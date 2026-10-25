@@ -12,7 +12,7 @@ import { onDrillKey } from '../ui/drill-keys';
 import { Tag } from '../ui/Tag';
 
 /**
- * The Stats page, opened from the Stats pin on the Home board: "‹ Back" to Home, then the player's own numbers as
+ * The Stats page, a place of the Collection group (no Back: the navigation is on screen): the player's own numbers as
  * a stat sheet grouped by area (Expeditions, Dungeon, Collection, Raid; the groups are `stats-view.ts`, so a new
  * stat is a row there), then the milestones with the tiny permanent bonuses they give. Nothing about other
  * players and no list of explorers (a creature's expedition count is on its own page).
@@ -21,15 +21,24 @@ export function StatsPage({
   profile,
   creatures,
   onBack,
+  backLabel = 'to Home',
 }: {
   profile: Profile;
   creatures: readonly Creature[];
-  onBack: () => void;
+  /** Where Back goes; absent for the place opened from the navigation (a place shows no Back). */
+  onBack?: (() => void) | undefined;
+  backLabel?: string;
 }) {
   const bonus = bonusSummary(profile.bonuses);
   return (
-    <section class="home-sub stats-page" aria-label="Stats" onKeyDown={onDrillKey(onBack)}>
-      <DrillHead title="Stats" backLabel="to Home" onBack={onBack} scroll focus />
+    <section
+      class="home-sub stats-page"
+      aria-label="Stats"
+      {...(onBack === undefined ? {} : { onKeyDown: onDrillKey(onBack) })}
+    >
+      {onBack !== undefined && (
+        <DrillHead title="Stats" backLabel={backLabel} onBack={onBack} scroll focus />
+      )}
 
       <div class="stat-sheet">
         {statGroups({ profile, creatures }).map((group) => (

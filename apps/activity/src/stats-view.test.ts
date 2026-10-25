@@ -4,7 +4,7 @@ import { parseGameState } from './api';
 import { parseProfile } from './expedition-parse';
 import profileFixture from './fixtures/expedition-profile.json';
 import stateOffer from './fixtures/expedition-state-offer.json';
-import { statGroups, statsTeaser, type StatsInput } from './stats-view';
+import { statGroups, type StatsInput } from './stats-view';
 
 const profile = parseProfile(profileFixture);
 const creatures = parseGameState(stateOffer).creatures;
@@ -50,22 +50,5 @@ describe('the stat sheet', () => {
     }).flatMap((g) => g.rows);
     // A new player's next depth is 1, so nothing is cleared yet.
     expect(empty.filter((r) => r.value !== 0).map((r) => r.key)).toEqual([]);
-  });
-});
-
-describe('the Home pin teaser for the Stats', () => {
-  it('says trips and dungeon clears', () => {
-    expect(statsTeaser(input)).toBe('3 trips, 3 dungeon clears');
-  });
-
-  it('is singular for one', () => {
-    const one = {
-      profile: {
-        stats: { trips_finished: 1 },
-        dungeon: { runs: 1, clears: 1, depth: 2, streak: 1 },
-      },
-      creatures: [],
-    };
-    expect(statsTeaser(one)).toBe('1 trip, 1 dungeon clear');
   });
 });

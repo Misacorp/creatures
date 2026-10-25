@@ -1,7 +1,7 @@
 import { ToggleButton } from './ToggleButton';
 
 /**
- * A short row of exclusive choices ("Flat / Leaning / Swaying"): one `ToggleButton` each, the chosen one gold and
+ * A short row of exclusive choices ("Flat / Leaning"): one `ToggleButton` each, the chosen one gold and
  * spoken as pressed, inside a named group. Choosing the chosen one again changes nothing. `label` names the
  * group for assistive technology (the visible name is the row around it). The words are the game's own: text.
  */

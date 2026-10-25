@@ -87,11 +87,6 @@ export function journalProgressText(profile: Pick<Profile, 'journal'>): string {
   return `${String(profile.journal.found.length)} / ${String(profile.journal.total)} pages found`;
 }
 
-/** The Home pin's teaser for the Journal: "3 / 45 pages found". */
-export function journalTeaser(profile: Pick<Profile, 'journal'>): string {
-  return `${String(profile.journal.found.length)} / ${String(profile.journal.total)} pages found`;
-}
-
 // --- The profile (milestones and bonuses; the stat sheet is `stats-view.ts`) ---
 
 const STAT_LABELS: Readonly<Record<string, string>> = {

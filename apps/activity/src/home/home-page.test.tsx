@@ -1,7 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Profile } from '../expedition-types';
-import { parseProfile } from '../expedition-parse';
-import profileFixture from '../fixtures/expedition-profile.json';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { HOME_NOW, homeInput } from '../workbench/home-sample';
 import {
   byClass,
@@ -16,22 +13,7 @@ import { DEFAULT_BOARD_SETTINGS, buildBoard, type BoardSettings } from './board'
 import { HomePage } from './HomePage';
 import { HomeScreen } from './HomeScreen';
 
-const fetchProfile = vi.fn<() => Promise<Profile>>();
-vi.mock('../expedition-api', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../expedition-api')>()),
-  fetchProfile: () => fetchProfile(),
-}));
-
 let page: Page | null = null;
-
-beforeEach(() => {
-  fetchProfile.mockReset();
-  fetchProfile.mockResolvedValue(parseProfile(profileFixture));
-});
-
-const flush = async (): Promise<void> => {
-  for (let i = 0; i < 4; i += 1) await Promise.resolve();
-};
 
 afterEach(() => {
   page?.unmount();
@@ -118,6 +100,55 @@ describe('HomePage', () => {
     expect(onGo).toHaveBeenCalledWith('collection');
   });
 
+  it('opens the place of every Coming up row, and of every Quiet places row, when tapped', () => {
+    const onGo = vi.fn();
+    const busy = draw('busy', DEFAULT_BOARD_SETTINGS, { onGo });
+    const rows = byClass(busy.root, 'hb-coming-row');
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      onGo.mockClear();
+      busy.click(row);
+      expect(onGo).toHaveBeenCalledWith(row.getAttribute('data-place'));
+    }
+    expect(rows.some((r) => r.getAttribute('data-place') === 'raid')).toBe(true);
+    expect(rows.some((r) => r.getAttribute('data-place') === 'games')).toBe(true);
+
+    const quiet = draw('nothing going on', { ...DEFAULT_BOARD_SETTINGS, idle: 'show' }, { onGo });
+    const quietRows = byClass(quiet.root, 'hb-quiet');
+    expect(quietRows).toHaveLength(5);
+    for (const row of quietRows) {
+      expect(row.localName).toBe('button');
+      onGo.mockClear();
+      quiet.click(row);
+      expect(onGo).toHaveBeenCalledWith(row.getAttribute('data-place'));
+    }
+  });
+
+  it('opens Games from the medals of The valley today, named by the events', () => {
+    const onGo = vi.fn();
+    const p = draw('busy', DEFAULT_BOARD_SETTINGS, { onGo });
+    const medals = first(byName(p.root, 'button', /^The Games today: /));
+    p.click(medals);
+    expect(onGo).toHaveBeenCalledWith('games');
+  });
+
+  it('makes the sky line a button that opens the forecast (a popover; none without a host)', () => {
+    const p = draw('busy');
+    const sky = first(byClass(p.root, 'hb-valley-sky'));
+    expect(sky.localName).toBe('button');
+    expect(sky.getAttribute('aria-haspopup')).toBe('dialog');
+    expect(() => {
+      p.click(sky);
+    }).not.toThrow();
+  });
+
+  it('has no button inside a button on the board', () => {
+    const p = draw('busy', { ...DEFAULT_BOARD_SETTINGS, idle: 'show' }, { onGo: () => undefined });
+    for (const b of find(p.root, (el) => el.localName === 'button')) {
+      expect(find(b, (el) => el !== b && el.localName === 'button')).toEqual([]);
+    }
+  });
+
   it('leaves the raid rows out when the raid view did not load', () => {
     const p = draw('busy', DEFAULT_BOARD_SETTINGS, { raid: false });
     expect(visibleText(p.root)).not.toContain('Raid finale');
@@ -137,24 +168,23 @@ describe('HomePage', () => {
   });
 
   it('marks the board with its tilt option, and gives each paper its lean', () => {
-    for (const tilt of ['none', 'still', 'sway'] as const) {
+    for (const tilt of ['none', 'still'] as const) {
       const p = draw('busy', { ...DEFAULT_BOARD_SETTINGS, tilt });
       const board = first(byClass(p.root, 'hb'));
       expect(board.getAttribute('data-tilt')).toBe(tilt);
       const lean = buildBoard(homeInput('busy', true), { ...DEFAULT_BOARD_SETTINGS, tilt });
       const raid = first(find(p.root, (el) => el.getAttribute('data-place') === 'raid'));
       expect(raid.style.getPropertyValue('--tilt')).toBe(`${String(lean.tilts['need:raid'])}deg`);
-      expect(raid.style.getPropertyValue('--sway-delay')).not.toBe('');
     }
   });
 
   it('keeps every paper in its lean across a redraw: nothing jumps', () => {
-    const p = draw('busy');
+    const p = draw('busy', { ...DEFAULT_BOARD_SETTINGS, tilt: 'still' });
     const before = byClass(p.root, 'hb-paper').map((el) => el.style.getPropertyValue('--tilt'));
     p.draw(
       <HomePage
         input={homeInput('busy', true)}
-        settings={DEFAULT_BOARD_SETTINGS}
+        settings={{ ...DEFAULT_BOARD_SETTINGS, tilt: 'still' }}
         onGo={() => undefined}
       />,
     );
@@ -163,8 +193,8 @@ describe('HomePage', () => {
     );
   });
 
-  it('pins the Journal and the Stats to the board, each with its teaser, and opens its page when tapped', () => {
-    const onOpenPage = vi.fn();
+  it('draws the "How to play" pin beside the starter pin when it can open How to play, and opens it', () => {
+    const onHowTo = vi.fn();
     const drawn = createPage();
     page = drawn;
     drawn.draw(
@@ -172,26 +202,18 @@ describe('HomePage', () => {
         input={homeInput('busy', true)}
         settings={DEFAULT_BOARD_SETTINGS}
         onGo={() => undefined}
-        teasers={{ journal: '3 / 45 pages found', stats: '48 trips, 9 dungeon clears' }}
-        onOpenPage={onOpenPage}
+        onHowTo={onHowTo}
       />,
     );
-    const pins = byClass(drawn.root, 'hb-pin');
-    expect(pins).toHaveLength(2);
-    expect(visibleText(first(byName(drawn.root, 'button', /^Journal/)))).toContain(
-      '3 / 45 pages found',
-    );
-    expect(visibleText(first(byName(drawn.root, 'button', /^Stats/)))).toContain(
-      '48 trips, 9 dungeon clears',
-    );
-    // They lean like the other papers.
-    for (const pin of pins) expect(pin.style.getPropertyValue('--tilt')).not.toBe('');
-    drawn.click(first(byName(drawn.root, 'button', /^Journal/)));
-    drawn.click(first(byName(drawn.root, 'button', /^Stats/)));
-    expect(onOpenPage.mock.calls).toEqual([['journal'], ['home/stats']]);
+    const pin = first(byName(drawn.root, 'button', 'How to play'));
+    expect(pin.classList.contains('hb-badge')).toBe(true);
+    expect(byClass(drawn.root, 'hb-starter')).toHaveLength(1);
+    drawn.click(pin);
+    expect(onHowTo).toHaveBeenCalledOnce();
+    expect(byName(draw('busy').root, 'button', 'How to play')).toHaveLength(0);
   });
 
-  it('keeps the pins on a calm board, and leaves them out when it cannot open pages', () => {
+  it('keeps the "How to play" pin on a calm board, and has no Journal or Stats pins', () => {
     const calm = createPage();
     page = calm;
     calm.draw(
@@ -199,13 +221,11 @@ describe('HomePage', () => {
         input={homeInput('nothing waiting', true)}
         settings={DEFAULT_BOARD_SETTINGS}
         onGo={() => undefined}
-        onOpenPage={() => undefined}
+        onHowTo={() => undefined}
       />,
     );
-    // No teaser line yet (the profile has not loaded): just the names.
-    expect(byClass(calm.root, 'hb-pin')).toHaveLength(2);
-    expect(byClass(calm.root, 'hb-pin-teaser')).toHaveLength(0);
-    expect(byClass(draw('busy').root, 'hb-pin')).toHaveLength(0);
+    expect(byName(calm.root, 'button', 'How to play')).toHaveLength(1);
+    expect(byName(calm.root, 'button', /^(Journal|Stats)/)).toHaveLength(0);
   });
 
   it('shows no notice for quiet places by default, and a calm one-line notice each with idle shown', () => {
@@ -233,49 +253,9 @@ describe('HomeScreen', () => {
         offset={HOME_NOW - Date.now()}
         settings={DEFAULT_BOARD_SETTINGS}
         onGo={() => undefined}
-        onOpenPage={() => undefined}
       />,
     );
     expect(visibleText(drawn.root)).toContain('Needs you');
     expect(visibleText(drawn.root)).toContain('Games lock');
-  });
-
-  it('fills the pins’ teasers from the profile once it has loaded', async () => {
-    const input = homeInput('busy', true);
-    const drawn = createPage();
-    page = drawn;
-    drawn.draw(
-      <HomeScreen
-        {...input}
-        offset={HOME_NOW - Date.now()}
-        settings={DEFAULT_BOARD_SETTINGS}
-        onGo={() => undefined}
-        onOpenPage={() => undefined}
-      />,
-    );
-    expect(byClass(drawn.root, 'hb-pin-teaser')).toHaveLength(0);
-    await flush();
-    drawn.update(() => undefined);
-    const teasers = byClass(drawn.root, 'hb-pin-teaser').map((el) => visibleText(el));
-    expect(teasers).toEqual(['3 / 45 pages found', `3 trips, 3 dungeon clears`]);
-  });
-
-  it('shows the pins without teasers when the profile fails to load', async () => {
-    fetchProfile.mockRejectedValue(new Error('offline'));
-    const drawn = createPage();
-    page = drawn;
-    drawn.draw(
-      <HomeScreen
-        {...homeInput('busy', true)}
-        offset={HOME_NOW - Date.now()}
-        settings={DEFAULT_BOARD_SETTINGS}
-        onGo={() => undefined}
-        onOpenPage={() => undefined}
-      />,
-    );
-    await flush();
-    drawn.update(() => undefined);
-    expect(byClass(drawn.root, 'hb-pin')).toHaveLength(2);
-    expect(byClass(drawn.root, 'hb-pin-teaser')).toHaveLength(0);
   });
 });

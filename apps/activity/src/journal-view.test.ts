@@ -8,7 +8,6 @@ import {
   bonusText,
   journalPlaces,
   journalProgressText,
-  journalTeaser,
   milestoneName,
   milestoneBonusText,
   milestoneViews,
@@ -82,10 +81,6 @@ describe('the profile', () => {
   it('names the account stats in words, with a fallback for a new one', () => {
     expect(statLabel('trips_finished')).toBe('Trips finished');
     expect(statLabel('brand_new_stat')).toBe('brand new stat');
-  });
-
-  it('gives the Home pin a teaser for the Journal', () => {
-    expect(journalTeaser(profile)).toBe('3 / 45 pages found');
   });
 
   it('names every milestone of the rules, and has a fallback for a new one', () => {

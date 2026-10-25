@@ -37,8 +37,13 @@ describe('the board settings on the device', () => {
 
   it('keeps what was saved, and reads it back', () => {
     const storage = memory();
-    expect(saveBoardSettings(storage, { tilt: 'sway', idle: 'show' })).toBe(true);
-    expect(loadBoardSettings(storage)).toEqual({ tilt: 'sway', idle: 'show' });
+    expect(saveBoardSettings(storage, { tilt: 'still', idle: 'show' })).toBe(true);
+    expect(loadBoardSettings(storage)).toEqual({ tilt: 'still', idle: 'show' });
+  });
+
+  it('reads an old saved sway as still (the player liked a lean)', () => {
+    const old = memory({ [BOARD_SETTINGS_KEY]: JSON.stringify({ tilt: 'sway', idle: 'show' }) });
+    expect(loadBoardSettings(old)).toEqual({ tilt: 'still', idle: 'show' });
   });
 
   it('falls back to the defaults field by field for anything unknown', () => {

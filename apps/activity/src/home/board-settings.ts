@@ -43,8 +43,10 @@ export function loadBoardSettings(storage: SettingsStorage | null): BoardSetting
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== 'object' || parsed === null) return DEFAULT_BOARD_SETTINGS;
     const record = parsed as Record<string, unknown>;
+    // An old saved `sway` (removed 2026-10-25) becomes `still`: the player liked a lean.
+    const savedTilt = record['tilt'] === 'sway' ? 'still' : record['tilt'];
     return {
-      tilt: pick<TiltMode>(record['tilt'], TILT_MODES, DEFAULT_BOARD_SETTINGS.tilt),
+      tilt: pick<TiltMode>(savedTilt, TILT_MODES, DEFAULT_BOARD_SETTINGS.tilt),
       idle: pick<IdleMode>(record['idle'], IDLE_MODES, DEFAULT_BOARD_SETTINGS.idle),
     };
   } catch {

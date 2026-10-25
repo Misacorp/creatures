@@ -3,9 +3,9 @@ import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 
 /**
- * The pin in the top right corner of the Today board: a round pushpin badge drawn as the player's starter
+ * The rightmost pin in the top right corner of the Today board: a round pushpin badge drawn as the player's starter
  * creature (`starterLook`; Sproutle when none is known). A button that opens the Creatures view, 44 px at least,
- * sitting above the papers (it may overlap a notice). The picture is decoration: the name is "Your creatures".
+ * sitting above the papers (it may overlap a notice); the look is the shared `hb-badge` (as the "?" pin's). The picture is decoration: the name is "Your creatures".
  */
 export function StarterPin({
   species,
@@ -18,8 +18,8 @@ export function StarterPin({
 }) {
   const palette = shiny ? shinyPalette(species) : undefined;
   return (
-    <button type="button" class="hb-starter" aria-label="Your creatures" onClick={onOpen}>
-      <span class="hb-starter-disc">
+    <button type="button" class="hb-badge hb-starter" aria-label="Your creatures" onClick={onOpen}>
+      <span class="hb-badge-disc">
         <Sprite
           sprite={creatureSpriteOrFallback(species)}
           scale={2}

@@ -178,7 +178,9 @@ describe('MainNav as the phone dock', () => {
 
   it('goes straight to the place from a group with one place, with no menu', () => {
     const onSelect = vi.fn();
-    const only = navPlaces(NO_ALERTS).filter((p) => p.id !== 'workshop' && p.id !== 'journal');
+    const only = navPlaces(NO_ALERTS).filter(
+      (p) => p.id !== 'workshop' && p.id !== 'journal' && p.id !== 'stats',
+    );
     const p = draw(<MainNav places={only} current="collection" wide={false} onSelect={onSelect} />);
     const creatures = first(byName(p.root, 'button', /^Creatures/));
     expect(creatures.getAttribute('aria-expanded')).toBeNull();
@@ -275,6 +277,7 @@ describe('MainNav as the phone dock', () => {
       'collection',
       'workshop',
       'journal',
+      'stats',
     ]);
   });
 
@@ -320,7 +323,7 @@ describe('MainNav as the wide rail', () => {
       'Adventure',
     ]);
     const buttons = find(p.root, (el) => el.localName === 'button');
-    expect(buttons).toHaveLength(7);
+    expect(buttons).toHaveLength(8);
     expect(buttons.every((b) => b.getAttribute('aria-expanded') === null)).toBe(true);
     expect(
       buttons.filter((b) => b.getAttribute('aria-current') === 'page').map((b) => nameOf(b)),
@@ -333,7 +336,7 @@ describe('MainNav as the wide rail', () => {
     const p = draw(nav({ wide: true, home: true, current: 'home' }));
     const buttons = find(p.root, (el) => el.localName === 'button');
     expect(buttons.map((b) => nameOf(b))[0]).toBe('Home');
-    expect(buttons).toHaveLength(8);
+    expect(buttons).toHaveLength(9);
     expect(first(byName(p.root, 'button', 'Home')).getAttribute('aria-current')).toBe('page');
     expect(byClass(p.root, 'nav-heading').map((h) => nameOf(h))).toEqual([
       'Collection',

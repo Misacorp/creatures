@@ -1,8 +1,8 @@
 /*
   The Home page (home/HomePage.tsx, home/NoticeBoard.tsx): on a phone the living room at the top and, under it, the
   Today board, a notice board of papers pinned on cork. Built from the game's tokens; the only art is the
-  sprites already in the game. The board's option is an attribute: `data-tilt` (`none`, `still`, `sway`) leans
-  or rocks the papers (`--tilt` and `--sway-delay` are set per paper from `home/board.ts`).
+  sprites already in the game. The board's option is an attribute: `data-tilt` (`none`, the default, or
+  `still`) leaves the papers flush or leans them (`--tilt` is set per paper from `home/board.ts`).
 */
 
 /* The page: the room (phone only) and the board, one column. */
@@ -59,7 +59,7 @@
 
 .hb .hb-title {
   margin: 0.25rem 0 -0.125rem;
-  font-size: var(--fs-title);
+  font-size: var(--fs-heading);
 }
 
 .hb ul,
@@ -101,7 +101,7 @@ button.hb-need {
   align-items: center;
   gap: 0.75rem;
   width: 100%;
-  min-height: 3.75rem;
+  min-height: 3.25rem;
   padding: 0.5rem 0.75rem;
   color: var(--ink);
   text-align: left;
@@ -120,8 +120,8 @@ button.hb-need:focus-visible {
   display: grid;
   flex: none;
   place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 2.25rem;
+  height: 2.25rem;
   background: var(--dusk);
   box-shadow: 0 0 0 var(--px) var(--ink);
 }
@@ -134,14 +134,14 @@ button.hb-need:focus-visible {
 }
 
 .hb-need-place {
-  font-size: var(--fs-heading);
+  font-size: var(--fs-row);
   font-weight: 400;
   line-height: 1.1;
 }
 
 .hb-need-reason {
   color: var(--leather);
-  font-size: var(--fs-row);
+  font-size: var(--fs-small);
   line-height: 1.2;
 }
 
@@ -164,7 +164,7 @@ button.hb-need:focus-visible {
   gap: 0.75rem;
   margin: 0;
   padding: 0.875rem;
-  font-size: var(--fs-row);
+  font-size: var(--fs-small);
   line-height: 1.3;
 }
 
@@ -183,14 +183,36 @@ button.hb-need:focus-visible {
 }
 
 .hb-coming li {
+  min-height: 2.75rem;
+}
+
+/* Every Coming up row is a button to its place (no paper of its own: the list is the paper). */
+.hb ol.hb-coming button.hb-coming-row {
   display: grid;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.25rem 0;
+  color: inherit;
+  text-align: left;
+  background: none;
+  box-shadow: none;
   grid-template-columns: 4.25rem auto minmax(0, 1fr) auto;
   gap: 0.5rem;
   align-items: center;
-  min-height: 2.5rem;
-  padding: 0.25rem 0;
-  font-size: var(--fs-row);
+  font-size: var(--fs-small);
   line-height: 1.2;
+}
+
+.hb ol.hb-coming button.hb-coming-row:hover {
+  background: color-mix(in srgb, var(--bone) 80%, var(--gold));
+}
+
+.hb ol.hb-coming button.hb-coming-row:focus-visible,
+.hb button.hb-valley-sky:focus-visible,
+.hb button.hb-valley-games:focus-visible,
+button.hb-quiet:focus-visible {
+  outline: var(--px) solid var(--ink);
+  outline-offset: calc(var(--px) * 2);
 }
 
 .hb-coming li + li {
@@ -199,7 +221,7 @@ button.hb-need:focus-visible {
 
 .hb-when {
   color: var(--leather-dark);
-  font-size: var(--fs-heading);
+  font-size: var(--fs-row);
   font-variant-numeric: tabular-nums;
 }
 
@@ -215,142 +237,23 @@ button.hb-need:focus-visible {
   text-align: right;
 }
 
-/*
-  The two pins that open pages of Home (home/BoardPins.tsx): the Journal is a small booklet (a velvet cover, a
-  page edge, a gold ribbon) and the Stats a ruled ledger card (bone, blue rules, a red margin). Same pin and
-  lean as the other papers; two columns on a phone, the same columns as the notices above on a wide board.
-*/
-.hb-pins {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-}
-
-button.hb-pin {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  width: 100%;
-  min-height: 4rem;
-  padding: 0.5rem 0.625rem;
-  color: var(--ink);
-  text-align: left;
-}
-
-.hb-pin-art {
-  display: grid;
-  flex: none;
-  place-items: center;
-  padding: 0.25rem;
-  background: var(--dusk);
-  box-shadow: 0 0 0 var(--px) var(--ink);
-}
-
-.hb-pin-text {
-  display: grid;
-  gap: 0.125rem;
-  min-width: 0;
-}
-
-.hb-pin-name {
-  font-size: var(--fs-heading);
-  font-weight: 400;
-  line-height: 1.1;
-}
-
-.hb-pin-teaser {
-  font-size: var(--fs-small);
-  line-height: 1.2;
-}
-
-/* The booklet: a cover, the page edge on its right, a ribbon hanging from the top edge. */
-button.hb-pin-journal {
-  padding-right: 1.125rem;
-  color: var(--bone);
-  background: var(--velvet);
-  box-shadow:
-    0 0 0 var(--px) var(--ink),
-    inset calc(var(--px) * -3) 0 0 0 var(--bone),
-    inset calc(var(--px) * -4) 0 0 0 var(--ink),
-    inset var(--px) var(--px) 0 0 var(--velvet-light),
-    var(--px) calc(var(--px) * 2) 0 var(--px) var(--leather-dark);
-}
-
-button.hb-pin-journal .hb-pin-name {
-  color: var(--gold);
-}
-
-button.hb-pin-journal .hb-pin-teaser {
-  color: var(--bone);
-}
-
-button.hb-pin-journal::after {
-  position: absolute;
-  top: calc(var(--px) * -1);
-  right: 1.5rem;
-  width: 0.5rem;
-  height: 1.25rem;
-  background: var(--gold);
-  box-shadow: 0 0 0 2px var(--ink);
-  content: '';
-}
-
-/* The ledger card: a red margin line and two ruled lines along the bottom (none under the words). */
-button.hb-pin-stats {
-  padding: 0.5rem 0.625rem 0.75rem 1rem;
-  background-color: var(--bone);
-  background-image:
-    linear-gradient(
-      90deg,
-      transparent 0.625rem,
-      var(--bad) 0.625rem,
-      var(--bad) calc(0.625rem + 2px),
-      transparent calc(0.625rem + 2px)
-    ),
-    linear-gradient(
-      0deg,
-      transparent 0.25rem,
-      color-mix(in srgb, var(--tide) 55%, var(--bone)) 0.25rem,
-      color-mix(in srgb, var(--tide) 55%, var(--bone)) calc(0.25rem + 2px),
-      transparent calc(0.25rem + 2px),
-      transparent 0.5rem,
-      color-mix(in srgb, var(--tide) 55%, var(--bone)) 0.5rem,
-      color-mix(in srgb, var(--tide) 55%, var(--bone)) calc(0.5rem + 2px),
-      transparent calc(0.5rem + 2px)
-    );
-}
-
-button.hb-pin-stats .hb-pin-teaser {
-  color: var(--leather);
-}
-
-button.hb-pin:hover {
-  background-color: color-mix(in srgb, var(--bone) 80%, var(--gold));
-}
-
-button.hb-pin-journal:hover {
-  background-color: var(--velvet-light);
-}
-
-button.hb-pin:focus-visible {
-  outline: var(--px) solid var(--gold);
-  outline-offset: calc(var(--px) * 2);
-}
-
 /* Quiet places (the `show` option for idle places): slim one-line papers. */
 .hb-quiet-list {
   display: grid;
   gap: 0.75rem;
 }
 
-.hb-quiet {
+button.hb-quiet {
   display: flex;
+  width: 100%;
+  color: var(--ink);
+  text-align: left;
   gap: 0.5rem;
   align-items: center;
-  min-height: 2.5rem;
+  min-height: 2.75rem;
   margin: 0;
   padding: 0.375rem 0.75rem;
-  font-size: var(--fs-row);
+  font-size: var(--fs-small);
   line-height: 1.2;
 }
 
@@ -371,7 +274,7 @@ button.hb-pin:focus-visible {
   gap: 0.375rem 0.75rem;
   align-items: center;
   padding: 0.625rem 0.75rem;
-  font-size: var(--fs-row);
+  font-size: var(--fs-small);
   line-height: 1.2;
 }
 
@@ -383,18 +286,33 @@ button.hb-pin:focus-visible {
   text-transform: uppercase;
 }
 
-.hb-valley-sky {
+.hb button.hb-valley-sky,
+.hb button.hb-valley-games {
   display: inline-flex;
-  flex: 1 1 auto;
   gap: 0.375rem;
   align-items: center;
+  min-height: 2.75rem;
+  padding: 0.125rem 0.25rem;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  background: none;
+  box-shadow: none;
+}
+
+.hb button.hb-valley-sky {
+  flex: 1 1 auto;
   min-width: 0;
 }
 
-.hb-valley-games {
-  display: inline-flex;
+.hb button.hb-valley-games {
   flex: none;
-  gap: 0.375rem;
+}
+
+.hb button.hb-valley-sky:hover,
+.hb button.hb-valley-games:hover,
+button.hb-quiet:hover {
+  background: color-mix(in srgb, var(--bone) 80%, var(--gold));
 }
 
 .hb-medal {
@@ -420,19 +338,9 @@ button.hb-pin:focus-visible {
 
 button.hb-need:hover,
 button.hb-need:focus-visible,
-button.hb-pin:hover,
-button.hb-pin:focus-visible {
+button.hb-quiet:hover,
+button.hb-quiet:focus-visible {
   rotate: 0deg;
-}
-
-@keyframes hb-sway {
-  from {
-    rotate: calc(var(--tilt, 0deg) * var(--tilt-scale, 1) - 0.6deg * var(--tilt-scale, 1));
-  }
-
-  to {
-    rotate: calc(var(--tilt, 0deg) * var(--tilt-scale, 1) + 0.6deg * var(--tilt-scale, 1));
-  }
 }
 
 /*
@@ -476,31 +384,19 @@ button.hb-pin:focus-visible {
 
 @container (min-width: 56rem) {
   .hb-needs,
-  .hb-quiet-list,
-  .hb-pins {
+  .hb-quiet-list {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-/* Only where motion is welcome: under reduced motion `sway` is just `still`. */
-@media (prefers-reduced-motion: no-preference) {
-  .hb[data-tilt='sway'] .hb-paper {
-    animation: hb-sway 7s ease-in-out var(--sway-delay, 0s) infinite alternate;
-  }
-
-  .hb[data-tilt='sway'] button.hb-need:hover,
-  .hb[data-tilt='sway'] button.hb-need:focus-visible,
-  .hb[data-tilt='sway'] button.hb-pin:hover,
-  .hb[data-tilt='sway'] button.hb-pin:focus-visible {
-    animation-play-state: paused;
-  }
-}
-
-/* --- The starter pin: a round pushpin badge in the board's top right corner, above the papers --- */
-button.hb-starter {
+/*
+  --- The corner pins: round pushpin badges in the board's top right corner, above the papers. The starter
+  (opens Creatures) is the rightmost, the "?" (opens How to play) sits to its left. `hb-badge` is the shared look:
+  an ink rim and a gold disc, one stepped circle each. ---
+*/
+button.hb-badge {
   position: absolute;
   top: 0.25rem;
-  right: 0.375rem;
   z-index: 3;
   display: grid;
   place-items: center;
@@ -542,13 +438,21 @@ button.hb-starter {
   );
 }
 
-button.hb-starter:active:not(:disabled) {
+button.hb-starter {
+  right: 0.375rem;
+}
+
+button.hb-help {
+  right: 3.75rem;
+}
+
+button.hb-badge:active:not(:disabled) {
   box-shadow: none;
   transform: translate(1px, 1px);
 }
 
 /* The ink rim and the gold disc are one stepped circle each, the disc inset by one pixel of chrome. */
-button.hb-starter::before {
+button.hb-badge::before {
   position: absolute;
   inset: 0;
   background: var(--ink);
@@ -556,7 +460,7 @@ button.hb-starter::before {
   content: '';
 }
 
-.hb-starter-disc {
+.hb-badge-disc {
   position: relative;
   display: grid;
   place-items: center;
@@ -567,7 +471,7 @@ button.hb-starter::before {
 }
 
 /* A bone glint on the upper left of the disc: the pin's head catches the light. */
-.hb-starter-disc::after {
+.hb-badge-disc::after {
   position: absolute;
   top: 18%;
   left: 18%;
@@ -575,4 +479,19 @@ button.hb-starter::before {
   height: 0.25rem;
   background: var(--bone);
   content: '';
+}
+
+/* The "?" of the HUD's help button (the pixel font), in ink on the gold. */
+.hb-help-mark {
+  color: var(--ink);
+  font-size: var(--fs-title);
+  line-height: 1;
+}
+
+/* "Needs you" is the first heading: it stops short of the two pins (3rem each and a gap, from the right edge). */
+.hb-cork > .hb-title:first-of-type {
+  display: flex;
+  align-items: center;
+  min-height: 2.25rem; /* the pins hang 3rem down from the corner: the first notice starts below them */
+  padding-right: 6.75rem;
 }

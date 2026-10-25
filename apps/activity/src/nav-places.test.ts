@@ -11,7 +11,7 @@ function place(id: string, group: string, pip: string | null = null): NavPlace {
 const ids = (list: readonly { id: string }[]): string[] => list.map((p) => p.id);
 
 describe('the place list', () => {
-  it('is the seven tabs in their order, each with its group and its pip from the alerts', () => {
+  it('is the eight tabs in their order, each with its group and its pip from the alerts', () => {
     const places = navPlaces({ ...NO_ALERTS, workshop: ALERT_TEXT.jobReady });
     expect(ids(places)).toEqual(TABS.map((t) => t.id));
     expect(places.map((p) => p.label)).toEqual(TABS.map((t) => t.label));
@@ -38,14 +38,16 @@ describe('navGroups', () => {
     expect(ids(groups)).toEqual(['collection', 'adventure']);
     expect(groups.map((g) => g.label)).toEqual(['Collection', 'Adventure']);
     expect(groups.map((g) => ids(g.places))).toEqual([
-      ['collection', 'workshop', 'journal'],
+      ['collection', 'workshop', 'journal', 'stats'],
       ['expeditions', 'dungeon', 'raid', 'games'],
     ]);
   });
 
   it('makes a group with several places a menu and a group with one place a direct button', () => {
     expect(navGroups(places).map((g) => g.direct)).toEqual([false, false]);
-    const lone = places.filter((p) => p.id !== 'workshop' && p.id !== 'journal');
+    const lone = places.filter(
+      (p) => p.id !== 'workshop' && p.id !== 'journal' && p.id !== 'stats',
+    );
     expect(navGroups(lone).map((g) => g.direct)).toEqual([true, false]);
   });
 
@@ -58,6 +60,7 @@ describe('navGroups', () => {
       'collection',
       'workshop',
       'journal',
+      'stats',
       'market',
     ]);
   });

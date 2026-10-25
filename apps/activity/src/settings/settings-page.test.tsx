@@ -57,31 +57,31 @@ describe('the Settings page', () => {
     expect(visibleText(p.root)).toContain('Quiet places');
   });
 
-  it('shows the current choices, the defaults being Leaning and Hide', () => {
+  it('shows the current choices, the defaults being Flat and Hide', () => {
     const p = draw();
-    expect(pressed(p.root, 'Leaning')).toBe(true);
-    expect(pressed(p.root, 'Flat')).toBe(false);
-    expect(pressed(p.root, 'Swaying')).toBe(false);
+    expect(pressed(p.root, 'Flat')).toBe(true);
+    expect(pressed(p.root, 'Leaning')).toBe(false);
+    expect(byName(p.root, 'button', 'Swaying')).toHaveLength(0);
     expect(pressed(p.root, 'Hide')).toBe(true);
     expect(pressed(p.root, 'Show')).toBe(false);
-    const swaying = draw({ tilt: 'sway', idle: 'show' });
-    expect(pressed(swaying.root, 'Swaying')).toBe(true);
-    expect(pressed(swaying.root, 'Show')).toBe(true);
+    const leaning = draw({ tilt: 'still', idle: 'show' });
+    expect(pressed(leaning.root, 'Leaning')).toBe(true);
+    expect(pressed(leaning.root, 'Show')).toBe(true);
   });
 
   it('hands back the whole settings object with just the one choice changed', () => {
     const onChange = vi.fn();
     const p = draw(DEFAULT_BOARD_SETTINGS, { onChange });
-    p.click(first(byName(p.root, 'button', 'Swaying')));
-    expect(onChange).toHaveBeenLastCalledWith({ tilt: 'sway', idle: 'hide' });
+    p.click(first(byName(p.root, 'button', 'Leaning')));
+    expect(onChange).toHaveBeenLastCalledWith({ tilt: 'still', idle: 'hide' });
     p.click(first(byName(p.root, 'button', 'Show')));
-    expect(onChange).toHaveBeenLastCalledWith({ tilt: 'still', idle: 'show' });
+    expect(onChange).toHaveBeenLastCalledWith({ tilt: 'none', idle: 'show' });
   });
 
   it('does nothing when the chosen choice is tapped again', () => {
     const onChange = vi.fn();
     const p = draw(DEFAULT_BOARD_SETTINGS, { onChange });
-    p.click(first(byName(p.root, 'button', 'Leaning')));
+    p.click(first(byName(p.root, 'button', 'Flat')));
     expect(onChange).not.toHaveBeenCalled();
   });
 

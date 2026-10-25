@@ -12,7 +12,6 @@ import { useWide } from '../../ui/wide-layout';
 import type { Forecast } from '../../weather-types';
 import { ROOM_SELF_ID, sampleResidents } from '../data';
 import { homeInput } from '../home-sample';
-import type { PinTeasers } from '../../home/BoardPins';
 
 /**
  * The Home page in a frame like the Activity window (dev only; imported by its workbench page alone): the real
@@ -44,14 +43,11 @@ function Room({ forecast }: { forecast: Forecast | null }) {
 export function HomeDemo({
   state,
   raid,
-  teasers,
   settings,
   layout,
 }: {
   state: string;
   raid: boolean;
-  /** The pins' teasers (null: the profile has not loaded, the pins show only their names). */
-  teasers: PinTeasers;
   settings: BoardSettings;
   layout: string;
 }) {
@@ -67,15 +63,7 @@ export function HomeDemo({
       home
     />
   );
-  const page = (
-    <HomePage
-      input={input}
-      settings={settings}
-      onGo={NOTHING}
-      teasers={teasers}
-      onOpenPage={NOTHING}
-    />
-  );
+  const page = <HomePage input={input} settings={settings} onGo={NOTHING} onHowTo={NOTHING} />;
   return (
     <PopoverHost onOpenHowTo={NOTHING}>
       <div class={wide ? 'nd hm nd-wide' : 'nd hm nd-phone'}>
@@ -103,8 +91,7 @@ export function HomeDemo({
                 input={input}
                 settings={settings}
                 onGo={NOTHING}
-                teasers={teasers}
-                onOpenPage={NOTHING}
+                onHowTo={NOTHING}
                 room={<Room forecast={input.forecast} />}
               />
             </div>

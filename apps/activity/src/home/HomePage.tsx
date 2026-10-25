@@ -1,8 +1,7 @@
-import type { ComponentChildren } from 'preact';
+import type { ComponentChildren, RefObject } from 'preact';
 import type { HomeInput } from '../home-view';
-import type { Screen, Tab } from '../tabs';
+import type { Tab } from '../tabs';
 import type { BoardSettings } from './board';
-import type { PinTeasers } from './BoardPins';
 import { NoticeBoard } from './NoticeBoard';
 
 /**
@@ -16,17 +15,17 @@ export function HomePage({
   settings,
   onGo,
   room,
-  teasers,
-  onOpenPage,
+  onHowTo,
+  howToRef,
 }: {
   input: HomeInput;
   settings: BoardSettings;
   onGo: (place: Tab, needsFilter?: boolean) => void;
   room?: ComponentChildren;
-  /** The pins' teasers (the Journal's and the Stats'); null parts until the profile has loaded. */
-  teasers?: PinTeasers;
-  /** Opens the screen of a pin (the Journal or the Stats); without it the pins are not drawn. */
-  onOpenPage?: (screen: Screen) => void;
+  /** Opens How to play (the "?" pin); without it the pin is not drawn. */
+  onHowTo?: () => void;
+  /** The "?" pin, where the focus returns when How to play closes. */
+  howToRef?: RefObject<HTMLButtonElement | null>;
 }) {
   return (
     <div class="home-page">
@@ -35,8 +34,8 @@ export function HomePage({
         input={input}
         settings={settings}
         onGo={onGo}
-        {...(teasers === undefined ? {} : { teasers })}
-        {...(onOpenPage === undefined ? {} : { onOpenPage })}
+        {...(onHowTo === undefined ? {} : { onHowTo })}
+        {...(howToRef === undefined ? {} : { howToRef })}
       />
     </div>
   );

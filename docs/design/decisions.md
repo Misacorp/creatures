@@ -3079,3 +3079,13 @@ Misa asked for an assessment of the patterns this day's navigation and Home work
 - **Reusable:** `ui/DrillHead` now serves pages as well as drawers; `ui/Segmented` is new and shared (with a workbench page); `home/HomeBook` is the loader for a Home page. The notice board's paper look stays the board's own (the Shared components row says so), so it does not spread to ordinary panels.
 - **Clear in code:** every new module opens with what it is, why and how to extend it (`MainNav`, `nav-places`, `tabs`, `use-scroll-top`, `build-info`, `home/*`, `settings/SettingsPage`, `stats-view`). The code still calls places "tabs" (`TABS`, `Tab`); `tabs.ts` says so at the top, and a rename is not worth its churn.
 - **Found by agents:** `CLAUDE.md` already sends UI work to `ux-patterns.md`; the implementer brief (`.claude/agents/implementer.md`) and the reviewers' `review-brief.md` now name "The frame" in one line each, and the Shared components table has rows for a page opened from another page and for a setting.
+
+## 2026-10-25: Home board: Journal and Stats off the board (Stats is a Collection place), a How to play pin, flush notices by default, no sway, smaller board text
+
+Misa's feedback on the Today board: the Journal and Stats pins did not fit under "Needs you", and their teasers loaded late (they needed the profile), so the layout jumped.
+
+- **Pins removed.** `BoardPins`, the teasers (`journalTeaser`, `statsTeaser`) and the profile load on Home are gone; Home loads nothing of its own. Stats is a place of the Collection group (Creatures, Workshop, Journal, Stats) with no Back, like the Journal. The Home sub-page machinery (`HOME_PAGES`, `HOME_PINS`, `Screen`, `homeScreen`, `homePageOf`, `navPlaceOf`) and `nav-state`'s `backTo` had no other user and were deleted; `Place` is the only screen id.
+- **A "?" pin** left of the starter pin opens How to play (How to play stays in Settings too). Both corner pins share one `hb-badge` look. The board keeps its own focus ref so closing How to play returns focus to the pin.
+- **No sway; flush by default.** `TiltMode` is `none` or `still`, default `none`. A saved `sway` loads as `still` (the player liked a lean).
+- **Everything on the board that is about another screen opens it** (Misa): Coming up rows, Quiet places rows and the Games medals are buttons that call the same `onGo` as a notice; the valley's sky line opens the forecast card, the same popover as the room's calendar (the forecast has no screen of its own).
+- **Smaller board text:** one step down (titles to heading size, place names to row size, reasons to small), the need tile's picture at scale 2, so the notices are less tall.

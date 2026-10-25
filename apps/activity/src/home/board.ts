@@ -3,8 +3,7 @@
  *
  * `BoardSettings` is the one small typed object a future player setting would fill in; nothing else decides
  * how the board looks or what it drops:
- *  - `tilt`: `none` (every notice flush), `still` (each notice leans a little, for good) or `sway` (the same
- *    lean, slowly rocking; the stylesheet turns it off under reduced motion).
+ *  - `tilt`: `none` (every notice flush, the default) or `still` (each notice leans a little, for good).
  *  - `idle`: `hide` (a place with nothing ongoing and nothing waiting gets no notice) or `show` (it gets a calm
  *    one-line notice).
  *
@@ -21,9 +20,8 @@ import {
   type QuietRow,
   type ValleyToday,
 } from '../home-view';
-import { HOME_PINS } from '../tabs';
 
-export type TiltMode = 'none' | 'still' | 'sway';
+export type TiltMode = 'none' | 'still';
 export type IdleMode = 'hide' | 'show';
 
 export interface BoardSettings {
@@ -31,13 +29,13 @@ export interface BoardSettings {
   idle: IdleMode;
 }
 
-export const TILT_MODES: readonly TiltMode[] = ['none', 'still', 'sway'];
+export const TILT_MODES: readonly TiltMode[] = ['none', 'still'];
 export const IDLE_MODES: readonly IdleMode[] = ['hide', 'show'];
 
-/** What a player gets until there is a setting for it: the notices lean a little and quiet places stay off the board. */
-export const DEFAULT_BOARD_SETTINGS: BoardSettings = { tilt: 'still', idle: 'hide' };
+/** What a player gets until there is a setting for it: the notices hang flush and quiet places stay off the board. */
+export const DEFAULT_BOARD_SETTINGS: BoardSettings = { tilt: 'none', idle: 'hide' };
 
-/** The largest lean of a notice, in degrees. A notice never sits nearer to flush than `MIN_TILT` in `still` or `sway`. */
+/** The largest lean of a notice, in degrees. A notice never sits nearer to flush than `MIN_TILT` in `still`. */
 export const MAX_TILT = 1.5;
 export const MIN_TILT = 0.5;
 
@@ -63,11 +61,6 @@ export function noticeTilt(id: string, index: number): number {
   return index % 2 === 0 ? -size : size;
 }
 
-/** A stable delay for the sway of a notice (seconds, from -6 to 0: every notice is already mid-rock, none in step). */
-export function swayDelay(id: string): number {
-  return -((hashId(id) >>> 8) % 61) / 10;
-}
-
 export interface Board {
   /** One notice per place that needs the player, the most pressing first. */
   needs: NeedRow[];
@@ -82,7 +75,7 @@ export interface Board {
   tilts: Readonly<Record<string, number>>;
 }
 
-/** The ids of the notices in the order they lean: which way each leans follows this order (the two pins come last). */
+/** The ids of the notices in the order they lean: which way each leans follows this order. */
 export function noticeIds(board: Pick<Board, 'needs' | 'calm' | 'coming' | 'quiet'>): string[] {
   return [
     ...board.needs.map((row) => `need:${row.place}`),
@@ -90,7 +83,6 @@ export function noticeIds(board: Pick<Board, 'needs' | 'calm' | 'coming' | 'quie
     ...(board.coming.length > 0 ? ['coming'] : []),
     ...board.quiet.map((row) => `quiet:${row.place}`),
     'valley',
-    ...HOME_PINS.map((page) => `pin:${page.id}`),
   ];
 }
 

@@ -1,24 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { BUNDLED_GLYPHS } from './glyphs';
-import {
-  DEFAULT_PLACE,
-  HOME_PINS,
-  NAV_GROUPS,
-  NAV_HOME,
-  TABS,
-  homePageOf,
-  isPlace,
-  isTab,
-  navPlaceOf,
-  tabPalette,
-} from './tabs';
+import { DEFAULT_PLACE, NAV_GROUPS, NAV_HOME, TABS, isPlace, isTab, tabPalette } from './tabs';
 
 describe('the tabs', () => {
-  it('has the seven tabs: the Collection (creatures, Workshop, Journal), then the adventures in rising danger, the Valley Games last', () => {
+  it('has the eight tabs: the Collection (creatures, Workshop, Journal, Stats), then the adventures in rising danger, the Valley Games last', () => {
     expect(TABS.map((t) => t.id)).toEqual([
       'collection',
       'workshop',
       'journal',
+      'stats',
       'expeditions',
       'dungeon',
       'raid',
@@ -48,7 +38,7 @@ describe('the groups and Home', () => {
     expect(NAV_GROUPS.map((g) => g.id)).toEqual(['collection', 'adventure']);
     expect(NAV_GROUPS.map((g) => g.label)).toEqual(['Collection', 'Adventure']);
     const of = (id: string) => TABS.filter((t) => t.group === id).map((t) => t.id);
-    expect(of('collection')).toEqual(['collection', 'workshop', 'journal']);
+    expect(of('collection')).toEqual(['collection', 'workshop', 'journal', 'stats']);
     expect(of('adventure')).toEqual(['expeditions', 'dungeon', 'raid', 'games']);
   });
 
@@ -64,14 +54,15 @@ describe('the groups and Home', () => {
   });
 });
 
-describe('the pins and pages of Home', () => {
-  it('opens the Journal as a place and the Stats as a page of Home', () => {
-    expect(HOME_PINS.map((p) => p.screen)).toEqual(['journal', 'home/stats']);
-    expect(isTab('journal')).toBe(true);
-    expect(navPlaceOf('journal')).toBe('journal');
-    expect(navPlaceOf('home/stats')).toBe('home');
-    expect(homePageOf('journal')).toBeNull();
-    expect(homePageOf('home/stats')).toBe('stats');
+describe('the Collection group', () => {
+  it('holds the Journal and the Stats as places', () => {
+    expect(TABS.filter((t) => t.group === 'collection').map((t) => t.id)).toEqual([
+      'collection',
+      'workshop',
+      'journal',
+      'stats',
+    ]);
+    expect(isTab('stats')).toBe(true);
   });
 });
 

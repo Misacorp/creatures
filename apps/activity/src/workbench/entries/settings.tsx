@@ -12,7 +12,7 @@ import type { Entry, Props } from '../types';
 
 const NOTHING = () => undefined;
 
-const TILT_LABELS = ['Flat', 'Leaning', 'Swaying'] as const;
+const TILT_LABELS = ['Flat', 'Leaning'] as const;
 
 function SettingsDemo({ p }: { p: Props }) {
   const [settings, setSettings] = useState<BoardSettings>({
@@ -29,16 +29,15 @@ const settingsPage: Entry = {
   file: 'apps/activity/src/settings/SettingsPage.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The Settings page, opened from the cog in the HUD: a drill-in ("‹ Back" at the top left, Escape) with sections, one row per setting (its name, a line about it and its control). Today one section, "The notice board": "Notices" (Flat, Leaning, Swaying) and "Quiet places" (Hide, Show), the Home board’s two display options. They are kept on this device (the browser’s storage, with the defaults as the fallback), never sent to the server. The choices work in the preview. A new setting is one more row; a new group of settings is one more section.',
+    'The Settings page, opened from the cog in the HUD: a drill-in ("‹ Back" at the top left, Escape) with sections, one row per setting (its name, a line about it and its control). Today one section, "The notice board": "Notices" (Flat, Leaning) and "Quiet places" (Hide, Show), the Home board’s two display options. They are kept on this device (the browser’s storage, with the defaults as the fallback), never sent to the server. The choices work in the preview. A new setting is one more row; a new group of settings is one more section.',
   controls: {
     tilt: { kind: 'select', options: TILT_MODES },
     idle: { kind: 'select', options: IDLE_MODES },
   },
-  defaults: { tilt: 'still', idle: 'hide' },
+  defaults: { tilt: 'none', idle: 'hide' },
   presets: [
-    { name: 'Defaults (Leaning, quiet places hidden)', props: {} },
-    { name: 'Flat, quiet places shown', props: { tilt: 'none', idle: 'show' } },
-    { name: 'Swaying', props: { tilt: 'sway' } },
+    { name: 'Defaults (Flat, quiet places hidden)', props: {} },
+    { name: 'Leaning, quiet places shown', props: { tilt: 'still', idle: 'show' } },
   ],
   render: (p) => <SettingsDemo key={JSON.stringify(p)} p={p} />,
 };
@@ -54,7 +53,7 @@ const segmented: Entry = {
   file: 'apps/activity/src/ui/Segmented.tsx',
   group: 'Controls',
   description:
-    'A short row of exclusive choices (Flat, Leaning, Swaying): one toggle button each, the chosen one gold and spoken as pressed, inside a named group; each at least 44 px tall. Tapping the chosen one again changes nothing. It is the control of the Settings page’s rows. Tap a choice in the preview.',
+    'A short row of exclusive choices (Flat, Leaning): one toggle button each, the chosen one gold and spoken as pressed, inside a named group; each at least 44 px tall. Tapping the chosen one again changes nothing. It is the control of the Settings page’s rows. Tap a choice in the preview.',
   controls: { value: { kind: 'select', options: TILT_MODES } },
   defaults: { value: 'still' },
   presets: [

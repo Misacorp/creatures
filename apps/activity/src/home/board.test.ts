@@ -7,7 +7,6 @@ import {
   buildBoard,
   noticeIds,
   noticeTilt,
-  swayDelay,
   type BoardSettings,
 } from './board';
 
@@ -31,8 +30,8 @@ const IDS = [
 ];
 
 describe('the board settings', () => {
-  it('default to a small lean and no notices for quiet places', () => {
-    expect(DEFAULT_BOARD_SETTINGS).toEqual({ tilt: 'still', idle: 'hide' });
+  it('default to flush notices and no notices for quiet places', () => {
+    expect(DEFAULT_BOARD_SETTINGS).toEqual({ tilt: 'none', idle: 'hide' });
   });
 });
 
@@ -69,18 +68,6 @@ describe('noticeTilt', () => {
   });
 });
 
-describe('swayDelay', () => {
-  it('is stable, within six seconds before the start, and differs between notices', () => {
-    const delays = IDS.map(swayDelay);
-    expect(delays).toEqual(IDS.map(swayDelay));
-    for (const delay of delays) {
-      expect(delay).toBeLessThanOrEqual(0);
-      expect(delay).toBeGreaterThanOrEqual(-6);
-    }
-    expect(new Set(delays).size).toBeGreaterThan(3);
-  });
-});
-
 const settings = (over: Partial<BoardSettings> = {}): BoardSettings => ({
   ...DEFAULT_BOARD_SETTINGS,
   ...over,
@@ -104,8 +91,7 @@ describe('the idle option', () => {
     ]);
     expect(board.quiet.every((r) => r.text.length > 0 && r.text.length < 40)).toBe(true);
     expect(noticeIds(board).filter((id) => id.startsWith('quiet:'))).toHaveLength(5);
-    // The two pins lean last, so every other notice keeps its lean.
-    expect(noticeIds(board).slice(-3)).toEqual(['valley', 'pin:journal', 'pin:stats']);
+    expect(noticeIds(board).slice(-1)).toEqual(['valley']);
   });
 
   it('show: a place that is busy or waiting still gets no quiet notice', () => {
@@ -125,9 +111,9 @@ describe('the idle option', () => {
     expect(buildBoard(homeInput('busy', true), settings()).calm).toBe(false);
   });
 
-  it('with everything quiet and hidden, the board is the calm line, the valley and the two pins and no more', () => {
+  it('with everything quiet and hidden, the board is the calm line and the valley and no more', () => {
     const board = buildBoard(homeInput('nothing going on', true), settings());
-    expect(noticeIds(board)).toEqual(['calm', 'valley', 'pin:journal', 'pin:stats']);
+    expect(noticeIds(board)).toEqual(['calm', 'valley']);
   });
 });
 
@@ -138,17 +124,16 @@ describe('the tilt option', () => {
     expect(Object.keys(board.tilts)).toEqual(noticeIds(board));
   });
 
-  it('still and sway: every notice has its own lean, the same on every build', () => {
-    for (const tilt of ['still', 'sway'] as const) {
-      const first = buildBoard(homeInput('crowded', true), settings({ tilt, idle: 'show' }));
-      const again = buildBoard(homeInput('crowded', true), settings({ tilt, idle: 'show' }));
-      expect(first.tilts).toEqual(again.tilts);
-      expect(Object.keys(first.tilts)).toEqual(noticeIds(first));
-      expect(Object.values(first.tilts).every((angle) => angle !== 0)).toBe(true);
-    }
-    expect(buildBoard(homeInput('busy', true), settings({ tilt: 'still' })).tilts).toEqual(
-      buildBoard(homeInput('busy', true), settings({ tilt: 'sway' })).tilts,
-    );
+  it('none is the default', () => {
+    expect(DEFAULT_BOARD_SETTINGS).toEqual({ tilt: 'none', idle: 'hide' });
+  });
+
+  it('still: every notice has its own lean, the same on every build', () => {
+    const first = buildBoard(homeInput('crowded', true), settings({ tilt: 'still', idle: 'show' }));
+    const again = buildBoard(homeInput('crowded', true), settings({ tilt: 'still', idle: 'show' }));
+    expect(first.tilts).toEqual(again.tilts);
+    expect(Object.keys(first.tilts)).toEqual(noticeIds(first));
+    expect(Object.values(first.tilts).every((angle) => angle !== 0)).toBe(true);
   });
 
   it('does not change what the board says', () => {

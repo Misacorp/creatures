@@ -4,10 +4,9 @@ import { DrillHead } from '../ui/DrillHead';
 import { onDrillKey } from '../ui/drill-keys';
 
 /**
- * The Journal, a place of the Collection group (also opened from the Journal pin on the Home board): the
- * Journal as it always was (every page by place, found ones with their words, blanks for the rest). Opened from
- * the dock it has no Back (the navigation is on screen, as on every place); opened from a pin it has "‹ Back" to
- * where it came from (`onBack`, with `backLabel` saying where for screen readers).
+ * The Journal, a place of the Collection group (no Back: the navigation is on screen, as on every place): the
+ * Journal as it always was (every page by place, found ones with their words, blanks for the rest). With an `onBack` it
+ * has "‹ Back" (and `backLabel` says where, for screen readers); the game passes none.
  */
 export function JournalPage({
   profile,

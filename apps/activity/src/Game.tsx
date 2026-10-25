@@ -57,7 +57,7 @@ import { choiceResultText } from './talent-view';
 import { DevPanelHost } from './DevPanelHost';
 import { StarterPicker } from './StarterPicker';
 import { navStateFor, type GoOptions } from './nav-state';
-import { DEFAULT_PLACE, NAV_HOME, homePageOf, isPlace, navPlaceOf, type Screen } from './tabs';
+import { DEFAULT_PLACE, NAV_HOME, isPlace, type Place } from './tabs';
 import { useActionRunner } from './use-action-runner';
 import { useForecast } from './use-forecast';
 import { EquipHost } from './equip-from-card';
@@ -126,32 +126,30 @@ export function Game({
   const games = useGames(game.starterChosen, offset, () => {
     refreshState();
   });
-  const [tab, setTab] = useState<Screen>(DEFAULT_PLACE);
+  const [tab, setTab] = useState<Place>(DEFAULT_PLACE);
   // The raid's week times for Home, loaded when the game opens and whenever Home is shown (a failed load
   // leaves the raid rows out).
   const { raid: raidGlance } = useRaidGlance(game.starterChosen, tab === 'home', offset);
   // The Settings page (from the cog in the HUD) is drawn in place of the screen; the screen stays mounted under it,
   // so Back finds it as it was. Choosing a place closes it.
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // The Home board's "?" pin: where the focus returns when How to play, opened from it, closes.
+  const boardHelpRef = useRef<HTMLButtonElement>(null);
   // The Home board's display options, kept on this device (read once, written on every change).
   const [boardSettings, setBoardSettings] = useState<BoardSettings>(() =>
     loadBoardSettings(browserSettingsStorage()),
   );
-  // Where Back goes on a place that a pin or a link opened (the Journal from Home's pin); a place opened from the
-  // dock has no Back. Cleared by every choice in the navigation.
-  const [backTo, setBackTo] = useState<{ place: Screen; to: Screen } | null>(null);
   // The Creatures view opens with its "Needs you" filter on when the Home notice for creatures that need you opened it.
   const [creaturesNeeds, setCreaturesNeeds] = useState(false);
-  // Every change of place goes through here: it also closes Settings, clears Back (unless one is set on purpose)
-  // and the Creatures "Needs you" filter (unless asked), so no route leaves the old page's state behind.
-  const goTo = (screen: Screen, opts?: GoOptions): void => {
-    const next = navStateFor(screen, opts);
+  // Every change of place goes through here: it also closes Settings and the Creatures "Needs you" filter
+  // (unless asked), so no route leaves the old page's state behind.
+  const goTo = (place: Place, opts?: GoOptions): void => {
+    const next = navStateFor(place, opts);
     setTab(next.tab);
     setSettingsOpen(next.settingsOpen);
-    setBackTo(next.backTo);
     setCreaturesNeeds(next.creaturesNeeds);
   };
-  // Every change of place or page (dock, tray, rail, a Home notice or pin) starts at the top of the new page.
+  // Every change of place (dock, tray, rail, a Home notice) starts at the top of the new page.
   useScrollTopOnChange(tab);
   const [reveal, setReveal] = useState<{ result: ClaimResult; trip: Trip | undefined } | null>(
     null,
@@ -381,10 +379,8 @@ export function Game({
   // The main navigation: the dock on a phone, the rail on a wide window. The HUD names the place you are in.
   const wide = useWide();
   const places = navPlaces(alerts);
-  // A page that opens from Home (the Journal, the Stats) counts as Home for the navigation and the HUD.
-  const place = navPlaceOf(tab);
   const placeLabelBeforeSettings =
-    place === NAV_HOME.id ? NAV_HOME.label : (places.find((p) => p.id === place)?.label ?? '');
+    tab === NAV_HOME.id ? NAV_HOME.label : (places.find((p) => p.id === tab)?.label ?? '');
   const placeLabel = settingsOpen ? 'Settings' : placeLabelBeforeSettings;
 
   // The living room's props: the same room in the desktop's band and at the top of the phone's Home page.
@@ -431,12 +427,7 @@ export function Game({
   );
 
   const devPanel = (
-    <DevPanelHost
-      enabled={devTools}
-      tab={place}
-      creatures={game.creatures}
-      onChanged={devRefresh}
-    />
+    <DevPanelHost enabled={devTools} tab={tab} creatures={game.creatures} onChanged={devRefresh} />
   );
 
   /** What the dungeon's and the raid's team screens need to get creatures ready (their configurator and page). */
@@ -482,7 +473,7 @@ export function Game({
       <div class="nav-shell">
         <MainNav
           places={places}
-          current={place}
+          current={tab}
           wide={wide}
           home
           onSelect={(id) => {
@@ -562,10 +553,12 @@ export function Game({
                 forecast={forecast}
                 settings={boardSettings}
                 creatureState={game}
-                onOpenPage={(screen) => {
-                  // The Journal is a place of the Collection group; from the pin its Back returns to Home.
-                  goTo(screen, screen === 'journal' ? { backTo: 'home' } : {});
+                onHowTo={() => {
+                  // A click may not focus the button (Safari): make it the opener the focus returns to.
+                  boardHelpRef.current?.focus();
+                  onHelp();
                 }}
+                howToRef={boardHelpRef}
                 onGo={(place, needsFilter) => {
                   goTo(place, needsFilter === true ? { needsFilter } : {});
                   refreshState();
@@ -576,28 +569,11 @@ export function Game({
                 room={wide ? undefined : <RoomBand room={roomProps} />}
               />
             )}
-            {homePageOf(tab) !== null && (
+            {(tab === 'journal' || tab === 'stats') && (
               <HomeBook
-                page={homePageOf(tab) ?? 'journal'}
+                page={tab}
                 creatures={game.creatures}
                 tripsFinished={game.slots.tripsFinished}
-                onBack={() => {
-                  goTo('home');
-                }}
-              />
-            )}
-            {tab === 'journal' && (
-              <HomeBook
-                page="journal"
-                creatures={game.creatures}
-                tripsFinished={game.slots.tripsFinished}
-                {...(backTo?.place === 'journal'
-                  ? {
-                      onBack: () => {
-                        goTo(backTo.to);
-                      },
-                    }
-                  : {})}
               />
             )}
             {tab === 'collection' && (

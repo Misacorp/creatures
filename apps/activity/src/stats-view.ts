@@ -128,10 +128,3 @@ export function statGroups(input: StatsInput): StatGroupView[] {
     rows: group.rows.map((row) => ({ key: row.key, label: row.label, value: row.value(input) })),
   }));
 }
-
-/** The Home pin's teaser for the sheet: "48 trips, 9 dungeon clears" (a count of 1 is singular). */
-export function statsTeaser(input: StatsInput): string {
-  const trips = input.profile.stats['trips_finished'] ?? 0;
-  const clears = input.profile.dungeon.clears;
-  return `${String(trips)} ${trips === 1 ? 'trip' : 'trips'}, ${String(clears)} dungeon ${clears === 1 ? 'clear' : 'clears'}`;
-}

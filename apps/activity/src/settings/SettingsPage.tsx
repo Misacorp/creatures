@@ -7,7 +7,6 @@ import { Segmented } from '../ui/Segmented';
 const TILT_OPTIONS: readonly { id: TiltMode; label: string }[] = [
   { id: 'none', label: 'Flat' },
   { id: 'still', label: 'Leaning' },
-  { id: 'sway', label: 'Swaying' },
 ];
 
 const IDLE_OPTIONS: readonly { id: IdleMode; label: string }[] = [

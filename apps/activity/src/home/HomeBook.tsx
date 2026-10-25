@@ -7,17 +7,15 @@ import { onDrillKey } from '../ui/drill-keys';
 import { JournalPage } from './JournalPage';
 import { StatsPage } from './StatsPage';
 
-const NOTHING = (): void => undefined;
-
-/** The two books: the Journal (a place of the Collection group) and the Stats (a page of Home). */
+/** The two books: the Journal and the Stats, both places of the Collection group. */
 export type BookPage = 'journal' | 'stats';
 
 const TITLES: Readonly<Record<BookPage, string>> = { journal: 'Journal', stats: 'Stats' };
 
 /**
- * The Journal or the Stats: loads the profile when it opens (and
- * again when a trip finishes while it is open), says so when that fails, and keeps "‹ Back" at the top whenever there
- * is one (the Stats always has it; the Journal only when a pin opened it), so a failed load is never a dead end.
+ * The Journal or the Stats: loads the profile when it opens (and again when a trip finishes while it is
+ * open) and says so when that fails, with a "Try again". It shows "‹ Back" only when given an `onBack` (the
+ * game gives none: both are places, and the navigation is on screen).
  */
 export function HomeBook({
   page,
@@ -30,7 +28,7 @@ export function HomeBook({
   creatures: readonly Creature[];
   /** The finished-trip count of the state: a new one loads the profile again. */
   tripsFinished: number;
-  /** Where Back goes; absent for the Journal opened from the dock (a place shows no Back). */
+  /** Where Back goes; absent for a place opened from the navigation (a place shows no Back). */
   onBack?: (() => void) | undefined;
   backLabel?: string;
 }) {
@@ -44,7 +42,12 @@ export function HomeBook({
         backLabel={backLabel}
       />
     ) : (
-      <StatsPage profile={profile} creatures={creatures} onBack={onBack ?? NOTHING} />
+      <StatsPage
+        profile={profile}
+        creatures={creatures}
+        {...(onBack === undefined ? {} : { onBack })}
+        backLabel={backLabel}
+      />
     );
   }
   return (
