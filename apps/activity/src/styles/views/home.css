@@ -396,7 +396,7 @@ button.hb-quiet:focus-visible {
 */
 button.hb-badge {
   position: absolute;
-  top: 0.125rem;
+  top: 0.5rem;
   z-index: 3;
   display: grid;
   place-items: center;
@@ -405,7 +405,8 @@ button.hb-badge {
   padding: 0;
   background: none;
   box-shadow: none;
-  filter: drop-shadow(var(--px) calc(var(--px) * 2) 0 var(--leather-dark));
+  /* A see-through shadow, so the cork (or a notice under the pin) shows through it. */
+  filter: drop-shadow(var(--px) calc(var(--px) * 2) 0 rgb(var(--ink-rgb) / 0.45));
   --disc: polygon(
     32% 0,
     68% 0,

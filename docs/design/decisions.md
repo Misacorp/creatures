@@ -3089,3 +3089,8 @@ Misa's feedback on the Today board: the Journal and Stats pins did not fit under
 - **No sway; flush by default.** `TiltMode` is `none` or `still`, default `none`. A saved `sway` loads as `still` (the player liked a lean).
 - **Everything on the board that is about another screen opens it** (Misa): Coming up rows, Quiet places rows and the Games medals are buttons that call the same `onGo` as a notice; the valley's sky line opens the forecast card, the same popover as the room's calendar (the forecast has no screen of its own).
 - **Smaller board text:** one step down (titles to heading size, place names to row size, reasons to small), the need tile's picture at scale 2, so the notices are less tall.
+
+### 2026-10-25: A fixed top bar on phones, see-through pin shadows
+
+- **The HUD is fixed, not sticky, on a phone** (Misa: "keep it at the top, full width of the viewport, always the same regardless of scroll position"). A sticky bar sat lower at the top of a page than once scrolled, and the strip above it (Discord's safe area) showed the page scrolling by. Now `main.card:has(.main-nav.dock) > .hud` is `position: fixed` across the window, padded down by `--discord-safe-area-inset-top` so its own colour fills the strip, and the card starts 0.75rem below it; the How to play page's head works the same way. The selector keeps workbench frames (no `main.card`) and wide windows (no dock) on the static bar.
+- **Board pins:** 44 px, 0.5rem from the board's top, a shadow in see-through ink so the cork or a notice shows through it.
