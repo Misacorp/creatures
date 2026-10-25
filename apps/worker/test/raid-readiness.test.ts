@@ -1,8 +1,10 @@
 import { createSeededRng, readinessBand, type ReadinessBand, type Rng } from '@creatures/game';
 import { forecastFinale, forecastWeek } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
+import { GuildCore } from '../src/guild-core';
 import { READINESS_MAX_AGE_MS, READINESS_MIN_INTERVAL_MS } from '../src/raid-readiness';
 import { buildPhaseInput } from '../src/raid-resolve';
+import { SHOWN_TEAM_MAX_AGE_MS, raidTeam, shownRaidTeam } from '../src/raid-teams';
 import { eventTimes } from '../src/raid-schedule';
 import type { CoreContext } from './helpers';
 import {
@@ -209,6 +211,32 @@ describe('the readiness band in the raid view', () => {
     );
   });
 
+  it('is stored, so an object that slept and started again does not compute it again', async () => {
+    const rng = countingRng('stored');
+    await runRaid(
+      (ctx) => {
+        const [a] = open(ctx) as [Seeded, ...Seeded[]];
+        const first = bandOf(ctx, a);
+        const drawn = rng.drawn();
+        expect(drawn).toBeGreaterThan(0);
+        // A new core on the same storage: what a wake after hibernation builds.
+        const woken = countingRng('woken');
+        const again = new GuildCore(ctx.storage, () => ctx.clock.t, {
+          guildId: () => ctx.guildId,
+          readinessRng: woken,
+        });
+        expect(again.raid.view(a.id, HELSINKI).party?.readiness).toBe(first);
+        expect(woken.drawn()).toBe(0);
+        // A change made through the new object still marks the stored band stale.
+        ctx.clock.t += READINESS_MIN_INTERVAL_MS + SECOND;
+        expect(again.raid.place(a.id, HELSINKI, a.creatureIds[0] as string, 0).ok).toBe(true);
+        again.raid.view(a.id, HELSINKI);
+        expect(woken.drawn()).toBeGreaterThan(0);
+      },
+      { start: W02.monday, core: { readinessRng: rng } },
+    );
+  });
+
   it('is recomputed at once when Friday’s result arrives, and has an entry per party', async () => {
     const rng = countingRng('states');
     await runRaid(
@@ -284,6 +312,62 @@ describe('the readiness band in the raid view', () => {
         expect(log.calls).toEqual([['readiness forecast failed', 'Error']]);
       },
       { start: W02.monday, core: { readinessRng: broken } },
+    );
+  });
+});
+
+describe("the raid view's stored teammate teams", () => {
+  it('reuse the ids they found, and work them out again when stale, old or a creature is gone', async () => {
+    await runRaid(
+      (ctx) => {
+        const [a, b] = open(ctx) as [Seeded, Seeded, ...Seeded[]];
+        const week = ctx.core.raid.currentWeek(HELSINKI).weekId;
+        const ids = (team: { id: string }[]) => team.map((c) => c.id).sort();
+        const live = ids(raidTeam(ctx.sql, week, b.id));
+        expect(ids(shownRaidTeam(ctx.sql, week, b.id, ctx.clock.t))).toEqual(live);
+        const stored = () =>
+          rows<{ creature_ids: string; stale: number }>(
+            ctx.sql,
+            'SELECT creature_ids, stale FROM raid_team_cache WHERE week_id = ? AND user_id = ?',
+            week,
+            b.id,
+          )[0];
+        expect(JSON.parse(stored()?.creature_ids ?? '[]')).toHaveLength(live.length);
+
+        // Reused: a stored team that names other ids is shown as stored while it is fresh.
+        const other = b.creatureIds.filter((id) => !live.includes(id)).slice(0, 1);
+        const pinned = [...live.slice(0, live.length - 1), ...other];
+        ctx.sql.exec(
+          'UPDATE raid_team_cache SET creature_ids = ? WHERE user_id = ?',
+          JSON.stringify(pinned),
+          b.id,
+        );
+        expect(ids(shownRaidTeam(ctx.sql, week, b.id, ctx.clock.t))).toEqual([...pinned].sort());
+
+        // A raid change (a placement) marks it stale: worked out again.
+        expect(ctx.core.raid.place(a.id, HELSINKI, a.creatureIds[0] as string, 0).ok).toBe(true);
+        expect(stored()?.stale).toBe(1);
+        expect(ids(shownRaidTeam(ctx.sql, week, b.id, ctx.clock.t))).toEqual(live);
+
+        // Too old: worked out again.
+        ctx.sql.exec(
+          'UPDATE raid_team_cache SET creature_ids = ? WHERE user_id = ?',
+          JSON.stringify(pinned),
+          b.id,
+        );
+        ctx.clock.t += SHOWN_TEAM_MAX_AGE_MS;
+        expect(ids(shownRaidTeam(ctx.sql, week, b.id, ctx.clock.t))).toEqual(live);
+
+        // A stored creature that is gone: worked out again.
+        ctx.sql.exec(
+          'UPDATE raid_team_cache SET creature_ids = ?, at = ? WHERE user_id = ?',
+          JSON.stringify([...live.slice(0, live.length - 1), 'gone']),
+          ctx.clock.t,
+          b.id,
+        );
+        expect(ids(shownRaidTeam(ctx.sql, week, b.id, ctx.clock.t))).toEqual(live);
+      },
+      { start: W02.monday },
     );
   });
 });

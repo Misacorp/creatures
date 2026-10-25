@@ -315,8 +315,16 @@ export function undoGamesIndexMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 42');
 }
 
+/** Puts a database back to before migration 45 (the raid view's stored bands and teams): the tables go. */
+export function undoRaidReadinessMigration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS raid_readiness');
+  sql.exec('DROP TABLE IF EXISTS raid_team_cache');
+  sql.exec('DELETE FROM schema_version WHERE version = 45');
+}
+
 /** Puts a database back to before migration 44 (the history indexes): the indexes go. */
 export function undoHistoryIndexMigration(sql: SqlStorage): void {
+  undoRaidReadinessMigration(sql);
   for (const index of [
     'expeditions_user_claimed',
     'expeditions_user_cancelled',

@@ -6,6 +6,8 @@ import { analyticsRollupMigration } from './analytics-rollup';
 import { creatureQuirkMigration } from './creature-quirk-migration';
 import { creaturesAMigration } from './creatures-a-migration';
 import { creaturesBMigration } from './creatures-b-migration';
+import { raidReadinessMigration } from './raid-readiness';
+import { raidTeamCacheMigration } from './raid-teams';
 import { historyIndexMigration } from './history-index-migration';
 import { gamesIndexMigration } from './games-index-migration';
 import { dmNotifyMigration } from './dm-migration';
@@ -303,6 +305,12 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   dbReadsMigration,
   // Version 44: indexes for a player's recent trips and worn gear (see history-index-migration.ts).
   historyIndexMigration,
+  // Version 45: the raid view's stored readiness bands and teammates' teams (see raid-readiness.ts and
+  // `shownRaidTeam` in raid-teams.ts).
+  (sql) => {
+    raidReadinessMigration(sql);
+    raidTeamCacheMigration(sql);
+  },
 ];
 
 /** The schema version of a fresh database. */

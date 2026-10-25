@@ -288,7 +288,7 @@ const BUDGET = {
   '/api/state': 700, // measured 465 (610 before migration 44's trip indexes)
   '/api/room': 50, // measured 33
   '/api/games': 350, // measured 222
-  '/api/raid': 4200, // measured 2773 (every party member's creatures, talents and gear: it scales with the roster)
+  '/api/raid': 1200, // measured 780 (teammates' stored teams: three creatures each, see `shownRaidTeam`)
   '/api/dungeon/today': 120, // measured 78
 } as const;
 
