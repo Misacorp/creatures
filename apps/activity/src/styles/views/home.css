@@ -390,8 +390,8 @@ button.hb-quiet:focus-visible {
 }
 
 /*
-  --- The corner pins: round pushpin badges in the board's top right corner, above the papers. The starter
-  (opens Creatures) is the rightmost, the "?" (opens How to play) sits to its left. `hb-badge` is the shared look:
+  --- The corner pins: round pushpin badges in the board's top right corner, above the papers. The "?"
+  (opens How to play) is the rightmost, the starter (opens Creatures) sits to its left. `hb-badge` is the shared look:
   an ink rim and a gold disc, one stepped circle each. ---
 */
 button.hb-badge {
@@ -442,8 +442,13 @@ button.hb-starter {
   right: 0.375rem;
 }
 
-button.hb-help {
+/* With the "?" drawn, the starter moves one pin to the left. */
+button.hb-starter:has(~ .hb-help) {
   right: 3.75rem;
+}
+
+button.hb-help {
+  right: 0.375rem;
 }
 
 button.hb-badge:active:not(:disabled) {

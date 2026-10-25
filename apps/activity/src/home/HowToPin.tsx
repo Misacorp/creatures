@@ -1,7 +1,7 @@
 import type { RefObject } from 'preact';
 
 /**
- * The "?" pin, left of the starter pin in the top right corner of the Today board: the same round pushpin
+ * The "?" pin in the top right corner of the Today board: the same round pushpin
  * badge (`hb-badge`) with the "?" the HUD's help button draws. A button that opens How to play, 44 px at least.
  * `pinRef` is where the focus returns when How to play closes.
  */
