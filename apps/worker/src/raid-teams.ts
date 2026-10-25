@@ -15,9 +15,9 @@ import {
   type Stats,
 } from '@creatures/game';
 import { speciesOf } from './collection';
-import { equippedByCreature, wearerOf, type WornBySlot } from './gear-store';
+import { equippedByCreature, wearerOf, wornOnCreatures, type WornBySlot } from './gear-store';
 import { foldCreature } from './gear-worn';
-import { booksByCreature, foldTalentsOf } from './talent-store';
+import { booksByCreature, booksOfCreatures, foldTalentsOf } from './talent-store';
 import type { HeldTalent } from '@creatures/game';
 
 export const RAID_PHASE_STATUSES = ['open', 'phase1', 'phase2', 'finale'] as const;
@@ -238,6 +238,96 @@ export function raidTeam(sql: SqlStorage, weekId: string, userId: string): TeamC
     RULES.raid.teamSize - placed.length,
   );
   return autoTeam([...placed, ...fill]);
+}
+
+/** How long a teammate's stored team is shown before it is worked out again (see `shownRaidTeam`). */
+export const SHOWN_TEAM_MAX_AGE_MS = 5 * 60_000;
+
+/**
+ * Migration 45 (with `raid_readiness`): the creature ids of each player's raid team as the raid view last
+ * worked them out. Working a team out loads the player's whole collection (every creature, talent and
+ * worn item) to find their strongest unplaced creatures, and the view did it for every member of the
+ * party on every read.
+ */
+export function raidTeamCacheMigration(sql: SqlStorage): void {
+  sql.exec(`CREATE TABLE raid_team_cache (
+    week_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    creature_ids TEXT NOT NULL,
+    at INTEGER NOT NULL,
+    stale INTEGER NOT NULL CHECK (stale IN (0, 1)),
+    PRIMARY KEY (week_id, user_id)
+  )`);
+}
+
+/** A placement, a team or the roster changed: every stored team is worked out again at its next read. */
+export function markShownTeamsStale(sql: SqlStorage): void {
+  sql.exec('UPDATE raid_team_cache SET stale = 1 WHERE stale = 0');
+}
+
+/** Some of a player's creatures by id, loaded like `loadCreatures` (gear and talents folded in). */
+function loadCreaturesById(
+  sql: SqlStorage,
+  userId: string,
+  ids: readonly string[],
+): TeamCreature[] {
+  if (ids.length === 0) return [];
+  const worn = wornOnCreatures(sql, ids);
+  const books = booksOfCreatures(sql, ids);
+  // By id (the primary key), the owner checked here: `user_id = ?` in the query walked their whole list.
+  return sql
+    .exec<CreatureDbRow>(
+      `SELECT id, user_id, species, level, fusion_count, nickname, caught_at FROM creatures
+       WHERE id IN (${ids.map(() => '?').join(', ')})`,
+      ...ids,
+    )
+    .toArray()
+    .filter((row) => row.user_id === userId)
+    .sort((a, b) => a.caught_at - b.caught_at)
+    .map((row) => toTeamCreature(row, worn.get(row.id), books.get(row.id)));
+}
+
+/**
+ * A teammate's raid team for the raid view only: `raidTeam`, but the ids it found are stored and reused
+ * for `SHOWN_TEAM_MAX_AGE_MS`, or until a raid change marks them stale (`markShownTeamsStale`), so a
+ * view loads only those few creatures. Their stats are always read fresh; only the choice of the
+ * strongest unplaced ones can lag (a teammate who trained another creature shows it within minutes).
+ * Fights never use this: `buildPhaseInput` works every team out from scratch.
+ */
+export function shownRaidTeam(
+  sql: SqlStorage,
+  weekId: string,
+  userId: string,
+  now: number,
+): TeamCreature[] {
+  const stored = sql
+    .exec<{ creature_ids: string; at: number; stale: number }>(
+      'SELECT creature_ids, at, stale FROM raid_team_cache WHERE week_id = ? AND user_id = ?',
+      weekId,
+      userId,
+    )
+    .toArray()[0];
+  if (stored !== undefined && stored.stale === 0) {
+    const age = now - stored.at;
+    const ids = JSON.parse(stored.creature_ids) as string[];
+    if (age >= 0 && age < SHOWN_TEAM_MAX_AGE_MS) {
+      const team = loadCreaturesById(sql, userId, ids);
+      // A creature released since: work the team out again.
+      if (team.length === ids.length) return autoTeam(team);
+    }
+  }
+  const team = raidTeam(sql, weekId, userId);
+  sql.exec('DELETE FROM raid_team_cache WHERE week_id <> ?', weekId);
+  sql.exec(
+    `INSERT INTO raid_team_cache (week_id, user_id, creature_ids, at, stale) VALUES (?, ?, ?, ?, 0)
+     ON CONFLICT(week_id, user_id) DO UPDATE SET creature_ids = excluded.creature_ids,
+       at = excluded.at, stale = 0`,
+    weekId,
+    userId,
+    JSON.stringify(team.map((c) => c.id)),
+    now,
+  );
+  return team;
 }
 
 /**

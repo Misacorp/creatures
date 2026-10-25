@@ -499,6 +499,38 @@ describe('the lounge live socket messages', () => {
     expect(message).toEqual({ type: 'resident', resident });
   });
 
+  it('reads a lounge-xp push of exactly its shape', () => {
+    const push = { creatureId: 'c1', paid: 35, level: 5, exp: 12, waiting: false };
+    expect(parseLiveMessage(JSON.stringify({ v: 1, type: 'lounge-xp', ...push }))).toEqual({
+      type: 'lounge-xp',
+      ...push,
+    });
+  });
+
+  const xp = {
+    v: 1,
+    type: 'lounge-xp',
+    creatureId: 'c1',
+    paid: 35,
+    level: 5,
+    exp: 12,
+    waiting: false,
+  };
+  it.each([
+    { ...xp, extra: 1 },
+    { ...xp, creatureId: 7 },
+    { ...xp, creatureId: '' },
+    { ...xp, paid: -1 },
+    { ...xp, paid: 1.5 },
+    { ...xp, level: 0 },
+    { ...xp, exp: '3' },
+    { ...xp, waiting: 0 },
+    { ...xp, creatureId: 'x'.repeat(65) },
+    Object.fromEntries(Object.entries(xp).filter(([k]) => k !== 'exp')),
+  ])('rejects a lounge-xp push of another shape (%#)', (data) => {
+    expect(parseLiveMessage(JSON.stringify(data))).toBeNull();
+  });
+
   it.each([
     'not json',
     '[]',

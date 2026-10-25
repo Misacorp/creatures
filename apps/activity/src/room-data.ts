@@ -5,7 +5,14 @@
  * the result to the screen.
  */
 import { RULES, isRested } from '@creatures/game';
-import type { Creature, GameState, LoungeSpot, RoomCreature, RoomResident } from './api';
+import type {
+  Creature,
+  GameState,
+  LoungeSpot,
+  LoungeXpPush,
+  RoomCreature,
+  RoomResident,
+} from './api';
 import { isFirstOnServer } from './game';
 import type { GearItem } from './gear-types';
 import { wornItemOf, type WornItem } from './gear-view';
@@ -116,14 +123,37 @@ export function shouldOpenSocket(
 }
 
 /**
- * How often the game reloads your state while your lounger earns: once per XP (the server pays what you
- * collected when you make a request, so the tag and the bar move a step each time). One small request each
- * time, and none while alone, hidden or Rested.
+ * How often the game reloads your state while your lounger earns and the live socket is NOT delivering
+ * (the fallback: the server's `loungeLive` flag is off, or the socket is reconnecting): once per XP, so the
+ * tag and the bar move a step each time. One small request each time, and none while alone, hidden or
+ * Rested. While the socket is live the server pushes each payment instead (`applyLoungeXp`).
  */
 export const LOUNGE_REFRESH_MS: number = RULES.experience.lounge.msPerXp;
 
 /**
- * Whether your lounger is earning now, so the state is worth reloading every `LOUNGE_REFRESH_MS`: someone
+ * The state with a pushed payment written in: the lounger's XP paid today and its banked experience. Null
+ * when the push cannot be written in as it is (an unknown creature, or a level or a ribbon wait that
+ * changed: a level-up changes many derived fields), so the caller reloads the state instead.
+ */
+export function applyLoungeXp(state: GameState, push: LoungeXpPush): GameState | null {
+  const creature = state.creatures.find((c) => c.id === push.creatureId);
+  if (
+    creature === undefined ||
+    creature.level !== push.level ||
+    creature.waiting !== push.waiting
+  ) {
+    return null;
+  }
+  return {
+    ...state,
+    creatures: state.creatures.map((c) => (c === creature ? { ...c, exp: push.exp } : c)),
+    loungeXp: { ...state.loungeXp, [push.creatureId]: push.paid },
+  };
+}
+
+/**
+ * Whether your lounger is earning now (so, without the live socket, the state is worth reloading every
+ * `LOUNGE_REFRESH_MS`): someone
  * else is here (Discord's participants, the same list the server pays from), the page is visible, you have a
  * lounger and it is not Rested yet.
  */

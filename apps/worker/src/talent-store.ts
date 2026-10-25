@@ -74,6 +74,28 @@ export function booksByCreature(sql: SqlStorage, userId: string): Map<string, He
   return map;
 }
 
+/** The talents held by some creatures, by creature id, in one query (the primary key answers it). */
+export function booksOfCreatures(
+  sql: SqlStorage,
+  creatureIds: readonly string[],
+): Map<string, HeldTalent[]> {
+  const map = new Map<string, HeldTalent[]>();
+  if (creatureIds.length === 0) return map;
+  const found = sql
+    .exec<TalentRow>(
+      `SELECT * FROM creature_talents WHERE creature_id IN (${creatureIds.map(() => '?').join(', ')})
+       ORDER BY gained_at, rowid`,
+      ...creatureIds,
+    )
+    .toArray();
+  for (const row of found) {
+    const list = map.get(row.creature_id) ?? [];
+    list.push(toHeld(row));
+    map.set(row.creature_id, list);
+  }
+  return map;
+}
+
 /** The talents that are active on a creature now (its signature and the open slots), for the fold. */
 export function foldTalentsOf(
   creature: { species: string; level: number },

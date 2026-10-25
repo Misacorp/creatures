@@ -21,7 +21,8 @@
  * Each creature gets at most the daily cap a game day (then it is Rested: the time passes unpaid until
  * another creature takes its place); a player has no cap of their own.
  *
- * Synchronous; one transaction per payment.
+ * Synchronous; one transaction per payment. Once it has committed, the player's own lounge sockets are
+ * told what the payment did to the creature (`onPaid`), so the bar moves without a reload of the state.
  */
 import { RULES, isRested, loungeExperience } from '@creatures/game';
 import type { Analytics } from './analytics';
@@ -81,6 +82,20 @@ export interface LoungeCompanyDeps {
   gameOffset?: () => number;
   /** The player's lounger (re-picked when gone or busy), or null when every creature is busy. */
   loungerOf: (userId: string) => string | null;
+  /** Called once a payment has committed (never inside the transaction); must not throw. */
+  onPaid?: (userId: string, paid: LoungePaid) => void;
+}
+
+/** What a payment did to the lounger, as the player's own client needs it to move its bar. */
+export interface LoungePaid {
+  creatureId: string;
+  /** What lounging has paid the creature on the game day, at most the daily cap. */
+  paid: number;
+  /** The creature's level and the experience banked towards the next one, after the payment. */
+  level: number;
+  exp: number;
+  /** It stands at a level it may not leave yet (a ribbon, or its evolution). */
+  waiting: boolean;
 }
 
 interface Credit {
@@ -178,7 +193,7 @@ export class LoungeCompany {
       lounger === null || isRested(paid)
         ? null
         : loungeExperience({ paid, carryMs: row?.carry_ms ?? 0 }, entry.ms);
-    this.deps.storage.transactionSync(() => {
+    const view = this.deps.storage.transactionSync(() => {
       this.sql.exec(
         `INSERT INTO lounge_company (user_id, carry_ms, credited_until) VALUES (?, ?, ?)
          ON CONFLICT(user_id) DO UPDATE SET carry_ms = excluded.carry_ms,
@@ -187,7 +202,7 @@ export class LoungeCompany {
         gain?.tally.carryMs ?? 0,
         now,
       );
-      if (lounger === null || gain === null || gain.xp === 0) return;
+      if (lounger === null || gain === null || gain.xp === 0) return null;
       this.sql.exec(
         `INSERT INTO lounge_rest (creature_id, user_id, day, paid) VALUES (?, ?, ?, ?)
          ON CONFLICT(creature_id) DO UPDATE SET user_id = excluded.user_id, day = excluded.day,
@@ -197,7 +212,25 @@ export class LoungeCompany {
         entry.day,
         gain.tally.paid,
       );
-      awardExperience(this.sql, this.deps.analytics, userId, lounger, gain.xp, 'lounge', false);
+      const view = awardExperience(
+        this.sql,
+        this.deps.analytics,
+        userId,
+        lounger,
+        gain.xp,
+        'lounge',
+        false,
+      );
+      return view === null
+        ? null
+        : {
+            creatureId: lounger,
+            paid: gain.tally.paid,
+            level: view.level,
+            exp: view.exp,
+            waiting: view.waiting,
+          };
     });
+    if (view !== null) this.deps.onPaid?.(userId, view);
   }
 }

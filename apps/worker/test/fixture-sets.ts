@@ -60,7 +60,7 @@ export interface FixtureSet {
 
 /**
  * Seeded rngs for every random source of the guild, so nothing a scenario touches is live randomness
- * (the cosmetic quirks and the lounger, for one, are not named by the scenarios themselves). A set
+ * (the cosmetic quirks, for one, are not named by the scenarios themselves). A set
  * passes its own seeds for the rngs its scenario scripts; they win over these. (The talents are seeded
  * by `runCore` already, and the scenarios that script them say so.)
  */
@@ -74,7 +74,6 @@ function seededRngs(set: string) {
     tripRng: seeded('trip'),
     gearRng: seeded('gear'),
     dungeonRng: seeded('dungeon'),
-    loungerRng: seeded('lounger'),
     weatherRng: seeded('weather'),
     gamesRng: seeded('games'),
   };

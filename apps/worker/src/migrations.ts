@@ -6,6 +6,9 @@ import { analyticsRollupMigration } from './analytics-rollup';
 import { creatureQuirkMigration } from './creature-quirk-migration';
 import { creaturesAMigration } from './creatures-a-migration';
 import { creaturesBMigration } from './creatures-b-migration';
+import { raidReadinessMigration } from './raid-readiness';
+import { raidTeamCacheMigration } from './raid-teams';
+import { historyIndexMigration } from './history-index-migration';
 import { gamesIndexMigration } from './games-index-migration';
 import { dmNotifyMigration } from './dm-migration';
 import { dungeonDraftMigration } from './dungeon-draft-migration';
@@ -20,6 +23,7 @@ import { gearV2Migration } from './gear-v2-migration';
 import { loungeMigration } from './lounge';
 import { loungeCompanyMigration } from './lounge-company';
 import { maintenanceMigration } from './maintenance';
+import { dbReadsMigration } from './read-meter';
 import { raidAutofireMigration } from './raid-autofire-migration';
 import { raidDifficultyMigration } from './raid-difficulty-migration';
 import { raidLiveMigration } from './raid-live-migration';
@@ -297,6 +301,16 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   dmNotifyMigration,
   // Version 42: indexes for the Valley Games' day lookups (see games-index-migration.ts).
   gamesIndexMigration,
+  // Version 43: rows read per game day and source (see read-meter.ts).
+  dbReadsMigration,
+  // Version 44: indexes for a player's recent trips and worn gear (see history-index-migration.ts).
+  historyIndexMigration,
+  // Version 45: the raid view's stored readiness bands and teammates' teams (see raid-readiness.ts and
+  // `shownRaidTeam` in raid-teams.ts).
+  (sql) => {
+    raidReadinessMigration(sql);
+    raidTeamCacheMigration(sql);
+  },
 ];
 
 /** The schema version of a fresh database. */

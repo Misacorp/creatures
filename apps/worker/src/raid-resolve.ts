@@ -372,9 +372,11 @@ export function buildPartyBoard(
   weekId: string,
   party: number,
   memberIds: readonly string[],
+  /** Each member's team; fights leave it out, so every team is worked out from scratch. */
+  teamOf: (userId: string) => TeamCreature[] = (userId) => raidTeam(sql, weekId, userId),
 ): PartyBoard {
   const aliases = memberIds.map((_, i) => aliasFor(i));
-  const teams = memberIds.map((userId) => raidTeam(sql, weekId, userId));
+  const teams = memberIds.map(teamOf);
   const slotById = new Map<string, FightSlot>();
   teams.forEach((team, i) => {
     for (const creature of team) slotById.set(creature.id, slotFor(creature, aliases[i] as string));

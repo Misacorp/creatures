@@ -1,7 +1,8 @@
 import { RULES } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
+import type { LiveHooks } from '../src/live-socket';
 import type { LoungeClient } from '../src/lounge-discord';
-import { LOUNGE_MAX_GAP_MS, loungeDay } from '../src/lounge-company';
+import { LOUNGE_MAX_GAP_MS, loungeDay, type LoungePaid } from '../src/lounge-company';
 import type { ActivityInstance } from '../src/schemas';
 import { runCore, type CoreContext } from './helpers';
 import { nextGuild, seedPlayer } from './raid-helpers';
@@ -89,7 +90,10 @@ function loungerOf(ctx: CoreContext, who: Seat): string {
 }
 
 /** Runs a test inside one game day: the clock starts a minute after a daily reset. */
-function inGuild(fn: (ctx: CoreContext, discord: FakeDiscord) => Promise<void>): Promise<void> {
+function inGuild(
+  fn: (ctx: CoreContext, discord: FakeDiscord) => Promise<void>,
+  extra: { live?: LiveHooks } = {},
+): Promise<void> {
   const guildId = nextGuild();
   const discord = fakeDiscord(guildId);
   return runCore(
@@ -98,7 +102,7 @@ function inGuild(fn: (ctx: CoreContext, discord: FakeDiscord) => Promise<void>):
       ctx.clock.t = loungeDay(ctx.clock.t, TZ).start + 24 * 60 * MIN + MIN;
       await fn(ctx, discord);
     },
-    { lounge: discord },
+    { lounge: discord, ...extra },
   );
 }
 
@@ -109,7 +113,70 @@ async function together(ctx: CoreContext, minutes: number): Promise<number> {
   return 15 * SECOND + minutes * MIN;
 }
 
+/** Live hooks that only record what lounging pushed (everything else is off). */
+function recordingHooks(): LiveHooks & { pushed: { userId: string; paid: LoungePaid }[] } {
+  const pushed: { userId: string; paid: LoungePaid }[] = [];
+  return {
+    pushed,
+    enabled: () => false,
+    mintTicket: () => Promise.resolve(''),
+    notify: () => undefined,
+    notifyLoungeXp: (userId, paid) => {
+      pushed.push({ userId, paid });
+    },
+    notifyFinale: () => undefined,
+    tickFinale: () => undefined,
+    finaleWatchers: () => new Set(),
+    nextFinaleAt: () => null,
+  };
+}
+
 describe('lounging with company, from Discord', () => {
+  it('tells the live sockets of each payer what a payment did, once it has committed', async () => {
+    const hooks = recordingHooks();
+    await inGuild(
+      async (ctx, discord) => {
+        const a = await arrive(ctx, discord, 1);
+        const b = await arrive(ctx, discord, 2);
+        await together(ctx, 6);
+        const lounger = loungerOf(ctx, a);
+        const mine = hooks.pushed.filter((p) => p.userId === a.id);
+        const last = mine.at(-1)?.paid;
+        expect(mine.length).toBeGreaterThan(0);
+        expect(new Set(hooks.pushed.map((p) => p.userId))).toEqual(new Set([a.id, b.id]));
+        // The last push carries what is stored for the creature, so the client can write it in as it is.
+        const row = ctx.sql
+          .exec<{ level: number; exp: number }>(
+            'SELECT level, exp FROM creatures WHERE id = ?',
+            lounger,
+          )
+          .one();
+        expect(last).toEqual({
+          creatureId: lounger,
+          paid: stored(ctx)[lounger],
+          level: row.level,
+          exp: row.exp,
+          waiting: false,
+        });
+        // Nothing was pushed for a check that paid nothing: one push per payment.
+        expect(mine.map((p) => p.paid.paid)).toEqual([...new Set(mine.map((p) => p.paid.paid))]);
+      },
+      { live: hooks },
+    );
+  });
+
+  it('pushes nothing while alone', async () => {
+    const hooks = recordingHooks();
+    await inGuild(
+      async (ctx, discord) => {
+        await arrive(ctx, discord, 1);
+        await together(ctx, 10);
+        expect(hooks.pushed).toEqual([]);
+      },
+      { live: hooks },
+    );
+  });
+
   it('pays both players while Discord lists them together: no live socket needed (a hidden tab earns)', async () => {
     await inGuild(async (ctx, discord) => {
       const a = await arrive(ctx, discord, 1);

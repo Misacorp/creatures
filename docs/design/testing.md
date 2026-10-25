@@ -66,3 +66,25 @@ in the worker.
 - **CI shape.** Parallel jobs: checks (format, lint, typecheck, build), worker tests, sim tests, the rest; one
   aggregate `ci` check for the ruleset. Target: under 5 min wall. Watch the per-file durations in the job log;
   anything over the layer budget is a finding.
+
+**Database reads**
+
+Cloudflare's free tier allows 5,000,000 Durable Object `rows_read` a day, and a whole-table scan on a path that runs
+on every request, every alarm or every object start used it up twice (decisions.md, 2026-10-25). Two guards:
+
+- **The read budget test** (`apps/worker/test/read-budget.test.ts`). It seeds a realistic guild straight into the
+  tables (15 players, 30 creatures each with talents, a month of history in every table that grows: analytics,
+  Games, ledger, gear, dungeon runs, expeditions, jobs; about 1 s) and measures the rows read, the sum of `rowsRead`
+  of every cursor (`test/read-meter.ts`, reusable: `meterStorage`, `expectReadsUnder`), by an object start of a
+  build that already started, an alarm with no lounge, and `/api/me`, `/api/state`, `/api/room`, `/api/games`,
+  `/api/raid` and `/api/dungeon/today`. Each has a budget of about 1.5x the measured value (written next to it);
+  a failure lists the top statements by rows read, so the culprit is at the top. Raise a budget only with a reason
+  in the PR. The lounge tick is not covered.
+- **The growth check** in the same file adds a second month of history and measures the alarm and `/api/me` again;
+  they may read at most a few rows more. A new whole-table scan grows with the tables and fails it where a budget
+  alone would only notice after the data grew. (`/api/state` and `/api/raid` do grow with history today; they are
+  budgeted, not yet in the check.)
+- **Production** counts the same thing: `GuildCore` wraps its `SqlStorage` (`src/read-meter.ts`), adds the rows read
+  to `db_reads` per game day and source (`start`, `alarm`, `socket`, `request:<area>`), and the daily rollup copies
+  a finished day to `analytics_daily` as `db.rows_read` with the dim `source`. The ops report has a "Database reads"
+  section: rows per day against the free 5,000,000, the top sources, and an alert from 80% of a day.

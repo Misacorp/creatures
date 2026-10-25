@@ -40,13 +40,21 @@ import {
 } from './raid-resolve';
 import { latestReveal, totalEssenceOf, type RevealView } from './raid-reveal';
 import { partyMembers, partyOf } from './raid-roster';
-import { RAID_PHASES, isWeekId, weekIndex, type RaidEvent, type RaidPhase } from './raid-schedule';
-import { awayMembers } from './raid-assist';
 import {
-  loadCreatures,
+  RAID_PHASES,
+  addWeeks,
+  isWeekId,
+  weekIndex,
+  type RaidEvent,
+  type RaidPhase,
+} from './raid-schedule';
+import { awayMembers } from './raid-assist';
+import { speciesOf } from './species';
+import {
   partyPlacements,
   raidTeam,
   rowLength,
+  shownRaidTeam,
   type RaidStatus,
   type TeamCreature,
 } from './raid-teams';
@@ -346,7 +354,10 @@ export function buildRaidView(
   if (myParty !== null) {
     const members = partyIds;
     const length = rowLength(members.length);
-    const board = buildPartyBoard(sql, week.weekId, myParty, members);
+    // Your own team is worked out fresh; teammates' come from `shownRaidTeam` (a whole collection each).
+    const board = buildPartyBoard(sql, week.weekId, myParty, members, (memberId) =>
+      memberId === userId && team !== null ? team : shownRaidTeam(sql, week.weekId, memberId, now),
+    );
     const editable = week.status !== 'finale';
     const awayIds = awayMembers(sql, members, schedule.weekStart);
     const row: RowSlotView[] = board.cells.map((cell, slot) => {
@@ -397,12 +408,9 @@ export function buildRaidView(
         );
         away.push({
           ownerName: names.get(memberId) ?? 'Unknown',
-          creatures: loadCreatures(sql, memberId).map((c) => ({
-            creatureId: c.id,
-            species: c.species.id,
-            name: c.nickname ?? c.species.name,
-            level: c.level,
-            joining: joining.has(c.id),
+          creatures: swapList(sql, memberId).map((c) => ({
+            ...c,
+            joining: joining.has(c.creatureId),
           })),
         });
       }
@@ -511,7 +519,7 @@ export function buildRaidView(
       abilities: abilityPreview(myAbility, myIndex < 0 ? null : aliasFor(myIndex), team, (target) =>
         autofire.isOn(userId, target),
       ),
-      reveal: latestReveal(sql, userId),
+      reveal: latestReveal(sql, userId, addWeeks(week.weekId, -1)),
       team:
         team === null
           ? null
@@ -659,7 +667,8 @@ export function buildReplayView(
       phase,
     )
     .toArray()[0];
-  if (row === undefined) return null;
+  // The fight's inputs and events of a week older than last week are emptied (`old-data.ts`).
+  if (row === undefined || row.input === '') return null;
   const input = JSON.parse(row.input) as FightInput;
   const result = JSON.parse(row.result) as FightResult;
   const summary = JSON.parse(row.summary) as StoredSummary;
@@ -690,4 +699,26 @@ export function buildReplayView(
     events: result.events,
     names: buildNames(input, aliasNames, content),
   };
+}
+
+/**
+ * An away teammate's creatures as the swap list shows them: id, species, name and level only. Loading
+ * them as fighters (every talent and worn item of every creature) read thousands of rows per raid view.
+ */
+function swapList(
+  sql: SqlStorage,
+  userId: string,
+): { creatureId: string; species: string; name: string; level: number }[] {
+  return sql
+    .exec<{ id: string; species: string; nickname: string | null; level: number }>(
+      'SELECT id, species, nickname, level FROM creatures WHERE user_id = ? ORDER BY caught_at, rowid',
+      userId,
+    )
+    .toArray()
+    .map((r) => ({
+      creatureId: r.id,
+      species: r.species,
+      name: r.nickname ?? speciesOf(r.species).name,
+      level: r.level,
+    }));
 }

@@ -4,7 +4,7 @@
  *
  * A creature does one thing at a time: one on an expedition or a workshop job cannot lounge. A raid
  * does not count, raiders can lounge. The lounger is stored on the player (`players.lounger_id`) and
- * re-picked lazily, at random, when a read finds it gone or busy. The spot a player dragged their
+ * re-picked lazily, when a read finds it gone or busy: the newest free creature that is not Rested today. The spot a player dragged their
  * lounger to belongs to the player (`players.lounge_spot` and `lounge_spot_at`), not to the creature.
  *
  * Everything is synchronous. The user is always an argument supplied from the verified session; the
@@ -13,15 +13,13 @@
 import {
   content,
   explorerRank,
-  pickLounger,
+  RULES,
   quirkText,
   skillLevel,
   isRoomSpotId,
   itemLines,
-  type Rng,
 } from '@creatures/game';
 import {
-  openJobsByCreature,
   rowToItem,
   viewOrSkip,
   wornGearView,
@@ -31,7 +29,6 @@ import {
 } from './gear-store';
 import type { LedgerStorage } from './ledger';
 import { GameError, atomically, type Outcome } from './outcome';
-import { liveRng } from './rng';
 
 /** The most ids one room request may carry. */
 export const ROOM_MAX_USERS = 25;
@@ -80,11 +77,9 @@ export interface LoungeDeps {
   storage: LedgerStorage;
   /** The core's clock (UTC epoch ms): the time of a spot claim. */
   now: () => number;
-  /** Live randomness for the pick. Defaults to crypto; tests inject a seeded one. */
-  rng?: Rng;
+  /** The current game day (`loungeDay`): a `lounge_rest` row of another day counts as nothing paid. */
+  gameDay: () => string;
 }
-
-type CreatureStub = { id: string; away_expedition_id: string | null };
 
 type DetailRow = {
   id: string;
@@ -124,30 +119,55 @@ function holdsFirst(firsts: ReadonlySet<string>, userId: string, species: string
 
 const placeholders = (n: number): string => Array.from({ length: n }, () => '?').join(', ');
 
-export class Lounge {
-  private readonly rng: Rng;
+/**
+ * The "busy" rule of the state view, as SQL on a creature `c`: on an expedition or on an open workshop
+ * job. (`workshop_jobs_creature_open` answers the job part from its index.)
+ */
+const FREE = `c.away_expedition_id IS NULL AND NOT EXISTS (
+  SELECT 1 FROM workshop_jobs j WHERE j.creature_id = c.id AND j.user_id = c.user_id AND j.claimed_at IS NULL)`;
 
-  constructor(private readonly deps: LoungeDeps) {
-    this.rng = deps.rng ?? liveRng();
-  }
+/** Rested: lounging has paid the creature its daily cap on this game day (as `isRested`). */
+const NOT_RESTED = `NOT EXISTS (
+  SELECT 1 FROM lounge_rest r WHERE r.creature_id = c.id AND r.day = ? AND r.paid >= ?)`;
+
+export class Lounge {
+  constructor(private readonly deps: LoungeDeps) {}
 
   private get sql(): SqlStorage {
     return this.deps.storage.sql;
   }
 
-  private stubs(userId: string): CreatureStub[] {
-    return this.sql
-      .exec<CreatureStub>(
-        'SELECT id, away_expedition_id FROM creatures WHERE user_id = ? ORDER BY caught_at, rowid',
-        userId,
-      )
-      .toArray();
+  /** Whether the stored lounger is the player's, exists and is free: reads that one creature only. */
+  private storedIsFree(userId: string): string | null {
+    return (
+      this.sql
+        .exec<{ id: string }>(
+          `SELECT c.id FROM players p JOIN creatures c ON c.id = p.lounger_id
+           WHERE p.user_id = ? AND c.user_id = ? AND ${FREE}`,
+          userId,
+          userId,
+        )
+        .toArray()[0]?.id ?? null
+    );
   }
 
-  /** The same "busy" rule as the state view: on an expedition or on an open workshop job. */
-  private idleIds(userId: string, stubs: readonly CreatureStub[]): string[] {
-    const jobs = openJobsByCreature(this.sql, userId);
-    return stubs.filter((c) => c.away_expedition_id === null && !jobs.has(c.id)).map((c) => c.id);
+  /**
+   * The newest-caught free creature of the player, one that is not Rested today first. Each query walks
+   * `creatures_user` from the newest and stops at its first row.
+   */
+  private pickFree(userId: string): string | null {
+    const day = this.deps.gameDay();
+    const { dailyCap } = RULES.experience.lounge;
+    const first = (extra: string, ...args: (string | number)[]): string | null =>
+      this.sql
+        .exec<{ id: string }>(
+          `SELECT c.id FROM creatures c WHERE c.user_id = ? AND ${FREE}${extra}
+           ORDER BY c.caught_at DESC, c.rowid DESC LIMIT 1`,
+          userId,
+          ...args,
+        )
+        .toArray()[0]?.id ?? null;
+    return first(` AND ${NOT_RESTED}`, day, dailyCap) ?? first('');
   }
 
   private stored(userId: string): string | null {
@@ -162,18 +182,15 @@ export class Lounge {
   }
 
   /**
-   * The player's lounger: the stored one if it still exists, is theirs and is idle; otherwise a new
-   * random idle creature, stored (or NULL when all are busy). A player without creatures gets null and
-   * nothing is stored.
+   * The player's lounger: the stored one if it still exists, is theirs and is free; otherwise the newest
+   * free creature that is not Rested today, stored (or NULL when all are busy). A player without
+   * creatures gets null and nothing is stored.
    */
   resolve(userId: string): string | null {
-    const stubs = this.stubs(userId);
-    if (stubs.length === 0) return null;
-    const idle = this.idleIds(userId, stubs);
-    const stored = this.stored(userId);
-    if (stored !== null && idle.includes(stored)) return stored;
-    const picked = pickLounger(idle, this.rng);
-    if (picked !== stored) {
+    const kept = this.storedIsFree(userId);
+    if (kept !== null) return kept;
+    const picked = this.pickFree(userId);
+    if (picked !== this.stored(userId)) {
       this.sql.exec('UPDATE players SET lounger_id = ? WHERE user_id = ?', picked, userId);
     }
     return picked;
@@ -182,9 +199,15 @@ export class Lounge {
   /** Chooses the lounger. 404 unless the creature is the player's, 409 while it is on a trip or a job. */
   choose(userId: string, creatureId: string): Outcome<{ loungerId: string }> {
     return atomically(this.deps.storage, () => {
-      const mine = this.stubs(userId).filter((c) => c.id === creatureId);
-      if (mine.length === 0) throw new GameError(404, 'creature_not_found');
-      if (this.idleIds(userId, mine).length === 0) throw new GameError(409, 'creature_busy');
+      const mine = this.sql
+        .exec<{ id: string; free: number }>(
+          `SELECT c.id, (${FREE}) AS free FROM creatures c WHERE c.id = ? AND c.user_id = ?`,
+          creatureId,
+          userId,
+        )
+        .toArray()[0];
+      if (mine === undefined) throw new GameError(404, 'creature_not_found');
+      if (mine.free !== 1) throw new GameError(409, 'creature_busy');
       this.sql.exec('UPDATE players SET lounger_id = ? WHERE user_id = ?', creatureId, userId);
       return { loungerId: creatureId };
     });
