@@ -107,9 +107,17 @@ h1.hud-title {
   padding: 0;
 }
 
+/* The cog is drawn like the currency pile beside it: the same height, the same dark box, one line round it. */
+.hud button.currency-pile,
+.hud button.hud-gear {
+  height: 2.25rem;
+}
+
 .hud button.hud-gear {
   display: grid;
   place-items: center;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 var(--px) var(--line);
 }
 
 /* The page scrolls to a thing without hiding it under the HUD or the dock. */

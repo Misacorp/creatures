@@ -531,21 +531,6 @@ const stats: SpriteDef = {
   ],
 };
 
-/** A cog: the Settings button in the HUD. A ring with a round hole and eight teeth (four flat, four at the corners). */
-const gear: SpriteDef = {
-  palette: { w: BONE },
-  rows: [
-    '.w.ww.w.',
-    '..wwww..',
-    '.ww..ww.',
-    'ww....ww',
-    'ww....ww',
-    '.ww..ww.',
-    '..wwww..',
-    '.w.ww.w.',
-  ],
-};
-
 // --- Creature experience ---
 
 /*
@@ -903,7 +888,6 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   reticle,
   anvil,
   stats,
-  gear,
   treat,
   paw,
   compass,

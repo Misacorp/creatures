@@ -31,14 +31,13 @@ const ALL_OPS: Record<GimmickOp, true> = {
   charge: true,
 };
 
-describe('the Stats and Settings pictures', () => {
-  it('give Stats a glyph of its own, not the trophy of the Games, and the HUD a cog', () => {
+describe('the Stats picture', () => {
+  it('gives Stats a glyph of its own, not the trophy of the Games', () => {
     const stats = glyph('stats');
     const trophy = glyph('trophy');
     expect(stats).toBeDefined();
     expect(trophy).toBeDefined();
     expect(stats?.rows).not.toEqual(trophy?.rows);
-    expect(glyph('gear')).toBeDefined();
   });
 });
 

@@ -1,7 +1,7 @@
 import type { RefObject } from 'preact';
 import type { Balances, LeetSyncStatus, LedgerEntry } from './api';
 import { CurrencyPile } from './CurrencyPile';
-import { glyphOrUnknown } from './glyphs';
+import { GEAR_SPRITE } from './sprites/data/hud-sprites';
 import { Sprite } from './sprites/Sprite';
 import { instantPress } from './ui/instant-press';
 
@@ -9,7 +9,7 @@ import { instantPress } from './ui/instant-press';
 export function SettingsButton({ onSettings }: { onSettings: () => void }) {
   return (
     <button type="button" class="hud-gear" aria-label="Settings" {...instantPress(onSettings)}>
-      <Sprite sprite={glyphOrUnknown('gear')} scale={2} />
+      <Sprite sprite={GEAR_SPRITE} scale={2} />
     </button>
   );
 }
