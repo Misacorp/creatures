@@ -627,6 +627,16 @@ export class AnalyticsRollup {
       }
     }
 
+    // Rows the database read, by source (read-meter.ts): the free tier allows 5,000,000 a day.
+    for (const row of this.sql
+      .exec<{ source: string; rows: number }>(
+        'SELECT source, rows FROM db_reads WHERE day = ?',
+        day,
+      )
+      .toArray()) {
+      tally.add('db.rows_read', { source: row.source }, row.rows);
+    }
+
     tally.add('rolled', {});
     return tally.rows();
   }

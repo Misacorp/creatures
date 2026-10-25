@@ -20,6 +20,7 @@ import { gearV2Migration } from './gear-v2-migration';
 import { loungeMigration } from './lounge';
 import { loungeCompanyMigration } from './lounge-company';
 import { maintenanceMigration } from './maintenance';
+import { dbReadsMigration } from './read-meter';
 import { raidAutofireMigration } from './raid-autofire-migration';
 import { raidDifficultyMigration } from './raid-difficulty-migration';
 import { raidLiveMigration } from './raid-live-migration';
@@ -297,6 +298,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   dmNotifyMigration,
   // Version 42: indexes for the Valley Games' day lookups (see games-index-migration.ts).
   gamesIndexMigration,
+  // Version 43: rows read per game day and source (see read-meter.ts).
+  dbReadsMigration,
 ];
 
 /** The schema version of a fresh database. */

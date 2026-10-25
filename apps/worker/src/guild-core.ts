@@ -1,7 +1,7 @@
 import { RULES, type Rng } from '@creatures/game';
 import * as v from 'valibot';
 import { DailyAllowance } from './allowance';
-import { Analytics } from './analytics';
+import { Analytics, RETENTION_MS } from './analytics';
 import { attentionOf, type Attention } from './attention';
 import { AnalyticsRollup, type DailyRow } from './analytics-rollup';
 import { Collection } from './collection';
@@ -115,6 +115,7 @@ import {
   trackedInstances,
 } from './lounge';
 import { MIGRATIONS } from './migrations';
+import { ReadMeter, pruneReads, readSourceOfPath, type ReadSource } from './read-meter';
 import { liveRng } from './rng';
 import type { LoungeClient, LoungeResult } from './lounge-discord';
 import { nextRaidBoundary, raidStageAt } from './lounge-raid';
@@ -128,6 +129,7 @@ import {
 } from './session';
 import {
   DEFAULT_GUILD_TIMEZONE,
+  addDays,
   gameDay,
   isValidTimeZone,
   nextOccurrence,
@@ -377,6 +379,9 @@ type CoreStorage = Pick<DurableObjectStorage, 'sql' | 'transactionSync' | 'getAl
  */
 export class GuildCore {
   private readonly limiter: TokenBucketLimiter;
+  /** Counts the rows read per source and game day (`read-meter.ts`). */
+  private readonly meter: ReadMeter;
+  private readonly storage: CoreStorage;
   /** The daily leet sync (`leet-sync.ts`); `syncLeet`, `leetSyncStatus` and `syncIfStale` delegate to it. */
   private readonly leet: LeetSync;
   /**
@@ -423,10 +428,19 @@ export class GuildCore {
   private readonly talentRng: Rng;
 
   constructor(
-    private readonly storage: CoreStorage,
+    rawStorage: CoreStorage,
     private readonly realNow: () => number,
     private readonly options: GuildCoreOptions = {},
   ) {
+    // Everything below reads through the meter (`read-meter.ts`): it counts the rows each statement reads.
+    this.meter = new ReadMeter(rawStorage.sql);
+    const storage: CoreStorage = {
+      sql: this.meter.sql,
+      transactionSync: (fn) => rawStorage.transactionSync(fn),
+      getAlarm: () => rawStorage.getAlarm(),
+      setAlarm: (at, options) => rawStorage.setAlarm(at, options),
+    };
+    this.storage = storage;
     this.devState = options.devTools === true ? new DevState(storage.sql) : null;
     const now = this.devState === null ? realNow : () => realNow() + this.devOffset();
     this.now = now;
@@ -595,6 +609,29 @@ export class GuildCore {
 
   /** Brings the schema up to date. Call inside `blockConcurrencyWhile`. */
   migrate(): void {
+    try {
+      this.runMigrations();
+    } finally {
+      // The start's rows are added to the day's counter at the next flush.
+      this.meter.settle('start');
+    }
+  }
+
+  /** Adds the rows read since the last flush to `source` and to today's counter. Never throws. */
+  private flushReads(source: ReadSource): void {
+    try {
+      this.meter.flush(source, gameDay(this.realNow(), this.timezone(), RULES.daily.reset));
+    } catch (err) {
+      console.error('read meter failed', err instanceof Error ? err.name : 'unknown');
+    }
+  }
+
+  /** The hibernation handlers and the socket upgrade call this when they are done (source `socket`). */
+  flushSocketReads(): void {
+    this.flushReads('socket');
+  }
+
+  private runMigrations(): void {
     this.sql.exec('CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)');
     const row = this.sql
       .exec<{ version: number | null }>('SELECT MAX(version) AS version FROM schema_version')
@@ -705,7 +742,11 @@ export class GuildCore {
         console.error('lounge record failed', err instanceof Error ? err.name : 'unknown');
       }
     }
-    await this.ensureAlarm();
+    try {
+      await this.ensureAlarm();
+    } finally {
+      this.flushReads('request:session');
+    }
     return secret;
   }
 
@@ -824,14 +865,26 @@ export class GuildCore {
     to: string,
     compare: { from: string; to: string } | null = null,
   ): { current: DailyRow[]; previous: DailyRow[] | null } {
-    return {
-      current: this.rollup.rows(from, to),
-      previous: compare === null ? null : this.rollup.rows(compare.from, compare.to),
-    };
+    try {
+      return {
+        current: this.rollup.rows(from, to),
+        previous: compare === null ? null : this.rollup.rows(compare.from, compare.to),
+      };
+    } finally {
+      this.flushReads('request:other');
+    }
   }
 
   /** Handles an authenticated API request forwarded by the Worker. */
   async handle(request: Request): Promise<Response> {
+    try {
+      return await this.handleRequest(request);
+    } finally {
+      this.flushReads(readSourceOfPath(new URL(request.url).pathname));
+    }
+  }
+
+  private async handleRequest(request: Request): Promise<Response> {
     // The dev routes do not exist unless the dev tools are on: checked before anything else, with a
     // plain 404.
     const pathname = new URL(request.url).pathname;
@@ -1547,6 +1600,14 @@ export class GuildCore {
    * duplicate or late alarm changes nothing.
    */
   async alarm(): Promise<void> {
+    try {
+      await this.runAlarm();
+    } finally {
+      this.flushReads('alarm');
+    }
+  }
+
+  private async runAlarm(): Promise<void> {
     // At the daily reset: today's weather is known (it was drawn yesterday) and tomorrow's is drawn now.
     this.weather.ensure();
     const now = this.now();
@@ -1584,6 +1645,7 @@ export class GuildCore {
     if (maintainedDay(this.sql) === day && !this.pruneBacklog) return;
     this.pruneBacklog = this.analytics.prune();
     this.gear.prune();
+    pruneReads(this.sql, addDays(day, -RETENTION_MS / 86_400_000));
     pruneSent(this.sql, this.now());
     pruneOutbox(this.sql, this.now());
     this.dungeon.closeStale();
