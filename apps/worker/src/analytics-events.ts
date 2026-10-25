@@ -203,7 +203,6 @@ export type AnalyticsEvent =
       golden: boolean;
       slot: number;
     }
-  | { kind: 'roster_optout'; optOut: boolean }
   | { kind: 'team_set'; auto: boolean; species: readonly string[] }
   | { kind: 'placement'; action: 'place' | 'unplace'; species: string; slot: number; swap: boolean }
   | { kind: 'ability_pick'; ability: string }

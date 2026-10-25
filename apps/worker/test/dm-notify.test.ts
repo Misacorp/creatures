@@ -4,6 +4,7 @@ import { OUTBOX_KEEP_MS, pruneOutbox } from '../src/dm-queue';
 import { createDmSender, type DmSender, type OpenOutcome } from '../src/dm-send';
 import type { SendOutcome } from '../src/discord-posts';
 import { stallWeek } from '../src/games-stall';
+import { joinSmallestParty } from '../src/raid-roster';
 import { eventTimes } from '../src/raid-schedule';
 import { OTHER_USER_ID, USER_ID, runCore, type CoreContext } from './helpers';
 import { HELSINKI, HOUR, MINUTE, W02, nextGuild, rows, seedPlayer } from './raid-helpers';
@@ -363,13 +364,22 @@ describe('scanDm: jobs, grouping and who is asked', () => {
 describe('scanDm: the finale and the Prize Stall', () => {
   const finale = eventTimes(W02.id, HELSINKI).finale;
 
-  it('pings ten minutes before the finale starts, once per player, never after it started', async () => {
+  it('pings ten minutes before the finale starts, once per player who joined the raid, never after it started', async () => {
     await withDm(null, (ctx) => {
       ctx.core.raid.ensureWeek(W02.id);
+      // Two players joined the week's raid (by placing a creature); a third has the ping on but did not.
+      joinSmallestParty(ctx.sql, W02.id, USER_ID, NOW);
+      joinSmallestParty(ctx.sql, W02.id, OTHER_USER_ID, NOW);
       optIn(ctx, USER_ID, finale - 3 * HOUR, ['finale']);
       optIn(ctx, OTHER_USER_ID, finale - 3 * HOUR, ['finale']);
+      optIn(ctx, '3'.repeat(18), finale - 3 * HOUR, ['finale']);
       expect(scan(ctx, finale - 11 * MINUTE)).toBe(0);
       expect(scan(ctx, finale - 10 * MINUTE)).toBe(2);
+      expect(
+        outbox(ctx)
+          .map((m) => m.user_id)
+          .sort(),
+      ).toEqual([OTHER_USER_ID, USER_ID].sort());
       expect(scan(ctx, finale - 9 * MINUTE)).toBe(0);
       expect(outbox(ctx)[0]?.content).toBe(`⚔️ The raid finale starts in 10 minutes.\n\n${FOOTER}`);
     });
@@ -381,6 +391,7 @@ describe('scanDm: the finale and the Prize Stall', () => {
       // No raid week yet.
       expect(scan(ctx, finale - 5 * MINUTE)).toBe(0);
       ctx.core.raid.ensureWeek(W02.id);
+      joinSmallestParty(ctx.sql, W02.id, USER_ID, NOW);
       expect(scan(ctx, finale + MINUTE)).toBe(0);
       ctx.sql.exec("UPDATE raid_weeks SET status = 'finale'");
       expect(scan(ctx, finale - 5 * MINUTE)).toBe(0);

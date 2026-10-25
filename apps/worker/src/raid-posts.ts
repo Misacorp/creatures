@@ -18,6 +18,7 @@ import {
 import { announceChannelId, enqueuePost } from './discord-posts';
 import { festivalWinners } from './raid-festival';
 import { rankChangeOf, readWeekProgression } from './raid-ladder';
+import { eligiblePlayerIds } from './raid-roster';
 import type { StoredSummary } from './raid-resolve';
 import { addWeeks, eventTimes, type RaidPhase } from './raid-schedule';
 import { storedTimezone } from './weather';
@@ -31,10 +32,18 @@ function playerNames(sql: SqlStorage): Map<string, string> {
   );
 }
 
-const count = (sql: SqlStorage, table: 'raid_party_members' | 'raid_parties', weekId: string) =>
-  sql.exec<{ n: number }>(`SELECT COUNT(*) AS n FROM ${table} WHERE week_id = ?`, weekId).one().n;
+/** How many parties have players this week (a post names its party only when there are several). */
+const partiesInPlay = (sql: SqlStorage, weekId: string): number =>
+  sql
+    .exec<{
+      n: number;
+    }>('SELECT COUNT(DISTINCT party) AS n FROM raid_party_members WHERE week_id = ?', weekId)
+    .one().n;
 
-/** Monday: the boss reveal. Skipped when no announcement channel is known or nobody is in. */
+/**
+ * Monday: the boss reveal. Nobody has joined yet (a player joins by placing a creature), so it names
+ * no head count. Skipped when no announcement channel is known or nobody is active on the server.
+ */
 export function queueBossReveal(
   sql: SqlStorage,
   week: { weekId: string; bossId: string },
@@ -43,8 +52,7 @@ export function queueBossReveal(
 ): void {
   try {
     if (announceChannelId(sql) === null) return;
-    const players = count(sql, 'raid_party_members', week.weekId);
-    if (players === 0) return;
+    if (eligiblePlayerIds(sql, now).length === 0) return;
     const found = content.bosses.find((b) => b.id === week.bossId);
     if (found === undefined) return;
     const times = eventTimes(week.weekId, tz);
@@ -64,8 +72,6 @@ export function queueBossReveal(
       turnOrder: boss.turnOrder,
       schedule: { phase1: times.phase1, phase2: times.phase2, finale: times.finale },
       timeZone: tz,
-      players,
-      parties: count(sql, 'raid_parties', week.weekId),
       rank: progression?.rank ?? null,
       festivalCreature: progression?.festival === true ? (festivalSpecies?.name ?? null) : null,
     });
@@ -240,7 +246,7 @@ export function queuePhasePost(sql: SqlStorage, src: PhasePostSource): void {
       phase,
       bossId: input.boss.id,
       bossName: input.boss.name,
-      party: count(sql, 'raid_parties', src.weekId) > 1 ? src.party : null,
+      party: partiesInPlay(sql, src.weekId) > 1 ? src.party : null,
       cleared: summary.cleared,
       retreated: summary.retreated === true,
       enraged: summary.enraged === true,

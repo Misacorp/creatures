@@ -1,16 +1,22 @@
 import { content } from '@creatures/game';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LeetSource } from '../src/leet';
-import {
-  eligiblePlayerIds,
-  leaveParty,
-  partyCountFor,
-  playerPower,
-  snakeDraft,
-} from '../src/raid-roster';
+import { eligiblePlayerIds, partyCountFor } from '../src/raid-roster';
 import { eventTimes, weekIdFor, weekIndex } from '../src/raid-schedule';
 import { T0, USER_ID } from './helpers';
-import { DAY, HELSINKI, HOUR, MINUTE, W02, count, rows, runRaid, seedPlayer } from './raid-helpers';
+import {
+  DAY,
+  HELSINKI,
+  HOUR,
+  MINUTE,
+  W02,
+  count,
+  joinRaid,
+  rows,
+  runRaid,
+  seedMember,
+  seedPlayer,
+} from './raid-helpers';
 import { captureConsole } from './kit';
 
 afterEach(() => {
@@ -24,38 +30,8 @@ const partySizes = (sql: SqlStorage, week = W02.id): number[] =>
     week,
   ).map((r) => r.n);
 
-describe('snakeDraft', () => {
-  it('deals the strongest first, then reverses each round', () => {
-    const players = [10, 9, 8, 7, 6, 5].map((power, i) => ({ userId: `u${i}`, power }));
-    expect(snakeDraft(players, 2)).toEqual([
-      ['u0', 'u3', 'u4'], // 10, 7, 6
-      ['u1', 'u2', 'u5'], // 9, 8, 5
-    ]);
-  });
-
-  it('sorts by power whatever the input order, and breaks ties by id', () => {
-    const players = [
-      { userId: 'b', power: 5 },
-      { userId: 'a', power: 5 },
-      { userId: 'c', power: 9 },
-    ];
-    expect(snakeDraft(players, 3)).toEqual([['c'], ['a'], ['b']]);
-    expect(snakeDraft([...players].reverse(), 3)).toEqual([['c'], ['a'], ['b']]);
-  });
-
-  it('keeps party sizes within one of each other and the power sums close', () => {
-    const players = Array.from({ length: 31 }, (_, i) => ({ userId: `u${i}`, power: 300 - i * 7 }));
-    const groups = snakeDraft(players, 3);
-    expect(groups.map((g) => g.length).sort()).toEqual([10, 10, 11]);
-    const power = new Map(players.map((p) => [p.userId, p.power]));
-    const sums = groups.map((g) => g.reduce((t, id) => t + (power.get(id) ?? 0), 0));
-    expect(Math.max(...sums) - Math.min(...sums)).toBeLessThanOrEqual(300);
-    // Everyone appears exactly once.
-    expect(groups.flat().sort()).toEqual(players.map((p) => p.userId).sort());
-  });
-
-  it('needs at least one party', () => {
-    expect(() => snakeDraft([], 0)).toThrow();
+describe('parties', () => {
+  it('needs the smallest number of parties of at most 15 players', () => {
     expect(partyCountFor(0)).toBe(0);
     expect(partyCountFor(15)).toBe(1);
     expect(partyCountFor(16)).toBe(2);
@@ -65,7 +41,7 @@ describe('snakeDraft', () => {
 });
 
 describe('week creation', () => {
-  it('creates the current week lazily on a raid read, with the rotating boss', async () => {
+  it('creates the current week lazily on a raid read, with the rotating boss and nobody in it', async () => {
     await runRaid((ctx) => {
       const player = seedPlayer(ctx, 1);
       expect(count(ctx.sql, 'raid_weeks')).toBe(0);
@@ -77,8 +53,12 @@ describe('week creation', () => {
       expect(rows(ctx.sql, 'SELECT week_id, boss_id, status FROM raid_weeks')).toEqual([
         { week_id: '2027-W02', boss_id: expectedBoss?.id, status: 'open' },
       ]);
-      // Reading again does not create a second week or party.
+      // Opening the week joins nobody and makes no party: that happens when someone places.
+      expect(count(ctx.sql, 'raid_party_members')).toBe(0);
+      expect(count(ctx.sql, 'raid_parties')).toBe(0);
       ctx.core.raid.view(player.id, HELSINKI);
+      expect(count(ctx.sql, 'raid_weeks')).toBe(1);
+      joinRaid(ctx, player);
       expect(count(ctx.sql, 'raid_weeks')).toBe(1);
       expect(count(ctx.sql, 'raid_parties')).toBe(1);
     });
@@ -133,7 +113,7 @@ describe('week creation', () => {
   });
 });
 
-describe('roster', () => {
+describe('the active roster', () => {
   it('counts players with a creature who opened the game or leeted in the last 14 days', async () => {
     await runRaid((ctx) => {
       const now = ctx.clock.t;
@@ -178,19 +158,15 @@ describe('roster', () => {
       for (const p of [seenLongAgo, leetedLongAgo, noCreature, justLate]) {
         expect(eligible).not.toContain(p.id);
       }
-      // The week uses the same rule.
+      // Being active puts nobody in the raid: the week has no members until someone places.
       ctx.core.raid.currentWeek(HELSINKI);
-      expect(
-        new Set(
-          rows<{ user_id: string }>(ctx.sql, 'SELECT user_id FROM raid_party_members').map(
-            (r) => r.user_id,
-          ),
-        ),
-      ).toEqual(new Set(eligible));
+      expect(count(ctx.sql, 'raid_party_members')).toBe(0);
     });
   });
+});
 
-  it('no longer honours opt-outs: a stored row and the old route change nothing', async () => {
+describe('joining by placing', () => {
+  it('joins on the first placement and brings exactly what was placed', async () => {
     await runRaid((ctx) => {
       const a = seedPlayer(ctx, 1);
       const b = seedPlayer(ctx, 2);
@@ -199,112 +175,78 @@ describe('roster', () => {
           .view(a.id, HELSINKI)
           .roster.map((r) => r.displayName)
           .sort();
-      expect(names()).toEqual(['Player 1', 'Player 2']);
+      expect(names()).toEqual([]);
+      expect(ctx.core.raid.view(a.id, HELSINKI).you).toMatchObject({
+        inRoster: false,
+        party: null,
+        canEdit: true,
+        team: null,
+      });
 
-      // The old route answers "not opted out" and leaves the player where they are.
-      expect(ctx.core.raid.setOptOut(HELSINKI)).toEqual({
+      expect(ctx.core.raid.place(a.id, HELSINKI, a.creatureIds[0] as string, 4)).toEqual({
         ok: true,
-        value: { optOut: false },
+        value: null,
       });
-      expect(count(ctx.sql, 'raid_opt_outs')).toBe(0);
-      expect(names()).toEqual(['Player 1', 'Player 2']);
-
-      // A row left by the old button (before this change) is ignored by the roster.
-      ctx.sql.exec('INSERT INTO raid_opt_outs (week_id, user_id) VALUES (?, ?)', W02.id, b.id);
-      expect(eligiblePlayerIds(ctx.sql, ctx.clock.t)).toContain(b.id);
-      leaveParty(ctx.sql, W02.id, b.id);
-      ctx.core.raid.syncRoster(W02.id);
-      expect(names()).toEqual(['Player 1', 'Player 2']);
-      expect(ctx.core.raid.view(b.id, HELSINKI).you).toMatchObject({
-        inRoster: true,
-        optOut: false,
-      });
-    });
-  });
-
-  it('still refuses the retired opt-out route once phase 1 has resolved', async () => {
-    await runRaid((ctx) => {
-      const a = seedPlayer(ctx, 1);
-      ctx.core.raid.view(a.id, HELSINKI);
-      ctx.clock.t = W02.afterPhase1 + HOUR;
-      expect(ctx.core.raid.setOptOut(HELSINKI)).toEqual({
-        ok: false,
-        status: 409,
-        error: 'locked',
-      });
-      expect(ctx.core.raid.view(a.id, HELSINKI).you.canOptOut).toBe(false);
+      const view = ctx.core.raid.view(a.id, HELSINKI);
+      expect(view.you).toMatchObject({ inRoster: true, party: 1 });
+      // One creature placed: that is all they bring. The other two are not picked for them.
+      expect(view.you.team?.creatures.map((c) => [c.creatureId, c.slot])).toEqual([
+        [a.creatureIds[0], 4],
+      ]);
+      expect(view.party?.row.filter((s) => s.creature !== null)).toHaveLength(1);
+      expect(names()).toEqual(['Player 1']);
+      // The other player placed nothing, so they are not in it.
+      expect(ctx.core.raid.view(b.id, HELSINKI).you.inRoster).toBe(false);
     });
   });
 });
 
-describe('parties', () => {
+describe('parties by placing', () => {
   it('keeps up to 15 players in one party', async () => {
     await runRaid((ctx) => {
-      for (let i = 1; i <= 15; i++) seedPlayer(ctx, i);
-      ctx.core.raid.currentWeek(HELSINKI);
+      const players = Array.from({ length: 15 }, (_, i) => seedPlayer(ctx, i + 1));
+      joinRaid(ctx, players);
       expect(partySizes(ctx.sql)).toEqual([15]);
     });
   });
 
-  it('splits 16 players into two parties of 8', async () => {
+  it('puts the 16 players of a server over 15 into two parties of 8', async () => {
     await runRaid((ctx) => {
-      for (let i = 1; i <= 16; i++) seedPlayer(ctx, i);
-      ctx.core.raid.currentWeek(HELSINKI);
+      // Everyone is active when the first one places: the board is made for two parties.
+      const players = Array.from({ length: 16 }, (_, i) => seedPlayer(ctx, i + 1));
+      joinRaid(ctx, players);
       expect(partySizes(ctx.sql)).toEqual([8, 8]);
     });
   });
 
-  it('splits 31 players into three parties (11, 10, 10) balanced by team power', async () => {
+  it('splits 31 players into three parties (11, 10, 10), each joining the party with the fewest', async () => {
     await runRaid((ctx) => {
-      for (let i = 1; i <= 31; i++) seedPlayer(ctx, i, { level: 1 + (i % 15) });
-      ctx.core.raid.currentWeek(HELSINKI);
+      const players = Array.from({ length: 31 }, (_, i) =>
+        seedPlayer(ctx, i + 1, { level: 1 + ((i + 1) % 15) }),
+      );
+      joinRaid(ctx, players);
       expect(partySizes(ctx.sql)).toEqual([11, 10, 10]);
-      const sums = [1, 2, 3].map((p) =>
-        rows<{ user_id: string }>(
-          ctx.sql,
-          'SELECT user_id FROM raid_party_members WHERE party = ?',
-          p,
-        ).reduce((total, r) => total + playerPower(ctx.sql, r.user_id), 0),
-      );
-      // Party 1 has one more player, so allow about one average player of difference.
-      const average = sums.reduce((a, b) => a + b, 0) / 31;
-      expect(Math.max(...sums) - Math.min(...sums)).toBeLessThan(average * 1.5);
     });
   });
 
-  it('balances party strength: the totals stay close even with very uneven players', async () => {
+  it('puts a joiner into the smallest party before phase 1', async () => {
     await runRaid((ctx) => {
-      for (let i = 1; i <= 20; i++) seedPlayer(ctx, i, { level: i <= 10 ? 15 : 2 });
-      ctx.core.raid.currentWeek(HELSINKI);
-      // Count the strong players (the first ten) in each party: a snake draft spreads them evenly.
-      const strongPerParty = [1, 2].map(
-        (p) =>
-          rows<{ user_id: string }>(
-            ctx.sql,
-            'SELECT user_id FROM raid_party_members WHERE party = ?',
-            p,
-          ).filter((r) => Number(BigInt(r.user_id) % 10n ** 17n) <= 10).length,
-      );
-      expect(strongPerParty).toEqual([5, 5]);
-    });
-  });
-
-  it('puts a late joiner into the smallest party before phase 1', async () => {
-    await runRaid((ctx) => {
-      for (let i = 1; i <= 16; i++) seedPlayer(ctx, i);
-      ctx.core.raid.currentWeek(HELSINKI);
-      // Make the parties uneven: party 2 loses a member.
-      const inParty2 = rows<{ user_id: string }>(
+      const players = Array.from({ length: 16 }, (_, i) => seedPlayer(ctx, i + 1));
+      joinRaid(ctx, players);
+      expect(partySizes(ctx.sql)).toEqual([8, 8]);
+      // One of party 2 takes all their creatures off the board: they leave the raid.
+      const leaver = rows<{ user_id: string }>(
         ctx.sql,
         'SELECT user_id FROM raid_party_members WHERE party = 2 LIMIT 1',
       )[0]?.user_id as string;
-      // They drop out (they are no longer active), so the late-joiner sync does not take them back.
-      leaveParty(ctx.sql, W02.id, inParty2);
-      ctx.sql.exec('UPDATE players SET last_seen_at = 0 WHERE user_id = ?', inParty2);
+      const gone = players.find((p) => p.id === leaver);
+      for (const id of gone?.creatureIds ?? []) {
+        expect(ctx.core.raid.unplace(leaver, HELSINKI, id).ok).toBe(true);
+      }
       expect(partySizes(ctx.sql)).toEqual([8, 7]);
 
       const late = seedPlayer(ctx, 40);
-      ctx.core.raid.view(late.id, HELSINKI);
+      joinRaid(ctx, late);
       expect(partySizes(ctx.sql)).toEqual([8, 8]);
       expect(
         rows<{ party: number }>(
@@ -318,31 +260,79 @@ describe('parties', () => {
 
   it('opens a new party when every party is full', async () => {
     await runRaid((ctx) => {
-      for (let i = 1; i <= 15; i++) seedPlayer(ctx, i);
-      ctx.core.raid.currentWeek(HELSINKI);
-      const late = seedPlayer(ctx, 50);
-      ctx.core.raid.view(late.id, HELSINKI);
+      const players = Array.from({ length: 15 }, (_, i) => seedPlayer(ctx, i + 1));
+      joinRaid(ctx, players);
+      // A 16th player becomes active after the party filled up: they open a second party.
+      seedMember(ctx, 50);
       expect(partySizes(ctx.sql)).toEqual([15, 1]);
     });
   });
 
-  it('fixes membership after phase 1: later arrivals are not in the roster', async () => {
+  it('shows a player who has not joined the board of the party they would join', async () => {
     await runRaid((ctx) => {
-      const a = seedPlayer(ctx, 1);
-      ctx.core.raid.view(a.id, HELSINKI);
+      const players = Array.from({ length: 16 }, (_, i) => seedPlayer(ctx, i + 1));
+      const watcher = seedPlayer(ctx, 99);
+      joinRaid(ctx, players, { creatures: 1 });
+      // 16 players over two parties of 8; the next to join goes to party 1 (the lowest on a tie).
+      const view = ctx.core.raid.view(watcher.id, HELSINKI);
+      expect(view.you).toMatchObject({ inRoster: false, party: null, canEdit: true });
+      expect(view.party?.party).toBe(1);
+      expect(view.party?.row.filter((s) => s.creature !== null)).toHaveLength(8);
+      // Looking changes nothing.
+      expect(partySizes(ctx.sql)).toEqual([8, 8]);
+    });
+  });
+
+  it('fixes membership after phase 1: later arrivals cannot join, joined players can still move', async () => {
+    await runRaid((ctx) => {
+      const a = seedMember(ctx, 1);
       ctx.clock.t = W02.afterPhase1 + HOUR;
-      // Phase 1 resolves (and locks the roster) on this read; only then does the late player appear.
+      // Phase 1 resolves (and closes joining) on this read.
       expect(ctx.core.raid.view(a.id, HELSINKI).status).toBe('phase1');
       const late = seedPlayer(ctx, 2);
       const view = ctx.core.raid.view(late.id, HELSINKI);
       expect(view.status).toBe('phase1');
-      expect(view.you.inRoster).toBe(false);
+      expect(view.you).toMatchObject({ inRoster: false, canEdit: false });
+      expect(view.party).toBeNull();
       expect(view.roster.map((r) => r.displayName)).toEqual(['Player 1']);
       expect(ctx.core.raid.place(late.id, HELSINKI, late.creatureIds[0] as string, 0)).toEqual({
         ok: false,
         status: 409,
-        error: 'not_in_roster',
+        error: 'raid_closed',
       });
+      expect(count(ctx.sql, 'raid_party_members')).toBe(1);
+      // The player who joined can still move their own creature (the adjustment window).
+      expect(ctx.core.raid.place(a.id, HELSINKI, a.creatureIds[0] as string, 7).ok).toBe(true);
+      expect(
+        ctx.core.raid
+          .view(a.id, HELSINKI)
+          .you.team?.creatures.find((c) => c.creatureId === a.creatureIds[0])?.slot,
+      ).toBe(7);
+    });
+  });
+
+  it('leaves the raid when the last creature comes off the board before phase 1, not after', async () => {
+    await runRaid((ctx) => {
+      const a = seedMember(ctx, 1, { place: 2 });
+      const [first, second, third] = a.creatureIds as [string, string, string];
+      expect(ctx.core.raid.unplace(a.id, HELSINKI, first).ok).toBe(true);
+      expect(ctx.core.raid.view(a.id, HELSINKI).you.inRoster).toBe(true);
+      expect(ctx.core.raid.unplace(a.id, HELSINKI, second).ok).toBe(true);
+      expect(ctx.core.raid.view(a.id, HELSINKI).you).toMatchObject({ inRoster: false, team: null });
+      expect(count(ctx.sql, 'raid_party_members')).toBe(0);
+      expect(count(ctx.sql, 'raid_placements')).toBe(0);
+      // Taking off one that was not on the board changes nothing.
+      expect(ctx.core.raid.unplace(a.id, HELSINKI, third).ok).toBe(true);
+      // They can join again by placing.
+      expect(ctx.core.raid.place(a.id, HELSINKI, third, 0).ok).toBe(true);
+      expect(ctx.core.raid.view(a.id, HELSINKI).you.inRoster).toBe(true);
+
+      // After Phase 1 the parties are fixed: removing the last creature keeps the player in the party.
+      ctx.clock.t = W02.afterPhase1 + HOUR;
+      ctx.core.raid.view(a.id, HELSINKI);
+      expect(ctx.core.raid.unplace(a.id, HELSINKI, third).ok).toBe(true);
+      expect(ctx.core.raid.view(a.id, HELSINKI).you.inRoster).toBe(true);
+      expect(count(ctx.sql, 'raid_party_members')).toBe(1);
     });
   });
 });
@@ -403,7 +393,7 @@ describe('one alarm for every schedule', () => {
     await runRaid(
       async (ctx) => {
         ref.sql = ctx.sql;
-        seedPlayer(ctx, 1);
+        seedMember(ctx, 1);
         // Saturday 12:00Z. Due: week start, phase 1 (Fri), phase 2 (Sat 11:37Z), all before the
         // sync slot (11:40Z), so the sync sees them done and not the finale.
         ctx.clock.t = Date.parse('2027-01-16T12:00:00Z');
@@ -430,7 +420,7 @@ describe('one alarm for every schedule', () => {
   it('runs raid events without a leet source and arms only raid alarms', async () => {
     await runRaid(
       async (ctx) => {
-        seedPlayer(ctx, 1);
+        seedMember(ctx, 1);
         ctx.clock.t = W02.afterPhase2;
         await ctx.core.alarm();
         expect(await ctx.storage.getAlarm()).toBe(eventTimes(W02.id, HELSINKI).finale);
@@ -446,12 +436,15 @@ describe('one alarm for every schedule', () => {
         id: USER_ID,
         displayName: 'Misa',
       });
+      const creatureId = crypto.randomUUID();
       ctx.sql.exec(
         `INSERT INTO creatures (id, user_id, line, species, level, origin, caught_at)
          VALUES (?, ?, 'splashet', 'splashet', 3, 'test', 0)`,
-        crypto.randomUUID(),
+        creatureId,
         USER_ID,
       );
+      // Misa joins the week's raid by placing her creature.
+      expect(ctx.core.raid.place(USER_ID, HELSINKI, creatureId, 0).ok).toBe(true);
       // The object slept through Friday, Saturday and Sunday. The next session wakes it up.
       ctx.clock.t = Date.parse('2027-01-17T19:00:00Z');
       const secret2 = await ctx.core.createSession(ctx.guildId, {
@@ -476,7 +469,7 @@ describe('one alarm for every schedule', () => {
   it('runs a finale missed over the week change, still for its own week', async () => {
     await runRaid(
       (ctx) => {
-        const a = seedPlayer(ctx, 1);
+        const a = seedMember(ctx, 1);
         ctx.core.raid.view(a.id, HELSINKI);
         // Asleep from Friday morning until Tuesday of the next week.
         ctx.clock.t = Date.parse('2027-01-19T10:00:00Z');
@@ -499,7 +492,7 @@ describe('one alarm for every schedule', () => {
 
   it('is idempotent: duplicate alarms and repeated events change nothing', async () => {
     await runRaid(async (ctx) => {
-      seedPlayer(ctx, 1);
+      seedMember(ctx, 1);
       ctx.clock.t = W02.afterFinale;
       await ctx.core.alarm();
       const snapshot = () => ({
@@ -521,7 +514,7 @@ describe('one alarm for every schedule', () => {
   it('retries a failing event in a minute instead of looping, and logs only the error type', async () => {
     const error = captureConsole();
     await runRaid((ctx) => {
-      const a = seedPlayer(ctx, 1);
+      const a = seedMember(ctx, 1);
       ctx.core.raid.view(a.id, HELSINKI);
       // A week whose boss no longer exists in the content: its phases cannot resolve.
       ctx.sql.exec("UPDATE raid_weeks SET boss_id = 'not-a-boss secret-text'");

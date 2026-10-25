@@ -27,6 +27,7 @@ import {
   nextGuild,
   rows,
   runRaid,
+  joinRaid,
   seedPlayer,
   storedRuns,
 } from './raid-helpers';
@@ -380,7 +381,7 @@ describe('talents in the numbers a creature fights and trips with', () => {
       const players = Array.from({ length: 4 }, (_, i) =>
         seedPlayer(ctx, i + 1, { level: 12, species: ['splashet', 'cindle', 'sproutle'] }),
       );
-      ctx.core.raid.currentWeek(HELSINKI);
+      joinRaid(ctx, players);
       const [a] = players as [(typeof players)[number]];
       const [splashet, cindle] = a.creatureIds as [string, string, string];
       holdTalent(ctx.sql, splashet, { talentId: 'playful', golden: false }, 1, 1);

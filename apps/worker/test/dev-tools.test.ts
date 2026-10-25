@@ -379,6 +379,12 @@ describe('the dev clock', () => {
         const p = await player(ctx);
         const times = eventTimes(W02.id, HELSINKI);
         expect((await p.call('GET', '/api/raid')).body.status).toBe('open');
+        // The player joins the week's raid by placing a creature.
+        const placed = await p.call('PUT', '/api/raid/placement', {
+          creatureId: p.creatureIds[0],
+          slot: 0,
+        });
+        expect(placed.status).toBe(200);
         // The alarm is set for Phase 1.
         expect(await ctx.storage.getAlarm()).toBe(times.phase1);
 

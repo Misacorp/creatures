@@ -59,6 +59,7 @@ import {
   nextGuild,
   rows,
   runRaid,
+  joinRaid,
   seedPlayer,
   storedRuns,
   type Seeded,
@@ -954,36 +955,28 @@ describe('collection events', () => {
   });
 });
 
-/** Seeds players in the roster of week 2027-W02 and opens it. */
+/** Seeds two players with four creatures each, active in week 2027-W02 and not in its raid yet. */
 function twoPlayers(ctx: CoreContext): Seeded[] {
-  const players = [
+  return [
     seedPlayer(ctx, 1, { level: BELOW_UNLOCK, creatures: 4 }),
     seedPlayer(ctx, 2, { level: BELOW_UNLOCK, creatures: 4 }),
   ];
-  ctx.core.raid.currentWeek(HELSINKI);
-  return players;
 }
 
 describe('raid roster, team and ability events', () => {
-  it('logs nothing for the retired sit-out route', async () => {
-    await runRaid(async (ctx) => {
-      const [p] = twoPlayers(ctx) as [Seeded, Seeded];
-      await ctx.core.analytics.prepare(p.id);
-      expect(ctx.core.raid.setOptOut(HELSINKI).ok).toBe(true);
-      expect(ctx.core.raid.setOptOut(HELSINKI).ok).toBe(true);
-      expect(events(ctx.sql, 'roster_optout')).toHaveLength(0);
-    });
-  });
-
   it('logs placements and removals, and nothing for the same slot or an empty removal', async () => {
     await runRaid(async (ctx) => {
       const [p] = twoPlayers(ctx) as [Seeded, Seeded];
       await ctx.core.analytics.prepare(p.id);
-      const team = (ctx.core.raid.view(p.id, HELSINKI).you.team?.creatures ?? []).map((c) => ({
-        id: c.creatureId,
-        species: c.species,
-      }));
-      const [a, b] = team as unknown as [
+      const speciesOf = (id: string) =>
+        content.creatures.find(
+          (c) =>
+            c.id ===
+            ctx.sql
+              .exec<{ species: string }>('SELECT species FROM creatures WHERE id = ?', id)
+              .one().species,
+        )?.id as string;
+      const [a, b] = p.creatureIds.slice(0, 2).map((id) => ({ id, species: speciesOf(id) })) as [
         { id: string; species: string },
         { id: string; species: string },
       ];
@@ -1008,6 +1001,8 @@ describe('raid roster, team and ability events', () => {
     await runRaid(async (ctx) => {
       const [p] = twoPlayers(ctx) as [Seeded, Seeded];
       await ctx.core.analytics.prepare(p.id);
+      // Only a player who joined (placed a creature) picks an ability.
+      joinRaid(ctx, p, { creatures: 1 });
       const basics = content.finaleAbilities.filter((a) => a.kind === 'basic');
       const [x, y] = basics as unknown as [{ id: string }, { id: string }];
       expect(ctx.core.raid.setAbility(p.id, HELSINKI, x.id).ok).toBe(true);
@@ -1027,6 +1022,7 @@ describe('raid roster, team and ability events', () => {
     await runRaid(async (ctx) => {
       const [p] = twoPlayers(ctx) as [Seeded, Seeded];
       await ctx.core.analytics.prepare(p.id);
+      joinRaid(ctx, p, { creatures: 1 });
       const first = ctx.core.raid.view(p.id, HELSINKI).you.team?.creatures[0];
       if (first === undefined) throw new Error('no team');
       const creature = { id: first.creatureId, species: first.species };
@@ -1061,9 +1057,12 @@ describe('raid roster, team and ability events', () => {
   });
 });
 
-/** Seeds players, opens the week and resolves phases 1 and 2; leaves the clock before the finale. */
-function toFinale(ctx: CoreContext): Seeded[] {
+/** Seeds players, has them join by placing, and resolves phases 1 and 2; leaves the clock before the finale. */
+async function toFinale(ctx: CoreContext): Promise<Seeded[]> {
   const players = twoPlayers(ctx);
+  // The actors are known first, so the placements are logged too.
+  for (const p of players) await ctx.core.analytics.prepare(p.id);
+  joinRaid(ctx, players);
   ctx.clock.t = W02.afterPhase2;
   ctx.core.raid.runDue(HELSINKI);
   // A pool nobody can empty, so the finale lasts every round.
@@ -1083,7 +1082,7 @@ const scheduleOf = (ctx: CoreContext) => {
 describe('live finale events', () => {
   it('logs one join per player however often they poll, with the stage they joined in', async () => {
     await runRaid(async (ctx) => {
-      const [a, b] = toFinale(ctx) as [Seeded, Seeded];
+      const [a, b] = (await toFinale(ctx)) as [Seeded, Seeded];
       await ctx.core.analytics.prepare(a.id);
       await ctx.core.analytics.prepare(b.id);
       ctx.clock.t = FINALE - 2 * MINUTE; // the lobby is open
@@ -1120,7 +1119,7 @@ describe('live finale events', () => {
 
   it('does not count a look at a finished fight as a join', async () => {
     await runRaid(async (ctx) => {
-      const [a] = toFinale(ctx) as [Seeded, Seeded];
+      const [a] = (await toFinale(ctx)) as [Seeded, Seeded];
       await ctx.core.analytics.prepare(a.id);
       ctx.clock.t = FINALE;
       ctx.core.raid.runDue(HELSINKI);
@@ -1132,7 +1131,7 @@ describe('live finale events', () => {
 
   it('logs Fire, Hold and Unhold with the round and the default round, and nothing for refusals', async () => {
     await runRaid(async (ctx) => {
-      const [a, b] = toFinale(ctx) as [Seeded, Seeded];
+      const [a, b] = (await toFinale(ctx)) as [Seeded, Seeded];
       await ctx.core.analytics.prepare(a.id);
       await ctx.core.analytics.prepare(b.id);
       ctx.clock.t = FINALE;
@@ -1165,7 +1164,7 @@ describe('live finale events', () => {
 
   it('logs guild-level phase results, one rank change and no second copy when run again', async () => {
     await runRaid(async (ctx) => {
-      const [a] = toFinale(ctx) as [Seeded, Seeded];
+      const [a] = (await toFinale(ctx)) as [Seeded, Seeded];
       await ctx.core.analytics.prepare(a.id);
       ctx.clock.t = FINALE;
       ctx.core.raid.runDue(HELSINKI);
@@ -1441,7 +1440,7 @@ describe('transactions', () => {
     const log = captureConsole();
     await runCore(nextGuild(), ({ core, sql }) => {
       sql.exec('DROP TABLE analytics_events');
-      expect(() => core.analytics.record({ kind: 'roster_optout', optOut: true })).not.toThrow();
+      expect(() => core.analytics.record({ kind: 'ability_pick', ability: 'rally' })).not.toThrow();
       // Only the kind of the error is logged, not its message (which names the table).
       expect(log.text()).toBe('analytics write failed Error');
       expect(log.text()).not.toContain('analytics_events');
@@ -1728,6 +1727,10 @@ describe('privacy', () => {
           slot: 0,
         });
         await call(ctx, a.secret, 'PUT', '/api/raid/autofire', { target: 'basic', on: false });
+        await call(ctx, b.secret, 'PUT', '/api/raid/placement', {
+          creatureId: b.starterId,
+          slot: 1,
+        });
         await call(ctx, b.secret, 'PUT', '/api/raid/ability', {
           abilityId: content.finaleAbilities.find((x) => x.kind === 'basic')?.id,
         });

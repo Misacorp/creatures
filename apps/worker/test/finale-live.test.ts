@@ -1,3 +1,4 @@
+import { joinSmallestParty } from '../src/raid-roster';
 import { env } from 'cloudflare:workers';
 import { runInDurableObject } from 'cloudflare:test';
 import { createSeededRng } from '@creatures/game';
@@ -27,6 +28,7 @@ import {
   forcePool,
   membersOf,
   nextGuild,
+  seedMember,
   seedPlayer,
   type Seeded,
 } from './raid-helpers';
@@ -199,7 +201,7 @@ function run<R>(
 
 /** Two seeded players, phases 1 and 2 resolved, the clock ten minutes before the finale. */
 function toFinale(ctx: CoreContext): Seeded[] {
-  const players = [1, 2].map((n) => seedPlayer(ctx, n, { level: 5 }));
+  const players = [1, 2].map((n) => seedMember(ctx, n, { level: 5 }));
   ctx.core.raid.currentWeek(HELSINKI);
   ctx.clock.t = W02.afterPhase2;
   ctx.core.raid.runDue(HELSINKI);
@@ -282,7 +284,6 @@ describe('the finale ticket', () => {
       // A player who is in no party at all.
       const outsider = seedPlayer(ctx, 9, { level: 5 });
       const outsiderSecret = await session(ctx, outsider);
-      ctx.sql.exec('DELETE FROM raid_party_members WHERE user_id = ?', outsider.id);
       const refused = await ctx.request(outsiderSecret, FINALE_TICKET_PATH, 'POST', body);
       expect(refused.status).toBe(403);
     });
@@ -594,8 +595,10 @@ describe('the finale socket through the Worker', () => {
       const seeded = [1, 2].map((n) => seedPlayer({ sql, clock: { t: Date.now() } }, n));
       const core = (instance as unknown as { core: GuildCore }).core;
       const first = seeded[0] as Seeded;
-      core.raid.view(first.id, HELSINKI);
       const week = core.raid.currentWeek(HELSINKI).weekId;
+      // The first player is in the week's raid. This test runs on the real clock, where joining may
+      // already be closed (after Friday), so the membership is written directly.
+      joinSmallestParty(sql, week, first.id, Date.now());
       const party = [1, 2, 3, 4].find((p) => core.raid.isPartyMember(first.id, week, p)) ?? 0;
       return { player: first, week, party };
     });

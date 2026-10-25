@@ -34,6 +34,7 @@ import {
   nextGuild,
   rows,
   runRaid,
+  joinRaid,
   seedPlayer,
   storedRuns,
 } from './raid-helpers';
@@ -868,8 +869,12 @@ describe('the dungeon under the weather', () => {
 
 describe('the raid stage under the weather', () => {
   const CHANNEL = '555555555555555555';
-  const players = (ctx: CoreContext, n: number) =>
-    Array.from({ length: n }, (_, i) => seedPlayer(ctx, i + 1, { level: 15 }));
+  /** Seeds `n` players; they join the raid by placing their creatures unless `join` is false. */
+  const players = (ctx: CoreContext, n: number, join = true) => {
+    const seeded = Array.from({ length: n }, (_, i) => seedPlayer(ctx, i + 1, { level: 15 }));
+    if (join) joinRaid(ctx, seeded);
+    return seeded;
+  };
 
   /** The game day of Phase 1 (Friday 13:37 guild time): the weather it fights under. */
   const phase1Day = (): string =>
@@ -973,19 +978,11 @@ describe('the raid stage under the weather', () => {
         const a = seedPlayer(ctx, 1, { level: 15 });
         const b = seedPlayer(ctx, 2, { level: 15, creatures: 1 });
         const c = seedPlayer(ctx, 3, { level: 15 });
-        ctx.core.raid.currentWeek(HELSINKI);
         // Nine slots (Front 0-2, Middle 3-5, Back 6-8) with seven creatures, all placed: Front is slots
         // 0-2, the lone creature stands in the Middle at slot 4, Back is slots 6-8 (3 / 1 / 3). Squeezed
         // into a line of seven the rows would be 2 / 3 / 2 and the haze would name other creatures.
         const place = (slot: number, userId: string, creatureId: string) =>
-          ctx.sql.exec(
-            'INSERT INTO raid_placements (week_id, party, slot, user_id, creature_id) VALUES (?, ?, ?, ?, ?)',
-            W02.id,
-            1,
-            slot,
-            userId,
-            creatureId,
-          );
+          expect(ctx.core.raid.place(userId, HELSINKI, creatureId, slot).ok).toBe(true);
         a.creatureIds.forEach((id, k) => place(k, a.id, id));
         place(4, b.id, b.creatureIds[0] as string);
         c.creatureIds.forEach((id, k) => place(6 + k, c.id, id));
@@ -1057,7 +1054,7 @@ describe('the raid stage under the weather', () => {
   it('leaves the sky out of the Monday reveal and the stage post (it is not raid news)', async () => {
     await runRaid(
       async (ctx) => {
-        const seeded = players(ctx, 4);
+        const seeded = players(ctx, 4, false);
         const first =
           seeded[0] ??
           (() => {
@@ -1070,6 +1067,7 @@ describe('the raid stage under the weather', () => {
           { id: first.id, displayName: first.name },
           CHANNEL,
         );
+        joinRaid(ctx, seeded);
         const posts = () =>
           rows<{ key: string; content: string }>(
             ctx.sql,

@@ -56,6 +56,12 @@ describe('raid tools', () => {
     await runRaid(
       async (ctx) => {
         const p = await player(ctx);
+        // The tool resolves the week as it is: the caller has to be in the raid, by placing a creature.
+        const placed = await p.call('PUT', '/api/raid/placement', {
+          creatureId: p.creatureIds[0],
+          slot: 0,
+        });
+        expect(placed.status).toBe(200);
         expect(await p.tool('raid-resolve', { phase: 'phase1' })).toMatchObject({
           resolved: ['phase1'],
           status: 'phase1',
@@ -81,11 +87,15 @@ describe('raid tools', () => {
     await runRaid(
       async (ctx) => {
         const p = await player(ctx);
+        // The caller does not place anything: the tool puts their three strongest on the board with the guests.
         expect(await p.tool('raid-roster', { count: 5 })).toMatchObject({
           weekId: W02.id,
           guests: 5,
           members: 6,
         });
+        // Everyone in the raid is there by their placed creatures: three each, no more.
+        expect(count(ctx.sql, 'raid_placements')).toBe(18);
+        expect(count(ctx.sql, 'raid_placements', "user_id = 'dev-guest-3'")).toBe(3);
         const guests = rows<{ user_id: string; n: number }>(
           ctx.sql,
           `SELECT p.user_id, (SELECT COUNT(*) FROM creatures c WHERE c.user_id = p.user_id) AS n
@@ -149,7 +159,7 @@ describe('raid tools', () => {
         // Again: nothing resolves twice.
         expect((await p.tool('raid-simulate', {})).status).toBe('finale');
         expect(count(ctx.sql, 'raid_results')).toBe(3);
-        // A player who is not in the roster has no week to simulate.
+        // A player with no creature cannot be in the raid, so has no week to simulate.
         const nobody = await player(ctx, 9, { creatures: 0 });
         expect(await nobody.dev('raid-simulate', {})).toEqual({
           status: 409,
@@ -231,14 +241,20 @@ describe('analytics and account tools', () => {
 
         // At most 50, newest first.
         for (let i = 0; i < 60; i++) {
-          ctx.core.analytics.record({ kind: 'roster_optout', optOut: i % 2 === 0 });
+          ctx.core.analytics.record({
+            kind: 'placement',
+            action: i % 2 === 0 ? 'place' : 'unplace',
+            species: 'splashet',
+            slot: 0,
+            swap: false,
+          });
         }
         const list = (await p.call('GET', '/api/dev/events')).body.events as {
           kind: string;
-          props: { optOut: boolean };
+          props: { action: string };
         }[];
         expect(list).toHaveLength(50);
-        expect(list[0]).toMatchObject({ kind: 'roster_optout', props: { optOut: false } });
+        expect(list[0]).toMatchObject({ kind: 'placement', props: { action: 'unplace' } });
       },
       ON,
     );

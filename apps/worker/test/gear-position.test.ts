@@ -155,19 +155,11 @@ describe('the raid board with empty slots', () => {
         const a = seedPlayer(ctx, 1, { level: 12, species: ['sproutle', 'zipmouse', 'cindle'] });
         const b = seedPlayer(ctx, 2, { level: 12, creatures: 1 });
         const c = seedPlayer(ctx, 3, { level: 12 });
-        ctx.core.raid.currentWeek(HELSINKI);
         const [sproutle, zipmouse, cindle] = a.creatureIds as [string, string, string];
         // Seven creatures on a board of nine, all placed: the Guard at slot 0 and the bearer at slot 2
         // with slot 1 empty, Cindle in the Middle at slot 3.
         const place = (slot: number, userId: string, creatureId: string) =>
-          ctx.sql.exec(
-            'INSERT INTO raid_placements (week_id, party, slot, user_id, creature_id) VALUES (?, ?, ?, ?, ?)',
-            W02.id,
-            1,
-            slot,
-            userId,
-            creatureId,
-          );
+          expect(ctx.core.raid.place(userId, HELSINKI, creatureId, slot).ok).toBe(true);
         place(0, a.id, sproutle);
         place(2, a.id, zipmouse);
         place(3, a.id, cindle);

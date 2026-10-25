@@ -1,6 +1,7 @@
 import { content, createSeededRng, pickQuirk, ribbonsForLevel, type Rng } from '@creatures/game';
 import { runCore, type CoreContext } from './helpers';
 import type { GuildCoreOptions } from '../src/guild-core';
+import { partyOf, partyToJoin } from '../src/raid-roster';
 
 export const HELSINKI = 'Europe/Helsinki';
 export const DAY = 86_400_000;
@@ -193,6 +194,85 @@ export const raidLedger = (sql: SqlStorage) =>
     sql,
     "SELECT user_id, amount, idempotency_key FROM ledger WHERE source = 'raid' ORDER BY id",
   );
+
+export interface JoinOptions {
+  /** How many of the player's creatures to place, in the order they were made (default all, at most 3). */
+  creatures?: number;
+  /** The guild timezone (default Helsinki). */
+  tz?: string;
+}
+
+/**
+ * Joins players to the current week's raid the way a player does: each places their creatures, through
+ * `Raid.place`, in the lowest free slots of the party the first placement joins (see `partyToJoin`).
+ * Nothing is placed for anyone else. Throws if the server refuses a placement.
+ */
+export function joinRaid(
+  ctx: CoreContext,
+  players: Seeded | readonly Seeded[],
+  o: JoinOptions = {},
+): void {
+  const tz = o.tz ?? HELSINKI;
+  const list: readonly Seeded[] = Array.isArray(players) ? players : [players as Seeded];
+  for (const player of list) {
+    for (const creatureId of player.creatureIds.slice(0, Math.min(o.creatures ?? 3, 3))) {
+      const week = ctx.core.raid.currentWeek(tz);
+      const party =
+        partyOf(ctx.sql, week.weekId, player.id) ?? partyToJoin(ctx.sql, week.weekId).party;
+      const taken = new Set(
+        rows<{ slot: number }>(
+          ctx.sql,
+          'SELECT slot FROM raid_placements WHERE week_id = ? AND party = ?',
+          week.weekId,
+          party,
+        ).map((r) => r.slot),
+      );
+      let slot = 0;
+      while (taken.has(slot)) slot++;
+      const outcome = ctx.core.raid.place(player.id, tz, creatureId, slot);
+      if (!outcome.ok) throw new Error(`could not place: ${outcome.error}`);
+    }
+  }
+}
+
+/**
+ * Every player in the guild who has a creature joins the current week's raid by placing their first three
+ * (`joinRaid`), unless they are in it already. For tests that run several weeks: placements are per week, so
+ * each new week everyone places again.
+ */
+export function joinEveryone(ctx: CoreContext, o: JoinOptions = {}): void {
+  const tz = o.tz ?? HELSINKI;
+  const week = ctx.core.raid.currentWeek(tz);
+  const players = rows<{ user_id: string }>(
+    ctx.sql,
+    `SELECT user_id FROM players p WHERE EXISTS (SELECT 1 FROM creatures c WHERE c.user_id = p.user_id)
+     ORDER BY user_id`,
+  );
+  for (const { user_id } of players) {
+    if (partyOf(ctx.sql, week.weekId, user_id) !== null) continue;
+    const creatureIds = rows<{ id: string }>(
+      ctx.sql,
+      'SELECT id FROM creatures WHERE user_id = ? ORDER BY caught_at, rowid LIMIT 3',
+      user_id,
+    ).map((r) => r.id);
+    joinRaid(ctx, { id: user_id, name: user_id, creatureIds }, o);
+  }
+}
+
+/** `seedPlayer`, then the player joins the current week's raid by placing their creatures (`joinRaid`). */
+export function seedMember(
+  ctx: CoreContext,
+  n: number,
+  o: SeedOptions & { tz?: string; place?: number } = {},
+): Seeded {
+  const { tz, place, ...seed } = o;
+  const player = seedPlayer(ctx, n, seed);
+  joinRaid(ctx, player, {
+    ...(tz === undefined ? {} : { tz }),
+    ...(place === undefined ? {} : { creatures: place }),
+  });
+  return player;
+}
 
 /** The rank and Festival flag the (only) week of a test pays out with, as stored. */
 export function weekPayout(sql: SqlStorage, weekId = W02.id): { rank: number; festival: boolean } {

@@ -265,8 +265,6 @@ const REVEAL: RevealPost = {
     finale: Date.parse('2027-01-17T18:00:00Z'),
   },
   timeZone: 'Europe/Helsinki',
-  players: 7,
-  parties: 1,
   rank: 4,
   festivalCreature: null,
 };
@@ -301,7 +299,8 @@ describe('formatBossReveal', () => {
         { name: 'Phase 2', value: 'Sat <t:1800099420:t>', inline: true },
         { name: 'Finale', value: 'Sun <t:1800208800:t>', inline: true },
       ],
-      footer: { text: '7 players in' },
+      // Nobody has joined on Monday (a player joins by placing a creature): no head count.
+      footer: { text: 'Place a creature on the raid board to join.' },
     });
   });
 
@@ -323,17 +322,12 @@ describe('formatBossReveal', () => {
     expect(textOf(formatBossReveal({ ...REVEAL, rank: 7 }))).not.toContain('Festival');
   });
 
-  it('handles one player, several parties, other turn orders and no moves', () => {
-    const one = embedOf(
-      formatBossReveal({ ...REVEAL, players: 1, turnOrder: 'speed', gimmicks: [] }),
-    );
+  it('handles other turn orders and no moves, with no head count', () => {
+    const one = embedOf(formatBossReveal({ ...REVEAL, turnOrder: 'speed', gimmicks: [] }));
     expect(one.description).toBe('🌊 Tide · creatures act fastest first');
-    expect(one.footer).toEqual({ text: '1 player in' });
+    expect(one.footer).toEqual({ text: 'Place a creature on the raid board to join.' });
     expect(one.fields.map((f) => f.name)).toEqual(['Phase 1', 'Phase 2', 'Finale']);
-    const many = embedOf(
-      formatBossReveal({ ...REVEAL, players: 31, parties: 3, turnOrder: 'right_to_left' }),
-    );
-    expect(many.footer).toEqual({ text: '31 players in · 3 parties' });
+    const many = embedOf(formatBossReveal({ ...REVEAL, turnOrder: 'right_to_left' }));
     expect(many.description).toContain('creatures act right to left');
     const snake = embedOf(formatBossReveal({ ...REVEAL, turnOrder: 'serpentine' }));
     expect(snake.description).toContain('creatures snake through the rows');

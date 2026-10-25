@@ -46,6 +46,8 @@ import {
   rows,
   runRaid,
   scriptedThenSeeded,
+  joinRaid,
+  seedMember,
   seedPlayer,
   storedRuns,
   weekPayout,
@@ -79,10 +81,11 @@ function toFinale(
   n = 2,
   options: { current?: number; level?: number; atk?: number } = {},
 ): Seeded[] {
+  // Everyone is active first, then they all join by placing their creatures (17 make two parties).
   const players = Array.from({ length: n }, (_, i) =>
     seedPlayer(ctx, i + 1, { level: options.level ?? BELOW_UNLOCK }),
   );
-  ctx.core.raid.currentWeek(HELSINKI);
+  joinRaid(ctx, players);
   ctx.clock.t = W02.afterPhase2;
   ctx.core.raid.runDue(HELSINKI);
   expect(new Set(storedRuns(ctx.sql).map((r) => r.phase))).toEqual(new Set(['phase1', 'phase2']));
@@ -1783,7 +1786,6 @@ describe('the API contract with the client', () => {
   ];
   const PARTY_KEYS = [
     'adaptation',
-    'away',
     'bossHp',
     'guests',
     'party',
@@ -1948,7 +1950,7 @@ describe('the API contract with the client', () => {
         );
         expect(keys(raidReveal), UPDATE).toEqual(RAID_KEYS);
         expect(keys(raidReveal.party), UPDATE).toEqual(PARTY_KEYS);
-        // A board tile: the same keys, plus `creatureId` (yours, or one you may move), `movedBy` and `reach` (Guards).
+        // A board tile: the same keys, plus `creatureId` (yours) and `reach` (Guards).
         const tiles = [
           ...(raid['party'] as { row: { creature: unknown }[] }).row,
           ...raidReveal.party.row,
@@ -1956,9 +1958,9 @@ describe('the API contract with the client', () => {
         expect(tiles.length, UPDATE).toBeGreaterThan(0);
         for (const tile of tiles) {
           expect(
-            keys(tile).filter((k) => k !== 'creatureId' && k !== 'movedBy' && k !== 'reach'),
+            keys(tile).filter((k) => k !== 'creatureId' && k !== 'reach'),
             UPDATE,
-          ).toEqual(['auto', 'level', 'mine', 'movable', 'name', 'ownerName', 'species']);
+          ).toEqual(['level', 'mine', 'name', 'ownerName', 'species']);
         }
         // A Guard's tile says how far it protects (one each side with no gear); nobody else's does.
         const served = (
@@ -2402,7 +2404,7 @@ describe('Auto fire preferences', () => {
   it('refuses a creature that is not in the caller team', async () => {
     await runRaid((ctx) => {
       const players = Array.from({ length: 2 }, (_, i) =>
-        seedPlayer(ctx, i + 1, { level: UNLOCKED, creatures: i === 0 ? 4 : 3 }),
+        seedMember(ctx, i + 1, { level: UNLOCKED, creatures: i === 0 ? 4 : 3 }),
       );
       ctx.core.raid.currentWeek(HELSINKI);
       ctx.clock.t = W02.afterPhase2;
@@ -2522,7 +2524,7 @@ describe('Auto fire preferences', () => {
   it('ignores a preference for a creature that left the team', async () => {
     await runRaid((ctx) => {
       const players = Array.from({ length: 2 }, (_, i) =>
-        seedPlayer(ctx, i + 1, { level: UNLOCKED, creatures: i === 0 ? 4 : 3 }),
+        seedMember(ctx, i + 1, { level: UNLOCKED, creatures: i === 0 ? 4 : 3 }),
       );
       ctx.core.raid.currentWeek(HELSINKI);
       ctx.clock.t = W02.afterPhase2;
@@ -2534,12 +2536,11 @@ describe('Auto fire preferences', () => {
       const leaving = before[0] as string;
       expect(setAuto(ctx, a, leaving, false).ok).toBe(true);
       expect(setAuto(ctx, a, before[1] as string, false).ok).toBe(true);
-      // Place the other two and the fourth: the first creature is no longer brought, and its
-      // preference stays in the table but is never read.
+      // Take the first creature off the board and place the fourth in its stead: the first is no longer
+      // brought, and its preference stays in the table but is never read.
       const fourth = a.creatureIds.find((id) => !before.includes(id)) as string;
-      for (const [slot, id] of [before[1], before[2], fourth].entries()) {
-        expect(ctx.core.raid.place(a.id, HELSINKI, id as string, slot).ok).toBe(true);
-      }
+      expect(ctx.core.raid.unplace(a.id, HELSINKI, leaving).ok).toBe(true);
+      expect(ctx.core.raid.place(a.id, HELSINKI, fourth, 6).ok).toBe(true);
       expect(count(ctx.sql, 'raid_autofire')).toBe(2);
       const now = teamIds(ctx, a);
       expect([...now].sort()).toEqual([before[1], before[2], fourth].sort());
