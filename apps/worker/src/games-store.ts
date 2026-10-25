@@ -216,15 +216,27 @@ export function hasEntries(sql: SqlStorage, day: string): boolean {
 
 /** Whether anybody has entered a creature for a show day on or after `day` that is not locked yet. */
 export function hasOpenEntries(sql: SqlStorage, day: string): boolean {
-  return (
-    sql
-      .exec(
-        `SELECT 1 FROM games_entries e LEFT JOIN games_days d ON d.day = e.day
-         WHERE e.day >= ? AND d.locked_at IS NULL LIMIT 1`,
-        day,
+  // Day by day, from the first day with entries: one join over the entries read every entry of a locked
+  // day (today's, after the lock) on every request and alarm.
+  let first = sql
+    .exec<{ day: string }>('SELECT day FROM games_entries WHERE day >= ? ORDER BY day LIMIT 1', day)
+    .toArray()[0];
+  while (first !== undefined) {
+    const locked = sql
+      .exec<{ locked_at: number | null }>(
+        'SELECT locked_at FROM games_days WHERE day = ?',
+        first.day,
       )
-      .toArray().length > 0
-  );
+      .toArray()[0];
+    if (locked === undefined || locked.locked_at === null) return true;
+    first = sql
+      .exec<{ day: string }>(
+        'SELECT day FROM games_entries WHERE day > ? ORDER BY day LIMIT 1',
+        first.day,
+      )
+      .toArray()[0];
+  }
+  return false;
 }
 
 export type MedalCounts = {

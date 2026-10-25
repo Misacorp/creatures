@@ -228,23 +228,37 @@ export function convertPendingLevels(deps: LevelResetDeps): number {
 
 /** The notice a player has not dismissed yet, or null (also null before the table exists). */
 export function pendingLevelReset(sql: SqlStorage, userId: string): LevelResetNotice | null {
-  if (!tableExists(sql)) return null;
-  const row = sql
-    .exec<{
-      notice_json: string | null;
-      seen_at: number | null;
-    }>('SELECT notice_json, seen_at FROM level_reset WHERE user_id = ?', userId)
-    .toArray()[0];
+  let row: { notice_json: string | null; seen_at: number | null } | undefined;
+  try {
+    row = sql
+      .exec<{
+        notice_json: string | null;
+        seen_at: number | null;
+      }>('SELECT notice_json, seen_at FROM level_reset WHERE user_id = ?', userId)
+      .toArray()[0];
+  } catch (err) {
+    // Asking `sqlite_master` first read the whole schema (about 180 rows) on every state load.
+    if (isNoSuchTable(err)) return null;
+    throw err;
+  }
   if (row === undefined || row.notice_json === null || row.seen_at !== null) return null;
   return JSON.parse(row.notice_json) as LevelResetNotice;
 }
 
 /** Marks the player's notice as seen (repeats change nothing). */
 export function dismissLevelReset(sql: SqlStorage, userId: string, now: number): void {
-  if (!tableExists(sql)) return;
-  sql.exec(
-    'UPDATE level_reset SET seen_at = ? WHERE user_id = ? AND notice_json IS NOT NULL AND seen_at IS NULL',
-    now,
-    userId,
-  );
+  try {
+    sql.exec(
+      'UPDATE level_reset SET seen_at = ? WHERE user_id = ? AND notice_json IS NOT NULL AND seen_at IS NULL',
+      now,
+      userId,
+    );
+  } catch (err) {
+    if (isNoSuchTable(err)) return;
+    throw err;
+  }
+}
+
+function isNoSuchTable(err: unknown): boolean {
+  return err instanceof Error && err.message.includes('no such table');
 }
