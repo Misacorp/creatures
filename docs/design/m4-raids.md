@@ -62,7 +62,7 @@ At the scheduled time, in one go per party:
 5. Pay Essence through the ledger, keyed `raid:<week>:<party>:<phase>`, so it pays exactly once.
 6. Queue the Discord post.
 
-**Replays** re-run the engine from the stored inputs and seed, or read the stored events. Both give the same output.
+**Replays** re-run the engine from the stored inputs and seed, or read the stored events. Both give the same output. The inputs, seed and events are kept for the current week and the one before; older weeks keep only their summary (decisions.md, 2026-10-25), so their replay and stats are not found.
 
 ## Loot in M4
 

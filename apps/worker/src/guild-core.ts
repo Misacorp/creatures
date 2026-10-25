@@ -23,6 +23,7 @@ import { LoungeCompany, loungeDay } from './lounge-company';
 import { FINALE_ACTION_PATHS, LIVE_QUIET_PATHS, type LiveHooks } from './live-socket';
 import { liveRoutes } from './live-routes';
 import type { LiveSnapshot } from './raid-live-view';
+import { pruneOldData } from './old-data';
 import { maintainedDay, markMaintained, markStartupPasses, startupPassesRan } from './maintenance';
 import { DevState } from './dev-state';
 import { DevTools, devRoutes, isDevPath } from './dev-tools';
@@ -1634,19 +1635,21 @@ export class GuildCore {
 
   /**
    * The cleanup passes, once per game day (they read whole tables, and the alarm can run every minute):
-   * old analytics rows, gear action results and dungeon run data go, and runs left open on an earlier
-   * day are closed. A long analytics backlog keeps the day unmarked, so the next alarms work it off.
+   * old analytics rows, gear action results, dungeon run data and the details of old trips, jobs, Games
+   * days, raid weeks and Discord posts go (`old-data.ts`), and runs left open on an earlier day are closed. A long analytics backlog keeps the day unmarked, so the next alarms work it off.
    */
   private maintain(): void {
     const day = gameDay(this.now(), this.timezone(), RULES.daily.reset);
     if (maintainedDay(this.sql) === day && !this.pruneBacklog) return;
-    this.pruneBacklog = this.analytics.prune();
+    const analyticsBacklog = this.analytics.prune();
     this.gear.prune();
     pruneReads(this.sql, addDays(day, -RETENTION_MS / 86_400_000));
     pruneSent(this.sql, this.now());
     pruneOutbox(this.sql, this.now());
     this.dungeon.closeStale();
     this.dungeon.prune();
+    const oldBacklog = pruneOldData(this.storage, this.now(), this.timezone());
+    this.pruneBacklog = analyticsBacklog || oldBacklog;
     if (!this.pruneBacklog) markMaintained(this.sql, day);
   }
 }

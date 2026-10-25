@@ -348,7 +348,8 @@ export function readStats(
       phase,
     )
     .toArray()[0];
-  if (row === undefined) return null;
+  // The fight's inputs and events of a week older than last week are emptied (`old-data.ts`).
+  if (row === undefined || row.input === '') return null;
   const summary = JSON.parse(row.summary) as StoredSummary;
   if (!summary.members.some((m) => m.userId === userId)) return null;
   return buildStats(
