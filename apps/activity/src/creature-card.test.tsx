@@ -310,11 +310,42 @@ describe('the one gold button', () => {
     expect(actions.onRibbon).toHaveBeenCalledTimes(1);
   });
 
-  it('has no button and no "Next" line while the ribbon is not ready', () => {
-    const { card } = draw(kind('ribbon short'));
-    expect(byClass(card, 'cc-do')).toHaveLength(0);
+  it('greys the ribbon button with its exact cost while the parts are short, and no "Next" line', () => {
+    const { card, actions, page: p } = draw(kind('ribbon short'));
+    const button = byClass(card, 'cc-do')[0]?.childNodes[0] as FakeElement;
+    expect(visibleText(button)).toContain('Earn Bronze Ribbon');
+    expect(visibleText(button)).toContain('6 scrap and 2 Ember shards');
+    expect(button.hasAttribute('disabled')).toBe(true);
+    p.click(button);
+    expect(actions.onRibbon).not.toHaveBeenCalled();
     expect(byClass(card, 'cc-next')).toHaveLength(0);
     expect(visibleText(card)).not.toContain('Next');
+  });
+
+  it('says how many trips a ribbon still needs on its greyed button', () => {
+    const short = kind('ribbon short');
+    const { card } = draw({ ...short, ribbon: { ...short.ribbon!, trips: 3, tripsDone: 1 } });
+    const button = byClass(card, 'cc-do')[0]?.childNodes[0] as FakeElement;
+    expect(visibleText(button)).toContain('2 more trips');
+    expect(button.hasAttribute('disabled')).toBe(true);
+  });
+
+  it('greys the evolve button with the Essence had and the price while it is short', () => {
+    const ready = kind('evolve ready');
+    const {
+      card,
+      actions,
+      page: p,
+    } = draw({
+      ...ready,
+      evolution: { ...ready.evolution!, available: false },
+    });
+    const button = byClass(card, 'cc-do')[0]?.childNodes[0] as FakeElement;
+    expect(visibleText(button)).toContain('Evolve');
+    expect(visibleText(button)).toContain('0 / 20 Essence');
+    expect(button.hasAttribute('disabled')).toBe(true);
+    p.click(button);
+    expect(actions.onEvolve).not.toHaveBeenCalled();
   });
 
   it('evolves when evolution is ready', () => {

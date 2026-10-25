@@ -134,6 +134,7 @@ const creatureCard: Entry = {
     { name: 'Ribbon ready (the gold button)', props: {} },
     { name: 'Ribbon, short of parts', props: { state: 'ribbon short' } },
     { name: 'Ready to evolve', props: { state: 'evolve ready' } },
+    { name: 'Evolution level, short of Essence', props: { state: 'evolve short' } },
     { name: 'A talent slot to fill', props: { state: 'talent to fill' } },
     { name: 'A waiting catch to answer', props: { state: 'growing', waitingCatch: true } },
     { name: 'Growing, nothing to do', props: { state: 'growing' } },

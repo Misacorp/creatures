@@ -216,8 +216,8 @@ export function CreaturePage({
   const evolveNeed = needs.find((n) => n.kind === 'evolve');
   const waitingCatch = needs.find((n) => n.kind === 'duplicate');
   // At its evolution level but short of Essence: the Evolve button greyed, with the price and what is had.
-  const evolveShort =
-    evolveNeed === undefined ? evolveShortfall(creature, state.balances.essence) : null;
+  // (The page draws it with its own note; the need's card wording is not used here.)
+  const evolveShort = evolveShortfall(creature, state.balances.essence);
   // The server sends a ribbon only for a creature that stands at the level that asks for one.
   const hasActions =
     creature.ribbon !== null ||
@@ -302,7 +302,7 @@ export function CreaturePage({
           {hasActions && (
             <div class="cp-actions">
               <RibbonLine creature={creature} busy={busy} onRibbon={actions.onRibbon} large />
-              {evolveNeed !== undefined && (
+              {evolveNeed !== undefined && evolveShort === null && (
                 <ActionButton
                   wide
                   large

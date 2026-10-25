@@ -3120,5 +3120,7 @@ Misa asked whether the desktop's links, all in one bottom bar, could work on a s
 A player's level 15 Cindle showed nothing about evolving: the server's `evolution.available` needs the level and the Essence, and the page drew the Evolve button only when it was true. Misa: show it greyed with the exact cost, as the ribbon does when it is short of parts.
 
 - **The creature page** now draws the Evolve button greyed ("Evolve 20 Essence") when the creature is at its evolution level and the player has less Essence than the price, with a note under it: "Short of Essence: you have 12 / 20." and the Essence help tag (`evolveShortfall` in `creature-needs.ts`; the price is the server's).
-- **Not a need.** The card's gold button, the "Needs you" filter and the Home notice stay for what the player can do now, as with a ribbon short of parts.
-- **Below the level** nothing is shown, as before.
+- **The creature list's card** shows the same greyed button for a ribbon or evolution the player cannot pay yet: "Evolve 12 / 20 Essence", "Earn Bronze Ribbon 6 scrap and 2 Ember shards", or "1 more trip" when trips are what is missing. These are needs with a `blocked` reason (`creatureNeeds`), listed after what can be done now, so the card's button is never a greyed one while something else is ready. Before, a ribbon short of parts showed nothing on the card either.
+- **The "Needs you" filter** counts them (Misa: it signals the player to go and get the parts). **The Home notice** does not: its words ("Cindle can evolve") promise something the player can do now, and it already left out blocked needs (away, on a job).
+- **Below the level** nothing is shown, as before. A talent slot short of Bait is unchanged (no button, not in the filter).
+- Two card samples (talent to fill at 20, top level at 30) were a stage-1 Cindle past its line's cap of 15 still offering an evolution; they no longer carry one.

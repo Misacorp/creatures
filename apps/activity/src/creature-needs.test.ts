@@ -28,8 +28,36 @@ describe('what a creature needs', () => {
     });
   });
 
-  it('does not need a ribbon it cannot pay yet', () => {
-    expect(creatureNeeds(sampleCreature('ribbon short'), plainState)).toEqual([]);
+  it('needs a ribbon it cannot pay yet as a blocked need, with the exact cost or the trips left', () => {
+    const short = sampleCreature('ribbon short');
+    expect(creatureNeeds(short, plainState)).toEqual([
+      {
+        kind: 'ribbon',
+        label: 'Earn Bronze Ribbon',
+        detail: '6 scrap and 2 Ember shards',
+        blocked: 'Short of parts',
+      },
+    ]);
+    const trips = { ...short, ribbon: { ...short.ribbon!, trips: 3, tripsDone: 2 } };
+    expect(creatureNeeds(trips, plainState)).toEqual([
+      {
+        kind: 'ribbon',
+        label: 'Earn Bronze Ribbon',
+        detail: '1 more trip',
+        blocked: 'Short of trips',
+      },
+    ]);
+  });
+
+  it('puts what can be done now before a blocked need', () => {
+    const pending = SAMPLE_STATE.pending[0];
+    if (pending === undefined) throw new Error('the fixture has a waiting catch');
+    const short = sampleCreature('ribbon short');
+    const state = {
+      ...SAMPLE_STATE,
+      pending: [{ ...pending, offered: { ...pending.offered, teach: [short.id], fuse: [] } }],
+    };
+    expect(creatureNeeds(short, state).map((n) => n.kind)).toEqual(['duplicate', 'ribbon']);
   });
 
   it('needs to evolve when the server says it can', () => {
@@ -41,7 +69,13 @@ describe('what a creature needs', () => {
       ...locked,
       evolution: { toSpecies: 'pyrelynx', level: 15, essence: 20, available: false },
     };
-    expect(creatureNeeds(notYet, plainState)).toEqual([]);
+    // At the level, short of Essence: a blocked need with what is had and the price.
+    const poor = { ...plainState, balances: { ...plainState.balances, essence: 12 } };
+    expect(creatureNeeds(notYet, poor)).toEqual([
+      { kind: 'evolve', label: 'Evolve', detail: '12 / 20 Essence', blocked: 'Short of Essence' },
+    ]);
+    // Below the level: nothing.
+    expect(creatureNeeds({ ...notYet, level: 14 }, poor)).toEqual([]);
   });
 
   it('says how much Essence an evolution is short of, only at its level', () => {
@@ -150,6 +184,22 @@ describe('who needs the player', () => {
   it('collects the ids of the creatures with any need', () => {
     const roster = sampleRoster(12);
     expect([...needyIds(roster, plainState)].sort()).toEqual(['sample-0', 'sample-2']);
+  });
+
+  it('counts a creature short of parts or Essence for the filter, but not for the Home notice', () => {
+    const ribbon = { ...sampleCreature('ribbon short'), id: 'short-ribbon' };
+    const ready = sampleCreature('evolve ready');
+    const evolve = {
+      ...ready,
+      id: 'short-evolve',
+      evolution: { ...ready.evolution!, available: false },
+    };
+    expect([...needyIds([ribbon, evolve], plainState)].sort()).toEqual([
+      'short-evolve',
+      'short-ribbon',
+    ]);
+    expect(noticeNeeds([ribbon, evolve], plainState)).toEqual([]);
+    expect(creaturesNeedLine([ribbon, evolve], plainState)).toBeNull();
   });
 });
 
