@@ -1,22 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import { BUNDLED_GLYPHS } from './glyphs';
-import { TABS, tabAfterKey, tabPalette } from './tabs';
+import { DEFAULT_PLACE, NAV_GROUPS, NAV_HOME, TABS, isPlace, isTab, tabPalette } from './tabs';
 
 describe('the tabs', () => {
-  it('has the six tabs in order of rising danger, the Raid last', () => {
+  it('has the eight tabs: the Collection (creatures, Workshop, Journal, Stats), then the adventures in rising danger, the Valley Games last', () => {
     expect(TABS.map((t) => t.id)).toEqual([
       'collection',
       'workshop',
+      'journal',
+      'stats',
       'expeditions',
-      'games',
       'dungeon',
       'raid',
+      'games',
     ]);
     expect(TABS[0]?.label).toBe('Creatures');
     expect(new Set(TABS.map((t) => t.id)).size).toBe(TABS.length);
   });
 
-  it('gives every tab a picture and a word, so all six fit as picture over word', () => {
+  it('gives every tab a picture and a word, so the dock and the rail can name every place', () => {
     for (const tab of TABS) {
       expect(Object.hasOwn(BUNDLED_GLYPHS, tab.glyph), tab.id).toBe(true);
       expect(tab.label.length).toBeGreaterThan(2);
@@ -29,14 +31,44 @@ describe('the tabs', () => {
     expect(tabPalette(false)).toBeUndefined();
     expect(tabPalette(true)).toEqual({ w: '#0d0a1a', m: '#0d0a1a' });
   });
+});
 
-  it('moves along the tabs with the arrow keys, wrapping, and Home and End jump', () => {
-    expect(tabAfterKey('collection', 'ArrowRight')).toBe('workshop');
-    expect(tabAfterKey('raid', 'ArrowRight')).toBe('collection');
-    expect(tabAfterKey('collection', 'ArrowLeft')).toBe('raid');
-    expect(tabAfterKey('dungeon', 'Home')).toBe('collection');
-    expect(tabAfterKey('dungeon', 'End')).toBe('raid');
-    expect(tabAfterKey('raid', 'Enter')).toBeNull();
-    expect(tabAfterKey('raid', 'a')).toBeNull();
+describe('the groups and Home', () => {
+  it('has two groups, Collection and Adventure, in the places Misa named', () => {
+    expect(NAV_GROUPS.map((g) => g.id)).toEqual(['collection', 'adventure']);
+    expect(NAV_GROUPS.map((g) => g.label)).toEqual(['Collection', 'Adventure']);
+    const of = (id: string) => TABS.filter((t) => t.group === id).map((t) => t.id);
+    expect(of('collection')).toEqual(['collection', 'workshop', 'journal', 'stats']);
+    expect(of('adventure')).toEqual(['expeditions', 'dungeon', 'raid', 'games']);
+  });
+
+  it('has a Home entry with a word and a picture of its own, and it is a place but not a tab', () => {
+    expect(NAV_HOME.label).toBe('Home');
+    expect(Object.hasOwn(BUNDLED_GLYPHS, NAV_HOME.glyph)).toBe(true);
+    expect(TABS.map((t) => t.id)).not.toContain(NAV_HOME.id);
+    expect(TABS.map((t) => t.glyph)).not.toContain(NAV_HOME.glyph);
+    expect(isPlace('home')).toBe(true);
+    expect(isTab('home')).toBe(false);
+    expect(isPlace('raid')).toBe(true);
+    expect(isPlace('lounge')).toBe(false);
+  });
+});
+
+describe('the Collection group', () => {
+  it('holds the Journal and the Stats as places', () => {
+    expect(TABS.filter((t) => t.group === 'collection').map((t) => t.id)).toEqual([
+      'collection',
+      'workshop',
+      'journal',
+      'stats',
+    ]);
+    expect(isTab('stats')).toBe(true);
+  });
+});
+
+describe('the default place', () => {
+  it('is Home, so the app opens on the Today board', () => {
+    expect(DEFAULT_PLACE).toBe(NAV_HOME.id);
+    expect(isPlace(DEFAULT_PLACE)).toBe(true);
   });
 });

@@ -1,12 +1,13 @@
 /*
-  The living room strip at the top of the app (LivingRoom.tsx, AppHead.tsx). The room is a stack of
+  The living room strip under the HUD on a wide window (LivingRoom.tsx, RoomBand in AppHead.tsx), and at the top
+  of the Home page on a phone (home/HomePage.tsx). The room is a stack of
   layers: a canvas of back props, the creatures as buttons, a canvas of front props. JS sets
-  --stage-w and --stage-h (the stage in CSS px) and --band (the top wall band, where the title row sits)
+  --stage-w and --stage-h (the stage in CSS px)
   and each creature's --x and --y with style.setProperty; there are no inline style attributes.
 */
 .app-top {
-  /* The band sits at the very top of the card (which has 1rem of padding) ... */
-  margin: -1rem 0 0.75rem;
+  /* The band sits under the HUD, which is flush with the top of the card ... */
+  margin: 0 0 0.75rem;
 }
 
 /* ... and, once measured, spans the whole window (see use-bleed.ts), not just the card. */
@@ -24,7 +25,8 @@
 .room-view {
   overflow-x: auto;
   overflow-y: hidden;
-  height: var(--stage-h);
+  /* The plain wall band at the top (--band) was for the old title row: it is cropped, so the room starts under the HUD. */
+  height: calc(var(--stage-h) - var(--band, 0px));
   scrollbar-width: none;
 }
 
@@ -46,6 +48,7 @@
   isolation: isolate;
   width: var(--stage-w);
   height: var(--stage-h);
+  margin-top: calc(var(--band, 0px) * -1);
 }
 
 canvas.room-layer {
@@ -124,78 +127,6 @@ button.room-note {
   height: 4px;
   background: var(--bone);
   clip-path: polygon(0 0, 100% 0, 100% 50%, 50% 100%, 0 50%);
-  content: '';
-}
-
-/* The title row: over the top wall band, not part of the scrolling room. */
-.room-head {
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  z-index: 4; /* above the "N here" pill (3), so the currency popover opens over it */
-  display: flex;
-  align-items: center;
-  height: var(--band);
-  padding: 0 var(--head-right, 0.625rem) 0 var(--head-left, 0.625rem);
-  pointer-events: none;
-}
-
-.room-head > * {
-  flex: 1;
-  min-width: 0;
-}
-
-.room-head .app-head {
-  align-items: center;
-  margin: 0;
-}
-
-.room-head .app-head > *,
-.room-head button {
-  pointer-events: auto;
-}
-
-/* The title shrinks with the band, so it never spills over the furniture below. */
-.room-head h1 {
-  font-size: min(clamp(1.375rem, 6vw, 2.5rem), calc(var(--band) - 8px));
-  line-height: 1;
-  white-space: nowrap;
-  /* A thin shadow, so it stays inside the band instead of showing as a second line below it. */
-  text-shadow:
-    1px 1px 0 var(--ink),
-    2px 2px 0 var(--plum);
-}
-
-.room-head .sigma {
-  font-size: min(0.75rem, calc(var(--band) / 3));
-}
-
-.room-head .app-head-tools {
-  gap: 0.625rem;
-}
-
-.room-head button.currency-pile,
-.room-head button.howto-open {
-  position: relative;
-  min-width: calc(var(--band) - 6px);
-  min-height: 0;
-  height: calc(var(--band) - 8px);
-  padding: 0;
-  line-height: 1;
-}
-
-/* A bigger tap area than the button looks: the wall band is thin. */
-/* On the thin scale-2 band the buttons take nearly all of it, so the 20 px currency icon fits. */
-.room[data-scale='2'] .room-head button.currency-pile,
-.room[data-scale='2'] .room-head button.howto-open {
-  height: calc(var(--band) - 2px);
-}
-
-.room-head button.currency-pile::after,
-.room-head button.howto-open::after {
-  position: absolute;
-  inset: -6px -3px;
   content: '';
 }
 

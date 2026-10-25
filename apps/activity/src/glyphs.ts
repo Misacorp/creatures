@@ -514,6 +514,23 @@ const anvil: SpriteDef = {
   ],
 };
 
+// --- Home board and HUD ---
+
+/** A bar chart on an axis: the Stats pin of the Home board (its own picture; the trophy is the Games). */
+const stats: SpriteDef = {
+  palette: { m: HAZE, w: BONE, g: GOLD },
+  rows: [
+    'm.....ww',
+    'm.....ww',
+    'm...ggww',
+    'm...ggww',
+    'm.wwggww',
+    'm.wwggww',
+    'm.wwggww',
+    'mmmmmmmm',
+  ],
+};
+
 // --- Creature experience ---
 
 /*
@@ -658,6 +675,51 @@ const door: SpriteDef = {
     'w......w',
     'w......w',
     'wwwwwwww',
+  ],
+};
+
+/** A house: the Home group of the dock (one colour, like the tab pictures). */
+const home: SpriteDef = {
+  palette: { w: BONE },
+  rows: [
+    '...ww...',
+    '..wwww..',
+    '.wwwwww.',
+    'wwwwwwww',
+    '.wwwwww.',
+    '.ww..ww.',
+    '.ww..ww.',
+    '.ww..ww.',
+  ],
+};
+
+/** A sofa: the Lounge, the dock's middle button (one colour, like the tab pictures). */
+const couch: SpriteDef = {
+  palette: { w: BONE },
+  rows: [
+    '.wwwwww.',
+    '.wwwwww.',
+    'wwwwwwww',
+    'ww....ww',
+    'wwwwwwww',
+    'wwwwwwww',
+    '.w....w.',
+    '........',
+  ],
+};
+
+/** Two peaks: the Adventure group of the dock. */
+const peaks: SpriteDef = {
+  palette: { w: BONE },
+  rows: [
+    '........',
+    '...w....',
+    '..ww..w.',
+    '.wwww.ww',
+    '.wwwwwww',
+    'wwwwwwww',
+    'wwwwwwww',
+    '........',
   ],
 };
 
@@ -825,11 +887,15 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   alert,
   reticle,
   anvil,
+  stats,
   treat,
   paw,
   compass,
   blade,
   door,
+  home,
+  couch,
+  peaks,
   bait,
   flag,
   gift,

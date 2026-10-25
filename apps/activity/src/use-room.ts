@@ -22,7 +22,7 @@ interface RoomInputs {
   selfId: string;
   /** The player's own display name. */
   selfName: string;
-  state: Pick<GameState, 'creatures' | 'loungerId' | 'loungeSpot'>;
+  state: Pick<GameState, 'creatures' | 'loungerId' | 'loungeSpot' | 'serverFirsts'>;
   /** Crafting level by creature id, once the gear view has loaded. */
   craftingLevels: ReadonlyMap<string, number>;
   /** The gear view's items, once loaded: they give your worn item its main stat. */
@@ -110,6 +110,7 @@ export function useRoom({
             creatures: state.creatures,
             loungerId: state.loungerId,
             loungeSpot: state.loungeSpot,
+            serverFirsts: state.serverFirsts,
           },
           selfId,
           selfName,
@@ -123,6 +124,7 @@ export function useRoom({
       state.creatures,
       state.loungerId,
       state.loungeSpot,
+      state.serverFirsts,
       selfId,
       selfName,
       craftingLevels,

@@ -19,8 +19,6 @@ import { NO_FILTERS, applyFilters, type Filters } from '../../creature-find';
 import { needyIds } from '../../creature-needs';
 import { creatureName } from '../../game';
 import type { GearActions } from '../../gear-actions';
-import { TabBar } from '../../TabBar';
-import { NO_ALERTS } from '../../tab-alerts';
 import { XP_SIZES, type XpSize } from '../../ui/XpTrack';
 import { Workshop } from '../../Workshop';
 import { bool, num, str } from '../props';
@@ -41,7 +39,7 @@ function kindOf(value: string): SampleKind {
   return SAMPLE_KINDS.find((k) => k === value) ?? 'growing';
 }
 
-/** The Creatures screen of Misa's phone screenshot (2026-10-19): the tab bar, find and filter, and five hard cases. */
+/** The Creatures screen of Misa's phone screenshot (2026-10-19): find and filter, and five hard cases. */
 function RosterScreen() {
   const roster = hardCaseRoster();
   // Lanternfin lounges (34 of the day's 60 XP); Mistnewt had its 60 today and is Rested.
@@ -55,7 +53,6 @@ function RosterScreen() {
   };
   return (
     <div>
-      <TabBar current="collection" alerts={NO_ALERTS} onSelect={() => undefined} />
       <Collection
         state={state}
         gear={SAMPLE_GEAR}

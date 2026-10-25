@@ -1,32 +1,83 @@
 /**
- * The tabs of the game screen. Six of them have to fit side by side on a phone (390 px wide, 16 px
- * gutters) with no horizontal scroll, so every tab is a small picture over a short word, and the
- * picture is part of the tab at every width. The glyphs are one-colour (`w`), so a selected tab
- * (dark on gold) can tint its picture to stay readable.
+ * The places of the game screen (the "tabs": `Tab` is the id of the current place). Each is a
+ * picture and a word in the main navigation (`MainNav`: the phone's bottom dock of a group button, Home and a group button,
+ * the desktop's left rail with Home first and the groups under headings; the list the navigation reads is `navPlaces` in
+ * `nav-places.ts`). Every tab belongs to one group (`NAV_GROUPS`); Home (`NAV_HOME`) is a place that is in no group. The glyphs are one-colour (`w`), so the active place (dark on gold) can tint its
+ * picture to stay readable.
  */
 
-export type Tab = 'collection' | 'expeditions' | 'games' | 'raid' | 'workshop' | 'dungeon';
+export type Tab =
+  'collection' | 'journal' | 'stats' | 'expeditions' | 'games' | 'raid' | 'workshop' | 'dungeon';
+
+/** Every place of the game screen: Home (the page the app opens on) and the tabs. */
+export type Place = 'home' | Tab;
+
+/** The place the app opens on: Home (Misa, 2026-10-24: the Home page is the default). */
+export const DEFAULT_PLACE: Place = 'home';
+
+/** Whether `id` is the id of a place, Home included (the navigation hands back plain strings). */
+export function isPlace(id: string): id is Place {
+  return id === NAV_HOME.id || isTab(id);
+}
+
+/** Whether `id` is the id of a place (the navigation hands back plain strings). */
+export function isTab(id: string): id is Tab {
+  return TABS.some((t) => t.id === id);
+}
 
 interface TabDef {
   id: Tab;
-  /** The word under the picture, also the accessible name. */
+  /** The word beside or under the picture, also the accessible name. */
+  label: string;
+  /** The id of the glyph in `glyphs.ts`. */
+  glyph: string;
+  /** The id of the group (`NAV_GROUPS`) the place belongs to. */
+  group: TabGroup;
+}
+
+export type TabGroup = 'collection' | 'adventure';
+
+interface TabGroupDef {
+  id: TabGroup;
   label: string;
   /** The id of the glyph in `glyphs.ts`. */
   glyph: string;
 }
 
 /**
- * Left to right is an escalating level of danger and excitement (Misa): your creatures at home, the
- * Workshop, Expeditions out in the world, the Valley Games (a silly show, no danger, but a crowd), the
- * Dungeon, and the Raid boss last.
+ * The groups of the main navigation in their order: the two group buttons of the phone dock (Home
+ * sits between them, see `NAV_HOME`) and the headings of the desktop rail. A group with one place is
+ * a direct button. The first group is the Collection (Misa, 2026-10-24: Creatures, Workshop, Journal and Stats; Items will
+ * split from the Workshop later, which is one more place in this group). A future village or home map is one more
+ * place in it too.
+ */
+export const NAV_GROUPS: readonly TabGroupDef[] = [
+  { id: 'collection', label: 'Collection', glyph: 'paw' },
+  { id: 'adventure', label: 'Adventure', glyph: 'peaks' },
+];
+
+/**
+ * Home: the page the app opens on and the dock's middle button, the primary one (gold, raised). It is in no
+ * group: on a phone it sits between the two group buttons, on a desktop it is the first item of the rail.
+ * It shows the Today board (what needs you, what is coming up, the valley's day); on a phone the living room
+ * is drawn at the top of that page, on a desktop the room band is above every screen as before.
+ */
+export const NAV_HOME = { id: 'home', label: 'Home', glyph: 'home' } as const;
+
+/**
+ * In list order, which is the order inside a group: your creatures, the Workshop, the Journal and the Stats, then the
+ * adventures in rising danger (Expeditions, Dungeon, Raid), and the Valley Games last (Misa, 2026-10-24: "the
+ * current adventures button but it could include the games section too").
  */
 export const TABS: readonly TabDef[] = [
-  { id: 'collection', label: 'Creatures', glyph: 'paw' },
-  { id: 'workshop', label: 'Workshop', glyph: 'anvil' },
-  { id: 'expeditions', label: 'Expeditions', glyph: 'compass' },
-  { id: 'games', label: 'Games', glyph: 'trophy' },
-  { id: 'dungeon', label: 'Dungeon', glyph: 'door' },
-  { id: 'raid', label: 'Raid', glyph: 'blade' },
+  { id: 'collection', label: 'Creatures', glyph: 'paw', group: 'collection' },
+  { id: 'workshop', label: 'Workshop', glyph: 'anvil', group: 'collection' },
+  { id: 'journal', label: 'Journal', glyph: 'journal', group: 'collection' },
+  { id: 'stats', label: 'Stats', glyph: 'stats', group: 'collection' },
+  { id: 'expeditions', label: 'Expeditions', glyph: 'compass', group: 'adventure' },
+  { id: 'dungeon', label: 'Dungeon', glyph: 'door', group: 'adventure' },
+  { id: 'raid', label: 'Raid', glyph: 'blade', group: 'adventure' },
+  { id: 'games', label: 'Games', glyph: 'trophy', group: 'adventure' },
 ];
 
 const INK = '#0d0a1a';
@@ -34,29 +85,4 @@ const INK = '#0d0a1a';
 /** The palette change for a tab's picture: dark on the gold of the selected tab, its own colours otherwise. */
 export function tabPalette(active: boolean): Readonly<Record<string, string>> | undefined {
   return active ? { w: INK, m: INK } : undefined;
-}
-
-/** The tab a key moves to inside the tab list: arrows step (wrapping), Home and End jump. */
-export function tabAfterKey(current: Tab, key: string): Tab | null {
-  const index = TABS.findIndex((t) => t.id === current);
-  if (index < 0) return null;
-  const last = TABS.length - 1;
-  let to: number;
-  switch (key) {
-    case 'ArrowRight':
-      to = index === last ? 0 : index + 1;
-      break;
-    case 'ArrowLeft':
-      to = index === 0 ? last : index - 1;
-      break;
-    case 'Home':
-      to = 0;
-      break;
-    case 'End':
-      to = last;
-      break;
-    default:
-      return null;
-  }
-  return TABS[to]?.id ?? null;
 }

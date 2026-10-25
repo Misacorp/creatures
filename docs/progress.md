@@ -19,7 +19,7 @@ Where the project is against the plan. Agents: read `CLAUDE.md`, then **`docs/ro
 - Overnight cleanup 2026-10-18/19 (branch `ccr-8ffccd88-e59k13`): audit fixes, test speed, docs; proposals for Misa in the PR.
 - **Production (2026-10-18):** main `f034142` (PR #35). Since `3b61330` (2026-10-15) it also includes:
   - #24: the raid retune: attack patterns, Guards, phase floors and enrage, a raid difficulty curve, the Bait allowance, raid rewards, the journey simulator;
-  - #25: staging deploys only on a manual run; the footer shows branch and commit; agents cannot merge;
+  - #25: staging deploys only on a manual run; the deployed branch and commit are in the page's meta tags; agents cannot merge;
   - #26: tab pips, a kept dungeon setup, claims that scroll to their result;
   - #27: supplies from the dungeon and the Workshop instead of Bait; the systems review;
   - #28, #30: player feedback with `/feedback` (public issues, private screenshots) and the export fix;
@@ -28,7 +28,7 @@ Where the project is against the plan. Agents: read `CLAUDE.md`, then **`docs/ro
   - #33: raid fights match the board exactly (slots kept, per-row silences, soft auto tiles, teammates can move an away player's creatures);
   - #34: the lounge message replaces Discord's launch card; Activity art;
   - #35: revamp part 2: two evolution forms for every evolving line, the last three weathers, gear sets and special lines, flipping and compare, one colour per kind of XP, the type scale and per-panel pixel font (`design/ux-patterns.md`).
-- **Staging:** runs whichever branch was last deployed by hand (its footer shows branch and commit). Misa uses it for several branches; deploy it only when he asks.
+- **Staging:** runs whichever branch was last deployed by hand (its meta tags and DEV panel show branch and commit). Misa uses it for several branches; deploy it only when he asks.
 - **Open PR:** #36, raid posts in Discord as embeds with the boss portrait and a Play button (another session).
 - **Reports:** the report workflow runs daily at 06:17 UTC; agents read the JSON from its job log. Run the `balance-review` skill on the next report: #31–#35 changed gear, training and the dungeon, so live numbers from before 2026-10-18 no longer describe the game.
 

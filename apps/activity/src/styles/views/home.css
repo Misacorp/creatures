@@ -1,0 +1,503 @@
+/*
+  The Home page (home/HomePage.tsx, home/NoticeBoard.tsx): on a phone the living room at the top and, under it, the
+  Today board, a notice board of papers pinned on cork. Built from the game's tokens; the only art is the
+  sprites already in the game. The board's option is an attribute: `data-tilt` (`none`, the default, or
+  `still`) leaves the papers flush or leans them (`--tilt` is set per paper from `home/board.ts`).
+*/
+
+/* The page: the room (phone only) and the board, one column. */
+.home-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+/* On a desktop Home takes the wide card, as Expeditions and the Games show do, so a big screen gets three
+   columns of notices (`components/side-panel.css`). */
+@media (min-width: 60rem) {
+  main.card:has(.home-page) {
+    width: min(84rem, 100% - 1.25rem);
+  }
+}
+
+.home-page > .app-top {
+  margin: 0;
+}
+
+.hb {
+  container-type: inline-size; /* the papers' lean scales with the board's width (see "Leaning papers") */
+
+  /* A wood frame: light edge, dark ink outline, round the cork. */
+  padding: 0.5rem;
+  background: var(--leather-light);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 var(--px) 0 0 color-mix(in srgb, var(--leather-light) 70%, var(--bone)),
+    inset 0 calc(var(--px) * -1) 0 0 var(--leather-dark);
+}
+
+.hb-cork {
+  position: relative;
+  display: grid;
+  /* The gaps and the padding leave room for the leaning papers' corners (see "Leaning papers"). */
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  /* Cork: the leather brown flecked with its light and dark shades. */
+  background-color: var(--leather);
+  background-image:
+    radial-gradient(var(--leather-light) 1px, transparent 1.5px),
+    radial-gradient(var(--leather-dark) 1px, transparent 1.5px);
+  background-position:
+    0 0,
+    5px 7px;
+  background-size:
+    11px 11px,
+    13px 13px;
+  box-shadow: inset 0 0 0 var(--px) var(--leather-dark);
+}
+
+.hb .hb-title {
+  margin: 0.25rem 0 -0.125rem;
+  font-size: var(--fs-heading);
+}
+
+.hb ul,
+.hb ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hb-needs {
+  display: grid;
+  gap: 0.75rem;
+}
+
+/* A paper pinned to the board: bone with an ink edge, ink text, a pin at the top. */
+.hb-paper {
+  position: relative;
+  color: var(--ink);
+  background: var(--bone);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    var(--px) calc(var(--px) * 2) 0 var(--px) var(--leather-dark);
+}
+
+.hb-paper::before {
+  position: absolute;
+  top: -0.25rem;
+  left: 50%;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--bad);
+  box-shadow: 0 0 0 2px var(--ink);
+  translate: -50% 0;
+  content: '';
+}
+
+button.hb-need {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.5rem 0.75rem;
+  color: var(--ink);
+  text-align: left;
+}
+
+button.hb-need:hover {
+  background: color-mix(in srgb, var(--bone) 80%, var(--gold));
+}
+
+button.hb-need:focus-visible {
+  outline: var(--px) solid var(--ink);
+  outline-offset: calc(var(--px) * 2);
+}
+
+.hb-tile {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  background: var(--dusk);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+}
+
+.hb-need-text {
+  display: grid;
+  flex: 1;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.hb-need-place {
+  font-size: var(--fs-row);
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.hb-need-reason {
+  color: var(--leather);
+  font-size: var(--fs-small);
+  line-height: 1.2;
+}
+
+.hb-until {
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.hb-pip {
+  flex: none;
+  width: 0.75rem;
+  height: 0.75rem;
+  background: var(--attention);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+}
+
+.hb-calm {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.875rem;
+  font-size: var(--fs-small);
+  line-height: 1.3;
+}
+
+.hb-calm canvas {
+  flex: none;
+  padding: 0.25rem;
+  background: var(--dusk);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+}
+
+/* Coming up: a short timeline, the time in a column. */
+.hb ol.hb-coming {
+  display: grid;
+  gap: 0;
+  padding: 0.25rem 0.75rem;
+}
+
+.hb-coming li {
+  min-height: 2.75rem;
+}
+
+/* Every Coming up row is a button to its place (no paper of its own: the list is the paper). */
+.hb ol.hb-coming button.hb-coming-row {
+  display: grid;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.25rem 0;
+  color: inherit;
+  text-align: left;
+  background: none;
+  box-shadow: none;
+  grid-template-columns: 4.25rem auto minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: var(--fs-small);
+  line-height: 1.2;
+}
+
+.hb ol.hb-coming button.hb-coming-row:hover {
+  background: color-mix(in srgb, var(--bone) 80%, var(--gold));
+}
+
+.hb ol.hb-coming button.hb-coming-row:focus-visible,
+.hb button.hb-valley-sky:focus-visible,
+.hb button.hb-valley-games:focus-visible,
+button.hb-quiet:focus-visible {
+  outline: var(--px) solid var(--ink);
+  outline-offset: calc(var(--px) * 2);
+}
+
+.hb-coming li + li {
+  border-top: 2px dotted var(--leather);
+}
+
+.hb-when {
+  color: var(--leather-dark);
+  font-size: var(--fs-row);
+  font-variant-numeric: tabular-nums;
+}
+
+.hb-coming-icon {
+  padding: 0.125rem;
+  background: var(--dusk);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.hb-rel {
+  color: var(--leather);
+  font-size: var(--fs-small);
+  text-align: right;
+}
+
+/* Quiet places (the `show` option for idle places): slim one-line papers. */
+.hb-quiet-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+button.hb-quiet {
+  display: flex;
+  width: 100%;
+  color: var(--ink);
+  text-align: left;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: 2.75rem;
+  margin: 0;
+  padding: 0.375rem 0.75rem;
+  font-size: var(--fs-small);
+  line-height: 1.2;
+}
+
+.hb-quiet-place {
+  flex: none;
+  font-weight: 400;
+}
+
+.hb-quiet-text {
+  min-width: 0;
+  color: var(--leather);
+}
+
+/* The valley today: one line, wrapping on a phone. */
+.hb-valley {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 0.75rem;
+  align-items: center;
+  padding: 0.625rem 0.75rem;
+  font-size: var(--fs-small);
+  line-height: 1.2;
+}
+
+.hb-valley-label {
+  flex: none;
+  color: var(--leather);
+  font-size: var(--fs-small);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hb button.hb-valley-sky,
+.hb button.hb-valley-games {
+  display: inline-flex;
+  gap: 0.375rem;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.125rem 0.25rem;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  background: none;
+  box-shadow: none;
+}
+
+.hb button.hb-valley-sky {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.hb button.hb-valley-games {
+  flex: none;
+}
+
+.hb button.hb-valley-sky:hover,
+.hb button.hb-valley-games:hover,
+button.hb-quiet:hover {
+  background: color-mix(in srgb, var(--bone) 80%, var(--gold));
+}
+
+.hb-medal {
+  display: inline-grid;
+  place-items: center;
+}
+
+/*
+  Leaning papers. Each paper hangs from its pin and leans `--tilt` (about -1.5 to 1.5 degrees). The board's gaps
+  and padding leave room for the rotated corners, so nothing overflows or touches its neighbour; `none` is flush.
+  Text stays crisp: it is a plain rotation of ordinary text, no scaling, no filters. A button you point at or
+  focus straightens, so it is easy to hit.
+*/
+.hb-paper {
+  rotate: calc(var(--tilt, 0deg) * var(--tilt-scale, 1));
+  transform-origin: 50% 0;
+  transition: rotate 0.15s ease-out;
+}
+
+.hb[data-tilt='none'] .hb-paper {
+  rotate: none;
+}
+
+button.hb-need:hover,
+button.hb-need:focus-visible,
+button.hb-quiet:hover,
+button.hb-quiet:focus-visible {
+  rotate: 0deg;
+}
+
+/*
+  A wide board (a desktop) keeps its papers about as narrow as on a phone, so they lean the same: the notices
+  stand in two columns (three on a wider board), and Coming up and The valley today stand side by side. Only
+  Coming up is still wider than a phone's paper, so its lean is halved.
+*/
+.hb-lower {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@container (min-width: 40rem) {
+  .hb-needs,
+  .hb-quiet-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hb-lower:has(.hb-coming) {
+    grid-template-areas:
+      'title .'
+      'coming valley';
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: start;
+  }
+
+  .hb-lower > .hb-title {
+    grid-area: title;
+  }
+
+  .hb-lower > .hb-coming {
+    --tilt-scale: 0.5;
+
+    grid-area: coming;
+  }
+
+  .hb-lower > .hb-valley {
+    grid-area: valley;
+  }
+}
+
+@container (min-width: 56rem) {
+  .hb-needs,
+  .hb-quiet-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/*
+  --- The corner pins: round pushpin badges in the board's top right corner, above the papers. The "?"
+  (opens How to play) is the rightmost, the starter (opens Creatures) sits to its left. `hb-badge` is the shared look:
+  an ink rim and a gold disc, one stepped circle each. ---
+*/
+button.hb-badge {
+  position: absolute;
+  top: 0.5rem;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 2.75rem; /* 44 px: the smallest tap target */
+  height: 2.75rem;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  /* A see-through shadow, so the cork (or a notice under the pin) shows through it. */
+  filter: drop-shadow(var(--px) var(--px) 0 rgb(var(--ink-rgb) / 0.25));
+  --disc: polygon(
+    32% 0,
+    68% 0,
+    68% 8%,
+    82% 8%,
+    82% 18%,
+    92% 18%,
+    92% 32%,
+    100% 32%,
+    100% 68%,
+    92% 68%,
+    92% 82%,
+    82% 82%,
+    82% 92%,
+    68% 92%,
+    68% 100%,
+    32% 100%,
+    32% 92%,
+    18% 92%,
+    18% 82%,
+    8% 82%,
+    8% 68%,
+    0 68%,
+    0 32%,
+    8% 32%,
+    8% 18%,
+    18% 18%,
+    18% 8%,
+    32% 8%
+  );
+}
+
+button.hb-starter {
+  right: 0.375rem;
+}
+
+/* With the "?" drawn, the starter moves one pin to the left. */
+button.hb-starter:has(~ .hb-help) {
+  right: 3.375rem;
+}
+
+button.hb-help {
+  right: 0.375rem;
+}
+
+button.hb-badge:active:not(:disabled) {
+  box-shadow: none;
+  transform: translate(1px, 1px);
+}
+
+/* The ink rim and the gold disc are one stepped circle each, the disc inset by one pixel of chrome. */
+button.hb-badge::before {
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+  clip-path: var(--disc);
+  content: '';
+}
+
+.hb-badge-disc {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: calc(100% - var(--px) * 2);
+  height: calc(100% - var(--px) * 2);
+  background: var(--gold);
+  clip-path: var(--disc);
+}
+
+/* A bone glint on the upper left of the disc: the pin's head catches the light. */
+.hb-badge-disc::after {
+  position: absolute;
+  top: 18%;
+  left: 18%;
+  width: 0.25rem;
+  height: 0.25rem;
+  background: var(--bone);
+  content: '';
+}
+
+/* The "?" of the HUD's help button (the pixel font), in ink on the gold. */
+.hb-help-mark {
+  color: var(--ink);
+  font-size: var(--fs-title);
+  line-height: 1;
+}
+
+/*
+  "Needs you" is the first heading: it stops short of the two pins (2.75rem each and a gap, from the right
+  edge). The pins may hang over the top of the first notice (Misa, 2026-10-25), so the board starts high.
+*/
+.hb-cork > .hb-title:first-of-type {
+  padding-right: 6.25rem;
+}

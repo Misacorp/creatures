@@ -38,6 +38,8 @@ interface Props extends CardActions {
   viewerId?: string;
   /** Loads a creature's Valley Games medals and records for its page; absent: the page has no Games block. */
   loadGames?: (creatureId: string) => Promise<CreatureGames>;
+  /** Start with the "Needs you" filter on (the Home notice for creatures that need you opened this view). */
+  initialNeeds?: boolean;
 }
 
 /** How long a card the finder chose stays marked. */
@@ -70,18 +72,22 @@ export function Collection({
   catchActions,
   viewerId,
   loadGames,
+  initialNeeds = false,
   ...actions
 }: Props) {
-  const [filters, setFilters] = useState<Filters>(() =>
-    viewerId === undefined
-      ? NO_FILTERS
-      : loadFilters(
-          browserFilterStorage(),
-          viewerId,
-          ELEMENT_OPTIONS.map((e) => e.id),
-          ROLE_OPTIONS.map((r) => r.id),
-        ),
-  );
+  const [filters, setFilters] = useState<Filters>(() => {
+    const kept =
+      viewerId === undefined
+        ? NO_FILTERS
+        : loadFilters(
+            browserFilterStorage(),
+            viewerId,
+            ELEMENT_OPTIONS.map((e) => e.id),
+            ROLE_OPTIONS.map((r) => r.id),
+          );
+    // "Needs you" is never kept between visits, but a notice that points at creatures turns it on.
+    return initialNeeds ? { ...kept, needs: true } : kept;
+  });
   // The creature the finder chose, and a counter so choosing the same one twice scrolls twice.
   const [found, setFound] = useState<{ id: string; n: number } | null>(null);
   const [page, setPage] = useState<OpenPage | null>(null);

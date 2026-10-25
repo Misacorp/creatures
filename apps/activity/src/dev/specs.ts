@@ -3,7 +3,7 @@
  * The body of each one has to match a strict schema in `apps/worker/src/dev-schemas.ts` (unknown keys
  * are refused with a 400), so a new field there needs a field here.
  */
-import type { Tab } from '../tabs';
+import type { Place, Tab } from '../tabs';
 import type { Field, Option, ToolSpec } from './forms';
 import {
   BASE_OPTIONS,
@@ -302,7 +302,7 @@ interface SectionDef {
   specs: readonly ToolSpec[];
 }
 
-/** The per-view sections, in the order of the tab bar. The panel moves the current tab's one to the top. */
+/** The per-view sections, in the order of the navigation's places. The panel moves the current place's one to the top. */
 export const SECTIONS: readonly SectionDef[] = [
   { id: 'creatures', title: 'Creatures', tab: 'collection', specs: CREATURES_SPECS },
   { id: 'workshop', title: 'Workshop', tab: 'workshop', specs: WORKSHOP_SPECS },
@@ -323,7 +323,7 @@ export const ALL_SPECS: readonly ToolSpec[] = [
 ];
 
 /** The sections with the current tab's first (the others keep their order). */
-export function orderedSections(tab: Tab): SectionDef[] {
+export function orderedSections(tab: Place): SectionDef[] {
   const here = SECTIONS.filter((s) => s.tab === tab);
   return [...here, ...SECTIONS.filter((s) => s.tab !== tab)];
 }

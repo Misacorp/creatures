@@ -19,6 +19,9 @@ import { iconEntries } from './entries/icons';
 import { jobRevealEntries } from './entries/job-reveal';
 import { findEntries } from './entries/find';
 import { lootEntries } from './entries/loot';
+import { homePageEntries } from './entries/home-page';
+import { homePagesEntries } from './entries/home-pages';
+import { settingsEntries } from './entries/settings';
 import { mainNavEntries } from './entries/main-nav';
 import { popoverEntries } from './entries/popovers';
 import { recipeCardEntries } from './entries/recipe-card';
@@ -86,6 +89,9 @@ export const ENTRIES: readonly Entry[] = [
   ...gamesShowEntries,
   ...gamesTabEntries,
   ...mainNavEntries,
+  ...homePageEntries,
+  ...homePagesEntries,
+  ...settingsEntries,
 ];
 
 export function findEntry(name: string | null): Entry | null {

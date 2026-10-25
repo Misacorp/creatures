@@ -19,6 +19,8 @@ export type TabAlerts = Readonly<Record<Tab, string | null>>;
 export const NO_ALERTS: TabAlerts = {
   collection: null,
   workshop: null,
+  journal: null,
+  stats: null,
   expeditions: null,
   games: null,
   dungeon: null,
@@ -75,6 +77,8 @@ export function tabAlerts(input: {
   return {
     collection: (input.pending ?? 0) > 0 ? ALERT_TEXT.catchWaiting : null,
     workshop: workshopAlert(jobs, serverNow),
+    journal: null,
+    stats: null,
     expeditions: expeditionsAlert(expeditions, serverNow),
     games: input.games ?? null,
     dungeon: attention?.dungeon === true ? ALERT_TEXT.dungeonOpen : null,

@@ -533,12 +533,12 @@ export function EventCard({
       />
       <div class="ge-head">
         <h3 class="ge-name">{event.name}</h3>
-        <FavourIcons event={event} />
         {team && (
           <Tag entry="games-team" label="Team event">
             Team
           </Tag>
         )}
+        <FavourIcons event={event} />
       </div>
       <div class="ge-slots">
         {slots.map((id, i) => {

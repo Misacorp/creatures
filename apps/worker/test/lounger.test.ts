@@ -135,6 +135,7 @@ interface RoomBody {
       quirk: string | null;
       craftingLevel: number;
       explorerRank: number;
+      firstOnServer: boolean;
       gear: {
         id: string;
         baseId: string;
@@ -655,6 +656,45 @@ describe('the spot in /api/state and /api/room', () => {
   });
 });
 
+describe('POST /api/room: first on server', () => {
+  const record = (ctx: CoreContext, userId: string, kind: string, species: string): void => {
+    ctx.sql.exec(
+      'INSERT INTO server_firsts (kind, species, user_id, drop_id, at) VALUES (?, ?, ?, ?, ?)',
+      kind,
+      species,
+      userId,
+      `drop-${kind}-${species}`,
+      T0,
+    );
+  };
+
+  it('flags a lounger whose owner holds the record for its species or its line, from the records alone', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const a = await member(ctx, 1, { name: 'Alice' });
+        const b = await member(ctx, 2, { name: 'Bob' });
+        const c = await member(ctx, 3, { name: 'Cleo' });
+        const speciesOf = (id: string): string =>
+          rows<{ species: string }>(ctx.sql, 'SELECT species FROM creatures WHERE id = ?', id)[0]
+            ?.species ?? '';
+        const aSpecies = speciesOf(a.creatureIds[0] as string);
+        // Alice holds a catch record; Bob only the hidden jackpot record; Cleo's record is someone else's species.
+        record(ctx, a.id, 'catch', aSpecies);
+        record(ctx, b.id, 'jackpot', speciesOf(b.creatureIds[0] as string));
+        record(ctx, c.id, 'catch', 'not-a-species-of-hers');
+        const res = await room(a, [a.id, b.id, c.id]);
+        expect(res.body.residents.map((r) => r.creature?.firstOnServer)).toEqual([
+          true,
+          false,
+          false,
+        ]);
+      },
+      { loungerRng: scriptedRng([0, 0, 0]) },
+    );
+  });
+});
+
 describe('POST /api/room', () => {
   it('answers the residents in the order asked, with the room view of their lounger', async () => {
     await runCore(
@@ -700,6 +740,7 @@ describe('POST /api/room', () => {
         expect(Object.keys(rb.creature ?? {}).sort()).toEqual([
           'craftingLevel',
           'explorerRank',
+          'firstOnServer',
           'gear',
           'id',
           'level',
@@ -715,6 +756,7 @@ describe('POST /api/room', () => {
           shiny: false,
           craftingLevel: 1,
           explorerRank: 1,
+          firstOnServer: false,
           gear: [],
         });
         expect(typeof ra.creature?.species).toBe('string');

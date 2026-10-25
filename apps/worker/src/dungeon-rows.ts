@@ -16,6 +16,7 @@ import type {
   ReplayRowEntry,
 } from './dungeon-types';
 import type { Weather } from './weather';
+import { addDays } from './time';
 
 export interface DungeonDeps {
   storage: LedgerStorage;
@@ -144,4 +145,19 @@ export function fightRows(sql: SqlStorage, runId: string): StepRow[] {
       runId,
     )
     .toArray();
+}
+
+/**
+ * The streak that is still alive on game day `day`: the stored one when the last run was today or yesterday
+ * (a last day later than `day`, a timezone moved west, keeps it), else 0. One rule for the Dungeon view and
+ * the stats page.
+ */
+export function liveStreak(
+  progress: Pick<ProgressRow, 'streak' | 'last_day'>,
+  day: string,
+): number {
+  const alive =
+    progress.last_day !== null &&
+    (progress.last_day >= day || progress.last_day === addDays(day, -1));
+  return alive ? progress.streak : 0;
 }

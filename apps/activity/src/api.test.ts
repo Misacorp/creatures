@@ -7,6 +7,7 @@ import {
   evolveCreature,
   fetchConfig,
   fetchFinaleTicket,
+  fetchLedger,
   fetchRoom,
   finaleSocketUrl,
   loungeSocketUrl,
@@ -53,6 +54,7 @@ describe('the living room answers', () => {
       quirk: null,
       craftingLevel: 3,
       explorerRank: 2,
+      firstOnServer: false,
       gear: [],
     },
   };
@@ -64,6 +66,16 @@ describe('the living room answers', () => {
     expect(parsed).toHaveLength(2);
     expect(parsed[1]?.creature).toBeNull();
     expect(parseRoom({ residents: [] })).toEqual([]);
+  });
+
+  it('parses the "First on server" flag and rejects an answer without it', () => {
+    const flagged = parseRoom({
+      residents: [{ ...resident, creature: { ...resident.creature, firstOnServer: true } }],
+    });
+    expect(flagged[0]?.creature?.firstOnServer).toBe(true);
+    const without: Partial<typeof resident.creature> = { ...resident.creature };
+    delete without.firstOnServer;
+    expect(() => parseRoom({ residents: [{ ...resident, creature: without }] })).toThrow();
   });
 
   it('parses the worn items with the text of their lines', () => {
@@ -534,5 +546,24 @@ describe('the daily allowance of /api/me', () => {
     ]) {
       expect(parseAllowance(bad)).toBeNull();
     }
+  });
+});
+
+describe('the ledger request', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('asks the server for Bait credits only when told to, so spends never crowd out income', async () => {
+    const urls: string[] = [];
+    vi.stubGlobal('fetch', (url: string) => {
+      urls.push(url);
+      return Promise.resolve(Response.json({ entries: [] }));
+    });
+    await fetchLedger(10, true);
+    await fetchLedger(20);
+    expect(urls[0]).toContain('/api/ledger?limit=10&credits=bait');
+    expect(urls[1]).toContain('/api/ledger?limit=20');
+    expect(urls[1]).not.toContain('credits');
   });
 });

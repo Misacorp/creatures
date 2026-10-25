@@ -11,6 +11,7 @@
  * ids of `room` are only who to look up.
  */
 import {
+  content,
   explorerRank,
   pickLounger,
   quirkText,
@@ -53,6 +54,8 @@ export interface RoomCreature {
   quirk: string | null;
   craftingLevel: number;
   explorerRank: number;
+  /** True when its owner holds a "first on server" record for this species or its line (read from the records, never from the request). */
+  firstOnServer: boolean;
   /** The items it wears, one per slot. */
   gear: RoomGear[];
 }
@@ -85,6 +88,7 @@ type CreatureStub = { id: string; away_expedition_id: string | null };
 
 type DetailRow = {
   id: string;
+  user_id: string;
   species: string;
   shiny: number;
   level: number;
@@ -103,6 +107,19 @@ type PlayerRow = {
 function toSpot(id: string | null | undefined, at: number | null | undefined): LoungeSpot | null {
   if (typeof id !== 'string' || typeof at !== 'number' || !isRoomSpotId(id)) return null;
   return { id, at };
+}
+
+/** Whether the player holds the record for the species or for stage one of its line (as the client's `isFirstOnServer`). */
+function holdsFirst(firsts: ReadonlySet<string>, userId: string, species: string): boolean {
+  const line = content.creatures.find((c) => c.id === species)?.line;
+  const stageOne =
+    line === undefined
+      ? undefined
+      : content.creatures.find((c) => c.line === line && c.stage === 1)?.id;
+  return (
+    firsts.has(`${userId}:${species}`) ||
+    (stageOne !== undefined && firsts.has(`${userId}:${stageOne}`))
+  );
 }
 
 const placeholders = (n: number): string => Array.from({ length: n }, () => '?').join(', ');
@@ -246,13 +263,32 @@ export class Lounge {
     });
   }
 
-  /** The room view of each creature id, in four bounded queries. */
+  /**
+   * The species each of these players holds a "first on server" record for, as `user:species` keys (the
+   * hidden jackpot record is left out, as in the state view).
+   */
+  private firstHolders(userIds: readonly string[]): Set<string> {
+    const owners = [...new Set(userIds)];
+    if (owners.length === 0) return new Set();
+    return new Set(
+      this.sql
+        .exec<{ user_id: string; species: string }>(
+          `SELECT DISTINCT user_id, species FROM server_firsts
+           WHERE kind != 'jackpot' AND user_id IN (${placeholders(owners.length)})`,
+          ...owners,
+        )
+        .toArray()
+        .map((r) => `${r.user_id}:${r.species}`),
+    );
+  }
+
+  /** The room view of each creature id, in five bounded queries. */
   private details(ids: readonly string[]): Map<string, RoomCreature> {
     if (ids.length === 0) return new Map();
     const marks = placeholders(ids.length);
     const rows = this.sql
       .exec<DetailRow>(
-        `SELECT id, species, shiny, level, nickname, quirk_id FROM creatures WHERE id IN (${marks})`,
+        `SELECT id, user_id, species, shiny, level, nickname, quirk_id FROM creatures WHERE id IN (${marks})`,
         ...ids,
       )
       .toArray();
@@ -275,6 +311,7 @@ export class Lounge {
         .map((r) => [r.creature_id, r.xp] as const),
     );
     const worn = wornOnCreatures(this.sql, ids);
+    const firsts = this.firstHolders(rows.map((row) => row.user_id));
     return new Map(
       rows.map((row) => {
         return [
@@ -289,6 +326,7 @@ export class Lounge {
               row.quirk_id !== null && quirkText(row.quirk_id) !== undefined ? row.quirk_id : null,
             craftingLevel: skillLevel(crafting.get(row.id) ?? 0),
             explorerRank: explorerRank(explorer.get(row.id) ?? 0),
+            firstOnServer: holdsFirst(firsts, row.user_id, row.species),
             // An item the content cannot read is left out of the room, not the whole room.
             gear: wornRows(worn.get(row.id)).flatMap((item) =>
               viewOrSkip('worn item', () => ({

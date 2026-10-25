@@ -38,10 +38,6 @@ export interface AppConfig {
   finaleLive: boolean;
 }
 
-interface Health {
-  ok: boolean;
-}
-
 export interface SessionUser {
   id: string;
   displayName: string;
@@ -203,14 +199,6 @@ export async function fetchConfig(): Promise<AppConfig> {
   };
 }
 
-export async function fetchHealth(): Promise<Health> {
-  const data = await request('/api/health');
-  if (!isRecord(data) || typeof data['ok'] !== 'boolean') {
-    throw new Error('/api/health returned an unexpected shape');
-  }
-  return { ok: data['ok'] };
-}
-
 /** Exchanges the Discord OAuth code for a session. Stores the session token in memory. */
 export async function createSession(code: string, instanceId: string): Promise<SessionResult> {
   const data = await request('/api/auth/session', jsonRequest('POST', { code, instanceId }));
@@ -290,9 +278,11 @@ function isLedgerEntry(value: unknown): value is LedgerEntry {
   );
 }
 
-/** The signed-in player's most recent ledger entries, newest first. */
-export async function fetchLedger(limit: number): Promise<LedgerEntry[]> {
-  const data = await apiFetch(`/api/ledger?limit=${String(limit)}`);
+/** The signed-in player's most recent ledger entries, newest first; `baitCredits`: only Bait credits (no spends). */
+export async function fetchLedger(limit: number, baitCredits = false): Promise<LedgerEntry[]> {
+  const data = await apiFetch(
+    `/api/ledger?limit=${String(limit)}${baitCredits ? '&credits=bait' : ''}`,
+  );
   if (!isRecord(data) || !Array.isArray(data['entries']) || !data['entries'].every(isLedgerEntry)) {
     throw new Error('/api/ledger returned an unexpected shape');
   }
@@ -766,6 +756,8 @@ export interface RoomCreature {
   quirk: string | null;
   craftingLevel: number;
   explorerRank: number;
+  /** Its owner holds the "first on server" record for its species or line (the server reads it from its records). */
+  firstOnServer: boolean;
   /** The items it wears (like `Creature.gear`), each with the text of its lines. */
   gear: RoomGear[];
 }
@@ -797,6 +789,7 @@ function isRoomCreature(value: unknown): value is RoomCreature {
     (value['quirk'] === null || isStr(value['quirk'])) &&
     isInt(value['craftingLevel']) &&
     isInt(value['explorerRank']) &&
+    typeof value['firstOnServer'] === 'boolean' &&
     isArrayOf(value['gear'], isRoomGear)
   );
 }

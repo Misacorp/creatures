@@ -149,8 +149,12 @@ interface RequestContext {
   channelId: string | null;
 }
 
-/** Query of GET /api/ledger: strict, only `limit`. Duplicates and unknown keys are rejected. */
+/**
+ * Query of GET /api/ledger: strict, only `limit` and `credits=bait` (Bait credits only, no spends).
+ * Duplicates and unknown keys are rejected.
+ */
 const LedgerQuerySchema = v.strictObject({
+  credits: v.optional(v.literal('bait')),
   limit: v.optional(
     v.pipe(
       v.string(),
@@ -162,7 +166,7 @@ const LedgerQuerySchema = v.strictObject({
   ),
 });
 
-function parseLedgerQuery(url: URL): number | null {
+function parseLedgerQuery(url: URL): { limit: number; creditsOf: 'bait' | null } | null {
   const seen = new Set<string>();
   for (const [key] of url.searchParams) {
     if (seen.has(key)) return null;
@@ -171,7 +175,10 @@ function parseLedgerQuery(url: URL): number | null {
   // fromEntries defines own properties, so a key like `__proto__` stays visible to the schema.
   const result = v.safeParse(LedgerQuerySchema, Object.fromEntries(url.searchParams));
   if (!result.success) return null;
-  return result.output.limit ?? LEDGER_DEFAULT_LIMIT;
+  return {
+    limit: result.output.limit ?? LEDGER_DEFAULT_LIMIT,
+    creditsOf: result.output.credits ?? null,
+  };
 }
 
 const routes: Routes<RequestContext> = {
@@ -202,9 +209,9 @@ const routes: Routes<RequestContext> = {
   },
   '/api/ledger': {
     GET: (request, { user, core }) => {
-      const limit = parseLedgerQuery(new URL(request.url));
-      if (limit === null) return errorResponse('invalid_query', 400);
-      return json({ entries: core.ledgerEntries(user.id, limit) });
+      const query = parseLedgerQuery(new URL(request.url));
+      if (query === null) return errorResponse('invalid_query', 400);
+      return json({ entries: core.ledgerEntries(user.id, query.limit, query.creditsOf) });
     },
   },
 };
@@ -930,8 +937,8 @@ export class GuildCore {
     return getBalances(this.sql, userId);
   }
 
-  ledgerEntries(userId: string, limit: number) {
-    return listEntries(this.sql, userId, limit);
+  ledgerEntries(userId: string, limit: number, creditsOf: 'bait' | 'essence' | null = null) {
+    return listEntries(this.sql, userId, limit, creditsOf);
   }
 
   private knownPlayers(): string[] {

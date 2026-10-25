@@ -16,6 +16,18 @@
   letter-spacing: 0.05em;
 }
 
+/*
+  On a phone the bottom dock (main-nav.css) is there: the button sits above it, clear of the Home button's
+  raised top (1 rem), not over its buttons; and it steps aside while a sub-menu tray is open over that spot.
+*/
+body:has(.main-nav.dock) .dev-fab {
+  bottom: calc(var(--dock-h) + var(--dock-safe) + 1.25rem);
+}
+
+body:has(.nav-tray) .dev-fab {
+  display: none;
+}
+
 .dev-drawer {
   position: fixed;
   left: 0;

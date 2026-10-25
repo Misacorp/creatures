@@ -16,7 +16,20 @@ import {
 } from './api';
 import { ActionIds } from './actions';
 import { allowanceNotice } from './allowance-text';
-import { AppHead } from './AppHead';
+import { AppHead, RoomBand } from './AppHead';
+import {
+  browserSettingsStorage,
+  loadBoardSettings,
+  saveBoardSettings,
+} from './home/board-settings';
+import type { BoardSettings } from './home/board';
+import { SettingsPage } from './settings/SettingsPage';
+import { HomeBook } from './home/HomeBook';
+import { HomeScreen } from './home/HomeScreen';
+import { Hud } from './Hud';
+import { MainNav } from './MainNav';
+import { navPlaces } from './nav-places';
+import { useWide } from './ui/wide-layout';
 import { Collection } from './Collection';
 import { createCreatureActions } from './creature-actions';
 import { LoungeSwap } from './LoungeSwap';
@@ -30,7 +43,7 @@ import type { ChoiceResult } from './talent-types';
 import { errorText } from './game';
 import { loaded, type Loaded } from './loaded-state';
 import type { ParticipantSource } from './participants';
-import { LOUNGE_REFRESH_MS, loungeEarning, settleClaim } from './room-data';
+import { settleClaim } from './room-data';
 import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
 import { Dungeon } from './Dungeon';
@@ -43,8 +56,8 @@ import { chooseCatch } from './talent-api';
 import { choiceResultText } from './talent-view';
 import { DevPanelHost } from './DevPanelHost';
 import { StarterPicker } from './StarterPicker';
-import { TabBar } from './TabBar';
-import type { Tab } from './tabs';
+import { navStateFor, type GoOptions } from './nav-state';
+import { DEFAULT_PLACE, NAV_HOME, isPlace, type Place } from './tabs';
 import { useActionRunner } from './use-action-runner';
 import { useForecast } from './use-forecast';
 import { EquipHost } from './equip-from-card';
@@ -52,10 +65,13 @@ import { GearItemsContext } from './gear-items-context';
 import type { GearItem } from './gear-types';
 import { TreatTimesContext } from './TreatBox';
 import { useGearState } from './use-gear-state';
-import { useRoom } from './use-room';
+import { useLoungePresence } from './use-lounge-presence';
+import { useRaidGlance } from './use-raid-glance';
 import { useRoomPhase } from './use-room-phase';
+import { scrollToTop } from './scroll-to';
+import { useScrollTopOnChange } from './use-scroll-top';
 import { useTabPips } from './use-tab-pips';
-import { sceneOf } from './LivingRoom';
+import { sceneOf, type LivingRoom } from './LivingRoom';
 import { LevelResetCard } from './LevelResetCard';
 import { WipeNotice } from './WipeNotice';
 import { Workshop } from './Workshop';
@@ -72,7 +88,6 @@ export function Game({
   participants,
   helpRef,
   onHelp,
-  onLeetSync,
   allowance,
   showPractice,
   devTools,
@@ -83,7 +98,7 @@ export function Game({
   user: SessionUser;
   /** Who has the Activity open: the living room shows them. */
   participants: ParticipantSource;
-  /** The "?" button of the title row and what it does (the app owns the How to play page). */
+  /** Where How to play's focus returns (the title row's "?" before a game, Settings' How to play in one) and what opens it (the app owns the page). */
   helpRef: RefObject<HTMLButtonElement | null>;
   onHelp: () => void;
   /** True on staging, where the server has the dev tools on: the debug panel loads (see `dev-gate.ts`). */
@@ -92,8 +107,6 @@ export function Game({
   loungeLive?: boolean;
   /** True on staging and local runs, where the server can start a practice finale. */
   showPractice: boolean;
-  /** Called with the sync status of every state this component loads, so the footer stays current. */
-  onLeetSync: (status: LeetSyncStatus) => void;
   /** The daily Bait allowance the server paid when the Activity opened; null when there is none to tell. */
   allowance: Allowance | null;
 }) {
@@ -113,7 +126,31 @@ export function Game({
   const games = useGames(game.starterChosen, offset, () => {
     refreshState();
   });
-  const [tab, setTab] = useState<Tab>('collection');
+  const [tab, setTab] = useState<Place>(DEFAULT_PLACE);
+  // The raid's week times for Home, loaded when the game opens and whenever Home is shown (a failed load
+  // leaves the raid rows out).
+  const { raid: raidGlance } = useRaidGlance(game.starterChosen, tab === 'home', offset);
+  // The Settings page (from the cog in the HUD) is drawn in place of the screen; the screen stays mounted under it,
+  // so Back finds it as it was. Choosing a place closes it.
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  // The Home board's "?" pin: where the focus returns when How to play, opened from it, closes.
+  const boardHelpRef = useRef<HTMLButtonElement>(null);
+  // The Home board's display options, kept on this device (read once, written on every change).
+  const [boardSettings, setBoardSettings] = useState<BoardSettings>(() =>
+    loadBoardSettings(browserSettingsStorage()),
+  );
+  // The Creatures view opens with its "Needs you" filter on when the Home notice for creatures that need you opened it.
+  const [creaturesNeeds, setCreaturesNeeds] = useState(false);
+  // Every change of place goes through here: it also closes Settings and the Creatures "Needs you" filter
+  // (unless asked), so no route leaves the old page's state behind.
+  const goTo = (place: Place, opts?: GoOptions): void => {
+    const next = navStateFor(place, opts);
+    setTab(next.tab);
+    setSettingsOpen(next.settingsOpen);
+    setCreaturesNeeds(next.creaturesNeeds);
+  };
+  // Every change of place (dock, tray, rail, a Home notice) starts at the top of the new page.
+  useScrollTopOnChange(tab);
   const [reveal, setReveal] = useState<{ result: ClaimResult; trip: Trip | undefined } | null>(
     null,
   );
@@ -165,7 +202,7 @@ export function Game({
   }, []);
 
   // While the first leet sync is still running, ask again every few seconds (a few times at most)
-  // so the balance, the history and the footer update as soon as the credits land.
+  // so the balance, the history and the currency popover's warning update as soon as the credits land.
   useEffect(() => {
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -177,7 +214,6 @@ export function Game({
           (next) => {
             if (cancelled) return;
             if (!inFlight() && actionCount.current === startedAt) setCurrent(loaded(next));
-            if (next.leetSync !== null) onLeetSync(next.leetSync);
             schedule(next.leetSync, attempts + 1);
           },
           () => {
@@ -218,7 +254,7 @@ export function Game({
     return true;
   }
 
-  // The pips of the tab bar and the timers that keep them true.
+  // The pips of the main navigation and the timers that keep them true.
   const alerts = useTabPips({
     expeditions: game.expeditions,
     jobs: gear === null ? null : gear.jobs,
@@ -298,16 +334,22 @@ export function Game({
     () => new Map((gear?.skills ?? []).map((skill) => [skill.creatureId, skill.level])),
     [gear],
   );
-  const room = useRoom({
-    enabled: game.starterChosen,
-    participants,
-    selfId: user.id,
-    selfName: user.displayName,
-    state: game,
-    craftingLevels,
-    loungeLive,
-    ...(gear === null ? {} : { gearItems: gear.items }),
-  });
+  // Presence lives here, not in the room's drawing: the room is on screen only in the desktop band or in the
+  // phone's Lounge sheet, and you are in the room (and your lounger earns) whether it is drawn or not.
+  const room = useLoungePresence(
+    {
+      enabled: game.starterChosen,
+      participants,
+      selfId: user.id,
+      selfName: user.displayName,
+      state: game,
+      craftingLevels,
+      loungeLive,
+      ...(gear === null ? {} : { gearItems: gear.items }),
+    },
+    game,
+    refreshState,
+  );
   // The room's light follows the guild's local time by the server's clock; one timer swaps it.
   const offsetRef = useRef(offset);
   offsetRef.current = offset;
@@ -334,52 +376,54 @@ export function Game({
       setError(errorText(err));
     });
   }
-  // While your lounger earns, reload the state once per XP so its tag and XP bar move (the server pays what
-  // you collected when you make a request). Nothing while alone, hidden or Rested.
-  const earning = loungeEarning(room.company, false, game);
-  useEffect(() => {
-    if (!earning) return undefined;
-    const timer = setInterval(() => {
-      refreshState();
-    }, LOUNGE_REFRESH_MS);
-    return () => {
-      clearInterval(timer);
-    };
-  }, [earning]);
+  // The main navigation: the dock on a phone, the rail on a wide window. The HUD names the place you are in.
+  const wide = useWide();
+  const places = navPlaces(alerts);
+  const placeLabelBeforeSettings =
+    tab === NAV_HOME.id ? NAV_HOME.label : (places.find((p) => p.id === tab)?.label ?? '');
+  const placeLabel = settingsOpen ? 'Settings' : placeLabelBeforeSettings;
 
-  const head = (
-    <AppHead
-      helpRef={helpRef}
-      onHelp={onHelp}
-      {...(game.starterChosen
-        ? {
-            balances: game.balances,
-            room: {
-              residents: room.residents,
-              selfId: user.id,
-              instanceId: participants.instanceId,
-              scene: sceneOf(phase),
-              forecast,
-              trophy: {
-                board: games.view?.board ?? [],
-                selfId: user.id,
-                onOpen: () => {
-                  setTab('games');
-                  games.load();
-                },
-              },
-              onMove: moveLounger,
-              onSwap: () => {
-                setSwapping(true);
-                refreshState();
-              },
-              ...(game.loungerId === null
-                ? {}
-                : { ownLoungeXp: game.loungeXp[game.loungerId] ?? 0 }),
-            },
-          }
-        : {})}
-    />
+  // The living room's props: the same room in the desktop's band and at the top of the phone's Home page.
+  const roomProps: Parameters<typeof LivingRoom>[0] = {
+    residents: room.residents,
+    selfId: user.id,
+    instanceId: participants.instanceId,
+    scene: sceneOf(phase),
+    forecast,
+    trophy: {
+      board: games.view?.board ?? [],
+      selfId: user.id,
+      onOpen: () => {
+        goTo('games');
+        games.load();
+      },
+    },
+    onMove: moveLounger,
+    onSwap: () => {
+      setSwapping(true);
+      refreshState();
+    },
+    ...(game.loungerId === null ? {} : { ownLoungeXp: game.loungeXp[game.loungerId] ?? 0 }),
+  };
+
+  // With a game on screen: the HUD and, on a wide window, the living room band under it (a phone has the
+  // room at the top of the Home page instead). Before a game (choosing a starter): the title row.
+  const head = game.starterChosen ? (
+    <>
+      <Hud
+        title={placeLabel}
+        balances={game.balances}
+        leetSync={game.leetSync}
+        helpRef={helpRef}
+        onHelp={onHelp}
+        onSettings={() => {
+          setSettingsOpen(true);
+        }}
+      />
+      {wide && <RoomBand room={roomProps} />}
+    </>
+  ) : (
+    <AppHead helpRef={helpRef} onHelp={onHelp} />
   );
 
   const devPanel = (
@@ -393,10 +437,10 @@ export function Game({
     busy,
     actions: { ...creatureActions, onEquip: equipOn },
     onAnswerCatch: () => {
-      setTab('collection');
+      goTo('collection');
     },
     onOpenWorkshop: () => {
-      setTab('workshop');
+      goTo('workshop');
       loadGear();
     },
   };
@@ -426,197 +470,252 @@ export function Game({
     </>
   ) : (
     <>
-      <TabBar
-        current={tab}
-        alerts={alerts}
-        onSelect={(id) => {
-          setTab(id);
-          setError(null);
-          setNotice(null);
-          refreshState();
-          room.refreshIfStale();
-          loadForecast();
-          if (id === 'games') games.load();
-          if (
-            id === 'workshop' ||
-            id === 'collection' ||
-            id === 'dungeon' ||
-            id === 'raid' ||
-            id === 'expeditions'
-          )
-            loadGear();
-        }}
-      />
-      <WipeNotice key={devNonce} cancelled={game.cancelled} creatures={game.creatures} />
-      {game.levelReset !== null && (
-        <LevelResetCard
-          notice={game.levelReset}
-          busy={busy}
-          onDismiss={() => {
-            void run(() => dismissLevelReset()).then(showState);
+      <div class="nav-shell">
+        <MainNav
+          places={places}
+          current={tab}
+          wide={wide}
+          home
+          onSelect={(id) => {
+            if (!isPlace(id)) return;
+            // Tapping the place you are in also goes back to its top.
+            if (id === tab) scrollToTop();
+            goTo(id);
+            setError(null);
+            setNotice(null);
+            refreshState();
+            room.refreshIfStale();
+            loadForecast();
+            if (id === 'games' || id === 'home') games.load();
+            if (id !== 'games') loadGear();
           }}
         />
-      )}
-      {error !== null && (
-        <Alert
-          key={error}
-          level="alert"
-          onDismiss={() => {
-            setError(null);
-          }}
-        >
-          {error}
-        </Alert>
-      )}
-      {notice !== null && (
-        <Alert
-          key={notice}
-          level="success"
-          onDismiss={() => {
-            setNotice(null);
-          }}
-        >
-          {notice}
-        </Alert>
-      )}
-      <div key={devNonce} role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === 'collection' && (
-          <Collection
-            state={game}
-            gear={gear}
-            busy={busy}
-            viewerId={user.id}
-            loadGames={fetchCreatureGames}
-            onEquip={equipOn}
-            catchActions={catchActions}
-            {...creatureActions}
-          />
-        )}
-        {tab === 'expeditions' && (
-          <Expeditions
-            state={game}
-            forecast={forecast}
-            offset={offset}
-            busy={busy}
-            reveal={reveal}
-            catchActions={catchActions}
-            settled={settled}
-            timezone={timezone.current}
-            onSend={async (request: SendRequest) => {
-              const answer = await runKeyed(ActionIds.send(request), (key) =>
-                sendExpedition(request, key),
-              );
-              if (answer === undefined) return false;
-              setCurrent(loaded(answer.state));
-              return true;
-            }}
-            onPushOn={(trip, goalId) => {
-              void run(() => pushOn(trip.id, goalId)).then((answer) => {
-                if (answer !== undefined) setCurrent(loaded(answer.state));
-              });
-            }}
-            onClaim={(trip) => {
-              void run(() => claimExpedition(trip.id)).then((done) => {
-                if (done === undefined) return;
-                setCurrent(loaded(done.state));
-                setReveal({
-                  result: done.result,
-                  trip: done.state.expeditions.find((e) => e.id === trip.id),
-                });
-                // The trip's parts, blueprints and gear are in the Workshop now.
-                loadGear();
-              });
-            }}
-            onRefresh={refreshState}
-            onDismissReveal={() => {
-              setReveal(null);
-            }}
-            onOpenWorkshop={() => {
-              setTab('workshop');
-              loadGear();
-            }}
-            bag={gear?.inventory ?? null}
-          />
-        )}
-        {tab === 'workshop' && (
-          <Workshop
-            state={game}
-            gear={gear}
-            failed={gearFailed}
-            offset={offset}
-            busy={busy}
-            error={error}
-            reveal={jobReveal}
-            actions={gearActions}
-            onRetry={loadGear}
-            onClaimed={setJobReveal}
-            onDismissReveal={() => {
-              setJobReveal(null);
-            }}
-          />
-        )}
-        {tab === 'games' && (
-          <GamesTab
-            view={games.view}
-            failed={games.failed}
-            creatures={game.creatures}
-            selfId={user.id}
-            offset={offset}
-            onView={games.replace}
-            onReload={games.load}
-            onPurchased={() => {
-              // A prize pays Bait, parts, a supply or a gear piece: the balances and the bag.
-              refreshState();
-              loadGear();
-            }}
-          />
-        )}
-        {tab === 'raid' && (
-          <Raid
-            creatures={game.creatures}
-            forecast={forecast}
-            showPractice={showPractice}
-            onBalanceChange={refreshState}
-            onNeedsPlacementChange={(needed) => {
-              setAttention((now) => ({
-                dungeon: false,
-                recheckAt: null,
-                ...now,
-                raid: needed,
-              }));
-            }}
-            configure={teamConfigure}
-          />
-        )}
-        {tab === 'dungeon' && (
-          <Dungeon
-            creatures={game.creatures}
-            forecast={forecast}
-            bait={game.balances.bait}
-            draft={dungeonDraft.current}
-            onDraftChange={(slots) => {
-              dungeonDraft.current = slots;
-            }}
-            onRunStarted={() => {
-              // The server deleted the saved draft: the next setup starts from this run's team.
-              dungeonDraft.current = null;
-            }}
-            onCanRunChange={(canRun) => {
-              setAttention((now) => ({
-                raid: false,
-                recheckAt: null,
-                ...now,
-                dungeon: canRun,
-              }));
-            }}
-            onRunFinished={() => {
-              // A run pays Bait, Essence, parts and maybe gear: reload the balances and the bag.
-              refreshState();
-              loadGear();
-            }}
-            configure={teamConfigure}
-          />
-        )}
+        <div class="nav-screen">
+          <WipeNotice key={devNonce} cancelled={game.cancelled} creatures={game.creatures} />
+          {game.levelReset !== null && (
+            <LevelResetCard
+              notice={game.levelReset}
+              busy={busy}
+              onDismiss={() => {
+                void run(() => dismissLevelReset()).then(showState);
+              }}
+            />
+          )}
+          {error !== null && (
+            <Alert
+              key={error}
+              level="alert"
+              onDismiss={() => {
+                setError(null);
+              }}
+            >
+              {error}
+            </Alert>
+          )}
+          {notice !== null && (
+            <Alert
+              key={notice}
+              level="success"
+              onDismiss={() => {
+                setNotice(null);
+              }}
+            >
+              {notice}
+            </Alert>
+          )}
+          {settingsOpen && (
+            <SettingsPage
+              settings={boardSettings}
+              onChange={(next) => {
+                setBoardSettings(next);
+                saveBoardSettings(browserSettingsStorage(), next);
+              }}
+              onBack={() => {
+                setSettingsOpen(false);
+              }}
+              backLabel={`to ${placeLabelBeforeSettings}`}
+              onHowTo={onHelp}
+              howToRef={helpRef}
+            />
+          )}
+          <div key={devNonce} hidden={settingsOpen}>
+            {tab === 'home' && (
+              <HomeScreen
+                offset={offset}
+                timezone={timezone.current}
+                trips={game.expeditions}
+                jobs={gear === null ? null : gear.jobs}
+                creatures={game.creatures}
+                games={games.view}
+                pending={game.pending.length}
+                attention={attention}
+                raid={raidGlance}
+                forecast={forecast}
+                settings={boardSettings}
+                creatureState={game}
+                onHowTo={() => {
+                  // A click may not focus the button (Safari): make it the opener the focus returns to.
+                  boardHelpRef.current?.focus();
+                  onHelp();
+                }}
+                howToRef={boardHelpRef}
+                onGo={(place, needsFilter) => {
+                  goTo(place, needsFilter === true ? { needsFilter } : {});
+                  refreshState();
+                  loadForecast();
+                  if (place === 'games') games.load();
+                  else loadGear();
+                }}
+                room={wide ? undefined : <RoomBand room={roomProps} />}
+              />
+            )}
+            {(tab === 'journal' || tab === 'stats') && (
+              <HomeBook
+                page={tab}
+                creatures={game.creatures}
+                tripsFinished={game.slots.tripsFinished}
+              />
+            )}
+            {tab === 'collection' && (
+              <Collection
+                initialNeeds={creaturesNeeds}
+                state={game}
+                gear={gear}
+                busy={busy}
+                viewerId={user.id}
+                loadGames={fetchCreatureGames}
+                onEquip={equipOn}
+                catchActions={catchActions}
+                {...creatureActions}
+              />
+            )}
+            {tab === 'expeditions' && (
+              <Expeditions
+                state={game}
+                forecast={forecast}
+                offset={offset}
+                busy={busy}
+                reveal={reveal}
+                catchActions={catchActions}
+                settled={settled}
+                timezone={timezone.current}
+                onSend={async (request: SendRequest) => {
+                  const answer = await runKeyed(ActionIds.send(request), (key) =>
+                    sendExpedition(request, key),
+                  );
+                  if (answer === undefined) return false;
+                  setCurrent(loaded(answer.state));
+                  return true;
+                }}
+                onPushOn={(trip, goalId) => {
+                  void run(() => pushOn(trip.id, goalId)).then((answer) => {
+                    if (answer !== undefined) setCurrent(loaded(answer.state));
+                  });
+                }}
+                onClaim={(trip) => {
+                  void run(() => claimExpedition(trip.id)).then((done) => {
+                    if (done === undefined) return;
+                    setCurrent(loaded(done.state));
+                    setReveal({
+                      result: done.result,
+                      trip: done.state.expeditions.find((e) => e.id === trip.id),
+                    });
+                    // The trip's parts, blueprints and gear are in the Workshop now.
+                    loadGear();
+                  });
+                }}
+                onRefresh={refreshState}
+                onDismissReveal={() => {
+                  setReveal(null);
+                }}
+                onOpenWorkshop={() => {
+                  goTo('workshop');
+                  loadGear();
+                }}
+                bag={gear?.inventory ?? null}
+              />
+            )}
+            {tab === 'workshop' && (
+              <Workshop
+                state={game}
+                gear={gear}
+                failed={gearFailed}
+                offset={offset}
+                busy={busy}
+                error={error}
+                reveal={jobReveal}
+                actions={gearActions}
+                onRetry={loadGear}
+                onClaimed={setJobReveal}
+                onDismissReveal={() => {
+                  setJobReveal(null);
+                }}
+              />
+            )}
+            {tab === 'games' && (
+              <GamesTab
+                view={games.view}
+                failed={games.failed}
+                creatures={game.creatures}
+                selfId={user.id}
+                offset={offset}
+                onView={games.replace}
+                onReload={games.load}
+                onPurchased={() => {
+                  // A prize pays Bait, parts, a supply or a gear piece: the balances and the bag.
+                  refreshState();
+                  loadGear();
+                }}
+              />
+            )}
+            {tab === 'raid' && (
+              <Raid
+                creatures={game.creatures}
+                forecast={forecast}
+                showPractice={showPractice}
+                onBalanceChange={refreshState}
+                onNeedsPlacementChange={(needed) => {
+                  setAttention((now) => ({
+                    dungeon: false,
+                    recheckAt: null,
+                    ...now,
+                    raid: needed,
+                  }));
+                }}
+                configure={teamConfigure}
+              />
+            )}
+            {tab === 'dungeon' && (
+              <Dungeon
+                creatures={game.creatures}
+                forecast={forecast}
+                bait={game.balances.bait}
+                draft={dungeonDraft.current}
+                onDraftChange={(slots) => {
+                  dungeonDraft.current = slots;
+                }}
+                onRunStarted={() => {
+                  // The server deleted the saved draft: the next setup starts from this run's team.
+                  dungeonDraft.current = null;
+                }}
+                onCanRunChange={(canRun) => {
+                  setAttention((now) => ({
+                    raid: false,
+                    recheckAt: null,
+                    ...now,
+                    dungeon: canRun,
+                  }));
+                }}
+                onRunFinished={() => {
+                  // A run pays Bait, Essence, parts and maybe gear: reload the balances and the bag.
+                  refreshState();
+                  loadGear();
+                }}
+                configure={teamConfigure}
+              />
+            )}
+          </div>
+        </div>
       </div>
     </>
   );

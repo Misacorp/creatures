@@ -191,6 +191,18 @@ export class FakeElement extends FakeNode {
   hasAttribute(name: string): boolean {
     return this.attributes.has(name);
   }
+  toggleAttribute(name: string, force?: boolean): boolean {
+    const on = force ?? !this.attributes.has(name);
+    if (on) this.attributes.set(name, '');
+    else this.attributes.delete(name);
+    return on;
+  }
+  /** Whether it is still in the page (reaches the document body through its parents). */
+  get isConnected(): boolean {
+    const up = (node: FakeElement | null): boolean =>
+      node !== null && (node === this.doc.body || up(node.parentNode));
+    return up(this);
+  }
 
   appendChild(node: FakeNode): FakeNode {
     return this.insertBefore(node, null);

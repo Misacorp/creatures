@@ -8,19 +8,28 @@
   background-color: var(--night);
   background-image: radial-gradient(var(--dusk) 1px, transparent 1px);
   background-size: 6px 6px;
-  padding-top: var(--discord-safe-area-inset-top, 0px);
+  /* The page starts under its fixed head. */
+  padding-top: calc(var(--discord-safe-area-inset-top, 0px) + var(--howto-head-h));
   padding-bottom: var(--discord-safe-area-inset-bottom, 0px);
+  --howto-head-h: 3.75rem;
 }
 
+/*
+  The head is fixed to the top of the window, full width, the same at every scroll position (like the game's HUD
+  on a phone), and reaches up behind Discord's own top bar so nothing scrolls by above it.
+*/
 .howto-head {
-  position: sticky;
+  position: fixed;
   top: 0;
+  right: 0;
+  left: 0;
   z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  min-height: calc(var(--howto-head-h) + var(--discord-safe-area-inset-top, 0px));
+  padding: calc(0.5rem + var(--discord-safe-area-inset-top, 0px)) 0.75rem 0.5rem;
   background: var(--dusk);
   box-shadow: var(--frame);
 }

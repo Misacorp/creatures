@@ -1,6 +1,6 @@
 ---
 name: staging
-description: Check what is deployed on Leet Creatures staging (or production) right now, and wait for a staging deploy to go live. Reads the branch and commit the game's footer shows from the public /api/config with a fixed, read-only script. Use before asking Misa to test on staging, after starting a staging deploy he asked for, when Misa asks "what's on staging?", or to confirm production is on the latest main.
+description: Check what is deployed on Leet Creatures staging (or production) right now, and wait for a staging deploy to go live. Reads the branch and commit (the page's build meta tags carry the same) from the public /api/config with a fixed, read-only script. Use before asking Misa to test on staging, after starting a staging deploy he asked for, when Misa asks "what's on staging?", or to confirm production is on the latest main.
 ---
 
 # Staging

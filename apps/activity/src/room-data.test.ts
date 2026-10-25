@@ -131,6 +131,7 @@ describe('ownResident', () => {
     creatures: [creature({ id: 'c1' }), creature({ id: 'c2', nickname: null, shiny: false })],
     loungerId: 'c2',
     loungeSpot: null,
+    serverFirsts: [],
   };
 
   it('builds the lounger from the state, with the Crafting level when known', () => {
@@ -148,6 +149,7 @@ describe('ownResident', () => {
         quirk: 'hums-quietly',
         craftingLevel: 4,
         explorerRank: 3,
+        firstOnServer: false,
         gear: [],
       },
     });
@@ -203,8 +205,31 @@ describe('roomResidents', () => {
   });
 });
 
+describe('own resident and "First on server"', () => {
+  const lounger = creature({ id: 'c9', species: 'splashet' });
+  const state = { creatures: [lounger], loungerId: 'c9', loungeSpot: null };
+  const record = (mine: boolean) => [
+    { kind: 'catch' as const, species: 'splashet', at: 1, mine, holders: ['Misa'] },
+  ];
+
+  it('is flagged when you hold the record for its species, from your own state', () => {
+    const own = ownResident({ ...state, serverFirsts: record(true) }, 'u1', 'Misa', new Map());
+    expect(own.creature?.firstOnServer).toBe(true);
+  });
+
+  it('is not flagged for a record someone else holds, or none', () => {
+    expect(
+      ownResident({ ...state, serverFirsts: record(false) }, 'u1', 'Misa', new Map()).creature
+        ?.firstOnServer,
+    ).toBe(false);
+    expect(
+      ownResident({ ...state, serverFirsts: [] }, 'u1', 'Misa', new Map()).creature?.firstOnServer,
+    ).toBe(false);
+  });
+});
+
 describe('own spot', () => {
-  const state = { creatures: [], loungerId: null };
+  const state = { creatures: [], loungerId: null, serverFirsts: [] };
 
   it('carries the chosen spot into the own resident', () => {
     const spot = { id: 'couch-left', at: 5 };

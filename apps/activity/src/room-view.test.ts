@@ -21,6 +21,7 @@ const creature = {
   quirk: null,
   craftingLevel: 3,
   explorerRank: 2,
+  firstOnServer: false,
   gear: [],
 };
 
@@ -49,6 +50,11 @@ describe('residentInfo', () => {
       craftingLevel: 3,
       explorerRank: 2,
     });
+  });
+
+  it('carries "First on server" into the popover info only when the creature has it', () => {
+    expect(residentInfo('Misa', { ...creature, firstOnServer: true }).firstOnServer).toBe(true);
+    expect(residentInfo('Misa', creature)).not.toHaveProperty('firstOnServer');
   });
 
   it('carries the worn items for the popover, or none when nothing is worn', () => {

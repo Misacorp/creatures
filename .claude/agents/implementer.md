@@ -16,5 +16,6 @@ Rules:
 - Add or update tests for every behaviour change. Before finishing, run `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test` and report the result honestly.
 - New dependencies need a reason. Exact versions only, at least 7 days old.
 - UI work: before building a component or layout, look for an existing one that does the same job (`docs/design/ux-patterns.md`, "Shared components", and the workbench) and reuse or extend it. Say in your report which ones you reused, and why if you built something new.
+- A new screen or feature fits the game's frame (`docs/design/ux-patterns.md`, "The frame"): a place in `TABS`, a Home notice row when it needs the player, a Back only on pages opened from another page. Never a second navigation, a footer or a bar of its own.
 
 Report back concisely: what changed (files), test results, deviations from the spec, and anything that looked suspicious.

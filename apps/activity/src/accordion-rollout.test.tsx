@@ -1,23 +1,14 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { LedgerEntry } from './api';
+import { afterEach, describe, expect, it } from 'vitest';
 import { parseProfile } from './expedition-parse';
 import profileFixture from './fixtures/expedition-profile.json';
 import { Journal } from './Journal';
-import { RecentActivity } from './RecentActivity';
-import { byClass, byName, createPage, visibleText, type FakeElement, type Page } from './test-dom';
-
-const fetchLedger = vi.hoisted(() => vi.fn());
-vi.mock('./api', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('./api')>()),
-  fetchLedger,
-}));
+import { byClass, createPage, type Page } from './test-dom';
 
 let page: Page | null = null;
 
 afterEach(() => {
   page?.unmount();
   page = null;
-  fetchLedger.mockReset();
 });
 
 const tsx = import.meta.glob<string>(['./**/*.tsx', '!./**/*.test.tsx', '!./workbench/**'], {
@@ -32,38 +23,6 @@ describe('every disclosure is the Accordion', () => {
       .map(([file]) => file);
     expect(Object.keys(tsx).length).toBeGreaterThan(50);
     expect(found).toEqual([]);
-  });
-});
-
-describe('Recent Bait activity', () => {
-  const entry: LedgerEntry = {
-    id: 1,
-    currency: 'bait',
-    amount: 25,
-    source: 'allowance',
-    createdAt: 0,
-    meta: { day: '2026-10-20' },
-  };
-
-  it('loads nothing until it is opened, then loads each time it opens', async () => {
-    fetchLedger.mockResolvedValue([entry]);
-    page = createPage();
-    page.draw(<RecentActivity refreshKey={null} />);
-    expect(fetchLedger).not.toHaveBeenCalled();
-    const head = byName(page.root, 'button', 'Recent Bait activity')[0] as FakeElement;
-    expect(head.getAttribute('aria-expanded')).toBe('false');
-
-    page.click(head);
-    expect(fetchLedger).toHaveBeenCalledTimes(1);
-    expect(visibleText(page.root)).toContain('Loading...');
-    await vi.waitFor(() => {
-      expect(visibleText((page as Page).root)).toContain('+25 Bait');
-    });
-
-    page.click(head);
-    expect(byClass(page.root, 'recent')).toHaveLength(0);
-    page.click(head);
-    expect(fetchLedger).toHaveBeenCalledTimes(2);
   });
 });
 

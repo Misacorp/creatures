@@ -6,6 +6,7 @@
  */
 import { RULES, isRested } from '@creatures/game';
 import type { Creature, GameState, LoungeSpot, RoomCreature, RoomResident } from './api';
+import { isFirstOnServer } from './game';
 import type { GearItem } from './gear-types';
 import { wornItemOf, type WornItem } from './gear-view';
 
@@ -174,7 +175,7 @@ export function settleClaim(
  * the gear view's items (empty until loaded), which give the worn item its main stat.
  */
 export function ownResident(
-  state: Pick<GameState, 'creatures' | 'loungerId' | 'loungeSpot'>,
+  state: Pick<GameState, 'creatures' | 'loungerId' | 'loungeSpot' | 'serverFirsts'>,
   userId: string,
   name: string,
   craftingLevels: ReadonlyMap<string, number>,
@@ -198,6 +199,7 @@ export function ownResident(
             quirk: lounger.quirk,
             craftingLevel: craftingLevels.get(lounger.id) ?? null,
             explorerRank: lounger.explorer.rank,
+            firstOnServer: isFirstOnServer(lounger, state.serverFirsts),
             gear: lounger.gear.map((g) => wornItemOf(g, gearItems)),
           },
   };

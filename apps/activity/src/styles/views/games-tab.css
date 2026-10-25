@@ -100,6 +100,11 @@
   padding: 0.5rem 0.75rem 0;
 }
 
+/* The favours stay right-aligned when the Team tag sits between the name and the icons. */
+.ge-head .ge-favours {
+  margin-left: auto;
+}
+
 .ge-name {
   margin: 0;
   color: var(--gold);

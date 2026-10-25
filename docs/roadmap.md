@@ -116,7 +116,7 @@ Noted while testing the expedition and Workshop rework on staging. The component
 
 ## After the Valley Games (Misa, 2026-10-23)
 
-- **Main menu redesign.** With Games as the sixth tab the tab bar barely fits on a phone (360 px has no spare width). Rethink the main navigation. **Chosen (Misa, 2026-10-24): option 1, a bottom dock on phones and a left rail on desktop** (mock-ups: workbench `MainNavMockups`); being built. He liked the valley-as-menu map too: "explore it later".
+- **Main menu redesign.** With Games as the sixth tab the tab bar barely fits on a phone (360 px has no spare width). Rethink the main navigation. **Chosen (Misa, 2026-10-24): option 1, a bottom dock on phones and a left rail on desktop** and built 2026-10-24 (a dock, later three group buttons with upward sub-menus, a left rail, a HUD; `design/decisions.md`). He liked the valley-as-menu map too: "explore it later".
 - **A home in the world (very long term).** A player asked "where is home on the expedition map". Misa: players might like a home or village in the game world, and "ultimately ... houses and decorations, furniture, etc. to find, craft and place". The dock's place list stays data-driven so a map home can be added later.
 - ~~**Valley Games polish and fixes**~~ **Done (2026-10-24):** alignment, spacing, the Good fit tick, a calm leaderboard, crowded big fields (see `design/valley-games.md`, "After v1"). The postponed ideas stay postponed (Misa, 2026-10-23).
 
@@ -147,6 +147,18 @@ Still open:
 - **The shared creature list** (`ui/CreatureList` for every creature pick, Misa's "what a creature list shows" rule): built on its own branch, its own PR once the one above merges.
 - **More risk-and-reward mystery rooms** (Misa: from rooms with decent rolls for any pick to drastic ones like the chasm; bigger risks may pay bigger rewards). Claude to propose ideas.
 - Deferred, very low priority: a Blue Chasm prize of a **creature of a species the player lacks**. Misa: "a fun idea where you rescue a friend in need".
+
+## Home page: later
+
+The Home page and its Today board shipped on 2026-10-24 (decisions.md). Ideas for after it:
+
+- **Signs in the room:** small signs in the living room that point at what needs the player (a letter on the table for a trip that is home).
+- **Out and about:** show creatures that are away (on a trip, a job) as little figures or notes around the board or the room.
+- **A valley news feed:** a short feed of what happened in the valley (catches, firsts, raid results) under "The valley today".
+- **Who's here:** who has the Activity open, beside the room.
+- **Tapping "Coming up" rows:** each row opens its place.
+- **A dungeon status that says "done today"** (the quiet notice only says "No run waiting" now, because the client cannot tell done from not possible).
+- **Per-player settings for the board's tilt (none, still, sway) and for showing quiet places (hide, show):** the typed `BoardSettings` is ready, stored and saved per player.
 
 ## Upkeep
 

@@ -51,7 +51,7 @@ const actions = {
 
 function draw(
   creatures: Creature[],
-  options: { viewerId?: string; waitingFor?: string } = {},
+  options: { viewerId?: string; waitingFor?: string; initialNeeds?: boolean } = {},
 ): { page: Page; root: FakeElement } {
   page ??= createPage();
   const pending =
@@ -72,6 +72,7 @@ function draw(
       busy={false}
       catchActions={{ chooseMany: () => Promise.resolve(true) }}
       {...(options.viewerId === undefined ? {} : { viewerId: options.viewerId })}
+      {...(options.initialNeeds === undefined ? {} : { initialNeeds: options.initialNeeds })}
       {...actions}
     />,
   );
@@ -318,6 +319,17 @@ describe('the filter chips', () => {
     p.click(byName(root, 'button', 'Clear filters')[0] as FakeElement);
     expect(cards(root)).toHaveLength(12);
     expect(byName(root, 'button', 'Clear filters')).toHaveLength(0);
+  });
+
+  it('opens with "Needs you" on when the Home notice sent the player, and not otherwise', () => {
+    const { root } = draw(roster, { initialNeeds: true });
+    expect(chip(root, /^Needs you/).getAttribute('aria-pressed')).toBe('true');
+    expect(cards(root)).toHaveLength(2);
+    page?.unmount();
+    page = null;
+    const plain = draw(roster);
+    expect(chip(plain.root, /^Needs you/).getAttribute('aria-pressed')).toBe('false');
+    expect(cards(plain.root)).toHaveLength(12);
   });
 
   it('"Needs you" with nothing to do says so', () => {

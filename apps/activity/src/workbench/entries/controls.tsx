@@ -1,8 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
 import { CurrencyPile } from '../../CurrencyPile';
-import { TabBar } from '../../TabBar';
-import { ALERT_TEXT, NO_ALERTS, type TabAlerts } from '../../tab-alerts';
-import { TABS, type Tab } from '../../tabs';
 import { ActionButton } from '../../ui/ActionButton';
 import { ChoiceButton, ChoiceList } from '../../ui/ChoiceList';
 import { FoldRow } from '../../ui/FoldRow';
@@ -14,6 +11,7 @@ import { ScrollHint } from '../../ui/ScrollHint';
 import { Switch } from '../../ui/Switch';
 import { ToggleButton } from '../../ui/ToggleButton';
 import type { Speed } from '../../replay';
+import { INCOME_CASES, incomeLoader } from '../income-sample';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
 
@@ -228,91 +226,46 @@ const liveRegion: Entry = {
   ),
 };
 
+const FAILING_SYNC = {
+  source: 'http',
+  lastAttemptAt: 1,
+  lastSyncedAt: null,
+  lastError: 'timeout',
+  lastDays: null,
+} as const;
+
 const currencyPile: Entry = {
   name: 'CurrencyPile',
   file: 'apps/activity/src/CurrencyPile.tsx',
   group: 'Controls',
   description:
-    'The small coin-pile button in the title row, left of "?": tap it for a compact popover with the Bait and Essence balances and their glossary tags. Its spoken label carries both amounts.',
+    'The currencies button in the HUD, left of "?": the Bait and Essence balances with their pictures and numbers (large ones shortened, 12.3K). Tap it for a compact popover with the exact amounts and their glossary tags, then a short list of recent Bait income (the newest five credits with their sources; spends and Essence never show), loaded each time it opens, and a warning when the leet sync is failing. Its spoken label carries both amounts. Tap the button to see the list: the "income" control picks what the sample ledger holds.',
   controls: {
     bait: { kind: 'number', min: 0, max: 999999 },
     essence: { kind: 'number', min: 0, max: 999999 },
+    income: { kind: 'select', options: INCOME_CASES },
+    syncFailing: { kind: 'toggle' },
   },
-  defaults: { bait: 52, essence: 52 },
+  defaults: { bait: 52, essence: 52, income: 'typical', syncFailing: false },
   presets: [
     { name: 'Typical', props: {} },
-    { name: 'Nothing yet', props: { bait: 0, essence: 0 } },
+    { name: 'Nothing yet', props: { bait: 0, essence: 0, income: 'nothing yet' } },
     { name: 'Rich', props: { bait: 123456, essence: 9876 } },
+    { name: 'Income: only spends in the ledger', props: { income: 'only spends' } },
+    { name: 'Income: loading', props: { income: 'loading' } },
+    { name: 'Income: failed to load', props: { income: 'failed' } },
+    { name: 'Leet sync failing', props: { syncFailing: true } },
   ],
   render: (p) => (
     <div class="wb-pop-stage">
-      <CurrencyPile balances={{ bait: num(p, 'bait'), essence: num(p, 'essence') }} />
+      <CurrencyPile
+        key={str(p, 'income')}
+        balances={{ bait: num(p, 'bait'), essence: num(p, 'essence') }}
+        loadLedger={incomeLoader(str(p, 'income'))}
+        leetSync={bool(p, 'syncFailing') ? FAILING_SYNC : null}
+      />
     </div>
   ),
-};
-
-const TAB_IDS = TABS.map((t) => t.id);
-
-function tabOf(value: string): Tab {
-  return TAB_IDS.find((id) => id === value) ?? 'collection';
-}
-
-function TabBarDemo({ p }: { p: Props }) {
-  const [current, setCurrent] = useState<Tab>(tabOf(str(p, 'current')));
-  const wanted = str(p, 'current');
-  useEffect(() => {
-    setCurrent(tabOf(wanted));
-  }, [wanted]);
-  const alerts: TabAlerts = {
-    ...NO_ALERTS,
-    workshop: bool(p, 'workshop') ? ALERT_TEXT.jobReady : null,
-    expeditions: bool(p, 'expeditions') ? ALERT_TEXT.tripHome : null,
-    games: bool(p, 'games') ? ALERT_TEXT.gamesLive : null,
-    dungeon: bool(p, 'dungeon') ? ALERT_TEXT.dungeonOpen : null,
-    raid: bool(p, 'raid') ? ALERT_TEXT.raidPlace : null,
-  };
-  return <TabBar current={current} alerts={alerts} onSelect={setCurrent} />;
-}
-
-const tabBar: Entry = {
-  name: 'TabBar',
-  file: 'apps/activity/src/TabBar.tsx',
-  group: 'Controls',
-  description:
-    'The six main tabs of the game (Creatures, Workshop, Expeditions, Games, Dungeon, Raid); a tab with something waiting for the player has a small orange square pip at its top right corner. Tap a tab or use the arrow keys.',
-  controls: {
-    current: { kind: 'select', options: TAB_IDS },
-    workshop: { kind: 'toggle' },
-    expeditions: { kind: 'toggle' },
-    games: { kind: 'toggle' },
-    dungeon: { kind: 'toggle' },
-    raid: { kind: 'toggle' },
-  },
-  defaults: {
-    current: 'collection',
-    workshop: false,
-    expeditions: false,
-    games: false,
-    dungeon: false,
-    raid: false,
-  },
-  presets: [
-    { name: 'No pips', props: {} },
-    {
-      name: 'All pips',
-      props: { workshop: true, expeditions: true, games: true, dungeon: true, raid: true },
-    },
-    {
-      name: 'Expeditions open, two pips',
-      props: { current: 'expeditions', expeditions: true, dungeon: true },
-    },
-    { name: 'Games open, the show is on', props: { current: 'games', games: true } },
-    {
-      name: 'Pip on the gold tab',
-      props: { current: 'raid', raid: true, workshop: true },
-    },
-  ],
-  render: (p) => <TabBarDemo p={p} />,
 };
 
 function ScrollHintDemo({ p }: { p: Props }) {
@@ -560,6 +513,5 @@ export const controlEntries: readonly Entry[] = [
   playbackControls,
   liveRegion,
   currencyPile,
-  tabBar,
   scrollHint,
 ];

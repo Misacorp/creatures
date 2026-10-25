@@ -5,7 +5,7 @@
  */
 import type { Creature, GameState } from './api';
 import { ribbonCostText, ribbonName } from './experience';
-import { speciesName } from './game';
+import { creatureName, speciesName } from './game';
 import { busyReason } from './gear-view';
 import { bookActions } from './talent-view';
 
@@ -70,6 +70,50 @@ export function creatureNeeds(creature: Creature, state: NeedsState): Need[] {
     });
   }
   return needs;
+}
+
+/**
+ * The creatures that need the player for something they can act on now, for the Home board's Creatures
+ * notice: those with a ribbon to earn, an evolution that is not blocked (a creature away or on a job cannot
+ * evolve yet), or a talent slot to fill. A waiting duplicate is left out here: the catches have their own
+ * line (the pending catches' count), so the same thing is never said twice.
+ */
+export function noticeNeeds(
+  creatures: readonly Creature[],
+  state: NeedsState,
+): { creature: Creature; needs: Need[] }[] {
+  const rows: { creature: Creature; needs: Need[] }[] = [];
+  for (const creature of creatures) {
+    const needs = creatureNeeds(creature, state).filter(
+      (n) => n.kind !== 'duplicate' && n.blocked === undefined,
+    );
+    if (needs.length > 0) rows.push({ creature, needs });
+  }
+  return rows;
+}
+
+/**
+ * What the Creatures notice says about the creatures themselves, or null when none needs the player: one
+ * creature with one need is named ("Splashet can evolve", "Mistnewt can earn its Bronze Ribbon", "Pip has a
+ * talent slot to fill"); one creature with several is "Pip needs you"; several creatures are counted ("3
+ * creatures need you"). Names are text (a nickname is the player's own).
+ */
+export function creaturesNeedLine(
+  creatures: readonly Creature[],
+  state: NeedsState,
+): string | null {
+  const rows = noticeNeeds(creatures, state);
+  const [first] = rows;
+  if (first === undefined) return null;
+  if (rows.length > 1) return `${String(rows.length)} creatures need you`;
+  const name = creatureName(first.creature);
+  const [only] = first.needs;
+  if (first.needs.length > 1 || only === undefined) return `${name} needs you`;
+  if (only.kind === 'evolve') return `${name} can evolve`;
+  if (only.kind === 'ribbon' && first.creature.ribbon !== null) {
+    return `${name} can earn its ${ribbonName(first.creature.ribbon.id)}`;
+  }
+  return `${name} has a talent slot to fill`;
 }
 
 /** The ids of the creatures that need the player (for the "Needs you" filter and its count). */

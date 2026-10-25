@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import gearState from './fixtures/gear-state.json';
 import { parseGearState } from './gear-parse';
 import { originText, PRIZE_STALL } from './gear-view';
-import { describeEntry } from './ledger-text';
+import { incomeLine } from './ledger-text';
 
 /**
  * The Valley Games' Prize Stall grants gear with `origin: { kind: 'games' }` and records its grants
@@ -34,9 +34,9 @@ describe('Prize Stall prizes in the bag', () => {
     expect(parseGearState(raw).grants).toHaveLength(raw.grants.length - 1);
   });
 
-  it('names Bait from the stall in the ledger', () => {
+  it('names Bait from the stall in the Bait income list', () => {
     expect(
-      describeEntry({
+      incomeLine({
         id: 1,
         currency: 'bait',
         amount: 30,
@@ -44,6 +44,6 @@ describe('Prize Stall prizes in the bag', () => {
         createdAt: 0,
         meta: { offer: 'bait-sack' },
       }),
-    ).toBe('+30 Bait · Prize Stall');
+    ).toBe('+30 · Prize Stall');
   });
 });

@@ -1,4 +1,3 @@
-import type { GlossarySection } from '@creatures/game';
 import { DiscordSDK } from '@discord/embedded-app-sdk';
 import { setExternalLinkOpener } from './external-link';
 import { setFinaleLiveOffered } from './live-flags';
@@ -7,13 +6,11 @@ import {
   ApiError,
   createSession,
   fetchConfig,
-  fetchHealth,
   fetchMe,
   fetchState,
   setReauthenticator,
   type AppConfig,
   type GameState,
-  type LeetSyncStatus,
   type Me,
 } from './api';
 import { AppHead } from './AppHead';
@@ -21,10 +18,8 @@ import { Game } from './Game';
 import { aloneParticipants, discordParticipants, type ParticipantSource } from './participants';
 import { PopoverHost } from './PopoverHost';
 import { HowToPlay } from './HowToPlay';
-import { leetStatusLine } from './leet-status';
-import { RecentActivity } from './RecentActivity';
-import { DataTable } from './ui/DataTable';
-import { footerRows } from './footer-rows';
+import { useHowTo } from './use-how-to';
+import { publishBuildInfo } from './build-info';
 
 type Status<T> =
   { state: 'loading' } | { state: 'error'; message: string } | { state: 'ok'; value: T };
@@ -43,6 +38,8 @@ const insideDiscord = new URLSearchParams(window.location.search).has('frame_id'
 
 async function boot(): Promise<Boot> {
   const config = await fetchConfig();
+  // The deployed branch and commit live in the page's meta tags (no visible footer).
+  publishBuildInfo(document, config);
   // The finale screen reads this when it opens (it polls as before while it is off).
   setFinaleLiveOffered(config.finaleLive);
   if (!insideDiscord) {
@@ -106,67 +103,22 @@ function useAsync<T>(load: () => Promise<T>): Status<T> {
   return status;
 }
 
-/** The newest known sync status: from polling, else the state call, else the /api/me call. */
-function shownLeetSync(boot: Boot, polled: LeetSyncStatus | null): LeetSyncStatus | null {
-  return polled ?? boot.game?.leetSync ?? boot.me?.leetSync ?? null;
-}
-
-/** One line about the leet sync; text only. A failed sync is a warning players can report. */
-function LeetStatus({ status }: { status: LeetSyncStatus | null }) {
-  if (status === null) return null;
-  const line = leetStatusLine(status, Date.now());
-  return (
-    <p class={line.tone === 'warning' ? 'small error' : 'small'} role="status">
-      {line.text}
-    </p>
-  );
-}
-
 export function App() {
   const bootStatus = useAsync(boot);
-  // The footer's sync status; refreshed by the game while the first sync is still running.
-  const [leetSync, setLeetSync] = useState<LeetSyncStatus | null>(null);
-  const healthStatus = useAsync(fetchHealth);
-  // The How to play page: closed (null), or open at a section (null section: the top).
-  const [howTo, setHowTo] = useState<{ section: GlossarySection | null; nonce: number } | null>(
-    null,
-  );
   const mainRef = useRef<HTMLElement>(null);
   const helpButton = useRef<HTMLButtonElement>(null);
-
-  // While the page is open nothing behind it can be reached with the keyboard or a screen reader.
-  const wasOpen = useRef(false);
-  useEffect(() => {
-    const open = howTo !== null;
-    mainRef.current?.toggleAttribute('inert', open);
-    // Closing the page puts focus back on the "?" button (the page may have been opened by a tag's link).
-    if (wasOpen.current && !open) helpButton.current?.focus();
-    wasOpen.current = open;
-  }, [howTo !== null]);
-
+  // The How to play page: closed (null), or open at a section (null section: the top).
+  const { howTo, open, close } = useHowTo(mainRef, helpButton);
   const openHowTo = (): void => {
-    setHowTo((open) => ({ section: null, nonce: (open?.nonce ?? 0) + 1 }));
+    open(null);
   };
   const loadedBoot = bootStatus.state === 'ok' ? bootStatus.value : null;
   // With a game on screen, the game draws the head (over the living room).
   const gameLoaded = loadedBoot !== null && loadedBoot.me !== null && loadedBoot.game !== null;
 
-  const healthText =
-    healthStatus.state === 'loading'
-      ? 'checking...'
-      : healthStatus.state === 'error'
-        ? `error (${healthStatus.message})`
-        : healthStatus.value.ok
-          ? 'ok'
-          : 'not ok';
-
   return (
-    <PopoverHost
-      onOpenHowTo={(section) => {
-        setHowTo((open) => ({ section, nonce: (open?.nonce ?? 0) + 1 }));
-      }}
-    >
-      <main class="card" ref={mainRef}>
+    <PopoverHost onOpenHowTo={open}>
+      <main class="card" ref={mainRef} tabIndex={-1}>
         {!gameLoaded && <AppHead helpRef={helpButton} onHelp={openHowTo} />}
 
         {bootStatus.state === 'loading' && <p>Loading...</p>}
@@ -183,7 +135,6 @@ export function App() {
                   participants={bootStatus.value.participants}
                   helpRef={helpButton}
                   onHelp={openHowTo}
-                  onLeetSync={setLeetSync}
                   allowance={bootStatus.value.me.allowance}
                   showPractice={bootStatus.value.config.environment !== 'production'}
                   devTools={bootStatus.value.config.devTools || bootStatus.value.me.devTools}
@@ -192,45 +143,12 @@ export function App() {
                 {bootStatus.value.config.leetSource === 'mock' && (
                   <p class="note">Leet points are simulated until the leet bot API is live</p>
                 )}
-                <RecentActivity
-                  refreshKey={shownLeetSync(bootStatus.value, leetSync)?.lastSyncedAt ?? null}
-                />
               </>
             )}
           </>
         )}
-
-        <footer>
-          {bootStatus.state === 'ok' && bootStatus.value.me !== null && (
-            <p class="small">Signed in as {bootStatus.value.me.user.displayName}</p>
-          )}
-          {bootStatus.state === 'ok' && bootStatus.value.me !== null && (
-            <LeetStatus status={shownLeetSync(bootStatus.value, leetSync)} />
-          )}
-          <DataTable
-            rows={footerRows(
-              bootStatus.state === 'ok'
-                ? {
-                    environment: bootStatus.value.config.environment,
-                    version: bootStatus.value.config.version,
-                    branch: bootStatus.value.config.branch,
-                    guildId: bootStatus.value.me?.guildId ?? null,
-                  }
-                : null,
-              healthText,
-            )}
-          />
-        </footer>
       </main>
-      {howTo !== null && (
-        <HowToPlay
-          section={howTo.section}
-          nonce={howTo.nonce}
-          onClose={() => {
-            setHowTo(null);
-          }}
-        />
-      )}
+      {howTo !== null && <HowToPlay section={howTo.section} nonce={howTo.nonce} onClose={close} />}
     </PopoverHost>
   );
 }
