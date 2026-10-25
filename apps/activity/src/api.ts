@@ -401,6 +401,68 @@ function isLevelResetNotice(value: unknown): value is LevelResetNotice {
   );
 }
 
+/** The automatic payouts that can be recorded while a player is away (the server's `AWAY_KINDS`). */
+export type AwayKind = 'leet' | 'raid' | 'games';
+
+/** What one source paid while the player was away. */
+export interface AwaySource {
+  kind: AwayKind;
+  bait: number;
+  essence: number;
+  /** Gear pieces and blueprints. */
+  items: number;
+  creatures: number;
+  medals: number;
+  xp: number;
+}
+
+/**
+ * What was paid while the player was away, until they dismiss it (`POST /api/away/dismiss` with `until`), and
+ * what waits for them to claim (trips that are home, Workshop jobs that are done).
+ */
+export interface AwaySummary {
+  sources: AwaySource[];
+  since: number;
+  /** The last payout recorded: what a dismissal names. */
+  until: number;
+  tripsWaiting: number;
+  jobsWaiting: number;
+}
+
+const AWAY_KINDS: readonly string[] = ['leet', 'raid', 'games'];
+
+function isAwaySource(value: unknown): value is AwaySource {
+  return (
+    isRecord(value) &&
+    typeof value['kind'] === 'string' &&
+    AWAY_KINDS.includes(value['kind']) &&
+    ['bait', 'essence', 'items', 'creatures', 'medals', 'xp'].every((k) => isInt(value[k]))
+  );
+}
+
+/** Checks the while-away summary: absent or null means none; any other shape is refused. */
+export function parseAway(value: unknown): AwaySummary | null {
+  if (value === undefined || value === null) return null;
+  if (
+    !isRecord(value) ||
+    !Array.isArray(value['sources']) ||
+    !value['sources'].every(isAwaySource) ||
+    !isInt(value['since']) ||
+    !isInt(value['until']) ||
+    !isInt(value['tripsWaiting']) ||
+    !isInt(value['jobsWaiting'])
+  ) {
+    throw new Error('the server returned an unexpected while-away summary');
+  }
+  return {
+    sources: value['sources'],
+    since: value['since'],
+    until: value['until'],
+    tripsWaiting: value['tripsWaiting'],
+    jobsWaiting: value['jobsWaiting'],
+  };
+}
+
 export interface GameState {
   serverNow: number;
   balances: Balances;
@@ -412,6 +474,8 @@ export interface GameState {
   cancelled: CancelledTrip[];
   /** The level reset card until the player dismisses it, else null. */
   levelReset: LevelResetNotice | null;
+  /** What was paid while the player was away until they dismiss it, else null. */
+  awayRewards: AwaySummary | null;
   slots: Slots;
   /** Supplies in stock: supply id to amount. */
   supplies: Record<string, number>;
@@ -628,6 +692,7 @@ export function parseGameState(data: unknown): GameState {
     expeditions: data['expeditions'],
     cancelled: data['cancelled'],
     levelReset: data['levelReset'] ?? null,
+    awayRewards: parseAway(data['awayRewards']),
     slots: data['slots'],
     supplies: data['supplies'],
     serverFirsts: data['serverFirsts'],
@@ -653,6 +718,11 @@ export async function fetchState(): Promise<GameState> {
 /** Dismisses the one-time level reset card for good; answers with the new state. */
 export async function dismissLevelReset(): Promise<GameState> {
   return stateFrom(await apiFetch('/api/level-reset/dismiss', jsonRequest('POST', {})));
+}
+
+/** Clears the while-away card the player was shown (`until` is the summary's last payout); answers with the new state. */
+export async function dismissAway(until: number): Promise<GameState> {
+  return stateFrom(await apiFetch('/api/away/dismiss', jsonRequest('POST', { until })));
 }
 
 export async function chooseStarter(species: string, idempotencyKey: string): Promise<GameState> {

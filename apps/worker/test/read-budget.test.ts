@@ -428,6 +428,7 @@ describe('rows read counter', () => {
     expect(readSourceOfPath('/api/state')).toBe('request:state');
     expect(readSourceOfPath('/api/raid/live/action')).toBe('request:raid');
     expect(readSourceOfPath('/api/level-reset/dismiss')).toBe('request:level-reset');
+    expect(readSourceOfPath('/api/away/dismiss')).toBe('request:away');
     expect(readSourceOfPath('/api/zzz')).toBe('request:other');
     expect(readSourceOfPath('/api/')).toBe('request:other');
     expect(readSourceOfPath('/elsewhere')).toBe('request:other');

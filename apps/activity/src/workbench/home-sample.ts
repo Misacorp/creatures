@@ -1,4 +1,4 @@
-import type { Attention, Creature } from '../api';
+import type { Attention, AwaySummary, Creature } from '../api';
 import type { Trip } from '../expedition-types';
 import { sampleCreature } from '../creature-card-sample';
 import gearRunning from '../fixtures/gear-running.json';
@@ -25,7 +25,13 @@ const MINUTE = 60_000;
 /** A time of day in Helsinki (UTC+2 in February) on the fixture's Saturday. */
 const at = (hour: number, minute: number): number => Date.UTC(2027, 1, 13, hour - 2, minute);
 
-export const HOME_STATES = ['busy', 'nothing waiting', 'nothing going on', 'crowded'] as const;
+export const HOME_STATES = [
+  'busy',
+  'nothing waiting',
+  'nothing going on',
+  'crowded',
+  'away',
+] as const;
 export type HomeState = (typeof HOME_STATES)[number];
 
 /** A trip of the sample explorers that ends at `endsAt` (an active trip still out). */
@@ -111,6 +117,19 @@ const EVOLVER = { ...sampleCreature('evolve ready'), id: 'home-evolver', caughtA
 const RIBBONER = { ...sampleCreature('ribbon ready'), id: 'home-ribbon', caughtAt: 2_000 };
 const TALENTED = { ...sampleCreature('talent to fill'), id: 'home-talent', caughtAt: 3_000 };
 
+/** What came in over a few days away: the daily gifts, a raid (Essence, experience, a find, a creature) and a Games day. */
+export const AWAY_SAMPLE: AwaySummary = {
+  sources: [
+    { kind: 'leet', bait: 47, essence: 0, items: 0, creatures: 0, medals: 0, xp: 0 },
+    { kind: 'raid', bait: 0, essence: 96, items: 1, creatures: 1, medals: 0, xp: 240 },
+    { kind: 'games', bait: 0, essence: 0, items: 0, creatures: 0, medals: 2, xp: 180 },
+  ],
+  since: HOME_NOW - 3 * 24 * HOUR,
+  until: HOME_NOW - 2 * HOUR,
+  tripsWaiting: 2,
+  jobsWaiting: 1,
+};
+
 /** Everything the Home page reads, for a day. `raid` false leaves the raid's schedule out (the game screen does not hold it today). */
 export function homeInput(state: string, raid: boolean): HomeInput {
   const common = {
@@ -121,6 +140,7 @@ export function homeInput(state: string, raid: boolean): HomeInput {
     raid: raid ? RAID : null,
     forecast: sampleForecast('boon and omen'),
   };
+  if (state === 'away') return { ...homeInput('busy', raid), away: AWAY_SAMPLE };
   if (state === 'nothing waiting') {
     return {
       ...common,

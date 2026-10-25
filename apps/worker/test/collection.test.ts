@@ -380,6 +380,7 @@ describe('GET /api/state', () => {
         expect(Object.keys(before).sort()).toEqual(
           [
             'attention',
+            'awayRewards',
             'balances',
             'bookSlotBait',
             'cancelled',

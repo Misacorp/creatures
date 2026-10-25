@@ -5,6 +5,7 @@
  * own ledger; credits are keyed by day id, so a repeat or a backfill never pays a day twice. The await
  * on the source happens between page transactions, never inside one.
  */
+import { recordAway } from './while-away';
 import { leetBonusForDay, leetPointsForDay } from '@creatures/game';
 import {
   LEET_BACKFILL_DAYS,
@@ -192,7 +193,10 @@ export class LeetSync {
               },
               this.deps.now(),
             );
-            if (credited.applied) count++;
+            if (credited.applied) {
+              count++;
+              recordAway(this.sql, participant.userId, 'leet', { bait }, this.deps.now());
+            }
           }
         }
         this.sql.exec(

@@ -4,6 +4,7 @@ import evolveOtherFixture from './fixtures/branches-evolve-other.json';
 import branchRequests from './fixtures/branches-request-bodies.json';
 import {
   createSession,
+  dismissAway,
   evolveCreature,
   fetchConfig,
   fetchFinaleTicket,
@@ -282,6 +283,23 @@ describe('the lounger and room requests', () => {
     expect(sent[sent.length - 1]?.path).toBe('/api/lounger');
     expect(sent[sent.length - 1]?.init.method).toBe('PUT');
     expect(sent[sent.length - 1]?.init.body).toBe('{"creatureId":"c9"}');
+  });
+
+  it('POSTs the last payout it was shown to /api/away/dismiss and returns the new state', async () => {
+    await signIn();
+    const sent: { path: string; init: RequestInit }[] = [];
+    vi.stubGlobal('fetch', (path: string, init: RequestInit) => {
+      sent.push({ path, init });
+      return Promise.resolve(
+        Response.json({ state: { ...evolveFixture.state, awayRewards: null } }),
+      );
+    });
+    const state = await dismissAway(1234);
+    expect(state.awayRewards).toBeNull();
+    const last = sent[sent.length - 1];
+    expect(last?.path).toBe('/api/away/dismiss');
+    expect(last?.init.method).toBe('POST');
+    expect(last?.init.body).toBe('{"until":1234}');
   });
 
   it('PUTs { spotId } to /api/lounge-spot and returns the stored choice', async () => {

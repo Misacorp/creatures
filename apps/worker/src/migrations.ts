@@ -2,6 +2,7 @@
  * The schema migrations of a guild's Durable Object database. `SCHEMA_VERSION` is the version of a
  * fresh database: adding a migration to the end of the list raises it by one (tests use it).
  */
+import { whileAwayMigration } from './while-away';
 import { analyticsRollupMigration } from './analytics-rollup';
 import { creatureQuirkMigration } from './creature-quirk-migration';
 import { creaturesAMigration } from './creatures-a-migration';
@@ -311,6 +312,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
     raidReadinessMigration(sql);
     raidTeamCacheMigration(sql);
   },
+  // Version 46: what was paid while a player was away (see while-away.ts).
+  whileAwayMigration,
 ];
 
 /** The schema version of a fresh database. */

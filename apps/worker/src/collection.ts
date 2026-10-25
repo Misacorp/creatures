@@ -64,6 +64,7 @@ import { GameError, atomically, type Outcome } from './outcome';
 import { recordServerFirst, type ServerFirstKind } from './server-firsts';
 import { speciesOf } from './species';
 import type { Weather } from './weather';
+import { awaySummary, dismissAway, type AwaySummary } from './while-away';
 
 export { speciesOf } from './species';
 export type { ErrorStatus, Outcome } from './outcome';
@@ -226,6 +227,8 @@ export interface PlayerState {
   cancelled: CancelledView[];
   /** The one-time level reset card (levels halved, Bait refunded) until the player dismisses it, else null. */
   levelReset: LevelResetNotice | null;
+  /** What was paid while the player was away, until they dismiss it (while-away.ts), else null. */
+  awayRewards: AwaySummary | null;
   /** Expedition slots: how many there are, how many are used and what opens the next one. */
   slots: SlotsView;
   /** Supplies in stock: supply id to amount. */
@@ -537,6 +540,7 @@ export class Collection {
       expeditions: trips.expeditions,
       cancelled: trips.cancelled,
       levelReset: pendingLevelReset(this.sql, userId),
+      awayRewards: awaySummary(this.sql, userId, this.deps.now()),
       slots: trips.slots,
       supplies: trips.supplies,
       serverFirsts: this.serverFirsts(userId),
@@ -552,6 +556,11 @@ export class Collection {
   /** Dismisses the one-time level reset card (repeats change nothing). */
   dismissLevelReset(userId: string): void {
     dismissLevelReset(this.sql, userId, this.deps.now());
+  }
+
+  /** Clears the while-away card the player was shown (`until` is its last payout; repeats change nothing). */
+  dismissAway(userId: string, until: number): void {
+    dismissAway(this.sql, userId, until);
   }
 
   // --- Starter ---

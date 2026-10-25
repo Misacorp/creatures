@@ -65,7 +65,15 @@ export function HomeDemo({
       home
     />
   );
-  const page = <HomePage input={input} settings={settings} onGo={NOTHING} onHowTo={NOTHING} />;
+  const page = (
+    <HomePage
+      input={input}
+      settings={settings}
+      onGo={NOTHING}
+      onHowTo={NOTHING}
+      onDismissAway={NOTHING}
+    />
+  );
   return (
     <PopoverHost onOpenHowTo={NOTHING}>
       <div class={wide ? 'nd hm nd-wide' : 'nd hm nd-phone'}>

@@ -24,6 +24,7 @@ import { FINALE_ACTION_PATHS, LIVE_QUIET_PATHS, type LiveHooks } from './live-so
 import { liveRoutes } from './live-routes';
 import type { LiveSnapshot } from './raid-live-view';
 import { pruneOldData } from './old-data';
+import { pruneAway } from './while-away';
 import { maintainedDay, markMaintained, markStartupPasses, startupPassesRan } from './maintenance';
 import { DevState } from './dev-state';
 import { DevTools, devRoutes, isDevPath } from './dev-tools';
@@ -1648,6 +1649,7 @@ export class GuildCore {
     pruneOutbox(this.sql, this.now());
     this.dungeon.closeStale();
     this.dungeon.prune();
+    pruneAway(this.sql, this.now());
     const oldBacklog = pruneOldData(this.storage, this.now(), this.timezone());
     this.pruneBacklog = analyticsBacklog || oldBacklog;
     if (!this.pruneBacklog) markMaintained(this.sql, day);
