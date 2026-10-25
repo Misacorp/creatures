@@ -5,7 +5,7 @@ import { incomeLoader } from '../income-sample';
 import { MainNav } from '../../MainNav';
 import { navPlaces, type NavPlace } from '../../nav-places';
 import { ALERT_TEXT, NO_ALERTS, type TabAlerts } from '../../tab-alerts';
-import { useWide } from '../../ui/wide-layout';
+import { useBar, useWide } from '../../ui/wide-layout';
 import { DemoScreen } from './screens';
 
 /**
@@ -15,7 +15,7 @@ import { DemoScreen } from './screens';
  * preview iframe can show it. Creatures, Games and Expeditions are the real screens on fixture data.
  */
 
-export const LAYOUTS = ['auto', 'phone', 'desktop'] as const;
+export const LAYOUTS = ['auto', 'phone', 'bar', 'desktop'] as const;
 
 /** What starts open on a phone: a group's sub-menu. */
 export const MENUS = ['none', 'collection', 'adventure'] as const;
@@ -62,7 +62,9 @@ export function MainNavDemo({
   layout: string;
 }) {
   const auto = useWide();
+  const autoBar = useBar();
   const wide = layout === 'desktop' || (layout === 'auto' && auto);
+  const bar = !wide && (layout === 'bar' || (layout === 'auto' && autoBar));
   const places = demoPlaces(pips, extra);
   const [picked, setPicked] = useState(place);
   const current =
@@ -78,6 +80,7 @@ export function MainNavDemo({
       onSelect={setPicked}
       openGroup={menu === 'none' ? undefined : menu}
       home
+      bar={bar}
     />
   );
   const screen = (

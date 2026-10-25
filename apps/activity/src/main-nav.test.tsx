@@ -370,6 +370,39 @@ describe('MainNav as the wide rail', () => {
     ]);
   });
 
+  it('in between (bar) puts every place in one bottom row, Home first, with no sub-menus', () => {
+    const onSelect = vi.fn();
+    const p = draw(
+      <MainNav places={navPlaces(PIPS)} current="raid" wide={false} bar home onSelect={onSelect} />,
+    );
+    const landmark = first(find(p.root, (el) => el.localName === 'nav'));
+    expect(landmark.getAttribute('class')).toContain('bar');
+    const names = byClass(p.root, 'nav-btn').map((b) => b.getAttribute('data-place'));
+    expect(names).toEqual([
+      'home',
+      'collection',
+      'workshop',
+      'journal',
+      'stats',
+      'expeditions',
+      'dungeon',
+      'raid',
+      'games',
+    ]);
+    expect(find(p.root, (el) => el.getAttribute('aria-expanded') !== null)).toHaveLength(0);
+    expect(first(byName(p.root, 'button', /^Raid/)).getAttribute('aria-current')).toBe('page');
+    p.update(() => {
+      p.pointer(first(byName(p.root, 'button', /^Games/)), 'pointerdown', {
+        x: 0,
+        y: 0,
+        kind: 'touch',
+      });
+    });
+    expect(onSelect).toHaveBeenLastCalledWith('games');
+    p.click(first(byName(p.root, 'button', 'Home')));
+    expect(onSelect).toHaveBeenLastCalledWith('home');
+  });
+
   it('has no Home when it is not asked for one', () => {
     const p = draw(nav({ wide: true }));
     expect(byName(p.root, 'button', 'Home')).toHaveLength(0);
