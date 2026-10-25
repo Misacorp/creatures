@@ -9,6 +9,8 @@
  *
  * The board is the rows of `home-view.ts` plus these two choices. Nothing here draws or asks the server.
  */
+import type { AwaySummary } from '../api';
+import { hasAwayNotice } from './away-notice';
 import {
   comingUp,
   needsYou,
@@ -62,6 +64,8 @@ export function noticeTilt(id: string, index: number): number {
 }
 
 export interface Board {
+  /** The "While you were away" paper, or null when nothing was recorded (or it was dismissed). */
+  away: AwaySummary | null;
   /** One notice per place that needs the player, the most pressing first. */
   needs: NeedRow[];
   /** True when nothing needs the player: the calm line stands in the first section. */
@@ -76,8 +80,11 @@ export interface Board {
 }
 
 /** The ids of the notices in the order they lean: which way each leans follows this order. */
-export function noticeIds(board: Pick<Board, 'needs' | 'calm' | 'coming' | 'quiet'>): string[] {
+export function noticeIds(
+  board: Pick<Board, 'away' | 'needs' | 'calm' | 'coming' | 'quiet'>,
+): string[] {
   return [
+    ...(board.away === null ? [] : ['away']),
     ...board.needs.map((row) => `need:${row.place}`),
     ...(board.calm ? ['calm'] : []),
     ...(board.coming.length > 0 ? ['coming'] : []),
@@ -89,6 +96,7 @@ export function noticeIds(board: Pick<Board, 'needs' | 'calm' | 'coming' | 'quie
 export function buildBoard(input: HomeInput, settings: BoardSettings): Board {
   const needs = needsYou(input);
   const parts = {
+    away: hasAwayNotice(input.away) ? input.away : null,
     needs,
     calm: needs.length === 0,
     coming: comingUp(input),

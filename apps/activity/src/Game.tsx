@@ -2,6 +2,7 @@ import type { RefObject } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
   chooseStarter,
+  dismissAway,
   dismissLevelReset,
   fetchState,
   setLoungeSpot,
@@ -579,6 +580,11 @@ export function Game({
                   onHelp();
                 }}
                 howToRef={boardHelpRef}
+                away={game.awayRewards}
+                awayBusy={busy}
+                onDismissAway={(until) => {
+                  void run(() => dismissAway(until)).then(showState);
+                }}
                 onGo={(place, needsFilter) => {
                   goTo(place, needsFilter === true ? { needsFilter } : {});
                   refreshState();
