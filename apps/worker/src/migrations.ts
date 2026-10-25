@@ -6,6 +6,7 @@ import { analyticsRollupMigration } from './analytics-rollup';
 import { creatureQuirkMigration } from './creature-quirk-migration';
 import { creaturesAMigration } from './creatures-a-migration';
 import { creaturesBMigration } from './creatures-b-migration';
+import { dmNotifyMigration } from './dm-migration';
 import { dungeonDraftMigration } from './dungeon-draft-migration';
 import { dungeonMigration } from './dungeon-migration';
 import { dungeonPathMigration } from './dungeon-path-migration';
@@ -291,6 +292,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   // Version 40: the Valley Games' event badges, wins per creature and event, back-filled from the
   // awarded gold placings (see games-badges-migration.ts).
   gamesBadgesMigration,
+  // Version 41: opt-in Discord DMs, their queue and the log of what was sent (see dm-migration.ts).
+  dmNotifyMigration,
 ];
 
 /** The schema version of a fresh database. */

@@ -247,6 +247,13 @@ describe('the event writer', () => {
         attempts: 2.9,
       }),
     ).toEqual({ result: 'sent', error: 'rejected', attempts: 2 });
+    expect(propsOf({ kind: 'dm_pref', which: 'secret' as never, on: true })).toEqual({
+      which: 'trip',
+      on: true,
+    });
+    expect(
+      propsOf({ kind: 'dm_result', result: 'blocked', error: 'user 123' as never, attempts: 1.5 }),
+    ).toEqual({ result: 'blocked', error: 'rejected', attempts: 1 });
     expect(
       propsOf({
         kind: 'team_set',

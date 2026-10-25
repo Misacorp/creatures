@@ -548,6 +548,18 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
           event.error === null ? null : POST_ERRORS.has(event.error) ? event.error : 'rejected',
         attempts: int(event.attempts, 99),
       };
+    case 'dm_pref':
+      return {
+        which: oneOf(['trip', 'job', 'finale', 'stall'] as const, event.which, 'trip'),
+        on: event.on === true,
+      };
+    case 'dm_result':
+      return {
+        result: oneOf(['sent', 'retry', 'failed', 'blocked'] as const, event.result, 'failed'),
+        error:
+          event.error === null ? null : POST_ERRORS.has(event.error) ? event.error : 'rejected',
+        attempts: int(event.attempts, 99),
+      };
   }
 }
 

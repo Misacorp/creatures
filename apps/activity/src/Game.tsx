@@ -24,6 +24,7 @@ import {
 } from './home/board-settings';
 import type { BoardSettings } from './home/board';
 import { SettingsPage } from './settings/SettingsPage';
+import { serverNotifications } from './notifications-api';
 import { HomeBook } from './home/HomeBook';
 import { HomeScreen } from './home/HomeScreen';
 import { Hud } from './Hud';
@@ -540,6 +541,7 @@ export function Game({
               backLabel={`to ${placeLabelBeforeSettings}`}
               onHowTo={onHelp}
               howToRef={helpRef}
+              notifications={serverNotifications}
             />
           )}
           <div key={devNonce} hidden={settingsOpen}>

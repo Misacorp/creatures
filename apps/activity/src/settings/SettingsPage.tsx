@@ -1,8 +1,11 @@
-import type { ComponentChildren, RefObject } from 'preact';
+import type { RefObject } from 'preact';
 import type { BoardSettings, IdleMode, TiltMode } from '../home/board';
+import type { NotificationsApi } from '../notifications-api';
 import { DrillHead } from '../ui/DrillHead';
 import { onDrillKey } from '../ui/drill-keys';
 import { Segmented } from '../ui/Segmented';
+import { DiscordDms } from './DiscordDms';
+import { SettingRow } from './SettingRow';
 
 const TILT_OPTIONS: readonly { id: TiltMode; label: string }[] = [
   { id: 'none', label: 'Flat' },
@@ -14,32 +17,12 @@ const IDLE_OPTIONS: readonly { id: IdleMode; label: string }[] = [
   { id: 'show', label: 'Show' },
 ];
 
-/** One setting: its name and a line about it, then its control (a row per setting). */
-function SettingRow({
-  name,
-  hint,
-  children,
-}: {
-  name: string;
-  hint: string;
-  children: ComponentChildren;
-}) {
-  return (
-    <li class="setting-row">
-      <div class="setting-text">
-        <b class="setting-name">{name}</b>
-        <span class="setting-hint">{hint}</span>
-      </div>
-      {children}
-    </li>
-  );
-}
-
 /**
  * The Settings page, opened from the cog in the HUD: a drill-in ("‹ Back", Escape) of sections, one row per
  * setting, each a name, a line about it and a control. How to play opens from here too (the HUD keeps one
- * button so the place's name fits a phone). The choices are display preferences kept on this device
- * (`home/board-settings.ts`), never the server's. A new setting is one `SettingRow` in a section; a new
+ * button so the place's name fits a phone). The board's choices are display preferences kept on this device
+ * (`home/board-settings.ts`); the Discord DMs section (`DiscordDms`) is the one exception: it holds the
+ * server's settings, loaded and saved through `notifications`. A new setting is one `SettingRow` in a section; a new
  * section is one more `<section class="settings-section">`.
  */
 export function SettingsPage({
@@ -49,6 +32,7 @@ export function SettingsPage({
   backLabel = 'to the game',
   onHowTo,
   howToRef,
+  notifications,
 }: {
   settings: BoardSettings;
   onChange: (next: BoardSettings) => void;
@@ -58,6 +42,8 @@ export function SettingsPage({
   onHowTo?: () => void;
   /** Where the focus returns when How to play closes. */
   howToRef?: RefObject<HTMLButtonElement | null>;
+  /** Loads and saves the Discord DM settings; without it the Discord DMs section is not drawn. */
+  notifications?: NotificationsApi;
 }) {
   return (
     <section class="home-sub settings-page" aria-label="Settings" onKeyDown={onDrillKey(onBack)}>
@@ -113,6 +99,7 @@ export function SettingsPage({
           </SettingRow>
         </ul>
       </section>
+      {notifications !== undefined && <DiscordDms api={notifications} />}
     </section>
   );
 }
