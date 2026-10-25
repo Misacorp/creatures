@@ -3,12 +3,13 @@ import type { Balances, LeetSyncStatus, LedgerEntry } from './api';
 import { CurrencyPile } from './CurrencyPile';
 import { glyphOrUnknown } from './glyphs';
 import { Sprite } from './sprites/Sprite';
+import { instantPress } from './ui/instant-press';
 
 /** The cog that opens Settings (How to play is inside Settings, so the HUD keeps one button). */
 export function SettingsButton({ onSettings }: { onSettings: () => void }) {
   return (
-    <button type="button" class="hud-gear" aria-label="Settings" onClick={onSettings}>
-      <Sprite sprite={glyphOrUnknown('gear')} scale={3} />
+    <button type="button" class="hud-gear" aria-label="Settings" {...instantPress(onSettings)}>
+      <Sprite sprite={glyphOrUnknown('gear')} scale={2} />
     </button>
   );
 }

@@ -10,6 +10,7 @@ import {
 } from './nav-places';
 import { Sprite } from './sprites/Sprite';
 import { tabPalette } from './tabs';
+import { instantPress } from './ui/instant-press';
 
 /**
  * The main navigation (decisions.md 2026-10-24, reworked three times the same day): one list of places
@@ -105,9 +106,9 @@ function PlaceButton({
       class={`nav-btn${active ? ' active' : ''}${extra === undefined ? '' : ` ${extra}`}`}
       aria-current={active ? 'page' : undefined}
       data-place={place.id}
-      onClick={() => {
+      {...instantPress(() => {
         onSelect(place.id);
-      }}
+      })}
     >
       <PlaceIcon glyph={place.glyph} active={active && !flatIcon} />
       <span class="nav-label">{place.label}</span>
@@ -260,10 +261,10 @@ function Dock({
                     if (el === null) buttons.current.delete(group.id);
                     else buttons.current.set(group.id, el);
                   }}
-                  onClick={() => {
+                  {...instantPress(() => {
                     if (isOpen) close(true);
                     else setOpen(group.id);
-                  }}
+                  })}
                 >
                   <PlaceIcon glyph={group.glyph} active={false} />
                   <span class="nav-label">{group.label}</span>
@@ -306,7 +307,7 @@ function HomeNavButton({
       class={`nav-btn home${current ? ' current' : ''}`}
       aria-current={current ? 'page' : undefined}
       data-place={entry.id}
-      onClick={onOpen}
+      {...instantPress(onOpen)}
     >
       <PlaceIcon glyph={entry.glyph} active scale={3} />
       <span class="nav-label">{entry.label}</span>
@@ -345,9 +346,9 @@ function Tray({
               class={here ? 'nav-tray-item active' : 'nav-tray-item'}
               aria-current={here ? 'page' : undefined}
               data-place={place.id}
-              onClick={() => {
+              {...instantPress(() => {
                 onPick(place.id);
-              }}
+              })}
             >
               <PlaceIcon glyph={place.glyph} active={here} />
               <span class="nav-tray-name pix">{place.label}</span>

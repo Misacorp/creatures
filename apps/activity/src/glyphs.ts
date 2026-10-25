@@ -531,17 +531,17 @@ const stats: SpriteDef = {
   ],
 };
 
-/** A cog: the Settings button in the HUD. */
+/** A cog: the Settings button in the HUD. A ring with a round hole and eight teeth (four flat, four at the corners). */
 const gear: SpriteDef = {
   palette: { w: BONE },
   rows: [
     '.w.ww.w.',
-    '.wwwwww.',
-    '.wwwwww.',
-    'www..www',
-    'www..www',
-    '.wwwwww.',
-    '.wwwwww.',
+    '..wwww..',
+    '.ww..ww.',
+    'ww....ww',
+    'ww....ww',
+    '.ww..ww.',
+    '..wwww..',
     '.w.ww.w.',
   ],
 };

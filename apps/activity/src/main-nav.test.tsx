@@ -176,6 +176,32 @@ describe('MainNav as the phone dock', () => {
     expect(trayItems(p.root)).toHaveLength(0);
   });
 
+  it('answers a finger on its touch down (a tap that only stops a glide sends no click): tray, place, Home', () => {
+    const onSelect = vi.fn();
+    const p = draw(nav({ home: true, onSelect }));
+    const touch = (el: FakeElement): void => {
+      p.update(() => {
+        p.pointer(el, 'pointerdown', { x: 0, y: 0, kind: 'touch' });
+      });
+    };
+    touch(first(byName(p.root, 'button', /^Adventure/)));
+    expect(trayItems(p.root).length).toBeGreaterThan(0);
+    touch(first(trayItems(p.root)));
+    expect(onSelect).toHaveBeenLastCalledWith('expeditions');
+    expect(trayItems(p.root)).toHaveLength(0);
+    touch(first(byName(p.root, 'button', 'Home')));
+    expect(onSelect).toHaveBeenLastCalledWith('home');
+    // A mouse still waits for its click.
+    p.update(() => {
+      p.pointer(first(byName(p.root, 'button', /^Collection/)), 'pointerdown', {
+        x: 0,
+        y: 0,
+        kind: 'mouse',
+      });
+    });
+    expect(trayItems(p.root)).toHaveLength(0);
+  });
+
   it('goes straight to the place from a group with one place, with no menu', () => {
     const onSelect = vi.fn();
     const only = navPlaces(NO_ALERTS).filter(

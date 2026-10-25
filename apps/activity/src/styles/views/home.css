@@ -406,7 +406,7 @@ button.hb-badge {
   background: none;
   box-shadow: none;
   /* A see-through shadow, so the cork (or a notice under the pin) shows through it. */
-  filter: drop-shadow(var(--px) calc(var(--px) * 2) 0 rgb(var(--ink-rgb) / 0.45));
+  filter: drop-shadow(var(--px) var(--px) 0 rgb(var(--ink-rgb) / 0.25));
   --disc: polygon(
     32% 0,
     68% 0,
