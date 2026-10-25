@@ -1,6 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import { createGuildApi } from './discord';
 import { createPostSender, publicOrigin } from './discord-posts';
+import { createDmSender } from './dm-send';
 import { createLoungeClient } from './lounge-discord';
 import { LIVE_PATH, FINALE_LIVE_PATH } from './live-socket';
 import { LiveHub } from './live-hub';
@@ -48,6 +49,10 @@ export class GuildWorld extends DurableObject<Env> {
       postSender: createPostSender({
         botToken: env.DISCORD_BOT_TOKEN,
         origin: publicOrigin(env.ENVIRONMENT),
+        fetch: (input, init) => fetch(input, init),
+      }),
+      dmSender: createDmSender({
+        botToken: env.DISCORD_BOT_TOKEN,
         fetch: (input, init) => fetch(input, init),
       }),
       lounge: createLoungeClient({

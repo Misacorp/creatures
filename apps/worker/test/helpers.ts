@@ -293,8 +293,23 @@ export function undoGamesMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 39');
 }
 
+/** Puts a database back to before migration 41 (opt-in Discord DMs): its tables and indexes go. */
+export function undoDmNotifyMigration(sql: SqlStorage): void {
+  for (const table of ['dm_prefs', 'dm_outbox', 'dm_sent'])
+    sql.exec(`DROP TABLE IF EXISTS ${table}`);
+  for (const index of [
+    'expeditions_active_end',
+    'expeditions_active_push',
+    'workshop_jobs_open_end',
+  ]) {
+    sql.exec(`DROP INDEX IF EXISTS ${index}`);
+  }
+  sql.exec('DELETE FROM schema_version WHERE version = 41');
+}
+
 /** Puts a database back to before migration 40 (the Games' event badges): the table goes. */
 export function undoGamesBadgesMigration(sql: SqlStorage): void {
+  undoDmNotifyMigration(sql);
   sql.exec('DROP TABLE IF EXISTS games_badges');
   sql.exec('DELETE FROM schema_version WHERE version = 40');
 }
