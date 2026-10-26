@@ -1,0 +1,4 @@
+# Append-only logs: every branch adds its entry at the end, so a merge keeps both sides' lines instead of
+# conflicting. Review the merged order after a merge (an entry belongs after the one it builds on).
+docs/design/decisions.md merge=union
+docs/retros/*.md merge=union
