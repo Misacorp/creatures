@@ -26,6 +26,9 @@ export interface MeteredStorage {
   measure<T>(fn: () => T | Promise<T>): Promise<{ result: T; reads: ReadReport }>;
 }
 
+/** Called with every statement and its bindings just before it runs (the query plan audit records them). */
+export type ExecHook = (query: string, bindings: unknown[]) => void;
+
 const shape = (query: string): string => query.replace(/\s+/g, ' ').trim().slice(0, 140);
 
 function wrap<T extends object>(target: T, over: Record<string, unknown>): T {
@@ -39,10 +42,11 @@ function wrap<T extends object>(target: T, over: Record<string, unknown>): T {
 }
 
 /** Wraps a Durable Object's storage so `measure` can sum the rows read by what runs through it. */
-export function meterStorage(raw: DurableObjectStorage): MeteredStorage {
+export function meterStorage(raw: DurableObjectStorage, onExec?: ExecHook): MeteredStorage {
   let recorded: { query: string; cursor: { rowsRead: number } }[] = [];
   const sql = wrap(raw.sql, {
     exec: (query: string, ...bindings: unknown[]) => {
+      onExec?.(query, bindings);
       const cursor = raw.sql.exec(query, ...(bindings as []));
       recorded.push({ query, cursor });
       return cursor;

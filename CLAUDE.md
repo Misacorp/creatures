@@ -10,6 +10,7 @@ Read this file first. Design decisions live in `docs/design/` (start with `decis
 - Ask Misa about game feel and priorities, not implementation details. Make technical decisions yourself and record them in `docs/design/decisions.md` (newest last, with date and reasoning).
 - When Misa must do something manually (Discord portal, Cloudflare token, GitHub setting, secret), give him one short **numbered checklist** with exact names and values, and say what to send back. Batch requests. Never ask him to paste a secret into chat; secrets go straight into GitHub or Cloudflare.
 - Keep messages to him short, plain English.
+- When several numbers are in play and it isn't obvious which is which, say briefly what each one covers (for example per request or per day, measured or estimated).
 - When Misa gives an example of wording or design ("for example ..."), match its scope and tone. Don't elaborate it per case, per event or per item unless he asks.
 - When a check or constraint forces a visible change to a design Misa has already seen (its size, shape, art or layout), say so in the same message and show the new version. Never ship the changed design silently.
 
@@ -22,6 +23,7 @@ Read this file first. Design decisions live in `docs/design/` (start with `decis
 - Agents that read untrusted web content must never also have shell access. Keep it that way.
 - **Agents that review UX, UI, art or game feel get `docs/design/review-brief.md`** (Misa's standing priorities) in their prompt. A suggestion that trades against one of those priorities goes to Misa as a choice; it is not applied as the new default.
 - **Parallel implementers work in their own worktree** (the Agent tool's `isolation: "worktree"`), not in the lead's working tree. The lead reviews each one's branch and merges it into the session branch. Two agents editing one tree break each other's runs and leave the lead's tree dirty.
+- **Every implementer brief says:** start with `git fetch origin <session branch> && git reset --hard origin/<session branch>` (a worktree may start from `main`); use the migration number the lead assigns (parallel agents otherwise take the same one); never hand-edit captured fixtures (`pnpm fixtures:capture`); finish with `pnpm check:changed` and `pnpm fixtures:capture --check`.
 
 ## Pull requests
 
@@ -87,4 +89,4 @@ Run `pnpm check` before proposing a PR. CI runs the same. Lint runs per package 
 - Tests for every behaviour change; deterministic seeds in tests. Prove each rule once, at the lowest layer that can (`docs/design/testing.md`: layers, speed budgets, when to move a slow check down).
 - Times are stored as UTC epoch milliseconds; game-calendar logic converts to the guild's timezone (default `Europe/Helsinki`) in one place, and the timezone is always passed explicitly, never defaulted in a function signature.
 - Integer amounts only for currencies; never negative balances.
-- Hot paths (every request, every alarm tick, every object start) read only a few rows: use an index for every lookup there, never a whole-table scan; one-off backfills run once per deployed build, not on every start. The read budget test (`apps/worker/test/read-budget.test.ts`) must stay green; raise a budget only with a reason in the PR (Cloudflare's free tier allows 5,000,000 Durable Object rows read a day).
+- **Database reads stay small** (Cloudflare's free tier allows 5,000,000 Durable Object rows read a day; a 10-player server once used all of it). Hot paths (every request, alarm tick, object start) read a few rows through indexes; nothing that must last between requests lives in memory (the object sleeps seconds after a request); work that repeats on a timer is priced before it ships. How costs work, how to measure and look them up, and the checklist for a new feature: `docs/design/database-reads.md`. Its checks (read budget, query plan audit, day in the life) must stay green; raise a budget only with a reason in the PR.

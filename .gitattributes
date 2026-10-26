@@ -1,0 +1,5 @@
+# Append-only logs: every branch adds its entry at the end, so a merge keeps both sides' lines instead of
+# conflicting. After a merge, check the order (an entry belongs after the one it builds on) and run
+# `pnpm exec prettier --write` on the file: a union merge can drop the blank line between two entries.
+docs/design/decisions.md merge=union
+docs/retros/*.md merge=union
