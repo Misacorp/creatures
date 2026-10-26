@@ -70,20 +70,43 @@ in the worker.
 **Database reads**
 
 Cloudflare's free tier allows 5,000,000 Durable Object `rows_read` a day, and a whole-table scan on a path that runs
-on every request, every alarm or every object start used it up twice (decisions.md, 2026-10-25). Two guards:
+on every request, every alarm or every object start used it up twice (decisions.md, 2026-10-25). Four guards:
 
 - **The read budget test** (`apps/worker/test/read-budget.test.ts`). It seeds a realistic guild straight into the
-  tables (15 players, 30 creatures each with talents, a month of history in every table that grows: analytics,
-  Games, ledger, gear, dungeon runs, expeditions, jobs; about 1 s) and measures the rows read, the sum of `rowsRead`
+  tables (`test/read-world.ts`, shared with the two tests below: 15 players, 30 creatures each with talents, a month
+  of history in every table that grows: analytics, Games, ledger, gear, dungeon runs, expeditions, jobs; about 1 s)
+  and measures the rows read, the sum of `rowsRead`
   of every cursor (`test/read-meter.ts`, reusable: `meterStorage`, `expectReadsUnder`), by an object start of a
   build that already started, an alarm with no lounge, and `/api/me`, `/api/state`, `/api/room`, `/api/games`,
-  `/api/raid` and `/api/dungeon/today`. Each has a budget of about 1.5x the measured value (written next to it);
-  a failure lists the top statements by rows read, so the culprit is at the top. Raise a budget only with a reason
-  in the PR. The lounge tick is not covered.
-- **The growth check** in the same file adds a second month of history and measures the alarm and `/api/me` again;
-  they may read at most a few rows more. A new whole-table scan grows with the tables and fails it where a budget
-  alone would only notice after the data grew. (`/api/state` and `/api/raid` do grow with history today; they are
-  budgeted, not yet in the check.)
+  `/api/raid` and `/api/dungeon/today`, an alarm tick with 5 players lounging together (the object evicted before
+  it, as production is between ticks) and one raid placement with a teammate's board socket open. Each has a budget
+  of about 1.5x the measured value (written next to it); a failure lists the top statements by rows read, so the
+  culprit is at the top. Raise a budget only with a reason in the PR.
+- **The growth check** in the same file adds a second month of history and measures the alarm, the lounge tick, the
+  placement, `/api/me`, `/api/state` and `/api/raid` again; they may read at most a few rows more. A new
+  whole-table scan grows with the tables and fails it where a budget alone would only notice after the data grew.
+- **The query plan audit** (`apps/worker/test/query-plan-audit.test.ts`). It records every distinct SQL statement the
+  hot paths run in the same guild (an object start, a login, the main GETs including `/api/notifications`,
+  `/api/weather` and `/api/gear`, an alarm with and without the lounge, a lounge payment, a raid placement with a
+  board listener) and runs `EXPLAIN QUERY PLAN` on each with the bindings of its first execution. A plan step that
+  is a plain `SCAN <table>` (not `SEARCH`, not `USING INDEX`) of a table that grows with play fails, naming the
+  statement, its plan and the place in `src/` that ran it. This catches a missing index the day the statement is
+  written, on every statement, not only on the ones a budget measures. When it fails: fix the statement (an index in
+  a new migration, or a query that uses one). Tables that are small by design (one row per guild, player, party or
+  hour of sessions) are in `SMALL_BY_DESIGN` with the reason; a single statement that has to scan goes in `ACCEPTED`
+  with a reason. Add to either list only with a reason in the PR: they are a list of debts, not exceptions to
+  forget. It does not look at how often a statement runs: that is the next guard.
+- **A day in the life** (`apps/worker/test/read-day.test.ts`). One game day of a 10-player server on the same guild:
+  4 opens of the game per player (a login and the usual tabs), a raid look each, 5 board placements, 5 players
+  lounging for 3 hours with the object evicted between the minute ticks, and every alarm of the day (the daily
+  reset and maintenance included). Every start, alarm and request is a real measurement; to stay fast only 30 of
+  the 180 lounge ticks are simulated and the rest cost the average of the last 20 (flagged `scaled`). The day must
+  stay under its budget (about 5% of the free tier, set at 1.5x the measured total, written next to it); a failure
+  prints the rows by source (`start`, `alarm`, `lounge:*`, `request:<area>`). Cost per occurrence is covered by the
+  budget test and the audit, frequency by this one: a path that is cheap once but runs all day, or an object that
+  wakes more often, shows up here. When it fails: find the source that grew and fix the query or the frequency
+  (push a change instead of polling, keep the state in a table instead of memory, run a pass once per build). Raise
+  the budget only with a reason in the PR.
 - **Production** counts the same thing: `GuildCore` wraps its `SqlStorage` (`src/read-meter.ts`), adds the rows read
   to `db_reads` per game day and source (`start`, `alarm`, `socket`, `request:<area>`), and the daily rollup copies
   a finished day to `analytics_daily` as `db.rows_read` with the dim `source`. The ops report has a "Database reads"

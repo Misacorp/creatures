@@ -3,287 +3,32 @@
 // alarm or every object start used it up twice (decisions.md, 2026-10-25). The budgets below are about 1.5x
 // what each path read when they were set (the measured value is next to each); a failure lists the top
 // statements by rows read. Raise a budget only with a reason in the PR. See testing.md, "Database reads".
-import {
-  content,
-  createSeededRng,
-  gamesContent,
-  pickQuirk,
-  ribbonsForLevel,
-} from '@creatures/game';
-import { env } from 'cloudflare:workers';
-import { runInDurableObject } from 'cloudflare:test';
+// The seeded guild is `read-world.ts`; `query-plan-audit.test.ts` checks how the statements are planned and
+// `read-day.test.ts` adds them up over a day.
 import { describe, expect, it } from 'vitest';
-import { GuildCore, type GuildCoreOptions } from '../src/guild-core';
 import { ReadMeter, readSourceOfPath } from '../src/read-meter';
-import { rollMissingTalents } from '../src/talent-store';
-import { addDays, gameDay, zonedTimeToEpoch } from '../src/time';
-import { ORIGIN, USER_ID, runCore, tokenFor, type CoreContext } from './helpers';
+import { addDays, gameDay } from '../src/time';
+import { USER_ID, runCore } from './helpers';
 import { captureConsole } from './kit';
+import { HELSINKI, MINUTE, nextGuild, rows, seedPlayer } from './raid-helpers';
+import { describeReads, expectReadsUnder, type ReadReport } from './read-meter';
 import {
-  DAY,
-  HELSINKI,
-  HOUR,
-  MINUTE,
-  W02,
-  joinRaid,
-  nextGuild,
-  rows,
-  seedPlayer,
-  type Seeded,
-} from './raid-helpers';
-import { describeReads, expectReadsUnder, meterStorage, type ReadReport } from './read-meter';
-
-const GUILD_ID = '555555555555555555';
-const PLAYERS = 15;
-const CREATURES_PER_PLAYER = 30;
-const HISTORY_DAYS = 30;
-/** Tuesday 15:00 in the guild, after the daily reset and the rollup, a quiet moment of the raid week. */
-const NOW = W02.monday + DAY + HOUR;
-
-const userId = (n: number): string => `8${String(n).padStart(17, '0')}`;
-/** The seeded players as `joinRaid` wants them: each places the first three creatures they own. */
-const PLAYERS_SEEDED = (creatures: Record<string, string[]>): Seeded[] =>
-  Object.entries(creatures).map(([id, creatureIds]) => ({ id, name: id, creatureIds }));
-const EVENTS = gamesContent.events.slice(0, 3).map((e) => e.id);
-
-/** The first game-day a month of history covers, and the day of `NOW`. */
-const TODAY = gameDay(NOW, HELSINKI, { hour: 13, minute: 37 });
-
-/** Seeds the players, their creatures and talents: a guild that has played for a while. */
-function seedPlayers(sql: SqlStorage, storage: DurableObjectStorage): Record<string, string[]> {
-  const ids: Record<string, string[]> = {};
-  storage.transactionSync(() => {
-    for (let n = 1; n <= PLAYERS; n++) {
-      const id = userId(n);
-      sql.exec(
-        'INSERT INTO players (user_id, display_name, created_at, last_seen_at) VALUES (?, ?, ?, ?)',
-        id,
-        `Player ${String(n)}`,
-        NOW - 60 * DAY,
-        NOW - HOUR,
-      );
-      sql.exec("INSERT INTO balances (user_id, currency, amount) VALUES (?, 'bait', 900)", id);
-      sql.exec("INSERT INTO balances (user_id, currency, amount) VALUES (?, 'essence', 40)", id);
-      const perLine = new Map<string, number>();
-      const own: string[] = [];
-      for (const species of content.creatures) {
-        if (own.length >= CREATURES_PER_PLAYER) break;
-        const slot = (perLine.get(species.line) ?? 0) + 1;
-        if (slot > 2) continue;
-        perLine.set(species.line, slot);
-        const level = Math.min(8 + own.length, species.levelCap);
-        const creatureId = crypto.randomUUID();
-        sql.exec(
-          `INSERT INTO creatures (id, user_id, line, species, level, fusion_count, origin, caught_at, quirk_id, ribbons, line_slot)
-           VALUES (?, ?, ?, ?, ?, 0, 'test', ?, ?, ?, ?)`,
-          creatureId,
-          id,
-          species.line,
-          species.id,
-          level,
-          NOW - 50 * DAY + own.length,
-          pickQuirk(species.id, createSeededRng(`quirk:${String(n)}:${String(own.length)}`)),
-          ribbonsForLevel(level),
-          slot,
-        );
-        own.push(creatureId);
-      }
-      ids[id] = own;
-    }
-  });
-  // Every creature without a talent gets the slots its level has opened, as the start-up pass does.
-  rollMissingTalents(
-    { sql, transactionSync: (fn) => storage.transactionSync(fn) },
-    createSeededRng('read-budget-talents'),
-    NOW - 50 * DAY,
-  );
-  return ids;
-}
-
-/**
- * Adds `days` game days of history ending the day before `lastDay`, a few rows per player per day in every
- * table that grows. Everything is finished (games awarded, expeditions claimed, jobs claimed, runs done).
- */
-function seedHistory(
-  sql: SqlStorage,
-  storage: DurableObjectStorage,
-  lastDay: string,
-  days: number,
-  creatures: Record<string, string[]>,
-): void {
-  storage.transactionSync(() => {
-    for (let back = 1; back <= days; back++) {
-      const day = addDays(lastDay, -back);
-      const start = zonedTimeToEpoch(day, 13, 37, HELSINKI);
-      const rng = createSeededRng(`history:${day}`);
-      const pick = (n: number): number => rng.nextU32() % n;
-      // The Valley Games: a locked and awarded show day with three events.
-      sql.exec(
-        `INSERT INTO games_days (day, lineup_json, created_at, locked_at, seed, show_at, ends_at, awarded_at)
-         VALUES (?, ?, ?, ?, 'seed', ?, ?, ?)`,
-        day,
-        JSON.stringify(EVENTS),
-        start - DAY,
-        start,
-        start + 3 * MINUTE,
-        start + 10 * MINUTE,
-        start + 11 * MINUTE,
-      );
-      EVENTS.forEach((eventId, idx) => {
-        sql.exec(
-          'INSERT INTO games_results (day, idx, event_id, input_json, result_json) VALUES (?, ?, ?, ?, NULL)',
-          day,
-          idx,
-          eventId,
-          '[]',
-        );
-      });
-      for (let n = 1; n <= PLAYERS; n++) {
-        const id = userId(n);
-        const own = creatures[id] ?? [];
-        const at = start - 3 * HOUR + n * MINUTE;
-        const actor = (n * 7919).toString(16).padStart(24, '0');
-        for (const kind of [
-          'session_start',
-          'train',
-          'expedition_claim',
-          'job_claim',
-          'games_entry',
-        ]) {
-          sql.exec(
-            'INSERT INTO analytics_events (at, kind, actor_hash, props_json) VALUES (?, ?, ?, ?)',
-            at + pick(HOUR),
-            kind,
-            actor,
-            '{"returning":true}',
-          );
-        }
-        sql.exec(
-          `INSERT INTO ledger (user_id, currency, amount, source, idempotency_key, created_at)
-           VALUES (?, 'bait', 40, 'allowance', ?, ?), (?, 'bait', -25, 'training', ?, ?)`,
-          id,
-          `allowance:${day}`,
-          at,
-          id,
-          `train:${day}`,
-          at + MINUTE,
-        );
-        EVENTS.forEach((eventId, slot) => {
-          const creatureId = own[(slot + back) % own.length];
-          if (creatureId === undefined) return;
-          sql.exec(
-            `INSERT INTO games_entries (day, user_id, event_id, slot, creature_id, entered_at)
-             VALUES (?, ?, ?, 0, ?, ?)`,
-            day,
-            id,
-            eventId,
-            creatureId,
-            at,
-          );
-          sql.exec(
-            `INSERT INTO games_placings (day, event_id, user_id, creature_ids, place, medal, score)
-             VALUES (?, ?, ?, ?, ?, NULL, ?)`,
-            day,
-            eventId,
-            id,
-            JSON.stringify([creatureId]),
-            1 + pick(PLAYERS),
-            pick(1000),
-          );
-        });
-        sql.exec(
-          `INSERT INTO gear_items (id, user_id, base_id, slot, tag, rarity, item_level, lines_json, source, created_at)
-           VALUES (?, ?, 'seed-base', 'hat', 'seed', 'common', 3, '[]', 'dungeon', ?)`,
-          crypto.randomUUID(),
-          id,
-          at,
-        );
-        sql.exec(
-          'INSERT INTO gear_grants (user_id, key, source, result_json, created_at) VALUES (?, ?, ?, ?, ?)',
-          id,
-          `dungeon:${day}`,
-          'dungeon',
-          '{}',
-          at,
-        );
-        sql.exec(
-          `INSERT INTO dungeon_runs (id, user_id, day, attempt, idempotency_key, fingerprint, depth, seed, cleared,
-                                     rooms_cleared, summary_json, rewards_json, created_at)
-           VALUES (?, ?, ?, 1, ?, 'fp', 2, 'seed', 1, 3, '{}', '{}', ?)`,
-          crypto.randomUUID(),
-          id,
-          day,
-          `run:${day}`,
-          at,
-        );
-        sql.exec(
-          `INSERT INTO expeditions (id, user_id, creature_id, duration, supplies, rolls, cost, started_at, ends_at,
-                                    status, claimed_at, result)
-           VALUES (?, ?, ?, 'short', '[]', 2, 0, ?, ?, 'claimed', ?, '{}')`,
-          crypto.randomUUID(),
-          id,
-          own[back % own.length] ?? '',
-          at,
-          at + HOUR,
-          at + 2 * HOUR,
-        );
-        sql.exec(
-          `INSERT INTO workshop_jobs (id, user_id, creature_id, kind, input_json, started_at, ends_at, claimed_at, result_json)
-           VALUES (?, ?, ?, 'craft', '{}', ?, ?, ?, '{}')`,
-          crypto.randomUUID(),
-          id,
-          own[(back + 1) % own.length] ?? '',
-          at,
-          at + HOUR,
-          at + 2 * HOUR,
-        );
-      }
-      // The rollup of the day, as the daily alarm wrote it: a few dozen rows.
-      for (const [metric, dims] of [
-        ['dau', '{}'],
-        ['sessions', '{}'],
-        ['events', '{"kind":"train"}'],
-        ['events', '{"kind":"games_entry"}'],
-        ['rolled', '{}'],
-      ] as const) {
-        sql.exec(
-          'INSERT INTO analytics_daily (day, metric, dims_json, value) VALUES (?, ?, ?, ?)',
-          day,
-          metric,
-          dims,
-          PLAYERS,
-        );
-      }
-    }
-  });
-}
-
-const stubs = {
-  dmSender: {
-    openChannel: () => Promise.resolve({ kind: 'ok' as const, channelId: '999999999999999999' }),
-    send: () => Promise.resolve({ kind: 'sent' as const }),
-  },
-  postSender: () => Promise.resolve({ kind: 'sent' as const }),
-};
-
-const coreOptions = (build?: string): GuildCoreOptions => ({
-  guildId: () => GUILD_ID,
-  analyticsSecret: env.DISCORD_CLIENT_SECRET,
-  talentRng: createSeededRng('a'),
-  dungeonRng: createSeededRng('b'),
-  gearRng: createSeededRng('c'),
-  tripRng: createSeededRng('d'),
-  raidRng: createSeededRng('e'),
-  quirkRng: createSeededRng('f'),
-  gamesRng: createSeededRng('g'),
-  weatherRng: createSeededRng('h'),
-  rng: createSeededRng('j'),
-  // As in production: weather, the allowance, DMs and posts are on; there is no lounge.
-  weather: true,
-  dailyAllowance: true,
-  ...stubs,
-  ...(build === undefined ? {} : { build }),
-});
+  BUILD,
+  HISTORY_DAYS,
+  TODAY,
+  callAs,
+  boardSwap,
+  fakeLounge,
+  inGuild,
+  loungeTick,
+  seedHistory,
+  seedWorld,
+  startLounge,
+  type FakeLounge,
+  userId,
+  type GuildEnv,
+  type World,
+} from './read-world';
 
 const PATHS = [
   '/api/me',
@@ -304,32 +49,21 @@ const BUDGET = {
   '/api/games': 350, // measured 222
   '/api/raid': 950, // measured 633, 15 players joined with three placed creatures each (was 2,773, then 780; a player is loaded by id from the placements, no collection is read)
   '/api/dungeon/today': 120, // measured 78
+  lounge: 180, // an alarm tick with 5 players lounging together (the object woke up for it; its start is `start`): measured 120 (98 statements: each lounger's payment, about 20 rows)
+  board: 235, // one raid placement (a swap of two creatures, without the view the route returns) with a teammate's board socket open: measured 155 (the push is about 10 of them, the rest is the placement's own checks)
 } as const;
 
 /** What another month of history may add to a path: a new whole-table scan adds hundreds. */
 const GROWTH_ROWS = 6;
 
-async function inGuild<T>(
-  fn: (ctx: {
-    metered: ReturnType<typeof meterStorage>;
-    clock: { t: number };
-    mk: (build?: string) => GuildCore;
-  }) => Promise<T>,
-): Promise<T> {
-  const stub = env.GUILD_WORLD.get(env.GUILD_WORLD.idFromName(GUILD_ID));
-  return runInDurableObject(stub, async (_instance, state) => {
-    const metered = meterStorage(state.storage);
-    const clock = { t: NOW };
-    const mk = (build?: string) =>
-      new GuildCore(metered.storage, () => clock.t, coreOptions(build));
-    return fn({ metered, clock, mk });
-  });
-}
-
 interface Measured {
   start: ReadReport;
   alarm: ReadReport;
   paths: Record<string, ReadReport>;
+  /** An alarm tick of a lounge with company; the object woke up for it (the start is `start`). */
+  lounge: ReadReport;
+  /** A swap of two of a player's creatures on the raid board while a teammate has the board open. */
+  board: ReadReport;
 }
 
 describe('read budget', () => {
@@ -337,67 +71,40 @@ describe('read budget', () => {
   let second: Measured | null = null;
 
   /** Measures every hot path against a core that has been warm for a minute (`warm` runs before it). */
-  async function measureAll(
-    ctx: Parameters<Parameters<typeof inGuild>[0]>[0],
-    core: GuildCore,
-    secrets: Map<string, string>,
-  ): Promise<Measured> {
-    const { metered, clock, mk } = ctx;
-    const get = async (path: string) => {
-      const secret = secrets.get(userId(1));
-      if (secret === undefined) throw new Error('no session');
-      const res = await core.handle(
-        new Request(`${ORIGIN}${path}`, {
-          // The living room is a POST that carries the players in the room (it only reads).
-          method: path === '/api/room' ? 'POST' : 'GET',
-          headers: { Authorization: `Bearer ${await tokenFor(GUILD_ID, secret)}` },
-          ...(path === '/api/room'
-            ? {
-                body: JSON.stringify({
-                  userIds: Array.from({ length: PLAYERS }, (_, i) => userId(i + 1)),
-                }),
-              }
-            : {}),
-        }),
-      );
-      expect(res.status, path).toBe(200);
-      await res.json();
-    };
+  async function measureAll(env: GuildEnv, world: World, lounge: FakeLounge): Promise<Measured> {
+    const { metered, clock, mk } = env;
+    const { core, secrets } = world;
     // An object start after the first one of this build: a new core, `migrate` with the same build.
-    mk('read-budget').migrate();
-    const start = (await metered.measure(() => mk('read-budget').migrate())).reads;
-    // Warm: the first call of each path today pays one-off work (the allowance, the week's rows, the draws).
-    for (const path of PATHS) await get(path);
+    mk(BUILD).migrate();
+    const start = (await metered.measure(() => mk(BUILD).migrate())).reads;
+    // Warm: the first call of each path today pays one-off work (the allowance, the week's rows, the draws,
+    // the raid's readiness band, which is recomputed every 5 minutes: the clock jumps past that first, so
+    // the band is always fresh when the paths are measured).
+    clock.t += 6 * MINUTE;
+    for (const path of PATHS) await callAs(core, secrets, 1, path);
     clock.t += MINUTE;
     await core.alarm();
     clock.t += MINUTE;
     const alarm = (await metered.measure(() => core.alarm())).reads;
     const paths: Record<string, ReadReport> = {};
-    for (const path of PATHS) paths[path] = (await metered.measure(() => get(path))).reads;
-    return { start, alarm, paths };
+    for (const path of PATHS)
+      paths[path] = (await metered.measure(() => callAs(core, secrets, 1, path))).reads;
+    // The lounge: the object is evicted between ticks, so each tick is a new core. A few ticks first, so
+    // the company has been counted and the payment path is the one measured.
+    if (lounge.instances.size === 0) await startLounge(env, lounge);
+    for (let i = 0; i < 3; i++) await loungeTick(env, lounge);
+    const loungeReads = await loungeTick(env, lounge);
+    await boardSwap(env, world);
+    const board = await boardSwap(env, world);
+    return { start, alarm, paths, lounge: loungeReads, board };
   }
 
   it('seeds a month-old guild and measures the hot paths', async () => {
-    await inGuild(async (ctx) => {
-      const { metered, clock, mk } = ctx;
-      // The Worker's own start: the schema and the one-off passes of this build.
-      const core = mk('read-budget');
-      core.migrate();
-      const creatures = seedPlayers(metered.sql, metered.storage);
-      seedHistory(metered.sql, metered.storage, TODAY, HISTORY_DAYS, creatures);
-      const secrets = new Map<string, string>();
-      for (let n = 1; n <= PLAYERS; n++) {
-        secrets.set(
-          userId(n),
-          await core.createSession(GUILD_ID, { id: userId(n), displayName: `Player ${String(n)}` }),
-        );
-      }
-      // Everyone has joined this week's raid by placing three creatures (one party of 15, a full board).
-      joinRaid({ core, sql: metered.sql } as unknown as CoreContext, PLAYERS_SEEDED(creatures));
-      // The first alarm of the day does the daily work (the rollup catch-up, the cleanup): not measured.
-      await core.alarm();
-      clock.t += MINUTE;
-      first = await measureAll(ctx, core, secrets);
+    await inGuild(async (env) => {
+      const { metered } = env;
+      const world = await seedWorld(env);
+      const lounge = fakeLounge();
+      first = await measureAll(env, world, lounge);
 
       // Another month, older than the first: the tables are twice as long, the hot paths must not notice.
       seedHistory(
@@ -405,15 +112,23 @@ describe('read budget', () => {
         metered.storage,
         addDays(TODAY, -HISTORY_DAYS),
         HISTORY_DAYS,
-        creatures,
+        world.creatures,
       );
-      second = await measureAll(ctx, core, secrets);
+      second = await measureAll(env, world, lounge);
     });
   }, 60_000);
 
   it.each(Object.keys(BUDGET) as (keyof typeof BUDGET)[])('%s reads few rows', (name) => {
     const reads =
-      name === 'start' ? first?.start : name === 'alarm' ? first?.alarm : first?.paths[name];
+      name === 'start'
+        ? first?.start
+        : name === 'alarm'
+          ? first?.alarm
+          : name === 'lounge'
+            ? first?.lounge
+            : name === 'board'
+              ? first?.board
+              : first?.paths[name];
     if (reads === undefined) throw new Error('the seeding test did not run');
     expectReadsUnder(name, reads, BUDGET[name]);
   });
@@ -427,6 +142,8 @@ describe('read budget', () => {
       ).toBeLessThanOrEqual(GROWTH_ROWS);
     };
     grown('alarm', first.alarm, second.alarm);
+    grown('lounge tick', first.lounge, second.lounge);
+    grown('board placement', first.board, second.board);
     for (const path of ['/api/me', '/api/state', '/api/raid'])
       grown(path, first.paths[path] as ReadReport, second.paths[path] as ReadReport);
   });
