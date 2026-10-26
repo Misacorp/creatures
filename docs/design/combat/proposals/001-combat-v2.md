@@ -85,7 +85,7 @@ Each rule names what it replaces in `combat-rules.md`. Durations count the affec
 
 1. A talent adds numbers or flags to the creature's Knack (the same grammar): numbers add, flags combine; a Support shape comes only from the Knack. Talent hit bonuses count toward the hit-boost cap (R15), crit raises toward the reaction cap (R7).
 2. One name per effect, one number per name, across Knacks, talents and gear (P-06). A talent never repeats a Knack's effect, and Seal is never a talent, so a roll never decides the Knack choice.
-3. Pools are by role, shared by every species (P-09); flavour lives in Knacks.
+3. Pools are by role, shared by every species (P-09); flavour lives in Knacks. Every species uses the shared names (Misa, 2026-10-26): today's species-named talents go at the migration.
 4. Silence blanks talents (R12).
 5. "Its first hit each fight" means its first hit that gets past dodge and armour, in each fight and each raid stage (R14); Twin Strike's second hit is not a first hit. A first hit made while silenced uses it up.
 6. Conditions like "while a living Guard stands beside it" are read as each hit is worked out (R6 step 1).
