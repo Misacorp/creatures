@@ -639,33 +639,18 @@
     "section": "raid-week"
   },
   {
-    "id": "raid-damage",
-    "title": "Damage",
-    "short": "The HP a creature really took off the boss.",
+    "id": "raid-scoreboard",
+    "title": "Damage and score",
+    "short": "Damage is what really hit the boss. Score is everything done for the raid.",
     "lines": [
-      "Every hit counts in full, its reaction bonus too, and so do Echo and Riposte hits.",
-      "A player's damage is all their creatures' damage added up. Guests' hits are not on the scoreboard.",
-      "Damage shows who hit hardest. Part of the Essence follows the score, not the damage."
+      "Damage: every hit in full, its reaction bonus too, and Echo and Riposte hits. It adds up to the HP the boss lost.",
+      "Score: a creature's own hits, less 60% of each reaction's bonus, which goes to the creature that left the mark.",
+      "Supports score their boosts' extra damage and the HP they heal. Guards score what they take or stop for others.",
+      "Part of the Essence follows the score. Tap Damage or Score to order the table by it."
     ],
     "visual": {
       "kind": "glyph",
       "id": "blade"
-    },
-    "section": "rewards"
-  },
-  {
-    "id": "raid-score",
-    "title": "Score",
-    "short": "Everything a creature did for the raid. Part of the Essence follows it.",
-    "lines": [
-      "Own hits: their damage, less the shares that go to the helpers below.",
-      "Setting up: 60% of a reaction's bonus goes to the creature that left the mark.",
-      "Supporting: the extra damage a Support's boost made, and the HP it healed.",
-      "Guarding: the damage a Guard took or stopped for its neighbours."
-    ],
-    "visual": {
-      "kind": "glyph",
-      "id": "shield"
     },
     "section": "rewards"
   },

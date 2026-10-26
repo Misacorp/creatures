@@ -90,7 +90,7 @@ describe('the scoreboard', () => {
       table,
       (el) => el.localName === 'th' && el.getAttribute('scope') === 'col',
     );
-    expect(headings.map(visibleText)).toEqual(['Player', 'Damage ?', 'Score ?']);
+    expect(headings.map(visibleText)).toEqual(['Player', 'Damage', 'Score']);
     const body = find(table, (el) => el.localName === 'tbody')[0] as FakeElement;
     const rows = byClass(body, 'data-row');
     // Eleven players and the raid's total.
@@ -102,16 +102,75 @@ describe('the scoreboard', () => {
     ).toHaveLength(12);
   });
 
-  it('explains damage and score with a "?" on each column heading (#86)', () => {
+  it('explains damage and score with one "?" by the Scoreboard heading (#86)', () => {
     const p = draw(clear11);
-    const helps = byClass(scoreboard(p), 'gtag-help');
-    expect(helps.map((h) => h.getAttribute('aria-label'))).toEqual([
-      'What is Damage?',
-      'What is Score?',
-    ]);
-    p.click(helps[1] as FakeElement);
+    expect(byClass(scoreboard(p), 'gtag-help')).toHaveLength(0);
+    const head = first(
+      find(p.root, (el) => el.localName === 'h4' && visibleText(el).startsWith('Scoreboard')),
+    );
+    const help = first(byClass(head, 'gtag-help'));
+    expect(help.getAttribute('aria-label')).toBe('What is Damage and score?');
+    p.click(help);
     const dialog = first(byRole(p.root.parentNode ?? p.root, 'dialog'));
-    expect(visibleText(dialog)).toContain('Setting up');
+    expect(visibleText(dialog)).toContain('Echo and Riposte');
+    expect(visibleText(dialog)).toContain('Tap Damage or Score');
+  });
+
+  it('orders the players by damage, and by score after a tap on Score; the places follow', () => {
+    const p = draw(clear11);
+    const table = () => scoreboard(p);
+    const names = () =>
+      byClass(table(), 'rs-name')
+        .map(visibleText)
+        .filter((n) => n !== 'Raid total');
+    const sorts = () => byClass(table(), 'rs-sort');
+    const sortedHeading = () =>
+      find(
+        table(),
+        (el) => el.localName === 'th' && el.getAttribute('aria-sort') === 'descending',
+      ).map(visibleText);
+    const byDamage = [...clear11.stats.players].sort(
+      (a, b) => b.damage - a.damage || b.score - a.score,
+    );
+    const byScore = [...clear11.stats.players].sort(
+      (a, b) => b.score - a.score || b.damage - a.damage,
+    );
+    const shown = (list: typeof byDamage) => list.map((x) => (x.you ? 'You' : x.displayName));
+    expect(shown(byDamage)).not.toEqual(shown(byScore));
+    expect(names()).toEqual(shown(byDamage));
+    expect(sortedHeading()).toEqual(['Damage']);
+    expect(sorts().map((b) => b.getAttribute('aria-pressed'))).toEqual(['true', 'false']);
+
+    p.click(sorts()[1] as FakeElement);
+    expect(names()).toEqual(shown(byScore));
+    expect(sortedHeading()).toEqual(['Score']);
+    expect(byClass(table(), 'rs-rank').map(visibleText).slice(0, 3)).toEqual(['1', '2', '3']);
+    // The total stays last.
+    const rows = byClass(table(), 'data-row');
+    expect(visibleText(rows[rows.length - 1] as FakeElement)).toContain('Raid total');
+
+    p.click(sorts()[0] as FakeElement);
+    expect(names()).toEqual(shown(byDamage));
+  });
+
+  it('lets Top creatures be ordered by score too', () => {
+    const p = draw(clear11, 'reveal', { open: true });
+    const top = () =>
+      first(
+        find(
+          p.root,
+          (el) => el.localName === 'table' && el.getAttribute('aria-label') === 'Top creatures',
+        ),
+      );
+    const values = () =>
+      find(top(), (el) => el.localName === 'td' && !classes(el).includes('data-extra')).length;
+    expect(values()).toBe(clear11.stats.creatures.length);
+    p.click(byClass(top(), 'rs-sort')[1] as FakeElement);
+    const scores = find(
+      top(),
+      (el) => el.localName === 'td' && classes(el).includes('data-extra'),
+    ).map((el) => Number(visibleText(el).replace(/,/g, '')));
+    expect(scores).toEqual([...scores].sort((a, b) => b - a));
   });
 
   it('shows the real damage and the score of each player, and both totals', () => {

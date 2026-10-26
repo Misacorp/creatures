@@ -17,7 +17,6 @@ import {
   heroHeadline,
   heroLine,
   pickHighlights,
-  scoreboard,
   summaryTitle,
   yourPlace,
   type SummaryInput,
@@ -26,6 +25,7 @@ import {
   HighlightCards,
   MoreNumbers,
   Rewards,
+  ScoreboardHead,
   ScoreTable,
   SectionHead,
   SummaryActions,
@@ -168,8 +168,8 @@ export function RaidSummaryCard({
       <div class="rs">
         <Hero input={input} />
 
-        <SectionHead>Scoreboard</SectionHead>
-        <ScoreTable rows={scoreboard(stats)} total />
+        <ScoreboardHead />
+        <ScoreTable stats={stats} total />
 
         <SectionHead>Highlights</SectionHead>
         <HighlightCards

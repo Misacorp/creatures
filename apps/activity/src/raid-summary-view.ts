@@ -113,20 +113,38 @@ export interface ScoreRow {
   share: number;
 }
 
-/** The players by damage (then score), each with a place and a share of the raid's damage. */
-export function scoreboard(stats: Pick<AfterActionStats, 'players'>): ScoreRow[] {
+/** What a raid results table is ordered by: its Damage or its Score column, highest first. */
+export type ScoreSort = 'damage' | 'score';
+
+/** `list` by `by`, highest first; a tie goes to the other number, then to the order it came in. */
+export function sortedBy<T extends { damage: number; score: number }>(
+  list: readonly T[],
+  by: ScoreSort,
+): T[] {
+  const other: ScoreSort = by === 'damage' ? 'score' : 'damage';
+  return list
+    .map((item, order) => ({ item, order }))
+    .sort((a, b) => b.item[by] - a.item[by] || b.item[other] - a.item[other] || a.order - b.order)
+    .map(({ item }) => item);
+}
+
+/**
+ * The players by damage (or by score, when the player sorts the scoreboard by it), each with its place
+ * in that order and a share of the raid's damage.
+ */
+export function scoreboard(
+  stats: Pick<AfterActionStats, 'players'>,
+  by: ScoreSort = 'damage',
+): ScoreRow[] {
   const total = stats.players.reduce((sum, p) => sum + p.damage, 0);
-  return [...stats.players]
-    .map((p, order) => ({ p, order }))
-    .sort((a, b) => b.p.damage - a.p.damage || b.p.score - a.p.score || a.order - b.order)
-    .map(({ p }, index) => ({
-      rank: index + 1,
-      name: whoText(p.displayName, p.you),
-      you: p.you,
-      damage: p.damage,
-      score: p.score,
-      share: sharePercent(p.damage, total),
-    }));
+  return sortedBy(stats.players, by).map((p, index) => ({
+    rank: index + 1,
+    name: whoText(p.displayName, p.you),
+    you: p.you,
+    damage: p.damage,
+    score: p.score,
+    share: sharePercent(p.damage, total),
+  }));
 }
 
 /** The caller's line of the scoreboard and how many played; null when the caller is not in it. */

@@ -48,10 +48,13 @@ export interface AccordionProps {
   children: ComponentChildren;
 }
 
-/** A pixel chevron, drawn with squares so it stays sharp; the stylesheet turns it when open. */
-function Chevron() {
+/**
+ * A pixel chevron pointing down, drawn with squares so it stays sharp. The Accordion's stylesheet turns
+ * it while closed; a sortable column heading shows it as it is (`class` names where it is used).
+ */
+export function Chevron({ class: name = 'acc-chev' }: { class?: string }) {
   return (
-    <svg class="acc-chev" viewBox="0 0 7 4" aria-hidden="true" shape-rendering="crispEdges">
+    <svg class={name} viewBox="0 0 7 4" aria-hidden="true" shape-rendering="crispEdges">
       <rect x="0" y="0" width="2" height="1" />
       <rect x="5" y="0" width="2" height="1" />
       <rect x="1" y="1" width="2" height="1" />

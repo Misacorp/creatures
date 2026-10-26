@@ -165,12 +165,48 @@
   color: var(--gold);
 }
 
-/* A column heading with its "?" (Damage, Score), right-aligned like the numbers under it. */
-.rs-col {
+/* The Scoreboard heading with its "?" (what damage and score mean). */
+.rs-with-help {
+  display: inline-flex;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+/*
+  A column heading that orders the table (Damage, Score): the heading's own text as a plain button, not a
+  framed one, tall enough to tap; gold with a small arrow while the rows follow it.
+*/
+.data-table th .rs-sort {
   display: inline-flex;
   gap: 0.25rem;
   align-items: center;
-  justify-content: flex-end;
+  min-height: 1.75rem;
+  padding: 0 0.125rem;
+  background: none;
+  color: inherit;
+  font: inherit;
+  box-shadow: none;
+}
+
+.data-table th .rs-sort:hover:not(:disabled) {
+  color: var(--bone);
+  filter: none;
+}
+
+.data-table th .rs-sort:active:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+}
+
+.data-table th .rs-sort.on {
+  color: var(--gold);
+}
+
+.rs-sort-chev {
+  display: block;
+  width: calc(var(--px) * 7);
+  height: calc(var(--px) * 4);
+  fill: currentcolor;
 }
 
 /* --- Highlight cards: one picture, a small title, who, and the fact. All aligned on one grid. --- */

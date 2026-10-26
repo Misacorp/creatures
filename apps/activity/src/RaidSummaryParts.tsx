@@ -4,6 +4,7 @@
  * as bullets, and the buttons. All text is plain text (names are player text).
  */
 import type { ComponentChildren } from 'preact';
+import { useState } from 'preact/hooks';
 import { abilitySummary, percentText, whoText } from './after-action';
 import { essenceCount, partCountItems } from './count-items';
 import { FinaleProgress } from './FinaleProgress';
@@ -17,13 +18,16 @@ import { FindCreature } from './ui/FindCreature';
 import {
   grouped,
   rewardLoot,
+  scoreboard,
+  sortedBy,
   type Highlight,
   type ScoreRow,
+  type ScoreSort,
   type SummaryRewards,
 } from './raid-summary-view';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
-import { Accordion } from './ui/Accordion';
+import { Accordion, Chevron } from './ui/Accordion';
 import { ActionButton } from './ui/ActionButton';
 import { DataTable, type DataRow } from './ui/DataTable';
 import { GameIcon } from './ui/GameIcon';
@@ -47,36 +51,89 @@ export function scoreRow(row: ScoreRow): DataRow {
 }
 
 /**
- * The headings of the damage and score columns, each with a "?" that explains it (#86: the old
- * "Damage" column was the score's share of the hits, which did not add up to the boss's HP).
+ * A column heading the table can be ordered by: a button with the word, gold and with a small arrow
+ * while the rows follow it. What the two numbers mean is one "?" by the Scoreboard heading
+ * (`ScoreboardHead`).
  */
-function columnHeadings(label: string) {
+function SortHeading({
+  word,
+  active,
+  onSort,
+}: {
+  word: 'Damage' | 'Score';
+  active: boolean;
+  onSort: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      class={active ? 'rs-sort on' : 'rs-sort'}
+      aria-pressed={active}
+      aria-label={`Sort by ${word.toLowerCase()}`}
+      onClick={onSort}
+    >
+      {word}
+      {active && <Chevron class="rs-sort-chev" />}
+    </button>
+  );
+}
+
+/** The headings of the damage and score columns: a tap on one orders the rows by it. */
+function columnHeadings(label: string, sort: ScoreSort, onSort: (by: ScoreSort) => void) {
   return {
     label,
     value: (
-      <span class="rs-col">
-        Damage <GlossaryTag entry="raid-damage" look="help" />
-      </span>
+      <SortHeading
+        word="Damage"
+        active={sort === 'damage'}
+        onSort={() => {
+          onSort('damage');
+        }}
+      />
     ),
     extra: (
-      <span class="rs-col">
-        Score <GlossaryTag entry="raid-score" look="help" />
-      </span>
+      <SortHeading
+        word="Score"
+        active={sort === 'score'}
+        onSort={() => {
+          onSort('score');
+        }}
+      />
     ),
   };
 }
 
 /**
+ * The Scoreboard heading with one "?" that explains damage and score in one place (#86: the old
+ * "Damage" column was the score's share of the hits, which did not add up to the boss's HP).
+ */
+export function ScoreboardHead() {
+  return (
+    <SectionHead>
+      <span class="rs-with-help">
+        Scoreboard <GlossaryTag entry="raid-scoreboard" look="help" />
+      </span>
+    </SectionHead>
+  );
+}
+
+/** Which column a sorted table follows, for `DataTable`'s `sorted`. */
+const sortedColumn = (sort: ScoreSort) => (sort === 'damage' ? 'value' : 'extra');
+
+/**
  * Every player as a table of place and name, damage and score, with column headings and the caller's
- * row marked. `total` adds the raid's total at the end.
+ * row marked: by damage until the player taps Score, and the places follow the order. `total` adds the
+ * raid's total at the end.
  */
 export function ScoreTable({
-  rows,
+  stats,
   total = false,
 }: {
-  rows: readonly ScoreRow[];
+  stats: Pick<AfterActionStats, 'players'>;
   total?: boolean;
 }) {
+  const [sort, setSort] = useState<ScoreSort>('damage');
+  const rows = scoreboard(stats, sort);
   const data: DataRow[] = rows.map(scoreRow);
   if (total) {
     data.push({
@@ -86,7 +143,15 @@ export function ScoreTable({
       total: true,
     });
   }
-  return <DataTable rows={data} tabular headings={columnHeadings('Player')} label="Scoreboard" />;
+  return (
+    <DataTable
+      rows={data}
+      tabular
+      headings={columnHeadings('Player', sort, setSort)}
+      sorted={sortedColumn(sort)}
+      label="Scoreboard"
+    />
+  );
 }
 
 // --- Highlights ---
@@ -186,6 +251,7 @@ export function MoreNumbers({
   /** Open all of them (for a review of what is inside). */
   open?: boolean;
 }) {
+  const [creatureSort, setCreatureSort] = useState<ScoreSort>('damage');
   const boss = stats.boss;
   const bossRows: DataRow[] = [
     {
@@ -231,9 +297,10 @@ export function MoreNumbers({
         >
           <DataTable
             tabular
-            headings={columnHeadings('Creature')}
+            headings={columnHeadings('Creature', creatureSort, setCreatureSort)}
+            sorted={sortedColumn(creatureSort)}
             label="Top creatures"
-            rows={stats.creatures.map((c) => ({
+            rows={sortedBy(stats.creatures, creatureSort).map((c) => ({
               label: (
                 <span class="rs-creature-name">
                   <Sprite sprite={creatureSpriteOrFallback(c.species)} scale={2} />

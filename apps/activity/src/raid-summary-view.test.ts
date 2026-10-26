@@ -47,6 +47,22 @@ describe('the scoreboard', () => {
     expect(rows.map((r) => r.name)).toEqual(['B', 'A', 'C']);
   });
 
+  it('orders by score on request, ties by damage, then by the order given', () => {
+    const players = [
+      { displayName: 'A', you: false, damage: 30, score: 10, assist: 0 },
+      { displayName: 'B', you: false, damage: 10, score: 40, assist: 30 },
+      { displayName: 'C', you: false, damage: 20, score: 40, assist: 20 },
+      { displayName: 'D', you: false, damage: 20, score: 40, assist: 20 },
+    ];
+    expect(scoreboard({ players }, 'score').map((r) => [r.rank, r.name])).toEqual([
+      [1, 'C'],
+      [2, 'D'],
+      [3, 'B'],
+      [4, 'A'],
+    ]);
+    expect(scoreboard({ players }).map((r) => r.name)).toEqual(['A', 'C', 'D', 'B']);
+  });
+
   it('has no shares of an empty raid', () => {
     expect(
       scoreboard({ players: [{ displayName: 'A', you: true, damage: 0, score: 0, assist: 0 }] })[0]

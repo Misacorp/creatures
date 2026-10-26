@@ -430,12 +430,11 @@ describe('the glossary text matches the rules', () => {
     expect(text('adaptation')).not.toMatch(/\d+%/);
   });
 
-  it('explains raid damage and score, with the real setup share (#86)', () => {
-    expect(text('raid-damage')).toContain('Echo and Riposte');
-    expect(text('raid-score')).toContain(
-      `${percent(RULES.combat.setupShareBp)} of a reaction's bonus`,
-    );
-    for (const id of ['raid-damage', 'raid-score']) expect(entry(id).section).toBe('rewards');
+  it('explains raid damage and score in one entry, with the real setup share (#86)', () => {
+    const board = text('raid-scoreboard');
+    expect(board).toContain('Echo and Riposte');
+    expect(board).toContain(`${percent(RULES.combat.setupShareBp)} of each reaction's bonus`);
+    expect(entry('raid-scoreboard').section).toBe('rewards');
   });
 
   it('shows only the description in every raid popup: no "how it works" lines (Misa, 2026-10-14)', () => {
