@@ -279,6 +279,10 @@ describe('the glossary text matches the rules', () => {
     expect(fx.tide.healBp).toBeGreaterThan(0);
     expect(fx.grove.healBp).toBeGreaterThan(0);
     expect(fx.tide.cleanse).toBe(true);
+    // Mire's Support work is its creatures' abilities, and the entry says so (#75).
+    expect(support).toContain('Mire has no element boost');
+    expect(fx.mire).toEqual({});
+    for (const el of content.elements) expect(support, el.id).toContain(el.name);
   });
 
   it('has a pattern entry for every attack pattern, drawn as its own glyph, plus enrage and retreat', () => {

@@ -113,9 +113,9 @@
     "title": "Support",
     "short": "Powers up its neighbours.",
     "lines": [
-      "Each round it boosts the creatures right next to it. In the raid its reach stops at the row's edge.",
-      "Their next hit deals 15% more damage.",
+      "Each round, its neighbours' next hit deals 15% more damage. In the raid its reach stops at the row's edge.",
       "By element: Ember boosts 25%, Spark adds reaction damage, Tide and Grove heal (Tide clears silence too).",
+      "Mire has no element boost: a Mire Support's own ability leaves the boss Mired instead.",
       "Nothing reaches past a knocked-out neighbour. A knocked-out or silenced Support gives nothing."
     ],
     "visual": {
