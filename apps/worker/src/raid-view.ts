@@ -39,7 +39,7 @@ import {
   type StoredSummary,
 } from './raid-resolve';
 import { latestReveal, totalEssenceOf, type RevealView } from './raid-reveal';
-import { partyMembers, partyOf, partyToJoin } from './raid-roster';
+import { joiningOpen, partyMembers, partyOf, partyToJoin } from './raid-roster';
 import {
   RAID_PHASES,
   addWeeks,
@@ -227,7 +227,7 @@ export interface RaidView {
     inRoster: boolean;
     party: number | null;
     /**
-     * The caller may change their placement: they joined, or joining is still open (before Phase 1) and
+     * The caller may change their placement: they joined, or joining is still open (until the finale starts) and
      * their first placement will join them. False once the finale has started.
      */
     canEdit: boolean;
@@ -328,15 +328,12 @@ export function buildRaidView(
   const parties = [...sizes].map(([party, size]) => ({ party, size }));
 
   const myParty = partyOf(sql, week.weekId, userId);
-  // Joining is open until Phase 1 resolves: a player who has not joined sees the board they would join.
-  const joiningOpen =
-    week.status === 'open' &&
-    sql.exec('SELECT 1 FROM raid_results WHERE week_id = ? LIMIT 1', week.weekId).toArray()
-      .length === 0;
+  // Joining is open until the finale starts: a player who has not joined sees the board they would join.
+  const joinOpen = joiningOpen(week.status);
   // (Only for a player who has a creature to place.)
   const shownParty =
     myParty ??
-    (joiningOpen &&
+    (joinOpen &&
     sql.exec('SELECT 1 FROM creatures WHERE user_id = ? LIMIT 1', userId).toArray().length > 0
       ? partyToJoin(sql, week.weekId).party
       : null);

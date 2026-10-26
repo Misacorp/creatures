@@ -118,7 +118,7 @@ describe('attention.raid', () => {
     }, options);
   });
 
-  it('is false once joining has closed for a player who did not join, true for one who joined with room left', async () => {
+  it('keeps nudging a player who did not join after Phase 1, until the finale starts', async () => {
     await runRaid(async (ctx) => {
       const joined = await dungeonPlayer(ctx, 1);
       const late = await dungeonPlayer(ctx, 2);
@@ -126,9 +126,15 @@ describe('attention.raid', () => {
         true,
       );
       ctx.clock.t = W02.afterPhase1 + HOUR;
-      // After Phase 1 nobody new can join, so there is nothing to ask of them; the joined player can still add.
-      expect((await attentionOf(late)).raid).toBe(false);
+      // After Phase 1 a newcomer can still join, so they are still asked; so is the joined player (room left).
+      expect((await attentionOf(late)).raid).toBe(true);
       expect((await attentionOf(joined)).raid).toBe(true);
+      ctx.clock.t = W02.afterPhase2 + HOUR;
+      expect((await attentionOf(late)).raid).toBe(true);
+      // Once the finale starts nobody is asked.
+      ctx.clock.t = W02.afterFinale + HOUR;
+      expect((await attentionOf(late)).raid).toBe(false);
+      expect((await attentionOf(joined)).raid).toBe(false);
     }, options);
   });
 

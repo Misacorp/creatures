@@ -4,7 +4,7 @@
  * inside the transaction of its caller.
  *
  * What is stored:
- * - per guild (`raid_ladder`): the server's `rank` (NULL until placed, once, by `placementRank`) and
+ * - per guild (`raid_ladder`): the server's `rank` (NULL only until its first week opens, which starts it at Rank 1 by `placementRank`) and
  *   the best rank cleared in a normal week;
  * - per raid week (columns of `raid_weeks`): the week's plan (`rank`, `effective_rank`, `festival`,
  *   `season_index`, `festival_species`), fixed when the week is created, and the ladder's done marker
@@ -22,10 +22,9 @@ import {
 } from '@creatures/game';
 import { RAID_DIFFICULTY_VERSION } from './raid-difficulty';
 import { weekIndex } from './raid-schedule';
-import { raidTeam } from './raid-teams';
 
 export interface Ladder {
-  /** The server's rank; null until a week with a roster has placed it. */
+  /** The server's rank; null only until its first week has opened (it then starts at Rank 1). */
   rank: number | null;
   /** The highest rank cleared in a normal week; null until one has been cleared. */
   bestRank: number | null;
@@ -121,50 +120,26 @@ export function seasonColumns(weekId: string): {
 
 /**
  * Gives a new-style week its rank, once. If the server has a rank, the week takes it (`raidWeekPlan`
- * eases a Festival). If it does not, and the week has members, the server is placed from the levels
- * of the creatures its members bring (`placementRank`, once for the whole server) and the week takes
- * that rank. With nobody in, nothing is stored and the next call tries again, so a brand-new server
- * is placed when its first player joins. A legacy week and a week that already has its rank are
- * left alone. Returns the week's rank, or null.
+ * eases a Festival). If it does not, the server starts at Rank 1 (`placeServer`) and the week takes
+ * that, so the Monday post always shows a rank, even before anyone has joined. A legacy week and a
+ * week that already has its rank are left alone. Returns the week's rank, or null for a legacy week.
  */
 export function ensureWeekRank(sql: SqlStorage, weekId: string): number | null {
   const progression = readWeekProgression(sql, weekId);
   if (progression === null) return null;
   if (progression.rank !== null) return progression.rank;
-  let rank = readLadder(sql).rank;
-  if (rank === null) {
-    rank = placeServer(sql, weekId);
-    if (rank === null) return null;
-  }
+  const rank = readLadder(sql).rank ?? placeServer(sql);
   return declareWeekRank(sql, weekId, rank).rank;
 }
 
 /**
- * Places the server from the creatures the week's members bring (`placementRank`) and stores the
- * rank on the ladder, once: a ladder that already has a rank keeps it. Returns the rank, or null if
- * nobody is in the week yet (nothing is stored then). The one place a server is placed, shared by the
- * week's opening, the Phase 1 conversion of a legacy week and the re-declaration of a week
- * (`raid-redeclare.ts`).
+ * Starts a server that has no rank at Rank 1 (`placementRank`, which ignores the creatures) and
+ * stores it on the ladder, once: a ladder that already has a rank keeps it. Returns the rank.
  */
-export function placeServer(sql: SqlStorage, weekId: string): number | null {
-  const rank = placementFor(sql, weekId);
-  if (rank === null) return null;
+export function placeServer(sql: SqlStorage): number {
+  const rank = placementRank([]);
   sql.exec('UPDATE raid_ladder SET rank = ? WHERE id = 1 AND rank IS NULL', rank);
-  return rank;
-}
-
-/** `placementRank` of the creatures the week's members bring now, or null with nobody in. */
-export function placementFor(sql: SqlStorage, weekId: string): number | null {
-  const members = sql
-    .exec<{ user_id: string }>(
-      'SELECT user_id FROM raid_party_members WHERE week_id = ? ORDER BY user_id',
-      weekId,
-    )
-    .toArray();
-  if (members.length === 0) return null;
-  return placementRank(
-    members.flatMap((m) => raidTeam(sql, weekId, m.user_id).map((c) => c.level)),
-  );
+  return readLadder(sql).rank ?? rank;
 }
 
 /**
@@ -193,8 +168,7 @@ export function declareWeekRank(
 /**
  * A week that was open before the ladder existed and has no stored pool yet (the deploy landed
  * between the week's creation and its Phase 1) becomes a normal ranked week at its Phase 1: the
- * server's rank is used, or, if it has none, the server is placed now from the creatures its
- * members bring (`placementRank`, once for the server), and the week stores its plan
+ * server's rank is used, or, if it has none, the server starts at Rank 1 now, and the week stores its plan
  * (`raidWeekPlan`: rank, effective rank, season, Festival) so the boss is scaled from it. A week whose
  * pool is already stored keeps it and stays a legacy week. Returns true if the week was converted.
  */
@@ -210,13 +184,9 @@ export function convertLegacyWeek(sql: SqlStorage, weekId: string): boolean {
     .exec('SELECT 1 FROM raid_parties WHERE week_id = ? AND hp_max IS NOT NULL LIMIT 1', weekId)
     .toArray();
   if (stored.length > 0) return false;
-  let rank = readLadder(sql).rank;
-  if (rank === null) {
-    rank = placeServer(sql, weekId);
-    if (rank === null) return false;
-  } else if (!hasMembers(sql, weekId)) {
-    return false;
-  }
+  // A legacy week where nobody joined stays as it is (there is no fight to scale).
+  if (!hasMembers(sql, weekId)) return false;
+  const rank = readLadder(sql).rank ?? placeServer(sql);
   const plan = raidWeekPlan(weekIndex(weekId), rank);
   const season = seasonColumns(weekId);
   sql.exec(

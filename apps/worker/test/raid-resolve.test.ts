@@ -591,3 +591,102 @@ describe('timing', () => {
     });
   });
 });
+
+describe('joining after Phase 1', () => {
+  const FRIDAY_AFTER = W02.afterPhase1 + 60 * 60 * 1000;
+
+  it('does not rescale the pool, and the late joiner fights only from the phase they are in', async () => {
+    await runRaid((ctx) => {
+      const early = openWeek(ctx, 3, 12);
+      ctx.clock.t = FRIDAY_AFTER;
+      ctx.core.raid.runDue(HELSINKI);
+      const pool = rows<{ hp_max: number }>(ctx.sql, 'SELECT hp_max FROM raid_parties')[0]?.hp_max;
+      expect(pool).toBeGreaterThan(0);
+      // A fourth player joins after Phase 1: the stored pool stays as it is.
+      const late = seedMember(ctx, 4, { level: 12 });
+      expect(rows(ctx.sql, 'SELECT hp_max FROM raid_parties')).toEqual([{ hp_max: pool }]);
+      ctx.clock.t = SUNDAY;
+      ctx.core.raid.runDue(HELSINKI);
+
+      const runs = storedRuns(ctx.sql);
+      expect(runs.map((r) => r.phase)).toEqual(['phase1', 'phase2', 'finale']);
+      for (const run of runs) {
+        expect(run.input.bossHpPool.max).toBe(pool);
+        const fighters = run.summary.members.map((m) => m.userId);
+        // The early three fight every stage; the late joiner only the ones after they joined.
+        for (const p of early) expect(fighters).toContain(p.id);
+        expect(fighters.includes(late.id)).toBe(run.phase !== 'phase1');
+        expect(run.summary.contributors.some((c) => c.userId === late.id)).toBe(
+          run.phase !== 'phase1',
+        );
+      }
+      // Phase 1 had three players in its row, Phase 2 and the finale four.
+      expect(runs.map((r) => r.input.players.length)).toEqual([3, 4, 4]);
+    });
+  });
+
+  it('pays Essence and loot only for the stages the late joiner fought', async () => {
+    await runRaid((ctx) => {
+      openWeek(ctx, 4, 15);
+      // A pool small enough that every stage clears.
+      forcePool(ctx.sql, 20_000);
+      ctx.clock.t = FRIDAY_AFTER;
+      ctx.core.raid.runDue(HELSINKI);
+      const late = seedMember(ctx, 5, { level: 15 });
+      ctx.clock.t = SUNDAY;
+      ctx.core.raid.runDue(HELSINKI);
+      const runs = storedRuns(ctx.sql);
+      expect(runs.every((r) => r.result.cleared)).toBe(true);
+      const keys = raidLedger(ctx.sql)
+        .filter((l) => l.user_id === late.id)
+        .map((l) => l.idempotency_key);
+      // Paid for Phase 2 and the finale, never for Phase 1.
+      expect(keys.sort()).toEqual(['raid:2027-W02:1:finale', 'raid:2027-W02:1:phase2']);
+      expect(runs[0]?.summary.essence[late.id]).toBeUndefined();
+      expect(runs[1]?.summary.essence[late.id]).toBeGreaterThan(0);
+      expect(runs[2]?.summary.essence[late.id]).toBeGreaterThan(0);
+      expect(runs[2]?.summary.members.map((m) => m.userId)).toContain(late.id);
+    });
+  });
+
+  it('gives a member who joined after Phase 2 a working default finale ability', async () => {
+    await runRaid((ctx) => {
+      openWeek(ctx, 3, 12);
+      ctx.clock.t = SATURDAY + 60 * 60 * 1000;
+      ctx.core.raid.runDue(HELSINKI);
+      expect(storedRuns(ctx.sql).map((r) => r.phase)).toEqual(['phase1', 'phase2']);
+      const late = seedMember(ctx, 4, { level: 12 });
+      const view = ctx.core.raid.view(late.id, HELSINKI);
+      expect(view.you.ability?.chosen).toBe(false);
+      expect(view.you.ability?.abilityId).toBeTruthy();
+      ctx.clock.t = SUNDAY;
+      ctx.core.raid.runDue(HELSINKI);
+      const finale = storedRuns(ctx.sql).find((r) => r.phase === 'finale');
+      const alias = finale?.summary.members.find((m) => m.userId === late.id)?.alias;
+      expect(alias).toBeDefined();
+      const mine = finale?.input.finaleAbilities.filter((a) => a.playerId === alias) ?? [];
+      expect(mine.length).toBeGreaterThan(0);
+      expect(mine[0]?.abilityId).toBe(view.you.ability?.abilityId);
+    });
+  });
+
+  it('fights a party made after Phase 1 from the next phase, with a pool scaled for its own members', async () => {
+    await runRaid((ctx) => {
+      // 16 active players make two parties; only one joins before Phase 1, so party 2 does not exist yet.
+      const players = Array.from({ length: 16 }, (_, i) => seedPlayer(ctx, i + 1, { level: 12 }));
+      joinRaid(ctx, players[0] as Seeded);
+      ctx.clock.t = FRIDAY_AFTER;
+      ctx.core.raid.runDue(HELSINKI);
+      expect(rows(ctx.sql, 'SELECT party FROM raid_parties')).toEqual([{ party: 1 }]);
+      joinRaid(ctx, players[1] as Seeded);
+      expect(rows(ctx.sql, 'SELECT party FROM raid_parties ORDER BY party')).toEqual([
+        { party: 1 },
+        { party: 2 },
+      ]);
+      ctx.clock.t = SUNDAY;
+      ctx.core.raid.runDue(HELSINKI);
+      const runs = storedRuns(ctx.sql).map((r) => `${r.party}:${r.phase}`);
+      expect(runs.sort()).toEqual(['1:finale', '1:phase1', '1:phase2', '2:finale', '2:phase2']);
+    });
+  });
+});

@@ -38,6 +38,15 @@ export function partyCountFor(players: number): number {
   return Math.ceil(players / RULES.raid.maxPartySize);
 }
 
+/**
+ * Whether a player may still join the week's raid (by placing their first creature): at any time until
+ * the finale starts (the week's status becomes 'finale' in the same step that starts the live fights).
+ * Parties made after Phase 1 fight from the next phase they are in; the boss pools already fixed stay.
+ */
+export function joiningOpen(status: string): boolean {
+  return status !== 'finale';
+}
+
 /** The members of a party, in join order. */
 export function partyMembers(sql: SqlStorage, weekId: string, party: number): string[] {
   return sql

@@ -3211,7 +3211,7 @@ Misa reversed the 2026-10-10 rule: "Their occupied slots only hinder the active 
 3. Away players' slots are simply free: nobody's creatures sit on the board unless they placed them. Slots stay first come, first served. The board's size rule keeps room for every active player to place three, capped at a party's maximum, and the guest rule for fewer than three joined players stays.
 4. "Sit this week out" and the away-teammate assist are removed.
 5. On servers over 15 players a player who first places a creature joins the party with the fewest joined players. No snake draft on power at week start.
-6. Joining closes at Phase 1. After it the parties are fixed, but joined players can still move or swap their own creatures. Before Phase 1 a player who removes all their creatures leaves the raid again.
+6. Joining closes at Phase 1. After it the parties are fixed, but joined players can still move or swap their own creatures. Before Phase 1 a player who removes all their creatures leaves the raid again. _Amended 2026-10-26 ("join until the finale"): joining stays open until the finale starts._
 7. The Raid tab's pip and the Home notice keep nudging an active player who has not placed yet, so nobody misses it. A joined player with fewer than three placed (and more creatures to place) is nudged the same way.
 
 **What was built.**
@@ -3239,3 +3239,15 @@ Misa wanted teammates' placements to appear on the Raid tab as they happen. Unti
 5. Not done: answering the player's own placement with the compact change. The HTTP routes still return the whole view (it would complicate the client's merge for the saving of one small response).
 
 `wrangler.jsonc` changed (the `RAID_LIVE` var in all three places), which the PR calls out.
+
+### 2026-10-26: Raids: join until the finale; new servers start at Rank 1
+
+Amends rule 6 of "Raids: you join by placing; no auto teams" (joining closed at Phase 1). Misa asked for two changes.
+
+1. **You can join the raid until the finale starts.** A player's first placement joins them at any time while the week's status is not `finale` (after Phase 1 and after Phase 2 too). The placement goes to the party with the fewest joined players (`partyToJoin`, lowest number on a tie), parties and all. Once the finale starts, the usual `locked` answer applies; `raid_closed` is gone.
+   - The boss's HP pool is fixed when a party first fights (Phase 1 for a party that exists then) and a late joiner never rescales it. A party made after Phase 1 (every other party is full, or the active roster needs another one) scales its own pool, from its members, at its first fight.
+   - Phase 2 and the finale are built from the current placements, so a late joiner's creatures fight from the next stage they are in. Essence, experience, gear and finale loot (jackpot, Festival creature) are paid per stage to the fighters of that stage only, so a late joiner gets nothing for Phase 1 or any stage before they joined. Their finale ability is the default by join order, like everyone else's.
+   - The Raid tab's pip and the Home notice nudge an active player who has not joined until the finale starts; the live board's ticket and the view of the board they would join work the same after Phase 1.
+   - **Leaving is unchanged:** removing all creatures before Phase 1 leaves the raid; from Phase 1 a member stays in the party and just does not fight with an empty board. (Allowing it later would mean moving a player out of a party with results, for no gain.)
+   - The staging dev tool that fills the roster (`raid-roster`) still locks at Phase 1, as before; it is a setup tool, not a player rule.
+2. **A new server starts at Rank 1 when its first week opens.** A server with no rank gets `placementRank` (always the start rank, 1) stored on its ladder at week creation, so the Monday post always shows "Rank 1" even before anyone has joined. Placement no longer waits for a member or reads the members' creatures: `placementFor` is removed and `placeServer` takes no week. Places that still place a rank without a member: an old open week with no rank gets it at its first join or at Phase 1 (`ensureWeekRank`), the legacy-week conversion still needs members (a legacy week where nobody joined stays as it was), and a re-declared first week uses the start rank.

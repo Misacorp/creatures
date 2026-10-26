@@ -57,7 +57,7 @@ describe('nowAction', () => {
       label: "Join this week's raid",
       target: 'placement',
     });
-    expect(action.detail).toContain('Place a creature on the board before Phase 1');
+    expect(action.detail).toContain('Place a creature on the board before the finale');
   });
 
   it('does not ask for more than the player owns', () => {

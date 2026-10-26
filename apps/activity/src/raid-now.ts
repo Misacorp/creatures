@@ -61,7 +61,7 @@ export function nowAction(
     return {
       kind: 'not-in',
       label: "You are not in this week's raid",
-      detail: 'You join a raid by placing a creature on its board before Phase 1.',
+      detail: 'You join a raid by placing a creature on its board, any time before the finale.',
       target: null,
     };
   }
@@ -94,7 +94,7 @@ export function nowAction(
       : {
           kind: 'set-team',
           label: "Join this week's raid",
-          detail: `Place a creature on the board before ${title} ${when}.`,
+          detail: `Place a creature on the board before the finale. You fight from the next phase on.`,
           target: 'placement',
         };
   }
