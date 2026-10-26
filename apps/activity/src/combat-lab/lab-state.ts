@@ -107,7 +107,7 @@ function pairCell(pair: string): Cell {
   return cleanCell({ formId, knack, level: DEFAULT_LEVEL });
 }
 
-const CLASSIC = 'tidewing/soak-through tempestray/detonate thornbuck/wide-reach';
+const CLASSIC = 'tidewing/steady-mark tempestray/detonate thornbuck/wide-reach';
 
 export const RAID_PRESET = 'Raid: four classic trios';
 

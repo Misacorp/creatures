@@ -40,7 +40,7 @@ describe('the combat lab setup', () => {
     const setup = defaultSetup();
     expect(setup).toMatchObject({ rows: 1, cols: 3, damageTest: true, cards: [] });
     expect(placementsOf(setup).map((p) => `${p.formId}/${p.knack ?? ''}`)).toEqual([
-      'tidewing/soak-through',
+      'tidewing/steady-mark',
       'tempestray/detonate',
       'thornbuck/wide-reach',
     ]);
@@ -98,7 +98,7 @@ describe('the combat lab setup', () => {
         c: 3,
         g: [
           ['tidewing', 'detonate', 25],
-          ['not-a-creature', 'soak-through', 25],
+          ['not-a-creature', 'steady-mark', 25],
           ['thornbuck', 'wide-reach', 25],
         ],
       }),

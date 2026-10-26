@@ -99,7 +99,7 @@ Trades against: P-07, P-03.
 
 Status: proposed
 Statement: Knacks come from a small grammar of families (see `grammar.md`) plus at most one signature per species, so 100 species stay buildable and learnable.
-Pass: the Detonator family (Detonate, Big Spout) shares one rule with different numbers.
+Pass: the Detonator family (Detonate, All at Once) shares one rule with different numbers.
 Fail: a Knack needing a new engine step that only one species will ever use.
 Review question: Which family is this in, and if none, why does it deserve a new one?
 Check: review only (systems reviewer).

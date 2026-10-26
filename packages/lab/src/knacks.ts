@@ -58,7 +58,50 @@ export interface KnackFx {
   readonly pierceBesideBp?: number;
   /** Support verbs replaced or reshaped at round start. */
   readonly support?:
-    'wideWarmth' | 'sunbeam' | 'curlUp' | 'readyMark' | 'clearSkies' | 'clearAir' | 'gatherCalm';
+    | 'wideWarmth'
+    | 'sunbeam'
+    | 'curlUp'
+    | 'readyMark'
+    | 'clearSkies'
+    | 'clearAir'
+    | 'gatherCalm'
+    | 'rowRain'
+    | 'rowBoost';
+  /** Creatures beside it get this much dodge (an aura). */
+  readonly besideDodgeBp?: number;
+  /** Every creature in its row gets this much dodge (an aura). */
+  readonly rowDodgeBp?: number;
+  /** Its hits deal this much more while a living Guard stands beside it. */
+  readonly besideGuardBp?: number;
+  /** Its hits deal this much more while no other living Payoff stands in its row. */
+  readonly alonePayoffBp?: number;
+  /** Creatures beside it take this much less from area hits. */
+  readonly besideAreaCutBp?: number;
+  /** A non-Guard that intercepts aimed hits for the creatures beside it, like a Guard. */
+  readonly interceptLikeGuard?: boolean;
+  /** Creatures beside it cannot be silenced. */
+  readonly besideNoSilence?: boolean;
+  /** At round start it heals the creatures in its reach by this share of their max HP. */
+  readonly guardMendBp?: number;
+  // Talent lines (talents use the same grammar; numbers add, flags combine).
+  /** Its Attack is this much higher. */
+  readonly atkBp?: number;
+  /** Added to its crit chance. */
+  readonly critChanceBp?: number;
+  /** A crit on a hit that sets off a reaction deals this much more. */
+  readonly reactionCritBp?: number;
+  /** Its first turn hit each fight deals this much more. */
+  readonly firstHitBp?: number;
+  /** It cannot be silenced. */
+  readonly ignoreSilence?: boolean;
+  /** A Guard's cover is this much stronger. */
+  readonly coverBonusBp?: number;
+  /** A Support's boost is this much stronger. */
+  readonly boostBonusBp?: number;
+  /** A Support's heal is this much stronger (a Support of any element heals with it). */
+  readonly mendBonusBp?: number;
+  /** Healing it receives is this much stronger. */
+  readonly healReceivedBp?: number;
   /** Mire: each hit it takes puts a Mired stack on the boss. */
   readonly miresOnHit?: boolean;
   /** Mire: at round start the boss gains a Mired stack. */
@@ -82,8 +125,8 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
   [
     // Splashet line (Tide Setter)
     K({
-      id: 'soak-through',
-      name: 'Soak Through',
+      id: 'steady-mark',
+      name: 'Steady Mark',
       family: 'Seal',
       text: '{Seal}: its marks are not shed by the boss.',
       intent:
@@ -99,8 +142,8 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       fx: { leadBoostBp: 2_000 },
     }),
     K({
-      id: 'downpour',
-      name: 'Downpour',
+      id: 'feed-the-marks',
+      name: 'Feed the Marks',
       family: 'Heavy Prime',
       text: 'Its hit deals no damage. It leaves its {Mark} and adds 1 to the count of every other mark on the boss.',
       intent: 'For multi-mark teams and Payoffs that spend several stacks.',
@@ -124,8 +167,8 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       fx: { marksAs: 'cashable' },
     }),
     K({
-      id: 'big-spout',
-      name: 'Big Spout',
+      id: 'all-at-once',
+      name: 'All at Once',
       family: 'Detonator',
       text: 'Cashes only a mark at x2 or more, and {Spend}s all of its count. Huge on x3.',
       intent: "Misa's mark-mark-mark-big-payoff choice: a slow, huge hit that breaks armour.",
@@ -286,8 +329,8 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       fx: { dodgeBonusBp: 2_000, retaliateBp: 5_000 },
     }),
     K({
-      id: 'overcharge',
-      name: 'Overcharge',
+      id: 'double-mark',
+      name: 'Double Mark',
       family: 'Heavy Prime',
       text: 'Its hit deals no damage. It leaves its {Mark} at x2.',
       intent: 'Feeds Detonators and two Payoffs of the trigger element.',
@@ -334,14 +377,111 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       intent: "Keeps Mire's debuff alive after finale abilities go.",
       fx: { miresAtStart: true },
     }),
+    // Remaining lines (phase 1, slice 2). Shared families keep their names (P-06).
+    K({
+      id: 'guards-shadow',
+      name: "Guard's Shadow",
+      family: 'Shadow',
+      text: '+25% on its hits while a living Guard stands beside it.',
+      intent:
+        "A Payoff that wants a Guard partner, ideally another player's in the raid. The same name as the gear line with the same effect.",
+      fx: { besideGuardBp: 2_500 },
+    }),
+    K({
+      id: 'crown-of-embers',
+      name: 'Crown of Embers',
+      family: 'Signature',
+      text: 'Its {Mark} starts at x2, and it still hits.',
+      intent:
+        "Solmane's signature: an epic Setter that feeds Detonators without giving up its damage.",
+      fx: { markStacks: 2 },
+    }),
+    K({
+      id: 'hide-in-mist',
+      name: 'Hide in Mist',
+      family: 'Evasion aura',
+      text: 'Creatures beside it get +15 dodge.',
+      intent:
+        'A Guard that protects by hiding friends; strong with dodge-before-intercept (R1) when the boss hits often.',
+      fx: { besideDodgeBp: 1_500 },
+    }),
+    K({
+      id: 'thick-fog',
+      name: 'Thick Fog',
+      family: 'Evasion aura',
+      text: 'Every creature in its row gets +8 dodge.',
+      intent: 'The wide version for long raid rows.',
+      fx: { rowDodgeBp: 800 },
+    }),
+    K({
+      id: 'drizzle',
+      name: 'Drizzle',
+      family: 'Support shape',
+      text: 'Instead of boosting, at round start it heals every creature in its row by 3%.',
+      intent: 'A row healer for long raid rows and steady damage.',
+      fx: { support: 'rowRain' },
+    }),
+    K({
+      id: 'living-shelter',
+      name: 'Living Shelter',
+      family: 'Row Ward',
+      text: 'Creatures beside it take 25% less from {Area hit}s.',
+      intent:
+        'Ancientshell hosts small creatures: a Setter that shelters its neighbours from sweeps.',
+      fx: { besideAreaCutBp: 2_500 },
+    }),
+    K({
+      id: 'territorial',
+      name: 'Territorial',
+      family: 'Signature',
+      text: '+30% on its hits while no other Payoff stands in its row.',
+      intent:
+        'Coralynx guards its reef alone: it wants a row to itself, a placement question in the raid.',
+      fx: { alonePayoffBp: 3_000 },
+    }),
+    K({
+      id: 'carry-them',
+      name: 'Carry Them',
+      family: 'Intercept (borrowed)',
+      text: 'It {Intercept}s aimed hits for the creatures beside it, like a Guard. Its reaction bonus is 25% smaller.',
+      intent:
+        "Gaiadrake protects everything it carries: a Payoff borrowing the Guard's verb at a cost (P-02).",
+      fx: { interceptLikeGuard: true, bonusBp: 7_500 },
+    }),
+    K({
+      id: 'starlight',
+      name: 'Starlight',
+      family: 'Support shape',
+      text: 'It {Boost}s every creature in its row, 5 points weaker, and heals no one.',
+      intent: 'Aurorix looks after friends from a distance: a row-wide boost for long raid rows.',
+      fx: { support: 'rowBoost' },
+    }),
+    K({
+      id: 'lantern-glow',
+      name: 'Lantern Glow',
+      family: 'Ward',
+      text: 'Creatures beside it cannot be {Silenced}.',
+      intent:
+        'Lanternfin guides friends through the dark: the silence answer that protects others.',
+      fx: { besideNoSilence: true },
+    }),
+    K({
+      id: 'hearth',
+      name: 'Hearth',
+      family: 'Guard Sustain',
+      text: 'At round start it heals the creatures in its {Reach} by 4%.',
+      intent:
+        'Hearthshell hosts friends around its fire: a Guard that heals the creatures it protects.',
+      fx: { guardMendBp: 400 },
+    }),
   ].map((k) => [k.id, k]),
 );
 
 /** The Knacks each form can equip (first listed is the default for absent players, R11). */
 export const FORM_KNACKS: Readonly<Record<string, readonly string[]>> = {
-  splashet: ['soak-through', 'lead-the-way'],
-  tidewing: ['soak-through', 'downpour', 'circle-round'],
-  geyserpup: ['leave-a-trail', 'puddle-maker', 'big-spout'],
+  splashet: ['steady-mark', 'lead-the-way'],
+  tidewing: ['steady-mark', 'feed-the-marks', 'circle-round'],
+  geyserpup: ['leave-a-trail', 'puddle-maker', 'all-at-once'],
   stormray: ['detonate', 'leave-a-trail'],
   tempestray: ['detonate', 'leave-a-trail', 'twin-strike'],
   halcyray: ['clear-skies', 'clear-the-air', 'gather-calm'],
@@ -351,16 +491,28 @@ export const FORM_KNACKS: Readonly<Record<string, readonly string[]>> = {
   ashmole: ['wide-warmth', 'ready-the-mark'],
   magmole: ['wide-warmth', 'ready-the-mark', 'tunnel-through'],
   kilnmole: ['draw-fire', 'keep-the-heat-in', 'baked-shell'],
-  zipmouse: ['zoom', 'overcharge'],
-  voltaro: ['zoom', 'overcharge', 'zigzag'],
-  ohmouse: ['overcharge', 'catch-the-bolts', 'lightning-ears'],
-  // Placeholders until these lines are designed: shared family Knacks (same effect, same name).
-  ancientshell: ['lead-the-way', 'overcharge'],
-  wickat: ['lead-the-way', 'overcharge'],
-  pyrelynx: ['detonate', 'leave-a-trail'],
-  bloomback: ['detonate', 'leave-a-trail'],
-  bogwarden: ['mud-wall'],
-  croakmire: ['squelch-song'],
+  zipmouse: ['zoom', 'double-mark'],
+  voltaro: ['zoom', 'double-mark', 'zigzag'],
+  ohmouse: ['double-mark', 'catch-the-bolts', 'lightning-ears'],
+  cindle: ['detonate', 'leave-a-trail'],
+  pyrelynx: ['detonate', 'leave-a-trail', 'guards-shadow'],
+  wickat: ['lead-the-way', 'steady-mark', 'double-mark'],
+  mistnewt: ['wide-reach', 'hide-in-mist'],
+  fogwyrm: ['wide-reach', 'hide-in-mist', 'thick-fog'],
+  drizzlewt: ['drizzle', 'curl-up', 'clear-the-air'],
+  mossback: ['steady-mark', 'feed-the-marks'],
+  ancientshell: ['steady-mark', 'feed-the-marks', 'living-shelter'],
+  bloomback: ['all-at-once', 'detonate', 'leave-a-trail'],
+  coralynx: ['detonate', 'leave-a-trail', 'territorial'],
+  solmane: ['lead-the-way', 'steady-mark', 'crown-of-embers'],
+  gaiadrake: ['detonate', 'leave-a-trail', 'carry-them'],
+  aurorix: ['starlight', 'clear-skies', 'gather-calm'],
+  lanternfin: ['lantern-glow', 'clear-the-air', 'sunbeam'],
+  hearthshell: ['draw-fire', 'keep-the-heat-in', 'hearth'],
+  mudlump: ['mud-wall', 'wide-reach'],
+  bogwarden: ['mud-wall', 'wide-reach', 'draw-fire'],
+  squelch: ['squelch-song', 'ready-the-mark'],
+  croakmire: ['squelch-song', 'ready-the-mark', 'wide-warmth'],
 };
 
 export function knack(id: string | undefined): KnackDef | undefined {

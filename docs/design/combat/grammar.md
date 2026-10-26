@@ -17,12 +17,12 @@ A family is one rule with different numbers or elements. A new Knack joins a fam
 
 | Family                      | What it does                                       | Examples                                       |
 | --------------------------- | -------------------------------------------------- | ---------------------------------------------- |
-| Seal                        | Its marks are not shed                             | Soak Through                                   |
+| Seal                        | Its marks are not shed                             | Steady Mark                                   |
 | Lead                        | Boosts the next creature after it marks            | Lead the Way                                   |
-| Heavy Prime                 | Gives up its damage for more mark counts           | Overcharge, Downpour                           |
+| Heavy Prime                 | Gives up its damage for more mark counts           | Double Mark, Feed the Marks                           |
 | Self Prime                  | A non-Setter that marks what it can cash           | Puddle Maker                                   |
 | Guard Prime / Support Prime | A Guard or Support that marks, at a cost           | Primed by Pain, Lightning Ears, Ready the Mark |
-| Detonator                   | A Payoff that spends several counts                | Detonate, Big Spout                            |
+| Detonator                   | A Payoff that spends several counts                | Detonate, All at Once                            |
 | Chain                       | After a reaction, leaves a mark of its own element | Leave a Trail                                  |
 | Flurry                      | Several smaller hits                               | Twin Strike                                    |
 | Reach / Intercept           | Changes what a Guard covers                        | Wide Reach, Night Watch, Catch the Bolts       |

@@ -19,7 +19,7 @@ Numbers live only in data (`packages/lab/src/rules.ts`, content JSON), never in 
 
 ## Reading order for an agent
 
-1. This page.
+1. This page, then [`roadmap.md`](roadmap.md) (the phases from the lab to the game, and where we are).
 2. [`principles.md`](principles.md): the filters every idea must pass.
 3. [`grammar.md`](grammar.md): what a Knack, a rule card or a boss may contain, and the templates.
 4. [`proposals/001-combat-v2.md`](proposals/001-combat-v2.md): the rules.

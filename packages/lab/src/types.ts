@@ -17,6 +17,11 @@ export interface Fighter {
   /** Armour before Knacks (a silenced creature loses its Knack's armour). */
   readonly baseArmour: number;
   readonly knack: string | undefined;
+  readonly talents: readonly string[];
+  /** The Knack's and the talents' effects together (silence blanks all of it, R12). */
+  readonly fxAll: import('./knacks').KnackFx;
+  /** Turn hits made this fight (for first-hit effects). */
+  hitsMade: number;
   row: number;
   col: number;
   silencedTurns: number;
@@ -92,6 +97,7 @@ export interface Placement {
   readonly formId: string;
   readonly level: number;
   readonly knack?: string;
+  readonly talents?: readonly string[];
   readonly row: number;
   readonly col: number;
 }

@@ -1,12 +1,16 @@
-import { createSeededRng } from '@creatures/game';
+import { content, createSeededRng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import {
   KEYWORDS,
   KNACKS,
   FORM_KNACKS,
   keywordsIn,
+  TALENTS,
+  TALENT_LINES,
   labBoss,
   fight,
+  mergeFx,
+  talentPool,
   weekend,
   type BossDef,
   type Placement,
@@ -21,6 +25,15 @@ const at = (formId: string, row: number, col: number, knack?: string, owner = 'p
   ...(knack ? { knack } : {}),
 });
 const rng = (s: string) => createSeededRng(s);
+const hush = (shape: 'all' | 'rowEnds', turns = 9) => ({
+  id: 's',
+  name: 'Hush',
+  pattern: { anchor: 'front' as const, shape },
+  powerBp: 0,
+  every: 1,
+  turn: 0,
+  silenceTurns: turns,
+});
 const count = (events: readonly { kind: string }[], kind: string) =>
   events.filter((e) => e.kind === kind).length;
 
@@ -166,11 +179,11 @@ describe('combat v2 lab rules', () => {
 describe('combat v2 lab rules, v0.4 fixes from the first panel', () => {
   const quiet = (b: BossDef): BossDef => ({ ...b, spd: 0, plain: { ...b.plain, powerBp: 0 } });
 
-  it('Overcharge marks on every form that can equip it, a Guard included', () => {
+  it('Double Mark marks on every form that can equip it, a Guard included', () => {
     for (const form of ['zipmouse', 'voltaro', 'ohmouse']) {
       const r = fight(
         quiet(labBoss({ rows: 1, cols: 1, rounds: 1 })),
-        [at(form, 0, 0, 'overcharge')],
+        [at(form, 0, 0, 'double-mark')],
         { rng: rng('oc'), log: true },
       );
       expect(
@@ -224,18 +237,22 @@ describe('combat v2 lab rules, v0.4 fixes from the first panel', () => {
     expect(r.reactions).toBe(1);
   });
 
-  it('R5: a minimum count is checked before picking the oldest mark (Big Spout)', () => {
+  it('R5: a minimum count is checked before picking the oldest mark (All at Once)', () => {
     const boss = quiet(labBoss({ rows: 1, cols: 3, rounds: 1 }));
-    // Wickat (Ember Setter) leaves Scorched x1: below Big Spout's x2, so no reaction; with Overcharge, x2.
-    const r = fight(boss, [at('wickat', 0, 0), at('geyserpup', 0, 1, 'big-spout')], {
+    // Wickat (Ember Setter) leaves Scorched x1: below All at Once's x2, so no reaction; with Double Mark, x2.
+    const r = fight(boss, [at('wickat', 0, 0), at('geyserpup', 0, 1, 'all-at-once')], {
       rng: rng('bs'),
       log: true,
     });
     expect(r.reactions).toBe(0);
-    const r2 = fight(boss, [at('wickat', 0, 0, 'overcharge'), at('geyserpup', 0, 1, 'big-spout')], {
-      rng: rng('bs'),
-      log: true,
-    });
+    const r2 = fight(
+      boss,
+      [at('wickat', 0, 0, 'double-mark'), at('geyserpup', 0, 1, 'all-at-once')],
+      {
+        rng: rng('bs'),
+        log: true,
+      },
+    );
     expect(r2.reactions).toBe(1);
   });
 
@@ -323,5 +340,144 @@ describe('combat v2 content rules', () => {
 
   it('every Knack states its design intent', () => {
     for (const k of Object.values(KNACKS)) expect(k.intent.length, k.id).toBeGreaterThan(10);
+  });
+});
+
+describe('combat v2 lab rules, the remaining species (phase 1, slice 2)', () => {
+  it('Lantern Glow: creatures beside it cannot be silenced; it can', () => {
+    const boss: BossDef = {
+      ...labBoss({ rows: 1, cols: 3, rounds: 2 }),
+      spd: 0,
+      moves: [hush('all')],
+    };
+    const r = fight(
+      boss,
+      [at('tidewing', 0, 0), at('lanternfin', 0, 1, 'lantern-glow'), at('tempestray', 0, 2)],
+      { rng: rng('glow'), log: true },
+    );
+    const silence = r.events.filter((e) => e.kind === 'silence').map((e) => e.text);
+    expect(silence).toContain('Lanternfin is silenced');
+    expect(silence).toContain('Tidewing shrugs off the silence');
+    expect(silence).toContain('Tempestray shrugs off the silence');
+  });
+
+  it('Unflappable (a talent) wards its own creature from silence', () => {
+    const boss: BossDef = {
+      ...labBoss({ rows: 1, cols: 1, rounds: 1 }),
+      spd: 0,
+      moves: [hush('all')],
+    };
+    const r = fight(boss, [{ ...at('tidewing', 0, 0), talents: ['unflappable'] }], {
+      rng: rng('calm'),
+      log: true,
+    });
+    expect(r.events.filter((e) => e.kind === 'silence').map((e) => e.text)).toEqual([
+      'Tidewing shrugs off the silence',
+    ]);
+  });
+
+  it('Hide in Mist: creatures beside it dodge more', () => {
+    const boss: BossDef = {
+      ...labBoss({ rows: 1, cols: 2, rounds: 10 }),
+      plain: { pattern: { anchor: 'random', shape: 'single' }, powerBp: 2_000, hits: 6 },
+    };
+    const team = (k?: string) => [at('tempestray', 0, 0), at('fogwyrm', 0, 1, k)];
+    const dodges = (k?: string) => {
+      let n = 0;
+      for (let i = 0; i < 20; i++) {
+        const r = fight(boss, team(k), { rng: rng(`mist:${i}`), log: true });
+        n += r.events.filter((e) => e.kind === 'dodge' && e.text.startsWith('Tempestray')).length;
+      }
+      return n;
+    };
+    expect(dodges('hide-in-mist')).toBeGreaterThan(dodges() * 1.3);
+  });
+
+  it('Carry Them: a Payoff intercepts aimed hits for the creature beside it, like a Guard', () => {
+    const boss: BossDef = {
+      ...labBoss({ rows: 1, cols: 2, rounds: 6 }),
+      plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 5_000 },
+    };
+    const team = (k?: string) => [at('voltaro', 0, 0), at('gaiadrake', 0, 1, k)];
+    const without = fight(boss, team(), { rng: rng('carry'), log: true });
+    const carried = fight(boss, team('carry-them'), { rng: rng('carry'), log: true });
+    expect(without.intercepts).toBe(0);
+    expect(carried.intercepts).toBeGreaterThan(0);
+    expect(
+      carried.events
+        .filter((e) => e.kind === 'intercept')
+        .every((e) => e.text.startsWith('Gaiadrake')),
+    ).toBe(true);
+  });
+
+  it("Guard's Shadow and Territorial: a Payoff's bonus depends on who stands beside it or in its row", () => {
+    const boss: BossDef = { ...labBoss({ rows: 1, cols: 2, rounds: 4 }), spd: 0 };
+    const dmg = (team: Placement[]) => fight(boss, team, { rng: rng('place') }).damage;
+    const shadow = dmg([at('kilnmole', 0, 0), at('pyrelynx', 0, 1, 'guards-shadow')]);
+    const noShadow = dmg([at('kilnmole', 0, 0), at('pyrelynx', 0, 1)]);
+    expect(shadow).toBeGreaterThan(noShadow);
+    const alone = dmg([at('kilnmole', 0, 0), at('coralynx', 0, 1, 'territorial')]);
+    const crowded = dmg([at('tempestray', 0, 0), at('coralynx', 0, 1, 'territorial')]);
+    const plainAlone = dmg([at('kilnmole', 0, 0), at('coralynx', 0, 1)]);
+    expect(alone).toBeGreaterThan(plainAlone);
+    // With another Payoff in the row, Territorial adds nothing to Coralynx's own hits.
+    const crowdedPlain = dmg([at('tempestray', 0, 0), at('coralynx', 0, 1)]);
+    expect(crowded).toBe(crowdedPlain);
+  });
+
+  it('Drizzle heals the whole row and Starlight boosts it, in place of the Support verb', () => {
+    // The boss sweeps the row, so damage is spread (a focused heal wins against one target).
+    const boss: BossDef = {
+      ...labBoss({ rows: 1, cols: 4, rounds: 6 }),
+      spd: 0,
+      plain: { pattern: { anchor: 'front', shape: 'row' }, powerBp: 6_000 },
+    };
+    const team = (form: string, k?: string): Placement[] => [
+      at('tidewing', 0, 0),
+      at(form, 0, 1, k),
+      at('thornbuck', 0, 2),
+      at('tempestray', 0, 3),
+    ];
+    const mean = (team: Placement[], of: (r: ReturnType<typeof fight>) => number) => {
+      let n = 0;
+      for (let i = 0; i < 20; i++) n += of(fight(boss, team, { rng: rng(`row:${i}`) }));
+      return n / 20;
+    };
+    const hp = (r: ReturnType<typeof fight>) => r.fighters.reduce((a, f) => a + f.hp, 0);
+    expect(mean(team('drizzlewt', 'drizzle'), hp)).toBeGreaterThan(mean(team('drizzlewt'), hp));
+    // Tempestray stands two places away: only a row-wide boost reaches it.
+    const dmg = (r: ReturnType<typeof fight>) => r.damage;
+    expect(mean(team('aurorix', 'starlight'), dmg)).toBeGreaterThan(mean(team('aurorix'), dmg));
+  });
+
+  it('mergeFx adds numbers and combines flags', () => {
+    expect(mergeFx([{ atkBp: 800, seal: true }, { atkBp: 500 }, { ignoreSilence: true }])).toEqual({
+      atkBp: 1_300,
+      seal: true,
+      ignoreSilence: true,
+    });
+  });
+});
+
+describe('combat v2 content rules: Knacks and talents for every species', () => {
+  it('every creature form has Knacks', () => {
+    for (const c of content.creatures) expect(FORM_KNACKS, c.id).toHaveProperty(c.id);
+  });
+
+  it('every talent pool entry exists, and every line has a pool', () => {
+    const lines = new Set(content.creatures.map((c) => c.line));
+    expect(new Set(TALENT_LINES)).toEqual(lines);
+    for (const ln of TALENT_LINES)
+      for (const e of talentPool(ln))
+        expect(TALENTS, `${ln}: ${e.talent}`).toHaveProperty(e.talent);
+  });
+
+  it('talent names are unique, never reuse a Knack name, and their keywords exist', () => {
+    const names = [...Object.values(TALENTS), ...Object.values(KNACKS)].map((t) => t.name);
+    expect(new Set(names).size).toBe(names.length);
+    for (const t of Object.values(TALENTS)) {
+      expect(t.intent.length, t.id).toBeGreaterThan(10);
+      for (const w of keywordsIn(t.text)) expect(KEYWORDS, `${t.id} uses {${w}}`).toHaveProperty(w);
+    }
   });
 });

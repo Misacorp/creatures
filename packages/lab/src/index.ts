@@ -6,4 +6,5 @@ export * from './report';
 export * from './rules';
 export * from './search';
 export * from './species';
+export * from './talents';
 export * from './types';

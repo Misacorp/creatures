@@ -10,6 +10,7 @@
  */
 import { chance, int } from '@creatures/game';
 import { knack, type KnackFx } from './knacks';
+import { mergeFx, talent } from './talents';
 import { LAB_RULES as R } from './rules';
 import { ELEMENTS, formStats, matchupBp, triggers } from './species';
 import type {
@@ -59,7 +60,7 @@ interface State {
   readonly byMark: Record<string, number>;
 }
 
-const fx = (f: Fighter): KnackFx => (f.silencedTurns > 0 ? {} : (knack(f.knack)?.fx ?? {}));
+const fx = (f: Fighter): KnackFx => (f.silencedTurns > 0 ? {} : f.fxAll);
 /** Silence blanks the creature: its Knack and its role's verb (Misa, 2026-10-26). Stats still work. */
 const silenced = (f: Fighter) => f.silencedTurns > 0;
 const armourOf = (f: Fighter) => f.baseArmour + (fx(f).armourBonus ?? 0);
@@ -87,6 +88,9 @@ export function placeFighters(placements: readonly Placement[]): Fighter[] {
       spd: st.spd,
       baseArmour: st.armour,
       knack: k,
+      talents: p.talents ?? [],
+      fxAll: mergeFx([knack(k)?.fx ?? {}, ...(p.talents ?? []).map((id) => talent(id)?.fx ?? {})]),
+      hitsMade: 0,
       row: p.row,
       col: p.col,
       silencedTurns: 0,
@@ -137,6 +141,7 @@ function heal(s: State, target: Fighter, amountBp: number, critOk = true): void 
   let amt = Math.floor((target.maxHp * amountBp) / 10_000);
   if (critOk && roll(s, R.critChanceBp)) amt = Math.floor((amt * R.critBp) / 10_000);
   amt = Math.floor((amt * (s.boss.mods.healBp ?? 10_000)) / 10_000);
+  amt = Math.floor((amt * (10_000 + (fx(target).healReceivedBp ?? 0))) / 10_000);
   const real = Math.min(amt, target.maxHp - target.hp);
   target.hp += real;
   s.count.healed += real;
@@ -149,6 +154,7 @@ function roundStart(s: State): void {
     const k = fx(f);
     if (f.role === 'support' && !silenced(f)) supportVerb(s, f, k);
     if (k.miresAtStart) s.mired = Math.min(R.miredMaxStacks, s.mired + 1);
+    if (k.guardMendBp) for (const o of beside(s, f, reachOf(f))) heal(s, o, k.guardMendBp);
   }
   // Charged moves due this round are announced now: their slots are rolled and shown (R8).
   s.announced = new Map();
@@ -158,9 +164,17 @@ function roundStart(s: State): void {
 }
 
 function supportVerb(s: State, f: Fighter, k: KnackFx): void {
-  const boost = f.element === 'ember' ? R.supportBoostEmberBp : R.supportBoostBp;
-  const healBp = R.supportHealBp[f.element] ?? 0;
+  const boost =
+    (f.element === 'ember' ? R.supportBoostEmberBp : R.supportBoostBp) + (k.boostBonusBp ?? 0);
+  const healBp = (R.supportHealBp[f.element] ?? 0) + (k.mendBonusBp ?? 0);
   switch (k.support) {
+    case 'rowRain':
+      for (const o of alive(s).filter((o) => o.row === f.row))
+        heal(s, o, 300 + (k.mendBonusBp ?? 0));
+      return;
+    case 'rowBoost':
+      for (const o of alive(s).filter((o) => o.row === f.row && o !== f)) o.boostBp += boost - 500;
+      return;
     case 'readyMark':
       addMark(s, f.element, 1);
       return;
@@ -194,12 +208,20 @@ function supportVerb(s: State, f: Fighter, k: KnackFx): void {
 function creatureHit(s: State, f: Fighter, shareBp: number): void {
   const k = fx(f);
   // 1. Plain damage: Attack, the element chart, boosts (capped, R15), the Knack's share, a crit.
-  const bonusSum = Math.min(R.maxHitBonusBp, f.boostBp);
-  const base = Math.floor((f.atk * matchupBp(f.element, s.boss.element)) / 10_000);
+  const guardBeside = beside(s, f).some((o) => o.role === 'guard');
+  const otherPayoff = alive(s).some((o) => o !== f && o.row === f.row && o.role === 'payoff');
+  const situational =
+    (f.hitsMade === 0 ? (k.firstHitBp ?? 0) : 0) +
+    (guardBeside ? (k.besideGuardBp ?? 0) : 0) +
+    (otherPayoff ? 0 : (k.alonePayoffBp ?? 0));
+  const bonusSum = Math.min(R.maxHitBonusBp, f.boostBp + situational);
+  const atk = Math.floor((f.atk * (10_000 + (k.atkBp ?? 0))) / 10_000);
+  const base = Math.floor((atk * matchupBp(f.element, s.boss.element)) / 10_000);
   let plain = k.noDamage
     ? 0
     : Math.floor((((base * (10_000 + bonusSum)) / 10_000) * shareBp * (k.plainBp ?? 10_000)) / 1e8);
-  if (plain > 0 && roll(s, R.critChanceBp)) plain = Math.floor((plain * R.critBp) / 10_000);
+  const crit = plain > 0 && roll(s, R.critChanceBp + (k.critChanceBp ?? 0));
+  if (crit) plain = Math.floor((plain * R.critBp) / 10_000);
   // 2. The boss rolls dodge (14.4). A hit that deals no damage is not rolled. Setup never misses.
   const bossDodge = f.undodgeable
     ? 0
@@ -237,6 +259,8 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       factor = Math.min(factor, R.maxBonusFactorBp);
       bonus = Math.floor((((plain * (R.payoffMultBp - 10_000)) / 10_000) * factor) / 10_000);
       if (s.opts.resistReaction === el) bonus = Math.floor(bonus / 2);
+      if (crit && k.reactionCritBp)
+        bonus += Math.floor(((plain + bonus) * k.reactionCritBp) / 10_000);
       mark.stacks -= spent;
       if (mark.stacks <= 0) s.marks.delete(el);
       reacted = true;
@@ -314,6 +338,7 @@ function creatureTurn(s: State, f: Fighter): void {
   const k = fx(f);
   const hits = k.twinStrikeBp ? [k.twinStrikeBp, k.twinStrikeBp] : [10_000];
   for (const share of hits) if (s.bossHp > 0) creatureHit(s, f, share);
+  f.hitsMade++;
   f.boostBp = 0;
   // Silence lasts until the end of the creature's Nth turn (R12).
   if (f.silencedTurns > 0) f.silencedTurns--;
@@ -380,8 +405,19 @@ function targetsOf(s: State, p: Pattern, plain: boolean): Fighter[] {
   }
 }
 
-function dodgeOf(f: Fighter, area: boolean): number {
-  const base = Math.min(R.dodgeMaxBp, f.spd * R.dodgePerSpdBp + (fx(f).dodgeBonusBp ?? 0));
+function dodgeOf(s: State, f: Fighter, area: boolean): number {
+  const aura = Math.max(
+    0,
+    ...alive(s)
+      .filter((o) => o !== f && o.row === f.row)
+      .map((o) =>
+        Math.max(
+          fx(o).rowDodgeBp ?? 0,
+          Math.abs(o.col - f.col) === 1 ? (fx(o).besideDodgeBp ?? 0) : 0,
+        ),
+      ),
+  );
+  const base = Math.min(R.dodgeMaxBp, f.spd * R.dodgePerSpdBp + (fx(f).dodgeBonusBp ?? 0) + aura);
   return area ? Math.floor((base * R.areaDodgeShareBp) / 10_000) : base;
 }
 
@@ -402,18 +438,24 @@ function takeHit(
         .filter((o) => o.row === taker.row)
         .map((o) => fx(o).rowAreaCutBp ?? 0),
     );
-    dmg = Math.floor((dmg * (10_000 - ward)) / 10_000);
-    const covered =
-      taker.role !== 'guard' &&
-      alive(s).some(
-        (g) =>
-          g.role === 'guard' &&
-          !silenced(g) &&
-          g !== taker &&
-          g.row === taker.row &&
-          Math.abs(g.col - taker.col) <= reachOf(g),
+    const shelter = Math.max(0, ...beside(s, taker).map((o) => fx(o).besideAreaCutBp ?? 0));
+    dmg = Math.floor((dmg * (10_000 - Math.max(ward, shelter))) / 10_000);
+    const coverer = alive(s).find(
+      (g) =>
+        g.role === 'guard' &&
+        !silenced(g) &&
+        g !== taker &&
+        g.row === taker.row &&
+        Math.abs(g.col - taker.col) <= reachOf(g),
+    );
+    const covered = taker.role !== 'guard' && coverer !== undefined;
+    if (covered)
+      dmg = Math.floor(
+        (dmg *
+          (10_000 -
+            Math.min(10_000, R.coverBp + (coverer ? (fx(coverer).coverBonusBp ?? 0) : 0)))) /
+          10_000,
       );
-    if (covered) dmg = Math.floor((dmg * (10_000 - R.coverBp)) / 10_000);
   }
   dmg -= armourOf(taker);
   // Mud Wall counts every hit it takes, Blocked or not.
@@ -442,17 +484,25 @@ function bossHits(
   const proposed = Math.floor(
     (((s.boss.atk * move.powerBp) / 10_000) * (10_000 - s.mired * R.miredPerStackBp)) / 10_000,
   );
+  // Wards are read before the move lands: a ward silenced by this same move still protects.
+  const warded = new Set(
+    targets.filter((t) => fx(t).ignoreSilence || beside(s, t).some((o) => fx(o).besideNoSilence)),
+  );
   for (const t of targets) {
     if (t.hp <= 0) continue;
     const area = !(shape === 'single' || (shape === 'line3' && t === targets[0]));
     // A move that deals no damage is not dodged or intercepted (R1).
     if (move.silenceTurns) {
+      if (warded.has(t)) {
+        log(s, 'silence', `${t.name} shrugs off the silence`);
+        continue;
+      }
       t.silencedTurns = Math.max(t.silencedTurns, move.silenceTurns);
       log(s, 'silence', `${t.name} is silenced`);
       continue;
     }
     // R1: the target rolls dodge first; a charged landing rolls at full chance.
-    if (roll(s, dodgeOf(t, area && !move.charged))) {
+    if (roll(s, dodgeOf(s, t, area && !move.charged))) {
       s.count.dodges++;
       log(s, 'dodge', `${t.name} dodges`);
       const k = fx(t);
@@ -472,7 +522,7 @@ function bossHits(
       const guard = alive(s)
         .filter(
           (g) =>
-            g.role === 'guard' &&
+            (g.role === 'guard' || fx(g).interceptLikeGuard === true) &&
             !silenced(g) &&
             !fx(g).noIntercept &&
             g !== t &&

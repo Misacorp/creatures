@@ -15,6 +15,8 @@ export interface Pick {
   /** A Knack id, or 'none'. */
   readonly knack: string;
   readonly level?: number;
+  /** Combat talent ids (lab: any number, for measuring one talent at a time). */
+  readonly talents?: readonly string[];
 }
 
 export const LEVEL = 25;
@@ -28,7 +30,7 @@ export function poolOf(forms: readonly string[] = Object.keys(FORM_KNACKS)): Pic
 export const POOL: readonly Pick[] = poolOf();
 
 export const CLASSIC_LINE: readonly Pick[] = [
-  { formId: 'tidewing', knack: 'soak-through' },
+  { formId: 'tidewing', knack: 'steady-mark' },
   { formId: 'tempestray', knack: 'detonate' },
   { formId: 'thornbuck', knack: 'wide-reach' },
 ];
@@ -55,6 +57,7 @@ export function toPlacements(line: readonly Pick[], mode: Mode): Placement[] {
     formId: p.formId,
     level: p.level ?? LEVEL,
     knack: p.knack,
+    ...(p.talents ? { talents: p.talents } : {}),
     row: Math.floor(i / mode.cols),
     col: i % mode.cols,
   }));

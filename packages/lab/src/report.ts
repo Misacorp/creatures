@@ -4,11 +4,12 @@
  * weekend with attrition. Written to docs/design/combat/lab-report.md by
  * `pnpm --filter @creatures/lab report`.
  */
-import { createSeededRng, int } from '@creatures/game';
+import { content, createSeededRng, int } from '@creatures/game';
 import { CARDS, labBoss } from './cards';
 import { weekend } from './fight';
 import { KEYWORDS } from './keywords';
 import { FORM_KNACKS, KNACKS } from './knacks';
+import { TALENTS, TALENT_LINES, talentPool } from './talents';
 import { LAB_RULES } from './rules';
 import { formStats, triggers } from './species';
 import {
@@ -42,20 +43,29 @@ const name = (p: Pick) => `${p.formId} (${knackName(p.knack)})`;
 /** Lines from the design library, tried on every card. */
 export const SCENARIOS: Readonly<Record<string, string>> = {
   'Classic: Tidewing, Tempestray Detonate, Thornbuck':
-    'tidewing/soak-through tempestray/detonate thornbuck/wide-reach',
+    'tidewing/steady-mark tempestray/detonate thornbuck/wide-reach',
   'Classic with no Knacks': 'tidewing/none tempestray/none thornbuck/none',
-  'Two Setters into Detonate': 'splashet/lead-the-way tidewing/soak-through tempestray/detonate',
-  'Overcharge into a Grove Detonate': 'voltaro/overcharge bloomback/detonate thornbuck/wide-reach',
+  'Two Setters into Detonate': 'splashet/lead-the-way tidewing/steady-mark tempestray/detonate',
+  'Double Mark into a Grove Detonate':
+    'voltaro/double-mark bloomback/detonate thornbuck/wide-reach',
   'Chain: Overload leaves Charged for Bloomback':
-    'tidewing/soak-through tempestray/leave-a-trail bloomback/none',
+    'tidewing/steady-mark tempestray/leave-a-trail bloomback/none',
   'No Setter: Ready the Mark feeds Geyserpup':
     'kilnmole/draw-fire geyserpup/none magmole/ready-the-mark',
   'No Setter: Puddle Maker': 'kilnmole/draw-fire geyserpup/puddle-maker magmole/tunnel-through',
-  'Big Spout on Downpour': 'wickat/overcharge geyserpup/big-spout kilnmole/baked-shell',
-  'Twin Strike': 'tidewing/soak-through tempestray/twin-strike thornbuck/wide-reach',
+  'All at Once on Feed the Marks': 'wickat/double-mark geyserpup/all-at-once kilnmole/baked-shell',
+  'Twin Strike': 'tidewing/steady-mark tempestray/twin-strike thornbuck/wide-reach',
   'Dodge tank: Zigzag beside a Guard': 'voltaro/zigzag ohmouse/catch-the-bolts tempestray/none',
   'Mire: Mud Wall and Squelch Song': 'bogwarden/mud-wall tempestray/none croakmire/squelch-song',
   'No reactions: plain hitters': 'tempestray/twin-strike magmole/tunnel-through kilnmole/draw-fire',
+  "Guard's Shadow: Pyrelynx beside Kilnmole":
+    'ancientshell/steady-mark pyrelynx/guards-shadow kilnmole/draw-fire',
+  'Crown of Embers into a Territorial Coralynx':
+    'solmane/crown-of-embers coralynx/territorial kilnmole/draw-fire',
+  'Starlight across the row': 'tidewing/steady-mark aurorix/starlight tempestray/none',
+  'Drizzle across the row': 'tidewing/steady-mark drizzlewt/drizzle tempestray/none',
+  'Carry Them: Gaiadrake guards its Setter':
+    'voltaro/zoom gaiadrake/carry-them thornbuck/wide-reach',
 };
 
 /** Each card's intended answers (the Knacks its icon would point at, P-08), as a line to test. */
@@ -63,36 +73,42 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
   'thick-hide': [
     [
       'Tunnel Through beside the Payoff',
-      'tidewing/soak-through tempestray/none magmole/tunnel-through',
+      'tidewing/steady-mark tempestray/none magmole/tunnel-through',
     ],
-    ['Big Spout on Overcharge', 'wickat/overcharge geyserpup/big-spout kilnmole/draw-fire'],
+    ['All at Once on Double Mark', 'wickat/double-mark geyserpup/all-at-once kilnmole/draw-fire'],
   ],
   'stone-skin': [
-    ['Twin Strike', 'tidewing/soak-through tempestray/twin-strike thornbuck/wide-reach'],
+    ['Twin Strike', 'tidewing/steady-mark tempestray/twin-strike thornbuck/wide-reach'],
   ],
   'clean-scales': [
-    ['Soak Through (Seal)', 'tidewing/soak-through tempestray/none thornbuck/wide-reach'],
+    ['Steady Mark (Seal)', 'tidewing/steady-mark tempestray/none thornbuck/wide-reach'],
   ],
   'reflective-hide': [
     ['Circle Round', 'tidewing/circle-round tempestray/none thornbuck/wide-reach'],
-    ['Clear the Air', 'tidewing/soak-through tempestray/none halcyray/clear-the-air'],
+    ['Clear the Air', 'tidewing/steady-mark tempestray/none halcyray/clear-the-air'],
   ],
-  elusive: [['Clear Skies', 'tidewing/soak-through tempestray/none halcyray/clear-skies']],
+  elusive: [['Clear Skies', 'tidewing/steady-mark tempestray/none halcyray/clear-skies']],
   'bramble-bind': [
-    ['Setter in the middle', 'thornbuck/wide-reach tidewing/soak-through tempestray/none'],
+    ['Setter in the middle', 'thornbuck/wide-reach tidewing/steady-mark tempestray/none'],
+    ['Lantern Glow in the middle', 'tidewing/steady-mark lanternfin/lantern-glow tempestray/none'],
   ],
-  wither: [['Draw Fire (prevention)', 'tidewing/soak-through tempestray/none kilnmole/draw-fire']],
+  wither: [['Draw Fire (prevention)', 'tidewing/steady-mark tempestray/none kilnmole/draw-fire']],
   'payoff-hunter': [
-    ['Guard beside the Payoff', 'tidewing/soak-through tempestray/none thornbuck/wide-reach'],
+    ['Guard beside the Payoff', 'tidewing/steady-mark tempestray/none thornbuck/wide-reach'],
   ],
-  grudge: [['Draw Fire', 'tidewing/soak-through tempestray/none kilnmole/draw-fire']],
+  grudge: [['Draw Fire', 'tidewing/steady-mark tempestray/none kilnmole/draw-fire']],
   'great-wave': [
-    ['Night Watch', 'tidewing/soak-through tempestray/none thornbuck/night-watch'],
-    ['Keep the Heat In', 'tidewing/soak-through tempestray/none kilnmole/keep-the-heat-in'],
+    ['Night Watch', 'tidewing/steady-mark tempestray/none thornbuck/night-watch'],
+    ['Keep the Heat In', 'tidewing/steady-mark tempestray/none kilnmole/keep-the-heat-in'],
+    ['Living Shelter', 'pyrelynx/none ancientshell/living-shelter thornbuck/wide-reach'],
   ],
-  swarm: [['Zoom', 'voltaro/zoom tempestray/none thornbuck/wide-reach']],
+  swarm: [
+    ['Zoom', 'voltaro/zoom tempestray/none thornbuck/wide-reach'],
+    ['Hide in Mist', 'tidewing/steady-mark fogwyrm/hide-in-mist tempestray/none'],
+  ],
   crusher: [
-    ['Guard beside the Payoff', 'tidewing/soak-through tempestray/none thornbuck/wide-reach'],
+    ['Guard beside the Payoff', 'tidewing/steady-mark tempestray/none thornbuck/wide-reach'],
+    ['Hearth', 'tidewing/steady-mark tempestray/none hearthshell/hearth'],
   ],
 };
 
@@ -344,7 +360,52 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
     '',
   );
 
-  // 7. A raid weekend with attrition.
+  // 7. Talents: what one talent on one creature adds.
+  md.push(
+    '## Talents: what one talent adds (gauntlet)',
+    '',
+    `Each talent on one form in a fitting team (the form in the middle slot with no Knack, its partners with their first Knack): its score with the talent against the same team without it, on every card (${seeds} seeds each). Mean is over all cards; Best is the card where it helps most. A talent near 0% everywhere does nothing in that team (some need a partner, such as a healer for Quick Healer); one far above the rest is a must-roll.`,
+    '',
+    '| Line | Talent | Form | Mean | Best card |',
+    '| --- | --- | --- | ---: | --- |',
+  );
+  const talentCards = cards.map((c) => c.id);
+  const talentValue: Record<string, unknown> = {};
+  for (const ln of TALENT_LINES) {
+    for (const entry of talentPool(ln)) {
+      for (const form of formsOf(ln)) {
+        if (!entry.roles.includes(formStats(form, LEVEL).role)) continue;
+        const team = teamFor(form);
+        const withT = team.map((p, i) => (i === 1 ? { ...p, talents: [entry.talent] } : p));
+        let sum = 0,
+          best = -Infinity,
+          bestCard = '';
+        for (const cid of talentCards) {
+          const boss = bossFor(GAUNTLET, [cid]);
+          const a = evaluate(boss, withT, GAUNTLET, seeds, `tal:${cid}`);
+          const b = evaluate(boss, team, GAUNTLET, seeds, `tal:${cid}`);
+          const v = b.score ? a.score / b.score - 1 : 0;
+          sum += v;
+          if (v > best) [best, bestCard] = [v, cid];
+        }
+        const v = sum / talentCards.length;
+        const signed = (x: number) => `${x >= 0 ? '+' : ''}${(x * 100).toFixed(1)}%`;
+        const cardName = CARDS.find((c) => c.id === bestCard)?.name ?? bestCard;
+        talentValue[`${form}/${entry.talent}`] = {
+          mean: Math.round(v * 1000) / 1000,
+          best: bestCard,
+          bestValue: Math.round(best * 1000) / 1000,
+        };
+        md.push(
+          `| ${ln} | ${TALENTS[entry.talent]?.name ?? entry.talent} | ${form} | ${signed(v)} | ${best > 0.005 ? `${cardName} ${signed(best)}` : 'none'} |`,
+        );
+      }
+    }
+  }
+  data['talentValue'] = talentValue;
+  md.push('');
+
+  // 8. A raid weekend with attrition.
   md.push(
     '## Raid weekend with attrition (3 stages of 8 rounds, HP carries, knocked-out creatures stay out)',
     '',
@@ -385,8 +446,8 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
     '',
     '## What this cannot tell',
     '',
-    '- It is a prototype: talents, gear, heal crits on screen and the raid board UI are simplified or missing.',
-    '- Pyrelynx, Bloomback, Wickat and Ancientshell carry placeholder Knacks; results that lean on them are provisional.',
+    '- It is a prototype: gear, heal crits on screen and the raid board UI are simplified or missing; talents are measured one at a time, never in the best-team search.',
+    '- Mire has no Setter or Payoff yet, so its reactions never happen here.',
     '- Searches are random plus local improvement; a missing team is not proof that it is weak.',
     '- The raid search uses 3 rows of 4 (four players); real servers place up to 15 per row, first come first served.',
     '- Fun is not in the numbers. Use this to find outliers and dead options, then test feel in the game.',
@@ -423,6 +484,23 @@ export function buildCatalogue(): string {
       '',
     );
   }
+  md.push(
+    '## Combat talents',
+    '',
+    "Generated from `packages/lab/src/talents.ts`. A creature rolls talents from its line's pool when found. Each pool has the role talents of its forms' roles (the same effect keeps the same name in every pool) and one flavour talent of its own.",
+    '',
+    '| Line | Pool (roles) |',
+    '| --- | --- |',
+  );
+  for (const ln of TALENT_LINES)
+    md.push(
+      `| ${ln} | ${talentPool(ln)
+        .map((e) => `${TALENTS[e.talent]?.name ?? e.talent} (${e.roles.join(', ')})`)
+        .join('; ')} |`,
+    );
+  md.push('', '| Talent | Text | Intent |', '| --- | --- | --- |');
+  for (const t of Object.values(TALENTS)) md.push(`| ${t.name} | ${t.text} | ${t.intent} |`);
+  md.push('');
   return md.join('\n');
 }
 
@@ -449,6 +527,34 @@ function summarise(l: readonly Pick[]): string {
     .sort((a, b) => b[1] - a[1])
     .map(([k, c]) => `${c}x ${k}`)
     .join(', ');
+}
+
+/** The forms of a creature line, in content order. */
+function formsOf(ln: string): string[] {
+  return content.creatures.filter((c) => c.line === ln && FORM_KNACKS[c.id]).map((c) => c.id);
+}
+
+const firstKnack = (form: string) => FORM_KNACKS[form]?.[0] ?? 'none';
+
+/**
+ * A fitting gauntlet team for measuring one form: the form in the middle (no Knack, so the talent
+ * is what changes), a partner on its left that makes its role work (a Payoff that cashes a Setter's
+ * mark, a Setter whose mark a Payoff cashes) and Thornbuck on its right; Guards and Supports stand
+ * between Tidewing and Tempestray.
+ */
+function teamFor(form: string): Pick[] {
+  const st = formStats(form, LEVEL);
+  const stage2 = (role: string, ok: (el: string) => boolean) =>
+    content.creatures.find((c) => c.role === role && c.stage === 2 && ok(c.element))?.id;
+  let partner: string | undefined;
+  if (st.role === 'setter') partner = stage2('payoff', (el) => triggers(el, st.element));
+  if (st.role === 'payoff') partner = stage2('setter', (el) => triggers(st.element, el));
+  const rest = partner !== undefined ? [partner, 'thornbuck'] : ['tidewing', 'tempestray'];
+  const [left, right] = rest.map((f) => ({
+    formId: f === form ? 'thornbuck' : f,
+    knack: firstKnack(f === form ? 'thornbuck' : f),
+  }));
+  return [left as Pick, { formId: form, knack: 'none' }, right as Pick];
 }
 
 export type { Ranked };

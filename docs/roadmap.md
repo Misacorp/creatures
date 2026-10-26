@@ -66,7 +66,7 @@ The simulator has 96 balance targets. On seed `leet`, about 28 fail. These failu
 
 ## Combat v2 (Misa, 2026-10-26)
 
-A rework of combat so players bring creatures for what their species can do, not their level: Knacks, primer and detonator marks, boss turns between rows, slot targeting, armour, raid attrition. Being designed and simulated in `docs/design/combat/` and `packages/lab`; next steps are in its proposal's testing plan (a lab page on staging, then a port behind a flag, then an experimental season).
+A rework of combat so players bring creatures for what their species can do, not their level: Knacks, primer and detonator marks, boss turns between rows, slot targeting, armour, raid attrition. Being designed and simulated in `docs/design/combat/` and `packages/lab`; the phases from the lab to the game are in `docs/design/combat/roadmap.md`.
 
 ## Open design questions
 
