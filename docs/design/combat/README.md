@@ -1,6 +1,6 @@
 # Combat v2: the rework
 
-Status: **proposal under iteration** (v0.4, 2026-10-26; first panel done). Nothing here is shipped. The shipped rules are still `docs/design/combat-rules.md` and `packages/engine`.
+Status: **proposal under iteration** (v0.5, 2026-10-26; first panel done, its questions answered). Nothing here is shipped. The shipped rules are still `docs/design/combat-rules.md` and `packages/engine`.
 
 ## North Star
 
