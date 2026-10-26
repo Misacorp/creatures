@@ -180,31 +180,19 @@ describe('placement', () => {
     );
   });
 
-  it('waits for the first player to place when the week opens, then places the server', async () => {
+  it('starts a brand-new server at Rank 1 as soon as its week opens, with nobody in it', async () => {
     await runRaid(
       (ctx) => {
+        expect(readLadder(ctx.sql)).toEqual({ rank: null, bestRank: null });
         openWeek(ctx, weekAt(0));
         expect(count(ctx.sql, 'raid_party_members')).toBe(0);
-        expect(readLadder(ctx.sql).rank).toBeNull();
-        expect(weekRow(ctx, W02.id)).toMatchObject({
-          rank: null,
-          effective_rank: null,
-          festival: 0,
-        });
+        expect(readLadder(ctx.sql).rank).toBe(1);
+        expect(weekRow(ctx, W02.id)).toMatchObject({ rank: 1, effective_rank: 1, festival: 0 });
 
-        // An active player who has not placed does not count: the server is still not placed.
-        const [late] = seedMany(ctx, 1, 9) as [Seeded];
-        ctx.core.raid.view(late.id, HELSINKI);
-        expect(readLadder(ctx.sql).rank).toBeNull();
-
-        // The first placement joins the week and places the server.
-        joinRaid(ctx, late);
-        const expected = placementRank([9, 9, 9]);
-        expect(readLadder(ctx.sql).rank).toBe(expected);
-        expect(weekRow(ctx, W02.id)).toMatchObject({ rank: expected, effective_rank: expected });
-        // Other joiners do not place it again.
+        // Joining does not place it again, whatever the joiners bring.
         joinRaid(ctx, seedMany(ctx, 3, 20, 10));
-        expect(readLadder(ctx.sql).rank).toBe(expected);
+        expect(readLadder(ctx.sql).rank).toBe(1);
+        expect(weekRow(ctx, W02.id)).toMatchObject({ rank: 1, effective_rank: 1 });
       },
       { start: W02.monday },
     );

@@ -68,7 +68,7 @@ async function openWeek(
     channel?: string | null;
     level?: number;
     name?: (i: number) => string;
-    /** The server's rank before the week opens (a brand-new server is placed when its first player joins). */
+    /** The server's rank before the week opens (a brand-new server starts at Rank 1 when its week opens). */
     rank?: number;
   } = {},
 ): Promise<Seeded[]> {
@@ -132,6 +132,25 @@ describe('the Monday boss reveal', () => {
         );
         expect(posts(ctx)).toHaveLength(1);
         expect(posts(ctx)[0]?.content).toBe(text);
+      },
+      { start: W02.monday },
+    );
+  });
+
+  it('shows Rank 1 for a brand-new server, before anyone has joined', async () => {
+    await runRaid(
+      async (ctx) => {
+        const player = seedPlayer(ctx, 1, { level: 5 });
+        expect(rows(ctx.sql, 'SELECT rank FROM raid_ladder')).toEqual([{ rank: null }]);
+        await ctx.core.createSession(
+          ctx.guildId,
+          { id: player.id, displayName: player.name },
+          CHANNEL,
+        );
+        expect(rows(ctx.sql, 'SELECT rank FROM raid_ladder')).toEqual([{ rank: 1 }]);
+        expect(rows(ctx.sql, 'SELECT COUNT(*) AS n FROM raid_party_members')).toEqual([{ n: 0 }]);
+        const [reveal] = posts(ctx);
+        expect(embedOf(reveal?.content ?? '').author).toEqual({ name: 'New raid week · Rank 1' });
       },
       { start: W02.monday },
     );
