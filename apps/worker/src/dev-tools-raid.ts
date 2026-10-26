@@ -288,13 +288,9 @@ export function placeGuest(
   ensureWeekRank(ctx.sql, weekId);
 }
 
-/** Whether joining this week's raid is still open (Phase 1 has not resolved). */
+/** Whether joining this week's raid is still open (the finale has not started). */
 function joiningOpen(ctx: ToolCtx, weekId: string): boolean {
-  return (
-    !eventDone(ctx, weekId, 'phase1') &&
-    ctx.sql.exec('SELECT 1 FROM raid_results WHERE week_id = ? LIMIT 1', weekId).toArray()
-      .length === 0
-  );
+  return !eventDone(ctx, weekId, 'finale');
 }
 
 /**

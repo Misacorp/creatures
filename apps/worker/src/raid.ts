@@ -58,6 +58,7 @@ import {
 import {
   eligiblePlayerIds,
   joinSmallestParty,
+  joiningOpen,
   leaveParty,
   partyMembers,
   partyOf,
@@ -210,8 +211,7 @@ export class Raid {
         season.festivalSpecies,
         RAID_DIFFICULTY_VERSION,
       );
-      // The week's rank is fixed now when the server has one. A server that has no rank yet is placed
-      // when the first player joins.
+      // The week gets its rank now: the server's, or Rank 1 for a server that has none yet (`ensureWeekRank`).
       ensureWeekRank(this.sql, weekId);
       return { weekId, bossId: boss.id, status: 'open' as const, createdAt: now };
     });
@@ -227,10 +227,11 @@ export class Raid {
   }
 
   /**
-   * Whether a player may still join the week's raid (by placing a creature): until Phase 1 resolves.
-   * After that the parties are fixed; the players who joined can still move their own creatures.
+   * Whether a player may still leave the week's raid by taking all their creatures off the board:
+   * until Phase 1 resolves. After that a member stays in the party (and does not fight with nothing
+   * placed).
    */
-  private joiningOpen(week: WeekRow): boolean {
+  private beforePhase1(week: WeekRow): boolean {
     if (week.status !== 'open') return false;
     return (
       this.sql.exec('SELECT 1 FROM raid_results WHERE week_id = ? LIMIT 1', week.weekId).toArray()
@@ -437,7 +438,7 @@ export class Raid {
   resolvePhase(week: WeekRow, phase: RaidPhase): void {
     if (this.isDone(week.weekId, phase)) return;
     if (phase === 'phase1') {
-      // A server that has no rank yet is placed now if anyone joined (nobody joins after this).
+      // A week that still has no rank (opened before servers started at Rank 1) gets it now.
       this.deps.storage.transactionSync(() => ensureWeekRank(this.sql, week.weekId));
       // Whatever happened before, the week's numbers follow the current rules when Phase 1 fixes the pool.
       this.redeclareOne(week.weekId);
@@ -475,8 +476,8 @@ export class Raid {
 
   /**
    * Puts one of the player's creatures into a slot of the party row. Placing the first creature joins
-   * the week's raid (the party with the fewest players, see `partyToJoin`), until Phase 1 resolves
-   * (`raid_closed` after); after that the players who joined can still move their own creatures. A
+   * the week's raid (the party with the fewest players, see `partyToJoin`), at any time until the
+   * finale starts (`locked` after); a late joiner fights from the next phase they are in. A
    * player brings exactly the creatures they place, at most three: one that is not on the board yet
    * needs a free place (`board_full` otherwise); one that is already there moves. An empty slot just
    * takes it; a slot held by another of the player's own creatures swaps places; a slot held by
@@ -492,9 +493,8 @@ export class Raid {
       let party = partyOf(this.sql, week.weekId, userId);
       const joining = party === null;
       if (party === null) {
-        if (!this.joiningOpen(week)) throw new GameError(409, 'raid_closed');
         party = joinSmallestParty(this.sql, week.weekId, userId, this.deps.now());
-        // A server that has no rank yet is placed as soon as its week has someone in.
+        // A week opened before servers started at Rank 1 gets its rank at the first join at the latest.
         ensureWeekRank(this.sql, week.weekId);
       }
       this.readinessCache.invalidate();
@@ -655,7 +655,7 @@ export class Raid {
             userId,
           )
           .one().n;
-        const leaving = left === 0 && this.joiningOpen(week);
+        const leaving = left === 0 && this.beforePhase1(week);
         if (leaving) leaveParty(this.sql, week.weekId, userId);
         changes.push({
           userId,
@@ -877,7 +877,7 @@ export class Raid {
   canWatchBoard(userId: string, week: WeekRow, party: number): boolean {
     const mine = partyOf(this.sql, week.weekId, userId);
     if (mine !== null) return mine === party;
-    if (!this.joiningOpen(week)) return false;
+    if (!joiningOpen(week.status)) return false;
     const hasCreature =
       this.sql.exec('SELECT 1 FROM creatures WHERE user_id = ? LIMIT 1', userId).toArray().length >
       0;
@@ -1139,7 +1139,7 @@ export class Raid {
   /**
    * The light read behind the Activity's raid pip and the Home notice: whether the Raid tab would ask the
    * caller to place creatures, and when the next raid event is due (`nextAt`, as `view.next.at`: the
-   * answer can change then). True for an active player who has not joined while joining is still open,
+   * answer can change then). True for an active player who has not joined, until the finale starts,
    * and for a joined player with fewer on the board than they could bring (up to three), until the
    * finale starts. It builds none of the view.
    */
@@ -1154,7 +1154,7 @@ export class Raid {
     if (party === null) {
       // Not joined: nudged while joining is open, if they are on the active roster (a creature and recent activity).
       const needed =
-        this.joiningOpen(week) && eligiblePlayerIds(this.sql, this.deps.now()).includes(userId);
+        joiningOpen(week.status) && eligiblePlayerIds(this.sql, this.deps.now()).includes(userId);
       return { needed, nextAt };
     }
     const placed = partyPlacements(this.sql, week.weekId, party).filter(

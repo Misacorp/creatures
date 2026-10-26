@@ -220,7 +220,6 @@ const ERROR_TEXT: Record<string, string> = {
   not_your_creature: 'That is not one of your creatures.',
   not_in_team: 'Only creatures in your team can be placed. Choose your team first.',
   not_in_roster: "You are not in this week's raid. Place a creature on its board to join.",
-  raid_closed: "Joining this week's raid closed when Phase 1 started. Place a creature next week.",
   duplicate_creatures: 'Pick three different creatures.',
   invalid_slot: 'That slot does not exist.',
   // The live finale.

@@ -191,7 +191,7 @@ export interface RaidView {
     /** The player joined this week's raid: they placed a creature. */
     inRoster: boolean;
     party: number | null;
-    /** They may place or move creatures: they joined, or joining is still open (before Phase 1). */
+    /** They may place or move creatures: they joined, or joining is still open (until the finale starts). */
     canEdit: boolean;
     /** Exactly the creatures the player placed on the board (up to three); null before they join. */
     team: { creatures: TeamCreatureView[] } | null;
@@ -203,7 +203,7 @@ export interface RaidView {
     reveal: RaidReveal | null;
   };
   /**
-   * The player's party, or, before they join (while joining is open), the party they would join. Null once
+   * The player's party, or, before they join (until the finale starts), the party they would join. Null once
    * joining has closed for them, or when they have no creature to place.
    */
   party: null | {

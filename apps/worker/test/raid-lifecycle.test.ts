@@ -283,31 +283,63 @@ describe('parties by placing', () => {
     });
   });
 
-  it('fixes membership after phase 1: later arrivals cannot join, joined players can still move', async () => {
+  it('lets a player join after Phase 1 and Phase 2, into the party with the fewest players, until the finale', async () => {
+    await runRaid((ctx) => {
+      // 16 active players: two parties. Five join before Phase 1: sizes 3 and 2.
+      const players = Array.from({ length: 16 }, (_, i) => seedPlayer(ctx, i + 1));
+      joinRaid(ctx, players.slice(0, 5), { creatures: 1 });
+      expect(partySizes(ctx.sql)).toEqual([3, 2]);
+      ctx.clock.t = W02.afterPhase1 + HOUR;
+      expect(ctx.core.raid.view(players[0]?.id as string, HELSINKI).status).toBe('phase1');
+      // After Phase 1 a newcomer sees the board they would join and can place on it.
+      const late = players[5] as (typeof players)[number];
+      const before = ctx.core.raid.view(late.id, HELSINKI);
+      expect(before.you).toMatchObject({ inRoster: false, canEdit: true });
+      expect(before.party?.party).toBe(2);
+      expect(ctx.core.raid.place(late.id, HELSINKI, late.creatureIds[0] as string, 5).ok).toBe(
+        true,
+      );
+      expect(partySizes(ctx.sql)).toEqual([3, 3]);
+      const after = ctx.core.raid.view(late.id, HELSINKI);
+      expect(after.you).toMatchObject({ inRoster: true, party: 2 });
+      expect(after.roster.map((r) => r.displayName)).toContain('Player 6');
+      // Phase 2 resolves; the next newcomer goes to party 1 (tie, lowest number).
+      ctx.clock.t = W02.afterPhase2 + HOUR;
+      const later = players[6] as (typeof players)[number];
+      expect(ctx.core.raid.view(later.id, HELSINKI).status).toBe('phase2');
+      expect(ctx.core.raid.place(later.id, HELSINKI, later.creatureIds[0] as string, 6).ok).toBe(
+        true,
+      );
+      expect(partySizes(ctx.sql)).toEqual([4, 3]);
+      // Once the finale starts, nobody joins any more.
+      ctx.clock.t = W02.afterFinale + HOUR;
+      const last = players[7] as (typeof players)[number];
+      expect(ctx.core.raid.view(last.id, HELSINKI).status).toBe('finale');
+      expect(ctx.core.raid.place(last.id, HELSINKI, last.creatureIds[0] as string, 7)).toEqual({
+        ok: false,
+        status: 409,
+        error: 'locked',
+      });
+      expect(partySizes(ctx.sql)).toEqual([4, 3]);
+    });
+  });
+
+  it('lets a joined player keep moving their creature after phase 1, and a late joiner opens a party that does not exist yet', async () => {
     await runRaid((ctx) => {
       const a = seedMember(ctx, 1);
       ctx.clock.t = W02.afterPhase1 + HOUR;
-      // Phase 1 resolves (and closes joining) on this read.
       expect(ctx.core.raid.view(a.id, HELSINKI).status).toBe('phase1');
-      const late = seedPlayer(ctx, 2);
-      const view = ctx.core.raid.view(late.id, HELSINKI);
-      expect(view.status).toBe('phase1');
-      expect(view.you).toMatchObject({ inRoster: false, canEdit: false });
-      expect(view.party).toBeNull();
-      expect(view.roster.map((r) => r.displayName)).toEqual(['Player 1']);
-      expect(ctx.core.raid.place(late.id, HELSINKI, late.creatureIds[0] as string, 0)).toEqual({
-        ok: false,
-        status: 409,
-        error: 'raid_closed',
-      });
-      expect(count(ctx.sql, 'raid_party_members')).toBe(1);
-      // The player who joined can still move their own creature (the adjustment window).
       expect(ctx.core.raid.place(a.id, HELSINKI, a.creatureIds[0] as string, 7).ok).toBe(true);
       expect(
         ctx.core.raid
           .view(a.id, HELSINKI)
           .you.team?.creatures.find((c) => c.creatureId === a.creatureIds[0])?.slot,
       ).toBe(7);
+      const late = seedPlayer(ctx, 2);
+      expect(ctx.core.raid.place(late.id, HELSINKI, late.creatureIds[0] as string, 0).ok).toBe(
+        true,
+      );
+      expect(count(ctx.sql, 'raid_party_members')).toBe(2);
     });
   });
 

@@ -140,7 +140,6 @@ describe('display helpers', () => {
     'not_your_creature',
     'not_in_team',
     'not_in_roster',
-    'raid_closed',
     'duplicate_creatures',
     'invalid_slot',
     'already_fired',

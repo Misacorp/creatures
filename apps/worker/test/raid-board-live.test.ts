@@ -241,7 +241,7 @@ describe('the raid board ticket', () => {
     });
   });
 
-  it('is refused to a player with no creature, and to a player once joining has closed for them', async () => {
+  it('is refused to a player with no creature, and to a player once the finale has started; open to a newcomer until then', async () => {
     await run(async (ctx) => {
       const a = seedPlayer(ctx, 1, { level: 5 });
       joinRaid(ctx, a, { creatures: 1 });
@@ -250,8 +250,14 @@ describe('the raid board ticket', () => {
       expect(
         (await ctx.request(await session(ctx, none), RAID_TICKET_PATH, 'POST', body)).status,
       ).toBe(403);
-      // Phase 1 has resolved: a player who is not in the raid sees no board.
+      // Phase 1 has resolved: a newcomer can still join, so they get the board they would join.
       ctx.clock.t = W02.afterPhase1 + HOUR;
+      ctx.core.raid.runDue(HELSINKI);
+      expect(
+        (await ctx.request(await session(ctx, late), RAID_TICKET_PATH, 'POST', body)).status,
+      ).toBe(200);
+      // The finale has started: nobody joins any more, so a player who is not in sees no board.
+      ctx.clock.t = W02.afterFinale + HOUR;
       ctx.core.raid.runDue(HELSINKI);
       expect(
         (await ctx.request(await session(ctx, late), RAID_TICKET_PATH, 'POST', body)).status,
