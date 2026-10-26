@@ -12,6 +12,7 @@ import {
   type FightEvent,
   type FightInput,
   type FightResult,
+  type FightSlot,
   type Zone,
 } from '@creatures/engine';
 import { RULES, content, seasonOf, type ReadinessBand } from '@creatures/game';
@@ -124,6 +125,27 @@ export interface RowSlotView {
     creatureId?: string;
     /** A Guard's reach (`guardReachOf`: how many creatures it protects on each side); Guards only. */
     reach?: GuardReach;
+  };
+}
+
+/**
+ * The creature of one board cell as the row shows it: the one place that decides what a cell says, used
+ * by the view's whole row and by the live board's one-cell pushes (`raid-board-change.ts`). The creature
+ * id is only for the viewer's own creatures.
+ */
+export function cellCreature(
+  fight: FightSlot,
+  ownerName: string,
+  mine: boolean,
+): NonNullable<RowSlotView['creature']> {
+  return {
+    ownerName,
+    species: fight.speciesId,
+    name: fight.name,
+    level: fight.level,
+    mine,
+    ...(mine ? { creatureId: fight.id } : {}),
+    ...reachField(fight.role, fight.mods),
   };
 }
 
@@ -349,15 +371,7 @@ export function buildRaidView(
       return {
         slot,
         zone: zoneOfIndex(slot, length),
-        creature: {
-          ownerName: names.get(ownerId) ?? 'Unknown',
-          species: fight.speciesId,
-          name: fight.name,
-          level: fight.level,
-          mine,
-          ...(mine ? { creatureId: fight.id } : {}),
-          ...reachField(fight.role, fight.mods),
-        },
+        creature: cellCreature(fight, names.get(ownerId) ?? 'Unknown', mine),
       };
     });
     const pool = sql

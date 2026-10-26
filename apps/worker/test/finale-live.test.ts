@@ -155,6 +155,7 @@ const residents = (live: Live) => live.messages.filter((m) => m['type'] === 'res
 interface Flags {
   lounge: boolean;
   finale: boolean;
+  raid: boolean;
 }
 
 /**
@@ -164,7 +165,7 @@ interface Flags {
  */
 function run<R>(
   fn: (ctx: CoreContext, hub: LiveHub) => Promise<R> | R,
-  flags: Flags = { lounge: true, finale: true },
+  flags: Flags = { lounge: true, finale: true, raid: true },
 ): Promise<R> {
   const guildId = nextGuild();
   const holder: { core?: GuildCore; hub?: LiveHub } = {};
@@ -262,7 +263,7 @@ describe('the finale ticket', () => {
         hub.tickFinale();
         hub.notifyFinale(a.id);
       },
-      { lounge: true, finale: false },
+      { lounge: true, finale: false, raid: true },
     );
   });
 
