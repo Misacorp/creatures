@@ -87,6 +87,7 @@ interface CreatureBody {
   fusionCount: number;
   fusionPoints: number;
   shiny: boolean;
+  note: string | null;
   nickname: string | null;
   away: boolean;
   quirk: string | null;

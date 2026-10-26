@@ -221,6 +221,7 @@ const SCENE_LIST: readonly SceneDef[] = [
   },
   { id: 'F1', label: 'F1 · Page top', kind: 'level 15', show: 'page' },
   { id: 'F2', label: 'F2 · Page, nicknamed (species tag)', kind: 'nickname', show: 'page' },
+  { id: 'F7', label: 'F7 · Page, with a note (open under Rename)', kind: 'note', show: 'page' },
   {
     id: 'F3',
     label: 'F3 · Page, ribbon waiting (cost and what is missing)',
