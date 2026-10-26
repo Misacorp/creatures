@@ -23,6 +23,7 @@ import {
   rows,
   runRaid,
   seedPlayer,
+  joinRaid,
   nextGuild,
 } from './raid-helpers';
 
@@ -157,7 +158,8 @@ describe('the hooked payouts', () => {
   it("records the raid's Essence, experience and finale gear of away members only", async () => {
     await runRaid((ctx) => {
       const players = Array.from({ length: 5 }, (_, i) => seedPlayer(ctx, i + 1, { level: 15 }));
-      ctx.core.raid.currentWeek(HELSINKI);
+      // Every player joins by placing their creatures (decisions.md, 2026-10-26).
+      joinRaid(ctx, players);
       forcePool(ctx.sql, 20_000);
       const members = membersOf(ctx.sql);
       expect(members).toHaveLength(5);
