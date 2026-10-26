@@ -104,10 +104,8 @@ describe('who and bars', () => {
     expect(barMax([0, 0])).toBe(1);
   });
 
-  it('gives each player a line with damage, share and contribution', () => {
-    expect(playerLine({ damage: 1200, contribution: 1500 }, 3500)).toBe(
-      '1200 damage (34%), 1500 contribution',
-    );
+  it('gives each player a line with damage, share and score', () => {
+    expect(playerLine({ damage: 1200, score: 1500 }, 3500)).toBe('1200 damage (34%), 1500 score');
   });
 
   it('names a creature, its kind when it has a nickname, and its owner', () => {
@@ -119,9 +117,9 @@ describe('who and bars', () => {
         owner: 'Eli',
         you: false,
         damage: 2775,
-        contribution: 2888,
+        score: 2888,
       }),
-    ).toBe('1. Mossback, Eli: 2775 damage, 2888 contribution');
+    ).toBe('1. Mossback, Eli: 2775 damage, 2888 score');
     expect(
       creatureLine({
         rank: 6,
@@ -130,9 +128,9 @@ describe('who and bars', () => {
         owner: 'Bob',
         you: true,
         damage: 9,
-        contribution: 9,
+        score: 9,
       }),
-    ).toBe('6. Rocky (Mossback), You: 9 damage, 9 contribution');
+    ).toBe('6. Rocky (Mossback), You: 9 damage, 9 score');
     expect(
       creatureLine({
         rank: 7,
@@ -141,7 +139,7 @@ describe('who and bars', () => {
         owner: null,
         you: false,
         damage: 0,
-        contribution: 0,
+        score: 0,
       }),
     ).toContain('Guest: 0 damage');
   });

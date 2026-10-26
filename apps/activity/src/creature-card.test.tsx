@@ -44,6 +44,7 @@ function actionsWith(overrides: Partial<CardActions> = {}): CardActions {
     onRibbon: vi.fn(),
     onEvolve: vi.fn(),
     onRename: vi.fn(),
+    onNote: vi.fn(),
     onLounge: vi.fn(),
     onSlotTalent: vi.fn(),
     ...overrides,

@@ -85,6 +85,7 @@ describe('the creature page flips through the list it came from', () => {
         onRibbon={noop}
         onEvolve={noop}
         onRename={onRename}
+        onNote={vi.fn()}
         onLounge={noop}
         onSlotTalent={noop}
       />,
@@ -509,6 +510,7 @@ describe('the item picker has no flip: the grid is how you move between items', 
           onRibbon: noop,
           onEvolve: noop,
           onRename: noop,
+          onNote: noop,
           onLounge: noop,
           onSlotTalent: noop,
         }}

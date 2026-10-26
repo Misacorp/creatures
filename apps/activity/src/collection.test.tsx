@@ -45,6 +45,7 @@ const actions = {
   onRibbon: noop,
   onEvolve: noop,
   onRename: noop,
+  onNote: noop,
   onLounge: noop,
   onSlotTalent: noop,
 };

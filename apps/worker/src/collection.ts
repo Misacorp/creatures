@@ -18,6 +18,7 @@ import {
   quirkText,
   ribbonNeeded,
   ribbonParts,
+  sanitizeCreatureNote,
   sanitizeNickname,
   treatCost,
   wearBlock,
@@ -80,6 +81,8 @@ type CreatureRow = {
   fusion_points: number;
   shiny: number;
   nickname: string | null;
+  /** The owner's private note (version 47), or null. */
+  note: string | null;
   away_expedition_id: string | null;
   origin: string;
   caught_at: number;
@@ -100,6 +103,8 @@ export interface CreatureView {
   fusionPoints: number;
   shiny: boolean;
   nickname: string | null;
+  /** The owner's private note on it, or null. This view is only ever the owner's own. */
+  note: string | null;
   away: boolean;
   origin: string;
   caughtAt: number;
@@ -424,6 +429,7 @@ export class Collection {
       fusionPoints: Math.max(row.fusion_points, fusionThreshold(row.fusion_count)),
       shiny: row.shiny === 1,
       nickname: row.nickname,
+      note: row.note,
       away,
       origin: row.origin,
       caughtAt: row.caught_at,
@@ -775,6 +781,27 @@ export class Collection {
       }
       this.sql.exec('UPDATE creatures SET nickname = ? WHERE id = ?', value, creature.id);
       return { nickname: value };
+    });
+  }
+
+  // --- Notes ---
+
+  /** The owner's private note on a creature; `null` or empty removes it. Only the cleaned text is stored. */
+  setNote(
+    userId: string,
+    creatureId: string,
+    raw: string | null,
+  ): Outcome<{ note: string | null }> {
+    return this.atomically(() => {
+      const creature = this.ownedCreature(userId, creatureId);
+      let value: string | null = null;
+      if (raw !== null) {
+        const clean = sanitizeCreatureNote(raw);
+        if (!clean.ok) throw new GameError(400, 'invalid_note', clean.reason);
+        value = clean.value;
+      }
+      this.sql.exec('UPDATE creatures SET note = ? WHERE id = ?', value, creature.id);
+      return { note: value };
     });
   }
 }

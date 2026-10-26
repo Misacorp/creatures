@@ -279,6 +279,10 @@ describe('the glossary text matches the rules', () => {
     expect(fx.tide.healBp).toBeGreaterThan(0);
     expect(fx.grove.healBp).toBeGreaterThan(0);
     expect(fx.tide.cleanse).toBe(true);
+    // Mire's Support work is its creatures' abilities, and the entry says so (#75).
+    expect(support).toContain('Mire has no element boost');
+    expect(fx.mire).toEqual({});
+    for (const el of content.elements) expect(support, el.id).toContain(el.name);
   });
 
   it('has a pattern entry for every attack pattern, drawn as its own glyph, plus enrage and retreat', () => {
@@ -424,6 +428,13 @@ describe('the glossary text matches the rules', () => {
   it('names the counter-move for what it does, without numbers that could drift', () => {
     expect(text('adaptation')).toContain('resists');
     expect(text('adaptation')).not.toMatch(/\d+%/);
+  });
+
+  it('explains raid damage and score in one entry, with the real setup share (#86)', () => {
+    const board = text('raid-scoreboard');
+    expect(board).toContain('Echo and Riposte');
+    expect(board).toContain(`${percent(RULES.combat.setupShareBp)} of each reaction's bonus`);
+    expect(entry('raid-scoreboard').section).toBe('rewards');
   });
 
   it('shows only the description in every raid popup: no "how it works" lines (Misa, 2026-10-14)', () => {

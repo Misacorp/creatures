@@ -99,19 +99,16 @@ export function barMax(values: readonly number[]): number {
   return Math.max(1, ...values);
 }
 
-/** The text next to a player's bar: "1200 damage (34%), 1500 contribution". */
-export function playerLine(
-  player: { damage: number; contribution: number },
-  totalDamage: number,
-): string {
-  return `${num(player.damage)} damage (${num(sharePercent(player.damage, totalDamage))}%), ${num(player.contribution)} contribution`;
+/** The text next to a player's bar: "1200 damage (34%), 1500 score". */
+export function playerLine(player: { damage: number; score: number }, totalDamage: number): string {
+  return `${num(player.damage)} damage (${num(sharePercent(player.damage, totalDamage))}%), ${num(player.score)} score`;
 }
 
 /** "3. Cindle (Cindle), Misa: 800 damage". The owner is "You" for the caller's own. */
 export function creatureLine(c: StatsCreature): string {
   const kind = speciesName(c.species);
   const label = c.name === kind ? c.name : `${c.name} (${kind})`;
-  return `${num(c.rank)}. ${label}, ${whoText(c.owner, c.you)}: ${num(c.damage)} damage, ${num(c.contribution)} contribution`;
+  return `${num(c.rank)}. ${label}, ${whoText(c.owner, c.you)}: ${num(c.damage)} damage, ${num(c.score)} score`;
 }
 
 /** "Steam: 9" or "Steam: 9 (2 reflected)". */

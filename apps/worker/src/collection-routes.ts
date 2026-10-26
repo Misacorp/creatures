@@ -10,6 +10,7 @@ import {
   LoungerBodySchema,
   LoungeSpotBodySchema,
   NicknameBodySchema,
+  NoteBodySchema,
   RibbonBodySchema,
   RoomBodySchema,
   StartExpeditionBodySchema,
@@ -220,6 +221,17 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
         nickname: outcome.value.nickname,
         state: ctx.core.collection.state(ctx.user.id),
       });
+    },
+  },
+  '/api/creatures/:id/note': {
+    PUT: async (request, ctx) => {
+      const id = pathId(ctx);
+      if (id === undefined) return invalidId();
+      const body = await parseBody(request, NoteBodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome = ctx.core.collection.setNote(ctx.user.id, id, body.note);
+      if (!outcome.ok) return failure(outcome);
+      return json({ note: outcome.value.note, state: ctx.core.collection.state(ctx.user.id) });
     },
   },
 };
