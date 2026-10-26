@@ -455,6 +455,7 @@ describe('GET /api/state', () => {
           fusionPoints: 0,
           shiny: false,
           nickname: null,
+          note: null,
           away: false,
           quirk: expect.any(String) as string,
           lineSlot: 1,

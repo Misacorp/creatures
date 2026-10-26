@@ -315,8 +315,18 @@ export function undoGamesIndexMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 42');
 }
 
+/** Puts a database back to before migration 47 (creature notes): the column goes. */
+export function undoCreatureNoteMigration(sql: SqlStorage): void {
+  const present = sql
+    .exec("SELECT 1 FROM pragma_table_info('creatures') WHERE name = 'note'")
+    .toArray();
+  if (present.length > 0) sql.exec('ALTER TABLE creatures DROP COLUMN note');
+  sql.exec('DELETE FROM schema_version WHERE version = 47');
+}
+
 /** Puts a database back to before migration 46 (what was paid while a player was away): the table goes. */
 export function undoWhileAwayMigration(sql: SqlStorage): void {
+  undoCreatureNoteMigration(sql);
   sql.exec('DROP TABLE IF EXISTS away_rewards');
   sql.exec('DELETE FROM schema_version WHERE version = 46');
 }
