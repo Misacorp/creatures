@@ -1,0 +1,1622 @@
+{
+ "scenarios": {
+  "Classic: Tidewing, Tempestray Detonate, Thornbuck": {
+   "plain": {
+    "damage": 4514,
+    "ko": 0.8333333333333334
+   },
+   "thick-hide": {
+    "damage": 2581,
+    "ko": 0.5833333333333334
+   },
+   "stone-skin": {
+    "damage": 3704,
+    "ko": 0.8333333333333334
+   },
+   "clean-scales": {
+    "damage": 4589,
+    "ko": 0.8333333333333334
+   },
+   "reflective-hide": {
+    "damage": 2131,
+    "ko": 1.9166666666666667
+   },
+   "elusive": {
+    "damage": 3399,
+    "ko": 0.8333333333333334
+   },
+   "bramble-bind": {
+    "damage": 3566,
+    "ko": 1
+   },
+   "wither": {
+    "damage": 4388,
+    "ko": 1.0833333333333333
+   },
+   "payoff-hunter": {
+    "damage": 2657,
+    "ko": 3
+   },
+   "grudge": {
+    "damage": 4119,
+    "ko": 1.8333333333333333
+   },
+   "great-wave": {
+    "damage": 3164,
+    "ko": 3
+   },
+   "swarm": {
+    "damage": 4528,
+    "ko": 1
+   },
+   "crusher": {
+    "damage": 3735,
+    "ko": 2.9166666666666665
+   }
+  },
+  "Two Setters into Detonate": {
+   "plain": {
+    "damage": 4276,
+    "ko": 1.75
+   },
+   "thick-hide": {
+    "damage": 2815,
+    "ko": 1.9166666666666667
+   },
+   "stone-skin": {
+    "damage": 3143,
+    "ko": 1.9166666666666667
+   },
+   "clean-scales": {
+    "damage": 4325,
+    "ko": 1.9166666666666667
+   },
+   "reflective-hide": {
+    "damage": 1327,
+    "ko": 3
+   },
+   "elusive": {
+    "damage": 3089,
+    "ko": 2
+   },
+   "bramble-bind": {
+    "damage": 4474,
+    "ko": 2
+   },
+   "wither": {
+    "damage": 3717,
+    "ko": 2.3333333333333335
+   },
+   "payoff-hunter": {
+    "damage": 2230,
+    "ko": 3
+   },
+   "grudge": {
+    "damage": 2730,
+    "ko": 2.9166666666666665
+   },
+   "great-wave": {
+    "damage": 2639,
+    "ko": 3
+   },
+   "swarm": {
+    "damage": 3932,
+    "ko": 3
+   },
+   "crusher": {
+    "damage": 3159,
+    "ko": 3
+   }
+  },
+  "Downpour into Detonate": {
+   "plain": {
+    "damage": 3467,
+    "ko": 0.9166666666666666
+   },
+   "thick-hide": {
+    "damage": 2379,
+    "ko": 0.9166666666666666
+   },
+   "stone-skin": {
+    "damage": 2730,
+    "ko": 0.9166666666666666
+   },
+   "clean-scales": {
+    "damage": 3457,
+    "ko": 0.9166666666666666
+   },
+   "reflective-hide": {
+    "damage": 1167,
+    "ko": 1.9166666666666667
+   },
+   "elusive": {
+    "damage": 2847,
+    "ko": 0.9166666666666666
+   },
+   "bramble-bind": {
+    "damage": 3591,
+    "ko": 1
+   },
+   "wither": {
+    "damage": 3305,
+    "ko": 1.3333333333333333
+   },
+   "payoff-hunter": {
+    "damage": 2004,
+    "ko": 3
+   },
+   "grudge": {
+    "damage": 3116,
+    "ko": 1.9166666666666667
+   },
+   "great-wave": {
+    "damage": 2725,
+    "ko": 3
+   },
+   "swarm": {
+    "damage": 3668,
+    "ko": 1
+   },
+   "crusher": {
+    "damage": 2941,
+    "ko": 2.75
+   }
+  },
+  "Overcharge into a Grove Detonate": {
+   "plain": {
+    "damage": 4470,
+    "ko": 0.9166666666666666
+   },
+   "thick-hide": {
+    "damage": 3377,
+    "ko": 0.9166666666666666
+   },
+   "stone-skin": {
+    "damage": 2730,
+    "ko": 0.9166666666666666
+   },
+   "clean-scales": {
+    "damage": 4465,
+    "ko": 0.9166666666666666
+   },
+   "reflective-hide": {
+    "damage": 820,
+    "ko": 1.9166666666666667
+   },
+   "elusive": {
+    "damage": 3560,
+    "ko": 0.9166666666666666
+   },
+   "bramble-bind": {
+    "damage": 3805,
+    "ko": 1
+   },
+   "wither": {
+    "damage": 4268,
+    "ko": 1.3333333333333333
+   },
+   "payoff-hunter": {
+    "damage": 2566,
+    "ko": 3
+   },
+   "grudge": {
+    "damage": 4053,
+    "ko": 1.9166666666666667
+   },
+   "great-wave": {
+    "damage": 3479,
+    "ko": 3
+   },
+   "swarm": {
+    "damage": 4738,
+    "ko": 1
+   },
+   "crusher": {
+    "damage": 3855,
+    "ko": 2.75
+   }
+  },
+  "Chain: Overload leaves Charged for Bloomback": {
+   "plain": {
+    "damage": 5969,
+    "ko": 1.0833333333333333
+   },
+   "thick-hide": {
+    "damage": 4158,
+    "ko": 1.1666666666666667
+   },
+   "stone-skin": {
+    "damage": 4516,
+    "ko": 1.25
+   },
+   "clean-scales": {
+    "damage": 5971,
+    "ko": 1.0833333333333333
+   },
+   "reflective-hide": {
+    "damage": 3068,
+    "ko": 2.3333333333333335
+   },
+   "elusive": {
+    "damage": 4451,
+    "ko": 1.25
+   },
+   "bramble-bind": {
+    "damage": 5518,
+    "ko": 1.5833333333333333
+   },
+   "wither": {
+    "damage": 5043,
+    "ko": 1.8333333333333333
+   },
+   "payoff-hunter": {
+    "damage": 2694,
+    "ko": 3
+   },
+   "grudge": {
+    "damage": 4034,
+    "ko": 2.6666666666666665
+   },
+   "great-wave": {
+    "damage": 3261,
+    "ko": 3
+   },
+   "swarm": {
+    "damage": 6909,
+    "ko": 2.5
+   },
+   "crusher": {
+    "damage": 4925,
+    "ko": 2.75
+   }
+  },
+  "No Setter: Ready the Mark feeds Geyserpup": {
+   "plain": {
+    "damage": 3491,
+    "ko": 0.8333333333333334
+   },
+   "thick-hide": {
+    "damage": 1609,
+    "ko": 0.5
+   },
+   "stone-skin": {
+    "damage": 3406,
+    "ko": 0.75
+   },
+   "clean-scales": {
+    "damage": 3589,
+    "ko": 0.6666666666666666
+   },
+   "reflective-hide": {
+    "damage": 1571,
+    "ko": 1.9166666666666667
+   },
+   "elusive": {
+    "damage": 2421,
+    "ko": 0.75
+   },
+   "bramble-bind": {
+    "damage": 2658,
+    "ko": 0.9166666666666666
+   },
+   "wither": {
+    "damage": 3397,
+    "ko": 1.5
+   },
+   "payoff-hunter": {
+    "damage": 1537,
+    "ko": 3
+   },
+   "grudge": {
+    "damage": 3117,
+    "ko": 1.8333333333333333
+   },
+   "great-wave": {
+    "damage": 2175,
+    "ko": 3
+   },
+   "swarm": {
+    "damage": 3420,
+    "ko": 0.5
+   },
+   "crusher": {
+    "damage": 2162,
+    "ko": 3
+   }
+  },
+  "No Setter: Own Puddle": {
+   "plain": {
+    "damage": 3460,
+    "ko": 0.8333333333333334
+   },
+   "thick-hide": {
+    "damage": 1894,
+    "ko": 0.5
+   },
+   "stone-skin": {
+    "damage": 3102,
+    "ko": 0.75
+   },
+   "clean-scales": {
+    "damage": 2727,
+    "ko": 0.6666666666666666
+   },
+   "reflective-hide": {
+    "damage": 2115,
+    "ko": 1.8333333333333333
+   },
+   "elusive": {
+    "damage": 2563,
+    "ko": 0.75
+   },
+   "bramble-bind": {
+    "damage": 3275,
+    "ko": 0.9166666666666666
+   },
+   "wither": {
+    "damage": 3372,
+    "ko": 1.5
+   },
+   "payoff-hunter": {
+    "damage": 1519,
+    "ko": 3
+   },
+   "grudge": {
+    "damage": 3026,
+    "ko": 1.8333333333333333
+   },
+   "great-wave": {
+    "damage": 2145,
+    "ko": 3
+   },
+   "swarm": {
+    "damage": 3404,
+    "ko": 0.5
+   },
+   "crusher": {
+    "damage": 2128,
+    "ko": 3
+   }
+  },
+  "Big Spout on stacked Scorched": {
+   "plain": {
+    "damage": 2820,
+    "ko": 1
+   },
+   "thick-hide": {
+    "damage": 1151,
+    "ko": 1
+   },
+   "stone-skin": {
+    "damage": 2341,
+    "ko": 1
+   },
+   "clean-scales": {
+    "damage": 2070,
+    "ko": 1
+   },
+   "reflective-hide": {
+    "damage": 1386,
+    "ko": 2
+   },
+   "elusive": {
+    "damage": 2104,
+    "ko": 1
+   },
+   "bramble-bind": {
+    "damage": 2258,
+    "ko": 1
+   },
+   "wither": {
+    "damage": 2478,
+    "ko": 1.25
+   },
+   "payoff-hunter": {
+    "damage": 1593,
+    "ko": 3
+   },
+   "grudge": {
+    "damage": 3398,
+    "ko": 1.75
+   },
+   "great-wave": {
+    "damage": 1665,
+    "ko": 3
+   },
+   "swarm": {
+    "damage": 4452,
+    "ko": 0.6666666666666666
+   },
+   "crusher": {
+    "damage": 2337,
+    "ko": 2.8333333333333335
+   }
+  },
+  "Twin Strike": {
+   "plain": {
+    "damage": 4121,
+    "ko": 1
+   },
+   "thick-hide": {
+    "damage": 1567,
+    "ko": 0.8333333333333334
+   },
+   "stone-skin": {
+    "damage": 4061,
+    "ko": 0.75
+   },
+   "clean-scales": {
+    "damage": 4138,
+    "ko": 1
+   },
+   "reflective-hide": {
+    "damage": 2192,
+    "ko": 1.8333333333333333
+   },
+   "elusive": {
+    "damage": 3000,
+    "ko": 0.9166666666666666
+   },
+   "bramble-bind": {
+    "damage": 3509,
+    "ko": 1
+   },
+   "wither": {
+    "damage": 3998,
+    "ko": 1.1666666666666667
+   },
+   "payoff-hunter": {
+    "damage": 2422,
+    "ko": 3
+   },
+   "grudge": {
+    "damage": 3677,
+    "ko": 1.9166666666666667
+   },
+   "great-wave": {
+    "damage": 3013,
+    "ko": 3
+   },
+   "swarm": {
+    "damage": 4172,
+    "ko": 0.9166666666666666
+   },
+   "crusher": {
+    "damage": 3521,
+    "ko": 2.5833333333333335
+   }
+  },
+  "Dodge tank: Zigzag beside a Guard": {
+   "plain": {
+    "damage": 3118,
+    "ko": 0.16666666666666666
+   },
+   "thick-hide": {
+    "damage": 1218,
+    "ko": 0.08333333333333333
+   },
+   "stone-skin": {
+    "damage": 3083,
+    "ko": 0.08333333333333333
+   },
+   "clean-scales": {
+    "damage": 3262,
+    "ko": 0
+   },
+   "reflective-hide": {
+    "damage": 3227,
+    "ko": 0.4166666666666667
+   },
+   "elusive": {
+    "damage": 2237,
+    "ko": 0.16666666666666666
+   },
+   "bramble-bind": {
+    "damage": 2985,
+    "ko": 0.9166666666666666
+   },
+   "wither": {
+    "damage": 3125,
+    "ko": 0.5833333333333334
+   },
+   "payoff-hunter": {
+    "damage": 2163,
+    "ko": 3
+   },
+   "grudge": {
+    "damage": 2807,
+    "ko": 1.75
+   },
+   "great-wave": {
+    "damage": 2310,
+    "ko": 2.8333333333333335
+   },
+   "swarm": {
+    "damage": 3136,
+    "ko": 0.8333333333333334
+   },
+   "crusher": {
+    "damage": 2592,
+    "ko": 2.5
+   }
+  },
+  "Mire: Mud Wall and Squelch Song": {
+   "plain": {
+    "damage": 3242,
+    "ko": 0.6666666666666666
+   },
+   "thick-hide": {
+    "damage": 1370,
+    "ko": 0.5
+   },
+   "stone-skin": {
+    "damage": 3229,
+    "ko": 0.75
+   },
+   "clean-scales": {
+    "damage": 3216,
+    "ko": 0.8333333333333334
+   },
+   "reflective-hide": {
+    "damage": 3242,
+    "ko": 0.75
+   },
+   "elusive": {
+    "damage": 2524,
+    "ko": 0.4166666666666667
+   },
+   "bramble-bind": {
+    "damage": 3232,
+    "ko": 1
+   },
+   "wither": {
+    "damage": 3147,
+    "ko": 1
+   },
+   "payoff-hunter": {
+    "damage": 1893,
+    "ko": 3
+   },
+   "grudge": {
+    "damage": 3071,
+    "ko": 1.1666666666666667
+   },
+   "great-wave": {
+    "damage": 2405,
+    "ko": 3
+   },
+   "swarm": {
+    "damage": 3265,
+    "ko": 0.4166666666666667
+   },
+   "crusher": {
+    "damage": 2489,
+    "ko": 2.4166666666666665
+   }
+  },
+  "No reactions: plain hitters": {
+   "plain": {
+    "damage": 3789,
+    "ko": 0.9166666666666666
+   },
+   "thick-hide": {
+    "damage": 2163,
+    "ko": 0.75
+   },
+   "stone-skin": {
+    "damage": 3757,
+    "ko": 0.6666666666666666
+   },
+   "clean-scales": {
+    "damage": 3856,
+    "ko": 0.9166666666666666
+   },
+   "reflective-hide": {
+    "damage": 3758,
+    "ko": 0.9166666666666666
+   },
+   "elusive": {
+    "damage": 2485,
+    "ko": 0.9166666666666666
+   },
+   "bramble-bind": {
+    "damage": 3038,
+    "ko": 1
+   },
+   "wither": {
+    "damage": 3600,
+    "ko": 1
+   },
+   "payoff-hunter": {
+    "damage": 2144,
+    "ko": 3
+   },
+   "grudge": {
+    "damage": 2091,
+    "ko": 1.9166666666666667
+   },
+   "great-wave": {
+    "damage": 2722,
+    "ko": 3
+   },
+   "swarm": {
+    "damage": 3784,
+    "ko": 0.4166666666666667
+   },
+   "crusher": {
+    "damage": 3150,
+    "ko": 1.8333333333333333
+   }
+  }
+ },
+ "perCard": {
+  "gauntlet:plain": {
+   "best": [
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "croakmire",
+     "knack": "squelch-song"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "circle-round"
+    }
+   ],
+   "damage": 5759,
+   "classic": 4512
+  },
+  "gauntlet:thick-hide": {
+   "best": [
+    {
+     "formId": "voltaro",
+     "knack": "overcharge"
+    },
+    {
+     "formId": "ohmouse",
+     "knack": "static-shell"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "detonate"
+    }
+   ],
+   "damage": 4673,
+   "classic": 2704
+  },
+  "gauntlet:stone-skin": {
+   "best": [
+    {
+     "formId": "tempestray",
+     "knack": "twin-strike"
+    },
+    {
+     "formId": "croakmire",
+     "knack": "squelch-song"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "circle-round"
+    }
+   ],
+   "damage": 4798,
+   "classic": 3624
+  },
+  "gauntlet:clean-scales": {
+   "best": [
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "soak-through"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    }
+   ],
+   "damage": 5380,
+   "classic": 4311
+  },
+  "gauntlet:reflective-hide": {
+   "best": [
+    {
+     "formId": "tempestray",
+     "knack": "twin-strike"
+    },
+    {
+     "formId": "sunfawn",
+     "knack": "curl-up"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    }
+   ],
+   "damage": 4603,
+   "classic": 2065
+  },
+  "gauntlet:elusive": {
+   "best": [
+    {
+     "formId": "tidewing",
+     "knack": "soak-through"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    }
+   ],
+   "damage": 4448,
+   "classic": 3158
+  },
+  "gauntlet:bramble-bind": {
+   "best": [
+    {
+     "formId": "tidewing",
+     "knack": "soak-through"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "detonate"
+    }
+   ],
+   "damage": 5994,
+   "classic": 3632
+  },
+  "gauntlet:wither": {
+   "best": [
+    {
+     "formId": "bloomback",
+     "knack": "detonate"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "soak-through"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    }
+   ],
+   "damage": 5369,
+   "classic": 4278
+  },
+  "gauntlet:payoff-hunter": {
+   "best": [
+    {
+     "formId": "ohmouse",
+     "knack": "static-shell"
+    },
+    {
+     "formId": "sunfawn",
+     "knack": "curl-up"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    }
+   ],
+   "damage": 4086,
+   "classic": 2492
+  },
+  "gauntlet:grudge": {
+   "best": [
+    {
+     "formId": "voltaro",
+     "knack": "zigzag"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "bogwarden",
+     "knack": "mud-wall"
+    }
+   ],
+   "damage": 4772,
+   "classic": 3920
+  },
+  "gauntlet:great-wave": {
+   "best": [
+    {
+     "formId": "voltaro",
+     "knack": "zoom"
+    },
+    {
+     "formId": "kilnmole",
+     "knack": "baked-shell"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    }
+   ],
+   "damage": 4393,
+   "classic": 3231
+  },
+  "gauntlet:swarm": {
+   "best": [
+    {
+     "formId": "tidewing",
+     "knack": "circle-round"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    }
+   ],
+   "damage": 7324,
+   "classic": 4612
+  },
+  "gauntlet:crusher": {
+   "best": [
+    {
+     "formId": "zipmouse",
+     "knack": "overcharge"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "zigzag"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "detonate"
+    }
+   ],
+   "damage": 5211,
+   "classic": 3957
+  },
+  "raid:plain": {
+   "best": [
+    {
+     "formId": "tidewing",
+     "knack": "downpour"
+    },
+    {
+     "formId": "bogwarden",
+     "knack": "mud-wall"
+    },
+    {
+     "formId": "ohmouse",
+     "knack": "static-shell"
+    },
+    {
+     "formId": "sunfawn",
+     "knack": "ready-the-mark"
+    },
+    {
+     "formId": "pyrelynx",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "halcyray",
+     "knack": "gather-calm"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "ashmole",
+     "knack": "ready-the-mark"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "wide-reach"
+    },
+    {
+     "formId": "geyserpup",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "pyrelynx",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    }
+   ],
+   "damage": 20638,
+   "classic": 14734
+  },
+  "raid:thick-hide": {
+   "best": [
+    {
+     "formId": "kilnmole",
+     "knack": "draw-fire"
+    },
+    {
+     "formId": "kilnmole",
+     "knack": "baked-shell"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "detonate"
+    },
+    {
+     "formId": "pyrelynx",
+     "knack": "detonate"
+    },
+    {
+     "formId": "ohmouse",
+     "knack": "overcharge"
+    },
+    {
+     "formId": "splashet",
+     "knack": "lead-the-way"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "soak-through"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "pyrelynx",
+     "knack": "detonate"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    }
+   ],
+   "damage": 14189,
+   "classic": 9365
+  },
+  "raid:stone-skin": {
+   "best": [
+    {
+     "formId": "croakmire",
+     "knack": "squelch-song"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "ashmole",
+     "knack": "wide-warmth"
+    },
+    {
+     "formId": "halcyray",
+     "knack": "clear-skies"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "geyserpup",
+     "knack": "big-spout"
+    },
+    {
+     "formId": "geyserpup",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "kilnmole",
+     "knack": "draw-fire"
+    },
+    {
+     "formId": "kilnmole",
+     "knack": "draw-fire"
+    },
+    {
+     "formId": "sunfawn",
+     "knack": "curl-up"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "twin-strike"
+    },
+    {
+     "formId": "geyserpup",
+     "knack": "own-puddle"
+    }
+   ],
+   "damage": 15284,
+   "classic": 12306
+  },
+  "raid:clean-scales": {
+   "best": [
+    {
+     "formId": "thornbuck",
+     "knack": "night-watch"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "zigzag"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "detonate"
+    },
+    {
+     "formId": "sunfawn",
+     "knack": "curl-up"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "soak-through"
+    },
+    {
+     "formId": "halcyray",
+     "knack": "clear-skies"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "soak-through"
+    },
+    {
+     "formId": "kilnmole",
+     "knack": "baked-shell"
+    },
+    {
+     "formId": "kilnmole",
+     "knack": "draw-fire"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "halcyray",
+     "knack": "gather-calm"
+    }
+   ],
+   "damage": 17272,
+   "classic": 15287
+  },
+  "raid:reflective-hide": {
+   "best": [
+    {
+     "formId": "pyrelynx",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "twin-strike"
+    },
+    {
+     "formId": "geyserpup",
+     "knack": "own-puddle"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "kilnmole",
+     "knack": "baked-shell"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "zigzag"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "magmole",
+     "knack": "tunnel-through"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "soak-through"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "night-watch"
+    }
+   ],
+   "damage": 13952,
+   "classic": 7738
+  },
+  "raid:elusive": {
+   "best": [
+    {
+     "formId": "thornbuck",
+     "knack": "primed-by-pain"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "detonate"
+    },
+    {
+     "formId": "kilnmole",
+     "knack": "draw-fire"
+    },
+    {
+     "formId": "zipmouse",
+     "knack": "zoom"
+    },
+    {
+     "formId": "magmole",
+     "knack": "ready-the-mark"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "detonate"
+    },
+    {
+     "formId": "splashet",
+     "knack": "lead-the-way"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "croakmire",
+     "knack": "squelch-song"
+    },
+    {
+     "formId": "pyrelynx",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "magmole",
+     "knack": "wide-warmth"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    }
+   ],
+   "damage": 15798,
+   "classic": 11480
+  },
+  "raid:bramble-bind": {
+   "best": [
+    {
+     "formId": "bogwarden",
+     "knack": "mud-wall"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "zoom"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "zoom"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "zoom"
+    },
+    {
+     "formId": "splashet",
+     "knack": "soak-through"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "halcyray",
+     "knack": "gather-calm"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "soak-through"
+    },
+    {
+     "formId": "halcyray",
+     "knack": "gather-calm"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "magmole",
+     "knack": "tunnel-through"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "circle-round"
+    }
+   ],
+   "damage": 19553,
+   "classic": 16574
+  },
+  "raid:wither": {
+   "best": [
+    {
+     "formId": "ohmouse",
+     "knack": "static-shell"
+    },
+    {
+     "formId": "splashet",
+     "knack": "lead-the-way"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "night-watch"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "kilnmole",
+     "knack": "keep-the-heat-in"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "detonate"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "circle-round"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "ohmouse",
+     "knack": "static-shell"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "zigzag"
+    },
+    {
+     "formId": "croakmire",
+     "knack": "squelch-song"
+    }
+   ],
+   "damage": 19310,
+   "classic": 13933
+  },
+  "raid:payoff-hunter": {
+   "best": [
+    {
+     "formId": "geyserpup",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "ohmouse",
+     "knack": "catch-the-bolts"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "zigzag"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "downpour"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "sunfawn",
+     "knack": "sunbeam"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "zigzag"
+    },
+    {
+     "formId": "sunfawn",
+     "knack": "curl-up"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "halcyray",
+     "knack": "gather-calm"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    }
+   ],
+   "damage": 18107,
+   "classic": 13249
+  },
+  "raid:grudge": {
+   "best": [
+    {
+     "formId": "tidewing",
+     "knack": "soak-through"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "wide-reach"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "wide-reach"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "wide-reach"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "soak-through"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "soak-through"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "soak-through"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "twin-strike"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "wide-reach"
+    }
+   ],
+   "damage": 15519,
+   "classic": 14065
+  },
+  "raid:great-wave": {
+   "best": [
+    {
+     "formId": "halcyray",
+     "knack": "gather-calm"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "zigzag"
+    },
+    {
+     "formId": "croakmire",
+     "knack": "squelch-song"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "detonate"
+    },
+    {
+     "formId": "kilnmole",
+     "knack": "draw-fire"
+    },
+    {
+     "formId": "ohmouse",
+     "knack": "overcharge"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "zoom"
+    },
+    {
+     "formId": "magmole",
+     "knack": "ready-the-mark"
+    },
+    {
+     "formId": "geyserpup",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "circle-round"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    }
+   ],
+   "damage": 19784,
+   "classic": 13430
+  },
+  "raid:swarm": {
+   "best": [
+    {
+     "formId": "sproutle",
+     "knack": "primed-by-pain"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "halcyray",
+     "knack": "gather-calm"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "geyserpup",
+     "knack": "own-puddle"
+    },
+    {
+     "formId": "sunfawn",
+     "knack": "curl-up"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "soak-through"
+    },
+    {
+     "formId": "magmole",
+     "knack": "ready-the-mark"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "sunfawn",
+     "knack": "sunbeam"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "circle-round"
+    }
+   ],
+   "damage": 20350,
+   "classic": 17912
+  },
+  "raid:crusher": {
+   "best": [
+    {
+     "formId": "tidewing",
+     "knack": "soak-through"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "wide-reach"
+    },
+    {
+     "formId": "magmole",
+     "knack": "ready-the-mark"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "soak-through"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "wide-reach"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "soak-through"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "soak-through"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "detonate"
+    }
+   ],
+   "damage": 15863,
+   "classic": 13334
+  }
+ },
+ "knackUsage": {
+  "leave-a-trail": 99,
+  "detonate": 79,
+  "soak-through": 47,
+  "zigzag": 39,
+  "circle-round": 33,
+  "squelch-song": 30,
+  "overcharge": 28,
+  "draw-fire": 26,
+  "zoom": 26,
+  "gather-calm": 25,
+  "twin-strike": 24,
+  "curl-up": 24,
+  "mud-wall": 22,
+  "wide-reach": 21,
+  "ready-the-mark": 19,
+  "primed-by-pain": 16,
+  "sunbeam": 16,
+  "wide-warmth": 16,
+  "lead-the-way": 15,
+  "own-puddle": 14,
+  "tunnel-through": 14,
+  "downpour": 12,
+  "baked-shell": 12,
+  "static-shell": 12,
+  "night-watch": 9,
+  "big-spout": 7,
+  "clear-skies": 7,
+  "catch-the-bolts": 6,
+  "keep-the-heat-in": 4,
+  "clear-the-air": 2
+ }
+}

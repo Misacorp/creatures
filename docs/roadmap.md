@@ -64,6 +64,10 @@ The simulator has 96 balance targets. On seed `leet`, about 28 fail. These failu
 
 **Production is not precious (Misa, 2026-10-13).** Players know the game is in development and that Misa may wipe progress at any time. Ship features when they are ready. Migrations stay forward-only and tested, and a wipe is Misa's call, never an agent's.
 
+## Combat v2 (Misa, 2026-10-26)
+
+A rework of combat so players bring creatures for what their species can do, not their level: Knacks, primer and detonator marks, boss turns between rows, slot targeting, armour, raid attrition. Being designed and simulated in `docs/design/combat/` and `packages/lab`; next steps are in its proposal's testing plan (a lab page on staging, then a port behind a flag, then an experimental season).
+
 ## Open design questions
 
 - **Payoff:** should the bonus depend on the creature's stats instead of a flat +10%? Misa left this open, and the text now says "hits even harder". Still flat: every reaction in `reactions.json` has `payoffBonusBp: 11000`.
