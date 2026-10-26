@@ -202,12 +202,10 @@
   color: var(--gold);
 }
 
-/* Two real pixels per square, so the triangle stays small and sharp: 10 by 6 px. */
-.rs-sort-arrow {
-  display: block;
-  width: 10px;
-  height: 6px;
-  fill: currentcolor;
+/* The text triangle (▼) of the column the rows follow, like the item compare's (▲2%) marks. */
+.rs-sort-mark {
+  font-size: var(--fs-small);
+  line-height: 1;
 }
 
 /* --- Highlight cards: one picture, a small title, who, and the fact. All aligned on one grid. --- */
