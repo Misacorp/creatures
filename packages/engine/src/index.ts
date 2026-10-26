@@ -8,6 +8,7 @@ export * from './row';
 export * from './mutators';
 export { resolveMods, type ResolvedMods } from './mods';
 export * from './describe';
+export * from './damage-dealt';
 export * from './gimmick-schedule';
 export * from './playback';
 export {

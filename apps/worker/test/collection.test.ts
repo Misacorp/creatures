@@ -87,6 +87,7 @@ interface CreatureBody {
   fusionCount: number;
   fusionPoints: number;
   shiny: boolean;
+  note: string | null;
   nickname: string | null;
   away: boolean;
   quirk: string | null;
@@ -454,6 +455,7 @@ describe('GET /api/state', () => {
           fusionPoints: 0,
           shiny: false,
           nickname: null,
+          note: null,
           away: false,
           quirk: expect.any(String) as string,
           lineSlot: 1,
@@ -1740,6 +1742,95 @@ describe('PATCH /api/creatures/{id}', () => {
         }
         expect((await rename(p, 'nope', 'x')).status).toBe(400);
         expect(stored(ctx.sql)).toBeNull();
+      },
+      seeded(),
+    );
+  });
+});
+
+describe('PUT /api/creatures/{id}/note', () => {
+  const write = (p: Player, id: string, note: unknown) =>
+    p.call('PUT', `/api/creatures/${id}/note`, { note });
+  const stored = (sql: SqlStorage, id: string) =>
+    sql.exec<{ note: string | null }>('SELECT note FROM creatures WHERE id = ?', id).one().note;
+
+  it('saves, cleans and removes the private note, and sends it in the state (#76)', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await joinWithStarter(ctx, USER, 0);
+        expect((await p.state()).creatures[0]?.note).toBeNull();
+        let res = await write(p, p.starterId, '  Level to 20,  \r\nthen Ember gear. ');
+        expect(res.status).toBe(200);
+        expect(res.body['note']).toBe('Level to 20,\nthen Ember gear.');
+        expect((res.body['state'] as StateBody).creatures[0]?.note).toBe(
+          'Level to 20,\nthen Ember gear.',
+        );
+        expect(stored(ctx.sql, p.starterId)).toBe('Level to 20,\nthen Ember gear.');
+        // The nickname is its own field: renaming keeps the note.
+        await p.call('PATCH', `/api/creatures/${p.starterId}`, { nickname: 'Sparky' });
+        expect(stored(ctx.sql, p.starterId)).toBe('Level to 20,\nthen Ember gear.');
+        res = await write(p, p.starterId, ' \n ');
+        expect(res.status).toBe(200);
+        expect(stored(ctx.sql, p.starterId)).toBeNull();
+        await write(p, p.starterId, 'Again');
+        expect((await write(p, p.starterId, null)).status).toBe(200);
+        expect(stored(ctx.sql, p.starterId)).toBeNull();
+      },
+      seeded(),
+    );
+  });
+
+  it.each([
+    ['a bidi override', 'abc\u202Edef', 'forbidden_characters'],
+    ['a zero-width space', 'a\u200Bb', 'forbidden_characters'],
+    ['a control character', 'a\u0007b', 'forbidden_characters'],
+    ['more than 256 characters', 'x'.repeat(257), 'too_long'],
+  ])('rejects %s and keeps the old note', async (_name, note, reason) => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await joinWithStarter(ctx, USER, 0);
+        await write(p, p.starterId, 'Keep');
+        const res = await write(p, p.starterId, note);
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual({ error: 'invalid_note', reason });
+        expect(stored(ctx.sql, p.starterId)).toBe('Keep');
+      },
+      seeded(),
+    );
+  });
+
+  it('accepts exactly 256 code points, and refuses a body over the raw limit', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await joinWithStarter(ctx, USER, 0);
+        expect((await write(p, p.starterId, '\u{1F40D}'.repeat(256))).status).toBe(200);
+        const res = await write(p, p.starterId, 'x'.repeat(5_000));
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual({ error: 'invalid_body' });
+      },
+      seeded(),
+    );
+  });
+
+  it('404s for creatures that are not yours, and 400s on malformed bodies', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const a = await joinWithStarter(ctx, USER, 0);
+        const b = await joinWithStarter(ctx, OTHER, 0, 'cindle');
+        const res = await write(b, a.starterId, 'Mine now');
+        expect(res.status).toBe(404);
+        expect(res.body).toEqual({ error: 'not_found' });
+        expect(stored(ctx.sql, a.starterId)).toBeNull();
+        for (const body of [{}, { note: 5 }, { note: 'a', extra: 1 }]) {
+          const bad = await a.call('PUT', `/api/creatures/${a.starterId}/note`, body);
+          expect(bad.status).toBe(400);
+          expect(bad.body).toEqual({ error: 'invalid_body' });
+        }
+        expect((await write(a, 'nope', 'x')).status).toBe(400);
       },
       seeded(),
     );

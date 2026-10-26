@@ -1,6 +1,6 @@
 /**
- * What the buttons of a creature do (the ribbon, evolving, renaming, putting a talent in a slot,
- * the lounger). Each action asks the server (which decides) through the guarded runner and puts the
+ * What the buttons of a creature do (the ribbon, evolving, renaming, its private note, putting a
+ * talent in a slot, the lounger). Each action asks the server (which decides) through the guarded runner and puts the
  * fresh state on screen; the notice line says what happened. Spends carry an idempotency key from the
  * runner (see `actions.ts`). The screen never changes a balance itself. Mirrors `gear-actions.ts`.
  */
@@ -29,6 +29,7 @@ export interface CreatureDeps {
     earnRibbon: typeof api.earnRibbon;
     evolveCreature: typeof api.evolveCreature;
     renameCreature: typeof api.renameCreature;
+    saveCreatureNote: typeof api.saveCreatureNote;
     setLounger: typeof api.setLounger;
     slotTalent: typeof talentApi.slotTalent;
   };
@@ -42,6 +43,7 @@ export function createCreatureActions(deps: CreatureDeps): CreatureActions {
     earnRibbon: api.earnRibbon,
     evolveCreature: api.evolveCreature,
     renameCreature: api.renameCreature,
+    saveCreatureNote: api.saveCreatureNote,
     setLounger: api.setLounger,
     slotTalent: talentApi.slotTalent,
   };
@@ -84,6 +86,15 @@ export function createCreatureActions(deps: CreatureDeps): CreatureActions {
     },
     onRename: (creature, nickname) => {
       void deps.run(() => server.renameCreature(creature.id, nickname)).then(showState);
+    },
+    onNote: (creature, note) => {
+      void deps
+        .run(() => server.saveCreatureNote(creature.id, note))
+        .then((next) => {
+          if (next === undefined) return;
+          showState(next);
+          deps.setNotice(note === null ? 'Note removed.' : 'Note saved.');
+        });
     },
     onSlotTalent: (creature, talentId, golden, slot) => {
       void deps

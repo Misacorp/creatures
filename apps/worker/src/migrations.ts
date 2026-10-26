@@ -4,6 +4,7 @@
  */
 import { whileAwayMigration } from './while-away';
 import { analyticsRollupMigration } from './analytics-rollup';
+import { creatureNoteMigration } from './creature-note-migration';
 import { creatureQuirkMigration } from './creature-quirk-migration';
 import { creaturesAMigration } from './creatures-a-migration';
 import { creaturesBMigration } from './creatures-b-migration';
@@ -315,6 +316,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   },
   // Version 46: what was paid while a player was away (see while-away.ts).
   whileAwayMigration,
+  // Version 47: a private note per creature (see creature-note-migration.ts).
+  creatureNoteMigration,
 ];
 
 /** The schema version of a fresh database. */

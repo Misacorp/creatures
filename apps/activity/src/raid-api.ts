@@ -649,8 +649,12 @@ export type StatsOutcome = 'cleared' | 'missed' | 'wiped';
 export interface StatsPlayer {
   displayName: string;
   you: boolean;
+  /** Damage the player's creatures really dealt to the boss, every hit in full. */
   damage: number;
-  contribution: number;
+  /** The score (it sets the Essence share): own hits, setting up, supporting and guarding. */
+  score: number;
+  /** The part of the score from setting up, supporting and guarding. */
+  assist: number;
 }
 
 export interface StatsCreature {
@@ -661,8 +665,9 @@ export interface StatsCreature {
   /** The owner's display name, or null for a guest. */
   owner: string | null;
   you: boolean;
+  /** Damage it really dealt to the boss. */
   damage: number;
-  contribution: number;
+  score: number;
 }
 
 export interface StatsReaction {
@@ -734,7 +739,8 @@ const isStatsPlayer = (value: unknown): value is StatsPlayer =>
   isStr(value['displayName']) &&
   isBool(value['you']) &&
   isCount(value['damage']) &&
-  isCount(value['contribution']);
+  isCount(value['score']) &&
+  isCount(value['assist']);
 
 const isStatsCreature = (value: unknown): value is StatsCreature =>
   isRecord(value) &&
@@ -744,7 +750,7 @@ const isStatsCreature = (value: unknown): value is StatsCreature =>
   isNullableStr(value['owner']) &&
   isBool(value['you']) &&
   isCount(value['damage']) &&
-  isCount(value['contribution']);
+  isCount(value['score']);
 
 const isStatsReaction = (value: unknown): value is StatsReaction =>
   isRecord(value) && isStr(value['name']) && isCount(value['count']) && isCount(value['reflected']);

@@ -4,9 +4,11 @@
  * as bullets, and the buttons. All text is plain text (names are player text).
  */
 import type { ComponentChildren } from 'preact';
+import { useState } from 'preact/hooks';
 import { abilitySummary, percentText, whoText } from './after-action';
 import { essenceCount, partCountItems } from './count-items';
 import { FinaleProgress } from './FinaleProgress';
+import { GlossaryTag } from './Glossary';
 import { LootList } from './LootList';
 import type { AfterActionStats } from './raid-api';
 import { festivalFind } from './find-view';
@@ -16,8 +18,11 @@ import { FindCreature } from './ui/FindCreature';
 import {
   grouped,
   rewardLoot,
+  scoreboard,
+  sortedBy,
   type Highlight,
   type ScoreRow,
+  type ScoreSort,
   type SummaryRewards,
 } from './raid-summary-view';
 import { Sprite } from './sprites/Sprite';
@@ -30,7 +35,7 @@ import { RewardSummary } from './ui/RewardSummary';
 
 // --- The scoreboard ---
 
-/** One scoreboard row: place, name, damage, share of the raid. The caller's row is marked. */
+/** One scoreboard row: place, name, damage and score. The caller's row is marked. */
 export function scoreRow(row: ScoreRow): DataRow {
   return {
     label: (
@@ -40,36 +45,124 @@ export function scoreRow(row: ScoreRow): DataRow {
       </>
     ),
     value: grouped(row.damage),
-    extra: <span class="rs-share">{row.share}%</span>,
+    extra: grouped(row.score),
     mine: row.you,
   };
 }
 
-/** The scoreboard's column headings: the last column is just "%". */
-const SCORE_HEADINGS = { label: 'Player', value: 'Damage', extra: '%' } as const;
+/** A small pixel triangle pointing down: the column the table is ordered by (highest first). */
+function SortArrow() {
+  return (
+    <svg class="rs-sort-arrow" viewBox="0 0 5 3" aria-hidden="true" shape-rendering="crispEdges">
+      <rect x="0" y="0" width="5" height="1" />
+      <rect x="1" y="1" width="3" height="1" />
+      <rect x="2" y="2" width="1" height="1" />
+    </svg>
+  );
+}
 
 /**
- * Every player as a table of place and name, damage and share, with column headings and the caller's
- * row marked. `total` adds the raid's total at the end.
+ * A column heading the table can be ordered by: a button with the word, gold and with a small
+ * triangle while the rows follow it. What the two numbers mean is one "?" by the Scoreboard heading
+ * (`ScoreboardHead`).
+ */
+function SortHeading({
+  word,
+  active,
+  onSort,
+}: {
+  word: 'Damage' | 'Score';
+  active: boolean;
+  onSort: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      class={active ? 'rs-sort on' : 'rs-sort'}
+      aria-pressed={active}
+      aria-label={`Sort by ${word.toLowerCase()}`}
+      onClick={onSort}
+    >
+      {word}
+      {active && <SortArrow />}
+    </button>
+  );
+}
+
+/** The headings of the damage and score columns: a tap on one orders the rows by it. */
+function columnHeadings(label: string, sort: ScoreSort, onSort: (by: ScoreSort) => void) {
+  return {
+    label,
+    value: (
+      <SortHeading
+        word="Damage"
+        active={sort === 'damage'}
+        onSort={() => {
+          onSort('damage');
+        }}
+      />
+    ),
+    extra: (
+      <SortHeading
+        word="Score"
+        active={sort === 'score'}
+        onSort={() => {
+          onSort('score');
+        }}
+      />
+    ),
+  };
+}
+
+/**
+ * The Scoreboard heading with one "?" that explains damage and score in one place (#86: the old
+ * "Damage" column was the score's share of the hits, which did not add up to the boss's HP).
+ */
+export function ScoreboardHead() {
+  return (
+    <SectionHead>
+      <span class="rs-with-help">
+        Scoreboard <GlossaryTag entry="raid-scoreboard" look="help" />
+      </span>
+    </SectionHead>
+  );
+}
+
+/** Which column a sorted table follows, for `DataTable`'s `sorted`. */
+const sortedColumn = (sort: ScoreSort) => (sort === 'damage' ? 'value' : 'extra');
+
+/**
+ * Every player as a table of place and name, damage and score, with column headings and the caller's
+ * row marked: by damage until the player taps Score, and the places follow the order. `total` adds the
+ * raid's total at the end.
  */
 export function ScoreTable({
-  rows,
+  stats,
   total = false,
 }: {
-  rows: readonly ScoreRow[];
+  stats: Pick<AfterActionStats, 'players'>;
   total?: boolean;
 }) {
-  const sum = rows.reduce((s, r) => s + r.damage, 0);
+  const [sort, setSort] = useState<ScoreSort>('damage');
+  const rows = scoreboard(stats, sort);
   const data: DataRow[] = rows.map(scoreRow);
   if (total) {
     data.push({
       label: <span class="rs-name">Raid total</span>,
-      value: grouped(sum),
-      extra: <span class="rs-share">100%</span>,
+      value: grouped(rows.reduce((s, r) => s + r.damage, 0)),
+      extra: grouped(rows.reduce((s, r) => s + r.score, 0)),
       total: true,
     });
   }
-  return <DataTable rows={data} tabular headings={SCORE_HEADINGS} label="Scoreboard" />;
+  return (
+    <DataTable
+      rows={data}
+      tabular
+      headings={columnHeadings('Player', sort, setSort)}
+      sorted={sortedColumn(sort)}
+      label="Scoreboard"
+    />
+  );
 }
 
 // --- Highlights ---
@@ -169,6 +262,7 @@ export function MoreNumbers({
   /** Open all of them (for a review of what is inside). */
   open?: boolean;
 }) {
+  const [creatureSort, setCreatureSort] = useState<ScoreSort>('damage');
   const boss = stats.boss;
   const bossRows: DataRow[] = [
     {
@@ -214,22 +308,27 @@ export function MoreNumbers({
         >
           <DataTable
             tabular
-            rows={stats.creatures.map((c) => ({
+            headings={columnHeadings('Creature', creatureSort, setCreatureSort)}
+            sorted={sortedColumn(creatureSort)}
+            label="Top creatures"
+            rows={sortedBy(stats.creatures, creatureSort).map((c) => ({
               label: (
                 <span class="rs-creature-name">
                   <Sprite sprite={creatureSpriteOrFallback(c.species)} scale={2} />
                   <span class="rs-stack">
                     <span class="rs-name">{c.name}</span>
-                    <span class="rs-share">{whoText(c.owner, c.you)}</span>
+                    <span class="rs-share">{`#${String(c.rank)} · ${whoText(c.owner, c.you)}`}</span>
                   </span>
                 </span>
               ),
               value: grouped(c.damage),
-              extra: <span class="rs-share">{`#${String(c.rank)}`}</span>,
+              extra: grouped(c.score),
               mine: c.you,
             }))}
           />
-          <p class="rs-note">Damage, and the place among all creatures in the fight.</p>
+          <p class="rs-note">
+            The number is the place among all creatures in the fight, by damage.
+          </p>
         </Accordion>
         <Accordion
           title="Reactions"

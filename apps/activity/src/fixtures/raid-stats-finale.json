@@ -19,31 +19,36 @@
       "displayName": "Eli",
       "you": false,
       "damage": 4757,
-      "contribution": 5108
+      "score": 5108,
+      "assist": 351
     },
     {
       "displayName": "Cy",
       "you": false,
       "damage": 2773,
-      "contribution": 3347
+      "score": 3347,
+      "assist": 574
     },
     {
       "displayName": "Dee",
       "you": false,
       "damage": 2739,
-      "contribution": 3272
+      "score": 3272,
+      "assist": 533
     },
     {
       "displayName": "Misa",
       "you": false,
       "damage": 2647,
-      "contribution": 4297
+      "score": 4297,
+      "assist": 1650
     },
     {
       "displayName": "Bob",
       "you": true,
       "damage": 2022,
-      "contribution": 3535
+      "score": 3535,
+      "assist": 1513
     }
   ],
   "creatures": [
@@ -54,7 +59,7 @@
       "owner": "Eli",
       "you": false,
       "damage": 2775,
-      "contribution": 2888
+      "score": 2888
     },
     {
       "rank": 2,
@@ -63,7 +68,7 @@
       "owner": "Cy",
       "you": false,
       "damage": 1478,
-      "contribution": 1654
+      "score": 1654
     },
     {
       "rank": 3,
@@ -72,7 +77,7 @@
       "owner": "Eli",
       "you": false,
       "damage": 1333,
-      "contribution": 1333
+      "score": 1333
     },
     {
       "rank": 4,
@@ -81,7 +86,7 @@
       "owner": "Misa",
       "you": false,
       "damage": 1222,
-      "contribution": 1908
+      "score": 1908
     },
     {
       "rank": 5,
@@ -90,7 +95,7 @@
       "owner": "Dee",
       "you": false,
       "damage": 1217,
-      "contribution": 1329
+      "score": 1329
     },
     {
       "rank": 6,
@@ -99,7 +104,7 @@
       "owner": "Bob",
       "you": true,
       "damage": 939,
-      "contribution": 2452
+      "score": 2452
     },
     {
       "rank": 13,
@@ -108,7 +113,7 @@
       "owner": "Bob",
       "you": true,
       "damage": 559,
-      "contribution": 559
+      "score": 559
     },
     {
       "rank": 15,
@@ -117,7 +122,7 @@
       "owner": "Bob",
       "you": true,
       "damage": 524,
-      "contribution": 524
+      "score": 524
     }
   ],
   "reactions": [

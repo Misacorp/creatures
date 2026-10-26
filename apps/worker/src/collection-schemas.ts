@@ -104,6 +104,11 @@ export const NicknameBodySchema = v.strictObject({
   nickname: v.nullable(v.string()),
 });
 
+/** A creature's private note (null removes it); the length and characters are checked by `sanitizeCreatureNote`. */
+export const NoteBodySchema = v.strictObject({
+  note: v.nullable(v.pipe(v.string(), v.maxLength(RULES.creatureNote.maxRawLength))),
+});
+
 /** Choosing the lounger: the player is the session's. */
 export const LoungerBodySchema = v.strictObject({ creatureId: IdSchema });
 

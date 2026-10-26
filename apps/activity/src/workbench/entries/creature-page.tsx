@@ -221,6 +221,7 @@ const SCENE_LIST: readonly SceneDef[] = [
   },
   { id: 'F1', label: 'F1 · Page top', kind: 'level 15', show: 'page' },
   { id: 'F2', label: 'F2 · Page, nicknamed (species tag)', kind: 'nickname', show: 'page' },
+  { id: 'F7', label: 'F7 · Page, with a note (open under Rename)', kind: 'note', show: 'page' },
   {
     id: 'F3',
     label: 'F3 · Page, ribbon waiting (cost and what is missing)',
@@ -331,6 +332,7 @@ const NO_ACTIONS: Omit<CardActions, 'onEquip' | 'onSlotTalent'> = {
   onRibbon: () => undefined,
   onEvolve: () => undefined,
   onRename: () => undefined,
+  onNote: () => undefined,
   onLounge: () => undefined,
 };
 
@@ -779,7 +781,7 @@ const creaturePage: Entry = {
   file: 'apps/activity/src/CreaturePage.tsx',
   group: 'Creatures & game pieces',
   description:
-    "A creature's page, opened from its card in the list's place: back at the top left and Lounge at the top right, one head row (portrait, the name in its rarity colour, element, level, the experience bar), tags (the species name of a nicknamed creature, element and role), the ribbon, evolve and waiting-catch buttons when ready, stats (HP, Attack, Speed and the creature’s own expedition count), the finale ability, gear and talents as slots (a tap opens a bottom drawer: the item picker grid with its detail panel, or the Talent Book), About and Rename. Pick a scene: H = header, G = gear slots, P = item picker, T = talent slots and Talent Book, F = the full page, C = cards, R = rarity colours, W = the Workshop's item detail, L = a compact loot list, B = the Workshop bag, K = the picker's compare (inline changes on the card, the Compare switch, what the swap does to the creature). The scenes are live: equip, take off and use a talent.",
+    "A creature's page, opened from its card in the list's place: back at the top left and Lounge at the top right, one head row (portrait, the name in its rarity colour, element, level, the experience bar), tags (the species name of a nicknamed creature, element and role), the ribbon, evolve and waiting-catch buttons when ready, stats (HP, Attack, Speed and the creature’s own expedition count), the finale ability, gear and talents as slots (a tap opens a bottom drawer: the item picker grid with its detail panel, or the Talent Book), About, Rename and the private Note. Pick a scene: H = header, G = gear slots, P = item picker, T = talent slots and Talent Book, F = the full page, C = cards, R = rarity colours, W = the Workshop's item detail, L = a compact loot list, B = the Workshop bag, K = the picker's compare (inline changes on the card, the Compare switch, what the swap does to the creature). The scenes are live: equip, take off and use a talent.",
   controls: {
     scene: { kind: 'select', options: SCENE_IDS },
     banner: { kind: 'toggle' },

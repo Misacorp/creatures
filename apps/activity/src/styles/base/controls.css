@@ -47,6 +47,7 @@ button:disabled {
 button:focus-visible,
 select:focus-visible,
 input:focus-visible,
+textarea:focus-visible,
 summary:focus-visible {
   outline: var(--px) solid var(--bone);
   outline-offset: calc(var(--px) * 2);
@@ -56,6 +57,20 @@ select,
 input[type='text'] {
   width: 100%;
   margin-bottom: 0.5rem;
+}
+
+/* A text box of a few lines (a creature's note): the text field's frame, as wide as its form. */
+textarea {
+  display: block;
+  width: 100%;
+  min-height: 5rem;
+  padding: 0.4rem 0.75rem;
+  border: 0;
+  background: var(--dusk-2);
+  color: var(--bone);
+  font: inherit;
+  resize: vertical;
+  box-shadow: 0 0 0 var(--px) var(--ink);
 }
 
 label {
