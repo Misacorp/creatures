@@ -293,6 +293,21 @@ describe('silence stops the role (Misa, 2026-10-26)', () => {
   });
 });
 
+describe('the fight log', () => {
+  it("tags each event with the row whose turns it follows (the boss's turn after row N is turn N)", () => {
+    const boss: BossDef = { ...labBoss({ rows: 3, cols: 1, rounds: 1 }), spd: 0 };
+    const r = fight(boss, [at('tidewing', 0, 0), at('voltaro', 1, 0), at('splashet', 2, 0)], {
+      rng: rng('rows'),
+      log: true,
+    });
+    expect(r.events.filter((e) => e.kind === 'mark').map((e) => [e.turn, e.text])).toEqual([
+      [0, 'tide x1'],
+      [1, 'spark x1'],
+      [2, 'tide x2'],
+    ]);
+  });
+});
+
 describe('combat v2 content rules', () => {
   it('every keyword used in Knack text exists in the keyword list', () => {
     for (const k of Object.values(KNACKS))

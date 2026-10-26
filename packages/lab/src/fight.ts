@@ -560,6 +560,8 @@ export function fight(
     roundStart(s);
     // The boss takes a turn after every row of the arena, empty or not.
     for (let r = 0; r < boss.rows && s.bossHp > 0 && alive(s).length > 0; r++) {
+      // Events of this row's turns and of the boss turn after them carry the row's number.
+      s.turn = r;
       for (const f of alive(s)
         .filter((x) => x.row === r)
         .sort((a, b) => a.col - b.col))

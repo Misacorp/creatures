@@ -230,7 +230,7 @@ describe('running the lab', () => {
     }
   });
 
-  it('puts a creature event after boss turn N under row N + 1, not under the boss turn it carries', () => {
+  it('groups by the row number every event carries', () => {
     const e = (turn: number, kind: string, text: string): FightEvent => ({
       round: 1,
       turn,
@@ -239,10 +239,10 @@ describe('running the lab', () => {
     });
     const rounds = groupSteps([
       e(0, 'mark', 'tide x1'), // row 1 acts
-      e(0, 'hit', 'A takes 5'), // boss turn 1
-      e(0, 'reaction', 'B cashes'), // row 2 acts (the engine still says turn 0)
-      e(1, 'dodge', 'B dodges'), // boss turn 2
-      e(1, 'blocked', "C's hit is Blocked"), // row 3 acts
+      e(0, 'hit', 'A takes 5'), // the boss's turn after row 1
+      e(1, 'reaction', 'B cashes'), // row 2 acts
+      e(1, 'dodge', 'B dodges'), // the boss's turn after row 2
+      e(2, 'blocked', "C's hit is Blocked"), // row 3 acts
       { round: 2, turn: 0, kind: 'mark', text: 'next round' },
     ]);
     expect(rounds.map((r) => r.groups.map((g) => [g.row, g.events.length]))).toEqual([

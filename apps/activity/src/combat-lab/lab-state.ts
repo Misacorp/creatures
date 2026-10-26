@@ -332,47 +332,21 @@ export interface RoundSteps {
   groups: StepGroup[];
 }
 
-/** Boss-turn events: a move, a target's dodge, an intercept, a silence; a hit or block unless the reflect just before it caused it. */
-function onBossSide(event: FightEvent, before: FightEvent | undefined): boolean {
-  switch (event.kind) {
-    case 'move':
-    case 'dodge':
-    case 'intercept':
-    case 'silence':
-      return true;
-    case 'hit':
-      return before?.kind !== 'reflect';
-    case 'blocked':
-      return !event.text.endsWith('hit is Blocked') && before?.kind !== 'reflect';
-    default:
-      return false;
-  }
-}
-
 /**
- * Groups the engine's flat log by round, then by arena row. The engine stamps a boss event with its own
- * turn number, but a creature's event with the turn of the boss turn before it, so the row of a
- * creature event is "the row after the last boss turn seen in this round".
+ * The log of one fight, by round and then by row: each group is one row's turns and the boss's turn
+ * after it (the lab tags every event with that row's number, `turn`; round-start events are row 0).
  */
 export function groupSteps(events: readonly FightEvent[]): RoundSteps[] {
   const rounds: RoundSteps[] = [];
-  let lastBoss = -1;
-  let prev: FightEvent | undefined;
   for (const event of events) {
     let round = rounds[rounds.length - 1];
     if (round === undefined || round.round !== event.round) {
       round = { round: event.round, groups: [] };
       rounds.push(round);
-      lastBoss = -1;
-      prev = undefined;
     }
-    const boss = onBossSide(event, prev);
-    const row = boss ? event.turn : lastBoss + 1;
-    if (boss) lastBoss = event.turn;
-    prev = event;
     let group = round.groups[round.groups.length - 1];
-    if (group === undefined || group.row !== row) {
-      group = { row, events: [] };
+    if (group === undefined || group.row !== event.turn) {
+      group = { row: event.turn, events: [] };
       round.groups.push(group);
     }
     group.events.push(event);

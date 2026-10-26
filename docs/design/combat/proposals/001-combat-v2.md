@@ -126,6 +126,6 @@ Answered (2026-10-26): attrition stays as written (R14); silence stops the role 
 
 1. **Lab** (`packages/lab`, done): the rules above as a pure prototype, with tests and a report.
 2. **Reviewer panel** (skill `design-panel`, done; first run on v0.3).
-3. **Lab UI on staging** (next): a staging-only page that runs a lab fight with a chosen board, Knacks and rule cards, shows a step log, and runs 100 seeds. Misa judges the feel.
+3. **Lab page on staging** (built 2026-10-26): `https://creatures-staging.misacorp.dev/combat-lab.html`, also linked from the DEV panel. Set up the arena, the boss, rule cards and a board of forms, Knacks and levels (or a preset), run one fight and read its log by round and row, or run 100 seeds. The address holds the setup, so a link reproduces a fight. Code: `apps/activity/src/combat-lab/`; a staging-only build input like the workbench, so production never ships it. Misa judges the feel here.
 4. **Port to the engine** behind a flag, with stored fights still replaying under their old rules.
 5. **Experimental season** in production, labelled; weekly retunes in patch notes. Signals: Knack picks and swaps, creatures used beyond each player's top three, winning combos, and a quick "was this fun?" after the raid.

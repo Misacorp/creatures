@@ -32,7 +32,7 @@ Numbers live only in data (`packages/lab/src/rules.ts`, content JSON), never in 
 2. **Simulate.** `pnpm --filter @creatures/lab report` regenerates the report: scenarios, the best team per rule card, Knack usage and a raid weekend. `pnpm --filter @creatures/lab test` checks the rules and the content rules.
 3. **Review.** Run the reviewer panel (the `design-panel` skill): rules, player experience, systems and readability, each against the principles. Its findings go to `reviews/YYYY-MM-DD-*.md`.
 4. **Decide.** The lead folds what is clearly right into the proposal and the data, and puts choices that trade against a principle to Misa as questions.
-5. **Test the feel.** Later: a staging-only combat lab page on the real engine, then a labelled experimental season (see the proposal, "Testing plan").
+5. **Test the feel.** The staging lab page, `creatures-staging.misacorp.dev/combat-lab.html` (DEV panel, "Combat lab"): set up a fight, run it, read the log, share the address. Later: the port to the engine behind a flag, then a labelled experimental season (see the proposal, "Testing plan").
 
 Balance stance (principle P-10): strong combos may stand out. We look for outliers, not averages, and we answer a dominant build with a counter card in the rotation before we nerf it.
 
