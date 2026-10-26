@@ -285,7 +285,7 @@ const accordion: Entry = {
   group: 'Controls',
   description:
     'The one expand and collapse of the game: a raised header button with a chevron, a title and an optional count on the right (the open one is lit, with the chevron turned down, and no line under it), and a body that hangs under it, with dividers only between its items (also AccordionGroup, for a stack with one open at a time). Tap a header in the preview.',
-  covers: ['AccordionGroup', 'Chevron'],
+  covers: ['AccordionGroup'],
   controls: {
     scene: { kind: 'select', options: SCENES },
     title: { kind: 'text', maxLength: 40 },

@@ -27,7 +27,7 @@ import {
 } from './raid-summary-view';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
-import { Accordion, Chevron } from './ui/Accordion';
+import { Accordion } from './ui/Accordion';
 import { ActionButton } from './ui/ActionButton';
 import { DataTable, type DataRow } from './ui/DataTable';
 import { GameIcon } from './ui/GameIcon';
@@ -50,9 +50,20 @@ export function scoreRow(row: ScoreRow): DataRow {
   };
 }
 
+/** A small pixel triangle pointing down: the column the table is ordered by (highest first). */
+function SortArrow() {
+  return (
+    <svg class="rs-sort-arrow" viewBox="0 0 5 3" aria-hidden="true" shape-rendering="crispEdges">
+      <rect x="0" y="0" width="5" height="1" />
+      <rect x="1" y="1" width="3" height="1" />
+      <rect x="2" y="2" width="1" height="1" />
+    </svg>
+  );
+}
+
 /**
- * A column heading the table can be ordered by: a button with the word, gold and with a small arrow
- * while the rows follow it. What the two numbers mean is one "?" by the Scoreboard heading
+ * A column heading the table can be ordered by: a button with the word, gold and with a small
+ * triangle while the rows follow it. What the two numbers mean is one "?" by the Scoreboard heading
  * (`ScoreboardHead`).
  */
 function SortHeading({
@@ -73,7 +84,7 @@ function SortHeading({
       onClick={onSort}
     >
       {word}
-      {active && <Chevron class="rs-sort-chev" />}
+      {active && <SortArrow />}
     </button>
   );
 }

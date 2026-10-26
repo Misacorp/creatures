@@ -174,7 +174,7 @@
 
 /*
   A column heading that orders the table (Damage, Score): the heading's own text as a plain button, not a
-  framed one, tall enough to tap; gold with a small arrow while the rows follow it.
+  framed one, tall enough to tap; gold with a small triangle while the rows follow it.
 */
 .data-table th .rs-sort {
   display: inline-flex;
@@ -202,10 +202,11 @@
   color: var(--gold);
 }
 
-.rs-sort-chev {
+/* Two real pixels per square, so the triangle stays small and sharp: 10 by 6 px. */
+.rs-sort-arrow {
   display: block;
-  width: calc(var(--px) * 7);
-  height: calc(var(--px) * 4);
+  width: 10px;
+  height: 6px;
   fill: currentcolor;
 }
 
