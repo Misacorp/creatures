@@ -271,6 +271,28 @@ describe('combat v2 lab rules, v0.4 fixes from the first panel', () => {
   });
 });
 
+describe('silence stops the role (Misa, 2026-10-26)', () => {
+  it('a silenced Setter does not mark, and a silenced Guard does not intercept', () => {
+    const hushAll = {
+      id: 's',
+      name: 'Hush',
+      pattern: { anchor: 'front' as const, shape: 'all' as const },
+      powerBp: 0,
+      every: 1,
+      turn: 0,
+      silenceTurns: 9,
+    };
+    const boss: BossDef = { ...labBoss({ rows: 1, cols: 2, rounds: 3 }), spd: 0, moves: [hushAll] };
+    const r = fight(boss, [at('tidewing', 0, 0), at('thornbuck', 0, 1)], {
+      rng: rng('hush'),
+      log: true,
+    });
+    // Round 1: Tidewing marks before the first boss turn silences everyone; after that, nothing.
+    expect(r.events.filter((e) => e.kind === 'mark').map((e) => e.text)).toEqual(['tide x1']);
+    expect(r.intercepts).toBe(0);
+  });
+});
+
 describe('combat v2 content rules', () => {
   it('every keyword used in Knack text exists in the keyword list', () => {
     for (const k of Object.values(KNACKS))

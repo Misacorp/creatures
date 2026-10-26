@@ -46,7 +46,8 @@ export const KEYWORDS: Readonly<
     step: 'R13',
   },
   Silenced: {
-    means: 'Its Knack, talents and gear effects do nothing. Its stats and role still work.',
+    means:
+      "Its Knack, talents, gear effects and its role's verb do nothing (a Setter does not mark, a Payoff does not cash, a Guard does not intercept or cover, a Support does not boost or heal). It still hits with its stats.",
     not: 'It skips its turn',
     step: 'R12',
   },

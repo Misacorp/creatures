@@ -26,7 +26,7 @@
     "ko": 0.9166666666666666
    },
    "bramble-bind": {
-    "damage": 3649,
+    "damage": 3031,
     "ko": 1
    },
    "wither": {
@@ -84,8 +84,8 @@
     "ko": 1
    },
    "bramble-bind": {
-    "damage": 3684,
-    "ko": 1
+    "damage": 3027,
+    "ko": 1.5416666666666667
    },
    "wither": {
     "damage": 3508,
@@ -142,7 +142,7 @@
     "ko": 1.9583333333333333
    },
    "bramble-bind": {
-    "damage": 4495,
+    "damage": 3082,
     "ko": 1.9166666666666667
    },
    "wither": {
@@ -200,7 +200,7 @@
     "ko": 0.9166666666666666
    },
    "bramble-bind": {
-    "damage": 3849,
+    "damage": 3177,
     "ko": 1
    },
    "wither": {
@@ -258,7 +258,7 @@
     "ko": 1.3333333333333333
    },
    "bramble-bind": {
-    "damage": 5784,
+    "damage": 4439,
     "ko": 1.5416666666666667
    },
    "wither": {
@@ -316,7 +316,7 @@
     "ko": 0.8333333333333334
    },
    "bramble-bind": {
-    "damage": 2656,
+    "damage": 2408,
     "ko": 0.9583333333333334
    },
    "wither": {
@@ -374,7 +374,7 @@
     "ko": 0.8333333333333334
    },
    "bramble-bind": {
-    "damage": 3282,
+    "damage": 2909,
     "ko": 0.9583333333333334
    },
    "wither": {
@@ -432,8 +432,8 @@
     "ko": 1
    },
    "bramble-bind": {
-    "damage": 3245,
-    "ko": 1
+    "damage": 2624,
+    "ko": 1.7916666666666667
    },
    "wither": {
     "damage": 3019,
@@ -490,7 +490,7 @@
     "ko": 0.8333333333333334
    },
    "bramble-bind": {
-    "damage": 3455,
+    "damage": 2989,
     "ko": 1
    },
    "wither": {
@@ -606,7 +606,7 @@
     "ko": 0.5416666666666666
    },
    "bramble-bind": {
-    "damage": 3211,
+    "damage": 2980,
     "ko": 1
    },
    "wither": {
@@ -664,7 +664,7 @@
     "ko": 0.8333333333333334
    },
    "bramble-bind": {
-    "damage": 2989,
+    "damage": 2957,
     "ko": 1
    },
    "wither": {
@@ -809,20 +809,20 @@
   "gauntlet:bramble-bind": {
    "best": [
     {
-     "formId": "ohmouse",
-     "knack": "lightning-ears"
+     "formId": "tempestray",
+     "knack": "twin-strike"
     },
     {
-     "formId": "voltaro",
-     "knack": "zigzag"
+     "formId": "bogwarden",
+     "knack": "mud-wall"
     },
     {
      "formId": "bloomback",
-     "knack": "leave-a-trail"
+     "knack": "detonate"
     }
    ],
-   "score": 4942,
-   "classic": 3182
+   "score": 3940,
+   "classic": 2595
   },
   "gauntlet:wither": {
    "best": [
@@ -1277,56 +1277,56 @@
   "raid:bramble-bind": {
    "best": [
     {
-     "formId": "wickat",
-     "knack": "none"
-    },
-    {
-     "formId": "voltaro",
-     "knack": "zigzag"
-    },
-    {
-     "formId": "kilnmole",
-     "knack": "draw-fire"
-    },
-    {
-     "formId": "pyrelynx",
-     "knack": "detonate"
-    },
-    {
-     "formId": "tidewing",
-     "knack": "soak-through"
-    },
-    {
-     "formId": "ohmouse",
-     "knack": "catch-the-bolts"
-    },
-    {
-     "formId": "ancientshell",
+     "formId": "croakmire",
      "knack": "none"
     },
     {
      "formId": "tempestray",
-     "knack": "twin-strike"
+     "knack": "leave-a-trail"
     },
     {
-     "formId": "bloomback",
-     "knack": "detonate"
+     "formId": "tidewing",
+     "knack": "circle-round"
     },
     {
-     "formId": "bloomback",
-     "knack": "none"
+     "formId": "halcyray",
+     "knack": "clear-the-air"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "overcharge"
+    },
+    {
+     "formId": "ohmouse",
+     "knack": "overcharge"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
     },
     {
      "formId": "geyserpup",
      "knack": "leave-a-trail"
     },
     {
-     "formId": "voltaro",
-     "knack": "zoom"
+     "formId": "kilnmole",
+     "knack": "draw-fire"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "none"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "none"
+    },
+    {
+     "formId": "magmole",
+     "knack": "ready-the-mark"
     }
    ],
-   "score": 15198,
-   "classic": 12256
+   "score": 12838,
+   "classic": 10658
   },
   "raid:wither": {
    "best": [
@@ -1709,46 +1709,46 @@
  },
  "diversity": {
   "bloomback": 11,
-  "voltaro": 7,
-  "tempestray": 6,
+  "tempestray": 7,
+  "voltaro": 6,
   "sunfawn": 5,
+  "bogwarden": 5,
   "tidewing": 4,
-  "bogwarden": 4,
-  "ohmouse": 3,
+  "ohmouse": 2,
   "kilnmole": 1,
   "halcyray": 1
  },
  "knackUsage": {
-  "none": 89,
-  "detonate": 71,
-  "soak-through": 46,
+  "none": 87,
+  "detonate": 70,
   "leave-a-trail": 45,
-  "zigzag": 44,
-  "zoom": 35,
-  "overcharge": 35,
+  "soak-through": 43,
+  "overcharge": 40,
+  "zigzag": 37,
+  "zoom": 33,
+  "mud-wall": 32,
   "squelch-song": 31,
-  "mud-wall": 27,
   "lead-the-way": 26,
   "gather-calm": 23,
   "curl-up": 23,
-  "twin-strike": 22,
+  "draw-fire": 23,
+  "ready-the-mark": 21,
+  "twin-strike": 20,
   "tunnel-through": 19,
-  "draw-fire": 19,
+  "circle-round": 18,
   "wide-reach": 18,
-  "ready-the-mark": 18,
-  "lightning-ears": 17,
   "baked-shell": 16,
+  "lightning-ears": 15,
   "big-spout": 14,
-  "circle-round": 13,
-  "keep-the-heat-in": 11,
-  "wide-warmth": 9,
+  "wide-warmth": 10,
+  "clear-the-air": 9,
+  "keep-the-heat-in": 8,
   "puddle-maker": 7,
-  "clear-the-air": 7,
   "sunbeam": 7,
   "primed-by-pain": 6,
-  "catch-the-bolts": 6,
   "clear-skies": 4,
   "downpour": 1,
-  "night-watch": 1
+  "night-watch": 1,
+  "catch-the-bolts": 1
  }
 }

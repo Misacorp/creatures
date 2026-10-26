@@ -1,6 +1,6 @@
 # Proposal 001: combat v2 rules
 
-Status: **proposed**, v0.4 (2026-10-26). Author: lead agent, from the design conversation with Misa (2026-10-25 and 26), three reviews of v0.1, the first panel on v0.3 (`reviews/2026-10-26-panel-1.md`) and the lab. Prototype: `packages/lab` (its `fight.ts` follows these rules step by step; a test covers each rule that changed).
+Status: **proposed**, v0.5 (2026-10-26; Misa answered the first panel's questions). Author: lead agent, from the design conversation with Misa (2026-10-25 and 26), three reviews of v0.1, the first panel on v0.3 (`reviews/2026-10-26-panel-1.md`) and the lab. Prototype: `packages/lab` (its `fight.ts` follows these rules step by step; a test covers each rule that changed).
 
 ## Motivation
 
@@ -61,11 +61,11 @@ Each rule names what it replaces in `combat-rules.md`. Durations count the affec
 
 **R11. Knacks.** One Knack per creature, or none. Swapping is free before any fight and locks with the raid phase. Stage 1 forms have all their Knacks at catch; stage 2 forms keep the line's Knack when the role stays and get their own at evolution. An absent player's creature uses the Knack its owner last saved, or none. Knacks replace creature finale abilities.
 
-**R12. Silence.** Until the end of the creature's Nth turn, its Knack (stat bonuses included), talents and gear effects do nothing. Its stats and its role's verb still work (open question 2).
+**R12. Silence.** Until the end of the creature's Nth turn, its Knack (stat bonuses included), talents, gear effects **and its role's verb** do nothing (Misa, 2026-10-26): a silenced Setter does not mark, a Payoff does not cash, a Guard does not intercept or cover, a Support does not boost or heal. It still makes its plain hit with its stats.
 
 **R13. Armour and Blocked.** Foes and creatures have Armour, a flat amount taken off every hit. A hit at or below armour is **Blocked** and deals nothing (Misa, 2026-10-26). Guards are armoured rather than only high in HP.
 
-**R14. Raid attrition.** A raid weekend's stages share the boss's HP. Only HP carries: creatures keep their HP between stages, nobody heals between stages, and a knocked-out creature is out for the weekend. Marks, Stores, Mired and "each fight" effects start fresh each stage. Players may swap creatures between stages; a replacement takes an empty slot. The dungeon is unchanged.
+**R14. Raid attrition.** A raid weekend's stages share the boss's HP. Only HP carries: creatures keep their HP between stages, nobody heals between stages, and a knocked-out creature is out for the weekend. Marks, Stores, Mired and "each fight" effects start fresh each stage. Players may swap creatures between stages; a replacement takes an empty slot. A knocked-out creature does not come back that weekend (Misa, 2026-10-26: players have spare creatures by week 2, so no extra mechanic). The dungeon is unchanged.
 
 **R15. Buffs and debuffs.** An effect stacks up to its own maximum; different effects add; all hit boosts together are capped (lab: +150%), and reaction-bonus factors have their own cap (R7). Debuffs on the boss (Mired) have their own maximum. Never design for "bring seven of this buff".
 
@@ -74,6 +74,8 @@ Each rule names what it replaces in `combat-rules.md`. Durations count the affec
 **R17. Spend.** An effect that spends names what (part of a mark's count, a Store, a share of HP) and how much ("all", "one extra"). A spend that cannot be paid does nothing.
 
 **R18. The live finale.** Creature finale abilities go (R11). The basic Rally, Shield Wall and Purge stay as the live input for now. Relics, items brought into the finale, are an idea for later.
+
+**R19. Swap requests (raid).** A player can ask another player to swap the slots of two creatures on the raid board, so pairings across players can be arranged (Misa, 2026-10-26: "we do it manually now; a system would help"). The other player accepts or declines; an accepted swap moves both creatures in one step; open requests end at the next phase lock. Design and build with the raid board (roadmap, "Swap requests").
 
 ## On the board (from the readability review)
 
@@ -103,7 +105,7 @@ Today's gear lines were priced for x4.95 reactions and for rules that are going.
 - Teams without a Setter, or without a Knack that marks, cannot react at all.
 - Mire's debuff came from finale abilities; it moves into Knacks (Mud Wall, Squelch Song) before abilities go. Mire still has no Setter or Payoff, so its two reactions cannot happen yet.
 - More rules to read. Keywords explain themselves on tap; players teach each other.
-- In the raid, pairings depend on who places first (each player places only their own creatures).
+- In the raid, pairings depend on who places first (each player places only their own creatures); swap requests (R19) answer it.
 
 ## Alternatives considered
 
@@ -115,11 +117,10 @@ Today's gear lines were priced for x4.95 reactions and for rules that are going.
 
 ## Open questions for Misa
 
-1. **Attrition harshness.** With HP carried and knockouts out for the weekend, a casual player's best creature can be gone on Friday. Keep it, or let knocked-out creatures return next stage "tired" (low HP)?
-2. **Silence.** Should it also stop the role's verb (a silenced Setter does not mark)?
-3. **Raid pairings.** Many Knacks need another player's creature beside them, and players place first come first served. Allow teammates to propose a swap, or design raid Knacks around rows and columns instead of neighbours?
-4. **Taunt variants** (a row, a column) after the basic one is tested.
-5. **Boss turns per round** in arenas with many rows: one per row, or one per two rows?
+1. **Taunt variants** (a row, a column) after the basic one is tested.
+2. **Boss turns per round** in arenas with many rows: one per row, or one per two rows?
+
+Answered (2026-10-26): attrition stays as written (R14); silence stops the role too (R12); swap requests become part of the design (R19).
 
 ## Testing plan
 

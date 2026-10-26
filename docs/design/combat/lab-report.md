@@ -8,18 +8,18 @@ Mean damage over 24 seeds. Percent is against the classic line on the same card;
 
 | Line | No card | Thick Hide | Stone Skin | Clean Scales | Reflective Hide | Elusive | Bramble Bind | Wither | Payoff Hunter | Grudge | Great Wave | Swarm | Crusher | Fizzle |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Classic: Tidewing, Tempestray Detonate, Thornbuck | 4501 (KO 0.9) | 2587 (KO 0.8) | 3673 (KO 0.8) | 4567 (KO 0.9) | 2376 (KO 2.0) | 3335 (KO 0.9) | 3649 (KO 1.0) | 4376 (KO 1.0) | 3494 (KO 2.8) | 4067 (KO 1.9) | 3720 (KO 2.8) | 4552 (KO 1.0) | 3689 (KO 2.8) | 4481 (KO 0.9) |
-| Classic with no Knacks | -14% (KO 1.0) | -12% (KO 1.0) | -15% (KO 1.0) | -15% (KO 1.0) | -18% (KO 2.0) | -16% (KO 1.0) | +1% (KO 1.0) | -20% (KO 1.2) | -17% (KO 2.8) | +12% (KO 1.8) | -15% (KO 2.8) | +6% (KO 0.7) | -6% (KO 2.8) | -15% (KO 1.0) |
-| Two Setters into Detonate | -5% (KO 1.9) | +7% (KO 1.9) | -15% (KO 2.0) | -6% (KO 2.0) | -26% (KO 2.9) | -12% (KO 2.0) | +23% (KO 1.9) | -17% (KO 2.4) | -6% (KO 3.0) | -38% (KO 3.0) | -21% (KO 3.0) | -15% (KO 3.0) | -13% (KO 3.0) | -10% (KO 1.9) |
+| Classic: Tidewing, Tempestray Detonate, Thornbuck | 4501 (KO 0.9) | 2587 (KO 0.8) | 3673 (KO 0.8) | 4567 (KO 0.9) | 2376 (KO 2.0) | 3335 (KO 0.9) | 3031 (KO 1.0) | 4376 (KO 1.0) | 3494 (KO 2.8) | 4067 (KO 1.9) | 3720 (KO 2.8) | 4552 (KO 1.0) | 3689 (KO 2.8) | 4481 (KO 0.9) |
+| Classic with no Knacks | -14% (KO 1.0) | -12% (KO 1.0) | -15% (KO 1.0) | -15% (KO 1.0) | -18% (KO 2.0) | -16% (KO 1.0) | 0% (KO 1.5) | -20% (KO 1.2) | -17% (KO 2.8) | +12% (KO 1.8) | -15% (KO 2.8) | +6% (KO 0.7) | -6% (KO 2.8) | -15% (KO 1.0) |
+| Two Setters into Detonate | -5% (KO 1.9) | +7% (KO 1.9) | -15% (KO 2.0) | -6% (KO 2.0) | -26% (KO 2.9) | -12% (KO 2.0) | +2% (KO 1.9) | -17% (KO 2.4) | -6% (KO 3.0) | -38% (KO 3.0) | -21% (KO 3.0) | -15% (KO 3.0) | -13% (KO 3.0) | -10% (KO 1.9) |
 | Overcharge into a Grove Detonate | -1% (KO 1.0) | +34% (KO 0.9) | -25% (KO 0.9) | -2% (KO 0.9) | -48% (KO 1.9) | +5% (KO 0.9) | +5% (KO 1.0) | +1% (KO 1.3) | +0% (KO 2.8) | +1% (KO 1.9) | +2% (KO 2.8) | +4% (KO 1.0) | +5% (KO 2.8) | +7% (KO 1.0) |
-| Chain: Overload leaves Charged for Bloomback | +35% (KO 1.3) | +69% (KO 1.2) | +24% (KO 1.3) | +34% (KO 1.1) | +59% (KO 2.2) | +34% (KO 1.3) | +59% (KO 1.5) | +22% (KO 1.8) | +17% (KO 3.0) | -3% (KO 2.7) | +11% (KO 3.0) | +56% (KO 2.6) | +38% (KO 2.8) | +23% (KO 1.3) |
-| No Setter: Ready the Mark feeds Geyserpup | -22% (KO 0.8) | -38% (KO 0.7) | -8% (KO 0.9) | -22% (KO 0.8) | -25% (KO 1.8) | -29% (KO 0.8) | -27% (KO 1.0) | -23% (KO 1.5) | -13% (KO 3.0) | -26% (KO 1.9) | -30% (KO 3.0) | -23% (KO 0.0) | -40% (KO 2.8) | -23% (KO 0.9) |
-| No Setter: Puddle Maker | -23% (KO 0.8) | -26% (KO 0.7) | -16% (KO 0.9) | -41% (KO 0.8) | -11% (KO 1.8) | -24% (KO 0.8) | -10% (KO 1.0) | -24% (KO 1.5) | -16% (KO 3.0) | -28% (KO 1.9) | -31% (KO 3.0) | -23% (KO 0.0) | -41% (KO 2.8) | -23% (KO 0.9) |
-| Big Spout on Downpour | -28% (KO 1.0) | -17% (KO 1.0) | -35% (KO 1.0) | -26% (KO 1.0) | -48% (KO 2.0) | -21% (KO 1.0) | -11% (KO 1.0) | -31% (KO 1.3) | -31% (KO 3.0) | +4% (KO 1.9) | -30% (KO 2.9) | +9% (KO 0.6) | -16% (KO 2.9) | -20% (KO 1.0) |
-| Twin Strike | -8% (KO 1.0) | -39% (KO 0.9) | +11% (KO 0.9) | -11% (KO 1.0) | +5% (KO 2.0) | -10% (KO 0.8) | -5% (KO 1.0) | -9% (KO 1.2) | -8% (KO 2.7) | -8% (KO 1.9) | -5% (KO 2.8) | -9% (KO 1.0) | -4% (KO 2.5) | -9% (KO 0.9) |
-| Dodge tank: Zigzag beside a Guard | -31% (KO 0.1) | -54% (KO 0.2) | -16% (KO 0.1) | -30% (KO 0.2) | +34% (KO 0.5) | -34% (KO 0.2) | -16% (KO 0.9) | -29% (KO 0.8) | -18% (KO 1.1) | -26% (KO 1.3) | -29% (KO 2.2) | -30% (KO 0.1) | -28% (KO 2.3) | -31% (KO 0.5) |
-| Mire: Mud Wall and Squelch Song | -28% (KO 0.7) | -47% (KO 0.6) | -12% (KO 0.7) | -29% (KO 0.7) | +36% (KO 0.8) | -23% (KO 0.5) | -12% (KO 1.0) | -28% (KO 1.0) | -16% (KO 1.7) | -25% (KO 1.3) | -21% (KO 2.3) | -28% (KO 0.5) | -31% (KO 2.3) | -28% (KO 0.6) |
-| No reactions: plain hitters | -15% (KO 1.0) | -15% (KO 0.8) | +3% (KO 0.8) | -17% (KO 0.9) | +58% (KO 0.9) | -26% (KO 0.8) | -18% (KO 1.0) | -18% (KO 1.0) | +4% (KO 1.6) | -19% (KO 1.9) | -22% (KO 2.9) | -15% (KO 0.0) | -14% (KO 1.9) | -15% (KO 0.8) |
+| Chain: Overload leaves Charged for Bloomback | +35% (KO 1.3) | +69% (KO 1.2) | +24% (KO 1.3) | +34% (KO 1.1) | +59% (KO 2.2) | +34% (KO 1.3) | +46% (KO 1.5) | +22% (KO 1.8) | +17% (KO 3.0) | -3% (KO 2.7) | +11% (KO 3.0) | +56% (KO 2.6) | +38% (KO 2.8) | +23% (KO 1.3) |
+| No Setter: Ready the Mark feeds Geyserpup | -22% (KO 0.8) | -38% (KO 0.7) | -8% (KO 0.9) | -22% (KO 0.8) | -25% (KO 1.8) | -29% (KO 0.8) | -21% (KO 1.0) | -23% (KO 1.5) | -13% (KO 3.0) | -26% (KO 1.9) | -30% (KO 3.0) | -23% (KO 0.0) | -40% (KO 2.8) | -23% (KO 0.9) |
+| No Setter: Puddle Maker | -23% (KO 0.8) | -26% (KO 0.7) | -16% (KO 0.9) | -41% (KO 0.8) | -11% (KO 1.8) | -24% (KO 0.8) | -4% (KO 1.0) | -24% (KO 1.5) | -16% (KO 3.0) | -28% (KO 1.9) | -31% (KO 3.0) | -23% (KO 0.0) | -41% (KO 2.8) | -23% (KO 0.9) |
+| Big Spout on Downpour | -28% (KO 1.0) | -17% (KO 1.0) | -35% (KO 1.0) | -26% (KO 1.0) | -48% (KO 2.0) | -21% (KO 1.0) | -13% (KO 1.8) | -31% (KO 1.3) | -31% (KO 3.0) | +4% (KO 1.9) | -30% (KO 2.9) | +9% (KO 0.6) | -16% (KO 2.9) | -20% (KO 1.0) |
+| Twin Strike | -8% (KO 1.0) | -39% (KO 0.9) | +11% (KO 0.9) | -11% (KO 1.0) | +5% (KO 2.0) | -10% (KO 0.8) | -1% (KO 1.0) | -9% (KO 1.2) | -8% (KO 2.7) | -8% (KO 1.9) | -5% (KO 2.8) | -9% (KO 1.0) | -4% (KO 2.5) | -9% (KO 0.9) |
+| Dodge tank: Zigzag beside a Guard | -31% (KO 0.1) | -54% (KO 0.2) | -16% (KO 0.1) | -30% (KO 0.2) | +34% (KO 0.5) | -34% (KO 0.2) | +1% (KO 0.9) | -29% (KO 0.8) | -18% (KO 1.1) | -26% (KO 1.3) | -29% (KO 2.2) | -30% (KO 0.1) | -28% (KO 2.3) | -31% (KO 0.5) |
+| Mire: Mud Wall and Squelch Song | -28% (KO 0.7) | -47% (KO 0.6) | -12% (KO 0.7) | -29% (KO 0.7) | +36% (KO 0.8) | -23% (KO 0.5) | -2% (KO 1.0) | -28% (KO 1.0) | -16% (KO 1.7) | -25% (KO 1.3) | -21% (KO 2.3) | -28% (KO 0.5) | -31% (KO 2.3) | -28% (KO 0.6) |
+| No reactions: plain hitters | -15% (KO 1.0) | -15% (KO 0.8) | +3% (KO 0.8) | -17% (KO 0.9) | +58% (KO 0.9) | -26% (KO 0.8) | -2% (KO 1.0) | -18% (KO 1.0) | +4% (KO 1.6) | -19% (KO 1.9) | -22% (KO 2.9) | -15% (KO 0.0) | -14% (KO 1.9) | -15% (KO 0.8) |
 
 ## Do each card's intended answers work? (gauntlet)
 
@@ -34,7 +34,7 @@ An answer works when it beats the classic line on its own card. If it does not, 
 | Reflective Hide | Circle Round | -4% | 1.9 / 1.9 |
 | Reflective Hide | Clear the Air | -10% | 2.0 / 1.9 |
 | Elusive | Clear Skies | +1% | 1.4 / 0.9 |
-| Bramble Bind | Setter in the middle | +31% | 1.0 / 1.0 |
+| Bramble Bind | Setter in the middle | +11% | 1.0 / 1.0 |
 | Wither | Draw Fire (prevention) | +23% | 1.0 / 1.5 |
 | Payoff Hunter | Guard beside the Payoff | +10% | 2.7 / 2.7 |
 | Grudge | Draw Fire | +8% | 2.0 / 1.9 |
@@ -55,7 +55,7 @@ An answer works when it beats the classic line on its own card. If it does not, 
 | Clean Scales | voltaro (Zigzag), bogwarden (Mud Wall), bloomback (no Knack) | 5131 | -24% | -19% |
 | Reflective Hide | bloomback (no Knack), sunfawn (Curl Up), tempestray (Twin Strike) | 4447 | -64% | -47% |
 | Elusive | tidewing (Soak Through), tempestray (Leave a Trail), bloomback (no Knack) | 3679 | -24% | -20% |
-| Bramble Bind | ohmouse (Lightning Ears), voltaro (Zigzag), bloomback (Leave a Trail) | 4942 | -36% | -17% |
+| Bramble Bind | tempestray (Twin Strike), bogwarden (Mud Wall), bloomback (Detonate) | 3940 | -34% | -28% |
 | Wither | voltaro (Zigzag), kilnmole (Draw Fire), bloomback (Leave a Trail) | 4754 | -27% | -18% |
 | Payoff Hunter | bogwarden (Mud Wall), tidewing (Soak Through), tempestray (Detonate) | 4343 | -52% | -27% |
 | Grudge | voltaro (Zigzag), sunfawn (Curl Up), bloomback (no Knack) | 4336 | -35% | -23% |
@@ -74,7 +74,7 @@ An answer works when it beats the classic line on its own card. If it does not, 
 | Clean Scales | 1x tempestray (Twin Strike), 1x thornbuck (Primed by Pain), 1x bloomback (Leave a Trail), 1x geyserpup (no Knack), 1x tidewing (Soak Through), 1x croakmire (no Knack), 1x splashet (Soak Through), 1x kilnmole (Draw Fire), 1x magmole (Wide Warmth), 1x tidewing (no Knack), 1x croakmire (Squelch Song), 1x tempestray (Detonate) | 13672 | -13% |
 | Reflective Hide | 2x geyserpup (Big Spout), 1x bogwarden (Mud Wall), 1x voltaro (Zigzag), 1x halcyray (Clear the Air), 1x kilnmole (no Knack), 1x ashmole (no Knack), 1x tempestray (no Knack), 1x tempestray (Leave a Trail), 1x stormray (Detonate), 1x ancientshell (no Knack), 1x halcyray (Clear Skies) | 10129 | -49% |
 | Elusive | 2x voltaro (Zoom), 1x magmole (Tunnel Through), 1x croakmire (Squelch Song), 1x bloomback (Leave a Trail), 1x kilnmole (no Knack), 1x voltaro (Zigzag), 1x tidewing (Soak Through), 1x geyserpup (Puddle Maker), 1x tempestray (no Knack), 1x bloomback (Detonate), 1x zipmouse (no Knack) | 13469 | -40% |
-| Bramble Bind | 1x wickat (no Knack), 1x voltaro (Zigzag), 1x kilnmole (Draw Fire), 1x pyrelynx (Detonate), 1x tidewing (Soak Through), 1x ohmouse (Catch the Bolts), 1x ancientshell (no Knack), 1x tempestray (Twin Strike), 1x bloomback (Detonate), 1x bloomback (no Knack), 1x geyserpup (Leave a Trail), 1x voltaro (Zoom) | 15198 | -19% |
+| Bramble Bind | 2x tempestray (Leave a Trail), 2x bloomback (no Knack), 1x croakmire (no Knack), 1x tidewing (Circle Round), 1x halcyray (Clear the Air), 1x voltaro (Overcharge), 1x ohmouse (Overcharge), 1x geyserpup (Leave a Trail), 1x kilnmole (Draw Fire), 1x magmole (Ready the Mark) | 12838 | -17% |
 | Wither | 1x bogwarden (Mud Wall), 1x tidewing (Soak Through), 1x tempestray (Detonate), 1x wickat (no Knack), 1x ohmouse (Lightning Ears), 1x halcyray (Clear the Air), 1x splashet (Soak Through), 1x bloomback (no Knack), 1x geyserpup (Big Spout), 1x sunfawn (Ready the Mark), 1x tempestray (no Knack), 1x wickat (Overcharge) | 13274 | -24% |
 | Payoff Hunter | 3x tempestray (Leave a Trail), 1x halcyray (Gather Calm), 1x croakmire (Squelch Song), 1x voltaro (Zoom), 1x splashet (Soak Through), 1x bloomback (Detonate), 1x kilnmole (Draw Fire), 1x geyserpup (Leave a Trail), 1x tidewing (Soak Through), 1x magmole (Ready the Mark) | 17936 | -46% |
 | Grudge | 2x thornbuck (Wide Reach), 1x bloomback (no Knack), 1x halcyray (Gather Calm), 1x ohmouse (Overcharge), 1x wickat (Lead the Way), 1x zipmouse (no Knack), 1x bloomback (Leave a Trail), 1x wickat (no Knack), 1x croakmire (Squelch Song), 1x geyserpup (no Knack), 1x kilnmole (Draw Fire) | 10650 | -7% |
@@ -87,7 +87,7 @@ An answer works when it beats the classic line on its own card. If it does not, 
 
 ## Diversity of the best gauntlet lines
 
-9 different forms appear across the 14 best lines. Most common: bloomback (11), voltaro (7), tempestray (6), sunfawn (5), tidewing (4). A form in nearly every best line is a new "top three" (P-11).
+9 different forms appear across the 14 best lines. Most common: bloomback (11), tempestray (7), voltaro (6), sunfawn (5), bogwarden (5). A form in nearly every best line is a new "top three" (P-11).
 
 ## Knack usage in the top 5 teams of every search
 
@@ -95,37 +95,37 @@ Out of 140 top teams (14 cards, gauntlet and raid, top 5 each). Leave a Trail co
 
 | Knack | Forms | Top teams |
 | --- | --- | ---: |
-| no Knack | any | 89 |
-| Detonate | stormray, tempestray, pyrelynx, bloomback | 71 |
-| Soak Through | splashet, tidewing | 46 |
+| no Knack | any | 87 |
+| Detonate | stormray, tempestray, pyrelynx, bloomback | 70 |
 | Leave a Trail | geyserpup, stormray, tempestray, pyrelynx, bloomback | 45 |
-| Zigzag | voltaro | 44 |
-| Zoom | zipmouse, voltaro | 35 |
-| Overcharge | zipmouse, voltaro, ohmouse, ancientshell, wickat | 35 |
+| Soak Through | splashet, tidewing | 43 |
+| Overcharge | zipmouse, voltaro, ohmouse, ancientshell, wickat | 40 |
+| Zigzag | voltaro | 37 |
+| Zoom | zipmouse, voltaro | 33 |
+| Mud Wall | bogwarden | 32 |
 | Squelch Song | croakmire | 31 |
-| Mud Wall | bogwarden | 27 |
 | Lead the Way | splashet, ancientshell, wickat | 26 |
 | Gather Calm | halcyray | 23 |
 | Curl Up | sunfawn | 23 |
-| Twin Strike | tempestray | 22 |
+| Draw Fire | kilnmole | 23 |
+| Ready the Mark | sunfawn, ashmole, magmole | 21 |
+| Twin Strike | tempestray | 20 |
 | Tunnel Through | magmole | 19 |
-| Draw Fire | kilnmole | 19 |
+| Circle Round | tidewing | 18 |
 | Wide Reach | sproutle, thornbuck | 18 |
-| Ready the Mark | sunfawn, ashmole, magmole | 18 |
-| Lightning Ears | ohmouse | 17 |
 | Baked Shell | kilnmole | 16 |
+| Lightning Ears | ohmouse | 15 |
 | Big Spout | geyserpup | 14 |
-| Circle Round | tidewing | 13 |
-| Keep the Heat In | kilnmole | 11 |
-| Wide Warmth | ashmole, magmole | 9 |
+| Wide Warmth | ashmole, magmole | 10 |
+| Clear the Air | halcyray | 9 |
+| Keep the Heat In | kilnmole | 8 |
 | Puddle Maker | geyserpup | 7 |
-| Clear the Air | halcyray | 7 |
 | Sunbeam | sunfawn | 7 |
 | Primed by Pain | sproutle, thornbuck | 6 |
-| Catch the Bolts | ohmouse | 6 |
 | Clear Skies | halcyray | 4 |
 | Downpour | tidewing | 1 |
 | Night Watch | thornbuck | 1 |
+| Catch the Bolts | ohmouse | 1 |
 
 ## A casual roster (the North Star metric)
 

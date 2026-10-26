@@ -13,7 +13,7 @@ Generated from `packages/lab/src/keywords.ts` by `pnpm --filter @creatures/lab r
 | Intercept | Takes a hit meant for a creature in its reach, after that creature's failed dodge. | It rolls dodge itself | R1 |
 | Retaliate | Hits back when it dodges. | It hits back when hit | R1 |
 | Blocked | A hit that does not get past armour deals nothing. | A dodge | R13 |
-| Silenced | Its Knack, talents and gear effects do nothing. Its stats and role still work. | It skips its turn | R12 |
+| Silenced | Its Knack, talents, gear effects and its role's verb do nothing (a Setter does not mark, a Payoff does not cash, a Guard does not intercept or cover, a Support does not boost or heal). It still hits with its stats. | It skips its turn | R12 |
 | Charged | A boss move announced at round start: its slots are shown, and it lands on them. | A mark | R8 |
 | Mired | A debuff on the boss: per count it deals less damage and dodges less (at most x5). | A mark | R15 |
 | Reach | How many places to each side, in its row, a Guard or Support covers. | Its whole row | R1, R16 |

@@ -60,6 +60,8 @@ interface State {
 }
 
 const fx = (f: Fighter): KnackFx => (f.silencedTurns > 0 ? {} : (knack(f.knack)?.fx ?? {}));
+/** Silence blanks the creature: its Knack and its role's verb (Misa, 2026-10-26). Stats still work. */
+const silenced = (f: Fighter) => f.silencedTurns > 0;
 const armourOf = (f: Fighter) => f.baseArmour + (fx(f).armourBonus ?? 0);
 const alive = (s: State) => s.fighters.filter((f) => f.hp > 0);
 const bySlot = (a: Fighter, b: Fighter) => a.row - b.row || a.col - b.col;
@@ -145,7 +147,7 @@ function heal(s: State, target: Fighter, amountBp: number, critOk = true): void 
 function roundStart(s: State): void {
   for (const f of [...alive(s)].sort(bySlot)) {
     const k = fx(f);
-    if (f.role === 'support') supportVerb(s, f, k);
+    if (f.role === 'support' && !silenced(f)) supportVerb(s, f, k);
     if (k.miresAtStart) s.mired = Math.min(R.miredMaxStacks, s.mired + 1);
   }
   // Charged moves due this round are announced now: their slots are rolled and shown (R8).
@@ -213,7 +215,7 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
   // 3. Reaction (R5): only a Payoff cashes; of the marks this hit may cash, the oldest.
   let bonus = 0;
   let reacted = false;
-  if (!dodged && !k.noDamage && f.role === 'payoff') {
+  if (!dodged && !k.noDamage && f.role === 'payoff' && !silenced(f)) {
     const cand = [...s.marks.entries()]
       .filter(
         ([el, m]) =>
@@ -284,7 +286,7 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
   }
   // 5. Mark (R4): a hit that set off a reaction leaves no mark by the base rules.
   if (!reacted) {
-    const marksAs = k.marksAs ?? (f.role === 'setter' ? 'own' : undefined);
+    const marksAs = k.marksAs ?? (f.role === 'setter' && !silenced(f) ? 'own' : undefined);
     if (marksAs) {
       const el =
         marksAs === 'own' ? f.element : (ELEMENTS.find((m) => triggers(f.element, m)) ?? f.element);
@@ -406,6 +408,7 @@ function takeHit(
       alive(s).some(
         (g) =>
           g.role === 'guard' &&
+          !silenced(g) &&
           g !== taker &&
           g.row === taker.row &&
           Math.abs(g.col - taker.col) <= reachOf(g),
@@ -470,6 +473,7 @@ function bossHits(
         .filter(
           (g) =>
             g.role === 'guard' &&
+            !silenced(g) &&
             !fx(g).noIntercept &&
             g !== t &&
             g.row === t.row &&
