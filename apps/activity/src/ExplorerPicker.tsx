@@ -35,7 +35,7 @@ export function ExplorerPicker({
   value: string | null;
   onChange: (creatureId: string) => void;
   /**
-   * One short row per creature (face, name and level, rank, the stars at this place, and the reason in
+   * One short row per creature (face, name and level, rank, the stars and trips at this place, and the reason in
    * words when it cannot go), with no XP bar, and the rank track folded under the list in "What ranks
    * unlock". The send form uses it; the full rows are the default.
    */
@@ -66,6 +66,7 @@ export function ExplorerPicker({
                 stars={option.stars}
                 label={`${String(option.stars)} / 3 stars at this place`}
               />
+              <span class="muted">{tripsHereText(option.trips)}</span>
             </span>
           ) : (
             <>
