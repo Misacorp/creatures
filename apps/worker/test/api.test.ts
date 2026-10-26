@@ -37,6 +37,7 @@ describe('GET /api/config', () => {
       // The flag is on in the local config (and staging); production has it off (lounge-live.test.ts).
       loungeLive: true,
       finaleLive: true,
+      raidLive: true,
     });
     expectApiHeaders(res);
   });

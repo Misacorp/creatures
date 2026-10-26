@@ -1,11 +1,14 @@
 /**
- * The guild object's live sockets as one piece: the transport (`live-socket.ts`) and the two pushes that
- * use it, the lounge's (`lounge-live.ts`) and the finale's (`finale-live.ts`). `GuildWorld` owns one;
+ * The guild object's live sockets as one piece: the transport (`live-socket.ts`) and the three pushes that
+ * use it, the lounge's (`lounge-live.ts`), the finale's (`finale-live.ts`) and the raid board's
+ * (`raid-board-live.ts`). `GuildWorld` owns one;
  * `GuildCore` sees it only as `LiveHooks`.
  */
 import { FinalePush, type FinalePushDeps } from './finale-live';
 import type { LoungePaid } from './lounge-company';
 import { LoungePush, type LoungePushDeps } from './lounge-live';
+import type { BoardPush } from './raid-board-change';
+import { RaidPush } from './raid-board-live';
 import { LiveSockets, type LiveHooks, type LiveSocketsDeps } from './live-socket';
 import type { Topic, TopicKind } from './live-topic';
 
@@ -20,6 +23,7 @@ export class LiveHub implements LiveHooks {
   readonly sockets: LiveSockets;
   readonly lounge: LoungePush;
   readonly finale: FinalePush;
+  readonly raid: RaidPush;
 
   constructor(deps: LiveHubDeps) {
     this.sockets = new LiveSockets({
@@ -29,6 +33,7 @@ export class LiveHub implements LiveHooks {
         if (topic.kind === 'finale') this.finale.afterOpen(topic);
       },
     });
+    this.raid = new RaidPush({ sockets: this.sockets });
     this.lounge = new LoungePush({ sockets: this.sockets, residentOf: deps.residentOf });
     this.finale = new FinalePush({
       sockets: this.sockets,
@@ -55,6 +60,14 @@ export class LiveHub implements LiveHooks {
 
   notifyFinale(userId: string): void {
     this.finale.afterAction(userId);
+  }
+
+  raidBoardListening(week: string, party: number, actorId: string): boolean {
+    return this.raid.listening(week, party, actorId);
+  }
+
+  notifyRaidBoard(actorId: string, push: BoardPush): void {
+    this.raid.notify(actorId, push);
   }
 
   tickFinale(): void {

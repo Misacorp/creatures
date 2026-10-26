@@ -1,5 +1,5 @@
 import { errorResponse, invalidBody, json, notFound, parseBody, type Routes } from './http';
-import { FINALE_TICKET_PATH, TICKET_PATH, type LiveHooks } from './live-socket';
+import { FINALE_TICKET_PATH, RAID_TICKET_PATH, TICKET_PATH, type LiveHooks } from './live-socket';
 import { LOUNGE_TOPIC } from './live-topic';
 import type { Raid } from './raid';
 import { FinaleTicketBodySchema } from './raid-schemas';
@@ -44,6 +44,27 @@ export const liveRoutes: Routes<LiveRouteContext> = {
         return json({ ticket: await live.mintTicket(guildId, user.id, topic) });
       } catch (err) {
         console.error('finale ticket failed', err instanceof Error ? err.name : 'unknown');
+        return errorResponse('internal_error', 500);
+      }
+    },
+  },
+  [RAID_TICKET_PATH]: {
+    // The raid board's topic is chosen here, like the finale's: the party must be the one the raid view
+    // shows this player (their own, or the one they would join). Without the flag the route does not exist.
+    POST: async (request, { user, guildId, core }) => {
+      const live = core.live;
+      if (live === null || !live.enabled('raid')) return notFound();
+      const body = await parseBody(request, FinaleTicketBodySchema);
+      if (body === undefined) return invalidBody();
+      const week = core.raid.currentWeek(core.timezone());
+      if (week.weekId !== body.week || !core.raid.canWatchBoard(user.id, week, body.party)) {
+        return errorResponse('forbidden', 403);
+      }
+      try {
+        const topic = { kind: 'raid', week: body.week, party: body.party } as const;
+        return json({ ticket: await live.mintTicket(guildId, user.id, topic) });
+      } catch (err) {
+        console.error('raid board ticket failed', err instanceof Error ? err.name : 'unknown');
         return errorResponse('internal_error', 500);
       }
     },

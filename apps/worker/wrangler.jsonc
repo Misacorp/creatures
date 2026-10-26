@@ -44,6 +44,10 @@
   // poll while the socket delivers (a slow safety poll stays). Any other value makes both answer 404 and
   // the finale polls as before. On locally and in staging; OFF in production until Misa has watched
   // a finale on staging (a test pins all three).
+  // RAID_LIVE: "on" turns on the live raid board (docs/design/raid-live-board.md): the Raid tab opens a
+  // socket and teammates' placements appear as they are made. The board ticket and socket routes exist and
+  // /api/config tells the client. Any other value makes both answer 404 and the tab behaves as before. On
+  // everywhere (the push is a few small messages and costs almost no database reads); a test pins it.
   // DISCORD_PUBLIC_KEY: the Discord app's public key (hex, not a secret). The deploy job fills it from
   // Discord's verify_key; empty (or not 64 hex characters) turns POST /api/discord/interactions off (404),
   // which also turns off /feedback (docs/design/feedback.md).
@@ -58,7 +62,8 @@
     "RAID_PRACTICE": "off",
     "DEV_TOOLS": "off",
     "LOUNGE_LIVE": "on",
-    "FINALE_LIVE": "on"
+    "FINALE_LIVE": "on",
+    "RAID_LIVE": "on"
   },
   "env": {
     "staging": {
@@ -83,7 +88,8 @@
         "RAID_PRACTICE": "on",
         "DEV_TOOLS": "on",
         "LOUNGE_LIVE": "on",
-        "FINALE_LIVE": "on"
+        "FINALE_LIVE": "on",
+        "RAID_LIVE": "on"
       }
     },
     "production": {
@@ -108,7 +114,8 @@
         "RAID_PRACTICE": "off",
         "DEV_TOOLS": "off",
         "LOUNGE_LIVE": "on",
-        "FINALE_LIVE": "off"
+        "FINALE_LIVE": "off",
+        "RAID_LIVE": "on"
       }
     }
   }

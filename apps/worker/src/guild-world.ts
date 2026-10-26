@@ -3,7 +3,7 @@ import { createGuildApi } from './discord';
 import { createPostSender, publicOrigin } from './discord-posts';
 import { createDmSender } from './dm-send';
 import { createLoungeClient } from './lounge-discord';
-import { LIVE_PATH, FINALE_LIVE_PATH } from './live-socket';
+import { LIVE_PATH, FINALE_LIVE_PATH, RAID_LIVE_PATH } from './live-socket';
 import { LiveHub } from './live-hub';
 import type { DailyRow } from './analytics-rollup';
 import { GuildCore, type SessionUser } from './guild-core';
@@ -17,7 +17,7 @@ import { LEET_BACKFILL_DAYS, createLeetSourceFromEnv } from './leet';
  */
 export class GuildWorld extends DurableObject<Env> {
   private readonly core: GuildCore;
-  /** The live sockets (Hibernation API) and their two pushes; `LOUNGE_LIVE` and `FINALE_LIVE` turn them on. */
+  /** The live sockets (Hibernation API) and their three pushes; `LOUNGE_LIVE`, `FINALE_LIVE` and `RAID_LIVE` turn them on. */
   readonly live: LiveHub;
   /** The UTC day this object last told the directory about its guild. */
   private directoryDay: string | null = null;
@@ -27,7 +27,11 @@ export class GuildWorld extends DurableObject<Env> {
     this.live = new LiveHub({
       sockets: {
         ctx,
-        enabled: { lounge: env.LOUNGE_LIVE === 'on', finale: env.FINALE_LIVE === 'on' },
+        enabled: {
+          lounge: env.LOUNGE_LIVE === 'on',
+          finale: env.FINALE_LIVE === 'on',
+          raid: env.RAID_LIVE === 'on',
+        },
         clientSecret: env.DISCORD_CLIENT_SECRET,
         guildId: () => ctx.id.name ?? '',
         now: Date.now,
@@ -128,7 +132,9 @@ export class GuildWorld extends DurableObject<Env> {
   override async fetch(request: Request): Promise<Response> {
     // The socket upgrades have no Authorization header: they carry a one-time ticket (live-ticket.ts).
     const { pathname } = new URL(request.url);
-    if (pathname === LIVE_PATH) return this.counted(() => this.live.upgrade(request));
+    if (pathname === LIVE_PATH || pathname === RAID_LIVE_PATH) {
+      return this.counted(() => this.live.upgrade(request));
+    }
     if (pathname === FINALE_LIVE_PATH) {
       return this.counted(async () => {
         const res = await this.live.upgrade(request);

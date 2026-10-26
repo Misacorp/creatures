@@ -509,6 +509,13 @@ export class GuildCore {
       rng: options.raidRng ?? liveRng(),
       practice: options.raidPractice === true,
       socketWatchers: (week, party) => this.live?.finaleWatchers(week, party) ?? new Set(),
+      board: {
+        listening: (week, party, actorId) =>
+          this.live?.raidBoardListening(week, party, actorId) ?? false,
+        send: (actorId, push) => {
+          this.live?.notifyRaidBoard(actorId, push);
+        },
+      },
       analytics: this.analytics,
       quirkRng,
       talentRng,

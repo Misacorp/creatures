@@ -62,6 +62,7 @@ import {
   partyMembers,
   partyOf,
   partyRowLength,
+  partyToJoin,
 } from './raid-roster';
 import {
   RAID_PHASES,
@@ -74,6 +75,7 @@ import {
   type RaidPhase,
   type ScheduledEvent,
 } from './raid-schedule';
+import { boardPush, type BoardChange, type BoardPush } from './raid-board-change';
 import { capPlacements, partyPlacements, type PlacementRow, type RaidStatus } from './raid-teams';
 
 export interface RaidDeps {
@@ -101,6 +103,15 @@ export interface RaidDeps {
    * watching without polling: a socket only gets a push when the stage moves.
    */
   socketWatchers?: (weekId: string, party: number) => ReadonlySet<string>;
+  /**
+   * The live raid board (`raid-live.ts`). `listening` says whether anyone but the actor has the party's
+   * board socket open (no listener: nothing is read for a push); `send` gives them the small message of
+   * a change. Both are called after the change committed and must not throw (a failure is logged here).
+   */
+  board?: {
+    listening: (weekId: string, party: number, actorId: string) => boolean;
+    send: (actorId: string, push: BoardPush) => void;
+  };
 }
 
 export interface WeekRow {
@@ -473,11 +484,13 @@ export class Raid {
    */
   place(userId: string, tz: string, creatureId: string, slot: number): Outcome<null> {
     this.runDue(tz);
-    return this.atomically(() => {
+    const changes: BoardChange[] = [];
+    const outcome = this.atomically(() => {
       const week = this.ensureWeek(weekIdFor(this.deps.now(), tz));
       this.requireEditable(week);
       const species = this.requireOwnedCreature(userId, creatureId);
       let party = partyOf(this.sql, week.weekId, userId);
+      const joining = party === null;
       if (party === null) {
         if (!this.joiningOpen(week)) throw new GameError(409, 'raid_closed');
         party = joinSmallestParty(this.sql, week.weekId, userId, this.deps.now());
@@ -491,7 +504,7 @@ export class Raid {
       }
       // A player never has more than three creatures on the board. Stale rows beyond that (from
       // before this rule) are dropped first, by the one rule in `capPlacements`.
-      const onBoard = this.enforcePlacementCap(week.weekId, userId);
+      const { kept: onBoard, droppedSlots } = this.enforcePlacementCap(week.weekId, userId);
       const mine = onBoard.find((p) => p.creature_id === creatureId);
       if (mine?.slot === slot) return null;
       // A creature that is not on the board yet needs a free place among the three.
@@ -526,6 +539,21 @@ export class Raid {
       if (occupant !== undefined && mine !== undefined) {
         this.insertPlacement(week.weekId, party, mine.slot, userId, occupant.creature_id);
       }
+      // What the party's board looks like now, for the live push (nothing is read for it here).
+      changes.push({
+        userId,
+        week: week.weekId,
+        party,
+        slots: [
+          ...droppedSlots.map((s) => ({ slot: s, creatureId: null })),
+          ...(mine === undefined
+            ? []
+            : [{ slot: mine.slot, creatureId: occupant?.creature_id ?? null }]),
+          { slot, creatureId },
+        ],
+        rowLength: length,
+        ...(joining ? { joined: true } : {}),
+      });
       this.deps.analytics?.record(
         {
           kind: 'placement',
@@ -538,13 +566,42 @@ export class Raid {
       );
       return null;
     });
+    const change = changes[0];
+    if (outcome.ok && change !== undefined) this.pushBoard(change);
+    return outcome;
+  }
+
+  /**
+   * Tells the party's other board sockets what a committed placement change did. Reads nothing when
+   * nobody listens; never throws (the change already happened).
+   */
+  private pushBoard(change: BoardChange): void {
+    const board = this.deps.board;
+    if (board === undefined) return;
+    try {
+      if (!board.listening(change.week, change.party, change.userId)) return;
+      // A player who left may shrink the row (it follows the joined players): the one read the push does.
+      const rowLength =
+        change.rowLength ??
+        (change.joined === false ? partyRowLength(this.sql, change.week, change.party) : undefined);
+      board.send(
+        change.userId,
+        boardPush(this.sql, { ...change, ...(rowLength === undefined ? {} : { rowLength }) }),
+      );
+    } catch (err) {
+      console.error('raid board push failed', err instanceof Error ? err.name : 'unknown');
+    }
   }
 
   /**
    * Deletes the player's placements beyond three (see `capPlacements`) and returns the ones left,
-   * earliest placed first. Run inside a transaction. Normally it deletes nothing.
+   * earliest placed first, and the slots of the ones it dropped. Run inside a transaction. Normally it
+   * deletes nothing.
    */
-  private enforcePlacementCap(weekId: string, userId: string): PlacementRow[] {
+  private enforcePlacementCap(
+    weekId: string,
+    userId: string,
+  ): { kept: PlacementRow[]; droppedSlots: number[] } {
     const all = this.sql
       .exec<PlacementRow>(
         'SELECT rowid, slot, user_id, creature_id FROM raid_placements WHERE week_id = ? AND user_id = ? ORDER BY rowid',
@@ -554,8 +611,10 @@ export class Raid {
       .toArray();
     const kept = capPlacements(all);
     const keptIds = new Set(kept.map((p) => p.creature_id));
+    const droppedSlots: number[] = [];
     for (const row of all) {
       if (!keptIds.has(row.creature_id)) {
+        droppedSlots.push(row.slot);
         this.sql.exec(
           'DELETE FROM raid_placements WHERE week_id = ? AND creature_id = ?',
           weekId,
@@ -563,7 +622,7 @@ export class Raid {
         );
       }
     }
-    return kept;
+    return { kept, droppedSlots };
   }
 
   /**
@@ -573,14 +632,15 @@ export class Raid {
    */
   unplace(userId: string, tz: string, creatureId: string): Outcome<null> {
     this.runDue(tz);
-    return this.atomically(() => {
+    const changes: BoardChange[] = [];
+    const outcome = this.atomically(() => {
       const week = this.ensureWeek(weekIdFor(this.deps.now(), tz));
       this.requireEditable(week);
       const species = this.requireOwnedCreature(userId, creatureId);
       this.readinessCache.invalidate();
       const removed = this.sql
-        .exec<{ slot: number }>(
-          'DELETE FROM raid_placements WHERE week_id = ? AND user_id = ? AND creature_id = ? RETURNING slot',
+        .exec<{ slot: number; party: number }>(
+          'DELETE FROM raid_placements WHERE week_id = ? AND user_id = ? AND creature_id = ? RETURNING slot, party',
           week.weekId,
           userId,
           creatureId,
@@ -595,7 +655,15 @@ export class Raid {
             userId,
           )
           .one().n;
-        if (left === 0 && this.joiningOpen(week)) leaveParty(this.sql, week.weekId, userId);
+        const leaving = left === 0 && this.joiningOpen(week);
+        if (leaving) leaveParty(this.sql, week.weekId, userId);
+        changes.push({
+          userId,
+          week: week.weekId,
+          party: removed.party,
+          slots: [{ slot: removed.slot, creatureId: null }],
+          ...(leaving ? { joined: false } : {}),
+        });
         this.deps.analytics?.record(
           {
             kind: 'placement',
@@ -609,6 +677,9 @@ export class Raid {
       }
       return null;
     });
+    const change = changes[0];
+    if (outcome.ok && change !== undefined) this.pushBoard(change);
+    return outcome;
   }
 
   private insertPlacement(
@@ -796,6 +867,21 @@ export class Raid {
   /** True when `userId` is in `party` of the week (a finale socket's ticket needs it). */
   isPartyMember(userId: string, weekId: string, party: number): boolean {
     return partyOf(this.sql, weekId, userId) === party;
+  }
+
+  /**
+   * True when the raid view of `userId` shows `party`'s board this week (the live board's ticket needs
+   * it): they are in it, or they have not joined, joining is open, they have a creature to place and it
+   * is the party they would join (`partyToJoin`, as the view picks it).
+   */
+  canWatchBoard(userId: string, week: WeekRow, party: number): boolean {
+    const mine = partyOf(this.sql, week.weekId, userId);
+    if (mine !== null) return mine === party;
+    if (!this.joiningOpen(week)) return false;
+    const hasCreature =
+      this.sql.exec('SELECT 1 FROM creatures WHERE user_id = ? LIMIT 1', userId).toArray().length >
+      0;
+    return hasCreature && partyToJoin(this.sql, week.weekId).party === party;
   }
 
   /**

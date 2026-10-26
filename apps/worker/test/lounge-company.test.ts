@@ -125,6 +125,8 @@ function recordingHooks(): LiveHooks & { pushed: { userId: string; paid: LoungeP
       pushed.push({ userId, paid });
     },
     notifyFinale: () => undefined,
+    raidBoardListening: () => false,
+    notifyRaidBoard: () => undefined,
     tickFinale: () => undefined,
     finaleWatchers: () => new Set(),
     nextFinaleAt: () => null,
