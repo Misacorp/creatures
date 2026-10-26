@@ -73,11 +73,11 @@ export interface KnackFx {
   readonly rowDodgeBp?: number;
   /** Its hits deal this much more while a living Guard stands beside it. */
   readonly besideGuardBp?: number;
-  /** Its hits deal this much more while no other living Payoff stands in its row. */
+  /** Its hits deal this much more while no other living Payoff stands beside it. */
   readonly alonePayoffBp?: number;
   /** Creatures beside it take this much less from area hits. */
   readonly besideAreaCutBp?: number;
-  /** A non-Guard that intercepts aimed hits for the creatures beside it, like a Guard. */
+  /** A non-Guard that intercepts aimed hits for the creatures beside it, when no Guard can (R1.3). */
   readonly interceptLikeGuard?: boolean;
   /** Creatures beside it cannot be silenced. */
   readonly besideNoSilence?: boolean;
@@ -90,8 +90,10 @@ export interface KnackFx {
   readonly critChanceBp?: number;
   /** A crit on a hit that sets off a reaction deals this much more. */
   readonly reactionCritBp?: number;
-  /** Its first turn hit each fight deals this much more. */
+  /** Its first hit that lands each fight (each raid stage) deals this much more. */
   readonly firstHitBp?: number;
+  /** Once per fight, when a hit drops it below half its max HP, it heals this share of its max HP. */
+  readonly secondWindBp?: number;
   /** It cannot be silenced. */
   readonly ignoreSilence?: boolean;
   /** A Guard's cover is this much stronger. */
@@ -107,6 +109,33 @@ export interface KnackFx {
   /** Mire: at round start the boss gains a Mired stack. */
   readonly miresAtStart?: boolean;
 }
+
+/** Knack families: one rule with different numbers or elements (grammar.md). A new family needs a reason (P-09). */
+export const FAMILIES: Readonly<Record<string, string>> = {
+  Seal: 'Its marks are not shed.',
+  Lead: 'Boosts the next creature after it marks.',
+  'Heavy Prime': 'Gives up its damage for more mark counts (Setters only).',
+  'Self Prime': 'A non-Setter that marks what it can cash.',
+  'Guard Prime': 'A Guard that marks, at a cost to its Guard role (P-02).',
+  'Support Prime': 'A Support that marks instead of its boost and heal.',
+  Detonator: 'A Payoff that spends several counts.',
+  Chain: 'After a reaction, leaves a mark of its own element.',
+  Flurry: 'Several smaller hits.',
+  Reach: 'Changes how far a Guard covers.',
+  Intercept: 'Changes which hits it takes for others (a non-Guard only when no Guard can).',
+  Taunt: 'Draws the plain attack.',
+  Evasion: 'Its own dodge, with Retaliate or a Store.',
+  'Evasion aura': 'Dodge for the creatures beside it or in its row (the largest aura applies).',
+  'Row Ward': 'Cuts area damage for its row or the creatures beside it (the largest applies).',
+  Ward: 'Keeps the creatures beside it from being silenced.',
+  Pierce: 'Ignores some boss armour.',
+  Partner: 'A bonus on its hits while a given role is, or is not, beside it.',
+  'Support shape': "Changes where a Support's boost and heal land, or replaces them.",
+  Sustain: 'Heals, on a reaction or at round start.',
+  Store: 'Fills over the fight, spends at 3.',
+  Debuff: 'Puts a debuff on the boss.',
+  Signature: "An epic's own twist on a family, on one species only.",
+};
 
 export interface KnackDef {
   readonly id: string;
@@ -170,9 +199,9 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'all-at-once',
       name: 'All at Once',
       family: 'Detonator',
-      text: 'Cashes only a mark at x2 or more, and {Spend}s all of its count. Huge on x3.',
+      text: 'Cashes only a mark at x3, and {Spend}s all of its count.',
       intent: "Misa's mark-mark-mark-big-payoff choice: a slow, huge hit that breaks armour.",
-      fx: { minStacks: 2, spendAllBp: 10_000, bonusBp: 12_500 },
+      fx: { minStacks: 3, spendAllBp: 10_000, bonusBp: 12_500 },
     }),
     K({
       id: 'leave-a-trail',
@@ -206,7 +235,7 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'clear-skies',
       name: 'Clear Skies',
       family: 'Support shape',
-      text: 'Instead of boosting, the boss cannot dodge the hits of creatures beside it this round.',
+      text: 'Instead of its boost and heal: the boss cannot dodge the hits of creatures {Beside} it this round.',
       intent: 'Answers Elusive bosses.',
       fx: { support: 'clearSkies' },
     }),
@@ -273,7 +302,7 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'ready-the-mark',
       name: 'Ready the Mark',
       family: 'Support Prime',
-      text: "Instead of boosting and healing, at round start it adds x1 to its own element's mark.",
+      text: "Instead of its boost and heal: it adds 1 to its own element's {Mark}.",
       intent: 'Lets a team without a Setter react; needs a Payoff of the right element.',
       fx: { support: 'readyMark' },
     }),
@@ -356,9 +385,10 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'lightning-ears',
       name: 'Lightning Ears',
       family: 'Guard Prime',
-      text: "It leaves its own element's {Mark} like a Setter, but it does not {Intercept}.",
-      intent: 'A Setter that survives the front row.',
-      fx: { marksAs: 'own', noIntercept: true },
+      text: "It leaves its own element's {Mark} like a Setter, but it does not {Intercept}, and Armour -22.",
+      intent:
+        "A Setter that survives the front row; it pays with the Guard's verb and its armour (P-02: never a Setter and a Guard in one body).",
+      fx: { marksAs: 'own', noIntercept: true, armourBonus: -22 },
     }),
     // Mire lines: the finale-ability passives, ported (they are how Mire applies Mired today)
     K({
@@ -381,7 +411,7 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
     K({
       id: 'guards-shadow',
       name: "Guard's Shadow",
-      family: 'Shadow',
+      family: 'Partner',
       text: '+25% on its hits while a living Guard stands beside it.',
       intent:
         "A Payoff that wants a Guard partner, ideally another player's in the raid. The same name as the gear line with the same effect.",
@@ -391,7 +421,7 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'crown-of-embers',
       name: 'Crown of Embers',
       family: 'Signature',
-      text: 'Its {Mark} starts at x2, and it still hits.',
+      text: 'Each {Mark} it leaves adds 2 to the count, and its hit still deals damage.',
       intent:
         "Solmane's signature: an epic Setter that feeds Detonators without giving up its damage.",
       fx: { markStacks: 2 },
@@ -417,7 +447,7 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'drizzle',
       name: 'Drizzle',
       family: 'Support shape',
-      text: 'Instead of boosting, at round start it heals every creature in its row by 3%.',
+      text: 'Instead of its boost and heal: it heals every creature in its row (itself too) by 5% of max HP.',
       intent: 'A row healer for long raid rows and steady damage.',
       fx: { support: 'rowRain' },
     }),
@@ -433,17 +463,17 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
     K({
       id: 'territorial',
       name: 'Territorial',
-      family: 'Signature',
-      text: '+30% on its hits while no other Payoff stands in its row.',
+      family: 'Partner',
+      text: '+30% on its hits while no other living Payoff stands beside it.',
       intent:
-        'Coralynx guards its reef alone: it wants a row to itself, a placement question in the raid.',
+        'Coralynx guards its reef alone: a placement question its owner controls (beside, not the whole row, so other players cannot switch it off).',
       fx: { alonePayoffBp: 3_000 },
     }),
     K({
       id: 'carry-them',
       name: 'Carry Them',
-      family: 'Intercept (borrowed)',
-      text: 'It {Intercept}s aimed hits for the creatures beside it, like a Guard. Its reaction bonus is 25% smaller.',
+      family: 'Intercept',
+      text: '{Intercept}s aimed hits for the creatures {Beside} it when no Guard can. Reaction bonus -25%.',
       intent:
         "Gaiadrake protects everything it carries: a Payoff borrowing the Guard's verb at a cost (P-02).",
       fx: { interceptLikeGuard: true, bonusBp: 7_500 },
@@ -452,7 +482,7 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'starlight',
       name: 'Starlight',
       family: 'Support shape',
-      text: 'It {Boost}s every creature in its row, 5 points weaker, and heals no one.',
+      text: 'Instead of its boost and heal: it {Boost}s every other creature in its row by 10%.',
       intent: 'Aurorix looks after friends from a distance: a row-wide boost for long raid rows.',
       fx: { support: 'rowBoost' },
     }),
@@ -468,19 +498,19 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
     K({
       id: 'hearth',
       name: 'Hearth',
-      family: 'Guard Sustain',
-      text: 'At round start it heals the creatures in its {Reach} by 4%.',
+      family: 'Sustain',
+      text: 'At round start it heals the creatures in its {Reach} by 6% of max HP.',
       intent:
         'Hearthshell hosts friends around its fire: a Guard that heals the creatures it protects.',
-      fx: { guardMendBp: 400 },
+      fx: { guardMendBp: 600 },
     }),
   ].map((k) => [k.id, k]),
 );
 
-/** The Knacks each form can equip (first listed is the default for absent players, R11). */
+/** The Knacks each form can equip. An absent player's creature uses the Knack its owner last saved, or none (R11). */
 export const FORM_KNACKS: Readonly<Record<string, readonly string[]>> = {
   splashet: ['steady-mark', 'lead-the-way'],
-  tidewing: ['steady-mark', 'feed-the-marks', 'circle-round'],
+  tidewing: ['steady-mark', 'double-mark', 'circle-round'],
   geyserpup: ['leave-a-trail', 'puddle-maker', 'all-at-once'],
   stormray: ['detonate', 'leave-a-trail'],
   tempestray: ['detonate', 'leave-a-trail', 'twin-strike'],
@@ -493,7 +523,7 @@ export const FORM_KNACKS: Readonly<Record<string, readonly string[]>> = {
   kilnmole: ['draw-fire', 'keep-the-heat-in', 'baked-shell'],
   zipmouse: ['zoom', 'double-mark'],
   voltaro: ['zoom', 'double-mark', 'zigzag'],
-  ohmouse: ['double-mark', 'catch-the-bolts', 'lightning-ears'],
+  ohmouse: ['catch-the-bolts', 'lightning-ears'],
   cindle: ['detonate', 'leave-a-trail'],
   pyrelynx: ['detonate', 'leave-a-trail', 'guards-shadow'],
   wickat: ['lead-the-way', 'steady-mark', 'double-mark'],

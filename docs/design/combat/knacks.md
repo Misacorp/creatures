@@ -2,12 +2,40 @@
 
 Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab report`. Do not edit by hand: change the data and regenerate. Keywords in braces are defined in `keywords.md`.
 
+## Families
+
+| Family | Rule | Knacks |
+| --- | --- | --- |
+| Seal | Its marks are not shed. | Steady Mark |
+| Lead | Boosts the next creature after it marks. | Lead the Way |
+| Heavy Prime | Gives up its damage for more mark counts (Setters only). | Feed the Marks, Double Mark |
+| Self Prime | A non-Setter that marks what it can cash. | Puddle Maker |
+| Guard Prime | A Guard that marks, at a cost to its Guard role (P-02). | Primed by Pain, Lightning Ears |
+| Support Prime | A Support that marks instead of its boost and heal. | Ready the Mark |
+| Detonator | A Payoff that spends several counts. | All at Once, Detonate |
+| Chain | After a reaction, leaves a mark of its own element. | Leave a Trail |
+| Flurry | Several smaller hits. | Twin Strike |
+| Reach | Changes how far a Guard covers. | Wide Reach |
+| Intercept | Changes which hits it takes for others (a non-Guard only when no Guard can). | Night Watch, Catch the Bolts, Carry Them |
+| Taunt | Draws the plain attack. | Draw Fire |
+| Evasion | Its own dodge, with Retaliate or a Store. | Zoom, Zigzag |
+| Evasion aura | Dodge for the creatures beside it or in its row (the largest aura applies). | Hide in Mist, Thick Fog |
+| Row Ward | Cuts area damage for its row or the creatures beside it (the largest applies). | Keep the Heat In, Living Shelter |
+| Ward | Keeps the creatures beside it from being silenced. | Lantern Glow |
+| Pierce | Ignores some boss armour. | Tunnel Through |
+| Partner | A bonus on its hits while a given role is, or is not, beside it. | Guard's Shadow, Territorial |
+| Support shape | Changes where a Support's boost and heal land, or replaces them. | Clear Skies, Sunbeam, Curl Up, Wide Warmth, Drizzle, Starlight |
+| Sustain | Heals, on a reaction or at round start. | Circle Round, Clear the Air, Hearth |
+| Store | Fills over the fight, spends at 3. | Gather Calm, Baked Shell |
+| Debuff | Puts a debuff on the boss. | Mud Wall, Squelch Song |
+| Signature | An epic's own twist on a family, on one species only. | Crown of Embers |
+
 ## By form
 
 | Form | Knacks |
 | --- | --- |
 | splashet | Steady Mark, Lead the Way |
-| tidewing | Steady Mark, Feed the Marks, Circle Round |
+| tidewing | Steady Mark, Double Mark, Circle Round |
 | geyserpup | Leave a Trail, Puddle Maker, All at Once |
 | stormray | Detonate, Leave a Trail |
 | tempestray | Detonate, Leave a Trail, Twin Strike |
@@ -20,7 +48,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 | kilnmole | Draw Fire, Keep the Heat In, Baked Shell |
 | zipmouse | Zoom, Double Mark |
 | voltaro | Zoom, Double Mark, Zigzag |
-| ohmouse | Double Mark, Catch the Bolts, Lightning Ears |
+| ohmouse | Catch the Bolts, Lightning Ears |
 | cindle | Detonate, Leave a Trail |
 | pyrelynx | Detonate, Leave a Trail, Guard's Shadow |
 | wickat | Lead the Way, Steady Mark, Double Mark |
@@ -61,7 +89,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 - **Text:** Its hit deals no damage. It leaves its {Mark} and adds 1 to the count of every other mark on the boss.
 - **Family:** Heavy Prime
-- **Forms:** tidewing, mossback, ancientshell
+- **Forms:** mossback, ancientshell
 - **Intent (for contributors, never shown to players):** For multi-mark teams and Payoffs that spend several stacks.
 
 ### Circle Round
@@ -80,7 +108,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### All at Once
 
-- **Text:** Cashes only a mark at x2 or more, and {Spend}s all of its count. Huge on x3.
+- **Text:** Cashes only a mark at x3, and {Spend}s all of its count.
 - **Family:** Detonator
 - **Forms:** geyserpup, bloomback
 - **Intent (for contributors, never shown to players):** Misa's mark-mark-mark-big-payoff choice: a slow, huge hit that breaks armour.
@@ -108,7 +136,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Clear Skies
 
-- **Text:** Instead of boosting, the boss cannot dodge the hits of creatures beside it this round.
+- **Text:** Instead of its boost and heal: the boss cannot dodge the hits of creatures {Beside} it this round.
 - **Family:** Support shape
 - **Forms:** halcyray, aurorix
 - **Intent (for contributors, never shown to players):** Answers Elusive bosses.
@@ -164,7 +192,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Ready the Mark
 
-- **Text:** Instead of boosting and healing, at round start it adds x1 to its own element's mark.
+- **Text:** Instead of its boost and heal: it adds 1 to its own element's {Mark}.
 - **Family:** Support Prime
 - **Forms:** sunfawn, ashmole, magmole, squelch, croakmire
 - **Intent (for contributors, never shown to players):** Lets a team without a Setter react; needs a Payoff of the right element.
@@ -215,7 +243,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 - **Text:** Its hit deals no damage. It leaves its {Mark} at x2.
 - **Family:** Heavy Prime
-- **Forms:** zipmouse, voltaro, ohmouse, wickat
+- **Forms:** tidewing, zipmouse, voltaro, wickat
 - **Intent (for contributors, never shown to players):** Feeds Detonators and two Payoffs of the trigger element.
 
 ### Zigzag
@@ -234,10 +262,10 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Lightning Ears
 
-- **Text:** It leaves its own element's {Mark} like a Setter, but it does not {Intercept}.
+- **Text:** It leaves its own element's {Mark} like a Setter, but it does not {Intercept}, and Armour -22.
 - **Family:** Guard Prime
 - **Forms:** ohmouse
-- **Intent (for contributors, never shown to players):** A Setter that survives the front row.
+- **Intent (for contributors, never shown to players):** A Setter that survives the front row; it pays with the Guard's verb and its armour (P-02: never a Setter and a Guard in one body).
 
 ### Mud Wall
 
@@ -256,13 +284,13 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 ### Guard's Shadow
 
 - **Text:** +25% on its hits while a living Guard stands beside it.
-- **Family:** Shadow
+- **Family:** Partner
 - **Forms:** pyrelynx
 - **Intent (for contributors, never shown to players):** A Payoff that wants a Guard partner, ideally another player's in the raid. The same name as the gear line with the same effect.
 
 ### Crown of Embers
 
-- **Text:** Its {Mark} starts at x2, and it still hits.
+- **Text:** Each {Mark} it leaves adds 2 to the count, and its hit still deals damage.
 - **Family:** Signature
 - **Forms:** solmane
 - **Intent (for contributors, never shown to players):** Solmane's signature: an epic Setter that feeds Detonators without giving up its damage.
@@ -283,7 +311,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Drizzle
 
-- **Text:** Instead of boosting, at round start it heals every creature in its row by 3%.
+- **Text:** Instead of its boost and heal: it heals every creature in its row (itself too) by 5% of max HP.
 - **Family:** Support shape
 - **Forms:** drizzlewt
 - **Intent (for contributors, never shown to players):** A row healer for long raid rows and steady damage.
@@ -297,21 +325,21 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Territorial
 
-- **Text:** +30% on its hits while no other Payoff stands in its row.
-- **Family:** Signature
+- **Text:** +30% on its hits while no other living Payoff stands beside it.
+- **Family:** Partner
 - **Forms:** coralynx
-- **Intent (for contributors, never shown to players):** Coralynx guards its reef alone: it wants a row to itself, a placement question in the raid.
+- **Intent (for contributors, never shown to players):** Coralynx guards its reef alone: a placement question its owner controls (beside, not the whole row, so other players cannot switch it off).
 
 ### Carry Them
 
-- **Text:** It {Intercept}s aimed hits for the creatures beside it, like a Guard. Its reaction bonus is 25% smaller.
-- **Family:** Intercept (borrowed)
+- **Text:** {Intercept}s aimed hits for the creatures {Beside} it when no Guard can. Reaction bonus -25%.
+- **Family:** Intercept
 - **Forms:** gaiadrake
 - **Intent (for contributors, never shown to players):** Gaiadrake protects everything it carries: a Payoff borrowing the Guard's verb at a cost (P-02).
 
 ### Starlight
 
-- **Text:** It {Boost}s every creature in its row, 5 points weaker, and heals no one.
+- **Text:** Instead of its boost and heal: it {Boost}s every other creature in its row by 10%.
 - **Family:** Support shape
 - **Forms:** aurorix
 - **Intent (for contributors, never shown to players):** Aurorix looks after friends from a distance: a row-wide boost for long raid rows.
@@ -325,62 +353,33 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Hearth
 
-- **Text:** At round start it heals the creatures in its {Reach} by 4%.
-- **Family:** Guard Sustain
+- **Text:** At round start it heals the creatures in its {Reach} by 6% of max HP.
+- **Family:** Sustain
 - **Forms:** hearthshell
 - **Intent (for contributors, never shown to players):** Hearthshell hosts friends around its fire: a Guard that heals the creatures it protects.
 
 ## Combat talents
 
-Generated from `packages/lab/src/talents.ts`. A creature rolls talents from its line's pool when found. Each pool has the role talents of its forms' roles (the same effect keeps the same name in every pool) and one flavour talent of its own.
+Generated from `packages/lab/src/talents.ts`. A creature rolls talents from its role's pool when found; a line with forms of several roles rolls from each form's own role. One name per effect; a talent never repeats a Knack's effect, and flavour lives in Knacks.
 
-| Line | Pool (roles) |
+| Role | Pool |
 | --- | --- |
-| splashet | Sharp Claws (setter, payoff); Light Feet (setter); Unflappable (setter); Lasting Marks (setter); Keen Eye (payoff); Big Finish (payoff); First Strike (payoff); Splashes Everywhere (setter, payoff) |
-| stormray | Sharp Claws (payoff); Keen Eye (payoff); Big Finish (payoff); First Strike (payoff); Warm Heart (support); Gentle Touch (support); Unflappable (support); Light Feet (support); Proud Wings (payoff, support) |
-| sproutle | Tough Hide (guard); Steady Paws (guard); Unflappable (guard, support); Quick Healer (guard); Warm Heart (support); Gentle Touch (support); Light Feet (support); Stands Close (guard, support) |
-| ashmole | Warm Heart (support); Gentle Touch (support); Unflappable (support, guard); Light Feet (support); Tough Hide (guard); Steady Paws (guard); Quick Healer (guard); Toasty Paws (support, guard) |
-| zipmouse | Sharp Claws (setter); Light Feet (setter); Unflappable (setter, guard); Lasting Marks (setter); Tough Hide (guard); Steady Paws (guard); Quick Healer (guard); Zoomies (setter, guard) |
-| cindle | Sharp Claws (payoff, setter); Keen Eye (payoff); Big Finish (payoff); First Strike (payoff); Light Feet (setter); Unflappable (setter); Lasting Marks (setter); Fiercely Loyal (payoff, setter) |
-| mistnewt | Tough Hide (guard); Steady Paws (guard); Unflappable (guard, support); Quick Healer (guard); Warm Heart (support); Gentle Touch (support); Light Feet (support); Slow and Unbothered (guard, support) |
-| mossback | Sharp Claws (setter, payoff); Light Feet (setter); Unflappable (setter); Lasting Marks (setter); Keen Eye (payoff); Big Finish (payoff); First Strike (payoff); Tends the Garden (setter, payoff) |
-| coralynx | Sharp Claws (payoff); Keen Eye (payoff); Big Finish (payoff); First Strike (payoff); Lone Hunter (payoff) |
-| solmane | Sharp Claws (setter); Light Feet (setter); Unflappable (setter); Lasting Marks (setter); Leads from the Front (setter) |
-| gaiadrake | Sharp Claws (payoff); Keen Eye (payoff); Big Finish (payoff); First Strike (payoff); Ecosystem (payoff) |
-| aurorix | Warm Heart (support); Gentle Touch (support); Unflappable (support); Light Feet (support); Starry Nights (support) |
-| lanternfin | Warm Heart (support); Gentle Touch (support); Unflappable (support); Light Feet (support); Gentle Glow (support) |
-| hearthshell | Tough Hide (guard); Steady Paws (guard); Unflappable (guard); Quick Healer (guard); Shares Its Warmth (guard) |
-| mudlump | Tough Hide (guard); Steady Paws (guard); Unflappable (guard); Quick Healer (guard); Squishy (guard) |
-| squelch | Warm Heart (support); Gentle Touch (support); Unflappable (support); Light Feet (support); Croaky Cheer (support) |
+| setter | Sharp Claws, Light Feet, Unflappable, Tough Hide |
+| payoff | Sharp Claws, Keen Eye, Big Finish, First Strike |
+| guard | Tough Hide, Broad Back, Unflappable, Second Wind |
+| support | Big Heart, Gentle Touch, Unflappable, Light Feet |
 
 | Talent | Text | Intent |
 | --- | --- | --- |
 | Sharp Claws | Attack +8%. | Plain power for hitters. |
-| Light Feet | +8 dodge. | A little dodge, more with Guards beside (R1). |
+| Light Feet | Dodge +10. | Front-row Setters and Supports; more with dodge auras beside (R1). |
 | Keen Eye | Crit chance +8. | Feeds Big Finish. |
-| Big Finish | A crit on a hit that sets off a {Reaction} deals 60% more. | A Payoff combo talent with Keen Eye and crit gear. |
-| First Strike | Its first hit each fight deals +40%. | Short fights and the dungeon. |
-| Unflappable | It cannot be {Silenced}. | The silence answer on the creature itself. |
-| Tough Hide | Armour +6. | Blocks more small hits (R13). |
-| Steady Paws | Its cover is 15 points stronger. | Guards against sweeps. |
-| Quick Healer | Healing it receives +30%. | Pairs with healer Supports. |
-| Warm Heart | Its {Boost} is 5 points stronger. | A Support that hits harder through others. |
-| Gentle Touch | It heals 3 points more (a Support of any element heals with it). | Makes Ember and Spark Supports small healers. |
-| Lasting Marks | {Seal}: its marks are not shed by the boss. | A Setter that answers shedding bosses without spending its Knack on it. |
-| Proud Wings | Crit chance +5, and a crit on a {Reaction} hit deals 90% more. | Stormray line: the showy crit Payoff. |
-| Stands Close | Its cover is 25 points stronger. | Sproutle line: guards friends by standing close. |
-| Toasty Paws | It heals 4 points more, and its {Boost} 3 points more. | Ashmole line: a warm burrow for friends. |
-| Zoomies | +15 dodge. | Zipmouse line: never sits still. |
-| Fiercely Loyal | +15% on its hits while a living Guard stands beside it. | Cindle line: loyal to its team. |
-| Slow and Unbothered | It cannot be {Silenced}, and Armour +4. | Mistnewt line: takes its time with everything. |
-| Tends the Garden | Creatures beside it take 10% less from {Area hit}s. | Mossback line: the garden on its shell. |
-| Splashes Everywhere | When it dodges, it hits back for 30% of its Attack ({Retaliate}). | Splashet line: playful and splashy. |
-| Lone Hunter | +15% on its hits while no other Payoff stands in its row. | Coralynx: fierce about its territory. |
-| Leads from the Front | Its first hit each fight deals +70%. | Solmane: loves to lead from the front. |
-| Ecosystem | Creatures beside it take 15% less from {Area hit}s, and Armour +4. | Gaiadrake: protects every living thing it carries. |
-| Starry Nights | Its {Boost} is 8 points stronger. | Aurorix: looks after friends from a distance. |
-| Gentle Glow | It heals 5 points more. | Lanternfin: guides friends through the dark. |
-| Shares Its Warmth | At round start it heals the creatures in its {Reach} by 2%. | Hearthshell: happy to share its warmth. |
-| Squishy | Healing it receives +40%. | Mudlump line: soaks up whatever comes. |
-| Croaky Cheer | Its {Boost} is 6 points stronger. | Squelch line: a cheerful croak. |
+| Big Finish | A crit on a hit that sets off a {Reaction} raises its bonus by 60% (inside the cap). | A Payoff combo talent with Keen Eye; the reaction cap (R7) still holds. |
+| First Strike | Its first hit that lands each fight deals +40%. | Short fights, the dungeon and each raid stage. |
+| Unflappable | It cannot be {Silenced}. | The silence answer on the creature itself, for row ends and front rows. |
+| Tough Hide | Armour +6. | Blocks more small hits (R13): Swarm and multi-hit bosses. |
+| Broad Back | Cover +15. | A Guard against sweeps. |
+| Second Wind | Once per fight, when a hit drops it below half its max HP, it heals 20% of max HP. | A Guard that survives one big hit (Crusher, Payoff Hunter). |
+| Big Heart | Its {Boost} +5%. | A Support that hits harder through others. |
+| Gentle Touch | Its heal +3% of max HP (a Support of any element heals with it). | Makes Ember and Spark Supports small healers. |
 

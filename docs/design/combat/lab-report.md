@@ -15,7 +15,7 @@ Mean damage over 24 seeds. Percent is against the classic line on the same card;
 | Chain: Overload leaves Charged for Bloomback | +35% (KO 1.3) | +69% (KO 1.2) | +24% (KO 1.3) | +34% (KO 1.1) | +59% (KO 2.2) | +34% (KO 1.3) | +46% (KO 1.5) | +22% (KO 1.8) | +17% (KO 3.0) | -3% (KO 2.7) | +11% (KO 3.0) | +56% (KO 2.6) | +38% (KO 2.8) | +23% (KO 1.3) |
 | No Setter: Ready the Mark feeds Geyserpup | -22% (KO 0.8) | -38% (KO 0.7) | -8% (KO 0.9) | -22% (KO 0.8) | -25% (KO 1.8) | -29% (KO 0.8) | -21% (KO 1.0) | -23% (KO 1.5) | -13% (KO 3.0) | -26% (KO 1.9) | -30% (KO 3.0) | -23% (KO 0.0) | -40% (KO 2.8) | -23% (KO 0.9) |
 | No Setter: Puddle Maker | -23% (KO 0.8) | -26% (KO 0.7) | -16% (KO 0.9) | -41% (KO 0.8) | -11% (KO 1.8) | -24% (KO 0.8) | -4% (KO 1.0) | -24% (KO 1.5) | -16% (KO 3.0) | -28% (KO 1.9) | -31% (KO 3.0) | -23% (KO 0.0) | -41% (KO 2.8) | -23% (KO 0.9) |
-| All at Once on Feed the Marks | -28% (KO 1.0) | -17% (KO 1.0) | -35% (KO 1.0) | -26% (KO 1.0) | -48% (KO 2.0) | -21% (KO 1.0) | -13% (KO 1.8) | -31% (KO 1.3) | -31% (KO 3.0) | +4% (KO 1.9) | -30% (KO 2.9) | +9% (KO 0.6) | -16% (KO 2.9) | -20% (KO 1.0) |
+| All at Once on two Setters | -4% (KO 1.3) | +20% (KO 1.3) | -22% (KO 1.3) | -11% (KO 1.3) | -35% (KO 2.3) | -7% (KO 1.2) | +0% (KO 1.3) | -10% (KO 1.9) | +11% (KO 3.0) | -41% (KO 2.7) | -23% (KO 3.0) | -11% (KO 3.0) | -42% (KO 3.0) | +4% (KO 1.3) |
 | Twin Strike | -8% (KO 1.0) | -39% (KO 0.9) | +11% (KO 0.9) | -11% (KO 1.0) | +5% (KO 2.0) | -10% (KO 0.8) | -1% (KO 1.0) | -9% (KO 1.2) | -8% (KO 2.7) | -8% (KO 1.9) | -5% (KO 2.8) | -9% (KO 1.0) | -4% (KO 2.5) | -9% (KO 0.9) |
 | Dodge tank: Zigzag beside a Guard | -31% (KO 0.1) | -54% (KO 0.2) | -16% (KO 0.1) | -30% (KO 0.2) | +34% (KO 0.5) | -34% (KO 0.2) | +1% (KO 0.9) | -29% (KO 0.8) | -18% (KO 1.1) | -26% (KO 1.3) | -29% (KO 2.2) | -30% (KO 0.1) | -28% (KO 2.3) | -31% (KO 0.5) |
 | Mire: Mud Wall and Squelch Song | -28% (KO 0.7) | -47% (KO 0.6) | -12% (KO 0.7) | -29% (KO 0.7) | +36% (KO 0.8) | -23% (KO 0.5) | -2% (KO 1.0) | -28% (KO 1.0) | -16% (KO 1.7) | -25% (KO 1.3) | -21% (KO 2.3) | -28% (KO 0.5) | -31% (KO 2.3) | -28% (KO 0.6) |
@@ -23,8 +23,8 @@ Mean damage over 24 seeds. Percent is against the classic line on the same card;
 | Guard's Shadow: Pyrelynx beside Kilnmole | -1% (KO 0.8) | -3% (KO 0.7) | +4% (KO 0.9) | 0% (KO 0.8) | -3% (KO 1.8) | -9% (KO 0.8) | -1% (KO 1.0) | -5% (KO 1.0) | +7% (KO 2.8) | -8% (KO 1.9) | -1% (KO 2.9) | -1% (KO 0.0) | -25% (KO 2.9) | -1% (KO 0.9) |
 | Crown of Embers into a Territorial Coralynx | -2% (KO 0.8) | -5% (KO 0.7) | +3% (KO 0.9) | -1% (KO 0.8) | -5% (KO 1.8) | -10% (KO 0.8) | +2% (KO 1.3) | -3% (KO 1.0) | +11% (KO 2.9) | -12% (KO 2.3) | -6% (KO 3.0) | -3% (KO 0.0) | -24% (KO 2.9) | -2% (KO 0.9) |
 | Starlight across the row | +1% (KO 1.0) | +8% (KO 1.0) | -4% (KO 1.0) | +0% (KO 1.0) | +2% (KO 2.0) | -2% (KO 1.0) | +16% (KO 1.0) | -6% (KO 1.6) | +21% (KO 2.9) | -28% (KO 2.3) | -12% (KO 3.0) | +15% (KO 2.4) | +1% (KO 2.7) | -1% (KO 1.0) |
-| Drizzle across the row | -15% (KO 1.0) | -11% (KO 1.0) | -15% (KO 1.0) | -16% (KO 1.0) | -17% (KO 2.0) | -15% (KO 1.0) | +1% (KO 1.3) | -22% (KO 1.9) | +4% (KO 2.8) | -25% (KO 2.0) | -26% (KO 3.0) | +8% (KO 0.8) | -12% (KO 2.7) | -12% (KO 1.0) |
-| Carry Them: Gaiadrake guards its Setter | -25% (KO 1.0) | -41% (KO 0.9) | -9% (KO 0.9) | -23% (KO 1.0) | -8% (KO 1.0) | -31% (KO 1.0) | -22% (KO 1.5) | -33% (KO 1.0) | -7% (KO 2.1) | -14% (KO 1.8) | -21% (KO 2.2) | -12% (KO 0.2) | -20% (KO 2.5) | -28% (KO 0.9) |
+| Drizzle across the row | -12% (KO 1.0) | -7% (KO 1.0) | -14% (KO 0.9) | -12% (KO 1.0) | -14% (KO 2.0) | -12% (KO 1.0) | +1% (KO 1.3) | -22% (KO 1.7) | +15% (KO 2.3) | -24% (KO 1.8) | -25% (KO 2.9) | +10% (KO 0.2) | -10% (KO 2.8) | -8% (KO 1.0) |
+| Carry Them: Gaiadrake guards its Setter | -10% (KO 0.1) | -19% (KO 0.2) | +7% (KO 0.1) | -10% (KO 0.2) | 0% (KO 1.5) | -15% (KO 0.2) | -18% (KO 1.0) | -9% (KO 0.8) | 0% (KO 2.5) | -14% (KO 1.8) | -4% (KO 2.3) | -10% (KO 0.8) | -22% (KO 2.6) | -11% (KO 0.5) |
 
 ## Do each card's intended answers work? (gauntlet)
 
@@ -33,7 +33,7 @@ An answer works when it beats the classic line on its own card. If it does not, 
 | Card | Answer | vs classic | KO (answer / classic) |
 | --- | --- | ---: | --- |
 | Thick Hide | Tunnel Through beside the Payoff | +20% | 1.2 / 0.9 |
-| Thick Hide | All at Once on Double Mark | +37% | 0.9 / 0.9 |
+| Thick Hide | All at Once on two Setters | +12% | 1.2 / 0.9 |
 | Stone Skin | Twin Strike | +14% | 0.8 / 0.9 |
 | Clean Scales | Steady Mark (Seal) | +10% | 0.8 / 0.8 |
 | Reflective Hide | Circle Round | -4% | 1.9 / 1.9 |
@@ -47,7 +47,7 @@ An answer works when it beats the classic line on its own card. If it does not, 
 | Great Wave | Night Watch | -5% | 2.9 / 2.9 |
 | Great Wave | Keep the Heat In | -12% | 2.7 / 2.9 |
 | Great Wave | Living Shelter | -12% | 2.6 / 2.9 |
-| Swarm | Zoom | -27% | 0.9 / 1.0 |
+| Swarm | Zoom | -25% | 0.9 / 1.0 |
 | Swarm | Hide in Mist | +20% | 0.9 / 1.0 |
 | Crusher | Guard beside the Payoff | +10% | 2.7 / 2.7 |
 | Crusher | Hearth | +1% | 2.6 / 2.7 |
@@ -58,296 +58,165 @@ An answer works when it beats the classic line on its own card. If it does not, 
 
 | Card | Best line | Score | Classic | Classic species, best Knacks |
 | --- | --- | ---: | ---: | ---: |
-| No card | ohmouse (Double Mark), lanternfin (Clear the Air), bloomback (All at Once) | 7591 | -50% | -46% |
-| Thick Hide | ohmouse (Lightning Ears), bloomback (All at Once), voltaro (Double Mark) | 4821 | -53% | -47% |
-| Stone Skin | tempestray (Detonate), sunfawn (Curl Up), bloomback (Leave a Trail) | 4457 | -30% | -22% |
-| Clean Scales | solmane (Crown of Embers), bogwarden (Mud Wall), geyserpup (All at Once) | 5731 | -32% | -27% |
-| Reflective Hide | tempestray (Twin Strike), sunfawn (Curl Up), gaiadrake (no Knack) | 4019 | -60% | -42% |
-| Elusive | zipmouse (Zoom), bogwarden (Mud Wall), bloomback (All at Once) | 4136 | -33% | -29% |
-| Bramble Bind | bloomback (Detonate), sunfawn (Curl Up), tempestray (Twin Strike) | 4373 | -41% | -35% |
-| Wither | voltaro (Double Mark), fogwyrm (Hide in Mist), bloomback (All at Once) | 5811 | -40% | -33% |
-| Payoff Hunter | fogwyrm (no Knack), voltaro (Zigzag), bloomback (Leave a Trail) | 4202 | -50% | -24% |
-| Grudge | tidewing (Circle Round), tempestray (Detonate), fogwyrm (Hide in Mist) | 3813 | -26% | -12% |
-| Great Wave | ohmouse (Double Mark), drizzlewt (Clear the Air), bloomback (All at Once) | 3392 | -41% | -17% |
-| Swarm | pyrelynx (no Knack), ohmouse (Double Mark), bloomback (Leave a Trail) | 4791 | -21% | +4% |
-| Crusher | ohmouse (Double Mark), lanternfin (Lantern Glow), bloomback (All at Once) | 4568 | -51% | -50% |
-| Fizzle | ohmouse (Lightning Ears), sunfawn (no Knack), bloomback (All at Once) | 5874 | -36% | -29% |
+| No card | tempestray (no Knack), drizzlewt (Clear the Air), tidewing (no Knack) | 5350 | -28% | -23% |
+| Thick Hide | voltaro (Zoom), bogwarden (Mud Wall), bloomback (Leave a Trail) | 3352 | -33% | -10% |
+| Stone Skin | tempestray (Detonate), sunfawn (Curl Up), bloomback (Detonate) | 4457 | -30% | -22% |
+| Clean Scales | voltaro (Zoom), kilnmole (Baked Shell), bloomback (Leave a Trail) | 5314 | -27% | -22% |
+| Reflective Hide | tempestray (Detonate), fogwyrm (Hide in Mist), bloomback (no Knack) | 3862 | -58% | -40% |
+| Elusive | voltaro (Double Mark), sunfawn (Curl Up), bloomback (Detonate) | 3911 | -29% | -25% |
+| Bramble Bind | tempestray (no Knack), sunfawn (Curl Up), coralynx (Detonate) | 3725 | -30% | -24% |
+| Wither | hearthshell (Draw Fire), tidewing (Steady Mark), tempestray (Detonate) | 3786 | -8% | +4% |
+| Payoff Hunter | bogwarden (Mud Wall), ohmouse (Lightning Ears), bloomback (no Knack) | 4523 | -53% | -29% |
+| Grudge | voltaro (Zigzag), bloomback (no Knack), fogwyrm (Wide Reach) | 4051 | -30% | -18% |
+| Great Wave | fogwyrm (Thick Fog), sunfawn (Curl Up), tempestray (Twin Strike) | 3392 | -41% | -17% |
+| Swarm | voltaro (no Knack), kilnmole (Baked Shell), bloomback (no Knack) | 5408 | -30% | -8% |
+| Crusher | voltaro (Zigzag), bogwarden (Draw Fire), bloomback (Leave a Trail) | 3614 | -37% | -37% |
+| Fizzle | voltaro (Zoom), fogwyrm (Hide in Mist), bloomback (All at Once) | 5368 | -30% | -22% |
 
 ## Best teams per card: raid (3 rows x 4, four players)
 
 | Card | Best line | Score | Classic |
 | --- | --- | ---: | ---: |
-| No card | 2x ohmouse (Lightning Ears), 2x bogwarden (no Knack), 1x wickat (Steady Mark), 1x kilnmole (Draw Fire), 1x bloomback (Detonate), 1x voltaro (Zigzag), 1x coralynx (Detonate), 1x aurorix (Gather Calm), 1x gaiadrake (Leave a Trail), 1x croakmire (Squelch Song) | 14842 | -21% |
-| Thick Hide | 2x tempestray (Leave a Trail), 1x kilnmole (Baked Shell), 1x sproutle (Primed by Pain), 1x voltaro (Zoom), 1x bloomback (Leave a Trail), 1x geyserpup (no Knack), 1x splashet (Steady Mark), 1x splashet (Lead the Way), 1x drizzlewt (Curl Up), 1x bloomback (no Knack), 1x croakmire (Squelch Song) | 11035 | -37% |
-| Stone Skin | 1x bogwarden (Wide Reach), 1x voltaro (Zoom), 1x mudlump (Wide Reach), 1x ancientshell (Steady Mark), 1x gaiadrake (Carry Them), 1x tidewing (no Knack), 1x pyrelynx (Leave a Trail), 1x croakmire (Squelch Song), 1x tempestray (no Knack), 1x coralynx (Leave a Trail), 1x magmole (Wide Warmth), 1x wickat (no Knack) | 12405 | -19% |
-| Clean Scales | 4x tidewing (Steady Mark), 4x tempestray (Detonate), 2x thornbuck (Wide Reach), 1x bogwarden (Draw Fire), 1x bloomback (Leave a Trail) | 13860 | -14% |
-| Reflective Hide | 2x gaiadrake (Carry Them), 1x gaiadrake (no Knack), 1x thornbuck (Night Watch), 1x solmane (Crown of Embers), 1x tempestray (Leave a Trail), 1x gaiadrake (Leave a Trail), 1x bogwarden (Draw Fire), 1x hearthshell (Hearth), 1x solmane (Lead the Way), 1x ancientshell (Steady Mark), 1x tempestray (Detonate) | 9371 | -45% |
-| Elusive | 1x aurorix (Starlight), 1x voltaro (Zigzag), 1x bogwarden (Mud Wall), 1x solmane (Crown of Embers), 1x voltaro (Zoom), 1x tidewing (Steady Mark), 1x geyserpup (Leave a Trail), 1x gaiadrake (Leave a Trail), 1x tempestray (Detonate), 1x aurorix (no Knack), 1x gaiadrake (Carry Them), 1x mudlump (Mud Wall) | 12690 | -37% |
-| Bramble Bind | 1x fogwyrm (Hide in Mist), 1x ancientshell (Living Shelter), 1x pyrelynx (Detonate), 1x magmole (no Knack), 1x coralynx (no Knack), 1x geyserpup (Puddle Maker), 1x drizzlewt (Curl Up), 1x kilnmole (Draw Fire), 1x gaiadrake (Detonate), 1x voltaro (Zoom), 1x gaiadrake (Leave a Trail), 1x bloomback (Detonate) | 12987 | -18% |
-| Wither | 1x fogwyrm (Wide Reach), 1x mudlump (Mud Wall), 1x voltaro (Zigzag), 1x wickat (Lead the Way), 1x tidewing (no Knack), 1x kilnmole (Keep the Heat In), 1x tempestray (Leave a Trail), 1x drizzlewt (Clear the Air), 1x ashmole (Wide Warmth), 1x tempestray (Detonate), 1x bloomback (All at Once), 1x bloomback (Leave a Trail) | 15095 | -33% |
-| Payoff Hunter | 1x halcyray (Clear the Air), 1x wickat (Double Mark), 1x bogwarden (no Knack), 1x bloomback (All at Once), 1x halcyray (Clear Skies), 1x solmane (Crown of Embers), 1x tidewing (no Knack), 1x voltaro (Double Mark), 1x croakmire (Squelch Song), 1x pyrelynx (Guard's Shadow), 1x bogwarden (Draw Fire), 1x geyserpup (All at Once) | 13011 | -26% |
-| Grudge | 4x tidewing (Steady Mark), 4x thornbuck (Wide Reach), 3x tempestray (Detonate), 1x tempestray (no Knack) | 11314 | -13% |
-| Great Wave | 1x fogwyrm (Thick Fog), 1x sunfawn (Curl Up), 1x ohmouse (Double Mark), 1x ohmouse (Lightning Ears), 1x magmole (Tunnel Through), 1x bloomback (All at Once), 1x croakmire (no Knack), 1x voltaro (Zigzag), 1x magmole (Ready the Mark), 1x coralynx (Leave a Trail), 1x pyrelynx (Guard's Shadow), 1x stormray (Detonate) | 13981 | -22% |
-| Swarm | 1x croakmire (Wide Warmth), 1x geyserpup (Leave a Trail), 1x tempestray (Detonate), 1x magmole (no Knack), 1x magmole (Ready the Mark), 1x wickat (Steady Mark), 1x bloomback (All at Once), 1x ohmouse (Double Mark), 1x kilnmole (Baked Shell), 1x bogwarden (Draw Fire), 1x coralynx (Territorial), 1x thornbuck (Night Watch) | 18232 | -15% |
-| Crusher | 2x ashmole (no Knack), 2x squelch (Squelch Song), 1x voltaro (Zoom), 1x tempestray (Detonate), 1x bloomback (All at Once), 1x mudlump (Wide Reach), 1x sunfawn (Sunbeam), 1x thornbuck (Wide Reach), 1x voltaro (Zigzag), 1x kilnmole (Baked Shell) | 12208 | -22% |
-| Fizzle | 2x tempestray (Leave a Trail), 1x magmole (Ready the Mark), 1x bogwarden (Draw Fire), 1x fogwyrm (Wide Reach), 1x squelch (Squelch Song), 1x bloomback (Leave a Trail), 1x splashet (no Knack), 1x pyrelynx (Detonate), 1x voltaro (Zoom), 1x geyserpup (Puddle Maker), 1x geyserpup (no Knack) | 14424 | -19% |
+| No card | 2x voltaro (Zigzag), 1x hearthshell (Keep the Heat In), 1x ancientshell (no Knack), 1x bloomback (Leave a Trail), 1x zipmouse (Zoom), 1x gaiadrake (no Knack), 1x ohmouse (Lightning Ears), 1x pyrelynx (Guard's Shadow), 1x wickat (Steady Mark), 1x bloomback (no Knack), 1x geyserpup (Leave a Trail) | 16245 | -28% |
+| Thick Hide | 1x pyrelynx (Leave a Trail), 1x fogwyrm (Hide in Mist), 1x bogwarden (Mud Wall), 1x bloomback (Detonate), 1x aurorix (no Knack), 1x tempestray (no Knack), 1x aurorix (Gather Calm), 1x tidewing (Circle Round), 1x zipmouse (Double Mark), 1x voltaro (Zoom), 1x bloomback (All at Once), 1x magmole (no Knack) | 12718 | -46% |
+| Stone Skin | 1x aurorix (no Knack), 1x solmane (Lead the Way), 1x croakmire (no Knack), 1x gaiadrake (Leave a Trail), 1x gaiadrake (no Knack), 1x voltaro (Zoom), 1x coralynx (Leave a Trail), 1x geyserpup (Puddle Maker), 1x sproutle (no Knack), 1x voltaro (Zigzag), 1x bogwarden (Mud Wall), 1x tempestray (Leave a Trail) | 13632 | -26% |
+| Clean Scales | 2x solmane (Steady Mark), 1x squelch (Ready the Mark), 1x croakmire (Squelch Song), 1x tempestray (no Knack), 1x voltaro (no Knack), 1x wickat (Steady Mark), 1x bloomback (no Knack), 1x tidewing (Steady Mark), 1x geyserpup (All at Once), 1x sunfawn (Curl Up), 1x kilnmole (Draw Fire) | 15548 | -24% |
+| Reflective Hide | 2x bloomback (Leave a Trail), 1x tidewing (no Knack), 1x drizzlewt (Curl Up), 1x bogwarden (no Knack), 1x geyserpup (no Knack), 1x pyrelynx (Leave a Trail), 1x ashmole (no Knack), 1x bloomback (All at Once), 1x tempestray (no Knack), 1x squelch (Squelch Song), 1x halcyray (Gather Calm) | 10896 | -52% |
+| Elusive | 4x tidewing (Circle Round), 3x tempestray (Twin Strike), 1x kilnmole (Keep the Heat In), 1x kilnmole (Baked Shell), 1x croakmire (Squelch Song), 1x wickat (no Knack), 1x croakmire (no Knack) | 13434 | -40% |
+| Bramble Bind | 2x halcyray (Clear the Air), 1x bogwarden (Mud Wall), 1x solmane (Crown of Embers), 1x voltaro (Double Mark), 1x aurorix (Gather Calm), 1x bloomback (no Knack), 1x tempestray (Leave a Trail), 1x pyrelynx (Leave a Trail), 1x geyserpup (Leave a Trail), 1x geyserpup (no Knack), 1x magmole (Ready the Mark) | 13643 | -22% |
+| Wither | 1x squelch (Squelch Song), 1x coralynx (Detonate), 1x bloomback (Detonate), 1x solmane (Crown of Embers), 1x tempestray (no Knack), 1x halcyray (Clear the Air), 1x voltaro (Zigzag), 1x fogwyrm (Wide Reach), 1x kilnmole (Draw Fire), 1x geyserpup (no Knack), 1x wickat (Steady Mark), 1x geyserpup (Leave a Trail) | 13724 | -26% |
+| Payoff Hunter | 2x sunfawn (Curl Up), 1x geyserpup (Puddle Maker), 1x kilnmole (no Knack), 1x ancientshell (Steady Mark), 1x bloomback (Leave a Trail), 1x solmane (Crown of Embers), 1x pyrelynx (Leave a Trail), 1x geyserpup (All at Once), 1x croakmire (Squelch Song), 1x tempestray (Leave a Trail), 1x voltaro (Double Mark) | 16426 | -41% |
+| Grudge | 4x tidewing (Steady Mark), 4x thornbuck (Wide Reach), 3x tempestray (Detonate), 1x tempestray (no Knack) | 11397 | -13% |
+| Great Wave | 2x tempestray (Detonate), 1x kilnmole (no Knack), 1x wickat (Steady Mark), 1x tidewing (no Knack), 1x tempestray (Leave a Trail), 1x tidewing (Steady Mark), 1x geyserpup (no Knack), 1x bogwarden (Draw Fire), 1x croakmire (no Knack), 1x croakmire (Squelch Song), 1x bloomback (no Knack) | 15287 | -29% |
+| Swarm | 2x zipmouse (Double Mark), 2x geyserpup (Leave a Trail), 1x hearthshell (Draw Fire), 1x stormray (Leave a Trail), 1x tempestray (no Knack), 1x solmane (Crown of Embers), 1x geyserpup (Puddle Maker), 1x bloomback (All at Once), 1x squelch (Squelch Song), 1x magmole (Ready the Mark) | 22636 | -31% |
+| Crusher | 1x tidewing (Double Mark), 1x gaiadrake (Carry Them), 1x coralynx (Detonate), 1x solmane (Crown of Embers), 1x fogwyrm (Hide in Mist), 1x bloomback (All at Once), 1x bogwarden (Draw Fire), 1x sunfawn (Curl Up), 1x squelch (Squelch Song), 1x tempestray (Leave a Trail), 1x coralynx (Territorial), 1x bloomback (Leave a Trail) | 14524 | -35% |
+| Fizzle | 2x tidewing (Steady Mark), 1x thornbuck (no Knack), 1x lanternfin (Lantern Glow), 1x voltaro (Zigzag), 1x bogwarden (Draw Fire), 1x gaiadrake (Detonate), 1x tempestray (Leave a Trail), 1x magmole (Tunnel Through), 1x aurorix (Gather Calm), 1x tempestray (Twin Strike), 1x gaiadrake (Carry Them) | 15474 | -25% |
 
-**The classic line is more than 10% behind the best gauntlet line on 14 of 14 cards; the classic species with their best Knacks and order on 13 of 14.** (Target: at least half.)
+**The classic line is more than 10% behind the best gauntlet line on 13 of 14 cards; the classic species with their best Knacks and order on 11 of 14.** (Target: at least half.)
 
 ## Diversity of the best gauntlet lines
 
-15 different forms appear across the 14 best lines. Most common: bloomback (11), ohmouse (6), tempestray (4), sunfawn (4), voltaro (3). A form in nearly every best line is a new "top three" (P-11).
+12 different forms appear across the 14 best lines. Most common: bloomback (10), voltaro (7), tempestray (6), sunfawn (4), fogwyrm (4). A form in nearly every best line is a new "top three" (P-11).
 
-## Knack usage in the top 5 teams of every search
+## Knack usage in the top 5 teams of every search (per creature)
 
-Out of 140 top teams (14 cards, gauntlet and raid, top 5 each). Leave a Trail counts only when another Payoff in the line can cash its mark. Never used: rework candidates. Used almost everywhere: needs a counter card (P-10).
+1050 creatures in the top 5 lines of every search (14 cards, gauntlet and raid). Ratio is the Knack's share of those picks over its share of the pool of every form and Knack: 1.0 is what random picks would give, above 2 stands out, below 0.3 is rarely chosen. Leave a Trail counts only when another Payoff in the line can cash its mark. Never chosen: rework candidates. Far above the rest: needs a counter card (P-10).
 
-| Knack | Forms | Top teams |
-| --- | --- | ---: |
-| no Knack | any | 85 |
-| Detonate | stormray, tempestray, cindle, pyrelynx, bloomback, coralynx, gaiadrake | 68 |
-| All at Once | geyserpup, bloomback | 56 |
-| Leave a Trail | geyserpup, stormray, tempestray, cindle, pyrelynx, bloomback, coralynx, gaiadrake | 53 |
-| Steady Mark | splashet, tidewing, wickat, mossback, ancientshell, solmane | 41 |
-| Double Mark | zipmouse, voltaro, ohmouse, wickat | 39 |
-| Zoom | zipmouse, voltaro | 34 |
-| Wide Reach | sproutle, thornbuck, mistnewt, fogwyrm, mudlump, bogwarden | 33 |
-| Draw Fire | kilnmole, hearthshell, bogwarden | 33 |
-| Zigzag | voltaro | 32 |
-| Curl Up | sunfawn, drizzlewt | 30 |
-| Squelch Song | squelch, croakmire | 27 |
-| Lightning Ears | ohmouse | 23 |
-| Lead the Way | splashet, wickat, solmane | 18 |
-| Ready the Mark | sunfawn, ashmole, magmole, squelch, croakmire | 16 |
-| Hide in Mist | mistnewt, fogwyrm | 16 |
-| Carry Them | gaiadrake | 16 |
-| Clear the Air | halcyray, drizzlewt, lanternfin | 15 |
-| Crown of Embers | solmane | 14 |
-| Twin Strike | tempestray | 11 |
-| Mud Wall | mudlump, bogwarden | 11 |
-| Night Watch | thornbuck | 10 |
-| Wide Warmth | ashmole, magmole, croakmire | 10 |
-| Baked Shell | kilnmole | 10 |
-| Territorial | coralynx | 10 |
-| Puddle Maker | geyserpup | 9 |
-| Gather Calm | halcyray, aurorix | 9 |
-| Tunnel Through | magmole | 9 |
-| Starlight | aurorix | 8 |
-| Primed by Pain | sproutle, thornbuck | 7 |
-| Keep the Heat In | kilnmole, hearthshell | 7 |
-| Feed the Marks | tidewing, mossback, ancientshell | 6 |
-| Thick Fog | fogwyrm | 6 |
-| Hearth | hearthshell | 5 |
-| Circle Round | tidewing | 4 |
-| Guard's Shadow | pyrelynx | 4 |
-| Living Shelter | ancientshell | 4 |
-| Lantern Glow | lanternfin | 4 |
-| Clear Skies | halcyray, aurorix | 2 |
-| Sunbeam | sunfawn, lanternfin | 2 |
-| Catch the Bolts | ohmouse | 2 |
-| Drizzle | drizzlewt | 1 |
+| Knack | Forms | Picks | Ratio |
+| --- | --- | ---: | ---: |
+| Zigzag | voltaro | 45 | 5.4 |
+| Circle Round | tidewing | 25 | 3.0 |
+| Twin Strike | tempestray | 20 | 2.4 |
+| Crown of Embers | solmane | 20 | 2.4 |
+| Squelch Song | squelch, croakmire | 38 | 2.3 |
+| All at Once | geyserpup, bloomback | 37 | 2.2 |
+| Zoom | zipmouse, voltaro | 32 | 1.9 |
+| Curl Up | sunfawn, drizzlewt | 31 | 1.8 |
+| Draw Fire | kilnmole, hearthshell, bogwarden | 43 | 1.7 |
+| Steady Mark | splashet, tidewing, wickat, mossback, ancientshell, solmane | 83 | 1.6 |
+| Leave a Trail | geyserpup, stormray, tempestray, cindle, pyrelynx, bloomback, coralynx, gaiadrake | 102 | 1.5 |
+| Baked Shell | kilnmole | 12 | 1.4 |
+| Lantern Glow | lanternfin | 12 | 1.4 |
+| Detonate | stormray, tempestray, cindle, pyrelynx, bloomback, coralynx, gaiadrake | 83 | 1.4 |
+| Mud Wall | mudlump, bogwarden | 23 | 1.4 |
+| Thick Fog | fogwyrm | 11 | 1.3 |
+| Puddle Maker | geyserpup | 10 | 1.2 |
+| Lightning Ears | ohmouse | 8 | 1.0 |
+| Wide Reach | sproutle, thornbuck, mistnewt, fogwyrm, mudlump, bogwarden | 46 | 0.9 |
+| Gather Calm | halcyray, aurorix | 14 | 0.8 |
+| Clear the Air | halcyray, drizzlewt, lanternfin | 20 | 0.8 |
+| Double Mark | tidewing, zipmouse, voltaro, wickat | 24 | 0.7 |
+| Territorial | coralynx | 6 | 0.7 |
+| Carry Them | gaiadrake | 6 | 0.7 |
+| no Knack | any | 198 | 0.7 |
+| Hide in Mist | mistnewt, fogwyrm | 11 | 0.7 |
+| Ready the Mark | sunfawn, ashmole, magmole, squelch, croakmire | 25 | 0.6 |
+| Tunnel Through | magmole | 5 | 0.6 |
+| Guard's Shadow | pyrelynx | 5 | 0.6 |
+| Keep the Heat In | kilnmole, hearthshell | 8 | 0.5 |
+| Wide Warmth | ashmole, magmole, croakmire | 10 | 0.4 |
+| Lead the Way | splashet, wickat, solmane | 7 | 0.3 |
+| Catch the Bolts | ohmouse | 2 | 0.2 |
+| Drizzle | drizzlewt | 2 | 0.2 |
+| Living Shelter | ancientshell | 1 | 0.1 |
+| Hearth | hearthshell | 1 | 0.1 |
+| Sunbeam | sunfawn, lanternfin | 1 | 0.1 |
+| Feed the Marks | mossback, ancientshell | 0 | 0.0 |
+| Clear Skies | halcyray, aurorix | 0 | 0.0 |
+| Primed by Pain | sproutle, thornbuck | 0 | 0.0 |
+| Night Watch | thornbuck | 0 | 0.0 |
+| Starlight | aurorix | 0 | 0.0 |
 
 ## A casual roster (the North Star metric)
 
-Twelve random forms at random levels (8 to 25, stage 1 forms at their cap), with any of their Knacks. For each card: the best gauntlet line from that roster against "the three highest levels with no Knack" (what a player who never opens Knacks brings). Beyond top 3 is how many of the best line are not among the three highest levels.
+Twelve random forms at random levels (8 to 25, stage 1 forms at their cap), with any of their Knacks. For each card: the best gauntlet line from that roster, the best line from the same roster with no Knacks (what a player who never opens Knacks could bring, P-14), and the three highest levels with no Knack. Scores are absolute. Beyond top 3 is how many of the best line are not among the three highest levels.
 
-| Roster | Card | Best line | vs top 3 by level | Beyond top 3 |
-| --- | --- | --- | ---: | ---: |
-| 1 | plain | ohmouse (Double Mark) L22, drizzlewt (Curl Up) L12, bloomback (All at Once) L12 | +499% | 2 |
-| 1 | thick-hide | ohmouse (Double Mark) L22, drizzlewt (Curl Up) L12, bloomback (All at Once) L12 | +45850% | 2 |
-| 1 | payoff-hunter | ohmouse (Lightning Ears) L22, drizzlewt (Curl Up) L12, bloomback (no Knack) L12 | +450% | 2 |
-| 1 | elusive | ohmouse (Double Mark) L22, drizzlewt (Clear the Air) L12, bloomback (All at Once) L12 | +479% | 2 |
-| 2 | plain | sunfawn (no Knack) L9, ohmouse (Double Mark) L25, bloomback (All at Once) L18 | +155% | 1 |
-| 2 | thick-hide | ohmouse (Double Mark) L25, sunfawn (Curl Up) L9, bloomback (All at Once) L18 | +792% | 1 |
-| 2 | payoff-hunter | ohmouse (Double Mark) L25, sunfawn (no Knack) L9, bloomback (All at Once) L18 | +454% | 1 |
-| 2 | elusive | ohmouse (Double Mark) L25, bloomback (All at Once) L18, croakmire (Squelch Song) L10 | +205% | 1 |
-| 3 | plain | gaiadrake (no Knack) L24, drizzlewt (Clear the Air) L10, zipmouse (no Knack) L15 | +118% | 2 |
-| 3 | thick-hide | magmole (Tunnel Through) L22, gaiadrake (Detonate) L24, ohmouse (Double Mark) L9 | +552% | 1 |
-| 3 | payoff-hunter | gaiadrake (no Knack) L24, lanternfin (Clear the Air) L13, hearthshell (Draw Fire) L16 | +187% | 1 |
-| 3 | elusive | zipmouse (Zoom) L15, gaiadrake (Leave a Trail) L24, hearthshell (Draw Fire) L16 | +95% | 1 |
-| 4 | plain | halcyray (Gather Calm) L22, bloomback (All at Once) L23, ohmouse (Double Mark) L10 | +157% | 2 |
-| 4 | thick-hide | ohmouse (Double Mark) L10, sunfawn (Curl Up) L14, bloomback (All at Once) L23 | +508% | 2 |
-| 4 | payoff-hunter | ohmouse (Double Mark) L10, drizzlewt (Clear the Air) L24, bloomback (All at Once) L23 | +140% | 1 |
-| 4 | elusive | ohmouse (Double Mark) L10, sunfawn (Curl Up) L14, bloomback (All at Once) L23 | +237% | 2 |
+| Roster | Card | Best line | Score | Best, no Knacks | Top 3 by level | Beyond top 3 |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| 1 | plain | ohmouse (Lightning Ears) L22, drizzlewt (Curl Up) L12, bloomback (All at Once) L12 | 3165 | 1951 | 847 | 2 |
+| 1 | thick-hide | ohmouse (Lightning Ears) L22, drizzlewt (Curl Up) L12, bloomback (no Knack) L12 | 1768 | 530 | 9 | 2 |
+| 1 | payoff-hunter | ohmouse (Lightning Ears) L22, drizzlewt (Curl Up) L12, bloomback (Leave a Trail) L12 | 2785 | 1574 | 572 | 2 |
+| 1 | elusive | ohmouse (Lightning Ears) L22, kilnmole (Baked Shell) L17, bloomback (Leave a Trail) L12 | 1908 | 1314 | 588 | 1 |
+| 2 | plain | voltaro (Zoom) L13, ohmouse (no Knack) L25, bloomback (Leave a Trail) L18 | 3691 | 3281 | 2142 | 1 |
+| 2 | thick-hide | voltaro (Double Mark) L13, ohmouse (Catch the Bolts) L25, bloomback (All at Once) L18 | 2415 | 1893 | 586 | 1 |
+| 2 | payoff-hunter | ohmouse (Lightning Ears) L25, sunfawn (Curl Up) L9, bloomback (no Knack) L18 | 3523 | 2166 | 946 | 1 |
+| 2 | elusive | voltaro (Zoom) L13, ohmouse (Catch the Bolts) L25, bloomback (Leave a Trail) L18 | 2548 | 2305 | 1409 | 1 |
+| 3 | plain | gaiadrake (Leave a Trail) L24, lanternfin (Clear the Air) L13, voltaro (no Knack) L8 | 3383 | 2548 | 1425 | 2 |
+| 3 | thick-hide | gaiadrake (Detonate) L24, drizzlewt (Clear the Air) L10, zipmouse (Double Mark) L15 | 2096 | 1540 | 339 | 2 |
+| 3 | payoff-hunter | gaiadrake (Detonate) L24, lanternfin (Clear the Air) L13, hearthshell (Draw Fire) L16 | 2418 | 1377 | 843 | 1 |
+| 3 | elusive | voltaro (Zigzag) L8, hearthshell (Draw Fire) L16, gaiadrake (Detonate) L24 | 2121 | 1856 | 1013 | 1 |
+| 4 | plain | bloomback (All at Once) L23, sunfawn (Curl Up) L14, zipmouse (Double Mark) L15 | 4745 | 3506 | 2288 | 2 |
+| 4 | thick-hide | bloomback (no Knack) L23, lanternfin (Clear the Air) L18, zipmouse (Zoom) L15 | 2766 | 2376 | 1034 | 2 |
+| 4 | payoff-hunter | ancientshell (Living Shelter) L23, drizzlewt (Curl Up) L24, tempestray (no Knack) L23 | 3332 | 2129 | 1407 | 1 |
+| 4 | elusive | halcyray (Clear Skies) L22, bloomback (no Knack) L23, zipmouse (Zoom) L15 | 2875 | 2378 | 1571 | 2 |
 
 **On average 1.5 of the 3 creatures in the best line are outside the player's top three by level.**
 
 ## Talents: what one talent adds (gauntlet)
 
-Each talent on one form in a fitting team (the form in the middle slot with no Knack, its partners with their first Knack): its score with the talent against the same team without it, on every card (24 seeds each). Mean is over all cards; Best is the card where it helps most. A talent near 0% everywhere does nothing in that team (some need a partner, such as a healer for Quick Healer); one far above the rest is a must-roll.
+Each role talent on every form of that role, in a fitting team with the form in its role's natural slot (a Setter or Guard in front, a Payoff after its Setter, a Support in the middle), no Knack on the measured form and the partners' first Knacks. Damage and knockouts with the talent against the same team without it, on every card (24 seeds each), averaged over the role's forms. Best card is where it helps most. Near 0% on damage and KO is a dud; far above the rest is a must-roll.
 
-| Line | Talent | Form | Mean | Best card |
-| --- | --- | --- | ---: | --- |
-| splashet | Sharp Claws | splashet | +1.2% | Reflective Hide +2.3% |
-| splashet | Sharp Claws | tidewing | +2.2% | Reflective Hide +3.5% |
-| splashet | Sharp Claws | geyserpup | +5.2% | Thick Hide +9.9% |
-| splashet | Light Feet | splashet | +0.4% | Reflective Hide +2.2% |
-| splashet | Light Feet | tidewing | +0.9% | Great Wave +4.0% |
-| splashet | Unflappable | splashet | +0.0% | none |
-| splashet | Unflappable | tidewing | +0.0% | none |
-| splashet | Lasting Marks | splashet | +3.7% | Clean Scales +51.3% |
-| splashet | Lasting Marks | tidewing | +3.0% | Clean Scales +42.3% |
-| splashet | Keen Eye | geyserpup | +2.6% | Thick Hide +5.6% |
-| splashet | Big Finish | geyserpup | +3.0% | Thick Hide +5.9% |
-| splashet | First Strike | geyserpup | +2.8% | Reflective Hide +4.4% |
-| splashet | Splashes Everywhere | splashet | +0.0% | none |
-| splashet | Splashes Everywhere | tidewing | +0.1% | Swarm +0.5% |
-| splashet | Splashes Everywhere | geyserpup | +0.1% | Swarm +0.7% |
-| stormray | Sharp Claws | stormray | +4.8% | Thick Hide +11.5% |
-| stormray | Sharp Claws | tempestray | +5.6% | Thick Hide +9.4% |
-| stormray | Keen Eye | stormray | +2.6% | Thick Hide +6.8% |
-| stormray | Keen Eye | tempestray | +2.8% | Thick Hide +5.3% |
-| stormray | Big Finish | stormray | +2.6% | Thick Hide +7.1% |
-| stormray | Big Finish | tempestray | +3.1% | Thick Hide +5.6% |
-| stormray | First Strike | stormray | +3.0% | Thick Hide +5.5% |
-| stormray | First Strike | tempestray | +3.5% | Reflective Hide +6.2% |
-| stormray | Warm Heart | halcyray | +4.1% | Thick Hide +7.2% |
-| stormray | Gentle Touch | halcyray | +6.1% | Swarm +30.6% |
-| stormray | Unflappable | halcyray | +0.2% | Bramble Bind +2.5% |
-| stormray | Light Feet | halcyray | +1.9% | Swarm +7.6% |
-| stormray | Proud Wings | stormray | +9.3% | Thick Hide +26.2% |
-| stormray | Proud Wings | tempestray | +10.7% | Thick Hide +20.7% |
-| stormray | Proud Wings | halcyray | +0.7% | Grudge +2.3% |
-| sproutle | Tough Hide | sproutle | +8.0% | Swarm +17.2% |
-| sproutle | Tough Hide | thornbuck | +2.4% | Swarm +20.1% |
-| sproutle | Steady Paws | sproutle | +0.0% | none |
-| sproutle | Steady Paws | thornbuck | +0.7% | Great Wave +10.2% |
-| sproutle | Unflappable | sproutle | +0.0% | none |
-| sproutle | Unflappable | thornbuck | +0.0% | none |
-| sproutle | Unflappable | sunfawn | +0.1% | Bramble Bind +1.5% |
-| sproutle | Quick Healer | sproutle | +0.0% | none |
-| sproutle | Quick Healer | thornbuck | +0.0% | none |
-| sproutle | Warm Heart | sunfawn | +4.2% | Thick Hide +7.2% |
-| sproutle | Gentle Touch | sunfawn | +8.3% | Payoff Hunter +26.3% |
-| sproutle | Light Feet | sunfawn | +1.5% | Payoff Hunter +6.4% |
-| sproutle | Stands Close | sproutle | +0.1% | Great Wave +1.2% |
-| sproutle | Stands Close | thornbuck | +1.6% | Great Wave +22.5% |
-| sproutle | Stands Close | sunfawn | +0.0% | none |
-| ashmole | Warm Heart | ashmole | +3.9% | Thick Hide +6.1% |
-| ashmole | Warm Heart | magmole | +3.9% | Thick Hide +6.4% |
-| ashmole | Gentle Touch | ashmole | +3.9% | Grudge +34.8% |
-| ashmole | Gentle Touch | magmole | +6.7% | Grudge +34.4% |
-| ashmole | Unflappable | ashmole | +0.2% | Bramble Bind +2.5% |
-| ashmole | Unflappable | magmole | +0.3% | Bramble Bind +3.9% |
-| ashmole | Unflappable | kilnmole | +0.0% | none |
-| ashmole | Light Feet | ashmole | +1.5% | Stone Skin +3.9% |
-| ashmole | Light Feet | magmole | +3.4% | Swarm +9.3% |
-| ashmole | Tough Hide | kilnmole | +2.5% | Swarm +20.1% |
-| ashmole | Steady Paws | kilnmole | +0.7% | Great Wave +10.2% |
-| ashmole | Quick Healer | kilnmole | +0.0% | none |
-| ashmole | Toasty Paws | ashmole | +8.6% | Grudge +40.1% |
-| ashmole | Toasty Paws | magmole | +11.1% | Swarm +49.1% |
-| ashmole | Toasty Paws | kilnmole | +0.0% | none |
-| zipmouse | Sharp Claws | zipmouse | +1.1% | Reflective Hide +2.9% |
-| zipmouse | Sharp Claws | voltaro | +2.1% | Reflective Hide +4.1% |
-| zipmouse | Light Feet | zipmouse | +0.5% | Reflective Hide +3.1% |
-| zipmouse | Light Feet | voltaro | +0.9% | Great Wave +4.0% |
-| zipmouse | Unflappable | zipmouse | +0.0% | none |
-| zipmouse | Unflappable | voltaro | +0.0% | none |
-| zipmouse | Unflappable | ohmouse | +0.0% | none |
-| zipmouse | Lasting Marks | zipmouse | +5.6% | Clean Scales +78.7% |
-| zipmouse | Lasting Marks | voltaro | +4.6% | Clean Scales +64.8% |
-| zipmouse | Tough Hide | ohmouse | +2.5% | Swarm +20.1% |
-| zipmouse | Steady Paws | ohmouse | +0.7% | Great Wave +10.2% |
-| zipmouse | Quick Healer | ohmouse | +0.0% | none |
-| zipmouse | Zoomies | zipmouse | +1.0% | Reflective Hide +7.4% |
-| zipmouse | Zoomies | voltaro | +1.8% | Reflective Hide +8.3% |
-| zipmouse | Zoomies | ohmouse | +0.8% | Great Wave +9.1% |
-| cindle | Sharp Claws | cindle | +4.2% | Thick Hide +10.8% |
-| cindle | Sharp Claws | pyrelynx | +4.9% | Thick Hide +9.8% |
-| cindle | Sharp Claws | wickat | +2.7% | Thick Hide +4.4% |
-| cindle | Keen Eye | cindle | +2.3% | Thick Hide +6.5% |
-| cindle | Keen Eye | pyrelynx | +2.4% | Thick Hide +5.6% |
-| cindle | Big Finish | cindle | +2.2% | Thick Hide +6.8% |
-| cindle | Big Finish | pyrelynx | +2.6% | Thick Hide +5.8% |
-| cindle | First Strike | cindle | +2.7% | Thick Hide +5.4% |
-| cindle | First Strike | pyrelynx | +3.0% | Thick Hide +4.7% |
-| cindle | Light Feet | wickat | +1.2% | Payoff Hunter +4.9% |
-| cindle | Unflappable | wickat | +0.0% | none |
-| cindle | Lasting Marks | wickat | +3.2% | Clean Scales +44.9% |
-| cindle | Fiercely Loyal | cindle | +7.0% | Thick Hide +19.3% |
-| cindle | Fiercely Loyal | pyrelynx | +7.4% | Thick Hide +16.7% |
-| cindle | Fiercely Loyal | wickat | +4.3% | Thick Hide +7.6% |
-| mistnewt | Tough Hide | mistnewt | +8.5% | Swarm +18.3% |
-| mistnewt | Tough Hide | fogwyrm | +2.6% | Swarm +20.6% |
-| mistnewt | Steady Paws | mistnewt | +0.0% | none |
-| mistnewt | Steady Paws | fogwyrm | +0.7% | Great Wave +10.0% |
-| mistnewt | Unflappable | mistnewt | +0.0% | none |
-| mistnewt | Unflappable | fogwyrm | +0.0% | none |
-| mistnewt | Unflappable | drizzlewt | +0.3% | Bramble Bind +4.7% |
-| mistnewt | Quick Healer | mistnewt | +0.0% | none |
-| mistnewt | Quick Healer | fogwyrm | +0.0% | none |
-| mistnewt | Warm Heart | drizzlewt | +4.2% | Thick Hide +7.2% |
-| mistnewt | Gentle Touch | drizzlewt | +12.9% | Payoff Hunter +23.7% |
-| mistnewt | Light Feet | drizzlewt | +2.2% | Wither +5.9% |
-| mistnewt | Slow and Unbothered | mistnewt | +7.7% | Elusive +15.7% |
-| mistnewt | Slow and Unbothered | fogwyrm | +2.0% | Swarm +19.7% |
-| mistnewt | Slow and Unbothered | drizzlewt | +1.1% | Grudge +8.0% |
-| mossback | Sharp Claws | mossback | +1.9% | Reflective Hide +3.3% |
-| mossback | Sharp Claws | ancientshell | +3.2% | Thick Hide +5.5% |
-| mossback | Sharp Claws | bloomback | +5.4% | Thick Hide +9.4% |
-| mossback | Light Feet | mossback | +0.5% | Reflective Hide +3.1% |
-| mossback | Light Feet | ancientshell | +1.6% | Great Wave +8.0% |
-| mossback | Unflappable | mossback | +0.0% | none |
-| mossback | Unflappable | ancientshell | +0.0% | none |
-| mossback | Lasting Marks | mossback | +3.1% | Clean Scales +43.8% |
-| mossback | Lasting Marks | ancientshell | +2.4% | Clean Scales +34.0% |
-| mossback | Keen Eye | bloomback | +2.8% | Thick Hide +5.6% |
-| mossback | Big Finish | bloomback | +3.0% | Crusher +5.6% |
-| mossback | First Strike | bloomback | +3.3% | Reflective Hide +5.8% |
-| mossback | Tends the Garden | mossback | +0.0% | none |
-| mossback | Tends the Garden | ancientshell | +0.0% | none |
-| mossback | Tends the Garden | bloomback | +1.1% | Payoff Hunter +9.6% |
-| coralynx | Sharp Claws | coralynx | +4.9% | Thick Hide +9.6% |
-| coralynx | Keen Eye | coralynx | +2.6% | Thick Hide +5.7% |
-| coralynx | Big Finish | coralynx | +2.9% | Thick Hide +6.0% |
-| coralynx | First Strike | coralynx | +2.8% | Reflective Hide +4.3% |
-| coralynx | Lone Hunter | coralynx | +7.8% | Thick Hide +15.7% |
-| solmane | Sharp Claws | solmane | +3.0% | Thick Hide +4.8% |
-| solmane | Light Feet | solmane | +1.6% | Reflective Hide +6.5% |
-| solmane | Unflappable | solmane | +0.0% | none |
-| solmane | Lasting Marks | solmane | +3.1% | Clean Scales +43.9% |
-| solmane | Leads from the Front | solmane | +2.9% | Thick Hide +4.0% |
-| gaiadrake | Sharp Claws | gaiadrake | +5.1% | Thick Hide +10.0% |
-| gaiadrake | Keen Eye | gaiadrake | +2.8% | Thick Hide +5.9% |
-| gaiadrake | Big Finish | gaiadrake | +2.9% | Thick Hide +5.8% |
-| gaiadrake | First Strike | gaiadrake | +3.1% | Reflective Hide +4.9% |
-| gaiadrake | Ecosystem | gaiadrake | +1.7% | Payoff Hunter +18.0% |
-| aurorix | Warm Heart | aurorix | +3.9% | Thick Hide +6.7% |
-| aurorix | Gentle Touch | aurorix | +6.0% | Swarm +31.2% |
-| aurorix | Unflappable | aurorix | +0.2% | Bramble Bind +2.3% |
-| aurorix | Light Feet | aurorix | +2.1% | Swarm +7.6% |
-| aurorix | Starry Nights | aurorix | +5.7% | Thick Hide +9.8% |
-| lanternfin | Warm Heart | lanternfin | +3.9% | Thick Hide +6.7% |
-| lanternfin | Gentle Touch | lanternfin | +11.7% | Payoff Hunter +23.6% |
-| lanternfin | Unflappable | lanternfin | +0.3% | Bramble Bind +3.8% |
-| lanternfin | Light Feet | lanternfin | +2.3% | Swarm +6.8% |
-| lanternfin | Gentle Glow | lanternfin | +18.5% | Payoff Hunter +55.1% |
-| hearthshell | Tough Hide | hearthshell | +4.2% | Swarm +18.1% |
-| hearthshell | Steady Paws | hearthshell | +0.7% | Great Wave +10.2% |
-| hearthshell | Unflappable | hearthshell | +0.0% | none |
-| hearthshell | Quick Healer | hearthshell | +0.0% | none |
-| hearthshell | Shares Its Warmth | hearthshell | +0.6% | Great Wave +11.8% |
-| mudlump | Tough Hide | mudlump | +1.1% | Swarm +13.7% |
-| mudlump | Tough Hide | bogwarden | +4.9% | Swarm +19.1% |
-| mudlump | Steady Paws | mudlump | +0.0% | none |
-| mudlump | Steady Paws | bogwarden | +0.7% | Great Wave +10.2% |
-| mudlump | Unflappable | mudlump | +0.0% | none |
-| mudlump | Unflappable | bogwarden | +0.0% | none |
-| mudlump | Quick Healer | mudlump | +0.0% | none |
-| mudlump | Quick Healer | bogwarden | +0.0% | none |
-| mudlump | Squishy | mudlump | +0.0% | none |
-| mudlump | Squishy | bogwarden | +0.0% | none |
-| squelch | Warm Heart | squelch | +4.3% | Thick Hide +6.8% |
-| squelch | Warm Heart | croakmire | +4.2% | Thick Hide +7.2% |
-| squelch | Gentle Touch | squelch | +4.2% | Grudge +33.4% |
-| squelch | Gentle Touch | croakmire | +5.9% | Grudge +32.8% |
-| squelch | Unflappable | squelch | +0.1% | Bramble Bind +1.5% |
-| squelch | Unflappable | croakmire | +0.2% | Bramble Bind +2.5% |
-| squelch | Light Feet | squelch | +1.1% | Swarm +3.7% |
-| squelch | Light Feet | croakmire | +1.3% | Swarm +6.1% |
-| squelch | Croaky Cheer | squelch | +4.7% | Thick Hide +7.4% |
-| squelch | Croaky Cheer | croakmire | +4.6% | Thick Hide +7.9% |
+| Role | Talent | Damage | KO per fight | Best card |
+| --- | --- | ---: | ---: | --- |
+| setter | Sharp Claws | +1.9% | +0.00 | Reflective Hide +3.5% |
+| setter | Light Feet | +1.7% | -0.17 | Payoff Hunter +5.9% |
+| setter | Unflappable | +1.7% | +0.00 | Bramble Bind +23.8% |
+| setter | Tough Hide | +0.2% | -0.00 | Great Wave +2.1% |
+| payoff | Sharp Claws | +5.0% | +0.00 | Thick Hide +9.9% |
+| payoff | Keen Eye | +2.6% | -0.00 | Thick Hide +5.8% |
+| payoff | Big Finish | +1.4% | +0.00 | Thick Hide +3.0% |
+| payoff | First Strike | +3.3% | +0.00 | Thick Hide +5.0% |
+| guard | Tough Hide | +1.0% | -0.09 | Payoff Hunter +3.1% |
+| guard | Broad Back | +0.1% | -0.01 | Payoff Hunter +0.9% |
+| guard | Unflappable | +0.0% | +0.00 | none |
+| guard | Second Wind | +2.0% | -0.22 | Payoff Hunter +6.3% |
+| support | Big Heart | +4.1% | +0.00 | Thick Hide +6.8% |
+| support | Gentle Touch | +3.6% | -0.13 | Grudge +14.1% |
+| support | Unflappable | +0.2% | -0.00 | Bramble Bind +2.3% |
+| support | Light Feet | +0.6% | -0.08 | Great Wave +3.9% |
+
+## Element coverage (P-12)
+
+Every element should have a Heavy Prime Setter, a Setter Knack that survives the front row (today only Evasion), and a Payoff with a Detonator. A gap makes another element the default for every Detonator team.
+
+| Element | Heavy Prime Setters | Evasion Setters | Detonator Payoffs |
+| --- | --- | --- | --- |
+| tide | tidewing (Double Mark) | **none** | geyserpup (All at Once), coralynx (Detonate) |
+| ember | wickat (Double Mark) | **none** | cindle (Detonate), pyrelynx (Detonate) |
+| grove | mossback (Feed the Marks), ancientshell (Feed the Marks) | **none** | bloomback (All at Once), bloomback (Detonate), gaiadrake (Detonate) |
+| spark | zipmouse (Double Mark), voltaro (Double Mark) | zipmouse (Zoom), voltaro (Zoom), voltaro (Zigzag) | stormray (Detonate), tempestray (Detonate) |
+| mire | **none** | **none** | **none** |
+
+## Texts over the two-line budget
+
+About 95 characters fit two lines on a 390 px card (an estimate; check in the workbench). Over it:
+
+- Baked Shell: 136
+- Gather Calm: 122
+- Leave a Trail: 108
+- Feed the Marks: 100
+- Sunbeam: 100
+- Clear Skies: 96
 
 ## Raid weekend with attrition (3 stages of 8 rounds, HP carries, knocked-out creatures stay out)
 

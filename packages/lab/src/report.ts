@@ -8,10 +8,10 @@ import { content, createSeededRng, int } from '@creatures/game';
 import { CARDS, labBoss } from './cards';
 import { weekend } from './fight';
 import { KEYWORDS } from './keywords';
-import { FORM_KNACKS, KNACKS } from './knacks';
-import { TALENTS, TALENT_LINES, talentPool } from './talents';
+import { FAMILIES, FORM_KNACKS, KNACKS } from './knacks';
+import { BY_ROLE, TALENTS } from './talents';
 import { LAB_RULES } from './rules';
-import { formStats, triggers } from './species';
+import { ELEMENTS, formStats, triggers } from './species';
 import {
   CLASSIC_LINE,
   GAUNTLET,
@@ -53,7 +53,7 @@ export const SCENARIOS: Readonly<Record<string, string>> = {
   'No Setter: Ready the Mark feeds Geyserpup':
     'kilnmole/draw-fire geyserpup/none magmole/ready-the-mark',
   'No Setter: Puddle Maker': 'kilnmole/draw-fire geyserpup/puddle-maker magmole/tunnel-through',
-  'All at Once on Feed the Marks': 'wickat/double-mark geyserpup/all-at-once kilnmole/baked-shell',
+  'All at Once on two Setters': 'wickat/double-mark solmane/none geyserpup/all-at-once',
   'Twin Strike': 'tidewing/steady-mark tempestray/twin-strike thornbuck/wide-reach',
   'Dodge tank: Zigzag beside a Guard': 'voltaro/zigzag ohmouse/catch-the-bolts tempestray/none',
   'Mire: Mud Wall and Squelch Song': 'bogwarden/mud-wall tempestray/none croakmire/squelch-song',
@@ -75,7 +75,7 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
       'Tunnel Through beside the Payoff',
       'tidewing/steady-mark tempestray/none magmole/tunnel-through',
     ],
-    ['All at Once on Double Mark', 'wickat/double-mark geyserpup/all-at-once kilnmole/draw-fire'],
+    ['All at Once on two Setters', 'wickat/double-mark solmane/none geyserpup/all-at-once'],
   ],
   'stone-skin': [
     ['Twin Strike', 'tidewing/steady-mark tempestray/twin-strike thornbuck/wide-reach'],
@@ -141,7 +141,7 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
     : { starts: 400, keep: 40, rounds: 4, seeds: 6, freshSeeds: 24 };
   const ropts = opts.quick
     ? { starts: 30, keep: 6, rounds: 1, seeds: 2, freshSeeds: 2 }
-    : { starts: 160, keep: 16, rounds: 3, seeds: 3, freshSeeds: 8 };
+    : { starts: 300, keep: 24, rounds: 5, seeds: 3, freshSeeds: 8 };
   const md: string[] = [];
   const data: Record<string, unknown> = {};
   const cards = CARDS.filter((c) => c.id !== 'adapts');
@@ -214,9 +214,11 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
   );
 
   // 3. Best teams per card.
+  // Knack picks per creature in the top lines (Leave a Trail only with a Payoff to cash its trail).
   const appear = new Map<string, number>(
     [...Object.keys(KNACKS), 'none'].map((k) => [k, 0] as [string, number]),
   );
+  let picks = 0;
   let classicBeaten = 0,
     classicSpeciesBeaten = 0;
   const bestSpecies = new Map<string, number>();
@@ -243,8 +245,13 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
       const best = ranked[0];
       const cl = ranked.find((r) => lineKey(r.line) === lineKey(classic));
       if (!best || !cl) continue;
-      for (const r of ranked.slice(0, 5))
-        for (const k of usefulKnacks(r.line)) appear.set(k, (appear.get(k) ?? 0) + 1);
+      for (const r of ranked.slice(0, 5)) {
+        const useful = usefulKnacks(r.line);
+        for (const p of r.line) {
+          picks++;
+          if (useful.has(p.knack)) appear.set(p.knack, (appear.get(p.knack) ?? 0) + 1);
+        }
+      }
       let extra = '';
       if (mode.id === 'gauntlet') {
         for (const p of best.line) bestSpecies.set(p.formId, (bestSpecies.get(p.formId) ?? 0) + 1);
@@ -291,17 +298,20 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
   data['diversity'] = Object.fromEntries(species);
 
   // 5. Knack usage.
-  const total = cards.length * 2 * 5;
-  const rows = [...appear.entries()].sort((a, b) => b[1] - a[1]);
+  const pool = poolOf();
+  const poolShare = (k: string) => pool.filter((p) => p.knack === k).length / pool.length;
+  const rows = [...appear.entries()]
+    .map(([k, n]) => ({ k, n, ratio: n / Math.max(1, picks) / poolShare(k) }))
+    .sort((a, b) => b.ratio - a.ratio);
   md.push(
-    '## Knack usage in the top 5 teams of every search',
+    '## Knack usage in the top 5 teams of every search (per creature)',
     '',
-    `Out of ${total} top teams (${cards.length} cards, gauntlet and raid, top 5 each). Leave a Trail counts only when another Payoff in the line can cash its mark. Never used: rework candidates. Used almost everywhere: needs a counter card (P-10).`,
+    `${picks} creatures in the top 5 lines of every search (${cards.length} cards, gauntlet and raid). Ratio is the Knack's share of those picks over its share of the pool of every form and Knack: 1.0 is what random picks would give, above 2 stands out, below 0.3 is rarely chosen. Leave a Trail counts only when another Payoff in the line can cash its mark. Never chosen: rework candidates. Far above the rest: needs a counter card (P-10).`,
     '',
-    '| Knack | Forms | Top teams |',
-    '| --- | --- | ---: |',
+    '| Knack | Forms | Picks | Ratio |',
+    '| --- | --- | ---: | ---: |',
   );
-  for (const [k, n] of rows)
+  for (const { k, n, ratio } of rows)
     md.push(
       `| ${knackName(k)} | ${
         k === 'none'
@@ -310,19 +320,21 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
               .filter(([, ks]) => ks.includes(k))
               .map(([f]) => f)
               .join(', ')
-      } | ${n} |`,
+      } | ${n} | ${ratio.toFixed(1)} |`,
     );
-  data['knackUsage'] = Object.fromEntries(rows);
+  data['knackUsage'] = Object.fromEntries(
+    rows.map((r) => [r.k, { picks: r.n, ratio: Math.round(r.ratio * 100) / 100 }]),
+  );
   md.push('');
 
   // 6. A casual roster: does the best line use creatures beyond the top three by level?
   md.push(
     '## A casual roster (the North Star metric)',
     '',
-    'Twelve random forms at random levels (8 to 25, stage 1 forms at their cap), with any of their Knacks. For each card: the best gauntlet line from that roster against "the three highest levels with no Knack" (what a player who never opens Knacks brings). Beyond top 3 is how many of the best line are not among the three highest levels.',
+    'Twelve random forms at random levels (8 to 25, stage 1 forms at their cap), with any of their Knacks. For each card: the best gauntlet line from that roster, the best line from the same roster with no Knacks (what a player who never opens Knacks could bring, P-14), and the three highest levels with no Knack. Scores are absolute. Beyond top 3 is how many of the best line are not among the three highest levels.',
     '',
-    '| Roster | Card | Best line | vs top 3 by level | Beyond top 3 |',
-    '| --- | --- | --- | ---: | ---: |',
+    '| Roster | Card | Best line | Score | Best, no Knacks | Top 3 by level | Beyond top 3 |',
+    '| --- | --- | --- | ---: | ---: | ---: | ---: |',
   );
   const forms = Object.keys(FORM_KNACKS);
   const rng = createSeededRng('casual');
@@ -345,12 +357,19 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
         include: [top3Line],
       })[0];
       const t3 = evaluate(boss, top3Line, GAUNTLET, sopts.freshSeeds, `fresh:casual:${r}:${cid}`);
+      const plainBest = search(boss, GAUNTLET, {
+        seed: `casual-plain:${r}:${cid}`,
+        ...sopts,
+        starts: 60,
+        pool: pool.filter((p) => p.knack === 'none'),
+        include: [top3Line],
+      })[0];
       if (!best) continue;
       const n = best.line.filter((p) => !top3.includes(p.formId)).length;
       beyond += n;
       trials++;
       md.push(
-        `| ${r + 1} | ${cid} | ${best.line.map((p) => `${name(p)} L${p.level ?? LEVEL}`).join(', ')} | ${pct(best.score.score, t3.score)} | ${n} |`,
+        `| ${r + 1} | ${cid} | ${best.line.map((p) => `${name(p)} L${p.level ?? LEVEL}`).join(', ')} | ${r0(best.score.score)} | ${r0(plainBest?.score.score ?? 0)} | ${r0(t3.score)} | ${n} |`,
       );
     }
   }
@@ -364,48 +383,93 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
   md.push(
     '## Talents: what one talent adds (gauntlet)',
     '',
-    `Each talent on one form in a fitting team (the form in the middle slot with no Knack, its partners with their first Knack): its score with the talent against the same team without it, on every card (${seeds} seeds each). Mean is over all cards; Best is the card where it helps most. A talent near 0% everywhere does nothing in that team (some need a partner, such as a healer for Quick Healer); one far above the rest is a must-roll.`,
+    `Each role talent on every form of that role, in a fitting team with the form in its role's natural slot (a Setter or Guard in front, a Payoff after its Setter, a Support in the middle), no Knack on the measured form and the partners' first Knacks. Damage and knockouts with the talent against the same team without it, on every card (${seeds} seeds each), averaged over the role's forms. Best card is where it helps most. Near 0% on damage and KO is a dud; far above the rest is a must-roll.`,
     '',
-    '| Line | Talent | Form | Mean | Best card |',
-    '| --- | --- | --- | ---: | --- |',
+    '| Role | Talent | Damage | KO per fight | Best card |',
+    '| --- | --- | ---: | ---: | --- |',
   );
-  const talentCards = cards.map((c) => c.id);
   const talentValue: Record<string, unknown> = {};
-  for (const ln of TALENT_LINES) {
-    for (const entry of talentPool(ln)) {
-      for (const form of formsOf(ln)) {
-        if (!entry.roles.includes(formStats(form, LEVEL).role)) continue;
-        const team = teamFor(form);
-        const withT = team.map((p, i) => (i === 1 ? { ...p, talents: [entry.talent] } : p));
-        let sum = 0,
-          best = -Infinity,
-          bestCard = '';
-        for (const cid of talentCards) {
-          const boss = bossFor(GAUNTLET, [cid]);
-          const a = evaluate(boss, withT, GAUNTLET, seeds, `tal:${cid}`);
-          const b = evaluate(boss, team, GAUNTLET, seeds, `tal:${cid}`);
-          const v = b.score ? a.score / b.score - 1 : 0;
-          sum += v;
-          if (v > best) [best, bestCard] = [v, cid];
+  for (const role of ['setter', 'payoff', 'guard', 'support'] as const) {
+    const forms = Object.keys(FORM_KNACKS).filter((f) => formStats(f, LEVEL).role === role);
+    for (const tid of BY_ROLE[role]) {
+      let dmg = 0,
+        ko = 0,
+        n = 0;
+      const byCard = new Map<string, number>();
+      for (const form of forms) {
+        const { team, slot } = teamFor(form);
+        const withT = team.map((p, i) => (i === slot ? { ...p, talents: [tid] } : p));
+        for (const c of cards) {
+          const boss = bossFor(GAUNTLET, [c.id]);
+          const a = evaluate(boss, withT, GAUNTLET, seeds, `tal:${c.id}`);
+          const b = evaluate(boss, team, GAUNTLET, seeds, `tal:${c.id}`);
+          const v = b.damage ? a.damage / b.damage - 1 : 0;
+          dmg += v;
+          ko += a.knockouts - b.knockouts;
+          n++;
+          byCard.set(c.id, (byCard.get(c.id) ?? 0) + v / forms.length);
         }
-        const v = sum / talentCards.length;
-        const signed = (x: number) => `${x >= 0 ? '+' : ''}${(x * 100).toFixed(1)}%`;
-        const cardName = CARDS.find((c) => c.id === bestCard)?.name ?? bestCard;
-        talentValue[`${form}/${entry.talent}`] = {
-          mean: Math.round(v * 1000) / 1000,
-          best: bestCard,
-          bestValue: Math.round(best * 1000) / 1000,
-        };
-        md.push(
-          `| ${ln} | ${TALENTS[entry.talent]?.name ?? entry.talent} | ${form} | ${signed(v)} | ${best > 0.005 ? `${cardName} ${signed(best)}` : 'none'} |`,
-        );
       }
+      const [bestCard, bestV] = [...byCard.entries()].sort((x, y) => y[1] - x[1])[0] ?? ['', 0];
+      const signed = (x: number, d = 1) => `${x >= 0 ? '+' : ''}${x.toFixed(d)}`;
+      talentValue[`${role}/${tid}`] = {
+        damage: Math.round((dmg / n) * 1000) / 1000,
+        ko: Math.round((ko / n) * 100) / 100,
+        best: bestCard,
+      };
+      md.push(
+        `| ${role} | ${TALENTS[tid]?.name ?? tid} | ${signed((dmg / n) * 100)}% | ${signed(ko / n, 2)} | ${bestV > 0.005 ? `${CARDS.find((c) => c.id === bestCard)?.name ?? bestCard} ${signed(bestV * 100)}%` : 'none'} |`,
+      );
     }
   }
   data['talentValue'] = talentValue;
   md.push('');
 
-  // 8. A raid weekend with attrition.
+  // 8. Element coverage (P-12): every element should have the same kinds of tools.
+  md.push(
+    '## Element coverage (P-12)',
+    '',
+    'Every element should have a Heavy Prime Setter, a Setter Knack that survives the front row (today only Evasion), and a Payoff with a Detonator. A gap makes another element the default for every Detonator team.',
+    '',
+    '| Element | Heavy Prime Setters | Evasion Setters | Detonator Payoffs |',
+    '| --- | --- | --- | --- |',
+  );
+  const famForms = (el: string, role: string, fams: readonly string[]) =>
+    Object.entries(FORM_KNACKS)
+      .filter(([f]) => formStats(f, LEVEL).element === el && formStats(f, LEVEL).role === role)
+      .flatMap(([f, ks]) =>
+        ks
+          .filter((k) => fams.includes(KNACKS[k]?.family ?? ''))
+          .map((k) => `${f} (${knackName(k)})`),
+      );
+  const coverage: Record<string, unknown> = {};
+  for (const el of ELEMENTS) {
+    const heavy = famForms(el, 'setter', ['Heavy Prime']);
+    const survive = famForms(el, 'setter', ['Evasion']);
+    const det = famForms(el, 'payoff', ['Detonator']);
+    coverage[el] = { heavy, survive, det };
+    md.push(
+      `| ${el} | ${heavy.join(', ') || '**none**'} | ${survive.join(', ') || '**none**'} | ${det.join(', ') || '**none**'} |`,
+    );
+  }
+  data['coverage'] = coverage;
+  md.push('');
+
+  // 9. Text length (P-08): a Knack or talent should fit two lines on a 390 px card.
+  const long = [...Object.values(KNACKS), ...Object.values(TALENTS)]
+    .map((t) => ({ name: t.name, len: t.text.replace(/[{}]/g, '').length }))
+    .filter((t) => t.len > TEXT_BUDGET)
+    .sort((a, b) => b.len - a.len);
+  md.push(
+    '## Texts over the two-line budget',
+    '',
+    `About ${TEXT_BUDGET} characters fit two lines on a 390 px card (an estimate; check in the workbench). ${long.length ? 'Over it:' : 'None over it.'}`,
+    '',
+    ...long.map((t) => `- ${t.name}: ${t.len}`),
+    '',
+  );
+
+  // 10. A raid weekend with attrition.
   md.push(
     '## Raid weekend with attrition (3 stages of 8 rounds, HP carries, knocked-out creatures stay out)',
     '',
@@ -464,6 +528,15 @@ export function buildCatalogue(): string {
     'Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab report`. Do not edit by hand: change the data and regenerate. Keywords in braces are defined in `keywords.md`.',
     '',
   ];
+  md.push('## Families', '', '| Family | Rule | Knacks |', '| --- | --- | --- |');
+  for (const [fam, rule] of Object.entries(FAMILIES))
+    md.push(
+      `| ${fam} | ${rule} | ${Object.values(KNACKS)
+        .filter((k) => k.family === fam)
+        .map((k) => k.name)
+        .join(', ')} |`,
+    );
+  md.push('');
   const byForm = Object.entries(FORM_KNACKS);
   md.push('## By form', '', '| Form | Knacks |', '| --- | --- |');
   for (const [form, ks] of byForm)
@@ -487,17 +560,13 @@ export function buildCatalogue(): string {
   md.push(
     '## Combat talents',
     '',
-    "Generated from `packages/lab/src/talents.ts`. A creature rolls talents from its line's pool when found. Each pool has the role talents of its forms' roles (the same effect keeps the same name in every pool) and one flavour talent of its own.",
+    "Generated from `packages/lab/src/talents.ts`. A creature rolls talents from its role's pool when found; a line with forms of several roles rolls from each form's own role. One name per effect; a talent never repeats a Knack's effect, and flavour lives in Knacks.",
     '',
-    '| Line | Pool (roles) |',
+    '| Role | Pool |',
     '| --- | --- |',
   );
-  for (const ln of TALENT_LINES)
-    md.push(
-      `| ${ln} | ${talentPool(ln)
-        .map((e) => `${TALENTS[e.talent]?.name ?? e.talent} (${e.roles.join(', ')})`)
-        .join('; ')} |`,
-    );
+  for (const [role, ids] of Object.entries(BY_ROLE))
+    md.push(`| ${role} | ${ids.map((id) => TALENTS[id]?.name ?? id).join(', ')} |`);
   md.push('', '| Talent | Text | Intent |', '| --- | --- | --- |');
   for (const t of Object.values(TALENTS)) md.push(`| ${t.name} | ${t.text} | ${t.intent} |`);
   md.push('');
@@ -529,32 +598,32 @@ function summarise(l: readonly Pick[]): string {
     .join(', ');
 }
 
-/** The forms of a creature line, in content order. */
-function formsOf(ln: string): string[] {
-  return content.creatures.filter((c) => c.line === ln && FORM_KNACKS[c.id]).map((c) => c.id);
-}
+/** The two-line budget for a Knack or talent text, in characters (an estimate). */
+const TEXT_BUDGET = 95;
 
 const firstKnack = (form: string) => FORM_KNACKS[form]?.[0] ?? 'none';
 
 /**
- * A fitting gauntlet team for measuring one form: the form in the middle (no Knack, so the talent
- * is what changes), a partner on its left that makes its role work (a Payoff that cashes a Setter's
- * mark, a Setter whose mark a Payoff cashes) and Thornbuck on its right; Guards and Supports stand
- * between Tidewing and Tempestray.
+ * A fitting gauntlet team for measuring one form, with the form in its role's natural slot: a
+ * Setter in front of a Payoff that cashes its mark, then Thornbuck; a Payoff after a Setter whose
+ * mark it cashes, then Thornbuck; a Guard in front of Tidewing and Tempestray; a Support between them.
  */
-function teamFor(form: string): Pick[] {
+function teamFor(form: string): { team: Pick[]; slot: number } {
   const st = formStats(form, LEVEL);
   const stage2 = (role: string, ok: (el: string) => boolean) =>
     content.creatures.find((c) => c.role === role && c.stage === 2 && ok(c.element))?.id;
-  let partner: string | undefined;
-  if (st.role === 'setter') partner = stage2('payoff', (el) => triggers(el, st.element));
-  if (st.role === 'payoff') partner = stage2('setter', (el) => triggers(st.element, el));
-  const rest = partner !== undefined ? [partner, 'thornbuck'] : ['tidewing', 'tempestray'];
-  const [left, right] = rest.map((f) => ({
-    formId: f === form ? 'thornbuck' : f,
-    knack: firstKnack(f === form ? 'thornbuck' : f),
-  }));
-  return [left as Pick, { formId: form, knack: 'none' }, right as Pick];
+  const P = (f: string): Pick => ({ formId: f, knack: firstKnack(f) });
+  const me: Pick = { formId: form, knack: 'none' };
+  if (st.role === 'setter') {
+    const partner = stage2('payoff', (el) => triggers(el, st.element)) ?? 'tempestray';
+    return { team: [me, P(partner), P('thornbuck')], slot: 0 };
+  }
+  if (st.role === 'payoff') {
+    const partner = stage2('setter', (el) => triggers(st.element, el)) ?? 'tidewing';
+    return { team: [P(partner), me, P('thornbuck')], slot: 1 };
+  }
+  if (st.role === 'guard') return { team: [me, P('tidewing'), P('tempestray')], slot: 0 };
+  return { team: [P('tidewing'), me, P('tempestray')], slot: 1 };
 }
 
 export type { Ranked };

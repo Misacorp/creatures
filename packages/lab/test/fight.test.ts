@@ -5,6 +5,8 @@ import {
   KNACKS,
   FORM_KNACKS,
   keywordsIn,
+  ADDITIVE_FIELDS,
+  FAMILIES,
   TALENTS,
   TALENT_LINES,
   labBoss,
@@ -13,6 +15,7 @@ import {
   talentPool,
   weekend,
   type BossDef,
+  type KnackFx,
   type Placement,
 } from '../src';
 
@@ -179,8 +182,8 @@ describe('combat v2 lab rules', () => {
 describe('combat v2 lab rules, v0.4 fixes from the first panel', () => {
   const quiet = (b: BossDef): BossDef => ({ ...b, spd: 0, plain: { ...b.plain, powerBp: 0 } });
 
-  it('Double Mark marks on every form that can equip it, a Guard included', () => {
-    for (const form of ['zipmouse', 'voltaro', 'ohmouse']) {
+  it('Double Mark marks x2 on the Setters that can equip it', () => {
+    for (const form of ['zipmouse', 'voltaro']) {
       const r = fight(
         quiet(labBoss({ rows: 1, cols: 1, rounds: 1 })),
         [at(form, 0, 0, 'double-mark')],
@@ -239,19 +242,21 @@ describe('combat v2 lab rules, v0.4 fixes from the first panel', () => {
 
   it('R5: a minimum count is checked before picking the oldest mark (All at Once)', () => {
     const boss = quiet(labBoss({ rows: 1, cols: 3, rounds: 1 }));
-    // Wickat (Ember Setter) leaves Scorched x1: below All at Once's x2, so no reaction; with Double Mark, x2.
-    const r = fight(boss, [at('wickat', 0, 0), at('geyserpup', 0, 1, 'all-at-once')], {
-      rng: rng('bs'),
-      log: true,
-    });
+    // Wickat with Double Mark leaves Ember x2: below All at Once's x3, so no reaction; Solmane adds the third.
+    const r = fight(
+      boss,
+      [at('wickat', 0, 0, 'double-mark'), at('geyserpup', 0, 1, 'all-at-once')],
+      { rng: rng('bs'), log: true },
+    );
     expect(r.reactions).toBe(0);
     const r2 = fight(
       boss,
-      [at('wickat', 0, 0, 'double-mark'), at('geyserpup', 0, 1, 'all-at-once')],
-      {
-        rng: rng('bs'),
-        log: true,
-      },
+      [
+        at('wickat', 0, 0, 'double-mark'),
+        at('solmane', 0, 1),
+        at('geyserpup', 0, 2, 'all-at-once'),
+      ],
+      { rng: rng('bs'), log: true },
     );
     expect(r2.reactions).toBe(1);
   });
@@ -336,6 +341,10 @@ describe('combat v2 content rules', () => {
       for (const id of ks) expect(KNACKS).toHaveProperty(id);
     const names = Object.values(KNACKS).map((k) => k.name);
     expect(new Set(names).size).toBe(names.length);
+  });
+
+  it('every Knack belongs to a defined family (P-09)', () => {
+    for (const k of Object.values(KNACKS)) expect(FAMILIES, k.id).toHaveProperty(k.family);
   });
 
   it('every Knack states its design intent', () => {
@@ -472,6 +481,16 @@ describe('combat v2 content rules: Knacks and talents for every species', () => 
         expect(TALENTS, `${ln}: ${e.talent}`).toHaveProperty(e.talent);
   });
 
+  it('talents add only, and never repeat a Knack (P-06)', () => {
+    for (const t of Object.values(TALENTS)) {
+      for (const key of Object.keys(t.fx))
+        expect(ADDITIVE_FIELDS.has(key as keyof KnackFx), `${t.id}: ${key}`).toBe(true);
+      const keys = Object.keys(t.fx).sort().join();
+      for (const k of Object.values(KNACKS))
+        expect(Object.keys(k.fx).sort().join(), `${t.id} repeats ${k.id}`).not.toBe(keys);
+    }
+  });
+
   it('talent names are unique, never reuse a Knack name, and their keywords exist', () => {
     const names = [...Object.values(TALENTS), ...Object.values(KNACKS)].map((t) => t.name);
     expect(new Set(names).size).toBe(names.length);
@@ -479,5 +498,40 @@ describe('combat v2 content rules: Knacks and talents for every species', () => 
       expect(t.intent.length, t.id).toBeGreaterThan(10);
       for (const w of keywordsIn(t.text)) expect(KEYWORDS, `${t.id} uses {${w}}`).toHaveProperty(w);
     }
+  });
+});
+
+describe('panel 2 fixes', () => {
+  it('R1.3: a Guard intercepts before a creature that only intercepts through an effect', () => {
+    const boss: BossDef = {
+      ...labBoss({ rows: 1, cols: 3, rounds: 4 }),
+      spd: 0,
+      plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 5_000 },
+    };
+    // Voltaro (Zigzag) taunts; Gaiadrake (Carry Them) and Thornbuck both stand beside it.
+    const r = fight(
+      boss,
+      [at('gaiadrake', 0, 0, 'carry-them'), at('voltaro', 0, 1, 'zigzag'), at('thornbuck', 0, 2)],
+      { rng: rng('order'), log: true },
+    );
+    const by = r.events.filter((e) => e.kind === 'intercept').map((e) => e.text.split(' ')[0]);
+    expect(by.length).toBeGreaterThan(0);
+    expect(new Set(by)).toEqual(new Set(['Thornbuck']));
+  });
+
+  it('Second Wind heals once, the first time a hit drops it below half', () => {
+    const boss: BossDef = {
+      ...labBoss({ rows: 1, cols: 1, rounds: 10, atk: 120 }),
+      spd: 0,
+      plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 10_000 },
+    };
+    const plain = fight(boss, [at('kilnmole', 0, 0)], { rng: rng('wind') });
+    const wind = fight(boss, [{ ...at('kilnmole', 0, 0), talents: ['second-wind'] }], {
+      rng: rng('wind'),
+    });
+    expect(wind.healed - plain.healed).toBeGreaterThan(0);
+    expect(wind.healed - plain.healed).toBeLessThanOrEqual(
+      Math.ceil((wind.fighters[0]?.maxHp ?? 0) / 5),
+    );
   });
 });

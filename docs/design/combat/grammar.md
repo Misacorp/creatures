@@ -5,7 +5,7 @@ The shape of every Knack, rule card and boss, so new content fits without new ru
 ## Limits (hard)
 
 - A mark's count is x1 to x3. One reaction per hit. A reaction on a trail mark leaves no further trail (the chain cap).
-- A Store holds at most 3; at most one Store per creature line; a Store fed by reactions gains at most 1 per boss turn.
+- A Store holds at most 3; at most one Store per creature line; a Store fed by reactions gains at most 1 per round.
 - All hit boosts together are capped; reaction-bonus factors together are capped (x3); every debuff has its own maximum.
 - Marks and trails come only from Knacks, never from gear.
 - A boss's moves never exceed two damaging moves on one boss turn (today's content rule, kept).
@@ -13,32 +13,14 @@ The shape of every Knack, rule card and boss, so new content fits without new ru
 
 ## Knack families
 
-A family is one rule with different numbers or elements. A new Knack joins a family; a new family needs a reason (P-09).
+A family is one rule with different numbers or elements. A new Knack joins a family; a new family needs a reason (P-09). The list lives in the data (`FAMILIES` in `packages/lab/src/knacks.ts`) and is generated into [`knacks.md`](knacks.md) ("Families"); a test fails if a Knack names a family that is not there.
 
-| Family                      | What it does                                       | Examples                                       |
-| --------------------------- | -------------------------------------------------- | ---------------------------------------------- |
-| Seal                        | Its marks are not shed                             | Steady Mark                                    |
-| Lead                        | Boosts the next creature after it marks            | Lead the Way                                   |
-| Heavy Prime                 | Gives up its damage for more mark counts           | Double Mark, Feed the Marks                    |
-| Self Prime                  | A non-Setter that marks what it can cash           | Puddle Maker                                   |
-| Guard Prime / Support Prime | A Guard or Support that marks, at a cost           | Primed by Pain, Lightning Ears, Ready the Mark |
-| Detonator                   | A Payoff that spends several counts                | Detonate, All at Once                          |
-| Chain                       | After a reaction, leaves a mark of its own element | Leave a Trail                                  |
-| Flurry                      | Several smaller hits                               | Twin Strike                                    |
-| Reach / Intercept           | Changes what a Guard covers                        | Wide Reach, Night Watch, Catch the Bolts       |
-| Taunt                       | Draws the plain attack                             | Draw Fire                                      |
-| Evasion                     | Dodge, with Retaliate or a Store                   | Zoom, Zigzag                                   |
-| Row Ward                    | Cuts area damage for its row                       | Keep the Heat In                               |
-| Pierce                      | Ignores some boss armour                           | Tunnel Through                                 |
-| Support shape               | Changes where a Support's boost and heal land      | Sunbeam, Wide Warmth, Curl Up, Clear Skies     |
-| Sustain                     | Heals or cleanses on a reaction                    | Circle Round, Clear the Air                    |
-| Store                       | Fills over the fight, spends at 3                  | Gather Calm, Baked Shell                       |
-| Debuff                      | Puts a debuff on the boss                          | Mud Wall, Squelch Song                         |
+Every element should get the same kinds of tools: a Heavy Prime Setter, a Setter that survives the front row, and a Payoff with a Detonator (P-12). The report's "Element coverage" table shows the gaps.
 
 ## Naming
 
 - The same effect keeps the same name everywhere (P-06): a Knack on another species or on gear uses its existing name.
-- Knacks are actions or short phrases ("Draw Fire"); talents are traits ("Proud Wings").
+- Knacks are actions or short phrases ("Draw Fire"); talents are traits ("Sharp Claws"). A talent never repeats a Knack's effect, and talents and gear take the existing name of an effect (R20).
 - Names are checked against the compendium's tone before shipping.
 
 ## Template: a Knack

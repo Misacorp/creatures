@@ -39,7 +39,11 @@ export const KEYWORDS: Readonly<
     not: 'It rolls dodge itself',
     step: 'R1',
   },
-  Retaliate: { means: 'Hits back when it dodges.', not: 'It hits back when hit', step: 'R1' },
+  Retaliate: {
+    means: 'Hits back when it dodges; the hit back ignores armour.',
+    not: 'It hits back when hit',
+    step: 'R1',
+  },
   Blocked: {
     means: 'A hit that does not get past armour deals nothing.',
     not: 'A dodge',
@@ -61,8 +65,14 @@ export const KEYWORDS: Readonly<
     not: 'A mark',
     step: 'R15',
   },
+  Beside: {
+    means: 'The one slot on each side of it, in its row. Never widened.',
+    not: 'Its Reach (which effects can widen)',
+    step: 'R16',
+  },
   Reach: {
-    means: 'How many places to each side, in its row, a Guard or Support covers.',
+    means:
+      'How many places to each side, in its row, a Guard or Support covers. Starts at Beside; some effects widen it.',
     not: 'Its whole row',
     step: 'R1, R16',
   },

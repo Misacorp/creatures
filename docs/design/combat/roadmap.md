@@ -43,7 +43,7 @@ Big simulations come in phase 5 on purpose: week-by-week and Boss Rank numbers m
 
 ## Progress
 
-| Phase | State                                                                                                                    |
-| ----- | ------------------------------------------------------------------------------------------------------------------------ |
-| 1     | In progress: rules v0.5, four lines and Zipmouse designed; the remaining species, talents and bosses are the next slices |
-| 2–8   | Not started                                                                                                              |
+| Phase | State                                                                                                                                                                                                                                                                                    |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | In progress. Done: rules v0.6; Knacks for every form; combat talents (R20); panel 2. Next slices: Zigzag and Bloomback, the never-chosen Knacks, bosses and dungeon foes (with Thick Hide's armour and wide raid rows). Content gap: Mire has no Setter or Payoff (new species and art). |
+| 2–8   | Not started                                                                                                                                                                                                                                                                              |

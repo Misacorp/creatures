@@ -3308,3 +3308,13 @@ A player asked (#76) for a short note on a creature, next to Rename, to remember
 ## 2026-10-26: Combat v2: Misa's answers to the first panel
 
 **Decision (Misa).** (1) Raid attrition stays as written: a knocked-out creature is out for the weekend, with no "tired" return; players have spare creatures by week 2. (2) Silence stops the role's verb as well as the Knack, talents and gear effects: a silenced Setter does not mark, a Payoff does not cash, a Guard does not intercept or cover, a Support does not boost or heal; the creature still makes its plain hit. (3) Raid swaps across players are wanted: "we do it manually now; a system would help". Recorded in proposal 001 v0.5 (R12, R14, R19) and in the lab (`packages/lab/src/fight.ts`, test "silence stops the role"). Swap requests move up from "not a priority" on the roadmap.
+
+## 2026-10-26: Combat v2: Knacks for every species, talents by role (panel 2)
+
+Tagged combat v2. Lead agent, after the second panel (`docs/design/combat/reviews/2026-10-26-panel-2.md`); proposal v0.6.
+
+- **The roadmap** (`docs/design/combat/roadmap.md`, agreed with Misa): eight gated phases from the lab to shipping, and the migration (creatures and levels stay; talents reroll; Knacks start as none; raid planning resets).
+- **Every form has Knacks** in the lab. New: Guard's Shadow, Crown of Embers, Hide in Mist, Thick Fog, Drizzle, Living Shelter, Territorial, Carry Them, Starlight, Lantern Glow, Hearth. Families live in the data (`FAMILIES`), and a test fails on a family that is not defined.
+- **Combat talents are by role, one name per effect** (R20): four per role from eleven, shared by every species; a talent never repeats a Knack and Seal is never a talent, so a roll never decides the Knack choice. Per-species flavour talents were tried and dropped: they copied Knacks and each other under other names (P-06) and each would need its own rule (P-09). Pending Misa's answer on species talent names.
+- **Ohmouse loses Double Mark** (a Guard that marks x2 was P-02's Fail example); **All at Once needs x3**; **Tidewing gets Double Mark**; Retaliate ignores armour; crit talents stay inside the reaction cap; reaction-fed Stores gain at most 1 per round.
+- **Still open:** Bloomback in 10 of 14 best gauntlet lines, with Voltaro's Zigzag; the next slice.

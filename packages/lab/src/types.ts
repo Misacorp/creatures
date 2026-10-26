@@ -21,7 +21,10 @@ export interface Fighter {
   /** The Knack's and the talents' effects together (silence blanks all of it, R12). */
   readonly fxAll: import('./knacks').KnackFx;
   /** Turn hits made this fight (for first-hit effects). */
-  hitsMade: number;
+  /** Hits that got past dodge and armour this fight (First Strike counts the first). */
+  hitsLanded: number;
+  /** Second Wind fired this fight. */
+  secondWindDone: boolean;
   row: number;
   col: number;
   silencedTurns: number;
@@ -33,7 +36,7 @@ export interface Fighter {
   damageThisRound: number;
   damageLastRound: number;
   /** The boss turn on which it last gained a reaction-fed Store point (at most one per boss turn). */
-  lastStoreTurn: number;
+  lastStoreRound: number;
 }
 
 /** Where the boss aims: an anchor slot, then a shape of slots around it (R2). */
