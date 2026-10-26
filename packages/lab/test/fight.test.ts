@@ -163,6 +163,114 @@ describe('combat v2 lab rules', () => {
   });
 });
 
+describe('combat v2 lab rules, v0.4 fixes from the first panel', () => {
+  const quiet = (b: BossDef): BossDef => ({ ...b, spd: 0, plain: { ...b.plain, powerBp: 0 } });
+
+  it('Overcharge marks on every form that can equip it, a Guard included', () => {
+    for (const form of ['zipmouse', 'voltaro', 'ohmouse']) {
+      const r = fight(
+        quiet(labBoss({ rows: 1, cols: 1, rounds: 1 })),
+        [at(form, 0, 0, 'overcharge')],
+        { rng: rng('oc'), log: true },
+      );
+      expect(
+        r.events.filter((e) => e.kind === 'mark').map((e) => e.text),
+        form,
+      ).toEqual(['spark x2']);
+    }
+  });
+
+  it('R9: Taunt draws every plain attack, whatever its anchor', () => {
+    const base = labBoss({ rows: 1, cols: 3, rounds: 3, cards: ['swarm'] });
+    const r = fight(
+      { ...base, spd: 0 },
+      [at('tidewing', 0, 0), at('tempestray', 0, 1), at('kilnmole', 0, 2, 'draw-fire')],
+      { rng: rng('taunt'), log: true },
+    );
+    const struck = r.events.filter(
+      (e) => e.kind === 'hit' || e.kind === 'blocked' || e.kind === 'dodge',
+    );
+    expect(struck.length).toBeGreaterThan(0);
+    expect(struck.every((e) => e.text.startsWith('Kilnmole'))).toBe(true);
+  });
+
+  it('R5: a reaction on a trail mark leaves no further trail (the chain cap)', () => {
+    const boss = quiet(labBoss({ rows: 1, cols: 4, rounds: 1 }));
+    const r = fight(
+      boss,
+      [
+        at('tidewing', 0, 0),
+        at('tempestray', 0, 1, 'leave-a-trail'),
+        at('bloomback', 0, 2, 'leave-a-trail'),
+        at('pyrelynx', 0, 3, 'leave-a-trail'),
+      ],
+      { rng: rng('chain'), log: true },
+    );
+    // Tide x1 (Setter), then Spark x1 (trail), then Bloomback cashes the trail mark: no Grove trail.
+    expect(r.events.filter((e) => e.kind === 'mark').map((e) => e.text)).toEqual([
+      'tide x1',
+      'spark x1',
+    ]);
+    expect(r.reactions).toBe(2);
+  });
+
+  it('Fizzle: a mark left by a reaction cannot be cashed before the next boss turn', () => {
+    const boss = quiet(labBoss({ rows: 1, cols: 3, rounds: 1, cards: ['fizzle'] }));
+    const r = fight(
+      boss,
+      [at('tidewing', 0, 0), at('tempestray', 0, 1, 'leave-a-trail'), at('bloomback', 0, 2)],
+      { rng: rng('fz'), log: true },
+    );
+    expect(r.reactions).toBe(1);
+  });
+
+  it('R5: a minimum count is checked before picking the oldest mark (Big Spout)', () => {
+    const boss = quiet(labBoss({ rows: 1, cols: 3, rounds: 1 }));
+    // Wickat (Ember Setter) leaves Scorched x1: below Big Spout's x2, so no reaction; with Overcharge, x2.
+    const r = fight(boss, [at('wickat', 0, 0), at('geyserpup', 0, 1, 'big-spout')], {
+      rng: rng('bs'),
+      log: true,
+    });
+    expect(r.reactions).toBe(0);
+    const r2 = fight(boss, [at('wickat', 0, 0, 'overcharge'), at('geyserpup', 0, 1, 'big-spout')], {
+      rng: rng('bs'),
+      log: true,
+    });
+    expect(r2.reactions).toBe(1);
+  });
+
+  it('Clean Scales sheds only the marks that were on the boss when its turn began', () => {
+    const boss = quiet(labBoss({ rows: 1, cols: 2, rounds: 2, cards: ['clean-scales'] }));
+    const r = fight(boss, [at('tidewing', 0, 0), at('thornbuck', 0, 1)], {
+      rng: rng('cs'),
+      log: true,
+    });
+    // Each round Tidewing marks x1 again: the count never grows past 1 because it is shed each boss turn.
+    expect(r.events.filter((e) => e.kind === 'mark').map((e) => e.text)).toEqual([
+      'tide x1',
+      'tide x1',
+    ]);
+  });
+
+  it("R12: a silenced creature loses its Knack's armour too", () => {
+    const hush = {
+      id: 's',
+      name: 'Hush',
+      pattern: { anchor: 'front' as const, shape: 'all' as const },
+      powerBp: 0,
+      every: 1,
+      turn: 0,
+      silenceTurns: 3,
+    };
+    const base = { ...labBoss({ rows: 1, cols: 1, rounds: 2, atk: 40 }), spd: 0 };
+    const quietRun = fight(base, [at('kilnmole', 0, 0, 'draw-fire')], { rng: rng('arm') });
+    const hushed = fight({ ...base, moves: [hush] }, [at('kilnmole', 0, 0, 'draw-fire')], {
+      rng: rng('arm'),
+    });
+    expect(hushed.fighters[0]?.hp ?? 0).toBeLessThan(quietRun.fighters[0]?.hp ?? 0);
+  });
+});
+
 describe('combat v2 content rules', () => {
   it('every keyword used in Knack text exists in the keyword list', () => {
     for (const k of Object.values(KNACKS))

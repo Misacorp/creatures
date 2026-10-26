@@ -14,7 +14,8 @@ export interface Fighter {
   hp: number;
   readonly atk: number;
   readonly spd: number;
-  readonly armour: number;
+  /** Armour before Knacks (a silenced creature loses its Knack's armour). */
+  readonly baseArmour: number;
   readonly knack: string | undefined;
   row: number;
   col: number;
@@ -25,6 +26,9 @@ export interface Fighter {
   firstInterceptDone: boolean;
   damageDealt: number;
   damageThisRound: number;
+  damageLastRound: number;
+  /** The boss turn on which it last gained a reaction-fed Store point (at most one per boss turn). */
+  lastStoreTurn: number;
 }
 
 /** Where the boss aims: an anchor slot, then a shape of slots around it (R2). */
@@ -77,6 +81,8 @@ export interface BossMods {
   readonly reflectFirst?: boolean;
   /** Healing is scaled by this (Wither). */
   readonly healBp?: number;
+  /** A mark left by a reaction cannot be cashed until after the next boss turn (Fizzle). */
+  readonly fizzle?: boolean;
   /** In a raid weekend, from stage 2 the boss resists the reaction used most so far (Adapts). */
   readonly adapts?: boolean;
 }

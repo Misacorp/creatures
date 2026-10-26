@@ -33,7 +33,7 @@ export const CARDS: readonly CardDef[] = [
   {
     id: 'clean-scales',
     name: 'Clean Scales',
-    asks: 'Marks are shed after every boss turn; are Setter and Payoff in the same row?',
+    asks: 'Marks are shed at the end of every boss turn; are Setter and Payoff in the same row?',
     apply: (b) => ({ ...b, mods: { ...b.mods, shedMarks: true } }),
   },
   {
@@ -72,14 +72,14 @@ export const CARDS: readonly CardDef[] = [
   {
     id: 'payoff-hunter',
     name: 'Payoff Hunter',
-    asks: 'It slams your strongest Payoff and the slots beside it; is a Guard there?',
+    asks: 'Every 3 rounds it slams the strongest Payoff (aimed) and the slots beside it (area); is a Guard there?',
     apply: (b) =>
       addMove(b, {
         id: 'payoff-slam',
         name: 'Payoff Slam',
         pattern: { anchor: 'payoff', shape: 'line3' },
-        powerBp: 22_000,
-        every: 2,
+        powerBp: 15_000,
+        every: 3,
       }),
   },
   {
@@ -98,13 +98,13 @@ export const CARDS: readonly CardDef[] = [
   {
     id: 'great-wave',
     name: 'Great Wave',
-    asks: 'A telegraphed sweep of a whole row every third round.',
+    asks: 'Every 3 rounds a Charged sweep of a row, announced at round start; who stands there?',
     apply: (b) =>
       addMove(b, {
         id: 'great-wave',
         name: 'Great Wave',
         pattern: { anchor: 'random', shape: 'randomRow' },
-        powerBp: 25_000,
+        powerBp: 18_000,
         every: 3,
         charged: true,
       }),
@@ -130,6 +130,12 @@ export const CARDS: readonly CardDef[] = [
         powerBp: 40_000,
         every: 3,
       }),
+  },
+  {
+    id: 'fizzle',
+    name: 'Fizzle',
+    asks: 'A mark left by a reaction cannot be cashed until after the next boss turn; do your chains cross rows?',
+    apply: (b) => ({ ...b, mods: { ...b.mods, fizzle: true } }),
   },
   {
     id: 'adapts',

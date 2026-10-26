@@ -7,7 +7,9 @@ export const LAB_RULES = {
   payoffMultBp: 20_000,
   /** Each stack beyond the first that an effect spends adds this share of the bonus (R7). */
   extraStackBp: 5_000,
-  /** A mark holds at most this many stacks (R3). */
+  /** All reaction-bonus factors together (Knack factor, extra counts, Baked Shell) never pass this (R7). */
+  maxBonusFactorBp: 30_000,
+  /** A mark holds at most this many counts (R3). */
   maxStacks: 3,
   /** Dodge chance per point of Speed, the cap, and the share against area hits (R1). */
   dodgePerSpdBp: 10,

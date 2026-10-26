@@ -4,11 +4,11 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ## By form
 
-| Form | Knacks (first is the default) |
+| Form | Knacks |
 | --- | --- |
 | splashet | Soak Through, Lead the Way |
 | tidewing | Soak Through, Downpour, Circle Round |
-| geyserpup | Leave a Trail, Own Puddle, Big Spout |
+| geyserpup | Leave a Trail, Puddle Maker, Big Spout |
 | stormray | Detonate, Leave a Trail |
 | tempestray | Detonate, Leave a Trail, Twin Strike |
 | halcyray | Clear Skies, Clear the Air, Gather Calm |
@@ -20,7 +20,9 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 | kilnmole | Draw Fire, Keep the Heat In, Baked Shell |
 | zipmouse | Zoom, Overcharge |
 | voltaro | Zoom, Overcharge, Zigzag |
-| ohmouse | Overcharge, Catch the Bolts, Static Shell |
+| ohmouse | Overcharge, Catch the Bolts, Lightning Ears |
+| ancientshell | Lead the Way, Overcharge |
+| wickat | Lead the Way, Overcharge |
 | pyrelynx | Detonate, Leave a Trail |
 | bloomback | Detonate, Leave a Trail |
 | bogwarden | Mud Wall |
@@ -39,12 +41,12 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 - **Text:** After it leaves a mark, the next creature to act in its row gets +20% on that hit.
 - **Family:** Lead
-- **Forms:** splashet
+- **Forms:** splashet, ancientshell, wickat
 - **Intent (for contributors, never shown to players):** Rewards placing the Payoff right after the Setter in a row.
 
 ### Downpour
 
-- **Text:** Its hit deals no damage. It leaves its mark and adds a stack to every other mark on the boss.
+- **Text:** Its hit deals no damage. It leaves its {Mark} and adds 1 to the count of every other mark on the boss.
 - **Family:** Heavy Prime
 - **Forms:** tidewing
 - **Intent (for contributors, never shown to players):** For multi-mark teams and Payoffs that spend several stacks.
@@ -56,30 +58,30 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 - **Forms:** tidewing
 - **Intent (for contributors, never shown to players):** Keeps Payoffs alive when reactions hurt them (Reflective Hide, Thorns).
 
-### Own Puddle
+### Puddle Maker
 
-- **Text:** When it sets off no reaction, it leaves the mark it can cash, like a Setter.
+- **Text:** When it sets off no {Reaction}, it leaves the mark it can cash, like a Setter.
 - **Family:** Self Prime
 - **Forms:** geyserpup
 - **Intent (for contributors, never shown to players):** A Payoff that works without a Setter, at half the pace.
 
 ### Big Spout
 
-- **Text:** Sets off a reaction only on a mark with 2 or more stacks; then {Spend} all of them: each extra stack adds the whole bonus again.
+- **Text:** Cashes only a mark at x2 or more, and {Spend}s all of its count. Huge on x3.
 - **Family:** Detonator
 - **Forms:** geyserpup
 - **Intent (for contributors, never shown to players):** Misa's mark-mark-mark-big-payoff choice: a slow, huge hit that breaks armour.
 
 ### Leave a Trail
 
-- **Text:** After it sets off a reaction, it leaves a stack of its own element's mark.
+- **Text:** After its {Reaction}, it leaves x1 of its own element's mark. A reaction on that mark leaves no further trail.
 - **Family:** Chain
 - **Forms:** geyserpup, stormray, tempestray, pyrelynx, bloomback
 - **Intent (for contributors, never shown to players):** Cross-element chains: a reaction primes the next one for another Payoff.
 
 ### Detonate
 
-- **Text:** {Spend} every stack of the mark it cashes. Its bonus is 25% smaller, and each extra stack adds three quarters of it again.
+- **Text:** {Spend}s the whole count of the mark it cashes. Weak on x1, strong on x2 and x3.
 - **Family:** Detonator
 - **Forms:** stormray, tempestray, pyrelynx, bloomback
 - **Intent (for contributors, never shown to players):** Pays off two Setters, or a Setter with Heavy Prime; worse than no Knack on a single stack.
@@ -121,14 +123,14 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Primed by Pain
 
-- **Text:** The first time it intercepts each fight, it leaves a stack of its own element's mark.
+- **Text:** The first time it {Intercept}s each fight, it leaves x1 of its own element's mark.
 - **Family:** Guard Prime
 - **Forms:** sproutle, thornbuck
 - **Intent (for contributors, never shown to players):** A Guard that helps prime for an Ember Payoff when no Grove Setter is around.
 
 ### Night Watch
 
-- **Text:** It intercepts every charged landing aimed at a creature in its row, after that creature's failed dodge.
+- **Text:** It {Intercept}s every {Charged} hit on a creature in its row.
 - **Family:** Intercept
 - **Forms:** thornbuck
 - **Intent (for contributors, never shown to players):** Answers telegraphed big hits (Great Wave).
@@ -149,14 +151,14 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Ready the Mark
 
-- **Text:** Instead of boosting and healing, at round start it adds a stack of its own element's mark.
+- **Text:** Instead of boosting and healing, at round start it adds x1 to its own element's mark.
 - **Family:** Support Prime
 - **Forms:** sunfawn, ashmole, magmole
 - **Intent (for contributors, never shown to players):** Lets a team without a Setter react; needs a Payoff of the right element.
 
 ### Wide Warmth
 
-- **Text:** Its boost also reaches creatures two places away, 10 points weaker.
+- **Text:** Its boost also reaches one place further on each side, 10 points weaker.
 - **Family:** Support shape
 - **Forms:** ashmole, magmole
 - **Intent (for contributors, never shown to players):** Wide raid rows with several hitters.
@@ -177,14 +179,14 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Keep the Heat In
 
-- **Text:** While it stands, its row takes 15% less from area hits and charged landings.
+- **Text:** While it stands, its row takes 15% less from area and {Charged} hits.
 - **Family:** Row Ward
 - **Forms:** kilnmole
 - **Intent (for contributors, never shown to players):** Protects other players' creatures in its row in the raid.
 
 ### Baked Shell
 
-- **Text:** {Store} Heat: +1 each time it or a creature in its reach takes damage. At 3, the next reaction beside it deals double bonus and spends all.
+- **Text:** {Store} Heat: +1 each time it or a creature in its reach takes damage. At 3, the next {Reaction} by a creature beside it deals double bonus.
 - **Family:** Store
 - **Forms:** kilnmole
 - **Intent (for contributors, never shown to players):** A Guard beside a Payoff in a hard fight.
@@ -198,42 +200,42 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Overcharge
 
-- **Text:** Its hit deals no damage. It leaves its mark with 2 stacks.
+- **Text:** Its hit deals no damage. It leaves its {Mark} at x2.
 - **Family:** Heavy Prime
-- **Forms:** zipmouse, voltaro, ohmouse
+- **Forms:** zipmouse, voltaro, ohmouse, ancientshell, wickat
 - **Intent (for contributors, never shown to players):** Feeds Detonators and two Payoffs of the trigger element.
 
 ### Zigzag
 
-- **Text:** {Taunt}, +20 dodge. {Store} Static: +1 per dodge. With 3 Static its next mark gains +2 stacks and it spends all.
+- **Text:** {Taunt}, +20 dodge. {Store} Static: +1 per dodge; at 3, its next mark gets +2 to its count.
 - **Family:** Evasion
 - **Forms:** voltaro
 - **Intent (for contributors, never shown to players):** A dodge tank beside a Guard (dodge before intercept).
 
 ### Catch the Bolts
 
-- **Text:** It intercepts area hits on creatures in its reach too, after each one's failed dodge.
+- **Text:** It {Intercept}s area hits too.
 - **Family:** Intercept
 - **Forms:** ohmouse
 - **Intent (for contributors, never shown to players):** Answers sweeps and splashes.
 
-### Static Shell
+### Lightning Ears
 
-- **Text:** It leaves its own element's mark like a Setter. Its plain hit deals 50% less.
+- **Text:** It leaves its own element's {Mark} like a Setter, but it does not {Intercept}.
 - **Family:** Guard Prime
 - **Forms:** ohmouse
 - **Intent (for contributors, never shown to players):** A Setter that survives the front row.
 
 ### Mud Wall
 
-- **Text:** Each hit it takes puts a Mired stack on the boss.
+- **Text:** Each hit it takes, even Blocked, puts {Mired} x1 on the boss.
 - **Family:** Debuff
 - **Forms:** bogwarden
 - **Intent (for contributors, never shown to players):** Keeps Mire's debuff alive after finale abilities go.
 
 ### Squelch Song
 
-- **Text:** At round start the boss gains a Mired stack.
+- **Text:** At round start the boss gains {Mired} x1.
 - **Family:** Debuff
 - **Forms:** croakmire
 - **Intent (for contributors, never shown to players):** Keeps Mire's debuff alive after finale abilities go.

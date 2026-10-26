@@ -1,25 +1,31 @@
 /**
  * Best-team search: for a boss with rule cards, find the lines that do the most, so we can see which
  * Knacks stand out, which are never picked, and whether the usual trio still wins everything.
- * It is a seeded random search plus local improvement: good enough to find outliers, not a proof.
+ * It is a seeded random search plus local improvement, then a re-score of the top lines on fresh
+ * seeds (so a lucky line does not win on its search seeds). Good enough to find outliers, not a proof.
  */
 import { createSeededRng, int, type Rng } from '@creatures/game';
 import { labBoss } from './cards';
 import { fight } from './fight';
 import { FORM_KNACKS } from './knacks';
-import { formStats } from './species';
 import type { BossDef, Placement } from './types';
 
 export interface Pick {
   readonly formId: string;
+  /** A Knack id, or 'none'. */
   readonly knack: string;
+  readonly level?: number;
 }
 
-/** The lab's creature pool: every form with Knacks, at level 25 (stage 1 forms stop at their cap). */
-export const POOL: readonly Pick[] = Object.entries(FORM_KNACKS).flatMap(([formId, ks]) =>
-  ks.map((knack) => ({ formId, knack })),
-);
 export const LEVEL = 25;
+
+/** Every form with every Knack it can equip, plus no Knack. */
+export function poolOf(forms: readonly string[] = Object.keys(FORM_KNACKS)): Pick[] {
+  return forms.flatMap((formId) =>
+    [...(FORM_KNACKS[formId] ?? []), 'none'].map((knack) => ({ formId, knack })),
+  );
+}
+export const POOL: readonly Pick[] = poolOf();
 
 export const CLASSIC_LINE: readonly Pick[] = [
   { formId: 'tidewing', knack: 'soak-through' },
@@ -47,7 +53,7 @@ export function toPlacements(line: readonly Pick[], mode: Mode): Placement[] {
   return line.map((p, i) => ({
     owner: mode.id === 'gauntlet' ? 'p1' : `p${(i % 4) + 1}`,
     formId: p.formId,
-    level: LEVEL,
+    level: p.level ?? LEVEL,
     knack: p.knack,
     row: Math.floor(i / mode.cols),
     col: i % mode.cols,
@@ -55,6 +61,8 @@ export function toPlacements(line: readonly Pick[], mode: Mode): Placement[] {
 }
 
 export interface Score {
+  /** Damage, weighted by how many creatures are still standing at the end (half weight for a wipe). */
+  readonly score: number;
   readonly damage: number;
   readonly knockouts: number;
   readonly reactions: number;
@@ -68,18 +76,22 @@ export function evaluate(
   seeds: number,
   salt: string,
 ): Score {
-  let damage = 0,
+  let score = 0,
+    damage = 0,
     knockouts = 0,
     reactions = 0,
     blocked = 0;
   for (let i = 0; i < seeds; i++) {
     const r = fight(boss, toPlacements(line, mode), { rng: createSeededRng(`${salt}:${i}`) });
+    const standing = (line.length - r.knockouts) / line.length;
+    score += r.damage * (0.5 + 0.5 * standing);
     damage += r.damage;
     knockouts += r.knockouts;
     reactions += r.reactions;
     blocked += r.blocked;
   }
   return {
+    score: score / seeds,
     damage: damage / seeds,
     knockouts: knockouts / seeds,
     reactions: reactions / seeds,
@@ -90,33 +102,30 @@ export function evaluate(
 const valid = (line: readonly Pick[], mode: Mode) => {
   const n = new Map<string, number>();
   for (const p of line) n.set(p.formId, (n.get(p.formId) ?? 0) + 1);
-  return (
-    [...n.values()].every((c) => c <= mode.maxCopies) &&
-    line.every((p) => formStats(p.formId, LEVEL).levelCap >= 15)
-  );
+  return [...n.values()].every((c) => c <= mode.maxCopies);
 };
 
-function randomLine(rng: Rng, mode: Mode): Pick[] {
+function randomLine(rng: Rng, mode: Mode, pool: readonly Pick[]): Pick[] {
   for (;;) {
     const line = Array.from(
       { length: mode.rows * mode.cols },
-      () => POOL[int(rng, POOL.length)] as Pick,
+      () => pool[int(rng, pool.length)] as Pick,
     );
     if (valid(line, mode)) return line;
   }
 }
 
-function mutate(rng: Rng, line: readonly Pick[], mode: Mode): Pick[] {
-  for (;;) {
+function mutate(rng: Rng, line: readonly Pick[], mode: Mode, pool: readonly Pick[]): Pick[] {
+  for (let tries = 0; ; tries++) {
     const next = [...line];
     const i = int(rng, next.length);
     if (int(rng, 2) === 0) {
-      next[i] = POOL[int(rng, POOL.length)] as Pick;
+      next[i] = pool[int(rng, pool.length)] as Pick;
     } else {
       const j = int(rng, next.length);
       [next[i], next[j]] = [next[j] as Pick, next[i] as Pick];
     }
-    if (valid(next, mode)) return next;
+    if (valid(next, mode) || tries > 50) return valid(next, mode) ? next : [...line];
   }
 }
 
@@ -125,28 +134,48 @@ export interface Ranked {
   readonly score: Score;
 }
 
+export const lineKey = (l: readonly Pick[]) => l.map((p) => `${p.formId}/${p.knack}`).join('|');
+
 export function search(
   boss: BossDef,
   mode: Mode,
-  opts: { seed: string; starts: number; keep: number; rounds: number; seeds: number },
+  opts: {
+    seed: string;
+    starts: number;
+    keep: number;
+    rounds: number;
+    seeds: number;
+    freshSeeds: number;
+    pool?: readonly Pick[];
+    include?: readonly (readonly Pick[])[];
+  },
 ): Ranked[] {
+  const pool = opts.pool ?? POOL;
   const rng = createSeededRng(`search:${opts.seed}`);
   const seen = new Map<string, Ranked>();
-  const key = (l: readonly Pick[]) => l.map((p) => `${p.formId}/${p.knack}`).join('|');
   const add = (l: readonly Pick[]) => {
-    const k = key(l);
+    const k = lineKey(l);
     if (!seen.has(k))
       seen.set(k, { line: l, score: evaluate(boss, l, mode, opts.seeds, `eval:${opts.seed}`) });
   };
-  add(classicFor(mode));
-  for (let i = 0; i < opts.starts; i++) add(randomLine(rng, mode));
+  for (const l of opts.include ?? []) add(l);
+  for (let i = 0; i < opts.starts; i++) add(randomLine(rng, mode, pool));
   for (let g = 0; g < opts.rounds; g++) {
     const top = [...seen.values()]
-      .sort((a, b) => b.score.damage - a.score.damage)
+      .sort((a, b) => b.score.score - a.score.score)
       .slice(0, opts.keep);
-    for (const t of top) for (let m = 0; m < 6; m++) add(mutate(rng, t.line, mode));
+    for (const t of top) for (let m = 0; m < 6; m++) add(mutate(rng, t.line, mode, pool));
   }
-  return [...seen.values()].sort((a, b) => b.score.damage - a.score.damage);
+  // Re-score the best lines (and every included line) on fresh seeds, then rank by that.
+  const ranked = [...seen.values()].sort((a, b) => b.score.score - a.score.score);
+  const includeKeys = new Set((opts.include ?? []).map(lineKey));
+  const recheck = ranked.filter((r, i) => i < 20 || includeKeys.has(lineKey(r.line)));
+  return recheck
+    .map((r) => ({
+      line: r.line,
+      score: evaluate(boss, r.line, mode, opts.freshSeeds, `fresh:${opts.seed}`),
+    }))
+    .sort((a, b) => b.score.score - a.score.score);
 }
 
 export function bossFor(mode: Mode, cards: readonly string[]): BossDef {

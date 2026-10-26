@@ -134,3 +134,23 @@ Fail: a boss that ignores where creatures stand, or one that makes a whole eleme
 Review question: Is there a placement or Knack answer, and is no build locked out?
 Check: report "Raid weekend" and "Best teams per card".
 Trades against: P-01.
+
+### P-13 The board only points at answers that work
+
+Status: proposed (first panel, 2026-10-26)
+Statement: A rule card's icon appears on a creature only when the lab shows that creature's Knack beats the usual team on that card.
+Pass: Tunnel Through beside the Payoff beats the classic line on Thick Hide (+20% in the v0.4 report).
+Fail: Night Watch shown as the Great Wave answer while it does 5% worse than the classic line.
+Review question: Does the report's "intended answers" table show this answer winning?
+Check: report "Do each card's intended answers work?".
+Trades against: P-08 (fewer icons until answers are tuned).
+
+### P-14 Doing nothing is never a trap
+
+Status: proposed (first panel, 2026-10-26)
+Statement: A player who never opens Knacks, or is absent, gets a sound fight: no Knack is a fair choice, and no default makes a creature worse than having none.
+Pass: an absent player's creature uses its saved Knack or none (R11).
+Fail: v0.3's default Detonate, 9% worse than no Knack with one Setter.
+Review question: Is this form's worst default still at least as good as no Knack?
+Check: report "Scenarios" row "Classic with no Knacks" and the casual roster.
+Trades against: P-05 (a Knack with a cost is worse than none somewhere).

@@ -1,6 +1,6 @@
 # Combat v2: the rework
 
-Status: **proposal under iteration** (v0.3, 2026-10-26). Nothing here is shipped. The shipped rules are still `docs/design/combat-rules.md` and `packages/engine`.
+Status: **proposal under iteration** (v0.4, 2026-10-26; first panel done). Nothing here is shipped. The shipped rules are still `docs/design/combat-rules.md` and `packages/engine`.
 
 ## North Star
 
@@ -11,8 +11,8 @@ A fight you can read from the board before it plays. Each creature's species giv
 1. **Misa's decisions** in `docs/design/decisions.md` (entries tagged combat v2) and the **accepted** entries in [`principles.md`](principles.md).
 2. **The proposal** [`proposals/001-combat-v2.md`](proposals/001-combat-v2.md): the draft rules, numbered, step by step.
 3. **The lab's data and tests** (`packages/lab`): Knacks (`src/knacks.ts`), keywords (`src/keywords.ts`), rule cards (`src/cards.ts`), starting numbers (`src/rules.ts`). Where the proposal and the lab disagree, fix one of them in the same change; a test should catch it next time.
-4. **Generated pages**: [`knacks.md`](knacks.md) and [`lab-report.md`](lab-report.md) are written by `pnpm --filter @creatures/lab report`. Never edit them by hand.
-5. **Readable references**: [`keywords.md`](keywords.md), [`grammar.md`](grammar.md).
+4. **Generated pages**: [`knacks.md`](knacks.md), [`keywords.md`](keywords.md) and [`lab-report.md`](lab-report.md) are written by `pnpm --filter @creatures/lab report`. Never edit them by hand.
+5. **Readable reference**: [`grammar.md`](grammar.md).
 6. **The compendium** (`docs/compendium/`) holds names and flavour only, never rules.
 
 Numbers live only in data (`packages/lab/src/rules.ts`, content JSON), never in prose. Prose may give an example with a number, marked as an example.
