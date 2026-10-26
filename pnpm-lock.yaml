@@ -232,6 +232,9 @@ importers:
       '@creatures/game':
         specifier: workspace:*
         version: link:../../packages/game
+      '@creatures/lab':
+        specifier: workspace:*
+        version: link:../../packages/lab
       '@discord/embedded-app-sdk':
         specifier: 'catalog:'
         version: 2.5.0

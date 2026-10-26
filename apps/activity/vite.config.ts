@@ -15,6 +15,10 @@ export default defineConfig(({ command, mode }) => {
   // gate: it is a build input only when the dev tools are in, so a production build never emits it.
   const input: Record<string, string> = { index: 'index.html' };
   if (devToolsBuild) input['workbench'] = 'workbench.html';
+  // The combat lab (`combat-lab.html`, `src/combat-lab/`, the combat v2 prototype) is a third page
+  // behind the same gate: staging and `pnpm dev` only, so it (and the lab engine it bundles) never
+  // reaches a production build.
+  if (devToolsBuild) input['combat-lab'] = 'combat-lab.html';
   return {
     plugins: [preact()],
     define: { __DEV_TOOLS_BUILD__: JSON.stringify(devToolsBuild) },

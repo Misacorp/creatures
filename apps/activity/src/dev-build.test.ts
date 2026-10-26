@@ -16,6 +16,12 @@ const MARKERS = ['DEV_PANEL_MARKER_7f3a', 'dev-drawer', '/api/dev/'];
  */
 const WORKBENCH_MARKERS = ['WORKBENCH_MARKER_5c1e', 'wb-frame-stage'];
 
+/**
+ * The combat lab (`combat-lab.html`, `src/combat-lab/`) is staging-only the same way. Strings only it
+ * has: its marker, and a class of its stylesheet.
+ */
+const COMBAT_LAB_MARKERS = ['COMBAT_LAB_MARKER_9d2b', 'cl-board-scroll'];
+
 /** A `#rrggbb` token's value in whitespace-free CSS. */
 function cssColour(css: string, name: string): string {
   const match = new RegExp(`${name}:(#[0-9a-fA-F]{6})`).exec(css);
@@ -71,6 +77,11 @@ describe('the debug panel and the production build', () => {
     for (const marker of WORKBENCH_MARKERS) {
       expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
     }
+    // The same for the combat lab: no page, no code, no styles.
+    expect(files.some((f) => f.name.includes('combat-lab'))).toBe(false);
+    for (const marker of COMBAT_LAB_MARKERS) {
+      expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
+    }
     // The rarity colours are defined once, as tokens (grey, blue, pink; gold and crimson reserved), with a lighter text variant each for names.
     const css = files
       .filter((f) => f.name.endsWith('.css'))
@@ -122,6 +133,11 @@ describe('the debug panel and the production build', () => {
     for (const marker of WORKBENCH_MARKERS) {
       expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
     }
+    // The same for the combat lab: no page, no code, no styles.
+    expect(files.some((f) => f.name.includes('combat-lab'))).toBe(false);
+    for (const marker of COMBAT_LAB_MARKERS) {
+      expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
+    }
   }, 60_000);
 
   it('is a separate lazy chunk in a staging build (so the search above can find it)', async () => {
@@ -146,6 +162,22 @@ describe('the debug panel and the production build', () => {
       true,
     );
     // It makes no API calls: nothing in the workbench bundle names the API.
+    expect(bundles[0]?.text.includes('/api/')).toBe(false);
+  }, 60_000);
+
+  it('has the combat lab page in a staging build, apart from the game page', async () => {
+    const files = await buildFiles('staging');
+    expect(files.some((f) => f.name === 'combat-lab.html')).toBe(true);
+    expect(files.some((f) => f.name === 'index.html')).toBe(true);
+    const bundles = files.filter((f) => f.text.includes('COMBAT_LAB_MARKER_9d2b'));
+    expect(bundles.map((f) => f.name.endsWith('.js'))).toEqual([true]);
+    // The game's own page never loads the combat lab bundle.
+    const gamePage = files.find((f) => f.name === 'index.html');
+    expect(gamePage?.text.includes(bundles[0]?.name ?? 'x')).toBe(false);
+    expect(files.some((f) => f.name.endsWith('.css') && f.text.includes('cl-board-scroll'))).toBe(
+      true,
+    );
+    // It makes no API calls: nothing in the combat lab bundle names the API.
     expect(bundles[0]?.text.includes('/api/')).toBe(false);
   }, 60_000);
 });
