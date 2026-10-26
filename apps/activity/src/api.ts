@@ -45,6 +45,8 @@ export interface AppConfig {
   loungeLive: boolean;
   /** True when the server offers the finale's live socket (`FINALE_LIVE`; off in production for now). */
   finaleLive: boolean;
+  /** True when the server offers the raid board's live socket (`RAID_LIVE`): teammates' placements appear as they are made. */
+  raidLive: boolean;
 }
 
 export interface SessionUser {
@@ -205,6 +207,7 @@ export async function fetchConfig(): Promise<AppConfig> {
     devTools: data['devTools'] === true,
     loungeLive: data['loungeLive'] === true,
     finaleLive: data['finaleLive'] === true,
+    raidLive: data['raidLive'] === true,
   };
 }
 
@@ -913,7 +916,8 @@ export type LiveMessage =
   | { type: 'hello'; serverNow: number }
   | { type: 'resident'; resident: RoomResident }
   | ({ type: 'lounge-xp' } & LoungeXpPush)
-  | { type: 'finale'; snapshot: unknown };
+  | { type: 'finale'; snapshot: unknown }
+  | { type: 'raid'; push: unknown };
 
 /**
  * What lounging just paid the player's own lounger (pushed to their own lounge sockets only): the
@@ -951,6 +955,10 @@ export function parseLiveMessage(text: string): LiveMessage | null {
   }
   if (data['type'] === 'finale') {
     return isRecord(data['snapshot']) ? { type: 'finale', snapshot: data['snapshot'] } : null;
+  }
+  if (data['type'] === 'raid') {
+    // One board change (a few cells): small, and checked strictly by `parseBoardPush` (`raid-board-live.ts`).
+    return text.length <= MAX_SMALL_CHARS ? { type: 'raid', push: data } : null;
   }
   if (data['type'] === 'lounge-xp') {
     // Exactly these keys: anything else is a shape this client does not know.
@@ -1002,6 +1010,18 @@ export async function fetchFinaleTicket(week: string, party: number): Promise<st
 }
 
 /**
+ * Asks for the one-time ticket that opens the raid board's live socket for one party (an authenticated
+ * request; the server refuses a party the raid view would not show this player).
+ */
+export async function fetchRaidBoardTicket(week: string, party: number): Promise<string> {
+  const data = await apiFetch('/api/raid/board/ticket', jsonRequest('POST', { week, party }));
+  if (!isRecord(data) || typeof data['ticket'] !== 'string') {
+    throw new Error('/api/raid/board/ticket returned an unexpected shape');
+  }
+  return data['ticket'];
+}
+
+/**
  * A socket's address: the page's own host, so inside Discord it goes through the proxy like every
  * other request. The ticket is single-use and lives 30 s, so it may sit in the URL.
  */
@@ -1023,3 +1043,8 @@ export const finaleSocketUrl = (
   ticket: string,
   location: { protocol: string; host: string },
 ): string => liveSocketUrl('/api/finale/live', ticket, location);
+
+export const raidBoardSocketUrl = (
+  ticket: string,
+  location: { protocol: string; host: string },
+): string => liveSocketUrl('/api/raid/board/live', ticket, location);
