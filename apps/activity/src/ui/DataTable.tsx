@@ -19,11 +19,11 @@ export interface DataRow {
 /** The column headings of a `DataTable`, one per column. */
 export interface DataHeadings {
   /** The label column ("Player"). */
-  label: string;
-  /** The value column ("Damage"). */
-  value: string;
-  /** The extra column ("%"). Give it whenever any row has an `extra` value. */
-  extra?: string;
+  label: ComponentChildren;
+  /** The value column ("Damage"); it may hold a "?" help tag after the word. */
+  value: ComponentChildren;
+  /** The extra column ("Score"). Give it whenever any row has an `extra` value. */
+  extra?: ComponentChildren;
 }
 
 /** The classes of one row: `total` for the closing row, `mine` for the viewer's own. */

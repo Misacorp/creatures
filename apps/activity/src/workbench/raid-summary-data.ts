@@ -204,7 +204,8 @@ function stats(o: StageOptions): AfterActionStats {
     displayName: s.name,
     you: s.name === o.you,
     damage: damages[i] ?? 0,
-    contribution: (damages[i] ?? 0) + s.support,
+    score: (damages[i] ?? 0) + s.support,
+    assist: s.support,
   }));
 
   const all: StatsCreature[] = o.seeds.flatMap((s, i) =>
@@ -215,11 +216,11 @@ function stats(o: StageOptions): AfterActionStats {
       owner: s.name,
       you: s.name === o.you,
       damage: Math.floor(((damages[i] ?? 0) * share) / 100),
-      contribution: Math.floor((((damages[i] ?? 0) + s.support) * share) / 100),
+      score: Math.floor((((damages[i] ?? 0) + s.support) * share) / 100),
     })),
   );
   const ranked = all
-    .sort((a, b) => b.damage - a.damage || b.contribution - a.contribution)
+    .sort((a, b) => b.damage - a.damage || b.score - a.score)
     .map((cr, index) => ({ ...cr, rank: index + 1 }));
   // The server lists the five best and always the caller's own.
   const listed = ranked.filter((cr, index) => index < 5 || cr.you);

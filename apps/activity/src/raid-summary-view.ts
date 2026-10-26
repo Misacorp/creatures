@@ -105,26 +105,26 @@ export interface ScoreRow {
   /** "You" for the caller, the display name for others, "Guest" without one. */
   name: string;
   you: boolean;
+  /** Damage really dealt to the boss. */
   damage: number;
-  contribution: number;
+  /** The score: what sets the Essence share. */
+  score: number;
   /** Whole percent of the raid's damage. */
   share: number;
 }
 
-/** The players by damage (then contribution), each with a place and a share of the raid's damage. */
+/** The players by damage (then score), each with a place and a share of the raid's damage. */
 export function scoreboard(stats: Pick<AfterActionStats, 'players'>): ScoreRow[] {
   const total = stats.players.reduce((sum, p) => sum + p.damage, 0);
   return [...stats.players]
     .map((p, order) => ({ p, order }))
-    .sort(
-      (a, b) => b.p.damage - a.p.damage || b.p.contribution - a.p.contribution || a.order - b.order,
-    )
+    .sort((a, b) => b.p.damage - a.p.damage || b.p.score - a.p.score || a.order - b.order)
     .map(({ p }, index) => ({
       rank: index + 1,
       name: whoText(p.displayName, p.you),
       you: p.you,
       damage: p.damage,
-      contribution: p.contribution,
+      score: p.score,
       share: sharePercent(p.damage, total),
     }));
 }
@@ -234,14 +234,14 @@ export function highlights(stats: AfterActionStats): Highlight[] {
     });
   }
 
-  // The backbone: the most credit that is not damage (setting up, supporting, guarding).
-  const backbone = most(stats.players, (p) => p.contribution - p.damage);
+  // The backbone: the most score that is not from its own hits (setting up, supporting, guarding).
+  const backbone = most(stats.players, (p) => p.assist);
   if (backbone !== undefined) {
     out.push({
       id: 'backbone',
       label: 'The backbone',
       who: whoText(backbone.displayName, backbone.you),
-      line: `${grouped(backbone.contribution - backbone.damage)} from setting up and supporting`,
+      line: `${grouped(backbone.assist)} score from setting up, supporting and guarding`,
       you: backbone.you,
       icon: glyph('shield'),
     });

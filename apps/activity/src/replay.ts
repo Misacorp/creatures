@@ -394,9 +394,9 @@ interface CreatureRecap {
   id: string;
   name: string;
   role: string;
-  /** Damage this creature dealt to the boss, reaction bonuses included. */
+  /** Damage this creature dealt to the boss, reaction bonuses and Echo and Riposte hits included. */
   damage: number;
-  /** Credit for marks it set that others (or it) cashed in: the setup share (60%) of the reaction bonus. */
+  /** Score for marks it set that others (or it) cashed in: the setup share (60%) of the reaction bonus. */
   setupCredit: number;
   /** Reactions it set up. */
   setups: number;
@@ -454,6 +454,13 @@ export function personalRecap(
       case 'hit': {
         const c = creatures.get(e.creature);
         if (c !== undefined) c.damage += e.damage;
+        break;
+      }
+      case 'proc': {
+        // Echo and Riposte hit the boss too (the engine's `damageDealt` counts them the same way).
+        const c = creatures.get(e.creature);
+        if (c !== undefined && (e.kind === 'echo' || e.kind === 'riposte'))
+          c.damage += e.amount ?? 0;
         break;
       }
       case 'reaction': {

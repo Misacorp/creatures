@@ -134,7 +134,7 @@
   overflow-wrap: anywhere;
 }
 
-/* --- The scoreboard (a ui/DataTable with headings: place and name, damage, share) --- */
+/* --- The scoreboard (a ui/DataTable with headings: place and name, damage, score) --- */
 .rs-rank {
   flex: none;
   width: 1.5rem;
@@ -163,6 +163,14 @@
 .data-row.mine .rs-rank,
 .data-row.mine .rs-share {
   color: var(--gold);
+}
+
+/* A column heading with its "?" (Damage, Score), right-aligned like the numbers under it. */
+.rs-col {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 /* --- Highlight cards: one picture, a small title, who, and the fact. All aligned on one grid. --- */

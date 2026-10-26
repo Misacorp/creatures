@@ -90,7 +90,7 @@ describe('the scoreboard', () => {
       table,
       (el) => el.localName === 'th' && el.getAttribute('scope') === 'col',
     );
-    expect(headings.map(visibleText)).toEqual(['Player', 'Damage', '%']);
+    expect(headings.map(visibleText)).toEqual(['Player', 'Damage ?', 'Score ?']);
     const body = find(table, (el) => el.localName === 'tbody')[0] as FakeElement;
     const rows = byClass(body, 'data-row');
     // Eleven players and the raid's total.
@@ -100,6 +100,28 @@ describe('the scoreboard', () => {
     expect(
       find(body, (el) => el.localName === 'th' && el.getAttribute('scope') === 'row'),
     ).toHaveLength(12);
+  });
+
+  it('explains damage and score with a "?" on each column heading (#86)', () => {
+    const p = draw(clear11);
+    const helps = byClass(scoreboard(p), 'gtag-help');
+    expect(helps.map((h) => h.getAttribute('aria-label'))).toEqual([
+      'What is Damage?',
+      'What is Score?',
+    ]);
+    p.click(helps[1] as FakeElement);
+    const dialog = first(byRole(p.root.parentNode ?? p.root, 'dialog'));
+    expect(visibleText(dialog)).toContain('Setting up');
+  });
+
+  it('shows the real damage and the score of each player, and both totals', () => {
+    const p = draw(clear11);
+    const rows = byClass(scoreboard(p), 'data-row');
+    const last = rows[rows.length - 1] as FakeElement;
+    const cells = find(last, (el) => el.localName === 'td').map(visibleText);
+    const sum = (key: 'damage' | 'score') =>
+      clear11.stats.players.reduce((t, x) => t + x[key], 0).toLocaleString('en-US');
+    expect(cells).toEqual([sum('damage'), sum('score')]);
   });
 
   it('marks only the caller row, and puts the total last', () => {

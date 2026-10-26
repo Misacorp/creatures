@@ -36,12 +36,12 @@ describe('the scoreboard', () => {
     expect(yourPlace({ players: [] })).toBeNull();
   });
 
-  it('breaks a tie by contribution, then by the order the server listed them', () => {
+  it('breaks a tie by score, then by the order the server listed them', () => {
     const rows = scoreboard({
       players: [
-        { displayName: 'A', you: false, damage: 10, contribution: 10 },
-        { displayName: 'B', you: false, damage: 10, contribution: 30 },
-        { displayName: 'C', you: false, damage: 10, contribution: 10 },
+        { displayName: 'A', you: false, damage: 10, score: 10, assist: 0 },
+        { displayName: 'B', you: false, damage: 10, score: 30, assist: 0 },
+        { displayName: 'C', you: false, damage: 10, score: 10, assist: 0 },
       ],
     });
     expect(rows.map((r) => r.name)).toEqual(['B', 'A', 'C']);
@@ -49,7 +49,7 @@ describe('the scoreboard', () => {
 
   it('has no shares of an empty raid', () => {
     expect(
-      scoreboard({ players: [{ displayName: 'A', you: true, damage: 0, contribution: 0 }] })[0]
+      scoreboard({ players: [{ displayName: 'A', you: true, damage: 0, score: 0, assist: 0 }] })[0]
         ?.share,
     ).toBe(0);
   });

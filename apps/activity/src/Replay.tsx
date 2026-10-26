@@ -155,8 +155,8 @@ function Player({ data, showControls }: { data: ReplayView; showControls: boolea
         <ul class="bullet-list">
           {recap.creatures.map((c) => (
             <li key={c.id}>
-              <strong>{c.name}</strong>: {c.damage} damage, {c.setupCredit} setup credit, {c.setups}{' '}
-              reaction{c.setups === 1 ? '' : 's'} set up
+              <strong>{c.name}</strong>: {c.damage} damage, {c.setupCredit} score from setting up,{' '}
+              {c.setups} reaction{c.setups === 1 ? '' : 's'} set up
             </li>
           ))}
         </ul>

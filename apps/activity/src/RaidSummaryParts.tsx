@@ -7,6 +7,7 @@ import type { ComponentChildren } from 'preact';
 import { abilitySummary, percentText, whoText } from './after-action';
 import { essenceCount, partCountItems } from './count-items';
 import { FinaleProgress } from './FinaleProgress';
+import { GlossaryTag } from './Glossary';
 import { LootList } from './LootList';
 import type { AfterActionStats } from './raid-api';
 import { festivalFind } from './find-view';
@@ -30,7 +31,7 @@ import { RewardSummary } from './ui/RewardSummary';
 
 // --- The scoreboard ---
 
-/** One scoreboard row: place, name, damage, share of the raid. The caller's row is marked. */
+/** One scoreboard row: place, name, damage and score. The caller's row is marked. */
 export function scoreRow(row: ScoreRow): DataRow {
   return {
     label: (
@@ -40,16 +41,33 @@ export function scoreRow(row: ScoreRow): DataRow {
       </>
     ),
     value: grouped(row.damage),
-    extra: <span class="rs-share">{row.share}%</span>,
+    extra: grouped(row.score),
     mine: row.you,
   };
 }
 
-/** The scoreboard's column headings: the last column is just "%". */
-const SCORE_HEADINGS = { label: 'Player', value: 'Damage', extra: '%' } as const;
+/**
+ * The headings of the damage and score columns, each with a "?" that explains it (#86: the old
+ * "Damage" column was the score's share of the hits, which did not add up to the boss's HP).
+ */
+function columnHeadings(label: string) {
+  return {
+    label,
+    value: (
+      <span class="rs-col">
+        Damage <GlossaryTag entry="raid-damage" look="help" />
+      </span>
+    ),
+    extra: (
+      <span class="rs-col">
+        Score <GlossaryTag entry="raid-score" look="help" />
+      </span>
+    ),
+  };
+}
 
 /**
- * Every player as a table of place and name, damage and share, with column headings and the caller's
+ * Every player as a table of place and name, damage and score, with column headings and the caller's
  * row marked. `total` adds the raid's total at the end.
  */
 export function ScoreTable({
@@ -59,17 +77,16 @@ export function ScoreTable({
   rows: readonly ScoreRow[];
   total?: boolean;
 }) {
-  const sum = rows.reduce((s, r) => s + r.damage, 0);
   const data: DataRow[] = rows.map(scoreRow);
   if (total) {
     data.push({
       label: <span class="rs-name">Raid total</span>,
-      value: grouped(sum),
-      extra: <span class="rs-share">100%</span>,
+      value: grouped(rows.reduce((s, r) => s + r.damage, 0)),
+      extra: grouped(rows.reduce((s, r) => s + r.score, 0)),
       total: true,
     });
   }
-  return <DataTable rows={data} tabular headings={SCORE_HEADINGS} label="Scoreboard" />;
+  return <DataTable rows={data} tabular headings={columnHeadings('Player')} label="Scoreboard" />;
 }
 
 // --- Highlights ---
@@ -214,22 +231,26 @@ export function MoreNumbers({
         >
           <DataTable
             tabular
+            headings={columnHeadings('Creature')}
+            label="Top creatures"
             rows={stats.creatures.map((c) => ({
               label: (
                 <span class="rs-creature-name">
                   <Sprite sprite={creatureSpriteOrFallback(c.species)} scale={2} />
                   <span class="rs-stack">
                     <span class="rs-name">{c.name}</span>
-                    <span class="rs-share">{whoText(c.owner, c.you)}</span>
+                    <span class="rs-share">{`#${String(c.rank)} · ${whoText(c.owner, c.you)}`}</span>
                   </span>
                 </span>
               ),
               value: grouped(c.damage),
-              extra: <span class="rs-share">{`#${String(c.rank)}`}</span>,
+              extra: grouped(c.score),
               mine: c.you,
             }))}
           />
-          <p class="rs-note">Damage, and the place among all creatures in the fight.</p>
+          <p class="rs-note">
+            The number is the place among all creatures in the fight, by damage.
+          </p>
         </Accordion>
         <Accordion
           title="Reactions"

@@ -117,6 +117,7 @@ function Hero({ input }: { input: SummaryInput }) {
         <p class="rs-yours">
           <Tag kind="chip">{`Place ${String(place.row.rank)} / ${String(place.of)}`}</Tag>
           <Tag kind="chip">{`${grouped(place.row.damage)} damage`}</Tag>
+          <Tag kind="chip">{`${grouped(place.row.score)} score`}</Tag>
         </p>
       )}
       {boss !== null && boss.turnOrder !== null && (

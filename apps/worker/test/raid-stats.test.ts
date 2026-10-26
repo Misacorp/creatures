@@ -1,3 +1,4 @@
+import { damageDealt } from '@creatures/engine';
 import { RULES } from '@creatures/game';
 import closeLoss from '../../activity/src/fixtures/raid-stats-close-loss.json';
 import closeWin from '../../activity/src/fixtures/raid-stats-close-win.json';
@@ -255,7 +256,22 @@ describe('after-action stats of real stored fights', () => {
         expect(stats.players.filter((p) => p.you).map((p) => p.displayName)).toEqual([me.name]);
         const damages = stats.players.map((p) => p.damage);
         expect(damages).toEqual([...damages].sort((a, b) => b - a));
-        expect(stats.players.reduce((t, p) => t + p.damage, 0)).toBe(run.summary.damage);
+        // Damage is what the creatures really dealt (#86): with the guests' it is the HP the boss
+        // lost, and never less than the engine's credit. The score is the engine's contribution.
+        const dealt = damageDealt(run.result.events);
+        const guests = run.input.row
+          .filter((slot) => slot.ownerId === null)
+          .reduce((t, slot) => t + (dealt[slot.id] ?? 0), 0);
+        expect(stats.players.reduce((t, p) => t + p.damage, 0) + guests).toBe(
+          run.result.bossHpStart - run.result.bossHpEnd,
+        );
+        expect(stats.players.reduce((t, p) => t + p.damage, 0)).toBeGreaterThanOrEqual(
+          run.summary.damage,
+        );
+        const pairs = (list: [number, number][]) => list.map((x) => x.join(':')).sort();
+        expect(pairs(stats.players.map((p) => [p.score, p.assist]))).toEqual(
+          pairs(run.summary.contributors.map((c) => [c.contribution, c.contribution - c.damage])),
+        );
         // Creatures: the top five, the caller's own always there, ranks from the whole fight.
         const ranks = stats.creatures.map((c) => c.rank);
         expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
@@ -263,7 +279,7 @@ describe('after-action stats of real stored fights', () => {
         expect(stats.creatures.length).toBeLessThanOrEqual(5 + me.creatureIds.length);
         expect(stats.creatures.length).toBeGreaterThanOrEqual(5);
         expect(stats.creatures[0]?.rank).toBe(1);
-        const best = Math.max(...Object.values(run.result.perCreature).map((c) => c.damage));
+        const best = Math.max(...Object.values(dealt));
         expect(stats.creatures[0]?.damage).toBe(best);
         // Boss numbers are the stored ones.
         expect(stats.boss).toMatchObject({
@@ -482,8 +498,8 @@ describe('the stats contract with the client', () => {
     'rounds',
   ];
   const BOSS = ['hpEnd', 'hpMax', 'hpStart', 'leftBp', 'lost', 'needed'];
-  const PLAYER = ['contribution', 'damage', 'displayName', 'you'];
-  const CREATURE = ['contribution', 'damage', 'name', 'owner', 'rank', 'species', 'you'];
+  const PLAYER = ['assist', 'damage', 'displayName', 'score', 'you'];
+  const CREATURE = ['damage', 'name', 'owner', 'rank', 'score', 'species', 'you'];
   const REACTION = ['count', 'name', 'reflected'];
   const USED = ['ability', 'byDefault', 'creature', 'player', 'round', 'you'];
   const KNOCKOUT = ['creature', 'owner', 'round', 'species', 'you'];
