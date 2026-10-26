@@ -88,7 +88,8 @@
   --z-stage-pop: 20; /* a popover inside the stage */
   --z-stage-intro: 25; /* the round intro over the stage */
   --z-stage-overlay: 30; /* the countdown and the room banner over the stage */
-  --z-howto: 40; /* the How to play page */
+  --z-drawer: 50; /* a bottom sheet (Drawer) and its backdrop */
+  --z-howto: 55; /* the How to play page, over an open drawer: the drawer is inert while it is open */
   --z-popover-layer: 60; /* the page popover layer over everything but a drag */
   --z-drag: 100; /* the creature you are dragging */
 }
