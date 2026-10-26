@@ -170,7 +170,7 @@ describe('the LOUNGE_LIVE flag: configuration', () => {
     await runInDurableObject(stubOf(guildId), async (_instance, state) => {
       const sockets = new LiveSockets({
         ctx: state,
-        enabled: { lounge: false, finale: false },
+        enabled: { lounge: false, finale: false, raid: false },
         clientSecret: 'test-only-client-secret',
         guildId: () => guildId,
         now: Date.now,
@@ -341,7 +341,7 @@ describe('lounge XP', () => {
     await runInDurableObject(stubOf(guildId), (_instance, state) => {
       const sockets = new LiveSockets({
         ctx: state,
-        enabled: { lounge: true, finale: true },
+        enabled: { lounge: true, finale: true, raid: true },
         clientSecret: 'test-only-client-secret',
         guildId: () => guildId,
         now: Date.now,
@@ -363,7 +363,7 @@ describe('lounge XP', () => {
     await runInDurableObject(stubOf(guildId), (_instance, state) => {
       const sockets = new LiveSockets({
         ctx: state,
-        enabled: { lounge: false, finale: false },
+        enabled: { lounge: false, finale: false, raid: false },
         clientSecret: 'test-only-client-secret',
         guildId: () => guildId,
         now: Date.now,

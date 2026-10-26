@@ -315,11 +315,15 @@ function finaleLines(sql: SqlStorage, ctx: ScanContext): DueLine[] {
   // Due from ten minutes before the start, never after it.
   if (ping === null || ping.at > ctx.now || ctx.now >= ping.start || ping.at < ctx.now - STALE_MS)
     return [];
+  // Only players who joined this week's raid (placed a creature) get the ping.
   return sql
     .exec<{ user_id: string }>(
       `SELECT user_id FROM dm_prefs
-       WHERE blocked_at IS NULL AND finale_on_at IS NOT NULL AND finale_on_at <= ? ORDER BY user_id`,
+       WHERE blocked_at IS NULL AND finale_on_at IS NOT NULL AND finale_on_at <= ?
+         AND user_id IN (SELECT user_id FROM raid_party_members WHERE week_id = ?)
+       ORDER BY user_id`,
       ping.at,
+      ping.weekId,
     )
     .toArray()
     .map((r) => ({

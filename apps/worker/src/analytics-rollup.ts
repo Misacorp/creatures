@@ -457,9 +457,6 @@ function tallyEvent(tally: Tally, kind: string, p: Props): void {
     case 'festival_grant':
       tally.add('raid.festival_grant', { result: str(p, 'result') });
       break;
-    case 'roster_optout':
-      tally.add('raid.optout', { optOut: flag(p, 'optOut') });
-      break;
     case 'team_set':
       tally.add('raid.team_set', { auto: flag(p, 'auto') });
       for (const s of list(p, 'species')) tally.add('raid.team_species', { species: s });

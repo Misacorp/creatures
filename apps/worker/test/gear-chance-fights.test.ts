@@ -3,7 +3,7 @@ import { simulateFight, type FightInput } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
 import { giveItem } from './gear-helpers';
 import type { CoreContext } from './helpers';
-import { HELSINKI, W02, forcePool, rows, runRaid, seedPlayer } from './raid-helpers';
+import { HELSINKI, W02, forcePool, joinRaid, rows, runRaid, seedPlayer } from './raid-helpers';
 
 /**
  * Chance lines and trigger lines in the fights the server builds: a worn line reaches the creature's sheet
@@ -31,7 +31,7 @@ describe('the raid fight with chance and trigger lines worn', () => {
     await runRaid(
       (ctx) => {
         const players = [1, 2, 3].map((n) => seedPlayer(ctx, n, { level: 12 }));
-        ctx.core.raid.currentWeek(HELSINKI);
+        joinRaid(ctx, players);
         const [a] = players as [(typeof players)[number]];
         const [c0, c1, c2] = a.creatureIds as [string, string, string];
         ctx.clock.t = W02.afterPhase2;

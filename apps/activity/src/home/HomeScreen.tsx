@@ -17,6 +17,8 @@ export function HomeScreen({
   onGo,
   onHowTo,
   howToRef,
+  onDismissAway,
+  awayBusy,
   room,
   ...rest
 }: Omit<HomeInput, 'now'> & {
@@ -28,6 +30,9 @@ export function HomeScreen({
   onHowTo?: () => void;
   /** The "?" pin, where the focus returns when How to play closes. */
   howToRef?: RefObject<HTMLButtonElement | null>;
+  /** Clears the "While you were away" paper. */
+  onDismissAway?: (until: number) => void;
+  awayBusy?: boolean;
   /** The living room, drawn at the top of the page on a phone. */
   room?: ComponentChildren;
 }) {
@@ -39,6 +44,8 @@ export function HomeScreen({
       onGo={onGo}
       {...(onHowTo === undefined ? {} : { onHowTo })}
       {...(howToRef === undefined ? {} : { howToRef })}
+      {...(onDismissAway === undefined ? {} : { onDismissAway })}
+      {...(awayBusy === undefined ? {} : { awayBusy })}
       room={room}
     />
   );

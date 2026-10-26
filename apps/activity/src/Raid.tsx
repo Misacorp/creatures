@@ -9,6 +9,8 @@ import { useServerNow } from './hooks';
 import { finaleWindow } from './live';
 import { startPractice, type LiveSnapshot } from './live-api';
 import { Live } from './Live';
+import { raidLiveOffered } from './live-flags';
+import { useRaidBoardLive } from './use-raid-board-live';
 import { Replay } from './Replay';
 import { RevealCard } from './Reveal';
 import { RaidSummary } from './RaidSummary';
@@ -93,9 +95,48 @@ export function Raid({
   const autoOpened = useRef(false);
   const serverNow = useServerNow(loaded?.offset ?? 0, loaded !== null);
 
+  /** The latest loaded view, for the live board socket (it applies a push to what is on screen). */
+  const loadedRef = useRef<Loaded | null>(null);
+  loadedRef.current = loaded;
+  const reloading = useRef(false);
+
   function apply(view: RaidView): void {
     setLoaded({ view, offset: clockOffset(view.serverNow, Date.now()) });
   }
+
+  // The live board: while this tab shows a party's board (and the finale is not on), a socket brings
+  // teammates' placements as they are made. The server offers it through `/api/config`; without it, or
+  // while it is down, the tab behaves as it always did.
+  const boardWeek = loaded?.view.weekId ?? null;
+  const boardParty = loaded?.view.party?.party ?? null;
+  const boardOpen = loaded !== null && loaded.view.status !== 'finale' && !liveOpen;
+  useRaidBoardLive({
+    offered: raidLiveOffered(),
+    open: boardOpen,
+    week: boardWeek,
+    party: boardParty,
+    current: () => loadedRef.current?.view ?? null,
+    show: (view) => {
+      const prev = loadedRef.current;
+      if (prev === null) return;
+      const next = { ...prev, view };
+      loadedRef.current = next;
+      setLoaded(next);
+    },
+    reload: () => {
+      if (reloading.current) return;
+      reloading.current = true;
+      fetchRaid().then(
+        (view) => {
+          reloading.current = false;
+          apply(view);
+        },
+        () => {
+          reloading.current = false;
+        },
+      );
+    },
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -114,7 +155,7 @@ export function Raid({
 
   // The tab's pip follows the raid view on screen.
   useEffect(() => {
-    if (loaded !== null) onNeedsPlacementChange(needsPlacement(loaded.view));
+    if (loaded !== null) onNeedsPlacementChange(needsPlacement(loaded.view, creatures.length));
   }, [loaded?.view]);
 
   // When the next phase is due, ask again shortly after, so the results appear by themselves.
@@ -328,6 +369,7 @@ export function Raid({
         view={view}
         serverNow={serverNow}
         finale={finaleState}
+        owned={creatures.length}
         onAct={act}
         onReplay={(phase) => {
           if (party !== null) setReplay({ week: view.weekId, party: party.party, phase });
@@ -350,7 +392,6 @@ export function Raid({
           busy={busy}
           rosterNames={rosterNames}
           turnOrder={view.boss.turnOrder}
-          next={view.next}
           onIntent={runIntent}
           configure={configure}
           owned={creatures}

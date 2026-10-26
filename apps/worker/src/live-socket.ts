@@ -16,6 +16,7 @@
  */
 import type { LoungePaid } from './lounge-company';
 import type { Resident } from './lounger';
+import type { BoardPush } from './raid-board-change';
 import type { LiveSnapshot } from './raid-live-view';
 import { TicketBook, parseTicket } from './live-ticket';
 import { parseTopicTag, topicTag, userTag, type Topic, type TopicKind } from './live-topic';
@@ -31,10 +32,16 @@ export const FINALE_LIVE_PATH = '/api/finale/live';
 /** The route that makes a finale ticket (POST, normal session auth, a body naming the party). */
 export const FINALE_TICKET_PATH = '/api/finale/ticket';
 
+/** The raid board's upgrade route. Open only with `RAID_LIVE` on; only a raid-board ticket opens it. */
+export const RAID_LIVE_PATH = '/api/raid/board/live';
+/** The route that makes a raid-board ticket (POST, normal session auth, a body naming the party). */
+export const RAID_TICKET_PATH = '/api/raid/board/ticket';
+
 /** The topic kind each upgrade route serves: a ticket of the other kind is refused there. */
 export const LIVE_PATH_KINDS: Readonly<Record<string, TopicKind>> = {
   [LIVE_PATH]: 'lounge',
   [FINALE_LIVE_PATH]: 'finale',
+  [RAID_LIVE_PATH]: 'raid',
 };
 
 /** Requests that never change what the room shows (reads sent as POST, and the tickets themselves). */
@@ -42,6 +49,7 @@ export const LIVE_QUIET_PATHS: ReadonlySet<string> = new Set([
   '/api/room',
   TICKET_PATH,
   FINALE_TICKET_PATH,
+  RAID_TICKET_PATH,
 ]);
 
 /** Requests after which a party's other finale watchers get a fresh snapshot: Fire, Hold and Unhold, and a practice start. */
@@ -74,13 +82,15 @@ export const CLOSE_PROTOCOL = 4002;
 /**
  * What the server pushes. `resident` is exactly one entry of the `POST /api/room` answer (lounge sockets
  * only); `lounge-xp` is what lounging just paid the socket's own player's lounger (their own lounge sockets
- * only); `finale` is the answer of `GET /api/raid/live` for the socket's own player (finale sockets only).
+ * only); `finale` is the answer of `GET /api/raid/live` for the socket's own player (finale sockets only);
+ * `raid` is what one placement change did to the party's board (raid-board sockets of that party only).
  */
 export type LiveMessage =
   | { v: 1; type: 'hello'; serverNow: number }
   | { v: 1; type: 'resident'; resident: Resident }
   | ({ v: 1; type: 'lounge-xp' } & LoungePaid)
-  | { v: 1; type: 'finale'; snapshot: LiveSnapshot };
+  | { v: 1; type: 'finale'; snapshot: LiveSnapshot }
+  | ({ v: 1; type: 'raid' } & BoardPush);
 
 interface Attachment {
   userId: string;
@@ -107,7 +117,7 @@ export function socketIdentity(ws: WebSocket): { userId: string; topic: Topic } 
 
 /** What the guild core needs from the live sockets (a core without them has no live socket). */
 export interface LiveHooks {
-  /** Whether the server offers sockets of this kind (the `LOUNGE_LIVE` and `FINALE_LIVE` flags). */
+  /** Whether the server offers sockets of this kind (the `LOUNGE_LIVE`, `FINALE_LIVE` and `RAID_LIVE` flags). */
   enabled(kind: TopicKind): boolean;
   mintTicket(guildId: string, userId: string, topic: Topic): Promise<string>;
   /** `userId` just changed something: pushes their room view to the lounge's sockets if it changed. */
@@ -121,6 +131,10 @@ export interface LiveHooks {
    * moved since the last push gets each socket its own fresh snapshot.
    */
   tickFinale(): void;
+  /** True when someone other than `actorId` has the party's raid board socket open (no listener: no push is built). */
+  raidBoardListening(week: string, party: number, actorId: string): boolean;
+  /** One placement change of `actorId`: the party's other raid-board sockets get it. Never throws. */
+  notifyRaidBoard(actorId: string, push: BoardPush): void;
   /** The players of a party who have a finale socket open (they count as watching without polling). */
   finaleWatchers(week: string, party: number): ReadonlySet<string>;
   /** The next moment a finale socket will want a snapshot (a round start), or null. Always after now. */
@@ -129,7 +143,7 @@ export interface LiveHooks {
 
 export interface LiveSocketsDeps {
   ctx: DurableObjectState;
-  /** Which topics the server offers (`LOUNGE_LIVE` and `FINALE_LIVE`). */
+  /** Which topics the server offers (`LOUNGE_LIVE`, `FINALE_LIVE` and `RAID_LIVE`). */
   enabled: Readonly<Record<TopicKind, boolean>>;
   clientSecret: string;
   guildId: () => string;

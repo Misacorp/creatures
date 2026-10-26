@@ -161,6 +161,8 @@ Rules behind it: more leeters never pays anyone less; a solo leet pays the same 
 
 ## 2026-10-10: No raid sign-up; parties of up to 15
 
+> **Superseded 2026-10-26** ("Raids: you join by placing; no auto teams"): a player is only in the raid once they place a creature, nothing is auto-picked, there is no opt-out and no snake draft. The 15-player party cap stands.
+
 **Decision.** Raids have no sign-up **[Misa]**. Every player with a starter who was active in the last 14 days (opened the game or leeted) is in the week's raid automatically, with an auto-picked team and auto-placement they can change, and can opt out for the week. A raid party holds at most 15 players; bigger rosters are split into balanced parties (snake draft on team power), each fighting the same boss with its own HP pool. Details: `docs/design/m4-raids.md`.
 
 **Reasoning.** Absent players should still count (the server's power doesn't drop), but long-gone players shouldn't inflate the boss or collect loot. A 15-player cap keeps the row readable and coordination possible; the engine itself handles hundreds of creatures in milliseconds, so the cap is about play, not performance.
@@ -1704,6 +1706,8 @@ Misa's changes after polish v5, with the lead's decision on item levels.
 
 ## 2026-10-18: Auto-joining creatures are on the board; teammates can move an away player's creatures (issue #29)
 
+> **Superseded 2026-10-26** ("Raids: you join by placing; no auto teams"): there are no auto-joining creatures and no away-player assist any more. The board shows only what players placed.
+
 **Problem.** Everyone in the raid fights, but the placement board drew only stored placements. A player who placed fewer than three creatures saw "random" creatures in the fight that were never on the board, and an auto-placed creature could sit where they had meant to put their own.
 
 **Decision 1: the board shows what the fight will build.** One worker function, `buildPartyBoard` (in `raid-resolve.ts`), builds the sparse board: the placements (at most three each), each player's strongest others topped up (`raidTeam`), `autoPlace`, then guests. `buildPhaseInput` makes the fight from it and the raid view draws it, so the two cannot disagree (a test compares them). Each tile carries `auto` (nobody placed it). The client draws auto tiles with a dashed outline and a small "auto" tag, with the owner's colour and initial like any tile. Tapping your own auto tile offers "Place here", which makes it a real placement in the same slot (the normal placement request). Guests are not drawn (their slots look empty, as before). The "n / 3 placed" count counts real placements only.
@@ -3159,6 +3163,8 @@ The read budget test's growth check found two paths that read more every month: 
 
 ### 2026-10-25: The raid view stores its readiness bands and teammates' teams (migration 45)
 
+_2026-10-26: the stored teammate teams (`raid_team_cache`, `shownRaidTeam`) are gone: a team is just the placed creatures, loaded by id. The table stays (a released migration), unused. The stored readiness bands stay._
+
 The raid view read about 2,800 rows on a month-old guild of 15 players. Nearly all of it was the party board: for every member, `raidTeam` loaded the player's whole collection (every creature, talent and worn item) to find their strongest unplaced creatures, on every view. The readiness band did the same through its forecast; it was cached for 5 minutes, but in memory, and the object sleeps a few seconds after each request, so nearly every view computed it again.
 
 - **Stored readiness bands** (`raid_readiness`): the band per week and party with the week state, the time and a stale flag. The rules are the same as the memory cache had (a change marks it stale, recomputed at most every 30 s; without a change kept 5 minutes). Rows of other weeks are deleted when a band is stored.
@@ -3184,3 +3190,64 @@ Misa: "just record the stats and delete the details when players can no longer i
 - **The loot reveal looks back to last week only** (`latestReveal`): it links to the replay and stats, which older weeks no longer have. A player away for more than a week no longer gets the card for a finale they missed (the loot was paid at the finale). It also makes the reveal's search a range of the table's key instead of all of it.
 - **Left alone:** `gear_grants`. The newest 20 are the "recent finds" list, and the other receipts (`raid:<week>:...`, `festival:<week>`, `rank:<creature>:<n>`, `dungeon:<day>:...`, `welcome`) guard against a second grant; only the `expedition:<id>` ones could go and they are a row a trip. `weather_days`, `daily_allowance`, `lounge_rest` and `games_days` are a row a day or week and are read.
 - **Staging only:** the dev tool that resets the latest Games day can leave the day before it without its stored show, since that one may be older than the latest awarded day.
+
+### 2026-10-26: While you were away: missed rewards on the notice board
+
+Misa: "accumulate missed rewards from older activities into a single place and show that to the user via the notice board after they log back on after a long period of inactivity ... efficiently, and compile loot from many sources."
+
+- **Recorded at payout, never found by scanning history.** Migration 46 adds `away_rewards`: one row per player and source kind (`leet`, `raid`, `games`) with summed integer counts (Bait, Essence, finds, creatures, medals, XP) and the first and last payout time. Each automatic payout calls `recordAway` (`while-away.ts`) in the transaction that pays it: one UPSERT, gated in the same statement by `INSERT ... SELECT ... FROM players WHERE user_id = ? AND last_seen_at < ?`, so a player who is around records nothing and the gate is one primary-key lookup.
+- **Away means unseen for more than 24 hours** at the moment of the payout (`AWAY_AFTER_MS`, a worker constant). The payouts run in the alarm, not in a visit, and a payout reads `last_seen_at` as it is then, so opening the game later (which moves `last_seen_at`) cannot hide what was paid before it.
+- **Hooked payouts (everything the server pays without the player acting):** the daily leet Bait (`leet-sync.ts`); the raid's stage Essence, the stage experience, the finale's gear piece or blueprint, the jackpot Essence, and the Festival gear and creature (`raid-resolve.ts`); the Valley Games' medals and experience (`games-award.ts`). Not hooked, on purpose: the daily allowance (paid by the player's own first request, with its own notice), lounge XP (only paid while present), trips, Workshop jobs and rank gifts (the player claims them), and the one-time level reset refund (its own card). To add a source, see the header of `while-away.ts`.
+- **Waiting, not recorded.** Finished trips and Workshop jobs are claimed by the player, so nothing was paid. The summary counts them at read time (`tripsWaiting`, `jobsWaiting`) with the user's trip and job indexes, and only when the player has something recorded.
+- **Read once, cheaply.** `GET /api/state` (and every action answer that embeds the state) carries `awayRewards`, read by primary-key prefix: no rows, no cost. The counts for trips and jobs are two more indexed reads, only for a player with rows. `POST /api/away/dismiss` takes `{ until }` (the summary's last payout), is strict, uses the session's user and is idempotent. It deletes rows whose last payout is not after `until`, so a payout that landed after the card was drawn is shown next time. The daily maintenance drops rows older than 90 days.
+- **The card** is a paper on the Today board above "Needs you" (`home/away-notice.ts`, `NoticeBoard`): a row per source ("Daily gifts", "Raid", "Valley Games") with count badges, one line for what waits ("2 trips and 1 job are waiting for you") and a gold "Got it". The card appears only when a source paid something; trips and jobs alone already have their "Needs you" rows. The game never says "leet", so the Bait source is called "Daily gifts".
+
+### 2026-10-26: Raids: you join by placing; no auto teams
+
+Misa reversed the 2026-10-10 rule: "Their occupied slots only hinder the active players. Therefore let's only add players to the raid if they legitimately actually assign their creatures to the board." It also removes the expensive part of the raid view and of every fight build, "find a player's best three" (every creature, talent and worn item of every member). He approved these seven rules exactly:
+
+1. You join the week's raid by placing your first creature. Nothing is auto-filled: you bring exactly what you placed (1 to 3 creatures).
+2. Only joined players count: boss HP scaling (`scaleBoss` by member count), loot, Essence, finale abilities and party size. Players who did not join get nothing and do not make the boss harder.
+3. Away players' slots are simply free: nobody's creatures sit on the board unless they placed them. Slots stay first come, first served. The board's size rule keeps room for every active player to place three, capped at a party's maximum, and the guest rule for fewer than three joined players stays.
+4. "Sit this week out" and the away-teammate assist are removed.
+5. On servers over 15 players a player who first places a creature joins the party with the fewest joined players. No snake draft on power at week start.
+6. Joining closes at Phase 1. After it the parties are fixed, but joined players can still move or swap their own creatures. Before Phase 1 a player who removes all their creatures leaves the raid again. _Amended 2026-10-26 ("join until the finale"): joining stays open until the finale starts._
+7. The Raid tab's pip and the Home notice keep nudging an active player who has not placed yet, so nobody misses it. A joined player with fewer than three placed (and more creatures to place) is nudged the same way.
+
+**What was built.**
+
+- **Joining.** `Raid.place` joins the caller on their first placement (`joinSmallestParty`, which makes the party if it does not exist yet) while Phase 1 has not resolved (`raid_closed` after). `unplace` leaves the raid when the last placement goes before Phase 1 (`leaveParty`). The week opens with no members and no parties. A new server is placed (its first Boss Rank) when its first player joins.
+- **Teams.** `raidTeam` and the new `teamOfPlacements` are the placed creatures only (at most three, `capPlacements`), loaded by id with their gear and talents. `autoTeam` is now only the strongest-first order of those. `buildPartyBoard` reads the party's placements once and builds every member's team from them; members with no creature left on the board do not fight and do not count for `scaleBoss`, the abilities or the payouts. A party where nobody has anything on the board has no fight (`buildPhaseInput` answers null; no result, no loot, no post). `updateLadder` waits only for parties that have a placement.
+- **Board size.** `partyRowLength`: three per player for the larger of the party's joined players and its share of the active roster, at most 15 players, nine slots (guests) below three players, never shorter than the highest slot in use. The active roster is counted as of the week's creation (`activeWindowDays` before it), so the board does not shrink when someone stops playing and the zones of placed creatures do not move; it can grow when someone new becomes active. The party count and the party a newcomer would join come from the same number (`partyToJoin`).
+- **View.** `GET /api/raid` shows a player who has not joined (and has a creature, while joining is open) the board of the party they would join, with `you.inRoster` false and no team. A joined player's `you.team` is the placed creatures. The roster, the parties and the finale only list joined players.
+- **Posts and pings.** The Monday reveal names no head count (nobody has joined yet): its footer says "Place a creature on the raid board to join." It is queued when the server has any active player. The phase and finale posts are about the fighters of the party. The finale DM ping goes only to opted-in players who joined the week's raid.
+- **Reads.** The raid view of the read budget's guild (15 players joined, three each) went from 780 rows to 633, with no collection read; its budget is 950. The stored teammate teams are not needed any more.
+- **Dev tools (staging).** Simulated players place their three creatures (`placeGuest`); the caller's three strongest are placed for them by the roster, simulate and live tools (`joinCaller`), because those tools need the caller in the raid. "Resolve now" does not join anyone.
+
+**Removed on purpose.** The opt-out (`PUT /api/raid/opt-out`, its schema, `Raid.setOptOut`, the `roster_optout` analytics event and its `raid.optout` rollup line), the away assist (`raid-assist.ts`, `placed_by` is no longer written or read, the away list, the "Swap for another" picker and the "moved by" lines in the client), `autoPlace` of unplaced creatures in the raid and the "auto" tile marker, `createParties`, `snakeDraft` and `playerPower`, the late-joiner sync (`syncRoster`), `shownRaidTeam` and `markShownTeamsStale`. The tables `raid_opt_outs`, `raid_teams` and `raid_team_cache` and the column `raid_placements.placed_by` stay as they are (released migrations are never edited) and are not used; nothing dropped in a new migration, since they hold no rows that matter and cost nothing. The retired `PUT /api/raid/team` route still answers (it changes nothing).
+
+**Open for Misa.** A joined player who removes everything after Phase 1 stays in the party (rule 6) but does not fight, so they get no loot that week. A brand-new server shows no Boss Rank on the Monday post (it is placed at the first join); an older server shows its rank as before.
+
+### 2026-10-26: The raid board is live over the sockets
+
+Misa wanted teammates' placements to appear on the Raid tab as they happen. Until now the tab only synced when it was reopened, when you acted, or when a phase resolved. Details in `raid-live-board.md`.
+
+1. A third socket topic, `raid` (`{ week, party }`), on the existing live machinery (tickets, caps, hibernation, the lounge's client controller). Its own ticket and upgrade routes, `POST /api/raid/board/ticket` and `GET /api/raid/board/live`, behind a new flag `RAID_LIVE` (on in local, staging and production, pinned by a test; `/api/config` announces `raidLive`). The ticket is made for the party the raid view shows the player: their own, or the one they would join.
+2. **Push the change, not the view.** After `place` or `unplace` commits, the party's other board sockets get one small message: the changed cells (built by the view's own cell code, the actor's creatures as `mine: false` without ids) and the roster change if someone joined or left. Nothing is built when nobody listens (0 rows); a push reads about 10 rows (the placed creatures by id and one name), plus one row-length calculation on a leave. A push never throws.
+3. Phase results and the readiness band are not pushed: the tab already reloads after each phase is due. The finale keeps its own socket.
+4. Client: while the Raid tab shows a party's board and the flag is on, it keeps a board socket; a pushed cell is checked strictly and applied in place, and anything that cannot be applied (or a socket coming back after a drop) costs one normal `fetchRaid()` reload. No polling was added; with the socket down the tab behaves as before.
+5. Not done: answering the player's own placement with the compact change. The HTTP routes still return the whole view (it would complicate the client's merge for the saving of one small response).
+
+`wrangler.jsonc` changed (the `RAID_LIVE` var in all three places), which the PR calls out.
+
+### 2026-10-26: Raids: join until the finale; new servers start at Rank 1
+
+Amends rule 6 of "Raids: you join by placing; no auto teams" (joining closed at Phase 1). Misa asked for two changes.
+
+1. **You can join the raid until the finale starts.** A player's first placement joins them at any time while the week's status is not `finale` (after Phase 1 and after Phase 2 too). The placement goes to the party with the fewest joined players (`partyToJoin`, lowest number on a tie), parties and all. Once the finale starts, the usual `locked` answer applies; `raid_closed` is gone.
+   - The boss's HP pool is fixed when a party first fights (Phase 1 for a party that exists then) and a late joiner never rescales it. A party made after Phase 1 (every other party is full, or the active roster needs another one) scales its own pool, from its members, at its first fight.
+   - Phase 2 and the finale are built from the current placements, so a late joiner's creatures fight from the next stage they are in. Essence, experience, gear and finale loot (jackpot, Festival creature) are paid per stage to the fighters of that stage only, so a late joiner gets nothing for Phase 1 or any stage before they joined. Their finale ability is the default by join order, like everyone else's.
+   - The Raid tab's pip and the Home notice nudge an active player who has not joined until the finale starts; the live board's ticket and the view of the board they would join work the same after Phase 1.
+   - **Leaving is unchanged:** removing all creatures before Phase 1 leaves the raid; from Phase 1 a member stays in the party and just does not fight with an empty board. (Allowing it later would mean moving a player out of a party with results, for no gain.)
+   - The staging dev tool that fills the roster (`raid-roster`) still locks at Phase 1, as before; it is a setup tool, not a player rule.
+2. **A new server starts at Rank 1 when its first week opens.** A server with no rank gets `placementRank` (always the start rank, 1) stored on its ladder at week creation, so the Monday post always shows "Rank 1" even before anyone has joined. Placement no longer waits for a member or reads the members' creatures: `placementFor` is removed and `placeServer` takes no week. Places that still place a rank without a member: an old open week with no rank gets it at its first join or at Phase 1 (`ensureWeekRank`), the legacy-week conversion still needs members (a legacy week where nobody joined stays as it was), and a re-declared first week uses the start rank.

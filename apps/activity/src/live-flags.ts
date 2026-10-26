@@ -13,3 +13,14 @@ export function setFinaleLiveOffered(offered: boolean): void {
 export function finaleLiveOffered(): boolean {
   return finaleLive;
 }
+
+let raidLive = false;
+
+export function setRaidLiveOffered(offered: boolean): void {
+  raidLive = offered;
+}
+
+/** True when the server offers the raid board's live socket (`raidLive` of `/api/config`). */
+export function raidLiveOffered(): boolean {
+  return raidLive;
+}

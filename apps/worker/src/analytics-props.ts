@@ -302,8 +302,6 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         golden: bool(event.golden),
         slot: int(event.slot, 3),
       };
-    case 'roster_optout':
-      return { optOut: bool(event.optOut) };
     case 'team_set':
       return { auto: bool(event.auto), species: event.species.slice(0, 3).map(species) };
     case 'placement':

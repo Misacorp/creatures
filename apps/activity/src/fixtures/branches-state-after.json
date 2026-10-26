@@ -461,6 +461,7 @@
   ],
   "cancelled": [],
   "levelReset": null,
+  "awayRewards": null,
   "slots": {
     "total": 1,
     "used": 0,
@@ -495,7 +496,7 @@
       "holders": ["Player 5"]
     }
   ],
-  "loungerId": "00000000-0000-4000-8100-000000000002",
+  "loungerId": "00000000-0000-4000-8100-000000000003",
   "loungeSpot": null,
   "loungeXp": {},
   "timezone": "Europe/Helsinki",

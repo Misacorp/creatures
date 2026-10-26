@@ -308,6 +308,7 @@
     ],
     "cancelled": [],
     "levelReset": null,
+    "awayRewards": null,
     "slots": {
       "total": 1,
       "used": 1,
@@ -322,7 +323,7 @@
       "lure-great": 2
     },
     "serverFirsts": [],
-    "loungerId": "00000000-0000-4000-8400-000000000003",
+    "loungerId": "00000000-0000-4000-8400-000000000004",
     "loungeSpot": null,
     "loungeXp": {}
   }

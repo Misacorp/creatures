@@ -17,6 +17,8 @@ export function HomePage({
   room,
   onHowTo,
   howToRef,
+  onDismissAway,
+  awayBusy,
 }: {
   input: HomeInput;
   settings: BoardSettings;
@@ -26,6 +28,9 @@ export function HomePage({
   onHowTo?: () => void;
   /** The "?" pin, where the focus returns when How to play closes. */
   howToRef?: RefObject<HTMLButtonElement | null>;
+  /** Clears the "While you were away" paper. */
+  onDismissAway?: (until: number) => void;
+  awayBusy?: boolean;
 }) {
   return (
     <div class="home-page">
@@ -36,6 +41,8 @@ export function HomePage({
         onGo={onGo}
         {...(onHowTo === undefined ? {} : { onHowTo })}
         {...(howToRef === undefined ? {} : { howToRef })}
+        {...(onDismissAway === undefined ? {} : { onDismissAway })}
+        {...(awayBusy === undefined ? {} : { awayBusy })}
       />
     </div>
   );

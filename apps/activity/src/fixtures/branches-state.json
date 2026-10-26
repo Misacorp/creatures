@@ -308,6 +308,7 @@
   "expeditions": [],
   "cancelled": [],
   "levelReset": null,
+  "awayRewards": null,
   "slots": {
     "total": 1,
     "used": 0,
@@ -320,7 +321,7 @@
   },
   "supplies": {},
   "serverFirsts": [],
-  "loungerId": "00000000-0000-4000-8100-000000000001",
+  "loungerId": "00000000-0000-4000-8100-000000000003",
   "loungeSpot": null,
   "loungeXp": {},
   "timezone": "Europe/Helsinki",

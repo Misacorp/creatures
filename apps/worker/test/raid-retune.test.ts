@@ -15,7 +15,7 @@ import {
   forcePool,
   rows,
   runRaid,
-  seedPlayer,
+  seedMember,
   storedRuns,
 } from './raid-helpers';
 
@@ -24,7 +24,7 @@ const CHANNEL = '555555555555555555';
 
 /** Seeds players and opens the week, leaving the clock where it is. */
 function openWeek(ctx: CoreContext, n: number, level = 15) {
-  const players = Array.from({ length: n }, (_, i) => seedPlayer(ctx, i + 1, { level }));
+  const players = Array.from({ length: n }, (_, i) => seedMember(ctx, i + 1, { level }));
   ctx.core.raid.currentWeek(HELSINKI);
   return players;
 }

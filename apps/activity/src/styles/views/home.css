@@ -145,6 +145,53 @@ button.hb-need:focus-visible {
   line-height: 1.2;
 }
 
+/* While you were away: a paper of one row per source (its name, then its count badges), what waits, "Got it". */
+.hb-away {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+}
+
+.hb-away-rows {
+  display: grid;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hb-away-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  min-width: 0;
+}
+
+.hb-away-source {
+  font-size: var(--fs-row);
+  font-weight: 400;
+}
+
+.hb-away-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hb-away-waiting {
+  margin: 0;
+  color: var(--leather);
+  font-size: var(--fs-small);
+}
+
+.hb-away-ok {
+  justify-self: end;
+}
+
 .hb-until {
   color: var(--ink);
   white-space: nowrap;

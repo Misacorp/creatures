@@ -23,6 +23,8 @@ import {
   HELSINKI,
   W02,
   count,
+  joinEveryone,
+  joinRaid,
   raidLedger,
   rows,
   runRaid,
@@ -58,12 +60,16 @@ function weekAt(n: number): WeekAt {
 const WIN = true;
 const LOSS = false;
 
-/** Opens a week: every seeded player is active again and the week's events run. */
+/**
+ * Opens a week: every seeded player is active again and the week's events run. Then every player joins by
+ * placing their creatures (placements are per week).
+ */
 function openWeek(ctx: CoreContext, week: WeekAt): void {
   ctx.clock.t = week.monday;
   ctx.sql.exec('UPDATE players SET last_seen_at = ?', ctx.clock.t);
   ctx.core.raid.runDue(HELSINKI);
   ctx.core.raid.currentWeek(HELSINKI);
+  joinEveryone(ctx);
 }
 
 const partyNumbers = (ctx: CoreContext, weekId: string): number[] =>
@@ -174,31 +180,19 @@ describe('placement', () => {
     );
   });
 
-  it('waits for the first player when the week opens empty, then places the server', async () => {
+  it('starts a brand-new server at Rank 1 as soon as its week opens, with nobody in it', async () => {
     await runRaid(
       (ctx) => {
+        expect(readLadder(ctx.sql)).toEqual({ rank: null, bestRank: null });
         openWeek(ctx, weekAt(0));
         expect(count(ctx.sql, 'raid_party_members')).toBe(0);
-        expect(readLadder(ctx.sql).rank).toBeNull();
-        expect(weekRow(ctx, W02.id)).toMatchObject({
-          rank: null,
-          effective_rank: null,
-          festival: 0,
-        });
-        // Asking again with nobody in changes nothing.
-        ctx.core.raid.syncRoster(W02.id);
-        expect(readLadder(ctx.sql).rank).toBeNull();
+        expect(readLadder(ctx.sql).rank).toBe(1);
+        expect(weekRow(ctx, W02.id)).toMatchObject({ rank: 1, effective_rank: 1, festival: 0 });
 
-        const [late] = seedMany(ctx, 1, 9) as [Seeded];
-        ctx.core.raid.syncRoster(W02.id);
-        const expected = placementRank([9, 9, 9]);
-        expect(readLadder(ctx.sql).rank).toBe(expected);
-        expect(weekRow(ctx, W02.id)).toMatchObject({ rank: expected, effective_rank: expected });
-        // Other joiners do not place it again.
-        seedMany(ctx, 3, 20, 10);
-        ctx.core.raid.syncRoster(W02.id);
-        expect(readLadder(ctx.sql).rank).toBe(expected);
-        expect(late.id).toBeTruthy();
+        // Joining does not place it again, whatever the joiners bring.
+        joinRaid(ctx, seedMany(ctx, 3, 20, 10));
+        expect(readLadder(ctx.sql).rank).toBe(1);
+        expect(weekRow(ctx, W02.id)).toMatchObject({ rank: 1, effective_rank: 1 });
       },
       { start: W02.monday },
     );
@@ -369,6 +363,35 @@ describe('the ladder update', () => {
         expect(readLadder(ctx.sql).rank).toBe(5);
         expect(weekRow(ctx, empty.id).ladder_at).toBeNull();
         expect(weekRow(ctx, empty.id).rank).toBe(5);
+      },
+      { start: W02.monday },
+    );
+  });
+
+  it('does not move the rank for a week in which players are active but nobody joined', async () => {
+    await runRaid(
+      (ctx) => {
+        seedMany(ctx, 3, 12);
+        openWeek(ctx, weekAt(0));
+        setRank(ctx, 5);
+        ctx.sql.exec('UPDATE raid_weeks SET rank = 5, effective_rank = 5');
+        playWeek(ctx, weekAt(0), [LOSS]);
+        const idle = weekAt(1);
+        // Everyone is around and the week opens, but nobody places a creature on the board.
+        ctx.clock.t = idle.monday;
+        ctx.sql.exec('UPDATE players SET last_seen_at = ?', ctx.clock.t);
+        ctx.core.raid.runDue(HELSINKI);
+        ctx.core.raid.currentWeek(HELSINKI);
+        expect(count(ctx.sql, 'raid_party_members', `week_id = '${idle.id}'`)).toBe(0);
+        ctx.clock.t = idle.afterFinale;
+        ctx.core.raid.runDue(HELSINKI);
+        // No fight, no result, no loot, and a week that is simply over.
+        expect(count(ctx.sql, 'raid_results', `week_id = '${idle.id}'`)).toBe(0);
+        expect(
+          rows(ctx.sql, 'SELECT week_id, status FROM raid_weeks WHERE week_id = ?', idle.id),
+        ).toEqual([{ week_id: idle.id, status: 'finale' }]);
+        expect(readLadder(ctx.sql).rank).toBe(5);
+        expect(weekRow(ctx, idle.id).ladder_at).toBeNull();
       },
       { start: W02.monday },
     );
@@ -769,7 +792,7 @@ describe('a week that was open before the ladder existed', () => {
           season: null,
         });
         expect(open.party?.readiness).toBeNull();
-        ctx.core.raid.syncRoster(W02.id);
+        ctx.core.raid.view(viewer.id, HELSINKI);
         expect(weekRow(ctx, W02.id).rank).toBeNull();
         expect(readLadder(ctx.sql).rank).toBeNull();
 

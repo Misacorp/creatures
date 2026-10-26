@@ -9,7 +9,7 @@
  *   started there is no band: the fight is on.
  * - The dice are fresh every time, from the injected Rng (crypto in production), never the seed of
  *   a stored or coming fight. Only the band leaves this module.
- * - A forecast is not free (several full fights: it loads every member's whole collection), so it is
+ * - A forecast is not free (several full fights: it loads every fighting creature), so it is
  *   cached per party in `raid_readiness` (migration 45). It was kept in memory until 2026-10-25, but the
  *   object sleeps a few seconds after each request, so nearly every raid view computed it again:
  *   - a different week state (open, Phase 1 done, Phase 2 done) is a different entry and always
@@ -25,7 +25,7 @@ import { forecastFinale, forecastWeek, phaseFloorHp, type FightInput } from '@cr
 import type { LedgerStorage } from './ledger';
 import { readWeekProgression } from './raid-ladder';
 import { buildPhaseInput } from './raid-resolve';
-import { markShownTeamsStale, type RaidStatus } from './raid-teams';
+import type { RaidStatus } from './raid-teams';
 
 /** The soonest a party's band is recomputed after a change. */
 export const READINESS_MIN_INTERVAL_MS = 30_000;
@@ -61,8 +61,6 @@ export class ReadinessCache {
   /** Something the forecast depends on changed (a team, a placement, an ability pick, the roster). */
   invalidate(): void {
     this.sql.exec('UPDATE raid_readiness SET stale = 1 WHERE stale = 0');
-    // The raid view's stored teams depend on the same things.
-    markShownTeamsStale(this.sql);
   }
 
   /** The band of a party, or null when there is none (the finale has started, or nothing to fight). */

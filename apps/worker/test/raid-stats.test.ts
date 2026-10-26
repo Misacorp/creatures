@@ -12,7 +12,7 @@ import {
   forcePool,
   membersOf,
   runRaid,
-  seedPlayer,
+  seedMember,
   storedRuns,
 } from './raid-helpers';
 
@@ -35,7 +35,7 @@ async function getStats(
 /** Seeds `n` players and resolves phase 1 only, on a pool of the given size. Returns the party. */
 function phase1(ctx: Ctx, pool: number, atk = 30, n = 4) {
   const players = Array.from({ length: n }, (_, i) =>
-    seedPlayer(ctx, i + 1, { level: 12, name: `Player ${String(i + 1)}` }),
+    seedMember(ctx, i + 1, { level: 12, name: `Player ${String(i + 1)}` }),
   );
   ctx.core.raid.currentWeek(HELSINKI);
   forcePool(ctx.sql, pool, pool, atk);
@@ -218,7 +218,7 @@ describe('after-action stats of real stored fights', () => {
   it('has the per-player, per-creature, reaction and adaptation numbers of the stored fight', async () => {
     await runRaid(async (ctx) => {
       const players = Array.from({ length: 5 }, (_, i) =>
-        seedPlayer(ctx, i + 1, { level: 15, name: `Player ${String(i + 1)}` }),
+        seedMember(ctx, i + 1, { level: 15, name: `Player ${String(i + 1)}` }),
       );
       ctx.core.raid.currentWeek(HELSINKI);
       // A pool the party cannot empty, so the finale is fought to its last round.
@@ -349,7 +349,7 @@ describe('after-action stats of real stored fights', () => {
   it('serves members of that fight only, and tells no more than a missing fight does', async () => {
     await runRaid(async (ctx) => {
       // 16 players make two parties; the outsider is in party 2.
-      const players = Array.from({ length: 16 }, (_, i) => seedPlayer(ctx, i + 1));
+      const players = Array.from({ length: 16 }, (_, i) => seedMember(ctx, i + 1));
       ctx.core.raid.currentWeek(HELSINKI);
       forcePool(ctx.sql, 20_000);
       ctx.clock.t = W02.afterPhase1;
@@ -390,7 +390,7 @@ describe('after-action stats of real stored fights', () => {
   it('leaks no user id, creature id, alias key or seed, and names others by display name', async () => {
     await runRaid(async (ctx) => {
       const players = Array.from({ length: 5 }, (_, i) =>
-        seedPlayer(ctx, i + 1, { level: 15, name: `Name ${String(i + 1)}` }),
+        seedMember(ctx, i + 1, { level: 15, name: `Name ${String(i + 1)}` }),
       );
       ctx.core.raid.currentWeek(HELSINKI);
       forcePool(ctx.sql, 20_000);
@@ -441,7 +441,7 @@ describe('after-action stats of real stored fights', () => {
 
   it('adds the party to the loot reveal, so the client can ask for the finale stats', async () => {
     await runRaid((ctx) => {
-      const players = Array.from({ length: 3 }, (_, i) => seedPlayer(ctx, i + 1, { level: 12 }));
+      const players = Array.from({ length: 3 }, (_, i) => seedMember(ctx, i + 1, { level: 12 }));
       ctx.core.raid.currentWeek(HELSINKI);
       forcePool(ctx.sql, 20_000);
       ctx.clock.t = SUNDAY;
@@ -505,7 +505,7 @@ describe('the stats contract with the client', () => {
 
   it('sends the same keys as the saved fixtures, with nulls where there is nothing', async () => {
     await runRaid(async (ctx) => {
-      const players = Array.from({ length: 5 }, (_, i) => seedPlayer(ctx, i + 1, { level: 15 }));
+      const players = Array.from({ length: 5 }, (_, i) => seedMember(ctx, i + 1, { level: 15 }));
       ctx.core.raid.currentWeek(HELSINKI);
       forcePool(ctx.sql, 1_000_000);
       ctx.clock.t = SUNDAY;

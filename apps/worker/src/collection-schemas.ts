@@ -46,6 +46,11 @@ export const PushOnBodySchema = v.strictObject({ goalId: v.picklist(GOAL_IDS) })
 /** Claiming takes no input: the expedition id is in the path and the user is the session's. */
 export const ClaimBodySchema = v.strictObject({});
 
+/** Dismissing the while-away card names the last payout it showed, so a later payout is not cleared unseen. */
+export const DismissAwayBodySchema = v.strictObject({
+  until: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(Number.MAX_SAFE_INTEGER)),
+});
+
 /** Dismissing the one-time level reset card carries nothing. */
 export const DismissLevelResetBodySchema = v.strictObject({});
 

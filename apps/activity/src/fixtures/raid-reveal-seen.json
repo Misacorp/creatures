@@ -53,10 +53,8 @@
   ],
   "you": {
     "inRoster": true,
-    "optOut": false,
     "party": 1,
     "canEdit": false,
-    "canOptOut": false,
     "ability": {
       "abilityId": "rally",
       "chosen": true
@@ -100,14 +98,13 @@
     ],
     "reveal": null,
     "team": {
-      "mode": "auto",
       "creatures": [
         {
           "creatureId": "dfcf5743-d005-460b-b999-1791665e7039",
           "species": "stormray",
           "name": "Stormray",
           "level": 10,
-          "slot": null
+          "slot": 0
         },
         {
           "creatureId": "8513fa8f-5509-4021-9938-bafae972a01c",
@@ -121,7 +118,7 @@
           "species": "zipmouse",
           "name": "Zipmouse",
           "level": 7,
-          "slot": null
+          "slot": 2
         }
       ]
     }
@@ -144,9 +141,7 @@
           "name": "Cindle",
           "level": 10,
           "mine": true,
-          "creatureId": "8513fa8f-5509-4021-9938-bafae972a01c",
-          "auto": false,
-          "movable": false
+          "creatureId": "8513fa8f-5509-4021-9938-bafae972a01c"
         }
       },
       {
@@ -157,9 +152,7 @@
           "species": "mistnewt",
           "name": "Mistnewt",
           "level": 10,
-          "mine": false,
-          "auto": false,
-          "movable": false
+          "mine": false
         }
       },
       {
@@ -300,7 +293,6 @@
         "festivalGrant": null
       }
     ],
-    "readiness": null,
-    "away": []
+    "readiness": null
   }
 }

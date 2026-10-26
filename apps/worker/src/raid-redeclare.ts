@@ -9,7 +9,7 @@
  * resolved stage, and every past week, is never touched.
  *
  * What a week's numbers are: the boss is chosen from the week id; the Boss Rank is the server's
- * placement for the server's first week (`placementRank` from the creatures the members bring) and
+ * start rank for the server's first week (`placementRank`) and
  * the ladder's rank after that; the rank the boss fights at follows from it (`raidWeekPlan`). The HP
  * pool (max and current) and the boss Attack are scaled from that rank and the party's head count when
  * Phase 1 resolves (`buildPhaseInput`), not before, so they always follow the rules of the moment.
@@ -18,7 +18,8 @@
  * another request).
  */
 import { RAID_DIFFICULTY_VERSION } from './raid-difficulty';
-import { declareWeekRank, placementFor, readLadder } from './raid-ladder';
+import { placementRank } from '@creatures/game';
+import { declareWeekRank, readLadder } from './raid-ladder';
 
 /** What re-declaring changed. */
 export interface Redeclared {
@@ -100,7 +101,7 @@ export function redeclareWeek(sql: SqlStorage, weekId: string): Redeclared | nul
     sql
       .exec('SELECT 1 FROM raid_weeks WHERE week_id < ? AND rank IS NOT NULL LIMIT 1', weekId)
       .toArray().length === 0;
-  const placement = placedHere ? placementFor(sql, weekId) : null;
+  const placement = placedHere ? placementRank([]) : null;
   const rank = placement ?? ladder.rank ?? week.rank;
   if (placement !== null) sql.exec('UPDATE raid_ladder SET rank = ? WHERE id = 1', placement);
   const declared = declareWeekRank(sql, weekId, rank);

@@ -41,30 +41,11 @@ export interface RowSlotView {
     name: string;
     level: number;
     mine: boolean;
-    /** It joins by itself (nobody placed it): drawn where the fight will put it. */
-    auto: boolean;
-    /** The caller may move or swap it: its owner is away and did not place it themselves. */
-    movable: boolean;
-    /** The teammate who placed it for an away owner (a name, plain text); absent otherwise. */
-    movedBy?: string;
-    /** Only present for the caller's own creatures and the ones the caller may move. */
+    /** Only present for the caller's own creatures. */
     creatureId?: string;
     /** A Guard's reach (how many creatures it protects on each side); Guards only. */
     reach?: { left: number; right: number };
   };
-}
-
-/** A party member who has not opened the game this week, with everything they own (for a swap). */
-export interface AwayView {
-  ownerName: string;
-  creatures: {
-    creatureId: string;
-    species: string;
-    name: string;
-    level: number;
-    /** It is in the fight now (a swap brings in one that is not). */
-    joining: boolean;
-  }[];
 }
 
 export interface TeamCreatureView {
@@ -72,7 +53,8 @@ export interface TeamCreatureView {
   species: string;
   name: string;
   level: number;
-  slot: number | null;
+  /** The board slot it is placed in. */
+  slot: number;
   /** A Guard's reach (how many creatures it protects on each side); Guards only. */
   reach?: { left: number; right: number };
 }
@@ -206,30 +188,28 @@ export interface RaidView {
   roster: RosterEntry[];
   parties: { party: number; size: number }[];
   you: {
+    /** The player joined this week's raid: they placed a creature. */
     inRoster: boolean;
-    optOut: boolean;
     party: number | null;
+    /** They may place or move creatures: they joined, or joining is still open (until the finale starts). */
     canEdit: boolean;
-    canOptOut: boolean;
-    /**
-     * The creatures the player brings: those placed on the board, then their strongest others up to
-     * three (`slot` null: placed automatically when a phase locks). `mode` is a leftover of the
-     * retired chosen team: the server always says `auto`, and a parser still accepts `chosen`.
-     */
-    team: { mode: 'auto' | 'chosen'; creatures: TeamCreatureView[] } | null;
-    /** The finale ability: `chosen` is false when it was assigned automatically. Null outside a party. */
+    /** Exactly the creatures the player placed on the board (up to three); null before they join. */
+    team: { creatures: TeamCreatureView[] } | null;
+    /** The finale ability: `chosen` is false when it was assigned automatically. Null before they join. */
     ability: { abilityId: string; chosen: boolean } | null;
     /** Everything the caller brings to the finale with their current team: basic ability first. */
     abilities: AbilityPreview[];
     /** A finale result the player has not seen yet. */
     reveal: RaidReveal | null;
   };
+  /**
+   * The player's party, or, before they join (until the finale starts), the party they would join. Null once
+   * joining has closed for them, or when they have no creature to place.
+   */
   party: null | {
     party: number;
     rowLength: number;
     row: RowSlotView[];
-    /** Away teammates (never the caller); empty once the board is locked. */
-    away: AwayView[];
     guests: boolean;
     bossHp: { max: number; current: number } | null;
     adaptation: { description: string; rule: string | null; target: string | null } | null;
@@ -323,28 +303,8 @@ function isRowSlot(value: unknown): value is RowSlotView {
     isStr(c['name']) &&
     isInt(c['level']) &&
     isBool(c['mine']) &&
-    isBool(c['auto']) &&
-    isBool(c['movable']) &&
-    (c['movedBy'] === undefined || isStr(c['movedBy'])) &&
     (c['creatureId'] === undefined || isStr(c['creatureId'])) &&
     (c['reach'] === undefined || isGuardReach(c['reach']))
-  );
-}
-
-function isAwayView(value: unknown): value is AwayView {
-  return (
-    isRecord(value) &&
-    isStr(value['ownerName']) &&
-    isArrayOf(
-      value['creatures'],
-      (c): c is AwayView['creatures'][number] =>
-        isRecord(c) &&
-        isStr(c['creatureId']) &&
-        isStr(c['species']) &&
-        isStr(c['name']) &&
-        isInt(c['level']) &&
-        isBool(c['joining']),
-    )
   );
 }
 
@@ -355,7 +315,7 @@ function isTeamCreature(value: unknown): value is TeamCreatureView {
     isStr(value['species']) &&
     isStr(value['name']) &&
     isInt(value['level']) &&
-    (value['slot'] === null || isInt(value['slot'])) &&
+    isInt(value['slot']) &&
     (value['reach'] === undefined || isGuardReach(value['reach']))
   );
 }
@@ -489,10 +449,8 @@ function isYou(value: unknown): value is RaidView['you'] {
   if (
     !isRecord(value) ||
     !isBool(value['inRoster']) ||
-    !isBool(value['optOut']) ||
     !(value['party'] === null || isInt(value['party'])) ||
     !isBool(value['canEdit']) ||
-    !isBool(value['canOptOut']) ||
     !(value['ability'] === null || isAbilityPick(value['ability'])) ||
     !isArrayOf(value['abilities'], isAbilityPreview) ||
     !(value['reveal'] === null || isReveal(value['reveal']))
@@ -501,11 +459,7 @@ function isYou(value: unknown): value is RaidView['you'] {
   }
   const team = value['team'];
   if (team === null) return true;
-  return (
-    isRecord(team) &&
-    (team['mode'] === 'auto' || team['mode'] === 'chosen') &&
-    isArrayOf(team['creatures'], isTeamCreature)
-  );
+  return isRecord(team) && isArrayOf(team['creatures'], isTeamCreature);
 }
 
 function isPartyView(value: unknown): value is NonNullable<RaidView['party']> {
@@ -514,7 +468,6 @@ function isPartyView(value: unknown): value is NonNullable<RaidView['party']> {
     !isInt(value['party']) ||
     !isInt(value['rowLength']) ||
     !isArrayOf(value['row'], isRowSlot) ||
-    !isArrayOf(value['away'], isAwayView) ||
     !isBool(value['guests']) ||
     !isArrayOf(value['results'], isResult) ||
     !(value['readiness'] === null || isReadiness(value['readiness']))
