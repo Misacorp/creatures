@@ -3274,6 +3274,7 @@ The rows_read week showed that a per-path read budget is not enough: it only mea
 3. **The lounge tick and a live board placement** are in the read budget test, with their own budgets, and in the growth check (together with `/api/state` and `/api/raid`, which used to be left out).
 
 The audit found no scan worth an index: every full scan on a hot path was of a table bounded by design. The readiness band recompute (about 600 extra rows for a raid view every 5 minutes) is the biggest single line of the day and is the next candidate if the day budget needs to come down. Reasoning for the checks over a lint rule: a static check cannot see data sizes or bindings, and the plans are the database's own answer.
+
 ### 2026-10-26: Raid results show real damage and a separate score
 
 A player reported (#86) that the scoreboard's "Damage" added up to about half the boss's HP lost, and that a Payoff like Gaiadrake showed a third of what the fight log said it hit for. The column was the engine's `CreatureTotals.damage`: the hitter's share of the credit, after the setter's 60% of a reaction's bonus and the Supports' share of buffed damage had moved to other creatures. Misa: a "Damage" column must show damage; the credit is the score, and the results say what each one means.
