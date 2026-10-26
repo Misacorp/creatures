@@ -186,6 +186,7 @@ describe('the Creatures tab and the evolve screen', () => {
         onRibbon={noop}
         onEvolve={onEvolve}
         onRename={noop}
+        onNote={noop}
         onLounge={noop}
         onSlotTalent={noop}
       />,

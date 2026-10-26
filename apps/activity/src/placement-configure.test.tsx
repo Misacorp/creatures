@@ -65,6 +65,7 @@ const actions: CardActions = {
   onRibbon: vi.fn(),
   onEvolve: vi.fn(),
   onRename: vi.fn(),
+  onNote: vi.fn(),
   onLounge: vi.fn(),
   onSlotTalent: vi.fn(),
 };

@@ -4,6 +4,7 @@ export * from './expedition';
 export * from './fusion';
 export * from './stats';
 export * from './nickname';
+export * from './creature-note';
 export * from './loot';
 export * from './power';
 export * from './abilities';

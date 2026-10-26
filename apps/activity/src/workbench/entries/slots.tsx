@@ -236,6 +236,7 @@ const NO_ACTIONS: CardActions = {
   onRibbon: noop,
   onEvolve: noop,
   onRename: noop,
+  onNote: noop,
   onLounge: noop,
   onSlotTalent: noop,
 };

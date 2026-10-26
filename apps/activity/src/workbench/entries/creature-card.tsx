@@ -29,6 +29,7 @@ const actions: CardActions = {
   onRibbon: () => undefined,
   onEvolve: () => undefined,
   onRename: () => undefined,
+  onNote: () => undefined,
   onLounge: () => undefined,
   onSlotTalent: () => undefined,
 };

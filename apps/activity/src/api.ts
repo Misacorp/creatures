@@ -314,6 +314,8 @@ export interface Creature extends CreatureGearFields {
   fusionPoints: number;
   shiny: boolean;
   nickname: string | null;
+  /** The player's private note on it (plain text with line breaks), or null. Only the owner sees it. */
+  note: string | null;
   away: boolean;
   /** When it was caught (epoch ms): the older of two equally strong creatures ranks first. */
   caughtAt: number;
@@ -611,6 +613,7 @@ function isCreature(value: unknown): value is Creature {
     isInt(value['caughtAt']) &&
     typeof value['shiny'] === 'boolean' &&
     (value['nickname'] === null || isStr(value['nickname'])) &&
+    (value['note'] === null || isStr(value['note'])) &&
     typeof value['away'] === 'boolean' &&
     (value['quirk'] === null || isStr(value['quirk'])) &&
     isStats(value['stats']) &&
@@ -773,6 +776,16 @@ export async function renameCreature(
 ): Promise<GameState> {
   return stateFrom(
     await apiFetch(`/api/creatures/${creatureId}`, jsonRequest('PATCH', { nickname })),
+  );
+}
+
+/** Saves the player's private note on a creature; null removes it. The server cleans and checks it. */
+export async function saveCreatureNote(
+  creatureId: string,
+  note: string | null,
+): Promise<GameState> {
+  return stateFrom(
+    await apiFetch(`/api/creatures/${creatureId}/note`, jsonRequest('PUT', { note })),
   );
 }
 

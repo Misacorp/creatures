@@ -28,6 +28,7 @@ const creature: Creature = {
   fusionPoints: 0,
   shiny: false,
   nickname: null,
+  note: null,
   away: false,
   caughtAt: 1_000,
   quirk: 'hums-quietly',

@@ -26,6 +26,7 @@ function setup() {
     earnRibbon: vi.fn(),
     evolveCreature: vi.fn(),
     renameCreature: vi.fn(),
+    saveCreatureNote: vi.fn(),
     setLounger: vi.fn(),
     slotTalent: vi.fn(),
   };
@@ -100,6 +101,20 @@ describe('creature actions', () => {
     await settle();
     expect(server.renameCreature).toHaveBeenCalledWith(creature.id, 'Fern');
     expect(shown.map((s) => s.game.serverNow)).toEqual([2]);
+  });
+
+  it('saves and removes the note, and says so (#76)', async () => {
+    const { actions, server, shown, notices, settle } = setup();
+    const creature = sampleCreature('growing');
+    server.saveCreatureNote.mockResolvedValue(state('ab'));
+    actions.onNote(creature, 'Ember gear at 20');
+    await settle();
+    expect(server.saveCreatureNote).toHaveBeenCalledWith(creature.id, 'Ember gear at 20');
+    actions.onNote(creature, null);
+    await settle();
+    expect(server.saveCreatureNote).toHaveBeenLastCalledWith(creature.id, null);
+    expect(shown).toHaveLength(2);
+    expect(notices).toEqual(['Note saved.', 'Note removed.']);
   });
 
   it('puts a talent in a slot and says which', async () => {

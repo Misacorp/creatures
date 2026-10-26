@@ -331,6 +331,7 @@ const NO_ACTIONS: Omit<CardActions, 'onEquip' | 'onSlotTalent'> = {
   onRibbon: () => undefined,
   onEvolve: () => undefined,
   onRename: () => undefined,
+  onNote: () => undefined,
   onLounge: () => undefined,
 };
 

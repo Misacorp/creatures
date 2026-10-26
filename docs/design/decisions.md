@@ -3261,3 +3261,12 @@ A player reported (#86) that the scoreboard's "Damage" added up to about half th
 3. The scoreboard and the Top creatures table have the columns Damage and Score, each heading with a "?" (`raid-damage`, `raid-score` glossary entries). The share column ("%") is gone from the scoreboard (the "Hardest hitter" highlight still says the share); the hero shows the caller's damage and score. Rows are still ordered by damage.
 4. The two glossary entries keep explaining lines although raid popups are one line (Misa, 2026-10-14): they sit in the How to play "Rewards" section, because the score is how the Essence share is decided, and Misa asked for an explanation here.
 5. The replay's "Your recap" counts Echo and Riposte as damage too, and calls the setup share "score from setting up".
+
+### 2026-10-26: A private note per creature
+
+A player asked (#76) for a short note on a creature, next to Rename, to remember plans for it. Misa: a small text box, at most 256 characters.
+
+1. **Storage.** Migration 47 adds `creatures.note` (TEXT, null for none). The note is a column of the creature row, so the owner's collection state, which already reads every row, carries it for no extra reads. `CreatureView` is only ever built for the owner's own collection, so nobody else sees a note; the room, raid and other views never read the column.
+2. **Route.** `PUT /api/creatures/:id/note` `{ note: string | null }` (strict body, at most 2,048 UTF-16 units), owner only (404 for anyone else's creature, like a rename). `null` or empty removes it. Not keyed: saving the same text twice is harmless.
+3. **Text rules** (`sanitizeCreatureNote`, `RULES.creatureNote`). Like a nickname, nothing is silently stripped: control, format (bidi, zero-width), unassigned, surrogate and line or paragraph separator characters are refused (`invalid_note`), but line breaks and tabs are allowed. NFKC, line breaks become `\n`, at most one empty line in a row, trailing spaces cut per line, ends trimmed, then at most 256 code points. Rendered as text only.
+4. **Client.** A "Note" fold under Rename on the creature page, open when there is a note, with a text box (`maxlength` 256), a "12 / 256" count and Save (off until the text changed). The note stays through evolving and renaming; it goes only when the owner removes it.

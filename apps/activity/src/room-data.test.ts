@@ -104,6 +104,7 @@ function creature(over: Partial<Creature>): Creature {
     fusionPoints: 0,
     shiny: true,
     nickname: 'Bubbles',
+    note: null,
     away: false,
     caughtAt: 1_000,
     quirk: 'hums-quietly',

@@ -1267,6 +1267,12 @@ export const RULES = {
     /** Inputs longer than this (UTF-16 units) are refused before any normalisation work. */
     maxRawLength: 256,
   },
+  /** A player's private note on one of their creatures (#76): plain text with line breaks. */
+  creatureNote: {
+    maxCodePoints: 256,
+    /** Inputs longer than this (UTF-16 units) are refused before any normalisation work. */
+    maxRawLength: 2_048,
+  },
 } as const;
 
 /** The shape of `RULES.combat.luck`; a fight input may carry its own. */
