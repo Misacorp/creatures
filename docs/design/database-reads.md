@@ -17,11 +17,11 @@ Cloudflare's free tier allows **5,000,000 Durable Object rows read a day** for t
 
 ## How to measure and look it up
 
-- **Locally, per statement**: `apps/worker/test/read-meter.ts` (`meterStorage`, `describeReads`) wraps the storage and sums `rowsRead` per statement. Use it in a scratch test on the read budget's seeded world (`read-budget.test.ts`) to see what any path reads and which statement costs most.
+- **Locally, per statement**: `apps/worker/test/read-meter.ts` (`meterStorage`, `describeReads`) wraps the storage and sums `rowsRead` per statement. Use it in a scratch test on the shared seeded world (`read-world.ts`: a month-old guild of 15 players, a fake lounge, helpers) to see what any path reads and which statement costs most.
 - **The checks** (all in `apps/worker/test`, all in CI):
   - `read-budget.test.ts`: rows per object start, alarm tick (with and without the lounge), main page loads, a raid placement with a live board; plus a growth check (another month of history must not add reads).
-  - the query plan audit: every statement the hot paths run is checked with `EXPLAIN QUERY PLAN`; a full scan of a table that grows fails, unless allowlisted with a reason.
-  - the day in the life: a realistic day of a 10-player server (lounge ticks with the object restarting, page loads, raid views, the daily jobs) must stay under its total.
+  - `query-plan-audit.test.ts`: every statement the hot paths run is checked with `EXPLAIN QUERY PLAN`; a full scan of a table that grows fails, unless allowlisted with a reason.
+  - `read-day.test.ts`: a realistic day of a 10-player server (lounge ticks with the object restarting, page loads, raid views, the daily jobs) must stay under its total.
 - **In production**: the daily ops report (the `report` workflow, also printed as JSON for agents; the `balance-review` skill shows how to fetch it) has a "Database reads" section: rows read per game day and source (`start`, `alarm`, `socket`, `request:<area>`), as a share of the free 5M. Cloudflare's dashboard (Workers & Pages, Durable Objects, Rows read) has the account total.
 
 ## Checklist for a new feature
