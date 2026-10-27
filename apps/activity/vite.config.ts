@@ -1,6 +1,7 @@
 /// <reference types="vitest/config" />
 import preact from '@preact/preset-vite';
 import { defineConfig, loadEnv } from 'vite';
+import { wikiPlugin } from './src/wiki/plugin.ts';
 
 export default defineConfig(({ command, mode }) => {
   // The staging-only debug panel (`src/dev/`). Fail closed: a build includes it only when the deploy
@@ -19,8 +20,9 @@ export default defineConfig(({ command, mode }) => {
   // behind the same gate: staging and `pnpm dev` only, so it (and the lab engine it bundles) never
   // reaches a production build.
   if (devToolsBuild) input['combat-lab'] = 'combat-lab.html';
+  // The wiki (`wiki.html`, `src/wiki/`) is generated text with no script, for every build; see `wikiPlugin`.
   return {
-    plugins: [preact()],
+    plugins: [preact(), wikiPlugin()],
     define: { __DEV_TOOLS_BUILD__: JSON.stringify(devToolsBuild) },
     build: {
       outDir: 'dist',

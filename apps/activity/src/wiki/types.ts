@@ -1,0 +1,66 @@
+/** What the wiki page is built from: plain data, no imports from the game, so a test can pass a fake. */
+
+export interface WikiCreature {
+  id: string;
+  name: string;
+  /** The creature line (its forms share it). */
+  line: string;
+  stage: number;
+  element: string;
+  rarity: string;
+  role: string;
+  levelCap: number;
+  baseStats: { hp: number; atk: number; spd: number };
+  growth: { hp: number; atk: number; spd: number };
+  /** The forms this one evolves into (one or two). */
+  evolvesTo: string[];
+  festival: boolean;
+  flavor: string;
+  /** Its finale ability in the game today. */
+  ability: { name: string; description: string } | null;
+  /** Ids of the talents in the game today that it can have (its line's pool and signature). */
+  talents: string[];
+  /** Ids of the combat v2 draft Knacks it can equip. */
+  knacks: string[];
+  /** Ids of the combat v2 draft talents it can roll. */
+  draftTalents: string[];
+}
+
+export interface WikiCurrentTalent {
+  id: string;
+  name: string;
+  /** The effect in one phrase: "First pounce +14%". */
+  text: string;
+  about: string;
+  /** A fixed signature talent (one line's epic) rather than a pool talent. */
+  signature: boolean;
+}
+
+export interface WikiKnack {
+  id: string;
+  name: string;
+  family: string;
+  /** What a player reads: keywords are in braces, `{Seal}`. */
+  text: string;
+  intent: string;
+}
+
+export interface WikiDraftTalent {
+  id: string;
+  name: string;
+  text: string;
+  intent: string;
+}
+
+export interface WikiData {
+  creatures: WikiCreature[];
+  currentTalents: WikiCurrentTalent[];
+  knacks: WikiKnack[];
+  draftTalents: WikiDraftTalent[];
+  /** The draft talent pool of each role. */
+  draftPools: { role: string; talents: string[] }[];
+  keywords: { name: string; means: string; not: string; step: string }[];
+  families: { name: string; text: string }[];
+  elements: { id: string; name: string }[];
+  elementChart: { attacker: string; defender: string; bp: number }[];
+}

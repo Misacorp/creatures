@@ -60,6 +60,28 @@ async function buildFiles(targetEnv: string): Promise<{ name: string; text: stri
   );
 }
 
+/**
+ * The wiki (`wiki.html`, `wiki.css`, `src/wiki/`) is generated text for every build, production too. It
+ * must never bring script with it: no script tag, and none of the combat v2 draft's data (Knack texts
+ * and so on) in any JavaScript file.
+ */
+function expectWikiWithoutScripts(
+  files: { name: string; text: string }[],
+  labInScripts = false,
+): void {
+  const page = files.find((f) => f.name === 'wiki.html');
+  expect(page?.text).toContain('Leet Creatures wiki');
+  expect(page?.text).toContain('id="knack-steady-mark"');
+  expect(page?.text).not.toMatch(/<script/i);
+  expect(files.some((f) => f.name === 'wiki.css' && f.text.length > 0)).toBe(true);
+  expect(page?.text).toContain('href="/wiki.css"');
+  if (labInScripts) return; // a staging build has the combat lab, which holds that data on purpose
+  const js = files.filter((f) => f.name.endsWith('.js'));
+  for (const draft of ['Steady Mark', 'its marks are not shed by the boss', 'FORM_KNACKS']) {
+    expect(js.filter((f) => f.text.includes(draft)).map((f) => f.name)).toEqual([]);
+  }
+}
+
 afterEach(() => {
   vi.unstubAllEnvs();
 });
@@ -82,6 +104,8 @@ describe('the debug panel and the production build', () => {
     for (const marker of COMBAT_LAB_MARKERS) {
       expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
     }
+    // The wiki is there: generated text and a stylesheet, no script, and no lab code in any script.
+    expectWikiWithoutScripts(files);
     // The rarity colours are defined once, as tokens (grey, blue, pink; gold and crimson reserved), with a lighter text variant each for names.
     const css = files
       .filter((f) => f.name.endsWith('.css'))
@@ -138,6 +162,11 @@ describe('the debug panel and the production build', () => {
     for (const marker of COMBAT_LAB_MARKERS) {
       expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
     }
+    expectWikiWithoutScripts(files);
+  }, 60_000);
+
+  it('has the wiki page in a staging build too, still with no script', async () => {
+    expectWikiWithoutScripts(await buildFiles('staging'), true);
   }, 60_000);
 
   it('is a separate lazy chunk in a staging build (so the search above can find it)', async () => {
