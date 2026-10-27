@@ -7,7 +7,7 @@
  * made by `anchor`, which keeps only `[a-z0-9-]`. A link is drawn only when its target exists, so the
  * page never has a dangling `#link`.
  */
-import { anchor, capital, esc, keywordsIn } from './html';
+import { anchor, capital, chip, chipClasses, esc, keywordsIn } from './html';
 import { buildPreviews } from './previews';
 import type {
   WikiCreature,
@@ -21,21 +21,37 @@ export { anchor, esc };
 
 /** What the page can link to, by kind and content id. */
 type Kind =
-  'creature' | 'line' | 'talent' | 'knack' | 'dtalent' | 'keyword' | 'family' | 'element' | 'pool';
+  | 'creature'
+  | 'line'
+  | 'talent'
+  | 'knack'
+  | 'dtalent'
+  | 'keyword'
+  | 'family'
+  | 'element'
+  | 'pool'
+  | 'role'
+  | 'rarity';
 
 /** The sizes of a creature picture: beside a name in running text, and before a heading. */
 const INLINE = 32;
 const HEAD = 48;
+/** A creature's portrait in its entry (the game's page portrait is 56 px) and an element icon in a chip (the game draws it at twice its 8 px). */
+const PORTRAIT = 56;
+const ICON = 16;
 
 class Page {
   private readonly known = new Map<Kind, Set<string>>();
   /** The picture of each creature form that has one, by creature id. */
   private readonly art = new Map<string, string>();
+  /** The icon of each element that has one, by element id. */
+  private readonly icons = new Map<string, string>();
   /** The base form (stage 1) of each line, by line. */
   private readonly base = new Map<string, string>();
 
   constructor(data: WikiData) {
     for (const a of data.art) this.art.set(a.id, a.src);
+    for (const a of data.elementArt) this.icons.set(a.id, a.src);
     for (const c of data.creatures) {
       const current = data.creatures.find((x) => x.id === this.base.get(c.line));
       if (current === undefined || (c.stage === 1 && current.stage !== 1)) {
@@ -49,6 +65,24 @@ class Page {
     const src = this.art.get(id);
     if (src === undefined) return '';
     return `<img class="sprite" src="${esc(src)}" width="${String(size)}" height="${String(size)}" alt="" loading="lazy">`;
+  }
+
+  /** An element's small icon, or nothing when it has none. */
+  element(id: string, size = ICON): string {
+    const src = this.icons.get(id);
+    if (src === undefined) return '';
+    return `<img class="sprite" src="${esc(src)}" width="${String(size)}" height="${String(size)}" alt="" loading="lazy">`;
+  }
+
+  /**
+   * One of the game's chips for an element, a role or a rarity, a link to its entry (the same chip as plain
+   * text when there is no such entry).
+   */
+  tag(kind: 'element' | 'role' | 'rarity', id: string, label: string): string {
+    const classes = chipClasses[kind](id);
+    const link = this.known.get(kind)?.has(id) === true ? { href: `#${anchor(kind, id)}` } : {};
+    const icon = kind === 'element' ? this.element(id) : '';
+    return chip({ classes, text: label, ...(icon === '' ? {} : { icon }), ...link });
   }
 
   /** The picture of a line: its base form (stage 1). */
@@ -107,6 +141,25 @@ function foundOn(page: Page, creatures: readonly WikiCreature[]): string {
   )}</p>`;
 }
 
+/** The stat block: the game's creature-page stat table, with the level 1 and level cap values and the growth. */
+function statBlock(c: WikiCreature): string {
+  const rows: [string, 'hp' | 'atk' | 'spd'][] = [
+    ['HP', 'hp'],
+    ['Attack', 'atk'],
+    ['Speed', 'spd'],
+  ];
+  const body = rows
+    .map(
+      ([label, stat]) =>
+        `<tr class="data-row"><th scope="row"><span class="data-label">${label}</span></th><td>${String(c.baseStats[stat])}</td><td>${String(c.capStats[stat])}</td><td class="data-extra">+${String(c.growth[stat])}</td></tr>`,
+    )
+    .join('');
+  return `<div class="cp-block stats pix-panel">
+<h5 class="cp-title">Stats</h5>
+<table class="data-table headed tabular" aria-label="Stats of ${esc(c.name)}"><thead><tr><th scope="col">Stat</th><th scope="col">Lv 1</th><th scope="col">Lv ${String(c.levelCap)}</th><th scope="col">Per level</th></tr></thead><tbody>${body}</tbody></table>
+</div>`;
+}
+
 function creatureEntry(page: Page, data: WikiData, c: WikiCreature): string {
   const byId = new Map(data.creatures.map((x) => [x.id, x]));
   const name = (id: string): { id: string; label: string } => ({
@@ -117,16 +170,7 @@ function creatureEntry(page: Page, data: WikiData, c: WikiCreature): string {
   const talents = new Map(data.currentTalents.map((t) => [t.id, t]));
   const knacks = new Map(data.knacks.map((k) => [k.id, k]));
   const draft = new Map(data.draftTalents.map((t) => [t.id, t]));
-  const g = c.growth;
   const rows: [string, string][] = [
-    [
-      'Type',
-      `${page.link('element', c.element, capital(c.element))}, ${esc(c.role)}, ${esc(c.rarity)}, stage ${String(c.stage)}${c.festival ? ', Festival only' : ''}`,
-    ],
-    [
-      'Stats at level 1',
-      `HP ${String(c.baseStats.hp)}, Attack ${String(c.baseStats.atk)}, Speed ${String(c.baseStats.spd)} (per level: +${String(g.hp)}, +${String(g.atk)}, +${String(g.spd)}); level cap ${String(c.levelCap)}`,
-    ],
     ['Evolves from', page.links('creature', from)],
     ['Evolves into', page.links('creature', c.evolvesTo.map(name))],
     [
@@ -162,10 +206,28 @@ function creatureEntry(page: Page, data: WikiData, c: WikiCreature): string {
     ],
   ];
   const facts = rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join('');
-  return `<article class="entry" id="${esc(anchor('creature', c.id))}">
-${heading(4, anchor('creature', c.id), c.name, page.creature(c.id, HEAD))}
+  const elementName = data.elements.find((e) => e.id === c.element)?.name ?? capital(c.element);
+  const roleName = data.roles.find((r) => r.id === c.role)?.name ?? capital(c.role);
+  const tags = [
+    page.tag('element', c.element, elementName),
+    page.tag('role', c.role, roleName),
+    page.tag('rarity', c.rarity, capital(c.rarity)),
+    `<span class="tag">Stage ${String(c.stage)}</span>`,
+    ...(c.festival ? ['<span class="badge festival">Festival</span>'] : []),
+  ].join('');
+  const id = anchor('creature', c.id);
+  const portrait = page.creature(c.id, PORTRAIT);
+  return `<article class="entry" id="${esc(id)}">
+<div class="cc-head">
+<div class="portrait">${portrait}</div>
+<div class="cc-id">
+<h4 class="cc-name rarity-name ${esc(anchor('rarity', c.rarity))}">${esc(c.name)} <a class="self" href="#${esc(id)}" aria-label="Link to ${esc(c.name)}">#</a></h4>
+<p class="cc-tags">${tags}</p>
+</div>
+</div>
 <p class="flavor">${esc(c.flavor)}</p>
-<dl>${facts}</dl>
+${statBlock(c)}
+<dl class="facts">${facts}</dl>
 </article>`;
 }
 
@@ -393,6 +455,55 @@ ${entries}
 </section>`;
 }
 
+function rolesSection(page: Page, data: WikiData): string {
+  const entries = data.roles
+    .map((r) => {
+      const lines =
+        r.lines.length === 0
+          ? ''
+          : `\n<ul class="lines">${r.lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>`;
+      return `<article class="entry" id="${esc(anchor('role', r.id))}">
+${heading(4, anchor('role', r.id), r.name, r.species === null ? '' : page.creature(r.species, HEAD))}
+<p><strong>${esc(r.short)}</strong></p>${lines}
+<p class="found"><span class="label">Creatures:</span> ${page.links(
+        'creature',
+        data.creatures.filter((c) => c.role === r.id).map((c) => ({ id: c.id, label: c.name })),
+      )}</p>
+</article>`;
+    })
+    .join('\n');
+  return `<section id="roles">
+${heading(2, 'roles', 'Roles')}
+<p>What a creature does in a fight, in the game's own words. Each creature shows its role as a tag.</p>
+${entries}
+</section>`;
+}
+
+function raritiesSection(page: Page, data: WikiData): string {
+  // The game has one glossary entry for rarity, so every rarity shares its words.
+  const about = data.rarities[0];
+  const intro =
+    about === undefined
+      ? ''
+      : `<p><strong>${esc(about.short)}</strong></p>\n<ul class="lines">${about.lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>`;
+  const entries = data.rarities
+    .map(
+      (r) => `<article class="entry" id="${esc(anchor('rarity', r.id))}">
+<h4 class="cc-name rarity-name ${esc(anchor('rarity', r.id))}">${esc(r.name)} <a class="self" href="#${esc(anchor('rarity', r.id))}" aria-label="Link to ${esc(r.name)}">#</a></h4>
+<p class="found"><span class="label">Creatures:</span> ${page.links(
+        'creature',
+        data.creatures.filter((c) => c.rarity === r.id).map((c) => ({ id: c.id, label: c.name })),
+      )}</p>
+</article>`,
+    )
+    .join('\n');
+  return `<section id="rarities">
+${heading(2, 'rarities', 'Rarities')}
+${intro}
+${entries}
+</section>`;
+}
+
 /** The whole page. `css` is the stylesheet's address (the plugin emits it next to the page). */
 export function buildWiki(data: WikiData, css = '/wiki.css', script = '/wiki.js'): string {
   const page = new Page(data);
@@ -407,6 +518,8 @@ export function buildWiki(data: WikiData, css = '/wiki.css', script = '/wiki.js'
   for (const f of data.families) page.declare('family', f.name);
   for (const e of data.elements) page.declare('element', e.id);
   for (const p of data.draftPools) page.declare('pool', p.line);
+  for (const r of data.roles) page.declare('role', r.id);
+  for (const r of data.rarities) page.declare('rarity', r.id);
 
   const toc = [
     ['creatures', 'Creatures'],
@@ -416,6 +529,8 @@ export function buildWiki(data: WikiData, css = '/wiki.css', script = '/wiki.js'
     ['keywords', 'Combat v2 draft: keywords'],
     ['families', 'Combat v2 draft: Knack families'],
     ['elements', 'Elements'],
+    ['roles', 'Roles'],
+    ['rarities', 'Rarities'],
   ]
     .map(([id, label]) => `<li><a href="#${esc(id ?? '')}">${esc(label ?? '')}</a></li>`)
     .join('\n');
@@ -447,6 +562,8 @@ ${knacksSection(page, data)}
 ${draftTalentsSection(page, data)}
 ${keywordsSection(page, data)}
 ${elementsSection(page, data)}
+${rolesSection(page, data)}
+${raritiesSection(page, data)}
 <footer><a href="#top">Back to the top</a></footer>
 </main>
 ${buildPreviews(page, data)}

@@ -5,17 +5,20 @@
  * contain no links and no ids (only the template has one), and their images are not loaded until a
  * card is shown (a `<template>` is inert).
  */
-import { anchor, capital, esc, plain, previewId } from './html';
+import { anchor, capital, chip, chipClasses, esc, plain, previewId } from './html';
 import type { WikiData, WikiCreature } from './types';
 
 /** Draws a creature form's small picture (or nothing when it has no art). */
 export interface Imager {
   creature(id: string, size: number): string;
   line(line: string, size: number): string;
+  /** An element's icon, or nothing. */
+  element(id: string, size: number): string;
 }
 
 const HEAD = 48;
 const FORM = 32;
+const ICON = 16;
 
 /** The line's forms as columns by stage, arrows between them; `here` is drawn highlighted. */
 function tree(img: Imager, forms: readonly WikiCreature[], here: string | null): string {
@@ -33,8 +36,17 @@ function tree(img: Imager, forms: readonly WikiCreature[], here: string | null):
   return `<div class="pv-tree">${columns.join('<span class="pv-arrow" aria-hidden="true">&rarr;</span>')}</div>`;
 }
 
-function card(title: string, kind: string, body: string, icon = ''): string {
-  return `<div class="pv-head">${icon}<span><strong class="pv-name">${esc(title)}</strong><span class="pv-kind">${esc(kind)}</span></span></div>${body}`;
+/** `nameClass` is a game class that colours the name (a creature's or rarity's name is in its rarity colour). */
+function card(title: string, kind: string, body: string, icon = '', nameClass = ''): string {
+  const cls = nameClass === '' ? 'pv-name' : `pv-name rarity-name ${nameClass}`;
+  return `<div class="pv-head">${icon}<span><strong class="${cls}">${esc(title)}</strong><span class="pv-kind">${esc(kind)}</span></span></div>${body}`;
+}
+
+/** The lines of a glossary entry as a list (nothing for none). */
+function lineList(lines: readonly string[]): string {
+  return lines.length === 0
+    ? ''
+    : `<ul class="pv-lines">${lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>`;
 }
 
 /** The templates of every entry the page links to, one after another. */
@@ -44,6 +56,7 @@ export function buildPreviews(img: Imager, data: WikiData): string {
     out.push(`<template id="${esc(previewId(anchor(kind, id)))}">${content}</template>`);
   };
   const elementName = new Map(data.elements.map((e) => [e.id, e.name]));
+  const roleName = new Map(data.roles.map((r) => [r.id, r.name]));
   const draftName = new Map(data.draftTalents.map((t) => [t.id, t.name]));
 
   const groups = new Map<string, WikiCreature[]>();
@@ -54,15 +67,25 @@ export function buildPreviews(img: Imager, data: WikiData): string {
   for (const c of data.creatures) {
     const forms = groups.get(c.line) ?? [c];
     const stages = new Set(forms.map((f) => f.stage)).size;
-    const body = `${tree(img, forms, c.id)}<p class="pv-text"><span class="pv-label">Role:</span> ${esc(c.role)}<br><span class="pv-label">Element:</span> ${esc(elementName.get(c.element) ?? capital(c.element))}</p>`;
+    // The tags are the game's own chips (the same as on the page), here plain: a card holds no links.
+    const tags = `<p class="cc-tags pv-tags">${[
+      chip({
+        classes: chipClasses.element(c.element),
+        text: elementName.get(c.element) ?? capital(c.element),
+        icon: img.element(c.element, ICON),
+      }),
+      chip({ classes: chipClasses.role(), text: roleName.get(c.role) ?? capital(c.role) }),
+      chip({ classes: chipClasses.rarity(c.rarity), text: capital(c.rarity) }),
+    ].join('')}</p>`;
     add(
       'creature',
       c.id,
       card(
         c.name,
-        `Stage ${String(c.stage)} / ${String(stages)}, ${c.rarity}`,
-        body,
+        `Stage ${String(c.stage)} / ${String(stages)}`,
+        `${tags}${tree(img, forms, c.id)}`,
         img.creature(c.id, HEAD),
+        anchor('rarity', c.rarity),
       ),
     );
   }
@@ -145,6 +168,31 @@ export function buildPreviews(img: Imager, data: WikiData): string {
         e.name,
         'Element',
         `<p class="pv-text"><span class="pv-label">Harder against:</span> ${esc(against(true))}<br><span class="pv-label">Softer against:</span> ${esc(against(false))}</p>`,
+      ),
+    );
+  }
+  for (const r of data.roles) {
+    add(
+      'role',
+      r.id,
+      card(
+        r.name,
+        'Role',
+        `<p class="pv-text"><strong>${esc(r.short)}</strong></p>${lineList(r.lines)}`,
+        r.species === null ? '' : img.creature(r.species, HEAD),
+      ),
+    );
+  }
+  for (const r of data.rarities) {
+    add(
+      'rarity',
+      r.id,
+      card(
+        r.name,
+        'Rarity',
+        `<p class="pv-text"><strong>${esc(r.short)}</strong></p>${lineList(r.lines)}`,
+        '',
+        anchor('rarity', r.id),
       ),
     );
   }

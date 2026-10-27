@@ -11,6 +11,8 @@ export interface WikiCreature {
   role: string;
   levelCap: number;
   baseStats: { hp: number; atk: number; spd: number };
+  /** The stats at its level cap (the game's own stat rule, no fusion). */
+  capStats: { hp: number; atk: number; spd: number };
   growth: { hp: number; atk: number; spd: number };
   /** The forms this one evolves into (one or two). */
   evolvesTo: string[];
@@ -63,10 +65,28 @@ export interface WikiArt {
   svg: string;
 }
 
+/** A role or a rarity as the game's glossary explains it. */
+export interface WikiTerm {
+  id: string;
+  name: string;
+  /** The glossary's one line. */
+  short: string;
+  /** The glossary's lines under it. */
+  lines: string[];
+  /** A creature form the glossary draws beside it, if any. */
+  species: string | null;
+}
+
 export interface WikiData {
   creatures: WikiCreature[];
   /** A picture for each form that has art; a form without art has none and the page shows no image. */
   art: WikiArt[];
+  /** The icon of each element that has one (drawn in the element's chip). */
+  elementArt: WikiArt[];
+  /** The roles of the game, in its order, as its glossary says them. */
+  roles: WikiTerm[];
+  /** The creature rarities of the game, in its order; they share one glossary entry. */
+  rarities: WikiTerm[];
   currentTalents: WikiCurrentTalent[];
   knacks: WikiKnack[];
   draftTalents: WikiDraftTalent[];

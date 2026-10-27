@@ -1,11 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { anchor, buildWiki, esc } from './build';
 import { loadWikiData } from './data';
-import { WIKI_CSS } from './style';
+import { readFileSync } from 'node:fs';
+import { buildWikiCss, GAME_STYLES, type GameCss } from './style';
 import type { WikiData } from './types';
 
 const data = loadWikiData();
 const html = buildWiki(data);
+/** The wiki's stylesheet, made from the game's real source files, as the plugin does. */
+const game = Object.fromEntries(
+  Object.entries(GAME_STYLES).map(([name, file]) => [
+    name,
+    readFileSync(new URL(`../styles/${file}`, import.meta.url), 'utf8'),
+  ]),
+) as GameCss;
+const WIKI = buildWikiCss(game);
+const WIKI_CSS = WIKI.css;
 
 function idsOf(text: string): string[] {
   return [...text.matchAll(/\sid="([^"]*)"/g)].map((m) => m[1] ?? '');
@@ -24,6 +34,9 @@ function fake(): WikiData {
   const evil = '<script>alert(1)</script> "quoted" & \'single\'';
   return {
     art: [{ id: 'evil-1', src: '/wiki-art/evil\'"x.svg', svg: '<svg></svg>' }],
+    elementArt: [{ id: 'tide', src: '/wiki-art/element-evil\'"x.svg', svg: '<svg></svg>' }],
+    roles: [{ id: 'setter', name: evil, short: evil, lines: [evil], species: 'evil-1' }],
+    rarities: [{ id: 'common', name: evil, short: evil, lines: [evil], species: null }],
     creatures: [
       {
         id: 'evil-1',
@@ -35,6 +48,7 @@ function fake(): WikiData {
         role: 'setter',
         levelCap: 15,
         baseStats: { hp: 1, atk: 2, spd: 3 },
+        capStats: { hp: 11, atk: 12, spd: 13 },
         growth: { hp: 1, atk: 1, spd: 1 },
         evolvesTo: [],
         festival: false,
@@ -163,14 +177,20 @@ describe('the wiki page of the real data', () => {
     expect(html).toContain('href="/wiki.css"');
   });
 
-  it('has a stylesheet with no remote or font loading', () => {
-    expect(WIKI_CSS).not.toMatch(/@import|url\(|@font-face/);
+  it('has a stylesheet with no remote loading: the only files are fonts of the site', () => {
+    expect(WIKI_CSS).not.toMatch(/@import|https?:|\/\//);
+    const urls = [...WIKI_CSS.matchAll(/url\(([^)]*)\)/g)].map((m) => m[1]);
+    expect(urls.length).toBe(3);
+    for (const u of urls) expect(u).toMatch(/^'\/wiki-fonts\/[a-z0-9-]+\.woff2'$/);
+    expect(WIKI.fonts).toHaveLength(3);
+    for (const f of WIKI.fonts)
+      expect(f).toMatch(/^@fontsource\/[a-z0-9-]+\/files\/[a-z0-9-]+\.woff2$/);
   });
 });
 
 /** The `<a>` links (with their inner markup) of a piece of the page whose target starts with `prefix`. */
 function linksTo(text: string, prefix: string): { target: string; inner: string }[] {
-  return [...text.matchAll(/<a href="#([^"]*)">([^]*?)<\/a>/g)]
+  return [...text.matchAll(/<a href="#([^"]*)"[^>]*>([^]*?)<\/a>/g)]
     .map((m) => ({ target: m[1] ?? '', inner: m[2] ?? '' }))
     .filter((l) => l.target.startsWith(prefix));
 }
@@ -225,7 +245,7 @@ describe('creature pictures', () => {
 
   it('puts the picture in a creature entry and in a line heading', () => {
     expect(entry(html, 'creature-splashet')).toMatch(
-      /<h4><img class="sprite"[^>]*creature-splashet\.svg/,
+      /<div class="portrait"><img class="sprite"[^>]*creature-splashet\.svg/,
     );
     expect(entry(html, 'line-splashet')).toMatch(
       /<h3><img class="sprite"[^>]*creature-splashet\.svg/,
@@ -253,8 +273,10 @@ describe('hover cards', () => {
       'keywords',
       'families',
       'elements',
+      'roles',
+      'rarities',
     ]);
-    const hrefs = [...html.matchAll(/<a href="#([^"]*)">/g)]
+    const hrefs = [...html.matchAll(/<a href="#([^"]*)"/g)]
       .map((m) => m[1] ?? '')
       .filter((h) => !sections.has(h));
     expect(hrefs.length).toBeGreaterThan(1000);
@@ -273,14 +295,20 @@ describe('hover cards', () => {
       const part = card(html, anchor('creature', c.id));
       const src = data.art.find((a) => a.id === c.id)?.src;
       if (src !== undefined) expect(part, c.id).toContain(`src="${src}"`);
-      expect(part, c.id).toContain(`<strong class="pv-name">${esc(c.name)}</strong>`);
+      expect(part, c.id).toContain(`">${esc(c.name)}</strong><span class="pv-kind">`);
       for (const f of data.creatures.filter((x) => x.line === c.line)) {
         expect(part, `${c.id} ${f.id}`).toContain(`<span>${esc(f.name)}</span>`);
       }
       expect(part.match(/pv-form here/g), c.id).toHaveLength(1);
-      expect(part, c.id).toContain(`<span class="pv-label">Role:</span> ${c.role}`);
+      // The tags are the game's chips, as spans (a card holds no link).
       const element = data.elements.find((e) => e.id === c.element);
-      expect(part, c.id).toContain(`</span> ${esc(element?.name ?? c.element)}</p>`);
+      expect(part, c.id).toContain(`<span class="chip t-${c.element}">`);
+      expect(part, c.id).toContain(
+        `<span class="chip-text">${esc(element?.name ?? c.element)}</span>`,
+      );
+      expect(part, c.id).toContain('<span class="chip role-chip">');
+      expect(part, c.id).toContain(`<span class="chip rarity-tag rarity-${c.rarity}">`);
+      expect(part, c.id).toContain(`class="pv-name rarity-name rarity-${c.rarity}"`);
     }
   });
 
@@ -311,6 +339,134 @@ describe('hover cards', () => {
     expect(card(html, anchor('family', family?.name ?? 'x'))).toContain(esc(family?.text ?? 'x'));
     const element = data.elements[0];
     expect(card(html, anchor('element', element?.id ?? 'x'))).toContain('Harder against');
+  });
+});
+
+describe('stat blocks and the game tags', () => {
+  const card = (target: string): string => {
+    const start = html.indexOf(`<template id="tip-${target}">`);
+    expect(start, `card ${target}`).toBeGreaterThan(-1);
+    return html.slice(start, html.indexOf('</template>', start));
+  };
+
+  it('gives every creature entry a stat block with its level 1 and level cap stats from the data', () => {
+    for (const c of data.creatures) {
+      const part = entry(html, anchor('creature', c.id));
+      const block = /<table class="data-table headed tabular"[^]*?<\/table>/.exec(part)?.[0] ?? '';
+      expect(block, c.id).not.toBe('');
+      expect(block, c.id).toContain(`Lv ${String(c.levelCap)}`);
+      const cells = (label: string): string[] =>
+        [
+          ...(
+            new RegExp(`<span class="data-label">${label}</span></th>([^]*?)</tr>`).exec(
+              block,
+            )?.[1] ?? ''
+          ).matchAll(/<td[^>]*>([^<]*)<\/td>/g),
+        ].map((m) => m[1] ?? '');
+      expect(cells('HP'), c.id).toEqual([
+        String(c.baseStats.hp),
+        String(c.capStats.hp),
+        `+${String(c.growth.hp)}`,
+      ]);
+      expect(cells('Attack'), c.id).toEqual([
+        String(c.baseStats.atk),
+        String(c.capStats.atk),
+        `+${String(c.growth.atk)}`,
+      ]);
+      expect(cells('Speed'), c.id).toEqual([
+        String(c.baseStats.spd),
+        String(c.capStats.spd),
+        `+${String(c.growth.spd)}`,
+      ]);
+      // The cap values follow from the game's rule: never below level 1.
+      expect(c.capStats.hp).toBeGreaterThanOrEqual(c.baseStats.hp);
+    }
+  });
+
+  it('shows each creature element, role and rarity as the game chips, links to entries that have cards', () => {
+    const ids = new Set(idsOf(html));
+    for (const c of data.creatures) {
+      const part = entry(html, anchor('creature', c.id));
+      const tags = /<p class="cc-tags">([^]*?)<\/p>/.exec(part)?.[1] ?? '';
+      for (const [kind, id, classes] of [
+        ['element', c.element, `t-${c.element}`],
+        ['role', c.role, 'role-chip'],
+        ['rarity', c.rarity, `rarity-tag rarity-${c.rarity}`],
+      ] as const) {
+        const target = anchor(kind, id);
+        expect(tags, `${c.id} ${kind}`).toContain(
+          `<a href="#${target}" class="gtag-chip chip ${classes}">`,
+        );
+        expect(ids.has(target), target).toBe(true);
+        expect(html, target).toContain(`<template id="tip-${target}">`);
+      }
+      expect(part, c.id).toContain(`<h4 class="cc-name rarity-name rarity-${c.rarity}">`);
+    }
+  });
+
+  it('has a Roles and a Rarities section listing every role and rarity of the game, with the glossary words', () => {
+    expect(data.roles.map((r) => r.id)).toEqual(['setter', 'payoff', 'support', 'guard']);
+    expect(data.rarities.map((r) => r.id)).toEqual(['common', 'rare', 'epic']);
+    for (const kind of ['role', 'rarity'] as const) {
+      for (const t of data[kind === 'role' ? 'roles' : 'rarities']) {
+        const part = entry(html, anchor(kind, t.id));
+        expect(part).toContain(esc(t.name));
+        const c = card(anchor(kind, t.id));
+        expect(c).toContain(esc(t.short));
+        for (const line of t.lines) expect(c).toContain(esc(line));
+      }
+    }
+    for (const r of data.roles) {
+      expect(r.short, r.id).not.toBe('');
+      expect(entry(html, anchor('role', r.id))).toContain(esc(r.short));
+      // Every creature of the role is listed.
+      for (const c of data.creatures.filter((x) => x.role === r.id)) {
+        expect(entry(html, anchor('role', r.id))).toContain(`href="#${anchor('creature', c.id)}"`);
+      }
+    }
+    for (const r of data.rarities) {
+      for (const c of data.creatures.filter((x) => x.rarity === r.id)) {
+        expect(entry(html, anchor('rarity', r.id))).toContain(
+          `href="#${anchor('creature', c.id)}"`,
+        );
+      }
+    }
+    expect(html).toContain('<a href="#roles">Roles</a>');
+    expect(html).toContain('<a href="#rarities">Rarities</a>');
+  });
+
+  it('has the roles words from the game glossary, and the element chips an icon file', () => {
+    expect(data.roles.find((r) => r.id === 'guard')?.short).toBe(
+      'Tough. Protects the creature on each side of it.',
+    );
+    expect(data.elementArt.length).toBe(data.elements.length);
+    for (const a of data.elementArt) expect(a.src).toMatch(/^\/wiki-art\/element-[a-z0-9-]+\.svg$/);
+    expect(html).toContain('src="/wiki-art/element-tide.svg" width="16" height="16"');
+  });
+
+  it('draws the links quietly: the text colour, a faint dotted underline, and a focus ring', () => {
+    expect(WIKI_CSS).toMatch(/\na \{[^}]*color: var\(--bone\)[^}]*underline dotted/);
+    expect(WIKI_CSS).toMatch(/a:focus-visible \{[^}]*outline: 2px solid/);
+    expect(WIKI_CSS).toMatch(/a:not\(\.chip\):hover/);
+    expect(WIKI_CSS).not.toContain('--link');
+  });
+
+  it('takes the game tokens and rules into the stylesheet', () => {
+    for (const rule of [
+      '--rarity-rare:',
+      '--rarity-epic-text:',
+      '.role-chip',
+      '.rarity-tag',
+      '.chip',
+      '.data-table.headed',
+      '.cc-tags > .chip',
+      '.badge.festival',
+      '@font-face',
+      'Jersey 10',
+      'Atkinson Hyperlegible',
+    ]) {
+      expect(WIKI_CSS, rule).toContain(rule);
+    }
   });
 });
 
@@ -405,5 +561,19 @@ describe('the wiki page from other data', () => {
     const noBase = buildWiki(more);
     expect(noBase).not.toMatch(/<a href="#line-bee"><img/);
     expect(noBase).toMatch(/<a href="#creature-b-2"><img/);
+  });
+});
+
+describe('the page from fake roles and rarities', () => {
+  it('escapes them and links a tag only when its entry exists', () => {
+    const more = fake();
+    more.roles = [];
+    more.rarities = [];
+    const page = buildWiki(more);
+    expect(page).not.toContain('<script>');
+    expect(page).not.toMatch(/<a href="#(role|rarity)-/);
+    expect(page).toContain('<span class="chip role-chip">');
+    expect(page).toContain('<span class="chip rarity-tag rarity-common">');
+    expect(buildWiki(fake())).toContain('<a href="#role-setter" class="gtag-chip chip role-chip">');
   });
 });

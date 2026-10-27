@@ -4,11 +4,35 @@
  * loads it) and in tests: no wiki code is in the app's bundle. Everything is derived from the data, so a
  * new creature, talent or Knack shows up on the page with no change to the page's code.
  */
-import { content, talentContent, talentSignature, talentText } from '@creatures/game';
+import {
+  content,
+  effectiveStats,
+  glossaryEntry,
+  GLOSSARY_IDS,
+  RARITIES,
+  RoleSchema,
+  talentContent,
+  talentSignature,
+  talentText,
+} from '@creatures/game';
 import { FAMILIES, FORM_KNACKS, KEYWORDS, KNACKS, LINE_POOLS, TALENTS } from '@creatures/lab';
 import { creatureSprite } from '../sprites/creature-sprites';
-import { artPath, spriteSvg } from './art';
-import type { WikiData } from './types';
+import { elementIcon } from '../sprites/element-icons';
+import { artPath, elementArtPath, spriteSvg } from './art';
+import { capital } from './html';
+import type { WikiData, WikiTerm } from './types';
+
+/** A role or rarity as the game's glossary entry says it (its title, one line and lines). */
+function term(id: string, entryId: string): WikiTerm {
+  const entry = glossaryEntry(entryId);
+  return {
+    id,
+    name: entry?.title ?? capital(id),
+    short: entry?.short ?? '',
+    lines: [...(entry?.lines ?? [])],
+    species: entry?.visual?.kind === 'species' ? entry.visual.id : null,
+  };
+}
 
 /** The wiki's data from the shipped content and the lab's draft. */
 export function loadWikiData(): WikiData {
@@ -27,6 +51,7 @@ export function loadWikiData(): WikiData {
       role: c.role,
       levelCap: c.levelCap,
       baseStats: { ...c.baseStats },
+      capStats: { ...effectiveStats(c, c.levelCap, 0) },
       growth: { ...c.growth },
       evolvesTo: [c.evolvesTo?.species, c.altEvolvesTo?.species].filter(
         (id): id is string => id !== undefined,
@@ -66,9 +91,20 @@ export function loadWikiData(): WikiData {
     return sprite === undefined ? [] : [{ id: c.id, src: artPath(c.id), svg: spriteSvg(sprite) }];
   });
 
+  const elementArt = content.elements.flatMap((e) => {
+    const icon = elementIcon(e.id);
+    return icon === undefined
+      ? []
+      : [{ id: e.id, src: elementArtPath(e.id), svg: spriteSvg(icon) }];
+  });
+
   return {
     creatures,
     art,
+    elementArt,
+    roles: RoleSchema.options.map((id) => term(id, GLOSSARY_IDS.role(id))),
+    // The game has one glossary entry for creature rarity, so each rarity says the same words.
+    rarities: RARITIES.map((id) => ({ ...term(id, 'rarity'), name: capital(id), species: null })),
     currentTalents,
     knacks: Object.values(KNACKS).map((k) => ({
       id: k.id,

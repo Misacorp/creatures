@@ -90,6 +90,16 @@ function expectWikiWithOneScript(
   expect(pictures.length).toBeGreaterThan(20);
   const names = new Set(files.map((f) => f.name));
   expect(pictures.filter((p) => !names.has(p.slice(1)))).toEqual([]);
+  // The element icons of the chips are among them, and the stylesheet's fonts are files of the site too (same origin).
+  expect(pictures).toContain('/wiki-art/element-tide.svg');
+  const css = files.find((f) => f.name === 'wiki.css')?.text ?? '';
+  const fontUrls = [...css.matchAll(/url\('([^']*)'\)/g)].map((m) => m[1] ?? '');
+  expect(fontUrls.length).toBeGreaterThanOrEqual(2);
+  for (const url of fontUrls) {
+    expect(url).toMatch(/^\/wiki-fonts\/[a-z0-9-]+\.woff2$/);
+    expect(names.has(url.slice(1)), url).toBe(true);
+  }
+  expect(css).not.toMatch(/https?:|@import/);
   // The script holds no lab or game data (its cards come from the page); the lab's own chunk, in a
   // staging build, holds it on purpose.
   const draft = ['Steady Mark', 'its marks are not shed by the boss', 'FORM_KNACKS'];

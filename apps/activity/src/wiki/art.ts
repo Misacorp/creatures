@@ -5,13 +5,22 @@
  */
 import { expandRows, validateSprite, type SpriteDef } from '../sprites/sprite-data';
 
-/** Where the picture of a creature form is served from. */
-export function artPath(creatureId: string): string {
-  const clean = creatureId
+function slug(id: string): string {
+  const clean = id
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
-  return `/wiki-art/creature-${clean === '' ? 'x' : clean}.svg`;
+  return clean === '' ? 'x' : clean;
+}
+
+/** Where the picture of a creature form is served from. */
+export function artPath(creatureId: string): string {
+  return `/wiki-art/creature-${slug(creatureId)}.svg`;
+}
+
+/** Where the icon of an element is served from. */
+export function elementArtPath(elementId: string): string {
+  return `/wiki-art/element-${slug(elementId)}.svg`;
 }
 
 /**
