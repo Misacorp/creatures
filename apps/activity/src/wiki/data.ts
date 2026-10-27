@@ -6,6 +6,8 @@
  */
 import { content, talentContent, talentSignature, talentText } from '@creatures/game';
 import { FAMILIES, FORM_KNACKS, KEYWORDS, KNACKS, LINE_POOLS, TALENTS } from '@creatures/lab';
+import { creatureSprite } from '../sprites/creature-sprites';
+import { artPath, spriteSvg } from './art';
 import type { WikiData } from './types';
 
 /** The wiki's data from the shipped content and the lab's draft. */
@@ -59,8 +61,14 @@ export function loadWikiData(): WikiData {
     };
   });
 
+  const art = content.creatures.flatMap((c) => {
+    const sprite = creatureSprite(c.id);
+    return sprite === undefined ? [] : [{ id: c.id, src: artPath(c.id), svg: spriteSvg(sprite) }];
+  });
+
   return {
     creatures,
+    art,
     currentTalents,
     knacks: Object.values(KNACKS).map((k) => ({
       id: k.id,

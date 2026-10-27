@@ -54,8 +54,19 @@ export interface WikiDraftTalent {
   roles: string[];
 }
 
+/** One creature form's picture: where the page links it and the SVG file the build writes there. */
+export interface WikiArt {
+  /** The creature form's id. */
+  id: string;
+  /** The site path of the file, such as `/wiki-art/creature-splashet.svg`. */
+  src: string;
+  svg: string;
+}
+
 export interface WikiData {
   creatures: WikiCreature[];
+  /** A picture for each form that has art; a form without art has none and the page shows no image. */
+  art: WikiArt[];
   currentTalents: WikiCurrentTalent[];
   knacks: WikiKnack[];
   draftTalents: WikiDraftTalent[];

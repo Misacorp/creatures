@@ -1,10 +1,14 @@
 /**
  * The wiki page as one HTML string, built from `WikiData` (see `data.ts`). Pure: no I/O, so it is
- * unit tested. The page is static (no script, no inline style: the Content-Security-Policy forbids both)
- * and links to `wiki.css`. Every text and attribute value goes through `esc`, and every anchor id is
+ * unit tested. The page has no inline script and no inline style (the Content-Security-Policy forbids
+ * both): it links to `wiki.css` and to one same-origin script, `wiki.js`, that shows the hover cards
+ * (`hover.ts`; the cards' content is generated here, in `previews.ts`). Creature pictures are the SVG
+ * files of `art.ts`. Every text and attribute value goes through `esc`, and every anchor id is
  * made by `anchor`, which keeps only `[a-z0-9-]`. A link is drawn only when its target exists, so the
  * page never has a dangling `#link`.
  */
+import { anchor, capital, esc, keywordsIn } from './html';
+import { buildPreviews } from './previews';
 import type {
   WikiCreature,
   WikiCurrentTalent,
@@ -13,40 +17,51 @@ import type {
   WikiKnack,
 } from './types';
 
-/** HTML-escapes text for element content and for double- or single-quoted attribute values. */
-export function esc(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-/** An anchor id: a kind prefix and the content id, lower case, only `a-z`, `0-9` and `-`. */
-export function anchor(kind: string, id: string): string {
-  const clean = id
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-  return `${kind}-${clean === '' ? 'x' : clean}`;
-}
-
-/** The `{Keyword}` markers of a text. */
-function keywordsIn(text: string): string[] {
-  return [...text.matchAll(/\{([^}]+)\}/g)].map((m) => m[1] ?? '');
-}
-
-function capital(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
+export { anchor, esc };
 
 /** What the page can link to, by kind and content id. */
 type Kind =
   'creature' | 'line' | 'talent' | 'knack' | 'dtalent' | 'keyword' | 'family' | 'element' | 'pool';
 
+/** The sizes of a creature picture: beside a name in running text, and before a heading. */
+const INLINE = 32;
+const HEAD = 48;
+
 class Page {
   private readonly known = new Map<Kind, Set<string>>();
+  /** The picture of each creature form that has one, by creature id. */
+  private readonly art = new Map<string, string>();
+  /** The base form (stage 1) of each line, by line. */
+  private readonly base = new Map<string, string>();
+
+  constructor(data: WikiData) {
+    for (const a of data.art) this.art.set(a.id, a.src);
+    for (const c of data.creatures) {
+      const current = data.creatures.find((x) => x.id === this.base.get(c.line));
+      if (current === undefined || (c.stage === 1 && current.stage !== 1)) {
+        this.base.set(c.line, c.id);
+      }
+    }
+  }
+
+  /** A creature form's small picture, or nothing when it has no art. */
+  creature(id: string, size = INLINE): string {
+    const src = this.art.get(id);
+    if (src === undefined) return '';
+    return `<img class="sprite" src="${esc(src)}" width="${String(size)}" height="${String(size)}" alt="" loading="lazy">`;
+  }
+
+  /** The picture of a line: its base form (stage 1). */
+  line(line: string, size = INLINE): string {
+    const id = this.base.get(line);
+    return id === undefined ? '' : this.creature(id, size);
+  }
+
+  private picture(kind: Kind, id: string): string {
+    if (kind === 'creature') return this.creature(id);
+    if (kind === 'line' || kind === 'pool') return this.line(id);
+    return '';
+  }
 
   /** Registers an entry of the page so links to it are drawn. */
   declare(kind: Kind, id: string): void {
@@ -58,7 +73,7 @@ class Page {
   /** A link to an entry, or plain text when there is no such entry. */
   link(kind: Kind, id: string, label: string): string {
     if (this.known.get(kind)?.has(id) !== true) return esc(label);
-    return `<a href="#${esc(anchor(kind, id))}">${esc(label)}</a>`;
+    return `<a href="#${esc(anchor(kind, id))}">${this.picture(kind, id)}${esc(label)}</a>`;
   }
 
   /** A comma-separated list of links, or a dash for none. */
@@ -80,9 +95,9 @@ class Page {
   }
 }
 
-function heading(level: 2 | 3 | 4, id: string, text: string): string {
+function heading(level: 2 | 3 | 4, id: string, text: string, icon = ''): string {
   // The id sits on the section or article around the heading, so each id is on the page once.
-  return `<h${String(level)}>${esc(text)} <a class="self" href="#${esc(id)}" aria-label="Link to ${esc(text)}">#</a></h${String(level)}>`;
+  return `<h${String(level)}>${icon}${esc(text)} <a class="self" href="#${esc(id)}" aria-label="Link to ${esc(text)}">#</a></h${String(level)}>`;
 }
 
 function foundOn(page: Page, creatures: readonly WikiCreature[]): string {
@@ -148,7 +163,7 @@ function creatureEntry(page: Page, data: WikiData, c: WikiCreature): string {
   ];
   const facts = rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join('');
   return `<article class="entry" id="${esc(anchor('creature', c.id))}">
-${heading(4, anchor('creature', c.id), c.name)}
+${heading(4, anchor('creature', c.id), c.name, page.creature(c.id, HEAD))}
 <p class="flavor">${esc(c.flavor)}</p>
 <dl>${facts}</dl>
 </article>`;
@@ -176,7 +191,7 @@ function creaturesSection(page: Page, data: WikiData): string {
   const body = groups
     .map(
       (g) => `<section class="line" id="${esc(anchor('line', g.line))}">
-${heading(3, anchor('line', g.line), lineName(g.forms))}
+${heading(3, anchor('line', g.line), lineName(g.forms), page.line(g.line, HEAD))}
 ${g.forms.map((f) => creatureEntry(page, data, f)).join('\n')}
 </section>`,
     )
@@ -275,7 +290,7 @@ function draftTalentsSection(page: Page, data: WikiData): string {
   const pools = data.draftPools
     .map((p) => {
       const names = new Map(data.draftTalents.map((t) => [t.id, t.name]));
-      return `<li id="${esc(anchor('pool', p.line))}"><strong>${esc(capital(p.line))} line</strong>: ${page.links(
+      return `<li id="${esc(anchor('pool', p.line))}">${page.line(p.line)}<strong>${esc(capital(p.line))} line</strong>: ${page.links(
         'dtalent',
         p.talents.map((id) => ({ id, label: names.get(id) ?? id })),
       )}</li>`;
@@ -379,8 +394,8 @@ ${entries}
 }
 
 /** The whole page. `css` is the stylesheet's address (the plugin emits it next to the page). */
-export function buildWiki(data: WikiData, css = '/wiki.css'): string {
-  const page = new Page();
+export function buildWiki(data: WikiData, css = '/wiki.css', script = '/wiki.js'): string {
+  const page = new Page(data);
   for (const c of data.creatures) {
     page.declare('creature', c.id);
     page.declare('line', c.line);
@@ -413,6 +428,7 @@ export function buildWiki(data: WikiData, css = '/wiki.css'): string {
 <meta name="robots" content="noindex">
 <title>Leet Creatures wiki</title>
 <link rel="stylesheet" href="${esc(css)}">
+<script type="module" src="${esc(script)}"></script>
 </head>
 <body>
 <main>
@@ -433,6 +449,7 @@ ${keywordsSection(page, data)}
 ${elementsSection(page, data)}
 <footer><a href="#top">Back to the top</a></footer>
 </main>
+${buildPreviews(page, data)}
 </body>
 </html>
 `;

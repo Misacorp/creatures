@@ -61,24 +61,43 @@ async function buildFiles(targetEnv: string): Promise<{ name: string; text: stri
 }
 
 /**
- * The wiki (`wiki.html`, `wiki.css`, `src/wiki/`) is generated text for every build, production too. It
- * must never bring script with it: no script tag, and none of the combat v2 draft's data (Knack texts
- * and so on) in any JavaScript file.
+ * The wiki (`wiki.html`, `wiki.css`, `wiki.js`, `wiki-art/`, `src/wiki/`) is generated for every build,
+ * production too. Its only script is one same-origin file (the Content-Security-Policy allows nothing
+ * inline) that holds no game data, and none of the combat v2 draft's data (Knack texts and so on) is in
+ * any JavaScript file. Its creature pictures are files of the site itself.
  */
-function expectWikiWithoutScripts(
+function expectWikiWithOneScript(
   files: { name: string; text: string }[],
   labInScripts = false,
 ): void {
   const page = files.find((f) => f.name === 'wiki.html');
   expect(page?.text).toContain('Leet Creatures wiki');
   expect(page?.text).toContain('id="knack-steady-mark"');
-  expect(page?.text).not.toMatch(/<script/i);
+  expect(page?.text.match(/<script[^>]*>/gi)).toEqual(['<script type="module" src="/wiki.js">']);
+  expect(page?.text).not.toMatch(/<script[^>]*>[^<]/i);
+  expect(page?.text).not.toMatch(/\son[a-z]+=|\sstyle=|<style/i);
   expect(files.some((f) => f.name === 'wiki.css' && f.text.length > 0)).toBe(true);
   expect(page?.text).toContain('href="/wiki.css"');
-  if (labInScripts) return; // a staging build has the combat lab, which holds that data on purpose
+  const script = files.find((f) => f.name === 'wiki.js');
+  expect(script?.text).toContain('wiki-card');
+  expect(script?.text).not.toMatch(/innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval\(/);
+  // Every picture the page names is a file of the build, and the page names some.
+  const pictures = [
+    ...new Set(
+      [...(page?.text ?? '').matchAll(/src="(\/wiki-art\/[^"]+)"/g)].map((m) => m[1] ?? ''),
+    ),
+  ];
+  expect(pictures.length).toBeGreaterThan(20);
+  const names = new Set(files.map((f) => f.name));
+  expect(pictures.filter((p) => !names.has(p.slice(1)))).toEqual([]);
+  // The script holds no lab or game data (its cards come from the page); the lab's own chunk, in a
+  // staging build, holds it on purpose.
+  const draft = ['Steady Mark', 'its marks are not shed by the boss', 'FORM_KNACKS'];
+  for (const text of draft) expect(script?.text).not.toContain(text);
+  if (labInScripts) return;
   const js = files.filter((f) => f.name.endsWith('.js'));
-  for (const draft of ['Steady Mark', 'its marks are not shed by the boss', 'FORM_KNACKS']) {
-    expect(js.filter((f) => f.text.includes(draft)).map((f) => f.name)).toEqual([]);
+  for (const text of draft) {
+    expect(js.filter((f) => f.text.includes(text)).map((f) => f.name)).toEqual([]);
   }
 }
 
@@ -104,8 +123,8 @@ describe('the debug panel and the production build', () => {
     for (const marker of COMBAT_LAB_MARKERS) {
       expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
     }
-    // The wiki is there: generated text and a stylesheet, no script, and no lab code in any script.
-    expectWikiWithoutScripts(files);
+    // The wiki is there: generated text, a stylesheet, one same-origin script and the pictures, and no lab code in any script.
+    expectWikiWithOneScript(files);
     // The rarity colours are defined once, as tokens (grey, blue, pink; gold and crimson reserved), with a lighter text variant each for names.
     const css = files
       .filter((f) => f.name.endsWith('.css'))
@@ -162,11 +181,11 @@ describe('the debug panel and the production build', () => {
     for (const marker of COMBAT_LAB_MARKERS) {
       expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
     }
-    expectWikiWithoutScripts(files);
+    expectWikiWithOneScript(files);
   }, 60_000);
 
-  it('has the wiki page in a staging build too, still with no script', async () => {
-    expectWikiWithoutScripts(await buildFiles('staging'), true);
+  it('has the wiki page in a staging build too, with its one script', async () => {
+    expectWikiWithOneScript(await buildFiles('staging'), true);
   }, 60_000);
 
   it('is a separate lazy chunk in a staging build (so the search above can find it)', async () => {
