@@ -42,7 +42,10 @@ body {
   font-synthesis-weight: none;
   overflow-wrap: anywhere;
 }
-main { max-width: 46rem; margin: 0 auto; padding: 1rem 1rem 6rem; }
+.page { max-width: 46rem; margin: 0 auto; padding: 1rem 1rem 6rem; }
+.top p { max-width: 46rem; }
+main { min-width: 0; }
+main > section > p { max-width: 46rem; }
 h1, h2, h3, h4, h5 { font-family: var(--display); font-weight: 400; letter-spacing: 0.02em; line-height: 1.2; margin: 0 0 0.5rem; }
 h1 { font-size: clamp(1.75rem, 8vw, 2.5rem); color: var(--gold); text-shadow: var(--px) var(--px) 0 var(--ink), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--plum); }
 h2 { font-size: 1.75rem; margin-top: 4rem; padding-bottom: 0.375rem; border-bottom: calc(var(--px) * 2) solid var(--gold-shade); color: var(--gold); }
@@ -60,11 +63,13 @@ a {
 a:not(.chip):hover { color: var(--gold); text-decoration-color: var(--gold); }
 a:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 a.self { text-decoration: none; color: var(--haze); margin-left: 0.25rem; }
-nav ol { padding-left: 1.25rem; margin: 0.5rem 0; }
-nav li { margin: 0.25rem 0; }
+.toc ol { padding-left: 1.25rem; margin: 0.5rem 0; }
+.toc li { margin: 0.25rem 0; }
+.toc-lines { display: none; }
 .index { padding-left: 1.25rem; }
 .index li { margin: 0.25rem 0; }
 .entry {
+  container-type: inline-size;
   background: var(--dusk);
   box-shadow: var(--frame);
   padding: 0.75rem;
@@ -72,8 +77,10 @@ nav li { margin: 0.25rem 0; }
   scroll-margin-top: 0.75rem;
 }
 .entry:target { box-shadow: var(--ring); }
+.entries { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(22rem, 100%), 1fr)); gap: 1rem; align-items: start; }
+.entries > .entry { margin: 0; }
 .line-group {
-  margin: 2.5rem 0 0;
+  margin: 1.5rem 0 0;
   background: var(--dusk-2);
   box-shadow: var(--frame);
   scroll-margin-top: 0.75rem;
@@ -81,7 +88,8 @@ nav li { margin: 0.25rem 0; }
 .line-group:target { box-shadow: var(--ring); }
 .line-head { background: var(--plum); padding: 0.5rem 0.75rem; box-shadow: inset 0 calc(var(--px) * -1) 0 0 var(--ink); }
 .line-head h3 { margin: 0; color: var(--bone); }
-.line-forms { padding: 0.75rem 0.75rem 0; }
+.line-forms { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(24rem, 100%), 1fr)); gap: 0.75rem; padding: 0.75rem; }
+.line-forms > .entry { margin: 0; }
 dl { margin: 0; }
 .facts { margin-top: 0.75rem; }
 .facts dt { color: var(--haze); font-size: var(--fs-row); margin-top: 0.5rem; }
@@ -147,9 +155,40 @@ h3 .sprite, h4 .sprite { margin-right: 0.5rem; margin-top: -0.75rem; margin-bott
 .pv-form.here { border-color: var(--gold); background: var(--dusk); color: var(--gold); }
 .pv-arrow { color: var(--haze); }
 @media (min-width: 40rem) {
-  main { padding: 2rem 1.5rem 4rem; }
-  .facts { display: grid; grid-template-columns: 14rem 1fr; gap: 0.25rem 1rem; }
+  .page { padding: 2rem 1.5rem 4rem; }
+}
+/* A fact list is two columns only when its entry is wide enough for them (a form in a grid of forms is not). */
+@container (min-width: 34rem) {
+  .facts { display: grid; grid-template-columns: 12rem 1fr; gap: 0.25rem 1rem; }
   .facts dt { margin-top: 0; }
+}
+/* Wide screens: the page grows to 90rem, and the table of contents is a sticky sidebar that keeps its own scroll. */
+@media (min-width: 64rem) {
+  .page { max-width: 90rem; padding: 2rem 2rem 4rem; }
+  .layout { display: grid; grid-template-columns: 17rem minmax(0, 1fr); gap: 2rem; align-items: start; }
+  .toc {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0.5rem 0.5rem 0.75rem;
+    background: var(--dusk);
+    box-shadow: var(--frame);
+    font-size: var(--fs-row);
+    line-height: 1.3;
+  }
+  .toc ol { list-style: none; padding: 0; margin: 0; }
+  .toc-lines { display: block; margin: 0.125rem 0 0.5rem; padding-left: 0.75rem; }
+  .toc li { margin: 0; }
+  .toc li li { margin: 0; }
+  .toc a { display: block; padding: 0.3rem 0.5rem; border-left: calc(var(--px) * 2) solid transparent; text-decoration: none; }
+  .toc a:not(.chip):hover { background: var(--dusk-2); }
+  .toc-lines a { display: flex; align-items: center; gap: 0.5rem; padding: 0.125rem 0.5rem; }
+  .toc .sprite { width: 1.5rem; height: 1.5rem; margin: 0; flex: none; }
+  .toc a[aria-current] { border-left-color: var(--gold); background: var(--dusk-2); color: var(--gold); }
+  .toc a.in-section { border-left-color: var(--gold-shade); color: var(--gold); }
+  main > section:first-of-type h2 { margin-top: 0; }
 }`;
 
 /** The wiki's own rules that must win over the game's: the portrait box, the chips' pictures and the cards' names. */

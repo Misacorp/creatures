@@ -116,6 +116,11 @@ class Page {
   }
 }
 
+/** Entries laid out in a responsive grid: columns where the width allows, one column on a phone. */
+function entriesGrid(entries: string): string {
+  return `<div class="entries">\n${entries}\n</div>`;
+}
+
 function heading(level: 2 | 3 | 4, id: string, text: string, icon = ''): string {
   // The id sits on the section or article around the heading, so each id is on the page once.
   return `<h${String(level)}>${icon}${esc(text)} <a class="self" href="#${esc(id)}" aria-label="Link to ${esc(text)}">#</a></h${String(level)}>`;
@@ -270,7 +275,7 @@ function currentTalentsSection(page: Page, data: WikiData): string {
   return `<section id="current-talents">
 ${heading(2, 'current-talents', 'Current talents (in the game today)')}
 <p>The talents a creature can roll or carry now. Every form of a line shares the line's pool. Values shown are the normal ones; a golden talent is 1.5 times as big.</p>
-${entries}
+${entriesGrid(entries)}
 </section>`;
 }
 
@@ -301,7 +306,7 @@ function knacksSection(page: Page, data: WikiData): string {
 ${heading(2, 'knacks', 'Combat v2 draft: Knacks')}
 ${DRAFT_NOTE}
 <p>Every Knack as a list of entries, or as a table of the creature forms that know it.</p>
-${viewSwitch('knacks', entries, knacksTable(page, data))}
+${viewSwitch('knacks', entriesGrid(entries), knacksTable(page, data))}
 </section>`;
 }
 
@@ -353,7 +358,7 @@ ${viewSwitch(
   `<ul class="index">
 ${pools}
 </ul>
-${entries}`,
+${entriesGrid(entries)}`,
   draftTalentsTable(page, data),
 )}
 </section>`;
@@ -396,13 +401,13 @@ ${heading(4, anchor('family', f.name), f.name)}
   return `<section id="keywords">
 ${heading(2, 'keywords', 'Combat v2 draft: keywords')}
 ${DRAFT_NOTE}
-${keywords}
+${entriesGrid(keywords)}
 </section>
 <section id="families">
 ${heading(2, 'families', 'Combat v2 draft: Knack families')}
 ${DRAFT_NOTE}
 <p>A family is one rule with different numbers or elements.</p>
-${families}
+${entriesGrid(families)}
 </section>`;
 }
 
@@ -431,7 +436,7 @@ ${heading(4, anchor('element', e.id), e.name)}
   return `<section id="elements">
 ${heading(2, 'elements', 'Elements')}
 <p>The element chart: a hit against the listed elements deals more or less damage.</p>
-${entries}
+${entriesGrid(entries)}
 </section>`;
 }
 
@@ -455,7 +460,7 @@ ${heading(4, anchor('role', r.id), r.name, r.species === null ? '' : page.creatu
   return `<section id="roles">
 ${heading(2, 'roles', 'Roles')}
 <p>What a creature does in a fight, in the game's own words. Each creature shows its role as a tag.</p>
-${entries}
+${entriesGrid(entries)}
 </section>`;
 }
 
@@ -480,9 +485,22 @@ function raritiesSection(page: Page, data: WikiData): string {
   return `<section id="rarities">
 ${heading(2, 'rarities', 'Rarities')}
 ${intro}
-${entries}
+${entriesGrid(entries)}
 </section>`;
 }
+
+/** The main sections, in page order: the table of contents lists them (the creature lines go under Creatures). */
+const TOC: readonly (readonly [string, string])[] = [
+  ['creatures', 'Creatures'],
+  ['current-talents', 'Current talents (in the game today)'],
+  ['knacks', 'Combat v2 draft: Knacks'],
+  ['draft-talents', 'Combat v2 draft: talents'],
+  ['keywords', 'Combat v2 draft: keywords'],
+  ['families', 'Combat v2 draft: Knack families'],
+  ['elements', 'Elements'],
+  ['roles', 'Roles'],
+  ['rarities', 'Rarities'],
+];
 
 /** The whole page. `css` is the stylesheet's address (the plugin emits it next to the page). */
 export function buildWiki(data: WikiData, css = '/wiki.css', script = '/wiki.js'): string {
@@ -501,19 +519,13 @@ export function buildWiki(data: WikiData, css = '/wiki.css', script = '/wiki.js'
   for (const r of data.roles) page.declare('role', r.id);
   for (const r of data.rarities) page.declare('rarity', r.id);
 
-  const toc = [
-    ['creatures', 'Creatures'],
-    ['current-talents', 'Current talents (in the game today)'],
-    ['knacks', 'Combat v2 draft: Knacks'],
-    ['draft-talents', 'Combat v2 draft: talents'],
-    ['keywords', 'Combat v2 draft: keywords'],
-    ['families', 'Combat v2 draft: Knack families'],
-    ['elements', 'Elements'],
-    ['roles', 'Roles'],
-    ['rarities', 'Rarities'],
-  ]
-    .map(([id, label]) => `<li><a href="#${esc(id ?? '')}">${esc(label ?? '')}</a></li>`)
+  const lineLinks = groupLines(data.creatures)
+    .map((g) => `<li>${page.link('line', g.line, lineName(g.forms))}</li>`)
     .join('\n');
+  const toc = TOC.map(([id, label]) => {
+    const sub = id === 'creatures' ? `\n<ol class="toc-lines">\n${lineLinks}\n</ol>` : '';
+    return `<li><a href="#${esc(id)}">${esc(label)}</a>${sub}</li>`;
+  }).join('\n');
 
   return `<!doctype html>
 <html lang="en">
@@ -526,16 +538,18 @@ export function buildWiki(data: WikiData, css = '/wiki.css', script = '/wiki.js'
 <script type="module" src="${esc(script)}"></script>
 </head>
 <body>
-<main>
-<header>
+<div class="page">
+<header class="top">
 <h1 id="top">Leet Creatures wiki</h1>
 <p>A reference to the game's configuration. It is generated from the game data on every deploy, so it is always up to date. It is not linked from the game.</p>
-<nav aria-label="Contents">
+</header>
+<div class="layout">
+<nav class="toc" aria-label="Contents">
 <ol>
 ${toc}
 </ol>
 </nav>
-</header>
+<main>
 ${creaturesSection(page, data)}
 ${currentTalentsSection(page, data)}
 ${knacksSection(page, data)}
@@ -545,6 +559,8 @@ ${elementsSection(page, data)}
 ${rolesSection(page, data)}
 ${raritiesSection(page, data)}
 </main>
+</div>
+</div>
 <a class="to-top" href="#top">Back to top</a>
 ${buildPreviews(page, data)}
 </body>

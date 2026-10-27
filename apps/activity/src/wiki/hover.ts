@@ -6,6 +6,9 @@
  * card is filled with `cloneNode`, never HTML text. The card ignores the pointer, so it never blocks
  * a click on the link; a tap on a phone still just follows the link. The one other job: a link to an entry in
  * the list view of a section whose table view is showing switches the section to its list (`revealList`).
+ * The other: the table of contents follows the reader (`trackContents`): the entry of the section on screen
+ * gets `aria-current="location"`, and the contents scroll to keep it in view. It is only an aid; the contents
+ * are plain links without this script.
  */
 
 export interface Box {
@@ -48,6 +51,47 @@ export function placeCard(
   const maxLeft = Math.max(margin, view.width - card.width - margin);
   const left = Math.max(margin, Math.min(link.left, maxLeft));
   return { left, top, above: flip };
+}
+
+/** A section's place: its id and the top of it in the window (as `getBoundingClientRect` gives it). */
+export interface Mark {
+  id: string;
+  top: number;
+}
+
+/**
+ * The section the reader is in: the last one, in page order, whose top has reached `line` (a distance from
+ * the top of the window). Null before the first section starts. At the very end of the page (`atEnd`) it is
+ * the last section, even when that one is too short to ever reach the line.
+ */
+export function currentSection(
+  marks: readonly Mark[],
+  line: number,
+  atEnd: boolean,
+): string | null {
+  if (marks.length === 0) return null;
+  if (atEnd) return marks[marks.length - 1]?.id ?? null;
+  let found: string | null = null;
+  for (const m of marks) {
+    if (m.top <= line) found = m.id;
+    else break;
+  }
+  return found;
+}
+
+/**
+ * How far to scroll a scrolling box (by adding this to its `scrollTop`) so an item is fully inside it, with
+ * `margin` to spare; 0 when it already is. Item and box are in the same coordinates (the window's).
+ */
+export function scrollDelta(
+  item: { top: number; height: number },
+  box: { top: number; height: number },
+  margin = 8,
+): number {
+  const over = item.top - (box.top + margin);
+  if (over < 0) return over;
+  const under = item.top + item.height - (box.top + box.height - margin);
+  return under > 0 ? Math.min(under, over) : 0;
 }
 
 const CARD_ID = 'wiki-card';
@@ -93,7 +137,62 @@ function fragmentId(hash: string | null): string | null {
   return hash.slice(1);
 }
 
+/** The table of contents follows the reader: see the file's header. */
+function trackContents(): void {
+  const nav = document.querySelector('nav.toc');
+  if (nav === null) return;
+  const items = [...nav.querySelectorAll('a[href^="#"]')].flatMap((link) => {
+    const id = fragmentId(link.getAttribute('href'));
+    const target = id === null ? null : document.getElementById(id);
+    if (id === null || target === null) return [];
+    const parent = link.closest('ol.toc-lines')?.closest('li')?.querySelector(':scope > a') ?? null;
+    return [{ link, id, target, parent }];
+  });
+  let shown: string | null = null;
+
+  const update = (): void => {
+    const root = document.documentElement;
+    const id = currentSection(
+      items.map((i) => ({ id: i.id, top: i.target.getBoundingClientRect().top })),
+      Math.round(root.clientHeight * 0.25),
+      window.scrollY + root.clientHeight >= root.scrollHeight - 2,
+    );
+    if (id === shown) return;
+    shown = id;
+    let active: Element | null = null;
+    for (const i of items) {
+      const here = i.id === id;
+      if (here) {
+        i.link.setAttribute('aria-current', 'location');
+        active = i.link;
+      } else i.link.removeAttribute('aria-current');
+      i.link.classList.toggle('in-section', false);
+    }
+    // A creature line is inside the Creatures section: that entry is marked too (not as the current one).
+    items.find((i) => i.id === id)?.parent?.classList.add('in-section');
+    if (active === null || nav.scrollHeight <= nav.clientHeight) return;
+    const item = active.getBoundingClientRect();
+    const box = nav.getBoundingClientRect();
+    nav.scrollTop += scrollDelta(item, box);
+  };
+
+  let queued = false;
+  const later = (): void => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      update();
+    });
+  };
+  window.addEventListener('scroll', later, { passive: true });
+  window.addEventListener('resize', later);
+  window.addEventListener('load', later);
+  update();
+}
+
 function start(): void {
+  trackContents();
   let shown: HTMLAnchorElement | null = null;
 
   const hide = (): void => {

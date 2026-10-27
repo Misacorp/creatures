@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { placeCard, previewIdFor } from './hover';
+import { currentSection, placeCard, previewIdFor, scrollDelta } from './hover';
 
 describe('the wiki hover card script', () => {
   it('finds the card of a link to an entry, and none for anything else', () => {
@@ -54,5 +54,48 @@ describe('the wiki hover card script', () => {
     );
     expect(phone.left).toBe(390 - 340 - 8);
     expect(phone.left + 340).toBeLessThanOrEqual(390);
+  });
+
+  describe('the table of contents tracking', () => {
+    const marks = [
+      { id: 'creatures', top: -900 },
+      { id: 'line-a', top: -500 },
+      { id: 'line-b', top: 150 },
+      { id: 'knacks', top: 1400 },
+    ];
+
+    it('picks the last section whose top has reached the line', () => {
+      expect(currentSection(marks, 200, false)).toBe('line-b');
+      expect(currentSection(marks, 100, false)).toBe('line-a');
+      expect(currentSection(marks, 150, false)).toBe('line-b');
+      expect(currentSection(marks, 5000, false)).toBe('knacks');
+    });
+
+    it('picks nothing before the first section, or when there are none', () => {
+      expect(currentSection([{ id: 'creatures', top: 300 }], 200, false)).toBeNull();
+      expect(currentSection([], 200, false)).toBeNull();
+      expect(currentSection([], 200, true)).toBeNull();
+    });
+
+    it('picks the last section at the end of the page, however short it is', () => {
+      expect(currentSection(marks, 200, true)).toBe('knacks');
+    });
+  });
+
+  describe('keeping the current entry in view in the sidebar', () => {
+    const box = { top: 16, height: 600 };
+
+    it('does not scroll an entry that is inside', () => {
+      expect(scrollDelta({ top: 300, height: 24 }, box)).toBe(0);
+    });
+
+    it('scrolls up to an entry above, and down to an entry below, with a margin', () => {
+      expect(scrollDelta({ top: -100, height: 24 }, box)).toBe(-100 - 24);
+      expect(scrollDelta({ top: 640, height: 24 }, box)).toBe(640 + 24 - (16 + 600 - 8));
+    });
+
+    it('never scrolls an entry taller than the box past its top', () => {
+      expect(scrollDelta({ top: 100, height: 900 }, box)).toBe(100 - 24);
+    });
   });
 });

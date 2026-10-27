@@ -510,6 +510,70 @@ describe('page structure and navigation', () => {
     expect(readFileSync(new URL('./hover.ts', import.meta.url), 'utf8')).toContain("'to-top'");
   });
 
+  it('has a table of contents with a link for every main section and every creature line', () => {
+    const nav = html.slice(html.indexOf('<nav class="toc"'), html.indexOf('</nav>'));
+    expect(nav).toContain('aria-label="Contents"');
+    const ids = new Set(idsOf(html));
+    const targets = [...nav.matchAll(/<a href="#([^"]*)"/g)].map((m) => m[1] ?? '');
+    for (const section of [
+      'creatures',
+      'current-talents',
+      'knacks',
+      'draft-talents',
+      'keywords',
+      'families',
+      'elements',
+      'roles',
+      'rarities',
+    ]) {
+      expect(targets, section).toContain(section);
+    }
+    const lines = [...new Set(data.creatures.map((c) => c.line))];
+    expect(lines.length).toBeGreaterThan(5);
+    for (const line of lines) expect(targets, line).toContain(anchor('line', line));
+    // Every link points at something on the page, and the contents follow the page's order.
+    expect(targets.filter((t) => !ids.has(t))).toEqual([]);
+    const order = targets.map((t) => html.indexOf(`id="${t}"`, html.indexOf('<main>')));
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    // The lines sit under Creatures, with their base form's picture.
+    expect(nav).toMatch(/<ol class="toc-lines">[^]*<img class="sprite"/);
+    expect(nav.indexOf('<ol class="toc-lines">')).toBeGreaterThan(nav.indexOf('href="#creatures"'));
+    expect(nav.indexOf('<ol class="toc-lines">')).toBeLessThan(
+      nav.indexOf('href="#current-talents"'),
+    );
+  });
+
+  it('has the contents before the text (the phone layout) and a sidebar only on wide screens', () => {
+    expect(html.indexOf('<nav class="toc"')).toBeLessThan(html.indexOf('<main>'));
+    expect(html.indexOf('<h1 id="top">')).toBeLessThan(html.indexOf('<nav class="toc"'));
+    const wide = WIKI_CSS.slice(WIKI_CSS.indexOf('@media (min-width: 64rem)'));
+    expect(wide).toMatch(/\.toc \{[^}]*position: sticky[^}]*overflow-y: auto/);
+    expect(wide).toMatch(/\.toc a\[aria-current\]/);
+    // Outside that query the contents are plain, and the creature lines are left out.
+    const narrow = WIKI_CSS.slice(0, WIKI_CSS.indexOf('@media (min-width: 64rem)'));
+    expect(narrow).not.toMatch(/\.toc \{[^}]*position/);
+    expect(narrow).toMatch(/\.toc-lines \{ display: none; \}/);
+    expect(narrow).toMatch(/\.page \{ max-width: 46rem/);
+    expect(wide).toMatch(/\.page \{ max-width: 90rem/);
+  });
+
+  it('lays the forms of a line and the entries of the other sections out in responsive grids', () => {
+    expect(WIKI_CSS).toMatch(
+      /\.line-forms \{ display: grid; grid-template-columns: repeat\(auto-fill, minmax\(min\(24rem, 100%\), 1fr\)\)/,
+    );
+    expect(WIKI_CSS).toMatch(
+      /\.entries \{ display: grid; grid-template-columns: repeat\(auto-fill, minmax\(min\(22rem, 100%\), 1fr\)\)/,
+    );
+    // Each of the entry sections has its entries in a grid.
+    for (const id of ['current-talents', 'keywords', 'families', 'elements', 'roles', 'rarities']) {
+      const start = html.indexOf(`<section id="${id}">`);
+      expect(html.slice(start, html.indexOf('</section>', start)), id).toContain(
+        '<div class="entries">',
+      );
+    }
+    expect(html.match(/<div class="entries">/g)?.length).toBeGreaterThanOrEqual(8);
+  });
+
   it('jumps to a link target at once: no smooth scrolling anywhere in the stylesheet', () => {
     expect(WIKI_CSS).toMatch(/html \{ scroll-behavior: auto; \}/);
     expect(WIKI_CSS).not.toContain('smooth');
