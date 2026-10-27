@@ -554,7 +554,7 @@ describe('page structure and navigation', () => {
     expect(narrow).not.toMatch(/\.toc \{[^}]*position/);
     expect(narrow).toMatch(/\.toc-lines \{ display: none; \}/);
     expect(narrow).toMatch(/\.page \{ max-width: 46rem/);
-    expect(wide).toMatch(/\.page \{ max-width: 90rem/);
+    expect(wide).toMatch(/\.page \{ max-width: 120rem/);
   });
 
   it('lays the forms of a line and the entries of the other sections out in responsive grids', () => {

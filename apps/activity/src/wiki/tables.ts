@@ -38,12 +38,12 @@ export function lineName(forms: readonly WikiCreature[]): string {
   return `${first?.name ?? 'Unknown'} line`;
 }
 
-/** A section's two views: the list (the default) and the table, with the toggle that switches them. */
+/** A section's two views: the table (the default) and the list, with the toggle that switches them. */
 export function viewSwitch(id: string, list: string, table: string): string {
   const name = `${id}-view`;
   return `<div class="views">
-<input type="radio" class="view-radio r-list" name="${esc(name)}" id="${esc(name)}-list" checked>
-<input type="radio" class="view-radio r-table" name="${esc(name)}" id="${esc(name)}-table">
+<input type="radio" class="view-radio r-list" name="${esc(name)}" id="${esc(name)}-list">
+<input type="radio" class="view-radio r-table" name="${esc(name)}" id="${esc(name)}-table" checked>
 <div class="segmented view-toggle" role="group" aria-label="View">
 <label class="l-list" for="${esc(name)}-list">List</label>
 <label class="l-table" for="${esc(name)}-table">Table</label>

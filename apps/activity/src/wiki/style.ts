@@ -31,7 +31,8 @@ export const GAME_STYLES = {
 export type GameCss = Record<keyof typeof GAME_STYLES, string>;
 
 /** The wiki's own rules that come first (page, text, links, entries, hover card). */
-const BASE = `* { box-sizing: border-box; }
+const BASE = `:root { --sp-1: 0.5rem; --sp-2: 0.75rem; --sp-3: 1.125rem; --sp-4: 1.75rem; }
+* { box-sizing: border-box; }
 body {
   margin: 0;
   background-color: var(--night);
@@ -46,14 +47,14 @@ body {
 .top p { max-width: 46rem; }
 main { min-width: 0; }
 main > section > p { max-width: 46rem; }
-h1, h2, h3, h4, h5 { font-family: var(--display); font-weight: 400; letter-spacing: 0.02em; line-height: 1.2; margin: 0 0 0.5rem; }
+h1, h2, h3, h4, h5 { font-family: var(--display); font-weight: 400; letter-spacing: 0.02em; line-height: 1.2; margin: 0 0 var(--sp-2); }
 h1 { font-size: clamp(1.75rem, 8vw, 2.5rem); color: var(--gold); text-shadow: var(--px) var(--px) 0 var(--ink), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--plum); }
-h2 { font-size: 1.75rem; margin-top: 4rem; padding-bottom: 0.375rem; border-bottom: calc(var(--px) * 2) solid var(--gold-shade); color: var(--gold); }
-h3 { font-size: 1.4rem; margin-top: 1.75rem; }
-main > section:first-of-type h2 { margin-top: 2.5rem; }
+h2 { font-size: 1.75rem; margin-top: 4.5rem; padding-bottom: 0.5rem; border-bottom: calc(var(--px) * 2) solid var(--gold-shade); color: var(--gold); }
+h3 { font-size: 1.4rem; margin-top: 2.25rem; }
+main > section:first-of-type h2 { margin-top: 3rem; }
 h4 { font-size: var(--fs-title); }
 h2, h3 { scroll-margin-top: 0.75rem; }
-p { margin: 0 0 0.5rem; }
+p { margin: 0 0 var(--sp-2); }
 a {
   color: var(--bone);
   text-decoration: underline dotted color-mix(in srgb, var(--haze) 60%, transparent);
@@ -63,47 +64,48 @@ a {
 a:not(.chip):hover { color: var(--gold); text-decoration-color: var(--gold); }
 a:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 a.self { text-decoration: none; color: var(--haze); margin-left: 0.25rem; }
-.toc ol { padding-left: 1.25rem; margin: 0.5rem 0; }
-.toc li { margin: 0.25rem 0; }
+.toc ol { padding-left: 1.25rem; margin: var(--sp-1) 0; }
+.toc li { margin: 0.375rem 0; }
 .toc-lines { display: none; }
 .index { padding-left: 1.25rem; }
-.index li { margin: 0.25rem 0; }
+.index { margin: 0 0 var(--sp-3); }
+.index li { margin: 0.375rem 0; }
 .entry {
   container-type: inline-size;
   background: var(--dusk);
   box-shadow: var(--frame);
-  padding: 0.75rem;
-  margin: 0 0 1rem;
+  padding: var(--sp-3);
+  margin: 0 0 var(--sp-3);
   scroll-margin-top: 0.75rem;
 }
 .entry:target { box-shadow: var(--ring); }
-.entries { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(22rem, 100%), 1fr)); gap: 1rem; align-items: start; }
+.entries { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(22rem, 100%), 1fr)); gap: var(--sp-4) var(--sp-3); align-items: start; }
 .entries > .entry { margin: 0; }
 .line-group {
-  margin: 1.5rem 0 0;
+  margin: var(--sp-4) 0 0;
   background: var(--dusk-2);
   box-shadow: var(--frame);
   scroll-margin-top: 0.75rem;
 }
 .line-group:target { box-shadow: var(--ring); }
-.line-head { background: var(--plum); padding: 0.5rem 0.75rem; box-shadow: inset 0 calc(var(--px) * -1) 0 0 var(--ink); }
+.line-head { background: var(--plum); padding: var(--sp-2) var(--sp-3); box-shadow: inset 0 calc(var(--px) * -1) 0 0 var(--ink); }
 .line-head h3 { margin: 0; color: var(--bone); }
-.line-forms { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(24rem, 100%), 1fr)); gap: 0.75rem; padding: 0.75rem; }
+.line-forms { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(24rem, 100%), 1fr)); gap: var(--sp-3); padding: var(--sp-3); }
 .line-forms > .entry { margin: 0; }
 dl { margin: 0; }
-.facts { margin-top: 0.75rem; }
-.facts dt { color: var(--haze); font-size: var(--fs-row); margin-top: 0.5rem; }
+.facts { margin-top: var(--sp-3); }
+.facts dt { color: var(--haze); font-size: var(--fs-row); margin-top: var(--sp-2); }
 .facts dd { margin: 0; }
 .label { color: var(--haze); }
-.flavor { color: var(--haze); font-style: italic; margin: 0.5rem 0 0; }
+.flavor { color: var(--haze); font-style: italic; margin: var(--sp-2) 0 0; }
 .intent { color: var(--haze); font-size: var(--fs-row); }
 .none { color: var(--haze); }
-.lines { margin: 0 0 0.5rem; padding-left: 1.25rem; }
+.lines { margin: 0 0 var(--sp-2); padding-left: 1.25rem; }
 .draft {
   border-left: 4px solid var(--gold);
   background: var(--dusk);
-  padding: 0.5rem 0.75rem;
-  margin: 0.5rem 0 1rem;
+  padding: var(--sp-2) var(--sp-3);
+  margin: var(--sp-2) 0 var(--sp-4);
 }
 .to-top {
   position: fixed;
@@ -125,7 +127,7 @@ dl { margin: 0; }
 .to-top:focus-visible { outline: var(--px) solid var(--bone); outline-offset: calc(var(--px) * 2); }
 .sprite { image-rendering: pixelated; vertical-align: middle; margin: -0.5rem 0.3rem -0.5rem 0; }
 h3 .sprite, h4 .sprite { margin-right: 0.5rem; margin-top: -0.75rem; margin-bottom: -0.75rem; }
-.stats { margin-top: 0.75rem; max-width: 26rem; }
+.stats { margin-top: var(--sp-3); max-width: 26rem; }
 .pv-card {
   position: fixed;
   z-index: 10;
@@ -159,12 +161,12 @@ h3 .sprite, h4 .sprite { margin-right: 0.5rem; margin-top: -0.75rem; margin-bott
 }
 /* A fact list is two columns only when its entry is wide enough for them (a form in a grid of forms is not). */
 @container (min-width: 34rem) {
-  .facts { display: grid; grid-template-columns: 12rem 1fr; gap: 0.25rem 1rem; }
+  .facts { display: grid; grid-template-columns: 12rem 1fr; gap: var(--sp-1) var(--sp-4); }
   .facts dt { margin-top: 0; }
 }
-/* Wide screens: the page grows to 90rem, and the table of contents is a sticky sidebar that keeps its own scroll. */
+/* Wide screens: the page grows to 120rem (the whole of a 1920 px screen, so the tables can fit), and the table of contents is a sticky sidebar that keeps its own scroll. */
 @media (min-width: 64rem) {
-  .page { max-width: 90rem; padding: 2rem 2rem 4rem; }
+  .page { max-width: 120rem; padding: 2rem 2rem 4rem; }
   .layout { display: grid; grid-template-columns: 17rem minmax(0, 1fr); gap: 2rem; align-items: start; }
   .toc {
     position: sticky;
@@ -211,8 +213,8 @@ a.to-top:hover { color: var(--ink); }
  * toggle looks like the game's Segmented control (the button face, gold when chosen).
  */
 const TABLES = `.vh, .view-radio { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
-.views { position: relative; }
-.view-toggle { margin: 0.5rem var(--px) 0.875rem; }
+.views { margin: var(--sp-3) 0 var(--sp-4); }
+.view-toggle { margin: var(--sp-2) var(--px) var(--sp-3); }
 .view-toggle label {
   display: flex;
   align-items: center;
@@ -238,24 +240,23 @@ const TABLES = `.vh, .view-radio { position: absolute; width: 1px; height: 1px; 
 .r-list:focus-visible ~ .view-toggle .l-list,
 .r-table:focus-visible ~ .view-toggle .l-table { outline: var(--px) solid var(--bone); outline-offset: calc(var(--px) * 2); }
 .r-list:checked ~ .view-table, .r-table:checked ~ .view-list { display: none; }
-.legend { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; margin: 0 0 0.75rem; padding: 0; list-style: none; font-size: var(--fs-row); color: var(--haze); }
+.legend { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-4); margin: 0 0 var(--sp-3); padding: 0; list-style: none; font-size: var(--fs-row); color: var(--haze); }
 .legend li { display: flex; align-items: center; gap: 0.5rem; }
 .table-wrap {
   position: relative; /* the hidden words inside are clipped by the scroller, not part of the page's width */
   max-width: 100%;
-  max-height: 80vh;
-  overflow: auto;
+  overflow-x: auto; /* only when the table cannot fit the width (a phone); the page scrolls up and down */
   background: var(--dusk);
   box-shadow: var(--frame);
 }
 .table-wrap:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-.matrix { border-collapse: separate; border-spacing: 0; font-size: var(--fs-row); line-height: 1.25; }
+.matrix { width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--fs-row); line-height: 1.25; }
 .matrix th, .matrix td { padding: 0; text-align: center; font-weight: 400; border-bottom: 1px solid var(--night); }
-.matrix td { width: 2.25rem; min-width: 2.25rem; height: 2.25rem; }
+.matrix td { width: 2rem; min-width: 2rem; height: 2.25rem; }
 .matrix .ls { border-left: 3px solid var(--ink); }
-.matrix thead th { position: sticky; z-index: 2; background: var(--dusk-2); }
-.matrix .lines th { top: 0; height: 2.5rem; background: var(--plum); }
-.matrix .forms th { top: 2.5rem; height: 2.5rem; border-bottom: var(--px) solid var(--ink); }
+.matrix thead th { background: var(--dusk-2); }
+.matrix .lines th { height: 2.75rem; background: var(--plum); }
+.matrix .forms th { height: 2.75rem; border-bottom: var(--px) solid var(--ink); }
 .matrix .row-name {
   position: sticky;
   left: 0;
@@ -268,7 +269,7 @@ const TABLES = `.vh, .view-radio { position: absolute; width: 1px; height: 1px; 
   background: var(--dusk);
   border-right: var(--px) solid var(--ink);
 }
-.matrix thead .corner { z-index: 3; color: var(--haze); background: var(--dusk-2); vertical-align: bottom; }
+.matrix thead .corner { z-index: 1; color: var(--haze); background: var(--dusk-2); vertical-align: bottom; }
 .matrix .family-row > * { background: var(--dusk-2); color: var(--gold); }
 .matrix .family-row .row-name { font-family: var(--display); font-size: var(--fs-heading); }
 .matrix tbody tr:hover > * { background: var(--dusk-2); }
@@ -276,11 +277,11 @@ const TABLES = `.vh, .view-radio { position: absolute; width: 1px; height: 1px; 
 .matrix .pic { display: flex; align-items: center; justify-content: center; min-height: 2.25rem; text-decoration: none; }
 .matrix .pic:focus-visible { outline-offset: -2px; }
 .matrix .sprite { display: block; margin: 0; }
-.matrix .fallback { font-size: var(--fs-small); max-width: 2.25rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.matrix .fallback { font-size: var(--fs-small); max-width: 2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mark { display: inline-block; flex: none; width: 0.75rem; height: 0.75rem; vertical-align: middle; background: var(--gold); box-shadow: 0 0 0 2px var(--ink); }
 .mark.alt { background: none; box-shadow: inset 0 0 0 2px var(--haze), 0 0 0 2px var(--ink); }
 @media (min-width: 40rem) {
-  .matrix .row-name { width: 9.5rem; min-width: 9.5rem; max-width: 9.5rem; }
+  .matrix .row-name { width: 8.5rem; min-width: 8.5rem; max-width: 8.5rem; }
 }`;
 
 /** The game rules the wiki takes, by file: whole files, or the rules with these selectors. */

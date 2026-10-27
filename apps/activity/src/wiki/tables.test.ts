@@ -195,14 +195,14 @@ describe('the Knacks table', () => {
 });
 
 describe('the table views as a part of the page', () => {
-  it('has a List and Table toggle in both sections, the list first and chosen', () => {
+  it('has a List and Table toggle in both sections, the table chosen to start with', () => {
     for (const id of ['draft-talents', 'knacks']) {
       const part = section(html, id);
       expect(part, id).toContain(
-        `<input type="radio" class="view-radio r-list" name="${id}-view" id="${id}-view-list" checked>`,
+        `<input type="radio" class="view-radio r-list" name="${id}-view" id="${id}-view-list">`,
       );
       expect(part, id).toContain(
-        `<input type="radio" class="view-radio r-table" name="${id}-view" id="${id}-view-table">`,
+        `<input type="radio" class="view-radio r-table" name="${id}-view" id="${id}-view-table" checked>`,
       );
       expect(part, id).toContain(`<label class="l-list" for="${id}-view-list">List</label>`);
       expect(part, id).toContain(`<label class="l-table" for="${id}-view-table">Table</label>`);
@@ -244,7 +244,7 @@ describe('the table views as a part of the page', () => {
     }
   });
 
-  it('hides the view that is not chosen with display: none, and keeps the table inside its own scroller', () => {
+  it('hides the view that is not chosen with display: none, and keeps the table in a sideways-only scroller', () => {
     const game = Object.fromEntries(
       Object.entries(GAME_STYLES).map(([name, file]) => [
         name,
@@ -255,9 +255,14 @@ describe('the table views as a part of the page', () => {
     expect(css).toMatch(
       /\.r-list:checked ~ \.view-table, \.r-table:checked ~ \.view-list \{ display: none; \}/,
     );
-    expect(css).toMatch(/\.table-wrap \{[^}]*position: relative[^}]*overflow: auto[^}]*\}/);
+    const wrap = /\.table-wrap \{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(wrap).toMatch(/position: relative/);
+    expect(wrap).toMatch(/overflow-x: auto/);
+    // No scrollbar of its own up and down: the table is as tall as its rows, and the page scrolls.
+    expect(wrap).not.toMatch(/max-height|overflow-y|overflow: auto/);
+    expect(css).not.toMatch(/\.matrix thead th \{ position: sticky/);
+    expect(css).toMatch(/\.matrix \{ width: 100%;/);
     expect(css).toMatch(/\.matrix \.row-name \{[^}]*position: sticky[^}]*left: 0/);
-    expect(css).toMatch(/\.matrix thead th \{ position: sticky;/);
     // The game's own segmented layout is taken, not copied.
     expect(css).toMatch(/\.segmented \{[^}]*display: flex/);
     // A link into a hidden list switches the section to it.
