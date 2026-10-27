@@ -68,7 +68,8 @@ function cardElement(): HTMLElement {
 function linkOf(target: EventTarget | null): HTMLAnchorElement | null {
   if (!(target instanceof Element)) return null;
   const link = target.closest('a');
-  if (link === null || link.classList.contains('self')) return null;
+  if (link === null || link.classList.contains('self') || link.classList.contains('to-top'))
+    return null;
   return previewIdFor(link.getAttribute('href')) === null ? null : link;
 }
 

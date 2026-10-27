@@ -470,6 +470,48 @@ describe('stat blocks and the game tags', () => {
   });
 });
 
+describe('page structure and navigation', () => {
+  it('wraps every form of a line in the line container, header first', () => {
+    const lines = new Set(data.creatures.map((c) => c.line));
+    for (const line of lines) {
+      const id = anchor('line', line);
+      const start = html.indexOf(`<section class="line-group" id="${id}">`);
+      expect(start, id).toBeGreaterThan(-1);
+      const end = html.indexOf('</section>', start);
+      const group = html.slice(start, end);
+      expect(group.indexOf('<header class="line-head">'), id).toBeGreaterThan(-1);
+      expect(group.indexOf('<h3>'), id).toBeGreaterThan(group.indexOf('line-head'));
+      const forms = data.creatures.filter((c) => c.line === line);
+      let last = group.indexOf('<div class="line-forms">');
+      expect(last, id).toBeGreaterThan(group.indexOf('</header>'));
+      for (const f of forms) {
+        const at = group.indexOf(`<article class="entry" id="${anchor('creature', f.id)}">`);
+        expect(at, `${id} ${f.id}`).toBeGreaterThan(last);
+        last = at;
+      }
+      // The group holds exactly its own forms.
+      expect(group.match(/<article class="entry"/g)).toHaveLength(forms.length);
+    }
+  });
+
+  it('has a Back to top link that targets an existing #top and gets no hover card', () => {
+    const link = html.match(/<a class="to-top" href="#top">Back to top<\/a>/);
+    expect(link).not.toBeNull();
+    expect(idsOf(html).filter((id) => id === 'top')).toHaveLength(1);
+    expect(html).not.toContain('<template id="tip-top"');
+    // It is outside the main column, so it is fixed to the window and not part of the text.
+    expect(html.indexOf('class="to-top"')).toBeGreaterThan(html.indexOf('</main>'));
+    expect(WIKI_CSS).toMatch(/\.to-top \{[^}]*position: fixed[^}]*right: 1rem[^}]*bottom: 1rem/);
+    expect(WIKI_CSS).toMatch(/\.to-top:focus-visible \{[^}]*outline:/);
+    expect(readFileSync(new URL('./hover.ts', import.meta.url), 'utf8')).toContain("'to-top'");
+  });
+
+  it('jumps to a link target at once: no smooth scrolling anywhere in the stylesheet', () => {
+    expect(WIKI_CSS).toMatch(/html \{ scroll-behavior: auto; \}/);
+    expect(WIKI_CSS).not.toContain('smooth');
+  });
+});
+
 describe('the wiki page from other data', () => {
   it('escapes every text from the data', () => {
     const page = buildWiki(fake());

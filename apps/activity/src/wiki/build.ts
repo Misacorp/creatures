@@ -252,9 +252,13 @@ function creaturesSection(page: Page, data: WikiData): string {
     .join('\n');
   const body = groups
     .map(
-      (g) => `<section class="line" id="${esc(anchor('line', g.line))}">
+      (g) => `<section class="line-group" id="${esc(anchor('line', g.line))}">
+<header class="line-head">
 ${heading(3, anchor('line', g.line), lineName(g.forms), page.line(g.line, HEAD))}
+</header>
+<div class="line-forms">
 ${g.forms.map((f) => creatureEntry(page, data, f)).join('\n')}
+</div>
 </section>`,
     )
     .join('\n');
@@ -564,8 +568,8 @@ ${keywordsSection(page, data)}
 ${elementsSection(page, data)}
 ${rolesSection(page, data)}
 ${raritiesSection(page, data)}
-<footer><a href="#top">Back to the top</a></footer>
 </main>
+<a class="to-top" href="#top">Back to top</a>
 ${buildPreviews(page, data)}
 </body>
 </html>

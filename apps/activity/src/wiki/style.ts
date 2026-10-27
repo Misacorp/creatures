@@ -31,7 +31,6 @@ export type GameCss = Record<keyof typeof GAME_STYLES, string>;
 
 /** The wiki's own rules that come first (page, text, links, entries, hover card). */
 const BASE = `* { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
 body {
   margin: 0;
   background-color: var(--night);
@@ -42,11 +41,12 @@ body {
   font-synthesis-weight: none;
   overflow-wrap: anywhere;
 }
-main { max-width: 46rem; margin: 0 auto; padding: 1rem 1rem 3rem; }
+main { max-width: 46rem; margin: 0 auto; padding: 1rem 1rem 6rem; }
 h1, h2, h3, h4, h5 { font-family: var(--display); font-weight: 400; letter-spacing: 0.02em; line-height: 1.2; margin: 0 0 0.5rem; }
 h1 { font-size: clamp(1.75rem, 8vw, 2.5rem); color: var(--gold); text-shadow: var(--px) var(--px) 0 var(--ink), calc(var(--px) * 2) calc(var(--px) * 2) 0 var(--plum); }
-h2 { font-size: 1.75rem; margin-top: 2.5rem; padding-bottom: 0.25rem; border-bottom: 2px solid var(--line); color: var(--gold); }
+h2 { font-size: 1.75rem; margin-top: 4rem; padding-bottom: 0.375rem; border-bottom: calc(var(--px) * 2) solid var(--gold-shade); color: var(--gold); }
 h3 { font-size: 1.4rem; margin-top: 1.75rem; }
+main > section:first-of-type h2 { margin-top: 2.5rem; }
 h4 { font-size: var(--fs-title); }
 h2, h3 { scroll-margin-top: 0.75rem; }
 p { margin: 0 0 0.5rem; }
@@ -71,7 +71,16 @@ nav li { margin: 0.25rem 0; }
   scroll-margin-top: 0.75rem;
 }
 .entry:target { box-shadow: var(--ring); }
-.line { scroll-margin-top: 0.75rem; }
+.line-group {
+  margin: 2.5rem 0 0;
+  background: var(--dusk-2);
+  box-shadow: var(--frame);
+  scroll-margin-top: 0.75rem;
+}
+.line-group:target { box-shadow: var(--ring); }
+.line-head { background: var(--plum); padding: 0.5rem 0.75rem; box-shadow: inset 0 calc(var(--px) * -1) 0 0 var(--ink); }
+.line-head h3 { margin: 0; color: var(--bone); }
+.line-forms { padding: 0.75rem 0.75rem 0; }
 dl { margin: 0; }
 .facts { margin-top: 0.75rem; }
 .facts dt { color: var(--haze); font-size: var(--fs-row); margin-top: 0.5rem; }
@@ -87,7 +96,24 @@ dl { margin: 0; }
   padding: 0.5rem 0.75rem;
   margin: 0.5rem 0 1rem;
 }
-footer { margin-top: 2.5rem; }
+.to-top {
+  position: fixed;
+  z-index: 5;
+  right: 1rem;
+  bottom: 1rem;
+  display: flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0.4rem 0.75rem;
+  background: var(--gold);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: var(--fs-row);
+  text-decoration: none;
+  box-shadow: 0 0 0 var(--px) var(--ink), inset 0 calc(var(--px) * -1) 0 0 var(--gold-shade);
+}
+.to-top:hover { filter: brightness(1.12); }
+.to-top:focus-visible { outline: var(--px) solid var(--bone); outline-offset: calc(var(--px) * 2); }
 .sprite { image-rendering: pixelated; vertical-align: middle; margin: -0.5rem 0.3rem -0.5rem 0; }
 h3 .sprite, h4 .sprite { margin-right: 0.5rem; margin-top: -0.75rem; margin-bottom: -0.75rem; }
 .stats { margin-top: 0.75rem; max-width: 26rem; }
@@ -126,7 +152,9 @@ h3 .sprite, h4 .sprite { margin-right: 0.5rem; margin-top: -0.75rem; margin-bott
 }`;
 
 /** The wiki's own rules that must win over the game's: the portrait box, the chips' pictures and the cards' names. */
-const TAIL = `.cc-head { margin-bottom: 0.25rem; }
+const TAIL = `html { scroll-behavior: auto; }
+a.to-top:hover { color: var(--ink); }
+.cc-head { margin-bottom: 0.25rem; }
 .cc-head .portrait { width: 56px; height: 56px; margin: 0; padding: 0; background: var(--ink); box-shadow: none; }
 .cc-head .portrait .sprite { display: block; margin: 0; }
 .cc-tags { margin: 0; }
