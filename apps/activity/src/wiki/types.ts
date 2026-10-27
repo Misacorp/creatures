@@ -22,8 +22,10 @@ export interface WikiCreature {
   ability: { name: string; description: string } | null;
   /** Ids of the talents in the game today that it can have (its line's pool and signature). */
   talents: string[];
-  /** Ids of the combat v2 draft Knacks it can equip. */
+  /** Ids of the combat v2 draft Knacks it can equip (the ones it brings and the ones it keeps from the form it evolved from). */
   knacks: string[];
+  /** The Knacks it brings itself (a subset of `knacks`); the others it keeps from the form it evolved from. */
+  ownKnacks: string[];
   /** Ids of the combat v2 draft talents it can roll. */
   draftTalents: string[];
 }

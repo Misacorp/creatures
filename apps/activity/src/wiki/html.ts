@@ -10,6 +10,20 @@ export function esc(text: string): string {
     .replace(/'/g, '&#39;');
 }
 
+/** What the page can link to, by kind and content id. */
+export type Kind =
+  | 'creature'
+  | 'line'
+  | 'talent'
+  | 'knack'
+  | 'dtalent'
+  | 'keyword'
+  | 'family'
+  | 'element'
+  | 'pool'
+  | 'role'
+  | 'rarity';
+
 /** An anchor id: a kind prefix and the content id, lower case, only `a-z`, `0-9` and `-`. */
 export function anchor(kind: string, id: string): string {
   const clean = id

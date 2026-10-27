@@ -56,6 +56,7 @@ function fake(): WikiData {
         ability: { name: evil, description: evil },
         talents: ['t1', 'missing-talent'],
         knacks: ['k1', 'missing-knack'],
+        ownKnacks: ['k1'],
         draftTalents: ['d1'],
       },
     ],
@@ -217,7 +218,10 @@ describe('creature pictures', () => {
       const id = l.target.slice('creature-'.length);
       const src = art.get(id);
       if (src === undefined) expect(l.inner, l.target).not.toContain('<img');
-      else expect(l.inner, l.target).toMatch(new RegExp(`^<img [^>]*src="${src}"[^>]*>[^<]`));
+      else
+        expect(l.inner, l.target).toMatch(
+          new RegExp(`^<img [^>]*src="${src}"[^>]*>(?:[^<]|<span class="vh">)`),
+        );
     }
   });
 

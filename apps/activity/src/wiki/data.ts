@@ -15,7 +15,15 @@ import {
   talentSignature,
   talentText,
 } from '@creatures/game';
-import { FAMILIES, FORM_KNACKS, KEYWORDS, KNACKS, LINE_POOLS, TALENTS } from '@creatures/lab';
+import {
+  FAMILIES,
+  FORM_KNACKS,
+  KEYWORDS,
+  KNACKS,
+  LINE_POOLS,
+  OWN_KNACKS,
+  TALENTS,
+} from '@creatures/lab';
 import { creatureSprite } from '../sprites/creature-sprites';
 import { elementIcon } from '../sprites/element-icons';
 import { artPath, elementArtPath, spriteSvg } from './art';
@@ -62,6 +70,7 @@ export function loadWikiData(): WikiData {
         ability === undefined ? null : { name: ability.name, description: ability.description },
       talents: [...pool, ...(signature === undefined ? [] : [signature])].map((t) => t.id),
       knacks: [...(FORM_KNACKS[c.id] ?? [])],
+      ownKnacks: [...(OWN_KNACKS[c.id] ?? [])],
       draftTalents: [...(LINE_POOLS[c.line] ?? [])],
     };
   });

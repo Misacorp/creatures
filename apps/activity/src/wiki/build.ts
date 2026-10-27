@@ -7,8 +7,9 @@
  * made by `anchor`, which keeps only `[a-z0-9-]`. A link is drawn only when its target exists, so the
  * page never has a dangling `#link`.
  */
-import { anchor, capital, chip, chipClasses, esc, keywordsIn } from './html';
+import { anchor, capital, chip, chipClasses, esc, keywordsIn, type Kind } from './html';
 import { buildPreviews } from './previews';
+import { draftTalentsTable, groupLines, knacksTable, lineName, viewSwitch } from './tables';
 import type {
   WikiCreature,
   WikiCurrentTalent,
@@ -18,20 +19,6 @@ import type {
 } from './types';
 
 export { anchor, esc };
-
-/** What the page can link to, by kind and content id. */
-type Kind =
-  | 'creature'
-  | 'line'
-  | 'talent'
-  | 'knack'
-  | 'dtalent'
-  | 'keyword'
-  | 'family'
-  | 'element'
-  | 'pool'
-  | 'role'
-  | 'rarity';
 
 /** The sizes of a creature picture: beside a name in running text, and before a heading. */
 const INLINE = 32;
@@ -231,19 +218,8 @@ ${statBlock(c)}
 </article>`;
 }
 
-/** The creatures grouped by line, in content order. */
-function lines(data: WikiData): { line: string; forms: WikiCreature[] }[] {
-  const out: { line: string; forms: WikiCreature[] }[] = [];
-  for (const c of data.creatures) {
-    const group = out.find((g) => g.line === c.line);
-    if (group === undefined) out.push({ line: c.line, forms: [c] });
-    else group.forms.push(c);
-  }
-  return out;
-}
-
 function creaturesSection(page: Page, data: WikiData): string {
-  const groups = lines(data);
+  const groups = groupLines(data.creatures);
   const index = groups
     .map((g) => {
       const forms = g.forms.map((f) => page.link('creature', f.id, f.name)).join(', ');
@@ -270,11 +246,6 @@ ${index}
 </ul>
 ${body}
 </section>`;
-}
-
-function lineName(forms: readonly WikiCreature[]): string {
-  const first = forms.find((f) => f.stage === 1) ?? forms[0];
-  return `${first?.name ?? 'Unknown'} line`;
 }
 
 function currentTalentEntry(page: Page, t: WikiCurrentTalent, on: WikiCreature[]): string {
@@ -329,7 +300,8 @@ function knacksSection(page: Page, data: WikiData): string {
   return `<section id="knacks">
 ${heading(2, 'knacks', 'Combat v2 draft: Knacks')}
 ${DRAFT_NOTE}
-${entries}
+<p>Every Knack as a list of entries, or as a table of the creature forms that know it.</p>
+${viewSwitch('knacks', entries, knacksTable(page, data))}
 </section>`;
 }
 
@@ -376,10 +348,14 @@ function draftTalentsSection(page: Page, data: WikiData): string {
 ${heading(2, 'draft-talents', 'Combat v2 draft: talents')}
 ${DRAFT_NOTE}
 <p>One shared library of talents; each creature line rolls from its own pool of it (branch forms share the line's pool). A talent that does nothing for a form's role is idle on it.</p>
-<ul class="index">
+${viewSwitch(
+  'draft-talents',
+  `<ul class="index">
 ${pools}
 </ul>
-${entries}
+${entries}`,
+  draftTalentsTable(page, data),
+)}
 </section>`;
 }
 

@@ -4,7 +4,8 @@
  * a `<template id="tip-<anchor>">`; on hover (or keyboard focus) of a link to `#<anchor>` this clones
  * that template's content into one floating card near the link. Nothing is built from strings: the
  * card is filled with `cloneNode`, never HTML text. The card ignores the pointer, so it never blocks
- * a click on the link; a tap on a phone still just follows the link.
+ * a click on the link; a tap on a phone still just follows the link. The one other job: a link to an entry in
+ * the list view of a section whose table view is showing switches the section to its list (`revealList`).
  */
 
 export interface Box {
@@ -73,6 +74,25 @@ function linkOf(target: EventTarget | null): HTMLAnchorElement | null {
   return previewIdFor(link.getAttribute('href')) === null ? null : link;
 }
 
+/**
+ * A link to an entry in the list view of a section whose table view is showing: switch the section to its
+ * list (check its radio), so the entry can be seen. The toggle itself needs no script; this only keeps a
+ * link from landing on something hidden. Returns whether it switched anything.
+ */
+function revealList(id: string): boolean {
+  const list = document.getElementById(id)?.closest('.view-list');
+  const radio = list?.parentElement?.querySelector(':scope > input.r-list');
+  if (!(radio instanceof HTMLInputElement) || radio.checked) return false;
+  radio.checked = true;
+  return true;
+}
+
+/** The id a `#fragment` names, or null. */
+function fragmentId(hash: string | null): string | null {
+  if (hash === null || !/^#[A-Za-z0-9_-]+$/.test(hash)) return null;
+  return hash.slice(1);
+}
+
 function start(): void {
   let shown: HTMLAnchorElement | null = null;
 
@@ -134,6 +154,18 @@ function start(): void {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') hide();
   });
+  // Following a link, going back, or opening an address with a fragment: show the list when the entry is in it.
+  document.addEventListener('click', (e) => {
+    if (!(e.target instanceof Element)) return;
+    const id = fragmentId(e.target.closest('a')?.getAttribute('href') ?? null);
+    if (id !== null) revealList(id);
+  });
+  const jump = (): void => {
+    const id = fragmentId(window.location.hash);
+    if (id !== null && revealList(id)) document.getElementById(id)?.scrollIntoView();
+  };
+  window.addEventListener('hashchange', jump);
+  jump();
   window.addEventListener('scroll', hide, { capture: true, passive: true });
   window.addEventListener('blur', hide);
 }
