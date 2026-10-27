@@ -50,7 +50,6 @@
         "role": null
       },
       "equippedOn": null,
-      "markedForDismantle": false,
       "dismantle": {
         "scrap": {
           "min": 2,

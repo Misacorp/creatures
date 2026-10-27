@@ -28,6 +28,7 @@ import {
   type WearBlock,
 } from '@creatures/game';
 import { GameError, atomically, type Outcome } from './outcome';
+import { dismantleLocks } from './dismantle-worn';
 import { conversionPending, dismissNotice, pendingNotice } from './gear-convert';
 import { grantWelcomeKit, recentGrants } from './gear-grants';
 import {
@@ -47,7 +48,7 @@ import type {
   GearItemView,
   GearState,
   JobResult,
-  MarkResult,
+  DismantleCheck,
   StartJobInput,
 } from './gear-types';
 import {
@@ -76,7 +77,7 @@ export type {
   JobCommon,
   JobResult,
   JobView,
-  MarkResult,
+  DismantleCheck,
   SkillView,
   StartJobInput,
 } from './gear-types';
@@ -301,12 +302,7 @@ export class Gear {
         if (displaced !== undefined) {
           this.sql.exec('UPDATE gear_items SET equipped_on = NULL WHERE id = ?', displaced.id);
         }
-        // A worn item cannot be marked: wearing one clears its mark (2026-10-27).
-        this.sql.exec(
-          'UPDATE gear_items SET equipped_on = ?, dismantle_mark = 0 WHERE id = ?',
-          creature.id,
-          row.id,
-        );
+        this.sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', creature.id, row.id);
         this.recordEquip(row, creature.species, 'equip', displaced !== undefined, userId);
       }
       const fresh = ownedItem(this.sql, userId, gearId);
@@ -385,7 +381,7 @@ export class Gear {
       for (const move of moves) {
         if (move.itemId === null) continue;
         this.sql.exec(
-          'UPDATE gear_items SET equipped_on = ?, dismantle_mark = 0 WHERE id = ?',
+          'UPDATE gear_items SET equipped_on = ? WHERE id = ?',
           move.creatureId,
           move.itemId,
         );
@@ -405,38 +401,17 @@ export class Gear {
     });
   }
 
-  // --- Marking for dismantling ---
+  // --- Dismantling ---
 
   /**
-   * Marks items for dismantling, or unmarks them (`marked` false). All or nothing: an item that is not the
-   * player's is a 404; marking a worn item is refused (409 `item_worn`) and so is marking one that sits in
-   * an open Workshop job (409 `item_in_job`). Unmarking always works. Repeating changes nothing, so it carries
-   * no key. Equipping an item clears its mark (see `equip`).
+   * Which of these items could not be dismantled right now: worn by a creature that is away or on a job whose
+   * claim reads the item live (see `dismantle-worn.ts`). Read only; the dismantle itself decides again.
    */
-  markForDismantle(
-    userId: string,
-    itemIds: readonly string[],
-    marked: boolean,
-  ): Outcome<MarkResult> {
+  dismantleCheck(userId: string, itemIds: readonly string[]): Outcome<DismantleCheck> {
     return this.atomically(() => {
+      if (new Set(itemIds).size !== itemIds.length) throw new GameError(400, 'invalid_items');
       const rows = itemIds.map((id) => ownedItem(this.sql, userId, id));
-      if (marked) {
-        for (const row of rows) {
-          if (row.equipped_on !== null) throw new GameError(409, 'item_worn');
-          const inJob = this.sql
-            .exec('SELECT 1 FROM workshop_jobs WHERE gear_id = ? AND claimed_at IS NULL', row.id)
-            .toArray();
-          if (inJob.length > 0) throw new GameError(409, 'item_in_job');
-        }
-      }
-      for (const row of rows) {
-        this.sql.exec(
-          'UPDATE gear_items SET dismantle_mark = ? WHERE id = ?',
-          marked ? 1 : 0,
-          row.id,
-        );
-      }
-      return { itemIds: [...itemIds], marked };
+      return { locked: dismantleLocks(this.sql, userId, rows) };
     });
   }
 

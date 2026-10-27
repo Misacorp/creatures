@@ -3,7 +3,7 @@ import { allBagItems } from './creature-page/bag-sample';
 import { PAGE_SAMPLE_ID } from './creature-page/sample';
 import { GEAR_STATE, SAMPLE_GEAR } from './creature-card-sample';
 import type { GearActions } from './gear-actions';
-import { InventoryGrid } from './InventoryGrid';
+import { InventoryGrid, type BagSelection } from './InventoryGrid';
 import { ItemCard } from './ItemCard';
 import {
   byClass,
@@ -33,7 +33,7 @@ function first(list: FakeElement[]): FakeElement {
 const actions: GearActions = {
   equip: () => Promise.resolve(undefined),
   equipBest: () => Promise.resolve(undefined),
-  mark: () => Promise.resolve(undefined),
+  checkDismantle: () => Promise.resolve({ locked: [] }),
   dismantlePile: () => Promise.resolve(undefined),
   dismissNotice: () => Promise.resolve(undefined),
   startJob: () => Promise.resolve(undefined),
@@ -66,13 +66,15 @@ function bagCells(p: Page): FakeElement[] {
 }
 
 describe('the Workshop bag', () => {
-  it('shows the bag count on the Gear heading line and no Equip best or Dismantle several', () => {
+  it('shows the bag count on the Gear heading line and no Equip best, no Dismantle several and no Dismantle items button above the grid', () => {
     page = drawWorkshop();
     const head = first(byClass(page.root, 'ws-head'));
     expect(visibleText(head)).toContain('Gear');
     expect(visibleText(head)).toContain('Bag:');
     expect(page.root.textContent).not.toContain('Equip best');
     expect(page.root.textContent).not.toContain('Dismantle several');
+    expect(byName(page.root, 'button', 'Dismantle items')).toHaveLength(0);
+    expect(byName(page.root, 'button', 'Done')).toHaveLength(0);
   });
 
   it('opens a tapped item in a bottom drawer that closes by the backdrop', () => {
@@ -82,7 +84,7 @@ describe('the Workshop bag', () => {
     p.click(first(bagCells(p)));
     const dialog = first(byRole(p.root, 'dialog'));
     expect(byClass(dialog, 'item-detail')).toHaveLength(1);
-    expect(byName(dialog, 'button', 'Mark for dismantling')).toHaveLength(1);
+    expect(byName(dialog, 'button', 'Dismantle')).toHaveLength(1);
     p.click(first(byClass(p.root, 'drawer-backdrop')));
     expect(byRole(p.root, 'dialog')).toHaveLength(0);
   });
@@ -100,6 +102,17 @@ describe('the Workshop bag', () => {
   });
 });
 
+/** A selection with nothing selected, for a grid drawn only to be read. */
+const NO_PICK: BagSelection = {
+  active: false,
+  ids: new Set(),
+  has: () => false,
+  toggle: () => undefined,
+  add: () => undefined,
+  range: () => undefined,
+  clear: () => undefined,
+};
+
 const bag = allBagItems(PAGE_SAMPLE_ID, {});
 const crown = bag.find((i) => i.baseId === 'emberkeepers-crown');
 
@@ -110,8 +123,9 @@ describe('slot and element on items', () => {
       <InventoryGrid
         items={bag.slice(0, 5)}
         creatures={[]}
-        selectedId={null}
-        onSelect={() => undefined}
+        openId={null}
+        onOpen={() => undefined}
+        selection={NO_PICK}
       />,
     );
     for (const cell of find(page.root, (e) => e.localName === 'button')) {

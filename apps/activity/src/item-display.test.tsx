@@ -5,7 +5,7 @@ import { allBagItems } from './creature-page/bag-sample';
 import { PAGE_SAMPLE_ID } from './creature-page/sample';
 import type { GrantLoot } from './gear-types';
 import { LootList } from './LootList';
-import { InventoryGrid } from './InventoryGrid';
+import { InventoryGrid, type BagSelection } from './InventoryGrid';
 import { ItemCard } from './ItemCard';
 import { byClass, createPage, find, visibleText, type FakeElement, type Page } from './test-dom';
 import { GearList } from './GearList';
@@ -29,6 +29,17 @@ function first(list: FakeElement[]): FakeElement {
   return el;
 }
 
+/** A selection with nothing selected, for grids drawn only to be read. */
+const NO_PICK: BagSelection = {
+  active: false,
+  ids: new Set(),
+  has: () => false,
+  toggle: () => undefined,
+  add: () => undefined,
+  range: () => undefined,
+  clear: () => undefined,
+};
+
 const bag = allBagItems(PAGE_SAMPLE_ID, {});
 const hat = bag.find((i) => i.baseId === 'emberkeepers-crown');
 const charm = bag.find((i) => i.slot === 'charm' && i.stats.length === 0);
@@ -50,8 +61,9 @@ describe('one item-level indicator everywhere', () => {
       <InventoryGrid
         items={bag.slice(0, 6)}
         creatures={[]}
-        selectedId={null}
-        onSelect={() => undefined}
+        openId={null}
+        onOpen={() => undefined}
+        selection={NO_PICK}
       />,
     );
     const cells = find(page.root, (e) => e.localName === 'button');
@@ -76,8 +88,9 @@ describe('one item-level indicator everywhere', () => {
       <InventoryGrid
         items={items}
         creatures={[wearer]}
-        selectedId={null}
-        onSelect={() => undefined}
+        openId={null}
+        onOpen={() => undefined}
+        selection={NO_PICK}
       />,
     );
     const cells = find(page.root, (e) => e.localName === 'button');

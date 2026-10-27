@@ -107,8 +107,6 @@ export interface GearItem {
   needs: { level: number; role: string | null };
   /** The creature wearing it, or null. */
   equippedOn: string | null;
-  /** The player marked it for dismantling (a worn item cannot be marked; wearing one clears the mark). */
-  markedForDismantle: boolean;
   /** What dismantling it can return, as a range. */
   dismantle: DismantleRange;
   source: string;
@@ -375,10 +373,12 @@ export interface DismantlePreview {
   tinkersLuckBp: number;
 }
 
-/** `POST /api/gear/mark`: the items asked about and whether they are marked now. */
-export interface MarkResult {
-  itemIds: string[];
-  marked: boolean;
+/**
+ * `POST /api/gear/dismantle-check`: which of some items cannot be dismantled now. Each is worn by a creature that is
+ * away on a trip or running a Workshop job whose claim reads the item live (empty when all can go).
+ */
+export interface DismantleCheck {
+  locked: { itemId: string; creatureId: string; reason: 'trip' | 'job' }[];
 }
 
 /** A worn item as a creature card shows it: the slot, the rarity and the item level. */

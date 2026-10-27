@@ -1,16 +1,18 @@
 import { content } from '@creatures/game';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Creature } from './api';
-import { sampleCreature } from './creature-card-sample';
+import { SAMPLE_GEAR, sampleCreature } from './creature-card-sample';
 import { sampleItem } from './creature-page/bag-sample';
 import { ItemDetail } from './ItemDetail';
 import type { GearActions } from './gear-actions';
-import type { GearItem } from './gear-types';
+import type { DismantlePreview, GearItem, JobResult } from './gear-types';
 import {
   byClass,
   byName,
   byRole,
   createPage,
+  find,
+  nameOf,
   visibleText,
   type FakeElement,
   type Page,
@@ -19,7 +21,8 @@ import {
 /**
  * The Workshop item drawer's content (2026-10-18): the item card, an "Equip on" row that opens the creature
  * picker sheet (a pick equips right away, "Take off" is its first option for a worn item), Details, and last
- * "Mark for dismantling" or "Unmark". These tests draw the real `ItemDetail` over the fake DOM.
+ * the red "Dismantle" (2026-10-27: the same flow as dismantling from the bag, for this one item, inside the card).
+ * These tests draw the real `ItemDetail` over the fake DOM.
  */
 
 let page: Page | null = null;
@@ -57,7 +60,7 @@ function actionsOf(over: Partial<GearActions> = {}): GearActions {
   return {
     equip: vi.fn(() => Promise.resolve(undefined)),
     equipBest: () => Promise.resolve(undefined),
-    mark: () => Promise.resolve(undefined),
+    checkDismantle: () => Promise.resolve({ locked: [] }),
     dismantlePile: () => Promise.resolve(undefined),
     dismissNotice: () => Promise.resolve(undefined),
     startJob: () => Promise.resolve(undefined),
@@ -73,9 +76,20 @@ function draw(
   actions: GearActions,
   busy = false,
   creatures: readonly Creature[] = ROSTER,
+  dismantle: { onDone: (result: JobResult) => void } | null = null,
 ): Page {
   page = createPage();
-  page.draw(<ItemDetail item={item} creatures={creatures} busy={busy} actions={actions} />);
+  page.draw(
+    <ItemDetail
+      item={item}
+      creatures={creatures}
+      busy={busy}
+      actions={actions}
+      {...(dismantle === null
+        ? {}
+        : { dismantle: { gear: SAMPLE_GEAR, error: null, onDone: dismantle.onDone } })}
+    />,
+  );
   return page;
 }
 
@@ -85,18 +99,22 @@ const optionOf = (p: Page, name: string): FakeElement =>
   first(options(p).filter((o) => visibleText(o).startsWith(name)));
 
 describe('the item drawer content', () => {
-  it('has the card, then the Equip on row, then Details, then the mark action last', () => {
-    const p = draw(hat(), actionsOf());
+  it('has the card, then the Equip on row, then Details, then the Dismantle action last', () => {
+    const p = draw(hat(), actionsOf(), false, ROSTER, { onDone: () => undefined });
     const text = visibleText(p.root);
     expect(text.indexOf('Trail Cap')).toBeGreaterThanOrEqual(0);
     expect(text.indexOf('Equip on')).toBeGreaterThan(text.indexOf('Trail Cap'));
     expect(text.indexOf('Details')).toBeGreaterThan(text.indexOf('Equip on'));
-    expect(text.indexOf('Mark for dismantling')).toBeGreaterThan(text.indexOf('Details'));
-    // The mark action is the last block of the section, in a row of its own (centred apart by the stylesheet).
+    expect(text.indexOf('Dismantle')).toBeGreaterThan(text.indexOf('Details'));
+    // The action is the last block of the section, in a row of its own (centred apart by the stylesheet), and red.
     const section = first(byClass(p.root, 'item-detail'));
     const last = section.childNodes[section.childNodes.length - 1] as FakeElement;
     expect(last.getAttribute('class')).toBe('item-actions');
-    expect(byName(last, 'button', 'Mark for dismantling')).toHaveLength(1);
+    const button = first(byName(last, 'button', 'Dismantle'));
+    expect(button.getAttribute('class')).toContain('danger');
+    // No marks any more: nothing says "Mark" or "Marked" on the card.
+    expect(text).not.toContain('Mark for dismantling');
+    expect(text).not.toContain('Marked');
   });
 
   it('has no "Needs level" line, and none of the old Equip, Take off or Give to another buttons', () => {
@@ -378,44 +396,197 @@ describe('the Equip on row', () => {
   });
 });
 
-describe('marking an item for dismantling from its card', () => {
-  const markedHat = (): GearItem => ({ ...hat(), markedForDismantle: true });
+describe('dismantling one item from its card', () => {
+  const result = {
+    kind: 'dismantle',
+    items: [],
+    parts: {},
+    essence: 0,
+    learned: [],
+    marked: [],
+    xp: 6,
+    skillXp: 6,
+    skillLevel: 1,
+    leveledUp: false,
+  } as JobResult;
 
-  it('marks on a tap of "Mark for dismantling", asking the server for this item only', () => {
-    const mark = vi.fn(() => Promise.resolve(undefined));
-    const p = draw(hat(), actionsOf({ mark }));
-    p.click(first(byName(p.root, 'button', 'Mark for dismantling')));
-    expect(mark).toHaveBeenCalledWith(['hat-1'], true);
+  const previewOf = (id: string): DismantlePreview => ({
+    kind: 'dismantle',
+    creatureId: 'low',
+    items: [{ id, baseId: 'trail-cap', rarity: 'common', itemLevel: 5 }],
+    range: {
+      scrap: { min: 2, max: 4 },
+      shards: { min: 0, max: 0, element: null },
+      glimmer: { min: 0, max: 0 },
+      essence: { min: 0, max: 0 },
+    },
+    xp: 6,
+    learnBp: 700,
+    teachers: 1,
+    boosted: 0,
+    tinkersLuckBp: 0,
   });
 
-  it('says "Unmark" for a marked item, and the card says in its badge row that it is marked', () => {
-    const mark = vi.fn(() => Promise.resolve(undefined));
-    const p = draw(markedHat(), actionsOf({ mark }));
-    expect(byName(p.root, 'button', 'Mark for dismantling')).toHaveLength(0);
-    expect(visibleText(first(byClass(p.root, 'idc-badge')))).toContain('Marked for dismantling');
-    p.click(first(byName(p.root, 'button', 'Unmark')));
-    expect(mark).toHaveBeenCalledWith(['hat-1'], false);
-  });
+  function flowActions(over: Partial<GearActions> = {}): GearActions {
+    return actionsOf({
+      previewDismantle: vi.fn((_c: string, ids: readonly string[]) =>
+        Promise.resolve(previewOf(ids[0] ?? '')),
+      ),
+      dismantlePile: vi.fn(() => Promise.resolve(result)),
+      ...over,
+    } as Partial<GearActions>);
+  }
 
-  it('shows no badge on an item that is not marked', () => {
-    const p = draw(hat(), actionsOf());
-    expect(visibleText(first(byClass(p.root, 'idc-badge')))).not.toContain('Marked');
-  });
-
-  it('cannot mark a worn item, and says how to (the server refuses it too)', () => {
-    const mark = vi.fn(() => Promise.resolve(undefined));
-    const p = draw(hat('mid'), actionsOf({ mark }));
-    const button = first(byName(p.root, 'button', 'Mark for dismantling'));
-    expect(button.hasAttribute('disabled')).toBe(true);
-    expect(visibleText(p.root)).toContain('Take it off to mark it.');
-    p.click(button);
-    expect(mark).not.toHaveBeenCalled();
-  });
-
-  it('is switched off while an action is running', () => {
-    const p = draw(hat(), actionsOf(), true);
-    expect(first(byName(p.root, 'button', 'Mark for dismantling')).hasAttribute('disabled')).toBe(
-      true,
+  const settle = async (p: Page): Promise<void> => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    p.update(() => undefined);
+  };
+  const dismantleButton = (p: Page): FakeElement =>
+    first(
+      find(
+        p.root,
+        (e) =>
+          e.localName === 'button' &&
+          nameOf(e) === 'Dismantle' &&
+          (e.getAttribute('class') ?? '').includes('danger'),
+      ),
     );
+  const footer = (p: Page): FakeElement => first(byClass(p.root, 'send-button'));
+  const head = (p: Page): string => visibleText(first(byClass(p.root, 'drill-head')));
+
+  it('has no button on a plain card (the workbench), and nothing is marked or unmarked', () => {
+    const p = draw(hat(), actionsOf());
+    expect(byName(p.root, 'button', 'Dismantle')).toHaveLength(0);
+    expect(byClass(p.root, 'item-actions')).toHaveLength(0);
+  });
+
+  it('is switched off while an action is running, and on for a worn item too', () => {
+    const busy = draw(hat(), actionsOf(), true, ROSTER, { onDone: () => undefined });
+    expect(dismantleButton(busy).hasAttribute('disabled')).toBe(true);
+    busy.unmount();
+    page = null;
+    const worn = draw(hat('mid'), actionsOf(), false, ROSTER, { onDone: () => undefined });
+    expect(dismantleButton(worn).hasAttribute('disabled')).toBe(false);
+  });
+
+  it('opens the flow inside the card on Who dismantles for a free item, and Back returns to the card', () => {
+    const p = draw(hat(), flowActions(), false, ROSTER, { onDone: () => undefined });
+    p.click(dismantleButton(p));
+    // A view of the same drawer: no second drawer, and the card is not drawn behind it.
+    expect(byRole(p.root, 'dialog')).toHaveLength(0);
+    expect(byClass(p.root, 'dismantle-inline')).toHaveLength(1);
+    expect(byClass(p.root, 'idc')).toHaveLength(0);
+    expect(head(p)).toContain('Who dismantles');
+    p.click(first(byName(p.root, 'button', /^‹ Back/)));
+    expect(byClass(p.root, 'dismantle-inline')).toHaveLength(0);
+    expect(byClass(p.root, 'idc')).toHaveLength(1);
+    // The focus is back on the Dismantle button.
+    expect(dismantleButton(p).focused).toBeGreaterThan(0);
+  });
+
+  it('asks the worn item first: who wears it, then Dismantle anyway goes on to Who', async () => {
+    const checkDismantle = vi.fn(() => Promise.resolve({ locked: [] }));
+    const p = draw(hat('mid'), flowActions({ checkDismantle }), false, ROSTER, {
+      onDone: () => undefined,
+    });
+    p.click(dismantleButton(p));
+    await settle(p);
+    expect(head(p)).toContain('Worn items');
+    expect(visibleText(p.root)).toContain('mid');
+    expect(visibleText(footer(p))).toBe('Dismantle anyway');
+    expect(checkDismantle).toHaveBeenCalledWith(['hat-1']);
+    p.click(footer(p));
+    expect(head(p)).toContain('Who dismantles');
+    // Back from Who returns to the warning, and from the warning to the card.
+    p.click(first(byName(p.root, 'button', /^‹ Back/)));
+    expect(head(p)).toContain('Worn items');
+    p.click(first(byName(p.root, 'button', /^‹ Back/)));
+    expect(byClass(p.root, 'idc')).toHaveLength(1);
+  });
+
+  it('holds a worn item back when its wearer is away and needs it, and says so', async () => {
+    const checkDismantle = vi.fn(() =>
+      Promise.resolve({
+        locked: [{ itemId: 'hat-1', creatureId: 'away', reason: 'trip' as const }],
+      }),
+    );
+    const p = draw(hat('away'), flowActions({ checkDismantle }), false, ROSTER, {
+      onDone: () => undefined,
+    });
+    p.click(dismantleButton(p));
+    await settle(p);
+    expect(visibleText(p.root)).toContain('Away on a trip');
+    expect(footer(p).hasAttribute('disabled')).toBe(true);
+    p.click(footer(p));
+    expect(head(p)).toContain('Worn items');
+  });
+
+  it('lets a worn item through when the check cannot be answered (the server decides again)', async () => {
+    const checkDismantle = vi.fn(() => Promise.reject(new Error('offline')));
+    const p = draw(hat('mid'), flowActions({ checkDismantle }), false, ROSTER, {
+      onDone: () => undefined,
+    });
+    p.click(dismantleButton(p));
+    await settle(p);
+    expect(footer(p).hasAttribute('disabled')).toBe(false);
+  });
+
+  it('runs the whole flow for one item: who, the confirmation, the dismantle, then the results', async () => {
+    const onDone = vi.fn();
+    const actions = flowActions();
+    const p = draw(hat(), actions, false, ROSTER, { onDone });
+    p.click(dismantleButton(p));
+    p.click(footer(p));
+    await settle(p);
+    expect(head(p)).toContain('Dismantle Trail Cap?');
+    expect(actions.previewDismantle).toHaveBeenCalledWith('low', ['hat-1']);
+    expect(visibleText(p.root)).toContain('Cannot be undone.');
+    p.click(footer(p));
+    await settle(p);
+    expect(actions.dismantlePile).toHaveBeenCalledWith('low', ['hat-1']);
+    expect(onDone).toHaveBeenCalledWith(result);
+  });
+
+  it('goes back one step on Escape without the key reaching the drawer behind, and keeps Left and Right from flipping', async () => {
+    const behind = vi.fn();
+    page = createPage();
+    page.draw(
+      <div onKeyDown={behind}>
+        <ItemDetail
+          item={hat()}
+          creatures={ROSTER}
+          busy={false}
+          actions={flowActions()}
+          dismantle={{ gear: SAMPLE_GEAR, error: null, onDone: () => undefined }}
+        />
+      </div>,
+    );
+    page.click(dismantleButton(page));
+    page.click(footer(page));
+    await settle(page);
+    const view = first(byClass(page.root, 'dismantle-inline'));
+    expect(view.getAttribute('data-no-flip')).toBe('');
+    for (const key of ['ArrowLeft', 'ArrowRight']) page.key(view, key);
+    page.key(footer(page), 'Escape');
+    expect(head(page)).toContain('Who dismantles');
+    expect(behind).not.toHaveBeenCalled();
+  });
+
+  it('tells the drawer while the flow is shown, so it stops flipping, and when it is gone', () => {
+    const told: boolean[] = [];
+    page = createPage();
+    page.draw(
+      <ItemDetail
+        item={hat()}
+        creatures={ROSTER}
+        busy={false}
+        actions={flowActions()}
+        onDrill={(open) => told.push(open)}
+        dismantle={{ gear: SAMPLE_GEAR, error: null, onDone: () => undefined }}
+      />,
+    );
+    page.click(dismantleButton(page));
+    page.click(first(byName(page.root, 'button', /^‹ Back/)));
+    expect(told).toEqual([false, true, false]);
   });
 });

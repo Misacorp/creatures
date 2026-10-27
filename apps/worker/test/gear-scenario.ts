@@ -185,16 +185,13 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
     creatureId: cindle,
     blueprintId: 'kelp-cap',
   });
-  // Mark the Festival piece for dismantling, ask what the pile would give, and dismantle it with the Guard
-  // (one free creature, all at once). Then mark another piece and leave it marked, so the state shows it.
+  // Ask what the Festival piece would give and dismantle it with the Guard (one free creature, all at once).
+  // The piece may be worn (Equip best may have put it on someone): the dismantle takes it off.
   const festive = (
     (out.responses['gear-loaded'] as { items: { id: string; festival: boolean }[] }).items.find(
       (i) => i.festival,
     ) as { id: string }
   ).id;
-  // (Equip best may have put it on someone: a worn item cannot be marked, so it comes off first.)
-  await call('POST', `/api/gear/${festive}/equip`, { creatureId: null });
-  await call('POST', '/api/gear/mark', { itemIds: [festive], marked: true });
   await record('preview-dismantle', 'POST', '/api/workshop/preview', {
     kind: 'dismantle',
     creatureId: zipmouse,
@@ -205,7 +202,7 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
     itemIds: [festive],
     idempotencyKey: newKey('fixture'),
   });
-  await record('gear-mark', 'POST', '/api/gear/mark', { itemIds: [high], marked: true });
+  await record('gear-dismantle-check', 'POST', '/api/gear/dismantle-check', { itemIds: [high] });
   // A timed dismantle job from before 2026-10-27 still running finishes and is claimed as before.
   const oldDismantle = seedOldDismantleJob(
     ctx,
@@ -261,15 +258,8 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
     reach: 'epic',
     idempotencyKey: newKey('fixture'),
   }); // the Crafting level is too low for a Reach for Epic
-  // Marking and the pile: a worn item cannot be marked, and the pile must be exactly the marked items.
-  await refuse('POST', '/api/gear/mark', { itemIds: [hat], marked: true });
+  // The same key for another pile is a conflict: the first piece goes with the first key.
   const spare = give('trail-cap', 'common', 1, 'fixture-spare');
-  await refuse('POST', '/api/gear/dismantle', {
-    creatureId: zipmouse,
-    itemIds: [spare],
-    idempotencyKey: newKey('fixture'),
-  }); // it was never marked
-  // The same key for another pile is a conflict: the marked piece goes with the first key.
   const reused = newKey('fixture');
   await call('POST', '/api/gear/dismantle', {
     creatureId: zipmouse,
@@ -282,6 +272,8 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
     idempotencyKey: reused,
   });
   await refuse('POST', `/api/gear/${hat}/dismantle`, { idempotencyKey: newKey('fixture') }); // the old one-item dismantle
+  // The Compass (Quick feet, Lucky find) goes on the Sprout, which then leaves on a trip.
+  await call('POST', `/api/gear/${compass}/equip`, { creatureId: sproutle });
   await call('POST', '/api/expeditions', {
     creatureId: sproutle,
     destination: 'tidepools',
@@ -295,6 +287,12 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
     blueprintId: 'kelp-cap',
     idempotencyKey: newKey('fixture'),
   }); // the creature is away on an expedition
+  // Its trip reads Lucky find when it is claimed, so the Compass cannot be dismantled until it is back.
+  await refuse('POST', '/api/gear/dismantle', {
+    creatureId: zipmouse,
+    itemIds: [compass],
+    idempotencyKey: newKey('fixture'),
+  });
   ctx.sql.exec("UPDATE parts SET amount = 0 WHERE kind = 'scrap'");
   await refuse('POST', '/api/workshop/jobs', {
     kind: 'craft',

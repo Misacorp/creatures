@@ -383,7 +383,6 @@ describe('GET /api/gear and the welcome kit', () => {
             'itemLevel',
             'lines',
             'madeBy',
-            'markedForDismantle',
             'needs',
             'origin',
             'rarity',
@@ -1759,8 +1758,6 @@ describe('analytics and privacy', () => {
         const a = give(ctx, p.id, 'kelp-cap', { rarity: 'rare', level: 4 });
         await p.call('POST', equipPath(a), { creatureId: p.creatureIds[0] });
         await p.call('POST', equipPath(a), { creatureId: null });
-        const taken = await p.call('POST', '/api/gear/mark', { itemIds: [a], marked: true });
-        expect(taken.status).toBe(200);
         const dismantled = await p.call('POST', '/api/gear/dismantle', {
           creatureId: p.creatureIds[1],
           itemIds: [a],

@@ -19,7 +19,7 @@ import {
 } from '@creatures/engine';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { grantDungeonRun } from '../src/gear-grants';
-import { giveItem, markAndDismantle } from './gear-helpers';
+import { giveItem, dismantlePile } from './gear-helpers';
 import { drawSeed } from '../src/raid-resolve';
 import type { RunState } from '../src/dungeon-state';
 import {
@@ -1829,6 +1829,28 @@ describe('gear in the dungeon', () => {
     );
   });
 
+  it('is not changed when a worn item is dismantled afterwards (it comes off its wearer)', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const item = give(ctx, p.id, 'trail-cap', 'worn');
+        await p.call('POST', `/api/gear/${item}/equip`, { creatureId: p.creatureIds[0] });
+        const run = (await p.run()).body.run;
+        const replay = (await p.replay(run.id)).body;
+        const before = fightSteps(ctx, run.id);
+        const stateBefore = storedRuns(ctx, p.id)[0]?.state_json;
+        // Still worn by a creature of the run: the dismantle takes it off in the same transaction.
+        expect((await dismantlePile(p, p.creatureIds[1] as string, [item])).status).toBe(200);
+        expect(count(ctx.sql, 'gear_items', `id = '${item}'`)).toBe(0);
+        expect(fightSteps(ctx, run.id)).toEqual(before);
+        expect(storedRuns(ctx, p.id)[0]?.state_json).toBe(stateBefore);
+        expect((await p.replay(run.id)).body).toEqual(replay);
+      },
+      opts(),
+    );
+  });
+
   it('is not changed by what happens to the gear afterwards', async () => {
     await runCore(
       nextGuild(),
@@ -1844,7 +1866,7 @@ describe('gear in the dungeon', () => {
         await p.call('POST', `/api/gear/${item}/equip`, { creatureId: null });
         const other = give(ctx, p.id, 'kelp-cap', 'other');
         await p.call('POST', `/api/gear/${other}/equip`, { creatureId: p.creatureIds[0] });
-        expect((await markAndDismantle(p, p.creatureIds[1] as string, [item])).status).toBe(200);
+        expect((await dismantlePile(p, p.creatureIds[1] as string, [item])).status).toBe(200);
         // The stored fights, the state, the replay and the summary are exactly what they were.
         expect(fightSteps(ctx, run.id)).toEqual(before);
         expect(storedRuns(ctx, p.id)[0]?.state_json).toBe(stateBefore);

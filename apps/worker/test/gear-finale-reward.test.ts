@@ -268,17 +268,12 @@ describe('the finale reward slot at the server', () => {
         expect(l.bestTier).toBe(3);
         expect(l.tier ?? 0).toBeLessThanOrEqual(3);
       }
-      // It can be marked and taken apart in a pile.
+      // It can be taken apart in a pile.
       const creatureId = rows<{ id: string }>(
         ctx.sql,
         'SELECT id FROM creatures WHERE user_id = ? LIMIT 1',
         userId,
       )[0]?.id;
-      const marked = await ctx.request(secret, '/api/gear/mark', 'POST', {
-        itemIds: [id],
-        marked: true,
-      });
-      expect(marked.status).toBe(200);
       const out = await ctx.request(secret, '/api/gear/dismantle', 'POST', {
         creatureId,
         itemIds: [id],

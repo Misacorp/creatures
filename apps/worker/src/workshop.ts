@@ -79,6 +79,7 @@ import {
   type JobRow,
 } from './gear-store';
 import { fixFestivalRarity } from './gear-normalise';
+import { dismantleLocks } from './dismantle-worn';
 import { gearRulesOf, minusBp } from './gear-worn';
 import { credit, spend } from './ledger';
 import type {
@@ -105,6 +106,15 @@ import { speciesOf } from './species';
 
 /** The gear rarity a supply tier is logged as (analytics) and a supply job is sized as. */
 const SUPPLY_RARITY = { basic: 'common', good: 'rare', great: 'epic' } as const;
+
+/** An open job of a removed kind (Improve, Enchant) still holds this item: it cannot be dismantled under it. */
+function openJobHoldsItem(sql: SqlStorage, itemId: string): boolean {
+  return (
+    sql
+      .exec('SELECT 1 FROM workshop_jobs WHERE gear_id = ? AND claimed_at IS NULL', itemId)
+      .toArray().length > 0
+  );
+}
 
 function failSupply(): never {
   throw new Error('stored supply job has an unknown supply');
@@ -193,15 +203,12 @@ export class Workshop {
   }
 
   /**
-   * The items of a pile request, owned, distinct and not worn (404 for anyone else's, 400 `invalid_items` for
-   * a repeat, 409 `item_worn` for a worn one). The caller's schema has limited the count.
+   * The items of a pile request, owned and distinct (404 for anyone else's, 400 `invalid_items` for
+   * a repeat). Worn items are fine. The caller's schema has limited the count.
    */
-  private pileRows(userId: string, itemIds: readonly string[], allowWorn = false): GearRow[] {
+  private pileRows(userId: string, itemIds: readonly string[]): GearRow[] {
     if (new Set(itemIds).size !== itemIds.length) throw new GameError(400, 'invalid_items');
-    const rows = itemIds.map((id) => ownedItem(this.sql, userId, id));
-    if (!allowWorn && rows.some((r) => r.equipped_on !== null))
-      throw new GameError(409, 'item_worn');
-    return rows;
+    return itemIds.map((id) => ownedItem(this.sql, userId, id));
   }
 
   /**
@@ -310,7 +317,7 @@ export class Workshop {
     return this.atomically(() => {
       const creature = ownedCreature(this.sql, userId, creatureId);
       const rows = pileOrder(
-        this.pileRows(userId, itemIds, true).map((row) => ({
+        this.pileRows(userId, itemIds).map((row) => ({
           row,
           rarity: row.rarity,
           itemLevel: row.item_level,
@@ -343,13 +350,15 @@ export class Workshop {
   }
 
   /**
-   * Dismantles the player's marked items at once with one free creature (decisions.md, 2026-10-27). The
-   * request names the exact items the confirmation showed: if the marked set is not exactly those, nothing
-   * is taken (409 `marks_changed`). The creature must not be away or on a job (same rule as starting a
+   * Dismantles the named items at once with one free creature (decisions.md, 2026-10-27, "Bulk selection
+   * replaces marking"). Worn items go too and come off their wearer in the same transaction; a wearer that is
+   * away or on a job keeps an item a running trip or job reads at its claim (409 `item_locked`, nothing is
+   * taken; see `dismantle-worn.ts`). The dismantler must not be away or on a job (same rule as starting a
    * Workshop job); it gains Crafting XP (what the old timed jobs paid for the same items) and no creature
    * experience. Each item's refund, its blueprint chance (with the creature's Crafting level) and Tinker's
-   * luck are rolled now with the live RNG; Market Day's top-of-range goes to the most valuable items; the
-   * Essence is paid once through the ledger. One keyed transaction: a retry returns the stored result.
+   * luck are rolled now with the live RNG, the dismantler's own gear read before any item comes off;
+   * Market Day's top-of-range goes to the most valuable items; the Essence is paid once through the ledger.
+   * One keyed transaction: a retry returns the stored result.
    */
   dismantlePile(
     userId: string,
@@ -365,15 +374,13 @@ export class Workshop {
           const creature = ownedCreature(this.sql, userId, input.creatureId);
           assertNotBusy(this.sql, creature);
           const rows = this.pileRows(userId, input.itemIds);
-          const markedNow = this.sql
-            .exec<{ n: number }>(
-              'SELECT COUNT(*) AS n FROM gear_items WHERE user_id = ? AND dismantle_mark = 1',
-              userId,
-            )
-            .one().n;
-          if (markedNow !== rows.length || rows.some((r) => r.dismantle_mark !== 1)) {
-            throw new GameError(409, 'marks_changed');
+          // An item in an open (removed-kind) job is not in the bag's hands; a worn item may go, taken off by
+          // the delete below, unless its wearer is away or on a job that reads it live (`dismantle-worn.ts`).
+          for (const row of rows) {
+            if (openJobHoldsItem(this.sql, row.id)) throw new GameError(409, 'item_in_job');
           }
+          const locked = dismantleLocks(this.sql, userId, rows)[0];
+          if (locked !== undefined) throw new GameError(409, 'item_locked');
           const now = this.deps.now();
           const before = skillLevel(creatureXp(this.sql, userId, creature.id));
           const worn = gearRulesOf(this.sql, creature);
@@ -447,7 +454,7 @@ export class Workshop {
               scrap: rolled.parts.scrap ?? 0,
               shards: sumShards(rolled.parts),
               glimmer: rolled.parts.glimmer ?? 0,
-              unequipped: false,
+              unequipped: rows.some((r) => r.equipped_on !== null),
               parts: rolled.parts,
               items: items.length,
               essence: rolled.essence,

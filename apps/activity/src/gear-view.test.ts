@@ -13,13 +13,10 @@ import {
   busyReason,
   defaultPick,
   detailLines,
-  belowLevelToMark,
-  canMark,
-  commonsToMark,
-  markedItems,
+  itemsWithIds,
   pileQuestion,
   pileText,
-  PRESET_LEVEL,
+  wornAmong,
   dismantleCountItems,
   durationCountItem,
   nominalDurationCountItem,
@@ -791,7 +788,7 @@ describe("writing the odds, the marks and the refund ranges (the numbers are the
   });
 });
 
-describe('marked items and the pile', () => {
+describe('selected items and the pile', () => {
   const base = gear.items[0] as GearItem;
   const make = (
     id: string,
@@ -804,35 +801,30 @@ describe('marked items and the pile', () => {
     rarity,
     itemLevel,
     equippedOn: null,
-    markedForDismantle: false,
     ...extra,
   });
   const bag = [
     make('c1', 'common', 3),
-    make('c2', 'common', 12, { markedForDismantle: true }),
+    make('c2', 'common', 12),
     make('c3', 'common', 4, { equippedOn: 'a-creature' }),
     make('r1', 'rare', 5),
     make('e1', 'epic', 2),
   ];
 
-  it('lists the marked items in the grid order', () => {
-    expect(markedItems(bag).map((i) => i.id)).toEqual(['c2']);
-    expect(
-      markedItems([...bag, make('r2', 'rare', 9, { markedForDismantle: true })]).map((i) => i.id),
-    ).toEqual(['r2', 'c2']);
+  it('lists the items with the picked ids in the grid order', () => {
+    expect(itemsWithIds(bag, new Set(['c2'])).map((i) => i.id)).toEqual(['c2']);
+    // The grid's order: the rarest first, then the higher level (ids that are not in the bag are ignored).
+    expect(itemsWithIds(bag, new Set(['c1', 'r1', 'e1', 'gone'])).map((i) => i.id)).toEqual([
+      'e1',
+      'r1',
+      'c1',
+    ]);
+    expect(itemsWithIds(bag, new Set())).toEqual([]);
   });
 
-  it('cannot mark a worn item', () => {
-    expect(canMark(make('x', 'common', 1))).toBe(true);
-    expect(canMark(make('x', 'common', 1, { equippedOn: 'a-creature' }))).toBe(false);
-  });
-
-  it('presets pick only what is eligible and not marked yet', () => {
-    // All Common: the worn Common and the one already marked are left out.
-    expect(commonsToMark(bag).map((i) => i.id)).toEqual(['c1']);
-    // Below level 10: the Epic and the Rare count, the worn one does not.
-    expect(PRESET_LEVEL).toBe(10);
-    expect(belowLevelToMark(bag, PRESET_LEVEL).map((i) => i.id)).toEqual(['c1', 'r1', 'e1']);
+  it('finds the worn items of a pile, the ones the warning step lists', () => {
+    expect(wornAmong(bag).map((i) => i.id)).toEqual(['c3']);
+    expect(wornAmong(bag.filter((i) => i.id !== 'c3'))).toEqual([]);
   });
 
   it('words the pile by rarity, commonest first, and asks about it', () => {

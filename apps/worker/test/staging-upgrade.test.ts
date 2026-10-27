@@ -175,13 +175,8 @@ describe('a staging database from b9cb38d, started by the new code', () => {
         });
         expect(claim.status).toBe(200);
       }
-      // Dismantling is a pile now: mark an old item and dismantle it with a free creature.
+      // Dismantling is a pile now: dismantle an old item with a free creature.
       await p.call('POST', `/api/gear/${s.items['i1'] as string}/equip`, { creatureId: null });
-      const marked = await p.call('POST', '/api/gear/mark', {
-        itemIds: [s.items['i1']],
-        marked: true,
-      });
-      expect(marked.status, JSON.stringify(marked.body)).toBe(200);
       const start = await p.call('POST', '/api/gear/dismantle', {
         creatureId: s.c[0],
         itemIds: [s.items['i1']],

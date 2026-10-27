@@ -4,8 +4,9 @@ import type { Creature } from './api';
 import { TAKE_OFF_ID, WEARS_IT_NOTE, equipOptions } from './equip-picker';
 import { creatureName } from './game';
 import type { GearActions } from './gear-actions';
-import type { GearItem } from './gear-types';
+import type { GearItem, GearState, JobResult } from './gear-types';
 import { detailLines, setPiecesWith } from './gear-view';
+import { DismantleInline } from './DismantleDrawer';
 import { ItemCard } from './ItemCard';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -117,9 +118,10 @@ function EquipView({
  * One item of the bag: its card (image with its level, name, rarity, base stats, modifiers with their tiers),
  * then the "Equip on" row (who wears it, or "Choose a creature": it opens the creature list as a view of this
  * same drawer, which equips right away and offers "Take off" first for a worn item), where it came from and who
- * made it one tap away under "Details", and last, centred and apart, "Mark for dismantling" or "Unmark"
- * (dismantling itself is done to the whole marked pile from the bag, see `DismantleDrawer`; a worn item cannot be
- * marked, and says so). The font is set once on the section (`.pix-panel`); only the Details text is body text.
+ * made it one tap away under "Details", and last, centred and apart, the red "Dismantle" (the destructive action
+ * comes last). It runs the same flow as dismantling from the bag for this one item, as a view of this same drawer
+ * (a warning first when the item is worn, then who, then the confirmation; see `DismantleInline`). The font is set
+ * once on the section (`.pix-panel`); only the Details text is body text.
  */
 export function ItemDetail({
   item,
@@ -129,6 +131,8 @@ export function ItemDetail({
   focusName = true,
   initialPicking = false,
   onDrill,
+  dismantle,
+  initialDismantling,
 }: {
   item: GearItem;
   creatures: readonly Creature[];
@@ -140,27 +144,45 @@ export function ItemDetail({
   initialPicking?: boolean;
   /** Told when the creature list opens and closes: the drawer turns its flipping off while it is shown. */
   onDrill?: (open: boolean) => void;
+  /**
+   * What the Dismantle button needs: the gear view (the creatures' Crafting levels), the server's last error and
+   * what to do once it is done (the results screen). Absent: no button (the workbench's plain card).
+   */
+  dismantle?: {
+    gear: GearState;
+    error: string | null;
+    onDone: (result: JobResult) => void;
+  };
+  /** The workbench shows the dismantle flow open, on this step. */
+  initialDismantling?: 'worn' | 'who' | 'confirm';
 }) {
   const [picking, setPicking] = useState(initialPicking);
+  const [dismantling, setDismantling] = useState(initialDismantling !== undefined);
   const heading = useRef<HTMLHeadingElement>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
+  const dismantleButton = useRef<HTMLButtonElement | null>(null);
   const shown = useRef(false);
   // Choosing another item starts clean and moves focus to its name.
   useEffect(() => {
     if (shown.current) {
       setPicking(false);
+      setDismantling(false);
     }
     shown.current = true;
     if (focusName) heading.current?.focus({ preventScroll: true });
   }, [item.id]);
   // The drawer is told while a drill-in is shown (and when this goes away), and the button that opened it gets
   // the focus back.
-  const wasPicking = useRef(false);
+  const was = useRef<'equip' | 'dismantle' | null>(null);
+  const drilling = picking || dismantling;
   useEffect(() => {
-    onDrill?.(picking);
-    if (!picking && wasPicking.current) trigger.current?.focus();
-    wasPicking.current = picking;
-  }, [picking]);
+    onDrill?.(drilling);
+    if (!drilling) {
+      if (was.current === 'equip') trigger.current?.focus();
+      else if (was.current === 'dismantle') dismantleButton.current?.focus();
+    }
+    was.current = picking ? 'equip' : dismantling ? 'dismantle' : null;
+  }, [drilling]);
   useEffect(
     () => () => {
       onDrill?.(false);
@@ -170,7 +192,30 @@ export function ItemDetail({
 
   const base = gearBase(item.baseId);
   const wearer = creatures.find((c) => c.id === item.equippedOn);
-  const worn = item.equippedOn !== null;
+
+  if (dismantling && dismantle !== undefined) {
+    return (
+      <DismantleInline
+        items={[item]}
+        gear={dismantle.gear}
+        creatures={creatures}
+        busy={busy}
+        error={dismantle.error}
+        loadPreview={actions.previewDismantle}
+        checkLocks={actions.checkDismantle}
+        start={initialDismantling}
+        onBack={() => {
+          setDismantling(false);
+        }}
+        onConfirm={async (creatureId) => {
+          const result = await actions.dismantlePile(creatureId, [item.id]);
+          if (result === undefined) return false;
+          dismantle.onDone(result);
+          return true;
+        }}
+      />
+    );
+  }
 
   if (picking) {
     return (
@@ -221,20 +266,23 @@ export function ItemDetail({
         </ul>
       </Accordion>
 
-      <div class="item-actions">
-        <p class="actions">
-          <button
-            type="button"
-            disabled={busy || (worn && !item.markedForDismantle)}
-            onClick={() => {
-              void actions.mark([item.id], !item.markedForDismantle);
-            }}
-          >
-            {item.markedForDismantle ? 'Unmark' : 'Mark for dismantling'}
-          </button>
-        </p>
-        {worn && <p class="muted item-actions-note">Take it off to mark it.</p>}
-      </div>
+      {dismantle !== undefined && (
+        <div class="item-actions">
+          <p class="actions">
+            <button
+              ref={dismantleButton}
+              type="button"
+              class="danger"
+              disabled={busy}
+              onClick={() => {
+                setDismantling(true);
+              }}
+            >
+              Dismantle
+            </button>
+          </p>
+        </div>
+      )}
     </section>
   );
 }

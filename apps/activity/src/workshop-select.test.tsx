@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { resetBagHintSession } from './bag-hint';
 import { GEAR_STATE, SAMPLE_GEAR } from './creature-card-sample';
 import type { GearActions } from './gear-actions';
 import type { DismantlePreview, GearState, JobResult } from './gear-types';
@@ -16,16 +17,24 @@ import {
 import { Workshop } from './Workshop';
 
 /**
- * The bag's selection mode (2026-10-27): "Dismantle items" starts it, a tap toggles an item's mark (its card is
- * one small "i" away), the presets mark what matches, the bar counts and goes on to who and the confirmation.
- * The sample bag: three worn Commons-and-Rares, a Rare level 10 and a Common level 2 that are free, and a Rare
- * level 16 the server already shows as marked.
+ * Selecting several items in the bag (2026-10-27, "Bulk selection replaces marking"): a press and hold on touch, the
+ * corner circle, Ctrl and Shift clicks and a right click's menu with a mouse, arrows, Enter, Space and Escape on a
+ * keyboard; a tap toggles once something is selected; the bulk bar counts, clears and dismantles. The sample bag
+ * (in the grid's order): the epic Ember crown, Thundercap (rare, level 16), the Warden's bell (rare, 13), the bark
+ * shawl (rare, 12), the Crossroads compass (rare, 10), the tidepool charm (common, 6), the kelp cap (common, 2)
+ * and the trail cap (common, 1). Five of them are worn: the crown, the shawl and the charm by one creature, the bell
+ * and the trail cap by another; Thundercap, the compass and the kelp cap are free.
  */
 
 let page: Page | null = null;
+beforeEach(() => {
+  resetBagHintSession();
+});
 afterEach(() => {
   page?.unmount();
   page = null;
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 function first(list: FakeElement[]): FakeElement {
@@ -39,10 +48,19 @@ const item = (baseId: string) => {
   if (found === undefined) throw new Error(`no ${baseId} in the sample bag`);
   return found;
 };
-const thundercap = item('thundercap'); // Rare, level 16, marked by the server
-const compass = item('crossroads-compass'); // Rare, level 10, free
-const kelp = item('kelp-cap'); // Common, level 2, free
-const worn = item('trail-cap'); // Common, level 1, worn
+const compass = item('crossroads-compass');
+const kelp = item('kelp-cap');
+const crown = item('emberkeepers-crown'); // worn
+const IN_ORDER = [
+  'emberkeepers-crown',
+  'thundercap',
+  'wardens-bell',
+  'bark-shawl',
+  'crossroads-compass',
+  'tidepool-charm',
+  'kelp-cap',
+  'trail-cap',
+];
 
 const result = {
   kind: 'dismantle',
@@ -57,23 +75,40 @@ const result = {
   leveledUp: false,
 } as JobResult;
 
+const previewed: DismantlePreview = {
+  kind: 'dismantle',
+  creatureId: 'x',
+  items: [],
+  range: {
+    scrap: { min: 1, max: 2 },
+    shards: { min: 0, max: 0, element: null },
+    glimmer: { min: 0, max: 0 },
+    essence: { min: 0, max: 0 },
+  },
+  xp: 6,
+  learnBp: null,
+  teachers: 0,
+  boosted: 0,
+  tinkersLuckBp: 0,
+};
+
 function actionsOf(over: Partial<GearActions> = {}): GearActions {
   return {
     equip: () => Promise.resolve(undefined),
     equipBest: () => Promise.resolve(undefined),
-    mark: vi.fn(() => new Promise(() => undefined)),
+    checkDismantle: vi.fn(() => Promise.resolve({ locked: [] })),
     dismantlePile: vi.fn(() => Promise.resolve(result)),
     dismissNotice: () => Promise.resolve(undefined),
     startJob: () => Promise.resolve(undefined),
     previewCraft: () => new Promise(() => undefined),
-    previewDismantle: vi.fn(() => new Promise(() => undefined)),
+    previewDismantle: vi.fn(() => Promise.resolve(previewed)),
     claimJob: () => Promise.resolve(undefined),
     ...over,
   } as unknown as GearActions;
 }
 
 function draw(
-  actions: GearActions,
+  actions: GearActions = actionsOf(),
   gear: GearState = SAMPLE_GEAR,
   onClaimed: (r: JobResult) => void = () => undefined,
 ): Page {
@@ -95,225 +130,751 @@ function draw(
   return page;
 }
 
-/** The tile of an item (the button named after it, not its info button). */
+/** The tile of an item (the option button named after it, not its info button). */
 function tile(p: Page, baseId: string): FakeElement {
   return first(
     find(
       p.root,
       (e) =>
         e.localName === 'button' &&
-        (e.getAttribute('class') ?? '').includes('item-tile') &&
-        !(e.getAttribute('class') ?? '').includes('item-tile-info') &&
+        e.getAttribute('role') === 'option' &&
         (e.getAttribute('aria-label') ?? '').startsWith(gearName(baseId)),
     ),
   );
 }
+const tiles = (p: Page): FakeElement[] =>
+  find(p.root, (e) => e.localName === 'button' && e.getAttribute('role') === 'option');
+const circleOf = (p: Page, baseId: string): FakeElement =>
+  first(byClass(tile(p, baseId).parentNode as FakeElement, 'item-tile-check'));
 const infoOf = (p: Page, baseId: string): FakeElement =>
   first(byName(p.root, 'button', new RegExp(`^Details of ${gearName(baseId)}`)));
-const start = (p: Page): void => {
-  p.click(first(byName(p.root, 'button', 'Dismantle items')));
-};
-const bar = (p: Page): FakeElement => first(byClass(p.root, 'select-bar'));
+const chosen = (p: Page): string[] =>
+  IN_ORDER.filter((id) => tile(p, id).getAttribute('aria-selected') === 'true');
+const bar = (p: Page): FakeElement => first(byClass(p.root, 'bulk-bar'));
+const barText = (p: Page): string => visibleText(bar(p));
+const hasBar = (p: Page): boolean => byClass(p.root, 'bulk-bar').length > 0;
+const dialogs = (p: Page): FakeElement[] => byRole(p.root, 'dialog');
 const settle = async (p: Page): Promise<void> => {
   await new Promise((resolve) => setTimeout(resolve, 0));
   p.update(() => undefined);
 };
+const grid = (p: Page): FakeElement => first(byRole(p.root, 'listbox'));
 
-describe('marked items in the bag', () => {
-  it('shows a red corner and says in its label that an item the server marked is marked', () => {
-    const p = draw(actionsOf());
-    const t = tile(p, 'thundercap');
-    expect(byClass(t, 'item-tile-mark')).toHaveLength(1);
-    expect(t.getAttribute('aria-label')).toContain('marked for dismantling');
-    expect(t.getAttribute('class')).toContain('marked');
-    // Another item has none.
-    expect(byClass(tile(p, 'kelp-cap'), 'item-tile-mark')).toHaveLength(0);
-    expect(tile(p, 'kelp-cap').getAttribute('aria-label')).not.toContain('marked');
+/** A finger (or the mouse) held on a tile for `ms`, then lifted. */
+function press(p: Page, el: FakeElement, ms: number, kind = 'touch'): void {
+  p.pointer(el, 'pointerdown', { x: 10, y: 10, kind });
+  p.update(() => {
+    vi.advanceTimersByTime(ms);
+  });
+  p.pointer(el, 'pointerup', { x: 10, y: 10, kind });
+}
+
+describe('the bag without a selection', () => {
+  it('has no mode button, no presets and no bar above or below the grid', () => {
+    const p = draw();
+    for (const name of ['Dismantle items', 'Done', 'All Common', 'Clear']) {
+      expect(byName(p.root, 'button', name), name).toHaveLength(0);
+    }
+    expect(byName(p.root, 'button', /^Below level/)).toHaveLength(0);
+    expect(hasBar(p)).toBe(false);
   });
 
-  it('has a "Dismantle items" button, and no selection tools or bar until it is tapped', () => {
-    const p = draw(actionsOf());
-    expect(byName(p.root, 'button', 'Dismantle items')).toHaveLength(1);
-    expect(byClass(p.root, 'select-bar')).toHaveLength(0);
-    expect(byName(p.root, 'button', 'All Common')).toHaveLength(0);
-    // Outside the mode a tap opens the card, which has the mark action.
+  it('is a multi-select listbox of options, none selected, with one tab stop', () => {
+    const p = draw();
+    const list = grid(p);
+    expect(list.getAttribute('aria-multiselectable')).toBe('true');
+    expect(tiles(p)).toHaveLength(8);
+    expect(chosen(p)).toEqual([]);
+    expect(tiles(p).filter((t) => t.getAttribute('tabindex') === '0')).toHaveLength(1);
+    expect(tiles(p)[0]?.getAttribute('tabindex')).toBe('0');
+  });
+
+  it('opens the item card on a plain tap, with no mark and no selection', () => {
+    const p = draw();
     p.click(tile(p, 'kelp-cap'));
-    expect(byName(first(byRole(p.root, 'dialog')), 'button', 'Mark for dismantling')).toHaveLength(
-      1,
-    );
+    const dialog = first(dialogs(p));
+    expect(visibleText(dialog)).toContain('Kelp Cap');
+    expect(hasBar(p)).toBe(false);
+    expect(chosen(p)).toEqual([]);
   });
 
-  it('has no selection button for an empty bag', () => {
-    const p = draw(actionsOf(), { ...SAMPLE_GEAR, items: [] });
-    expect(byName(p.root, 'button', 'Dismantle items')).toHaveLength(0);
+  it("says in each tile's label what it is and who wears it, and nothing about marks", () => {
+    const p = draw();
+    const label = tile(p, 'emberkeepers-crown').getAttribute('aria-label') ?? '';
+    expect(label).toContain('worn by');
+    expect(label).not.toContain('marked');
+    expect(tile(p, 'kelp-cap').getAttribute('aria-label')).not.toContain('worn by');
   });
 });
 
-describe('the selection mode', () => {
-  it('starts with Done, the presets and the bar counting what the server marked', () => {
-    const p = draw(actionsOf());
-    start(p);
-    expect(byName(p.root, 'button', 'Done')).toHaveLength(1);
-    expect(byName(p.root, 'button', 'All Common')).toHaveLength(1);
-    expect(byName(p.root, 'button', 'Below level 10')).toHaveLength(1);
-    expect(byName(p.root, 'button', 'Clear')).toHaveLength(1);
-    expect(visibleText(bar(p))).toContain('1 marked');
-    expect(byName(bar(p), 'button', 'Dismantle')).toHaveLength(1);
+describe('a press and hold', () => {
+  it('shows its cue while held, then selects the item, buzzes, and starts selecting', () => {
+    vi.useFakeTimers();
+    const vibrate = vi.fn();
+    vi.stubGlobal('navigator', { vibrate });
+    const p = draw();
+    const t = tile(p, 'kelp-cap');
+    p.pointer(t, 'pointerdown', { x: 10, y: 10, kind: 'touch' });
+    expect(tile(p, 'kelp-cap').getAttribute('class')).toContain('holding');
+    p.update(() => {
+      vi.advanceTimersByTime(449);
+    });
+    expect(chosen(p)).toEqual([]);
+    p.update(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(chosen(p)).toEqual(['kelp-cap']);
+    expect(tile(p, 'kelp-cap').getAttribute('class')).not.toContain('holding');
+    expect(tile(p, 'kelp-cap').getAttribute('class')).toContain('chosen');
+    expect(vibrate).toHaveBeenCalledTimes(1);
+    expect(barText(p)).toContain('1 selected');
+    expect(first(byRole(p.root, 'listbox')).getAttribute('class')).toContain('selecting');
   });
 
-  it('toggles a mark on a tap, at once, and opens no card', () => {
-    const actions = actionsOf();
-    const p = draw(actions);
-    start(p);
+  it('swallows the click that follows the release: it neither opens the card nor toggles', () => {
+    vi.useFakeTimers();
+    const p = draw();
+    const t = tile(p, 'kelp-cap');
+    press(p, t, 450);
+    p.click(t);
+    expect(chosen(p)).toEqual(['kelp-cap']);
+    expect(dialogs(p)).toHaveLength(0);
+    // The next tap is a real one again: it toggles (the item goes, and the mode with it).
+    p.click(t);
+    expect(chosen(p)).toEqual([]);
+    expect(hasBar(p)).toBe(false);
+  });
+
+  it('works for a mouse too (the same pointer code)', () => {
+    vi.useFakeTimers();
+    const p = draw();
+    press(p, tile(p, 'thundercap'), 450, 'mouse');
+    expect(chosen(p)).toEqual(['thundercap']);
+  });
+
+  it('is cancelled by a move of more than 8 px, but not by a small drift', () => {
+    vi.useFakeTimers();
+    const p = draw();
+    const t = tile(p, 'kelp-cap');
+    p.pointer(t, 'pointerdown', { x: 10, y: 10 });
+    p.pointer(t, 'pointermove', { x: 14, y: 14 });
+    expect(tile(p, 'kelp-cap').getAttribute('class')).toContain('holding');
+    p.pointer(t, 'pointermove', { x: 10, y: 19 });
+    expect(tile(p, 'kelp-cap').getAttribute('class')).not.toContain('holding');
+    p.update(() => {
+      vi.advanceTimersByTime(600);
+    });
+    expect(chosen(p)).toEqual([]);
+    // A small drift only: the hold still completes.
+    p.pointer(t, 'pointerdown', { x: 10, y: 10 });
+    p.pointer(t, 'pointermove', { x: 13, y: 12 });
+    p.update(() => {
+      vi.advanceTimersByTime(450);
+    });
+    expect(chosen(p)).toEqual(['kelp-cap']);
+  });
+
+  it('is cancelled by a release or a pointer cancel (a scroll starting) before the time is up', () => {
+    vi.useFakeTimers();
+    const p = draw();
+    const t = tile(p, 'kelp-cap');
+    press(p, t, 300);
+    p.update(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(chosen(p)).toEqual([]);
+    p.pointer(t, 'pointerdown', { x: 10, y: 10 });
+    p.pointer(t, 'pointercancel', { x: 10, y: 10 });
+    p.update(() => {
+      vi.advanceTimersByTime(600);
+    });
+    expect(chosen(p)).toEqual([]);
+    expect(tile(p, 'kelp-cap').getAttribute('class')).not.toContain('holding');
+    // The click after a short press is a plain tap: it opens the card.
+    p.click(t);
+    expect(dialogs(p)).toHaveLength(1);
+  });
+
+  it('ignores a second finger and a right mouse button', () => {
+    vi.useFakeTimers();
+    const p = draw();
+    const t = tile(p, 'kelp-cap');
+    p.pointer(t, 'pointerdown', { x: 10, y: 10, primary: false });
+    p.pointer(t, 'pointerdown', { x: 10, y: 10, kind: 'mouse', button: 2 });
+    p.update(() => {
+      vi.advanceTimersByTime(600);
+    });
+    expect(chosen(p)).toEqual([]);
+  });
+
+  it("keeps the context menu away from a finger but stops the browser's own", () => {
+    const p = draw();
+    const t = tile(p, 'kelp-cap');
+    p.pointer(t, 'pointerdown', { x: 10, y: 10, kind: 'touch' });
+    p.pointer(t, 'pointerup', { x: 10, y: 10, kind: 'touch' });
+    const event = p.event(t, 'contextmenu', { x: 10, y: 10 });
+    expect(event.defaultPrevented).toBe(true);
+    expect(byRole(p.root, 'menu')).toHaveLength(0);
+  });
+});
+
+describe('selecting with a mouse', () => {
+  it('puts a circle in every tile, and a click on it selects the item and starts selecting', () => {
+    const p = draw();
+    expect(
+      find(p.root, (e) => (e.getAttribute('class') ?? '').includes('item-tile-check')),
+    ).toHaveLength(8);
+    p.click(circleOf(p, 'kelp-cap'));
+    expect(chosen(p)).toEqual(['kelp-cap']);
+    expect(barText(p)).toContain('1 selected');
+    // The click on the circle never opens the card.
+    expect(dialogs(p)).toHaveLength(0);
+    // A second circle adds, and a click on a chosen one's circle removes.
+    p.click(circleOf(p, 'thundercap'));
+    expect(chosen(p)).toEqual(['thundercap', 'kelp-cap']);
+    p.click(circleOf(p, 'kelp-cap'));
+    expect(chosen(p)).toEqual(['thundercap']);
+  });
+
+  it('shows a check in a chosen circle and an empty one on the rest', () => {
+    const p = draw();
+    p.click(circleOf(p, 'kelp-cap'));
+    expect(circleOf(p, 'kelp-cap').getAttribute('class')).toContain('on');
+    expect(find(circleOf(p, 'kelp-cap'), (e) => e.localName === 'svg')).toHaveLength(1);
+    expect(circleOf(p, 'thundercap').getAttribute('class')).not.toContain('on');
+    expect(find(circleOf(p, 'thundercap'), (e) => e.localName === 'svg')).toHaveLength(0);
+    // The circles are decoration for a pointer: hidden from screen readers, and not tab stops.
+    expect(circleOf(p, 'kelp-cap').getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('starts selecting with a Ctrl or Command click, and toggles with it afterwards', () => {
+    const p = draw();
+    p.click(tile(p, 'kelp-cap'), { ctrlKey: true });
+    expect(chosen(p)).toEqual(['kelp-cap']);
+    expect(dialogs(p)).toHaveLength(0);
+    p.click(tile(p, 'thundercap'), { metaKey: true });
+    expect(chosen(p)).toEqual(['thundercap', 'kelp-cap']);
+    p.click(tile(p, 'kelp-cap'), { ctrlKey: true });
+    expect(chosen(p)).toEqual(['thundercap']);
+  });
+
+  it("adds the range from the last toggled item with a Shift click, in the grid's order", () => {
+    const p = draw();
+    p.click(tile(p, 'thundercap'), { ctrlKey: true });
+    p.click(tile(p, 'crossroads-compass'), { shiftKey: true });
+    expect(chosen(p)).toEqual(['thundercap', 'wardens-bell', 'bark-shawl', 'crossroads-compass']);
+    // The range goes the other way too, and keeps the anchor: from Thundercap up to the crown.
+    p.click(tile(p, 'emberkeepers-crown'), { shiftKey: true });
+    expect(chosen(p)).toEqual([
+      'emberkeepers-crown',
+      'thundercap',
+      'wardens-bell',
+      'bark-shawl',
+      'crossroads-compass',
+    ]);
+  });
+
+  it('starts from the clicked item on a Shift click when nothing was toggled before', () => {
+    const p = draw();
+    p.click(tile(p, 'bark-shawl'), { shiftKey: true });
+    expect(chosen(p)).toEqual(['bark-shawl']);
+  });
+
+  it('opens a menu on a right click with Inspect and Select, at the pointer', () => {
+    const p = draw();
+    p.event(tile(p, 'kelp-cap'), 'contextmenu', { x: 120, y: 80 });
+    const menu = first(byRole(p.root, 'menu'));
+    expect(byRole(menu, 'menuitem').map((m) => visibleText(m))).toEqual(['Inspect', 'Select']);
+    expect(menu.getAttribute('aria-label')).toContain('Kelp Cap');
+    expect(menu.style.getPropertyValue('--menu-x')).toBe('120px');
+    expect(menu.style.getPropertyValue('--menu-y')).toBe('80px');
+  });
+
+  it('Select in the menu starts selecting that item; the menu closes', () => {
+    const p = draw();
+    p.event(tile(p, 'kelp-cap'), 'contextmenu', { x: 120, y: 80 });
+    p.click(first(byName(p.root, 'button', 'Select')));
+    expect(chosen(p)).toEqual(['kelp-cap']);
+    expect(byRole(p.root, 'menu')).toHaveLength(0);
+    expect(barText(p)).toContain('1 selected');
+    // On a chosen item the entry says Deselect, and takes it out again.
+    p.event(tile(p, 'kelp-cap'), 'contextmenu', { x: 120, y: 80 });
+    p.click(first(byName(p.root, 'button', 'Deselect')));
+    expect(chosen(p)).toEqual([]);
+  });
+
+  it('Inspect in the menu opens the card without selecting anything', () => {
+    const p = draw();
+    p.event(tile(p, 'kelp-cap'), 'contextmenu', { x: 120, y: 80 });
+    p.click(first(byName(p.root, 'button', 'Inspect')));
+    expect(byRole(p.root, 'menu')).toHaveLength(0);
+    expect(visibleText(first(dialogs(p)))).toContain('Kelp Cap');
+    expect(hasBar(p)).toBe(false);
+  });
+
+  it('closes the menu on Escape (the focus goes back to the tile) and on a click outside, changing nothing', () => {
+    const p = draw();
+    p.event(tile(p, 'kelp-cap'), 'contextmenu', { x: 120, y: 80 });
+    p.key(first(byRole(p.root, 'menu')), 'Escape');
+    expect(byRole(p.root, 'menu')).toHaveLength(0);
+    expect(tile(p, 'kelp-cap').focused).toBeGreaterThan(0);
+    p.event(tile(p, 'kelp-cap'), 'contextmenu', { x: 120, y: 80 });
+    p.pointer(first(byClass(p.root, 'item-menu-backdrop')), 'pointerdown', {
+      x: 5,
+      y: 5,
+      kind: 'mouse',
+    });
+    expect(byRole(p.root, 'menu')).toHaveLength(0);
+    expect(chosen(p)).toEqual([]);
+    expect(dialogs(p)).toHaveLength(0);
+  });
+
+  it('moves between the two entries with the arrow keys', () => {
+    const p = draw();
+    p.event(tile(p, 'kelp-cap'), 'contextmenu', { x: 120, y: 80 });
+    const menu = first(byRole(p.root, 'menu'));
+    expect(byRole(menu, 'menuitem')[0]?.focused).toBeGreaterThan(0);
+  });
+});
+
+describe('while selecting', () => {
+  function selecting(): Page {
+    const p = draw();
+    p.click(circleOf(p, 'thundercap'));
+    return p;
+  }
+
+  it('toggles an item on a tap and never opens the card', () => {
+    const p = selecting();
     p.click(tile(p, 'kelp-cap'));
-    expect(actions.mark).toHaveBeenCalledWith([kelp.id], true);
-    expect(byRole(p.root, 'dialog')).toHaveLength(0);
-    // Shown before the server answers.
-    expect(byClass(tile(p, 'kelp-cap'), 'item-tile-mark')).toHaveLength(1);
-    expect(tile(p, 'kelp-cap').getAttribute('aria-pressed')).toBe('true');
-    expect(visibleText(bar(p))).toContain('2 marked');
-    // And a tap on a marked one unmarks it.
-    p.click(tile(p, 'thundercap'));
-    expect(actions.mark).toHaveBeenCalledTimes(1);
-    expect(byClass(tile(p, 'thundercap'), 'item-tile-mark')).toHaveLength(0);
-    expect(visibleText(bar(p))).toContain('1 marked');
+    expect(chosen(p)).toEqual(['thundercap', 'kelp-cap']);
+    expect(dialogs(p)).toHaveLength(0);
+    expect(barText(p)).toContain('2 selected');
+    p.click(tile(p, 'kelp-cap'));
+    expect(chosen(p)).toEqual(['thundercap']);
   });
 
-  it('opens the card from the small info button, and stays in the mode', () => {
-    const p = draw(actionsOf());
-    start(p);
+  it('draws a ring on chosen tiles and an empty circle on the others', () => {
+    const p = selecting();
+    expect(tile(p, 'thundercap').getAttribute('class')).toContain('chosen');
+    expect(tile(p, 'kelp-cap').getAttribute('class')).not.toContain('chosen');
+    expect(grid(p).getAttribute('class')).toContain('selecting');
+    expect(circleOf(p, 'thundercap').getAttribute('class')).toContain('on');
+    expect(circleOf(p, 'kelp-cap').getAttribute('class')).not.toContain('on');
+  });
+
+  it("lets worn items be selected, and they keep the wearer's portrait", () => {
+    const p = selecting();
+    const t = tile(p, 'emberkeepers-crown');
+    expect(byClass(t, 'item-tile-wearer')).toHaveLength(1);
+    expect(t.getAttribute('class')).not.toContain('blocked');
+    p.click(t);
+    expect(chosen(p)).toEqual(['emberkeepers-crown', 'thundercap']);
+    expect(byClass(tile(p, 'emberkeepers-crown'), 'item-tile-wearer')).toHaveLength(1);
+  });
+
+  it('opens the card from the small info button on top, keeping the selection', () => {
+    const p = selecting();
     p.click(infoOf(p, 'crossroads-compass'));
-    const dialog = first(byRole(p.root, 'dialog'));
+    const dialog = first(dialogs(p));
     expect(byClass(dialog, 'idc')).toHaveLength(1);
     expect(visibleText(dialog)).toContain('Crossroads Compass');
-    expect(byName(dialog, 'button', 'Mark for dismantling')).toHaveLength(1);
-    expect(byName(p.root, 'button', 'Done')).toHaveLength(1);
-    // Nothing was marked by looking.
-    expect(visibleText(bar(p))).toContain('1 marked');
+    expect(chosen(p)).toEqual(['thundercap']);
+    expect(barText(p)).toContain('1 selected');
   });
 
-  it('marks what a preset matches, in one request, and leaves worn and marked items out', () => {
-    const actions = actionsOf();
-    const p = draw(actions);
-    start(p);
-    p.click(first(byName(p.root, 'button', 'All Common')));
-    // The only free Common; the worn Commons are not eligible.
-    expect(actions.mark).toHaveBeenCalledWith([kelp.id], true);
-    expect(visibleText(bar(p))).toContain('2 marked');
-    // "All Common" has nothing left to mark: greyed.
-    expect(first(byName(p.root, 'button', 'All Common')).hasAttribute('disabled')).toBe(true);
+  it('shows the info button only while selecting', () => {
+    const p = draw();
+    expect(byName(p.root, 'button', /^Details of/)).toHaveLength(0);
+    p.click(circleOf(p, 'thundercap'));
+    expect(byName(p.root, 'button', /^Details of/)).toHaveLength(8);
   });
 
-  it('"Below level 10" marks the free items under that item level, and "Clear" unmarks every marked one', () => {
-    const actions = actionsOf();
-    const p = draw(actions);
-    start(p);
-    p.click(first(byName(p.root, 'button', 'Below level 10')));
-    expect(actions.mark).toHaveBeenCalledWith([kelp.id], true);
-    expect(visibleText(bar(p))).toContain('2 marked');
-    p.click(first(byName(p.root, 'button', 'Clear')));
-    expect(visibleText(bar(p))).toContain('0 marked');
-    expect(byClass(tile(p, 'thundercap'), 'item-tile-mark')).toHaveLength(0);
-    expect(byName(bar(p), 'button', 'Dismantle')[0]?.hasAttribute('disabled')).toBe(true);
-  });
-
-  it('says why a worn item cannot be marked, asks the server nothing and keeps it dimmed', () => {
-    const actions = actionsOf();
-    const p = draw(actions);
-    start(p);
-    const t = tile(p, worn.baseId);
-    expect(t.getAttribute('class')).toContain('blocked');
-    p.click(t);
-    expect(actions.mark).not.toHaveBeenCalled();
-    expect(visibleText(bar(p))).toContain('Worn items cannot be marked');
-    expect(visibleText(bar(p))).toContain('1 marked');
-  });
-
-  it('shows the server marks again when a request ends (a refused mark leaves the item as it was)', async () => {
-    const actions = actionsOf({ mark: vi.fn(() => Promise.resolve(undefined)) });
-    const p = draw(actions);
-    start(p);
-    p.click(tile(p, 'crossroads-compass'));
-    await settle(p);
-    expect(byClass(tile(p, 'crossroads-compass'), 'item-tile-mark')).toHaveLength(0);
-    expect(visibleText(bar(p))).toContain('1 marked');
-  });
-
-  it('leaves the mode on Done, keeping the marks and showing their corners', () => {
-    const p = draw(actionsOf());
-    start(p);
-    p.click(first(byName(p.root, 'button', 'Done')));
-    expect(byClass(p.root, 'select-bar')).toHaveLength(0);
-    expect(byName(p.root, 'button', 'Dismantle items')).toHaveLength(1);
-    expect(byClass(tile(p, 'thundercap'), 'item-tile-mark')).toHaveLength(1);
+  it('keeps worn tiles as options of the listbox with aria-selected, and says how many in a live region', () => {
+    const p = selecting();
+    p.click(tile(p, 'kelp-cap'));
+    const live = find(
+      p.root,
+      (e) => e.getAttribute('role') === 'status' && e.hasAttribute('aria-live'),
+    );
+    expect(live.map((e) => visibleText(e))).toContain('2 selected');
   });
 });
 
-describe('dismantling from the bar', () => {
-  it('opens who dismantles for exactly the marked items, and asks the question with the count', () => {
-    const marked: GearState = {
-      ...SAMPLE_GEAR,
-      items: SAMPLE_GEAR.items.map((i) =>
-        i.id === kelp.id || i.id === compass.id ? { ...i, markedForDismantle: true } : i,
-      ),
-    };
-    const actions = actionsOf();
-    const p = draw(actions, marked);
-    start(p);
-    expect(visibleText(bar(p))).toContain('3 marked');
-    p.click(first(byName(bar(p), 'button', 'Dismantle')));
-    const dialog = first(byRole(p.root, 'dialog'));
-    expect(visibleText(dialog)).toContain('Who dismantles');
-    // Next: the confirmation names what goes.
-    p.click(first(byClass(dialog, 'send-button')));
-    expect(visibleText(first(byClass(p.root, 'drill-head')))).toContain(
-      'Dismantle 3 items (1 Common, 2 Rare)?',
-    );
-    const ids = vi.mocked(actions.previewDismantle).mock.calls[0]?.[1] as string[];
-    expect([...ids].sort()).toEqual([kelp.id, compass.id, thundercap.id].sort());
+describe('ending the selection', () => {
+  it('clears and leaves the mode on the X of the bar', () => {
+    const p = draw();
+    p.click(circleOf(p, 'thundercap'));
+    p.click(circleOf(p, 'kelp-cap'));
+    p.click(first(byName(bar(p), 'button', 'Clear the selection')));
+    expect(hasBar(p)).toBe(false);
+    expect(chosen(p)).toEqual([]);
+    expect(grid(p).getAttribute('class')).not.toContain('selecting');
+    // Back to the plain grid: a tap opens the card again.
+    p.click(tile(p, 'kelp-cap'));
+    expect(dialogs(p)).toHaveLength(1);
   });
 
-  it('dismantles on the confirmation, shows the one results screen and leaves the mode', async () => {
-    const previewed: DismantlePreview = {
-      kind: 'dismantle',
-      creatureId: 'x',
-      items: [],
-      range: {
-        scrap: { min: 1, max: 2 },
-        shards: { min: 0, max: 0, element: null },
-        glimmer: { min: 0, max: 0 },
-        essence: { min: 0, max: 0 },
-      },
-      xp: 6,
-      learnBp: null,
-      teachers: 0,
-      boosted: 0,
-      tinkersLuckBp: 0,
-    };
-    const actions = actionsOf({ previewDismantle: vi.fn(() => Promise.resolve(previewed)) });
-    const claimed = vi.fn();
-    const p = draw(actions, SAMPLE_GEAR, claimed);
-    start(p);
-    p.click(first(byName(bar(p), 'button', 'Dismantle')));
-    p.click(first(byClass(first(byRole(p.root, 'dialog')), 'send-button')));
+  it('clears and leaves the mode on Escape in the grid, and in the bar', () => {
+    const p = draw();
+    p.click(circleOf(p, 'thundercap'));
+    const event = p.key(tile(p, 'thundercap'), 'Escape');
+    expect(event.defaultPrevented).toBe(true);
+    expect(hasBar(p)).toBe(false);
+    p.click(circleOf(p, 'thundercap'));
+    p.key(first(byName(bar(p), 'button', 'Dismantle')), 'Escape');
+    expect(hasBar(p)).toBe(false);
+  });
+
+  it('leaves the mode when the last item is deselected', () => {
+    const p = draw();
+    p.click(circleOf(p, 'thundercap'));
+    p.click(tile(p, 'thundercap'));
+    expect(hasBar(p)).toBe(false);
+    expect(chosen(p)).toEqual([]);
+  });
+
+  it('does not clear on Escape when nothing is selected', () => {
+    const behind = vi.fn();
+    page = createPage();
+    page.draw(
+      <div onKeyDown={behind}>
+        <Workshop
+          state={GEAR_STATE}
+          gear={SAMPLE_GEAR}
+          failed={false}
+          offset={0}
+          busy={false}
+          reveal={null}
+          actions={actionsOf()}
+          onRetry={() => undefined}
+          onClaimed={() => undefined}
+          onDismissReveal={() => undefined}
+        />
+      </div>,
+    );
+    page.key(tile(page, 'kelp-cap'), 'Escape');
+    expect(behind).toHaveBeenCalledTimes(1);
+  });
+
+  it('drops an item that is no longer in the bag from the selection', () => {
+    const p = draw();
+    p.click(circleOf(p, 'thundercap'));
+    p.click(circleOf(p, 'kelp-cap'));
+    expect(barText(p)).toContain('2 selected');
+    // The server's bag now has no kelp cap (dismantled elsewhere).
+    p.draw(
+      <Workshop
+        state={GEAR_STATE}
+        gear={{ ...SAMPLE_GEAR, items: SAMPLE_GEAR.items.filter((i) => i.id !== kelp.id) }}
+        failed={false}
+        offset={0}
+        busy={false}
+        reveal={null}
+        actions={actionsOf()}
+        onRetry={() => undefined}
+        onClaimed={() => undefined}
+        onDismissReveal={() => undefined}
+      />,
+    );
+    expect(barText(p)).toContain('1 selected');
+  });
+});
+
+describe('dismantling the selection', () => {
+  const dismantle = (p: Page): FakeElement => first(byName(bar(p), 'button', 'Dismantle'));
+  const next = (p: Page): FakeElement => first(byClass(first(dialogs(p)), 'send-button'));
+
+  it('has Dismantle as the only action of the bar, with the count and the X', () => {
+    const p = draw();
+    p.click(circleOf(p, 'thundercap'));
+    expect(byName(bar(p), 'button', /./)).toHaveLength(2);
+    expect(barText(p)).toContain('1 selected');
+    expect(byName(bar(p), 'button', 'Clear the selection')).toHaveLength(1);
+    expect(dismantle(p).getAttribute('class')).toContain('primary');
+  });
+
+  it('goes straight to Who for free items, then the confirmation naming the count', () => {
+    const actions = actionsOf();
+    const p = draw(actions);
+    p.click(circleOf(p, 'kelp-cap'));
+    p.click(circleOf(p, 'crossroads-compass'));
+    p.click(dismantle(p));
+    expect(visibleText(first(dialogs(p)))).toContain('Who dismantles');
+    expect(actions.checkDismantle).not.toHaveBeenCalled();
+    p.click(next(p));
+    expect(visibleText(first(byClass(p.root, 'drill-head')))).toContain(
+      'Dismantle 2 items (1 Common, 1 Rare)?',
+    );
+    const ids = vi.mocked(actions.previewDismantle).mock.calls[0]?.[1] as string[];
+    expect([...ids].sort()).toEqual([kelp.id, compass.id].sort());
+  });
+
+  it('warns about worn items first: who wears each, then Dismantle anyway goes on', async () => {
+    const actions = actionsOf();
+    const p = draw(actions);
+    p.click(circleOf(p, 'kelp-cap'));
+    p.click(circleOf(p, 'emberkeepers-crown'));
+    p.click(dismantle(p));
     await settle(p);
-    p.click(first(byClass(first(byRole(p.root, 'dialog')), 'send-button')));
+    const dialog = first(dialogs(p));
+    expect(visibleText(first(byClass(dialog, 'drill-head')))).toContain('Worn items');
+    const rows = byClass(dialog, 'worn-row');
+    expect(rows).toHaveLength(1);
+    expect(visibleText(rows[0] as FakeElement)).toContain('Ember');
+    expect(actions.checkDismantle).toHaveBeenCalledWith([crown.id]);
+    expect(visibleText(next(p))).toBe('Dismantle anyway');
+    p.click(next(p));
+    expect(visibleText(first(byClass(dialog, 'drill-head')))).toContain('Who dismantles');
+    // Back to the warning, and out to the bag with the selection kept.
+    p.click(first(byName(p.root, 'button', /^‹ Back/)));
+    p.click(first(byName(p.root, 'button', /^‹ Back/)));
+    expect(dialogs(p)).toHaveLength(0);
+    expect(chosen(p)).toEqual(['emberkeepers-crown', 'kelp-cap']);
+  });
+
+  it('dismantles worn items too, shows the results and ends the selection', async () => {
+    const claimed = vi.fn();
+    const actions = actionsOf();
+    const p = draw(actions, SAMPLE_GEAR, claimed);
+    p.click(circleOf(p, 'kelp-cap'));
+    p.click(circleOf(p, 'emberkeepers-crown'));
+    p.click(dismantle(p));
+    await settle(p);
+    p.click(next(p));
+    p.click(next(p));
+    await settle(p);
+    p.click(next(p));
     await settle(p);
     expect(actions.dismantlePile).toHaveBeenCalledTimes(1);
     const call = vi.mocked(actions.dismantlePile).mock.calls[0];
-    expect(call?.[1]).toEqual([thundercap.id]);
+    expect([...(call?.[1] as string[])].sort()).toEqual([crown.id, kelp.id].sort());
     expect(claimed).toHaveBeenCalledWith(result);
-    expect(byRole(p.root, 'dialog')).toHaveLength(0);
-    expect(byClass(p.root, 'select-bar')).toHaveLength(0);
+    expect(dialogs(p)).toHaveLength(0);
+    expect(hasBar(p)).toBe(false);
   });
 
-  it('keeps the button off while no item is marked', () => {
-    const p = draw(actionsOf());
-    start(p);
-    p.click(first(byName(p.root, 'button', 'Clear')));
-    const button = first(byName(bar(p), 'button', 'Dismantle'));
-    expect(button.hasAttribute('disabled')).toBe(true);
-    p.click(button);
-    expect(byRole(p.root, 'dialog')).toHaveLength(0);
+  it('keeps the selection and the bar when the dismantle is refused', async () => {
+    const actions = actionsOf({ dismantlePile: vi.fn(() => Promise.resolve(undefined)) });
+    const p = draw(actions);
+    p.click(circleOf(p, 'kelp-cap'));
+    p.click(dismantle(p));
+    p.click(next(p));
+    await settle(p);
+    p.click(next(p));
+    await settle(p);
+    expect(actions.dismantlePile).toHaveBeenCalledTimes(1);
+    expect(dialogs(p)).toHaveLength(1);
+    p.click(first(byName(p.root, 'button', /^‹ Back/)));
+    p.click(first(byName(p.root, 'button', /^‹ Back/)));
+    expect(chosen(p)).toEqual(['kelp-cap']);
+  });
+});
+
+describe('dismantling one item from its card', () => {
+  const cardButton = (p: Page): FakeElement =>
+    first(
+      find(
+        first(dialogs(p)),
+        (e) =>
+          e.localName === 'button' &&
+          (e.getAttribute('class') ?? '').includes('danger') &&
+          visibleText(e) === 'Dismantle',
+      ),
+    );
+
+  it('has the red Dismantle on the card outside the selection mode, and no Mark button', () => {
+    const p = draw();
+    p.click(tile(p, 'kelp-cap'));
+    expect(cardButton(p)).toBeDefined();
+    const text = visibleText(first(dialogs(p)));
+    expect(text).not.toContain('Mark for dismantling');
+    expect(text).not.toContain('Marked for dismantling');
+  });
+
+  it('runs the flow for that item inside the drawer, and closes it with the results', async () => {
+    const claimed = vi.fn();
+    const actions = actionsOf();
+    const p = draw(actions, SAMPLE_GEAR, claimed);
+    p.click(tile(p, 'kelp-cap'));
+    p.click(cardButton(p));
+    // Still one drawer: the flow is a view of the card's drawer.
+    expect(dialogs(p)).toHaveLength(1);
+    const send = (): FakeElement => first(byClass(first(dialogs(p)), 'send-button'));
+    p.click(send());
+    await settle(p);
+    p.click(send());
+    await settle(p);
+    expect(actions.dismantlePile).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(actions.dismantlePile).mock.calls[0]?.[1]).toEqual([kelp.id]);
+    expect(claimed).toHaveBeenCalledWith(result);
+    expect(dialogs(p)).toHaveLength(0);
+  });
+
+  it('warns first when the item is worn', async () => {
+    const actions = actionsOf();
+    const p = draw(actions);
+    p.click(tile(p, 'emberkeepers-crown'));
+    p.click(cardButton(p));
+    await settle(p);
+    expect(visibleText(first(byClass(p.root, 'drill-head')))).toContain('Worn items');
+    expect(actions.checkDismantle).toHaveBeenCalledWith([crown.id]);
+  });
+
+  it('works on top of a selection (from the info button) and removes the item from it afterwards', async () => {
+    const actions = actionsOf();
+    const p = draw(actions);
+    p.click(circleOf(p, 'thundercap'));
+    p.click(circleOf(p, 'kelp-cap'));
+    p.click(infoOf(p, 'kelp-cap'));
+    p.click(cardButton(p));
+    const send = (): FakeElement => first(byClass(first(dialogs(p)), 'send-button'));
+    p.click(send());
+    await settle(p);
+    p.click(send());
+    await settle(p);
+    // The whole selection ended with the action.
+    expect(hasBar(p)).toBe(false);
+  });
+});
+
+describe('with the keyboard', () => {
+  it('moves one tab stop around the grid with the arrow keys, Home and End', () => {
+    const p = draw();
+    const all = tiles(p);
+    p.key(all[0] as FakeElement, 'ArrowRight');
+    expect(all[1]?.focused).toBeGreaterThan(0);
+    p.event(all[1] as FakeElement, 'focusin');
+    p.key(all[1] as FakeElement, 'End');
+    expect(all[7]?.focused).toBeGreaterThan(0);
+    p.key(all[7] as FakeElement, 'Home');
+    expect(all[0]?.focused).toBe(1);
+    p.key(all[0] as FakeElement, 'ArrowLeft');
+    // Nothing before the first one: the focus stays.
+    expect(all[0]?.focused).toBe(1);
+    expect(all[7]?.focused).toBe(1);
+  });
+
+  it('keeps one tab stop on the focused tile', () => {
+    const p = draw();
+    p.event(tile(p, 'bark-shawl'), 'focus');
+    expect(tiles(p).filter((t) => t.getAttribute('tabindex') === '0')).toHaveLength(1);
+    expect(tile(p, 'bark-shawl').getAttribute('tabindex')).toBe('0');
+  });
+
+  it('opens the card on Enter, even while selecting, and does not toggle', () => {
+    const p = draw();
+    const t = tile(p, 'kelp-cap');
+    const event = p.key(t, 'Enter');
+    expect(event.defaultPrevented).toBe(true);
+    expect(visibleText(first(dialogs(p)))).toContain('Kelp Cap');
+    expect(chosen(p)).toEqual([]);
+  });
+
+  it('toggles with Space, starting the selection, and says how many are selected', () => {
+    const p = draw();
+    p.key(tile(p, 'kelp-cap'), ' ');
+    expect(chosen(p)).toEqual(['kelp-cap']);
+    expect(dialogs(p)).toHaveLength(0);
+    p.key(tile(p, 'thundercap'), ' ');
+    expect(chosen(p)).toEqual(['thundercap', 'kelp-cap']);
+    p.key(tile(p, 'kelp-cap'), ' ');
+    expect(chosen(p)).toEqual(['thundercap']);
+    // The key that released Space does not click the button too.
+    expect(p.event(tile(p, 'kelp-cap'), 'keyup', { key: ' ' }).defaultPrevented).toBe(true);
+  });
+
+  it('opens the menu on the context menu key', () => {
+    const p = draw();
+    p.key(tile(p, 'kelp-cap'), 'ContextMenu');
+    expect(byRole(p.root, 'menu')).toHaveLength(1);
+  });
+});
+
+describe('the one-time hint', () => {
+  const hint = (p: Page): FakeElement[] => byClass(p.root, 'bag-hint');
+  const touchText = 'Press and hold an item to select several';
+  const mouseText = 'Click the circle on an item to select several';
+
+  function storage(throws = false) {
+    const saved = new Map<string, string>();
+    const local = {
+      getItem: (k: string) => {
+        if (throws) throw new Error('blocked');
+        return saved.get(k) ?? null;
+      },
+      setItem: (k: string, v: string) => {
+        if (throws) throw new Error('blocked');
+        saved.set(k, v);
+      },
+    };
+    vi.stubGlobal('window', {
+      localStorage: local,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    });
+    return saved;
+  }
+
+  it('shows the press and hold wording on a touch device the first time the bag opens', () => {
+    const p = draw();
+    expect(hint(p)).toHaveLength(1);
+    expect(visibleText(hint(p)[0] as FakeElement)).toContain(touchText);
+  });
+
+  it('shows the circle wording where there is a mouse', () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === '(hover: hover) and (pointer: fine)',
+    }));
+    const p = draw();
+    expect(visibleText(hint(p)[0] as FakeElement)).toContain(mouseText);
+  });
+
+  it('is not shown for an empty bag', () => {
+    const p = draw(actionsOf(), { ...SAMPLE_GEAR, items: [] });
+    expect(hint(p)).toHaveLength(0);
+  });
+
+  it('is gone for good once dismissed, on this device', () => {
+    vi.useFakeTimers();
+    const saved = storage();
+    const p = draw();
+    p.click(first(byName(hint(p)[0] as FakeElement, 'button', /Dismiss/)));
+    p.update(() => {
+      vi.advanceTimersByTime(400);
+    });
+    expect(hint(p)).toHaveLength(0);
+    expect([...saved.values()]).toEqual(['1']);
+    // A new visit to the bag (a fresh page, the same storage): no hint.
+    p.unmount();
+    page = null;
+    const again = draw();
+    expect(hint(again)).toHaveLength(0);
+  });
+
+  it('is gone once the player selects anything, without being dismissed', () => {
+    const saved = storage();
+    const p = draw();
+    expect(hint(p)).toHaveLength(1);
+    p.click(circleOf(p, 'kelp-cap'));
+    expect(hint(p)).toHaveLength(0);
+    expect([...saved.values()]).toEqual(['1']);
+    p.click(first(byName(bar(p), 'button', 'Clear the selection')));
+    expect(hint(p)).toHaveLength(0);
+  });
+
+  it('still shows, and hides for the session once dismissed, when storage throws', () => {
+    vi.useFakeTimers();
+    storage(true);
+    const p = draw();
+    expect(hint(p)).toHaveLength(1);
+    p.click(first(byName(hint(p)[0] as FakeElement, 'button', /Dismiss/)));
+    p.update(() => {
+      vi.advanceTimersByTime(400);
+    });
+    expect(hint(p)).toHaveLength(0);
+    p.unmount();
+    page = null;
+    expect(hint(draw())).toHaveLength(0);
   });
 });

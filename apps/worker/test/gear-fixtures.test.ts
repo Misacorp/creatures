@@ -5,7 +5,7 @@ import expeditionClaimLoot from '../../activity/src/fixtures/expedition-claim-lo
 import gearEquip from '../../activity/src/fixtures/gear-equip.json';
 import gearDismantle from '../../activity/src/fixtures/gear-dismantle.json';
 import gearEquipBest from '../../activity/src/fixtures/gear-equip-best.json';
-import gearMark from '../../activity/src/fixtures/gear-mark.json';
+import gearDismantleCheck from '../../activity/src/fixtures/gear-dismantle-check.json';
 import gearNotice from '../../activity/src/fixtures/gear-notice.json';
 import gearNoticeDismissed from '../../activity/src/fixtures/gear-notice-dismissed.json';
 import gearErrors from '../../activity/src/fixtures/gear-errors.json';
@@ -27,7 +27,7 @@ import {
   DismissNoticeBodySchema,
   EquipBestBodySchema,
   EquipBodySchema,
-  MarkBodySchema,
+  DismantleCheckBodySchema,
   PreviewBodySchema,
   StartJobBodySchema,
 } from '../src/gear-schemas';
@@ -61,7 +61,7 @@ describe('the gear fixtures match what the server sends', () => {
     sameShape(r['job-start-craft'], startCraft);
     sameShape(r['job-claim-craft'], claimCraft);
     sameShape(r['job-claim-retired'], claimRetired);
-    sameShape(r['gear-mark'], gearMark);
+    sameShape(r['gear-dismantle-check'], gearDismantleCheck);
     sameShape(r['dismantle-pile'], gearDismantle);
     sameShape(r['job-claim-dismantle'], claimDismantle);
     sameShape(r['preview-craft'], previewCraft);
@@ -109,10 +109,8 @@ describe('the gear fixtures match what the server sends', () => {
     // A pile dismantle answers with the same result shape, plus who did it and how many Market Day boosted.
     expect(gearDismantle.result.kind).toBe('dismantle');
     expect(gearDismantle.result.creatureId).toBeTruthy();
-    // A mark is in the state until the item is worn or dismantled.
-    expect(gearMark.result).toMatchObject({ marked: true });
-    expect(gearMark.gear.items.some((i) => i.markedForDismantle)).toBe(true);
-    expect(gearState.items.some((i) => i.markedForDismantle)).toBe(true);
+    // The check names the items that cannot go now (none for a free item).
+    expect(gearDismantleCheck.result.locked).toEqual([]);
     // The previews carry every way to craft, each with exact odds that add up, and the refund as a range.
     expect(previewCraft.result.options.map((o) => o.reach)).toEqual(['none', 'rare', 'epic']);
     for (const o of previewCraft.result.options) {
@@ -146,8 +144,7 @@ describe('the gear fixtures match what the server sends', () => {
       'wrong_role',
       'gear_upgrade_removed',
       'dismantle_is_a_job',
-      'item_worn',
-      'marks_changed',
+      'item_locked',
       'dismantle_job_removed',
       'skill_too_low',
       'base_locked',
@@ -168,7 +165,7 @@ describe('the request bodies the client sends', () => {
     'equip-best': EquipBestBodySchema,
     'job-craft': StartJobBodySchema,
     'job-craft-reach': StartJobBodySchema,
-    mark: MarkBodySchema,
+    'dismantle-check': DismantleCheckBodySchema,
     'dismantle-pile': DismantleBodySchema,
     'preview-craft': PreviewBodySchema,
     'preview-dismantle': PreviewBodySchema,
@@ -199,7 +196,7 @@ describe('the request bodies the client sends', () => {
       'equip-best': /^\/api\/gear\/equip-best$/,
       'job-craft': /^\/api\/workshop\/jobs$/,
       'job-craft-reach': /^\/api\/workshop\/jobs$/,
-      mark: /^\/api\/gear\/mark$/,
+      'dismantle-check': /^\/api\/gear\/dismantle-check$/,
       'dismantle-pile': /^\/api\/gear\/dismantle$/,
       'preview-craft': /^\/api\/workshop\/preview$/,
       'preview-dismantle': /^\/api\/workshop\/preview$/,

@@ -26,10 +26,10 @@ const ItemIdsSchema = v.pipe(
   v.maxLength(RULES.gear.dismantle.pileMax),
 );
 
-/** Marks items for dismantling or unmarks them: the items (at most 60) and the state they should be in. */
-export const MarkBodySchema = v.strictObject({ itemIds: ItemIdsSchema, marked: v.boolean() });
+/** Asks which of some items cannot be dismantled now (worn by a creature whose trip or job reads them live). */
+export const DismantleCheckBodySchema = v.strictObject({ itemIds: ItemIdsSchema });
 
-/** Dismantles the marked pile with one creature: the exact items the confirmation showed, and a key. */
+/** Dismantles the named items with one creature: the items the confirmation showed, and a key. */
 export const DismantleBodySchema = v.strictObject({
   creatureId: IdSchema,
   itemIds: ItemIdsSchema,

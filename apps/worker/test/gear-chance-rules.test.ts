@@ -9,10 +9,8 @@ import {
 import { describe, expect, it } from 'vitest';
 import {
   apiPlayer as player,
-  dismantlePile,
   giveItem,
-  markAndDismantle,
-  markItems,
+  dismantlePile,
   skipWelcome,
   type Api,
 } from './gear-helpers';
@@ -80,7 +78,7 @@ describe("Tinker's luck through the pile dismantle", () => {
         const range = dismantleRange([{ baseId: 'kelp-cap', rarity: 'rare', itemLevel: 8 }]);
         // The creature without the line: the bottom of the ranges.
         const before = partsOf(ctx, p.id);
-        const resA = (await markAndDismantle(p, plain, [other])).body['result'] as Record<
+        const resA = (await dismantlePile(p, plain, [other])).body['result'] as Record<
           string,
           unknown
         >;
@@ -90,7 +88,7 @@ describe("Tinker's luck through the pile dismantle", () => {
         expect(partsOf(ctx, p.id)['scrap']).toBe((before['scrap'] ?? 0) + range.scrap.min);
         // The worker with Tinker's luck (the rng makes every chance hit): the full cost.
         const mid = partsOf(ctx, p.id);
-        const resB = (await markAndDismantle(p, worker, [itemId])).body['result'] as Record<
+        const resB = (await dismantlePile(p, worker, [itemId])).body['result'] as Record<
           string,
           unknown
         >;
@@ -115,7 +113,7 @@ describe("Tinker's luck through the pile dismantle", () => {
           now: ctx.clock.t,
         });
         const range = dismantleRange([{ baseId: 'kelp-cap', rarity: 'rare', itemLevel: 8 }]);
-        const res = (await markAndDismantle(p, worker, [itemId])).body['result'] as Record<
+        const res = (await dismantlePile(p, worker, [itemId])).body['result'] as Record<
           string,
           unknown
         >;
@@ -137,7 +135,6 @@ describe("Tinker's luck through the pile dismantle", () => {
         const ids = [1, 2, 3].map(() =>
           giveItem(ctx.sql, p.id, 'trail-cap', { rarity: 'common', level: 4, now: ctx.clock.t }),
         );
-        await markItems(p, ids);
         const before = partsOf(ctx, p.id)['scrap'] ?? 0;
         const key = newKey();
         const results = await Promise.all([
@@ -182,7 +179,6 @@ describe("Tinker's luck through the pile dismantle", () => {
             level: 8,
             now: ctx.clock.t,
           });
-          await markItems(p, [itemId]);
           const base = rng.drawn();
           await dismantlePile(p, worker, [itemId]);
           draws.push(rng.drawn() - base);

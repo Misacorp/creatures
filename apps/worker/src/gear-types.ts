@@ -69,8 +69,6 @@ export interface GearItemView {
   /** What a creature needs to wear it: its level (the slot's opening level or the item's, the higher) and the role of a role-locked Charm. */
   needs: { level: number; role: Role | null };
   equippedOn: string | null;
-  /** The player marked it for dismantling (a worn item cannot be marked; equipping clears the mark). */
-  markedForDismantle: boolean;
   /** What dismantling it can return, as a range (rolled when the pile is dismantled). */
   dismantle: DismantleRange;
   source: string;
@@ -291,8 +289,10 @@ export interface DismantlePreview {
   tinkersLuckBp: number;
 }
 
-/** What marking or unmarking items did: the ids it was asked for, and whether they are marked now. */
-export interface MarkResult {
-  itemIds: string[];
-  marked: boolean;
+/**
+ * Which of some items cannot be dismantled right now (`dismantle-worn.ts`): each is worn by a creature that
+ * is away on a trip or running a Workshop job whose claim reads the item live. Empty when all can go.
+ */
+export interface DismantleCheck {
+  locked: { itemId: string; creatureId: string; reason: 'trip' | 'job' }[];
 }

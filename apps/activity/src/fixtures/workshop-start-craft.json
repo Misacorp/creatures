@@ -54,7 +54,6 @@
           "role": null
         },
         "equippedOn": "00000000-0000-4000-8500-000000000003",
-        "markedForDismantle": false,
         "dismantle": {
           "scrap": {
             "min": 2,
@@ -119,7 +118,6 @@
           "role": null
         },
         "equippedOn": "00000000-0000-4000-8500-000000000002",
-        "markedForDismantle": false,
         "dismantle": {
           "scrap": {
             "min": 1,
@@ -199,7 +197,6 @@
           "role": null
         },
         "equippedOn": "00000000-0000-4000-8500-000000000003",
-        "markedForDismantle": false,
         "dismantle": {
           "scrap": {
             "min": 1,
@@ -296,7 +293,6 @@
           "role": null
         },
         "equippedOn": "00000000-0000-4000-8500-000000000002",
-        "markedForDismantle": false,
         "dismantle": {
           "scrap": {
             "min": 3,
@@ -372,7 +368,6 @@
           "role": null
         },
         "equippedOn": "00000000-0000-4000-8500-000000000002",
-        "markedForDismantle": false,
         "dismantle": {
           "scrap": {
             "min": 3,
@@ -446,7 +441,6 @@
           "role": "guard"
         },
         "equippedOn": "00000000-0000-4000-8500-000000000003",
-        "markedForDismantle": false,
         "dismantle": {
           "scrap": {
             "min": 3,
@@ -520,7 +514,6 @@
           "role": null
         },
         "equippedOn": null,
-        "markedForDismantle": false,
         "dismantle": {
           "scrap": {
             "min": 3,
@@ -596,7 +589,6 @@
           "role": null
         },
         "equippedOn": null,
-        "markedForDismantle": false,
         "dismantle": {
           "scrap": {
             "min": 3,

@@ -11,7 +11,7 @@ import type {
   CraftPreview,
   DismantlePreview,
   DismantleRange,
-  MarkResult,
+  DismantleCheck,
   DismissResult,
   EquipBestResult,
   EquipResult,
@@ -155,7 +155,6 @@ export function isGearItem(value: unknown): value is GearItem {
     isCount(needs['level']) &&
     isNullableStr(needs['role']) &&
     isNullableStr(value['equippedOn']) &&
-    typeof value['markedForDismantle'] === 'boolean' &&
     isDismantleRange(value['dismantle']) &&
     isStr(value['source']) &&
     isInt(value['createdAt']) &&
@@ -525,16 +524,17 @@ export function parseDismantlePreview(value: unknown): DismantlePreview {
   return value as unknown as DismantlePreview;
 }
 
-/** `POST /api/gear/mark`. */
-export function parseMarkResult(value: unknown): MarkResult {
-  if (
-    !isRecord(value) ||
-    !isArrayOf(value['itemIds'], isStr) ||
-    typeof value['marked'] !== 'boolean'
-  ) {
-    throw new Error('the server returned an unexpected mark result');
+/** `POST /api/gear/dismantle-check`. */
+export function parseDismantleCheck(value: unknown): DismantleCheck {
+  const isLock = (v: unknown): v is DismantleCheck['locked'][number] =>
+    isRecord(v) &&
+    isStr(v['itemId']) &&
+    isStr(v['creatureId']) &&
+    (v['reason'] === 'trip' || v['reason'] === 'job');
+  if (!isRecord(value) || !isArrayOf(value['locked'], isLock)) {
+    throw new Error('the server returned an unexpected dismantle check');
   }
-  return { itemIds: value['itemIds'], marked: value['marked'] };
+  return { locked: value['locked'] };
 }
 
 /** `POST /api/gear/dismantle`: the one results screen's result (a dismantle result). */
