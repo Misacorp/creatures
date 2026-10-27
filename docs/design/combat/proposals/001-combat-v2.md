@@ -81,7 +81,11 @@ Each rule names what it replaces in `combat-rules.md`. Durations count the affec
 
 **R19. Swap requests (raid).** A player can ask another player to swap the slots of two creatures on the raid board, so pairings across players can be arranged (Misa, 2026-10-26: "we do it manually now; a system would help"). The other player accepts or declines; an accepted swap moves both creatures in one step; open requests end at the next phase lock. Design and build with the raid board (roadmap, "Swap requests").
 
-**R20. Talents.** One shared library of combat talents; each creature line links to its own pool of seven from it (Misa, 2026-10-27), so two lines of the same role roll different tools. Branch forms share the line's pool. Talents are found over time, as in the game today: a slot at catch, more slots with level, duplicates and the Talent Book. A golden talent is 1.5 times the value. The migration rerolls talents from the new pools, and a golden talent rolls golden (Misa, 2026-10-27).
+**R20. Talents.** One shared library of combat talents; each creature line links to its own pool of seven from it (Misa, 2026-10-27), so two lines of the same role roll different tools. Branch forms share the line's pool. A line's pool says which talents can appear on its creatures; each creature grows its own library over time (Misa, 2026-10-27):
+
+- A creature starts with the talent it was found with; a starter starts with a set talent instead of a roll.
+- More come through Teach, as in the game today: a duplicate's talent goes into the Talent Book of the player's creature of that line, and only that one. The same talent must be found again for another creature to have it.
+- Slots open with level and are filled from the creature's own book. A golden talent is 1.5 times the value. The migration rerolls talents from the new pools, and a golden talent rolls golden (Misa, 2026-10-27).
 
 1. A talent adds numbers or flags to the creature's Knack (the same grammar): numbers add, flags combine; a Support shape comes only from the Knack. Talent hit bonuses count toward the hit-boost cap (R15), crit raises toward the reaction cap (R7).
 2. One name per effect, one number per name, across Knacks, talents and gear (P-06). A talent never repeats a Knack's effect, and Seal is never a talent, so a roll never decides the Knack choice.
@@ -90,6 +94,7 @@ Each rule names what it replaces in `combat-rules.md`. Durations count the affec
 5. Silence blanks talents (R12).
 6. "Its first hit each fight" means its first hit that gets past dodge and armour, in each fight and each raid stage (R14); Twin Strike's second hit is not a first hit. A first hit made while silenced uses it up.
 7. Conditions like "while a living Guard stands beside it" are read as each hit is worked out (R6 step 1).
+8. **Evolution and role changes** (Misa, 2026-10-27; built with the game integration, phase 4): when an evolution changes the role, each slotted talent that is idle for the new role is replaced by a random roll from the line's pool among the talents that work for the new role and are not in the creature's book yet. The evolution screen shows the replaced talents as unknown cards that turn over to reveal the new ones. Book entries that become idle stay in the book. Until this is built, idle talents after a role change are accepted.
 
 ## On the board (from the readability review)
 
