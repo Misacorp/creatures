@@ -777,7 +777,15 @@ function BagScene({ def }: { def: SceneDef }) {
 function SelectScene({ def }: { def: SceneDef }) {
   const { gear, state } = pageScene(def.kind);
   const [marks, setMarks] = useState<ReadonlySet<string>>(
-    () => new Set(gear.items.slice(2, 5).map((i) => i.id)),
+    // Three unworn items: a worn one cannot be marked.
+    () =>
+      new Set(
+        gear.items
+          .slice(0, 18)
+          .filter((i) => i.equippedOn === null)
+          .slice(1, 4)
+          .map((i) => i.id),
+      ),
   );
   const [hint, setHint] = useState<string | null>(null);
   const shown = gear.items.slice(0, 18).map((i) => ({ ...i, markedForDismantle: marks.has(i.id) }));
@@ -848,6 +856,8 @@ function PileScene({ def }: { def: SceneDef }) {
     ...gear.items.filter((i) => i.rarity === 'common').slice(0, 15),
   ]
     .filter((item, index, all) => all.findIndex((o) => o.id === item.id) === index)
+    // A worn item cannot be marked, so the pile never holds one.
+    .filter((item) => item.equippedOn === null)
     .map((i) => ({ ...i, markedForDismantle: true }));
   return (
     <div class="v3-phone">
