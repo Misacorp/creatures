@@ -68,15 +68,15 @@ describe('migrations 39 and 40', () => {
   const has = (ctx: { sql: SqlStorage }, name: string): boolean =>
     count(ctx.sql, 'sqlite_master', `name = '${name}'`) > 0;
 
-  it('47 is the last version; an undo adds the Games tables and the badges again', async () => {
-    expect(SCHEMA_VERSION).toBe(47);
+  it('48 is the last version; an undo adds the Games tables and the badges again', async () => {
+    expect(SCHEMA_VERSION).toBe(48);
     await run(async (ctx) => {
       const p = await sixer(ctx);
       undoGamesMigration(ctx.sql);
       expect(has(ctx, 'games_days')).toBe(false);
       ctx.core.migrate();
       ctx.core.migrate();
-      expect(version(ctx)).toBe(47);
+      expect(version(ctx)).toBe(48);
       expect(has(ctx, 'games_days')).toBe(true);
       expect(has(ctx, 'games_badges')).toBe(true);
       expect((await p.call('GET', '/api/games')).status).toBe(200);
@@ -92,7 +92,7 @@ describe('migrations 39 and 40', () => {
       ctx.sql.exec('INSERT INTO schema_version (version) VALUES (38)');
       expect(has(ctx, 'maintenance')).toBe(false);
       ctx.core.migrate();
-      expect(version(ctx)).toBe(47);
+      expect(version(ctx)).toBe(48);
       expect(has(ctx, 'maintenance')).toBe(true);
       expect(has(ctx, 'games_days')).toBe(true);
       expect((await p.call('GET', '/api/games')).status).toBe(200);

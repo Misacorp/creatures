@@ -5,12 +5,16 @@ import { FestivalTag, GearTagBadge, ItemThumb, RarityTag, SetTag, SlotTag } from
 import type { GearItem } from './gear-types';
 import { gearName, isFestivalBase, itemSet, setBonusRows, setCountText } from './gear-view';
 import { DeltaMark, ItemLines } from './ItemLines';
+import { Tag } from './ui/Tag';
 
 /** What the card needs of an item: the part of a `GearItem` that is drawn. */
 export type ItemCardItem = Pick<
   GearItem,
   'baseId' | 'slot' | 'rarity' | 'itemLevel' | 'stats' | 'lines'
->;
+> & {
+  /** Marked for dismantling: the badge row says so (a bag item; found and previewed items have no mark). */
+  markedForDismantle?: boolean | undefined;
+};
 
 /**
  * An item's full details, the one layout wherever they show (the Workshop's item card, the picker's
@@ -82,6 +86,11 @@ export function ItemCard({
             <GearTagBadge baseId={item.baseId} plain={plainRarity} />
             <SetTag baseId={item.baseId} plain={plainRarity} />
             {isFestivalBase(item.baseId) && <FestivalTag />}
+            {item.markedForDismantle === true && (
+              <Tag tone="bad" class="marked-tag">
+                Marked for dismantling
+              </Tag>
+            )}
           </p>
           {note}
           {(rows.length > 0 || (diff?.goneStats.length ?? 0) > 0) && (

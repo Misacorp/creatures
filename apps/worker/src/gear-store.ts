@@ -33,6 +33,8 @@ export type GearRow = {
   made_at: number | null;
   origin_json: string;
   equipped_on: string | null;
+  /** 1 while the player has marked the item for dismantling (version 48), else 0. */
+  dismantle_mark: number;
   source: string;
   created_at: number;
 };

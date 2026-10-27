@@ -88,13 +88,14 @@ export const ActionIds = {
   talentSlot: (creatureId: string, talentId: string, golden: boolean, slot: number): ActionId =>
     `talent-slot:${creatureId}:${talentId}:${golden ? 'g' : 'n'}:${String(slot)}`,
   claimJob: (jobId: string): ActionId => `claim-job:${jobId}`,
+  /** The same creature dismantling the same items is the same pile (other items are another action). */
+  dismantlePile: (creatureId: string, itemIds: readonly string[]): ActionId =>
+    `dismantle-pile:${creatureId}:${[...itemIds].sort().join(',')}`,
   /** The same job on the same creature is the same action (a craft aimed differently, or other items, is another). */
   job: (request: JobStart): ActionId => {
     switch (request.kind) {
       case 'craft':
         return `job:craft:${request.creatureId}:${request.blueprintId}:${request.reach}${treatSuffix(request)}`;
-      case 'dismantle':
-        return `job:dismantle:${request.creatureId}:${[...request.itemIds].sort().join(',')}${treatSuffix(request)}`;
       case 'supply':
         return `job:supply:${request.creatureId}:${request.supplyId}${treatSuffix(request)}`;
       case 'convert':

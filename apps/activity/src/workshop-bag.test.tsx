@@ -33,6 +33,8 @@ function first(list: FakeElement[]): FakeElement {
 const actions: GearActions = {
   equip: () => Promise.resolve(undefined),
   equipBest: () => Promise.resolve(undefined),
+  mark: () => Promise.resolve(undefined),
+  dismantlePile: () => Promise.resolve(undefined),
   dismissNotice: () => Promise.resolve(undefined),
   startJob: () => Promise.resolve(undefined),
   previewCraft: () => new Promise(() => undefined),
@@ -80,7 +82,7 @@ describe('the Workshop bag', () => {
     p.click(first(bagCells(p)));
     const dialog = first(byRole(p.root, 'dialog'));
     expect(byClass(dialog, 'item-detail')).toHaveLength(1);
-    expect(byName(dialog, 'button', 'Dismantle')).toHaveLength(1);
+    expect(byName(dialog, 'button', 'Mark for dismantling')).toHaveLength(1);
     p.click(first(byClass(p.root, 'drawer-backdrop')));
     expect(byRole(p.root, 'dialog')).toHaveLength(0);
   });

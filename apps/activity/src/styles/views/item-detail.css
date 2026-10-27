@@ -265,8 +265,8 @@ button.danger {
 }
 
 /*
-  A destructive action sits last in its view, centred, apart from the rest: the item drawer's Dismantle. The
-  panel it opens (the confirmation) takes the full width under it.
+  The item drawer's last row: "Mark for dismantling" or "Unmark", centred and apart from the rest (what takes an item
+  away is done to the whole marked pile from the bag, behind its own confirmation).
 */
 .item-actions {
   display: flex;
@@ -280,22 +280,17 @@ button.danger {
   padding-inline: var(--px);
 }
 
-.item-actions .confirm {
-  align-self: stretch;
+.item-actions-note {
+  margin: 0;
+  font-size: var(--fs-small);
 }
 
 /*
-  Dismantling as a wizard (2026-10-22): a drill-in in the place of the item. The gold button and its reason sit
-  at the bottom of the drawer's scrolling body (sticky), like the job wizard's pinned footer, so they stay in
-  view while the list scrolls. It reaches the drawer's edges and is drawn over the list.
+  Dismantling the marked pile (2026-10-27): a drawer from the bag with the shared wizard. Its footer (the reason and
+  the gold button) is the drawer's own pinned footer; the body is the list of who, or the confirmation.
 */
-.dismantle-footer {
-  position: sticky;
-  bottom: -0.75rem;
-  margin: 0.75rem calc(var(--drawer-pad) * -1) -0.75rem;
-  padding: 0.5rem var(--drawer-pad) 0.75rem;
-  background: var(--dusk-2);
-  box-shadow: inset 0 2px 0 0 var(--line);
+.dismantle-wizard {
+  min-width: 0;
 }
 
 /*

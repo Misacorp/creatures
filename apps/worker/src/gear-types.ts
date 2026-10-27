@@ -69,7 +69,9 @@ export interface GearItemView {
   /** What a creature needs to wear it: its level (the slot's opening level or the item's, the higher) and the role of a role-locked Charm. */
   needs: { level: number; role: Role | null };
   equippedOn: string | null;
-  /** What dismantling it can return, as a range (rolled when the job is claimed). */
+  /** The player marked it for dismantling (a worn item cannot be marked; equipping clears the mark). */
+  markedForDismantle: boolean;
+  /** What dismantling it can return, as a range (rolled when the pile is dismantled). */
   dismantle: DismantleRange;
   source: string;
   createdAt: number;
@@ -122,6 +124,9 @@ export type JobResult =
       marked: { baseId: string; marks: number }[];
       /** How many items Tinker's luck refunded in full (absent when none). */
       tinkered?: number;
+      /** A pile dismantle (2026-10-27): the creature that did it, and how many items Market Day boosted (absent on a timed job's result). */
+      creatureId?: string;
+      boosted?: number;
     } & JobCommon)
   | ({
       /** A crafted supply for expeditions: `amount` of `supplyId` went into the stock. */
@@ -225,13 +230,6 @@ export type StartJobInput =
       idempotencyKey: string;
     }
   | {
-      kind: 'dismantle';
-      creatureId: string;
-      itemIds: string[];
-      treat?: boolean | undefined;
-      idempotencyKey: string;
-    }
-  | {
       kind: 'convert';
       creatureId: string;
       recipeId: string;
@@ -273,16 +271,28 @@ export interface CraftPreview {
   options: CraftOption[];
 }
 
+/** What dismantling a pile of items would give with a creature, before the player confirms. Changes nothing. */
 export interface DismantlePreview {
   kind: 'dismantle';
   creatureId: string;
+  /** The items in the order they are rolled (the most valuable first). */
   items: { id: string; baseId: string; rarity: GearRarity; itemLevel: number }[];
-  /** The refund as a range, the same for any creature. */
+  /** The refund as a range, the same for any creature (Market Day's bonus and Tinker's luck not counted). */
   range: DismantleRange;
-  durationMs: number;
+  /** The Crafting XP the creature would get (Apprentice counted). The creature gains no creature experience. */
   xp: number;
   /** The chance (basis points) each item that can teach a blueprint does, with this creature; null when none can. */
   learnBp: number | null;
   /** How many of the items can teach a blueprint (or add a mark). */
   teachers: number;
+  /** How many items today's Market Day would roll at the top of their range (0 without it). */
+  boosted: number;
+  /** The creature's Tinker's luck chance per item (basis points), 0 without the line. */
+  tinkersLuckBp: number;
+}
+
+/** What marking or unmarking items did: the ids it was asked for, and whether they are marked now. */
+export interface MarkResult {
+  itemIds: string[];
+  marked: boolean;
 }

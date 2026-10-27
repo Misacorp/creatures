@@ -115,3 +115,52 @@ export function essenceOf(ctx: CoreContext, userId: string): number {
     )[0]?.amount ?? 0
   );
 }
+
+/** Marks items for dismantling (`marked` false unmarks them). */
+export const markItems = (p: Api, itemIds: string[], marked = true) =>
+  p.call('POST', '/api/gear/mark', { itemIds, marked });
+
+/** Dismantles the marked pile with a creature: the exact items the player saw. */
+export const dismantlePile = (
+  p: Api,
+  creatureId: string,
+  itemIds: string[],
+  idempotencyKey: string = crypto.randomUUID(),
+) => p.call('POST', '/api/gear/dismantle', { creatureId, itemIds, idempotencyKey });
+
+/** Marks the items and dismantles them with the creature, as the screen does (the answer of the dismantle). */
+export async function markAndDismantle(
+  p: Api,
+  creatureId: string,
+  itemIds: string[],
+): Promise<Json> {
+  const marked = await markItems(p, itemIds);
+  if (marked.status !== 200) return marked;
+  return dismantlePile(p, creatureId, itemIds);
+}
+
+/**
+ * An open timed dismantle job as it was started before 2026-10-27 (the start is refused now, a running job
+ * still finishes): the items are gone from the bag, and the row waits for its claim at `endsAt`.
+ */
+export function seedOldDismantleJob(
+  ctx: CoreContext,
+  userId: string,
+  creatureId: string,
+  items: { baseId: string; rarity: GearRarity; itemLevel: number }[],
+  endsAt: number,
+  extra: Record<string, unknown> = {},
+): string {
+  const id = crypto.randomUUID();
+  ctx.sql.exec(
+    `INSERT INTO workshop_jobs (id, user_id, creature_id, kind, gear_id, input_json, started_at, ends_at)
+     VALUES (?, ?, ?, 'dismantle', NULL, ?, ?, ?)`,
+    id,
+    userId,
+    creatureId,
+    JSON.stringify({ cost: {}, items, level: 1, ...extra }),
+    ctx.clock.t,
+    endsAt,
+  );
+  return id;
+}

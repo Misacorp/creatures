@@ -11,6 +11,7 @@ import type {
   CraftPreview,
   DismantlePreview,
   DismantleRange,
+  MarkResult,
   DismissResult,
   EquipBestResult,
   EquipResult,
@@ -154,6 +155,7 @@ export function isGearItem(value: unknown): value is GearItem {
     isCount(needs['level']) &&
     isNullableStr(needs['role']) &&
     isNullableStr(value['equippedOn']) &&
+    typeof value['markedForDismantle'] === 'boolean' &&
     isDismantleRange(value['dismantle']) &&
     isStr(value['source']) &&
     isInt(value['createdAt']) &&
@@ -198,6 +200,8 @@ function isJobResult(value: unknown): value is JobResult {
         isCount(value['essence']) &&
         isArrayOf(value['learned'], isStr) &&
         (value['tinkered'] === undefined || isCount(value['tinkered'])) &&
+        (value['creatureId'] === undefined || isStr(value['creatureId'])) &&
+        (value['boosted'] === undefined || isCount(value['boosted'])) &&
         isArrayOf(
           value['marked'],
           (m): m is { baseId: string; marks: number } =>
@@ -494,7 +498,7 @@ export function parseCraftPreview(value: unknown): CraftPreview {
   return value as unknown as CraftPreview;
 }
 
-/** `POST /api/workshop/preview` for a dismantle job: the refund range, the time and the blueprint chance. */
+/** `POST /api/workshop/preview` for a pile: the refund range, the Crafting XP, the blueprint chance and the Market Day boost. */
 export function parseDismantlePreview(value: unknown): DismantlePreview {
   if (
     !isRecord(value) ||
@@ -510,14 +514,35 @@ export function parseDismantlePreview(value: unknown): DismantlePreview {
         isCount(i['itemLevel']),
     ) ||
     !isDismantleRange(value['range']) ||
-    !isCount(value['durationMs']) ||
     !isCount(value['xp']) ||
     !isNullableCount(value['learnBp']) ||
-    !isCount(value['teachers'])
+    !isCount(value['teachers']) ||
+    !isCount(value['boosted']) ||
+    !isCount(value['tinkersLuckBp'])
   ) {
     throw new Error('the server returned an unexpected dismantle preview');
   }
   return value as unknown as DismantlePreview;
+}
+
+/** `POST /api/gear/mark`. */
+export function parseMarkResult(value: unknown): MarkResult {
+  if (
+    !isRecord(value) ||
+    !isArrayOf(value['itemIds'], isStr) ||
+    typeof value['marked'] !== 'boolean'
+  ) {
+    throw new Error('the server returned an unexpected mark result');
+  }
+  return { itemIds: value['itemIds'], marked: value['marked'] };
+}
+
+/** `POST /api/gear/dismantle`: the one results screen's result (a dismantle result). */
+export function parseDismantleResult(value: unknown): Extract<JobResult, { kind: 'dismantle' }> {
+  if (!isJobResult(value) || value.kind !== 'dismantle') {
+    throw new Error('the server returned an unexpected dismantle result');
+  }
+  return value;
 }
 
 export function parseStartJobResult(value: unknown): StartJobResult {

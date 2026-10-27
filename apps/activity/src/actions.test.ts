@@ -75,9 +75,6 @@ describe('action names', () => {
     expect(ActionIds.job({ kind: 'craft', creatureId: 'c', blueprintId: 'b', reach: 'none' })).toBe(
       'job:craft:c:b:none',
     );
-    expect(ActionIds.job({ kind: 'dismantle', creatureId: 'c', itemIds: ['i2', 'i1'] })).toBe(
-      'job:dismantle:c:i1,i2',
-    );
     expect(ActionIds.job({ kind: 'supply', creatureId: 'c', supplyId: 's' })).toBe(
       'job:supply:c:s',
     );
@@ -122,8 +119,19 @@ describe('action names', () => {
       ActionIds.job({ ...craft, reach: 'rare' }),
       ActionIds.job({ ...craft, reach: 'epic' }),
       ActionIds.job({ kind: 'supply', creatureId: 'c1', supplyId: 'wave-band' }),
-      ActionIds.job({ kind: 'dismantle', creatureId: 'c1', itemIds: ['a'] }),
-      ActionIds.job({ kind: 'dismantle', creatureId: 'c1', itemIds: ['a', 'b'] }),
+    ];
+    expect(new Set(names).size).toBe(names.length);
+  });
+
+  it('names a pile dismantle by its creature and its items, whatever order they were marked in', () => {
+    expect(ActionIds.dismantlePile('c', ['i2', 'i1'])).toBe('dismantle-pile:c:i1,i2');
+    expect(ActionIds.dismantlePile('c', ['i1', 'i2'])).toBe(
+      ActionIds.dismantlePile('c', ['i2', 'i1']),
+    );
+    const names = [
+      ActionIds.dismantlePile('c1', ['a']),
+      ActionIds.dismantlePile('c1', ['a', 'b']),
+      ActionIds.dismantlePile('c2', ['a']),
     ];
     expect(new Set(names).size).toBe(names.length);
   });

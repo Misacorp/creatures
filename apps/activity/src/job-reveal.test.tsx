@@ -133,6 +133,42 @@ describe('a claimed dismantle', () => {
     expect(visibleText(first(byClass(p.root, 'jr-row')))).toContain('Nothing');
   });
 
+  it("is the one results screen of a pile: every item, the totals, blueprints, Tinker's luck, and only the Crafting XP with its level up", () => {
+    const pile = dismantle({
+      items: Array.from({ length: 23 }, (_, i) => ({
+        baseId: i % 2 === 0 ? 'kelp-cap' : 'trail-cap',
+        rarity: 'common' as const,
+        itemLevel: 2,
+      })),
+      parts: { scrap: 61, 'ember-shard': 2, glimmer: 1 },
+      essence: 14,
+      learned: ['kelp-cap'],
+      marked: [{ baseId: 'trail-cap', marks: 4 }],
+      tinkered: 3,
+      creatureId: 'worker',
+      boosted: 2,
+      xp: 30,
+      skillXp: 260,
+      skillLevel: 3,
+      leveledUp: true,
+    });
+    delete (pile as { experience?: unknown }).experience;
+    const p = draw(pile);
+    const row = first(byClass(p.root, 'jr-row'));
+    expect(byClass(first(byClass(row, 'jr-items')), 'item-frame')).toHaveLength(23);
+    // Totals as count badges: scrap, shards, glimmer, Essence.
+    expect(byClass(row, 'part-count').map((b) => visibleText(b))).toEqual(['61', '2', '1', '14']);
+    const text = visibleText(p.root);
+    expect(text).toContain('Blueprint');
+    expect(text).toContain("Tinker's luck: 3 items gave back their full craft cost.");
+    // The worker is named by the result itself (a pile pays no creature experience): one XP row, Crafting.
+    expect(visibleText(first(byClass(p.root, 'jr-who')))).toBe('Cindle');
+    const list = first(byClass(p.root, 'xp-list'));
+    expect(byClass(list, 'xp-label').map((e) => visibleText(e))).toEqual(['Crafting']);
+    expect(byClass(list, 'xp-plus').map((e) => visibleText(e))).toEqual(['+30']);
+    expect(byClass(list, 'xp-up')).toHaveLength(1);
+  });
+
   it('shows who did the work and two XP rows, the Crafting one in its own colour', () => {
     const p = draw(dismantle());
     const who = first(byClass(p.root, 'jr-who'));

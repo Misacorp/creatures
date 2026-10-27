@@ -1674,17 +1674,14 @@ describe('privacy', () => {
           level: 4,
           now: ctx.clock.t,
         });
-        const taking = await call(ctx, a.secret, 'POST', '/api/workshop/jobs', {
-          kind: 'dismantle',
+        const marking = await call(ctx, a.secret, 'POST', '/api/gear/mark', {
+          itemIds: [rare],
+          marked: true,
+        });
+        expect(marking.status).toBe(200);
+        const taken = await call(ctx, a.secret, 'POST', '/api/gear/dismantle', {
           creatureId: a.starterId,
           itemIds: [rare],
-          idempotencyKey: newKey(),
-        });
-        expect(taking.status).toBe(200);
-        ctx.clock.t += 2 * HOUR;
-        a.secret = await ctx.core.createSession(ctx.guildId, USER, '555555555555555555');
-        const takenJob = (taking.body['result'] as { jobId: string }).jobId;
-        const taken = await call(ctx, a.secret, 'POST', `/api/workshop/jobs/${takenJob}/claim`, {
           idempotencyKey: newKey(),
         });
         expect(taken.status).toBe(200);

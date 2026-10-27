@@ -253,10 +253,15 @@ const ERROR_TEXT: Record<string, string> = {
   item_level_too_high: 'That item is higher level than that creature.',
   gear_upgrade_removed: 'Gear is not upgraded any more. Use the new items instead.',
   job_kind_removed: 'That kind of job is not in the Workshop any more.',
-  dismantle_is_a_job:
-    'Dismantling is a Workshop job now. Pick the items and a creature in the Workshop.',
+  dismantle_is_a_job: 'Mark the items in the Workshop, then pick a creature to dismantle them.',
+  dismantle_job_removed:
+    'Dismantling is not a timed job any more. Mark the items in the Workshop and dismantle them at once.',
+  invalid_items: 'An item cannot repeat in the pile.',
   invalid_bundle:
     'Up to 5 Commons can go in one dismantle job; anything rarer goes alone, and an item cannot repeat.',
+  item_worn: 'A worn item cannot be dismantled. Take it off first.',
+  item_in_job: 'That item is in a Workshop job. Claim the job first.',
+  marks_changed: 'The items you marked changed. Look at the list again.',
   insufficient_essence: 'You do not have enough Essence for that.',
   gear_conversion_pending:
     'Your old gear is still being converted to the new gear. Try again in a little while.',

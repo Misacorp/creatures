@@ -19,7 +19,7 @@ import {
 } from '@creatures/engine';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { grantDungeonRun } from '../src/gear-grants';
-import { giveItem } from './gear-helpers';
+import { giveItem, markAndDismantle } from './gear-helpers';
 import { drawSeed } from '../src/raid-resolve';
 import type { RunState } from '../src/dungeon-state';
 import {
@@ -1844,16 +1844,7 @@ describe('gear in the dungeon', () => {
         await p.call('POST', `/api/gear/${item}/equip`, { creatureId: null });
         const other = give(ctx, p.id, 'kelp-cap', 'other');
         await p.call('POST', `/api/gear/${other}/equip`, { creatureId: p.creatureIds[0] });
-        expect(
-          (
-            await p.call('POST', '/api/workshop/jobs', {
-              kind: 'dismantle',
-              creatureId: p.creatureIds[1],
-              itemIds: [item],
-              idempotencyKey: newKey(),
-            })
-          ).status,
-        ).toBe(200);
+        expect((await markAndDismantle(p, p.creatureIds[1] as string, [item])).status).toBe(200);
         // The stored fights, the state, the replay and the summary are exactly what they were.
         expect(fightSteps(ctx, run.id)).toEqual(before);
         expect(storedRuns(ctx, p.id)[0]?.state_json).toBe(stateBefore);

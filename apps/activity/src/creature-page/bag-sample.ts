@@ -157,6 +157,7 @@ export function sampleItem(
       role: ['guard', 'support', 'setter', 'payoff'].includes(tag) ? tag : null,
     },
     equippedOn: null,
+    markedForDismantle: false,
     dismantle: {
       scrap: { min: 1, max: 3 },
       shards: { min: 0, max: 1, element: null },

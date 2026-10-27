@@ -67,9 +67,9 @@
   },
   {
     "route": "POST /api/workshop/jobs",
-    "status": 409,
+    "status": 410,
     "body": {
-      "error": "key_conflict"
+      "error": "dismantle_job_removed"
     }
   },
   {
@@ -80,11 +80,24 @@
     }
   },
   {
-    "route": "POST /api/workshop/jobs",
-    "status": 400,
+    "route": "POST /api/gear/mark",
+    "status": 409,
     "body": {
-      "error": "invalid_bundle",
-      "reason": "mixed"
+      "error": "item_worn"
+    }
+  },
+  {
+    "route": "POST /api/gear/dismantle",
+    "status": 409,
+    "body": {
+      "error": "marks_changed"
+    }
+  },
+  {
+    "route": "POST /api/gear/dismantle",
+    "status": 409,
+    "body": {
+      "error": "key_conflict"
     }
   },
   {

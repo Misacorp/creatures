@@ -29,6 +29,8 @@ function setup(ids: string[] = ['key-1', 'key-2', 'key-3']) {
   const server = {
     equipGear: vi.fn(),
     equipBestGear: vi.fn(),
+    markGear: vi.fn(),
+    dismantlePile: vi.fn(),
     dismissGearNotice: vi.fn(),
     startJob: vi.fn(),
     claimJob: vi.fn(),
@@ -45,7 +47,11 @@ function setup(ids: string[] = ['key-1', 'key-2', 'key-3']) {
 }
 
 describe('gear actions', () => {
-  const dismantle = { kind: 'dismantle', creatureId: 'c1', itemIds: ['g'] } as const;
+  const dismantle = {
+    kind: 'supply',
+    creatureId: 'c1',
+    supplyId: 'trail-snack',
+  } as const;
 
   it('applies the gear view and the collection of an answer and returns the result', async () => {
     const { actions, server, applied, answer } = setup();
@@ -76,7 +82,7 @@ describe('gear actions', () => {
       .mockResolvedValue(answer({ jobId: 'j' }));
     await actions.startJob(dismantle); // network error: unknown outcome
     await actions.startJob(dismantle); // retry: same key, succeeds
-    await actions.startJob(dismantle); // next dismantle: a new key, refused
+    await actions.startJob(dismantle); // next job: a new key, refused
     await actions.startJob(dismantle); // refused is definite: a new key again
     const keysSent = server.startJob.mock.calls.map(
       (call) => (call[0] as Record<string, unknown>)['idempotencyKey'],
@@ -124,6 +130,38 @@ describe('gear actions', () => {
     expect(server.previewCraft).toHaveBeenCalledWith('c1', 'kelp-cap');
     expect(server.previewDismantle).toHaveBeenCalledWith('c1', ['a', 'b']);
     expect(applied).toEqual([]);
+  });
+
+  it('marks and unmarks items without a key, and applies the answer', async () => {
+    const { actions, server, applied, answer } = setup();
+    server.markGear.mockResolvedValue(answer({ itemIds: ['a', 'b'], marked: true }));
+    expect(await actions.mark(['a', 'b'], true)).toEqual({ itemIds: ['a', 'b'], marked: true });
+    await actions.mark(['a'], false);
+    expect(server.markGear.mock.calls).toEqual([
+      [['a', 'b'], true],
+      [['a'], false],
+    ]);
+    expect(applied).toHaveLength(2);
+  });
+
+  it('dismantles the pile with a key per pile: kept after an unknown outcome, new after a definite answer', async () => {
+    const { actions, server, answer } = setup();
+    server.dismantlePile
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce(answer({ kind: 'dismantle' }))
+      .mockRejectedValueOnce(new ApiError(409, 'marks_changed'))
+      .mockResolvedValue(answer({ kind: 'dismantle' }));
+    await actions.dismantlePile('c1', ['b', 'a']); // network error: unknown outcome
+    await actions.dismantlePile('c1', ['a', 'b']); // the same pile in another order: same key
+    await actions.dismantlePile('c1', ['a', 'b']); // refused: a definite answer
+    await actions.dismantlePile('c1', ['a', 'b']); // a new key
+    expect(server.dismantlePile.mock.calls.map((c) => c[2] as string)).toEqual([
+      'key-1',
+      'key-1',
+      'key-2',
+      'key-3',
+    ]);
+    expect(server.dismantlePile.mock.calls[0]?.slice(0, 2)).toEqual(['c1', ['b', 'a']]);
   });
 
   it('equips without a key, and takes off with null', async () => {
