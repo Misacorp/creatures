@@ -1,24 +1,31 @@
-import { useState } from 'preact/hooks';
+import { useRef, useState } from 'preact/hooks';
 import type { GameState } from './api';
 import { Blueprints } from './Blueprints';
 import type { GearActions } from './gear-actions';
 import { PartsRow } from './GearArt';
-import type { GearState, JobResult } from './gear-types';
+import type { GearItem, GearState, JobResult } from './gear-types';
 import {
+  PRESET_LEVEL,
   bagFull,
   bagText,
+  belowLevelToMark,
+  commonsToMark,
   jobResultRarity,
+  markedItems,
   noticeLines,
   sortItems,
   unequippedReason,
 } from './gear-view';
 import { GlossaryTag } from './Glossary';
+import { DismantleDrawer } from './DismantleDrawer';
+import { SelectBar, SelectTools } from './DismantleSelect';
 import { InventoryGrid } from './InventoryGrid';
 import { gearName } from './gear-view';
 import { ItemDetail } from './ItemDetail';
 import { JobReveal } from './JobReveal';
 import { JobSlots } from './JobSlots';
 import { SupplyCrafting } from './SupplyCrafting';
+import { useMarks } from './use-marks';
 import { Accordion } from './ui/Accordion';
 import { Drawer } from './ui/Drawer';
 import { flipOver } from './ui/flip-logic';
@@ -67,6 +74,13 @@ export function Workshop({
   // The item's "Equip on" list is shown inside the drawer: flipping is paused while it is (no arrows, swipe or
   // keys), so nothing acts on the item behind it. The drawer keeps its structure, so the item's state survives.
   const [drilling, setDrilling] = useState(false);
+  // The bag's selection mode (2026-10-27): a tap toggles an item's mark; "Dismantle" in the bar picks the
+  // creature and confirms. `pile` is the marked items the confirmation shows (the drawer is open while set).
+  const [selecting, setSelecting] = useState(false);
+  const [pile, setPile] = useState<GearItem[] | null>(null);
+  const [hint, setHint] = useState<string | null>(null);
+  const dismantleButton = useRef<HTMLButtonElement | null>(null);
+  const marks = useMarks(actions.mark);
   if (gear === null) {
     return failed ? (
       <section class="ws-section">
@@ -80,6 +94,20 @@ export function Workshop({
     );
   }
   const selected = gear.items.find((i) => i.id === selectedId) ?? null;
+  // What the bag shows: the server's items, each with the player's latest tap on its mark.
+  const shown = gear.items.map((i) =>
+    marks.isMarked(i) === i.markedForDismantle
+      ? i
+      : { ...i, markedForDismantle: marks.isMarked(i) },
+  );
+  const marked = markedItems(shown);
+  const mark = (items: readonly GearItem[], on: boolean): void => {
+    setHint(null);
+    marks.set(
+      items.map((i) => i.id),
+      on,
+    );
+  };
   // The drawer flips through the bag's items in the grid's order.
   const ordered = sortItems(gear.items);
   const itemFlip = flipOver({
@@ -171,6 +199,27 @@ export function Workshop({
             Bag: {bagText(gear.inventory)}
           </span>
         </div>
+        {gear.items.length > 0 && (
+          <SelectTools
+            selecting={selecting}
+            onToggle={() => {
+              setHint(null);
+              setSelecting(!selecting);
+            }}
+            commons={commonsToMark(shown).length}
+            below={belowLevelToMark(shown, PRESET_LEVEL).length}
+            marked={marked.length}
+            onCommons={() => {
+              mark(commonsToMark(shown), true);
+            }}
+            onBelow={() => {
+              mark(belowLevelToMark(shown, PRESET_LEVEL), true);
+            }}
+            onClear={() => {
+              mark(marked, false);
+            }}
+          />
+        )}
         {bagFull(gear.inventory) && (
           <Alert level="warning">Gear you find becomes parts until the bag has room.</Alert>
         )}
@@ -178,12 +227,56 @@ export function Workshop({
           <p class="empty muted">Your bag is empty.</p>
         ) : (
           <InventoryGrid
-            items={gear.items}
+            items={shown}
             creatures={state.creatures}
             selectedId={selected?.id ?? null}
+            mode={selecting ? 'mark' : 'view'}
             onSelect={(id) => {
               setFlipped(false);
               setSelectedId(id === selectedId ? null : id);
+            }}
+            onToggle={(item) => {
+              mark([item], !item.markedForDismantle);
+            }}
+            onRefuse={() => {
+              setHint('Worn items cannot be marked. Take it off first.');
+            }}
+          />
+        )}
+        {selecting && (
+          <SelectBar
+            count={marked.length}
+            hint={hint}
+            disabled={busy || marks.pending}
+            buttonRef={dismantleButton}
+            onDismantle={() => {
+              setHint(null);
+              setPile(marked);
+            }}
+          />
+        )}
+        {pile !== null && (
+          <DismantleDrawer
+            items={pile}
+            gear={gear}
+            creatures={state.creatures}
+            busy={busy}
+            error={error}
+            returnFocusTo={dismantleButton.current}
+            loadPreview={actions.previewDismantle}
+            onConfirm={async (creatureId) => {
+              const result = await actions.dismantlePile(
+                creatureId,
+                pile.map((i) => i.id),
+              );
+              if (result === undefined) return false;
+              setPile(null);
+              setSelecting(false);
+              onClaimed(result);
+              return true;
+            }}
+            onClose={() => {
+              setPile(null);
             }}
           />
         )}
@@ -202,16 +295,11 @@ export function Workshop({
               <ItemDetail
                 key={selected.id}
                 item={selected}
-                gear={gear}
                 creatures={state.creatures}
                 busy={busy}
                 actions={actions}
-                error={error}
                 focusName={!flipped}
                 onDrill={setDrilling}
-                onGone={() => {
-                  setSelectedId(null);
-                }}
               />
             </FlipArea>
           )}

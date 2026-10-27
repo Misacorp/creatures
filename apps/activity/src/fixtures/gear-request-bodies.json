@@ -60,14 +60,21 @@
       "itemIds": ["00000000-0000-4000-8500-000000000006"]
     }
   },
-  "job-dismantle": {
-    "path": "/api/workshop/jobs",
+  "dismantle-pile": {
+    "path": "/api/gear/dismantle",
     "method": "POST",
     "body": {
-      "kind": "dismantle",
       "creatureId": "00000000-0000-4000-8500-000000000004",
       "itemIds": ["00000000-0000-4000-8500-000000000006"],
       "idempotencyKey": "fixture-00000009-key"
+    }
+  },
+  "mark": {
+    "path": "/api/gear/mark",
+    "method": "POST",
+    "body": {
+      "itemIds": ["00000000-0000-4000-8500-000000000011"],
+      "marked": true
     }
   },
   "job-craft-reach": {

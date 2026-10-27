@@ -24,6 +24,8 @@ export interface GearDeps {
     typeof api,
     | 'equipGear'
     | 'equipBestGear'
+    | 'markGear'
+    | 'dismantlePile'
     | 'dismissGearNotice'
     | 'startJob'
     | 'claimJob'
@@ -50,6 +52,16 @@ export function createGearActions(deps: GearDeps) {
     /** The best item for every slot of these creatures (one or a team); the server picks. */
     equipBest: (creatureIds: readonly string[]): Promise<EquipBestResult | undefined> =>
       applied(deps.run(() => server.equipBestGear(creatureIds))),
+    /** Marks items for dismantling, or unmarks them (`marked` false). The server refuses worn items. */
+    mark: (itemIds: readonly string[], marked: boolean) =>
+      applied(deps.run(() => server.markGear(itemIds, marked))),
+    /** Dismantles the marked pile with a free creature: the items the confirmation showed, all at once. */
+    dismantlePile: (creatureId: string, itemIds: readonly string[]) =>
+      applied(
+        deps.runKeyed(ActionIds.dismantlePile(creatureId, itemIds), (key) =>
+          server.dismantlePile(creatureId, itemIds, key),
+        ),
+      ),
     /** Closes the one-time card about the switch to gear v2. */
     dismissNotice: () => applied(deps.run(() => server.dismissGearNotice())),
     startJob: (request: JobStart) =>

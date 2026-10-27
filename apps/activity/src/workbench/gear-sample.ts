@@ -43,6 +43,7 @@ export function sampleGearItem(piece: {
     lines: itemLines(rolled).map((l) => ({ ...l, active: null })),
     needs: { level: 1, role: null },
     equippedOn: null,
+    markedForDismantle: false,
     dismantle: {
       scrap: { min: 0, max: 0 },
       shards: { min: 0, max: 0, element: null },

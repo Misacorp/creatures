@@ -13,7 +13,9 @@ import {
   parseEquipBestResult,
   parseEquipResult,
   parseGearState,
+  parseDismantleResult,
   parseJobResult,
+  parseMarkResult,
   parseStartJobResult,
 } from './gear-parse';
 import type {
@@ -24,6 +26,7 @@ import type {
   EquipResult,
   GearState,
   JobResult,
+  MarkResult,
   StartJobRequest,
   StartJobResult,
 } from './gear-types';
@@ -106,6 +109,35 @@ export async function previewDismantle(
     jsonRequest('POST', { kind: 'dismantle', creatureId, itemIds }),
   );
   return parseDismantlePreview(isRecord(data) ? data['result'] : undefined);
+}
+
+/** Marks items for dismantling, or unmarks them. Repeats change nothing, so it needs no key. */
+export async function markGear(
+  itemIds: readonly string[],
+  marked: boolean,
+): Promise<GearAction<MarkResult>> {
+  return action(
+    await apiFetch('/api/gear/mark', jsonRequest('POST', { itemIds, marked })),
+    parseMarkResult,
+  );
+}
+
+/**
+ * Dismantles the marked pile with one free creature. The request names the exact items the confirmation
+ * showed; the server takes nothing (409) when the marked set is not exactly those. Carries a key.
+ */
+export async function dismantlePile(
+  creatureId: string,
+  itemIds: readonly string[],
+  idempotencyKey: string,
+): Promise<GearAction<Extract<JobResult, { kind: 'dismantle' }>>> {
+  return action(
+    await apiFetch(
+      '/api/gear/dismantle',
+      jsonRequest('POST', { creatureId, itemIds, idempotencyKey }),
+    ),
+    parseDismantleResult,
+  );
 }
 
 export async function startJob(request: StartJobRequest): Promise<GearAction<StartJobResult>> {

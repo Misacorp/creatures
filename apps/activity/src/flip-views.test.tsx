@@ -297,6 +297,8 @@ describe('the creature page flips through the list it came from', () => {
 const gearActions = {
   equip: vi.fn(() => Promise.resolve(undefined)),
   equipBest: () => Promise.resolve(undefined),
+  mark: () => Promise.resolve(undefined),
+  dismantlePile: () => Promise.resolve(undefined),
   dismissNotice: () => Promise.resolve(undefined),
   startJob: () => Promise.resolve(undefined),
   previewCraft: () => new Promise(() => undefined),
@@ -450,20 +452,20 @@ describe('the Workshop item drawer flips through the bag in the grid order', () 
     expect(gearActions.equip).not.toHaveBeenCalled();
   });
 
-  it('pauses the flipping while the dismantle wizard is shown, and Back returns to the same item with the arrows', () => {
+  it('pauses the flipping while the Equip on list is shown, and Back returns to the same item with the arrows', () => {
     const p = drawWorkshop();
     p.click(cells(p)[0] as FakeElement);
     const shownId = (): string | null =>
       byClass(dialog(p), 'item-detail')[0]?.getAttribute('aria-labelledby') ?? null;
     const before = shownId();
-    p.click(first(byName(dialog(p), 'button', 'Dismantle')));
-    expect(byClass(dialog(p), 'dismantle-items')).toHaveLength(1);
+    p.click(first(byClass(dialog(p), 'equip-trigger')));
+    expect(byClass(dialog(p), 'equip-view')).toHaveLength(1);
     expect(byClass(dialog(p), 'flip-nav')).toHaveLength(0);
     p.click(first(byName(dialog(p), 'button', /^‹ Back/)));
-    expect(byClass(dialog(p), 'dismantle-items')).toHaveLength(0);
+    expect(byClass(dialog(p), 'equip-view')).toHaveLength(0);
     expect(shownId()).toBe(before);
     expect(byClass(dialog(p), 'flip-nav')).toHaveLength(1);
-    expect(byName(dialog(p), 'button', 'Dismantle')).toHaveLength(1);
+    expect(byName(dialog(p), 'button', 'Mark for dismantling')).toHaveLength(1);
   });
 
   it('keeps the focus on the arrow that was pressed instead of moving it to the new name', () => {

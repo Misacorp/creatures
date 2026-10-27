@@ -1,6 +1,25 @@
 {
   "result": {
-    "jobId": "00000000-0000-4000-8500-000000000016"
+    "kind": "dismantle",
+    "items": [
+      {
+        "baseId": "festival-hearth-scarf",
+        "rarity": "common",
+        "itemLevel": 6
+      }
+    ],
+    "parts": {
+      "scrap": 2
+    },
+    "essence": 0,
+    "learned": [],
+    "marked": [],
+    "creatureId": "00000000-0000-4000-8500-000000000004",
+    "boosted": 0,
+    "xp": 6,
+    "skillXp": 42,
+    "skillLevel": 1,
+    "leveledUp": false
   },
   "gear": {
     "serverNow": 1799744402000,
@@ -54,6 +73,7 @@
           "role": null
         },
         "equippedOn": "00000000-0000-4000-8500-000000000003",
+        "markedForDismantle": false,
         "dismantle": {
           "scrap": {
             "min": 2,
@@ -118,6 +138,7 @@
           "role": null
         },
         "equippedOn": "00000000-0000-4000-8500-000000000002",
+        "markedForDismantle": false,
         "dismantle": {
           "scrap": {
             "min": 1,
@@ -214,6 +235,7 @@
           "role": null
         },
         "equippedOn": "00000000-0000-4000-8500-000000000002",
+        "markedForDismantle": false,
         "dismantle": {
           "scrap": {
             "min": 3,
@@ -289,6 +311,7 @@
           "role": null
         },
         "equippedOn": "00000000-0000-4000-8500-000000000002",
+        "markedForDismantle": false,
         "dismantle": {
           "scrap": {
             "min": 3,
@@ -362,6 +385,7 @@
           "role": "guard"
         },
         "equippedOn": "00000000-0000-4000-8500-000000000003",
+        "markedForDismantle": false,
         "dismantle": {
           "scrap": {
             "min": 3,
@@ -435,6 +459,7 @@
           "role": null
         },
         "equippedOn": null,
+        "markedForDismantle": false,
         "dismantle": {
           "scrap": {
             "min": 3,
@@ -510,6 +535,7 @@
           "role": null
         },
         "equippedOn": null,
+        "markedForDismantle": false,
         "dismantle": {
           "scrap": {
             "min": 3,
@@ -574,6 +600,7 @@
           "role": null
         },
         "equippedOn": null,
+        "markedForDismantle": false,
         "dismantle": {
           "scrap": {
             "min": 1,
@@ -610,7 +637,7 @@
       "charm": 13
     },
     "parts": {
-      "scrap": 70,
+      "scrap": 72,
       "tide-shard": 3,
       "ember-shard": 4,
       "grove-shard": 0,
@@ -639,28 +666,6 @@
       }
     ],
     "jobs": [
-      {
-        "id": "00000000-0000-4000-8500-000000000016",
-        "creatureId": "00000000-0000-4000-8500-000000000004",
-        "kind": "dismantle",
-        "input": {
-          "items": [
-            {
-              "baseId": "festival-hearth-scarf",
-              "rarity": "common",
-              "itemLevel": 6
-            }
-          ]
-        },
-        "cost": {},
-        "bait": 0,
-        "treat": false,
-        "startedAt": 1799744402000,
-        "endsAt": 1799745302000,
-        "status": "running",
-        "claimedAt": null,
-        "result": null
-      },
       {
         "id": "00000000-0000-4000-8500-000000000012",
         "creatureId": "00000000-0000-4000-8500-000000000004",
@@ -732,7 +737,7 @@
     ],
     "slots": {
       "total": 2,
-      "used": 1
+      "used": 0
     },
     "skills": [
       {
@@ -749,7 +754,7 @@
       },
       {
         "creatureId": "00000000-0000-4000-8500-000000000004",
-        "xp": 36,
+        "xp": 42,
         "level": 1,
         "nextLevelXp": 100
       }
@@ -1067,10 +1072,7 @@
         },
         "dodgeBp": 0,
         "gear": [],
-        "busy": {
-          "kind": "job",
-          "id": "00000000-0000-4000-8500-000000000016"
-        },
+        "busy": null,
         "ability": {
           "id": "static-zap",
           "unlocked": false,

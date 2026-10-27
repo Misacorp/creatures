@@ -29,6 +29,8 @@ const NO_ACTIONS: CardActions = {
 const NO_JOB_ACTIONS: GearActions = {
   equip: () => Promise.resolve(undefined),
   equipBest: () => Promise.resolve(undefined),
+  mark: () => Promise.resolve(undefined),
+  dismantlePile: () => Promise.resolve(undefined),
   dismissNotice: () => Promise.resolve(undefined),
   startJob: () => Promise.resolve(undefined),
   previewCraft: () => new Promise(() => undefined),

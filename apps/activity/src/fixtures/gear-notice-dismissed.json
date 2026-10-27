@@ -65,6 +65,7 @@
           "role": null
         },
         "equippedOn": "00000000-0000-4000-8500-000000000018",
+        "markedForDismantle": false,
         "dismantle": {
           "scrap": {
             "min": 2,
@@ -153,6 +154,7 @@
           "role": null
         },
         "equippedOn": "00000000-0000-4000-8500-000000000020",
+        "markedForDismantle": false,
         "dismantle": {
           "scrap": {
             "min": 2,
@@ -217,6 +219,7 @@
           "role": null
         },
         "equippedOn": null,
+        "markedForDismantle": false,
         "dismantle": {
           "scrap": {
             "min": 1,
