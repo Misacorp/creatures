@@ -34,7 +34,7 @@ Numbers live only in data (`packages/lab/src/rules.ts`, content JSON), never in 
 4. **Decide.** The lead folds what is clearly right into the proposal and the data, and puts choices that trade against a principle to Misa as questions.
 5. **Test the feel.** The staging lab page, `creatures-staging.misacorp.dev/combat-lab.html` (DEV panel, "Combat lab"): set up a fight, run it, read the log, share the address. Later: the port to the engine behind a flag, then a labelled experimental season (see the proposal, "Testing plan").
 
-The **wiki page**, `creatures.misacorp.dev/wiki.html` (staging too; not linked from the game), lists every creature with its Knacks and talents, the current talents and the draft's Knacks, talents, keywords and families, as linked entries. It is generated from the data on every build, so it follows the lab's data without any edit (`apps/activity/src/wiki/`).
+The **wiki page**, `creatures.misacorp.dev/wiki.html` (staging too; not linked from the game), lists every creature with its Knacks and talents, the current talents and the draft's Knacks, talents, keywords and families, as linked entries, with creature pictures and a hover card on every link. It is generated from the data on every build, so it follows the lab's data without any edit (`apps/activity/src/wiki/`).
 
 Balance stance (principle P-10): strong combos may stand out. We look for outliers, not averages, and we answer a dominant build with a counter card in the rotation before we nerf it.
 
