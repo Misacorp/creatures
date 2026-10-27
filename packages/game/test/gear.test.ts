@@ -23,6 +23,8 @@ import {
   dismantleLearnBp,
   dismantleRange,
   dismantleXp,
+  pileDismantleXp,
+  pileOrder,
   reachMinLevel,
   rollCraftItem,
   rollCraftRarity,
@@ -2103,5 +2105,40 @@ describe('the day modifiers hook (Market Day, built by the Boons step)', () => {
     expect(top.parts['ember-shard']).toBe(range.shards.max);
     expect(top.parts.glimmer).toBe(range.glimmer.max);
     expect(top.essence).toBe(range.essence.max);
+  });
+
+  it('can roll the top of the first items of a pile only', () => {
+    const items = [
+      { baseId: 'coal-warm-cap', rarity: 'epic' as const, itemLevel: 12 },
+      { baseId: 'coal-warm-cap', rarity: 'epic' as const, itemLevel: 12 },
+    ];
+    const range = dismantleRange([items[0] as (typeof items)[number]]);
+    const rolled = rollDismantle(createSeededRng('pile'), items, { dismantleTopItems: 1 });
+    const first = rollDismantle(createSeededRng('pile'), items, { dismantleTopItems: 2 });
+    // Two boosted items give twice the top; one boosted item gives less than that (the second rolls a range).
+    expect(first.essence).toBe(range.essence.max * 2);
+    expect(rolled.essence).toBeGreaterThanOrEqual(range.essence.max + range.essence.min);
+    expect(rolled.essence).toBeLessThanOrEqual(range.essence.max * 2);
+  });
+
+  it('orders a pile by rarity, then item level, keeping the given order for ties', () => {
+    const pile = [
+      { id: 'a', rarity: 'common' as const, itemLevel: 20 },
+      { id: 'b', rarity: 'rare' as const, itemLevel: 4 },
+      { id: 'c', rarity: 'epic' as const, itemLevel: 2 },
+      { id: 'd', rarity: 'rare' as const, itemLevel: 9 },
+      { id: 'e', rarity: 'rare' as const, itemLevel: 9 },
+    ];
+    expect(pileOrder(pile).map((i) => i.id)).toEqual(['c', 'd', 'e', 'b', 'a']);
+  });
+
+  it('pays a pile the Crafting XP its old timed jobs would have: 6 per 5 Commons, 12 a Rare, 24 an Epic', () => {
+    expect(pileDismantleXp([])).toBe(0);
+    expect(pileDismantleXp(['common'])).toBe(6);
+    expect(pileDismantleXp(Array<'common'>(5).fill('common'))).toBe(6);
+    expect(pileDismantleXp(Array<'common'>(6).fill('common'))).toBe(12);
+    expect(pileDismantleXp(['common', 'common', 'rare', 'epic'])).toBe(6 + 12 + 24);
+    // Apprentice adds its share once, to the total.
+    expect(pileDismantleXp(['rare', 'epic'], 1_000)).toBe(Math.floor((36 * 11_000) / 10_000));
   });
 });

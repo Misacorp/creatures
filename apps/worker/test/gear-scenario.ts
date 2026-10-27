@@ -10,7 +10,7 @@ import { convertPendingGear } from '../src/gear-convert';
 import { grantFestivalGear, grantRaidFinale } from '../src/gear-grants';
 import { creditParts } from '../src/gear-store';
 import { createRecorder, type Captured } from './fixture-contract';
-import { giveItem } from './gear-helpers';
+import { giveItem, seedOldDismantleJob } from './gear-helpers';
 import type { CoreContext } from './helpers';
 import { seedPlayer } from './raid-helpers';
 import { HOUR, newKey, type Json, sessionCaller, give as giveFunds, setCreature } from './kit';
@@ -185,30 +185,42 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
     creatureId: cindle,
     blueprintId: 'kelp-cap',
   });
-  // Dismantle the Festival piece in a Workshop job (2 hours), claim it, and look at the state again.
+  // Mark the Festival piece for dismantling, ask what the pile would give, and dismantle it with the Guard
+  // (one free creature, all at once). Then mark another piece and leave it marked, so the state shows it.
   const festive = (
     (out.responses['gear-loaded'] as { items: { id: string; festival: boolean }[] }).items.find(
       (i) => i.festival,
     ) as { id: string }
   ).id;
+  // (Equip best may have put it on someone: a worn item cannot be marked, so it comes off first.)
+  await call('POST', `/api/gear/${festive}/equip`, { creatureId: null });
+  await call('POST', '/api/gear/mark', { itemIds: [festive], marked: true });
   await record('preview-dismantle', 'POST', '/api/workshop/preview', {
     kind: 'dismantle',
     creatureId: zipmouse,
     itemIds: [festive],
   });
-  const taking = await record('job-start-dismantle', 'POST', '/api/workshop/jobs', {
-    kind: 'dismantle',
+  await record('dismantle-pile', 'POST', '/api/gear/dismantle', {
     creatureId: zipmouse,
     itemIds: [festive],
     idempotencyKey: newKey('fixture'),
   });
-  ctx.clock.t += 2 * HOUR + 1000;
-  await record(
-    'job-claim-dismantle',
-    'POST',
-    `/api/workshop/jobs/${(taking.body['result'] as { jobId: string }).jobId}/claim`,
-    { idempotencyKey: newKey('fixture') },
+  await record('gear-mark', 'POST', '/api/gear/mark', { itemIds: [high], marked: true });
+  // A timed dismantle job from before 2026-10-27 still running finishes and is claimed as before.
+  const oldDismantle = seedOldDismantleJob(
+    ctx,
+    seeded.id,
+    sproutle,
+    [
+      { baseId: 'kelp-cap', rarity: 'common', itemLevel: 1 },
+      { baseId: 'kelp-cap', rarity: 'common', itemLevel: 1 },
+    ],
+    ctx.clock.t + 15 * 60_000,
   );
+  ctx.clock.t += 15 * 60_000 + 1000;
+  await record('job-claim-dismantle', 'POST', `/api/workshop/jobs/${oldDismantle}/claim`, {
+    idempotencyKey: newKey('fixture'),
+  });
   // One more craft left running, so the final state has a running job beside the claimed ones: a
   // Reach for a Rare (it asks for Crafting level 3 and Essence).
   ctx.sql.exec(
@@ -235,26 +247,13 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
     blueprintId: 'trail-cap',
     idempotencyKey: newKey('fixture'),
   }); // blueprint not learned
-  const reused = newKey('fixture');
-  const kitJob = await call('POST', '/api/workshop/jobs', {
-    kind: 'dismantle',
-    creatureId: zipmouse,
-    itemIds: [kit],
-    idempotencyKey: reused,
-  });
+  // The timed dismantle job is gone: an old client gets a clear answer, and nothing is taken.
   await refuse('POST', '/api/workshop/jobs', {
     kind: 'dismantle',
     creatureId: zipmouse,
-    itemIds: [hat],
-    idempotencyKey: reused,
-  }); // the key of another action
-  // The kit's job (15 minutes) is claimed, so the creature and the slot are free again.
-  ctx.clock.t += 15 * 60_000 + 1000;
-  await call(
-    'POST',
-    `/api/workshop/jobs/${((kitJob.body['result'] ?? {}) as { jobId?: string }).jobId ?? ''}/claim`,
-    { idempotencyKey: newKey('fixture') },
-  );
+    itemIds: [kit],
+    idempotencyKey: newKey('fixture'),
+  });
   await refuse('POST', '/api/workshop/jobs', {
     kind: 'craft',
     creatureId: zipmouse,
@@ -262,13 +261,27 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
     reach: 'epic',
     idempotencyKey: newKey('fixture'),
   }); // the Crafting level is too low for a Reach for Epic
-  await refuse('POST', '/api/workshop/jobs', {
-    kind: 'dismantle',
+  // Marking and the pile: a worn item cannot be marked, and the pile must be exactly the marked items.
+  await refuse('POST', '/api/gear/mark', { itemIds: [hat], marked: true });
+  const spare = give('trail-cap', 'common', 1, 'fixture-spare');
+  await refuse('POST', '/api/gear/dismantle', {
     creatureId: zipmouse,
-    itemIds: [hat, bell],
+    itemIds: [spare],
     idempotencyKey: newKey('fixture'),
-  }); // an Epic and a Rare cannot share a job
-  await refuse('POST', `/api/gear/${hat}/dismantle`, { idempotencyKey: newKey('fixture') }); // dismantling is a job now
+  }); // it was never marked
+  // The same key for another pile is a conflict: the marked piece goes with the first key.
+  const reused = newKey('fixture');
+  await call('POST', '/api/gear/dismantle', {
+    creatureId: zipmouse,
+    itemIds: [high],
+    idempotencyKey: reused,
+  });
+  await refuse('POST', '/api/gear/dismantle', {
+    creatureId: zipmouse,
+    itemIds: [spare],
+    idempotencyKey: reused,
+  });
+  await refuse('POST', `/api/gear/${hat}/dismantle`, { idempotencyKey: newKey('fixture') }); // the old one-item dismantle
   await call('POST', '/api/expeditions', {
     creatureId: sproutle,
     destination: 'tidepools',

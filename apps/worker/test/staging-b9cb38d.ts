@@ -36,6 +36,8 @@ export function oldGearItemsTable(sql: SqlStorage): void {
     source TEXT NOT NULL,
     created_at INTEGER NOT NULL
   )`);
+  // The rest of the database is today's (migration 48 is recorded as done), so the table has its mark column.
+  sql.exec('ALTER TABLE gear_items ADD COLUMN dismantle_mark INTEGER NOT NULL DEFAULT 0');
   sql.exec('CREATE INDEX gear_items_user ON gear_items(user_id, created_at)');
   sql.exec(
     'CREATE UNIQUE INDEX gear_items_worn ON gear_items(equipped_on, slot) WHERE equipped_on IS NOT NULL',

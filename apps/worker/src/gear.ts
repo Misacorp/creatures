@@ -47,6 +47,7 @@ import type {
   GearItemView,
   GearState,
   JobResult,
+  MarkResult,
   StartJobInput,
 } from './gear-types';
 import {
@@ -75,6 +76,7 @@ export type {
   JobCommon,
   JobResult,
   JobView,
+  MarkResult,
   SkillView,
   StartJobInput,
 } from './gear-types';
@@ -121,6 +123,11 @@ export class Gear {
     this.sql.exec(
       'DELETE FROM gear_actions WHERE created_at < ?',
       this.deps.now() - ACTION_RETENTION_MS,
+    );
+    // The day's dismantled count only matters on its own game day.
+    this.sql.exec(
+      'DELETE FROM dismantle_days WHERE day_start < ?',
+      this.deps.now() - 3 * 86_400_000,
     );
   }
 
@@ -294,7 +301,12 @@ export class Gear {
         if (displaced !== undefined) {
           this.sql.exec('UPDATE gear_items SET equipped_on = NULL WHERE id = ?', displaced.id);
         }
-        this.sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', creature.id, row.id);
+        // A worn item cannot be marked: wearing one clears its mark (2026-10-27).
+        this.sql.exec(
+          'UPDATE gear_items SET equipped_on = ?, dismantle_mark = 0 WHERE id = ?',
+          creature.id,
+          row.id,
+        );
         this.recordEquip(row, creature.species, 'equip', displaced !== undefined, userId);
       }
       const fresh = ownedItem(this.sql, userId, gearId);
@@ -373,7 +385,7 @@ export class Gear {
       for (const move of moves) {
         if (move.itemId === null) continue;
         this.sql.exec(
-          'UPDATE gear_items SET equipped_on = ? WHERE id = ?',
+          'UPDATE gear_items SET equipped_on = ?, dismantle_mark = 0 WHERE id = ?',
           move.creatureId,
           move.itemId,
         );
@@ -393,6 +405,41 @@ export class Gear {
     });
   }
 
+  // --- Marking for dismantling ---
+
+  /**
+   * Marks items for dismantling, or unmarks them (`marked` false). All or nothing: an item that is not the
+   * player's is a 404; marking a worn item is refused (409 `item_worn`) and so is marking one that sits in
+   * an open Workshop job (409 `item_in_job`). Unmarking always works. Repeating changes nothing, so it carries
+   * no key. Equipping an item clears its mark (see `equip`).
+   */
+  markForDismantle(
+    userId: string,
+    itemIds: readonly string[],
+    marked: boolean,
+  ): Outcome<MarkResult> {
+    return this.atomically(() => {
+      const rows = itemIds.map((id) => ownedItem(this.sql, userId, id));
+      if (marked) {
+        for (const row of rows) {
+          if (row.equipped_on !== null) throw new GameError(409, 'item_worn');
+          const inJob = this.sql
+            .exec('SELECT 1 FROM workshop_jobs WHERE gear_id = ? AND claimed_at IS NULL', row.id)
+            .toArray();
+          if (inJob.length > 0) throw new GameError(409, 'item_in_job');
+        }
+      }
+      for (const row of rows) {
+        this.sql.exec(
+          'UPDATE gear_items SET dismantle_mark = ? WHERE id = ?',
+          marked ? 1 : 0,
+          row.id,
+        );
+      }
+      return { itemIds: [...itemIds], marked };
+    });
+  }
+
   // --- Workshop jobs (see `workshop.ts`; each opens its own transaction) ---
 
   previewCraft(userId: string, creatureId: string, blueprintId: string): Outcome<CraftPreview> {
@@ -405,6 +452,14 @@ export class Gear {
     itemIds: readonly string[],
   ): Outcome<DismantlePreview> {
     return this.workshop.previewDismantle(userId, creatureId, itemIds);
+  }
+
+  /** Dismantles the marked pile with one free creature (see `Workshop.dismantlePile`). */
+  dismantlePile(
+    userId: string,
+    input: { creatureId: string; itemIds: readonly string[]; idempotencyKey: string },
+  ): Outcome<Extract<JobResult, { kind: 'dismantle' }>> {
+    return this.workshop.dismantlePile(userId, input);
   }
 
   startJob(userId: string, input: StartJobInput): Outcome<{ jobId: string }> {

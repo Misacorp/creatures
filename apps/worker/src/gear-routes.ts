@@ -2,9 +2,12 @@ import type { Collection } from './collection';
 import type { Gear } from './gear';
 import {
   ClaimJobBodySchema,
+  DismantleBodySchema,
+  DismantleJobSchema,
   DismissNoticeBodySchema,
   EquipBestBodySchema,
   EquipBodySchema,
+  MarkBodySchema,
   PreviewBodySchema,
   RemovedJobKindSchema,
   StartJobBodySchema,
@@ -74,11 +77,31 @@ const routes: Routes<GearRouteContext> = {
   '/api/gear/:id/upgrade': {
     POST: () => errorResponse('gear_upgrade_removed', 410),
   },
-  // Dismantling is a Workshop job now (gear v2, Gear B): an old client gets a clear answer, and nothing is taken.
+  // The old instant dismantle of one item (before gear v2, Gear B): an old client gets a clear answer, and nothing is taken.
   '/api/gear/:id/dismantle': {
     POST: () => errorResponse('dismantle_is_a_job', 410),
   },
-  // What a craft or a dismantle job would give, before it starts: exact odds, parts, Essence, time and refund ranges.
+  // Marks items for dismantling or unmarks them (2026-10-27): a worn item or one in an open job cannot be marked.
+  '/api/gear/mark': {
+    POST: async (request, ctx) => {
+      const body = await parseBody(request, MarkBodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome = ctx.core.gear.markForDismantle(ctx.user.id, body.itemIds, body.marked);
+      if (!outcome.ok) return failure(outcome);
+      return json({ result: outcome.value, ...views(ctx) });
+    },
+  },
+  // Dismantles the whole marked pile at once with one free creature; the request names the items the player saw.
+  '/api/gear/dismantle': {
+    POST: async (request, ctx) => {
+      const body = await parseBody(request, DismantleBodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome = ctx.core.gear.dismantlePile(ctx.user.id, body);
+      if (!outcome.ok) return failure(outcome);
+      return json({ result: outcome.value, ...views(ctx) });
+    },
+  },
+  // What dismantling a pile would give with a creature, and what a craft would: exact odds, parts, Essence, XP and refund ranges.
   '/api/workshop/preview': {
     POST: async (request, ctx) => {
       const body = await parseBody(request, PreviewBodySchema);
@@ -96,6 +119,9 @@ const routes: Routes<GearRouteContext> = {
       // Improve and Enchant are gone (gear v2): an old client gets a clear answer, and nothing is charged.
       const removed = await parseBody(request.clone(), RemovedJobKindSchema);
       if (removed !== undefined) return errorResponse('job_kind_removed', 410);
+      // The timed dismantle job is gone too (a job already running still finishes and is claimed as before).
+      const dismantle = await parseBody(request.clone(), DismantleJobSchema);
+      if (dismantle !== undefined) return errorResponse('dismantle_job_removed', 410);
       const body = await parseBody(request, StartJobBodySchema);
       if (body === undefined) return invalidBody();
       const outcome = ctx.core.gear.startJob(ctx.user.id, body);
