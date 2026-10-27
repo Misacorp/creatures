@@ -19,8 +19,8 @@ Status: agreed with Misa, 2026-10-26. How the new combat system replaces the old
 
 Players keep their creatures: species, form, level, ribbons, evolutions, fusions, nicknames, quirks, shinies and private notes. Everything that changes is rolled fresh with live randomness, as if the creature had just been found:
 
-- **Talents** roll from the new combat pools (the Talent Book starts again).
-- **Knacks** start as none (P-14): players choose.
+- **Talents** roll from the new line pools (the Talent Book starts again). A golden talent rolls golden (Misa, 2026-10-27).
+- **Knacks:** every creature knows its form's Knacks (R11) and has none equipped (P-14): players choose.
 - **Finale abilities** go.
 - **Raid planning resets**: placements, the open week, the after-action history stays readable under its old rules.
 - **The dungeon run in progress** finishes under the old rules, or is voided (decide in phase 6).
@@ -43,7 +43,7 @@ Big simulations come in phase 5 on purpose: week-by-week and Boss Rank numbers m
 
 ## Progress
 
-| Phase | State                                                                                                                                                                                                                                                                                    |
-| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | In progress. Done: rules v0.6; Knacks for every form; combat talents (R20); panel 2. Next slices: Zigzag and Bloomback, the never-chosen Knacks, bosses and dungeon foes (with Thick Hide's armour and wide raid rows). Content gap: Mire has no Setter or Payoff (new species and art). |
-| 2–8   | Not started                                                                                                                                                                                                                                                                              |
+| Phase | State                                                                                                                                                                                                                                                                                                                                                               |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | In progress. Done: rules v0.6; Knacks for every form; combat talents (R20); panel 2. Done since: Knacks grow on evolution (R11), talent pools per line (R20). Next slices: Zigzag, the never-chosen Knacks, talent numbers, bosses and dungeon foes (with Thick Hide's armour and wide raid rows). Content gap: Mire has no Setter or Payoff (new species and art). |
+| 2–8   | Not started                                                                                                                                                                                                                                                                                                                                                         |

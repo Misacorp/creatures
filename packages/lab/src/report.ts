@@ -9,7 +9,7 @@ import { CARDS, labBoss } from './cards';
 import { weekend } from './fight';
 import { KEYWORDS } from './keywords';
 import { FAMILIES, FORM_KNACKS, KNACKS } from './knacks';
-import { BY_ROLE, TALENTS } from './talents';
+import { LINE_POOLS, TALENTS, talentPool } from './talents';
 import { LAB_RULES } from './rules';
 import { ELEMENTS, formStats, triggers } from './species';
 import {
@@ -383,15 +383,17 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
   md.push(
     '## Talents: what one talent adds (gauntlet)',
     '',
-    `Each role talent on every form of that role, in a fitting team with the form in its role's natural slot (a Setter or Guard in front, a Payoff after its Setter, a Support in the middle), no Knack on the measured form and the partners' first Knacks. Damage and knockouts with the talent against the same team without it, on every card (${seeds} seeds each), averaged over the role's forms. Best card is where it helps most. Near 0% on damage and KO is a dud; far above the rest is a must-roll.`,
+    `Each talent on every form whose line's pool has it and whose role it fits, in a fitting team with the form in its role's natural slot (a Setter or Guard in front, a Payoff after its Setter, a Support in the middle), no Knack on the measured form and the partners' first Knacks. Damage and knockouts with the talent against the same team without it, on every card (${seeds} seeds each), averaged over those forms. Best card is where it helps most. Near 0% on damage and KO is a dud; far above the rest is a must-roll.`,
     '',
     '| Role | Talent | Damage | KO per fight | Best card |',
     '| --- | --- | ---: | ---: | --- |',
   );
   const talentValue: Record<string, unknown> = {};
   for (const role of ['setter', 'payoff', 'guard', 'support'] as const) {
-    const forms = Object.keys(FORM_KNACKS).filter((f) => formStats(f, LEVEL).role === role);
-    for (const tid of BY_ROLE[role]) {
+    const roleForms = Object.keys(FORM_KNACKS).filter((f) => formStats(f, LEVEL).role === role);
+    for (const tid of Object.keys(TALENTS).filter((t) => TALENTS[t]?.roles.includes(role))) {
+      const forms = roleForms.filter((f) => LINE_POOLS[lineOf(f)]?.includes(tid));
+      if (forms.length === 0) continue;
       let dmg = 0,
         ko = 0,
         n = 0;
@@ -560,15 +562,23 @@ export function buildCatalogue(): string {
   md.push(
     '## Combat talents',
     '',
-    "Generated from `packages/lab/src/talents.ts`. A creature rolls talents from its role's pool when found; a line with forms of several roles rolls from each form's own role. One name per effect; a talent never repeats a Knack's effect, and flavour lives in Knacks.",
+    "Generated from `packages/lab/src/talents.ts`. One shared library; each line links to its own pool (branch forms share it). A talent that does nothing for a form's role is idle on it (in brackets). One name per effect; a talent never repeats a Knack's effect.",
     '',
-    '| Role | Pool |',
+    '| Line | Pool |',
     '| --- | --- |',
   );
-  for (const [role, ids] of Object.entries(BY_ROLE))
-    md.push(`| ${role} | ${ids.map((id) => TALENTS[id]?.name ?? id).join(', ')} |`);
-  md.push('', '| Talent | Text | Intent |', '| --- | --- | --- |');
-  for (const t of Object.values(TALENTS)) md.push(`| ${t.name} | ${t.text} | ${t.intent} |`);
+  for (const ln of Object.keys(LINE_POOLS))
+    md.push(
+      `| ${ln} | ${talentPool(ln)
+        .map((e) => {
+          const nm = TALENTS[e.talent]?.name ?? e.talent;
+          return e.roles.length ? nm : `(${nm})`;
+        })
+        .join(', ')} |`,
+    );
+  md.push('', '| Talent | Text | Roles | Intent |', '| --- | --- | --- | --- |');
+  for (const t of Object.values(TALENTS))
+    md.push(`| ${t.name} | ${t.text} | ${t.roles.join(', ')} | ${t.intent} |`);
   md.push('');
   return md.join('\n');
 }
@@ -600,6 +610,8 @@ function summarise(l: readonly Pick[]): string {
 
 /** The two-line budget for a Knack or talent text, in characters (an estimate). */
 const TEXT_BUDGET = 95;
+
+const lineOf = (form: string) => content.creatures.find((c) => c.id === form)?.line ?? form;
 
 const firstKnack = (form: string) => FORM_KNACKS[form]?.[0] ?? 'none';
 

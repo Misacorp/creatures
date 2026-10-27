@@ -35,7 +35,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 | Form | Knacks |
 | --- | --- |
 | splashet | Steady Mark, Lead the Way |
-| tidewing | Steady Mark, Double Mark, Circle Round |
+| tidewing | Steady Mark, Lead the Way, Double Mark, Circle Round |
 | geyserpup | Leave a Trail, Puddle Maker, All at Once |
 | stormray | Detonate, Leave a Trail |
 | tempestray | Detonate, Leave a Trail, Twin Strike |
@@ -82,7 +82,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 - **Text:** After it leaves a mark, the next creature to act in its row gets +20% on that hit.
 - **Family:** Lead
-- **Forms:** splashet, wickat, solmane
+- **Forms:** splashet, tidewing, wickat, solmane
 - **Intent (for contributors, never shown to players):** Rewards placing the Payoff right after the Setter in a row.
 
 ### Feed the Marks
@@ -360,26 +360,45 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ## Combat talents
 
-Generated from `packages/lab/src/talents.ts`. A creature rolls talents from its role's pool when found; a line with forms of several roles rolls from each form's own role. One name per effect; a talent never repeats a Knack's effect, and flavour lives in Knacks.
+Generated from `packages/lab/src/talents.ts`. One shared library; each line links to its own pool (branch forms share it). A talent that does nothing for a form's role is idle on it (in brackets). One name per effect; a talent never repeats a Knack's effect.
 
-| Role | Pool |
+| Line | Pool |
 | --- | --- |
-| setter | Sharp Claws, Light Feet, Unflappable, Tough Hide |
-| payoff | Sharp Claws, Keen Eye, Big Finish, First Strike |
-| guard | Tough Hide, Broad Back, Unflappable, Second Wind |
-| support | Big Heart, Gentle Touch, Unflappable, Light Feet |
+| splashet | Light Feet, Sharp Claws, Unflappable, First Strike, Hunker Down, Keen Eye, Hungry |
+| cindle | Sharp Claws, Keen Eye, Mighty Blow, Big Finish, Cornered, Light Feet, First Strike |
+| sproutle | Tough Hide, Broad Back, Hardy, Second Wind, Gentle Touch, Big Heart, Hold On |
+| zipmouse | Light Feet, Nimble, Sharp Claws, Unflappable, Keen Eye, Tough Hide, First Strike |
+| mistnewt | Unflappable, Hardy, Hunker Down, Broad Back, Gentle Touch, Second Wind, Nimble |
+| ashmole | Big Heart, Gentle Touch, Tough Hide, Hunker Down, Hardy, (Cornered), Broad Back |
+| stormray | Keen Eye, Big Finish, Mighty Blow, Sharp Claws, Gentle Touch, Big Heart, Nimble |
+| mossback | Tough Hide, Hardy, Hold On, Unflappable, Hungry, Sharp Claws, Hunker Down |
+| coralynx | Sharp Claws, Keen Eye, Cornered, Hungry, Light Feet, First Strike, Mighty Blow |
+| solmane | First Strike, Sharp Claws, Unflappable, Hardy, Light Feet, Cornered, Tough Hide |
+| gaiadrake | Hardy, Hungry, Big Finish, Tough Hide, Hold On, Sharp Claws, Hunker Down |
+| aurorix | Big Heart, Nimble, Light Feet, Gentle Touch, Unflappable, (Keen Eye), Hardy |
+| lanternfin | Gentle Touch, Big Heart, Unflappable, Light Feet, Second Wind, Hardy, Nimble |
+| hearthshell | Broad Back, Tough Hide, Second Wind, Hold On, Hardy, Hunker Down, Unflappable |
+| mudlump | Hardy, Hold On, Tough Hide, Second Wind, Broad Back, Hunker Down, (Cornered) |
+| squelch | Big Heart, Gentle Touch, (Cornered), Hardy, Nimble, Unflappable, Light Feet |
 
-| Talent | Text | Intent |
-| --- | --- | --- |
-| Sharp Claws | Attack +8%. | Plain power for hitters. |
-| Light Feet | Dodge +10. | Front-row Setters and Supports; more with dodge auras beside (R1). |
-| Keen Eye | Crit chance +8. | Feeds Big Finish. |
-| Big Finish | A crit on a hit that sets off a {Reaction} raises its bonus by 60% (inside the cap). | A Payoff combo talent with Keen Eye; the reaction cap (R7) still holds. |
-| First Strike | Its first hit that lands each fight deals +40%. | Short fights, the dungeon and each raid stage. |
-| Unflappable | It cannot be {Silenced}. | The silence answer on the creature itself, for row ends and front rows. |
-| Tough Hide | Armour +6. | Blocks more small hits (R13): Swarm and multi-hit bosses. |
-| Broad Back | Cover +15. | A Guard against sweeps. |
-| Second Wind | Once per fight, when a hit drops it below half its max HP, it heals 20% of max HP. | A Guard that survives one big hit (Crusher, Payoff Hunter). |
-| Big Heart | Its {Boost} +5%. | A Support that hits harder through others. |
-| Gentle Touch | Its heal +3% of max HP (a Support of any element heals with it). | Makes Ember and Spark Supports small healers. |
+| Talent | Text | Roles | Intent |
+| --- | --- | --- | --- |
+| Sharp Claws | Attack +8%. | setter, payoff | Plain power for hitters. |
+| Light Feet | Dodge +10. | setter, payoff, guard, support | Front-row creatures; more with dodge auras beside (R1). |
+| Nimble | Dodge +10 against {Area hit}s. | setter, payoff, guard, support | Sweeps and splashes (Great Wave, Payoff Hunter). |
+| Keen Eye | Crit chance +8. | setter, payoff | Feeds Mighty Blow and Big Finish. |
+| Mighty Blow | Its crits deal +30%. | setter, payoff | A crit build with Keen Eye. |
+| Big Finish | A crit on a hit that sets off a {Reaction} raises its bonus by 60% (inside the cap). | payoff | A Payoff combo talent with Keen Eye; the reaction cap (R7) still holds. |
+| Hungry | Its {Reaction} bonus +15% (inside the cap). | payoff | A steady Payoff talent, no crit needed. |
+| First Strike | Its first hit that lands each fight deals +40%. | setter, payoff | Short fights, the dungeon and each raid stage. |
+| Cornered | +25% on its hits while it is below half its max HP. | setter, payoff | A comeback talent; strong with healers and Second Wind. |
+| Unflappable | It cannot be {Silenced}. | setter, payoff, guard, support | The silence answer on the creature itself, for row ends and front rows. |
+| Tough Hide | Armour +6. | setter, payoff, guard, support | Blocks more small hits (R13): Swarm and multi-hit bosses. |
+| Hardy | Max HP +10%. | setter, payoff, guard, support | Plain staying power; carries through a raid weekend (R14). |
+| Hunker Down | It takes 20% less from {Area hit}s. | setter, payoff, guard, support | Its own cut; adds to a Row Ward beside it. |
+| Hold On | Once per fight, a hit that would knock it out leaves it at 1 HP. | setter, payoff, guard, support | Survives one Crusher; pairs with healers. |
+| Second Wind | Once per fight, when a hit drops it below half its max HP, it heals 20% of max HP. | setter, payoff, guard, support | Survives one big hit (Crusher, Payoff Hunter). |
+| Broad Back | Cover +15. | guard | A Guard against sweeps. |
+| Big Heart | Its {Boost} +5%. | support | A Support that hits harder through others. |
+| Gentle Touch | Its heal +3% of max HP (a Support of any element heals with it). | support | Makes Ember and Spark Supports small healers. |
 

@@ -59,7 +59,7 @@ Each rule names what it replaces in `combat-rules.md`. Durations count the affec
 
 **R10. Store.** A Store holds up to 3 of a named resource. Gains past 3 are lost. It empties on knock-out and at the end of the fight. A spend on a turn that is dodged, skipped or silenced keeps it. A Store fed by reactions gains at most 1 per round (not per boss turn, so arenas with more rows do not fill it faster). At most one Store per creature line.
 
-**R11. Knacks.** One Knack per creature, or none. Swapping is free before any fight and locks with the raid phase. Stage 1 forms have all their Knacks at catch; stage 2 forms keep the line's Knack when the role stays and get their own at evolution. An absent player's creature uses the Knack its owner last saved, or none. Knacks replace creature finale abilities.
+**R11. Knacks.** One Knack per creature, or none. Swapping is free before any fight and locks with the raid phase. A creature knows every Knack of its form from the moment it is caught, so a base form is useful from day one. Evolving adds the new form's own Knacks to the ones it knew (Misa, 2026-10-27): evolution grows the Knack list, so the evolved form brings something new. On a role change (Mossback, a Setter, into Bloomback, a Payoff) it keeps only the new form's Knacks, since the old role's would do nothing; an equipped Knack it no longer knows becomes none. An absent player's creature uses the Knack its owner last saved, or none. Knacks replace creature finale abilities.
 
 **R12. Silence.** Until the end of the creature's Nth turn, its Knack (stat bonuses included), talents, gear effects **and its role's verb** do nothing (Misa, 2026-10-26): a silenced Setter does not mark, a Payoff does not cash, a Guard does not intercept or cover, a Support does not boost or heal. It still makes its plain hit with its stats.
 
@@ -81,14 +81,15 @@ Each rule names what it replaces in `combat-rules.md`. Durations count the affec
 
 **R19. Swap requests (raid).** A player can ask another player to swap the slots of two creatures on the raid board, so pairings across players can be arranged (Misa, 2026-10-26: "we do it manually now; a system would help"). The other player accepts or declines; an accepted swap moves both creatures in one step; open requests end at the next phase lock. Design and build with the raid board (roadmap, "Swap requests").
 
-**R20. Talents.** A creature rolls combat talents from its role's pool when found (roadmap phase 6 rerolls them).
+**R20. Talents.** One shared library of combat talents; each creature line links to its own pool of seven from it (Misa, 2026-10-27), so two lines of the same role roll different tools. Branch forms share the line's pool. Talents are found over time, as in the game today: a slot at catch, more slots with level, duplicates and the Talent Book. A golden talent is 1.5 times the value. The migration rerolls talents from the new pools, and a golden talent rolls golden (Misa, 2026-10-27).
 
 1. A talent adds numbers or flags to the creature's Knack (the same grammar): numbers add, flags combine; a Support shape comes only from the Knack. Talent hit bonuses count toward the hit-boost cap (R15), crit raises toward the reaction cap (R7).
 2. One name per effect, one number per name, across Knacks, talents and gear (P-06). A talent never repeats a Knack's effect, and Seal is never a talent, so a roll never decides the Knack choice.
-3. Pools are by role, shared by every species (P-09); flavour lives in Knacks. Every species uses the shared names (Misa, 2026-10-26): today's species-named talents go at the migration.
-4. Silence blanks talents (R12).
-5. "Its first hit each fight" means its first hit that gets past dodge and armour, in each fight and each raid stage (R14); Twin Strike's second hit is not a first hit. A first hit made while silenced uses it up.
-6. Conditions like "while a living Guard stands beside it" are read as each hit is worked out (R6 step 1).
+3. Every species uses the shared names (Misa, 2026-10-26): today's species-named talents go at the migration. A pool gives each role in its line at least three talents that work for it; a talent that does nothing for a form's role is idle on it (shown as such, as in the game today). New talents join the library as new effects; no talent is unique to one species by rule (P-09), though a pool may be the only one that has it.
+4. Max HP from a talent (Hardy) is set when the fight starts, so silence does not take it away.
+5. Silence blanks talents (R12).
+6. "Its first hit each fight" means its first hit that gets past dodge and armour, in each fight and each raid stage (R14); Twin Strike's second hit is not a first hit. A first hit made while silenced uses it up.
+7. Conditions like "while a living Guard stands beside it" are read as each hit is worked out (R6 step 1).
 
 ## On the board (from the readability review)
 

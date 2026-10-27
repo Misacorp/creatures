@@ -991,80 +991,62 @@
   "gauntlet:plain": {
    "best": [
     {
-     "formId": "tempestray",
-     "knack": "none"
-    },
-    {
-     "formId": "drizzlewt",
-     "knack": "clear-the-air"
-    },
-    {
      "formId": "tidewing",
-     "knack": "none"
-    }
-   ],
-   "score": 5350,
-   "classic": 3828
-  },
-  "gauntlet:thick-hide": {
-   "best": [
-    {
-     "formId": "voltaro",
-     "knack": "zoom"
-    },
-    {
-     "formId": "bogwarden",
-     "knack": "mud-wall"
-    },
-    {
-     "formId": "bloomback",
-     "knack": "leave-a-trail"
-    }
-   ],
-   "score": 3352,
-   "classic": 2243
-  },
-  "gauntlet:stone-skin": {
-   "best": [
-    {
-     "formId": "tempestray",
-     "knack": "detonate"
+     "knack": "lead-the-way"
     },
     {
      "formId": "sunfawn",
      "knack": "curl-up"
     },
     {
-     "formId": "bloomback",
-     "knack": "detonate"
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
     }
    ],
-   "score": 4457,
+   "score": 5885,
+   "classic": 3828
+  },
+  "gauntlet:thick-hide": {
+   "best": [
+    {
+     "formId": "bogwarden",
+     "knack": "mud-wall"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "lead-the-way"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "none"
+    }
+   ],
+   "score": 3503,
+   "classic": 2243
+  },
+  "gauntlet:stone-skin": {
+   "best": [
+    {
+     "formId": "fogwyrm",
+     "knack": "hide-in-mist"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "zigzag"
+    },
+    {
+     "formId": "gaiadrake",
+     "knack": "none"
+    }
+   ],
+   "score": 3990,
    "classic": 3101
   },
   "gauntlet:clean-scales": {
    "best": [
     {
      "formId": "voltaro",
-     "knack": "zoom"
-    },
-    {
-     "formId": "kilnmole",
-     "knack": "baked-shell"
-    },
-    {
-     "formId": "bloomback",
-     "knack": "leave-a-trail"
-    }
-   ],
-   "score": 5314,
-   "classic": 3877
-  },
-  "gauntlet:reflective-hide": {
-   "best": [
-    {
-     "formId": "tempestray",
-     "knack": "detonate"
+     "knack": "double-mark"
     },
     {
      "formId": "fogwyrm",
@@ -1072,136 +1054,154 @@
     },
     {
      "formId": "bloomback",
+     "knack": "detonate"
+    }
+   ],
+   "score": 4681,
+   "classic": 3877
+  },
+  "gauntlet:reflective-hide": {
+   "best": [
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "sunfawn",
+     "knack": "curl-up"
+    },
+    {
+     "formId": "pyrelynx",
      "knack": "none"
     }
    ],
-   "score": 3862,
+   "score": 3758,
    "classic": 1621
   },
   "gauntlet:elusive": {
    "best": [
     {
-     "formId": "voltaro",
-     "knack": "double-mark"
-    },
-    {
-     "formId": "sunfawn",
-     "knack": "curl-up"
-    },
-    {
-     "formId": "bloomback",
-     "knack": "detonate"
-    }
-   ],
-   "score": 3911,
-   "classic": 2790
-  },
-  "gauntlet:bramble-bind": {
-   "best": [
-    {
-     "formId": "tempestray",
-     "knack": "none"
-    },
-    {
-     "formId": "sunfawn",
-     "knack": "curl-up"
-    },
-    {
-     "formId": "coralynx",
-     "knack": "detonate"
-    }
-   ],
-   "score": 3725,
-   "classic": 2595
-  },
-  "gauntlet:wither": {
-   "best": [
-    {
-     "formId": "hearthshell",
-     "knack": "draw-fire"
-    },
-    {
      "formId": "tidewing",
-     "knack": "steady-mark"
+     "knack": "lead-the-way"
     },
-    {
-     "formId": "tempestray",
-     "knack": "detonate"
-    }
-   ],
-   "score": 3786,
-   "classic": 3480
-  },
-  "gauntlet:payoff-hunter": {
-   "best": [
     {
      "formId": "bogwarden",
      "knack": "mud-wall"
     },
     {
-     "formId": "ohmouse",
-     "knack": "lightning-ears"
-    },
-    {
-     "formId": "bloomback",
+     "formId": "tempestray",
      "knack": "none"
     }
    ],
-   "score": 4523,
+   "score": 3908,
+   "classic": 2790
+  },
+  "gauntlet:bramble-bind": {
+   "best": [
+    {
+     "formId": "bloomback",
+     "knack": "all-at-once"
+    },
+    {
+     "formId": "sunfawn",
+     "knack": "curl-up"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    }
+   ],
+   "score": 4463,
+   "classic": 2595
+  },
+  "gauntlet:wither": {
+   "best": [
+    {
+     "formId": "voltaro",
+     "knack": "zoom"
+    },
+    {
+     "formId": "ohmouse",
+     "knack": "catch-the-bolts"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "all-at-once"
+    }
+   ],
+   "score": 4583,
+   "classic": 3480
+  },
+  "gauntlet:payoff-hunter": {
+   "best": [
+    {
+     "formId": "tidewing",
+     "knack": "lead-the-way"
+    },
+    {
+     "formId": "sunfawn",
+     "knack": "curl-up"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    }
+   ],
+   "score": 4496,
    "classic": 2103
   },
   "gauntlet:grudge": {
    "best": [
     {
-     "formId": "voltaro",
-     "knack": "zigzag"
+     "formId": "tidewing",
+     "knack": "circle-round"
     },
     {
-     "formId": "bloomback",
+     "formId": "tempestray",
      "knack": "none"
+    },
+    {
+     "formId": "lanternfin",
+     "knack": "clear-the-air"
+    }
+   ],
+   "score": 4451,
+   "classic": 2838
+  },
+  "gauntlet:great-wave": {
+   "best": [
+    {
+     "formId": "gaiadrake",
+     "knack": "none"
+    },
+    {
+     "formId": "sunfawn",
+     "knack": "curl-up"
     },
     {
      "formId": "fogwyrm",
      "knack": "wide-reach"
     }
    ],
-   "score": 4051,
-   "classic": 2838
-  },
-  "gauntlet:great-wave": {
-   "best": [
-    {
-     "formId": "fogwyrm",
-     "knack": "thick-fog"
-    },
-    {
-     "formId": "sunfawn",
-     "knack": "curl-up"
-    },
-    {
-     "formId": "tempestray",
-     "knack": "twin-strike"
-    }
-   ],
-   "score": 3392,
+   "score": 3089,
    "classic": 1987
   },
   "gauntlet:swarm": {
    "best": [
     {
-     "formId": "voltaro",
+     "formId": "tidewing",
      "knack": "none"
     },
     {
-     "formId": "kilnmole",
-     "knack": "baked-shell"
+     "formId": "bogwarden",
+     "knack": "mud-wall"
     },
     {
-     "formId": "bloomback",
+     "formId": "tempestray",
      "knack": "none"
     }
    ],
-   "score": 5408,
+   "score": 5223,
    "classic": 3764
   },
   "gauntlet:crusher": {
@@ -1211,774 +1211,450 @@
      "knack": "zigzag"
     },
     {
-     "formId": "bogwarden",
-     "knack": "draw-fire"
+     "formId": "ohmouse",
+     "knack": "catch-the-bolts"
     },
     {
      "formId": "bloomback",
-     "knack": "leave-a-trail"
+     "knack": "none"
     }
    ],
-   "score": 3614,
+   "score": 3473,
    "classic": 2259
   },
   "gauntlet:fizzle": {
    "best": [
     {
-     "formId": "voltaro",
-     "knack": "zoom"
-    },
-    {
-     "formId": "fogwyrm",
-     "knack": "hide-in-mist"
-    },
-    {
      "formId": "bloomback",
      "knack": "all-at-once"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "zigzag"
+    },
+    {
+     "formId": "zipmouse",
+     "knack": "double-mark"
     }
    ],
-   "score": 5368,
+   "score": 5794,
    "classic": 3772
   },
   "raid:plain": {
    "best": [
     {
-     "formId": "voltaro",
-     "knack": "zigzag"
+     "formId": "magmole",
+     "knack": "ready-the-mark"
     },
     {
-     "formId": "hearthshell",
-     "knack": "keep-the-heat-in"
+     "formId": "aurorix",
+     "knack": "clear-skies"
+    },
+    {
+     "formId": "fogwyrm",
+     "knack": "none"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "double-mark"
     },
     {
      "formId": "ancientshell",
-     "knack": "none"
-    },
-    {
-     "formId": "bloomback",
-     "knack": "leave-a-trail"
-    },
-    {
-     "formId": "zipmouse",
-     "knack": "zoom"
-    },
-    {
-     "formId": "gaiadrake",
-     "knack": "none"
-    },
-    {
-     "formId": "ohmouse",
-     "knack": "lightning-ears"
-    },
-    {
-     "formId": "pyrelynx",
-     "knack": "guards-shadow"
-    },
-    {
-     "formId": "voltaro",
-     "knack": "zigzag"
-    },
-    {
-     "formId": "wickat",
-     "knack": "steady-mark"
-    },
-    {
-     "formId": "bloomback",
-     "knack": "none"
-    },
-    {
-     "formId": "geyserpup",
-     "knack": "leave-a-trail"
-    }
-   ],
-   "score": 16245,
-   "classic": 11711
-  },
-  "raid:thick-hide": {
-   "best": [
-    {
-     "formId": "pyrelynx",
-     "knack": "leave-a-trail"
-    },
-    {
-     "formId": "fogwyrm",
-     "knack": "hide-in-mist"
-    },
-    {
-     "formId": "bogwarden",
-     "knack": "mud-wall"
-    },
-    {
-     "formId": "bloomback",
-     "knack": "detonate"
-    },
-    {
-     "formId": "aurorix",
-     "knack": "none"
-    },
-    {
-     "formId": "tempestray",
-     "knack": "none"
-    },
-    {
-     "formId": "aurorix",
-     "knack": "gather-calm"
-    },
-    {
-     "formId": "tidewing",
-     "knack": "circle-round"
-    },
-    {
-     "formId": "zipmouse",
-     "knack": "double-mark"
-    },
-    {
-     "formId": "voltaro",
-     "knack": "zoom"
-    },
-    {
-     "formId": "bloomback",
-     "knack": "all-at-once"
-    },
-    {
-     "formId": "magmole",
-     "knack": "none"
-    }
-   ],
-   "score": 12718,
-   "classic": 6930
-  },
-  "raid:stone-skin": {
-   "best": [
-    {
-     "formId": "aurorix",
-     "knack": "none"
-    },
-    {
-     "formId": "solmane",
-     "knack": "lead-the-way"
-    },
-    {
-     "formId": "croakmire",
-     "knack": "none"
-    },
-    {
-     "formId": "gaiadrake",
-     "knack": "leave-a-trail"
-    },
-    {
-     "formId": "gaiadrake",
-     "knack": "none"
-    },
-    {
-     "formId": "voltaro",
-     "knack": "zoom"
-    },
-    {
-     "formId": "coralynx",
-     "knack": "leave-a-trail"
-    },
-    {
-     "formId": "geyserpup",
-     "knack": "puddle-maker"
-    },
-    {
-     "formId": "sproutle",
-     "knack": "none"
-    },
-    {
-     "formId": "voltaro",
-     "knack": "zigzag"
-    },
-    {
-     "formId": "bogwarden",
-     "knack": "mud-wall"
-    },
-    {
-     "formId": "tempestray",
-     "knack": "leave-a-trail"
-    }
-   ],
-   "score": 13632,
-   "classic": 10048
-  },
-  "raid:clean-scales": {
-   "best": [
-    {
-     "formId": "solmane",
-     "knack": "steady-mark"
-    },
-    {
-     "formId": "squelch",
-     "knack": "ready-the-mark"
-    },
-    {
-     "formId": "solmane",
-     "knack": "steady-mark"
-    },
-    {
-     "formId": "croakmire",
-     "knack": "squelch-song"
-    },
-    {
-     "formId": "tempestray",
-     "knack": "none"
-    },
-    {
-     "formId": "voltaro",
-     "knack": "none"
-    },
-    {
-     "formId": "wickat",
-     "knack": "steady-mark"
-    },
-    {
-     "formId": "bloomback",
-     "knack": "none"
-    },
-    {
-     "formId": "tidewing",
-     "knack": "steady-mark"
-    },
-    {
-     "formId": "geyserpup",
-     "knack": "all-at-once"
-    },
-    {
-     "formId": "sunfawn",
-     "knack": "curl-up"
-    },
-    {
-     "formId": "kilnmole",
-     "knack": "draw-fire"
-    }
-   ],
-   "score": 15548,
-   "classic": 11880
-  },
-  "raid:reflective-hide": {
-   "best": [
-    {
-     "formId": "tidewing",
-     "knack": "none"
-    },
-    {
-     "formId": "drizzlewt",
-     "knack": "curl-up"
-    },
-    {
-     "formId": "bogwarden",
-     "knack": "none"
-    },
-    {
-     "formId": "bloomback",
-     "knack": "leave-a-trail"
-    },
-    {
-     "formId": "geyserpup",
-     "knack": "none"
-    },
-    {
-     "formId": "pyrelynx",
-     "knack": "leave-a-trail"
-    },
-    {
-     "formId": "ashmole",
-     "knack": "none"
-    },
-    {
-     "formId": "bloomback",
-     "knack": "all-at-once"
-    },
-    {
-     "formId": "tempestray",
-     "knack": "none"
-    },
-    {
-     "formId": "squelch",
-     "knack": "squelch-song"
-    },
-    {
-     "formId": "bloomback",
-     "knack": "leave-a-trail"
-    },
-    {
-     "formId": "halcyray",
-     "knack": "gather-calm"
-    }
-   ],
-   "score": 10896,
-   "classic": 5186
-  },
-  "raid:elusive": {
-   "best": [
-    {
-     "formId": "kilnmole",
-     "knack": "keep-the-heat-in"
-    },
-    {
-     "formId": "kilnmole",
-     "knack": "baked-shell"
-    },
-    {
-     "formId": "tempestray",
-     "knack": "twin-strike"
-    },
-    {
-     "formId": "croakmire",
-     "knack": "squelch-song"
-    },
-    {
-     "formId": "tempestray",
-     "knack": "twin-strike"
-    },
-    {
-     "formId": "tidewing",
-     "knack": "circle-round"
-    },
-    {
-     "formId": "tidewing",
-     "knack": "circle-round"
-    },
-    {
-     "formId": "wickat",
-     "knack": "none"
-    },
-    {
-     "formId": "tidewing",
-     "knack": "circle-round"
-    },
-    {
-     "formId": "tempestray",
-     "knack": "twin-strike"
-    },
-    {
-     "formId": "croakmire",
-     "knack": "none"
-    },
-    {
-     "formId": "tidewing",
-     "knack": "circle-round"
-    }
-   ],
-   "score": 13434,
-   "classic": 8033
-  },
-  "raid:bramble-bind": {
-   "best": [
-    {
-     "formId": "halcyray",
-     "knack": "clear-the-air"
-    },
-    {
-     "formId": "bogwarden",
-     "knack": "mud-wall"
-    },
-    {
-     "formId": "solmane",
-     "knack": "crown-of-embers"
-    },
-    {
-     "formId": "voltaro",
-     "knack": "double-mark"
-    },
-    {
-     "formId": "aurorix",
-     "knack": "gather-calm"
-    },
-    {
-     "formId": "bloomback",
-     "knack": "none"
-    },
-    {
-     "formId": "tempestray",
-     "knack": "leave-a-trail"
-    },
-    {
-     "formId": "pyrelynx",
-     "knack": "leave-a-trail"
-    },
-    {
-     "formId": "halcyray",
-     "knack": "clear-the-air"
-    },
-    {
-     "formId": "geyserpup",
-     "knack": "leave-a-trail"
-    },
-    {
-     "formId": "geyserpup",
-     "knack": "none"
-    },
-    {
-     "formId": "magmole",
-     "knack": "ready-the-mark"
-    }
-   ],
-   "score": 13643,
-   "classic": 10658
-  },
-  "raid:wither": {
-   "best": [
-    {
-     "formId": "squelch",
-     "knack": "squelch-song"
-    },
-    {
-     "formId": "coralynx",
-     "knack": "detonate"
-    },
-    {
-     "formId": "bloomback",
-     "knack": "detonate"
-    },
-    {
-     "formId": "solmane",
-     "knack": "crown-of-embers"
-    },
-    {
-     "formId": "tempestray",
-     "knack": "none"
-    },
-    {
-     "formId": "halcyray",
-     "knack": "clear-the-air"
-    },
-    {
-     "formId": "voltaro",
-     "knack": "zigzag"
-    },
-    {
-     "formId": "fogwyrm",
-     "knack": "wide-reach"
-    },
-    {
-     "formId": "kilnmole",
-     "knack": "draw-fire"
-    },
-    {
-     "formId": "geyserpup",
-     "knack": "none"
-    },
-    {
-     "formId": "wickat",
-     "knack": "steady-mark"
-    },
-    {
-     "formId": "geyserpup",
-     "knack": "leave-a-trail"
-    }
-   ],
-   "score": 13724,
-   "classic": 10145
-  },
-  "raid:payoff-hunter": {
-   "best": [
-    {
-     "formId": "geyserpup",
-     "knack": "puddle-maker"
-    },
-    {
-     "formId": "sunfawn",
-     "knack": "curl-up"
-    },
-    {
-     "formId": "kilnmole",
-     "knack": "none"
-    },
-    {
-     "formId": "sunfawn",
-     "knack": "curl-up"
-    },
-    {
-     "formId": "ancientshell",
-     "knack": "steady-mark"
-    },
-    {
-     "formId": "bloomback",
-     "knack": "leave-a-trail"
-    },
-    {
-     "formId": "solmane",
-     "knack": "crown-of-embers"
-    },
-    {
-     "formId": "pyrelynx",
-     "knack": "leave-a-trail"
-    },
-    {
-     "formId": "geyserpup",
-     "knack": "all-at-once"
-    },
-    {
-     "formId": "croakmire",
-     "knack": "squelch-song"
-    },
-    {
-     "formId": "tempestray",
-     "knack": "leave-a-trail"
-    },
-    {
-     "formId": "voltaro",
-     "knack": "double-mark"
-    }
-   ],
-   "score": 16426,
-   "classic": 9669
-  },
-  "raid:grudge": {
-   "best": [
-    {
-     "formId": "tidewing",
-     "knack": "steady-mark"
-    },
-    {
-     "formId": "tempestray",
-     "knack": "detonate"
-    },
-    {
-     "formId": "thornbuck",
-     "knack": "wide-reach"
-    },
-    {
-     "formId": "tidewing",
-     "knack": "steady-mark"
-    },
-    {
-     "formId": "tempestray",
-     "knack": "detonate"
-    },
-    {
-     "formId": "thornbuck",
-     "knack": "wide-reach"
-    },
-    {
-     "formId": "tidewing",
-     "knack": "steady-mark"
-    },
-    {
-     "formId": "tempestray",
-     "knack": "detonate"
-    },
-    {
-     "formId": "thornbuck",
-     "knack": "wide-reach"
-    },
-    {
-     "formId": "tidewing",
-     "knack": "steady-mark"
-    },
-    {
-     "formId": "tempestray",
-     "knack": "none"
-    },
-    {
-     "formId": "thornbuck",
-     "knack": "wide-reach"
-    }
-   ],
-   "score": 11397,
-   "classic": 9862
-  },
-  "raid:great-wave": {
-   "best": [
-    {
-     "formId": "tempestray",
-     "knack": "detonate"
-    },
-    {
-     "formId": "kilnmole",
-     "knack": "none"
-    },
-    {
-     "formId": "tempestray",
-     "knack": "detonate"
-    },
-    {
-     "formId": "wickat",
-     "knack": "steady-mark"
-    },
-    {
-     "formId": "tidewing",
-     "knack": "none"
-    },
-    {
-     "formId": "tempestray",
-     "knack": "leave-a-trail"
-    },
-    {
-     "formId": "tidewing",
-     "knack": "steady-mark"
-    },
-    {
-     "formId": "geyserpup",
-     "knack": "none"
-    },
-    {
-     "formId": "bogwarden",
-     "knack": "draw-fire"
-    },
-    {
-     "formId": "croakmire",
-     "knack": "none"
-    },
-    {
-     "formId": "croakmire",
-     "knack": "squelch-song"
-    },
-    {
-     "formId": "bloomback",
-     "knack": "none"
-    }
-   ],
-   "score": 15287,
-   "classic": 10886
-  },
-  "raid:swarm": {
-   "best": [
-    {
-     "formId": "hearthshell",
-     "knack": "draw-fire"
-    },
-    {
-     "formId": "stormray",
-     "knack": "leave-a-trail"
-    },
-    {
-     "formId": "zipmouse",
-     "knack": "double-mark"
-    },
-    {
-     "formId": "geyserpup",
-     "knack": "leave-a-trail"
-    },
-    {
-     "formId": "zipmouse",
-     "knack": "double-mark"
-    },
-    {
-     "formId": "geyserpup",
-     "knack": "leave-a-trail"
-    },
-    {
-     "formId": "tempestray",
-     "knack": "none"
-    },
-    {
-     "formId": "solmane",
-     "knack": "crown-of-embers"
-    },
-    {
-     "formId": "geyserpup",
-     "knack": "puddle-maker"
-    },
-    {
-     "formId": "bloomback",
-     "knack": "all-at-once"
-    },
-    {
-     "formId": "squelch",
-     "knack": "squelch-song"
-    },
-    {
-     "formId": "magmole",
-     "knack": "ready-the-mark"
-    }
-   ],
-   "score": 22636,
-   "classic": 15563
-  },
-  "raid:crusher": {
-   "best": [
-    {
-     "formId": "tidewing",
-     "knack": "double-mark"
-    },
-    {
-     "formId": "gaiadrake",
-     "knack": "carry-them"
-    },
-    {
-     "formId": "coralynx",
-     "knack": "detonate"
-    },
-    {
-     "formId": "solmane",
-     "knack": "crown-of-embers"
-    },
-    {
-     "formId": "fogwyrm",
-     "knack": "hide-in-mist"
-    },
-    {
-     "formId": "bloomback",
-     "knack": "all-at-once"
-    },
-    {
-     "formId": "bogwarden",
-     "knack": "draw-fire"
-    },
-    {
-     "formId": "sunfawn",
-     "knack": "curl-up"
-    },
-    {
-     "formId": "squelch",
-     "knack": "squelch-song"
-    },
-    {
-     "formId": "tempestray",
-     "knack": "leave-a-trail"
-    },
-    {
-     "formId": "coralynx",
-     "knack": "territorial"
-    },
-    {
-     "formId": "bloomback",
-     "knack": "leave-a-trail"
-    }
-   ],
-   "score": 14524,
-   "classic": 9497
-  },
-  "raid:fizzle": {
-   "best": [
-    {
-     "formId": "thornbuck",
-     "knack": "none"
-    },
-    {
-     "formId": "lanternfin",
-     "knack": "lantern-glow"
-    },
-    {
-     "formId": "voltaro",
-     "knack": "zigzag"
-    },
-    {
-     "formId": "bogwarden",
-     "knack": "draw-fire"
-    },
-    {
-     "formId": "tidewing",
-     "knack": "steady-mark"
-    },
-    {
-     "formId": "gaiadrake",
-     "knack": "detonate"
-    },
-    {
-     "formId": "tempestray",
-     "knack": "leave-a-trail"
+     "knack": "feed-the-marks"
     },
     {
      "formId": "magmole",
      "knack": "tunnel-through"
     },
     {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "halcyray",
+     "knack": "gather-calm"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "none"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "coralynx",
+     "knack": "leave-a-trail"
+    }
+   ],
+   "score": 16055,
+   "classic": 11711
+  },
+  "raid:thick-hide": {
+   "best": [
+    {
      "formId": "aurorix",
      "knack": "gather-calm"
+    },
+    {
+     "formId": "kilnmole",
+     "knack": "baked-shell"
+    },
+    {
+     "formId": "stormray",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "double-mark"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "all-at-once"
+    },
+    {
+     "formId": "croakmire",
+     "knack": "squelch-song"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "none"
+    },
+    {
+     "formId": "pyrelynx",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "steady-mark"
+    },
+    {
+     "formId": "kilnmole",
+     "knack": "draw-fire"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "all-at-once"
+    }
+   ],
+   "score": 12101,
+   "classic": 6930
+  },
+  "raid:stone-skin": {
+   "best": [
+    {
+     "formId": "ancientshell",
+     "knack": "steady-mark"
+    },
+    {
+     "formId": "fogwyrm",
+     "knack": "wide-reach"
+    },
+    {
+     "formId": "solmane",
+     "knack": "crown-of-embers"
+    },
+    {
+     "formId": "bogwarden",
+     "knack": "wide-reach"
+    },
+    {
+     "formId": "gaiadrake",
+     "knack": "carry-them"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "circle-round"
+    },
+    {
+     "formId": "pyrelynx",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "coralynx",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "twin-strike"
+    },
+    {
+     "formId": "croakmire",
+     "knack": "squelch-song"
+    },
+    {
+     "formId": "wickat",
+     "knack": "none"
+    },
+    {
+     "formId": "zipmouse",
+     "knack": "double-mark"
+    }
+   ],
+   "score": 13543,
+   "classic": 10048
+  },
+  "raid:clean-scales": {
+   "best": [
+    {
+     "formId": "tidewing",
+     "knack": "steady-mark"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "bogwarden",
+     "knack": "mud-wall"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "steady-mark"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "wide-reach"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "steady-mark"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "wide-reach"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "steady-mark"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "kilnmole",
+     "knack": "draw-fire"
+    }
+   ],
+   "score": 13615,
+   "classic": 11880
+  },
+  "raid:reflective-hide": {
+   "best": [
+    {
+     "formId": "ancientshell",
+     "knack": "none"
+    },
+    {
+     "formId": "kilnmole",
+     "knack": "keep-the-heat-in"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "detonate"
+    },
+    {
+     "formId": "fogwyrm",
+     "knack": "thick-fog"
+    },
+    {
+     "formId": "magmole",
+     "knack": "wide-warmth"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "none"
+    },
+    {
+     "formId": "ancientshell",
+     "knack": "living-shelter"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "zigzag"
+    },
+    {
+     "formId": "squelch",
+     "knack": "squelch-song"
+    },
+    {
+     "formId": "ancientshell",
+     "knack": "steady-mark"
+    },
+    {
+     "formId": "lanternfin",
+     "knack": "lantern-glow"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "twin-strike"
+    }
+   ],
+   "score": 10877,
+   "classic": 5186
+  },
+  "raid:elusive": {
+   "best": [
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "wide-reach"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "wide-reach"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "steady-mark"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "squelch",
+     "knack": "squelch-song"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "steady-mark"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "steady-mark"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "steady-mark"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "wide-reach"
+    }
+   ],
+   "score": 12163,
+   "classic": 8033
+  },
+  "raid:bramble-bind": {
+   "best": [
+    {
+     "formId": "ancientshell",
+     "knack": "none"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "wide-reach"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "wide-reach"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "steady-mark"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "steady-mark"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "steady-mark"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "steady-mark"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "hearthshell",
+     "knack": "draw-fire"
+    }
+   ],
+   "score": 14127,
+   "classic": 10658
+  },
+  "raid:wither": {
+   "best": [
+    {
+     "formId": "voltaro",
+     "knack": "zoom"
+    },
+    {
+     "formId": "kilnmole",
+     "knack": "keep-the-heat-in"
+    },
+    {
+     "formId": "croakmire",
+     "knack": "squelch-song"
+    },
+    {
+     "formId": "bogwarden",
+     "knack": "wide-reach"
+    },
+    {
+     "formId": "lanternfin",
+     "knack": "sunbeam"
+    },
+    {
+     "formId": "geyserpup",
+     "knack": "all-at-once"
+    },
+    {
+     "formId": "solmane",
+     "knack": "crown-of-embers"
+    },
+    {
+     "formId": "ancientshell",
+     "knack": "living-shelter"
+    },
+    {
+     "formId": "solmane",
+     "knack": "none"
     },
     {
      "formId": "tempestray",
@@ -1986,197 +1662,521 @@
     },
     {
      "formId": "tidewing",
+     "knack": "lead-the-way"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "none"
+    }
+   ],
+   "score": 14589,
+   "classic": 10145
+  },
+  "raid:payoff-hunter": {
+   "best": [
+    {
+     "formId": "bogwarden",
+     "knack": "mud-wall"
+    },
+    {
+     "formId": "tidewing",
      "knack": "steady-mark"
     },
     {
-     "formId": "gaiadrake",
-     "knack": "carry-them"
+     "formId": "thornbuck",
+     "knack": "wide-reach"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "wide-reach"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "lead-the-way"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "wide-reach"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "steady-mark"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "steady-mark"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "detonate"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "wide-reach"
     }
    ],
-   "score": 15474,
+   "score": 14489,
+   "classic": 9669
+  },
+  "raid:grudge": {
+   "best": [
+    {
+     "formId": "hearthshell",
+     "knack": "draw-fire"
+    },
+    {
+     "formId": "magmole",
+     "knack": "wide-warmth"
+    },
+    {
+     "formId": "squelch",
+     "knack": "squelch-song"
+    },
+    {
+     "formId": "geyserpup",
+     "knack": "none"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "all-at-once"
+    },
+    {
+     "formId": "fogwyrm",
+     "knack": "none"
+    },
+    {
+     "formId": "solmane",
+     "knack": "steady-mark"
+    },
+    {
+     "formId": "croakmire",
+     "knack": "none"
+    },
+    {
+     "formId": "bogwarden",
+     "knack": "none"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "zigzag"
+    },
+    {
+     "formId": "bogwarden",
+     "knack": "draw-fire"
+    },
+    {
+     "formId": "zipmouse",
+     "knack": "double-mark"
+    }
+   ],
+   "score": 12326,
+   "classic": 9862
+  },
+  "raid:great-wave": {
+   "best": [
+    {
+     "formId": "halcyray",
+     "knack": "gather-calm"
+    },
+    {
+     "formId": "geyserpup",
+     "knack": "all-at-once"
+    },
+    {
+     "formId": "bogwarden",
+     "knack": "draw-fire"
+    },
+    {
+     "formId": "ohmouse",
+     "knack": "none"
+    },
+    {
+     "formId": "wickat",
+     "knack": "none"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "wide-reach"
+    },
+    {
+     "formId": "bogwarden",
+     "knack": "mud-wall"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "zigzag"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "steady-mark"
+    },
+    {
+     "formId": "solmane",
+     "knack": "crown-of-embers"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "all-at-once"
+    },
+    {
+     "formId": "lanternfin",
+     "knack": "clear-the-air"
+    }
+   ],
+   "score": 14529,
+   "classic": 10886
+  },
+  "raid:swarm": {
+   "best": [
+    {
+     "formId": "ohmouse",
+     "knack": "lightning-ears"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "magmole",
+     "knack": "wide-warmth"
+    },
+    {
+     "formId": "gaiadrake",
+     "knack": "detonate"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "double-mark"
+    },
+    {
+     "formId": "geyserpup",
+     "knack": "puddle-maker"
+    },
+    {
+     "formId": "bogwarden",
+     "knack": "mud-wall"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "zigzag"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "twin-strike"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "all-at-once"
+    },
+    {
+     "formId": "cindle",
+     "knack": "none"
+    }
+   ],
+   "score": 20432,
+   "classic": 15563
+  },
+  "raid:crusher": {
+   "best": [
+    {
+     "formId": "bloomback",
+     "knack": "all-at-once"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "none"
+    },
+    {
+     "formId": "aurorix",
+     "knack": "clear-skies"
+    },
+    {
+     "formId": "geyserpup",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "solmane",
+     "knack": "steady-mark"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "none"
+    },
+    {
+     "formId": "zipmouse",
+     "knack": "zoom"
+    },
+    {
+     "formId": "mossback",
+     "knack": "feed-the-marks"
+    },
+    {
+     "formId": "squelch",
+     "knack": "squelch-song"
+    },
+    {
+     "formId": "thornbuck",
+     "knack": "wide-reach"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "zigzag"
+    },
+    {
+     "formId": "kilnmole",
+     "knack": "none"
+    }
+   ],
+   "score": 13853,
+   "classic": 9497
+  },
+  "raid:fizzle": {
+   "best": [
+    {
+     "formId": "voltaro",
+     "knack": "zoom"
+    },
+    {
+     "formId": "ohmouse",
+     "knack": "catch-the-bolts"
+    },
+    {
+     "formId": "stormray",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "voltaro",
+     "knack": "double-mark"
+    },
+    {
+     "formId": "solmane",
+     "knack": "steady-mark"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "all-at-once"
+    },
+    {
+     "formId": "croakmire",
+     "knack": "squelch-song"
+    },
+    {
+     "formId": "coralynx",
+     "knack": "none"
+    },
+    {
+     "formId": "kilnmole",
+     "knack": "draw-fire"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "none"
+    },
+    {
+     "formId": "wickat",
+     "knack": "lead-the-way"
+    },
+    {
+     "formId": "halcyray",
+     "knack": "clear-the-air"
+    }
+   ],
+   "score": 16728,
    "classic": 11665
   }
  },
  "diversity": {
-  "bloomback": 10,
-  "voltaro": 7,
-  "tempestray": 6,
-  "sunfawn": 4,
-  "fogwyrm": 4,
+  "tempestray": 7,
+  "tidewing": 6,
+  "bloomback": 6,
+  "sunfawn": 5,
+  "voltaro": 5,
   "bogwarden": 3,
-  "tidewing": 2,
-  "kilnmole": 2,
-  "drizzlewt": 1,
-  "coralynx": 1,
-  "hearthshell": 1,
-  "ohmouse": 1
+  "fogwyrm": 3,
+  "gaiadrake": 2,
+  "ohmouse": 2,
+  "pyrelynx": 1,
+  "lanternfin": 1,
+  "zipmouse": 1
  },
  "knackUsage": {
   "zigzag": {
-   "picks": 45,
-   "ratio": 5.36
-  },
-  "circle-round": {
-   "picks": 25,
-   "ratio": 2.98
-  },
-  "twin-strike": {
-   "picks": 20,
-   "ratio": 2.38
-  },
-  "crown-of-embers": {
-   "picks": 20,
-   "ratio": 2.38
-  },
-  "squelch-song": {
-   "picks": 38,
-   "ratio": 2.26
+   "picks": 37,
+   "ratio": 4.44
   },
   "all-at-once": {
-   "picks": 37,
-   "ratio": 2.2
+   "picks": 56,
+   "ratio": 3.36
   },
-  "zoom": {
-   "picks": 32,
-   "ratio": 1.9
+  "twin-strike": {
+   "picks": 26,
+   "ratio": 3.12
   },
-  "curl-up": {
-   "picks": 31,
-   "ratio": 1.85
-  },
-  "draw-fire": {
-   "picks": 43,
-   "ratio": 1.71
+  "squelch-song": {
+   "picks": 42,
+   "ratio": 2.52
   },
   "steady-mark": {
-   "picks": 83,
-   "ratio": 1.65
-  },
-  "leave-a-trail": {
-   "picks": 102,
-   "ratio": 1.52
-  },
-  "baked-shell": {
-   "picks": 12,
-   "ratio": 1.43
-  },
-  "lantern-glow": {
-   "picks": 12,
-   "ratio": 1.43
+   "picks": 113,
+   "ratio": 2.26
   },
   "detonate": {
-   "picks": 83,
-   "ratio": 1.41
+   "picks": 102,
+   "ratio": 1.75
   },
   "mud-wall": {
-   "picks": 23,
-   "ratio": 1.37
+   "picks": 29,
+   "ratio": 1.74
   },
-  "thick-fog": {
-   "picks": 11,
-   "ratio": 1.31
-  },
-  "puddle-maker": {
-   "picks": 10,
-   "ratio": 1.19
-  },
-  "lightning-ears": {
-   "picks": 8,
-   "ratio": 0.95
+  "circle-round": {
+   "picks": 14,
+   "ratio": 1.68
   },
   "wide-reach": {
-   "picks": 46,
-   "ratio": 0.91
+   "picks": 82,
+   "ratio": 1.64
   },
-  "gather-calm": {
-   "picks": 14,
-   "ratio": 0.83
+  "crown-of-embers": {
+   "picks": 12,
+   "ratio": 1.44
   },
-  "clear-the-air": {
-   "picks": 20,
-   "ratio": 0.79
+  "living-shelter": {
+   "picks": 12,
+   "ratio": 1.44
+  },
+  "draw-fire": {
+   "picks": 31,
+   "ratio": 1.24
+  },
+  "leave-a-trail": {
+   "picks": 73,
+   "ratio": 1.1
+  },
+  "baked-shell": {
+   "picks": 9,
+   "ratio": 1.08
+  },
+  "zoom": {
+   "picks": 18,
+   "ratio": 1.08
+  },
+  "catch-the-bolts": {
+   "picks": 9,
+   "ratio": 1.08
+  },
+  "thick-fog": {
+   "picks": 9,
+   "ratio": 1.08
+  },
+  "lead-the-way": {
+   "picks": 35,
+   "ratio": 1.05
   },
   "double-mark": {
+   "picks": 34,
+   "ratio": 1.02
+  },
+  "clear-the-air": {
    "picks": 24,
-   "ratio": 0.71
+   "ratio": 0.96
   },
-  "territorial": {
-   "picks": 6,
-   "ratio": 0.71
+  "lantern-glow": {
+   "picks": 8,
+   "ratio": 0.96
   },
-  "carry-them": {
-   "picks": 6,
-   "ratio": 0.71
+  "gather-calm": {
+   "picks": 15,
+   "ratio": 0.9
   },
-  "none": {
-   "picks": 198,
-   "ratio": 0.69
+  "curl-up": {
+   "picks": 15,
+   "ratio": 0.9
+  },
+  "lightning-ears": {
+   "picks": 7,
+   "ratio": 0.84
   },
   "hide-in-mist": {
-   "picks": 11,
-   "ratio": 0.65
+   "picks": 12,
+   "ratio": 0.72
   },
-  "ready-the-mark": {
-   "picks": 25,
-   "ratio": 0.6
+  "wide-warmth": {
+   "picks": 17,
+   "ratio": 0.68
   },
-  "tunnel-through": {
-   "picks": 5,
-   "ratio": 0.6
-  },
-  "guards-shadow": {
-   "picks": 5,
-   "ratio": 0.6
+  "feed-the-marks": {
+   "picks": 9,
+   "ratio": 0.54
   },
   "keep-the-heat-in": {
+   "picks": 9,
+   "ratio": 0.54
+  },
+  "none": {
+   "picks": 144,
+   "ratio": 0.51
+  },
+  "clear-skies": {
    "picks": 8,
    "ratio": 0.48
   },
-  "wide-warmth": {
-   "picks": 10,
-   "ratio": 0.4
+  "tunnel-through": {
+   "picks": 4,
+   "ratio": 0.48
   },
-  "lead-the-way": {
-   "picks": 7,
-   "ratio": 0.28
+  "carry-them": {
+   "picks": 4,
+   "ratio": 0.48
   },
-  "catch-the-bolts": {
-   "picks": 2,
-   "ratio": 0.24
+  "puddle-maker": {
+   "picks": 3,
+   "ratio": 0.36
   },
-  "drizzle": {
-   "picks": 2,
-   "ratio": 0.24
+  "night-watch": {
+   "picks": 3,
+   "ratio": 0.36
   },
-  "living-shelter": {
+  "territorial": {
+   "picks": 3,
+   "ratio": 0.36
+  },
+  "guards-shadow": {
    "picks": 1,
    "ratio": 0.12
   },
-  "hearth": {
+  "starlight": {
    "picks": 1,
    "ratio": 0.12
+  },
+  "ready-the-mark": {
+   "picks": 4,
+   "ratio": 0.1
   },
   "sunbeam": {
    "picks": 1,
    "ratio": 0.06
   },
-  "feed-the-marks": {
-   "picks": 0,
-   "ratio": 0
-  },
-  "clear-skies": {
-   "picks": 0,
-   "ratio": 0
-  },
   "primed-by-pain": {
    "picks": 0,
    "ratio": 0
   },
-  "night-watch": {
+  "drizzle": {
    "picks": 0,
    "ratio": 0
   },
-  "starlight": {
+  "hearth": {
    "picks": 0,
    "ratio": 0
   }
@@ -2188,9 +2188,34 @@
    "best": "reflective-hide"
   },
   "setter/light-feet": {
-   "damage": 0.017,
+   "damage": 0.018,
    "ko": -0.17,
+   "best": "crusher"
+  },
+  "setter/nimble": {
+   "damage": 0.001,
+   "ko": 0,
    "best": "payoff-hunter"
+  },
+  "setter/keen-eye": {
+   "damage": 0.009,
+   "ko": 0,
+   "best": "reflective-hide"
+  },
+  "setter/mighty-blow": {
+   "damage": 0.005,
+   "ko": 0,
+   "best": "thick-hide"
+  },
+  "setter/first-strike": {
+   "damage": 0.012,
+   "ko": 0,
+   "best": "reflective-hide"
+  },
+  "setter/cornered": {
+   "damage": 0.004,
+   "ko": 0,
+   "best": "crusher"
   },
   "setter/unflappable": {
    "damage": 0.017,
@@ -2198,17 +2223,47 @@
    "best": "bramble-bind"
   },
   "setter/tough-hide": {
-   "damage": 0.002,
+   "damage": 0.001,
    "ko": 0,
    "best": "great-wave"
+  },
+  "setter/hardy": {
+   "damage": 0.005,
+   "ko": -0.02,
+   "best": "bramble-bind"
+  },
+  "setter/hunker-down": {
+   "damage": 0.005,
+   "ko": -0.01,
+   "best": "great-wave"
+  },
+  "setter/hold-on": {
+   "damage": 0.011,
+   "ko": -0.06,
+   "best": "payoff-hunter"
   },
   "payoff/sharp-claws": {
    "damage": 0.05,
    "ko": 0,
    "best": "thick-hide"
   },
+  "payoff/light-feet": {
+   "damage": 0.009,
+   "ko": -0.05,
+   "best": "grudge"
+  },
+  "payoff/nimble": {
+   "damage": 0,
+   "ko": 0,
+   "best": "plain"
+  },
   "payoff/keen-eye": {
    "damage": 0.026,
+   "ko": 0,
+   "best": "thick-hide"
+  },
+  "payoff/mighty-blow": {
+   "damage": 0.01,
    "ko": 0,
    "best": "thick-hide"
   },
@@ -2217,14 +2272,84 @@
    "ko": 0,
    "best": "thick-hide"
   },
-  "payoff/first-strike": {
-   "damage": 0.033,
+  "payoff/hungry": {
+   "damage": 0.044,
    "ko": 0,
    "best": "thick-hide"
   },
-  "guard/tough-hide": {
-   "damage": 0.01,
+  "payoff/first-strike": {
+   "damage": 0.031,
+   "ko": 0,
+   "best": "thick-hide"
+  },
+  "payoff/cornered": {
+   "damage": 0.008,
+   "ko": 0,
+   "best": "great-wave"
+  },
+  "payoff/unflappable": {
+   "damage": 0,
+   "ko": 0,
+   "best": "plain"
+  },
+  "payoff/tough-hide": {
+   "damage": 0.003,
+   "ko": -0.01,
+   "best": "reflective-hide"
+  },
+  "payoff/hardy": {
+   "damage": 0.011,
+   "ko": -0.03,
+   "best": "crusher"
+  },
+  "payoff/hunker-down": {
+   "damage": 0,
+   "ko": -0.01,
+   "best": "great-wave"
+  },
+  "payoff/hold-on": {
+   "damage": 0.017,
    "ko": -0.09,
+   "best": "crusher"
+  },
+  "guard/light-feet": {
+   "damage": 0.013,
+   "ko": -0.18,
+   "best": "great-wave"
+  },
+  "guard/nimble": {
+   "damage": 0,
+   "ko": 0,
+   "best": "plain"
+  },
+  "guard/unflappable": {
+   "damage": 0,
+   "ko": 0,
+   "best": "plain"
+  },
+  "guard/tough-hide": {
+   "damage": 0.008,
+   "ko": -0.09,
+   "best": "payoff-hunter"
+  },
+  "guard/hardy": {
+   "damage": 0.016,
+   "ko": -0.15,
+   "best": "payoff-hunter"
+  },
+  "guard/hunker-down": {
+   "damage": 0.001,
+   "ko": 0,
+   "best": "great-wave"
+  },
+  "guard/hold-on": {
+   "damage": 0.022,
+   "ko": -0.19,
+   "best": "payoff-hunter"
+  },
+  "guard/second-wind": {
+   "damage": 0.022,
+   "ko": -0.23,
    "best": "payoff-hunter"
   },
   "guard/broad-back": {
@@ -2232,15 +2357,45 @@
    "ko": -0.01,
    "best": "payoff-hunter"
   },
-  "guard/unflappable": {
-   "damage": 0,
-   "ko": 0,
-   "best": "plain"
+  "support/light-feet": {
+   "damage": 0.006,
+   "ko": -0.07,
+   "best": "great-wave"
   },
-  "guard/second-wind": {
-   "damage": 0.02,
-   "ko": -0.22,
+  "support/nimble": {
+   "damage": 0.001,
+   "ko": -0.01,
    "best": "payoff-hunter"
+  },
+  "support/unflappable": {
+   "damage": 0.002,
+   "ko": 0,
+   "best": "bramble-bind"
+  },
+  "support/tough-hide": {
+   "damage": 0.002,
+   "ko": -0.03,
+   "best": "swarm"
+  },
+  "support/hardy": {
+   "damage": 0.004,
+   "ko": -0.05,
+   "best": "great-wave"
+  },
+  "support/hunker-down": {
+   "damage": 0.005,
+   "ko": -0.01,
+   "best": "great-wave"
+  },
+  "support/hold-on": {
+   "damage": 0.007,
+   "ko": -0.08,
+   "best": "great-wave"
+  },
+  "support/second-wind": {
+   "damage": 0.008,
+   "ko": -0.17,
+   "best": "great-wave"
   },
   "support/big-heart": {
    "damage": 0.041,
@@ -2251,16 +2406,6 @@
    "damage": 0.036,
    "ko": -0.13,
    "best": "grudge"
-  },
-  "support/unflappable": {
-   "damage": 0.002,
-   "ko": 0,
-   "best": "bramble-bind"
-  },
-  "support/light-feet": {
-   "damage": 0.006,
-   "ko": -0.08,
-   "best": "great-wave"
   }
  },
  "coverage": {

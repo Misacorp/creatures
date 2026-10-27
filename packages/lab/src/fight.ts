@@ -75,6 +75,12 @@ export function placeFighters(placements: readonly Placement[]): Fighter[] {
   return placements.map((p, i) => {
     const st = formStats(p.formId, p.level);
     const k = p.knack === 'none' ? undefined : p.knack;
+    const fxAll = mergeFx([
+      knack(k)?.fx ?? {},
+      ...(p.talents ?? []).map((id) => talent(id)?.fx ?? {}),
+    ]);
+    // Max HP is set when the fight starts (a stat, so silence does not take it away).
+    const maxHp = Math.floor((st.hp * (10_000 + (fxAll.hpBp ?? 0))) / 10_000);
     return {
       uid: `${p.owner}:${p.formId}:${i}`,
       owner: p.owner,
@@ -82,16 +88,17 @@ export function placeFighters(placements: readonly Placement[]): Fighter[] {
       name: st.name,
       element: st.element,
       role: st.role,
-      maxHp: st.hp,
-      hp: st.hp,
+      maxHp,
+      hp: maxHp,
       atk: st.atk,
       spd: st.spd,
       baseArmour: st.armour,
       knack: k,
       talents: p.talents ?? [],
-      fxAll: mergeFx([knack(k)?.fx ?? {}, ...(p.talents ?? []).map((id) => talent(id)?.fx ?? {})]),
+      fxAll,
       hitsLanded: 0,
       secondWindDone: false,
+      holdOnDone: false,
       row: p.row,
       col: p.col,
       silencedTurns: 0,
@@ -216,6 +223,7 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
   const payoffBeside = beside(s, f).some((o) => o.role === 'payoff');
   const situational =
     (f.hitsLanded === 0 ? (k.firstHitBp ?? 0) : 0) +
+    (f.hp * 2 < f.maxHp ? (k.lowHpAtkBp ?? 0) : 0) +
     (guardBeside ? (k.besideGuardBp ?? 0) : 0) +
     (payoffBeside ? 0 : (k.alonePayoffBp ?? 0));
   const bonusSum = Math.min(R.maxHitBonusBp, f.boostBp + situational);
@@ -225,7 +233,7 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
     ? 0
     : Math.floor((((base * (10_000 + bonusSum)) / 10_000) * shareBp * (k.plainBp ?? 10_000)) / 1e8);
   const crit = plain > 0 && roll(s, R.critChanceBp + (k.critChanceBp ?? 0));
-  if (crit) plain = Math.floor((plain * R.critBp) / 10_000);
+  if (crit) plain = Math.floor((plain * (R.critBp + (k.critDamageBp ?? 0))) / 10_000);
   // 2. The boss rolls dodge (14.4). A hit that deals no damage is not rolled. Setup never misses.
   const bossDodge = f.undodgeable
     ? 0
@@ -260,8 +268,9 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
         factor *= 2;
         shell.store = 0;
       }
-      // A crit talent on a reaction raises the factor, inside the cap (R7).
+      // Talents raise the factor, inside the cap (R7): a crit talent on a crit, Hungry always.
       if (crit && k.reactionCritBp) factor = (factor * (10_000 + k.reactionCritBp)) / 10_000;
+      if (k.reactionBonusBp) factor = (factor * (10_000 + k.reactionBonusBp)) / 10_000;
       factor = Math.min(factor, R.maxBonusFactorBp);
       bonus = Math.floor((((plain * (R.payoffMultBp - 10_000)) / 10_000) * factor) / 10_000);
       if (s.opts.resistReaction === el) bonus = Math.floor(bonus / 2);
@@ -422,7 +431,11 @@ function dodgeOf(s: State, f: Fighter, area: boolean): number {
       ),
   );
   const base = Math.min(R.dodgeMaxBp, f.spd * R.dodgePerSpdBp + (fx(f).dodgeBonusBp ?? 0) + aura);
-  return area ? Math.floor((base * R.areaDodgeShareBp) / 10_000) : base;
+  if (!area) return base;
+  return Math.min(
+    R.dodgeMaxBp,
+    Math.floor((base * R.areaDodgeShareBp) / 10_000) + (fx(f).areaDodgeBp ?? 0),
+  );
 }
 
 const reachOf = (g: Fighter) => R.guardReach + (fx(g).reachBonus ?? 0);
@@ -443,7 +456,9 @@ function takeHit(
         .map((o) => fx(o).rowAreaCutBp ?? 0),
     );
     const shelter = Math.max(0, ...beside(s, taker).map((o) => fx(o).besideAreaCutBp ?? 0));
-    dmg = Math.floor((dmg * (10_000 - Math.max(ward, shelter))) / 10_000);
+    // Auras of one kind: the largest applies; the creature's own cut adds (R15), at most 75%.
+    const cut = Math.min(7_500, Math.max(ward, shelter) + (fx(taker).areaCutBp ?? 0));
+    dmg = Math.floor((dmg * (10_000 - cut)) / 10_000);
     const coverer = alive(s).find(
       (g) =>
         g.role === 'guard' &&
@@ -468,6 +483,11 @@ function takeHit(
     s.count.blocked++;
     log(s, 'blocked', `${taker.name} blocks the hit`);
     return;
+  }
+  if (dmg >= taker.hp && fx(taker).holdOn && !taker.holdOnDone) {
+    taker.holdOnDone = true;
+    dmg = taker.hp - 1;
+    log(s, 'hold-on', `${taker.name} holds on`);
   }
   taker.hp = Math.max(0, taker.hp - dmg);
   const wind = fx(taker).secondWindBp;

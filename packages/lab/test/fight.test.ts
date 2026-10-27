@@ -6,6 +6,10 @@ import {
   FORM_KNACKS,
   keywordsIn,
   ADDITIVE_FIELDS,
+  LINE_POOLS,
+  OWN_KNACKS,
+  knacksOf,
+  lineRoles,
   FAMILIES,
   TALENTS,
   TALENT_LINES,
@@ -533,5 +537,50 @@ describe('panel 2 fixes', () => {
     expect(wind.healed - plain.healed).toBeLessThanOrEqual(
       Math.ceil((wind.fighters[0]?.maxHp ?? 0) / 5),
     );
+  });
+});
+
+describe('R11 and line talent pools (Misa, 2026-10-27)', () => {
+  it('evolving adds the new form its own Knacks; a role change keeps only the new role', () => {
+    // Splashet (Setter) to Tidewing (Setter): it keeps Steady Mark and Lead the Way, and learns more.
+    expect(knacksOf('tidewing')).toEqual([
+      'steady-mark',
+      'lead-the-way',
+      'double-mark',
+      'circle-round',
+    ]);
+    // Splashet to Geyserpup (Payoff): only the Payoff's own.
+    expect(knacksOf('geyserpup')).toEqual(OWN_KNACKS['geyserpup']);
+    for (const c of content.creatures) expect(OWN_KNACKS, c.id).toHaveProperty(c.id);
+  });
+
+  it('every line has a pool of 7 talents, at least 3 of them fit each role in the line', () => {
+    for (const ln of new Set(content.creatures.map((c) => c.line))) {
+      const pool = LINE_POOLS[ln] ?? [];
+      expect(pool.length, ln).toBe(7);
+      expect(new Set(pool).size, ln).toBe(7);
+      for (const role of lineRoles(ln))
+        expect(
+          pool.filter((t) => TALENTS[t]?.roles.includes(role)).length,
+          `${ln} ${role}`,
+        ).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('Hold On leaves it at 1 HP once; Hardy raises max HP', () => {
+    const boss: BossDef = {
+      ...labBoss({ rows: 1, cols: 1, rounds: 1, atk: 2_000 }),
+      spd: 0,
+      plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 10_000 },
+    };
+    const held = fight(boss, [{ ...at('tidewing', 0, 0), talents: ['hold-on'] }], {
+      rng: rng('hold'),
+      log: true,
+    });
+    expect(held.events.some((e) => e.kind === 'hold-on')).toBe(true);
+    expect(held.fighters[0]?.hp).toBe(1);
+    const hardy = fight(boss, [{ ...at('tidewing', 0, 0), talents: ['hardy'] }], { rng: rng('h') });
+    const plain = fight(boss, [at('tidewing', 0, 0)], { rng: rng('h') });
+    expect(hardy.fighters[0]?.maxHp).toBe(Math.floor(((plain.fighters[0]?.maxHp ?? 0) * 11) / 10));
   });
 });

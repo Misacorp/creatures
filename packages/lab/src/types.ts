@@ -25,6 +25,8 @@ export interface Fighter {
   hitsLanded: number;
   /** Second Wind fired this fight. */
   secondWindDone: boolean;
+  /** Hold On fired this fight. */
+  holdOnDone: boolean;
   row: number;
   col: number;
   silencedTurns: number;

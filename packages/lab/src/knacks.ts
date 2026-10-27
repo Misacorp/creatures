@@ -5,6 +5,8 @@
  * Naming rule (principle 8): the same effect keeps the same name wherever it appears (another
  * species, a gear piece). A different effect gets a different name.
  */
+import { content } from '@creatures/game';
+
 export interface KnackFx {
   /** Guard reach +n on each side. */
   readonly reachBonus?: number;
@@ -94,6 +96,20 @@ export interface KnackFx {
   readonly firstHitBp?: number;
   /** Once per fight, when a hit drops it below half its max HP, it heals this share of its max HP. */
   readonly secondWindBp?: number;
+  /** Max HP this much higher (set when the fight starts). */
+  readonly hpBp?: number;
+  /** A crit deals this much more on top of the base crit. */
+  readonly critDamageBp?: number;
+  /** Its hits deal this much more while it is below half its max HP. */
+  readonly lowHpAtkBp?: number;
+  /** It takes this much less from area hits and charged landings (its own; adds to an aura). */
+  readonly areaCutBp?: number;
+  /** Once per fight, a hit that would knock it out leaves it at 1 HP. */
+  readonly holdOn?: boolean;
+  /** Its reaction bonus factor is this much higher (inside the cap, R7). */
+  readonly reactionBonusBp?: number;
+  /** Added to its dodge against area hits (after the half chance). */
+  readonly areaDodgeBp?: number;
   /** It cannot be silenced. */
   readonly ignoreSilence?: boolean;
   /** A Guard's cover is this much stronger. */
@@ -507,31 +523,35 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
   ].map((k) => [k.id, k]),
 );
 
-/** The Knacks each form can equip. An absent player's creature uses the Knack its owner last saved, or none (R11). */
-export const FORM_KNACKS: Readonly<Record<string, readonly string[]>> = {
+/**
+ * The Knacks each form brings of its own (R11, Misa 2026-10-27). A creature knows them from the
+ * moment it is caught; evolving adds the new form's own Knacks to the ones it knew, if the role stays
+ * (a role change keeps only the new form's, since the old role's Knacks would do nothing).
+ */
+export const OWN_KNACKS: Readonly<Record<string, readonly string[]>> = {
   splashet: ['steady-mark', 'lead-the-way'],
-  tidewing: ['steady-mark', 'double-mark', 'circle-round'],
+  tidewing: ['double-mark', 'circle-round'],
   geyserpup: ['leave-a-trail', 'puddle-maker', 'all-at-once'],
   stormray: ['detonate', 'leave-a-trail'],
-  tempestray: ['detonate', 'leave-a-trail', 'twin-strike'],
+  tempestray: ['twin-strike'],
   halcyray: ['clear-skies', 'clear-the-air', 'gather-calm'],
   sproutle: ['wide-reach', 'primed-by-pain'],
-  thornbuck: ['wide-reach', 'primed-by-pain', 'night-watch'],
+  thornbuck: ['night-watch'],
   sunfawn: ['sunbeam', 'curl-up', 'ready-the-mark'],
   ashmole: ['wide-warmth', 'ready-the-mark'],
-  magmole: ['wide-warmth', 'ready-the-mark', 'tunnel-through'],
+  magmole: ['tunnel-through'],
   kilnmole: ['draw-fire', 'keep-the-heat-in', 'baked-shell'],
   zipmouse: ['zoom', 'double-mark'],
-  voltaro: ['zoom', 'double-mark', 'zigzag'],
+  voltaro: ['zigzag'],
   ohmouse: ['catch-the-bolts', 'lightning-ears'],
   cindle: ['detonate', 'leave-a-trail'],
-  pyrelynx: ['detonate', 'leave-a-trail', 'guards-shadow'],
+  pyrelynx: ['guards-shadow'],
   wickat: ['lead-the-way', 'steady-mark', 'double-mark'],
   mistnewt: ['wide-reach', 'hide-in-mist'],
-  fogwyrm: ['wide-reach', 'hide-in-mist', 'thick-fog'],
+  fogwyrm: ['thick-fog'],
   drizzlewt: ['drizzle', 'curl-up', 'clear-the-air'],
   mossback: ['steady-mark', 'feed-the-marks'],
-  ancientshell: ['steady-mark', 'feed-the-marks', 'living-shelter'],
+  ancientshell: ['living-shelter'],
   bloomback: ['all-at-once', 'detonate', 'leave-a-trail'],
   coralynx: ['detonate', 'leave-a-trail', 'territorial'],
   solmane: ['lead-the-way', 'steady-mark', 'crown-of-embers'],
@@ -540,10 +560,34 @@ export const FORM_KNACKS: Readonly<Record<string, readonly string[]>> = {
   lanternfin: ['lantern-glow', 'clear-the-air', 'sunbeam'],
   hearthshell: ['draw-fire', 'keep-the-heat-in', 'hearth'],
   mudlump: ['mud-wall', 'wide-reach'],
-  bogwarden: ['mud-wall', 'wide-reach', 'draw-fire'],
+  bogwarden: ['draw-fire'],
   squelch: ['squelch-song', 'ready-the-mark'],
-  croakmire: ['squelch-song', 'ready-the-mark', 'wide-warmth'],
+  croakmire: ['wide-warmth'],
 };
+
+/** The form a stage 2 form evolves from (its line's stage 1 form), if any. */
+export function evolvesFrom(form: string): string | undefined {
+  const c = content.creatures.find((x) => x.id === form);
+  if (!c || c.stage < 2) return undefined;
+  return content.creatures.find((x) => x.line === c.line && x.stage === c.stage - 1)?.id;
+}
+
+/** Every Knack a form knows: what it knew before evolving (if the role stayed), then its own (R11). */
+export function knacksOf(form: string): string[] {
+  const own = OWN_KNACKS[form] ?? [];
+  const parent = evolvesFrom(form);
+  const role = content.creatures.find((x) => x.id === form)?.role;
+  const kept =
+    parent !== undefined && content.creatures.find((x) => x.id === parent)?.role === role
+      ? knacksOf(parent)
+      : [];
+  return [...new Set([...kept, ...own])];
+}
+
+/** The Knacks each form can equip (R11): worked out from `OWN_KNACKS` and the evolution line. */
+export const FORM_KNACKS: Readonly<Record<string, readonly string[]>> = Object.fromEntries(
+  Object.keys(OWN_KNACKS).map((f) => [f, knacksOf(f)]),
+);
 
 export function knack(id: string | undefined): KnackDef | undefined {
   return id === undefined ? undefined : KNACKS[id];

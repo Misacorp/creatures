@@ -5,7 +5,7 @@
  * new creature, talent or Knack shows up on the page with no change to the page's code.
  */
 import { content, talentContent, talentSignature, talentText } from '@creatures/game';
-import { BY_ROLE, FAMILIES, FORM_KNACKS, KEYWORDS, KNACKS, TALENTS } from '@creatures/lab';
+import { FAMILIES, FORM_KNACKS, KEYWORDS, KNACKS, LINE_POOLS, TALENTS } from '@creatures/lab';
 import type { WikiData } from './types';
 
 /** The wiki's data from the shipped content and the lab's draft. */
@@ -35,7 +35,7 @@ export function loadWikiData(): WikiData {
         ability === undefined ? null : { name: ability.name, description: ability.description },
       talents: [...pool, ...(signature === undefined ? [] : [signature])].map((t) => t.id),
       knacks: [...(FORM_KNACKS[c.id] ?? [])],
-      draftTalents: [...BY_ROLE[c.role]],
+      draftTalents: [...(LINE_POOLS[c.line] ?? [])],
     };
   });
 
@@ -74,8 +74,12 @@ export function loadWikiData(): WikiData {
       name: t.name,
       text: t.text,
       intent: t.intent,
+      roles: [...t.roles],
     })),
-    draftPools: Object.entries(BY_ROLE).map(([role, talents]) => ({ role, talents: [...talents] })),
+    draftPools: Object.entries(LINE_POOLS).map(([line, talents]) => ({
+      line,
+      talents: [...talents],
+    })),
     keywords: Object.entries(KEYWORDS).map(([name, k]) => ({
       name,
       means: k.means,

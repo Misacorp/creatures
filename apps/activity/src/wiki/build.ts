@@ -43,7 +43,7 @@ function capital(text: string): string {
 
 /** What the page can link to, by kind and content id. */
 type Kind =
-  'creature' | 'line' | 'talent' | 'knack' | 'dtalent' | 'keyword' | 'family' | 'element' | 'role';
+  'creature' | 'line' | 'talent' | 'knack' | 'dtalent' | 'keyword' | 'family' | 'element' | 'pool';
 
 class Page {
   private readonly known = new Map<Kind, Set<string>>();
@@ -135,10 +135,14 @@ function creatureEntry(page: Page, data: WikiData, c: WikiCreature): string {
       ),
     ],
     [
-      `Draft talent pool (${c.role})`,
+      'Draft talent pool (its line)',
       page.links(
         'dtalent',
-        c.draftTalents.map((id) => ({ id, label: draft.get(id)?.name ?? id })),
+        c.draftTalents.map((id) => {
+          const t = draft.get(id);
+          const idle = t !== undefined && !t.roles.includes(c.role);
+          return { id, label: `${t?.name ?? id}${idle ? ' (idle on this form)' : ''}` };
+        }),
       ),
     ],
   ];
@@ -251,16 +255,17 @@ ${entries}
 function draftTalentEntry(
   page: Page,
   t: WikiDraftTalent,
-  roles: string[],
+  lines: string[],
   on: WikiCreature[],
 ): string {
   return `<article class="entry" id="${esc(anchor('dtalent', t.id))}">
 ${heading(4, anchor('dtalent', t.id), t.name)}
 <p>${page.rich(t.text)}</p>
 <p class="intent"><span class="label">Design intent:</span> ${esc(t.intent)}</p>
-<p class="found"><span class="label">Rolled by roles:</span> ${page.links(
-    'role',
-    roles.map((r) => ({ id: r, label: capital(r) })),
+<p class="found"><span class="label">Works for:</span> ${esc(t.roles.map(capital).join(', '))}</p>
+<p class="found"><span class="label">In the pools of:</span> ${page.links(
+    'pool',
+    lines.map((l) => ({ id: l, label: `${capital(l)} line` })),
   )}</p>
 ${foundOn(page, on)}
 </article>`;
@@ -270,7 +275,7 @@ function draftTalentsSection(page: Page, data: WikiData): string {
   const pools = data.draftPools
     .map((p) => {
       const names = new Map(data.draftTalents.map((t) => [t.id, t.name]));
-      return `<li id="${esc(anchor('role', p.role))}"><strong>${esc(capital(p.role))}</strong>: ${page.links(
+      return `<li id="${esc(anchor('pool', p.line))}"><strong>${esc(capital(p.line))} line</strong>: ${page.links(
         'dtalent',
         p.talents.map((id) => ({ id, label: names.get(id) ?? id })),
       )}</li>`;
@@ -281,7 +286,7 @@ function draftTalentsSection(page: Page, data: WikiData): string {
       draftTalentEntry(
         page,
         t,
-        data.draftPools.filter((p) => p.talents.includes(t.id)).map((p) => p.role),
+        data.draftPools.filter((p) => p.talents.includes(t.id)).map((p) => p.line),
         data.creatures.filter((c) => c.draftTalents.includes(t.id)),
       ),
     )
@@ -289,7 +294,7 @@ function draftTalentsSection(page: Page, data: WikiData): string {
   return `<section id="draft-talents">
 ${heading(2, 'draft-talents', 'Combat v2 draft: talents')}
 ${DRAFT_NOTE}
-<p>Draft talents are by role: every form of a role rolls from the same pool.</p>
+<p>One shared library of talents; each creature line rolls from its own pool of it (branch forms share the line's pool). A talent that does nothing for a form's role is idle on it.</p>
 <ul class="index">
 ${pools}
 </ul>
@@ -386,7 +391,7 @@ export function buildWiki(data: WikiData, css = '/wiki.css'): string {
   for (const k of data.keywords) page.declare('keyword', k.name);
   for (const f of data.families) page.declare('family', f.name);
   for (const e of data.elements) page.declare('element', e.id);
-  for (const p of data.draftPools) page.declare('role', p.role);
+  for (const p of data.draftPools) page.declare('pool', p.line);
 
   const toc = [
     ['creatures', 'Creatures'],

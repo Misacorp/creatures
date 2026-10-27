@@ -50,6 +50,8 @@ export interface WikiDraftTalent {
   name: string;
   text: string;
   intent: string;
+  /** The roles it does something for (idle on the others). */
+  roles: string[];
 }
 
 export interface WikiData {
@@ -57,8 +59,8 @@ export interface WikiData {
   currentTalents: WikiCurrentTalent[];
   knacks: WikiKnack[];
   draftTalents: WikiDraftTalent[];
-  /** The draft talent pool of each role. */
-  draftPools: { role: string; talents: string[] }[];
+  /** The draft talent pool of each creature line. */
+  draftPools: { line: string; talents: string[] }[];
   keywords: { name: string; means: string; not: string; step: string }[];
   families: { name: string; text: string }[];
   elements: { id: string; name: string }[];
