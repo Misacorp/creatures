@@ -80,20 +80,6 @@
     }
   },
   {
-    "route": "POST /api/gear/mark",
-    "status": 409,
-    "body": {
-      "error": "item_worn"
-    }
-  },
-  {
-    "route": "POST /api/gear/dismantle",
-    "status": 409,
-    "body": {
-      "error": "marks_changed"
-    }
-  },
-  {
     "route": "POST /api/gear/dismantle",
     "status": 409,
     "body": {
@@ -112,6 +98,13 @@
     "status": 409,
     "body": {
       "error": "creature_away"
+    }
+  },
+  {
+    "route": "POST /api/gear/dismantle",
+    "status": 409,
+    "body": {
+      "error": "item_locked"
     }
   },
   {

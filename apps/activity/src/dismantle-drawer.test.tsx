@@ -4,7 +4,7 @@ import type { Creature } from './api';
 import { SAMPLE_GEAR, sampleCreature } from './creature-card-sample';
 import { sampleItem } from './creature-page/bag-sample';
 import { DismantleDrawer } from './DismantleDrawer';
-import type { DismantlePreview, GearItem } from './gear-types';
+import type { DismantleCheck, DismantlePreview, GearItem } from './gear-types';
 import {
   byClass,
   byName,
@@ -17,9 +17,10 @@ import {
 } from './test-dom';
 
 /**
- * Dismantling the marked pile (2026-10-27): a drawer from the bag with the shared wizard. Who dismantles (free
- * creatures first, busy ones greyed, no clock), then the confirmation that names what goes and shows the
- * server's numbers, with "Cannot be undone." above the gold "Dismantle".
+ * Dismantling the picked items (2026-10-27): a drawer from the bag with the shared wizard. A warning about worn items
+ * first (when some are worn), then Who dismantles (free creatures first, busy ones greyed, no clock), then the
+ * confirmation that names what goes and shows the server's numbers, with "Cannot be undone." above the gold
+ * "Dismantle".
  */
 
 let page: Page | null = null;
@@ -56,7 +57,7 @@ function pileOf(): GearItem[] {
       sampleItem(`c${String(i)}`, 'trail-cap', 'common', 2, []),
     ),
     ...Array.from({ length: 3 }, (_, i) => sampleItem(`r${String(i)}`, 'kelp-cap', 'rare', 6, [])),
-  ].map((i) => ({ ...i, markedForDismantle: true }));
+  ];
 }
 
 const preview = (
@@ -89,6 +90,7 @@ interface Open {
   p: Page;
   items: GearItem[];
   loadPreview: ReturnType<typeof vi.fn>;
+  checkLocks: ReturnType<typeof vi.fn>;
   onConfirm: ReturnType<typeof vi.fn>;
   onClose: ReturnType<typeof vi.fn>;
 }
@@ -100,9 +102,17 @@ function open(
     error?: string | null;
     creatures?: readonly Creature[];
     previewOver?: Partial<DismantlePreview>;
+    /** The pile (a pile of 23 free items by default). */
+    pile?: GearItem[];
+    locks?: DismantleCheck['locked'] | 'fails';
   } = {},
 ): Open {
-  const items = pileOf();
+  const items = over.pile ?? pileOf();
+  const checkLocks = vi.fn(() =>
+    over.locks === 'fails'
+      ? Promise.reject(new Error('offline'))
+      : Promise.resolve({ locked: over.locks ?? [] }),
+  );
   const loadPreview =
     over.loadPreview ?? vi.fn(() => Promise.resolve(preview(items, over.previewOver)));
   const onConfirm = over.onConfirm ?? vi.fn(() => Promise.resolve(true));
@@ -116,11 +126,12 @@ function open(
       busy={false}
       error={over.error ?? null}
       loadPreview={loadPreview as never}
+      checkLocks={checkLocks}
       onConfirm={onConfirm as never}
       onClose={onClose}
     />,
   );
-  return { p: page, items, loadPreview, onConfirm, onClose };
+  return { p: page, items, loadPreview, checkLocks, onConfirm, onClose };
 }
 
 const footer = (p: Page): FakeElement => first(byClass(p.root, 'send-button'));
@@ -243,7 +254,7 @@ describe('the dismantle drawer', () => {
   it("keeps the confirmation up and shows the server's error when the dismantle is refused", async () => {
     const { p, onConfirm } = open({
       onConfirm: vi.fn(() => Promise.resolve(false)),
-      error: 'The items you marked changed. Look at the list again.',
+      error: 'A creature that is away or busy still needs something it wears.',
     });
     p.click(footer(p));
     await settle(p);
@@ -252,7 +263,7 @@ describe('the dismantle drawer', () => {
     await settle(p);
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(head(p)).toContain('Dismantle 23 items');
-    expect(visibleText(p.root)).toContain('The items you marked changed.');
+    expect(visibleText(p.root)).toContain('A creature that is away or busy still needs');
   });
 
   it('goes Back from the confirmation to Who, and from Who closes the drawer, changing nothing', async () => {
@@ -289,5 +300,89 @@ describe('the dismantle drawer', () => {
     const text = visibleText(pinned);
     expect(text.indexOf('Cannot be undone.')).toBeLessThan(text.indexOf('Dismantle'));
     expect(visibleText(first(byClass(p.root, 'send-button')))).toBe('Dismantle');
+  });
+});
+
+describe('the warning about worn items', () => {
+  /** Three items: two worn (by `mid` and `high`) and one free. */
+  function wornPile(): GearItem[] {
+    return [
+      { ...sampleItem('w1', 'trail-cap', 'common', 2, []), equippedOn: 'mid' },
+      { ...sampleItem('w2', 'kelp-cap', 'rare', 6, []), equippedOn: 'high' },
+      sampleItem('f1', 'trail-cap', 'common', 2, []),
+    ];
+  }
+  const text = (p: Page): string => visibleText(p.root);
+
+  it('does not come up when nothing is worn: the drawer opens on Who', () => {
+    const { p, checkLocks } = open();
+    expect(head(p)).toContain('Who dismantles');
+    expect(checkLocks).not.toHaveBeenCalled();
+  });
+
+  it('opens on the worn items when some are worn, listing each with who wears it, free ones left out', async () => {
+    const { p, checkLocks } = open({ pile: wornPile() });
+    await settle(p);
+    expect(head(p)).toContain('Worn items');
+    const list = first(byClass(p.root, 'worn-list'));
+    const rows = byClass(list, 'worn-row');
+    expect(rows).toHaveLength(2);
+    expect(visibleText(rows[0] as FakeElement)).toContain('Trail Cap');
+    expect(visibleText(rows[0] as FakeElement)).toContain('mid');
+    expect(visibleText(rows[1] as FakeElement)).toContain('Kelp Cap');
+    expect(visibleText(rows[1] as FakeElement)).toContain('high');
+    // Each row has the wearer's small picture.
+    expect(byClass(rows[0] as FakeElement, 'sprite').length).toBeGreaterThan(0);
+    // The server is asked about the worn items only, and the words are "Dismantle anyway".
+    expect(checkLocks).toHaveBeenCalledWith(['w1', 'w2']);
+    expect(visibleText(footer(p))).toBe('Dismantle anyway');
+    expect(footer(p).hasAttribute('disabled')).toBe(false);
+  });
+
+  it('goes on to Who on "Dismantle anyway" and asks about every item in the end, worn ones too', async () => {
+    const items = wornPile();
+    const { p, loadPreview, onClose } = open({ pile: items });
+    await settle(p);
+    p.click(footer(p));
+    expect(head(p)).toContain('Who dismantles');
+    p.click(footer(p));
+    await settle(p);
+    expect(loadPreview.mock.calls[0]?.[1]).toEqual(['w1', 'w2', 'f1']);
+    // Back through the steps: the confirmation, Who, the warning, then out.
+    p.click(first(byName(p.root, 'button', /^‹ Back/)));
+    p.click(first(byName(p.root, 'button', /^‹ Back/)));
+    expect(head(p)).toContain('Worn items');
+    expect(onClose).not.toHaveBeenCalled();
+    p.click(first(byName(p.root, 'button', /^‹ Back/)));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('holds back an item whose wearer is away on a trip or on a job, saying which, and keeps the button off', async () => {
+    const { p } = open({
+      pile: wornPile(),
+      locks: [
+        { itemId: 'w1', creatureId: 'mid', reason: 'trip' },
+        { itemId: 'w2', creatureId: 'high', reason: 'job' },
+      ],
+    });
+    await settle(p);
+    expect(text(p)).toContain('Away on a trip');
+    expect(text(p)).toContain('On a job');
+    expect(byClass(p.root, 'locked')).toHaveLength(2);
+    expect(footer(p).hasAttribute('disabled')).toBe(true);
+    expect(text(p)).toContain('Go back and leave those out');
+    p.click(footer(p));
+    expect(head(p)).toContain('Worn items');
+  });
+
+  it('waits for the check before it lets the player on, and goes on when it cannot be answered', async () => {
+    const waiting = open({ pile: wornPile() });
+    expect(text(waiting.p)).toContain('Checking');
+    expect(footer(waiting.p).hasAttribute('disabled')).toBe(true);
+    waiting.p.unmount();
+    page = null;
+    const offline = open({ pile: wornPile(), locks: 'fails' });
+    await settle(offline.p);
+    expect(footer(offline.p).hasAttribute('disabled')).toBe(false);
   });
 });

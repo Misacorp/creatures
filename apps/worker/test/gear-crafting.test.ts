@@ -565,8 +565,6 @@ describe('the day modifiers hook', () => {
         expect(rare(shown.value)?.epic).toBeGreaterThan(rare(normal.value)?.epic ?? 99_999);
         // A pile dismantle with the day's top-of-range rolls the top of every item (the hook says all).
         const item = give(ctx, p.id, 'coal-warm-cap', { rarity: 'epic', level: 10 });
-        const marked = gear.markForDismantle(p.id, [item], true);
-        if (!marked.ok) throw new Error('mark failed');
         const done = gear.dismantlePile(p.id, {
           creatureId: p.creatureIds[1] as string,
           itemIds: [item],

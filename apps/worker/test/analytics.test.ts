@@ -1674,11 +1674,6 @@ describe('privacy', () => {
           level: 4,
           now: ctx.clock.t,
         });
-        const marking = await call(ctx, a.secret, 'POST', '/api/gear/mark', {
-          itemIds: [rare],
-          marked: true,
-        });
-        expect(marking.status).toBe(200);
         const taken = await call(ctx, a.secret, 'POST', '/api/gear/dismantle', {
           creatureId: a.starterId,
           itemIds: [rare],

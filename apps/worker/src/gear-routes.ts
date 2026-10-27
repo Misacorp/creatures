@@ -3,11 +3,11 @@ import type { Gear } from './gear';
 import {
   ClaimJobBodySchema,
   DismantleBodySchema,
+  DismantleCheckBodySchema,
   DismantleJobSchema,
   DismissNoticeBodySchema,
   EquipBestBodySchema,
   EquipBodySchema,
-  MarkBodySchema,
   PreviewBodySchema,
   RemovedJobKindSchema,
   StartJobBodySchema,
@@ -81,17 +81,17 @@ const routes: Routes<GearRouteContext> = {
   '/api/gear/:id/dismantle': {
     POST: () => errorResponse('dismantle_is_a_job', 410),
   },
-  // Marks items for dismantling or unmarks them (2026-10-27): a worn item or one in an open job cannot be marked.
-  '/api/gear/mark': {
+  // Which of the items cannot be dismantled now (worn by a creature whose running trip or job reads them live).
+  '/api/gear/dismantle-check': {
     POST: async (request, ctx) => {
-      const body = await parseBody(request, MarkBodySchema);
+      const body = await parseBody(request, DismantleCheckBodySchema);
       if (body === undefined) return invalidBody();
-      const outcome = ctx.core.gear.markForDismantle(ctx.user.id, body.itemIds, body.marked);
+      const outcome = ctx.core.gear.dismantleCheck(ctx.user.id, body.itemIds);
       if (!outcome.ok) return failure(outcome);
-      return json({ result: outcome.value, ...views(ctx) });
+      return json({ result: outcome.value });
     },
   },
-  // Dismantles the whole marked pile at once with one free creature; the request names the items the player saw.
+  // Dismantles the named items at once with one free creature (worn ones come off); the request names the items the player saw.
   '/api/gear/dismantle': {
     POST: async (request, ctx) => {
       const body = await parseBody(request, DismantleBodySchema);

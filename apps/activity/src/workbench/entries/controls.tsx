@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { CurrencyPile } from '../../CurrencyPile';
 import { ActionButton } from '../../ui/ActionButton';
+import { BulkBar } from '../../ui/BulkBar';
 import { ChoiceButton, ChoiceList } from '../../ui/ChoiceList';
 import { FoldRow } from '../../ui/FoldRow';
 import { DrillHead } from '../../ui/DrillHead';
@@ -502,8 +503,42 @@ const actionButton: Entry = {
   render: (p) => <ActionButtonDemo p={p} />,
 };
 
+const bulkBar: Entry = {
+  name: 'BulkBar',
+  file: 'apps/activity/src/ui/BulkBar.tsx',
+  group: 'Controls',
+  description:
+    'The bulk actions bar of a page where several things can be selected (the Workshop bag): an X that clears the selection and leaves the mode, "N selected", and the page\'s actions as buttons (today only Dismantle; later ones slot in beside it). It is part of the page\'s section, not a bar of the frame: it sticks to the bottom of the window above the dock while the list scrolls. Escape inside it clears too. A short hint after the count says why an action is off.',
+  controls: {
+    count: { kind: 'number', min: 1, max: 60 },
+    hint: { kind: 'text', maxLength: 60 },
+    second: { kind: 'toggle' },
+  },
+  defaults: { count: 3, hint: '', second: false },
+  presets: [
+    { name: 'Three selected, Dismantle', props: {} },
+    { name: 'One selected', props: { count: 1 } },
+    { name: 'Sixty selected', props: { count: 60 } },
+    { name: 'Two actions (a later one beside Dismantle)', props: { second: true } },
+    { name: 'With a hint', props: { hint: 'Nobody is free.' } },
+  ],
+  render: (p) => (
+    <BulkBar
+      count={num(p, 'count')}
+      hint={str(p, 'hint') === '' ? null : str(p, 'hint')}
+      onClear={() => undefined}
+    >
+      {bool(p, 'second') && <button type="button">Sort out</button>}
+      <button type="button" class="primary">
+        Dismantle
+      </button>
+    </BulkBar>
+  ),
+};
+
 export const controlEntries: readonly Entry[] = [
   actionButton,
+  bulkBar,
   choiceList,
   drillHead,
   previewStatus,

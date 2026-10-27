@@ -116,28 +116,13 @@ export function essenceOf(ctx: CoreContext, userId: string): number {
   );
 }
 
-/** Marks items for dismantling (`marked` false unmarks them). */
-export const markItems = (p: Api, itemIds: string[], marked = true) =>
-  p.call('POST', '/api/gear/mark', { itemIds, marked });
-
-/** Dismantles the marked pile with a creature: the exact items the player saw. */
+/** Dismantles the named items with a creature (the exact items the player saw). */
 export const dismantlePile = (
   p: Api,
   creatureId: string,
   itemIds: string[],
   idempotencyKey: string = crypto.randomUUID(),
 ) => p.call('POST', '/api/gear/dismantle', { creatureId, itemIds, idempotencyKey });
-
-/** Marks the items and dismantles them with the creature, as the screen does (the answer of the dismantle). */
-export async function markAndDismantle(
-  p: Api,
-  creatureId: string,
-  itemIds: string[],
-): Promise<Json> {
-  const marked = await markItems(p, itemIds);
-  if (marked.status !== 200) return marked;
-  return dismantlePile(p, creatureId, itemIds);
-}
 
 /**
  * An open timed dismantle job as it was started before 2026-10-27 (the start is refused now, a running job

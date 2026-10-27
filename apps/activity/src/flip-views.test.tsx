@@ -297,7 +297,7 @@ describe('the creature page flips through the list it came from', () => {
 const gearActions = {
   equip: vi.fn(() => Promise.resolve(undefined)),
   equipBest: () => Promise.resolve(undefined),
-  mark: () => Promise.resolve(undefined),
+  checkDismantle: () => Promise.resolve({ locked: [] }),
   dismantlePile: () => Promise.resolve(undefined),
   dismissNotice: () => Promise.resolve(undefined),
   startJob: () => Promise.resolve(undefined),
@@ -337,7 +337,7 @@ describe('the Workshop item drawer flips through the bag in the grid order', () 
   const ordered = sortItems(SAMPLE_GEAR.items);
 
   function pressedIndex(p: Page): number {
-    return cells(p).findIndex((c) => c.getAttribute('aria-pressed') === 'true');
+    return cells(p).findIndex((c) => c.getAttribute('aria-current') === 'true');
   }
 
   it('has the sample bag with more than one item', () => {
@@ -465,7 +465,7 @@ describe('the Workshop item drawer flips through the bag in the grid order', () 
     expect(byClass(dialog(p), 'equip-view')).toHaveLength(0);
     expect(shownId()).toBe(before);
     expect(byClass(dialog(p), 'flip-nav')).toHaveLength(1);
-    expect(byName(dialog(p), 'button', 'Mark for dismantling')).toHaveLength(1);
+    expect(byName(dialog(p), 'button', 'Dismantle')).toHaveLength(1);
   });
 
   it('keeps the focus on the arrow that was pressed instead of moving it to the new name', () => {

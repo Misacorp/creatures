@@ -69,12 +69,11 @@
       "idempotencyKey": "fixture-00000009-key"
     }
   },
-  "mark": {
-    "path": "/api/gear/mark",
+  "dismantle-check": {
+    "path": "/api/gear/dismantle-check",
     "method": "POST",
     "body": {
-      "itemIds": ["00000000-0000-4000-8500-000000000011"],
-      "marked": true
+      "itemIds": ["00000000-0000-4000-8500-000000000011"]
     }
   },
   "job-craft-reach": {

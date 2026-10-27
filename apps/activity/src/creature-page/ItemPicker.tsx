@@ -242,13 +242,12 @@ export function ItemPickerDrawer({
             <ItemTile
               key={cell.item.id}
               item={cell.item}
-              label={`${itemLabel(cell.item.baseId, cell.item.itemLevel)}, ${rarityName(cell.item.rarity)}${cell.worn ? ', worn now' : ''}${cell.wornBy === null ? '' : `, worn by ${cell.wornBy}`}${cell.item.markedForDismantle ? ', marked for dismantling' : ''}${cell.blocked === null ? '' : `. ${cell.blocked}`}`}
+              label={`${itemLabel(cell.item.baseId, cell.item.itemLevel)}, ${rarityName(cell.item.rarity)}${cell.worn ? ', worn now' : ''}${cell.wornBy === null ? '' : `, worn by ${cell.wornBy}`}${cell.blocked === null ? '' : `. ${cell.blocked}`}`}
               selected={cell.item.id === shown?.item.id}
               pressed={cell.item.id === selected?.item.id}
               blocked={dimmed(cell)}
               flag={cell.worn ? 'Worn' : null}
               wearer={cell.wornBySpecies}
-              marked={cell.item.markedForDismantle}
               onSelect={() => {
                 if (cell.item.id === selected?.item.id) {
                   setDetailOpen(false);

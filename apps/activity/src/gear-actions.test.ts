@@ -29,7 +29,7 @@ function setup(ids: string[] = ['key-1', 'key-2', 'key-3']) {
   const server = {
     equipGear: vi.fn(),
     equipBestGear: vi.fn(),
-    markGear: vi.fn(),
+    checkDismantle: vi.fn(),
     dismantlePile: vi.fn(),
     dismissGearNotice: vi.fn(),
     startJob: vi.fn(),
@@ -132,16 +132,16 @@ describe('gear actions', () => {
     expect(applied).toEqual([]);
   });
 
-  it('marks and unmarks items without a key, and applies the answer', async () => {
-    const { actions, server, applied, answer } = setup();
-    server.markGear.mockResolvedValue(answer({ itemIds: ['a', 'b'], marked: true }));
-    expect(await actions.mark(['a', 'b'], true)).toEqual({ itemIds: ['a', 'b'], marked: true });
-    await actions.mark(['a'], false);
-    expect(server.markGear.mock.calls).toEqual([
-      [['a', 'b'], true],
-      [['a'], false],
-    ]);
-    expect(applied).toHaveLength(2);
+  it('asks which items cannot go without a key and applies nothing', async () => {
+    const { actions, server, applied } = setup();
+    server.checkDismantle.mockResolvedValue({
+      locked: [{ itemId: 'a', creatureId: 'c1', reason: 'trip' }],
+    });
+    expect(await actions.checkDismantle(['a', 'b'])).toEqual({
+      locked: [{ itemId: 'a', creatureId: 'c1', reason: 'trip' }],
+    });
+    expect(server.checkDismantle).toHaveBeenCalledWith(['a', 'b']);
+    expect(applied).toEqual([]);
   });
 
   it('dismantles the pile with a key per pile: kept after an unknown outcome, new after a definite answer', async () => {

@@ -1,6 +1,7 @@
 /**
- * Marked items, dismantled as a pile (decisions.md, 2026-10-27), through the real routes: marking and its
- * refusals, the keyed all-at-once dismantle, its rolls (refund, blueprints, Tinker's luck, Essence once,
+ * Items dismantled as a pile (decisions.md, 2026-10-27, "Bulk selection replaces marking"), through the real
+ * routes: the items named in the request (worn ones come off, a creature that is away keeps what its trip or
+ * job reads), the keyed all-at-once dismantle, its rolls (refund, blueprints, Tinker's luck, Essence once,
  * Market Day on the most valuable items), Crafting XP, and the old timed job (start refused, a running one
  * still claims).
  */
@@ -22,14 +23,17 @@ import {
   giveItem,
   giveParts,
   learnBase,
-  markAndDismantle,
-  markItems,
   seedOldDismantleJob,
   setCraftingXp,
   skipWelcome,
   type Api,
 } from './gear-helpers';
-import { runCore, undoDismantleMarkMigration, type CoreContext } from './helpers';
+import {
+  runCore,
+  undoDismantleMarkMigration,
+  undoDismantleUnmarkMigration,
+  type CoreContext,
+} from './helpers';
 import { HOUR, newKey } from './kit';
 import { HELSINKI, count, nextGuild, rows } from './raid-helpers';
 import { gameDay } from '../src/time';
@@ -54,13 +58,6 @@ function counting(seed: string): Rng & { drawn: () => number } {
 
 const give = (ctx: CoreContext, userId: string, baseId: string, o = {}): string =>
   giveItem(ctx.sql, userId, baseId, { now: ctx.clock.t, ...o });
-
-const markOf = (ctx: CoreContext, id: string): number | undefined =>
-  rows<{ dismantle_mark: number }>(
-    ctx.sql,
-    'SELECT dismantle_mark FROM gear_items WHERE id = ?',
-    id,
-  )[0]?.dismantle_mark;
 
 const partsOf = (ctx: CoreContext, userId: string): Record<string, number> =>
   Object.fromEntries(
@@ -98,160 +95,358 @@ interface PileResult {
 const resultOf = (res: { body: Record<string, unknown> }): PileResult =>
   res.body['result'] as PileResult;
 
-describe('marking items for dismantling', () => {
-  it('marks and unmarks, keeps the mark with the bag, and shows it in the gear view', async () => {
+/** Wears an item straight from the table (the equip route refuses a busy creature, which some tests need). */
+const wear = (ctx: CoreContext, itemId: string, creatureId: string): void => {
+  ctx.sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', creatureId, itemId);
+};
+
+/** Sends a creature away on a trip (a row in the creature is all the gear code reads). */
+const sendAway = (ctx: CoreContext, creatureId: string): void => {
+  ctx.sql.exec("UPDATE creatures SET away_expedition_id = 'trip-1' WHERE id = ?", creatureId);
+};
+
+/** Puts a creature on an open Workshop supply job. */
+const putOnJob = (ctx: CoreContext, userId: string, creatureId: string): void => {
+  ctx.sql.exec(
+    `INSERT INTO workshop_jobs (id, user_id, creature_id, kind, gear_id, input_json, started_at, ends_at)
+     VALUES (?, ?, ?, 'supply', NULL, '{}', 1, 2)`,
+    crypto.randomUUID(),
+    userId,
+    creatureId,
+  );
+};
+
+const itemCount = (ctx: CoreContext, userId: string): number =>
+  count(ctx.sql, 'gear_items', `user_id = '${userId}'`);
+
+describe('the mark route is gone', () => {
+  it('has no route to mark items any more, and the gear view carries no mark', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await player(ctx, 1);
         skipWelcome(ctx, p.id);
-        const a = give(ctx, p.id, 'trail-cap', { seed: 'a' });
-        const b = give(ctx, p.id, 'trail-cap', { seed: 'b' });
-        const view = async () =>
-          (
-            (await p.call('GET', '/api/gear')).body['items'] as {
-              id: string;
-              markedForDismantle: boolean;
-            }[]
-          ).map((i) => [i.id, i.markedForDismantle]);
-        expect(await view()).toEqual([
-          [a, false],
-          [b, false],
-        ]);
-        const res = await markItems(p, [a, b]);
-        expect(res.status).toBe(200);
-        expect(res.body['result']).toEqual({ itemIds: [a, b], marked: true });
-        expect(await view()).toEqual([
-          [a, true],
-          [b, true],
-        ]);
-        // Marking again changes nothing; unmarking one leaves the other.
-        expect((await markItems(p, [a])).status).toBe(200);
-        expect((await markItems(p, [a], false)).status).toBe(200);
-        expect(await view()).toEqual([
-          [a, false],
-          [b, true],
-        ]);
-        // The answer carries the fresh gear view.
-        const again = await markItems(p, [a]);
-        expect(
-          (
-            again.body['gear'] as { items: { id: string; markedForDismantle: boolean }[] }
-          ).items.find((i) => i.id === a)?.markedForDismantle,
-        ).toBe(true);
-      },
-      {},
-    );
-  });
-
-  it('refuses a worn item and an item in an open job, all or nothing, and unknown or foreign items', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await player(ctx, 1, { level: 8 });
-        const other = await player(ctx, 2);
-        skipWelcome(ctx, p.id);
-        const [c1] = p.creatureIds as [string];
-        const free = give(ctx, p.id, 'trail-cap', { seed: 'free' });
-        const worn = give(ctx, p.id, 'trail-cap', { seed: 'worn' });
-        const held = give(ctx, p.id, 'trail-cap', { seed: 'held' });
-        const theirs = give(ctx, other.id, 'trail-cap');
-        expect((await p.call('POST', `/api/gear/${worn}/equip`, { creatureId: c1 })).status).toBe(
-          200,
+        const a = give(ctx, p.id, 'trail-cap');
+        const res = await p.call('POST', '/api/gear/mark', { itemIds: [a], marked: true });
+        expect(res.status).toBe(404);
+        const view = (await p.call('GET', '/api/gear')).body['items'] as Record<string, unknown>[];
+        expect(view[0]).toBeDefined();
+        expect('markedForDismantle' in (view[0] as object)).toBe(false);
+        expect(count(ctx.sql, "pragma_table_info('gear_items')", "name = 'dismantle_mark'")).toBe(
+          0,
         );
-        // An item an open job holds (the `gear_id` of an old job).
-        ctx.sql.exec(
-          `INSERT INTO workshop_jobs (id, user_id, creature_id, kind, gear_id, input_json, started_at, ends_at)
-           VALUES ('held-job', ?, ?, 'craft', ?, '{}', 1, 2)`,
-          p.id,
-          p.creatureIds[1],
-          held,
-        );
-        expect(await markItems(p, [free, worn])).toMatchObject({
-          status: 409,
-          body: { error: 'item_worn' },
-        });
-        expect(await markItems(p, [free, held])).toMatchObject({
-          status: 409,
-          body: { error: 'item_in_job' },
-        });
-        // Nothing was marked by the refused calls.
-        expect([free, worn, held].map((id) => markOf(ctx, id))).toEqual([0, 0, 0]);
-        expect((await markItems(p, [theirs])).status).toBe(404);
-        expect((await markItems(p, [crypto.randomUUID()])).status).toBe(404);
-        expect(markOf(ctx, theirs)).toBe(0);
-        // Unmarking is always allowed, a worn item included.
-        expect((await markItems(p, [worn], false)).status).toBe(200);
-      },
-      {},
-    );
-  });
-
-  it('validates the body: strict keys, one to 60 distinct-looking ids, a boolean', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await player(ctx, 1);
-        skipWelcome(ctx, p.id);
-        const id = give(ctx, p.id, 'trail-cap');
-        const ids = (n: number): string[] => Array.from({ length: n }, () => crypto.randomUUID());
-        const ask = (body: unknown) => p.call('POST', '/api/gear/mark', body);
-        for (const body of [
-          { itemIds: [], marked: true },
-          { itemIds: ids(61), marked: true },
-          { itemIds: ['not-an-id'], marked: true },
-          { itemIds: [id] },
-          { itemIds: [id], marked: 'yes' },
-          { itemIds: [id], marked: true, userId: 'someone' },
-        ]) {
-          expect((await ask(body)).status, JSON.stringify(body).slice(0, 60)).toBe(400);
-        }
-        expect(markOf(ctx, id)).toBe(0);
-      },
-      {},
-    );
-  });
-
-  it('equipping a marked item removes its mark (Equip best too), and the picker sees it before', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await player(ctx, 1, { level: 8 });
-        skipWelcome(ctx, p.id);
-        const [c1, c2] = p.creatureIds as [string, string];
-        const a = give(ctx, p.id, 'trail-cap', { seed: 'a' });
-        const best = give(ctx, p.id, 'kelp-cap', { rarity: 'epic', level: 6, seed: 'best' });
-        const rest = give(ctx, p.id, 'trail-cap', { seed: 'rest' });
-        await markItems(p, [a, best, rest]);
-        const gear = (await p.call('GET', '/api/gear')).body['items'] as {
-          id: string;
-          markedForDismantle: boolean;
-        }[];
-        expect(gear.every((i) => i.markedForDismantle)).toBe(true);
-        const equipped = await p.call('POST', `/api/gear/${a}/equip`, { creatureId: c1 });
-        expect(equipped.status).toBe(200);
-        expect(
-          (equipped.body['result'] as { item: { markedForDismantle: boolean } }).item
-            .markedForDismantle,
-        ).toBe(false);
-        expect(markOf(ctx, a)).toBe(0);
-        expect(markOf(ctx, rest)).toBe(1);
-        // Equip best puts the Epic hat on and clears its mark too (the item it replaces was not marked).
-        const planned = await p.call('POST', '/api/gear/equip-best', { creatureIds: [c2] });
-        expect(planned.status).toBe(200);
-        const moved = (planned.body['result'] as { changes: { itemId: string }[] }).changes.map(
-          (c) => c.itemId,
-        );
-        for (const id of moved) expect(markOf(ctx, id)).toBe(0);
-        expect(moved.length).toBeGreaterThan(0);
       },
       {},
     );
   });
 });
 
-describe('dismantling the marked pile', () => {
-  it('takes every marked item at once, pays the refund, the Crafting XP and no creature experience', async () => {
+describe('dismantling by item ids', () => {
+  it('takes the named items only', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1);
+        skipWelcome(ctx, p.id);
+        const [c1] = p.creatureIds as [string];
+        const a = give(ctx, p.id, 'trail-cap', { seed: 'a' });
+        const b = give(ctx, p.id, 'trail-cap', { seed: 'b' });
+        const kept = give(ctx, p.id, 'trail-cap', { seed: 'kept' });
+        const res = await dismantlePile(p, c1, [a, b]);
+        expect(res.status).toBe(200);
+        expect(resultOf(res).items).toHaveLength(2);
+        expect(count(ctx.sql, 'gear_items', `id IN ('${a}', '${b}')`)).toBe(0);
+        expect(count(ctx.sql, 'gear_items', `id = '${kept}'`)).toBe(1);
+      },
+      {},
+    );
+  });
+
+  it('takes worn items off in the same transaction: they are gone from their wearers', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1, { level: 8 });
+        skipWelcome(ctx, p.id);
+        const [wearer, helper] = p.creatureIds as [string, string];
+        const worn = give(ctx, p.id, 'trail-cap', { seed: 'worn' });
+        const free = give(ctx, p.id, 'trail-cap', { seed: 'free' });
+        expect(
+          (await p.call('POST', `/api/gear/${worn}/equip`, { creatureId: wearer })).status,
+        ).toBe(200);
+        const res = await dismantlePile(p, helper, [worn, free]);
+        expect(res.status).toBe(200);
+        expect(resultOf(res).items).toHaveLength(2);
+        expect(itemCount(ctx, p.id)).toBe(0);
+        expect(count(ctx.sql, 'gear_items', `equipped_on = '${wearer}'`)).toBe(0);
+        // The wearer's card shows nothing worn, in the answer's state and in a fresh one.
+        const state = res.body['state'] as { creatures: { id: string; gear: unknown[] }[] };
+        expect(state.creatures.find((c) => c.id === wearer)?.gear).toEqual([]);
+        const fresh = (await p.call('GET', '/api/state')).body as typeof state;
+        expect(fresh.creatures.find((c) => c.id === wearer)?.gear).toEqual([]);
+      },
+      {},
+    );
+  });
+
+  it('lets the dismantler wear an item of the pile: its own gear counts as it was when the player confirmed', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1, { level: 10 });
+        skipWelcome(ctx, p.id);
+        const [c1] = p.creatureIds as [string];
+        const hat = give(ctx, p.id, 'trail-cap', {
+          rarity: 'rare',
+          level: 8,
+          lines: [['apprentice', 2]],
+        });
+        expect((await p.call('POST', `/api/gear/${hat}/equip`, { creatureId: c1 })).status).toBe(
+          200,
+        );
+        const preview = await p.call('POST', '/api/workshop/preview', {
+          kind: 'dismantle',
+          creatureId: c1,
+          itemIds: [hat],
+        });
+        const shown = (preview.body['result'] as { xp: number }).xp;
+        const done = resultOf(await dismantlePile(p, c1, [hat]));
+        // Apprentice (+20% at tier III) was on when it was shown and when it was done.
+        expect(done.xp).toBe(shown);
+        expect(done.xp).toBeGreaterThan(pileDismantleXp(['rare']));
+        expect(itemCount(ctx, p.id)).toBe(0);
+      },
+      {},
+    );
+  });
+
+  it('is all or nothing: a foreign, unknown or repeated item and an item an open job holds refuse the whole pile', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1, { level: 8 });
+        const other = await player(ctx, 2);
+        skipWelcome(ctx, p.id);
+        const [c1, c2] = p.creatureIds as [string, string];
+        const free = give(ctx, p.id, 'trail-cap', { seed: 'free' });
+        const held = give(ctx, p.id, 'trail-cap', { seed: 'held' });
+        const theirs = give(ctx, other.id, 'trail-cap');
+        ctx.sql.exec(
+          `INSERT INTO workshop_jobs (id, user_id, creature_id, kind, gear_id, input_json, started_at, ends_at)
+           VALUES ('held-job', ?, ?, 'craft', ?, '{}', 1, 2)`,
+          p.id,
+          c2,
+          held,
+        );
+        const before = partsOf(ctx, p.id);
+        expect(await dismantlePile(p, c1, [free, held])).toMatchObject({
+          status: 409,
+          body: { error: 'item_in_job' },
+        });
+        expect((await dismantlePile(p, c1, [free, theirs])).status).toBe(404);
+        expect((await dismantlePile(p, c1, [free, crypto.randomUUID()])).status).toBe(404);
+        expect((await dismantlePile(p, c1, [free, free])).status).toBe(400);
+        expect(itemCount(ctx, p.id)).toBe(2);
+        expect(count(ctx.sql, 'gear_items', `id = '${theirs}'`)).toBe(1);
+        expect(partsOf(ctx, p.id)).toEqual(before);
+        expect(skillXpOf(ctx, c1)).toBe(0);
+        expect((await dismantlePile(p, c1, [free])).status).toBe(200);
+      },
+      {},
+    );
+  });
+
+  it('validates the body: strict keys, one to 60 ids, a creature and a key', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1);
+        skipWelcome(ctx, p.id);
+        const [c1] = p.creatureIds as [string];
+        const id = give(ctx, p.id, 'trail-cap');
+        const ids = (n: number): string[] => Array.from({ length: n }, () => crypto.randomUUID());
+        const ask = (body: unknown) => p.call('POST', '/api/gear/dismantle', body);
+        const key = newKey();
+        for (const body of [
+          { creatureId: c1, itemIds: [], idempotencyKey: key },
+          { creatureId: c1, itemIds: ids(61), idempotencyKey: key },
+          { creatureId: c1, itemIds: ['not-an-id'], idempotencyKey: key },
+          { creatureId: c1, itemIds: [id] },
+          { itemIds: [id], idempotencyKey: key },
+          { creatureId: c1, itemIds: [id], idempotencyKey: key, marked: true },
+        ]) {
+          expect((await ask(body)).status, JSON.stringify(body).slice(0, 70)).toBe(400);
+        }
+        expect(itemCount(ctx, p.id)).toBe(1);
+      },
+      {},
+    );
+  });
+});
+
+describe('worn items on creatures that are away', () => {
+  const lines = (...ids: string[]): [string, number][] => ids.map((id) => [id, 2]);
+
+  it('takes an item off a creature on a trip when the trip has already fixed what it does (Quick feet)', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1, { level: 14 });
+        skipWelcome(ctx, p.id);
+        const [explorer, helper] = p.creatureIds as [string, string];
+        // Quick feet shortened the trip when it was sent; the claim never reads them again.
+        const compass = give(ctx, p.id, 'static-charm', {
+          rarity: 'epic',
+          level: 13,
+          lines: lines('quick-feet'),
+        });
+        wear(ctx, compass, explorer);
+        sendAway(ctx, explorer);
+        expect(
+          await p.call('POST', '/api/gear/dismantle-check', { itemIds: [compass] }),
+        ).toMatchObject({ status: 200, body: { result: { locked: [] } } });
+        const res = await dismantlePile(p, helper, [compass]);
+        expect(res.status).toBe(200);
+        expect(count(ctx.sql, 'gear_items', `id = '${compass}'`)).toBe(0);
+        expect(
+          count(ctx.sql, 'creatures', `id = '${explorer}' AND away_expedition_id IS NOT NULL`),
+        ).toBe(1);
+      },
+      {},
+    );
+  });
+
+  it('keeps an item a trip reads when it is claimed (Lucky find, Trail XP): 409 item_locked, nothing is taken', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1, { level: 14 });
+        skipWelcome(ctx, p.id);
+        const [explorer, helper] = p.creatureIds as [string, string];
+        const lucky = give(ctx, p.id, 'static-charm', {
+          rarity: 'epic',
+          level: 13,
+          lines: lines('lucky-find'),
+        });
+        const plain = give(ctx, p.id, 'trail-cap', { seed: 'plain' });
+        wear(ctx, lucky, explorer);
+        sendAway(ctx, explorer);
+        const before = partsOf(ctx, p.id);
+        const check = await p.call('POST', '/api/gear/dismantle-check', {
+          itemIds: [plain, lucky],
+        });
+        expect(check.body['result']).toEqual({
+          locked: [{ itemId: lucky, creatureId: explorer, reason: 'trip' }],
+        });
+        expect(await dismantlePile(p, helper, [plain, lucky])).toMatchObject({
+          status: 409,
+          body: { error: 'item_locked' },
+        });
+        // All or nothing: the free item stayed too, and nothing was paid.
+        expect(itemCount(ctx, p.id)).toBe(2);
+        expect(partsOf(ctx, p.id)).toEqual(before);
+        expect(skillXpOf(ctx, helper)).toBe(0);
+        // Back home, the same pile goes.
+        ctx.sql.exec('UPDATE creatures SET away_expedition_id = NULL WHERE id = ?', explorer);
+        expect((await dismantlePile(p, helper, [plain, lucky])).status).toBe(200);
+        expect(itemCount(ctx, p.id)).toBe(0);
+      },
+      {},
+    );
+  });
+
+  it('reads a creature on a Workshop job the same way: Apprentice is read at the claim, Busy paws is not', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1, { level: 10 });
+        skipWelcome(ctx, p.id);
+        const [worker, helper] = p.creatureIds as [string, string];
+        const busyPaws = give(ctx, p.id, 'static-charm', {
+          rarity: 'rare',
+          level: 8,
+          lines: lines('busy-paws'),
+        });
+        const apprentice = give(ctx, p.id, 'kelp-cap', {
+          rarity: 'rare',
+          level: 8,
+          lines: lines('apprentice'),
+        });
+        wear(ctx, busyPaws, worker);
+        wear(ctx, apprentice, worker);
+        putOnJob(ctx, p.id, worker);
+        const check = await p.call('POST', '/api/gear/dismantle-check', {
+          itemIds: [busyPaws, apprentice],
+        });
+        expect(check.body['result']).toEqual({
+          locked: [{ itemId: apprentice, creatureId: worker, reason: 'job' }],
+        });
+        expect(await dismantlePile(p, helper, [apprentice])).toMatchObject({
+          status: 409,
+          body: { error: 'item_locked' },
+        });
+        expect((await dismantlePile(p, helper, [busyPaws])).status).toBe(200);
+        expect(count(ctx.sql, 'gear_items', `id = '${apprentice}'`)).toBe(1);
+        expect(count(ctx.sql, 'gear_items', `equipped_on = '${worker}'`)).toBe(1);
+      },
+      {},
+    );
+  });
+
+  it('does not lock an item of a free creature, or a worn item with nothing a running activity reads', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1, { level: 14 });
+        skipWelcome(ctx, p.id);
+        const [free, away, helper] = p.creatureIds as [string, string, string];
+        const lucky = give(ctx, p.id, 'static-charm', {
+          rarity: 'epic',
+          level: 13,
+          lines: lines('lucky-find'),
+        });
+        const attack = give(ctx, p.id, 'trail-cap', {
+          seed: 'atk',
+          lines: lines('attack-local-pct'),
+        });
+        wear(ctx, lucky, free);
+        wear(ctx, attack, away);
+        sendAway(ctx, away);
+        const check = await p.call('POST', '/api/gear/dismantle-check', {
+          itemIds: [lucky, attack],
+        });
+        expect(check.body['result']).toEqual({ locked: [] });
+        expect((await dismantlePile(p, helper, [lucky, attack])).status).toBe(200);
+      },
+      {},
+    );
+  });
+
+  it('checks the items: strict body, 404 for a foreign or unknown item, 400 for a repeat', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1);
+        const other = await player(ctx, 2);
+        skipWelcome(ctx, p.id);
+        const a = give(ctx, p.id, 'trail-cap');
+        const theirs = give(ctx, other.id, 'trail-cap');
+        const ask = (body: unknown) => p.call('POST', '/api/gear/dismantle-check', body);
+        expect((await ask({ itemIds: [a] })).status).toBe(200);
+        expect((await ask({ itemIds: [theirs] })).status).toBe(404);
+        expect((await ask({ itemIds: [crypto.randomUUID()] })).status).toBe(404);
+        expect((await ask({ itemIds: [a, a] })).status).toBe(400);
+        for (const body of [{ itemIds: [] }, { itemIds: [a], extra: 1 }, {}, { itemIds: ['x'] }]) {
+          expect((await ask(body)).status).toBe(400);
+        }
+      },
+      {},
+    );
+  });
+});
+
+describe('dismantling a pile', () => {
+  it('takes every item at once, pays the refund, the Crafting XP and no creature experience', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -269,7 +464,7 @@ describe('dismantling the marked pile', () => {
           c1,
         )[0]?.experience;
         const ids = [...commons, rare];
-        const res = await markAndDismantle(p, c1, ids);
+        const res = await dismantlePile(p, c1, ids);
         expect(res.status).toBe(200);
         const result = resultOf(res);
         expect(result.kind).toBe('dismantle');
@@ -278,7 +473,7 @@ describe('dismantling the marked pile', () => {
         expect(result.items.map((i) => i.rarity)).toEqual(['rare', 'common', 'common', 'common']);
         // The items are gone, the unmarked one stays, the parts are in the bank.
         expect(count(ctx.sql, 'gear_items', `user_id = '${p.id}'`)).toBe(1);
-        expect(markOf(ctx, kept)).toBe(0);
+        expect(count(ctx.sql, 'gear_items', `id = '${kept}'`)).toBe(1);
         expect(partsOf(ctx, p.id)['scrap']).toBe(result.parts.scrap);
         // Crafting XP: 6 for the (up to 5) Commons together and 12 for the Rare, as the old jobs paid.
         expect(result.xp).toBe(18);
@@ -316,7 +511,7 @@ describe('dismantling the marked pile', () => {
           give(ctx, p.id, 'kelp-cap', { rarity: 'rare' }),
           give(ctx, p.id, 'coal-warm-cap', { rarity: 'epic', level: 10 }),
         ];
-        const result = resultOf(await markAndDismantle(p, c1, ids));
+        const result = resultOf(await dismantlePile(p, c1, ids));
         // 7 Commons are two old jobs (12), plus 12 and 24.
         expect(result.xp).toBe(12 + 12 + 24);
       },
@@ -336,7 +531,6 @@ describe('dismantling the marked pile', () => {
           give(ctx, p.id, 'coal-warm-cap', { rarity: 'epic', level: 10, seed: 'e1' }),
           give(ctx, p.id, 'kelp-cap', { rarity: 'epic', level: 10, seed: 'e2' }),
         ];
-        await markItems(p, ids);
         const key = newKey();
         const first = await dismantlePile(p, c1, ids, key);
         expect(first.status).toBe(200);
@@ -358,7 +552,6 @@ describe('dismantling the marked pile', () => {
         expect(skillXpOf(ctx, c1)).toBe(xp);
         // The same key for another pile is a conflict.
         const other = give(ctx, p.id, 'trail-cap', { seed: 'other' });
-        await markItems(p, [other]);
         expect(await dismantlePile(p, c1, [other], key)).toMatchObject({
           status: 409,
           body: { error: 'key_conflict' },
@@ -381,7 +574,7 @@ describe('dismantling the marked pile', () => {
           give(ctx, p.id, 'coal-warm-cap', { rarity: 'rare', level: 5, seed: 'r2' }),
           give(ctx, p.id, 'kelp-cap', { rarity: 'epic', level: 20, seed: 'e1' }),
         ];
-        const result = resultOf(await markAndDismantle(p, c1, ids));
+        const result = resultOf(await dismantlePile(p, c1, ids));
         expect(result.essence).toBeGreaterThanOrEqual(3 + 3 + 10);
         expect(result.essence).toBeLessThanOrEqual(8 + 8 + 25);
         expect(essenceOf(ctx, p.id)).toBe(result.essence);
@@ -397,46 +590,6 @@ describe('dismantling the marked pile', () => {
     );
   });
 
-  it('refuses with 409 and takes nothing when the marked set is not exactly what was shown', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await player(ctx, 1);
-        skipWelcome(ctx, p.id);
-        const [c1] = p.creatureIds as [string];
-        const a = give(ctx, p.id, 'trail-cap', { seed: 'a' });
-        const b = give(ctx, p.id, 'trail-cap', { seed: 'b' });
-        const c = give(ctx, p.id, 'trail-cap', { seed: 'c' });
-        await markItems(p, [a, b]);
-        const before = partsOf(ctx, p.id);
-        // A marked item the confirmation did not show (c is marked now, the request names a and b).
-        await markItems(p, [c]);
-        expect(await dismantlePile(p, c1, [a, b])).toMatchObject({
-          status: 409,
-          body: { error: 'marks_changed' },
-        });
-        // A shown item that was unmarked meanwhile.
-        await markItems(p, [c], false);
-        await markItems(p, [b], false);
-        expect(await dismantlePile(p, c1, [a, b])).toMatchObject({
-          status: 409,
-          body: { error: 'marks_changed' },
-        });
-        // An item that was never marked.
-        expect(await dismantlePile(p, c1, [a, c])).toMatchObject({
-          status: 409,
-          body: { error: 'marks_changed' },
-        });
-        expect(count(ctx.sql, 'gear_items', `user_id = '${p.id}'`)).toBe(3);
-        expect(partsOf(ctx, p.id)).toEqual(before);
-        expect(skillXpOf(ctx, c1)).toBe(0);
-        // The exact set goes through.
-        expect((await dismantlePile(p, c1, [a])).status).toBe(200);
-      },
-      {},
-    );
-  });
-
   it('refuses a busy creature (away or on a job), a foreign creature and a body with anything extra', async () => {
     await runCore(
       nextGuild(),
@@ -446,7 +599,6 @@ describe('dismantling the marked pile', () => {
         skipWelcome(ctx, p.id);
         const [away, working, free] = p.creatureIds as [string, string, string];
         const a = give(ctx, p.id, 'trail-cap', { seed: 'a' });
-        await markItems(p, [a]);
         ctx.sql.exec("UPDATE creatures SET away_expedition_id = 'trip-1' WHERE id = ?", away);
         ctx.sql.exec(
           `INSERT INTO workshop_jobs (id, user_id, creature_id, kind, gear_id, input_json, started_at, ends_at)
@@ -497,7 +649,7 @@ describe('dismantling the marked pile', () => {
           );
         }
         const a = give(ctx, p.id, 'trail-cap', { seed: 'a' });
-        expect((await markAndDismantle(p, c3, [a])).status).toBe(200);
+        expect((await dismantlePile(p, c3, [a])).status).toBe(200);
         expect(count(ctx.sql, 'workshop_jobs', 'claimed_at IS NULL')).toBe(2);
       },
       {},
@@ -519,7 +671,7 @@ describe('dismantling the marked pile', () => {
               level: 5,
               seed: `s${String(i)}${who}`,
             });
-            const done = resultOf(await markAndDismantle(p, who, [item]));
+            const done = resultOf(await dismantlePile(p, who, [item]));
             const range = dismantleRange([{ baseId: 'kelp-cap', rarity: 'rare', itemLevel: 5 }]);
             expect(done.parts.scrap).toBeGreaterThanOrEqual(range.scrap.min);
             expect(done.parts.scrap).toBeLessThanOrEqual(range.scrap.max);
@@ -544,13 +696,13 @@ describe('what the pile teaches and refunds', () => {
         const [c1] = p.creatureIds as [string];
         const known = give(ctx, p.id, 'trail-cap', { seed: 'k1' });
         const fresh = give(ctx, p.id, 'kelp-cap', { seed: 'f1' });
-        const result = resultOf(await markAndDismantle(p, c1, [known, fresh]));
+        const result = resultOf(await dismantlePile(p, c1, [known, fresh]));
         // Every chance hits: the new base is learned, the known one gets its tenth mark.
         expect(result.learned).toEqual(['kelp-cap']);
         expect(result.marked).toEqual([{ baseId: 'trail-cap', marks: 10 }]);
         // At 10 marks a find adds nothing more.
         const more = give(ctx, p.id, 'trail-cap', { seed: 'k2' });
-        expect(resultOf(await markAndDismantle(p, c1, [more]))).toMatchObject({
+        expect(resultOf(await dismantlePile(p, c1, [more]))).toMatchObject({
           learned: [],
           marked: [],
         });
@@ -599,7 +751,7 @@ describe('what the pile teaches and refunds', () => {
           itemIds: [bell, lantern],
         });
         expect(preview.body['result']).toMatchObject({ learnBp: null, teachers: 0 });
-        expect(resultOf(await markAndDismantle(p, c1, [bell, lantern]))).toMatchObject({
+        expect(resultOf(await dismantlePile(p, c1, [bell, lantern]))).toMatchObject({
           learned: [],
           marked: [],
         });
@@ -627,10 +779,10 @@ describe('what the pile teaches and refunds', () => {
         const mk = (seed: string) =>
           give(ctx, p.id, 'kelp-cap', { rarity: 'rare', level: 8, seed });
         const range = dismantleRange([{ baseId: 'kelp-cap', rarity: 'rare', itemLevel: 8 }]);
-        const without = resultOf(await markAndDismantle(p, plain, [mk('a'), mk('b')]));
+        const without = resultOf(await dismantlePile(p, plain, [mk('a'), mk('b')]));
         expect(without.tinkered).toBeUndefined();
         expect(without.parts.scrap).toBe(range.scrap.min * 2);
-        const withLine = resultOf(await markAndDismantle(p, worker, [mk('c'), mk('d'), mk('e')]));
+        const withLine = resultOf(await dismantlePile(p, worker, [mk('c'), mk('d'), mk('e')]));
         expect(withLine.tinkered).toBe(3);
         expect(withLine.parts.scrap ?? 0).toBeGreaterThan(range.scrap.min * 3);
       },
@@ -660,7 +812,7 @@ describe('what the pile teaches and refunds', () => {
         expect((preview.body['result'] as { tinkersLuckBp: number }).tinkersLuckBp).toBeGreaterThan(
           0,
         );
-        const done = resultOf(await markAndDismantle(p, worker, [item]));
+        const done = resultOf(await dismantlePile(p, worker, [item]));
         expect(done.tinkered).toBeUndefined();
       },
       { gearRng: highest },
@@ -707,13 +859,12 @@ describe('the preview of a pile', () => {
         expect(r.durationMs).toBeUndefined();
         expect(rng.drawn()).toBe(0);
         expect(count(ctx.sql, 'gear_items', `user_id = '${p.id}'`)).toBe(3);
-        expect(markOf(ctx, common)).toBe(0);
       },
       { gearRng: rng },
     );
   });
 
-  it('refuses a foreign item, repeats and more than 60 items, but previews a worn one (the dismantle refuses it)', async () => {
+  it('refuses a foreign item, repeats and more than 60 items, and previews a worn one', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -763,7 +914,7 @@ describe('Market Day on a pile', () => {
         const high = give(ctx, p.id, 'kelp-cap', { rarity: 'rare', level: 10, seed: 'high' });
         const mid = give(ctx, p.id, 'kelp-cap', { rarity: 'rare', level: 6, seed: 'mid' });
         const common = give(ctx, p.id, 'trail-cap', { seed: 'common' });
-        const result = resultOf(await markAndDismantle(p, c1, [low, high, mid, common]));
+        const result = resultOf(await dismantlePile(p, c1, [low, high, mid, common]));
         expect(result.boosted).toBe(2);
         // With the lowest dice, each unboosted Rare gives the bottom of its range and a boosted one the top.
         const essence = RULES.gear.dismantle.ranges.rare.essence;
@@ -790,11 +941,9 @@ describe('Market Day on a pile', () => {
         market(ctx);
         const [c1] = p.creatureIds as [string];
         const mk = (seed: string) => give(ctx, p.id, 'trail-cap', { seed });
-        expect(resultOf(await markAndDismantle(p, c1, [mk('a')])).boosted).toBe(1);
-        expect(resultOf(await markAndDismantle(p, c1, [mk('b'), mk('c'), mk('d')])).boosted).toBe(
-          1,
-        );
-        expect(resultOf(await markAndDismantle(p, c1, [mk('e')])).boosted).toBe(0);
+        expect(resultOf(await dismantlePile(p, c1, [mk('a')])).boosted).toBe(1);
+        expect(resultOf(await dismantlePile(p, c1, [mk('b'), mk('c'), mk('d')])).boosted).toBe(1);
+        expect(resultOf(await dismantlePile(p, c1, [mk('e')])).boosted).toBe(0);
         // The preview of a pile says the same before it is dismantled.
         const preview = await p.call('POST', '/api/workshop/preview', {
           kind: 'dismantle',
@@ -804,7 +953,7 @@ describe('Market Day on a pile', () => {
         expect((preview.body['result'] as { boosted: number }).boosted).toBe(0);
         // Without the Boon nothing is boosted.
         market(ctx, 'fair-winds');
-        expect(resultOf(await markAndDismantle(p, c1, [mk('g')])).boosted).toBe(0);
+        expect(resultOf(await dismantlePile(p, c1, [mk('g')])).boosted).toBe(0);
       },
       { weather: true, gearRng: lowest },
     );
@@ -826,7 +975,7 @@ describe('Market Day on a pile', () => {
           ctx.clock.t + HOUR,
         );
         const items = ['a', 'b', 'c'].map((seed) => give(ctx, p.id, 'trail-cap', { seed }));
-        expect(resultOf(await markAndDismantle(p, c1, items)).boosted).toBe(1);
+        expect(resultOf(await dismantlePile(p, c1, items)).boosted).toBe(1);
       },
       { weather: true, gearRng: lowest },
     );
@@ -892,27 +1041,50 @@ describe('the timed dismantle job is gone', () => {
   });
 });
 
-describe('migration 48', () => {
-  it('adds the mark column (everything unmarked) and the day count table, and can be redone', async () => {
-    expect(SCHEMA_VERSION).toBe(48);
+describe('migration 49', () => {
+  it('drops the mark column, keeps the day count table, and can be redone', async () => {
+    expect(SCHEMA_VERSION).toBe(49);
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await player(ctx, 1);
         skipWelcome(ctx, p.id);
         const a = give(ctx, p.id, 'trail-cap');
-        undoDismantleMarkMigration(ctx.sql);
         expect(count(ctx.sql, "pragma_table_info('gear_items')", "name = 'dismantle_mark'")).toBe(
           0,
         );
+        // Back to before 49: the column is there again (staging's state), the item untouched.
+        undoDismantleUnmarkMigration(ctx.sql);
+        expect(count(ctx.sql, "pragma_table_info('gear_items')", "name = 'dismantle_mark'")).toBe(
+          1,
+        );
         ctx.core.migrate();
         ctx.core.migrate();
-        expect(markOf(ctx, a)).toBe(0);
+        expect(count(ctx.sql, "pragma_table_info('gear_items')", "name = 'dismantle_mark'")).toBe(
+          0,
+        );
+        expect(count(ctx.sql, 'gear_items', `id = '${a}'`)).toBe(1);
         expect(count(ctx.sql, 'sqlite_master', "name = 'dismantle_days'")).toBe(1);
         expect(
           rows<{ v: number }>(ctx.sql, 'SELECT MAX(version) AS v FROM schema_version')[0]?.v,
-        ).toBe(48);
-        expect((await markItems(p, [a])).status).toBe(200);
+        ).toBe(49);
+        expect((await dismantlePile(p, p.creatureIds[0] as string, [a])).status).toBe(200);
+      },
+      {},
+    );
+  });
+
+  it('also runs from before 48: the column is added by 48 and dropped by 49, the day counts stay', async () => {
+    await runCore(
+      nextGuild(),
+      (ctx) => {
+        undoDismantleMarkMigration(ctx.sql);
+        expect(count(ctx.sql, 'sqlite_master', "name = 'dismantle_days'")).toBe(0);
+        ctx.core.migrate();
+        expect(count(ctx.sql, "pragma_table_info('gear_items')", "name = 'dismantle_mark'")).toBe(
+          0,
+        );
+        expect(count(ctx.sql, 'sqlite_master', "name = 'dismantle_days'")).toBe(1);
       },
       {},
     );
@@ -931,7 +1103,7 @@ describe('the roll of a pile', () => {
         giveParts(ctx, p.id, {});
         const rare = give(ctx, p.id, 'kelp-cap', { rarity: 'rare', level: 4, seed: 'r' });
         const common = give(ctx, p.id, 'trail-cap', { seed: 'c' });
-        const result = resultOf(await markAndDismantle(p, c1, [common, rare]));
+        const result = resultOf(await dismantlePile(p, c1, [common, rare]));
         const expected = rollDismantle(
           createSeededRng('pile-roll'),
           [

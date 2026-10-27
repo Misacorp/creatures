@@ -24,7 +24,7 @@ export interface GearDeps {
     typeof api,
     | 'equipGear'
     | 'equipBestGear'
-    | 'markGear'
+    | 'checkDismantle'
     | 'dismantlePile'
     | 'dismissGearNotice'
     | 'startJob'
@@ -52,10 +52,9 @@ export function createGearActions(deps: GearDeps) {
     /** The best item for every slot of these creatures (one or a team); the server picks. */
     equipBest: (creatureIds: readonly string[]): Promise<EquipBestResult | undefined> =>
       applied(deps.run(() => server.equipBestGear(creatureIds))),
-    /** Marks items for dismantling, or unmarks them (`marked` false). The server refuses worn items. */
-    mark: (itemIds: readonly string[], marked: boolean) =>
-      applied(deps.run(() => server.markGear(itemIds, marked))),
-    /** Dismantles the marked pile with a free creature: the items the confirmation showed, all at once. */
+    /** Which of these items cannot be dismantled now (worn by a creature whose trip or job reads them). */
+    checkDismantle: (itemIds: readonly string[]) => server.checkDismantle(itemIds),
+    /** Dismantles the named items with a free creature, all at once (worn ones come off). */
     dismantlePile: (creatureId: string, itemIds: readonly string[]) =>
       applied(
         deps.runKeyed(ActionIds.dismantlePile(creatureId, itemIds), (key) =>

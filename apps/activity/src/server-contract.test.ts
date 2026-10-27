@@ -33,7 +33,7 @@ import workshopClaimDismantle from './fixtures/workshop-claim-dismantle.json';
 import workshopPreviewCraft from './fixtures/workshop-preview-craft.json';
 import workshopPreviewDismantle from './fixtures/workshop-preview-dismantle.json';
 import gearDismantle from './fixtures/gear-dismantle.json';
-import gearMark from './fixtures/gear-mark.json';
+import gearDismantleCheck from './fixtures/gear-dismantle-check.json';
 import workshopClaimRetired from './fixtures/workshop-claim-retired.json';
 import workshopStartCraft from './fixtures/workshop-start-craft.json';
 import dungeonActCampPending from './fixtures/dungeon-act-camp-pending.json';
@@ -121,7 +121,7 @@ import {
   equipBestGear,
   equipGear,
   fetchGear,
-  markGear,
+  checkDismantle,
   previewCraft,
   previewDismantle,
   startJob,
@@ -330,13 +330,12 @@ describe('the gear requests the client sends', () => {
     expect(gearRequestBodies['job-craft-reach'].body.reach).toBe('rare');
   });
 
-  it('marking sends the items and the state they should be in; the pile sends the creature, the items and a key', async () => {
-    apiFetch.mockResolvedValue(gearMark);
-    const mark = gearRequestBodies.mark.body;
-    const marked = await markGear(mark.itemIds, mark.marked);
-    expect(sent()).toEqual(expected('mark'));
-    expect(marked.result).toEqual({ itemIds: mark.itemIds, marked: true });
-    expect(marked.gear.items.some((i) => i.markedForDismantle)).toBe(true);
+  it('the check sends the items and reads who is held back; the pile sends the creature, the items and a key', async () => {
+    apiFetch.mockResolvedValue(gearDismantleCheck);
+    const check = gearRequestBodies['dismantle-check'].body;
+    const checked = await checkDismantle(check.itemIds);
+    expect(sent()).toEqual(expected('dismantle-check'));
+    expect(checked).toEqual({ locked: [] });
     apiFetch.mockClear();
     apiFetch.mockResolvedValue(gearDismantle);
     const pile = gearRequestBodies['dismantle-pile'].body;
@@ -437,7 +436,6 @@ describe('the gear responses the server sends', () => {
       [gearUnequip, () => equipGear('g', null)],
       [gearEquipBest, () => equipBestGear(['c'])],
       [gearNoticeDismissed, () => dismissGearNotice()],
-      [gearMark, () => markGear(['i'], true)],
       [gearDismantle, () => dismantlePile('c', ['i'], 'k')],
       [workshopClaimDismantle, () => claimJob('j', 'k')],
       [workshopStartCraft, () => startJob(gearRequestBodies['job-craft'].body as StartJobRequest)],

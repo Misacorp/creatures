@@ -697,33 +697,20 @@ export function nominalDurationCountItem(durationMs: number): CountItem {
   return { ...durationCountItem(durationMs), label: 'Takes about' };
 }
 
-// --- Marked items and the pile (2026-10-27) ---
+// --- Selected items and the pile (2026-10-27) ---
 
 /** The most items one pile holds (the bag's size; the server's `pileMax`). */
 export const PILE_MAX = 60;
 
-/** The items the player marked for dismantling, in the grid's order. */
-export function markedItems(items: readonly GearItem[]): GearItem[] {
-  return sortItems(items.filter((i) => i.markedForDismantle));
+/** The items among `items` whose ids are in `ids`, in the grid's order. */
+export function itemsWithIds(items: readonly GearItem[], ids: ReadonlySet<string>): GearItem[] {
+  return sortItems(items.filter((i) => ids.has(i.id)));
 }
 
-/** A worn item cannot be marked (the server refuses it); everything else in the bag can. */
-export function canMark(item: Pick<GearItem, 'equippedOn'>): boolean {
-  return item.equippedOn === null;
+/** The worn items of a pile: the ones the warning step lists, with who wears each. */
+export function wornAmong(items: readonly GearItem[]): GearItem[] {
+  return items.filter((i) => i.equippedOn !== null);
 }
-
-/** The "All Common" preset: every Common that can be marked and is not yet. */
-export function commonsToMark(items: readonly GearItem[]): GearItem[] {
-  return items.filter((i) => i.rarity === 'common' && canMark(i) && !i.markedForDismantle);
-}
-
-/** The "Below level N" preset: every item under that item level that can be marked and is not yet. */
-export function belowLevelToMark(items: readonly GearItem[], level: number): GearItem[] {
-  return items.filter((i) => i.itemLevel < level && canMark(i) && !i.markedForDismantle);
-}
-
-/** The level the second preset marks below. */
-export const PRESET_LEVEL = 10;
 
 /** "20 Common, 3 Rare": how many of each rarity, the commonest first, none left out that are absent. */
 export function pileText(items: readonly Pick<GearItem, 'rarity'>[]): string {
