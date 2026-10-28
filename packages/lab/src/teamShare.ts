@@ -13,14 +13,19 @@ import { GAUNTLET, LEVEL, RAID, bossFor, evaluate, toPlacements, type Pick } fro
 import { LINE_POOLS, TALENTS } from './talents';
 
 /** The target: the average share over the cards, in percent, with the accepted band, and the least a casual roster should gain. */
-export const TEAM_SHARE = { target: 20, min: 17, max: 23, casualMin: 10 } as const;
+export const TEAM_SHARE = { target: 20, min: 17, max: 23, casualMaxOfBestPct: 60 } as const;
 
 /** Whether an average share meets the target: within the accepted band, read to the whole percent ("about"). */
 export const inBand = (share: number): boolean =>
   Math.round(share) >= TEAM_SHARE.min && Math.round(share) <= TEAM_SHARE.max;
 
 /** Whether a casual roster's share is high enough, read to the whole percent. */
-export const casualOk = (share: number): boolean => Math.round(share) >= TEAM_SHARE.casualMin;
+/**
+ * Random talents stay situational (Misa, 2026-10-28): a casual roster's random rolls still gain something, but stay
+ * well below the best fit (at most this share of it), so talents do not become flat.
+ */
+export const casualOk = (share: number, best: number): boolean =>
+  share > 0 && share <= (best * TEAM_SHARE.casualMaxOfBestPct) / 100;
 
 /** A talent's share of a team's result, in percent: 1 - without / with (0 when the team with talents scores nothing). */
 export function shareOf(withScore: number, withoutScore: number): number {

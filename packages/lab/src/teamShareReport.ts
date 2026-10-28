@@ -128,14 +128,14 @@ export function buildTeamShareSection(opts: {
   const casualR = meanShare(Object.values(raidRandom));
   const T = TEAM_SHARE;
   const ok = (b: boolean) => (b ? 'pass' : 'FAIL');
-  const pass = inBand(avgG) && inBand(avgR) && casualOk(casualG) && casualOk(casualR);
+  const pass = inBand(avgG) && inBand(avgR) && casualOk(casualG, avgG) && casualOk(casualR, avgR);
 
   const talentsOf = (s: TeamShare) =>
     s.chosen.map((c) => `${c.forms[0] ?? '?'}: ${talentName(c.talent)}`).join(', ');
   const md: string[] = [
     "### The talents' share of the team's result",
     '',
-    `**What it is.** The share of a team's result that comes from talents: the best gauntlet team of each card (and the best raid board), each creature given the best-fitting talent from its line's pool (one talent each; in the raid one per form), against the same team with none, on a boss whose HP is tuned to that team, as a week's boss is tuned to the players: the team wins ${Math.round(winRate * 100)}% of its fights without talents, a fight that could go either way (the boss of the per-talent table below is the classic line's 8-round boss, which these teams crush: they score about 88 of 100 there and no talent could show 20%); the 0 to 100 score; share = 1 - score without / score with. The target is about ${T.target}% on average (accepted ${T.min}% to ${T.max}%); a casual roster, with a random talent from each creature's whole pool (idle ones included), should still gain ${T.casualMin}% or more. The raid board is scored by the best-teams section's damage score on a boss with a million HP (the raid has no calibrated boss), talents chosen on other seeds than the ones scored.`,
+    `**What it is.** The share of a team's result that comes from talents: the best gauntlet team of each card (and the best raid board), each creature given the best-fitting talent from its line's pool (one talent each; in the raid one per form), against the same team with none, on a boss whose HP is tuned to that team, as a week's boss is tuned to the players: the team wins ${Math.round(winRate * 100)}% of its fights without talents, a fight that could go either way (the boss of the per-talent table below is the classic line's 8-round boss, which these teams crush: they score about 88 of 100 there and no talent could show 20%); the 0 to 100 score; share = 1 - score without / score with. The target is about ${T.target}% on average (accepted ${T.min}% to ${T.max}%); a casual roster, with a random talent from each creature's whole pool (idle ones included), should gain something but stay well below the best fit (at most ${T.casualMaxOfBestPct}% of it), so talents stay situational rather than flat (Misa, 2026-10-28). The raid board is scored by the best-teams section's damage score on a boss with a million HP (the raid has no calibrated boss), talents chosen on other seeds than the ones scored.`,
     '',
     '| Card | Best gauntlet team | Without | With talents | Share | Talents | Raid share | Same team, random talents |',
     '| --- | --- | ---: | ---: | ---: | --- | ---: | ---: |',
@@ -152,7 +152,7 @@ export function buildTeamShareSection(opts: {
     '',
     `**Average share, best-fit talents:** gauntlet ${fmt(avgG)} (${ok(inBand(avgG))}), raid ${fmt(avgR)} (${ok(inBand(avgR))}); target about ${T.target}% (${T.min}% to ${T.max}%).`,
     '',
-    `**Casual roster, random talents** (the best lines of ${teams.casual.length / Math.max(1, CASUAL_CARDS.length)} random rosters on ${CASUAL_CARDS.length} cards, each with ${gSet.draws} random draws; ${CASUAL_CARDS.map((id) => `${cardName(id)} ${fmt(casualShares.find((s) => s.cardId === id)?.share ?? 0)}`).join(', ')}): gauntlet ${fmt(casualG)} (${ok(casualOk(casualG))}), and the best raid boards with a random talent per form ${fmt(casualR)} (${ok(casualOk(casualR))}); at least ${T.casualMin}%. With a random talent that fits the creature's role (no idle rolls) the casual gauntlet gains ${fmt(casualFit)}; the same best gauntlet teams with random talents on all cards: ${fmt(meanShare(Object.values(gauntRandom)))} (column above).`,
+    `**Casual roster, random talents** (the best lines of ${teams.casual.length / Math.max(1, CASUAL_CARDS.length)} random rosters on ${CASUAL_CARDS.length} cards, each with ${gSet.draws} random draws; ${CASUAL_CARDS.map((id) => `${cardName(id)} ${fmt(casualShares.find((s) => s.cardId === id)?.share ?? 0)}`).join(', ')}): gauntlet ${fmt(casualG)} (${ok(casualOk(casualG, avgG))}), and the best raid boards with a random talent per form ${fmt(casualR)} (${ok(casualOk(casualR, avgR))}); above 0 and at most ${T.casualMaxOfBestPct}% of the best fit. With a random talent that fits the creature's role (no idle rolls) the casual gauntlet gains ${fmt(casualFit)}; the same best gauntlet teams with random talents on all cards: ${fmt(meanShare(Object.values(gauntRandom)))} (column above).`,
     '',
     `**Team share check: ${pass ? 'pass' : 'FAIL'}.**`,
     '',

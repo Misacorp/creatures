@@ -53,7 +53,7 @@ describe('share arithmetic', () => {
     expect(meanShare([])).toBe(0);
   });
 
-  it('reads the band and the casual floor to the whole percent', () => {
+  it('reads the band to the whole percent, and keeps random rolls below the best fit', () => {
     expect(TEAM_SHARE.min).toBeLessThan(TEAM_SHARE.target);
     expect(TEAM_SHARE.target).toBeLessThan(TEAM_SHARE.max);
     expect(inBand(17)).toBe(true);
@@ -61,8 +61,11 @@ describe('share arithmetic', () => {
     expect(inBand(16.4)).toBe(false);
     expect(inBand(23.4)).toBe(true);
     expect(inBand(23.6)).toBe(false);
-    expect(casualOk(9.5)).toBe(true);
-    expect(casualOk(9.4)).toBe(false);
+    // Random rolls gain something but stay well below the best fit (situational, not flat).
+    expect(casualOk(7, 20)).toBe(true);
+    expect(casualOk(12, 20)).toBe(true);
+    expect(casualOk(13, 20)).toBe(false);
+    expect(casualOk(0, 20)).toBe(false);
   });
 });
 
