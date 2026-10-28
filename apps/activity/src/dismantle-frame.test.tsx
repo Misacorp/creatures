@@ -139,7 +139,7 @@ describe('dismantling is one component in one frame, whichever way it is opened'
   it('draws the same drawer, head and pinned footer from the bag bar and from the item card', () => {
     // From the bulk bar: select an item by its checkbox, then Dismantle.
     const bulk = draw();
-    bulk.click(first(byClass(tile(bulk).parentNode as FakeElement, 'item-tile-check')));
+    bulk.click(first(byClass(tile(bulk).parentNode as FakeElement, 'select-check')));
     bulk.click(first(byName(first(byClass(bulk.root, 'bulk-bar')), 'button', 'Dismantle')));
     const fromBar = frameOf(bulk);
     bulk.unmount();

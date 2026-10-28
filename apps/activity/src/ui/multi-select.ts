@@ -1,10 +1,11 @@
 import { useState } from 'preact/hooks';
 
 /**
- * The bag's selection (decisions.md, 2026-10-27, "Bulk selection replaces marking"): the ids the player picked and
- * the last one they toggled (where a Shift-click range starts). It lives only on the client; nothing is stored or
- * sent until an action (Dismantle) names the items. Selecting is a mode: it is on while at least one item is
- * selected, so deselecting the last one ends it.
+ * A selection of several things in a list (decisions.md, 2026-10-27, "Bulk selection replaces marking"; shared since
+ * 2026-10-28, the Workshop bag is the first user): the ids the player picked and the last one they toggled (where a
+ * Shift-click range starts). It lives only on the client; nothing is stored or sent until an action (Dismantle) names
+ * the things. Selecting is a mode: it is on while at least one thing is selected, so deselecting the last one ends it.
+ * `useMultiSelect` holds it for a page; `useSelectGrid` wires a list's gestures to it; `BulkBar` shows its actions.
  */
 export interface Selection {
   readonly ids: ReadonlySet<string>;
@@ -43,7 +44,7 @@ export function rangeTo(selection: Selection, id: string, order: readonly string
   return { ids, anchor: selection.anchor };
 }
 
-/** The selection without ids that are not in `valid` any more (an item was dismantled or equipped away). */
+/** The selection without ids that are not in `valid` any more (a thing left the list: an item was dismantled). */
 export function pruned(selection: Selection, valid: ReadonlySet<string>): Selection {
   const ids = [...selection.ids].filter((id) => valid.has(id));
   if (ids.length === selection.ids.size) {
@@ -57,15 +58,26 @@ export function pruned(selection: Selection, valid: ReadonlySet<string>): Select
   };
 }
 
+/** The keys held down at a click (a Ctrl or Command click toggles, a Shift click takes a range). */
+export interface ClickKeys {
+  ctrlKey: boolean;
+  metaKey: boolean;
+  shiftKey: boolean;
+}
+
+/** What a list needs of its page's selection (`useMultiSelect`). */
+export type MultiSelect = ReturnType<typeof useMultiSelect>;
+
 /**
- * The selection's state and moves for a grid whose items are `order` (ids, in the shown order). `initial` is the
- * selection a page opens with (the workbench shows one); the game starts with none.
+ * The selection's state and moves for a list whose things are `order` (ids, in the shown order). `initial` is the
+ * selection a page opens with (the workbench shows one); the game starts with none. Ids that leave `order` drop out
+ * of the selection by themselves.
  */
-export function useBagSelection(
+export function useMultiSelect(
   order: readonly string[],
   initial: readonly string[] = [],
 ): {
-  /** The selected ids that are still in the bag. */
+  /** The selected ids that are still in the list. */
   ids: ReadonlySet<string>;
   /** Whether the selection mode is on (something is selected). */
   active: boolean;

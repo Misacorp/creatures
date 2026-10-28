@@ -1,15 +1,15 @@
 import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
 
 /**
- * The small menu a right click on a bag tile opens (decisions.md, 2026-10-27, "Bulk selection replaces
- * marking"): "Inspect" (open the item's card) and "Select" (start or change the selection; "Deselect" for an item
- * already chosen). It is an extra for a mouse, never the only way to either action. It sits at the pointer, kept
+ * The small menu a right click on a tile of a selectable list opens (decisions.md, 2026-10-27, "Bulk selection
+ * replaces marking"; `useSelectGrid` draws it): "Inspect" (open the thing's card) and "Select" (start or change the
+ * selection; "Deselect" for a thing already chosen). It is an extra for a mouse, never the only way to either action. It sits at the pointer, kept
  * inside the window; a transparent layer under it takes any click or scroll outside as "close", Escape closes it
  * too, and Up and Down move between its two entries. The place is written as CSS custom properties, so no inline
  * style attribute is needed. `onClose` is told whether the focus should go back to the tile (Escape does; a
  * choice does not, since it moves the player on).
  */
-export function ItemMenu({
+export function SelectMenu({
   x,
   y,
   chosen,
@@ -21,9 +21,9 @@ export function ItemMenu({
   /** Where the pointer was, in window coordinates. */
   x: number;
   y: number;
-  /** The item is in the selection now: the second entry reads "Deselect". */
+  /** The thing is in the selection now: the second entry reads "Deselect". */
   chosen: boolean;
-  /** The item's name, for the menu's spoken label. */
+  /** The thing's name, for the menu's spoken label. */
   name: string;
   onInspect: () => void;
   onSelect: () => void;
@@ -58,7 +58,7 @@ export function ItemMenu({
   return (
     <>
       <div
-        class="item-menu-backdrop"
+        class="select-menu-backdrop"
         onPointerDown={() => {
           onClose(false);
         }}
@@ -69,7 +69,7 @@ export function ItemMenu({
       />
       <div
         ref={menu}
-        class="item-menu pix-panel"
+        class="select-menu pix-panel"
         role="menu"
         aria-label={`${name}: actions`}
         onKeyDown={(event) => {

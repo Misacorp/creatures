@@ -23,16 +23,15 @@ import { ItemFrame, ItemSprite } from '../../GearArt';
 import { LootList } from '../../LootList';
 import type { DismantlePreview, GearItem, GearState, GrantLoot } from '../../gear-types';
 import { gearName, rarityName, slotName, wornItemOf } from '../../gear-view';
-import { BAG_HINT_POINTER, BAG_HINT_TOUCH } from '../../bag-hint';
-import { useBagSelection } from '../../bag-select';
 import { DismantleDrawer } from '../../DismantleDrawer';
-import { InventoryGrid } from '../../InventoryGrid';
+import { BAG_HINT, InventoryGrid } from '../../InventoryGrid';
 import { ItemDetail } from '../../ItemDetail';
-import { ItemMenu } from '../../ItemMenu';
 import { ItemTile } from '../../ItemTile';
 import { Alert } from '../../ui/Alert';
 import { BulkBar } from '../../ui/BulkBar';
 import { Drawer } from '../../ui/Drawer';
+import { useMultiSelect } from '../../ui/multi-select';
+import { SelectMenu } from '../../ui/SelectMenu';
 import { bool, str } from '../props';
 import type { Entry, Props } from '../types';
 
@@ -885,9 +884,9 @@ function PlainBag({
   hover?: boolean;
   /** The ids selected at the start. */
   start?: readonly string[];
-  children?: (selection: ReturnType<typeof useBagSelection>) => ComponentChildren;
+  children?: (selection: ReturnType<typeof useMultiSelect>) => ComponentChildren;
 }) {
-  const selection = useBagSelection(
+  const selection = useMultiSelect(
     items.map((i) => i.id),
     start,
   );
@@ -951,7 +950,6 @@ function HoldScene({ def }: { def: SceneDef }) {
                 label={`${gearName(item.baseId)}, ${slotName(item.slot)}, ${rarityName(item.rarity)}`}
                 selected={false}
                 choice={{
-                  selecting: false,
                   chosen: false,
                   holding: index === 1,
                   onCheck: () => undefined,
@@ -975,7 +973,7 @@ function MenuScene({ def }: { def: SceneDef }) {
     <div>
       <div class="workshop">
         <PlainBag items={items} creatures={state.creatures} />
-        <ItemMenu
+        <SelectMenu
           x={150}
           y={130}
           chosen={false}
@@ -996,10 +994,10 @@ function HintScene() {
       <div class="workshop">
         <section class="ws-section">
           <Alert level="info" class="bag-hint" onDismiss={() => undefined}>
-            {BAG_HINT_TOUCH}
+            {BAG_HINT.touch}
           </Alert>
           <Alert level="info" class="bag-hint" onDismiss={() => undefined}>
-            {BAG_HINT_POINTER}
+            {BAG_HINT.mouse}
           </Alert>
         </section>
       </div>

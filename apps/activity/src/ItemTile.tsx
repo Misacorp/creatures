@@ -2,26 +2,18 @@ import type { JSX } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
 import { ItemCorners, ItemSprite } from './GearArt';
 import type { GearItem } from './gear-types';
-import { glyphOrUnknown } from './glyphs';
 import { isFestivalBase } from './gear-view';
 import { Sprite } from './sprites/Sprite';
-import { CHECK_PALETTE } from './ui/PlacedCount';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
-
-/** The keys held down at a click (a Ctrl or Command click toggles, a Shift click takes a range). */
-export interface ClickKeys {
-  ctrlKey: boolean;
-  metaKey: boolean;
-  shiftKey: boolean;
-}
+import type { ClickKeys } from './ui/multi-select';
+import { SelectCheck } from './ui/SelectCheck';
 
 /**
  * How a bag tile takes part in selecting several items (decisions.md, 2026-10-27, "Bulk selection replaces
- * marking"). Only the bag passes it; the item picker's tiles do not select.
+ * marking"). Only the bag passes it; the item picker's tiles do not select. The list's gestures and the tile's role
+ * come from `useSelectGrid` (through `buttonProps`).
  */
 export interface TileChoice {
-  /** The selection mode is on: every tile shows its checkbox. */
-  selecting: boolean;
   /** This item is in the selection: a ring on the tile and a check in its checkbox. */
   chosen: boolean;
   /** A long press is being held on this tile: its cue plays. */
@@ -40,13 +32,11 @@ export interface TileChoice {
  * item shown, or shown last); `blocked` dims an item that cannot be worn (or that another creature wears). A selected tile scrolls itself into view (when it is selected and again when its details
  * close), so a closed detail never leaves the player lost in a long grid.
  *
- * Selecting several (bag only, `choice`): the tile is an option of the grid's listbox (`aria-selected`). A square
- * checkbox sits in its top left corner: it shows on hover for a mouse, and on every tile while the selection mode is
- * on (empty, or a check on a chosen tile, which also gets a ring). The checkbox is its own button (never nested in
- * the tile, out of the tab order: keyboard users select with Space on the tile) with a hit area of about 44 px, a
- * tap on it toggles, and a tap anywhere else on the tile opens the item's card. The slot icon of a bag tile sits at
- * the bottom left, so the checkbox never covers it. `buttonProps` carries the pointer and key handlers of the grid
- * (long press, context menu, arrow keys) and `focusRef` hands the grid the button.
+ * Selecting several (bag only, `choice`): the tile is an option of the grid's listbox, and the shared `SelectCheck`
+ * sits beside its button in the top left corner (a tap on it toggles, a tap anywhere else on the tile opens the item's
+ * card). A chosen tile gets a gold ring and a held one the hold cue (`item-tile.css`). The slot icon of a bag tile
+ * sits at the bottom left, so the checkbox never covers it. `buttonProps` carries the role and the pointer and key
+ * handlers of `useSelectGrid` (long press, context menu, arrow keys) and `focusRef` hands the grid the button.
  */
 export function ItemTile({
   item,
@@ -105,11 +95,9 @@ export function ItemTile({
         }}
         class={classes.join(' ')}
         {...(multi
-          ? {
-              role: 'option',
-              'aria-selected': choice.chosen,
-              ...(selected ? { 'aria-current': 'true' as const } : {}),
-            }
+          ? selected
+            ? { 'aria-current': 'true' as const }
+            : {}
           : { 'aria-pressed': pressed })}
         aria-label={label}
         draggable={false}
@@ -133,21 +121,7 @@ export function ItemTile({
         <ItemCorners level={item.itemLevel} baseId={item.baseId} />
       </button>
       {choice !== undefined && (
-        <button
-          type="button"
-          role="checkbox"
-          class={choice.chosen ? 'item-tile-check on' : 'item-tile-check'}
-          aria-checked={choice.chosen}
-          aria-label={choice.checkLabel}
-          tabIndex={-1}
-          onClick={choice.onCheck}
-        >
-          <span class="item-tile-box" aria-hidden="true">
-            {choice.chosen && (
-              <Sprite sprite={glyphOrUnknown('check')} palette={CHECK_PALETTE} scale={2} />
-            )}
-          </span>
-        </button>
+        <SelectCheck chosen={choice.chosen} label={choice.checkLabel} onCheck={choice.onCheck} />
       )}
     </li>
   );

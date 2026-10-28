@@ -1,16 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  BAG_HINT_KEY,
-  BAG_HINT_POINTER,
-  BAG_HINT_TOUCH,
-  bagHintRetired,
-  bagHintText,
   hasMousePointer,
-  resetBagHintSession,
-  retireBagHint,
-} from './bag-hint';
+  resetSelectHintSession,
+  retireSelectHint,
+  selectHintRetired,
+  selectHintText,
+  type SelectHint,
+} from './select-hint';
 
-/** The one-time hint about selecting several items (2026-10-27): once only, on this device, whatever storage does. */
+/** The one-time hint about selecting several things (2026-10-27): once only, on this device, whatever storage does. */
+
+const HINT: SelectHint = {
+  key: 'lc.test-select-hint.v1',
+  touch: 'Press and hold a thing to select several',
+  mouse: 'Click the box on a thing to select several',
+};
+const OTHER: SelectHint = { ...HINT, key: 'lc.other-select-hint.v1' };
 
 function memory(): {
   getStorage: () => Pick<Storage, 'getItem' | 'setItem'>;
@@ -33,7 +38,7 @@ const broken = (): never => {
 };
 
 beforeEach(() => {
-  resetBagHintSession();
+  resetSelectHintSession();
 });
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -42,23 +47,23 @@ afterEach(() => {
 describe('the hint flag', () => {
   it('is not retired on a fresh device, and retired once it is set', () => {
     const { getStorage, saved } = memory();
-    expect(bagHintRetired(getStorage)).toBe(false);
-    retireBagHint(getStorage);
-    expect(saved.get(BAG_HINT_KEY)).toBe('1');
-    expect(bagHintRetired(getStorage)).toBe(true);
+    expect(selectHintRetired(HINT, getStorage)).toBe(false);
+    retireSelectHint(HINT, getStorage);
+    expect(saved.get(HINT.key)).toBe('1');
+    expect(selectHintRetired(HINT, getStorage)).toBe(true);
   });
 
   it('stays retired for a later visit (a new session reads the saved flag)', () => {
     const { getStorage } = memory();
-    retireBagHint(getStorage);
-    resetBagHintSession();
-    expect(bagHintRetired(getStorage)).toBe(true);
+    retireSelectHint(HINT, getStorage);
+    resetSelectHintSession();
+    expect(selectHintRetired(HINT, getStorage)).toBe(true);
   });
 
   it('shows the hint, without throwing, when storage cannot be read', () => {
-    expect(bagHintRetired(broken)).toBe(false);
+    expect(selectHintRetired(HINT, broken)).toBe(false);
     expect(
-      bagHintRetired(() => ({
+      selectHintRetired(HINT, () => ({
         getItem: broken,
         setItem: broken,
       })),
@@ -67,11 +72,11 @@ describe('the hint flag', () => {
 
   it('stays retired for the session when storage cannot be written, and never throws', () => {
     expect(() => {
-      retireBagHint(broken);
+      retireSelectHint(HINT, broken);
     }).not.toThrow();
-    expect(bagHintRetired(broken)).toBe(true);
-    resetBagHintSession();
-    expect(bagHintRetired(broken)).toBe(false);
+    expect(selectHintRetired(HINT, broken)).toBe(true);
+    resetSelectHintSession();
+    expect(selectHintRetired(HINT, broken)).toBe(false);
   });
 
   it('reads the real flag key of the browser through window.localStorage, and survives it throwing', () => {
@@ -80,20 +85,27 @@ describe('the hint flag', () => {
         throw new Error('blocked');
       },
     });
-    expect(bagHintRetired()).toBe(false);
+    expect(selectHintRetired(HINT)).toBe(false);
     expect(() => {
-      retireBagHint();
+      retireSelectHint(HINT);
     }).not.toThrow();
-    expect(bagHintRetired()).toBe(true);
+    expect(selectHintRetired(HINT)).toBe(true);
+  });
+});
+
+describe('one flag per list', () => {
+  it("retiring one list's hint leaves another list's alone", () => {
+    const { getStorage } = memory();
+    retireSelectHint(HINT, getStorage);
+    expect(selectHintRetired(HINT, getStorage)).toBe(true);
+    expect(selectHintRetired(OTHER, getStorage)).toBe(false);
   });
 });
 
 describe('the wording by device', () => {
   it('names the box for a mouse and the press and hold for a finger', () => {
-    expect(bagHintText(true)).toBe('Click the box on an item to select several');
-    expect(bagHintText(false)).toBe('Press and hold an item to select several');
-    expect(BAG_HINT_POINTER).toBe(bagHintText(true));
-    expect(BAG_HINT_TOUCH).toBe(bagHintText(false));
+    expect(HINT.mouse).toBe(selectHintText(HINT, true));
+    expect(HINT.touch).toBe(selectHintText(HINT, false));
   });
 
   it('asks the media query for a hovering, precise pointer', () => {
@@ -104,7 +116,7 @@ describe('the wording by device', () => {
     });
     expect(hasMousePointer()).toBe(true);
     expect(asked).toEqual(['(hover: hover) and (pointer: fine)']);
-    expect(bagHintText()).toBe(BAG_HINT_POINTER);
+    expect(selectHintText(HINT)).toBe(HINT.mouse);
   });
 
   it('is a touch device where the query says no, is missing or throws', () => {
@@ -114,6 +126,6 @@ describe('the wording by device', () => {
     expect(hasMousePointer()).toBe(false);
     vi.stubGlobal('matchMedia', broken);
     expect(hasMousePointer()).toBe(false);
-    expect(bagHintText()).toBe(BAG_HINT_TOUCH);
+    expect(selectHintText(HINT)).toBe(HINT.touch);
   });
 });

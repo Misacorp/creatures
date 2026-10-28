@@ -5,7 +5,8 @@ import { allBagItems } from './creature-page/bag-sample';
 import { PAGE_SAMPLE_ID } from './creature-page/sample';
 import type { GrantLoot } from './gear-types';
 import { LootList } from './LootList';
-import { InventoryGrid, type BagSelection } from './InventoryGrid';
+import { InventoryGrid } from './InventoryGrid';
+import type { MultiSelect } from './ui/multi-select';
 import { ItemCard } from './ItemCard';
 import { byClass, createPage, find, visibleText, type FakeElement, type Page } from './test-dom';
 import { GearList } from './GearList';
@@ -30,7 +31,7 @@ function first(list: FakeElement[]): FakeElement {
 }
 
 /** A selection with nothing selected, for grids drawn only to be read. */
-const NO_PICK: BagSelection = {
+const NO_PICK: MultiSelect = {
   active: false,
   ids: new Set(),
   has: () => false,

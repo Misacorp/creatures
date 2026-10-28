@@ -78,93 +78,11 @@ button.item-tile.blocked canvas.sprite.item-tile-wearer {
 }
 
 /*
-  Selecting several (2026-10-27, bag only). The grid keeps its vertical scroll native (`touch-action: pan-y`) and a
-  tile never selects text or opens the touch callout, so a press and hold is ours. A square checkbox sits in the
-  tile's top left corner: on hover for a mouse, on every tile while the selection mode is on (empty, or with the
-  pixel check and a gold edge on a chosen tile, which also gets a gold ring). It is a plain square (hard pixel
-  edges); its button is 44 px, larger than what is drawn, so it is an easy target. While a long press is held the tile steps down in size and its
-  ring fills in a few steps (no motion under reduced motion: the ring just shows).
+  Selecting several (2026-10-27, the bag). The list's gestures, the checkbox and the right click's menu are shared
+  (`select-grid.css`, `ui/use-select-grid.tsx`, `ui/SelectCheck.tsx`); what is the item tile's own is here: the slot
+  icon's corner, the gold ring of a chosen tile and the hold cue (while a long press is held the tile steps down in size
+  and its ring fills in a few steps; no motion under reduced motion: the ring just shows).
 */
-.bag-grid {
-  touch-action: pan-y;
-}
-
-.bag-grid button.item-tile {
-  touch-action: pan-y;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-}
-
-.item-tile-check {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 2;
-  display: none;
-  /* A little larger than the drawn box (Misa, 2026-10-28: 44 px took too much of the tile on a phone). */
-  width: 2rem;
-  height: 2rem;
-  min-height: 0;
-  padding: 0;
-  background: none;
-  box-shadow: none;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-/*
- * The target itself never shows: no press sink, no outline flash, no hover brightening and no tap highlight
- * (the game's buttons have them; Misa, 2026-10-28). Only the drawn box below says selected or not.
- */
-.item-tile-check:hover:not(:disabled),
-.item-tile-check:active:not(:disabled) {
-  filter: none;
-  transform: none;
-  box-shadow: none;
-}
-
-.item-tile-check {
-  -webkit-tap-highlight-color: transparent;
-  transition: none;
-}
-
-.item-tile-check:focus {
-  outline: none;
-}
-
-/* The drawn square is small and square-cornered; the button around it is a target a few pixels larger. */
-.item-tile-box {
-  position: absolute;
-  top: 0.25rem;
-  left: 0.25rem;
-  display: grid;
-  place-items: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  background: var(--ink);
-  box-shadow: inset 0 0 0 2px var(--bone);
-}
-
-.item-tile-check.on .item-tile-box {
-  box-shadow: inset 0 0 0 2px var(--gold);
-}
-
-.item-tile-check:focus-visible .item-tile-box,
-.item-tile-check:hover .item-tile-box {
-  box-shadow: inset 0 0 0 2px var(--gold);
-}
-
-.bag-grid.selecting .item-tile-check {
-  display: block;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .bag-grid > li:hover .item-tile-check,
-  .bag-grid > li:focus-within .item-tile-check {
-    display: block;
-  }
-}
 
 /* The slot icon of a bag tile sits at the bottom left, so the checkbox at the top left never covers it. */
 .bag-grid canvas.sprite.item-slot {

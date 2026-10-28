@@ -13,11 +13,9 @@ import {
   sortItems,
   unequippedReason,
 } from './gear-view';
-import { bagHintRetired, bagHintText, retireBagHint } from './bag-hint';
-import { useBagSelection } from './bag-select';
 import { GlossaryTag } from './Glossary';
 import { DismantleDrawer, type DismantleStep } from './DismantleDrawer';
-import { InventoryGrid } from './InventoryGrid';
+import { BAG_HINT, InventoryGrid } from './InventoryGrid';
 import { gearName } from './gear-view';
 import { ItemDetail } from './ItemDetail';
 import { JobReveal } from './JobReveal';
@@ -29,6 +27,8 @@ import { Drawer } from './ui/Drawer';
 import { flipOver } from './ui/flip-logic';
 import { FlipArea } from './ui/Flipper';
 import { Alert } from './ui/Alert';
+import { useMultiSelect } from './ui/multi-select';
+import { retireSelectHint, selectHintRetired, selectHintText } from './ui/select-hint';
 
 /**
  * The Workshop tab: your parts, the job slots (with timers and claims), the bag of gear (an item's
@@ -78,7 +78,7 @@ export function Workshop({
   // The bag's multi-select (2026-10-27): started by a gesture on a tile, held only here; the bulk bar's
   // "Dismantle" picks the creature and confirms. `pile` is the items the confirmation shows (the drawer is open
   // while set).
-  const selection = useBagSelection(sortItems(gear?.items ?? []).map((i) => i.id));
+  const selection = useMultiSelect(sortItems(gear?.items ?? []).map((i) => i.id));
   const [pile, setPile] = useState<GearItem[] | null>(null);
   const dismantleButton = useRef<HTMLButtonElement | null>(null);
   // The item card's red Dismantle: the same `DismantleDrawer` as the bulk bar's, for this one item, taking the place
@@ -86,10 +86,10 @@ export function Workshop({
   const [cardFlow, setCardFlow] = useState(initialCardDismantle !== undefined);
   const [backFromFlow, setBackFromFlow] = useState(false);
   // The one-time hint about selecting several: gone for good once dismissed or once anything was selected.
-  const [hintOpen, setHintOpen] = useState(() => !bagHintRetired());
+  const [hintOpen, setHintOpen] = useState(() => !selectHintRetired(BAG_HINT));
   useEffect(() => {
     if (selection.active) {
-      retireBagHint();
+      retireSelectHint(BAG_HINT);
       setHintOpen(false);
     }
   }, [selection.active]);
@@ -204,11 +204,11 @@ export function Workshop({
             level="info"
             class="bag-hint"
             onDismiss={() => {
-              retireBagHint();
+              retireSelectHint(BAG_HINT);
               setHintOpen(false);
             }}
           >
-            {bagHintText()}
+            {selectHintText(BAG_HINT)}
           </Alert>
         )}
         {bagFull(gear.inventory) && (

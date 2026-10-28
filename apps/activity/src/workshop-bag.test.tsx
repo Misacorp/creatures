@@ -3,7 +3,8 @@ import { allBagItems } from './creature-page/bag-sample';
 import { PAGE_SAMPLE_ID } from './creature-page/sample';
 import { GEAR_STATE, SAMPLE_GEAR } from './creature-card-sample';
 import type { GearActions } from './gear-actions';
-import { InventoryGrid, type BagSelection } from './InventoryGrid';
+import { InventoryGrid } from './InventoryGrid';
+import type { MultiSelect } from './ui/multi-select';
 import { ItemCard } from './ItemCard';
 import {
   byClass,
@@ -106,7 +107,7 @@ describe('the Workshop bag', () => {
 });
 
 /** A selection with nothing selected, for a grid drawn only to be read. */
-const NO_PICK: BagSelection = {
+const NO_PICK: MultiSelect = {
   active: false,
   ids: new Set(),
   has: () => false,

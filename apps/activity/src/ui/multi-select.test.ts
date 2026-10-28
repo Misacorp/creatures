@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { NO_SELECTION, pruned, rangeTo, toggled, withItem } from './bag-select';
+import { NO_SELECTION, pruned, rangeTo, toggled, withItem } from './multi-select';
 
-/** The bag's selection (2026-10-27): toggling, ranges in the shown order, pruning. */
+/** A list's selection (2026-10-27): toggling, ranges in the shown order, pruning. */
 
 const ORDER = ['a', 'b', 'c', 'd', 'e'];
 const ids = (s: { ids: ReadonlySet<string> }): string[] => [...s.ids].sort();

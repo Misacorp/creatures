@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { resetBagHintSession } from './bag-hint';
+import { resetSelectHintSession } from './ui/select-hint';
 import { GEAR_STATE, SAMPLE_GEAR } from './creature-card-sample';
 import type { GearActions } from './gear-actions';
 import type { DismantlePreview, GearState, JobResult } from './gear-types';
@@ -28,7 +28,7 @@ import { Workshop } from './Workshop';
 
 let page: Page | null = null;
 beforeEach(() => {
-  resetBagHintSession();
+  resetSelectHintSession();
 });
 afterEach(() => {
   page?.unmount();
@@ -145,7 +145,7 @@ function tile(p: Page, baseId: string): FakeElement {
 const tiles = (p: Page): FakeElement[] =>
   find(p.root, (e) => e.localName === 'button' && e.getAttribute('role') === 'option');
 const boxOf = (p: Page, baseId: string): FakeElement =>
-  first(byClass(tile(p, baseId).parentNode as FakeElement, 'item-tile-check'));
+  first(byClass(tile(p, baseId).parentNode as FakeElement, 'select-check'));
 const chosen = (p: Page): string[] =>
   IN_ORDER.filter((id) => tile(p, id).getAttribute('aria-selected') === 'true');
 const bar = (p: Page): FakeElement => first(byClass(p.root, 'bulk-bar'));
@@ -320,7 +320,7 @@ describe('selecting with a mouse', () => {
   it('puts a square checkbox in every tile, and a click on it selects the item and starts selecting', () => {
     const p = draw();
     expect(
-      find(p.root, (e) => (e.getAttribute('class') ?? '').includes('item-tile-check')),
+      find(p.root, (e) => (e.getAttribute('class') ?? '').includes('select-check')),
     ).toHaveLength(8);
     p.click(boxOf(p, 'kelp-cap'));
     expect(chosen(p)).toEqual(['kelp-cap']);
@@ -435,7 +435,7 @@ describe('selecting with a mouse', () => {
     expect(byRole(p.root, 'menu')).toHaveLength(0);
     expect(tile(p, 'kelp-cap').focused).toBeGreaterThan(0);
     p.event(tile(p, 'kelp-cap'), 'contextmenu', { x: 120, y: 80 });
-    p.pointer(first(byClass(p.root, 'item-menu-backdrop')), 'pointerdown', {
+    p.pointer(first(byClass(p.root, 'select-menu-backdrop')), 'pointerdown', {
       x: 5,
       y: 5,
       kind: 'mouse',
