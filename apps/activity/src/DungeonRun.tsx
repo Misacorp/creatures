@@ -61,39 +61,41 @@ export function DungeonRun({
 
   return (
     <div ref={top} class="dungeon-run">
-      <DungeonRunStrip state={state} />
-      {error !== null && <Alert level="alert">{error}</Alert>}
-      {state.pending?.kind === 'event' && (
-        <DungeonEvent
-          key={state.step}
-          event={state.pending.event}
-          busy={busy}
-          onPick={(option) => {
-            onAct({ type: 'event', option });
-          }}
-        />
-      )}
-      {state.pending?.kind === 'camp' && (
-        <DungeonCamp
-          key={state.step}
-          team={state.team}
-          pack={state.pack}
-          camp={state.pending}
-          creatures={creatures}
-          busy={busy}
-          onAct={onAct}
-        />
-      )}
-      {state.pending?.kind === 'descend' && (
-        <DungeonDescend
-          key={state.step}
-          descent={state.pending}
-          pack={state.pack}
-          depth={state.depth}
-          busy={busy}
-          onAct={onAct}
-        />
-      )}
+      <div class="dungeon-run-side">
+        <DungeonRunStrip state={state} />
+        {error !== null && <Alert level="alert">{error}</Alert>}
+        {state.pending?.kind === 'event' && (
+          <DungeonEvent
+            key={state.step}
+            event={state.pending.event}
+            busy={busy}
+            onPick={(option) => {
+              onAct({ type: 'event', option });
+            }}
+          />
+        )}
+        {state.pending?.kind === 'camp' && (
+          <DungeonCamp
+            key={state.step}
+            team={state.team}
+            pack={state.pack}
+            camp={state.pending}
+            creatures={creatures}
+            busy={busy}
+            onAct={onAct}
+          />
+        )}
+        {state.pending?.kind === 'descend' && (
+          <DungeonDescend
+            key={state.step}
+            descent={state.pending}
+            pack={state.pack}
+            depth={state.depth}
+            busy={busy}
+            onAct={onAct}
+          />
+        )}
+      </div>
       {screen === 'run' && (
         <section class="raid-section dungeon-run-map" aria-label="The map">
           <DungeonMap

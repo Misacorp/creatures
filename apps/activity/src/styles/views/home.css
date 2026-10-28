@@ -13,14 +13,6 @@
   min-width: 0;
 }
 
-/* On a desktop Home takes the wide card, as Expeditions and the Games show do, so a big screen gets three
-   columns of notices (`components/side-panel.css`). */
-@media (min-width: 60rem) {
-  main.card:has(.home-page) {
-    width: min(84rem, 100% - 1.25rem);
-  }
-}
-
 .home-page > .app-top {
   margin: 0;
 }
@@ -433,6 +425,14 @@ button.hb-quiet:focus-visible {
   .hb-needs,
   .hb-quiet-list {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* The whole-window board (a 1920 px window): four notices across; the papers stay phone-sized. */
+@container (min-width: 84rem) {
+  .hb-needs,
+  .hb-quiet-list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 

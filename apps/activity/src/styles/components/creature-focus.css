@@ -9,10 +9,16 @@
   keyboard and screen readers). The card's own buttons keep their own actions.
 */
 
-/* Two columns of cards at most on a wide screen; one on a phone. */
+/* As many columns as fit; one on a phone. On a whole-window desktop a card is at least 20 rem. */
 .creature-cards {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
   align-items: start;
+}
+
+@media (min-width: 60rem) {
+  .creature-cards {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  }
 }
 
 .creature-card.focused {

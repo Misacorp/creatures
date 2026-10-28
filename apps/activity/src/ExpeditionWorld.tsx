@@ -1,6 +1,6 @@
 import type { ComponentChildren } from 'preact';
 import type { GearState } from './gear-types';
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { Creature } from './api';
 import { destinationCards } from './destination-view';
 import type { SendRequest } from './expedition-api';
@@ -8,7 +8,7 @@ import type { DestinationsView, Slots, Trip } from './expedition-types';
 import { cssVars } from './css-vars';
 import { useElementWidth } from './hooks';
 import { centerOn, startingPlace } from './map-start';
-import { mapPlaces, mapScale } from './map-view';
+import { mapPlaces, mapScaleWide } from './map-view';
 import { MAP_SIZE } from './sprites/world-map-art';
 import { OutStrip } from './OutStrip';
 import { PlacePanel } from './PlacePanel';
@@ -135,7 +135,8 @@ export function ExpeditionWorld(props: ExpeditionWorldProps) {
   // it has at the full width, so opening the panel narrows its window instead of shrinking the art.
   const panelOpen = wide && (selected !== null || props.reveal !== null);
   const fullWidth = useElementWidth(root, 0);
-  const scale = wide && fullWidth > 0 ? mapScale(fullWidth) : undefined;
+  const roomBelow = useRoomBelow(root, wide);
+  const scale = wide && fullWidth > 0 ? mapScaleWide(fullWidth, roomBelow) : undefined;
   // The panel is no taller than the map (world.css), so its list scrolls inside it and its button stays in view.
   const panelVars = cssVars(
     scale === undefined ? {} : { '--side-max-h': `${String(MAP_SIZE.height * scale)}px` },
@@ -318,4 +319,26 @@ export function ExpeditionWorld(props: ExpeditionWorldProps) {
       )}
     </WideLayout>
   );
+}
+
+/**
+ * Wide: the window's height below the top of `ref` in the page (CSS px, a little margin kept), kept up to
+ * date as the window resizes, so the map's scale also fits the window's height. 0 until measured.
+ */
+function useRoomBelow(ref: { current: HTMLElement | null }, wide: boolean): number {
+  const [room, setRoom] = useState(0);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!wide || el === null || typeof window === 'undefined') return undefined;
+    const read = (): void => {
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      setRoom(Math.max(0, Math.round(window.innerHeight - top - 16)));
+    };
+    read();
+    window.addEventListener('resize', read);
+    return () => {
+      window.removeEventListener('resize', read);
+    };
+  }, [wide]);
+  return room;
 }

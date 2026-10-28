@@ -365,83 +365,91 @@ export function Raid({
           }}
         />
       )}
-      <RaidTimeline
-        view={view}
-        serverNow={serverNow}
-        finale={finaleState}
-        owned={creatures.length}
-        onAct={act}
-        onReplay={(phase) => {
-          if (party !== null) setReplay({ week: view.weekId, party: party.party, phase });
-        }}
-      />
-      {showPractice && !practiceGone && (
-        <Accordion title="Testing tools" class="practice">
-          <p class="muted">Practice fights only exist on the test server and give no rewards.</p>
-          <button type="button" disabled={busy} onClick={startPracticeFight}>
-            Start practice fight
-          </button>
-        </Accordion>
-      )}
-      <BossCard view={view} forecast={forecast} />
-      {party !== null && (
-        <Placement
-          party={party}
-          creatures={creatures.map(toPickerCreature)}
-          canEdit={view.you.canEdit}
-          busy={busy}
-          rosterNames={rosterNames}
-          turnOrder={view.boss.turnOrder}
-          onIntent={runIntent}
-          configure={configure}
-          owned={creatures}
-          onOpenPage={setPage}
-        />
-      )}
-      {party !== null && view.you.canEdit && (
-        <BagFullNote
-          inventory={configure?.gear?.inventory}
-          onOpenWorkshop={configure?.onOpenWorkshop}
-        />
-      )}
+      <div class="raid-page">
+        <div class="raid-col raid-col-boss">
+          <RaidTimeline
+            view={view}
+            serverNow={serverNow}
+            finale={finaleState}
+            owned={creatures.length}
+            onAct={act}
+            onReplay={(phase) => {
+              if (party !== null) setReplay({ week: view.weekId, party: party.party, phase });
+            }}
+          />
+          {showPractice && !practiceGone && (
+            <Accordion title="Testing tools" class="practice">
+              <p class="muted">
+                Practice fights only exist on the test server and give no rewards.
+              </p>
+              <button type="button" disabled={busy} onClick={startPracticeFight}>
+                Start practice fight
+              </button>
+            </Accordion>
+          )}
+          <BossCard view={view} forecast={forecast} />
+        </div>
+        <div class="raid-col raid-col-board">
+          {party !== null && (
+            <Placement
+              party={party}
+              creatures={creatures.map(toPickerCreature)}
+              canEdit={view.you.canEdit}
+              busy={busy}
+              rosterNames={rosterNames}
+              turnOrder={view.boss.turnOrder}
+              onIntent={runIntent}
+              configure={configure}
+              owned={creatures}
+              onOpenPage={setPage}
+            />
+          )}
+          {party !== null && view.you.canEdit && (
+            <BagFullNote
+              inventory={configure?.gear?.inventory}
+              onOpenWorkshop={configure?.onOpenWorkshop}
+            />
+          )}
 
-      {view.you.ability !== null && (
-        <AbilityChip
-          you={view.you}
-          current={view.you.ability}
-          abilities={view.you.abilities}
-          team={view.you.team?.creatures ?? []}
-          editable={serverNow < view.schedule.finale}
-          busy={busy}
-          onPick={(abilityId) => {
-            void mutate(() => setRaidAbility(abilityId));
-          }}
-          onAutoFire={(target, on) => {
-            void mutate(() => setRaidAutofire(target, on));
-          }}
-        />
-      )}
-      {party !== null && showFullResults(party.results) && (
-        <section class="raid-section" aria-labelledby="raid-results-heading">
-          <h3 id="raid-results-heading">Results</h3>
-          <ul class="cards">
-            {party.results.map((result) => (
-              <ResultCard
-                key={result.phase}
-                result={result}
-                week={view.weekId}
-                party={party.party}
-                view={view}
-                onReplay={() => {
-                  setReplay({ week: view.weekId, party: party.party, phase: result.phase });
-                }}
-              />
-            ))}
-          </ul>
-        </section>
-      )}
+          {view.you.ability !== null && (
+            <AbilityChip
+              you={view.you}
+              current={view.you.ability}
+              abilities={view.you.abilities}
+              team={view.you.team?.creatures ?? []}
+              editable={serverNow < view.schedule.finale}
+              busy={busy}
+              onPick={(abilityId) => {
+                void mutate(() => setRaidAbility(abilityId));
+              }}
+              onAutoFire={(target, on) => {
+                void mutate(() => setRaidAutofire(target, on));
+              }}
+            />
+          )}
+          {party !== null && showFullResults(party.results) && (
+            <section class="raid-section" aria-labelledby="raid-results-heading">
+              <h3 id="raid-results-heading">Results</h3>
+              <ul class="cards">
+                {party.results.map((result) => (
+                  <ResultCard
+                    key={result.phase}
+                    result={result}
+                    week={view.weekId}
+                    party={party.party}
+                    view={view}
+                    onReplay={() => {
+                      setReplay({ week: view.weekId, party: party.party, phase: result.phase });
+                    }}
+                  />
+                ))}
+              </ul>
+            </section>
+          )}
 
-      <RaidNews />
+          <RaidNews />
+        </div>
+      </div>
     </>
   );
 }

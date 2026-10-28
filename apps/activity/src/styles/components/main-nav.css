@@ -472,13 +472,36 @@ button.nav-tray-item.active:focus-visible {
 @media (min-width: 60rem) {
   .nav-shell {
     display: grid;
-    grid-template-columns: 8.5rem minmax(0, 1fr);
+    grid-template-columns: 9rem minmax(0, 1fr);
     gap: 1rem;
     align-items: start;
+    padding: 0 1rem 1rem 0;
   }
 
-  /* The card is as wide as before plus the rail; a screen with a side panel widens it further (`side-panel.css`). */
+  /*
+    The whole window (Misa, 2026-10-28: "on desktop use the entire screen width and height"): the card is the
+    window, no margin, no frame, at least as tall as it. The HUD is its full-width top row, the living room
+    band under it, then the rail (a column the full height, sticky) and the screen filling the rest. Each
+    screen caps its own reading text and cards (the per-view files); the card itself never does.
+  */
   main.card:has(.main-nav.rail) {
-    width: min(58rem, 100% - 1.25rem);
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  main.card:has(.main-nav.rail) > .hud {
+    margin: 0 0 0.75rem;
+    padding-inline: 1rem;
+  }
+
+  .main-nav.rail {
+    top: 0;
+    max-height: 100vh;
+    max-height: 100dvh;
+    padding: 0.5rem 0.5rem 1rem 1rem;
   }
 }

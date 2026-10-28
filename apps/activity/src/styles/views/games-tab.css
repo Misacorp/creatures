@@ -55,6 +55,14 @@
   list-style: none;
 }
 
+/* A whole-window desktop: the event cards in two or three columns (each at least 22 rem). */
+@media (min-width: 60rem) {
+  .ge-cards {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+    align-items: start;
+  }
+}
+
 .ge-card {
   position: relative;
   display: flex;
