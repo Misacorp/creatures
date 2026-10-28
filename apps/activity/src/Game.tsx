@@ -490,6 +490,7 @@ export function Game({
     </>
   ) : (
     <AppFrame
+      place={tab}
       head={head}
       nav={
         <MainNav

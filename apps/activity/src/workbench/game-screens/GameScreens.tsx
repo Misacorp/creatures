@@ -154,7 +154,7 @@ export function GameScreens({
   return (
     <PopoverHost onOpenHowTo={NOTHING}>
       <main class="card">
-        <AppFrame head={head} nav={nav}>
+        <AppFrame place={place} head={head} nav={nav}>
           {place === 'home' ? (
             <HomePage
               input={input}

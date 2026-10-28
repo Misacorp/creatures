@@ -7,10 +7,13 @@ import type { ComponentChildren } from 'preact';
  * it, so a screenshot of the page cannot drift from the game's markup.
  */
 export function AppFrame({
+  place,
   head,
   nav,
   children,
 }: {
+  /** The place on screen (a `TABS` id or "home"), as `data-place` so a look can style a place's scenery. */
+  place: string;
   head: ComponentChildren;
   nav: ComponentChildren;
   children: ComponentChildren;
@@ -18,7 +21,7 @@ export function AppFrame({
   return (
     <>
       {head}
-      <div class="nav-shell">
+      <div class="nav-shell" data-place={place}>
         {nav}
         <div class="nav-screen">{children}</div>
       </div>
