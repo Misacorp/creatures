@@ -405,6 +405,8 @@ export interface Modifiers {
   metaKey?: boolean;
   shiftKey?: boolean;
   button?: number;
+  /** For events a listener may cancel only sometimes (a `touchmove` during a scroll is not cancelable). */
+  cancelable?: boolean;
 }
 
 export interface Page {

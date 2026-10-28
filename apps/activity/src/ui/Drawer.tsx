@@ -100,6 +100,7 @@ function DrawerSheet({
   const panel = useRef<HTMLDivElement>(null);
   const drag = useRef<{ y: number; at: number; id: number } | null>(null);
   const swallowClick = useRef(false);
+  const handle = useRef<HTMLButtonElement>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
 
@@ -109,6 +110,22 @@ function DrawerSheet({
     panel.current?.focus({ preventScroll: true });
     return () => {
       before?.focus({ preventScroll: true });
+    };
+  }, []);
+
+  // A pull on the handle is the page's own gesture: its touch moves are marked handled (`preventDefault`), which
+  // tells the app around the page to keep out of it. Without it, Discord on Android also took the pull down as its
+  // own and, after the sheet closed, turned away taps for about half a second (Misa, 2026-10-28). `touch-action:
+  // none` alone does not tell the app; a passive listener (Preact's) cannot do it. Only moves: a tap keeps its click.
+  useEffect(() => {
+    const el = handle.current;
+    if (el === null) return undefined;
+    const hold = (event: TouchEvent): void => {
+      if (drag.current !== null && event.cancelable) event.preventDefault();
+    };
+    el.addEventListener('touchmove', hold, { passive: false });
+    return () => {
+      el.removeEventListener('touchmove', hold);
     };
   }, []);
 
@@ -204,6 +221,7 @@ function DrawerSheet({
           <button
             type="button"
             class="drawer-handle"
+            ref={handle}
             tabIndex={-1}
             aria-hidden="true"
             onPointerDown={press}
