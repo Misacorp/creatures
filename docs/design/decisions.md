@@ -3408,3 +3408,9 @@ Misa asked whether the next list that needs "select several and act on them" cou
 **Decision (Misa).** Talent choice should feel like it has a big impact. Roughly **+20%** on a team's result is the upper target for a talent at its best (Misa's guess, to be checked in play). Power comes from many sources (Knacks, gear, placement and synergies, stats, levels), so what talents gain is taken from those. Too strong and players think each creature has only one valuable talent, so no pool may have a single must-pick.
 
 **How the lab checks it (lead).** In the report's talent section (best legal board with against best legal board without, on a boss the classic line kills in about 8 rounds): a talent's gain on its best card is at most about +20%; the good talents of each role sit at about +8% to +15% where they fit; in each line's pool, every role has at least two talents within a few points of its best one. Raid-shaped talents (neighbours, row ends, long fights) are measured on a raid row as well.
+
+## 2026-10-28: Talent strength is a share of the team's result
+
+**Decision (Misa).** "About 20%" means the share of a team's success that comes from talents, on average: the same team with its talents taken away does about 20% worse (talents' share = 1 - without / with, the measure the journey sim's creatures study already uses). A single talent may spike above that on the week it fits best (option B), as long as no pool has a single must-pick. This replaces the earlier reading of +20% as a per-card ceiling.
+
+**How the lab checks it (lead).** The report adds a team measure: for each card, the best gauntlet and raid teams with their creatures' best-fitting talents from their pools, against the same teams with no talents; the talents' share averages about 20% over the cards. The per-talent table stays to find duds and must-picks.
