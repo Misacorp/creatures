@@ -63,6 +63,19 @@ function fake(): WikiData {
     currentTalents: [{ id: 't1', name: evil, text: evil, about: evil, signature: false }],
     knacks: [{ id: 'k1', name: evil, family: 'F', text: `${evil} {Mark} {Nothing}`, intent: evil }],
     draftTalents: [{ id: 'd1', name: evil, text: evil, intent: evil, roles: ['setter'] }],
+    modifiers: [
+      {
+        id: 'm1',
+        name: evil,
+        text: evil,
+        category: evil,
+        roles: ['setter', evil],
+        status: evil,
+        kind: evil,
+        draftTalents: ['d1', 'missing-talent'],
+        also: [evil],
+      },
+    ],
     draftPools: [{ line: 'evil-line', talents: ['d1'] }],
     keywords: [{ name: 'Mark', means: evil, not: evil, step: evil }],
     families: [{ name: 'F', text: evil }],
@@ -87,11 +100,12 @@ describe('the wiki page of the real data', () => {
       ...data.currentTalents.map((t) => anchor('talent', t.id)),
       ...data.knacks.map((k) => anchor('knack', k.id)),
       ...data.draftTalents.map((t) => anchor('dtalent', t.id)),
+      ...data.modifiers.map((m) => anchor('modifier', m.id)),
       ...data.keywords.map((k) => anchor('keyword', k.name)),
       ...data.families.map((f) => anchor('family', f.name)),
       ...data.elements.map((e) => anchor('element', e.id)),
     ];
-    expect(wanted.length).toBeGreaterThan(80);
+    expect(wanted.length).toBeGreaterThan(200);
     expect(wanted.filter((id) => !ids.has(id))).toEqual([]);
   });
 
@@ -272,6 +286,7 @@ describe('hover cards', () => {
       'top',
       'creatures',
       'current-talents',
+      'modifiers',
       'knacks',
       'draft-talents',
       'keywords',
@@ -518,6 +533,7 @@ describe('page structure and navigation', () => {
     for (const section of [
       'creatures',
       'current-talents',
+      'modifiers',
       'knacks',
       'draft-talents',
       'keywords',

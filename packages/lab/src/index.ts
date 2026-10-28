@@ -1,6 +1,7 @@
 export * from './cards';
 export * from './fight';
 export * from './knacks';
+export * from './modifiers';
 export * from './keywords';
 export * from './report';
 export * from './rules';

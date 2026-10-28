@@ -25,6 +25,8 @@ export const GAME_STYLES = {
   pixel: 'components/pixel.css',
   glossaryTag: 'components/glossary-tag.css',
   settings: 'views/settings.css',
+  controls: 'base/controls.css',
+  raid: 'views/raid.css',
 } as const;
 
 /** The text of each of those stylesheets. */
@@ -284,6 +286,39 @@ const TABLES = `.vh, .view-radio { position: absolute; width: 1px; height: 1px; 
   .matrix .row-name { width: 8.5rem; min-width: 8.5rem; max-width: 8.5rem; }
 }`;
 
+/** The modifier library: the controls, the two-column table, the chips. */
+const MODIFIERS = `.mod-controls[hidden], .mod-empty[hidden] { display: none; }
+.mod-controls { display: grid; gap: var(--sp-2); margin: var(--sp-3) 0; padding: var(--sp-3); background: var(--dusk); box-shadow: var(--frame); }
+.mod-search { display: grid; gap: 0.25rem; margin: 0; }
+.mod-search input { max-width: 30rem; margin: 0; }
+.mod-filter { display: grid; gap: 0.25rem; }
+.mod-filter .segmented { flex-wrap: wrap; }
+.mod-filter .segmented button.toggle { min-width: 3.5rem; }
+.mod-count { margin: 0; color: var(--haze); font-family: var(--display); }
+.mod-empty { margin: var(--sp-3) 0; color: var(--haze); }
+.mod-wrap { background: var(--dusk); box-shadow: var(--frame); margin: 0 0 var(--sp-4); }
+.mods { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: var(--fs-row); line-height: 1.35; }
+.mods th, .mods td { padding: 0.5rem 0.625rem; text-align: left; vertical-align: top; font-weight: 400; border-bottom: 1px solid var(--night); }
+.mods thead th { background: var(--dusk-2); color: var(--haze); font-family: var(--display); }
+.mods .mod-name { width: 46%; }
+.mods tbody tr:hover > * { background: var(--dusk-2); }
+.mods tbody tr { scroll-margin-top: 0.75rem; }
+.mods tbody tr:target { outline: 2px solid var(--gold); outline-offset: -2px; }
+.mod-title { display: block; margin-bottom: 0.25rem; font-family: var(--display); font-size: var(--fs-heading); line-height: 1.2; }
+.mod-tags { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.mod-text p { margin: 0; }
+.mod-text .mod-note { margin-top: 0.375rem; color: var(--haze); }
+.mod-kind { color: var(--haze); }
+.mod-status.s-game { box-shadow: inset calc(var(--px) * -1) 0 0 var(--good); }
+.mod-status.s-lab { box-shadow: inset calc(var(--px) * -1) 0 0 var(--gold); }
+.mod-status.s-idea { box-shadow: inset calc(var(--px) * -1) 0 0 var(--haze); }
+@media (min-width: 40rem) {
+  .mods .mod-name { width: 20rem; }
+}
+@media (min-width: 64rem) {
+  .mods .mod-name { width: 24rem; }
+}`;
+
 /** The game rules the wiki takes, by file: whole files, or the rules with these selectors. */
 function fromGame(game: GameCss): string {
   return [
@@ -293,7 +328,16 @@ function fromGame(game: GameCss): string {
     pickRules(game.app, ['.role-chip']),
     pickRules(game.itemFrame, ['.rarity-tag']),
     pickRules(game.glossaryTag, ['.gtag-chip', '.gtag-chip:hover']),
-    pickRules(game.settings, ['.segmented']),
+    pickRules(game.settings, ['.segmented', '.segmented button.toggle']),
+    // The search box and the filter buttons of the modifier library are the game's own controls.
+    pickRules(game.controls, [
+      'button',
+      'button:hover:not(:disabled)',
+      'button:active:not(:disabled)',
+      'button:focus-visible',
+      "input[type='text']",
+    ]),
+    pickRules(game.raid, ['button.toggle.on']),
     wholeCss(game.elementChip),
     wholeCss(game.dataTable),
     pickRules(game.creatureFocus, [
@@ -320,6 +364,7 @@ export function buildWikiCss(game: GameCss): { css: string; fonts: string[] } {
     fromGame(game),
     TAIL,
     TABLES,
+    MODIFIERS,
   ].join('\n');
   return { css: `${css}\n`, fonts: faces.files };
 }

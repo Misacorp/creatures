@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { currentSection, placeCard, previewIdFor, scrollDelta } from './hover';
+import {
+  countText,
+  currentSection,
+  type ModifierQuery,
+  placeCard,
+  previewIdFor,
+  type RowFacts,
+  rowMatches,
+  scrollDelta,
+} from './hover';
 
 describe('the wiki hover card script', () => {
   it('finds the card of a link to an entry, and none for anything else', () => {
@@ -97,5 +106,63 @@ describe('the wiki hover card script', () => {
     it('never scrolls an entry taller than the box past its top', () => {
       expect(scrollDelta({ top: 100, height: 900 }, box)).toBe(100 - 24);
     });
+  });
+});
+
+describe('the modifier library search and filters', () => {
+  const row: RowFacts = {
+    category: 'protection',
+    roles: 'guard',
+    status: 'game',
+    text: "cover a guard's cover for its neighbours grows by these points.",
+  };
+  const none: ModifierQuery = { search: '', category: '', role: '', status: '' };
+
+  it('shows every row for an empty search and no filter', () => {
+    expect(rowMatches(row, none)).toBe(true);
+    expect(rowMatches(row, { ...none, search: '   ' })).toBe(true);
+  });
+
+  it('matches the search against the text in any case, every word of it', () => {
+    expect(rowMatches(row, { ...none, search: 'guard' })).toBe(true);
+    expect(rowMatches(row, { ...none, search: '  GUARD  Cover ' })).toBe(true);
+    expect(rowMatches(row, { ...none, search: 'neighbours points' })).toBe(true);
+    expect(rowMatches(row, { ...none, search: 'guard dodge' })).toBe(false);
+    expect(rowMatches(row, { ...none, search: 'support' })).toBe(false);
+  });
+
+  it('keeps only the chosen category and status', () => {
+    expect(rowMatches(row, { ...none, category: 'protection' })).toBe(true);
+    expect(rowMatches(row, { ...none, category: 'damage' })).toBe(false);
+    expect(rowMatches(row, { ...none, status: 'game' })).toBe(true);
+    expect(rowMatches(row, { ...none, status: 'idea' })).toBe(false);
+  });
+
+  it('keeps a row whose roles include the chosen role, not one that merely contains the letters', () => {
+    const any: RowFacts = { ...row, roles: 'setter payoff guard support' };
+    expect(rowMatches(any, { ...none, role: 'support' })).toBe(true);
+    expect(rowMatches(any, { ...none, role: 'guard' })).toBe(true);
+    expect(rowMatches(row, { ...none, role: 'guard' })).toBe(true);
+    expect(rowMatches(row, { ...none, role: 'setter' })).toBe(false);
+    expect(rowMatches(row, { ...none, role: 'guar' })).toBe(false);
+  });
+
+  it('combines the search and the filters, all of which must hold', () => {
+    const all = { search: 'guard', category: 'protection', role: 'guard', status: 'game' };
+    expect(rowMatches(row, all)).toBe(true);
+    const misses = [
+      { search: 'dodge' },
+      { category: 'damage' },
+      { role: 'payoff' },
+      { status: 'lab' },
+    ];
+    for (const miss of misses) {
+      expect(rowMatches(row, { ...all, ...miss }), JSON.stringify(miss)).toBe(false);
+    }
+  });
+
+  it('words the count as "shown / total"', () => {
+    expect(countText(24, 130)).toBe('24 / 130');
+    expect(countText(0, 130)).toBe('0 / 130');
   });
 });

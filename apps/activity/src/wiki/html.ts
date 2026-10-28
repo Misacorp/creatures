@@ -17,6 +17,7 @@ export type Kind =
   | 'talent'
   | 'knack'
   | 'dtalent'
+  | 'modifier'
   | 'keyword'
   | 'family'
   | 'element'

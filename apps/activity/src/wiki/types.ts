@@ -38,6 +38,8 @@ export interface WikiCurrentTalent {
   about: string;
   /** A fixed signature talent (one line's epic) rather than a pool talent. */
   signature: boolean;
+  /** The id of the modifier it is the effect of (its gear line), when it has one. */
+  modifier?: string;
 }
 
 export interface WikiKnack {
@@ -56,6 +58,25 @@ export interface WikiDraftTalent {
   intent: string;
   /** The roles it does something for (idle on the others). */
   roles: string[];
+}
+
+/** One modifier of the library (an effect that changes a creature, one entry per effect). */
+export interface WikiModifier {
+  id: string;
+  name: string;
+  text: string;
+  /** What it is about: damage, marks, protection, support or outside. */
+  category: string;
+  /** The roles it works for (all four for "any"). */
+  roles: string[];
+  /** Where it exists: `game` (a shipped gear line), `lab` (a draft talent) or `idea` (only designed). */
+  status: string;
+  /** What it is made of: stat, condition, trigger, shape, aura, transfer, rhythm, chance or rule. */
+  kind: string;
+  /** Ids of the draft talents that are this effect. */
+  draftTalents: string[];
+  /** Other names the design gives the same effect. */
+  also: string[];
 }
 
 /** One creature form's picture: where the page links it and the SVG file the build writes there. */
@@ -92,6 +113,8 @@ export interface WikiData {
   currentTalents: WikiCurrentTalent[];
   knacks: WikiKnack[];
   draftTalents: WikiDraftTalent[];
+  /** The modifier library, in the order the page shows it. */
+  modifiers: WikiModifier[];
   /** The draft talent pool of each creature line. */
   draftPools: { line: string; talents: string[] }[];
   keywords: { name: string; means: string; not: string; step: string }[];

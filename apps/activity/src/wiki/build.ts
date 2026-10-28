@@ -8,6 +8,7 @@
  * page never has a dangling `#link`.
  */
 import { anchor, capital, chip, chipClasses, esc, keywordsIn, type Kind } from './html';
+import { modifiersSection } from './modifiers';
 import { buildPreviews } from './previews';
 import { draftTalentsTable, groupLines, knacksTable, lineName, viewSwitch } from './tables';
 import type {
@@ -16,6 +17,7 @@ import type {
   WikiData,
   WikiDraftTalent,
   WikiKnack,
+  WikiModifier,
 } from './types';
 
 export { anchor, esc };
@@ -253,11 +255,22 @@ ${body}
 </section>`;
 }
 
-function currentTalentEntry(page: Page, t: WikiCurrentTalent, on: WikiCreature[]): string {
+/** A line that links a talent to the modifier entry it is the effect of, or nothing when it has none. */
+function modifierLine(page: Page, m: WikiModifier | undefined): string {
+  if (m === undefined) return '';
+  return `\n<p class="found"><span class="label">Modifier:</span> ${page.link('modifier', m.id, m.name)}</p>`;
+}
+
+function currentTalentEntry(
+  page: Page,
+  t: WikiCurrentTalent,
+  on: WikiCreature[],
+  modifier: WikiModifier | undefined,
+): string {
   return `<article class="entry" id="${esc(anchor('talent', t.id))}">
 ${heading(4, anchor('talent', t.id), t.name)}
 <p><strong>${esc(t.text)}</strong>${t.signature ? ' <span class="tag">signature</span>' : ''}</p>
-<p>${esc(t.about)}</p>
+<p>${esc(t.about)}</p>${modifierLine(page, modifier)}
 ${foundOn(page, on)}
 </article>`;
 }
@@ -269,6 +282,7 @@ function currentTalentsSection(page: Page, data: WikiData): string {
         page,
         t,
         data.creatures.filter((c) => c.talents.includes(t.id)),
+        data.modifiers.find((m) => m.id === t.modifier),
       ),
     )
     .join('\n');
@@ -315,12 +329,13 @@ function draftTalentEntry(
   t: WikiDraftTalent,
   lines: string[],
   on: WikiCreature[],
+  modifier: WikiModifier | undefined,
 ): string {
   return `<article class="entry" id="${esc(anchor('dtalent', t.id))}">
 ${heading(4, anchor('dtalent', t.id), t.name)}
 <p>${page.rich(t.text)}</p>
 <p class="intent"><span class="label">Design intent:</span> ${esc(t.intent)}</p>
-<p class="found"><span class="label">Works for:</span> ${esc(t.roles.map(capital).join(', '))}</p>
+<p class="found"><span class="label">Works for:</span> ${esc(t.roles.map(capital).join(', '))}</p>${modifierLine(page, modifier)}
 <p class="found"><span class="label">In the pools of:</span> ${page.links(
     'pool',
     lines.map((l) => ({ id: l, label: `${capital(l)} line` })),
@@ -346,6 +361,7 @@ function draftTalentsSection(page: Page, data: WikiData): string {
         t,
         data.draftPools.filter((p) => p.talents.includes(t.id)).map((p) => p.line),
         data.creatures.filter((c) => c.draftTalents.includes(t.id)),
+        data.modifiers.find((m) => m.draftTalents.includes(t.id)),
       ),
     )
     .join('\n');
@@ -493,6 +509,7 @@ ${entriesGrid(entries)}
 const TOC: readonly (readonly [string, string])[] = [
   ['creatures', 'Creatures'],
   ['current-talents', 'Current talents (in the game today)'],
+  ['modifiers', 'Modifiers'],
   ['knacks', 'Combat v2 draft: Knacks'],
   ['draft-talents', 'Combat v2 draft: talents'],
   ['keywords', 'Combat v2 draft: keywords'],
@@ -510,6 +527,7 @@ export function buildWiki(data: WikiData, css = '/wiki.css', script = '/wiki.js'
     page.declare('line', c.line);
   }
   for (const t of data.currentTalents) page.declare('talent', t.id);
+  for (const m of data.modifiers) page.declare('modifier', m.id);
   for (const k of data.knacks) page.declare('knack', k.id);
   for (const t of data.draftTalents) page.declare('dtalent', t.id);
   for (const k of data.keywords) page.declare('keyword', k.name);
@@ -552,6 +570,7 @@ ${toc}
 <main>
 ${creaturesSection(page, data)}
 ${currentTalentsSection(page, data)}
+${modifiersSection(page, data)}
 ${knacksSection(page, data)}
 ${draftTalentsSection(page, data)}
 ${keywordsSection(page, data)}

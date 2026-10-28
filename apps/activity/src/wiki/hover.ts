@@ -9,6 +9,9 @@
  * The other: the table of contents follows the reader (`trackContents`): the entry of the section on screen
  * gets `aria-current="location"`, and the contents scroll to keep it in view. It is only an aid; the contents
  * are plain links without this script.
+ * The last: the modifier library's search box and filters (`setupModifiers`). The table's rows carry what is
+ * filtered on as data attributes (see `modifiers.ts`), the controls are written `hidden`, and this script
+ * reveals them and hides the rows that do not match; without it the whole table shows.
  */
 
 export interface Box {
@@ -92,6 +95,124 @@ export function scrollDelta(
   if (over < 0) return over;
   const under = item.top + item.height - (box.top + box.height - margin);
   return under > 0 ? Math.min(under, over) : 0;
+}
+
+/** What a table row of the modifier library carries as data attributes (`data-category`, `data-roles`, ...). */
+export interface RowFacts {
+  category: string;
+  /** The roles it works for, separated by spaces. */
+  roles: string;
+  status: string;
+  /** The lower-case text the search looks in. */
+  text: string;
+}
+
+/** The search and the three filters; an empty choice lets everything through. */
+export interface ModifierQuery {
+  search: string;
+  category: string;
+  role: string;
+  status: string;
+}
+
+/**
+ * Whether a row shows for the current search and filters: every word of the search is in the row's text
+ * (any case), its category and status are the chosen ones, and the chosen role is one it works for.
+ */
+export function rowMatches(row: RowFacts, query: ModifierQuery): boolean {
+  if (query.category !== '' && row.category !== query.category) return false;
+  if (query.status !== '' && row.status !== query.status) return false;
+  if (query.role !== '' && !row.roles.split(' ').includes(query.role)) return false;
+  const words = query.search
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((w) => w !== '');
+  return words.every((w) => row.text.includes(w));
+}
+
+/** "24 / 130". */
+export function countText(shown: number, total: number): string {
+  return `${String(shown)} / ${String(total)}`;
+}
+
+const FILTERS = ['category', 'role', 'status'] as const;
+
+/**
+ * The modifier library's search and filters: reveal the controls, and on every change hide the rows that do
+ * not match and update the count. A link to a row that is hidden clears the search and filters first, so the
+ * row can be seen (`showAll`, returns whether it changed anything).
+ */
+function setupModifiers(): { showAll: (id: string) => boolean } | null {
+  const section = document.getElementById('modifiers');
+  if (section === null) return null;
+  const controls = section.querySelector('.mod-controls');
+  const input = document.getElementById('mod-search');
+  if (!(controls instanceof HTMLElement) || !(input instanceof HTMLInputElement)) return null;
+  const rows = [...section.querySelectorAll<HTMLTableRowElement>('tbody > tr[data-category]')];
+  const count = document.getElementById('mod-count');
+  const empty = section.querySelector<HTMLElement>('.mod-empty');
+  const groups = new Map<string, HTMLElement>();
+  for (const name of FILTERS) {
+    const group = controls.querySelector<HTMLElement>(`[data-filter="${name}"]`);
+    if (group !== null) groups.set(name, group);
+  }
+  const chosen = (name: string): string =>
+    groups.get(name)?.querySelector('button[aria-pressed="true"]')?.getAttribute('data-value') ??
+    '';
+
+  const apply = (): void => {
+    const query: ModifierQuery = {
+      search: input.value,
+      category: chosen('category'),
+      role: chosen('role'),
+      status: chosen('status'),
+    };
+    let shown = 0;
+    for (const row of rows) {
+      const show = rowMatches(
+        {
+          category: row.dataset['category'] ?? '',
+          roles: row.dataset['roles'] ?? '',
+          status: row.dataset['status'] ?? '',
+          text: row.dataset['text'] ?? '',
+        },
+        query,
+      );
+      row.hidden = !show;
+      if (show) shown += 1;
+    }
+    if (count !== null) count.textContent = countText(shown, rows.length);
+    if (empty !== null) empty.hidden = shown > 0;
+  };
+
+  const choose = (group: HTMLElement, value: string): void => {
+    for (const b of group.querySelectorAll('button')) {
+      b.setAttribute('aria-pressed', b.getAttribute('data-value') === value ? 'true' : 'false');
+      b.classList.toggle('on', b.getAttribute('data-value') === value);
+    }
+  };
+  for (const group of groups.values()) {
+    group.addEventListener('click', (e) => {
+      const button = e.target instanceof Element ? e.target.closest('button') : null;
+      if (button === null || !group.contains(button)) return;
+      choose(group, button.getAttribute('data-value') ?? '');
+      apply();
+    });
+  }
+  input.addEventListener('input', apply);
+  controls.hidden = false;
+  apply();
+
+  return {
+    showAll: (id) => {
+      const row = rows.find((r) => r.id === id);
+      if (row === undefined || !row.hidden) return false;
+      input.value = '';
+      for (const group of groups.values()) choose(group, '');
+      apply();
+      return true;
+    },
+  };
 }
 
 const CARD_ID = 'wiki-card';
@@ -193,6 +314,7 @@ function trackContents(): void {
 
 function start(): void {
   trackContents();
+  const modifiers = setupModifiers();
   let shown: HTMLAnchorElement | null = null;
 
   const hide = (): void => {
@@ -257,11 +379,18 @@ function start(): void {
   document.addEventListener('click', (e) => {
     if (!(e.target instanceof Element)) return;
     const id = fragmentId(e.target.closest('a')?.getAttribute('href') ?? null);
-    if (id !== null) revealList(id);
+    if (id !== null) {
+      revealList(id);
+      // A row the filters hide would be a dead jump: clear them first (the browser then scrolls to it).
+      if (modifiers?.showAll(id) === true) document.getElementById(id)?.scrollIntoView();
+    }
   });
   const jump = (): void => {
     const id = fragmentId(window.location.hash);
-    if (id !== null && revealList(id)) document.getElementById(id)?.scrollIntoView();
+    if (id === null) return;
+    const listed = revealList(id);
+    const cleared = modifiers?.showAll(id) === true;
+    if (listed || cleared) document.getElementById(id)?.scrollIntoView();
   };
   window.addEventListener('hashchange', jump);
   jump();

@@ -6,6 +6,7 @@
  * card is shown (a `<template>` is inert).
  */
 import { anchor, capital, chip, chipClasses, esc, plain, previewId } from './html';
+import { modifierChips, statusLabel } from './modifiers';
 import type { WikiData, WikiCreature } from './types';
 
 /** Draws a creature form's small picture (or nothing when it has no art). */
@@ -116,6 +117,17 @@ export function buildPreviews(img: Imager, data: WikiData): string {
         t.name,
         t.signature ? 'Talent, signature' : 'Talent',
         `<p class="pv-text"><strong>${esc(t.text)}</strong></p><p class="pv-text">${esc(t.about)}</p>`,
+      ),
+    );
+  }
+  for (const m of data.modifiers) {
+    add(
+      'modifier',
+      m.id,
+      card(
+        m.name,
+        `Modifier, ${statusLabel(m.status).toLowerCase()}`,
+        `<p class="pv-text">${esc(m.text)}</p><p class="cc-tags pv-tags">${modifierChips(m, data)}</p>`,
       ),
     );
   }

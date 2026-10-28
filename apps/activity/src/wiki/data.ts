@@ -7,6 +7,7 @@
 import {
   content,
   effectiveStats,
+  gearLine,
   glossaryEntry,
   GLOSSARY_IDS,
   RARITIES,
@@ -21,6 +22,8 @@ import {
   KEYWORDS,
   KNACKS,
   LINE_POOLS,
+  MODIFIER_CATEGORIES,
+  MODIFIERS,
   OWN_KNACKS,
   TALENTS,
 } from '@creatures/lab';
@@ -40,6 +43,11 @@ function term(id: string, entryId: string): WikiTerm {
     lines: [...(entry?.lines ?? [])],
     species: entry?.visual?.kind === 'species' ? entry.visual.id : null,
   };
+}
+
+/** A gear line's id in `gear-lines.json`: an element line (`tide-attunement`) is its `attunement`. */
+function rawLineId(line: { id: string; element: string | null }): string {
+  return line.element === null ? line.id : line.id.slice(line.element.length + 1);
 }
 
 /** The wiki's data from the shipped content and the lab's draft. */
@@ -86,7 +94,11 @@ export function loadWikiData(): WikiData {
     })),
   ].map(({ def, signatureOf }) => {
     const text = talentText(def, false);
+    // The modifier it is the effect of: its gear line, by the id the library uses (an element line without its element).
+    const line = 'line' in def.effect ? gearLine(def.effect.line) : undefined;
+    const modifier = line === undefined ? undefined : rawLineId(line);
     return {
+      ...(modifier === undefined ? {} : { modifier }),
       id: def.id,
       name: def.name,
       text: text.text,
@@ -94,6 +106,8 @@ export function loadWikiData(): WikiData {
       signature: signatureOf !== null,
     };
   });
+
+  const categories: readonly string[] = MODIFIER_CATEGORIES;
 
   const art = content.creatures.flatMap((c) => {
     const sprite = creatureSprite(c.id);
@@ -129,6 +143,23 @@ export function loadWikiData(): WikiData {
       intent: t.intent,
       roles: [...t.roles],
     })),
+    modifiers: [...MODIFIERS]
+      .sort(
+        (a, b) =>
+          categories.indexOf(a.category) - categories.indexOf(b.category) ||
+          a.name.localeCompare(b.name, 'en'),
+      )
+      .map((m) => ({
+        id: m.id,
+        name: m.name,
+        text: m.text,
+        category: m.category,
+        roles: [...m.roles],
+        status: m.status,
+        kind: m.kind,
+        draftTalents: [...m.talents],
+        also: [...m.also],
+      })),
     draftPools: Object.entries(LINE_POOLS).map(([line, talents]) => ({
       line,
       talents: [...talents],
