@@ -3295,6 +3295,65 @@ A player asked (#76) for a short note on a creature, next to Rename, to remember
 3. **Text rules** (`sanitizeCreatureNote`, `RULES.creatureNote`). Like a nickname, nothing is silently stripped: control, format (bidi, zero-width), unassigned, surrogate and line or paragraph separator characters are refused (`invalid_note`), but line breaks and tabs are allowed. NFKC, line breaks become `\n`, at most one empty line in a row, trailing spaces cut per line, ends trimmed, then at most 256 code points. Rendered as text only.
 4. **Client.** A "Note" fold under Rename on the creature page, open when there is a note, with a text box (`maxlength` 256), a "12 / 256" count and Save (off until the text changed). The note stays through evolving and renaming; it goes only when the owner removes it.
 
+## 2026-10-26: Combat v2 is designed in a lab before it touches the engine
+
+**Decision (Misa, 2026-10-25 and 26).** The combat rework (species Knacks instead of finale abilities, primer and detonator marks, slot-based boss targeting, a boss turn after each row, armour with Blocked hits, raid attrition, healing as a pillar) is iterated as a proposal with a reviewer panel and a prototype simulator before any of it reaches `@creatures/engine`. Misa's calls so far: only Setters mark and only Payoffs cash marks (Anthem's primers and detonators); a hit that cashes a reaction leaves no mark by the base rules, but effects may add marks; no Swift or Last; targets are slots, and a slam is three slot targets that each roll dodge; dodge before intercept; armour is a flat stat and a hit at or below it is Blocked; the raid arena's row count varies by boss, and the boss acts after each row; in a raid weekend HP carries over, nobody heals between stages and knocked-out creatures are out; the dungeon keeps its structure; the same effect keeps the same name everywhere; counts shown as numbers (x3); strong combos may stand out (answer them with counter cards before nerfing); the live finale keeps Rally, Shield Wall and Purge for now.
+
+**How it is built (lead's calls).**
+
+- **Docs** in `docs/design/combat/`: `README.md` (North Star, which document wins, reading order, the loop), `principles.md` (P-01 to P-12, each with pass and fail examples and a review question; only Misa accepts one), `grammar.md` (families, limits, templates), `keywords.md`, `proposals/001-combat-v2.md` (the numbered rules R1 to R18, drawbacks, alternatives, open questions, testing plan), `reviews/` (panel results). `knacks.md` and `lab-report.md` are generated; never edited by hand. The structure follows research on rules references (one definition per keyword, a named authority), design pillars as filters with examples, ADR-style proposals and small always-loaded context.
+- **`packages/lab`**: a pure prototype of the draft rules (no I/O, injected RNG, its own small rule set), separate from the shipped engine on purpose. It reads species stats from `@creatures/game`. Knacks are data with a small effect grammar (`KnackFx`) plus player text and design intent. `pnpm --filter @creatures/lab report` writes the report (scenarios per rule card, a best-team search per card for a one-row gauntlet and a three-row raid, Knack usage, a raid weekend) and the generated Knack catalogue; `test` checks the rules and the content rules (keywords exist, names unique, intent written). Pyrelynx and Bloomback carry shared family Knacks as placeholders so Grove and Ember marks have a Payoff.
+- **The reviewer panel** is a skill, `.claude/skills/design-panel`: four reviewers (rules, player experience, systems and exploits, readability) judge against the principles; the lead writes one review file with a verdict per finding.
+
+## 2026-10-26: Combat v2: Misa's answers to the first panel
+
+**Decision (Misa).** (1) Raid attrition stays as written: a knocked-out creature is out for the weekend, with no "tired" return; players have spare creatures by week 2. (2) Silence stops the role's verb as well as the Knack, talents and gear effects: a silenced Setter does not mark, a Payoff does not cash, a Guard does not intercept or cover, a Support does not boost or heal; the creature still makes its plain hit. (3) Raid swaps across players are wanted: "we do it manually now; a system would help". Recorded in proposal 001 v0.5 (R12, R14, R19) and in the lab (`packages/lab/src/fight.ts`, test "silence stops the role"). Swap requests move up from "not a priority" on the roadmap.
+
+## 2026-10-26: Combat v2: Knacks for every species, talents by role (panel 2)
+
+Tagged combat v2. Lead agent, after the second panel (`docs/design/combat/reviews/2026-10-26-panel-2.md`); proposal v0.6.
+
+- **The roadmap** (`docs/design/combat/roadmap.md`, agreed with Misa): eight gated phases from the lab to shipping, and the migration (creatures and levels stay; talents reroll; Knacks start as none; raid planning resets).
+- **Every form has Knacks** in the lab. New: Guard's Shadow, Crown of Embers, Hide in Mist, Thick Fog, Drizzle, Living Shelter, Territorial, Carry Them, Starlight, Lantern Glow, Hearth. Families live in the data (`FAMILIES`), and a test fails on a family that is not defined.
+- **Combat talents are by role, one name per effect** (R20): four per role from eleven, shared by every species; a talent never repeats a Knack and Seal is never a talent, so a roll never decides the Knack choice. Per-species flavour talents were tried and dropped: they copied Knacks and each other under other names (P-06) and each would need its own rule (P-09). **Misa (2026-10-26): use shared names everywhere**, so the shipped species-named talents (Splashet's "Playful" and the rest) take the shared name of their effect at the migration.
+- **Ohmouse loses Double Mark** (a Guard that marks x2 was P-02's Fail example); **All at Once needs x3**; **Tidewing gets Double Mark**; Retaliate ignores armour; crit talents stay inside the reaction cap; reaction-fed Stores gain at most 1 per round.
+- **Still open:** Bloomback in 10 of 14 best gauntlet lines, with Voltaro's Zigzag; the next slice.
+
+## 2026-10-27: A generated wiki page of the game's configuration
+
+**Decision (lead agent, for Misa).** `/wiki.html` is a reference page of what is in the game: every creature form (grouped by line, with stats, evolution relatives, its finale ability today, its current talents, and its combat v2 draft Knacks and talent pool), the current talents, and the combat v2 draft's Knacks, talents, keywords, Knack families, plus the elements. Each creature links to its talents and Knacks, which are entries further down the same page and link back to the creatures that have them (plain `#anchors`). The draft sections are labelled "Draft, not in the game yet". Design intent is shown, in a smaller style, because the page is for Misa too.
+
+**Why build time, and why in production.** The page is generated from the content data (`@creatures/game`) and the lab's data (`@creatures/lab`) by a small Vite plugin (`apps/activity/src/wiki/`) on every build, so it can never be out of date and needs no hand-written text: a new creature, talent or Knack appears with no change to the wiki code (a test adds one to fake data and checks). It is one HTML file and one CSS file, with no JavaScript, so it fits the Content-Security-Policy (no inline style or script) and adds nothing to the app's bundle; the plugin loads the data modules with Vite's module runner outside the bundle, and the build test checks the production bundle still has no lab code. Unlike the combat lab and the workbench it ships to production and staging, because it is text that gives nothing away that a player could not read from the game's own screens, and Misa can open it from his phone on the live address. It is not linked from the game (the DEV panel does not link it either); it carries `noindex`, but it is not secret. Tests check every entry has an id, no link is dangling, every Knack of a form is linked, and text is escaped.
+
+## 2026-10-27: Combat v2: Knacks grow on evolution, talents by line, golden stays golden
+
+**Decision (Misa).** (1) A creature knows its form's Knacks from the catch, and evolving adds the new form's own Knacks (R11), so base forms work from day one and evolving brings something new. (2) Talent pools are per creature line, drawn from one shared library with one name per effect (R20), so two lines of the same role can roll different tools. (3) At the migration a golden talent rolls golden.
+
+**How (lead).** The lab stores each form's own Knacks (`OWN_KNACKS`) and works out the full list from the evolution line (`knacksOf`); on a role change only the new form's own Knacks count, since the old role's would do nothing. The talent library grows from 11 to 18 talents (new effects: Max HP, crit damage, low-HP damage, an own area cut, Hold On, a reaction bonus, area dodge), each marked with the roles it works for; each line has a pool of seven with at least three that fit each of its roles (a test). The wiki shows the line pools and marks idle talents. In the lab report, Tidewing keeping Lead the Way moved Bloomback from 10 of 14 best gauntlet lines to 6.
+
+## 2026-10-27: Combat v2: which talents can appear on which creatures
+
+**Decision (Misa).** A line's talent pool says which talents can appear on its creatures. A creature starts with the talent it was found with (a starter with a set talent), and grows its own Talent Book through Teach: a found talent goes only into the book of the creature it was found for, and must be found again for another creature. When an evolution changes the role, slotted talents that become idle are rerolled from the pool among the talents that work for the new role, shown as unknown cards on the evolution screen (phase 4); until then idle talents after a role change are accepted.
+
+**Notes (lead).** Teach already works per creature today (`catch-choices.ts`: a duplicate's talent goes into the book of the player's creature of that line), so only the starter's set talent and the evolution reroll are new; both are recorded in R20 and built in roadmap phase 4. Which talent each starter gets is content, chosen with the starter list.
+
+## 2026-10-28: Content changes are not held back by existing rolls; modifiers, luck and fading debuffs
+
+**Decision (Misa).**
+
+- **Change freely.** Misa may change, remove or add any content at any time. A removed or changed modifier line on an existing item or creature is replaced by a fresh random roll; a new line just enters future rolls. Players expect changes; be fair, but don't let old rolls slow progress. (Also a standing rule in `CLAUDE.md`.)
+- **Luck is welcome.** Chance-based modifiers stay, and most effects may be luck-based; deterministic rhythms are an option. P-04 still keeps a creature's main job certain.
+- **Debuffs fade over time** (Mired loses stacks), and bosses may cleanse them, announced at round start, so a debuff creature has to keep working and its effect does not last the whole fight.
+- **Same effect, same name** also between talents and gear lines (a gear line is one modifier on an item); a talent and a gear line of the same name add up.
+- **Build a first batch** of the modifier and talent library (`docs/design/combat/modifiers.md`) into the lab and the wiki; Misa filters later.
+- **New ideas:** Cull (a hit that leaves a foe below a small share of its HP defeats it) and killing-blow triggers (for example more loot for the raid). Cover gets a cap (an intercepted hit needs none, since the Guard still takes it).
+
+## 2026-10-28: Armour works for every creature; the first talent batch is in the lab
+
+**Decision (Misa).** Armour is a stat of every creature: Guards have the most, and talents, Knacks and gear may raise anyone's. No armour effect is limited to Guards (R13). The shipped gear line Armor still says "Guards only"; it changes with the engine port.
+
+**The batch (lead).** 35 talents in the lab from `modifiers.md`, with the engine hooks they need (neighbour, position, round, boss-HP and mark conditions; triggers; Flank Guard and Long Shadow; shared armour; Thick Skull; Brace; Bright Boost, Kindred Boost, Triage, Overheal Spill; Heavy Hand, Clinging, Light Sleeper; Cull and the killing blow). Rules: Mired fades one stack per round, the Shake It Off card cleanses debuffs on an announced round, cover is capped at 75% (R8.6, R15, R21). Twelve old lab talents were folded in or dropped. The report: talents add +0% to +22% on their boards; Lone Wolf, Flank Guard (Left) and Shoulder to Shoulder are best on most cards of their role (measured on boards chosen to show them, so a ceiling); Share the Load, Long Shadow and Thick Skull are near zero on plain boards; Shake It Off has no working answer yet.
+
 ### 2026-10-27: Marked items, dismantled as a pile
 
 A player asked for a quick way to clear items past the 60-item bag. Misa's rules: mark items, then one free creature dismantles the whole marked pile at once; worn items and items in an open job cannot be marked; equipping a marked item clears its mark; the request names the exact items the confirmation showed (409 and nothing taken if the marked set changed); the creature must be free (not away, not on a job); it gains Crafting XP but no creature experience; Market Day's bonus goes to the most valuable items; the old timed dismantle job goes.
@@ -3333,3 +3392,29 @@ Misa asked whether the next list that needs "select several and act on them" cou
 - **Shared CSS:** `select-grid.css` (the list, the checkbox, the menu; classes `select-grid`, `selecting`, `select-check`, `select-box`, `select-menu`). What stays per tile kind, on purpose: the chosen ring and the hold cue (`item-tile.css`), since every kind of tile has its own frame. That is a few lines to write again for a creature tile, and clearer than a shared ring that fits nothing well.
 - **Nothing a player sees changed.** `InventoryGrid` only draws the items; all bag tests pass unchanged apart from class names.
 - **How agents find it:** a row in the component table of `ux-patterns.md` ("Select several things in a list and act on them"), the "Bulk actions" rule pointing at it, workbench pages for `SelectCheck` and `SelectMenu`, and `select-grid-guard.test.ts`, which fails when a multi-select list, a long press or a selection checkbox is built outside the shared files (the same idea as the wizard footer guard).
+
+## 2026-10-28: Armour per species; talents go into the line's book automatically
+
+**Decision (Misa).**
+
+- **Armour is a species stat**, in the stat block like HP, Attack and Speed. Each line has its own base; lines that start as Guards lean higher; an evolution never lowers it. The Armor gear line works for every creature going forward (changed with the engine port, not now). Variety is the point: the species with the most armour is a choice to build around, not a default.
+- **Found talents are recorded automatically** in that line's Talent Book; the duplicate choice is only about the creature (Fuse, Release, Keep). A creature learns a talent from the book for Bait the first time; afterwards swapping among its learned talents is free (before the raid locks). This answers panel 3's question on swap costs.
+- **Idea for later:** if creatures ever "work" at places, a school where a creature learns a random talent from its line's book after some time.
+
+**Notes (lead).** Both change the live game's systems (stats, the duplicate flow), so they are built with the game integration (roadmap phase 4) and the migration (phase 6). The lab gets per-species armour now, so the numbers reflect it.
+
+## 2026-10-28: How strong a talent should be
+
+**Decision (Misa).** Talent choice should feel like it has a big impact. Roughly **+20%** on a team's result is the upper target for a talent at its best (Misa's guess, to be checked in play). Power comes from many sources (Knacks, gear, placement and synergies, stats, levels), so what talents gain is taken from those. Too strong and players think each creature has only one valuable talent, so no pool may have a single must-pick.
+
+**How the lab checks it (lead).** In the report's talent section (best legal board with against best legal board without, on a boss the classic line kills in about 8 rounds): a talent's gain on its best card is at most about +20%; the good talents of each role sit at about +8% to +15% where they fit; in each line's pool, every role has at least two talents within a few points of its best one. Raid-shaped talents (neighbours, row ends, long fights) are measured on a raid row as well.
+
+## 2026-10-28: Talent strength is a share of the team's result
+
+**Decision (Misa).** "About 20%" means the share of a team's success that comes from talents, on average: the same team with its talents taken away does about 20% worse (talents' share = 1 - without / with, the measure the journey sim's creatures study already uses). A single talent may spike above that on the week it fits best (option B), as long as no pool has a single must-pick. This replaces the earlier reading of +20% as a per-card ceiling.
+
+**How the lab checks it (lead).** The report adds a team measure: for each card, the best gauntlet and raid teams with their creatures' best-fitting talents from their pools, against the same teams with no talents; the talents' share averages about 20% over the cards. The per-talent table stays to find duds and must-picks.
+
+## 2026-10-28: Random talent rolls stay situational
+
+**Decision (Misa).** A casual player with random talents gaining about 7% to 9% (against about 20% for the best fit) is fine: random rolls should stay well away from the best fit, so talents stay situational rather than flat. Finisher, picked by 9 of the 15 best teams, is fine for now; watch it. The lab's team check now asks that random rolls gain something but at most 60% of the best fit's share (the old 10% floor is gone).

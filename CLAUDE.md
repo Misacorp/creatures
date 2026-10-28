@@ -2,7 +2,7 @@
 
 Leet Creatures is a Discord Activity: a creature collector plus a co-op weekly raid auto battler with an idle weekday loop, for small Discord communities (5–15 active players per server). It runs on Cloudflare at `creatures.misacorp.dev`.
 
-Read this file first. Design decisions live in `docs/design/` (start with `decisions.md`; for any UI work also read `docs/design/ux-patterns.md`, the standing UX rules and shared components), research in `docs/research/`, security practice in `docs/security.md`. Lore, names, places and flavour live in the dev-only compendium, `docs/compendium/` (start with its `README.md`): read it before writing any player-facing text or new content, and add to it when content ships.
+Read this file first. Design decisions live in `docs/design/` (start with `decisions.md`; for any UI work also read `docs/design/ux-patterns.md`, the standing UX rules and shared components), research in `docs/research/`, security practice in `docs/security.md`. The combat rework (combat v2) is designed in `docs/design/combat/` (start with its `README.md`) and prototyped in `packages/lab`; it does not change the shipped engine until Misa accepts it. Lore, names, places and flavour live in the dev-only compendium, `docs/compendium/` (start with its `README.md`): read it before writing any player-facing text or new content, and add to it when content ships.
 
 ## The owner and how we work
 
@@ -12,6 +12,7 @@ Read this file first. Design decisions live in `docs/design/` (start with `decis
 - Keep messages to him short, plain English.
 - Ask a waiting question once. When a notification arrives and nothing new needs his answer, say what changed and end with a summary line, not the same question again.
 - When several numbers are in play and it isn't obvious which is which, say briefly what each one covers (for example per request or per day, measured or estimated).
+- **Content changes are not held back by what players already own** (Misa, 2026-10-28). Misa may change, remove or add any creature, talent, Knack, gear line or item at any time. A removed or changed modifier on an existing item or creature is replaced by a fresh random roll; a new one simply enters future rolls. Be fair, but don't slow progress to protect old rolls.
 - When Misa gives an example of wording or design ("for example ..."), match its scope and tone. Don't elaborate it per case, per event or per item unless he asks.
 - When a check or constraint forces a visible change to a design Misa has already seen (its size, shape, art or layout), say so in the same message and show the new version. Never ship the changed design silently.
 
