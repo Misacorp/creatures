@@ -19,7 +19,8 @@ Read this file first. Design decisions live in `docs/design/` (start with `decis
 ### Agent roles
 
 - The **lead agent** (Opus) plans, splits work into small tasks, delegates, and **reviews every change** for correctness, security and consistency with this file before it goes into a PR.
-  - **The lead may code directly** only a fix of a few files that it can test end to end itself. Then a reviewer agent (the implementer type, read-only brief; with `docs/design/review-brief.md` for UI) reads the diff before the PR, so no change reaches Misa with only its author having read it. Delegated UI work always comes back with a reuse list (retro 2026-10-28).
+  - **The lead may code directly** only a fix of a few files that it can test end to end itself. Then a second agent reviews the diff before the PR (an implementer told to review only and make no edits; give it `docs/design/review-brief.md` for UI), so no change reaches Misa read only by its author (retro 2026-10-28).
+  - **Delegated UI work always comes back with a reuse list**, for the review below.
   - **UI review checks reuse.** Go through the implementer's reuse list: for each part built new or drawn a second way, name the row of the `docs/design/ux-patterns.md` lookup table it should use, or say why none fits. Screenshot every way into a changed flow (the bag and the item card, say), not only the main one. (Retro 2026-10-28: a second creature picker, custom worn rows and a new check mark got past review; the report named the second wrapper.)
 - `.claude/agents/implementer.md` (Sonnet): code and tests.
 - `.claude/agents/researcher.md` (Sonnet): read-only web/docs research. No shell, no write access, by design.
