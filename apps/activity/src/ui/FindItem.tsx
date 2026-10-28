@@ -97,7 +97,7 @@ export function FindItem({
     label: gearName(shown.baseId),
     body: (
       <div
-        class="find-item-pop"
+        class="find-item-pop pop-stack"
         onPointerEnter={(event: PointerEvent) => {
           if (event.pointerType !== 'touch') cancelLeave();
         }}

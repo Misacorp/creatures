@@ -22,7 +22,7 @@ export function TrophyBoard({
 }) {
   const top = board.slice(0, SHELF_TOP);
   return (
-    <div class="gm-shelf-pop pix-panel">
+    <div class="gm-shelf-pop pop-stack pix-panel">
       {top.length > 0 && (
         <ol class="gm-top">
           {top.map((row, i) => (

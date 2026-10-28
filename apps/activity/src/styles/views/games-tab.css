@@ -627,7 +627,6 @@ button.trophy-button[aria-expanded='true'] canvas.trophy-art {
 .gm-shelf-pop {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
   min-width: 12rem;
 }
 

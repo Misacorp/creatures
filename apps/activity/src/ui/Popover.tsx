@@ -177,13 +177,14 @@ interface PopoverCardProps {
 /** The content of a popover that explains something: a picture, a title, a short text, lines and a link. */
 export function PopoverCard(props: PopoverCardProps) {
   const { lines = [] } = props;
+  // The title and its short answer are one group: they sit closer than the blocks around them.
   const heading = (
-    <>
+    <div class="pop-heading">
       <p class={`pop-title pix${props.titleClass === undefined ? '' : ` ${props.titleClass}`}`}>
         {props.title}
       </p>
       {props.short !== undefined && props.short !== '' && <p class="pop-short">{props.short}</p>}
-    </>
+    </div>
   );
   return (
     <div class="pop-body">
