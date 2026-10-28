@@ -86,7 +86,7 @@ function EquipView({
 }) {
   return (
     <section
-      class="item-detail equip-view pix-panel"
+      class="item-detail equip-view dr-stack pix-panel"
       aria-label="Equip on"
       data-no-flip=""
       onKeyDown={(event) => {
@@ -199,7 +199,7 @@ export function ItemDetail({
   }
 
   return (
-    <section class="item-detail pix-panel" aria-labelledby={`item-${item.id}-name`}>
+    <section class="item-detail dr-stack pix-panel" aria-labelledby={`item-${item.id}-name`}>
       <ItemCard
         item={item}
         heading
@@ -230,7 +230,7 @@ export function ItemDetail({
       </Accordion>
 
       {onDismantle !== undefined && (
-        <div class="item-actions">
+        <div class="item-actions dr-stack dr-section">
           <p class="actions">
             <button
               ref={dismantleButton}

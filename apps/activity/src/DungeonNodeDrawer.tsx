@@ -261,14 +261,14 @@ function Outcome({ entry }: { entry: DungeonStepLog }) {
   }
   if (entry.kind === 'descend') {
     return (
-      <div class="dnd-outcome">
+      <div class="dnd-outcome dr-stack">
         <p class="dnd-line">{descendLine(entry)}</p>
       </div>
     );
   }
   if (entry.result === 'door') {
     return (
-      <div class="dnd-outcome">
+      <div class="dnd-outcome dr-stack">
         <p class="dnd-line">{doorLine(entry)}</p>
       </div>
     );
@@ -276,13 +276,13 @@ function Outcome({ entry }: { entry: DungeonStepLog }) {
   if (entry.result === 'chest') {
     const chestLoot = lootOf(entry);
     return (
-      <div class="dnd-outcome">
+      <div class="dnd-outcome dr-stack">
         <p class="dnd-line">{chestLine(entry)}</p>
         {chestLoot !== null && <LootRow pack={chestLoot} />}
         {entry.gear.length > 0 && (
-          <div class="dnd-gear">
+          <div class="dnd-gear dr-group">
             <span>{CHEST_GEAR_LABEL}:</span>
-            <div class="loot" role="group" aria-label={CHEST_GEAR_LABEL}>
+            <div class="loot dr-stack" role="group" aria-label={CHEST_GEAR_LABEL}>
               <FindItems pieces={entry.gear} label="Items" />
             </div>
           </div>
@@ -293,7 +293,7 @@ function Outcome({ entry }: { entry: DungeonStepLog }) {
   // A chest entry only holds what the chest added, so a fight always shows its own loot.
   const loot = lootOf(entry);
   return (
-    <div class="dnd-outcome">
+    <div class="dnd-outcome dr-stack">
       {entry.result === 'fight' && <p class="dnd-line">{roundsLine(entry)}</p>}
       {entry.result === 'event' && (
         <>
@@ -353,7 +353,7 @@ function PlainBody({
   const lines =
     quiet && visited ? [QUIET_LINE] : entry === undefined || quiet ? nodeLines(node) : [];
   return (
-    <div class="dnd-plain">
+    <div class="dnd-plain dr-stack">
       {/* An unvisited mystery room does not name its scene: it is hardly a mystery if it did. */}
       {node.kind === 'mystery' && node.event !== undefined && visited && (
         <p class="dnd-event pix">{node.event.name}</p>
@@ -403,12 +403,12 @@ function FoeBody({
   const chest = RULES.dungeon.undercroft.chest;
   const epicLoot = RULES.dungeon.undercroft.epic.loot;
   return (
-    <div class="dnd-foe">
+    <div class="dnd-foe dr-stack">
       <div class={`dnd-top ${elementClass(foe.element)}`}>
         <div class="dnd-art" aria-hidden="true">
           <Sprite sprite={art.sprite} scale={art.scale} />
         </div>
-        <div class="dnd-who">
+        <div class="dnd-who dr-group">
           <p class="dnd-name pix">{foeDisplayName(node)}</p>
           <p class="dnd-tags">
             {deeper && !keeper && (

@@ -1,7 +1,8 @@
 /* A list of creatures (or stats) to choose from: native radios in tappable rows. */
 fieldset.picker {
+  display: grid;
+  gap: var(--dr-tight);
   min-width: 0;
-  margin: 0.5rem 0;
   padding: 0;
   border: 0;
 }
@@ -19,10 +20,10 @@ fieldset.picker {
 label.pick,
 div.pick {
   display: flex;
+  margin: 0; /* a label's own top margin (base) */
   align-items: center;
   gap: 0.5rem;
   min-height: 2.75rem;
-  margin: 0.25rem 0 0;
   padding: 0.25rem 0.5rem;
   background: var(--dusk-2);
   box-shadow: inset 0 0 0 var(--px) var(--ink);
@@ -77,15 +78,6 @@ label.pick input[type='radio'] {
 }
 
 /* The job drawer: the recipe pinned under the title, then the wizard's steps. */
-.job-drawer .drawer-toolbar {
-  padding-bottom: 0.25rem;
-}
-
-.job-ready {
-  display: grid;
-  gap: 0.5rem;
-}
-
 /* The job wizards' Who step: the step title says it, so the legend is for assistive technology only. */
 .job-who legend {
   position: absolute;

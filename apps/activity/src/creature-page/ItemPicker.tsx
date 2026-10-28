@@ -84,7 +84,7 @@ function DetailPanel({
   const comparable = !worn;
   const comparing = comparable && compareOn;
   return (
-    <section class="ip-detail pix-panel" aria-label="Selected item">
+    <section class="ip-detail dr-stack pix-panel" aria-label="Selected item">
       {/* The card scrolls inside its own box (a long Epic with its lost lines is tall) and hints that it does; the actions below stay put. */}
       <ScrollHint
         class="ip-detail-scroll"

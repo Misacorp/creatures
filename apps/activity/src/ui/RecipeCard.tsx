@@ -40,7 +40,7 @@ export function RecipeCard({
 }: RecipeCardProps) {
   const reason = disabledReason ?? null;
   return (
-    <div class="recipe-card">
+    <div class="recipe-card dr-stack">
       <div class="recipe-row">
         <ul class="recipe-side gives" aria-label="Needs">
           {inputs.map(({ key, have, amount, ...badge }) => {

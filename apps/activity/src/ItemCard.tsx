@@ -56,33 +56,35 @@ export function ItemCard({
   const set = itemSet(item.baseId);
   const nameClass = `idc-name rarity-name rarity-${item.rarity}`;
   return (
-    <div class={`idc pix-panel${extra === undefined ? '' : ` ${extra}`}`}>
+    <div class={`idc dr-stack pix-panel${extra === undefined ? '' : ` ${extra}`}`}>
       <div class="idc-head">
         <ItemThumb item={item} scale={spriteScale} class="big" />
-        <div class="idc-info">
-          {heading ? (
-            <h3
-              class={nameClass}
-              {...(nameId === undefined ? {} : { id: nameId })}
-              tabIndex={-1}
-              {...(nameRef === undefined ? {} : { ref: nameRef })}
-            >
-              {name}
-              <span class="visually-hidden">, item level {item.itemLevel}</span>
-            </h3>
-          ) : (
-            <p class={nameClass} {...(nameId === undefined ? {} : { id: nameId })}>
-              {name}
-              <span class="visually-hidden">, item level {item.itemLevel}</span>
+        <div class="idc-info dr-stack">
+          <div class="dr-group">
+            {heading ? (
+              <h3
+                class={nameClass}
+                {...(nameId === undefined ? {} : { id: nameId })}
+                tabIndex={-1}
+                {...(nameRef === undefined ? {} : { ref: nameRef })}
+              >
+                {name}
+                <span class="visually-hidden">, item level {item.itemLevel}</span>
+              </h3>
+            ) : (
+              <p class={nameClass} {...(nameId === undefined ? {} : { id: nameId })}>
+                {name}
+                <span class="visually-hidden">, item level {item.itemLevel}</span>
+              </p>
+            )}
+            <p class="idc-badge">
+              <SlotTag slot={item.slot} plain={plainRarity} />
+              <RarityTag rarity={item.rarity} plain={plainRarity} />
+              <GearTagBadge baseId={item.baseId} plain={plainRarity} />
+              <SetTag baseId={item.baseId} plain={plainRarity} />
+              {isFestivalBase(item.baseId) && <FestivalTag />}
             </p>
-          )}
-          <p class="idc-badge">
-            <SlotTag slot={item.slot} plain={plainRarity} />
-            <RarityTag rarity={item.rarity} plain={plainRarity} />
-            <GearTagBadge baseId={item.baseId} plain={plainRarity} />
-            <SetTag baseId={item.baseId} plain={plainRarity} />
-            {isFestivalBase(item.baseId) && <FestivalTag />}
-          </p>
+          </div>
           {note}
           {(rows.length > 0 || (diff?.goneStats.length ?? 0) > 0) && (
             <ul class="idc-stats" aria-label="Base stats">
@@ -129,7 +131,7 @@ export function ItemCard({
         </>
       )}
       {set !== undefined && (
-        <section class="idc-set" aria-label={`${set.name} set`}>
+        <section class="idc-set dr-group" aria-label={`${set.name} set`}>
           <p class="idc-set-head">
             <span class="idc-set-name">{set.name}</span>{' '}
             <span class="idc-set-count" aria-label={`${String(wornInSet)} pieces worn`}>

@@ -122,7 +122,7 @@ export function EvolveDrawer({
       class="evolve-drawer"
       {...(returnFocusTo === undefined ? {} : { returnFocusTo })}
       footer={
-        <div class="evolve-confirm">
+        <div class="evolve-confirm dr-stack">
           <p class="evolve-permanent evolve-cost">
             <CountBadge {...essenceCount(essence, { entry: true })} />
             <span>

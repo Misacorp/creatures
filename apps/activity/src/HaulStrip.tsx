@@ -43,7 +43,7 @@ export function HaulStrip({
     rank,
   );
   return (
-    <section class="haul" aria-labelledby="haul-title">
+    <section class="haul dr-stack" aria-labelledby="haul-title">
       <h4 id="haul-title" class="label">
         Expected haul
       </h4>
