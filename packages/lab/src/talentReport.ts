@@ -1,7 +1,8 @@
 /**
- * The talent section of the lab report: best legal board with a talent against best legal board without it (gauntlet),
- * a raid row for the raid-shaped talents, and the check lines that say how many talents and pools meet Misa's talent
- * strength targets (docs/design/decisions.md, "How strong a talent should be").
+ * The talent section of the lab report: the talents' share of a team's result (the target, `teamShareReport.ts`), then
+ * best legal board with a talent against best legal board without it (gauntlet), a raid row for the raid-shaped talents,
+ * and the check lines that find duds, must-picks and spikes (docs/design/decisions.md, "Talent strength is a share of
+ * the team's result").
  */
 import { content } from '@creatures/game';
 import { CARDS, type CardDef } from './cards';
@@ -24,6 +25,8 @@ import {
 import { formStats } from './species';
 import { LINE_POOLS, TALENTS } from './talents';
 import { LEVEL } from './search';
+import { TEAM_BOSS_WIN_RATE } from './teamShare';
+import { buildTeamShareSection, type TeamInputs, type TeamShareSummary } from './teamShareReport';
 import type { Role } from './types';
 
 /** The rounds in which the classic line should kill a plain boss on average, which sets the talent boss's HP. */
@@ -33,15 +36,14 @@ export const TALENT_BOSS_ROUNDS = 8;
 export const MIN_BASE = 10;
 
 /**
- * Misa's talent strength targets, in percent of the score without the talent (decisions.md, 2026-10-28). "About" is one
- * point either way in the check lines.
+ * What the per-talent table checks (decisions.md, 2026-10-28). The strength target itself is the team share
+ * (`TEAM_SHARE`); the table finds duds and must-picks. "About" is one point either way in the check lines.
  */
 export const GOALS = {
-  /** A talent's gain on its best card is at most this. */
-  bestCardMax: 20,
-  /** A good talent's overall gain where it fits. */
-  goodMin: 8,
-  goodMax: 15,
+  /** A talent whose best card gains more than this is a soft warning (a spike is fine, a runaway is not). */
+  spikeWarn: 50,
+  /** A non-plain talent judged below this is a dud. */
+  dudBelow: 2,
   /** No must-pick: this many talents of a role in a pool within `mustPickPoints` of its best. */
   alternatives: 2,
   mustPickPoints: 3,
@@ -115,12 +117,11 @@ export function bestCard(
 }
 
 export interface TalentGoals {
-  /** Talent rows (role / talent) whose gain on the best card is within the cap. */
-  readonly bestCardOk: number;
   readonly rows: number;
-  /** Non-plain talent rows in the good band, and how many non-plain rows there are. */
-  readonly goodOk: number;
-  readonly goodRows: number;
+  /** Talent rows (role / talent) whose best card gains more than `GOALS.spikeWarn` percent (soft warning). */
+  readonly spikes: readonly string[];
+  /** Non-plain talent rows judged under `GOALS.dudBelow` percent (role / talent). */
+  readonly duds: readonly string[];
   /** Pools (lines) with no must-pick in any role, and the lines. */
   readonly poolsOk: number;
   readonly pools: number;
@@ -129,20 +130,31 @@ export interface TalentGoals {
   readonly plainOk: number;
   readonly plainRows: number;
   readonly raidRows: number;
-  /** The rows over the best card cap (role / talent), and the non-plain rows in the good band per role. */
-  readonly overCap: readonly string[];
-  readonly goodByRole: Readonly<Record<string, string>>;
 }
 
-export function buildTalentSection(opts: { cards: readonly CardDef[]; quick: boolean }): {
+export function buildTalentSection(opts: {
+  cards: readonly CardDef[];
+  quick: boolean;
+  /** The best and casual teams the report's searches found (searched again, with the same seeds, when missing). */
+  teams?: TeamInputs;
+}): {
   md: string[];
   data: Record<string, unknown>;
   goals: TalentGoals;
+  teamShare: TeamShareSummary;
+  /** The team share part of `md` (also inside it), for the tuning loop. */
+  teamMd: string[];
 } {
   const { cards, quick } = opts;
   const talentSeeds = quick ? 2 : 24;
   const raidSeeds = quick ? 2 : 24;
   const bossHp = classicBossHp(TALENT_BOSS_ROUNDS, quick ? 6 : 24);
+  const team = buildTeamShareSection({
+    cards,
+    quick,
+    winRate: TEAM_BOSS_WIN_RATE,
+    ...(opts.teams ? { teams: opts.teams } : {}),
+  });
   const measurer = createMeasurer({ bossHp, cards, seeds: talentSeeds, rowSeeds: quick ? 6 : 24 });
   const raidHp = raidBossHp(quick ? 2 : 6);
   const raidMeasurer = createRaidMeasurer({ hp: raidHp, seeds: raidSeeds });
@@ -153,6 +165,7 @@ export function buildTalentSection(opts: { cards: readonly CardDef[]; quick: boo
     '',
     `**The score** of one fight, 0 to 100: ${SCORE_WEIGHTS.damage} for the share of the boss's HP removed, ${SCORE_WEIGHTS.win} for a win, up to ${SCORE_WEIGHTS.speed} for the rounds a win left unused (fewer rounds is better), and up to ${SCORE_WEIGHTS.standing} for the share of the three creatures still standing (a knockout costs ${SCORE_WEIGHTS.standing / 3} points). A talent that saves creatures or ends the fight sooner shows it.`,
     '',
+    ...team.md,
     `**The boards.** Every form whose line's pool has the talent and whose role it fits, with no Knack on the measured form (the Mire talents carry the line's Mire Knack, with and without, because they do nothing without one). The form stands in each of the three slots with two fixed fitting partners in either order, for two partner sets (the natural team's partners, and the classic trio's two other roles with their classic Knacks): up to 12 legal boards. The score is the best board with the talent and the best board without it, each chosen on its own, on every card (${talentSeeds} seeds each, the same seeds for every board), averaged over those forms and cards. Gain is the difference in points; the percentage is against the best score without it and reads n/a when that is under ${MIN_BASE} points. Knockouts are per fight (with / without), on the best board of each. Nothing here forces a board for a talent: a position talent pays for standing where it wants to.`,
     '',
     `**Raid gain.** The raid-shaped talents (${[...RAID_SHAPED].map((t) => TALENTS[t]?.name ?? t).join(', ')}) also run on a raid row: 3 rows of 12, the classic trio in order with one slot in four a creature of the form's own element (so neighbour talents have kin to read), and one creature of the form in one slot. The boss has Great Wave (every second round) and Payoff Hunter, and ${raidHp.toLocaleString('en')} HP (the classic row removes 90% of it in ten rounds, so a win never hides a small gain and a Finisher has its last rounds). The form is tried in ${RAID_SLOTS.length} slots (ends, near the ends and the middle, in every row) and one random slot, ${raidSeeds} seeds each, with the talent and without it on the same seeds, so a slot is compared with itself. The score of a fight is the damage of the creature and the creatures within ${RAID_REACH} slots of it in its row, weighted by how many of them still stand: one creature of 36 is too small a share of the raid to read through the noise of a fight. The raid gain is the gain at the best slot for the talent (where it gains most), in percent of the score without it, scaled by ${RAID_SCALE.toFixed(2)} (the five of the neighbourhood over the three of the gauntlet) to read on the gauntlet's scale; the random slot's gain is shown beside it. A raid-shaped talent is judged on the raid gain; the others on the gauntlet gain.`,
@@ -288,8 +301,11 @@ export function buildTalentSection(opts: { cards: readonly CardDef[]; quick: boo
       talentRaid: { hp: raidHp, seeds: raidSeeds, scale: RAID_SCALE },
       talentTopPicks: topPicks,
       talentGoals: goals,
+      ...team.data,
     },
     goals,
+    teamShare: team.summary,
+    teamMd: team.md,
   };
 }
 
@@ -304,22 +320,14 @@ export function checkGoals(
   cards: readonly CardDef[],
 ): TalentGoals {
   const G = GOALS;
-  const capOk = (r: { bestCardPct: number }) => r.bestCardPct <= G.bestCardMax + G.slack;
-  const bestCardOk = rows.filter(capOk).length;
-  const overCap = rows
-    .filter((r) => !capOk(r))
-    .map((r) => `${TALENTS[r.tid]?.name ?? r.tid} (${r.role}) +${Math.round(r.bestCardPct)}%`);
+  const label = (r: { role: Role; tid: string }) => `${TALENTS[r.tid]?.name ?? r.tid} (${r.role})`;
+  const spikes = rows
+    .filter((r) => r.bestCardPct > G.spikeWarn)
+    .map((r) => `${label(r)} +${Math.round(r.bestCardPct)}%`);
   const good = rows.filter((r) => !PLAIN_TALENTS.has(r.tid));
-  const goodOk = good.filter((r) => within(r.judged, G.goodMin, G.goodMax)).length;
-  const goodByRole = Object.fromEntries(
-    ROLES.map((role) => {
-      const mine = good.filter((r) => r.role === role);
-      return [
-        role,
-        `${mine.filter((r) => within(r.judged, G.goodMin, G.goodMax)).length} of ${mine.length}`,
-      ];
-    }),
-  );
+  const duds = good
+    .filter((r) => r.judged !== undefined && r.judged < G.dudBelow)
+    .map((r) => `${label(r)} ${signed(r.judged ?? 0)}%`);
   const plain = rows.filter((r) => PLAIN_TALENTS.has(r.tid));
   const plainOk = plain.filter((r) => within(r.judged, G.plainMin, G.plainMax)).length;
   // Pools: in every line, for every role of the line, at least `alternatives` talents within `mustPickPoints` of the best.
@@ -330,51 +338,50 @@ export function checkGoals(
     ] as Role[];
     const bad: string[] = [];
     for (const role of roles) {
-      const gains: number[] = [];
+      const gains: { tid: string; g: number }[] = [];
       for (const tid of LINE_POOLS[line] ?? []) {
         const ms = measured.filter((m) => m.line === line && m.role === role && m.tid === tid);
         const g = judgedPct(tid, ms, cards);
-        if (ms.length > 0 && g !== undefined) gains.push(g);
+        if (ms.length > 0 && g !== undefined) gains.push({ tid, g });
       }
-      gains.sort((a, b) => b - a);
-      const top = gains[0] ?? 0;
-      const near = gains.filter((g) => g >= top - G.mustPickPoints).length;
-      if (near < G.alternatives) bad.push(role);
+      gains.sort((a, b) => b.g - a.g);
+      const top = gains[0]?.g ?? 0;
+      const near = gains.filter((x) => x.g >= top - G.mustPickPoints).length;
+      if (near < G.alternatives)
+        bad.push(
+          `${role}: ${gains
+            .slice(0, 3)
+            .map((x) => `${TALENTS[x.tid]?.name ?? x.tid} ${signed(x.g)}`)
+            .join(', ')}`,
+        );
     }
-    if (bad.length) failing.push(`${line} (${bad.join(', ')})`);
+    if (bad.length) failing.push(`${line} (${bad.join('; ')})`);
   }
   const pools = Object.keys(LINE_POOLS).length;
   return {
-    bestCardOk,
     rows: rows.length,
-    goodOk,
-    goodRows: good.length,
+    spikes,
+    duds,
     poolsOk: pools - failing.length,
     pools,
     failingPools: failing,
     plainOk,
     plainRows: plain.length,
     raidRows: rows.filter((r) => RAID_SHAPED.has(r.tid)).length,
-    overCap,
-    goodByRole,
   };
 }
 
-/** The check lines under the talent table, one per goal. */
+/** The check lines under the talent table, one per check. */
 export function goalLines(g: TalentGoals): string[] {
   const G = GOALS;
   return [
-    `**Talent strength targets** (Misa, 2026-10-28; "about" is ${G.slack} point either way; a raid-shaped talent is judged on its raid gain, ${g.raidRows} of ${g.rows} rows):`,
+    `**Per-talent checks** (Misa, 2026-10-28; "about" is ${G.slack} point either way; a raid-shaped talent is judged on its raid gain, ${g.raidRows} of ${g.rows} rows). The strength target is the team share at the top of this section; these find duds, must-picks and runaways:`,
     '',
-    `- Gain on its best card at most +${G.bestCardMax}%: ${g.bestCardOk} of ${g.rows} talent rows${g.overCap.length ? `. Over: ${g.overCap.join(', ')}` : ''}.`,
-    `- Good talents at +${G.goodMin}% to +${G.goodMax}% overall: ${g.goodOk} of ${g.goodRows} talent rows (plain stats excluded; by role: ${Object.entries(
-      g.goodByRole,
-    )
-      .map(([r, v]) => `${r} ${v}`)
-      .join(', ')}).`,
     `- Pools with no must-pick (every role of the line has at least ${G.alternatives} talents within ${G.mustPickPoints} points of its best): ${g.poolsOk} of ${g.pools}${g.failingPools.length ? `. Short: ${g.failingPools.join(', ')}` : ''}.`,
+    `- Duds (non-plain talents judged under +${G.dudBelow}%): ${g.duds.length} of ${g.rows - g.plainRows}${g.duds.length ? `: ${g.duds.join(', ')}` : ''}.`,
     `- Plain stat talents (Sharp Claws, Hardy) at +${G.plainMin}% to +${G.plainMax}%: ${g.plainOk} of ${g.plainRows} talent rows.`,
+    `- Soft warning, a best card over +${G.spikeWarn}% (a spike on the card a talent fits is fine, a runaway is not): ${g.spikes.length ? g.spikes.join(', ') : 'none'}.`,
     '',
-    'The first two targets pull against each other: a talent that gains 10% overall gains two to three times that on the card where the team does worst (Thick Hide, Reflective Hide, Grudge), because the same points are a bigger share of a smaller score. Talents are tuned to the cap first, so the good band is met where a talent is spread evenly over the cards. A counter (Unbothered, Stubborn, Brace) or a discrete effect (Deep Ink adds whole counts) cannot be scaled to both.',
+    'A talent may gain more than its average on the card it fits best (a talent that gains 5% overall gains two to three times that on the card where the team does worst, because the same points are a bigger share of a smaller score), as long as no pool has a single must-pick. A counter (Unbothered, Stubborn, Brace) or a discrete effect (Deep Ink adds whole counts) is judged on one number for every card.',
   ];
 }

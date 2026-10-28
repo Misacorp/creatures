@@ -4,12 +4,13 @@
  * weekend with attrition. Written to docs/design/combat/lab-report.md by
  * `pnpm --filter @creatures/lab report`.
  */
-import { createSeededRng, int } from '@creatures/game';
+import { createSeededRng } from '@creatures/game';
 import { CARDS, labBoss } from './cards';
 import { weekend } from './fight';
 import { KEYWORDS } from './keywords';
 import { FAMILIES, FORM_KNACKS, KNACKS } from './knacks';
 import { buildTalentSection } from './talentReport';
+import { CASUAL_CARDS, casualRosters, searchOptions } from './teams';
 import { LINE_POOLS, TALENTS, talentPool } from './talents';
 import { LAB_RULES } from './rules';
 import { ELEMENTS, formStats, triggers } from './species';
@@ -137,12 +138,10 @@ function usefulKnacks(l: readonly Pick[]): Set<string> {
 
 export function buildReport(opts: { quick?: boolean } = {}): Report {
   const seeds = opts.quick ? 4 : 24;
-  const sopts = opts.quick
-    ? { starts: 60, keep: 10, rounds: 2, seeds: 3, freshSeeds: 4 }
-    : { starts: 400, keep: 40, rounds: 4, seeds: 6, freshSeeds: 24 };
-  const ropts = opts.quick
-    ? { starts: 30, keep: 6, rounds: 1, seeds: 2, freshSeeds: 2 }
-    : { starts: 300, keep: 24, rounds: 5, seeds: 3, freshSeeds: 8 };
+  const { gauntlet: sopts, raid: ropts } = searchOptions(opts.quick ?? false);
+  const bestGauntlet = new Map<string, readonly Pick[]>();
+  const bestRaid = new Map<string, readonly Pick[]>();
+  const casualBest: { cardId: string; line: readonly Pick[] }[] = [];
   const md: string[] = [];
   const data: Record<string, unknown> = {};
   const cards = CARDS.filter((c) => c.id !== 'adapts');
@@ -253,6 +252,7 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
       const best = ranked[0];
       const cl = ranked.find((r) => lineKey(r.line) === lineKey(classic));
       if (!best || !cl) continue;
+      (mode.id === 'gauntlet' ? bestGauntlet : bestRaid).set(c.id, best.line);
       for (const r of ranked.slice(0, 5)) {
         const useful = usefulKnacks(r.line);
         for (const p of r.line) {
@@ -344,19 +344,11 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
     '| Roster | Card | Best line | Score | Best, no Knacks | Top 3 by level | Beyond top 3 |',
     '| --- | --- | --- | ---: | ---: | ---: | ---: |',
   );
-  const forms = Object.keys(FORM_KNACKS);
-  const rng = createSeededRng('casual');
   let beyond = 0,
     trials = 0;
-  for (let r = 0; r < (opts.quick ? 1 : 4); r++) {
-    const roster = new Map<string, number>();
-    while (roster.size < 12)
-      roster.set(forms[int(rng, forms.length)] ?? 'tidewing', 8 + int(rng, 18));
-    const lv = (f: string) => Math.min(roster.get(f) ?? 1, formStats(f, 30).levelCap);
-    const pool = poolOf([...roster.keys()]).map((p) => ({ ...p, level: lv(p.formId) }));
-    const top3 = [...roster.keys()].sort((a, b) => lv(b) - lv(a)).slice(0, 3);
-    const top3Line = top3.map((f) => ({ formId: f, knack: 'none', level: lv(f) }));
-    for (const cid of ['plain', 'thick-hide', 'payoff-hunter', 'elusive']) {
+  for (const roster of casualRosters(opts.quick ?? false)) {
+    const { index: r, pool, top3, top3Line } = roster;
+    for (const cid of CASUAL_CARDS) {
       const boss = bossFor(GAUNTLET, [cid]);
       const best = search(boss, GAUNTLET, {
         seed: `casual:${r}:${cid}`,
@@ -373,6 +365,7 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
         include: [top3Line],
       })[0];
       if (!best) continue;
+      casualBest.push({ cardId: cid, line: best.line });
       const n = best.line.filter((p) => !top3.includes(p.formId)).length;
       beyond += n;
       trials++;
@@ -388,7 +381,11 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
   );
 
   // 7. Talents: best legal board with the talent against best legal board without it.
-  const talentSection = buildTalentSection({ cards, quick: opts.quick ?? false });
+  const talentSection = buildTalentSection({
+    cards,
+    quick: opts.quick ?? false,
+    teams: { gauntlet: bestGauntlet, raid: bestRaid, casual: casualBest },
+  });
   md.push(...talentSection.md);
   Object.assign(data, talentSection.data);
 
@@ -477,7 +474,7 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
     '',
     '## What this cannot tell',
     '',
-    '- It is a prototype: gear, heal crits on screen and the raid board UI are simplified or missing; talents are measured one at a time, never in the best-team search.',
+    '- It is a prototype: gear, heal crits on screen and the raid board UI are simplified or missing; talents are measured one at a time in the per-talent table, and as a share of the team result (one talent per creature, never searched with the Knacks).',
     '- Mire has no Setter or Payoff yet, so its reactions never happen here.',
     '- Searches are random plus local improvement; a missing team is not proof that it is weak.',
     '- The raid search uses 3 rows of 4 (four players); real servers place up to 15 per row, first come first served.',

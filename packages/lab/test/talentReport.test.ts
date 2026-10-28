@@ -108,34 +108,36 @@ describe('checkGoals', () => {
     expect(b.failingPools).toEqual([]);
   });
 
-  it('counts the best card cap, the good band and the plain band', () => {
+  it('counts spikes over the soft warning, duds and the plain band', () => {
     const ms = everything((tid) => (PLAIN_TALENTS.has(tid) ? 3 : 10));
-    const rows = rowsOf(ms, (m) => (m.tid === 'finisher' ? 30 : 15));
+    const rows = rowsOf(ms, (m) => (m.tid === 'finisher' ? 60 : 30));
     const g = checkGoals(ms, rows, cards);
     expect(g.rows).toBe(rows.length);
-    // Every Finisher row is over the cap of 20 (plus one point), the rest under.
+    // Every Finisher row is over the soft warning of +50% on its best card; +30% is fine (a spike on the card it fits).
     const finishers = rows.filter((r) => r.tid === 'finisher').length;
     expect(finishers).toBeGreaterThan(0);
-    expect(g.bestCardOk).toBe(rows.length - finishers);
-    expect(g.overCap).toHaveLength(finishers);
-    expect(g.overCap[0]).toContain('Finisher');
-    // 10% is inside 8..15 for every non-plain row; 3% inside 2..5 for every plain row.
-    expect(g.goodOk).toBe(g.goodRows);
+    expect(g.spikes).toHaveLength(finishers);
+    expect(g.spikes[0]).toContain('Finisher');
+    expect(g.spikes[0]).toContain('+60%');
+    // 10% overall is no dud; 3% inside the plain band of 2..5 for every plain row.
+    expect(g.duds).toEqual([]);
     expect(g.plainOk).toBe(g.plainRows);
     expect(g.plainRows).toBeGreaterThan(0);
-    // Out of the band: 20% and 0%.
-    const high = everything((tid) => (PLAIN_TALENTS.has(tid) ? 0 : 20));
-    const h = checkGoals(high, rowsOf(high), cards);
-    expect(h.goodOk).toBe(0);
-    expect(h.plainOk).toBe(0);
-    expect(Object.keys(h.goodByRole).sort()).toEqual(['guard', 'payoff', 'setter', 'support']);
+    // 1% on a non-plain talent is a dud; 0% on a plain one is out of its band and is not a dud.
+    const low = everything((tid) => (PLAIN_TALENTS.has(tid) ? 0 : 1));
+    const l = checkGoals(low, rowsOf(low), cards);
+    expect(l.duds).toHaveLength(l.rows - l.plainRows);
+    expect(l.duds[0]).toMatch(/\(.*\) \+1\.0%/);
+    expect(l.plainOk).toBe(0);
   });
 
-  it('states each target with its count', () => {
+  it('states each check with its count and no per-card ceiling', () => {
     const ms = everything(() => 10);
     const lines = goalLines(checkGoals(ms, rowsOf(ms), cards)).join('\n');
-    expect(lines).toContain(`at most +${GOALS.bestCardMax}%`);
+    expect(lines).toContain(`over +${GOALS.spikeWarn}%`);
+    expect(lines).not.toContain('at most +20%');
     expect(lines).toMatch(/Pools with no must-pick .*: \d+ of 16/);
+    expect(lines).toContain('Duds');
     expect(lines).toContain('Plain stat talents');
     expect(lineRoles('cindle').length).toBeGreaterThan(0);
   });
