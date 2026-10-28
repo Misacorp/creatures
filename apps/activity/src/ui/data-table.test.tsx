@@ -196,3 +196,18 @@ describe('the DataTable', () => {
     expect(byClass(draw([]), 'data-row')).toHaveLength(0);
   });
 });
+
+describe('a picture in a data table', () => {
+  const css =
+    Object.values(
+      import.meta.glob<string>('../styles/components/data-table.css', {
+        query: '?raw',
+        import: 'default',
+        eager: true,
+      }),
+    )[0] ?? '';
+
+  it('keeps its own size: a sprite in a narrow column is not shrunk to fit (the medal headings)', () => {
+    expect(css).toMatch(/\.data-table canvas\.sprite\s*\{[^}]*max-width:\s*none/);
+  });
+});

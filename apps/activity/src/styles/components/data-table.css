@@ -15,6 +15,15 @@
   font-size: var(--fs-row);
 }
 
+/*
+  A picture in a cell keeps its own size. A sprite shrinks to fit its box (`max-width: 100%`), and a column beside
+  the full-width label column is only as wide as it must be, so the sprite would shrink to almost nothing
+  (2026-10-28: the medal table's headings drew 7px medals).
+*/
+.data-table canvas.sprite {
+  max-width: none;
+}
+
 .data-table.wide {
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
