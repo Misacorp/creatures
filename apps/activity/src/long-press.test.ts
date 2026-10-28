@@ -133,6 +133,26 @@ describe('a long press', () => {
     expect(hold.takeSwallow()).toBe(false);
   });
 
+  it('turns away the click of a long mouse press however long it was held before the release', () => {
+    const { hold } = setup();
+    hold.down('a', down);
+    // Held for seconds after the hold fired (a mouse is often held well past it).
+    vi.advanceTimersByTime(HOLD_MS + 3000);
+    hold.end();
+    expect(hold.takeSwallow()).toBe(true);
+  });
+
+  it('forgets an old long press when a new press starts', () => {
+    const { hold } = setup();
+    hold.down('a', down);
+    vi.advanceTimersByTime(HOLD_MS);
+    // No release reached the tile; the next press is a fresh one and its click is real.
+    hold.down('b', down);
+    vi.advanceTimersByTime(100);
+    hold.end();
+    expect(hold.takeSwallow()).toBe(false);
+  });
+
   it('lets a swallowed click that never came expire, so a later tap is a real one', () => {
     const { hold } = setup();
     hold.down('a', down);

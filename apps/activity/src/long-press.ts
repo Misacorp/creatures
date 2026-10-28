@@ -4,7 +4,11 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 export const HOLD_MS = 450;
 /** How far (in pixels) the pointer may drift before the press is a scroll or a drag, not a hold. */
 export const HOLD_SLOP_PX = 8;
-/** How long the click that follows a long press is still turned away (it normally comes at once). */
+/**
+ * How long after the release the click that follows a long press is still turned away (it normally comes at
+ * once). Until the release it is always turned away, however long the press lasts (a mouse is often held well
+ * past the hold).
+ */
 const SWALLOW_MS = 400;
 
 /** What the logic needs of a pointer event. */
@@ -51,6 +55,8 @@ export class Hold {
   /** A press began on the tile `key`. */
   down(key: string, p: HoldPointer): void {
     this.cancel();
+    // A new press: whatever an earlier long press was turning away is over.
+    this.takeSwallow();
     if (!p.primary || p.button !== 0) return;
     this.at = { key, x: p.x, y: p.y, id: p.id };
     this.events.change(key);
@@ -75,6 +81,8 @@ export class Hold {
   /** The press ended (up, cancel) or the page scrolled. */
   end(): void {
     this.cancel();
+    // A long press fired during this press: its click comes with the release, so turn it away from now on.
+    if (this.swallow && this.swallowTimer === null) this.startSwallowTimer();
   }
 
   /** True once for the click that follows a completed long press (and clears it). */
@@ -101,9 +109,14 @@ export class Hold {
     }
   }
 
+  /** A long press fired: its click is turned away until the release, and for `SWALLOW_MS` after it (`end`). */
   private armSwallow(): void {
     this.swallow = true;
     if (this.swallowTimer !== null) clearTimeout(this.swallowTimer);
+    this.swallowTimer = null;
+  }
+
+  private startSwallowTimer(): void {
     this.swallowTimer = setTimeout(() => {
       this.swallow = false;
       this.swallowTimer = null;

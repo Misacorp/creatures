@@ -112,6 +112,26 @@ button.item-tile.blocked canvas.sprite.item-tile-wearer {
   touch-action: manipulation;
 }
 
+/*
+ * The 44 px target itself never shows: no press sink, no outline flash, no hover brightening and no tap highlight
+ * (the game's buttons have them; Misa, 2026-10-28). Only the drawn box below says selected or not.
+ */
+.item-tile-check:hover:not(:disabled),
+.item-tile-check:active:not(:disabled) {
+  filter: none;
+  transform: none;
+  box-shadow: none;
+}
+
+.item-tile-check {
+  -webkit-tap-highlight-color: transparent;
+  transition: none;
+}
+
+.item-tile-check:focus {
+  outline: none;
+}
+
 /* The drawn square is small and square-cornered; the button around it is the 44 px target. */
 .item-tile-box {
   position: absolute;
