@@ -8,12 +8,16 @@
   isolation: isolate;
 }
 
-/* One gap to the card's left edge and between the strips; the highest ribbon is on the left. */
+/*
+  One gap to the card's left edge and between the strips; the highest ribbon is on the left. The strips
+  start `--ribbon-fold` above the card: the part that folds over its top edge.
+*/
 .cc-ribbons {
   --ribbon-gap: 0.5rem;
+  --ribbon-fold: 7px;
 
   position: absolute;
-  top: var(--px);
+  top: calc(var(--ribbon-fold) * -1);
   left: var(--ribbon-gap);
   z-index: -1;
   display: flex;
@@ -24,20 +28,39 @@
 
 /*
   A strip of cloth with a light outer edge and a dark line inside it (hard stops, so the edges stay sharp),
-  cut to a swallowtail at the bottom.
+  cut to a swallowtail at the bottom. At the top it curls over the card's edge: an ink outline, the lit top of
+  the curl, the cloth down to the edge, then the edge's dark line and a short shadow on the front.
 */
 .cc-ribbon {
   width: 1.25rem;
-  height: var(--ribbon-length);
-  background: linear-gradient(
-    90deg,
-    var(--ribbon-light-shown) 0 2px,
-    var(--ribbon-line-shown) 2px 3px,
-    var(--ribbon-cloth-shown) 3px calc(100% - 3px),
-    var(--ribbon-line-shown) calc(100% - 3px) calc(100% - 2px),
-    var(--ribbon-light-shown) calc(100% - 2px)
+  height: calc(var(--ribbon-length) + var(--ribbon-fold));
+  background:
+    linear-gradient(
+      180deg,
+      var(--ink) 0 1px,
+      var(--ribbon-light-shown) 1px 3px,
+      var(--ribbon-cloth-shown) 3px calc(var(--ribbon-fold) - 1px),
+      var(--ink) calc(var(--ribbon-fold) - 1px) calc(var(--ribbon-fold) + 2px),
+      rgb(13 10 26 / 40%) calc(var(--ribbon-fold) + 2px) calc(var(--ribbon-fold) + 4px),
+      transparent calc(var(--ribbon-fold) + 4px)
+    ),
+    linear-gradient(
+      90deg,
+      var(--ribbon-light-shown) 0 2px,
+      var(--ribbon-line-shown) 2px 3px,
+      var(--ribbon-cloth-shown) 3px calc(100% - 3px),
+      var(--ribbon-line-shown) calc(100% - 3px) calc(100% - 2px),
+      var(--ribbon-light-shown) calc(100% - 2px)
+    );
+  clip-path: polygon(
+    2px 0,
+    calc(100% - 2px) 0,
+    100% 2px,
+    100% 100%,
+    50% calc(100% - 8px),
+    0 100%,
+    0 2px
   );
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 8px), 0 100%);
 
   --ribbon-light-shown: color-mix(in srgb, var(--ribbon-light) var(--ribbon-mix), var(--dusk-2));
   --ribbon-line-shown: color-mix(in srgb, var(--ribbon-line) var(--ribbon-mix), var(--dusk-2));
