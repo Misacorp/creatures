@@ -1,0 +1,282 @@
+/*
+  Look "arcade" (Arcade Pocket): a handheld cartridge. Saturated indigo ground in a two-colour checker, royal
+  violet panels with a thick ink outline and a light top-left / dark bottom-right bevel, fat buttons with a
+  4 px lip that drops on press, a gold title plate, one gold accent and a teal secondary. Every rule sits under
+  `:root[data-look='arcade']`; the default look is untouched. Pixel rules only: hard edges, no blur, no glow.
+*/
+:root[data-look='arcade'] {
+  --night: #12102b;
+  --dusk: #2a2260;
+  --dusk-2: #3d3390;
+  --ink: #07061a;
+  --bone: #fff8e7;
+  --haze: #c2bdf0;
+  --gold: #ffcc33;
+  --gold-shade: #b8870f;
+  --line: #5a4fc0;
+  --mine: #4a3fa8;
+  --bevel-hi: #5a4fc0;
+  --bevel-lo: #1a1545;
+  --plum: #7a3fd0;
+  --good: #5ee05a;
+  --bad: #ff8aa0;
+  --attention: #ff7a45;
+  --teal: #35e0c0;
+  --lip: 4px;
+  --ink-rgb: 7 6 26;
+  --good-rgb: 94 224 90;
+  --bad-rgb: 255 138 160;
+  --gold-rgb: 255 204 51;
+  --hp-gone: #2a1840;
+
+  /* The panel frame: a 3 px ink outline with the corners left out (the notch), lit top-left, shadowed bottom-right. */
+  --frame:
+    0 calc(var(--px) * -1) 0 0 var(--ink), 0 var(--px) 0 0 var(--ink),
+    calc(var(--px) * -1) 0 0 0 var(--ink), var(--px) 0 0 0 var(--ink),
+    inset var(--px) var(--px) 0 0 var(--bevel-hi),
+    inset calc(var(--px) * -1) calc(var(--px) * -1) 0 0 var(--bevel-lo);
+  --ring: 0 0 0 var(--px) var(--ink), 0 0 0 calc(var(--px) * 2) var(--teal);
+}
+
+/* --- The ground: a two-colour checker --- */
+:root[data-look='arcade'] body {
+  background-color: #12102b;
+  background-image: conic-gradient(#191540 25%, transparent 0 50%, #191540 0 75%, transparent 0);
+  background-size: 24px 24px;
+}
+
+/* --- The card: a violet cartridge with a dither on its face --- */
+:root[data-look='arcade'] .card {
+  background-color: var(--dusk);
+  background-image: radial-gradient(#33297a 1.5px, transparent 1.5px);
+  background-size: 8px 8px;
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    0 0 0 calc(var(--px) * 2) var(--gold),
+    0 0 0 calc(var(--px) * 3) var(--ink),
+    inset var(--px) var(--px) 0 0 var(--bevel-hi),
+    inset calc(var(--px) * -1) calc(var(--px) * -1) 0 0 var(--bevel-lo);
+}
+
+/* --- Titles: big pixel lettering, ink outline, hard offset shadow --- */
+:root[data-look='arcade'] h1 {
+  color: var(--gold);
+  text-shadow:
+    var(--ink-outline),
+    0 calc(var(--px) * 2) 0 var(--ink),
+    var(--px) calc(var(--px) * 2) 0 var(--ink),
+    calc(var(--px) * -1) calc(var(--px) * 2) 0 var(--ink);
+}
+
+/* --- The HUD: a dark control strip with a gold underline; the place name in a gold plate --- */
+:root[data-look='arcade'] .hud {
+  background: var(--ink);
+  box-shadow:
+    0 var(--px) 0 0 var(--gold),
+    0 calc(var(--px) * 2) 0 0 var(--ink);
+}
+
+:root[data-look='arcade'] h1.hud-title {
+  flex: none;
+  max-width: 55%;
+  padding: 0 0.625rem;
+  background: var(--gold);
+  color: var(--ink);
+  box-shadow: inset 0 calc(var(--px) * -1) 0 0 var(--gold-shade);
+  text-shadow: none;
+  clip-path: polygon(
+    0 var(--px),
+    var(--px) var(--px),
+    var(--px) 0,
+    calc(100% - var(--px)) 0,
+    calc(100% - var(--px)) var(--px),
+    100% var(--px),
+    100% calc(100% - var(--px)),
+    calc(100% - var(--px)) calc(100% - var(--px)),
+    calc(100% - var(--px)) 100%,
+    var(--px) 100%,
+    var(--px) calc(100% - var(--px)),
+    0 calc(100% - var(--px))
+  );
+}
+
+:root[data-look='arcade'] .hud-tools {
+  margin-left: auto;
+}
+
+/* --- Buttons: fat blocks with a lip that drops on press --- */
+:root[data-look='arcade'] button {
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    0 var(--lip) 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 var(--bevel-lo),
+    inset 0 var(--px) 0 0 var(--bevel-hi);
+}
+
+:root[data-look='arcade'] button:hover:not(:disabled) {
+  filter: none;
+  background-color: #4a3fa8;
+}
+
+:root[data-look='arcade'] button:active:not(:disabled) {
+  transform: translateY(var(--lip));
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 var(--px) 0 0 var(--bevel-lo);
+}
+
+:root[data-look='arcade'] button.primary {
+  background: var(--gold);
+  color: var(--ink);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    0 var(--lip) 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 var(--gold-shade),
+    inset 0 var(--px) 0 0 #ffe27a;
+}
+
+:root[data-look='arcade'] button.primary:hover:not(:disabled) {
+  background-color: #ffd95e;
+}
+
+:root[data-look='arcade'] button.primary:active:not(:disabled) {
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 var(--px) 0 0 var(--gold-shade);
+}
+
+:root[data-look='arcade'] button:focus-visible,
+:root[data-look='arcade'] select:focus-visible,
+:root[data-look='arcade'] input:focus-visible,
+:root[data-look='arcade'] textarea:focus-visible {
+  outline-color: var(--teal);
+}
+
+/* Tags and badges: flat ink chips, hard edge. */
+:root[data-look='arcade'] .tag,
+:root[data-look='arcade'] .badge {
+  box-shadow: inset 0 0 0 2px var(--line);
+}
+
+:root[data-look='arcade'] .card-item {
+  background: var(--dusk-2);
+  box-shadow:
+    inset 0 0 0 var(--px) var(--ink),
+    inset calc(var(--px) * 2) calc(var(--px) * 2) 0 0 var(--bevel-hi);
+}
+
+/* --- The nav: dock (phone), rail (desktop), trays --- */
+:root[data-look='arcade'] .main-nav.dock {
+  background: var(--ink);
+  box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--gold),
+    0 calc(var(--px) * -2) 0 0 var(--ink);
+}
+
+:root[data-look='arcade'] .main-nav.rail {
+  background: var(--ink);
+  box-shadow: var(--frame);
+}
+
+:root[data-look='arcade'] .main-nav.dock ul.nav-tray {
+  background: var(--dusk);
+}
+
+:root[data-look='arcade'] button.nav-btn.active,
+:root[data-look='arcade'] button.nav-tray-item.active {
+  background: var(--teal);
+  color: var(--ink);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 #1b9c85;
+}
+
+:root[data-look='arcade'] .main-nav.dock button.nav-btn.active {
+  background: var(--dusk-2);
+  color: var(--teal);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -2) 0 0 var(--teal);
+}
+
+:root[data-look='arcade'] button.nav-btn.home {
+  background: var(--gold);
+  color: var(--ink);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    0 var(--lip) 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -2) 0 0 var(--gold-shade),
+    inset 0 var(--px) 0 0 #ffe27a;
+}
+
+/* --- Drawers and popovers: the same panel as the page --- */
+:root[data-look='arcade'] .drawer-panel {
+  box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--ink),
+    0 calc(var(--px) * -2) 0 0 var(--gold),
+    0 calc(var(--px) * -3) 0 0 var(--ink),
+    calc(var(--px) * -1) 0 0 0 var(--ink),
+    var(--px) 0 0 0 var(--ink),
+    inset 0 var(--px) 0 0 var(--bevel-hi);
+}
+
+:root[data-look='arcade'] .drawer-backdrop {
+  background: rgb(var(--ink-rgb) / 78%);
+}
+
+/* --- Scenery: each place gets its own hard-edged pattern on the card face and a tint on the ground --- */
+:root[data-look='arcade'] main.card:has([data-place='home']) {
+  background-image: radial-gradient(#4a3d9c 2px, transparent 2px);
+  background-size: 12px 12px;
+}
+
+:root[data-look='arcade'] main.card:has([data-place='collection']) {
+  background-color: #1f2a62;
+  background-image: conic-gradient(#2f4496 25%, transparent 0 50%, #2f4496 0 75%, transparent 0);
+  background-size: 16px 16px;
+}
+
+:root[data-look='arcade'] main.card:has([data-place='workshop']) {
+  background-color: #3a2260;
+  background-image:
+    linear-gradient(#22123f 2px, transparent 2px),
+    linear-gradient(90deg, #22123f 2px, transparent 2px);
+  background-size: 24px 12px;
+}
+
+:root[data-look='arcade'] main.card:has([data-place='journal']) {
+  background-color: #2a2260;
+  background-image: repeating-linear-gradient(0deg, #41368e 0 2px, transparent 2px 14px);
+}
+
+:root[data-look='arcade'] main.card:has([data-place='expeditions']) {
+  background-color: #1c3566;
+  background-image: repeating-linear-gradient(135deg, #2c5499 0 4px, transparent 4px 16px);
+}
+
+:root[data-look='arcade'] main.card:has([data-place='dungeon']) {
+  background-color: #1a1240;
+  background-image:
+    linear-gradient(#352578 3px, transparent 3px),
+    linear-gradient(90deg, #352578 3px, transparent 3px);
+  background-size: 20px 20px;
+}
+
+:root[data-look='arcade'] main.card:has([data-place='raid']) {
+  background-color: #3a1a52;
+  background-image: repeating-linear-gradient(45deg, #5e2a7c 0 4px, transparent 4px 16px);
+}
+
+:root[data-look='arcade'] main.card:has([data-place='games']) {
+  background-color: #1f2a60;
+  background-image: conic-gradient(#36498e 25%, transparent 0 50%, #2a3a78 0 75%, transparent 0);
+  background-size: 24px 24px;
+}
+
+:root[data-look='arcade']:has([data-place='raid']) body {
+  background-color: #1a0e2b;
+}
+
+:root[data-look='arcade']:has([data-place='expeditions']) body {
+  background-color: #0e1a33;
+}
