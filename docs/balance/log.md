@@ -1373,3 +1373,14 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
 - **Expected:** live `dungeon` clear rates for runs that meet Thorns or the Slag Tyrant move to within a few points of the other rooms; knock-outs stop being near-certain.
 - **Outcome:**
 - **Follow-ups:** watch live Slag Tyrant clear rates and knock-outs; the cap stays off (Misa).
+
+### B-032: Expeditions may find too many creatures (open)
+
+- **Opened:** 2026-10-28, from Misa's note: some expedition setups find a lot of creatures right now.
+- **Finding:** not measured yet. It matters more with combat v2's talents (R20): every found creature records its talent in its line's Talent Book, so the catch rate is also the talent find rate.
+- **Hypothesis:** the catch chance per trip length (`RULES.expeditions.lengths.<length>.catchBp`) plus lures' `catchBp` is high for long trips with a lure.
+- **Options:** lower `catchBp` for Long and Day trips or for lures; or leave it, if talent finds feel good.
+- **Action:** none, watching (Misa: keep the current system, keep an eye on it).
+- **Expected:** the next ops report shows catches per player per day by trip length and lure; the balance review compares them with the target in `docs/balance/report-2026-10-13-expeditions.md`.
+- **Outcome:**
+- **Follow-ups:**
