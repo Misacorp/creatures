@@ -1,0 +1,61 @@
+# Combat v2 grammar: what content may contain
+
+The shape of every Knack, rule card and boss, so new content fits without new rules. The lab's types (`packages/lab/src/knacks.ts` `KnackFx`, `src/types.ts`, `src/cards.ts`) are the authority for shape; this page explains them.
+
+## Limits (hard)
+
+- A mark's count is x1 to x3. One reaction per hit. A reaction on a trail mark leaves no further trail (the chain cap).
+- A Store holds at most 3; at most one Store per creature line; a Store fed by reactions gains at most 1 per round.
+- All hit boosts together are capped; reaction-bonus factors together are capped (x3); every debuff has its own maximum.
+- Marks and trails come only from Knacks, never from gear.
+- A boss's moves never exceed two damaging moves on one boss turn (today's content rule, kept).
+- Every rule card has at least two answers from different tools (Knacks of different families, placement, a talent), and the report must show them winning before the board points at them (P-13).
+
+## Knack families
+
+A family is one rule with different numbers or elements. A new Knack joins a family; a new family needs a reason (P-09). The list lives in the data (`FAMILIES` in `packages/lab/src/knacks.ts`) and is generated into [`knacks.md`](knacks.md) ("Families"); a test fails if a Knack names a family that is not there.
+
+Every element should get the same kinds of tools: a Heavy Prime Setter, a Setter that survives the front row, and a Payoff with a Detonator (P-12). The report's "Element coverage" table shows the gaps.
+
+## Naming
+
+- The same effect keeps the same name everywhere (P-06): a Knack on another species or on gear uses its existing name.
+- Knacks are actions or short phrases ("Draw Fire"); talents are traits ("Sharp Claws"). A talent never repeats a Knack's effect, and talents and gear take the existing name of an effect (R20).
+- Names are checked against the compendium's tone before shipping.
+
+## Template: a Knack
+
+```
+### Knack: Name (id)
+Family: one from the table.
+Forms: which species and stages can equip it; unlock (catch or evolution).
+Text: what the player reads; keywords in braces must exist in keywords.md.
+Effect: in the grammar's terms (the KnackFx fields).
+Cost: what it gives up, or "none" (then name the fight where it is the wrong pick).
+Intent: the situation it is for (for contributors; never shown to players).
+Principles: which it serves; which it trades against.
+Must not: one counter-example of how it could go wrong.
+Tests: the lab test or report section that shows it works.
+```
+
+## Template: a rule card
+
+```
+### Card: Name (id)
+Asks: the question, one sentence.
+Does: in the grammar's terms (a boss move with anchor, shape, power, schedule; or a boss mod).
+Answers: at least two, from different families or tools.
+Punishes: the setup it punishes (never a whole build or element).
+Scales: how it grows at higher Boss Ranks.
+```
+
+## Template: a boss
+
+```
+### Boss: Name (id)
+Arena: rows and slots per row.
+Stats: HP, Attack, Armour, Speed (data only).
+Plain attack: anchor and shape.
+Moves: each with anchor, shape, power, schedule and boss turn.
+Cards: its signature rule cards, and which rank adds which.
+```

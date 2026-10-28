@@ -16,6 +16,12 @@ const MARKERS = ['DEV_PANEL_MARKER_7f3a', 'dev-drawer', '/api/dev/'];
  */
 const WORKBENCH_MARKERS = ['WORKBENCH_MARKER_5c1e', 'wb-frame-stage'];
 
+/**
+ * The combat lab (`combat-lab.html`, `src/combat-lab/`) is staging-only the same way. Strings only it
+ * has: its marker, and a class of its stylesheet.
+ */
+const COMBAT_LAB_MARKERS = ['COMBAT_LAB_MARKER_9d2b', 'cl-board-scroll'];
+
 /** A `#rrggbb` token's value in whitespace-free CSS. */
 function cssColour(css: string, name: string): string {
   const match = new RegExp(`${name}:(#[0-9a-fA-F]{6})`).exec(css);
@@ -54,6 +60,57 @@ async function buildFiles(targetEnv: string): Promise<{ name: string; text: stri
   );
 }
 
+/**
+ * The wiki (`wiki.html`, `wiki.css`, `wiki.js`, `wiki-art/`, `src/wiki/`) is generated for every build,
+ * production too. Its only script is one same-origin file (the Content-Security-Policy allows nothing
+ * inline) that holds no game data, and none of the combat v2 draft's data (Knack texts and so on) is in
+ * any JavaScript file. Its creature pictures are files of the site itself.
+ */
+function expectWikiWithOneScript(
+  files: { name: string; text: string }[],
+  labInScripts = false,
+): void {
+  const page = files.find((f) => f.name === 'wiki.html');
+  expect(page?.text).toContain('Leet Creatures wiki');
+  expect(page?.text).toContain('id="knack-steady-mark"');
+  expect(page?.text.match(/<script[^>]*>/gi)).toEqual(['<script type="module" src="/wiki.js">']);
+  expect(page?.text).not.toMatch(/<script[^>]*>[^<]/i);
+  expect(page?.text).not.toMatch(/\son[a-z]+=|\sstyle=|<style/i);
+  expect(files.some((f) => f.name === 'wiki.css' && f.text.length > 0)).toBe(true);
+  expect(page?.text).toContain('href="/wiki.css"');
+  const script = files.find((f) => f.name === 'wiki.js');
+  expect(script?.text).toContain('wiki-card');
+  expect(script?.text).not.toMatch(/innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval\(/);
+  // Every picture the page names is a file of the build, and the page names some.
+  const pictures = [
+    ...new Set(
+      [...(page?.text ?? '').matchAll(/src="(\/wiki-art\/[^"]+)"/g)].map((m) => m[1] ?? ''),
+    ),
+  ];
+  expect(pictures.length).toBeGreaterThan(20);
+  const names = new Set(files.map((f) => f.name));
+  expect(pictures.filter((p) => !names.has(p.slice(1)))).toEqual([]);
+  // The element icons of the chips are among them, and the stylesheet's fonts are files of the site too (same origin).
+  expect(pictures).toContain('/wiki-art/element-tide.svg');
+  const css = files.find((f) => f.name === 'wiki.css')?.text ?? '';
+  const fontUrls = [...css.matchAll(/url\('([^']*)'\)/g)].map((m) => m[1] ?? '');
+  expect(fontUrls.length).toBeGreaterThanOrEqual(2);
+  for (const url of fontUrls) {
+    expect(url).toMatch(/^\/wiki-fonts\/[a-z0-9-]+\.woff2$/);
+    expect(names.has(url.slice(1)), url).toBe(true);
+  }
+  expect(css).not.toMatch(/https?:|@import/);
+  // The script holds no lab or game data (its cards come from the page); the lab's own chunk, in a
+  // staging build, holds it on purpose.
+  const draft = ['Steady Mark', 'its marks are not shed by the boss', 'FORM_KNACKS'];
+  for (const text of draft) expect(script?.text).not.toContain(text);
+  if (labInScripts) return;
+  const js = files.filter((f) => f.name.endsWith('.js'));
+  for (const text of draft) {
+    expect(js.filter((f) => f.text.includes(text)).map((f) => f.name)).toEqual([]);
+  }
+}
+
 afterEach(() => {
   vi.unstubAllEnvs();
 });
@@ -71,6 +128,13 @@ describe('the debug panel and the production build', () => {
     for (const marker of WORKBENCH_MARKERS) {
       expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
     }
+    // The same for the combat lab: no page, no code, no styles.
+    expect(files.some((f) => f.name.includes('combat-lab'))).toBe(false);
+    for (const marker of COMBAT_LAB_MARKERS) {
+      expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
+    }
+    // The wiki is there: generated text, a stylesheet, one same-origin script and the pictures, and no lab code in any script.
+    expectWikiWithOneScript(files);
     // The rarity colours are defined once, as tokens (grey, blue, pink; gold and crimson reserved), with a lighter text variant each for names.
     const css = files
       .filter((f) => f.name.endsWith('.css'))
@@ -122,6 +186,16 @@ describe('the debug panel and the production build', () => {
     for (const marker of WORKBENCH_MARKERS) {
       expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
     }
+    // The same for the combat lab: no page, no code, no styles.
+    expect(files.some((f) => f.name.includes('combat-lab'))).toBe(false);
+    for (const marker of COMBAT_LAB_MARKERS) {
+      expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
+    }
+    expectWikiWithOneScript(files);
+  }, 60_000);
+
+  it('has the wiki page in a staging build too, with its one script', async () => {
+    expectWikiWithOneScript(await buildFiles('staging'), true);
   }, 60_000);
 
   it('is a separate lazy chunk in a staging build (so the search above can find it)', async () => {
@@ -146,6 +220,22 @@ describe('the debug panel and the production build', () => {
       true,
     );
     // It makes no API calls: nothing in the workbench bundle names the API.
+    expect(bundles[0]?.text.includes('/api/')).toBe(false);
+  }, 60_000);
+
+  it('has the combat lab page in a staging build, apart from the game page', async () => {
+    const files = await buildFiles('staging');
+    expect(files.some((f) => f.name === 'combat-lab.html')).toBe(true);
+    expect(files.some((f) => f.name === 'index.html')).toBe(true);
+    const bundles = files.filter((f) => f.text.includes('COMBAT_LAB_MARKER_9d2b'));
+    expect(bundles.map((f) => f.name.endsWith('.js'))).toEqual([true]);
+    // The game's own page never loads the combat lab bundle.
+    const gamePage = files.find((f) => f.name === 'index.html');
+    expect(gamePage?.text.includes(bundles[0]?.name ?? 'x')).toBe(false);
+    expect(files.some((f) => f.name.endsWith('.css') && f.text.includes('cl-board-scroll'))).toBe(
+      true,
+    );
+    // It makes no API calls: nothing in the combat lab bundle names the API.
     expect(bundles[0]?.text.includes('/api/')).toBe(false);
   }, 60_000);
 });
