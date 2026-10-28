@@ -260,7 +260,11 @@ function supportVerb(s: State, f: Fighter, k: KnackFx): void {
     bump(f, 'brightBoost');
   }
   // Kindred Boost: bigger on creatures of its own element.
-  const kindred = (o: Fighter) => (o.element === f.element ? (k.kindredBoostBp ?? 0) : 0);
+  const kindred = (o: Fighter) => {
+    const extra = o.element === f.element ? (k.kindredBoostBp ?? 0) : 0;
+    if (extra) bump(f, 'kindredBoostBp');
+    return extra;
+  };
   const healBp = (R.supportHealBp[f.element] ?? 0) + (k.mendBonusBp ?? 0);
   switch (k.support) {
     case 'rowRain':
@@ -366,8 +370,8 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
   };
   const rounds = Math.max(0, s.round - 1);
   const situational =
-    (f.hitsLanded === 0 ? (k.firstHitBp ?? 0) : 0) +
-    (f.hp * 2 < f.maxHp ? (k.lowHpAtkBp ?? 0) : 0) +
+    on('firstHitBp', k.firstHitBp, f.hitsLanded === 0) +
+    on('lowHpAtkBp', k.lowHpAtkBp, f.hp * 2 < f.maxHp) +
     (guardBeside ? (k.besideGuardBp ?? 0) : 0) +
     (payoffBeside ? 0 : (k.alonePayoffBp ?? 0)) +
     on('perKindredBesideBp', kin * (k.perKindredBesideBp ?? 0), kin > 0) +
@@ -614,12 +618,17 @@ function dodgeOf(s: State, f: Fighter, area: boolean): number {
 }
 
 /** Armour: base, the Knack's and talents', and the largest share a neighbour passes on (Share the Load). */
-function armourOf(s: State, f: Fighter): number {
-  const shared = Math.max(
-    0,
-    ...beside(s, f).map((o) => Math.floor((ownArmour(o) * (fx(o).shareArmourBp ?? 0)) / 10_000)),
-  );
-  return ownArmour(f) + shared;
+function armourOf(s: State, f: Fighter): { total: number; giver: Fighter | undefined } {
+  let shared = 0;
+  let giver: Fighter | undefined;
+  for (const o of beside(s, f)) {
+    const part = Math.floor((ownArmour(o) * (fx(o).shareArmourBp ?? 0)) / 10_000);
+    if (part > shared) {
+      shared = part;
+      giver = o;
+    }
+  }
+  return { total: ownArmour(f) + shared, giver };
 }
 
 /**
@@ -659,6 +668,8 @@ function takeHit(
       const best = coverers.sort((a, b) => cover(b) - cover(a))[0];
       if (best) {
         if (fx(best).distanceCoverBp) bump(best, 'distanceCoverBp');
+        if (fx(best).flankLeft) bump(best, 'flankLeft');
+        if (fx(best).flankRight) bump(best, 'flankRight');
         dmg = Math.floor((dmg * (10_000 - Math.min(R.coverMaxBp, cover(best)))) / 10_000);
       }
     }
@@ -680,7 +691,9 @@ function takeHit(
     dmg = Math.floor((dmg * (10_000 - cut)) / 10_000);
     bump(taker, 'distanceCoverBp');
   }
-  dmg -= armourOf(s, taker);
+  const armour = armourOf(s, taker);
+  dmg -= armour.total;
+  if (armour.giver && dmg + armour.total > 0) bump(armour.giver, 'shareArmourBp');
   // Thick Skull: a hit smaller than a share of its max HP is Blocked.
   if (dmg > 0 && k.skullBp && dmg * 10_000 < taker.maxHp * k.skullBp) {
     dmg = 0;
@@ -695,6 +708,7 @@ function takeHit(
   }
   if (dmg >= taker.hp && k.holdOn && !taker.holdOnDone) {
     taker.holdOnDone = true;
+    bump(taker, 'holdOn');
     dmg = taker.hp - 1;
     log(s, 'hold-on', `${taker.name} holds on`);
   }
@@ -702,6 +716,7 @@ function takeHit(
   const wind = k.secondWindBp;
   if (wind && !taker.secondWindDone && taker.hp > 0 && taker.hp * 2 < taker.maxHp) {
     taker.secondWindDone = true;
+    bump(taker, 'secondWindBp');
     heal(s, taker, wind, false);
   }
   log(s, 'hit', `${taker.name} takes ${dmg}${taker.hp === 0 ? ' and is knocked out' : ''}`);
@@ -738,6 +753,7 @@ function bossHits(
     // A move that deals no damage is not dodged or intercepted (R1).
     if (move.silenceTurns) {
       if (warded.has(t)) {
+        if (fx(t).ignoreSilence) bump(t, 'ignoreSilence');
         log(s, 'silence', `${t.name} shrugs off the silence`);
         continue;
       }
@@ -794,6 +810,8 @@ function bossHits(
         taker = by;
         s.count.intercepts++;
         log(s, 'intercept', `${by.name} intercepts for ${t.name}`);
+        if (fx(by).flankLeft) bump(by, 'flankLeft');
+        if (fx(by).flankRight) bump(by, 'flankRight');
         if (fx(by).primeOnFirstIntercept && !by.firstInterceptDone) {
           by.firstInterceptDone = true;
           addMark(s, by.element, 1, { by });
