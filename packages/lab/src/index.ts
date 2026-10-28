@@ -11,3 +11,8 @@ export * from './species';
 export * from './talents';
 export * from './types';
 export * from './measure';
+export * from './bosses';
+export * from './foes';
+export * from './dungeon';
+export * from './mechanics';
+export * from './bossAnswers';

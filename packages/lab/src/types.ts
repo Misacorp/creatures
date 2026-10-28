@@ -55,10 +55,35 @@ export interface Fighter {
 
 /** Where the boss aims: an anchor slot, then a shape of slots around it (R2). */
 export interface Pattern {
-  readonly anchor: 'front' | 'strongest' | 'payoff' | 'random' | 'grudge';
-  readonly shape: 'single' | 'line3' | 'row' | 'column' | 'rowEnds' | 'randomRow' | 'all';
-  /** For rowEnds: how many from each end of each row. */
+  readonly anchor:
+    | 'front'
+    | 'strongest'
+    | 'payoff'
+    | 'random'
+    | 'grudge'
+    | 'back'
+    | 'weakest';
+  readonly shape:
+    | 'single'
+    | 'line3'
+    | 'row'
+    | 'column'
+    | 'rowEnds'
+    | 'randomRow'
+    | 'all'
+    | 'scatter'
+    | 'chain'
+    | 'columns'
+    | 'rows'
+    | 'cross'
+    | 'checker';
+  /**
+   * rowEnds: how many slots from each end of each row. scatter: how many different creatures are
+   * hit. chain: how many jumps after the anchor. columns, rows: how many neighbouring columns or rows.
+   */
   readonly n?: number;
+  /** chain: each jump deals this share (bp) of the hit before it. */
+  readonly decayBp?: number;
 }
 
 export interface BossMove {
@@ -73,6 +98,56 @@ export interface BossMove {
   readonly silenceTurns?: number;
   /** A charged move: announced one boss turn ahead (Night Watch, Keep the Heat In read it). */
   readonly charged?: boolean;
+}
+
+/** What fills an escalation (the boss's Store). */
+export const ESCALATION_FEEDS = [
+  'reactions',
+  'hpLost',
+  'rounds',
+  'crits',
+  'dodges',
+  'knockouts',
+  'shed',
+] as const;
+export type EscalationFeed = (typeof ESCALATION_FEEDS)[number];
+
+/** What each step of an escalation adds to the boss (steps multiply: step 3 adds three times). */
+export interface EscalationGrowth {
+  /** Attack, in bp of the boss's own. */
+  readonly atkBp?: number;
+  /** Dodge chance, in bp, on top of its Speed's. */
+  readonly dodgeBp?: number;
+  /** Flat armour. */
+  readonly armour?: number;
+  /** More plain attacks on each boss turn. */
+  readonly hits?: number;
+  /** More jumps on every chain move. */
+  readonly jumps?: number;
+  /** More creatures hit by every scatter move (meteors). */
+  readonly targets?: number;
+  /** More neighbouring columns or rows on every columns or rows move. */
+  readonly area?: number;
+}
+
+/**
+ * The boss's Store (Misa, 2026-10-28), one rule with data per boss: it fills from a `feed`, every `per` units is a step,
+ * it stops at `cap` steps, and each step `grow`s the boss. A step is announced in the log at round start before it
+ * applies; an optional `phase` adds moves from a step on. A boss with Mired at round start does not step up that round
+ * (Mired freezes it, the answer). Feeds: `reactions` it takes, `hpLost` (units are bp of its full HP, the weekend's shared
+ * HP in a raid), `rounds` passed, `crits` it takes, its `dodges`, creatures it `knockouts`, marks it `shed`.
+ */
+export interface Escalation {
+  readonly name: string;
+  readonly feed: EscalationFeed;
+  readonly per: number;
+  readonly cap: number;
+  readonly grow: EscalationGrowth;
+  readonly phase?: {
+    readonly atStep: number;
+    readonly name: string;
+    readonly moves: readonly BossMove[];
+  };
 }
 
 export interface BossDef {
@@ -91,6 +166,8 @@ export interface BossDef {
   readonly moves: readonly BossMove[];
   readonly cards: readonly string[];
   readonly mods: BossMods;
+  /** The boss's Store, if it has one. */
+  readonly escalation?: Escalation;
 }
 
 /** Standing rules a rule card puts on the boss. */
@@ -109,6 +186,8 @@ export interface BossMods {
   readonly shakeEvery?: number;
   /** In a raid weekend, from stage 2 the boss resists the reaction used most so far (Adapts). */
   readonly adapts?: boolean;
+  /** In a raid weekend, from stage 2 the boss takes less from the element that dealt the most damage so far (Element Resistance). */
+  readonly adaptsElement?: boolean;
 }
 
 export interface Placement {
@@ -127,6 +206,8 @@ export interface FightOptions {
   readonly carryHp?: ReadonlyMap<string, number>;
   readonly bossHp?: number;
   readonly resistReaction?: string;
+  /** The element the boss resists this fight (Element Resistance: its creatures' hits deal `LAB_RULES.adaptElementBp` of their damage). */
+  readonly resistElement?: string;
   readonly log?: boolean;
 }
 
@@ -135,6 +216,19 @@ export interface FightEvent {
   readonly turn: number;
   readonly kind: string;
   readonly text: string;
+}
+
+export interface EscalationState {
+  readonly name: string;
+  readonly feed: EscalationFeed;
+  /** Feed units so far this fight (for `hpLost` and `rounds`, the figure it was last read at). */
+  readonly count: number;
+  readonly step: number;
+  readonly cap: number;
+  /** The count at which the next step applies, or null at the cap. */
+  readonly nextAt: number | null;
+  /** True once the phase change has applied. */
+  readonly phase: boolean;
 }
 
 /** Who defeated the boss (R21 draft): the creature whose hit, counter or Cull took its last HP. */
@@ -163,6 +257,8 @@ export interface FightResult {
   readonly intercepts: number;
   readonly healed: number;
   readonly hpLeft: ReadonlyMap<string, number>;
+  /** The boss's escalation at the end of the fight: its count, step, and what the next step needs (readable state for the board). */
+  readonly escalation: EscalationState | null;
   readonly fighters: readonly Fighter[];
   readonly events: readonly FightEvent[];
 }

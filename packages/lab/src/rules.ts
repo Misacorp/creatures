@@ -44,6 +44,8 @@ export const LAB_RULES = {
   miredClingingFadeEvery: 3,
   /** Stubborn (Hold On): a hit that would knock it out leaves it at 1 HP or at this share of its Max HP, whichever is more. */
   holdOnLeaveBp: 4_000,
+  /** Element Resistance: the resisted element's creatures deal this share of their damage (a quarter less). */
+  adaptElementBp: 7_500,
   /** "The boss is low" for Finisher: its HP is below this share of its full HP. */
   finisherBelowBp: 3_333,
 } as const;

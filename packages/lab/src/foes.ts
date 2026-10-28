@@ -1,0 +1,243 @@
+/**
+ * The daily dungeon's foes and floor bosses as combat v2 `BossDef`s: one line of three, then the foe (R8.7: one boss turn
+ * after the line), with HP and Attack set by a depth. Id, name, kind, element and round count come from the content
+ * (`dungeon-foes.json`), so they cannot drift; the stats are scaled by the dungeon's own depth curve; the armour, plain
+ * attack, moves and rule cards are lab data in the grammar of `types.ts`.
+ *
+ * Misa's direction (2026-10-28): the foes may change freely, so each one asks its own question instead of repeating a
+ * shipped gimmick. A dungeon shows its encounters up front but sends many different foes, so it needs an all-round
+ * team, and it is tough, so the camp (a rest between rooms) matters. The Undercroft stays a mystery and is not modelled.
+ */
+import { depthFactorBp, dungeonContent, isLandmark } from '@creatures/game';
+import { card } from './cards';
+import { move, type MoveRow } from './bosses';
+import type { BossDef, Escalation } from './types';
+
+/** The dungeon line: one row of three. */
+export const FOE_ROWS = 1;
+export const FOE_COLS = 3;
+
+/**
+ * Lab scale of a foe's content numbers (basis points of them): the content's HP and Attack were made for the shipped
+ * engine, and a v2 creature is bigger with flat armour, so the lab multiplies both.
+ */
+export const FOE_BASE = { hpBp: 22_000, atkBp: 200_000 } as const;
+
+/**
+ * The lab's depth curve, in the shape of the dungeon's (`depthFactorBp`: 10000 plus a step for each depth above 1 plus a
+ * curve for each square of them). It is gentler than the shipped one: the lab's creatures are all at their level cap, so
+ * there is no levelling wall to climb, and the report reads foes at depths a capped team can meet. Lab depths are not
+ * the shipped depth numbers.
+ */
+export const FOE_CURVE = {
+  hpStepBp: 800,
+  hpCurveBp: 20,
+  atkStepBp: 800,
+  atkCurveBp: 20,
+} as const;
+
+export interface FoeSpec {
+  readonly id: string;
+  readonly armour: number;
+  readonly plain: BossDef['plain'];
+  readonly moves: readonly MoveRow[];
+  /** A floor boss's landmark move: only at a landmark depth, announced a round ahead. */
+  readonly signature?: MoveRow;
+  readonly cards: readonly string[];
+  readonly escalation?: Escalation;
+  /** The question the foe asks the team (for the report). */
+  readonly asks: string;
+}
+
+const front = { anchor: 'front', shape: 'single' } as const;
+
+export const FOE_SPECS: readonly FoeSpec[] = [
+  {
+    id: 'puddle-imp',
+    armour: 4,
+    plain: { pattern: { anchor: 'random', shape: 'single' }, powerBp: 4_500, hits: 4 },
+    moves: [],
+    cards: [],
+    asks: 'Many small splashes: does armour or dodge hold?',
+  },
+  {
+    id: 'drift-wisp',
+    armour: 2,
+    plain: { pattern: front, powerBp: 8_000 },
+    moves: [['sea-mist', 'Sea Mist', 3, 0, 'front', 'rowEnds', 0, { n: 1, silenceTurns: 1 }]],
+    cards: ['elusive'],
+    escalation: { name: 'Wisp Fog', feed: 'dodges', per: 2, cap: 2, grow: { atkBp: 2_000 } },
+    asks: 'Hard to hit, it silences the ends of the line, and every miss thickens the fog.',
+  },
+  {
+    id: 'ember-mite',
+    armour: 6,
+    plain: { pattern: front, powerBp: 7_000 },
+    moves: [['flare-up', 'Flare Up', 2, 0, 'random', 'scatter', 9_000, { n: 2 }]],
+    cards: ['clean-scales'],
+    escalation: { name: 'Warm Stones', feed: 'shed', per: 2, cap: 2, grow: { atkBp: 2_500, targets: 1 } },
+    asks: 'Its heat sheds your marks after every turn of its own, and each mark shed warms it.',
+  },
+  {
+    id: 'ash-sprite',
+    armour: 8,
+    plain: { pattern: { anchor: 'front', shape: 'line3' }, powerBp: 8_000 },
+    moves: [],
+    cards: ['fizzle'],
+    asks: 'Ash settles on a mark made by a reaction, so it cannot be cashed at once.',
+  },
+  {
+    id: 'bramble-hound',
+    armour: 6,
+    plain: { pattern: front, powerBp: 9_000 },
+    moves: [['thorn-snap', 'Thorn Snap', 3, 0, 'front', 'rowEnds', 0, { n: 1, silenceTurns: 1 }]],
+    cards: ['thick-hide'],
+    asks: 'Bark turns small hits away, and it silences the ends of the line.',
+  },
+  {
+    id: 'moss-lurker',
+    armour: 10,
+    plain: { pattern: front, powerBp: 6_000 },
+    moves: [['root-grab', 'Root Grab', 2, 0, 'strongest', 'line3', 12_000]],
+    cards: ['grudge'],
+    asks: 'It likes the loudest visitor: the one that dealt the most, and the strongest.',
+  },
+  {
+    id: 'static-bat',
+    armour: 3,
+    plain: { pattern: front, powerBp: 6_000 },
+    moves: [['zap-dive', 'Zap Dive', 3, 0, 'strongest', 'chain', 11_000, { n: 2, decayBp: 6_000 }]],
+    cards: ['stone-skin'],
+    escalation: { name: 'Static Charge', feed: 'crits', per: 1, cap: 2, grow: { atkBp: 2_500 } },
+    asks: 'No hit deals more than a cap, it dives at the hardest hitter, and every crit on it charges it.',
+  },
+  {
+    id: 'flicker-swarm',
+    armour: 2,
+    plain: { pattern: { anchor: 'random', shape: 'scatter', n: 2 }, powerBp: 5_000 },
+    moves: [['buzz-cloud', 'Buzz Cloud', 2, 0, 'front', 'all', 5_000]],
+    cards: [],
+    asks: 'Sparks everywhere: area hits on all three, every round.',
+  },
+  {
+    id: 'bog-toad',
+    armour: 14,
+    plain: { pattern: front, powerBp: 8_000 },
+    moves: [['mud-spit', 'Mud Spit', 2, 0, 'random', 'scatter', 9_000, { n: 1 }]],
+    cards: ['shake-it-off'],
+    asks: 'It washes every debuff off itself every third round.',
+  },
+  {
+    id: 'tar-leech',
+    armour: 24,
+    plain: { pattern: front, powerBp: 7_000 },
+    moves: [['tar-cling', 'Tar Cling', 3, 0, 'front', 'line3', 13_000]],
+    cards: ['wither'],
+    asks: 'Black, thick and draining: healing is halved, and little gets through its armour.',
+  },
+  // Floor bosses.
+  {
+    id: 'drowned-warden',
+    armour: 16,
+    plain: { pattern: front, powerBp: 6_000 },
+    moves: [
+      ['flood-gate', 'Flood Gate', 3, 0, 'front', 'all', 6_000],
+      ['undertow', 'Undertow', 2, 0, 'front', 'columns', 7_000, { n: 2 }],
+    ],
+    signature: ['sluice-surge', 'Sluice Surge', 4, 0, 'front', 'all', 11_000, { charged: true }],
+    cards: [],
+    asks: 'The gates open on the whole line; at a landmark, a wave announced a round ahead.',
+  },
+  {
+    id: 'slag-tyrant',
+    armour: 20,
+    plain: { pattern: front, powerBp: 7_000 },
+    moves: [['anvil-fall', 'Anvil Fall', 3, 0, 'front', 'line3', 15_000]],
+    signature: ['slag-spill', 'Slag Spill', 4, 0, 'strongest', 'line3', 24_000, { charged: true }],
+    cards: ['reflective-hide'],
+    escalation: { name: 'Molten Shell', feed: 'reactions', per: 2, cap: 2, grow: { atkBp: 1_500 } },
+    asks: 'The first reaction after each of its turns burns the one who plays it, and every reaction heats it.',
+  },
+  {
+    id: 'bramble-matron',
+    armour: 18,
+    plain: { pattern: front, powerBp: 6_000 },
+    moves: [
+      ['tangle', 'Tangle', 2, 0, 'front', 'rowEnds', 0, { n: 1, silenceTurns: 1 }],
+      ['thorn-rain', 'Thorn Rain', 3, 0, 'random', 'scatter', 8_000, { n: 2 }],
+    ],
+    signature: ['briar-cage', 'Briar Cage', 4, 0, 'front', 'rowEnds', 13_000, { n: 1, charged: true }],
+    cards: ['wither'],
+    asks: 'She silences the ends and drains healing; thorns land on two random creatures.',
+  },
+  {
+    id: 'coil-baron',
+    armour: 14,
+    plain: { pattern: { anchor: 'strongest', shape: 'single' }, powerBp: 6_000 },
+    moves: [['arc-lash', 'Arc Lash', 1, 0, 'strongest', 'chain', 6_000, { n: 1, decayBp: 6_000 }]],
+    signature: ['overload', 'Overload', 4, 0, 'strongest', 'line3', 22_000, { charged: true }],
+    cards: [],
+    escalation: { name: 'Overload', feed: 'rounds', per: 2, cap: 3, grow: { atkBp: 1_500, jumps: 1 } },
+    asks: 'It always goes for the strongest, and the charge builds with every round: a race.',
+  },
+  {
+    id: 'fen-lurker',
+    armour: 22,
+    plain: { pattern: front, powerBp: 6_000 },
+    moves: [['sink-down', 'Sink Down', 3, 0, 'front', 'all', 6_000]],
+    signature: ['pull-under', 'Pull Under', 4, 0, 'front', 'all', 11_000, { charged: true }],
+    cards: ['shake-it-off'],
+    asks: 'A heavy sweep of the line, and it washes off every debuff every third round.',
+  },
+];
+
+export const FOE_IDS: readonly string[] = FOE_SPECS.map((s) => s.id);
+
+/** The depths the report looks at (7 is the first landmark, where a floor boss has its signature move). */
+export const DUNGEON_DEPTHS: readonly number[] = [1, 3, 5, 7];
+
+/** A foe's HP and Attack at a depth: the content's numbers, the lab scale, then the dungeon's depth curve. */
+export function foeStats(id: string, depth: number): { hp: number; atk: number } {
+  const def = dungeonContent.foes.find((f) => f.id === id);
+  if (!def) throw new Error(`unknown dungeon foe ${id}`);
+  const part = (value: number, scale: number, step: number, curve: number) =>
+    Math.max(
+      1,
+      Math.floor(
+        (Math.floor((value * scale) / 10_000) * depthFactorBp(depth, step, curve)) / 10_000,
+      ),
+    );
+  return {
+    hp: part(def.baseHp, FOE_BASE.hpBp, FOE_CURVE.hpStepBp, FOE_CURVE.hpCurveBp),
+    atk: part(def.baseAtk, FOE_BASE.atkBp, FOE_CURVE.atkStepBp, FOE_CURVE.atkCurveBp),
+  };
+}
+
+/** A dungeon foe at a depth: a one-row arena, its own armour, plain attack, moves and cards; a floor boss gains its signature at a landmark. */
+export function foeAt(id: string, depth: number): BossDef {
+  const spec = FOE_SPECS.find((s) => s.id === id);
+  const def = dungeonContent.foes.find((f) => f.id === id);
+  if (!spec || !def) throw new Error(`unknown dungeon foe ${id}`);
+  const { hp, atk } = foeStats(id, depth);
+  const moves = spec.moves.map(move);
+  if (spec.signature && isLandmark(depth)) moves.push(move(spec.signature));
+  let boss: BossDef = {
+    id,
+    name: def.name,
+    element: def.element,
+    hp,
+    atk,
+    armour: spec.armour,
+    spd: def.baseSpd ?? 0,
+    rounds: def.rounds,
+    rows: FOE_ROWS,
+    cols: FOE_COLS,
+    plain: spec.plain,
+    moves,
+    cards: spec.cards,
+    mods: {},
+    ...(spec.escalation ? { escalation: spec.escalation } : {}),
+  };
+  for (const c of spec.cards) boss = card(c).apply(boss);
+  return boss;
+}

@@ -151,15 +151,19 @@ export function search(
     freshSeeds: number;
     pool?: readonly Pick[];
     include?: readonly (readonly Pick[])[];
+    /** Score a line some other way than `evaluate` (the raid bosses are scored over a whole weekend). */
+    score?: (line: readonly Pick[], seeds: number, salt: string) => Score;
   },
 ): Ranked[] {
+  const scoreOf =
+    opts.score ?? ((l: readonly Pick[], seeds: number, salt: string) => evaluate(boss, l, mode, seeds, salt));
   const pool = opts.pool ?? POOL;
   const rng = createSeededRng(`search:${opts.seed}`);
   const seen = new Map<string, Ranked>();
   const add = (l: readonly Pick[]) => {
     const k = lineKey(l);
     if (!seen.has(k))
-      seen.set(k, { line: l, score: evaluate(boss, l, mode, opts.seeds, `eval:${opts.seed}`) });
+      seen.set(k, { line: l, score: scoreOf(l, opts.seeds, `eval:${opts.seed}`) });
   };
   for (const l of opts.include ?? []) add(l);
   for (let i = 0; i < opts.starts; i++) add(randomLine(rng, mode, pool));
@@ -176,7 +180,7 @@ export function search(
   return recheck
     .map((r) => ({
       line: r.line,
-      score: evaluate(boss, r.line, mode, opts.freshSeeds, `fresh:${opts.seed}`),
+      score: scoreOf(r.line, opts.freshSeeds, `fresh:${opts.seed}`),
     }))
     .sort((a, b) => b.score.score - a.score.score);
 }

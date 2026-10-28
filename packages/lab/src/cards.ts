@@ -8,6 +8,8 @@ export interface CardDef {
   readonly id: string;
   readonly name: string;
   readonly asks: string;
+  /** Only a raid weekend means anything to it (the report's controlled tests and the lab page leave it out). */
+  readonly raidOnly?: boolean;
   readonly apply: (boss: BossDef) => BossDef;
 }
 
@@ -146,8 +148,16 @@ export const CARDS: readonly CardDef[] = [
   {
     id: 'adapts',
     name: 'Adapts',
+    raidOnly: true,
     asks: 'Raid only: from stage 2 it resists your most-used reaction.',
     apply: (b) => ({ ...b, mods: { ...b.mods, adapts: true } }),
+  },
+  {
+    id: 'adapts-element',
+    name: 'Element Resistance',
+    raidOnly: true,
+    asks: 'Raid only: from stage 2 the element that dealt the most damage hits it a quarter softer; is your team more than one element?',
+    apply: (b) => ({ ...b, mods: { ...b.mods, adaptsElement: true } }),
   },
 ];
 
