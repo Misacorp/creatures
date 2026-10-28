@@ -24,7 +24,7 @@ type OpenPopover = { key: string; anchor: HTMLElement } & (
   | { kind: 'tag'; ref: TagRef }
   | { kind: 'creature'; info: CreatureInfo; actions?: readonly CreatureAction[] }
   | { kind: 'foe'; info: FoeInfo }
-  | { kind: 'custom'; label: string; body: ComponentChildren }
+  | { kind: 'custom'; label: string; body: ComponentChildren; face?: TagRef | undefined }
 );
 
 /** A button under a creature's popover (the raid board's "Remove from board"). It closes the popover first. */
@@ -357,6 +357,45 @@ function FoePopover({
 }
 
 /**
+ * A popover with content of its own (an item card, a breakdown). A tag inside it switches it to that
+ * glossary entry (`face`), with a back control named by the popover's label; Escape goes back first.
+ */
+function CustomPopover({
+  open,
+  onBack,
+  onClose,
+  onMore,
+}: {
+  open: OpenPopover & { kind: 'custom' };
+  onBack: () => void;
+  onClose: () => void;
+  onMore: (section: GlossarySection) => void;
+}) {
+  const view = open.face === undefined ? undefined : resolveTag(open.face);
+  return (
+    <Popover
+      key={`${open.key}:${view?.title ?? ''}`}
+      layer="page"
+      anchor={() => open.anchor}
+      label={view?.title ?? open.label}
+      onClose={onClose}
+      nav={{ canBack: view !== undefined, back: onBack }}
+    >
+      {view === undefined ? (
+        open.body
+      ) : (
+        <>
+          <PopoverBack label={backLabel({ name: open.label })} onBack={onBack}>
+            {open.label}
+          </PopoverBack>
+          <GlossaryCard view={view} onMore={onMore} />
+        </>
+      )}
+    </Popover>
+  );
+}
+
+/**
  * Holds the one open popover of the app (a glossary tag's, a small creature's, a boss icon's) and
  * draws it above everything (a fixed layer, so it works on any page and over the How to play
  * overlay). Opening one closes the other. `onOpenHowTo` is what the popover's "More in How to play"
@@ -378,7 +417,13 @@ export function PopoverHost({
     () => ({
       anchor: open?.anchor ?? null,
       openTag: (ref, anchor) => {
-        setOpen((current) => toggleActive(current, { kind: 'tag', key: tagKey(ref), anchor, ref }));
+        setOpen((current) =>
+          // A tag inside a custom popover (an item card's line) switches that popover to its entry, with
+          // a back control: replacing the popover would take the tag, its anchor, off the page.
+          current?.kind === 'custom' && anchor.closest('.popover-layer') !== null
+            ? { ...current, face: ref }
+            : toggleActive(current, { kind: 'tag', key: tagKey(ref), anchor, ref }),
+        );
       },
       openCreature: (key, info, anchor, action) => {
         setOpen((current) =>
@@ -417,15 +462,14 @@ export function PopoverHost({
       )}
       {open?.kind === 'foe' && <FoePopover open={open} onClose={api.close} onMore={onMore} />}
       {open?.kind === 'custom' && (
-        <Popover
-          key={open.key}
-          layer="page"
-          anchor={() => open.anchor}
-          label={open.label}
+        <CustomPopover
+          open={open}
+          onBack={() => {
+            setOpen((current) => (current === open ? { ...open, face: undefined } : current));
+          }}
           onClose={api.close}
-        >
-          {open.body}
-        </Popover>
+          onMore={onMore}
+        />
       )}
     </PopoverHostContext.Provider>
   );

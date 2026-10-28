@@ -400,14 +400,17 @@ button.gr-play {
   font-size: var(--fs-title);
 }
 
-.gm-board .gm-counts {
-  flex-wrap: nowrap;
-  justify-content: flex-end;
-  gap: 0.375rem;
+/* The medal table: the medal pictures head their columns, centred over the counts. */
+.data-table.gm-board thead th:not(:first-child),
+.data-table.gm-board td {
+  text-align: center;
 }
 
-.gm-board .gm-count {
-  font-size: var(--fs-small);
+/* A sprite shrinks to fit its box; a column beside the full-width name column would squeeze it to nothing. */
+.data-table.gm-board .gm-medal {
+  display: inline-block;
+  max-width: none;
+  vertical-align: middle;
 }
 
 .gm-rank {
@@ -627,31 +630,7 @@ button.trophy-button[aria-expanded='true'] canvas.trophy-art {
 .gm-shelf-pop {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
   min-width: 12rem;
-}
-
-.gm-top {
-  display: grid;
-  gap: 0.25rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.gm-top li {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: var(--fs-row);
-}
-
-.gm-top li .gm-player {
-  flex: 1;
-}
-
-.gm-top li.is-mine .gm-player {
-  color: var(--gold);
 }
 
 .gm-to-games {

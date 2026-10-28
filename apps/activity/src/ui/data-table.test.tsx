@@ -160,6 +160,23 @@ describe('the DataTable', () => {
       expect(byClass(table, 'data-extra')).toHaveLength(0);
     });
 
+    it('takes more value columns, each with its heading (a medal table: gold, silver, bronze)', () => {
+      const table = drawHeaded({
+        rows: [
+          { label: 'Aino', value: 6, extra: 2, more: [3] },
+          { label: 'You', value: 4, extra: 5, more: [1], mine: true },
+        ],
+        headings: { label: 'Player', value: 'Gold', extra: 'Silver', more: ['Bronze'] },
+      });
+      expect(tags(table, 'th', 'col').map(visibleText)).toEqual([
+        'Player',
+        'Gold',
+        'Silver',
+        'Bronze',
+      ]);
+      expect(tags(table, 'td').map(visibleText)).toEqual(['6', '2', '3', '4', '5', '1']);
+    });
+
     it('is off by default: no headings means the description list it always was', () => {
       page = createPage();
       page.draw(<DataTable rows={rows} />);

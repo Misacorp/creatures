@@ -146,19 +146,20 @@ button.calendar-button:active canvas.calendar-page {
 
 /* --- The forecast it opens --- */
 
+/* On the popover's scale: a day's parts a tight step apart, the days a group step. */
 .sky-days {
   display: grid;
-  gap: 0.625rem;
+  gap: var(--pop-gap);
 }
 
 .sky-day-title {
-  margin: 0 0 0.125rem;
+  margin: 0 0 var(--pop-tight);
   color: var(--gold);
   font-size: var(--fs-row);
 }
 
-.sky-entry {
-  margin: 0 0 0.25rem;
+.sky-entry + .sky-entry {
+  margin-top: var(--pop-tight);
 }
 
 .sky-name {
@@ -183,14 +184,14 @@ button.calendar-button:active canvas.calendar-page {
 }
 
 .sky-lines {
-  margin: 0.125rem 0 0;
+  margin: var(--pop-tight) 0 0;
   padding-left: 1.125rem;
   list-style: square;
   font-size: var(--fs-small);
 }
 
-.sky-lines li {
-  margin: 0.0625rem 0;
+.sky-lines li + li {
+  margin-top: 0.125rem;
 }
 
 .sky-none {

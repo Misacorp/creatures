@@ -7,7 +7,6 @@
   flex-wrap: wrap;
   gap: 0.375rem 0.75rem;
   align-items: center;
-  margin: 0.5rem 0;
 }
 
 .recipe-side {
@@ -31,8 +30,4 @@
   flex: none;
   color: var(--bone);
   font-size: var(--fs-heading);
-}
-
-.recipe-time {
-  margin: 0.25rem 0;
 }

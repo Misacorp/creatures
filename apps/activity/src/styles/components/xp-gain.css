@@ -255,7 +255,6 @@ button.xp-boost:focus-visible {
   the body font's digits for its other set). The treat's line starts with the treat icon.
 */
 .data-table.xp-boost-lines {
-  margin: 0.25rem 0 0;
   font-size: var(--fs-small);
 }
 
