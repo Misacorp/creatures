@@ -98,8 +98,10 @@ export interface BossMove {
   /** Silences instead of dealing damage, for this many of the victim's turns. */
   readonly silenceTurns?: number;
   /**
-   * A Charged move: at round start its slots are rolled and shown; it lands on those creatures on its boss turn and never
-   * re-aims (a creature knocked out by then is skipped). A Guard takes a Charged hit only through an effect that says so
+   * A Charged (Wind-up) move. Every move whose targets use a roll (a random anchor, scatter, a random row) is announced
+   * at round start, Charged or not: its slots are rolled and shown, and it lands on those creatures on its boss turn and
+   * never re-aims (a creature knocked out by then is skipped). Being Charged only changes how its hits are dodged and
+   * intercepted (full-chance dodge; a Guard takes one only through an effect that says so). A Guard takes a Charged hit only through an effect that says so
    * (Night Watch, Intercept area hits too); a Row Ward, Keep the Heat In and Brace read it.
    */
   readonly charged?: boolean;
@@ -235,6 +237,9 @@ export interface FightEvent {
   readonly turn: number;
   readonly kind: string;
   readonly text: string;
+  /** On an `announce` event of a move: the move's id and the (row, slot) of each creature it will land on (0-based). */
+  readonly move?: string;
+  readonly slots?: readonly (readonly [number, number])[];
 }
 
 export interface EscalationState {

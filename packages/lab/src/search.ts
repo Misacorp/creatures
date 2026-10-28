@@ -8,6 +8,7 @@ import { createSeededRng, int, type Rng } from '@creatures/game';
 import { labBoss } from './cards';
 import { fight } from './fight';
 import { FORM_KNACKS } from './knacks';
+import { legalTalents } from './talents';
 import type { BossDef, Placement } from './types';
 
 export interface Pick {
@@ -15,7 +16,7 @@ export interface Pick {
   /** A Knack id, or 'none'. */
   readonly knack: string;
   readonly level?: number;
-  /** Combat talent ids (lab: any number, for measuring one talent at a time). */
+  /** Combat talent ids (lab: any number, for measuring one talent at a time; a player's line carries only legal ones, see `legalTalents`). */
   readonly talents?: readonly string[];
 }
 
@@ -53,7 +54,8 @@ export function classicFor(mode: Mode): Pick[] {
 
 export function toPlacements(line: readonly Pick[], mode: Mode): Placement[] {
   return line.map((p, i) => ({
-    owner: mode.id === 'gauntlet' ? 'p1' : `p${(i % 4) + 1}`,
+    // A raid has a player for each column of the arena (four in the usual raid).
+    owner: mode.id === 'gauntlet' ? 'p1' : `p${(i % mode.cols) + 1}`,
     formId: p.formId,
     level: p.level ?? LEVEL,
     knack: p.knack,
@@ -108,25 +110,43 @@ const valid = (line: readonly Pick[], mode: Mode) => {
   return [...n.values()].every((c) => c <= mode.maxCopies);
 };
 
-function randomLine(rng: Rng, mode: Mode, pool: readonly Pick[]): Pick[] {
+/** `p` with a talent drawn from the legal ones for its form (or none): one talent a creature, as a player has at first. */
+function retalent(rng: Rng, p: Pick): Pick {
+  const options = [undefined, ...legalTalents(p.formId)];
+  const t = options[int(rng, options.length)];
+  const { talents: _old, ...rest } = p;
+  return t === undefined ? rest : { ...rest, talents: [t] };
+}
+
+function randomLine(rng: Rng, mode: Mode, pool: readonly Pick[], talents: boolean): Pick[] {
   for (;;) {
-    const line = Array.from(
-      { length: mode.rows * mode.cols },
-      () => pool[int(rng, pool.length)] as Pick,
-    );
+    const line = Array.from({ length: mode.rows * mode.cols }, () => {
+      const p = pool[int(rng, pool.length)] as Pick;
+      return talents ? retalent(rng, p) : p;
+    });
     if (valid(line, mode)) return line;
   }
 }
 
-function mutate(rng: Rng, line: readonly Pick[], mode: Mode, pool: readonly Pick[]): Pick[] {
+function mutate(
+  rng: Rng,
+  line: readonly Pick[],
+  mode: Mode,
+  pool: readonly Pick[],
+  talents: boolean,
+): Pick[] {
   for (let tries = 0; ; tries++) {
     const next = [...line];
     const i = int(rng, next.length);
-    if (int(rng, 2) === 0) {
+    // With talents on, a third of the moves change one creature's talent (from its legal ones); else a replace or a swap.
+    const kind = int(rng, talents ? 3 : 2);
+    if (kind === 0) {
       next[i] = pool[int(rng, pool.length)] as Pick;
-    } else {
+    } else if (kind === 1) {
       const j = int(rng, next.length);
       [next[i], next[j]] = [next[j] as Pick, next[i] as Pick];
+    } else {
+      next[i] = retalent(rng, next[i] as Pick);
     }
     if (valid(next, mode) || tries > 50) return valid(next, mode) ? next : [...line];
   }
@@ -137,7 +157,10 @@ export interface Ranked {
   readonly score: Score;
 }
 
-export const lineKey = (l: readonly Pick[]) => l.map((p) => `${p.formId}/${p.knack}`).join('|');
+export const lineKey = (l: readonly Pick[]) =>
+  l
+    .map((p) => `${p.formId}/${p.knack}${p.talents?.length ? `+${p.talents.join('+')}` : ''}`)
+    .join('|');
 
 export function search(
   boss: BossDef,
@@ -151,6 +174,8 @@ export function search(
     freshSeeds: number;
     pool?: readonly Pick[];
     include?: readonly (readonly Pick[])[];
+    /** The search may also pick a talent for each creature, from the legal ones of its line (one each). */
+    talents?: boolean;
     /** Score a line some other way than `evaluate` (the raid bosses are scored over a whole weekend). */
     score?: (line: readonly Pick[], seeds: number, salt: string) => Score;
   },
@@ -159,6 +184,7 @@ export function search(
     opts.score ??
     ((l: readonly Pick[], seeds: number, salt: string) => evaluate(boss, l, mode, seeds, salt));
   const pool = opts.pool ?? POOL;
+  const talents = opts.talents ?? false;
   const rng = createSeededRng(`search:${opts.seed}`);
   const seen = new Map<string, Ranked>();
   const add = (l: readonly Pick[]) => {
@@ -166,12 +192,12 @@ export function search(
     if (!seen.has(k)) seen.set(k, { line: l, score: scoreOf(l, opts.seeds, `eval:${opts.seed}`) });
   };
   for (const l of opts.include ?? []) add(l);
-  for (let i = 0; i < opts.starts; i++) add(randomLine(rng, mode, pool));
+  for (let i = 0; i < opts.starts; i++) add(randomLine(rng, mode, pool, talents));
   for (let g = 0; g < opts.rounds; g++) {
     const top = [...seen.values()]
       .sort((a, b) => b.score.score - a.score.score)
       .slice(0, opts.keep);
-    for (const t of top) for (let m = 0; m < 6; m++) add(mutate(rng, t.line, mode, pool));
+    for (const t of top) for (let m = 0; m < 6; m++) add(mutate(rng, t.line, mode, pool, talents));
   }
   // Re-score the best lines (and every included line) on fresh seeds, then rank by that.
   const ranked = [...seen.values()].sort((a, b) => b.score.score - a.score.score);

@@ -58,7 +58,7 @@ interface State {
    * step applied, the count read at the last round start and whether its phase change has applied.
    */
   esc: { fed: number; base: number; step: number; count: number; phase: boolean };
-  /** Targets of this round's charged moves, rolled when announced at round start (by move id). */
+  /** Targets of this round's announced moves (Charged, or with a roll in their targets), rolled at round start (by move id). */
   announced: Map<string, Fighter[]>;
   readonly events: FightEvent[];
   /** The creature whose hit took the boss's last HP (the first to do so). */
@@ -85,8 +85,8 @@ const roll = (s: State, bp: number) => bp > 0 && chance(s.opts.rng, Math.min(bp,
 const bump = (f: Fighter, key: keyof KnackFx) => {
   f.fires[key] = (f.fires[key] ?? 0) + 1;
 };
-const log = (s: State, kind: string, text: string) => {
-  if (s.opts.log) s.events.push({ round: s.round, turn: s.turn, kind, text });
+const log = (s: State, kind: string, text: string, extra: Partial<FightEvent> = {}) => {
+  if (s.opts.log) s.events.push({ round: s.round, turn: s.turn, kind, text, ...extra });
 };
 
 // ---------- the boss's escalation (its Store) ----------
@@ -355,18 +355,21 @@ function roundStart(s: State): void {
     if (k.guardMendBp)
       for (const o of alive(s).filter((o) => inReach(s, f, o))) heal(s, o, k.guardMendBp, true, f);
   }
-  // The escalation steps up (announced), then the Charged moves due this round are announced: their slots are rolled
-  // and shown (R8), and each lands on exactly those creatures.
+  // The escalation steps up (announced), then every move due this round whose targets use a roll (a random anchor,
+  // scatter, a random row) or that is Charged is announced: its slots are rolled and shown now, and it lands on exactly
+  // those creatures (a creature knocked out meanwhile is skipped; nothing re-aims). Being Charged only changes how its
+  // hits are dodged and intercepted. The log carries the move's id and its slots for the board.
   escalate(s);
   s.announced = new Map();
   for (const m of movesOf(s)) {
-    if (!m.charged || s.round % m.every !== 0) continue;
+    if (s.round % m.every !== 0 || !(m.charged || usesRoll(m.pattern))) continue;
     const aimed = targetsOf(s, m.pattern, false);
     s.announced.set(m.id, aimed);
     log(
       s,
       'announce',
-      `${m.name} (Charged) will land on ${aimed.map((t) => `${t.name} (row ${t.row + 1}, slot ${t.col + 1})`).join(', ') || 'nobody'}`,
+      `${m.name} (${m.id}${m.charged ? ', Charged' : ''}) will land on ${aimed.map((t) => `${t.name} (row ${t.row + 1}, slot ${t.col + 1})`).join(', ') || 'nobody'}`,
+      { move: m.id, slots: aimed.map((t) => [t.row, t.col] as const) },
     );
   }
 }
@@ -697,6 +700,12 @@ function anchorOf(s: State, p: Pattern): Fighter | undefined {
   }
 }
 
+/** Whether a pattern's targets are rolled: a random anchor, a scatter or a random row. */
+const usesRoll = (p: Pattern): boolean =>
+  p.shape === 'scatter' ||
+  p.shape === 'randomRow' ||
+  (!ANCHORLESS.has(p.shape) && p.anchor === 'random');
+
 /** Shapes with no anchor: scatter, a random row, everything and the row ends. Taunt does not move them (R9). */
 const ANCHORLESS: ReadonlySet<Pattern['shape']> = new Set([
   'scatter',
@@ -953,9 +962,9 @@ function bossHits(
   move: Pick<BossMove, 'id' | 'pattern' | 'powerBp' | 'silenceTurns' | 'charged'>,
   plain: boolean,
 ): void {
-  const targets = move.charged
-    ? (s.announced.get(move.id) ?? [])
-    : targetsOf(s, move.pattern, plain);
+  // An announced move lands on the slots shown at round start; any other aims as it lands.
+  const targets =
+    s.announced.get(move.id) ?? (move.charged ? [] : targetsOf(s, move.pattern, plain));
   const shape = move.pattern.shape;
   const full = Math.floor(
     (((grown(s).atk * move.powerBp) / 10_000) * (10_000 - miredCut(s))) / 10_000,

@@ -561,3 +561,78 @@ describe('legal talents (R20: the line pool, and the role)', () => {
     expect(bad).toEqual([]);
   });
 });
+
+describe('every move with a roll in its targets is announced at round start', () => {
+  const rolled: Pattern[] = [
+    { anchor: 'random', shape: 'scatter', n: 2 },
+    { anchor: 'random', shape: 'single' },
+    { anchor: 'random', shape: 'randomRow' },
+    { anchor: 'random', shape: 'column' },
+  ];
+  const team = Array.from({ length: 6 }, (_, i) => at('thornbuck', Math.floor(i / 3), i % 3));
+
+  it.each(rolled)(
+    '%j: the log carries the move id and its slots, and the landing hits exactly those',
+    (pattern) => {
+      const boss = mover(pattern, 2, 3);
+      for (let i = 0; i < 6; i++) {
+        const r = fight(boss, team, { rng: rng(`an${i}`), log: true });
+        const ann = r.events.filter((e) => e.kind === 'announce');
+        expect(ann).toHaveLength(1);
+        expect(ann[0]?.move).toBe('m');
+        const shown = (ann[0]?.slots ?? []).map(([row, col]) => `${row},${col}`);
+        expect(shown.length).toBeGreaterThan(0);
+        // The announcement comes before the boss turn, and the landing is on those slots (a dodge still logs it).
+        expect(r.events.indexOf(ann[0] as (typeof r.events)[number])).toBeLessThan(
+          r.events.findIndex((e) => e.kind === 'target'),
+        );
+        expect(slotsHit(r, 'm')).toEqual(shown);
+      }
+    },
+  );
+
+  it('a move with no roll (a strongest anchor) is not announced, and a Charged one is', () => {
+    const plain = fight(mover({ anchor: 'strongest', shape: 'single' }, 2, 3), team, {
+      rng: rng('an'),
+      log: true,
+    });
+    expect(plain.events.filter((e) => e.kind === 'announce')).toHaveLength(0);
+    const charged = fight(
+      mover({ anchor: 'strongest', shape: 'single' }, 2, 3, {}, { charged: true }),
+      team,
+      { rng: rng('an'), log: true },
+    );
+    expect(charged.events.filter((e) => e.kind === 'announce')).toHaveLength(1);
+  });
+
+  it('an announced random move never re-aims when a target falls first', () => {
+    // Round start shows every creature; the boss turn before the scatter knocks the front one out; it is skipped.
+    const kill: BossMove = {
+      id: 'kill',
+      name: 'Kill',
+      pattern: { anchor: 'front', shape: 'single' },
+      powerBp: 100_000,
+      every: 1,
+      turn: 0,
+    };
+    const scatter = mover(
+      { anchor: 'random', shape: 'scatter', n: 6 },
+      2,
+      3,
+      { atk: 500 },
+      { turn: 1 },
+    );
+    const boss: BossDef = { ...scatter, moves: [kill, ...scatter.moves] };
+    const r = seedWhere(
+      (seed) => fight(boss, team, { rng: rng(seed), log: true }),
+      (x) => x.events.some((e) => e.kind === 'hit' && e.text.includes('knocked out')),
+    );
+    const shown = (r.events.find((e) => e.kind === 'announce')?.slots ?? []).map(
+      ([a, b]) => `${a},${b}`,
+    );
+    expect(shown).toHaveLength(6);
+    const landed = slotsHit(r, 'm');
+    expect(landed.length).toBeLessThan(6);
+    for (const slot of landed) expect(shown).toContain(slot);
+  });
+});
