@@ -40,4 +40,4 @@ Session: debug a failed `/feedback` export run, sort the open player reports, th
 | 4   | **A line under Commands:** check output piped into `tail` or `grep` needs `set -o pipefail`, and commit and push run only after `&&`. Never `pkill -f` or `pgrep -f` a pattern that also appears in the same command; stop servers by their PID. | `CLAUDE.md` (Commands)                                               | The ▼ commit pushed with failing tests (13:10) and the exit 144s.                                         |
 | 5   | **A line under Pull requests:** `gh` GraphQL is blocked here; list and open PRs with `gh api repos/Misacorp/creatures/pulls` (GET with `head=Misacorp:<branch>&state=all`, POST with `title`, `head`, `base`, `body`).                           | `CLAUDE.md` (Pull requests)                                          | The two 403s on 10-28 and the time to find the REST route each session.                                   |
 
-Status: proposals not applied; Misa decides.
+Status: Misa accepted 1, 2, 3 and 5 (applied in the same PR); 4 declined (rare, not worth a rule).
