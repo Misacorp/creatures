@@ -4,6 +4,7 @@
  * team and the classic line at a few depths, runs with and without the camp), Knack usage across all of them and the
  * mechanics that no boss or foe calls for. `pnpm --filter @creatures/lab report -- --bosses` prints only these.
  */
+import { ablate, type Measured } from './ablation';
 import { BOSS_ANSWERS, answerLine } from './bossAnswers';
 import {
   NOT_PORTED,
@@ -14,10 +15,19 @@ import {
   weekendScore,
   weekendStats,
 } from './bosses';
+import {
+  MARGIN_TARGET,
+  RAID_WIDTHS,
+  marginOf,
+  mixedServer,
+  widthOf,
+  type MixedResult,
+  type WidthResult,
+} from './raidMeasure';
 import { gauntletScore, gauntletStats, runScore, runStats } from './dungeon';
 import { DUNGEON_DEPTHS, FOE_IDS, FOE_SPECS, foeAt } from './foes';
 import { FORM_KNACKS, KNACKS } from './knacks';
-import { coverage } from './mechanics';
+import { MECHANICS, coverage } from './mechanics';
 import {
   CLASSIC_LINE,
   GAUNTLET,
@@ -28,6 +38,7 @@ import {
   type Pick,
   type Ranked,
 } from './search';
+import { illegalTalents, legalTalents } from './talents';
 import type { BossDef, BossMove, Pattern } from './types';
 
 const knackName = (k: string) => (k === 'none' ? 'no Knack' : (KNACKS[k]?.name ?? k));
@@ -115,6 +126,8 @@ interface Settings {
     seeds: number;
     freshSeeds: number;
     weekends: number;
+    /** Weekends for each width and each draw of the mixed server, and the number of casual draws. */
+    mixedDraws: number;
   };
   readonly foe: {
     starts: number;
@@ -137,12 +150,29 @@ interface Settings {
 export const BOSS_SETTINGS = (quick: boolean): Settings =>
   quick
     ? {
-        raid: { starts: 40, keep: 6, rounds: 2, seeds: 3, freshSeeds: 10, weekends: 20 },
+        raid: {
+          starts: 30,
+          keep: 4,
+          rounds: 6,
+          seeds: 3,
+          freshSeeds: 10,
+          weekends: 20,
+          mixedDraws: 2,
+        },
         foe: { starts: 40, keep: 6, rounds: 2, seeds: 3, freshSeeds: 10, fights: 16 },
         runs: { starts: 40, keep: 6, rounds: 2, search: 3, fresh: 12, stats: 24 },
       }
     : {
-        raid: { starts: 300, keep: 24, rounds: 5, seeds: 5, freshSeeds: 40, weekends: 100 },
+        // A few starts and many rounds of local improvement: found far better lines than many starts and few rounds.
+        raid: {
+          starts: 100,
+          keep: 6,
+          rounds: 20,
+          seeds: 5,
+          freshSeeds: 40,
+          weekends: 100,
+          mixedDraws: 5,
+        },
         foe: { starts: 120, keep: 10, rounds: 3, seeds: 4, freshSeeds: 24, fights: 40 },
         runs: { starts: 250, keep: 16, rounds: 4, search: 6, fresh: 50, stats: 100 },
       };
@@ -175,39 +205,82 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
   const raidRows: string[] = [];
   const answerRows: string[] = [];
   const bestLinesMd: string[] = [];
+  const marginRows: string[] = [];
+  const widthRows: string[] = [];
+  const mixedRows: string[] = [];
+  const illegalNotes: string[] = [];
   const raidData: Record<string, unknown> = {};
+  /** The raid bosses' measured mechanics: name, boss id, and what taking each out of the best line costs (win-rate points). */
+  const raidAblation: { id: string; name: string; measured: Measured[] }[] = [];
   let answers = 0,
     beat = 0;
   for (const spec of RAID_SPECS) {
     const boss = raidBossOf(spec.id);
     const mode = raidMode(boss);
     const classic = classicFor(mode);
-    const given = (BOSS_ANSWERS[spec.id] ?? []).map((a) => ({
-      ...a,
-      picks: answerLine(a.line),
-      // A talent answer is read against the classic party with the same talent on every creature.
-      baseline: a.talent ? classic.map((p) => ({ ...p, talents: [a.talent as string] })) : classic,
-    }));
+    // A written answer may carry only legal talents; an illegal one is left out of the searches and reported.
+    const given = (BOSS_ANSWERS[spec.id] ?? []).map((a) => {
+      const picks = answerLine(a.line);
+      const bad = illegalTalents(picks);
+      if (bad.length)
+        illegalNotes.push(
+          `${boss.name} / ${a.label}: ${bad.map((x) => `${x.formId} carries ${x.talent} (${x.why})`).join('; ')}`,
+        );
+      // A talent answer is read against the classic party with the talent on each creature that may carry it.
+      const baseline = a.talent
+        ? classic.map((p) =>
+            legalTalents(p.formId).includes(a.talent as string)
+              ? { ...p, talents: [a.talent as string] }
+              : p,
+          )
+        : classic;
+      return { ...a, picks, baseline, legal: bad.length === 0 };
+    });
+    const legalGiven = given.filter((g) => g.legal);
+    const score = weekendScore(boss);
+    // Seeded with the written answers (and the classic party), and from scratch: the two are reported apart.
     const ranked: Ranked[] = search(boss, mode, {
       seed: `raidboss:${spec.id}`,
       ...S.raid,
-      include: [classic, ...given.flatMap((g) => [g.picks, g.baseline])],
-      score: weekendScore(boss),
+      talents: true,
+      include: [classic, ...legalGiven.flatMap((g) => [g.picks, g.baseline])],
+      score,
     });
-    const best = ranked[0];
+    const scratchRanked: Ranked[] = search(boss, mode, {
+      seed: `raidboss:${spec.id}:scratch`,
+      ...S.raid,
+      talents: true,
+      score,
+    });
+    const seeded = ranked[0];
+    const scratch = scratchRanked[0];
     const key = (l: readonly Pick[]) => lineKey(l);
     const cl = ranked.find((r) => key(r.line) === key(classic));
-    if (!best || !cl) continue;
-    bestRaidLines.push(best.line);
-    for (const r of ranked.slice(0, 5)) topLines.push(r.line);
-    const wb = weekendStats(boss, best.line, S.raid.weekends, `report:${spec.id}:best`);
+    if (!seeded || !scratch || !cl) continue;
+    // The overall best line is whichever of the two does better on the same fresh seeds.
+    const fresh = (l: readonly Pick[]) => score(l, S.raid.freshSeeds, `pick:${spec.id}`).score;
+    const overall = fresh(scratch.line) >= fresh(seeded.line) ? scratch : seeded;
+    const overallIs = overall === scratch ? 'from scratch' : 'seeded';
+    bestRaidLines.push(scratch.line);
+    for (const r of scratchRanked.slice(0, 5)) topLines.push(r.line);
+    const wSeeded = weekendStats(boss, seeded.line, S.raid.weekends, `report:${spec.id}:seeded`);
+    const wScratch = weekendStats(boss, scratch.line, S.raid.weekends, `report:${spec.id}:scratch`);
     const wc = weekendStats(boss, classic, S.raid.weekends, `report:${spec.id}:classic`);
     raidRows.push(
-      `| ${boss.name} | ${Math.round(best.score.score)} | ${Math.round(cl.score.score)} | ${pct(wc.winRate)} | ${pct(wb.winRate)} | ${wc.knockoutsTotal.toFixed(1)} | ${wb.knockoutsTotal.toFixed(1)} | ${boss.escalation ? `${wc.steps.toFixed(1)} / ${wb.steps.toFixed(1)} of ${boss.escalation.cap}` : 'none'} |`,
+      `| ${boss.name} | ${pct(wc.winRate)} | ${pct(wSeeded.winRate)} | ${pct(wScratch.winRate)} | ${Math.round(cl.score.score)} / ${Math.round(seeded.score.score)} / ${Math.round(scratch.score.score)} | ${wc.knockoutsTotal.toFixed(1)} / ${wSeeded.knockoutsTotal.toFixed(1)} / ${wScratch.knockoutsTotal.toFixed(1)} | ${boss.escalation ? `${wc.steps.toFixed(1)} / ${wSeeded.steps.toFixed(1)} / ${wScratch.steps.toFixed(1)} of ${boss.escalation.cap}` : 'none'} |`,
     );
-    bestLinesMd.push(`- ${boss.name}: ${rows(best.line, mode.cols)}`);
+    bestLinesMd.push(
+      `- ${boss.name}, seeded: ${rows(seeded.line, mode.cols)}`,
+      `- ${boss.name}, from scratch: ${rows(scratch.line, mode.cols)}`,
+    );
     const ansData: unknown[] = [];
     for (const g of given) {
+      if (!g.legal) {
+        answerRows.push(
+          `| ${boss.name} | ${g.label} (${g.tool}) | **illegal talent, not measured** | - | - | - |`,
+        );
+        continue;
+      }
       const r = ranked.find((x) => key(x.line) === key(g.picks));
       const base = ranked.find((x) => key(x.line) === key(g.baseline)) ?? cl;
       const w = weekendStats(boss, g.picks, S.raid.weekends, `report:${spec.id}:ans`);
@@ -218,7 +291,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
       const wins = r !== undefined && r.score.score > base.score.score;
       if (wins) beat++;
       answerRows.push(
-        `| ${boss.name} | ${g.label} (${g.tool}) | ${r ? Math.round(r.score.score) : 'n/a'} vs ${Math.round(base.score.score)}${g.talent ? ` (classic with ${g.talent})` : ''} | ${pct(w.winRate)} vs ${pct(wbase.winRate)} | ${w.knockoutsTotal.toFixed(1)} | ${boss.escalation ? `${w.steps.toFixed(1)} of ${boss.escalation.cap}` : '-'} |`,
+        `| ${boss.name} | ${g.label} (${g.tool}) | ${r ? Math.round(r.score.score) : 'n/a'} vs ${Math.round(base.score.score)}${g.talent ? ` (classic with ${g.talent} where legal)` : ''} | ${pct(w.winRate)} vs ${pct(wbase.winRate)} | ${w.knockoutsTotal.toFixed(1)} | ${boss.escalation ? `${w.steps.toFixed(1)} of ${boss.escalation.cap}` : '-'} |`,
       );
       ansData.push({
         label: g.label,
@@ -228,30 +301,95 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
         beatsClassic: wins,
       });
     }
+    // The margin: the best line when the boss hits 10% harder, and when it has 10% more HP.
+    const m = marginOf(boss, overall.line, S.raid.weekends, `report:${spec.id}:margin`);
+    marginRows.push(
+      `| ${boss.name} | ${overallIs} | ${pct(m.base)} | ${pct(m.atk10)} | ${pct(m.hp10)} |`,
+    );
+    // Other widths: the classic party, and the best line repeated to fill.
+    const widths: WidthResult[] = RAID_WIDTHS.map((w) =>
+      widthOf(boss, overall.line, w, S.raid.weekends, `report:${spec.id}:w${w}`),
+    );
+    widthRows.push(
+      `| ${boss.name} | ${widths.map((w) => `${pct(w.classicWin)} / ${pct(w.bestWin)}`).join(' | ')} |`,
+    );
+    // A mixed server: 2 min-maxers, 3 builders, 5 casual players.
+    const mixed: MixedResult = mixedServer(
+      boss,
+      overall.line,
+      legalGiven.map((g) => g.picks),
+      S.raid.mixedDraws,
+      S.raid.weekends,
+      `report:${spec.id}:mixed`,
+    );
+    mixedRows.push(`| ${boss.name} | ${pct(mixed.winRate)} | ${mixed.knockouts.toFixed(1)} |`);
+    // Which mechanics the best line really needs: take each out and measure the win rate.
+    const measured = ablate(
+      overall.line,
+      (l) => 100 * weekendStats(boss, l, S.raid.weekends, `report:${spec.id}:abl`).winRate,
+    );
+    raidAblation.push({ id: spec.id, name: boss.name, measured });
     raidData[spec.id] = {
-      best: best.line,
-      score: Math.round(best.score.score),
-      classicScore: Math.round(cl.score.score),
+      seededBest: seeded.line,
+      scratchBest: scratch.line,
+      overall: overallIs,
       classicWin: wc.winRate,
-      bestWin: wb.winRate,
+      seededWin: wSeeded.winRate,
+      scratchWin: wScratch.winRate,
       classicKnockouts: wc.knockoutsTotal,
-      bestKnockouts: wb.knockoutsTotal,
-      steps: { classic: wc.steps, best: wb.steps },
+      seededKnockouts: wSeeded.knockoutsTotal,
+      scratchKnockouts: wScratch.knockoutsTotal,
+      steps: { classic: wc.steps, seeded: wSeeded.steps, scratch: wScratch.steps },
+      margin: m,
+      widths,
+      mixed,
       answers: ansData,
     };
   }
   md.push(
     '### The best raid team and the classic party',
     '',
-    'Score is the search score (win rate x 100, plus 40 x the share of boss HP removed, minus half a point per knockout); the weekend columns are measured on their own seeds. Steps is how far the boss escalated in a weekend, on average, against the classic party and the best team.',
+    `The team search over a whole weekend (it also picks a legal talent for each creature) is run twice per boss: **seeded** with the classic party and the written answers, and **from scratch**, with nothing written. The Knack and form usage tables below count the from-scratch lines only, so they are not skewed by lines written by hand. Score is the search score (win rate x 100, plus 40 x the share of boss HP removed, minus half a point per knockout); the weekend columns are measured on their own seeds, ${S.raid.weekends} weekends each. Steps is how far the boss escalated in a weekend, on average. Cells read classic / seeded best / from-scratch best.`,
     '',
-    '| Boss | Best score | Classic score | Classic weekend win | Best weekend win | Classic knockouts | Best knockouts | Escalation steps (classic / best) |',
-    '| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
+    '| Boss | Classic weekend win | Seeded best win | From-scratch best win | Score (classic / seeded / scratch) | Knockouts | Escalation steps |',
+    '| --- | ---: | ---: | ---: | --- | --- | --- |',
     ...raidRows,
     '',
     'Best lines (rows front to back):',
     '',
     ...bestLinesMd,
+    '',
+    ...(illegalNotes.length
+      ? [
+          '**Written answers with illegal talents (a creature may carry only a talent of its line pool that works for its role); they are left out of the searches and the tables until fixed:**',
+          '',
+          ...illegalNotes.map((n) => `- ${n}`),
+          '',
+        ]
+      : []),
+    '### Margin',
+    '',
+    `The best line's weekend win rate on the real boss, with 10% more Attack, and with 10% more HP. Target: a well-prepared team wins about ${pct(MARGIN_TARGET)} at +10% (a boss that is beaten by a mile at +10% has no margin to ask for; one that is lost has none to give).`,
+    '',
+    '| Boss | Best line | Win | +10% Attack | +10% HP |',
+    '| --- | --- | ---: | ---: | ---: |',
+    ...marginRows,
+    '',
+    '### The raid at other widths',
+    '',
+    `Each player brings one column, so the arena is as wide as the server's raid: ${RAID_WIDTHS.join(', ')} columns a row. Cells read classic party / best line repeated to fill. A boss's HP and Attack do not grow with the arena, so a wider raid mostly shows how the arena's counts scale (a move's counts can be set per 4 columns, \`perColumns\`).`,
+    '',
+    `| Boss | ${RAID_WIDTHS.map((w) => `${w} columns`).join(' | ')} |`,
+    `| --- | ${RAID_WIDTHS.map(() => '---:').join(' | ')} |`,
+    ...widthRows,
+    '',
+    '### A mixed server weekend',
+    '',
+    `Ten players, one column each, side by side: 2 min-maxers (a column of the best line), 3 builders (a column of a written answer, at most 2 copies of any form) and 5 casual players (a column of random forms from a random roster of 12, a random Knack each that the form can equip, and a random legal talent). ${S.raid.mixedDraws} different draws of the casual players and the builders' answers, ${S.raid.weekends} weekends in all.`,
+    '',
+    '| Boss | Weekend win | Knockouts |',
+    '| --- | ---: | ---: |',
+    ...mixedRows,
     '',
     '### Intended answers (P-13)',
     '',
@@ -266,6 +404,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
   );
   data['raidBosses'] = raidData;
   data['raidAnswers'] = { beat, total: answers };
+  data['illegalAnswers'] = illegalNotes;
 
   // ---------- Dungeon foes ----------
   md.push(
@@ -279,6 +418,8 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     `| --- | --- | ${DUNGEON_DEPTHS.map(() => '---:').join(' | ')} |`,
   );
   const foeData: Record<string, unknown> = {};
+  /** The best gauntlet line of each foe at the deepest depth (where floor bosses have their signature), for the measured mechanics. */
+  const foeBest = new Map<string, readonly Pick[]>();
   const bestAtMid: string[] = [];
   const mid = DUNGEON_DEPTHS[Math.min(2, DUNGEON_DEPTHS.length - 1)] ?? 5;
   for (const id of FOE_IDS) {
@@ -296,8 +437,11 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
       });
       const best = ranked[0];
       if (!best) continue;
-      for (const r of ranked.slice(0, 3)) topLines.push(r.line);
+      // The usage tables count what the search found, not the classic line it was seeded with.
+      for (const r of ranked.slice(0, 3))
+        if (lineKey(r.line) !== lineKey(CLASSIC_LINE)) topLines.push(r.line);
       bestFoeLines.push(best.line);
+      if (d === DUNGEON_DEPTHS[DUNGEON_DEPTHS.length - 1]) foeBest.set(id, best.line);
       const wb = gauntletStats(foe, best.line, S.foe.fights, `foe:${id}:${d}:b`);
       const wc = gauntletStats(foe, CLASSIC_LINE, S.foe.fights, `foe:${id}:${d}:c`);
       cells.push(
@@ -369,7 +513,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
   md.push(
     '## Knack usage across the real bosses (per creature)',
     '',
-    `${picks} creatures in the top 5 raid lines of each boss and the top 3 gauntlet lines of each foe at each depth. Ratio is the Knack's share of those picks over its share of the pool of every form and Knack: 1.0 is what random picks would give, above 2 stands out, below 0.3 is rarely chosen.`,
+    `${picks} creatures in the top 5 from-scratch raid lines of each boss (not the lines written by hand or the classic party) and the top 3 gauntlet lines of each foe at each depth. Ratio is the Knack's share of those picks over its share of the pool of every form and Knack: 1.0 is what random picks would give, above 2 stands out, below 0.3 is rarely chosen.`,
     '',
     '| Knack | Forms | Picks | Ratio |',
     '| --- | --- | ---: | ---: |',
@@ -405,6 +549,75 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
   );
   data['bossForms'] = Object.fromEntries(forms);
 
+  // Which mechanics a boss or foe really calls for: take the mechanic out of its best line and measure what the line loses.
+  const RAID_DROP = 10;
+  const FOE_DROP = 10;
+  const deepest = DUNGEON_DEPTHS[DUNGEON_DEPTHS.length - 1] ?? 7;
+  const foeAblation: { id: string; name: string; measured: Measured[] }[] = [];
+  for (const id of FOE_IDS) {
+    const line = foeBest.get(id);
+    if (!line) continue;
+    const foe = foeAt(id, deepest);
+    const score = gauntletScore(foe);
+    foeAblation.push({
+      id,
+      name: foe.name,
+      measured: ablate(line, (l) => score(l, S.foe.fights, `report:foe:${id}:abl`).score),
+    });
+  }
+  const calledBy = (mechanicId: string) => [
+    ...raidAblation.flatMap((r) => {
+      const m = r.measured.find((x) => x.mechanic.id === mechanicId);
+      return m && m.drop >= RAID_DROP ? [{ name: r.name, drop: m.drop, unit: 'pts' }] : [];
+    }),
+    ...foeAblation.flatMap((r) => {
+      const m = r.measured.find((x) => x.mechanic.id === mechanicId);
+      return m && m.drop >= FOE_DROP ? [{ name: r.name, drop: m.drop, unit: 'score' }] : [];
+    }),
+  ];
+  const measuredRows = MECHANICS.map((mechanic) => {
+    const hasTool = raidAblation[0]?.measured.find((x) => x.mechanic.id === mechanic.id)?.hasTool;
+    return { mechanic, hasTool: hasTool ?? false, callers: calledBy(mechanic.id) };
+  });
+  const bossSide = measuredRows.filter((r) => !r.hasTool);
+  const notCalled = measuredRows.filter((r) => r.hasTool && r.callers.length === 0);
+  md.push(
+    '## Mechanics the bosses and foes call for (measured)',
+    '',
+    `Every Knack family, keyword, rule and talent kind should be the answer or the problem for at least one boss or foe. A mechanic is **called for** by a raid boss only when taking it out of that boss's best line (its Knacks become none, its talents are dropped) lowers the weekend win rate by ${RAID_DROP} points or more, on the same seeds (${S.raid.weekends} weekends); a foe, when the best line's score at depth ${deepest} (where floor bosses have their signature) falls by ${FOE_DROP} or more (${S.foe.fights} fights). The drop is measured, not read off the boss's data. A mechanic only a boss has (an escalation feed, Adaptation) has no tool on a line to take out; those are in the features-present list below.`,
+    '',
+    '| Mechanic | Kind | Called for by (measured drop) |',
+    '| --- | --- | --- |',
+    ...measuredRows.map(
+      ({ mechanic, hasTool, callers }) =>
+        `| ${mechanic.name} | ${mechanic.group} | ${
+          !hasTool
+            ? 'boss-side only (no tool to take out)'
+            : callers.length === 0
+              ? '**none**'
+              : `${callers.length}: ${callers
+                  .slice(0, 4)
+                  .map((x) => `${x.name} (-${Math.round(x.drop)} ${x.unit})`)
+                  .join(', ')}${callers.length > 4 ? ', ...' : ''}`
+        } |`,
+    ),
+    '',
+    notCalled.length
+      ? `**No boss or foe measurably calls for: ${notCalled.map((m) => `${m.mechanic.name} (${m.mechanic.group})`).join(', ')}.**`
+      : '**Every mechanic with a tool is measurably called for by at least one boss or foe.**',
+    '',
+  );
+  data['mechanicsNotCalled'] = notCalled.map((m) => m.mechanic.id);
+  data['mechanicsBossSide'] = bossSide.map((m) => m.mechanic.id);
+  data['mechanicsTotal'] = MECHANICS.length;
+  data['mechanicsMeasured'] = Object.fromEntries(
+    measuredRows.map((r) => [
+      r.mechanic.id,
+      r.callers.map((c) => ({ ...c, drop: Math.round(c.drop) })),
+    ]),
+  );
+
+  // The old structural check, kept as a separate list: which boss features exist, whether or not the best line needs them.
   const everyone: BossDef[] = [
     ...RAID_BOSS_IDS.map((id) => raidBossOf(id)),
     ...FOE_IDS.map((id) => foeAt(id, 7)),
@@ -412,11 +625,11 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
   const cover = coverage(everyone);
   const missing = cover.filter((c) => c.callers.length === 0);
   md.push(
-    '## Mechanics the bosses and foes call for',
+    '### Features present (not measured)',
     '',
-    'Every Knack family, keyword, rule and talent kind should be the answer or the problem for at least one boss or foe. The predicates in `src/mechanics.ts` read each boss’s data (foes at a landmark depth, so their signatures count), so nothing is claimed by hand.',
+    'What the bosses and foes have, read off their data by the predicates in `src/mechanics.ts`: a Knack family, keyword or rule that some boss or foe has a feature for. This does not say a team needs it; the measured table above does.',
     '',
-    '| Mechanic | Kind | Called for by |',
+    '| Mechanic | Kind | Present on |',
     '| --- | --- | --- |',
     ...cover.map(
       (c) =>
@@ -431,8 +644,8 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     ),
     '',
     missing.length
-      ? `**No boss or foe calls for: ${missing.map((m) => `${m.mechanic.name} (${m.mechanic.group})`).join(', ')}.**`
-      : '**Every mechanic is called for by at least one boss or foe.**',
+      ? `**No boss or foe has a feature for: ${missing.map((m) => `${m.mechanic.name} (${m.mechanic.group})`).join(', ')}.**`
+      : '**Every mechanic has a feature on at least one boss or foe.**',
     '',
   );
   md.push(
@@ -441,8 +654,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     ...NOT_PORTED.map((t) => `- ${t}`),
     '',
   );
-  data['mechanicsMissing'] = missing.map((m) => m.mechanic.id);
-  data['mechanicsTotal'] = cover.length;
+  data['featuresMissing'] = missing.map((m) => m.mechanic.id);
   return { md, data };
 }
 
