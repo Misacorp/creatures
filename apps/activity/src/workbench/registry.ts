@@ -7,6 +7,7 @@ import { creatureEntries } from './entries/creatures';
 import { evolveEntries } from './entries/evolve';
 import { expeditionWorldEntries } from './entries/expedition-world';
 import { flipperEntries } from './entries/flipper';
+import { gameScreensEntries } from './entries/game-screens';
 import { gamesArtEntries } from './entries/games-art';
 import { gamesShowEntries } from './entries/games-show';
 import { gamesTabEntries } from './entries/games-tab';
@@ -92,6 +93,7 @@ export const ENTRIES: readonly Entry[] = [
   ...homePageEntries,
   ...homePagesEntries,
   ...settingsEntries,
+  ...gameScreensEntries,
 ];
 
 export function findEntry(name: string | null): Entry | null {
