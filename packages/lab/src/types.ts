@@ -39,6 +39,20 @@ export interface Fighter {
   damageLastRound: number;
   /** The boss turn on which it last gained a reaction-fed Store point (at most one per boss turn). */
   lastStoreRound: number;
+  /** Hits it has made this fight, for rhythms (Steady Rhythm: every third is a crit). */
+  hitsMade: number;
+  /** Set when it dodges; its next hit uses it up (Momentum). */
+  momentum: boolean;
+  /** A creature beside it was knocked out this fight (Vengeful). */
+  avenged: boolean;
+  /** Marks it has left this fight (Deep Ink: the first starts bigger). */
+  marksLeft: number;
+  /** Times its Support verb has run (Bright Boost: every second is doubled). */
+  verbsUsed: number;
+  /** Light Sleeper has shortened a silence this fight. */
+  sleeperDone: boolean;
+  /** How often each effect's condition held or its trigger fired this fight, by effect field (the report's "holds"). */
+  fires: Record<string, number>;
 }
 
 /** Where the boss aims: an anchor slot, then a shape of slots around it (R2). */
@@ -93,6 +107,8 @@ export interface BossMods {
   readonly healBp?: number;
   /** A mark left by a reaction cannot be cashed until after the next boss turn (Fizzle). */
   readonly fizzle?: boolean;
+  /** Every this many rounds the boss clears all its debuffs at the end of the round; announced at round start (Shake It Off). */
+  readonly shakeEvery?: number;
   /** In a raid weekend, from stage 2 the boss resists the reaction used most so far (Adapts). */
   readonly adapts?: boolean;
 }
@@ -123,10 +139,23 @@ export interface FightEvent {
   readonly text: string;
 }
 
+/** Who defeated the boss (R21 draft): the creature whose hit, counter or Cull took its last HP. */
+export interface KillingBlow {
+  readonly uid: string;
+  readonly owner: string;
+  readonly formId: string;
+  readonly name: string;
+  readonly round: number;
+  /** True when Cull, not damage, finished it. */
+  readonly culled: boolean;
+}
+
 export interface FightResult {
   readonly damage: number;
   readonly bossHpLeft: number;
   readonly won: boolean;
+  /** The creature that landed the killing blow (no loot in the lab), or null if the boss lived. */
+  readonly killingBlow: KillingBlow | null;
   readonly wiped: boolean;
   readonly knockouts: number;
   readonly reactions: number;

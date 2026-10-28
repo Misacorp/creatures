@@ -567,13 +567,13 @@ describe('R11 and line talent pools (Misa, 2026-10-27)', () => {
     }
   });
 
-  it('Hold On leaves it at 1 HP once; Hardy raises max HP', () => {
+  it('Stubborn leaves it at 1 HP once; Hardy raises max HP', () => {
     const boss: BossDef = {
       ...labBoss({ rows: 1, cols: 1, rounds: 1, atk: 2_000 }),
       spd: 0,
       plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 10_000 },
     };
-    const held = fight(boss, [{ ...at('tidewing', 0, 0), talents: ['hold-on'] }], {
+    const held = fight(boss, [{ ...at('tidewing', 0, 0), talents: ['stubborn'] }], {
       rng: rng('hold'),
       log: true,
     });

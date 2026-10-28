@@ -22,6 +22,10 @@ export const LAB_RULES = {
   armourByRole: { setter: 8, payoff: 8, guard: 30, support: 6 } as Record<string, number>,
   /** A Guard covers area hits on creatures in its reach (4.3, kept). */
   coverBp: 4_000,
+  /** Cover with every bonus (Broad Back, Long Shadow, gear) never passes this, like area cuts (Misa, 2026-10-28). An intercepted hit needs no cap: the Guard still takes it. */
+  coverMaxBp: 7_500,
+  /** An area cut (aura plus the creature's own) never passes this (R15). */
+  areaCutMaxBp: 7_500,
   guardReach: 1,
   /** Support round-start verbs (4.5, kept): boost on the next hit, and the elements that heal. */
   supportBoostBp: 1_500,
@@ -32,4 +36,9 @@ export const LAB_RULES = {
   /** Mired, the Mire debuff: per stack, the boss deals less damage and dodges less. */
   miredPerStackBp: 300,
   miredMaxStacks: 5,
+  /** Mired fades: one stack at each round start; with Clinging on a living creature, at every second round start (Misa, 2026-10-28). */
+  miredFadeEvery: 1,
+  miredClingingFadeEvery: 2,
+  /** "The boss is low" for Finisher: its HP is below this share of its full HP. */
+  finisherBelowBp: 3_333,
 } as const;
