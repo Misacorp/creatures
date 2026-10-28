@@ -10,7 +10,7 @@
 
 /* One gap to the card's left edge and between the strips; the highest ribbon is on the left. */
 .cc-ribbons {
-  --ribbon-gap: 0.375rem;
+  --ribbon-gap: 0.5rem;
 
   position: absolute;
   top: var(--px);
@@ -31,13 +31,33 @@
   height: var(--ribbon-length);
   background: linear-gradient(
     90deg,
-    var(--ribbon-light) 0 3px,
-    var(--ribbon-line) 3px 5px,
-    var(--ribbon-cloth) 5px calc(100% - 5px),
-    var(--ribbon-line) calc(100% - 5px) calc(100% - 3px),
-    var(--ribbon-light) calc(100% - 3px)
+    var(--ribbon-light-shown) 0 2px,
+    var(--ribbon-line-shown) 2px 3px,
+    var(--ribbon-cloth-shown) 3px calc(100% - 3px),
+    var(--ribbon-line-shown) calc(100% - 3px) calc(100% - 2px),
+    var(--ribbon-light-shown) calc(100% - 2px)
   );
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 8px), 0 100%);
+
+  --ribbon-light-shown: color-mix(in srgb, var(--ribbon-light) var(--ribbon-mix), var(--dusk-2));
+  --ribbon-line-shown: color-mix(in srgb, var(--ribbon-line) var(--ribbon-mix), var(--dusk-2));
+  --ribbon-cloth-shown: color-mix(in srgb, var(--ribbon-cloth) var(--ribbon-mix), var(--dusk-2));
+}
+
+/*
+  How strongly the ribbons show, to compare in the workbench: each colour is mixed with the card's panel
+  colour, so the strips fade into the card and their edges stay sharp.
+*/
+.cc-ribbons.is-bright {
+  --ribbon-mix: 100%;
+}
+
+.cc-ribbons.is-muted {
+  --ribbon-mix: 55%;
+}
+
+.cc-ribbons.is-faint {
+  --ribbon-mix: 35%;
 }
 
 .cc-ribbon.is-gold {

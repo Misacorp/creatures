@@ -2,6 +2,7 @@ import { useState } from 'preact/hooks';
 import { Collection } from '../../Collection';
 import { CreatureCard } from '../../CreatureCard';
 import { CreatureFinder } from '../../CreatureFinder';
+import { RIBBON_TONES, type RibbonTone } from '../../CreatureHonours';
 import { LoungeSwap } from '../../LoungeSwap';
 import type { CardActions } from '../../CreaturePage';
 import {
@@ -68,6 +69,10 @@ function xpSizeOf(value: string): XpSize | undefined {
   return XP_SIZES.find((s) => s === value);
 }
 
+function toneOf(value: string): RibbonTone {
+  return RIBBON_TONES.find((t) => t === value) ?? 'muted';
+}
+
 function CardDemo({ p }: { p: Props }) {
   if (bool(p, 'screen')) return <RosterScreen />;
   const sample = sampleCreature(kindOf(str(p, 'state')));
@@ -95,7 +100,7 @@ function CardDemo({ p }: { p: Props }) {
   return (
     <ul class="cards creature-cards">
       <CreatureCard
-        {...(bool(p, 'honours') ? { honours: { medals } } : {})}
+        {...(bool(p, 'honours') ? { honours: { medals, tone: toneOf(str(p, 'ribbonTone')) } } : {})}
         creature={creature}
         state={state}
         gear={bool(p, 'gearLoaded') ? SAMPLE_GEAR : null}
@@ -127,6 +132,7 @@ const creatureCard: Entry = {
     screen: { kind: 'toggle' },
     xpSize: { kind: 'select', options: ['default', ...XP_SIZES] },
     honours: { kind: 'toggle' },
+    ribbonTone: { kind: 'select', options: RIBBON_TONES },
     ribbons: { kind: 'number', min: 0, max: 3 },
     gold: { kind: 'number', min: 0, max: 99 },
     silver: { kind: 'number', min: 0, max: 99 },
@@ -143,6 +149,7 @@ const creatureCard: Entry = {
     screen: false,
     xpSize: 'default',
     honours: false,
+    ribbonTone: 'muted',
     ribbons: 0,
     gold: 0,
     silver: 0,
@@ -178,6 +185,30 @@ const creatureCard: Entry = {
     {
       name: 'Honours: three ribbons, 3 gold, 12 silver and 1 bronze medal',
       props: { state: 'top level', honours: true, ribbons: 3, gold: 3, silver: 12, bronze: 1 },
+    },
+    {
+      name: 'Honours: three ribbons, bright',
+      props: {
+        state: 'top level',
+        honours: true,
+        ribbons: 3,
+        gold: 3,
+        silver: 12,
+        bronze: 1,
+        ribbonTone: 'bright',
+      },
+    },
+    {
+      name: 'Honours: three ribbons, faint',
+      props: {
+        state: 'top level',
+        honours: true,
+        ribbons: 3,
+        gold: 3,
+        silver: 12,
+        bronze: 1,
+        ribbonTone: 'faint',
+      },
     },
     {
       name: 'Honours: two ribbons and one gold medal',

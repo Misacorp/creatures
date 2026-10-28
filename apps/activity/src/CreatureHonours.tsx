@@ -12,6 +12,10 @@ import type { SpriteDef } from './sprites/sprite-data';
 
 type RibbonKind = 'gold' | 'silver' | 'bronze';
 
+/** How strongly the ribbons show, to compare in the workbench (their colours mixed into the card's panel). */
+export const RIBBON_TONES = ['bright', 'muted', 'faint'] as const;
+export type RibbonTone = (typeof RIBBON_TONES)[number];
+
 /** The ribbons held, highest first: 1 Bronze, 2 Silver and Bronze, 3 Gold, Silver and Bronze. */
 export function ribbonsHeld(ribbons: number): RibbonKind[] {
   const held: RibbonKind[] = [];
@@ -22,11 +26,17 @@ export function ribbonsHeld(ribbons: number): RibbonKind[] {
 }
 
 /** The ribbons as strips behind the card's content; the higher the ribbon, the longer its strip. */
-export function CardRibbons({ creature }: { creature: Pick<Creature, 'ribbons'> }) {
+export function CardRibbons({
+  creature,
+  tone,
+}: {
+  creature: Pick<Creature, 'ribbons'>;
+  tone: RibbonTone;
+}) {
   const held = ribbonsHeld(creature.ribbons);
   if (held.length === 0) return null;
   return (
-    <span class="cc-ribbons" aria-hidden="true">
+    <span class={`cc-ribbons is-${tone}`} aria-hidden="true">
       {held.map((kind) => (
         <span key={kind} class={`cc-ribbon is-${kind}`} />
       ))}

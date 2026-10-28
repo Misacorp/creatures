@@ -12,7 +12,7 @@ import {
 import { creatureNeeds, type Need } from './creature-needs';
 import type { CardActions } from './CreaturePage';
 import { CreatureHead } from './CreatureHead';
-import { CardMedals, CardRibbons } from './CreatureHonours';
+import { CardMedals, CardRibbons, type RibbonTone } from './CreatureHonours';
 import { experienceLabel } from './CreatureProgress';
 import { creatureName } from './game';
 import type { MedalCounts } from './games-types';
@@ -65,7 +65,7 @@ export function CreatureCard({
    * The workbench's variation of the ribbons (strips behind the card) and the Valley Games medals (small, top
    * right, over the top edge): left out, the card shows neither (the list does not have the medals yet).
    */
-  honours?: { medals: MedalCounts } | undefined;
+  honours?: { medals: MedalCounts; tone: RibbonTone } | undefined;
 }) {
   const domId = cardDomId(creature.id);
   const nameId = `${domId}-name`;
@@ -120,7 +120,7 @@ export function CreatureCard({
         if (!clickedButton(event.target, event.currentTarget)) onOpen(null);
       }}
     >
-      {honours !== undefined && <CardRibbons creature={creature} />}
+      {honours !== undefined && <CardRibbons creature={creature} tone={honours.tone} />}
       {honours !== undefined && <CardMedals medals={honours.medals} />}
       <CreatureHead
         creature={creature}
