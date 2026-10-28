@@ -10,6 +10,8 @@ export default defineConfig(
     '**/worker-configuration.d.ts',
     // Local agent worktrees (gitignored) are other checkouts of this repo.
     '.claude/worktrees/**',
+    // Throwaway repro pages (gitignored, docs/design/workbench.md).
+    'apps/activity/scratch/**',
   ]),
   js.configs.recommended,
   {

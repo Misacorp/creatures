@@ -15,7 +15,8 @@ Rules:
 - Server is authoritative; never use `Math.random`; validate every payload with a schema; render user text as text only.
 - Add or update tests for every behaviour change. Before finishing, run `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test` and report the result honestly.
 - New dependencies need a reason. Exact versions only, at least 7 days old.
-- UI work: before building a component or layout, look for an existing one that does the same job (`docs/design/ux-patterns.md`, "Shared components", and the workbench) and reuse or extend it. Say in your report which ones you reused, and why if you built something new.
+- UI work: before building a component or layout, look for an existing one that does the same job (`docs/design/ux-patterns.md`, "Shared components", and the workbench) and reuse or extend it.
+- UI work: end your report with a **reuse list**, one line per visible part you added or changed: the row of the `ux-patterns.md` lookup table it uses ("worn rows: `ui/CreatureList`, `show` mode"), or "new, because …". A flow reachable from several places gets one line per entry point, naming the component each one opens. The lead checks this list first (retro 2026-10-28).
 - A new screen or feature fits the game's frame (`docs/design/ux-patterns.md`, "The frame"): a place in `TABS`, a Home notice row when it needs the player, a Back only on pages opened from another page. Never a second navigation, a footer or a bar of its own.
 
 Report back concisely: what changed (files), test results, deviations from the spec, and anything that looked suspicious.
