@@ -29,6 +29,10 @@ export const LAB_RULES = {
   supportHealBp: { tide: 400, grove: 600 } as Record<string, number>,
   /** Buffs and debuffs: all hit bonuses from buffs together never pass this (R15). */
   maxHitBonusBp: 15_000,
+  /** A Flank Guard's one side covers this many times the slots of its Reach. */
+  flankGuardSlots: 2,
+  /** Opportunist: a mark with at least this many counts. */
+  opportunistFromStacks: 2,
   /** Mired, the Mire debuff: per stack, the boss deals less damage and dodges less. */
   miredPerStackBp: 300,
   miredMaxStacks: 5,

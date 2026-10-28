@@ -140,8 +140,8 @@ export interface KnackFx {
   readonly finisherBp?: number;
   /** Every third hit it makes is a crit. */
   readonly steadyRhythm?: boolean;
-  /** Its reaction bonus factor is this much higher when it cashes a mark at x3. */
-  readonly cashFullBp?: number;
+  /** Its reaction bonus factor is this much higher when it cashes a mark with `opportunistFromStacks` counts or more. */
+  readonly cashHighBp?: number;
   /** Its reaction bonus factor is this much higher on a mark set this boss turn. */
   readonly freshMarkBp?: number;
   /** A reaction on a mark this creature helped leave has its bonus factor this much higher. */
@@ -168,8 +168,8 @@ export interface KnackFx {
   readonly brightBoost?: boolean;
   /** Its boost is this much bigger on creatures of its own element. */
   readonly kindredBoostBp?: number;
-  /** Its base heal goes to the most hurt creature beside it, at double size (idle under a Support shape Knack). */
-  readonly triage?: boolean;
+  /** Its base heal goes to the most hurt creature beside it, this much bigger (idle under a Support shape Knack). */
+  readonly triageBp?: number;
   /** Healing of its that goes past full HP passes to the most hurt creature beside the one it healed. */
   readonly spillOver?: boolean;
   /** A hit that leaves a foe below this share of its full HP defeats it outright (the HP left is the killing blow, not damage). */

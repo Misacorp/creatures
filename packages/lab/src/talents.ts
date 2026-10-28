@@ -68,7 +68,7 @@ export const ADDITIVE_FIELDS: ReadonlySet<keyof KnackFx> = new Set<keyof KnackFx
   'slowBurnCapBp',
   'finisherBp',
   'steadyRhythm',
-  'cashFullBp',
+  'cashHighBp',
   'freshMarkBp',
   'ownMarkBp',
   'firstMarkExtra',
@@ -82,7 +82,7 @@ export const ADDITIVE_FIELDS: ReadonlySet<keyof KnackFx> = new Set<keyof KnackFx
   'clinging',
   'brightBoost',
   'kindredBoostBp',
-  'triage',
+  'triageBp',
   'spillOver',
   'cullBp',
 ]);
@@ -96,37 +96,37 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'sharp-claws',
       name: 'Sharp Claws',
-      text: 'Attack +8%.',
+      text: 'Attack +10%.',
       roles: HITTERS,
       intent:
         'Plain power for hitters; the small, steady number the conditional talents are judged against.',
-      fx: { atkBp: 800 },
+      fx: { atkBp: 1_000 },
     }),
     T({
       id: 'hardy',
       name: 'Hardy',
-      text: 'Max HP +10%.',
+      text: 'Max HP +22%.',
       roles: ALL,
       intent: 'Plain staying power; carries through a raid weekend (R14).',
-      fx: { hpBp: 1_000 },
+      fx: { hpBp: 2_200 },
     }),
     // Neighbours: where the creature wants its partners.
     T({
       id: 'shoulder-to-shoulder',
       name: 'Shoulder to Shoulder',
-      text: '+20% on its hits for each creature {Beside} it of its element, at most 2.',
+      text: '+24% on its hits for each creature {Beside} it of its element, at most 2.',
       roles: ALL,
       intent: 'Mono-element pairs and trios: a reason to talk about placement in the raid.',
-      fx: { perKindredBesideBp: 2_000 },
+      fx: { perKindredBesideBp: 2_400 },
     }),
     T({
       id: 'odd-one-out',
       name: 'Odd One Out',
-      text: '+12% on its hits while no creature {Beside} it shares its element.',
+      text: '+16% on its hits while no creature {Beside} it shares its element.',
       roles: ALL,
       intent:
         'The mixed row: the opposite of Shoulder to Shoulder. Like the shipped line it also holds when nothing stands beside it, so the number is small.',
-      fx: { oddOneOutBp: 1_200 },
+      fx: { oddOneOutBp: 1_600 },
     }),
     // Position.
     T({
@@ -141,81 +141,82 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'front-liner',
       name: 'Front-liner',
-      text: 'It takes 20% less from every hit in the {Front row}.',
+      text: 'It takes 15% less from every hit in the {Front row}.',
       roles: ALL,
       intent: 'The front row takes the plain attack: a creature that wants to stand there.',
-      fx: { frontCutBp: 2_000 },
+      fx: { frontCutBp: 1_500 },
     }),
     // Fight state.
     T({
       id: 'slow-burn',
       name: 'Slow Burn',
-      text: '+4% on its hits per round from round 2, up to +24%.',
+      text: '+2% on its hits per round from round 2, up to +12%.',
       roles: HITTERS,
       intent: 'Strong in long raid stages, weak in short fights: a reason to own two of a species.',
-      fx: { slowBurnBp: 400, slowBurnCapBp: 2_400 },
+      fx: { slowBurnBp: 200, slowBurnCapBp: 1_200 },
     }),
     T({
       id: 'finisher',
       name: 'Finisher',
-      text: '+50% on its hits while the boss is below a third of its HP.',
+      text: '+75% on its hits while the boss is below a third of its HP.',
       roles: HITTERS,
       intent:
         'With the boss HP shared across a raid weekend (R14), the last stage rewards it most.',
-      fx: { finisherBp: 5_000 },
+      fx: { finisherBp: 7_500 },
     }),
     T({
       id: 'first-pounce',
       name: 'First Pounce',
-      text: 'Its first hit that lands each fight deals +60%.',
+      text: 'Its first hit that lands each fight deals +150%.',
       roles: HITTERS,
       intent:
         'Short fights, the dungeon and each raid stage. A hit made while silenced does not use it up.',
-      fx: { firstHitBp: 6_000 },
+      fx: { firstHitBp: 15_000 },
     }),
     T({
       id: 'steady-rhythm',
       name: 'Steady Rhythm',
-      text: 'Every third hit it makes is a crit.',
+      text: 'Every third hit it makes is a crit, and its crits deal 20% more.',
       roles: HITTERS,
       intent: 'Crits you can plan for (P-04): a rhythm instead of a chance.',
-      fx: { steadyRhythm: true },
+      fx: { steadyRhythm: true, critDamageBp: 2_000 },
     }),
     // Marks and reactions.
     T({
       id: 'opportunist',
       name: 'Opportunist',
-      text: 'Its {Reaction} bonus +40% when it cashes a {Mark} at x3.',
+      text: 'Its {Reaction} bonus +80% when it cashes a {Mark} at x2 or more.',
       roles: ['payoff'],
-      intent: 'Rewards waiting for a full mark; pairs with Setters that leave x2.',
-      fx: { cashFullBp: 4_000 },
+      intent:
+        'Rewards waiting for a bigger mark (x2 or x3); pairs with Setters that leave x2, and with a second Setter. Was x3 only (2026-10-28): a mark almost never reached x3 when cashed, so the talent did nothing.',
+      fx: { cashHighBp: 8_000 },
     }),
     T({
       id: 'quick-draw',
       name: 'Quick Draw',
-      text: "+30% on a {Reaction} on a mark added since the boss's last turn.",
+      text: "+27% on a {Reaction} on a mark added since the boss's last turn.",
       roles: ['payoff'],
       intent:
         'The opposite timing: cash right after the Setter, before Clean Scales sheds the mark.',
-      fx: { freshMarkBp: 3_000 },
+      fx: { freshMarkBp: 2_700 },
     }),
     T({
       id: 'owners-mark',
       name: "Owner's Mark",
-      text: '{Reaction}s on a {Mark} it left have a +30% bonus while it stands.',
+      text: '{Reaction}s on a {Mark} it left have a +22% bonus while it stands.',
       roles: ['setter'],
       intent:
         'A Setter that makes its own marks worth more, whoever cashes them, while it stands and is not silenced.',
-      fx: { ownMarkBp: 3_000 },
+      fx: { ownMarkBp: 2_200 },
     }),
     T({
       id: 'deep-ink',
       name: 'Deep Ink',
-      text: 'Its first {Mark} each fight adds 1 more to the count.',
+      text: 'Its first {Mark} each fight adds 2 more to the count.',
       roles: ['setter'],
       intent:
         'Changes the opening without adding marks from nowhere: marks still come only from Setters and Knacks.',
-      fx: { firstMarkExtra: 1 },
+      fx: { firstMarkExtra: 2 },
     }),
     // Triggers.
     T({
@@ -229,47 +230,49 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'momentum',
       name: 'Momentum',
-      text: 'After it dodges, its next hit deals +40%.',
-      roles: ALL,
-      intent: 'Fast creatures against bosses that hit often; the front row.',
-      fx: { momentumBp: 4_000 },
+      text: 'After it dodges, or a Guard takes a hit aimed at it, its next hit deals +33%.',
+      roles: HITTERS,
+      intent:
+        'Fast creatures and the creature in the front row: a hit aimed at it that is dodged, or that a Guard beside it takes, arms its next hit. Reworked (2026-10-28): a dodge alone almost never happens to a creature the boss does not aim at, so the talent did nothing.',
+      fx: { momentumBp: 3_300 },
     }),
     // Guard shapes.
     T({
       id: 'flank-guard',
       name: 'Flank Guard',
-      text: 'Its {Reach} covers only its longer side (the side with more slots to the row end, ties go left), with twice the slots.',
+      text: 'Its {Reach} covers only its longer side (more slots to the row end, ties go left), twice the slots, and its cover is +35%.',
       roles: ['guard'],
       intent:
-        'A Guard at one end protects the long stretch of the row: a placement puzzle the owner controls, with no Left/Right pair to roll.',
-      fx: { flankGuard: true },
+        'A Guard at one end protects the long stretch of the row: a placement puzzle the owner controls, with no Left/Right pair to roll. Twice the slots on one side covers no more creatures than one slot on each side, so the cover bonus is what makes it worth the placement (2026-10-28).',
+      fx: { flankGuard: true, coverBonusBp: 3_500 },
     }),
     T({
       id: 'long-shadow',
       name: 'Long Shadow',
-      text: 'Cover +10% per slot of distance, and the hits it takes for others are cut by 10% per slot.',
+      text: 'Cover +20% per slot of distance, and the hits it takes for others are cut by 20% per slot.',
       roles: ['guard'],
       intent:
         'Protects the far creatures best; with Flank Guard a Guard at one end covers a long row.',
-      fx: { distanceCoverBp: 1_000 },
+      fx: { distanceCoverBp: 2_000 },
     }),
     T({
       id: 'shoulder-charge',
       name: 'Shoulder Charge',
-      text: 'When it {Intercept}s, it strikes back for 40% of its Attack, ignoring armour.',
+      text: 'When it {Intercept}s, it strikes back for 80% of its Attack, ignoring armour.',
       roles: ['guard'],
       intent:
         'A Guard that adds damage the more it is hit. The strike-back is a counter, not a hit: it can land the killing blow but triggers nothing that keys on its hits.',
-      fx: { interceptHitBackBp: 4_000 },
+      fx: { interceptHitBackBp: 8_000 },
     }),
     // Rule benders.
     T({
       id: 'brace',
       name: 'Brace',
-      text: 'It takes 40% less from a {Charged} hit on its slot.',
+      text: "It takes 50% less from the boss's moves ({Charged} on its slot included), not its plain attack.",
       roles: ALL,
-      intent: "Reads straight off the board's Charged highlights (Great Wave).",
-      fx: { braceBp: 4_000 },
+      intent:
+        "Reads off the boss's named moves (the Charged highlights of Great Wave, Crusher, Payoff Slam), not its plain attack: a card-shaped talent, strong where the boss has moves and idle where it has none.",
+      fx: { braceBp: 5_000 },
     }),
     T({
       id: 'stubborn',
@@ -282,11 +285,11 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'catch-breath',
       name: 'Catch Breath',
-      text: 'Once per fight, when a hit drops it below half its max HP, it heals 20% of max HP.',
+      text: 'Once per fight, when a hit drops it below half its max HP, it heals 21% of max HP.',
       roles: ALL,
       intent:
         'Survives one big hit (Crusher, Payoff Hunter). Not the gear line Second Wind, which is a chance each round to heal.',
-      fx: { secondWindBp: 2_000 },
+      fx: { secondWindBp: 2_100 },
     }),
     T({
       id: 'unbothered',
@@ -309,11 +312,11 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'heavy-hand',
       name: 'Heavy Hand',
-      text: 'Its {Mired} has a 50% chance to add 1 extra stack.',
+      text: 'Its {Mired} has a 55% chance to add 1 extra stack.',
       roles: ['guard', 'support'],
       intent:
         'Mire only; the shipped line is a chance of an extra stack, and luck is welcome. More stacks per application keeps the debuff up.',
-      fx: { miredExtraBp: 5_000 },
+      fx: { miredExtraBp: 5_500 },
     }),
     T({
       id: 'clinging',
@@ -336,26 +339,27 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'kindred-boost',
       name: 'Kindred Boost',
-      text: 'Its {Boost} +10% on creatures of its own element.',
+      text: 'Its {Boost} +32% on creatures of its own element.',
       roles: ['support'],
       intent: 'Mono-element rows in the raid, across players.',
-      fx: { kindredBoostBp: 1_000 },
+      fx: { kindredBoostBp: 3_200 },
     }),
     T({
       id: 'triage',
       name: 'Triage',
-      text: 'Its heal on the creatures {Beside} it goes to the most hurt one, at double size.',
+      text: 'Its heal on the creatures {Beside} it goes to the most hurt one, 70% bigger.',
       roles: ['support'],
       intent:
-        "Aims the Support's own base heal on the creatures beside it; only healing Supports (Tide, Grove) have a heal to aim. Idle under a Support shape Knack (Sunbeam, Drizzle, Curl Up and the rest), which replaces that verb.",
-      fx: { triage: true },
+        "Aims the Support's own base heal on the creatures beside it, bigger; only healing Supports (Tide, Grove) have a heal to aim. Idle under a Support shape Knack (Sunbeam, Drizzle, Curl Up and the rest), which replaces that verb.",
+      fx: { triageBp: 7_000 },
     }),
     T({
       id: 'overheal-spill',
       name: 'Overheal Spill',
-      text: 'Its healing past full HP passes to the most hurt creature {Beside} the one it healed.',
+      text: 'Its healing past full HP passes to the most hurt creature in the row of the one it healed.',
       roles: ['support'],
-      intent: 'Big heals are never wasted; only healing Supports (Tide, Grove) have a heal.',
+      intent:
+        'Big heals are never wasted; only healing Supports (Tide, Grove) have a heal. Goes to the most hurt creature in the row (was: beside the one healed), because overheal is rare and a short reach almost never had a target (2026-10-28).',
       fx: { spillOver: true },
     }),
   ].map((t) => [t.id, t]),
@@ -374,60 +378,60 @@ export const LINE_POOLS: Readonly<Record<string, readonly string[]>> = {
     'first-pounce',
     'momentum',
     'edge-walker',
-    'deep-ink',
     'quick-draw',
-    'shoulder-to-shoulder',
     'hardy',
+    'finisher',
+    'owners-mark',
   ],
   // A pounce, a lucky crit, a steady flame.
   cindle: [
     'steady-rhythm',
     'sharp-claws',
     'rally-cry',
-    'opportunist',
     'owners-mark',
-    'odd-one-out',
     'first-pounce',
+    'front-liner',
+    'shoulder-to-shoulder',
   ],
   // Shy, stands close to its friends and soaks up hits for them.
   sproutle: [
     'rally-cry',
     'shoulder-to-shoulder',
-    'stubborn',
     'brace',
     'triage',
-    'kindred-boost',
     'hardy',
+    'kindred-boost',
+    'flank-guard',
   ],
   // Static that never sits still; the Ohmouse plants its feet.
   zipmouse: [
     'momentum',
     'first-pounce',
     'edge-walker',
-    'deep-ink',
     'flank-guard',
-    'unbothered',
-    'brace',
+    'odd-one-out',
+    'deep-ink',
+    'shoulder-to-shoulder',
   ],
   // Calm newt in a cloud of mist, drizzling on friends.
   mistnewt: [
-    'long-shadow',
     'flank-guard',
     'unbothered',
     'overheal-spill',
     'bright-boost',
-    'kindred-boost',
     'catch-breath',
+    'shoulder-charge',
+    'rally-cry',
   ],
   // Warms the burrow and cheers the team on; the Kilnmole digs in.
   ashmole: [
     'kindred-boost',
     'bright-boost',
     'shoulder-charge',
-    'stubborn',
     'rally-cry',
     'brace',
     'hardy',
+    'odd-one-out',
   ],
   // Rides the edge of the thundercloud, bold and showy.
   stormray: [
@@ -435,12 +439,12 @@ export const LINE_POOLS: Readonly<Record<string, readonly string[]>> = {
     'quick-draw',
     'edge-walker',
     'bright-boost',
-    'kindred-boost',
     'momentum',
     'unbothered',
+    'catch-breath',
   ],
   // A patient turtle with a garden on its shell.
-  mossback: ['owners-mark', 'opportunist', 'finisher', 'front-liner', 'stubborn', 'hardy', 'brace'],
+  mossback: ['owners-mark', 'opportunist', 'finisher', 'stubborn', 'hardy', 'brace', 'rally-cry'],
   // Elegant and proud, strikes from the shadows.
   coralynx: [
     'sharp-claws',
@@ -462,56 +466,64 @@ export const LINE_POOLS: Readonly<Record<string, readonly string[]>> = {
     'catch-breath',
   ],
   // A mountain-sized drake, very hard to stop once it roars.
-  gaiadrake: ['finisher', 'opportunist', 'stubborn', 'brace', 'hardy', 'slow-burn', 'catch-breath'],
+  gaiadrake: [
+    'opportunist',
+    'stubborn',
+    'hardy',
+    'catch-breath',
+    'front-liner',
+    'rally-cry',
+    'finisher',
+  ],
   // Drifts above the noise and watches over the team.
   aurorix: [
     'bright-boost',
-    'kindred-boost',
     'unbothered',
     'hardy',
     'edge-walker',
     'odd-one-out',
     'momentum',
+    'rally-cry',
   ],
   // A lantern that lights the way; a soft, warm glow.
   lanternfin: [
     'triage',
     'overheal-spill',
-    'kindred-boost',
-    'unbothered',
     'catch-breath',
     'hardy',
     'rally-cry',
+    'odd-one-out',
+    'front-liner',
   ],
   // A bonfire on its shell, shared with the whole team.
   hearthshell: [
     'shoulder-charge',
-    'flank-guard',
     'stubborn',
     'catch-breath',
-    'front-liner',
     'brace',
     'hardy',
+    'odd-one-out',
+    'shoulder-to-shoulder',
   ],
   // Mire: a sticky wall.
   mudlump: [
     'heavy-hand',
     'clinging',
     'shoulder-charge',
-    'stubborn',
     'brace',
-    'front-liner',
     'hardy',
+    'long-shadow',
+    'flank-guard',
   ],
   // Mire: a croaking song.
   squelch: [
     'heavy-hand',
     'clinging',
     'bright-boost',
-    'kindred-boost',
     'catch-breath',
     'hardy',
     'unbothered',
+    'front-liner',
   ],
 };
 

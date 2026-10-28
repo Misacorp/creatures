@@ -534,8 +534,11 @@ describe('panel 2 fixes', () => {
       rng: rng('wind'),
     });
     expect(wind.healed - plain.healed).toBeGreaterThan(0);
+    // One heal of the talent's share of max HP, at most (a crit on the heal is not rolled for it).
     expect(wind.healed - plain.healed).toBeLessThanOrEqual(
-      Math.ceil((wind.fighters[0]?.maxHp ?? 0) / 5),
+      Math.ceil(
+        ((wind.fighters[0]?.maxHp ?? 0) * (TALENTS['catch-breath']?.fx.secondWindBp ?? 0)) / 10_000,
+      ),
     );
   });
 });
@@ -581,6 +584,10 @@ describe('R11 and line talent pools (Misa, 2026-10-27)', () => {
     expect(held.fighters[0]?.hp).toBe(1);
     const hardy = fight(boss, [{ ...at('tidewing', 0, 0), talents: ['hardy'] }], { rng: rng('h') });
     const plain = fight(boss, [at('tidewing', 0, 0)], { rng: rng('h') });
-    expect(hardy.fighters[0]?.maxHp).toBe(Math.floor(((plain.fighters[0]?.maxHp ?? 0) * 11) / 10));
+    expect(hardy.fighters[0]?.maxHp).toBe(
+      Math.floor(
+        ((plain.fighters[0]?.maxHp ?? 0) * (10_000 + (TALENTS['hardy']?.fx.hpBp ?? 0))) / 10_000,
+      ),
+    );
   });
 });

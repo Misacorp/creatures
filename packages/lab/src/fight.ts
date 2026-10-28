@@ -149,7 +149,7 @@ function inReach(s: State, g: Fighter, o: Fighter): boolean {
   const d = o.col - g.col;
   if (fx(g).flankGuard) {
     const left = g.col >= s.boss.cols - 1 - g.col;
-    return left ? d >= -2 * r && d <= -1 : d >= 1 && d <= 2 * r;
+    return left ? d >= -R.flankGuardSlots * r && d <= -1 : d >= 1 && d <= R.flankGuardSlots * r;
   }
   return Math.abs(d) <= r;
 }
@@ -190,7 +190,7 @@ function addMark(
   log(s, 'mark', `${element} x${s.marks.get(element)?.stacks ?? 0}`);
 }
 
-/** A heal by `src` (if any): healing past full HP passes on to the most hurt creature beside the one healed (Overheal Spill). */
+/** A heal by `src` (if any): healing past full HP passes on to the most hurt creature in the row of the one healed (Overheal Spill). */
 function heal(s: State, target: Fighter, amountBp: number, critOk = true, src?: Fighter): void {
   if (target.hp <= 0) return;
   let amt = Math.floor((target.maxHp * amountBp) / 10_000);
@@ -202,7 +202,7 @@ function heal(s: State, target: Fighter, amountBp: number, critOk = true, src?: 
   s.count.healed += real;
   const over = amt - real;
   if (over > 0 && src && fx(src).spillOver) {
-    const next = mostHurt(beside(s, target));
+    const next = mostHurt(alive(s).filter((o) => o !== target && o.row === target.row));
     if (next) {
       const moved = Math.min(over, next.maxHp - next.hp);
       next.hp += moved;
@@ -272,7 +272,7 @@ function supportVerb(s: State, f: Fighter, k: KnackFx): void {
   };
   const healBp = (R.supportHealBp[f.element] ?? 0) + (k.mendBonusBp ?? 0);
   // Triage aims the Support's own base verb: a Support shape Knack leaves it idle.
-  const triage = k.triage && !talentIdleUnder('triage', f.knack);
+  const triage = (k.triageBp ?? 0) > 0 && !talentIdleUnder('triage', f.knack);
   switch (k.support) {
     case 'rowRain':
       for (const o of alive(s).filter((o) => o.row === f.row))
@@ -298,12 +298,13 @@ function supportVerb(s: State, f: Fighter, k: KnackFx): void {
       const near = beside(s, f);
       for (const o of near) o.boostBp += boost + kindred(o);
       if (healBp) {
-        // Triage: only the most hurt creature beside it, at double size.
+        // Triage: only the most hurt creature beside it, at a bigger size.
         const patients = triage ? [mostHurt(near)].filter((o): o is Fighter => !!o) : near;
         for (const o of patients) {
-          const size = (k.support === 'curlUp' && o.hp * 2 < o.maxHp ? 3 : 1) * (triage ? 2 : 1);
-          heal(s, o, healBp * size, true, f);
-          if (triage) bump(f, 'triage');
+          const size = k.support === 'curlUp' && o.hp * 2 < o.maxHp ? 3 : 1;
+          const aimed = triage ? 10_000 + (k.triageBp ?? 0) : 10_000;
+          heal(s, o, Math.floor((healBp * size * aimed) / 10_000), true, f);
+          if (triage) bump(f, 'triageBp');
         }
       }
       if (k.support === 'wideWarmth')
@@ -444,7 +445,7 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
           bump(who, key);
         }
       };
-      raise(f, 'cashFullBp', k.cashFullBp, mark.stacks === R.maxStacks);
+      raise(f, 'cashHighBp', k.cashHighBp, mark.stacks >= R.opportunistFromStacks);
       raise(f, 'freshMarkBp', k.freshMarkBp, mark.turnSet === s.bossTurnsDone);
       for (const o of alive(s)) raise(o, 'ownMarkBp', fx(o).ownMarkBp, mark.owners.has(o.uid));
       factor = Math.min(factor, R.maxBonusFactorBp);
@@ -634,6 +635,7 @@ function takeHit(
   proposed: number,
   how: 'aimed' | 'area' | 'charged' | 'reflected',
   target: Fighter = taker,
+  move = false,
 ): void {
   let dmg = proposed;
   const k = fx(taker);
@@ -676,8 +678,8 @@ function takeHit(
     cut(k.frontCutBp);
     bump(taker, 'frontCutBp');
   }
-  // Brace: less from a Charged landing aimed at its own slot.
-  if (k.braceBp && how === 'charged' && taker === target) {
+  // Brace: less from the boss's moves (not its plain attack): a Charged landing aimed at its own slot, and any other move.
+  if (k.braceBp && move && (how !== 'charged' || taker === target)) {
     cut(k.braceBp);
     bump(taker, 'braceBp');
   }
@@ -799,6 +801,8 @@ function bossHits(
         taker = by;
         s.count.intercepts++;
         log(s, 'intercept', `${by.name} intercepts for ${t.name}`);
+        // Momentum: a hit aimed at it that another creature took counts like a dodge.
+        if (fx(t).momentumBp) t.momentum = true;
         if (fx(by).flankGuard) bump(by, 'flankGuard');
         if (fx(by).primeOnFirstIntercept && !by.firstInterceptDone) {
           by.firstInterceptDone = true;
@@ -812,7 +816,7 @@ function bossHits(
         }
       }
     }
-    takeHit(s, taker, proposed, move.charged ? 'charged' : area ? 'area' : 'aimed', t);
+    takeHit(s, taker, proposed, move.charged ? 'charged' : area ? 'area' : 'aimed', t, !plain);
   }
 }
 

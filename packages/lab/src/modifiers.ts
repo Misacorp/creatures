@@ -260,36 +260,36 @@ interface Idea {
 export const IDEAS: readonly Idea[] = [
   {
     name: 'Long Shadow',
-    text: "A Guard's cover, and the cut on hits it takes for others, grow by 10% per slot of distance.",
+    text: "A Guard's cover, and the cut on hits it takes for others, grow by 20% per slot of distance.",
     class: ['protection', GUARD, 'shape'],
     also: ['Distance cover'],
   },
   {
     name: 'Opportunist',
-    text: '+40% on a reaction that cashes a mark at x3.',
+    text: '+80% on a reaction that cashes a mark at x2 or more.',
     class: ['marks', PAYOFF, 'condition'],
     also: ['Count hunter'],
   },
   {
     name: 'Quick Draw',
-    text: "+30% on a reaction on a mark added since the boss's last turn.",
+    text: "+27% on a reaction on a mark added since the boss's last turn.",
     class: ['marks', PAYOFF, 'condition'],
     also: ['Fresh mark'],
   },
   {
     name: 'Deep Ink',
-    text: 'Its first mark each fight adds 1 more to the count.',
+    text: 'Its first mark each fight adds 2 more to the count.',
     class: ['marks', SETTER, 'rhythm'],
     also: ['Mark painter'],
   },
   {
     name: 'Slow Burn',
-    text: '+4% per round from round 2, up to +24%.',
+    text: '+2% per round from round 2, up to +12%.',
     class: ['damage', HIT, 'condition'],
   },
   {
     name: 'Finisher',
-    text: '+50% while the boss is below a third of its HP.',
+    text: '+75% while the boss is below a third of its HP.',
     class: ['damage', HIT, 'condition'],
   },
   {
@@ -300,18 +300,18 @@ export const IDEAS: readonly Idea[] = [
   },
   {
     name: 'Steady Rhythm',
-    text: 'Every third hit it makes is a crit.',
+    text: 'Every third hit it makes is a crit, and its crits deal 20% more.',
     class: ['damage', HIT, 'rhythm'],
   },
   {
     name: 'Brace for impact',
-    text: 'Takes 40% less from a Charged landing announced on its slot.',
+    text: "Takes 50% less from the boss's moves (a Charged landing announced on its slot included), not its plain attack.",
     class: ['protection', ANY, 'rule'],
     isGear: 'brace',
   },
   {
     name: 'Shoulder Charge',
-    text: 'When it intercepts, it strikes back for 40% of its Attack (ignores armour).',
+    text: 'When it intercepts, it strikes back for 80% of its Attack (ignores armour).',
     class: ['damage', GUARD, 'trigger'],
   },
   {
@@ -321,17 +321,17 @@ export const IDEAS: readonly Idea[] = [
   },
   {
     name: 'Triage',
-    text: 'Its heal on the creatures beside it goes to the most hurt one, at double size.',
+    text: 'Its heal on the creatures beside it goes to the most hurt one, 70% bigger.',
     class: ['team', SUPPORT, 'shape'],
   },
   {
     name: 'Overheal Spill',
-    text: 'Healing past full HP passes to the most hurt creature beside the one healed.',
+    text: 'Healing past full HP passes to the most hurt creature in the row of the one healed.',
     class: ['team', SUPPORT, 'transfer'],
   },
   {
     name: 'Kindred Boost',
-    text: 'Its boost +10% on creatures of its own element.',
+    text: 'Its boost +32% on creatures of its own element.',
     class: ['team', SUPPORT, 'condition'],
   },
   {

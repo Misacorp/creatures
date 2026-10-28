@@ -105,68 +105,94 @@ const aimed = (anchor: 'strongest' | 'front', shape: 'single' | 'row' | 'all', a
 };
 const close = (v: number | undefined, want: number, tol = 0.03) =>
   expect(Math.abs((v ?? 0) - want)).toBeLessThan(tol);
+/** A talent's number (basis points) as the library has it: a retune of a talent changes the library, not these tests. */
+const bp = (id: string, key: string): number =>
+  (TALENTS[id]?.fx as Record<string, number | undefined> | undefined)?.[key] ?? 0;
+/** The multiplier a talent's number gives on a hit. */
+const mult = (id: string, key: string): number => 1 + bp(id, key) / 10_000;
+/** What is left of a hit (in bp) after cuts multiply, the total cut capped (R13). */
+const cutLeft = (...cuts: number[]): number => {
+  let left = 10_000;
+  for (const c of cuts) left = Math.floor((left * (10_000 - Math.min(10_000, c))) / 10_000);
+  return Math.max(left, 10_000 - LAB_RULES.cutMaxBp);
+};
+/** A hit of `dmg` after cuts, before armour. */
+const afterCuts = (dmg: number, ...cuts: number[]): number =>
+  Math.floor((dmg * cutLeft(...cuts)) / 10_000);
 
 describe('talent hooks: neighbours and position', () => {
   const quiet = calm({ rows: 1, cols: 3 });
 
-  it('Shoulder to Shoulder: +20% per neighbour of its element, at most 2', () => {
+  it('Shoulder to Shoulder: a bonus for each neighbour of its element, at most 2', () => {
     const two = [at('tidewing', 0, 0), at('tidewing', 0, 1), at('tidewing', 0, 2)];
     const one = [at('wickat', 0, 0), at('tidewing', 0, 1), at('tidewing', 0, 2)];
     const none = [at('wickat', 0, 0), at('tidewing', 0, 1), at('wickat', 0, 2)];
-    close(gain(quiet, two, 1, 'shoulder-to-shoulder')[0], 1.4);
-    close(gain(quiet, one, 1, 'shoulder-to-shoulder')[0], 1.2);
+    const per = bp('shoulder-to-shoulder', 'perKindredBesideBp') / 10_000;
+    close(gain(quiet, two, 1, 'shoulder-to-shoulder')[0], 1 + 2 * per);
+    close(gain(quiet, one, 1, 'shoulder-to-shoulder')[0], 1 + per);
     expect(gain(quiet, none, 1, 'shoulder-to-shoulder')[0]).toBe(1);
   });
 
-  it('Odd One Out: +12% while no creature beside it shares its element, also with nobody beside it', () => {
+  it('Odd One Out: a bonus while no creature beside it shares its element, also with nobody beside it', () => {
     const mixed = [at('wickat', 0, 0), at('tidewing', 0, 1), at('wickat', 0, 2)];
     const kin = [at('tidewing', 0, 0), at('tidewing', 0, 1), at('wickat', 0, 2)];
-    close(gain(quiet, mixed, 1, 'odd-one-out')[0], 1.12);
+    const odd = mult('odd-one-out', 'oddOneOutBp');
+    close(gain(quiet, mixed, 1, 'odd-one-out')[0], odd);
     expect(gain(quiet, kin, 1, 'odd-one-out')[0]).toBe(1);
     // The shipped line holds with nobody beside it too.
-    close(gain(calm({ rows: 1, cols: 1 }), [at('tidewing', 0, 0)], 0, 'odd-one-out')[0], 1.12);
+    close(gain(calm({ rows: 1, cols: 1 }), [at('tidewing', 0, 0)], 0, 'odd-one-out')[0], odd);
   });
 
-  it('Edge-walker: +15% in the arena end slots (column 0 and the last column), nothing in the middle', () => {
+  it('Edge-walker: a bonus in the arena end slots (column 0 and the last column), nothing in the middle', () => {
+    const edge = mult('edge-walker', 'rowEndBp');
     const row = [at('tidewing', 0, 0), at('wickat', 0, 1), at('tidewing', 0, 2)];
-    close(gain(quiet, row, 0, 'edge-walker')[0], 1.15);
-    close(gain(quiet, row, 2, 'edge-walker')[0], 1.15);
+    close(gain(quiet, row, 0, 'edge-walker')[0], edge);
+    close(gain(quiet, row, 2, 'edge-walker')[0], edge);
     expect(gain(quiet, row, 1, 'edge-walker')[0]).toBe(1);
     // The slot decides, not the end creature: alone in column 1 it is not at a row end, alone in column 0 it is.
     const lone = (col: number) => [at('tidewing', 0, col)];
     expect(gain(quiet, lone(1), 0, 'edge-walker')[0]).toBe(1);
-    close(gain(quiet, lone(0), 0, 'edge-walker')[0], 1.15);
+    close(gain(quiet, lone(0), 0, 'edge-walker')[0], edge);
     // Nobody to its left does not make column 1 an end.
     expect(gain(quiet, [at('tidewing', 0, 1), at('wickat', 0, 2)], 0, 'edge-walker')[0]).toBe(1);
   });
 
-  it('Front-liner: 20% less from every hit in the front row, none from further back', () => {
+  it('Front-liner: less from every hit in the front row, none from further back', () => {
     const hit = (cols: number, row: number, talents?: string[]) => {
       const b = labBoss({ rows: 2, cols, atk: 110 });
       const r = run({ ...b, spd: 0 }, [at('kilnmole', row, 0, undefined, talents)]);
       return firstHit(r, 'Kilnmole');
     };
-    // Plain hit 110, minus Kilnmole's armour; with the cut, floor(110 x 0.8) - armour.
+    // Plain hit 110, minus Kilnmole's armour; with the cut, the cut hit minus armour.
     expect(hit(1, 0)).toBe(110 - KILN_ARMOUR);
-    expect(hit(1, 0, ['front-liner'])).toBe(88 - KILN_ARMOUR);
+    expect(hit(1, 0, ['front-liner'])).toBe(
+      afterCuts(110, bp('front-liner', 'frontCutBp')) - KILN_ARMOUR,
+    );
     expect(hit(1, 1, ['front-liner'])).toBe(110 - KILN_ARMOUR);
   });
 });
 
 describe('talent hooks: fight state', () => {
-  it('Slow Burn: +4% per round from round 2, up to +24%', () => {
+  it('Slow Burn: a bonus per round from round 2, up to its cap', () => {
     const g = gain(calm({ rows: 1, cols: 1 }), [at('tidewing', 0, 0)], 0, 'slow-burn', 0, 9);
+    const per = bp('slow-burn', 'slowBurnBp') / 10_000;
+    const cap = bp('slow-burn', 'slowBurnCapBp') / 10_000;
+    const want = (round: number) => 1 + Math.min(round * per, cap);
     close(g[0], 1);
-    close(g[1], 1.04);
-    close(g[3], 1.12);
-    close(g[6], 1.24);
-    close(g[8], 1.24);
+    close(g[1], want(1));
+    close(g[3], want(3));
+    // Past the cap it stops growing (the cap is reached before round 9).
+    expect(cap / per).toBeLessThan(8);
+    close(g[8], 1 + cap);
   });
 
-  it('Finisher: +50% while the boss is below a third of its HP', () => {
+  it('Finisher: a bonus while the boss is below a third of its HP', () => {
     const boss = calm({ rows: 1, cols: 1, hp: 900_000 });
     const team = [at('tidewing', 0, 0)];
-    close(gain(boss, team, 0, 'finisher', 0, 1, { bossHp: 299_000 })[0], 1.5);
+    close(
+      gain(boss, team, 0, 'finisher', 0, 1, { bossHp: 299_000 })[0],
+      mult('finisher', 'finisherBp'),
+    );
     expect(gain(boss, team, 0, 'finisher', 0, 1, { bossHp: 301_000 })[0]).toBe(1);
   });
 
@@ -181,7 +207,7 @@ describe('talent hooks: fight state', () => {
     expect(a.damage).toBeGreaterThan(b.damage);
   });
 
-  it('Momentum: after it dodges, its next hit deals +40%', () => {
+  it('Momentum: after it dodges, its next hit deals a bonus', () => {
     // Many tiny hits on a creature with plenty of dodge: it dodges in round 1, so round 2 is boosted.
     const b = labBoss({ rows: 1, cols: 1 });
     const boss: BossDef = {
@@ -192,10 +218,30 @@ describe('talent hooks: fight state', () => {
     const team = [at('voltaro', 0, 0, 'zigzag')];
     const g = gain(boss, team, 0, 'momentum', 0, 3);
     expect(g[0]).toBe(1);
-    close(g[1], 1.4);
+    close(g[1], mult('momentum', 'momentumBp'));
   });
 
-  it('Rally Cry: +50% for the rest of the fight, only after a creature beside it is knocked out', () => {
+  it('Momentum: a hit aimed at it that a Guard takes counts like a dodge', () => {
+    // The boss aims at the front creature every round; the Guard beside it takes the hit (no dodge for either).
+    const b = labBoss({ rows: 1, cols: 2 });
+    const boss: BossDef = {
+      ...b,
+      spd: 0,
+      plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 100 },
+    };
+    const team = [at('tidewing', 0, 0), at('thornbuck', 0, 1)];
+    const on = run(boss, withTalents(team, { 0: ['momentum'] }));
+    expect(on.intercepts).toBeGreaterThan(0);
+    expect(on.fighters[0]?.fires['momentumBp']).toBeGreaterThan(0);
+    // Alone, with nobody to take the hit, nothing is armed (it does not dodge either: Speed 0 boss, but its own dodge may).
+    const alone = run(
+      { ...boss, cols: 1 },
+      withTalents([at('tidewing', 0, 0)], { 0: ['momentum'] }),
+    );
+    expect(alone.intercepts).toBe(0);
+  });
+
+  it('Rally Cry: a bonus for the rest of the fight, only after a creature beside it is knocked out', () => {
     const b = labBoss({ rows: 1, cols: 3, atk: 5_000 });
     const boss: BossDef = {
       ...b,
@@ -206,7 +252,7 @@ describe('talent hooks: fight state', () => {
     const team = [at('tidewing', 0, 0), at('tidewing', 0, 1), at('tidewing', 0, 2)];
     const beside = gain(boss, team, 1, 'rally-cry', 1, 2);
     expect(beside[0]).toBe(1);
-    close(beside[1], 1.5);
+    close(beside[1], mult('rally-cry', 'vengefulBp'));
     const apart = gain(boss, team, 2, 'rally-cry', 2, 2);
     expect(apart).toEqual([1, 1]);
   });
@@ -216,17 +262,17 @@ describe('talent hooks: marks', () => {
   const trio = calm({ rows: 1, cols: 2, rounds: 3 });
   const doubleMarker = at('tidewing', 0, 0, 'double-mark');
 
-  it('Opportunist: a bigger reaction when it cashes a mark at x3', () => {
-    // Double Mark leaves x2 a round and the Payoff cashes one: round 2 is the first x3.
+  it('Opportunist: a bigger reaction when it cashes a mark at x2 or more', () => {
+    // Double Mark leaves x2 a round and the Payoff cashes one: every round it cashes a mark of x2 or x3.
     const team = [doubleMarker, at('tempestray', 0, 1)];
     const on = run(trio, withTalents(team, { 1: ['opportunist'] }));
     const off = run(trio, team);
-    expect(on.fighters[1]?.fires['cashFullBp']).toBe(2);
+    expect(on.fighters[1]?.fires['cashHighBp']).toBe(3);
     expect(on.fighters[1]?.damageDealt).toBeGreaterThan(off.fighters[1]?.damageDealt ?? 0);
-    // With single marks it never holds, and nothing changes.
+    // With single marks (x1 when cashed) it never holds, and nothing changes.
     const single = [at('tidewing', 0, 0), at('tempestray', 0, 1)];
     const none = run(trio, withTalents(single, { 1: ['opportunist'] }));
-    expect(none.fighters[1]?.fires['cashFullBp']).toBeUndefined();
+    expect(none.fighters[1]?.fires['cashHighBp']).toBeUndefined();
     expect(none.damage).toBe(run(trio, single).damage);
   });
 
@@ -241,10 +287,12 @@ describe('talent hooks: marks', () => {
           ?.text.split('+')[1],
       );
     const none = bonusOf([]);
-    // 40% and 30% multiply: x1.82, not x1.70.
+    // The two raises multiply (not add), while the factor stays under the cap.
     const both = bonusOf(['opportunist', 'quick-draw']);
-    expect(both / none).toBeGreaterThan(1.8);
-    expect(both / none).toBeLessThan(1.84);
+    const product = mult('opportunist', 'cashHighBp') * mult('quick-draw', 'freshMarkBp');
+    expect(product * 10_000).toBeLessThan(LAB_RULES.maxBonusFactorBp);
+    expect(both / none).toBeGreaterThan(product - 0.03);
+    expect(both / none).toBeLessThan(product + 0.03);
     expect(LAB_RULES.maxBonusFactorBp).toBe(30_000);
   });
 
@@ -273,11 +321,12 @@ describe('talent hooks: marks', () => {
     expect(other.damage).toBe(run(trio, team).damage);
   });
 
-  it('Deep Ink: its first mark each fight starts at x2', () => {
+  it('Deep Ink: its first mark each fight starts bigger by its count (a mark holds three at most)', () => {
     const boss = calm({ rows: 1, cols: 1, rounds: 2 });
+    const first = Math.min(3, 1 + bp('deep-ink', 'firstMarkExtra'));
     expect(marks(run(boss, [at('tidewing', 0, 0, undefined, ['deep-ink'])]))).toEqual([
-      'tide x2',
-      'tide x3',
+      `tide x${first}`,
+      `tide x${Math.min(3, first + 1)}`,
     ]);
     expect(marks(run(boss, [at('tidewing', 0, 0)]))).toEqual(['tide x1', 'tide x2']);
   });
@@ -306,7 +355,26 @@ describe('talent hooks: Guard shapes and defence', () => {
     expect(hit(3, 4, [])).toBeGreaterThan(0);
   });
 
+  it("Flank Guard: its cover is bigger by the talent's number, on top of the base cover", () => {
+    const sweep = aimed('front', 'row', 110);
+    const covered = (talents: string[]) =>
+      firstHit(
+        run(sweep, [
+          at('tempestray', 0, 1),
+          // Middle of five slots: the tie goes left, so Tempestray one slot to its left is covered.
+          at('thornbuck', 0, 2, undefined, talents),
+        ]),
+        'Tempestray',
+      );
+    expect(covered([])).toBe(afterCuts(110, LAB_RULES.coverBp) - TEMPEST_ARMOUR);
+    expect(covered(['flank-guard'])).toBe(
+      afterCuts(110, LAB_RULES.coverBp + bp('flank-guard', 'coverBonusBp')) - TEMPEST_ARMOUR,
+    );
+    expect(bp('flank-guard', 'coverBonusBp')).toBeGreaterThan(0);
+  });
+
   it('Long Shadow: cover grows with distance, and so does the cut on a hit it intercepts', () => {
+    const per = bp('long-shadow', 'distanceCoverBp');
     const sweep = aimed('front', 'row', 110);
     const covered = (guardCol: number, knack: string | undefined, talents: string[]) =>
       firstHit(
@@ -315,16 +383,18 @@ describe('talent hooks: Guard shapes and defence', () => {
       );
     // Area hit 110, minus Tempestray's armour. Cover 40%: 66 - armour.
     expect(covered(1, undefined, [])).toBe(66 - TEMPEST_ARMOUR);
-    // Two slots away with Wide Reach: 40% + 2 x 10 = 60%: 44 - armour.
-    expect(covered(2, 'wide-reach', ['long-shadow'])).toBe(44 - TEMPEST_ARMOUR);
-    // An aimed hit the Guard takes for a creature two slots away is cut 20%: 88 - armour (not 110 - armour).
+    // Two slots away with Wide Reach: 40% plus the talent's number twice (inside the 75% cap).
+    expect(covered(2, 'wide-reach', ['long-shadow'])).toBe(
+      afterCuts(110, LAB_RULES.coverBp + 2 * per) - TEMPEST_ARMOUR,
+    );
+    // An aimed hit the Guard takes for a creature two slots away is cut by the number twice (not 110 - armour).
     const hit = (talents: string[]) =>
       firstHit(
         run(aim(), [at('tempestray', 0, 0), at('thornbuck', 0, 2, undefined, talents)]),
         'Thornbuck',
       );
     expect(hit(['flank-guard'])).toBe(110 - THORN_ARMOUR);
-    expect(hit(['flank-guard', 'long-shadow'])).toBe(88 - THORN_ARMOUR);
+    expect(hit(['flank-guard', 'long-shadow'])).toBe(afterCuts(110, 2 * per) - THORN_ARMOUR);
   });
 
   it('every cut on one hit multiplies, then the total cut is capped at 75%, before armour', () => {
@@ -337,10 +407,13 @@ describe('talent hooks: Guard shapes and defence', () => {
     ];
     // 75%: floor(110 x 0.25) = 27, minus Tempestray's armour.
     expect(firstHit(run(sweep, team), 'Tempestray')).toBe(27 - TEMPEST_ARMOUR);
-    // Two cuts multiply: cover 40% and Front-liner 20% leave 60% x 80% = 48% (not 40%).
+    // Two cuts multiply: cover 40% and Front-liner leave 60% x (100% - its cut), not 100% - 40% - its cut.
     const both = [at('tempestray', 0, 0, undefined, ['front-liner']), at('thornbuck', 0, 1)];
+    const front = bp('front-liner', 'frontCutBp');
+    const left = Math.floor((6_000 * (10_000 - front)) / 10_000);
+    expect(left).toBeGreaterThan(10_000 - LAB_RULES.coverBp - front);
     expect(firstHit(run(sweep, both), 'Tempestray')).toBe(
-      Math.floor((110 * 4_800) / 10_000) - TEMPEST_ARMOUR,
+      Math.floor((110 * left) / 10_000) - TEMPEST_ARMOUR,
     );
   });
 
@@ -357,10 +430,11 @@ describe('talent hooks: Guard shapes and defence', () => {
       at('thornbuck', 0, 14, 'wide-reach', ['flank-guard', 'long-shadow', 'front-liner']),
     ];
     const r = run(sweep, team);
-    // 110 x 25% = 27 before armour: the covered creature takes 27 - its armour, the Guard (no cover, Front-liner) 88 - its own.
+    // 110 x 25% = 27 before armour: the covered creature takes 27 - its armour, the Guard (no cover, Front-liner) its cut hit - its own.
+    const front = bp('front-liner', 'frontCutBp');
     expect(firstHit(r, 'Tempestray')).toBe(27 - TEMPEST_ARMOUR);
-    expect(firstHit(r, 'Thornbuck')).toBe(88 - THORN_ARMOUR);
-    // The Guard in the front row also shrugs a hit it takes for the creature four slots away: 20% and 40% leave 48%.
+    expect(firstHit(r, 'Thornbuck')).toBe(afterCuts(110, front) - THORN_ARMOUR);
+    // The Guard in the front row also shrugs a hit it takes for the creature four slots away: both cuts multiply, inside the cap.
     const aimedAt = { ...aimed('strongest', 'single', 110), cols: 15, rounds: 6 };
     const intercepted = firstHit(
       run(aimedAt, [
@@ -369,7 +443,9 @@ describe('talent hooks: Guard shapes and defence', () => {
       ]),
       'Thornbuck',
     );
-    expect(intercepted).toBe(Math.floor((110 * 4_800) / 10_000) - THORN_ARMOUR);
+    // At or below armour the hit is Blocked and there is no hit line.
+    const left = afterCuts(110, front, 4 * bp('long-shadow', 'distanceCoverBp')) - THORN_ARMOUR;
+    expect(intercepted).toBe(left > 0 ? left : undefined);
   });
 
   it('cover comes from the Guard with the largest cover whose reach includes the creature', () => {
@@ -380,16 +456,18 @@ describe('talent hooks: Guard shapes and defence', () => {
           at('tempestray', 0, 0),
           // Beside it: cover 40%.
           at('thornbuck', 0, 1),
-          // Two slots away (Wide Reach): with Long Shadow its cover is 60%, so it wins.
+          // Two slots away (Wide Reach): with Long Shadow its cover is bigger, so it wins.
           at('thornbuck', 0, 2, 'wide-reach', strong),
         ]),
         'Tempestray',
       );
     expect(covered([])).toBe(66 - TEMPEST_ARMOUR);
-    expect(covered(['long-shadow'])).toBe(44 - TEMPEST_ARMOUR);
+    expect(covered(['long-shadow'])).toBe(
+      afterCuts(110, LAB_RULES.coverBp + 2 * bp('long-shadow', 'distanceCoverBp')) - TEMPEST_ARMOUR,
+    );
   });
 
-  it('Shoulder Charge: when it intercepts, it strikes back for 40% of its Attack, ignoring armour', () => {
+  it('Shoulder Charge: when it intercepts, it strikes back for a share of its Attack, ignoring armour', () => {
     const team = (talents: string[]) => [
       at('tempestray', 0, 0),
       at('thornbuck', 0, 1, undefined, talents),
@@ -399,18 +477,40 @@ describe('talent hooks: Guard shapes and defence', () => {
     const atk = a.fighters[1]?.atk ?? 0;
     expect(a.intercepts).toBeGreaterThan(0);
     expect((a.fighters[1]?.damageDealt ?? 0) - (b.fighters[1]?.damageDealt ?? 0)).toBe(
-      a.intercepts * Math.floor((atk * 4_000) / 10_000),
+      a.intercepts * Math.floor((atk * bp('shoulder-charge', 'interceptHitBackBp')) / 10_000),
     );
   });
 
-  it('Brace: 40% less from a Charged landing on its slot', () => {
-    const b = labBoss({ rows: 1, cols: 1, cards: ['great-wave'], rounds: 3 });
-    const boss: BossDef = { ...b, spd: 0, plain: { ...b.plain, powerBp: 0 } };
-    const hit = (talents: string[]) =>
-      firstHit(run(boss, [at('tempestray', 0, 0, undefined, talents)]), 'Tempestray');
-    // Great Wave lands 110 x 1.8 = 198: minus Tempestray's armour; braced, floor(198 x 0.6) = 118 - armour.
-    expect(hit([])).toBe(198 - TEMPEST_ARMOUR);
-    expect(hit(['brace'])).toBe(118 - TEMPEST_ARMOUR);
+  it("Brace: less from a Charged landing on its slot and from the boss's other moves, not from its plain attack", () => {
+    const brace = bp('brace', 'braceBp');
+    const quietPlain = (card: string, rounds: number): BossDef => {
+      const b = labBoss({ rows: 1, cols: 1, cards: [card], rounds });
+      return { ...b, spd: 0, plain: { ...b.plain, powerBp: 0 } };
+    };
+    // A seed on which the boss's first hit is not dodged (the same seed with and without Brace).
+    const hit = (boss: BossDef, talents: string[]) => {
+      for (let i = 0; i < 30; i++) {
+        const seed = `brace${i}`;
+        const base = firstHit(run(boss, [at('tempestray', 0, 0)], seed), 'Tempestray');
+        if (base !== undefined)
+          return firstHit(
+            run(boss, [at('tempestray', 0, 0, undefined, talents)], seed),
+            'Tempestray',
+          );
+      }
+      return undefined;
+    };
+    // Great Wave lands 110 x 1.8 = 198: minus Tempestray's armour; braced, the cut hit minus armour.
+    const wave = quietPlain('great-wave', 3);
+    expect(hit(wave, [])).toBe(198 - TEMPEST_ARMOUR);
+    expect(hit(wave, ['brace'])).toBe(afterCuts(198, brace) - TEMPEST_ARMOUR);
+    // Another move (Crusher: 110 x 4 on the strongest in round 3) is braced too.
+    const crush = quietPlain('crusher', 3);
+    expect(hit(crush, [])).toBe(440 - TEMPEST_ARMOUR);
+    expect(hit(crush, ['brace'])).toBe(afterCuts(440, brace) - TEMPEST_ARMOUR);
+    // The plain attack is not a move: Brace does nothing against it.
+    const plain = { ...labBoss({ rows: 1, cols: 1, rounds: 1 }), spd: 0 };
+    expect(hit(plain, ['brace'])).toBe(hit(plain, []));
   });
 
   it('Stubborn leaves it at 1 HP once per fight', () => {
@@ -434,14 +534,18 @@ describe('talent hooks: Support', () => {
     expect(g[2]).toBe(1);
   });
 
-  it('Kindred Boost: +10% on creatures of its own element only', () => {
+  it('Kindred Boost: a bigger boost on creatures of its own element only', () => {
     const team = [at('aurorix', 0, 0), at('tempestray', 0, 1)];
-    close(gain(quiet, team, 0, 'kindred-boost', 1)[0], 1.25 / 1.15, 0.02);
+    close(
+      gain(quiet, team, 0, 'kindred-boost', 1)[0],
+      (1.15 + bp('kindred-boost', 'kindredBoostBp') / 10_000) / 1.15,
+      0.02,
+    );
     const other = [at('aurorix', 0, 0), at('tidewing', 0, 1)];
     expect(gain(quiet, other, 0, 'kindred-boost', 1)[0]).toBe(1);
   });
 
-  it('Triage: the heal goes to the most hurt creature beside it, at double size', () => {
+  it('Triage: the heal goes to the most hurt creature beside it, bigger', () => {
     const b = labBoss({ rows: 1, cols: 3, rounds: 5, atk: 90 });
     const boss: BossDef = { ...b, spd: 0 };
     const team = (talents: string[]) => [
@@ -449,8 +553,8 @@ describe('talent hooks: Support', () => {
       at('lanternfin', 0, 1, undefined, talents),
       at('tempestray', 0, 2),
     ];
-    // Only Kilnmole is ever hurt: one heal on it, not a second wasted on Tempestray at full HP.
-    expect(run(boss, team(['triage'])).healed).toBeGreaterThan(run(boss, team([])).healed * 1.5);
+    // Only Kilnmole is ever hurt: one heal on it, bigger by the talent's number, not a second wasted on Tempestray at full HP.
+    expect(run(boss, team(['triage'])).healed).toBeGreaterThan(run(boss, team([])).healed * 1.4);
   });
 
   it('Triage is idle under a Support shape Knack: its own base verb is replaced, so nothing is aimed', () => {
@@ -472,7 +576,7 @@ describe('talent hooks: Support', () => {
     expect(talentIdleUnder('hardy', 'curl-up')).toBe(false);
   });
 
-  it('Overheal Spill: healing past full HP passes to the most hurt creature beside the one that was healed', () => {
+  it('Overheal Spill: healing past full HP passes to the most hurt creature in the row of the one that was healed', () => {
     const boss = calm({ rows: 1, cols: 3, rounds: 1 });
     // Tempestray stands beside Kilnmole (the one healed), not beside Lanternfin (the healer).
     const team = (talents: string[]) => [
@@ -483,6 +587,24 @@ describe('talent hooks: Support', () => {
     // Kilnmole is one HP short, so its heal mostly overflows; Tempestray is at half.
     const carryHp = new Map([
       ['p1:kilnmole:1', formStats('kilnmole', 25).hp - 1],
+      ['p1:tempestray:0', Math.floor(formStats('tempestray', 25).hp / 2)],
+    ]);
+    const hp = (talents: string[]) =>
+      run(boss, team(talents), 't', { carryHp }).fighters[0]?.hp ?? 0;
+    expect(hp(['overheal-spill'])).toBeGreaterThan(hp([]));
+  });
+
+  it('Overheal Spill reaches a hurt creature anywhere in the row, not only beside the one healed', () => {
+    const boss = calm({ rows: 1, cols: 4, rounds: 1 });
+    // Tempestray is two slots from Kilnmole (the one healed) and one from nothing else that heals: out of the old reach.
+    const team = (talents: string[]) => [
+      at('tempestray', 0, 0),
+      at('magmole', 0, 1),
+      at('kilnmole', 0, 2),
+      at('lanternfin', 0, 3, undefined, talents),
+    ];
+    const carryHp = new Map([
+      ['p1:kilnmole:2', formStats('kilnmole', 25).hp - 1],
       ['p1:tempestray:0', Math.floor(formStats('tempestray', 25).hp / 2)],
     ]);
     const hp = (talents: string[]) =>
@@ -678,7 +800,10 @@ describe('counters are not hits, and the fight ends the moment the boss is down 
     at('tempestray', 0, 0),
     at('thornbuck', 0, 1, undefined, talents),
   ];
-  const counterOf = () => Math.floor((formStats('thornbuck', 25).atk * 4_000) / 10_000);
+  const counterOf = () =>
+    Math.floor(
+      (formStats('thornbuck', 25).atk * bp('shoulder-charge', 'interceptHitBackBp')) / 10_000,
+    );
 
   it('Shoulder Charge strikes back for damage but never sets off Cull or a talent on its hits', () => {
     const talents = ['shoulder-charge', 'cull', 'first-pounce', 'sharp-claws'];
