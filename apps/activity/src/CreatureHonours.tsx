@@ -66,21 +66,36 @@ const COINS: Readonly<Record<GamesMedal, SpriteDef>> = {
   },
 };
 
+/** A metal not won yet: the same medal as a flat dark shape in its ink outline, with no count. */
+const SILHOUETTE: SpriteDef = {
+  rows: COIN_ROWS,
+  palette: { k: INK, a: '#4a4370', f: '#4a4370', d: '#4a4370', t: '#4a4370', u: '#4a4370' },
+};
+
 const MEDALS: readonly GamesMedal[] = ['gold', 'silver', 'bronze'];
 
-/** The medals small, gold first; a metal it has none of is left out, and nothing at all with none. */
+/**
+ * The medals small, always in the same three places (gold, silver, bronze) so the leftmost one reads as
+ * the best at a glance; a metal not won yet is a silhouette with no count. Nothing at all for a creature
+ * that has won none.
+ */
 export function CardMedals({ creature }: { creature: Pick<Creature, 'medals'> }) {
   const { medals } = creature;
-  const shown = MEDALS.filter((m) => medals[m] > 0);
-  if (shown.length === 0) return null;
+  if (MEDALS.every((m) => medals[m] === 0)) return null;
   return (
     <span class="cc-medals" aria-hidden="true">
-      {shown.map((m) => (
-        <span key={m} class={`cc-coin is-${m}`}>
-          <Sprite sprite={COINS[m]} scale={2} />
-          <span class="cc-coin-n">{medals[m] > 99 ? '99' : medals[m]}</span>
-        </span>
-      ))}
+      {MEDALS.map((m) =>
+        medals[m] > 0 ? (
+          <span key={m} class={`cc-coin is-${m}`}>
+            <Sprite sprite={COINS[m]} scale={2} />
+            <span class="cc-coin-n">{medals[m] > 99 ? '99' : medals[m]}</span>
+          </span>
+        ) : (
+          <span key={m} class={`cc-coin is-${m} is-none`}>
+            <Sprite sprite={SILHOUETTE} scale={2} />
+          </span>
+        ),
+      )}
     </span>
   );
 }

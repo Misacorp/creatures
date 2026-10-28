@@ -509,16 +509,21 @@ describe('ribbons and medals', () => {
     ]);
   });
 
-  it('draws each metal it has won with the count on it, gold first, leaving out a metal it has none of', () => {
-    const { card } = draw(honoured(0, { gold: 3, silver: 0, bronze: 12 }));
+  it('keeps the three medals in place, gold first: a metal not won is a silhouette with no count', () => {
+    const { card } = draw(honoured(0, { gold: 0, silver: 0, bronze: 12 }));
     const [medals] = byClass(card, 'cc-medals');
     expect(medals?.getAttribute('aria-hidden')).toBe('true');
     const coins = byClass(card, 'cc-coin');
     expect(coins.map((el) => el.getAttribute('class'))).toEqual([
-      'cc-coin is-gold',
+      'cc-coin is-gold is-none',
+      'cc-coin is-silver is-none',
       'cc-coin is-bronze',
     ]);
-    expect(coins.map((el) => byClass(el, 'cc-coin-n')[0]?.textContent)).toEqual(['3', '12']);
+    expect(coins.map((el) => byClass(el, 'cc-coin-n')[0]?.textContent)).toEqual([
+      undefined,
+      undefined,
+      '12',
+    ]);
   });
 
   it('shows at most 99 on a medal', () => {
