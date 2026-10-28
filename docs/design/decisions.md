@@ -3418,3 +3418,13 @@ Misa asked whether the next list that needs "select several and act on them" cou
 ## 2026-10-28: Random talent rolls stay situational
 
 **Decision (Misa).** A casual player with random talents gaining about 7% to 9% (against about 20% for the best fit) is fine: random rolls should stay well away from the best fit, so talents stay situational rather than flat. Finisher, picked by 9 of the 15 best teams, is fine for now; watch it. The lab's team check now asks that random rolls gain something but at most 60% of the best fit's share (the old 10% floor is gone).
+
+## 2026-10-28: Combat v2 content direction: raids hyper-focused, dungeons all-round
+
+**Decision (Misa).**
+
+- **Existing foes are not sacred**: names, elements, gimmicks and numbers may all change for combat v2.
+- **The raid** is announced in advance: one known boss, so players build a hyper-focused roster against it. Raid bosses get stronger and many more attacks, especially area attacks in varied patterns (rows, columns, several columns, chains, several random targets). Creatures should be knocked out in raids.
+- **The dungeon** shows its encounters up front but sends many different foes, so it asks for an all-round team. Dungeons are tough, so the camp between rooms matters. The Undercroft stays a mystery: a push-your-luck choice players may skip.
+- **Every mechanic matters somewhere**: each Knack family, talent kind, keyword, armour, silence, Mired, marks, Charged moves, Taunt, intercept and cover is the answer (or the problem) for at least one boss or foe.
+- **Spiky is fine**: perfect balance is impossible; fun swings are welcome.
