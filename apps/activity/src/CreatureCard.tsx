@@ -63,7 +63,7 @@ export function CreatureCard({
   xpSize?: XpSize | undefined;
   /**
    * The workbench's variation of the ribbons (strips behind the card) and the Valley Games medals (small, top
-   * right): left out, the card shows neither (the list does not have the medals yet).
+   * right, over the top edge): left out, the card shows neither (the list does not have the medals yet).
    */
   honours?: { medals: MedalCounts } | undefined;
 }) {
@@ -121,6 +121,7 @@ export function CreatureCard({
       }}
     >
       {honours !== undefined && <CardRibbons creature={creature} />}
+      {honours !== undefined && <CardMedals medals={honours.medals} />}
       <CreatureHead
         creature={creature}
         state={state}
@@ -130,7 +131,6 @@ export function CreatureCard({
         }}
         corner={
           <>
-            {honours !== undefined && <CardMedals medals={honours.medals} />}
             {canLounge(creature, state) && (
               <button
                 type="button"

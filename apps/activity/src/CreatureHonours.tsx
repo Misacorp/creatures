@@ -5,8 +5,8 @@ import type { SpriteDef } from './sprites/sprite-data';
 
 /**
  * A creature's honours on its card, a workbench variation (Misa, 2026-10-28): its ribbons as strips hanging
- * from the card's top edge behind everything, and its Valley Games medals small at the top right with the
- * count on their face. Decoration only: hidden from screen readers (the page says the same in words), no
+ * from the card's top edge behind everything, and its Valley Games medals small, pinned over the card's top
+ * edge at the right, with the count on their face. Decoration only: hidden from screen readers (the page says the same in words), no
  * words drawn.
  */
 
@@ -40,13 +40,15 @@ const INK = '#0d0a1a';
 const COIN_ROWS = [
   '..tt.uu..',
   '...tuu...',
-  '..kkkkk..',
+  '...kkk...',
+  '.kkaaakk.',
   '.kafffdk.',
   'kafffffdk',
   'kafffffdk',
   'kafffffdk',
-  '.kdddddk.',
-  '..kkkkk..',
+  '.kafffdk.',
+  '.kkdddkk.',
+  '...kkk...',
 ];
 
 const COINS: Readonly<Record<GamesMedal, SpriteDef>> = {

@@ -22,44 +22,54 @@
   pointer-events: none;
 }
 
-/* A strip of cloth with darker edges, cut to a swallowtail at the bottom. */
+/*
+  A strip of cloth with a light outer edge and a dark line inside it (hard stops, so the edges stay sharp),
+  cut to a swallowtail at the bottom.
+*/
 .cc-ribbon {
-  width: 0.75rem;
+  width: 1.25rem;
   height: var(--ribbon-length);
   background: linear-gradient(
     90deg,
-    var(--ribbon-edge) 0 2px,
-    var(--ribbon-cloth) 2px calc(100% - 2px),
-    var(--ribbon-edge) calc(100% - 2px)
+    var(--ribbon-light) 0 3px,
+    var(--ribbon-line) 3px 5px,
+    var(--ribbon-cloth) 5px calc(100% - 5px),
+    var(--ribbon-line) calc(100% - 5px) calc(100% - 3px),
+    var(--ribbon-light) calc(100% - 3px)
   );
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 6px), 0 100%);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 8px), 0 100%);
 }
 
 .cc-ribbon.is-gold {
   --ribbon-length: 8.5rem;
+  --ribbon-light: #fff0b0;
+  --ribbon-line: #a8751f;
   --ribbon-cloth: #ffd25a;
-  --ribbon-edge: #c8952b;
 }
 
 .cc-ribbon.is-silver {
   --ribbon-length: 6.5rem;
-  --ribbon-cloth: #d8dce8;
-  --ribbon-edge: #8f97b0;
+  --ribbon-light: #ffffff;
+  --ribbon-line: #6e7690;
+  --ribbon-cloth: #c4cad8;
 }
 
 .cc-ribbon.is-bronze {
   --ribbon-length: 4.5rem;
+  --ribbon-light: #f6c08a;
+  --ribbon-line: #7a4420;
   --ribbon-cloth: #d08a4a;
-  --ribbon-edge: #8a5228;
 }
 
-/* The medals at the end of the name's line, before the armchair: no height of their own. */
+/* The medals pinned over the card's top edge at the right, clear of the name and the armchair. */
 .cc-medals {
+  position: absolute;
+  top: -0.625rem;
+  right: 0.75rem;
+  z-index: 1;
   display: inline-flex;
-  flex: none;
   gap: 0.125rem;
   align-items: flex-start;
-  margin: -0.375rem 0;
   pointer-events: none;
 }
 
@@ -69,10 +79,10 @@
   line-height: 0;
 }
 
-/* The count on the medal's face (its plain 5 x 4 pixels under the ribbon). */
+/* The count on the medal's round face (its plain 5 x 5 pixels under the ribbon). */
 .cc-coin-n {
   position: absolute;
-  top: 7px;
+  top: 9px;
   left: 3px;
   width: 12px;
   height: 8px;
