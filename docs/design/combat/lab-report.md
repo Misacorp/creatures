@@ -176,82 +176,86 @@ Twelve random forms at random levels (8 to 25, stage 1 forms at their cap), with
 
 **On average 1.6 of the 3 creatures in the best line are outside the player's top three by level.**
 
-## Talents: what one talent adds (gauntlet)
+## Talents: best board with it against best board without it (gauntlet)
 
-Each talent on every form whose line's pool has it and whose role it fits, in a fitting team with the form in its role's natural slot (a Setter or Guard in front, a Payoff after its Setter, a Support in the middle), no Knack on the measured form and the partners' first Knacks. A few talents need a board that shows them (see "Boards" below). Damage and knockouts with the talent against the same team without it, on every card (24 seeds each, the same seed for both), as total damage with it over total damage without, pooled over those forms. **Holds** is the share of fights in which its condition held or its trigger fired at least once (flat stats always hold). **While it holds** is the damage gain in those fights only, so a conditional talent can be read against a flat one: the budget rule says value while on, times how often it is on, should land near the same average (P-10: spiky, not flat). Best card is where it helps most. Near 0% on damage and KO is a dud; far above the rest is a must-roll.
+**The boss.** Its HP is 3,392, calibrated at report time so that the classic line kills a plain boss in about 8 of the 10 rounds on average, so the length of the fight matters (the boss of the other sections has a million HP, so fights always last ten rounds there).
 
-| Role | Talent | Damage | KO per fight | Holds | While it holds | Best card |
-| --- | --- | ---: | ---: | ---: | ---: | --- |
-| setter | Sharp Claws | +2.4% | +0.00 | always | - | Thick Hide +4.4% |
-| setter | Hardy | +0.4% | -0.01 | always | - | Payoff Hunter +3.7% |
-| setter | Shoulder to Shoulder | +12.3% | -0.00 | 100% | +13.1% | Thick Hide +31.3% |
-| setter | Odd One Out | +3.7% | +0.00 | 100% | +3.8% | Thick Hide +6.8% |
-| setter | Edge-walker | +3.1% | +0.00 | 100% | +3.2% | Reflective Hide +6.3% |
-| setter | Front-liner | +0.7% | -0.03 | 70% | +1.2% | Payoff Hunter +5.7% |
-| setter | Finisher | +0.0% | +0.00 | 0% | +14.2% | none |
-| setter | First Pounce | +1.6% | +0.00 | 100% | +1.6% | Reflective Hide +2.9% |
-| setter | Steady Rhythm | +4.2% | +0.00 | 93% | +4.7% | Thick Hide +8.0% |
-| setter | Owner's Mark | +8.6% | -0.00 | 100% | +8.7% | Thick Hide +19.0% |
-| setter | Deep Ink | +2.2% | +0.00 | 100% | +2.3% | Bramble Bind +11.5% |
-| setter | Rally Cry | +1.1% | +0.00 | 17% | +9.1% | Reflective Hide +16.5% |
-| setter | Momentum | +0.7% | +0.00 | 49% | +1.4% | Reflective Hide +1.3% |
-| setter | Brace | +0.3% | -0.01 | 7% | +4.3% | Great Wave +3.8% |
-| setter | Stubborn | +0.8% | -0.06 | 23% | +4.4% | Payoff Hunter +6.0% |
-| setter | Catch Breath | +0.5% | -0.02 | 26% | +1.9% | Payoff Hunter +4.0% |
-| setter | Unbothered | +1.7% | +0.00 | 7% | +35.6% | Bramble Bind +36.3% |
-| payoff | Sharp Claws | +4.7% | +0.00 | always | - | Thick Hide +9.9% |
-| payoff | Hardy | +0.6% | -0.02 | always | - | Crusher +6.9% |
-| payoff | Shoulder to Shoulder | +15.2% | +0.00 | 100% | +16.7% | Thick Hide +50.0% |
-| payoff | Odd One Out | +6.7% | +0.00 | 100% | +6.8% | Thick Hide +14.3% |
-| payoff | Edge-walker | +9.1% | +0.00 | 100% | +9.1% | Thick Hide +18.8% |
-| payoff | Front-liner | +0.6% | -0.05 | 42% | +1.8% | Reflective Hide +6.3% |
-| payoff | Slow Burn | +9.7% | +0.00 | 100% | +9.5% | Thick Hide +19.5% |
-| payoff | Finisher | +0.0% | +0.00 | 0% | +30.5% | none |
-| payoff | First Pounce | +4.3% | +0.00 | 100% | +4.6% | Thick Hide +7.2% |
-| payoff | Steady Rhythm | +8.1% | +0.00 | 100% | +8.3% | Thick Hide +19.1% |
-| payoff | Opportunist | +6.8% | +0.00 | 52% | +12.0% | Thick Hide +15.5% |
-| payoff | Quick Draw | +9.2% | -0.00 | 100% | +8.9% | Thick Hide +18.9% |
-| payoff | Rally Cry | +5.3% | +0.00 | 67% | +8.2% | Payoff Hunter +15.8% |
-| payoff | Momentum | +0.6% | +0.00 | 12% | +4.0% | Swarm +3.5% |
-| payoff | Brace | +0.1% | -0.02 | 7% | +0.9% | Great Wave +0.8% |
-| payoff | Stubborn | +1.3% | -0.09 | 23% | +7.4% | Crusher +12.3% |
-| payoff | Catch Breath | +0.4% | -0.03 | 25% | +2.2% | Reflective Hide +4.8% |
-| payoff | Unbothered | +0.0% | +0.00 | 6% | +0.0% | none |
-| guard | Hardy | +1.4% | -0.14 | always | - | Payoff Hunter +4.0% |
-| guard | Shoulder to Shoulder | +12.8% | +0.00 | 97% | +16.4% | Thick Hide +159.5% |
-| guard | Edge-walker | +2.9% | +0.00 | 100% | +3.0% | Reflective Hide +5.8% |
-| guard | Front-liner | +3.0% | -0.65 | 100% | +3.2% | Great Wave +11.7% |
-| guard | Rally Cry | +0.0% | +0.00 | 0% | - | none |
-| guard | Momentum | +0.4% | +0.00 | 39% | +1.1% | Swarm +0.9% |
-| guard | Flank Guard | +19.1% | -0.04 | 99% | +20.8% | Thick Hide +35.0% |
-| guard | Long Shadow | +0.2% | -0.02 | 24% | +0.7% | Swarm +1.5% |
-| guard | Shoulder Charge | +0.8% | +0.00 | 14% | +5.2% | Swarm +7.4% |
-| guard | Brace | +0.5% | -0.00 | 7% | +8.4% | Great Wave +7.8% |
-| guard | Stubborn | +2.1% | -0.19 | 88% | +2.6% | Great Wave +6.4% |
-| guard | Catch Breath | +2.4% | -0.23 | 93% | +2.8% | Payoff Hunter +5.8% |
-| guard | Unbothered | +0.0% | +0.00 | 7% | +0.0% | none |
-| guard | Heavy Hand | +1.7% | -0.09 | 94% | +2.0% | Crusher +8.7% |
-| guard | Clinging | +0.9% | -0.01 | 92% | +1.2% | Crusher +4.6% |
-| support | Hardy | +0.4% | -0.05 | always | - | Great Wave +3.0% |
-| support | Shoulder to Shoulder | +17.1% | +0.02 | 97% | +28.9% | Thick Hide +732.1% |
-| support | Odd One Out | +0.4% | +0.00 | 23% | +2.1% | Reflective Hide +3.1% |
-| support | Edge-walker | +3.8% | -0.00 | 100% | +4.0% | Grudge +6.7% |
-| support | Rally Cry | +3.8% | -0.01 | 93% | +4.3% | Reflective Hide +8.9% |
-| support | Momentum | +0.5% | +0.00 | 36% | +1.5% | Swarm +1.3% |
-| support | Brace | +0.5% | -0.00 | 7% | +10.0% | Great Wave +9.7% |
-| support | Stubborn | +1.1% | -0.15 | 58% | +2.2% | Great Wave +7.1% |
-| support | Catch Breath | +0.9% | -0.14 | 86% | +1.2% | Great Wave +5.8% |
-| support | Unbothered | +0.1% | -0.00 | 7% | +2.2% | Bramble Bind +2.2% |
-| support | Heavy Hand | +0.6% | -0.01 | 100% | +1.3% | Swarm +4.7% |
-| support | Clinging | +0.5% | -0.01 | 100% | +0.5% | Great Wave +2.7% |
-| support | Bright Boost | +6.2% | +0.00 | 100% | +6.2% | Thick Hide +10.8% |
-| support | Kindred Boost | +6.9% | +0.00 | 99% | +9.0% | Thick Hide +23.2% |
-| support | Triage | +10.0% | -0.29 | 100% | +11.0% | Grudge +17.2% |
-| support | Overheal Spill | +0.1% | -0.15 | 59% | +0.1% | none |
+**The score** of one fight, 0 to 100: 50 for the share of the boss's HP removed, 20 for a win, up to 15 for the rounds a win left unused (fewer rounds is better), and up to 15 for the share of the three creatures still standing (a knockout costs 5 points). A talent that saves creatures or ends the fight sooner shows it.
 
-**Talent value range:** +0.0% to +19.1% damage. **Best on most cards of its role:** Shoulder to Shoulder (setter, 13 of 15), Shoulder to Shoulder (payoff, 13 of 15), Flank Guard (guard, 11 of 15), Shoulder to Shoulder (support, 14 of 15).
+**The boards.** Every form whose line's pool has the talent and whose role it fits, with no Knack on the measured form (the Mire talents carry the line's Mire Knack, with and without, because they do nothing without one). The form stands in each of the three slots with two fixed fitting partners in either order, for two partner sets (the natural team's partners, and the classic trio's two other roles with their classic Knacks): up to 12 legal boards. The score is the best board with the talent and the best board without it, each chosen on its own, on every card (16 seeds each, the same seeds for every board), averaged over those forms and cards. Gain is the difference in points; the percentage is against the best score without it and reads n/a when that is under 10 points. Knockouts are per fight (with / without), on the best board of each. Nothing here forces a board for a talent: a position talent pays for standing where it wants to.
 
-Boards: Shoulder to Shoulder between two creatures of its own element; Kindred Boost between two creatures of its own element; Edge-walker at the end of the row; Flank Guard at the right end of the row; Opportunist after a Setter with Double Mark where the line has one; Finisher its "While it holds" is measured with the boss at 30% HP (the boss has 1,000,000 HP, so it never holds otherwise); Heavy Hand with the line's Mire Knack (Mud Wall for a Guard, Squelch Song for a Support); Clinging with the line's Mire Knack (Mud Wall for a Guard, Squelch Song for a Support); Cull is not a damage talent (it ends the fight a little early and decides who lands the killing blow), so it has no value here.
+**Holds** is the share of fights in which the talent's condition held or its trigger fired at least once, on the form's natural board (every card, no board chosen for it) and in a row 12 wide (the form at a random slot among mixed classic creatures, plain card, a boss with four times the HP; this is the raid rate for position talents). Flat stats always hold. **Best card** is where it gains most. A talent that is top of its role on most cards is flagged "best on most cards" and is a new default pick.
+
+| Role | Talent | Best with | Best without | Gain | Gain % | Knockouts with / without | Holds (natural) | Holds (row of 12) | Best card | Flag |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| setter | Sharp Claws | 68.3 | 66.9 | +1.4 | +2.1% | 1.01 / 1.04 | always | always | Reflective Hide +3.7 |  |
+| setter | Hardy | 62.2 | 62.0 | +0.2 | +0.3% | 1.12 / 1.14 | always | always | Great Wave +1.6 |  |
+| setter | Shoulder to Shoulder | 69.2 | 69.2 | +0.0 | +0.0% | 1.00 / 1.00 | 0% | 43% | none |  |
+| setter | Odd One Out | 68.2 | 65.9 | +2.3 | +3.5% | 1.05 / 1.10 | 100% | 100% | Great Wave +6.2 |  |
+| setter | Edge-walker | 70.8 | 69.2 | +1.6 | +2.3% | 0.92 / 0.97 | 100% | 23% | Stone Skin +3.1 |  |
+| setter | Front-liner | 59.3 | 58.8 | +0.5 | +0.8% | 1.12 / 1.17 | 60% | 7% | Crusher +2.6 |  |
+| setter | Finisher | 56.7 | 54.2 | +2.5 | +4.6% | 1.25 / 1.27 | 61% | 100% | Payoff Hunter +5.1 |  |
+| setter | First Pounce | 69.6 | 68.6 | +1.0 | +1.5% | 0.97 / 1.00 | 100% | 100% | Great Wave +1.8 |  |
+| setter | Steady Rhythm | 68.5 | 65.9 | +2.6 | +4.0% | 1.04 / 1.10 | 93% | 100% | Great Wave +6.8 |  |
+| setter | Owner's Mark | 65.5 | 60.6 | +4.9 | +8.2% | 1.02 / 1.16 | 100% | 0% | Great Wave +12.2 | best on most cards |
+| setter | Deep Ink | 71.2 | 69.0 | +2.2 | +3.2% | 0.88 / 0.97 | 100% | 100% | Bramble Bind +7.7 |  |
+| setter | Rally Cry | 68.6 | 66.9 | +1.7 | +2.5% | 1.03 / 1.04 | 17% | 17% | Grudge +7.5 |  |
+| setter | Momentum | 69.5 | 69.2 | +0.3 | +0.4% | 0.96 / 0.97 | 43% | 2% | Payoff Hunter +0.8 |  |
+| setter | Brace | 61.5 | 61.4 | +0.1 | +0.2% | 1.09 / 1.10 | 7% | 0% | Great Wave +1.5 |  |
+| setter | Stubborn | 54.8 | 54.2 | +0.6 | +1.1% | 1.20 / 1.27 | 23% | 0% | Crusher +2.5 |  |
+| setter | Catch Breath | 68.3 | 67.9 | +0.4 | +0.6% | 0.93 / 0.98 | 25% | 4% | Crusher +3.0 |  |
+| setter | Unbothered | 70.8 | 68.6 | +2.1 | +3.1% | 0.91 / 0.93 | 7% | 0% | Bramble Bind +31.9 |  |
+| payoff | Sharp Claws | 62.0 | 59.8 | +2.2 | +3.7% | 1.01 / 1.10 | always | always | Great Wave +6.0 |  |
+| payoff | Hardy | 76.3 | 75.7 | +0.6 | +0.8% | 0.60 / 0.63 | always | always | Crusher +8.8 |  |
+| payoff | Shoulder to Shoulder | 71.0 | 70.7 | +0.2 | +0.3% | 0.88 / 0.88 | 0% | 46% | Reflective Hide +3.4 |  |
+| payoff | Odd One Out | 62.9 | 59.8 | +3.1 | +5.2% | 1.00 / 1.10 | 100% | 75% | Great Wave +7.8 |  |
+| payoff | Edge-walker | 68.9 | 65.4 | +3.5 | +5.3% | 0.93 / 1.01 | 0% | 14% | Thick Hide +8.4 |  |
+| payoff | Front-liner | 81.9 | 81.9 | +0.0 | +0.0% | 0.42 / 0.42 | 30% | 4% | none |  |
+| payoff | Slow Burn | 70.2 | 66.0 | +4.2 | +6.4% | 0.86 / 0.91 | 100% | 100% | Thick Hide +11.4 | best on most cards |
+| payoff | Finisher | 77.2 | 74.5 | +2.7 | +3.6% | 0.61 / 0.68 | 83% | 100% | Thick Hide +6.4 |  |
+| payoff | First Pounce | 64.6 | 62.5 | +2.1 | +3.4% | 0.96 / 1.04 | 100% | 100% | Great Wave +6.7 |  |
+| payoff | Steady Rhythm | 60.0 | 56.0 | +4.0 | +7.1% | 1.04 / 1.13 | 100% | 100% | Great Wave +9.2 |  |
+| payoff | Opportunist | 67.4 | 67.1 | +0.4 | +0.6% | 0.81 / 0.82 | 11% | 0% | Elusive +4.7 |  |
+| payoff | Quick Draw | 69.7 | 65.4 | +4.3 | +6.5% | 0.88 / 1.01 | 100% | 28% | Thick Hide +9.4 |  |
+| payoff | Rally Cry | 58.8 | 56.0 | +2.8 | +5.1% | 1.07 / 1.13 | 61% | 15% | Great Wave +10.6 |  |
+| payoff | Momentum | 65.6 | 65.4 | +0.3 | +0.4% | 1.01 / 1.01 | 10% | 5% | Swarm +1.3 |  |
+| payoff | Brace | 78.1 | 78.1 | +0.0 | +0.0% | 0.51 / 0.51 | 7% | 0% | none |  |
+| payoff | Stubborn | 79.1 | 78.1 | +0.9 | +1.2% | 0.46 / 0.51 | 12% | 0% | Crusher +13.1 |  |
+| payoff | Catch Breath | 74.5 | 74.4 | +0.1 | +0.2% | 0.57 / 0.59 | 19% | 4% | Grudge +1.8 |  |
+| payoff | Unbothered | 62.5 | 61.7 | +0.8 | +1.3% | 1.05 / 1.07 | 6% | 0% | Bramble Bind +12.2 |  |
+| guard | Hardy | 72.9 | 72.1 | +0.8 | +1.2% | 0.89 / 0.98 | always | always | Stone Skin +3.4 |  |
+| guard | Shoulder to Shoulder | 69.2 | 69.2 | +0.0 | +0.0% | 1.19 / 1.19 | 0% | 50% | none |  |
+| guard | Edge-walker | 77.6 | 77.0 | +0.5 | +0.7% | 0.65 / 0.64 | 100% | 8% | Grudge +1.8 |  |
+| guard | Front-liner | 75.8 | 72.3 | +3.5 | +4.8% | 0.55 / 0.96 | 100% | 22% | Great Wave +10.2 |  |
+| guard | Rally Cry | 71.9 | 71.8 | +0.1 | +0.1% | 1.01 / 1.01 | 0% | 11% | Reflective Hide +1.4 |  |
+| guard | Momentum | 77.1 | 77.0 | +0.0 | +0.0% | 0.64 / 0.64 | 32% | 0% | none |  |
+| guard | Flank Guard | 74.1 | 74.1 | +0.0 | +0.0% | 0.93 / 0.89 | 32% | 0% | Great Wave +1.4 |  |
+| guard | Long Shadow | 72.5 | 71.2 | +1.3 | +1.9% | 0.99 / 1.14 | 23% | 13% | Stone Skin +4.0 |  |
+| guard | Shoulder Charge | 75.8 | 73.5 | +2.2 | +3.0% | 0.82 / 0.88 | 14% | 22% | Bramble Bind +6.7 |  |
+| guard | Brace | 73.3 | 72.8 | +0.5 | +0.7% | 0.90 / 0.93 | 7% | 0% | Great Wave +7.3 |  |
+| guard | Stubborn | 74.9 | 72.1 | +2.8 | +3.9% | 0.77 / 0.98 | 62% | 15% | Crusher +9.4 |  |
+| guard | Catch Breath | 74.9 | 73.2 | +1.8 | +2.4% | 0.77 / 0.97 | 91% | 18% | Stone Skin +5.2 |  |
+| guard | Unbothered | 73.1 | 73.1 | +0.0 | +0.0% | 0.98 / 0.98 | 7% | 0% | none |  |
+| guard | Heavy Hand | 74.4 | 73.1 | +1.3 | +1.7% | 0.89 / 0.95 | 94% | 23% | Crusher +8.0 |  |
+| guard | Clinging | 74.0 | 73.1 | +0.9 | +1.2% | 0.90 / 0.95 | 93% | 15% | Grudge +4.7 |  |
+| support | Hardy | 69.1 | 68.6 | +0.4 | +0.6% | 1.29 / 1.33 | always | always | Great Wave +2.9 |  |
+| support | Shoulder to Shoulder | 72.3 | 72.3 | +0.0 | +0.0% | 1.11 / 1.11 | 0% | 58% | none |  |
+| support | Odd One Out | 73.8 | 73.1 | +0.6 | +0.9% | 1.07 / 1.09 | 18% | 21% | Crusher +3.3 |  |
+| support | Edge-walker | 73.4 | 72.2 | +1.2 | +1.7% | 1.05 / 1.10 | 0% | 10% | Crusher +4.9 |  |
+| support | Rally Cry | 71.7 | 70.1 | +1.6 | +2.3% | 1.23 / 1.27 | 80% | 9% | Grudge +7.6 |  |
+| support | Momentum | 72.7 | 72.2 | +0.5 | +0.7% | 1.07 / 1.10 | 26% | 6% | Elusive +2.0 |  |
+| support | Brace | 68.8 | 68.4 | +0.5 | +0.7% | 1.34 / 1.35 | 7% | 0% | Great Wave +6.8 |  |
+| support | Stubborn | 70.1 | 68.4 | +1.7 | +2.5% | 1.22 / 1.35 | 34% | 0% | Great Wave +7.9 |  |
+| support | Catch Breath | 69.8 | 68.0 | +1.8 | +2.7% | 1.20 / 1.36 | 63% | 1% | Great Wave +9.5 |  |
+| support | Unbothered | 69.6 | 69.4 | +0.2 | +0.3% | 1.27 / 1.27 | 6% | 0% | Bramble Bind +3.2 |  |
+| support | Heavy Hand | 68.9 | 67.4 | +1.6 | +2.3% | 1.35 / 1.34 | 99% | 100% | Great Wave +6.7 |  |
+| support | Clinging | 68.0 | 67.4 | +0.6 | +0.9% | 1.34 / 1.34 | 100% | 100% | Wither +3.0 |  |
+| support | Bright Boost | 70.5 | 67.7 | +2.8 | +4.1% | 1.25 / 1.36 | 100% | 100% | Crusher +8.6 |  |
+| support | Kindred Boost | 69.8 | 69.1 | +0.7 | +1.0% | 1.27 / 1.30 | 44% | 30% | Crusher +2.4 |  |
+| support | Triage | 77.6 | 73.7 | +3.9 | +5.2% | 0.67 / 1.07 | 100% | 25% | Grudge +12.4 | best on most cards |
+| support | Overheal Spill | 73.1 | 72.6 | +0.5 | +0.6% | 1.07 / 1.15 | 50% | 25% | Thick Hide +2.9 |  |
+
+**Talent gain range:** +0.0 to +4.9 points of 100. **Best on most cards of its role:** Owner's Mark (setter), Slow Burn (payoff), Triage (support).
 
 ## Element coverage (P-12)
 
