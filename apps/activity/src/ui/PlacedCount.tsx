@@ -4,7 +4,7 @@ import { allPlaced, placedLine } from '../roster-picker';
 import { Sprite } from '../sprites/Sprite';
 
 /** The check mark's colour: the same green as the `--good` token (canvas sprites take colours, not CSS variables). */
-const CHECK_PALETTE = { h: '#6fdc8c' } as const;
+export const CHECK_PALETTE = { h: '#6fdc8c' } as const;
 
 interface PlacedCountProps {
   /** How many of the player's creatures are placed. */

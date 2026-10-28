@@ -16,7 +16,7 @@ import {
 import { bagHintRetired, bagHintText, retireBagHint } from './bag-hint';
 import { useBagSelection } from './bag-select';
 import { GlossaryTag } from './Glossary';
-import { DismantleDrawer } from './DismantleDrawer';
+import { DismantleDrawer, type DismantleStep } from './DismantleDrawer';
 import { InventoryGrid } from './InventoryGrid';
 import { gearName } from './gear-view';
 import { ItemDetail } from './ItemDetail';
@@ -48,6 +48,7 @@ export function Workshop({
   onClaimed,
   onDismissReveal,
   initialSelectedId,
+  initialCardDismantle,
 }: {
   state: GameState;
   gear: GearState | null;
@@ -65,6 +66,8 @@ export function Workshop({
   onDismissReveal: () => void;
   /** The item whose drawer is up when the tab opens (the workbench shows one; the game starts with none). */
   initialSelectedId?: string;
+  /** The workbench shows the item card's Dismantle flow open on this step (with `initialSelectedId`). */
+  initialCardDismantle?: DismantleStep;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId ?? null);
   // The drawer was flipped to another item: the new card does not take the focus from the arrows.
@@ -78,6 +81,10 @@ export function Workshop({
   const selection = useBagSelection(sortItems(gear?.items ?? []).map((i) => i.id));
   const [pile, setPile] = useState<GearItem[] | null>(null);
   const dismantleButton = useRef<HTMLButtonElement | null>(null);
+  // The item card's red Dismantle: the same `DismantleDrawer` as the bulk bar's, for this one item, taking the place
+  // of the card's drawer (one drawer at a time). `backFromFlow` returns the focus to the card's button.
+  const [cardFlow, setCardFlow] = useState(initialCardDismantle !== undefined);
+  const [backFromFlow, setBackFromFlow] = useState(false);
   // The one-time hint about selecting several: gone for good once dismissed or once anything was selected.
   const [hintOpen, setHintOpen] = useState(() => !bagHintRetired());
   useEffect(() => {
@@ -110,6 +117,7 @@ export function Workshop({
     pick: (item) => {
       setSelectedId(item.id);
       setFlipped(true);
+      setBackFromFlow(false);
     },
   });
   const flip = drilling && itemFlip !== undefined ? { ...itemFlip, paused: true } : itemFlip;
@@ -216,6 +224,7 @@ export function Workshop({
             selection={selection}
             onOpen={(id) => {
               setFlipped(false);
+              setBackFromFlow(false);
               setSelectedId(id === selectedId ? null : id);
             }}
           />
@@ -261,14 +270,47 @@ export function Workshop({
             }}
           />
         )}
+        {selected !== null && cardFlow && (
+          <DismantleDrawer
+            items={[selected]}
+            gear={gear}
+            creatures={state.creatures}
+            busy={busy}
+            error={error}
+            exitLabel="to the item"
+            swap
+            {...(initialCardDismantle === undefined ? {} : { start: initialCardDismantle })}
+            loadPreview={actions.previewDismantle}
+            checkLocks={actions.checkDismantle}
+            onConfirm={async (creatureId) => {
+              const result = await actions.dismantlePile(creatureId, [selected.id]);
+              if (result === undefined) return false;
+              setCardFlow(false);
+              setSelectedId(null);
+              selection.clear();
+              onClaimed(result);
+              return true;
+            }}
+            onClose={() => {
+              setCardFlow(false);
+              setBackFromFlow(true);
+            }}
+            onDismiss={() => {
+              setCardFlow(false);
+              setSelectedId(null);
+              setBackFromFlow(false);
+            }}
+          />
+        )}
         <Drawer
-          open={selected !== null}
+          open={selected !== null && !cardFlow}
           title={selected === null ? 'Item' : gearName(selected.baseId)}
           titleHidden
-          class="item-drawer"
+          class={backFromFlow ? 'item-drawer drawer-swap' : 'item-drawer'}
           flip={flip}
           onClose={() => {
             setSelectedId(null);
+            setBackFromFlow(false);
           }}
         >
           {selected !== null && (
@@ -279,16 +321,12 @@ export function Workshop({
                 creatures={state.creatures}
                 busy={busy}
                 actions={actions}
-                focusName={!flipped}
+                focusName={!flipped && !backFromFlow}
+                focusDismantle={backFromFlow}
                 onDrill={setDrilling}
-                dismantle={{
-                  gear,
-                  error,
-                  onDone: (result) => {
-                    setSelectedId(null);
-                    selection.clear();
-                    onClaimed(result);
-                  },
+                onDismantle={() => {
+                  setBackFromFlow(false);
+                  setCardFlow(true);
                 }}
               />
             </FlipArea>

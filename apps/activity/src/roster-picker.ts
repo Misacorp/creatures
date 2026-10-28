@@ -112,7 +112,14 @@ export interface PickerOption {
    * The item this creature already wears in the slot the option is for (the Workshop's "Equip on" list): drawn
    * as a small item tile at the right end of the row. Absent: the slot is empty, and nothing is drawn.
    */
-  worn?: { baseId: string; rarity: GearRarity; itemLevel: number };
+  worn?: WornItem | readonly WornItem[];
+}
+
+/** An item a creature wears, as the list draws it (a small tile). */
+export interface WornItem {
+  baseId: string;
+  rarity: GearRarity;
+  itemLevel: number;
 }
 
 /**

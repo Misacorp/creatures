@@ -62,7 +62,10 @@ function drawWorkshop(): Page {
 }
 
 function bagCells(p: Page): FakeElement[] {
-  return find(first(byClass(p.root, 'item-grid')), (e) => e.localName === 'button');
+  return find(
+    first(byClass(p.root, 'item-grid')),
+    (e) => e.localName === 'button' && e.getAttribute('role') !== 'checkbox',
+  );
 }
 
 describe('the Workshop bag', () => {
@@ -117,7 +120,7 @@ const bag = allBagItems(PAGE_SAMPLE_ID, {});
 const crown = bag.find((i) => i.baseId === 'emberkeepers-crown');
 
 describe('slot and element on items', () => {
-  it('puts the slot icon in the top-left corner of every bag image', () => {
+  it('puts the slot icon in a corner of every bag image (bottom left: the checkbox has the top left)', () => {
     page = createPage();
     page.draw(
       <InventoryGrid
@@ -128,7 +131,10 @@ describe('slot and element on items', () => {
         selection={NO_PICK}
       />,
     );
-    for (const cell of find(page.root, (e) => e.localName === 'button')) {
+    for (const cell of find(
+      page.root,
+      (e) => e.localName === 'button' && e.getAttribute('role') !== 'checkbox',
+    )) {
       expect(byClass(cell, 'item-slot')).toHaveLength(1);
     }
   });

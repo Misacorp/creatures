@@ -71,7 +71,7 @@ export function useBagSelection(
   active: boolean;
   has: (id: string) => boolean;
   toggle: (id: string) => void;
-  /** Selects the item and starts the mode (a long press, the corner circle's first tap, "Select"). */
+  /** Selects the item and starts the mode (a long press, the corner checkbox's first tap, "Select"). */
   add: (id: string) => void;
   range: (id: string) => void;
   clear: () => void;

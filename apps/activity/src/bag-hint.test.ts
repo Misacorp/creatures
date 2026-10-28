@@ -89,8 +89,8 @@ describe('the hint flag', () => {
 });
 
 describe('the wording by device', () => {
-  it('names the circle for a mouse and the press and hold for a finger', () => {
-    expect(bagHintText(true)).toBe('Click the circle on an item to select several');
+  it('names the box for a mouse and the press and hold for a finger', () => {
+    expect(bagHintText(true)).toBe('Click the box on an item to select several');
     expect(bagHintText(false)).toBe('Press and hold an item to select several');
     expect(BAG_HINT_POINTER).toBe(bagHintText(true));
     expect(BAG_HINT_TOUCH).toBe(bagHintText(false));

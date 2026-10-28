@@ -1,6 +1,6 @@
 import { content, dismantleRange, type ItemLine } from '@creatures/game';
 import type { ComponentChildren } from 'preact';
-import { useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature } from '../../api';
 import { CreatureCard } from '../../CreatureCard';
 import { CreaturePage, type CardActions, type PageOpen } from '../../CreaturePage';
@@ -73,6 +73,8 @@ interface SceneDef {
   drawer?: 'equip' | 'dismantle' | 'dismantle-confirm' | 'dismantle-worn' | 'dismantle-locked';
   /** `item`: the card has the red Dismantle button (`button`), or its flow open on this step (`worn`, `who`, `confirm`). */
   single?: 'button' | 'worn' | 'who' | 'confirm';
+  /** `bag`: the first tile is hovered or focused (the checkbox shows on it alone). */
+  hover?: boolean;
   /** `item`: creatures of every state beside the two of the sample (a Guard, a low level, away, on a job). */
   crowd?: boolean;
   /** The gear view has not loaded yet. */
@@ -337,7 +339,8 @@ const SCENE_LIST: readonly SceneDef[] = [
   },
   {
     id: 'W8w',
-    label: 'W8w · Item drawer: Dismantle on a worn item (the warning step, inside the card)',
+    label:
+      "W8w · The card's Dismantle on a worn item: the same flow and frame as the bag's (the warning step, footer pinned)",
     kind: 'level 15',
     show: 'item',
     pick: 'hat:0',
@@ -346,7 +349,8 @@ const SCENE_LIST: readonly SceneDef[] = [
   },
   {
     id: 'W8c',
-    label: 'W8c · Item drawer: Dismantle, the confirmation inside the card',
+    label:
+      "W8c · The card's Dismantle: the confirmation in the same frame as the bag's (footer pinned)",
     kind: 'level 15',
     show: 'item',
     pick: 'hat:2',
@@ -381,6 +385,14 @@ const SCENE_LIST: readonly SceneDef[] = [
     label: "B4 · A right click's menu (Inspect, Select)",
     kind: 'level 15',
     show: 'menu',
+  },
+  {
+    id: 'B6',
+    label:
+      'B6 · Desktop hover: the checkbox shows on the one tile the mouse is over (here: focus, which shows it the same way)',
+    kind: 'level 15',
+    show: 'bag',
+    hover: true,
   },
   {
     id: 'B5',
@@ -776,14 +788,30 @@ function ItemScene({ def }: { def: SceneDef }) {
       busy={false}
       actions={actions}
       initialPicking={def.drawer === 'equip'}
-      {...(def.single === undefined
-        ? {}
-        : { dismantle: { gear, error: null, onDone: () => undefined } })}
-      {...(def.single === undefined || def.single === 'button'
-        ? {}
-        : { initialDismantling: def.single })}
+      {...(def.single === undefined ? {} : { onDismantle: () => undefined })}
     />
   );
+  // The card's Dismantle flow is the bag's own `DismantleDrawer`, taking the card drawer's place.
+  if (def.single === 'worn' || def.single === 'who' || def.single === 'confirm') {
+    return (
+      <div class="v3-phone">
+        <DismantleDrawer
+          items={[item]}
+          gear={gear}
+          creatures={creatures}
+          busy={false}
+          error={null}
+          exitLabel="to the item"
+          swap
+          start={def.single}
+          loadPreview={actions.previewDismantle}
+          checkLocks={actions.checkDismantle}
+          onConfirm={() => Promise.resolve(false)}
+          onClose={() => undefined}
+        />
+      </div>
+    );
+  }
   // The scenes with a crowd show the content in a real drawer (its widths and padding are part of the look).
   return def.crowd === true ? (
     <div class="v3-phone">
@@ -833,7 +861,11 @@ function BagScene({ def }: { def: SceneDef }) {
   return (
     <div>
       <div class="workshop">
-        <PlainBag items={gear.items.slice(0, 18)} creatures={state.creatures} />
+        <PlainBag
+          items={gear.items.slice(0, 18)}
+          creatures={state.creatures}
+          hover={def.hover === true}
+        />
       </div>
     </div>
   );
@@ -844,10 +876,13 @@ function PlainBag({
   items,
   creatures,
   start = [],
+  hover = false,
   children,
 }: {
   items: readonly GearItem[];
   creatures: readonly Creature[];
+  /** The first tile has the focus, which shows its checkbox as a mouse over it does. */
+  hover?: boolean;
   /** The ids selected at the start. */
   start?: readonly string[];
   children?: (selection: ReturnType<typeof useBagSelection>) => ComponentChildren;
@@ -856,8 +891,12 @@ function PlainBag({
     items.map((i) => i.id),
     start,
   );
+  const section = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (hover) section.current?.querySelector<HTMLElement>('button.item-tile')?.focus();
+  }, [hover]);
   return (
-    <section class="ws-section">
+    <section class="ws-section" ref={section}>
       <InventoryGrid
         items={items}
         creatures={creatures}
@@ -916,6 +955,7 @@ function HoldScene({ def }: { def: SceneDef }) {
                   chosen: false,
                   holding: index === 1,
                   onCheck: () => undefined,
+                  checkLabel: 'Select',
                 }}
                 onSelect={() => undefined}
               />

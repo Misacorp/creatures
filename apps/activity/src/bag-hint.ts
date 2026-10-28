@@ -1,7 +1,7 @@
 /**
  * The one-time hint over the bag's grid about selecting several items (decisions.md, 2026-10-27, "Bulk selection
  * replaces marking"). It names the gesture that starts a selection on this device: a press and hold on a touch
- * screen, a click on the circle with a mouse. It is gone for good on this device once the player dismisses it or
+ * screen, a click on the box in the tile's corner with a mouse. It is gone for good on this device once the player dismisses it or
  * selects anything, with a flag in `localStorage` (a local convenience, nothing is sent to the server). Storage can
  * be missing, full or blocked (Discord's embedded frame, private modes), so every read and write is wrapped: if
  * storage throws, the hint still shows and stays hidden for the rest of the session once dismissed, and nothing
@@ -11,7 +11,7 @@
 export const BAG_HINT_KEY = 'lc.bag-select-hint.v1';
 
 export const BAG_HINT_TOUCH = 'Press and hold an item to select several';
-export const BAG_HINT_POINTER = 'Click the circle on an item to select several';
+export const BAG_HINT_POINTER = 'Click the box on an item to select several';
 
 /** Where the flag lives. A function, because even touching `window.localStorage` can throw. */
 export type StorageGetter = () => Pick<Storage, 'getItem' | 'setItem'>;
@@ -47,7 +47,7 @@ export function retireBagHint(getStorage: StorageGetter = browserStorage): void 
 }
 
 /**
- * Whether this device has a precise hovering pointer (a mouse): the hint then names the circle, otherwise the
+ * Whether this device has a precise hovering pointer (a mouse): the hint then names the box, otherwise the
  * press and hold. Where `matchMedia` is missing it is a touch device.
  */
 export function hasMousePointer(): boolean {

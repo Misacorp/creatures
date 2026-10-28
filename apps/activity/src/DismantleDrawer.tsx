@@ -9,7 +9,6 @@ import { GlossaryTag } from './Glossary';
 import type { DismantleCheck, DismantlePreview, GearItem, GearState } from './gear-types';
 import {
   dismantleCountItems,
-  gearName,
   oddsPercent,
   pickerOptions,
   pileQuestion,
@@ -19,6 +18,8 @@ import { jobWho } from './job-who';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { Alert } from './ui/Alert';
+import { CreatureList } from './ui/CreatureList';
+import { baseOption, type PickerOption } from './roster-picker';
 import { CountBadgeList } from './ui/CountBadge';
 import { Drawer } from './ui/Drawer';
 import { PreviewStatus } from './ui/PreviewStatus';
@@ -78,7 +79,18 @@ export interface DismantleFlowProps {
 
 type Locks = 'loading' | 'failed' | DismantleCheck['locked'];
 
-/** The worn step: every worn item with who wears it, and what holds one back. */
+/** The held reason of a worn item, in words ("Away on a trip: ...", "On a job: ..."). */
+function lockText(reason: 'trip' | 'job'): string {
+  return reason === 'trip'
+    ? 'Away on a trip: it still counts when the trip is claimed.'
+    : 'On a job: it still counts when the job is claimed.';
+}
+
+/**
+ * The worn step: one row per creature that wears something from the pile, in the established creature row
+ * (`ui/CreatureList`, as "Equip on" draws it: picture, name, level, element and role, and what it wears as small item
+ * tiles on the right). An item that is held (its wearer is away or on a job) keeps a reason line in its row.
+ */
 function WornStep({
   worn,
   creatures,
@@ -88,41 +100,31 @@ function WornStep({
   creatures: readonly Creature[];
   locks: Locks;
 }) {
-  const lockOf = (id: string) =>
-    Array.isArray(locks) ? locks.find((l) => l.itemId === id) : undefined;
+  const options = creatures.flatMap((creature): PickerOption[] => {
+    const mine = worn.filter((item) => item.equippedOn === creature.id);
+    if (mine.length === 0) return [];
+    const held = Array.isArray(locks)
+      ? locks.find((l) => mine.some((item) => item.id === l.itemId))
+      : undefined;
+    return [
+      {
+        ...baseOption(creature),
+        worn: mine.map(({ baseId, rarity, itemLevel }) => ({ baseId, rarity, itemLevel })),
+        ...(held === undefined ? {} : { note: lockText(held.reason) }),
+      },
+    ];
+  });
   return (
     <div class="dismantle-worn">
       <p class="muted">
         {worn.length === 1 ? 'This one is' : 'These are'} worn. Dismantling takes{' '}
         {worn.length === 1 ? 'it' : 'them'} off.
       </p>
-      <ul class="worn-list" aria-label="Worn items">
-        {worn.map((item) => {
-          const wearer = creatures.find((c) => c.id === item.equippedOn);
-          const lock = lockOf(item.id);
-          return (
-            <li key={item.id} class={lock === undefined ? 'worn-row' : 'worn-row locked'}>
-              <ItemThumb item={item} scale={3} />
-              <span class="worn-text">
-                <span class="worn-name pix">{gearName(item.baseId)}</span>
-                {wearer !== undefined && (
-                  <span class="worn-wearer">
-                    <Sprite sprite={creatureSpriteOrFallback(wearer.species)} scale={2} />
-                    <span class="pick-name pix">{creatureName(wearer)}</span>
-                  </span>
-                )}
-                {lock !== undefined && (
-                  <span class="muted worn-lock">
-                    {lock.reason === 'trip'
-                      ? 'Away on a trip: it still counts when the trip is claimed.'
-                      : 'On a job: it still counts when the job is claimed.'}
-                  </span>
-                )}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+      <CreatureList
+        options={options}
+        selection={{ mode: 'show', label: 'Worn items' }}
+        class="flat worn-list"
+      />
       {locks === 'loading' && <p class="muted">Checking...</p>}
     </div>
   );
@@ -314,53 +316,39 @@ export function useDismantleFlow(props: DismantleFlowProps): {
 }
 
 /**
- * Dismantling the picked items from the bag: the flow in a drawer (a sheet from a page, never from a drawer),
- * the gold button pinned in the drawer's footer.
+ * The one frame of dismantling, wherever it starts (the bag's bulk bar, or an item's red Dismantle): the flow in a
+ * drawer, the head ("Back", then the step's title) in its content and the gold button pinned in the drawer's
+ * footer. An entry point only says what Back from the first step returns to (`exitLabel`) and may add `swap`; it
+ * never wraps the flow itself (ux-patterns.md, "A flow reachable from several places").
  */
 export function DismantleDrawer({
   onClose,
+  onDismiss,
   returnFocusTo,
+  exitLabel = 'to the bag',
+  swap = false,
   ...flow
 }: Omit<DismantleFlowProps, 'onExit' | 'exitLabel'> & {
+  /** Back from the first step: leave the flow. */
   onClose: () => void;
+  /** A tap outside, the handle or Escape on the sheet itself: leave everything (default: same as `onClose`). */
+  onDismiss?: (() => void) | undefined;
   returnFocusTo?: HTMLElement | null | undefined;
+  exitLabel?: string | undefined;
+  /** Replaces another drawer of the same screen (the item card's): no slide-in, one drawer changing view. */
+  swap?: boolean | undefined;
 }) {
-  const { body, footer } = useDismantleFlow({ ...flow, onExit: onClose, exitLabel: 'to the bag' });
+  const { body, footer } = useDismantleFlow({ ...flow, onExit: onClose, exitLabel });
   return (
     <Drawer
       open
-      onClose={onClose}
+      onClose={onDismiss ?? onClose}
       title="Dismantle"
       returnFocusTo={returnFocusTo}
-      class="dismantle-drawer"
+      class={swap ? 'dismantle-drawer drawer-swap' : 'dismantle-drawer'}
       footer={footer}
     >
       {body}
     </Drawer>
-  );
-}
-
-/**
- * Dismantling one item from its card: the same flow as a view of the card's own drawer (a choice inside a drawer
- * opens inside it, with Back at the top left; never a second drawer). Back from the first step returns to the
- * card. Left and Right do not flip the item behind it.
- */
-export function DismantleInline({
-  onBack,
-  ...flow
-}: Omit<DismantleFlowProps, 'onExit' | 'exitLabel'> & { onBack: () => void }) {
-  const { body, footer } = useDismantleFlow({ ...flow, onExit: onBack, exitLabel: 'to the item' });
-  return (
-    <section
-      class="item-detail dismantle-inline pix-panel"
-      aria-label="Dismantle"
-      data-no-flip=""
-      onKeyDown={(event) => {
-        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') event.stopPropagation();
-      }}
-    >
-      {body}
-      {footer}
-    </section>
   );
 }

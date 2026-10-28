@@ -304,6 +304,18 @@ describe('the dismantle drawer', () => {
 });
 
 describe('the warning about worn items', () => {
+  it('shows a creature that wears several of the pile once, with each item on the right', async () => {
+    const two = [
+      { ...sampleItem('w1', 'trail-cap', 'common', 2, []), equippedOn: 'mid' },
+      { ...sampleItem('w2', 'kelp-cap', 'rare', 6, []), equippedOn: 'mid' },
+    ];
+    const { p } = open({ pile: two });
+    await settle(p);
+    const rows = byClass(first(byClass(p.root, 'worn-list')), 'roster-option');
+    expect(rows).toHaveLength(1);
+    expect(byClass(rows[0] as FakeElement, 'ro-worn')).toHaveLength(2);
+  });
+
   /** Three items: two worn (by `mid` and `high`) and one free. */
   function wornPile(): GearItem[] {
     return [
@@ -324,15 +336,22 @@ describe('the warning about worn items', () => {
     const { p, checkLocks } = open({ pile: wornPile() });
     await settle(p);
     expect(head(p)).toContain('Worn items');
-    const list = first(byClass(p.root, 'worn-list'));
-    const rows = byClass(list, 'worn-row');
+    // The established creature row (the one of "Equip on"): one row per wearing creature, its item on the right.
+    const rows = byClass(first(byClass(p.root, 'worn-list')), 'roster-option');
     expect(rows).toHaveLength(2);
-    expect(visibleText(rows[0] as FakeElement)).toContain('Trail Cap');
     expect(visibleText(rows[0] as FakeElement)).toContain('mid');
-    expect(visibleText(rows[1] as FakeElement)).toContain('Kelp Cap');
     expect(visibleText(rows[1] as FakeElement)).toContain('high');
-    // Each row has the wearer's small picture.
-    expect(byClass(rows[0] as FakeElement, 'sprite').length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(byClass(row, 'ro-tags')).toHaveLength(1);
+      expect(byClass(row, 'sprite').length).toBeGreaterThan(0);
+    }
+    const mine = byClass(rows[0] as FakeElement, 'ro-worn');
+    expect(mine).toHaveLength(1);
+    expect(mine[0]?.getAttribute('aria-label')).toContain('Wearing Trail Cap');
+    expect(byClass(rows[1] as FakeElement, 'ro-worn')[0]?.getAttribute('aria-label')).toContain(
+      'Wearing Kelp Cap',
+    );
+    expect(text(p)).not.toContain('f1');
     // The server is asked about the worn items only, and the words are "Dismantle anyway".
     expect(checkLocks).toHaveBeenCalledWith(['w1', 'w2']);
     expect(visibleText(footer(p))).toBe('Dismantle anyway');
@@ -368,7 +387,10 @@ describe('the warning about worn items', () => {
     await settle(p);
     expect(text(p)).toContain('Away on a trip');
     expect(text(p)).toContain('On a job');
-    expect(byClass(p.root, 'locked')).toHaveLength(2);
+    // The reason line sits in the creature's row.
+    const rows = byClass(first(byClass(p.root, 'worn-list')), 'roster-option');
+    expect(visibleText(rows[0] as FakeElement)).toContain('Away on a trip');
+    expect(visibleText(rows[1] as FakeElement)).toContain('On a job');
     expect(footer(p).hasAttribute('disabled')).toBe(true);
     expect(text(p)).toContain('Go back and leave those out');
     p.click(footer(p));

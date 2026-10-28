@@ -2,8 +2,10 @@ import type { JSX } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
 import { ItemCorners, ItemSprite } from './GearArt';
 import type { GearItem } from './gear-types';
+import { glyphOrUnknown } from './glyphs';
 import { isFestivalBase } from './gear-view';
 import { Sprite } from './sprites/Sprite';
+import { CHECK_PALETTE } from './ui/PlacedCount';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 
 /** The keys held down at a click (a Ctrl or Command click toggles, a Shift click takes a range). */
@@ -18,14 +20,16 @@ export interface ClickKeys {
  * marking"). Only the bag passes it; the item picker's tiles do not select.
  */
 export interface TileChoice {
-  /** The selection mode is on: every tile shows its circle and a click toggles. */
+  /** The selection mode is on: every tile shows its checkbox. */
   selecting: boolean;
-  /** This item is in the selection: a ring and a check in its circle. */
+  /** This item is in the selection: a ring on the tile and a check in its checkbox. */
   chosen: boolean;
   /** A long press is being held on this tile: its cue plays. */
   holding: boolean;
-  /** The circle in the top left corner was clicked (it starts the selection with this item, or toggles it). */
+  /** The checkbox in the top left corner was tapped or clicked (it starts the selection with this item, or toggles it). */
   onCheck: () => void;
+  /** The checkbox's spoken name ("Select Kelp Cap"). */
+  checkLabel: string;
 }
 
 /**
@@ -36,12 +40,13 @@ export interface TileChoice {
  * item shown, or shown last); `blocked` dims an item that cannot be worn (or that another creature wears). A selected tile scrolls itself into view (when it is selected and again when its details
  * close), so a closed detail never leaves the player lost in a long grid.
  *
- * Selecting several (bag only, `choice`): the tile is an option of the grid's listbox (`aria-selected`). A circle
- * sits in its top left corner: it shows on hover for a mouse, and on every tile while the selection mode is on
- * (empty, or a check on a chosen tile, which also gets a ring). The circle is a pointer shortcut (a plain span);
- * keyboard users select with Space. While selecting, `onInfo` adds a small "i" at the bottom left that opens
- * the item's card instead (a separate button, never nested). `buttonProps` carries the pointer and key handlers
- * of the grid (long press, context menu, arrow keys) and `focusRef` hands the grid the button.
+ * Selecting several (bag only, `choice`): the tile is an option of the grid's listbox (`aria-selected`). A square
+ * checkbox sits in its top left corner: it shows on hover for a mouse, and on every tile while the selection mode is
+ * on (empty, or a check on a chosen tile, which also gets a ring). The checkbox is its own button (never nested in
+ * the tile, out of the tab order: keyboard users select with Space on the tile) with a hit area of about 44 px, a
+ * tap on it toggles, and a tap anywhere else on the tile opens the item's card. The slot icon of a bag tile sits at
+ * the bottom left, so the checkbox never covers it. `buttonProps` carries the pointer and key handlers of the grid
+ * (long press, context menu, arrow keys) and `focusRef` hands the grid the button.
  */
 export function ItemTile({
   item,
@@ -54,8 +59,6 @@ export function ItemTile({
   choice,
   buttonProps,
   focusRef,
-  onInfo,
-  infoLabel,
   onSelect,
 }: {
   item: Pick<GearItem, 'baseId' | 'rarity' | 'itemLevel'>;
@@ -76,10 +79,6 @@ export function ItemTile({
   buttonProps?: JSX.IntrinsicElements['button'] | undefined;
   /** Receives the tile button (and `null` when it goes). */
   focusRef?: ((el: HTMLButtonElement | null) => void) | undefined;
-  /** Selection mode: opens the item's card (the tile itself toggles). Needs `infoLabel`. */
-  onInfo?: (() => void) | undefined;
-  /** The spoken name of the info button ("Details of Kelp Cap"). */
-  infoLabel?: string | undefined;
   onSelect: (keys: ClickKeys) => void;
 }) {
   const button = useRef<HTMLButtonElement | null>(null);
@@ -134,39 +133,22 @@ export function ItemTile({
         <ItemCorners level={item.itemLevel} baseId={item.baseId} />
       </button>
       {choice !== undefined && (
-        <span
-          class={choice.chosen ? 'item-tile-check on' : 'item-tile-check'}
-          aria-hidden="true"
-          onClick={choice.onCheck}
-        >
-          {choice.chosen && <CheckGlyph />}
-        </span>
-      )}
-      {choice !== undefined && choice.selecting && onInfo !== undefined && (
         <button
           type="button"
-          class="item-tile-info"
-          aria-label={infoLabel ?? 'Details'}
+          role="checkbox"
+          class={choice.chosen ? 'item-tile-check on' : 'item-tile-check'}
+          aria-checked={choice.chosen}
+          aria-label={choice.checkLabel}
           tabIndex={-1}
-          onClick={onInfo}
+          onClick={choice.onCheck}
         >
-          <svg viewBox="0 0 5 7" aria-hidden="true" shape-rendering="crispEdges">
-            <rect x="2" y="0" width="1" height="1" />
-            <rect x="1" y="2" width="2" height="1" />
-            <rect x="2" y="3" width="1" height="3" />
-            <rect x="1" y="6" width="3" height="1" />
-          </svg>
+          <span class="item-tile-box" aria-hidden="true">
+            {choice.chosen && (
+              <Sprite sprite={glyphOrUnknown('check')} palette={CHECK_PALETTE} scale={2} />
+            )}
+          </span>
         </button>
       )}
     </li>
-  );
-}
-
-/** The pixel check in a chosen tile's circle (a shape, so colour is not the only cue). */
-function CheckGlyph() {
-  return (
-    <svg viewBox="0 0 7 6" aria-hidden="true" shape-rendering="crispEdges">
-      <path d="M0 3h1v1H0zM1 4h1v1H1zM2 3h1v1H2zM3 2h1v1H3zM4 1h1v1H4zM5 0h1v1H5z" />
-    </svg>
   );
 }
