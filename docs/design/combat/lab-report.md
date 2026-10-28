@@ -54,6 +54,8 @@ An answer works when it beats the classic line on its own card. If it does not, 
 
 **13 of 19 intended answers beat the classic line on their card.**
 
+No intended answer yet: Fizzle, Shake It Off. Shake It Off only costs a debuff build something (Mired x5 is -15% boss damage, and Mire has no Setter or Payoff yet), so the classic line is not hurt by it and no Mire team beats the classic line on it; its answer is a team that does not lean on a debuff.
+
 ## Best teams per card: gauntlet (one row of three)
 
 | Card | Best line | Score | Classic | Classic species, best Knacks |

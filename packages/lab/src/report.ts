@@ -211,6 +211,13 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
     '',
     `**${working} of ${answers} intended answers beat the classic line on their card.**`,
     '',
+    `No intended answer yet: ${cards
+      .filter((c) => c.id !== 'plain' && !(ANSWERS[c.id]?.length ?? 0))
+      .map((c) => c.name)
+      .join(
+        ', ',
+      )}. Shake It Off only costs a debuff build something (Mired x5 is -15% boss damage, and Mire has no Setter or Payoff yet), so the classic line is not hurt by it and no Mire team beats the classic line on it; its answer is a team that does not lean on a debuff.`,
+    '',
   );
 
   // 3. Best teams per card.
@@ -757,7 +764,7 @@ function measureTalent(
             ...(startHp !== undefined ? { bossHp: startHp } : {}),
           });
           const withRes = fight(boss, place(withT, setup.cols), opts());
-          const key = `${JSON.stringify(setup.team)}|${setup.cols}|${c.id}|${i}|${startHp}`;
+          const key = `${JSON.stringify(setup.team)}|${setup.cols?.join(',') ?? ''}|${c.id}|${i}|${startHp}`;
           let base = baseline.get(key);
           if (!base) {
             const r = fight(boss, place(setup.team, setup.cols), opts());
