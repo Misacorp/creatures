@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Retro digest: reads a Claude Code session transcript (JSON lines) and prints a short Markdown digest
-// for the `retro` skill: the human's messages, permission denials, failed tool calls, hook feedback,
+// for the `retro` skill: the human's messages (also those sent mid-turn), permission denials, failed tool calls, hook feedback,
 // compactions, subagent work, the most edited files and failing check output. Node only, no packages.
 // Usage: node .claude/skills/retro/digest.mjs <session.jsonl> [--segment current|previous|all]
 //        [--since <ISO>] [--until <ISO>] [--retros <dir>]
@@ -134,6 +134,12 @@ for (const entry of entries) {
   if (entry.type === 'system' && entry.subtype === 'compact_boundary') {
     compactionsInWindow += 1;
     compactions.push(when(ts));
+  }
+  // A message the human sent while a turn was running: it reaches the model as an attachment, not a user turn.
+  const queued = entry.type === 'attachment' ? entry.attachment : undefined;
+  if (queued?.type === 'queued_command' && queued.origin?.kind === 'human') {
+    human.push(`${when(ts)} (mid-turn) ${clip(String(queued.prompt ?? ''), 400)}`);
+    continue;
   }
   const content = entry.message?.content;
   if (entry.type === 'user') {
