@@ -54,7 +54,7 @@ export const BOSS_ANSWERS: Readonly<Record<string, readonly BossAnswer[]>> = {
       label: 'Brace on the creatures that stand in the surf',
       tool: 'talent: Brace',
       talent: 'brace',
-      line: 'croakmire/squelch-song bloomback/none+brace thornbuck/wide-reach drizzlewt/drizzle | voltaro/none+brace sunfawn/none+brace tempestray/none+brace tidewing/none+brace | tidewing/none+brace tempestray/none+brace sunfawn/none+brace tempestray/none+brace',
+      line: 'croakmire/squelch-song bloomback/none+brace thornbuck/wide-reach drizzlewt/drizzle | voltaro/none sunfawn/none+brace tempestray/none tidewing/none | tidewing/none tempestray/none sunfawn/none+brace tempestray/none',
     },
   ],
   'cinder-wyrm': [
@@ -90,7 +90,7 @@ export const BOSS_ANSWERS: Readonly<Record<string, readonly BossAnswer[]>> = {
       label: 'Unbothered keeps the row ends talking',
       tool: 'talent: Unbothered',
       talent: 'unbothered',
-      line: 'pyrelynx/none+unbothered hearthshell/hearth sunfawn/curl-up magmole/none+unbothered | bloomback/all-at-once hearthshell/hearth croakmire/squelch-song ancientshell/none+unbothered | ancientshell/none+unbothered lanternfin/sunbeam hearthshell/hearth pyrelynx/none+unbothered',
+      line: 'pyrelynx/none hearthshell/hearth sunfawn/curl-up magmole/none | bloomback/all-at-once hearthshell/hearth croakmire/squelch-song ancientshell/none | ancientshell/none lanternfin/sunbeam hearthshell/hearth pyrelynx/none',
     },
   ],
   'storm-sovereign': [
@@ -126,7 +126,7 @@ export const BOSS_ANSWERS: Readonly<Record<string, readonly BossAnswer[]>> = {
       label: 'Catch Breath on the front, where Swallow and the flop land',
       tool: 'talent: Catch Breath',
       talent: 'catch-breath',
-      line: 'bloomback/none+catch-breath sunfawn/none+catch-breath voltaro/none solmane/none+catch-breath | voltaro/zigzag bogwarden/mud-wall ancientshell/living-shelter voltaro/none+catch-breath | bloomback/all-at-once hearthshell/draw-fire pyrelynx/none+catch-breath voltaro/none+catch-breath',
+      line: 'bloomback/none sunfawn/none voltaro/none solmane/none+catch-breath | voltaro/zigzag bogwarden/mud-wall ancientshell/living-shelter voltaro/none | bloomback/all-at-once hearthshell/draw-fire pyrelynx/none voltaro/none',
     },
   ],
 };
