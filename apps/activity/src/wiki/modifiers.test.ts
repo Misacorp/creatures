@@ -164,11 +164,11 @@ describe('the modifier library section', () => {
       }
     }
     const draft = html.slice(
-      html.indexOf('id="dtalent-broad-back"'),
-      html.indexOf('</article>', html.indexOf('id="dtalent-broad-back"')),
+      html.indexOf('id="dtalent-first-strike"'),
+      html.indexOf('</article>', html.indexOf('id="dtalent-first-strike"')),
     );
-    expect(draft).toContain('href="#modifier-cover"');
-    expect(row('modifier-cover')).toContain('href="#dtalent-broad-back"');
+    expect(draft).toContain('href="#modifier-first-pounce"');
+    expect(row('modifier-first-pounce')).toContain('href="#dtalent-first-strike"');
   });
 });
 

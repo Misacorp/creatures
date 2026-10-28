@@ -3347,3 +3347,9 @@ Tagged combat v2. Lead agent, after the second panel (`docs/design/combat/review
 - **Same effect, same name** also between talents and gear lines (a gear line is one modifier on an item); a talent and a gear line of the same name add up.
 - **Build a first batch** of the modifier and talent library (`docs/design/combat/modifiers.md`) into the lab and the wiki; Misa filters later.
 - **New ideas:** Cull (a hit that leaves a foe below a small share of its HP defeats it) and killing-blow triggers (for example more loot for the raid). Cover gets a cap (an intercepted hit needs none, since the Guard still takes it).
+
+## 2026-10-28: Armour works for every creature; the first talent batch is in the lab
+
+**Decision (Misa).** Armour is a stat of every creature: Guards have the most, and talents, Knacks and gear may raise anyone's. No armour effect is limited to Guards (R13). The shipped gear line Armor still says "Guards only"; it changes with the engine port.
+
+**The batch (lead).** 35 talents in the lab from `modifiers.md`, with the engine hooks they need (neighbour, position, round, boss-HP and mark conditions; triggers; Flank Guard and Long Shadow; shared armour; Thick Skull; Brace; Bright Boost, Kindred Boost, Triage, Overheal Spill; Heavy Hand, Clinging, Light Sleeper; Cull and the killing blow). Rules: Mired fades one stack per round, the Shake It Off card cleanses debuffs on an announced round, cover is capped at 75% (R8.6, R15, R21). Twelve old lab talents were folded in or dropped. The report: talents add +0% to +22% on their boards; Lone Wolf, Flank Guard (Left) and Shoulder to Shoulder are best on most cards of their role (measured on boards chosen to show them, so a ceiling); Share the Load, Long Shadow and Thick Skull are near zero on plain boards; Shake It Off has no working answer yet.

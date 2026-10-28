@@ -119,7 +119,11 @@ export const GEAR_CLASS: Readonly<Record<string, GearClass>> = {
     name: 'Element Ward',
     text: 'Less damage from the foes that beat that element.',
   },
-  armor: c('protection', GUARD, 'stat'),
+  // Armour works for every creature (Misa, 2026-10-28); the shipped line still names Guards only.
+  armor: {
+    ...c('protection', ANY, 'stat'),
+    text: 'Armour grows by these points. Every creature has armour; Guards have the most.',
+  },
   cover: c('protection', GUARD, 'stat'),
   'wide-stance': c('protection', GUARD, 'shape'),
   'long-arm-left': c('protection', GUARD, 'shape'),

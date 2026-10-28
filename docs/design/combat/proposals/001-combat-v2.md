@@ -53,7 +53,8 @@ Each rule names what it replaces in `combat-rules.md`. Durations count the affec
 3. For each row from the front: its creatures act left to right (Supports hit too), then **the boss takes a turn**: its moves due on that turn, its plain attack, then Clean Scales sheds the marks that were on it when that turn began (unless Sealed).
 4. The boss takes a turn after every row of the arena, empty or not.
 5. Reflective Hide arms at the end of each boss turn (not before the first).
-6. The dungeon keeps its single line and today's order (one boss turn after the line).
+6. **Debuffs fade** (Misa, 2026-10-28): at each round start, before the Support verbs, the boss loses 1 Mired stack (Clinging slows this to every second round while a living creature has it). A rule card may also clear every debuff on a round it announces at round start (Shake It Off: every 3 rounds, at the end of that round's last boss turn).
+7. The dungeon keeps its single line and today's order (one boss turn after the line).
 
 **R9. Taunt.** Taunt becomes the anchor of every plain attack, whatever its anchor; moves keep their own anchors. Several taunters: the front-most, then the leftmost. A Guard may still intercept for a non-Guard taunter after its failed dodge.
 
@@ -65,11 +66,11 @@ Each rule names what it replaces in `combat-rules.md`. Durations count the affec
 
 1. **Wards.** Before a silencing move lands, every target that cannot be silenced is noted (its own Unflappable, or a living, unsilenced Lantern Glow beside it); then the rest are silenced. A Lantern Glow silenced by that same move still wards its neighbours from that move, not from the next.
 
-**R13. Armour and Blocked.** Foes and creatures have Armour, a flat amount taken off every hit. A hit at or below armour is **Blocked** and deals nothing (Misa, 2026-10-26). Guards are armoured rather than only high in HP.
+**R13. Armour and Blocked.** Foes and creatures have Armour, a flat amount taken off every hit. A hit at or below armour is **Blocked** and deals nothing (Misa, 2026-10-26). Guards are armoured rather than only high in HP. **Every creature has armour** (Misa, 2026-10-28): Guards have the most, and talents, Knacks and gear may raise anyone's; no armour effect is limited to Guards.
 
 **R14. Raid attrition.** A raid weekend's stages share the boss's HP. Only HP carries: creatures keep their HP between stages, nobody heals between stages, and a knocked-out creature is out for the weekend. Marks, Stores, Mired and "each fight" effects start fresh each stage. Players may swap creatures between stages; a replacement takes an empty slot. A knocked-out creature does not come back that weekend (Misa, 2026-10-26: players have spare creatures by week 2, so no extra mechanic). The dungeon is unchanged.
 
-**R15. Buffs and debuffs.** An effect stacks up to its own maximum; different effects add; all hit boosts together are capped (lab: +150%), and reaction-bonus factors have their own cap (R7). **Auras** (an effect a creature gives others: dodge beside it or in its row, area cut): of the auras of one kind reaching a creature, only the largest applies. A creature's own Knack and talents add to it. Debuffs on the boss (Mired) have their own maximum. Never design for "bring seven of this buff".
+**R15. Buffs and debuffs.** An effect stacks up to its own maximum; different effects add; all hit boosts together are capped (lab: +150%), and reaction-bonus factors have their own cap (R7). **Auras** (an effect a creature gives others: dodge beside it or in its row, area cut): of the auras of one kind reaching a creature, only the largest applies. A creature's own Knack and talents add to it. Debuffs on the boss (Mired) have their own maximum. Never design for "bring seven of this buff". **Cover**, with every bonus, is capped at 75%, like area cuts; a hit a Guard intercepts needs no cap, since the Guard still takes it.
 
 **R16. Support shapes and healing.** A Support's base reach is the creatures beside it. Knacks may reshape it (one place further, every creature in front of it in its column). Heals can crit. Some bosses may need well-placed healers.
 
@@ -95,6 +96,14 @@ Each rule names what it replaces in `combat-rules.md`. Durations count the affec
 6. "Its first hit each fight" means its first hit that gets past dodge and armour, in each fight and each raid stage (R14); Twin Strike's second hit is not a first hit. A first hit made while silenced uses it up.
 7. Conditions like "while a living Guard stands beside it" are read as each hit is worked out (R6 step 1).
 8. **Evolution and role changes** (Misa, 2026-10-27; built with the game integration, phase 4): when an evolution changes the role, each slotted talent that is idle for the new role is replaced by a random roll from the line's pool among the talents that work for the new role and are not in the creature's book yet. The evolution screen shows the replaced talents as unknown cards that turn over to reveal the new ones. Book entries that become idle stay in the book. Until this is built, idle talents after a role change are accepted.
+
+**R21. Conditions and finishing blows** (the talent library, `modifiers.md`; lab 2026-10-28).
+
+1. **Row end:** the leftmost or rightmost living creature of its row. **Front row:** row 0.
+2. **A mark set this boss turn:** a count added since the last boss turn ended.
+3. **Flank Guard:** a Guard's reach goes to one side only, with twice the slots; both flanks together cancel out.
+4. **Cull:** a hit that leaves a foe below the effect's share of its max HP defeats it; the HP left counts as damage dealt.
+5. **Killing blow:** the creature whose damage (or Cull) takes the foe's last HP. Effects may trigger on it (for example more loot for the raid, granted by the server like all loot).
 
 ## On the board (from the readability review)
 

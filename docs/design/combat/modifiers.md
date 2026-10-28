@@ -1,6 +1,6 @@
 # Modifiers and the talent library (draft for discussion)
 
-Status: **draft**, 2026-10-28, from Misa's request: talents that define how a creature plays, not just "+10% Attack". Nothing here is in the lab yet. Names are placeholders until Misa approves them; numbers are starting guesses for the lab to tune.
+Status: **draft**, 2026-10-28. The first batch is built in the lab (35 talents, `packages/lab/src/talents.ts`), where the exact numbers now live; the tables below are the design they came from, and the wiki's Modifiers section is the current list. Written from Misa's request: talents that define how a creature plays, not just "+10% Attack". Names are placeholders until Misa approves them; numbers are starting guesses for the lab to tune.
 
 ## The idea in one paragraph
 

@@ -99,8 +99,10 @@ describe('the modifier library', () => {
       const onLine = MODIFIERS.filter((m) => m.also.includes(idea.name));
       expect(own.length + onLine.length, idea.name).toBe(1);
     }
-    const ideas = MODIFIERS.filter((m) => m.status === 'idea');
-    expect(ideas.length).toBeGreaterThan(10);
+    // An idea built as a lab talent is no longer an idea: its entry shows the lab status.
+    const built = new Set(Object.values(TALENTS).map((t) => nameKey(t.name)));
+    for (const m of MODIFIERS.filter((x) => x.status === 'idea'))
+      expect(built.has(nameKey(m.name)), m.name).toBe(false);
     expect(MODIFIERS.find((m) => m.id === 'rally-cry')?.also).toContain('Vengeful');
   });
 
