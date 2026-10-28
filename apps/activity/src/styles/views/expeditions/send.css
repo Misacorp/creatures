@@ -1,13 +1,8 @@
 /* The send flow. */
-.send {
-  margin: 0.75rem 0;
-}
-
 .step {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin: 1rem 0 0.25rem;
   font-size: var(--fs-row);
 }
 
@@ -27,11 +22,6 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.25rem 0.5rem;
-  margin-top: 0.25rem;
-}
-
-.explorer-picker .xpbar-row {
-  margin: 0.375rem 0 0.125rem;
 }
 
 .explorer-picker .xpbar {
@@ -47,13 +37,8 @@
   max-width: 3.5rem;
 }
 
-.send > .ptrack {
-  margin-top: 0.75rem;
-}
-
 .lengths {
   min-width: 0;
-  margin: 0.25rem 0;
   padding: 0;
   border: 0;
 }
@@ -74,6 +59,7 @@
 }
 
 label.length-option {
+  margin: 0; /* a label's own top margin (base) */
   position: relative;
   display: flex;
   flex: 1 1 5rem;
@@ -107,23 +93,8 @@ label.length-option:focus-within {
   font-size: var(--fs-heading);
 }
 
-/* The expected haul, just above Send. */
-.haul {
-  margin: 0.25rem 0;
-}
-
-/* 16 px from the treat row to the heading: the summary's gap, the haul's margin and this one. */
-.haul > .label {
-  margin-top: 0.375rem;
-}
-
-.send-summary > .treat-box {
-  margin: 0;
-}
-
 /* The trip's settings in a line: reading text, so the body font (the heading above is the pixel label). */
 .trip-summary {
-  margin: 0 0 0.25rem;
   color: var(--haze);
   font-family: var(--body);
   line-height: 1.5;
@@ -134,7 +105,6 @@ label.length-option:focus-within {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
   gap: 0.5rem 0.25rem;
-  margin: 0.25rem 0;
   padding: 0.5rem;
   list-style: none;
   background: var(--dusk-2);
@@ -198,15 +168,10 @@ label.length-option:focus-within {
 }
 
 /* Supplies. */
-.supply-kind {
-  margin: 0.5rem 0;
-}
-
 .supply-kind-name {
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  margin: 0 0 0.25rem;
   font-size: var(--fs-row);
 }
 
@@ -273,10 +238,7 @@ label.length-option:focus-within {
 }
 
 .send-summary {
-  display: grid;
-  gap: 0.375rem;
-  margin: 1rem 0 0;
-  padding: 0.625rem;
+  padding: var(--dr-gap);
   background: var(--dusk-2);
   box-shadow: inset 0 0 0 var(--px) var(--ink);
 }
@@ -291,29 +253,11 @@ label.length-option:focus-within {
   min-width: 0;
 }
 
-.send-footer {
-  display: grid;
-  gap: 0.375rem;
-}
-
-.send-footer .send-button {
-  margin-top: 0;
-}
-
-.send-footer .reason {
-  margin: 0;
-}
-
 .send-rule {
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  margin: 0;
   font-size: var(--fs-small);
-}
-
-.send-form.panel > .send-footer {
-  margin-top: 0.75rem;
 }
 
 .send-button {
@@ -322,10 +266,5 @@ label.length-option:focus-within {
   align-items: center;
   justify-content: center;
   width: 100%;
-  margin-top: 0.75rem;
   white-space: normal;
-}
-
-.rank-unlocks {
-  margin-top: 0.5rem;
 }

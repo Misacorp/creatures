@@ -82,7 +82,7 @@ export function WizardView<Id extends string>({
 }) {
   return (
     <div
-      class={className === undefined ? 'wizard' : `wizard ${className}`}
+      class={className === undefined ? 'wizard dr-stack' : `wizard dr-stack ${className}`}
       onKeyDown={disabled ? undefined : onDrillKey(wizard.back)}
     >
       <WizardHead wizard={wizard} level={level} focus={focus} disabled={disabled} />
@@ -136,7 +136,7 @@ export function WizardFooter<Id extends string>({
   };
   return (
     <div
-      class="wizard-footer send-footer"
+      class="wizard-footer send-footer dr-stack"
       {...(wizard === undefined ? {} : { onKeyDown: onDrillKey(wizard.back) })}
     >
       {before}

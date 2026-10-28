@@ -503,6 +503,7 @@ describe('GET /api/state', () => {
           expNeeded: 27,
           waiting: false,
           ribbons: 0,
+          medals: { gold: 0, silver: 0, bronze: 0 },
           nextUnlock: { level: 7, name: 'Scarf' },
           ribbon: null,
           treatCost: 4,

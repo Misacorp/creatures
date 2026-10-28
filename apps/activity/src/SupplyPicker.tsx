@@ -51,7 +51,7 @@ export function SupplyPicker({ picks, stock, onChange }: Props) {
   const view = options.find((o) => o.id === focus && pickFor(picks, o.id) !== undefined);
 
   return (
-    <div class="supply-picker">
+    <div class="supply-picker dr-stack">
       <SupplyGrid
         kinds={kinds}
         cells={cells}

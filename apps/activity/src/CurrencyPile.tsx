@@ -4,8 +4,9 @@ import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
 import { Sprite } from './sprites/Sprite';
 import { leetStatusLine } from './leet-status';
-import { INCOME_FETCH, baitIncome, incomeLine } from './ledger-text';
+import { INCOME_FETCH, baitIncome, incomeRow } from './ledger-text';
 import { compactCount } from './number-format';
+import { DataTable } from './ui/DataTable';
 import { Popover, popupProps } from './ui/Popover';
 
 /** What assistive technology says for the button: both amounts. */
@@ -71,11 +72,16 @@ function IncomeList({ load }: { load: () => Promise<LedgerEntry[]> }) {
       ) : entries.length === 0 ? (
         <p class="small muted">No Bait has come in yet.</p>
       ) : (
-        <ul class="income-list">
-          {entries.map((entry) => (
-            <li key={entry.id}>{incomeLine(entry)}</li>
-          ))}
-        </ul>
+        // The shared data table: where it came from, then the amount in its own column (2026-10-28: as one
+        // line, "+30 · leet on 2026-10-23 with 4 players" wrapped mid-phrase).
+        <DataTable
+          class="income-list"
+          bright
+          rows={entries.map((entry) => {
+            const row = incomeRow(entry);
+            return { label: row.source, value: row.amount };
+          })}
+        />
       )}
     </section>
   );

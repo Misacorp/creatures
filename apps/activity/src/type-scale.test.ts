@@ -20,11 +20,13 @@ const NOT_COUNTED = ['stage/fx.css', 'stage/patterns.css'];
  * heading (3 rem and a fluid size); the glossary tag's mark (relative to its word); the living room's emoji and
  * speech labels (sized from the room's band); the How to play illustrations' labels; and the compact labels of
  * the 9-slot boards, the fight stage's unit names and the move track's round labels, which have to be
- * smaller than `--fs-small` to fit. (The narrowest phone's tab bar had one too, until the scale went a
+ * smaller than `--fs-small` to fit; and the count on a creature card's medal, sized to the medal's 10 px face.
+ * (The narrowest phone's tab bar had one too, until the scale went a
  * rung smaller on 2026-10-19.)
  */
 const ALLOWED: Readonly<Record<string, number>> = {
   'base/base.css': 2,
+  'components/creature-honours.css': 1,
   'components/glossary-tag.css': 1,
   'components/lane-grid.css': 1,
   'components/pixel-heading.css': 2,

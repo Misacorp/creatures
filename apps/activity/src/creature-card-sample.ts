@@ -319,7 +319,7 @@ function slotOf(slot: number, opensAt: number, open: boolean, talentId: string |
  * The cards of Misa's phone screenshot (2026-10-19), the card's hard cases: a new Mistnewt (one talent, a slot at 20), a Festival Lanternfin that is lounging
  * (signature talent and one more, slots at 20 and 25), a 20-letter nickname at level 8 (the charm slot
  * still says "Lv 13"), a level 27 Hearthshell with every gear and talent slot filled (one golden), and
- * a Cindle ready to evolve (the gold button).
+ * a Cindle ready to evolve (the gold button). Three of them hold ribbons and Valley Games medals.
  */
 export function hardCaseRoster(): Creature[] {
   const template = base();
@@ -372,6 +372,7 @@ export function hardCaseRoster(): Creature[] {
     expNeeded: 328,
     gear: gear.filter((g) => g.slot !== 'charm'),
     nextUnlock: { level: 10, name: 'Bronze Ribbon' },
+    medals: { gold: 0, silver: 1, bronze: 4 },
   };
   const full: Creature = {
     ...withoutEvolution(mistnewt),
@@ -385,6 +386,7 @@ export function hardCaseRoster(): Creature[] {
     gear,
     nextUnlock: null,
     ribbons: 2,
+    medals: { gold: 2, silver: 5, bronze: 3 },
     talents: {
       signature: talentView('fire-that-lasts', false),
       slots: [
@@ -395,7 +397,12 @@ export function hardCaseRoster(): Creature[] {
       book: [],
     },
   };
-  const evolve: Creature = { ...sampleCreature('evolve ready'), id: 'v-evolve' };
+  const evolve: Creature = {
+    ...sampleCreature('evolve ready'),
+    id: 'v-evolve',
+    ribbons: 1,
+    medals: { gold: 1, silver: 0, bronze: 0 },
+  };
   return [mistnewt, lanternfin, longName, full, evolve];
 }
 

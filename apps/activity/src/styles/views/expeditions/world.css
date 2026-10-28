@@ -35,19 +35,17 @@
 .place-trips {
   display: grid;
   gap: 0.5rem;
-  margin: 0.75rem 0 0;
   padding: 0;
   list-style: none;
 }
 
+/* In the side panel (a page, no drawer stack around it) the list keeps its own space. */
 .place-panel .place-trips {
-  margin-bottom: 0.25rem;
+  margin: 0.75rem 0 0.25rem;
 }
 
 /* A drill-in inside the sheet or the panel (the send steps, the push-on choice). */
 .place-drill {
-  display: grid;
-  gap: 0.5rem;
   min-width: 0;
 }
 

@@ -131,6 +131,67 @@ describe('an inspectable found item', () => {
     expect(dialogs(p)).toHaveLength(1);
   });
 
+  it('moves to the next item when the mouse goes straight from one to the other', () => {
+    vi.useFakeTimers();
+    stubHover(true);
+    const other = { id: 'item-2', baseId: piece.baseId, rarity: 'epic', itemLevel: 8 } as const;
+    page = createPage();
+    const p = page;
+    p.draw(
+      <PopoverHost onOpenHowTo={() => undefined}>
+        <GearItemsContext.Provider value={[sampleGearItem(piece), sampleGearItem(other)]}>
+          <FindItems label="Found" pieces={[piece, other]} />
+        </GearItemsContext.Provider>
+      </PopoverHost>,
+    );
+    const [one, two] = byClass(p.root, 'find-row-button');
+    if (one === undefined || two === undefined) throw new Error('two rows expected');
+    p.pointer(one, 'pointerenter', { x: 0, y: 0, kind: 'mouse' });
+    expect(one.getAttribute('aria-expanded')).toBe('true');
+    p.pointer(one, 'pointerleave', { x: 0, y: 0, kind: 'mouse' });
+    p.pointer(two, 'pointerenter', { x: 0, y: 0, kind: 'mouse' });
+    expect(two.getAttribute('aria-expanded')).toBe('true');
+    expect(one.getAttribute('aria-expanded')).toBe('false');
+    // The first row's late close does not close the second row's popover.
+    p.update(() => vi.advanceTimersByTime(300));
+    expect(dialogs(p)).toHaveLength(1);
+    expect(two.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('keeps a popover pinned by a tap when the mouse crosses another item', () => {
+    stubHover(true);
+    const other = { id: 'item-2', baseId: piece.baseId, rarity: 'epic', itemLevel: 8 } as const;
+    page = createPage();
+    const p = page;
+    p.draw(
+      <PopoverHost onOpenHowTo={() => undefined}>
+        <GearItemsContext.Provider value={[sampleGearItem(piece), sampleGearItem(other)]}>
+          <FindItems label="Found" pieces={[piece, other]} />
+        </GearItemsContext.Provider>
+      </PopoverHost>,
+    );
+    const [one, two] = byClass(p.root, 'find-row-button');
+    if (one === undefined || two === undefined) throw new Error('two rows expected');
+    p.click(one);
+    p.pointer(two, 'pointerenter', { x: 0, y: 0, kind: 'mouse' });
+    expect(one.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('explains a modifier line inside the popover, with a way back to the card', () => {
+    const p = draw(item);
+    p.click(rowButton(p));
+    const line = first(byClass(first(dialogs(p)), 'line-text'));
+    p.click(line);
+    // Still the one popover, on the line's explanation, still pointing at the row.
+    expect(dialogs(p)).toHaveLength(1);
+    expect(byClass(p.root, 'idc')).toHaveLength(0);
+    expect(rowButton(p).getAttribute('aria-expanded')).toBe('true');
+    const back = first(byClass(p.root, 'pop-back'));
+    expect(back.getAttribute('aria-label')).toBe(`Back to ${base.name}`);
+    p.click(back);
+    expect(byClass(p.root, 'idc')).toHaveLength(1);
+  });
+
   it('does not open on hover for a finger or a device that cannot hover', () => {
     stubHover(true);
     let p = draw(item);
@@ -168,13 +229,11 @@ describe('the Equip button of a found item popover', () => {
     return draw(item, true, { creatures: list, onEquip });
   }
 
-  it('shows under the card, centred and no wider than its label', () => {
+  it("shows under the card in the popover's action row (centred, no wider than its label)", () => {
     const p = drawEquip();
     p.click(rowButton(p));
     expect(equipButton(p)).toHaveLength(1);
-    expect(first(byClass(p.root, 'pop-actions')).getAttribute('class')).toContain(
-      'pop-actions-center',
-    );
+    expect(byClass(first(byClass(p.root, 'pop-actions')), 'pop-action')).toHaveLength(1);
   });
 
   it('closes the popover and opens the creature sheet with the Equip on rows', () => {

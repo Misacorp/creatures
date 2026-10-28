@@ -12,6 +12,7 @@ import {
 import { creatureNeeds, type Need } from './creature-needs';
 import type { CardActions } from './CreaturePage';
 import { CreatureHead } from './CreatureHead';
+import { CardMedals, CardRibbons } from './CreatureHonours';
 import { experienceLabel } from './CreatureProgress';
 import { creatureName } from './game';
 import type { GearState } from './gear-types';
@@ -29,7 +30,8 @@ import { XpTrack, type XpSize } from './ui/XpTrack';
  * ribbon, the evolution, a waiting catch to answer or a talent slot to fill). Tapping anywhere else on the
  * card opens the creature's page (`CreaturePage`): the card handles the click, and the name is a real button
  * for the keyboard and screen readers. The gear icons and the talents open the page on their part. The
- * server decides what is ready; the card only shows it.
+ * ribbons it holds hang behind the card and its Valley Games medals sit over its top edge (`CreatureHonours`,
+ * decoration only). The server decides what is ready; the card only shows it.
  */
 export function CreatureCard({
   creature,
@@ -86,6 +88,7 @@ export function CreatureCard({
   const classes = ['card-item', 'creature-card', 'focused', 'pix-panel'];
   if (found) classes.push('found');
   if (current) classes.push('current');
+  if (creature.ribbons > 0) classes.push('has-ribbons');
   return (
     <li
       id={domId}
@@ -98,6 +101,8 @@ export function CreatureCard({
         if (!clickedButton(event.target, event.currentTarget)) onOpen(null);
       }}
     >
+      <CardRibbons creature={creature} />
+      <CardMedals creature={creature} />
       <CreatureHead
         creature={creature}
         state={state}

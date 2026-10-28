@@ -9,8 +9,18 @@
   top: var(--pop-y, 0);
   left: var(--pop-x, 0);
   z-index: var(--z-stage-pop);
+  /*
+    The one spacing scale of every popover (ux-patterns.md, "Spacing inside a popover"): `tight` inside a
+    group (a title and its short answer, a name and its tags), `gap` between groups, `action` above the
+    buttons, `pad` all round. Parts never set their own outer margins: the stacks below space them.
+  */
+  --pop-tight: 0.25rem;
+  --pop-gap: 0.5rem;
+  --pop-action: 0.75rem;
+  --pop-pad: 0.5rem;
+
   width: min(12.5rem, calc(100% - 8px));
-  padding: 0.375rem 0.5rem 0.5rem;
+  padding: var(--pop-pad);
   background: var(--dusk-2);
   box-shadow: var(--frame);
   color: var(--bone);
@@ -85,8 +95,33 @@
   outline-offset: 1px;
 }
 
-.popover p {
+/* A loose paragraph in a popover's own content; no weight, so a part's class decides its spacing. */
+:where(.popover) p {
   margin: 0.125rem 0;
+}
+
+/*
+  The stacks: the popover itself, an explaining card (`pop-body`) and a custom body (`pop-stack`) space
+  their children with the scale, and a group (`pop-heading`, the text beside a picture) with the tight
+  step. The first child has no space above and the last none below, so the padding alone is the edge.
+  An action row, the "More in How to play" link or any button on its own line always has the larger step above it: a button never
+  hugs the text (2026-10-28: it sat 2px under a glossary entry with no lines).
+*/
+/* `:nth-child` gives these the weight of two classes, so a shared part's own margin (a data table's) never wins. */
+:is(.popover, .pop-body, .pop-stack, .pop-heading, .pop-head-text) > :nth-child(n) {
+  margin-block: 0;
+}
+
+:is(.popover, .pop-body, .pop-stack) > :nth-child(n + 2) {
+  margin-top: var(--pop-gap);
+}
+
+:is(.pop-heading, .pop-head-text) > :nth-child(n + 2) {
+  margin-top: var(--pop-tight);
+}
+
+:is(.popover, .pop-body, .pop-stack) > :nth-child(n + 2):is(.pop-actions, .pop-more, button) {
+  margin-top: var(--pop-action);
 }
 
 /* The page popover: the same pixel frame and arrow, on a fixed layer over the page. */
@@ -98,8 +133,10 @@
 }
 
 .popover.popover-wide {
+  --pop-pad: 0.625rem;
+
   width: min(17rem, calc(100% - 8px));
-  padding: 0.5rem 0.625rem 0.625rem;
+  padding: var(--pop-pad);
   font-size: var(--fs-small);
   line-height: 1.4;
   pointer-events: auto;
@@ -109,23 +146,22 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.25rem;
 }
 
-/* A picture with its title block beside it (a creature: name, level and tags); the lines go below. */
+/* A picture with its title block beside it; a picture too wide to leave the title room (a chain) wraps above it. */
 .pop-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.625rem;
-  margin-bottom: 0.375rem;
+  gap: var(--pop-gap) 0.625rem;
 }
 
 .pop-head .pop-visual {
   flex: none;
-  margin-bottom: 0;
 }
 
 .pop-head-text {
+  flex: 1 1 8rem;
   min-width: 0;
 }
 
@@ -147,87 +183,58 @@
   margin-right: 0;
 }
 
-/*
-  A creature's facts (level, owner, ranks) as the shared data table in the pixel font (as on the creature
-  page), then a board's effect sentence.
-*/
-.pop-body .data-table {
-  margin: 0.25rem 0 0.5rem;
-}
-
-.pop-effect {
-  margin: 0 0 0.5rem;
-}
-
-.pop-short {
-  margin-bottom: 0;
-}
-
-.popover-wide .pop-head .pop-tags {
-  margin-top: 0.25rem;
-}
-
 .pop-title {
-  margin: 0;
   color: var(--gold);
   font-size: var(--fs-row);
   line-height: 1.2;
 }
 
 .pop-short {
-  margin: 0.125rem 0 0.375rem;
   font-weight: 700;
 }
 
 .pop-lines {
-  margin: 0 0 0.5rem;
   padding-left: 1.125rem;
   list-style: square;
 }
 
-.pop-lines li {
-  margin: 0.125rem 0;
+.pop-lines li + li {
+  margin-top: 0.125rem;
 }
 
-/* Actions under a creature's facts (the raid board's "Remove from board"; the room's "Move" and "Swap"), side by side. */
+/*
+  A popover's buttons have one look (2026-10-28): the game's plain button, as wide as its label needs,
+  centred under the content. An action row (an item card's "Equip", the room's "Move" and "Swap", the raid
+  board's "Remove from board") holds one or several side by side; "More in How to play" is the same button.
+*/
 .pop-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 0.5rem;
+  justify-content: center;
 }
 
-button.pop-action {
-  flex: 1 1 0;
-  width: 100%;
+button.pop-action,
+button.pop-more {
   min-height: 2.25rem;
+  padding-inline: 1.25rem;
   font-size: var(--fs-small);
 }
 
 button.pop-more {
-  width: 100%;
-  min-height: 2.25rem;
-  background: var(--dusk);
-  color: var(--gold);
-  font-size: var(--fs-small);
+  display: block;
+  margin-inline: auto;
 }
 
 .pop-general {
-  margin: 0.25rem 0 0;
   font-size: var(--fs-small);
 }
 
-/*
-  The tags under a creature popover, and under an ability popover on your own creature. The wide
-  popover has more room above them; the compact one keeps the margin of `.popover p`.
-*/
+/* The tags under a creature's or a foe's name (the tight step of `pop-head-text` above them). */
 .pop-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 0.375rem;
-}
-
-.popover-wide .pop-tags {
-  margin: 0.375rem 0 0;
 }
 
 button.pop-back {
@@ -235,7 +242,6 @@ button.pop-back {
   align-items: center;
   gap: 0.375rem;
   min-height: 2rem;
-  margin: 0 0 0.25rem;
   padding: 0 0.5rem 0 0.25rem;
   background: var(--dusk);
   color: var(--gold);
@@ -244,15 +250,4 @@ button.pop-back {
 
 .pop-back-arrow {
   transform: scaleX(-1);
-}
-
-/* One action centred under a popover's content, as wide as its label needs (an item card's "Equip"). */
-.pop-actions-center {
-  justify-content: center;
-}
-
-.pop-actions-center button.pop-action {
-  flex: 0 0 auto;
-  width: auto;
-  padding-inline: 1.25rem;
 }

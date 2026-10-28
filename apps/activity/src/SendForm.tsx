@@ -114,30 +114,34 @@ function PackSection({
   const { explorer } = form;
   return (
     <>
-      <h4 class="step">How long</h4>
-      <LengthPicker
-        name="send-length"
-        rank={form.rank}
-        value={form.length}
-        onChange={form.setLength}
-      />
-      <div class="step-row">
-        <h4 class="step">
-          Supplies <GlossaryTag entry="supplies" look="help" />
-        </h4>
-        {onOpenWorkshop !== undefined && (
-          <button
-            type="button"
-            class="step-craft"
-            aria-label="Craft supplies in the Workshop"
-            onClick={onOpenWorkshop}
-          >
-            <Sprite sprite={glyphOrUnknown('anvil')} scale={2} />
-            Craft
-          </button>
-        )}
-      </div>
-      <SupplyPicker picks={form.picks} stock={form.stock} onChange={form.setPicks} />
+      <section class="dr-section dr-group">
+        <h4 class="step">How long</h4>
+        <LengthPicker
+          name="send-length"
+          rank={form.rank}
+          value={form.length}
+          onChange={form.setLength}
+        />
+      </section>
+      <section class="dr-section dr-group">
+        <div class="step-row">
+          <h4 class="step">
+            Supplies <GlossaryTag entry="supplies" look="help" />
+          </h4>
+          {onOpenWorkshop !== undefined && (
+            <button
+              type="button"
+              class="step-craft"
+              aria-label="Craft supplies in the Workshop"
+              onClick={onOpenWorkshop}
+            >
+              <Sprite sprite={glyphOrUnknown('anvil')} scale={2} />
+              Craft
+            </button>
+          )}
+        </div>
+        <SupplyPicker picks={form.picks} stock={form.stock} onChange={form.setPicks} />
+      </section>
       {explorer !== undefined && (
         <TreatBox
           cost={form.treatCost}
@@ -155,7 +159,7 @@ function PackSection({
 function ReadySection({ form, forecast }: { form: SendFormState; forecast: Forecast | null }) {
   const { explorer, place } = form;
   return (
-    <div class="send-summary">
+    <div class="send-summary dr-stack">
       <HaulStrip
         length={form.length}
         element={form.element}
@@ -202,7 +206,7 @@ export function SendForm({
   onOpenWorkshop?: (() => void) | undefined;
 }) {
   return (
-    <div class="send-form steps">
+    <div class="send-form steps dr-stack">
       {form.step === 'who' && <WhoSection form={form} />}
       {form.step === 'pack' && (
         <PackSection form={form} busy={busy} onOpenWorkshop={onOpenWorkshop} />

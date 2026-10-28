@@ -15,7 +15,7 @@ interface PopoverPlacement {
   /** Where the popover's top-left corner goes, relative to the anchor's top-left corner. */
   x: number;
   y: number;
-  placement: 'below' | 'above';
+  placement: PopoverSide;
   /** Where the arrow points at, from the popover's left edge (the anchor's centre, kept inside). */
   arrowX: number;
 }
@@ -23,18 +23,25 @@ interface PopoverPlacement {
 const ARROW_MARGIN = 10;
 const EDGE_MARGIN = 4;
 
+/** Which side of its anchor a popover sits on. */
+export type PopoverSide = 'below' | 'above';
+
 /**
- * Puts a popover of `size` next to `anchor`, inside `bounds`: above the anchor if it fits there,
- * else below, else on the side with more room (clamped into the bounds, over the anchor if it has
- * to). It is centred on the anchor and slid sideways to stay `margin` inside the bounds, and the
- * arrow still points at the anchor.
+ * Puts a popover of `size` next to `anchor`, inside `bounds`: on the `prefer` side if it fits there
+ * (the side it already showed on, so a popover that changes its face does not jump across its anchor),
+ * else above the anchor if it fits there, else below, else on the side with more room (clamped into the
+ * bounds, over the anchor if it has to). It is centred on the anchor and slid sideways to stay `margin`
+ * inside the bounds, and the arrow still points at the anchor.
  */
 export function placePopover(
   anchor: Box,
   bounds: Box,
   size: { width: number; height: number },
-  gap = 6,
-  margin = EDGE_MARGIN,
+  {
+    gap = 6,
+    margin = EDGE_MARGIN,
+    prefer,
+  }: { gap?: number; margin?: number; prefer?: PopoverSide } = {},
 ): PopoverPlacement {
   const centre = anchor.left + anchor.width / 2;
   const minLeft = bounds.left + margin;
@@ -49,9 +56,12 @@ export function placePopover(
   const fitsAbove = aboveTop >= bounds.top;
   const fitsBelow = belowTop + size.height <= boundsBottom;
 
-  let placement: 'below' | 'above' = 'above';
+  let placement: PopoverSide = 'above';
   let top = aboveTop;
-  if (!fitsAbove && fitsBelow) {
+  if (prefer === 'below' && fitsBelow) {
+    placement = 'below';
+    top = belowTop;
+  } else if (!fitsAbove && fitsBelow) {
     placement = 'below';
     top = belowTop;
   } else if (!fitsAbove) {
@@ -72,7 +82,7 @@ export interface PopoverCoords {
   y: number;
   /** Where the arrow points at, from the popover's left edge. */
   arrow: number;
-  placement: 'below' | 'above';
+  placement: PopoverSide;
 }
 
 /**
@@ -84,8 +94,9 @@ export function popoverCoords(
   anchor: Box,
   container: Box,
   size: { width: number; height: number },
+  prefer?: PopoverSide,
 ): PopoverCoords {
-  const at = placePopover(anchor, container, size);
+  const at = placePopover(anchor, container, size, prefer === undefined ? {} : { prefer });
   return {
     x: Math.round(anchor.left + at.x - container.left),
     y: Math.round(anchor.top + at.y - container.top),

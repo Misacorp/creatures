@@ -109,8 +109,9 @@ describe('the currency popover', () => {
     expect(loadLedger).toHaveBeenCalledTimes(1);
     await vi.waitFor(() => {
       const items = byClass((page as Page).root, 'income-list')[0]?.textContent ?? '';
-      expect(items).toContain('+30 · daily allowance');
-      expect(items).toContain('+20 · explorer rank gift');
+      // A data table: the source, then the amount in its own column.
+      expect(items).toContain('daily allowance+30');
+      expect(items).toContain('explorer rank gift+20');
       expect(items).not.toContain('train');
       expect(items).not.toContain('-12');
     });

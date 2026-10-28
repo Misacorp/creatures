@@ -90,7 +90,18 @@ type CreatureRow = {
   line_slot: number;
   exp: number;
   ribbons: number;
+  /** Its lifetime Valley Games medals (`games_creature_medals`, joined in); null when it has none yet. */
+  medal_gold: number | null;
+  medal_silver: number | null;
+  medal_bronze: number | null;
 };
+
+/**
+ * A creature row with its Valley Games medals: the medal row is found by its primary key, so the join reads
+ * one row more only for a creature that has medals.
+ */
+const CREATURE_SELECT = `SELECT c.*, m.gold AS medal_gold, m.silver AS medal_silver, m.bronze AS medal_bronze
+  FROM creatures c LEFT JOIN games_creature_medals m ON m.creature_id = c.id`;
 
 export interface CreatureView {
   id: string;
@@ -158,6 +169,8 @@ export interface CreatureView {
   waiting: boolean;
   /** Ribbons held: 0 none, 1 Bronze, 2 Silver, 3 Gold. */
   ribbons: number;
+  /** Its lifetime Valley Games medals (the card draws them); pins are on the creature page only. */
+  medals: { gold: number; silver: number; bronze: number };
   /** What its next level brings ("Scarf" at 7), or null at the top. */
   nextUnlock: { level: number; name: string } | null;
   /** The ribbon it waits for at its level (with the price and whether the player can pay it now), else null. */
@@ -352,7 +365,7 @@ export class Collection {
   private creatureRows(userId: string): CreatureRow[] {
     return this.sql
       .exec<CreatureRow>(
-        'SELECT * FROM creatures WHERE user_id = ? ORDER BY caught_at, rowid',
+        `${CREATURE_SELECT} WHERE c.user_id = ? ORDER BY c.caught_at, c.rowid`,
         userId,
       )
       .toArray();
@@ -360,7 +373,7 @@ export class Collection {
 
   private ownedCreature(userId: string, creatureId: string): CreatureRow {
     const row = this.sql
-      .exec<CreatureRow>('SELECT * FROM creatures WHERE id = ? AND user_id = ?', creatureId, userId)
+      .exec<CreatureRow>(`${CREATURE_SELECT} WHERE c.id = ? AND c.user_id = ?`, creatureId, userId)
       .toArray()[0];
     // Same answer for "does not exist" and "belongs to someone else".
     if (row === undefined) throw new GameError(404, 'not_found');
@@ -460,6 +473,11 @@ export class Collection {
       expNeeded: atTop ? null : expToNext(row.level),
       waiting: !atTop && row.exp >= expToNext(row.level),
       ribbons: row.ribbons,
+      medals: {
+        gold: row.medal_gold ?? 0,
+        silver: row.medal_silver ?? 0,
+        bronze: row.medal_bronze ?? 0,
+      },
       nextUnlock: nextUnlock(row.level, species.rarity, species.evolvesTo?.level),
       ribbon,
       treatCost: treatCost(row.level),

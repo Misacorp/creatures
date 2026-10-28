@@ -115,7 +115,7 @@ function WornStep({
     ];
   });
   return (
-    <div class="dismantle-worn">
+    <div class="dismantle-worn dr-stack">
       <p class="muted">
         {worn.length === 1 ? 'This one is' : 'These are'} worn. Dismantling takes{' '}
         {worn.length === 1 ? 'it' : 'them'} off.
@@ -227,7 +227,7 @@ export function useDismantleFlow(props: DismantleFlowProps): {
   };
 
   const body = (
-    <div ref={root} class="dismantle-wizard pix-panel">
+    <div ref={root} class="dismantle-wizard dr-stack pix-panel">
       <WizardView wizard={wizard} class="job-wizard" focus>
         {wizard.step === 'worn' ? (
           <WornStep worn={worn} creatures={creatures} locks={locks} />
@@ -241,7 +241,7 @@ export function useDismantleFlow(props: DismantleFlowProps): {
             time={false}
           />
         ) : (
-          <div class="job-ready dismantle-ready">
+          <div class="job-ready dismantle-ready dr-stack">
             <ul class="dismantle-items" aria-label={`${String(items.length)} items to take apart`}>
               {items.map((item) => (
                 <li key={item.id}>

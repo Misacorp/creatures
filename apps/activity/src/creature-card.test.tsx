@@ -474,3 +474,60 @@ describe('opening the page', () => {
     expect(actions.onRibbon).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('ribbons and medals', () => {
+  const honoured = (ribbons: number, medals: Creature['medals']): Creature => ({
+    ...kind('growing'),
+    ribbons,
+    medals,
+  });
+  const none = { gold: 0, silver: 0, bronze: 0 };
+
+  it('draws nothing for a creature with no ribbon and no medal', () => {
+    const { card } = draw(honoured(0, none));
+    expect(byClass(card, 'cc-ribbons')).toEqual([]);
+    expect(byClass(card, 'cc-medals')).toEqual([]);
+    expect(card.classList.contains('has-ribbons')).toBe(false);
+  });
+
+  it('hangs the ribbons held behind the card, the highest on the left, hidden from screen readers', () => {
+    const { card } = draw(honoured(3, none));
+    const strips = byClass(card, 'cc-ribbons');
+    expect(strips.map((el) => el.getAttribute('aria-hidden'))).toEqual(['true']);
+    expect(byClass(card, 'cc-ribbon').map((el) => el.getAttribute('class'))).toEqual([
+      'cc-ribbon is-gold',
+      'cc-ribbon is-silver',
+      'cc-ribbon is-bronze',
+    ]);
+    expect(card.classList.contains('has-ribbons')).toBe(true);
+  });
+
+  it('hangs only the Bronze Ribbon for a creature that holds one', () => {
+    const { card } = draw(honoured(1, none));
+    expect(byClass(card, 'cc-ribbon').map((el) => el.getAttribute('class'))).toEqual([
+      'cc-ribbon is-bronze',
+    ]);
+  });
+
+  it('keeps the three medals in place, gold first: a metal not won is a silhouette with no count', () => {
+    const { card } = draw(honoured(0, { gold: 0, silver: 0, bronze: 12 }));
+    const [medals] = byClass(card, 'cc-medals');
+    expect(medals?.getAttribute('aria-hidden')).toBe('true');
+    const coins = byClass(card, 'cc-coin');
+    expect(coins.map((el) => el.getAttribute('class'))).toEqual([
+      'cc-coin is-gold is-none',
+      'cc-coin is-silver is-none',
+      'cc-coin is-bronze',
+    ]);
+    expect(coins.map((el) => byClass(el, 'cc-coin-n')[0]?.textContent)).toEqual([
+      undefined,
+      undefined,
+      '12',
+    ]);
+  });
+
+  it('shows at most 99 on a medal', () => {
+    const { card } = draw(honoured(0, { gold: 120, silver: 0, bronze: 0 }));
+    expect(byClass(card, 'cc-coin-n').map((el) => el.textContent)).toEqual(['99']);
+  });
+});
