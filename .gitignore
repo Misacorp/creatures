@@ -22,6 +22,9 @@ coverage/
 # Workbench screenshots from apps/activity/scripts/shoot.mjs (its default output folder)
 apps/activity/screenshots/
 
+# Throwaway pages for reproducing a bug in a real browser (docs/design/workbench.md, "Reproducing a bug")
+apps/activity/scratch/
+
 # Simulator output (reports are generated; commit only curated ones under docs/)
 sim-out/
 

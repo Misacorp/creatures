@@ -10,6 +10,7 @@ Read this file first. Design decisions live in `docs/design/` (start with `decis
 - Ask Misa about game feel and priorities, not implementation details. Make technical decisions yourself and record them in `docs/design/decisions.md` (newest last, with date and reasoning).
 - When Misa must do something manually (Discord portal, Cloudflare token, GitHub setting, secret), give him one short **numbered checklist** with exact names and values, and say what to send back. Batch requests. Never ask him to paste a secret into chat; secrets go straight into GitHub or Cloudflare.
 - Keep messages to him short, plain English.
+- Ask a waiting question once. When a notification arrives and nothing new needs his answer, say what changed and end with a summary line, not the same question again.
 - When several numbers are in play and it isn't obvious which is which, say briefly what each one covers (for example per request or per day, measured or estimated).
 - When Misa gives an example of wording or design ("for example ..."), match its scope and tone. Don't elaborate it per case, per event or per item unless he asks.
 - When a check or constraint forces a visible change to a design Misa has already seen (its size, shape, art or layout), say so in the same message and show the new version. Never ship the changed design silently.
@@ -17,6 +18,7 @@ Read this file first. Design decisions live in `docs/design/` (start with `decis
 ### Agent roles
 
 - The **lead agent** (Opus) plans, splits work into small tasks, delegates, and **reviews every change** for correctness, security and consistency with this file before it goes into a PR.
+  - **UI review checks reuse.** Go through the implementer's reuse list: for each part built new or drawn a second way, name the row of the `docs/design/ux-patterns.md` lookup table it should use, or say why none fits. Screenshot every way into a changed flow (the bag and the item card, say), not only the main one. (Retro 2026-10-28: a second creature picker, custom worn rows and a new check mark got past review; the report named the second wrapper.)
 - `.claude/agents/implementer.md` (Sonnet): code and tests.
 - `.claude/agents/researcher.md` (Sonnet): read-only web/docs research. No shell, no write access, by design.
 - `.claude/agents/helper.md` (Haiku): boilerplate, fixtures, content data entry, doc checks.
@@ -31,6 +33,7 @@ Read this file first. Design decisions live in `docs/design/` (start with `decis
 - **Staging** (`creatures-staging.misacorp.dev`, wired to the dev Discord app) changes only when the `deploy` workflow is run by hand on a branch: GitHub, Actions, deploy, "Run workflow". Pushing a branch deploys nothing. A manual run always deploys staging, even on `main`. The page's `<meta name="build-branch">` and `<meta name="build-commit">` tags (and the staging DEV panel's Build section) show the deployed branch and commit; there is no visible footer.
 - Agents may start that staging run (the GitHub tools' workflow trigger, workflow `deploy.yml`, `ref` = the branch) **only when Misa asks for it in that session**. Then wait for it to be live (`node apps/worker/scripts/deployed.mjs --expect HEAD --wait 600`, the `staging` skill) and tell Misa it is ready. With several sessions open, only the one Misa asked deploys. To see what is on staging at any time, run the same script without `--expect`.
 - **Never push to `main` or merge a pull request.** Only Misa merges. GitHub's ruleset on `main` (PR required, no bypass) rejects direct pushes from everyone. Merges it cannot tell apart, because the GitHub connection acts as Misa's account, so `.claude/settings.json` denies the merge and auto-merge tools and `gh pr merge`.
+- **Push after the checks pass.** If checks are still running when a turn ends, say so and push when they finish. A stop hook's "unpushed" or "uncommitted" nudge is not a reason to push early.
 - **Before each staging deploy and before telling Misa a PR is ready,** merge the latest `main` into the branch and check the PR is mergeable. GitHub runs no CI on a PR with a merge conflict, so a conflicted PR looks quiet, not red. Resolve conflicts first (migrations: a released number is never reused or edited).
 - **Batch work into fewer PRs** (Misa's preference): agents may use several local branches, but merge finished work together locally and open one PR for Misa to merge into `main`. Large PRs are fine; each commit inside should still be one coherent change.
 - **Other repositories** (for example `Misacorp/leetbot-aws`): only open PRs there; Misa merges them manually. Never push to their default branch.
