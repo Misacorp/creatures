@@ -35,7 +35,7 @@ function columnsOf(tiles: readonly (HTMLButtonElement | null)[]): number {
  * one gesture set for picking several items:
  *
  * - A tap or click on a tile opens the item's card (`onOpen`), selecting or not (the card opens over the
- *   selection). The small square checkbox in the tile's corner (a 44 px target) toggles it instead.
+ *   selection). The small square checkbox in the tile's corner (a 32 px target) toggles it instead.
  * - Touch: press and hold ~450 ms selects the item and starts selecting (`useHold`; the tile shows a cue, the
  *   device buzzes, scrolling stays native, and the click after the hold is swallowed).
  * - Mouse: the checkbox shows in the tile's corner on hover; a click on it selects. Ctrl or Command click toggles,

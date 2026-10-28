@@ -102,8 +102,9 @@ button.item-tile.blocked canvas.sprite.item-tile-wearer {
   left: 0;
   z-index: 2;
   display: none;
-  width: 2.75rem;
-  height: 2.75rem;
+  /* A little larger than the drawn box (Misa, 2026-10-28: 44 px took too much of the tile on a phone). */
+  width: 2rem;
+  height: 2rem;
   min-height: 0;
   padding: 0;
   background: none;
@@ -113,7 +114,7 @@ button.item-tile.blocked canvas.sprite.item-tile-wearer {
 }
 
 /*
- * The 44 px target itself never shows: no press sink, no outline flash, no hover brightening and no tap highlight
+ * The target itself never shows: no press sink, no outline flash, no hover brightening and no tap highlight
  * (the game's buttons have them; Misa, 2026-10-28). Only the drawn box below says selected or not.
  */
 .item-tile-check:hover:not(:disabled),
@@ -132,7 +133,7 @@ button.item-tile.blocked canvas.sprite.item-tile-wearer {
   outline: none;
 }
 
-/* The drawn square is small and square-cornered; the button around it is the 44 px target. */
+/* The drawn square is small and square-cornered; the button around it is a target a few pixels larger. */
 .item-tile-box {
   position: absolute;
   top: 0.25rem;
