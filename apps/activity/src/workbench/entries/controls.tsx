@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'preact/hooks';
+import { SAMPLE_GEAR } from '../../creature-card-sample';
 import { CurrencyPile } from '../../CurrencyPile';
+import { ItemTile } from '../../ItemTile';
 import { ActionButton } from '../../ui/ActionButton';
+import { BulkBar } from '../../ui/BulkBar';
 import { ChoiceButton, ChoiceList } from '../../ui/ChoiceList';
 import { FoldRow } from '../../ui/FoldRow';
 import { DrillHead } from '../../ui/DrillHead';
@@ -8,6 +11,7 @@ import { LiveRegion } from '../../ui/LiveRegion';
 import { PlaybackControls } from '../../ui/PlaybackControls';
 import { PreviewStatus } from '../../ui/PreviewStatus';
 import { ScrollHint } from '../../ui/ScrollHint';
+import { SelectMenu } from '../../ui/SelectMenu';
 import { Switch } from '../../ui/Switch';
 import { ToggleButton } from '../../ui/ToggleButton';
 import type { Speed } from '../../replay';
@@ -502,8 +506,121 @@ const actionButton: Entry = {
   render: (p) => <ActionButtonDemo p={p} />,
 };
 
+const bulkBar: Entry = {
+  name: 'BulkBar',
+  file: 'apps/activity/src/ui/BulkBar.tsx',
+  group: 'Controls',
+  description:
+    'The bulk actions bar of a page where several things can be selected (the Workshop bag): an X that clears the selection and leaves the mode, "N selected", and the page\'s actions as buttons (today only Dismantle; later ones slot in beside it). It is part of the page\'s section, not a bar of the frame: it sticks to the bottom of the window above the dock while the list scrolls. Escape inside it clears too. A short hint after the count says why an action is off.',
+  controls: {
+    count: { kind: 'number', min: 1, max: 60 },
+    hint: { kind: 'text', maxLength: 60 },
+    second: { kind: 'toggle' },
+  },
+  defaults: { count: 3, hint: '', second: false },
+  presets: [
+    { name: 'Three selected, Dismantle', props: {} },
+    { name: 'One selected', props: { count: 1 } },
+    { name: 'Sixty selected', props: { count: 60 } },
+    { name: 'Two actions (a later one beside Dismantle)', props: { second: true } },
+    { name: 'With a hint', props: { hint: 'Nobody is free.' } },
+  ],
+  render: (p) => (
+    <BulkBar
+      count={num(p, 'count')}
+      hint={str(p, 'hint') === '' ? null : str(p, 'hint')}
+      onClear={() => undefined}
+    >
+      {bool(p, 'second') && <button type="button">Sort out</button>}
+      <button type="button" class="primary">
+        Dismantle
+      </button>
+    </BulkBar>
+  ),
+};
+
+/** A bag tile with the checkbox in its corner, in a list that is selecting (so the box shows without a hover). */
+function SelectCheckDemo({ p }: { p: Props }) {
+  const [chosen, setChosen] = useState(bool(p, 'chosen'));
+  useEffect(() => {
+    setChosen(bool(p, 'chosen'));
+  }, [bool(p, 'chosen')]);
+  const item = SAMPLE_GEAR.items.find((i) => i.equippedOn === null) ?? SAMPLE_GEAR.items[0];
+  if (item === undefined) return null;
+  return (
+    <ul
+      class={`item-grid bag-grid select-grid${bool(p, 'selecting') ? ' selecting' : ''}`}
+      aria-label="One tile"
+    >
+      <ItemTile
+        item={item}
+        label="A sample item"
+        selected={false}
+        choice={{
+          chosen,
+          holding: false,
+          onCheck: () => {
+            setChosen((now) => !now);
+          },
+          checkLabel: 'Select the sample item',
+        }}
+        onSelect={() => undefined}
+      />
+    </ul>
+  );
+}
+
+const selectCheck: Entry = {
+  name: 'SelectCheck',
+  file: 'apps/activity/src/ui/SelectCheck.tsx',
+  group: 'Controls',
+  description:
+    'The checkbox in the top left corner of a tile in a list where several things can be selected (the Workshop bag; shown here on a bag tile): a small square box with the pixel check when chosen, in a button only a little larger, so the rest of the tile still opens the card. It shows on hover for a mouse and on every tile while selecting; the button itself never flashes or sinks. The gestures around it come from useSelectGrid.',
+  controls: {
+    chosen: { kind: 'toggle' },
+    selecting: { kind: 'toggle' },
+  },
+  defaults: { chosen: true, selecting: true },
+  presets: [
+    { name: 'Chosen', props: {} },
+    { name: 'Not chosen, while selecting', props: { chosen: false } },
+    { name: 'Not selecting (shows on hover only)', props: { chosen: false, selecting: false } },
+  ],
+  render: (p) => <SelectCheckDemo p={p} />,
+};
+
+const selectMenu: Entry = {
+  name: 'SelectMenu',
+  file: 'apps/activity/src/ui/SelectMenu.tsx',
+  group: 'Controls',
+  description:
+    'The small menu a right click (or the menu key) opens on a tile of a list where several things can be selected: Inspect opens the card, Select (or Deselect) changes the selection. It sits at the pointer inside the window; a click or scroll outside, or Escape, closes it. An extra for a mouse: every action has another way.',
+  controls: {
+    chosen: { kind: 'toggle' },
+  },
+  defaults: { chosen: false },
+  presets: [
+    { name: 'On a thing not chosen', props: {} },
+    { name: 'On a chosen thing (Deselect)', props: { chosen: true } },
+  ],
+  render: (p) => (
+    <SelectMenu
+      x={40}
+      y={40}
+      chosen={bool(p, 'chosen')}
+      name="Kelp cap"
+      onInspect={() => undefined}
+      onSelect={() => undefined}
+      onClose={() => undefined}
+    />
+  ),
+};
+
 export const controlEntries: readonly Entry[] = [
   actionButton,
+  bulkBar,
+  selectCheck,
+  selectMenu,
   choiceList,
   drillHead,
   previewStatus,

@@ -33,6 +33,7 @@ import {
   weatherStrength,
   workshopExperience,
   workshopMods,
+  dismantleBoostLeft,
   xpBoostTotalBp,
   xpWeather,
   type DrawContext,
@@ -714,6 +715,16 @@ describe('experience and the Workshop', () => {
     expect(workshopMods(day('market-day', null, 15_000), 'craft', 1)).toEqual({});
     expect(workshopMods(day('fair-winds'), 'craft', 0)).toEqual({});
     expect(workshopMods(null, 'dismantle', 0)).toEqual({});
+  });
+
+  it('Market Day boosts the first 2 dismantled items of the day, counted in items', () => {
+    const market = day('market-day');
+    expect(dismantleBoostLeft(market, 0)).toBe(2);
+    expect(dismantleBoostLeft(market, 1)).toBe(1);
+    expect(dismantleBoostLeft(market, 2)).toBe(0);
+    expect(dismantleBoostLeft(market, 40)).toBe(0);
+    expect(dismantleBoostLeft(day('fair-winds'), 0)).toBe(0);
+    expect(dismantleBoostLeft(null, 0)).toBe(0);
   });
 });
 

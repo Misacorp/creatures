@@ -5,7 +5,6 @@ import {
   dismantleRange,
   jobDuration,
   rollCraftItem,
-  rollDismantle,
   type PartsBundle,
   type Rng,
 } from '@creatures/game';
@@ -25,8 +24,6 @@ import {
 import { runCore, undoWorkshopV2Migration, type CoreContext } from './helpers';
 import { count, nextGuild, rows } from './raid-helpers';
 import { HOUR, newKey, give as giveFunds } from './kit';
-
-const MIN = 60_000;
 
 interface JobBody {
   id: string;
@@ -79,17 +76,11 @@ function counting(seed: string): Rng & { drawn: () => number } {
   };
 }
 
-/** An RNG that always answers 0: the lowest roll, and every chance succeeds. */
-const lowest: Rng = { nextU32: () => 0 };
-
 const start = (p: Api, body: Record<string, unknown>) =>
   p.call('POST', '/api/workshop/jobs', { idempotencyKey: newKey(), ...body });
 
 const claim = (p: Api, jobId: string, key = newKey()) =>
   p.call('POST', `/api/workshop/jobs/${jobId}/claim`, { idempotencyKey: key });
-
-const jobIdOf = (res: { body: Record<string, unknown> }): string =>
-  (res.body['result'] as { jobId: string }).jobId;
 
 describe('crafting: the preview', () => {
   it('sends the exact odds, costs, times and XP of every way to craft, and changes nothing', async () => {
@@ -485,411 +476,7 @@ describe('crafting: Reach', () => {
   });
 });
 
-describe('dismantling is a Workshop job', () => {
-  it('previews the range (the same for every creature), the time and the blueprint chance of the creature', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await player(ctx, 1);
-        skipWelcome(ctx, p.id);
-        const hat = give(ctx, p.id, 'kelp-cap', { rarity: 'rare', level: 10 });
-        const [novice, master] = p.creatureIds as [string, string];
-        setCraftingXp(ctx, p.id, master, 5_500); // level 10
-        const ask = async (creatureId: string) =>
-          (
-            await p.call('POST', '/api/workshop/preview', {
-              kind: 'dismantle',
-              creatureId,
-              itemIds: [hat],
-            })
-          ).body['result'] as {
-            kind: string;
-            range: unknown;
-            durationMs: number;
-            xp: number;
-            learnBp: number | null;
-            teachers: number;
-            items: { id: string }[];
-          };
-        const a = await ask(novice);
-        const b = await ask(master);
-        expect(a.range).toEqual(
-          dismantleRange([{ baseId: 'kelp-cap', rarity: 'rare', itemLevel: 10 }]),
-        );
-        expect(a.range).toEqual({
-          scrap: { min: 2, max: 3 },
-          shards: { min: 1, max: 1, element: 'tide' },
-          glimmer: { min: 0, max: 0 },
-          essence: { min: 3, max: 8 },
-        });
-        // The range is the same whoever works; time and the blueprint chance are the creature's.
-        expect(b.range).toEqual(a.range);
-        expect(a.durationMs).toBe(HOUR);
-        expect(b.durationMs).toBe(Math.floor(HOUR * 0.73));
-        expect(a).toMatchObject({ learnBp: 700, xp: 12, teachers: 1 });
-        expect(b.learnBp).toBe(1_600);
-        expect(a.items.map((i) => i.id)).toEqual([hat]);
-        expect(count(ctx.sql, 'gear_items')).toBe(1);
-      },
-      {},
-    );
-  });
-
-  it('takes the items out of the bag now and gives the refund only at the claim, rolled with the live rng', async () => {
-    const rng = counting('dismantle');
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await player(ctx, 1);
-        skipWelcome(ctx, p.id);
-        const ids = [1, 2, 3].map((n) => give(ctx, p.id, 'trail-cap', { seed: `c${String(n)}` }));
-        const [c1] = p.creatureIds as [string];
-        const started = await start(p, { kind: 'dismantle', creatureId: c1, itemIds: ids });
-        expect(started.status).toBe(200);
-        // 3 Commons in one 15 minute job; the bag is empty, nothing is paid yet.
-        const job = (started.body['gear'] as GearBody).jobs[0] as JobBody;
-        expect(job).toMatchObject({ kind: 'dismantle', status: 'running' });
-        expect(job.endsAt - job.startedAt).toBe(15 * MIN);
-        expect(job.input['items']).toHaveLength(3);
-        expect(count(ctx.sql, 'gear_items')).toBe(0);
-        expect(partsOf(ctx, p.id)['scrap'] ?? 0).toBe(0);
-        expect(rng.drawn()).toBe(0);
-        expect(
-          (started.body['state'] as { creatures: { id: string; busy: unknown }[] }).creatures.find(
-            (c) => c.id === c1,
-          )?.busy,
-        ).toEqual({ kind: 'job', id: job.id });
-        // Too early.
-        ctx.clock.t = job.endsAt - 1;
-        expect(await claim(p, job.id)).toMatchObject({ status: 409, body: { error: 'not_ready' } });
-        ctx.clock.t = job.endsAt;
-        const res = await claim(p, job.id);
-        expect(res.status).toBe(200);
-        const items = (
-          job.input['items'] as { baseId: string; rarity: string; itemLevel: number }[]
-        ).map((i) => ({ baseId: i.baseId, rarity: i.rarity as 'common', itemLevel: i.itemLevel }));
-        const expected = rollDismantle(createSeededRng('dismantle'), items);
-        const result = res.body['result'] as {
-          kind: string;
-          parts: PartsBundle;
-          essence: number;
-          xp: number;
-          learned: string[];
-          marked: unknown[];
-        };
-        expect(result).toMatchObject({ kind: 'dismantle', parts: expected.parts, essence: 0 });
-        // Three Commons (item level 1, craft scrap cost 8 each): 2 to 3 scrap each, and the minimum 6 XP for a 15 minute job.
-        expect(result.parts.scrap).toBeGreaterThanOrEqual(6);
-        expect(result.parts.scrap).toBeLessThanOrEqual(9);
-        expect(result.xp).toBe(6);
-        expect(partsOf(ctx, p.id)['scrap']).toBe(result.parts.scrap);
-        expect(
-          rows<{ work_minutes: number }>(ctx.sql, 'SELECT work_minutes FROM workshop_jobs')[0]
-            ?.work_minutes,
-        ).toBe(15);
-        // The creature is free again, and claiming again pays and rolls nothing more.
-        const drawn = rng.drawn();
-        expect((await claim(p, job.id)).body['result']).toEqual(res.body['result']);
-        expect(rng.drawn()).toBe(drawn);
-        expect(partsOf(ctx, p.id)['scrap']).toBe(result.parts.scrap);
-      },
-      { gearRng: rng },
-    );
-  });
-
-  it('a Rare takes 1 hour and pays Essence through the ledger, an Epic takes 2 hours', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await player(ctx, 1);
-        skipWelcome(ctx, p.id);
-        const rare = give(ctx, p.id, 'coal-warm-cap', { rarity: 'rare', level: 5 });
-        const epic = give(ctx, p.id, 'kelp-cap', { rarity: 'epic', level: 20 });
-        const [c1, c2] = p.creatureIds as [string, string];
-        const a = await start(p, { kind: 'dismantle', creatureId: c1, itemIds: [rare] });
-        const b = await start(p, { kind: 'dismantle', creatureId: c2, itemIds: [epic] });
-        const jobs = (b.body['gear'] as GearBody).jobs;
-        const byKind = (id: string) => jobs.find((j) => j.id === id) as JobBody;
-        expect(byKind(jobIdOf(a)).endsAt - byKind(jobIdOf(a)).startedAt).toBe(HOUR);
-        expect(byKind(jobIdOf(b)).endsAt - byKind(jobIdOf(b)).startedAt).toBe(2 * HOUR);
-        ctx.clock.t += 2 * HOUR;
-        const done = await claim(p, jobIdOf(b));
-        const result = done.body['result'] as { parts: PartsBundle; essence: number; xp: number };
-        // Epic at item level 20 (craft scrap cost 11): 4 to 5 scrap, 1 or 2 tide shards, up to 1 glimmer, 10 to 25 Essence, 24 XP.
-        expect(result.parts.scrap).toBeGreaterThanOrEqual(4);
-        expect(result.parts.scrap).toBeLessThanOrEqual(5);
-        expect(result.essence).toBeGreaterThanOrEqual(10);
-        expect(result.essence).toBeLessThanOrEqual(25);
-        expect(result.xp).toBe(24);
-        expect(essenceOf(ctx, p.id)).toBe(result.essence);
-        expect(
-          rows<{ amount: number; source: string }>(
-            ctx.sql,
-            "SELECT amount, source FROM ledger WHERE user_id = ? AND source = 'dismantle'",
-            p.id,
-          ),
-        ).toEqual([{ amount: result.essence, source: 'dismantle' }]);
-        const shards = result.parts['tide-shard'] ?? 0;
-        expect([1, 2]).toContain(shards);
-        // Claiming again credits the Essence once.
-        await claim(p, jobIdOf(b));
-        expect(essenceOf(ctx, p.id)).toBe(result.essence);
-      },
-      { gearRng: createSeededRng('rare-epic') },
-    );
-  });
-
-  it('the refund range is the same whichever creature works, over many rolls', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await player(ctx, 1);
-        skipWelcome(ctx, p.id);
-        const [novice, master] = p.creatureIds as [string, string];
-        setCraftingXp(ctx, p.id, master, 5_500);
-        const seen = new Map<string, Set<number>>();
-        for (let i = 0; i < 12; i++) {
-          for (const creature of [novice, master]) {
-            const item = give(ctx, p.id, 'kelp-cap', {
-              rarity: 'rare',
-              level: 5,
-              seed: `s${String(i)}${creature}`,
-            });
-            const res = await start(p, {
-              kind: 'dismantle',
-              creatureId: creature,
-              itemIds: [item],
-            });
-            const job = (res.body['gear'] as GearBody).jobs.find(
-              (j) => j.creatureId === creature,
-            ) as JobBody;
-            ctx.clock.t = job.endsAt;
-            const done = (await claim(p, job.id)).body['result'] as {
-              essence: number;
-              parts: PartsBundle;
-            };
-            const values = seen.get(creature) ?? new Set<number>();
-            values.add(done.essence);
-            seen.set(creature, values);
-            // Rare at item level 5 (craft scrap cost 7): 2 to 3 scrap, 1 shard, 3 to 8 Essence for everybody.
-            expect(done.parts.scrap).toBeGreaterThanOrEqual(2);
-            expect(done.parts.scrap).toBeLessThanOrEqual(3);
-            expect(done.essence).toBeGreaterThanOrEqual(3);
-            expect(done.essence).toBeLessThanOrEqual(8);
-          }
-        }
-        // Both creatures roll across the range.
-        expect((seen.get(master) ?? new Set()).size).toBeGreaterThan(2);
-        expect((seen.get(novice) ?? new Set()).size).toBeGreaterThan(2);
-      },
-      { gearRng: createSeededRng('range') },
-    );
-  });
-
-  it('refuses a mixed bundle, a bundle of Rares, repeats, six items and items that are not yours', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await player(ctx, 1);
-        const other = await player(ctx, 2);
-        skipWelcome(ctx, p.id);
-        skipWelcome(ctx, other.id);
-        const [c1] = p.creatureIds as [string];
-        const common = give(ctx, p.id, 'trail-cap', { seed: 'a' });
-        const common2 = give(ctx, p.id, 'trail-cap', { seed: 'b' });
-        const rare = give(ctx, p.id, 'kelp-cap', { rarity: 'rare' });
-        const rare2 = give(ctx, p.id, 'coal-warm-cap', { rarity: 'rare' });
-        const theirs = give(ctx, other.id, 'trail-cap');
-        const six = Array.from({ length: 6 }, (_, i) =>
-          give(ctx, p.id, 'trail-cap', { seed: `six${String(i)}` }),
-        );
-        const tries: [string, string[], number, string][] = [
-          ['mixed rarities', [common, rare], 400, 'invalid_bundle'],
-          ['two Rares', [rare, rare2], 400, 'invalid_bundle'],
-          ['a repeat', [common, common], 400, 'invalid_bundle'],
-          ['six Commons', six, 400, 'invalid_body'],
-          ['nothing', [], 400, 'invalid_body'],
-          ['theirs', [theirs], 404, 'not_found'],
-          ['one of theirs in a bundle', [common, common2, theirs], 404, 'not_found'],
-        ];
-        for (const [label, itemIds, status, error] of tries) {
-          const res = await start(p, { kind: 'dismantle', creatureId: c1, itemIds });
-          expect([label, res.status, res.body['error']]).toEqual([label, status, error]);
-        }
-        // Nothing was taken, started or kept by the failed tries.
-        expect(count(ctx.sql, 'workshop_jobs')).toBe(0);
-        expect(count(ctx.sql, 'gear_items', `user_id = '${p.id}'`)).toBe(10);
-        // Five Commons are fine.
-        const five = six.slice(0, 5);
-        expect((await start(p, { kind: 'dismantle', creatureId: c1, itemIds: five })).status).toBe(
-          200,
-        );
-      },
-      {},
-    );
-  });
-
-  it('keeps the busy rules: a busy creature, a full workshop, and gear frozen on a busy creature', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await player(ctx, 1, { level: 8 });
-        skipWelcome(ctx, p.id);
-        const [c1, c2, c3] = p.creatureIds as [string, string, string];
-        const items = [1, 2, 3, 4].map((n) =>
-          give(ctx, p.id, 'trail-cap', { seed: `b${String(n)}` }),
-        );
-        const [i1, i2, i3, i4] = items as [string, string, string, string];
-        expect((await start(p, { kind: 'dismantle', creatureId: c1, itemIds: [i1] })).status).toBe(
-          200,
-        );
-        expect(await start(p, { kind: 'dismantle', creatureId: c1, itemIds: [i2] })).toMatchObject({
-          status: 409,
-          body: { error: 'creature_on_job' },
-        });
-        expect((await start(p, { kind: 'dismantle', creatureId: c2, itemIds: [i2] })).status).toBe(
-          200,
-        );
-        expect(await start(p, { kind: 'dismantle', creatureId: c3, itemIds: [i3] })).toMatchObject({
-          status: 409,
-          body: { error: 'workshop_full' },
-        });
-        // The items of a refused start stay.
-        expect(count(ctx.sql, 'gear_items')).toBe(2);
-        void i4;
-        // An item worn by a creature on a job is not taken away from it.
-        ctx.clock.t += HOUR;
-        for (const j of ((await p.call('GET', '/api/gear')).body as unknown as GearBody).jobs) {
-          await claim(p, j.id);
-        }
-        const worn = give(ctx, p.id, 'trail-cap', { seed: 'worn' });
-        expect((await p.call('POST', `/api/gear/${worn}/equip`, { creatureId: c3 })).status).toBe(
-          200,
-        );
-        expect(
-          (await start(p, { kind: 'craft', creatureId: c3, blueprintId: 'trail-cap' })).status,
-        ).toBe(409);
-        learnBase(ctx, p.id, 'trail-cap');
-        giveParts(ctx, p.id, { scrap: 20 });
-        expect(
-          (await start(p, { kind: 'craft', creatureId: c3, blueprintId: 'trail-cap' })).status,
-        ).toBe(200);
-        expect(
-          await start(p, { kind: 'dismantle', creatureId: c1, itemIds: [worn] }),
-        ).toMatchObject({
-          status: 409,
-          body: { error: 'creature_on_job' },
-        });
-        expect(count(ctx.sql, 'gear_items', `id = '${worn}'`)).toBe(1);
-      },
-      { gearRng: createSeededRng('busy') },
-    );
-  });
-
-  it('takes a worn item off when its job starts, and is idempotent per key', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await player(ctx, 1, { level: 13 });
-        skipWelcome(ctx, p.id);
-        const [c1, c2] = p.creatureIds as [string, string];
-        const worn = give(ctx, p.id, 'trail-cap');
-        await p.call('POST', `/api/gear/${worn}/equip`, { creatureId: c1 });
-        const body = {
-          kind: 'dismantle',
-          creatureId: c2,
-          itemIds: [worn],
-          idempotencyKey: newKey(),
-        };
-        const first = await p.call('POST', '/api/workshop/jobs', body);
-        const again = await Promise.all(
-          Array.from({ length: 3 }, () => p.call('POST', '/api/workshop/jobs', body)),
-        );
-        for (const r of again) expect(r.body['result']).toEqual(first.body['result']);
-        expect(count(ctx.sql, 'workshop_jobs')).toBe(1);
-        expect(count(ctx.sql, 'gear_items')).toBe(0);
-        // The same key on other items is a conflict.
-        const other = give(ctx, p.id, 'trail-cap', { seed: 'other' });
-        expect(
-          await p.call('POST', '/api/workshop/jobs', { ...body, itemIds: [other] }),
-        ).toMatchObject({ status: 409, body: { error: 'key_conflict' } });
-        expect(count(ctx.sql, 'gear_items')).toBe(1);
-      },
-      {},
-    );
-  });
-});
-
-describe('dismantling teaches blueprints and adds well-thumbed marks', () => {
-  it('learns the blueprint of an item with the chance, or adds a mark for one it knows (never past 10)', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await player(ctx, 1);
-        skipWelcome(ctx, p.id);
-        learnBase(ctx, p.id, 'trail-cap', 9);
-        const [c1, c2] = p.creatureIds as [string, string];
-        const known = give(ctx, p.id, 'trail-cap', { seed: 'k1' });
-        const fresh = give(ctx, p.id, 'kelp-cap', { seed: 'f1' });
-        const started = await start(p, {
-          kind: 'dismantle',
-          creatureId: c1,
-          itemIds: [known, fresh],
-        });
-        expect(started.status).toBe(200);
-        // Two Commons: always a mark for the one it knows, the other is learned.
-        const job = (started.body['gear'] as GearBody).jobs[0] as JobBody;
-        ctx.clock.t = job.endsAt;
-        const res = await claim(p, job.id);
-        expect(res.body['result']).toMatchObject({
-          learned: ['kelp-cap'],
-          marked: [{ baseId: 'trail-cap', marks: 10 }],
-        });
-        expect(marksOf(ctx, p.id, 'trail-cap')).toBe(10);
-        expect(marksOf(ctx, p.id, 'kelp-cap')).toBe(0);
-        // At 10 marks a find adds nothing more.
-        const more = give(ctx, p.id, 'trail-cap', { seed: 'k2' });
-        const second = await start(p, { kind: 'dismantle', creatureId: c2, itemIds: [more] });
-        const job2 = (second.body['gear'] as GearBody).jobs.find(
-          (j) => j.creatureId === c2,
-        ) as JobBody;
-        ctx.clock.t = job2.endsAt;
-        expect((await claim(p, job2.id)).body['result']).toMatchObject({ learned: [], marked: [] });
-        expect(marksOf(ctx, p.id, 'trail-cap')).toBe(10);
-      },
-      { gearRng: lowest },
-    );
-  });
-
-  it('gives no blueprint chance for Festival pieces and role Charms, and the chance follows the worker level', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await player(ctx, 1);
-        skipWelcome(ctx, p.id);
-        const [c1] = p.creatureIds as [string];
-        const bell = give(ctx, p.id, 'wardens-bell', { rarity: 'rare' });
-        const lantern = give(ctx, p.id, 'festival-lantern-charm', { rarity: 'epic' });
-        const ask = async (itemId: string) =>
-          (
-            await p.call('POST', '/api/workshop/preview', {
-              kind: 'dismantle',
-              creatureId: c1,
-              itemIds: [itemId],
-            })
-          ).body['result'] as { learnBp: number | null; teachers: number };
-        expect(await ask(bell)).toMatchObject({ learnBp: null, teachers: 0 });
-        expect(await ask(lantern)).toMatchObject({ learnBp: null, teachers: 0 });
-        const started = await start(p, { kind: 'dismantle', creatureId: c1, itemIds: [bell] });
-        const job = (started.body['gear'] as GearBody).jobs[0] as JobBody;
-        ctx.clock.t = job.endsAt;
-        expect((await claim(p, job.id)).body['result']).toMatchObject({ learned: [], marked: [] });
-        expect(count(ctx.sql, 'blueprints')).toBe(0);
-      },
-      { gearRng: lowest },
-    );
-  });
-
+describe('well-thumbed marks of a blueprint', () => {
   it('adds a mark for a repeat find of a blueprint on a trip or in the finale, and scrap only at 10 marks', async () => {
     await runCore(
       nextGuild(),
@@ -976,26 +563,18 @@ describe('the day modifiers hook', () => {
         const rare = (o: typeof shown.value) => o.options[1]?.oddsBp;
         expect(rare(shown.value)).toEqual(craftOdds('rare', 3, 0, { stepUpBonusBp: 500 }));
         expect(rare(shown.value)?.epic).toBeGreaterThan(rare(normal.value)?.epic ?? 99_999);
-        // A dismantle with the day's top-of-range rolls the top.
+        // A pile dismantle with the day's top-of-range rolls the top of every item (the hook says all).
         const item = give(ctx, p.id, 'coal-warm-cap', { rarity: 'epic', level: 10 });
-        const key = newKey();
-        const started = gear.startJob(p.id, {
-          kind: 'dismantle',
+        const done = gear.dismantlePile(p.id, {
           creatureId: p.creatureIds[1] as string,
           itemIds: [item],
-          idempotencyKey: key,
+          idempotencyKey: newKey(),
         });
-        if (!started.ok) throw new Error('start failed');
-        const job = rows<{ id: string; ends_at: number }>(
-          ctx.sql,
-          'SELECT id, ends_at FROM workshop_jobs',
-        )[0];
-        ctx.clock.t = job?.ends_at ?? 0;
-        const done = gear.claimJob(p.id, job?.id ?? '', newKey());
-        if (!done.ok || done.value.kind !== 'dismantle') throw new Error('claim failed');
+        if (!done.ok) throw new Error('dismantle failed');
         const range = dismantleRange([{ baseId: 'coal-warm-cap', rarity: 'epic', itemLevel: 10 }]);
         expect(done.value.parts.scrap).toBe(range.scrap.max);
         expect(done.value.essence).toBe(range.essence.max);
+        expect(done.value.boosted).toBe(1);
       },
       {},
     );

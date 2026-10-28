@@ -32,7 +32,8 @@ import workshopClaimCraft from './fixtures/workshop-claim-craft.json';
 import workshopClaimDismantle from './fixtures/workshop-claim-dismantle.json';
 import workshopPreviewCraft from './fixtures/workshop-preview-craft.json';
 import workshopPreviewDismantle from './fixtures/workshop-preview-dismantle.json';
-import workshopStartDismantle from './fixtures/workshop-start-dismantle.json';
+import gearDismantle from './fixtures/gear-dismantle.json';
+import gearDismantleCheck from './fixtures/gear-dismantle-check.json';
 import workshopClaimRetired from './fixtures/workshop-claim-retired.json';
 import workshopStartCraft from './fixtures/workshop-start-craft.json';
 import dungeonActCampPending from './fixtures/dungeon-act-camp-pending.json';
@@ -115,10 +116,12 @@ import { DUNGEON_ERROR_TEXT, dungeonErrorText, isStaleDungeonError } from './dun
 import { DUNGEON_ERRORS, type DungeonActRequest, type DungeonStartRequest } from './dungeon-types';
 import {
   claimJob,
+  dismantlePile,
   dismissGearNotice,
   equipBestGear,
   equipGear,
   fetchGear,
+  checkDismantle,
   previewCraft,
   previewDismantle,
   startJob,
@@ -327,10 +330,25 @@ describe('the gear requests the client sends', () => {
     expect(gearRequestBodies['job-craft-reach'].body.reach).toBe('rare');
   });
 
-  it('a dismantle job sends the creature, the items and a key', async () => {
-    apiFetch.mockResolvedValue(workshopStartDismantle);
-    await startJob(gearRequestBodies['job-dismantle'].body as StartJobRequest);
-    expect(sent()).toEqual(expected('job-dismantle'));
+  it('the check sends the items and reads who is held back; the pile sends the creature, the items and a key', async () => {
+    apiFetch.mockResolvedValue(gearDismantleCheck);
+    const check = gearRequestBodies['dismantle-check'].body;
+    const checked = await checkDismantle(check.itemIds);
+    expect(sent()).toEqual(expected('dismantle-check'));
+    expect(checked).toEqual({ locked: [] });
+    apiFetch.mockClear();
+    apiFetch.mockResolvedValue(gearDismantle);
+    const pile = gearRequestBodies['dismantle-pile'].body;
+    const done = await dismantlePile(pile.creatureId, pile.itemIds, pile.idempotencyKey);
+    expect(sent()).toEqual(expected('dismantle-pile'));
+    expect(done.result.kind).toBe('dismantle');
+    expect(done.result.creatureId).toBe(pile.creatureId);
+    // Anything but a dismantle result is an error, never a half-drawn results screen.
+    apiFetch.mockResolvedValue({
+      ...gearDismantle,
+      result: { ...gearDismantle.result, kind: 'craft' },
+    });
+    await expect(dismantlePile('c', ['i'], 'k')).rejects.toThrow('dismantle result');
   });
 
   it('asks for a preview with the creature and the blueprint or the items, and reads the answer', async () => {
@@ -418,10 +436,7 @@ describe('the gear responses the server sends', () => {
       [gearUnequip, () => equipGear('g', null)],
       [gearEquipBest, () => equipBestGear(['c'])],
       [gearNoticeDismissed, () => dismissGearNotice()],
-      [
-        workshopStartDismantle,
-        () => startJob(gearRequestBodies['job-dismantle'].body as StartJobRequest),
-      ],
+      [gearDismantle, () => dismantlePile('c', ['i'], 'k')],
       [workshopClaimDismantle, () => claimJob('j', 'k')],
       [workshopStartCraft, () => startJob(gearRequestBodies['job-craft'].body as StartJobRequest)],
       [workshopClaimCraft, () => claimJob('j', 'k')],

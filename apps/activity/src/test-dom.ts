@@ -15,6 +15,11 @@ export interface FakeEvent {
   target: FakeElement;
   currentTarget: FakeElement;
   key?: string;
+  /** Modifier keys and the mouse button of clicks, pointer events and keys (a Ctrl click, a Shift click, a right click). */
+  ctrlKey?: boolean;
+  metaKey?: boolean;
+  shiftKey?: boolean;
+  button?: number;
   /** Pointer events: where, which pointer and what kind (a finger is `touch`). */
   clientX?: number;
   clientY?: number;
@@ -394,6 +399,16 @@ export function visibleText(root: FakeElement): string {
 
 // --- The page ---
 
+/** Modifier keys held at a click, key or event. */
+export interface Modifiers {
+  ctrlKey?: boolean;
+  metaKey?: boolean;
+  shiftKey?: boolean;
+  button?: number;
+  /** For events a listener may cancel only sometimes (a `touchmove` during a scroll is not cancelable). */
+  cancelable?: boolean;
+}
+
 export interface Page {
   root: FakeElement;
   document: FakeDocument;
@@ -401,17 +416,29 @@ export interface Page {
   draw(vnode: ComponentChild): void;
   /** Runs `change` (state updates, events) and flushes the redraw and the effects. */
   update(change: () => void): void;
-  click(el: FakeElement): void;
+  click(el: FakeElement, modifiers?: Modifiers): void;
   /** Types into a text field: sets its value and fires `input`. */
   type(el: FakeElement, text: string): void;
-  key(el: FakeElement, key: string): FakeEvent;
-  /** Any other event by name (`wheel`, `touchstart`, `focusin`, `scroll`), with effects flushed. */
-  event(el: FakeElement, type: string): FakeEvent;
+  key(el: FakeElement, key: string, modifiers?: Modifiers): FakeEvent;
+  /** Any other event by name (`wheel`, `touchstart`, `focusin`, `scroll`, `contextmenu`), with effects flushed. */
+  event(
+    el: FakeElement,
+    type: string,
+    init?: Modifiers & { x?: number; y?: number; key?: string },
+  ): FakeEvent;
   /** A pointer event (`pointerdown`, `pointermove`, `pointerup`, `pointercancel`) with its position and kind. */
   pointer(
     el: FakeElement,
     type: string,
-    init: { x: number; y: number; at?: number; id?: number; kind?: string; primary?: boolean },
+    init: {
+      x: number;
+      y: number;
+      at?: number;
+      id?: number;
+      kind?: string;
+      primary?: boolean;
+      button?: number;
+    },
   ): FakeEvent;
   unmount(): void;
 }
@@ -476,19 +503,26 @@ export function createPage(): Page {
     update(change) {
       void act(change);
     },
-    click(el) {
+    click(el, modifiers = {}) {
       if (el.hasAttribute('disabled')) return;
-      fire(el, { type: 'click' });
+      fire(el, { type: 'click', ...modifiers });
     },
     type(el, text) {
       el.value = text;
       fire(el, { type: 'input' });
     },
-    key(el, key) {
-      return fire(el, { type: 'keydown', key });
+    key(el, key, modifiers = {}) {
+      return fire(el, { type: 'keydown', key, ...modifiers });
     },
-    event(el, type) {
-      return fire(el, { type });
+    event(el, type, init = {}) {
+      const { x, y, key, ...modifiers } = init;
+      return fire(el, {
+        type,
+        ...modifiers,
+        ...(key === undefined ? {} : { key }),
+        ...(x === undefined ? {} : { clientX: x }),
+        ...(y === undefined ? {} : { clientY: y }),
+      });
     },
     pointer(el, type, init) {
       return fire(el, {
@@ -499,6 +533,7 @@ export function createPage(): Page {
         pointerId: init.id ?? 1,
         pointerType: init.kind ?? 'touch',
         isPrimary: init.primary ?? true,
+        button: init.button ?? 0,
       });
     },
     unmount() {

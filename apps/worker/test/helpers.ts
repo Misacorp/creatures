@@ -315,8 +315,31 @@ export function undoGamesIndexMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 42');
 }
 
+/** Puts a database back to before migration 49 (the marks dropped): the mark column is there again (all zero). */
+export function undoDismantleUnmarkMigration(sql: SqlStorage): void {
+  const present = sql
+    .exec("SELECT 1 FROM pragma_table_info('gear_items') WHERE name = 'dismantle_mark'")
+    .toArray();
+  if (present.length === 0) {
+    sql.exec('ALTER TABLE gear_items ADD COLUMN dismantle_mark INTEGER NOT NULL DEFAULT 0');
+  }
+  sql.exec('DELETE FROM schema_version WHERE version = 49');
+}
+
+/** Puts a database back to before migration 48 (marked items): the mark column and the day counts go. */
+export function undoDismantleMarkMigration(sql: SqlStorage): void {
+  undoDismantleUnmarkMigration(sql);
+  const present = sql
+    .exec("SELECT 1 FROM pragma_table_info('gear_items') WHERE name = 'dismantle_mark'")
+    .toArray();
+  if (present.length > 0) sql.exec('ALTER TABLE gear_items DROP COLUMN dismantle_mark');
+  sql.exec('DROP TABLE IF EXISTS dismantle_days');
+  sql.exec('DELETE FROM schema_version WHERE version = 48');
+}
+
 /** Puts a database back to before migration 47 (creature notes): the column goes. */
 export function undoCreatureNoteMigration(sql: SqlStorage): void {
+  undoDismantleMarkMigration(sql);
   const present = sql
     .exec("SELECT 1 FROM pragma_table_info('creatures') WHERE name = 'note'")
     .toArray();

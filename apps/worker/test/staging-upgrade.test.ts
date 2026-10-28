@@ -166,7 +166,7 @@ describe('a staging database from b9cb38d, started by the new code', () => {
         expect(dismantle.status).toBe(200);
         parseDismantlePreview(dismantle.body['result']);
       }
-      // The finished old jobs free their workshop slots; then a new dismantle job takes an old item apart
+      // The finished old jobs free their workshop slots; then a pile takes an old item apart
       // and a new craft starts from an old blueprint.
       ctx.clock.t += 6 * HOUR;
       for (const name of ['dismantleReady', 'improveReady']) {
@@ -175,8 +175,9 @@ describe('a staging database from b9cb38d, started by the new code', () => {
         });
         expect(claim.status).toBe(200);
       }
-      const start = await p.call('POST', '/api/workshop/jobs', {
-        kind: 'dismantle',
+      // Dismantling is a pile now: dismantle an old item with a free creature.
+      await p.call('POST', `/api/gear/${s.items['i1'] as string}/equip`, { creatureId: null });
+      const start = await p.call('POST', '/api/gear/dismantle', {
         creatureId: s.c[0],
         itemIds: [s.items['i1']],
         idempotencyKey: newKey(),

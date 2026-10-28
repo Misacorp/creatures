@@ -7,7 +7,6 @@
 import {
   RULES,
   createSeededRng,
-  dismantleRange,
   lengthRules,
   raidExperience,
   treatPart,
@@ -22,7 +21,7 @@ import { eventTimes } from '../src/raid-schedule';
 import { addDays, gameDay, zonedTimeToEpoch } from '../src/time';
 import { dungeonPlayer, easyFoes } from './dungeon-helpers';
 import { paidFor } from './dungeon-xp-helpers';
-import { apiPlayer, giveItem, giveParts, learnBase, skipWelcome, type Api } from './gear-helpers';
+import { apiPlayer, giveParts, learnBase, skipWelcome, type Api } from './gear-helpers';
 import { runCore, type CoreContext } from './helpers';
 import {
   HELSINKI,
@@ -340,14 +339,6 @@ const startCraft = (p: Api, creatureId: string, baseId = 'trail-cap') =>
     idempotencyKey: newKey(),
   });
 
-const startDismantle = (p: Api, creatureId: string, itemIds: string[]) =>
-  p.call('POST', '/api/workshop/jobs', {
-    kind: 'dismantle',
-    creatureId,
-    itemIds,
-    idempotencyKey: newKey(),
-  });
-
 const claimJob = (p: Api, jobId: string) =>
   p.call('POST', `/api/workshop/jobs/${jobId}/claim`, { idempotencyKey: newKey() });
 
@@ -508,61 +499,6 @@ describe('the Workshop under the weather', () => {
         expect(supply.status).toBe(200);
         const craft = jobIdOf(await startCraft(p, b, 'kelp-cap'));
         expect(inputOf(ctx, craft).mods).toEqual({ stepUpBonusBp: 500 });
-      },
-      { weather: true },
-    );
-  });
-
-  it('Market Day: the first 2 dismantle jobs roll the top of their range and the third does not', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await workshopPlayer(ctx);
-        const [a, b] = p.creatureIds as [string, string];
-        const item = (seed: string): string => giveItem(ctx.sql, p.id, 'trail-cap', { seed });
-        sky(ctx, 'market-day');
-        const first = jobIdOf(await startDismantle(p, a, [item('one')]));
-        const second = jobIdOf(await startDismantle(p, b, [item('two')]));
-        expect(inputOf(ctx, first).mods).toEqual({ dismantleTopOfRange: true });
-        expect(inputOf(ctx, second).mods).toEqual({ dismantleTopOfRange: true });
-        // Free the slots (every job of the day still counts), then the third is a plain one.
-        ctx.clock.t += HOUR;
-        await claimJob(p, first);
-        await claimJob(p, second);
-        const third = jobIdOf(await startDismantle(p, a, [item('three')]));
-        expect(inputOf(ctx, third).mods).toBeUndefined();
-      },
-      { weather: true },
-    );
-  });
-
-  it('a top-of-range dismantle refunds the top of the range at the claim', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await workshopPlayer(ctx);
-        const [a] = p.creatureIds as [string];
-        const itemId = giveItem(ctx.sql, p.id, 'trail-cap', { seed: 'top' });
-        const before = rows<{ kind: string; amount: number }>(
-          ctx.sql,
-          "SELECT kind, amount FROM parts WHERE user_id = ? AND kind = 'scrap'",
-          p.id,
-        )[0]?.amount as number;
-        sky(ctx, 'market-day');
-        const job = jobIdOf(await startDismantle(p, a, [itemId]));
-        ctx.clock.t += HOUR;
-        const claimed = await claimJob(p, job);
-        const range = (claimed.body['result'] as { parts: PartsBundle }).parts.scrap as number;
-        // Level 1 trail cap, common: its range tops at the highest scrap of a common piece.
-        expect(range).toBe(
-          dismantleRange([{ baseId: 'trail-cap', rarity: 'common', itemLevel: 1 }]).scrap.max,
-        );
-        const after = rows<{ amount: number }>(
-          ctx.sql,
-          "SELECT amount FROM parts WHERE user_id = ? AND kind = 'scrap'",
-          p.id,
-        )[0]?.amount as number;
-        expect(after - before).toBe(range);
       },
       { weather: true },
     );

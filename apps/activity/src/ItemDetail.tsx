@@ -4,10 +4,9 @@ import type { Creature } from './api';
 import { TAKE_OFF_ID, WEARS_IT_NOTE, equipOptions } from './equip-picker';
 import { creatureName } from './game';
 import type { GearActions } from './gear-actions';
-import type { GearItem, GearState } from './gear-types';
+import type { GearItem } from './gear-types';
 import { detailLines, setPiecesWith } from './gear-view';
 import { ItemCard } from './ItemCard';
-import { DismantleWizard, type DismantleStep } from './DismantleWizard';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { Accordion } from './ui/Accordion';
@@ -118,66 +117,59 @@ function EquipView({
  * One item of the bag: its card (image with its level, name, rarity, base stats, modifiers with their tiers),
  * then the "Equip on" row (who wears it, or "Choose a creature": it opens the creature list as a view of this
  * same drawer, which equips right away and offers "Take off" first for a worn item), where it came from and who
- * made it one tap away under "Details", and last, centred and apart, Dismantle (a destructive action sits last
- * in its view). The font is set once on the section (`.pix-panel`); only the Details text is body text.
+ * made it one tap away under "Details", and last, centred and apart, the red "Dismantle" (the destructive action
+ * comes last). It runs the same flow as dismantling from the bag for this one item, in the same frame
+ * (a warning first when the item is worn, then who, then the confirmation). The card only has the button: the flow is
+ * the bag's own `DismantleDrawer`, which the screen puts in this drawer's place (`onDismantle`). The font is set
+ * once on the section (`.pix-panel`); only the Details text is body text.
  */
 export function ItemDetail({
   item,
-  gear,
   creatures,
   busy,
   actions,
   focusName = true,
-  onGone,
-  initialDismantle = false,
   initialPicking = false,
-  error = null,
   onDrill,
+  onDismantle,
+  focusDismantle = false,
 }: {
   item: GearItem;
-  gear: GearState;
   creatures: readonly Creature[];
   busy: boolean;
   actions: GearActions;
   /** Move the focus to the item's name when it is shown (not after a flip, which keeps the arrows' focus). */
   focusName?: boolean;
-  /** The item no longer exists (it went into a dismantle job): the screen drops the selection. */
-  onGone: () => void;
-  /** The workbench shows the dismantle wizard open (`true`: on Who dismantles). */
-  initialDismantle?: boolean | DismantleStep;
   /** The workbench shows the creature list ("Equip on") open. */
   initialPicking?: boolean;
-  /** The server's last error, shown in the dismantle wizard after a start that was refused. */
-  error?: string | null;
   /** Told when the creature list opens and closes: the drawer turns its flipping off while it is shown. */
   onDrill?: (open: boolean) => void;
+  /** Shows the red Dismantle button, and what it does (the screen opens the dismantle flow for this item). Absent: no button. */
+  onDismantle?: () => void;
+  /** Move the focus to the Dismantle button when shown (back from the flow). */
+  focusDismantle?: boolean;
 }) {
-  const [dismantle, setDismantle] = useState(initialDismantle !== false);
   const [picking, setPicking] = useState(initialPicking);
   const heading = useRef<HTMLHeadingElement>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
-  const dismantleButton = useRef<HTMLButtonElement>(null);
+  const dismantleButton = useRef<HTMLButtonElement | null>(null);
   const shown = useRef(false);
   // Choosing another item starts clean and moves focus to its name.
   useEffect(() => {
-    if (shown.current) {
-      setDismantle(false);
-      setPicking(false);
-    }
+    const again = shown.current;
+    if (again) setPicking(false);
     shown.current = true;
-    if (focusName) heading.current?.focus({ preventScroll: true });
+    if (focusDismantle && !again) dismantleButton.current?.focus({ preventScroll: true });
+    else if (focusName) heading.current?.focus({ preventScroll: true });
   }, [item.id]);
   // The drawer is told while a drill-in is shown (and when this goes away), and the button that opened it gets
   // the focus back.
-  const wasPicking = useRef(false);
-  const wasDismantling = useRef(false);
+  const was = useRef(false);
   useEffect(() => {
-    onDrill?.(picking || dismantle);
-    if (!picking && wasPicking.current) trigger.current?.focus();
-    if (!dismantle && wasDismantling.current) dismantleButton.current?.focus();
-    wasPicking.current = picking;
-    wasDismantling.current = dismantle;
-  }, [picking, dismantle]);
+    onDrill?.(picking);
+    if (!picking && was.current) trigger.current?.focus();
+    was.current = picking;
+  }, [picking]);
   useEffect(
     () => () => {
       onDrill?.(false);
@@ -187,35 +179,6 @@ export function ItemDetail({
 
   const base = gearBase(item.baseId);
   const wearer = creatures.find((c) => c.id === item.equippedOn);
-
-  if (dismantle) {
-    return (
-      <section class="item-detail dismantle-view pix-panel" aria-label="Dismantle">
-        <DismantleWizard
-          items={[item]}
-          wearers={wearer === undefined ? [] : [wearer]}
-          gear={gear}
-          creatures={creatures}
-          busy={busy}
-          error={error}
-          start={typeof initialDismantle === 'string' ? initialDismantle : undefined}
-          loadPreview={actions.previewDismantle}
-          onConfirm={async (creatureId) => {
-            const result = await actions.startJob({
-              kind: 'dismantle',
-              creatureId,
-              itemIds: [item.id],
-            });
-            if (result !== undefined) onGone();
-            return result !== undefined;
-          }}
-          onExit={() => {
-            setDismantle(false);
-          }}
-        />
-      </section>
-    );
-  }
 
   if (picking) {
     return (
@@ -266,21 +229,21 @@ export function ItemDetail({
         </ul>
       </Accordion>
 
-      <div class="item-actions">
-        <p class="actions">
-          <button
-            type="button"
-            class="danger"
-            disabled={busy}
-            ref={dismantleButton}
-            onClick={() => {
-              setDismantle(true);
-            }}
-          >
-            Dismantle
-          </button>
-        </p>
-      </div>
+      {onDismantle !== undefined && (
+        <div class="item-actions">
+          <p class="actions">
+            <button
+              ref={dismantleButton}
+              type="button"
+              class="danger"
+              disabled={busy}
+              onClick={onDismantle}
+            >
+              Dismantle
+            </button>
+          </p>
+        </div>
+      )}
     </section>
   );
 }

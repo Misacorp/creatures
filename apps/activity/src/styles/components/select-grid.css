@@ -1,0 +1,124 @@
+/*
+  A list where several things can be selected (2026-10-27, "Bulk selection replaces marking"; shared since 2026-10-28:
+  `ui/use-select-grid.tsx` gives the list `select-grid`, and `selecting` while the mode is on). The list keeps its
+  vertical scroll native (`touch-action: pan-y`) and a tile never selects text or opens the touch callout, so a press
+  and hold is ours. Each tile sits in an `<li>` that is the checkbox's corner. A tile's own chosen and holding look
+  (a ring, the hold cue) is in the tile's stylesheet (`item-tile.css` for the bag).
+*/
+.select-grid {
+  touch-action: pan-y;
+}
+
+.select-grid > li {
+  position: relative;
+}
+
+.select-grid [role='option'] {
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/*
+  The checkbox (ui/SelectCheck.tsx) in the tile's top left corner: on hover or focus for a mouse, on every tile while
+  selecting (empty, or with the pixel check and a gold edge on a chosen tile). It is a plain square (hard pixel edges)
+  drawn at 24 px in a button only a little larger, 32 px (Misa, 2026-10-28: 44 px took too much of the tile on a phone).
+*/
+.select-check {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  display: none;
+  width: 2rem;
+  height: 2rem;
+  min-height: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/*
+ * The target itself never shows: no press sink, no outline flash, no hover brightening and no tap highlight
+ * (the game's buttons have them; Misa, 2026-10-28). Only the drawn box below says selected or not.
+ */
+.select-check:hover:not(:disabled),
+.select-check:active:not(:disabled) {
+  filter: none;
+  transform: none;
+  box-shadow: none;
+}
+
+.select-check {
+  -webkit-tap-highlight-color: transparent;
+  transition: none;
+}
+
+.select-check:focus {
+  outline: none;
+}
+
+/* The drawn square is small and square-cornered; the button around it is a target a few pixels larger. */
+.select-box {
+  position: absolute;
+  top: 0.25rem;
+  left: 0.25rem;
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--bone);
+}
+
+.select-check.on .select-box {
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+
+.select-check:focus-visible .select-box,
+.select-check:hover .select-box {
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+
+.select-grid.selecting .select-check {
+  display: block;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .select-grid > li:hover .select-check,
+  .select-grid > li:focus-within .select-check {
+    display: block;
+  }
+}
+
+/* The menu a right click on a tile opens (ui/SelectMenu.tsx): at the pointer, over a transparent layer that closes it. */
+.select-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  touch-action: none;
+}
+
+.select-menu {
+  position: fixed;
+  top: var(--menu-y, 0);
+  left: var(--menu-x, 0);
+  z-index: 41;
+  display: flex;
+  flex-direction: column;
+  min-width: 8rem;
+  padding: 0.25rem;
+  background: var(--dusk-2);
+  box-shadow:
+    inset 0 0 0 var(--px) var(--line),
+    0 0 0 var(--px) var(--ink);
+}
+
+.select-menu button {
+  min-height: 2.25rem;
+  padding-inline: 0.75rem;
+  text-align: left;
+}

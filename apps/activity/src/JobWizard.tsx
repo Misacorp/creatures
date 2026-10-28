@@ -146,6 +146,7 @@ export function JobWhoStep({
   startOpen = false,
   legend = 'Who crafts',
   groupName = WHO_GROUP,
+  time = true,
 }: {
   who: JobWho;
   value: string | null;
@@ -156,6 +157,8 @@ export function JobWhoStep({
   legend?: string;
   /** Names the radio group; unique on the page. */
   groupName?: string;
+  /** Each row that can do it shows the clock badge with its time; false for a job with no time (dismantling a pile). */
+  time?: boolean;
 }) {
   const [open, setOpen] = useState(startOpen);
   const rows = [...who.able, ...who.busy].map((o) => workerRow(o));
@@ -173,7 +176,7 @@ export function JobWhoStep({
       fieldClass="job-who"
       chips={false}
       reasonSide
-      side={workerSide}
+      {...(time ? { side: workerSide } : {})}
       {...(who.summary === null
         ? {}
         : {

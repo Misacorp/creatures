@@ -469,6 +469,19 @@ export function workshopMods(
   return out;
 }
 
+/**
+ * How many more items of a pile today's Market Day boosts: the day's first `dismantles` dismantles counted in
+ * items (a pile's most valuable items take the bonus, `pileOrder`), with `before` already counted today.
+ * Zero without the Boon.
+ */
+export function dismantleBoostLeft(day: WeatherDay | null, before: number): number {
+  let left = 0;
+  for (const { effect: e } of activeEffects(day)) {
+    if (e.op === 'market') left = Math.max(left, e.dismantles - before);
+  }
+  return left;
+}
+
 // --- Words ---
 
 /** A number of basis points as a percent or points figure: `1250` is "12.5", `1500` is "15". */

@@ -120,6 +120,8 @@
 @import './components/drill-head.css';
 @import './components/creature-page.css';
 @import './components/item-tile.css';
+@import './components/select-grid.css';
+@import './components/bulk-bar.css';
 @import './components/evolve.css';
 @import './components/flip.css';
 @import './components/switch.css';

@@ -1,5 +1,6 @@
 import { content, dismantleRange, type ItemLine } from '@creatures/game';
-import { useState } from 'preact/hooks';
+import type { ComponentChildren } from 'preact';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature } from '../../api';
 import { CreatureCard } from '../../CreatureCard';
 import { CreaturePage, type CardActions, type PageOpen } from '../../CreaturePage';
@@ -21,10 +22,16 @@ import type { GearActions } from '../../gear-actions';
 import { ItemFrame, ItemSprite } from '../../GearArt';
 import { LootList } from '../../LootList';
 import type { DismantlePreview, GearItem, GearState, GrantLoot } from '../../gear-types';
-import { dismantleDurationFor, gearName, wornItemOf } from '../../gear-view';
-import { InventoryGrid } from '../../InventoryGrid';
+import { gearName, rarityName, slotName, wornItemOf } from '../../gear-view';
+import { DismantleDrawer } from '../../DismantleDrawer';
+import { BAG_HINT, InventoryGrid } from '../../InventoryGrid';
 import { ItemDetail } from '../../ItemDetail';
+import { ItemTile } from '../../ItemTile';
+import { Alert } from '../../ui/Alert';
+import { BulkBar } from '../../ui/BulkBar';
 import { Drawer } from '../../ui/Drawer';
+import { useMultiSelect } from '../../ui/multi-select';
+import { SelectMenu } from '../../ui/SelectMenu';
 import { bool, str } from '../props';
 import type { Entry, Props } from '../types';
 
@@ -48,6 +55,11 @@ interface SceneDef {
     | 'item'
     | 'loot'
     | 'bag'
+    | 'select'
+    | 'hold'
+    | 'menu'
+    | 'hint'
+    | 'pile'
     | 'compare';
   /** `item`: the bag item the card shows (its slot and index in the sample bag). `compare`: the id of the item the picker starts on. */
   pick?: string;
@@ -56,8 +68,12 @@ interface SceneDef {
   /** `compare`: a long Epic against a long worn Epic (many lines, changed, new and lost), to show the card scroll. */
   long?: boolean;
   open?: PageOpen;
-  /** `item`: what the item drawer shows open: the creature list of "Equip on" (a view of the drawer), or the dismantle wizard (on Who dismantles, or on the confirmation). */
-  drawer?: 'equip' | 'dismantle' | 'dismantle-confirm';
+  /** `item`: what the item drawer shows open: the creature list of "Equip on" (a view of the drawer). `pile`: the dismantle drawer's step (Who dismantles, or the confirmation). */
+  drawer?: 'equip' | 'dismantle' | 'dismantle-confirm' | 'dismantle-worn' | 'dismantle-locked';
+  /** `item`: the card has the red Dismantle button (`button`), or its flow open on this step (`worn`, `who`, `confirm`). */
+  single?: 'button' | 'worn' | 'who' | 'confirm';
+  /** `bag`: the first tile is hovered or focused (the checkbox shows on it alone). */
+  hover?: boolean;
   /** `item`: creatures of every state beside the two of the sample (a Guard, a low level, away, on a job). */
   crowd?: boolean;
   /** The gear view has not loaded yet. */
@@ -278,21 +294,66 @@ const SCENE_LIST: readonly SceneDef[] = [
   },
   {
     id: 'W6',
-    label: 'W6 · Item drawer: Dismantle, step 1 (Who dismantles: able, busy greyed)',
+    label: 'W6 · Dismantle a pile, step 1 (Who dismantles: able, busy greyed, no clock)',
     kind: 'level 15',
-    show: 'item',
-    pick: 'hat:2',
+    show: 'pile',
     drawer: 'dismantle',
     crowd: true,
   },
   {
     id: 'W6b',
     label:
-      'W6b · Item drawer: Dismantle, step 2 (the confirmation: yields, time, Cannot be undone)',
+      'W6b · Dismantle a pile, step 2 (the confirmation: what goes, the numbers, Cannot be undone)',
+    kind: 'level 15',
+    show: 'pile',
+    drawer: 'dismantle-confirm',
+    crowd: true,
+  },
+  {
+    id: 'W6w',
+    label:
+      'W6w · Dismantle a pile with worn items: the warning step (who wears each, Dismantle anyway)',
+    kind: 'level 15',
+    show: 'pile',
+    drawer: 'dismantle-worn',
+    crowd: true,
+  },
+  {
+    id: 'W6l',
+    label:
+      'W6l · The warning step when a creature on a trip still needs one (the button stays off)',
+    kind: 'level 15',
+    show: 'pile',
+    drawer: 'dismantle-locked',
+    crowd: true,
+  },
+  {
+    id: 'W8',
+    label: 'W8 · Item drawer: the red Dismantle at the end of the card',
     kind: 'level 15',
     show: 'item',
     pick: 'hat:2',
-    drawer: 'dismantle-confirm',
+    single: 'button',
+    crowd: true,
+  },
+  {
+    id: 'W8w',
+    label:
+      "W8w · The card's Dismantle on a worn item: the same flow and frame as the bag's (the warning step, footer pinned)",
+    kind: 'level 15',
+    show: 'item',
+    pick: 'hat:0',
+    single: 'worn',
+    crowd: true,
+  },
+  {
+    id: 'W8c',
+    label:
+      "W8c · The card's Dismantle: the confirmation in the same frame as the bag's (footer pinned)",
+    kind: 'level 15',
+    show: 'item',
+    pick: 'hat:2',
+    single: 'confirm',
     crowd: true,
   },
   {
@@ -305,6 +366,39 @@ const SCENE_LIST: readonly SceneDef[] = [
   },
   { id: 'L1', label: 'L1 · Loot list, compact rows', kind: 'level 15', show: 'loot' },
   { id: 'B1', label: 'B1 · Workshop bag', kind: 'level 15', show: 'bag' },
+  {
+    id: 'B2',
+    label:
+      'B2 · Workshop bag selecting: chosen, empty and worn tiles, the bulk bar (live: tap to toggle)',
+    kind: 'level 15',
+    show: 'select',
+  },
+  {
+    id: 'B3',
+    label: 'B3 · A press and hold in progress (the ring fills, the tile steps down)',
+    kind: 'level 15',
+    show: 'hold',
+  },
+  {
+    id: 'B4',
+    label: "B4 · A right click's menu (Inspect, Select)",
+    kind: 'level 15',
+    show: 'menu',
+  },
+  {
+    id: 'B6',
+    label:
+      'B6 · Desktop hover: the checkbox shows on the one tile the mouse is over (here: focus, which shows it the same way)',
+    kind: 'level 15',
+    show: 'bag',
+    hover: true,
+  },
+  {
+    id: 'B5',
+    label: 'B5 · The one-time hint (touch wording, then the mouse wording)',
+    kind: 'level 15',
+    show: 'hint',
+  },
   {
     id: 'R1',
     label: 'R1 · Rarity colours: common, rare, epic',
@@ -611,6 +705,8 @@ function Rarities({ def }: { def: SceneDef }) {
 const NO_JOB_ACTIONS: GearActions = {
   equip: () => Promise.resolve(undefined),
   equipBest: () => Promise.resolve(undefined),
+  checkDismantle: () => Promise.resolve({ locked: [] }),
+  dismantlePile: () => Promise.resolve(undefined),
   dismissNotice: () => Promise.resolve(undefined),
   startJob: () => Promise.resolve(undefined),
   previewCraft: () => new Promise(() => undefined),
@@ -648,18 +744,23 @@ function crowdOf(creatures: readonly Creature[]): Creature[] {
   ];
 }
 
-/** The server's answer to "what would dismantling this give", worked out by the game's own rules. */
-function previewOf(item: GearItem, creatureId: string): Promise<DismantlePreview> {
-  const piece = { baseId: item.baseId, rarity: item.rarity, itemLevel: item.itemLevel };
+/** The server's answer to "what would dismantling this pile give", worked out by the game's own rules. */
+function previewOf(items: readonly GearItem[], creatureId: string): Promise<DismantlePreview> {
+  const pieces = items.map((item) => ({
+    baseId: item.baseId,
+    rarity: item.rarity,
+    itemLevel: item.itemLevel,
+  }));
   return Promise.resolve({
     kind: 'dismantle',
     creatureId,
-    items: [{ id: item.id, ...piece }],
-    range: dismantleRange([piece]),
-    durationMs: dismantleDurationFor(item.rarity, 1),
-    xp: 12,
+    items: items.map((item, i) => ({ id: item.id, ...(pieces[i] as (typeof pieces)[number]) })),
+    range: dismantleRange(pieces),
+    xp: 6 + items.length,
     learnBp: 700,
-    teachers: 1,
+    teachers: items.length,
+    boosted: 0,
+    tinkersLuckBp: 0,
   });
 }
 
@@ -673,20 +774,43 @@ function ItemScene({ def }: { def: SceneDef }) {
   if (item === undefined) return null;
   const actions: GearActions = {
     ...NO_JOB_ACTIONS,
-    previewDismantle: (creatureId) => previewOf(item, creatureId),
+    previewDismantle: (creatureId, ids) =>
+      previewOf(
+        gear.items.filter((i) => ids.includes(i.id)),
+        creatureId,
+      ),
   };
   const detail = (
     <ItemDetail
       item={item}
-      gear={gear}
       creatures={creatures}
       busy={false}
       actions={actions}
-      onGone={() => undefined}
-      initialDismantle={def.drawer === 'dismantle-confirm' ? 'confirm' : def.drawer === 'dismantle'}
       initialPicking={def.drawer === 'equip'}
+      {...(def.single === undefined ? {} : { onDismantle: () => undefined })}
     />
   );
+  // The card's Dismantle flow is the bag's own `DismantleDrawer`, taking the card drawer's place.
+  if (def.single === 'worn' || def.single === 'who' || def.single === 'confirm') {
+    return (
+      <div class="v3-phone">
+        <DismantleDrawer
+          items={[item]}
+          gear={gear}
+          creatures={creatures}
+          busy={false}
+          error={null}
+          exitLabel="to the item"
+          swap
+          start={def.single}
+          loadPreview={actions.previewDismantle}
+          checkLocks={actions.checkDismantle}
+          onConfirm={() => Promise.resolve(false)}
+          onClose={() => undefined}
+        />
+      </div>
+    );
+  }
   // The scenes with a crowd show the content in a real drawer (its widths and padding are part of the look).
   return def.crowd === true ? (
     <div class="v3-phone">
@@ -736,13 +860,196 @@ function BagScene({ def }: { def: SceneDef }) {
   return (
     <div>
       <div class="workshop">
-        <InventoryGrid
+        <PlainBag
           items={gear.items.slice(0, 18)}
           creatures={state.creatures}
-          selectedId={gear.items[0]?.id ?? null}
-          onSelect={() => undefined}
+          hover={def.hover === true}
         />
       </div>
+    </div>
+  );
+}
+
+/** The bag with its selection running live (nothing selected until the first gesture). */
+function PlainBag({
+  items,
+  creatures,
+  start = [],
+  hover = false,
+  children,
+}: {
+  items: readonly GearItem[];
+  creatures: readonly Creature[];
+  /** The first tile has the focus, which shows its checkbox as a mouse over it does. */
+  hover?: boolean;
+  /** The ids selected at the start. */
+  start?: readonly string[];
+  children?: (selection: ReturnType<typeof useMultiSelect>) => ComponentChildren;
+}) {
+  const selection = useMultiSelect(
+    items.map((i) => i.id),
+    start,
+  );
+  const section = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (hover) section.current?.querySelector<HTMLElement>('button.item-tile')?.focus();
+  }, [hover]);
+  return (
+    <section class="ws-section" ref={section}>
+      <InventoryGrid
+        items={items}
+        creatures={creatures}
+        openId={items[0]?.id ?? null}
+        selection={selection}
+        onOpen={() => undefined}
+      />
+      {children?.(selection)}
+    </section>
+  );
+}
+
+/** The bag while selecting, live: a tap toggles, the bar counts, the X (or Escape) clears. Starts with three chosen, one of them worn. */
+function SelectScene({ def }: { def: SceneDef }) {
+  const { gear, state } = pageScene(def.kind);
+  const items = gear.items.slice(0, 18);
+  const worn = items.find((i) => i.equippedOn !== null);
+  const free = items.filter((i) => i.equippedOn === null).slice(1, 3);
+  const start = [...(worn === undefined ? [] : [worn.id]), ...free.map((i) => i.id)];
+  return (
+    <div>
+      <div class="workshop">
+        <PlainBag items={items} creatures={state.creatures} start={start}>
+          {(selection) =>
+            selection.active && (
+              <BulkBar count={selection.ids.size} onClear={selection.clear}>
+                <button type="button" class="primary">
+                  Dismantle
+                </button>
+              </BulkBar>
+            )
+          }
+        </PlainBag>
+      </div>
+    </div>
+  );
+}
+
+/** Three tiles, the middle one with its press and hold in progress (the cue at its end). */
+function HoldScene({ def }: { def: SceneDef }) {
+  const { gear } = pageScene(def.kind);
+  const items = gear.items.slice(0, 3);
+  return (
+    <div>
+      <div class="workshop">
+        <section class="ws-section">
+          <ul class="item-grid bag-grid" aria-label="A press and hold in progress">
+            {items.map((item, index) => (
+              <ItemTile
+                key={item.id}
+                item={item}
+                label={`${gearName(item.baseId)}, ${slotName(item.slot)}, ${rarityName(item.rarity)}`}
+                selected={false}
+                choice={{
+                  chosen: false,
+                  holding: index === 1,
+                  onCheck: () => undefined,
+                  checkLabel: 'Select',
+                }}
+                onSelect={() => undefined}
+              />
+            ))}
+          </ul>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+/** The bag with the right click's menu open over a tile. */
+function MenuScene({ def }: { def: SceneDef }) {
+  const { gear, state } = pageScene(def.kind);
+  const items = gear.items.slice(0, 18);
+  return (
+    <div>
+      <div class="workshop">
+        <PlainBag items={items} creatures={state.creatures} />
+        <SelectMenu
+          x={150}
+          y={130}
+          chosen={false}
+          name={gearName(items[1]?.baseId ?? '')}
+          onInspect={() => undefined}
+          onSelect={() => undefined}
+          onClose={() => undefined}
+        />
+      </div>
+    </div>
+  );
+}
+
+/** The one-time hint in both wordings. */
+function HintScene() {
+  return (
+    <div>
+      <div class="workshop">
+        <section class="ws-section">
+          <Alert level="info" class="bag-hint" onDismiss={() => undefined}>
+            {BAG_HINT.touch}
+          </Alert>
+          <Alert level="info" class="bag-hint" onDismiss={() => undefined}>
+            {BAG_HINT.mouse}
+          </Alert>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+/** The dismantle drawer over a pile of items (at the step the scene names). */
+function PileScene({ def }: { def: SceneDef }) {
+  const { gear } = pageScene(def.kind);
+  const scene = pageScene(def.kind);
+  const creatures = crowdOf(scene.state.creatures);
+  const wornScene = def.drawer === 'dismantle-worn' || def.drawer === 'dismantle-locked';
+  const items = (
+    wornScene
+      ? [
+          ...gear.items.filter((i) => i.equippedOn !== null).slice(0, 3),
+          ...gear.items.filter((i) => i.equippedOn === null).slice(0, 3),
+        ]
+      : [
+          ...gear.items.slice(0, 8),
+          ...gear.items.filter((i) => i.rarity === 'common').slice(0, 15),
+        ].filter((item, index, all) => all.findIndex((o) => o.id === item.id) === index)
+  ).filter((item, index, all) => all.findIndex((o) => o.id === item.id) === index);
+  const firstWorn = items.find((i) => i.equippedOn !== null);
+  return (
+    <div class="v3-phone">
+      <DismantleDrawer
+        items={items}
+        gear={gear}
+        creatures={creatures}
+        busy={false}
+        error={null}
+        start={def.drawer === 'dismantle-confirm' ? 'confirm' : wornScene ? 'worn' : 'who'}
+        loadPreview={(creatureId) => previewOf(items, creatureId)}
+        checkLocks={() =>
+          Promise.resolve({
+            locked:
+              def.drawer === 'dismantle-locked' && firstWorn?.equippedOn != null
+                ? [
+                    {
+                      itemId: firstWorn.id,
+                      creatureId: firstWorn.equippedOn,
+                      reason: 'trip' as const,
+                    },
+                  ]
+                : [],
+          })
+        }
+        onConfirm={() => Promise.resolve(true)}
+        onClose={() => undefined}
+      />
     </div>
   );
 }
@@ -765,6 +1072,16 @@ function Scene({ p }: { p: Props }) {
         <LootScene />
       ) : def.show === 'bag' ? (
         <BagScene def={{ ...def, kind }} />
+      ) : def.show === 'select' ? (
+        <SelectScene def={{ ...def, kind }} />
+      ) : def.show === 'hold' ? (
+        <HoldScene def={{ ...def, kind }} />
+      ) : def.show === 'menu' ? (
+        <MenuScene def={{ ...def, kind }} />
+      ) : def.show === 'hint' ? (
+        <HintScene />
+      ) : def.show === 'pile' ? (
+        <PileScene def={{ ...def, kind }} />
       ) : def.show === 'compare' ? (
         <CompareScene key={`${def.id}-${kind}`} def={{ ...def, kind }} />
       ) : def.show === 'rarities' ? (

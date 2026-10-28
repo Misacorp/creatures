@@ -664,7 +664,10 @@ export const RULES = {
      * of the item's element; neutral, explorer and role pieces give a random one.
      */
     dismantle: {
+      /** Commons per old timed job (pile XP counts one job per this many Commons). */
       bundleMax: 5,
+      /** Items in one pile (the bag's size): marked items are dismantled together, 2026-10-27. */
+      pileMax: 60,
       /** Nominal minutes of a job by the rarity of what is taken apart (a bundle of Commons: one job). */
       minutes: { common: 15, rare: 60, epic: 120 },
       /** Inclusive ranges per item: `[min, max]`. */

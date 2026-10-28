@@ -1,17 +1,18 @@
 import { content } from '@creatures/game';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Creature } from './api';
-import { SAMPLE_GEAR, sampleCreature } from './creature-card-sample';
+import { sampleCreature } from './creature-card-sample';
 import { sampleItem } from './creature-page/bag-sample';
 import { ItemDetail } from './ItemDetail';
 import type { GearActions } from './gear-actions';
-import type { DismantlePreview, GearItem } from './gear-types';
+import type { GearItem } from './gear-types';
 import {
   byClass,
-  find,
   byName,
   byRole,
   createPage,
+  find,
+  nameOf,
   visibleText,
   type FakeElement,
   type Page,
@@ -19,8 +20,9 @@ import {
 
 /**
  * The Workshop item drawer's content (2026-10-18): the item card, an "Equip on" row that opens the creature
- * picker sheet (a pick equips right away, "Take off" is its first option for a worn item), Dismantle, and
- * Details. These tests draw the real `ItemDetail` over the fake DOM.
+ * picker sheet (a pick equips right away, "Take off" is its first option for a worn item), Details, and last
+ * the red "Dismantle" (2026-10-27: the same flow as dismantling from the bag, for this one item, inside the card).
+ * These tests draw the real `ItemDetail` over the fake DOM.
  */
 
 let page: Page | null = null;
@@ -58,6 +60,8 @@ function actionsOf(over: Partial<GearActions> = {}): GearActions {
   return {
     equip: vi.fn(() => Promise.resolve(undefined)),
     equipBest: () => Promise.resolve(undefined),
+    checkDismantle: () => Promise.resolve({ locked: [] }),
+    dismantlePile: () => Promise.resolve(undefined),
     dismissNotice: () => Promise.resolve(undefined),
     startJob: () => Promise.resolve(undefined),
     previewCraft: () => new Promise(() => undefined),
@@ -72,16 +76,18 @@ function draw(
   actions: GearActions,
   busy = false,
   creatures: readonly Creature[] = ROSTER,
+  onDismantle: (() => void) | null = null,
+  focusDismantle = false,
 ): Page {
   page = createPage();
   page.draw(
     <ItemDetail
       item={item}
-      gear={{ ...SAMPLE_GEAR, items: [item] }}
       creatures={creatures}
       busy={busy}
       actions={actions}
-      onGone={() => undefined}
+      focusDismantle={focusDismantle}
+      {...(onDismantle === null ? {} : { onDismantle })}
     />,
   );
   return page;
@@ -93,18 +99,22 @@ const optionOf = (p: Page, name: string): FakeElement =>
   first(options(p).filter((o) => visibleText(o).startsWith(name)));
 
 describe('the item drawer content', () => {
-  it('has the card, then the Equip on row, then Details, then Dismantle last', () => {
-    const p = draw(hat(), actionsOf());
+  it('has the card, then the Equip on row, then Details, then the Dismantle action last', () => {
+    const p = draw(hat(), actionsOf(), false, ROSTER, () => undefined);
     const text = visibleText(p.root);
     expect(text.indexOf('Trail Cap')).toBeGreaterThanOrEqual(0);
     expect(text.indexOf('Equip on')).toBeGreaterThan(text.indexOf('Trail Cap'));
     expect(text.indexOf('Details')).toBeGreaterThan(text.indexOf('Equip on'));
     expect(text.indexOf('Dismantle')).toBeGreaterThan(text.indexOf('Details'));
-    // Dismantle is the last block of the section, in a row of its own (centred apart by the stylesheet).
+    // The action is the last block of the section, in a row of its own (centred apart by the stylesheet), and red.
     const section = first(byClass(p.root, 'item-detail'));
     const last = section.childNodes[section.childNodes.length - 1] as FakeElement;
     expect(last.getAttribute('class')).toBe('item-actions');
-    expect(byName(last, 'button', 'Dismantle')).toHaveLength(1);
+    const button = first(byName(last, 'button', 'Dismantle'));
+    expect(button.getAttribute('class')).toContain('danger');
+    // No marks any more: nothing says "Mark" or "Marked" on the card.
+    expect(text).not.toContain('Mark for dismantling');
+    expect(text).not.toContain('Marked');
   });
 
   it('has no "Needs level" line, and none of the old Equip, Take off or Give to another buttons', () => {
@@ -223,7 +233,9 @@ describe('the Equip on row', () => {
     const [tile] = tiles(highRow);
     expect(tiles(highRow)).toHaveLength(1);
     expect(tile?.getAttribute('aria-label')).toBe('Wearing Trail Cap, item level 9, Rare');
-    expect((highRow.childNodes as FakeElement[]).at(-1)).toBe(tile);
+    const worns = first(byClass(highRow, 'ro-worns'));
+    expect((highRow.childNodes as FakeElement[]).at(-1)).toBe(worns);
+    expect(worns.childNodes).toContain(tile);
     // Mid wears only a Scarf, so its Hat slot is empty: nothing is drawn.
     expect(tiles(optionOf(p, 'mid'))).toHaveLength(0);
     expect(tiles(optionOf(p, 'low'))).toHaveLength(0);
@@ -341,14 +353,7 @@ describe('the Equip on row', () => {
     const item = hat();
     page.draw(
       <div onKeyDown={behind}>
-        <ItemDetail
-          item={item}
-          gear={{ ...SAMPLE_GEAR, items: [item] }}
-          creatures={ROSTER}
-          busy={false}
-          actions={actionsOf()}
-          onGone={() => undefined}
-        />
+        <ItemDetail item={item} creatures={ROSTER} busy={false} actions={actionsOf()} />
       </div>,
     );
     page.click(trigger(page));
@@ -364,14 +369,7 @@ describe('the Equip on row', () => {
     const item = hat();
     page.draw(
       <div onKeyDown={behind}>
-        <ItemDetail
-          item={item}
-          gear={{ ...SAMPLE_GEAR, items: [item] }}
-          creatures={ROSTER}
-          busy={false}
-          actions={actionsOf()}
-          onGone={() => undefined}
-        />
+        <ItemDetail item={item} creatures={ROSTER} busy={false} actions={actionsOf()} />
       </div>,
     );
     page.click(trigger(page));
@@ -388,11 +386,9 @@ describe('the Equip on row', () => {
     page.draw(
       <ItemDetail
         item={item}
-        gear={{ ...SAMPLE_GEAR, items: [item] }}
         creatures={ROSTER}
         busy={false}
         actions={actionsOf()}
-        onGone={() => undefined}
         onDrill={(open) => told.push(open)}
       />,
     );
@@ -402,249 +398,44 @@ describe('the Equip on row', () => {
   });
 });
 
-describe('the dismantle wizard', () => {
-  const preview = (item: GearItem): DismantlePreview => ({
-    kind: 'dismantle',
-    creatureId: 'low',
-    items: [{ id: item.id, baseId: item.baseId, rarity: item.rarity, itemLevel: item.itemLevel }],
-    range: {
-      scrap: { min: 3, max: 4 },
-      shards: { min: 1, max: 1, element: 'ember' },
-      glimmer: { min: 0, max: 0 },
-      essence: { min: 3, max: 8 },
-    },
-    durationMs: 51 * 60_000,
-    xp: 10,
-    learnBp: 700,
-    teachers: 1,
-  });
-
-  interface Open {
-    p: Page;
-    item: GearItem;
-    actions: GearActions;
-    gone: ReturnType<typeof vi.fn>;
-    behind: ReturnType<typeof vi.fn>;
-  }
-
-  function openWizard(over: Partial<GearActions> = {}, error: string | null = null): Open {
-    const item = hat();
-    const actions = actionsOf({
-      previewDismantle: vi.fn(() => Promise.resolve(preview(item))),
-      startJob: vi.fn(() => Promise.resolve({ jobId: 'j1' })),
-      ...over,
-    });
-    const gone = vi.fn();
-    const behind = vi.fn();
-    page = createPage();
-    page.draw(
-      <div onKeyDown={behind}>
-        <ItemDetail
-          item={item}
-          gear={{ ...SAMPLE_GEAR, items: [item] }}
-          creatures={ROSTER}
-          busy={false}
-          actions={actions}
-          error={error}
-          onGone={gone}
-        />
-      </div>,
+describe('the Dismantle button of the card', () => {
+  const dismantleButton = (p: Page): FakeElement =>
+    first(
+      find(
+        p.root,
+        (e) =>
+          e.localName === 'button' &&
+          nameOf(e) === 'Dismantle' &&
+          (e.getAttribute('class') ?? '').includes('danger'),
+      ),
     );
-    page.click(first(byName(page.root, 'button', 'Dismantle')));
-    return { p: page, item, actions, gone, behind };
-  }
 
-  const footer = (p: Page): FakeElement => first(byClass(p.root, 'send-button'));
-  const wizardEl = (p: Page): FakeElement => first(byClass(p.root, 'dismantle-wizard'));
-  const head = (p: Page): string => visibleText(first(byClass(p.root, 'drill-head')));
-  const rowsOf = (p: Page): string[] =>
-    find(
-      p.root,
-      (e) => e.localName === 'label' && (e.getAttribute('class') ?? '').includes('roster-option'),
-    ).map((e) => visibleText(e));
-  const radios = (p: Page): FakeElement[] =>
-    find(p.root, (e) => e.localName === 'input' && e.getAttribute('type') === 'radio');
-  const settle = async (p: Page): Promise<void> => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    p.update(() => undefined);
-  };
-
-  it('opens in the place of the item, on Who dismantles, with the item and nothing asked of the server', () => {
-    const { p, actions } = openWizard();
-    expect(byClass(p.root, 'idc')).toHaveLength(0);
-    expect(head(p)).toContain('Who dismantles');
-    expect(byClass(p.root, 'dismantle-items')).toHaveLength(1);
-    expect(wizardEl(p).getAttribute('data-no-flip')).toBe('');
-    expect(actions.previewDismantle).not.toHaveBeenCalled();
-    expect(visibleText(footer(p))).toBe('Next');
+  it('has no button on a plain card (the workbench)', () => {
+    const p = draw(hat(), actionsOf());
+    expect(byName(p.root, 'button', 'Dismantle')).toHaveLength(0);
+    expect(byClass(p.root, 'item-actions')).toHaveLength(0);
   });
 
-  it('lists who can do it first (with their time), then the busy ones greyed with their reason, with no fold', () => {
-    const { p } = openWizard();
-    const rows = rowsOf(p);
-    expect(rows).toHaveLength(5);
-    const names = rows.map((r) => /^(low|mid|high|away|job)/.exec(r)?.[1]);
-    expect(names.slice(0, 3).sort()).toEqual(['high', 'low', 'mid']);
-    expect(names.slice(3).sort()).toEqual(['away', 'job']);
-    expect(rows[0]).toMatch(/min|h/);
-    expect(rows[3]).toMatch(/On a job|Away on a trip/);
-    // The busy radios are disabled; nobody is under a level, so no fold row.
-    expect(radios(p).filter((r) => r.hasAttribute('disabled'))).toHaveLength(2);
-    expect(byClass(p.root, 'fold-row')).toHaveLength(0);
+  it('is switched off while an action is running, and on for a worn item too', () => {
+    const busy = draw(hat(), actionsOf(), true, ROSTER, () => undefined);
+    expect(dismantleButton(busy).hasAttribute('disabled')).toBe(true);
+    busy.unmount();
+    page = null;
+    const worn = draw(hat('mid'), actionsOf(), false, ROSTER, () => undefined);
+    expect(dismantleButton(worn).hasAttribute('disabled')).toBe(false);
   });
 
-  it('asks the server for the first free creature and the item on Next, and shows the yields and the time', async () => {
-    const { p, item, actions } = openWizard();
-    p.click(footer(p));
-    expect(head(p)).toContain('Dismantle Trail Cap?');
-    expect(actions.previewDismantle).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(actions.previewDismantle).mock.calls[0]?.[1]).toEqual([item.id]);
-    // While it loads: "Loading...", the button is disabled and its reason is not repeated in the footer.
-    expect(visibleText(p.root)).toContain('Loading...');
-    expect(footer(p).hasAttribute('disabled')).toBe(true);
-    await settle(p);
-    const badges = byClass(first(byClass(p.root, 'gives')), 'part-count').map((b) =>
-      visibleText(b),
-    );
-    expect(badges).toEqual(['3–4', '1', '3–8']);
-    // The time is the server's, beside the worker.
-    expect(visibleText(first(byClass(p.root, 'job-ready-who')))).toContain('51 min');
-    expect(visibleText(p.root)).toContain(
-      '7% per piece to learn its blueprint or raise its quality.',
-    );
-    expect(visibleText(p.root)).toContain('Cannot be undone.');
-    expect(visibleText(footer(p))).toBe('Dismantle');
-    expect(footer(p).hasAttribute('disabled')).toBe(false);
-  });
-
-  it('asks about the creature that was picked', () => {
-    const { p, actions } = openWizard();
-    const mid = radios(p).find((r) => r.value === 'mid');
-    if (mid === undefined) throw new Error('no radio');
-    p.event(mid, 'change');
-    p.click(footer(p));
-    expect(vi.mocked(actions.previewDismantle).mock.calls[0]?.[0]).toBe('mid');
-  });
-
-  it('says so and keeps the button off when the preview fails', async () => {
-    const { p, actions } = openWizard({ previewDismantle: () => Promise.reject(new Error('x')) });
-    p.click(footer(p));
-    await settle(p);
-    expect(visibleText(p.root)).toContain('Could not load the refund');
-    expect(footer(p).hasAttribute('disabled')).toBe(true);
-    p.click(footer(p));
-    expect(actions.startJob).not.toHaveBeenCalled();
-  });
-
-  it('puts the focus on Back, not the gold button, when the confirmation opens, and starts nothing by itself', async () => {
-    const { p, actions, gone } = openWizard();
-    p.click(footer(p));
-    await settle(p);
-    expect(first(byClass(p.root, 'drill-back')).focused).toBeGreaterThan(0);
-    expect(footer(p).focused).toBe(0);
-    expect(actions.startJob).not.toHaveBeenCalled();
-    expect(gone).not.toHaveBeenCalled();
-  });
-
-  it("sends today's request on the tap of Dismantle, and the item goes", async () => {
-    const { p, item, actions, gone } = openWizard();
-    p.click(footer(p));
-    await settle(p);
-    p.click(footer(p));
-    await settle(p);
-    expect(actions.startJob).toHaveBeenCalledTimes(1);
-    expect(actions.startJob).toHaveBeenCalledWith({
-      kind: 'dismantle',
-      creatureId: 'low',
-      itemIds: [item.id],
-    });
-    expect(gone).toHaveBeenCalledTimes(1);
-  });
-
-  it("keeps the confirmation up and shows the server's error when the start is refused", async () => {
-    const { p, actions, gone } = openWizard(
-      { startJob: vi.fn(() => Promise.resolve(undefined)) },
-      'Nobody is free to dismantle.',
-    );
-    p.click(footer(p));
-    await settle(p);
-    expect(byRole(p.root, 'alert')).toHaveLength(0);
-    p.click(footer(p));
-    await settle(p);
-    expect(actions.startJob).toHaveBeenCalledTimes(1);
-    expect(gone).not.toHaveBeenCalled();
-    expect(head(p)).toContain('Dismantle Trail Cap?');
-    expect(visibleText(first(byClass(p.root, 'dismantle-wizard')))).toContain(
-      'Nobody is free to dismantle.',
-    );
-  });
-
-  it('goes Back from the confirmation to Who, and from Who to the item with the Dismantle button focused', async () => {
-    const { p, actions } = openWizard();
-    p.click(footer(p));
-    await settle(p);
-    p.click(first(byName(p.root, 'button', /^‹ Back/)));
-    expect(head(p)).toContain('Who dismantles');
-    p.click(first(byName(p.root, 'button', /^‹ Back/)));
+  it('only asks the screen to open the flow: the card draws none of it', () => {
+    const onDismantle = vi.fn();
+    const p = draw(hat(), actionsOf(), false, ROSTER, onDismantle);
+    p.click(dismantleButton(p));
+    expect(onDismantle).toHaveBeenCalledTimes(1);
     expect(byClass(p.root, 'dismantle-wizard')).toHaveLength(0);
-    expect(byClass(p.root, 'idc')).toHaveLength(1);
-    expect(first(byName(p.root, 'button', 'Dismantle')).focused).toBeGreaterThan(0);
-    expect(actions.startJob).not.toHaveBeenCalled();
+    expect(byClass(p.root, 'send-button')).toHaveLength(0);
   });
 
-  it('goes back one step on Escape and never reaches the drawer behind it', async () => {
-    const { p, actions, behind } = openWizard();
-    p.click(footer(p));
-    await settle(p);
-    p.key(footer(p), 'Escape');
-    expect(head(p)).toContain('Who dismantles');
-    p.key(footer(p), 'Escape');
-    expect(byClass(p.root, 'idc')).toHaveLength(1);
-    expect(behind).not.toHaveBeenCalled();
-    expect(actions.startJob).not.toHaveBeenCalled();
-  });
-
-  it('keeps Left and Right from the drawer behind it', () => {
-    const { p, behind } = openWizard();
-    for (const key of ['ArrowLeft', 'ArrowRight']) p.key(wizardEl(p), key);
-    expect(behind).not.toHaveBeenCalled();
-  });
-
-  it('tells the drawer while it is shown (the flipping pauses) and when it is gone', () => {
-    const told: boolean[] = [];
-    page = createPage();
-    const item = hat();
-    page.draw(
-      <ItemDetail
-        item={item}
-        gear={{ ...SAMPLE_GEAR, items: [item] }}
-        creatures={ROSTER}
-        busy={false}
-        actions={actionsOf()}
-        onGone={() => undefined}
-        onDrill={(open) => told.push(open)}
-      />,
-    );
-    page.click(first(byName(page.root, 'button', 'Dismantle')));
-    page.click(first(byName(page.root, 'button', /^‹ Back/)));
-    expect(told).toEqual([false, true, false]);
-  });
-
-  it('says why when nobody is free, and Next stays off', () => {
-    const item = hat();
-    page = createPage();
-    page.draw(
-      <ItemDetail
-        item={item}
-        gear={{ ...SAMPLE_GEAR, items: [item] }}
-        creatures={[away, job]}
-        busy={false}
-        actions={actionsOf()}
-        onGone={() => undefined}
-      />,
-    );
-    page.click(first(byName(page.root, 'button', 'Dismantle')));
-    expect(visibleText(page.root)).toContain('Nobody is free to dismantle.');
-    expect(footer(page).hasAttribute('disabled')).toBe(true);
+  it('takes the focus when it comes back from the flow', () => {
+    const p = draw(hat(), actionsOf(), false, ROSTER, () => undefined, true);
+    expect(dismantleButton(p).focused).toBeGreaterThan(0);
   });
 });

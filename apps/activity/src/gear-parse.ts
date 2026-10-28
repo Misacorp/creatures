@@ -11,6 +11,7 @@ import type {
   CraftPreview,
   DismantlePreview,
   DismantleRange,
+  DismantleCheck,
   DismissResult,
   EquipBestResult,
   EquipResult,
@@ -198,6 +199,8 @@ function isJobResult(value: unknown): value is JobResult {
         isCount(value['essence']) &&
         isArrayOf(value['learned'], isStr) &&
         (value['tinkered'] === undefined || isCount(value['tinkered'])) &&
+        (value['creatureId'] === undefined || isStr(value['creatureId'])) &&
+        (value['boosted'] === undefined || isCount(value['boosted'])) &&
         isArrayOf(
           value['marked'],
           (m): m is { baseId: string; marks: number } =>
@@ -494,7 +497,7 @@ export function parseCraftPreview(value: unknown): CraftPreview {
   return value as unknown as CraftPreview;
 }
 
-/** `POST /api/workshop/preview` for a dismantle job: the refund range, the time and the blueprint chance. */
+/** `POST /api/workshop/preview` for a pile: the refund range, the Crafting XP, the blueprint chance and the Market Day boost. */
 export function parseDismantlePreview(value: unknown): DismantlePreview {
   if (
     !isRecord(value) ||
@@ -510,14 +513,36 @@ export function parseDismantlePreview(value: unknown): DismantlePreview {
         isCount(i['itemLevel']),
     ) ||
     !isDismantleRange(value['range']) ||
-    !isCount(value['durationMs']) ||
     !isCount(value['xp']) ||
     !isNullableCount(value['learnBp']) ||
-    !isCount(value['teachers'])
+    !isCount(value['teachers']) ||
+    !isCount(value['boosted']) ||
+    !isCount(value['tinkersLuckBp'])
   ) {
     throw new Error('the server returned an unexpected dismantle preview');
   }
   return value as unknown as DismantlePreview;
+}
+
+/** `POST /api/gear/dismantle-check`. */
+export function parseDismantleCheck(value: unknown): DismantleCheck {
+  const isLock = (v: unknown): v is DismantleCheck['locked'][number] =>
+    isRecord(v) &&
+    isStr(v['itemId']) &&
+    isStr(v['creatureId']) &&
+    (v['reason'] === 'trip' || v['reason'] === 'job');
+  if (!isRecord(value) || !isArrayOf(value['locked'], isLock)) {
+    throw new Error('the server returned an unexpected dismantle check');
+  }
+  return { locked: value['locked'] };
+}
+
+/** `POST /api/gear/dismantle`: the one results screen's result (a dismantle result). */
+export function parseDismantleResult(value: unknown): Extract<JobResult, { kind: 'dismantle' }> {
+  if (!isJobResult(value) || value.kind !== 'dismantle') {
+    throw new Error('the server returned an unexpected dismantle result');
+  }
+  return value;
 }
 
 export function parseStartJobResult(value: unknown): StartJobResult {
