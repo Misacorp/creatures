@@ -165,213 +165,217 @@ export function Workshop({
           onDismiss={onDismissReveal}
         />
       )}
-      <section class="ws-section" aria-labelledby="ws-parts">
-        <h3 id="ws-parts">Parts</h3>
-        <PartsRow parts={gear.parts} />
-        <p>
-          <button
-            type="button"
-            onClick={() => {
-              document.getElementById('ws-supplies')?.scrollIntoView({ block: 'start' });
-            }}
-          >
-            Craft supplies
-          </button>
-        </p>
-      </section>
-      <JobSlots
-        gear={gear}
-        creatures={state.creatures}
-        offset={offset}
-        busy={busy}
-        onClaim={(job) => {
-          void actions.claimJob(job.id).then((result) => {
-            if (result !== undefined) onClaimed(result);
-          });
-        }}
-      />
-      <section class="ws-section" aria-labelledby="ws-gear">
-        <div class="ws-head">
-          <h3 id="ws-gear">
-            Gear <GlossaryTag entry="gear" look="help" />
-          </h3>
-          <span class={bagFull(gear.inventory) ? 'bag-count over' : 'bag-count muted'}>
-            Bag: {bagText(gear.inventory)}
-          </span>
-        </div>
-        {hintOpen && gear.items.length > 0 && (
-          <Alert
-            level="info"
-            class="bag-hint"
-            onDismiss={() => {
-              retireSelectHint(BAG_HINT);
-              setHintOpen(false);
-            }}
-          >
-            {selectHintText(BAG_HINT)}
-          </Alert>
-        )}
-        {bagFull(gear.inventory) && (
-          <Alert level="warning">Gear you find becomes parts until the bag has room.</Alert>
-        )}
-        {gear.items.length === 0 ? (
-          <p class="empty muted">Your bag is empty.</p>
-        ) : (
-          <InventoryGrid
-            items={gear.items}
-            creatures={state.creatures}
-            openId={selected?.id ?? null}
-            selection={selection}
-            onOpen={(id) => {
-              setFlipped(false);
-              setBackFromFlow(false);
-              setSelectedId(id === selectedId ? null : id);
-            }}
-          />
-        )}
-        {selection.active && (
-          <BulkBar count={picked.length} onClear={selection.clear}>
+      <div class="ws-col ws-col-side">
+        <section class="ws-section" aria-labelledby="ws-parts">
+          <h3 id="ws-parts">Parts</h3>
+          <PartsRow parts={gear.parts} />
+          <p>
             <button
-              ref={dismantleButton}
               type="button"
-              class="primary"
-              disabled={busy}
               onClick={() => {
-                setPile(picked);
+                document.getElementById('ws-supplies')?.scrollIntoView({ block: 'start' });
               }}
             >
-              Dismantle
+              Craft supplies
             </button>
-          </BulkBar>
-        )}
-        {pile !== null && (
-          <DismantleDrawer
-            items={pile}
-            gear={gear}
-            creatures={state.creatures}
-            busy={busy}
-            error={error}
-            returnFocusTo={dismantleButton.current}
-            loadPreview={actions.previewDismantle}
-            checkLocks={actions.checkDismantle}
-            onConfirm={async (creatureId) => {
-              const result = await actions.dismantlePile(
-                creatureId,
-                pile.map((i) => i.id),
-              );
-              if (result === undefined) return false;
-              setPile(null);
-              selection.clear();
-              onClaimed(result);
-              return true;
-            }}
+          </p>
+        </section>
+        <JobSlots
+          gear={gear}
+          creatures={state.creatures}
+          offset={offset}
+          busy={busy}
+          onClaim={(job) => {
+            void actions.claimJob(job.id).then((result) => {
+              if (result !== undefined) onClaimed(result);
+            });
+          }}
+        />
+      </div>
+      <div class="ws-col ws-col-main">
+        <section class="ws-section" aria-labelledby="ws-gear">
+          <div class="ws-head">
+            <h3 id="ws-gear">
+              Gear <GlossaryTag entry="gear" look="help" />
+            </h3>
+            <span class={bagFull(gear.inventory) ? 'bag-count over' : 'bag-count muted'}>
+              Bag: {bagText(gear.inventory)}
+            </span>
+          </div>
+          {hintOpen && gear.items.length > 0 && (
+            <Alert
+              level="info"
+              class="bag-hint"
+              onDismiss={() => {
+                retireSelectHint(BAG_HINT);
+                setHintOpen(false);
+              }}
+            >
+              {selectHintText(BAG_HINT)}
+            </Alert>
+          )}
+          {bagFull(gear.inventory) && (
+            <Alert level="warning">Gear you find becomes parts until the bag has room.</Alert>
+          )}
+          {gear.items.length === 0 ? (
+            <p class="empty muted">Your bag is empty.</p>
+          ) : (
+            <InventoryGrid
+              items={gear.items}
+              creatures={state.creatures}
+              openId={selected?.id ?? null}
+              selection={selection}
+              onOpen={(id) => {
+                setFlipped(false);
+                setBackFromFlow(false);
+                setSelectedId(id === selectedId ? null : id);
+              }}
+            />
+          )}
+          {selection.active && (
+            <BulkBar count={picked.length} onClear={selection.clear}>
+              <button
+                ref={dismantleButton}
+                type="button"
+                class="primary"
+                disabled={busy}
+                onClick={() => {
+                  setPile(picked);
+                }}
+              >
+                Dismantle
+              </button>
+            </BulkBar>
+          )}
+          {pile !== null && (
+            <DismantleDrawer
+              items={pile}
+              gear={gear}
+              creatures={state.creatures}
+              busy={busy}
+              error={error}
+              returnFocusTo={dismantleButton.current}
+              loadPreview={actions.previewDismantle}
+              checkLocks={actions.checkDismantle}
+              onConfirm={async (creatureId) => {
+                const result = await actions.dismantlePile(
+                  creatureId,
+                  pile.map((i) => i.id),
+                );
+                if (result === undefined) return false;
+                setPile(null);
+                selection.clear();
+                onClaimed(result);
+                return true;
+              }}
+              onClose={() => {
+                setPile(null);
+              }}
+            />
+          )}
+          {selected !== null && cardFlow && (
+            <DismantleDrawer
+              items={[selected]}
+              gear={gear}
+              creatures={state.creatures}
+              busy={busy}
+              error={error}
+              exitLabel="to the item"
+              swap
+              {...(initialCardDismantle === undefined ? {} : { start: initialCardDismantle })}
+              loadPreview={actions.previewDismantle}
+              checkLocks={actions.checkDismantle}
+              onConfirm={async (creatureId) => {
+                const result = await actions.dismantlePile(creatureId, [selected.id]);
+                if (result === undefined) return false;
+                setCardFlow(false);
+                setSelectedId(null);
+                selection.clear();
+                onClaimed(result);
+                return true;
+              }}
+              onClose={() => {
+                setCardFlow(false);
+                setBackFromFlow(true);
+              }}
+              onDismiss={() => {
+                setCardFlow(false);
+                setSelectedId(null);
+                setBackFromFlow(false);
+              }}
+            />
+          )}
+          <Drawer
+            open={selected !== null && !cardFlow}
+            title={selected === null ? 'Item' : gearName(selected.baseId)}
+            titleHidden
+            class={backFromFlow ? 'item-drawer drawer-swap' : 'item-drawer'}
+            flip={flip}
             onClose={() => {
-              setPile(null);
-            }}
-          />
-        )}
-        {selected !== null && cardFlow && (
-          <DismantleDrawer
-            items={[selected]}
-            gear={gear}
-            creatures={state.creatures}
-            busy={busy}
-            error={error}
-            exitLabel="to the item"
-            swap
-            {...(initialCardDismantle === undefined ? {} : { start: initialCardDismantle })}
-            loadPreview={actions.previewDismantle}
-            checkLocks={actions.checkDismantle}
-            onConfirm={async (creatureId) => {
-              const result = await actions.dismantlePile(creatureId, [selected.id]);
-              if (result === undefined) return false;
-              setCardFlow(false);
-              setSelectedId(null);
-              selection.clear();
-              onClaimed(result);
-              return true;
-            }}
-            onClose={() => {
-              setCardFlow(false);
-              setBackFromFlow(true);
-            }}
-            onDismiss={() => {
-              setCardFlow(false);
               setSelectedId(null);
               setBackFromFlow(false);
             }}
-          />
-        )}
-        <Drawer
-          open={selected !== null && !cardFlow}
-          title={selected === null ? 'Item' : gearName(selected.baseId)}
-          titleHidden
-          class={backFromFlow ? 'item-drawer drawer-swap' : 'item-drawer'}
-          flip={flip}
-          onClose={() => {
-            setSelectedId(null);
-            setBackFromFlow(false);
-          }}
-        >
-          {selected !== null && (
-            <FlipArea flip={flip}>
-              <ItemDetail
-                key={selected.id}
-                item={selected}
-                creatures={state.creatures}
-                busy={busy}
-                actions={actions}
-                focusName={!flipped && !backFromFlow}
-                focusDismantle={backFromFlow}
-                onDrill={setDrilling}
-                onDismantle={() => {
-                  setBackFromFlow(false);
-                  setCardFlow(true);
-                }}
-              />
-            </FlipArea>
-          )}
-        </Drawer>
-      </section>
-      <Blueprints
-        gear={gear}
-        creatures={state.creatures}
-        busy={busy}
-        error={error}
-        loadPreview={actions.previewCraft}
-        onCraft={async (baseId, creatureId, reach, treat) =>
-          (await actions.startJob({
-            kind: 'craft',
-            creatureId,
-            blueprintId: baseId,
-            reach,
-            ...(treat ? { treat: true } : {}),
-          })) !== undefined
-        }
-      />
-      <SupplyCrafting
-        gear={gear}
-        creatures={state.creatures}
-        stock={state.supplies}
-        busy={busy}
-        error={error}
-        onCraft={async (supplyId, creatureId, treat) =>
-          (await actions.startJob({
-            kind: 'supply',
-            creatureId,
-            supplyId,
-            ...(treat ? { treat: true } : {}),
-          })) !== undefined
-        }
-        onConvert={async (recipeId, creatureId, treat) =>
-          (await actions.startJob({
-            kind: 'convert',
-            creatureId,
-            recipeId,
-            ...(treat ? { treat: true } : {}),
-          })) !== undefined
-        }
-      />
+          >
+            {selected !== null && (
+              <FlipArea flip={flip}>
+                <ItemDetail
+                  key={selected.id}
+                  item={selected}
+                  creatures={state.creatures}
+                  busy={busy}
+                  actions={actions}
+                  focusName={!flipped && !backFromFlow}
+                  focusDismantle={backFromFlow}
+                  onDrill={setDrilling}
+                  onDismantle={() => {
+                    setBackFromFlow(false);
+                    setCardFlow(true);
+                  }}
+                />
+              </FlipArea>
+            )}
+          </Drawer>
+        </section>
+        <Blueprints
+          gear={gear}
+          creatures={state.creatures}
+          busy={busy}
+          error={error}
+          loadPreview={actions.previewCraft}
+          onCraft={async (baseId, creatureId, reach, treat) =>
+            (await actions.startJob({
+              kind: 'craft',
+              creatureId,
+              blueprintId: baseId,
+              reach,
+              ...(treat ? { treat: true } : {}),
+            })) !== undefined
+          }
+        />
+        <SupplyCrafting
+          gear={gear}
+          creatures={state.creatures}
+          stock={state.supplies}
+          busy={busy}
+          error={error}
+          onCraft={async (supplyId, creatureId, treat) =>
+            (await actions.startJob({
+              kind: 'supply',
+              creatureId,
+              supplyId,
+              ...(treat ? { treat: true } : {}),
+            })) !== undefined
+          }
+          onConvert={async (recipeId, creatureId, treat) =>
+            (await actions.startJob({
+              kind: 'convert',
+              creatureId,
+              recipeId,
+              ...(treat ? { treat: true } : {}),
+            })) !== undefined
+          }
+        />
+      </div>
     </div>
   );
 }

@@ -1,5 +1,28 @@
 /* --- Raid tab --- */
 
+/*
+  The Raid screen's two columns from 80 rem (the roster board needs about 30 rem; the wrappers vanish below it, so a phone and a narrow desktop keep one column): the
+  week's timeline and the boss at the left, the focus and the larger part; the roster, results and news at
+  the right.
+*/
+.raid-col {
+  display: contents;
+}
+
+@media (min-width: 80rem) {
+  .raid-page {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
+    gap: 0 1rem;
+    align-items: start;
+  }
+
+  .raid-col {
+    display: block;
+    min-width: 0;
+  }
+}
+
 .raid-section {
   margin-bottom: 0.75rem;
   padding: 0.75rem;

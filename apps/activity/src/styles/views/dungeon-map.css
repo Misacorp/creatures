@@ -20,6 +20,13 @@
   box-shadow: var(--frame);
 }
 
+/* A desktop has the room for a bigger map: as wide as its column, to 32 rem. */
+@media (min-width: 60rem) {
+  .dmap-board {
+    max-width: 32rem;
+  }
+}
+
 .dmap-svg {
   position: absolute;
   inset: 0;

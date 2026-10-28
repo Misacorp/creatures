@@ -4,10 +4,10 @@
  * visual style, `src/looks.ts`). For designing looks and layouts.
  *
  *   cd apps/activity && node scripts/screens.mjs --out <dir> [--looks current,arcade]
- *     [--screens home,collection,...] [--sizes phone,desktop,hd] [--wait 1500]
+ *     [--screens home,collection,...] [--sizes phone,wide,desktop,hd] [--wait 1500]
  *
  * Sizes: phone 390x844 (the window at the top, plus the whole page capped at 2400 px high, with Discord's phone
- * safe areas: 40 px top, 24 px bottom), desktop 1440x900 and hd 1920x1080 (the window only). Each shot opens the
+ * safe areas: 40 px top, 24 px bottom), wide 1100x800 (just above the desktop break), desktop 1440x900 and hd 1920x1080 (the window only). Each shot opens the
  * workbench's `GameScreens` page bare (`workbench.html?frame=1&bare=1`), so `main.card` and its media queries
  * behave as in the game.
  *
@@ -36,11 +36,12 @@ const ALL_SCREENS = [
 const SIZES = {
   phone: { width: 390, height: 844 },
   desktop: { width: 1440, height: 900 },
+  wide: { width: 1100, height: 800 },
   hd: { width: 1920, height: 1080 },
 };
 const FULL_CAP = 2400;
 const USAGE =
-  'usage: node scripts/screens.mjs --out <dir> [--looks current,arcade] [--screens home,collection] [--sizes phone,desktop,hd] [--wait <ms>]';
+  'usage: node scripts/screens.mjs --out <dir> [--looks current,arcade] [--screens home,collection] [--sizes phone,wide,desktop,hd] [--wait <ms>]';
 
 function readArgs(argv) {
   const opts = {

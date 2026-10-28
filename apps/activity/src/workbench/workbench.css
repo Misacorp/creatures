@@ -556,10 +556,12 @@
   display: inline-flex;
 }
 
-/* As the app card (`components/side-panel.css`): wider from 60 rem while a wide layout shows. */
+/* As the app card (`components/main-nav.css`): from 60 rem the game's own card is the whole window. */
 @media (min-width: 60rem) {
-  .wb-frame-stage:has(.side-layout.wide) {
-    width: min(84rem, 100% - 1.25rem);
+  .wb-frame-stage:has(> main.card) {
+    width: 100%;
+    margin: 0;
+    padding: 0;
   }
 }
 

@@ -60,18 +60,20 @@ function pageOf(entries: readonly Entry[], name: string, over: Record<string, st
  */
 function RaidScreen({ forecast }: { forecast: ReturnType<typeof homeInput>['forecast'] }) {
   return (
-    <>
-      <RaidTimeline
-        view={SAMPLE_RAID}
-        serverNow={SAMPLE_RAID.serverNow}
-        finale="before"
-        owned={9}
-        onAct={NOTHING}
-        onReplay={NOTHING}
-      />
-      <BossCard view={SAMPLE_RAID} forecast={forecast} />
-      {pageOf(raidBoardEntries, 'RaidBoard')}
-    </>
+    <div class="raid-page">
+      <div class="raid-col raid-col-boss">
+        <RaidTimeline
+          view={SAMPLE_RAID}
+          serverNow={SAMPLE_RAID.serverNow}
+          finale="before"
+          owned={9}
+          onAct={NOTHING}
+          onReplay={NOTHING}
+        />
+        <BossCard view={SAMPLE_RAID} forecast={forecast} />
+      </div>
+      <div class="raid-col raid-col-board">{pageOf(raidBoardEntries, 'RaidBoard')}</div>
+    </div>
   );
 }
 

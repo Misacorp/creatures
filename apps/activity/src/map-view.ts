@@ -121,6 +121,19 @@ export function mapScale(width: number): number {
   return width >= MAP_SIZE.width * MAP_SCALE_LARGE ? MAP_SCALE_LARGE : MAP_SCALE_SMALL;
 }
 
+/** The largest scale on a whole-window desktop (a 1920 px window shows the map at 4: 1472 x 1152 px). */
+export const MAP_SCALE_MAX = 4;
+
+/**
+ * The whole-number scale on a desktop that uses the whole window: `mapScale` (2, or 3 once the width fits
+ * it), and up to `MAP_SCALE_MAX` where the map fits both the width and `height` (the window below the
+ * map's top). The height only holds back the larger scales; it never shrinks the map below `mapScale`.
+ */
+export function mapScaleWide(width: number, height: number): number {
+  const fit = Math.min(Math.floor(width / MAP_SIZE.width), Math.floor(height / MAP_SIZE.height));
+  return Math.min(MAP_SCALE_MAX, Math.max(mapScale(width), fit));
+}
+
 /** True when the map at its scale is wider than its window (it pans sideways). */
 export function mapScrolls(width: number): boolean {
   return MAP_SIZE.width * mapScale(width) > width;

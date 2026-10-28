@@ -180,3 +180,25 @@
 .journal-place {
   margin: 0.5rem 0;
 }
+
+/*
+  The Journal on a whole-window desktop: the progress line and bar across the top, the chapters in columns
+  (at least 28 rem each, so a page of text is never a very long line). Chapters open and close on their own,
+  so a column does not wait for its neighbour.
+*/
+@media (min-width: 60rem) {
+  .journal {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 28rem), 1fr));
+    gap: 0.5rem 1rem;
+    align-items: start;
+  }
+
+  .journal > :not(.journal-place) {
+    grid-column: 1 / -1;
+  }
+
+  .journal > .journal-place {
+    margin: 0;
+  }
+}
