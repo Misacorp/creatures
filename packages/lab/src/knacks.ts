@@ -124,6 +124,65 @@ export interface KnackFx {
   readonly miresOnHit?: boolean;
   /** Mire: at round start the boss gains a Mired stack. */
   readonly miresAtStart?: boolean;
+  // Talent library, first batch (docs/design/combat/modifiers.md). Numbers add, flags combine.
+  /** Its hits deal this much more for each neighbour of its own element, at most two. */
+  readonly perKindredBesideBp?: number;
+  /** Its hits deal this much more while it has neighbours and none shares its element. */
+  readonly oddOneOutBp?: number;
+  /** Its hits deal this much more while no living creature stands beside it. */
+  readonly loneWolfBp?: number;
+  /** Its hits deal this much more while it is the leftmost or rightmost living creature of its row. */
+  readonly rowEndBp?: number;
+  /** It takes this much less from every hit while it stands in the front row. */
+  readonly frontCutBp?: number;
+  /** Its hits deal this much more for each round from round 2, up to `slowBurnCapBp`. */
+  readonly slowBurnBp?: number;
+  readonly slowBurnCapBp?: number;
+  /** Its hits deal this much more while the boss is below a third of its HP. */
+  readonly finisherBp?: number;
+  /** Every third hit it makes is a crit. */
+  readonly steadyRhythm?: boolean;
+  /** Its reaction bonus factor is this much higher when it cashes a mark at x3. */
+  readonly cashFullBp?: number;
+  /** Its reaction bonus factor is this much higher on a mark set this boss turn. */
+  readonly freshMarkBp?: number;
+  /** A reaction on a mark this creature helped leave has its bonus factor this much higher. */
+  readonly ownMarkBp?: number;
+  /** Its first mark each fight leaves this many extra counts. */
+  readonly firstMarkExtra?: number;
+  /** After a creature beside it is knocked out, its hits deal this much more for the rest of the fight. */
+  readonly vengefulBp?: number;
+  /** After it dodges, its next hit deals this much more. */
+  readonly momentumBp?: number;
+  /** A Guard's reach covers only one side, with twice the slots. */
+  readonly flankLeft?: boolean;
+  readonly flankRight?: boolean;
+  /** A Guard's cover, and the cut on hits it intercepts, grow by this much per slot of distance. */
+  readonly distanceCoverBp?: number;
+  /** When it intercepts, it hits back for this share of its Attack, ignoring armour. */
+  readonly interceptHitBackBp?: number;
+  /** Creatures beside it get this share of its armour (the largest such aura applies). */
+  readonly shareArmourBp?: number;
+  /** A hit that would deal less than this share of its max HP is Blocked. */
+  readonly skullBp?: number;
+  /** It takes this much less from a Charged landing aimed at its slot. */
+  readonly braceBp?: number;
+  /** Debuffs it puts on the boss add this many extra stacks each time. */
+  readonly miredExtra?: number;
+  /** While it stands, the boss's debuff stacks fade at every second round start instead of every one. */
+  readonly clinging?: boolean;
+  /** Every second time its Support verb runs, its boost is doubled. */
+  readonly brightBoost?: boolean;
+  /** Its boost is this much bigger on creatures of its own element. */
+  readonly kindredBoostBp?: number;
+  /** Its heal goes to the most hurt creature beside it, at double size. */
+  readonly triage?: boolean;
+  /** Healing of its that goes past full HP passes to the most hurt other creature beside it. */
+  readonly spillOver?: boolean;
+  /** The first silence on it each fight lasts one turn. */
+  readonly lightSleeper?: boolean;
+  /** A hit that leaves a foe below this share of its max HP defeats it outright. */
+  readonly cullBp?: number;
 }
 
 /** Knack families: one rule with different numbers or elements (grammar.md). A new family needs a reason (P-09). */

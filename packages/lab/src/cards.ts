@@ -138,6 +138,12 @@ export const CARDS: readonly CardDef[] = [
     apply: (b) => ({ ...b, mods: { ...b.mods, fizzle: true } }),
   },
   {
+    id: 'shake-it-off',
+    name: 'Shake It Off',
+    asks: 'Every 3 rounds the boss clears all its debuffs, announced at round start; can you put them back?',
+    apply: (b) => ({ ...b, mods: { ...b.mods, shakeEvery: 3 } }),
+  },
+  {
     id: 'adapts',
     name: 'Adapts',
     asks: 'Raid only: from stage 2 it resists your most-used reaction.',

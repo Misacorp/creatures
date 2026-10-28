@@ -20,6 +20,7 @@ import type {
   FightOptions,
   FightResult,
   Fighter,
+  KillingBlow,
   Pattern,
   Placement,
 } from './types';
@@ -32,6 +33,10 @@ interface Mark {
   fromTrail: boolean;
   /** With Fizzle, a mark left by a reaction cannot be cashed until this many boss turns have passed. */
   cashableAfterTurns: number;
+  /** The boss turns done when a count was last added: "set this boss turn" means equal to now (Quick Draw). */
+  turnSet: number;
+  /** Creatures that left a count on it (Owner's Mark). */
+  owners: Set<string>;
 }
 
 interface State {
@@ -49,6 +54,8 @@ interface State {
   /** Targets of this round's charged moves, rolled when announced at round start (by move id). */
   announced: Map<string, Fighter[]>;
   readonly events: FightEvent[];
+  /** The creature whose hit took the boss's last HP (the first to do so). */
+  killer: KillingBlow | null;
   readonly count: {
     reactions: number;
     blocked: number;
@@ -63,10 +70,14 @@ interface State {
 const fx = (f: Fighter): KnackFx => (f.silencedTurns > 0 ? {} : f.fxAll);
 /** Silence blanks the creature: its Knack and its role's verb (Misa, 2026-10-26). Stats still work. */
 const silenced = (f: Fighter) => f.silencedTurns > 0;
-const armourOf = (f: Fighter) => f.baseArmour + (fx(f).armourBonus ?? 0);
+const ownArmour = (f: Fighter) => f.baseArmour + (fx(f).armourBonus ?? 0);
 const alive = (s: State) => s.fighters.filter((f) => f.hp > 0);
 const bySlot = (a: Fighter, b: Fighter) => a.row - b.row || a.col - b.col;
 const roll = (s: State, bp: number) => bp > 0 && chance(s.opts.rng, Math.min(bp, 10_000), 10_000);
+/** Counts that an effect's condition held or its trigger fired (the report's "holds"). */
+const bump = (f: Fighter, key: keyof KnackFx) => {
+  f.fires[key] = (f.fires[key] ?? 0) + 1;
+};
 const log = (s: State, kind: string, text: string) => {
   if (s.opts.log) s.events.push({ round: s.round, turn: s.turn, kind, text });
 };
@@ -110,6 +121,13 @@ export function placeFighters(placements: readonly Placement[]): Fighter[] {
       damageThisRound: 0,
       damageLastRound: 0,
       lastStoreRound: -1,
+      hitsMade: 0,
+      momentum: false,
+      avenged: false,
+      marksLeft: 0,
+      verbsUsed: 0,
+      sleeperDone: false,
+      fires: {},
     };
   });
 }
@@ -119,15 +137,40 @@ function beside(s: State, f: Fighter, reach = 1): Fighter[] {
   return alive(s).filter((o) => o !== f && o.row === f.row && Math.abs(o.col - f.col) <= reach);
 }
 
+const reachOf = (g: Fighter) => R.guardReach + (fx(g).reachBonus ?? 0);
+
+/**
+ * Whether `o` is in `g`'s reach: the same row, within its reach on each side. Flank Guard covers only
+ * one side, with twice the slots (both flags cancel out).
+ */
+function inReach(g: Fighter, o: Fighter): boolean {
+  if (g === o || g.row !== o.row) return false;
+  const k = fx(g);
+  const r = reachOf(g);
+  const d = o.col - g.col;
+  if (!!k.flankLeft !== !!k.flankRight)
+    return k.flankLeft ? d >= -2 * r && d <= -1 : d >= 1 && d <= 2 * r;
+  return Math.abs(d) <= r;
+}
+
+/** The most hurt of these (lowest share of max HP, ties to the front then the left); none if all are at full HP. */
+function mostHurt(xs: readonly Fighter[]): Fighter | undefined {
+  return xs
+    .filter((o) => o.hp > 0 && o.hp < o.maxHp)
+    .sort((a, b) => a.hp * b.maxHp - b.hp * a.maxHp || bySlot(a, b))[0];
+}
+
 function addMark(
   s: State,
   element: string,
   stacks: number,
-  opts: { sealed?: boolean; fromTrail?: boolean; fizzle?: boolean } = {},
+  opts: { sealed?: boolean; fromTrail?: boolean; fizzle?: boolean; by?: Fighter } = {},
 ): void {
   const m = s.marks.get(element);
   const after = opts.fizzle && s.boss.mods.fizzle ? s.bossTurnsDone + 1 : 0;
   if (m) {
+    m.turnSet = s.bossTurnsDone;
+    if (opts.by) m.owners.add(opts.by.uid);
     m.stacks = Math.min(R.maxStacks, m.stacks + stacks);
     // A mark is sealed if any of its counts was left sealed (R8).
     m.sealed ||= opts.sealed ?? false;
@@ -139,12 +182,15 @@ function addMark(
       sealed: opts.sealed ?? false,
       fromTrail: opts.fromTrail ?? false,
       cashableAfterTurns: after,
+      turnSet: s.bossTurnsDone,
+      owners: new Set(opts.by ? [opts.by.uid] : []),
     });
   }
   log(s, 'mark', `${element} x${s.marks.get(element)?.stacks ?? 0}`);
 }
 
-function heal(s: State, target: Fighter, amountBp: number, critOk = true): void {
+/** A heal by `src` (if any): healing past full HP passes on to the most hurt creature beside `src` (Overheal Spill). */
+function heal(s: State, target: Fighter, amountBp: number, critOk = true, src?: Fighter): void {
   if (target.hp <= 0) return;
   let amt = Math.floor((target.maxHp * amountBp) / 10_000);
   if (critOk && roll(s, R.critChanceBp)) amt = Math.floor((amt * R.critBp) / 10_000);
@@ -153,19 +199,49 @@ function heal(s: State, target: Fighter, amountBp: number, critOk = true): void 
   const real = Math.min(amt, target.maxHp - target.hp);
   target.hp += real;
   s.count.healed += real;
+  const over = amt - real;
+  if (over > 0 && src && fx(src).spillOver) {
+    const next = mostHurt(beside(s, src).filter((o) => o !== target));
+    if (next) {
+      const moved = Math.min(over, next.maxHp - next.hp);
+      next.hp += moved;
+      s.count.healed += moved;
+      bump(src, 'spillOver');
+    }
+  }
+}
+
+/** Mired stacks (capped); a debuff's Heavy Hand talent adds extra stacks each time. */
+function addMired(s: State, by: Fighter): void {
+  s.mired = Math.min(R.miredMaxStacks, s.mired + 1 + (fx(by).miredExtra ?? 0));
+  if (fx(by).miredExtra) bump(by, 'miredExtra');
+  log(s, 'mired', `Mired x${s.mired}`);
 }
 
 // ---------- round start ----------
 
 function roundStart(s: State): void {
+  // Mired fades first: a stack at every round start, or every second one while a living creature has
+  // Clinging (Misa, 2026-10-28). A creature that puts Mired on again afterwards keeps it up.
+  if (s.mired > 0) {
+    const clinging = alive(s).find((f) => fx(f).clinging);
+    const every = clinging ? R.miredClingingFadeEvery : R.miredFadeEvery;
+    if (s.round % every === 0) {
+      s.mired--;
+      log(s, 'mired', `Mired x${s.mired}`);
+    } else if (clinging) bump(clinging, 'clinging');
+  }
+  if (s.boss.mods.shakeEvery && s.round % s.boss.mods.shakeEvery === 0)
+    log(s, 'announce', `${s.boss.name} will shake off its debuffs`);
   // R8.2 a: Support verbs (and their shapes), in slot order.
   for (const f of [...alive(s)].sort(bySlot))
     if (f.role === 'support' && !silenced(f)) supportVerb(s, f, fx(f));
   // R8.2 b: round-start Knacks and talents, in slot order.
   for (const f of [...alive(s)].sort(bySlot)) {
     const k = fx(f);
-    if (k.miresAtStart) s.mired = Math.min(R.miredMaxStacks, s.mired + 1);
-    if (k.guardMendBp) for (const o of beside(s, f, reachOf(f))) heal(s, o, k.guardMendBp);
+    if (k.miresAtStart) addMired(s, f);
+    if (k.guardMendBp)
+      for (const o of alive(s).filter((o) => inReach(f, o))) heal(s, o, k.guardMendBp, true, f);
   }
   // Charged moves due this round are announced now: their slots are rolled and shown (R8).
   s.announced = new Map();
@@ -175,37 +251,57 @@ function roundStart(s: State): void {
 }
 
 function supportVerb(s: State, f: Fighter, k: KnackFx): void {
-  const boost =
+  f.verbsUsed++;
+  let boost =
     (f.element === 'ember' ? R.supportBoostEmberBp : R.supportBoostBp) + (k.boostBonusBp ?? 0);
+  // Bright Boost: every second boost it gives is doubled.
+  if (k.brightBoost && f.verbsUsed % 2 === 0) {
+    boost *= 2;
+    bump(f, 'brightBoost');
+  }
+  // Kindred Boost: bigger on creatures of its own element.
+  const kindred = (o: Fighter) => {
+    const extra = o.element === f.element ? (k.kindredBoostBp ?? 0) : 0;
+    if (extra) bump(f, 'kindredBoostBp');
+    return extra;
+  };
   const healBp = (R.supportHealBp[f.element] ?? 0) + (k.mendBonusBp ?? 0);
   switch (k.support) {
     case 'rowRain':
       for (const o of alive(s).filter((o) => o.row === f.row))
-        heal(s, o, 500 + (k.mendBonusBp ?? 0));
+        heal(s, o, 500 + (k.mendBonusBp ?? 0), true, f);
       return;
     case 'rowBoost':
-      for (const o of alive(s).filter((o) => o.row === f.row && o !== f)) o.boostBp += boost - 500;
+      for (const o of alive(s).filter((o) => o.row === f.row && o !== f))
+        o.boostBp += boost - 500 + kindred(o);
       return;
     case 'readyMark':
-      addMark(s, f.element, 1);
+      addMark(s, f.element, 1, { by: f });
       return;
     case 'clearSkies':
       for (const o of beside(s, f)) o.undodgeable = true;
       return;
     case 'sunbeam':
       for (const o of alive(s).filter((o) => o.col === f.col && o.row < f.row)) {
-        o.boostBp += boost;
-        heal(s, o, Math.max(healBp, 600));
+        o.boostBp += boost + kindred(o);
+        heal(s, o, Math.max(healBp, 600), true, f);
       }
       return;
     default: {
-      for (const o of beside(s, f)) {
-        o.boostBp += boost;
-        if (healBp) heal(s, o, k.support === 'curlUp' && o.hp * 2 < o.maxHp ? healBp * 3 : healBp);
+      const near = beside(s, f);
+      for (const o of near) o.boostBp += boost + kindred(o);
+      if (healBp) {
+        // Triage: only the most hurt creature beside it, at double size.
+        const patients = k.triage ? [mostHurt(near)].filter((o): o is Fighter => !!o) : near;
+        for (const o of patients) {
+          const size = (k.support === 'curlUp' && o.hp * 2 < o.maxHp ? 3 : 1) * (k.triage ? 2 : 1);
+          heal(s, o, healBp * size, true, f);
+          if (k.triage) bump(f, 'triage');
+        }
       }
       if (k.support === 'wideWarmth')
         for (const o of beside(s, f, 2).filter((o) => Math.abs(o.col - f.col) === 2))
-          o.boostBp += boost - 1_000;
+          o.boostBp += boost - 1_000 + kindred(o);
       if (k.support === 'gatherCalm' && f.store >= 3) {
         for (const o of beside(s, f)) o.boostBp += 4_500;
         f.store = 0;
@@ -216,23 +312,89 @@ function supportVerb(s: State, f: Fighter, k: KnackFx): void {
 
 // ---------- a creature's turn (R6) ----------
 
+/**
+ * Damage to the boss by `f` (a hit, or a counter that ignores armour): HP, damage counts, Cull and the
+ * killing blow. A hit that leaves the boss below `f`'s Cull share of its full HP defeats it outright;
+ * the HP that was left counts as damage dealt. The creature whose damage or Cull takes the last HP
+ * lands the killing blow (the first one only).
+ */
+function hitBoss(s: State, f: Fighter, dmg: number): void {
+  const real = Math.min(dmg, s.bossHp);
+  s.bossHp -= real;
+  let dealt = real;
+  let culled = false;
+  const cull = fx(f).cullBp;
+  if (cull && real > 0 && s.bossHp > 0 && s.bossHp * 10_000 < s.boss.hp * cull) {
+    dealt += s.bossHp;
+    s.bossHp = 0;
+    culled = true;
+    bump(f, 'cullBp');
+    log(s, 'cull', `${f.name} culls ${s.boss.name}`);
+  }
+  s.count.damage += dealt;
+  f.damageDealt += dealt;
+  f.damageThisRound += dealt;
+  if (s.bossHp <= 0 && dealt > 0 && !s.killer) {
+    s.killer = {
+      uid: f.uid,
+      owner: f.owner,
+      formId: f.formId,
+      name: f.name,
+      round: s.round,
+      culled,
+    };
+    log(s, 'killing-blow', `${f.name} lands the killing blow`);
+  }
+}
+
+/** Whether `f` is the leftmost or rightmost living creature of its row (Edge-walker). */
+function atRowEnd(s: State, f: Fighter): boolean {
+  const cols = alive(s)
+    .filter((o) => o.row === f.row)
+    .map((o) => o.col);
+  return f.col === Math.min(...cols) || f.col === Math.max(...cols);
+}
+
 function creatureHit(s: State, f: Fighter, shareBp: number): void {
   const k = fx(f);
   // 1. Plain damage: Attack, the element chart, boosts (capped, R15), the Knack's share, a crit.
-  const guardBeside = beside(s, f).some((o) => o.role === 'guard');
-  const payoffBeside = beside(s, f).some((o) => o.role === 'payoff');
+  const near = beside(s, f);
+  const guardBeside = near.some((o) => o.role === 'guard');
+  const payoffBeside = near.some((o) => o.role === 'payoff');
+  const kin = Math.min(2, near.filter((o) => o.element === f.element).length);
+  // Conditions are read as the hit is worked out (R20.7). Each adds to the hit bonus, inside the cap (R15).
+  const on = (key: keyof KnackFx, bp: number | undefined, holds: boolean): number => {
+    if (!bp || !holds) return 0;
+    bump(f, key);
+    return bp;
+  };
+  const rounds = Math.max(0, s.round - 1);
   const situational =
-    (f.hitsLanded === 0 ? (k.firstHitBp ?? 0) : 0) +
-    (f.hp * 2 < f.maxHp ? (k.lowHpAtkBp ?? 0) : 0) +
+    on('firstHitBp', k.firstHitBp, f.hitsLanded === 0) +
+    on('lowHpAtkBp', k.lowHpAtkBp, f.hp * 2 < f.maxHp) +
     (guardBeside ? (k.besideGuardBp ?? 0) : 0) +
-    (payoffBeside ? 0 : (k.alonePayoffBp ?? 0));
+    (payoffBeside ? 0 : (k.alonePayoffBp ?? 0)) +
+    on('perKindredBesideBp', kin * (k.perKindredBesideBp ?? 0), kin > 0) +
+    on('oddOneOutBp', k.oddOneOutBp, near.length > 0 && kin === 0) +
+    on('loneWolfBp', k.loneWolfBp, near.length === 0) +
+    on('rowEndBp', k.rowEndBp, atRowEnd(s, f)) +
+    on('slowBurnBp', Math.min(rounds * (k.slowBurnBp ?? 0), k.slowBurnCapBp ?? 0), rounds > 0) +
+    on('finisherBp', k.finisherBp, s.bossHp * 10_000 < s.boss.hp * R.finisherBelowBp) +
+    on('momentumBp', k.momentumBp, f.momentum) +
+    on('vengefulBp', k.vengefulBp, f.avenged);
+  f.momentum = false;
   const bonusSum = Math.min(R.maxHitBonusBp, f.boostBp + situational);
   const atk = Math.floor((f.atk * (10_000 + (k.atkBp ?? 0))) / 10_000);
   const base = Math.floor((atk * matchupBp(f.element, s.boss.element)) / 10_000);
   let plain = k.noDamage
     ? 0
     : Math.floor((((base * (10_000 + bonusSum)) / 10_000) * shareBp * (k.plainBp ?? 10_000)) / 1e8);
-  const crit = plain > 0 && roll(s, R.critChanceBp + (k.critChanceBp ?? 0));
+  let crit = plain > 0 && roll(s, R.critChanceBp + (k.critChanceBp ?? 0));
+  // Steady Rhythm: every third hit it makes is a crit, no luck.
+  if (plain > 0 && k.steadyRhythm && ++f.hitsMade % 3 === 0) {
+    crit = true;
+    bump(f, 'steadyRhythm');
+  }
   if (crit) plain = Math.floor((plain * (R.critBp + (k.critDamageBp ?? 0))) / 10_000);
   // 2. The boss rolls dodge (14.4). A hit that deals no damage is not rolled. Setup never misses.
   const bossDodge = f.undodgeable
@@ -271,6 +433,16 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       // Talents raise the factor, inside the cap (R7): a crit talent on a crit, Hungry always.
       if (crit && k.reactionCritBp) factor = (factor * (10_000 + k.reactionCritBp)) / 10_000;
       if (k.reactionBonusBp) factor = (factor * (10_000 + k.reactionBonusBp)) / 10_000;
+      // Mark conditions: a mark at x3, a mark set this boss turn, a mark a Setter's talent left.
+      const raise = (who: Fighter, key: keyof KnackFx, bp: number | undefined, holds: boolean) => {
+        if (bp && holds) {
+          factor = (factor * (10_000 + bp)) / 10_000;
+          bump(who, key);
+        }
+      };
+      raise(f, 'cashFullBp', k.cashFullBp, mark.stacks === R.maxStacks);
+      raise(f, 'freshMarkBp', k.freshMarkBp, mark.turnSet === s.bossTurnsDone);
+      for (const o of alive(s)) raise(o, 'ownMarkBp', fx(o).ownMarkBp, mark.owners.has(o.uid));
       factor = Math.min(factor, R.maxBonusFactorBp);
       bonus = Math.floor((((plain * (R.payoffMultBp - 10_000)) / 10_000) * factor) / 10_000);
       if (s.opts.resistReaction === el) bonus = Math.floor(bonus / 2);
@@ -286,9 +458,9 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
           o.store = Math.min(3, o.store + 1);
           o.lastStoreRound = s.round;
         }
-        if (ok.healOnReactionBp && o.element === el) heal(s, f, ok.healOnReactionBp, false);
+        if (ok.healOnReactionBp && o.element === el) heal(s, f, ok.healOnReactionBp, false, o);
         if (ok.support === 'clearAir' && beside(s, o).includes(f)) {
-          heal(s, f, 1_000, false);
+          heal(s, f, 1_000, false, o);
           f.silencedTurns = 0;
         }
       }
@@ -300,7 +472,12 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       }
       // Leave a Trail: one link per chain, so a reaction on a trail mark leaves no trail.
       if (k.trail && !mark.fromTrail)
-        addMark(s, f.element, 1, { sealed: k.seal ?? false, fromTrail: true, fizzle: true });
+        addMark(s, f.element, 1, {
+          sealed: k.seal ?? false,
+          fromTrail: true,
+          fizzle: true,
+          by: f,
+        });
     }
   }
   // 4. Cap, then armour: at or below armour the hit is Blocked (R13). A spent mark stays spent.
@@ -316,11 +493,7 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       dmg = 0;
     }
     if (dmg > 0) f.hitsLanded++;
-    dmg = Math.min(dmg, s.bossHp);
-    s.bossHp -= dmg;
-    s.count.damage += dmg;
-    f.damageDealt += dmg;
-    f.damageThisRound += dmg;
+    hitBoss(s, f, dmg);
   }
   // 5. Mark (R4): a hit that set off a reaction leaves no mark by the base rules.
   if (!reacted) {
@@ -329,6 +502,12 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       const el =
         marksAs === 'own' ? f.element : (ELEMENTS.find((m) => triggers(f.element, m)) ?? f.element);
       let stacks = k.markStacks ?? 1;
+      // Deep Ink: its first mark each fight starts bigger.
+      if (k.firstMarkExtra && f.marksLeft === 0) {
+        stacks += k.firstMarkExtra;
+        bump(f, 'firstMarkExtra');
+      }
+      f.marksLeft++;
       if (k.storeDodgeStacks && f.store >= 3) {
         stacks += k.storeDodgeStacks;
         f.store = 0;
@@ -336,7 +515,7 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       if (k.markOthers)
         for (const [other, m] of s.marks)
           if (other !== el) m.stacks = Math.min(R.maxStacks, m.stacks + 1);
-      addMark(s, el, stacks, { sealed: k.seal ?? false });
+      addMark(s, el, stacks, { sealed: k.seal ?? false, by: f });
       if (k.leadBoostBp) {
         const next = alive(s)
           .filter((o) => o.row === f.row && o.col > f.col)
@@ -438,14 +617,31 @@ function dodgeOf(s: State, f: Fighter, area: boolean): number {
   );
 }
 
-const reachOf = (g: Fighter) => R.guardReach + (fx(g).reachBonus ?? 0);
+/** Armour: base, the Knack's and talents', and the largest share a neighbour passes on (Share the Load). */
+function armourOf(s: State, f: Fighter): { total: number; giver: Fighter | undefined } {
+  let shared = 0;
+  let giver: Fighter | undefined;
+  for (const o of beside(s, f)) {
+    const part = Math.floor((ownArmour(o) * (fx(o).shareArmourBp ?? 0)) / 10_000);
+    if (part > shared) {
+      shared = part;
+      giver = o;
+    }
+  }
+  return { total: ownArmour(f) + shared, giver };
+}
 
-/** Damage lands on a creature: reductions, armour, then Blocked or HP (R13), then hit-taken effects. */
+/**
+ * Damage lands on a creature: reductions, armour, then Blocked or HP (R13), then hit-taken effects.
+ * `target` is the slot the hit was aimed at; when another creature took it (an intercept), the
+ * distance between them counts for Long Shadow.
+ */
 function takeHit(
   s: State,
   taker: Fighter,
   proposed: number,
   how: 'aimed' | 'area' | 'charged' | 'reflected',
+  target: Fighter = taker,
 ): void {
   let dmg = proposed;
   if (how === 'area' || how === 'charged') {
@@ -457,49 +653,83 @@ function takeHit(
     );
     const shelter = Math.max(0, ...beside(s, taker).map((o) => fx(o).besideAreaCutBp ?? 0));
     // Auras of one kind: the largest applies; the creature's own cut adds (R15), at most 75%.
-    const cut = Math.min(7_500, Math.max(ward, shelter) + (fx(taker).areaCutBp ?? 0));
+    const cut = Math.min(R.areaCutMaxBp, Math.max(ward, shelter) + (fx(taker).areaCutBp ?? 0));
     dmg = Math.floor((dmg * (10_000 - cut)) / 10_000);
-    const coverer = alive(s).find(
-      (g) =>
-        g.role === 'guard' &&
-        !silenced(g) &&
-        g !== taker &&
-        g.row === taker.row &&
-        Math.abs(g.col - taker.col) <= reachOf(g),
-    );
-    const covered = taker.role !== 'guard' && coverer !== undefined;
-    if (covered)
-      dmg = Math.floor(
-        (dmg *
-          (10_000 -
-            Math.min(10_000, R.coverBp + (coverer ? (fx(coverer).coverBonusBp ?? 0) : 0)))) /
-          10_000,
+    // Cover: the best of the Guards in reach, with every bonus, capped (Misa, 2026-10-28). A hit a
+    // Guard intercepts is not covered again; it needs no cap, the Guard still takes it.
+    if (taker.role !== 'guard') {
+      const cover = (g: Fighter) =>
+        R.coverBp +
+        (fx(g).coverBonusBp ?? 0) +
+        (fx(g).distanceCoverBp ?? 0) * Math.abs(g.col - taker.col);
+      const coverers = alive(s).filter(
+        (g) => g.role === 'guard' && !silenced(g) && inReach(g, taker),
       );
+      const best = coverers.sort((a, b) => cover(b) - cover(a))[0];
+      if (best) {
+        if (fx(best).distanceCoverBp) bump(best, 'distanceCoverBp');
+        if (fx(best).flankLeft) bump(best, 'flankLeft');
+        if (fx(best).flankRight) bump(best, 'flankRight');
+        dmg = Math.floor((dmg * (10_000 - Math.min(R.coverMaxBp, cover(best)))) / 10_000);
+      }
+    }
   }
-  dmg -= armourOf(taker);
+  const k = fx(taker);
+  // Front-liner: less from every hit in the front row.
+  if (k.frontCutBp && taker.row === 0) {
+    dmg = Math.floor((dmg * (10_000 - k.frontCutBp)) / 10_000);
+    bump(taker, 'frontCutBp');
+  }
+  // Brace: less from a Charged landing aimed at its own slot.
+  if (k.braceBp && how === 'charged' && taker === target) {
+    dmg = Math.floor((dmg * (10_000 - k.braceBp)) / 10_000);
+    bump(taker, 'braceBp');
+  }
+  // Long Shadow: the cut on a hit it intercepts grows with the distance to the creature it saved.
+  if (k.distanceCoverBp && taker !== target) {
+    const cut = Math.min(10_000, k.distanceCoverBp * Math.abs(taker.col - target.col));
+    dmg = Math.floor((dmg * (10_000 - cut)) / 10_000);
+    bump(taker, 'distanceCoverBp');
+  }
+  const armour = armourOf(s, taker);
+  dmg -= armour.total;
+  if (armour.giver && dmg + armour.total > 0) bump(armour.giver, 'shareArmourBp');
+  // Thick Skull: a hit smaller than a share of its max HP is Blocked.
+  if (dmg > 0 && k.skullBp && dmg * 10_000 < taker.maxHp * k.skullBp) {
+    dmg = 0;
+    bump(taker, 'skullBp');
+  }
   // Mud Wall counts every hit it takes, Blocked or not.
-  if (fx(taker).miresOnHit) s.mired = Math.min(R.miredMaxStacks, s.mired + 1);
+  if (k.miresOnHit) addMired(s, taker);
   if (dmg <= 0) {
     s.count.blocked++;
     log(s, 'blocked', `${taker.name} blocks the hit`);
     return;
   }
-  if (dmg >= taker.hp && fx(taker).holdOn && !taker.holdOnDone) {
+  if (dmg >= taker.hp && k.holdOn && !taker.holdOnDone) {
     taker.holdOnDone = true;
+    bump(taker, 'holdOn');
     dmg = taker.hp - 1;
     log(s, 'hold-on', `${taker.name} holds on`);
   }
   taker.hp = Math.max(0, taker.hp - dmg);
-  const wind = fx(taker).secondWindBp;
+  const wind = k.secondWindBp;
   if (wind && !taker.secondWindDone && taker.hp > 0 && taker.hp * 2 < taker.maxHp) {
     taker.secondWindDone = true;
+    bump(taker, 'secondWindBp');
     heal(s, taker, wind, false);
   }
   log(s, 'hit', `${taker.name} takes ${dmg}${taker.hp === 0 ? ' and is knocked out' : ''}`);
+  // Vengeful: a creature beside it was knocked out.
+  if (taker.hp === 0) for (const g of beside(s, taker)) if (g.fxAll.vengefulBp) g.avenged = true;
   for (const g of alive(s)) {
-    if (fx(g).bakedShell && g.row === taker.row && Math.abs(g.col - taker.col) <= reachOf(g))
-      g.store = Math.min(3, g.store + 1);
+    if (fx(g).bakedShell && (g === taker || inReach(g, taker))) g.store = Math.min(3, g.store + 1);
   }
+}
+
+/** A hit back that ignores armour (Retaliate, Shoulder Charge): the counter of a creature. */
+function counter(s: State, f: Fighter, shareBp: number): void {
+  hitBoss(s, f, Math.floor((f.atk * shareBp) / 10_000));
 }
 
 function bossHits(
@@ -523,10 +753,18 @@ function bossHits(
     // A move that deals no damage is not dodged or intercepted (R1).
     if (move.silenceTurns) {
       if (warded.has(t)) {
+        if (fx(t).ignoreSilence) bump(t, 'ignoreSilence');
         log(s, 'silence', `${t.name} shrugs off the silence`);
         continue;
       }
-      t.silencedTurns = Math.max(t.silencedTurns, move.silenceTurns);
+      // Light Sleeper: the first silence each fight lasts one turn.
+      let turns = move.silenceTurns;
+      if (fx(t).lightSleeper && !t.sleeperDone) {
+        t.sleeperDone = true;
+        turns = 1;
+        bump(t, 'lightSleeper');
+      }
+      t.silencedTurns = Math.max(t.silencedTurns, turns);
       log(s, 'silence', `${t.name} is silenced`);
       continue;
     }
@@ -535,15 +773,11 @@ function bossHits(
       s.count.dodges++;
       log(s, 'dodge', `${t.name} dodges`);
       const k = fx(t);
-      if (k.retaliateBp) {
-        // Retaliate ignores armour: the hit back is a counter, not an attack (keywords).
-        const back = Math.floor((t.atk * k.retaliateBp) / 10_000);
-        s.bossHp = Math.max(0, s.bossHp - back);
-        s.count.damage += back;
-        t.damageDealt += back;
-        t.damageThisRound += back;
-      }
+      // Retaliate ignores armour: the hit back is a counter, not an attack (keywords).
+      if (k.retaliateBp) counter(s, t, k.retaliateBp);
       if (k.storeDodgeStacks) t.store = Math.min(3, t.store + 1);
+      // Momentum: its next hit deals more.
+      if (k.momentumBp) t.momentum = true;
       continue;
     }
     // Only if the dodge failed: a Guard in reach intercepts (aimed hits; area or charged with a Knack).
@@ -557,7 +791,7 @@ function bossHits(
             g !== t &&
             g.row === t.row &&
             (g.role === 'guard'
-              ? Math.abs(g.col - t.col) <= reachOf(g)
+              ? inReach(g, t)
               : fx(g).interceptLikeGuard === true && Math.abs(g.col - t.col) === 1),
         )
         .filter((g) => !area || fx(g).interceptArea || (move.charged && fx(g).interceptCharged))
@@ -576,13 +810,20 @@ function bossHits(
         taker = by;
         s.count.intercepts++;
         log(s, 'intercept', `${by.name} intercepts for ${t.name}`);
+        if (fx(by).flankLeft) bump(by, 'flankLeft');
+        if (fx(by).flankRight) bump(by, 'flankRight');
         if (fx(by).primeOnFirstIntercept && !by.firstInterceptDone) {
           by.firstInterceptDone = true;
-          addMark(s, by.element, 1);
+          addMark(s, by.element, 1, { by });
+        }
+        // Shoulder Charge: it hits back, ignoring armour.
+        if (fx(by).interceptHitBackBp) {
+          counter(s, by, fx(by).interceptHitBackBp ?? 0);
+          bump(by, 'interceptHitBackBp');
         }
       }
     }
-    takeHit(s, taker, proposed, move.charged ? 'charged' : area ? 'area' : 'aimed');
+    takeHit(s, taker, proposed, move.charged ? 'charged' : area ? 'area' : 'aimed', t);
   }
 }
 
@@ -633,6 +874,7 @@ export function fight(
     reflectArmed: false,
     announced: new Map(),
     events: [],
+    killer: null,
     count: { reactions: 0, blocked: 0, dodges: 0, intercepts: 0, healed: 0, damage: 0 },
     byMark: {},
   };
@@ -655,11 +897,18 @@ export function fight(
         creatureTurn(s, f);
       bossTurn(s, r);
     }
+    // Shake It Off: announced at round start, the boss clears every debuff when its round ends.
+    if (s.boss.mods.shakeEvery && s.round % s.boss.mods.shakeEvery === 0 && s.mired > 0) {
+      s.mired = 0;
+      log(s, 'shake', `${boss.name} shakes off its debuffs`);
+      log(s, 'mired', 'Mired x0');
+    }
   }
   return {
     damage: s.count.damage,
     bossHpLeft: s.bossHp,
     won: s.bossHp <= 0,
+    killingBlow: s.killer,
     wiped: alive(s).length === 0,
     knockouts: startAlive - alive(s).length,
     reactions: s.count.reactions,

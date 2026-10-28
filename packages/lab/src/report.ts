@@ -4,9 +4,9 @@
  * weekend with attrition. Written to docs/design/combat/lab-report.md by
  * `pnpm --filter @creatures/lab report`.
  */
-import { content, createSeededRng, int } from '@creatures/game';
-import { CARDS, labBoss } from './cards';
-import { weekend } from './fight';
+import { content, createSeededRng, int, type Rng } from '@creatures/game';
+import { CARDS, labBoss, type CardDef } from './cards';
+import { fight, weekend } from './fight';
 import { KEYWORDS } from './keywords';
 import { FAMILIES, FORM_KNACKS, KNACKS } from './knacks';
 import { LINE_POOLS, TALENTS, talentPool } from './talents';
@@ -211,6 +211,13 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
     '',
     `**${working} of ${answers} intended answers beat the classic line on their card.**`,
     '',
+    `No intended answer yet: ${cards
+      .filter((c) => c.id !== 'plain' && !(ANSWERS[c.id]?.length ?? 0))
+      .map((c) => c.name)
+      .join(
+        ', ',
+      )}. Shake It Off only costs a debuff build something (Mired x5 is -15% boss damage, and Mire has no Setter or Payoff yet), so the classic line is not hurt by it and no Mire team beats the classic line on it; its answer is a team that does not lean on a debuff.`,
+    '',
   );
 
   // 3. Best teams per card.
@@ -383,49 +390,65 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
   md.push(
     '## Talents: what one talent adds (gauntlet)',
     '',
-    `Each talent on every form whose line's pool has it and whose role it fits, in a fitting team with the form in its role's natural slot (a Setter or Guard in front, a Payoff after its Setter, a Support in the middle), no Knack on the measured form and the partners' first Knacks. Damage and knockouts with the talent against the same team without it, on every card (${seeds} seeds each), averaged over those forms. Best card is where it helps most. Near 0% on damage and KO is a dud; far above the rest is a must-roll.`,
+    `Each talent on every form whose line's pool has it and whose role it fits, in a fitting team with the form in its role's natural slot (a Setter or Guard in front, a Payoff after its Setter, a Support in the middle), no Knack on the measured form and the partners' first Knacks. A few talents need a board that shows them (see "Boards" below). Damage and knockouts with the talent against the same team without it, on every card (${seeds} seeds each, the same seed for both), as total damage with it over total damage without, pooled over those forms. **Holds** is the share of fights in which its condition held or its trigger fired at least once (flat stats always hold). **While it holds** is the damage gain in those fights only, so a conditional talent can be read against a flat one: the budget rule says value while on, times how often it is on, should land near the same average (P-10: spiky, not flat). Best card is where it helps most. Near 0% on damage and KO is a dud; far above the rest is a must-roll.`,
     '',
-    '| Role | Talent | Damage | KO per fight | Best card |',
-    '| --- | --- | ---: | ---: | --- |',
+    '| Role | Talent | Damage | KO per fight | Holds | While it holds | Best card |',
+    '| --- | --- | ---: | ---: | ---: | ---: | --- |',
   );
   const talentValue: Record<string, unknown> = {};
+  // Which talent is best on each card, per role: a talent that is best on most cards is a new "top pick".
+  const bestOnCard = new Map<string, Map<string, { tid: string; v: number }>>();
+  const signed = (x: number, d = 1) => `${x >= 0 ? '+' : ''}${x.toFixed(d)}`;
   for (const role of ['setter', 'payoff', 'guard', 'support'] as const) {
     const roleForms = Object.keys(FORM_KNACKS).filter((f) => formStats(f, LEVEL).role === role);
     for (const tid of Object.keys(TALENTS).filter((t) => TALENTS[t]?.roles.includes(role))) {
       const forms = roleForms.filter((f) => LINE_POOLS[lineOf(f)]?.includes(tid));
       if (forms.length === 0) continue;
-      let dmg = 0,
-        ko = 0,
-        n = 0;
-      const byCard = new Map<string, number>();
-      for (const form of forms) {
-        const { team, slot } = teamFor(form);
-        const withT = team.map((p, i) => (i === slot ? { ...p, talents: [tid] } : p));
-        for (const c of cards) {
-          const boss = bossFor(GAUNTLET, [c.id]);
-          const a = evaluate(boss, withT, GAUNTLET, seeds, `tal:${c.id}`);
-          const b = evaluate(boss, team, GAUNTLET, seeds, `tal:${c.id}`);
-          const v = b.damage ? a.damage / b.damage - 1 : 0;
-          dmg += v;
-          ko += a.knockouts - b.knockouts;
-          n++;
-          byCard.set(c.id, (byCard.get(c.id) ?? 0) + v / forms.length);
+      const m = measureTalent(tid, forms, cards, seeds);
+      const [bestCard, bestV] = [...m.byCard.entries()].sort((x, y) => y[1] - x[1])[0] ?? ['', 0];
+      if (!TALENT_NO_VALUE.has(tid))
+        for (const [cid, v] of m.byCard) {
+          const roleBest = bestOnCard.get(role) ?? new Map<string, { tid: string; v: number }>();
+          if (v > (roleBest.get(cid)?.v ?? -Infinity)) roleBest.set(cid, { tid, v });
+          bestOnCard.set(role, roleBest);
         }
-      }
-      const [bestCard, bestV] = [...byCard.entries()].sort((x, y) => y[1] - x[1])[0] ?? ['', 0];
-      const signed = (x: number, d = 1) => `${x >= 0 ? '+' : ''}${x.toFixed(d)}`;
       talentValue[`${role}/${tid}`] = {
-        damage: Math.round((dmg / n) * 1000) / 1000,
-        ko: Math.round((ko / n) * 100) / 100,
+        damage: Math.round(m.damage * 1000) / 1000,
+        ko: Math.round(m.ko * 100) / 100,
+        holds: m.holds === undefined ? 'always' : Math.round(m.holds * 100) / 100,
+        whileHolding:
+          m.whileHolding === undefined ? null : Math.round(m.whileHolding * 1000) / 1000,
         best: bestCard,
       };
+      const none = TALENT_NO_VALUE.has(tid);
       md.push(
-        `| ${role} | ${TALENTS[tid]?.name ?? tid} | ${signed((dmg / n) * 100)}% | ${signed(ko / n, 2)} | ${bestV > 0.005 ? `${CARDS.find((c) => c.id === bestCard)?.name ?? bestCard} ${signed(bestV * 100)}%` : 'none'} |`,
+        `| ${role} | ${TALENTS[tid]?.name ?? tid} | ${none ? 'n/a' : `${signed(m.damage * 100)}%`} | ${none ? 'n/a' : signed(m.ko, 2)} | ${m.holds === undefined ? 'always' : `${Math.round(m.holds * 100)}%`} | ${none || m.whileHolding === undefined ? '-' : `${signed(m.whileHolding * 100)}%`} | ${none ? 'killing blow' : bestV > 0.005 ? `${CARDS.find((c) => c.id === bestCard)?.name ?? bestCard} ${signed(bestV * 100)}%` : 'none'} |`,
       );
     }
   }
   data['talentValue'] = talentValue;
-  md.push('');
+  // Flag a talent that is best on most cards of its role.
+  const topPicks: string[] = [];
+  for (const [role, perCard] of bestOnCard) {
+    const wins = new Map<string, number>();
+    for (const { tid } of perCard.values()) wins.set(tid, (wins.get(tid) ?? 0) + 1);
+    const [top, n] = [...wins.entries()].sort((a, b) => b[1] - a[1])[0] ?? ['', 0];
+    if (n * 2 > cards.length)
+      topPicks.push(`${TALENTS[top]?.name ?? top} (${role}, ${n} of ${cards.length})`);
+  }
+  data['talentTopPicks'] = topPicks;
+  const values = Object.entries(talentValue as Record<string, { damage: number }>)
+    .filter(([k]) => !TALENT_NO_VALUE.has(k.split('/')[1] ?? ''))
+    .map(([, v]) => v.damage);
+  md.push(
+    '',
+    `**Talent value range:** ${signed(Math.min(...values) * 100)}% to ${signed(Math.max(...values) * 100)}% damage. **Best on most cards of its role:** ${topPicks.length ? topPicks.join(', ') : 'none'}.`,
+    '',
+    `Boards: ${Object.entries(BOARD_NOTES)
+      .map(([t, note]) => `${TALENTS[t]?.name ?? t} ${note}`)
+      .join('; ')}.`,
+    '',
+  );
 
   // 8. Element coverage (P-12): every element should have the same kinds of tools.
   md.push(
@@ -606,6 +629,190 @@ function summarise(l: readonly Pick[]): string {
     .sort((a, b) => b[1] - a[1])
     .map(([k, c]) => `${c}x ${k}`)
     .join(', ');
+}
+
+/** Talents with no damage value: they decide who lands the killing blow, not how much damage is done. */
+const TALENT_NO_VALUE: ReadonlySet<string> = new Set(['cull']);
+
+/** Effect fields that are plain stats (always on): no condition to count. */
+const FLAT_FIELDS: ReadonlySet<string> = new Set(['atkBp', 'hpBp']);
+
+/** Talents measured again with the boss already at 30% of its HP, for the "While it holds" column. */
+const ON_BOSS_HP: Readonly<Record<string, number>> = { finisher: 0.3 };
+
+/** The boards that show a talent at work (the default board is the form's natural slot, see `teamFor`). */
+const BOARD_NOTES: Readonly<Record<string, string>> = {
+  'shoulder-to-shoulder': 'between two creatures of its own element',
+  'kindred-boost': 'between two creatures of its own element',
+  'lone-wolf': 'alone at the end of the row',
+  'edge-walker': 'at the end of the row',
+  'flank-guard-left': 'at the right end of the row',
+  opportunist: 'after a Setter with Double Mark where the line has one',
+  finisher:
+    'its "While it holds" is measured with the boss at 30% HP (the boss has 1,000,000 HP, so it never holds otherwise)',
+  'heavy-hand': "with the line's Mire Knack (Mud Wall for a Guard, Squelch Song for a Support)",
+  clinging: "with the line's Mire Knack (Mud Wall for a Guard, Squelch Song for a Support)",
+  cull: 'is not a damage talent (it ends the fight a little early and decides who lands the killing blow), so it has no value here',
+};
+
+interface Setup {
+  readonly team: Pick[];
+  readonly slot: number;
+  /** Columns to stand in, by position in `team` (default 0, 1, 2). */
+  readonly cols?: number[];
+}
+
+/** The board a talent is measured on: the form's natural team, changed where the talent needs it. */
+function setupFor(tid: string, form: string): Setup {
+  const st = formStats(form, LEVEL);
+  const natural = teamFor(form);
+  let team = natural.team.map((p) => ({ ...p }));
+  let slot = natural.slot;
+  let cols: number[] | undefined;
+  const me = () => team[slot] as Pick;
+  const toEnd = () => {
+    const [m] = team.splice(slot, 1);
+    team.push(m as Pick);
+    slot = team.length - 1;
+  };
+  switch (tid) {
+    case 'heavy-hand':
+    case 'clinging':
+      team[slot] = { ...me(), knack: st.role === 'guard' ? 'mud-wall' : 'squelch-song' };
+      break;
+    case 'opportunist': {
+      const setter = team[0] as Pick;
+      if (FORM_KNACKS[setter.formId]?.includes('double-mark'))
+        team[0] = { ...setter, knack: 'double-mark' };
+      break;
+    }
+    case 'edge-walker':
+    case 'flank-guard-left':
+      toEnd();
+      break;
+    case 'lone-wolf':
+      toEnd();
+      cols = [0, 1, 3];
+      break;
+    case 'shoulder-to-shoulder':
+    case 'kindred-boost': {
+      const kin = Object.keys(FORM_KNACKS)
+        .filter((f) => f !== form && formStats(f, LEVEL).element === st.element)
+        .slice(0, 2)
+        .map((f): Pick => ({ formId: f, knack: firstKnack(f) }));
+      if (kin.length === 2) {
+        team = [kin[0] as Pick, me(), kin[1] as Pick];
+        slot = 1;
+      }
+      break;
+    }
+  }
+  return { team, slot, ...(cols ? { cols } : {}) };
+}
+
+interface Measured {
+  /** Total damage with the talent over total damage without, over the forms and cards, minus 1. */
+  readonly damage: number;
+  /** Mean knockouts per fight gained. */
+  readonly ko: number;
+  /** Share of fights in which the talent's condition held or trigger fired; undefined for a flat stat. */
+  readonly holds: number | undefined;
+  /** Mean damage gain in the fights where it held; undefined for a flat stat. */
+  readonly whileHolding: number | undefined;
+  readonly byCard: Map<string, number>;
+}
+
+const baseline = new Map<string, { damage: number; knockouts: number }>();
+
+/** One talent on every form that can have it, on every card; the same seed with and without it. */
+function measureTalent(
+  tid: string,
+  forms: readonly string[],
+  cards: readonly CardDef[],
+  seeds: number,
+): Measured {
+  const keys = Object.keys(TALENTS[tid]?.fx ?? {});
+  const flat = keys.every((k) => FLAT_FIELDS.has(k));
+  const place = (line: readonly Pick[], cols?: number[]) =>
+    toPlacements(line, GAUNTLET).map((p, i) => (cols ? { ...p, col: cols[i] ?? p.col } : p));
+  let sumA = 0,
+    sumB = 0,
+    ko = 0,
+    n = 0,
+    held = 0,
+    fights = 0,
+    onGain = 0,
+    onFights = 0;
+  const cardA = new Map<string, number>();
+  const cardB = new Map<string, number>();
+  for (const form of forms) {
+    const setup = setupFor(tid, form);
+    const withT = setup.team.map((p, i) => (i === setup.slot ? { ...p, talents: [tid] } : p));
+    for (const c of cards) {
+      const boss = bossFor(GAUNTLET, [c.id]);
+      // A pass over the seeds: the damage and knockouts with and without, and the fights where it held.
+      const pass = (startHp?: number) => {
+        let a = 0,
+          b = 0,
+          koA = 0,
+          koB = 0,
+          holdN = 0,
+          gain = 0;
+        for (let i = 0; i < seeds; i++) {
+          const opts = (): { rng: Rng; bossHp?: number } => ({
+            rng: createSeededRng(`tal:${c.id}:${i}`),
+            ...(startHp !== undefined ? { bossHp: startHp } : {}),
+          });
+          const withRes = fight(boss, place(withT, setup.cols), opts());
+          const key = `${JSON.stringify(setup.team)}|${setup.cols?.join(',') ?? ''}|${c.id}|${i}|${startHp}`;
+          let base = baseline.get(key);
+          if (!base) {
+            const r = fight(boss, place(setup.team, setup.cols), opts());
+            base = { damage: r.damage, knockouts: r.knockouts };
+            baseline.set(key, base);
+          }
+          a += withRes.damage;
+          b += base.damage;
+          koA += withRes.knockouts;
+          koB += base.knockouts;
+          const fires = keys.reduce(
+            (sum, k) => sum + (withRes.fighters[setup.slot]?.fires[k] ?? 0),
+            0,
+          );
+          if (fires > 0 && base.damage > 0) {
+            holdN++;
+            gain += withRes.damage / base.damage - 1;
+          }
+        }
+        return { a: a / seeds, b: b / seeds, koDelta: (koA - koB) / seeds, holdN, gain };
+      };
+      const p = pass();
+      sumA += p.a;
+      sumB += p.b;
+      ko += p.koDelta;
+      n++;
+      cardA.set(c.id, (cardA.get(c.id) ?? 0) + p.a);
+      cardB.set(c.id, (cardB.get(c.id) ?? 0) + p.b);
+      fights += seeds;
+      const hpShare = ON_BOSS_HP[tid];
+      const q = hpShare !== undefined ? pass(Math.floor(boss.hp * hpShare)) : p;
+      held += p.holdN;
+      onGain += q.gain;
+      onFights += q.holdN;
+    }
+  }
+  // Damage gains are ratios of totals, so a card where the baseline is almost nothing (Thick Hide)
+  // cannot swamp the average; the best card is the one where the ratio is highest.
+  const byCard = new Map(
+    [...cardA].map(([id, a]) => [id, (cardB.get(id) ?? 0) ? a / (cardB.get(id) ?? 1) - 1 : 0]),
+  );
+  return {
+    damage: sumB ? sumA / sumB - 1 : 0,
+    ko: ko / n,
+    holds: flat ? undefined : held / Math.max(1, fights),
+    whileHolding: flat || onFights === 0 ? undefined : onGain / onFights,
+    byCard,
+  };
 }
 
 /** The two-line budget for a Knack or talent text, in characters (an estimate). */
