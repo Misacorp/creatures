@@ -1,6 +1,6 @@
 # Proposal 001: combat v2 rules
 
-Status: **proposed**, v0.6 (2026-10-26; Misa answered the first panel's questions; the second panel's fixes for the species and talent slice are in, `reviews/2026-10-26-panel-2.md`). Author: lead agent, from the design conversation with Misa (2026-10-25 and 26), three reviews of v0.1, the first panel on v0.3 (`reviews/2026-10-26-panel-1.md`) and the lab. Prototype: `packages/lab` (its `fight.ts` follows these rules step by step; a test covers each rule that changed).
+Status: **proposed**, v0.7 (2026-10-28: the talent library and the third panel, `reviews/2026-10-28-panel-3.md`); v0.6 (2026-10-26; Misa answered the first panel's questions; the second panel's fixes for the species and talent slice are in, `reviews/2026-10-26-panel-2.md`). Author: lead agent, from the design conversation with Misa (2026-10-25 and 26), three reviews of v0.1, the first panel on v0.3 (`reviews/2026-10-26-panel-1.md`) and the lab. Prototype: `packages/lab` (its `fight.ts` follows these rules step by step; a test covers each rule that changed).
 
 ## Motivation
 
@@ -44,7 +44,7 @@ Each rule names what it replaces in `combat-rules.md`. Durations count the affec
 5. Mark (R4). A Setter's hit that the boss dodged or Blocked still marks: setup never misses.
 6. After-hit effects.
 
-**R7. Reaction bonus.** Bonus = plain hit x (Payoff multiplier - 1) x the bonus factor. The factor is the Knack's own factor, times (1 + extra counts spent x the Knack's share), times Baked Shell's x2, times a crit talent's raise on a crit (Big Finish); all of it together is capped at x3. Starting Payoff multiplier: **x2** (today x4.95). The first panel measured x2.5 as close to doubling two plain hitters and x3 as past it, so x2 stays.
+**R7. Reaction bonus.** Bonus = plain hit x (Payoff multiplier - 1) x the bonus factor. The factor is the Knack's own factor, times (1 + extra counts spent x the Knack's share), times Baked Shell's x2, times a crit talent's raise on a crit (Big Finish); all of it together is capped at x3. Starting Payoff multiplier: **x2** (today x4.95). The first panel measured x2.5 as close to doubling two plain hitters and x3 as past it, so x2 stays. Talent raises (Opportunist, Quick Draw, Owner's Mark, Hungry, Big Finish) are further factors; every factor multiplies, and the total is capped at x3.
 
 **R8. The round and the arena.**
 
@@ -53,7 +53,7 @@ Each rule names what it replaces in `combat-rules.md`. Durations count the affec
 3. For each row from the front: its creatures act left to right (Supports hit too), then **the boss takes a turn**: its moves due on that turn, its plain attack, then Clean Scales sheds the marks that were on it when that turn began (unless Sealed).
 4. The boss takes a turn after every row of the arena, empty or not.
 5. Reflective Hide arms at the end of each boss turn (not before the first).
-6. **Debuffs fade** (Misa, 2026-10-28): at each round start, before the Support verbs, the boss loses 1 Mired stack (Clinging slows this to every second round while a living creature has it). A rule card may also clear every debuff on a round it announces at round start (Shake It Off: every 3 rounds, at the end of that round's last boss turn).
+6. **Debuffs fade** (Misa, 2026-10-28): at the end of every second round the boss loses 1 Mired stack (Clinging: every third round while a living creature has it; panel 3). A rule card may also clear every debuff on a round it announces at round start (Shake It Off: every 3 rounds, at the end of that round's last boss turn).
 7. The dungeon keeps its single line and today's order (one boss turn after the line).
 
 **R9. Taunt.** Taunt becomes the anchor of every plain attack, whatever its anchor; moves keep their own anchors. Several taunters: the front-most, then the leftmost. A Guard may still intercept for a non-Guard taunter after its failed dodge.
@@ -64,13 +64,14 @@ Each rule names what it replaces in `combat-rules.md`. Durations count the affec
 
 **R12. Silence.** Until the end of the creature's Nth turn, its Knack (stat bonuses included), talents, gear effects **and its role's verb** do nothing (Misa, 2026-10-26): a silenced Setter does not mark, a Payoff does not cash, a Guard does not intercept or cover, a Support does not boost or heal. It still makes its plain hit with its stats.
 
-1. **Wards.** Before a silencing move lands, every target that cannot be silenced is noted (its own Unflappable, or a living, unsilenced Lantern Glow beside it); then the rest are silenced. A Lantern Glow silenced by that same move still wards its neighbours from that move, not from the next.
+1. **Wards.** Before a silencing move lands, every target that cannot be silenced is noted (its own Unbothered, or a living, unsilenced Lantern Glow beside it); then the rest are silenced. A Lantern Glow silenced by that same move still wards its neighbours from that move, not from the next.
+2. **Talents while silenced** (panel 3): its talents do nothing. Triggers do not arm, rhythm counters do not count, and once-per-fight effects are not spent (a first hit made while silenced is not its First Pounce). An effect stored before the silence stays stored.
 
 **R13. Armour and Blocked.** Foes and creatures have Armour, a flat amount taken off every hit. A hit at or below armour is **Blocked** and deals nothing (Misa, 2026-10-26). Guards are armoured rather than only high in HP. **Every creature has armour** (Misa, 2026-10-28): Guards have the most, and talents, Knacks and gear may raise anyone's; no armour effect is limited to Guards.
 
-**R14. Raid attrition.** A raid weekend's stages share the boss's HP. Only HP carries: creatures keep their HP between stages, nobody heals between stages, and a knocked-out creature is out for the weekend. Marks, Stores, Mired and "each fight" effects start fresh each stage. Players may swap creatures between stages; a replacement takes an empty slot. A knocked-out creature does not come back that weekend (Misa, 2026-10-26: players have spare creatures by week 2, so no extra mechanic). The dungeon is unchanged.
+**R14. Raid attrition.** A raid weekend's stages share the boss's HP. Only HP carries: creatures keep their HP between stages, nobody heals between stages, and a knocked-out creature is out for the weekend. Marks, Stores, Mired and "each fight" effects start fresh each stage. Players may swap creatures between stages; a replacement takes an empty slot. A knocked-out creature does not come back that weekend (Misa, 2026-10-26: players have spare creatures by week 2, so no extra mechanic). The dungeon is unchanged. The round count restarts each stage.
 
-**R15. Buffs and debuffs.** An effect stacks up to its own maximum; different effects add; all hit boosts together are capped (lab: +150%), and reaction-bonus factors have their own cap (R7). **Auras** (an effect a creature gives others: dodge beside it or in its row, area cut): of the auras of one kind reaching a creature, only the largest applies. A creature's own Knack and talents add to it. Debuffs on the boss (Mired) have their own maximum. Never design for "bring seven of this buff". **Cover**, with every bonus, is capped at 75%, like area cuts; a hit a Guard intercepts needs no cap, since the Guard still takes it.
+**R15. Buffs and debuffs.** An effect stacks up to its own maximum; different effects add; all hit boosts together are capped (lab: +150%), and reaction-bonus factors have their own cap (R7). **Auras** (an effect a creature gives others: dodge beside it or in its row, area cut): of the auras of one kind reaching a creature, only the largest applies. A creature's own Knack and talents add to it. Debuffs on the boss (Mired) have their own maximum. Never design for "bring seven of this buff". **One cap on cuts** (panel 3): every cut a creature gets on one hit (Row Wards and other auras, cover, Long Shadow, Front-liner, Brace) multiplies, and the total cut is capped at 75%, before armour.
 
 **R16. Support shapes and healing.** A Support's base reach is the creatures beside it. Knacks may reshape it (one place further, every creature in front of it in its column). Heals can crit. Some bosses may need well-placed healers.
 
@@ -80,13 +81,13 @@ Each rule names what it replaces in `combat-rules.md`. Durations count the affec
 
 **R18. The live finale.** Creature finale abilities go (R11). The basic Rally, Shield Wall and Purge stay as the live input for now. Relics, items brought into the finale, are an idea for later.
 
-**R19. Swap requests (raid).** A player can ask another player to swap the slots of two creatures on the raid board, so pairings across players can be arranged (Misa, 2026-10-26: "we do it manually now; a system would help"). The other player accepts or declines; an accepted swap moves both creatures in one step; open requests end at the next phase lock. Design and build with the raid board (roadmap, "Swap requests").
+**R19. Swap requests (raid).** A player can ask another player to swap the slots of two creatures on the raid board, so pairings across players can be arranged (Misa, 2026-10-26: "we do it manually now; a system would help"). The other player accepts or declines; an accepted swap moves both creatures in one step; open requests end at the next phase lock. Design and build with the raid board (roadmap, "Swap requests"). A request may also move a creature into an empty slot (panel 3).
 
 **R20. Talents.** One shared library of combat talents; each creature line links to its own pool of seven from it (Misa, 2026-10-27), so two lines of the same role roll different tools. Branch forms share the line's pool. A line's pool says which talents can appear on its creatures; each creature grows its own library over time (Misa, 2026-10-27):
 
 - A creature starts with the talent it was found with; a starter starts with a set talent instead of a roll.
 - More come through Teach, as in the game today: a duplicate's talent goes into the Talent Book of the player's creature of that line, and only that one. The same talent must be found again for another creature to have it.
-- Slots open with level and are filled from the creature's own book. A golden talent is 1.5 times the value. The migration rerolls talents from the new pools, and a golden talent rolls golden (Misa, 2026-10-27).
+- Slots open with level and are filled from the creature's own book. A golden talent is 1.25 times the value (Misa, 2026-10-28); a talent with no number has its own small golden extra, which never changes a shared limit. The migration rerolls talents from the new pools, and a golden talent rolls golden (Misa, 2026-10-27).
 
 1. A talent adds numbers or flags to the creature's Knack (the same grammar): numbers add, flags combine; a Support shape comes only from the Knack. Talent hit bonuses count toward the hit-boost cap (R15), crit raises toward the reaction cap (R7).
 2. One name per effect, one number per name, across Knacks, talents and gear (P-06). A talent never repeats a Knack's effect, and Seal is never a talent, so a roll never decides the Knack choice.
@@ -99,11 +100,14 @@ Each rule names what it replaces in `combat-rules.md`. Durations count the affec
 
 **R21. Conditions and finishing blows** (the talent library, `modifiers.md`; lab 2026-10-28).
 
-1. **Row end:** the leftmost or rightmost living creature of its row. **Front row:** row 0.
+1. **Row end:** the first or last slot of its row in the arena (stable, and the owner chooses it). **Front row:** row 0.
 2. **A mark set this boss turn:** a count added since the last boss turn ended.
 3. **Flank Guard:** a Guard's reach goes to one side only, with twice the slots; both flanks together cancel out.
-4. **Cull:** a hit that leaves a foe below the effect's share of its max HP defeats it; the HP left counts as damage dealt.
-5. **Killing blow:** the creature whose damage (or Cull) takes the foe's last HP. Effects may trigger on it (for example more loot for the raid, granted by the server like all loot).
+4. **Cull:** a hit that leaves a foe below the effect's share of its full HP (5%; in a raid weekend, of the weekend's shared HP) defeats it. The HP removed this way counts as the killing blow, not as the creature's damage.
+5. **Killing blow:** the creature whose damage (or Cull) takes the foe's last HP. Effects may trigger on it (for example more loot for the raid, granted by the server like all loot). Killing-blow rewards go to the whole raid, never to one player, since turn order decides who lands it.
+6. **The fight ends** the moment the foe reaches 0 HP: nothing else acts.
+7. **Hits and counters:** a creature's hits are its own attacks (Twin Strike's two included). A counter (Retaliate, Shoulder Charge) deals damage and can land the killing blow, but it is not a hit: it never triggers Cull or an "its hits" effect.
+8. **Cover and reach:** cover comes from the Guard with the largest cover whose reach includes the taker; reach counts across empty and knocked-out slots; every reach effect (Hearth, Baked Shell) follows a Flank Guard's reshaped reach.
 
 ## On the board (from the readability review)
 
@@ -118,6 +122,7 @@ What the fight and the raid board must show, so each rule can be read before it 
 - **Cards and answers:** each rule card is an icon on the boss card; the same icon sits on creatures whose Knack answers it, **only once the lab shows that answer works** (P-13).
 - **Conditions and auras** (panel 2): every slot shows its role icon; a Knack or talent with a condition (Guard's Shadow, Territorial) has a chip that lights while the condition holds, and the picker previews it against the current placement; tapping a creature lights the slots its auras and reach cover, in a friendly look unlike boss-target lights; a creature that intercepts through an effect shows the same shield bracket under the slots it covers as a Guard.
 - **Silence wards:** a warded creature shows a small "no silence" mark; when a silencing move is announced, warded targets show that mark instead of the crossed-out Knack chip.
+- **Talent conditions** (panel 3): a chip that lights while its condition holds and updates as creatures fall (Shoulder to Shoulder with its 0 to 2 count, Odd One Out, Edge-walker, Front-liner); counters for Slow Burn (the round and its bonus) and for rhythms (pips); once-per-fight talents lit until spent, then grey; a notch on the boss HP bar for Cull and Finisher, drawn only when a creature on the board has them; a small "fresh" spark on a mark added since the boss's last turn (Quick Draw); an arrow on a Flank Guard's chip toward the side it covers. The Talent Book previews whether each condition holds in the current placement.
 - **Talents on the card:** stat talents fold into the stat numbers with a small dot; only talents that change behaviour (Unflappable, Second Wind, First Strike, Big Finish) get a chip.
 - **Text:** Knack text at most two lines on a 390 px card, keywords as chips, reach and heal shapes as tiny grid icons. Intent, formulas and rule numbers never appear in the game.
 

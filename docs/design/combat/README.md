@@ -1,6 +1,6 @@
 # Combat v2: the rework
 
-Status: **proposal under iteration** (v0.6, 2026-10-26; second panel done: Knacks for every species and combat talents). Nothing here is shipped. The shipped rules are still `docs/design/combat-rules.md` and `packages/engine`.
+Status: **proposal under iteration** (v0.7, 2026-10-28; third panel done: the talent library). Nothing here is shipped. The shipped rules are still `docs/design/combat-rules.md` and `packages/engine`.
 
 ## North Star
 
