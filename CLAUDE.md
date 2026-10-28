@@ -17,6 +17,7 @@ Read this file first. Design decisions live in `docs/design/` (start with `decis
 ### Agent roles
 
 - The **lead agent** (Opus) plans, splits work into small tasks, delegates, and **reviews every change** for correctness, security and consistency with this file before it goes into a PR.
+  - **UI review checks reuse.** Go through the implementer's reuse list: for each part built new or drawn a second way, name the row of the `docs/design/ux-patterns.md` lookup table it should use, or say why none fits. Screenshot every way into a changed flow (the bag and the item card, say), not only the main one. (Retro 2026-10-28: a second creature picker, custom worn rows and a new check mark got past review; the report named the second wrapper.)
 - `.claude/agents/implementer.md` (Sonnet): code and tests.
 - `.claude/agents/researcher.md` (Sonnet): read-only web/docs research. No shell, no write access, by design.
 - `.claude/agents/helper.md` (Haiku): boilerplate, fixtures, content data entry, doc checks.
