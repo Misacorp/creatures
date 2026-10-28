@@ -3,7 +3,7 @@
  * id is a style a stylesheet selects with `:root[data-look='<id>']`. Add an id here to offer it in the workbench's
  * `GameScreens` page and in `scripts/screens.mjs`. Dev tooling only: the shipped game never sets a look.
  */
-export const LOOKS = ['current', 'arcade', 'hearth'] as const;
+export const LOOKS = ['current', 'arcade', 'hearth', 'quest'] as const;
 
 export type LookId = (typeof LOOKS)[number];
 
