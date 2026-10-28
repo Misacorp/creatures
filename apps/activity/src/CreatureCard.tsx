@@ -12,10 +12,9 @@ import {
 import { creatureNeeds, type Need } from './creature-needs';
 import type { CardActions } from './CreaturePage';
 import { CreatureHead } from './CreatureHead';
-import { CardMedals, CardRibbons, type RibbonTone } from './CreatureHonours';
+import { CardMedals, CardRibbons } from './CreatureHonours';
 import { experienceLabel } from './CreatureProgress';
 import { creatureName } from './game';
-import type { MedalCounts } from './games-types';
 import type { GearState } from './gear-types';
 import { gearName, itemLabel, slotName } from './gear-view';
 import { ItemThumb } from './GearArt';
@@ -31,7 +30,8 @@ import { XpTrack, type XpSize } from './ui/XpTrack';
  * ribbon, the evolution, a waiting catch to answer or a talent slot to fill). Tapping anywhere else on the
  * card opens the creature's page (`CreaturePage`): the card handles the click, and the name is a real button
  * for the keyboard and screen readers. The gear icons and the talents open the page on their part. The
- * server decides what is ready; the card only shows it.
+ * ribbons it holds hang behind the card and its Valley Games medals sit over its top edge (`CreatureHonours`,
+ * decoration only). The server decides what is ready; the card only shows it.
  */
 export function CreatureCard({
   creature,
@@ -44,7 +44,6 @@ export function CreatureCard({
   onAnswerCatch,
   onOpen,
   xpSize,
-  honours,
 }: {
   creature: Creature;
   state: GameState;
@@ -61,11 +60,6 @@ export function CreatureCard({
   onOpen: (focus: PageFocus) => void;
   /** A look of the experience bar to compare (the workbench); the game uses the default. */
   xpSize?: XpSize | undefined;
-  /**
-   * The workbench's variation of the ribbons (strips behind the card) and the Valley Games medals (small, top
-   * right, over the top edge): left out, the card shows neither (the list does not have the medals yet).
-   */
-  honours?: { medals: MedalCounts; tone: RibbonTone } | undefined;
 }) {
   const domId = cardDomId(creature.id);
   const nameId = `${domId}-name`;
@@ -91,23 +85,10 @@ export function CreatureCard({
     }
   }
 
-  const xpTrack = (
-    <XpTrack
-      level={creature.level}
-      value={creature.exp}
-      max={creature.expNeeded ?? 1}
-      top={creature.expNeeded === null}
-      label={experienceLabel(creature)}
-      text={xpWords(creature)}
-      levelEntry="level"
-      size={xpSize}
-    />
-  );
-
   const classes = ['card-item', 'creature-card', 'focused', 'pix-panel'];
   if (found) classes.push('found');
   if (current) classes.push('current');
-  if (honours !== undefined && creature.ribbons > 0) classes.push('has-ribbons');
+  if (creature.ribbons > 0) classes.push('has-ribbons');
   return (
     <li
       id={domId}
@@ -120,8 +101,8 @@ export function CreatureCard({
         if (!clickedButton(event.target, event.currentTarget)) onOpen(null);
       }}
     >
-      {honours !== undefined && <CardRibbons creature={creature} tone={honours.tone} />}
-      {honours !== undefined && <CardMedals medals={honours.medals} />}
+      <CardRibbons creature={creature} />
+      <CardMedals creature={creature} />
       <CreatureHead
         creature={creature}
         state={state}
@@ -130,25 +111,32 @@ export function CreatureCard({
           onOpen(null);
         }}
         corner={
-          <>
-            {canLounge(creature, state) && (
-              <button
-                type="button"
-                class="cc-lounge"
-                disabled={busy}
-                aria-label={`Lounge ${creatureName(creature)}`}
-                title="Lounge"
-                onClick={() => {
-                  actions.onLounge(creature);
-                }}
-              >
-                <ArmchairIcon />
-              </button>
-            )}
-          </>
+          canLounge(creature, state) ? (
+            <button
+              type="button"
+              class="cc-lounge"
+              disabled={busy}
+              aria-label={`Lounge ${creatureName(creature)}`}
+              title="Lounge"
+              onClick={() => {
+                actions.onLounge(creature);
+              }}
+            >
+              <ArmchairIcon />
+            </button>
+          ) : undefined
         }
       />
-      {xpTrack}
+      <XpTrack
+        level={creature.level}
+        value={creature.exp}
+        max={creature.expNeeded ?? 1}
+        top={creature.expNeeded === null}
+        label={experienceLabel(creature)}
+        text={xpWords(creature)}
+        levelEntry="level"
+        size={xpSize}
+      />
       <div class="cc-kit">
         <ul class="cc-gear" aria-label="Gear">
           {GEAR_SLOTS.map((slot) => {

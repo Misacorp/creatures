@@ -87,6 +87,11 @@
       "expNeeded": 825,
       "waiting": false,
       "ribbons": 1,
+      "medals": {
+        "gold": 0,
+        "silver": 0,
+        "bronze": 0
+      },
       "nextUnlock": {
         "level": 20,
         "name": "Silver Ribbon"
@@ -182,6 +187,11 @@
       "expNeeded": 825,
       "waiting": false,
       "ribbons": 1,
+      "medals": {
+        "gold": 0,
+        "silver": 0,
+        "bronze": 0
+      },
       "nextUnlock": {
         "level": 20,
         "name": "Silver Ribbon"
@@ -275,6 +285,11 @@
       "expNeeded": 825,
       "waiting": false,
       "ribbons": 1,
+      "medals": {
+        "gold": 0,
+        "silver": 0,
+        "bronze": 0
+      },
       "nextUnlock": {
         "level": 20,
         "name": "Silver Ribbon"
@@ -374,6 +389,11 @@
       "expNeeded": 825,
       "waiting": false,
       "ribbons": 0,
+      "medals": {
+        "gold": 0,
+        "silver": 0,
+        "bronze": 0
+      },
       "nextUnlock": {
         "level": 20,
         "name": "Silver Ribbon"

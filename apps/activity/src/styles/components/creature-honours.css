@@ -1,7 +1,12 @@
 /*
-  A creature's honours on its card (`CreatureHonours`, a workbench variation): its ribbons as strips hanging
-  from the card's top edge behind everything, and its Valley Games medals small at the top right.
+  A creature's honours on its card (`CreatureHonours`): its ribbons as muted strips hanging from the card's
+  top edge behind everything, and its Valley Games medals small, pinned over the top edge at the right.
 */
+
+/* Room between the rows of cards for the medals pinned over a card's top edge. */
+.creature-cards {
+  row-gap: 1rem;
+}
 
 /* The card draws its own layer, so the strips sit above its panel and below all of its content. */
 .creature-card.has-ribbons {
@@ -14,7 +19,7 @@
 */
 .cc-ribbons {
   --ribbon-gap: 0.5rem;
-  --ribbon-fold: 7px;
+  --ribbon-fold: 4px;
 
   position: absolute;
   top: calc(var(--ribbon-fold) * -1);
@@ -29,19 +34,25 @@
 /*
   A strip of cloth with a light outer edge and a dark line inside it (hard stops, so the edges stay sharp),
   cut to a swallowtail at the bottom. It starts a little above the card, as if hung over its top edge, with
-  its corners cut (the card's border stays under it).
+  its corners cut and that part a little lighter (the card's border stays under it).
 */
 .cc-ribbon {
   width: 1.25rem;
   height: calc(var(--ribbon-length) + var(--ribbon-fold));
-  background: linear-gradient(
-    90deg,
-    var(--ribbon-light-shown) 0 2px,
-    var(--ribbon-line-shown) 2px 3px,
-    var(--ribbon-cloth-shown) 3px calc(100% - 3px),
-    var(--ribbon-line-shown) calc(100% - 3px) calc(100% - 2px),
-    var(--ribbon-light-shown) calc(100% - 2px)
-  );
+  background:
+    linear-gradient(
+      180deg,
+      rgb(255 255 255 / 22%) 0 var(--ribbon-fold),
+      transparent var(--ribbon-fold)
+    ),
+    linear-gradient(
+      90deg,
+      var(--ribbon-light-shown) 0 2px,
+      var(--ribbon-line-shown) 2px 3px,
+      var(--ribbon-cloth-shown) 3px calc(100% - 3px),
+      var(--ribbon-line-shown) calc(100% - 3px) calc(100% - 2px),
+      var(--ribbon-light-shown) calc(100% - 2px)
+    );
   clip-path: polygon(
     2px 0,
     calc(100% - 2px) 0,
@@ -52,25 +63,9 @@
     0 2px
   );
 
-  --ribbon-light-shown: color-mix(in srgb, var(--ribbon-light) var(--ribbon-mix), var(--dusk-2));
-  --ribbon-line-shown: color-mix(in srgb, var(--ribbon-line) var(--ribbon-mix), var(--dusk-2));
-  --ribbon-cloth-shown: color-mix(in srgb, var(--ribbon-cloth) var(--ribbon-mix), var(--dusk-2));
-}
-
-/*
-  How strongly the ribbons show, to compare in the workbench: each colour is mixed with the card's panel
-  colour, so the strips fade into the card and their edges stay sharp.
-*/
-.cc-ribbons.is-bright {
-  --ribbon-mix: 100%;
-}
-
-.cc-ribbons.is-muted {
-  --ribbon-mix: 55%;
-}
-
-.cc-ribbons.is-faint {
-  --ribbon-mix: 35%;
+  --ribbon-light-shown: color-mix(in srgb, var(--ribbon-light) 55%, var(--dusk-2));
+  --ribbon-line-shown: color-mix(in srgb, var(--ribbon-line) 55%, var(--dusk-2));
+  --ribbon-cloth-shown: color-mix(in srgb, var(--ribbon-cloth) 55%, var(--dusk-2));
 }
 
 .cc-ribbon.is-gold {

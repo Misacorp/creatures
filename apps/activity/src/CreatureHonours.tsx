@@ -1,20 +1,16 @@
 import type { Creature } from './api';
-import type { GamesMedal, MedalCounts } from './games-types';
+import type { GamesMedal } from './games-types';
 import { Sprite } from './sprites/Sprite';
 import type { SpriteDef } from './sprites/sprite-data';
 
 /**
- * A creature's honours on its card, a workbench variation (Misa, 2026-10-28): its ribbons as strips hanging
+ * A creature's honours on its card (Misa, 2026-10-28; decisions.md): its ribbons as muted strips hanging
  * from the card's top edge behind everything, and its Valley Games medals small, pinned over the card's top
- * edge at the right, with the count on their face. Decoration only: hidden from screen readers (the page says the same in words), no
- * words drawn.
+ * edge at the right, with the count on their face. Decoration only: hidden from screen readers (the page
+ * says the same in words), no words drawn.
  */
 
 type RibbonKind = 'gold' | 'silver' | 'bronze';
-
-/** How strongly the ribbons show, to compare in the workbench (their colours mixed into the card's panel). */
-export const RIBBON_TONES = ['bright', 'muted', 'faint'] as const;
-export type RibbonTone = (typeof RIBBON_TONES)[number];
 
 /** The ribbons held, highest first: 1 Bronze, 2 Silver and Bronze, 3 Gold, Silver and Bronze. */
 export function ribbonsHeld(ribbons: number): RibbonKind[] {
@@ -26,17 +22,11 @@ export function ribbonsHeld(ribbons: number): RibbonKind[] {
 }
 
 /** The ribbons as strips behind the card's content; the higher the ribbon, the longer its strip. */
-export function CardRibbons({
-  creature,
-  tone,
-}: {
-  creature: Pick<Creature, 'ribbons'>;
-  tone: RibbonTone;
-}) {
+export function CardRibbons({ creature }: { creature: Pick<Creature, 'ribbons'> }) {
   const held = ribbonsHeld(creature.ribbons);
   if (held.length === 0) return null;
   return (
-    <span class={`cc-ribbons is-${tone}`} aria-hidden="true">
+    <span class="cc-ribbons" aria-hidden="true">
       {held.map((kind) => (
         <span key={kind} class={`cc-ribbon is-${kind}`} />
       ))}
@@ -79,9 +69,10 @@ const COINS: Readonly<Record<GamesMedal, SpriteDef>> = {
 const MEDALS: readonly GamesMedal[] = ['gold', 'silver', 'bronze'];
 
 /** The medals small, gold first; a metal it has none of is left out, and nothing at all with none. */
-export function CardMedals({ medals }: { medals: MedalCounts | undefined }) {
-  const shown = medals === undefined ? [] : MEDALS.filter((m) => medals[m] > 0);
-  if (medals === undefined || shown.length === 0) return null;
+export function CardMedals({ creature }: { creature: Pick<Creature, 'medals'> }) {
+  const { medals } = creature;
+  const shown = MEDALS.filter((m) => medals[m] > 0);
+  if (shown.length === 0) return null;
   return (
     <span class="cc-medals" aria-hidden="true">
       {shown.map((m) => (

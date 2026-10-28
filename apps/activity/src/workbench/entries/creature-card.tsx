@@ -2,7 +2,6 @@ import { useState } from 'preact/hooks';
 import { Collection } from '../../Collection';
 import { CreatureCard } from '../../CreatureCard';
 import { CreatureFinder } from '../../CreatureFinder';
-import { RIBBON_TONES, type RibbonTone } from '../../CreatureHonours';
 import { LoungeSwap } from '../../LoungeSwap';
 import type { CardActions } from '../../CreaturePage';
 import {
@@ -70,19 +69,14 @@ function xpSizeOf(value: string): XpSize | undefined {
   return XP_SIZES.find((s) => s === value);
 }
 
-function toneOf(value: string): RibbonTone {
-  return RIBBON_TONES.find((t) => t === value) ?? 'muted';
-}
-
 function CardDemo({ p }: { p: Props }) {
   if (bool(p, 'screen')) return <RosterScreen />;
   const sample = sampleCreature(kindOf(str(p, 'state')));
-  const creature = { ...sample, ribbons: num(p, 'ribbons') };
-  const medals = {
-    gold: num(p, 'gold'),
-    silver: num(p, 'silver'),
-    bronze: num(p, 'bronze'),
-    pins: 0,
+  const ribbons = str(p, 'ribbons');
+  const creature = {
+    ...sample,
+    ribbons: ribbons === 'sample' ? sample.ribbons : Number(ribbons),
+    medals: { gold: num(p, 'gold'), silver: num(p, 'silver'), bronze: num(p, 'bronze') },
   };
   const waiting = bool(p, 'waitingCatch');
   const state = {
@@ -101,7 +95,6 @@ function CardDemo({ p }: { p: Props }) {
   return (
     <ul class="cards creature-cards">
       <CreatureCard
-        {...(bool(p, 'honours') ? { honours: { medals, tone: toneOf(str(p, 'ribbonTone')) } } : {})}
         creature={creature}
         state={state}
         gear={bool(p, 'gearLoaded') ? SAMPLE_GEAR : null}
@@ -132,9 +125,7 @@ const creatureCard: Entry = {
     busy: { kind: 'toggle' },
     screen: { kind: 'toggle' },
     xpSize: { kind: 'select', options: ['default', ...XP_SIZES] },
-    honours: { kind: 'toggle' },
-    ribbonTone: { kind: 'select', options: RIBBON_TONES },
-    ribbons: { kind: 'number', min: 0, max: 3 },
+    ribbons: { kind: 'select', options: ['sample', '0', '1', '2', '3'] },
     gold: { kind: 'number', min: 0, max: 99 },
     silver: { kind: 'number', min: 0, max: 99 },
     bronze: { kind: 'number', min: 0, max: 99 },
@@ -149,9 +140,7 @@ const creatureCard: Entry = {
     busy: false,
     screen: false,
     xpSize: 'default',
-    honours: false,
-    ribbonTone: 'muted',
-    ribbons: 0,
+    ribbons: 'sample',
     gold: 0,
     silver: 0,
     bronze: 0,
@@ -185,45 +174,21 @@ const creatureCard: Entry = {
     },
     {
       name: 'Honours: three ribbons, 3 gold, 12 silver and 1 bronze medal',
-      props: { state: 'top level', honours: true, ribbons: 3, gold: 3, silver: 12, bronze: 1 },
-    },
-    {
-      name: 'Honours: three ribbons, bright',
-      props: {
-        state: 'top level',
-        honours: true,
-        ribbons: 3,
-        gold: 3,
-        silver: 12,
-        bronze: 1,
-        ribbonTone: 'bright',
-      },
-    },
-    {
-      name: 'Honours: three ribbons, faint',
-      props: {
-        state: 'top level',
-        honours: true,
-        ribbons: 3,
-        gold: 3,
-        silver: 12,
-        bronze: 1,
-        ribbonTone: 'faint',
-      },
+      props: { state: 'top level', ribbons: '3', gold: 3, silver: 12, bronze: 1 },
     },
     {
       name: 'Honours: two ribbons and one gold medal',
-      props: { state: 'evolve ready', honours: true, ribbons: 2, gold: 1 },
+      props: { state: 'evolve ready', ribbons: '2', gold: 1 },
     },
     {
       name: 'Honours: one ribbon, no medals, with a gold button',
-      props: { state: 'evolve ready', honours: true, ribbons: 1 },
+      props: { state: 'evolve ready', ribbons: '1' },
     },
     {
       name: 'Honours: medals only, long nickname, lounging',
       props: {
         state: 'nickname and badges',
-        honours: true,
+        ribbons: '0',
         silver: 2,
         bronze: 14,
         lounging: true,
