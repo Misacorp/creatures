@@ -332,6 +332,8 @@ export interface Creature extends CreatureGearFields {
   waiting: boolean;
   /** Ribbons held: 0 none, 1 Bronze, 2 Silver, 3 Gold. */
   ribbons: number;
+  /** Its lifetime Valley Games medals, drawn on its card (pins are on its page). */
+  medals: CreatureMedals;
   /** What its next level brings ("Scarf" at 7); null at the top. */
   nextUnlock: { level: number; name: string } | null;
   /** The ribbon it waits for at its level, with the price; null when it is not at a gate. */
@@ -594,6 +596,19 @@ function isBusy(value: unknown): value is CreatureGearFields['busy'] {
   );
 }
 
+/** A creature's lifetime Valley Games medals by metal. */
+export interface CreatureMedals {
+  gold: number;
+  silver: number;
+  bronze: number;
+}
+
+function isCreatureMedals(value: unknown): value is CreatureMedals {
+  return (
+    isRecord(value) && isInt(value['gold']) && isInt(value['silver']) && isInt(value['bronze'])
+  );
+}
+
 function isCreature(value: unknown): value is Creature {
   if (!isRecord(value)) return false;
   const evolution = value['evolution'];
@@ -621,6 +636,7 @@ function isCreature(value: unknown): value is Creature {
     (value['expNeeded'] === null || isInt(value['expNeeded'])) &&
     typeof value['waiting'] === 'boolean' &&
     isInt(value['ribbons']) &&
+    isCreatureMedals(value['medals']) &&
     (value['nextUnlock'] === null ||
       (isRecord(value['nextUnlock']) &&
         isInt(value['nextUnlock']['level']) &&

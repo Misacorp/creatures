@@ -71,7 +71,13 @@ function xpSizeOf(value: string): XpSize | undefined {
 
 function CardDemo({ p }: { p: Props }) {
   if (bool(p, 'screen')) return <RosterScreen />;
-  const creature = sampleCreature(kindOf(str(p, 'state')));
+  const sample = sampleCreature(kindOf(str(p, 'state')));
+  const ribbons = str(p, 'ribbons');
+  const creature = {
+    ...sample,
+    ribbons: ribbons === 'sample' ? sample.ribbons : Number(ribbons),
+    medals: { gold: num(p, 'gold'), silver: num(p, 'silver'), bronze: num(p, 'bronze') },
+  };
   const waiting = bool(p, 'waitingCatch');
   const state = {
     ...SAMPLE_STATE,
@@ -119,6 +125,10 @@ const creatureCard: Entry = {
     busy: { kind: 'toggle' },
     screen: { kind: 'toggle' },
     xpSize: { kind: 'select', options: ['default', ...XP_SIZES] },
+    ribbons: { kind: 'select', options: ['sample', '0', '1', '2', '3'] },
+    gold: { kind: 'number', min: 0, max: 99 },
+    silver: { kind: 'number', min: 0, max: 99 },
+    bronze: { kind: 'number', min: 0, max: 99 },
   },
   defaults: {
     state: 'ribbon ready',
@@ -130,6 +140,10 @@ const creatureCard: Entry = {
     busy: false,
     screen: false,
     xpSize: 'default',
+    ribbons: 'sample',
+    gold: 0,
+    silver: 0,
+    bronze: 0,
   },
   presets: [
     { name: 'Ribbon ready (the gold button)', props: {} },
@@ -157,6 +171,29 @@ const creatureCard: Entry = {
     {
       name: 'XP bar look: grown (bar enlarged to the tag)',
       props: { state: 'evolve ready', xpSize: 'grown' },
+    },
+    {
+      name: 'Honours: three ribbons, 3 gold, 12 silver and 1 bronze medal',
+      props: { state: 'top level', ribbons: '3', gold: 3, silver: 12, bronze: 1 },
+    },
+    {
+      name: 'Honours: two ribbons and one gold medal',
+      props: { state: 'evolve ready', ribbons: '2', gold: 1 },
+    },
+    {
+      name: 'Honours: one ribbon, no medals, with a gold button',
+      props: { state: 'evolve ready', ribbons: '1' },
+    },
+    {
+      name: 'Honours: medals only, long nickname, lounging',
+      props: {
+        state: 'nickname and badges',
+        ribbons: '0',
+        silver: 2,
+        bronze: 14,
+        lounging: true,
+        loungeXp: 34,
+      },
     },
     {
       name: "Five hard cases (Misa's 360 px screenshot): new, Festival, long nickname, full kit, evolve",
