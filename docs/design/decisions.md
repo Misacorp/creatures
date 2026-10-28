@@ -3393,6 +3393,15 @@ Misa asked whether the next list that needs "select several and act on them" cou
 - **Nothing a player sees changed.** `InventoryGrid` only draws the items; all bag tests pass unchanged apart from class names.
 - **How agents find it:** a row in the component table of `ux-patterns.md` ("Select several things in a list and act on them"), the "Bulk actions" rule pointing at it, workbench pages for `SelectCheck` and `SelectMenu`, and `select-grid-guard.test.ts`, which fails when a multi-select list, a long press or a selection checkbox is built outside the shared files (the same idea as the wizard footer guard).
 
+### 2026-10-28: Ribbons and medals on the creature card
+
+Misa asked for a creature's ribbons and Valley Games medals on its card in the creature list: decoration only, no words, the card as small as before. He chose the look over several workbench rounds (four placements first, then this).
+
+1. **Ribbons** hang as strips from the card's top edge, behind everything on the card (`CardRibbons` in `CreatureHonours.tsx`; the card gets `isolation: isolate` and the strips `z-index: -1`, so they sit above the panel and under all content). Gold is longest, then Silver, then Bronze; the highest is on the left, with one gap to the card's edge and between strips. A creature holds the lower ribbons too, so Gold shows all three. Colours are mixed 55% into the card's panel colour ("muted": in the background but noticeable), with a light outer edge and a dark line inside it in hard stops. Each strip starts 4 px above the card, as if hung over its edge, that part a little lighter, its corners cut. Misa plans to drop ribbons from the game later; the strips go with them.
+2. **Medals** are small round pixel medals pinned over the card's top edge at the right (`CardMedals`), always three in a fixed order (gold, silver, bronze): a metal not won yet is a dark silhouette with no count, so the leftmost medal reads as the best at a glance (Misa, 2026-10-28; at first a metal with none was left out). A creature that has won no medal at all shows none. The count is on the face (at most 99 shown; Misa expects the card to be redesigned before any creature gets that far). Pins stay on the creature page only. The rows of the creature list are 16 px apart (was 12) so a medal never touches the card above.
+3. **Both are hidden from screen readers** (`aria-hidden`): the creature page says the same in words (its Ribbons row and its Valley Games medals).
+4. **Data.** `CreatureView.medals` (`{ gold, silver, bronze }`) comes from `games_creature_medals`, left-joined into the two creature reads of `collection.ts` (`CREATURE_SELECT`). The medal row is found by its primary key, so the state reads one row more only for each creature that has medals; no migration or index was needed. The read budget, query plan and day-in-the-life tests pass unchanged.
+
 ## 2026-10-28: Armour per species; talents go into the line's book automatically
 
 **Decision (Misa).**
