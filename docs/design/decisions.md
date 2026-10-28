@@ -3458,3 +3458,7 @@ Misa asked for a creature's ribbons and Valley Games medals on its card in the c
 ## 2026-10-28: A well-prepared raid team should usually win
 
 **Decision (Misa).** A well-picked team built for the week's boss should win most weekends: finding the way to beat the boss and pulling it off is the reward, and that is the player agency combat v2 is for. Unprepared rosters (the same three creatures every week) should not stand much of a chance. The lab's raid targets follow: the best focused team wins most weekends (about 85% to 100%), the classic party rarely or never, and creatures are still knocked out along the way.
+
+## 2026-10-28: Announced random attacks; dungeon clear target; the camp stays
+
+**Decision (Misa).** Every random boss attack is shown at round start, with the attack's icon on each targeted creature (players cannot stop it, but watching it come is exciting). A dungeon clear is beating the day's floor boss; with the map's agency (route, skipped fights, safe mystery options, keepsakes, the camp) a good all-round team clears over 50% of runs at depths 1 to 8, and the Undercroft is where success drops. The camp keeps today's choices (rest, swap a creature, take a keepsake; push on or head home).
