@@ -231,15 +231,16 @@ function addMired(s: State, by: Fighter): void {
 // ---------- round start ----------
 
 /**
- * Mired fades at the end of every second round, and not at all while a living creature has Clinging (panel 3, reworked
- * 2026-10-28: fading every third round instead gained under a point; each stack counts for more as well, `miredCut`). Squelch Song alone builds stacks over a fight.
+ * Mired fades at the end of every second round; while a living creature has Clinging, only every third round
+ * (Misa, 2026-10-28: one debuff creature must not hold it for the whole fight). Clinging also makes each stack
+ * count for more (`miredCut`). Squelch Song alone builds stacks over a fight.
  */
 function fadeMired(s: State): void {
   if (s.mired <= 0) return;
   const clinging = alive(s).find((f) => fx(f).clinging);
-  if (s.round % R.miredFadeEvery !== 0) return;
-  if (clinging) {
-    bump(clinging, 'clinging');
+  const every = clinging ? R.miredClingingFadeEvery : R.miredFadeEvery;
+  if (s.round % every !== 0) {
+    if (clinging && s.round % R.miredFadeEvery === 0) bump(clinging, 'clinging');
     return;
   }
   s.mired--;

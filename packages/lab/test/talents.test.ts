@@ -641,19 +641,21 @@ describe('talent hooks: debuffs', () => {
     ]);
   });
 
-  it('Clinging: Mired does not fade while it stands (up to the stack cap)', () => {
+  it('Clinging: Mired fades only every third round while it stands', () => {
     const r = song(['clinging'], {}, 6);
-    // The song adds a stack at each round start; nothing fades, so the count climbs to the cap of 5 and stays.
+    // The song adds a stack at each round start; with Clinging the fade comes at the end of rounds 3 and 6 only.
     expect(mired(r)).toEqual([
       'Mired x1',
       'Mired x2',
       'Mired x3',
+      'Mired x2',
+      'Mired x3',
       'Mired x4',
       'Mired x5',
-      'Mired x5',
+      'Mired x4',
     ]);
-    // It held the fade back at the end of rounds 2, 4 and 6.
-    expect(r.fighters[0]?.fires['clinging']).toBe(3);
+    // It held back the base fade at the end of rounds 2 and 4.
+    expect(r.fighters[0]?.fires['clinging']).toBe(2);
   });
 
   it('Clinging: each Mired stack takes more off the boss’s damage while it stands', () => {

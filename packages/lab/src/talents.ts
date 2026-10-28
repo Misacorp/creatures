@@ -323,10 +323,10 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'clinging',
       name: 'Clinging',
-      text: '{Mired} does not fade while it stands, and each stack counts for half as much again.',
+      text: 'While it stands, {Mired} fades only every third round, and each stack counts for half as much again.',
       roles: ['guard', 'support'],
       intent:
-        'Mire only: the v2 form of the shipped "lasts more turns"; one creature can hold a debuff for the team. Reworked (2026-10-28): fading every third round instead of every second gained under a point, so the debuff now stays until the fight ends, and its stacks count for half as much again (the per-stack cut is 4.5% instead of 3%).',
+        'Mire only: the v2 form of the shipped "lasts more turns"; one creature can hold a debuff for the team. Reworked (2026-10-28): slower fading alone gained under a point, so its stacks also count for half as much again (4.5% instead of 3%); it still fades, every third round, so one creature cannot hold the debuff for the whole fight (Misa).',
       fx: { clinging: true },
     }),
     // Support talents.

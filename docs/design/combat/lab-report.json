@@ -3030,18 +3030,18 @@
   },
   "guard/clinging": {
    "forms": 2,
-   "withScore": 75.3,
+   "withScore": 75,
    "withoutScore": 73.5,
-   "gain": 1.75,
-   "gainPercent": 2.4,
+   "gain": 1.52,
+   "gainPercent": 2.1,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.79,
+   "koWith": 0.8,
    "koWithout": 0.88,
-   "holdsNatural": 0.93,
+   "holdsNatural": 0.92,
    "holdsRow": 0.15,
    "best": "grudge",
-   "bestPercent": 11.1
+   "bestPercent": 9.6
   },
   "support/hardy": {
    "forms": 7,
@@ -3195,13 +3195,13 @@
   },
   "support/clinging": {
    "forms": 2,
-   "withScore": 71.5,
+   "withScore": 71.4,
    "withoutScore": 68.2,
-   "gain": 3.33,
-   "gainPercent": 4.9,
+   "gain": 3.23,
+   "gainPercent": 4.7,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 1.09,
+   "koWith": 1.1,
    "koWithout": 1.3,
    "holdsNatural": 1,
    "holdsRow": 1,
@@ -3425,7 +3425,7 @@
    },
    {
     "card": "clean-scales",
-    "share": 28.1,
+    "share": 26.9,
     "talents": "ancientshell: Owner's Mark, hearthshell: Stubborn, bloomback: Rally Cry, tidewing: Owner's Mark, tempestray: Quick Draw, wickat: Steady Rhythm, aurorix: Bright Boost, pyrelynx: Steady Rhythm, squelch: Clinging"
    },
    {
@@ -3435,7 +3435,7 @@
    },
    {
     "card": "elusive",
-    "share": 32.4,
+    "share": 31.8,
     "talents": "ohmouse: Odd One Out, kilnmole: Hardy, halcyray: Unbothered, solmane: Owner's Mark, coralynx: First Pounce, tidewing: Owner's Mark, tempestray: Quick Draw, ashmole: Bright Boost, wickat: Owner's Mark, squelch: Clinging, croakmire: Bright Boost, geyserpup: First Pounce"
    },
    {
@@ -3455,12 +3455,12 @@
    },
    {
     "card": "grudge",
-    "share": 26.2,
-    "talents": "wickat: Owner's Mark, ancientshell: Owner's Mark, gaiadrake: Opportunist, croakmire: Clinging, fogwyrm: Catch Breath, voltaro: Momentum, bogwarden: Brace, geyserpup: Edge-walker, magmole: Bright Boost, pyrelynx: Steady Rhythm"
+    "share": 25.8,
+    "talents": "wickat: Owner's Mark, ancientshell: Owner's Mark, gaiadrake: Opportunist, croakmire: Bright Boost, fogwyrm: Catch Breath, voltaro: Deep Ink, bogwarden: Brace, geyserpup: Edge-walker, magmole: Bright Boost, pyrelynx: Steady Rhythm"
    },
    {
     "card": "great-wave",
-    "share": 18.8,
+    "share": 18.7,
     "talents": "hearthshell: Stubborn, ancientshell: Rally Cry, bogwarden: Brace, croakmire: Clinging, bloomback: Rally Cry, aurorix: Bright Boost, ohmouse: Shoulder to Shoulder, tidewing: Edge-walker, zipmouse: none, stormray: Quick Draw"
    },
    {
@@ -3475,8 +3475,8 @@
    },
    {
     "card": "fizzle",
-    "share": 15.4,
-    "talents": "ohmouse: Odd One Out, solmane: Catch Breath, bogwarden: Brace, ancientshell: Rally Cry, pyrelynx: Steady Rhythm, bloomback: none, croakmire: Heavy Hand, coralynx: Odd One Out, voltaro: Odd One Out, tidewing: First Pounce, wickat: Owner's Mark"
+    "share": 17.1,
+    "talents": "ohmouse: Odd One Out, solmane: Owner's Mark, bogwarden: Brace, ancientshell: Owner's Mark, pyrelynx: Steady Rhythm, bloomback: none, croakmire: Clinging, coralynx: Odd One Out, voltaro: Odd One Out, tidewing: First Pounce, wickat: Owner's Mark"
    },
    {
     "card": "shake-it-off",
@@ -3510,7 +3510,7 @@
   },
   "casual": {
    "gauntlet": 7,
-   "raid": 8.8,
+   "raid": 8.7,
    "gauntletFitOnly": 7.4,
    "byCard": {
     "plain": 6.4,

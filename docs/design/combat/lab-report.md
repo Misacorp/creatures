@@ -191,22 +191,22 @@ Twelve random forms at random levels (8 to 25, stage 1 forms at their cap), with
 | No card | ancientshell (Living Shelter), tidewing (Lead the Way), tempestray (Leave a Trail) | 69.0 | 85.7 | +19.5% | ancientshell: Finisher, tidewing: Owner's Mark, tempestray: Quick Draw | +26.6% | +16.8% |
 | Thick Hide | ancientshell (Steady Mark), tidewing (Lead the Way), tempestray (no Knack) | 69.2 | 87.3 | +20.8% | ancientshell: Finisher, tidewing: Owner's Mark, tempestray: Quick Draw | +30.4% | +10.4% |
 | Stone Skin | bloomback (All at Once), tempestray (Leave a Trail), hearthshell (Draw Fire) | 68.3 | 85.5 | +20.0% | bloomback: Finisher, tempestray: Slow Burn, hearthshell: Odd One Out | +19.9% | +7.7% |
-| Clean Scales | tidewing (Steady Mark), sunfawn (Curl Up), tempestray (no Knack) | 62.6 | 84.0 | +25.5% | tidewing: Owner's Mark, sunfawn: Rally Cry, tempestray: Quick Draw | +28.1% | +11.6% |
+| Clean Scales | tidewing (Steady Mark), sunfawn (Curl Up), tempestray (no Knack) | 62.6 | 84.0 | +25.5% | tidewing: Owner's Mark, sunfawn: Rally Cry, tempestray: Quick Draw | +26.9% | +11.6% |
 | Reflective Hide | tempestray (Detonate), bloomback (All at Once), hearthshell (Draw Fire) | 75.2 | 86.1 | +12.7% | tempestray: Edge-walker, bloomback: Finisher, hearthshell: none | +16.7% | +4.2% |
-| Elusive | bloomback (Detonate), tidewing (Lead the Way), tempestray (Leave a Trail) | 60.8 | 79.1 | +23.1% | bloomback: Stubborn, tidewing: Owner's Mark, tempestray: Quick Draw | +32.4% | +12.0% |
+| Elusive | bloomback (Detonate), tidewing (Lead the Way), tempestray (Leave a Trail) | 60.8 | 79.1 | +23.1% | bloomback: Stubborn, tidewing: Owner's Mark, tempestray: Quick Draw | +31.8% | +12.0% |
 | Bramble Bind | ancientshell (no Knack), lanternfin (Lantern Glow), tempestray (Twin Strike) | 72.5 | 86.2 | +15.9% | ancientshell: Finisher, lanternfin: Odd One Out, tempestray: Edge-walker | +15.8% | +5.1% |
 | Wither | voltaro (Zoom), kilnmole (no Knack), bloomback (no Knack) | 69.3 | 89.1 | +22.2% | voltaro: Deep Ink, kilnmole: Brace, bloomback: Opportunist | +23.3% | +8.9% |
 | Payoff Hunter | ancientshell (Steady Mark), tidewing (Circle Round), tempestray (Leave a Trail) | 67.3 | 86.0 | +21.7% | ancientshell: Finisher, tidewing: Owner's Mark, tempestray: Quick Draw | +18.1% | +14.7% |
-| Grudge | bloomback (Leave a Trail), fogwyrm (Hide in Mist), voltaro (Zigzag) | 67.7 | 85.3 | +20.6% | bloomback: Finisher, fogwyrm: Catch Breath, voltaro: Momentum | +26.2% | +12.0% |
-| Great Wave | tempestray (Detonate), sunfawn (Curl Up), fogwyrm (Wide Reach) | 74.8 | 87.7 | +14.6% | tempestray: Momentum, sunfawn: none, fogwyrm: Shoulder Charge | +18.8% | +9.4% |
+| Grudge | bloomback (Leave a Trail), fogwyrm (Hide in Mist), voltaro (Zigzag) | 67.7 | 85.3 | +20.6% | bloomback: Finisher, fogwyrm: Catch Breath, voltaro: Momentum | +25.8% | +12.0% |
+| Great Wave | tempestray (Detonate), sunfawn (Curl Up), fogwyrm (Wide Reach) | 74.8 | 87.7 | +14.6% | tempestray: Momentum, sunfawn: none, fogwyrm: Shoulder Charge | +18.7% | +9.4% |
 | Swarm | tidewing (Lead the Way), tempestray (Detonate), thornbuck (Wide Reach) | 69.6 | 86.8 | +19.8% | tidewing: Momentum, tempestray: Momentum, thornbuck: none | +13.2% | +15.7% |
 | Crusher | voltaro (Zoom), fogwyrm (Thick Fog), gaiadrake (no Knack) | 63.5 | 82.8 | +23.3% | voltaro: Momentum, fogwyrm: Catch Breath, gaiadrake: Finisher | +34.8% | +10.0% |
-| Fizzle | hearthshell (Hearth), voltaro (Zigzag), bloomback (Leave a Trail) | 71.4 | 86.2 | +17.2% | hearthshell: Shoulder Charge, voltaro: Momentum, bloomback: Finisher | +15.4% | +7.9% |
+| Fizzle | hearthshell (Hearth), voltaro (Zigzag), bloomback (Leave a Trail) | 71.4 | 86.2 | +17.2% | hearthshell: Shoulder Charge, voltaro: Momentum, bloomback: Finisher | +17.1% | +7.9% |
 | Shake It Off | bloomback (All at Once), voltaro (Zigzag), zipmouse (Double Mark) | 68.1 | 78.3 | +13.0% | bloomback: Rally Cry, voltaro: Shoulder to Shoulder, zipmouse: none | +29.9% | +3.5% |
 
 **Average share, best-fit talents:** gauntlet +19.3% (pass), raid +23.3% (pass); target about 20% (17% to 23%).
 
-**Casual roster, random talents** (the best lines of 4 random rosters on 4 cards, each with 8 random draws; No card +6.4%, Thick Hide +9.6%, Payoff Hunter +4.2%, Elusive +7.9%): gauntlet +7.0% (FAIL), and the best raid boards with a random talent per form +8.8% (FAIL); at least 10%. With a random talent that fits the creature's role (no idle rolls) the casual gauntlet gains +7.4%; the same best gauntlet teams with random talents on all cards: +10.0% (column above).
+**Casual roster, random talents** (the best lines of 4 random rosters on 4 cards, each with 8 random draws; No card +6.4%, Thick Hide +9.6%, Payoff Hunter +4.2%, Elusive +7.9%): gauntlet +7.0% (FAIL), and the best raid boards with a random talent per form +8.7% (FAIL); at least 10%. With a random talent that fits the creature's role (no idle rolls) the casual gauntlet gains +7.4%; the same best gauntlet teams with random talents on all cards: +10.0% (column above).
 
 **Team share check: FAIL.**
 
@@ -265,7 +265,7 @@ Twelve random forms at random levels (8 to 25, stage 1 forms at their cap), with
 | guard | Catch Breath | 77.3 | 73.8 | +3.5 | +4.8% | - | - | 0.53 / 0.93 | 90% | 18% | Great Wave +11.3 (+17%) |  |
 | guard | Unbothered | 73.2 | 71.5 | +1.7 | +2.4% | - | - | 0.99 / 1.15 | 7% | 0% | Elusive +5.1 (+8%) |  |
 | guard | Heavy Hand | 75.1 | 73.5 | +1.6 | +2.2% | - | - | 0.81 / 0.88 | 99% | 27% | Grudge +6.8 (+10%) |  |
-| guard | Clinging | 75.3 | 73.5 | +1.8 | +2.4% | - | - | 0.79 / 0.88 | 93% | 15% | Grudge +7.6 (+11%) |  |
+| guard | Clinging | 75.0 | 73.5 | +1.5 | +2.1% | - | - | 0.80 / 0.88 | 92% | 15% | Grudge +6.5 (+10%) |  |
 | support | Hardy | 70.9 | 68.8 | +2.2 | +3.1% | - | - | 1.15 / 1.31 | always | always | Great Wave +8.9 (+18%) |  |
 | support | Shoulder to Shoulder | 73.1 | 73.1 | +0.0 | +0.0% | +7.9% | +7.9% | 1.00 / 1.00 | 0% | 58% | none |  |
 | support | Odd One Out | 72.0 | 70.4 | +1.6 | +2.3% | +5.9% | +1.7% | 1.20 / 1.26 | 75% | 64% | Grudge +5.3 (+11%) |  |
@@ -276,7 +276,7 @@ Twelve random forms at random levels (8 to 25, stage 1 forms at their cap), with
 | support | Catch Breath | 72.8 | 68.9 | +4.0 | +5.8% | - | - | 0.91 / 1.28 | 60% | 0% | Great Wave +13.8 (+27%) |  |
 | support | Unbothered | 71.1 | 68.6 | +2.5 | +3.7% | - | - | 1.13 / 1.28 | 6% | 0% | Great Wave +8.5 (+18%) |  |
 | support | Heavy Hand | 70.3 | 68.2 | +2.1 | +3.1% | - | - | 1.27 / 1.30 | 100% | 100% | Great Wave +11.9 (+25%) |  |
-| support | Clinging | 71.5 | 68.2 | +3.3 | +4.9% | - | - | 1.09 / 1.30 | 100% | 100% | Great Wave +14.0 (+30%) |  |
+| support | Clinging | 71.4 | 68.2 | +3.2 | +4.7% | - | - | 1.10 / 1.30 | 100% | 100% | Great Wave +14.0 (+30%) |  |
 | support | Bright Boost | 71.0 | 68.0 | +2.9 | +4.3% | - | - | 1.21 / 1.33 | 100% | 100% | Crusher +9.0 (+15%) |  |
 | support | Kindred Boost | 68.8 | 68.8 | +0.0 | +0.0% | +5.9% | +1.6% | 1.31 / 1.31 | 0% | 13% | none |  |
 | support | Triage | 78.2 | 74.0 | +4.2 | +5.7% | - | - | 0.65 / 1.02 | 100% | 25% | Grudge +14.4 (+24%) |  |
@@ -317,6 +317,7 @@ About 95 characters fit two lines on a 390 px card (an estimate; check in the wo
 - Brace: 106
 - Feed the Marks: 100
 - Sunbeam: 100
+- Clinging: 98
 - Clear Skies: 96
 
 ## Raid weekend with attrition (3 stages of 8 rounds, HP carries, knocked-out creatures stay out)

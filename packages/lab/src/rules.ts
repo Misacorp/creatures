@@ -40,6 +40,8 @@ export const LAB_RULES = {
   miredMaxStacks: 5,
   /** Mired fades: one stack at the end of every second round; with Clinging on a living creature, never (panel 3, reworked 2026-10-28). */
   miredFadeEvery: 2,
+  /** While a living creature has Clinging, Mired fades only every this many rounds. */
+  miredClingingFadeEvery: 3,
   /** Stubborn (Hold On): a hit that would knock it out leaves it at 1 HP or at this share of its Max HP, whichever is more. */
   holdOnLeaveBp: 4_000,
   /** "The boss is low" for Finisher: its HP is below this share of its full HP. */
