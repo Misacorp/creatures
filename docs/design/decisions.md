@@ -3454,3 +3454,7 @@ Misa asked for a creature's ribbons and Valley Games medals on its card in the c
 - **The dungeon** shows its encounters up front but sends many different foes, so it asks for an all-round team. Dungeons are tough, so the camp between rooms matters. The Undercroft stays a mystery: a push-your-luck choice players may skip.
 - **Every mechanic matters somewhere**: each Knack family, talent kind, keyword, armour, silence, Mired, marks, Charged moves, Taunt, intercept and cover is the answer (or the problem) for at least one boss or foe.
 - **Spiky is fine**: perfect balance is impossible; fun swings are welcome.
+
+## 2026-10-28: A well-prepared raid team should usually win
+
+**Decision (Misa).** A well-picked team built for the week's boss should win most weekends: finding the way to beat the boss and pulling it off is the reward, and that is the player agency combat v2 is for. Unprepared rosters (the same three creatures every week) should not stand much of a chance. The lab's raid targets follow: the best focused team wins most weekends (about 85% to 100%), the classic party rarely or never, and creatures are still knocked out along the way.
