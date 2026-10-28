@@ -12,7 +12,7 @@ import {
 import { creatureNeeds, type Need } from './creature-needs';
 import type { CardActions } from './CreaturePage';
 import { CreatureHead } from './CreatureHead';
-import { CreatureHonours, type HonoursLook } from './CreatureHonours';
+import { CardMedals, CardRibbons } from './CreatureHonours';
 import { experienceLabel } from './CreatureProgress';
 import { creatureName } from './game';
 import type { MedalCounts } from './games-types';
@@ -44,8 +44,7 @@ export function CreatureCard({
   onAnswerCatch,
   onOpen,
   xpSize,
-  medals,
-  honoursLook,
+  honours,
 }: {
   creature: Creature;
   state: GameState;
@@ -62,10 +61,11 @@ export function CreatureCard({
   onOpen: (focus: PageFocus) => void;
   /** A look of the experience bar to compare (the workbench); the game uses the default. */
   xpSize?: XpSize | undefined;
-  /** The creature's Valley Games medals (the workbench's variations; the list does not have them yet). */
-  medals?: MedalCounts | undefined;
-  /** Where the ribbons and medals sit, to compare (the workbench); left out, the card shows none. */
-  honoursLook?: HonoursLook | undefined;
+  /**
+   * The workbench's variation of the ribbons (strips behind the card) and the Valley Games medals (small, top
+   * right): left out, the card shows neither (the list does not have the medals yet).
+   */
+  honours?: { medals: MedalCounts } | undefined;
 }) {
   const domId = cardDomId(creature.id);
   const nameId = `${domId}-name`;
@@ -91,11 +91,6 @@ export function CreatureCard({
     }
   }
 
-  const honours = (look: HonoursLook) =>
-    honoursLook === look ? (
-      <CreatureHonours creature={creature} medals={medals} look={look} />
-    ) : null;
-
   const xpTrack = (
     <XpTrack
       level={creature.level}
@@ -112,6 +107,7 @@ export function CreatureCard({
   const classes = ['card-item', 'creature-card', 'focused', 'pix-panel'];
   if (found) classes.push('found');
   if (current) classes.push('current');
+  if (honours !== undefined && creature.ribbons > 0) classes.push('has-ribbons');
   return (
     <li
       id={domId}
@@ -124,18 +120,17 @@ export function CreatureCard({
         if (!clickedButton(event.target, event.currentTarget)) onOpen(null);
       }}
     >
-      {honours('pinned')}
+      {honours !== undefined && <CardRibbons creature={creature} />}
       <CreatureHead
         creature={creature}
         state={state}
         nameId={nameId}
-        overPortrait={honours('portrait')}
         onOpen={() => {
           onOpen(null);
         }}
         corner={
           <>
-            {honours('name')}
+            {honours !== undefined && <CardMedals medals={honours.medals} />}
             {canLounge(creature, state) && (
               <button
                 type="button"
@@ -153,14 +148,7 @@ export function CreatureCard({
           </>
         }
       />
-      {honoursLook === 'xp' ? (
-        <div class="cc-xp-row">
-          {xpTrack}
-          {honours('xp')}
-        </div>
-      ) : (
-        xpTrack
-      )}
+      {xpTrack}
       <div class="cc-kit">
         <ul class="cc-gear" aria-label="Gear">
           {GEAR_SLOTS.map((slot) => {

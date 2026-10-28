@@ -2,7 +2,6 @@ import { useState } from 'preact/hooks';
 import { Collection } from '../../Collection';
 import { CreatureCard } from '../../CreatureCard';
 import { CreatureFinder } from '../../CreatureFinder';
-import { HONOURS_LOOKS, type HonoursLook } from '../../CreatureHonours';
 import { LoungeSwap } from '../../LoungeSwap';
 import type { CardActions } from '../../CreaturePage';
 import {
@@ -69,10 +68,6 @@ function xpSizeOf(value: string): XpSize | undefined {
   return XP_SIZES.find((s) => s === value);
 }
 
-function honoursLookOf(value: string): HonoursLook | undefined {
-  return HONOURS_LOOKS.find((look) => look === value);
-}
-
 function CardDemo({ p }: { p: Props }) {
   if (bool(p, 'screen')) return <RosterScreen />;
   const sample = sampleCreature(kindOf(str(p, 'state')));
@@ -83,8 +78,6 @@ function CardDemo({ p }: { p: Props }) {
     bronze: num(p, 'bronze'),
     pins: 0,
   };
-  const looks: (HonoursLook | undefined)[] =
-    str(p, 'honours') === 'all' ? [...HONOURS_LOOKS] : [honoursLookOf(str(p, 'honours'))];
   const waiting = bool(p, 'waitingCatch');
   const state = {
     ...SAMPLE_STATE,
@@ -101,22 +94,18 @@ function CardDemo({ p }: { p: Props }) {
   };
   return (
     <ul class="cards creature-cards">
-      {looks.map((look) => (
-        <CreatureCard
-          key={look ?? 'none'}
-          medals={medals}
-          honoursLook={look}
-          creature={creature}
-          state={state}
-          gear={bool(p, 'gearLoaded') ? SAMPLE_GEAR : null}
-          busy={bool(p, 'busy')}
-          found={bool(p, 'found')}
-          actions={actions}
-          onAnswerCatch={() => undefined}
-          onOpen={() => undefined}
-          xpSize={xpSizeOf(str(p, 'xpSize'))}
-        />
-      ))}
+      <CreatureCard
+        {...(bool(p, 'honours') ? { honours: { medals } } : {})}
+        creature={creature}
+        state={state}
+        gear={bool(p, 'gearLoaded') ? SAMPLE_GEAR : null}
+        busy={bool(p, 'busy')}
+        found={bool(p, 'found')}
+        actions={actions}
+        onAnswerCatch={() => undefined}
+        onOpen={() => undefined}
+        xpSize={xpSizeOf(str(p, 'xpSize'))}
+      />
     </ul>
   );
 }
@@ -137,8 +126,8 @@ const creatureCard: Entry = {
     busy: { kind: 'toggle' },
     screen: { kind: 'toggle' },
     xpSize: { kind: 'select', options: ['default', ...XP_SIZES] },
-    honours: { kind: 'select', options: ['none', 'all', ...HONOURS_LOOKS] },
-    ribbons: { kind: 'number', min: 0, max: 2 },
+    honours: { kind: 'toggle' },
+    ribbons: { kind: 'number', min: 0, max: 3 },
     gold: { kind: 'number', min: 0, max: 99 },
     silver: { kind: 'number', min: 0, max: 99 },
     bronze: { kind: 'number', min: 0, max: 99 },
@@ -153,7 +142,7 @@ const creatureCard: Entry = {
     busy: false,
     screen: false,
     xpSize: 'default',
-    honours: 'none',
+    honours: false,
     ribbons: 0,
     gold: 0,
     silver: 0,
@@ -187,45 +176,24 @@ const creatureCard: Entry = {
       props: { state: 'evolve ready', xpSize: 'grown' },
     },
     {
-      name: 'Honours: the four placements side by side (2 ribbons, 3 gold, 12 silver, 1 bronze)',
-      props: { state: 'top level', honours: 'all', ribbons: 2, gold: 3, silver: 12, bronze: 1 },
+      name: 'Honours: three ribbons, 3 gold, 12 silver and 1 bronze medal',
+      props: { state: 'top level', honours: true, ribbons: 3, gold: 3, silver: 12, bronze: 1 },
     },
     {
-      name: 'Honours A: at the end of the name line',
-      props: { state: 'top level', honours: 'name', ribbons: 2, gold: 3, silver: 12, bronze: 1 },
+      name: 'Honours: two ribbons and one gold medal',
+      props: { state: 'evolve ready', honours: true, ribbons: 2, gold: 1 },
     },
     {
-      name: 'Honours B: pinned over the top edge',
-      props: { state: 'top level', honours: 'pinned', ribbons: 2, gold: 3, silver: 12, bronze: 1 },
+      name: 'Honours: one ribbon, no medals, with a gold button',
+      props: { state: 'evolve ready', honours: true, ribbons: 1 },
     },
     {
-      name: 'Honours C: over the portrait',
-      props: {
-        state: 'top level',
-        honours: 'portrait',
-        ribbons: 2,
-        gold: 3,
-        silver: 12,
-        bronze: 1,
-      },
-    },
-    {
-      name: 'Honours D: at the end of the experience bar',
-      props: { state: 'top level', honours: 'xp', ribbons: 2, gold: 3, silver: 12, bronze: 1 },
-    },
-    {
-      name: 'Honours: one ribbon, one gold medal (all four)',
-      props: { state: 'evolve ready', honours: 'all', ribbons: 1, gold: 1 },
-    },
-    {
-      name: 'Honours: long nickname, lounging (all four)',
+      name: 'Honours: medals only, long nickname, lounging',
       props: {
         state: 'nickname and badges',
-        honours: 'all',
-        ribbons: 2,
-        gold: 3,
-        silver: 12,
-        bronze: 1,
+        honours: true,
+        silver: 2,
+        bronze: 14,
         lounging: true,
         loungeXp: 34,
       },

@@ -119,7 +119,6 @@ export function CreatureHead({
   nameId,
   onOpen,
   corner,
-  overPortrait,
 }: {
   creature: Creature;
   state: Pick<GameState, 'loungerId' | 'loungeXp' | 'serverFirsts'>;
@@ -128,8 +127,6 @@ export function CreatureHead({
   onOpen?: (() => void) | undefined;
   /** The card's: a small button at the end of the name's line (the armchair of `LoungeCorner`). */
   corner?: ComponentChildren;
-  /** The card's: decoration drawn over the portrait's edges (the workbench's honours variation). */
-  overPortrait?: ComponentChildren;
 }) {
   const species = getSpecies(creature.species);
   const shinyColours = creature.shiny ? shinyPalette(creature.species) : undefined;
@@ -155,7 +152,6 @@ export function CreatureHead({
             <Sprite sprite={sparkle} scale={2} class="sparkle two" />
           </>
         )}
-        {overPortrait}
       </div>
       <div class="cc-id">
         {onOpen === undefined ? (
