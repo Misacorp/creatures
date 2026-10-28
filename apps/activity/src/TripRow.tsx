@@ -54,7 +54,7 @@ export function TripRow({
   const done = Math.floor(status.fraction * 100);
   return (
     <li class={`trip-row pix-panel${status.phase === 'ready' ? ' home' : ''}`}>
-      <div class="trip-row-main">
+      <div class="trip-row-main dr-group">
         <p class="trip-row-head">
           <b class="trip-row-name">{name}</b>
           <LengthBadge trip={trip} />

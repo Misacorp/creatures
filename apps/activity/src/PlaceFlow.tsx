@@ -150,7 +150,7 @@ function FlowFrame({ form, ...props }: PlaceFlowProps & { form: SendFormState | 
     return props.frame({
       title,
       body: (
-        <div class="place-drill" onKeyDown={keys}>
+        <div class="place-drill dr-stack" onKeyDown={keys}>
           <DrillHead title="Push on?" backLabel="to the place" onBack={toPlace} focus />
           <PushOnChoice
             goals={mode.trip.offer.goals}
@@ -172,7 +172,7 @@ function FlowFrame({ form, ...props }: PlaceFlowProps & { form: SendFormState | 
   return props.frame({
     title,
     footer: (
-      <div class="send-footer">
+      <div class="send-footer dr-stack">
         {reason !== null && (
           <p class="reason" role="status">
             {reason}

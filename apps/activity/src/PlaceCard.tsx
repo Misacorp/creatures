@@ -53,7 +53,7 @@ export function PlaceInfo({ card }: { card: DestinationCard }) {
   const normal = card.residents.filter((r) => !r.deep);
   const deep = card.residents.filter((r) => r.deep);
   return (
-    <div class="place-body">
+    <div class="place-body dr-stack">
       <p class="tags place-tags">
         {card.element === null ? (
           <Tag entry="destination">Mixed place</Tag>
@@ -76,15 +76,17 @@ export function PlaceInfo({ card }: { card: DestinationCard }) {
           <strong>{card.twist.name}:</strong> {card.twist.description}
         </p>
       )}
-      <div class="place-lives">
-        <p class="label">Lives here</p>
-        <ul class="residents" aria-label="Creatures that live here">
-          {normal.map((r) => (
-            <ResidentView key={r.species} resident={r} />
-          ))}
-        </ul>
+      <div class="place-lives dr-stack">
+        <div class="dr-group">
+          <p class="label">Lives here</p>
+          <ul class="residents" aria-label="Creatures that live here">
+            {normal.map((r) => (
+              <ResidentView key={r.species} resident={r} />
+            ))}
+          </ul>
+        </div>
         {deep.length > 0 && (
-          <>
+          <div class="dr-group">
             <p class="label">
               <GlossaryTag entry="deep-area" look="text">
                 Deeper area
@@ -96,7 +98,7 @@ export function PlaceInfo({ card }: { card: DestinationCard }) {
                 <ResidentView key={r.species} resident={r} />
               ))}
             </ul>
-          </>
+          </div>
         )}
       </div>
       {card.timeRule !== null && (

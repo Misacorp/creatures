@@ -209,13 +209,19 @@
 .trip-row .xp,
 .trip-slot .xp {
   height: 0.375rem;
+}
+
+.trip-slot .xp {
   margin: 0.375rem 0 0;
 }
 
 .trip-row .timer-state,
 .trip-slot .timer-state {
-  margin: 0.25rem 0 0;
   font-size: var(--fs-small);
+}
+
+.trip-slot .timer-state {
+  margin: 0.25rem 0 0;
 }
 
 .trip-act {

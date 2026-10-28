@@ -16,6 +16,21 @@
   justify-content: center;
 }
 
+/*
+  The one spacing scale of every drawer and sheet (ux-patterns.md, "Spacing inside a drawer or sheet"): `tight`
+  inside a group and between rows, `gap` between blocks, `action` above a button, `section` between sections
+  (a step, the card and what you do with it), `pad` at the sides and the bottom. On the root so a list that also
+  shows on a page (the creature rows) can use them too. Parts never set their own vertical margins: the stacks
+  below space them.
+*/
+:root {
+  --dr-tight: 0.25rem;
+  --dr-gap: 0.5rem;
+  --dr-action: 0.75rem;
+  --dr-section: 1rem;
+  --dr-pad: var(--drawer-pad);
+}
+
 .drawer-backdrop {
   position: absolute;
   inset: 0;
@@ -134,7 +149,7 @@ button.drawer-handle:active:not(:disabled) {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0 var(--drawer-pad) 0.25rem;
+  padding: 0 var(--dr-pad);
 }
 
 /* With the heading only spoken, the close button sits in the handle's row, at the top right. */
@@ -202,13 +217,13 @@ button.drawer-close:active:not(:disabled) {
 
 .drawer-toolbar {
   flex: none;
-  padding: 0 var(--drawer-pad);
+  padding: var(--dr-gap) var(--dr-pad) 0;
 }
 
 .drawer-body {
   flex: 1 1 auto;
   min-height: 0;
-  padding: 0.25rem var(--drawer-pad) 0.75rem;
+  padding: var(--dr-gap) var(--dr-pad) var(--dr-pad);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -216,11 +231,55 @@ button.drawer-close:active:not(:disabled) {
 .drawer-footer {
   flex: none;
   max-height: 50%;
-  padding: 0.5rem var(--drawer-pad) 0.75rem;
+  padding: var(--dr-gap) var(--dr-pad) var(--dr-pad);
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--dusk-2);
   box-shadow: inset 0 2px 0 0 var(--line);
+}
+
+/*
+  The stacks: the body, the toolbar, the footer and any `dr-stack` space their children with the scale, and a
+  `dr-group` (a name and its tags, a title and its one line) with the tight step. The first child has no space
+  above and the last none below, so the padding alone is the edge. A button, an action row or a `dr-action`
+  always has the larger step above it: a button never hugs the text. A `dr-section` (a step, the card and what
+  you do with it) has the section step above it.
+*/
+/* `:nth-child` gives these the weight of two classes, so a shared part's own margin never wins. */
+:is(.drawer-body, .drawer-toolbar, .drawer-footer, .sheet, .dr-stack, .dr-group) > :nth-child(n) {
+  margin-block: 0;
+}
+
+:is(.drawer-body, .drawer-toolbar, .drawer-footer, .sheet, .dr-stack) > :nth-child(n + 2) {
+  margin-top: var(--dr-gap);
+}
+
+.dr-group > :nth-child(n + 2) {
+  margin-top: var(--dr-tight);
+}
+
+/* An empty live region (a status line with nothing to say yet) takes no space, so it adds no step at the end. */
+:is(.drawer-body, .drawer-toolbar, .drawer-footer, .sheet, .dr-stack)
+  > :nth-child(n + 2):is([role='status'], [aria-live]):empty {
+  margin-top: 0;
+}
+
+:is(.drawer-body, .drawer-toolbar, .drawer-footer, .sheet, .dr-stack)
+  > :nth-child(n + 2).dr-section {
+  margin-top: var(--dr-section);
+}
+
+:is(.drawer-body, .drawer-toolbar, .drawer-footer, .sheet, .dr-stack)
+  > :nth-child(n + 2):is(
+    button,
+    .actions,
+    .action-row,
+    .ip-actions,
+    .item-actions,
+    .send-button,
+    .dr-action
+  ) {
+  margin-top: var(--dr-action);
 }
 
 /*

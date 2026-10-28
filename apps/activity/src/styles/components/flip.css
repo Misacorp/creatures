@@ -72,8 +72,8 @@ button.flip-btn[aria-disabled='true']:active {
 
 .drawer-flip {
   display: flex;
-  padding: 0 calc(var(--drawer-pad) + var(--px));
-  margin-bottom: 0.75rem;
+  /* The row of arrows is a row of buttons: as much air under it as between sections (the body adds the gap). */
+  padding: 0 calc(var(--dr-pad) + var(--px)) var(--dr-gap);
 }
 
 /* --- The swipe area --- */

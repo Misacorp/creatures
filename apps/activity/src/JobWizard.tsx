@@ -205,7 +205,7 @@ export function JobReadyStep({ job, busy }: { job: JobWizard; busy: boolean }) {
   const durationMs = job.durationMs ?? picked.durationMs;
   const way = job.reach?.chosen;
   return (
-    <div class="job-ready">
+    <div class="job-ready dr-stack">
       <div class="pick on job-ready-who">
         <Sprite sprite={creatureSpriteOrFallback(creature.species)} scale={2} />
         <span class="pick-text">
@@ -253,7 +253,7 @@ export function JobReachStep({
   if (reach === null) return null;
   const { preview, chosen } = reach;
   return (
-    <fieldset class="picker reach-options">
+    <fieldset class="picker reach-options dr-stack">
       <legend class="visually-hidden">How hard do you reach?</legend>
       <PreviewStatus status={reach.status} what="the odds" />
       {preview !== null && (
@@ -275,7 +275,7 @@ export function JobReachStep({
                     reach.choose(o.reach);
                   }}
                 />
-                <span class="pick-text">
+                <span class="pick-text dr-group">
                   <span class="pick-name pix">{reachName(o.reach)}</span>
                   <span class="reach-odds">{oddsText(o.oddsBp)}</span>
                   {o.unlocked ? (

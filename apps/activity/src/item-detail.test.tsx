@@ -109,7 +109,7 @@ describe('the item drawer content', () => {
     // The action is the last block of the section, in a row of its own (centred apart by the stylesheet), and red.
     const section = first(byClass(p.root, 'item-detail'));
     const last = section.childNodes[section.childNodes.length - 1] as FakeElement;
-    expect(last.getAttribute('class')).toBe('item-actions');
+    expect(last.getAttribute('class')).toContain('item-actions');
     const button = first(byName(last, 'button', 'Dismantle'));
     expect(button.getAttribute('class')).toContain('danger');
     // No marks any more: nothing says "Mark" or "Marked" on the card.

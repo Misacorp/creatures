@@ -1,8 +1,4 @@
 /* One item. */
-.item-detail {
-  margin-top: 0.5rem;
-}
-
 /*
   The item card (ItemCard.tsx), the one layout for an item's full details (the Workshop's item and the picker's
   detail panel): the image at the top left, to its right the name, a small rarity badge and the base stats (one
@@ -18,7 +14,7 @@
 .idc-head {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 0.625rem;
+  gap: var(--dr-action);
   align-items: start;
 }
 
@@ -32,7 +28,6 @@
 }
 
 .idc .idc-name {
-  margin: 0;
   font-size: var(--fs-heading);
   font-weight: 400;
   line-height: 1.05;
@@ -43,13 +38,11 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem;
-  margin: 0.25rem 0 0;
 }
 
 .idc-stats {
   display: grid;
   gap: 0.125rem;
-  margin: 0.5rem 0 0;
   padding: 0;
   color: var(--bone);
   list-style: none;
@@ -61,13 +54,11 @@
 
 .idc-divider {
   height: 0;
-  margin: 0.625rem 0 0.5rem;
   border: 0;
   border-top: 2px solid var(--line);
 }
 
 .idc .line-list {
-  margin: 0;
   gap: 0.125rem;
 }
 
@@ -85,14 +76,12 @@
   two and three pieces. The ones the wearer has are in the gear colour with a marker; the others are dimmed.
 */
 .idc-set {
-  margin: 0.625rem 0 0;
-  padding: 0.375rem 0.5rem;
+  padding: var(--dr-tight) var(--dr-gap);
   background: var(--ink);
   box-shadow: inset 0 0 0 var(--px) var(--line);
 }
 
 .idc-set-head {
-  margin: 0 0 0.25rem;
   color: var(--bone);
 }
 
@@ -221,7 +210,6 @@ button.danger {
 
 /* Where an item came from: one tap away. */
 .item-details {
-  margin-top: 0.5rem;
   font-size: var(--fs-small);
 }
 
@@ -241,7 +229,6 @@ button.danger {
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem 0.5rem;
-  margin: 0.25rem 0 0.5rem;
   padding: 0;
   list-style: none;
 }
@@ -272,7 +259,6 @@ button.danger {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 1rem;
 }
 
 .item-actions .actions {
@@ -295,19 +281,14 @@ button.danger {
 }
 
 /* The warning step is the creature list in its `show` mode; the list sits in the body, so it has no gutter. */
-.dismantle-worn .worn-list {
-  margin: 0.5rem 0;
-}
-
 /*
   The "Equip on" row of the Workshop item drawer: the label, then a trigger that looks like a dropdown (the
   wearer's sprite and name, or "Choose a creature", and a chevron). It opens the creature picker sheet.
 */
 .equip-on {
   display: flex;
-  gap: 0.75rem;
+  gap: var(--dr-action);
   align-items: center;
-  margin: 0.625rem 0 0;
 }
 
 .equip-on-label {

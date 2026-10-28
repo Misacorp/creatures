@@ -77,10 +77,6 @@
 }
 
 /* Ways to start a craft: a plain craft and the Reaches, each with its exact odds, time and cost. */
-fieldset.reach-options {
-  margin-top: 0.75rem;
-}
-
 label.pick.reach {
   align-items: flex-start;
   padding-block: 0.5rem;
@@ -90,16 +86,16 @@ label.pick.reach input[type='radio'] {
   margin-top: 0.125rem;
 }
 
-label.pick.reach .pick-text {
-  gap: 0.125rem;
-}
-
 .reach-odds {
   color: var(--bone);
   font-size: var(--fs-small);
 }
 
 .reach-details {
-  margin-top: 0.5rem;
   font-size: var(--fs-small);
+}
+
+/* The reach options are a stack (the odds status, the ways, the details), not a tight list of rows. */
+fieldset.picker.reach-options {
+  display: block;
 }

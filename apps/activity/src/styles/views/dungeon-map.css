@@ -344,9 +344,7 @@ button.dmap-node.s-reachable {
 
 .dnd-foe,
 .dnd-plain {
-  display: grid;
   text-align: left;
-  gap: 0.625rem;
 }
 
 .dnd-top {
@@ -366,15 +364,7 @@ button.dmap-node.s-reachable {
 }
 
 .dnd-who {
-  display: grid;
-  gap: 0.375rem;
   min-width: 0;
-}
-
-.dnd-who p,
-.dnd-foe p,
-.dnd-plain p {
-  margin: 0;
 }
 
 .dnd-name {
@@ -432,19 +422,10 @@ button.dnd-go {
 }
 
 .dnd-blocked {
-  margin: 0;
   text-align: center;
 }
 
 /* What happened in a room the run has been through: result, loot and what it gave. */
-.dnd-outcome {
-  display: grid;
-  gap: 0.375rem;
-}
-
-.dnd-outcome p {
-  margin: 0;
-}
 
 .dnd-loot {
   display: flex;
