@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Creature, GameState } from './api';
 import { CreaturePage, startingDrawer, type CardActions } from './CreaturePage';
+import { PopoverHost } from './PopoverHost';
 import { SAMPLE_STATE } from './creature-card-sample';
 import { cardDomId, type PageFocus } from './creature-card-view';
 import { pageScene, type SceneKind } from './creature-page/sample';
@@ -21,6 +22,7 @@ let page: Page | null = null;
 afterEach(() => {
   page?.unmount();
   page = null;
+  vi.unstubAllGlobals();
 });
 
 function actionsWith(overrides: Partial<CardActions> = {}): CardActions {
@@ -57,6 +59,8 @@ function draw(
     pending?: boolean;
     change?: (creature: Creature) => Creature;
     actions?: Partial<CardActions>;
+    /** Inside a PopoverHost, as in the app, so taps that open a popover work. */
+    popovers?: boolean;
   } = {},
 ): Drawn {
   page = createPage();
@@ -83,7 +87,7 @@ function draw(
           ]
         : base.pending,
   };
-  page.draw(
+  const drawn = (
     <CreaturePage
       creature={creature}
       state={state}
@@ -93,7 +97,14 @@ function draw(
       focus={options.focus ?? null}
       onBack={onBack}
       onAnswerCatch={onAnswerCatch}
-    />,
+    />
+  );
+  page.draw(
+    options.popovers === true ? (
+      <PopoverHost onOpenHowTo={() => undefined}>{drawn}</PopoverHost>
+    ) : (
+      drawn
+    ),
   );
   const root = find(
     page.root,
@@ -726,7 +737,7 @@ describe('the creature page: talent slots and the Talent Book', () => {
     expect(visibleText(dialog)).toContain('Not enough Bait.');
   });
 
-  it('shows locked talent slots like locked gear slots, and the signature talent without a button', () => {
+  it('shows locked talent slots like locked gear slots, and the signature talent first', () => {
     const { root } = draw('talents: epic');
     const slots = byClass(
       first(find(root, (e) => e.localName === 'ul' && e.getAttribute('aria-label') === 'Talents')),
@@ -734,9 +745,29 @@ describe('the creature page: talent slots and the Talent Book', () => {
     );
     expect(slots).toHaveLength(4);
     expect(visibleText(slots[0] as FakeElement)).toContain('Signature');
-    expect(slots[0]?.localName).toBe('div');
     const locked = first(byClass(root, 'locked'));
     expect(visibleText(locked)).toBe('TalentLv 25');
+  });
+
+  it('opens a popover that says what the signature talent does', () => {
+    vi.stubGlobal('window', {
+      innerHeight: 800,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    });
+    const { root, page: p, creature } = draw('talents: epic', { popovers: true });
+    const signature = creature.talents.signature;
+    if (signature === null) throw new Error('the epic scene has no signature talent');
+    const button = slotButton(root, /^Signature talent: /);
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    p.click(button);
+    const dialog = first(byRole(p.root, 'dialog'));
+    expect(dialog.getAttribute('aria-label')).toBe(`Signature talent: ${signature.name}`);
+    expect(visibleText(dialog)).toContain(signature.about);
+    expect(visibleText(dialog)).toContain('never changes');
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+    // No Talent Book: a signature talent is never swapped.
+    expect(visibleText(dialog)).not.toContain('Bait');
   });
 
   it('opens on the talents when the chips were tapped', () => {
