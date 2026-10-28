@@ -3,10 +3,17 @@ import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
 import { glyphOrUnknown } from '../glyphs';
 import { Sprite } from '../sprites/Sprite';
 import { escapeAction, type PopoverNav } from './popover-nav';
-import { popoverCoords } from './popover-place';
+import { popoverCoords, type PopoverSide } from './popover-place';
 
 /** The class of the fixed full-window layer a `layer="page"` popover sits in. */
 const LAYER_CLASS = 'popover-layer';
+
+/**
+ * The side each anchor's popover last showed on. A popover that changes its face (an item card to one
+ * of its lines, a creature to a tag) is drawn anew, and stays on that side while it fits there, so it
+ * never jumps across its anchor (2026-10-28).
+ */
+const lastSide = new WeakMap<HTMLElement, PopoverSide>();
 
 /** How often a `closeWhenAnchorGone` popover checks that its anchor is still on the page. */
 const ANCHOR_POLL_MS = 400;
@@ -39,7 +46,7 @@ interface PopoverProps {
 
 /**
  * The one popover of the game: a small dialog with a pointer arrow. It sits above its anchor, flips
- * below when there is no room above, and is kept inside its container (the stage, or the window for
+ * below when there is no room above, keeps the side it showed on while it fits there, and is kept inside its container (the stage, or the window for
  * `layer="page"`). The place is written as CSS custom properties (`--pop-x`, `--pop-y`,
  * `--pop-arrow`) with `style.setProperty`, so no inline style attribute is needed, and it is worked
  * out again after every render and whenever the window, the popover or any scrolled list changes.
@@ -72,7 +79,9 @@ export function Popover(props: PopoverProps) {
         height: container.clientHeight,
       },
       { width: pop.offsetWidth, height: pop.offsetHeight },
+      lastSide.get(target),
     );
+    lastSide.set(target, at.placement);
     pop.style.setProperty('--pop-x', `${String(at.x)}px`);
     pop.style.setProperty('--pop-y', `${String(at.y)}px`);
     pop.style.setProperty('--pop-arrow', `${String(at.arrow)}px`);
@@ -164,8 +173,9 @@ interface PopoverCardProps {
   /** A muted line under the rest (the general rule behind a boss's own trick). */
   note?: string | null;
   /**
-   * More beside the picture, under the title and the short text (a creature's tags). When given, the
-   * picture and the title block sit side by side, and the lines go below the pair.
+   * More beside the picture, under the title and the short text (a creature's tags). The picture and
+   * the title block always sit side by side (a picture too wide for that, a reaction's chain, wraps above
+   * the title); the lines go below the pair.
    */
   beside?: ComponentChildren;
   /** More under the text (a creature's worn item). */
@@ -188,7 +198,7 @@ export function PopoverCard(props: PopoverCardProps) {
   );
   return (
     <div class="pop-body">
-      {props.beside !== undefined ? (
+      {props.visual != null || props.beside !== undefined ? (
         <div class="pop-head">
           {props.visual != null && (
             <div class="pop-visual" aria-hidden="true">
@@ -201,14 +211,7 @@ export function PopoverCard(props: PopoverCardProps) {
           </div>
         </div>
       ) : (
-        <>
-          {props.visual != null && (
-            <div class="pop-visual" aria-hidden="true">
-              {props.visual}
-            </div>
-          )}
-          {heading}
-        </>
+        heading
       )}
       {lines.length > 0 && (
         <ul class="pop-lines">

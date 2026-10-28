@@ -148,11 +148,12 @@
   gap: 0.5rem;
 }
 
-/* A picture with its title block beside it (a creature: name, level and tags); the lines go below. */
+/* A picture with its title block beside it; a picture too wide to leave the title room (a chain) wraps above it. */
 .pop-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.625rem;
+  gap: var(--pop-gap) 0.625rem;
 }
 
 .pop-head .pop-visual {
@@ -160,6 +161,7 @@
 }
 
 .pop-head-text {
+  flex: 1 1 8rem;
   min-width: 0;
 }
 
@@ -200,25 +202,28 @@
   margin-top: 0.125rem;
 }
 
-/* Actions under a creature's facts (the raid board's "Remove from board"; the room's "Move" and "Swap"), side by side. */
+/*
+  A popover's buttons have one look (2026-10-28): the game's plain button, as wide as its label needs,
+  centred under the content. An action row (an item card's "Equip", the room's "Move" and "Swap", the raid
+  board's "Remove from board") holds one or several side by side; "More in How to play" is the same button.
+*/
 .pop-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
+  justify-content: center;
 }
 
-button.pop-action {
-  flex: 1 1 0;
-  width: 100%;
+button.pop-action,
+button.pop-more {
   min-height: 2.25rem;
+  padding-inline: 1.25rem;
   font-size: var(--fs-small);
 }
 
 button.pop-more {
-  width: 100%;
-  min-height: 2.25rem;
-  background: var(--dusk);
-  color: var(--gold);
-  font-size: var(--fs-small);
+  display: block;
+  margin-inline: auto;
 }
 
 .pop-general {
@@ -245,15 +250,4 @@ button.pop-back {
 
 .pop-back-arrow {
   transform: scaleX(-1);
-}
-
-/* One action centred under a popover's content, as wide as its label needs (an item card's "Equip"). */
-.pop-actions-center {
-  justify-content: center;
-}
-
-.pop-actions-center button.pop-action {
-  flex: 0 0 auto;
-  width: auto;
-  padding-inline: 1.25rem;
 }

@@ -229,13 +229,11 @@ describe('the Equip button of a found item popover', () => {
     return draw(item, true, { creatures: list, onEquip });
   }
 
-  it('shows under the card, centred and no wider than its label', () => {
+  it("shows under the card in the popover's action row (centred, no wider than its label)", () => {
     const p = drawEquip();
     p.click(rowButton(p));
     expect(equipButton(p)).toHaveLength(1);
-    expect(first(byClass(p.root, 'pop-actions')).getAttribute('class')).toContain(
-      'pop-actions-center',
-    );
+    expect(byClass(first(byClass(p.root, 'pop-actions')), 'pop-action')).toHaveLength(1);
   });
 
   it('closes the popover and opens the creature sheet with the Equip on rows', () => {

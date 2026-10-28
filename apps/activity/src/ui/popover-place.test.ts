@@ -53,6 +53,17 @@ describe('placePopover', () => {
     expect(low.placement).toBe('above');
   });
 
+  it('stays below when it showed there before and still fits (a popover changing its face)', () => {
+    const at = placePopover(anchor(120, 300), bounds, size, { prefer: 'below' });
+    expect(at.placement).toBe('below');
+    expect(at.y).toBe(60 + 6);
+  });
+
+  it('leaves the preferred side when the popover no longer fits there', () => {
+    const at = placePopover(anchor(120, 480), bounds, size, { prefer: 'below' });
+    expect(at.placement).toBe('above');
+  });
+
   it('works in any coordinate space (the bounds need not start at zero)', () => {
     const shifted: Box = { left: 500, top: 300, width: 280, height: 600 };
     const at = placePopover(anchor(520, 520), shifted, size);

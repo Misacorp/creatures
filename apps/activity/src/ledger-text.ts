@@ -57,7 +57,13 @@ export function baitIncome(
     .slice(0, Math.max(0, limit));
 }
 
+/** A Bait credit as a table row: where it came from ("leet on 2026-10-09 with 3 players") and the amount ("+30"). */
+export function incomeRow(entry: LedgerEntry): { source: string; amount: string } {
+  return { source: sourceText(entry), amount: `+${String(entry.amount)}` };
+}
+
 /** One compact line for a Bait credit, for example "+30 · leet on 2026-10-09 with 3 players". */
 export function incomeLine(entry: LedgerEntry): string {
-  return `+${String(entry.amount)} · ${sourceText(entry)}`;
+  const row = incomeRow(entry);
+  return `${row.amount} · ${row.source}`;
 }

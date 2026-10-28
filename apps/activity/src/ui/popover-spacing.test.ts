@@ -64,6 +64,17 @@ describe('spacing inside a popover', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('gives every popover button one look: as wide as its label, centred', () => {
+    const row = all.find((r) => r.selector === '.pop-actions');
+    expect(row?.body).toContain('justify-content: center');
+    const button = all.find((r) => r.selector === 'button.pop-action,\nbutton.pop-more');
+    expect(button?.body).toContain('padding-inline');
+    expect(button?.body).not.toContain('width');
+    expect(all.find((r) => r.selector === 'button.pop-more')?.body).toContain(
+      'margin-inline: auto',
+    );
+  });
+
   it('puts the larger step above any button or action row', () => {
     const action = all.find((r) =>
       r.selector.includes(':nth-child(n + 2):is(.pop-actions, .pop-more, button)'),

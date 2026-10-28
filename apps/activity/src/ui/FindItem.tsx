@@ -113,7 +113,7 @@ export function FindItem({
       >
         <ItemCard item={shown} plainRarity />
         {equip !== null && canEquip && (
-          <div class="pop-actions pop-actions-center">
+          <div class="pop-actions">
             <button
               type="button"
               class="pop-action"

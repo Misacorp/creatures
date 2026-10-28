@@ -8,6 +8,11 @@ export interface DataRow {
   value: ComponentChildren;
   /** A second value in its own column after the first ("+204" of gear). Rows without one leave it empty. */
   extra?: ComponentChildren;
+  /**
+   * More value columns after those, one per entry, in a table with `headings` (`headings.more` names them):
+   * a medal table's silver and bronze after its gold.
+   */
+  more?: readonly ComponentChildren[];
   /** A small picture before the label (the treat's icon). Decorative: the label says it all. */
   icon?: ComponentChildren;
   /** The closing row: a line above it and gold type ("Total 3.15x"). Put it last. */
@@ -24,6 +29,8 @@ export interface DataHeadings {
   value: ComponentChildren;
   /** The extra column ("Score"). Give it whenever any row has an `extra` value. */
   extra?: ComponentChildren;
+  /** The further columns, one per entry of the rows' `more`. Only a table with headings has them. */
+  more?: readonly ComponentChildren[];
 }
 
 /** The classes of one row: `total` for the closing row, `mine` for the viewer's own. */
@@ -93,6 +100,11 @@ export function DataTable({
                 {headings.extra ?? ''}
               </th>
             )}
+            {headings.more?.map((heading, i) => (
+              <th key={i} scope="col">
+                {heading}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
@@ -106,6 +118,9 @@ export function DataTable({
               </th>
               <td>{row.value}</td>
               {wide && <td class="data-extra">{row.extra}</td>}
+              {headings.more?.map((_, c) => (
+                <td key={c}>{row.more?.[c]}</td>
+              ))}
             </tr>
           ))}
         </tbody>

@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { byClass, byName, createPage, visibleText, type Page } from '../test-dom';
+import {
+  byClass,
+  byName,
+  createPage,
+  find,
+  visibleText,
+  type FakeElement,
+  type Page,
+} from '../test-dom';
 import { GAMES_FIXTURES } from '../workbench/games-tab-sample';
 import { PopoverHost } from '../PopoverHost';
 import { CreatureGamesRow } from './CreatureGamesRow';
@@ -86,8 +94,17 @@ describe("the trophy shelf's popover", () => {
     page = createPage();
     page.draw(<TrophyBoard board={board} selfId="me" onOpen={onOpen} />);
     expect(visibleText(page.root)).not.toContain('Pd');
-    expect(byClass(page.root, 'is-mine')).toHaveLength(1);
-    expect(visibleText(page.root)).toContain('Pme');
+    // The shared medal table: a column per medal, the viewer's row marked.
+    const [table] = byClass(page.root, 'gm-board');
+    if (table === undefined) throw new Error('no medal table');
+    expect(table.localName).toBe('table');
+    expect(table.getAttribute('aria-label')).toBe('Medal table');
+    expect(byClass(table, 'data-row')).toHaveLength(3);
+    const mine = byClass(table, 'mine');
+    expect(mine).toHaveLength(1);
+    expect(visibleText(mine[0] as FakeElement)).toContain('Pme');
+    const headings = find(table, (e) => e.getAttribute('scope') === 'col').map(visibleText);
+    expect(headings).toEqual(['Player', 'Gold', 'Silver', 'Bronze']);
     const [games] = byName(page.root, 'button', 'Games');
     if (games === undefined) throw new Error('no button');
     page.click(games);

@@ -5,7 +5,7 @@ import { TROPHY_SPOT } from '../sprites/room-art';
 import { Sprite } from '../sprites/Sprite';
 import type { SpriteDef } from '../sprites/sprite-data';
 import { popupProps } from '../ui/Popover';
-import { MedalCountsRow } from './GamesParts';
+import { MedalTable } from './MedalCabinet';
 
 /** How many players the shelf's popover lists. */
 export const SHELF_TOP = 3;
@@ -20,20 +20,9 @@ export function TrophyBoard({
   selfId: string;
   onOpen: () => void;
 }) {
-  const top = board.slice(0, SHELF_TOP);
   return (
     <div class="gm-shelf-pop pop-stack pix-panel">
-      {top.length > 0 && (
-        <ol class="gm-top">
-          {top.map((row, i) => (
-            <li key={row.userId} class={row.userId === selfId ? 'is-mine' : undefined}>
-              <span class="gm-rank">{i + 1}</span>
-              <span class="gm-player">{row.name}</span>
-              <MedalCountsRow medals={row} pins={false} scale={1} tags={false} />
-            </li>
-          ))}
-        </ol>
-      )}
+      {board.length > 0 && <MedalTable board={board} selfId={selfId} limit={SHELF_TOP} />}
       <button type="button" class="primary gm-to-games" onClick={onOpen}>
         Games
       </button>
