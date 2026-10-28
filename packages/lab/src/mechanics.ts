@@ -161,7 +161,7 @@ const KEYWORD_CALLS: Readonly<Record<string, Mechanic['calls']>> = {
     (armoured(b) || attacksOf(b).some((a) => a.plain && a.hits > 1)) &&
     'armour turns small hits into Blocked',
   Silenced: (b) => silences(b) && 'it silences creatures',
-  Charged: (b) => charged(b) && 'moves announced a round ahead',
+  Charged: (b) => charged(b) && 'moves announced at round start',
   Mired: (b) =>
     (b.mods.shakeEvery !== undefined || b.escalation) && 'it washes debuffs off, or Mired holds it',
   Beside: (b) => shapes(b, 'line3', 'chain', 'cross') && 'hits that spread to the creatures beside',
@@ -229,7 +229,7 @@ const RULE_CALLS: readonly Mechanic[] = [
     id: 'rule:charged',
     name: 'Charged moves',
     group: 'Rule',
-    calls: (b) => charged(b) && 'it announces moves a round ahead',
+    calls: (b) => charged(b) && 'it announces moves at round start',
   },
   {
     id: 'rule:taunt',

@@ -48,7 +48,7 @@ export interface KnackFx {
   readonly noIntercept?: boolean;
   /** Intercepts area hits too, after the target's failed dodge. */
   readonly interceptArea?: boolean;
-  /** Intercepts every charged landing aimed at a creature in its row. */
+  /** Night Watch: takes the first Charged hit each boss turn aimed at a creature in its row, with its own cover's cut. */
   readonly interceptCharged?: boolean;
   /** The first time it intercepts each fight, it leaves one stack of its own element's mark. */
   readonly primeOnFirstIntercept?: boolean;
@@ -342,8 +342,9 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'night-watch',
       name: 'Night Watch',
       family: 'Intercept',
-      text: 'It {Intercept}s every {Charged} hit on a creature in its row.',
-      intent: 'Answers telegraphed big hits (Great Wave).',
+      text: "Each boss turn it {Intercept}s the first {Charged} hit on a creature in its row, and takes it with its cover's cut.",
+      intent:
+        'Answers telegraphed big hits (Great Wave, Judgement Bolt). One hit a boss turn, and the hit it takes is cut by its own cover, so it is no longer a liability (panel 4).',
       fx: { interceptCharged: true },
     }),
     // Sunfawn (Grove Support, second branch)

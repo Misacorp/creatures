@@ -20,10 +20,9 @@ export interface Fighter {
   readonly talents: readonly string[];
   /** The Knack's and the talents' effects together (silence blanks all of it, R12). */
   readonly fxAll: import('./knacks').KnackFx;
-  /** Turn hits made this fight (for first-hit effects). */
   /** Hits made unsilenced that got past dodge and armour this fight (First Pounce counts the first). */
   hitsLanded: number;
-  /** Catch Breath fired this fight. */
+  /** Catch Breath fired this fight, or earlier in the raid weekend (once per weekend). */
   secondWindDone: boolean;
   /** Hold On fired this fight. */
   holdOnDone: boolean;
@@ -35,6 +34,10 @@ export interface Fighter {
   undodgeable: boolean;
   firstInterceptDone: boolean;
   damageDealt: number;
+  /** Damage its hits dealt to the boss, reactions included, counters not (Element Resistance reads it). */
+  hitDamage: number;
+  /** The boss turns done when Night Watch last took a Charged hit (it takes the first each boss turn). */
+  watchTurn: number;
   damageThisRound: number;
   damageLastRound: number;
   /** The boss turn on which it last gained a reaction-fed Store point (at most one per boss turn). */
@@ -71,10 +74,15 @@ export interface Pattern {
     | 'cross'
     | 'checker';
   /**
-   * rowEnds: how many slots from each end of each row. scatter: how many different creatures are
-   * hit. chain: how many jumps after the anchor. columns, rows: how many neighbouring columns or rows.
+   * rowEnds: how many arena slots from each end of each row (an empty slot is skipped). scatter: how many different
+   * creatures are hit. chain: how many jumps after the anchor. columns, rows: how many neighbouring columns or rows.
    */
   readonly n?: number;
+  /**
+   * `n` is for this many columns of the arena and grows with its width: the count is `n x columns / perColumns`,
+   * rounded, at least 1 (a scatter of 4 per 4 columns hits 10 creatures in an arena 10 slots wide). Without it `n` is fixed.
+   */
+  readonly perColumns?: number;
   /** chain: each jump deals this share (bp) of the hit before it. */
   readonly decayBp?: number;
 }
@@ -89,7 +97,11 @@ export interface BossMove {
   readonly turn?: number;
   /** Silences instead of dealing damage, for this many of the victim's turns. */
   readonly silenceTurns?: number;
-  /** A charged move: announced one boss turn ahead (Night Watch, Keep the Heat In read it). */
+  /**
+   * A Charged move: at round start its slots are rolled and shown; it lands on those creatures on its boss turn and never
+   * re-aims (a creature knocked out by then is skipped). A Guard takes a Charged hit only through an effect that says so
+   * (Night Watch, Intercept area hits too); a Row Ward, Keep the Heat In and Brace read it.
+   */
   readonly charged?: boolean;
 }
 
@@ -105,7 +117,7 @@ export const ESCALATION_FEEDS = [
 ] as const;
 export type EscalationFeed = (typeof ESCALATION_FEEDS)[number];
 
-/** What each step of an escalation adds to the boss (steps multiply: step 3 adds three times). */
+/** What each step of an escalation adds to the boss. Growth adds up in a straight line: step 3 adds three times what step 1 does. */
 export interface EscalationGrowth {
   /** Attack, in bp of the boss's own. */
   readonly atkBp?: number;
@@ -125,10 +137,16 @@ export interface EscalationGrowth {
 
 /**
  * The boss's Store (Misa, 2026-10-28), one rule with data per boss: it fills from a `feed`, every `per` units is a step,
- * it stops at `cap` steps, and each step `grow`s the boss. A step is announced in the log at round start before it
- * applies; an optional `phase` adds moves from a step on. A boss with Mired at round start does not step up that round
- * (Mired freezes it, the answer). Feeds: `reactions` it takes, `hpLost` (units are bp of its full HP, the weekend's shared
- * HP in a raid), `rounds` passed, `crits` it takes, its `dodges`, creatures it `knockouts`, marks it `shed`.
+ * it stops at `cap` steps, and each step `grow`s the boss (R22, the escalation rules):
+ * - Steps apply only at round start, after the round-start Knacks and before the Charged announcements, at most one step
+ *   per round, and each is announced in the log first. An optional `phase` adds moves from a step on.
+ * - Step, phase and the feed's count carry across a raid weekend's stages like the boss's HP; event feeds keep counting
+ *   (`rounds` too: the weekend's rounds, not the stage's).
+ * - Mired slows it, it does not freeze it: each Mired stack on the boss at round start raises the units the next step
+ *   needs by `LAB_RULES.miredSlowsEscalationBp` of `per` (a quarter of a step's units per stack). A step that is due but
+ *   not yet through the slowed bar comes in a later round, when the Mired has faded.
+ * - Feeds: `reactions` it takes, `hpLost` (units are bp of its full HP, the weekend's shared HP in a raid), `rounds`
+ *   passed, `crits` it takes, its `dodges`, creatures it `knockouts`, marks it `shed`.
  */
 export interface Escalation {
   readonly name: string;
@@ -199,8 +217,16 @@ export interface FightOptions {
   readonly carryHp?: ReadonlyMap<string, number>;
   readonly bossHp?: number;
   readonly resistReaction?: string;
-  /** The element the boss resists this fight (Element Resistance: its creatures' hits deal `LAB_RULES.adaptElementBp` of their damage). */
+  /** The element the boss resists this fight (Element Resistance: their hits' base damage is `LAB_RULES.adaptElementBp` of itself; counters are not cut). */
   readonly resistElement?: string;
+  /** Carried from the earlier stages of a raid weekend: Catch Breath already used (uids of this stage's fighters). */
+  readonly carryWindDone?: ReadonlySet<string>;
+  /** Carried from the earlier stages of a raid weekend: the boss's escalation (R22). */
+  readonly carryEscalation?: {
+    readonly step: number;
+    readonly phase: boolean;
+    readonly count: number;
+  };
   readonly log?: boolean;
 }
 
