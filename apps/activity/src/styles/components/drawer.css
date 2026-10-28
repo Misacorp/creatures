@@ -66,6 +66,15 @@
   }
 }
 
+/* A drawer that takes the place of another one of the same screen (the item card's Dismantle flow) does not slide in
+   again: it reads as one drawer changing its view. */
+@media (prefers-reduced-motion: no-preference) {
+  .drawer-layer:has(.drawer-swap) .drawer-backdrop,
+  .drawer-panel.drawer-swap {
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .drawer-panel:not(.dragging) {
     transition: none;

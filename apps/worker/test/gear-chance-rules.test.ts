@@ -7,7 +7,13 @@ import {
   type Rng,
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import { apiPlayer as player, giveItem, skipWelcome, type Api } from './gear-helpers';
+import {
+  apiPlayer as player,
+  giveItem,
+  dismantlePile,
+  skipWelcome,
+  type Api,
+} from './gear-helpers';
 import { runCore, type CoreContext } from './helpers';
 import { nextGuild, rows, scriptedThenSeeded } from './raid-helpers';
 import { speciesOf } from '../src/species';
@@ -21,14 +27,6 @@ import { newKey } from './kit';
  * so a retry changes nothing.
  */
 
-interface JobBody {
-  id: string;
-  endsAt: number;
-}
-interface GearBody {
-  jobs: JobBody[];
-}
-
 /** Every roll lands on its lowest number: each chance succeeds, each range gives its minimum. */
 const lowest: Rng = { nextU32: () => 0 };
 /** Every roll lands high: a chance of under 99.98% fails. */
@@ -36,15 +34,6 @@ const highest: Rng = { nextU32: () => 4_294_959_998 };
 
 const equip = (p: Api, itemId: string, creatureId: string) =>
   p.call('POST', `/api/gear/${itemId}/equip`, { creatureId });
-const startDismantle = (p: Api, creatureId: string, itemIds: string[]) =>
-  p.call('POST', '/api/workshop/jobs', {
-    kind: 'dismantle',
-    creatureId,
-    itemIds,
-    idempotencyKey: newKey(),
-  });
-const claim = (p: Api, jobId: string, key = newKey()) =>
-  p.call('POST', `/api/workshop/jobs/${jobId}/claim`, { idempotencyKey: key });
 const partsOf = (ctx: CoreContext, userId: string): Record<string, number> =>
   Object.fromEntries(
     rows<{ kind: string; amount: number }>(
@@ -69,7 +58,7 @@ async function tinker(ctx: CoreContext) {
   return { p, worker, plain };
 }
 
-describe("Tinker's luck through the Workshop", () => {
+describe("Tinker's luck through the pile dismantle", () => {
   it('refunds the full craft cost of an item when the chance hits, and says how many', async () => {
     await runCore(
       nextGuild(),
@@ -88,21 +77,21 @@ describe("Tinker's luck through the Workshop", () => {
         const cost = craftCost('kelp-cap', 8);
         const range = dismantleRange([{ baseId: 'kelp-cap', rarity: 'rare', itemLevel: 8 }]);
         // The creature without the line: the bottom of the ranges.
-        const a = await startDismantle(p, plain, [other]);
-        const jobA = (a.body['gear'] as GearBody).jobs[0] as JobBody;
-        ctx.clock.t = jobA.endsAt;
         const before = partsOf(ctx, p.id);
-        const resA = (await claim(p, jobA.id)).body['result'] as Record<string, unknown>;
+        const resA = (await dismantlePile(p, plain, [other])).body['result'] as Record<
+          string,
+          unknown
+        >;
         expect(resA).not.toHaveProperty('tinkered');
         expect((resA['parts'] as Record<string, number>)['scrap']).toBe(range.scrap.min);
         expect(range.scrap.min).toBeLessThan(cost.scrap ?? 0);
         expect(partsOf(ctx, p.id)['scrap']).toBe((before['scrap'] ?? 0) + range.scrap.min);
         // The worker with Tinker's luck (the rng makes every chance hit): the full cost.
-        const b = await startDismantle(p, worker, [itemId]);
-        const jobB = (b.body['gear'] as GearBody).jobs.find((j) => j.id !== jobA.id) as JobBody;
-        ctx.clock.t = jobB.endsAt;
         const mid = partsOf(ctx, p.id);
-        const resB = (await claim(p, jobB.id)).body['result'] as Record<string, unknown>;
+        const resB = (await dismantlePile(p, worker, [itemId])).body['result'] as Record<
+          string,
+          unknown
+        >;
         expect(resB['tinkered']).toBe(1);
         const parts = resB['parts'] as Record<string, number>;
         expect(parts['scrap']).toBeGreaterThanOrEqual(cost.scrap ?? 0);
@@ -124,10 +113,10 @@ describe("Tinker's luck through the Workshop", () => {
           now: ctx.clock.t,
         });
         const range = dismantleRange([{ baseId: 'kelp-cap', rarity: 'rare', itemLevel: 8 }]);
-        const started = await startDismantle(p, worker, [itemId]);
-        const job = (started.body['gear'] as GearBody).jobs[0] as JobBody;
-        ctx.clock.t = job.endsAt;
-        const res = (await claim(p, job.id)).body['result'] as Record<string, unknown>;
+        const res = (await dismantlePile(p, worker, [itemId])).body['result'] as Record<
+          string,
+          unknown
+        >;
         expect(res).not.toHaveProperty('tinkered');
         const scrap = (res['parts'] as Record<string, number>)['scrap'] ?? 0;
         expect(scrap).toBeGreaterThanOrEqual(range.scrap.min);
@@ -138,7 +127,7 @@ describe("Tinker's luck through the Workshop", () => {
     );
   });
 
-  it('counts each item of a bundle of Commons, and the retry or a race pays once', async () => {
+  it('counts each item of the pile, and the retry pays once', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -146,16 +135,12 @@ describe("Tinker's luck through the Workshop", () => {
         const ids = [1, 2, 3].map(() =>
           giveItem(ctx.sql, p.id, 'trail-cap', { rarity: 'common', level: 4, now: ctx.clock.t }),
         );
-        const started = await startDismantle(p, worker, ids);
-        const job = (started.body['gear'] as GearBody).jobs[0] as JobBody;
-        ctx.clock.t = job.endsAt;
         const before = partsOf(ctx, p.id)['scrap'] ?? 0;
         const key = newKey();
         const results = await Promise.all([
-          claim(p, job.id, key),
-          claim(p, job.id, key),
-          claim(p, job.id),
-          claim(p, job.id),
+          dismantlePile(p, worker, ids, key),
+          dismantlePile(p, worker, ids, key),
+          dismantlePile(p, worker, ids, key),
         ]);
         for (const r of results) expect(r.status).toBe(200);
         const first = results[0]?.body['result'] as Record<string, unknown>;
@@ -194,11 +179,8 @@ describe("Tinker's luck through the Workshop", () => {
             level: 8,
             now: ctx.clock.t,
           });
-          const started = await startDismantle(p, worker, [itemId]);
-          const job = (started.body['gear'] as GearBody).jobs[0] as JobBody;
-          ctx.clock.t = job.endsAt;
           const base = rng.drawn();
-          await claim(p, job.id);
+          await dismantlePile(p, worker, [itemId]);
           draws.push(rng.drawn() - base);
         },
         { gearRng: rng },

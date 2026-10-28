@@ -54,17 +54,19 @@ export function foldCreature(
 /**
  * The rules of one creature outside the fight (trips, Workshop, dungeon rest), from its worn gear and its
  * active talents, read from the database. The level matters for talents (a slot opens at a level), so
- * callers pass the creature's own.
+ * callers pass the creature's own. `without` leaves out the worn items with these ids, as if they were
+ * already off (dismantling asks what a running trip or job would lose).
  */
 export function gearRulesOf(
   sql: SqlStorage,
   creature: { id: string; species: string; level: number },
+  without: ReadonlySet<string> = new Set(),
 ): GearRules {
   const worn: WornBySlot = {};
   for (const row of sql
     .exec<GearRow>('SELECT * FROM gear_items WHERE equipped_on = ?', creature.id)
     .toArray()) {
-    worn[row.slot] = row;
+    if (!without.has(row.id)) worn[row.slot] = row;
   }
   return foldCreature(
     { species: creature.species, level: 1, fusion_count: 0 },

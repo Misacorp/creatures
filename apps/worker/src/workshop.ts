@@ -1,6 +1,6 @@
 /**
  * The Workshop of a guild (`docs/design/gear-and-creatures-v2.md`): previews, starting a craft, supply or
- * dismantle job and claiming it. Split from `Gear` (`gear.ts`), which delegates here. Every public method
+ * job, dismantling a pile of marked items and claiming a job. Split from `Gear` (`gear.ts`), which delegates here. Every public method
  * opens its own `atomically` and runs the whole check-and-write inside it; the helpers run inside the
  * caller's transaction. Rolls are drawn with the live RNG at claim time, never when a job starts.
  */
@@ -19,11 +19,12 @@ import {
   craftLevelNeeded,
   craftOdds,
   craftable,
-  dismantleBundleError,
-  dismantleHours,
+  dismantleBoostLeft,
   dismantleLearnBp,
   dismantleRange,
   dismantleXp,
+  pileDismantleXp,
+  pileOrder,
   gearBase,
   jobDuration,
   jobXp,
@@ -78,6 +79,7 @@ import {
   type JobRow,
 } from './gear-store';
 import { fixFestivalRarity } from './gear-normalise';
+import { dismantleLocks } from './dismantle-worn';
 import { gearRulesOf, minusBp } from './gear-worn';
 import { credit, spend } from './ledger';
 import type {
@@ -104,6 +106,15 @@ import { speciesOf } from './species';
 
 /** The gear rarity a supply tier is logged as (analytics) and a supply job is sized as. */
 const SUPPLY_RARITY = { basic: 'common', good: 'rare', great: 'epic' } as const;
+
+/** An open job of a removed kind (Improve, Enchant) still holds this item: it cannot be dismantled under it. */
+function openJobHoldsItem(sql: SqlStorage, itemId: string): boolean {
+  return (
+    sql
+      .exec('SELECT 1 FROM workshop_jobs WHERE gear_id = ? AND claimed_at IS NULL', itemId)
+      .toArray().length > 0
+  );
+}
 
 function failSupply(): never {
   throw new Error('stored supply job has an unknown supply');
@@ -191,13 +202,49 @@ export class Workshop {
     return { weather: w };
   }
 
-  /** The items of a dismantle request, owned and distinct, and the bundle rule checked (400 `invalid_bundle`). */
-  private dismantleRows(userId: string, itemIds: readonly string[]): GearRow[] {
-    if (new Set(itemIds).size !== itemIds.length) throw new GameError(400, 'invalid_bundle');
-    const rows = itemIds.map((id) => ownedItem(this.sql, userId, id));
-    const error = dismantleBundleError(rows.map((r) => r.rarity));
-    if (error !== null) throw new GameError(400, 'invalid_bundle', error);
-    return rows;
+  /**
+   * The items of a pile request, owned and distinct (404 for anyone else's, 400 `invalid_items` for
+   * a repeat). Worn items are fine. The caller's schema has limited the count.
+   */
+  private pileRows(userId: string, itemIds: readonly string[]): GearRow[] {
+    if (new Set(itemIds).size !== itemIds.length) throw new GameError(400, 'invalid_items');
+    return itemIds.map((id) => ownedItem(this.sql, userId, id));
+  }
+
+  /**
+   * How many items of the pile today's Market Day boosts, and what to store: the day's first 2 dismantles,
+   * counted in items (the old timed jobs of the day count one each, so a day that began with one still
+   * leaves what remains).
+   */
+  private pileBoost(userId: string, count: number): number {
+    const injected = this.deps.workshopMods?.(userId, 'dismantle');
+    if (injected !== undefined) {
+      return injected.dismantleTopOfRange === true
+        ? count
+        : Math.min(count, injected.dismantleTopItems ?? 0);
+    }
+    const weather = this.deps.weather;
+    const day = weather?.at() ?? null;
+    if (weather === undefined || day === null) return 0;
+    const { startsAt, endsAt } = weather.dayBounds();
+    const old = this.sql
+      .exec<{ n: number }>(
+        `SELECT COUNT(*) AS n FROM workshop_jobs
+         WHERE user_id = ? AND kind = 'dismantle' AND started_at >= ? AND started_at < ?`,
+        userId,
+        startsAt,
+        endsAt,
+      )
+      .one().n;
+    const piled =
+      this.sql
+        .exec<{ items: number }>(
+          'SELECT items FROM dismantle_days WHERE user_id = ? AND day_start = ?',
+          userId,
+          startsAt,
+        )
+        .toArray()[0]?.items ?? 0;
+    return Math.min(count, dismantleBoostLeft(day, old + piled));
   }
 
   /** The Crafting level and the Busy paws and Apprentice shares of a creature. */
@@ -257,9 +304,10 @@ export class Workshop {
   }
 
   /**
-   * What taking these items apart would give with this creature: the refund range (the same for any
-   * creature), how long it takes this one, the XP, and the chance each item teaches its blueprint.
-   * Changes nothing. Items worn by a creature that is away or on a job are not refused here (starting is).
+   * What taking these items apart as a pile would give with this creature: the refund range (the same for
+   * any creature), the Crafting XP, the chance each item teaches its blueprint, how many items Market Day
+   * would boost, and the creature's Tinker's luck. Changes nothing. A busy creature is not refused here
+   * (the dismantle is).
    */
   previewDismantle(
     userId: string,
@@ -268,9 +316,14 @@ export class Workshop {
   ): Outcome<DismantlePreview> {
     return this.atomically(() => {
       const creature = ownedCreature(this.sql, userId, creatureId);
-      const rows = this.dismantleRows(userId, itemIds);
-      const { level, busyBp, apprenticeBp } = this.workerOf(userId, creature);
-      const rarity = (rows[0] as GearRow).rarity;
+      const rows = pileOrder(
+        this.pileRows(userId, itemIds).map((row) => ({
+          row,
+          rarity: row.rarity,
+          itemLevel: row.item_level,
+        })),
+      ).map((e) => e.row);
+      const { level, apprenticeBp } = this.workerOf(userId, creature);
       const teachers = rows.filter((r) => {
         const base = gearBase(r.base_id);
         return base !== undefined && craftable(base);
@@ -285,12 +338,150 @@ export class Workshop {
           itemLevel: r.item_level,
         })),
         range: dismantleRange(rows.map(rowToItem)),
-        durationMs: this.weatherMs(jobDuration(level, busyBp, dismantleHours(rarity))),
-        xp: dismantleXp(rarity, apprenticeBp),
+        xp: applyXpBoost(pileDismantleXp(rows.map((r) => r.rarity)), [
+          gearPart('apprentice', apprenticeBp),
+        ]),
         learnBp: teachers === 0 ? null : dismantleLearnBp(level),
         teachers,
+        boosted: this.pileBoost(userId, rows.length),
+        tinkersLuckBp: gearRulesOf(this.sql, creature).tinkersLuckBp,
       };
     });
+  }
+
+  /**
+   * Dismantles the named items at once with one free creature (decisions.md, 2026-10-27, "Bulk selection
+   * replaces marking"). Worn items go too and come off their wearer in the same transaction; a wearer that is
+   * away or on a job keeps an item a running trip or job reads at its claim (409 `item_locked`, nothing is
+   * taken; see `dismantle-worn.ts`). The dismantler must not be away or on a job (same rule as starting a
+   * Workshop job); it gains Crafting XP (what the old timed jobs paid for the same items) and no creature
+   * experience. Each item's refund, its blueprint chance (with the creature's Crafting level) and Tinker's
+   * luck are rolled now with the live RNG, the dismantler's own gear read before any item comes off;
+   * Market Day's top-of-range goes to the most valuable items; the Essence is paid once through the ledger.
+   * One keyed transaction: a retry returns the stored result.
+   */
+  dismantlePile(
+    userId: string,
+    input: { creatureId: string; itemIds: readonly string[]; idempotencyKey: string },
+  ): Outcome<Extract<JobResult, { kind: 'dismantle' }>> {
+    const fingerprint = JSON.stringify([input.creatureId, [...input.itemIds].sort()]);
+    return this.atomically(() =>
+      runKeyed(
+        this.sql,
+        this.deps.now,
+        { userId, key: input.idempotencyKey, kind: 'dismantle_pile', fingerprint },
+        () => {
+          const creature = ownedCreature(this.sql, userId, input.creatureId);
+          assertNotBusy(this.sql, creature);
+          const rows = this.pileRows(userId, input.itemIds);
+          // An item in an open (removed-kind) job is not in the bag's hands; a worn item may go, taken off by
+          // the delete below, unless its wearer is away or on a job that reads it live (`dismantle-worn.ts`).
+          for (const row of rows) {
+            if (openJobHoldsItem(this.sql, row.id)) throw new GameError(409, 'item_in_job');
+          }
+          const locked = dismantleLocks(this.sql, userId, rows)[0];
+          if (locked !== undefined) throw new GameError(409, 'item_locked');
+          const now = this.deps.now();
+          const before = skillLevel(creatureXp(this.sql, userId, creature.id));
+          const worn = gearRulesOf(this.sql, creature);
+          const items: ItemSnapshot[] = pileOrder(
+            rows.map((row) => ({
+              baseId: row.base_id,
+              rarity: row.rarity,
+              itemLevel: row.item_level,
+            })),
+          );
+          const boosted = this.pileBoost(userId, items.length);
+          const rolled = rollDismantle(
+            this.deps.rng,
+            items,
+            boosted > 0 ? { dismantleTopItems: boosted } : {},
+            worn.tinkersLuckBp,
+          );
+          creditParts(this.sql, userId, rolled.parts);
+          if (rolled.essence > 0) {
+            credit(
+              this.deps.storage,
+              {
+                userId,
+                currency: 'essence',
+                amount: rolled.essence,
+                source: 'dismantle',
+                idempotencyKey: `dismantle-pile:${input.idempotencyKey}`,
+                meta: { items: items.length },
+              },
+              now,
+            );
+          }
+          // Each item that can teach a blueprint has its chance: the dismantler's level counts here, not in the refund.
+          const learnBp = dismantleLearnBp(before);
+          const learned: string[] = [];
+          const marked: { baseId: string; marks: number }[] = [];
+          for (const item of items) {
+            const base = gearBase(item.baseId);
+            if (base === undefined || !craftable(base)) continue;
+            if (!chance(this.deps.rng, learnBp, 10_000)) continue;
+            if (learnBlueprint(this.sql, userId, base.id, now)) learned.push(base.id);
+            else {
+              const marks = addMark(this.sql, userId, base.id);
+              if (marks !== null) marked.push({ baseId: base.id, marks });
+            }
+          }
+          for (const row of rows) this.sql.exec('DELETE FROM gear_items WHERE id = ?', row.id);
+          const day = this.deps.weather?.dayBounds().startsAt;
+          if (day !== undefined) {
+            this.sql.exec(
+              `INSERT INTO dismantle_days (user_id, day_start, items) VALUES (?, ?, ?)
+               ON CONFLICT (user_id, day_start) DO UPDATE SET items = items + excluded.items`,
+              userId,
+              day,
+              items.length,
+            );
+          }
+          // Crafting XP: what the old timed jobs paid for these items, Apprentice on top. No creature experience.
+          const craftParts = [gearPart('apprentice', worn.apprenticeBp)];
+          const xp = applyXpBoost(pileDismantleXp(items.map((i) => i.rarity)), craftParts);
+          const skillXp = addCreatureXp(this.sql, userId, creature.id, xp);
+          const after = skillLevel(skillXp);
+          const craftBoost = xpBoost(craftParts);
+          const first = items[0] as ItemSnapshot;
+          this.deps.analytics?.record(
+            {
+              kind: 'gear_dismantle',
+              base: first.baseId,
+              rarity: first.rarity,
+              level: first.itemLevel,
+              scrap: rolled.parts.scrap ?? 0,
+              shards: sumShards(rolled.parts),
+              glimmer: rolled.parts.glimmer ?? 0,
+              unequipped: rows.some((r) => r.equipped_on !== null),
+              parts: rolled.parts,
+              items: items.length,
+              essence: rolled.essence,
+              learned: learned.length,
+              marks: marked.length,
+            },
+            userId,
+          );
+          return {
+            kind: 'dismantle' as const,
+            items,
+            parts: rolled.parts,
+            essence: rolled.essence,
+            learned,
+            marked,
+            ...(rolled.tinkered === undefined ? {} : { tinkered: rolled.tinkered }),
+            creatureId: creature.id,
+            boosted,
+            xp,
+            ...(craftBoost === null ? {} : { xpBoost: craftBoost }),
+            skillXp,
+            skillLevel: after,
+            leveledUp: after > before,
+          };
+        },
+      ),
+    );
   }
 
   /** Inserts the open job row; the creature and the slot were checked by the caller. */
@@ -319,7 +510,7 @@ export class Workshop {
 
   /**
    * Starts a job on a creature that is not busy, in a free workshop slot. A craft pays its parts (and a
-   * Reach's Essence) now, all or nothing; a dismantle takes the items out of the bag now. The result is
+   * Reach's Essence) now, all or nothing. The result is
    * rolled when the job is claimed. Busy paws lines on the creature shorten it.
    */
   startJob(userId: string, input: StartJobInput): Outcome<{ jobId: string }> {
@@ -328,9 +519,7 @@ export class Workshop {
         ? [input.kind, input.creatureId, input.blueprintId, input.reach ?? 'none']
         : input.kind === 'supply'
           ? [input.kind, input.creatureId, input.supplyId]
-          : input.kind === 'convert'
-            ? [input.kind, input.creatureId, input.recipeId]
-            : [input.kind, input.creatureId, [...input.itemIds]]),
+          : [input.kind, input.creatureId, input.recipeId]),
       ...(input.treat === true ? ['treat'] : []),
     ]);
     return this.atomically(() =>
@@ -353,8 +542,6 @@ export class Workshop {
                 return this.startCraft(userId, input, creature, worker);
               case 'supply':
                 return this.startSupply(userId, input, creature, worker);
-              case 'dismantle':
-                return this.startDismantle(userId, input, creature, worker);
               case 'convert':
                 return this.startConvert(userId, input, creature, worker);
             }
@@ -580,56 +767,6 @@ export class Workshop {
         hours: Math.round(duration / 3_600_000),
         skillLevel: worker.level,
         ...(Object.keys(took.parts).length === 0 ? {} : { parts: took.parts }),
-      },
-      userId,
-    );
-    return { jobId };
-  }
-
-  private startDismantle(
-    userId: string,
-    input: Extract<StartJobInput, { kind: 'dismantle' }>,
-    creature: CreatureRow,
-    worker: { level: number; busyBp: number },
-  ): { jobId: string } {
-    const rows = this.dismantleRows(userId, input.itemIds);
-    // An item worn by a creature that is away or on a job stays where it is (see `equip`).
-    for (const wearer of new Set(
-      rows.flatMap((r) => (r.equipped_on === null ? [] : [r.equipped_on])),
-    )) {
-      assertNotBusy(this.sql, ownedCreature(this.sql, userId, wearer));
-    }
-    const rarity = (rows[0] as GearRow).rarity;
-    const items: ItemSnapshot[] = rows.map((r) => ({
-      baseId: r.base_id,
-      rarity: r.rarity,
-      itemLevel: r.item_level,
-    }));
-    const mods = this.mods(userId, 'dismantle');
-    const duration = this.weatherMs(
-      jobDuration(worker.level, worker.busyBp, dismantleHours(rarity)),
-    );
-    // The items leave the bag now: a worn one is taken off with them. Nothing is refunded until the claim.
-    for (const row of rows) this.sql.exec('DELETE FROM gear_items WHERE id = ?', row.id);
-    const stored: StoredInput = {
-      cost: {},
-      items,
-      level: worker.level,
-      ...(Object.keys(mods).length === 0 ? {} : { mods }),
-      ...this.storedWeather(userId),
-    };
-    const jobId = this.insertJob(userId, creature.id, 'dismantle', stored, duration);
-    const first = rows[0] as GearRow;
-    this.deps.analytics?.record(
-      {
-        kind: 'job_start',
-        job: 'dismantle',
-        base: first.base_id,
-        rarity,
-        species: creature.species,
-        hours: Math.round(duration / 3_600_000),
-        skillLevel: worker.level,
-        items: items.length,
       },
       userId,
     );

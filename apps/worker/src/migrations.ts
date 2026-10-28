@@ -5,6 +5,8 @@
 import { whileAwayMigration } from './while-away';
 import { analyticsRollupMigration } from './analytics-rollup';
 import { creatureNoteMigration } from './creature-note-migration';
+import { dismantleMarkMigration } from './dismantle-mark-migration';
+import { dismantleUnmarkMigration } from './dismantle-unmark-migration';
 import { creatureQuirkMigration } from './creature-quirk-migration';
 import { creaturesAMigration } from './creatures-a-migration';
 import { creaturesBMigration } from './creatures-b-migration';
@@ -318,6 +320,10 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   whileAwayMigration,
   // Version 47: a private note per creature (see creature-note-migration.ts).
   creatureNoteMigration,
+  // Version 48: items marked for dismantling and the day's dismantled count (see dismantle-mark-migration.ts).
+  dismantleMarkMigration,
+  // Version 49: the persisted marks go, selection is client-only (see dismantle-unmark-migration.ts).
+  dismantleUnmarkMigration,
 ];
 
 /** The schema version of a fresh database. */

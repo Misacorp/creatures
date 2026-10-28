@@ -1757,19 +1757,13 @@ describe('analytics and privacy', () => {
         await p.gear(); // welcome kit
         const a = give(ctx, p.id, 'kelp-cap', { rarity: 'rare', level: 4 });
         await p.call('POST', equipPath(a), { creatureId: p.creatureIds[0] });
-        const started = await p.call('POST', '/api/workshop/jobs', {
-          kind: 'dismantle',
+        await p.call('POST', equipPath(a), { creatureId: null });
+        const dismantled = await p.call('POST', '/api/gear/dismantle', {
           creatureId: p.creatureIds[1],
           itemIds: [a],
           idempotencyKey: newKey(),
         });
-        expect(started.status).toBe(200);
-        ctx.clock.t += HOUR + 1000;
-        const jobId = ((started.body['gear'] as GearBody).jobs[0] as JobBody).id;
-        expect(
-          (await p.call('POST', `/api/workshop/jobs/${jobId}/claim`, { idempotencyKey: newKey() }))
-            .status,
-        ).toBe(200);
+        expect(dismantled.status).toBe(200);
         const all = rows<{ kind: string; actor_hash: string | null; props_json: string }>(
           ctx.sql,
           "SELECT kind, actor_hash, props_json FROM analytics_events WHERE kind LIKE 'gear_%' OR kind LIKE 'job_%' ORDER BY id",
@@ -1777,8 +1771,7 @@ describe('analytics and privacy', () => {
         expect(all.map((e) => e.kind)).toEqual([
           'gear_drop',
           'gear_equip',
-          'job_start',
-          'job_claim',
+          'gear_equip',
           'gear_dismantle',
         ]);
         const haystack = JSON.stringify(all);

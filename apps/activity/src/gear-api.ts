@@ -13,7 +13,9 @@ import {
   parseEquipBestResult,
   parseEquipResult,
   parseGearState,
+  parseDismantleResult,
   parseJobResult,
+  parseDismantleCheck,
   parseStartJobResult,
 } from './gear-parse';
 import type {
@@ -24,6 +26,7 @@ import type {
   EquipResult,
   GearState,
   JobResult,
+  DismantleCheck,
   StartJobRequest,
   StartJobResult,
 } from './gear-types';
@@ -106,6 +109,33 @@ export async function previewDismantle(
     jsonRequest('POST', { kind: 'dismantle', creatureId, itemIds }),
   );
   return parseDismantlePreview(isRecord(data) ? data['result'] : undefined);
+}
+
+/**
+ * Which of these items cannot be dismantled right now (worn by a creature that is away or on a job whose claim
+ * reads the item). Changes nothing, so it needs no key.
+ */
+export async function checkDismantle(itemIds: readonly string[]): Promise<DismantleCheck> {
+  const data = await apiFetch('/api/gear/dismantle-check', jsonRequest('POST', { itemIds }));
+  return parseDismantleCheck(isRecord(data) ? data['result'] : undefined);
+}
+
+/**
+ * Dismantles the named items with one free creature (worn ones come off their wearer). The request names the
+ * exact items the confirmation showed. Carries a key.
+ */
+export async function dismantlePile(
+  creatureId: string,
+  itemIds: readonly string[],
+  idempotencyKey: string,
+): Promise<GearAction<Extract<JobResult, { kind: 'dismantle' }>>> {
+  return action(
+    await apiFetch(
+      '/api/gear/dismantle',
+      jsonRequest('POST', { creatureId, itemIds, idempotencyKey }),
+    ),
+    parseDismantleResult,
+  );
 }
 
 export async function startJob(request: StartJobRequest): Promise<GearAction<StartJobResult>> {

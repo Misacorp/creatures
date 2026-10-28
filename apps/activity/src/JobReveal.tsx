@@ -42,7 +42,11 @@ function Chevron() {
   );
 }
 
-/** Row 1 of a dismantle: the item or items taken apart, an arrow, and what they became as count badges. */
+/**
+ * Row 1 of a dismantle: the item or items taken apart (a whole pile at once, smaller when there are many), an
+ * arrow, and the totals as count badges: parts and Essence. The blueprints, Tinker's luck and the Crafting XP
+ * with any level up are under it (`Outcome`, `Worker`).
+ */
 function DismantleRow({ result }: { result: Extract<JobResult, { kind: 'dismantle' }> }) {
   const gave = gaveItems(result);
   return (
@@ -50,7 +54,7 @@ function DismantleRow({ result }: { result: Extract<JobResult, { kind: 'dismantl
       <ul class="jr-items" aria-label="Taken apart">
         {result.items.map((item, index) => (
           <li key={`${item.baseId}-${String(index)}`}>
-            <ItemThumb item={item} scale={4} />
+            <ItemThumb item={item} scale={result.items.length > 12 ? 3 : 4} />
           </li>
         ))}
       </ul>
@@ -89,7 +93,9 @@ function ConvertRow({ result }: { result: Extract<JobResult, { kind: 'convert' }
  */
 function Worker({ result, creatures }: { result: JobResult; creatures: readonly Creature[] }) {
   const paid = result.experience;
-  const creature = paid === undefined ? undefined : creatures.find((c) => c.id === paid.creatureId);
+  // A pile dismantle names its creature itself (it pays no creature experience).
+  const whoId = paid?.creatureId ?? (result.kind === 'dismantle' ? result.creatureId : undefined);
+  const creature = whoId === undefined ? undefined : creatures.find((c) => c.id === whoId);
   const name = creature === undefined ? 'The worker' : creatureName(creature);
   const exp = paid === undefined ? null : experienceGain(paid, name);
   const crafting = craftingGain(result, name);

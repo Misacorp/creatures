@@ -24,6 +24,8 @@ export interface GearDeps {
     typeof api,
     | 'equipGear'
     | 'equipBestGear'
+    | 'checkDismantle'
+    | 'dismantlePile'
     | 'dismissGearNotice'
     | 'startJob'
     | 'claimJob'
@@ -50,6 +52,15 @@ export function createGearActions(deps: GearDeps) {
     /** The best item for every slot of these creatures (one or a team); the server picks. */
     equipBest: (creatureIds: readonly string[]): Promise<EquipBestResult | undefined> =>
       applied(deps.run(() => server.equipBestGear(creatureIds))),
+    /** Which of these items cannot be dismantled now (worn by a creature whose trip or job reads them). */
+    checkDismantle: (itemIds: readonly string[]) => server.checkDismantle(itemIds),
+    /** Dismantles the named items with a free creature, all at once (worn ones come off). */
+    dismantlePile: (creatureId: string, itemIds: readonly string[]) =>
+      applied(
+        deps.runKeyed(ActionIds.dismantlePile(creatureId, itemIds), (key) =>
+          server.dismantlePile(creatureId, itemIds, key),
+        ),
+      ),
     /** Closes the one-time card about the switch to gear v2. */
     dismissNotice: () => applied(deps.run(() => server.dismissGearNotice())),
     startJob: (request: JobStart) =>

@@ -19,12 +19,22 @@ export const ClaimJobBodySchema = v.strictObject({ idempotencyKey: IdempotencyKe
 
 const BLUEPRINT_IDS = blueprintBases().map((b) => b.id) as [string, ...string[]];
 
-/** The items of a dismantle job: 1 to the bundle size, each a valid id (the server checks they are the player's and distinct). */
+/** The items of a pile: 1 to the bag's size, each a valid id (the server checks they are the player's and distinct). */
 const ItemIdsSchema = v.pipe(
   v.array(IdSchema),
   v.minLength(1),
-  v.maxLength(RULES.gear.dismantle.bundleMax),
+  v.maxLength(RULES.gear.dismantle.pileMax),
 );
+
+/** Asks which of some items cannot be dismantled now (worn by a creature whose trip or job reads them live). */
+export const DismantleCheckBodySchema = v.strictObject({ itemIds: ItemIdsSchema });
+
+/** Dismantles the named items with one creature: the items the confirmation showed, and a key. */
+export const DismantleBodySchema = v.strictObject({
+  creatureId: IdSchema,
+  itemIds: ItemIdsSchema,
+  idempotencyKey: IdempotencyKeySchema,
+});
 
 /** Pack a treat for the worker (Bait, paid when the job starts): it doubles the job's creature experience. */
 const TreatSchema = v.optional(v.boolean());
@@ -37,13 +47,6 @@ export const StartJobBodySchema = v.variant('kind', [
     blueprintId: v.picklist(BLUEPRINT_IDS),
     /** What the craft is aimed at; absent means a plain craft (an older client sends none). */
     reach: v.optional(v.picklist(REACH_IDS)),
-    treat: TreatSchema,
-    idempotencyKey: IdempotencyKeySchema,
-  }),
-  v.strictObject({
-    kind: v.literal('dismantle'),
-    creatureId: IdSchema,
-    itemIds: ItemIdsSchema,
     treat: TreatSchema,
     idempotencyKey: IdempotencyKeySchema,
   }),
@@ -67,7 +70,9 @@ export const StartJobBodySchema = v.variant('kind', [
 /** The two job kinds gear v2 removed: an old client that sends one gets a clear answer, not a validation error. */
 export const RemovedJobKindSchema = v.object({ kind: v.picklist(['improve', 'enchant']) });
 
-/** The old instant dismantle's body (the route now answers that dismantling is a job): any object is accepted and ignored. */
+/** The timed dismantle job (removed 2026-10-27, marked items are dismantled as a pile): the same kind of clear answer. */
+export const DismantleJobSchema = v.object({ kind: v.literal('dismantle') });
+
 /** Asks what a craft or a dismantle job would give, before it is started. Changes nothing. */
 export const PreviewBodySchema = v.variant('kind', [
   v.strictObject({

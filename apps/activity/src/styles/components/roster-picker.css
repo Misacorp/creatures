@@ -196,6 +196,17 @@
   The item the creature already wears in the slot (the Equip on list): the creature card's item tile, small, at the
   right end of the row after any reason. An empty slot draws nothing, so the tiles alone say "slot taken".
 */
+.ro-worns {
+  display: flex;
+  flex: none;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.roster-option.static {
+  cursor: default;
+}
+
 .ro-worn {
   display: grid;
   flex: none;

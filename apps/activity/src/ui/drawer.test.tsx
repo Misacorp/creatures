@@ -91,6 +91,19 @@ describe('Drawer', () => {
     expect(event.defaultPrevented).toBe(true);
   });
 
+  it('keeps a pull on the handle to the page: its touch moves are marked handled, a tap is left alone', () => {
+    const p = draw(sheet());
+    const handle = first(byClass(p.root, 'drawer-handle'));
+    // No pull under way: a touch move is the browser's.
+    expect(p.event(handle, 'touchmove', { cancelable: true }).defaultPrevented).toBe(false);
+    p.pointer(handle, 'pointerdown', { x: 0, y: 10 });
+    expect(p.event(handle, 'touchmove', { cancelable: true }).defaultPrevented).toBe(true);
+    // A move the browser says cannot be cancelled is not (that would only log a warning).
+    expect(p.event(handle, 'touchmove', { cancelable: false }).defaultPrevented).toBe(false);
+    p.pointer(handle, 'pointerup', { x: 0, y: 12 });
+    expect(p.event(handle, 'touchmove', { cancelable: true }).defaultPrevented).toBe(false);
+  });
+
   it('keeps Escape to itself: the page around it never hears it', () => {
     const onBack = vi.fn();
     const onClose = vi.fn();

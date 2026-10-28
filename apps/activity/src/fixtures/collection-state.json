@@ -1,5 +1,5 @@
 {
-  "serverNow": 1799751603000,
+  "serverNow": 1799745303000,
   "balances": {
     "bait": 100,
     "essence": 75
@@ -189,7 +189,7 @@
         "nextRankXp": 200,
         "trips": 0
       },
-      "exp": 0,
+      "exp": 2,
       "expNeeded": 742,
       "waiting": false,
       "ribbons": 1,
@@ -268,7 +268,7 @@
         "nextRankXp": 200,
         "trips": 0
       },
-      "exp": 26,
+      "exp": 24,
       "expNeeded": 387,
       "waiting": false,
       "ribbons": 1,
@@ -313,7 +313,7 @@
   "timezone": "Europe/Helsinki",
   "leetSync": {
     "source": "disabled",
-    "lastAttemptAt": 1799751603000,
+    "lastAttemptAt": 1799745303000,
     "lastSyncedAt": null,
     "lastError": "disabled",
     "lastDays": null

@@ -53,10 +53,15 @@ const GAME_MESSAGES: Readonly<Record<string, string>> = {
   item_level_too_high: 'That item is higher level than that creature.',
   gear_upgrade_removed: 'Gear is not upgraded any more. Use the new items instead.',
   job_kind_removed: 'That kind of job is not in the Workshop any more.',
-  dismantle_is_a_job:
-    'Dismantling is a Workshop job now. Pick the items and a creature in the Workshop.',
+  dismantle_is_a_job: 'Pick the items in the Workshop, then a creature to dismantle them.',
+  dismantle_job_removed:
+    'Dismantling is not a timed job any more. Pick the items in the Workshop and dismantle them at once.',
+  invalid_items: 'An item cannot repeat in the pile.',
   invalid_bundle:
     'Up to 5 Commons can go in one dismantle job; anything rarer goes alone, and an item cannot repeat.',
+  item_in_job: 'That item is in a Workshop job. Claim the job first.',
+  item_locked:
+    'A creature that is away or busy still needs something it wears. Dismantle it when they are back.',
   insufficient_essence: 'You do not have enough Essence for that.',
   gear_conversion_pending:
     'Your old gear is still being converted to the new gear. Try again in a little while.',
@@ -107,7 +112,7 @@ describe('error messages', () => {
   });
 
   it('pins every code of the table', () => {
-    expect(Object.keys(GAME_MESSAGES)).toHaveLength(68);
+    expect(Object.keys(GAME_MESSAGES)).toHaveLength(72);
   });
 
   it('says the same words for every dungeon code', () => {
