@@ -14,6 +14,12 @@ import { Tag } from './Tag';
 /** How long a hover-opened popover stays after the mouse leaves, so the mouse can reach its button. */
 const HOVER_CLOSE_MS = 200;
 
+/**
+ * The row whose popover is open because the mouse is on it (not pinned by a tap), across all rows: hovering
+ * another row moves the popover there, and a row's late close never closes another row's popover.
+ */
+let hoverOpen: HTMLElement | null = null;
+
 /** A mouse or pen that can hover (a finger cannot, and taps instead). */
 const canHover = (event: PointerEvent): boolean =>
   event.pointerType !== 'touch' &&
@@ -82,6 +88,8 @@ export function FindItem({
       leaving.current = null;
       if (!hovered.current) return;
       hovered.current = false;
+      if (hoverOpen === null || hoverOpen !== ref.current) return;
+      hoverOpen = null;
       host?.close();
     }, HOVER_CLOSE_MS);
   };
@@ -92,6 +100,12 @@ export function FindItem({
         class="find-item-pop"
         onPointerEnter={(event: PointerEvent) => {
           if (event.pointerType !== 'touch') cancelLeave();
+        }}
+        // A press inside (a line's help tag) pins it: the popover may change face and stay open.
+        onPointerDown={() => {
+          cancelLeave();
+          hovered.current = false;
+          if (hoverOpen === ref.current) hoverOpen = null;
         }}
         onPointerLeave={(event: PointerEvent) => {
           if (event.pointerType !== 'touch' && hovered.current) leaveSoon();
@@ -107,6 +121,7 @@ export function FindItem({
                 const from = ref.current;
                 cancelLeave();
                 hovered.current = false;
+                hoverOpen = null;
                 host?.close();
                 equip.open(shown, from);
               }}
@@ -129,15 +144,24 @@ export function FindItem({
             if (ref.current === null) return;
             if (hovered.current && open) {
               hovered.current = false;
+              hoverOpen = null;
               return;
             }
             hovered.current = false;
+            if (hoverOpen === ref.current) hoverOpen = null;
             cancelLeave();
             host.openCustom(`find-item:${item.id}`, ref.current, popover(item));
           },
           onPointerEnter: (event: PointerEvent) => {
-            if (ref.current === null || !canHover(event) || host.anchor !== null) return;
+            if (ref.current === null || !canHover(event)) return;
+            // Another popover that is open by a tap stays; one open by hovering moves here.
+            if (host.anchor !== null && host.anchor !== hoverOpen) return;
+            if (host.anchor === ref.current) {
+              cancelLeave();
+              return;
+            }
             hovered.current = true;
+            hoverOpen = ref.current;
             cancelLeave();
             host.openCustom(`find-item:${item.id}`, ref.current, popover(item));
           },
