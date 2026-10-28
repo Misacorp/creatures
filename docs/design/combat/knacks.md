@@ -157,10 +157,10 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Wide Reach
 
-- **Text:** Its reach is +1 on each side.
+- **Text:** Its reach is +1 slot on each side.
 - **Family:** Reach
 - **Forms:** sproutle, thornbuck, mistnewt, fogwyrm, mudlump, bogwarden
-- **Intent (for contributors, never shown to players):** Protects fragile creatures two places away; strong in wide raid rows.
+- **Intent (for contributors, never shown to players):** Protects fragile creatures two slots away; strong in wide raid rows.
 
 ### Primed by Pain
 
@@ -199,7 +199,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Wide Warmth
 
-- **Text:** Its boost also reaches one place further on each side, 10 points weaker.
+- **Text:** Its boost also reaches one slot further on each side, 10% weaker.
 - **Family:** Support shape
 - **Forms:** ashmole, magmole, croakmire
 - **Intent (for contributors, never shown to players):** Wide raid rows with several hitters.
@@ -364,58 +364,53 @@ Generated from `packages/lab/src/talents.ts`. One shared library; each line link
 
 | Line | Pool |
 | --- | --- |
-| splashet | First Strike, Momentum, Edge-walker, Deep Ink, Quick Draw, Shoulder to Shoulder, Hardy |
-| cindle | Steady Rhythm, Sharp Claws, Lone Wolf, Opportunist, Owner's Mark, Odd One Out, First Strike |
-| sproutle | Share the Load, Shoulder to Shoulder, Stubborn, Brace, Triage, Kindred Boost, Hardy |
-| zipmouse | Momentum, First Strike, Edge-walker, Deep Ink, Flank Guard (Right), Thick Skull, Light Sleeper |
-| mistnewt | Long Shadow, Flank Guard (Left), Unflappable, Overheal Spill, Bright Boost, Light Sleeper, Second Wind |
-| ashmole | Kindred Boost, Bright Boost, Share the Load, Shoulder Charge, Stubborn, Vengeful, Thick Skull |
-| stormray | Slow Burn, Quick Draw, Cull, Bright Boost, Kindred Boost, Momentum, Light Sleeper |
+| splashet | First Pounce, Momentum, Edge-walker, Deep Ink, Quick Draw, Shoulder to Shoulder, Hardy |
+| cindle | Steady Rhythm, Sharp Claws, Rally Cry, Opportunist, Owner's Mark, Odd One Out, First Pounce |
+| sproutle | Rally Cry, Shoulder to Shoulder, Stubborn, Brace, Triage, Kindred Boost, Hardy |
+| zipmouse | Momentum, First Pounce, Edge-walker, Deep Ink, Flank Guard, Unbothered, Brace |
+| mistnewt | Long Shadow, Flank Guard, Unbothered, Overheal Spill, Bright Boost, Kindred Boost, Catch Breath |
+| ashmole | Kindred Boost, Bright Boost, Shoulder Charge, Stubborn, Rally Cry, Brace, Hardy |
+| stormray | Slow Burn, Quick Draw, Edge-walker, Bright Boost, Kindred Boost, Momentum, Unbothered |
 | mossback | Owner's Mark, Opportunist, Finisher, Front-liner, Stubborn, Hardy, Brace |
-| coralynx | Sharp Claws, Odd One Out, Edge-walker, Cull, Quick Draw, First Strike, Momentum |
-| solmane | Front-liner, Deep Ink, Owner's Mark, Shoulder to Shoulder, Vengeful, Sharp Claws, Second Wind |
-| gaiadrake | Finisher, Opportunist, Stubborn, Brace, Hardy, Thick Skull, Second Wind |
-| aurorix | Bright Boost, Kindred Boost, Unflappable, Light Sleeper, Edge-walker, Odd One Out, Momentum |
-| lanternfin | Triage, Overheal Spill, Kindred Boost, Unflappable, Second Wind, Hardy, Vengeful |
-| hearthshell | Share the Load, Shoulder Charge, Flank Guard (Right), Stubborn, Second Wind, Front-liner, Brace |
-| mudlump | Heavy Hand, Clinging, Thick Skull, Stubborn, Brace, Front-liner, Hardy |
-| squelch | Heavy Hand, Clinging, Bright Boost, Kindred Boost, Light Sleeper, Hardy, Unflappable |
+| coralynx | Sharp Claws, Odd One Out, Edge-walker, Finisher, Quick Draw, First Pounce, Momentum |
+| solmane | Front-liner, Deep Ink, Owner's Mark, Shoulder to Shoulder, Rally Cry, Sharp Claws, Catch Breath |
+| gaiadrake | Finisher, Opportunist, Stubborn, Brace, Hardy, Slow Burn, Catch Breath |
+| aurorix | Bright Boost, Kindred Boost, Unbothered, Hardy, Edge-walker, Odd One Out, Momentum |
+| lanternfin | Triage, Overheal Spill, Kindred Boost, Unbothered, Catch Breath, Hardy, Rally Cry |
+| hearthshell | Shoulder Charge, Flank Guard, Stubborn, Catch Breath, Front-liner, Brace, Hardy |
+| mudlump | Heavy Hand, Clinging, Shoulder Charge, Stubborn, Brace, Front-liner, Hardy |
+| squelch | Heavy Hand, Clinging, Bright Boost, Kindred Boost, Catch Breath, Hardy, Unbothered |
 
 | Talent | Text | Roles | Intent |
 | --- | --- | --- | --- |
 | Sharp Claws | Attack +8%. | setter, payoff | Plain power for hitters; the small, steady number the conditional talents are judged against. |
 | Hardy | Max HP +10%. | setter, payoff, guard, support | Plain staying power; carries through a raid weekend (R14). |
 | Shoulder to Shoulder | +20% on its hits for each creature {Beside} it of its element, at most 2. | setter, payoff, guard, support | Mono-element pairs and trios: a reason to talk about placement in the raid. |
-| Odd One Out | +30% on its hits while creatures stand {Beside} it and none shares its element. | setter, payoff, guard, support | The mixed row: the opposite of Shoulder to Shoulder. It needs a neighbour, so it is not Lone Wolf. |
-| Lone Wolf | +40% on its hits while no creature stands {Beside} it. | setter, payoff | Wants empty slots: the opposite of the aura builds. |
-| Edge-walker | +30% on its hits at either end of its row. | setter, payoff, guard, support | A reason to stand at the end of the row; Bramble Bind and sweeps make ends risky. |
-| Front-liner | It takes 20% less from every hit in the front row. | setter, payoff, guard, support | The front row takes the plain attack: a creature that wants to stand there. |
-| Slow Burn | +8% on its hits per round from round 2, up to +48%. | setter, payoff | Strong in long raid stages, weak in short fights: a reason to own two of a species. |
+| Odd One Out | +12% on its hits while no creature {Beside} it shares its element. | setter, payoff, guard, support | The mixed row: the opposite of Shoulder to Shoulder. Like the shipped line it also holds when nothing stands beside it, so the number is small. |
+| Edge-walker | +15% on its hits while it stands at a {Row end}. | setter, payoff, guard, support | A reason to stand at an end slot of the row (column 0 or the last column), whoever stands beside it: the owner controls it. Sweeps of the row ends make ends risky. |
+| Front-liner | It takes 20% less from every hit in the {Front row}. | setter, payoff, guard, support | The front row takes the plain attack: a creature that wants to stand there. |
+| Slow Burn | +4% on its hits per round from round 2, up to +24%. | setter, payoff | Strong in long raid stages, weak in short fights: a reason to own two of a species. |
 | Finisher | +50% on its hits while the boss is below a third of its HP. | setter, payoff | With the boss HP shared across a raid weekend (R14), the last stage rewards it most. |
-| First Strike | Its first hit that lands each fight deals +60%. | setter, payoff | Short fights, the dungeon and each raid stage. |
+| First Pounce | Its first hit that lands each fight deals +60%. | setter, payoff | Short fights, the dungeon and each raid stage. A hit made while silenced does not use it up. |
 | Steady Rhythm | Every third hit it makes is a crit. | setter, payoff | Crits you can plan for (P-04): a rhythm instead of a chance. |
 | Opportunist | Its {Reaction} bonus +40% when it cashes a {Mark} at x3. | payoff | Rewards waiting for a full mark; pairs with Setters that leave x2. |
-| Quick Draw | Its {Reaction} bonus +30% on a {Mark} set this boss turn. | payoff | The opposite timing: cash right after the Setter, before Clean Scales sheds the mark. |
-| Owner's Mark | {Reaction}s on a {Mark} it left have a +30% bonus. | setter | A Setter that makes its own marks worth more, whoever cashes them. |
-| Deep Ink | Its first {Mark} each fight starts at x2. | setter | Changes the opening without adding marks from nowhere: marks still come only from Setters and Knacks. |
-| Vengeful | +50% on its hits for the rest of the fight after a creature {Beside} it is knocked out. | setter, payoff, guard, support | Turns attrition into a comeback. |
+| Quick Draw | +30% on a {Reaction} on a mark added since the boss's last turn. | payoff | The opposite timing: cash right after the Setter, before Clean Scales sheds the mark. |
+| Owner's Mark | {Reaction}s on a {Mark} it left have a +30% bonus while it stands. | setter | A Setter that makes its own marks worth more, whoever cashes them, while it stands and is not silenced. |
+| Deep Ink | Its first {Mark} each fight adds 1 more to the count. | setter | Changes the opening without adding marks from nowhere: marks still come only from Setters and Knacks. |
+| Rally Cry | +50% on its hits for the rest of the fight after a creature {Beside} it is knocked out. | setter, payoff, guard, support | Turns attrition into a comeback. It does not arm while the creature is silenced. |
 | Momentum | After it dodges, its next hit deals +40%. | setter, payoff, guard, support | Fast creatures against bosses that hit often; the front row. |
-| Flank Guard (Left) | Its {Reach} covers only the left side, with twice the places. | guard | A Guard at the right end protects the whole row to its left: a placement puzzle. |
-| Flank Guard (Right) | Its {Reach} covers only the right side, with twice the places. | guard | The mirror of Flank Guard (Left), for a Guard at the left end. |
-| Long Shadow | Its cover, and the cut on hits it {Intercept}s, grow 10 points per place of distance. | guard | Protects the far creatures best; with Flank Guard a Guard at one end covers a long row. |
-| Shoulder Charge | When it {Intercept}s, it hits back for 40% of its Attack, ignoring armour. | guard | A Guard that adds damage the more it is hit. |
-| Share the Load | Creatures {Beside} it get half its armour. | guard | A Guard that protects without intercepting; armour is why Guards are armoured (R13). |
-| Thick Skull | A hit smaller than 10% of its max HP is {Blocked}. | setter, payoff, guard, support | A Swarm answer that scales with HP, not armour. |
-| Brace | It takes 40% less from a {Charged} hit aimed at its slot. | setter, payoff, guard, support | Reads straight off the board's Charged highlights (Great Wave). |
+| Flank Guard | Its {Reach} covers only its longer side (the side with more slots to the row end, ties go left), with twice the slots. | guard | A Guard at one end protects the long stretch of the row: a placement puzzle the owner controls, with no Left/Right pair to roll. |
+| Long Shadow | Cover +10% per slot of distance, and the hits it takes for others are cut by 10% per slot. | guard | Protects the far creatures best; with Flank Guard a Guard at one end covers a long row. |
+| Shoulder Charge | When it {Intercept}s, it strikes back for 40% of its Attack, ignoring armour. | guard | A Guard that adds damage the more it is hit. The strike-back is a counter, not a hit: it can land the killing blow but triggers nothing that keys on its hits. |
+| Brace | It takes 40% less from a {Charged} hit on its slot. | setter, payoff, guard, support | Reads straight off the board's Charged highlights (Great Wave). |
 | Stubborn | Once per fight, a hit that would knock it out leaves it at 1 HP. | setter, payoff, guard, support | Survives one Crusher; pairs with healers. Hold On under its one name. |
-| Second Wind | Once per fight, when a hit drops it below half its max HP, it heals 20% of max HP. | setter, payoff, guard, support | Survives one big hit (Crusher, Payoff Hunter). |
-| Unflappable | It cannot be {Silenced}. | setter, payoff, guard, support | The silence answer on the creature itself, for row ends and front rows. |
-| Light Sleeper | The first silence on it each fight lasts one turn. | setter, payoff, guard, support | A softer Unflappable: it still loses a turn, but not two. |
-| Cull | A hit that leaves the boss below 5% of its HP defeats it. It lands the killing blow. | setter, payoff | Weak alone; it decides who lands the killing blow, which other effects can key on. |
-| Heavy Hand | Its {Mired} adds 2 stacks each time. | guard, support | Mire only: with Mired fading each round, more stacks per application keeps the debuff up. |
-| Clinging | {Mired} fades every second round instead of every round while it stands. | guard, support | Mire only: slower fading; one creature can hold a debuff for the team. |
+| Catch Breath | Once per fight, when a hit drops it below half its max HP, it heals 20% of max HP. | setter, payoff, guard, support | Survives one big hit (Crusher, Payoff Hunter). Not the gear line Second Wind, which is a chance each round to heal. |
+| Unbothered | It cannot be {Silenced}. | setter, payoff, guard, support | The silence answer on the creature itself, for row ends and front rows. |
+| Cull | A hit that leaves the boss below 5% of its full HP defeats it. The HP removed counts as the killing blow, not as damage. | setter, payoff | Weak alone; it decides who lands the killing blow, which other effects can key on. In no line pool until a killing-blow talent exists. |
+| Heavy Hand | Its {Mired} has a 50% chance to add 1 extra stack. | guard, support | Mire only; the shipped line is a chance of an extra stack, and luck is welcome. More stacks per application keeps the debuff up. |
+| Clinging | {Mired} fades every third round instead of every second while it stands. | guard, support | Mire only: the v2 form of the shipped "lasts more turns"; one creature can hold a debuff for the team. |
 | Bright Boost | Every second {Boost} it gives is doubled. | support | A Support with a visible rhythm instead of a crit chance. |
-| Kindred Boost | Its {Boost} is 10 points bigger on creatures of its own element. | support | Mono-element rows in the raid, across players. |
-| Triage | Its heal goes to the most hurt creature {Beside} it, at double size. | support | Changes how a healer is placed; only healing Supports (Tide, Grove) have a heal to aim. |
-| Overheal Spill | Its healing past full HP passes to the most hurt creature {Beside} it. | support | Big heals are never wasted; only healing Supports (Tide, Grove) have a heal. |
+| Kindred Boost | Its {Boost} +10% on creatures of its own element. | support | Mono-element rows in the raid, across players. |
+| Triage | Its heal on the creatures {Beside} it goes to the most hurt one, at double size. | support | Aims the Support's own base heal on the creatures beside it; only healing Supports (Tide, Grove) have a heal to aim. Idle under a Support shape Knack (Sunbeam, Drizzle, Curl Up and the rest), which replaces that verb. |
+| Overheal Spill | Its healing past full HP passes to the most hurt creature {Beside} the one it healed. | support | Big heals are never wasted; only healing Supports (Tide, Grove) have a heal. |
 

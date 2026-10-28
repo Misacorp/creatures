@@ -15,8 +15,10 @@ Generated from `packages/lab/src/keywords.ts` by `pnpm --filter @creatures/lab r
 | Blocked | A hit that does not get past armour deals nothing. | A dodge | R13 |
 | Silenced | Its Knack, talents, gear effects and its role's verb do nothing (a Setter does not mark, a Payoff does not cash, a Guard does not intercept or cover, a Support does not boost or heal). It still hits with its stats. | It skips its turn | R12 |
 | Charged | A boss move announced at round start: its slots are shown, and it lands on them. | A mark | R8 |
-| Mired | A debuff on the boss: per count it deals less damage and dodges less (at most x5). | A mark | R15 |
-| Beside | The one slot on each side of it, in its row. Never widened. | Its Reach (which effects can widen) | R16 |
-| Reach | How many places to each side, in its row, a Guard or Support covers. Starts at Beside; some effects widen it. | Its whole row | R1, R16 |
+| Mired | A debuff on the boss: per count it deals less damage and dodges less (at most x5). It fades by 1 at the end of every second round. | A mark | R15 |
+| Beside | The living creatures in the slots on each side of it, in its row. Never widened. | Its Reach (which effects can widen) | R16 |
+| Row end | The first or last slot of its row. | The end living creature of the row | R21 |
+| Front row | The row nearest the boss. | The first row with a creature in it | R8, R21 |
+| Reach | How many slots to each side, in its row, a Guard or Support covers. Starts at Beside; some effects widen it. | Its whole row | R1, R16 |
 | Boost | A Support's bonus on a creature's next hit. | A lasting buff | R16 |
 | Area hit | A hit on more than one slot; it is dodged at half chance. | A hit a Guard takes for you | R2 |
