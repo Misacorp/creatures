@@ -1,6 +1,6 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { EFFECT_PREFIX, RECOMMENDED_TAG, type PickerOption } from '../roster-picker';
+import { EFFECT_PREFIX, RECOMMENDED_TAG, type PickerOption, type WornItem } from '../roster-picker';
 import { ElementChip } from '../sprites/ElementChip';
 import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
@@ -30,6 +30,12 @@ export type Selection =
       onChange: (creatureId: string) => void;
       /** The fieldset's legend (it may be visually hidden by the screen's CSS). */
       legend: ComponentChildren;
+    }
+  | {
+      /** Only shown, never chosen from (the dismantle flow's "Worn items"): a plain list, no focus stops, no roles. */
+      mode: 'show';
+      /** Names the list for assistive technology. */
+      label: string;
     };
 
 export interface CreatureListProps<T extends PickerOption = PickerOption> {
@@ -99,6 +105,12 @@ function Reason({ option, side }: { option: PickerOption; side: boolean }) {
   );
 }
 
+/** The items an option wears, as a list (one for the Equip on list, several for a creature in the dismantle flow). */
+function wornOf(o: PickerOption): readonly WornItem[] {
+  if (o.worn === undefined) return [];
+  return 'baseId' in o.worn ? [o.worn] : o.worn;
+}
+
 /** The index of the option to focus first: the first one that can be picked, else the first. */
 function firstEnabled(options: readonly PickerOption[]): number {
   const at = options.findIndex((o) => o.disabled === null);
@@ -115,6 +127,7 @@ function RowContent<T extends PickerOption>({ o, props }: { o: T; props: Creatur
   // The name is in its species' rarity colour, as on the creature card (an action row has no species).
   const rarity = o.action === true ? undefined : getSpecies(o.species)?.rarity;
   const detail = o.disabled === null ? props.side?.(o) : undefined;
+  const wornItems = wornOf(o);
   return (
     <>
       {o.action !== true && <Sprite sprite={creatureSpriteOrFallback(o.species)} scale={2} />}
@@ -161,14 +174,19 @@ function RowContent<T extends PickerOption>({ o, props }: { o: T; props: Creatur
         <span class="ro-note ro-side">{placedNote}</span>
       )}
       {detail !== undefined && detail !== null && <span class="ro-detail">{detail}</span>}
-      {o.worn !== undefined && (
-        <span
-          class="ro-worn"
-          role="img"
-          aria-label={`Wearing ${gearName(o.worn.baseId)}, item level ${String(o.worn.itemLevel)}, ${rarityName(o.worn.rarity)}`}
-          title={`Wearing ${gearName(o.worn.baseId)}`}
-        >
-          <ItemThumb item={o.worn} scale={2} />
+      {wornItems.length > 0 && (
+        <span class="ro-worns">
+          {wornItems.map((w, at) => (
+            <span
+              key={`${w.baseId}-${String(at)}`}
+              class="ro-worn"
+              role="img"
+              aria-label={`Wearing ${gearName(w.baseId)}, item level ${String(w.itemLevel)}, ${rarityName(w.rarity)}`}
+              title={`Wearing ${gearName(w.baseId)}`}
+            >
+              <ItemThumb item={w} scale={2} />
+            </span>
+          ))}
         </span>
       )}
     </>
@@ -189,7 +207,8 @@ function RowContent<T extends PickerOption>({ o, props }: { o: T; props: Creatur
  *   as a job's clock badge), `more` (a block under the name, such as the explorer's XP bar and familiarity) and
  *   `beside` (a small mark on the name's line, such as the Games' event badge).
  *
- * `selection.mode` says how it is chosen from. `pick`: a listbox; Up, Down, Home and End move through the rows
+ * `selection.mode` says how it is chosen from. `show` is a plain list for showing creatures with what they wear (the
+ * dismantle flow's "Worn items"). `pick`: a listbox; Up, Down, Home and End move through the rows
  * (roving tabindex), Enter, Space or a tap picks, and the focus starts on the first row that can be picked. It is
  * for pick-and-close views: the sheet of `RosterPicker` and the "Equip on" drill-in. `choose`: native radios in a
  * fieldset, so the arrow keys and screen readers work as for any radio group; the choice stays, and a row that
@@ -198,6 +217,7 @@ function RowContent<T extends PickerOption>({ o, props }: { o: T; props: Creatur
 export function CreatureList<T extends PickerOption = PickerOption>(props: CreatureListProps<T>) {
   const { selection } = props;
   if (selection.mode === 'choose') return <ChooseList {...props} selection={selection} />;
+  if (selection.mode === 'show') return <ShowList {...props} selection={selection} />;
   return <PickList {...props} selection={selection} />;
 }
 
@@ -209,6 +229,7 @@ function listClass(props: { class?: string | undefined }): string {
   return `roster-list pix-panel${props.class === undefined ? '' : ` ${props.class}`}`;
 }
 
+type Shown = Extract<Selection, { mode: 'show' }>;
 type Chosen = Extract<Selection, { mode: 'choose' }>;
 type Picking = Extract<Selection, { mode: 'pick' }>;
 
@@ -250,6 +271,19 @@ function ChooseList<T extends PickerOption>(props: CreatureListProps<T> & { sele
         </>
       )}
     </fieldset>
+  );
+}
+
+/** `show` mode: the same rows as a plain list that nothing can be picked from. */
+function ShowList<T extends PickerOption>(props: CreatureListProps<T> & { selection: Shown }) {
+  return (
+    <ul class={listClass(props)} aria-label={props.selection.label}>
+      {props.options.map((o) => (
+        <li key={o.id} class={`${rowClass(o)} static`}>
+          <RowContent o={o} props={props} />
+        </li>
+      ))}
+    </ul>
   );
 }
 

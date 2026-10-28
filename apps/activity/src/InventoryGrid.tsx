@@ -34,11 +34,11 @@ function columnsOf(tiles: readonly (HTMLButtonElement | null)[]): number {
  * it. The grid is a multi-select listbox (decisions.md, 2026-10-27, "Bulk selection replaces marking"), the
  * one gesture set for picking several items:
  *
- * - A tap or click opens the item's card (`onOpen`); once something is selected, a tap toggles instead and
- *   never opens the card. The small "i" on each tile (while selecting) opens the card on top of the selection.
+ * - A tap or click on a tile opens the item's card (`onOpen`), selecting or not (the card opens over the
+ *   selection). The small square checkbox in the tile's corner (a 44 px target) toggles it instead.
  * - Touch: press and hold ~450 ms selects the item and starts selecting (`useHold`; the tile shows a cue, the
  *   device buzzes, scrolling stays native, and the click after the hold is swallowed).
- * - Mouse: a circle shows in the tile's corner on hover; a click on it selects. Ctrl or Command click toggles,
+ * - Mouse: the checkbox shows in the tile's corner on hover; a click on it selects. Ctrl or Command click toggles,
  *   Shift click adds the range from the last toggled item (in the grid's order), a right click opens a small menu
  *   with Inspect and Select (an extra: the other ways always work).
  * - Keyboard: arrows (with Home and End) move one tab stop around the grid (roving tabindex), Enter opens the
@@ -123,6 +123,7 @@ export function InventoryGrid({
                 onCheck: () => {
                   selection.toggle(item.id);
                 },
+                checkLabel: `Select ${nameOfItem(item)}, item level ${String(item.itemLevel)}`,
               }}
               focusRef={(el) => {
                 tiles.current[index] = el;
@@ -194,20 +195,10 @@ export function InventoryGrid({
                   if (event.key === ' ') event.preventDefault();
                 },
               }}
-              {...(selection.active
-                ? {
-                    onInfo: () => {
-                      onOpen(item.id);
-                    },
-                    infoLabel: `Details of ${nameOfItem(item)}, item level ${String(item.itemLevel)}`,
-                  }
-                : {})}
               onSelect={(keys) => {
                 if (hold.swallowClick()) return;
-                if (selection.active) {
-                  if (keys.shiftKey) selection.range(item.id);
-                  else selection.toggle(item.id);
-                } else if (keys.ctrlKey || keys.metaKey) selection.toggle(item.id);
+                // The tile's body always opens the card; the checkbox (or Ctrl, Command, Shift) selects.
+                if (keys.ctrlKey || keys.metaKey) selection.toggle(item.id);
                 else if (keys.shiftKey) selection.range(item.id);
                 else onOpen(item.id);
               }}

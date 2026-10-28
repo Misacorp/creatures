@@ -327,7 +327,10 @@ describe('the Workshop item drawer flips through the bag in the grid order', () 
   }
 
   function cells(p: Page): FakeElement[] {
-    return find(first(byClass(p.root, 'item-grid')), (e) => e.localName === 'button');
+    return find(
+      first(byClass(p.root, 'item-grid')),
+      (e) => e.localName === 'button' && e.getAttribute('role') !== 'checkbox',
+    );
   }
 
   function dialog(p: Page): FakeElement {

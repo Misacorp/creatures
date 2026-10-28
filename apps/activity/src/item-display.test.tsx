@@ -66,7 +66,10 @@ describe('one item-level indicator everywhere', () => {
         selection={NO_PICK}
       />,
     );
-    const cells = find(page.root, (e) => e.localName === 'button');
+    const cells = find(
+      page.root,
+      (e) => e.localName === 'button' && e.getAttribute('role') !== 'checkbox',
+    );
     expect(cells).toHaveLength(6);
     cells.forEach((cell, i) => {
       const labels = byClass(cell, 'item-lv');
@@ -93,7 +96,10 @@ describe('one item-level indicator everywhere', () => {
         selection={NO_PICK}
       />,
     );
-    const cells = find(page.root, (e) => e.localName === 'button');
+    const cells = find(
+      page.root,
+      (e) => e.localName === 'button' && e.getAttribute('role') !== 'checkbox',
+    );
     const worn = cells.filter((c) => byClass(c, 'item-tile-wearer').length === 1);
     expect(worn).toHaveLength(1);
     expect(byClass(page.root, 'item-tile-flag')).toHaveLength(0);

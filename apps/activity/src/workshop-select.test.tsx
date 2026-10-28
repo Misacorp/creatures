@@ -18,7 +18,7 @@ import { Workshop } from './Workshop';
 
 /**
  * Selecting several items in the bag (2026-10-27, "Bulk selection replaces marking"): a press and hold on touch, the
- * corner circle, Ctrl and Shift clicks and a right click's menu with a mouse, arrows, Enter, Space and Escape on a
+ * corner checkbox, Ctrl and Shift clicks and a right click's menu with a mouse, arrows, Enter, Space and Escape on a
  * keyboard; a tap toggles once something is selected; the bulk bar counts, clears and dismantles. The sample bag
  * (in the grid's order): the epic Ember crown, Thundercap (rare, level 16), the Warden's bell (rare, 13), the bark
  * shawl (rare, 12), the Crossroads compass (rare, 10), the tidepool charm (common, 6), the kelp cap (common, 2)
@@ -130,7 +130,7 @@ function draw(
   return page;
 }
 
-/** The tile of an item (the option button named after it, not its info button). */
+/** The tile of an item (the option button named after it, not its checkbox). */
 function tile(p: Page, baseId: string): FakeElement {
   return first(
     find(
@@ -144,10 +144,8 @@ function tile(p: Page, baseId: string): FakeElement {
 }
 const tiles = (p: Page): FakeElement[] =>
   find(p.root, (e) => e.localName === 'button' && e.getAttribute('role') === 'option');
-const circleOf = (p: Page, baseId: string): FakeElement =>
+const boxOf = (p: Page, baseId: string): FakeElement =>
   first(byClass(tile(p, baseId).parentNode as FakeElement, 'item-tile-check'));
-const infoOf = (p: Page, baseId: string): FakeElement =>
-  first(byName(p.root, 'button', new RegExp(`^Details of ${gearName(baseId)}`)));
 const chosen = (p: Page): string[] =>
   IN_ORDER.filter((id) => tile(p, id).getAttribute('aria-selected') === 'true');
 const bar = (p: Page): FakeElement => first(byClass(p.root, 'bulk-bar'));
@@ -239,10 +237,10 @@ describe('a press and hold', () => {
     p.click(t);
     expect(chosen(p)).toEqual(['kelp-cap']);
     expect(dialogs(p)).toHaveLength(0);
-    // The next tap is a real one again: it toggles (the item goes, and the mode with it).
+    // The next tap is a real one again: on the tile's body it opens the card (the selection stays).
     p.click(t);
-    expect(chosen(p)).toEqual([]);
-    expect(hasBar(p)).toBe(false);
+    expect(dialogs(p)).toHaveLength(1);
+    expect(chosen(p)).toEqual(['kelp-cap']);
   });
 
   it('works for a mouse too (the same pointer code)', () => {
@@ -319,32 +317,50 @@ describe('a press and hold', () => {
 });
 
 describe('selecting with a mouse', () => {
-  it('puts a circle in every tile, and a click on it selects the item and starts selecting', () => {
+  it('puts a square checkbox in every tile, and a click on it selects the item and starts selecting', () => {
     const p = draw();
     expect(
       find(p.root, (e) => (e.getAttribute('class') ?? '').includes('item-tile-check')),
     ).toHaveLength(8);
-    p.click(circleOf(p, 'kelp-cap'));
+    p.click(boxOf(p, 'kelp-cap'));
     expect(chosen(p)).toEqual(['kelp-cap']);
     expect(barText(p)).toContain('1 selected');
-    // The click on the circle never opens the card.
+    // The click on the checkbox never opens the card.
     expect(dialogs(p)).toHaveLength(0);
-    // A second circle adds, and a click on a chosen one's circle removes.
-    p.click(circleOf(p, 'thundercap'));
+    // A second checkbox adds, and a click on a chosen one's checkbox removes.
+    p.click(boxOf(p, 'thundercap'));
     expect(chosen(p)).toEqual(['thundercap', 'kelp-cap']);
-    p.click(circleOf(p, 'kelp-cap'));
+    p.click(boxOf(p, 'kelp-cap'));
     expect(chosen(p)).toEqual(['thundercap']);
   });
 
-  it('shows a check in a chosen circle and an empty one on the rest', () => {
+  it('shows the pixel check in a chosen box and an empty one on the rest, announced as selecting the item', () => {
     const p = draw();
-    p.click(circleOf(p, 'kelp-cap'));
-    expect(circleOf(p, 'kelp-cap').getAttribute('class')).toContain('on');
-    expect(find(circleOf(p, 'kelp-cap'), (e) => e.localName === 'svg')).toHaveLength(1);
-    expect(circleOf(p, 'thundercap').getAttribute('class')).not.toContain('on');
-    expect(find(circleOf(p, 'thundercap'), (e) => e.localName === 'svg')).toHaveLength(0);
-    // The circles are decoration for a pointer: hidden from screen readers, and not tab stops.
-    expect(circleOf(p, 'kelp-cap').getAttribute('aria-hidden')).toBe('true');
+    p.click(boxOf(p, 'kelp-cap'));
+    expect(boxOf(p, 'kelp-cap').getAttribute('class')).toContain('on');
+    expect(byClass(boxOf(p, 'kelp-cap'), 'sprite')).toHaveLength(1);
+    expect(boxOf(p, 'thundercap').getAttribute('class')).not.toContain('on');
+    expect(byClass(boxOf(p, 'thundercap'), 'sprite')).toHaveLength(0);
+    // A checkbox of its own, named for the item and out of the tab order (Space on the tile selects).
+    expect(boxOf(p, 'kelp-cap').getAttribute('role')).toBe('checkbox');
+    expect(boxOf(p, 'kelp-cap').getAttribute('aria-checked')).toBe('true');
+    expect(boxOf(p, 'thundercap').getAttribute('aria-checked')).toBe('false');
+    expect(boxOf(p, 'kelp-cap').getAttribute('aria-label')).toContain('Select Kelp Cap');
+    expect(boxOf(p, 'kelp-cap').getAttribute('tabindex')).toBe('-1');
+  });
+
+  it('has no "i" button on any tile', () => {
+    const p = draw();
+    expect(byName(p.root, 'button', /^Details of/)).toHaveLength(0);
+    p.click(boxOf(p, 'thundercap'));
+    expect(byName(p.root, 'button', /^Details of/)).toHaveLength(0);
+    expect(byClass(p.root, 'item-tile-info')).toHaveLength(0);
+  });
+
+  it('puts the slot icon where the checkbox is not: the box is the first thing after the tile, the icon is in the tile', () => {
+    const p = draw();
+    expect(byClass(tile(p, 'kelp-cap'), 'item-slot')).toHaveLength(1);
+    expect(byClass(boxOf(p, 'kelp-cap'), 'item-slot')).toHaveLength(0);
   });
 
   it('starts selecting with a Ctrl or Command click, and toggles with it afterwards', () => {
@@ -440,27 +456,32 @@ describe('selecting with a mouse', () => {
 describe('while selecting', () => {
   function selecting(): Page {
     const p = draw();
-    p.click(circleOf(p, 'thundercap'));
+    p.click(boxOf(p, 'thundercap'));
     return p;
   }
 
-  it('toggles an item on a tap and never opens the card', () => {
+  it('opens the card on a tap on the tile and toggles on the checkbox', () => {
     const p = selecting();
-    p.click(tile(p, 'kelp-cap'));
+    p.click(boxOf(p, 'kelp-cap'));
     expect(chosen(p)).toEqual(['thundercap', 'kelp-cap']);
     expect(dialogs(p)).toHaveLength(0);
     expect(barText(p)).toContain('2 selected');
-    p.click(tile(p, 'kelp-cap'));
+    p.click(boxOf(p, 'kelp-cap'));
     expect(chosen(p)).toEqual(['thundercap']);
+    // A tap anywhere else on the tile opens the card on top of the selection, and changes nothing.
+    p.click(tile(p, 'crossroads-compass'));
+    expect(visibleText(first(dialogs(p)))).toContain('Crossroads Compass');
+    expect(chosen(p)).toEqual(['thundercap']);
+    expect(barText(p)).toContain('1 selected');
   });
 
-  it('draws a ring on chosen tiles and an empty circle on the others', () => {
+  it('draws a ring on chosen tiles and an empty box on the others', () => {
     const p = selecting();
     expect(tile(p, 'thundercap').getAttribute('class')).toContain('chosen');
     expect(tile(p, 'kelp-cap').getAttribute('class')).not.toContain('chosen');
     expect(grid(p).getAttribute('class')).toContain('selecting');
-    expect(circleOf(p, 'thundercap').getAttribute('class')).toContain('on');
-    expect(circleOf(p, 'kelp-cap').getAttribute('class')).not.toContain('on');
+    expect(boxOf(p, 'thundercap').getAttribute('class')).toContain('on');
+    expect(boxOf(p, 'kelp-cap').getAttribute('class')).not.toContain('on');
   });
 
   it("lets worn items be selected, and they keep the wearer's portrait", () => {
@@ -468,31 +489,14 @@ describe('while selecting', () => {
     const t = tile(p, 'emberkeepers-crown');
     expect(byClass(t, 'item-tile-wearer')).toHaveLength(1);
     expect(t.getAttribute('class')).not.toContain('blocked');
-    p.click(t);
+    p.click(boxOf(p, 'emberkeepers-crown'));
     expect(chosen(p)).toEqual(['emberkeepers-crown', 'thundercap']);
     expect(byClass(tile(p, 'emberkeepers-crown'), 'item-tile-wearer')).toHaveLength(1);
   });
 
-  it('opens the card from the small info button on top, keeping the selection', () => {
-    const p = selecting();
-    p.click(infoOf(p, 'crossroads-compass'));
-    const dialog = first(dialogs(p));
-    expect(byClass(dialog, 'idc')).toHaveLength(1);
-    expect(visibleText(dialog)).toContain('Crossroads Compass');
-    expect(chosen(p)).toEqual(['thundercap']);
-    expect(barText(p)).toContain('1 selected');
-  });
-
-  it('shows the info button only while selecting', () => {
-    const p = draw();
-    expect(byName(p.root, 'button', /^Details of/)).toHaveLength(0);
-    p.click(circleOf(p, 'thundercap'));
-    expect(byName(p.root, 'button', /^Details of/)).toHaveLength(8);
-  });
-
   it('keeps worn tiles as options of the listbox with aria-selected, and says how many in a live region', () => {
     const p = selecting();
-    p.click(tile(p, 'kelp-cap'));
+    p.click(boxOf(p, 'kelp-cap'));
     const live = find(
       p.root,
       (e) => e.getAttribute('role') === 'status' && e.hasAttribute('aria-live'),
@@ -504,32 +508,32 @@ describe('while selecting', () => {
 describe('ending the selection', () => {
   it('clears and leaves the mode on the X of the bar', () => {
     const p = draw();
-    p.click(circleOf(p, 'thundercap'));
-    p.click(circleOf(p, 'kelp-cap'));
+    p.click(boxOf(p, 'thundercap'));
+    p.click(boxOf(p, 'kelp-cap'));
     p.click(first(byName(bar(p), 'button', 'Clear the selection')));
     expect(hasBar(p)).toBe(false);
     expect(chosen(p)).toEqual([]);
     expect(grid(p).getAttribute('class')).not.toContain('selecting');
-    // Back to the plain grid: a tap opens the card again.
+    // Back to the plain grid: a tap opens the card.
     p.click(tile(p, 'kelp-cap'));
     expect(dialogs(p)).toHaveLength(1);
   });
 
   it('clears and leaves the mode on Escape in the grid, and in the bar', () => {
     const p = draw();
-    p.click(circleOf(p, 'thundercap'));
+    p.click(boxOf(p, 'thundercap'));
     const event = p.key(tile(p, 'thundercap'), 'Escape');
     expect(event.defaultPrevented).toBe(true);
     expect(hasBar(p)).toBe(false);
-    p.click(circleOf(p, 'thundercap'));
+    p.click(boxOf(p, 'thundercap'));
     p.key(first(byName(bar(p), 'button', 'Dismantle')), 'Escape');
     expect(hasBar(p)).toBe(false);
   });
 
   it('leaves the mode when the last item is deselected', () => {
     const p = draw();
-    p.click(circleOf(p, 'thundercap'));
-    p.click(tile(p, 'thundercap'));
+    p.click(boxOf(p, 'thundercap'));
+    p.click(boxOf(p, 'thundercap'));
     expect(hasBar(p)).toBe(false);
     expect(chosen(p)).toEqual([]);
   });
@@ -559,8 +563,8 @@ describe('ending the selection', () => {
 
   it('drops an item that is no longer in the bag from the selection', () => {
     const p = draw();
-    p.click(circleOf(p, 'thundercap'));
-    p.click(circleOf(p, 'kelp-cap'));
+    p.click(boxOf(p, 'thundercap'));
+    p.click(boxOf(p, 'kelp-cap'));
     expect(barText(p)).toContain('2 selected');
     // The server's bag now has no kelp cap (dismantled elsewhere).
     p.draw(
@@ -587,7 +591,7 @@ describe('dismantling the selection', () => {
 
   it('has Dismantle as the only action of the bar, with the count and the X', () => {
     const p = draw();
-    p.click(circleOf(p, 'thundercap'));
+    p.click(boxOf(p, 'thundercap'));
     expect(byName(bar(p), 'button', /./)).toHaveLength(2);
     expect(barText(p)).toContain('1 selected');
     expect(byName(bar(p), 'button', 'Clear the selection')).toHaveLength(1);
@@ -597,8 +601,8 @@ describe('dismantling the selection', () => {
   it('goes straight to Who for free items, then the confirmation naming the count', () => {
     const actions = actionsOf();
     const p = draw(actions);
-    p.click(circleOf(p, 'kelp-cap'));
-    p.click(circleOf(p, 'crossroads-compass'));
+    p.click(boxOf(p, 'kelp-cap'));
+    p.click(boxOf(p, 'crossroads-compass'));
     p.click(dismantle(p));
     expect(visibleText(first(dialogs(p)))).toContain('Who dismantles');
     expect(actions.checkDismantle).not.toHaveBeenCalled();
@@ -613,13 +617,13 @@ describe('dismantling the selection', () => {
   it('warns about worn items first: who wears each, then Dismantle anyway goes on', async () => {
     const actions = actionsOf();
     const p = draw(actions);
-    p.click(circleOf(p, 'kelp-cap'));
-    p.click(circleOf(p, 'emberkeepers-crown'));
+    p.click(boxOf(p, 'kelp-cap'));
+    p.click(boxOf(p, 'emberkeepers-crown'));
     p.click(dismantle(p));
     await settle(p);
     const dialog = first(dialogs(p));
     expect(visibleText(first(byClass(dialog, 'drill-head')))).toContain('Worn items');
-    const rows = byClass(dialog, 'worn-row');
+    const rows = byClass(dialog, 'roster-option');
     expect(rows).toHaveLength(1);
     expect(visibleText(rows[0] as FakeElement)).toContain('Ember');
     expect(actions.checkDismantle).toHaveBeenCalledWith([crown.id]);
@@ -637,8 +641,8 @@ describe('dismantling the selection', () => {
     const claimed = vi.fn();
     const actions = actionsOf();
     const p = draw(actions, SAMPLE_GEAR, claimed);
-    p.click(circleOf(p, 'kelp-cap'));
-    p.click(circleOf(p, 'emberkeepers-crown'));
+    p.click(boxOf(p, 'kelp-cap'));
+    p.click(boxOf(p, 'emberkeepers-crown'));
     p.click(dismantle(p));
     await settle(p);
     p.click(next(p));
@@ -657,7 +661,7 @@ describe('dismantling the selection', () => {
   it('keeps the selection and the bar when the dismantle is refused', async () => {
     const actions = actionsOf({ dismantlePile: vi.fn(() => Promise.resolve(undefined)) });
     const p = draw(actions);
-    p.click(circleOf(p, 'kelp-cap'));
+    p.click(boxOf(p, 'kelp-cap'));
     p.click(dismantle(p));
     p.click(next(p));
     await settle(p);
@@ -698,7 +702,7 @@ describe('dismantling one item from its card', () => {
     const p = draw(actions, SAMPLE_GEAR, claimed);
     p.click(tile(p, 'kelp-cap'));
     p.click(cardButton(p));
-    // Still one drawer: the flow is a view of the card's drawer.
+    // Still one drawer at a time: the card's drawer is replaced by the flow's (the same frame as the bag's).
     expect(dialogs(p)).toHaveLength(1);
     const send = (): FakeElement => first(byClass(first(dialogs(p)), 'send-button'));
     p.click(send());
@@ -721,12 +725,26 @@ describe('dismantling one item from its card', () => {
     expect(actions.checkDismantle).toHaveBeenCalledWith([crown.id]);
   });
 
-  it('works on top of a selection (from the info button) and removes the item from it afterwards', async () => {
+  it('goes back to the card from the first step, and leaves everything on a tap outside', () => {
+    const p = draw();
+    p.click(tile(p, 'kelp-cap'));
+    p.click(cardButton(p));
+    expect(visibleText(first(byClass(p.root, 'drill-head')))).toContain('Who dismantles');
+    p.click(first(byName(p.root, 'button', /^‹ Back/)));
+    expect(dialogs(p)).toHaveLength(1);
+    expect(byClass(first(dialogs(p)), 'idc')).toHaveLength(1);
+    expect(visibleText(first(dialogs(p)))).toContain('Kelp Cap');
+    p.click(cardButton(p));
+    p.click(first(byClass(p.root, 'drawer-backdrop')));
+    expect(dialogs(p)).toHaveLength(0);
+  });
+
+  it('works on top of a selection (the card opened from the tile) and ends the selection afterwards', async () => {
     const actions = actionsOf();
     const p = draw(actions);
-    p.click(circleOf(p, 'thundercap'));
-    p.click(circleOf(p, 'kelp-cap'));
-    p.click(infoOf(p, 'kelp-cap'));
+    p.click(boxOf(p, 'thundercap'));
+    p.click(boxOf(p, 'kelp-cap'));
+    p.click(tile(p, 'kelp-cap'));
     p.click(cardButton(p));
     const send = (): FakeElement => first(byClass(first(dialogs(p)), 'send-button'));
     p.click(send());
@@ -794,7 +812,7 @@ describe('with the keyboard', () => {
 describe('the one-time hint', () => {
   const hint = (p: Page): FakeElement[] => byClass(p.root, 'bag-hint');
   const touchText = 'Press and hold an item to select several';
-  const mouseText = 'Click the circle on an item to select several';
+  const mouseText = 'Click the box on an item to select several';
 
   function storage(throws = false) {
     const saved = new Map<string, string>();
@@ -822,7 +840,7 @@ describe('the one-time hint', () => {
     expect(visibleText(hint(p)[0] as FakeElement)).toContain(touchText);
   });
 
-  it('shows the circle wording where there is a mouse', () => {
+  it('shows the box wording where there is a mouse', () => {
     vi.stubGlobal('matchMedia', (query: string) => ({
       matches: query === '(hover: hover) and (pointer: fine)',
     }));
@@ -856,7 +874,7 @@ describe('the one-time hint', () => {
     const saved = storage();
     const p = draw();
     expect(hint(p)).toHaveLength(1);
-    p.click(circleOf(p, 'kelp-cap'));
+    p.click(boxOf(p, 'kelp-cap'));
     expect(hint(p)).toHaveLength(0);
     expect([...saved.values()]).toEqual(['1']);
     p.click(first(byName(bar(p), 'button', 'Clear the selection')));
