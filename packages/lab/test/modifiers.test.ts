@@ -53,7 +53,7 @@ describe('the modifier library', () => {
   });
 
   it('gives every modifier one of the five categories, a known kind and status, and roles', () => {
-    expect(MODIFIER_CATEGORIES).toEqual(['damage', 'marks', 'protection', 'support', 'outside']);
+    expect(MODIFIER_CATEGORIES).toEqual(['damage', 'marks', 'protection', 'team', 'outside']);
     for (const m of MODIFIERS) {
       expect(MODIFIER_CATEGORIES, m.id).toContain(m.category);
       expect(MODIFIER_KINDS, m.id).toContain(m.kind);
@@ -65,6 +65,38 @@ describe('the modifier library', () => {
     for (const category of MODIFIER_CATEGORIES) {
       expect(MODIFIERS.filter((m) => m.category === category).length, category).toBeGreaterThan(3);
     }
+  });
+
+  it('puts reaction bonuses and mark effects under Marks and reactions, and effects on others under Team', () => {
+    const category = (id: string) => MODIFIERS.find((m) => m.id === id)?.category;
+    // Anything that raises a reaction's bonus or keys on marks.
+    for (const id of [
+      'opportunist',
+      'quickdraw',
+      'owners-mark',
+      'keen-reaction',
+      'reaction',
+      'payoffs-pounce',
+      'four-winds',
+      'marked-foe',
+      'spark-share',
+    ]) {
+      expect(category(id), id).toBe('marks');
+    }
+    // Heals, boosts, auras, debuffs on the boss and cleanses help others, whatever role uses them.
+    for (const id of ['boost', 'mend', 'kindling', 'lantern-bearer', 'clinging', 'heavy-hand']) {
+      expect(category(id), id).toBe('team');
+    }
+    expect(category('trail-xp')).toBe('outside');
+    expect(category('armor')).toBe('protection');
+    // Armour works for every creature (Misa, 2026-10-28).
+    const armor = MODIFIERS.find((m) => m.id === 'armor');
+    expect(armor?.roles).toHaveLength(4);
+    expect(armor?.text).toContain('Every creature has armour');
+    const counts = Object.fromEntries(
+      MODIFIER_CATEGORIES.map((c) => [c, MODIFIERS.filter((m) => m.category === c).length]),
+    );
+    expect(Object.values(counts).every((n) => n > 3)).toBe(true);
   });
 
   it('has a unique id for every modifier, and one entry per name except the item lines', () => {
@@ -145,7 +177,7 @@ describe('the modifier library', () => {
     const m = more.find((x) => x.id === 'talent-brand-new');
     expect(m).toMatchObject({
       status: 'lab',
-      category: 'support',
+      category: 'team',
       roles: ['support'],
       text: 'Its Boost +9%.',
     });

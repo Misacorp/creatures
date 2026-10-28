@@ -15,7 +15,7 @@ const game = Object.fromEntries(
 ) as GameCss;
 const css = buildWikiCss(game).css;
 
-const CATEGORIES = ['damage', 'marks', 'protection', 'support', 'outside'];
+const CATEGORIES = ['damage', 'marks', 'protection', 'team', 'outside'];
 
 function sectionOf(page: string): string {
   const start = page.indexOf('<section id="modifiers"');
@@ -107,6 +107,20 @@ describe('the modifier library section', () => {
     expect(cover).toContain('mod-status s-game">In the game</span>');
     expect(cover).toContain('<span class="chip-text">Guard</span>');
     expect(row('modifier-edge-walker')).toContain('<span class="chip-text">Any role</span>');
+    // The two categories with longer names (panel 3, finding 18).
+    expect(row('modifier-keen-reaction')).toContain(
+      '<span class="tag mod-cat">Marks and reactions</span>',
+    );
+    expect(row('modifier-boost')).toContain('<span class="tag mod-cat">Team</span>');
+    expect(row('modifier-trail-xp')).toContain('<span class="tag mod-cat">Outside fights</span>');
+  });
+
+  it('words the category filter as Damage, Marks and reactions, Protection, Team and Outside fights', () => {
+    const chips = [...section.matchAll(/data-filter="category"[^]*?<\/div>/g)][0]?.[0] ?? '';
+    for (const label of ['Damage', 'Marks and reactions', 'Protection', 'Team', 'Outside fights']) {
+      expect(chips, label).toContain(label);
+    }
+    expect(chips).not.toContain('Support');
   });
 
   it('hides the search and filters until the script shows them, and the table never', () => {

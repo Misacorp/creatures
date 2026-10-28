@@ -20,8 +20,13 @@ import type { KnackFx } from './knacks';
 import { TALENTS, type TalentDef } from './talents';
 import type { Role } from './types';
 
-/** What a modifier is about, the fewest groups that work. */
-export const MODIFIER_CATEGORIES = ['damage', 'marks', 'protection', 'support', 'outside'] as const;
+/**
+ * What a modifier is about, the fewest groups that work (panel 3, finding 18): `damage`, `marks` (marks and
+ * reactions: anything that keys on a mark or raises a reaction's bonus), `protection`, `team` (helps others:
+ * heals, boosts, auras, debuffs on the boss, cleanses, whatever role uses them) and `outside` (outside
+ * fights: trips, crafting, catches).
+ */
+export const MODIFIER_CATEGORIES = ['damage', 'marks', 'protection', 'team', 'outside'] as const;
 export type ModifierCategory = (typeof MODIFIER_CATEGORIES)[number];
 
 /** Where a modifier exists: a shipped gear line, a lab draft talent, or only an idea in the design. */
@@ -110,7 +115,7 @@ export const GEAR_CLASS: Readonly<Record<string, GearClass>> = {
     text: 'More damage to bosses and foes that the element is strong against.',
   },
   reaction: {
-    ...c('damage', PAYOFF, 'stat'),
+    ...c('marks', PAYOFF, 'stat'),
     name: 'Reaction bonus',
     text: 'The bonus of the reaction that creatures of an element set off is bigger.',
   },
@@ -130,18 +135,18 @@ export const GEAR_CLASS: Readonly<Record<string, GearClass>> = {
   'long-arm-right': c('protection', GUARD, 'shape'),
   'flank-guard-left': c('protection', GUARD, 'shape'),
   'flank-guard-right': c('protection', GUARD, 'shape'),
-  boost: c('support', SUPPORT, 'stat'),
-  mend: c('support', SUPPORT, 'stat'),
-  'spark-share': c('support', SUPPORT, 'stat'),
+  boost: c('team', SUPPORT, 'stat'),
+  mend: c('team', SUPPORT, 'stat'),
+  'spark-share': c('marks', SUPPORT, 'stat'),
   'marking-hit': c('marks', SETTER, 'stat'),
-  'payoffs-pounce': c('damage', PAYOFF, 'stat'),
+  'payoffs-pounce': c('marks', PAYOFF, 'stat'),
   strike: c('damage', ANY, 'stat'),
-  lingering: c('support', ANY, 'stat'),
-  'marked-foe': c('damage', HIT, 'condition'),
+  lingering: c('team', ANY, 'stat'),
+  'marked-foe': c('marks', HIT, 'condition'),
   'first-pounce': c('damage', HIT, 'condition'),
   'owners-mark': c('marks', SETTER, 'condition'),
   'backdraft-ward': c('protection', ANY, 'condition'),
-  'keen-reaction': c('damage', PAYOFF, 'stat'),
+  'keen-reaction': c('marks', PAYOFF, 'stat'),
   'adaptation-pierce': c('damage', ANY, 'stat'),
   unbothered: c('protection', ANY, 'rule'),
   brace: c('protection', ANY, 'rule'),
@@ -152,8 +157,8 @@ export const GEAR_CLASS: Readonly<Record<string, GearClass>> = {
   'heart-of-the-row': c('protection', ANY, 'condition'),
   'front-liner': c('protection', ANY, 'condition'),
   'back-row-patience': c('damage', HIT, 'condition'),
-  'lantern-bearer': c('protection', ANY, 'aura'),
-  'four-winds': c('damage', PAYOFF, 'condition'),
+  'lantern-bearer': c('team', ANY, 'aura'),
+  'four-winds': c('marks', PAYOFF, 'condition'),
   sheltered: c('protection', ANY, 'condition'),
   'beside-the-mark-maker': c('damage', PAYOFF, 'condition'),
   'second-wind': c('protection', ANY, 'chance'),
@@ -162,21 +167,21 @@ export const GEAR_CLASS: Readonly<Record<string, GearClass>> = {
   'quick-remark': c('marks', PAYOFF, 'chance'),
   'steady-paws': c('protection', ANY, 'chance'),
   'spill-over': c('marks', PAYOFF, 'chance'),
-  'warm-heart': c('support', SUPPORT, 'chance'),
+  'warm-heart': c('team', SUPPORT, 'chance'),
   'tinkers-luck': c('outside', ANY, 'chance'),
   'second-look': c('outside', ANY, 'chance'),
   payback: c('damage', GUARD, 'trigger'),
-  kindling: c('support', ANY, 'aura'),
+  kindling: c('team', ANY, 'aura'),
   'opening-mark': c('marks', ANY, 'trigger'),
   'rally-cry': c('damage', ANY, 'trigger'),
   'ember-tail': c('damage', HIT, 'trigger'),
   'storm-warning': c('protection', ANY, 'trigger'),
   stubborn: c('protection', ANY, 'trigger'),
   'last-stand': c('protection', ANY, 'condition'),
-  overflow: c('support', PAYOFF, 'trigger'),
+  overflow: c('team', PAYOFF, 'trigger'),
   'second-breath': c('protection', ANY, 'trigger'),
   patient: c('damage', ANY, 'trigger'),
-  'shared-warmth': c('support', ANY, 'trigger'),
+  'shared-warmth': c('team', ANY, 'trigger'),
   'trail-xp': c('outside', ANY, 'stat'),
   'quick-feet': c('outside', ANY, 'stat'),
   'keen-nose': c('outside', ANY, 'stat'),
@@ -189,13 +194,13 @@ export const GEAR_CLASS: Readonly<Record<string, GearClass>> = {
   'lantern-luck': c('outside', ANY, 'chance'),
   'lantern-light': c('outside', ANY, 'stat'),
   'clean-coat': c('protection', ANY, 'stat'),
-  'heavy-hand': c('support', SUPPORT, 'chance'),
-  clinging: c('support', SUPPORT, 'stat'),
+  'heavy-hand': c('team', SUPPORT, 'chance'),
+  clinging: c('team', SUPPORT, 'stat'),
   fleet: c('protection', ANY, 'stat'),
   'light-footed': c('protection', ANY, 'stat'),
   riposte: c('damage', ANY, 'trigger'),
   momentum: c('damage', ANY, 'trigger'),
-  slipstream: c('support', ANY, 'trigger'),
+  slipstream: c('team', ANY, 'trigger'),
 };
 
 /**
@@ -233,8 +238,8 @@ export const TALENT_IS_GEAR: Readonly<Record<string, string>> = {
 /** The class of a lab-only effect that the guess from its effect would get wrong. */
 const LAB_CLASS: Readonly<Record<string, Class>> = {
   nimble: ['protection', ANY, 'stat'],
-  'big-finish': ['damage', PAYOFF, 'trigger'],
-  hungry: ['damage', PAYOFF, 'stat'],
+  'big-finish': ['marks', PAYOFF, 'trigger'],
+  hungry: ['marks', PAYOFF, 'stat'],
   cornered: ['damage', HIT, 'condition'],
 };
 
@@ -262,13 +267,13 @@ export const IDEAS: readonly Idea[] = [
   {
     name: 'Opportunist',
     text: '+40% on a reaction that cashes a mark at x3.',
-    class: ['damage', PAYOFF, 'condition'],
+    class: ['marks', PAYOFF, 'condition'],
     also: ['Count hunter'],
   },
   {
     name: 'Quick Draw',
     text: "+30% on a reaction on a mark added since the boss's last turn.",
-    class: ['damage', PAYOFF, 'condition'],
+    class: ['marks', PAYOFF, 'condition'],
     also: ['Fresh mark'],
   },
   {
@@ -312,22 +317,22 @@ export const IDEAS: readonly Idea[] = [
   {
     name: 'Bright Boost',
     text: 'Every second boost it gives is doubled.',
-    class: ['support', SUPPORT, 'rhythm'],
+    class: ['team', SUPPORT, 'rhythm'],
   },
   {
     name: 'Triage',
     text: 'Its heal on the creatures beside it goes to the most hurt one, at double size.',
-    class: ['support', SUPPORT, 'shape'],
+    class: ['team', SUPPORT, 'shape'],
   },
   {
     name: 'Overheal Spill',
     text: 'Healing past full HP passes to the most hurt creature beside the one healed.',
-    class: ['support', SUPPORT, 'transfer'],
+    class: ['team', SUPPORT, 'transfer'],
   },
   {
     name: 'Kindred Boost',
     text: 'Its boost +10% on creatures of its own element.',
-    class: ['support', SUPPORT, 'condition'],
+    class: ['team', SUPPORT, 'condition'],
   },
   {
     name: 'Store Saver',
@@ -355,8 +360,24 @@ export function nameKey(name: string): string {
 export function guessClass(fx: KnackFx, roles: readonly Role[]): Class {
   const f = fx as Readonly<Record<string, unknown>>;
   const has = (...keys: string[]): boolean => keys.some((k) => f[k] !== undefined);
-  if (has('boostBonusBp', 'mendBonusBp', 'support')) return ['support', roles, 'stat'];
-  if (has('markStacks', 'markOthers', 'marksAs', 'seal', 'leadBoostBp', 'minStacks', 'trail')) {
+  if (has('boostBonusBp', 'mendBonusBp', 'support', 'guardMendBp', 'healOnReactionBp')) {
+    return ['team', roles, 'stat'];
+  }
+  if (
+    has(
+      'markStacks',
+      'markOthers',
+      'marksAs',
+      'seal',
+      'leadBoostBp',
+      'minStacks',
+      'trail',
+      'reactionBonusBp',
+      'reactionCritBp',
+      'bakedShell',
+      'spendAllBp',
+    )
+  ) {
     return ['marks', roles, 'rule'];
   }
   if (has('reachBonus', 'rowAreaCutBp', 'interceptArea', 'interceptCharged')) {
@@ -366,7 +387,7 @@ export function guessClass(fx: KnackFx, roles: readonly Role[]): Class {
   if (has('armourBonus', 'coverBonusBp', 'hpBp', 'dodgeBonusBp', 'areaCutBp', 'areaDodgeBp')) {
     return ['protection', roles, 'stat'];
   }
-  if (has('firstHitBp', 'lowHpAtkBp', 'retaliateBp', 'healOnReactionBp')) {
+  if (has('firstHitBp', 'lowHpAtkBp', 'retaliateBp')) {
     return ['damage', roles, 'condition'];
   }
   return ['damage', roles, 'stat'];

@@ -13,18 +13,18 @@ import type { WikiData, WikiModifier } from './types';
 /** The categories as the page words them, in the order the table groups them. */
 export const CATEGORY_LABELS: Readonly<Record<string, string>> = {
   damage: 'Damage',
-  marks: 'Marks',
+  marks: 'Marks and reactions',
   protection: 'Protection',
-  support: 'Support',
-  outside: 'Outside',
+  team: 'Team',
+  outside: 'Outside fights',
 };
 
 /** What each category covers, shown under the filters. */
 const CATEGORY_HINTS: Readonly<Record<string, string>> = {
-  damage: 'hits harder, crits, reactions’ damage',
-  marks: 'marks and reactions setup',
+  damage: 'hits harder, crits, strikes back',
+  marks: 'leaving marks, cashing them, anything that raises a reaction’s bonus',
   protection: 'armour, dodge, HP, cover, intercept, survival, silence wards',
-  support: 'heals, boosts, debuffs on the boss, cleanses',
+  team: 'helps others: heals, boosts, auras, debuffs on the boss, cleanses',
   outside: 'trips, crafting, catches: not in a fight',
 };
 
