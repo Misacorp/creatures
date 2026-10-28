@@ -3353,6 +3353,7 @@ Tagged combat v2. Lead agent, after the second panel (`docs/design/combat/review
 **Decision (Misa).** Armour is a stat of every creature: Guards have the most, and talents, Knacks and gear may raise anyone's. No armour effect is limited to Guards (R13). The shipped gear line Armor still says "Guards only"; it changes with the engine port.
 
 **The batch (lead).** 35 talents in the lab from `modifiers.md`, with the engine hooks they need (neighbour, position, round, boss-HP and mark conditions; triggers; Flank Guard and Long Shadow; shared armour; Thick Skull; Brace; Bright Boost, Kindred Boost, Triage, Overheal Spill; Heavy Hand, Clinging, Light Sleeper; Cull and the killing blow). Rules: Mired fades one stack per round, the Shake It Off card cleanses debuffs on an announced round, cover is capped at 75% (R8.6, R15, R21). Twelve old lab talents were folded in or dropped. The report: talents add +0% to +22% on their boards; Lone Wolf, Flank Guard (Left) and Shoulder to Shoulder are best on most cards of their role (measured on boards chosen to show them, so a ceiling); Share the Load, Long Shadow and Thick Skull are near zero on plain boards; Shake It Off has no working answer yet.
+
 ### 2026-10-27: Marked items, dismantled as a pile
 
 A player asked for a quick way to clear items past the 60-item bag. Misa's rules: mark items, then one free creature dismantles the whole marked pile at once; worn items and items in an open job cannot be marked; equipping a marked item clears its mark; the request names the exact items the confirmation showed (409 and nothing taken if the marked set changed); the creature must be free (not away, not on a job); it gains Crafting XP but no creature experience; Market Day's bonus goes to the most valuable items; the old timed dismantle job goes.
@@ -3391,3 +3392,13 @@ Misa asked whether the next list that needs "select several and act on them" cou
 - **Shared CSS:** `select-grid.css` (the list, the checkbox, the menu; classes `select-grid`, `selecting`, `select-check`, `select-box`, `select-menu`). What stays per tile kind, on purpose: the chosen ring and the hold cue (`item-tile.css`), since every kind of tile has its own frame. That is a few lines to write again for a creature tile, and clearer than a shared ring that fits nothing well.
 - **Nothing a player sees changed.** `InventoryGrid` only draws the items; all bag tests pass unchanged apart from class names.
 - **How agents find it:** a row in the component table of `ux-patterns.md` ("Select several things in a list and act on them"), the "Bulk actions" rule pointing at it, workbench pages for `SelectCheck` and `SelectMenu`, and `select-grid-guard.test.ts`, which fails when a multi-select list, a long press or a selection checkbox is built outside the shared files (the same idea as the wizard footer guard).
+
+## 2026-10-28: Armour per species; talents go into the line's book automatically
+
+**Decision (Misa).**
+
+- **Armour is a species stat**, in the stat block like HP, Attack and Speed. Each line has its own base; lines that start as Guards lean higher; an evolution never lowers it. The Armor gear line works for every creature going forward (changed with the engine port, not now). Variety is the point: the species with the most armour is a choice to build around, not a default.
+- **Found talents are recorded automatically** in that line's Talent Book; the duplicate choice is only about the creature (Fuse, Release, Keep). A creature learns a talent from the book for Bait the first time; afterwards swapping among its learned talents is free (before the raid locks). This answers panel 3's question on swap costs.
+- **Idea for later:** if creatures ever "work" at places, a school where a creature learns a random talent from its line's book after some time.
+
+**Notes (lead).** Both change the live game's systems (stats, the duplicate flow), so they are built with the game integration (roadmap phase 4) and the migration (phase 6). The lab gets per-species armour now, so the numbers reflect it.

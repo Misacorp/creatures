@@ -19,7 +19,7 @@ Status: agreed with Misa, 2026-10-26. How the new combat system replaces the old
 
 Players keep their creatures: species, form, level, ribbons, evolutions, fusions, nicknames, quirks, shinies and private notes. Everything that changes is rolled fresh with live randomness, as if the creature had just been found:
 
-- **Talents** roll from the new line pools (the Talent Book starts again). A golden talent rolls golden (Misa, 2026-10-27).
+- **Talents** roll from the new line pools (the Talent Book starts again). A golden talent rolls golden (Misa, 2026-10-27). Each line's Talent Book then holds every talent the player's creatures of that line had (golden kept); each creature has learned the ones it had.
 - **Knacks:** every creature knows its form's Knacks (R11) and has none equipped (P-14): players choose.
 - **Finale abilities** go.
 - **Raid planning resets**: placements, the open week, the after-action history stays readable under its old rules.
