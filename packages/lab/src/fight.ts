@@ -16,6 +16,8 @@ import { ELEMENTS, formStats, matchupBp, triggers } from './species';
 import type {
   BossDef,
   BossMove,
+  EscalationFeed,
+  EscalationState,
   FightEvent,
   FightOptions,
   FightResult,
@@ -51,6 +53,8 @@ interface State {
   turn: number;
   bossTurnsDone: number;
   reflectArmed: boolean;
+  /** The boss's escalation (its Store): units fed by events, the step applied, whether its phase change has applied. */
+  esc: { fed: number; step: number; count: number; phase: boolean };
   /** Targets of this round's charged moves, rolled when announced at round start (by move id). */
   announced: Map<string, Fighter[]>;
   readonly events: FightEvent[];
@@ -81,6 +85,87 @@ const bump = (f: Fighter, key: keyof KnackFx) => {
 const log = (s: State, kind: string, text: string) => {
   if (s.opts.log) s.events.push({ round: s.round, turn: s.turn, kind, text });
 };
+
+// ---------- the boss's escalation (its Store) ----------
+
+/** One unit of an event feed (`reactions`, `crits`, `dodges`, `knockouts`, `shed`). */
+function feed(s: State, kind: EscalationFeed): void {
+  if (s.boss.escalation?.feed === kind) s.esc.fed++;
+}
+
+/** What the escalation's steps add to the boss now. */
+const grown = (s: State) => {
+  const g = s.boss.escalation?.grow ?? {};
+  const n = s.esc.step;
+  return {
+    atk: Math.floor((s.boss.atk * (10_000 + n * (g.atkBp ?? 0))) / 10_000),
+    dodgeBp: n * (g.dodgeBp ?? 0),
+    armour: s.boss.armour + n * (g.armour ?? 0),
+    hits: (s.boss.plain.hits ?? 1) + n * (g.hits ?? 0),
+    jumps: n * (g.jumps ?? 0),
+    targets: n * (g.targets ?? 0),
+    area: n * (g.area ?? 0),
+  };
+};
+
+/** The boss's moves now: its own, and its phase's once the phase change has applied. */
+const movesOf = (s: State): readonly BossMove[] =>
+  s.esc.phase && s.boss.escalation?.phase
+    ? [...s.boss.moves, ...s.boss.escalation.phase.moves]
+    : s.boss.moves;
+
+/** The feed units now: event feeds count as they happen; `rounds` and `hpLost` are read from the fight. */
+function escalationCount(s: State): number {
+  const e = s.boss.escalation;
+  if (!e) return 0;
+  if (e.feed === 'rounds') return s.round - 1;
+  if (e.feed === 'hpLost') return Math.floor(((s.boss.hp - s.bossHp) * 10_000) / s.boss.hp);
+  return s.esc.fed;
+}
+
+function escalationState(s: State): EscalationState | null {
+  const e = s.boss.escalation;
+  if (!e) return null;
+  return {
+    name: e.name,
+    feed: e.feed,
+    count: escalationCount(s),
+    step: s.esc.step,
+    cap: e.cap,
+    nextAt: s.esc.step >= e.cap ? null : (s.esc.step + 1) * e.per,
+    phase: s.esc.phase,
+  };
+}
+
+/**
+ * Round start, after the Knacks (R8.2 b) and before the Charged announcements: the boss steps up as far as its count
+ * allows, announcing each step before it applies, unless it is Mired (Mired freezes it).
+ */
+function escalate(s: State): void {
+  const e = s.boss.escalation;
+  if (!e) return;
+  s.esc.count = escalationCount(s);
+  const want = Math.min(e.cap, Math.floor(s.esc.count / e.per));
+  if (want <= s.esc.step) return;
+  if (s.mired > 0) {
+    log(s, 'escalation', `${e.name} is held by the Mired (${s.esc.count}, step ${s.esc.step})`);
+    return;
+  }
+  while (s.esc.step < want) {
+    s.esc.step++;
+    log(
+      s,
+      'escalation',
+      `${e.name}: step ${s.esc.step} of ${e.cap} (${s.esc.count} ${e.feed}); next at ${
+        s.esc.step >= e.cap ? 'the cap' : (s.esc.step + 1) * e.per
+      }`,
+    );
+    if (e.phase && !s.esc.phase && s.esc.step >= e.phase.atStep) {
+      s.esc.phase = true;
+      log(s, 'phase', `${s.boss.name}: ${e.phase.name}`);
+    }
+  }
+}
 
 export function placeFighters(placements: readonly Placement[]): Fighter[] {
   return placements.map((p, i) => {
@@ -260,9 +345,10 @@ function roundStart(s: State): void {
     if (k.guardMendBp)
       for (const o of alive(s).filter((o) => inReach(s, f, o))) heal(s, o, k.guardMendBp, true, f);
   }
-  // Charged moves due this round are announced now: their slots are rolled and shown (R8).
+  // The escalation steps up (announced), then the charged moves due this round are announced: their slots are rolled and shown (R8).
+  escalate(s);
   s.announced = new Map();
-  for (const m of s.boss.moves) {
+  for (const m of movesOf(s)) {
     if (m.charged && s.round % m.every === 0) s.announced.set(m.id, targetsOf(s, m.pattern, false));
   }
 }
@@ -402,7 +488,12 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
   if (!silenced(f)) f.momentum = false;
   const bonusSum = Math.min(R.maxHitBonusBp, f.boostBp + situational);
   const atk = Math.floor((f.atk * (10_000 + (k.atkBp ?? 0))) / 10_000);
-  const base = Math.floor((atk * matchupBp(f.element, s.boss.element)) / 10_000);
+  const matched = Math.floor((atk * matchupBp(f.element, s.boss.element)) / 10_000);
+  // Element Resistance (a raid weekend, from stage 2): the resisted element's creatures deal less.
+  const base =
+    s.opts.resistElement === f.element
+      ? Math.floor((matched * R.adaptElementBp) / 10_000)
+      : matched;
   let plain = k.noDamage
     ? 0
     : Math.floor((((base * (10_000 + bonusSum)) / 10_000) * shareBp * (k.plainBp ?? 10_000)) / 1e8);
@@ -416,9 +507,13 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
   // 2. The boss rolls dodge (14.4). A hit that deals no damage is not rolled. Setup never misses.
   const bossDodge = f.undodgeable
     ? 0
-    : Math.max(0, Math.min(R.dodgeMaxBp, s.boss.spd * R.dodgePerSpdBp - miredCut(s)));
+    : Math.max(
+        0,
+        Math.min(R.dodgeMaxBp, s.boss.spd * R.dodgePerSpdBp + grown(s).dodgeBp - miredCut(s)),
+      );
   const dodged = !k.noDamage && roll(s, bossDodge);
   if (dodged) {
+    feed(s, 'dodges');
     s.count.dodges++;
     log(s, 'boss-dodge', `${s.boss.name} dodges ${f.name}`);
   }
@@ -463,6 +558,7 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       mark.stacks -= spent;
       if (mark.stacks <= 0) s.marks.delete(el);
       reacted = true;
+      feed(s, 'reactions');
       s.count.reactions++;
       s.byMark[el] = (s.byMark[el] ?? 0) + 1;
       log(s, 'reaction', `${f.name} cashes ${el} x${spent} for +${bonus}`);
@@ -496,8 +592,9 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
   }
   // 4. Cap, then armour: at or below armour the hit is Blocked (R13). A spent mark stays spent.
   if (!dodged && !k.noDamage) {
+    if (crit) feed(s, 'crits');
     const pierce = Math.max(0, ...beside(s, f).map((o) => fx(o).pierceBesideBp ?? 0));
-    const armour = Math.floor((s.boss.armour * (10_000 - pierce)) / 10_000);
+    const armour = Math.floor((grown(s).armour * (10_000 - pierce)) / 10_000);
     let dmg = plain + bonus;
     if (s.boss.mods.capPerHit !== undefined) dmg = Math.min(dmg, s.boss.mods.capPerHit);
     dmg -= armour;
@@ -567,6 +664,12 @@ function anchorOf(s: State, p: Pattern): Fighter | undefined {
       return strongest(live.filter((f) => f.role === 'payoff')) ?? strongest(live);
     case 'random':
       return live[int(s.opts.rng, live.length)];
+    case 'back':
+      // The back-most living creature (the highest row, then the leftmost).
+      return [...live].sort((a, b) => b.row - a.row || a.col - b.col)[0];
+    case 'weakest':
+      // The lowest share of its max HP; ties to the front, then the left.
+      return [...live].sort((a, b) => a.hp * b.maxHp - b.hp * a.maxHp || bySlot(a, b))[0];
     case 'grudge':
       // Last round's top hitter; in round 1, the strongest.
       return s.round === 1
@@ -576,13 +679,69 @@ function anchorOf(s: State, p: Pattern): Fighter | undefined {
 }
 
 /** The slots a pattern covers, as the living creatures standing in them (R2: targets are slots). */
-function targetsOf(s: State, p: Pattern, plain: boolean): Fighter[] {
+function targetsOf(s: State, p0: Pattern, plain: boolean): Fighter[] {
   const live = alive(s);
+  // The escalation widens a pattern: more jumps, more shells, more neighbouring columns or rows.
+  const g = grown(s);
+  const p: Pattern =
+    p0.shape === 'chain' && g.jumps
+      ? { ...p0, n: (p0.n ?? 1) + g.jumps }
+      : p0.shape === 'scatter' && g.targets
+        ? { ...p0, n: (p0.n ?? 1) + g.targets }
+        : (p0.shape === 'columns' || p0.shape === 'rows') && g.area
+          ? { ...p0, n: (p0.n ?? 2) + g.area }
+          : p0;
+  // A scatter has no anchor: n different creatures, drawn one by one (a shell never lands twice on one creature).
+  if (p.shape === 'scatter') {
+    const rest = [...live];
+    const out: Fighter[] = [];
+    for (let i = 0; i < (p.n ?? 1) && rest.length > 0; i++)
+      out.push(...rest.splice(int(s.opts.rng, rest.length), 1));
+    return out;
+  }
   // Taunt becomes the anchor of every plain attack, whatever its anchor (R9).
   const taunter = plain ? live.filter((f) => fx(f).taunt).sort(bySlot)[0] : undefined;
   const a = taunter ?? anchorOf(s, p);
   if (!a) return [];
   switch (p.shape) {
+    case 'chain': {
+      // The anchor takes the aimed hit; each jump goes to the strongest unhit creature right next to the last one hit
+      // (the slot beside it in its row, or in front of or behind it in its column; ties front, then left).
+      const out = [a];
+      for (let k = 0; k < (p.n ?? 1); k++) {
+        const last = out[out.length - 1] as Fighter;
+        const next = live
+          .filter(
+            (f) =>
+              !out.includes(f) && Math.abs(f.row - last.row) + Math.abs(f.col - last.col) === 1,
+          )
+          .sort((x, y) => y.atk - x.atk || bySlot(x, y))[0];
+        if (!next) break;
+        out.push(next);
+      }
+      return out;
+    }
+    case 'columns': {
+      // n neighbouring columns, the anchor's first (towards the right; the last columns shift left to fit).
+      const n = p.n ?? 2;
+      const from = Math.min(a.col, Math.max(0, s.boss.cols - n));
+      return live.filter((f) => f.col >= from && f.col < from + n);
+    }
+    case 'rows': {
+      // n neighbouring rows, the anchor's first (towards the back; the last rows shift forward to fit).
+      const n = p.n ?? 2;
+      const from = Math.min(a.row, Math.max(0, s.boss.rows - n));
+      return live.filter((f) => f.row >= from && f.row < from + n);
+    }
+    case 'cross':
+      // The anchor first, then the creatures right beside it in its row and right in front of or behind it in its column.
+      return [
+        a,
+        ...live.filter((f) => f !== a && Math.abs(f.row - a.row) + Math.abs(f.col - a.col) === 1),
+      ];
+    case 'checker':
+      // Every other slot of the arena, the slots of the anchor's colour.
+      return live.filter((f) => (f.row + f.col) % 2 === (a.row + a.col) % 2);
     case 'single':
       return [a];
     case 'line3':
@@ -728,6 +887,7 @@ function takeHit(
     bump(taker, 'secondWindBp');
     heal(s, taker, wind, false);
   }
+  if (taker.hp === 0) feed(s, 'knockouts');
   log(s, 'hit', `${taker.name} takes ${dmg}${taker.hp === 0 ? ' and is knocked out' : ''}`);
   // Rally Cry: a creature beside it was knocked out (a silenced creature does not arm it).
   if (taker.hp === 0) for (const g of beside(s, taker)) if (fx(g).vengefulBp) g.avenged = true;
@@ -753,8 +913,8 @@ function bossHits(
   const targets =
     (move.charged ? s.announced.get(move.id) : undefined) ?? targetsOf(s, move.pattern, plain);
   const shape = move.pattern.shape;
-  const proposed = Math.floor(
-    (((s.boss.atk * move.powerBp) / 10_000) * (10_000 - miredCut(s))) / 10_000,
+  const full = Math.floor(
+    (((grown(s).atk * move.powerBp) / 10_000) * (10_000 - miredCut(s))) / 10_000,
   );
   // Wards are read before the move lands: a ward silenced by this same move still protects.
   const warded = new Set(
@@ -764,7 +924,16 @@ function bossHits(
     // The fight ends the moment the boss is down: the rest of the move does not land.
     if (s.bossHp <= 0) return;
     if (t.hp <= 0) continue;
-    const area = !(shape === 'single' || (shape === 'line3' && t === targets[0]));
+    log(s, 'target', `${t.name} (row ${t.row + 1}, slot ${t.col + 1}) <- ${move.id}`);
+    const area = !(
+      shape === 'single' ||
+      ((shape === 'line3' || shape === 'chain' || shape === 'cross') && t === targets[0])
+    );
+    // A chain's jumps each deal a share of the hit before: the first hit full, the next at decay, then decay squared.
+    let proposed = full;
+    if (shape === 'chain')
+      for (let k = targets.indexOf(t); k > 0; k--)
+        proposed = Math.floor((proposed * (move.pattern.decayBp ?? 6_000)) / 10_000);
     // A move that deals no damage is not dodged or intercepted (R1).
     if (move.silenceTurns) {
       if (warded.has(t)) {
@@ -842,14 +1011,14 @@ function bossTurn(s: State, turn: number): void {
   s.turn = turn;
   const ageAtStart = s.markAge;
   const last = s.boss.rows - 1;
-  for (const m of s.boss.moves) {
+  for (const m of movesOf(s)) {
     if (s.bossHp <= 0) return;
     if (s.round % m.every === 0 && (m.turn ?? last) === turn) {
       log(s, 'move', m.name);
       bossHits(s, m, false);
     }
   }
-  for (let i = 0; i < (s.boss.plain.hits ?? 1); i++) {
+  for (let i = 0; i < grown(s).hits; i++) {
     if (s.bossHp <= 0) return;
     bossHits(
       s,
@@ -860,7 +1029,11 @@ function bossTurn(s: State, turn: number): void {
   if (s.bossHp <= 0) return;
   // Clean Scales sheds the marks that were on the boss when this turn began, unless sealed (R8).
   if (s.boss.mods.shedMarks)
-    for (const [el, m] of s.marks) if (!m.sealed && m.age < ageAtStart) s.marks.delete(el);
+    for (const [el, m] of s.marks)
+      if (!m.sealed && m.age < ageAtStart) {
+        s.marks.delete(el);
+        feed(s, 'shed');
+      }
   s.bossTurnsDone++;
   s.reflectArmed = true;
 }
@@ -886,6 +1059,7 @@ export function fight(
     bossTurnsDone: 0,
     // Reflective Hide arms after each boss turn, so not before the first one.
     reflectArmed: false,
+    esc: { fed: 0, step: 0, count: 0, phase: false },
     announced: new Map(),
     events: [],
     killer: null,
@@ -933,6 +1107,7 @@ export function fight(
     intercepts: s.count.intercepts,
     healed: s.count.healed,
     hpLeft: new Map(fighters.map((f) => [f.uid, f.hp])),
+    escalation: escalationState(s),
     fighters,
     events: s.events,
   };
@@ -943,7 +1118,7 @@ export function fight(
  * stages, nobody heals between them, and a knocked-out creature stays out (its owner may bring a
  * replacement from `bench`, which takes the empty slot). Only HP carries: marks, Stores, Mired and
  * "each fight" effects start fresh each stage. From stage 2 an adapting boss resists the reaction
- * used most so far.
+ * used most so far (Adapts) or the element that dealt the most damage so far (Element Resistance).
  */
 export function weekend(
   boss: BossDef,
@@ -959,18 +1134,22 @@ export function weekend(
   let bossHp = boss.hp;
   let replacements = 0;
   const used: Record<string, number> = {};
+  const dealt: Record<string, number> = {};
+  const most = (m: Record<string, number>) => Object.entries(m).sort((a, b) => b[1] - a[1])[0]?.[0];
   for (let i = 0; i < (opts.stages ?? 3) && bossHp > 0; i++) {
-    const top = Object.entries(used).sort((a, b) => b[1] - a[1])[0]?.[0];
-    const resist = boss.mods.adapts && i > 0 ? top : undefined;
+    const resist = boss.mods.adapts && i > 0 ? most(used) : undefined;
+    const resistEl = boss.mods.adaptsElement && i > 0 ? most(dealt) : undefined;
     const res = fight(boss, current, {
       ...opts,
       carryHp: hp,
       bossHp,
       ...(resist ? { resistReaction: resist } : {}),
+      ...(resistEl ? { resistElement: resistEl } : {}),
     });
     stages.push(res);
     bossHp = res.bossHpLeft;
     for (const [el, n] of Object.entries(res.reactionsByMark)) used[el] = (used[el] ?? 0) + n;
+    for (const f of res.fighters) dealt[f.element] = (dealt[f.element] ?? 0) + f.damageDealt;
     const next: Placement[] = [];
     res.fighters.forEach((f, idx) => {
       const p = current[idx];
