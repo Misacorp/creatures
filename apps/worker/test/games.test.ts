@@ -414,6 +414,22 @@ describe('the show', () => {
         expect.objectContaining({ eventId: solo, unit: expect.any(String) }),
       ]);
       expect(page.body.medals.pins).toBe(1);
+      // The collection carries every creature's medals for its card (pins stay on the page).
+      const state = await p.call('GET', '/api/state');
+      const creatures = state.body.creatures as {
+        id: string;
+        medals: { gold: number; silver: number; bronze: number };
+      }[];
+      const { gold, silver, bronze } = page.body.medals as Record<string, number>;
+      expect(creatures.find((c) => c.id === a)?.medals).toEqual({ gold, silver, bronze });
+      for (const c of creatures) {
+        const won = rows<{ gold: number; silver: number; bronze: number }>(
+          ctx.sql,
+          'SELECT gold, silver, bronze FROM games_creature_medals WHERE creature_id = ?',
+          c.id,
+        )[0];
+        expect(c.medals).toEqual(won ?? { gold: 0, silver: 0, bronze: 0 });
+      }
       expect((await quiet.call('GET', `/api/games/creature/${a}`)).status).toBe(404);
       expect((await p.call('GET', '/api/games/creature/nope')).status).toBe(400);
     });
