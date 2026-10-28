@@ -3,6 +3,7 @@ import { shinyPalette } from '../../art';
 import { Sprite } from '../../sprites/Sprite';
 import { ArmchairIcon } from '../../ui/ArmchairIcon';
 import { GameIcon } from '../../ui/GameIcon';
+import { PixelTriangle } from '../../ui/PixelTriangle';
 import { GEAR_BASE_IDS, ICON_NAMES, SPRITES, SPRITE_NAMES, iconOf } from '../data';
 import { bool, num, str } from '../props';
 import type { Entry } from '../types';
@@ -114,4 +115,29 @@ const armchairIcon: Entry = {
     ),
 };
 
-export const iconEntries: readonly Entry[] = [gameIcon, sprite, itemSprite, armchairIcon];
+const pixelTriangle: Entry = {
+  name: 'PixelTriangle',
+  file: 'apps/activity/src/ui/PixelTriangle.tsx',
+  group: 'Icons',
+  description:
+    'The game\'s one small pixel triangle, in the text colour: small (8 by 5 px) marks the sorted column of a table, medium (14 by 8 px) the "Equip on" button. Use it for any small marker; never draw another.',
+  controls: { size: { kind: 'select', options: ['small', 'medium'] } },
+  defaults: { size: 'small' },
+  presets: [
+    { name: 'Small (a sorted column)', props: { size: 'small' } },
+    { name: 'Medium (Equip on)', props: { size: 'medium' } },
+  ],
+  render: (p) => (
+    <span class="pix">
+      Damage <PixelTriangle size={str(p, 'size') === 'medium' ? 'medium' : 'small'} />
+    </span>
+  ),
+};
+
+export const iconEntries: readonly Entry[] = [
+  gameIcon,
+  sprite,
+  itemSprite,
+  armchairIcon,
+  pixelTriangle,
+];

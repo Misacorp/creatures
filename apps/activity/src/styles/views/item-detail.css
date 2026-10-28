@@ -345,7 +345,4 @@ button.equip-trigger canvas.sprite {
 
 .equip-chevron {
   flex: none;
-  width: 0.875rem;
-  height: 0.5rem;
-  fill: currentcolor;
 }

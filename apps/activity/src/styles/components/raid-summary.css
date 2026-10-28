@@ -202,12 +202,8 @@
   color: var(--gold);
 }
 
-/* A tiny pixel triangle (five squares by three): 8 by 5 px. */
 .rs-sort-arrow {
   display: block;
-  width: 8px;
-  height: 5px;
-  fill: currentcolor;
 }
 
 /* --- Highlight cards: one picture, a small title, who, and the fact. All aligned on one grid. --- */

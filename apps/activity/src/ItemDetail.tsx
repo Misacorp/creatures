@@ -11,6 +11,7 @@ import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { Accordion } from './ui/Accordion';
 import { DrillHead } from './ui/DrillHead';
+import { PixelTriangle } from './ui/PixelTriangle';
 import { CreatureList } from './ui/CreatureList';
 
 /**
@@ -51,17 +52,7 @@ function EquipOn({
         <span id={valueId} class={wearer === undefined ? 'equip-name equip-empty' : 'equip-name'}>
           {wearer === undefined ? 'Choose a creature' : creatureName(wearer)}
         </span>
-        <svg
-          class="equip-chevron"
-          viewBox="0 0 7 4"
-          aria-hidden="true"
-          shape-rendering="crispEdges"
-        >
-          <rect x="0" y="0" width="7" height="1" />
-          <rect x="1" y="1" width="5" height="1" />
-          <rect x="2" y="2" width="3" height="1" />
-          <rect x="3" y="3" width="1" height="1" />
-        </svg>
+        <PixelTriangle size="medium" class="equip-chevron" />
       </button>
     </div>
   );
