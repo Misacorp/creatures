@@ -29,6 +29,18 @@ describe('the item picker rules', () => {
     expect(choices.some((c) => c.item.equippedOn === PAGE_SAMPLE_ID)).toBe(false);
   });
 
+  it('lists the worn item once, when the bag does not yet mark it as worn by this creature', () => {
+    const worn = scene.creature.gear.find((g) => g.slot === 'hat');
+    expect(worn).toBeDefined();
+    // The game state and the gear view load apart: here the bag still says nobody wears the hat.
+    const stale = scene.gear.items.map((i) => (i.id === worn?.id ? { ...i, equippedOn: null } : i));
+    const ids = pickerChoices(stale, scene.creature, scene.state.creatures, 'hat').map(
+      (c) => c.item.id,
+    );
+    expect(ids).not.toContain(worn?.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it('has a bag of thirteen to twenty-five items for each slot', () => {
     const items = allBagItems(PAGE_SAMPLE_ID, {});
     for (const slot of ['hat', 'scarf', 'charm'] as const) {

@@ -54,12 +54,17 @@ export function statRows(stats: readonly GearStat[]): StatRow[] {
   });
 }
 
-/** The picker's choices for a slot: the bag's items (not the worn one) with who wears them and why not. */
+/**
+ * The picker's choices for a slot: the bag's items (not the worn one) with who wears them and why not. The
+ * worn item is the one the creature's own gear names (the picker draws it first), so it is left out here
+ * too, even when the bag, loaded at another moment, does not yet mark it as this creature's.
+ */
 export function pickerChoices(
   items: readonly GearItem[],
-  creature: Pick<Creature, 'id' | 'level' | 'species'>,
+  creature: Pick<Creature, 'id' | 'level' | 'species' | 'gear'>,
   creatures: readonly Creature[],
   slot: GearItem['slot'],
 ): EquipChoice[] {
-  return equipChoices(items, creature, creatures, slot);
+  const wornId = creature.gear.find((g) => g.slot === slot)?.id;
+  return equipChoices(items, creature, creatures, slot).filter((c) => c.item.id !== wornId);
 }
