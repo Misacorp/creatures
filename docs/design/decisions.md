@@ -3401,6 +3401,7 @@ Misa asked for a creature's ribbons and Valley Games medals on its card in the c
 2. **Medals** are small round pixel medals pinned over the card's top edge at the right (`CardMedals`), always three in a fixed order (gold, silver, bronze): a metal not won yet is a dark silhouette with no count, so the leftmost medal reads as the best at a glance (Misa, 2026-10-28; at first a metal with none was left out). A creature that has won no medal at all shows none. The count is on the face (at most 99 shown; Misa expects the card to be redesigned before any creature gets that far). Pins stay on the creature page only. The rows of the creature list are 16 px apart (was 12) so a medal never touches the card above.
 3. **Both are hidden from screen readers** (`aria-hidden`): the creature page says the same in words (its Ribbons row and its Valley Games medals).
 4. **Data.** `CreatureView.medals` (`{ gold, silver, bronze }`) comes from `games_creature_medals`, left-joined into the two creature reads of `collection.ts` (`CREATURE_SELECT`). The medal row is found by its primary key, so the state reads one row more only for each creature that has medals; no migration or index was needed. The read budget, query plan and day-in-the-life tests pass unchanged.
+
 ## 2026-10-28: Armour per species; talents go into the line's book automatically
 
 **Decision (Misa).**
