@@ -56,6 +56,15 @@ The workbench is a second Vite entry (`apps/activity/workbench.html`, code in `a
 
 `MainNav` and `Hud` (2026-10-24; Controls) are the main navigation and the bar on top of the game. `MainNav` draws a frame (the real HUD, the real dock or rail, and the real Creatures, Games and Expeditions screens on fixture data; other places show a stand-in; the dock sits under the screen instead of being fixed to the window, since a preview iframe cannot show a fixed bar). Controls: the place, how many places (3 to 10: today's six, then four made-up ones), pips, and a layout switch (auto follows the window; phone and desktop force one). Presets: each of the six places, no pips, nine places (More shows at 360 and 390 px), nine places with one from More active, ten places. Use 360 or 390 for the dock and the full width for the rail. The game itself is checked the same way with the real shell on fixture data (screenshots at 360, 390 and 1100 px). `Hud` has the title, Bait and Essence (big numbers are shortened) and an `income` control for what the sample ledger holds; `HelpButton` is covered by it. `CurrencyPile` (2026-10-24, shell polish) has the same `income` control (typical, only spends, nothing yet, loading, failed) and a `syncFailing` toggle: tap the button to see the popover's Bait income list and the leet warning.
 
+## Reproducing a bug in a real browser
+
+For a timing or gesture bug (a tap lost after a drawer closes, a long press), load the real component in Chromium with phone emulation:
+
+- **A component with an entry:** open `workbench.html?frame=1#c=<Name>&p=<props>` from a Playwright script in your scratchpad. `scripts/shoot.mjs` shows how to start Vite and launch the preinstalled Chromium.
+- **A whole screen with no entry** (`Workshop` and the others under "Not covered"): write a throwaway page in `apps/activity/scratch/`. It is gitignored and lint skips it, and `pnpm dev` serves it at `/scratch/<page>.html`. It can import from `../src/` and the test samples (`creature-card-sample.ts`). Never put probe files anywhere else in the repo.
+- Chromium is not Discord's phone app: a bug that only shows on the phone (Misa's drawer pull, retro 2026-10-28) may need his answers on how and where it happens. Ask those before guessing.
+- If a step is denied, stop and ask Misa. Don't do the same thing another way.
+
 ## UI audit
 
 `apps/activity/scripts/ui-audit.mjs` finds layout overflow on every workbench page. Run it from `apps/activity`:
