@@ -3336,3 +3336,14 @@ Tagged combat v2. Lead agent, after the second panel (`docs/design/combat/review
 **Decision (Misa).** A line's talent pool says which talents can appear on its creatures. A creature starts with the talent it was found with (a starter with a set talent), and grows its own Talent Book through Teach: a found talent goes only into the book of the creature it was found for, and must be found again for another creature. When an evolution changes the role, slotted talents that become idle are rerolled from the pool among the talents that work for the new role, shown as unknown cards on the evolution screen (phase 4); until then idle talents after a role change are accepted.
 
 **Notes (lead).** Teach already works per creature today (`catch-choices.ts`: a duplicate's talent goes into the book of the player's creature of that line), so only the starter's set talent and the evolution reroll are new; both are recorded in R20 and built in roadmap phase 4. Which talent each starter gets is content, chosen with the starter list.
+
+## 2026-10-28: Content changes are not held back by existing rolls; modifiers, luck and fading debuffs
+
+**Decision (Misa).**
+
+- **Change freely.** Misa may change, remove or add any content at any time. A removed or changed modifier line on an existing item or creature is replaced by a fresh random roll; a new line just enters future rolls. Players expect changes; be fair, but don't let old rolls slow progress. (Also a standing rule in `CLAUDE.md`.)
+- **Luck is welcome.** Chance-based modifiers stay, and most effects may be luck-based; deterministic rhythms are an option. P-04 still keeps a creature's main job certain.
+- **Debuffs fade over time** (Mired loses stacks), and bosses may cleanse them, announced at round start, so a debuff creature has to keep working and its effect does not last the whole fight.
+- **Same effect, same name** also between talents and gear lines (a gear line is one modifier on an item); a talent and a gear line of the same name add up.
+- **Build a first batch** of the modifier and talent library (`docs/design/combat/modifiers.md`) into the lab and the wiki; Misa filters later.
+- **New ideas:** Cull (a hit that leaves a foe below a small share of its HP defeats it) and killing-blow triggers (for example more loot for the raid). Cover gets a cap (an intercepted hit needs none, since the Guard still takes it).

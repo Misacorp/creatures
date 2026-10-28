@@ -11,6 +11,7 @@ Read this file first. Design decisions live in `docs/design/` (start with `decis
 - When Misa must do something manually (Discord portal, Cloudflare token, GitHub setting, secret), give him one short **numbered checklist** with exact names and values, and say what to send back. Batch requests. Never ask him to paste a secret into chat; secrets go straight into GitHub or Cloudflare.
 - Keep messages to him short, plain English.
 - When several numbers are in play and it isn't obvious which is which, say briefly what each one covers (for example per request or per day, measured or estimated).
+- **Content changes are not held back by what players already own** (Misa, 2026-10-28). Misa may change, remove or add any creature, talent, Knack, gear line or item at any time. A removed or changed modifier on an existing item or creature is replaced by a fresh random roll; a new one simply enters future rolls. Be fair, but don't slow progress to protect old rolls.
 - When Misa gives an example of wording or design ("for example ..."), match its scope and tone. Don't elaborate it per case, per event or per item unless he asks.
 - When a check or constraint forces a visible change to a design Misa has already seen (its size, shape, art or layout), say so in the same message and show the new version. Never ship the changed design silently.
 
