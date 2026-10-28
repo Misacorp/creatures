@@ -63,6 +63,12 @@ in the worker.
   and real errors stand out.
 - **Timeouts are budgets.** Default timeouts per layer as above (sim at most 30 s). A test that needs more is a
   test to split or move down, not a timeout to raise.
+- **Test every way in, popovers included** (retro 2026-10-28: a help tag in an item card worked on the Workshop
+  page and broke when the same card opened in a found item's popover). A part that can show inside a page popover
+  (`PopoverHost`: the item card of a found item, the XP breakdown, the forecast, a creature's popover) gets one
+  client test that opens it there, under a real `PopoverHost`, and taps a help tag inside it: the explanation must
+  open in that popover, with its anchor still on the page (`ui/find-item-card.test.tsx` is the example). A part
+  with a hover popover gets one test that moves the mouse from one trigger straight to the next.
 - **CI shape.** Parallel jobs: checks (format, lint, typecheck, build), worker tests, sim tests, the rest; one
   aggregate `ci` check for the ruleset. Target: under 5 min wall. Watch the per-file durations in the job log;
   anything over the layer budget is a finding.
