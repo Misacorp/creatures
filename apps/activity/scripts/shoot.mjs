@@ -26,11 +26,12 @@
  * default places. Nothing here ships in the game.
  */
 /* global console, document, window */
-import { mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 import { createServer } from 'vite';
+import { drawSheet } from './sheet.mjs';
 
 const USAGE =
   "usage: node scripts/shoot.mjs <Entry> [--props '<json>'] [--widths 390,1100] [--sel <css>] [--wait <ms>] [--out <dir>] [--name <name>] [--shell <top,bottom>] [--scroll <px>]";
@@ -164,20 +165,8 @@ try {
 
   if (shots.length === 0) process.exit(process.exitCode ?? 1);
   // The widths side by side on one image, each labelled, so one file shows both.
-  const page = await browser.newPage({ deviceScaleFactor: 1 });
-  const cells = shots
-    .map(
-      (s) =>
-        `<figure><figcaption>${s.label}</figcaption><img src="data:image/png;base64,${readFileSync(s.file).toString('base64')}"></figure>`,
-    )
-    .join('');
-  await page.setContent(
-    `<body style="margin:0;padding:24px;background:#17132b;display:flex;gap:24px;align-items:flex-start;width:max-content;font:bold 28px sans-serif;color:#ffd25a">${cells}</body>`,
-  );
-  await page.addStyleTag({ content: 'figure{margin:0} figcaption{margin-bottom:12px}' });
-  await page.waitForTimeout(200);
   const sheet = join(outDir, `${opts.name}.png`);
-  await page.screenshot({ path: sheet, fullPage: true });
+  await drawSheet(browser, shots, sheet);
   for (const s of shots) console.log(s.file);
   console.log(sheet);
 } finally {
