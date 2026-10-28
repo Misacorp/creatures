@@ -135,7 +135,7 @@ function foundOn(page: Page, creatures: readonly WikiCreature[]): string {
   )}</p>`;
 }
 
-/** The stat block: the game's creature-page stat table, with the level 1 and level cap values and the growth. */
+/** The stat block: the game's creature-page stat table, with the level 1 and level cap values and the growth, plus the draft's armour. */
 function statBlock(c: WikiCreature): string {
   const rows: [string, 'hp' | 'atk' | 'spd'][] = [
     ['HP', 'hp'],
@@ -148,9 +148,12 @@ function statBlock(c: WikiCreature): string {
         `<tr class="data-row"><th scope="row"><span class="data-label">${label}</span></th><td>${String(c.baseStats[stat])}</td><td>${String(c.capStats[stat])}</td><td class="data-extra">+${String(c.growth[stat])}</td></tr>`,
     )
     .join('');
+  // Armour is a species stat of the combat v2 draft, flat across levels: the same value at both ends, no growth.
+  const armour = `<tr class="data-row"><th scope="row"><span class="data-label">Armour</span></th><td>${String(c.armour)}</td><td>${String(c.armour)}</td><td class="data-extra">-</td></tr>`;
   return `<div class="cp-block stats pix-panel">
 <h5 class="cp-title">Stats</h5>
-<table class="data-table headed tabular" aria-label="Stats of ${esc(c.name)}"><thead><tr><th scope="col">Stat</th><th scope="col">Lv 1</th><th scope="col">Lv ${String(c.levelCap)}</th><th scope="col">Per level</th></tr></thead><tbody>${body}</tbody></table>
+<table class="data-table headed tabular" aria-label="Stats of ${esc(c.name)}"><thead><tr><th scope="col">Stat</th><th scope="col">Lv 1</th><th scope="col">Lv ${String(c.levelCap)}</th><th scope="col">Per level</th></tr></thead><tbody>${body}${armour}</tbody></table>
+<p class="intent">Armour is the combat v2 draft value; the other stats are the game's today.</p>
 </div>`;
 }
 

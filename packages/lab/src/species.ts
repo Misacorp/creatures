@@ -1,5 +1,5 @@
 import { content } from '@creatures/game';
-import { LAB_RULES } from './rules';
+import { formArmour } from './armour';
 import type { Role } from './types';
 
 export interface FormStats {
@@ -15,7 +15,7 @@ export interface FormStats {
   readonly armour: number;
 }
 
-/** A form's stats at a level, from the shipped species data (levels above its cap are capped). Armour is the lab's role default. */
+/** A form's stats at a level, from the shipped species data (levels above its cap are capped). Armour is the form's own base (`FORM_ARMOUR`), flat across levels. */
 export function formStats(formId: string, level: number): FormStats {
   const s = content.creatures.find((c) => c.id === formId);
   if (!s) throw new Error(`unknown form ${formId}`);
@@ -31,7 +31,7 @@ export function formStats(formId: string, level: number): FormStats {
     hp: s.baseStats.hp + s.growth.hp * (L - 1),
     atk: s.baseStats.atk + s.growth.atk * (L - 1),
     spd: s.baseStats.spd + s.growth.spd * (L - 1),
-    armour: LAB_RULES.armourByRole[role] ?? 0,
+    armour: formArmour(s.id),
   };
 }
 

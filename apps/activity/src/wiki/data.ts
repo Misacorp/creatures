@@ -20,6 +20,7 @@ import {
   FAMILIES,
   FORM_KNACKS,
   KEYWORDS,
+  formArmour,
   KNACKS,
   LINE_POOLS,
   MODIFIER_CATEGORIES,
@@ -69,6 +70,7 @@ export function loadWikiData(): WikiData {
       baseStats: { ...c.baseStats },
       capStats: { ...effectiveStats(c, c.levelCap, 0) },
       growth: { ...c.growth },
+      armour: formArmour(c.id),
       evolvesTo: [c.evolvesTo?.species, c.altEvolvesTo?.species].filter(
         (id): id is string => id !== undefined,
       ),

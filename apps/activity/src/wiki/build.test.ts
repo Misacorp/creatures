@@ -50,6 +50,7 @@ function fake(): WikiData {
         baseStats: { hp: 1, atk: 2, spd: 3 },
         capStats: { hp: 11, atk: 12, spd: 13 },
         growth: { hp: 1, atk: 1, spd: 1 },
+        armour: 7,
         evolvesTo: [],
         festival: false,
         flavor: evil,
@@ -397,6 +398,8 @@ describe('stat blocks and the game tags', () => {
         String(c.capStats.spd),
         `+${String(c.growth.spd)}`,
       ]);
+      expect(cells('Armour'), c.id).toEqual([String(c.armour), String(c.armour), '-']);
+      expect(part, c.id).toContain('Armour is the combat v2 draft value');
       // The cap values follow from the game's rule: never below level 1.
       expect(c.capStats.hp).toBeGreaterThanOrEqual(c.baseStats.hp);
     }

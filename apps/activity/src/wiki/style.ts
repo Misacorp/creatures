@@ -206,6 +206,7 @@ a.to-top:hover { color: var(--ink); }
 .cc-name .self { font-family: var(--body); font-size: var(--fs-row); }
 .cp-title { margin-bottom: 0.375rem; }
 .stats .data-table { margin: 0; }
+.stats .intent { margin: var(--sp-2) 0 0; }
 .pv-name.rarity-name { color: var(--rar-text, var(--gold)); }`;
 
 /**

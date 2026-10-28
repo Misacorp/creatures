@@ -1,3 +1,4 @@
+export * from './armour';
 export * from './cards';
 export * from './fight';
 export * from './knacks';

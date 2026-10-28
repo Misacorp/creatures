@@ -29,6 +29,10 @@ import {
 import { content } from '@creatures/game';
 
 const rng = (s: string) => createSeededRng(s);
+/** Armour is per form now (R13); the defence tests read the numbers they subtract from the data. */
+const TEMPEST_ARMOUR = formStats('tempestray', 25).armour;
+const THORN_ARMOUR = formStats('thornbuck', 25).armour;
+const KILN_ARMOUR = formStats('kilnmole', 25).armour;
 const at = (
   formId: string,
   row: number,
@@ -142,10 +146,10 @@ describe('talent hooks: neighbours and position', () => {
       const r = run({ ...b, spd: 0 }, [at('kilnmole', row, 0, undefined, talents)]);
       return firstHit(r, 'Kilnmole');
     };
-    // Plain hit 110, armour 30: 80; with the cut, floor(110 x 0.8) - 30 = 58.
-    expect(hit(1, 0)).toBe(80);
-    expect(hit(1, 0, ['front-liner'])).toBe(58);
-    expect(hit(1, 1, ['front-liner'])).toBe(80);
+    // Plain hit 110, minus Kilnmole's armour; with the cut, floor(110 x 0.8) - armour.
+    expect(hit(1, 0)).toBe(110 - KILN_ARMOUR);
+    expect(hit(1, 0, ['front-liner'])).toBe(88 - KILN_ARMOUR);
+    expect(hit(1, 1, ['front-liner'])).toBe(110 - KILN_ARMOUR);
   });
 });
 
@@ -309,18 +313,18 @@ describe('talent hooks: Guard shapes and defence', () => {
         run(sweep, [at('tempestray', 0, 0), at('thornbuck', 0, guardCol, knack, talents)]),
         'Tempestray',
       );
-    // Area hit 110, Tempestray armour 8. Cover 40%: 66 - 8 = 58.
-    expect(covered(1, undefined, [])).toBe(58);
-    // Two slots away with Wide Reach: 40% + 2 x 10 = 60%: 44 - 8 = 36.
-    expect(covered(2, 'wide-reach', ['long-shadow'])).toBe(36);
-    // An aimed hit the Guard takes for a creature two slots away is cut 20%: 88 - 30 = 58 (not 80).
+    // Area hit 110, minus Tempestray's armour. Cover 40%: 66 - armour.
+    expect(covered(1, undefined, [])).toBe(66 - TEMPEST_ARMOUR);
+    // Two slots away with Wide Reach: 40% + 2 x 10 = 60%: 44 - armour.
+    expect(covered(2, 'wide-reach', ['long-shadow'])).toBe(44 - TEMPEST_ARMOUR);
+    // An aimed hit the Guard takes for a creature two slots away is cut 20%: 88 - armour (not 110 - armour).
     const hit = (talents: string[]) =>
       firstHit(
         run(aim(), [at('tempestray', 0, 0), at('thornbuck', 0, 2, undefined, talents)]),
         'Thornbuck',
       );
-    expect(hit(['flank-guard'])).toBe(80);
-    expect(hit(['flank-guard', 'long-shadow'])).toBe(58);
+    expect(hit(['flank-guard'])).toBe(110 - THORN_ARMOUR);
+    expect(hit(['flank-guard', 'long-shadow'])).toBe(88 - THORN_ARMOUR);
   });
 
   it('every cut on one hit multiplies, then the total cut is capped at 75%, before armour', () => {
@@ -331,11 +335,13 @@ describe('talent hooks: Guard shapes and defence', () => {
       at('tempestray', 0, 0),
       at('thornbuck', 0, 4, 'wide-reach', ['flank-guard', 'long-shadow']),
     ];
-    // 75%: floor(110 x 0.25) = 27, minus armour 8.
-    expect(firstHit(run(sweep, team), 'Tempestray')).toBe(27 - 8);
+    // 75%: floor(110 x 0.25) = 27, minus Tempestray's armour.
+    expect(firstHit(run(sweep, team), 'Tempestray')).toBe(27 - TEMPEST_ARMOUR);
     // Two cuts multiply: cover 40% and Front-liner 20% leave 60% x 80% = 48% (not 40%).
     const both = [at('tempestray', 0, 0, undefined, ['front-liner']), at('thornbuck', 0, 1)];
-    expect(firstHit(run(sweep, both), 'Tempestray')).toBe(Math.floor((110 * 4_800) / 10_000) - 8);
+    expect(firstHit(run(sweep, both), 'Tempestray')).toBe(
+      Math.floor((110 * 4_800) / 10_000) - TEMPEST_ARMOUR,
+    );
   });
 
   it('a Guard stacking Flank Guard, Wide Reach, Long Shadow and Front-liner in a 15-wide row never lets a hit through for less than 25%', () => {
@@ -351,9 +357,9 @@ describe('talent hooks: Guard shapes and defence', () => {
       at('thornbuck', 0, 14, 'wide-reach', ['flank-guard', 'long-shadow', 'front-liner']),
     ];
     const r = run(sweep, team);
-    // 110 x 25% = 27 before armour: the covered creature takes 27 - 8, the Guard (no cover, Front-liner) 88 - 30.
-    expect(firstHit(r, 'Tempestray')).toBe(27 - 8);
-    expect(firstHit(r, 'Thornbuck')).toBe(88 - 30);
+    // 110 x 25% = 27 before armour: the covered creature takes 27 - its armour, the Guard (no cover, Front-liner) 88 - its own.
+    expect(firstHit(r, 'Tempestray')).toBe(27 - TEMPEST_ARMOUR);
+    expect(firstHit(r, 'Thornbuck')).toBe(88 - THORN_ARMOUR);
     // The Guard in the front row also shrugs a hit it takes for the creature four slots away: 20% and 40% leave 48%.
     const aimedAt = { ...aimed('strongest', 'single', 110), cols: 15, rounds: 6 };
     const intercepted = firstHit(
@@ -363,7 +369,7 @@ describe('talent hooks: Guard shapes and defence', () => {
       ]),
       'Thornbuck',
     );
-    expect(intercepted).toBe(Math.floor((110 * 4_800) / 10_000) - 30);
+    expect(intercepted).toBe(Math.floor((110 * 4_800) / 10_000) - THORN_ARMOUR);
   });
 
   it('cover comes from the Guard with the largest cover whose reach includes the creature', () => {
@@ -379,8 +385,8 @@ describe('talent hooks: Guard shapes and defence', () => {
         ]),
         'Tempestray',
       );
-    expect(covered([])).toBe(58);
-    expect(covered(['long-shadow'])).toBe(36);
+    expect(covered([])).toBe(66 - TEMPEST_ARMOUR);
+    expect(covered(['long-shadow'])).toBe(44 - TEMPEST_ARMOUR);
   });
 
   it('Shoulder Charge: when it intercepts, it strikes back for 40% of its Attack, ignoring armour', () => {
@@ -402,9 +408,9 @@ describe('talent hooks: Guard shapes and defence', () => {
     const boss: BossDef = { ...b, spd: 0, plain: { ...b.plain, powerBp: 0 } };
     const hit = (talents: string[]) =>
       firstHit(run(boss, [at('tempestray', 0, 0, undefined, talents)]), 'Tempestray');
-    // Great Wave lands 110 x 1.8 = 198: minus armour 8 = 190; braced, floor(198 x 0.6) = 118 - 8 = 110.
-    expect(hit([])).toBe(190);
-    expect(hit(['brace'])).toBe(110);
+    // Great Wave lands 110 x 1.8 = 198: minus Tempestray's armour; braced, floor(198 x 0.6) = 118 - armour.
+    expect(hit([])).toBe(198 - TEMPEST_ARMOUR);
+    expect(hit(['brace'])).toBe(118 - TEMPEST_ARMOUR);
   });
 
   it('Stubborn leaves it at 1 HP once per fight', () => {

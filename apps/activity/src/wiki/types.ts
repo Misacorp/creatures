@@ -14,6 +14,8 @@ export interface WikiCreature {
   /** The stats at its level cap (the game's own stat rule, no fusion). */
   capStats: { hp: number; atk: number; spd: number };
   growth: { hp: number; atk: number; spd: number };
+  /** Armour, a species stat of the combat v2 draft (flat: no growth per level). */
+  armour: number;
   /** The forms this one evolves into (one or two). */
   evolvesTo: string[];
   festival: boolean;
