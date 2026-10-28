@@ -141,14 +141,16 @@ const reachOf = (g: Fighter) => R.guardReach + (fx(g).reachBonus ?? 0);
 /**
  * Whether `o` is in `g`'s reach: the same row, within its reach on each side, whatever stands in the slots
  * between (empty and knocked-out slots do not stop it). Flank Guard covers only its longer side (the side
- * with more slots to the row end, ties go left), with twice the slots.
+ * with more slots to the row end; a Guard in the exact middle covers both), with twice the slots.
  */
 function inReach(s: State, g: Fighter, o: Fighter): boolean {
   if (g === o || g.row !== o.row) return false;
   const r = reachOf(g);
   const d = o.col - g.col;
   if (fx(g).flankGuard) {
-    const left = g.col >= s.boss.cols - 1 - g.col;
+    const toRight = s.boss.cols - 1 - g.col;
+    if (g.col === toRight) return Math.abs(d) <= R.flankGuardSlots * r && d !== 0;
+    const left = g.col > toRight;
     return left ? d >= -R.flankGuardSlots * r && d <= -1 : d >= 1 && d <= R.flankGuardSlots * r;
   }
   return Math.abs(d) <= r;
@@ -212,6 +214,12 @@ function heal(s: State, target: Fighter, amountBp: number, critOk = true, src?: 
   }
 }
 
+/** What the boss's Mired takes off its damage and its dodge, in bp: per stack, more while a living creature has Clinging. */
+function miredCut(s: State): number {
+  const per = alive(s).some((f) => fx(f).clinging) ? R.miredClingingStackBp : R.miredPerStackBp;
+  return s.mired * per;
+}
+
 /** Mired stacks (capped); Heavy Hand gives a chance of 1 extra stack each time. */
 function addMired(s: State, by: Fighter): void {
   const extra = roll(s, fx(by).miredExtraBp ?? 0) ? 1 : 0;
@@ -223,16 +231,19 @@ function addMired(s: State, by: Fighter): void {
 // ---------- round start ----------
 
 /**
- * Mired fades at the end of every second round, or every third while a living creature has Clinging
- * (panel 3). Squelch Song alone builds stacks over a fight.
+ * Mired fades at the end of every second round, and not at all while a living creature has Clinging (panel 3, reworked
+ * 2026-10-28: fading every third round instead gained under a point; each stack counts for more as well, `miredCut`). Squelch Song alone builds stacks over a fight.
  */
 function fadeMired(s: State): void {
   if (s.mired <= 0) return;
   const clinging = alive(s).find((f) => fx(f).clinging);
-  if (s.round % (clinging ? R.miredClingingFadeEvery : R.miredFadeEvery) === 0) {
-    s.mired--;
-    log(s, 'mired', `Mired x${s.mired}`);
-  } else if (clinging && s.round % R.miredFadeEvery === 0) bump(clinging, 'clinging');
+  if (s.round % R.miredFadeEvery !== 0) return;
+  if (clinging) {
+    bump(clinging, 'clinging');
+    return;
+  }
+  s.mired--;
+  log(s, 'mired', `Mired x${s.mired}`);
 }
 
 function roundStart(s: State): void {
@@ -404,10 +415,7 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
   // 2. The boss rolls dodge (14.4). A hit that deals no damage is not rolled. Setup never misses.
   const bossDodge = f.undodgeable
     ? 0
-    : Math.max(
-        0,
-        Math.min(R.dodgeMaxBp, s.boss.spd * R.dodgePerSpdBp - s.mired * R.miredPerStackBp),
-      );
+    : Math.max(0, Math.min(R.dodgeMaxBp, s.boss.spd * R.dodgePerSpdBp - miredCut(s)));
   const dodged = !k.noDamage && roll(s, bossDodge);
   if (dodged) {
     s.count.dodges++;
@@ -678,9 +686,13 @@ function takeHit(
     cut(k.frontCutBp);
     bump(taker, 'frontCutBp');
   }
-  // Brace: less from the boss's moves (not its plain attack): a Charged landing aimed at its own slot, and any other move.
+  // Brace: less from the boss's moves (a Charged landing aimed at its own slot, and any other move), half of that from its plain attack.
   if (k.braceBp && move && (how !== 'charged' || taker === target)) {
     cut(k.braceBp);
+    bump(taker, 'braceBp');
+  } else if (k.braceBp && !move && how !== 'reflected') {
+    // Its plain attack too, at half the cut (a card-shaped talent that is never fully idle).
+    cut(Math.floor(k.braceBp / 2));
     bump(taker, 'braceBp');
   }
   // Long Shadow: the cut on a hit it intercepts grows with the distance to the creature it saved.
@@ -698,13 +710,17 @@ function takeHit(
     log(s, 'blocked', `${taker.name} blocks the hit`);
     return;
   }
+  let heldOn = false;
   if (dmg >= taker.hp && k.holdOn && !taker.holdOnDone) {
     taker.holdOnDone = true;
+    heldOn = true;
     bump(taker, 'holdOn');
     dmg = taker.hp - 1;
     log(s, 'hold-on', `${taker.name} holds on`);
   }
   taker.hp = Math.max(0, taker.hp - dmg);
+  // Holding on leaves it at two fifths of its Max HP (at least 1 HP); reworked 2026-10-28: 1 HP alone gained about 2%.
+  if (heldOn) taker.hp = Math.max(taker.hp, Math.floor((taker.maxHp * R.holdOnLeaveBp) / 10_000));
   const wind = k.secondWindBp;
   if (wind && !taker.secondWindDone && taker.hp > 0 && taker.hp * 2 < taker.maxHp) {
     taker.secondWindDone = true;
@@ -737,7 +753,7 @@ function bossHits(
     (move.charged ? s.announced.get(move.id) : undefined) ?? targetsOf(s, move.pattern, plain);
   const shape = move.pattern.shape;
   const proposed = Math.floor(
-    (((s.boss.atk * move.powerBp) / 10_000) * (10_000 - s.mired * R.miredPerStackBp)) / 10_000,
+    (((s.boss.atk * move.powerBp) / 10_000) * (10_000 - miredCut(s))) / 10_000,
   );
   // Wards are read before the move lands: a ward silenced by this same move still protects.
   const warded = new Set(

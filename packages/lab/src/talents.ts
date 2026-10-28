@@ -114,100 +114,100 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'shoulder-to-shoulder',
       name: 'Shoulder to Shoulder',
-      text: '+24% on its hits for each creature {Beside} it of its element, at most 2.',
+      text: '+23% on its hits for each creature {Beside} it of its element, at most 2.',
       roles: ALL,
       intent: 'Mono-element pairs and trios: a reason to talk about placement in the raid.',
-      fx: { perKindredBesideBp: 2_400 },
+      fx: { perKindredBesideBp: 2_300 },
     }),
     T({
       id: 'odd-one-out',
       name: 'Odd One Out',
-      text: '+16% on its hits while no creature {Beside} it shares its element.',
+      text: '+18% on its hits while no creature {Beside} it shares its element.',
       roles: ALL,
       intent:
         'The mixed row: the opposite of Shoulder to Shoulder. Like the shipped line it also holds when nothing stands beside it, so the number is small.',
-      fx: { oddOneOutBp: 1_600 },
+      fx: { oddOneOutBp: 1_800 },
     }),
     // Position.
     T({
       id: 'edge-walker',
       name: 'Edge-walker',
-      text: '+15% on its hits while it stands at a {Row end}.',
+      text: '+16% on its hits while it stands at a {Row end}.',
       roles: ALL,
       intent:
         'A reason to stand at an end slot of the row (column 0 or the last column), whoever stands beside it: the owner controls it. Sweeps of the row ends make ends risky.',
-      fx: { rowEndBp: 1_500 },
+      fx: { rowEndBp: 1_600 },
     }),
     T({
       id: 'front-liner',
       name: 'Front-liner',
-      text: 'It takes 15% less from every hit in the {Front row}.',
+      text: 'It takes 10% less from every hit in the {Front row}.',
       roles: ALL,
       intent: 'The front row takes the plain attack: a creature that wants to stand there.',
-      fx: { frontCutBp: 1_500 },
+      fx: { frontCutBp: 1_000 },
     }),
     // Fight state.
     T({
       id: 'slow-burn',
       name: 'Slow Burn',
-      text: '+2% on its hits per round from round 2, up to +12%.',
+      text: '+2.5% on its hits per round from round 2, up to +15%.',
       roles: HITTERS,
       intent: 'Strong in long raid stages, weak in short fights: a reason to own two of a species.',
-      fx: { slowBurnBp: 200, slowBurnCapBp: 1_200 },
+      fx: { slowBurnBp: 250, slowBurnCapBp: 1_500 },
     }),
     T({
       id: 'finisher',
       name: 'Finisher',
-      text: '+75% on its hits while the boss is below a third of its HP.',
+      text: '+55% on its hits while the boss is below a third of its HP.',
       roles: HITTERS,
       intent:
         'With the boss HP shared across a raid weekend (R14), the last stage rewards it most.',
-      fx: { finisherBp: 7_500 },
+      fx: { finisherBp: 5_500 },
     }),
     T({
       id: 'first-pounce',
       name: 'First Pounce',
-      text: 'Its first hit that lands each fight deals +150%.',
+      text: 'Its first hit that lands each fight deals +170%.',
       roles: HITTERS,
       intent:
         'Short fights, the dungeon and each raid stage. A hit made while silenced does not use it up.',
-      fx: { firstHitBp: 15_000 },
+      fx: { firstHitBp: 17_000 },
     }),
     T({
       id: 'steady-rhythm',
       name: 'Steady Rhythm',
-      text: 'Every third hit it makes is a crit, and its crits deal 20% more.',
+      text: 'Every third hit it makes is a crit, and its crits deal 10% more.',
       roles: HITTERS,
       intent: 'Crits you can plan for (P-04): a rhythm instead of a chance.',
-      fx: { steadyRhythm: true, critDamageBp: 2_000 },
+      fx: { steadyRhythm: true, critDamageBp: 1_000 },
     }),
     // Marks and reactions.
     T({
       id: 'opportunist',
       name: 'Opportunist',
-      text: 'Its {Reaction} bonus +80% when it cashes a {Mark} at x2 or more.',
+      text: 'Its {Reaction} bonus +120% when it cashes a {Mark} at x2 or more.',
       roles: ['payoff'],
       intent:
         'Rewards waiting for a bigger mark (x2 or x3); pairs with Setters that leave x2, and with a second Setter. Was x3 only (2026-10-28): a mark almost never reached x3 when cashed, so the talent did nothing.',
-      fx: { cashHighBp: 8_000 },
+      fx: { cashHighBp: 12_000 },
     }),
     T({
       id: 'quick-draw',
       name: 'Quick Draw',
-      text: "+27% on a {Reaction} on a mark added since the boss's last turn.",
+      text: "+32% on a {Reaction} on a mark added since the boss's last turn.",
       roles: ['payoff'],
       intent:
         'The opposite timing: cash right after the Setter, before Clean Scales sheds the mark.',
-      fx: { freshMarkBp: 2_700 },
+      fx: { freshMarkBp: 3_200 },
     }),
     T({
       id: 'owners-mark',
       name: "Owner's Mark",
-      text: '{Reaction}s on a {Mark} it left have a +22% bonus while it stands.',
+      text: '{Reaction}s on a {Mark} it left have a +15% bonus while it stands.',
       roles: ['setter'],
       intent:
         'A Setter that makes its own marks worth more, whoever cashes them, while it stands and is not silenced.',
-      fx: { ownMarkBp: 2_200 },
+      fx: { ownMarkBp: 1_500 },
     }),
     T({
       id: 'deep-ink',
@@ -222,29 +222,29 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'rally-cry',
       name: 'Rally Cry',
-      text: '+50% on its hits for the rest of the fight after a creature {Beside} it is knocked out.',
+      text: '+40% on its hits for the rest of the fight after a creature {Beside} it is knocked out.',
       roles: ALL,
       intent: 'Turns attrition into a comeback. It does not arm while the creature is silenced.',
-      fx: { vengefulBp: 5_000 },
+      fx: { vengefulBp: 4_000 },
     }),
     T({
       id: 'momentum',
       name: 'Momentum',
-      text: 'After it dodges, or a Guard takes a hit aimed at it, its next hit deals +33%.',
+      text: 'After it dodges, or a Guard takes a hit aimed at it, its next hit deals +38%.',
       roles: HITTERS,
       intent:
         'Fast creatures and the creature in the front row: a hit aimed at it that is dodged, or that a Guard beside it takes, arms its next hit. Reworked (2026-10-28): a dodge alone almost never happens to a creature the boss does not aim at, so the talent did nothing.',
-      fx: { momentumBp: 3_300 },
+      fx: { momentumBp: 3_800 },
     }),
     // Guard shapes.
     T({
       id: 'flank-guard',
       name: 'Flank Guard',
-      text: 'Its {Reach} covers only its longer side (more slots to the row end, ties go left), twice the slots, and its cover is +35%.',
+      text: 'Its {Reach} covers only its longer side (more slots to the row end; both when it stands in the middle), twice the slots, and its cover is +50%.',
       roles: ['guard'],
       intent:
         'A Guard at one end protects the long stretch of the row: a placement puzzle the owner controls, with no Left/Right pair to roll. Twice the slots on one side covers no more creatures than one slot on each side, so the cover bonus is what makes it worth the placement (2026-10-28).',
-      fx: { flankGuard: true, coverBonusBp: 3_500 },
+      fx: { flankGuard: true, coverBonusBp: 5_000 },
     }),
     T({
       id: 'long-shadow',
@@ -258,46 +258,48 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'shoulder-charge',
       name: 'Shoulder Charge',
-      text: 'When it {Intercept}s, it strikes back for 80% of its Attack, ignoring armour.',
+      text: 'When it {Intercept}s, it strikes back for 45% of its Attack, ignoring armour.',
       roles: ['guard'],
       intent:
         'A Guard that adds damage the more it is hit. The strike-back is a counter, not a hit: it can land the killing blow but triggers nothing that keys on its hits.',
-      fx: { interceptHitBackBp: 8_000 },
+      fx: { interceptHitBackBp: 4_500 },
     }),
     // Rule benders.
     T({
       id: 'brace',
       name: 'Brace',
-      text: "It takes 50% less from the boss's moves ({Charged} on its slot included), not its plain attack.",
+      text: "It takes 40% less from the boss's moves ({Charged} on its slot included) and 20% less from its plain attack.",
       roles: ALL,
       intent:
-        "Reads off the boss's named moves (the Charged highlights of Great Wave, Crusher, Payoff Slam), not its plain attack: a card-shaped talent, strong where the boss has moves and idle where it has none.",
-      fx: { braceBp: 5_000 },
+        "Reads off the boss's named moves (the Charged highlights of Great Wave, Crusher, Payoff Slam): a card-shaped talent, strong where the boss has moves. Reworked (2026-10-28): it also cuts the plain attack by half of that, because a talent that did nothing on most weeks gained under a point on every role.",
+      fx: { braceBp: 4_000 },
     }),
     T({
       id: 'stubborn',
       name: 'Stubborn',
-      text: 'Once per fight, a hit that would knock it out leaves it at 1 HP.',
+      text: 'Once per fight, a hit that would knock it out leaves it at two fifths of its max HP.',
       roles: ALL,
-      intent: 'Survives one Crusher; pairs with healers. Hold On under its one name.',
+      intent:
+        "Survives one Crusher; pairs with healers. Hold On under its one name. Reworked (2026-10-28): it left the creature at 1 HP, which gained about 2% of a team's result, so it now leaves it at two fifths of its max HP.",
       fx: { holdOn: true },
     }),
     T({
       id: 'catch-breath',
       name: 'Catch Breath',
-      text: 'Once per fight, when a hit drops it below half its max HP, it heals 21% of max HP.',
+      text: 'Once per fight, when a hit drops it below half its max HP, it heals 40% of max HP.',
       roles: ALL,
       intent:
         'Survives one big hit (Crusher, Payoff Hunter). Not the gear line Second Wind, which is a chance each round to heal.',
-      fx: { secondWindBp: 2_100 },
+      fx: { secondWindBp: 4_000 },
     }),
     T({
       id: 'unbothered',
       name: 'Unbothered',
-      text: 'It cannot be {Silenced}.',
+      text: 'It cannot be {Silenced}, and has +6% Attack and +14% Max HP.',
       roles: ALL,
-      intent: 'The silence answer on the creature itself, for row ends and front rows.',
-      fx: { ignoreSilence: true },
+      intent:
+        'The silence answer on the creature itself, for row ends and front rows. Reworked (2026-10-28): the immunity alone did nothing on the gauntlet, where a creature can always stand in the middle (a Guard gained nothing), so it carries a little Attack and HP as well, less than Sharp Claws or Hardy.',
+      fx: { ignoreSilence: true, atkBp: 600, hpBp: 1_400 },
     }),
     T({
       id: 'cull',
@@ -312,19 +314,19 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'heavy-hand',
       name: 'Heavy Hand',
-      text: 'Its {Mired} has a 55% chance to add 1 extra stack.',
+      text: 'Its {Mired} has an 80% chance to add 1 extra stack.',
       roles: ['guard', 'support'],
       intent:
         'Mire only; the shipped line is a chance of an extra stack, and luck is welcome. More stacks per application keeps the debuff up.',
-      fx: { miredExtraBp: 5_500 },
+      fx: { miredExtraBp: 8_000 },
     }),
     T({
       id: 'clinging',
       name: 'Clinging',
-      text: '{Mired} fades every third round instead of every second while it stands.',
+      text: '{Mired} does not fade while it stands, and each stack counts for half as much again.',
       roles: ['guard', 'support'],
       intent:
-        'Mire only: the v2 form of the shipped "lasts more turns"; one creature can hold a debuff for the team.',
+        'Mire only: the v2 form of the shipped "lasts more turns"; one creature can hold a debuff for the team. Reworked (2026-10-28): fading every third round instead of every second gained under a point, so the debuff now stays until the fight ends, and its stacks count for half as much again (the per-stack cut is 4.5% instead of 3%).',
       fx: { clinging: true },
     }),
     // Support talents.
@@ -339,19 +341,19 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'kindred-boost',
       name: 'Kindred Boost',
-      text: 'Its {Boost} +32% on creatures of its own element.',
+      text: 'Its {Boost} +26% on creatures of its own element.',
       roles: ['support'],
       intent: 'Mono-element rows in the raid, across players.',
-      fx: { kindredBoostBp: 3_200 },
+      fx: { kindredBoostBp: 2_600 },
     }),
     T({
       id: 'triage',
       name: 'Triage',
-      text: 'Its heal on the creatures {Beside} it goes to the most hurt one, 70% bigger.',
+      text: 'Its heal on the creatures {Beside} it goes to the most hurt one, 100% bigger.',
       roles: ['support'],
       intent:
         "Aims the Support's own base heal on the creatures beside it, bigger; only healing Supports (Tide, Grove) have a heal to aim. Idle under a Support shape Knack (Sunbeam, Drizzle, Curl Up and the rest), which replaces that verb.",
-      fx: { triageBp: 7_000 },
+      fx: { triageBp: 10_000 },
     }),
     T({
       id: 'overheal-spill',

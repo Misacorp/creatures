@@ -162,7 +162,7 @@ export interface KnackFx {
   readonly braceBp?: number;
   /** Its Mired has this chance (bp) to add 1 extra stack each time. */
   readonly miredExtraBp?: number;
-  /** While it stands, the boss's Mired fades every third round instead of every second. */
+  /** While it stands, the boss's Mired does not fade and each stack counts for half as much again. */
   readonly clinging?: boolean;
   /** Every second time its Support verb runs, its boost is doubled. */
   readonly brightBoost?: boolean;

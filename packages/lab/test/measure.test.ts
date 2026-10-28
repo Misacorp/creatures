@@ -222,8 +222,8 @@ describe('the raid row', () => {
     expect(hp).toBeGreaterThan(5_000);
     expect(raidBossHp(2)).toBe(hp);
     const m = createRaidMeasurer({ hp, seeds: 3 });
-    // The raid boss never silences: Unbothered changes nothing, and the same seeds make the two runs identical.
-    expect(m.measure('unbothered', 'tidewing')).toEqual({ bestPct: 0, randomPct: 0 });
+    // Opportunist is idle on a Setter, and the same seeds make the two runs identical.
+    expect(m.measure('opportunist', 'tidewing')).toEqual({ bestPct: 0, randomPct: 0 });
     // Edge-walker gains at an end slot, and the best slot is at least as good as the random one.
     const edge = m.measure('edge-walker', 'tidewing');
     expect(edge.bestPct).toBeGreaterThan(0);

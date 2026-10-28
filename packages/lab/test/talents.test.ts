@@ -336,7 +336,7 @@ describe('talent hooks: Guard shapes and defence', () => {
   /** The boss aims at the strongest creature, Tempestray, wherever it stands. */
   const aim = (atk = 110) => ({ ...aimed('strongest', 'single', atk), rounds: 6 });
 
-  it('Flank Guard: reach to its longer side only, with twice the slots; ties go left', () => {
+  it('Flank Guard: reach to its longer side only, with twice the slots; the exact middle covers both', () => {
     const hit = (guardCol: number, creatureCol: number, talents: string[] = ['flank-guard']) =>
       run(aim(), [
         at('tempestray', 0, creatureCol),
@@ -344,9 +344,13 @@ describe('talent hooks: Guard shapes and defence', () => {
       ]).intercepts;
     // Two slots away is out of a plain Guard's reach and inside a flank's.
     expect(hit(2, 0, [])).toBe(0);
-    // Five slots wide, a Guard in the middle has two slots each way: a tie goes left.
+    // Five slots wide, a Guard in the middle has two slots each way: a tie covers both sides (reworked 2026-10-28:
+    // "ties go left" made a middle Guard worse than a plain one in the three-wide gauntlet).
     expect(hit(2, 0)).toBeGreaterThan(0);
-    expect(hit(2, 4)).toBe(0);
+    expect(hit(2, 4)).toBeGreaterThan(0);
+    // Off the middle, the longer side only: a Guard at column 1 of 5 covers to the right (three slots), not to the left.
+    expect(hit(1, 3)).toBeGreaterThan(0);
+    expect(hit(1, 0)).toBe(0);
     // At the right end the longer side is the left; at the left end it is the right.
     expect(hit(4, 2)).toBeGreaterThan(0);
     expect(hit(0, 2)).toBeGreaterThan(0);
@@ -481,7 +485,7 @@ describe('talent hooks: Guard shapes and defence', () => {
     );
   });
 
-  it("Brace: less from a Charged landing on its slot and from the boss's other moves, not from its plain attack", () => {
+  it("Brace: less from a Charged landing on its slot and from the boss's other moves, and half as much from its plain attack", () => {
     const brace = bp('brace', 'braceBp');
     const quietPlain = (card: string, rounds: number): BossDef => {
       const b = labBoss({ rows: 1, cols: 1, cards: [card], rounds });
@@ -508,12 +512,13 @@ describe('talent hooks: Guard shapes and defence', () => {
     const crush = quietPlain('crusher', 3);
     expect(hit(crush, [])).toBe(440 - TEMPEST_ARMOUR);
     expect(hit(crush, ['brace'])).toBe(afterCuts(440, brace) - TEMPEST_ARMOUR);
-    // The plain attack is not a move: Brace does nothing against it.
+    // The plain attack is not a move: it is cut by half the number (reworked 2026-10-28: Brace was idle on most weeks).
     const plain = { ...labBoss({ rows: 1, cols: 1, rounds: 1 }), spd: 0 };
-    expect(hit(plain, ['brace'])).toBe(hit(plain, []));
+    expect(hit(plain, [])).toBe(110 - TEMPEST_ARMOUR);
+    expect(hit(plain, ['brace'])).toBe(afterCuts(110, Math.floor(brace / 2)) - TEMPEST_ARMOUR);
   });
 
-  it('Stubborn leaves it at 1 HP once per fight', () => {
+  it('Stubborn leaves it at two fifths of its max HP once per fight', () => {
     const b = labBoss({ rows: 1, cols: 1, rounds: 3, atk: 2_000 });
     const boss: BossDef = { ...b, spd: 0 };
     const r = run(boss, [at('tidewing', 0, 0, undefined, ['stubborn'])]);
@@ -636,31 +641,56 @@ describe('talent hooks: debuffs', () => {
     ]);
   });
 
-  it('Clinging: Mired fades only at the end of every third round while it stands', () => {
+  it('Clinging: Mired does not fade while it stands (up to the stack cap)', () => {
     const r = song(['clinging'], {}, 6);
+    // The song adds a stack at each round start; nothing fades, so the count climbs to the cap of 5 and stays.
     expect(mired(r)).toEqual([
       'Mired x1',
       'Mired x2',
       'Mired x3',
-      'Mired x2',
-      'Mired x3',
       'Mired x4',
       'Mired x5',
-      'Mired x4',
+      'Mired x5',
     ]);
-    // It held the fade back at the end of rounds 2 and 4.
-    expect(r.fighters[0]?.fires['clinging']).toBe(2);
+    // It held the fade back at the end of rounds 2, 4 and 6.
+    expect(r.fighters[0]?.fires['clinging']).toBe(3);
   });
 
-  it('Heavy Hand: its Mired has a 50% chance to add 1 extra stack', () => {
+  it('Clinging: each Mired stack takes more off the boss’s damage while it stands', () => {
+    // Round 1: the song has put x1 on the boss before it hits Tempestray (the one it aims at), which does not dodge on this seed.
+    const boss = { ...aimed('strongest', 'single', 1_000), cols: 2, rounds: 1 };
+    const hit = (talents: string[]) => {
+      for (let i = 0; i < 30; i++) {
+        const seed = `cl${i}`;
+        const team = (t: string[]) => [
+          at('squelch', 0, 0, 'squelch-song', t),
+          at('tempestray', 0, 1),
+        ];
+        if (firstHit(run(boss, team([]), seed), 'Tempestray') !== undefined)
+          return firstHit(run(boss, team(talents), seed), 'Tempestray');
+      }
+      return undefined;
+    };
+    const per = (key: 'miredPerStackBp' | 'miredClingingStackBp') => LAB_RULES[key];
+    expect(per('miredClingingStackBp')).toBeGreaterThan(per('miredPerStackBp'));
+    expect(hit([])).toBe(
+      Math.floor((1_000 * (10_000 - per('miredPerStackBp'))) / 10_000) - TEMPEST_ARMOUR,
+    );
+    expect(hit(['clinging'])).toBe(
+      Math.floor((1_000 * (10_000 - per('miredClingingStackBp'))) / 10_000) - TEMPEST_ARMOUR,
+    );
+  });
+
+  it('Heavy Hand: its Mired has its number as the chance to add 1 extra stack', () => {
     let extra = 0;
     const n = 200;
+    const p = bp('heavy-hand', 'miredExtraBp') / 10_000;
     for (let i = 0; i < n; i++) {
       const r = song(['heavy-hand'], {}, 1, `hh:${i}`);
       extra += mired(r)[0] === 'Mired x2' ? 1 : 0;
     }
-    expect(extra).toBeGreaterThan(n * 0.4);
-    expect(extra).toBeLessThan(n * 0.6);
+    expect(extra).toBeGreaterThan(n * (p - 0.1));
+    expect(extra).toBeLessThan(n * (p + 0.1));
     // Without it, never.
     expect(mired(song([], {}, 1))).toEqual(['Mired x1']);
   });
@@ -924,5 +954,19 @@ describe('the talent library as content', () => {
           line,
         ).toBe(true);
     }
+  });
+});
+
+describe('reworked weak talents (2026-10-28)', () => {
+  it('Unbothered is the silence ward with a little Attack and HP, less than the plain stat talents', () => {
+    expect(TALENTS['unbothered']?.fx.ignoreSilence).toBe(true);
+    expect(bp('unbothered', 'atkBp')).toBeGreaterThan(0);
+    expect(bp('unbothered', 'atkBp')).toBeLessThan(bp('sharp-claws', 'atkBp'));
+    expect(bp('unbothered', 'hpBp')).toBeGreaterThan(0);
+    expect(bp('unbothered', 'hpBp')).toBeLessThan(bp('hardy', 'hpBp'));
+    const boss = calm({ rows: 1, cols: 1, rounds: 1 });
+    const plain = run(boss, [at('tidewing', 0, 0)]);
+    const calmed = run(boss, [at('tidewing', 0, 0, undefined, ['unbothered'])]);
+    expect(calmed.fighters[0]?.maxHp).toBeGreaterThan(plain.fighters[0]?.maxHp ?? 0);
   });
 });

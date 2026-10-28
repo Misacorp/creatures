@@ -6,6 +6,7 @@ import {
   FORM_KNACKS,
   keywordsIn,
   ADDITIVE_FIELDS,
+  LAB_RULES,
   LINE_POOLS,
   OWN_KNACKS,
   knacksOf,
@@ -570,7 +571,7 @@ describe('R11 and line talent pools (Misa, 2026-10-27)', () => {
     }
   });
 
-  it('Stubborn leaves it at 1 HP once; Hardy raises max HP', () => {
+  it('Stubborn leaves it at two fifths of its max HP once; Hardy raises max HP', () => {
     const boss: BossDef = {
       ...labBoss({ rows: 1, cols: 1, rounds: 1, atk: 2_000 }),
       spd: 0,
@@ -581,7 +582,9 @@ describe('R11 and line talent pools (Misa, 2026-10-27)', () => {
       log: true,
     });
     expect(held.events.some((e) => e.kind === 'hold-on')).toBe(true);
-    expect(held.fighters[0]?.hp).toBe(1);
+    expect(held.fighters[0]?.hp).toBe(
+      Math.floor(((held.fighters[0]?.maxHp ?? 0) * LAB_RULES.holdOnLeaveBp) / 10_000),
+    );
     const hardy = fight(boss, [{ ...at('tidewing', 0, 0), talents: ['hardy'] }], { rng: rng('h') });
     const plain = fight(boss, [at('tidewing', 0, 0)], { rng: rng('h') });
     expect(hardy.fighters[0]?.maxHp).toBe(
