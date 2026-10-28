@@ -232,6 +232,9 @@ importers:
       '@creatures/game':
         specifier: workspace:*
         version: link:../../packages/game
+      '@creatures/lab':
+        specifier: workspace:*
+        version: link:../../packages/lab
       '@discord/embedded-app-sdk':
         specifier: 'catalog:'
         version: 2.5.0
@@ -305,6 +308,22 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(vite@8.3.4(esbuild@0.28.2))
+
+  packages/lab:
+    dependencies:
+      '@creatures/game':
+        specifier: workspace:*
+        version: link:../game
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vite:
+        specifier: 'catalog:'
+        version: 8.3.4(esbuild@0.28.2)
       vitest:
         specifier: 'catalog:'
         version: 5.0.3(vite@8.3.4(esbuild@0.28.2))

@@ -24,6 +24,7 @@ import { resetLocalFlags } from './flags';
 import type { CreatureChoice, ToolSpec } from './forms';
 import { CLOCK_SPECS, GOODS_SPECS, RESET_ACCOUNT_SPEC, orderedSections } from './specs';
 import { ToolForm } from './ToolForm';
+import { COMBAT_LAB_URL } from './combat-lab-link';
 import { WORKBENCH_URL } from './workbench-link';
 import { Accordion } from '../ui/Accordion';
 import { DataTable } from '../ui/DataTable';
@@ -54,25 +55,32 @@ function Section({
   );
 }
 
-/** The link to the component workbench: opened through Discord when inside it, else shown to copy. */
-function WorkbenchLink({ onStatus }: { onStatus: (status: Status) => void }): JSX.Element {
+/** A link to a staging-only page: opened through Discord when inside it, else shown to copy. */
+function PageLink({
+  name,
+  url,
+  blurb,
+  onStatus,
+}: {
+  name: string;
+  url: string;
+  blurb: string;
+  onStatus: (status: Status) => void;
+}): JSX.Element {
   return (
     <div class="dev-workbench">
-      <p class="dev-hint">
-        Every reusable piece of the game on one page, with controls and a feedback button. It opens
-        in your browser, no sign-in.
-      </p>
-      <p class="dev-url">{WORKBENCH_URL}</p>
+      <p class="dev-hint">{blurb}</p>
+      <p class="dev-url">{url}</p>
       <div class="dev-quick-row">
         <button
           type="button"
           class="dev-btn"
           onClick={() => {
-            void openExternalLink(WORKBENCH_URL).then((ok) => {
+            void openExternalLink(url).then((ok) => {
               onStatus(
                 ok
-                  ? { ok: true, text: 'Component workbench: link opened' }
-                  : { ok: false, text: 'Component workbench: could not open it, copy the address' },
+                  ? { ok: true, text: `${name}: link opened` }
+                  : { ok: false, text: `${name}: could not open it, copy the address` },
               );
             });
           }}
@@ -83,15 +91,12 @@ function WorkbenchLink({ onStatus }: { onStatus: (status: Status) => void }): JS
           type="button"
           class="dev-btn"
           onClick={() => {
-            navigator.clipboard.writeText(WORKBENCH_URL).then(
+            navigator.clipboard.writeText(url).then(
               () => {
-                onStatus({ ok: true, text: 'Component workbench: address copied' });
+                onStatus({ ok: true, text: `${name}: address copied` });
               },
               () => {
-                onStatus({
-                  ok: false,
-                  text: 'Component workbench: could not copy, select the address',
-                });
+                onStatus({ ok: false, text: `${name}: could not copy, select the address` });
               },
             );
           }}
@@ -100,6 +105,30 @@ function WorkbenchLink({ onStatus }: { onStatus: (status: Status) => void }): JS
         </button>
       </div>
     </div>
+  );
+}
+
+/** The link to the component workbench. */
+function WorkbenchLink({ onStatus }: { onStatus: (status: Status) => void }): JSX.Element {
+  return (
+    <PageLink
+      name="Component workbench"
+      url={WORKBENCH_URL}
+      blurb="Every reusable piece of the game on one page, with controls and a feedback button. It opens in your browser, no sign-in."
+      onStatus={onStatus}
+    />
+  );
+}
+
+/** The link to the combat lab (the combat v2 prototype). */
+function CombatLabLink({ onStatus }: { onStatus: (status: Status) => void }): JSX.Element {
+  return (
+    <PageLink
+      name="Combat lab"
+      url={COMBAT_LAB_URL}
+      blurb="Set up a combat v2 prototype fight, run it and read what happened step by step. It opens in your browser, no sign-in."
+      onStatus={onStatus}
+    />
   );
 }
 
@@ -269,6 +298,13 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
               onToggle={toggle('workbench')}
             >
               <WorkbenchLink onStatus={setStatus} />
+            </Section>
+            <Section
+              title="Combat lab"
+              open={sectionOpen('combat-lab', false)}
+              onToggle={toggle('combat-lab')}
+            >
+              <CombatLabLink onStatus={setStatus} />
             </Section>
             {orderedSections(tab).map((section) => (
               <Section
