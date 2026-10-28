@@ -18,8 +18,6 @@ export const LAB_RULES = {
   /** Crits on creature hits and heals. */
   critChanceBp: 500,
   critBp: 15_000,
-  /** Legacy, no longer read by any fight or by `formStats`: armour is per form now (`FORM_ARMOUR`, R13). Kept only because the report header still prints the Guard value; remove it with that line. */
-  armourByRole: { setter: 8, payoff: 8, guard: 30, support: 6 } as Record<string, number>,
   /** A Guard covers area hits on creatures in its reach (4.3, kept). Cover with every bonus is one cut among the others (`cutMaxBp`). */
   coverBp: 4_000,
   /** Every cut one hit gets (auras, cover, Long Shadow's intercept cut, Front-liner, Brace, ...) multiplies together; the total cut never passes this, and it comes off before armour (panel 3). */
