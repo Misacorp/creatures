@@ -60,7 +60,7 @@ The workbench is a second Vite entry (`apps/activity/workbench.html`, code in `a
 
 For a timing or gesture bug (a tap lost after a drawer closes, a long press), load the real component in Chromium with phone emulation:
 
-- **A component with an entry:** open `workbench.html?frame=1#c=<Name>&p=<props>` from a Playwright script in your scratchpad. `scripts/shoot.mjs` shows how to start Vite and launch the preinstalled Chromium.
+- **A component with an entry:** `scripts/shoot.mjs <Name> --props '<json>'` shoots it, and `--click <css>` taps something first (a popover, a drawer, a menu). For more than that, open `workbench.html?frame=1#c=<Name>&p=<props>` from a Playwright script in your scratchpad; `scripts/shoot.mjs` shows how to start Vite (on its own port, closed when it ends) and launch the preinstalled Chromium.
 - **A whole screen with no entry** (`Workshop` and the others under "Not covered"): write a throwaway page in `apps/activity/scratch/`. It is gitignored and lint skips it, and `pnpm dev` serves it at `/scratch/<page>.html`. It can import from `../src/` and the test samples (`creature-card-sample.ts`). Never put probe files anywhere else in the repo.
 - Chromium is not Discord's phone app: a bug that only shows on the phone (Misa's drawer pull, retro 2026-10-28) may need his answers on how and where it happens. Ask those before guessing.
 - If a step is denied, stop and ask Misa. Don't do the same thing another way.

@@ -51,3 +51,9 @@ canvas.sprite {
   font-family: var(--body);
   letter-spacing: normal;
 }
+
+/* The one small pixel triangle (ui/PixelTriangle): in the text's colour, its size set by the component. */
+.pixel-triangle {
+  flex: none;
+  fill: currentcolor;
+}

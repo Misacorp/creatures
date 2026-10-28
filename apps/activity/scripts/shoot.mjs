@@ -4,12 +4,14 @@
  *
  *   cd apps/activity && node scripts/shoot.mjs <Entry> [--props '{"fight":"Raid"}'] [--widths 390,1100]
  *     [--sel 'section.stage'] [--wait 1500] [--out <dir>] [--name <file name>]
- *     [--shell 40,24] [--scroll 600]
+ *     [--shell 40,24] [--scroll 600] [--click 'button[aria-label^="Signature"]']
  *
  * It opens the entry (with `--props` over its defaults) in a real window per width, like
  * `ui-audit.mjs`, at twice the pixel density, waits `--wait` ms (animations, fonts), and saves
  * `<name>-<width>.png` for each width plus `<name>.png` with them side by side, labelled. `--sel`
- * shoots one element of the page (default: the whole workbench stage). The output folder defaults to
+ * shoots one element of the page (default: the whole workbench stage). `--click <css>` taps the first
+ * element that matches before the shot, so a popover, drawer or menu shows open; give it more than once
+ * to tap in turn (each tap waits 400 ms). The output folder defaults to
  * `screenshots/` here (gitignored); point `--out` at a scratch folder to keep the repo clean.
  *
  * `--shell <top,bottom>` shoots the game's frame as a phone in Discord sees it, for any change to the HUD, the
@@ -34,7 +36,7 @@ import { createServer } from 'vite';
 import { drawSheet } from './sheet.mjs';
 
 const USAGE =
-  "usage: node scripts/shoot.mjs <Entry> [--props '<json>'] [--widths 390,1100] [--sel <css>] [--wait <ms>] [--out <dir>] [--name <name>] [--shell <top,bottom>] [--scroll <px>]";
+  "usage: node scripts/shoot.mjs <Entry> [--props '<json>'] [--widths 390,1100] [--sel <css>] [--wait <ms>] [--out <dir>] [--name <name>] [--shell <top,bottom>] [--scroll <px>] [--click <css>]...";
 
 function readArgs(argv) {
   const [entry, ...rest] = argv;
@@ -46,6 +48,7 @@ function readArgs(argv) {
   opts.shell = null;
   opts.scroll = 600;
   opts.out = 'screenshots';
+  opts.clicks = [];
   opts.name = entry.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   for (let i = 0; i < rest.length; i += 2) {
     const [key, value] = [rest[i], rest[i + 1]];
@@ -67,6 +70,7 @@ function readArgs(argv) {
       }
       opts.shell = { top, bottom: bottom ?? 0 };
     } else if (key === '--scroll') opts.scroll = Number.parseInt(value, 10);
+    else if (key === '--click') opts.clicks.push(value);
     else {
       console.error(USAGE);
       process.exit(2);
@@ -152,6 +156,10 @@ try {
     await page.waitForSelector('.wb-frame-stage', { timeout: 15000 });
     await page.evaluate(() => document.fonts.ready);
     await page.waitForTimeout(opts.wait);
+    for (const target of opts.clicks) {
+      await page.locator(target).first().click();
+      await page.waitForTimeout(400);
+    }
     if (opts.shell !== null) {
       await shootShell(page, width);
       await ctx.close();
