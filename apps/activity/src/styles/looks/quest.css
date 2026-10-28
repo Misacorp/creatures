@@ -1,0 +1,285 @@
+/*
+  Look "quest" (Window Quest): classic JRPG blue windows. Calm deep blue panels with a pale window line and a dark
+  gap outside it, a pointing cursor on the selected place, and flat stepped silhouettes behind the screen, tinted
+  per place (`.nav-shell[data-place]`). A look is selected with `data-look` on the root (`looks.ts`). Tokens first,
+  then a small set of chrome overrides; every rule is under `:root[data-look='quest']`. Only the outer panels (the
+  card, the rail, the dock, trays, drawers, popovers, buttons) get the window line; what sits inside them stays flat.
+  The silhouettes are one-colour pixel masks (data URIs, which the CSP's img-src allows) tinted by a colour.
+*/
+:root[data-look='quest'] {
+  --night: #0a0f24;
+  --dusk: #1b2a6b; /* the window */
+  --dusk-2: #2c3f93; /* raised: rows, tiles, the HUD band */
+  --ink: #050818;
+  --bone: #fff;
+  --haze: #a9b8ee; /* muted text: 6.8:1 on the window, 4.8:1 on raised */
+  --gold: #ffd45a;
+  --gold-shade: #b88f2a;
+  --plum: #2c3f93;
+  --line: #5469c4;
+  --mine: #3a4fb0;
+  --bevel-hi: #3d54b8;
+  --bevel-lo: #121c4f;
+  --tide: #6db4ff;
+  --good: #6ee07a;
+  --bad: #ff6b6b;
+  --attention: #ff8a4c;
+  --ink-rgb: 5 8 24;
+  --good-rgb: 110 224 122;
+  --bad-rgb: 255 107 107;
+  --gold-rgb: 255 212 90;
+  --tide-rgb: 109 180 255;
+  --win-line: #e8ecff; /* the window line */
+  --win-gap: 0 0 0 2px var(--win-line), 0 0 0 5px var(--ink);
+
+  /* The one window frame: a 2 px pale line with a dark gap outside it (no bevel, no boxes in boxes). */
+  --frame: var(--win-gap);
+  --scene-far: #17245f;
+  --scene-mid: #111b4d;
+  --scene-name: var(--scene-home);
+}
+
+:root[data-look='quest'] body {
+  background-color: var(--night);
+  background-image: radial-gradient(#16215a 1px, transparent 1px);
+}
+
+/* --- The window and its scenery --- */
+:root[data-look='quest'] main.card {
+  isolation: isolate;
+  background: var(--dusk);
+  box-shadow: var(--win-gap);
+}
+
+/* The silhouettes sit behind the screen, fixed to the bottom of the window (the dock, the rail and the page are above). */
+:root[data-look='quest'] main.card::before,
+:root[data-look='quest'] main.card::after {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: -1;
+  height: 7.5rem;
+  content: '';
+  pointer-events: none;
+  mask-repeat: repeat-x;
+  mask-position: left bottom;
+  mask-size: 20rem 7.5rem;
+}
+
+:root[data-look='quest'] main.card::before {
+  background: var(--scene-far);
+  mask-image: var(--scene-hills);
+}
+
+:root[data-look='quest'] main.card::after {
+  height: 9rem;
+  background: var(--scene-mid);
+  mask-image: var(--scene-name);
+  mask-position: 4rem bottom;
+  mask-size: 24rem 9rem;
+}
+
+:root[data-look='quest'] main.card:has(.nav-shell[data-place='home']) {
+  --scene-name: var(--scene-home);
+}
+
+:root[data-look='quest'] main.card:has(.nav-shell[data-place='collection']) {
+  --scene-name: var(--scene-collection);
+  --scene-far: #123a5e;
+  --scene-mid: #0d2e49;
+}
+
+:root[data-look='quest'] main.card:has(.nav-shell[data-place='workshop']) {
+  --scene-name: var(--scene-workshop);
+  --scene-far: #2c2a66;
+  --scene-mid: #221f52;
+}
+
+:root[data-look='quest'] main.card:has(.nav-shell[data-place='journal']) {
+  --scene-name: var(--scene-journal);
+  --scene-far: #28246e;
+  --scene-mid: #1d1a5a;
+}
+
+:root[data-look='quest'] main.card:has(.nav-shell[data-place='expeditions']) {
+  --scene-name: var(--scene-expeditions);
+  --scene-far: #12406e;
+  --scene-mid: #0d315a;
+}
+
+:root[data-look='quest'] main.card:has(.nav-shell[data-place='dungeon']) {
+  --scene-name: var(--scene-dungeon);
+  --scene-far: #181d4a;
+  --scene-mid: #0f1337;
+}
+
+:root[data-look='quest'] main.card:has(.nav-shell[data-place='raid']) {
+  --scene-name: var(--scene-raid);
+  --scene-far: #3c2268;
+  --scene-mid: #2c1854;
+}
+
+:root[data-look='quest'] main.card:has(.nav-shell[data-place='games']) {
+  --scene-name: var(--scene-games);
+  --scene-far: #1d4080;
+  --scene-mid: #153266;
+}
+
+/* --- The HUD: the top band of the window, a pale line under it --- */
+:root[data-look='quest'] .hud {
+  background: var(--dusk-2);
+  box-shadow:
+    0 2px 0 0 var(--win-line),
+    0 5px 0 0 var(--ink);
+}
+
+:root[data-look='quest'] h1,
+:root[data-look='quest'] h1.hud-title {
+  color: #fff;
+  text-shadow: var(--ink-outline-thin);
+}
+
+:root[data-look='quest'] h1.hud-title::before {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-right: 0.5rem;
+  background: var(--gold);
+  content: '';
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+:root[data-look='quest'] .place-plate {
+  background: var(--dusk-2);
+  box-shadow:
+    inset 0 0 0 2px var(--win-line),
+    0 0 0 var(--px) var(--ink);
+}
+
+/* --- Navigation: windows, and a pointing cursor on the selected place --- */
+:root[data-look='quest'] .main-nav.rail {
+  background: var(--dusk);
+  box-shadow: var(--win-gap);
+}
+
+:root[data-look='quest'] button.nav-btn,
+:root[data-look='quest'] button.nav-tray-item {
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-look='quest'] .main-nav.rail button.nav-btn,
+:root[data-look='quest'] button.nav-tray-item {
+  padding-left: 1.25rem;
+}
+
+:root[data-look='quest'] button.nav-btn:hover:not(:disabled),
+:root[data-look='quest'] button.nav-tray-item:hover:not(:disabled) {
+  background: var(--dusk-2);
+  filter: none;
+}
+
+:root[data-look='quest'] button.nav-btn.active,
+:root[data-look='quest'] .main-nav.dock button.nav-btn.active,
+:root[data-look='quest'] button.nav-tray-item.active {
+  background: var(--dusk-2);
+  box-shadow: none;
+  color: var(--gold);
+}
+
+:root[data-look='quest'] button.nav-btn.active::before,
+:root[data-look='quest'] button.nav-tray-item.active::before {
+  position: absolute;
+  top: 50%;
+  left: 0.375rem;
+  width: 0.5rem;
+  height: 0.75rem;
+  margin-top: -0.375rem;
+  background: var(--gold);
+  content: '';
+  clip-path: polygon(
+    0 0,
+    25% 0,
+    25% 20%,
+    50% 20%,
+    50% 40%,
+    100% 40%,
+    100% 60%,
+    50% 60%,
+    50% 80%,
+    25% 80%,
+    25% 100%,
+    0 100%
+  );
+}
+
+:root[data-look='quest'] .active > .nav-tray-pip {
+  color: var(--gold);
+}
+
+:root[data-look='quest'] button.nav-btn.active:focus-visible,
+:root[data-look='quest'] button.nav-tray-item.active:focus-visible {
+  outline-color: var(--bone);
+}
+
+:root[data-look='quest'] .main-nav.dock {
+  background: var(--dusk);
+  box-shadow:
+    0 -2px 0 0 var(--win-line),
+    0 -5px 0 0 var(--ink);
+}
+
+/* Home is a small window with a gold word, raised above the dock. */
+:root[data-look='quest'] .main-nav.dock button.nav-btn.home {
+  background: var(--dusk-2);
+  box-shadow: var(--win-gap);
+  color: var(--gold);
+}
+
+:root[data-look='quest'] .main-nav.dock button.nav-btn.home:focus-visible {
+  outline-color: var(--bone);
+}
+
+/* --- Buttons: small windows with a gold word; a press swaps the colours --- */
+:root[data-look='quest'] button.primary {
+  background: var(--dusk);
+  box-shadow: var(--win-gap);
+  color: var(--gold);
+}
+
+:root[data-look='quest'] button.primary:active:not(:disabled) {
+  background: var(--win-line);
+  box-shadow: var(--win-gap);
+  color: var(--dusk);
+  transform: none;
+}
+
+:root[data-look='quest'] .action-btn.wide {
+  width: calc(100% - 10px);
+  margin-inline: 5px;
+}
+
+/* --- Drawers and popovers --- */
+:root[data-look='quest'] .drawer-panel {
+  box-shadow: var(--win-gap);
+}
+
+:root[data-look='quest'] .popover {
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 0 0 2px var(--win-line);
+}
+
+/* --- Scenery masks: stepped pixel silhouettes, one colour (generated) --- */
+:root[data-look='quest'] {
+  --scene-hills: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 60' shape-rendering='crispEdges'%3E%3Cpath d='M0 40h10v20h-10zM10 34h14v26h-14zM24 28h16v32h-16zM40 24h20v36h-20zM60 30h12v30h-12zM72 36h18v24h-18zM90 30h14v30h-14zM104 24h20v36h-20zM124 30h16v30h-16zM140 36h10v24h-10zM150 40h10v20h-10z'/%3E%3C/svg%3E");
+  --scene-home: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 60' shape-rendering='crispEdges'%3E%3Cpath d='M8 36h20v24h-20zM16 26h4v2h-4zM14 28h8v2h-8zM12 30h12v2h-12zM10 32h16v2h-16zM8 34h20v2h-20zM44 22h12v38h-12zM42 20h16v2h-16zM46 16h8v4h-8zM70 38h24v22h-24zM80 28h4v2h-4zM78 30h8v2h-8zM76 32h12v2h-12zM74 34h16v2h-16zM72 36h20v2h-20zM112 34h18v26h-18zM119 24h4v2h-4zM117 26h8v2h-8zM115 28h12v2h-12zM113 30h16v2h-16zM111 32h20v2h-20zM140 40h14v20h-14z'/%3E%3C/svg%3E");
+  --scene-collection: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 60' shape-rendering='crispEdges'%3E%3Cpath d='M10 20h4v4h-4zM8 24h8v4h-8zM6 28h12v4h-12zM4 32h16v4h-16zM4 36h16v4h-16zM4 40h16v4h-16zM4 44h16v4h-16zM4 48h16v4h-16zM4 52h16v4h-16zM4 56h16v4h-16zM11 56h2v4h-2zM32 28h4v4h-4zM30 32h8v4h-8zM28 36h12v4h-12zM26 40h16v4h-16zM26 44h16v4h-16zM26 48h16v4h-16zM26 52h16v4h-16zM26 56h16v4h-16zM33 56h2v4h-2zM54 16h4v4h-4zM52 20h8v4h-8zM50 24h12v4h-12zM48 28h16v4h-16zM48 32h16v4h-16zM48 36h16v4h-16zM48 40h16v4h-16zM48 44h16v4h-16zM48 48h16v4h-16zM48 52h16v4h-16zM48 56h16v4h-16zM55 56h2v4h-2zM78 30h4v4h-4zM76 34h8v4h-8zM74 38h12v4h-12zM72 42h16v4h-16zM72 46h16v4h-16zM72 50h16v4h-16zM72 54h16v4h-16zM72 58h16v2h-16zM79 56h2v4h-2zM98 22h4v4h-4zM96 26h8v4h-8zM94 30h12v4h-12zM92 34h16v4h-16zM92 38h16v4h-16zM92 42h16v4h-16zM92 46h16v4h-16zM92 50h16v4h-16zM92 54h16v4h-16zM92 58h16v2h-16zM99 56h2v4h-2zM122 14h4v4h-4zM120 18h8v4h-8zM118 22h12v4h-12zM116 26h16v4h-16zM116 30h16v4h-16zM116 34h16v4h-16zM116 38h16v4h-16zM116 42h16v4h-16zM116 46h16v4h-16zM116 50h16v4h-16zM116 54h16v4h-16zM116 58h16v2h-16zM123 56h2v4h-2zM144 26h4v4h-4zM142 30h8v4h-8zM140 34h12v4h-12zM138 38h16v4h-16zM138 42h16v4h-16zM138 46h16v4h-16zM138 50h16v4h-16zM138 54h16v4h-16zM138 58h16v2h-16zM145 56h2v4h-2z'/%3E%3C/svg%3E");
+  --scene-workshop: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 60' shape-rendering='crispEdges'%3E%3Cpath d='M6 36h28v24h-28zM10 20h6v40h-6zM8 18h10v42h-10zM48 30h30v30h-30zM70 12h6v48h-6zM68 10h10v50h-10zM94 40h22v20h-22zM104 26h6v34h-6zM124 32h30v28h-30zM132 18h6v42h-6z'/%3E%3C/svg%3E");
+  --scene-journal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 60' shape-rendering='crispEdges'%3E%3Cpath d='M4 24h8v36h-8zM12 14h6v46h-6zM18 28h8v32h-8zM26 18h6v42h-6zM32 10h8v50h-8zM40 26h6v34h-6zM46 16h8v44h-8zM54 30h6v30h-6zM60 20h8v40h-8zM68 8h6v52h-6zM74 24h8v36h-8zM82 16h6v44h-6zM88 30h8v30h-8zM96 12h6v48h-6zM102 22h8v38h-8zM110 28h6v32h-6zM116 14h8v46h-8zM124 24h6v36h-6zM130 10h8v50h-8zM138 26h6v34h-6zM144 18h8v42h-8zM152 30h6v30h-6z'/%3E%3C/svg%3E");
+  --scene-expeditions: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 60' shape-rendering='crispEdges'%3E%3Cpath d='M17 14h6v4h-6zM14 18h12v4h-12zM11 22h18v4h-18zM8 26h24v4h-24zM5 30h30v4h-30zM2 34h36v4h-36zM-1 38h42v4h-42zM-4 42h48v4h-48zM-6 46h52v4h-52zM-6 50h52v4h-52zM-6 54h52v4h-52zM-6 58h52v2h-52zM61 26h6v4h-6zM58 30h12v4h-12zM55 34h18v4h-18zM52 38h24v4h-24zM49 42h30v4h-30zM46 46h36v4h-36zM43 50h42v4h-42zM42 54h44v4h-44zM42 58h44v2h-44zM101 8h6v4h-6zM98 12h12v4h-12zM95 16h18v4h-18zM92 20h24v4h-24zM89 24h30v4h-30zM86 28h36v4h-36zM83 32h42v4h-42zM80 36h48v4h-48zM77 40h54v4h-54zM74 44h60v4h-60zM74 48h60v4h-60zM74 52h60v4h-60zM74 56h60v4h-60zM141 24h6v4h-6zM138 28h12v4h-12zM135 32h18v4h-18zM132 36h24v4h-24zM129 40h30v4h-30zM126 44h36v4h-36zM124 48h40v4h-40zM124 52h40v4h-40zM124 56h40v4h-40z'/%3E%3C/svg%3E");
+  --scene-dungeon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 60' shape-rendering='crispEdges'%3E%3Cpath d='M9 30h2v4h-2zM8 34h4v4h-4zM7 38h6v4h-6zM6 42h8v4h-8zM5 46h10v4h-10zM4 50h12v4h-12zM3 54h14v4h-14zM3 58h14v2h-14zM29 18h2v4h-2zM28 22h4v4h-4zM27 26h6v4h-6zM26 30h8v4h-8zM25 34h10v4h-10zM24 38h12v4h-12zM23 42h14v4h-14zM22 46h16v4h-16zM21 50h18v4h-18zM21 54h18v4h-18zM21 58h18v2h-18zM51 34h2v4h-2zM50 38h4v4h-4zM49 42h6v4h-6zM48 46h8v4h-8zM47 50h10v4h-10zM46 54h12v4h-12zM46 58h12v2h-12zM73 12h2v4h-2zM72 16h4v4h-4zM71 20h6v4h-6zM70 24h8v4h-8zM69 28h10v4h-10zM68 32h12v4h-12zM67 36h14v4h-14zM66 40h16v4h-16zM65 44h18v4h-18zM64 48h20v4h-20zM64 52h20v4h-20zM64 56h20v4h-20zM95 28h2v4h-2zM94 32h4v4h-4zM93 36h6v4h-6zM92 40h8v4h-8zM91 44h10v4h-10zM90 48h12v4h-12zM89 52h14v4h-14zM88 56h16v4h-16zM117 20h2v4h-2zM116 24h4v4h-4zM115 28h6v4h-6zM114 32h8v4h-8zM113 36h10v4h-10zM112 40h12v4h-12zM111 44h14v4h-14zM110 48h16v4h-16zM109 52h18v4h-18zM109 56h18v4h-18zM139 32h2v4h-2zM138 36h4v4h-4zM137 40h6v4h-6zM136 44h8v4h-8zM135 48h10v4h-10zM134 52h12v4h-12zM133 56h14v4h-14z'/%3E%3C/svg%3E");
+  --scene-raid: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 60' shape-rendering='crispEdges'%3E%3Cpath d='M0 34h160v26h-160zM0 30h8v4h-8zM16 30h8v4h-8zM32 30h8v4h-8zM48 30h8v4h-8zM64 30h8v4h-8zM80 30h8v4h-8zM96 30h8v4h-8zM112 30h8v4h-8zM128 30h8v4h-8zM144 30h8v4h-8zM18 12h20v48h-20zM16 8h24v4h-24zM18 4h4v4h-4zM26 4h4v4h-4zM34 4h4v4h-4zM100 6h24v54h-24zM98 2h28v4h-28z'/%3E%3C/svg%3E");
+  --scene-games: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 60' shape-rendering='crispEdges'%3E%3Cpath d='M19 24h6v4h-6zM16 28h12v4h-12zM13 32h18v4h-18zM10 36h24v4h-24zM7 40h30v4h-30zM4 44h36v4h-36zM4 48h36v4h-36zM4 52h36v4h-36zM4 56h36v4h-36zM21 12h2v12h-2zM23 12h8v4h-8zM75 30h6v4h-6zM72 34h12v4h-12zM69 38h18v4h-18zM66 42h24v4h-24zM63 46h30v4h-30zM62 50h32v4h-32zM62 54h32v4h-32zM62 58h32v2h-32zM123 18h6v4h-6zM120 22h12v4h-12zM117 26h18v4h-18zM114 30h24v4h-24zM111 34h30v4h-30zM108 38h36v4h-36zM106 42h40v4h-40zM106 46h40v4h-40zM106 50h40v4h-40zM106 54h40v4h-40zM106 58h40v2h-40zM125 6h2v12h-2zM127 6h8v4h-8z'/%3E%3C/svg%3E");
+}
