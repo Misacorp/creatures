@@ -114,8 +114,12 @@ const valid = (line: readonly Pick[], mode: Mode) => {
 function retalent(rng: Rng, p: Pick): Pick {
   const options = [undefined, ...legalTalents(p.formId)];
   const t = options[int(rng, options.length)];
-  const { talents: _old, ...rest } = p;
-  return t === undefined ? rest : { ...rest, talents: [t] };
+  return {
+    formId: p.formId,
+    knack: p.knack,
+    ...(p.level !== undefined ? { level: p.level } : {}),
+    ...(t === undefined ? {} : { talents: [t] }),
+  };
 }
 
 function randomLine(rng: Rng, mode: Mode, pool: readonly Pick[], talents: boolean): Pick[] {
