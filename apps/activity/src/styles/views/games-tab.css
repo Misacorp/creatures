@@ -406,10 +406,9 @@ button.gr-play {
   text-align: center;
 }
 
-/* A sprite shrinks to fit its box; a column beside the full-width name column would squeeze it to nothing. */
+/* The medal pictures sit in the line of their heading cell (data-table.css keeps them at their own size). */
 .data-table.gm-board .gm-medal {
   display: inline-block;
-  max-width: none;
   vertical-align: middle;
 }
 
