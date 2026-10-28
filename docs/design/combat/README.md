@@ -21,10 +21,11 @@ Numbers live only in data (`packages/lab/src/rules.ts`, content JSON), never in 
 
 1. This page, then [`roadmap.md`](roadmap.md) (the phases from the lab to the game, and where we are).
 2. [`principles.md`](principles.md): the filters every idea must pass.
-3. [`grammar.md`](grammar.md): what a Knack, a rule card or a boss may contain, and the templates.
-4. [`proposals/001-combat-v2.md`](proposals/001-combat-v2.md): the rules.
-5. [`lab-report.md`](lab-report.md): what the prototype says today.
-6. The newest review in [`reviews/`](reviews/).
+3. [`modifiers.md`](modifiers.md): the modifier library (what Knacks, talents and gear are built from) and the talent library draft.
+4. [`grammar.md`](grammar.md): what a Knack, a rule card or a boss may contain, and the templates.
+5. [`proposals/001-combat-v2.md`](proposals/001-combat-v2.md): the rules.
+6. [`lab-report.md`](lab-report.md): what the prototype says today.
+7. The newest review in [`reviews/`](reviews/).
 
 ## How we work on it (the loop)
 
