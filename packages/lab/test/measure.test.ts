@@ -5,16 +5,28 @@ import { labBoss } from '../src/cards';
 import { fight } from '../src/fight';
 import { FORM_KNACKS } from '../src/knacks';
 import {
+  RAID_REACH,
+  RAID_ROW,
+  RAID_SCALE,
+  RAID_SHAPED,
+  RAID_SLOTS,
   SCORE_WEIGHTS,
   bestOnMostCards,
   boardsFor,
   calibrateBossHp,
   classicBossHp,
   fightScore,
+  createRaidMeasurer,
   gainPercent,
+  kinFor,
   knackForTalent,
+  neighbourhoodScore,
+  raidBossHp,
+  raidPlacements,
   teamFor,
 } from '../src/measure';
+import { TALENTS } from '../src/talents';
+import { formStats } from '../src/species';
 import { CLASSIC_LINE, GAUNTLET, toPlacements } from '../src/search';
 
 const won = (round: number, knockouts = 0) => ({
@@ -147,6 +159,75 @@ describe('knackForTalent', () => {
     const guard = forms().find((f) => FORM_KNACKS[f]?.includes('mud-wall'));
     if (guard) expect(knackForTalent('heavy-hand', guard)).toBe('mud-wall');
     expect(knackForTalent('heavy-hand', 'tidewing')).toBe('none');
+  });
+});
+
+describe('the raid row', () => {
+  it('is 3 rows of 12 with the form in one slot and one slot in four kin of the form', () => {
+    expect(RAID_ROW.rows * RAID_ROW.cols).toBe(36);
+    const placed = raidPlacements(1, 5, { formId: 'tidewing', knack: 'none', talents: ['hardy'] });
+    expect(placed).toHaveLength(36);
+    const me = placed[1 * 12 + 5];
+    expect(me).toMatchObject({ formId: 'tidewing', row: 1, col: 5, talents: ['hardy'] });
+    // Everything else is the classic trio, or the kin: a creature of the form's own element that is not the form.
+    const kin = kinFor('tidewing');
+    expect(kin).not.toBe('tidewing');
+    expect(formStats(kin, 25).element).toBe(formStats('tidewing', 25).element);
+    const others = placed.filter((p) => p !== me);
+    expect(
+      others.every((p) => ['tidewing', 'tempestray', 'thornbuck', kin].includes(p.formId)),
+    ).toBe(true);
+    expect(placed.filter((_, k) => k % 4 === 3 && k !== 17).every((p) => p.formId === kin)).toBe(
+      true,
+    );
+  });
+
+  it('has kin for an element the classic trio lacks (ember, mire)', () => {
+    for (const form of ['kilnmole', 'bogwarden', 'croakmire']) {
+      const kin = kinFor(form);
+      expect(kin).not.toBe(form);
+      expect(formStats(kin, 25).element).toBe(formStats(form, 25).element);
+    }
+  });
+
+  it('every raid-shaped talent exists, and the slots are inside the row', () => {
+    for (const t of RAID_SHAPED) expect(TALENTS, t).toHaveProperty(t);
+    for (const [r, c] of RAID_SLOTS) {
+      expect(r).toBeLessThan(RAID_ROW.rows);
+      expect(c).toBeLessThan(RAID_ROW.cols);
+    }
+    expect(RAID_SCALE).toBeCloseTo((2 * RAID_REACH + 1) / 3);
+  });
+
+  it('scores the five slots around a creature, shifted inside the row at an end', () => {
+    // Slot k deals k damage; everyone stands.
+    const result = {
+      fighters: Array.from({ length: 36 }, (_, k) => ({ damageDealt: k, hp: 1 })),
+    };
+    const rowSum = (row: number, from: number) =>
+      [0, 1, 2, 3, 4].reduce((a, i) => a + row * 12 + from + i, 0);
+    expect(neighbourhoodScore(result, 1, 5)).toBe(rowSum(1, 3));
+    // Column 0 and 11 use the nearest five: columns 0..4 and 7..11, never fewer.
+    expect(neighbourhoodScore(result, 0, 0)).toBe(rowSum(0, 0));
+    expect(neighbourhoodScore(result, 2, 11)).toBe(rowSum(2, 7));
+    // Knocked-out neighbours cost up to half the damage.
+    const hurt = {
+      fighters: result.fighters.map((f, k) => (k >= 15 && k <= 16 ? { ...f, hp: 0 } : f)),
+    };
+    expect(neighbourhoodScore(hurt, 1, 5)).toBeCloseTo(rowSum(1, 3) * (0.5 + 0.5 * (3 / 5)));
+  });
+
+  it('the raid boss HP is what the classic row removes 90% of, and a talent that does nothing gains nothing', () => {
+    const hp = raidBossHp(2);
+    expect(hp).toBeGreaterThan(5_000);
+    expect(raidBossHp(2)).toBe(hp);
+    const m = createRaidMeasurer({ hp, seeds: 3 });
+    // The raid boss never silences: Unbothered changes nothing, and the same seeds make the two runs identical.
+    expect(m.measure('unbothered', 'tidewing')).toEqual({ bestPct: 0, randomPct: 0 });
+    // Edge-walker gains at an end slot, and the best slot is at least as good as the random one.
+    const edge = m.measure('edge-walker', 'tidewing');
+    expect(edge.bestPct).toBeGreaterThan(0);
+    expect(edge.bestPct).toBeGreaterThanOrEqual(edge.randomPct);
   });
 });
 

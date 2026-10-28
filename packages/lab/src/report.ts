@@ -4,20 +4,12 @@
  * weekend with attrition. Written to docs/design/combat/lab-report.md by
  * `pnpm --filter @creatures/lab report`.
  */
-import { content, createSeededRng, int } from '@creatures/game';
+import { createSeededRng, int } from '@creatures/game';
 import { CARDS, labBoss } from './cards';
 import { weekend } from './fight';
 import { KEYWORDS } from './keywords';
 import { FAMILIES, FORM_KNACKS, KNACKS } from './knacks';
-import {
-  SCORE_WEIGHTS,
-  bestOnMostCards,
-  classicBossHp,
-  createMeasurer,
-  gainPercent,
-  type Cell,
-  type FormMeasure,
-} from './measure';
+import { buildTalentSection } from './talentReport';
 import { LINE_POOLS, TALENTS, talentPool } from './talents';
 import { LAB_RULES } from './rules';
 import { ELEMENTS, formStats, triggers } from './species';
@@ -396,117 +388,9 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
   );
 
   // 7. Talents: best legal board with the talent against best legal board without it.
-  const talentSeeds = opts.quick ? 2 : 16;
-  const bossHp = classicBossHp(TALENT_BOSS_ROUNDS, opts.quick ? 6 : 24);
-  const measurer = createMeasurer({
-    bossHp,
-    cards,
-    seeds: talentSeeds,
-    rowSeeds: opts.quick ? 6 : 24,
-  });
-  md.push(
-    '## Talents: best board with it against best board without it (gauntlet)',
-    '',
-    `**The boss.** Its HP is ${bossHp.toLocaleString('en')}, calibrated at report time so that the classic line kills a plain boss in about ${TALENT_BOSS_ROUNDS} of the 10 rounds on average, so the length of the fight matters (the boss of the other sections has a million HP, so fights always last ten rounds there).`,
-    '',
-    `**The score** of one fight, 0 to 100: ${SCORE_WEIGHTS.damage} for the share of the boss's HP removed, ${SCORE_WEIGHTS.win} for a win, up to ${SCORE_WEIGHTS.speed} for the rounds a win left unused (fewer rounds is better), and up to ${SCORE_WEIGHTS.standing} for the share of the three creatures still standing (a knockout costs ${SCORE_WEIGHTS.standing / 3} points). A talent that saves creatures or ends the fight sooner shows it.`,
-    '',
-    `**The boards.** Every form whose line's pool has the talent and whose role it fits, with no Knack on the measured form (the Mire talents carry the line's Mire Knack, with and without, because they do nothing without one). The form stands in each of the three slots with two fixed fitting partners in either order, for two partner sets (the natural team's partners, and the classic trio's two other roles with their classic Knacks): up to 12 legal boards. The score is the best board with the talent and the best board without it, each chosen on its own, on every card (${talentSeeds} seeds each, the same seeds for every board), averaged over those forms and cards. Gain is the difference in points; the percentage is against the best score without it and reads n/a when that is under ${MIN_BASE} points. Knockouts are per fight (with / without), on the best board of each. Nothing here forces a board for a talent: a position talent pays for standing where it wants to.`,
-    '',
-    `**Holds** is the share of fights in which the talent's condition held or its trigger fired at least once, on the form's natural board (every card, no board chosen for it) and in a row 12 wide (the form at a random slot among mixed classic creatures, plain card, a boss with four times the HP; this is the raid rate for position talents). Flat stats always hold. **Best card** is where it gains most. A talent that is top of its role on most cards is flagged "best on most cards" and is a new default pick.`,
-    '',
-    '| Role | Talent | Best with | Best without | Gain | Gain % | Knockouts with / without | Holds (natural) | Holds (row of 12) | Best card | Flag |',
-    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |',
-  );
-  const talentValue: Record<string, unknown> = {};
-  const signed = (x: number, d = 1) => `${x >= 0 ? '+' : ''}${x.toFixed(d)}`;
-  const mean = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length);
-  const topPicks: string[] = [];
-  const rangeGains: number[] = [];
-  for (const role of ['setter', 'payoff', 'guard', 'support'] as const) {
-    const roleForms = Object.keys(FORM_KNACKS).filter((f) => formStats(f, LEVEL).role === role);
-    const gains = new Map<string, Map<string, number>>();
-    const rows: { tid: string; cells: string[] }[] = [];
-    for (const tid of Object.keys(TALENTS).filter((t) => TALENTS[t]?.roles.includes(role))) {
-      const forms = roleForms.filter((f) => LINE_POOLS[lineOf(f)]?.includes(tid));
-      if (forms.length === 0) continue;
-      const ms = forms.map((f) => measurer.measure(tid, f));
-      const cell = (m: FormMeasure, cid: string) => ({
-        w: m.withTalent.get(cid),
-        o: m.without.get(cid),
-      });
-      const byCard = new Map<string, number>();
-      for (const c of cards)
-        byCard.set(
-          c.id,
-          mean(ms.map((m) => (cell(m, c.id).w?.score ?? 0) - (cell(m, c.id).o?.score ?? 0))),
-        );
-      gains.set(tid, byCard);
-      const all = (pick: (c: { w: Cell | undefined; o: Cell | undefined }) => number | undefined) =>
-        ms.flatMap((m) => cards.map((c) => pick(cell(m, c.id)) ?? 0));
-      const withScore = mean(all((c) => c.w?.score));
-      const withoutScore = mean(all((c) => c.o?.score));
-      const koWith = mean(all((c) => c.w?.ko));
-      const koWithout = mean(all((c) => c.o?.ko));
-      const gain = withScore - withoutScore;
-      const gainPct = gainPercent(withScore, withoutScore, MIN_BASE);
-      rangeGains.push(gain);
-      const [bestCard, bestV] = [...byCard.entries()].sort((x, y) => y[1] - x[1])[0] ?? ['', 0];
-      const defined = (xs: (number | undefined)[]) =>
-        xs.length && xs.every((x) => x !== undefined) ? mean(xs) : undefined;
-      const holdsNat = defined(ms.map((m) => m.holdsNatural));
-      const holdsRow = defined(ms.map((m) => m.holdsRow));
-      const share = (x: number | undefined) =>
-        x === undefined ? 'always' : `${Math.round(x * 100)}%`;
-      talentValue[`${role}/${tid}`] = {
-        forms: forms.length,
-        withScore: Math.round(withScore * 10) / 10,
-        withoutScore: Math.round(withoutScore * 10) / 10,
-        gain: Math.round(gain * 100) / 100,
-        gainPercent: gainPct === undefined ? null : Math.round(gainPct * 10) / 10,
-        koWith: Math.round(koWith * 100) / 100,
-        koWithout: Math.round(koWithout * 100) / 100,
-        holdsNatural: holdsNat === undefined ? 'always' : Math.round(holdsNat * 100) / 100,
-        holdsRow: holdsRow === undefined ? 'always' : Math.round(holdsRow * 100) / 100,
-        best: bestCard,
-      };
-      rows.push({
-        tid,
-        cells: [
-          role,
-          TALENTS[tid]?.name ?? tid,
-          withScore.toFixed(1),
-          withoutScore.toFixed(1),
-          signed(gain),
-          gainPct === undefined ? 'n/a' : `${signed(gainPct)}%`,
-          `${koWith.toFixed(2)} / ${koWithout.toFixed(2)}`,
-          share(holdsNat),
-          share(holdsRow),
-          bestV > 0.5
-            ? `${CARDS.find((c) => c.id === bestCard)?.name ?? bestCard} ${signed(bestV)}`
-            : 'none',
-        ],
-      });
-    }
-    const tops = new Set(
-      bestOnMostCards(
-        gains,
-        cards.map((c) => c.id),
-      ),
-    );
-    for (const r of rows) {
-      md.push(`| ${r.cells.join(' | ')} | ${tops.has(r.tid) ? 'best on most cards' : ''} |`);
-      if (tops.has(r.tid)) topPicks.push(`${TALENTS[r.tid]?.name ?? r.tid} (${role})`);
-    }
-  }
-  data['talentValue'] = talentValue;
-  data['talentBoss'] = { hp: bossHp, targetRounds: TALENT_BOSS_ROUNDS, seeds: talentSeeds };
-  data['talentTopPicks'] = topPicks;
-  md.push(
-    '',
-    `**Talent gain range:** ${signed(Math.min(...rangeGains))} to ${signed(Math.max(...rangeGains))} points of 100. **Best on most cards of its role:** ${topPicks.length ? topPicks.join(', ') : 'none'}.`,
-    '',
-  );
+  const talentSection = buildTalentSection({ cards, quick: opts.quick ?? false });
+  md.push(...talentSection.md);
+  Object.assign(data, talentSection.data);
 
   // 8. Element coverage (P-12): every element should have the same kinds of tools.
   md.push(
@@ -689,15 +573,7 @@ function summarise(l: readonly Pick[]): string {
     .join(', ');
 }
 
-/** The rounds in which the classic line should kill a plain boss on average, which sets the talent boss's HP. */
-const TALENT_BOSS_ROUNDS = 8;
-
-/** A best score without a talent below this many points (of 100) gives no percentage: "n/a". */
-const MIN_BASE = 10;
-
 /** The two-line budget for a Knack or talent text, in characters (an estimate). */
 const TEXT_BUDGET = 95;
-
-const lineOf = (form: string) => content.creatures.find((c) => c.id === form)?.line ?? form;
 
 export type { Ranked };
