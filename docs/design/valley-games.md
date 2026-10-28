@@ -111,3 +111,5 @@ Alignment, spacing, the Good fit tick, the calm leaderboard, crowded big fields,
 - Retired events (Sauna Stack, Shark Relay) stay readable in old shows, records and badges through `GAMES_RETIRED`.
 - No auto-entry, no results post, no level: Misa's decisions, see the decisions log.
 - Entries lock at 13:37; the show plays at 13:40 (`RULES.games`).
+
+**Retention (2026-10-25).** The stored fights, entries and placings of a day are kept until a later show has been shown and awarded (nothing older than the latest shown, the latest awarded and the earliest unawarded day is kept); medals, records, badges and the day rows stay. Prize Stall buys are kept for the current week.

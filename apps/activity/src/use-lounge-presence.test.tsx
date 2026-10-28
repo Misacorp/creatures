@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { GameState } from './api';
+import type { GameState, LoungeXpPush } from './api';
+import { parseLiveMessage } from './api';
 import { LivingRoom, sceneOf } from './LivingRoom';
 import type { ParticipantSource } from './participants';
 import { PopoverHost } from './PopoverHost';
@@ -14,11 +15,22 @@ vi.mock('./api', async (importOriginal) => ({
   fetchRoom: (ids: readonly string[]) => fetchRoom(ids),
 }));
 
+// The live socket is a stand-in too: the test plays the server's side through the deps it was opened with.
+let socketDeps: Parameters<typeof import('./live-socket').createLiveSocket>[0] | null = null;
+vi.mock('./live-socket', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./live-socket')>()),
+  createLiveSocket: (deps: NonNullable<typeof socketDeps>) => {
+    socketDeps = deps;
+    return { start: () => undefined, stop: () => undefined, state: () => 'idle' as const };
+  },
+}));
+
 let page: Page | null = null;
 
 beforeEach(() => {
   vi.useFakeTimers();
   fetchRoom.mockClear();
+  socketDeps = null;
 });
 
 afterEach(() => {
@@ -46,7 +58,17 @@ const lounging: Pick<GameState, 'loungerId' | 'loungeXp'> = { loungerId: 'c1', l
  * The game screen's part of the room: presence always runs, and the room is drawn only on the Home page of a
  * phone or in a wide window's band (`drawn`).
  */
-function Screen({ drawn, refresh }: { drawn: boolean; refresh: () => void }) {
+function Screen({
+  drawn,
+  refresh,
+  loungeLive = false,
+  onLoungeXp,
+}: {
+  drawn: boolean;
+  refresh: () => void;
+  loungeLive?: boolean;
+  onLoungeXp?: (push: LoungeXpPush) => void;
+}) {
   const room = useLoungePresence(
     {
       enabled: true,
@@ -55,6 +77,8 @@ function Screen({ drawn, refresh }: { drawn: boolean; refresh: () => void }) {
       selfName: 'You',
       state: { creatures: [], loungerId: 'c1', loungeSpot: null, serverFirsts: [] },
       craftingLevels: new Map(),
+      loungeLive,
+      ...(onLoungeXp === undefined ? {} : { onLoungeXp }),
     },
     lounging,
     refresh,
@@ -107,5 +131,55 @@ describe('presence while the room is not drawn (any other page on a phone)', () 
     expect(fetchRoom).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(LOUNGE_REFRESH_MS);
     expect(refresh).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("your lounger's XP with the live socket", () => {
+  const push = {
+    v: 1,
+    type: 'lounge-xp',
+    creatureId: 'c1',
+    paid: 1,
+    level: 3,
+    exp: 4,
+    waiting: false,
+  };
+
+  it('reloads the state only while the socket is not delivering, and takes pushes while it is', async () => {
+    page = createPage();
+    const refresh = vi.fn();
+    const onLoungeXp = vi.fn();
+    page.draw(<Screen drawn={false} refresh={refresh} loungeLive onLoungeXp={onLoungeXp} />);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(socketDeps).not.toBeNull();
+
+    // Not live yet (connecting): the fallback reload runs.
+    await vi.advanceTimersByTimeAsync(LOUNGE_REFRESH_MS);
+    expect(refresh).toHaveBeenCalledTimes(1);
+
+    // Live: no reloads at all, and a pushed payment reaches the screen.
+    socketDeps?.onLive(true);
+    await vi.advanceTimersByTimeAsync(0);
+    refresh.mockClear();
+    await vi.advanceTimersByTimeAsync(5 * LOUNGE_REFRESH_MS);
+    expect(refresh).not.toHaveBeenCalled();
+    const message = parseLiveMessage(JSON.stringify(push));
+    if (message === null || message.type === 'hello') throw new Error('push not read');
+    socketDeps?.onMessage(message);
+    expect(onLoungeXp).toHaveBeenCalledWith(expect.objectContaining({ creatureId: 'c1', paid: 1 }));
+
+    // Dropped (reconnecting): the fallback takes over again.
+    socketDeps?.onLive(false);
+    await vi.advanceTimersByTimeAsync(LOUNGE_REFRESH_MS);
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps reloading when the server does not offer the socket', async () => {
+    page = createPage();
+    const refresh = vi.fn();
+    page.draw(<Screen drawn={false} refresh={refresh} />);
+    await vi.advanceTimersByTimeAsync(3 * LOUNGE_REFRESH_MS);
+    expect(socketDeps).toBeNull();
+    expect(refresh).toHaveBeenCalledTimes(3);
   });
 });

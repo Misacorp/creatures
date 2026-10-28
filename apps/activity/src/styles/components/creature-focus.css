@@ -417,6 +417,16 @@ button.cp-back {
   margin-top: 0.5rem;
 }
 
-.creature-page .rename {
+.creature-page .rename,
+.creature-page .note {
   margin-top: 0.5rem;
+}
+
+/* Under the note's text box: the characters used on the left, Save on the right. */
+.creature-page .note-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0;
 }

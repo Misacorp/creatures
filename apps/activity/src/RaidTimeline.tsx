@@ -16,19 +16,22 @@ export function RaidTimeline({
   view,
   serverNow,
   finale,
+  owned,
   onAct,
   onReplay,
 }: {
   view: RaidView;
   serverNow: number;
   finale: FinaleWindow;
+  /** How many creatures the player owns (one who owns fewer than three cannot place three). */
+  owned: number;
   /** The player tapped the "what to do now" button. */
   onAct: (target: NowTarget) => void;
   onReplay: (phase: RaidPhaseId) => void;
 }) {
   const [open, setOpen] = useState<RaidPhaseId | null>(null);
   const steps = scheduleSteps(view.schedule, view.next, view.timezone);
-  const action = nowAction(view, finale, serverNow);
+  const action = nowAction(view, finale, serverNow, owned);
   const results = view.party?.results ?? [];
   const marks = stepMarks(results);
   const opened: PhaseResultView | undefined = results.find((r) => r.phase === open);

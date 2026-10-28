@@ -17,7 +17,6 @@ import {
   heroHeadline,
   heroLine,
   pickHighlights,
-  scoreboard,
   summaryTitle,
   yourPlace,
   type SummaryInput,
@@ -26,6 +25,7 @@ import {
   HighlightCards,
   MoreNumbers,
   Rewards,
+  ScoreboardHead,
   ScoreTable,
   SectionHead,
   SummaryActions,
@@ -117,6 +117,7 @@ function Hero({ input }: { input: SummaryInput }) {
         <p class="rs-yours">
           <Tag kind="chip">{`Place ${String(place.row.rank)} / ${String(place.of)}`}</Tag>
           <Tag kind="chip">{`${grouped(place.row.damage)} damage`}</Tag>
+          <Tag kind="chip">{`${grouped(place.row.score)} score`}</Tag>
         </p>
       )}
       {boss !== null && boss.turnOrder !== null && (
@@ -167,8 +168,8 @@ export function RaidSummaryCard({
       <div class="rs">
         <Hero input={input} />
 
-        <SectionHead>Scoreboard</SectionHead>
-        <ScoreTable rows={scoreboard(stats)} total />
+        <ScoreboardHead />
+        <ScoreTable stats={stats} total />
 
         <SectionHead>Highlights</SectionHead>
         <HighlightCards

@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { capPlacements, type PlacementRow } from '../src/raid-teams';
 import { undoPlacementCapMigration } from './helpers';
-import { HELSINKI, W02, count, rows, runRaid, seedPlayer, storedRuns } from './raid-helpers';
+import {
+  HELSINKI,
+  W02,
+  count,
+  joinRaid,
+  rows,
+  runRaid,
+  seedPlayer,
+  storedRuns,
+} from './raid-helpers';
 
 const row = (rowid: number, slot: number, creature: string, user = 'u1'): PlacementRow => ({
   rowid,
@@ -49,13 +58,13 @@ function legacyBoard(ctx: Parameters<Parameters<typeof runRaid>[0]>[0]) {
   });
   seedPlayer(ctx, 2);
   seedPlayer(ctx, 3);
-  ctx.core.raid.currentWeek(HELSINKI);
-  // Placed in this order, sproutle first: it is the oldest row but not in the strongest three.
-  p.creatureIds.forEach((id, slot) => {
+  // Placed in this order, sproutle first: it is the oldest row. The first placement joins the player.
+  joinRaid(ctx, p, { creatures: 1 });
+  p.creatureIds.slice(1).forEach((id, k) => {
     ctx.sql.exec(
       'INSERT INTO raid_placements (week_id, party, slot, user_id, creature_id) VALUES (?, 1, ?, ?, ?)',
       W02.id,
-      slot,
+      k + 1,
       p.id,
       id,
     );
@@ -107,12 +116,7 @@ describe('a table with four placements of one player (legacy data)', () => {
       const p = legacyBoard(ctx);
       // Another player and week that are fine stay as they are.
       const other = seedPlayer(ctx, 4);
-      ctx.sql.exec(
-        'INSERT INTO raid_placements (week_id, party, slot, user_id, creature_id) VALUES (?, 1, 11, ?, ?)',
-        W02.id,
-        other.id,
-        other.creatureIds[0],
-      );
+      joinRaid(ctx, other, { creatures: 1 });
       undoPlacementCapMigration(ctx.sql);
       ctx.core.migrate();
       const left = rows<{ creature_id: string }>(

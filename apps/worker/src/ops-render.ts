@@ -28,6 +28,12 @@ const RESOURCE_ORDER = [
   'supplies',
 ] as const;
 const TOP_LABELS = 3;
+/** Cloudflare's free tier allows this many Durable Object rows read a day (for the whole account). */
+export const ROWS_READ_FREE_DAILY = 5_000_000;
+/** A day that reads this share of the allowance raises an alert. */
+const ROWS_READ_ALERT = 0.8;
+/** Sources listed in the Database reads table. */
+const TOP_SOURCES = 8;
 /** A currency is "piling up" when sources are at least this many times the sinks (and big enough). */
 const PILE_RATIO = 3;
 const PILE_MIN = 50;
@@ -398,6 +404,44 @@ function gearSection(rows: Rows): string[] {
   return out;
 }
 
+/** Rows read per game day (summed over servers), oldest first, from the report's daily series. */
+function readsPerDay(report: Report): [string, number][] {
+  return Object.entries(report.daily)
+    .map(([day, rows]): [string, number] => [
+      day,
+      rows.filter((r) => r.metric === 'db.rows_read').reduce((sum, r) => sum + r.value, 0),
+    ])
+    .filter(([, n]) => n > 0)
+    .sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+function databaseReadsSection(report: Report, rows: Rows, prior: Rows | null): string[] {
+  const out = ['## Database reads', ''];
+  const total = rows.total('db.rows_read');
+  if (total === 0) return [...out, '_No rows read recorded in this range._', ''];
+  const before = prior === null ? null : prior.total('db.rows_read');
+  out.push(
+    `Rows read in total: **${fmt(total)}**${change(total, before)}. The free allowance is ${fmt(ROWS_READ_FREE_DAILY)} a day.`,
+    '',
+  );
+  out.push(
+    ...table(
+      ['Day', 'Rows read', 'Of the free day'],
+      readsPerDay(report).map(([day, n]) => [day, fmt(n), pctText(rate(n, ROWS_READ_FREE_DAILY))]),
+    ),
+  );
+  out.push(
+    ...table(
+      ['Source', 'Rows read', 'Share'],
+      rows
+        .by('db.rows_read', 'source')
+        .slice(0, TOP_SOURCES)
+        .map(([source, n]) => [code(source), fmt(n), pctText(rate(n, total))]),
+    ),
+  );
+  return out;
+}
+
 interface StageRate {
   label: string;
   wins: number;
@@ -534,6 +578,13 @@ function alertsSection(report: Report, rows: Rows, prior: Rows | null): string[]
       }
     }
   }
+  for (const [day, n] of readsPerDay(report)) {
+    if (n >= ROWS_READ_FREE_DAILY * ROWS_READ_ALERT) {
+      alerts.push(
+        `${day}: ${fmt(n)} database rows read, ${pctText(rate(n, ROWS_READ_FREE_DAILY))} of the free day (Durable Object limit).`,
+      );
+    }
+  }
   const failedPosts = rows.total('post.result', { result: 'failed' });
   if (failedPosts > 0) alerts.push(`${fmt(failedPosts)} Discord posts failed for good.`);
   if (report.previous !== undefined && prior !== null) {
@@ -572,6 +623,7 @@ export function renderMarkdown(report: Report): string {
     ...dungeonSection(rows),
     ...gearSection(rows),
     ...raidSection(rows),
+    ...databaseReadsSection(report, rows, prior),
     ...alertsSection(report, rows, prior),
   ].join('\n');
 }

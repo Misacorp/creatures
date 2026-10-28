@@ -10,18 +10,22 @@ Read this file first. Design decisions live in `docs/design/` (start with `decis
 - Ask Misa about game feel and priorities, not implementation details. Make technical decisions yourself and record them in `docs/design/decisions.md` (newest last, with date and reasoning).
 - When Misa must do something manually (Discord portal, Cloudflare token, GitHub setting, secret), give him one short **numbered checklist** with exact names and values, and say what to send back. Batch requests. Never ask him to paste a secret into chat; secrets go straight into GitHub or Cloudflare.
 - Keep messages to him short, plain English.
+- Ask a waiting question once. When a notification arrives and nothing new needs his answer, say what changed and end with a summary line, not the same question again.
+- When several numbers are in play and it isn't obvious which is which, say briefly what each one covers (for example per request or per day, measured or estimated).
 - When Misa gives an example of wording or design ("for example ..."), match its scope and tone. Don't elaborate it per case, per event or per item unless he asks.
 - When a check or constraint forces a visible change to a design Misa has already seen (its size, shape, art or layout), say so in the same message and show the new version. Never ship the changed design silently.
 
 ### Agent roles
 
 - The **lead agent** (Opus) plans, splits work into small tasks, delegates, and **reviews every change** for correctness, security and consistency with this file before it goes into a PR.
+  - **UI review checks reuse.** Go through the implementer's reuse list: for each part built new or drawn a second way, name the row of the `docs/design/ux-patterns.md` lookup table it should use, or say why none fits. Screenshot every way into a changed flow (the bag and the item card, say), not only the main one. (Retro 2026-10-28: a second creature picker, custom worn rows and a new check mark got past review; the report named the second wrapper.)
 - `.claude/agents/implementer.md` (Sonnet): code and tests.
 - `.claude/agents/researcher.md` (Sonnet): read-only web/docs research. No shell, no write access, by design.
 - `.claude/agents/helper.md` (Haiku): boilerplate, fixtures, content data entry, doc checks.
 - Agents that read untrusted web content must never also have shell access. Keep it that way.
 - **Agents that review UX, UI, art or game feel get `docs/design/review-brief.md`** (Misa's standing priorities) in their prompt. A suggestion that trades against one of those priorities goes to Misa as a choice; it is not applied as the new default.
 - **Parallel implementers work in their own worktree** (the Agent tool's `isolation: "worktree"`), not in the lead's working tree. The lead reviews each one's branch and merges it into the session branch. Two agents editing one tree break each other's runs and leave the lead's tree dirty.
+- **Every implementer brief says:** start with `git fetch origin <session branch> && git reset --hard origin/<session branch>` (a worktree may start from `main`); use the migration number the lead assigns (parallel agents otherwise take the same one); never hand-edit captured fixtures (`pnpm fixtures:capture`); finish with `pnpm check:changed` and `pnpm fixtures:capture --check`.
 
 ## Pull requests
 
@@ -29,6 +33,7 @@ Read this file first. Design decisions live in `docs/design/` (start with `decis
 - **Staging** (`creatures-staging.misacorp.dev`, wired to the dev Discord app) changes only when the `deploy` workflow is run by hand on a branch: GitHub, Actions, deploy, "Run workflow". Pushing a branch deploys nothing. A manual run always deploys staging, even on `main`. The page's `<meta name="build-branch">` and `<meta name="build-commit">` tags (and the staging DEV panel's Build section) show the deployed branch and commit; there is no visible footer.
 - Agents may start that staging run (the GitHub tools' workflow trigger, workflow `deploy.yml`, `ref` = the branch) **only when Misa asks for it in that session**. Then wait for it to be live (`node apps/worker/scripts/deployed.mjs --expect HEAD --wait 600`, the `staging` skill) and tell Misa it is ready. With several sessions open, only the one Misa asked deploys. To see what is on staging at any time, run the same script without `--expect`.
 - **Never push to `main` or merge a pull request.** Only Misa merges. GitHub's ruleset on `main` (PR required, no bypass) rejects direct pushes from everyone. Merges it cannot tell apart, because the GitHub connection acts as Misa's account, so `.claude/settings.json` denies the merge and auto-merge tools and `gh pr merge`.
+- **Push after the checks pass.** If checks are still running when a turn ends, say so and push when they finish. A stop hook's "unpushed" or "uncommitted" nudge is not a reason to push early.
 - **Before each staging deploy and before telling Misa a PR is ready,** merge the latest `main` into the branch and check the PR is mergeable. GitHub runs no CI on a PR with a merge conflict, so a conflicted PR looks quiet, not red. Resolve conflicts first (migrations: a released number is never reused or edited).
 - **Batch work into fewer PRs** (Misa's preference): agents may use several local branches, but merge finished work together locally and open one PR for Misa to merge into `main`. Large PRs are fine; each commit inside should still be one coherent change.
 - **Other repositories** (for example `Misacorp/leetbot-aws`): only open PRs there; Misa merges them manually. Never push to their default branch.
@@ -87,3 +92,4 @@ Run `pnpm check` before proposing a PR. CI runs the same. Lint runs per package 
 - Tests for every behaviour change; deterministic seeds in tests. Prove each rule once, at the lowest layer that can (`docs/design/testing.md`: layers, speed budgets, when to move a slow check down).
 - Times are stored as UTC epoch milliseconds; game-calendar logic converts to the guild's timezone (default `Europe/Helsinki`) in one place, and the timezone is always passed explicitly, never defaulted in a function signature.
 - Integer amounts only for currencies; never negative balances.
+- **Database reads stay small** (Cloudflare's free tier allows 5,000,000 Durable Object rows read a day; a 10-player server once used all of it). Hot paths (every request, alarm tick, object start) read a few rows through indexes; nothing that must last between requests lives in memory (the object sleeps seconds after a request); work that repeats on a timer is priced before it ships. How costs work, how to measure and look them up, and the checklist for a new feature: `docs/design/database-reads.md`. Its checks (read budget, query plan audit, day in the life) must stay green; raise a budget only with a reason in the PR.

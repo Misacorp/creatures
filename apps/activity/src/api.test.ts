@@ -4,10 +4,12 @@ import evolveOtherFixture from './fixtures/branches-evolve-other.json';
 import branchRequests from './fixtures/branches-request-bodies.json';
 import {
   createSession,
+  dismissAway,
   evolveCreature,
   fetchConfig,
   fetchFinaleTicket,
   fetchLedger,
+  fetchRaidBoardTicket,
   fetchRoom,
   finaleSocketUrl,
   loungeSocketUrl,
@@ -17,6 +19,7 @@ import {
   parseAllowance,
   parseLoungeSpot,
   parseRoom,
+  raidBoardSocketUrl,
   setLounger,
   setLoungeSpot,
 } from './api';
@@ -284,6 +287,23 @@ describe('the lounger and room requests', () => {
     expect(sent[sent.length - 1]?.init.body).toBe('{"creatureId":"c9"}');
   });
 
+  it('POSTs the last payout it was shown to /api/away/dismiss and returns the new state', async () => {
+    await signIn();
+    const sent: { path: string; init: RequestInit }[] = [];
+    vi.stubGlobal('fetch', (path: string, init: RequestInit) => {
+      sent.push({ path, init });
+      return Promise.resolve(
+        Response.json({ state: { ...evolveFixture.state, awayRewards: null } }),
+      );
+    });
+    const state = await dismissAway(1234);
+    expect(state.awayRewards).toBeNull();
+    const last = sent[sent.length - 1];
+    expect(last?.path).toBe('/api/away/dismiss');
+    expect(last?.init.method).toBe('POST');
+    expect(last?.init.body).toBe('{"until":1234}');
+  });
+
   it('PUTs { spotId } to /api/lounge-spot and returns the stored choice', async () => {
     await signIn();
     const sent: { path: string; init: RequestInit }[] = [];
@@ -482,6 +502,46 @@ describe('the finale live socket messages', () => {
   });
 });
 
+describe('the raid board live socket', () => {
+  it('reads raidLive: only an explicit true counts, apart from the other live flags', async () => {
+    const base = { discordClientId: '1', environment: 'local', version: 'dev', leetSource: 'mock' };
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ ...base, raidLive: true })));
+    const on = await fetchConfig();
+    expect(on.raidLive).toBe(true);
+    expect(on.finaleLive).toBe(false);
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json(base)));
+    expect((await fetchConfig()).raidLive).toBe(false);
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ ...base, raidLive: 'on' })));
+    expect((await fetchConfig()).raidLive).toBe(false);
+  });
+
+  it('hands a raid message on for its own strict check, and refuses a big or broken one', () => {
+    const message = { v: 1, type: 'raid', week: '2027-W02', party: 1, cells: [] };
+    expect(parseLiveMessage(JSON.stringify(message))).toEqual({ type: 'raid', push: message });
+    expect(parseLiveMessage(JSON.stringify({ ...message, v: 2 }))).toBeNull();
+    const big = { ...message, pad: 'x'.repeat(70_000) };
+    expect(parseLiveMessage(JSON.stringify(big))).toBeNull();
+  });
+
+  it('builds the board address and asks for a ticket naming the party', async () => {
+    expect(raidBoardSocketUrl('t', { protocol: 'https:', host: 'x.discordsays.com' })).toBe(
+      'wss://x.discordsays.com/api/raid/board/live?ticket=t',
+    );
+    let seen: { url: string; body: unknown } | null = null;
+    vi.stubGlobal('fetch', (url: string, init: RequestInit) => {
+      seen = { url, body: JSON.parse(init.body as string) };
+      return Promise.resolve(Response.json({ ticket: 'abc' }));
+    });
+    expect(await fetchRaidBoardTicket('2027-W02', 3)).toBe('abc');
+    expect(seen).toEqual({
+      url: '/api/raid/board/ticket',
+      body: { week: '2027-W02', party: 3 },
+    });
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ nope: 1 })));
+    await expect(fetchRaidBoardTicket('2027-W02', 3)).rejects.toThrow();
+  });
+});
+
 describe('the lounge live socket messages', () => {
   const resident = {
     userId: '1',
@@ -497,6 +557,38 @@ describe('the lounge live socket messages', () => {
     });
     const message = parseLiveMessage(JSON.stringify({ v: 1, type: 'resident', resident }));
     expect(message).toEqual({ type: 'resident', resident });
+  });
+
+  it('reads a lounge-xp push of exactly its shape', () => {
+    const push = { creatureId: 'c1', paid: 35, level: 5, exp: 12, waiting: false };
+    expect(parseLiveMessage(JSON.stringify({ v: 1, type: 'lounge-xp', ...push }))).toEqual({
+      type: 'lounge-xp',
+      ...push,
+    });
+  });
+
+  const xp = {
+    v: 1,
+    type: 'lounge-xp',
+    creatureId: 'c1',
+    paid: 35,
+    level: 5,
+    exp: 12,
+    waiting: false,
+  };
+  it.each([
+    { ...xp, extra: 1 },
+    { ...xp, creatureId: 7 },
+    { ...xp, creatureId: '' },
+    { ...xp, paid: -1 },
+    { ...xp, paid: 1.5 },
+    { ...xp, level: 0 },
+    { ...xp, exp: '3' },
+    { ...xp, waiting: 0 },
+    { ...xp, creatureId: 'x'.repeat(65) },
+    Object.fromEntries(Object.entries(xp).filter(([k]) => k !== 'exp')),
+  ])('rejects a lounge-xp push of another shape (%#)', (data) => {
+    expect(parseLiveMessage(JSON.stringify(data))).toBeNull();
   });
 
   it.each([

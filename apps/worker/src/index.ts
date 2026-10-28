@@ -88,9 +88,10 @@ export function createHandler(overrides: Partial<HandlerDeps> = {}): ExportedHan
           leetSource: env.LEET_SOURCE,
           // Staging only: lets the client load the dev panel. Absent (not false) everywhere else.
           ...(env.DEV_TOOLS === 'on' ? { devTools: true } : {}),
-          // The live sockets: the lounge's (LOUNGE_LIVE) and the finale's (FINALE_LIVE). Absent, not false.
+          // The live sockets: the lounge's (LOUNGE_LIVE), the finale's (FINALE_LIVE) and the raid board's (RAID_LIVE). Absent, not false.
           ...(env.LOUNGE_LIVE === 'on' ? { loungeLive: true } : {}),
           ...(env.FINALE_LIVE === 'on' ? { finaleLive: true } : {}),
+          ...(env.RAID_LIVE === 'on' ? { raidLive: true } : {}),
         });
       },
     },
@@ -137,12 +138,13 @@ export function createHandler(overrides: Partial<HandlerDeps> = {}): ExportedHan
     if (match.kind === 'ok') return dispatch(publicRoutes, request, pathname, env);
     if (match.kind === 'method_not_allowed') return methodNotAllowed(match.allow);
 
-    // The socket upgrades (the lounge's and the finale's): no Authorization header is possible, so they
+    // The socket upgrades (the lounge's, the finale's and the raid board's): no Authorization header is possible, so they
     // carry a one-time ticket. Strict parse and MAC check first, like a session token, so junk never
     // wakes a Durable Object. The object checks that the ticket is of the route's kind.
     const liveKind = LIVE_PATH_KINDS[pathname];
     if (liveKind !== undefined) {
-      if ((liveKind === 'lounge' ? env.LOUNGE_LIVE : env.FINALE_LIVE) !== 'on') return notFound();
+      const flags = { lounge: env.LOUNGE_LIVE, finale: env.FINALE_LIVE, raid: env.RAID_LIVE };
+      if (flags[liveKind] !== 'on') return notFound();
       if (
         request.method !== 'GET' ||
         request.headers.get('Upgrade')?.toLowerCase() !== 'websocket'

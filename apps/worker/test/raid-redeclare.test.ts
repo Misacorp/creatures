@@ -231,9 +231,12 @@ describe('re-declaring an open week', () => {
     );
   });
 
-  it('only stamps the version on a week that has no rank yet (nobody was in)', async () => {
+  it('only stamps the version on an old week that has no rank yet (opened before servers started at Rank 1)', async () => {
     await runRaid((ctx) => {
       ctx.core.raid.currentWeek(HELSINKI);
+      // A new week has its rank at once; take it away to make the old shape.
+      ctx.sql.exec('UPDATE raid_weeks SET rank = NULL, effective_rank = NULL');
+      ctx.sql.exec('UPDATE raid_ladder SET rank = NULL');
       expect(weekState(ctx).rank).toBeNull();
       ctx.sql.exec('UPDATE raid_weeks SET difficulty_version = 0');
       ctx.core.raid.invalidateDifficultyCheck();

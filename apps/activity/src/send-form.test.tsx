@@ -131,6 +131,14 @@ describe('who goes, compact', () => {
     expect(visibleText(root)).toContain('What ranks unlock');
   });
 
+  it("shows each creature's trips to this place next to its stars (#63)", () => {
+    const root = draw('tidepools');
+    const rows = byClass(root, 'pick-rank').map(visibleText);
+    // The fixture's first creature has been to the Tidepools once; the others never.
+    expect(rows[0]).toContain('1 trip here');
+    expect(rows.slice(1).every((t) => t.includes('No trips here yet'))).toBe(true);
+  });
+
   it('chooses nobody when everybody is away, and says why', () => {
     const away = base.map((c) => ({
       ...c,

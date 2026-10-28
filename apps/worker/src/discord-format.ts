@@ -283,8 +283,6 @@ export interface RevealPost {
   schedule: { phase1: number; phase2: number; finale: number };
   /** The guild's timezone: the fights' weekdays are named in it. */
   timeZone: string;
-  players: number;
-  parties: number;
   /** The server's Boss Rank this week; null when the week has none (an old week, or nobody in yet). */
   rank: number | null;
   /** Set in a Festival week: the name of the Festival creature every winner gets. */
@@ -321,7 +319,6 @@ export function formatBossReveal(post: RevealPost): PostMessage {
   ] as const) {
     fields.push(field(name, dayAndTime(at, post.timeZone)));
   }
-  const players = `${String(post.players)} ${plural(post.players, 'player', 'players')} in`;
   return message({
     author: {
       name: `New raid week${post.rank === null ? '' : ` · Rank ${String(post.rank)}`}`,
@@ -331,9 +328,7 @@ export function formatBossReveal(post: RevealPost): PostMessage {
     color: POST_COLOURS.element[post.elementId] ?? POST_COLOURS.plain,
     thumbnail: { url: bossPortraitPath(post.bossId) },
     fields,
-    footer: {
-      text: post.parties > 1 ? `${players} · ${String(post.parties)} parties` : players,
-    },
+    footer: { text: 'Place a creature on the raid board to join.' },
   });
 }
 

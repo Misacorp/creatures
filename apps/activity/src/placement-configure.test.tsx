@@ -42,8 +42,6 @@ const party: Party = {
       name: 'Mossback',
       level: 20,
       mine: true,
-      auto: false,
-      movable: false,
       creatureId: 'demo-moss',
     }),
     tile(1, {
@@ -52,12 +50,9 @@ const party: Party = {
       name: 'Splashet',
       level: 5,
       mine: false,
-      auto: false,
-      movable: false,
     }),
     tile(2, null),
   ],
-  away: [],
   guests: false,
   bossHp: null,
   adaptation: null,
@@ -70,6 +65,7 @@ const actions: CardActions = {
   onRibbon: vi.fn(),
   onEvolve: vi.fn(),
   onRename: vi.fn(),
+  onNote: vi.fn(),
   onLounge: vi.fn(),
   onSlotTalent: vi.fn(),
 };
@@ -91,7 +87,6 @@ function draw(canEdit: boolean): {
       busy={false}
       rosterNames={['Misa', 'Kim']}
       turnOrder="left_to_right"
-      next={null}
       onIntent={onIntent}
       configure={{
         state: scene.state,

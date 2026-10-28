@@ -29,9 +29,10 @@
         "max": 0
       }
     },
-    "durationMs": 900000,
     "xp": 6,
     "learnBp": null,
-    "teachers": 0
+    "teachers": 0,
+    "boosted": 0,
+    "tinkersLuckBp": 0
   }
 }

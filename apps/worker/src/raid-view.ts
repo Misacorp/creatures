@@ -12,6 +12,7 @@ import {
   type FightEvent,
   type FightInput,
   type FightResult,
+  type FightSlot,
   type Zone,
 } from '@creatures/engine';
 import { RULES, content, seasonOf, type ReadinessBand } from '@creatures/game';
@@ -30,7 +31,6 @@ import {
   aliasFor,
   basicKey,
   buildPartyBoard,
-  type PartyBoard,
   bossFor,
   creatureKey,
   guardRulesOf,
@@ -39,17 +39,16 @@ import {
   type StoredSummary,
 } from './raid-resolve';
 import { latestReveal, totalEssenceOf, type RevealView } from './raid-reveal';
-import { partyMembers, partyOf } from './raid-roster';
-import { RAID_PHASES, isWeekId, weekIndex, type RaidEvent, type RaidPhase } from './raid-schedule';
-import { awayMembers } from './raid-assist';
+import { joiningOpen, partyMembers, partyOf, partyToJoin } from './raid-roster';
 import {
-  loadCreatures,
-  partyPlacements,
-  raidTeam,
-  rowLength,
-  type RaidStatus,
-  type TeamCreature,
-} from './raid-teams';
+  RAID_PHASES,
+  addWeeks,
+  isWeekId,
+  weekIndex,
+  type RaidEvent,
+  type RaidPhase,
+} from './raid-schedule';
+import type { RaidStatus, TeamCreature } from './raid-teams';
 
 export interface RosterEntry {
   displayName: string;
@@ -74,9 +73,9 @@ export interface AbilityPreview {
 }
 
 /**
- * What the caller brings with their current team (placed creatures, then the strongest others): the basic ability, then one entry for
- * each team creature whose species has an ability (locked ones too, so the client can show when
- * they unlock). Empty when the caller is not in a party.
+ * What the caller brings with their placed creatures: the basic ability, then one entry for
+ * each placed creature whose species has an ability (locked ones too, so the client can show when
+ * they unlock). Empty when the caller has not joined.
  */
 function abilityPreview(
   basic: { abilityId: string } | null,
@@ -122,16 +121,31 @@ export interface RowSlotView {
     name: string;
     level: number;
     mine: boolean;
-    /** It joins by itself (the fight would place it here), not placed on the board by anyone. */
-    auto: boolean;
-    /** The caller may move or swap it: its owner is away and a teammate (not the owner) put it here or it is auto. */
-    movable: boolean;
-    /** The teammate who placed it for an away owner; absent when the owner placed it (or it is auto). */
-    movedBy?: string;
-    /** Only for the caller's own creatures and the ones the caller may move. */
+    /** Only for the caller's own creatures. */
     creatureId?: string;
     /** A Guard's reach (`guardReachOf`: how many creatures it protects on each side); Guards only. */
     reach?: GuardReach;
+  };
+}
+
+/**
+ * The creature of one board cell as the row shows it: the one place that decides what a cell says, used
+ * by the view's whole row and by the live board's one-cell pushes (`raid-board-change.ts`). The creature
+ * id is only for the viewer's own creatures.
+ */
+export function cellCreature(
+  fight: FightSlot,
+  ownerName: string,
+  mine: boolean,
+): NonNullable<RowSlotView['creature']> {
+  return {
+    ownerName,
+    species: fight.speciesId,
+    name: fight.name,
+    level: fight.level,
+    mine,
+    ...(mine ? { creatureId: fight.id } : {}),
+    ...reachField(fight.role, fight.mods),
   };
 }
 
@@ -141,19 +155,6 @@ function reachField(
   mods: Parameters<typeof guardReachOf>[0],
 ): { reach?: GuardReach } {
   return role === 'guard' ? { reach: guardReachOf(mods) } : {};
-}
-
-/** A party member who has not opened the game this raid week: teammates may move their joining creatures. */
-export interface AwayView {
-  ownerName: string;
-  /** Everything they own (a swap may bring any of them in); `joining` is set for the ones in the fight. */
-  creatures: {
-    creatureId: string;
-    species: string;
-    name: string;
-    level: number;
-    joining: boolean;
-  }[];
 }
 
 export interface PhaseResultView {
@@ -222,17 +223,18 @@ export interface RaidView {
   roster: RosterEntry[];
   parties: { party: number; size: number }[];
   you: {
+    /** The caller joined this week's raid (they placed a creature). */
     inRoster: boolean;
-    optOut: boolean;
     party: number | null;
-    /** The caller may change their placement. */
+    /**
+     * The caller may change their placement: they joined, or joining is still open (until the finale starts) and
+     * their first placement will join them. False once the finale has started.
+     */
     canEdit: boolean;
-    /** The caller may still sit the week out or rejoin. */
-    canOptOut: boolean;
     /**
      * The caller's finale ability: their pick (`chosen`) or the default they get if they pick
      * nothing. It can be changed (`PUT /api/raid/ability`) until the finale starts. Null when the
-     * caller is not in a party.
+     * caller has not joined or has no creature on the board.
      */
     ability: { abilityId: string; chosen: boolean } | null;
     /** Everything the caller brings to the finale with their current team (see `AbilityPreview`). */
@@ -243,32 +245,31 @@ export interface RaidView {
      */
     reveal: RevealView | null;
     /**
-     * The creatures the caller brings: the ones placed on the board, then their strongest others to
-     * make three (`slot` is null for those; they are placed automatically when a phase locks).
+     * The creatures the caller brings: exactly the ones placed on the board (up to three). Null when
+     * the caller has not joined.
      */
     team: {
-      /** Always `auto`: the chosen-team feature is gone, the field stays for older clients. */
-      mode: 'auto';
       creatures: {
         creatureId: string;
         species: string;
         name: string;
         level: number;
-        slot: number | null;
+        slot: number;
         /** A Guard's reach (how many creatures it protects on each side); Guards only. */
         reach?: GuardReach;
       }[];
     } | null;
   };
-  /** The caller's party; null when they are not in one. */
+  /**
+   * The caller's party, or, for a player who has not joined while joining is open, the party they
+   * would join (its board, empty slots where nobody placed). Null once joining has closed for them.
+   */
   party: null | {
     party: number;
     rowLength: number;
-    /** Slots; creatures that are not placed are auto-placed when a phase resolves. */
+    /** Slots: only what players placed (guests are not drawn). */
     row: RowSlotView[];
     guests: boolean;
-    /** Away teammates (never the caller); empty once the board is locked. */
-    away: AwayView[];
     bossHp: { max: number; current: number } | null;
     /** The boss's phase 2 counter-move, once phase 1 has resolved. */
     adaptation: { description: string; rule: string | null; target: string | null } | null;
@@ -286,11 +287,6 @@ const PHASE_ORDER: readonly RaidStatus[] = ['open', 'phase1', 'phase2', 'finale'
 /** The first phase event a week in this status has not run yet (the view's `next`), or undefined. */
 export function nextPendingEvent(status: RaidStatus): RaidPhase | undefined {
   return RAID_PHASES.find((p) => PHASE_ORDER.indexOf(p) > PHASE_ORDER.indexOf(status));
-}
-
-/** The engine alias of a member in a board. */
-function aliasOf(board: PartyBoard, members: readonly string[], userId: string): string {
-  return board.aliases[members.indexOf(userId)] as string;
 }
 
 export function displayNames(sql: SqlStorage): Map<string, string> {
@@ -311,7 +307,6 @@ export function buildRaidView(
   now: number,
 ): RaidView {
   const week = raid.currentWeek(tz);
-  raid.syncRoster(week.weekId);
   const names = displayNames(sql);
   const boss = bossFor(week.bossId, fightRank(sql, week.weekId));
   const schedule = raid.schedule(week.weekId, tz);
@@ -333,80 +328,49 @@ export function buildRaidView(
   const parties = [...sizes].map(([party, size]) => ({ party, size }));
 
   const myParty = partyOf(sql, week.weekId, userId);
-  const team = myParty === null ? null : raidTeam(sql, week.weekId, userId);
-  // At most three placements per player, whatever the table holds (a stale row once made a fourth).
-  const placements = myParty === null ? [] : partyPlacements(sql, week.weekId, myParty);
-  const slotOf = new Map(placements.map((p) => [p.creature_id, p.slot]));
-
-  const partyIds = myParty === null ? [] : partyMembers(sql, week.weekId, myParty);
-  const myAbility = myParty === null ? null : abilityFor(sql, week.weekId, partyIds, userId);
-  const myIndex = partyIds.indexOf(userId);
+  // Joining is open until the finale starts: a player who has not joined sees the board they would join.
+  const joinOpen = joiningOpen(week.status);
+  // (Only for a player who has a creature to place.)
+  const shownParty =
+    myParty ??
+    (joinOpen &&
+    sql.exec('SELECT 1 FROM creatures WHERE user_id = ? LIMIT 1', userId).toArray().length > 0
+      ? partyToJoin(sql, week.weekId).party
+      : null);
+  // Exactly the creatures the caller placed (at most three), taken from the party's board below.
+  let team: TeamCreature[] | null = null;
+  const slotOf = new Map<string, number>();
 
   let partyView: RaidView['party'] = null;
-  if (myParty !== null) {
-    const members = partyIds;
-    const length = rowLength(members.length);
-    const board = buildPartyBoard(sql, week.weekId, myParty, members);
-    const editable = week.status !== 'finale';
-    const awayIds = awayMembers(sql, members, schedule.weekStart);
+  let myAbility: { abilityId: string; chosen: boolean } | null = null;
+  let myAlias: string | null = null;
+  if (shownParty !== null) {
+    const members = partyMembers(sql, week.weekId, shownParty);
+    // Everyone's team is their placed creatures, loaded by id from the party's placements (read once).
+    const board = buildPartyBoard(sql, week.weekId, shownParty, members);
+    const length = board.cells.length;
+    if (myParty !== null) {
+      team = board.teams[board.memberIds.indexOf(userId)] ?? [];
+      for (const p of board.placements) if (p.user_id === userId) slotOf.set(p.creature_id, p.slot);
+    }
+    // The finale's ability and alias follow the members who fight (the same order the fight uses).
+    myAbility = myParty === null ? null : abilityFor(sql, week.weekId, board.memberIds, userId);
+    const myIndex = board.memberIds.indexOf(userId);
+    myAlias = myIndex < 0 ? null : aliasFor(myIndex);
     const row: RowSlotView[] = board.cells.map((cell, slot) => {
       const fight = cell.slot;
       // Guests are not drawn: their slots show as empty, as before.
       if (fight === null || cell.origin === 'guest') {
         return { slot, zone: zoneOfIndex(slot, length), creature: null };
       }
-      const ownerId = members[board.aliases.indexOf(fight.ownerId as string)] as string;
+      const ownerId = board.memberIds[board.aliases.indexOf(fight.ownerId as string)] as string;
       const mine = ownerId === userId;
-      // A teammate may move this tile: its owner is away and did not place it themselves.
-      const movable =
-        editable &&
-        !mine &&
-        awayIds.has(ownerId) &&
-        (cell.origin === 'auto' || cell.placedBy !== null);
-      const movedBy = cell.placedBy !== null && cell.placedBy !== ownerId ? cell.placedBy : null;
       return {
         slot,
         zone: zoneOfIndex(slot, length),
-        creature: {
-          ownerName: names.get(ownerId) ?? 'Unknown',
-          species: fight.speciesId,
-          name: fight.name,
-          level: fight.level,
-          mine,
-          auto: cell.origin === 'auto',
-          movable,
-          ...(movedBy === null ? {} : { movedBy: names.get(movedBy) ?? 'Unknown' }),
-          ...(mine || movable ? { creatureId: fight.id } : {}),
-          ...reachField(fight.role, fight.mods),
-        },
+        creature: cellCreature(fight, names.get(ownerId) ?? 'Unknown', mine),
       };
     });
-    // Away teammates, with everything they own (for a swap). Nothing once the board is locked.
-    const away: AwayView[] = [];
-    if (editable) {
-      for (const memberId of members) {
-        if (memberId === userId || !awayIds.has(memberId)) continue;
-        const joining = new Set(
-          board.cells.flatMap((c) =>
-            c.slot !== null &&
-            c.origin !== 'guest' &&
-            c.slot.ownerId === aliasOf(board, members, memberId)
-              ? [c.slot.id]
-              : [],
-          ),
-        );
-        away.push({
-          ownerName: names.get(memberId) ?? 'Unknown',
-          creatures: loadCreatures(sql, memberId).map((c) => ({
-            creatureId: c.id,
-            species: c.species.id,
-            name: c.nickname ?? c.species.name,
-            level: c.level,
-            joining: joining.has(c.id),
-          })),
-        });
-      }
-    }
     const pool = sql
       .exec<{
         hp_max: number | null;
@@ -418,14 +382,14 @@ export function buildRaidView(
         `SELECT hp_max, hp_current, adaptation_rule, adaptation_target, adaptation_description
          FROM raid_parties WHERE week_id = ? AND party = ?`,
         week.weekId,
-        myParty,
+        shownParty,
       )
-      .one();
+      .toArray()[0];
     const results = sql
       .exec<{ phase: RaidPhase; summary: string; created_at: number }>(
         'SELECT phase, summary, created_at FROM raid_results WHERE week_id = ? AND party = ?',
         week.weekId,
-        myParty,
+        shownParty,
       )
       .toArray()
       .sort((a, b) => RAID_PHASES.indexOf(a.phase) - RAID_PHASES.indexOf(b.phase))
@@ -441,17 +405,16 @@ export function buildRaidView(
         ),
       );
     partyView = {
-      party: myParty,
+      party: shownParty,
       rowLength: length,
       row,
-      away,
-      guests: members.length < 3,
+      guests: board.memberIds.length < RULES.combat.guestsBelowPlayers,
       bossHp:
-        pool.hp_max === null || pool.hp_current === null
+        pool === undefined || pool.hp_max === null || pool.hp_current === null
           ? null
           : { max: pool.hp_max, current: pool.hp_current },
       adaptation:
-        pool.adaptation_description === null
+        pool === undefined || pool.adaptation_description === null
           ? null
           : {
               description: pool.adaptation_description,
@@ -459,7 +422,7 @@ export function buildRaidView(
               target: pool.adaptation_target,
             },
       results,
-      readiness: raid.readiness(week, myParty),
+      readiness: raid.readiness(week, shownParty),
     };
   }
 
@@ -502,28 +465,23 @@ export function buildRaidView(
     parties,
     you: {
       inRoster: myParty !== null,
-      // Sitting a week out is gone: the field stays for older clients and is always false.
-      optOut: false,
       party: myParty,
-      canEdit: myParty !== null && week.status !== 'finale',
-      canOptOut: false,
+      canEdit: shownParty !== null && week.status !== 'finale',
       ability: myAbility,
-      abilities: abilityPreview(myAbility, myIndex < 0 ? null : aliasFor(myIndex), team, (target) =>
+      abilities: abilityPreview(myAbility, myAlias, team, (target) =>
         autofire.isOn(userId, target),
       ),
-      reveal: latestReveal(sql, userId),
+      reveal: latestReveal(sql, userId, addWeeks(week.weekId, -1)),
       team:
         team === null
           ? null
           : {
-              // The chosen-team feature is gone; old clients still read `mode`, so it stays.
-              mode: 'auto',
               creatures: team.map((c) => ({
                 creatureId: c.id,
                 species: c.species.id,
                 name: c.nickname ?? c.species.name,
                 level: c.level,
-                slot: slotOf.get(c.id) ?? null,
+                slot: slotOf.get(c.id) as number,
                 ...reachField(c.species.role, c.mods),
               })),
             },
@@ -659,7 +617,8 @@ export function buildReplayView(
       phase,
     )
     .toArray()[0];
-  if (row === undefined) return null;
+  // The fight's inputs and events of a week older than last week are emptied (`old-data.ts`).
+  if (row === undefined || row.input === '') return null;
   const input = JSON.parse(row.input) as FightInput;
   const result = JSON.parse(row.result) as FightResult;
   const summary = JSON.parse(row.summary) as StoredSummary;

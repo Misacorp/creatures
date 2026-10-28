@@ -19,8 +19,6 @@ export const PlacementBodySchema = v.strictObject({
 
 export const UnplaceBodySchema = v.strictObject({ creatureId: IdSchema });
 
-export const OptOutBodySchema = v.strictObject({ optOut: v.boolean() });
-
 /** Body of `POST /api/raid/channel`. The channel is never in the body: it is the session's own. */
 export const RaidChannelBodySchema = v.strictObject({ action: v.picklist(['pin', 'unpin']) });
 

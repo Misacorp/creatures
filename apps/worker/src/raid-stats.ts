@@ -4,7 +4,7 @@
  * by display name and a `you` flag, never by user id, and no creature id is sent at all (the fight's
  * creature ids are the players' real creature ids).
  */
-import type { FightInput, FightResult } from '@creatures/engine';
+import { damageDealt, type FightInput, type FightResult } from '@creatures/engine';
 import { RULES, content } from '@creatures/game';
 import { outcomeFlags, type StoredSummary } from './raid-resolve';
 import { isWeekId, RAID_PHASES, type RaidPhase } from './raid-schedule';
@@ -17,22 +17,29 @@ export type StatsOutcome = 'cleared' | 'missed' | 'wiped';
 export interface StatsPlayer {
   displayName: string;
   you: boolean;
-  /** Damage credited to the player's creatures (setup and support shares excluded). */
+  /** Damage the player's creatures really dealt to the boss (every hit in full: `damageDealt`). */
   damage: number;
-  /** The loot weight: damage plus setup, support and guard credit. */
-  contribution: number;
+  /**
+   * The score, which sets the Essence share: the credit for the creatures' own hits (less the shares
+   * below) plus setup, support and guard credit (the engine's `contribution`).
+   */
+  score: number;
+  /** The part of the score from setting up, supporting and guarding (and the finale's abilities). */
+  assist: number;
 }
 
 export interface StatsCreature {
-  /** 1-based place among all creatures in the fight, by damage. */
+  /** 1-based place among all creatures in the fight, by damage dealt. */
   rank: number;
   name: string;
   species: string;
   /** The owner's display name, or null for a guest. */
   owner: string | null;
   you: boolean;
+  /** Damage it really dealt to the boss. */
   damage: number;
-  contribution: number;
+  /** Its score (the engine's `contribution`). */
+  score: number;
 }
 
 export interface StatsReaction {
@@ -176,16 +183,26 @@ export function buildStats(
     return { owner: nameOf(id), you: id === userId };
   };
   const slotOf = new Map(input.row.map((s) => [s.id, s]));
+  // The damage really dealt, by creature and by owner. The engine's `damage` credit is only the
+  // hitter's share (the setup and support shares go to other creatures), so it is not shown as damage.
+  const dealt = damageDealt(result.events);
+  const dealtByUser = new Map<string, number>();
+  for (const slot of input.row) {
+    const owner = slot.ownerId === null ? undefined : userOfAlias.get(slot.ownerId);
+    if (owner === undefined) continue;
+    dealtByUser.set(owner, (dealtByUser.get(owner) ?? 0) + (dealt[slot.id] ?? 0));
+  }
 
   // --- Players ---
   const players: StatsPlayer[] = summary.contributors
     .map((c) => ({
       displayName: nameOf(c.userId),
       you: c.userId === userId,
-      damage: c.damage,
-      contribution: c.contribution,
+      damage: dealtByUser.get(c.userId) ?? 0,
+      score: c.contribution,
+      assist: Math.max(0, c.contribution - c.damage),
     }))
-    .sort((a, b) => b.damage - a.damage || b.contribution - a.contribution);
+    .sort((a, b) => b.damage - a.damage || b.score - a.score);
 
   // --- Creatures ---
   const ranked = input.row
@@ -194,13 +211,11 @@ export function buildStats(
       return {
         position,
         slot,
-        damage: totals?.damage ?? 0,
-        contribution: totals?.contribution ?? 0,
+        damage: dealt[slot.id] ?? 0,
+        score: totals?.contribution ?? 0,
       };
     })
-    .sort(
-      (a, b) => b.damage - a.damage || b.contribution - a.contribution || a.position - b.position,
-    )
+    .sort((a, b) => b.damage - a.damage || b.score - a.score || a.position - b.position)
     .map((entry, index): StatsCreature => {
       const { owner, you } = ownerOf(entry.slot.ownerId);
       return {
@@ -210,7 +225,7 @@ export function buildStats(
         owner,
         you,
         damage: entry.damage,
-        contribution: entry.contribution,
+        score: entry.score,
       };
     });
   const creatures = ranked.filter((c, index) => index < TOP_CREATURES || c.you);
@@ -348,7 +363,8 @@ export function readStats(
       phase,
     )
     .toArray()[0];
-  if (row === undefined) return null;
+  // The fight's inputs and events of a week older than last week are emptied (`old-data.ts`).
+  if (row === undefined || row.input === '') return null;
   const summary = JSON.parse(row.summary) as StoredSummary;
   if (!summary.members.some((m) => m.userId === userId)) return null;
   return buildStats(

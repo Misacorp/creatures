@@ -85,6 +85,7 @@ describe('the creature page flips through the list it came from', () => {
         onRibbon={noop}
         onEvolve={noop}
         onRename={onRename}
+        onNote={vi.fn()}
         onLounge={noop}
         onSlotTalent={noop}
       />,
@@ -296,6 +297,8 @@ describe('the creature page flips through the list it came from', () => {
 const gearActions = {
   equip: vi.fn(() => Promise.resolve(undefined)),
   equipBest: () => Promise.resolve(undefined),
+  checkDismantle: () => Promise.resolve({ locked: [] }),
+  dismantlePile: () => Promise.resolve(undefined),
   dismissNotice: () => Promise.resolve(undefined),
   startJob: () => Promise.resolve(undefined),
   previewCraft: () => new Promise(() => undefined),
@@ -324,7 +327,10 @@ describe('the Workshop item drawer flips through the bag in the grid order', () 
   }
 
   function cells(p: Page): FakeElement[] {
-    return find(first(byClass(p.root, 'item-grid')), (e) => e.localName === 'button');
+    return find(
+      first(byClass(p.root, 'item-grid')),
+      (e) => e.localName === 'button' && e.getAttribute('role') !== 'checkbox',
+    );
   }
 
   function dialog(p: Page): FakeElement {
@@ -334,7 +340,7 @@ describe('the Workshop item drawer flips through the bag in the grid order', () 
   const ordered = sortItems(SAMPLE_GEAR.items);
 
   function pressedIndex(p: Page): number {
-    return cells(p).findIndex((c) => c.getAttribute('aria-pressed') === 'true');
+    return cells(p).findIndex((c) => c.getAttribute('aria-current') === 'true');
   }
 
   it('has the sample bag with more than one item', () => {
@@ -449,17 +455,17 @@ describe('the Workshop item drawer flips through the bag in the grid order', () 
     expect(gearActions.equip).not.toHaveBeenCalled();
   });
 
-  it('pauses the flipping while the dismantle wizard is shown, and Back returns to the same item with the arrows', () => {
+  it('pauses the flipping while the Equip on list is shown, and Back returns to the same item with the arrows', () => {
     const p = drawWorkshop();
     p.click(cells(p)[0] as FakeElement);
     const shownId = (): string | null =>
       byClass(dialog(p), 'item-detail')[0]?.getAttribute('aria-labelledby') ?? null;
     const before = shownId();
-    p.click(first(byName(dialog(p), 'button', 'Dismantle')));
-    expect(byClass(dialog(p), 'dismantle-items')).toHaveLength(1);
+    p.click(first(byClass(dialog(p), 'equip-trigger')));
+    expect(byClass(dialog(p), 'equip-view')).toHaveLength(1);
     expect(byClass(dialog(p), 'flip-nav')).toHaveLength(0);
     p.click(first(byName(dialog(p), 'button', /^‹ Back/)));
-    expect(byClass(dialog(p), 'dismantle-items')).toHaveLength(0);
+    expect(byClass(dialog(p), 'equip-view')).toHaveLength(0);
     expect(shownId()).toBe(before);
     expect(byClass(dialog(p), 'flip-nav')).toHaveLength(1);
     expect(byName(dialog(p), 'button', 'Dismantle')).toHaveLength(1);
@@ -509,6 +515,7 @@ describe('the item picker has no flip: the grid is how you move between items', 
           onRibbon: noop,
           onEvolve: noop,
           onRename: noop,
+          onNote: noop,
           onLounge: noop,
           onSlotTalent: noop,
         }}

@@ -1,7 +1,7 @@
 import { RULES, type Rng } from '@creatures/game';
 import * as v from 'valibot';
 import { DailyAllowance } from './allowance';
-import { Analytics } from './analytics';
+import { Analytics, RETENTION_MS } from './analytics';
 import { attentionOf, type Attention } from './attention';
 import { AnalyticsRollup, type DailyRow } from './analytics-rollup';
 import { Collection } from './collection';
@@ -23,7 +23,9 @@ import { LoungeCompany, loungeDay } from './lounge-company';
 import { FINALE_ACTION_PATHS, LIVE_QUIET_PATHS, type LiveHooks } from './live-socket';
 import { liveRoutes } from './live-routes';
 import type { LiveSnapshot } from './raid-live-view';
-import { maintainedDay, markMaintained } from './maintenance';
+import { pruneOldData } from './old-data';
+import { pruneAway } from './while-away';
+import { maintainedDay, markMaintained, markStartupPasses, startupPassesRan } from './maintenance';
 import { DevState } from './dev-state';
 import { DevTools, devRoutes, isDevPath } from './dev-tools';
 import { DiscordError, type GuildApi } from './discord';
@@ -115,6 +117,7 @@ import {
   trackedInstances,
 } from './lounge';
 import { MIGRATIONS } from './migrations';
+import { ReadMeter, pruneReads, readSourceOfPath, type ReadSource } from './read-meter';
 import { liveRng } from './rng';
 import type { LoungeClient, LoungeResult } from './lounge-discord';
 import { nextRaidBoundary, raidStageAt } from './lounge-raid';
@@ -128,6 +131,7 @@ import {
 } from './session';
 import {
   DEFAULT_GUILD_TIMEZONE,
+  addDays,
   gameDay,
   isValidTimeZone,
   nextOccurrence,
@@ -304,11 +308,6 @@ export interface GuildCoreOptions {
    */
   gamesRng?: Rng;
   /**
-   * Live randomness for picking the living room's lounger. Defaults to crypto.getRandomValues.
-   * Separate from the others, so a pick never consumes a test's scripted draws.
-   */
-  loungerRng?: Rng;
-  /**
    * Live randomness for the valley's weather: the Boon and Omen of a day, drawn a day ahead. Defaults to
    * crypto.getRandomValues. Separate from the others, so a draw never consumes a test's scripted draws.
    */
@@ -355,6 +354,11 @@ export interface GuildCoreOptions {
    */
   devTools?: boolean;
   /**
+   * The deployed build (the git commit). The start-up passes in `migrate` run once per build instead of
+   * on every start. Without one (local dev, tests) they run on every start.
+   */
+  build?: string;
+  /**
    * The live sockets (see `live-socket.ts`): makes tickets, is told when a player changed something, and
    * is ticked by the alarm for the finale. Without it the ticket routes answer 404 and nothing is pushed.
    */
@@ -372,6 +376,9 @@ type CoreStorage = Pick<DurableObjectStorage, 'sql' | 'transactionSync' | 'getAl
  */
 export class GuildCore {
   private readonly limiter: TokenBucketLimiter;
+  /** Counts the rows read per source and game day (`read-meter.ts`). */
+  private readonly meter: ReadMeter;
+  private readonly storage: CoreStorage;
   /** The daily leet sync (`leet-sync.ts`); `syncLeet`, `leetSyncStatus` and `syncIfStale` delegate to it. */
   private readonly leet: LeetSync;
   /**
@@ -418,10 +425,19 @@ export class GuildCore {
   private readonly talentRng: Rng;
 
   constructor(
-    private readonly storage: CoreStorage,
+    rawStorage: CoreStorage,
     private readonly realNow: () => number,
     private readonly options: GuildCoreOptions = {},
   ) {
+    // Everything below reads through the meter (`read-meter.ts`): it counts the rows each statement reads.
+    this.meter = new ReadMeter(rawStorage.sql);
+    const storage: CoreStorage = {
+      sql: this.meter.sql,
+      transactionSync: (fn) => rawStorage.transactionSync(fn),
+      getAlarm: () => rawStorage.getAlarm(),
+      setAlarm: (at, options) => rawStorage.setAlarm(at, options),
+    };
+    this.storage = storage;
     this.devState = options.devTools === true ? new DevState(storage.sql) : null;
     const now = this.devState === null ? realNow : () => realNow() + this.devOffset();
     this.now = now;
@@ -467,7 +483,6 @@ export class GuildCore {
       gearRng,
       branchesOf: options.branchesOf,
       tripRng: options.tripRng ?? liveRng(),
-      ...(options.loungerRng === undefined ? {} : { loungerRng: options.loungerRng }),
       weather: this.weather,
       gameDay: () => loungeDay(this.now(), this.timezone()).day,
     });
@@ -494,6 +509,13 @@ export class GuildCore {
       rng: options.raidRng ?? liveRng(),
       practice: options.raidPractice === true,
       socketWatchers: (week, party) => this.live?.finaleWatchers(week, party) ?? new Set(),
+      board: {
+        listening: (week, party, actorId) =>
+          this.live?.raidBoardListening(week, party, actorId) ?? false,
+        send: (actorId, push) => {
+          this.live?.notifyRaidBoard(actorId, push);
+        },
+      },
       analytics: this.analytics,
       quirkRng,
       talentRng,
@@ -522,6 +544,9 @@ export class GuildCore {
       // Sockets keep real time; the game day follows the dev clock where it runs.
       gameOffset: () => this.now() - realNow(),
       loungerOf: (userId) => this.collection.lounge.resolve(userId),
+      onPaid: (userId, paid) => {
+        this.live?.notifyLoungeXp(userId, paid);
+      },
     });
     this.dev =
       this.devState === null
@@ -590,6 +615,29 @@ export class GuildCore {
 
   /** Brings the schema up to date. Call inside `blockConcurrencyWhile`. */
   migrate(): void {
+    try {
+      this.runMigrations();
+    } finally {
+      // The start's rows are added to the day's counter at the next flush.
+      this.meter.settle('start');
+    }
+  }
+
+  /** Adds the rows read since the last flush to `source` and to today's counter. Never throws. */
+  private flushReads(source: ReadSource): void {
+    try {
+      this.meter.flush(source, gameDay(this.realNow(), this.timezone(), RULES.daily.reset));
+    } catch (err) {
+      console.error('read meter failed', err instanceof Error ? err.name : 'unknown');
+    }
+  }
+
+  /** The hibernation handlers and the socket upgrade call this when they are done (source `socket`). */
+  flushSocketReads(): void {
+    this.flushReads('socket');
+  }
+
+  private runMigrations(): void {
     this.sql.exec('CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)');
     const row = this.sql
       .exec<{ version: number | null }>('SELECT MAX(version) AS version FROM schema_version')
@@ -607,6 +655,11 @@ export class GuildCore {
     this.storage.transactionSync(() => {
       loungeMigration(this.sql);
     });
+    // The passes below read whole tables, and the object starts again after every sleep (between the
+    // lounge's minute ticks while sockets are open): they run once per deployed build. Each is idempotent,
+    // and every deploy is a new build, so a branch switch on the shared staging database runs them again.
+    const build = this.options.build;
+    if (build !== undefined && startupPassesRan(this.sql, build)) return;
     // Rows of an earlier shape of gear v2 (staging ran one before its migration 27 was edited in place) are
     // brought to today's shape first, so nothing below or in a view meets an item it cannot read.
     normaliseGearRows(this.storage);
@@ -626,6 +679,7 @@ export class GuildCore {
     // The first load after the creatures A migration: every creature without a talent gets the slots its
     // level has opened rolled, once, with live randomness (idempotent: nothing is waiting later).
     rollMissingTalents(this.storage, this.talentRng, this.now(), this.analytics);
+    if (build !== undefined) markStartupPasses(this.sql, build);
   }
 
   /**
@@ -694,7 +748,11 @@ export class GuildCore {
         console.error('lounge record failed', err instanceof Error ? err.name : 'unknown');
       }
     }
-    await this.ensureAlarm();
+    try {
+      await this.ensureAlarm();
+    } finally {
+      this.flushReads('request:session');
+    }
     return secret;
   }
 
@@ -813,14 +871,26 @@ export class GuildCore {
     to: string,
     compare: { from: string; to: string } | null = null,
   ): { current: DailyRow[]; previous: DailyRow[] | null } {
-    return {
-      current: this.rollup.rows(from, to),
-      previous: compare === null ? null : this.rollup.rows(compare.from, compare.to),
-    };
+    try {
+      return {
+        current: this.rollup.rows(from, to),
+        previous: compare === null ? null : this.rollup.rows(compare.from, compare.to),
+      };
+    } finally {
+      this.flushReads('request:other');
+    }
   }
 
   /** Handles an authenticated API request forwarded by the Worker. */
   async handle(request: Request): Promise<Response> {
+    try {
+      return await this.handleRequest(request);
+    } finally {
+      this.flushReads(readSourceOfPath(new URL(request.url).pathname));
+    }
+  }
+
+  private async handleRequest(request: Request): Promise<Response> {
     // The dev routes do not exist unless the dev tools are on: checked before anything else, with a
     // plain 404.
     const pathname = new URL(request.url).pathname;
@@ -1536,6 +1606,14 @@ export class GuildCore {
    * duplicate or late alarm changes nothing.
    */
   async alarm(): Promise<void> {
+    try {
+      await this.runAlarm();
+    } finally {
+      this.flushReads('alarm');
+    }
+  }
+
+  private async runAlarm(): Promise<void> {
     // At the daily reset: today's weather is known (it was drawn yesterday) and tomorrow's is drawn now.
     this.weather.ensure();
     const now = this.now();
@@ -1565,18 +1643,22 @@ export class GuildCore {
 
   /**
    * The cleanup passes, once per game day (they read whole tables, and the alarm can run every minute):
-   * old analytics rows, gear action results and dungeon run data go, and runs left open on an earlier
-   * day are closed. A long analytics backlog keeps the day unmarked, so the next alarms work it off.
+   * old analytics rows, gear action results, dungeon run data and the details of old trips, jobs, Games
+   * days, raid weeks and Discord posts go (`old-data.ts`), and runs left open on an earlier day are closed. A long analytics backlog keeps the day unmarked, so the next alarms work it off.
    */
   private maintain(): void {
     const day = gameDay(this.now(), this.timezone(), RULES.daily.reset);
     if (maintainedDay(this.sql) === day && !this.pruneBacklog) return;
-    this.pruneBacklog = this.analytics.prune();
+    const analyticsBacklog = this.analytics.prune();
     this.gear.prune();
+    pruneReads(this.sql, addDays(day, -RETENTION_MS / 86_400_000));
     pruneSent(this.sql, this.now());
     pruneOutbox(this.sql, this.now());
     this.dungeon.closeStale();
     this.dungeon.prune();
+    pruneAway(this.sql, this.now());
+    const oldBacklog = pruneOldData(this.storage, this.now(), this.timezone());
+    this.pruneBacklog = analyticsBacklog || oldBacklog;
     if (!this.pruneBacklog) markMaintained(this.sql, day);
   }
 }

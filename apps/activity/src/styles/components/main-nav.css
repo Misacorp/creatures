@@ -25,7 +25,7 @@
 /* --- The HUD --- */
 .hud {
   position: relative;
-  z-index: 35; /* over the stage's overlays (30), under the How to play page (40) and drawers (50) */
+  z-index: 35; /* over the stage's overlays (30), under drawers (50) and the How to play page (55) */
   display: flex;
   align-items: center;
   gap: 0.5rem;

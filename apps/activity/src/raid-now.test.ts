@@ -14,7 +14,8 @@ const schedule = {
 
 const party = { party: 1 } as unknown as NonNullable<RaidView['party']>;
 const placed = { creatureId: 'a', species: 'splashet', name: 'A', level: 1, slot: 0 };
-const loose = { ...placed, creatureId: 'b', slot: null };
+/** The player's team when they placed one creature of three. */
+const one = { creatures: [placed] };
 
 function view(patch: {
   next?: RaidView['next'];
@@ -29,25 +30,45 @@ function view(patch: {
     party: 'party' in patch ? (patch.party ?? null) : party,
     you: {
       inRoster: true,
-      optOut: false,
       canEdit: true,
-      canOptOut: true,
-      team: { mode: 'auto' as const, creatures: [placed, placed, placed] },
+      team: { creatures: [placed, placed, placed] },
       ...patch.you,
     },
   };
 }
 
 describe('nowAction', () => {
-  it('asks for a team while a creature has no slot, during Preparation', () => {
+  it('asks a joined player with fewer than three placed to set their team, during Preparation', () => {
+    const action = nowAction(view({ you: { team: one } }), 'before', FRIDAY - 10 * HOUR);
+    expect(action.kind).toBe('set-team');
+    expect(action.label).toBe('Set your team');
+    expect(action.detail).toContain('Only the creatures you place fight.');
+    expect(action.target).toBe('placement');
+  });
+
+  it('asks a player who has not joined to join by placing a creature', () => {
     const action = nowAction(
-      view({ you: { team: { mode: 'auto', creatures: [placed, loose, loose] } } }),
+      view({ you: { inRoster: false, team: null } }),
       'before',
       FRIDAY - 10 * HOUR,
     );
-    expect(action.kind).toBe('set-team');
-    expect(action.label).toBe('Set your team');
-    expect(action.target).toBe('placement');
+    expect(action).toMatchObject({
+      kind: 'set-team',
+      label: "Join this week's raid",
+      target: 'placement',
+    });
+    expect(action.detail).toContain('Place a creature on the board before the finale');
+  });
+
+  it('does not ask for more than the player owns', () => {
+    const two = { creatures: [placed, { ...placed, creatureId: 'b', slot: 1 }] };
+    // Two creatures owned, both placed: nothing more to ask.
+    expect(nowAction(view({ you: { team: two } }), 'before', FRIDAY - HOUR, 2).kind).toBe(
+      'countdown',
+    );
+    expect(nowAction(view({ you: { team: two } }), 'before', FRIDAY - HOUR, 3).kind).toBe(
+      'set-team',
+    );
   });
 
   it('counts down to the next phase once the team is placed', () => {
@@ -85,12 +106,17 @@ describe('nowAction', () => {
     );
   });
 
-  it('puts live first even when a creature is unplaced: the row is closed by then', () => {
+  it('puts live first even when fewer than three are placed: the row is closed by then', () => {
     const next = { event: 'finale' as const, at: schedule.finale };
-    const unplaced = { team: { mode: 'auto' as const, creatures: [loose] } };
-    expect(nowAction(view({ next, you: unplaced }), 'live', schedule.finale).kind).toBe(
+    expect(nowAction(view({ next, you: { team: one } }), 'live', schedule.finale).kind).toBe(
       'watch-live',
     );
+  });
+
+  it('does not offer a live view to a player who is not in the raid', () => {
+    const next = { event: 'finale' as const, at: schedule.finale };
+    const out = view({ next, party: null, you: { inRoster: false, team: null } });
+    expect(nowAction(out, 'live', schedule.finale).kind).toBe('not-in');
   });
 
   it('names the next boss when the week is done', () => {
@@ -101,7 +127,7 @@ describe('nowAction', () => {
   });
 
   it('does not ask for a team when edits are closed', () => {
-    const closed = { canEdit: false, team: { mode: 'auto' as const, creatures: [loose] } };
+    const closed = { canEdit: false, team: one };
     expect(nowAction(view({ you: closed }), 'before', FRIDAY - HOUR).kind).toBe('countdown');
   });
 
@@ -121,14 +147,19 @@ describe('nowAction', () => {
 });
 
 describe('needsPlacement', () => {
-  it('is false without a party, without a team and when everything is placed', () => {
+  it('is false without a board to place on, when edits are closed and when everything is placed', () => {
     expect(needsPlacement(view({ party: null }))).toBe(false);
-    expect(needsPlacement(view({ you: { team: null } }))).toBe(false);
+    expect(needsPlacement(view({ you: { canEdit: false, team: one } }))).toBe(false);
     expect(needsPlacement(view({}))).toBe(false);
   });
 
-  it('is true while any team creature has no slot', () => {
-    const team = { mode: 'chosen' as const, creatures: [placed, placed, loose] };
-    expect(needsPlacement(view({ you: { team } }))).toBe(true);
+  it('is true for a player who has not joined, and while fewer than three are placed', () => {
+    expect(needsPlacement(view({ you: { inRoster: false, team: null } }))).toBe(true);
+    expect(needsPlacement(view({ you: { team: one } }))).toBe(true);
+  });
+
+  it('counts only the creatures the player owns', () => {
+    expect(needsPlacement(view({ you: { team: one } }), 1)).toBe(false);
+    expect(needsPlacement(view({ you: { team: one } }), 2)).toBe(true);
   });
 });

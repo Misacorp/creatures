@@ -1,6 +1,7 @@
 /*
   The Drawer (ui/Drawer.tsx): a bottom sheet over a dimming backdrop. It is `position: fixed` over the
-  screen that owns it, below the glossary popovers (so a tag inside it still opens its popover). The sheet
+  screen that owns it, below the How to play page (a "More in How to play" link inside it opens the
+  page on top) and the glossary popovers (so a tag inside it still opens its popover). The sheet
   is full width up to 34 rem, at most 88% of the screen high, with a drag handle on top, a heading row with
   the close button, an optional toolbar, a scrolling body and an optional pinned footer. It slides up in
   180 ms (not at all with reduced motion); a pull down on the handle moves it with the finger.
@@ -8,7 +9,7 @@
 
 .drawer-layer {
   position: fixed;
-  z-index: 50;
+  z-index: var(--z-drawer);
   inset: 0;
   display: flex;
   align-items: flex-end;
@@ -62,6 +63,15 @@
 
   .drawer-backdrop {
     animation: drawer-fade 180ms ease-out;
+  }
+}
+
+/* A drawer that takes the place of another one of the same screen (the item card's Dismantle flow) does not slide in
+   again: it reads as one drawer changing its view. */
+@media (prefers-reduced-motion: no-preference) {
+  .drawer-layer:has(.drawer-swap) .drawer-backdrop,
+  .drawer-panel.drawer-swap {
+    animation: none;
   }
 }
 

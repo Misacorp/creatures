@@ -44,14 +44,16 @@ function finalesOf(
   sql: SqlStorage,
   userId: string,
   limit = Number.POSITIVE_INFINITY,
+  sinceWeek = '',
 ): { weekId: string; party: number; summary: StoredSummary }[] {
   const out: { weekId: string; party: number; summary: StoredSummary }[] = [];
   // The text match only narrows the rows; the parsed member list decides.
   const rows = sql
     .exec<{ week_id: string; party: number; summary: string }>(
       `SELECT week_id, party, summary FROM raid_results
-       WHERE phase = 'finale' AND instr(summary, ?) > 0
+       WHERE week_id >= ? AND phase = 'finale' AND instr(summary, ?) > 0
        ORDER BY created_at DESC, rowid DESC`,
+      sinceWeek,
       `"userId":"${userId}"`,
     )
     .toArray();
@@ -67,10 +69,15 @@ function finalesOf(
 
 /**
  * The reveal for the latest finale the user took part in, unless they have marked it seen. Null if
- * there is none.
+ * there is none. Only finales of `sinceWeek` or later count: the week before the current one is the
+ * oldest whose fight details are kept (`old-data.ts`), and the reveal links to them.
  */
-export function latestReveal(sql: SqlStorage, userId: string): RevealView | null {
-  const latest = finalesOf(sql, userId, 1)[0];
+export function latestReveal(
+  sql: SqlStorage,
+  userId: string,
+  sinceWeek: string,
+): RevealView | null {
+  const latest = finalesOf(sql, userId, 1, sinceWeek)[0];
   if (latest === undefined) return null;
   const seen = sql
     .exec('SELECT 1 FROM raid_reveal_seen WHERE user_id = ? AND week_id = ?', userId, latest.weekId)

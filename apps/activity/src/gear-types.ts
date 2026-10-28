@@ -149,6 +149,9 @@ export type JobResult =
       marked: { baseId: string; marks: number }[];
       /** How many items Tinker's luck refunded in full (absent when none). */
       tinkered?: number;
+      /** A pile dismantle: who did it, and how many items Market Day rolled at the top of their range (absent on a timed job). */
+      creatureId?: string;
+      boosted?: number;
     } & JobCommon)
   /** A crafted supply for expeditions: `amount` of `supplyId` went into the stock. */
   | ({ kind: 'supply'; supplyId: string; amount: number } & JobCommon)
@@ -309,13 +312,6 @@ export type StartJobRequest =
       idempotencyKey: string;
     }
   | {
-      kind: 'dismantle';
-      creatureId: string;
-      itemIds: readonly string[];
-      treat?: boolean | undefined;
-      idempotencyKey: string;
-    }
-  | {
       /** Refine or recycle: the recipe decides what goes in and what comes out. */
       kind: 'convert';
       creatureId: string;
@@ -359,17 +355,30 @@ export interface CraftPreview {
   options: CraftOption[];
 }
 
-/** `POST /api/workshop/preview` for a dismantle job. */
+/** `POST /api/workshop/preview` for a pile of items to dismantle with a creature. */
 export interface DismantlePreview {
   kind: 'dismantle';
   creatureId: string;
+  /** In the order they are rolled: the most valuable first. */
   items: { id: string; baseId: string; rarity: GearRarity; itemLevel: number }[];
   range: DismantleRange;
-  durationMs: number;
+  /** The Crafting XP the creature would get (no creature experience). */
   xp: number;
   /** The chance (basis points) each item that can teach its blueprint does, with this creature; null when none can. */
   learnBp: number | null;
   teachers: number;
+  /** How many items today's Market Day would roll at the top of their range. */
+  boosted: number;
+  /** The creature's Tinker's luck chance per item, in basis points (0 without the line). */
+  tinkersLuckBp: number;
+}
+
+/**
+ * `POST /api/gear/dismantle-check`: which of some items cannot be dismantled now. Each is worn by a creature that is
+ * away on a trip or running a Workshop job whose claim reads the item live (empty when all can go).
+ */
+export interface DismantleCheck {
+  locked: { itemId: string; creatureId: string; reason: 'trip' | 'job' }[];
 }
 
 /** A worn item as a creature card shows it: the slot, the rarity and the item level. */

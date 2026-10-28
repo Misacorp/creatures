@@ -34,6 +34,7 @@ export type SceneKind =
   | 'ribbon ready'
   | 'ribbon waiting'
   | 'nickname'
+  | 'note'
   | 'evolve ready'
   | 'evolve short'
   | 'set: two pieces'
@@ -54,6 +55,7 @@ export const SCENE_KINDS: readonly SceneKind[] = [
   'ribbon ready',
   'ribbon waiting',
   'nickname',
+  'note',
   'evolve ready',
   'evolve short',
   'set: two pieces',
@@ -93,6 +95,7 @@ interface Shape {
   worn: WornRows;
   talents: CreatureTalents;
   nickname?: string;
+  note?: string;
   exp: number;
   expNeeded: number | null;
 }
@@ -250,6 +253,15 @@ function shapeOf(kind: SceneKind): Shape {
         exp: 310,
         expNeeded: 825,
       };
+    case 'note':
+      return {
+        level: 15,
+        worn: { hat: 0, scarf: 0 },
+        talents: talentsOf(twoSlots(GOLDEN, false)),
+        note: 'Ribbon at 20, then the Ember hat.\nKeep it next to the Tide Setter.',
+        exp: 310,
+        expNeeded: 825,
+      };
     case 'level 15':
       return {
         level: 15,
@@ -287,6 +299,7 @@ export function pageScene(kind: SceneKind, options: { bait?: number } = {}): Pag
     exp: shape.exp,
     expNeeded: shape.expNeeded,
     nickname: shape.nickname ?? null,
+    note: shape.note ?? null,
     gear: wornFromBag(items, PAGE_SAMPLE_ID),
     talents: shape.talents,
     ribbon: kind === 'ribbon ready' || kind === 'ribbon waiting' ? base.ribbon : null,

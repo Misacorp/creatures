@@ -19,11 +19,11 @@ export interface DataRow {
 /** The column headings of a `DataTable`, one per column. */
 export interface DataHeadings {
   /** The label column ("Player"). */
-  label: string;
-  /** The value column ("Damage"). */
-  value: string;
-  /** The extra column ("%"). Give it whenever any row has an `extra` value. */
-  extra?: string;
+  label: ComponentChildren;
+  /** The value column ("Damage"); it may hold a "?" help tag after the word. */
+  value: ComponentChildren;
+  /** The extra column ("Score"). Give it whenever any row has an `extra` value. */
+  extra?: ComponentChildren;
 }
 
 /** The classes of one row: `total` for the closing row, `mine` for the viewer's own. */
@@ -51,6 +51,7 @@ export function DataTable({
   bright = false,
   headings,
   label,
+  sorted,
   class: extra,
 }: {
   rows: readonly DataRow[];
@@ -62,6 +63,8 @@ export function DataTable({
   headings?: DataHeadings;
   /** Names a table that has `headings` for assistive technology ("Scoreboard"). */
   label?: string;
+  /** With `headings`: the column the rows are ordered by (highest first), said with `aria-sort`. */
+  sorted?: 'value' | 'extra';
   /** Where it is used (a hook for a test or a small tweak); never the look. */
   class?: string;
 }) {
@@ -82,8 +85,14 @@ export function DataTable({
         <thead>
           <tr>
             <th scope="col">{headings.label}</th>
-            <th scope="col">{headings.value}</th>
-            {wide && <th scope="col">{headings.extra ?? ''}</th>}
+            <th scope="col" {...(sorted === 'value' ? { 'aria-sort': 'descending' } : {})}>
+              {headings.value}
+            </th>
+            {wide && (
+              <th scope="col" {...(sorted === 'extra' ? { 'aria-sort': 'descending' } : {})}>
+                {headings.extra ?? ''}
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>

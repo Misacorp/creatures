@@ -18,6 +18,7 @@ import {
   quirkText,
   ribbonNeeded,
   ribbonParts,
+  sanitizeCreatureNote,
   sanitizeNickname,
   treatCost,
   wearBlock,
@@ -64,6 +65,7 @@ import { GameError, atomically, type Outcome } from './outcome';
 import { recordServerFirst, type ServerFirstKind } from './server-firsts';
 import { speciesOf } from './species';
 import type { Weather } from './weather';
+import { awaySummary, dismissAway, type AwaySummary } from './while-away';
 
 export { speciesOf } from './species';
 export type { ErrorStatus, Outcome } from './outcome';
@@ -79,6 +81,8 @@ type CreatureRow = {
   fusion_points: number;
   shiny: number;
   nickname: string | null;
+  /** The owner's private note (version 47), or null. */
+  note: string | null;
   away_expedition_id: string | null;
   origin: string;
   caught_at: number;
@@ -99,6 +103,8 @@ export interface CreatureView {
   fusionPoints: number;
   shiny: boolean;
   nickname: string | null;
+  /** The owner's private note on it, or null. This view is only ever the owner's own. */
+  note: string | null;
   away: boolean;
   origin: string;
   caughtAt: number;
@@ -226,6 +232,8 @@ export interface PlayerState {
   cancelled: CancelledView[];
   /** The one-time level reset card (levels halved, Bait refunded) until the player dismisses it, else null. */
   levelReset: LevelResetNotice | null;
+  /** What was paid while the player was away, until they dismiss it (while-away.ts), else null. */
+  awayRewards: AwaySummary | null;
   /** Expedition slots: how many there are, how many are used and what opens the next one. */
   slots: SlotsView;
   /** Supplies in stock: supply id to amount. */
@@ -272,11 +280,6 @@ export interface CollectionDeps {
    * so none of them ever consumes the draws of a catch.
    */
   tripRng: Rng;
-  /**
-   * Live randomness for picking the lounger. Optional: defaults to crypto; tests inject a seeded one.
-   * Separate from `rng`, so a pick never consumes the draws of a catch.
-   */
-  loungerRng?: Rng;
   /** The valley's weather: trips are sent under the day's Boon and Omen. Optional: without it, none. */
   weather?: Weather | undefined;
   /** The analytics event log. Optional: without it nothing is logged. */
@@ -312,7 +315,7 @@ export class Collection {
     this.lounge = new Lounge({
       storage: deps.storage,
       now: deps.now,
-      ...(deps.loungerRng === undefined ? {} : { rng: deps.loungerRng }),
+      gameDay: () => deps.gameDay?.() ?? '',
     });
     this.choices = new CatchChoices({
       storage: deps.storage,
@@ -426,6 +429,7 @@ export class Collection {
       fusionPoints: Math.max(row.fusion_points, fusionThreshold(row.fusion_count)),
       shiny: row.shiny === 1,
       nickname: row.nickname,
+      note: row.note,
       away,
       origin: row.origin,
       caughtAt: row.caught_at,
@@ -542,6 +546,7 @@ export class Collection {
       expeditions: trips.expeditions,
       cancelled: trips.cancelled,
       levelReset: pendingLevelReset(this.sql, userId),
+      awayRewards: awaySummary(this.sql, userId, this.deps.now()),
       slots: trips.slots,
       supplies: trips.supplies,
       serverFirsts: this.serverFirsts(userId),
@@ -557,6 +562,11 @@ export class Collection {
   /** Dismisses the one-time level reset card (repeats change nothing). */
   dismissLevelReset(userId: string): void {
     dismissLevelReset(this.sql, userId, this.deps.now());
+  }
+
+  /** Clears the while-away card the player was shown (`until` is its last payout; repeats change nothing). */
+  dismissAway(userId: string, until: number): void {
+    dismissAway(this.sql, userId, until);
   }
 
   // --- Starter ---
@@ -771,6 +781,27 @@ export class Collection {
       }
       this.sql.exec('UPDATE creatures SET nickname = ? WHERE id = ?', value, creature.id);
       return { nickname: value };
+    });
+  }
+
+  // --- Notes ---
+
+  /** The owner's private note on a creature; `null` or empty removes it. Only the cleaned text is stored. */
+  setNote(
+    userId: string,
+    creatureId: string,
+    raw: string | null,
+  ): Outcome<{ note: string | null }> {
+    return this.atomically(() => {
+      const creature = this.ownedCreature(userId, creatureId);
+      let value: string | null = null;
+      if (raw !== null) {
+        const clean = sanitizeCreatureNote(raw);
+        if (!clean.ok) throw new GameError(400, 'invalid_note', clean.reason);
+        value = clean.value;
+      }
+      this.sql.exec('UPDATE creatures SET note = ? WHERE id = ?', value, creature.id);
+      return { note: value };
     });
   }
 }

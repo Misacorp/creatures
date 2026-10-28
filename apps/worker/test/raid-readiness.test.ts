@@ -1,6 +1,7 @@
 import { createSeededRng, readinessBand, type ReadinessBand, type Rng } from '@creatures/game';
 import { forecastFinale, forecastWeek } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
+import { GuildCore } from '../src/guild-core';
 import { READINESS_MAX_AGE_MS, READINESS_MIN_INTERVAL_MS } from '../src/raid-readiness';
 import { buildPhaseInput } from '../src/raid-resolve';
 import { eventTimes } from '../src/raid-schedule';
@@ -14,6 +15,7 @@ import {
   runRaid,
   scriptedThenSeeded,
   seedPlayer,
+  joinRaid,
   type Seeded,
 } from './raid-helpers';
 import { captureConsole } from './kit';
@@ -36,8 +38,9 @@ const SECOND = 1000;
 
 /** Seeds `n` players and opens the week; the clock stays on Monday. */
 function open(ctx: CoreContext, n = 4, level = 12): Seeded[] {
+  // Everyone is active first, then they all place their creatures (so 16 players make two parties).
   const players = Array.from({ length: n }, (_, i) => seedPlayer(ctx, i + 1, { level }));
-  ctx.core.raid.currentWeek(HELSINKI);
+  joinRaid(ctx, players);
   return players;
 }
 
@@ -55,9 +58,14 @@ describe('the readiness band in the raid view', () => {
         const json = JSON.stringify(view.party);
         expect(json).not.toMatch(/margin|forecast|odds|chance|percent/i);
         expect(typeof view.party?.readiness).toBe('string');
-        // A player who is not in a party has no party block, so no band.
-        const outsider = seedPlayer(ctx, 90, { lastSeenAt: 0 });
+        // A player with no creature has no party block, so no band.
+        const outsider = seedPlayer(ctx, 90, { creatures: 0 });
         expect(ctx.core.raid.view(outsider.id, HELSINKI).party).toBeNull();
+        // A player who has not joined yet sees the party they would join, and its band.
+        const watcher = seedPlayer(ctx, 91);
+        const shown = ctx.core.raid.view(watcher.id, HELSINKI).party;
+        expect(shown?.party).toBe(1);
+        expect(shown?.readiness).toBe(view.party?.readiness);
       },
       { start: W02.monday, core: { readinessRng: createSeededRng('r') } },
     );
@@ -204,6 +212,32 @@ describe('the readiness band in the raid view', () => {
         ctx.clock.t += READINESS_MAX_AGE_MS;
         bandOf(ctx, a);
         expect(rng.drawn()).toBeGreaterThan(afterChange);
+      },
+      { start: W02.monday, core: { readinessRng: rng } },
+    );
+  });
+
+  it('is stored, so an object that slept and started again does not compute it again', async () => {
+    const rng = countingRng('stored');
+    await runRaid(
+      (ctx) => {
+        const [a] = open(ctx) as [Seeded, ...Seeded[]];
+        const first = bandOf(ctx, a);
+        const drawn = rng.drawn();
+        expect(drawn).toBeGreaterThan(0);
+        // A new core on the same storage: what a wake after hibernation builds.
+        const woken = countingRng('woken');
+        const again = new GuildCore(ctx.storage, () => ctx.clock.t, {
+          guildId: () => ctx.guildId,
+          readinessRng: woken,
+        });
+        expect(again.raid.view(a.id, HELSINKI).party?.readiness).toBe(first);
+        expect(woken.drawn()).toBe(0);
+        // A change made through the new object still marks the stored band stale.
+        ctx.clock.t += READINESS_MIN_INTERVAL_MS + SECOND;
+        expect(again.raid.place(a.id, HELSINKI, a.creatureIds[0] as string, 0).ok).toBe(true);
+        again.raid.view(a.id, HELSINKI);
+        expect(woken.drawn()).toBeGreaterThan(0);
       },
       { start: W02.monday, core: { readinessRng: rng } },
     );

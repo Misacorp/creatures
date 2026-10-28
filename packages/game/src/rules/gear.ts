@@ -169,6 +169,11 @@ export interface WorkshopMods {
   stepUpBonusBp?: number;
   /** A dismantle refund rolls the top of every range. */
   dismantleTopOfRange?: boolean;
+  /**
+   * A pile dismantle (2026-10-27): only the first this many items of the pile (the most valuable, see
+   * `pileOrder`) roll the top of their range. The day's first 2 dismantles are counted in items.
+   */
+  dismantleTopItems?: number;
 }
 
 /** The result of a dismantle claim: parts, and Essence (which goes to the ledger, not to the parts). */
@@ -194,11 +199,13 @@ export function rollDismantle(
   mods: WorkshopMods = {},
   tinkersLuckBp = 0,
 ): DismantleRoll {
-  const top = mods.dismantleTopOfRange === true;
+  const topAll = mods.dismantleTopOfRange === true;
+  const topItems = mods.dismantleTopItems ?? 0;
   const parts: PartsBundle = {};
   let essence = 0;
   let tinkered = 0;
-  for (const item of items) {
+  for (const [index, item] of items.entries()) {
+    const top = topAll || index < topItems;
     const r = itemRange(item);
     const element = tagElement(itemBase(item).tag);
     const own: PartsBundle = {};
@@ -226,6 +233,25 @@ export function rollDismantle(
   return { parts, essence, ...(tinkered > 0 ? { tinkered } : {}) };
 }
 
+/**
+ * The order a pile is rolled and listed in: the most valuable first (rarity, highest first, then item level,
+ * highest first; ties keep the given order). Market Day's bonus goes to the first items of this order.
+ */
+export function pileOrder<T extends { rarity: GearRarity; itemLevel: number }>(
+  items: readonly T[],
+): T[] {
+  const rank: Record<GearRarity, number> = { common: 0, rare: 1, epic: 2 };
+  return items
+    .map((item, index) => ({ item, index }))
+    .sort(
+      (a, b) =>
+        rank[b.item.rarity] - rank[a.item.rarity] ||
+        b.item.itemLevel - a.item.itemLevel ||
+        a.index - b.index,
+    )
+    .map((e) => e.item);
+}
+
 /** Why a set of items cannot go in one dismantle job, or null: Commons bundle up to 5, anything else goes alone. */
 export function dismantleBundleError(
   rarities: readonly GearRarity[],
@@ -247,6 +273,19 @@ export function dismantleXp(rarity: GearRarity, extraBp = 0): number {
     RULES.gear.dismantle.minXp,
     Math.floor(dismantleHours(rarity) * RULES.gear.skill.xpPerHour),
   );
+  return Math.floor((base * (10_000 + extraBp)) / 10_000);
+}
+
+/**
+ * Crafting XP of a pile dismantle (2026-10-27): what the old timed jobs would have paid for the same items.
+ * Those bundled up to `bundleMax` Commons into one job (`dismantleXp('common')` each, 6) and took every Rare
+ * (12) and Epic (24) alone, so the total is that sum; Apprentice adds its share once, to the total. A pile
+ * gives the creature no creature experience.
+ */
+export function pileDismantleXp(rarities: readonly GearRarity[], extraBp = 0): number {
+  const commons = rarities.filter((r) => r === 'common').length;
+  let base = Math.ceil(commons / RULES.gear.dismantle.bundleMax) * dismantleXp('common');
+  for (const r of rarities) if (r !== 'common') base += dismantleXp(r);
   return Math.floor((base * (10_000 + extraBp)) / 10_000);
 }
 

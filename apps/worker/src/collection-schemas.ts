@@ -46,6 +46,11 @@ export const PushOnBodySchema = v.strictObject({ goalId: v.picklist(GOAL_IDS) })
 /** Claiming takes no input: the expedition id is in the path and the user is the session's. */
 export const ClaimBodySchema = v.strictObject({});
 
+/** Dismissing the while-away card names the last payout it showed, so a later payout is not cleared unseen. */
+export const DismissAwayBodySchema = v.strictObject({
+  until: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(Number.MAX_SAFE_INTEGER)),
+});
+
 /** Dismissing the one-time level reset card carries nothing. */
 export const DismissLevelResetBodySchema = v.strictObject({});
 
@@ -97,6 +102,11 @@ export const EvolveBodySchema = v.strictObject({
 /** Length and character rules are applied by `sanitizeNickname`, which reports a reason. */
 export const NicknameBodySchema = v.strictObject({
   nickname: v.nullable(v.string()),
+});
+
+/** A creature's private note (null removes it); the length and characters are checked by `sanitizeCreatureNote`. */
+export const NoteBodySchema = v.strictObject({
+  note: v.nullable(v.pipe(v.string(), v.maxLength(RULES.creatureNote.maxRawLength))),
 });
 
 /** Choosing the lounger: the player is the session's. */

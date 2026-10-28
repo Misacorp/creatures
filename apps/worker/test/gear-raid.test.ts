@@ -31,6 +31,7 @@ import {
   nextGuild,
   rows,
   runRaid,
+  seedMember,
   seedPlayer,
   storedRuns,
   weekPayout,
@@ -85,7 +86,7 @@ const scrapOf = (ctx: CoreContext, userId: string): number =>
 
 /** Seeds `n` players and opens the week. */
 function openWeek(ctx: CoreContext, n: number, level = 15): Seeded[] {
-  const players = Array.from({ length: n }, (_, i) => seedPlayer(ctx, i + 1, { level }));
+  const players = Array.from({ length: n }, (_, i) => seedMember(ctx, i + 1, { level }));
   ctx.core.raid.currentWeek(HELSINKI);
   return players;
 }
@@ -325,7 +326,7 @@ describe('the Festival piece', () => {
     await runRaid(
       (ctx) => {
         const week = festival(4); // 2027-W06
-        Array.from({ length: 4 }, (_, i) => seedPlayer(ctx, i + 1, { level: 15 }));
+        Array.from({ length: 4 }, (_, i) => seedMember(ctx, i + 1, { level: 15 }));
         ctx.clock.t = week.monday;
         ctx.sql.exec('UPDATE players SET last_seen_at = ?', ctx.clock.t);
         ctx.core.raid.runDue(HELSINKI);
@@ -388,7 +389,7 @@ describe('the Festival piece', () => {
     await runRaid(
       (ctx) => {
         const week = festival(4);
-        Array.from({ length: 3 }, (_, i) => seedPlayer(ctx, i + 1, { level: 3 }));
+        Array.from({ length: 3 }, (_, i) => seedMember(ctx, i + 1, { level: 3 }));
         ctx.clock.t = week.monday;
         ctx.sql.exec('UPDATE players SET last_seen_at = ?', ctx.clock.t);
         ctx.core.raid.runDue(HELSINKI);
@@ -575,7 +576,7 @@ describe('gear in fights', () => {
   it('counts gear in a creature’s power, so the automatic team prefers the geared creature', async () => {
     await runRaid(
       (ctx) => {
-        const a = seedPlayer(ctx, 1, {
+        const a = seedMember(ctx, 1, {
           level: 5,
           creatures: 4,
           species: ['splashet', 'cindle', 'sproutle', 'zipmouse'],
@@ -662,7 +663,7 @@ describe('stats freeze when the live finale starts', () => {
   it('uses the gear worn at the start; later changes never touch the stored fight, and it replays exactly', async () => {
     await runRaid(
       (ctx) => {
-        const players = Array.from({ length: 2 }, (_, i) => seedPlayer(ctx, i + 1, { level: 12 }));
+        const players = Array.from({ length: 2 }, (_, i) => seedMember(ctx, i + 1, { level: 12 }));
         ctx.core.raid.currentWeek(HELSINKI);
         ctx.clock.t = W02.afterPhase2;
         ctx.core.raid.runDue(HELSINKI);
@@ -749,7 +750,7 @@ describe('expedition loot', () => {
   async function explorer(ctx: CoreContext, n: number, species?: string[]) {
     // Early in the raid week, so no phase resolves while the trips run.
     ctx.clock.t = Date.parse('2027-01-12T06:00:00Z');
-    const seeded = seedPlayer(ctx, n, {
+    const seeded = seedMember(ctx, n, {
       level: 5,
       ...(species === undefined ? {} : { species }),
     });

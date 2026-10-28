@@ -2,6 +2,8 @@
 
 Status: **built, 2026-10-14** (all ten slices and the decided items; the raid fight stage got the same lane grid as the board). The raid structure section below was built with the attack patterns (PR #24). Details of each slice are in `decisions.md` (2026-10-14 entries). It comes from Misa's review of the raid page on a phone. It is the next build after PR #18 (the left-to-right dungeon), and it goes **before or together with** the attack-pattern build (`attack-patterns.md`), because the patterns need a board where rows, lanes and neighbours are easy to see.
 
+> **Later (2026-10-26):** a player's raid creatures are now only the ones they placed; nothing is filled in with their strongest and nothing is auto-placed, and joining the raid is placing the first creature (`decisions.md`, "Raids: you join by placing; no auto teams"). The "The model" section below describes the version before that.
+
 ## Misa's asks (verbatim intent)
 
 1. **Raid rows wrap uncomfortably on mobile, so adjacency is hard to read.** In the placement board, the Front, Middle and Back zones each wrap into lines of four, then three. Slot 4 and slot 5 are neighbours in the engine but sit on different lines, and slot 11 (the end of Front) is a neighbour of slot 12 (the start of Middle).

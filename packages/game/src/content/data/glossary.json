@@ -113,9 +113,9 @@
     "title": "Support",
     "short": "Powers up its neighbours.",
     "lines": [
-      "Each round it boosts the creatures right next to it. In the raid its reach stops at the row's edge.",
-      "Their next hit deals 15% more damage.",
+      "Each round, its neighbours' next hit deals 15% more damage. In the raid its reach stops at the row's edge.",
       "By element: Ember boosts 25%, Spark adds reaction damage, Tide and Grove heal (Tide clears silence too).",
+      "Mire has no element boost: a Mire Support's own ability leaves the boss Mired instead.",
       "Nothing reaches past a knocked-out neighbour. A knocked-out or silenced Support gives nothing."
     ],
     "visual": {
@@ -637,6 +637,22 @@
     "short": "Phase 1 or 2 floor: the boss goes immune, the fight ends, extra damage is lost.",
     "lines": [],
     "section": "raid-week"
+  },
+  {
+    "id": "raid-scoreboard",
+    "title": "Damage and score",
+    "short": "Damage is what really hit the boss. Score is everything done for the raid.",
+    "lines": [
+      "Damage: every hit in full, its reaction bonus too, and Echo and Riposte hits. It adds up to the HP the boss lost.",
+      "Score: a creature's own hits, less 60% of each reaction's bonus, which goes to the creature that left the mark.",
+      "Supports score their boosts' extra damage and the HP they heal. Guards score what they take or stop for others.",
+      "Part of the Essence follows the score. Tap Damage or Score to order the table by it."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "blade"
+    },
+    "section": "rewards"
   },
   {
     "id": "enrage",

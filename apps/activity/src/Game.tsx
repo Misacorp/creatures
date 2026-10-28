@@ -2,6 +2,7 @@ import type { RefObject } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
   chooseStarter,
+  dismissAway,
   dismissLevelReset,
   fetchState,
   setLoungeSpot,
@@ -12,6 +13,7 @@ import {
   type GameState,
   type LeetSyncStatus,
   type LoungeSpot,
+  type LoungeXpPush,
   type SessionUser,
 } from './api';
 import { ActionIds } from './actions';
@@ -44,7 +46,7 @@ import type { ChoiceResult } from './talent-types';
 import { errorText } from './game';
 import { loaded, type Loaded } from './loaded-state';
 import type { ParticipantSource } from './participants';
-import { settleClaim } from './room-data';
+import { applyLoungeXp, settleClaim } from './room-data';
 import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
 import { Dungeon } from './Dungeon';
@@ -255,6 +257,18 @@ export function Game({
     return true;
   }
 
+  /**
+   * Lounging paid your lounger (pushed over the live socket): the bar and the XP move in place. A level-up,
+   * a ribbon wait or a creature this screen does not know is one normal background reload instead.
+   */
+  function applyPaid(push: LoungeXpPush): void {
+    if (applyLoungeXp(game, push) === null) {
+      refreshState();
+      return;
+    }
+    setCurrent((now) => ({ ...now, game: applyLoungeXp(now.game, push) ?? now.game }));
+  }
+
   // The pips of the main navigation and the timers that keep them true.
   const alerts = useTabPips({
     expeditions: game.expeditions,
@@ -346,6 +360,7 @@ export function Game({
       state: game,
       craftingLevels,
       loungeLive,
+      onLoungeXp: applyPaid,
       ...(gear === null ? {} : { gearItems: gear.items }),
     },
     game,
@@ -565,6 +580,11 @@ export function Game({
                   onHelp();
                 }}
                 howToRef={boardHelpRef}
+                away={game.awayRewards}
+                awayBusy={busy}
+                onDismissAway={(until) => {
+                  void run(() => dismissAway(until)).then(showState);
+                }}
                 onGo={(place, needsFilter) => {
                   goTo(place, needsFilter === true ? { needsFilter } : {});
                   refreshState();

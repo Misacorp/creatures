@@ -19,25 +19,29 @@
       "displayName": "Misa",
       "you": true,
       "damage": 2775,
-      "contribution": 2775
+      "score": 2775,
+      "assist": 0
     },
     {
       "displayName": "Bob",
       "you": false,
       "damage": 2360,
-      "contribution": 2360
+      "score": 2360,
+      "assist": 0
     },
     {
       "displayName": "Dee",
       "you": false,
       "damage": 1584,
-      "contribution": 1846
+      "score": 1846,
+      "assist": 262
     },
     {
       "displayName": "Cy",
       "you": false,
       "damage": 1500,
-      "contribution": 3784
+      "score": 3784,
+      "assist": 2284
     }
   ],
   "creatures": [
@@ -48,7 +52,7 @@
       "owner": "Bob",
       "you": false,
       "damage": 1400,
-      "contribution": 1400
+      "score": 1400
     },
     {
       "rank": 2,
@@ -57,7 +61,7 @@
       "owner": "Misa",
       "you": true,
       "damage": 1395,
-      "contribution": 1395
+      "score": 1395
     },
     {
       "rank": 3,
@@ -66,7 +70,7 @@
       "owner": "Misa",
       "you": true,
       "damage": 820,
-      "contribution": 820
+      "score": 820
     },
     {
       "rank": 4,
@@ -75,7 +79,7 @@
       "owner": "Dee",
       "you": false,
       "damage": 644,
-      "contribution": 644
+      "score": 644
     },
     {
       "rank": 5,
@@ -84,7 +88,7 @@
       "owner": "Cy",
       "you": false,
       "damage": 560,
-      "contribution": 1406
+      "score": 1406
     },
     {
       "rank": 6,
@@ -93,7 +97,7 @@
       "owner": "Misa",
       "you": true,
       "damage": 560,
-      "contribution": 560
+      "score": 560
     }
   ],
   "reactions": [

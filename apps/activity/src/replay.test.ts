@@ -370,6 +370,16 @@ describe('personalRecap', () => {
     expect(recap.creatures.find((c) => c.id === 'x')).toBeUndefined();
   });
 
+  it('counts Echo and Riposte hits as damage, like the raid results do (#86)', () => {
+    const extra: FightEvent[] = [
+      ...events,
+      { t: 'proc', round: 2, creature: 'a', kind: 'echo', amount: 30, bossHp: 0 },
+      { t: 'proc', round: 2, creature: 'a', kind: 'riposte', amount: 7, bossHp: 0 },
+      { t: 'proc', round: 2, creature: 'a', kind: 'stubborn' },
+    ];
+    expect(personalRecap(extra, row, ['a']).creatures[0]?.damage).toBe(137);
+  });
+
   it('counts a setup as wasted for the creature whose mark was overwritten', () => {
     const recap = personalRecap(events, row, ['x']);
     expect(recap.creatures[0]).toMatchObject({ id: 'x', wasted: 1, damage: 50 });

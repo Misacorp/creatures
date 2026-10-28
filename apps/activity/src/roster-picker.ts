@@ -1,6 +1,6 @@
 /**
  * What the Raid Roster says and offers, as plain data: how many creatures a player has on the board,
- * the line about when the rest join, and the options of the creature picker (who can be placed in a
+ * the line about joining and what they bring, and the options of the creature picker (who can be placed in a
  * slot, who is already on the board, what the board refuses). Pure: `ui/RosterPicker.tsx` draws the
  * picker and `Placement.tsx` wires it to the game. The server still decides every placement.
  */
@@ -9,9 +9,8 @@ import { RULES, content, creaturePower, strongest } from '@creatures/game';
 import type { Creature } from './api';
 import type { GearRarity } from './gear-types';
 import { creatureName, getSpecies, speciesName } from './game';
-import type { AwayView, RaidEventId, RowSlotView } from './raid-api';
+import type { RowSlotView } from './raid-api';
 import { boardAffectRow, boardKeys, parseTurnOrder } from './raid-board';
-import { phaseName } from './raid-text';
 
 /**
  * Whether each picker option has a line saying what the creature would do in the slot being filled
@@ -69,9 +68,9 @@ export function toPickerCreature(c: Creature): PickerCreature {
 }
 
 /**
- * The ids of the player's three strongest creatures: the same ranking as the server's automatic team
- * (`strongest` of `@creatures/game`, which `autoTeam` uses). It ignores slot rules: it is the same
- * three whatever slot is being filled.
+ * The ids of the player's three strongest creatures (`strongest` of `@creatures/game`), the ones the
+ * picker tags "Recommended". It ignores slot rules: it is the same three whatever slot is being filled.
+ * Nothing is placed for the player: it is only a hint.
  */
 export function recommendedIds(creatures: readonly PickerCreature[]): ReadonlySet<string> {
   return new Set(strongest(creatures, RECOMMENDED_COUNT).map((c) => c.id));
@@ -113,7 +112,14 @@ export interface PickerOption {
    * The item this creature already wears in the slot the option is for (the Workshop's "Equip on" list): drawn
    * as a small item tile at the right end of the row. Absent: the slot is empty, and nothing is drawn.
    */
-  worn?: { baseId: string; rarity: GearRarity; itemLevel: number };
+  worn?: WornItem | readonly WornItem[];
+}
+
+/** An item a creature wears, as the list draws it (a small tile). */
+export interface WornItem {
+  baseId: string;
+  rarity: GearRarity;
+  itemLevel: number;
 }
 
 /**
@@ -140,7 +146,7 @@ export function baseOption(
 
 /** How many of the player's creatures are on the board. */
 export function placedCount(row: readonly RowSlotView[]): number {
-  return row.filter((s) => s.creature?.mine === true && !s.creature.auto).length;
+  return row.filter((s) => s.creature?.mine === true).length;
 }
 
 /**
@@ -163,19 +169,15 @@ export function placedLine(placed: number): string {
 }
 
 /**
- * The quiet line under the count, or null when there is nothing to add: "The rest join
- * automatically when Phase 1 locks." while fewer than three are placed (`next` is the view's next
- * event, its lock), "The board is locked." once edits are closed, nothing when all three are placed.
+ * The quiet line under the count, or null when there is nothing to add: "Place a creature to join this
+ * week's raid." while none is placed (placing the first one joins the player), "You bring only what you
+ * place." while one or two are, "The board is locked." once edits are closed, nothing when all three are placed.
  */
-export function rosterNote(
-  placed: number,
-  next: { event: RaidEventId } | null,
-  canEdit: boolean,
-): string | null {
+export function rosterNote(placed: number, canEdit: boolean): string | null {
   if (!canEdit) return 'The board is locked.';
+  if (placed === 0) return "Place a creature to join this week's raid.";
   if (allPlaced(placed)) return null;
-  const when = next === null || next.event === 'weekStart' ? 'the board' : phaseName(next.event);
-  return `The rest join automatically when ${when} locks.`;
+  return 'You bring only what you place.';
 }
 
 /** The slot's place as the picker's title says it: "Middle, lane 3". */
@@ -231,40 +233,6 @@ export function effectPreview(args: {
   return parts.length === 0 ? null : parts.join(' · ');
 }
 
-/** Why an away teammate's joining creature is not offered as a swap-in. */
-export const ALREADY_JOINING = 'Already joining the fight';
-
-/**
- * The options of the swap picker for an away teammate's creature: everything they own. The ones that
- * are not in the fight come first (picking one takes the tile's place); the ones already joining stay
- * listed but cannot be picked. Highest level first. No effect preview, no recommendation.
- */
-export function awayPickerOptions(creatures: AwayView['creatures']): PickerOption[] {
-  const options = creatures.map((c): PickerOption => {
-    const species = getSpecies(c.species);
-    return {
-      id: c.creatureId,
-      name: c.name,
-      species: c.species,
-      level: c.level,
-      element: species?.element ?? 'unknown',
-      role: species?.role ?? '',
-      onBoard: false,
-      disabled: c.joining ? ALREADY_JOINING : null,
-      effect: null,
-      recommended: false,
-    };
-  });
-  const rank = (o: PickerOption): number => (o.disabled === null ? 0 : 1);
-  return options.sort(
-    (a, b) =>
-      rank(a) - rank(b) ||
-      b.level - a.level ||
-      a.name.localeCompare(b.name) ||
-      (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
-  );
-}
-
 /**
  * The options for filling the empty `slot` of the raid board: every creature the player owns. Those
  * that are free come first, then those already on the board (picking moves them), then, when the
@@ -282,7 +250,7 @@ export function pickerOptions(args: {
   const { row, length } = args;
   const onBoard = new Set(
     row.flatMap((s) =>
-      s.creature?.mine === true && !s.creature.auto && s.creature.creatureId !== undefined
+      s.creature?.mine === true && s.creature.creatureId !== undefined
         ? [s.creature.creatureId]
         : [],
     ),

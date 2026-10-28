@@ -61,57 +61,6 @@
   line-height: 1;
 }
 
-/* A creature nobody placed: it joins by itself. Dashed outline, and a small "auto" tag at the bottom. */
-.party-slot.auto {
-  border-style: dashed;
-}
-
-/*
-  And muted, so it reads as a suggestion beside the tiles somebody placed: a faded, half-desaturated
-  sprite and the quiet text colour (--haze on --dusk is about 6.5:1, above the 4.5:1 AA needs). The
-  text keeps full opacity, so it stays readable. Hover, focus and a drag over it bring
-  the full look back so the tile never looks disabled.
-*/
-.party-slot.auto canvas.sprite {
-  opacity: 0.6;
-  filter: saturate(0.5);
-  transition: opacity 0.12s;
-}
-
-.party-slot.auto .slot-species,
-.party-slot.auto .slot-meta {
-  color: var(--haze);
-}
-
-.party-slot.auto:hover canvas.sprite,
-.party-slot.auto:focus-visible canvas.sprite,
-.party-slot.auto.drop-over canvas.sprite,
-.party-slot.auto.draggable:active canvas.sprite {
-  opacity: 1;
-  filter: none;
-}
-
-.party-slot.auto:hover .slot-species,
-.party-slot.auto:hover .slot-meta,
-.party-slot.auto:focus-visible .slot-meta,
-.party-slot.auto.drop-over .slot-meta,
-.party-slot.auto:focus-visible .slot-species,
-.party-slot.auto.drop-over .slot-species {
-  color: inherit;
-}
-
-.party-slot .slot-auto {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  padding: 0 0.25rem;
-  background: var(--line);
-  color: var(--bone);
-  font-size: 0.5625rem;
-  line-height: 1.2;
-  text-transform: uppercase;
-}
-
 /*
   The single-row mode (the dungeon team's places): no label column, no lane header and no scroller.
   The row is centred with roomy padding, and the tiles are the raid's own size and look, with the

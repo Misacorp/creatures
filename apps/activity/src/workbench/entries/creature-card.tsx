@@ -30,6 +30,7 @@ const actions: CardActions = {
   onRibbon: () => undefined,
   onEvolve: () => undefined,
   onRename: () => undefined,
+  onNote: () => undefined,
   onLounge: () => undefined,
   onSlotTalent: () => undefined,
 };
@@ -241,6 +242,8 @@ const creatureCard: Entry = {
 const gearActions: GearActions = {
   equip: () => Promise.resolve(undefined),
   equipBest: () => Promise.resolve(undefined),
+  checkDismantle: () => Promise.resolve({ locked: [] }),
+  dismantlePile: () => Promise.resolve(undefined),
   dismissNotice: () => Promise.resolve(undefined),
   startJob: () => Promise.resolve(undefined),
   previewCraft: () => new Promise(() => undefined),

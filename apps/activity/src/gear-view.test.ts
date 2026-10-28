@@ -13,7 +13,10 @@ import {
   busyReason,
   defaultPick,
   detailLines,
-  dismantleDurationFor,
+  itemsWithIds,
+  pileQuestion,
+  pileText,
+  wornAmong,
   dismantleCountItems,
   durationCountItem,
   nominalDurationCountItem,
@@ -56,7 +59,7 @@ import {
   wornInOrder,
   wornItemOf,
 } from './gear-view';
-import type { GrantLoot } from './gear-types';
+import type { GearItem, GrantLoot } from './gear-types';
 
 /** Keeps what the parser logs for an entry it leaves out out of the test output, and returns it. */
 function silenceErrors(): { messages: string[]; restore: () => void } {
@@ -783,12 +786,60 @@ describe("writing the odds, the marks and the refund ranges (the numbers are the
       amount: '3 h',
     });
   });
+});
 
-  it('shows the time of a dismantle for the rarity and the worker', () => {
-    expect(dismantleDurationFor('common', 1)).toBe(15 * 60_000);
-    expect(dismantleDurationFor('rare', 1)).toBe(60 * 60_000);
-    expect(dismantleDurationFor('epic', 1)).toBe(2 * 60 * 60_000);
-    expect(dismantleDurationFor('epic', 5)).toBeLessThan(dismantleDurationFor('epic', 1));
+describe('selected items and the pile', () => {
+  const base = gear.items[0] as GearItem;
+  const make = (
+    id: string,
+    rarity: GearItem['rarity'],
+    itemLevel: number,
+    extra: Partial<GearItem> = {},
+  ): GearItem => ({
+    ...base,
+    id,
+    rarity,
+    itemLevel,
+    equippedOn: null,
+    ...extra,
+  });
+  const bag = [
+    make('c1', 'common', 3),
+    make('c2', 'common', 12),
+    make('c3', 'common', 4, { equippedOn: 'a-creature' }),
+    make('r1', 'rare', 5),
+    make('e1', 'epic', 2),
+  ];
+
+  it('lists the items with the picked ids in the grid order', () => {
+    expect(itemsWithIds(bag, new Set(['c2'])).map((i) => i.id)).toEqual(['c2']);
+    // The grid's order: the rarest first, then the higher level (ids that are not in the bag are ignored).
+    expect(itemsWithIds(bag, new Set(['c1', 'r1', 'e1', 'gone'])).map((i) => i.id)).toEqual([
+      'e1',
+      'r1',
+      'c1',
+    ]);
+    expect(itemsWithIds(bag, new Set())).toEqual([]);
+  });
+
+  it('finds the worn items of a pile, the ones the warning step lists', () => {
+    expect(wornAmong(bag).map((i) => i.id)).toEqual(['c3']);
+    expect(wornAmong(bag.filter((i) => i.id !== 'c3'))).toEqual([]);
+  });
+
+  it('words the pile by rarity, commonest first, and asks about it', () => {
+    const pile = [
+      ...Array.from({ length: 20 }, (_, i) => make(`c${String(i)}`, 'common', 1)),
+      make('r1', 'rare', 1),
+      make('r2', 'rare', 1),
+      make('r3', 'rare', 1),
+    ];
+    expect(pileText(pile)).toBe('20 Common, 3 Rare');
+    expect(pileQuestion(pile)).toBe('Dismantle 23 items (20 Common, 3 Rare)?');
+    expect(pileText([make('e', 'epic', 1), make('c', 'common', 1)])).toBe('1 Common, 1 Epic');
+    expect(pileQuestion([make('one', 'rare', 1, { baseId: 'kelp-cap' })])).toBe(
+      'Dismantle Kelp Cap?',
+    );
   });
 });
 

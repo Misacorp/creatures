@@ -15,9 +15,9 @@ import {
   type Stats,
 } from '@creatures/game';
 import { speciesOf } from './collection';
-import { equippedByCreature, wearerOf, type WornBySlot } from './gear-store';
+import { equippedByCreature, wearerOf, wornOnCreatures, type WornBySlot } from './gear-store';
 import { foldCreature } from './gear-worn';
-import { booksByCreature, foldTalentsOf } from './talent-store';
+import { booksByCreature, booksOfCreatures, foldTalentsOf } from './talent-store';
 import type { HeldTalent } from '@creatures/game';
 
 export const RAID_PHASE_STATUSES = ['open', 'phase1', 'phase2', 'finale'] as const;
@@ -127,11 +127,10 @@ export function loadCreatures(
 }
 
 /**
- * The automatic team: the player's strongest creatures by power (at most `teamSize`). Ties go to
- * the older creature, then the smaller id, so the pick never depends on storage order.
- *
- * Creatures away on an expedition are NOT excluded: they still fight (see
- * `docs/design/m4-raids.md`, "Away creatures"). Expeditions and raids do not block each other.
+ * The strongest creatures by power (at most `teamSize`), ties to the older creature, then the smaller
+ * id, so the order never depends on storage order. A raid team is sorted this way (strongest first),
+ * so the order never depends on where or when a creature was placed. Nobody's creatures are picked
+ * for them: this only orders the creatures a player placed.
  */
 export function autoTeam(creatures: readonly TeamCreature[]): TeamCreature[] {
   return strongest(creatures, RULES.raid.teamSize);
@@ -144,9 +143,6 @@ export type PlacementRow = {
   user_id: string;
   creature_id: string;
 };
-
-/** A placement with who put it there: null is the owner, otherwise the teammate who moved it for them. */
-export type PartyPlacementRow = PlacementRow & { placed_by: string | null };
 
 /**
  * At most `teamSize` placements per player, chosen deterministically: creatures in `preferred`
@@ -183,16 +179,11 @@ export function capPlacements<T extends PlacementRow>(
  * The placements of one party this week, at most three per player (see `capPlacements`). Only
  * creatures their placing player still owns count.
  */
-export function partyPlacements(
-  sql: SqlStorage,
-  weekId: string,
-  party: number,
-): PartyPlacementRow[] {
+export function partyPlacements(sql: SqlStorage, weekId: string, party: number): PlacementRow[] {
   return capPlacements(
     sql
-      .exec<PartyPlacementRow>(
-        `SELECT p.rowid AS rowid, p.slot AS slot, p.user_id AS user_id, p.creature_id AS creature_id,
-                p.placed_by AS placed_by
+      .exec<PlacementRow>(
+        `SELECT p.rowid AS rowid, p.slot AS slot, p.user_id AS user_id, p.creature_id AS creature_id
          FROM raid_placements p JOIN creatures c ON c.id = p.creature_id AND c.user_id = p.user_id
          WHERE p.week_id = ? AND p.party = ? ORDER BY p.rowid`,
         weekId,
@@ -208,19 +199,16 @@ export function teamPower(team: readonly TeamCreature[]): number {
 }
 
 /**
- * The creatures a player brings to this week's raid: the ones they placed on the board (at most
- * three, see `capPlacements`; a placement of a creature they no longer own does not count), then
- * their strongest unplaced creatures to make up three (`autoTeam` order). A player who placed
- * nothing gets the automatic team. Sorted strongest first, so the order never depends on where or
- * when a creature was placed.
- *
- * The fill is not stored: it is worked out again whenever a fight is built, so the three are
- * always the player's strongest at that moment. Placed creatures always fight, wherever they are.
+ * The creatures a player brings to this week's raid: the ones they placed on the board, and only
+ * those (at most three, see `capPlacements`; a placement of a creature they no longer own does not
+ * count). Nothing is picked for them: a player who placed nothing brings nothing and is not in the
+ * raid. Loaded by id, with gear and talents folded in (never the whole collection). Sorted strongest
+ * first, so the order never depends on where or when a creature was placed.
  */
 export function raidTeam(sql: SqlStorage, weekId: string, userId: string): TeamCreature[] {
-  const owned = loadCreatures(sql, userId);
-  const byId = new Map(owned.map((c) => [c.id, c]));
-  const placedRows = capPlacements(
+  return teamOfPlacements(
+    sql,
+    userId,
     sql
       .exec<PlacementRow>(
         `SELECT p.rowid AS rowid, p.slot AS slot, p.user_id AS user_id, p.creature_id AS creature_id
@@ -231,18 +219,69 @@ export function raidTeam(sql: SqlStorage, weekId: string, userId: string): TeamC
       )
       .toArray(),
   );
-  const placed = placedRows.map((r) => byId.get(r.creature_id) as TeamCreature);
-  const placedIds = new Set(placed.map((c) => c.id));
-  const fill = autoTeam(owned.filter((c) => !placedIds.has(c.id))).slice(
-    0,
-    RULES.raid.teamSize - placed.length,
-  );
-  return autoTeam([...placed, ...fill]);
 }
 
 /**
- * Slots in a party's shared row: three per member, or `guestRowSize` when fewer than
- * `guestsBelowPlayers` members take part (guests fill the rest).
+ * A player's raid team out of placement rows that were already read (a party's, see `partyPlacements`): only
+ * their own rows count, at most three. Loads those creatures by id, strongest first.
+ */
+export function teamOfPlacements(
+  sql: SqlStorage,
+  userId: string,
+  placements: readonly PlacementRow[],
+): TeamCreature[] {
+  const mine = capPlacements(placements.filter((p) => p.user_id === userId));
+  return autoTeam(
+    loadCreaturesById(
+      sql,
+      userId,
+      mine.map((r) => r.creature_id),
+    ),
+  );
+}
+
+/**
+ * Migration 45 (with `raid_readiness`) made this table; it is no longer read or written (a raid team is
+ * just the placed creatures, so there is nothing to cache). The function stays because a released
+ * migration is never edited.
+ */
+export function raidTeamCacheMigration(sql: SqlStorage): void {
+  sql.exec(`CREATE TABLE raid_team_cache (
+    week_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    creature_ids TEXT NOT NULL,
+    at INTEGER NOT NULL,
+    stale INTEGER NOT NULL CHECK (stale IN (0, 1)),
+    PRIMARY KEY (week_id, user_id)
+  )`);
+}
+
+/** Some of a player's creatures by id, loaded like `loadCreatures` (gear and talents folded in). */
+export function loadCreaturesById(
+  sql: SqlStorage,
+  userId: string,
+  ids: readonly string[],
+): TeamCreature[] {
+  if (ids.length === 0) return [];
+  const worn = wornOnCreatures(sql, ids);
+  const books = booksOfCreatures(sql, ids);
+  // By id (the primary key), the owner checked here: `user_id = ?` in the query walked their whole list.
+  return sql
+    .exec<CreatureDbRow>(
+      `SELECT id, user_id, species, level, fusion_count, nickname, caught_at FROM creatures
+       WHERE id IN (${ids.map(() => '?').join(', ')})`,
+      ...ids,
+    )
+    .toArray()
+    .filter((row) => row.user_id === userId)
+    .sort((a, b) => a.caught_at - b.caught_at)
+    .map((row) => toTeamCreature(row, worn.get(row.id), books.get(row.id)));
+}
+
+/**
+ * Slots in a row made for `memberCount` players: three each, or `guestRowSize` when fewer than
+ * `guestsBelowPlayers` take part (guests fill the rest). A party's real row also follows the active
+ * roster and the slots in use: see `partyRowLength` in raid-roster.ts.
  */
 export function rowLength(memberCount: number): number {
   return memberCount < RULES.combat.guestsBelowPlayers

@@ -1,3 +1,4 @@
+import { damageDealt } from '@creatures/engine';
 import { RULES } from '@creatures/game';
 import closeLoss from '../../activity/src/fixtures/raid-stats-close-loss.json';
 import closeWin from '../../activity/src/fixtures/raid-stats-close-win.json';
@@ -12,7 +13,7 @@ import {
   forcePool,
   membersOf,
   runRaid,
-  seedPlayer,
+  seedMember,
   storedRuns,
 } from './raid-helpers';
 
@@ -35,7 +36,7 @@ async function getStats(
 /** Seeds `n` players and resolves phase 1 only, on a pool of the given size. Returns the party. */
 function phase1(ctx: Ctx, pool: number, atk = 30, n = 4) {
   const players = Array.from({ length: n }, (_, i) =>
-    seedPlayer(ctx, i + 1, { level: 12, name: `Player ${String(i + 1)}` }),
+    seedMember(ctx, i + 1, { level: 12, name: `Player ${String(i + 1)}` }),
   );
   ctx.core.raid.currentWeek(HELSINKI);
   forcePool(ctx.sql, pool, pool, atk);
@@ -218,7 +219,7 @@ describe('after-action stats of real stored fights', () => {
   it('has the per-player, per-creature, reaction and adaptation numbers of the stored fight', async () => {
     await runRaid(async (ctx) => {
       const players = Array.from({ length: 5 }, (_, i) =>
-        seedPlayer(ctx, i + 1, { level: 15, name: `Player ${String(i + 1)}` }),
+        seedMember(ctx, i + 1, { level: 15, name: `Player ${String(i + 1)}` }),
       );
       ctx.core.raid.currentWeek(HELSINKI);
       // A pool the party cannot empty, so the finale is fought to its last round.
@@ -255,7 +256,22 @@ describe('after-action stats of real stored fights', () => {
         expect(stats.players.filter((p) => p.you).map((p) => p.displayName)).toEqual([me.name]);
         const damages = stats.players.map((p) => p.damage);
         expect(damages).toEqual([...damages].sort((a, b) => b - a));
-        expect(stats.players.reduce((t, p) => t + p.damage, 0)).toBe(run.summary.damage);
+        // Damage is what the creatures really dealt (#86): with the guests' it is the HP the boss
+        // lost, and never less than the engine's credit. The score is the engine's contribution.
+        const dealt = damageDealt(run.result.events);
+        const guests = run.input.row
+          .filter((slot) => slot.ownerId === null)
+          .reduce((t, slot) => t + (dealt[slot.id] ?? 0), 0);
+        expect(stats.players.reduce((t, p) => t + p.damage, 0) + guests).toBe(
+          run.result.bossHpStart - run.result.bossHpEnd,
+        );
+        expect(stats.players.reduce((t, p) => t + p.damage, 0)).toBeGreaterThanOrEqual(
+          run.summary.damage,
+        );
+        const pairs = (list: [number, number][]) => list.map((x) => x.join(':')).sort();
+        expect(pairs(stats.players.map((p) => [p.score, p.assist]))).toEqual(
+          pairs(run.summary.contributors.map((c) => [c.contribution, c.contribution - c.damage])),
+        );
         // Creatures: the top five, the caller's own always there, ranks from the whole fight.
         const ranks = stats.creatures.map((c) => c.rank);
         expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
@@ -263,7 +279,7 @@ describe('after-action stats of real stored fights', () => {
         expect(stats.creatures.length).toBeLessThanOrEqual(5 + me.creatureIds.length);
         expect(stats.creatures.length).toBeGreaterThanOrEqual(5);
         expect(stats.creatures[0]?.rank).toBe(1);
-        const best = Math.max(...Object.values(run.result.perCreature).map((c) => c.damage));
+        const best = Math.max(...Object.values(dealt));
         expect(stats.creatures[0]?.damage).toBe(best);
         // Boss numbers are the stored ones.
         expect(stats.boss).toMatchObject({
@@ -349,7 +365,7 @@ describe('after-action stats of real stored fights', () => {
   it('serves members of that fight only, and tells no more than a missing fight does', async () => {
     await runRaid(async (ctx) => {
       // 16 players make two parties; the outsider is in party 2.
-      const players = Array.from({ length: 16 }, (_, i) => seedPlayer(ctx, i + 1));
+      const players = Array.from({ length: 16 }, (_, i) => seedMember(ctx, i + 1));
       ctx.core.raid.currentWeek(HELSINKI);
       forcePool(ctx.sql, 20_000);
       ctx.clock.t = W02.afterPhase1;
@@ -390,7 +406,7 @@ describe('after-action stats of real stored fights', () => {
   it('leaks no user id, creature id, alias key or seed, and names others by display name', async () => {
     await runRaid(async (ctx) => {
       const players = Array.from({ length: 5 }, (_, i) =>
-        seedPlayer(ctx, i + 1, { level: 15, name: `Name ${String(i + 1)}` }),
+        seedMember(ctx, i + 1, { level: 15, name: `Name ${String(i + 1)}` }),
       );
       ctx.core.raid.currentWeek(HELSINKI);
       forcePool(ctx.sql, 20_000);
@@ -441,7 +457,7 @@ describe('after-action stats of real stored fights', () => {
 
   it('adds the party to the loot reveal, so the client can ask for the finale stats', async () => {
     await runRaid((ctx) => {
-      const players = Array.from({ length: 3 }, (_, i) => seedPlayer(ctx, i + 1, { level: 12 }));
+      const players = Array.from({ length: 3 }, (_, i) => seedMember(ctx, i + 1, { level: 12 }));
       ctx.core.raid.currentWeek(HELSINKI);
       forcePool(ctx.sql, 20_000);
       ctx.clock.t = SUNDAY;
@@ -482,8 +498,8 @@ describe('the stats contract with the client', () => {
     'rounds',
   ];
   const BOSS = ['hpEnd', 'hpMax', 'hpStart', 'leftBp', 'lost', 'needed'];
-  const PLAYER = ['contribution', 'damage', 'displayName', 'you'];
-  const CREATURE = ['contribution', 'damage', 'name', 'owner', 'rank', 'species', 'you'];
+  const PLAYER = ['assist', 'damage', 'displayName', 'score', 'you'];
+  const CREATURE = ['damage', 'name', 'owner', 'rank', 'score', 'species', 'you'];
   const REACTION = ['count', 'name', 'reflected'];
   const USED = ['ability', 'byDefault', 'creature', 'player', 'round', 'you'];
   const KNOCKOUT = ['creature', 'owner', 'round', 'species', 'you'];
@@ -505,7 +521,7 @@ describe('the stats contract with the client', () => {
 
   it('sends the same keys as the saved fixtures, with nulls where there is nothing', async () => {
     await runRaid(async (ctx) => {
-      const players = Array.from({ length: 5 }, (_, i) => seedPlayer(ctx, i + 1, { level: 15 }));
+      const players = Array.from({ length: 5 }, (_, i) => seedMember(ctx, i + 1, { level: 15 }));
       ctx.core.raid.currentWeek(HELSINKI);
       forcePool(ctx.sql, 1_000_000);
       ctx.clock.t = SUNDAY;

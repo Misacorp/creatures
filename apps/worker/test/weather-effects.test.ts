@@ -7,7 +7,6 @@
 import {
   RULES,
   createSeededRng,
-  dismantleRange,
   lengthRules,
   raidExperience,
   treatPart,
@@ -22,7 +21,7 @@ import { eventTimes } from '../src/raid-schedule';
 import { addDays, gameDay, zonedTimeToEpoch } from '../src/time';
 import { dungeonPlayer, easyFoes } from './dungeon-helpers';
 import { paidFor } from './dungeon-xp-helpers';
-import { apiPlayer, giveItem, giveParts, learnBase, skipWelcome, type Api } from './gear-helpers';
+import { apiPlayer, giveParts, learnBase, skipWelcome, type Api } from './gear-helpers';
 import { runCore, type CoreContext } from './helpers';
 import {
   HELSINKI,
@@ -34,6 +33,7 @@ import {
   nextGuild,
   rows,
   runRaid,
+  joinRaid,
   seedPlayer,
   storedRuns,
 } from './raid-helpers';
@@ -339,14 +339,6 @@ const startCraft = (p: Api, creatureId: string, baseId = 'trail-cap') =>
     idempotencyKey: newKey(),
   });
 
-const startDismantle = (p: Api, creatureId: string, itemIds: string[]) =>
-  p.call('POST', '/api/workshop/jobs', {
-    kind: 'dismantle',
-    creatureId,
-    itemIds,
-    idempotencyKey: newKey(),
-  });
-
 const claimJob = (p: Api, jobId: string) =>
   p.call('POST', `/api/workshop/jobs/${jobId}/claim`, { idempotencyKey: newKey() });
 
@@ -507,61 +499,6 @@ describe('the Workshop under the weather', () => {
         expect(supply.status).toBe(200);
         const craft = jobIdOf(await startCraft(p, b, 'kelp-cap'));
         expect(inputOf(ctx, craft).mods).toEqual({ stepUpBonusBp: 500 });
-      },
-      { weather: true },
-    );
-  });
-
-  it('Market Day: the first 2 dismantle jobs roll the top of their range and the third does not', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await workshopPlayer(ctx);
-        const [a, b] = p.creatureIds as [string, string];
-        const item = (seed: string): string => giveItem(ctx.sql, p.id, 'trail-cap', { seed });
-        sky(ctx, 'market-day');
-        const first = jobIdOf(await startDismantle(p, a, [item('one')]));
-        const second = jobIdOf(await startDismantle(p, b, [item('two')]));
-        expect(inputOf(ctx, first).mods).toEqual({ dismantleTopOfRange: true });
-        expect(inputOf(ctx, second).mods).toEqual({ dismantleTopOfRange: true });
-        // Free the slots (every job of the day still counts), then the third is a plain one.
-        ctx.clock.t += HOUR;
-        await claimJob(p, first);
-        await claimJob(p, second);
-        const third = jobIdOf(await startDismantle(p, a, [item('three')]));
-        expect(inputOf(ctx, third).mods).toBeUndefined();
-      },
-      { weather: true },
-    );
-  });
-
-  it('a top-of-range dismantle refunds the top of the range at the claim', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await workshopPlayer(ctx);
-        const [a] = p.creatureIds as [string];
-        const itemId = giveItem(ctx.sql, p.id, 'trail-cap', { seed: 'top' });
-        const before = rows<{ kind: string; amount: number }>(
-          ctx.sql,
-          "SELECT kind, amount FROM parts WHERE user_id = ? AND kind = 'scrap'",
-          p.id,
-        )[0]?.amount as number;
-        sky(ctx, 'market-day');
-        const job = jobIdOf(await startDismantle(p, a, [itemId]));
-        ctx.clock.t += HOUR;
-        const claimed = await claimJob(p, job);
-        const range = (claimed.body['result'] as { parts: PartsBundle }).parts.scrap as number;
-        // Level 1 trail cap, common: its range tops at the highest scrap of a common piece.
-        expect(range).toBe(
-          dismantleRange([{ baseId: 'trail-cap', rarity: 'common', itemLevel: 1 }]).scrap.max,
-        );
-        const after = rows<{ amount: number }>(
-          ctx.sql,
-          "SELECT amount FROM parts WHERE user_id = ? AND kind = 'scrap'",
-          p.id,
-        )[0]?.amount as number;
-        expect(after - before).toBe(range);
       },
       { weather: true },
     );
@@ -868,8 +805,12 @@ describe('the dungeon under the weather', () => {
 
 describe('the raid stage under the weather', () => {
   const CHANNEL = '555555555555555555';
-  const players = (ctx: CoreContext, n: number) =>
-    Array.from({ length: n }, (_, i) => seedPlayer(ctx, i + 1, { level: 15 }));
+  /** Seeds `n` players; they join the raid by placing their creatures unless `join` is false. */
+  const players = (ctx: CoreContext, n: number, join = true) => {
+    const seeded = Array.from({ length: n }, (_, i) => seedPlayer(ctx, i + 1, { level: 15 }));
+    if (join) joinRaid(ctx, seeded);
+    return seeded;
+  };
 
   /** The game day of Phase 1 (Friday 13:37 guild time): the weather it fights under. */
   const phase1Day = (): string =>
@@ -973,19 +914,11 @@ describe('the raid stage under the weather', () => {
         const a = seedPlayer(ctx, 1, { level: 15 });
         const b = seedPlayer(ctx, 2, { level: 15, creatures: 1 });
         const c = seedPlayer(ctx, 3, { level: 15 });
-        ctx.core.raid.currentWeek(HELSINKI);
         // Nine slots (Front 0-2, Middle 3-5, Back 6-8) with seven creatures, all placed: Front is slots
         // 0-2, the lone creature stands in the Middle at slot 4, Back is slots 6-8 (3 / 1 / 3). Squeezed
         // into a line of seven the rows would be 2 / 3 / 2 and the haze would name other creatures.
         const place = (slot: number, userId: string, creatureId: string) =>
-          ctx.sql.exec(
-            'INSERT INTO raid_placements (week_id, party, slot, user_id, creature_id) VALUES (?, ?, ?, ?, ?)',
-            W02.id,
-            1,
-            slot,
-            userId,
-            creatureId,
-          );
+          expect(ctx.core.raid.place(userId, HELSINKI, creatureId, slot).ok).toBe(true);
         a.creatureIds.forEach((id, k) => place(k, a.id, id));
         place(4, b.id, b.creatureIds[0] as string);
         c.creatureIds.forEach((id, k) => place(6 + k, c.id, id));
@@ -1057,7 +990,7 @@ describe('the raid stage under the weather', () => {
   it('leaves the sky out of the Monday reveal and the stage post (it is not raid news)', async () => {
     await runRaid(
       async (ctx) => {
-        const seeded = players(ctx, 4);
+        const seeded = players(ctx, 4, false);
         const first =
           seeded[0] ??
           (() => {
@@ -1070,6 +1003,7 @@ describe('the raid stage under the weather', () => {
           { id: first.id, displayName: first.name },
           CHANNEL,
         );
+        joinRaid(ctx, seeded);
         const posts = () =>
           rows<{ key: string; content: string }>(
             ctx.sql,

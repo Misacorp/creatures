@@ -204,7 +204,7 @@ export async function runCore<R>(
       // pass their own `talentRng` through `options`).
       talentRng: createSeededRng('test-talents'),
       // The same for every other live dice: dungeon fights and loot, trips, gear, raid, catches, quirks,
-      // games, weather and the lounger. A test that needs particular dice passes its own through `options`. Each has
+      // games and weather. A test that needs particular dice passes its own through `options`. Each has
       // its own seed, so the streams are independent. (`readinessRng` stays live on purpose: a test
       // checks that it is separate from the raid dice.)
       dungeonRng: createSeededRng('test-dungeon'),
@@ -214,7 +214,6 @@ export async function runCore<R>(
       quirkRng: createSeededRng('test-quirk'),
       gamesRng: createSeededRng('test-games'),
       weatherRng: createSeededRng('test-weather'),
-      loungerRng: createSeededRng('test-lounger'),
       rng: createSeededRng('test-catch'),
       // Off by default so other features' tests keep exact Bait balances; allowance tests turn it on.
       dailyAllowance: false,
@@ -295,6 +294,7 @@ export function undoGamesMigration(sql: SqlStorage): void {
 
 /** Puts a database back to before migration 41 (opt-in Discord DMs): its tables and indexes go. */
 export function undoDmNotifyMigration(sql: SqlStorage): void {
+  undoGamesIndexMigration(sql);
   for (const table of ['dm_prefs', 'dm_outbox', 'dm_sent'])
     sql.exec(`DROP TABLE IF EXISTS ${table}`);
   for (const index of [
@@ -305,6 +305,80 @@ export function undoDmNotifyMigration(sql: SqlStorage): void {
     sql.exec(`DROP INDEX IF EXISTS ${index}`);
   }
   sql.exec('DELETE FROM schema_version WHERE version = 41');
+}
+
+/** Puts a database back to before migration 42 (the Games' day indexes): the indexes go. */
+export function undoGamesIndexMigration(sql: SqlStorage): void {
+  undoDbReadsMigration(sql);
+  for (const index of ['games_days_unawarded', 'games_days_shown', 'games_days_awarded'])
+    sql.exec(`DROP INDEX IF EXISTS ${index}`);
+  sql.exec('DELETE FROM schema_version WHERE version = 42');
+}
+
+/** Puts a database back to before migration 49 (the marks dropped): the mark column is there again (all zero). */
+export function undoDismantleUnmarkMigration(sql: SqlStorage): void {
+  const present = sql
+    .exec("SELECT 1 FROM pragma_table_info('gear_items') WHERE name = 'dismantle_mark'")
+    .toArray();
+  if (present.length === 0) {
+    sql.exec('ALTER TABLE gear_items ADD COLUMN dismantle_mark INTEGER NOT NULL DEFAULT 0');
+  }
+  sql.exec('DELETE FROM schema_version WHERE version = 49');
+}
+
+/** Puts a database back to before migration 48 (marked items): the mark column and the day counts go. */
+export function undoDismantleMarkMigration(sql: SqlStorage): void {
+  undoDismantleUnmarkMigration(sql);
+  const present = sql
+    .exec("SELECT 1 FROM pragma_table_info('gear_items') WHERE name = 'dismantle_mark'")
+    .toArray();
+  if (present.length > 0) sql.exec('ALTER TABLE gear_items DROP COLUMN dismantle_mark');
+  sql.exec('DROP TABLE IF EXISTS dismantle_days');
+  sql.exec('DELETE FROM schema_version WHERE version = 48');
+}
+
+/** Puts a database back to before migration 47 (creature notes): the column goes. */
+export function undoCreatureNoteMigration(sql: SqlStorage): void {
+  undoDismantleMarkMigration(sql);
+  const present = sql
+    .exec("SELECT 1 FROM pragma_table_info('creatures') WHERE name = 'note'")
+    .toArray();
+  if (present.length > 0) sql.exec('ALTER TABLE creatures DROP COLUMN note');
+  sql.exec('DELETE FROM schema_version WHERE version = 47');
+}
+
+/** Puts a database back to before migration 46 (what was paid while a player was away): the table goes. */
+export function undoWhileAwayMigration(sql: SqlStorage): void {
+  undoCreatureNoteMigration(sql);
+  sql.exec('DROP TABLE IF EXISTS away_rewards');
+  sql.exec('DELETE FROM schema_version WHERE version = 46');
+}
+
+/** Puts a database back to before migration 45 (the raid view's stored bands and teams): the tables go. */
+export function undoRaidReadinessMigration(sql: SqlStorage): void {
+  undoWhileAwayMigration(sql);
+  sql.exec('DROP TABLE IF EXISTS raid_readiness');
+  sql.exec('DROP TABLE IF EXISTS raid_team_cache');
+  sql.exec('DELETE FROM schema_version WHERE version = 45');
+}
+
+/** Puts a database back to before migration 44 (the history indexes): the indexes go. */
+export function undoHistoryIndexMigration(sql: SqlStorage): void {
+  undoRaidReadinessMigration(sql);
+  for (const index of [
+    'expeditions_user_claimed',
+    'expeditions_user_cancelled',
+    'gear_items_user_worn',
+  ])
+    sql.exec(`DROP INDEX IF EXISTS ${index}`);
+  sql.exec('DELETE FROM schema_version WHERE version = 44');
+}
+
+/** Puts a database back to before migration 43 (rows read per day): the table goes. */
+export function undoDbReadsMigration(sql: SqlStorage): void {
+  undoHistoryIndexMigration(sql);
+  sql.exec('DROP TABLE IF EXISTS db_reads');
+  sql.exec('DELETE FROM schema_version WHERE version = 43');
 }
 
 /** Puts a database back to before migration 40 (the Games' event badges): the table goes. */

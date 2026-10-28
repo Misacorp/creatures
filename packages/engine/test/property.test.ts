@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { PATTERN_OPS, RULES } from '@creatures/game';
-import { liveFightRules, simulateFight, type FightInput, type FightResult } from '../src/index';
+import {
+  damageDealt,
+  liveFightRules,
+  simulateFight,
+  type FightInput,
+  type FightResult,
+} from '../src/index';
 import { randomInput, rng } from './helpers';
 
 const phases = ['phase1', 'phase2', 'finale'] as const;
@@ -99,6 +105,12 @@ function checkResult(inp: FightInput, r: FightResult): string[] {
     playerDamage,
     ownedDamage,
   ]);
+  // The damage each creature really dealt (the scoreboard's Damage) adds up to the HP the boss lost.
+  const real = Object.values(damageDealt(r.events)).reduce((s, d) => s + d, 0);
+  check(real === r.bossHpStart - r.bossHpEnd, 'damageDealt adds up to the HP lost', [
+    real,
+    r.bossHpStart - r.bossHpEnd,
+  ]);
   const taken = Object.values(r.perCreature).reduce((s, c) => s + c.damageTaken, 0);
   check(guard <= taken, 'guard credit <= damage taken', [guard, taken]);
   check(support >= 0, 'support credit >= 0', support);
@@ -187,6 +199,36 @@ describe('properties over seeded random fights', () => {
       for (const p of checkResult(inp, first)) problems.push(`prop-rules-${i}: ${p}`);
     }
     expect(problems).toEqual([]);
+  });
+
+  it('count Echo and Riposte in the damage dealt: it adds up to the HP the boss lost', () => {
+    const problems: string[] = [];
+    let procs = 0;
+    for (let i = 0; i < 40; i++) {
+      const phase = phases[i % 3] as (typeof phases)[number];
+      const base = randomInput(`prop-procs-${i}`, 1 + (i % 6), phase);
+      const inp: FightInput = {
+        ...base,
+        row: base.row.map((s) => ({
+          ...s,
+          mods: { echoBp: 5_000, dodgeBp: 3_000, riposteBp: 3_000 },
+        })),
+        rules: liveFightRules(),
+        luck: RULES.combat.luck,
+      };
+      const r = simulateFight(inp, rng());
+      procs += r.events.filter(
+        (e) => e.t === 'proc' && (e.kind === 'echo' || e.kind === 'riposte'),
+      ).length;
+      const real = Object.values(damageDealt(r.events)).reduce((s, d) => s + d, 0);
+      if (real !== r.bossHpStart - r.bossHpEnd) {
+        problems.push(
+          `prop-procs-${i}: ${String(real)} dealt, ${String(r.bossHpStart - r.bossHpEnd)} lost`,
+        );
+      }
+    }
+    expect(problems).toEqual([]);
+    expect(procs).toBeGreaterThan(0);
   });
 
   it('give the same result for a different RNG (the MVP rules draw no randomness)', () => {

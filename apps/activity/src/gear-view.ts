@@ -15,7 +15,6 @@ import {
   RULES,
   craftCost,
   craftItemLevel,
-  dismantleHours,
   entryView,
   expeditionContent,
   gearBase,
@@ -698,9 +697,35 @@ export function nominalDurationCountItem(durationMs: number): CountItem {
   return { ...durationCountItem(durationMs), label: 'Takes about' };
 }
 
-/** The time a dismantle job of these items takes a creature of this Crafting level (the preview gives the server's). */
-export function dismantleDurationFor(rarity: GearRarity, level: number): number {
-  return jobDuration(level, 0, dismantleHours(rarity));
+// --- Selected items and the pile (2026-10-27) ---
+
+/** The most items one pile holds (the bag's size; the server's `pileMax`). */
+export const PILE_MAX = 60;
+
+/** The items among `items` whose ids are in `ids`, in the grid's order. */
+export function itemsWithIds(items: readonly GearItem[], ids: ReadonlySet<string>): GearItem[] {
+  return sortItems(items.filter((i) => ids.has(i.id)));
+}
+
+/** The worn items of a pile: the ones the warning step lists, with who wears each. */
+export function wornAmong(items: readonly GearItem[]): GearItem[] {
+  return items.filter((i) => i.equippedOn !== null);
+}
+
+/** "20 Common, 3 Rare": how many of each rarity, the commonest first, none left out that are absent. */
+export function pileText(items: readonly Pick<GearItem, 'rarity'>[]): string {
+  return RARITY_ORDER.flatMap((rarity) => {
+    const n = items.filter((i) => i.rarity === rarity).length;
+    return n === 0 ? [] : [`${String(n)} ${rarityName(rarity)}`];
+  }).join(', ');
+}
+
+/** The confirmation's question: "Dismantle 23 items (20 Common, 3 Rare)?" or "Dismantle Kelp Cap?" for one. */
+export function pileQuestion(items: readonly Pick<GearItem, 'rarity' | 'baseId'>[]): string {
+  const first = items[0];
+  if (first === undefined) return 'Dismantle';
+  if (items.length === 1) return `Dismantle ${gearName(first.baseId)}?`;
+  return `Dismantle ${String(items.length)} items (${pileText(items)})?`;
 }
 
 /**

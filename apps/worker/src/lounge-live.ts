@@ -3,8 +3,9 @@
  * shows, their new room entry goes to the other lounge sockets of the guild. The sockets themselves,
  * tickets and caps are in `live-socket.ts`. Only sockets whose topic is the lounge are ever written to.
  */
+import type { LoungePaid } from './lounge-company';
 import type { Resident } from './lounger';
-import { LiveSockets, type LiveMessage } from './live-socket';
+import { LiveSockets, socketIdentity, type LiveMessage } from './live-socket';
 import { LOUNGE_TOPIC } from './live-topic';
 
 export interface LoungePushDeps {
@@ -39,5 +40,24 @@ export class LoungePush {
     if (this.lastSent.size >= LAST_SENT_MAX) this.lastSent.clear();
     this.lastSent.set(userId, payload);
     for (const ws of listening) sockets.send(ws, payload);
+  }
+
+  /**
+   * Lounging has paid `userId`'s lounger: what it did goes to that player's own lounge sockets, so their
+   * client moves the bar without reloading the state. Nobody else gets it. Never throws.
+   */
+  notifyXp(userId: string, paid: LoungePaid): void {
+    try {
+      const { sockets } = this.deps;
+      if (!sockets.enabled('lounge')) return;
+      const own = sockets
+        .socketsOfUser(userId)
+        .filter((ws) => socketIdentity(ws)?.topic.kind === 'lounge');
+      if (own.length === 0) return;
+      const payload = JSON.stringify({ v: 1, type: 'lounge-xp', ...paid } satisfies LiveMessage);
+      for (const ws of own) sockets.send(ws, payload);
+    } catch (err) {
+      console.error('lounge xp push failed', err instanceof Error ? err.name : 'unknown');
+    }
   }
 }

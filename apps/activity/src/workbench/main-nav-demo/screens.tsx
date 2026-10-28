@@ -20,6 +20,7 @@ const CARD_ACTIONS: CardActions = {
   onRibbon: NOTHING,
   onEvolve: NOTHING,
   onRename: NOTHING,
+  onNote: NOTHING,
   onLounge: NOTHING,
   onSlotTalent: NOTHING,
 };

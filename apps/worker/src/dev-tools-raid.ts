@@ -20,7 +20,8 @@ import type {
   RaidSimulateBodySchema,
 } from './dev-schemas';
 import { readWeekProgression } from './raid-ladder';
-import { joinSmallestParty, leaveParty, partyOf } from './raid-roster';
+import { ensureWeekRank } from './raid-ladder';
+import { joinSmallestParty, leaveParty, partyOf, partyRowLength } from './raid-roster';
 import { RAID_PHASES, weekIndex } from './raid-schedule';
 import { autoTeam, loadCreatures } from './raid-teams';
 import { insertCreature } from './talent-store';
@@ -222,10 +223,99 @@ export function existingGuests(ctx: ToolCtx): number[] {
 }
 
 /**
- * Makes the guild's simulated players exactly `count` (numbers 1 to `count`) and puts them in this week's
- * roster, each with three creatures near the caller's level (their automatic team: the row auto-places
- * them when a phase resolves, like any player who did not place). Allowed while the roster is open, that
- * is until Phase 1 resolves; later it is locked and only a no-op change is accepted.
+ * Joins a simulated player to this week's raid the way a real one does: it places its creatures (up to
+ * three) in the lowest free slots of the party it joins. Nobody's creatures are placed for them
+ * otherwise, so this is what makes a guest take part.
+ */
+export function placeGuest(
+  ctx: ToolCtx,
+  weekId: string,
+  userId: string,
+  /** The creatures to place (at most three); default the first three the player made. */
+  creatureIds?: readonly string[],
+): void {
+  const party =
+    partyOf(ctx.sql, weekId, userId) ?? joinSmallestParty(ctx.sql, weekId, userId, ctx.now);
+  const creatures = (
+    creatureIds ??
+    ctx.sql
+      .exec<{ id: string }>(
+        'SELECT id FROM creatures WHERE user_id = ? ORDER BY caught_at, rowid LIMIT ?',
+        userId,
+        RULES.raid.teamSize,
+      )
+      .toArray()
+      .map((r) => r.id)
+  )
+    .slice(0, RULES.raid.teamSize)
+    .map((id) => ({ id }));
+  const placed = new Set(
+    ctx.sql
+      .exec<{ creature_id: string }>(
+        'SELECT creature_id FROM raid_placements WHERE week_id = ? AND user_id = ?',
+        weekId,
+        userId,
+      )
+      .toArray()
+      .map((r) => r.creature_id),
+  );
+  const length = partyRowLength(ctx.sql, weekId, party);
+  const taken = new Set(
+    ctx.sql
+      .exec<{ slot: number }>(
+        'SELECT slot FROM raid_placements WHERE week_id = ? AND party = ?',
+        weekId,
+        party,
+      )
+      .toArray()
+      .map((r) => r.slot),
+  );
+  let slot = 0;
+  for (const { id } of creatures) {
+    if (placed.has(id)) continue;
+    while (taken.has(slot) && slot < length) slot += 1;
+    if (slot >= length) break;
+    ctx.sql.exec(
+      'INSERT INTO raid_placements (week_id, party, slot, user_id, creature_id) VALUES (?, ?, ?, ?, ?)',
+      weekId,
+      party,
+      slot,
+      userId,
+      id,
+    );
+    taken.add(slot);
+  }
+  ensureWeekRank(ctx.sql, weekId);
+}
+
+/** Whether joining this week's raid is still open (the finale has not started). */
+function joiningOpen(ctx: ToolCtx, weekId: string): boolean {
+  return !eventDone(ctx, weekId, 'finale');
+}
+
+/**
+ * Dev convenience for the tools that need the caller in the raid (the roster, a simulated week, a live
+ * practice): when they have not joined and joining is open, their three strongest creatures are placed
+ * for them, as if they had placed them. Real players are never given a team: this only exists on staging.
+ */
+export function joinCaller(ctx: ToolCtx, weekId: string): void {
+  if (partyOf(ctx.sql, weekId, ctx.userId) !== null || !joiningOpen(ctx, weekId)) return;
+  const team = autoTeam(loadCreatures(ctx.sql, ctx.userId));
+  if (team.length === 0) return;
+  placeGuest(
+    ctx,
+    weekId,
+    ctx.userId,
+    team.map((c) => c.id),
+  );
+  ctx.raid.invalidateReadiness();
+}
+
+/**
+ * Makes the guild's simulated players exactly `count` (numbers 1 to `count`) and has each place its three
+ * creatures (near the caller's level) on this week's board, so they are in the raid like any player who
+ * placed. The caller joins with their three strongest (`joinCaller`). Allowed while joining is
+ * open, that is until Phase 1 resolves; later it is locked and only a no-op change is accepted.
  */
 export function ensureGuests(ctx: ToolCtx, count: number): { guests: number } {
   const week = ctx.raid.currentWeek(ctx.tz);
@@ -250,12 +340,9 @@ export function ensureGuests(ctx: ToolCtx, count: number): { guests: number } {
     } else {
       createGuest(ctx, n, level);
     }
-    if (partyOf(ctx.sql, week.weekId, guestId(n)) === null) {
-      joinSmallestParty(ctx.sql, week.weekId, guestId(n), ctx.now);
-    }
+    placeGuest(ctx, week.weekId, guestId(n));
   }
-  // The caller and anybody else eligible join too, and a server with no rank is placed.
-  ctx.raid.syncRoster(week.weekId);
+  joinCaller(ctx, week.weekId);
   ctx.raid.invalidateReadiness();
   return { guests: count };
 }
@@ -279,6 +366,7 @@ export function raidRoster(ctx: ToolCtx, body: Body<typeof RaidRosterBodySchema>
  * the existing practice mode with the block and the cooldown lifted. It pays nothing and stores no result.
  */
 export function raidLive(ctx: ToolCtx, body: Body<typeof RaidLiveBodySchema>) {
+  joinCaller(ctx, ctx.raid.currentWeek(ctx.tz).weekId);
   const outcome = ctx.raid.startPractice(ctx.userId, ctx.tz, {
     lobbyMs: (body.countdownSeconds ?? 10) * 1000,
     unrestricted: true,
@@ -295,7 +383,7 @@ export function raidLive(ctx: ToolCtx, body: Body<typeof RaidLiveBodySchema>) {
 export function raidSimulate(ctx: ToolCtx, body: Body<typeof RaidSimulateBodySchema>) {
   if (body.guests !== undefined) ensureGuests(ctx, body.guests);
   const week = ctx.raid.currentWeek(ctx.tz);
-  ctx.raid.syncRoster(week.weekId);
+  joinCaller(ctx, week.weekId);
   const party = partyOf(ctx.sql, week.weekId, ctx.userId);
   if (party === null) throw new DevError(409, 'not_in_roster');
   for (const phase of RAID_PHASES) {

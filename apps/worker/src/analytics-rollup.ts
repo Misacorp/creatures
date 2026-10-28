@@ -457,9 +457,6 @@ function tallyEvent(tally: Tally, kind: string, p: Props): void {
     case 'festival_grant':
       tally.add('raid.festival_grant', { result: str(p, 'result') });
       break;
-    case 'roster_optout':
-      tally.add('raid.optout', { optOut: flag(p, 'optOut') });
-      break;
     case 'team_set':
       tally.add('raid.team_set', { auto: flag(p, 'auto') });
       for (const s of list(p, 'species')) tally.add('raid.team_species', { species: s });
@@ -625,6 +622,16 @@ export class AnalyticsRollup {
       } catch {
         // A damaged row only loses its details.
       }
+    }
+
+    // Rows the database read, by source (read-meter.ts): the free tier allows 5,000,000 a day.
+    for (const row of this.sql
+      .exec<{ source: string; rows: number }>(
+        'SELECT source, rows FROM db_reads WHERE day = ?',
+        day,
+      )
+      .toArray()) {
+      tally.add('db.rows_read', { source: row.source }, row.rows);
     }
 
     tally.add('rolled', {});

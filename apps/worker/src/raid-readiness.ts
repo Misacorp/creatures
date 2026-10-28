@@ -9,13 +9,16 @@
  *   started there is no band: the fight is on.
  * - The dice are fresh every time, from the injected Rng (crypto in production), never the seed of
  *   a stored or coming fight. Only the band leaves this module.
- * - A forecast is not free (several full fights), so it is cached in memory per party:
+ * - A forecast is not free (several full fights: it loads every fighting creature), so it is
+ *   cached per party in `raid_readiness` (migration 45). It was kept in memory until 2026-10-25, but the
+ *   object sleeps a few seconds after each request, so nearly every raid view computed it again:
  *   - a different week state (open, Phase 1 done, Phase 2 done) is a different entry and always
  *     computed at once, so results show up right after Friday and Saturday;
  *   - a change to teams, placements, ability picks or the roster (`invalidate`) is picked up lazily,
  *     and a party's band is never recomputed more often than every 30 seconds;
  *   - without a change it is refreshed every 5 minutes, which catches training.
- *   The cache is an optimisation only: losing it (the object restarting) just recomputes.
+ *   The cache is an optimisation only: a missing row just recomputes. Rows of other weeks are deleted when
+ *   a band is stored.
  */
 import { readinessBand, type ReadinessBand, type Rng } from '@creatures/game';
 import { forecastFinale, forecastWeek, phaseFloorHp, type FightInput } from '@creatures/engine';
@@ -28,16 +31,17 @@ import type { RaidStatus } from './raid-teams';
 export const READINESS_MIN_INTERVAL_MS = 30_000;
 /** How long a band is kept when nothing was reported changed. */
 export const READINESS_MAX_AGE_MS = 5 * 60_000;
-/** Bound on remembered bands: one per party of the current weeks. */
-const MAX_ENTRIES = 100;
-
-interface Entry {
-  /** The week state the band was computed for. */
-  status: RaidStatus;
-  /** The cache version at the time (see `invalidate`). */
-  version: number;
-  at: number;
-  band: ReadinessBand | null;
+/** Migration 45: the stored readiness bands, one per party of the current week. */
+export function raidReadinessMigration(sql: SqlStorage): void {
+  sql.exec(`CREATE TABLE raid_readiness (
+    week_id TEXT NOT NULL,
+    party INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    band TEXT,
+    at INTEGER NOT NULL,
+    stale INTEGER NOT NULL CHECK (stale IN (0, 1)),
+    PRIMARY KEY (week_id, party)
+  )`);
 }
 
 export interface ReadinessDeps {
@@ -48,14 +52,15 @@ export interface ReadinessDeps {
 }
 
 export class ReadinessCache {
-  private readonly entries = new Map<string, Entry>();
-  private version = 0;
-
   constructor(private readonly deps: ReadinessDeps) {}
+
+  private get sql(): SqlStorage {
+    return this.deps.storage.sql;
+  }
 
   /** Something the forecast depends on changed (a team, a placement, an ability pick, the roster). */
   invalidate(): void {
-    this.version++;
+    this.sql.exec('UPDATE raid_readiness SET stale = 1 WHERE stale = 0');
   }
 
   /** The band of a party, or null when there is none (the finale has started, or nothing to fight). */
@@ -64,19 +69,31 @@ export class ReadinessCache {
     party: number,
   ): ReadinessBand | null {
     if (week.status === 'finale') return null;
-    const key = `${week.weekId}:${String(party)}`;
     const now = this.deps.now();
-    const entry = this.entries.get(key);
+    const entry = this.sql
+      .exec<{ status: string; band: ReadinessBand | null; at: number; stale: number }>(
+        'SELECT status, band, at, stale FROM raid_readiness WHERE week_id = ? AND party = ?',
+        week.weekId,
+        party,
+      )
+      .toArray()[0];
     if (entry !== undefined && entry.status === week.status) {
       const age = now - entry.at;
       if (age >= 0 && age < READINESS_MIN_INTERVAL_MS) return entry.band;
-      if (age >= 0 && entry.version === this.version && age < READINESS_MAX_AGE_MS) {
-        return entry.band;
-      }
+      if (age >= 0 && entry.stale === 0 && age < READINESS_MAX_AGE_MS) return entry.band;
     }
     const band = this.compute(week, party);
-    if (this.entries.size >= MAX_ENTRIES) this.entries.clear();
-    this.entries.set(key, { status: week.status, version: this.version, at: now, band });
+    this.sql.exec('DELETE FROM raid_readiness WHERE week_id <> ?', week.weekId);
+    this.sql.exec(
+      `INSERT INTO raid_readiness (week_id, party, status, band, at, stale) VALUES (?, ?, ?, ?, ?, 0)
+       ON CONFLICT(week_id, party) DO UPDATE SET status = excluded.status, band = excluded.band,
+         at = excluded.at, stale = 0`,
+      week.weekId,
+      party,
+      week.status,
+      band,
+      now,
+    );
     return band;
   }
 

@@ -39,6 +39,7 @@
         "fusionPoints": 0,
         "shiny": false,
         "nickname": null,
+        "note": null,
         "away": true,
         "origin": "test",
         "caughtAt": 1799733600000,
@@ -120,6 +121,7 @@
         "fusionPoints": 0,
         "shiny": false,
         "nickname": null,
+        "note": null,
         "away": false,
         "origin": "test",
         "caughtAt": 1799733600001,
@@ -198,6 +200,7 @@
         "fusionPoints": 0,
         "shiny": false,
         "nickname": null,
+        "note": null,
         "away": false,
         "origin": "test",
         "caughtAt": 1799733600002,
@@ -298,6 +301,7 @@
     ],
     "cancelled": [],
     "levelReset": null,
+    "awayRewards": null,
     "slots": {
       "total": 1,
       "used": 1,
@@ -312,7 +316,7 @@
       "lure-great": 2
     },
     "serverFirsts": [],
-    "loungerId": "00000000-0000-4000-8400-000000000003",
+    "loungerId": "00000000-0000-4000-8400-000000000004",
     "loungeSpot": null,
     "loungeXp": {}
   }

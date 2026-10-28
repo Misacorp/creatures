@@ -29,6 +29,7 @@ function actionsWith(overrides: Partial<CardActions> = {}): CardActions {
     onRibbon: vi.fn(),
     onEvolve: vi.fn(),
     onRename: vi.fn(),
+    onNote: vi.fn(),
     onLounge: vi.fn(),
     onSlotTalent: vi.fn(),
     ...overrides,
@@ -788,5 +789,63 @@ describe('the creature page: About and Rename', () => {
       }
     });
     expect(rename).toHaveBeenCalledWith(creature, 'Sparky');
+  });
+});
+
+describe('the creature page: Note (#76)', () => {
+  const textarea = (root: FakeElement) => first(find(root, (e) => e.localName === 'textarea'));
+  const submit = (p: Page, root: FakeElement) => {
+    const form = find(root, (e) => e.localName === 'form')[1] as FakeElement;
+    p.update(() => {
+      for (const l of form.listeners.get('submit') ?? []) {
+        l.call(form, {
+          type: 'submit',
+          target: form,
+          currentTarget: form,
+          defaultPrevented: false,
+          preventDefault: () => undefined,
+          stopPropagation: () => undefined,
+        });
+      }
+    });
+  };
+
+  it('is a closed fold next to Rename without a note, with a 256 character box', () => {
+    const { root } = draw('level 15');
+    const note = first(byName(root, 'button', 'Note'));
+    expect(note.getAttribute('aria-expanded')).toBe('false');
+    expect(textarea(root).getAttribute('maxlength')).toBe('256');
+    expect(visibleText(root)).toContain('Only you can see it');
+  });
+
+  it('is open with the note in it when there is one, and Save waits for a change', () => {
+    const { root, page: p } = draw('level 15', {
+      change: (c) => ({ ...c, note: 'Ember gear at 20' }),
+    });
+    expect(first(byName(root, 'button', 'Note')).getAttribute('aria-expanded')).toBe('true');
+    expect(textarea(root).value).toBe('Ember gear at 20');
+    expect(visibleText(root)).toContain('16 / 256');
+    const save = () => byName(root, 'button', 'Save')[1] as FakeElement;
+    expect(save().hasAttribute('disabled')).toBe(true);
+    p.type(textarea(root), 'Ember gear at 25');
+    expect(save().hasAttribute('disabled')).toBe(false);
+  });
+
+  it('sends the note to the server, and empty removes it', () => {
+    const onNote = vi.fn();
+    const {
+      root,
+      page: p,
+      creature,
+    } = draw('level 15', {
+      change: (c) => ({ ...c, note: 'Old plan' }),
+      actions: { onNote },
+    });
+    p.type(textarea(root), 'Level to 20,\nthen Ember gear');
+    submit(p, root);
+    expect(onNote).toHaveBeenLastCalledWith(creature, 'Level to 20,\nthen Ember gear');
+    p.type(textarea(root), '   ');
+    submit(p, root);
+    expect(onNote).toHaveBeenLastCalledWith(creature, null);
   });
 });

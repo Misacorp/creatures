@@ -170,7 +170,7 @@ describe('the LOUNGE_LIVE flag: configuration', () => {
     await runInDurableObject(stubOf(guildId), async (_instance, state) => {
       const sockets = new LiveSockets({
         ctx: state,
-        enabled: { lounge: false, finale: false },
+        enabled: { lounge: false, finale: false, raid: false },
         clientSecret: 'test-only-client-secret',
         guildId: () => guildId,
         now: Date.now,
@@ -327,6 +327,52 @@ describe('push', () => {
     expect(residents(other)).toHaveLength(1);
     own.ws.close(1000);
     other.ws.close(1000);
+  });
+});
+
+describe('lounge XP', () => {
+  it("goes to the payer's own lounge sockets only, as one message each", async () => {
+    const guildId = nextGuild();
+    const [p1, p2] = await Promise.all([join(guildId, 1), join(guildId, 2)]);
+    const first = await connect(p1);
+    const second = await connect(p1);
+    const other = await connect(p2);
+    const paid = { creatureId: 'c1', paid: 7, level: 4, exp: 3, waiting: false };
+    await runInDurableObject(stubOf(guildId), (_instance, state) => {
+      const sockets = new LiveSockets({
+        ctx: state,
+        enabled: { lounge: true, finale: true, raid: true },
+        clientSecret: 'test-only-client-secret',
+        guildId: () => guildId,
+        now: Date.now,
+      });
+      new LoungePush({ sockets, residentOf: () => null }).notifyXp(p1.id, paid);
+    });
+    const xp = (live: Live) => live.messages.filter((m) => m['type'] === 'lounge-xp');
+    await until(() => xp(first).length === 1 && xp(second).length === 1);
+    expect(xp(first)[0]).toEqual({ v: 1, type: 'lounge-xp', ...paid });
+    await sleep(50);
+    expect(xp(first)).toHaveLength(1);
+    expect(xp(other)).toHaveLength(0);
+    for (const l of [first, second, other]) l.ws.close(1000);
+  });
+
+  it('is not sent when the lounge is off, and never throws', async () => {
+    const guildId = nextGuild();
+    await join(guildId, 1);
+    await runInDurableObject(stubOf(guildId), (_instance, state) => {
+      const sockets = new LiveSockets({
+        ctx: state,
+        enabled: { lounge: false, finale: false, raid: false },
+        clientSecret: 'test-only-client-secret',
+        guildId: () => guildId,
+        now: Date.now,
+      });
+      const push = new LoungePush({ sockets, residentOf: () => null });
+      expect(() => {
+        push.notifyXp('1', { creatureId: 'c', paid: 1, level: 1, exp: 1, waiting: false });
+      }).not.toThrow();
+    });
   });
 });
 

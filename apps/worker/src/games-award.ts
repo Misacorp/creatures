@@ -10,6 +10,7 @@
 import { beatsRecord, gamesXp, medalPoints, pocketPoints, type GamesMedal } from '@creatures/game';
 import { awardExperience } from './creature-exp';
 import type { GamesDeps } from './games-lock';
+import { recordAway } from './while-away';
 import {
   addBadgeWin,
   addCreatureMedals,
@@ -101,6 +102,7 @@ export function awardDay(deps: GamesDeps, day: string): boolean {
           p.event_id === row.bonus,
         ),
       });
+      recordAway(sql, p.user_id, 'games', { medals: p.medal === null ? 0 : 1, xp }, now);
       sql.exec(
         'UPDATE games_placings SET pins = ?, xp = ? WHERE day = ? AND event_id = ? AND user_id = ?',
         JSON.stringify(pins),

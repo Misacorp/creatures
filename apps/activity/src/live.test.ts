@@ -580,7 +580,7 @@ describe('ability texts', () => {
 
   it('lists creature abilities for the Raid tab, locked ones with the level they need', () => {
     const team = [
-      { creatureId: 'a', species: 'cindle', name: 'Cindle', level: 12, slot: null },
+      { creatureId: 'a', species: 'cindle', name: 'Cindle', level: 12, slot: 0 },
       { creatureId: 'b', species: 'splashet', name: 'Bubbles', level: 7, slot: 3 },
     ];
     const preview: AbilityPreview[] = [

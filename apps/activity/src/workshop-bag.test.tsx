@@ -4,6 +4,7 @@ import { PAGE_SAMPLE_ID } from './creature-page/sample';
 import { GEAR_STATE, SAMPLE_GEAR } from './creature-card-sample';
 import type { GearActions } from './gear-actions';
 import { InventoryGrid } from './InventoryGrid';
+import type { MultiSelect } from './ui/multi-select';
 import { ItemCard } from './ItemCard';
 import {
   byClass,
@@ -33,6 +34,8 @@ function first(list: FakeElement[]): FakeElement {
 const actions: GearActions = {
   equip: () => Promise.resolve(undefined),
   equipBest: () => Promise.resolve(undefined),
+  checkDismantle: () => Promise.resolve({ locked: [] }),
+  dismantlePile: () => Promise.resolve(undefined),
   dismissNotice: () => Promise.resolve(undefined),
   startJob: () => Promise.resolve(undefined),
   previewCraft: () => new Promise(() => undefined),
@@ -60,17 +63,22 @@ function drawWorkshop(): Page {
 }
 
 function bagCells(p: Page): FakeElement[] {
-  return find(first(byClass(p.root, 'item-grid')), (e) => e.localName === 'button');
+  return find(
+    first(byClass(p.root, 'item-grid')),
+    (e) => e.localName === 'button' && e.getAttribute('role') !== 'checkbox',
+  );
 }
 
 describe('the Workshop bag', () => {
-  it('shows the bag count on the Gear heading line and no Equip best or Dismantle several', () => {
+  it('shows the bag count on the Gear heading line and no Equip best, no Dismantle several and no Dismantle items button above the grid', () => {
     page = drawWorkshop();
     const head = first(byClass(page.root, 'ws-head'));
     expect(visibleText(head)).toContain('Gear');
     expect(visibleText(head)).toContain('Bag:');
     expect(page.root.textContent).not.toContain('Equip best');
     expect(page.root.textContent).not.toContain('Dismantle several');
+    expect(byName(page.root, 'button', 'Dismantle items')).toHaveLength(0);
+    expect(byName(page.root, 'button', 'Done')).toHaveLength(0);
   });
 
   it('opens a tapped item in a bottom drawer that closes by the backdrop', () => {
@@ -98,21 +106,36 @@ describe('the Workshop bag', () => {
   });
 });
 
+/** A selection with nothing selected, for a grid drawn only to be read. */
+const NO_PICK: MultiSelect = {
+  active: false,
+  ids: new Set(),
+  has: () => false,
+  toggle: () => undefined,
+  add: () => undefined,
+  range: () => undefined,
+  clear: () => undefined,
+};
+
 const bag = allBagItems(PAGE_SAMPLE_ID, {});
 const crown = bag.find((i) => i.baseId === 'emberkeepers-crown');
 
 describe('slot and element on items', () => {
-  it('puts the slot icon in the top-left corner of every bag image', () => {
+  it('puts the slot icon in a corner of every bag image (bottom left: the checkbox has the top left)', () => {
     page = createPage();
     page.draw(
       <InventoryGrid
         items={bag.slice(0, 5)}
         creatures={[]}
-        selectedId={null}
-        onSelect={() => undefined}
+        openId={null}
+        onOpen={() => undefined}
+        selection={NO_PICK}
       />,
     );
-    for (const cell of find(page.root, (e) => e.localName === 'button')) {
+    for (const cell of find(
+      page.root,
+      (e) => e.localName === 'button' && e.getAttribute('role') !== 'checkbox',
+    )) {
       expect(byClass(cell, 'item-slot')).toHaveLength(1);
     }
   });

@@ -2,10 +2,18 @@
  * The schema migrations of a guild's Durable Object database. `SCHEMA_VERSION` is the version of a
  * fresh database: adding a migration to the end of the list raises it by one (tests use it).
  */
+import { whileAwayMigration } from './while-away';
 import { analyticsRollupMigration } from './analytics-rollup';
+import { creatureNoteMigration } from './creature-note-migration';
+import { dismantleMarkMigration } from './dismantle-mark-migration';
+import { dismantleUnmarkMigration } from './dismantle-unmark-migration';
 import { creatureQuirkMigration } from './creature-quirk-migration';
 import { creaturesAMigration } from './creatures-a-migration';
 import { creaturesBMigration } from './creatures-b-migration';
+import { raidReadinessMigration } from './raid-readiness';
+import { raidTeamCacheMigration } from './raid-teams';
+import { historyIndexMigration } from './history-index-migration';
+import { gamesIndexMigration } from './games-index-migration';
 import { dmNotifyMigration } from './dm-migration';
 import { dungeonDraftMigration } from './dungeon-draft-migration';
 import { dungeonMigration } from './dungeon-migration';
@@ -19,6 +27,7 @@ import { gearV2Migration } from './gear-v2-migration';
 import { loungeMigration } from './lounge';
 import { loungeCompanyMigration } from './lounge-company';
 import { maintenanceMigration } from './maintenance';
+import { dbReadsMigration } from './read-meter';
 import { raidAutofireMigration } from './raid-autofire-migration';
 import { raidDifficultyMigration } from './raid-difficulty-migration';
 import { raidLiveMigration } from './raid-live-migration';
@@ -268,7 +277,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   weatherMigration,
   (sql) => {
     // Version 32: who put each raid placement on the board. NULL is the owner; otherwise the teammate
-    // who moved it for a player who was away (see raid-assist.ts). Existing rows are the owners'.
+    // who moved it for a player who was away (the away assist is gone since 2026-10-26: the column is no
+    // longer written or read). Existing rows are the owners'.
     sql.exec('ALTER TABLE raid_placements ADD COLUMN placed_by TEXT');
   },
   // Version 33: the lounge message and the Activity instances it tracks (see lounge.ts).
@@ -294,6 +304,26 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   gamesBadgesMigration,
   // Version 41: opt-in Discord DMs, their queue and the log of what was sent (see dm-migration.ts).
   dmNotifyMigration,
+  // Version 42: indexes for the Valley Games' day lookups (see games-index-migration.ts).
+  gamesIndexMigration,
+  // Version 43: rows read per game day and source (see read-meter.ts).
+  dbReadsMigration,
+  // Version 44: indexes for a player's recent trips and worn gear (see history-index-migration.ts).
+  historyIndexMigration,
+  // Version 45: the raid view's stored readiness bands (see raid-readiness.ts) and teammates' teams (the
+  // teams table is no longer used since 2026-10-26, see `raidTeamCacheMigration` in raid-teams.ts).
+  (sql) => {
+    raidReadinessMigration(sql);
+    raidTeamCacheMigration(sql);
+  },
+  // Version 46: what was paid while a player was away (see while-away.ts).
+  whileAwayMigration,
+  // Version 47: a private note per creature (see creature-note-migration.ts).
+  creatureNoteMigration,
+  // Version 48: items marked for dismantling and the day's dismantled count (see dismantle-mark-migration.ts).
+  dismantleMarkMigration,
+  // Version 49: the persisted marks go, selection is client-only (see dismantle-unmark-migration.ts).
+  dismantleUnmarkMigration,
 ];
 
 /** The schema version of a fresh database. */

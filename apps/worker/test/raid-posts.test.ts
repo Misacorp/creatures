@@ -12,6 +12,7 @@ import {
   W02,
   count,
   forcePool,
+  joinRaid,
   rows,
   runRaid,
   seedPlayer,
@@ -56,11 +57,20 @@ const posts = (ctx: Pick<CoreContext, 'sql'>) =>
     'SELECT key, channel_id, content, status, next_attempt_at FROM discord_posts ORDER BY id',
   );
 
-/** Seeds players, sets the announcement channel (or not) and opens the week. */
+/**
+ * Seeds players, sets the announcement channel (or not) and opens the week (the Monday reveal is queued),
+ * then the players join the raid by placing their creatures.
+ */
 async function openWeek(
   ctx: CoreContext,
   n: number,
-  options: { channel?: string | null; level?: number; name?: (i: number) => string } = {},
+  options: {
+    channel?: string | null;
+    level?: number;
+    name?: (i: number) => string;
+    /** The server's rank before the week opens (a brand-new server starts at Rank 1 when its week opens). */
+    rank?: number;
+  } = {},
 ): Promise<Seeded[]> {
   const players = Array.from({ length: n }, (_, i) =>
     seedPlayer(ctx, i + 1, {
@@ -69,20 +79,24 @@ async function openWeek(
     }),
   );
   const first = players[0] as Seeded;
+  if (options.rank !== undefined) {
+    ctx.sql.exec('UPDATE raid_ladder SET rank = ? WHERE id = 1', options.rank);
+  }
   // Session creation stores the channel, then catches up: the week opens and the reveal is queued.
   await ctx.core.createSession(
     ctx.guildId,
     { id: first.id, displayName: first.name },
     options.channel === undefined ? CHANNEL : options.channel,
   );
+  joinRaid(ctx, players);
   return players;
 }
 
 describe('the Monday boss reveal', () => {
-  it('is queued once when the week opens, with the boss, the times and the player count', async () => {
+  it('is queued once when the week opens, with the boss, the times and how to join', async () => {
     await runRaid(
       async (ctx) => {
-        await openWeek(ctx, 4);
+        await openWeek(ctx, 4, { rank: 2 });
         const [reveal] = posts(ctx);
         expect(posts(ctx)).toHaveLength(1);
         expect(reveal).toMatchObject({
@@ -103,7 +117,8 @@ describe('the Monday boss reveal', () => {
           { name: 'Phase 2', value: at('Sat', times.phase2), inline: true },
           { name: 'Finale', value: at('Sun', times.finale), inline: true },
         ]);
-        expect(embed.footer).toEqual({ text: '4 players in' });
+        // Nobody has joined on Monday, so there is no head count: it says how to join.
+        expect(embed.footer).toEqual({ text: 'Place a creature on the raid board to join.' });
         // The server's rank, as stored for the week; a normal week says nothing about a Festival.
         const rank = rows<{ rank: number }>(ctx.sql, 'SELECT rank FROM raid_weeks')[0]?.rank;
         expect(rank).toBeGreaterThanOrEqual(1);
@@ -117,6 +132,25 @@ describe('the Monday boss reveal', () => {
         );
         expect(posts(ctx)).toHaveLength(1);
         expect(posts(ctx)[0]?.content).toBe(text);
+      },
+      { start: W02.monday },
+    );
+  });
+
+  it('shows Rank 1 for a brand-new server, before anyone has joined', async () => {
+    await runRaid(
+      async (ctx) => {
+        const player = seedPlayer(ctx, 1, { level: 5 });
+        expect(rows(ctx.sql, 'SELECT rank FROM raid_ladder')).toEqual([{ rank: null }]);
+        await ctx.core.createSession(
+          ctx.guildId,
+          { id: player.id, displayName: player.name },
+          CHANNEL,
+        );
+        expect(rows(ctx.sql, 'SELECT rank FROM raid_ladder')).toEqual([{ rank: 1 }]);
+        expect(rows(ctx.sql, 'SELECT COUNT(*) AS n FROM raid_party_members')).toEqual([{ n: 0 }]);
+        const [reveal] = posts(ctx);
+        expect(embedOf(reveal?.content ?? '').author).toEqual({ name: 'New raid week · Rank 1' });
       },
       { start: W02.monday },
     );
@@ -185,12 +219,15 @@ describe('the Monday boss reveal', () => {
     );
   });
 
-  it('counts parties when the roster is split', async () => {
+  it('names no head count and no parties, however many players are active', async () => {
     await runRaid(
       async (ctx) => {
         await openWeek(ctx, 16);
+        const text = textOf(posts(ctx)[0]?.content);
+        expect(text).not.toMatch(/\d+ players? in/);
+        expect(text).not.toMatch(/parties/);
         expect(embedOf(posts(ctx)[0]?.content).footer).toEqual({
-          text: '16 players in · 2 parties',
+          text: 'Place a creature on the raid board to join.',
         });
       },
       { start: W02.monday },
@@ -468,6 +505,7 @@ describe('a Festival week', () => {
     await runRaid(
       async (ctx) => {
         const players = await openWeek(ctx, 3, {
+          rank: 2,
           name: (i) => (i === 1 ? '_Ace_ @everyone' : `Player ${String(i)}`),
         });
         const creature = content.creatures.find(

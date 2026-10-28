@@ -51,6 +51,8 @@ export interface CardActions {
    */
   onEvolve: (creature: Creature, species?: string) => void;
   onRename: (creature: Creature, nickname: string | null) => void;
+  /** Saves the player's private note on the creature; null removes it. */
+  onNote: (creature: Creature, note: string | null) => void;
   /** Makes this creature the one that lounges in the living room. */
   onLounge: (creature: Creature) => void;
   /** Puts a talent from a creature's Talent Book into a slot (for Bait). */
@@ -91,6 +93,56 @@ export function RenameForm({
         <button type="submit" disabled={busy}>
           Save
         </button>
+      </form>
+    </Accordion>
+  );
+}
+
+/** The longest note, in characters (the server counts code points: `RULES.creatureNote`). */
+const NOTE_MAX = RULES.creatureNote.maxCodePoints;
+
+/**
+ * A short private note on the creature (#76), next to Rename: plans for how to grow it, for example.
+ * Open when there is a note, so it can be read at a glance. Only the owner ever sees it.
+ */
+export function NoteForm({
+  creature,
+  busy,
+  onNote,
+}: {
+  creature: Creature;
+  busy: boolean;
+  onNote: CardActions['onNote'];
+}) {
+  const [draft, setDraft] = useState(creature.note ?? '');
+  const inputId = `note-${creature.id}`;
+  const used = Array.from(draft).length;
+  return (
+    <Accordion title="Note" class="note" defaultOpen={creature.note !== null} keepMounted>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          // Empty means "no note"; the server does the real cleaning and validation.
+          onNote(creature, draft.trim() === '' ? null : draft);
+        }}
+      >
+        <label for={inputId}>Only you can see it</label>
+        <textarea
+          id={inputId}
+          class="prose"
+          value={draft}
+          rows={4}
+          maxLength={NOTE_MAX}
+          onInput={(event) => {
+            setDraft(event.currentTarget.value);
+          }}
+        />
+        <p class="note-foot">
+          <span class="muted">{`${String(used)} / ${String(NOTE_MAX)}`}</span>
+          <button type="submit" disabled={busy || draft === (creature.note ?? '')}>
+            Save
+          </button>
+        </p>
       </form>
     </Accordion>
   );
@@ -434,6 +486,7 @@ export function CreaturePage({
         </Accordion>
 
         <RenameForm creature={creature} busy={busy} onRename={actions.onRename} />
+        <NoteForm creature={creature} busy={busy} onNote={actions.onNote} />
         {teamAction !== undefined && (
           <p class="cp-team-action">
             <button type="button" class="danger" disabled={busy} onClick={teamAction.onAct}>

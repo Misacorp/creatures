@@ -28,6 +28,7 @@ import {
   type WearBlock,
 } from '@creatures/game';
 import { GameError, atomically, type Outcome } from './outcome';
+import { dismantleLocks } from './dismantle-worn';
 import { conversionPending, dismissNotice, pendingNotice } from './gear-convert';
 import { grantWelcomeKit, recentGrants } from './gear-grants';
 import {
@@ -47,6 +48,7 @@ import type {
   GearItemView,
   GearState,
   JobResult,
+  DismantleCheck,
   StartJobInput,
 } from './gear-types';
 import {
@@ -75,6 +77,7 @@ export type {
   JobCommon,
   JobResult,
   JobView,
+  DismantleCheck,
   SkillView,
   StartJobInput,
 } from './gear-types';
@@ -121,6 +124,11 @@ export class Gear {
     this.sql.exec(
       'DELETE FROM gear_actions WHERE created_at < ?',
       this.deps.now() - ACTION_RETENTION_MS,
+    );
+    // The day's dismantled count only matters on its own game day.
+    this.sql.exec(
+      'DELETE FROM dismantle_days WHERE day_start < ?',
+      this.deps.now() - 3 * 86_400_000,
     );
   }
 
@@ -393,6 +401,20 @@ export class Gear {
     });
   }
 
+  // --- Dismantling ---
+
+  /**
+   * Which of these items could not be dismantled right now: worn by a creature that is away or on a job whose
+   * claim reads the item live (see `dismantle-worn.ts`). Read only; the dismantle itself decides again.
+   */
+  dismantleCheck(userId: string, itemIds: readonly string[]): Outcome<DismantleCheck> {
+    return this.atomically(() => {
+      if (new Set(itemIds).size !== itemIds.length) throw new GameError(400, 'invalid_items');
+      const rows = itemIds.map((id) => ownedItem(this.sql, userId, id));
+      return { locked: dismantleLocks(this.sql, userId, rows) };
+    });
+  }
+
   // --- Workshop jobs (see `workshop.ts`; each opens its own transaction) ---
 
   previewCraft(userId: string, creatureId: string, blueprintId: string): Outcome<CraftPreview> {
@@ -405,6 +427,14 @@ export class Gear {
     itemIds: readonly string[],
   ): Outcome<DismantlePreview> {
     return this.workshop.previewDismantle(userId, creatureId, itemIds);
+  }
+
+  /** Dismantles the marked pile with one free creature (see `Workshop.dismantlePile`). */
+  dismantlePile(
+    userId: string,
+    input: { creatureId: string; itemIds: readonly string[]; idempotencyKey: string },
+  ): Outcome<Extract<JobResult, { kind: 'dismantle' }>> {
+    return this.workshop.dismantlePile(userId, input);
   }
 
   startJob(userId: string, input: StartJobInput): Outcome<{ jobId: string }> {

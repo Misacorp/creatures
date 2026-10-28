@@ -7,7 +7,7 @@
  * The raid's schedule comes from the raid view the game loads when it opens (`use-raid-glance.ts`). It is an
  * optional input: every line that needs it is left out when it is null (the load failed or has not landed).
  */
-import type { Attention, Creature } from './api';
+import type { Attention, AwaySummary, Creature } from './api';
 import { creaturesNeedLine, type NeedsState } from './creature-needs';
 import { creatureName } from './game';
 import type { GamesView } from './games-types';
@@ -54,6 +54,8 @@ export interface HomeInput {
   creatureState?: NeedsState;
   raid: RaidGlance | null;
   forecast: Forecast | null;
+  /** What was paid while the player was away, until they dismiss it (the "While you were away" paper); absent or null: none. */
+  away?: AwaySummary | null;
 }
 
 /** "15:20" on the same local day as `now`, else "Sun 20:00". */

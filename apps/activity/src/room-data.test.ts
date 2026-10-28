@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { Creature, RoomResident } from './api';
+import type { Creature, GameState, RoomResident } from './api';
 import type { GearItem } from './gear-types';
 import {
   LOUNGE_REFRESH_MS,
+  applyLoungeXp,
   ROOM_CHUNK,
   ROOM_POLL_MS,
   ROOM_STALE_MS,
@@ -103,6 +104,7 @@ function creature(over: Partial<Creature>): Creature {
     fusionPoints: 0,
     shiny: true,
     nickname: 'Bubbles',
+    note: null,
     away: false,
     caughtAt: 1_000,
     quirk: 'hums-quietly',
@@ -325,5 +327,40 @@ describe('loungeEarning', () => {
 
   it('reloads once per XP: every 2 minutes', () => {
     expect(LOUNGE_REFRESH_MS).toBe(2 * 60_000);
+  });
+});
+
+describe('applyLoungeXp', () => {
+  const push = { creatureId: 'c1', paid: 35, level: 5, exp: 12, waiting: false };
+  const state = {
+    creatures: [
+      creature({ id: 'c1', level: 5, exp: 11, waiting: false }),
+      creature({ id: 'c2', level: 3, exp: 1 }),
+    ],
+    loungeXp: { c1: 34, c2: 2 },
+    loungerId: 'c1',
+  } as unknown as GameState;
+
+  it("writes in the lounger's XP paid today and its experience, and nothing else", () => {
+    const next = applyLoungeXp(state, push);
+    expect(next?.loungeXp).toEqual({ c1: 35, c2: 2 });
+    expect(next?.creatures.map((c) => [c.id, c.level, c.exp])).toEqual([
+      ['c1', 5, 12],
+      ['c2', 3, 1],
+    ]);
+    expect(next?.creatures[1]).toBe(state.creatures[1]);
+    expect(next?.loungerId).toBe('c1');
+  });
+
+  it('does not change the state it was given', () => {
+    applyLoungeXp(state, push);
+    expect(state.loungeXp['c1']).toBe(34);
+    expect(state.creatures[0]?.exp).toBe(11);
+  });
+
+  it('asks for a reload instead on a level-up, a ribbon wait or an unknown creature', () => {
+    expect(applyLoungeXp(state, { ...push, level: 6, exp: 0 })).toBeNull();
+    expect(applyLoungeXp(state, { ...push, waiting: true })).toBeNull();
+    expect(applyLoungeXp(state, { ...push, creatureId: 'zz' })).toBeNull();
   });
 });

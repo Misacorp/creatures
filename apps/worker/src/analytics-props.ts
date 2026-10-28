@@ -302,8 +302,6 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         golden: bool(event.golden),
         slot: int(event.slot, 3),
       };
-    case 'roster_optout':
-      return { optOut: bool(event.optOut) };
     case 'team_set':
       return { auto: bool(event.auto), species: event.species.slice(0, 3).map(species) };
     case 'placement':
@@ -425,10 +423,10 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         glimmer: int(event.glimmer),
         unequipped: bool(event.unequipped),
         ...withParts(event.parts),
-        ...(event.items === undefined ? {} : { items: int(event.items, 5) }),
+        ...(event.items === undefined ? {} : { items: int(event.items, 60) }),
         ...(event.essence === undefined ? {} : { essence: int(event.essence, 1_000) }),
-        ...(event.learned === undefined ? {} : { learned: int(event.learned, 5) }),
-        ...(event.marks === undefined ? {} : { marks: int(event.marks, 5) }),
+        ...(event.learned === undefined ? {} : { learned: int(event.learned, 60) }),
+        ...(event.marks === undefined ? {} : { marks: int(event.marks, 60) }),
       };
     case 'job_start':
       return {

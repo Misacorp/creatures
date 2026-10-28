@@ -3,7 +3,7 @@ import { createGuildApi } from './discord';
 import { createPostSender, publicOrigin } from './discord-posts';
 import { createDmSender } from './dm-send';
 import { createLoungeClient } from './lounge-discord';
-import { LIVE_PATH, FINALE_LIVE_PATH } from './live-socket';
+import { LIVE_PATH, FINALE_LIVE_PATH, RAID_LIVE_PATH } from './live-socket';
 import { LiveHub } from './live-hub';
 import type { DailyRow } from './analytics-rollup';
 import { GuildCore, type SessionUser } from './guild-core';
@@ -17,7 +17,7 @@ import { LEET_BACKFILL_DAYS, createLeetSourceFromEnv } from './leet';
  */
 export class GuildWorld extends DurableObject<Env> {
   private readonly core: GuildCore;
-  /** The live sockets (Hibernation API) and their two pushes; `LOUNGE_LIVE` and `FINALE_LIVE` turn them on. */
+  /** The live sockets (Hibernation API) and their three pushes; `LOUNGE_LIVE`, `FINALE_LIVE` and `RAID_LIVE` turn them on. */
   readonly live: LiveHub;
   /** The UTC day this object last told the directory about its guild. */
   private directoryDay: string | null = null;
@@ -27,7 +27,11 @@ export class GuildWorld extends DurableObject<Env> {
     this.live = new LiveHub({
       sockets: {
         ctx,
-        enabled: { lounge: env.LOUNGE_LIVE === 'on', finale: env.FINALE_LIVE === 'on' },
+        enabled: {
+          lounge: env.LOUNGE_LIVE === 'on',
+          finale: env.FINALE_LIVE === 'on',
+          raid: env.RAID_LIVE === 'on',
+        },
         clientSecret: env.DISCORD_CLIENT_SECRET,
         guildId: () => ctx.id.name ?? '',
         now: Date.now,
@@ -40,6 +44,8 @@ export class GuildWorld extends DurableObject<Env> {
       guildId: () => ctx.id.name,
       raidPractice: env.RAID_PRACTICE === 'on',
       devTools: env.DEV_TOOLS === 'on',
+      // CI sets VERSION to the commit; "dev" (local) keeps the start-up passes on every start.
+      ...(env.VERSION !== 'dev' && env.VERSION !== '' ? { build: env.VERSION } : {}),
       live: this.live,
       analyticsSecret: env.DISCORD_CLIENT_SECRET,
       guildApi: createGuildApi({
@@ -126,27 +132,54 @@ export class GuildWorld extends DurableObject<Env> {
   override async fetch(request: Request): Promise<Response> {
     // The socket upgrades have no Authorization header: they carry a one-time ticket (live-ticket.ts).
     const { pathname } = new URL(request.url);
-    if (pathname === LIVE_PATH) return this.live.upgrade(request);
+    if (pathname === LIVE_PATH || pathname === RAID_LIVE_PATH) {
+      return this.counted(() => this.live.upgrade(request));
+    }
     if (pathname === FINALE_LIVE_PATH) {
-      const res = await this.live.upgrade(request);
-      // A finale socket needs the alarm at the next round start (the lounge's never touches it).
-      if (res.status === 101) await this.core.ensureAlarm();
-      return res;
+      return this.counted(async () => {
+        const res = await this.live.upgrade(request);
+        // A finale socket needs the alarm at the next round start (the lounge's never touches it).
+        if (res.status === 101) await this.core.ensureAlarm();
+        return res;
+      });
     }
     return this.core.handle(request);
   }
 
+  /** Runs socket work and adds the rows it read to the `socket` source of the day's counter (`read-meter.ts`). */
+  private counted<T>(work: () => T): T {
+    try {
+      const result = work();
+      if (result instanceof Promise) {
+        return result.finally(() => {
+          this.core.flushSocketReads();
+        }) as T;
+      }
+      this.core.flushSocketReads();
+      return result;
+    } catch (err) {
+      this.core.flushSocketReads();
+      throw err;
+    }
+  }
+
   // The Hibernation API's handlers: the runtime calls them even after the object slept.
   override webSocketMessage(ws: WebSocket): void {
-    this.live.webSocketMessage(ws);
+    this.counted(() => {
+      this.live.webSocketMessage(ws);
+    });
   }
 
   override webSocketClose(ws: WebSocket, code: number): void {
-    this.live.webSocketClose(ws, code);
+    this.counted(() => {
+      this.live.webSocketClose(ws, code);
+    });
   }
 
   override webSocketError(ws: WebSocket): void {
-    this.live.webSocketError(ws);
+    this.counted(() => {
+      this.live.webSocketError(ws);
+    });
   }
 
   override alarm(): Promise<void> {

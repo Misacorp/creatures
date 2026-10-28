@@ -35,10 +35,8 @@ const raid = {
   parties: [{ party: 1, size: 1 }],
   you: {
     inRoster: true,
-    optOut: false,
     party: 1,
     canEdit: true,
-    canOptOut: true,
     ability: { abilityId: 'rally', chosen: false },
     abilities: [
       {
@@ -61,10 +59,7 @@ const raid = {
     ],
     reveal: null,
     team: {
-      mode: 'auto',
-      creatures: [
-        { creatureId: 'c1', species: 'splashet', name: 'Splashet', level: 3, slot: null },
-      ],
+      creatures: [{ creatureId: 'c1', species: 'splashet', name: 'Splashet', level: 3, slot: 1 }],
     },
   },
   party: {
@@ -81,13 +76,10 @@ const raid = {
           name: 'Splashet',
           level: 3,
           mine: true,
-          auto: false,
-          movable: false,
           creatureId: 'c1',
         },
       },
     ],
-    away: [],
     guests: true,
     bossHp: { max: 100, current: 100 },
     adaptation: null,
@@ -96,7 +88,7 @@ const raid = {
   },
 };
 
-describe('parseRaidView and the board tiles of the auto-join and away rules', () => {
+describe('parseRaidView and the board tiles', () => {
   const party = raid.party;
   const withRow = (creature: unknown) => ({
     ...raid,
@@ -104,50 +96,23 @@ describe('parseRaidView and the board tiles of the auto-join and away rules', ()
   });
   const tile = { ownerName: 'Jun', species: 'cindle', name: 'Cindle', level: 4, mine: false };
 
-  it('reads an auto tile, a movable tile of an away teammate and who moved it', () => {
-    const parsed = parseRaidView(
-      withRow({ ...tile, auto: true, movable: true, creatureId: 'c9', movedBy: 'Kim' }),
-    );
-    expect(parsed.party?.row[0]?.creature).toMatchObject({
-      auto: true,
-      movable: true,
-      movedBy: 'Kim',
-      creatureId: 'c9',
-    });
+  it('reads a tile with its owner, and the creature id of your own', () => {
+    const parsed = parseRaidView(withRow({ ...tile, mine: true, creatureId: 'c9' }));
+    expect(parsed.party?.row[0]?.creature).toMatchObject({ mine: true, creatureId: 'c9' });
+    expect(parseRaidView(withRow(tile)).party?.row[0]?.creature).toEqual(tile);
   });
 
-  it('refuses a tile without the flags or with the wrong types', () => {
-    expect(() => parseRaidView(withRow({ ...tile, movable: false }))).toThrow();
-    expect(() => parseRaidView(withRow({ ...tile, auto: false }))).toThrow();
-    expect(() => parseRaidView(withRow({ ...tile, auto: 'yes', movable: false }))).toThrow();
-    expect(() => parseRaidView(withRow({ ...tile, auto: false, movable: 1 }))).toThrow();
-    expect(() =>
-      parseRaidView(withRow({ ...tile, auto: false, movable: false, movedBy: 4 })),
-    ).toThrow();
+  it('refuses a tile with the wrong types', () => {
+    expect(() => parseRaidView(withRow({ ...tile, mine: 'yes' }))).toThrow();
+    expect(() => parseRaidView(withRow({ ...tile, level: 1.5 }))).toThrow();
+    expect(() => parseRaidView(withRow({ ...tile, creatureId: 4 }))).toThrow();
   });
 
-  it('reads the away teammates and refuses a broken list', () => {
-    const away = [
-      {
-        ownerName: 'Jun',
-        creatures: [
-          { creatureId: 'c9', species: 'cindle', name: 'Cindle', level: 4, joining: true },
-          { creatureId: 'c8', species: 'splashet', name: 'Splashet', level: 2, joining: false },
-        ],
-      },
-    ];
-    expect(parseRaidView({ ...raid, party: { ...party, away } }).party?.away).toEqual(away);
-    const bad = (value: unknown) => parseRaidView({ ...raid, party: { ...party, away: value } });
-    expect(() => bad(undefined)).toThrow();
-    expect(() => bad('Jun')).toThrow();
-    expect(() => bad([{ ownerName: 'Jun' }])).toThrow();
-    expect(() => bad([{ ...away[0], ownerName: 4 }])).toThrow();
-    expect(() =>
-      bad([{ ownerName: 'Jun', creatures: [{ ...away[0]?.creatures[0], joining: 'yes' }] }]),
-    ).toThrow();
-    expect(() =>
-      bad([{ ownerName: 'Jun', creatures: [{ ...away[0]?.creatures[0], level: 1.5 }] }]),
-    ).toThrow();
+  it('reads the player who has not joined: no team and a board to place on', () => {
+    const you = { ...raid.you, inRoster: false, party: null, team: null, ability: null };
+    const parsed = parseRaidView({ ...raid, you });
+    expect(parsed.you).toMatchObject({ inRoster: false, party: null, team: null });
+    expect(parsed.party?.row.length).toBeGreaterThan(0);
   });
 });
 
@@ -248,7 +213,6 @@ describe('parseRaidView with a Festival week (real server responses)', () => {
     expect(Object.keys(parsed.party ?? {}).sort()).toEqual(
       [
         'adaptation',
-        'away',
         'bossHp',
         'guests',
         'party',

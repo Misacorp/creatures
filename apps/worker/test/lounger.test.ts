@@ -1,5 +1,6 @@
 import { SCHEMA_VERSION } from '../src/migrations';
-import { ROOM_SPOT_IDS, RULES, createSeededRng, type Rng } from '@creatures/game';
+import { ROOM_SPOT_IDS, RULES } from '@creatures/game';
+import { loungeDay } from '../src/lounge-company';
 import { describe, expect, it } from 'vitest';
 import { createHandler } from '../src/index';
 import { giveItem } from './gear-helpers';
@@ -16,19 +17,6 @@ import {
 } from './helpers';
 import { count, nextGuild, rows, seedPlayer, type Seeded } from './raid-helpers';
 import { type Json, setCreature } from './kit';
-
-/** Returns the scripted values in order, then fails loudly: tests must account for every draw. */
-function scriptedRng(values: number[]): Rng & { drawn: () => number } {
-  let i = 0;
-  return {
-    nextU32() {
-      const value = values[i++];
-      if (value === undefined) throw new Error('scripted rng exhausted');
-      return value;
-    },
-    drawn: () => i,
-  };
-}
 
 interface Session {
   call: (method: string, path: string, body?: unknown) => Promise<Json>;
@@ -152,48 +140,54 @@ interface RoomBody {
 const room = async (p: Session, userIds: string[]): Promise<Json & { body: RoomBody }> =>
   (await p.call('POST', '/api/room', { userIds })) as Json & { body: RoomBody };
 
+/** Today's game day, as the core computes it (the clock stands still in a test). */
+const today = (ctx: CoreContext): string => loungeDay(ctx.clock.t, ctx.core.timezone()).day;
+
+const CAP = RULES.experience.lounge.dailyCap;
+
+/** Records what lounging paid a creature on a game day. */
+function setPaid(
+  ctx: CoreContext,
+  userId: string,
+  creatureId: string,
+  day: string,
+  paid: number,
+): void {
+  ctx.sql.exec(
+    `INSERT INTO lounge_rest (creature_id, user_id, day, paid) VALUES (?, ?, ?, ?)
+     ON CONFLICT(creature_id) DO UPDATE SET day = excluded.day, paid = excluded.paid`,
+    creatureId,
+    userId,
+    day,
+    paid,
+  );
+}
+
 describe('the lounger in /api/state', () => {
-  it('picks an idle creature at random on first read and stores it', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await member(ctx, 1);
-        expect(storedLounger(ctx, a.id)).toBeNull();
-        // Draw 1 of 3 candidates (in the order caught): the second creature.
-        expect(await loungerIdOf(a)).toBe(a.creatureIds[1]);
-        expect(storedLounger(ctx, a.id)).toBe(a.creatureIds[1]);
-      },
-      { loungerRng: scriptedRng([1]) },
-    );
+  it('picks the newest free creature on first read and stores it', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      expect(storedLounger(ctx, a.id)).toBeNull();
+      expect(await loungerIdOf(a)).toBe(a.creatureIds[2]);
+      expect(storedLounger(ctx, a.id)).toBe(a.creatureIds[2]);
+    });
   });
 
-  it('keeps the stored lounger on later reads without drawing again', async () => {
-    const rng = scriptedRng([2]);
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await member(ctx, 1);
-        expect(await loungerIdOf(a)).toBe(a.creatureIds[2]);
-        expect(await loungerIdOf(a)).toBe(a.creatureIds[2]);
-        expect(await loungerIdOf(a)).toBe(a.creatureIds[2]);
-        expect(rng.drawn()).toBe(1);
-      },
-      { loungerRng: rng },
-    );
+  it('keeps the stored lounger, even when a newer creature is free', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      ctx.sql.exec('UPDATE players SET lounger_id = ? WHERE user_id = ?', a.creatureIds[0], a.id);
+      expect(await loungerIdOf(a)).toBe(a.creatureIds[0]);
+      expect(storedLounger(ctx, a.id)).toBe(a.creatureIds[0]);
+    });
   });
 
   it('is null for a player without creatures and stores nothing', async () => {
-    const rng = scriptedRng([]);
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await member(ctx, 1, { creatures: 0, starter: false });
-        expect(await loungerIdOf(a)).toBeNull();
-        expect(storedLounger(ctx, a.id)).toBeNull();
-        expect(rng.drawn()).toBe(0);
-      },
-      { loungerRng: rng },
-    );
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1, { creatures: 0, starter: false });
+      expect(await loungerIdOf(a)).toBeNull();
+      expect(storedLounger(ctx, a.id)).toBeNull();
+    });
   });
 
   it('is in the state echoed by POST routes too', async () => {
@@ -207,126 +201,142 @@ describe('the lounger in /api/state', () => {
     });
   });
 
-  it('re-picks, at random, when the lounger goes on an expedition', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await member(ctx, 1);
-        const first = a.creatureIds[0] as string;
-        expect(await loungerIdOf(a)).toBe(first);
-        expect((await sendOnTrip(a, first)).status).toBe(200);
-        // Idle now: creatures 1 and 2. Draw 1 picks the second of the two.
-        expect(await loungerIdOf(a)).toBe(a.creatureIds[2]);
-        expect(storedLounger(ctx, a.id)).toBe(a.creatureIds[2]);
-      },
-      { loungerRng: scriptedRng([0, 1]) },
-    );
+  it('re-picks the newest free one when the lounger goes on an expedition', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      const [, c1, c2] = a.creatureIds as [string, string, string];
+      expect(await loungerIdOf(a)).toBe(c2);
+      expect((await sendOnTrip(a, c2)).status).toBe(200);
+      expect(await loungerIdOf(a)).toBe(c1);
+      expect(storedLounger(ctx, a.id)).toBe(c1);
+    });
   });
 
   it('re-picks when the lounger starts a workshop job, and never picks a creature on a job', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await member(ctx, 1);
-        const [c0, c1, c2] = a.creatureIds as [string, string, string];
-        expect(await loungerIdOf(a)).toBe(c0);
-        startJob(ctx, a.id, c0);
-        startJob(ctx, a.id, c1);
-        // Only the third is idle: no draw is needed.
-        expect(await loungerIdOf(a)).toBe(c2);
-        expect(storedLounger(ctx, a.id)).toBe(c2);
-      },
-      { loungerRng: scriptedRng([0]) },
-    );
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      const [c0, c1, c2] = a.creatureIds as [string, string, string];
+      expect(await loungerIdOf(a)).toBe(c2);
+      startJob(ctx, a.id, c2);
+      startJob(ctx, a.id, c1);
+      expect(await loungerIdOf(a)).toBe(c0);
+      expect(storedLounger(ctx, a.id)).toBe(c0);
+    });
   });
 
   it('re-picks when the lounger no longer exists', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await member(ctx, 1);
-        expect(await loungerIdOf(a)).toBe(a.creatureIds[0]);
-        ctx.sql.exec('DELETE FROM creatures WHERE id = ?', a.creatureIds[0]);
-        expect(await loungerIdOf(a)).toBe(a.creatureIds[1]);
-        expect(storedLounger(ctx, a.id)).toBe(a.creatureIds[1]);
-      },
-      { loungerRng: scriptedRng([0, 0]) },
-    );
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      expect(await loungerIdOf(a)).toBe(a.creatureIds[2]);
+      ctx.sql.exec('DELETE FROM creatures WHERE id = ?', a.creatureIds[2]);
+      expect(await loungerIdOf(a)).toBe(a.creatureIds[1]);
+      expect(storedLounger(ctx, a.id)).toBe(a.creatureIds[1]);
+    });
   });
 
   it('ignores a stored lounger that belongs to someone else', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await member(ctx, 1, { creatures: 1 });
-        const b = await member(ctx, 2, { creatures: 1 });
-        ctx.sql.exec('UPDATE players SET lounger_id = ? WHERE user_id = ?', b.creatureIds[0], a.id);
-        expect(await loungerIdOf(a)).toBe(a.creatureIds[0]);
-        expect(storedLounger(ctx, a.id)).toBe(a.creatureIds[0]);
-      },
-      { loungerRng: scriptedRng([]) },
-    );
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1, { creatures: 1 });
+      const b = await member(ctx, 2, { creatures: 1 });
+      ctx.sql.exec('UPDATE players SET lounger_id = ? WHERE user_id = ?', b.creatureIds[0], a.id);
+      expect(await loungerIdOf(a)).toBe(a.creatureIds[0]);
+      expect(storedLounger(ctx, a.id)).toBe(a.creatureIds[0]);
+    });
   });
 
   it('is null and stored as NULL while everything is busy, and picks again once one is free', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await member(ctx, 1, { creatures: 2 });
-        const [c0, c1] = a.creatureIds as [string, string];
-        expect(await loungerIdOf(a)).toBe(c0);
-        const job0 = startJob(ctx, a.id, c0);
-        startJob(ctx, a.id, c1);
-        expect(await loungerIdOf(a)).toBeNull();
-        expect(storedLounger(ctx, a.id)).toBeNull();
-        // A job is claimed: its creature can lounge again.
-        ctx.sql.exec('UPDATE workshop_jobs SET claimed_at = 5 WHERE id = ?', job0);
-        expect(await loungerIdOf(a)).toBe(c0);
-        expect(storedLounger(ctx, a.id)).toBe(c0);
-      },
-      { loungerRng: scriptedRng([0]) },
-    );
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1, { creatures: 2 });
+      const [c0, c1] = a.creatureIds as [string, string];
+      expect(await loungerIdOf(a)).toBe(c1);
+      const job1 = startJob(ctx, a.id, c1);
+      startJob(ctx, a.id, c0);
+      expect(await loungerIdOf(a)).toBeNull();
+      expect(storedLounger(ctx, a.id)).toBeNull();
+      // A job is claimed: its creature can lounge again.
+      ctx.sql.exec('UPDATE workshop_jobs SET claimed_at = 5 WHERE id = ?', job1);
+      expect(await loungerIdOf(a)).toBe(c1);
+      expect(storedLounger(ctx, a.id)).toBe(c1);
+    });
   });
 
   it('does not count a raid as busy: a raider keeps lounging', async () => {
-    const rng = scriptedRng([0]);
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await member(ctx, 1, { creatures: 3 });
-        const [c0, c1, c2] = a.creatureIds as [string, string, string];
-        expect(await loungerIdOf(a)).toBe(c0);
-        putOnRaidTeam(ctx, a.id, [c0, c1, c2]);
-        expect(await loungerIdOf(a)).toBe(c0);
-        expect(rng.drawn()).toBe(1);
-      },
-      { loungerRng: rng },
-    );
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1, { creatures: 3 });
+      const [c0, c1, c2] = a.creatureIds as [string, string, string];
+      expect(await loungerIdOf(a)).toBe(c2);
+      putOnRaidTeam(ctx, a.id, [c0, c1, c2]);
+      expect(await loungerIdOf(a)).toBe(c2);
+    });
   });
 
-  it('works with the live crypto source by default', async () => {
+  it('prefers a creature that is not Rested today over a newer Rested one', async () => {
     await runCore(nextGuild(), async (ctx) => {
       const a = await member(ctx, 1);
-      const picked = await loungerIdOf(a);
-      expect(a.creatureIds).toContain(picked);
+      const [c0, c1, c2] = a.creatureIds as [string, string, string];
+      setPaid(ctx, a.id, c2, today(ctx), CAP);
+      setPaid(ctx, a.id, c1, today(ctx), CAP - 1);
+      // The newest is Rested; the next one is one XP short of it, so it is not.
+      expect(await loungerIdOf(a)).toBe(c1);
+      // Everyone Rested: the newest of them.
+      setPaid(ctx, a.id, c1, today(ctx), CAP);
+      setPaid(ctx, a.id, c0, today(ctx), CAP);
+      ctx.sql.exec('UPDATE players SET lounger_id = NULL WHERE user_id = ?', a.id);
+      expect(await loungerIdOf(a)).toBe(c2);
+    });
+  });
+
+  it('counts a Rested row of an older day as nothing paid', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      setPaid(ctx, a.id, a.creatureIds[2] as string, '2000-01-01', CAP);
+      expect(await loungerIdOf(a)).toBe(a.creatureIds[2]);
+    });
+  });
+
+  it('skips busy creatures when it prefers one that is not Rested', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      const [c0, c1, c2] = a.creatureIds as [string, string, string];
+      startJob(ctx, a.id, c2);
+      setPaid(ctx, a.id, c1, today(ctx), CAP);
+      // c2 is busy and c1 is Rested: c0 is the only free one that is not Rested.
+      expect(await loungerIdOf(a)).toBe(c0);
+    });
+  });
+
+  it('picks with a query that walks creatures_user from the newest and stops early', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1, { creatures: 6 });
+      const plan = ctx.sql
+        .exec<{ detail: string }>(
+          `EXPLAIN QUERY PLAN SELECT c.id FROM creatures c WHERE c.user_id = ? AND c.away_expedition_id IS NULL
+           AND NOT EXISTS (SELECT 1 FROM workshop_jobs j WHERE j.creature_id = c.id AND j.user_id = c.user_id AND j.claimed_at IS NULL)
+           AND NOT EXISTS (SELECT 1 FROM lounge_rest r WHERE r.creature_id = c.id AND r.day = ? AND r.paid >= ?)
+           ORDER BY c.caught_at DESC, c.rowid DESC LIMIT 1`,
+          a.id,
+          'd',
+          60,
+        )
+        .toArray()
+        .map((r) => r.detail);
+      expect(plan.some((d) => d.includes('USING INDEX creatures_user'))).toBe(true);
+      expect(plan.some((d) => d.includes('TEMP B-TREE'))).toBe(false);
+      expect(plan.some((d) => /SCAN (j|workshop_jobs)/.test(d))).toBe(false);
     });
   });
 });
 
 describe('PUT /api/lounger', () => {
   it('stores the choice, answers { loungerId } and shows it in the state', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await member(ctx, 1);
-        const target = a.creatureIds[2] as string;
-        const res = await a.call('PUT', '/api/lounger', { creatureId: target });
-        expect(res).toEqual({ status: 200, body: { loungerId: target } });
-        expect(storedLounger(ctx, a.id)).toBe(target);
-        expect(await loungerIdOf(a)).toBe(target);
-      },
-      { loungerRng: scriptedRng([]) },
-    );
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      const target = a.creatureIds[2] as string;
+      const res = await a.call('PUT', '/api/lounger', { creatureId: target });
+      expect(res).toEqual({ status: 200, body: { loungerId: target } });
+      expect(storedLounger(ctx, a.id)).toBe(target);
+      expect(await loungerIdOf(a)).toBe(target);
+    });
   });
 
   it('answers 404 creature_not_found for a creature of another player, and changes nothing', async () => {
@@ -522,28 +532,24 @@ describe('PUT /api/lounge-spot', () => {
   });
 
   it('keeps the spot when the lounger changes, goes busy or is fused away', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await member(ctx, 1);
-        ctx.clock.t = T0 + 9_000;
-        await a.call('PUT', '/api/lounge-spot', { spotId: 'window-sill' });
-        const spot = { id: 'window-sill', at: T0 + 9_000 };
-        // Choosing another lounger leaves the spot alone.
-        await a.call('PUT', '/api/lounger', { creatureId: a.creatureIds[2] });
-        expect(await spotOf(a)).toEqual(spot);
-        // The lounger goes on an expedition and a new one is picked: same spot.
-        expect((await sendOnTrip(a, a.creatureIds[2] as string)).status).toBe(200);
-        expect(await loungerIdOf(a)).not.toBe(a.creatureIds[2]);
-        expect(await spotOf(a)).toEqual(spot);
-        // The lounger no longer exists: same spot.
-        const current = (await loungerIdOf(a)) as string;
-        ctx.sql.exec('DELETE FROM creatures WHERE id = ?', current);
-        expect(await loungerIdOf(a)).not.toBe(current);
-        expect(await spotOf(a)).toEqual(spot);
-      },
-      { loungerRng: scriptedRng([0, 0]) },
-    );
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      ctx.clock.t = T0 + 9_000;
+      await a.call('PUT', '/api/lounge-spot', { spotId: 'window-sill' });
+      const spot = { id: 'window-sill', at: T0 + 9_000 };
+      // Choosing another lounger leaves the spot alone.
+      await a.call('PUT', '/api/lounger', { creatureId: a.creatureIds[2] });
+      expect(await spotOf(a)).toEqual(spot);
+      // The lounger goes on an expedition and a new one is picked: same spot.
+      expect((await sendOnTrip(a, a.creatureIds[2] as string)).status).toBe(200);
+      expect(await loungerIdOf(a)).not.toBe(a.creatureIds[2]);
+      expect(await spotOf(a)).toEqual(spot);
+      // The lounger no longer exists: same spot.
+      const current = (await loungerIdOf(a)) as string;
+      ctx.sql.exec('DELETE FROM creatures WHERE id = ?', current);
+      expect(await loungerIdOf(a)).not.toBe(current);
+      expect(await spotOf(a)).toEqual(spot);
+    });
   });
 
   it('works while every creature of the player is busy', async () => {
@@ -592,26 +598,22 @@ describe('the spot in /api/state and /api/room', () => {
   });
 
   it('shows the spot and its time on each resident, and null for players who never chose', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await member(ctx, 1);
-        const b = await member(ctx, 2);
-        const c = await member(ctx, 3);
-        ctx.clock.t = T0 + 100;
-        await a.call('PUT', '/api/lounge-spot', { spotId: 'fire-mantel' });
-        ctx.clock.t = T0 + 200;
-        await b.call('PUT', '/api/lounge-spot', { spotId: 'couch-middle' });
-        await b.call('PUT', '/api/lounge-spot', { spotId: null });
-        const res = await room(c, [a.id, b.id, c.id]);
-        expect(res.body.residents.map((r) => r.spot)).toEqual([
-          { id: 'fire-mantel', at: T0 + 100 },
-          null,
-          null,
-        ]);
-      },
-      { loungerRng: scriptedRng([0, 0, 0]) },
-    );
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      const b = await member(ctx, 2);
+      const c = await member(ctx, 3);
+      ctx.clock.t = T0 + 100;
+      await a.call('PUT', '/api/lounge-spot', { spotId: 'fire-mantel' });
+      ctx.clock.t = T0 + 200;
+      await b.call('PUT', '/api/lounge-spot', { spotId: 'couch-middle' });
+      await b.call('PUT', '/api/lounge-spot', { spotId: null });
+      const res = await room(c, [a.id, b.id, c.id]);
+      expect(res.body.residents.map((r) => r.spot)).toEqual([
+        { id: 'fire-mantel', at: T0 + 100 },
+        null,
+        null,
+      ]);
+    });
   });
 
   it('keeps the spot of a resident whose creature is busy', async () => {
@@ -632,27 +634,23 @@ describe('the spot in /api/state and /api/room', () => {
   });
 
   it('reads a stored id that is no longer a spot as null, in the room and in the state', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await member(ctx, 1);
-        ctx.sql.exec(
-          "UPDATE players SET lounge_spot = 'removed-spot', lounge_spot_at = ? WHERE user_id = ?",
-          T0,
-          a.id,
-        );
-        expect((await room(a, [a.id])).body.residents[0]?.spot).toBeNull();
-        expect(await spotOf(a)).toBeNull();
-        // Half-set rows (no time) are also treated as not set.
-        ctx.sql.exec(
-          "UPDATE players SET lounge_spot = 'couch-left', lounge_spot_at = NULL WHERE user_id = ?",
-          a.id,
-        );
-        expect((await room(a, [a.id])).body.residents[0]?.spot).toBeNull();
-        expect(await spotOf(a)).toBeNull();
-      },
-      { loungerRng: scriptedRng([0]) },
-    );
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      ctx.sql.exec(
+        "UPDATE players SET lounge_spot = 'removed-spot', lounge_spot_at = ? WHERE user_id = ?",
+        T0,
+        a.id,
+      );
+      expect((await room(a, [a.id])).body.residents[0]?.spot).toBeNull();
+      expect(await spotOf(a)).toBeNull();
+      // Half-set rows (no time) are also treated as not set.
+      ctx.sql.exec(
+        "UPDATE players SET lounge_spot = 'couch-left', lounge_spot_at = NULL WHERE user_id = ?",
+        a.id,
+      );
+      expect((await room(a, [a.id])).body.residents[0]?.spot).toBeNull();
+      expect(await spotOf(a)).toBeNull();
+    });
   });
 });
 
@@ -669,185 +667,167 @@ describe('POST /api/room: first on server', () => {
   };
 
   it('flags a lounger whose owner holds the record for its species or its line, from the records alone', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await member(ctx, 1, { name: 'Alice' });
-        const b = await member(ctx, 2, { name: 'Bob' });
-        const c = await member(ctx, 3, { name: 'Cleo' });
-        const speciesOf = (id: string): string =>
-          rows<{ species: string }>(ctx.sql, 'SELECT species FROM creatures WHERE id = ?', id)[0]
-            ?.species ?? '';
-        const aSpecies = speciesOf(a.creatureIds[0] as string);
-        // Alice holds a catch record; Bob only the hidden jackpot record; Cleo's record is someone else's species.
-        record(ctx, a.id, 'catch', aSpecies);
-        record(ctx, b.id, 'jackpot', speciesOf(b.creatureIds[0] as string));
-        record(ctx, c.id, 'catch', 'not-a-species-of-hers');
-        const res = await room(a, [a.id, b.id, c.id]);
-        expect(res.body.residents.map((r) => r.creature?.firstOnServer)).toEqual([
-          true,
-          false,
-          false,
-        ]);
-      },
-      { loungerRng: scriptedRng([0, 0, 0]) },
-    );
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1, { name: 'Alice' });
+      const b = await member(ctx, 2, { name: 'Bob' });
+      const c = await member(ctx, 3, { name: 'Cleo' });
+      const speciesOf = (id: string): string =>
+        rows<{ species: string }>(ctx.sql, 'SELECT species FROM creatures WHERE id = ?', id)[0]
+          ?.species ?? '';
+      const aSpecies = speciesOf(a.creatureIds[2] as string);
+      // Alice holds a catch record; Bob only the hidden jackpot record; Cleo's record is someone else's species.
+      record(ctx, a.id, 'catch', aSpecies);
+      record(ctx, b.id, 'jackpot', speciesOf(b.creatureIds[2] as string));
+      record(ctx, c.id, 'catch', 'not-a-species-of-hers');
+      const res = await room(a, [a.id, b.id, c.id]);
+      expect(res.body.residents.map((r) => r.creature?.firstOnServer)).toEqual([
+        true,
+        false,
+        false,
+      ]);
+    });
   });
 });
 
 describe('POST /api/room', () => {
   it('answers the residents in the order asked, with the room view of their lounger', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await member(ctx, 1, { name: 'Alice' });
-        const b = await member(ctx, 2, { name: 'Bob' });
-        // Bob's lounger has a nickname and is shiny; crafting and explorer XP are stored per creature.
-        const bobCreature = b.creatureIds[0] as string;
-        setCreature(ctx, bobCreature, { nickname: 'Puddle', shiny: 1 });
-        const craftXp = RULES.gear.skill.xpForLevel[2] as number;
-        const exploreXp = RULES.expeditions.rank.xpForRank[1] as number;
-        ctx.sql.exec(
-          'INSERT INTO crafting_skill (user_id, creature_id, xp) VALUES (?, ?, ?)',
-          b.id,
-          bobCreature,
-          craftXp,
-        );
-        ctx.sql.exec(
-          'INSERT INTO explorer_progress (user_id, creature_id, xp, trips) VALUES (?, ?, ?, 1)',
-          b.id,
-          bobCreature,
-          exploreXp,
-        );
-        const res = await room(a, [b.id, a.id]);
-        expect(res.status).toBe(200);
-        expect(Object.keys(res.body)).toEqual(['residents']);
-        expect(res.body.residents.map((r) => r.userId)).toEqual([b.id, a.id]);
-        const [rb, ra] = res.body.residents as [
-          RoomBody['residents'][number],
-          RoomBody['residents'][number],
-        ];
-        expect(rb.name).toBe('Bob');
-        expect(ra.name).toBe('Alice');
-        expect(Object.keys(rb).sort()).toEqual(['creature', 'name', 'spot', 'userId']);
-        expect(rb.creature).toMatchObject({
-          id: bobCreature,
-          nickname: 'Puddle',
-          shiny: true,
-          craftingLevel: 3,
-          explorerRank: 2,
-        });
-        expect(Object.keys(rb.creature ?? {}).sort()).toEqual([
-          'craftingLevel',
-          'explorerRank',
-          'firstOnServer',
-          'gear',
-          'id',
-          'level',
-          'nickname',
-          'quirk',
-          'shiny',
-          'species',
-        ]);
-        // Fresh creatures: level 1 crafting and rank 1, no nickname, not shiny.
-        expect(ra.creature).toMatchObject({
-          id: a.creatureIds[0],
-          nickname: null,
-          shiny: false,
-          craftingLevel: 1,
-          explorerRank: 1,
-          firstOnServer: false,
-          gear: [],
-        });
-        expect(typeof ra.creature?.species).toBe('string');
-        expect(typeof ra.creature?.level).toBe('number');
-        expect(typeof ra.creature?.quirk).toBe('string');
-      },
-      { loungerRng: scriptedRng([0, 0]) },
-    );
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1, { name: 'Alice' });
+      const b = await member(ctx, 2, { name: 'Bob' });
+      // Bob's lounger has a nickname and is shiny; crafting and explorer XP are stored per creature.
+      const bobCreature = b.creatureIds[2] as string;
+      setCreature(ctx, bobCreature, { nickname: 'Puddle', shiny: 1 });
+      const craftXp = RULES.gear.skill.xpForLevel[2] as number;
+      const exploreXp = RULES.expeditions.rank.xpForRank[1] as number;
+      ctx.sql.exec(
+        'INSERT INTO crafting_skill (user_id, creature_id, xp) VALUES (?, ?, ?)',
+        b.id,
+        bobCreature,
+        craftXp,
+      );
+      ctx.sql.exec(
+        'INSERT INTO explorer_progress (user_id, creature_id, xp, trips) VALUES (?, ?, ?, 1)',
+        b.id,
+        bobCreature,
+        exploreXp,
+      );
+      const res = await room(a, [b.id, a.id]);
+      expect(res.status).toBe(200);
+      expect(Object.keys(res.body)).toEqual(['residents']);
+      expect(res.body.residents.map((r) => r.userId)).toEqual([b.id, a.id]);
+      const [rb, ra] = res.body.residents as [
+        RoomBody['residents'][number],
+        RoomBody['residents'][number],
+      ];
+      expect(rb.name).toBe('Bob');
+      expect(ra.name).toBe('Alice');
+      expect(Object.keys(rb).sort()).toEqual(['creature', 'name', 'spot', 'userId']);
+      expect(rb.creature).toMatchObject({
+        id: bobCreature,
+        nickname: 'Puddle',
+        shiny: true,
+        craftingLevel: 3,
+        explorerRank: 2,
+      });
+      expect(Object.keys(rb.creature ?? {}).sort()).toEqual([
+        'craftingLevel',
+        'explorerRank',
+        'firstOnServer',
+        'gear',
+        'id',
+        'level',
+        'nickname',
+        'quirk',
+        'shiny',
+        'species',
+      ]);
+      // Fresh creatures: level 1 crafting and rank 1, no nickname, not shiny.
+      expect(ra.creature).toMatchObject({
+        id: a.creatureIds[2],
+        nickname: null,
+        shiny: false,
+        craftingLevel: 1,
+        explorerRank: 1,
+        firstOnServer: false,
+        gear: [],
+      });
+      expect(typeof ra.creature?.species).toBe('string');
+      expect(typeof ra.creature?.level).toBe('number');
+      expect(typeof ra.creature?.quirk).toBe('string');
+    });
   });
 
   it('shows the worn items in the shape of the state view with their line texts, and none when nothing is worn', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await member(ctx, 1, { creatures: 2 });
-        const b = await member(ctx, 2, { creatures: 2 });
-        const c = await member(ctx, 3, { creatures: 2 });
-        const wear = (
-          userId: string,
-          creatureId: string | null,
-          baseId: string,
-          level: number,
-          lines: [string, number][],
-        ): string => {
-          const id = giveItem(ctx.sql, userId, baseId, { rarity: 'rare', level, lines, now: T0 });
-          ctx.sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', creatureId, id);
-          return id;
-        };
-        const hat = wear(b.id, b.creatureIds[0] as string, 'acorn-cap', 3, [
-          ['attack-local-pct', 0],
-          ['attack-local-flat', 0],
-        ]);
-        const scarf = wear(b.id, b.creatureIds[0] as string, 'patch-scarf', 3, [
-          ['hp-local-pct', 0],
-        ]);
-        // An unworn item of Bob's, and an item on his other creature, must not show up.
-        wear(b.id, null, 'kelp-cap', 1, [['attack-local-pct', 0]]);
-        wear(b.id, b.creatureIds[1] as string, 'trail-cap', 1, [['attack-local-pct', 0]]);
-        const res = await room(a, [a.id, b.id, c.id]);
-        const [ra, rb, rc] = res.body.residents as [
-          RoomBody['residents'][number],
-          RoomBody['residents'][number],
-          RoomBody['residents'][number],
-        ];
-        expect(ra.creature?.gear).toEqual([]);
-        expect(rc.creature?.gear).toEqual([]);
-        expect(rb.creature?.gear).toEqual([
-          {
-            id: hat,
-            baseId: 'acorn-cap',
-            slot: 'hat',
-            rarity: 'rare',
-            itemLevel: 3,
-            lines: ['+20% Attack (this item)', '+2 Attack (this item)'],
-          },
-          {
-            id: scarf,
-            baseId: 'patch-scarf',
-            slot: 'scarf',
-            rarity: 'rare',
-            itemLevel: 3,
-            lines: ['+20% HP (this item)'],
-          },
-        ]);
-        // The owner's own state view shows the same items (without the line texts).
-        const state = (await b.call('GET', '/api/state')).body as {
-          creatures: { id: string; gear: unknown }[];
-        };
-        expect(state.creatures.find((x) => x.id === b.creatureIds[0])?.gear).toEqual([
-          { id: hat, baseId: 'acorn-cap', slot: 'hat', rarity: 'rare', itemLevel: 3 },
-          { id: scarf, baseId: 'patch-scarf', slot: 'scarf', rarity: 'rare', itemLevel: 3 },
-        ]);
-      },
-      { loungerRng: scriptedRng([0, 0, 0]) },
-    );
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1, { creatures: 2 });
+      const b = await member(ctx, 2, { creatures: 2 });
+      const c = await member(ctx, 3, { creatures: 2 });
+      const wear = (
+        userId: string,
+        creatureId: string | null,
+        baseId: string,
+        level: number,
+        lines: [string, number][],
+      ): string => {
+        const id = giveItem(ctx.sql, userId, baseId, { rarity: 'rare', level, lines, now: T0 });
+        ctx.sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', creatureId, id);
+        return id;
+      };
+      const hat = wear(b.id, b.creatureIds[1] as string, 'acorn-cap', 3, [
+        ['attack-local-pct', 0],
+        ['attack-local-flat', 0],
+      ]);
+      const scarf = wear(b.id, b.creatureIds[1] as string, 'patch-scarf', 3, [['hp-local-pct', 0]]);
+      // An unworn item of Bob's, and an item on his other creature, must not show up.
+      wear(b.id, null, 'kelp-cap', 1, [['attack-local-pct', 0]]);
+      wear(b.id, b.creatureIds[0] as string, 'trail-cap', 1, [['attack-local-pct', 0]]);
+      const res = await room(a, [a.id, b.id, c.id]);
+      const [ra, rb, rc] = res.body.residents as [
+        RoomBody['residents'][number],
+        RoomBody['residents'][number],
+        RoomBody['residents'][number],
+      ];
+      expect(ra.creature?.gear).toEqual([]);
+      expect(rc.creature?.gear).toEqual([]);
+      expect(rb.creature?.gear).toEqual([
+        {
+          id: hat,
+          baseId: 'acorn-cap',
+          slot: 'hat',
+          rarity: 'rare',
+          itemLevel: 3,
+          lines: ['+20% Attack (this item)', '+2 Attack (this item)'],
+        },
+        {
+          id: scarf,
+          baseId: 'patch-scarf',
+          slot: 'scarf',
+          rarity: 'rare',
+          itemLevel: 3,
+          lines: ['+20% HP (this item)'],
+        },
+      ]);
+      // The owner's own state view shows the same items (without the line texts).
+      const state = (await b.call('GET', '/api/state')).body as {
+        creatures: { id: string; gear: unknown }[];
+      };
+      expect(state.creatures.find((x) => x.id === b.creatureIds[1])?.gear).toEqual([
+        { id: hat, baseId: 'acorn-cap', slot: 'hat', rarity: 'rare', itemLevel: 3 },
+        { id: scarf, baseId: 'patch-scarf', slot: 'scarf', rarity: 'rare', itemLevel: 3 },
+      ]);
+    });
   });
 
   it('uses (and stores) the same lounger as the player sees in their own state', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await member(ctx, 1);
-        const b = await member(ctx, 2);
-        const res = await room(a, [b.id]);
-        const seen = res.body.residents[0]?.creature?.id;
-        expect(seen).toBe(b.creatureIds[1]);
-        expect(storedLounger(ctx, b.id)).toBe(seen);
-        expect(await loungerIdOf(b)).toBe(seen);
-      },
-      { loungerRng: scriptedRng([1]) },
-    );
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      const b = await member(ctx, 2);
+      const res = await room(a, [b.id]);
+      const seen = res.body.residents[0]?.creature?.id;
+      expect(seen).toBe(b.creatureIds[2]);
+      expect(storedLounger(ctx, b.id)).toBe(seen);
+      expect(await loungerIdOf(b)).toBe(seen);
+    });
   });
 
   it('leaves out ids that are unknown, have no starter, or have no creatures, silently', async () => {
@@ -876,17 +856,13 @@ describe('POST /api/room', () => {
   });
 
   it('re-picks for a resident whose lounger went on an expedition', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await member(ctx, 1);
-        const b = await member(ctx, 2, { creatures: 2 });
-        expect((await room(a, [b.id])).body.residents[0]?.creature?.id).toBe(b.creatureIds[0]);
-        expect((await sendOnTrip(b, b.creatureIds[0] as string)).status).toBe(200);
-        expect((await room(a, [b.id])).body.residents[0]?.creature?.id).toBe(b.creatureIds[1]);
-      },
-      { loungerRng: scriptedRng([0]) },
-    );
+    await runCore(nextGuild(), async (ctx) => {
+      const a = await member(ctx, 1);
+      const b = await member(ctx, 2, { creatures: 2 });
+      expect((await room(a, [b.id])).body.residents[0]?.creature?.id).toBe(b.creatureIds[1]);
+      expect((await sendOnTrip(b, b.creatureIds[1] as string)).status).toBe(200);
+      expect((await room(a, [b.id])).body.residents[0]?.creature?.id).toBe(b.creatureIds[0]);
+    });
   });
 
   it('does not show the stored display name of a player from another guild', async () => {
@@ -1046,23 +1022,6 @@ describe('migration 21', () => {
       expect(storedLounger(ctx, a.id)).toBeNull();
       expect(count(ctx.sql, 'players', 'lounger_id IS NOT NULL')).toBe(0);
     });
-  });
-});
-
-// Keeps the seeded RNG import honest: a seeded stream also satisfies the injected type.
-describe('loungerRng option', () => {
-  it('accepts a seeded stream and is deterministic for a seed', async () => {
-    const pick = (): Promise<string | null> =>
-      runCore(
-        nextGuild(),
-        async (ctx) => {
-          const a = await member(ctx, 1, { creatures: 5 });
-          const index = a.creatureIds.indexOf((await loungerIdOf(a)) as string);
-          return String(index);
-        },
-        { loungerRng: createSeededRng('lounger-determinism') },
-      );
-    expect(await pick()).toBe(await pick());
   });
 });
 

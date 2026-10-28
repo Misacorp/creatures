@@ -88,32 +88,68 @@ describe('attention.dungeon', () => {
 });
 
 describe('attention.raid', () => {
-  it('is true when a team creature has no place on the board, false once all are placed', async () => {
+  it('is true until an active player has placed their creatures: not joined, then fewer than three', async () => {
     await runRaid(async (ctx) => {
       const p = await dungeonPlayer(ctx, 1);
       const [a, b, c] = p.creatureIds as [string, string, string];
+      // Active and not in the raid: nudged to place.
       expect((await attentionOf(p)).raid).toBe(true);
       expect(ctx.core.raid.place(p.id, HELSINKI, a, 0).ok).toBe(true);
-      // One of three placed: the other two still have no slot.
+      // Joined with one of three placed: still nudged.
       expect((await attentionOf(p)).raid).toBe(true);
       expect(ctx.core.raid.place(p.id, HELSINKI, b, 1).ok).toBe(true);
       expect(ctx.core.raid.place(p.id, HELSINKI, c, 2).ok).toBe(true);
       expect((await attentionOf(p)).raid).toBe(false);
       // The Raid tab agrees.
       const view = ctx.core.raid.view(p.id, HELSINKI);
-      expect(view.you.team?.creatures.every((x) => x.slot !== null)).toBe(true);
+      expect(view.you.team?.creatures).toHaveLength(3);
+    }, options);
+  });
+
+  it('is false for a player who placed every creature they own, even with fewer than three', async () => {
+    await runRaid(async (ctx) => {
+      const p = await dungeonPlayer(ctx, 1, { creatures: 2 });
+      expect((await attentionOf(p)).raid).toBe(true);
+      const [a, b] = p.creatureIds as [string, string];
+      expect(ctx.core.raid.place(p.id, HELSINKI, a, 0).ok).toBe(true);
+      expect((await attentionOf(p)).raid).toBe(true);
+      expect(ctx.core.raid.place(p.id, HELSINKI, b, 1).ok).toBe(true);
+      expect((await attentionOf(p)).raid).toBe(false);
+    }, options);
+  });
+
+  it('keeps nudging a player who did not join after Phase 1, until the finale starts', async () => {
+    await runRaid(async (ctx) => {
+      const joined = await dungeonPlayer(ctx, 1);
+      const late = await dungeonPlayer(ctx, 2);
+      expect(ctx.core.raid.place(joined.id, HELSINKI, joined.creatureIds[0] as string, 0).ok).toBe(
+        true,
+      );
+      ctx.clock.t = W02.afterPhase1 + HOUR;
+      // After Phase 1 a newcomer can still join, so they are still asked; so is the joined player (room left).
+      expect((await attentionOf(late)).raid).toBe(true);
+      expect((await attentionOf(joined)).raid).toBe(true);
+      ctx.clock.t = W02.afterPhase2 + HOUR;
+      expect((await attentionOf(late)).raid).toBe(true);
+      // Once the finale starts nobody is asked.
+      ctx.clock.t = W02.afterFinale + HOUR;
+      expect((await attentionOf(late)).raid).toBe(false);
+      expect((await attentionOf(joined)).raid).toBe(false);
     }, options);
   });
 
   it('matches what the raid view would tell the client', async () => {
     await runRaid(async (ctx) => {
       const p = await dungeonPlayer(ctx, 1, { creatures: 4 });
+      // The tab asks to place when the player can edit and either has not joined or has fewer than three on.
       const wanted = (view: RaidView): boolean =>
         view.party !== null &&
         view.you.canEdit &&
-        (view.you.team?.creatures.some((x) => x.slot === null) ?? false);
+        (!view.you.inRoster || (view.you.team?.creatures.length ?? 0) < 3);
       expect((await attentionOf(p)).raid).toBe(wanted(ctx.core.raid.view(p.id, HELSINKI)));
-      for (const id of p.creatureIds.slice(0, 3)) ctx.core.raid.place(p.id, HELSINKI, id, 0);
+      for (const [slot, id] of p.creatureIds.slice(0, 3).entries()) {
+        ctx.core.raid.place(p.id, HELSINKI, id, slot);
+      }
       const view = ctx.core.raid.view(p.id, HELSINKI);
       expect((await attentionOf(p)).raid).toBe(wanted(view));
     }, options);

@@ -16,7 +16,7 @@ import {
 import { effectiveStats } from '@creatures/game';
 import type { CreatureInfo } from './creature-info';
 import { getSpecies, speciesName } from './game';
-import type { AwayView, RowSlotView } from './raid-api';
+import type { RowSlotView } from './raid-api';
 import { initialOf } from './raid-roster';
 import { ownerColour } from './raid-slots';
 import type { SlotModel } from './ui/SlotButton';
@@ -141,53 +141,16 @@ export function ownLaneSpan(states: readonly LaneState[]): { first: number; last
 type Tile = NonNullable<RowSlotView['creature']>;
 
 /**
- * Whether the carried creature may be dropped on the tile `occupant` (they trade places): yours on
- * yours, or one of an away teammate's on another of the same teammate's that you may also move. The
- * server decides again.
+ * Whether a creature of yours may be dropped on the tile `occupant`: only on another of yours (they trade
+ * places) or an empty slot. Someone else's creature holds its slot (first come, first served). The server
+ * decides again.
  */
-export function canSwapWith(carried: Tile, occupant: Tile): boolean {
-  return carried.mine
-    ? occupant.mine
-    : occupant.movable && occupant.ownerName === carried.ownerName;
+export function canDropOn(occupant: Tile): boolean {
+  return occupant.mine;
 }
 
-/**
- * Whether the carried creature takes the place of the creature on `occupant` and sends it to a free
- * place: true for a creature that joins by itself (an auto tile) that is not one the carried one may
- * trade with. A placed creature never makes room. The server finds the free place and decides again.
- */
-export function makesRoom(carried: Tile | undefined, occupant: Tile): boolean {
-  return (
-    occupant.auto && (carried === undefined ? !occupant.mine : !canSwapWith(carried, occupant))
-  );
-}
-
-/** Whether the carried creature (undefined: one from the picker, always yours) may be dropped on `occupant`. */
-export function canDropOn(carried: Tile | undefined, occupant: Tile): boolean {
-  if (occupant.auto) return true;
-  return carried === undefined ? occupant.mine : canSwapWith(carried, occupant);
-}
-
-/** Whether a tile can be picked up and dragged: yours, or one of an away teammate's you may move. */
-export const isDraggable = (tile: Tile): boolean => tile.mine || tile.movable;
-
-/**
- * The lines about away teammates under the board: who is away (their creatures can be moved by the
- * party), and which creatures a teammate moved for them. Plain text; names are the players' own.
- */
-export function awayNotes(
-  away: readonly AwayView[],
-  row: readonly RowSlotView[],
-): { away: string[]; moved: string[] } {
-  return {
-    away: away.map((a) => `${a.ownerName} is away — teammates can move these.`),
-    moved: row.flatMap((s) =>
-      s.creature?.movedBy === undefined
-        ? []
-        : [`${s.creature.name} (${s.creature.ownerName}) moved by ${s.creature.movedBy}.`],
-    ),
-  };
-}
+/** Whether a tile can be picked up and dragged: only your own creatures. */
+export const isDraggable = (tile: Tile): boolean => tile.mine;
 
 /** What the creature popover shows for a creature on the board, with its owner's full name. */
 export function boardCreatureInfo(c: NonNullable<RowSlotView['creature']>): CreatureInfo | null {
@@ -219,21 +182,15 @@ export function boardSlot(
     return { ...base, ariaLabel: label, occupant: null };
   }
   const owner = c.mine ? 'you' : c.ownerName;
-  const notes = [
-    ...(c.auto ? ['joins automatically'] : []),
-    ...(c.movedBy === undefined ? [] : [`moved by ${c.movedBy}`]),
-    ...(c.movable && editable ? ['away, you can move it'] : []),
-  ];
   return {
     ...base,
-    ariaLabel: [`${where}, ${c.name} level ${String(c.level)}, ${owner}`, ...notes].join(', '),
+    ariaLabel: `${where}, ${c.name} level ${String(c.level)}, ${owner}`,
     occupant: {
       species: c.species,
       name: c.name,
       level: c.level,
       ownId: editable && isDraggable(c) && c.creatureId !== undefined ? c.creatureId : null,
       mine: c.mine,
-      auto: c.auto,
       element: getSpecies(c.species)?.element ?? 'unknown',
       owner: { colour: ownerColour(c.ownerName, rosterNames), initial: initialOf(c.ownerName) },
     },
@@ -335,10 +292,6 @@ export function boardCues(args: {
       known.set(s.creature.creatureId ?? `other:${String(s.slot)}`, s.creature);
   }
   for (const c of args.tray) known.set(c.creatureId, c);
-  const carriedTile =
-    args.carried === null
-      ? undefined
-      : (row.find((s) => s.creature?.creatureId === args.carried)?.creature ?? undefined);
   const scene = sceneOf({
     keys: boardKeys(row, length),
     carried: args.carried,
@@ -347,8 +300,8 @@ export function boardCues(args: {
     canDrop: (slot) => {
       const there = bySlot.get(slot)?.creature ?? null;
       if (there === null) return true;
-      // A creature from the tray is yours; a carried tile trades with the right owner's tiles only.
-      return canDropOn(carriedTile, there);
+      // What is carried is yours: it trades with your own tiles only.
+      return canDropOn(there);
     },
   });
   const affectRow = boardAffectRow(scene.keys, known);

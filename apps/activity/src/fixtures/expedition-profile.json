@@ -191,10 +191,10 @@
     ]
   },
   "dungeon": {
-    "runs": 7,
-    "clears": 3,
-    "depth": 4,
-    "streak": 2
+    "runs": 0,
+    "clears": 0,
+    "depth": 1,
+    "streak": 0
   },
   "explorers": [
     {
