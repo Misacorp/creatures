@@ -374,13 +374,13 @@ describe('combat v2 lab rules, the remaining species (phase 1, slice 2)', () => 
     expect(silence).toContain('Tempestray shrugs off the silence');
   });
 
-  it('Unflappable (a talent) wards its own creature from silence', () => {
+  it('Unbothered (a talent) wards its own creature from silence', () => {
     const boss: BossDef = {
       ...labBoss({ rows: 1, cols: 1, rounds: 1 }),
       spd: 0,
       moves: [hush('all')],
     };
-    const r = fight(boss, [{ ...at('tidewing', 0, 0), talents: ['unflappable'] }], {
+    const r = fight(boss, [{ ...at('tidewing', 0, 0), talents: ['unbothered'] }], {
       rng: rng('calm'),
       log: true,
     });
@@ -523,14 +523,14 @@ describe('panel 2 fixes', () => {
     expect(new Set(by)).toEqual(new Set(['Thornbuck']));
   });
 
-  it('Second Wind heals once, the first time a hit drops it below half', () => {
+  it('Catch Breath heals once, the first time a hit drops it below half', () => {
     const boss: BossDef = {
       ...labBoss({ rows: 1, cols: 1, rounds: 10, atk: 120 }),
       spd: 0,
       plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 10_000 },
     };
     const plain = fight(boss, [at('kilnmole', 0, 0)], { rng: rng('wind') });
-    const wind = fight(boss, [{ ...at('kilnmole', 0, 0), talents: ['second-wind'] }], {
+    const wind = fight(boss, [{ ...at('kilnmole', 0, 0), talents: ['catch-breath'] }], {
       rng: rng('wind'),
     });
     expect(wind.healed - plain.healed).toBeGreaterThan(0);

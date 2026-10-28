@@ -644,9 +644,8 @@ const ON_BOSS_HP: Readonly<Record<string, number>> = { finisher: 0.3 };
 const BOARD_NOTES: Readonly<Record<string, string>> = {
   'shoulder-to-shoulder': 'between two creatures of its own element',
   'kindred-boost': 'between two creatures of its own element',
-  'lone-wolf': 'alone at the end of the row',
   'edge-walker': 'at the end of the row',
-  'flank-guard-left': 'at the right end of the row',
+  'flank-guard': 'at the right end of the row',
   opportunist: 'after a Setter with Double Mark where the line has one',
   finisher:
     'its "While it holds" is measured with the boss at 30% HP (the boss has 1,000,000 HP, so it never holds otherwise)',
@@ -668,7 +667,6 @@ function setupFor(tid: string, form: string): Setup {
   const natural = teamFor(form);
   let team = natural.team.map((p) => ({ ...p }));
   let slot = natural.slot;
-  let cols: number[] | undefined;
   const me = () => team[slot] as Pick;
   const toEnd = () => {
     const [m] = team.splice(slot, 1);
@@ -687,12 +685,8 @@ function setupFor(tid: string, form: string): Setup {
       break;
     }
     case 'edge-walker':
-    case 'flank-guard-left':
+    case 'flank-guard':
       toEnd();
-      break;
-    case 'lone-wolf':
-      toEnd();
-      cols = [0, 1, 3];
       break;
     case 'shoulder-to-shoulder':
     case 'kindred-boost': {
@@ -707,7 +701,7 @@ function setupFor(tid: string, form: string): Setup {
       break;
     }
   }
-  return { team, slot, ...(cols ? { cols } : {}) };
+  return { team, slot };
 }
 
 interface Measured {

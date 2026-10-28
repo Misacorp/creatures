@@ -61,18 +61,29 @@ export const KEYWORDS: Readonly<
     step: 'R8',
   },
   Mired: {
-    means: 'A debuff on the boss: per count it deals less damage and dodges less (at most x5).',
+    means:
+      'A debuff on the boss: per count it deals less damage and dodges less (at most x5). It fades by 1 at the end of every second round.',
     not: 'A mark',
     step: 'R15',
   },
   Beside: {
-    means: 'The one slot on each side of it, in its row. Never widened.',
+    means: 'The living creatures in the slots on each side of it, in its row. Never widened.',
     not: 'Its Reach (which effects can widen)',
     step: 'R16',
   },
+  'Row end': {
+    means: 'The first or last slot of its row.',
+    not: 'The end living creature of the row',
+    step: 'R21',
+  },
+  'Front row': {
+    means: 'The row nearest the boss.',
+    not: 'The first row with a creature in it',
+    step: 'R8, R21',
+  },
   Reach: {
     means:
-      'How many places to each side, in its row, a Guard or Support covers. Starts at Beside; some effects widen it.',
+      'How many slots to each side, in its row, a Guard or Support covers. Starts at Beside; some effects widen it.',
     not: 'Its whole row',
     step: 'R1, R16',
   },

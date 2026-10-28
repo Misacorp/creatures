@@ -8,7 +8,7 @@
 import { content } from '@creatures/game';
 
 export interface KnackFx {
-  /** Guard reach +n on each side. */
+  /** Guard reach +n slots on each side. */
   readonly reachBonus?: number;
   /** The boss's plain attack aims at this creature (R9). */
   readonly taunt?: boolean;
@@ -127,11 +127,9 @@ export interface KnackFx {
   // Talent library, first batch (docs/design/combat/modifiers.md). Numbers add, flags combine.
   /** Its hits deal this much more for each neighbour of its own element, at most two. */
   readonly perKindredBesideBp?: number;
-  /** Its hits deal this much more while it has neighbours and none shares its element. */
+  /** Its hits deal this much more while no creature beside it shares its element (also with nobody beside it). */
   readonly oddOneOutBp?: number;
-  /** Its hits deal this much more while no living creature stands beside it. */
-  readonly loneWolfBp?: number;
-  /** Its hits deal this much more while it is the leftmost or rightmost living creature of its row. */
+  /** Its hits deal this much more while it stands in a row end slot (column 0 or the last column of the arena's row). */
   readonly rowEndBp?: number;
   /** It takes this much less from every hit while it stands in the front row. */
   readonly frontCutBp?: number;
@@ -154,34 +152,27 @@ export interface KnackFx {
   readonly vengefulBp?: number;
   /** After it dodges, its next hit deals this much more. */
   readonly momentumBp?: number;
-  /** A Guard's reach covers only one side, with twice the slots. */
-  readonly flankLeft?: boolean;
-  readonly flankRight?: boolean;
+  /** A Guard's reach covers only its longer side (more slots to the row end; ties go left), with twice the slots. */
+  readonly flankGuard?: boolean;
   /** A Guard's cover, and the cut on hits it intercepts, grow by this much per slot of distance. */
   readonly distanceCoverBp?: number;
   /** When it intercepts, it hits back for this share of its Attack, ignoring armour. */
   readonly interceptHitBackBp?: number;
-  /** Creatures beside it get this share of its armour (the largest such aura applies). */
-  readonly shareArmourBp?: number;
-  /** A hit that would deal less than this share of its max HP is Blocked. */
-  readonly skullBp?: number;
   /** It takes this much less from a Charged landing aimed at its slot. */
   readonly braceBp?: number;
-  /** Debuffs it puts on the boss add this many extra stacks each time. */
-  readonly miredExtra?: number;
-  /** While it stands, the boss's debuff stacks fade at every second round start instead of every one. */
+  /** Its Mired has this chance (bp) to add 1 extra stack each time. */
+  readonly miredExtraBp?: number;
+  /** While it stands, the boss's Mired fades every third round instead of every second. */
   readonly clinging?: boolean;
   /** Every second time its Support verb runs, its boost is doubled. */
   readonly brightBoost?: boolean;
   /** Its boost is this much bigger on creatures of its own element. */
   readonly kindredBoostBp?: number;
-  /** Its heal goes to the most hurt creature beside it, at double size. */
+  /** Its base heal goes to the most hurt creature beside it, at double size (idle under a Support shape Knack). */
   readonly triage?: boolean;
-  /** Healing of its that goes past full HP passes to the most hurt other creature beside it. */
+  /** Healing of its that goes past full HP passes to the most hurt creature beside the one it healed. */
   readonly spillOver?: boolean;
-  /** The first silence on it each fight lasts one turn. */
-  readonly lightSleeper?: boolean;
-  /** A hit that leaves a foe below this share of its max HP defeats it outright. */
+  /** A hit that leaves a foe below this share of its full HP defeats it outright (the HP left is the killing blow, not damage). */
   readonly cullBp?: number;
 }
 
@@ -335,8 +326,8 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'wide-reach',
       name: 'Wide Reach',
       family: 'Reach',
-      text: 'Its reach is +1 on each side.',
-      intent: 'Protects fragile creatures two places away; strong in wide raid rows.',
+      text: 'Its reach is +1 slot on each side.',
+      intent: 'Protects fragile creatures two slots away; strong in wide raid rows.',
       fx: { reachBonus: 1 },
     }),
     K({
@@ -386,7 +377,7 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'wide-warmth',
       name: 'Wide Warmth',
       family: 'Support shape',
-      text: 'Its boost also reaches one place further on each side, 10 points weaker.',
+      text: 'Its boost also reaches one slot further on each side, 10% weaker.',
       intent: 'Wide raid rows with several hitters.',
       fx: { support: 'wideWarmth' },
     }),
@@ -580,6 +571,13 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       fx: { guardMendBp: 600 },
     }),
   ].map((k) => [k.id, k]),
+);
+
+/** The Knacks that reshape or replace a Support's base verb (family "Support shape"). */
+export const SUPPORT_SHAPE_KNACKS: ReadonlySet<string> = new Set(
+  Object.values(KNACKS)
+    .filter((k) => k.family === 'Support shape')
+    .map((k) => k.id),
 );
 
 /**

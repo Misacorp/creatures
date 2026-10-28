@@ -21,9 +21,9 @@ export interface Fighter {
   /** The Knack's and the talents' effects together (silence blanks all of it, R12). */
   readonly fxAll: import('./knacks').KnackFx;
   /** Turn hits made this fight (for first-hit effects). */
-  /** Hits that got past dodge and armour this fight (First Strike counts the first). */
+  /** Hits made unsilenced that got past dodge and armour this fight (First Pounce counts the first). */
   hitsLanded: number;
-  /** Second Wind fired this fight. */
+  /** Catch Breath fired this fight. */
   secondWindDone: boolean;
   /** Hold On fired this fight. */
   holdOnDone: boolean;
@@ -41,16 +41,14 @@ export interface Fighter {
   lastStoreRound: number;
   /** Hits it has made this fight, for rhythms (Steady Rhythm: every third is a crit). */
   hitsMade: number;
-  /** Set when it dodges; its next hit uses it up (Momentum). */
+  /** Set when it dodges unsilenced; its next unsilenced hit uses it up (Momentum). */
   momentum: boolean;
-  /** A creature beside it was knocked out this fight (Vengeful). */
+  /** A creature beside it was knocked out this fight while it was not silenced (Rally Cry). */
   avenged: boolean;
   /** Marks it has left this fight (Deep Ink: the first starts bigger). */
   marksLeft: number;
   /** Times its Support verb has run (Bright Boost: every second is doubled). */
   verbsUsed: number;
-  /** Light Sleeper has shortened a silence this fight. */
-  sleeperDone: boolean;
   /** How often each effect's condition held or its trigger fired this fight, by effect field (the report's "holds"). */
   fires: Record<string, number>;
 }

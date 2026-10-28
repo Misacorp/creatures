@@ -209,15 +209,25 @@ export const TALENT_IS_GEAR: Readonly<Record<string, string>> = {
   'light-feet': 'light-footed',
   'keen-eye': 'crit-chance',
   'mighty-blow': 'crit-damage',
-  'first-strike': 'first-pounce',
-  unflappable: 'unbothered',
+  'first-pounce': 'first-pounce',
+  unbothered: 'unbothered',
   'tough-hide': 'armor',
   'hunker-down': 'area-ward',
-  'hold-on': 'stubborn',
-  'second-wind': 'second-wind',
+  stubborn: 'stubborn',
   'broad-back': 'cover',
   'big-heart': 'boost',
   'gentle-touch': 'mend',
+  // The same effect as the shipped line of the same name (the name is the line's).
+  'rally-cry': 'rally-cry',
+  'heavy-hand': 'heavy-hand',
+  clinging: 'clinging',
+  'odd-one-out': 'odd-one-out',
+  'edge-walker': 'edge-walker',
+  'front-liner': 'front-liner',
+  'shoulder-to-shoulder': 'shoulder-to-shoulder',
+  'owners-mark': 'owners-mark',
+  brace: 'brace',
+  momentum: 'momentum',
 };
 
 /** The class of a lab-only effect that the guess from its effect would get wrong. */
@@ -245,7 +255,7 @@ interface Idea {
 export const IDEAS: readonly Idea[] = [
   {
     name: 'Long Shadow',
-    text: "A Guard's cover and the cut on hits it intercepts grow by 10 points per slot of distance.",
+    text: "A Guard's cover, and the cut on hits it takes for others, grow by 10% per slot of distance.",
     class: ['protection', GUARD, 'shape'],
     also: ['Distance cover'],
   },
@@ -257,19 +267,19 @@ export const IDEAS: readonly Idea[] = [
   },
   {
     name: 'Quick Draw',
-    text: '+30% on a reaction that cashes a mark set this boss turn.',
+    text: "+30% on a reaction on a mark added since the boss's last turn.",
     class: ['damage', PAYOFF, 'condition'],
     also: ['Fresh mark'],
   },
   {
     name: 'Deep Ink',
-    text: 'Its first mark each fight starts at x2.',
+    text: 'Its first mark each fight adds 1 more to the count.',
     class: ['marks', SETTER, 'rhythm'],
     also: ['Mark painter'],
   },
   {
     name: 'Slow Burn',
-    text: '+8% per round from round 2, up to +48%.',
+    text: '+4% per round from round 2, up to +24%.',
     class: ['damage', HIT, 'condition'],
   },
   {
@@ -279,7 +289,7 @@ export const IDEAS: readonly Idea[] = [
   },
   {
     name: 'Vengeful',
-    text: '+50% for the rest of the fight after a creature beside it is knocked out.',
+    text: '+50% for the rest of the fight after a creature beside it is knocked out (not while silenced).',
     class: ['damage', ANY, 'trigger'],
     isGear: 'rally-cry',
   },
@@ -295,18 +305,8 @@ export const IDEAS: readonly Idea[] = [
     isGear: 'brace',
   },
   {
-    name: 'Thick Skull',
-    text: 'A hit smaller than 10% of its max HP is Blocked.',
-    class: ['protection', ANY, 'rule'],
-  },
-  {
-    name: 'Share the Load',
-    text: 'Creatures beside it get half its armour.',
-    class: ['protection', GUARD, 'transfer'],
-  },
-  {
     name: 'Shoulder Charge',
-    text: 'When it intercepts, it hits back for 40% of its Attack (ignores armour).',
+    text: 'When it intercepts, it strikes back for 40% of its Attack (ignores armour).',
     class: ['damage', GUARD, 'trigger'],
   },
   {
@@ -316,28 +316,18 @@ export const IDEAS: readonly Idea[] = [
   },
   {
     name: 'Triage',
-    text: 'Its heal goes to the most hurt creature in its reach instead of everyone, at double size.',
+    text: 'Its heal on the creatures beside it goes to the most hurt one, at double size.',
     class: ['support', SUPPORT, 'shape'],
   },
   {
     name: 'Overheal Spill',
-    text: 'Healing past full HP passes to the most hurt creature beside it.',
+    text: 'Healing past full HP passes to the most hurt creature beside the one healed.',
     class: ['support', SUPPORT, 'transfer'],
   },
   {
     name: 'Kindred Boost',
-    text: 'Its boost is +10% bigger on creatures of its own element.',
+    text: 'Its boost +10% on creatures of its own element.',
     class: ['support', SUPPORT, 'condition'],
-  },
-  {
-    name: 'Lone Wolf',
-    text: '+40% while no creature stands beside it.',
-    class: ['damage', HIT, 'condition'],
-  },
-  {
-    name: 'Light Sleeper',
-    text: 'The first silence each fight lasts one turn.',
-    class: ['protection', ANY, 'rule'],
   },
   {
     name: 'Store Saver',
@@ -346,7 +336,7 @@ export const IDEAS: readonly Idea[] = [
   },
   {
     name: 'Cull',
-    text: 'A hit that leaves the foe below 5% of its max HP defeats it outright (bosses: a smaller threshold, or none).',
+    text: 'A hit that leaves the foe below 5% of its full HP defeats it outright; the HP removed counts as the killing blow, not as damage.',
     class: ['damage', ANY, 'rule'],
   },
   {

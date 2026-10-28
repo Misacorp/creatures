@@ -13,6 +13,9 @@ import {
   TALENTS,
 } from '../src';
 
+const rawId = (l: { id: string; element: string | null }) =>
+  l.element === null ? l.id : l.id.slice(l.element.length + 1);
+
 /** The raw gear line ids: an element line (`tide-attunement`) once, as `attunement`. */
 const RAW_LINES = [
   ...new Set(
@@ -88,8 +91,31 @@ describe('the modifier library', () => {
   it('shows a talent that is a gear line on the line, with the line name', () => {
     const line = MODIFIERS.find((m) => m.id === 'first-pounce');
     expect(line?.status).toBe('game');
-    expect(line?.talents).toContain('first-strike');
+    expect(line?.talents).toContain('first-pounce');
     expect(MODIFIERS.some((m) => nameKey(m.name) === 'firststrike')).toBe(false);
+  });
+
+  it('keeps the shipped line names: a talent shares a gear line name only when TALENT_IS_GEAR says it is that line', () => {
+    const lineNames = new Map(
+      gearContent.lines.map((l) => [nameKey(GEAR_CLASS[rawId(l)]?.name ?? l.name), rawId(l)]),
+    );
+    for (const t of Object.values(TALENTS)) {
+      const line = lineNames.get(nameKey(t.name));
+      if (line !== undefined)
+        expect(TALENT_IS_GEAR[t.id], `${t.name} is the gear line ${line}`).toBe(line);
+      // A talent mapped to a line is that line's effect: it keeps the line's name.
+      const mapped = TALENT_IS_GEAR[t.id];
+      if (
+        mapped !== undefined &&
+        gearContent.lines.some((l) => rawId(l) === mapped) &&
+        lineNames.get(nameKey(t.name)) !== undefined
+      )
+        expect(lineNames.get(nameKey(t.name)), t.id).toBe(mapped);
+    }
+    // The names panel 3 renamed.
+    for (const id of ['first-pounce', 'unbothered', 'rally-cry'])
+      expect(TALENTS).toHaveProperty(id);
+    expect(Object.values(TALENTS).some((t) => nameKey(t.name) === 'secondwind')).toBe(false);
   });
 
   it('lists the design ideas once, and an idea that is a gear line on the line as a second name', () => {

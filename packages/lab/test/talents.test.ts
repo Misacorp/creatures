@@ -19,7 +19,9 @@ import {
   labBoss,
   lineRoles,
   mergeFx,
+  talentIdleUnder,
   talentPool,
+  weekend,
   type BossDef,
   type FightOptions,
   type Placement,
@@ -112,29 +114,26 @@ describe('talent hooks: neighbours and position', () => {
     expect(gain(quiet, none, 1, 'shoulder-to-shoulder')[0]).toBe(1);
   });
 
-  it('Odd One Out: +30% while neighbours stand beside it and none shares its element', () => {
+  it('Odd One Out: +12% while no creature beside it shares its element, also with nobody beside it', () => {
     const mixed = [at('wickat', 0, 0), at('tidewing', 0, 1), at('wickat', 0, 2)];
     const kin = [at('tidewing', 0, 0), at('tidewing', 0, 1), at('wickat', 0, 2)];
-    close(gain(quiet, mixed, 1, 'odd-one-out')[0], 1.3);
+    close(gain(quiet, mixed, 1, 'odd-one-out')[0], 1.12);
     expect(gain(quiet, kin, 1, 'odd-one-out')[0]).toBe(1);
-    // Alone it has no neighbour at all: that is Lone Wolf's job.
-    expect(gain(calm({ rows: 1, cols: 1 }), [at('tidewing', 0, 0)], 0, 'odd-one-out')[0]).toBe(1);
+    // The shipped line holds with nobody beside it too.
+    close(gain(calm({ rows: 1, cols: 1 }), [at('tidewing', 0, 0)], 0, 'odd-one-out')[0], 1.12);
   });
 
-  it('Lone Wolf: +40% while no living creature stands beside it', () => {
-    close(gain(calm({ rows: 1, cols: 1 }), [at('tidewing', 0, 0)], 0, 'lone-wolf')[0], 1.4);
-    const crowded = [at('tidewing', 0, 0), at('wickat', 0, 1)];
-    expect(gain(calm({ rows: 1, cols: 2 }), crowded, 0, 'lone-wolf')[0]).toBe(1);
-    // Two places away is not beside.
-    const apart = [at('tidewing', 0, 0), at('wickat', 0, 2)];
-    close(gain(quiet, apart, 0, 'lone-wolf')[0], 1.4);
-  });
-
-  it('Edge-walker: +30% at either end of its row, nothing in the middle', () => {
+  it('Edge-walker: +15% in the arena end slots (column 0 and the last column), nothing in the middle', () => {
     const row = [at('tidewing', 0, 0), at('wickat', 0, 1), at('tidewing', 0, 2)];
-    close(gain(quiet, row, 0, 'edge-walker')[0], 1.3);
-    close(gain(quiet, row, 2, 'edge-walker')[0], 1.3);
+    close(gain(quiet, row, 0, 'edge-walker')[0], 1.15);
+    close(gain(quiet, row, 2, 'edge-walker')[0], 1.15);
     expect(gain(quiet, row, 1, 'edge-walker')[0]).toBe(1);
+    // The slot decides, not the end creature: alone in column 1 it is not at a row end, alone in column 0 it is.
+    const lone = (col: number) => [at('tidewing', 0, col)];
+    expect(gain(quiet, lone(1), 0, 'edge-walker')[0]).toBe(1);
+    close(gain(quiet, lone(0), 0, 'edge-walker')[0], 1.15);
+    // Nobody to its left does not make column 1 an end.
+    expect(gain(quiet, [at('tidewing', 0, 1), at('wickat', 0, 2)], 0, 'edge-walker')[0]).toBe(1);
   });
 
   it('Front-liner: 20% less from every hit in the front row, none from further back', () => {
@@ -151,13 +150,13 @@ describe('talent hooks: neighbours and position', () => {
 });
 
 describe('talent hooks: fight state', () => {
-  it('Slow Burn: +8% per round from round 2, up to +48%', () => {
+  it('Slow Burn: +4% per round from round 2, up to +24%', () => {
     const g = gain(calm({ rows: 1, cols: 1 }), [at('tidewing', 0, 0)], 0, 'slow-burn', 0, 9);
     close(g[0], 1);
-    close(g[1], 1.08);
-    close(g[3], 1.24);
-    close(g[6], 1.48);
-    close(g[8], 1.48);
+    close(g[1], 1.04);
+    close(g[3], 1.12);
+    close(g[6], 1.24);
+    close(g[8], 1.24);
   });
 
   it('Finisher: +50% while the boss is below a third of its HP', () => {
@@ -192,7 +191,7 @@ describe('talent hooks: fight state', () => {
     close(g[1], 1.4);
   });
 
-  it('Vengeful: +50% for the rest of the fight, only after a creature beside it is knocked out', () => {
+  it('Rally Cry: +50% for the rest of the fight, only after a creature beside it is knocked out', () => {
     const b = labBoss({ rows: 1, cols: 3, atk: 5_000 });
     const boss: BossDef = {
       ...b,
@@ -201,10 +200,10 @@ describe('talent hooks: fight state', () => {
     };
     // Column 0 falls at the end of round 1: column 1 stands beside it, column 2 does not.
     const team = [at('tidewing', 0, 0), at('tidewing', 0, 1), at('tidewing', 0, 2)];
-    const beside = gain(boss, team, 1, 'vengeful', 1, 2);
+    const beside = gain(boss, team, 1, 'rally-cry', 1, 2);
     expect(beside[0]).toBe(1);
     close(beside[1], 1.5);
-    const apart = gain(boss, team, 2, 'vengeful', 2, 2);
+    const apart = gain(boss, team, 2, 'rally-cry', 2, 2);
     expect(apart).toEqual([1, 1]);
   });
 });
@@ -225,6 +224,24 @@ describe('talent hooks: marks', () => {
     const none = run(trio, withTalents(single, { 1: ['opportunist'] }));
     expect(none.fighters[1]?.fires['cashFullBp']).toBeUndefined();
     expect(none.damage).toBe(run(trio, single).damage);
+  });
+
+  it('reaction raises multiply, then the factor is capped at x3 (R7)', () => {
+    // Double Mark makes x2 a round: in round 3 the Payoff cashes a mark at x3, set this boss turn.
+    const team = [doubleMarker, at('tempestray', 0, 1)];
+    const bonusOf = (talents: string[]) =>
+      Number(
+        run(trio, withTalents(team, { 1: talents }))
+          .events.filter((e) => e.kind === 'reaction')
+          .at(-1)
+          ?.text.split('+')[1],
+      );
+    const none = bonusOf([]);
+    // 40% and 30% multiply: x1.82, not x1.70.
+    const both = bonusOf(['opportunist', 'quick-draw']);
+    expect(both / none).toBeGreaterThan(1.8);
+    expect(both / none).toBeLessThan(1.84);
+    expect(LAB_RULES.maxBonusFactorBp).toBe(30_000);
   });
 
   it('Quick Draw: a bigger reaction on a mark set this boss turn, not one from an earlier row', () => {
@@ -266,21 +283,23 @@ describe('talent hooks: Guard shapes and defence', () => {
   /** The boss aims at the strongest creature, Tempestray, wherever it stands. */
   const aim = (atk = 110) => ({ ...aimed('strongest', 'single', atk), rounds: 6 });
 
-  it('Flank Guard: reach to one side only, with twice the slots', () => {
-    const left = (talents: string[]) => [
-      at('tempestray', 0, 0),
-      at('thornbuck', 0, 2, undefined, talents),
-    ];
-    // Two places to its left is out of a plain Guard's reach and inside a left flank's.
-    expect(run(aim(), left([])).intercepts).toBe(0);
-    expect(run(aim(), left(['flank-guard-left'])).intercepts).toBeGreaterThan(0);
-    // A creature on the other side is not covered by a left flank.
-    const right = [at('thornbuck', 0, 2, undefined, ['flank-guard-left']), at('tempestray', 0, 3)];
-    expect(run(aim(), right).intercepts).toBe(0);
-    // The mirror: a right flank covers two places to its right, and nobody on its left.
-    const guard = at('thornbuck', 0, 1, undefined, ['flank-guard-right']);
-    expect(run(aim(), [guard, at('tempestray', 0, 3)]).intercepts).toBeGreaterThan(0);
-    expect(run(aim(), [at('tempestray', 0, 0), guard]).intercepts).toBe(0);
+  it('Flank Guard: reach to its longer side only, with twice the slots; ties go left', () => {
+    const hit = (guardCol: number, creatureCol: number, talents: string[] = ['flank-guard']) =>
+      run(aim(), [
+        at('tempestray', 0, creatureCol),
+        at('thornbuck', 0, guardCol, undefined, talents),
+      ]).intercepts;
+    // Two slots away is out of a plain Guard's reach and inside a flank's.
+    expect(hit(2, 0, [])).toBe(0);
+    // Five slots wide, a Guard in the middle has two slots each way: a tie goes left.
+    expect(hit(2, 0)).toBeGreaterThan(0);
+    expect(hit(2, 4)).toBe(0);
+    // At the right end the longer side is the left; at the left end it is the right.
+    expect(hit(4, 2)).toBeGreaterThan(0);
+    expect(hit(0, 2)).toBeGreaterThan(0);
+    // The shorter side gets nothing, not even beside it (a plain Guard would cover it).
+    expect(hit(3, 4)).toBe(0);
+    expect(hit(3, 4, [])).toBeGreaterThan(0);
   });
 
   it('Long Shadow: cover grows with distance, and so does the cut on a hit it intercepts', () => {
@@ -292,31 +311,79 @@ describe('talent hooks: Guard shapes and defence', () => {
       );
     // Area hit 110, Tempestray armour 8. Cover 40%: 66 - 8 = 58.
     expect(covered(1, undefined, [])).toBe(58);
-    // Two places away with Wide Reach: 40% + 2 x 10 = 60%: 44 - 8 = 36.
+    // Two slots away with Wide Reach: 40% + 2 x 10 = 60%: 44 - 8 = 36.
     expect(covered(2, 'wide-reach', ['long-shadow'])).toBe(36);
-    // An aimed hit the Guard takes for a creature two places away is cut 20%: 88 - 30 = 58 (not 80).
+    // An aimed hit the Guard takes for a creature two slots away is cut 20%: 88 - 30 = 58 (not 80).
     const hit = (talents: string[]) =>
       firstHit(
         run(aim(), [at('tempestray', 0, 0), at('thornbuck', 0, 2, undefined, talents)]),
         'Thornbuck',
       );
-    expect(hit(['flank-guard-left'])).toBe(80);
-    expect(hit(['flank-guard-left', 'long-shadow'])).toBe(58);
+    expect(hit(['flank-guard'])).toBe(80);
+    expect(hit(['flank-guard', 'long-shadow'])).toBe(58);
   });
 
-  it('cover is capped at 75% with every bonus (an intercepted hit has no cap)', () => {
+  it('every cut on one hit multiplies, then the total cut is capped at 75%, before armour', () => {
+    expect(LAB_RULES.cutMaxBp).toBe(7_500);
     const sweep = aimed('front', 'row', 110);
-    // Wide Reach and a left flank: four places, so Long Shadow would give 40% + 40% = 80% at the far end.
+    // Wide Reach and a flank: four slots, so Long Shadow would give 40% + 40% = 80% at the far end.
     const team = [
       at('tempestray', 0, 0),
-      at('thornbuck', 0, 4, 'wide-reach', ['flank-guard-left', 'long-shadow']),
+      at('thornbuck', 0, 4, 'wide-reach', ['flank-guard', 'long-shadow']),
     ];
     // 75%: floor(110 x 0.25) = 27, minus armour 8.
-    expect(LAB_RULES.coverMaxBp).toBe(7_500);
     expect(firstHit(run(sweep, team), 'Tempestray')).toBe(27 - 8);
+    // Two cuts multiply: cover 40% and Front-liner 20% leave 60% x 80% = 48% (not 40%).
+    const both = [at('tempestray', 0, 0, undefined, ['front-liner']), at('thornbuck', 0, 1)];
+    expect(firstHit(run(sweep, both), 'Tempestray')).toBe(Math.floor((110 * 4_800) / 10_000) - 8);
   });
 
-  it('Shoulder Charge: when it intercepts, it hits back for 40% of its Attack, ignoring armour', () => {
+  it('a Guard stacking Flank Guard, Wide Reach, Long Shadow and Front-liner in a 15-wide row never lets a hit through for less than 25%', () => {
+    const b = labBoss({ rows: 1, cols: 15, atk: 110 });
+    const sweep: BossDef = {
+      ...b,
+      spd: 0,
+      plain: { pattern: { anchor: 'front', shape: 'row' }, powerBp: 10_000 },
+    };
+    const team = [
+      // Front-liner on the covered creature too: cover 80% at four slots, then 20% more.
+      at('tempestray', 0, 10, undefined, ['front-liner']),
+      at('thornbuck', 0, 14, 'wide-reach', ['flank-guard', 'long-shadow', 'front-liner']),
+    ];
+    const r = run(sweep, team);
+    // 110 x 25% = 27 before armour: the covered creature takes 27 - 8, the Guard (no cover, Front-liner) 88 - 30.
+    expect(firstHit(r, 'Tempestray')).toBe(27 - 8);
+    expect(firstHit(r, 'Thornbuck')).toBe(88 - 30);
+    // The Guard in the front row also shrugs a hit it takes for the creature four slots away: 20% and 40% leave 48%.
+    const aimedAt = { ...aimed('strongest', 'single', 110), cols: 15, rounds: 6 };
+    const intercepted = firstHit(
+      run(aimedAt, [
+        at('tempestray', 0, 10),
+        at('thornbuck', 0, 14, 'wide-reach', ['flank-guard', 'long-shadow', 'front-liner']),
+      ]),
+      'Thornbuck',
+    );
+    expect(intercepted).toBe(Math.floor((110 * 4_800) / 10_000) - 30);
+  });
+
+  it('cover comes from the Guard with the largest cover whose reach includes the creature', () => {
+    const sweep = aimed('front', 'row', 110);
+    const covered = (strong: string[]) =>
+      firstHit(
+        run(sweep, [
+          at('tempestray', 0, 0),
+          // Beside it: cover 40%.
+          at('thornbuck', 0, 1),
+          // Two slots away (Wide Reach): with Long Shadow its cover is 60%, so it wins.
+          at('thornbuck', 0, 2, 'wide-reach', strong),
+        ]),
+        'Tempestray',
+      );
+    expect(covered([])).toBe(58);
+    expect(covered(['long-shadow'])).toBe(36);
+  });
+
+  it('Shoulder Charge: when it intercepts, it strikes back for 40% of its Attack, ignoring armour', () => {
     const team = (talents: string[]) => [
       at('tempestray', 0, 0),
       at('thornbuck', 0, 1, undefined, talents),
@@ -328,37 +395,6 @@ describe('talent hooks: Guard shapes and defence', () => {
     expect((a.fighters[1]?.damageDealt ?? 0) - (b.fighters[1]?.damageDealt ?? 0)).toBe(
       a.intercepts * Math.floor((atk * 4_000) / 10_000),
     );
-  });
-
-  it('Share the Load: creatures beside it get half its armour', () => {
-    const all = aimed('front', 'all', 110);
-    const hit = (cols: number[], talents: string[]) =>
-      firstHit(
-        run(all, [
-          at('thornbuck', 0, cols[0] ?? 0, undefined, talents),
-          at('tempestray', 0, cols[1] ?? 1),
-        ]),
-        'Tempestray',
-      );
-    // Beside a Guard: cover 40% (66), armour 8 + half of 30: 66 - 23 = 43 (not 58).
-    expect(hit([0, 1], [])).toBe(58);
-    expect(hit([0, 1], ['share-the-load'])).toBe(43);
-    // Two places away it gets nothing, and no cover either: 110 - 8.
-    expect(hit([0, 2], ['share-the-load'])).toBe(102);
-  });
-
-  it('Thick Skull: a hit smaller than 10% of its max HP is Blocked', () => {
-    const max = formStats('tempestray', 25).hp;
-    const limit = Math.ceil(max / 10);
-    const hit = (dmg: number, talents: string[]) => {
-      const b = labBoss({ rows: 1, cols: 1, atk: dmg + 8 });
-      return run({ ...b, spd: 0, rounds: 1 }, [at('tempestray', 0, 0, undefined, talents)]);
-    };
-    const small = hit(limit - 1, ['thick-skull']);
-    expect(small.blocked).toBe(1);
-    expect(firstHit(small, 'Tempestray')).toBeUndefined();
-    expect(firstHit(hit(limit - 1, []), 'Tempestray')).toBe(limit - 1);
-    expect(firstHit(hit(limit, ['thick-skull']), 'Tempestray')).toBe(limit);
   });
 
   it('Brace: 40% less from a Charged landing on its slot', () => {
@@ -392,7 +428,7 @@ describe('talent hooks: Support', () => {
     expect(g[2]).toBe(1);
   });
 
-  it('Kindred Boost: 10 points bigger on creatures of its own element only', () => {
+  it('Kindred Boost: +10% on creatures of its own element only', () => {
     const team = [at('aurorix', 0, 0), at('tempestray', 0, 1)];
     close(gain(quiet, team, 0, 'kindred-boost', 1)[0], 1.25 / 1.15, 0.02);
     const other = [at('aurorix', 0, 0), at('tidewing', 0, 1)];
@@ -411,77 +447,178 @@ describe('talent hooks: Support', () => {
     expect(run(boss, team(['triage'])).healed).toBeGreaterThan(run(boss, team([])).healed * 1.5);
   });
 
-  it('Overheal Spill: healing past full HP passes to the most hurt creature beside it', () => {
-    const boss = calm({ rows: 1, cols: 3, rounds: 1 });
-    const team = (talents: string[]) => [
+  it('Triage is idle under a Support shape Knack: its own base verb is replaced, so nothing is aimed', () => {
+    const b = labBoss({ rows: 1, cols: 3, rounds: 5, atk: 90 });
+    const boss: BossDef = { ...b, spd: 0 };
+    const team = (knack: string | undefined, talents: string[]) => [
       at('kilnmole', 0, 0),
-      at('lanternfin', 0, 1, undefined, talents),
+      at('lanternfin', 0, 1, knack, talents),
       at('tempestray', 0, 2),
+    ];
+    // Curl Up still heals beside it like a normal Support; with Triage it would double and aim.
+    expect(run(boss, team('curl-up', ['triage'])).healed).toBe(
+      run(boss, team('curl-up', [])).healed,
+    );
+    expect(talentIdleUnder('triage', 'curl-up')).toBe(true);
+    expect(talentIdleUnder('triage', 'drizzle')).toBe(true);
+    expect(talentIdleUnder('triage', 'gather-calm')).toBe(false);
+    expect(talentIdleUnder('triage', undefined)).toBe(false);
+    expect(talentIdleUnder('hardy', 'curl-up')).toBe(false);
+  });
+
+  it('Overheal Spill: healing past full HP passes to the most hurt creature beside the one that was healed', () => {
+    const boss = calm({ rows: 1, cols: 3, rounds: 1 });
+    // Tempestray stands beside Kilnmole (the one healed), not beside Lanternfin (the healer).
+    const team = (talents: string[]) => [
+      at('tempestray', 0, 0),
+      at('kilnmole', 0, 1),
+      at('lanternfin', 0, 2, undefined, talents),
     ];
     // Kilnmole is one HP short, so its heal mostly overflows; Tempestray is at half.
     const carryHp = new Map([
-      ['p1:kilnmole:0', formStats('kilnmole', 25).hp - 1],
-      ['p1:tempestray:2', Math.floor(formStats('tempestray', 25).hp / 2)],
+      ['p1:kilnmole:1', formStats('kilnmole', 25).hp - 1],
+      ['p1:tempestray:0', Math.floor(formStats('tempestray', 25).hp / 2)],
     ]);
     const hp = (talents: string[]) =>
-      run(boss, team(talents), 't', { carryHp }).fighters[2]?.hp ?? 0;
+      run(boss, team(talents), 't', { carryHp }).fighters[0]?.hp ?? 0;
     expect(hp(['overheal-spill'])).toBeGreaterThan(hp([]));
   });
 });
 
-describe('talent hooks: debuffs and silence', () => {
-  const song = (talents: string[], extra: Partial<BossDef> = {}, rounds = 3) =>
-    run({ ...calm({ rows: 1, cols: 1, rounds }), ...extra }, [
-      at('squelch', 0, 0, 'squelch-song', talents),
+describe('talent hooks: debuffs', () => {
+  const song = (talents: string[], extra: Partial<BossDef> = {}, rounds = 3, seed = 't') =>
+    run(
+      { ...calm({ rows: 1, cols: 1, rounds }), ...extra },
+      [at('squelch', 0, 0, 'squelch-song', talents)],
+      seed,
+    );
+
+  it('Mired fades by 1 at the end of every second round, so Squelch Song alone builds stacks', () => {
+    // The song adds a stack at each round start; the fade comes at the end of rounds 2, 4 and 6.
+    expect(mired(song([], {}, 6))).toEqual([
+      'Mired x1',
+      'Mired x2',
+      'Mired x1',
+      'Mired x2',
+      'Mired x3',
+      'Mired x2',
+      'Mired x3',
+      'Mired x4',
+      'Mired x3',
     ]);
-
-  it('Mired fades: one stack at each round start, so a creature must keep applying it', () => {
-    // Round 1: x1. Rounds 2 and 3: it fades to x0 first, then the song puts it back to x1.
-    expect(mired(song([]))).toEqual(['Mired x1', 'Mired x0', 'Mired x1', 'Mired x0', 'Mired x1']);
   });
 
-  it('Clinging: Mired fades only every second round while it stands', () => {
-    // Round 2 fades and re-applies (x1); round 3 does not fade, so the song makes x2.
-    expect(mired(song(['clinging']))).toEqual(['Mired x1', 'Mired x0', 'Mired x1', 'Mired x2']);
+  it('Clinging: Mired fades only at the end of every third round while it stands', () => {
+    const r = song(['clinging'], {}, 6);
+    expect(mired(r)).toEqual([
+      'Mired x1',
+      'Mired x2',
+      'Mired x3',
+      'Mired x2',
+      'Mired x3',
+      'Mired x4',
+      'Mired x5',
+      'Mired x4',
+    ]);
+    // It held the fade back at the end of rounds 2 and 4.
+    expect(r.fighters[0]?.fires['clinging']).toBe(2);
   });
 
-  it('Heavy Hand: its Mired adds 2 stacks each time', () => {
-    expect(mired(song(['heavy-hand'], {}, 1))).toEqual(['Mired x2']);
+  it('Heavy Hand: its Mired has a 50% chance to add 1 extra stack', () => {
+    let extra = 0;
+    const n = 200;
+    for (let i = 0; i < n; i++) {
+      const r = song(['heavy-hand'], {}, 1, `hh:${i}`);
+      extra += mired(r)[0] === 'Mired x2' ? 1 : 0;
+    }
+    expect(extra).toBeGreaterThan(n * 0.4);
+    expect(extra).toBeLessThan(n * 0.6);
+    // Without it, never.
+    expect(mired(song([], {}, 1))).toEqual(['Mired x1']);
   });
 
   it('Shake It Off: announced at round start, the boss clears every debuff when that round ends', () => {
     const boss = { ...calm({ rows: 1, cols: 1, rounds: 4, cards: ['shake-it-off'] }) };
-    const r = run(boss, [at('squelch', 0, 0, 'squelch-song', ['heavy-hand'])]);
+    const r = run(boss, [at('squelch', 0, 0, 'squelch-song')]);
     expect(r.events.filter((e) => e.kind === 'announce')).toHaveLength(1);
     expect(r.events.find((e) => e.kind === 'announce')?.round).toBe(3);
     expect(r.events.filter((e) => e.kind === 'shake')).toHaveLength(1);
-    // x2, then fade and add (x1, x3), fade and add (x2, x4), shaken to x0, and round 4 starts from nothing.
+    // x1, x2 (faded to x1 at the end of round 2), x2 in round 3, shaken to x0, round 4 starts from nothing.
     expect(mired(r)).toEqual([
+      'Mired x1',
       'Mired x2',
       'Mired x1',
-      'Mired x3',
       'Mired x2',
-      'Mired x4',
       'Mired x0',
-      'Mired x2',
+      'Mired x1',
+      'Mired x0',
     ]);
   });
+});
 
-  it('Light Sleeper: the first silence on it each fight lasts one turn', () => {
-    const b = calm({ rows: 1, cols: 1, rounds: 4 });
-    const hush = {
-      id: 's',
-      name: 'Hush',
-      pattern: { anchor: 'front' as const, shape: 'all' as const },
-      powerBp: 0,
-      every: 2,
-      turn: 0,
-      silenceTurns: 9,
+describe('silence blanks talents: nothing arms, counts or is spent (panel 3)', () => {
+  /** Silences everyone at the start of the boss turn after row `turn`, for a long time. */
+  const hushAt = (turn: number, turns = 9) => ({
+    id: 's',
+    name: 'Hush',
+    pattern: { anchor: 'front' as const, shape: 'all' as const },
+    powerBp: 0,
+    every: 1,
+    turn,
+    silenceTurns: turns,
+  });
+
+  it('Rally Cry does not arm while the creature is silenced', () => {
+    const b = labBoss({ rows: 1, cols: 3, atk: 5_000, rounds: 1 });
+    const boss: BossDef = {
+      ...b,
+      spd: 0,
+      plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 10_000 },
     };
-    const boss: BossDef = { ...b, moves: [hush] };
-    // Silenced after round 2: without the talent for good; with it, only round 3 is lost.
-    expect(marks(run(boss, [at('tidewing', 0, 0)]))).toHaveLength(2);
-    expect(marks(run(boss, [at('tidewing', 0, 0, undefined, ['light-sleeper'])]))).toHaveLength(3);
+    const team = [at('tidewing', 0, 0), at('tidewing', 0, 1, undefined, ['rally-cry'])];
+    // Column 0 falls in round 1: beside it, column 1 is armed, unless it was silenced just before.
+    expect(run(boss, team).fighters[1]?.avenged).toBe(true);
+    expect(run({ ...boss, moves: [hushAt(0)] }, team).fighters[1]?.avenged).toBe(false);
+  });
+
+  it('Steady Rhythm does not count the hits it makes while silenced', () => {
+    const boss = calm({ rows: 1, cols: 1, rounds: 6 });
+    const team = [at('tidewing', 0, 0, undefined, ['steady-rhythm'])];
+    expect(run(boss, team).fighters[0]?.hitsMade).toBe(6);
+    // Round 1's hit is made before the first silence; every later hit is silenced and not counted.
+    const hushed = run({ ...boss, moves: [hushAt(0)] }, team);
+    expect(hushed.fighters[0]?.hitsMade).toBe(1);
+    expect(hushed.fighters[0]?.fires['steadyRhythm']).toBeUndefined();
+  });
+
+  it('First Pounce stays unspent when its first hits are made while silenced', () => {
+    // Two rows: the boss turn after the empty row 0 silences the creature before it acts in row 1.
+    const boss = calm({ rows: 2, cols: 1, rounds: 4 });
+    const team = [at('tidewing', 1, 0, undefined, ['first-pounce'])];
+    const open = run(boss, team);
+    expect(open.fighters[0]?.hitsLanded).toBeGreaterThan(0);
+    expect(open.fighters[0]?.fires['firstHitBp']).toBe(1);
+    const hushed = run({ ...boss, moves: [hushAt(0, 1)] }, team);
+    expect(hushed.fighters[0]?.damageDealt).toBeGreaterThan(0);
+    expect(hushed.fighters[0]?.hitsLanded).toBe(0);
+    expect(hushed.fighters[0]?.fires['firstHitBp']).toBeUndefined();
+  });
+
+  it('Momentum keeps what it stored before the silence', () => {
+    // Round 1: row 0 acts, then the boss turn after it hits 25 times at 1%: the creature dodges and
+    // stores Momentum. The next boss turn silences it first, so round 2's hit does not use it up.
+    const b = labBoss({ rows: 2, cols: 1, rounds: 2 });
+    const boss: BossDef = {
+      ...b,
+      spd: 0,
+      plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 100, hits: 25 },
+      moves: [hushAt(1)],
+    };
+    const team = [at('voltaro', 0, 0, 'zigzag', ['momentum'])];
+    expect(run(boss, team).fighters[0]?.momentum).toBe(true);
+    // Silenced, it does not store more either: with no dodge before the silence nothing is stored.
+    const fresh = run({ ...boss, moves: [hushAt(0)] }, team);
+    expect(fresh.fighters[0]?.momentum).toBe(false);
   });
 });
 
@@ -489,19 +626,23 @@ describe('Cull and the killing blow', () => {
   const boss = calm({ rows: 1, cols: 1, hp: 4_000, rounds: 1 });
   const solo = (talents?: string[]) => [at('tempestray', 0, 0, undefined, talents)];
 
-  it('a hit that leaves the boss below its Cull share defeats it, and counts the HP that was left', () => {
+  it('a hit that leaves the boss below its Cull share of its full HP defeats it; the HP left is the killing blow, not damage', () => {
     const hit = run(boss, solo(), 't', { bossHp: 4_000 }).damage;
     // 100 HP left is under 5% of 4000 (200): culled.
     const culled = run(boss, solo(['cull']), 't', { bossHp: hit + 100 });
     expect(culled.won).toBe(true);
-    expect(culled.damage).toBe(hit + 100);
+    expect(culled.bossHpLeft).toBe(0);
+    // The 100 HP Cull removed are not damage the creature dealt.
+    expect(culled.damage).toBe(hit);
+    expect(culled.fighters[0]?.damageDealt).toBe(hit);
     expect(culled.killingBlow).toMatchObject({ name: 'Tempestray', culled: true, round: 1 });
     const plain = run(boss, solo(), 't', { bossHp: hit + 100 });
     expect(plain.won).toBe(false);
     expect(plain.bossHpLeft).toBe(100);
     expect(plain.killingBlow).toBeNull();
-    // 300 left is not under 200: no cull.
+    // 300 left is not under 200: no cull. The share is of the boss's full HP, not of what is left.
     expect(run(boss, solo(['cull']), 't', { bossHp: hit + 300 }).won).toBe(false);
+    expect(run(boss, solo(['cull']), 't', { bossHp: hit + 150 }).won).toBe(true);
   });
 
   it('the killing blow is the creature whose damage took the last HP', () => {
@@ -516,18 +657,98 @@ describe('Cull and the killing blow', () => {
   });
 });
 
+describe('counters are not hits, and the fight ends the moment the boss is down (panel 3)', () => {
+  const armoured = (cols: number, hits: number, hp = 1_000): BossDef => {
+    const b = labBoss({ rows: 1, cols, atk: 110, hp, rounds: 1 });
+    // Armour no hit gets past: only counters (which ignore armour) hurt the boss.
+    return {
+      ...b,
+      spd: 0,
+      armour: 10_000,
+      plain: { pattern: { anchor: 'strongest', shape: 'single' }, powerBp: 10_000, hits },
+    };
+  };
+  const pair = (talents: string[]) => [
+    at('tempestray', 0, 0),
+    at('thornbuck', 0, 1, undefined, talents),
+  ];
+  const counterOf = () => Math.floor((formStats('thornbuck', 25).atk * 4_000) / 10_000);
+
+  it('Shoulder Charge strikes back for damage but never sets off Cull or a talent on its hits', () => {
+    const talents = ['shoulder-charge', 'cull', 'first-pounce', 'sharp-claws'];
+    // One intercept leaves the boss 20 HP, under 5% of 1000: a hit would cull it, a counter does not.
+    const r = run(armoured(2, 1), pair(talents), 't', { bossHp: counterOf() + 20 });
+    const guard = r.fighters[1];
+    expect(r.intercepts).toBe(1);
+    expect(guard?.damageDealt).toBe(counterOf());
+    // Its own hit was Blocked, so its first hit has not landed; the counter did not use it up.
+    expect(guard?.hitsLanded).toBe(0);
+    expect(r.won).toBe(false);
+    expect(r.bossHpLeft).toBe(20);
+    expect(r.killingBlow).toBeNull();
+  });
+
+  it('a counter can land the killing blow, and nothing of the boss acts after it', () => {
+    // Four plain hits at the strongest creature; the first intercept's strike-back takes the last HP.
+    const r = run(armoured(2, 4), pair(['shoulder-charge']), 't', { bossHp: counterOf() });
+    expect(r.won).toBe(true);
+    expect(r.killingBlow).toMatchObject({ name: 'Thornbuck', culled: false });
+    expect(r.intercepts).toBe(1);
+    // The intercepted hit does not land either: the killing blow is the last thing that happens.
+    expect(r.events.at(-1)?.kind).toBe('killing-blow');
+    expect(r.events.filter((e) => e.kind === 'hit')).toHaveLength(0);
+  });
+
+  it('no creature hits after the boss is down, and no later row acts', () => {
+    const b = labBoss({ rows: 2, cols: 3, rounds: 3, hp: 100_000 });
+    const boss: BossDef = { ...b, spd: 0 };
+    const team = [
+      at('tempestray', 0, 0),
+      at('tempestray', 0, 1),
+      at('tempestray', 0, 2),
+      at('kilnmole', 1, 0),
+    ];
+    const r = run(boss, team, 't', { bossHp: 1 });
+    expect(r.won).toBe(true);
+    expect(r.fighters.map((f) => f.damageDealt > 0)).toEqual([true, false, false, false]);
+    // The boss never took its turn after row 0, or any later one.
+    expect(
+      r.events.filter((e) => ['hit', 'blocked', 'dodge', 'intercept', 'move'].includes(e.kind)),
+    ).toHaveLength(0);
+  });
+
+  it('the round count restarts each raid stage', () => {
+    const w = weekend(calm({ rows: 1, cols: 1, rounds: 3 }), [at('tidewing', 0, 0)], [], {
+      rng: rng('wk'),
+      log: true,
+      stages: 3,
+    });
+    expect(w.stages).toHaveLength(3);
+    for (const st of w.stages) {
+      const rounds = [...new Set(st.events.map((e) => e.round))];
+      expect(rounds).toEqual([1, 2, 3]);
+    }
+  });
+});
+
 describe('the talent library as content', () => {
   const roles = (line: string) => lineRoles(line);
 
-  it('every talent has the keys it says, fits a role, and is in a line pool', () => {
+  it('every talent has the keys it says, fits a role, and is in a line pool (Cull waits for a killing-blow talent)', () => {
     const pooled = new Set(Object.values(LINE_POOLS).flat());
     for (const [id, t] of Object.entries(TALENTS)) {
       expect(t.id, id).toBe(id);
       expect(t.roles.length, id).toBeGreaterThan(0);
-      expect(pooled.has(id), `${id} is in no pool`).toBe(true);
+      expect(pooled.has(id), `${id} pool membership`).toBe(id !== 'cull');
       for (const w of keywordsIn(t.text)) expect(KEYWORDS, `${id} {${w}}`).toHaveProperty(w);
     }
-    expect(Object.keys(TALENTS).length).toBeGreaterThanOrEqual(32);
+    expect(Object.keys(TALENTS).length).toBeGreaterThanOrEqual(28);
+    // Retired in panel 3.
+    for (const gone of ['lone-wolf', 'share-the-load', 'thick-skull', 'light-sleeper'])
+      expect(TALENTS, gone).not.toHaveProperty(gone);
+    expect(Object.keys(TALENTS).filter((id) => id.startsWith('flank-guard'))).toEqual([
+      'flank-guard',
+    ]);
   });
 
   it('talent fields all add up: numbers and flags only, so mergeFx stays sound', () => {
@@ -537,9 +758,8 @@ describe('the talent library as content', () => {
     ]);
     for (const [key, v] of Object.entries(all))
       if (ADDITIVE_FIELDS.has(key as never)) expect(['number', 'boolean'], key).toContain(typeof v);
-    // Both flanks together cancel out: the reach is both sides again.
-    const both = mergeFx([{ flankLeft: true }, { flankRight: true }]);
-    expect(both).toEqual({ flankLeft: true, flankRight: true });
+    // Flank Guard is a flag: two of them are still one.
+    expect(mergeFx([{ flankGuard: true }, { flankGuard: true }])).toEqual({ flankGuard: true });
   });
 
   it('every pool is 7 talents, every role in a line has 3 that fit, and lines of one role differ', () => {
