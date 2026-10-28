@@ -123,7 +123,7 @@ Misa asked (2026-10-28) whether protection needs a cap. An **intercepted** hit n
 ## Numbers and golden talents
 
 - **Budget rule**: a talent's value while its condition holds, times how often the condition holds in a typical fight, lands near the same average (the lab measures it). So "+8% always" and "+40% only at a row end" cost the same, but the second one decides where the creature stands. That is how talents become defining without one being best everywhere (P-10: spiky, not flat).
-- **Bigger numbers**: conditional talents sit at +30% to +60% while on (Misa's "around 50%"); plain stats stay at +8% to +10%.
+- **Bigger numbers**: target (Misa, 2026-10-28): about +20% on the team's result for a talent at its best, about +8% to +15% for a good talent where it fits, and no single must-pick in a pool (see `decisions.md`).
 - **Golden**: the number x1.25 (Misa, 2026-10-28: with bigger base values, golden comes down from x1.5). A talent with no number (Flank Guard, Unflappable, Stubborn) has its own small golden extra, written in brackets above.
 - The lab measures each talent with its condition met and on average, and the report flags any talent that is best on most cards.
 

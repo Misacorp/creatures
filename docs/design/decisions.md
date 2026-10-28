@@ -3402,3 +3402,9 @@ Misa asked whether the next list that needs "select several and act on them" cou
 - **Idea for later:** if creatures ever "work" at places, a school where a creature learns a random talent from its line's book after some time.
 
 **Notes (lead).** Both change the live game's systems (stats, the duplicate flow), so they are built with the game integration (roadmap phase 4) and the migration (phase 6). The lab gets per-species armour now, so the numbers reflect it.
+
+## 2026-10-28: How strong a talent should be
+
+**Decision (Misa).** Talent choice should feel like it has a big impact. Roughly **+20%** on a team's result is the upper target for a talent at its best (Misa's guess, to be checked in play). Power comes from many sources (Knacks, gear, placement and synergies, stats, levels), so what talents gain is taken from those. Too strong and players think each creature has only one valuable talent, so no pool may have a single must-pick.
+
+**How the lab checks it (lead).** In the report's talent section (best legal board with against best legal board without, on a boss the classic line kills in about 8 rounds): a talent's gain on its best card is at most about +20%; the good talents of each role sit at about +8% to +15% where they fit; in each line's pool, every role has at least two talents within a few points of its best one. Raid-shaped talents (neighbours, row ends, long fights) are measured on a raid row as well.
