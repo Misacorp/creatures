@@ -3464,6 +3464,7 @@ The dungeon map's rooms were the only smooth, glowing art in the game. They are 
 ## 2026-10-29: The boss is the hero of the Raid screen on desktop
 
 Panel round 2 asked for it first: from 60 rem the boss card is a centred hero. The art is drawn at twice its size (whole pixels, no frame, only a soft glow of its element behind it), the name under it, then the tags, the HP and the move chips, with the rules text smaller and quieter below (nothing deleted; no new popover was made for it). From 80 rem the roster board (`ui/RaidBoard`) takes taller tiles with 3x sprites by itself and is exactly as wide as a whole number of lanes, so the right edge never cuts a tile (CSS `round()`; lanes snap to the left edge). The phone layout is unchanged. The dungeon map's panel takes the map's own ground on desktop, so the map and its panel are one surface. The XP bar's numbers use written-out bone and ink colours, so a look cannot make them unreadable on a full bar (`xp-text-colours.test.ts`).
+
 ### 2026-10-29: CI skips the build and tests for documentation-only PRs
 
 Misa noticed that a PR adding only a retro file ran every CI job. He asked for a scope that saves CI time without leaving gaps.
