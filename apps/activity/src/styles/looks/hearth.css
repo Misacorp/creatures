@@ -1,28 +1,30 @@
 /*
-  The "hearth" look (Hearthbook): a lamplit wooden cabin and a well-thumbed field journal. Three clear steps of
-  walnut: the ground (#1f140c, darkest), panels (#3a2618) and raised plates (#4e331f). Panels keep cream text
-  (every component draws bone text on them); only a few plates are parchment, and those set their own dark text.
+  The "hearth" look (Hearthbook): a lamplit wooden cabin and a well-thumbed field journal. Four steps of walnut,
+  darkest to lightest: the ground (#1d120a), the rail, HUD and dock (#33200f), panels (#46301f) and raised plates
+  (#5a3b24), with planks (#77502b) one more step up. Panels keep cream text; only a few plates are parchment, and
+  those set their own dark text. Panels have a tan rim (#a47844) so they part from the floor.
   Hard edges only: no blur, no glow, no smooth gradients, no rounded corners.
-  Contrast, measured (WCAG): bone #f6ead0 on panel 12.0:1, on raised 9.7:1;
-  sand #d8c39c on panel 8.3:1, on raised 6.7:1, on the floor 9.7:1; light sand #e6d4ae on raised 7.9:1; ink #1c100a on amber
-  #f0b040 9.7:1; dark #2c1a0c on parchment #ead7a8 11.7:1; amber on the floor 8.8:1, on raised 6.1:1
+  Contrast, measured (WCAG): bone #f6ead0 on panel 10.3:1, on raised 8.4:1, on plank 5.9:1, on rail 13.0:1;
+  sand #d8c39c on panel 7.2:1, on raised 5.9:1, on the floor 10.5:1; mid sand #c8b08a (empty slots) on panel
+  5.9:1, on raised 4.8:1, on the floor 8.6:1; ink #1c100a on amber #f0b040 9.7:1; dark #2c1a0c on parchment
+  #ead7a8 11.7:1; amber on panel 6.5:1, on raised 5.3:1, on the rail 8.1:1
   Every rule is scoped under :root[data-look='hearth']; the default look is untouched.
 */
 :root[data-look='hearth'] {
   --night: #1f140c; /* the ground */
-  --dusk: #3a2618; /* walnut panel */
-  --dusk-2: #4e331f; /* raised walnut */
+  --dusk: #46301f; /* walnut panel */
+  --dusk-2: #5a3b24; /* raised walnut */
   --ink: #1c100a;
   --ink-rgb: 28 16 10;
   --bone: #f6ead0; /* cream text */
   --haze: #d8c39c; /* warm sand, muted text */
-  --sand: #e6d4ae; /* light sand: dashed edges, empty labels */
+  --sand: #c8b08a; /* mid sand: empty slots, dashed edges, locked labels */
   --gold: #f0b040; /* amber / honey */
   --gold-shade: #a8701f;
   --gold-rgb: 240 176 64;
   --line: #7a5230;
   --mine: #5e3d1f;
-  --bevel-hi: #7a5230; /* the rim */
+  --bevel-hi: #a47844; /* the rim: lighter than any plank behind it */
   --bevel-lo: #26160c;
   --plum: #5a3418; /* the shadow under a title */
   --good: #9bd46a; /* moss */
@@ -39,7 +41,7 @@
   --parchment-dark: #c9ae78;
   --nail: #cfa862;
   --nail-dark: #6a4a26;
-  --plank-bg: #6a4524; /* a pressable plank, lighter than any panel behind it */
+  --plank-bg: #77502b; /* a pressable plank, lighter than any panel behind it */
   /* A walnut panel: ink outline, a lighter rim inside, a shadowed bottom edge. */
   --frame:
     0 calc(var(--px) * -1) 0 0 var(--ink), 0 var(--px) 0 0 var(--ink),
@@ -67,21 +69,21 @@
 
 /* --- The card: the floor of the window, wide planks with visible seams. Panels sit on it, lighter. --- */
 :root[data-look='hearth'] main.card {
-  background-color: #2a1a10;
+  background-color: #1d120a;
   background-image: repeating-linear-gradient(
     90deg,
-    #2a1a10 0 94px,
-    #170d07 94px 96px,
-    #2f1e13 96px 190px,
-    #170d07 190px 192px,
-    #271810 192px 286px,
-    #170d07 286px 288px
+    #1d120a 0 94px,
+    #0f0804 94px 96px,
+    #22160d 96px 190px,
+    #0f0804 190px 192px,
+    #1a1009 192px 286px,
+    #0f0804 286px 288px
   );
 }
 
 /* --- The HUD: a dark beam, one ink lip and a walnut rim below it (no per-place colour) --- */
 :root[data-look='hearth'] .hud {
-  background: #2e1c10;
+  background: #33200f;
   box-shadow:
     0 var(--px) 0 0 var(--ink),
     inset 0 -2px 0 0 var(--bevel-hi);
@@ -140,7 +142,7 @@
 
 /* --- Navigation: a walnut dock and rail, buttons are planks, the chosen one is amber --- */
 :root[data-look='hearth'] .main-nav.dock {
-  background: #2e1c10;
+  background: #33200f;
   box-shadow:
     0 calc(var(--px) * -1) 0 0 var(--ink),
     inset 0 2px 0 0 var(--bevel-hi);
@@ -148,7 +150,7 @@
 }
 
 :root[data-look='hearth'] .main-nav.rail {
-  background: #2a1a10;
+  background: #33200f;
   box-shadow:
     0 calc(var(--px) * -1) 0 0 var(--ink),
     0 var(--px) 0 0 var(--ink),
@@ -243,9 +245,29 @@
 
 /* --- Empty slots: a dashed 2 px edge in light sand, "Add" in sand --- */
 :root[data-look='hearth'] .party-slot.empty {
-  border-color: var(--sand);
+  border: 2px dashed var(--sand);
   background: var(--night);
   color: var(--sand);
+}
+
+:root[data-look='hearth'] .cc-chip.empty,
+:root[data-look='hearth'] .cc-chip.locked-slots,
+:root[data-look='hearth'] .slot.locked,
+:root[data-look='hearth'] .slot-lock,
+:root[data-look='hearth'] .cc-slot-empty,
+:root[data-look='hearth'] button.cc-slot.locked .cc-slot-empty {
+  outline-color: var(--sand);
+  color: var(--sand);
+  opacity: 1;
+}
+
+:root[data-look='hearth'] button.cc-slot:disabled {
+  opacity: 1;
+}
+
+:root[data-look='hearth'] .cc-chip.empty,
+:root[data-look='hearth'] .cc-chip.locked-slots {
+  outline-color: var(--sand);
 }
 
 :root[data-look='hearth'] .slot.empty {
@@ -257,11 +279,46 @@
 :root[data-look='hearth'] .ph-ink-drop,
 :root[data-look='hearth'] .ph-element-drop {
   text-shadow:
+    2px 0 0 var(--ink),
+    -2px 0 0 var(--ink),
+    0 2px 0 var(--ink),
+    0 -2px 0 var(--ink),
+    2px 2px 0 var(--ink),
+    -2px -2px 0 var(--ink),
+    2px -2px 0 var(--ink),
+    -2px 2px 0 var(--ink),
+    calc(var(--px) * 2) calc(var(--px) * 2) 0 #0a0503;
+}
+
+/* Creature names on cards: cream with a hard ink edge, so a name reads as a title. */
+:root[data-look='hearth'] .cc-name-row h3 .cc-open,
+:root[data-look='hearth'] h2.cc-name-page .cc-name-text {
+  color: var(--bone);
+  text-shadow:
     1px 0 0 var(--ink),
     -1px 0 0 var(--ink),
     0 1px 0 var(--ink),
     0 -1px 0 var(--ink),
-    var(--px) var(--px) 0 #0a0503;
+    var(--px) var(--px) 0 var(--ink);
+}
+
+/* The dungeon map: a near-black floor with clear amber stripes, so the rooms stand out of the walnut. */
+:root[data-look='hearth'] .dmap-board {
+  background: #120a05;
+}
+
+:root[data-look='hearth'] .dmap-band {
+  fill: #5a3d1c;
+}
+
+/* Claim and any other pressed-down primary: ready is amber, waiting is a flat dark plank with sand words. */
+:root[data-look='hearth'] button.primary:disabled {
+  opacity: 1;
+  background: var(--night);
+  color: var(--haze);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 0 0 2px var(--line);
 }
 
 /* --- Tags and badges: small dark plaques with a sand rim (zero specificity, so the gold and green variants win) --- */
