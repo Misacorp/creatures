@@ -3462,3 +3462,7 @@ Misa asked for a creature's ribbons and Valley Games medals on its card in the c
 ## 2026-10-28: Announced random attacks; dungeon clear target; the camp stays
 
 **Decision (Misa).** Every random boss attack is shown at round start, with the attack's icon on each targeted creature (players cannot stop it, but watching it come is exciting). A dungeon clear is beating the day's floor boss; with the map's agency (route, skipped fights, safe mystery options, keepsakes, the camp) a good all-round team clears over 50% of runs at depths 1 to 8, and the Undercroft is where success drops. The camp keeps today's choices (rest, swap a creature, take a keepsake; push on or head home).
+
+## 2026-10-29: Combat v2 raid boss HP grows with the number of players
+
+**Decision (lead).** In the lab, a raid boss's weekend HP grows with the arena's width, as (players / 4) to the power of a per-boss exponent (0.55 to 1.23), like the shipped game's `hpExponent` (1.1). With a fixed HP, the classic party won every weekend in rows 10 and 15 wide, since more creatures simply deal more damage. Move counts scale with width too (`perColumns`), so a pattern covers the same share of a wide row as of a four-wide one. The exponents are lab numbers, tuned per boss; the port (roadmap phase 4) sets them with the shipped scaling.
