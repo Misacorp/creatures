@@ -139,7 +139,7 @@ export function ArenaScene({
                     count={RAID_TEAM_SIZE}
                     lit={RAID_TEAM_SIZE - left}
                     size="md"
-                    label={`${String(RAID_TEAM_SIZE - left)} of ${String(RAID_TEAM_SIZE)} placed`}
+                    label={`Placed: ${String(RAID_TEAM_SIZE - left)} / ${String(RAID_TEAM_SIZE)}`}
                   />
                 </span>
               </At>
