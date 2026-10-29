@@ -3497,3 +3497,11 @@ Misa noticed that a PR adding only a retro file ran every CI job. He asked for a
 - **Robustness:** prepared answers are tuned to win with random legal talents too (about 60% or more), since a talent is meant to be about a fifth of a result, not the whole weekend.
 
 Also: Stubborn is once per weekend and never heals; further anchors of a move skip creatures already in its shape; moves on one boss turn land in the boss card's order (R8.3); one HP exponent (0.7) for every boss.
+
+## 2026-10-29: Measure HP removed; rule cards ask before they require
+
+**Decision (Misa).** Boss fights should not be all-or-nothing. Getting the boss to 10% left is very different from doing nothing, and players should feel their choices move the result ("just a little more of this and next week we beat it"). So:
+
+- **The main raid measure is the share of the boss's HP removed** (with the retreat tiers beside it); every choice's impact is shown as HP removed, not only as kills.
+- **Rule cards have a strength**, not an on/off switch (reflection returns a share of the damage, armour grows by a share, a one-shot becomes a heavy hit, and so on). A card **asks** for a tool at low strength and **requires** it at high strength.
+- **Strength rises with Boss Rank.** Early raids must not expect servers to have an answer to every problem (they lack creatures, talents and gear): a server without the answer still does real damage, and the right tools turn it into a kill. Hard requirements are a challenge for the later stages and the endgame.
