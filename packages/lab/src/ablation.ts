@@ -117,6 +117,8 @@ export interface Measured {
   readonly carried: boolean;
   /** How far the measure falls when it is taken out (0 when the line does not carry it). */
   readonly drop: number;
+  /** The line without it, as a key: mechanics that take the same Knacks and talents off share a key (Mired and the Debuff family, say). */
+  readonly key: string;
 }
 
 /**
@@ -130,15 +132,15 @@ export function ablate(line: readonly Pick[], measure: (l: readonly Pick[]) => n
   cache.set(baseKey, base);
   return MECHANICS.map((mechanic) => {
     const tool = toolOf(mechanic);
-    if (!tool) return { mechanic, hasTool: false, carried: false, drop: 0 };
+    if (!tool) return { mechanic, hasTool: false, carried: false, drop: 0, key: '' };
     const stripped = strip(line, tool);
     const key = lineKey(stripped);
-    if (key === baseKey) return { mechanic, hasTool: true, carried: false, drop: 0 };
+    if (key === baseKey) return { mechanic, hasTool: true, carried: false, drop: 0, key };
     let v = cache.get(key);
     if (v === undefined) {
       v = measure(stripped);
       cache.set(key, v);
     }
-    return { mechanic, hasTool: true, carried: true, drop: base - v };
+    return { mechanic, hasTool: true, carried: true, drop: base - v, key };
   });
 }

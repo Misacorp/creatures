@@ -23,10 +23,12 @@
  * tuned together with the written answers (`bossAnswers.ts`, found by a team search that must keep the boss's tool and
  * a gap of at least 40 points without it): Attack and HP set how hard a weekend is for four players (a boss at its cliff
  * wins or loses within about 10% of Attack, so the prepared line sits just below it: a margin of 60% to 95% at +10%),
- * the HP exponent sets how much a wide raid gains over it (a low exponent lets a mixed server of ten win by its tools),
  * and the aimed moves that would thin out in a wide row (a single hit, a line of three) have `anchors` per `perColumns`
- * columns so a wide raid of the same three creatures meets as many of them as a narrow one does. Past ten players the HP
- * grows in a straight line (`RAID_LINEAR_FROM`, `raidMeasure.ts`).
+ * columns so a wide raid of the same three creatures meets as many of them as a narrow one does.
+ *
+ * Panel 5 (2026-10-29): the weekend HP grows with the players by one exponent for every boss (`RAID_HP_EXPONENT`,
+ * `raidMeasure.ts`) and one smooth curve, with no kink. The per-boss exponents (0.15 to 0.6) and the straight line past ten
+ * players are gone; the mixed servers of four bosses fall below their band as a result and are the content task's to retune.
  */
 import { content, createSeededRng } from '@creatures/game';
 import { card } from './cards';
@@ -90,11 +92,6 @@ export interface RaidBossSpec {
   readonly atk: number;
   /** The weekend's shared HP. */
   readonly hp: number;
-  /**
-   * How the HP grows with the raid's width in the lab's measures: `(players / 4) ^ hpExponent` (default 1). A boss that asks
-   * for a tool, not for numbers, grows more gently, so a mixed server can still beat it.
-   */
-  readonly hpExponent?: number;
   readonly plain: BossDef['plain'];
   readonly moves: readonly MoveRow[];
   readonly cards: readonly string[];
@@ -121,7 +118,6 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
     armour: 34,
     atk: 122,
     hp: 26_400,
-    hpExponent: 0.6,
     plain: { pattern: { anchor: 'front', shape: 'row' }, powerBp: 2_500 },
     cards: ['adapts'],
     // The tide rises as the Colossus is hurt: every fifth of its HP gone widens its columns and rows, and Mired slows it.
@@ -168,7 +164,6 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
     armour: 60,
     atk: 160,
     hp: 28_300,
-    hpExponent: 0.36,
     plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 6_000 },
     cards: ['reflective-hide', 'adapts-element'],
     // Every cashed reaction stokes the forge: the fire grows hotter and throws more shells. Few, big reactions or Mired hold it down.
@@ -206,7 +201,6 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
     armour: 98,
     atk: 137,
     hp: 15_200,
-    hpExponent: 0.15,
     plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 7_000 },
     cards: ['adapts'],
     // Each fifth of her HP lost wakes her further; at half she blooms (Second Bloom) and the whole arena is in play.
@@ -270,7 +264,6 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
     armour: 7,
     atk: 74,
     hp: 19_000,
-    hpExponent: 0.38,
     // Lightning Rod: the plain attack leaps from the strongest Payoff, twice a round. A Taunt takes the first strike.
     plain: {
       pattern: { anchor: 'payoff', shape: 'chain', n: 2, perColumns: 4, decayBp: 5_500 },
@@ -338,7 +331,6 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
     armour: 23,
     atk: 105,
     hp: 42_500,
-    hpExponent: 0.5,
     plain: {
       pattern: { anchor: 'front', shape: 'line3', anchors: 1, perColumns: 4 },
       powerBp: 4_500,
@@ -457,6 +449,8 @@ export interface WeekendStats {
   /** The same two at the end of the weekend: the last stage each weekend played (a won weekend ends in its winning stage). */
   readonly hpLeftEnd: number;
   readonly standingEnd: number;
+  /** Mean knockouts over the weekend by the owner of the creature (`p1` ...): who paid for it. */
+  readonly knockoutsByOwner: Readonly<Record<string, number>>;
 }
 
 /** The standing creatures' HP over their max HP, and the share of the field standing, at the end of a stage. */
@@ -494,6 +488,12 @@ export function combineWeekends(parts: readonly WeekendStats[]): WeekendStats {
     standing: idx.map((k) => at(k, (p) => p.standing[k] ?? 0)),
     hpLeftEnd: w((p) => p.hpLeftEnd),
     standingEnd: w((p) => p.standingEnd),
+    knockoutsByOwner: Object.fromEntries(
+      [...new Set(parts.flatMap((p) => Object.keys(p.knockoutsByOwner)))].map((o) => [
+        o,
+        w((p) => p.knockoutsByOwner[o] ?? 0),
+      ]),
+    ),
   };
 }
 
@@ -525,6 +525,7 @@ export function weekendStatsOf(
   const up = [0, 0, 0];
   let hpEnd = 0,
     upEnd = 0;
+  const byOwner: Record<string, number> = {};
   for (let i = 0; i < runs; i++) {
     const w = weekend(boss, placements, bench, {
       rng: createSeededRng(`weekend:${salt}:${i}`),
@@ -537,6 +538,7 @@ export function weekendStatsOf(
       played[k] = (played[k] ?? 0) + 1;
       hp[k] = (hp[k] ?? 0) + h.hpLeft;
       up[k] = (up[k] ?? 0) + h.standing;
+      for (const f of st.fighters) if (f.hp <= 0) byOwner[f.owner] = (byOwner[f.owner] ?? 0) + 1;
     });
     const lastStage = w.stages[w.stages.length - 1];
     if (lastStage) {
@@ -562,6 +564,7 @@ export function weekendStatsOf(
     standing: up.map((u, k) => u / Math.max(1, played[k] ?? 0)),
     hpLeftEnd: hpEnd / runs,
     standingEnd: upEnd / runs,
+    knockoutsByOwner: Object.fromEntries(Object.entries(byOwner).map(([o, n]) => [o, n / runs])),
   };
 }
 

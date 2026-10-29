@@ -9,7 +9,12 @@ import {
   MECHANICS,
   MIXED_ORDER,
   RAID,
-  RAID_LINEAR_FROM,
+  RAID_HP_EXPONENT,
+  RAID_SPECS,
+  MIXED_ORDERS,
+  PLAYER_KINDS,
+  mixedSpread,
+  raidHpFactor,
   CLASSIC_LINE,
   ablate,
   attacksOf,
@@ -38,7 +43,6 @@ import {
   weekendStats,
   widthOf,
   wideBoss,
-  hpExponentOf,
   type BossDef,
   type Fighter,
   type Pick,
@@ -173,22 +177,29 @@ describe('the margin, the widths and the mixed server', () => {
     }
   });
 
-  it('a wider raid has a bigger boss: the weekend HP grows with the players by the boss’s own exponent, its Attack does not', () => {
-    const b = raidBossOf('thornmother');
-    const exponent = hpExponentOf(b);
-    // The lab's exponents run from 0.2 (Thornmother: her bark asks for a tool, so a wide raid without it gets nowhere, and
-    // a wide raid with it should not meet a much bigger boss) up to the shipped 1.1.
-    expect(exponent).toBeGreaterThanOrEqual(0.1);
-    expect(exponent).toBeLessThanOrEqual(1.1);
-    for (const w of [5, 10, 15]) {
-      const wide = wideBoss(b, w);
-      expect(wide.cols).toBe(w);
-      expect(wide.atk).toBe(b.atk);
-      // Up to ten players the boss's exponent applies; past ten the HP grows in a straight line.
-      const bend = Math.min(w, RAID_LINEAR_FROM);
-      expect(wide.hp).toBe(Math.round(b.hp * (bend / b.cols) ** exponent * (w / bend)));
+  it('a wider raid has a bigger boss: one exponent and one smooth curve for every boss, and its Attack does not grow', () => {
+    // Panel 5: no boss has an exponent of its own, and there is no kink (no straight line past ten players).
+    for (const spec of RAID_SPECS) expect(spec, spec.id).not.toHaveProperty('hpExponent');
+    expect(RAID_HP_EXPONENT).toBeGreaterThan(0.5);
+    expect(RAID_HP_EXPONENT).toBeLessThanOrEqual(1);
+    for (const id of RAID_SPECS.map((x) => x.id)) {
+      const b = raidBossOf(id);
+      for (const w of [5, 10, 15]) {
+        const wide = wideBoss(b, w);
+        expect(wide.cols).toBe(w);
+        expect(wide.atk).toBe(b.atk);
+        expect(wide.hp).toBe(Math.round(b.hp * (w / b.cols) ** RAID_HP_EXPONENT));
+      }
+      expect(wideBoss(b, b.cols).hp).toBe(b.hp);
     }
-    expect(wideBoss(b, b.cols).hp).toBe(b.hp);
+    // The local exponent between neighbouring widths is the same everywhere: no kink at 10 players.
+    const b = raidBossOf('thornmother');
+    const widths = [4, 5, 6, 8, 9, 10, 11, 12, 15];
+    for (let i = 1; i < widths.length; i++) {
+      const [lo, hi] = [widths[i - 1] as number, widths[i] as number];
+      const local = Math.log(raidHpFactor(b, hi) / raidHpFactor(b, lo)) / Math.log(hi / lo);
+      expect(local, `${lo} to ${hi}`).toBeCloseTo(RAID_HP_EXPONENT, 8);
+    }
   });
 
   it('players who read the boss bring the columns that hold its tool, the most of it first', () => {
@@ -250,6 +261,61 @@ describe('the margin, the widths and the mixed server', () => {
     expect(r.winRate).toBeLessThanOrEqual(1);
     // Deterministic for a salt.
     expect(mixedServer(colossus, best, [best], 2, 4, 'mixed')).toEqual(r);
+  });
+
+  it('the mixed server keeps its shares at 5, 10 and 15 players', () => {
+    for (const [n, order] of Object.entries(MIXED_ORDERS)) {
+      expect(order).toHaveLength(Number(n));
+      const share = (k: 'm' | 'b' | 'c') => order.filter((x) => x === k).length / order.length;
+      expect(share('m'), n).toBeGreaterThanOrEqual(0.15);
+      expect(share('m'), n).toBeLessThanOrEqual(0.25);
+      expect(share('b'), n).toBeGreaterThanOrEqual(0.25);
+      expect(share('b'), n).toBeLessThanOrEqual(0.4);
+      expect(share('c'), n).toBeGreaterThanOrEqual(0.4);
+    }
+    expect(MIXED_ORDERS[10]).toBe(MIXED_ORDER);
+    expect(PLAYER_KINDS).toEqual(['m', 'b', 'c']);
+  });
+
+  it('the casual players with no Knack bring their top creatures by level, a legal talent each', () => {
+    const a = casualColumn(createSeededRng('top3'), 3, 'top3');
+    expect(a).toEqual(casualColumn(createSeededRng('top3'), 3, 'top3'));
+    expect(a).toHaveLength(3);
+    expect(a.every((p) => p.knack === 'none')).toBe(true);
+    expect(illegalTalents(a)).toEqual([]);
+    // The same roster as the random column's (same seed), whose creatures are never higher than the top three.
+    const levels = a.map((p) => p.level ?? 0);
+    expect([...levels].sort((x, y) => y - x)).toEqual(levels);
+    // Four rows bring four creatures.
+    expect(casualColumn(createSeededRng('top3'), 4, 'top3')).toHaveLength(4);
+  });
+
+  it('the mixed server reports knockouts per kind of player, and the casual variant is a different server', () => {
+    const best = answerLine(BOSS_ANSWERS['storm-sovereign']?.[0]?.line ?? '');
+    const run = (casual: 'random' | 'top3', players = 10) =>
+      mixedServer(colossus, best, [best], 2, 4, 'kinds', [], [], { casual, players });
+    const r = run('random');
+    expect(r.drawWins).toHaveLength(2);
+    expect(Object.keys(r.knockoutsPerPlayer).sort()).toEqual(['b', 'c', 'm']);
+    // Per-player means times the players of each kind add up to the weekend's knockouts.
+    const order = MIXED_ORDERS[10] ?? [];
+    const total = PLAYER_KINDS.reduce(
+      (n, k) => n + r.knockoutsPerPlayer[k] * order.filter((x) => x === k).length,
+      0,
+    );
+    expect(total).toBeCloseTo(r.knockouts);
+    expect(run('top3')).not.toEqual(r);
+    for (const players of [5, 15]) expect(run('random', players).players).toBe(players);
+  });
+
+  it('the spread over seeds splits the draws, and gives each seed’s win rate and the draws’ spread', () => {
+    const best = answerLine(BOSS_ANSWERS['storm-sovereign']?.[0]?.line ?? '');
+    const r = mixedSpread(colossus, best, [best], 7, 3, 1, 'spread');
+    expect(r.seedWins).toHaveLength(3);
+    expect(r.drawWins).toHaveLength(7);
+    expect(r.weekend.runs).toBe(7);
+    expect(r.drawSd).toBeGreaterThanOrEqual(0);
+    expect(mixedSpread(colossus, best, [best], 7, 3, 1, 'spread')).toEqual(r);
   });
 
   it('a weekend score is a number the search can rank by', () => {
@@ -358,6 +424,7 @@ describe('HP left after each stage (Misa, 2026-10-29)', () => {
       standing: [hp, hp2, 0],
       hpLeftEnd: hp,
       standingEnd: hp,
+      knockoutsByOwner: { p1: hp * 10, p2: 1 },
     });
     const c = combineWeekends([part(10, 0.2, 1, 0.4), part(30, 0.6, 0.5, 0.8)]);
     expect(c.runs).toBe(40);
@@ -367,5 +434,16 @@ describe('HP left after each stage (Misa, 2026-10-29)', () => {
     // Stage 2: 10 weekends with HP 0.4, 15 weekends with HP 0.8.
     expect(c.hpLeft[1]).toBeCloseTo((10 * 0.4 + 15 * 0.8) / 25);
     expect(c.played[2]).toBe(0);
+    // Knockouts by owner combine the same way.
+    expect(c.knockoutsByOwner['p1']).toBeCloseTo((10 * 2 + 30 * 6) / 40);
+    expect(c.knockoutsByOwner['p2']).toBeCloseTo(1);
+  });
+
+  it('every knockout of a weekend is counted against its owner', () => {
+    const boss = raidBossOf('cinder-wyrm');
+    const w = weekendStats(boss, classicFor(raidMode(boss)), 6, 'by-owner');
+    const total = Object.values(w.knockoutsByOwner).reduce((a, b) => a + b, 0);
+    expect(total).toBeCloseTo(w.knockoutsTotal);
+    expect(Object.keys(w.knockoutsByOwner).every((o) => /^p[1-4]$/.test(o))).toBe(true);
   });
 });

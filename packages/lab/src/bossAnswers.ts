@@ -24,7 +24,7 @@ export interface BossAnswer {
   readonly talent?: string;
   /**
    * What makes it the tool: Knack ids, and talents as `talent:<id>`. Taking these off the line (`withoutTool`) must cost it
-   * (tested for the first answer of every boss: the tool the boss really asks for).
+   * (tested for every answer, panel 5: it must cost at least `TOOL_DROP_MIN` points of weekend win rate; the first answer of each boss must cost 40).
    */
   readonly core?: readonly string[];
 }
@@ -93,7 +93,8 @@ export const arenaSize = (bossId: string): number =>
  * The answers, found by the lab's team search with the tool required (`scratch` searches over legal rosters: a creature's
  * Knack from its form, its talents from its line's pool and its role), then written down. Each boss's first answer is the tool
  * it really asks for, and it uses at most two copies of any form (a roster a table of four players can bring). Tested: every line is
- * legal, beats the classic party, and the first answer loses much of its win rate without its `core`.
+ * legal, beats the classic party, the first answer loses much of its win rate without its `core`, and every answer loses at least
+ * 20 points (the answers that do not yet are listed in the test).
  */
 export const BOSS_ANSWERS: Readonly<Record<string, readonly BossAnswer[]>> = {
   'tidal-colossus': [

@@ -4,7 +4,6 @@
  */
 import { createSeededRng, int, type Rng } from '@creatures/game';
 import {
-  RAID_SPECS,
   combineWeekends,
   raidBench,
   raidMode,
@@ -41,30 +40,28 @@ export function marginOf(boss: BossDef, line: readonly Pick[], runs: number, sal
 export const RAID_WIDTHS: readonly number[] = [5, 10, 15];
 
 /**
- * How a raid boss's weekend HP grows with the number of players: `(players / 4) ^ e` up to `RAID_LINEAR_FROM` players, where
- * `e` is the boss's own `hpExponent` (shipped bosses have one too: they answer differently to a bigger raid) or 1, a
- * straight line, and in a straight line past it. The boss's Attack does not grow; its area counts do (`perColumns`).
+ * How a raid boss's weekend HP grows with the number of players (panel 5): `(players / 4) ^ RAID_HP_EXPONENT`, one
+ * exponent for every boss and one smooth curve, with no kink at any width. The boss's Attack does not grow; its area
+ * counts do (`perColumns`).
  */
-export const hpExponentOf = (boss: BossDef): number =>
-  RAID_SPECS.find((s) => s.id === boss.id)?.hpExponent ?? 1;
-
-/**
- * Past this many players the boss's HP grows in a straight line, one player's share for every player (balance pass,
- * 2026-10-29). Below it the boss's own exponent applies, which lets a mixed server of about ten players win by its tools;
- * with the exponent alone a 15-player raid of the same three creatures out-damaged the boss, since more creatures simply
- * deal more (panel 4, finding 12).
- */
-export const RAID_LINEAR_FROM = 10;
+export const RAID_HP_EXPONENT = 0.7;
 
 /** The weekend HP of a raid boss for `cols` players, as a multiple of its HP for the usual four. */
-export function raidHpFactor(boss: BossDef, cols: number): number {
-  const bend = Math.min(cols, RAID_LINEAR_FROM);
-  return (bend / boss.cols) ** hpExponentOf(boss) * (cols / bend);
+export function raidHpFactor(
+  boss: BossDef,
+  cols: number,
+  exponent: number = RAID_HP_EXPONENT,
+): number {
+  return (cols / boss.cols) ** exponent;
 }
 
 /** The boss in an arena of `cols` columns, one player each: the arena is wider and the weekend HP has grown with the players. */
-export function wideBoss(boss: BossDef, cols: number): BossDef {
-  return { ...boss, cols, hp: Math.round(boss.hp * raidHpFactor(boss, cols)) };
+export function wideBoss(
+  boss: BossDef,
+  cols: number,
+  exponent: number = RAID_HP_EXPONENT,
+): BossDef {
+  return { ...boss, cols, hp: Math.round(boss.hp * raidHpFactor(boss, cols, exponent)) };
 }
 
 /** A raid line (rows of `from` columns) repeated to fill rows of `to` columns: column c of each row is column c % from of it. */
@@ -91,8 +88,9 @@ export function widthOf(
   width: number,
   runs: number,
   salt: string,
+  exponent: number = RAID_HP_EXPONENT,
 ): WidthResult {
-  const wide = wideBoss(boss, width);
+  const wide = wideBoss(boss, width, exponent);
   const classic = weekendStats(wide, classicFor(raidMode(wide)), runs, `${salt}:c`);
   const b = weekendStats(wide, tileLine(best, boss.cols, width), runs, `${salt}:b`);
   return {
@@ -132,34 +130,74 @@ export function limitCopies(column: readonly Pick[], max: number, spare: readonl
   return out;
 }
 
+/** How a casual player picks the column: a random Knack each (today's players), or the top creatures by level with no Knack (the default after the migration, P-14). */
+export type CasualKind = 'random' | 'top3';
+
 /**
  * A casual player's column: twelve random forms at random levels (8 to 25, capped by the form), `rows` of them in the
- * column, each with a random Knack it can equip (or none) and a random legal talent.
+ * column, each with a random legal talent. `random`: random forms, each with a random Knack it can equip (or none).
+ * `top3` (panel 5): the highest levels of the roster, one creature a row (the top three on a three-row arena), no Knack,
+ * since migrated creatures start with none equipped.
  */
-export function casualColumn(rng: Rng, rows: number): Pick[] {
+export function casualColumn(rng: Rng, rows: number, kind: CasualKind = 'random'): Pick[] {
   const forms = Object.keys(FORM_KNACKS);
   const roster = new Map<string, number>();
   while (roster.size < 12)
     roster.set(forms[int(rng, forms.length)] ?? 'tidewing', 8 + int(rng, 18));
+  const level = (f: string) => Math.min(roster.get(f) ?? 1, formStats(f, 30).levelCap);
   const owned = [...roster.keys()];
-  const column: Pick[] = [];
-  for (let r = 0; r < rows; r++) {
-    const form = owned.splice(int(rng, owned.length), 1)[0] ?? 'tidewing';
+  const chosen =
+    kind === 'top3'
+      ? [...owned].sort((a, b) => level(b) - level(a)).slice(0, rows)
+      : Array.from(
+          { length: rows },
+          () => owned.splice(int(rng, owned.length), 1)[0] ?? 'tidewing',
+        );
+  return chosen.map((form) => {
     const knacks = [...(FORM_KNACKS[form] ?? []), 'none'];
     const talents = legalTalents(form);
     const talent = talents[int(rng, talents.length)];
-    column.push({
+    return {
       formId: form,
-      knack: knacks[int(rng, knacks.length)] ?? 'none',
-      level: Math.min(roster.get(form) ?? 1, formStats(form, 30).levelCap),
+      knack: kind === 'top3' ? 'none' : (knacks[int(rng, knacks.length)] ?? 'none'),
+      level: level(form),
       ...(talent ? { talents: [talent] } : {}),
-    });
-  }
-  return column;
+    };
+  });
 }
 
-/** The mixed server: 2 min-maxers, 3 builders and 5 casual players, columns interleaved. */
-export const MIXED_ORDER = ['m', 'c', 'b', 'c', 'm', 'c', 'b', 'c', 'b', 'c'] as const;
+/** The kinds of player on a mixed server: min-maxers, builders and casual players. */
+export type PlayerKind = 'm' | 'b' | 'c';
+export const PLAYER_KINDS: readonly PlayerKind[] = ['m', 'b', 'c'];
+export const PLAYER_KIND_NAME: Readonly<Record<PlayerKind, string>> = {
+  m: 'min-maxer',
+  b: 'builder',
+  c: 'casual',
+};
+
+/** The mixed server of ten: 2 min-maxers, 3 builders and 5 casual players, columns interleaved. */
+export const MIXED_ORDER: readonly PlayerKind[] = [
+  'm',
+  'c',
+  'b',
+  'c',
+  'm',
+  'c',
+  'b',
+  'c',
+  'b',
+  'c',
+];
+
+/**
+ * The mixed server at 5, 10 and 15 players (about a fifth min-maxers, three tenths builders, half casual players), columns
+ * interleaved so each kind stands spread across the arena.
+ */
+export const MIXED_ORDERS: Readonly<Record<number, readonly PlayerKind[]>> = {
+  5: ['m', 'c', 'b', 'c', 'b'],
+  10: MIXED_ORDER,
+  15: ['m', 'c', 'b', 'c', 'm', 'c', 'b', 'c', 'b', 'c', 'm', 'c', 'b', 'b', 'c'],
+};
 
 export interface MixedResult {
   readonly players: number;
@@ -167,6 +205,10 @@ export interface MixedResult {
   readonly knockouts: number;
   /** The whole measure over every draw: HP left and the share standing per stage and at the weekend's end. */
   readonly weekend: WeekendStats;
+  /** Mean knockouts a weekend per player of each kind (who pays for it). */
+  readonly knockoutsPerPlayer: Readonly<Record<PlayerKind, number>>;
+  /** The win rate of each draw (a draw is one set of casual rosters and builder answers). */
+  readonly drawWins: readonly number[];
 }
 
 /**
@@ -184,11 +226,21 @@ export function toolColumns(
   return Array.from({ length: cols }, (_, c) => c).sort((a, b) => score(b) - score(a) || a - b);
 }
 
+export interface MixedOptions {
+  /** Players (columns), 5, 10 or 15 (default 10). */
+  readonly players?: number;
+  /** How the casual players pick their column (default `random`). */
+  readonly casual?: CasualKind;
+  /** The HP exponent (default the one rule). */
+  readonly hpExponent?: number;
+}
+
 /**
- * A mixed server weekend against `boss`: ten players, one column each. The two min-maxers each bring a column of the best
- * line; the three builders each a column of a written answer (at most two copies of a form); the five casual players a
- * column of random forms, Knacks and talents. Min-maxers and builders have read the boss: they bring the columns that hold
- * the tool (`core` for the best line, `answerCores` for each written answer), the most of it first. Over `draws` different casual rosters (and builder answers), `runs` weekends
+ * A mixed server weekend against `boss`: ten players (or 5 or 15), one column each. The min-maxers each bring a column of
+ * the best line; the builders each a column of a written answer (at most two copies of a form); the casual players a
+ * column of random forms, Knacks and talents (or their top creatures by level with no Knack, `options.casual`). Min-maxers
+ * and builders have read the boss: they bring the columns that hold the tool (`core` for the best line, `answerCores` for
+ * each written answer), the most of it first. Over `draws` different casual rosters (and builder answers), `runs` weekends
  * in all.
  */
 export function mixedServer(
@@ -200,15 +252,17 @@ export function mixedServer(
   salt: string,
   core: readonly string[] = [],
   answerCores: readonly (readonly string[])[] = [],
+  options: MixedOptions = {},
 ): MixedResult {
   const rows = boss.rows;
+  const order = MIXED_ORDERS[options.players ?? 10] ?? MIXED_ORDER;
   const per = Math.max(1, Math.floor(runs / draws));
   const parts: WeekendStats[] = [];
   for (let d = 0; d < draws; d++) {
     const rng = createSeededRng(`mixed:${salt}:${d}`);
     let m = 0,
       b = 0;
-    const columns: Pick[][] = MIXED_ORDER.map((kind) => {
+    const columns: Pick[][] = order.map((kind) => {
       if (kind === 'm')
         return columnOf(
           best,
@@ -218,11 +272,11 @@ export function mixedServer(
       if (kind === 'b') {
         const k = answers.length ? (b + d) % answers.length : -1;
         const a = k >= 0 ? (answers[k] as readonly Pick[]) : best;
-        const order = toolColumns(a, boss.cols, answerCores[k] ?? core);
-        const col = order[(b++ + d) % boss.cols] as number;
+        const tc = toolColumns(a, boss.cols, answerCores[k] ?? core);
+        const col = tc[(b++ + d) % boss.cols] as number;
         return limitCopies(columnOf(a, boss.cols, col), BUILDER_MAX_COPIES, a);
       }
-      return casualColumn(rng, rows);
+      return casualColumn(rng, rows, options.casual ?? 'random');
     });
     const players = columns.length;
     const placements: Placement[] = columns.flatMap((col, c) =>
@@ -236,20 +290,89 @@ export function mixedServer(
         col: c,
       })),
     );
-    const w = weekendStatsOf(
-      wideBoss(boss, players),
-      placements,
-      raidBench(players),
-      per,
-      `${salt}:${d}`,
+    parts.push(
+      weekendStatsOf(
+        wideBoss(boss, players, options.hpExponent),
+        placements,
+        raidBench(players),
+        per,
+        `${salt}:${d}`,
+      ),
     );
-    parts.push(w);
   }
   const weekend = combineWeekends(parts);
+  const perPlayer = (kind: PlayerKind): number => {
+    const owners = order.flatMap((k, c) => (k === kind ? [`p${c + 1}`] : []));
+    return owners.length
+      ? owners.reduce((n, o) => n + (weekend.knockoutsByOwner[o] ?? 0), 0) / owners.length
+      : 0;
+  };
   return {
-    players: MIXED_ORDER.length,
+    players: order.length,
     winRate: weekend.winRate,
     knockouts: weekend.knockoutsTotal,
     weekend,
+    knockoutsPerPlayer: { m: perPlayer('m'), b: perPlayer('b'), c: perPlayer('c') },
+    drawWins: parts.map((p) => p.winRate),
+  };
+}
+
+/** The draws and seeds of the report's mixed server: 200 draws over 3 seeds (panel 5: one seed of 40 draws was mostly noise). */
+export const MIXED_SEEDS = 3;
+export const MIXED_DRAWS = 200;
+
+export interface MixedSpread extends MixedResult {
+  /** The win rate on each seed's share of the draws, and the standard deviation of the draws' win rates. */
+  readonly seedWins: readonly number[];
+  readonly drawSd: number;
+}
+
+/** The mixed server over several seeds (`draws` in all, split over them), with the spread between seeds and between draws. */
+export function mixedSpread(
+  boss: BossDef,
+  best: readonly Pick[],
+  answers: readonly (readonly Pick[])[],
+  draws: number,
+  seeds: number,
+  weekendsPerDraw: number,
+  salt: string,
+  core: readonly string[] = [],
+  answerCores: readonly (readonly string[])[] = [],
+  options: MixedOptions = {},
+): MixedSpread {
+  const parts: MixedResult[] = Array.from({ length: seeds }, (_, k) =>
+    mixedServer(
+      boss,
+      best,
+      answers,
+      Math.floor(draws / seeds) + (k < draws % seeds ? 1 : 0),
+      (Math.floor(draws / seeds) + (k < draws % seeds ? 1 : 0)) * weekendsPerDraw,
+      `${salt}:seed${k}`,
+      core,
+      answerCores,
+      options,
+    ),
+  );
+  const weekend = combineWeekends(parts.map((p) => p.weekend));
+  const total = parts.reduce((n, p) => n + p.weekend.runs, 0);
+  const w = (f: (p: MixedResult) => number) =>
+    parts.reduce((n, p) => n + f(p) * p.weekend.runs, 0) / total;
+  const drawWins = parts.flatMap((p) => p.drawWins);
+  const mean = drawWins.reduce((a, b) => a + b, 0) / Math.max(1, drawWins.length);
+  return {
+    players: parts[0]?.players ?? 0,
+    winRate: weekend.winRate,
+    knockouts: weekend.knockoutsTotal,
+    weekend,
+    knockoutsPerPlayer: {
+      m: w((p) => p.knockoutsPerPlayer.m),
+      b: w((p) => p.knockoutsPerPlayer.b),
+      c: w((p) => p.knockoutsPerPlayer.c),
+    },
+    drawWins,
+    seedWins: parts.map((p) => p.winRate),
+    drawSd: Math.sqrt(
+      drawWins.reduce((n, x) => n + (x - mean) ** 2, 0) / Math.max(1, drawWins.length),
+    ),
   };
 }
