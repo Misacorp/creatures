@@ -94,7 +94,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Circle Round
 
-- **Text:** Each reaction on a Tide mark heals the creature that set it off by 8% of its max HP.
+- **Text:** Each reaction on a Tide mark heals the creature that set it off by 14% of its max HP.
 - **Family:** Sustain
 - **Forms:** tidewing
 - **Intent (for contributors, never shown to players):** Keeps Payoffs alive when reactions hurt them (Reflective Hide, Thorns).
@@ -164,10 +164,10 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Primed by Pain
 
-- **Text:** The first time it {Intercept}s each fight, it leaves x1 of its own element's mark.
+- **Text:** Each time it {Intercept}s, it leaves x2 of its own element's mark. Once a round.
 - **Family:** Guard Prime
 - **Forms:** sproutle, thornbuck
-- **Intent (for contributors, never shown to players):** A Guard that helps prime for an Ember Payoff when no Grove Setter is around.
+- **Intent (for contributors, never shown to players):** A Guard that marks by taking hits (panel 5: once a fight, and one count, was too little to build a team on): an Ember Payoff gets its reaction while the Setter slot becomes another hitter.
 
 ### Night Watch
 
@@ -227,7 +227,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Baked Shell
 
-- **Text:** {Store} Heat: +1 each time it or a creature in its reach takes damage. At 3, the next {Reaction} by a creature beside it deals double bonus.
+- **Text:** {Store} Heat: +1 at round start and each time it or a creature in its reach takes damage. At 3, the next {Reaction} by a creature beside it deals double bonus.
 - **Family:** Store
 - **Forms:** kilnmole
 - **Intent (for contributors, never shown to players):** A Guard beside a Payoff in a hard fight.
@@ -248,7 +248,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Zigzag
 
-- **Text:** {Taunt}, +20 dodge. {Store} Static: +1 per dodge; at 3, its next mark gets +2 to its count.
+- **Text:** {Taunt}, +12 dodge. {Store} Static: +1 per dodge; at 3, its next mark gets +1 to its count.
 - **Family:** Evasion
 - **Forms:** voltaro
 - **Intent (for contributors, never shown to players):** A dodge tank beside a Guard (dodge before intercept).
@@ -262,7 +262,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Lightning Ears
 
-- **Text:** It leaves its own element's {Mark} like a Setter, but it does not {Intercept}, and Armour -22.
+- **Text:** It leaves its own element's {Mark} like a Setter, but it does not {Intercept}, and Armour -8.
 - **Family:** Guard Prime
 - **Forms:** ohmouse
 - **Intent (for contributors, never shown to players):** A Setter that survives the front row; it pays with the Guard's verb and its armour (P-02: never a Setter and a Guard in one body).
