@@ -6,7 +6,10 @@
  *
  * Misa's direction (2026-10-28): the foes may change freely, so each one asks its own question instead of repeating a
  * shipped gimmick. A dungeon shows its encounters up front but sends many different foes, so it needs an all-round
- * team, and it is tough, so the camp (a rest between rooms) matters. The Undercroft stays a mystery and is not modelled.
+ * team, and it is tough, so the camp (a rest between rooms) matters. Fourth panel (2026-10-28): three foes ask a question
+ * the classic line fails unless it answers it (`needs`: a Guard, a silence ward, something for armour), and the depth
+ * curve grows one stat, HP, so a deeper foe is a longer fight and not a harder-hitting one. The runs on the shipped map,
+ * the camp and the Undercroft are in `dungeon.ts`.
  */
 import { depthFactorBp, dungeonContent, isLandmark } from '@creatures/game';
 import { card } from './cards';
@@ -25,15 +28,17 @@ export const FOE_BASE = { hpBp: 23_000, atkBp: 225_000 } as const;
 
 /**
  * The lab's depth curve, in the shape of the dungeon's (`depthFactorBp`: 10000 plus a step for each depth above 1 plus a
- * curve for each square of them). It is gentler than the shipped one: the lab's creatures are all at their level cap, so
- * there is no levelling wall to climb, and the report reads foes at depths a capped team can meet. Lab depths are not
- * the shipped depth numbers.
+ * curve for each square of them). It grows one stat: HP (a foe's Attack is the same at every depth; Attack growth on top
+ * of HP growth tested worse, a double step the best team never recovered from). It is gentler than the shipped one: the
+ * lab's creatures are all at their level cap, so there is no levelling wall to climb. Tuned (2026-10-28) so a good
+ * all-round team with a plan clears over half of its runs at depths 1 to 8 (about 100% at depth 1 down to about 70% at depth 8),
+ * the Undercroft below is harder, and the classic line falls away by depth 3. Lab depths are not the shipped depth numbers.
  */
 export const FOE_CURVE = {
-  hpStepBp: 800,
-  hpCurveBp: 20,
-  atkStepBp: 800,
-  atkCurveBp: 20,
+  hpStepBp: 1_600,
+  hpCurveBp: 45,
+  atkStepBp: 0,
+  atkCurveBp: 0,
 } as const;
 
 export interface FoeSpec {
@@ -47,6 +52,15 @@ export interface FoeSpec {
   readonly escalation?: Escalation;
   /** The question the foe asks the team (for the report). */
   readonly asks: string;
+  /** A foe that asks a hard question is tuned on its own: its HP and Attack, in basis points of the lab's scaled numbers (10000 is unchanged). */
+  readonly hpBp?: number;
+  readonly atkBp?: number;
+  /**
+   * Set when the classic line (Tidewing, Tempestray, Thornbuck) fails the foe unless it answers the question (tested):
+   * `guard` (a team with no Guard loses a hitter), `ward` (a team with no silence ward loses its Setter and Guard to the
+   * silence) or `pierce` (a team with nothing to get past its bark makes no dent).
+   */
+  readonly needs?: 'guard' | 'ward' | 'pierce';
 }
 
 const front = { anchor: 'front', shape: 'single' } as const;
@@ -64,10 +78,12 @@ export const FOE_SPECS: readonly FoeSpec[] = [
     id: 'drift-wisp',
     armour: 2,
     plain: { pattern: front, powerBp: 8_000 },
-    moves: [['sea-mist', 'Sea Mist', 3, 0, 'front', 'rowEnds', 0, { n: 1, silenceTurns: 1 }]],
+    moves: [['sea-mist', 'Sea Mist', 1, 0, 'front', 'rowEnds', 0, { n: 1, silenceTurns: 2 }]],
     cards: ['elusive'],
-    escalation: { name: 'Wisp Fog', feed: 'dodges', per: 2, cap: 2, grow: { atkBp: 2_000 } },
-    asks: 'Hard to hit, it silences the ends of the line, and every miss thickens the fog.',
+    escalation: { name: 'Wisp Fog', feed: 'dodges', per: 2, cap: 2, grow: { dodgeBp: 800 } },
+    asks: 'Hard to hit, it keeps the ends of the line quiet, and every miss thickens the fog. Something must ward the ends.',
+    hpBp: 22_000,
+    needs: 'ward',
   },
   {
     id: 'ember-mite',
@@ -98,15 +114,20 @@ export const FOE_SPECS: readonly FoeSpec[] = [
     plain: { pattern: front, powerBp: 9_000 },
     moves: [['thorn-snap', 'Thorn Snap', 3, 0, 'front', 'rowEnds', 0, { n: 1, silenceTurns: 1 }]],
     cards: ['thick-hide'],
-    asks: 'Bark turns small hits away, and it silences the ends of the line.',
+    asks: 'Bark turns small hits away, and it silences the ends of the line. Tunnel Through or a big hit gets past.',
+    hpBp: 12_000,
+    needs: 'pierce',
   },
   {
     id: 'moss-lurker',
     armour: 10,
     plain: { pattern: front, powerBp: 6_000 },
-    moves: [['root-grab', 'Root Grab', 2, 0, 'strongest', 'line3', 12_000]],
+    moves: [['root-grab', 'Root Grab', 2, 0, 'strongest', 'line3', 18_000]],
     cards: ['grudge'],
-    asks: 'It likes the loudest visitor: the one that dealt the most, and the strongest.',
+    asks: 'It likes the loudest visitor: the one that dealt the most, and the strongest. A Guard beside it takes the hit.',
+    hpBp: 12500,
+    atkBp: 1_0000,
+    needs: 'guard',
   },
   {
     id: 'static-bat',
@@ -148,20 +169,22 @@ export const FOE_SPECS: readonly FoeSpec[] = [
     plain: { pattern: front, powerBp: 6_000 },
     moves: [
       ['flood-gate', 'Flood Gate', 3, 0, 'front', 'all', 6_000],
-      ['undertow', 'Undertow', 2, 0, 'front', 'columns', 7_000, { n: 2 }],
+      ['sluice-pull', 'Sluice Pull', 2, 0, 'front', 'columns', 7_000, { n: 2 }],
     ],
-    signature: ['sluice-surge', 'Sluice Surge', 4, 0, 'front', 'all', 11_000, { charged: true }],
+    signature: ['sluice-surge', 'Sluice Surge', 4, 0, 'front', 'all', 11_000, { windUp: true }],
     cards: [],
-    asks: 'The gates open on the whole line; at a landmark, a wave announced a round ahead.',
+    // A dungeon run is one player's own team, so a Build-up that feeds on knockouts blames no one: each creature that falls lets the water rise.
+    escalation: { name: 'Rising Water', feed: 'knockouts', per: 1, cap: 2, grow: { atkBp: 1_200 } },
+    asks: 'The gates open on the whole line, and each creature that falls lets the water rise; at a landmark, a wave announced a round ahead.',
   },
   {
     id: 'slag-tyrant',
     armour: 20,
     plain: { pattern: front, powerBp: 7_000 },
     moves: [['anvil-fall', 'Anvil Fall', 3, 0, 'front', 'line3', 15_000]],
-    signature: ['slag-spill', 'Slag Spill', 4, 0, 'strongest', 'line3', 24_000, { charged: true }],
+    signature: ['slag-spill', 'Slag Spill', 4, 0, 'strongest', 'line3', 24_000, { windUp: true }],
     cards: ['reflective-hide'],
-    escalation: { name: 'Molten Shell', feed: 'reactions', per: 2, cap: 2, grow: { atkBp: 1_500 } },
+    escalation: { name: 'Molten Shell', feed: 'reactions', per: 2, cap: 2, grow: { armour: 8 } },
     asks: 'The first reaction after each of its turns burns the one who plays it, and every reaction heats it.',
   },
   {
@@ -180,7 +203,7 @@ export const FOE_SPECS: readonly FoeSpec[] = [
       'front',
       'rowEnds',
       13_000,
-      { n: 1, charged: true },
+      { n: 1, windUp: true },
     ],
     cards: ['wither'],
     asks: 'She silences the ends and drains healing; thorns land on two random creatures.',
@@ -190,10 +213,10 @@ export const FOE_SPECS: readonly FoeSpec[] = [
     armour: 14,
     plain: { pattern: { anchor: 'strongest', shape: 'single' }, powerBp: 6_000 },
     moves: [['arc-lash', 'Arc Lash', 1, 0, 'strongest', 'chain', 6_000, { n: 1, decayBp: 6_000 }]],
-    signature: ['overload', 'Overload', 4, 0, 'strongest', 'line3', 22_000, { charged: true }],
+    signature: ['coil-burst', 'Coil Burst', 4, 0, 'strongest', 'line3', 22_000, { windUp: true }],
     cards: [],
     escalation: {
-      name: 'Overload',
+      name: 'Tightening Coil',
       feed: 'rounds',
       per: 2,
       cap: 3,
@@ -206,7 +229,7 @@ export const FOE_SPECS: readonly FoeSpec[] = [
     armour: 22,
     plain: { pattern: front, powerBp: 6_000 },
     moves: [['sink-down', 'Sink Down', 3, 0, 'front', 'all', 6_000]],
-    signature: ['pull-under', 'Pull Under', 4, 0, 'front', 'all', 11_000, { charged: true }],
+    signature: ['fen-tug', 'Fen Tug', 4, 0, 'front', 'all', 11_000, { windUp: true }],
     cards: ['shake-it-off'],
     asks: 'A heavy sweep of the line, and it washes off every debuff every third round.',
   },
@@ -221,27 +244,45 @@ export const DUNGEON_DEPTHS: readonly number[] = [1, 3, 5, 7];
 export function foeStats(id: string, depth: number): { hp: number; atk: number } {
   const def = dungeonContent.foes.find((f) => f.id === id);
   if (!def) throw new Error(`unknown dungeon foe ${id}`);
-  const part = (value: number, scale: number, step: number, curve: number) =>
+  const spec = FOE_SPECS.find((s) => s.id === id);
+  const part = (value: number, scale: number, step: number, curve: number, own: number) =>
     Math.max(
       1,
       Math.floor(
-        (Math.floor((value * scale) / 10_000) * depthFactorBp(depth, step, curve)) / 10_000,
+        (Math.floor((Math.floor((value * scale) / 10_000) * own) / 10_000) *
+          depthFactorBp(depth, step, curve)) /
+          10_000,
       ),
     );
   return {
-    hp: part(def.baseHp, FOE_BASE.hpBp, FOE_CURVE.hpStepBp, FOE_CURVE.hpCurveBp),
-    atk: part(def.baseAtk, FOE_BASE.atkBp, FOE_CURVE.atkStepBp, FOE_CURVE.atkCurveBp),
+    hp: part(
+      def.baseHp,
+      FOE_BASE.hpBp,
+      FOE_CURVE.hpStepBp,
+      FOE_CURVE.hpCurveBp,
+      spec?.hpBp ?? 10_000,
+    ),
+    atk: part(
+      def.baseAtk,
+      FOE_BASE.atkBp,
+      FOE_CURVE.atkStepBp,
+      FOE_CURVE.atkCurveBp,
+      spec?.atkBp ?? 10_000,
+    ),
   };
 }
 
-/** A dungeon foe at a depth: a one-row arena, its own armour, plain attack, moves and cards; a floor boss gains its signature at a landmark. */
-export function foeAt(id: string, depth: number): BossDef {
+/**
+ * A dungeon foe at a depth: a one-row arena, its own armour, plain attack, moves and cards; a floor boss gains its
+ * signature at a landmark (`signature` decides it instead: an Undercroft keeper always has it).
+ */
+export function foeAt(id: string, depth: number, options: { signature?: boolean } = {}): BossDef {
   const spec = FOE_SPECS.find((s) => s.id === id);
   const def = dungeonContent.foes.find((f) => f.id === id);
   if (!spec || !def) throw new Error(`unknown dungeon foe ${id}`);
   const { hp, atk } = foeStats(id, depth);
   const moves = spec.moves.map(move);
-  if (spec.signature && isLandmark(depth)) moves.push(move(spec.signature));
+  if (spec.signature && (options.signature ?? isLandmark(depth))) moves.push(move(spec.signature));
   let boss: BossDef = {
     id,
     name: def.name,

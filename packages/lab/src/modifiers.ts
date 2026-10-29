@@ -305,7 +305,7 @@ export const IDEAS: readonly Idea[] = [
   },
   {
     name: 'Brace for impact',
-    text: "Takes 50% less from the boss's moves (a Charged landing announced on its slot included), not its plain attack.",
+    text: "Takes 50% less from the boss's moves (a Wind-up landing announced on its slot included), not its plain attack.",
     class: ['protection', ANY, 'rule'],
     isGear: 'brace',
   },

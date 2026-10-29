@@ -161,7 +161,16 @@ const KEYWORD_CALLS: Readonly<Record<string, Mechanic['calls']>> = {
     (armoured(b) || attacksOf(b).some((a) => a.plain && a.hits > 1)) &&
     'armour turns small hits into Blocked',
   Silenced: (b) => silences(b) && 'it silences creatures',
-  Charged: (b) => charged(b) && 'moves announced a round ahead',
+  'Wind-up': (b) => charged(b) && 'moves announced a round ahead',
+  Scatter: (b) => shapes(b, 'scatter') && 'shells on random creatures',
+  Leap: (b) => shapes(b, 'chain') && 'hits that jump from creature to creature',
+  Cross: (b) => shapes(b, 'cross') && 'hits on a creature and the slots touching it',
+  Checker: (b) => shapes(b, 'checker') && 'hits on every other slot',
+  'Most hurt': (b) =>
+    attacksOf(b).some((a) => a.pattern.anchor === 'weakest') && 'it picks the most hurt creature',
+  'Back-most': (b) =>
+    attacksOf(b).some((a) => a.pattern.anchor === 'back') && 'it picks the back-most creature',
+  'Build-up': (b) => b.escalation !== undefined && 'it grows as the weekend goes on',
   Mired: (b) =>
     (b.mods.shakeEvery !== undefined || b.escalation) && 'it washes debuffs off, or Mired holds it',
   Beside: (b) => shapes(b, 'line3', 'chain', 'cross') && 'hits that spread to the creatures beside',
@@ -227,7 +236,7 @@ const RULE_CALLS: readonly Mechanic[] = [
   },
   {
     id: 'rule:charged',
-    name: 'Charged moves',
+    name: 'Wind-up moves',
     group: 'Rule',
     calls: (b) => charged(b) && 'it announces moves a round ahead',
   },
@@ -251,7 +260,7 @@ const RULE_CALLS: readonly Mechanic[] = [
   },
   {
     id: 'rule:escalation',
-    name: 'Escalation',
+    name: 'Build-up',
     group: 'Rule',
     calls: (b) =>
       b.escalation !== undefined && `${b.escalation.name} grows with ${b.escalation.feed}`,

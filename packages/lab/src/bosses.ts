@@ -10,9 +10,13 @@
  * sweeps rows and columns, Thornmother binds and silences, the Storm Sovereign strikes the strongest, Old Bogback
  * cleanses and sinks, the Cinder Wyrm burns back reactions) and gets the rest of its moves from the grammar.
  *
- * HP is the weekend's shared HP (R14), set so the classic raid party (four players with Tidewing, Tempestray and
- * Thornbuck) wins about a third of the weekends and the best team found by search wins more (`measureBoss`).
- * Attack and the move powers are the boss's threat: a weekend should cost the party creatures.
+ * HP is the weekend's shared HP (R14). Fourth panel (Misa, 2026-10-28): a raid is announced, so a team built for the week
+ * should usually win (about 85% to 100% of weekends) and still lose creatures, while the classic raid party (four players
+ * with Tidewing, Tempestray and Thornbuck) never wins. Each boss has one tool it really asks for (the first of its
+ * `BOSS_ANSWERS`, tested by taking the tool away): Reach for the Tidal Colossus, Mired on the Cinder Wyrm, Pierce for
+ * Thornmother, Taunt for the Storm Sovereign, Mud Wall and healing for Old Bogback. Attack and the move powers are
+ * the boss's threat: a weekend should cost the party creatures. The boss's Build-up (`escalation` in the data) is the
+ * word players read.
  */
 import { content, createSeededRng } from '@creatures/game';
 import { card } from './cards';
@@ -28,8 +32,11 @@ export const RAID_COLS = 4;
 /** A move in the lab's short form: `[id, name, every, turn, anchor, shape, powerBp, extras]`. */
 type Extras = {
   readonly n?: number;
+  /** `n` per this many columns of the arena (`Pattern.perColumns`): scatter and row end counts grow with the raid's width. */
+  readonly perColumns?: number;
   readonly decayBp?: number;
-  readonly charged?: boolean;
+  /** A Wind-up move: announced a round ahead (the engine's field is still `charged`). */
+  readonly windUp?: boolean;
   readonly silenceTurns?: number;
 };
 export type MoveRow = readonly [
@@ -55,9 +62,10 @@ export function move(row: MoveRow): BossMove {
       shape,
       ...(x.n !== undefined ? { n: x.n } : {}),
       ...(x.decayBp !== undefined ? { decayBp: x.decayBp } : {}),
+      ...(x.perColumns !== undefined ? { perColumns: x.perColumns } : {}),
     },
     powerBp,
-    ...(x.charged ? { charged: true } : {}),
+    ...(x.windUp ? { charged: true } : {}),
     ...(x.silenceTurns ? { silenceTurns: x.silenceTurns } : {}),
   };
 }
@@ -93,26 +101,26 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
     id: 'tidal-colossus',
     rows: 3,
     armour: 30,
-    atk: 118,
-    hp: 45_000,
+    atk: 122,
+    hp: 36_000,
     plain: { pattern: { anchor: 'front', shape: 'row' }, powerBp: 2_500 },
     cards: ['adapts'],
-    // The tide rises as creatures fall: each pair knocked out widens its columns and rows, a spiral that is stopped early or not at all.
+    // The tide rises as the Colossus is hurt: every fifth of its HP gone widens its columns and rows, and Mired slows it.
     escalation: {
       name: 'Rising Tide',
-      feed: 'knockouts',
-      per: 2,
+      feed: 'hpLost',
+      per: 2_000,
       cap: 3,
-      grow: { atkBp: 800, area: 1 },
+      grow: { atkBp: 600, area: 1 },
     },
-    asks: 'The whole sea: rows, lanes and spray. Who stands where, and who can take a wave?',
+    asks: 'The whole sea sweeps the rows. Wide Reach and row wards turn the waves; who stands where?',
     moves: [
       ['undertow', 'Undertow', 3, 0, 'front', 'row', 9_000],
-      ['spray', 'Spray', 2, 0, 'random', 'scatter', 5_000, { n: 4 }],
+      ['spray', 'Spray', 2, 0, 'random', 'scatter', 5_000, { n: 4, perColumns: 4 }],
       ['tidal-pull', 'Tidal Pull', 2, 1, 'strongest', 'columns', 6_000, { n: 2 }],
-      ['riptide', 'Riptide', 4, 1, 'random', 'column', 14_000, { charged: true }],
-      ['spring-tide', 'Spring Tide', 6, 1, 'payoff', 'row', 16_000, { charged: true }],
-      ['great-wave', 'Great Wave', 3, 2, 'random', 'randomRow', 18_000, { charged: true }],
+      ['riptide', 'Riptide', 4, 1, 'random', 'column', 14_000, { windUp: true }],
+      ['spring-tide', 'Spring Tide', 6, 1, 'payoff', 'row', 16_000, { windUp: true }],
+      ['great-wave', 'Great Wave', 3, 2, 'random', 'randomRow', 18_000, { windUp: true }],
       ['deepwater-spear', 'Deepwater Spear', 5, 2, 'strongest', 'column', 15_000],
       ['breaker', 'Breaker', 7, 0, 'back', 'rows', 8_000, { n: 2 }],
     ],
@@ -120,9 +128,9 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
   {
     id: 'cinder-wyrm',
     rows: 4,
-    armour: 24,
-    atk: 140,
-    hp: 41_000,
+    armour: 60,
+    atk: 132,
+    hp: 38_000,
     plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 6_000 },
     cards: ['reflective-hide', 'adapts-element'],
     // Every cashed reaction stokes the forge: the fire grows hotter and throws more shells. Few, big reactions or Mired hold it down.
@@ -133,26 +141,26 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       cap: 4,
       grow: { atkBp: 1_000, targets: 1 },
     },
-    asks: 'The forge turns your first reaction back on you. Spread the heat, and guard the carry.',
+    asks: 'The forge turns the first reaction of every row back on you, and every reaction heats it. Keep Mired on it, or make each reaction count.',
     moves: [
       ['coil-crush', 'Coil Crush', 3, 0, 'front', 'line3', 15_000],
       ['scorch-lane', 'Scorch Lane', 2, 1, 'random', 'column', 7_000],
       ['magma-spit', 'Magma Spit', 4, 1, 'payoff', 'line3', 16_000],
-      ['cinder-fall', 'Cinder Fall', 2, 3, 'random', 'scatter', 8_000, { n: 5 }],
-      ['ember-chain', 'Ember Chain', 3, 2, 'strongest', 'chain', 14_000, { n: 3, decayBp: 7_000 }],
+      ['cinder-fall', 'Cinder Fall', 2, 3, 'random', 'scatter', 8_000, { n: 5, perColumns: 4 }],
+      ['ember-leap', 'Ember Leap', 3, 2, 'strongest', 'chain', 14_000, { n: 3, decayBp: 7_000 }],
       ['ash-cloud', 'Ash Cloud', 4, 2, 'random', 'checker', 6_000],
-      ['eruption', 'Eruption', 5, 3, 'front', 'all', 8_000, { charged: true }],
+      ['eruption', 'Eruption', 5, 3, 'front', 'all', 8_000, { windUp: true }],
     ],
   },
   {
     id: 'thornmother',
     rows: 3,
-    armour: 38,
+    armour: 68,
     atk: 131,
-    hp: 29_500,
+    hp: 24_000,
     plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 7_000 },
     cards: ['adapts'],
-    // Each quarter of her HP lost wakes her further; at half she blooms (Phase 2) and the whole arena is in play.
+    // Each fifth of her HP lost wakes her further; at half she blooms (Second Bloom) and the whole arena is in play.
     escalation: {
       name: 'Awakening',
       feed: 'hpLost',
@@ -163,28 +171,36 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
         atStep: 2,
         name: 'Second Bloom',
         moves: [
-          ['bloom-storm', 'Bloom Storm', 2, 0, 'random', 'scatter', 7_000, { n: 6 }],
-          [
-            'choking-bloom',
-            'Choking Bloom',
-            3,
-            1,
-            'front',
-            'rowEnds',
-            0,
-            { n: 2, silenceTurns: 1 },
-          ],
+          ['bloom-storm', 'Bloom Storm', 2, 0, 'random', 'scatter', 7_000, { n: 6, perColumns: 4 }],
           ['thorn-wall', 'Thorn Wall', 4, 2, 'front', 'rows', 9_000, { n: 2 }],
         ],
       },
     },
-    asks: 'The row ends fall silent. Put what you cannot spare in the middle, or ward it.',
+    asks: 'The row ends fall quiet. Keep what you cannot spare in the middle or ward it, and bring something for her thick bark.',
     moves: [
-      ['bramble-bind', 'Bramble Bind', 2, 2, 'front', 'rowEnds', 0, { n: 1, silenceTurns: 1 }],
-      ['choking-vines', 'Choking Vines', 4, 0, 'front', 'rowEnds', 0, { n: 1, silenceTurns: 2 }],
-      ['briar-pincer', 'Briar Pincer', 3, 1, 'front', 'rowEnds', 9_000, { n: 1 }],
+      // The one silencing move: every second round, the two ends of every row.
+      [
+        'bramble-hush',
+        'Bramble Hush',
+        2,
+        2,
+        'front',
+        'rowEnds',
+        0,
+        { n: 1, perColumns: 4, silenceTurns: 1 },
+      ],
+      ['briar-pincer', 'Briar Pincer', 3, 1, 'front', 'rowEnds', 9_000, { n: 1, perColumns: 4 }],
       ['bramble-cross', 'Bramble Cross', 2, 0, 'random', 'cross', 9_000],
-      ['seed-burst', 'Seed Burst', 4, 1, 'random', 'scatter', 10_000, { n: 5, charged: true }],
+      [
+        'seed-burst',
+        'Seed Burst',
+        4,
+        1,
+        'random',
+        'scatter',
+        10_000,
+        { n: 5, perColumns: 4, windUp: true },
+      ],
       ['thorn-lash', 'Thorn Lash', 3, 2, 'strongest', 'chain', 12_000, { n: 3, decayBp: 6_000 }],
       ['root-snare', 'Root Snare', 5, 2, 'random', 'columns', 8_000, { n: 2 }],
       ['back-thorns', 'Back Thorns', 4, 2, 'back', 'row', 8_000],
@@ -194,9 +210,13 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
     id: 'storm-sovereign',
     rows: 2,
     armour: 10,
-    atk: 104,
+    atk: 110,
     hp: 14_000,
-    plain: { pattern: { anchor: 'strongest', shape: 'single' }, powerBp: 8_000 },
+    // Lightning Rod: the plain attack leaps from the strongest Payoff, twice a round. A Taunt takes the first strike.
+    plain: {
+      pattern: { anchor: 'payoff', shape: 'chain', n: 2, decayBp: 5_500 },
+      powerBp: 12_000,
+    },
     cards: ['elusive', 'adapts-element'],
     // The storm gathers as the rounds pass: a race. Mired holds it back.
     escalation: {
@@ -206,35 +226,35 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       cap: 3,
       grow: { atkBp: 1_000, jumps: 1 },
     },
-    asks: 'He strikes the hardest hitter first. Who can take it, and who can still land a hit on him?',
+    asks: 'The Rod leaps from the strongest Payoff, round after round. Draw it onto something that can take it, or put a Guard beside the Payoff.',
     moves: [
-      [
-        'lightning-rod',
-        'Lightning Rod',
-        1,
-        1,
-        'strongest',
-        'chain',
-        14_000,
-        { n: 2, decayBp: 5_500 },
-      ],
       ['thunderclap', 'Thunderclap', 3, 0, 'strongest', 'line3', 18_000],
       ['forked-lightning', 'Forked Lightning', 2, 0, 'random', 'columns', 7_000, { n: 2 }],
-      ['static-field', 'Static Field', 3, 1, 'payoff', 'row', 12_000],
-      ['ball-lightning', 'Ball Lightning', 4, 1, 'random', 'scatter', 9_000, { n: 3 }],
-      ['judgement-bolt', 'Judgement Bolt', 4, 0, 'payoff', 'single', 28_000, { charged: true }],
-      ['storm-front', 'Storm Front', 5, 1, 'front', 'all', 7_000, { charged: true }],
+      ['static-field', 'Static Field', 3, 1, 'payoff', 'line3', 14_000],
+      [
+        'ball-lightning',
+        'Ball Lightning',
+        4,
+        1,
+        'random',
+        'scatter',
+        9_000,
+        { n: 3, perColumns: 4 },
+      ],
+      ['judgement-bolt', 'Judgement Bolt', 4, 0, 'payoff', 'single', 28_000, { windUp: true }],
+      ['storm-front', 'Storm Front', 5, 1, 'front', 'all', 7_000, { windUp: true }],
+      ['spark-dive', 'Spark Dive', 2, 1, 'payoff', 'single', 16_000],
     ],
   },
   {
     id: 'old-bogback',
     rows: 3,
     armour: 18,
-    atk: 112,
+    atk: 125,
     hp: 42_500,
     plain: { pattern: { anchor: 'front', shape: 'line3' }, powerBp: 4_500 },
     cards: ['shake-it-off', 'adapts-element'],
-    asks: 'The fen swallows the wounded. Keep them up, and keep the Mired on it.',
+    asks: 'The fen pulls the most hurt creature down. Keep them up, and keep the Mired on it.',
     moves: [
       ['sinking-mud', 'Sinking Mud', 3, 2, 'random', 'randomRow', 11_000],
       ['belly-flop', 'Belly Flop', 4, 0, 'front', 'line3', 16_000],
@@ -248,9 +268,9 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
         'random',
         'scatter',
         12_000,
-        { n: 4, charged: true },
+        { n: 4, perColumns: 4, windUp: true },
       ],
-      ['swallow', 'Swallow', 6, 0, 'weakest', 'single', 24_000],
+      ['sinkhole', 'Sinkhole', 6, 0, 'weakest', 'single', 24_000],
       ['peat-wave', 'Peat Wave', 5, 0, 'back', 'rows', 9_000, { n: 2 }],
     ],
   },
@@ -262,11 +282,11 @@ export const NOT_PORTED: readonly string[] = [
   'Turn orders (left to right, serpentine, right to left): the lab acts row by row, left to right, with a boss turn after each row (R8).',
   'Phase 1, Phase 2 and the twelve-round finale, with their retreat lines: a weekend is three stages of eight rounds that share the boss\u2019s HP (R14). The retreat lines are live-finale flavour.',
   'The lance\u2019s falloff (each row softer) and the Guard that stops a lance: a column hits every creature in it at the move\u2019s power, and a Guard covers by reach like any area hit.',
-  'Mired on creatures (Sinking Mud, Mud Spit, Tar Cling, Pull Under): the lab has Mired only on the boss (-3% damage and dodge per stack). A creature debuff needs a debuff-resistance tool first, so it is a proposal question.',
+  'Mired on creatures (Sinking Mud, Mud Spit, Tar Cling, Fen Tug): the lab has Mired only on the boss (-3% damage and dodge per stack). A creature debuff needs a debuff-resistance tool first, so it is a proposal question.',
   'Purge as a move: it is the Shake It Off card, every third round instead of every fifth.',
   'Finale abilities (Rally, Shield Wall, Purge): gone with R18\u2019s Knacks.',
-  'Slag Tyrant\u2019s backlash (half the time a reaction burns its Payoff): it is Reflective Hide, which is certain (P-04), plus an escalation that heats it.',
-  'Room modifiers (Flooded, Thorns and the rest), elites, mystery rooms, keepsakes and the Undercroft: a run here is fights, the camp and the floor boss. The Undercroft stays a mystery and is not modelled.',
+  'Slag Tyrant\u2019s backlash (half the time a reaction burns its Payoff): it is Reflective Hide, which is certain (P-04), plus a Build-up that thickens its shell.',
+  'Room modifiers (Flooded, Thorns and the rest), rare rooms, carved doors, loot, experience and the Sealed Vault: a run here is the shipped map (fights, elites, mystery rooms, caches, the camp and the floor boss) and the Undercroft below it. Keepsakes are applied as shares off the foe, not as team stats.',
 ];
 
 export const RAID_BOSS_IDS: readonly string[] = RAID_SPECS.map((s) => s.id);
@@ -276,8 +296,11 @@ function escalationOf(e: NonNullable<RaidBossSpec['escalation']>): Escalation {
   return phase ? { ...rest, phase: { ...phase, moves: phase.moves.map(move) } } : rest;
 }
 
-/** A raid boss by id: name and element from the content, the rest from its spec; `hp` and `atk` may be overridden for tuning. */
-export function raidBossOf(id: string, over: { hp?: number; atk?: number } = {}): BossDef {
+/** A raid boss by id: name and element from the content, the rest from its spec; `hp`, `atk` and `armour` may be overridden for tuning. */
+export function raidBossOf(
+  id: string,
+  over: { hp?: number; atk?: number; armour?: number } = {},
+): BossDef {
   const spec = RAID_SPECS.find((s) => s.id === id);
   const shipped = content.bosses.find((b) => b.id === id);
   if (!spec || !shipped) throw new Error(`unknown raid boss ${id}`);
@@ -287,7 +310,7 @@ export function raidBossOf(id: string, over: { hp?: number; atk?: number } = {})
     element: shipped.element,
     hp: over.hp ?? spec.hp,
     atk: over.atk ?? spec.atk,
-    armour: spec.armour,
+    armour: over.armour ?? spec.armour,
     spd: shipped.baseSpd ?? 0,
     rounds: RAID_ROUNDS,
     rows: spec.rows,

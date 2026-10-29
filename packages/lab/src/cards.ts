@@ -100,7 +100,7 @@ export const CARDS: readonly CardDef[] = [
   {
     id: 'great-wave',
     name: 'Great Wave',
-    asks: 'Every 3 rounds a Charged sweep of a row, announced at round start; who stands there?',
+    asks: 'Every 3 rounds a Wind-up sweep of a row, announced at round start; who stands there?',
     apply: (b) =>
       addMove(b, {
         id: 'great-wave',
@@ -147,7 +147,7 @@ export const CARDS: readonly CardDef[] = [
   },
   {
     id: 'adapts',
-    name: 'Adapts',
+    name: 'Reaction Resistance',
     raidOnly: true,
     asks: 'Raid only: from stage 2 it resists your most-used reaction.',
     apply: (b) => ({ ...b, mods: { ...b.mods, adapts: true } }),
