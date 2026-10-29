@@ -68,6 +68,8 @@ The simulator has 96 balance targets. On seed `leet`, about 28 fail. These failu
 
 A rework of combat so players bring creatures for what their species can do, not their level: Knacks, primer and detonator marks, boss turns between rows, slot targeting, armour, raid attrition. Being designed and simulated in `docs/design/combat/` and `packages/lab`; the phases from the lab to the game are in `docs/design/combat/roadmap.md`.
 
+Later, for the endgame (Misa, 2026-10-29): an opt-in harder version of the week's boss (an extra rule card, a better chest), for servers with crafted gear and max-level creatures.
+
 ## Open design questions
 
 - **Payoff:** should the bonus depend on the creature's stats instead of a flat +10%? Misa left this open, and the text now says "hits even harder". Still flat: every reaction in `reactions.json` has `payoffBonusBp: 11000`.

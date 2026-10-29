@@ -3484,3 +3484,7 @@ Misa noticed that a PR adding only a retro file ran every CI job. He asked for a
 3. **Always run:** the formatting check (Prettier formats Markdown, and it caught a merge slip on 2026-10-28) and the security job (secret scan and workflow audits).
 4. **`ci` accepts a skipped test job only when `changes` succeeded and found documentation only.** A skip for any other reason (`changes` failed, a job was cancelled) fails `ci`.
 5. **A gap found on the way:** CI didn't run `packages/lab`'s tests (added in #92). The `test-rest` job runs them now (about 15 s).
+
+## 2026-10-29: Opt-in harder raids belong to the endgame
+
+**Decision (Misa).** An optional harder version of the week's boss (an extra rule card, a better chest) is a good idea, but for the endgame: once players have crafted gear, max-level creatures and less to strive for, choosing more difficulty means more. Not in combat v2's first release.
