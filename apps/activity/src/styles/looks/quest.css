@@ -12,7 +12,7 @@
   --dusk-2: #343b94; /* raised: rows, tiles, the HUD band */
   --ink: #050818;
   --bone: #fff;
-  --haze: #b4c0f2; /* muted text */
+  --haze: #cdd6fa; /* muted text */
   --gold: #ffd45a;
   --gold-shade: #b88f2a;
   --plum: #343b94;
@@ -192,11 +192,7 @@
   padding-left: 1.75rem;
 }
 
-/* Tap clarity in the rail: a faint hard line between the places, a darker band while pressed. */
-:root[data-look='quest'] .main-nav.rail button.nav-btn:not(.active) {
-  box-shadow: inset 0 -2px 0 0 var(--bevel-lo);
-}
-
+/* Tap clarity in the rail: no rules between the places; a lighter band on hover and a darker one while pressed. */
 :root[data-look='quest'] button.nav-btn:hover:not(:disabled),
 :root[data-look='quest'] button.nav-tray-item:hover:not(:disabled) {
   background: var(--dusk-2);
@@ -252,7 +248,7 @@
 /* On the dock the buttons are narrow: the cursor sits above the word's left, in the button's corner. */
 :root[data-look='quest'] .main-nav.dock button.nav-btn.active::before {
   top: 0.5rem;
-  left: 0.375rem;
+  left: 0.75rem;
   margin-top: 0;
 }
 
@@ -287,7 +283,7 @@
 
 :root[data-look='quest'] .main-nav.dock button.nav-btn.home.current::before {
   top: 0.5rem;
-  left: 0.5rem;
+  left: 0.75rem;
   margin-top: 0;
   background: var(--ink);
 }
@@ -316,11 +312,21 @@
 }
 
 :root[data-look='quest'] button.primary:disabled {
-  background: var(--dusk-2);
+  background: var(--night);
   box-shadow:
-    0 0 0 2px var(--line),
+    0 0 0 2px var(--bevel-hi),
     0 0 0 5px var(--ink);
-  color: var(--haze);
+  color: #8590c8;
+}
+
+/* Rooms on the dungeon map: been there is a solid gold-burnt disc; out of reach for good is an empty dark one. */
+:root[data-look='quest'] button.dmap-node.s-visited {
+  --fill: #8a6a1c;
+}
+
+:root[data-look='quest'] button.dmap-node.s-unreachable {
+  --nr: var(--bone);
+  --fill: var(--ink);
 }
 
 :root[data-look='quest'] .action-btn.wide {
