@@ -173,6 +173,14 @@ describe('the card hint from measurement', () => {
     );
   });
 
+  it('an entry that more lines cannot do without comes before one with a bigger drop in a single line', () => {
+    const hint = measuredHint(
+      [[call('family:Reach', 99), call('rule:taunt', 20)], [call('rule:taunt', 30)]],
+      10,
+    );
+    expect(hint).toBe('Taunt, Reach Knacks');
+  });
+
   it('across lines an entry keeps its biggest drop, and a boss that calls for nothing has an empty hint', () => {
     const hint = measuredHint(
       [[call('family:Reach', 20), call('rule:taunt', 30)], [call('family:Reach', 50)]],

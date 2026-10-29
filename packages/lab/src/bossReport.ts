@@ -69,8 +69,10 @@ const pickName = (p: Pick) =>
   `${p.formId} (${knackName(p.knack)}${p.talents?.length ? `, ${p.talents.join(', ')}` : ''})`;
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 /** Points lost when something is taken out: `-12`, or `+3` when the line did better without it. */
-const lost = (points: number): string =>
-  Math.round(points) > 0 ? `-${Math.round(points)}` : `+${-Math.round(points)}`;
+const lost = (points: number): string => {
+  const n = Math.round(points);
+  return n > 0 ? `-${n}` : n < 0 ? `+${-n}` : '0';
+};
 const rows = (line: readonly Pick[], cols: number): string =>
   Array.from({ length: Math.ceil(line.length / cols) }, (_, r) =>
     line
@@ -1107,7 +1109,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
   md.push(
     '### The card hint, from measurement (P-13)',
     '',
-    `The hint a boss card would show, generated from the measured table above instead of written from intent: the biggest five mechanics whose removal costs at least ${RAID_DROP} points (a foe: ${FOE_DROP} score), Knack families as "<family> Knacks" and talent kinds as "<kind> talents"; mechanics that take the same Knacks and talents off a line are one entry, and a keyword with a family's or rule's name is the same entry; a tie goes to the Knack family. The written hint is what the boss's spec says today.`,
+    `The hint a boss card would show, generated from the measured table above instead of written from intent: the five mechanics (removal costs at least ${RAID_DROP} points; a foe: ${FOE_DROP} score) that most of the boss's lines (its best line and each written answer) cannot do without, then by the biggest drop; Knack families as "<family> Knacks" and talent kinds as "<kind> talents"; mechanics that take the same Knacks and talents off a line are one entry, and a keyword with a family's or rule's name is the same entry. The written hint is what the boss's spec says today.`,
     '',
     '| Boss or foe | Written hint | Measured hint |',
     '| --- | --- | --- |',

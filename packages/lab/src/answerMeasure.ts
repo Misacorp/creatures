@@ -208,15 +208,34 @@ const PRIORITY: readonly Mechanic['group'][] = [
   'Escalation feed',
 ];
 
+interface Entry {
+  mechanic: Mechanic;
+  /** The biggest drop in any line. */
+  drop: number;
+  /** How many of the boss's lines (its best line, each written answer) cannot do without it. */
+  lines: number;
+}
+
+/** A tie goes to a Knack family (a tool a player can pick) before a rule, a talent kind or a keyword. */
+const RANK: readonly Mechanic['group'][] = [
+  'Knack family',
+  'Rule',
+  'Talent kind',
+  'Keyword',
+  'Escalation feed',
+];
+
 /**
  * The answer hint of a boss from what it measurably calls for. `lines` are the measurements of the boss's lines (its best
  * line, each written answer): in each, mechanics that take the same Knacks and talents off the line (the Debuff family and
  * Mired, say) are one entry named by the most general of them (a rule before a family before a keyword before a talent
- * kind); across the lines an entry keeps its biggest drop. The hint lists the biggest `top` entries whose removal costs at
- * least `min`; empty when the boss calls for nothing.
+ * kind); a keyword with the name of a family or a rule is the same entry. The hint lists the biggest `top` entries whose
+ * removal costs at least `min`, those that most lines cannot do without first (a drop alone is not a ranking: the lines
+ * are brittle, and many drops are near 100), then by the biggest drop, then a family before the rest. Empty when the boss
+ * calls for nothing.
  */
 export function measuredHint(lines: readonly (readonly Call[])[], min: number, top = 5): string {
-  const merged = new Map<string, { mechanic: Mechanic; drop: number }>();
+  const entries = new Map<string, Entry>();
   for (const calls of lines) {
     const groups = new Map<string, { mechanic: Mechanic; drop: number }>();
     for (const c of calls) {
@@ -232,33 +251,28 @@ export function measuredHint(lines: readonly (readonly Call[])[], min: number, t
         });
       }
     }
+    // One count per line for each name (a family and a keyword of one name are one entry).
+    const seen = new Set<string>();
     for (const g of groups.values()) {
-      const m = merged.get(g.mechanic.id);
-      if (!m || g.drop > m.drop) merged.set(g.mechanic.id, g);
+      const name = g.mechanic.name.toLowerCase();
+      const e = entries.get(name);
+      if (!e) entries.set(name, { ...g, lines: 1 });
+      else {
+        if (!seen.has(name)) e.lines++;
+        if (
+          g.drop > e.drop ||
+          (g.drop === e.drop && RANK.indexOf(g.mechanic.group) < RANK.indexOf(e.mechanic.group))
+        )
+          e.mechanic = g.mechanic;
+        e.drop = Math.max(e.drop, g.drop);
+      }
+      seen.add(name);
     }
   }
-  // Largest drop first; a tie goes to a Knack family (a tool a player can pick) before a rule, a talent kind or a keyword.
-  const RANK: readonly Mechanic['group'][] = [
-    'Knack family',
-    'Rule',
-    'Talent kind',
-    'Keyword',
-    'Escalation feed',
-  ];
-  const byName = new Map<string, { mechanic: Mechanic; drop: number }>();
-  for (const g of merged.values()) {
-    // A keyword that has the name of a family or a rule ("Reach") is the same thing to a player: one entry.
-    const known = byName.get(g.mechanic.name.toLowerCase());
-    if (
-      !known ||
-      g.drop > known.drop ||
-      (g.drop === known.drop && RANK.indexOf(g.mechanic.group) < RANK.indexOf(known.mechanic.group))
-    )
-      byName.set(g.mechanic.name.toLowerCase(), g);
-  }
-  return [...byName.values()]
+  return [...entries.values()]
     .sort(
       (a, b) =>
+        b.lines - a.lines ||
         b.drop - a.drop ||
         RANK.indexOf(a.mechanic.group) - RANK.indexOf(b.mechanic.group) ||
         a.mechanic.id.localeCompare(b.mechanic.id),
