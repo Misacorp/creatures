@@ -147,7 +147,7 @@ button.boss-icon.open {
 /*
   On a desktop the boss is the hero of its column: the art at twice its size (every boss canvas is 96 px, see
   BOSS_SCALE and FALLBACK_BOSS_SCALE in art.ts, drawn here at 2x, so whole pixels) with no box round it, only
-  a soft glow of its element behind it, the name under it, then the tags, the HP and the move chips, all
+  a hard-edged pool of its element's colour under it, the name under it, then the tags, the HP and the move chips, all
   centred. The rules text below stays, smaller and quieter, so the boss and its HP are what the eye finds first.
 */
 @media (min-width: 60rem) {
@@ -159,10 +159,12 @@ button.boss-icon.open {
 
   .boss-card .boss-portrait {
     padding: 0.5rem 2.5rem;
+    /* A pool of the element's colour under the boss in two hard bands (no fade: pixel style). */
     background: radial-gradient(
-      ellipse at 50% 60%,
-      color-mix(in srgb, var(--elem) 40%, transparent) 0,
-      transparent 70%
+      ellipse 42% 16% at 50% 88%,
+      color-mix(in srgb, var(--elem) 45%, transparent) 0 60%,
+      color-mix(in srgb, var(--elem) 22%, transparent) 60% 100%,
+      transparent 100%
     );
     box-shadow: none;
   }
