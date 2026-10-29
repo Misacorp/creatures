@@ -1,18 +1,14 @@
 /**
- * Direction 2, "your creatures run the show". PLACEHOLDER: the party prototype replaces this folder's
- * contents and keeps the `registerProto` call.
+ * Direction 2, "your creatures run the show": a clearing of stations over a camp of creatures. Every
+ * action starts from a creature (pick it up, the places that can take it light up, put it there).
  */
 import { registerProto } from '../registry';
 import { TOUR_STEPS } from '../tour';
+import { PartyScreen } from './PartyScreen';
 
 registerProto({
   id: 'party',
-  title: 'Party (placeholder)',
+  title: 'Your creatures run the show',
   steps: TOUR_STEPS.map(({ id, title }) => ({ id, title })),
-  render: ({ step }) => (
-    <main style="padding:2rem">
-      <h1>Party (placeholder)</h1>
-      <p>Step {String(step)}</p>
-    </main>
-  ),
+  render: ({ step }) => <PartyScreen step={step} />,
 });
