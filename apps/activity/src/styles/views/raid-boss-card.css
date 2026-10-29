@@ -215,4 +215,9 @@ button.boss-icon.open {
   .boss-card .counter-move {
     margin-top: 0.375rem;
   }
+
+  /* The last line (rank cleared, rules text) clears the frame in every look. */
+  .boss-card {
+    padding-bottom: 1.25rem;
+  }
 }

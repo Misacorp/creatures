@@ -1,6 +1,6 @@
 import type { Zone } from '@creatures/engine';
 import type { ComponentChildren, RefObject } from 'preact';
-import { useLayoutEffect, useRef } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { laneStates, ownLaneSpan, scrollToSpan, snapToLane } from '../raid-board';
 import { SlotButton, type SlotModel, type SlotStripProps } from './SlotButton';
 import { CueRail, type CueRailProps } from './CueRail';
@@ -110,7 +110,22 @@ export function RaidBoard(props: RaidBoardProps) {
   useLayoutEffect(() => {
     if (first.current !== null)
       showLanes(stripRef.current, first.current.first, first.current.last);
-  }, []);
+  }, [desktop]);
+
+  // On the desktop board: whether lanes continue past the left or right edge (a hard-edged marker, raid-board.css).
+  const [edges, setEdges] = useState({ left: false, right: false });
+  useEffect(() => {
+    const el = stripRef.current;
+    if (el === null || !desktop || props.single !== undefined) return undefined;
+    const update = () => {
+      const left = el.scrollLeft > 1;
+      const right = el.scrollLeft < el.scrollWidth - el.clientWidth - 1;
+      setEdges((e) => (e.left === left && e.right === right ? e : { left, right }));
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    return () => el.removeEventListener('scroll', update);
+  }, [desktop, props.single !== undefined, states.length]);
 
   const dragging = props.drag.drag?.creatureId ?? null;
   if (props.single !== undefined) {
@@ -144,7 +159,9 @@ export function RaidBoard(props: RaidBoardProps) {
     );
   }
   const classes =
-    dragging === null ? 'party-strip board-scroller' : 'party-strip board-scroller dragging';
+    (dragging === null ? 'party-strip board-scroller' : 'party-strip board-scroller dragging') +
+    (desktop && edges.left ? ' more-left' : '') +
+    (desktop && edges.right ? ' more-right' : '');
   return (
     <div class={desktop ? 'raid-board large' : 'raid-board'}>
       <div class="board-grid">

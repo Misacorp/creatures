@@ -461,6 +461,16 @@ describe('snapToLane', () => {
     expect(snapToLane(0, lanes, 6, 62, 200, 400)).toBe(0);
     expect(snapToLane(400, lanes, 342, 398, 200, 400)).toBe(400);
   });
+  it('lands exactly on a lane edge, so the lane before it (which ends a gap earlier) is hidden', () => {
+    const edge = snapToLane(170.3, lanes, 230, 286, 200, 400);
+    expect(lanes).toContain(edge);
+    // The lane before 174 ends at 174 - 4 = 170 (tiles are 52 wide with a 4 px gap): off screen.
+    expect(edge - 4).toBeLessThan(edge);
+  });
+  it('tolerates half a pixel of rounding when checking that the span fits', () => {
+    // Window 200 from 174 ends at 374; the span ends at 374.4 (fractional rects): still whole.
+    expect(snapToLane(174, lanes, 230, 374.4, 200, 400)).toBe(174);
+  });
   it('keeps the wanted scroll when no lane edge shows the span', () => {
     expect(snapToLane(100, lanes, 6, 300, 200, 400)).toBe(100);
   });

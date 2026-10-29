@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useMemo, useState } from 'preact/hooks';
 import { Collection } from '../../Collection';
 import { CreatureCard } from '../../CreatureCard';
 import { CreatureFinder } from '../../CreatureFinder';
@@ -216,11 +216,33 @@ const gearActions: GearActions = {
   claimJob: () => Promise.resolve(undefined),
 };
 
+const MINUTE_MS = 60_000;
+
+/**
+ * The sample gear with its running jobs moved to the clock of the page: the soonest ends 80 minutes
+ * from now and the others keep their gaps, so a screenshot reads "1h 20m left", not the days the
+ * captured fixture is away from today. The fixture itself is untouched.
+ */
+function gearWithJobsFromNow(gear: typeof SAMPLE_GEAR, now: number): typeof SAMPLE_GEAR {
+  const running = gear.jobs.filter((j) => j.status === 'running');
+  if (running.length === 0) return gear;
+  const shift = now + 80 * MINUTE_MS - Math.min(...running.map((j) => j.endsAt));
+  return {
+    ...gear,
+    jobs: gear.jobs.map((j) =>
+      j.status === 'running'
+        ? { ...j, startedAt: j.startedAt + shift, endsAt: j.endsAt + shift }
+        : j,
+    ),
+  };
+}
+
 function WorkshopDemo({ p }: { p: Props }) {
+  const gear = useMemo(() => gearWithJobsFromNow(SAMPLE_GEAR, Date.now()), []);
   return (
     <Workshop
       state={GEAR_STATE}
-      gear={bool(p, 'loaded') ? SAMPLE_GEAR : null}
+      gear={bool(p, 'loaded') ? gear : null}
       failed={false}
       offset={0}
       busy={bool(p, 'busy')}

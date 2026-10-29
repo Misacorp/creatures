@@ -3,7 +3,7 @@
  * dev-only keys (not the `lc.` prefix, so "Reset local flags" leaves them alone). Loaded by the staging
  * build only; production never sets a look.
  */
-import { applyLook, applyRoom, isLook, ROOM_MODES, type LookId, type RoomMode } from '../looks';
+import { applyLook, applyRoom, isLook, isRoomMode, type LookId, type RoomMode } from '../looks';
 
 export const LOOK_KEY = 'dev-look';
 export const ROOM_KEY = 'dev-room';
@@ -20,10 +20,6 @@ function browserStorage(): PrefStorage | null {
   } catch {
     return null;
   }
-}
-
-function isRoomMode(value: string): value is RoomMode {
-  return (ROOM_MODES as readonly string[]).includes(value);
 }
 
 function read(key: string, storage: PrefStorage | null): string | null {

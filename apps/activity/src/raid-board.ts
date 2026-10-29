@@ -146,7 +146,7 @@ export function snapToLane(
 ): number {
   if (target <= 0) return 0;
   if (target >= maxScroll) return Math.round(target);
-  const fits = laneLefts.filter((l) => l <= left && l + viewport >= right && l <= maxScroll);
+  const fits = laneLefts.filter((l) => l <= left && l + viewport + 0.5 >= right && l <= maxScroll);
   let best: number | null = null;
   for (const l of fits) {
     if (best === null || Math.abs(l - target) < Math.abs(best - target)) best = l;

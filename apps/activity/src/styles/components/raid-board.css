@@ -191,7 +191,22 @@
     round(down, 100% - var(--board-pad) * 2 + 4px, var(--lane-pitch)) + var(--board-pad) * 2 - 4px
   );
   scroll-snap-type: x proximity;
-  scroll-padding-left: var(--board-pad);
+  scroll-padding-left: 0; /* a lane's edge is the window's edge: no sliver of the lane before it */
+}
+
+/* More lanes past an edge: a hard gold bar on that edge (inset shadows stay put while the lanes scroll). */
+.raid-board.large:not(.single) .board-scroller.more-left {
+  box-shadow: inset 4px 0 0 var(--gold);
+}
+
+.raid-board.large:not(.single) .board-scroller.more-right {
+  box-shadow: inset -4px 0 0 var(--gold);
+}
+
+.raid-board.large:not(.single) .board-scroller.more-left.more-right {
+  box-shadow:
+    inset 4px 0 0 var(--gold),
+    inset -4px 0 0 var(--gold);
 }
 
 .raid-board.large:not(.single) .board-lane {
