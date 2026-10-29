@@ -347,6 +347,17 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
       (l) => 100 * weekendStats(boss, l, S.raid.weekends, `report:${spec.id}:abl`).winRate,
     );
     raidAblation.push({ id: spec.id, name: boss.name, measured });
+    // The prepared line is a boss's own answer: a tool it cannot do without counts too (the search's best line often has
+    // several tools that cover for each other).
+    if (prepared)
+      raidAblation.push({
+        id: `${spec.id}:prepared`,
+        name: `${boss.name}, prepared line`,
+        measured: ablate(
+          prepared.picks,
+          (l) => 100 * weekendStats(boss, l, S.raid.weekends, `report:${spec.id}:ablp`).winRate,
+        ),
+      });
     raidData[spec.id] = {
       seededBest: seeded.line,
       scratchBest: scratch.line,
@@ -602,7 +613,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
   md.push(
     '## Mechanics the bosses and foes call for (measured)',
     '',
-    `Every Knack family, keyword, rule and talent kind should be the answer or the problem for at least one boss or foe. A mechanic is **called for** by a raid boss only when taking it out of that boss's best line (its Knacks become none, its talents are dropped) lowers the weekend win rate by ${RAID_DROP} points or more, on the same seeds (${S.raid.weekends} weekends); a foe, when the best line's score at depth ${deepest} (where floor bosses have their signature) falls by ${FOE_DROP} or more (${S.foe.fights} fights). The drop is measured, not read off the boss's data. A mechanic only a boss has (an escalation feed, Adaptation) has no tool on a line to take out; those are in the features-present list below.`,
+    `Every Knack family, keyword, rule and talent kind should be the answer or the problem for at least one boss or foe. A mechanic is **called for** by a raid boss only when taking it out of that boss's best line or of its prepared line, the first written answer (its Knacks become none, its talents are dropped) lowers the weekend win rate by ${RAID_DROP} points or more, on the same seeds (${S.raid.weekends} weekends); a foe, when the best line's score at depth ${deepest} (where floor bosses have their signature) falls by ${FOE_DROP} or more (${S.foe.fights} fights). The drop is measured, not read off the boss's data. A mechanic only a boss has (an escalation feed, Adaptation) has no tool on a line to take out; those are in the features-present list below.`,
     '',
     '| Mechanic | Kind | Called for by (measured drop) |',
     '| --- | --- | --- |',

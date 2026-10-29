@@ -171,10 +171,10 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Night Watch
 
-- **Text:** It {Intercept}s every {Charged} hit on a creature in its row.
+- **Text:** Each boss turn it {Intercept}s the first {Wind-up} hit on a creature in its row, and takes it with its cover's cut.
 - **Family:** Intercept
 - **Forms:** thornbuck
-- **Intent (for contributors, never shown to players):** Answers telegraphed big hits (Great Wave).
+- **Intent (for contributors, never shown to players):** Answers telegraphed big hits (Great Wave, Judgement Bolt). One hit a boss turn, and the hit it takes is cut by its own cover, so it is no longer a liability (panel 4).
 
 ### Sunbeam
 
@@ -220,7 +220,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Keep the Heat In
 
-- **Text:** While it stands, its row takes 15% less from area and {Charged} hits.
+- **Text:** While it stands, its row takes 15% less from area and {Wind-up} hits.
 - **Family:** Row Ward
 - **Forms:** kilnmole, hearthshell
 - **Intent (for contributors, never shown to players):** Protects other players' creatures in its row in the raid.
@@ -402,10 +402,10 @@ Generated from `packages/lab/src/talents.ts`. One shared library; each line link
 | Flank Guard | Its {Reach} covers only its longer side (more slots to the row end; both when it stands in the middle), twice the slots, and its cover is +50%. | guard | A Guard at one end protects the long stretch of the row: a placement puzzle the owner controls, with no Left/Right pair to roll. Twice the slots on one side covers no more creatures than one slot on each side, so the cover bonus is what makes it worth the placement (2026-10-28). |
 | Long Shadow | Cover +20% per slot of distance, and the hits it takes for others are cut by 20% per slot. | guard | Protects the far creatures best; with Flank Guard a Guard at one end covers a long row. |
 | Shoulder Charge | When it {Intercept}s, it strikes back for 45% of its Attack, ignoring armour. | guard | A Guard that adds damage the more it is hit. The strike-back is a counter, not a hit: it can land the killing blow but triggers nothing that keys on its hits. |
-| Brace | It takes 40% less from the boss's moves ({Charged} on its slot included) and 20% less from its plain attack. | setter, payoff, guard, support | Reads off the boss's named moves (the Charged highlights of Great Wave, Crusher, Payoff Slam): a card-shaped talent, strong where the boss has moves. Reworked (2026-10-28): it also cuts the plain attack by half of that, because a talent that did nothing on most weeks gained under a point on every role. |
+| Brace | It takes 40% less from a {Wind-up} hit aimed at its slot. | setter, payoff, guard, support | Answers a telegraphed hit (Great Wave, Judgement Bolt, the Wind-up signatures): it is shown at round start, so the owner knows who will be aimed at. Nothing against other moves or the plain attack. Back to this design (2026-10-28 panel 4): the version that also cut other moves and the plain attack decided a boss by itself. |
 | Stubborn | Once per fight, a hit that would knock it out leaves it at two fifths of its max HP. | setter, payoff, guard, support | Survives one Crusher; pairs with healers. Hold On under its one name. Reworked (2026-10-28): it left the creature at 1 HP, which gained about 2% of a team's result, so it now leaves it at two fifths of its max HP. |
-| Catch Breath | Once per fight, when a hit drops it below half its max HP, it heals 40% of max HP. | setter, payoff, guard, support | Survives one big hit (Crusher, Payoff Hunter). Not the gear line Second Wind, which is a chance each round to heal. |
-| Unbothered | It cannot be {Silenced}, and has +6% Attack and +14% Max HP. | setter, payoff, guard, support | The silence answer on the creature itself, for row ends and front rows. Reworked (2026-10-28): the immunity alone did nothing on the gauntlet, where a creature can always stand in the middle (a Guard gained nothing), so it carries a little Attack and HP as well, less than Sharp Claws or Hardy. |
+| Catch Breath | Once per fight (in a raid, once per weekend), when a hit drops it below half its max HP, it heals 40% of max HP. | setter, payoff, guard, support | Survives one big hit (Crusher, Payoff Hunter). Not the gear line Second Wind, which is a chance each round to heal. |
+| Unbothered | It cannot be {Silenced}, and has +3% Attack and +6% Max HP. | setter, payoff, guard, support | The silence answer on the creature itself, for row ends and front rows. Reworked (2026-10-28): the immunity alone did nothing on the gauntlet, where a creature can always stand in the middle (a Guard gained nothing), so it carries a little Attack and HP as well, less than Sharp Claws or Hardy. Shrunk (2026-10-28 panel 4, from +6% and +14%): it won a boss by its stats; it should win by its ward. |
 | Cull | A hit that leaves the boss below 5% of its full HP defeats it. The HP removed counts as the killing blow, not as damage. | setter, payoff | Weak alone; it decides who lands the killing blow, which other effects can key on. In no line pool until a killing-blow talent exists. |
 | Heavy Hand | Its {Mired} has an 80% chance to add 1 extra stack. | guard, support | Mire only; the shipped line is a chance of an extra stack, and luck is welcome. More stacks per application keeps the debuff up. |
 | Clinging | While it stands, {Mired} fades only every third round, and each stack counts for half as much again. | guard, support | Mire only: the v2 form of the shipped "lasts more turns"; one creature can hold a debuff for the team. Reworked (2026-10-28): slower fading alone gained under a point, so its stacks also count for half as much again (4.5% instead of 3%); it still fades, every third round, so one creature cannot hold the debuff for the whole fight (Misa). |

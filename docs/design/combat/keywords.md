@@ -14,7 +14,7 @@ Generated from `packages/lab/src/keywords.ts` by `pnpm --filter @creatures/lab r
 | Retaliate | Hits back when it dodges; the hit back ignores armour. | It hits back when hit | R1 |
 | Blocked | A hit that does not get past armour deals nothing. | A dodge | R13 |
 | Silenced | Its Knack, talents, gear effects and its role's verb do nothing (a Setter does not mark, a Payoff does not cash, a Guard does not intercept or cover, a Support does not boost or heal). It still hits with its stats. | It skips its turn | R12 |
-| Charged | A boss move announced at round start: its slots are shown, and it lands on them. | A mark | R8 |
+| Wind-up | A boss move announced at round start: its slots are shown, and it lands on them. | The Spark mark Charged | R8 |
 | Mired | A debuff on the boss: per count it deals less damage and dodges less (at most x5). It fades by 1 at the end of every second round. | A mark | R15 |
 | Beside | The living creatures in the slots on each side of it, in its row. Never widened. | Its Reach (which effects can widen) | R16 |
 | Row end | The first or last slot of its row. | The end living creature of the row | R21 |
@@ -22,3 +22,10 @@ Generated from `packages/lab/src/keywords.ts` by `pnpm --filter @creatures/lab r
 | Reach | How many slots to each side, in its row, a Guard or Support covers. Starts at Beside; some effects widen it. | Its whole row | R1, R16 |
 | Boost | A Support's bonus on a creature's next hit. | A lasting buff | R16 |
 | Area hit | A hit on more than one slot; it is dodged at half chance. | A hit a Guard takes for you | R2 |
+| Scatter | A boss move that hits a number of different creatures, drawn at random from the whole arena. | A hit on every creature of a row | R2 |
+| Leap | A boss move that hits one creature, then jumps to the strongest creature right next to it, and on, each jump softer. | The Knack family Chain | R2 |
+| Cross | A boss move that hits one creature and the creatures right beside, in front of and behind it. | A whole row or column | R2 |
+| Checker | A boss move that hits every other slot of the arena, like the dark squares of a board. | A row | R2 |
+| Most hurt | The creature with the lowest share of its max HP. | The creature with the least HP | R2 |
+| Back-most | The living creature in the row furthest from the boss (the leftmost, if several). | The creature in the last slot | R2 |
+| Build-up | A boss that grows as a weekend goes on. It fills from something its text names (rounds, HP lost, reactions), grows a step each time it fills, up to a cap, carries across the weekend, and Mired slows it. | A phase of the raid | R8 |
