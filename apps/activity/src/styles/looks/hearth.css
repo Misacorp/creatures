@@ -1,25 +1,28 @@
 /*
-  The "hearth" look (Hearthbook): a lamplit wooden cabin and a well-thumbed field journal. Panels stay dark
-  walnut with cream text (every component draws bone text on them); only a few plates are parchment, and those
-  set their own dark text. Hard edges only: no blur, no glow, no smooth gradients, no rounded corners.
-  Contrast, checked: bone #f6ead0 on dusk #3a2618 12:1, haze #c8b08a on dusk 6.8:1, on dusk-2 5.6:1; dark ink
-  #1c100a on amber #f0b040 9:1; cream on the oak sign #7a4f28 5.6:1.
+  The "hearth" look (Hearthbook): a lamplit wooden cabin and a well-thumbed field journal. Three clear steps of
+  walnut: the ground (#1f140c, darkest), panels (#3a2618) and raised plates (#4e331f). Panels keep cream text
+  (every component draws bone text on them); only a few plates are parchment, and those set their own dark text.
+  Hard edges only: no blur, no glow, no smooth gradients, no rounded corners.
+  Contrast, measured (WCAG): bone #f6ead0 on panel 12.0:1, on raised 9.7:1;
+  sand #d8c39c on panel 8.3:1, on raised 6.7:1, on the floor 9.7:1; light sand #e6d4ae on raised 7.9:1; ink #1c100a on amber
+  #f0b040 9.7:1; dark #2c1a0c on parchment #ead7a8 11.7:1; amber on the floor 8.8:1, on raised 6.1:1
   Every rule is scoped under :root[data-look='hearth']; the default look is untouched.
 */
 :root[data-look='hearth'] {
-  --night: #2a1a10; /* the plank ground */
+  --night: #1f140c; /* the ground */
   --dusk: #3a2618; /* walnut panel */
-  --dusk-2: #4b3220; /* raised walnut */
+  --dusk-2: #4e331f; /* raised walnut */
   --ink: #1c100a;
   --ink-rgb: 28 16 10;
   --bone: #f6ead0; /* cream text */
-  --haze: #c8b08a; /* warm sand */
+  --haze: #d8c39c; /* warm sand, muted text */
+  --sand: #e6d4ae; /* light sand: dashed edges, empty labels */
   --gold: #f0b040; /* amber / honey */
   --gold-shade: #a8701f;
   --gold-rgb: 240 176 64;
-  --line: #6b4428;
+  --line: #7a5230;
   --mine: #5e3d1f;
-  --bevel-hi: #6b4428; /* the rim */
+  --bevel-hi: #7a5230; /* the rim */
   --bevel-lo: #26160c;
   --plum: #5a3418; /* the shadow under a title */
   --good: #9bd46a; /* moss */
@@ -35,179 +38,91 @@
   --parchment: #ead7a8;
   --parchment-dark: #c9ae78;
   --nail: #cfa862;
-  --place: var(--gold);
+  --nail-dark: #6a4a26;
+  --plank-bg: #6a4524; /* a pressable plank, lighter than any panel behind it */
   /* A walnut panel: ink outline, a lighter rim inside, a shadowed bottom edge. */
   --frame:
     0 calc(var(--px) * -1) 0 0 var(--ink), 0 var(--px) 0 0 var(--ink),
     calc(var(--px) * -1) 0 0 0 var(--ink), var(--px) 0 0 0 var(--ink),
     inset 0 0 0 2px var(--bevel-hi), inset 0 -5px 0 0 var(--bevel-lo);
+  /* A plank button: ink outline, a lit rim inside, a dark lip under it. */
+  --plank:
+    0 0 0 var(--px) var(--ink), inset 0 0 0 2px var(--bevel-hi),
+    inset 0 calc(var(--px) * -2) 0 0 var(--bevel-lo);
 }
 
-/* --- Each place has its own lamp colour: the HUD's underline and the ground's accent --- */
-:root[data-look='hearth'] main.card:has(.nav-shell[data-place='home']) {
-  --place: #f0b040;
-}
-
-:root[data-look='hearth'] main.card:has(.nav-shell[data-place='collection']) {
-  --place: #9bd46a;
-}
-
-:root[data-look='hearth'] main.card:has(.nav-shell[data-place='workshop']) {
-  --place: #e0803a;
-}
-
-:root[data-look='hearth'] main.card:has(.nav-shell[data-place='journal']) {
-  --place: #e6d29a;
-}
-
-:root[data-look='hearth'] main.card:has(.nav-shell[data-place='expeditions']) {
-  --place: #7fc4a0;
-}
-
-:root[data-look='hearth'] main.card:has(.nav-shell[data-place='dungeon']) {
-  --place: #b890d8;
-}
-
-:root[data-look='hearth'] main.card:has(.nav-shell[data-place='raid']) {
-  --place: #ef6a3a;
-}
-
-:root[data-look='hearth'] main.card:has(.nav-shell[data-place='games']) {
-  --place: #6fb4e6;
-}
-
-/* --- The ground: dark planks, vertical, hard 1 px seams, three tones --- */
+/* --- The ground: dark planks, vertical, hard 1 px seams. The window's card is lit planks, one step up. --- */
 :root[data-look='hearth'] body {
-  background-color: #2a1a10;
-  background-image:
-    /* the lamp's reach: hard bands of light along the top of the window */
-    linear-gradient(#3a2414, #3a2414), linear-gradient(#32200f, #32200f),
-    repeating-linear-gradient(
-      90deg,
-      #2c1b11 0 47px,
-      #170d07 47px 48px,
-      #311e13 48px 95px,
-      #170d07 95px 96px,
-      #281910 96px 143px,
-      #170d07 143px 144px
-    );
-  background-repeat: no-repeat, no-repeat, repeat;
-  background-size:
-    100% 0.75rem,
-    100% 1.5rem,
-    auto;
-  background-attachment: fixed;
+  background-color: #1f140c;
+  background-image: repeating-linear-gradient(
+    90deg,
+    #231710 0 47px,
+    #0f0804 47px 49px,
+    #1f140c 49px 95px,
+    #0f0804 95px 97px,
+    #281a10 97px 143px,
+    #0f0804 143px 145px
+  );
 }
 
-/* A band at the foot of the ground in the place's colour: a rug, the floor's lamp. Margins only matter on desktop. */
-:root[data-look='hearth'] body:has(.nav-shell[data-place]) {
-  background-image:
-    linear-gradient(var(--place-ground, #3a2414), var(--place-ground, #3a2414)),
-    linear-gradient(var(--place-ground-2, #3a2414), var(--place-ground-2, #3a2414)),
-    linear-gradient(#3a2414, #3a2414), linear-gradient(#32200f, #32200f),
-    repeating-linear-gradient(
-      90deg,
-      #2c1b11 0 47px,
-      #170d07 47px 48px,
-      #311e13 48px 95px,
-      #170d07 95px 96px,
-      #281910 96px 143px,
-      #170d07 143px 144px
-    );
-  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat;
-  background-position:
-    0 100%,
-    0 100%,
-    0 0,
-    0 0,
-    0 0;
-  background-size:
-    100% 0.75rem,
-    100% 2rem,
-    100% 0.75rem,
-    100% 1.5rem,
-    auto;
-}
-
-:root[data-look='hearth'] body:has(.nav-shell[data-place='home']) {
-  --place-ground: #6b4a1c;
-  --place-ground-2: #3f2c14;
-}
-
-:root[data-look='hearth'] body:has(.nav-shell[data-place='collection']) {
-  --place-ground: #3f5a28;
-  --place-ground-2: #2f3f1f;
-}
-
-:root[data-look='hearth'] body:has(.nav-shell[data-place='workshop']) {
-  --place-ground: #7a4220;
-  --place-ground-2: #4a2a16;
-}
-
-:root[data-look='hearth'] body:has(.nav-shell[data-place='journal']) {
-  --place-ground: #7a6a3e;
-  --place-ground-2: #4a4028;
-}
-
-:root[data-look='hearth'] body:has(.nav-shell[data-place='expeditions']) {
-  --place-ground: #2f5a48;
-  --place-ground-2: #203d30;
-}
-
-:root[data-look='hearth'] body:has(.nav-shell[data-place='dungeon']) {
-  --place-ground: #4a3566;
-  --place-ground-2: #2e2342;
-}
-
-:root[data-look='hearth'] body:has(.nav-shell[data-place='raid']) {
-  --place-ground: #7a3018;
-  --place-ground-2: #4a2010;
-}
-
-:root[data-look='hearth'] body:has(.nav-shell[data-place='games']) {
-  --place-ground: #2f5278;
-  --place-ground-2: #203752;
-}
-
-/* --- The card: one walnut board with a nail in each corner --- */
+/* --- The card: the floor of the window, wide planks with visible seams. Panels sit on it, lighter. --- */
 :root[data-look='hearth'] main.card {
-  background-color: var(--dusk);
-  background-image:
-    linear-gradient(var(--nail), var(--nail)), linear-gradient(var(--nail), var(--nail)),
-    linear-gradient(var(--nail), var(--nail)), linear-gradient(var(--nail), var(--nail));
-  background-repeat: no-repeat;
-  background-size: 4px 4px;
-  background-position:
-    6px 6px,
-    calc(100% - 6px) 6px,
-    6px calc(100% - 6px),
-    calc(100% - 6px) calc(100% - 6px);
+  background-color: #2a1a10;
+  background-image: repeating-linear-gradient(
+    90deg,
+    #2a1a10 0 94px,
+    #170d07 94px 96px,
+    #2f1e13 96px 190px,
+    #170d07 190px 192px,
+    #271810 192px 286px,
+    #170d07 286px 288px
+  );
 }
 
-/* --- The HUD: a dark beam with the place's lamp colour as its lower edge --- */
+/* --- The HUD: a dark beam, one ink lip and a walnut rim below it (no per-place colour) --- */
 :root[data-look='hearth'] .hud {
   background: #2e1c10;
   box-shadow:
     0 var(--px) 0 0 var(--ink),
-    inset 0 -4px 0 0 var(--place),
-    inset 0 -6px 0 0 var(--ink);
+    inset 0 -2px 0 0 var(--bevel-hi);
   padding-bottom: 0.5rem;
 }
 
-/* The place's name hangs on an oak sign: cream pixel text on oak, a rim, two nails. */
+/* The place's name hangs on a parchment sign: dark text, a rim, two nails and two short chains above. */
 :root[data-look='hearth'] h1.hud-title {
+  position: relative;
   flex: 0 1 auto;
   margin-right: auto;
   padding: 0.125rem 1.25rem;
   background:
-    linear-gradient(var(--nail), var(--nail)) 6px 50% / 4px 4px no-repeat,
-    linear-gradient(var(--nail), var(--nail)) calc(100% - 6px) 50% / 4px 4px no-repeat,
-    var(--oak);
+    linear-gradient(var(--nail-dark), var(--nail-dark)) 6px 50% / 4px 4px no-repeat,
+    linear-gradient(var(--nail-dark), var(--nail-dark)) calc(100% - 6px) 50% / 4px 4px no-repeat,
+    var(--parchment);
   box-shadow:
     0 0 0 var(--px) var(--ink),
-    inset 0 0 0 2px var(--oak-light);
-  color: var(--bone);
-  text-shadow: 2px 2px 0 var(--ink);
+    inset 0 0 0 2px var(--parchment-dark),
+    inset 0 calc(var(--px) * -2) 0 0 var(--parchment-dark);
+  color: #2c1a0c;
+  text-shadow: none;
+}
+
+:root[data-look='hearth'] h1.hud-title::before,
+:root[data-look='hearth'] h1.hud-title::after {
+  content: '';
+  position: absolute;
+  top: calc(var(--px) * -3);
+  width: 4px;
+  height: calc(var(--px) * 2);
+  background: var(--nail);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+
+:root[data-look='hearth'] h1.hud-title::before {
+  left: 10px;
+}
+
+:root[data-look='hearth'] h1.hud-title::after {
+  right: 10px;
 }
 
 /* The Home place name plates (under a banner) are parchment with dark text. */
@@ -228,22 +143,24 @@
   background: #2e1c10;
   box-shadow:
     0 calc(var(--px) * -1) 0 0 var(--ink),
-    inset 0 4px 0 0 var(--place),
-    inset 0 6px 0 0 var(--ink);
+    inset 0 2px 0 0 var(--bevel-hi);
   padding-top: 0.5rem;
 }
 
 :root[data-look='hearth'] .main-nav.rail {
-  background: var(--dusk);
-  box-shadow: var(--frame);
+  background: #2a1a10;
+  box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--ink),
+    0 var(--px) 0 0 var(--ink),
+    calc(var(--px) * -1) 0 0 0 var(--ink),
+    var(--px) 0 0 0 var(--ink),
+    inset 0 0 0 2px var(--bevel-hi);
 }
 
 :root[data-look='hearth'] button.nav-btn,
 :root[data-look='hearth'] button.nav-tray-item {
   background: var(--dusk-2);
-  box-shadow:
-    0 0 0 var(--px) var(--ink),
-    inset 0 0 0 2px var(--bevel-hi);
+  box-shadow: var(--plank);
 }
 
 :root[data-look='hearth'] button.nav-btn.active,
@@ -252,7 +169,7 @@
   color: var(--ink);
   box-shadow:
     0 0 0 var(--px) var(--ink),
-    inset 0 calc(var(--px) * -1) 0 0 var(--gold-shade);
+    inset 0 calc(var(--px) * -2) 0 0 var(--gold-shade);
 }
 
 :root[data-look='hearth'] .main-nav.dock button.nav-btn.active {
@@ -276,28 +193,34 @@
   background: var(--dusk);
 }
 
-/* --- Buttons: wood planks; the primary is an amber plank with dark text --- */
-:root[data-look='hearth'] button {
-  box-shadow:
-    0 0 0 var(--px) var(--ink),
-    inset 0 0 0 2px var(--bevel-hi),
-    inset 0 calc(var(--px) * -2) 0 0 var(--bevel-lo);
+/*
+  --- Buttons: wood planks with a lit rim and a dark lip. ---
+  Zero specificity (:where), so every component that draws its own button (a creature sprite in the room, a map
+  hotspot, a card's name, a text link, a lane label, a tile with its rarity edge) keeps its own frame; only a
+  plain button gets the plank. The base pressed rule (ink ring, pushed down) then drops the lip on press.
+*/
+:where(:root[data-look='hearth']) button {
+  background: var(--plank-bg);
+  box-shadow: var(--plank);
 }
 
-:root[data-look='hearth'] button:active:not(:disabled) {
-  box-shadow:
-    0 0 0 var(--px) var(--ink),
-    inset 0 0 0 2px var(--bevel-hi);
-}
-
-:root[data-look='hearth'] button.primary,
-:root[data-look='hearth'] .action-btn.primary {
+:where(:root[data-look='hearth']) button.primary,
+:where(:root[data-look='hearth']) .action-btn.primary {
   background: var(--gold);
   color: var(--ink);
   box-shadow:
     0 0 0 var(--px) var(--ink),
     inset 0 0 0 2px #f8d078,
     inset 0 calc(var(--px) * -2) 0 0 var(--gold-shade);
+}
+
+/* A good or ready state: moss green as a second cue next to the words. */
+:where(:root[data-look='hearth']) button.ready,
+:where(:root[data-look='hearth']) button.good {
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 0 0 2px var(--good),
+    inset 0 calc(var(--px) * -2) 0 0 var(--bevel-lo);
 }
 
 :root[data-look='hearth'] button:focus-visible,
@@ -308,6 +231,39 @@
   outline-color: var(--gold);
 }
 
+/* --- Panels: an ink edge, a lit walnut rim and a shadowed foot, so each one reads as a board on the floor --- */
+:root[data-look='hearth'] .raid-section,
+:root[data-look='hearth'] .side-panel,
+:root[data-look='hearth'] .card-item {
+  box-shadow:
+    inset 0 0 0 var(--px) var(--ink),
+    inset 0 0 0 calc(var(--px) * 2) var(--bevel-hi),
+    inset 0 calc(var(--px) * -3) 0 0 var(--bevel-lo);
+}
+
+/* --- Empty slots: a dashed 2 px edge in light sand, "Add" in sand --- */
+:root[data-look='hearth'] .party-slot.empty {
+  border-color: var(--sand);
+  background: var(--night);
+  color: var(--sand);
+}
+
+:root[data-look='hearth'] .slot.empty {
+  outline-color: var(--sand);
+  color: var(--sand);
+}
+
+/* Boss name: a 1 px ink outline and one hard near-black shadow, no second shadow. */
+:root[data-look='hearth'] .ph-ink-drop,
+:root[data-look='hearth'] .ph-element-drop {
+  text-shadow:
+    1px 0 0 var(--ink),
+    -1px 0 0 var(--ink),
+    0 1px 0 var(--ink),
+    0 -1px 0 var(--ink),
+    var(--px) var(--px) 0 #0a0503;
+}
+
 /* --- Tags and badges: small dark plaques with a sand rim (zero specificity, so the gold and green variants win) --- */
 :where(:root[data-look='hearth']) .tag,
 :where(:root[data-look='hearth']) .badge {
@@ -315,9 +271,22 @@
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
+/* Rank and Festival tags are amber plates: dark ink text and an ink rim, so amber never sits on amber. */
+:root[data-look='hearth'] .tag.rank,
+:root[data-look='hearth'] .badge.festival {
+  background: var(--gold);
+  color: var(--ink);
+  box-shadow:
+    inset 0 0 0 1px var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 var(--gold-shade);
+}
+
 /* --- Drawers and popovers: the same walnut, with the rim; the backdrop is a hard dark veil --- */
 :root[data-look='hearth'] .drawer-panel {
   background: var(--dusk);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 0 0 2px var(--bevel-hi);
 }
 
 :root[data-look='hearth'] .drawer-backdrop {
@@ -328,8 +297,15 @@
 :root[data-look='hearth'] select,
 :root[data-look='hearth'] input[type='text'],
 :root[data-look='hearth'] textarea {
+  padding-inline: 0.75rem;
   background: #24150b;
   box-shadow:
     0 0 0 var(--px) var(--ink),
     inset 0 0 0 2px var(--line);
+}
+
+:root[data-look='hearth'] input::placeholder,
+:root[data-look='hearth'] textarea::placeholder {
+  color: var(--haze);
+  opacity: 1;
 }
