@@ -62,6 +62,13 @@ Big simulations come in phase 5 on purpose: week-by-week and Boss Rank numbers m
 
 **Next steps, in order:**
 
+0. **First: find and fix drastic inefficiencies in the lab setup** (Misa, 2026-10-29). The bosses work took about 14 hours of agent time, mostly serial (boss port and panel 4 fixes about 2.5 h, retune 1.7 h, balance pass 3.3 h, panel 5 measurement 1.6 h, panel 5 content 3.7 h, rank ladder 1.3 h); the talent tuning before it about 2.5 h. Measured on 2026-10-29: the full lab report takes 517 s (it took 21 s when the lab started), the quick report 64 s, the lab tests 21 s; the machine has 4 cores and the simulation uses one. Known causes:
+   - **Hand-tuning by agents:** each tuning step was "change numbers, run the report, read, repeat", 150 to 260 tool calls per task. Build an **automatic tuner** in the lab: targets as data (for example "prepared removes 85% to 100%, mixed 55% to 80%, unprepared under 40% at high rank"), and a search over boss HP, Attack, armour and card strength that reports the best fit and which targets conflict. Agents then change rules and content, not numbers.
+   - **One core:** run independent fights (weekends, seeds, teams) in parallel with worker threads (expect about 3 to 4 times faster on 4 cores), keeping results identical for the same seeds.
+   - **Everything every time:** split the report into sections that can run alone (`--bosses`, `--talents`, `--team` exist) and cache search results by a hash of their inputs (content, rules, seeds), so a section only reruns when what it reads changed.
+   - **Moving targets:** settle the success measure with Misa before a tuning pass (this time it changed from kills, to robustness, to share of HP removed, and each change redid the tuning).
+   - **Profile first:** measure where the 517 s go (which sections, which searches, how many fights) before optimising, and set a speed budget for the report and the lab tests (like `docs/design/testing.md` does for the game's tests).
+
 1. **Leftovers from the bosses:**
    - At high rank the unprepared party still removes about two thirds of Tidal Colossus's and Old Bogback's HP, more than a mixed server: they need a gate the classic trio lacks, and re-searched answers.
    - A low-rank mixed server reaches 61% to 79%, not the 85% tier.
