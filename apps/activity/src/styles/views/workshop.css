@@ -99,38 +99,3 @@ label.pick.reach input[type='radio'] {
 fieldset.picker.reach-options {
   display: block;
 }
-
-/*
-  The two columns of a whole-window desktop (from 60 rem; below it the wrappers vanish and the sections stack
-  in their one column, as on a phone): the jobs and parts at the left (sticky, they stay in reach while the
-  bag scrolls), the bag, the blueprints and the supplies at the right, the bag's grid growing columns.
-*/
-.ws-col {
-  display: contents;
-}
-
-@media (min-width: 60rem) {
-  .workshop {
-    grid-template-columns: minmax(18rem, 1fr) minmax(0, 3fr);
-    align-items: start;
-    gap: 1rem;
-  }
-
-  .workshop > :not(.ws-col) {
-    grid-column: 1 / -1;
-  }
-
-  .ws-col {
-    display: grid;
-    gap: 0.5rem;
-    min-width: 0;
-  }
-
-  .ws-col-side {
-    position: sticky;
-    top: 0.625rem;
-    max-height: calc(100dvh - 1.25rem);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-}

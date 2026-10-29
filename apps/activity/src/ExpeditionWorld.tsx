@@ -323,7 +323,8 @@ export function ExpeditionWorld(props: ExpeditionWorldProps) {
 
 /**
  * Wide: the window's height below the top of `ref` in the page (CSS px, a little margin kept), kept up to
- * date as the window resizes, so the map's scale also fits the window's height. 0 until measured.
+ * date as the window resizes and as anything above it changes height (the living room band appearing, the
+ * room mode changing), so the map's scale also fits the window's height. 0 until measured.
  */
 function useRoomBelow(ref: { current: HTMLElement | null }, wide: boolean): number {
   const [room, setRoom] = useState(0);
@@ -336,9 +337,14 @@ function useRoomBelow(ref: { current: HTMLElement | null }, wide: boolean): numb
     };
     read();
     window.addEventListener('resize', read);
+    // What is above the map changes its top without changing its size: watch the page's height too.
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(read) : null;
+    observer?.observe(document.documentElement);
+    observer?.observe(el);
     return () => {
       window.removeEventListener('resize', read);
+      observer?.disconnect();
     };
-  }, [wide]);
+  }, [ref, wide]);
   return room;
 }

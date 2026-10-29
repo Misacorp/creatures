@@ -4,32 +4,6 @@
   min-width: 0;
 }
 
-/* The team, the pack and the room's choice. A phone stacks them over the map; a desktop puts them beside it. */
-.dungeon-run-side {
-  display: contents;
-}
-
-@media (min-width: 60rem) {
-  .dungeon-run {
-    display: grid;
-    grid-template-columns: minmax(26rem, 2fr) minmax(0, 3fr);
-    gap: 0.75rem;
-    align-items: start;
-  }
-
-  .dungeon-run-side {
-    display: grid;
-    gap: 0.75rem;
-    min-width: 0;
-  }
-
-  /* The map is the bigger part and stays in view beside the team while the page scrolls. */
-  .dungeon-run-map {
-    position: sticky;
-    top: 0.625rem;
-  }
-}
-
 .dungeon-run-strip {
   display: flex;
   flex-direction: column;

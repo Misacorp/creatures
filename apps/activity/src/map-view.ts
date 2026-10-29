@@ -121,7 +121,11 @@ export function mapScale(width: number): number {
   return width >= MAP_SIZE.width * MAP_SCALE_LARGE ? MAP_SCALE_LARGE : MAP_SCALE_SMALL;
 }
 
-/** The largest scale on a whole-window desktop (a 1920 px window shows the map at 4: 1472 x 1152 px). */
+/**
+ * The largest scale on a whole-window desktop. Scale 4 is 1472 x 1152 px, so it shows only where the window is
+ * about 1400 px high below the top bar and band (a 1920 x 1080 window shows the map at 3: 1104 x 864 px, with
+ * grass east of it to the window's edge); the height holds the larger scales back (`mapScaleWide`).
+ */
 export const MAP_SCALE_MAX = 4;
 
 /**

@@ -436,8 +436,17 @@ button.nav-tray-item.active:focus-visible {
   min-width: 0;
 }
 
-/* The rail: only drawn on a wide window (`MainNav`'s `wide`), so its look needs no media query. */
+/*
+  The rail: only drawn on a wide window (`MainNav`'s `wide`), so its look needs no media query. The nav itself is the
+  column, as tall as the screen beside it and reaching the bottom of the window (a look paints it); its list
+  (`.rail-stick`) sticks to the top of the window and scrolls inside itself if the window is short.
+*/
 .main-nav.rail {
+  align-self: stretch;
+  min-height: 0;
+}
+
+.rail-stick {
   position: sticky;
   top: 0.625rem;
   max-height: calc(100vh - 1.25rem);
@@ -472,10 +481,15 @@ button.nav-tray-item.active:focus-visible {
 @media (min-width: 60rem) {
   .nav-shell {
     display: grid;
+    flex: 1 0 auto; /* the card is a column at least as tall as the window: the rail reaches its bottom */
     grid-template-columns: 9rem minmax(0, 1fr);
     gap: 1rem;
     align-items: start;
-    padding: 0 1rem 1rem 0;
+    padding: 0 1rem 0 0;
+  }
+
+  .nav-screen {
+    padding-bottom: 1rem;
   }
 
   /*
@@ -485,6 +499,8 @@ button.nav-tray-item.active:focus-visible {
     screen caps its own reading text and cards (the per-view files); the card itself never does.
   */
   main.card:has(.main-nav.rail) {
+    display: flex;
+    flex-direction: column;
     width: 100%;
     min-height: 100vh;
     min-height: 100dvh;
@@ -498,7 +514,7 @@ button.nav-tray-item.active:focus-visible {
     padding-inline: 1rem;
   }
 
-  .main-nav.rail {
+  .rail-stick {
     top: 0;
     max-height: 100vh;
     max-height: 100dvh;

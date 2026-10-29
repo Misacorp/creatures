@@ -7,7 +7,16 @@ import { usePopoverTrigger, type CreatureAction } from './PopoverHost';
 import { SmallCreature } from './SmallCreature';
 import { drawSprites } from './room-canvas';
 import type { Resident } from './room-data';
-import { dropSpotAt, dropSpotIds, edgeFill, fnv1a, roomScale } from './room-layout';
+import {
+  dropSpotAt,
+  dropSpotIds,
+  edgeFill,
+  fnv1a,
+  HERO_MAX_SCALE,
+  HERO_SLACK,
+  MAX_SCALE,
+  roomScale,
+} from './room-layout';
 import {
   allBusyLabel,
   edgePlacements,
@@ -234,6 +243,12 @@ interface LivingRoomProps {
   onSwap?: () => void;
   /** What lounging gave your own lounger today: its popover shows the Lounging tag. Absent: no tag. */
   ownLoungeXp?: number;
+  /**
+   * Home's hero room (`room` mode `home`, a wide window): up to scale 6 instead of 4, so the room is taller (210 px
+   * at 1440, 252 px at 1920 instead of 168), and a window up to `HERO_SLACK` px narrower than a scale still gets
+   * it (the room's plain end walls are cropped a little). Default: the band under the HUD.
+   */
+  hero?: boolean;
 }
 
 /**
@@ -258,12 +273,15 @@ export function LivingRoom({
   onMove,
   onSwap,
   ownLoungeXp,
+  hero = false,
 }: LivingRoomProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
   const width = useElementWidth(rootRef, FALLBACK_WIDTH);
   const reduced = usePrefersReducedMotion();
-  const { scale, scroll } = roomScale(width);
+  const { scale, scroll } = hero
+    ? roomScale(width + HERO_SLACK, HERO_MAX_SCALE)
+    : roomScale(width, MAX_SCALE);
   const roomWidth = ROOM_SIZE.width * scale;
   const stageWidth = scroll ? roomWidth : width;
   const originX = scroll ? 0 : Math.floor((width - roomWidth) / 2);
@@ -366,7 +384,7 @@ export function LivingRoom({
 
   return (
     <div
-      class={scroll ? 'room room-scrolls' : 'room'}
+      class={`room${scroll ? ' room-scrolls' : ''}${hero ? ' room-hero' : ''}`}
       data-scale={scale}
       ref={(el) => {
         rootRef.current = el;

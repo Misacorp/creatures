@@ -99,6 +99,7 @@
 @import './views/expeditions/supply-crafting.css';
 @import './views/expeditions/world-map.css';
 @import './components/side-panel.css';
+@import './components/columns.css';
 @import './views/expeditions/world.css';
 @import './components/progress-track.css';
 @import './components/recipe-card.css';

@@ -44,6 +44,45 @@ function markers(p: Page) {
 }
 
 describe('WorldMap', () => {
+  it('goes on in grass east of its edge when the window is wider than the map', () => {
+    const p = createPage();
+    page = p;
+    p.draw(
+      <WorldMap
+        places={[]}
+        selected={null}
+        night={false}
+        onPick={() => undefined}
+        width={1000}
+        scale={2}
+      />,
+    );
+    // The map at scale 2 is 736 px and the map's side padding 6 px: the rest of 1000 px is grass.
+    const more = byClass(p.root, 'world-map-more');
+    expect(more).toHaveLength(1);
+    expect(more[0]?.getAttribute('width')).toBe('258');
+    expect(more[0]?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('draws no extra grass when the map fills its window or pans', () => {
+    const p = createPage();
+    page = p;
+    p.draw(
+      <WorldMap
+        places={[]}
+        selected={null}
+        night={false}
+        onPick={() => undefined}
+        width={742}
+        scale={2}
+      />,
+    );
+    expect(byClass(p.root, 'world-map-more')).toHaveLength(0);
+    p.unmount();
+    const narrow = build(null);
+    expect(byClass(narrow.root, 'world-map-more')).toHaveLength(0);
+  });
+
   it('lists a button per place in reading order, each with its spoken label', () => {
     const p = build(null);
     const list = markers(p);
