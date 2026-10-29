@@ -17,3 +17,10 @@ export function applyLook(id: string, root: HTMLElement = document.documentEleme
   if (id === 'current' || !isLook(id)) root.removeAttribute('data-look');
   else root.dataset['look'] = id;
 }
+
+export const ROOM_MODES = ['every', 'home'] as const;
+export type RoomMode = (typeof ROOM_MODES)[number];
+export function applyRoom(mode: RoomMode): void {
+  if (mode === 'every') delete document.documentElement.dataset.room;
+  else document.documentElement.dataset.room = mode;
+}

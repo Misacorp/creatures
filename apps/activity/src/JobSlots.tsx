@@ -60,7 +60,7 @@ function RunningSlot({
               <strong>Ready</strong>
             </>
           ) : (
-            `${formatCountdown(progress.remainingMs, 'hms')} left`
+            `${formatCountdown(progress.remainingMs, 'days')} left`
           )
         }
       />

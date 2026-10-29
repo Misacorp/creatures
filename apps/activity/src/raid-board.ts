@@ -130,6 +130,30 @@ export function scrollToSpan(
   return Math.round(Math.max(0, Math.min(Math.max(0, scrollWidth - viewport), wanted)));
 }
 
+/**
+ * Snaps a scroll position to a lane boundary, so the board never opens with a tile cut in half: the
+ * left edge of the lane (`laneLefts`, in scroll-content pixels) nearest to `target` that still shows the
+ * span `left` to `right` whole. When no lane edge does (the span is wider than the window), `target`
+ * stands; at the far end the scroll stays as it is (the end of the board is a whole edge too).
+ */
+export function snapToLane(
+  target: number,
+  laneLefts: readonly number[],
+  left: number,
+  right: number,
+  viewport: number,
+  maxScroll: number,
+): number {
+  if (target <= 0) return 0;
+  if (target >= maxScroll) return Math.round(target);
+  const fits = laneLefts.filter((l) => l <= left && l + viewport >= right && l <= maxScroll);
+  let best: number | null = null;
+  for (const l of fits) {
+    if (best === null || Math.abs(l - target) < Math.abs(best - target)) best = l;
+  }
+  return Math.round(best ?? target);
+}
+
 /** The first and last lane (from 0) with a creature of yours, or null when you have none on the board. */
 export function ownLaneSpan(states: readonly LaneState[]): { first: number; last: number } | null {
   const first = states.indexOf('mine');

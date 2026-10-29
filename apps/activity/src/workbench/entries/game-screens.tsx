@@ -1,4 +1,6 @@
 import { LOOKS } from '../../looks';
+// The looks' stylesheets are not in the game's index.css; the workbench loads them here (after it).
+import '../../looks-styles';
 import { DUNGEON_STATES, GameScreens, SCREENS } from '../game-screens/GameScreens';
 import { str } from '../props';
 import type { Entry } from '../types';

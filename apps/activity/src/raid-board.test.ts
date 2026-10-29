@@ -21,6 +21,7 @@ import {
   placeOf,
   placeText,
   scrollToSpan,
+  snapToLane,
 } from './raid-board';
 
 const MAX_ROW = RULES.raid.maxPartySize * RULES.raid.teamSize;
@@ -447,5 +448,20 @@ describe('whose tiles can be moved', () => {
     // Someone else's tile takes no drop: the focus stays on the carried one.
     expect(over(2)).toBe(0);
     expect(over(3)).toBe(0);
+  });
+});
+
+describe('snapToLane', () => {
+  const lanes = [6, 62, 118, 174, 230, 286, 342];
+  it('lands on the lane edge nearest the wanted scroll that keeps the span whole', () => {
+    // A span at 230..286, a 200 px window, centred would be 148: the edge 118 or 174; 174 is nearer.
+    expect(snapToLane(148, lanes, 230, 286, 200, 400)).toBe(174);
+  });
+  it('stays at the start when nothing is scrolled, and at the end', () => {
+    expect(snapToLane(0, lanes, 6, 62, 200, 400)).toBe(0);
+    expect(snapToLane(400, lanes, 342, 398, 200, 400)).toBe(400);
+  });
+  it('keeps the wanted scroll when no lane edge shows the span', () => {
+    expect(snapToLane(100, lanes, 6, 300, 200, 400)).toBe(100);
   });
 });

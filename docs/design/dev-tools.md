@@ -45,6 +45,10 @@ A floating "DEV" button opens a drawer with a section per view and shared contro
 | Raid        | Jump the week to Preparation, Phase 1, Phase 2, finale day or week done. Resolve Phase 1 or Phase 2 now. Set the boss and Boss Rank (difficulty tier). Toggle Festival week. Fill the roster with N simulated players (guests with placed teams). Start a live finale now with a short countdown, the existing practice mode extended. Run a full simulated raid week and show the after-action. |
 | Analytics   | Show the last 50 events this guild wrote, then the next rollup. Trigger a rollup now.                                                                                                                                                                                                                                                                                                            |
 
+### Look section (staging only)
+
+A "Look" section holds two drop-downs: the look (`LOOKS` in `src/looks.ts`: current, arcade, hearth, quest) and the room band mode (`every` place, or `home` only, `applyRoom`). The choice is applied at once and kept on the device (localStorage keys `dev-look` and `dev-room`, not under `lc.`, so "Reset local flags" leaves them), and applied again at start-up (`src/dev/looks-boot.ts`). The look stylesheets (`src/looks-styles.ts`) are imported only behind `__DEV_TOOLS_BUILD__`, so a production build has no `data-look` rule and never sets a look (a test in `dev-build.test.ts` checks it). The workbench's GameScreens page imports them too.
+
 ## Tests
 
 - Dev routes refuse when the flag is off.

@@ -170,6 +170,8 @@ describe('the debug panel and the production build', () => {
     // The armchair has a clear gap (at least half a rem) before the Lounge and Lounging words.
     const gap = /\.armchair-icon\{[^}]*margin-right:([\d.]+)rem/.exec(css);
     expect(Number(gap?.[1])).toBeGreaterThanOrEqual(0.5);
+    // The looks (arcade, hearth, quest) are staging-only until Misa picks one: no `data-look` rule ships.
+    expect(css).not.toContain('data-look');
     // The item picker's list and find-and-filter options were dropped from the game: only the grid ships.
     const js = files.filter((f) => f.name.endsWith('.js'));
     for (const gone of ['Find an item', 'ip-pinned', 'item-find']) {
@@ -205,6 +207,12 @@ describe('the debug panel and the production build', () => {
     const entry = files.find((f) => f.name.endsWith('.js') && /index/.test(f.name));
     expect(entry?.text.includes('DEV_PANEL_MARKER_7f3a')).toBe(false);
     expect(files.some((f) => f.name.endsWith('.css') && f.text.includes('dev-drawer'))).toBe(true);
+  }, 60_000);
+
+  it('has the looks styles in a staging build', async () => {
+    const files = await buildFiles('staging');
+    const css = files.filter((f) => f.name.endsWith('.css') && f.text.includes('data-look'));
+    expect(css.length).toBeGreaterThan(0);
   }, 60_000);
 
   it('has the workbench page in a staging build, apart from the game page', async () => {
