@@ -171,3 +171,37 @@
   outline-offset: calc(var(--px) * -2);
   background-color: var(--dusk-2);
 }
+
+/*
+  The raid's grid on a desktop (`large`, set by RaidBoard from 80 rem): the roster has a whole column, so the
+  tiles are taller with 3x sprites (whole pixels), and the scroller is as wide as a whole number of lanes
+  (`round()`: where a browser lacks it the line is dropped and the scroller fills the column), so the right
+  edge never cuts a tile in half. Lanes snap to the left edge as the board is swiped.
+*/
+.raid-board.large:not(.single) {
+  --tile-w: 4.5rem;
+  --tile-h: 7.5rem;
+  --lane-h: 1.5rem;
+  --label-w: 3rem;
+}
+
+.raid-board.large:not(.single) .board-scroller {
+  --lane-pitch: calc(var(--tile-w) + 4px);
+  width: calc(
+    round(down, 100% - var(--board-pad) * 2 + 4px, var(--lane-pitch)) + var(--board-pad) * 2 - 4px
+  );
+  scroll-snap-type: x proximity;
+  scroll-padding-left: var(--board-pad);
+}
+
+.raid-board.large:not(.single) .board-lane {
+  scroll-snap-align: start;
+}
+
+.raid-board.large:not(.single) .board-row .party-slot canvas.sprite {
+  margin-top: 1rem;
+}
+
+.raid-board.large:not(.single) .board-row .party-slot .slot-species {
+  font-size: 0.6875rem;
+}

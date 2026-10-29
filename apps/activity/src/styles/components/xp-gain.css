@@ -168,7 +168,9 @@
 
 /*
   The numbers inside: one colour (bone) with an ink outline, so every letter reads the same over the dark
-  trough, the shaded old part and the bright fill, wherever the fill's edge is.
+  trough, the shaded old part and the bright fill, wherever the fill's edge is. The two colours are written
+  out (the values of --bone and --ink), not read from the tokens: a look that recolours the tokens must not
+  be able to put pale numbers on a pale full bar (xp-text-colours.test.ts keeps it so).
 */
 .xp-text {
   position: absolute;
@@ -176,20 +178,20 @@
   display: grid;
   place-items: center;
   padding-top: 0.0625rem;
-  color: var(--bone);
+  color: #f4eedc;
   line-height: 1;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
   /* A one-pixel ink edge on all eight sides: thin enough to keep the pixel letters open. */
   text-shadow:
-    1px 0 var(--ink),
-    -1px 0 var(--ink),
-    0 1px var(--ink),
-    0 -1px var(--ink),
-    1px 1px var(--ink),
-    -1px -1px var(--ink),
-    1px -1px var(--ink),
-    -1px 1px var(--ink);
+    1px 0 #0d0a1a,
+    -1px 0 #0d0a1a,
+    0 1px #0d0a1a,
+    0 -1px #0d0a1a,
+    1px 1px #0d0a1a,
+    -1px -1px #0d0a1a,
+    1px -1px #0d0a1a,
+    -1px 1px #0d0a1a;
 }
 
 .xp-plus {

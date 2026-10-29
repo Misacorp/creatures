@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef } from 'preact/hooks';
 import { laneStates, ownLaneSpan, scrollToSpan, snapToLane } from '../raid-board';
 import { SlotButton, type SlotModel, type SlotStripProps } from './SlotButton';
 import { CueRail, type CueRailProps } from './CueRail';
+import { useMediaQuery } from '../hooks';
 import { slotState } from './slot-state';
 
 /** One row of the board: its zone, its name (for assistive technology), its label and its slots. */
@@ -31,7 +32,9 @@ interface RaidBoardProps extends SlotStripProps {
   /**
    * The size of the tiles of a `single` row. Absent (the default): the raid's own size. `large`: about
    * halfway back to the bigger tiles the dungeon used before it shared the raid's (the dungeon's
-   * team, where only three have to fit). The same component and the same tile either way.
+   * team, where only three have to fit). The same component and the same tile either way. The raid's
+   * grid takes no prop: on a desktop (`DESKTOP`, where the roster has a whole column) it draws taller tiles
+   * with 3x sprites by itself.
    */
   size?: 'large';
   /** What the rail under the board says (the "no reaction" mark, the effect line). Absent: no rail. */
@@ -48,6 +51,9 @@ const TILE_SCALE = 2;
  * between 2 and the 3 the larger tiles used; the tile's box (raid-board.css) is what lands halfway.
  */
 const LARGE_TILE_SCALE = 3;
+
+/** The window width from which the Raid screen has two columns: the grid draws its larger tiles. */
+const DESKTOP = '(min-width: 80rem)';
 
 /** Scrolls the board sideways to show lanes `first` to `last` (from 0). */
 function showLanes(scroller: HTMLElement | null, first: number, last: number) {
@@ -86,6 +92,7 @@ function showLanes(scroller: HTMLElement | null, first: number, last: number) {
  */
 export function RaidBoard(props: RaidBoardProps) {
   const { rows, stripRef } = props;
+  const desktop = useMediaQuery(DESKTOP);
   const occupants = new Map(
     rows.flatMap((r) => r.slots.map((s) => [s.index, s.occupant] as const)),
   );
@@ -139,7 +146,7 @@ export function RaidBoard(props: RaidBoardProps) {
   const classes =
     dragging === null ? 'party-strip board-scroller' : 'party-strip board-scroller dragging';
   return (
-    <div class="raid-board">
+    <div class={desktop ? 'raid-board large' : 'raid-board'}>
       <div class="board-grid">
         <div class="board-labels">
           <p class="board-lane-head" aria-hidden="true">
@@ -180,7 +187,7 @@ export function RaidBoard(props: RaidBoardProps) {
                 <SlotButton
                   key={slot.index}
                   slot={slot}
-                  scale={TILE_SCALE}
+                  scale={desktop ? LARGE_TILE_SCALE : TILE_SCALE}
                   {...slotState(props, slot)}
                 />
               ))}
