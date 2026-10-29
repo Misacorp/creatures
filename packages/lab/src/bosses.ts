@@ -22,7 +22,7 @@ import { content, createSeededRng } from '@creatures/game';
 import { card } from './cards';
 import { weekend } from './fight';
 import { LEVEL, toPlacements, type Mode, type Pick, type Score } from './search';
-import type { BossDef, BossMove, Escalation, Pattern, Placement } from './types';
+import type { BossDef, BossMove, Escalation, Fighter, Pattern, Placement } from './types';
 
 /** The raid stage: rounds per stage (R14: the round count restarts each stage). */
 export const RAID_ROUNDS = 8;
@@ -32,6 +32,8 @@ export const RAID_COLS = 4;
 /** A move in the lab's short form: `[id, name, every, turn, anchor, shape, powerBp, extras]`. */
 type Extras = {
   readonly n?: number;
+  /** single, line3, cross: aimed at this many different creatures (`Pattern.anchors`), per `perColumns` columns when that is set. */
+  readonly anchors?: number;
   /** `n` per this many columns of the arena (`Pattern.perColumns`): scatter and row end counts grow with the raid's width. */
   readonly perColumns?: number;
   readonly decayBp?: number;
@@ -61,6 +63,7 @@ export function move(row: MoveRow): BossMove {
       anchor,
       shape,
       ...(x.n !== undefined ? { n: x.n } : {}),
+      ...(x.anchors !== undefined ? { anchors: x.anchors } : {}),
       ...(x.perColumns !== undefined ? { perColumns: x.perColumns } : {}),
       ...(x.decayBp !== undefined ? { decayBp: x.decayBp } : {}),
     },
@@ -393,6 +396,56 @@ export interface WeekendStats {
   readonly damageShare: number;
   /** Mean of the highest escalation step the boss reached in a weekend (0 for a boss without one). */
   readonly steps: number;
+  /** Share of weekends that played each stage (stage 1 is always 1). */
+  readonly played: readonly number[];
+  /**
+   * The team's HP at the end of each stage (Misa, 2026-10-29: everyone alive but low is also a result): the standing
+   * creatures' HP over their max HP, a mean over the weekends that played the stage (0 for a stage nobody played).
+   */
+  readonly hpLeft: readonly number[];
+  /** The share of the creatures that took the stage's field still standing at its end, over the weekends that played it. */
+  readonly standing: readonly number[];
+  /** The same two at the end of the weekend: the last stage each weekend played (a won weekend ends in its winning stage). */
+  readonly hpLeftEnd: number;
+  readonly standingEnd: number;
+}
+
+/** The standing creatures' HP over their max HP, and the share of the field standing, at the end of a stage. */
+export function teamHealth(fighters: readonly Fighter[]): { hpLeft: number; standing: number } {
+  const up = fighters.filter((f) => f.hp > 0);
+  const max = up.reduce((n, f) => n + f.maxHp, 0);
+  return {
+    hpLeft: max > 0 ? up.reduce((n, f) => n + f.hp, 0) / max : 0,
+    standing: fighters.length > 0 ? up.length / fighters.length : 0,
+  };
+}
+
+/** Several weekend measures of the same boss as one, each weighted by its number of runs (the mixed server's draws). */
+export function combineWeekends(parts: readonly WeekendStats[]): WeekendStats {
+  const runs = parts.reduce((n, p) => n + p.runs, 0);
+  const w = (f: (p: WeekendStats) => number) => parts.reduce((n, p) => n + f(p) * p.runs, 0) / runs;
+  const stages = Math.max(0, ...parts.map((p) => p.played.length));
+  const at = (k: number, f: (p: WeekendStats) => number) =>
+    parts.reduce((n, p) => n + (p.played[k] ?? 0) * p.runs * f(p), 0) /
+    Math.max(
+      1e-9,
+      parts.reduce((n, p) => n + (p.played[k] ?? 0) * p.runs, 0),
+    );
+  const idx = Array.from({ length: stages }, (_, k) => k);
+  return {
+    runs,
+    winRate: w((p) => p.winRate),
+    knockouts: idx.map((k) => w((p) => p.knockouts[k] ?? 0)),
+    knockoutsTotal: w((p) => p.knockoutsTotal),
+    replacements: w((p) => p.replacements),
+    damageShare: w((p) => p.damageShare),
+    steps: w((p) => p.steps),
+    played: idx.map((k) => w((p) => p.played[k] ?? 0)),
+    hpLeft: idx.map((k) => at(k, (p) => p.hpLeft[k] ?? 0)),
+    standing: idx.map((k) => at(k, (p) => p.standing[k] ?? 0)),
+    hpLeftEnd: w((p) => p.hpLeftEnd),
+    standingEnd: w((p) => p.standingEnd),
+  };
 }
 
 /** `runs` seeded raid weekends of `line` against `boss` (three stages, attrition, a bench; a player for each column). */
@@ -418,6 +471,11 @@ export function weekendStatsOf(
     share = 0,
     steps = 0;
   const ko = [0, 0, 0];
+  const played = [0, 0, 0];
+  const hp = [0, 0, 0];
+  const up = [0, 0, 0];
+  let hpEnd = 0,
+    upEnd = 0;
   for (let i = 0; i < runs; i++) {
     const w = weekend(boss, placements, bench, {
       rng: createSeededRng(`weekend:${salt}:${i}`),
@@ -426,7 +484,17 @@ export function weekendStatsOf(
     reps += w.replacements;
     w.stages.forEach((st, k) => {
       ko[k] = (ko[k] ?? 0) + st.knockouts;
+      const h = teamHealth(st.fighters);
+      played[k] = (played[k] ?? 0) + 1;
+      hp[k] = (hp[k] ?? 0) + h.hpLeft;
+      up[k] = (up[k] ?? 0) + h.standing;
     });
+    const lastStage = w.stages[w.stages.length - 1];
+    if (lastStage) {
+      const h = teamHealth(lastStage.fighters);
+      hpEnd += h.hpLeft;
+      upEnd += h.standing;
+    }
     steps += Math.max(0, ...w.stages.map((st) => st.escalation?.step ?? 0));
     const left = w.stages[w.stages.length - 1]?.bossHpLeft ?? boss.hp;
     share += 1 - left / boss.hp;
@@ -440,6 +508,11 @@ export function weekendStatsOf(
     replacements: reps / runs,
     damageShare: share / runs,
     steps: steps / runs,
+    played: played.map((n) => n / runs),
+    hpLeft: hp.map((h, k) => h / Math.max(1, played[k] ?? 0)),
+    standing: up.map((u, k) => u / Math.max(1, played[k] ?? 0)),
+    hpLeftEnd: hpEnd / runs,
+    standingEnd: upEnd / runs,
   };
 }
 

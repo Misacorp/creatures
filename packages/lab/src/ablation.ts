@@ -46,7 +46,7 @@ const RULE_FX: Readonly<Record<string, (fx: KnackFx) => boolean>> = {
       'trail',
       'firstMarkExtra',
       'ownMarkBp',
-      'primeOnFirstIntercept',
+      'primeOnIntercept',
     ]) || fx.support === 'readyMark',
   'rule:charged': (fx) => any(fx, ['interceptCharged', 'braceBp']),
   'rule:taunt': (fx) => on(fx.taunt),
@@ -56,7 +56,7 @@ const RULE_FX: Readonly<Record<string, (fx: KnackFx) => boolean>> = {
       'interceptCharged',
       'interceptLikeGuard',
       'interceptHitBackBp',
-      'primeOnFirstIntercept',
+      'primeOnIntercept',
       'distanceCoverBp',
     ]),
   'rule:cover': (fx) =>

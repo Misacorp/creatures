@@ -234,7 +234,7 @@ export function placeFighters(placements: readonly Placement[]): Fighter[] {
       store: 0,
       boostBp: 0,
       undodgeable: false,
-      firstInterceptDone: false,
+      lastPrimeRound: 0,
       damageDealt: 0,
       hitDamage: 0,
       watchTurn: -1,
@@ -377,6 +377,8 @@ function roundStart(s: State): void {
   for (const f of [...alive(s)].sort(bySlot)) {
     const k = fx(f);
     if (k.miresAtStart) addMired(s, f);
+    // Baked Shell's Heat also builds by itself: +1 at every round start (panel 5: it was filled by damage alone and never picked).
+    if (k.bakedShell) f.store = Math.min(3, f.store + 1);
     if (k.guardMendBp)
       for (const o of alive(s).filter((o) => inReach(s, f, o))) heal(s, o, k.guardMendBp, true, f);
   }
@@ -697,8 +699,8 @@ function creatureTurn(s: State, f: Fighter): void {
 
 // ---------- the boss's turn ----------
 
-function anchorOf(s: State, p: Pattern): Fighter | undefined {
-  const live = alive(s);
+function anchorOf(s: State, p: Pattern, exclude: readonly Fighter[] = []): Fighter | undefined {
+  const live = alive(s).filter((f) => !exclude.includes(f));
   if (live.length === 0) return undefined;
   // "Strongest" is the highest Attack; ties go to the front, then the left.
   const strongest = (xs: Fighter[]) => [...xs].sort((a, b) => b.atk - a.atk || bySlot(a, b))[0];
@@ -738,6 +740,9 @@ const ANCHORLESS: ReadonlySet<Pattern['shape']> = new Set([
   'all',
   'rowEnds',
 ]);
+
+/** The creatures a multi-anchor pattern aims at (its anchors), by the array `targetsOf` returned. */
+const AIMED = new WeakMap<readonly Fighter[], ReadonlySet<Fighter>>();
 
 /** A pattern's count `n` in this arena: fixed, or per `perColumns` columns of its width (at least 1). */
 const countOf = (cols: number, n: number, perColumns: number | undefined): number =>
@@ -788,8 +793,32 @@ function targetsOf(s: State, p0: Pattern, plain: boolean): Fighter[] {
   }
   // Taunt becomes the anchor of every plain attack that has an anchor, whatever its anchor (R9).
   const taunter = plain ? live.filter((f) => fx(f).taunt).sort(bySlot)[0] : undefined;
+  // An aimed shape may have several anchors (`anchors`, per `perColumns` columns): each is the next best match.
+  const count =
+    p.anchors !== undefined && (p.shape === 'single' || p.shape === 'line3' || p.shape === 'cross')
+      ? countOf(cols, p.anchors, p.perColumns)
+      : 1;
+  if (count > 1) {
+    const used: Fighter[] = [];
+    const out: Fighter[] = [];
+    for (let i = 0; i < count; i++) {
+      const next = i === 0 ? (taunter ?? anchorOf(s, p)) : anchorOf(s, p, used);
+      if (!next) break;
+      used.push(next);
+      for (const t of shapeAround(s, p, next)) if (!out.includes(t)) out.push(t);
+    }
+    AIMED.set(out, new Set(used));
+    return out;
+  }
   const a = taunter ?? anchorOf(s, p);
   if (!a) return [];
+  return shapeAround(s, p, a);
+}
+
+/** The creatures a shape covers around one anchor (the shapes that start from an anchor). */
+function shapeAround(s: State, p: Pattern, a: Fighter): Fighter[] {
+  const live = alive(s);
+  const cols = s.boss.cols;
   switch (p.shape) {
     case 'chain': {
       // The anchor takes the aimed hit; each jump goes to the strongest creature not yet hit in a slot next to the last
@@ -991,6 +1020,7 @@ function bossHits(
   const targets =
     s.announced.get(move.id) ?? (move.charged ? [] : targetsOf(s, move.pattern, plain));
   const shape = move.pattern.shape;
+  const aimedAt = AIMED.get(targets);
   const full = Math.floor(
     (((grown(s).atk * move.powerBp) / 10_000) * (10_000 - miredCut(s))) / 10_000,
   );
@@ -1016,7 +1046,8 @@ function bossHits(
     log(s, 'target', `${t.name} (row ${t.row + 1}, slot ${t.col + 1}) <- ${move.id}`);
     const area = !(
       shape === 'single' ||
-      ((shape === 'line3' || shape === 'chain' || shape === 'cross') && t === targets[0])
+      ((shape === 'line3' || shape === 'chain' || shape === 'cross') &&
+        (aimedAt ? aimedAt.has(t) : t === targets[0]))
     );
     // A chain's jumps each deal a share of the hit before: the first hit full, the next at decay, then decay squared.
     let proposed = full;
@@ -1099,9 +1130,9 @@ function bossHits(
         // Momentum: a hit aimed at it that another creature took counts like a dodge.
         if (fx(t).momentumBp) t.momentum = true;
         if (fx(by).flankGuard) bump(by, 'flankGuard');
-        if (fx(by).primeOnFirstIntercept && !by.firstInterceptDone) {
-          by.firstInterceptDone = true;
-          addMark(s, by.element, 1, { by });
+        if (fx(by).primeOnIntercept && by.lastPrimeRound !== s.round) {
+          by.lastPrimeRound = s.round;
+          addMark(s, by.element, 2, { by });
         }
         // Shoulder Charge: it strikes back, ignoring armour (a counter, not a hit).
         if (fx(by).interceptHitBackBp) {

@@ -725,3 +725,159 @@ describe('every move with a roll in its targets is announced at round start', ()
     for (const slot of landed) expect(shown).toContain(slot);
   });
 });
+
+describe('an aimed shape may have several anchors (balance pass, 2026-10-29)', () => {
+  const big = (cols: number, form = 'thornbuck') =>
+    Array.from({ length: 3 * cols }, (_, i) => at(form, Math.floor(i / cols), i % cols));
+
+  it('single with anchors: aimed at that many different creatures, the best matches in order', () => {
+    const boss = mover({ anchor: 'strongest', shape: 'single', anchors: 3 }, 1, 4, { atk: 1 });
+    const team = [
+      at('thornbuck', 0, 0),
+      at('tempestray', 0, 1),
+      at('pyrelynx', 0, 2),
+      at('bloomback', 0, 3),
+    ];
+    const r = fight(boss, team, { rng: rng('anchors'), log: true });
+    // Tempestray and Bloomback (165) first, then Pyrelynx (149): the three highest Attacks, thornbuck left out.
+    expect(new Set(slotsHit(r, 'm'))).toEqual(new Set(['0,1', '0,2', '0,3']));
+  });
+
+  it('a count with perColumns grows with the width, and without `anchors` an aimed move has one', () => {
+    const hits = (pattern: Pattern, cols: number) =>
+      slotsHit(fight(mover(pattern, 3, cols), big(cols), { rng: rng('anchors-w'), log: true }), 'm')
+        .length;
+    const scaled: Pattern = { anchor: 'strongest', shape: 'single', anchors: 1, perColumns: 4 };
+    expect([4, 8, 12].map((c) => hits(scaled, c))).toEqual([1, 2, 3]);
+    expect([4, 8, 12].map((c) => hits({ anchor: 'strongest', shape: 'single' }, c))).toEqual([
+      1, 1, 1,
+    ]);
+  });
+
+  it('each anchor of a line of three takes the aimed hit, and its neighbours the area hits', () => {
+    const boss = mover({ anchor: 'strongest', shape: 'line3', anchors: 2 }, 2, 6, { atk: 1 });
+    // Two strong Payoffs far apart in the front row, plain Guards between and around them.
+    const team = [
+      at('thornbuck', 0, 0),
+      at('tempestray', 0, 1),
+      at('thornbuck', 0, 2),
+      at('thornbuck', 0, 3),
+      at('bloomback', 0, 4),
+      at('thornbuck', 0, 5),
+    ];
+    const r = fight(boss, team, { rng: rng('anchors-l3'), log: true });
+    // The two anchors are the two Payoffs, each with its row neighbours: every slot of the row once.
+    expect(new Set(slotsHit(r, 'm'))).toEqual(new Set(['0,0', '0,1', '0,2', '0,3', '0,4', '0,5']));
+    expect(slotsHit(r, 'm')).toHaveLength(6);
+  });
+
+  it('Taunt draws the first anchor of a plain attack; the others follow the anchor rule', () => {
+    const boss: BossDef = {
+      ...labBoss({ rows: 1, cols: 4, rounds: 1, atk: 1 }),
+      spd: 0,
+      plain: { pattern: { anchor: 'strongest', shape: 'single', anchors: 2 }, powerBp: 10_000 },
+    };
+    const team = [
+      at('tempestray', 0, 0),
+      at('pyrelynx', 0, 1),
+      at('thornbuck', 0, 2),
+      at('kilnmole', 0, 3, { knack: 'draw-fire' }),
+    ];
+    const r = fight(boss, team, { rng: rng('anchors-t'), log: true });
+    // Kilnmole (Draw Fire) first, then the strongest creature: Tempestray.
+    expect(new Set(slotsHit(r, 'plain'))).toEqual(new Set(['0,3', '0,0']));
+  });
+});
+
+describe('Primed by Pain: each interception leaves a mark, once a round', () => {
+  const boss = (moves: number): BossDef => ({
+    ...mover({ anchor: 'front', shape: 'single' }, 1, 2, { atk: 50, rounds: 4 }),
+    moves: Array.from({ length: moves }, (_, i) => ({
+      id: `m${i}`,
+      name: `M${i}`,
+      pattern: { anchor: 'front' as const, shape: 'single' as const },
+      powerBp: 5_000,
+      every: 1,
+      turn: 0,
+    })),
+  });
+  const team = (knack?: string) => [
+    at('tidewing', 0, 0),
+    at('thornbuck', 0, 1, knack ? { knack } : {}),
+  ];
+  const groveMarks = (r: FightResult) =>
+    r.events.filter((e) => e.kind === 'mark' && e.text.startsWith('grove')).length;
+
+  it('two interceptions in a round leave one mark, and a round without one leaves none', () => {
+    // Two aimed hits each round at the front Setter; the Guard beside it takes what the Setter does not dodge.
+    const r = seedWhere(
+      (seed) => fight(boss(2), team('primed-by-pain'), { rng: rng(seed), log: true }),
+      (x) => x.intercepts >= 6 && !x.events.some((e) => e.kind === 'dodge'),
+      200,
+    );
+    expect(r.intercepts).toBe(8);
+    expect(groveMarks(r)).toBe(4);
+    // Without the Knack the Guard marks nothing.
+    const plain = fight(boss(2), team(), { rng: rng('pbp-none'), log: true });
+    expect(groveMarks(plain)).toBe(0);
+  });
+});
+
+describe('Baked Shell: Heat builds at every round start, and by damage', () => {
+  const quiet = (rounds: number): BossDef =>
+    mover({ anchor: 'front', shape: 'single' }, 1, 2, { rounds, atk: 1 }, { powerBp: 0 });
+  const team = [at('kilnmole', 0, 0, { knack: 'baked-shell' }), at('tempestray', 0, 1)];
+  const heat = (r: FightResult) => r.fighters.find((f) => f.formId === 'kilnmole')?.store;
+
+  it('one Heat a round with nothing hitting it, up to three', () => {
+    expect(heat(fight(quiet(1), team, { rng: rng('bs1') }))).toBe(1);
+    expect(heat(fight(quiet(2), team, { rng: rng('bs2') }))).toBe(2);
+    expect(heat(fight(quiet(6), team, { rng: rng('bs3') }))).toBe(3);
+  });
+
+  it('a silenced Kilnmole builds none', () => {
+    const boss: BossDef = {
+      ...quiet(4),
+      moves: [
+        {
+          id: 's',
+          name: 'Hush',
+          pattern: { anchor: 'front', shape: 'rowEnds' },
+          powerBp: 0,
+          every: 1,
+          turn: 0,
+          silenceTurns: 9,
+        },
+      ],
+    };
+    // Both slots of a two-wide row are row ends: silenced from the first boss turn on, after the first round start.
+    expect(heat(fight(boss, team, { rng: rng('bs4') }))).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('Primed by Pain beats Clean Scales: a mark left during the boss turn is not shed', () => {
+  const boss: BossDef = {
+    ...labBoss({ rows: 1, cols: 3, rounds: 2, atk: 60 }),
+    spd: 0,
+    plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 10_000 },
+    mods: { shedMarks: true },
+  };
+  const team = (knack?: string) => [
+    at('tidewing', 0, 0),
+    at('thornbuck', 0, 1, knack ? { knack } : {}),
+    at('pyrelynx', 0, 2),
+  ];
+  const cashedGrove = (r: FightResult) =>
+    r.events.filter((e) => e.kind === 'reaction' && e.text.includes('cashes grove')).length;
+
+  it('the Guard’s grove mark is still there when Pyrelynx acts next round', () => {
+    const r = seedWhere(
+      (seed) => fight(boss, team('primed-by-pain'), { rng: rng(seed), log: true }),
+      (x) => x.intercepts >= 1 && !x.events.some((e) => e.kind === 'dodge'),
+      200,
+    );
+    expect(cashedGrove(r)).toBeGreaterThan(0);
+    // Nothing else leaves a grove mark: without the Knack there is nothing to cash.
+    expect(cashedGrove(fight(boss, team(), { rng: rng('pbp-cs'), log: true }))).toBe(0);
+  });
+});

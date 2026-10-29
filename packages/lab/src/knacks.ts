@@ -50,8 +50,8 @@ export interface KnackFx {
   readonly interceptArea?: boolean;
   /** Night Watch: takes the first Charged hit each boss turn aimed at a creature in its row, with its own cover's cut. */
   readonly interceptCharged?: boolean;
-  /** The first time it intercepts each fight, it leaves one stack of its own element's mark. */
-  readonly primeOnFirstIntercept?: boolean;
+  /** When it intercepts a hit, it leaves two stacks of its own element's mark (at most once a round). */
+  readonly primeOnIntercept?: boolean;
   /** While it stands, its row takes this much less from area hits and charged landings. */
   readonly rowAreaCutBp?: number;
   /** Store: +1 when it or a creature in its reach takes damage; at 3, the next reaction beside it deals double bonus. */
@@ -248,9 +248,9 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'circle-round',
       name: 'Circle Round',
       family: 'Sustain',
-      text: 'Each reaction on a Tide mark heals the creature that set it off by 8% of its max HP.',
+      text: 'Each reaction on a Tide mark heals the creature that set it off by 14% of its max HP.',
       intent: 'Keeps Payoffs alive when reactions hurt them (Reflective Hide, Thorns).',
-      fx: { healOnReactionBp: 800 },
+      fx: { healOnReactionBp: 1_400 },
     }),
     // Geyserpup (Tide Payoff, second branch)
     K({
@@ -334,9 +334,10 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'primed-by-pain',
       name: 'Primed by Pain',
       family: 'Guard Prime',
-      text: "The first time it {Intercept}s each fight, it leaves x1 of its own element's mark.",
-      intent: 'A Guard that helps prime for an Ember Payoff when no Grove Setter is around.',
-      fx: { primeOnFirstIntercept: true },
+      text: "Each time it {Intercept}s, it leaves x2 of its own element's mark. Once a round.",
+      intent:
+        'A Guard that marks by taking hits (panel 5: once a fight, and one count, was too little to build a team on): an Ember Payoff gets its reaction while the Setter slot becomes another hitter.',
+      fx: { primeOnIntercept: true },
     }),
     K({
       id: 'night-watch',
@@ -411,7 +412,7 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'baked-shell',
       name: 'Baked Shell',
       family: 'Store',
-      text: '{Store} Heat: +1 each time it or a creature in its reach takes damage. At 3, the next {Reaction} by a creature beside it deals double bonus.',
+      text: '{Store} Heat: +1 at round start and each time it or a creature in its reach takes damage. At 3, the next {Reaction} by a creature beside it deals double bonus.',
       intent: 'A Guard beside a Payoff in a hard fight.',
       fx: { bakedShell: true },
     }),
@@ -436,9 +437,9 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'zigzag',
       name: 'Zigzag',
       family: 'Evasion',
-      text: '{Taunt}, +20 dodge. {Store} Static: +1 per dodge; at 3, its next mark gets +2 to its count.',
+      text: '{Taunt}, +12 dodge. {Store} Static: +1 per dodge; at 3, its next mark gets +1 to its count.',
       intent: 'A dodge tank beside a Guard (dodge before intercept).',
-      fx: { taunt: true, dodgeBonusBp: 2_000, storeDodgeStacks: 2 },
+      fx: { taunt: true, dodgeBonusBp: 1_200, storeDodgeStacks: 1 },
     }),
     K({
       id: 'catch-the-bolts',
@@ -452,10 +453,10 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'lightning-ears',
       name: 'Lightning Ears',
       family: 'Guard Prime',
-      text: "It leaves its own element's {Mark} like a Setter, but it does not {Intercept}, and Armour -22.",
+      text: "It leaves its own element's {Mark} like a Setter, but it does not {Intercept}, and Armour -8.",
       intent:
         "A Setter that survives the front row; it pays with the Guard's verb and its armour (P-02: never a Setter and a Guard in one body).",
-      fx: { marksAs: 'own', noIntercept: true, armourBonus: -22 },
+      fx: { marksAs: 'own', noIntercept: true, armourBonus: -8 },
     }),
     // Mire lines: the finale-ability passives, ported (they are how Mire applies Mired today)
     K({

@@ -3,7 +3,15 @@
  * widths, and a mixed server weekend (min-maxers, builders and casual players side by side).
  */
 import { createSeededRng, int, type Rng } from '@creatures/game';
-import { RAID_SPECS, raidBench, raidMode, weekendStats, weekendStatsOf } from './bosses';
+import {
+  RAID_SPECS,
+  combineWeekends,
+  raidBench,
+  raidMode,
+  weekendStats,
+  weekendStatsOf,
+  type WeekendStats,
+} from './bosses';
 import { FORM_KNACKS } from './knacks';
 import { LEVEL, classicFor, type Pick } from './search';
 import { formStats } from './species';
@@ -33,16 +41,30 @@ export function marginOf(boss: BossDef, line: readonly Pick[], runs: number, sal
 export const RAID_WIDTHS: readonly number[] = [5, 10, 15];
 
 /**
- * How a raid boss's weekend HP grows with the number of players: `(players / 4) ^ e`, where `e` is the boss's own
- * `hpExponent` (shipped bosses have one too: they answer differently to a bigger raid) or 1, a straight line. The boss's
- * Attack does not grow; its area counts do (`perColumns`).
+ * How a raid boss's weekend HP grows with the number of players: `(players / 4) ^ e` up to `RAID_LINEAR_FROM` players, where
+ * `e` is the boss's own `hpExponent` (shipped bosses have one too: they answer differently to a bigger raid) or 1, a
+ * straight line, and in a straight line past it. The boss's Attack does not grow; its area counts do (`perColumns`).
  */
 export const hpExponentOf = (boss: BossDef): number =>
   RAID_SPECS.find((s) => s.id === boss.id)?.hpExponent ?? 1;
 
+/**
+ * Past this many players the boss's HP grows in a straight line, one player's share for every player (balance pass,
+ * 2026-10-29). Below it the boss's own exponent applies, which lets a mixed server of about ten players win by its tools;
+ * with the exponent alone a 15-player raid of the same three creatures out-damaged the boss, since more creatures simply
+ * deal more (panel 4, finding 12).
+ */
+export const RAID_LINEAR_FROM = 10;
+
+/** The weekend HP of a raid boss for `cols` players, as a multiple of its HP for the usual four. */
+export function raidHpFactor(boss: BossDef, cols: number): number {
+  const bend = Math.min(cols, RAID_LINEAR_FROM);
+  return (bend / boss.cols) ** hpExponentOf(boss) * (cols / bend);
+}
+
 /** The boss in an arena of `cols` columns, one player each: the arena is wider and the weekend HP has grown with the players. */
 export function wideBoss(boss: BossDef, cols: number): BossDef {
-  return { ...boss, cols, hp: Math.round(boss.hp * (cols / boss.cols) ** hpExponentOf(boss)) };
+  return { ...boss, cols, hp: Math.round(boss.hp * raidHpFactor(boss, cols)) };
 }
 
 /** A raid line (rows of `from` columns) repeated to fill rows of `to` columns: column c of each row is column c % from of it. */
@@ -143,6 +165,8 @@ export interface MixedResult {
   readonly players: number;
   readonly winRate: number;
   readonly knockouts: number;
+  /** The whole measure over every draw: HP left and the share standing per stage and at the weekend's end. */
+  readonly weekend: WeekendStats;
 }
 
 /**
@@ -179,9 +203,7 @@ export function mixedServer(
 ): MixedResult {
   const rows = boss.rows;
   const per = Math.max(1, Math.floor(runs / draws));
-  let wins = 0,
-    ko = 0,
-    total = 0;
+  const parts: WeekendStats[] = [];
   for (let d = 0; d < draws; d++) {
     const rng = createSeededRng(`mixed:${salt}:${d}`);
     let m = 0,
@@ -221,9 +243,13 @@ export function mixedServer(
       per,
       `${salt}:${d}`,
     );
-    wins += w.winRate * per;
-    ko += w.knockoutsTotal * per;
-    total += per;
+    parts.push(w);
   }
-  return { players: MIXED_ORDER.length, winRate: wins / total, knockouts: ko / total };
+  const weekend = combineWeekends(parts);
+  return {
+    players: MIXED_ORDER.length,
+    winRate: weekend.winRate,
+    knockouts: weekend.knockoutsTotal,
+    weekend,
+  };
 }

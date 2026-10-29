@@ -14,10 +14,12 @@ import {
   raidMode,
   weekendScore,
   weekendStats,
+  type WeekendStats,
 } from './bosses';
 import {
   MARGIN_TARGET,
   RAID_WIDTHS,
+  RAID_LINEAR_FROM,
   hpExponentOf,
   marginOf,
   mixedServer,
@@ -119,6 +121,17 @@ export function bossLine(b: BossDef): string {
   );
 }
 
+/** One team's HP left per stage and at the weekend's end: "standing creatures' HP (share of creatures standing)". */
+export function healthCells(w: WeekendStats): string[] {
+  const cell = (hp: number, up: number) => `${pct(hp)} (${pct(up)})`;
+  return [
+    ...[0, 1, 2].map((k) =>
+      (w.played[k] ?? 0) > 0 ? cell(w.hpLeft[k] ?? 0, w.standing[k] ?? 0) : '-',
+    ),
+    cell(w.hpLeftEnd, w.standingEnd),
+  ];
+}
+
 interface Settings {
   readonly raid: {
     starts: number;
@@ -160,7 +173,7 @@ export const BOSS_SETTINGS = (quick: boolean): Settings =>
           seeds: 3,
           freshSeeds: 10,
           weekends: 20,
-          mixedDraws: 4,
+          mixedDraws: 8,
           scratchSearches: 1,
         },
         foe: { starts: 40, keep: 6, rounds: 2, seeds: 3, freshSeeds: 10, fights: 16 },
@@ -175,7 +188,7 @@ export const BOSS_SETTINGS = (quick: boolean): Settings =>
           seeds: 5,
           freshSeeds: 40,
           weekends: 100,
-          mixedDraws: 20,
+          mixedDraws: 40,
           scratchSearches: 2,
         },
         foe: { starts: 120, keep: 10, rounds: 3, seeds: 4, freshSeeds: 24, fights: 40 },
@@ -211,6 +224,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
   const answerRows: string[] = [];
   const bestLinesMd: string[] = [];
   const marginRows: string[] = [];
+  const healthRows: string[] = [];
   const widthRows: string[] = [];
   const mixedRows: string[] = [];
   const illegalNotes: string[] = [];
@@ -278,6 +292,12 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     const wSeeded = weekendStats(boss, seeded.line, S.raid.weekends, `report:${spec.id}:seeded`);
     const wScratch = weekendStats(boss, scratch.line, S.raid.weekends, `report:${spec.id}:scratch`);
     const wc = weekendStats(boss, classic, S.raid.weekends, `report:${spec.id}:classic`);
+    // The prepared answer: the first written legal answer, the tool the boss asks for (the mixed server brings it too).
+    const prepared = legalGiven[0];
+    const wOverall = overall === scratch ? wScratch : wSeeded;
+    const wPrep = prepared
+      ? weekendStats(boss, prepared.picks, S.raid.weekends, `report:${spec.id}:ans`)
+      : undefined;
     raidRows.push(
       `| ${boss.name} | ${pct(wc.winRate)} | ${pct(wSeeded.winRate)} | ${pct(wScratch.winRate)} | ${Math.round(cl.score.score)} / ${Math.round(seeded.score.score)} / ${Math.round(scratch.score.score)} | ${wc.knockoutsTotal.toFixed(1)} / ${wSeeded.knockoutsTotal.toFixed(1)} / ${wScratch.knockoutsTotal.toFixed(1)} | ${boss.escalation ? `${wc.steps.toFixed(1)} / ${wSeeded.steps.toFixed(1)} / ${wScratch.steps.toFixed(1)} of ${boss.escalation.cap}` : 'none'} |`,
     );
@@ -313,10 +333,17 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
         beatsClassic: wins,
       });
     }
-    // The margin: the best line when the boss hits 10% harder, and when it has 10% more HP.
+    // The margin: the prepared answer and the best line when the boss hits 10% harder, and when it has 10% more HP.
+    const mp = prepared
+      ? marginOf(boss, prepared.picks, S.raid.weekends, `report:${spec.id}:margin:prepared`)
+      : undefined;
     const m = marginOf(boss, overall.line, S.raid.weekends, `report:${spec.id}:margin`);
+    if (mp)
+      marginRows.push(
+        `| ${boss.name} | prepared answer | ${pct(mp.base)} | ${pct(mp.atk10)} | ${pct(mp.hp10)} |`,
+      );
     marginRows.push(
-      `| ${boss.name} | ${overallIs} | ${pct(m.base)} | ${pct(m.atk10)} | ${pct(m.hp10)} |`,
+      `| ${boss.name} | best searched (${overallIs}) | ${pct(m.base)} | ${pct(m.atk10)} | ${pct(m.hp10)} |`,
     );
     // Other widths: the classic party, and the best line repeated to fill.
     const widths: WidthResult[] = RAID_WIDTHS.map((w) =>
@@ -329,7 +356,6 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     // One answer per boss, the prepared line (the first written answer: the tool the boss asks for, at most two copies of a form).
     // Min-maxers and builders bring its columns; the search's best line is tuned to its own four columns together, and its
     // columns do not carry the tool by name.
-    const prepared = legalGiven[0];
     const mixed: MixedResult = mixedServer(
       boss,
       prepared?.picks ?? overall.line,
@@ -340,7 +366,21 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
       prepared?.core ?? [],
       prepared ? [prepared.core ?? []] : [],
     );
-    mixedRows.push(`| ${boss.name} | ${pct(mixed.winRate)} | ${mixed.knockouts.toFixed(1)} |`);
+    mixedRows.push(
+      `| ${boss.name} | ${pct(mixed.winRate)} | ${mixed.knockouts.toFixed(1)} | ${healthCells(mixed.weekend).slice(3).join(' ')} |`,
+    );
+    // HP left (Misa, 2026-10-29): knockouts are not the only cost; creatures standing but low on HP count too.
+    const teams: [string, WeekendStats | undefined][] = [
+      ['classic party', wc],
+      ['prepared answer', wPrep],
+      [`best searched (${overallIs})`, wOverall],
+      ['mixed server', mixed.weekend],
+    ];
+    for (const [label, w] of teams)
+      if (w)
+        healthRows.push(
+          `| ${boss.name} | ${label} | ${pct(w.winRate)} | ${w.knockoutsTotal.toFixed(1)} | ${healthCells(w).join(' | ')} |`,
+        );
     // Which mechanics the best line really needs: take each out and measure the win rate.
     const measured = ablate(
       overall.line,
@@ -370,6 +410,13 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
       scratchKnockouts: wScratch.knockoutsTotal,
       steps: { classic: wc.steps, seeded: wSeeded.steps, scratch: wScratch.steps },
       margin: m,
+      preparedMargin: mp,
+      health: {
+        classic: wc,
+        prepared: wPrep,
+        best: wOverall,
+        mixed: mixed.weekend,
+      },
       widths,
       mixed,
       answers: ansData,
@@ -398,15 +445,23 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
       : []),
     '### Margin',
     '',
-    `The best line's weekend win rate on the real boss, with 10% more Attack, and with 10% more HP. Target: a well-prepared team wins about ${pct(MARGIN_TARGET)} at +10% (a boss that is beaten by a mile at +10% has no margin to ask for; one that is lost has none to give).`,
+    `The weekend win rate of the prepared answer (the first written answer) and of the best searched line on the real boss, with 10% more Attack, and with 10% more HP. Target: a well-prepared team wins about ${pct(MARGIN_TARGET)} or more at +10%, but not always (a boss that is beaten by a mile at +10% has no margin to ask for; one that is lost has none to give).`,
     '',
     '| Boss | Best line | Win | +10% Attack | +10% HP |',
     '| --- | --- | ---: | ---: | ---: |',
     ...marginRows,
     '',
+    '### HP left after each stage',
+    '',
+    `Knockouts are one cost of a weekend; the creatures that stand but are low on HP are another (Misa, 2026-10-29: everyone alive but low is also a result). Each cell reads the standing creatures' HP over their max HP, and in brackets the share of the stage's creatures still standing, at the end of the stage (a mean over the weekends that played it, \`-\` when none did). The last column is the weekend's end: the last stage each weekend played. ${S.raid.weekends} weekends each. The prepared answer is the first written answer; the mixed server is the draw of casual players described below.`,
+    '',
+    '| Boss | Team | Win | Knockouts | Stage 1 | Stage 2 | Stage 3 | Weekend end |',
+    '| --- | --- | ---: | ---: | --- | --- | --- | --- |',
+    ...healthRows,
+    '',
     '### The raid at other widths',
     '',
-    `Each player brings one column, so the arena is as wide as the server's raid: ${RAID_WIDTHS.join(', ')} columns a row. Cells read classic party / best line repeated to fill. The boss's weekend HP grows with the players as (players / 4) ^ e, where e is the boss's own exponent (the shipped bosses have one too: they answer differently to a bigger raid, and the shipped default is 1.1); its Attack does not grow, and its area counts scale with the width (a move's counts, and a Build-up's units per step, can be set per 4 columns, \`perColumns\`).`,
+    `Each player brings one column, so the arena is as wide as the server's raid: ${RAID_WIDTHS.join(', ')} columns a row. Cells read classic party / best line repeated to fill. The boss's weekend HP grows with the players as (players / 4) ^ e up to ${RAID_LINEAR_FROM} players, where e is the boss's own exponent (the shipped bosses have one too: they answer differently to a bigger raid, and the shipped default is 1.1), and in a straight line past that (a raid of ${RAID_WIDTHS[RAID_WIDTHS.length - 1]} copies of the same three creatures should not walk over it); its Attack does not grow, and its area counts scale with the width (a move's counts, and a Build-up's units per step, can be set per 4 columns, \`perColumns\`).`,
     '',
     `| Boss | HP exponent | ${RAID_WIDTHS.map((w) => `${w} columns`).join(' | ')} |`,
     `| --- | ---: | ${RAID_WIDTHS.map(() => '---:').join(' | ')} |`,
@@ -416,8 +471,8 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     '',
     `Ten players, one column each, side by side: 2 min-maxers and 3 builders (a column each of the prepared line, the first written answer: one answer per boss, at most 2 copies of any form in a column; they have read the boss, so the min-maxers bring the columns with the most of its tool first and the builders take the columns in turn) and 5 casual players (a column of random forms from a random roster of 12, a random Knack each that the form can equip, and a random legal talent). ${S.raid.mixedDraws} different draws of the casual players and the builders' answers, ${S.raid.weekends} weekends in all.`,
     '',
-    '| Boss | Weekend win | Knockouts |',
-    '| --- | ---: | ---: |',
+    '| Boss | Weekend win | Knockouts | HP left (standing) at the weekend end |',
+    '| --- | ---: | ---: | --- |',
     ...mixedRows,
     '',
     '### Intended answers (P-13)',
@@ -635,6 +690,44 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
       ? `**No boss or foe measurably calls for: ${notCalled.map((m) => `${m.mechanic.name} (${m.mechanic.group})`).join(', ')}.**`
       : '**Every mechanic with a tool is measurably called for by at least one boss or foe.**',
     '',
+  );
+  // The same table read the other way round: what each raid boss and foe measurably calls for (the aim: at least three each).
+  const perBoss = [
+    ...RAID_SPECS.map((spec) => {
+      const entries = raidAblation.filter(
+        (r) => r.id === spec.id || r.id === `${spec.id}:prepared`,
+      );
+      return {
+        id: spec.id,
+        name: entries[0]?.name ?? spec.id,
+        named: MECHANICS.filter((mech) =>
+          entries.some((r) =>
+            r.measured.some((x) => x.mechanic.id === mech.id && x.drop >= RAID_DROP),
+          ),
+        ),
+      };
+    }),
+    ...foeAblation.map((r) => ({
+      id: r.id,
+      name: r.name,
+      named: r.measured.filter((x) => x.drop >= FOE_DROP).map((x) => x.mechanic),
+    })),
+  ];
+  md.push(
+    '### What each boss measurably calls for',
+    '',
+    'The same measure read per boss: the mechanics whose removal from its best line or its prepared line costs the weekend win rate (raid) or the score (foe) the drop above. A boss that names few is one the best lines beat without needing much; the aim is at least three each.',
+    '',
+    '| Boss or foe | Mechanics named | Which |',
+    '| --- | ---: | --- |',
+    ...perBoss.map(
+      (b) =>
+        `| ${b.name} | ${b.named.length} | ${b.named.map((m) => `${m.name} (${m.group})`).join(', ') || '-'} |`,
+    ),
+    '',
+  );
+  data['coveragePerBoss'] = Object.fromEntries(
+    perBoss.map((b) => [b.id, b.named.map((m) => m.id)]),
   );
   data['mechanicsNotCalled'] = notCalled.map((m) => m.mechanic.id);
   data['mechanicsBossSide'] = bossSide.map((m) => m.mechanic.id);

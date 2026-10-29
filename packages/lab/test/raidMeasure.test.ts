@@ -9,10 +9,15 @@ import {
   MECHANICS,
   MIXED_ORDER,
   RAID,
+  RAID_LINEAR_FROM,
   CLASSIC_LINE,
   ablate,
   attacksOf,
+  BOSS_ANSWERS,
+  answerLine,
   casualColumn,
+  classicFor,
+  combineWeekends,
   columnOf,
   illegalTalents,
   labBoss,
@@ -22,17 +27,22 @@ import {
   mixedServer,
   poolOf,
   raidBossOf,
+  raidMode,
   search,
   strip,
+  teamHealth,
   tileLine,
   toolColumns,
   toolOf,
   weekendScore,
+  weekendStats,
   widthOf,
   wideBoss,
   hpExponentOf,
   type BossDef,
+  type Fighter,
   type Pick,
+  type WeekendStats,
 } from '../src';
 
 const pick = (formId: string, knack = 'none', talents?: string[]): Pick => ({
@@ -166,13 +176,17 @@ describe('the margin, the widths and the mixed server', () => {
   it('a wider raid has a bigger boss: the weekend HP grows with the players by the boss’s own exponent, its Attack does not', () => {
     const b = raidBossOf('thornmother');
     const exponent = hpExponentOf(b);
-    expect(exponent).toBeGreaterThan(0.4);
+    // The lab's exponents run from 0.2 (Thornmother: her bark asks for a tool, so a wide raid without it gets nowhere, and
+    // a wide raid with it should not meet a much bigger boss) up to the shipped 1.1.
+    expect(exponent).toBeGreaterThanOrEqual(0.1);
     expect(exponent).toBeLessThanOrEqual(1.1);
     for (const w of [5, 10, 15]) {
       const wide = wideBoss(b, w);
       expect(wide.cols).toBe(w);
       expect(wide.atk).toBe(b.atk);
-      expect(wide.hp).toBe(Math.round(b.hp * (w / b.cols) ** exponent));
+      // Up to ten players the boss's exponent applies; past ten the HP grows in a straight line.
+      const bend = Math.min(w, RAID_LINEAR_FROM);
+      expect(wide.hp).toBe(Math.round(b.hp * (bend / b.cols) ** exponent * (w / bend)));
     }
     expect(wideBoss(b, b.cols).hp).toBe(b.hp);
   });
@@ -282,5 +296,76 @@ describe('structural mechanics checks', () => {
       typeof MECHANICS.find((m) => m.id === 'rule:dodge')?.calls(b) === 'string';
     expect(dodge(quiet)).toBe(false);
     expect(dodge({ ...quiet, spd: 300 })).toBe(true);
+  });
+});
+
+describe('HP left after each stage (Misa, 2026-10-29)', () => {
+  const fighter = (hp: number, maxHp: number) => ({ hp, maxHp }) as unknown as Fighter;
+
+  it('the standing creatures’ HP over their max, and the share still standing', () => {
+    const h = teamHealth([fighter(50, 100), fighter(0, 100), fighter(100, 100)]);
+    // The knocked-out creature adds nothing to either side of the HP share; it does count in the share standing.
+    expect(h.hpLeft).toBeCloseTo(150 / 200);
+    expect(h.standing).toBeCloseTo(2 / 3);
+    expect(teamHealth([fighter(0, 100)])).toEqual({ hpLeft: 0, standing: 0 });
+    expect(teamHealth([])).toEqual({ hpLeft: 0, standing: 0 });
+  });
+
+  it('a weekend reports each stage it played and the end of the weekend, in shares between 0 and 1', () => {
+    const boss = raidBossOf('storm-sovereign');
+    const line = answerLine(BOSS_ANSWERS['storm-sovereign']?.[0]?.line ?? '');
+    const w = weekendStats(boss, line, 6, 'health');
+    expect(w.hpLeft).toHaveLength(3);
+    expect(w.standing).toHaveLength(3);
+    expect(w.played[0]).toBe(1);
+    // A stage nobody played reads 0, and every stage that was played is a share.
+    w.played.forEach((n, k) => {
+      expect(n).toBeGreaterThanOrEqual(0);
+      expect(n).toBeLessThanOrEqual(1);
+      if (n === 0) expect(w.hpLeft[k]).toBe(0);
+      else {
+        expect(w.hpLeft[k]).toBeGreaterThan(0);
+        expect(w.hpLeft[k]).toBeLessThanOrEqual(1);
+        expect(w.standing[k]).toBeGreaterThan(0);
+        expect(w.standing[k]).toBeLessThanOrEqual(1);
+      }
+    });
+    expect(w.hpLeftEnd).toBeGreaterThan(0);
+    expect(w.hpLeftEnd).toBeLessThanOrEqual(1);
+    // The same seeds give the same numbers.
+    expect(weekendStats(boss, line, 6, 'health')).toEqual(w);
+  });
+
+  it('a party that is wiped has no HP left at the weekend’s end', () => {
+    const boss = raidBossOf('cinder-wyrm');
+    const w = weekendStats(boss, classicFor(raidMode(boss)), 4, 'health-classic');
+    expect(w.winRate).toBe(0);
+    expect(w.hpLeftEnd).toBeLessThan(0.2);
+    expect(w.standingEnd).toBeLessThan(0.4);
+  });
+
+  it('several measures combine weighted by their runs, a stage counted over the weekends that played it', () => {
+    const part = (runs: number, hp: number, played2: number, hp2: number): WeekendStats => ({
+      runs,
+      winRate: hp,
+      knockouts: [1, 1, 0],
+      knockoutsTotal: 2,
+      replacements: 0,
+      damageShare: 1,
+      steps: 0,
+      played: [1, played2, 0],
+      hpLeft: [hp, hp2, 0],
+      standing: [hp, hp2, 0],
+      hpLeftEnd: hp,
+      standingEnd: hp,
+    });
+    const c = combineWeekends([part(10, 0.2, 1, 0.4), part(30, 0.6, 0.5, 0.8)]);
+    expect(c.runs).toBe(40);
+    expect(c.winRate).toBeCloseTo((10 * 0.2 + 30 * 0.6) / 40);
+    expect(c.hpLeftEnd).toBeCloseTo(0.5);
+    expect(c.played[1]).toBeCloseTo((10 * 1 + 30 * 0.5) / 40);
+    // Stage 2: 10 weekends with HP 0.4, 15 weekends with HP 0.8.
+    expect(c.hpLeft[1]).toBeCloseTo((10 * 0.4 + 15 * 0.8) / 25);
+    expect(c.played[2]).toBe(0);
   });
 });

@@ -32,7 +32,8 @@ export interface Fighter {
   store: number;
   boostBp: number;
   undodgeable: boolean;
-  firstInterceptDone: boolean;
+  /** The round of the last mark it left by intercepting (Primed by Pain: once a round); 0 for none yet. */
+  lastPrimeRound: number;
   damageDealt: number;
   /** Damage its hits dealt to the boss, reactions included, counters not (Element Resistance reads it). */
   hitDamage: number;
@@ -85,6 +86,12 @@ export interface Pattern {
   readonly perColumns?: number;
   /** chain: each jump deals this share (bp) of the hit before it. */
   readonly decayBp?: number;
+  /**
+   * single, line3, cross: how many different creatures the move is aimed at, each by the same anchor rule (the best match,
+   * then the next best). With `perColumns` the count grows with the arena's width, so an aimed hit does not thin out in a
+   * wide raid. Default 1.
+   */
+  readonly anchors?: number;
 }
 
 export interface BossMove {
