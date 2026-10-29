@@ -6,49 +6,47 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q7. Should a missed day still cost a dungeon run? (a challenge)
+### Q10. Does a player who plays less get help catching up?
 
-Status: asked, round 3 (2026-10-29). From the scrap list. Challenges: today's daily dungeon against F-1 and G-3 as Misa reworded them in round 1 ("being away never takes away what a player already has"). Touches: the Cave in `systems/valley.md`, `scrap-list.md`.
+Status: asked, round 4 (2026-10-29). Was the queued **returners**. Touches: `bonfire.md` V-BON-2, `posts.md` V-POST-10, `defence.md`; a seam with combat v2 (what a level is worth in the raid).
 
-**Why it matters.** Today you get one dungeon run a day, on a map the whole server shares, reset at 13:37. A missed day is a run gone for good, and it resets your streak (a small bonus on the 3rd and 7th day in a row). Everything else in the valley now waits for you, so the dungeon would be the one place that punishes a day off.
+**Why it matters.** With the away steps, a once-a-week player grows about 43% as fast as a daily one, and someone back after a month has barely grown. Everyone fights the same raid boss together, so a roster far behind adds little and can feel like dead weight. Today's plan only helps a player's own weakest creatures catch up to that player's best.
 
-- **A. Keep it daily.** One run a day; a missed day is gone. It stays the game's daily habit. Example: Sanni skips Saturday and that run is lost.
-- **B. Missed runs wait for you.** Runs bank up (example: up to 3); you play them on the current day's map. The streak becomes "runs played this week". Example: Sanni skips the weekend and plays three runs on Monday.
-- **C. A weekly delve.** One bigger run a week, played any day. Example: a seven-floor delve that Sanni plays on Wednesday evening.
+- **A. No help: that is the cost of playing less.** Example: Juho plays on Sundays; Juho's creatures are ten levels behind the server's, and Juho knows why.
+- **B. Catch-up toward the server.** Creatures behind the server's middle grow faster while their player is present, fading as they close in. Example: Juho comes back after a month; within about a week of daily visits Juho's best team is close to the server's middle again.
+- **C. Level sync in the raid.** In the raid every creature fights at the server's level, so levels matter only outside it. Example: Juho's level 12 Pip fights as level 20 on Sunday.
 
-**Lead's pick: B.** It keeps the shared daily map (people compare routes) and the daily rhythm for those who like it, without taking anything from someone who skips a day. A 3-run bank means nobody has to visit daily, and the run isn't spread so thin that it loses its weight.
+**Lead's pick: B.** A returning player gets back into the fight quickly, which is what keeps a small server's raid alive, and levels still mean something in the raid, so growing your roster stays rewarding. C would make the raid ignore the growth the whole valley is built around. The catch-up only runs while the player is present, so it never undoes the away steps.
 
-### Q8. What happens to the Valley Games?
+### Q11. Is the bonfire the same for everyone, or something the server builds?
 
-Status: asked, round 3 (2026-10-29). From the scrap list. Touches: the Fairground in `systems/valley.md`, `scrap-list.md`; today's Games, Prize Stall, medals and badges.
+Status: asked, round 4 (2026-10-29). Was the queued **bonfire**. Touches: `bonfire.md`, `commons.md`.
 
-**Why it matters.** The Games are a daily show of three events (four on Wednesdays) where level doesn't matter and "good fit" does; medals buy prizes at the Wednesday stall. They were built to make low-level creatures worth using, which posts and the bonfire now do for the whole roster. A daily show is also one more daily habit next to the dungeon.
+**Why it matters.** Creatures without a post sit at the bonfire and grow slowly; it's the floor that keeps a whole roster useful. It is also the one place every player's creatures share, so it's a natural first project for the server.
 
-- **A. Keep them daily** at the Fairground, as today. Example: you enter three creatures each day and see the results next visit.
-- **B. A weekly fair.** One bigger show midweek, with entries open all week and the stall on the same day. The week gets a rhythm: the fair midweek, the raid at the weekend. Example: Wednesday is fair day; Sanni sets her entries on Monday and sees the medals Wednesday evening.
-- **C. Scrap them.** Posts already make every creature useful. Medals, badges and the stall go; players keep their medals as mementos.
+- **A. A flat floor.** Every idle creature grows at the same fixed rate on every server. Nothing to build. Example: Sanni's bench grows the same on a busy server and a quiet one.
+- **B. A communal hearth.** The server raises the bonfire's level with gifts and a lamplighter post; each level makes everyone's bench grow a little faster and adds something to see (a bigger fire, benches, lanterns). Example: the server feeds the fire for a week and every player's idle creatures grow 10% faster from then on.
+- **C. Your own campfire.** Each player upgrades their own fire with their own resources. Example: Sanni buys a better log pile and her bench grows faster.
 
-**Lead's pick: B.** The "good fit" puzzle is a different kind of fun than the raid's power, and worth keeping. Weekly makes it an event instead of a chore, and gives the quiet middle of the week something to look forward to. Today you said four events "felt like a bit much"; a weekly fair can be bigger without that feeling.
+**Lead's pick: B.** It is the project that helps everyone most evenly, newcomers included from day one, and the easiest one for a new server to rally around in its first week. The floor stays: a level-1 hearth is A's flat rate, so a quiet server is never worse off.
 
-### Q9. What is Bait for in the valley?
+### Q12. Do the server's places stop growing at some level?
 
-Status: asked, round 3 (2026-10-29). From the scrap list. Touches: `commons.md`, `scouts.md`, `posts.md`; today's allowance (25 a day for opening the game) and leet bonus (15 to 32).
+Status: asked, round 4 (2026-10-29). Was the queued **place-max**. Touches: `commons.md`, `later.md`, goal G-7 (the endgame is cosmetic).
 
-**Why it matters.** Today Bait mostly buys treats (double XP for one activity), lures and talent slots. Treats go with posts, so Bait would pile up with nothing to buy (the simulator already shows it piling up). Bait is also the game's link to leeting, so it should stay worth earning.
+**Why it matters.** Places grow through the server's projects. If they grow forever, every level adds a little power, the economy has to keep finding new bonuses, and an old server pulls ever further ahead of a new one. If they stop, the server needs something else to build.
 
-- **A. Bait builds the valley.** It is what you give to the server's projects, next to parts. Example: Sanni drops 200 Bait in the Signpost's donation bowl toward a new road.
-- **B. Bait goes to your posts.** You spend it on things that stay at a post: a lure at a scout's post that attracts a particular creature (shown with a hint), a better tool for a smith. Example: Sanni puts a Kelp Lure at the Tidepools and a rare Tide creature starts turning up.
-- **C. Both.** Bait is the everyday currency: your own setup and the server's projects compete for it.
+- **A. A max level, then projects turn cosmetic.** After the last level, projects add banners, statues, a fountain, seasonal decorations everyone sees. Example: the Forge maxes at level 5; the next project is a copper weathervane on its roof.
+- **B. No max.** Every level adds a small bonus forever, idle-game style. Example: Forge level 23 gives +1% speed.
+- **C. A max level, then a new place opens.** Finishing the valley's places unlocks a new place to build. Example: when every place reaches level 5, the road to the Lighthouse opens.
 
-**Lead's pick: C.** A real choice between "my valley" and "our valley" every time you spend is the heart of co-op idling, and lures at posts give the discovery puzzle the research recommends. Leets keep paying Bait. The daily allowance would stop being a reward for opening the game and arrive like any other idle gain instead (lead's call, unless you object), so it isn't one more thing that punishes a day off.
+**Lead's pick: A now, with C as later content.** A matches your endgame (cosmetics, housing and decorations) and keeps the balance in one known range the economy lab can test, so old and new servers stay comparable. New places can arrive later on top of the same system (G-6).
 
 ## Queue
 
 In order. Each becomes a numbered question when asked; entries name what they wait on.
 
-- **returners.** A weekly or returning player brings a smaller roster to the raid (V-POST-10: about 43% of a daily player's idle growth in a week). Does the raid even it out (level sync, a catch-up toward the server), or is that the honest cost of playing less? A seam with combat v2. After round 2.
-- **bonfire.** Is the bonfire a flat floor for every creature, or a communal hearth the server feeds? (`bonfire.md`.) Waits on Q1 and Q3.
-- **place-max.** Do places have a max level, after which projects turn cosmetic? (`commons.md`.) Waits on Q1.
+- **currency-name.** Bait needs a new name (round 3, Q9). The lead proposes three or four names from the compendium's world (`docs/compendium/`), each with a line of flavour.
 - **battlegrounds.** Battlegrounds for Tide, Ember and Mire: a drowned sea gate, a caldera, a sunken shrine; or other ideas? (`defence.md`.)
 - **sentries.** Should sentries posted at the Watchtower add to the server's raid readiness, or should the raid stay purely the weekend's fight? (`defence.md` V-DEF-4.)
 - **targets.** What the economy lab measures and which numbers feel right (T-1 to T-5 in `goals.md`). Asked with the lab's first report, as concrete examples, not as a list to approve.
@@ -148,6 +146,54 @@ Status: answered, round 2 (2026-10-29). Was the queued **post-or-fight**. Touche
 **Answer (2026-10-29): B.** "Thematically leaving on a raid quest would remove the creature from a post. However, the raid fights happen in just a few minutes and a creature can even be knocked out during one. The plan in the combat branch is to not allow a knocked out creature to return the same weekend, but another can take its place. Maybe option B sounds best and an active player would just replace the posts vacancy with another creature."
 
 Became: V-POST-7, a raider's seat is kept for the weekend, a stand-in may hold it, the raider returns on its own; the dungeon pauses nothing; V-DEF-3.
+
+### Q7. Should a missed day still cost a dungeon run? (a challenge)
+
+Status: answered, round 3 (2026-10-29). From the scrap list. Challenges: today's daily dungeon against F-1 and G-3 as Misa reworded them in round 1 ("being away never takes away what a player already has"). Touches: the Cave in `systems/valley.md`, `scrap-list.md`.
+
+**Why it matters.** Today you get one dungeon run a day, on a map the whole server shares, reset at 13:37. A missed day is a run gone for good, and it resets your streak (a small bonus on the 3rd and 7th day in a row). Everything else in the valley now waits for you, so the dungeon would be the one place that punishes a day off.
+
+- **A. Keep it daily.** One run a day; a missed day is gone. It stays the game's daily habit. Example: Sanni skips Saturday and that run is lost.
+- **B. Missed runs wait for you.** Runs bank up (example: up to 3); you play them on the current day's map. The streak becomes "runs played this week". Example: Sanni skips the weekend and plays three runs on Monday.
+- **C. A weekly delve.** One bigger run a week, played any day. Example: a seven-floor delve that Sanni plays on Wednesday evening.
+
+**Lead's pick: B.** It keeps the shared daily map (people compare routes) and the daily rhythm for those who like it, without taking anything from someone who skips a day. A 3-run bank means nobody has to visit daily, and the run isn't spread so thin that it loses its weight.
+
+**Answer (2026-10-29): B, with past maps.** "B, but keep the dungeon seeds for the last 3 days so the player can run the same content as everyone else did. We can basically give players "dungeon passes" that stack up when needed."
+
+Became: dungeon passes, one a day, stacking to 3; a pass runs today's map or one of the last 3 days' maps (the stored day seeds; every fight's seed is still a fresh draw on entry); the streak becomes runs played in a week (lead's call). `systems/valley.md`, `scrap-list.md`.
+
+### Q8. What happens to the Valley Games?
+
+Status: answered, round 3 (2026-10-29). From the scrap list. Touches: the Fairground in `systems/valley.md`, `scrap-list.md`; today's Games, Prize Stall, medals and badges.
+
+**Why it matters.** The Games are a daily show of three events (four on Wednesdays) where level doesn't matter and "good fit" does; medals buy prizes at the Wednesday stall. They were built to make low-level creatures worth using, which posts and the bonfire now do for the whole roster. A daily show is also one more daily habit next to the dungeon.
+
+- **A. Keep them daily** at the Fairground, as today. Example: you enter three creatures each day and see the results next visit.
+- **B. A weekly fair.** One bigger show midweek, with entries open all week and the stall on the same day. The week gets a rhythm: the fair midweek, the raid at the weekend. Example: Wednesday is fair day; Sanni sets her entries on Monday and sees the medals Wednesday evening.
+- **C. Scrap them.** Posts already make every creature useful. Medals, badges and the stall go; players keep their medals as mementos.
+
+**Lead's pick: B.** The "good fit" puzzle is a different kind of fun than the raid's power, and worth keeping. Weekly makes it an event instead of a chore, and gives the quiet middle of the week something to look forward to. Today you said four events "felt like a bit much"; a weekly fair can be bigger without that feeling.
+
+**Answer (2026-10-29): B.** "Wednesday is good. Increase the number of events to maybe 5 to compensate."
+
+Became: the Valley Games are a weekly fair every Wednesday with about 5 events, entries open all week, the Prize Stall the same day. `systems/valley.md`, `scrap-list.md`.
+
+### Q9. What is Bait for in the valley?
+
+Status: answered, round 3 (2026-10-29). From the scrap list. Touches: `commons.md`, `scouts.md`, `posts.md`; today's allowance (25 a day for opening the game) and leet bonus (15 to 32).
+
+**Why it matters.** Today Bait mostly buys treats (double XP for one activity), lures and talent slots. Treats go with posts, so Bait would pile up with nothing to buy (the simulator already shows it piling up). Bait is also the game's link to leeting, so it should stay worth earning.
+
+- **A. Bait builds the valley.** It is what you give to the server's projects, next to parts. Example: Sanni drops 200 Bait in the Signpost's donation bowl toward a new road.
+- **B. Bait goes to your posts.** You spend it on things that stay at a post: a lure at a scout's post that attracts a particular creature (shown with a hint), a better tool for a smith. Example: Sanni puts a Kelp Lure at the Tidepools and a rare Tide creature starts turning up.
+- **C. Both.** Bait is the everyday currency: your own setup and the server's projects compete for it.
+
+**Lead's pick: C.** A real choice between "my valley" and "our valley" every time you spend is the heart of co-op idling, and lures at posts give the discovery puzzle the research recommends. Leets keep paying Bait. The daily allowance would stop being a reward for opening the game and arrive like any other idle gain instead (lead's call, unless you object), so it isn't one more thing that punishes a day off.
+
+**Answer (2026-10-29): C.** "We don't have to keep calling it bait either."
+
+Became: Bait is the everyday currency for a player's own posts (lures, tools, supplies) and the server's projects; leets keep paying it; the daily allowance builds up like an idle gain (the lead's call stood, Misa did not object). A new name is queued (**currency-name**). `commons.md`, `scouts.md`, `scrap-list.md`.
 
 ## Withdrawn
 

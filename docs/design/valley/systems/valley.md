@@ -18,17 +18,17 @@ One pixel-art valley, panned on a phone and seen whole on a desktop. Places are 
 
 ## Places today (prototype) and their posts (proposed)
 
-| Place            | Today's feature inside                                 | Posts it could hold (see `posts.md`)          |
-| ---------------- | ------------------------------------------------------ | --------------------------------------------- |
-| House            | living room lounge, evolve, Journal and trophy shelves | the lounge (rest)                             |
-| Paddock          | the creature list, new arrivals                        | keepers                                       |
-| Bonfire (new)    |                                                        | idle creatures gather here (see `bonfire.md`) |
-| Forge            | Workshop jobs, the bag chest, blueprints, supplies     | smiths                                        |
-| Signpost         | expeditions, the haul, push on                         | scouts per destination                        |
-| Cave             | the daily dungeon                                      |                                               |
-| Fairground       | the Valley Games                                       |                                               |
-| Watchtower (new) | the raid: muster, the defence weekend                  | sentries                                      |
-| School (new)     |                                                        | teacher, students                             |
+| Place            | Today's feature inside                                                                                        | Posts it could hold (see `posts.md`)          |
+| ---------------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| House            | living room lounge, evolve, Journal and trophy shelves                                                        | the lounge (rest)                             |
+| Paddock          | the creature list, new arrivals                                                                               | keepers                                       |
+| Bonfire (new)    |                                                                                                               | idle creatures gather here (see `bonfire.md`) |
+| Forge            | Workshop jobs, the bag chest, blueprints, supplies                                                            | smiths                                        |
+| Signpost         | expeditions, the haul, push on                                                                                | scouts per destination                        |
+| Cave             | the dungeon: dungeon passes stack to 3, and a pass can run any of the last 3 days' maps (round 3, Q7)         |                                               |
+| Fairground       | the Valley Games as a weekly fair every Wednesday, about 5 events, the Prize Stall the same day (round 3, Q8) |                                               |
+| Watchtower (new) | the raid: muster, the defence weekend                                                                         | sentries                                      |
+| School (new)     |                                                                                                               | teacher, students                             |
 
 ## Known work (from the prototype panel, 2026-10-29)
 

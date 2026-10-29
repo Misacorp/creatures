@@ -3502,3 +3502,11 @@ Misa's answers to the valley plan's round 2 (`docs/design/valley/questions.md`, 
 - **A lone player can finish a shared project (Q4).** "Individual players can slowly accumulate the resources and there's no need to obfuscate it behind diminishing returns unless research calls for it. Let's not block the player, but encourage them to engage with the community and coordinate efforts." Gifts always count in full; projects are sized for the server's active players (those who visited in the last 7 days), so friends are the fast way (V-COM-5).
 - **Stores and queues last at least about a day and a half (Q5),** so a daily player never meets a full store or an empty queue. A loose guideline: players who look in more often gain slightly more by spending what they collected on small upgrades to their setup, never through a faster rate or a timer (V-POST-11).
 - **A raider's post waits for it (Q6).** The creature is away for the raid weekend; its seat is kept, a stand-in may hold it, and the raider returns on its own after the weekend. A creature knocked out stays out for the weekend (combat v2). The dungeon pauses nothing (V-POST-7).
+
+## 2026-10-29: Valley: dungeon passes, a weekly fair, one everyday currency (round 3)
+
+Misa's answers to the valley plan's round 3 (`docs/design/valley/questions.md`, Q7 to Q9).
+
+- **Dungeon passes (Q7).** "Keep the dungeon seeds for the last 3 days so the player can run the same content as everyone else did. We can basically give players "dungeon passes" that stack up when needed." One pass a day, stacking to 3; a pass runs today's map or one of the last 3 days' maps (the stored day seeds; every fight's seed is still a fresh crypto draw on entry). The streak becomes runs played in a week (lead's call).
+- **The Valley Games become a weekly fair (Q8)** every Wednesday, with about 5 events ("Increase the number of events to maybe 5 to compensate"), entries open all week and the Prize Stall the same day.
+- **Bait is the everyday currency for a player's own posts and the server's projects (Q9),** so every spend is a choice between "my valley" and "our valley". Leets keep paying it; the daily allowance builds up like an idle gain instead of paying for opening the game. "We don't have to keep calling it bait either": a new name is queued.

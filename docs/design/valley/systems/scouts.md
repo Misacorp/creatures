@@ -12,7 +12,7 @@ Instead of timed trips, a scout is posted to one of the eight destinations and r
 - **V-SCOUT-2** Finds are the destination's own: Bait, parts and scrap (feeding the Forge), supplies, lore pages, and now and then a creature that lives there. A scout's explorer rank grows with time at the place and raises rare odds, as today's explorer ranks do.
 - **V-SCOUT-3** The store holds a generous number of finds; when full, the scout keeps exploring but stops picking up (a bubble says "pack full"), nothing is lost.
 - **V-SCOUT-4** Night and festival places keep their rules (Moonlit Reef by night, Festival Grounds in festival weeks); a scout there waits at camp when the place is closed.
-- **V-SCOUT-5** Supplies change from "packed for one trip" to "kept at the post" (a lantern at the Ember Caves lasts a while and raises a particular find), so they stay a choice without a timer.
+- **V-SCOUT-5** Supplies change from "packed for one trip" to "kept at the post" (a lantern at the Ember Caves lasts a while and raises a particular find), so they stay a choice without a timer. They are bought with Bait (to be renamed, round 3, Q9), as are lures that draw a particular creature to a scout's post, with the hint shown.
 - **V-SCOUT-6** "Push on" becomes a rare event at the post: a scout finds a way deeper and asks (in the return story) whether to follow it.
 
 ## Open questions
