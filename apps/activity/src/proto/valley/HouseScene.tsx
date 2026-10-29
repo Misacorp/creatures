@@ -1,10 +1,11 @@
 /**
- * Inside the house (the living room): the game's own living room art (`roomScene`, drawn in two layers like
- * `LivingRoom`), the other players' creatures in their spots, and yours on the couch. A creature that can
- * evolve has its bubble (its face and an up arrow). Tap it: its forms stand on the floor to pick from, and a
- * gold Evolve. Then the moment: the old and the new form flash in turn, white, faster and faster, the new one
- * lands with a bounce and four sparkles pop. The bookshelf is the Journal and the trophy shelf the Stats
- * (both stubs here).
+ * Inside the house (the living room), full screen: the game's own living room art along the top (two layers,
+ * like `LivingRoom`), the other players' creatures in their spots, and the floor running on below it with a
+ * rug in the middle. The creature that can evolve sits on the rug with its bubble and its Essence cost; it is
+ * the button. Tap it and its two forms stand either side of it; tap a form, then the one big Evolve pinned at
+ * the bottom (evolving is permanent, so it is a second press). Then the moment: the old and the new form flash
+ * in turn, white, faster and faster, the new one lands with a bounce and four sparkles pop. The bookshelf is
+ * the Journal and the trophy shelf the Stats (stubs here).
  */
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { RoomPhase } from '@creatures/game';
@@ -16,20 +17,19 @@ import { creatureSpriteOrFallback } from '../../sprites/creature-sprites';
 import { ROOM_SPOTS } from '../../sprites/room-art';
 import { Sprite } from '../../sprites/Sprite';
 import { ActionButton } from '../../ui/ActionButton';
+import { CountBadge } from '../../ui/CountBadge';
 import { Drawer } from '../../ui/Drawer';
 import { TOUR, evolvers, type ProtoWorld } from '../world';
 import { paint } from './paint';
-import { At, CreatureSprite, SpeechBubble, UpArrow, isStill } from './parts';
-import { SceneFrame } from './SceneFrame';
-import { HOUSE_SIZE, ROOM_TOP, houseDraw, houseFront } from './scene-art';
+import { At, CreatureSprite, Plate, SpeechBubble, UpArrow, isStill } from './parts';
+import { SceneFrame, type SceneGeometry } from './SceneFrame';
+import { houseDraw, houseFloor, houseFront, houseSpots, roomLeft } from './scene-art';
 import { EVOLVE_FLASH_MS, evolveInto } from './valley-logic';
-import { CreatureIcon } from '../../CreatureIcon';
 
 const PHASE: RoomPhase = 'day';
 const DRAW = houseDraw(PHASE);
 const WHITE = '#ffffff';
 
-/** Every colour of a sprite turned white: the flash of the evolution. */
 function whitePalette(species: string): Record<string, string> {
   const def = creatureSpriteOrFallback(species);
   return Object.fromEntries(Object.keys(def.palette).map((k) => [k, WHITE]));
@@ -46,6 +46,7 @@ export function HouseScene({
   setWorld,
   choosing,
   onLeave,
+  onDone,
   onProgress,
 }: {
   world: ProtoWorld;
@@ -53,6 +54,7 @@ export function HouseScene({
   /** The evolution's choice is open at first (the step's moment). */
   choosing: boolean;
   onLeave: () => void;
+  onDone: () => void;
   onProgress: () => void;
 }) {
   const reduced = usePrefersReducedMotion();
@@ -60,10 +62,10 @@ export function HouseScene({
   const ready = evolvers(world)[0];
   const ownId = ready?.id ?? TOUR.evolveId;
   const own = world.creatures.find((c) => c.id === ownId);
+  const forms = ready === undefined ? [] : evolveForms(ready);
   const [evo, setEvo] = useState<Evo | null>(
     choosing && ready !== undefined ? { phase: 'choose' } : null,
   );
-  const forms = ready === undefined ? [] : evolveForms(ready);
   const [picked, setPicked] = useState<string | null>(
     choosing ? (forms[0]?.species ?? null) : null,
   );
@@ -95,72 +97,63 @@ export function HouseScene({
     onProgress();
   };
 
-  // Who sits where: your creature on the couch's middle, the other players' in the next spots.
+  const essence = ready?.evolution?.essence ?? 0;
+  const form = forms.find((f) => f.species === picked);
+  let act;
+  if (evo?.phase === 'choose') {
+    act = (
+      <ActionButton
+        label={form === undefined ? 'Pick a form' : `Evolve into ${form.name}`}
+        detail={`${String(essence)} Essence`}
+        wide
+        large
+        disabled={form === undefined}
+        onClick={go}
+      />
+    );
+  } else if (evo?.phase === 'done') {
+    act = <ActionButton label="Back to the valley" wide large onClick={onDone} />;
+  } else if (ready !== undefined) {
+    act = (
+      <ActionButton
+        label={`Evolve ${creatureName(ready)}`}
+        detail={`${String(essence)} Essence`}
+        wide
+        large
+        onClick={() => {
+          setEvo({ phase: 'choose' });
+          setPicked(forms[0]?.species ?? null);
+        }}
+      />
+    );
+  }
+
+  // The other players' creatures in their spots (never the rug).
   const spots = ROOM_SPOTS.filter((s) => s.id !== 'couch-middle');
   const others = world.residents.slice(1, 6).flatMap((r, i) => {
     const spot = [spots[3], spots[0], spots[6], spots[10], spots[13]][i];
     return r.creature === null || spot === undefined ? [] : [{ r, spot }];
   });
-  const couch = ROOM_SPOTS.find((s) => s.id === 'couch-middle') ?? { x: 72, y: 28 };
-
-  const floor =
-    evo?.phase === 'choose' && ready !== undefined ? (
-      <div class="pv-setup">
-        <ul class="pv-forms" aria-label={`What ${creatureName(ready)} becomes`}>
-          {forms.map((f) => (
-            <li key={f.species}>
-              <button
-                type="button"
-                class={`pv-pick${picked === f.species ? ' on' : ''}`}
-                aria-pressed={picked === f.species}
-                aria-label={`${f.name}, ${f.element}`}
-                onClick={() => {
-                  setPicked(f.species);
-                }}
-              >
-                <CreatureSprite creature={{ species: f.species, shiny: ready.shiny }} scale={4} />
-                <span class="pv-pick-name pix" aria-hidden="true">
-                  {f.name}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-        <ActionButton
-          label={picked === null ? 'Pick a form' : 'Evolve'}
-          detail={`${String(ready.evolution?.essence ?? 0)} Essence`}
-          wide
-          large
-          disabled={picked === null}
-          onClick={go}
-        />
-      </div>
-    ) : evo?.phase === 'done' && own !== undefined ? (
-      <p class="pv-evolved pix" role="status">
-        <CreatureIcon creature={own} /> {creatureName(own)}!
-      </p>
-    ) : null;
 
   return (
     <>
       <SceneFrame
         id="house"
         label="House, living room"
-        width={HOUSE_SIZE.width}
-        height={HOUSE_SIZE.height}
         draw={DRAW}
         onLeave={onLeave}
-        floor={floor}
-        start={couch.x + 8}
-        phoneScale={4}
-        ground="#2a1e2e"
+        act={act}
+        ground="#9a6036"
       >
-        {({ s, X, Y }) => {
-          const ox = X(0) / s;
+        {(g) => {
+          const { s, X, Y } = g;
+          const left = roomLeft(g);
+          const top = houseFloor(g) - 50;
+          const at = houseSpots(g);
           return (
             <>
               {others.map(({ r, spot }) => (
-                <At key={r.userId} x={X(spot.x)} y={Y(ROOM_TOP + spot.y)}>
+                <At key={r.userId} x={X(left + spot.x)} y={Y(top + spot.y)}>
                   <CreatureSprite
                     creature={{
                       species: r.creature?.species ?? 'cindle',
@@ -170,36 +163,14 @@ export function HouseScene({
                   />
                 </At>
               ))}
-              {own !== undefined && (
-                <OwnOnCouch
-                  x={X(couch.x)}
-                  y={Y(ROOM_TOP + couch.y)}
-                  s={s}
-                  evo={evo}
-                  species={own.species}
-                  shiny={own.shiny}
-                  canEvolve={ready !== undefined}
-                  label={
-                    ready !== undefined
-                      ? `${creatureName(ready)}, on the couch. Can evolve`
-                      : `${creatureName(own)}, on the couch`
-                  }
-                  onTap={() => {
-                    if (ready !== undefined) {
-                      setEvo({ phase: 'choose' });
-                      setPicked(forms[0]?.species ?? null);
-                    }
-                  }}
-                />
-              )}
-              <FrontLayer ox={ox} s={s} />
+              <FrontLayer g={g} />
               <button
                 type="button"
                 class="pv-thing"
                 aria-label="Bookshelf: the Journal"
                 ref={cssVars({
-                  '--x': `${String(X(240))}px`,
-                  '--y': `${String(Y(ROOM_TOP + 18))}px`,
+                  '--x': `${String(X(left + 240))}px`,
+                  '--y': `${String(Y(top + 18))}px`,
                   '--pw': `${String(28 * s)}px`,
                   '--ph': `${String(24 * s)}px`,
                 })}
@@ -212,8 +183,8 @@ export function HouseScene({
                 class="pv-thing"
                 aria-label="Trophy shelf: your Stats"
                 ref={cssVars({
-                  '--x': `${String(X(168))}px`,
-                  '--y': `${String(Y(ROOM_TOP + 17))}px`,
+                  '--x': `${String(X(left + 168))}px`,
+                  '--y': `${String(Y(top + 17))}px`,
                   '--pw': `${String(14 * s)}px`,
                   '--ph': `${String(12 * s)}px`,
                 })}
@@ -221,6 +192,58 @@ export function HouseScene({
                   setStub('Stats');
                 }}
               />
+              {evo?.phase === 'choose' &&
+                forms.map((f, i) => {
+                  const spot = i === 0 ? at.left : at.right;
+                  const on = picked === f.species;
+                  return (
+                    <button
+                      key={f.species}
+                      type="button"
+                      class={`pv-form${on ? ' on' : ''}`}
+                      aria-pressed={on}
+                      aria-label={`Evolve into ${f.name}, ${f.element}`}
+                      ref={cssVars({
+                        '--x': `${String(X(spot.x - 4))}px`,
+                        '--y': `${String(Y(spot.y - 4))}px`,
+                        '--pw': `${String(24 * s)}px`,
+                        '--ph': `${String(24 * s)}px`,
+                      })}
+                      onClick={() => {
+                        setPicked(f.species);
+                      }}
+                    >
+                      <CreatureSprite creature={{ species: f.species, shiny: false }} scale={s} />
+                      <span class="pv-under">
+                        <Plate>{f.name}</Plate>
+                      </span>
+                    </button>
+                  );
+                })}
+              {own !== undefined && (
+                <OnTheRug
+                  x={X(at.centre.x)}
+                  y={Y(at.centre.y)}
+                  s={s}
+                  evo={evo}
+                  species={own.species}
+                  shiny={own.shiny}
+                  canEvolve={ready !== undefined}
+                  essence={essence}
+                  label={
+                    ready !== undefined
+                      ? `${creatureName(ready)}, on the rug. Can evolve for ${String(essence)} Essence`
+                      : `${creatureName(own)}, on the rug`
+                  }
+                  name={creatureName(own)}
+                  onTap={() => {
+                    if (ready !== undefined && evo === null) {
+                      setEvo({ phase: 'choose' });
+                      setPicked(forms[0]?.species ?? null);
+                    }
+                  }}
+                />
+              )}
             </>
           );
         }}
@@ -238,8 +261,8 @@ export function HouseScene({
   );
 }
 
-/** Your creature on the couch: a button, with its bubble while it can evolve, flashing while it does. */
-function OwnOnCouch({
+/** The creature on the rug: the button, its bubble and cost while it can evolve, flashing while it does. */
+function OnTheRug({
   x,
   y,
   s,
@@ -247,7 +270,9 @@ function OwnOnCouch({
   species,
   shiny,
   canEvolve,
+  essence,
   label,
+  name,
   onTap,
 }: {
   x: number;
@@ -257,7 +282,9 @@ function OwnOnCouch({
   species: string;
   shiny: boolean;
   canEvolve: boolean;
+  essence: number;
   label: string;
+  name: string;
   onTap: () => void;
 }) {
   let shown = species;
@@ -279,23 +306,30 @@ function OwnOnCouch({
         class="pv-own"
         aria-label={label}
         ref={cssVars({
-          '--x': `${String(x)}px`,
-          '--y': `${String(y - lift * s)}px`,
-          '--pw': `${String(16 * s)}px`,
-          '--ph': `${String(16 * s)}px`,
+          '--x': `${String(x - 4 * s)}px`,
+          '--y': `${String(y - (4 + lift) * s)}px`,
+          '--pw': `${String(24 * s)}px`,
+          '--ph': `${String(24 * s)}px`,
         })}
         onClick={onTap}
       >
-        {palette === undefined ? (
-          <CreatureSprite creature={{ species: shown, shiny }} scale={s} />
-        ) : (
-          <Sprite sprite={creatureSpriteOrFallback(shown)} scale={s} palette={palette} />
-        )}
+        <span class="pv-own-sprite">
+          {palette === undefined ? (
+            <CreatureSprite creature={{ species: shown, shiny }} scale={s} />
+          ) : (
+            <Sprite sprite={creatureSpriteOrFallback(shown)} scale={s} palette={palette} />
+          )}
+        </span>
         {canEvolve && evo === null && (
           <SpeechBubble>
-            <CreatureIcon creature={{ species, shiny }} />
             <UpArrow />
+            <CountBadge icon={{ kind: 'glyph', id: 'gem' }} amount={essence} />
           </SpeechBubble>
+        )}
+        {evo?.phase === 'done' && (
+          <span class="pv-under">
+            <Plate>{name}</Plate>
+          </span>
         )}
       </button>
       {sparkles && (
@@ -310,14 +344,14 @@ function OwnOnCouch({
   );
 }
 
-/** The room's front props (couch arms, the table) over the creatures: a second canvas, like `LivingRoom`. */
-function FrontLayer({ ox, s }: { ox: number; s: number }) {
+/** The room's front props over the creatures: a second canvas, like `LivingRoom`. */
+function FrontLayer({ g }: { g: SceneGeometry }) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const w = (HOUSE_SIZE.width + ox * 2) * s;
-  const h = HOUSE_SIZE.height * s;
   useEffect(() => {
     const ctx = ref.current?.getContext('2d');
-    if (ctx) paint(ctx, houseFront(PHASE, ox), s);
-  }, [ox, s]);
-  return <canvas ref={ref} class="pv-front" width={w} height={h} aria-hidden="true" />;
+    if (ctx) paint(ctx, houseFront(PHASE, g), g.s);
+  }, [g.W, g.H, g.s]);
+  return (
+    <canvas ref={ref} class="pv-front" width={g.W * g.s} height={g.H * g.s} aria-hidden="true" />
+  );
 }

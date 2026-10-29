@@ -116,7 +116,9 @@ export function fitValley(width: number, height: number, scale = VALLEY_SCALE): 
   const updown = Math.max(0, Math.ceil((height - vh) / 2 / tile));
   // Centre the valley itself (not the drawing): the drawing overhangs by its margins.
   const left = pans ? 0 : Math.floor((width - vw) / 2) - side * tile;
-  const top = Math.floor((height - vh) / 2) - updown * tile;
+  // A window shorter than the valley (a phone, with the tray under it) loses the top sky row and the
+  // south's grass, never a building: the valley starts one sky row up and is cut at the bottom.
+  const top = height < vh ? -tile : Math.floor((height - vh) / 2) - updown * tile;
   return {
     scale,
     margin: { left: side, top: updown, right: side, bottom: updown },
@@ -180,6 +182,23 @@ export function edgeArrows(
     const y = r.y + r.height / 2;
     if (mid < scrollLeft) out.push({ place: id, side: 'left', y });
     else if (mid > scrollLeft + width) out.push({ place: id, side: 'right', y });
+  }
+  return out;
+}
+
+/**
+ * The heights (valley pixels) of a side's edge tabs: each at its place's middle, moved down where it would
+ * overlap the one above (`gap` valley pixels apart at least), in the order of their heights.
+ */
+export function stackTabs(arrows: readonly EdgeArrow[], gap: number): Map<PlaceId, number> {
+  const out = new Map<PlaceId, number>();
+  for (const side of ['left', 'right'] as const) {
+    let last = -Infinity;
+    for (const a of [...arrows].filter((x) => x.side === side).sort((p, q) => p.y - q.y)) {
+      const y = Math.max(a.y, last + gap);
+      out.set(a.place, y);
+      last = y;
+    }
   }
   return out;
 }

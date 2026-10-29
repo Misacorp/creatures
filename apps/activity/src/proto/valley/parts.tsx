@@ -3,7 +3,7 @@
  * bubble and its pictures, the window-size and clock hooks, and the leave door of an interior.
  */
 import type { ComponentChildren } from 'preact';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { shinyPalette } from '../../art';
 import { cssVars } from '../../css-vars';
 import { glyphOrUnknown } from '../../glyphs';
@@ -68,7 +68,7 @@ export function At({
 }: {
   x: number;
   y: number;
-  class?: string;
+  class?: string | undefined;
   children: ComponentChildren;
   hidden?: boolean;
 }) {
@@ -215,18 +215,7 @@ export function SpeechBubble({
   );
 }
 
-/** The leave door of an interior: a pixel door, bottom-left of the scene. */
-export function LeaveDoor({
-  onLeave,
-  label = 'Back to the valley',
-}: {
-  onLeave: () => void;
-  label?: string;
-}) {
-  const ref = useRef<HTMLButtonElement>(null);
-  return (
-    <button ref={ref} type="button" class="pv-leave" aria-label={label} onClick={onLeave}>
-      <Glyph id="door" scale={3} />
-    </button>
-  );
+/** A name plate: bone words in the pixel font on a solid ink plate (buildings, owners, forms). */
+export function Plate({ children }: { children: ComponentChildren }) {
+  return <span class="pv-plate pix">{children}</span>;
 }

@@ -6,7 +6,9 @@
  * sideways (`useDragScroll`), a finger swipes, Left and Right walk the places.
  */
 import { createSeededRng, type Rng } from '@creatures/game';
+import type { ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
+import type { Verdict } from './tray-state';
 import { bossArt } from '../../art';
 import { cssVars } from '../../css-vars';
 import { usePrefersReducedMotion } from '../../hooks';
@@ -24,6 +26,7 @@ import {
   CreatureSprite,
   Glyph,
   Pic,
+  Plate,
   SpeechBubble,
   isStill,
   useSize,
@@ -44,6 +47,7 @@ import {
 import {
   bubblesOf,
   edgeArrows,
+  stackTabs,
   fitValley,
   hopOf,
   newWalker,
@@ -77,9 +81,27 @@ export interface ValleyMapProps {
   departing: Creature | null;
   /** Reports the scroll, so the view can come back to it. */
   onScroll?: (left: number) => void;
+  /** A creature is held in the tray: where it can go (lit) and where not (dimmed, with the word). */
+  lit?: Readonly<Record<PlaceId, Verdict>> | null;
+  /** The haul is open at the signpost: the explorer's sack lies on the road instead (drawn by `overlay`). */
+  haulOpen?: boolean;
+  /** More sprites in the valley (the haul), in valley pixels. */
+  overlay?:
+    | ((g: { s: number; X: (x: number) => number; Y: (y: number) => number }) => ComponentChildren)
+    | undefined;
 }
 
-export function ValleyMap({ world, at, onPlace, focus, departing, onScroll }: ValleyMapProps) {
+export function ValleyMap({
+  world,
+  at,
+  onPlace,
+  focus,
+  departing,
+  onScroll,
+  lit = null,
+  haulOpen = false,
+  overlay,
+}: ValleyMapProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -151,16 +173,13 @@ export function ValleyMap({ world, at, onPlace, focus, departing, onScroll }: Va
   const X = (x: number): number => (x + drawing.ox) * s;
   const Y = (y: number): number => (y + drawing.oy) * s;
 
-  const people = useResidents(world, departing, tick, moving);
+  const people = useResidents(world, departing, tick, moving).map((p) =>
+    haulOpen ? { ...p, sack: false } : p,
+  );
 
-  const wanted = [...bubbles.map((b) => b.place)];
-  const arrows = edgeArrows(wanted, scrollLeft, size.width);
-  const house = placeOf('house').rect;
-  const houseMid = (house.x + house.width / 2) * s;
-  const houseGone =
-    fit.pans &&
-    !wanted.includes('house') &&
-    (houseMid < scrollLeft || houseMid > scrollLeft + size.width);
+  // An edge tab for every place out of view (not only those that need you), stacked so none overlap.
+  const arrows = edgeArrows(order, scrollLeft, size.width);
+  const tabY = stackTabs(arrows, 26);
 
   const stageVars = cssVars({
     '--w': `${String(drawing.width * s)}px`,
@@ -205,7 +224,7 @@ export function ValleyMap({ world, at, onPlace, focus, departing, onScroll }: Va
             <Pic sprite={flameSprite(flameFrame)} scale={s} />
           </At>
           <At x={X(ARENA_BOSS.x)} y={Y(ARENA_BOSS.y)} class="pv-boss">
-            <Sprite sprite={boss.sprite} scale={s * 2} />
+            <Sprite sprite={boss.sprite} scale={s} />
           </At>
           {people.map((p) => (
             <At key={p.key} x={X(p.x)} y={Y(p.y)} class="pv-person">
@@ -217,18 +236,22 @@ export function ValleyMap({ world, at, onPlace, focus, departing, onScroll }: Va
               )}
             </At>
           ))}
+          {overlay?.({ s, X, Y })}
           <ul class="pv-places" aria-label="The valley">
             {order.map((id, i) => {
               const place = placeOf(id);
               const bubble = bubbleAt(id);
               const r = place.rect;
+              const verdict = lit?.[id] ?? null;
+              const state = verdict === null ? '' : verdict.ok ? ' is-lit' : ' is-dim';
+              const word = verdict !== null && !verdict.ok ? verdict.word : null;
               return (
                 <li key={id}>
                   <button
                     type="button"
-                    class={`pv-place pv-place-${id}`}
+                    class={`pv-place pv-place-${id}${state}`}
                     data-place={id}
-                    aria-label={placeLabel(id, bubble)}
+                    aria-label={`${placeLabel(id, bubble)}${word === null ? '' : `. Not now: ${word}`}`}
                     ref={cssVars({
                       '--x': `${String(X(r.x))}px`,
                       '--y': `${String(Y(r.y))}px`,
@@ -247,6 +270,9 @@ export function ValleyMap({ world, at, onPlace, focus, departing, onScroll }: Va
                         <BubbleArt bubble={bubble} world={world} />
                       </SpeechBubble>
                     )}
+                    <span class="pv-place-plate" aria-hidden="true">
+                      <Plate>{word ?? place.name}</Plate>
+                    </span>
                   </button>
                 </li>
               );
@@ -256,36 +282,31 @@ export function ValleyMap({ world, at, onPlace, focus, departing, onScroll }: Va
       </div>
       {arrows.map((a) => {
         const bubble = bubbleAt(a.place);
+        const place = placeOf(a.place);
         return (
           <button
             key={a.place}
             type="button"
-            class={`pv-edge pv-edge-${a.side}`}
+            class={`pv-edge pv-edge-${a.side}${bubble === undefined ? '' : ' needs'}`}
             aria-label={`${placeLabel(a.place, bubble)}. Off screen, to the ${a.side === 'left' ? 'west' : 'east'}`}
-            ref={cssVars({ '--ey': `${String(Y(a.y) + fit.top)}px` })}
+            ref={cssVars({ '--ey': `${String(Y(tabY.get(a.place) ?? a.y) + fit.top)}px` })}
             onClick={() => {
               goTo(a.place);
             }}
           >
             <span class="pv-edge-head" aria-hidden="true" />
-            <Glyph id={placeOf(a.place).glyph} scale={2} />
+            <Glyph id={place.glyph} scale={2} />
+            <span class="pv-edge-name pix" aria-hidden="true">
+              {place.name}
+            </span>
+            {bubble !== undefined && (
+              <span class="pv-edge-bang pix" aria-hidden="true">
+                !
+              </span>
+            )}
           </button>
         );
       })}
-      {houseGone && (
-        <button
-          type="button"
-          class={`pv-edge pv-edge-${houseMid < scrollLeft ? 'left' : 'right'} pv-edge-home`}
-          aria-label="Home: back to the house"
-          ref={cssVars({ '--ey': `${String(Y(house.y + house.height / 2) + fit.top)}px` })}
-          onClick={() => {
-            goTo('house');
-          }}
-        >
-          <span class="pv-edge-head" aria-hidden="true" />
-          <Glyph id="home" scale={2} />
-        </button>
-      )}
     </div>
   );
 }

@@ -1,6 +1,9 @@
 /*
   The valley prototype (staging only, `src/proto/valley/`). Every class starts `pv-`. Pixel rules: hard
   edges, no radius, no blur or glow, motion in steps (and none under reduced motion).
+
+  Layout: `.pv` is the window; `.pv-main` (the valley or a place, with the HUD over its top) fills it above
+  the creature tray (`.pv-tray`), the one thing always on screen besides the HUD.
 */
 .pv {
   position: fixed;
@@ -9,50 +12,84 @@
   flex-direction: column;
   padding-top: var(--discord-safe-area-inset-top, 0px);
   padding-bottom: var(--discord-safe-area-inset-bottom, 0px);
-  background: linear-gradient(#9cd8fb 50%, #57ad52 50%);
+  background: var(--night);
   overflow: hidden;
 }
 
-.pv:not(.pv-at-valley) {
+.pv-main {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #9cd8fb;
+}
+
+.pv:not(.pv-at-valley) .pv-main {
   background: var(--night);
 }
 
 /* The game's buttons are raised panels; things in the world are not (the art is the button). */
-.pv-place,
-.pv-anvil,
-.pv-chest,
-.pv-thing,
-.pv-own,
-.pv-boss-button,
-.pv-raid-slot,
-.pv-pick,
-.pv-stall-button {
+.pv
+  :is(
+    .pv-place,
+    .pv-anvil,
+    .pv-chest,
+    .pv-thing,
+    .pv-own,
+    .pv-boss-button,
+    .pv-seat,
+    .pv-form,
+    .pv-mon,
+    .pv-stall-button,
+    .pv-blueprint
+  ) {
   min-height: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
   box-shadow: none;
   filter: none;
+  color: var(--bone);
 }
 
-.pv-place:hover,
-.pv-anvil:hover,
-.pv-chest:hover,
-.pv-thing:hover,
-.pv-own:hover,
-.pv-boss-button:hover,
-.pv-raid-slot:hover,
-.pv-pick:hover {
+.pv
+  :is(
+    .pv-place,
+    .pv-anvil,
+    .pv-chest,
+    .pv-thing,
+    .pv-own,
+    .pv-boss-button,
+    .pv-seat,
+    .pv-form,
+    .pv-mon,
+    .pv-stall-button,
+    .pv-blueprint
+  ):is(:hover, :active) {
   filter: none;
-}
-
-.pv-place:active,
-.pv-anvil:active,
-.pv-chest:active,
-.pv-thing:active,
-.pv-own:active,
-.pv-boss-button:active,
-.pv-raid-slot:active,
-.pv-pick:active {
   transform: none;
   box-shadow: none;
+}
+
+.pv
+  :is(
+    .pv-place,
+    .pv-anvil,
+    .pv-chest,
+    .pv-thing,
+    .pv-own,
+    .pv-boss-button,
+    .pv-seat,
+    .pv-form,
+    .pv-mon,
+    .pv-stall-button,
+    .pv-blueprint
+  ):focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
 }
 
 .pv canvas,
@@ -60,11 +97,25 @@
   image-rendering: pixelated;
 }
 
-/* --- The HUD: the Places hatch top-left, the currencies and the cog top-right, over the sky --- */
+/* A name plate: bone on solid ink, the pixel font. */
+.pv-plate {
+  display: inline-block;
+  max-width: 9rem;
+  padding: 0 5px;
+  overflow: hidden;
+  background: var(--ink);
+  color: var(--bone);
+  font-size: 1rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- The HUD: back and the Places hatch top-left, the currencies and the cog top-right --- */
 .pv-hud {
   position: absolute;
   z-index: 30;
-  top: calc(var(--discord-safe-area-inset-top, 0px) + 0.375rem);
+  top: 0.375rem;
   left: 0.375rem;
   right: 0.375rem;
   display: flex;
@@ -84,10 +135,12 @@
   align-items: center;
 }
 
-.pv-hatch {
+.pv-hatch,
+.pv-back {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   min-width: 2.75rem;
   min-height: 2.75rem;
   padding: 0;
@@ -101,7 +154,34 @@
   color: var(--bone);
 }
 
-.pv-hatch:focus-visible {
+.pv-back {
+  padding: 0 0.625rem 0 0.5rem;
+  font-size: 1.25rem;
+}
+
+/* The back arrow: a stepped triangle pointing left. */
+.pv-back-head {
+  width: 9px;
+  height: 15px;
+  background: var(--gold);
+  clip-path: polygon(
+    100% 0,
+    67% 0,
+    67% 20%,
+    33% 20%,
+    33% 40%,
+    0 40%,
+    0 60%,
+    33% 60%,
+    33% 80%,
+    67% 80%,
+    67% 100%,
+    100% 100%
+  );
+}
+
+.pv-hatch:focus-visible,
+.pv-back:focus-visible {
   outline: none;
   box-shadow: var(--ring);
 }
@@ -154,6 +234,10 @@
   pointer-events: none;
 }
 
+.pv-at.pv-centred {
+  transform: translateX(-50%);
+}
+
 .pv-flip {
   transform: scaleX(-1);
 }
@@ -176,22 +260,37 @@
   top: var(--y);
   width: var(--pw);
   height: var(--ph);
-  padding: 0;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
   cursor: pointer;
 }
 
-.pv-place:focus-visible {
-  outline: none;
-  box-shadow: var(--ring);
+/* The building's name plate, at its foot. */
+.pv-place-plate {
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  transform: translateX(-50%);
+  line-height: 0;
+  pointer-events: none;
 }
 
-@media (hover: hover) {
-  .pv-place:hover {
-    box-shadow: 0 0 0 2px rgb(var(--ink-rgb) / 0.5);
-  }
+/* A creature is held: the places it can go are ringed and step up; the others are shaded, with the word. */
+.pv-place.is-lit {
+  box-shadow:
+    0 0 0 3px var(--ink),
+    0 0 0 6px var(--gold);
+}
+
+.pv-place.is-lit .pv-plate {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+.pv-place.is-dim {
+  background: rgb(var(--ink-rgb) / 0.45);
+}
+
+.pv-place.is-dim .pv-bubble {
+  visibility: hidden;
 }
 
 /* --- The speech bubble: ink outline, cream fill, a stepped tail --- */
@@ -253,6 +352,10 @@
   background: var(--ink);
 }
 
+.pv-bubble .part-count {
+  color: var(--ink);
+}
+
 .pv-bang {
   font-size: 1.5rem;
   line-height: 1;
@@ -280,43 +383,64 @@
   background: #ecdcb8;
 }
 
-/* --- Edge arrows: a tab on the valley's edge per need out of view --- */
+/* --- Edge tabs: a ribbon on the valley's edge for every place out of view --- */
 .pv-edge {
   position: absolute;
   z-index: 20;
-  top: calc(var(--ey) - 1.375rem);
+  top: calc(var(--ey) - 0.875rem);
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  min-height: 2.75rem;
-  min-width: 2.75rem;
-  padding: 0 4px;
-  background: var(--dusk);
+  gap: 3px;
+  min-height: 1.75rem;
+  max-width: 7.5rem;
+  padding: 0 5px;
+  background: var(--ink);
   border: 0;
   border-radius: 0;
-  box-shadow:
-    inset 0 var(--px) 0 var(--bevel-hi),
-    0 0 0 var(--px) var(--ink);
+  box-shadow: none;
   color: var(--bone);
 }
 
-.pv-edge:focus-visible {
-  outline: none;
-  box-shadow: var(--ring);
-}
-
+/* A tab is a flag on a pole, not a raised button: no bevel, a notch on its inner end. */
 .pv-edge-left {
-  left: 2px;
-  flex-direction: row;
+  left: 0;
+  padding-right: 10px;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 50%, 100% 100%, 0 100%);
 }
 
 .pv-edge-right {
-  right: 2px;
+  right: 0;
   flex-direction: row-reverse;
+  padding-left: 10px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 6px 50%);
 }
 
-/* The arrowhead: a stepped triangle of squares pointing out of the screen. */
+.pv-edge:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: -3px;
+}
+
+.pv-edge-name {
+  overflow: hidden;
+  font-size: 1rem;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pv-edge-bang {
+  display: inline-block;
+  min-width: 14px;
+  background: #fbf3df;
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.1;
+  text-align: center;
+}
+
+/* The arrowhead: a stepped triangle pointing out of the screen. */
 .pv-edge-head {
+  flex: none;
   width: 6px;
   height: 12px;
   background: var(--gold);
@@ -340,6 +464,239 @@
   transform: scaleX(-1);
 }
 
-.pv-edge-home .pv-edge-head {
-  background: var(--bone);
+/* --- The creature tray --- */
+.pv-tray {
+  position: relative;
+  flex: none;
+  background: #5e3620;
+  box-shadow:
+    inset 0 3px 0 #9a6036,
+    inset 0 6px 0 var(--ink);
+}
+
+.pv-tray-scroll {
+  overflow-x: auto;
+  padding: 8px 6px 4px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.pv-tray-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.pv-tray-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 72px;
+  grid-template-rows: repeat(2, 80px);
+  gap: 2px 4px;
+  justify-content: center;
+  min-width: min-content;
+}
+
+@media (min-width: 900px) {
+  .pv-tray-grid {
+    grid-template-rows: 80px;
+    grid-auto-columns: 80px;
+  }
+}
+
+/* More creatures than fit: a gold arrow at the right edge. */
+.pv-tray-more {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 18px;
+  background: var(--ink);
+  pointer-events: none;
+}
+
+.pv-tray-more::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: calc(50% - 6px);
+  width: 6px;
+  height: 12px;
+  background: var(--gold);
+  clip-path: polygon(
+    0 0,
+    33% 0,
+    33% 17%,
+    67% 17%,
+    67% 33%,
+    100% 33%,
+    100% 67%,
+    67% 67%,
+    67% 83%,
+    33% 83%,
+    33% 100%,
+    0 100%
+  );
+}
+
+.pv-mon {
+  position: relative;
+  display: grid;
+  grid-template-rows: 18px 48px 14px;
+  justify-items: center;
+  align-items: end;
+  width: 100%;
+  height: 100%;
+  scroll-snap-align: start;
+  cursor: pointer;
+}
+
+.pv-mon-head {
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  height: 18px;
+  line-height: 0;
+}
+
+.pv-mon-body {
+  position: relative;
+  line-height: 0;
+}
+
+.pv-mon-pack {
+  position: absolute;
+  right: -12px;
+  bottom: -2px;
+}
+
+.pv-mon-lv {
+  font-size: 0.875rem;
+  line-height: 14px;
+  color: #fbf3df;
+}
+
+.pv-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.pv-mark-say {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 2px;
+  background: #fbf3df;
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.pv-mark-say .pv-bang {
+  font-size: 1.125rem;
+}
+
+/* A free creature idles: a one-pixel bob in two steps. */
+.pv-mon-free .pv-mon-body {
+  animation: pv-idle 1200ms steps(1) infinite;
+  animation-delay: calc(var(--i, 0) * -170ms);
+}
+
+@keyframes pv-idle {
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.pv-mon.is-held {
+  background: var(--dusk-2);
+  box-shadow:
+    0 0 0 3px var(--ink),
+    0 0 0 6px var(--gold);
+}
+
+.pv-mon.is-held .pv-mon-body {
+  transform: translateY(-4px);
+  animation: none;
+}
+
+.pv-mon.is-dim .pv-mon-body,
+.pv-mon.is-dim .pv-mon-head {
+  opacity: 0.4;
+}
+
+.pv-mon-word {
+  position: absolute;
+  top: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0 4px;
+  background: var(--ink);
+  color: var(--bone);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+/* --- A held creature's card, over the valley above the tray --- */
+.pv-card {
+  position: absolute;
+  z-index: 25;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.625rem;
+  max-width: 24rem;
+  padding: 0.5rem 0.625rem;
+  background: var(--dusk);
+  box-shadow:
+    inset 0 var(--px) 0 var(--bevel-hi),
+    0 0 0 var(--px) var(--ink);
+}
+
+.pv-card-sprite {
+  line-height: 0;
+}
+
+.pv-card-text {
+  display: grid;
+  gap: 0.25rem;
+  justify-items: start;
+  min-width: 0;
+}
+
+.pv-card-name {
+  font-size: 1.375rem;
+  line-height: 1;
+  color: var(--gold);
+}
+
+.pv-card-lv {
+  color: var(--bone);
+  font-size: 1.125rem;
+}
+
+.pv-card-state,
+.pv-card-where {
+  font-size: var(--fs-row);
+}
+
+.pv-card-where {
+  color: var(--haze);
+}
+
+.pv-card-close {
+  align-self: start;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  font-size: 1.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-mon-free .pv-mon-body {
+    animation: none;
+  }
+
+  .pv-mon.is-held .pv-mon-body {
+    transform: none;
+  }
 }

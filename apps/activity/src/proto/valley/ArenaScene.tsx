@@ -1,58 +1,59 @@
 /**
- * Inside the arena (the Raid): this week's boss stands in the middle, big, with its moves small under it
- * (`BossIconList`), and the sand in front of it is the board: three lines (front nearest the boss) of three
- * lanes. The other players' creatures stand in their slots; your empty slots are dashed squares that flash in
- * steps. Tap one, pick a creature from the line-up on the floor, and it drops into the slot with a puff of dust.
- * The phase and its time hang on a small wooden sign. Tap the boss for its card.
+ * Inside the arena (the Raid), full screen: this week's boss stands on the sand at the world's scale (more
+ * pixels than a creature, the same pixel size), its name on a plate with its element, and three pips by it
+ * for the creatures you still place. In front of it the board: three lines (front nearest the boss) of three
+ * seats, drawn as rugs in the sand's own tones. The other players' creatures sit on their seats with their
+ * owner's name on an ink plate; yours carry a pennant. Pick a seat (the next free one is picked for you) and a
+ * creature in the tray; Place is pinned at the bottom. Tap the boss for its card.
  */
 import { useEffect, useState } from 'preact/hooks';
 import { BossCard } from '../../BossCard';
-import { BossIconList } from '../../BossIcons';
 import { bossArt } from '../../art';
 import { cssVars } from '../../css-vars';
-import { whenText } from '../../home-view';
-import { eventTitle } from '../../raid-time';
-import { Sprite } from '../../sprites/Sprite';
+import { creatureName } from '../../game';
 import { propSprite } from '../../games/art/props';
+import { Sprite } from '../../sprites/Sprite';
+import { ElementChip } from '../../sprites/ElementChip';
+import { ActionButton } from '../../ui/ActionButton';
 import { Drawer } from '../../ui/Drawer';
-import { RAID_TEAM_SIZE, freeCreatures, raidTeamIds, type ProtoWorld } from '../world';
-import { LineUp } from './LineUp';
-import { At, CreatureSprite, Glyph, Pic, isStill } from './parts';
+import { PipRow } from '../../ui/PipRow';
+import { RAID_TEAM_SIZE, isFree, raidTeamIds, type ProtoWorld } from '../world';
+import { At, CreatureSprite, Pic, Plate, isStill } from './parts';
 import { SceneFrame } from './SceneFrame';
-import { ARENA_BOARD, ARENA_BOSS_AT, ARENA_SIZE, arenaDraw } from './scene-art';
+import { arenaDraw, arenaSpots } from './scene-art';
 import { placeRaidAt } from './valley-logic';
 
 const ZONES = ['front', 'middle', 'back'] as const;
 
+/** The first empty seat, front line first (the seat picked for you). */
+export function firstEmptySeat(world: ProtoWorld): number | null {
+  return (world.raid.party?.row ?? []).find((s) => s.creature === null)?.slot ?? null;
+}
+
 export function ArenaScene({
   world,
   setWorld,
-  pickSlot,
+  held,
+  setHeld,
   onLeave,
+  onDone,
   onProgress,
 }: {
   world: ProtoWorld;
   setWorld: (w: ProtoWorld) => void;
-  /** A slot whose line-up is open at first (the step's moment), or null. */
-  pickSlot: number | null;
+  held: string | null;
+  setHeld: (id: string | null) => void;
   onLeave: () => void;
+  /** All placed: back to the valley. */
+  onDone: () => void;
   onProgress: () => void;
 }) {
   const still = isStill();
-  const [picking, setPicking] = useState<number | null>(pickSlot);
+  const left = RAID_TEAM_SIZE - raidTeamIds(world).length;
+  const [seatPicked, setSeat] = useState<number | null>(left > 0 ? firstEmptySeat(world) : null);
   const [dust, setDust] = useState<{ slot: number; frame: number } | null>(null);
   const [card, setCard] = useState(false);
-  const [flash, setFlash] = useState(0);
 
-  useEffect(() => {
-    if (still) return undefined;
-    const id = window.setInterval(() => {
-      setFlash((f) => f + 1);
-    }, 400);
-    return () => {
-      window.clearInterval(id);
-    };
-  }, [still]);
   useEffect(() => {
     if (dust === null) return undefined;
     const id = window.setTimeout(() => {
@@ -64,45 +65,36 @@ export function ArenaScene({
   }, [dust]);
 
   const row = world.raid.party?.row ?? [];
-  const placed = raidTeamIds(world).length;
-  const left = RAID_TEAM_SIZE - placed;
   const boss = world.raid.boss;
   const art = bossArt(boss.id);
-  const next = world.raid.next;
+  const pick =
+    held === null ? undefined : world.creatures.find((c) => c.id === held && isFree(world, c));
 
-  const pick = (creatureId: string): void => {
-    if (picking === null) return;
-    const after = placeRaidAt(world, creatureId, picking);
+  const place = (slot: number | null): void => {
+    if (slot === null || pick === undefined || left === 0) return;
+    const after = placeRaidAt(world, pick.id, slot);
     setWorld(after);
-    if (!still) setDust({ slot: picking, frame: 0 });
-    // The next empty slot opens on its own while there are creatures to place.
-    const team = raidTeamIds(after).length;
-    const nextEmpty = (after.raid.party?.row ?? []).find((s) => s.creature === null);
-    if (team >= RAID_TEAM_SIZE) {
-      setPicking(null);
-      onProgress();
-    } else setPicking(nextEmpty?.slot ?? null);
+    setHeld(null);
+    if (!still) setDust({ slot, frame: 0 });
+    const done = raidTeamIds(after).length >= RAID_TEAM_SIZE;
+    setSeat(done ? null : firstEmptySeat(after));
+    if (done) onProgress();
   };
 
-  const floor =
-    picking !== null && left > 0 ? (
-      <div class="pv-setup">
-        <p class="pv-floor-note pix" aria-hidden="true">
-          {[...Array(left).keys()].map((k) => (
-            <span key={k} class="pv-slot-square" />
-          ))}
-        </p>
-        <LineUp
-          label={`Who stands in this slot? ${String(left)} to place`}
-          creatures={freeCreatures(world)}
-          picked={null}
-          onPick={pick}
-        />
-      </div>
+  const act =
+    left > 0 ? (
+      <ActionButton
+        label={pick === undefined ? 'Pick a creature below' : `Place ${creatureName(pick)}`}
+        detail={`${String(left)} to place`}
+        wide
+        large
+        disabled={pick === undefined || seatPicked === null}
+        onClick={() => {
+          place(seatPicked);
+        }}
+      />
     ) : (
-      <div class="pv-raid-icons">
-        <BossIconList boss={boss} effectiveRank={world.raid.effectiveRank} compact />
-      </div>
+      <ActionButton label="Team placed · back to the valley" wide large onClick={onDone} />
     );
 
   return (
@@ -110,93 +102,109 @@ export function ArenaScene({
       <SceneFrame
         id="arena"
         label="Arena, Raid"
-        width={ARENA_SIZE.width}
-        height={ARENA_SIZE.height}
         draw={arenaDraw}
         onLeave={onLeave}
-        floor={floor}
-        ground="#5e3620"
+        act={act}
+        ground="#e2bc72"
       >
-        {({ s, X, Y }) => (
-          <>
-            <span
-              class="pv-sign pix"
-              ref={cssVars({ '--x': `${String(X(4))}px`, '--y': `${String(Y(38))}px` })}
-            >
-              <Glyph id="clock" scale={2} />
-              <span>
-                {next === null
-                  ? ''
-                  : `${eventTitle(next.event)} ${whenText(world.now, next.at, world.timezone)}`}
-              </span>
-            </span>
-            <button
-              type="button"
-              class="pv-boss-button"
-              aria-label={`${boss.name}, this week's boss. Open its card`}
-              aria-haspopup="dialog"
-              ref={cssVars({
-                '--x': `${String(X(ARENA_BOSS_AT.x) - 12 * s)}px`,
-                '--y': `${String(Y(ARENA_BOSS_AT.y) - 6 * s)}px`,
-              })}
-              onClick={() => {
-                setCard(true);
-              }}
-            >
-              <Sprite sprite={art.sprite} scale={s + 1} />
-            </button>
-            <ul class="pv-board" aria-label="Your party's board, front line nearest the boss">
-              {row.map((slot) => {
-                const zone = ZONES.indexOf(slot.zone);
-                const lane = row.filter((r) => r.zone === slot.zone).indexOf(slot);
-                const x = ARENA_BOARD.x + lane * ARENA_BOARD.step;
-                const y = ARENA_BOARD.y + zone * ARENA_BOARD.step;
-                const c = slot.creature;
-                const mine = c?.mine === true;
-                const name = c === null ? '' : c.name;
-                const label =
-                  c === null
-                    ? `${slot.zone} line, lane ${String(lane + 1)}: empty. Place a creature`
-                    : `${slot.zone} line, lane ${String(lane + 1)}: ${name}, level ${String(c.level)}, ${mine ? 'yours' : c.ownerName}`;
-                const empty = c === null;
-                const lit = empty && left > 0 && (flash % 2 === 0 || picking === slot.slot);
-                return (
-                  <li key={slot.slot}>
-                    <button
-                      type="button"
-                      class={`pv-raid-slot${empty ? ' empty' : ''}${mine ? ' mine' : ''}${lit ? ' lit' : ''}${picking === slot.slot ? ' on' : ''}`}
-                      aria-label={label}
-                      disabled={!empty || left === 0}
-                      ref={cssVars({
-                        '--x': `${String(X(x))}px`,
-                        '--y': `${String(Y(y))}px`,
-                        '--pw': `${String(20 * s)}px`,
-                        '--ph': `${String(20 * s)}px`,
-                      })}
-                      onClick={() => {
-                        setPicking(slot.slot);
-                      }}
-                    >
-                      {c !== null && (
-                        <CreatureSprite creature={{ species: c.species, shiny: false }} scale={s} />
+        {(g) => {
+          const { s, X, Y } = g;
+          const at = arenaSpots(g);
+          return (
+            <>
+              <button
+                type="button"
+                class="pv-boss-button"
+                aria-label={`${boss.name}, this week's boss. Open its card`}
+                aria-haspopup="dialog"
+                ref={cssVars({
+                  '--x': `${String(X(at.boss.x))}px`,
+                  '--y': `${String(Y(at.boss.y))}px`,
+                })}
+                onClick={() => {
+                  setCard(true);
+                }}
+              >
+                <Sprite sprite={art.sprite} scale={s} />
+              </button>
+              <At x={X(at.boss.x + 12)} y={Y(at.boss.y + 25)} class="pv-centred" hidden={false}>
+                <span class="pv-boss-plate">
+                  <Plate>{boss.name}</Plate>
+                  <ElementChip element={boss.element} as="plain" />
+                </span>
+              </At>
+              <At x={X(at.boss.x + 28)} y={Y(at.boss.y + 4)} hidden={false}>
+                <span class="pv-pips">
+                  <PipRow
+                    count={RAID_TEAM_SIZE}
+                    lit={RAID_TEAM_SIZE - left}
+                    size="md"
+                    label={`${String(RAID_TEAM_SIZE - left)} of ${String(RAID_TEAM_SIZE)} placed`}
+                  />
+                </span>
+              </At>
+              <ul class="pv-board" aria-label="Your party's board, front line nearest the boss">
+                {row.map((slot) => {
+                  const line = ZONES.indexOf(slot.zone);
+                  const lane = row.filter((r) => r.zone === slot.zone).indexOf(slot);
+                  const x = at.board.x + lane * at.board.step;
+                  const y = at.board.y + line * at.board.step;
+                  const c = slot.creature;
+                  const mine = c?.mine === true;
+                  const label =
+                    c === null
+                      ? `${slot.zone} line, seat ${String(lane + 1)}: empty`
+                      : `${slot.zone} line, seat ${String(lane + 1)}: ${c.name}, level ${String(c.level)}, ${mine ? 'yours' : c.ownerName}`;
+                  const empty = c === null;
+                  const on = seatPicked === slot.slot;
+                  return (
+                    <li key={slot.slot}>
+                      <button
+                        type="button"
+                        class={`pv-seat${empty ? ' empty' : ''}${mine ? ' mine' : ''}${on ? ' on' : ''}`}
+                        aria-label={label}
+                        aria-pressed={empty ? on : undefined}
+                        disabled={!empty || left === 0}
+                        ref={cssVars({
+                          '--x': `${String(X(x))}px`,
+                          '--y': `${String(Y(y))}px`,
+                          '--pw': `${String(at.board.seat * s)}px`,
+                          '--ph': `${String(at.board.seat * s)}px`,
+                        })}
+                        onClick={() => {
+                          if (pick !== undefined) place(slot.slot);
+                          else setSeat(slot.slot);
+                        }}
+                      >
+                        {c !== null && (
+                          <CreatureSprite
+                            creature={{ species: c.species, shiny: false }}
+                            scale={s}
+                          />
+                        )}
+                        {mine && (
+                          <span class="pv-pennant" aria-hidden="true">
+                            <Pic sprite={propSprite('pennant', 0, 'red')} scale={2} />
+                          </span>
+                        )}
+                        {c !== null && !mine && (
+                          <span class="pv-owner" aria-hidden="true">
+                            <Plate>{c.ownerName}</Plate>
+                          </span>
+                        )}
+                      </button>
+                      {dust?.slot === slot.slot && (
+                        <At x={X(x + 1)} y={Y(y + 14)}>
+                          <Pic sprite={propSprite('dust', dust.frame % 2)} scale={s} />
+                        </At>
                       )}
-                      {c !== null && !mine && (
-                        <span class="pv-owner pix" aria-hidden="true">
-                          {c.ownerName}
-                        </span>
-                      )}
-                    </button>
-                    {dust?.slot === slot.slot && (
-                      <At x={X(x + 1)} y={Y(y + 14)}>
-                        <Pic sprite={propSprite('dust', dust.frame % 2)} scale={s} />
-                      </At>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </>
-        )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          );
+        }}
       </SceneFrame>
       <Drawer
         open={card}

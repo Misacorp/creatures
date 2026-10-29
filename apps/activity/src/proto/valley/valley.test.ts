@@ -4,7 +4,7 @@ import { WORLD_MAP_SPRITE_DATA } from '../../sprites/data/world-map-sprites';
 import { parseSprite } from '../../sprites/sprite-data';
 import { TOUR, claimJob, claimTrip, initialWorld, needs, raidTeamIds, worldAtStep } from '../world';
 import { anvilJobs } from './ForgeScene';
-import { sceneScale, sceneSpan } from './SceneFrame';
+import { sceneGeometry, sceneScale } from './SceneFrame';
 import { arenaDraw, caveDraw, fairDraw, forgeDraw, houseDraw, paddockDraw } from './scene-art';
 import {
   CHEST_FRAMES,
@@ -28,6 +28,7 @@ import {
   placeRaidAt,
   readingOrder,
   scrollToPlace,
+  stackTabs,
   startScroll,
   stepWalker,
 } from './valley-logic';
@@ -74,8 +75,19 @@ describe('the valley art', () => {
   });
 
   it('draws every inside scene with valid sprites', () => {
-    for (const draw of [forgeDraw, arenaDraw, caveDraw, fairDraw, paddockDraw, houseDraw('day')]) {
-      for (const p of draw(20, 32)) expect(() => parseSprite(p.sprite)).not.toThrow();
+    for (const g of [sceneGeometry(390, 640), sceneGeometry(1440, 800)]) {
+      for (const draw of [
+        forgeDraw,
+        arenaDraw,
+        caveDraw,
+        fairDraw,
+        paddockDraw,
+        houseDraw('day'),
+      ]) {
+        const placed = draw(g);
+        expect(placed.length).toBeGreaterThan(0);
+        for (const p of placed) expect(() => parseSprite(p.sprite)).not.toThrow();
+      }
     }
   });
 });
@@ -171,13 +183,33 @@ describe('fitting the window', () => {
     ]);
   });
 
-  it('draws inside scenes at 3 on a phone and bigger on a desktop, content tile-aligned', () => {
-    expect(sceneScale(390, 780, 128, 96)).toBe(3);
-    expect(sceneScale(390, 780, 288, 56, 4)).toBe(4);
-    expect(sceneScale(1440, 836, 128, 96)).toBe(5);
-    const span = sceneSpan(1440, 5, 128);
-    expect(span.cols * 16 * 5).toBeGreaterThanOrEqual(1440);
-    expect(span.ox % 16).toBe(0);
+  it('draws inside scenes at one world scale: 3 on a phone, 4 on a wide window, filling the space', () => {
+    expect(sceneScale(390)).toBe(3);
+    expect(sceneScale(1440)).toBe(4);
+    const g = sceneGeometry(390, 640);
+    expect(g.W * g.s).toBeGreaterThanOrEqual(390);
+    expect(g.H * g.s).toBeGreaterThanOrEqual(640);
+    expect(g.top * g.s).toBeGreaterThanOrEqual(56);
+  });
+
+  it('cuts a phone valley at the bottom, never at a building', () => {
+    const fit = fitValley(390, 640);
+    expect(fit.top).toBe(-32);
+    const lowest = Math.max(...PLACES.map((p) => p.rect.y + p.rect.height));
+    expect(lowest * 2 + fit.top).toBeLessThanOrEqual(640);
+  });
+
+  it('stacks edge tabs on a side so none overlap', () => {
+    const arrows = edgeArrows(readingOrder(), 0, 390);
+    const ys = stackTabs(arrows, 26);
+    const right = arrows
+      .filter((a) => a.side === 'right')
+      .map((a) => ys.get(a.place) ?? 0)
+      .sort((p, q) => p - q);
+    for (let i = 1; i < right.length; i++) {
+      expect((right[i] ?? 0) - (right[i - 1] ?? 0)).toBeGreaterThanOrEqual(26);
+    }
+    expect(arrows.every((a) => a.side === 'right')).toBe(true);
   });
 });
 
