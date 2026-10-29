@@ -103,10 +103,43 @@ describe('Pierce has a second Knack, on a common species', () => {
   });
 });
 
+describe('Wide Warmth has a job: it boosts the far hitter of a line of three, and Tar Leech asks for it', () => {
+  it('a Support at the end of the line boosts both hitters at full strength, the far one included', () => {
+    expect(KNACKS['wide-warmth']?.text).toMatch(/full strength/);
+    const boss: BossDef = {
+      ...labBoss({ rows: 1, cols: 3, rounds: 4, atk: 1, hp: 10_000_000 }),
+      spd: 0,
+    };
+    const team = (knack: string): Placement[] => [
+      at('croakmire', 0, 0, knack),
+      at('tidewing', 0, 1),
+      at('tempestray', 0, 2),
+    ];
+    const run = (knack: string) => fight(boss, team(knack), { rng: createSeededRng('warmth') });
+    const wide = run('wide-warmth');
+    const plain = run('none');
+    // The far hitter (slot 3) deals more with the wide boost; so does the whole team.
+    expect(wide.fighters[2]?.damageDealt ?? 0).toBeGreaterThan(plain.fighters[2]?.damageDealt ?? 0);
+    expect(wide.damage).toBeGreaterThan(plain.damage);
+    // The creature beside it is boosted the same with or without.
+    expect(wide.fighters[1]?.damageDealt ?? 0).toBeGreaterThanOrEqual(
+      plain.fighters[1]?.damageDealt ?? 0,
+    );
+  });
+
+  it('Tar Leech’s question is about it: the team with Wide Warmth wins clearly more often', () => {
+    const q = FOE_QUESTIONS['tar-leech'];
+    expect(q?.tool).toEqual(['wide-warmth']);
+    expect(q?.mechanic).toBe('family:Support shape');
+    expect(KNACKS[q?.tool[0] ?? '']?.family).toBe('Support shape');
+  });
+});
+
 describe('Guard’s Shadow is trimmed, and the rare Knacks have somewhere to be an answer', () => {
-  it('Guard’s Shadow gives +15%, not +25%', () => {
-    expect(KNACKS['guards-shadow']?.fx.besideGuardBp).toBe(1_500);
-    expect(KNACKS['guards-shadow']?.text).toMatch(/\+15%/);
+  it('Guard’s Shadow gives +12%, not +25%, and costs 8 armour', () => {
+    expect(KNACKS['guards-shadow']?.fx.besideGuardBp).toBe(1_200);
+    expect(KNACKS['guards-shadow']?.fx.armourBonus).toBe(-8);
+    expect(KNACKS['guards-shadow']?.text).toMatch(/\+12%/);
   });
 
   const carries = (knack: string) =>

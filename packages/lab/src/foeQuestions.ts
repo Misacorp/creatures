@@ -126,15 +126,16 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         13_000,
         'tidewing/none croakmire/squelch-song tempestray/none',
       ],
-      // Black, thick and draining: its heavy hits are dodged, not healed.
+      // Black, thick and draining: healing is halved and little gets through its armour, so a boost that reaches the far hitter too
+      // (Wide Warmth, standing at the end of the line) is worth more than a heal.
       [
         'tar-leech',
-        'family:Evasion',
-        ['zoom'],
+        'family:Support shape',
+        ['wide-warmth'],
         7,
+        14_000,
         10_000,
-        16_000,
-        'voltaro/zoom thornbuck/none tempestray/none',
+        'croakmire/wide-warmth tidewing/steady-mark tempestray/detonate',
       ],
       // The gates open on the whole line: Catch the Bolts takes the sweeps.
       [

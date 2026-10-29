@@ -381,8 +381,9 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'wide-warmth',
       name: 'Wide Warmth',
       family: 'Support shape',
-      text: 'Its boost also reaches one slot further on each side, 10% weaker.',
-      intent: 'Wide raid rows with several hitters.',
+      text: 'Its boost also reaches one slot further on each side, at full strength.',
+      intent:
+        'Wide rows with several hitters: a Support at the end of a line of three boosts both hitters, and in a raid row it reaches the far column too. Tar Leech asks for it.',
       fx: { support: 'wideWarmth' },
     }),
     K({
@@ -492,10 +493,10 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'guards-shadow',
       name: "Guard's Shadow",
       family: 'Partner',
-      text: '+15% on its hits while a living Guard stands beside it. Armour -8.',
+      text: '+12% on its hits while a living Guard stands beside it. Armour -8.',
       intent:
         "A Payoff that wants a Guard partner, ideally another player's in the raid. The same name as the gear line with the same effect.",
-      fx: { besideGuardBp: 1_500, armourBonus: -8 },
+      fx: { besideGuardBp: 1_200, armourBonus: -8 },
     }),
     K({
       id: 'crown-of-embers',

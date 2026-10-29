@@ -468,7 +468,7 @@ function supportVerb(s: State, f: Fighter, k: KnackFx): void {
       }
       if (k.support === 'wideWarmth')
         for (const o of beside(s, f, 2).filter((o) => Math.abs(o.col - f.col) === 2))
-          o.boostBp += boost - 1_000 + kindred(o);
+          o.boostBp += boost + kindred(o);
       if (k.support === 'gatherCalm' && f.store >= 3) {
         for (const o of beside(s, f)) o.boostBp += 4_500;
         f.store = 0;

@@ -163,7 +163,7 @@ export const FOE_SPECS: readonly FoeSpec[] = [
     plain: { pattern: front, powerBp: 7_000 },
     moves: [['tar-cling', 'Tar Cling', 3, 0, 'front', 'line3', 13_000]],
     cards: ['wither'],
-    asks: 'Black, thick and draining: healing is halved and little gets through its armour, so its heavy hits are dodged, not healed.',
+    asks: 'Black, thick and draining: healing is halved and little gets through its armour, so a boost that reaches every hitter gets more through than a heal; its heavy hits are dodged, not healed.',
   },
   // Floor bosses.
   {
