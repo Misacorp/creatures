@@ -57,7 +57,7 @@ Latest lab numbers (`lab-report.md`, raid boss section, after the balance pass o
 Next steps, in order:
 
 1. **Balance pass** against the real bosses: done (2026-10-29). Left over: Storm Sovereign's mixed server (36%, below the 50% aim, since raising it lets the classic party win at wide rows); the best searched lines on Tidal Colossus and Storm Sovereign still win with almost no losses; Baked Shell, Tunnel Through and Crown of Embers are still rarely picked against the real bosses; Zigzag is still near the "stands out" line (next step: separate its Taunt); the gear plan.
-2. **Panel 5** on the balance pass.
+2. **Panel 5** on the balance pass: done (`reviews/2026-10-29-panel-5.md`). The phase 1 gate fails on three items; the fix round is next: first measurement and rules (Stubborn, every answer's tool tested, prepared lines with random talents, mixed servers on more seeds with casuals on no Knack, anchors and move order, one HP rule, hints from measurement, the dungeon map in the report), then content (Mired's cut halved and a second cleanse boss, Thornmother's cracking bark, common-species answers, rarely used Knacks, Guard's Shadow).
 3. **Phase 1 gate check** (phase 1 row in the table above), then a PR for Misa.
 4. Later content: a Mire Setter or Payoff (art), the Undercroft's own foes.
 
