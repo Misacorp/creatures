@@ -71,6 +71,7 @@ import { TreatTimesContext } from './TreatBox';
 import { useGearState } from './use-gear-state';
 import { useLoungePresence } from './use-lounge-presence';
 import { useRaidGlance } from './use-raid-glance';
+import { useRoomMode } from './use-room-mode';
 import { useRoomPhase } from './use-room-phase';
 import { scrollToTop } from './scroll-to';
 import { useScrollTopOnChange } from './use-scroll-top';
@@ -396,6 +397,8 @@ export function Game({
   // The main navigation: the dock on a phone, one bottom bar in between, the rail on a wide window. The HUD
   // names the place you are in.
   const wide = useWide();
+  // Where the room is drawn on a wide window: under the HUD everywhere, or only on Home as its hero (`looks.ts`).
+  const roomMode = useRoomMode();
   // Between the phone and the wide window: one bottom bar with every place (no sub-menus).
   const bar = useBar();
   const places = navPlaces(alerts);
@@ -440,7 +443,9 @@ export function Game({
           setSettingsOpen(true);
         }}
       />
-      {wide && <RoomBand room={roomProps} />}
+      {wide && (roomMode === 'every' || tab === NAV_HOME.id) && (
+        <RoomBand room={roomProps} hero={roomMode === 'home'} />
+      )}
     </>
   ) : (
     <AppHead helpRef={helpRef} onHelp={onHelp} />

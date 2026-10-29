@@ -10,8 +10,9 @@ import { RaidTimeline } from '../../RaidTimeline';
 import { DEFAULT_BOARD_SETTINGS } from '../../home/board';
 import { HomePage } from '../../home/HomePage';
 import { homeAlerts } from '../../home-view';
-import { applyLook } from '../../looks';
+import { applyLook, applyRoom } from '../../looks';
 import { navPlaces } from '../../nav-places';
+import { Column, Columns } from '../../ui/Columns';
 import { useBar, useWide } from '../../ui/wide-layout';
 import { ROOM_SELF_ID, SAMPLE_RAID, sampleResidents } from '../data';
 import { creatureCardEntries } from '../entries/creature-card';
@@ -60,8 +61,8 @@ function pageOf(entries: readonly Entry[], name: string, over: Record<string, st
  */
 function RaidScreen({ forecast }: { forecast: ReturnType<typeof homeInput>['forecast'] }) {
   return (
-    <div class="raid-page">
-      <div class="raid-col raid-col-boss">
+    <Columns from="80rem" ratio="5-4">
+      <Column>
         <RaidTimeline
           view={SAMPLE_RAID}
           serverNow={SAMPLE_RAID.serverNow}
@@ -71,9 +72,9 @@ function RaidScreen({ forecast }: { forecast: ReturnType<typeof homeInput>['fore
           onReplay={NOTHING}
         />
         <BossCard view={SAMPLE_RAID} forecast={forecast} />
-      </div>
-      <div class="raid-col raid-col-board">{pageOf(raidBoardEntries, 'RaidBoard')}</div>
-    </div>
+      </Column>
+      <Column>{pageOf(raidBoardEntries, 'RaidBoard')}</Column>
+    </Columns>
   );
 }
 
@@ -111,10 +112,13 @@ function Screen({
 export function GameScreens({
   screen,
   look,
+  room: roomMode = 'every',
   dungeon,
 }: {
   screen: string;
   look: string;
+  /** Where the living room is drawn on a wide window (`ROOM_MODES` in `looks.ts`). */
+  room?: string;
   dungeon: string;
 }) {
   useEffect(() => {
@@ -123,6 +127,13 @@ export function GameScreens({
       applyLook('current');
     };
   }, [look]);
+  useEffect(() => {
+    applyRoom(roomMode);
+    return () => {
+      applyRoom('every');
+    };
+  }, [roomMode]);
+  const hero = roomMode === 'home';
   const wide = useWide();
   const bar = useBar() && !wide;
   const input = homeInput('busy', true);
@@ -147,7 +158,7 @@ export function GameScreens({
         onHelp={NOTHING}
         onSettings={NOTHING}
       />
-      {wide && <RoomBand room={room} />}
+      {wide && (!hero || place === 'home') && <RoomBand room={room} hero={hero} />}
     </>
   );
   const nav = (

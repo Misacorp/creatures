@@ -40,6 +40,7 @@ import type { Forecast } from './weather-types';
 import { Accordion } from './ui/Accordion';
 import { BagFullNote } from './ui/BagFullNote';
 import { Alert } from './ui/Alert';
+import { Column, Columns } from './ui/Columns';
 
 interface Loaded {
   view: RaidView;
@@ -365,8 +366,8 @@ export function Raid({
           }}
         />
       )}
-      <div class="raid-page">
-        <div class="raid-col raid-col-boss">
+      <Columns from="80rem" ratio="5-4">
+        <Column>
           <RaidTimeline
             view={view}
             serverNow={serverNow}
@@ -388,8 +389,8 @@ export function Raid({
             </Accordion>
           )}
           <BossCard view={view} forecast={forecast} />
-        </div>
-        <div class="raid-col raid-col-board">
+        </Column>
+        <Column>
           {party !== null && (
             <Placement
               party={party}
@@ -448,8 +449,8 @@ export function Raid({
           )}
 
           <RaidNews />
-        </div>
-      </div>
+        </Column>
+      </Columns>
     </>
   );
 }

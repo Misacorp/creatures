@@ -27,6 +27,7 @@ import { Drawer } from './ui/Drawer';
 import { flipOver } from './ui/flip-logic';
 import { FlipArea } from './ui/Flipper';
 import { Alert } from './ui/Alert';
+import { Column, Columns } from './ui/Columns';
 import { useMultiSelect } from './ui/multi-select';
 import { retireSelectHint, selectHintRetired, selectHintText } from './ui/select-hint';
 
@@ -122,7 +123,7 @@ export function Workshop({
   });
   const flip = drilling && itemFlip !== undefined ? { ...itemFlip, paused: true } : itemFlip;
   return (
-    <div class="workshop">
+    <Columns from="60rem" ratio="1-3" class="workshop">
       {gear.notice !== null && (
         <section class="ws-section card-item notice-card" aria-labelledby="ws-notice">
           <h3 id="ws-notice">Gear has changed</h3>
@@ -165,7 +166,7 @@ export function Workshop({
           onDismiss={onDismissReveal}
         />
       )}
-      <div class="ws-col ws-col-side">
+      <Column sticky stack="tight">
         <section class="ws-section" aria-labelledby="ws-parts">
           <h3 id="ws-parts">Parts</h3>
           <PartsRow parts={gear.parts} />
@@ -191,8 +192,8 @@ export function Workshop({
             });
           }}
         />
-      </div>
-      <div class="ws-col ws-col-main">
+      </Column>
+      <Column stack="tight">
         <section class="ws-section" aria-labelledby="ws-gear">
           <div class="ws-head">
             <h3 id="ws-gear">
@@ -375,7 +376,7 @@ export function Workshop({
             })) !== undefined
           }
         />
-      </div>
-    </div>
+      </Column>
+    </Columns>
   );
 }

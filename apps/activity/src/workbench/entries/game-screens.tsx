@@ -1,4 +1,4 @@
-import { LOOKS } from '../../looks';
+import { LOOKS, ROOM_MODES } from '../../looks';
 import { DUNGEON_STATES, GameScreens, SCREENS } from '../game-screens/GameScreens';
 import { str } from '../props';
 import type { Entry } from '../types';
@@ -8,13 +8,14 @@ const gameScreens: Entry = {
   file: 'apps/activity/src/workbench/game-screens/GameScreens.tsx',
   group: 'Controls',
   description:
-    "Every main screen of the game in the game's real frame (the HUD, the living room band on a wide window, the dock, bar or rail, and the screen), on fixture data, under a chosen look (an app-wide visual style: `data-look` on the page). For screenshots: `node scripts/screens.mjs` shoots every screen at phone and desktop sizes; open `workbench.html?frame=1&bare=1#c=GameScreens` in a window of the size you want to see it as the game sees it. The Raid tab is composed by hand from its parts (the timeline, the boss, the roster) because the real one loads from the server; the Dungeon shows a run in progress or the setup card.",
+    "Every main screen of the game in the game's real frame (the HUD, the living room band on a wide window, the dock, bar or rail, and the screen), on fixture data, under a chosen look (an app-wide visual style: `data-look` on the page) and a room mode (`room`: `every`, the living room band under the HUD on every place, or `home`, a taller band on Home only; `data-room` on the page). For screenshots: `node scripts/screens.mjs` shoots every screen at phone and desktop sizes; open `workbench.html?frame=1&bare=1#c=GameScreens` in a window of the size you want to see it as the game sees it. The Raid tab is composed by hand from its parts (the timeline, the boss, the roster) because the real one loads from the server; the Dungeon shows a run in progress or the setup card.",
   controls: {
     screen: { kind: 'select', options: SCREENS },
     look: { kind: 'select', options: LOOKS },
+    room: { kind: 'select', options: ROOM_MODES },
     dungeonState: { kind: 'select', options: DUNGEON_STATES },
   },
-  defaults: { screen: 'home', look: 'current', dungeonState: 'mid-run' },
+  defaults: { screen: 'home', look: 'current', room: 'every', dungeonState: 'mid-run' },
   presets: [
     ...SCREENS.map((screen) => ({ name: screen, props: { screen } })),
     { name: 'dungeon setup', props: { screen: 'dungeon', dungeonState: 'setup' } },
@@ -24,6 +25,7 @@ const gameScreens: Entry = {
       key={`${str(p, 'screen')}-${str(p, 'dungeonState')}`}
       screen={str(p, 'screen')}
       look={str(p, 'look')}
+      room={str(p, 'room')}
       dungeon={str(p, 'dungeonState')}
     />
   ),
