@@ -132,11 +132,12 @@ describe('the raid bosses', () => {
         rng: createSeededRng(seed),
         log: true,
       });
-    const mired = BOSS_ANSWERS['thornmother']?.find((a) => /squelch-song/.test(a.line));
     const plain = BOSS_ANSWERS['thornmother']?.[0];
-    expect(mired).toBeDefined();
+    // The same line with a Croakmire first in the front row: a Squelch Song keeps Mired on her all weekend.
+    const mired = (plain?.line ?? '').replace(/^\S+/, 'croakmire/squelch-song+clinging');
+    expect(mired).toMatch(/squelch-song/);
     for (const [line, seed] of [
-      [mired?.line ?? '', 'sb1'],
+      [mired, 'sb1'],
       [plain?.line ?? '', 'sb2'],
       [
         classicFor(raidMode(b))
@@ -334,12 +335,34 @@ describe('the prepared line at the margin, at other widths and on a mixed server
   );
 
   it.each(RAID_BOSS_IDS)(
+    '%s: the prepared line wins most weekends and still pays for it: creatures lost, or the team left low on HP',
+    (id) => {
+      const w = weekendStats(raidBossOf(id), lineOf(id), 24, `cost:${id}`);
+      expect(w.winRate, id).toBeGreaterThanOrEqual(0.85);
+      // Misa, 2026-10-29: everyone alive but low is also a result, so HP left counts next to knockouts.
+      expect(
+        w.knockoutsTotal >= 0.5 || w.hpLeftEnd <= 0.6,
+        `${id}: ${String(w.knockoutsTotal)} out, ${String(w.hpLeftEnd)} HP left`,
+      ).toBe(true);
+      expect(w.hpLeftEnd, id).toBeLessThanOrEqual(0.75);
+    },
+  );
+
+  it('Tidal Colossus and Cinder Wyrm are not beaten at +10% every time: their prepared line has a margin, not a walkover', () => {
+    for (const id of ['tidal-colossus', 'cinder-wyrm']) {
+      const m = marginOf(raidBossOf(id), lineOf(id), 24, `margin:${id}`);
+      expect(Math.max(m.atk10, m.hp10), id).toBeLessThan(1);
+    }
+  });
+
+  it.each(RAID_BOSS_IDS)(
     '%s: at 5, 10 and 15 columns the classic party rarely wins and the prepared line does',
     (id) => {
       const b = raidBossOf(id);
       for (const w of RAID_WIDTHS) {
         const r = widthOf(b, lineOf(id), w, 12, `width:${id}`);
-        expect(r.classicWin, `${id} at ${w} columns`).toBeLessThanOrEqual(w === 15 ? 0.34 : 0.1);
+        // Balance pass (2026-10-29): rarely or never, also at 15 columns (the boss's HP grows in a straight line past ten players).
+        expect(r.classicWin, `${id} at ${w} columns`).toBeLessThanOrEqual(0.1);
         expect(r.bestWin, `${id} at ${w} columns`).toBeGreaterThanOrEqual(0.8);
       }
     },
@@ -358,11 +381,14 @@ describe('the prepared line at the margin, at other widths and on a mixed server
         first(id)?.core ?? [],
         [first(id)?.core ?? []],
       );
-      // The target is 60% to 95% (met by Cinder Wyrm, Thornmother and Storm Sovereign; Tidal Colossus and Old Bogback are
-      // below it, see the report). The casual players' draws swing the number widely, so this floor only guards against a
-      // boss no mixed server can beat at all.
-      expect(r.winRate, id).toBeGreaterThanOrEqual(0.03);
-      expect(r.winRate, id).toBeLessThanOrEqual(0.98);
+      // The target is about 50% to 85% (Misa, 2026-10-29; the report has the exact numbers, Storm Sovereign is below it).
+      // The casual players' draws swing the number widely, so these bounds only guard against a boss no mixed server can
+      // beat, or one every mixed server beats.
+      expect(r.winRate, id).toBeGreaterThanOrEqual(0.2);
+      expect(r.winRate, id).toBeLessThanOrEqual(0.9);
+      // A mixed server feels losses more than a prepared team does.
+      const prepared = weekendStats(raidBossOf(id), lineOf(id), 12, `mixed-cost:${id}`);
+      expect(r.knockouts, id).toBeGreaterThan(3 * prepared.knockoutsTotal);
     },
   );
 });

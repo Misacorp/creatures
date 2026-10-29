@@ -98,7 +98,10 @@ export const FOE_SPECS: readonly FoeSpec[] = [
       cap: 2,
       grow: { atkBp: 2_500, targets: 1 },
     },
-    asks: 'Its heat sheds your marks after every turn of its own, and each mark shed warms it.',
+    asks: 'Its heat sheds your marks after every turn of its own, and each mark shed warms it. A sealed mark stays, and so does one left during its own turn.',
+    // A longer fight (balance pass 2026-10-29), so keeping marks is worth a team's slot: Seal does it, and so does Primed by Pain
+    // (it leaves its mark while the foe is taking its turn, after the shedding began).
+    hpBp: 14_000,
   },
   {
     id: 'ash-sprite',

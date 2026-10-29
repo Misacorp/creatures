@@ -17,6 +17,16 @@
  * Thornmother, Taunt for the Storm Sovereign, Mud Wall and healing for Old Bogback. Attack and the move powers are
  * the boss's threat: a weekend should cost the party creatures. The boss's Build-up (`escalation` in the data) is the
  * word players read.
+ *
+ * Balance pass (2026-10-29, Misa: a prepared team wins about 85% to 100% and pays for it, the classic party never wins
+ * also at 10 and 15 columns, a mixed server wins about 50% to 85% and feels its losses more). The numbers below were
+ * tuned together with the written answers (`bossAnswers.ts`, found by a team search that must keep the boss's tool and
+ * a gap of at least 40 points without it): Attack and HP set how hard a weekend is for four players (a boss at its cliff
+ * wins or loses within about 10% of Attack, so the prepared line sits just below it: a margin of 60% to 95% at +10%),
+ * the HP exponent sets how much a wide raid gains over it (a low exponent lets a mixed server of ten win by its tools),
+ * and the aimed moves that would thin out in a wide row (a single hit, a line of three) have `anchors` per `perColumns`
+ * columns so a wide raid of the same three creatures meets as many of them as a narrow one does. Past ten players the HP
+ * grows in a straight line (`RAID_LINEAR_FROM`, `raidMeasure.ts`).
  */
 import { content, createSeededRng } from '@creatures/game';
 import { card } from './cards';
@@ -109,9 +119,9 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
     id: 'tidal-colossus',
     rows: 3,
     armour: 34,
-    atk: 126,
-    hp: 22_400,
-    hpExponent: 0.87,
+    atk: 122,
+    hp: 26_400,
+    hpExponent: 0.6,
     plain: { pattern: { anchor: 'front', shape: 'row' }, powerBp: 2_500 },
     cards: ['adapts'],
     // The tide rises as the Colossus is hurt: every fifth of its HP gone widens its columns and rows, and Mired slows it.
@@ -127,10 +137,28 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       ['undertow', 'Undertow', 3, 0, 'front', 'row', 9_000],
       ['spray', 'Spray', 2, 0, 'random', 'scatter', 5_000, { n: 4, perColumns: 4 }],
       ['tidal-pull', 'Tidal Pull', 2, 1, 'strongest', 'columns', 6_000, { n: 2, perColumns: 4 }],
-      ['riptide', 'Riptide', 4, 1, 'random', 'column', 10_800, { windUp: true }],
+      [
+        'riptide',
+        'Riptide',
+        4,
+        1,
+        'random',
+        'columns',
+        10_800,
+        { n: 1, perColumns: 4, windUp: true },
+      ],
       ['spring-tide', 'Spring Tide', 6, 1, 'payoff', 'row', 12_300, { windUp: true }],
       ['great-wave', 'Great Wave', 3, 2, 'random', 'randomRow', 13_900, { windUp: true }],
-      ['deepwater-spear', 'Deepwater Spear', 5, 2, 'strongest', 'column', 15_000],
+      [
+        'deepwater-spear',
+        'Deepwater Spear',
+        5,
+        2,
+        'strongest',
+        'columns',
+        15_000,
+        { n: 1, perColumns: 4 },
+      ],
       ['breaker', 'Breaker', 7, 0, 'back', 'rows', 8_000, { n: 2 }],
     ],
   },
@@ -138,9 +166,9 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
     id: 'cinder-wyrm',
     rows: 4,
     armour: 60,
-    atk: 123,
+    atk: 160,
     hp: 28_300,
-    hpExponent: 0.55,
+    hpExponent: 0.36,
     plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 6_000 },
     cards: ['reflective-hide', 'adapts-element'],
     // Every cashed reaction stokes the forge: the fire grows hotter and throws more shells. Few, big reactions or Mired hold it down.
@@ -175,10 +203,10 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
   {
     id: 'thornmother',
     rows: 3,
-    armour: 82,
-    atk: 114,
+    armour: 98,
+    atk: 137,
     hp: 15_200,
-    hpExponent: 0.55,
+    hpExponent: 0.15,
     plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 7_000 },
     cards: ['adapts'],
     // Each fifth of her HP lost wakes her further; at half she blooms (Second Bloom) and the whole arena is in play.
@@ -240,9 +268,9 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
     id: 'storm-sovereign',
     rows: 2,
     armour: 7,
-    atk: 87,
-    hp: 8_700,
-    hpExponent: 1.23,
+    atk: 74,
+    hp: 19_000,
+    hpExponent: 0.38,
     // Lightning Rod: the plain attack leaps from the strongest Payoff, twice a round. A Taunt takes the first strike.
     plain: {
       pattern: { anchor: 'payoff', shape: 'chain', n: 2, perColumns: 4, decayBp: 5_500 },
@@ -257,9 +285,18 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       cap: 3,
       grow: { atkBp: 2_000, jumps: 1 },
     },
-    asks: 'The Rod leaps from the strongest Payoff, round after round. Draw it onto something that can take it, or put a Guard beside the Payoff.',
+    asks: 'The Rod leaps from the strongest Payoff, round after round, and a Judgement Bolt, announced at round start, can fell it. Draw the Rod onto something that can take it, and have Night Watch beside the Payoff for the Bolt.',
     moves: [
-      ['thunderclap', 'Thunderclap', 3, 0, 'strongest', 'line3', 18_000],
+      [
+        'thunderclap',
+        'Thunderclap',
+        3,
+        0,
+        'strongest',
+        'line3',
+        18_000,
+        { anchors: 1, perColumns: 6 },
+      ],
       [
         'forked-lightning',
         'Forked Lightning',
@@ -270,7 +307,16 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
         7_000,
         { n: 2, perColumns: 4 },
       ],
-      ['static-field', 'Static Field', 3, 1, 'payoff', 'line3', 14_000],
+      [
+        'static-field',
+        'Static Field',
+        3,
+        1,
+        'payoff',
+        'line3',
+        14_000,
+        { anchors: 1, perColumns: 6 },
+      ],
       [
         'ball-lightning',
         'Ball Lightning',
@@ -281,25 +327,28 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
         9_000,
         { n: 3, perColumns: 4 },
       ],
-      ['judgement-bolt', 'Judgement Bolt', 4, 0, 'payoff', 'single', 28_000, { windUp: true }],
+      ['judgement-bolt', 'Judgement Bolt', 4, 0, 'payoff', 'single', 70_000, { windUp: true }],
       ['storm-front', 'Storm Front', 5, 1, 'front', 'all', 7_000, { windUp: true }],
-      ['spark-dive', 'Spark Dive', 2, 1, 'payoff', 'single', 16_000],
+      ['spark-dive', 'Spark Dive', 2, 1, 'payoff', 'single', 16_000, { anchors: 1, perColumns: 6 }],
     ],
   },
   {
     id: 'old-bogback',
     rows: 3,
     armour: 23,
-    atk: 125,
-    hp: 38_700,
-    hpExponent: 0.68,
-    plain: { pattern: { anchor: 'front', shape: 'line3' }, powerBp: 4_500 },
+    atk: 105,
+    hp: 42_500,
+    hpExponent: 0.5,
+    plain: {
+      pattern: { anchor: 'front', shape: 'line3', anchors: 1, perColumns: 4 },
+      powerBp: 4_500,
+    },
     cards: ['shake-it-off', 'adapts-element'],
     asks: 'The fen pulls the most hurt creature down. Keep them up, and keep the Mired on it.',
     moves: [
       ['sinking-mud', 'Sinking Mud', 3, 2, 'random', 'randomRow', 11_000],
-      ['belly-flop', 'Belly Flop', 4, 0, 'front', 'line3', 13_900],
-      ['bog-lob', 'Bog Lob', 5, 1, 'payoff', 'line3', 15_000],
+      ['belly-flop', 'Belly Flop', 4, 0, 'front', 'line3', 13_900, { anchors: 1, perColumns: 4 }],
+      ['bog-lob', 'Bog Lob', 5, 1, 'payoff', 'line3', 15_000, { anchors: 1, perColumns: 4 }],
       ['mud-slide', 'Mud Slide', 2, 2, 'random', 'columns', 6_000, { n: 2, perColumns: 4 }],
       [
         'rising-bubbles',
@@ -311,7 +360,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
         12_000,
         { n: 4, perColumns: 4, windUp: true },
       ],
-      ['sinkhole', 'Sinkhole', 6, 0, 'weakest', 'single', 20_900],
+      ['sinkhole', 'Sinkhole', 6, 0, 'weakest', 'single', 20_900, { anchors: 1, perColumns: 4 }],
       ['peat-wave', 'Peat Wave', 5, 0, 'back', 'rows', 9_000, { n: 2 }],
     ],
   },

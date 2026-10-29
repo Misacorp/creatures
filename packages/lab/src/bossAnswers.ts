@@ -98,16 +98,16 @@ export const arenaSize = (bossId: string): number =>
 export const BOSS_ANSWERS: Readonly<Record<string, readonly BossAnswer[]>> = {
   'tidal-colossus': [
     {
-      label: 'Wide Reach Guards in the middle of every row cover the whole sweep',
+      label: 'Wide Reach Guards in every column cover the whole sweep',
       tool: 'Reach',
       core: ['wide-reach'],
-      line: 'voltaro/zoom+edge-walker ancientshell/living-shelter+hardy bogwarden/wide-reach+long-shadow gaiadrake/leave-a-trail+opportunist | bloomback/none+opportunist hearthshell/keep-the-heat-in+hardy solmane/none+shoulder-to-shoulder mistnewt/wide-reach+flank-guard | geyserpup/leave-a-trail+finisher croakmire/squelch-song+clinging tempestray/leave-a-trail+slow-burn thornbuck/wide-reach+flank-guard',
+      line: 'voltaro/zoom+deep-ink bogwarden/wide-reach+clinging mudlump/wide-reach+long-shadow gaiadrake/leave-a-trail+finisher | tempestray/leave-a-trail tidewing/double-mark+owners-mark coralynx/detonate+finisher fogwyrm/wide-reach+flank-guard | bogwarden/wide-reach+flank-guard tempestray/none+catch-breath croakmire/squelch-song+heavy-hand geyserpup/puddle-maker+finisher',
     },
     {
       label: 'Living Shelter and Keep the Heat In on every row blunt the waves',
       tool: 'Row Ward',
       core: ['living-shelter', 'keep-the-heat-in'],
-      line: 'ancientshell/living-shelter+finisher hearthshell/keep-the-heat-in+hardy solmane/crown-of-embers+shoulder-to-shoulder ancientshell/living-shelter+owners-mark | pyrelynx/leave-a-trail+steady-rhythm croakmire/squelch-song+hardy bogwarden/none+flank-guard drizzlewt/drizzle+overheal-spill | hearthshell/keep-the-heat-in+catch-breath sunfawn/curl-up+brace geyserpup/all-at-once magmole/tunnel-through+bright-boost',
+      line: 'bogwarden/mud-wall+clinging gaiadrake/carry-them+catch-breath kilnmole/keep-the-heat-in+brace gaiadrake/leave-a-trail+stubborn | ancientshell/living-shelter+finisher thornbuck/primed-by-pain+flank-guard ancientshell/living-shelter+finisher tempestray/detonate | lanternfin/sunbeam+overheal-spill fogwyrm/thick-fog+flank-guard lanternfin/none+triage tidewing/circle-round+finisher',
     },
   ],
   'cinder-wyrm': [
@@ -116,13 +116,13 @@ export const BOSS_ANSWERS: Readonly<Record<string, readonly BossAnswer[]>> = {
         'Squelch Song keeps Mired on the Wyrm, so Forge Heat cannot build and each hit lands softer',
       tool: 'Debuff',
       core: ['squelch-song'],
-      line: 'bloomback/all-at-once bogwarden/draw-fire+brace lanternfin/lantern-glow+triage halcyray/gather-calm+catch-breath | aurorix/starlight+bright-boost pyrelynx/guards-shadow+sharp-claws fogwyrm/hide-in-mist+flank-guard tempestray/leave-a-trail+catch-breath | croakmire/squelch-song+unbothered fogwyrm/wide-reach+unbothered geyserpup/all-at-once+edge-walker croakmire/squelch-song+clinging | bogwarden/wide-reach+flank-guard coralynx/territorial+odd-one-out lanternfin/sunbeam+odd-one-out magmole/wide-warmth+bright-boost',
+      line: 'geyserpup/none+finisher drizzlewt/curl-up+bright-boost bogwarden/wide-reach+long-shadow lanternfin/clear-the-air+odd-one-out | kilnmole/none+shoulder-charge tempestray/none+momentum magmole/wide-warmth+hardy fogwyrm/wide-reach+flank-guard | aurorix/starlight+rally-cry croakmire/squelch-song+catch-breath drizzlewt/drizzle+bright-boost aurorix/starlight+unbothered | bogwarden/wide-reach+flank-guard lanternfin/none+triage halcyray/none+bright-boost croakmire/squelch-song+clinging',
     },
     {
       label: 'Circle Round and Clear the Air heal the Payoffs its reflected hits land on',
       tool: 'Sustain',
       core: ['clear-the-air', 'circle-round'],
-      line: 'hearthshell/draw-fire+brace magmole/tunnel-through+bright-boost coralynx/detonate+first-pounce fogwyrm/none+flank-guard | geyserpup/leave-a-trail+first-pounce bogwarden/draw-fire+brace drizzlewt/clear-the-air+unbothered tidewing/circle-round+first-pounce | geyserpup/all-at-once+hardy fogwyrm/none+catch-breath drizzlewt/clear-the-air+overheal-spill tidewing/lead-the-way+edge-walker | lanternfin/sunbeam+odd-one-out magmole/tunnel-through+hardy bogwarden/wide-reach+long-shadow lanternfin/sunbeam+overheal-spill',
+      line: 'drizzlewt/clear-the-air+overheal-spill bogwarden/wide-reach+long-shadow lanternfin/clear-the-air+odd-one-out magmole/wide-warmth+kindred-boost | geyserpup/leave-a-trail+momentum fogwyrm/hide-in-mist+catch-breath lanternfin/none+overheal-spill fogwyrm/thick-fog+unbothered | croakmire/squelch-song+clinging coralynx/territorial+finisher sunfawn/curl-up+rally-cry bogwarden/draw-fire+flank-guard | tempestray/leave-a-trail+edge-walker kilnmole/draw-fire+odd-one-out drizzlewt/curl-up+catch-breath croakmire/squelch-song+clinging',
     },
   ],
   thornmother: [
@@ -130,41 +130,41 @@ export const BOSS_ANSWERS: Readonly<Record<string, readonly BossAnswer[]>> = {
       label: 'Tunnel Through gets hits past her thick bark',
       tool: 'Pierce',
       core: ['tunnel-through'],
-      line: 'solmane/none+catch-breath lanternfin/lantern-glow+rally-cry bogwarden/draw-fire+brace geyserpup/leave-a-trail+first-pounce | hearthshell/keep-the-heat-in+hardy magmole/tunnel-through squelch/squelch-song hearthshell/hearth+stubborn | pyrelynx/none+front-liner magmole/tunnel-through+odd-one-out bogwarden/draw-fire+flank-guard ancientshell/living-shelter+brace',
+      line: 'voltaro/zigzag bogwarden/mud-wall+clinging sunfawn/curl-up+kindred-boost bloomback/leave-a-trail+hardy | ancientshell/none+brace magmole/tunnel-through+bright-boost magmole/tunnel-through+bright-boost thornbuck/primed-by-pain+flank-guard | pyrelynx/none+first-pounce mudlump/wide-reach+clinging pyrelynx/detonate+first-pounce solmane/steady-mark+catch-breath',
     },
     {
       label: 'Lantern Glow keeps the creatures beside it from falling quiet at the row ends',
       tool: 'Ward',
       core: ['lantern-glow'],
-      line: 'bloomback/leave-a-trail+hardy bogwarden/mud-wall+clinging drizzlewt/curl-up+unbothered croakmire/squelch-song+clinging | hearthshell/draw-fire+brace magmole/tunnel-through+hardy magmole/tunnel-through+brace solmane/lead-the-way+catch-breath | fogwyrm/wide-reach+flank-guard lanternfin/lantern-glow+rally-cry lanternfin/lantern-glow+catch-breath geyserpup/puddle-maker+finisher',
+      line: 'bogwarden/mud-wall+clinging gaiadrake/none+opportunist magmole/tunnel-through+bright-boost fogwyrm/thick-fog+catch-breath | mudlump/wide-reach+flank-guard pyrelynx/none+shoulder-to-shoulder ashmole/none+kindred-boost bloomback/detonate+stubborn | voltaro/double-mark+shoulder-to-shoulder ohmouse/lightning-ears+flank-guard lanternfin/lantern-glow+odd-one-out gaiadrake/leave-a-trail+finisher',
     },
   ],
   'storm-sovereign': [
     {
       label: 'Draw Fire pulls the Rod onto a Guard that can take it',
       tool: 'Taunt',
-      core: ['draw-fire'],
-      line: 'croakmire/squelch-song+hardy sunfawn/none+brace sunfawn/curl-up+kindred-boost hearthshell/draw-fire+hardy | fogwyrm/wide-reach+flank-guard magmole/ready-the-mark+rally-cry croakmire/squelch-song+heavy-hand bogwarden/draw-fire+clinging',
+      core: ['draw-fire', 'zigzag'],
+      line: 'gaiadrake/detonate+opportunist hearthshell/draw-fire+stubborn hearthshell/hearth+stubborn bloomback/leave-a-trail+stubborn | mudlump/mud-wall+clinging zipmouse/double-mark+shoulder-to-shoulder aurorix/gather-calm+bright-boost bloomback/detonate+opportunist',
     },
     {
-      label: 'Catch the Bolts and Guards beside the Payoffs take the aimed strikes',
+      label: 'Night Watch takes the Judgement Bolt meant for the strongest Payoff',
       tool: 'Intercept',
-      core: ['catch-the-bolts'],
-      line: 'squelch/squelch-song+clinging bogwarden/mud-wall+long-shadow bloomback/none+stubborn hearthshell/keep-the-heat-in+brace | voltaro/double-mark+edge-walker ohmouse/catch-the-bolts+shoulder-to-shoulder bogwarden/mud-wall+brace bloomback/detonate+opportunist',
+      core: ['night-watch'],
+      line: 'thornbuck/night-watch+flank-guard voltaro/zoom+shoulder-to-shoulder voltaro/zigzag+momentum hearthshell/keep-the-heat-in+stubborn | bloomback/all-at-once+stubborn hearthshell/draw-fire+stubborn gaiadrake/detonate+opportunist croakmire/squelch-song+heavy-hand',
     },
   ],
   'old-bogback': [
     {
       label: 'Mud Wall keeps Mired on it while Drizzle and Hearth keep the most hurt up',
       tool: 'Mud Wall',
-      core: ['mud-wall'],
-      line: 'bogwarden/mud-wall+clinging drizzlewt/drizzle+overheal-spill sunfawn/none+kindred-boost pyrelynx/none+shoulder-to-shoulder | kilnmole/keep-the-heat-in+hardy zipmouse/zoom+deep-ink hearthshell/hearth+catch-breath gaiadrake/none+opportunist | ancientshell/living-shelter+stubborn bogwarden/mud-wall+flank-guard pyrelynx/guards-shadow+rally-cry squelch/ready-the-mark+heavy-hand',
+      core: ['mud-wall', 'squelch-song'],
+      line: 'ancientshell/steady-mark+owners-mark bogwarden/mud-wall+hardy fogwyrm/hide-in-mist+rally-cry squelch/ready-the-mark+clinging | zipmouse/double-mark+momentum hearthshell/hearth+shoulder-to-shoulder mossback/feed-the-marks+finisher gaiadrake/carry-them+catch-breath | pyrelynx/detonate+rally-cry magmole/wide-warmth+kindred-boost fogwyrm/wide-reach+catch-breath bloomback/detonate+opportunist',
     },
     {
       label: 'Hearth at round start heals the creatures the fen sinks first',
       tool: 'Sustain',
       core: ['hearth'],
-      line: 'kilnmole/keep-the-heat-in+brace voltaro/zoom+first-pounce ancientshell/steady-mark+finisher bogwarden/draw-fire+flank-guard | ancientshell/living-shelter+rally-cry thornbuck/none+flank-guard sunfawn/none+kindred-boost bloomback/leave-a-trail | pyrelynx/leave-a-trail+steady-rhythm hearthshell/hearth+shoulder-to-shoulder hearthshell/hearth+stubborn pyrelynx/detonate+first-pounce',
+      line: 'solmane/none+owners-mark drizzlewt/curl-up+rally-cry hearthshell/hearth+shoulder-charge tempestray/detonate+edge-walker | geyserpup/none+edge-walker solmane/none+deep-ink bogwarden/wide-reach+long-shadow ancientshell/living-shelter+hardy | geyserpup/leave-a-trail+edge-walker bogwarden/wide-reach+long-shadow pyrelynx/guards-shadow+shoulder-to-shoulder kilnmole/keep-the-heat-in+hardy',
     },
   ],
 };
