@@ -40,8 +40,8 @@
 
 /* --- The ground: a calm two-indigo checker, in the margins only (the window itself is flat) --- */
 :root[data-look='arcade'] body {
-  background-color: #17133a;
-  background-image: conic-gradient(#1c1845 25%, transparent 0 50%, #1c1845 0 75%, transparent 0);
+  background-color: #0e0c22;
+  background-image: conic-gradient(#13102f 25%, transparent 0 50%, #13102f 0 75%, transparent 0);
   background-size: 24px 24px;
 }
 
@@ -64,6 +64,10 @@
 
 /* On a phone the window fills the width: no gold double rule in the side gutters, ink and bevel only. */
 @media (max-width: 59.99rem) {
+  :root[data-look='arcade'] body {
+    background-image: none;
+  }
+
   :root[data-look='arcade'] main.card {
     box-shadow:
       inset var(--px) var(--px) 0 0 var(--bevel-hi),
@@ -85,7 +89,7 @@
 :root[data-look='arcade'] .hud {
   background: var(--ink);
   box-shadow:
-    0 var(--px) 0 0 var(--gold),
+    0 var(--px) 0 0 var(--bevel-hi),
     0 calc(var(--px) * 2) 0 0 var(--ink);
 }
 
@@ -191,7 +195,7 @@
 :root[data-look='arcade'] .main-nav.dock {
   background: var(--ink);
   box-shadow:
-    0 calc(var(--px) * -1) 0 0 var(--gold),
+    0 calc(var(--px) * -1) 0 0 var(--bevel-hi),
     0 calc(var(--px) * -2) 0 0 var(--ink);
 }
 
@@ -204,7 +208,7 @@
   background: var(--dusk);
 }
 
-/* The current place: teal fill plus a shape cue (a notch of ink cut into its left edge), never colour alone. */
+/* The current place: teal fill plus a shape cue (a notch of ink cut into its right edge, clear of the icon), never colour alone. */
 :root[data-look='arcade'] .main-nav button.nav-btn.active,
 :root[data-look='arcade'] .main-nav button.nav-tray-item.active {
   background: var(--teal);
@@ -218,25 +222,27 @@
 :root[data-look='arcade'] .main-nav button.nav-tray-item.active::before {
   content: '';
   position: absolute;
-  left: 0;
+  right: 0;
   top: 50%;
   width: 0.5rem;
   height: 1rem;
   margin-top: -0.5rem;
   background: var(--ink);
-  clip-path: polygon(0 0, 50% 0, 50% 25%, 100% 25%, 100% 75%, 50% 75%, 50% 100%, 0 100%);
+  clip-path: polygon(100% 0, 50% 0, 50% 25%, 0 25%, 0 75%, 50% 75%, 50% 100%, 100% 100%);
 }
 
-:root[data-look='arcade'] .main-nav button.nav-tray-item {
+:root[data-look='arcade'] .main-nav button.nav-tray-item,
+:root[data-look='arcade'] .main-nav.dock button.nav-btn {
   position: relative;
 }
 
-:root[data-look='arcade'] .main-nav.dock button.nav-btn.active {
-  background: var(--dusk-2);
-  color: var(--teal);
+/* The active group tab on the dock: the same teal fill and notch as the rail. */
+:root[data-look='arcade'] .main-nav.dock button.nav-btn.active:not(.home) {
+  background: var(--teal);
+  color: var(--ink);
   box-shadow:
     0 0 0 var(--px) var(--ink),
-    inset 0 calc(var(--px) * -2) 0 0 var(--teal);
+    inset 0 calc(var(--px) * -1) 0 0 #1b9c85;
 }
 
 /* Home is the gold button on the dock only; in the rail it is a place like the others. */
@@ -265,35 +271,74 @@
   background: rgb(var(--ink-rgb) / 78%);
 }
 
-/* --- Scenery: the window is flat; each place gets only a tint (and the ground a matching tint) --- */
+/*
+  --- Scenery: the window is the ground (a darker indigo than the panels), so panels sit ON it and empty room
+  under the content reads as ground. Each place gets only a faint tint. ---
+*/
+:root[data-look='arcade'] main.card {
+  background-color: #0e0c22;
+}
+
 :root[data-look='arcade'] main.card:has([data-place='home']) {
-  background-color: #2a2260;
+  background-color: #100d27;
 }
 
 :root[data-look='arcade'] main.card:has([data-place='collection']) {
-  background-color: #232d68;
+  background-color: #0c1228;
 }
 
 :root[data-look='arcade'] main.card:has([data-place='workshop']) {
-  background-color: #35235f;
+  background-color: #130d26;
 }
 
 :root[data-look='arcade'] main.card:has([data-place='journal']) {
-  background-color: #2a2260;
+  background-color: #100d27;
 }
 
 :root[data-look='arcade'] main.card:has([data-place='expeditions']) {
-  background-color: #1f3868;
+  background-color: #0b1729;
 }
 
 :root[data-look='arcade'] main.card:has([data-place='dungeon']) {
-  background-color: #1e1650;
+  background-color: #0d0a22;
 }
 
 :root[data-look='arcade'] main.card:has([data-place='raid']) {
-  background-color: #351b55;
+  background-color: #150b22;
 }
 
 :root[data-look='arcade'] main.card:has([data-place='games']) {
-  background-color: #232d66;
+  background-color: #0c1127;
+}
+
+/* Creature names on cards: bone, not lavender. */
+:root[data-look='arcade'] .cc-name,
+:root[data-look='arcade'] .cc-name button.cc-open {
+  color: var(--bone);
+}
+
+/*
+  A main button that cannot be pressed yet (Workshop "Claim" before the job is done): a flat, dark, dashed-look
+  block with muted text, not half-faded gold, so it never reads as an olive button that is on.
+*/
+:root[data-look='arcade'] button.primary:disabled {
+  opacity: 1;
+  background: var(--bevel-lo);
+  color: var(--haze);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 0 0 calc(var(--px) * 2) var(--dusk);
+}
+
+/* On the dock the tab's icon and label are centred and its attention dot sits at the right, so its notch goes left. */
+:root[data-look='arcade'] .main-nav.dock button.nav-btn.active:not(.home)::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 0.5rem;
+  height: 1rem;
+  margin-top: -0.5rem;
+  background: var(--ink);
+  clip-path: polygon(0 0, 50% 0, 50% 25%, 100% 25%, 100% 75%, 50% 75%, 50% 100%, 0 100%);
 }
