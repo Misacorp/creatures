@@ -8,7 +8,7 @@ Smiths at the Forge craft the blueprint the player set, one piece after another,
 
 ## Rules (draft)
 
-- **V-FORGE-1** Each anvil has a short queue of orders: a blueprint and a target (example: "Kelp Cap, keep making until 3", then "Reef Boots x2"). When the queue runs out, the smith refines or recycles by default, a plainer and less valuable job, so an anvil never sits idle by mistake (V-POST-9).
+- **V-FORGE-1** Each anvil has a short queue of orders, long enough for at least about a day and a half of work at a normal pace (round 2, Q5): a blueprint and a target (example: "Kelp Cap, keep making until 3", then "Reef Boots x2"). When the queue runs out, the smith refines or recycles by default, a plainer and less valuable job, so an anvil never sits idle by mistake (V-POST-9).
 - **V-FORGE-2** Inputs come from the player's own stockpile (scrap, parts), shown on the Forge's shelf. The stockpile is hours to days deep at a normal pace.
 - **V-FORGE-3** When an input runs low, the smith slows (never stops dead: a small trickle) and the Forge's bubble says the reason in a few words ("waiting for scrap"). The one-tap fix is shown: move a scout to a scrap-rich place, or change the order.
 - **V-FORGE-4** Crafted pieces wait on the Forge floor until collected; the bag's limit pauses the anvil, never destroys a piece.

@@ -20,7 +20,7 @@ The valley's places belong to the whole server. Each place has a **server level*
 - **V-COM-2** Giving is recognised, never ranked: the place keeps a plaque of who helped build each level (names in order of their first gift), and the return story says "Sam and 3 others raised the Forge to level 3". No leaderboard of amounts.
 - **V-COM-3** Giving has a small personal thank-you so it never feels like a pure loss: example, a share of a project's completion reward to everyone who gave anything, the same for all.
 - **V-COM-4** Projects never fail, never decay and have no deadline (F-1). A finished level is kept for good.
-- **V-COM-5** Project size scales with the server's active players, counted as those who visited in the last 7 days, so members who drifted away never hold a project back (a 5-player server and a 15-player server finish at a similar pace), and one big giver cannot finish a project alone in a normal week: past a weekly share, a player's gifts still count but at a lower rate (open: or a hard weekly cap).
+- **V-COM-5** Project size scales with the server's active players, counted as those who visited in the last 7 days, so members who drifted away never hold a project back (a 5-player server and a 15-player server finish at a similar pace), and gifts always count in full (Misa, round 2, Q4: "there's no need to obfuscate it behind diminishing returns"). A lone player can finish a project; it just takes them about as many times longer as there are active players, so coordinating with friends is the fast way. The scene shows who is building it and what it still needs, to invite that coordination. The economy lab reports the top giver's share of each project.
 - **V-COM-6** The scene shows progress: scaffolding rises as resources come in; creatures on communal posts are seen working; a delivered keystone sits in its place for good.
 - **V-COM-7** A newcomer joins a valley already built up and benefits from day one; the next project is open to them at once (F-7).
 - **V-COM-8** Server state is one row per project and one per player per project, updated on a gift (F-9); communal posts' output is computed lazily like any post.
@@ -45,5 +45,4 @@ The valley's places belong to the whole server. Each place has a **server level*
 
 ## Open questions (also in `../questions.md`)
 
-- Weekly soft share (gifts past it count less) or a hard cap?
 - Should places have a max level, after which projects become cosmetic (the endgame link to `later.md`)?

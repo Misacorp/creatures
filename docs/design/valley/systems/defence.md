@@ -10,7 +10,7 @@ The raid is not a show in an arena. Each week a threat rises against the valley 
 
 - **V-DEF-1** The Watchtower at the east gate is the raid's place. When this week's threat is sighted, its beacon is lit and the sky at the valley's edge takes the threat's colour.
 - **V-DEF-2** Muster at the gate: each player holds a column of the line (combat v2: one column per player, the boss sets the rows).
-- **V-DEF-3** The weekend (combat v2's R14): three stages against one boss whose HP carries over; creatures do not heal between stages and a fallen one is out for the weekend; swaps at each break.
+- **V-DEF-3** The weekend (combat v2's R14): three stages against one boss whose HP carries over; creatures do not heal between stages and a fallen one is out for the weekend; swaps at each break. Defenders leave their posts for the weekend; a stand-in may hold the seat (V-POST-7).
 - **V-DEF-4** Sentries (a post, see `posts.md`) stand guard during the week. Proposal: sentries add to the server's readiness (a small shared bonus at the first stage, or a scouting report of the boss's first moves), so the whole server benefits from creatures posted there (G-4).
 - **V-DEF-5** The aftermath tells the defence as a story in the return moment: who held, who fell, what the valley earned.
 

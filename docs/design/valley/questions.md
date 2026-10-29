@@ -6,49 +6,46 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q4. When the shared place blocks you, can you push it through yourself? (a challenge)
+### Q7. Should a missed day still cost a dungeon run? (a challenge)
 
-Status: asked, round 2 (2026-10-29). Challenges: Q1's "alternating blocker" against V-COM-5 ("one big giver cannot finish a project alone in a normal week"), F-5 (the fix is one tap) and F-6 (co-op without guilt). Replaces the queued **big-giver** question. Touches: `commons.md`, `forge.md`.
+Status: asked, round 3 (2026-10-29). From the scrap list. Challenges: today's daily dungeon against F-1 and G-3 as Misa reworded them in round 1 ("being away never takes away what a player already has"). Touches: the Cave in `systems/valley.md`, `scrap-list.md`.
 
-**Why it matters.** You want a player who outgrows the Forge to push for its upgrade. But the plan also says one player can't finish a project alone. Put together, a keen player on a quiet server is stuck waiting on friends, and the only thing they can do is nag them in Discord, which is the guilt we promised to avoid. The research found nothing showing that waiting on the group is fun; the common complaint is about being nagged.
+**Why it matters.** Today you get one dungeon run a day, on a map the whole server shares, reset at 13:37. A missed day is a run gone for good, and it resets your streak (a small bonus on the 3rd and 7th day in a row). Everything else in the valley now waits for you, so the dungeon would be the one place that punishes a day off.
 
-- **A. Wait for the server.** Your gifts count less past a weekly share, so the upgrade needs others. Example: on a quiet 5-player server, Sanni has the resources for a third anvil and waits two weeks for the Forge's level 3.
-- **B. You can carry it, slowly.** Your gifts count less past a weekly share, but never zero, so a keen player can finish it alone in a few weeks; with friends it takes days. Example: Sanni gets her anvil in about three weeks alone, or in four days if two friends chip in.
-- **C. A rare find opens it.** The common route needs the group, but the place's keystone (a Heartcoal from the Ember Caves for the Forge) completes the step at once, and a dedicated scout finds one in a few weeks. Example: Sanni puts her best scout in the Ember Caves and gets the Heartcoal in week 3.
+- **A. Keep it daily.** One run a day; a missed day is gone. It stays the game's daily habit. Example: Sanni skips Saturday and that run is lost.
+- **B. Missed runs wait for you.** Runs bank up (example: up to 3); you play them on the current day's map. The streak becomes "runs played this week". Example: Sanni skips the weekend and plays three runs on Monday.
+- **C. A weekly delve.** One bigger run a week, played any day. Example: a seven-floor delve that Sanni plays on Wednesday evening.
 
-**Lead's pick: B, with C as well.** B keeps the alternating limit you want and keeps the group the fast way, but no one is held hostage by quiet friends. C gives a keen player a goal and an adventure instead of a grind. Projects are sized only for players who visited in the last week (lead's decision), so members who drifted away never make a project bigger.
+**Lead's pick: B.** It keeps the shared daily map (people compare routes) and the daily rhythm for those who like it, without taking anything from someone who skips a day. A 3-run bank means nobody has to visit daily, and the run isn't spread so thin that it loses its weight.
 
-### Q5. How long do stores and queues last before they need you? (a challenge)
+### Q8. What happens to the Valley Games?
 
-Status: asked, round 2 (2026-10-29). Challenges: Q3's "storages likely fill up, crafting jobs default to less valuable processes... keep bringing players back" together with "daily check in for full exp", and F-1 (no must-check timers). Touches: `posts.md` V-POST-5 and V-POST-9, `forge.md`, `scouts.md`, `return.md`.
+Status: asked, round 3 (2026-10-29). From the scrap list. Touches: the Fairground in `systems/valley.md`, `scrap-list.md`; today's Games, Prize Stall, medals and badges.
 
-**Why it matters.** You expect full stores and finished queues to bring players back on their own. How fast they fill decides what kind of pull that is. Short stores become timers by another name: a twice-a-day player beats a daily one, which goes against "daily for full". The research names this as the most resented idle pattern (AFK Arena's 12-hour chest exists to force two visits a day). And for someone away a month, full stores, a low-value Forge and near-zero growth all hit at once, so the return story would read "nothing much happened".
+**Why it matters.** The Games are a daily show of three events (four on Wednesdays) where level doesn't matter and "good fit" does; medals buy prizes at the Wednesday stall. They were built to make low-level creatures worth using, which posts and the bonfire now do for the whole roster. A daily show is also one more daily habit next to the dungeon.
 
-- **A. About a day and a half.** A daily player never hits a full store or an empty queue. Stores and queues limit long absences; they don't pull you back daily. Example: Sanni plays every evening and always finds her scouts still picking things up.
-- **B. About half a day.** Stores and queues are the reason to look in twice a day. Example: Sanni's scouts are full by lunch.
-- **C. Several days.** They almost never fill. Only the away steps limit long absences. Example: away a long weekend, everything is still running.
+- **A. Keep them daily** at the Fairground, as today. Example: you enter three creatures each day and see the results next visit.
+- **B. A weekly fair.** One bigger show midweek, with entries open all week and the stall on the same day. The week gets a rhythm: the fair midweek, the raid at the weekend. Example: Wednesday is fair day; Sanni sets her entries on Monday and sees the medals Wednesday evening.
+- **C. Scrap them.** Posts already make every creature useful. Medals, badges and the stall go; players keep their medals as mementos.
 
-**Lead's pick: A.** It keeps your rule that a daily visit gets everything, and leaves the pull to what you said brings players back: new choices, finds to use and orders to set. Even a month away still gets a proper story (who found what, how the server's places grew, what is waiting), never "nothing happened".
+**Lead's pick: B.** The "good fit" puzzle is a different kind of fun than the raid's power, and worth keeping. Weekly makes it an event instead of a chore, and gives the quiet middle of the week something to look forward to. Today you said four events "felt like a bit much"; a weekly fair can be bigger without that feeling.
 
-### Q6. Does a creature picked for the raid leave its post?
+### Q9. What is Bait for in the valley?
 
-Status: asked, round 2 (2026-10-29). Was the queued **post-or-fight**. Touches: `posts.md` V-POST-7, `defence.md`.
+Status: asked, round 3 (2026-10-29). From the scrap list. Touches: `commons.md`, `scouts.md`, `posts.md`; today's allowance (25 a day for opening the game) and leet bonus (15 to 32).
 
-**Why it matters.** Most creatures will hold a post all week. The raid weekend (and the daily dungeon) picks a team from them. This decides whether fighting costs the valley anything, which shapes how much a big roster is worth.
+**Why it matters.** Today Bait mostly buys treats (double XP for one activity), lures and talent slots. Treats go with posts, so Bait would pile up with nothing to buy (the simulator already shows it piling up). Bait is also the game's link to leeting, so it should stay worth earning.
 
-- **A. Fighting costs nothing.** The creature fights and keeps working. Example: Pip smiths all weekend and is in the raid too.
-- **B. Its post waits for it during the raid.** The post pauses for the raid weekend and resumes on its own; the dungeon is a quick run and pauses nothing. Example: you take your best smith to the raid, and the Forge is slower until Monday unless another creature takes the anvil.
-- **C. It leaves its post.** You reassign it after the raid. Example: on Monday you move Pip back to the Forge yourself.
+- **A. Bait builds the valley.** It is what you give to the server's projects, next to parts. Example: Sanni drops 200 Bait in the Signpost's donation bowl toward a new road.
+- **B. Bait goes to your posts.** You spend it on things that stay at a post: a lure at a scout's post that attracts a particular creature (shown with a hint), a better tool for a smith. Example: Sanni puts a Kelp Lure at the Tidepools and a rare Tide creature starts turning up.
+- **C. Both.** Bait is the everyday currency: your own setup and the server's projects compete for it.
 
-**Lead's pick: B.** It fits the story (creatures leave the valley to defend it) and makes a bigger roster worth something (G-2: cover both the raid and the Forge), and it needs nothing from you: the post resumes by itself. C is a chore (F-1, F-5), and A makes the choice weightless.
+**Lead's pick: C.** A real choice between "my valley" and "our valley" every time you spend is the heart of co-op idling, and lures at posts give the discovery puzzle the research recommends. Leets keep paying Bait. The daily allowance would stop being a reward for opening the game and arrive like any other idle gain instead (lead's call, unless you object), so it isn't one more thing that punishes a day off.
 
 ## Queue
 
 In order. Each becomes a numbered question when asked; entries name what they wait on.
 
-- **dungeon-days.** From the scrap list: a missed day loses that day's dungeon run, while everything else now never punishes absence (F-1). Bank missed runs (example: up to 3), make it weekly, or keep it daily as the one daily habit?
-- **games.** From the scrap list: the Valley Games were built to make low-level creatures worth using, which posts and the bonfire now do, and a daily show is one more daily habit. Keep them daily, make them a weekly fair, or fold them into the Festival?
-- **bait.** From the scrap list: treats go, so Bait loses its biggest use and already piles up. What is Bait for in the valley (gifts to the commons, supplies at posts, the Paddock), and does leeting still pay it?
 - **returners.** A weekly or returning player brings a smaller roster to the raid (V-POST-10: about 43% of a daily player's idle growth in a week). Does the raid even it out (level sync, a catch-up toward the server), or is that the honest cost of playing less? A seam with combat v2. After round 2.
 - **bonfire.** Is the bonfire a flat floor for every creature, or a communal hearth the server feeds? (`bonfire.md`.) Waits on Q1 and Q3.
 - **place-max.** Do places have a max level, after which projects turn cosmetic? (`commons.md`.) Waits on Q1.
@@ -103,6 +100,54 @@ Status: answered, round 1 (2026-10-29). Challenges: Misa's "don't limit daily XP
 **Answer (2026-10-29): C, with steeper steps.** "C sounds good, though the fall off could be larger toward longer idle periods and even drop to near zero after a long time. A player who was away for a month might lose the feeling of control if they don't recognize the game they came back to, because the game has moved them forward so much. Daily check in for full exp is good, then drop in a few steps. I'd expect that our other systems will keep bringing players back organically because their storages likely fill up, crafting jobs default to less valuable processes, expeditions don't get player input, and so on. This all stems from the systems and doesn't need to influence the plain simple scalar we apply to long idling players' gains."
 
 Became: G-3 accepted as reworded; F-1 and T-2 changed; V-POST-10, away growth in steps (full for a day, near zero after about a month); the lounge's daily cap goes.
+
+### Q4. When the shared place blocks you, can you push it through yourself? (a challenge)
+
+Status: answered, round 2 (2026-10-29). Challenges: Q1's "alternating blocker" against V-COM-5 ("one big giver cannot finish a project alone in a normal week"), F-5 (the fix is one tap) and F-6 (co-op without guilt). Replaces the queued **big-giver** question. Touches: `commons.md`, `forge.md`.
+
+**Why it matters.** You want a player who outgrows the Forge to push for its upgrade. But the plan also says one player can't finish a project alone. Put together, a keen player on a quiet server is stuck waiting on friends, and the only thing they can do is nag them in Discord, which is the guilt we promised to avoid. The research found nothing showing that waiting on the group is fun; the common complaint is about being nagged.
+
+- **A. Wait for the server.** Your gifts count less past a weekly share, so the upgrade needs others. Example: on a quiet 5-player server, Sanni has the resources for a third anvil and waits two weeks for the Forge's level 3.
+- **B. You can carry it, slowly.** Your gifts count less past a weekly share, but never zero, so a keen player can finish it alone in a few weeks; with friends it takes days. Example: Sanni gets her anvil in about three weeks alone, or in four days if two friends chip in.
+- **C. A rare find opens it.** The common route needs the group, but the place's keystone (a Heartcoal from the Ember Caves for the Forge) completes the step at once, and a dedicated scout finds one in a few weeks. Example: Sanni puts her best scout in the Ember Caves and gets the Heartcoal in week 3.
+
+**Lead's pick: B, with C as well.** B keeps the alternating limit you want and keeps the group the fast way, but no one is held hostage by quiet friends. C gives a keen player a goal and an adventure instead of a grind. Projects are sized only for players who visited in the last week (lead's decision), so members who drifted away never make a project bigger.
+
+**Answer (2026-10-29): B, without diminishing returns.** "B, I think. Individual players can slowly accumulate the resources and there's no need to obfuscate it behind diminishing returns unless research calls for it. Let's not block the player, but encourage them to engage with the community and coordinate efforts."
+
+Became: V-COM-5, gifts always count in full; a lone player is slowed only because projects are sized for the server's active players; the scene shows who builds and what is missing; the lab reports the top giver's share. Keystones stay as in `commons.md`.
+
+### Q5. How long do stores and queues last before they need you? (a challenge)
+
+Status: answered, round 2 (2026-10-29). Challenges: Q3's "storages likely fill up, crafting jobs default to less valuable processes... keep bringing players back" together with "daily check in for full exp", and F-1 (no must-check timers). Touches: `posts.md` V-POST-5 and V-POST-9, `forge.md`, `scouts.md`, `return.md`.
+
+**Why it matters.** You expect full stores and finished queues to bring players back on their own. How fast they fill decides what kind of pull that is. Short stores become timers by another name: a twice-a-day player beats a daily one, which goes against "daily for full". The research names this as the most resented idle pattern (AFK Arena's 12-hour chest exists to force two visits a day). And for someone away a month, full stores, a low-value Forge and near-zero growth all hit at once, so the return story would read "nothing much happened".
+
+- **A. About a day and a half.** A daily player never hits a full store or an empty queue. Stores and queues limit long absences; they don't pull you back daily. Example: Sanni plays every evening and always finds her scouts still picking things up.
+- **B. About half a day.** Stores and queues are the reason to look in twice a day. Example: Sanni's scouts are full by lunch.
+- **C. Several days.** They almost never fill. Only the away steps limit long absences. Example: away a long weekend, everything is still running.
+
+**Lead's pick: A.** It keeps your rule that a daily visit gets everything, and leaves the pull to what you said brings players back: new choices, finds to use and orders to set. Even a month away still gets a proper story (who found what, how the server's places grew, what is waiting), never "nothing happened".
+
+**Answer (2026-10-29): A.** "We could probably take a page out of an idle game's book here and keep the rewards rolling even longer, but if our progression model lets players make constant small upgrades by being present more often, they could get slightly more efficient gains that way by using the collected resources to upgrade their setup. Treat this as a loose design guideline."
+
+Became: V-POST-5 and V-FORGE-1, stores and queues last at least about a day and a half; V-POST-11, being present pays a little through small upgrades, never through rate or timers (a guideline).
+
+### Q6. Does a creature picked for the raid leave its post?
+
+Status: answered, round 2 (2026-10-29). Was the queued **post-or-fight**. Touches: `posts.md` V-POST-7, `defence.md`.
+
+**Why it matters.** Most creatures will hold a post all week. The raid weekend (and the daily dungeon) picks a team from them. This decides whether fighting costs the valley anything, which shapes how much a big roster is worth.
+
+- **A. Fighting costs nothing.** The creature fights and keeps working. Example: Pip smiths all weekend and is in the raid too.
+- **B. Its post waits for it during the raid.** The post pauses for the raid weekend and resumes on its own; the dungeon is a quick run and pauses nothing. Example: you take your best smith to the raid, and the Forge is slower until Monday unless another creature takes the anvil.
+- **C. It leaves its post.** You reassign it after the raid. Example: on Monday you move Pip back to the Forge yourself.
+
+**Lead's pick: B.** It fits the story (creatures leave the valley to defend it) and makes a bigger roster worth something (G-2: cover both the raid and the Forge), and it needs nothing from you: the post resumes by itself. C is a chore (F-1, F-5), and A makes the choice weightless.
+
+**Answer (2026-10-29): B.** "Thematically leaving on a raid quest would remove the creature from a post. However, the raid fights happen in just a few minutes and a creature can even be knocked out during one. The plan in the combat branch is to not allow a knocked out creature to return the same weekend, but another can take its place. Maybe option B sounds best and an active player would just replace the posts vacancy with another creature."
+
+Became: V-POST-7, a raider's seat is kept for the weekend, a stand-in may hold it, the raider returns on its own; the dungeon pauses nothing; V-DEF-3.
 
 ## Withdrawn
 

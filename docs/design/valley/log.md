@@ -41,3 +41,9 @@ One entry per session, newest last. Each says what was done, what was decided, a
 Then the scrap list ([`scrap-list.md`](scrap-list.md)), from an agent's inventory of the shipped game: trips, Workshop jobs, slots, the lounge cap, treats, the leet points conversion and the Home board are scrapped; scouts, the Forge and the house take over their inputs; three rows queued for Misa (dungeon-days, games, bait).
 
 **Next.** Record round 2; round 3 from the head of the queue (dungeon-days, games, bait, then returners, bonfire, place-max).
+
+## 2026-10-29 (late night): round 2 answered, round 3 asked
+
+**Done.** Recorded round 2 (`questions.md`, `decisions.md`): gifts to the commons always count in full and a lone player can finish a project, slowly (V-COM-5); stores and queues last at least about a day and a half, and being present pays a little through small upgrades (V-POST-5, V-POST-11, V-FORGE-1); a raider's seat is kept for the weekend with an optional stand-in (V-POST-7, V-DEF-3). Asked round 3 from the scrap list: Q7 the daily dungeon and missed days, Q8 the Valley Games, Q9 what Bait is for.
+
+**Next.** Record round 3; then round 4 from the queue (returners, bonfire, place-max).
