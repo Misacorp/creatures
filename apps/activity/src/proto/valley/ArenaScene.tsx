@@ -10,7 +10,6 @@ import { BossCard } from '../../BossCard';
 import { BossIconList } from '../../BossIcons';
 import { bossArt } from '../../art';
 import { cssVars } from '../../css-vars';
-import { creatureName } from '../../game';
 import { whenText } from '../../home-view';
 import { eventTitle } from '../../raid-time';
 import { Sprite } from '../../sprites/Sprite';
@@ -116,17 +115,19 @@ export function ArenaScene({
         draw={arenaDraw}
         onLeave={onLeave}
         floor={floor}
-        ground="#b48a4e"
+        ground="#5e3620"
       >
         {({ s, X, Y }) => (
           <>
             <span
               class="pv-sign pix"
-              ref={cssVars({ '--x': `${String(X(4))}px`, '--y': `${String(Y(18))}px` })}
+              ref={cssVars({ '--x': `${String(X(4))}px`, '--y': `${String(Y(38))}px` })}
             >
               <Glyph id="clock" scale={2} />
               <span>
-                {next === null ? '' : `${eventTitle(next.event)} ${whenText(world.now, next.at, world.timezone)}`}
+                {next === null
+                  ? ''
+                  : `${eventTitle(next.event)} ${whenText(world.now, next.at, world.timezone)}`}
               </span>
             </span>
             <button
@@ -146,7 +147,7 @@ export function ArenaScene({
             </button>
             <ul class="pv-board" aria-label="Your party's board, front line nearest the boss">
               {row.map((slot) => {
-                const zone = ZONES.indexOf(slot.zone as (typeof ZONES)[number]);
+                const zone = ZONES.indexOf(slot.zone);
                 const lane = row.filter((r) => r.zone === slot.zone).indexOf(slot);
                 const x = ARENA_BOARD.x + lane * ARENA_BOARD.step;
                 const y = ARENA_BOARD.y + zone * ARENA_BOARD.step;
@@ -209,5 +210,3 @@ export function ArenaScene({
     </>
   );
 }
-
-export { creatureName };

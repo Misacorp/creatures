@@ -17,7 +17,7 @@ import { ROOM_SPOTS } from '../../sprites/room-art';
 import { Sprite } from '../../sprites/Sprite';
 import { ActionButton } from '../../ui/ActionButton';
 import { Drawer } from '../../ui/Drawer';
-import { TOUR, creatureOf, evolvers, type ProtoWorld } from '../world';
+import { TOUR, evolvers, type ProtoWorld } from '../world';
 import { paint } from './paint';
 import { At, CreatureSprite, SpeechBubble, UpArrow, isStill } from './parts';
 import { SceneFrame } from './SceneFrame';
@@ -60,9 +60,13 @@ export function HouseScene({
   const ready = evolvers(world)[0];
   const ownId = ready?.id ?? TOUR.evolveId;
   const own = world.creatures.find((c) => c.id === ownId);
-  const [evo, setEvo] = useState<Evo | null>(choosing && ready !== undefined ? { phase: 'choose' } : null);
+  const [evo, setEvo] = useState<Evo | null>(
+    choosing && ready !== undefined ? { phase: 'choose' } : null,
+  );
   const forms = ready === undefined ? [] : evolveForms(ready);
-  const [picked, setPicked] = useState<string | null>(choosing ? (forms[0]?.species ?? null) : null);
+  const [picked, setPicked] = useState<string | null>(
+    choosing ? (forms[0]?.species ?? null) : null,
+  );
   const [stub, setStub] = useState<string | null>(null);
 
   useEffect(() => {
@@ -158,7 +162,10 @@ export function HouseScene({
               {others.map(({ r, spot }) => (
                 <At key={r.userId} x={X(spot.x)} y={Y(ROOM_TOP + spot.y)}>
                   <CreatureSprite
-                    creature={{ species: r.creature?.species ?? 'cindle', shiny: r.creature?.shiny ?? false }}
+                    creature={{
+                      species: r.creature?.species ?? 'cindle',
+                      shiny: r.creature?.shiny ?? false,
+                    }}
                     scale={s}
                   />
                 </At>
@@ -225,9 +232,7 @@ export function HouseScene({
         }}
         title={stub ?? ''}
       >
-        <p class="pv-stub">
-          In the game this opens the {stub}. It is not part of this prototype.
-        </p>
+        <p class="pv-stub">In the game this opens the {stub}. It is not part of this prototype.</p>
       </Drawer>
     </>
   );
@@ -281,15 +286,11 @@ function OwnOnCouch({
         })}
         onClick={onTap}
       >
-        <Sprite
-          sprite={creatureSpriteOrFallback(shown)}
-          scale={s}
-          {...(palette !== undefined
-            ? { palette }
-            : shiny
-              ? {}
-              : {})}
-        />
+        {palette === undefined ? (
+          <CreatureSprite creature={{ species: shown, shiny }} scale={s} />
+        ) : (
+          <Sprite sprite={creatureSpriteOrFallback(shown)} scale={s} palette={palette} />
+        )}
         {canEvolve && evo === null && (
           <SpeechBubble>
             <CreatureIcon creature={{ species, shiny }} />
@@ -320,5 +321,3 @@ function FrontLayer({ ox, s }: { ox: number; s: number }) {
   }, [ox, s]);
   return <canvas ref={ref} class="pv-front" width={w} height={h} aria-hidden="true" />;
 }
-
-export { creatureOf };

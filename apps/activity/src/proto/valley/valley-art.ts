@@ -27,7 +27,15 @@ export const VALLEY_SIZE = { width: VALLEY_COLS * TILE, height: VALLEY_ROWS * TI
 const INK = '#0d0a1a';
 
 /** The places of the valley, west to east and north to south (the reading order of their buttons). */
-export const PLACE_IDS = ['cave', 'fair', 'house', 'paddock', 'forge', 'arena', 'signpost'] as const;
+export const PLACE_IDS = [
+  'cave',
+  'fair',
+  'house',
+  'paddock',
+  'forge',
+  'arena',
+  'signpost',
+] as const;
 export type PlaceId = (typeof PLACE_IDS)[number];
 
 export interface Rect {
@@ -149,12 +157,7 @@ export function roofPlacements(
       g.set(xx, yy, key);
     }
   }
-  return gridPlacements(
-    g,
-    { a: ramp[0], b: ramp[1], c: ramp[2], d: ramp[3], k: INK },
-    x,
-    y,
-  );
+  return gridPlacements(g, { a: ramp[0], b: ramp[1], c: ramp[2], d: ramp[3], k: INK }, x, y);
 }
 
 /** The anvil (16 x 16): a dark iron horn and face on a stout foot. */
@@ -264,7 +267,8 @@ export function featureGrid(): Cell[][] {
     }
   };
   // Hills along the horizon (two tiles that make one 32 px wave).
-  for (let c = 0; c < VALLEY_COLS; c++) fill(c, 2, 1, 1, { tile: c % 2 === 0 ? 'hillsA' : 'hillsB' });
+  for (let c = 0; c < VALLEY_COLS; c++)
+    fill(c, 2, 1, 1, { tile: c % 2 === 0 ? 'hillsA' : 'hillsB' });
   // Roads.
   const dirt: Cell = { tile: 'dirt' };
   fill(3, 9, 32, 1, dirt);
@@ -313,7 +317,8 @@ function cellSprite(cell: NonNullable<Cell>, frame: number): SpriteDef {
 function marginDecor(col: number, row: number): Placement | null {
   if (row < 3) return null;
   const n = (((col * 7 + row * 13) % 11) + 11) % 11;
-  if (n === 0) return { sprite: WORLD_MAP_SPRITE_DATA.smallPine, x: col * TILE + 2, y: row * TILE - 2 };
+  if (n === 0)
+    return { sprite: WORLD_MAP_SPRITE_DATA.smallPine, x: col * TILE + 2, y: row * TILE - 2 };
   if (n === 5) return { sprite: WORLD_MAP_SPRITE_DATA.smallTree, x: col * TILE + 3, y: row * TILE };
   if (n === 8) return { sprite: WORLD_MAP_SPRITE_DATA.bush, x: col * TILE + 4, y: row * TILE + 6 };
   return null;
@@ -339,8 +344,8 @@ const DECOR: readonly [keyof typeof WORLD_MAP_SPRITE_DATA, number, number][] = [
   ['smallPine', 132, 222],
   ['bush', 300, 172],
   ['flowers', 328, 196],
-  ['smallTree', 372, 160],
-  ['smallPine', 392, 180],
+  ['smallTree', 400, 150],
+  ['smallPine', 396, 182],
   ['smallTree', 420, 164],
   ['rock', 448, 196],
   ['smallPine', 540, 168],
@@ -443,7 +448,8 @@ export function buildingPlacements(): Placement[] {
   out.push({ sprite: forgeOpening(), x: 21 * TILE - 4, y: 11 * TILE + 4 });
   out.push({ sprite: ANVIL, x: 21 * TILE, y: 13 * TILE - 2 });
   // Arena: bunting over the north bleachers.
-  for (let c = 24; c < 34; c++) out.push({ sprite: tileFrame('bunting'), x: c * TILE, y: 2 * TILE });
+  for (let c = 24; c < 34; c++)
+    out.push({ sprite: tileFrame('bunting'), x: c * TILE, y: 2 * TILE });
   // Fairground: the festival tents, the podium and pennants.
   out.push({ sprite: wm.festivalGrounds, x: 1 * TILE + 6, y: 12 * TILE + 10 });
   out.push({ sprite: propSprite('podium2', 0, 'silver'), x: 82, y: 262 - 18 });
@@ -492,7 +498,12 @@ export const LAKE = tiles(0, 19, 10, 5);
 /** The boss in the arena, from the valley (its 24 px sprite at 2x). */
 export const ARENA_BOSS = { x: 29 * TILE - 24, y: 4 * TILE + 4 } as const;
 /** Where your idle creatures roam: inside the paddock's fence. */
-export const PADDOCK_ROAM = { x: 12 * TILE + 4, y: 13 * TILE, width: 6 * TILE - 24, height: 3 * TILE - 16 } as const;
+export const PADDOCK_ROAM = {
+  x: 12 * TILE + 4,
+  y: 13 * TILE,
+  width: 6 * TILE - 24,
+  height: 3 * TILE - 16,
+} as const;
 
 export function flameSprite(frame: number): SpriteDef {
   return propSprite('flame', frame);

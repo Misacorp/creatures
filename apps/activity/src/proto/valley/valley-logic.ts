@@ -117,7 +117,13 @@ export function fitValley(width: number, height: number, scale = VALLEY_SCALE): 
   // Centre the valley itself (not the drawing): the drawing overhangs by its margins.
   const left = pans ? 0 : Math.floor((width - vw) / 2) - side * tile;
   const top = Math.floor((height - vh) / 2) - updown * tile;
-  return { scale, margin: { left: side, top: updown, right: side, bottom: updown }, left, top, pans };
+  return {
+    scale,
+    margin: { left: side, top: updown, right: side, bottom: updown },
+    left,
+    top,
+    pans,
+  };
 }
 
 /** The furthest a panning valley scrolls (CSS px). */
@@ -126,7 +132,12 @@ export function maxScroll(width: number, scale = VALLEY_SCALE): number {
 }
 
 /** The scroll that centres the valley-pixel span `[from, to]` in a window `width` wide, clamped. */
-export function scrollToSpan(from: number, to: number, width: number, scale = VALLEY_SCALE): number {
+export function scrollToSpan(
+  from: number,
+  to: number,
+  width: number,
+  scale = VALLEY_SCALE,
+): number {
   const centre = ((from + to) / 2) * scale;
   return Math.round(Math.min(maxScroll(width, scale), Math.max(0, centre - width / 2)));
 }
@@ -175,9 +186,7 @@ export function edgeArrows(
 
 /** The places in reading order (west to east, north to south): the list of buttons and the arrow keys. */
 export function readingOrder(): PlaceId[] {
-  return [...PLACES]
-    .sort((a, b) => a.rect.x - b.rect.x || a.rect.y - b.rect.y)
-    .map((p) => p.id);
+  return [...PLACES].sort((a, b) => a.rect.x - b.rect.x || a.rect.y - b.rect.y).map((p) => p.id);
 }
 
 // --- The raid's board ---

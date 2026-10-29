@@ -35,9 +35,12 @@ export function HaulReveal({
   const [frame, setFrame] = useState(still ? 3 : 0);
   useEffect(() => {
     if (still || frame >= 3) return undefined;
-    const id = window.setTimeout(() => {
-      setFrame((f) => f + 1);
-    }, frame === 0 ? 300 : 100);
+    const id = window.setTimeout(
+      () => {
+        setFrame((f) => f + 1);
+      },
+      frame === 0 ? 200 : 100,
+    );
     return () => {
       window.clearTimeout(id);
     };
@@ -77,7 +80,14 @@ export function HaulReveal({
       <div class={`pv-haul-body${open ? ' open' : ''}`}>
         <FindList label="Brought home" class="pv-haul-finds">
           {gear.map((g) => (
-            <FindItem key={g.id} baseId={g.baseId} rarity={g.rarity} level={g.itemLevel} motion={!still} scale={3} />
+            <FindItem
+              key={g.id}
+              baseId={g.baseId}
+              rarity={g.rarity}
+              level={g.itemLevel}
+              motion={!still}
+              scale={3}
+            />
           ))}
           {blueprints.slice(0, 2).map((b) => (
             <FindBlueprint key={b.baseId} baseId={b.baseId} duplicate={b.duplicate} scale={3} />

@@ -5,7 +5,7 @@
  * trip. Then the view goes back to the valley at the signpost and the explorer steps off along the road.
  */
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { mapPlaces } from '../../map-view';
+import { mapPlaces, mapScaleWide } from '../../map-view';
 import { creatureName } from '../../game';
 import { destinationName, supplyKindOf, supplyName } from '../../trip-view';
 import { ActionButton } from '../../ui/ActionButton';
@@ -13,7 +13,7 @@ import { GameIcon } from '../../ui/GameIcon';
 import { WorldMap } from '../../WorldMap';
 import { TOUR, freeCreatures, type ProtoWorld, type SendTripChoice } from '../world';
 import { LineUp } from './LineUp';
-import { LeaveDoor } from './parts';
+import { LeaveDoor, useSize } from './parts';
 
 export interface SendPicks {
   place: string | null;
@@ -49,19 +49,45 @@ export function SignpostScene({
   const stock = Object.entries(world.supplies).filter(([, n]) => n > 0);
   const name = who === null ? null : free.find((c) => c.id === who);
   const floorRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLElement | null>(null);
+  const size = useSize(rootRef);
+  // A desktop draws the map as big as the window allows (`mapScaleWide`), as the Expeditions tab does; the
+  // send panel takes 26rem beside it and the HUD 3.5rem above.
+  const wide = size.width >= 900;
+  const mapSize = { width: size.width - 416, height: size.height - 56 };
   // A place picked on a phone: the floor (the line-up and Send) scrolls into view under the map.
   useEffect(() => {
-    if (place === null) return;
+    if (place === null) return undefined;
     const el = floorRef.current;
     const box = el?.parentElement;
-    if (el == null || box == null || box.scrollHeight <= box.clientHeight) return;
-    box.scrollTop = el.offsetTop + el.offsetHeight - box.clientHeight;
+    if (el == null || box == null) return undefined;
+    if (window.matchMedia('(min-width: 900px)').matches) return undefined;
+    // Once more after the map has measured itself and settled its scale.
+    el.scrollIntoView({ block: 'end' });
+    const id = window.setTimeout(() => {
+      el.scrollIntoView({ block: 'end' });
+    }, 80);
+    return () => {
+      window.clearTimeout(id);
+    };
   }, [place]);
 
   return (
-    <section class="pv-interior pv-in-signpost" aria-label="Signpost, Expeditions">
+    <section
+      ref={(el) => {
+        rootRef.current = el;
+      }}
+      class="pv-interior pv-in-signpost"
+      aria-label="Signpost, Expeditions"
+    >
       <div class="pv-map">
-        <WorldMap places={places} selected={place} night={false} onPick={setPlace} />
+        <WorldMap
+          places={places}
+          selected={place}
+          night={false}
+          onPick={setPlace}
+          {...(wide ? { scale: mapScaleWide(mapSize.width, mapSize.height) } : {})}
+        />
       </div>
       <LeaveDoor onLeave={onLeave} />
       <div class="pv-floor" ref={floorRef}>
@@ -92,7 +118,10 @@ export function SignpostScene({
                           setSupply(supply === id ? null : id);
                         }}
                       >
-                        <GameIcon icon={{ kind: 'supply', id: supplyKindOf(id) ?? 'unknown' }} scale={3} />
+                        <GameIcon
+                          icon={{ kind: 'supply', id: supplyKindOf(id) ?? 'unknown' }}
+                          scale={3}
+                        />
                         <span class="pv-pack-n pix" aria-hidden="true">
                           {n}
                         </span>
@@ -112,7 +141,12 @@ export function SignpostScene({
                   disabled={name == null}
                   onClick={() => {
                     if (who === null) return;
-                    onSend({ creatureId: who, destination: place, length: TOUR.send.length, supply });
+                    onSend({
+                      creatureId: who,
+                      destination: place,
+                      length: TOUR.send.length,
+                      supply,
+                    });
                   }}
                 />
               </>

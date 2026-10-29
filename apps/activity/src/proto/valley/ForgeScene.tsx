@@ -7,6 +7,7 @@
  * a blueprint off the wall and a free creature from the line-up, and start.
  */
 import { useEffect, useState } from 'preact/hooks';
+import { cssVars } from '../../css-vars';
 import { creatureName } from '../../game';
 import { jobTitle } from '../../gear-view';
 import { ItemSprite } from '../../GearArt';
@@ -23,14 +24,7 @@ import { GlossaryTag } from '../../Glossary';
 import { craftingGain } from '../../xp-gain';
 import { gearName } from '../../gear-view';
 import type { Job } from '../../gear-types';
-import {
-  TOUR,
-  claimJob,
-  creatureOf,
-  freeCreatures,
-  startJob,
-  type ProtoWorld,
-} from '../world';
+import { TOUR, claimJob, creatureOf, freeCreatures, startJob, type ProtoWorld } from '../world';
 import { LineUp } from './LineUp';
 import { At, CreatureSprite, Pic, SpeechBubble, isStill } from './parts';
 import { SceneFrame } from './SceneFrame';
@@ -80,19 +74,22 @@ export function ForgeScene({
 
   useEffect(() => {
     if (strike === null) return undefined;
-    const id = window.setTimeout(() => {
-      if (strike.frame < 3) setStrike({ ...strike, frame: strike.frame + 1 });
-      else if (chest < 2) setChest((c) => c + 1);
-      else {
-        const job = anvils[strike.anvil];
-        setStrike(null);
-        if (job != null) finishClaim(strike.anvil, job);
-      }
-    }, strike.frame < 3 ? 120 : 100);
+    const id = window.setTimeout(
+      () => {
+        if (strike.frame < 3) setStrike({ ...strike, frame: strike.frame + 1 });
+        else if (chest < 2) setChest((c) => c + 1);
+        else {
+          const job = anvils[strike.anvil];
+          setStrike(null);
+          if (job != null) finishClaim(strike.anvil, job);
+        }
+      },
+      strike.frame < 3 ? 120 : 100,
+    );
     return () => {
       window.clearTimeout(id);
     };
-  }, [strike, chest]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [strike, chest]);
 
   const finishClaim = (anvil: number, jobId: string): void => {
     setWorld(claimJob(world, jobId));
@@ -151,7 +148,10 @@ export function ForgeScene({
         </FindList>
         <XpList label="Crafting">
           <XpGain
-            change={craftingGain(claimed.result, creatureName(creatureOf(world, claimed.creatureId)))}
+            change={craftingGain(
+              claimed.result,
+              creatureName(creatureOf(world, claimed.creatureId)),
+            )}
             what="Crafting XP"
             label={<GlossaryTag entry="crafting">Crafting</GlossaryTag>}
             who={creatureOf(world, claimed.creatureId)}
@@ -177,12 +177,7 @@ export function ForgeScene({
             </li>
           ))}
         </ul>
-        <LineUp
-          label="Who works the anvil?"
-          creatures={free}
-          picked={worker}
-          onPick={setWorker}
-        />
+        <LineUp label="Who works the anvil?" creatures={free} picked={worker} onPick={setWorker} />
         <ActionButton
           label={worker === null ? 'Pick a worker' : `Craft ${gearName(blueprint)}`}
           detail="6 scrap · 3 h"
@@ -244,13 +239,12 @@ export function ForgeScene({
                   type="button"
                   class={`pv-anvil${job === undefined ? ' empty' : ''}${setting === i ? ' on' : ''}`}
                   aria-label={label}
-                  ref={(el) => {
-                    if (el === null) return;
-                    el.style.setProperty('--x', `${String(X(a.x - 14))}px`);
-                    el.style.setProperty('--y', `${String(Y(a.y - 12))}px`);
-                    el.style.setProperty('--pw', `${String(32 * s)}px`);
-                    el.style.setProperty('--ph', `${String(30 * s)}px`);
-                  }}
+                  ref={cssVars({
+                    '--x': `${String(X(a.x - 14))}px`,
+                    '--y': `${String(Y(a.y - 12))}px`,
+                    '--pw': `${String(32 * s)}px`,
+                    '--ph': `${String(30 * s)}px`,
+                  })}
                   onClick={() => {
                     tapAnvil(i);
                   }}
@@ -284,11 +278,10 @@ export function ForgeScene({
             type="button"
             class="pv-chest"
             aria-label={`Chest: your bag, ${String(world.items.length)} items (not in this prototype)`}
-            ref={(el) => {
-              if (el === null) return;
-              el.style.setProperty('--x', `${String(X(FORGE_CHEST.x))}px`);
-              el.style.setProperty('--y', `${String(Y(FORGE_CHEST.y))}px`);
-            }}
+            ref={cssVars({
+              '--x': `${String(X(FORGE_CHEST.x))}px`,
+              '--y': `${String(Y(FORGE_CHEST.y))}px`,
+            })}
           >
             <Pic sprite={CHEST_FRAMES[chest] ?? CHEST_FRAMES[0]!} scale={s} />
           </button>

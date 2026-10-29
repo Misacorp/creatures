@@ -43,10 +43,10 @@ function shelf(w: number, x: number, y: number): Placement[] {
 export const FORGE_SIZE = { width: 128, height: 96 } as const;
 /** The forge's job slots (the anvils), its chest and its parts shelf, in scene pixels. */
 export const FORGE_ANVILS = [
-  { x: 14, y: 70 },
-  { x: 72, y: 70 },
+  { x: 34, y: 70 },
+  { x: 80, y: 70 },
 ] as const;
-export const FORGE_CHEST = { x: 106, y: 70 } as const;
+export const FORGE_CHEST = { x: 108, y: 70 } as const;
 export const FORGE_SHELF = { x: 4, y: 20, width: 36 } as const;
 
 export function forgeDraw(cols: number, ox: number): Placement[] {
@@ -70,24 +70,25 @@ export const ARENA_BOARD = { x: 31, y: 56, step: 22 } as const;
 
 export function arenaDraw(cols: number, ox: number): Placement[] {
   void ox;
-  return [...band('bleacher', cols, 0, 1), ...band('sand', cols, 1, 7), ...band('bunting', cols, 0, 1)];
+  return [
+    ...band('bleacher', cols, 0, 1),
+    ...band('sand', cols, 1, 7),
+    ...band('bunting', cols, 0, 1),
+  ];
 }
 
 // --- House (the living room) ---
 
-/** The room's content (the game's living room, 288 x 56) under a strip of wall: 288 x 64. */
-export const HOUSE_SIZE = { width: 288, height: 64 } as const;
-const ROOM_TOP = 8;
+/** The room's content: the game's living room, 288 x 56. */
+export const HOUSE_SIZE = { width: 288, height: 56 } as const;
+const ROOM_TOP = 0;
 
 export function houseDraw(phase: RoomPhase): (cols: number, ox: number) => Placement[] {
   return (cols, ox) => {
     const scene = roomScene(phase);
     const out: Placement[] = [];
-    // The wall continues above the room and at its sides.
-    for (let x = 0; x < cols * TILE; x += 16) {
-      out.push({ sprite: scene.edgeTile, x, y: ROOM_TOP });
-      out.push({ sprite: scene.edgeTile, x, y: ROOM_TOP - 48 });
-    }
+    // The wall and floor continue at the room's sides.
+    for (let x = 0; x < cols * TILE; x += 16) out.push({ sprite: scene.edgeTile, x, y: ROOM_TOP });
     for (const p of scene.props) {
       if (p.layer === 'back') out.push({ sprite: p.sprite, x: ox + p.x, y: ROOM_TOP + p.y });
     }

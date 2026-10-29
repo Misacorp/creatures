@@ -13,5 +13,12 @@ registerProto({
   id: 'valley',
   title: 'The valley is the menu',
   steps: TOUR_STEPS.map(({ id, title }) => ({ id, title })),
-  render: ({ step, setStep }) => <Valley step={step} setStep={setStep} />,
+  render: (props) => (
+    <Valley
+      step={props.step}
+      setStep={(n) => {
+        props.setStep(n);
+      }}
+    />
+  ),
 });

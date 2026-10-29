@@ -33,7 +33,12 @@ export function paint(
     const top = oy + p.y * f;
     const sprite = parsed(p.sprite);
     // Skip what is wholly outside the canvas (the zoom draws a small part of a big world).
-    if (left > width || top > height || left + sprite.width * f < 0 || top + sprite.height * f < 0) {
+    if (
+      left > width ||
+      top > height ||
+      left + sprite.width * f < 0 ||
+      top + sprite.height * f < 0
+    ) {
       continue;
     }
     for (const cell of sprite.cells) {

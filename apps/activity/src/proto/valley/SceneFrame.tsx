@@ -23,20 +23,18 @@ export interface SceneGeometry {
 }
 
 /** The scene's scale: 3 on a phone; on a wide window as big as fits 60% of the height, at most 5. */
-export function sceneScale(
-  width: number,
-  height: number,
-  w: number,
-  h: number,
-  phone = 3,
-): number {
+export function sceneScale(width: number, height: number, w: number, h: number, phone = 3): number {
   if (width < 700) return phone;
   const fit = Math.min(Math.floor(width / w), Math.floor((height * 0.6) / h));
   return Math.max(3, Math.min(5, fit));
 }
 
 /** The drawing's width in whole tiles (at least the content's), and where the content starts (tile-aligned). */
-export function sceneSpan(viewWidth: number, s: number, contentWidth: number): { cols: number; ox: number } {
+export function sceneSpan(
+  viewWidth: number,
+  s: number,
+  contentWidth: number,
+): { cols: number; ox: number } {
   const need = Math.max(contentWidth, Math.ceil(viewWidth / s));
   const cols = Math.ceil(need / TILE) + 1;
   const ox = Math.max(0, Math.floor((cols * TILE - contentWidth) / 2 / TILE) * TILE);
@@ -101,7 +99,8 @@ export function SceneFrame({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape' && document.querySelector('.drawer, [role="dialog"]') === null) onLeave();
+      if (e.key === 'Escape' && document.querySelector('.drawer, [role="dialog"]') === null)
+        onLeave();
     };
     window.addEventListener('keydown', onKey);
     return () => {

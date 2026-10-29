@@ -115,14 +115,31 @@ export function Glyph({ id, scale = 2 }: { id: string; scale?: number }) {
 }
 
 /** A plain sprite. */
-export function Pic({ sprite, scale = 2, class: extra }: { sprite: SpriteDef; scale?: number; class?: string }) {
-  return <Sprite sprite={sprite} scale={scale} {...(extra === undefined ? {} : { class: extra })} />;
+export function Pic({
+  sprite,
+  scale = 2,
+  class: extra,
+}: {
+  sprite: SpriteDef;
+  scale?: number;
+  class?: string;
+}) {
+  return (
+    <Sprite sprite={sprite} scale={scale} {...(extra === undefined ? {} : { class: extra })} />
+  );
 }
 
 /** An up arrow of pixels (evolution), drawn as an SVG of squares. */
 export function UpArrow() {
   return (
-    <svg class="pv-up" viewBox="0 0 5 6" width="10" height="12" aria-hidden="true" shape-rendering="crispEdges">
+    <svg
+      class="pv-up"
+      viewBox="0 0 5 6"
+      width="10"
+      height="12"
+      aria-hidden="true"
+      shape-rendering="crispEdges"
+    >
       <path d="M2 0h1v1h1v1h1v1H3v3H2V3H0V2h1V1h1z" />
     </svg>
   );
@@ -199,7 +216,13 @@ export function SpeechBubble({
 }
 
 /** The leave door of an interior: a pixel door, bottom-left of the scene. */
-export function LeaveDoor({ onLeave, label = 'Back to the valley' }: { onLeave: () => void; label?: string }) {
+export function LeaveDoor({
+  onLeave,
+  label = 'Back to the valley',
+}: {
+  onLeave: () => void;
+  label?: string;
+}) {
   const ref = useRef<HTMLButtonElement>(null);
   return (
     <button ref={ref} type="button" class="pv-leave" aria-label={label} onClick={onLeave}>

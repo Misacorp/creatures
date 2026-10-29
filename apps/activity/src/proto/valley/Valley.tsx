@@ -14,6 +14,7 @@ import { usePrefersReducedMotion } from '../../hooks';
 import {
   TOUR,
   claimJob,
+  claimTrip,
   creatureOf,
   placeRaid,
   sendTrip,
@@ -29,11 +30,10 @@ import { HouseScene } from './HouseScene';
 import { Glyph, isStill } from './parts';
 import { CaveScene, FairScene, PaddockScene } from './PeekScenes';
 import { SignpostScene, type SendPicks } from './SignpostScene';
-import { PLACES, placeOf, type PlaceId } from './valley-art';
+import { placeOf, type PlaceId } from './valley-art';
 import { bubblesOf, placeLabel, readingOrder } from './valley-logic';
 import { ValleyMap } from './ValleyMap';
 import { ZoomCut } from './ZoomCut';
-import { claimTrip } from '../world';
 
 /** Where the player is, and the moment a place opens on. */
 interface View {
@@ -195,9 +195,7 @@ export function Valley({ step, setStep }: { step: number; setStep: (n: number) =
             departing={view.departing}
             onPlace={enter}
           />
-          {view.haul !== null && (
-            <HaulReveal world={world} tripId={view.haul} onClaim={claim} />
-          )}
+          {view.haul !== null && <HaulReveal world={world} tripId={view.haul} onClaim={claim} />}
         </>
       );
       break;
@@ -323,5 +321,3 @@ export function Valley({ step, setStep }: { step: number; setStep: (n: number) =
     </PopoverHost>
   );
 }
-
-export { PLACES };

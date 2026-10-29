@@ -91,7 +91,7 @@ export function ValleyMap({ world, at, onPlace, focus, departing, onScroll }: Va
   const tick = useTick(TICK_MS, moving);
   useDragScroll(scrollerRef);
 
-  const drawing = useMemo(() => valleyDrawing(fit.margin), [fit.margin.left, fit.margin.top]); // eslint-disable-line react-hooks/exhaustive-deps
+  const drawing = useMemo(() => valleyDrawing(fit.margin), [fit.margin.left, fit.margin.top]);
   const lakeFrame = moving ? Math.floor(tick / 8) % 2 : 0;
   useEffect(() => {
     const ctx = canvasRef.current?.getContext('2d');
@@ -106,7 +106,7 @@ export function ValleyMap({ world, at, onPlace, focus, departing, onScroll }: Va
       (p) => p.y >= 19 * TILE + drawing.oy && p.x < 10 * TILE + drawing.ox && p.x >= drawing.ox,
     );
     paint(ctx, lake, s, 0, 0, false);
-  }, [lakeFrame]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [lakeFrame]);
 
   // Start where asked (a phone pans; a desktop sees it all).
   useLayoutEffect(() => {
@@ -117,7 +117,6 @@ export function ValleyMap({ world, at, onPlace, focus, departing, onScroll }: Va
   }, [at, fit.pans, size.width]);
 
   const [scrollLeft, setScrollLeft] = useScrollLeft(scrollerRef);
-  void setScrollLeft;
 
   const bubbles = bubblesOf(world);
   const bubbleAt = (id: PlaceId): Bubble | undefined => bubbles.find((b) => b.place === id);
@@ -129,7 +128,7 @@ export function ValleyMap({ world, at, onPlace, focus, departing, onScroll }: Va
     wrapRef.current
       ?.querySelector<HTMLElement>(`[data-place="${focus}"]`)
       ?.focus({ preventScroll: true });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const goTo = (id: PlaceId): void => {
     const el = scrollerRef.current;
@@ -159,7 +158,9 @@ export function ValleyMap({ world, at, onPlace, focus, departing, onScroll }: Va
   const house = placeOf('house').rect;
   const houseMid = (house.x + house.width / 2) * s;
   const houseGone =
-    fit.pans && !wanted.includes('house') && (houseMid < scrollLeft || houseMid > scrollLeft + size.width);
+    fit.pans &&
+    !wanted.includes('house') &&
+    (houseMid < scrollLeft || houseMid > scrollLeft + size.width);
 
   const stageVars = cssVars({
     '--w': `${String(drawing.width * s)}px`,
@@ -253,18 +254,15 @@ export function ValleyMap({ world, at, onPlace, focus, departing, onScroll }: Va
           </ul>
         </div>
       </div>
-      {arrows.map((a, i) => {
+      {arrows.map((a) => {
         const bubble = bubbleAt(a.place);
-        const same = arrows.filter((b) => b.side === a.side);
-        const stack = same.indexOf(a);
-        void i;
         return (
           <button
             key={a.place}
             type="button"
             class={`pv-edge pv-edge-${a.side}`}
             aria-label={`${placeLabel(a.place, bubble)}. Off screen, to the ${a.side === 'left' ? 'west' : 'east'}`}
-            ref={cssVars({ '--ey': `${String(Y(a.y) + fit.top + stack * 0)}px` })}
+            ref={cssVars({ '--ey': `${String(Y(a.y) + fit.top)}px` })}
             onClick={() => {
               goTo(a.place);
             }}
@@ -333,7 +331,14 @@ function useResidents(
   home.slice(0, 1).forEach((t) => {
     const c = world.creatures.find((x) => x.id === t.creatureId);
     if (c !== undefined) {
-      out.push({ key: c.id, creature: c, x: 28 * TILE + 2, y: 16 * TILE + 2, flip: false, sack: true });
+      out.push({
+        key: c.id,
+        creature: c,
+        x: 28 * TILE + 2,
+        y: 16 * TILE + 2,
+        flip: false,
+        sack: true,
+      });
     }
   });
   const working = world.jobs.filter((j) => j.status !== 'claimed');
@@ -352,10 +357,21 @@ function useResidents(
   });
   const evolving = world.creatures.find((c) => c.evolution?.available === true && isFree(world, c));
   if (evolving !== undefined) {
-    out.push({ key: evolving.id, creature: evolving, x: 16 * TILE + 2, y: 7 * TILE, flip: true, sack: false });
+    out.push({
+      key: evolving.id,
+      creature: evolving,
+      x: 16 * TILE + 2,
+      y: 7 * TILE,
+      flip: true,
+      sack: false,
+    });
   }
   // The raid's board: front nearest the boss. Three lines of three, facing east.
-  const zoneX: Record<string, number> = { front: 25 * TILE + 8 + 32, middle: 25 * TILE + 8 + 16, back: 25 * TILE + 8 };
+  const zoneX: Record<string, number> = {
+    front: 25 * TILE + 8 + 32,
+    middle: 25 * TILE + 8 + 16,
+    back: 25 * TILE + 8,
+  };
   const row = world.raid.party?.row ?? [];
   row.forEach((slot) => {
     if (slot.creature === null) return;
@@ -387,7 +403,14 @@ function useResidents(
     const gone = (tick - departTick.current) * (moving ? 8 : 0);
     const x = 31 * TILE + gone;
     if (x < 38 * TILE) {
-      out.push({ key: `out-${departing.id}`, creature: departing, x, y: 17 * TILE + 2, flip: false, sack: true });
+      out.push({
+        key: `out-${departing.id}`,
+        creature: departing,
+        x,
+        y: 17 * TILE + 2,
+        flip: false,
+        sack: true,
+      });
     }
   } else departTick.current = null;
 
