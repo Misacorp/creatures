@@ -22,7 +22,7 @@ import { At, Pic } from './parts';
 import { SACK_FRAMES } from './valley-art';
 
 /** Where the sack lies (valley pixels): on the road at the signpost's foot. */
-export const SACK_AT = { x: 28 * 16 + 22, y: 17 * 16 + 4 } as const;
+export const SACK_AT = { x: 28 * 16 + 22, y: 15 * 16 + 10 } as const;
 /** Where the found things land round the sack (offsets from it), in the order they pop out. */
 export const LAND_AT: readonly { dx: number; dy: number }[] = [
   { dx: -30, dy: -22 },

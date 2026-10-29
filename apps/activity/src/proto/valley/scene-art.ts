@@ -6,7 +6,7 @@
  * Built from the Games tiles, the living room's props and the valley's new sprites.
  */
 import type { RoomPhase } from '@creatures/game';
-import { ROOM_SPRITE_DATA } from '../../sprites/data/room-sprites';
+import { ROOM_SPRITE_DATA, type RoomPropName } from '../../sprites/data/room-sprites';
 import type { SpriteDef } from '../../sprites/sprite-data';
 import { WORLD_MAP_SPRITE_DATA } from '../../sprites/data/world-map-sprites';
 import { roomScene } from '../../sprites/room-art';
@@ -114,8 +114,8 @@ export function forgeDraw(g: SceneGeometry): Placement[] {
       propSprite('crate', 0, 'pine', 'green'),
     ]),
     ...sides(g, g.cx - 72, g.cx + 72, f + 60, 44, [
-      propSprite('teamCrate', 0, 'pine', 'red'),
-      ANVIL,
+      propSprite('crate', 0, 'pine', 'green'),
+      propSprite('bucket', 0, 'wood'),
       propSprite('barrel', 0, 'wood', 'blue'),
     ]),
   ];
@@ -198,13 +198,14 @@ export function houseFloor(g: SceneGeometry): number {
 }
 
 export function houseSpots(g: SceneGeometry) {
-  const f = houseFloor(g);
+  // The rug lies in the middle of the floor between the room and the pinned button.
+  const mid = Math.max(houseFloor(g) + 30, Math.floor((houseFloor(g) + 6 + g.H - 22) / 2));
   return {
-    rug: { x: g.cx - 22, y: f + 40 },
+    rug: { x: g.cx - 22, y: mid + 6 },
     /** The creature that evolves, on the rug; its two forms either side. */
-    centre: { x: g.cx - 8, y: f + 26 },
-    left: { x: g.cx - 46, y: f + 26 },
-    right: { x: g.cx + 30, y: f + 26 },
+    centre: { x: g.cx - 8, y: mid - 8 },
+    left: { x: g.cx - 46, y: mid - 8 },
+    right: { x: g.cx + 30, y: mid - 8 },
   };
 }
 
@@ -214,10 +215,11 @@ export function houseDraw(phase: RoomPhase): (g: SceneGeometry) => Placement[] {
     const top = houseFloor(g) - 50;
     const left = roomLeft(g);
     const out: Placement[] = [];
-    // The wall above the room and the wall and floor at its sides.
+    // The wall and floor at the room's sides, and its calm top band repeated up to the HUD.
+    const band14 = { ...scene.edgeTile, rows: scene.edgeTile.rows.slice(0, 14) };
     for (let x = 0; x < g.W; x += 16) {
       out.push({ sprite: scene.edgeTile, x, y: top });
-      out.push({ sprite: scene.edgeTile, x, y: top - 42 });
+      for (let y = top - 14; y > -14; y -= 14) out.push({ sprite: band14, x, y });
     }
     // The floor runs on down to the bottom: planks.
     out.push(...band('planks', g, top + 56, g.H, RAMPS.wood));
@@ -228,6 +230,13 @@ export function houseDraw(phase: RoomPhase): (g: SceneGeometry) => Placement[] {
     const rug = ROOM_SPRITE_DATA.rug.day;
     const at = houseSpots(g);
     if (rug !== undefined) out.push({ sprite: rug, x: at.rug.x, y: at.rug.y });
+    // More of the room on the floor round the rug: cushions, poufs, plants, a lamp.
+    const prop = (name: RoomPropName): SpriteDef | undefined => ROOM_SPRITE_DATA[name][phase];
+    const things = (['pouf', 'plant', 'cushion', 'tableLamp', 'beanbag'] as const)
+      .map(prop)
+      .filter((p): p is SpriteDef => p !== undefined);
+    out.push(...sides(g, g.cx - 60, g.cx + 52, at.rug.y + 8, 44, things));
+    out.push(...sides(g, g.cx - 20, g.cx + 12, g.H - 26, 52, [...things].reverse()));
     return out;
   };
 }

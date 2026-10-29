@@ -230,6 +230,7 @@
   position: absolute;
   left: var(--x);
   top: var(--y);
+  width: max-content;
   line-height: 0;
   pointer-events: none;
 }
@@ -392,7 +393,7 @@
   align-items: center;
   gap: 3px;
   min-height: 1.75rem;
-  max-width: 7.5rem;
+  max-width: 9rem;
   padding: 0 5px;
   background: var(--ink);
   border: 0;
