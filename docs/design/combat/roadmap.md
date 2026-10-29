@@ -50,7 +50,7 @@ Big simulations come in phase 5 on purpose: week-by-week and Boss Rank numbers m
 
 ## Where we are (handoff, 2026-10-29)
 
-**Merged:** PR #92 (design docs, the lab, the wiki). **In review:** the PR from branch `combat-v2-bosses` (the five raid bosses, the fifteen dungeon foes, Build-up, new attack shapes, announced attacks, rule-card strength by Boss Rank, the dungeon map model, panels 4 and 5 with their fixes). It changes nothing in the live game except the wiki's draft sections, which are generated from the lab's data.
+**Merged:** PR #92 (design docs, the lab, the wiki). **In review:** PR #104 from branch `combat-v2-bosses` (the five raid bosses, the fifteen dungeon foes, Build-up, new attack shapes, announced attacks, rule-card strength by Boss Rank, the dungeon map model, panels 4 and 5 with their fixes). It changes nothing in the live game except the wiki's draft sections, which are generated from the lab's data.
 
 **Where the numbers stand** (`lab-report.md`; the main measure is the share of boss HP removed, with the retreat tiers 30%, 85% and the kill; Boss Rank low / mid / high sets rule-card strength, boss stats and the lab roster's level 12 / 18 / 25):
 
