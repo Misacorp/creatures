@@ -69,9 +69,13 @@ in the worker.
   client test that opens it there, under a real `PopoverHost`, and taps a help tag inside it: the explanation must
   open in that popover, with its anchor still on the page (`ui/find-item-card.test.tsx` is the example). A part
   with a hover popover gets one test that moves the mouse from one trigger straight to the next.
-- **CI shape.** Parallel jobs: checks (format, lint, typecheck, build), worker tests, sim tests, the rest; one
-  aggregate `ci` check for the ruleset. Target: under 5 min wall. Watch the per-file durations in the job log;
-  anything over the layer budget is a finding.
+- **CI shape.** Parallel jobs: checks (format, lint, typecheck, build), worker tests, sim tests, the rest (game,
+  engine, lab, activity, the worker's scripts, the fixture check); one aggregate `ci` check for the ruleset. Target:
+  under 5 min wall. Watch the per-file durations in the job log; anything over the layer budget is a finding.
+- **Documentation-only PRs** run only the formatting check and the security job (decisions.md, 2026-10-29). The
+  `changes` job counts a PR as documentation when every file it changes is Markdown or under `docs/`, except
+  `docs/compendium/` (the compendium test reads it). A test that starts reading another file under `docs/` must add
+  that folder to the exception in `.github/workflows/ci.yml`.
 
 **Database reads**
 
