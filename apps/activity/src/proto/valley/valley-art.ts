@@ -295,6 +295,10 @@ export function featureGrid(): Cell[][] {
   // The fairground's fence and the lake south of it.
   fill(1, 17, 4, 1, { tile: 'fence' });
   fill(6, 17, 3, 1, { tile: 'fence' });
+  // The south: a road out of the valley's bottom edge, and a garden of beds beside it.
+  fill(26, 19, 1, 5, dirt);
+  fill(14, 20, 9, 1, dirt);
+  fill(14, 22, 9, 1, dirt);
   fill(0, 19, 9, 5, { tile: 'water' });
   fill(0, 19, 9, 1, { tile: 'shoreN' });
   fill(9, 20, 1, 4, { tile: 'shoreE' });
@@ -354,17 +358,10 @@ const DECOR: readonly [keyof typeof WORLD_MAP_SPRITE_DATA, number, number][] = [
   ['flowers', 360, 252],
   ['smallTree', 168, 316],
   ['smallPine', 196, 330],
-  ['bush', 232, 316],
-  ['flowers', 260, 336],
-  ['smallTree', 300, 322],
-  ['smallPine', 340, 340],
   ['rock', 380, 318],
-  ['smallTree', 420, 332],
   ['smallPine', 470, 316],
   ['flowers', 500, 340],
   ['smallTree', 540, 330],
-  ['bush', 236, 360],
-  ['flowers', 300, 364],
   ['bush', 452, 362],
   ['rock', 168, 290],
   ['flowers', 220, 290],
@@ -460,6 +457,11 @@ export function buildingPlacements(): Placement[] {
   out.push({ sprite: propSprite('pennant', 0, 'yellow'), x: 126, y: 214 });
   // Signpost: the old crossroads' post.
   out.push({ sprite: wm.oldCrossroads, x: 28 * TILE + 12, y: 14 * TILE + 6 });
+  // The garden's beds: rows of flowers on the dug earth.
+  for (let x = 14 * TILE + 4; x < 23 * TILE - 4; x += 12) {
+    out.push({ sprite: wm.flowers, x, y: 20 * TILE + 6 });
+    out.push({ sprite: wm.flowers, x: x + 4, y: 22 * TILE + 6 });
+  }
   // Reeds at the lake.
   out.push({ sprite: propSprite('reeds'), x: 10 * TILE + 4, y: 21 * TILE });
   out.push({ sprite: propSprite('duck'), x: 4 * TILE, y: 21 * TILE + 4 });
