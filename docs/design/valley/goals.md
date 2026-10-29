@@ -23,7 +23,7 @@ From Misa's standing priorities (`docs/design/review-brief.md`) and the research
 - **F-4, one control per creature.** A creature holds one post at a time; there is no priority grid or schedule to fill.
 - **F-5, the fix is one tap.** When something stalls, the reason is visible and the fix is a single swap or claim.
 - **F-6, co-op without guilt.** Helping is optional, pull-based and small to give; there are no quotas, streaks, "X hasn't helped" lines or kicks. Contributions are recognised, never ranked against each other.
-- **F-7, fair to small and new players.** A newcomer can contribute and benefit on day one; a veteran cannot dwarf others; help is capped by the receiver where it matters.
+- **F-7, fair to small and new players.** A newcomer can contribute and benefit on day one; help given to another player is capped by the receiver where it matters. Gifts to the server's projects are not capped (round 2, Q4); one level's project is open at a time, so a big giver cannot raise several levels at once.
 - **F-8, the server is authoritative.** All output, RNG and progress are computed on the server; nothing a client claims is trusted; idle gains cannot be faked by keeping a tab open.
 - **F-9, cheap to run.** Every timed or idle system is priced against the Durable Object read budget before it ships (`docs/design/database-reads.md`): idle output is computed lazily from timestamps on read, never by ticking per creature.
 - **F-10, light, fun and predictable.** A player can say what will happen if they do nothing, and roughly what a choice will give.
