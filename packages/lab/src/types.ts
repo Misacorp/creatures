@@ -94,6 +94,13 @@ export interface Pattern {
   readonly anchors?: number;
 }
 
+/**
+ * Strength (Misa, 2026-10-29): every rule card and every boss gate has a strength from 0 to 10000 bp instead of being on or
+ * off, so a card *asks* for a tool at low strength and *requires* it at high strength. 10000 is the full card. The number
+ * is read by the engine (`fight.ts`) where it says so below; every default is 10000, so a boss without one is unchanged.
+ */
+export const FULL_STRENGTH_BP = 10_000;
+
 export interface BossMove {
   readonly id: string;
   readonly name: string;
@@ -104,6 +111,16 @@ export interface BossMove {
   readonly turn?: number;
   /** Silences instead of dealing damage, for this many of the victim's turns. */
   readonly silenceTurns?: number;
+  /**
+   * The gate's strength (bp, default the boss's `strengthBp`). A silence hits that share of the slots it picks (each target
+   * rolls) and lasts that share of its turns (at least one); a one-shot (`oneShotBp`) deals that share of the target's Max HP.
+   */
+  readonly strengthBp?: number;
+  /**
+   * A one-shot (Judgement Bolt): instead of Attack x power it deals this share (bp) of the target's Max HP at full strength,
+   * `strengthBp` of it at a lower one (a heavy hit). Cuts, cover and armour still come off it.
+   */
+  readonly oneShotBp?: number;
   /**
    * A Charged (Wind-up) move. Every move whose targets use a roll (a random anchor, scatter, a random row) is announced
    * at round start, Charged or not: its slots are rolled and shown, and it lands on those creatures on its boss turn and
@@ -132,7 +149,7 @@ export interface EscalationGrowth {
   readonly atkBp?: number;
   /** Dodge chance, in bp, on top of its Speed's. */
   readonly dodgeBp?: number;
-  /** Flat armour. */
+  /** Flat armour; a negative step lowers it (Thornmother's bark cracks), never below 0. */
   readonly armour?: number;
   /** More plain attacks on each boss turn. */
   readonly hits?: number;
@@ -170,6 +187,8 @@ export interface Escalation {
   readonly perColumns?: number;
   readonly cap: number;
   readonly grow: EscalationGrowth;
+  /** Each step grows the boss by this share (bp, default the boss's `strengthBp`) of what `grow` says. */
+  readonly strengthBp?: number;
   readonly phase?: {
     /** The phase starts when the feed has `atStep * per` units (announced a round ahead; Mired does not delay it). */
     readonly atStep: number;
@@ -194,6 +213,14 @@ export interface BossDef {
   readonly moves: readonly BossMove[];
   readonly cards: readonly string[];
   readonly mods: BossMods;
+  /**
+   * The strength of the boss's rule cards and gates (bp, default 10000 = full): reflection returns this share of the
+   * reaction's bonus, Shake It Off clears this share of the Mired, Clean Scales and Fizzle take hold on this share of the
+   * marks, Reaction Resistance halves the bonus by this share (a cut of half at full strength), Element Resistance cuts a quarter
+   * at full strength and this share of that below it; cards that change a number (armour, Speed, the cap, healing, an
+   * added move's power) are built with it (`CardDef.apply`).
+   */
+  readonly strengthBp?: number;
   /** The boss's Store, if it has one. */
   readonly escalation?: Escalation;
 }

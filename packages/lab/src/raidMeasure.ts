@@ -24,15 +24,21 @@ export interface Margin {
   readonly base: number;
   readonly atk10: number;
   readonly hp10: number;
+  /** The same three in the primary measure: the share of the boss's HP removed. */
+  readonly share: { readonly base: number; readonly atk10: number; readonly hp10: number };
 }
 
-/** A line's weekend win rate against the boss, with 10% more Attack, and with 10% more HP (the same seeds each time). */
+/** A line's weekend win rate (and share of HP removed) against the boss, with 10% more Attack, and with 10% more HP (the same seeds each time). */
 export function marginOf(boss: BossDef, line: readonly Pick[], runs: number, salt: string): Margin {
-  const win = (b: BossDef) => weekendStats(b, line, runs, salt).winRate;
+  const w = (b: BossDef) => weekendStats(b, line, runs, salt);
+  const base = w(boss);
+  const atk = w({ ...boss, atk: Math.floor(boss.atk * 1.1) });
+  const hp = w({ ...boss, hp: Math.floor(boss.hp * 1.1) });
   return {
-    base: win(boss),
-    atk10: win({ ...boss, atk: Math.floor(boss.atk * 1.1) }),
-    hp10: win({ ...boss, hp: Math.floor(boss.hp * 1.1) }),
+    base: base.winRate,
+    atk10: atk.winRate,
+    hp10: hp.winRate,
+    share: { base: base.damageShare, atk10: atk.damageShare, hp10: hp.damageShare },
   };
 }
 
@@ -45,6 +51,13 @@ export const RAID_WIDTHS: readonly number[] = [5, 10, 15];
  * counts do (`perColumns`).
  */
 export const RAID_HP_EXPONENT = 0.7;
+
+/**
+ * How a raid boss's Attack grows with the number of players (panel 5 fix, tool gap at 10 players): `(players / 4) ^ RAID_ATK_EXPONENT`.
+ * A wider raid spreads each hit over more creatures, so with the HP alone a wide line of the same creatures won without its tool;
+ * the boss hits harder in a wide raid, and its area counts and anchors grow (`perColumns`) as before.
+ */
+export const RAID_ATK_EXPONENT = 0.3;
 
 /** The weekend HP of a raid boss for `cols` players, as a multiple of its HP for the usual four. */
 export function raidHpFactor(
@@ -60,8 +73,14 @@ export function wideBoss(
   boss: BossDef,
   cols: number,
   exponent: number = RAID_HP_EXPONENT,
+  atkExponent: number = RAID_ATK_EXPONENT,
 ): BossDef {
-  return { ...boss, cols, hp: Math.round(boss.hp * raidHpFactor(boss, cols, exponent)) };
+  return {
+    ...boss,
+    cols,
+    hp: Math.round(boss.hp * raidHpFactor(boss, cols, exponent)),
+    atk: Math.round(boss.atk * (cols / boss.cols) ** atkExponent),
+  };
 }
 
 /** A raid line (rows of `from` columns) repeated to fill rows of `to` columns: column c of each row is column c % from of it. */
@@ -77,6 +96,9 @@ export interface WidthResult {
   readonly width: number;
   readonly classicWin: number;
   readonly bestWin: number;
+  /** The primary measure: the mean share of the boss's HP removed. */
+  readonly classicShare: number;
+  readonly bestShare: number;
   readonly classicKnockouts: number;
   readonly bestKnockouts: number;
 }
@@ -89,14 +111,17 @@ export function widthOf(
   runs: number,
   salt: string,
   exponent: number = RAID_HP_EXPONENT,
+  atkExponent: number = RAID_ATK_EXPONENT,
 ): WidthResult {
-  const wide = wideBoss(boss, width, exponent);
+  const wide = wideBoss(boss, width, exponent, atkExponent);
   const classic = weekendStats(wide, classicFor(raidMode(wide)), runs, `${salt}:c`);
   const b = weekendStats(wide, tileLine(best, boss.cols, width), runs, `${salt}:b`);
   return {
     width,
     classicWin: classic.winRate,
     bestWin: b.winRate,
+    classicShare: classic.damageShare,
+    bestShare: b.damageShare,
     classicKnockouts: classic.knockoutsTotal,
     bestKnockouts: b.knockoutsTotal,
   };
@@ -233,6 +258,10 @@ export interface MixedOptions {
   readonly casual?: CasualKind;
   /** The HP exponent (default the one rule). */
   readonly hpExponent?: number;
+  /** The Attack exponent (default the one rule). */
+  readonly atkExponent?: number;
+  /** The kinds of the players, one a column, instead of the mixed order of `players` (a server of casual players only: `['c', 'c', ...]`). */
+  readonly order?: readonly PlayerKind[];
 }
 
 /**
@@ -255,7 +284,7 @@ export function mixedServer(
   options: MixedOptions = {},
 ): MixedResult {
   const rows = boss.rows;
-  const order = MIXED_ORDERS[options.players ?? 10] ?? MIXED_ORDER;
+  const order = options.order ?? MIXED_ORDERS[options.players ?? 10] ?? MIXED_ORDER;
   const per = Math.max(1, Math.floor(runs / draws));
   const parts: WeekendStats[] = [];
   for (let d = 0; d < draws; d++) {
@@ -292,7 +321,7 @@ export function mixedServer(
     );
     parts.push(
       weekendStatsOf(
-        wideBoss(boss, players, options.hpExponent),
+        wideBoss(boss, players, options.hpExponent, options.atkExponent),
         placements,
         raidBench(players),
         per,
@@ -316,6 +345,9 @@ export function mixedServer(
     drawWins: parts.map((p) => p.winRate),
   };
 }
+
+/** A server of ten casual players only: nobody has read the boss. */
+export const CASUAL_ORDER: readonly PlayerKind[] = Array.from({ length: 10 }, () => 'c' as const);
 
 /** The draws and seeds of the report's mixed server: 200 draws over 3 seeds (panel 5: one seed of 40 draws was mostly noise). */
 export const MIXED_SEEDS = 3;

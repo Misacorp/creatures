@@ -14,7 +14,7 @@
  * should usually win (about 85% to 100% of weekends) and still lose creatures, while the classic raid party (four players
  * with Tidewing, Tempestray and Thornbuck) never wins. Each boss has one tool it really asks for (the first of its
  * `BOSS_ANSWERS`, tested by taking the tool away): Reach for the Tidal Colossus, Mired on the Cinder Wyrm, Pierce for
- * Thornmother, Taunt for the Storm Sovereign, Mud Wall and healing for Old Bogback. Attack and the move powers are
+ * Thornmother, Taunt for the Storm Sovereign and healing for Old Bogback. Attack and the move powers are
  * the boss's threat: a weekend should cost the party creatures. The boss's Build-up (`escalation` in the data) is the
  * word players read.
  *
@@ -27,10 +27,16 @@
  * columns so a wide raid of the same three creatures meets as many of them as a narrow one does.
  *
  * Panel 5 (2026-10-29): the weekend HP grows with the players by one exponent for every boss (`RAID_HP_EXPONENT`,
- * `raidMeasure.ts`) and one smooth curve, with no kink. The per-boss exponents (0.15 to 0.6) and the straight line past ten
- * players are gone; the mixed servers of four bosses fall below their band as a result and are the content task's to retune.
+ * `raidMeasure.ts`) and one smooth curve, with no kink; the per-boss exponents and the straight line past ten players are gone.
+ *
+ * Panel 5, content and tuning (Misa, 2026-10-29: the primary measure is the share of the boss's HP removed in a weekend, with the
+ * retreat tiers beside it; the kill is the cliff): Mired's cut is halved, the Colossus washes debuffs off (Shake It Off), Thornmother's
+ * bark cracks at each Build-up step, every rule card and gate has a strength (`strengthBp`, 0% to 100%) that rises with the Boss Rank,
+ * the boss's Attack grows with the players (`RAID_ATK_EXPONENT`) so the tool gap holds at ten players, and the prepared answers
+ * were searched for a team with random legal talents (`bossAnswers.ts`). The numbers below are the high rank's; each boss's
+ * `ranks` row gives the lower ranks' HP and Attack.
  */
-import { content, createSeededRng } from '@creatures/game';
+import { RULES, content, createSeededRng } from '@creatures/game';
 import { card } from './cards';
 import { weekend } from './fight';
 import { LEVEL, toPlacements, type Mode, type Pick, type Score } from './search';
@@ -52,6 +58,8 @@ type Extras = {
   /** A Wind-up move (the engine's field is still `charged`): like every move with a roll it is announced at round start; it changes how a hit is dodged and intercepted. */
   readonly windUp?: boolean;
   readonly silenceTurns?: number;
+  /** A one-shot: this share (bp) of the target's Max HP at full strength (`BossMove.oneShotBp`). */
+  readonly oneShotBp?: number;
 };
 export type MoveRow = readonly [
   id: string,
@@ -82,6 +90,7 @@ export function move(row: MoveRow): BossMove {
     powerBp,
     ...(x.windUp ? { charged: true } : {}),
     ...(x.silenceTurns ? { silenceTurns: x.silenceTurns } : {}),
+    ...(x.oneShotBp ? { oneShotBp: x.oneShotBp } : {}),
   };
 }
 
@@ -105,6 +114,16 @@ export interface RaidBossSpec {
   };
   /** One line for the report: what the boss asks. */
   readonly asks: string;
+  /**
+   * HP and Attack at the lower ranks, in bp of the spec's (the spec is the high rank). A lower rank softens the cards and gates, which
+   * would make the boss a walkover for everybody, so the lab roster (every creature at level 25 whatever the rank) meets a bigger pool
+   * there; each boss's rows were found by a grid over HP and Attack that keeps the classic party from killing it at any width, lets the
+   * prepared team kill, and puts the casual server between half and most of the HP (`scripts` in the lab log, 2026-10-29).
+   */
+  readonly ranks?: {
+    readonly low: readonly [number, number];
+    readonly mid: readonly [number, number];
+  };
 }
 
 /**
@@ -116,10 +135,11 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
     id: 'tidal-colossus',
     rows: 3,
     armour: 34,
-    atk: 122,
-    hp: 26_400,
+    atk: 116,
+    hp: 20_200,
     plain: { pattern: { anchor: 'front', shape: 'row' }, powerBp: 2_500 },
-    cards: ['adapts'],
+    // The sea washes the mud off it (Shake It Off), so Mired is no must-have here; reactions it resists from stage 2.
+    cards: ['adapts', 'shake-it-off'],
     // The tide rises as the Colossus is hurt: every fifth of its HP gone widens its columns and rows, and Mired slows it.
     escalation: {
       name: 'Rising Tide',
@@ -129,6 +149,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       grow: { atkBp: 1_300, area: 1 },
     },
     asks: 'The whole sea sweeps the rows. Wide Reach and row wards turn the waves; who stands where?',
+    ranks: { low: [14500, 10000], mid: [12500, 10000] },
     moves: [
       ['undertow', 'Undertow', 3, 0, 'front', 'row', 9_000],
       ['spray', 'Spray', 2, 0, 'random', 'scatter', 5_000, { n: 4, perColumns: 4 }],
@@ -162,8 +183,8 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
     id: 'cinder-wyrm',
     rows: 4,
     armour: 60,
-    atk: 160,
-    hp: 28_300,
+    atk: 130,
+    hp: 22_600,
     plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 6_000 },
     cards: ['reflective-hide', 'adapts-element'],
     // Every cashed reaction stokes the forge: the fire grows hotter and throws more shells. Few, big reactions or Mired hold it down.
@@ -176,6 +197,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       grow: { atkBp: 1_000, targets: 1 },
     },
     asks: 'The forge turns the first reaction of every row back on you, and every reaction heats it. Keep Mired on it, or make each reaction count.',
+    ranks: { low: [15_000, 9_000], mid: [11_500, 10_000] },
     moves: [
       ['coil-crush', 'Coil Crush', 3, 0, 'front', 'line3', 15_000],
       ['scorch-lane', 'Scorch Lane', 2, 1, 'random', 'column', 7_000],
@@ -198,9 +220,9 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
   {
     id: 'thornmother',
     rows: 3,
-    armour: 98,
-    atk: 137,
-    hp: 15_200,
+    armour: 170,
+    atk: 99,
+    hp: 11_000,
     plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 7_000 },
     cards: ['adapts'],
     // Each fifth of her HP lost wakes her further; at half she blooms (Second Bloom) and the whole arena is in play.
@@ -209,7 +231,8 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       feed: 'hpLost',
       per: 2_500,
       cap: 3,
-      grow: { atkBp: 800, jumps: 1 },
+      // The bark cracks at every step: her armour drops by 30 each fifth of her HP lost (170 at the start, 80 at the cap), so only a Pierce line or a big reaction gets in early.
+      grow: { atkBp: 800, jumps: 1, armour: -30 },
       phase: {
         atStep: 2,
         name: 'Second Bloom',
@@ -220,6 +243,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       },
     },
     asks: 'The row ends fall quiet. Keep what you cannot spare in the middle or ward it, and bring something for her thick bark.',
+    ranks: { low: [15_000, 7_000], mid: [10_000, 10_000] },
     moves: [
       // The one silencing move: every second round, the two ends of every row.
       [
@@ -262,8 +286,8 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
     id: 'storm-sovereign',
     rows: 2,
     armour: 7,
-    atk: 74,
-    hp: 19_000,
+    atk: 73,
+    hp: 14_500,
     // Lightning Rod: the plain attack leaps from the strongest Payoff, twice a round. A Taunt takes the first strike.
     plain: {
       pattern: { anchor: 'payoff', shape: 'chain', n: 2, perColumns: 4, decayBp: 5_500 },
@@ -279,6 +303,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       grow: { atkBp: 2_000, jumps: 1 },
     },
     asks: 'The Rod leaps from the strongest Payoff, round after round, and a Judgement Bolt, announced at round start, can fell it. Draw the Rod onto something that can take it, and have Night Watch beside the Payoff for the Bolt.',
+    ranks: { low: [15_000, 9_000], mid: [13_000, 8_000] },
     moves: [
       [
         'thunderclap',
@@ -320,7 +345,17 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
         9_000,
         { n: 3, perColumns: 4 },
       ],
-      ['judgement-bolt', 'Judgement Bolt', 4, 0, 'payoff', 'single', 70_000, { windUp: true }],
+      // A one-shot: 120% of the strongest Payoff's Max HP at full strength, a heavy hit of that share below it.
+      [
+        'judgement-bolt',
+        'Judgement Bolt',
+        4,
+        0,
+        'payoff',
+        'single',
+        70_000,
+        { windUp: true, oneShotBp: 12_000, anchors: 1, perColumns: 4 },
+      ],
       ['storm-front', 'Storm Front', 5, 1, 'front', 'all', 7_000, { windUp: true }],
       ['spark-dive', 'Spark Dive', 2, 1, 'payoff', 'single', 16_000, { anchors: 1, perColumns: 6 }],
     ],
@@ -330,17 +365,18 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
     rows: 3,
     armour: 23,
     atk: 105,
-    hp: 42_500,
+    hp: 34_000,
     plain: {
-      pattern: { anchor: 'front', shape: 'line3', anchors: 1, perColumns: 4 },
+      pattern: { anchor: 'front', shape: 'line3', anchors: 1, perColumns: 6 },
       powerBp: 4_500,
     },
     cards: ['shake-it-off', 'adapts-element'],
     asks: 'The fen pulls the most hurt creature down. Keep them up, and keep the Mired on it.',
+    ranks: { low: [11500, 9000], mid: [10000, 10000] },
     moves: [
       ['sinking-mud', 'Sinking Mud', 3, 2, 'random', 'randomRow', 11_000],
-      ['belly-flop', 'Belly Flop', 4, 0, 'front', 'line3', 13_900, { anchors: 1, perColumns: 4 }],
-      ['bog-lob', 'Bog Lob', 5, 1, 'payoff', 'line3', 15_000, { anchors: 1, perColumns: 4 }],
+      ['belly-flop', 'Belly Flop', 4, 0, 'front', 'line3', 13_900, { anchors: 1, perColumns: 6 }],
+      ['bog-lob', 'Bog Lob', 5, 1, 'payoff', 'line3', 15_000, { anchors: 1, perColumns: 6 }],
       ['mud-slide', 'Mud Slide', 2, 2, 'random', 'columns', 6_000, { n: 2, perColumns: 4 }],
       [
         'rising-bubbles',
@@ -352,7 +388,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
         12_000,
         { n: 4, perColumns: 4, windUp: true },
       ],
-      ['sinkhole', 'Sinkhole', 6, 0, 'weakest', 'single', 20_900, { anchors: 1, perColumns: 4 }],
+      ['sinkhole', 'Sinkhole', 6, 0, 'weakest', 'single', 20_900, { anchors: 1, perColumns: 6 }],
       ['peat-wave', 'Peat Wave', 5, 0, 'back', 'rows', 9_000, { n: 2 }],
     ],
   },
@@ -364,7 +400,7 @@ export const NOT_PORTED: readonly string[] = [
   'Turn orders (left to right, serpentine, right to left): the lab acts row by row, left to right, with a boss turn after each row (R8).',
   'Phase 1, Phase 2 and the twelve-round finale, with their retreat lines: a weekend is three stages of eight rounds that share the boss\u2019s HP (R14). The retreat lines are live-finale flavour.',
   'The lance\u2019s falloff (each row softer) and the Guard that stops a lance: a column hits every creature in it at the move\u2019s power, and a Guard covers by reach like any area hit.',
-  'Mired on creatures (Sinking Mud, Mud Spit, Tar Cling, Fen Tug): the lab has Mired only on the boss (-3% damage and dodge per stack). A creature debuff needs a debuff-resistance tool first, so it is a proposal question.',
+  'Mired on creatures (Sinking Mud, Mud Spit, Tar Cling, Fen Tug): the lab has Mired only on the boss (-1.5% damage and dodge per stack). A creature debuff needs a debuff-resistance tool first, so it is a proposal question.',
   'Purge as a move: it is the Shake It Off card, every third round instead of every fifth.',
   'Finale abilities (Rally, Shield Wall, Purge): gone with R18\u2019s Knacks.',
   'Slag Tyrant\u2019s backlash (half the time a reaction burns its Payoff): it is Reflective Hide, which is certain (P-04), plus a Build-up that thickens its shell.',
@@ -378,21 +414,56 @@ function escalationOf(e: NonNullable<RaidBossSpec['escalation']>): Escalation {
   return phase ? { ...rest, phase: { ...phase, moves: phase.moves.map(move) } } : rest;
 }
 
-/** A raid boss by id: name and element from the content, the rest from its spec; `hp`, `atk` and `armour` may be overridden for tuning. */
+/**
+ * Boss Rank in the lab (Misa, 2026-10-29): the strength of the boss's cards and gates rises with the rank, and so do its HP and
+ * Attack, as in the shipped ladder (`RULES.raid.curve`: steep in the first ranks, nearly flat later). Three settings stand for
+ * it: low (a rank 1 to 3 server), mid (about rank 5) and high (the endgame, rank 10 and up). The raid specs below are the
+ * high rank's numbers; a lower rank takes a share of the HP, the Attack, the armour and every card. The shares are lab-scale
+ * (every lab creature is level 25, so the shipped table's early ranks, a few percent of the pool, would be a boss nobody feels).
+ */
+export interface RaidRank {
+  readonly id: 'low' | 'mid' | 'high';
+  /** The Boss Rank it stands for. */
+  readonly rank: number;
+  /** The strength of every card and gate (bp of the full card). */
+  readonly strengthBp: number;
+  /** HP and Attack, in bp of the spec's. */
+  readonly hpBp: number;
+  readonly atkBp: number;
+}
+
+export const RAID_RANKS: readonly RaidRank[] = [
+  { id: 'low', rank: 2, strengthBp: 3_000, hpBp: 12_000, atkBp: 10_000 },
+  { id: 'mid', rank: 5, strengthBp: 6_500, hpBp: 11_000, atkBp: 10_000 },
+  { id: 'high', rank: 10, strengthBp: 10_000, hpBp: 10_000, atkBp: 10_000 },
+];
+
+export type RankId = RaidRank['id'];
+export const rankOf = (id: RankId): RaidRank => RAID_RANKS.find((r) => r.id === id) as RaidRank;
+
+/**
+ * A raid boss by id at a Boss Rank (default high): name and element from the content, the rest from its spec; `hp`, `atk` and
+ * `armour` may be overridden for tuning (they replace the rank's numbers). Armour and every card are built at the rank's strength.
+ */
 export function raidBossOf(
   id: string,
-  over: { hp?: number; atk?: number; armour?: number } = {},
+  over: { hp?: number; atk?: number; armour?: number; rank?: RankId } = {},
 ): BossDef {
   const spec = RAID_SPECS.find((s) => s.id === id);
   const shipped = content.bosses.find((b) => b.id === id);
   if (!spec || !shipped) throw new Error(`unknown raid boss ${id}`);
+  const rank = rankOf(over.rank ?? 'high');
+  const st = rank.strengthBp;
+  const [hpBp, atkBp] =
+    rank.id === 'high' || !spec.ranks ? [rank.hpBp, rank.atkBp] : spec.ranks[rank.id];
   let boss: BossDef = {
     id,
     name: shipped.name,
     element: shipped.element,
-    hp: over.hp ?? spec.hp,
-    atk: over.atk ?? spec.atk,
-    armour: over.armour ?? spec.armour,
+    hp: over.hp ?? Math.round((spec.hp * hpBp) / 10_000),
+    atk: over.atk ?? Math.round((spec.atk * atkBp) / 10_000),
+    // Half of a boss's armour is its hide and always there; the other half is its card, the strength's share of it.
+    armour: over.armour ?? Math.round((spec.armour * (5_000 + Math.floor(st / 2))) / 10_000),
     spd: shipped.baseSpd ?? 0,
     rounds: RAID_ROUNDS,
     rows: spec.rows,
@@ -401,9 +472,12 @@ export function raidBossOf(
     moves: spec.moves.map(move),
     cards: spec.cards,
     mods: {},
-    ...(spec.escalation ? { escalation: escalationOf(spec.escalation) } : {}),
+    strengthBp: st,
+    ...(spec.escalation
+      ? { escalation: { ...escalationOf(spec.escalation), strengthBp: st } }
+      : {}),
   };
-  for (const c of spec.cards) boss = card(c).apply(boss);
+  for (const c of spec.cards) boss = card(c).apply(boss, st);
   return boss;
 }
 
@@ -424,17 +498,42 @@ export function raidBench(players = 4): Placement[] {
   }));
 }
 
+/**
+ * The shipped raid's success tiers (`RULES.raid.phases[].clearAtLossBp`): the boss retreats when 30% of its HP is gone and
+ * again at 85% gone, and is defeated at 100%. Tier 1 and tier 2 are the two retreats; a kill is the third tier.
+ */
+export const TIER_LOSS: readonly [number, number] = [
+  (RULES.raid.phases[0]?.clearAtLossBp ?? 3_000) / 10_000,
+  (RULES.raid.phases[1]?.clearAtLossBp ?? 8_500) / 10_000,
+];
+
+/** Shares of weekends that reached each success tier (a weekend that kills reached all three). */
+export interface Tiers {
+  /** The first retreat: at least 30% of the boss's HP removed. */
+  readonly t1: number;
+  /** The second retreat: at least 85% removed. */
+  readonly t2: number;
+  /** Defeated: all of it. */
+  readonly kill: number;
+}
+
 export interface WeekendStats {
   readonly runs: number;
   /** Share of weekends won, 0 to 1. */
   readonly winRate: number;
+  /** Share of weekends that reached each success tier (the kill is `winRate`). */
+  readonly tiers: Tiers;
   /** Mean knockouts in each stage of the weekend (a stage that did not happen counts 0). */
   readonly knockouts: readonly number[];
   /** Mean knockouts over the whole weekend, and mean replacements brought in. */
   readonly knockoutsTotal: number;
   readonly replacements: number;
-  /** Mean share of the weekend's boss HP removed. */
+  /**
+   * The primary measure (Misa, 2026-10-29): the mean share of the weekend's boss HP removed (0 to 1), and the standard
+   * deviation of that share between weekends. The kill rate is the secondary column.
+   */
   readonly damageShare: number;
+  readonly damageShareSd: number;
   /** Mean of the highest escalation step the boss reached in a weekend (0 for a boss without one). */
   readonly steps: number;
   /** Share of weekends that played each stage (stage 1 is always 1). */
@@ -478,10 +577,15 @@ export function combineWeekends(parts: readonly WeekendStats[]): WeekendStats {
   return {
     runs,
     winRate: w((p) => p.winRate),
+    tiers: { t1: w((p) => p.tiers.t1), t2: w((p) => p.tiers.t2), kill: w((p) => p.tiers.kill) },
     knockouts: idx.map((k) => w((p) => p.knockouts[k] ?? 0)),
     knockoutsTotal: w((p) => p.knockoutsTotal),
     replacements: w((p) => p.replacements),
     damageShare: w((p) => p.damageShare),
+    // Pooled: the spread inside each part plus the spread of the parts' means (the law of total variance).
+    damageShareSd: Math.sqrt(
+      w((p) => p.damageShareSd ** 2) + w((p) => p.damageShare ** 2) - w((p) => p.damageShare) ** 2,
+    ),
     steps: w((p) => p.steps),
     played: idx.map((k) => w((p) => p.played[k] ?? 0)),
     hpLeft: idx.map((k) => at(k, (p) => p.hpLeft[k] ?? 0)),
@@ -518,7 +622,10 @@ export function weekendStatsOf(
   let wins = 0,
     reps = 0,
     share = 0,
-    steps = 0;
+    steps = 0,
+    t1 = 0,
+    t2 = 0,
+    shareSq = 0;
   const ko = [0, 0, 0];
   const played = [0, 0, 0];
   const hp = [0, 0, 0];
@@ -549,15 +656,20 @@ export function weekendStatsOf(
     steps += Math.max(0, ...w.stages.map((st) => st.escalation?.step ?? 0));
     const left = w.stages[w.stages.length - 1]?.bossHpLeft ?? boss.hp;
     share += 1 - left / boss.hp;
+    shareSq += (1 - left / boss.hp) ** 2;
+    if (1 - left / boss.hp >= TIER_LOSS[0]) t1++;
+    if (1 - left / boss.hp >= TIER_LOSS[1]) t2++;
   }
   const knockouts = ko.map((k) => k / runs);
   return {
     runs,
     winRate: wins / runs,
+    tiers: { t1: t1 / runs, t2: t2 / runs, kill: wins / runs },
     knockouts,
     knockoutsTotal: knockouts.reduce((a, b) => a + b, 0),
     replacements: reps / runs,
     damageShare: share / runs,
+    damageShareSd: Math.sqrt(Math.max(0, shareSq / runs - (share / runs) ** 2)),
     steps: steps / runs,
     played: played.map((n) => n / runs),
     hpLeft: hp.map((h, k) => h / Math.max(1, played[k] ?? 0)),

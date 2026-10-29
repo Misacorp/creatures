@@ -7,7 +7,7 @@ import { createSeededRng, int } from '@creatures/game';
 import type { Measured } from './ablation';
 import type { BossAnswer } from './bossAnswers';
 import { withoutTool } from './bossAnswers';
-import { weekendStats, type WeekendStats } from './bosses';
+import { combineWeekends, weekendStats, type Tiers, type WeekendStats } from './bosses';
 import { KNACKS } from './knacks';
 import type { Mechanic } from './mechanics';
 import type { Pick } from './search';
@@ -16,10 +16,20 @@ import type { BossDef } from './types';
 
 /** An answer's own tool must be worth at least this many win-rate points (panel 5, finding 3). */
 export const TOOL_DROP_MIN = 20;
-/** A Knack family is a gate on a boss when taking it out of an answer costs more than this many points. */
+/**
+ * An answer's own tool must also be worth at least this many points of the boss's HP removed (Misa, 2026-10-29: the share of HP
+ * removed is the primary measure; the kill rate is the cliff). Tested at the high rank, with the line's written talents.
+ */
+export const TOOL_SHARE_MIN = 0.1;
+/**
+ * A Knack family is a gate on a boss when taking it out of an answer costs more than this many points of kill rate (the cliff:
+ * "required"). The same removal is also shown as points of the boss's HP removed, the primary measure (Misa, 2026-10-29).
+ */
 export const GATE_DROP = 50;
 /** The gate check fails for a family that is a gate on this many bosses or more. */
 export const GATE_BOSSES = 3;
+/** And remove at least this share of the boss's HP (the primary measure) with random legal talents. */
+export const ROBUST_SHARE = 0.8;
 /** The prepared line with random legal talents should still win about this share of weekends (panel 5, finding 4). */
 export const ROBUST_TARGET = 0.6;
 
@@ -58,7 +68,14 @@ export interface Robustness {
     readonly minWin: number;
     readonly maxWin: number;
     readonly damageShare: number;
+    /** The standard deviation of the share between weekends (all draws pooled). */
+    readonly damageShareSd: number;
+    /** The lowest and highest draw's mean share of the boss's HP removed. */
+    readonly minShare: number;
+    readonly maxShare: number;
     readonly knockouts: number;
+    /** The mean share of weekends that reached each success tier. */
+    readonly tiers: Tiers;
   };
   /** No talents at all. */
   readonly none: WeekendStats;
@@ -91,7 +108,15 @@ export function robustnessOf(
       minWin: Math.min(...parts.map((p) => p.winRate)),
       maxWin: Math.max(...parts.map((p) => p.winRate)),
       damageShare: mean((p) => p.damageShare),
+      damageShareSd: combineWeekends(parts).damageShareSd,
+      minShare: Math.min(...parts.map((p) => p.damageShare)),
+      maxShare: Math.max(...parts.map((p) => p.damageShare)),
       knockouts: mean((p) => p.knockoutsTotal),
+      tiers: {
+        t1: mean((p) => p.tiers.t1),
+        t2: mean((p) => p.tiers.t2),
+        kill: mean((p) => p.tiers.kill),
+      },
     },
     none: weekendStats(boss, noTalents(line), weekends, `${salt}:n`),
   };
@@ -104,8 +129,13 @@ export interface ToolCost {
   /** The mean share of the boss's HP the weekend removed, with and without the tool. */
   readonly shareWith: number;
   readonly shareWithout: number;
-  /** The drop in points (0 to 100). */
+  /** The drop in points of win rate (0 to 100). */
   readonly drop: number;
+  /** The same drop in the primary measure: points of the boss's HP removed (the share removed with the tool minus without, times 100). */
+  readonly shareDrop: number;
+  /** The two weekend measures themselves (tiers and spread included). */
+  readonly withStats: WeekendStats;
+  readonly withoutStats: WeekendStats;
 }
 
 /** An answer's weekend win rate with and without its own tool (`core`: its Knacks become none, its talents go), on the same seeds. */
@@ -124,6 +154,9 @@ export function toolCost(
     shareWith: a.damageShare,
     shareWithout: b.damageShare,
     drop: 100 * (a.winRate - b.winRate),
+    shareDrop: 100 * (a.damageShare - b.damageShare),
+    withStats: a,
+    withoutStats: b,
   };
 }
 

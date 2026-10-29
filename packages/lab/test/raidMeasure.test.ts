@@ -9,6 +9,10 @@ import {
   MECHANICS,
   MIXED_ORDER,
   RAID,
+  RAID_ATK_EXPONENT,
+  CASUAL_ORDER,
+  TIER_LOSS,
+  toolCost,
   RAID_HP_EXPONENT,
   RAID_SPECS,
   MIXED_ORDERS,
@@ -177,20 +181,25 @@ describe('the margin, the widths and the mixed server', () => {
     }
   });
 
-  it('a wider raid has a bigger boss: one exponent and one smooth curve for every boss, and its Attack does not grow', () => {
+  it('a wider raid has a bigger boss: one HP exponent and one Attack exponent, each a smooth curve for every boss', () => {
     // Panel 5: no boss has an exponent of its own, and there is no kink (no straight line past ten players).
     for (const spec of RAID_SPECS) expect(spec, spec.id).not.toHaveProperty('hpExponent');
     expect(RAID_HP_EXPONENT).toBeGreaterThan(0.5);
     expect(RAID_HP_EXPONENT).toBeLessThanOrEqual(1);
+    // The Attack grows more slowly than the HP (the tool-gap fix): enough that a wide line of the same creatures still needs its tool.
+    expect(RAID_ATK_EXPONENT).toBeGreaterThan(0);
+    expect(RAID_ATK_EXPONENT).toBeLessThan(RAID_HP_EXPONENT);
     for (const id of RAID_SPECS.map((x) => x.id)) {
       const b = raidBossOf(id);
       for (const w of [5, 10, 15]) {
         const wide = wideBoss(b, w);
         expect(wide.cols).toBe(w);
-        expect(wide.atk).toBe(b.atk);
+        expect(wide.atk).toBe(Math.round(b.atk * (w / b.cols) ** RAID_ATK_EXPONENT));
+        expect(wide.atk).toBeGreaterThan(b.atk);
         expect(wide.hp).toBe(Math.round(b.hp * (w / b.cols) ** RAID_HP_EXPONENT));
       }
       expect(wideBoss(b, b.cols).hp).toBe(b.hp);
+      expect(wideBoss(b, b.cols).atk).toBe(b.atk);
     }
     // The local exponent between neighbouring widths is the same everywhere: no kink at 10 players.
     const b = raidBossOf('thornmother');
@@ -414,10 +423,12 @@ describe('HP left after each stage (Misa, 2026-10-29)', () => {
     const part = (runs: number, hp: number, played2: number, hp2: number): WeekendStats => ({
       runs,
       winRate: hp,
+      tiers: { t1: 1, t2: hp, kill: hp },
       knockouts: [1, 1, 0],
       knockoutsTotal: 2,
       replacements: 0,
-      damageShare: 1,
+      damageShare: hp,
+      damageShareSd: 0.1,
       steps: 0,
       played: [1, played2, 0],
       hpLeft: [hp, hp2, 0],
@@ -430,6 +441,13 @@ describe('HP left after each stage (Misa, 2026-10-29)', () => {
     expect(c.runs).toBe(40);
     expect(c.winRate).toBeCloseTo((10 * 0.2 + 30 * 0.6) / 40);
     expect(c.hpLeftEnd).toBeCloseTo(0.5);
+    // The share is the primary measure: its mean is weighted by the runs, its spread is pooled (the spread inside each part
+    // plus the spread of the parts' means: the law of total variance).
+    expect(c.damageShare).toBeCloseTo((10 * 0.2 + 30 * 0.6) / 40);
+    const mean = (10 * 0.2 + 30 * 0.6) / 40;
+    const variance = (10 * (0.01 + (0.2 - mean) ** 2) + 30 * (0.01 + (0.6 - mean) ** 2)) / 40;
+    expect(c.damageShareSd).toBeCloseTo(Math.sqrt(variance));
+    expect(c.tiers.kill).toBeCloseTo(c.winRate);
     expect(c.played[1]).toBeCloseTo((10 * 1 + 30 * 0.5) / 40);
     // Stage 2: 10 weekends with HP 0.4, 15 weekends with HP 0.8.
     expect(c.hpLeft[1]).toBeCloseTo((10 * 0.4 + 15 * 0.8) / 25);
@@ -445,5 +463,63 @@ describe('HP left after each stage (Misa, 2026-10-29)', () => {
     const total = Object.values(w.knockoutsByOwner).reduce((a, b) => a + b, 0);
     expect(total).toBeCloseTo(w.knockoutsTotal);
     expect(Object.keys(w.knockoutsByOwner).every((o) => /^p[1-4]$/.test(o))).toBe(true);
+  });
+});
+
+describe('success tiers and the share of the boss’s HP removed (Misa, 2026-10-29)', () => {
+  it('the tiers are the shipped raid’s retreats: 30% and 85% of the HP removed, then the kill; each weekend reaches them in order', () => {
+    expect(TIER_LOSS).toEqual([0.3, 0.85]);
+    for (const id of ['thornmother', 'old-bogback']) {
+      const boss = raidBossOf(id);
+      for (const line of [
+        classicFor(raidMode(boss)),
+        answerLine(BOSS_ANSWERS[id]?.[0]?.line ?? ''),
+      ]) {
+        const w = weekendStats(boss, line, 10, `tiers:${id}`);
+        expect(w.tiers.t1, id).toBeGreaterThanOrEqual(w.tiers.t2);
+        expect(w.tiers.t2, id).toBeGreaterThanOrEqual(w.tiers.kill);
+        expect(w.tiers.kill, id).toBe(w.winRate);
+        // A mean share under 30% cannot have every weekend past the first retreat, and over 85% cannot have all of them short of the second.
+        if (w.damageShare < 0.3) expect(w.tiers.t1).toBeLessThan(1);
+        if (w.damageShare >= 0.85) expect(w.tiers.t2).toBeGreaterThan(0);
+        expect(w.damageShareSd).toBeGreaterThanOrEqual(0);
+        expect(w.damageShareSd).toBeLessThan(0.5);
+      }
+    }
+  });
+
+  it('a killed boss is 100% removed in every weekend, so its share is 1 with no spread', () => {
+    const weak: BossDef = { ...raidBossOf('storm-sovereign', { hp: 500, atk: 1 }), armour: 0 };
+    const w = weekendStats(weak, classicFor(raidMode(weak)), 6, 'tiers-kill');
+    expect(w.winRate).toBe(1);
+    expect(w.damageShare).toBe(1);
+    expect(w.damageShareSd).toBe(0);
+    expect(w.tiers).toEqual({ t1: 1, t2: 1, kill: 1 });
+  });
+
+  it('a server of casual players only is a mixed server with no min-maxers and no builders', () => {
+    const boss = raidBossOf('thornmother', { rank: 'low' });
+    const line = answerLine(BOSS_ANSWERS['thornmother']?.[0]?.line ?? '');
+    const r = mixedSpread(boss, line, [line], 4, 1, 1, 'casual-only', [], [], {
+      players: 10,
+      casual: 'top3',
+      order: CASUAL_ORDER,
+    });
+    expect(r.players).toBe(10);
+    expect(CASUAL_ORDER.every((k) => k === 'c')).toBe(true);
+    expect(r.knockoutsPerPlayer.m).toBe(0);
+    expect(r.knockoutsPerPlayer.b).toBe(0);
+    expect(r.weekend.damageShare).toBeGreaterThan(0);
+  });
+
+  it('the tool’s cost is also a difference in the HP removed', () => {
+    const boss = raidBossOf('thornmother');
+    const first = BOSS_ANSWERS['thornmother']?.[0] as NonNullable<
+      (typeof BOSS_ANSWERS)['thornmother']
+    >[number];
+    const t = toolCost(boss, first, answerLine(first.line), 8, 'tool-share');
+    expect(t.shareDrop).toBeCloseTo(100 * (t.shareWith - t.shareWithout), 8);
+    expect(t.withStats.damageShare).toBe(t.shareWith);
+    expect(t.withoutStats.damageShare).toBe(t.shareWithout);
   });
 });

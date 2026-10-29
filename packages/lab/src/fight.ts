@@ -26,6 +26,7 @@ import type {
   Pattern,
   Placement,
 } from './types';
+import { FULL_STRENGTH_BP } from './types';
 
 interface Mark {
   stacks: number;
@@ -111,18 +112,26 @@ const perOf = (s: State): number => {
   return e.perColumns ? Math.max(1, Math.round((e.per * s.boss.cols) / e.perColumns)) : e.per;
 };
 
-/** What the escalation's steps add to the boss now. */
+/** The strength of the boss's cards and gates (bp; 10000 is the full card). */
+const strengthOf = (s: State): number => s.boss.strengthBp ?? FULL_STRENGTH_BP;
+
+/** A chance of `st` bp that draws nothing at full strength (so a full-strength boss keeps its seeded results). */
+const strong = (s: State, st: number): boolean => st >= FULL_STRENGTH_BP || roll(s, st);
+
+/** What the escalation's steps add to the boss now: `grow` for each step, at the Build-up's strength (a share of it). */
 const grown = (s: State) => {
   const g = s.boss.escalation?.grow ?? {};
+  const st = s.boss.escalation?.strengthBp ?? strengthOf(s);
   const n = s.esc.step;
+  const part = (v: number | undefined) => Math.trunc((n * (v ?? 0) * st) / 10_000);
   return {
-    atk: Math.floor((s.boss.atk * (10_000 + n * (g.atkBp ?? 0))) / 10_000),
-    dodgeBp: n * (g.dodgeBp ?? 0),
-    armour: s.boss.armour + n * (g.armour ?? 0),
-    hits: (s.boss.plain.hits ?? 1) + n * (g.hits ?? 0),
-    jumps: n * (g.jumps ?? 0),
-    targets: n * (g.targets ?? 0),
-    area: n * (g.area ?? 0),
+    atk: Math.floor((s.boss.atk * (10_000 + part(g.atkBp))) / 10_000),
+    dodgeBp: part(g.dodgeBp),
+    armour: Math.max(0, s.boss.armour + part(g.armour)),
+    hits: (s.boss.plain.hits ?? 1) + part(g.hits),
+    jumps: part(g.jumps),
+    targets: part(g.targets),
+    area: part(g.area),
   };
 };
 
@@ -293,7 +302,8 @@ function addMark(
   opts: { sealed?: boolean; fromTrail?: boolean; fizzle?: boolean; by?: Fighter } = {},
 ): void {
   const m = s.marks.get(element);
-  const after = opts.fizzle && s.boss.mods.fizzle ? s.bossTurnsDone + 1 : 0;
+  const after =
+    opts.fizzle && s.boss.mods.fizzle && strong(s, strengthOf(s)) ? s.bossTurnsDone + 1 : 0;
   if (m) {
     m.turnSet = s.bossTurnsDone;
     if (opts.by) m.owners.add(opts.by.uid);
@@ -544,7 +554,11 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
   // Element Resistance (a raid weekend, from stage 2): the resisted element's creatures deal less.
   const base =
     s.opts.resistElement === f.element
-      ? Math.floor((matched * R.adaptElementBp) / 10_000)
+      ? Math.floor(
+          (matched *
+            (10_000 - Math.floor(((10_000 - R.adaptElementBp) * strengthOf(s)) / 10_000))) /
+            10_000,
+        )
       : matched;
   let plain = k.noDamage
     ? 0
@@ -606,7 +620,11 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       for (const o of alive(s)) raise(o, 'ownMarkBp', fx(o).ownMarkBp, mark.owners.has(o.uid));
       factor = Math.min(factor, R.maxBonusFactorBp);
       bonus = Math.floor((((plain * (R.payoffMultBp - 10_000)) / 10_000) * factor) / 10_000);
-      if (s.opts.resistReaction === el) bonus = Math.floor(bonus / 2);
+      // Reaction Resistance: half the bonus at full strength, less below it.
+      if (s.opts.resistReaction === el)
+        bonus = Math.floor(
+          (bonus * (10_000 - Math.floor((5_000 * strengthOf(s)) / 10_000))) / 10_000,
+        );
       mark.stacks -= spent;
       if (mark.stacks <= 0) s.marks.delete(el);
       reacted = true;
@@ -628,9 +646,11 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       }
       if (s.boss.mods.reflectFirst && s.reflectArmed) {
         s.reflectArmed = false;
-        log(s, 'reflect', `${s.boss.name} reflects ${bonus} at ${f.name}`);
-        takeHit(s, f, bonus, 'reflected');
-        bonus = 0;
+        // Reflective Hide: the card's strength is the share of the bonus that bounces back; the rest lands.
+        const back = Math.floor((bonus * strengthOf(s)) / 10_000);
+        log(s, 'reflect', `${s.boss.name} reflects ${back} at ${f.name}`);
+        takeHit(s, f, back, 'reflected');
+        bonus -= back;
       }
       // Leave a Trail: one link per chain, so a reaction on a trail mark leaves no trail.
       if (k.trail && !mark.fromTrail)
@@ -645,7 +665,11 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
   // 4. Cap, then armour: at or below armour the hit is Blocked (R13). A spent mark stays spent.
   if (!dodged && !k.noDamage) {
     if (crit) feed(s, 'crits');
-    const pierce = Math.max(0, ...beside(s, f).map((o) => fx(o).pierceBesideBp ?? 0));
+    const pierce = Math.max(
+      k.pierceOwnBp ?? 0,
+      0,
+      ...beside(s, f).map((o) => fx(o).pierceBesideBp ?? 0),
+    );
     const armour = Math.floor((grown(s).armour * (10_000 - pierce)) / 10_000);
     let dmg = plain + bonus;
     if (s.boss.mods.capPerHit !== undefined) dmg = Math.min(dmg, s.boss.mods.capPerHit);
@@ -1020,7 +1044,10 @@ function counter(s: State, f: Fighter, shareBp: number): void {
  */
 function bossHits(
   s: State,
-  move: Pick<BossMove, 'id' | 'pattern' | 'powerBp' | 'silenceTurns' | 'charged'>,
+  move: Pick<
+    BossMove,
+    'id' | 'pattern' | 'powerBp' | 'silenceTurns' | 'charged' | 'strengthBp' | 'oneShotBp'
+  >,
   plain: boolean,
 ): void {
   // An announced move lands on the slots shown at round start; any other aims as it lands.
@@ -1057,7 +1084,13 @@ function bossHits(
         (aimedAt ? aimedAt.has(t) : t === targets[0]))
     );
     // A chain's jumps each deal a share of the hit before: the first hit full, the next at decay, then decay squared.
+    const gate = move.strengthBp ?? strengthOf(s);
     let proposed = full;
+    // A one-shot is a share of the target's Max HP (a heavy hit below full strength), still cut by Mired.
+    if (move.oneShotBp)
+      proposed = Math.floor(
+        (((t.maxHp * move.oneShotBp * gate) / 1e8) * (10_000 - miredCut(s))) / 10_000,
+      );
     if (shape === 'chain')
       for (let k = targets.indexOf(t); k > 0; k--)
         proposed = Math.floor((proposed * (move.pattern.decayBp ?? 6_000)) / 10_000);
@@ -1068,7 +1101,16 @@ function bossHits(
         log(s, 'silence', `${t.name} shrugs off the silence`);
         continue;
       }
-      t.silencedTurns = Math.max(t.silencedTurns, move.silenceTurns);
+      // A weaker gate hits fewer of the slots it picks and lasts fewer turns (at least one).
+      if (!strong(s, gate)) {
+        log(s, 'silence', `${t.name} is spared the silence`);
+        continue;
+      }
+      const turns =
+        gate >= FULL_STRENGTH_BP
+          ? move.silenceTurns
+          : Math.max(1, Math.round((move.silenceTurns * gate) / 10_000));
+      t.silencedTurns = Math.max(t.silencedTurns, turns);
       log(s, 'silence', `${t.name} is silenced`);
       continue;
     }
@@ -1178,7 +1220,7 @@ function bossTurn(s: State, turn: number): void {
   // Clean Scales sheds the marks that were on the boss when this turn began, unless sealed (R8).
   if (s.boss.mods.shedMarks)
     for (const [el, m] of s.marks)
-      if (!m.sealed && m.age < ageAtStart) {
+      if (!m.sealed && m.age < ageAtStart && strong(s, strengthOf(s))) {
         s.marks.delete(el);
         feed(s, 'shed');
       }
@@ -1248,9 +1290,10 @@ export function fight(
     fadeMired(s);
     // Shake It Off: announced at round start, the boss clears every debuff when its round ends.
     if (s.boss.mods.shakeEvery && s.round % s.boss.mods.shakeEvery === 0 && s.mired > 0) {
-      s.mired = 0;
+      // Shake It Off clears the card's strength's share of the Mired (all of it at full strength).
+      s.mired -= Math.min(s.mired, Math.round((s.mired * strengthOf(s)) / 10_000));
       log(s, 'shake', `${boss.name} shakes off its debuffs`);
-      log(s, 'mired', 'Mired x0');
+      log(s, 'mired', `Mired x${s.mired}`);
     }
   }
   return {

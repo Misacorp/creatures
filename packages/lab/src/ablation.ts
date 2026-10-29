@@ -23,7 +23,7 @@ const any = (fx: KnackFx, keys: readonly (keyof KnackFx)[]): boolean => keys.som
 
 /** The effects that make up each rule mechanic, read off a Knack's or a talent's effect fields. */
 const RULE_FX: Readonly<Record<string, (fx: KnackFx) => boolean>> = {
-  'rule:armour': (fx) => (fx.armourBonus ?? 0) > 0 || on(fx.pierceBesideBp),
+  'rule:armour': (fx) => (fx.armourBonus ?? 0) > 0 || on(fx.pierceBesideBp) || on(fx.pierceOwnBp),
   'rule:dodge': (fx) =>
     any(fx, [
       'dodgeBonusBp',
