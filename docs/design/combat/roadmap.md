@@ -43,7 +43,34 @@ Big simulations come in phase 5 on purpose: week-by-week and Boss Rank numbers m
 
 ## Progress
 
-| Phase | State                                                                                                                                                                                                                                                                                                                                                               |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | In progress. Done: rules v0.6; Knacks for every form; combat talents (R20); panel 2. Done since: Knacks grow on evolution (R11), talent pools per line (R20). Next slices: Zigzag, the never-chosen Knacks, talent numbers, bosses and dungeon foes (with Thick Hide's armour and wide raid rows). Content gap: Mire has no Setter or Payoff (new species and art). |
-| 2–8   | Not started                                                                                                                                                                                                                                                                                                                                                         |
+| Phase | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | In progress (2026-10-29). Done: rules v0.8; Knacks for every form, growing on evolution (R11); the talent library with line pools, tuned so talents are about 20% of a team's result (R20, `modifiers.md`); armour per species; the five raid bosses and fifteen dungeon foes with Build-up, new attack shapes and announced attacks (R2, R8, R22, R23); a dungeon map model with the camp; panels 1 to 4. Next: see "Where we are" below. Content gap: Mire has no Setter or Payoff (new species and art). |
+| 2–8   | Not started                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+
+## Where we are (handoff, 2026-10-29)
+
+**Merged:** PR #92 (design docs, the lab, the wiki). **In review:** PR #104 from branch `combat-v2-bosses` (the five raid bosses, the fifteen dungeon foes, Build-up, new attack shapes, announced attacks, rule-card strength by Boss Rank, the dungeon map model, panels 4 and 5 with their fixes). It changes nothing in the live game except the wiki's draft sections, which are generated from the lab's data.
+
+**Where the numbers stand** (`lab-report.md`; the main measure is the share of boss HP removed, with the retreat tiers 30%, 85% and the kill; Boss Rank low / mid / high sets rule-card strength, boss stats and the lab roster's level 12 / 18 / 25):
+
+- A prepared team removes 98% to 100% at every rank and kills 73% to 100% of weekends; with random legal talents it still removes 84% to 100%.
+- Without the boss's tool a team still removes 67% to 90%: the tool adds 9 to 33 points ("asks" at low rank, closer to "requires" at high).
+- A mixed server (10 players) removes 56% to 79%; the unprepared classic party never kills, removing 14% to 76%.
+- No Knack family gates more than 2 bosses; talents are about 20% of a team's result.
+- The dungeon: careful routes clear 99% at depth 1 down to 52% at depth 8; every foe asks for something; the Undercroft drops to 19%, 4%, 1%.
+
+**Next steps, in order:**
+
+1. **Leftovers from the bosses:**
+   - At high rank the unprepared party still removes about two thirds of Tidal Colossus's and Old Bogback's HP, more than a mixed server: they need a gate the classic trio lacks, and re-searched answers.
+   - A low-rank mixed server reaches 61% to 79%, not the 85% tier.
+   - Living Shelter is now the most picked Knack (Ancientshell's only one in the searches).
+   - Zigzag still near the "stands out" line (idea: separate its Taunt).
+   - Baked Shell and Crown of Embers still rarely picked.
+2. **The gear plan:** which shipped gear lines change, merge with a talent's name or retire in combat v2 (proposal, "Gear: what changes"), with the lab measuring the main ones.
+3. **Panel 6** on the leftovers and the gear plan.
+4. **Phase 1 gate check** (the phase 1 row above): panel without must-fix findings, every card's answers beat the classic line, no Knack used almost everywhere and none never used, the casual roster beyond its top three, the classic line losing on most cards. Then a PR, and phase 2 (the engine port) can start.
+5. **Later content:** a Mire Setter or Payoff (needs art); the Undercroft's own foes; an opt-in harder boss for the endgame (Misa, 2026-10-29).
+
+**Open questions for Misa:** none waiting.

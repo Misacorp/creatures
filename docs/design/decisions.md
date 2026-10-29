@@ -3445,6 +3445,36 @@ Misa asked for a creature's ribbons and Valley Games medals on its card in the c
 
 **Decision (Misa).** A casual player with random talents gaining about 7% to 9% (against about 20% for the best fit) is fine: random rolls should stay well away from the best fit, so talents stay situational rather than flat. Finisher, picked by 9 of the 15 best teams, is fine for now; watch it. The lab's team check now asks that random rolls gain something but at most 60% of the best fit's share (the old 10% floor is gone).
 
+## 2026-10-28: Combat v2 content direction: raids hyper-focused, dungeons all-round
+
+**Decision (Misa).**
+
+- **Existing foes are not sacred**: names, elements, gimmicks and numbers may all change for combat v2.
+- **The raid** is announced in advance: one known boss, so players build a hyper-focused roster against it. Raid bosses get stronger and many more attacks, especially area attacks in varied patterns (rows, columns, several columns, chains, several random targets). Creatures should be knocked out in raids.
+- **The dungeon** shows its encounters up front but sends many different foes, so it asks for an all-round team. Dungeons are tough, so the camp between rooms matters. The Undercroft stays a mystery: a push-your-luck choice players may skip.
+- **Every mechanic matters somewhere**: each Knack family, talent kind, keyword, armour, silence, Mired, marks, Charged moves, Taunt, intercept and cover is the answer (or the problem) for at least one boss or foe.
+- **Spiky is fine**: perfect balance is impossible; fun swings are welcome.
+
+## 2026-10-28: A well-prepared raid team should usually win
+
+**Decision (Misa).** A well-picked team built for the week's boss should win most weekends: finding the way to beat the boss and pulling it off is the reward, and that is the player agency combat v2 is for. Unprepared rosters (the same three creatures every week) should not stand much of a chance. The lab's raid targets follow: the best focused team wins most weekends (about 85% to 100%), the classic party rarely or never, and creatures are still knocked out along the way.
+
+## 2026-10-28: Announced random attacks; dungeon clear target; the camp stays
+
+**Decision (Misa).** Every random boss attack is shown at round start, with the attack's icon on each targeted creature (players cannot stop it, but watching it come is exciting). A dungeon clear is beating the day's floor boss; with the map's agency (route, skipped fights, safe mystery options, keepsakes, the camp) a good all-round team clears over 50% of runs at depths 1 to 8, and the Undercroft is where success drops. The camp keeps today's choices (rest, swap a creature, take a keepsake; push on or head home).
+
+## 2026-10-29: Combat v2 raid boss HP grows with the number of players
+
+**Decision (lead).** In the lab, a raid boss's weekend HP grows with the arena's width, as (players / 4) to the power of a per-boss exponent (0.55 to 1.23), like the shipped game's `hpExponent` (1.1). With a fixed HP, the classic party won every weekend in rows 10 and 15 wide, since more creatures simply deal more damage. Move counts scale with width too (`perColumns`), so a pattern covers the same share of a wide row as of a four-wide one. The exponents are lab numbers, tuned per boss; the port (roadmap phase 4) sets them with the shipped scaling.
+
+## 2026-10-29: Raid losses: mixed servers should feel them; measure HP left
+
+**Decision (Misa).** A prepared team losing about 1 to 5 creatures a weekend is fine, but mixed servers should feel losses more; creature losses may go up if that makes an impact. Also measure creatures' HP left after each raid stage: everyone alive but low on health is a good result too.
+
+## 2026-10-29: Combat v2 balance pass against the real bosses
+
+**Decisions (lead).** Lab rules from the balance pass: aimed boss moves may pick several targets per 4 columns, so a wide raid does not thin them out (R2.1); boss HP grows in a straight line past 10 players (R14.1); raid measures report HP left after each stage beside knockouts (Misa's note). Content: Thornmother's armour is 98, so only a Pierce line gets through (her tool); Storm Sovereign's Judgement Bolt is a one-shot on the strongest Payoff that only Night Watch takes (so Night Watch has a boss); Primed by Pain marks at every interception (x2, once a round); Baked Shell builds Heat at round start; Circle Round heals 14%; Lightning Ears costs 8 armour; Zigzag is +12 dodge and +1 count. Results: prepared teams win 98% to 100% and lose 1 to 7 creatures; mixed servers win 36% to 65% and lose 22 to 33. Storm Sovereign's mixed result (36%) is below the aim; raising it lets the classic party win in wide rows, so it stays for the panel.
+
 ### 2026-10-29: CI skips the build and tests for documentation-only PRs
 
 Misa noticed that a PR adding only a retro file ran every CI job. He asked for a scope that saves CI time without leaving gaps.
@@ -3454,3 +3484,28 @@ Misa noticed that a PR adding only a retro file ran every CI job. He asked for a
 3. **Always run:** the formatting check (Prettier formats Markdown, and it caught a merge slip on 2026-10-28) and the security job (secret scan and workflow audits).
 4. **`ci` accepts a skipped test job only when `changes` succeeded and found documentation only.** A skip for any other reason (`changes` failed, a job was cancelled) fails `ci`.
 5. **A gap found on the way:** CI didn't run `packages/lab`'s tests (added in #92). The `test-rest` job runs them now (about 15 s).
+
+## 2026-10-29: Opt-in harder raids belong to the endgame
+
+**Decision (Misa).** An optional harder version of the week's boss (an extra rule card, a better chest) is a good idea, but for the endgame: once players have crafted gear, max-level creatures and less to strive for, choosing more difficulty means more. Not in combat v2's first release.
+
+## 2026-10-29: Raid tuning aims at success tiers and robustness
+
+**Decision (lead).** The honest measures after panel 5 showed the raid fights are knife-edge damage races: prepared answers won 92% to 100% with their exact talents but 0% to 28% with random legal talents, and one HP rule for all bosses emptied mixed servers. Two changes of aim for the lab:
+
+- **Success tiers, as the shipped raid has them:** the boss retreats at 70% and at 15% of its HP left, and is defeated at 0 (`RULES.raid.phases[].clearAtLossBp`). The lab reports the share of weekends reaching each tier, not only the kill: a prepared team usually kills, a mixed server usually reaches the second retreat and sometimes kills, an unprepared party may reach the first.
+- **Robustness:** prepared answers are tuned to win with random legal talents too (about 60% or more), since a talent is meant to be about a fifth of a result, not the whole weekend.
+
+Also: Stubborn is once per weekend and never heals; further anchors of a move skip creatures already in its shape; moves on one boss turn land in the boss card's order (R8.3); one HP exponent (0.7) for every boss.
+
+## 2026-10-29: Measure HP removed; rule cards ask before they require
+
+**Decision (Misa).** Boss fights should not be all-or-nothing. Getting the boss to 10% left is very different from doing nothing, and players should feel their choices move the result ("just a little more of this and next week we beat it"). So:
+
+- **The main raid measure is the share of the boss's HP removed** (with the retreat tiers beside it); every choice's impact is shown as HP removed, not only as kills.
+- **Rule cards have a strength**, not an on/off switch (reflection returns a share of the damage, armour grows by a share, a one-shot becomes a heavy hit, and so on). A card **asks** for a tool at low strength and **requires** it at high strength.
+- **Strength rises with Boss Rank.** Early raids must not expect servers to have an answer to every problem (they lack creatures, talents and gear): a server without the answer still does real damage, and the right tools turn it into a kill. Hard requirements are a challenge for the later stages and the endgame.
+
+## 2026-10-29: The lab's raid roster levels follow Boss Rank
+
+**Decision (lead).** In the lab, the roster's level grows with Boss Rank (low, mid, high: levels 12, 18 and 25; casual players scale the same way). With a level 25 roster at every rank, a softer low-rank boss was a walkover, so the old ladder had given low rank more HP than high. Now HP, Attack, armour and rule-card strength all rise from low to high (a test enforces it), as a real server's creatures grow with the weeks. Known gaps: at high rank the unprepared party still removes about two thirds of Tidal Colossus's and Old Bogback's HP; at low rank a mixed server reaches 61% to 79%, not the 85% tier, because the boss's tool must stay worth 10 points or more. Wide Warmth reaches the far hitter at full strength (Tar Leech asks for it); Guard's Shadow is +10% with Armour -10; Living Shelter is the new most-picked Knack (Ancientshell's only one in the lab's searches).

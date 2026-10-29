@@ -34,16 +34,20 @@ export const LAB_RULES = {
   /** Opportunist: a mark with at least this many counts. */
   opportunistFromStacks: 2,
   /** Mired, the Mire debuff: per stack, the boss deals less damage and dodges less. */
-  miredPerStackBp: 300,
+  miredPerStackBp: 150,
   /** With Clinging on a living creature each stack counts for this much instead (reworked 2026-10-28). */
-  miredClingingStackBp: 450,
+  miredClingingStackBp: 225,
   miredMaxStacks: 5,
   /** Mired fades: one stack at the end of every second round; with Clinging on a living creature, never (panel 3, reworked 2026-10-28). */
   miredFadeEvery: 2,
   /** While a living creature has Clinging, Mired fades only every this many rounds. */
   miredClingingFadeEvery: 3,
-  /** Stubborn (Hold On): a hit that would knock it out leaves it at 1 HP or at this share of its Max HP, whichever is more. */
+  /** Stubborn (Hold On): once per fight (a raid: once per weekend), a hit that would knock it out leaves it at the lower of this share of its Max HP and its HP before the hit (never a heal). */
   holdOnLeaveBp: 4_000,
+  /** Element Resistance: the resisted element's creatures' hits start from this share of their base damage (a quarter less; counters are not cut). */
+  adaptElementBp: 7_500,
+  /** Mired slows the boss's escalation (R22): each stack raises the units the next step needs by this share of a step's units. */
+  miredSlowsEscalationBp: 2_500,
   /** "The boss is low" for Finisher: its HP is below this share of its full HP. */
   finisherBelowBp: 3_333,
 } as const;

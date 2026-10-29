@@ -55,9 +55,9 @@ export const KEYWORDS: Readonly<
     not: 'It skips its turn',
     step: 'R12',
   },
-  Charged: {
+  'Wind-up': {
     means: 'A boss move announced at round start: its slots are shown, and it lands on them.',
-    not: 'A mark',
+    not: 'The Spark mark Charged',
     step: 'R8',
   },
   Mired: {
@@ -96,6 +96,45 @@ export const KEYWORDS: Readonly<
     means: 'A hit on more than one slot; it is dodged at half chance.',
     not: 'A hit a Guard takes for you',
     step: 'R2',
+  },
+  Scatter: {
+    means:
+      'A boss move that hits a number of different creatures, drawn at random from the whole arena.',
+    not: 'A hit on every creature of a row',
+    step: 'R2',
+  },
+  Leap: {
+    means:
+      'A boss move that hits one creature, then jumps to the strongest creature right next to it, and on, each jump softer.',
+    not: 'The Knack family Chain',
+    step: 'R2',
+  },
+  Cross: {
+    means:
+      'A boss move that hits one creature and the creatures right beside, in front of and behind it.',
+    not: 'A whole row or column',
+    step: 'R2',
+  },
+  Checker: {
+    means: 'A boss move that hits every other slot of the arena, like the dark squares of a board.',
+    not: 'A row',
+    step: 'R2',
+  },
+  'Most hurt': {
+    means: 'The creature with the lowest share of its max HP.',
+    not: 'The creature with the least HP',
+    step: 'R2',
+  },
+  'Back-most': {
+    means: 'The living creature in the row furthest from the boss (the leftmost, if several).',
+    not: 'The creature in the last slot',
+    step: 'R2',
+  },
+  'Build-up': {
+    means:
+      'A boss that grows as a weekend goes on. It fills from something its text names (rounds, HP lost, reactions), grows a step each time it fills, up to a cap, carries across the weekend, and Mired slows it.',
+    not: 'A phase of the raid',
+    step: 'R8',
   },
 };
 

@@ -1,7 +1,7 @@
 /** Armour is a species stat (R13, Misa 2026-10-28): every form has some, an evolution never lowers it. */
 import { content } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import { FORM_ARMOUR, formArmour, formStats } from '../src';
+import { FORM_ARMOUR, STAT_OVERRIDES, formArmour, formStats } from '../src';
 
 describe('armour per form', () => {
   it('every form has armour above zero, and the table lists no unknown form', () => {
@@ -13,10 +13,12 @@ describe('armour per form', () => {
     for (const id of Object.keys(FORM_ARMOUR)) expect(ids.has(id), id).toBe(true);
   });
 
-  it('formStats reads the table at every level, never a role default', () => {
+  it('formStats reads the table at every level, never a role default (the lab overrides apart)', () => {
     for (const c of content.creatures) {
       for (const level of [1, c.levelCap, c.levelCap + 5]) {
-        expect(formStats(c.id, level).armour, `${c.id} Lv ${String(level)}`).toBe(formArmour(c.id));
+        expect(formStats(c.id, level).armour, `${c.id} Lv ${String(level)}`).toBe(
+          STAT_OVERRIDES[c.id]?.armour ?? formArmour(c.id),
+        );
       }
     }
   });

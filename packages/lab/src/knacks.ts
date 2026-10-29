@@ -48,16 +48,18 @@ export interface KnackFx {
   readonly noIntercept?: boolean;
   /** Intercepts area hits too, after the target's failed dodge. */
   readonly interceptArea?: boolean;
-  /** Intercepts every charged landing aimed at a creature in its row. */
+  /** Night Watch: takes the first Charged hit each boss turn aimed at a creature in its row, with its own cover's cut. */
   readonly interceptCharged?: boolean;
-  /** The first time it intercepts each fight, it leaves one stack of its own element's mark. */
-  readonly primeOnFirstIntercept?: boolean;
+  /** When it intercepts a hit, it leaves two stacks of its own element's mark (at most once a round). */
+  readonly primeOnIntercept?: boolean;
   /** While it stands, its row takes this much less from area hits and charged landings. */
   readonly rowAreaCutBp?: number;
   /** Store: +1 when it or a creature in its reach takes damage; at 3, the next reaction beside it deals double bonus. */
   readonly bakedShell?: boolean;
   /** Hits by creatures beside it ignore this share of the boss's armour. */
   readonly pierceBesideBp?: number;
+  /** Its own hits ignore this share of the boss's armour. */
+  readonly pierceOwnBp?: number;
   /** Support verbs replaced or reshaped at round start. */
   readonly support?:
     | 'wideWarmth'
@@ -104,7 +106,7 @@ export interface KnackFx {
   readonly lowHpAtkBp?: number;
   /** It takes this much less from area hits and charged landings (its own; adds to an aura). */
   readonly areaCutBp?: number;
-  /** Once per fight, a hit that would knock it out leaves it at 1 HP. */
+  /** Once per fight (a raid: per weekend), a hit that would knock it out leaves it at the lower of two fifths of its max HP and its HP before the hit. */
   readonly holdOn?: boolean;
   /** Its reaction bonus factor is this much higher (inside the cap, R7). */
   readonly reactionBonusBp?: number;
@@ -248,9 +250,9 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'circle-round',
       name: 'Circle Round',
       family: 'Sustain',
-      text: 'Each reaction on a Tide mark heals the creature that set it off by 8% of its max HP.',
+      text: 'Each reaction on a Tide mark heals the creature that set it off by 14% of its max HP.',
       intent: 'Keeps Payoffs alive when reactions hurt them (Reflective Hide, Thorns).',
-      fx: { healOnReactionBp: 800 },
+      fx: { healOnReactionBp: 1_400 },
     }),
     // Geyserpup (Tide Payoff, second branch)
     K({
@@ -334,16 +336,18 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'primed-by-pain',
       name: 'Primed by Pain',
       family: 'Guard Prime',
-      text: "The first time it {Intercept}s each fight, it leaves x1 of its own element's mark.",
-      intent: 'A Guard that helps prime for an Ember Payoff when no Grove Setter is around.',
-      fx: { primeOnFirstIntercept: true },
+      text: "Each time it {Intercept}s, it leaves x2 of its own element's mark. Once a round.",
+      intent:
+        'A Guard that marks by taking hits (panel 5: once a fight, and one count, was too little to build a team on): an Ember Payoff gets its reaction while the Setter slot becomes another hitter.',
+      fx: { primeOnIntercept: true },
     }),
     K({
       id: 'night-watch',
       name: 'Night Watch',
       family: 'Intercept',
-      text: 'It {Intercept}s every {Charged} hit on a creature in its row.',
-      intent: 'Answers telegraphed big hits (Great Wave).',
+      text: "Each boss turn it {Intercept}s the first {Wind-up} hit on a creature in its row, and takes it with its cover's cut.",
+      intent:
+        'Answers telegraphed big hits (Great Wave, Judgement Bolt). One hit a boss turn, and the hit it takes is cut by its own cover, so it is no longer a liability (panel 4).',
       fx: { interceptCharged: true },
     }),
     // Sunfawn (Grove Support, second branch)
@@ -377,8 +381,9 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'wide-warmth',
       name: 'Wide Warmth',
       family: 'Support shape',
-      text: 'Its boost also reaches one slot further on each side, 10% weaker.',
-      intent: 'Wide raid rows with several hitters.',
+      text: 'Its boost also reaches one slot further on each side, at full strength.',
+      intent:
+        'Wide rows with several hitters: a Support at the end of a line of three boosts both hitters, and in a raid row it reaches the far column too. Tar Leech asks for it.',
       fx: { support: 'wideWarmth' },
     }),
     K({
@@ -388,6 +393,16 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       text: "Hits by creatures beside it ignore half the boss's armour.",
       intent: 'Answers armoured bosses for plain hitters.',
       fx: { pierceBesideBp: 5_000 },
+    }),
+    // Pyrelynx (Ember Payoff): the second Pierce Knack, for the Payoff's own hits (panel 5: Thornmother's bark).
+    K({
+      id: 'gnaw-through',
+      name: 'Gnaw Through',
+      family: 'Pierce',
+      text: "Its own hits ignore a third of the boss's armour.",
+      intent:
+        "Pierce for a Payoff of a common species: its own plain and reaction hits get past thick bark (Thornmother, Tar Leech), where Tunnel Through helps the creatures beside a Support. Only the Payoff's hits, so it is a choice for one creature, not a row.",
+      fx: { pierceOwnBp: 3_333 },
     }),
     // Kilnmole (Ember Guard, second branch)
     K({
@@ -402,7 +417,7 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'keep-the-heat-in',
       name: 'Keep the Heat In',
       family: 'Row Ward',
-      text: 'While it stands, its row takes 15% less from area and {Charged} hits.',
+      text: 'While it stands, its row takes 15% less from area and {Wind-up} hits.',
       intent: "Protects other players' creatures in its row in the raid.",
       fx: { rowAreaCutBp: 1_500 },
     }),
@@ -410,7 +425,7 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'baked-shell',
       name: 'Baked Shell',
       family: 'Store',
-      text: '{Store} Heat: +1 each time it or a creature in its reach takes damage. At 3, the next {Reaction} by a creature beside it deals double bonus.',
+      text: '{Store} Heat: +1 at round start and each time it or a creature in its reach takes damage. At 3, the next {Reaction} by a creature beside it deals double bonus.',
       intent: 'A Guard beside a Payoff in a hard fight.',
       fx: { bakedShell: true },
     }),
@@ -435,9 +450,9 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'zigzag',
       name: 'Zigzag',
       family: 'Evasion',
-      text: '{Taunt}, +20 dodge. {Store} Static: +1 per dodge; at 3, its next mark gets +2 to its count.',
+      text: '{Taunt}, +12 dodge. {Store} Static: +1 per dodge; at 3, its next mark gets +1 to its count.',
       intent: 'A dodge tank beside a Guard (dodge before intercept).',
-      fx: { taunt: true, dodgeBonusBp: 2_000, storeDodgeStacks: 2 },
+      fx: { taunt: true, dodgeBonusBp: 1_200, storeDodgeStacks: 1 },
     }),
     K({
       id: 'catch-the-bolts',
@@ -451,10 +466,10 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'lightning-ears',
       name: 'Lightning Ears',
       family: 'Guard Prime',
-      text: "It leaves its own element's {Mark} like a Setter, but it does not {Intercept}, and Armour -22.",
+      text: "It leaves its own element's {Mark} like a Setter, but it does not {Intercept}, and Armour -8.",
       intent:
         "A Setter that survives the front row; it pays with the Guard's verb and its armour (P-02: never a Setter and a Guard in one body).",
-      fx: { marksAs: 'own', noIntercept: true, armourBonus: -22 },
+      fx: { marksAs: 'own', noIntercept: true, armourBonus: -8 },
     }),
     // Mire lines: the finale-ability passives, ported (they are how Mire applies Mired today)
     K({
@@ -478,10 +493,10 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'guards-shadow',
       name: "Guard's Shadow",
       family: 'Partner',
-      text: '+25% on its hits while a living Guard stands beside it.',
+      text: '+10% on its hits while a living Guard stands beside it. Armour -10.',
       intent:
         "A Payoff that wants a Guard partner, ideally another player's in the raid. The same name as the gear line with the same effect.",
-      fx: { besideGuardBp: 2_500 },
+      fx: { besideGuardBp: 1_000, armourBonus: -10 },
     }),
     K({
       id: 'crown-of-embers',
@@ -602,7 +617,7 @@ export const OWN_KNACKS: Readonly<Record<string, readonly string[]>> = {
   voltaro: ['zigzag'],
   ohmouse: ['catch-the-bolts', 'lightning-ears'],
   cindle: ['detonate', 'leave-a-trail'],
-  pyrelynx: ['guards-shadow'],
+  pyrelynx: ['guards-shadow', 'gnaw-through'],
   wickat: ['lead-the-way', 'steady-mark', 'double-mark'],
   mistnewt: ['wide-reach', 'hide-in-mist'],
   fogwyrm: ['thick-fog'],

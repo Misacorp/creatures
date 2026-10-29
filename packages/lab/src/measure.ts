@@ -324,7 +324,7 @@ export function bestOnMostCards(
 /** Three rows of twelve: the raid's board for the raid measurement (one creature of the form among classic ones). */
 export const RAID_ROW: Mode = { id: 'raid', rows: 3, cols: 12, maxCopies: 36 };
 
-/** The cards the raid boss carries: a row sweep (Charged) and a slam on the strongest Payoff, so Guard shapes have something to cover. */
+/** The cards the raid boss carries: a row sweep (Wind-up) and a slam on the strongest Payoff, so Guard shapes have something to cover. */
 const RAID_CARDS: readonly string[] = ['great-wave', 'payoff-hunter'];
 
 /**

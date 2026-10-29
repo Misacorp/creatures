@@ -1,18 +1,26 @@
 import { writeFileSync } from 'node:fs';
 import { CARDS } from './cards';
+import { buildBossSections } from './bossReport';
 import { buildTalentSection } from './talentReport';
 import { TEAM_BOSS_WIN_RATE } from './teamShare';
 import { buildTeamShareSection } from './teamShareReport';
 import { buildCatalogue, buildKeywords, buildReport } from './report';
 
-/** `pnpm --filter @creatures/lab report [-- --quick] [--out <file>]`: writes the lab report; `--talents` prints only the talent section, `--team` only its team share. */
+/** `pnpm --filter @creatures/lab report [-- --quick] [--out <file>]`: writes the lab report; `--talents` prints only the talent section, `--team` only its team share, `--bosses` only the real raid bosses and dungeon foes. */
 export function main(args: readonly string[]): number {
   const quick = args.includes('--quick');
+  if (args.includes('--bosses')) {
+    // Only the real raid bosses and dungeon foes, to the console (nothing is written).
+    const t0 = Date.now();
+    console.log(buildBossSections({ quick }).md.join('\n'));
+    console.log(`bosses in ${Math.round((Date.now() - t0) / 1000)} s`);
+    return 0;
+  }
   if (args.includes('--team')) {
     // Tuning loop: only the talents' share of the team's result.
     const t0 = Date.now();
     const section = buildTeamShareSection({
-      cards: CARDS.filter((c) => c.id !== 'adapts'),
+      cards: CARDS.filter((c) => !c.raidOnly),
       quick,
       winRate: TEAM_BOSS_WIN_RATE,
     });
@@ -24,7 +32,7 @@ export function main(args: readonly string[]): number {
   if (args.includes('--talents')) {
     // Tuning loop: only the talent section, to the console (nothing is written).
     const t0 = Date.now();
-    const section = buildTalentSection({ cards: CARDS.filter((c) => c.id !== 'adapts'), quick });
+    const section = buildTalentSection({ cards: CARDS.filter((c) => !c.raidOnly), quick });
     console.log(section.teamMd.join('\n'));
     console.log(section.md.slice(section.md.findIndex((l) => l.startsWith('| Role'))).join('\n'));
     console.log(`talent section in ${Math.round((Date.now() - t0) / 1000)} s`);
