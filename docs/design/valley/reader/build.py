@@ -122,6 +122,7 @@ sections.append(('overview','Overview', md(readme)))
 sections.append(('questions','Questions', md(qs)))
 sections.append(('goals','Goals', md(read('goals.md'))))
 sections.append(('roadmap','Roadmap', md(read('roadmap.md'))))
+sections.append(('scrap','Scrap list', md(read('scrap-list.md'))))
 sys_html = []
 for f, name in SYSTEMS:
     s = read('systems/'+f)

@@ -46,7 +46,9 @@ Status: asked, round 2 (2026-10-29). Was the queued **post-or-fight**. Touches: 
 
 In order. Each becomes a numbered question when asked; entries name what they wait on.
 
-- **scrap-list (lead's work first).** A keep, rework or scrap table of today's game against the vision: Expeditions, Workshop jobs, the lounge and its cap, the daily dungeon, Bait, Essence, scrap and the other materials, leet points, gear, the Journal, weather, Home's board. Live numbers and player feedback next to each. Misa is asked only about the rows where the call is not obvious. In progress while round 2 waits.
+- **dungeon-days.** From the scrap list: a missed day loses that day's dungeon run, while everything else now never punishes absence (F-1). Bank missed runs (example: up to 3), make it weekly, or keep it daily as the one daily habit?
+- **games.** From the scrap list: the Valley Games were built to make low-level creatures worth using, which posts and the bonfire now do, and a daily show is one more daily habit. Keep them daily, make them a weekly fair, or fold them into the Festival?
+- **bait.** From the scrap list: treats go, so Bait loses its biggest use and already piles up. What is Bait for in the valley (gifts to the commons, supplies at posts, the Paddock), and does leeting still pay it?
 - **returners.** A weekly or returning player brings a smaller roster to the raid (V-POST-10: about 43% of a daily player's idle growth in a week). Does the raid even it out (level sync, a catch-up toward the server), or is that the honest cost of playing less? A seam with combat v2. After round 2.
 - **bonfire.** Is the bonfire a flat floor for every creature, or a communal hearth the server feeds? (`bonfire.md`.) Waits on Q1 and Q3.
 - **place-max.** Do places have a max level, after which projects turn cosmetic? (`commons.md`.) Waits on Q1.

@@ -40,6 +40,8 @@ Numbers live in data, never in prose. A doc may give an example number, marked a
 | Valley map (places, what players do, shortcuts, posts idea)                          | Claude artifact "Valley Map" (Misa has the link)                                             | v2                                    |
 | Research on job posts, roster XP, idling, the School, co-op idle                     | `docs/research/idle-job-posts.md`                                                            | done                                  |
 
+Today's game against the vision, system by system (keep, rework or scrap): [`scrap-list.md`](scrap-list.md).
+
 ## The systems (one doc each)
 
 | System                                                    | Doc                                        | Status                                                    |

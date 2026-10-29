@@ -38,4 +38,6 @@ One entry per session, newest last. Each says what was done, what was decided, a
 
 **Done.** Recorded Misa's round 1 answers (`questions.md`, `decisions.md`): one shared valley where personal and shared progress take turns as the limit (V-COM-10); posts replace every timed task, with agency at the place (V-POST-9); away growth in steps, full for a day and near zero after a month (V-POST-10). G-3 and G-4 accepted as reworded; F-1 and T-2 changed. A challenger agent checked the answers; the lead decided three technical points (projects sized by players who visited in the last 7 days, the away steps never touch what fights pay, queues of at most about 3 orders computed lazily and priced against the read budget) and turned two conflicts into round 2: Q4 (when the shared place blocks you, can you push it through yourself), Q5 (how long stores and queues last), plus Q6 (does a raid pick leave its post).
 
-**Next.** The scrap list (lead's work) while round 2 waits; then record round 2 and ask round 3 from the queue (returners, bonfire, place-max).
+Then the scrap list ([`scrap-list.md`](scrap-list.md)), from an agent's inventory of the shipped game: trips, Workshop jobs, slots, the lounge cap, treats, the leet points conversion and the Home board are scrapped; scouts, the Forge and the house take over their inputs; three rows queued for Misa (dungeon-days, games, bait).
+
+**Next.** Record round 2; round 3 from the head of the queue (dungeon-days, games, bait, then returners, bonfire, place-max).

@@ -15,7 +15,7 @@ Each phase ends at a **gate**: what must be true before the next phase starts. M
 
 ## Order inside phase 1 (current)
 
-1. **Question rounds** with Misa ([`deciding.md`](deciding.md), the ledger [`questions.md`](questions.md)): the foundations first (one valley or many, posts instead of timers, how much opening the game matters), then the **scrap list** (today's game, keep, rework or scrap), then each system's open choices. The goals in [`goals.md`](goals.md) change with each answer.
+1. **Question rounds** with Misa ([`deciding.md`](deciding.md), the ledger [`questions.md`](questions.md)): the foundations first (one valley or many, posts instead of timers, how much opening the game matters), then the **scrap list** ([`scrap-list.md`](scrap-list.md): today's game, keep, rework or scrap), then each system's open choices. The goals in [`goals.md`](goals.md) change with each answer.
 2. **Posts** and **the bonfire** first: they decide how XP flows, which everything else depends on.
 3. **The return moment**: what a player sees and decides; it shapes how outputs are reported.
 4. **Scouts** and **the Forge loop**: the first chain (finds feed crafting).
