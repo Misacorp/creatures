@@ -1,7 +1,7 @@
 import type { Zone } from '@creatures/engine';
 import type { ComponentChildren, RefObject } from 'preact';
 import { useLayoutEffect, useRef } from 'preact/hooks';
-import { laneStates, ownLaneSpan, scrollToSpan } from '../raid-board';
+import { laneStates, ownLaneSpan, scrollToSpan, snapToLane } from '../raid-board';
 import { SlotButton, type SlotModel, type SlotStripProps } from './SlotButton';
 import { CueRail, type CueRailProps } from './CueRail';
 import { slotState } from './slot-state';
@@ -59,8 +59,19 @@ function showLanes(scroller: HTMLElement | null, first: number, last: number) {
   const box = scroller.getBoundingClientRect();
   const left = a.getBoundingClientRect().left - box.left + scroller.scrollLeft;
   const right = b.getBoundingClientRect().right - box.left + scroller.scrollLeft;
+  const target = scrollToSpan(left, right, scroller.clientWidth, scroller.scrollWidth);
+  const laneLefts = [...lanes].map(
+    (l) => l.getBoundingClientRect().left - box.left + scroller.scrollLeft,
+  );
   scroller.scrollTo({
-    left: scrollToSpan(left, right, scroller.clientWidth, scroller.scrollWidth),
+    left: snapToLane(
+      target,
+      laneLefts,
+      left,
+      right,
+      scroller.clientWidth,
+      Math.max(0, scroller.scrollWidth - scroller.clientWidth),
+    ),
     behavior: 'auto',
   });
 }

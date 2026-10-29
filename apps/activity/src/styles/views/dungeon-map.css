@@ -3,7 +3,7 @@
   stand below the floor boss in a darker band (blacker ground, pale violet rings, a violet label). The board has the
   aspect ratio of the map's coordinate space (320 units wide, see dungeon-map.ts), so everything inside it
   is placed in percent and scales with the width of the screen: no sideways scroll, and at 320 px a room is
-  at least 44 px across. The SVG draws the paths; the rooms are round buttons on top of it.
+  at least 44 px across. The SVG draws the paths; the rooms are pixel-disc buttons on top of it.
 */
 
 .dmap {
@@ -139,8 +139,92 @@
   transform: translate(-50%, -50%);
 }
 
+/*
+  A room is a pixel disc: a stepped octagon in three flat layers (.dmap-disc: an ink outline, the ring in the
+  room's colour, the fill), no blur and no glow, a hard offset shadow under it. Every layer is clipped to the
+  same staircase, one step (one --u) shorter per layer, so the ring is as thick at the corners as on the
+  sides. States differ by SHAPE as well as colour: out of reach has a broken (dashed) ring, a room you can
+  go to a solid one that blinks in steps, the room you stand in a thick ring with a pip inside, a room you
+  have been through a square stamp with a tick, an elite a thick ring, the boss a thick collar. The badges
+  (stamp, crack, descent, lost) are square.
+*/
 button.dmap-node {
   --nr: var(--el, var(--haze)); /* the colour of the room's ring */
+  --fill: color-mix(in srgb, var(--el, var(--haze)) 18%, var(--dusk-2));
+  --u: 3px; /* one step of the staircase, and the thickness of the outline and the ring */
+  --u2: 6px;
+  --u3: 9px;
+  --rw: var(--u); /* the ring's thickness */
+  /* The staircase: 3 steps (outline), 2 (ring), 1 (fill), 0 (a thick ring's fill). */
+  --st3: polygon(
+    var(--u3) 0,
+    calc(100% - var(--u3)) 0,
+    calc(100% - var(--u3)) var(--u),
+    calc(100% - var(--u2)) var(--u),
+    calc(100% - var(--u2)) var(--u2),
+    calc(100% - var(--u)) var(--u2),
+    calc(100% - var(--u)) var(--u3),
+    100% var(--u3),
+    100% calc(100% - var(--u3)),
+    calc(100% - var(--u)) calc(100% - var(--u3)),
+    calc(100% - var(--u)) calc(100% - var(--u2)),
+    calc(100% - var(--u2)) calc(100% - var(--u2)),
+    calc(100% - var(--u2)) calc(100% - var(--u)),
+    calc(100% - var(--u3)) calc(100% - var(--u)),
+    calc(100% - var(--u3)) 100%,
+    var(--u3) 100%,
+    var(--u3) calc(100% - var(--u)),
+    var(--u2) calc(100% - var(--u)),
+    var(--u2) calc(100% - var(--u2)),
+    var(--u) calc(100% - var(--u2)),
+    var(--u) calc(100% - var(--u3)),
+    0 calc(100% - var(--u3)),
+    0 var(--u3),
+    var(--u) var(--u3),
+    var(--u) var(--u2),
+    var(--u2) var(--u2),
+    var(--u2) var(--u),
+    var(--u3) var(--u)
+  );
+  --st2: polygon(
+    var(--u2) 0,
+    calc(100% - var(--u2)) 0,
+    calc(100% - var(--u2)) var(--u),
+    calc(100% - var(--u)) var(--u),
+    calc(100% - var(--u)) var(--u2),
+    100% var(--u2),
+    100% calc(100% - var(--u2)),
+    calc(100% - var(--u)) calc(100% - var(--u2)),
+    calc(100% - var(--u)) calc(100% - var(--u)),
+    calc(100% - var(--u2)) calc(100% - var(--u)),
+    calc(100% - var(--u2)) 100%,
+    var(--u2) 100%,
+    var(--u2) calc(100% - var(--u)),
+    var(--u) calc(100% - var(--u)),
+    var(--u) calc(100% - var(--u2)),
+    0 calc(100% - var(--u2)),
+    0 var(--u2),
+    var(--u) var(--u2),
+    var(--u) var(--u),
+    var(--u2) var(--u)
+  );
+  --st1: polygon(
+    var(--u) 0,
+    calc(100% - var(--u)) 0,
+    calc(100% - var(--u)) var(--u),
+    100% var(--u),
+    100% calc(100% - var(--u)),
+    calc(100% - var(--u)) calc(100% - var(--u)),
+    calc(100% - var(--u)) 100%,
+    var(--u) 100%,
+    var(--u) calc(100% - var(--u)),
+    0 calc(100% - var(--u)),
+    0 var(--u),
+    var(--u) var(--u)
+  );
+  --st0: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  --st-ring: var(--st2);
+  --st-fill: var(--st1);
   position: relative;
   display: grid;
   place-items: center;
@@ -148,11 +232,46 @@ button.dmap-node {
   height: 100%;
   min-height: 0;
   padding: 0;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--el, var(--haze)) 18%, var(--dusk-2));
-  box-shadow:
-    0 0 0 var(--px) var(--ink),
-    inset 0 0 0 var(--px) var(--nr);
+  background: none;
+  box-shadow: none;
+  /* The hard shadow: a drop shadow with no blur (it follows the clipped shape). */
+  filter: drop-shadow(3px 3px 0 var(--ink));
+}
+
+.dmap-disc {
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+  clip-path: var(--st3);
+  pointer-events: none;
+}
+
+.dmap-disc::before,
+.dmap-disc::after {
+  content: '';
+  position: absolute;
+}
+
+/* The ring (the ink outline shows through its gaps). */
+.dmap-disc::before {
+  inset: var(--u);
+  background: var(--nr);
+  clip-path: var(--st-ring);
+}
+
+.dmap-disc::after {
+  inset: calc(var(--u) + var(--rw));
+  background: var(--fill);
+  clip-path: var(--st-fill);
+}
+
+/* Bigger rooms on a wide map: a step of 4 px, so the corners stay stepped and not square. */
+@media (min-width: 60rem) {
+  button.dmap-node {
+    --u: 4px;
+    --u2: 8px;
+    --u3: 12px;
+  }
 }
 
 button.dmap-node:active:not(:disabled) {
@@ -160,6 +279,8 @@ button.dmap-node:active:not(:disabled) {
 }
 
 button.dmap-node .sprite {
+  position: relative;
+  z-index: 1;
   display: block;
 }
 
@@ -174,7 +295,7 @@ button.dmap-node.k-cache {
 
 button.dmap-node.k-camp {
   --nr: var(--bone);
-  background: color-mix(in srgb, var(--gold) 14%, var(--dusk-2));
+  --fill: color-mix(in srgb, var(--gold) 14%, var(--dusk-2));
 }
 
 /* A carved door: a plain stone ring. */
@@ -185,7 +306,7 @@ button.dmap-node.k-door {
 /* Undercroft rooms: a darker disc and a pale violet ring in place of the gold-and-haze ones. */
 button.dmap-node.u {
   --nr: var(--el, var(--uc-ring));
-  background: color-mix(in srgb, var(--el, var(--uc-ring)) 14%, var(--uc-node));
+  --fill: color-mix(in srgb, var(--el, var(--uc-ring)) 14%, var(--uc-node));
 }
 
 button.dmap-node.u:where(.k-mystery, .k-door) {
@@ -198,84 +319,81 @@ button.dmap-node.u:where(.k-cache) {
 
 button.dmap-node.u:where(.k-camp) {
   --nr: var(--bone);
-  background: color-mix(in srgb, var(--gold) 12%, var(--uc-node));
+  --fill: color-mix(in srgb, var(--gold) 12%, var(--uc-node));
 }
 
-/* An epic fight: the elite's thick ring in gold. */
+/* An elite (the epic fight too): a thick ring, in gold for the epic one. */
+button.dmap-node:where(.k-elite, .k-epic) {
+  --rw: calc(var(--u) * 2);
+  --st-fill: var(--st0);
+}
+
 button.dmap-node.k-epic {
   --nr: var(--gold);
-  box-shadow:
-    0 0 0 var(--px) var(--ink),
-    inset 0 0 0 calc(var(--px) + 2px) var(--nr);
 }
 
-/* The keeper wears a pale collar instead of the gold one. */
-button.dmap-node.u:where(.k-boss) {
-  box-shadow:
-    0 0 0 var(--px) var(--ink),
-    0 0 0 calc(var(--px) * 2) var(--uc-ring),
-    inset 0 0 0 calc(var(--px) + 1px) var(--nr);
+/* The boss: a thick collar, gold (pale violet in the Undercroft); a cracked floor turns it red. */
+button.dmap-node.k-boss {
+  --nr: var(--gold-shade);
+  --rw: calc(var(--u) * 2);
+  --st-fill: var(--st0);
 }
 
-/* A cracked floor under the keeper: a red crack on its collar. */
-button.dmap-node.cracked {
-  box-shadow:
-    0 0 0 var(--px) var(--ink),
-    0 0 0 calc(var(--px) * 2) var(--bad),
-    inset 0 0 0 calc(var(--px) + 1px) var(--nr);
+button.dmap-node.u.k-boss {
+  --nr: var(--uc-ring);
+}
+
+button.dmap-node.cracked,
+button.dmap-node.u.cracked {
+  --nr: var(--bad);
 }
 
 .dmap-crack {
   position: absolute;
   left: -0.375rem;
   bottom: -0.375rem;
+  z-index: 2;
   padding: 2px;
-  border-radius: 50%;
   background: var(--ink);
   line-height: 0;
 }
 
-/* The elite's ring is thicker; the boss wears a gold collar. */
-button.dmap-node.k-elite {
-  box-shadow:
-    0 0 0 var(--px) var(--ink),
-    inset 0 0 0 calc(var(--px) + 2px) var(--nr);
-}
-
-button.dmap-node.k-boss {
-  box-shadow:
-    0 0 0 var(--px) var(--ink),
-    0 0 0 calc(var(--px) * 2) var(--gold-shade),
-    inset 0 0 0 calc(var(--px) + 1px) var(--nr);
-}
-
-/* Out of reach: dimmed (and still tappable, for what is there). Not see-through, so no path shows behind it. */
+/* Out of reach: a broken ring (eight dashes), dimmed. Still tappable, for what is there. */
 button.dmap-node.s-locked {
-  filter: saturate(0.5) brightness(0.65);
+  filter: drop-shadow(3px 3px 0 var(--ink)) saturate(0.5) brightness(0.65);
+}
+
+button.dmap-node.s-locked .dmap-disc::before {
+  background: repeating-conic-gradient(var(--nr) 0 30deg, transparent 30deg 45deg);
 }
 
 /*
-  Out of reach for good: no path from where the run stands leads here. Greyer and darker than a room that is
-  only not next (colour gone, much dimmer), still not see-through, and still tappable for what is there.
+  Out of reach for good: no path from where the run stands leads here. A ring in four pieces, greyed and
+  darker still, and still tappable for what is there.
 */
 button.dmap-node.s-unreachable {
-  --nr: var(--line);
-  filter: grayscale(1) brightness(0.45);
+  --nr: var(--haze);
+  filter: drop-shadow(3px 3px 0 var(--ink)) grayscale(1) brightness(0.5);
 }
 
-/* Been there: filled in gold. */
+button.dmap-node.s-unreachable .dmap-disc::before {
+  background: repeating-conic-gradient(var(--nr) 0 40deg, transparent 40deg 90deg);
+}
+
+/* Been there: a gold ring, the fill burnt in, and a square stamp with a tick. */
 button.dmap-node.s-visited {
   --nr: var(--gold);
-  background: color-mix(in srgb, var(--gold) 45%, var(--ink));
+  --fill: color-mix(in srgb, var(--gold) 45%, var(--ink));
 }
 
 .dmap-check {
   position: absolute;
   top: -0.25rem;
   right: -0.25rem;
+  z-index: 2;
   padding: 2px;
-  border-radius: 50%;
   background: var(--ink);
+  box-shadow: 0 0 0 1px var(--gold);
   line-height: 0;
 }
 
@@ -284,8 +402,8 @@ button.dmap-node.s-visited {
   position: absolute;
   right: -0.375rem;
   bottom: -0.375rem;
+  z-index: 2;
   padding: 3px;
-  border-radius: 50%;
   background: var(--ink);
   box-shadow: 0 0 0 1px var(--uc-ring);
   line-height: 0;
@@ -294,56 +412,56 @@ button.dmap-node.s-visited {
 /* Lost here: a red cross on the room (in place of the tick) and a red ring. */
 button.dmap-node.s-visited.lost {
   --nr: var(--bad);
-  background: color-mix(in srgb, var(--bad) 35%, var(--ink));
+  --fill: color-mix(in srgb, var(--bad) 35%, var(--ink));
 }
 
 .dmap-lost {
   position: absolute;
   top: -0.25rem;
   right: -0.25rem;
+  z-index: 2;
   padding: 2px;
-  border-radius: 50%;
   background: var(--ink);
+  box-shadow: 0 0 0 1px var(--bad);
   line-height: 0;
 }
 
-/* Standing here: the gold double ring. */
+/* Standing here: a thick gold ring and a gold pip inside, under the picture. */
 button.dmap-node.s-current {
   --nr: var(--gold);
-  background: color-mix(in srgb, var(--el, var(--haze)) 40%, var(--dusk-2));
-  box-shadow:
-    var(--ring),
-    inset 0 0 0 var(--px) var(--nr);
+  --rw: calc(var(--u) * 2);
+  --st-fill: var(--st0);
+  --fill: color-mix(in srgb, var(--el, var(--haze)) 40%, var(--dusk-2));
 }
 
-/* Can go there now: a glowing ring (a still one with reduced motion). */
+button.dmap-node.s-current::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--u) * 3 + 1px);
+  z-index: 2;
+  width: 9px;
+  height: 6px;
+  background: var(--gold);
+  box-shadow: 0 0 0 1px var(--ink);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  transform: translateX(-50%);
+}
+
+/* Can go there now: a solid ring that blinks gold and bone in steps (a still gold one with reduced motion). */
 button.dmap-node.s-reachable {
   --nr: var(--gold);
-  box-shadow:
-    0 0 0 var(--px) var(--ink),
-    inset 0 0 0 var(--px) var(--nr),
-    0 0 0.625rem 0.25rem rgb(var(--gold-rgb) / 55%);
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  button.dmap-node.s-reachable {
-    animation: dmap-glow 1.6s ease-in-out infinite alternate;
+  button.dmap-node.s-reachable .dmap-disc::before {
+    animation: dmap-blink 1.2s steps(1, end) infinite;
   }
 }
 
-@keyframes dmap-glow {
-  from {
-    box-shadow:
-      0 0 0 var(--px) var(--ink),
-      inset 0 0 0 var(--px) var(--nr),
-      0 0 0.25rem 0.0625rem rgb(var(--gold-rgb) / 35%);
-  }
-
-  to {
-    box-shadow:
-      0 0 0 var(--px) var(--ink),
-      inset 0 0 0 var(--px) var(--nr),
-      0 0 0.75rem 0.3125rem rgb(var(--gold-rgb) / 70%);
+@keyframes dmap-blink {
+  50% {
+    background: var(--bone);
   }
 }
 
