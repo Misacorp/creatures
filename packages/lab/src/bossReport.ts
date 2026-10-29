@@ -169,14 +169,14 @@ export const BOSS_SETTINGS = (quick: boolean): Settings =>
     : {
         // A few starts and many rounds of local improvement: found far better lines than many starts and few rounds.
         raid: {
-          starts: 100,
+          starts: 200,
           keep: 6,
-          rounds: 20,
+          rounds: 40,
           seeds: 5,
           freshSeeds: 40,
           weekends: 100,
-          mixedDraws: 12,
-          scratchSearches: 3,
+          mixedDraws: 20,
+          scratchSearches: 2,
         },
         foe: { starts: 120, keep: 10, rounds: 3, seeds: 4, freshSeeds: 24, fights: 40 },
         runs: { starts: 250, keep: 16, rounds: 4, search: 6, fresh: 50, stats: 100 },
@@ -326,15 +326,19 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
       `| ${boss.name} | ${hpExponentOf(boss)} | ${widths.map((w) => `${pct(w.classicWin)} / ${pct(w.bestWin)}`).join(' | ')} |`,
     );
     // A mixed server: 2 min-maxers, 3 builders, 5 casual players.
+    // One answer per boss, the prepared line (the first written answer: the tool the boss asks for, at most two copies of a form).
+    // Min-maxers and builders bring its columns; the search's best line is tuned to its own four columns together, and its
+    // columns do not carry the tool by name.
+    const prepared = legalGiven[0];
     const mixed: MixedResult = mixedServer(
       boss,
-      overall.line,
-      legalGiven.map((g) => g.picks),
+      prepared?.picks ?? overall.line,
+      prepared ? [prepared.picks] : legalGiven.map((g) => g.picks),
       S.raid.mixedDraws,
       S.raid.weekends,
       `report:${spec.id}:mixed`,
-      BOSS_ANSWERS[spec.id]?.[0]?.core ?? [],
-      legalGiven.map((g) => g.core ?? []),
+      prepared?.core ?? [],
+      prepared ? [prepared.core ?? []] : [],
     );
     mixedRows.push(`| ${boss.name} | ${pct(mixed.winRate)} | ${mixed.knockouts.toFixed(1)} |`);
     // Which mechanics the best line really needs: take each out and measure the win rate.
@@ -399,7 +403,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     '',
     '### A mixed server weekend',
     '',
-    `Ten players, one column each, side by side: 2 min-maxers (a column of the best line), 3 builders (a column of a written answer, at most 2 copies of any form; the min-maxers and builders have read the boss and bring the columns that hold its tool) and 5 casual players (a column of random forms from a random roster of 12, a random Knack each that the form can equip, and a random legal talent). ${S.raid.mixedDraws} different draws of the casual players and the builders' answers, ${S.raid.weekends} weekends in all.`,
+    `Ten players, one column each, side by side: 2 min-maxers and 3 builders (a column each of the prepared line, the first written answer: one answer per boss, at most 2 copies of any form in a column; they have read the boss, so the min-maxers bring the columns with the most of its tool first and the builders take the columns in turn) and 5 casual players (a column of random forms from a random roster of 12, a random Knack each that the form can equip, and a random legal talent). ${S.raid.mixedDraws} different draws of the casual players and the builders' answers, ${S.raid.weekends} weekends in all.`,
     '',
     '| Boss | Weekend win | Knockouts |',
     '| --- | ---: | ---: |',

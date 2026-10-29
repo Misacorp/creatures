@@ -106,7 +106,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
     id: 'tidal-colossus',
     rows: 3,
     armour: 34,
-    atk: 124,
+    atk: 126,
     hp: 22_400,
     hpExponent: 0.87,
     plain: { pattern: { anchor: 'front', shape: 'row' }, powerBp: 2_500 },
