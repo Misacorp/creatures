@@ -8,6 +8,7 @@ export * from './report';
 export * from './rules';
 export * from './search';
 export * from './species';
+export * from './stats';
 export * from './talents';
 export * from './types';
 export * from './measure';
