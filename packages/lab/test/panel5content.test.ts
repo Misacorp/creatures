@@ -136,10 +136,10 @@ describe('Wide Warmth has a job: it boosts the far hitter of a line of three, an
 });
 
 describe('Guard’s Shadow is trimmed, and the rare Knacks have somewhere to be an answer', () => {
-  it('Guard’s Shadow gives +12%, not +25%, and costs 8 armour', () => {
-    expect(KNACKS['guards-shadow']?.fx.besideGuardBp).toBe(1_200);
-    expect(KNACKS['guards-shadow']?.fx.armourBonus).toBe(-8);
-    expect(KNACKS['guards-shadow']?.text).toMatch(/\+12%/);
+  it('Guard’s Shadow gives +10%, not +25%, and costs 10 armour', () => {
+    expect(KNACKS['guards-shadow']?.fx.besideGuardBp).toBe(1_000);
+    expect(KNACKS['guards-shadow']?.fx.armourBonus).toBe(-10);
+    expect(KNACKS['guards-shadow']?.text).toMatch(/\+10%/);
   });
 
   const carries = (knack: string) =>

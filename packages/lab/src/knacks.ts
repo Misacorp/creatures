@@ -493,10 +493,10 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'guards-shadow',
       name: "Guard's Shadow",
       family: 'Partner',
-      text: '+12% on its hits while a living Guard stands beside it. Armour -8.',
+      text: '+10% on its hits while a living Guard stands beside it. Armour -10.',
       intent:
         "A Payoff that wants a Guard partner, ideally another player's in the raid. The same name as the gear line with the same effect.",
-      fx: { besideGuardBp: 1_200, armourBonus: -8 },
+      fx: { besideGuardBp: 1_000, armourBonus: -10 },
     }),
     K({
       id: 'crown-of-embers',
