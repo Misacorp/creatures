@@ -3474,6 +3474,7 @@ Misa asked for a creature's ribbons and Valley Games medals on its card in the c
 ## 2026-10-29: Combat v2 balance pass against the real bosses
 
 **Decisions (lead).** Lab rules from the balance pass: aimed boss moves may pick several targets per 4 columns, so a wide raid does not thin them out (R2.1); boss HP grows in a straight line past 10 players (R14.1); raid measures report HP left after each stage beside knockouts (Misa's note). Content: Thornmother's armour is 98, so only a Pierce line gets through (her tool); Storm Sovereign's Judgement Bolt is a one-shot on the strongest Payoff that only Night Watch takes (so Night Watch has a boss); Primed by Pain marks at every interception (x2, once a round); Baked Shell builds Heat at round start; Circle Round heals 14%; Lightning Ears costs 8 armour; Zigzag is +12 dodge and +1 count. Results: prepared teams win 98% to 100% and lose 1 to 7 creatures; mixed servers win 36% to 65% and lose 22 to 33. Storm Sovereign's mixed result (36%) is below the aim; raising it lets the classic party win in wide rows, so it stays for the panel.
+
 ### 2026-10-29: CI skips the build and tests for documentation-only PRs
 
 Misa noticed that a PR adding only a retro file ran every CI job. He asked for a scope that saves CI time without leaving gaps.
