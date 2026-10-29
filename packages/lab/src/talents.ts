@@ -277,7 +277,7 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'stubborn',
       name: 'Stubborn',
-      text: 'Once per fight, a hit that would knock it out leaves it at two fifths of its max HP.',
+      text: 'Once per fight (in a raid, once per weekend), a hit that would knock it out leaves it at two fifths of its max HP, or at the HP it had if that was lower.',
       roles: ALL,
       intent:
         "Survives one Crusher; pairs with healers. Hold On under its one name. Reworked (2026-10-28): it left the creature at 1 HP, which gained about 2% of a team's result, so it now leaves it at two fifths of its max HP.",

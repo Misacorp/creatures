@@ -17,6 +17,7 @@ import {
   illegalTalents,
   labBoss,
   legalTalents,
+  placeFighters,
   resistedElement,
   weekend,
   type BossDef,
@@ -363,6 +364,50 @@ describe('Catch Breath is once per weekend', () => {
       { rng: rng('x'), stages: 2 },
     );
     expect(w.stages).toHaveLength(2);
+  });
+});
+
+describe('Stubborn (panel 5): once per weekend, and it never heals', () => {
+  const hitter = (atk: number): BossDef => ({
+    ...labBoss({ rows: 1, cols: 1, rounds: 1, atk, hp: 1_000_000 }),
+    spd: 0,
+    armour: 5_000,
+  });
+  const team = [at('tidewing', 0, 0, { talents: ['stubborn'] })];
+
+  it('holds on in one stage only: a later stage knocks it out', () => {
+    // Each stage's hit is far more than its max HP.
+    let stages: FightResult[] | undefined;
+    for (let i = 0; i < 40 && !stages; i++) {
+      const w = weekend(hitter(2_000), team, [], { rng: rng(`st${i}`), stages: 2, log: true });
+      if (w.stages.every((st) => st.dodges === 0)) stages = w.stages;
+    }
+    const held = (st: FightResult | undefined) =>
+      st?.events.filter((e) => e.kind === 'hold-on').length;
+    expect(held(stages?.[0])).toBe(1);
+    expect(stages?.[0]?.knockouts).toBe(0);
+    expect(held(stages?.[1])).toBe(0);
+    expect(stages?.[1]?.knockouts).toBe(1);
+  });
+
+  it('leaves it at two fifths of its max HP, or at the HP it had if that was lower (never a heal)', () => {
+    const uid = placeFighters(team)[0]?.uid ?? '';
+    const maxHp = formStats('tidewing', 25).hp;
+    const left = (carried: number) => {
+      for (let i = 0; i < 40; i++) {
+        const r = fight(hitter(2_000), team, {
+          rng: rng(`nh${i}`),
+          carryHp: new Map([[uid, carried]]),
+          log: true,
+        });
+        if (r.dodges === 0) return r.fighters[0]?.hp;
+      }
+      return undefined;
+    };
+    const two5 = Math.floor((maxHp * LAB_RULES.holdOnLeaveBp) / 10_000);
+    expect(left(maxHp)).toBe(two5);
+    expect(left(Math.floor(maxHp / 10))).toBe(Math.floor(maxHp / 10));
+    expect(left(1)).toBe(1);
   });
 });
 
@@ -771,6 +816,25 @@ describe('an aimed shape may have several anchors (balance pass, 2026-10-29)', (
     expect(slotsHit(r, 'm')).toHaveLength(6);
   });
 
+  it('each further anchor is the best match not already inside the move’s shape (R2.1, panel 5)', () => {
+    const boss = mover({ anchor: 'strongest', shape: 'line3', anchors: 2 }, 1, 6, { atk: 1 });
+    // Tempestray (165) and Bloomback (165) stand side by side: the first anchor's line of three already holds both, so the
+    // second anchor is the strongest creature outside it, Pyrelynx (149), not Bloomback.
+    const team = [
+      at('thornbuck', 0, 0),
+      at('tempestray', 0, 1),
+      at('bloomback', 0, 2),
+      at('thornbuck', 0, 3),
+      at('pyrelynx', 0, 4),
+      at('thornbuck', 0, 5),
+    ];
+    const r = fight(boss, team, { rng: rng('anchors-r21'), log: true });
+    // Without the rule the second anchor would be Bloomback and the right half of the row would go untouched.
+    expect(new Set(slotsHit(r, 'm'))).toEqual(new Set(['0,0', '0,1', '0,2', '0,3', '0,4', '0,5']));
+    const aimed = r.events.filter((e) => e.kind === 'target').map((e) => e.text);
+    expect(aimed.findIndex((t) => t.includes('Pyrelynx'))).toBeGreaterThan(2);
+  });
+
   it('Taunt draws the first anchor of a plain attack; the others follow the anchor rule', () => {
     const boss: BossDef = {
       ...labBoss({ rows: 1, cols: 4, rounds: 1, atk: 1 }),
@@ -786,6 +850,42 @@ describe('an aimed shape may have several anchors (balance pass, 2026-10-29)', (
     const r = fight(boss, team, { rng: rng('anchors-t'), log: true });
     // Kilnmole (Draw Fire) first, then the strongest creature: Tempestray.
     expect(new Set(slotsHit(r, 'plain'))).toEqual(new Set(['0,3', '0,0']));
+  });
+});
+
+describe('moves on one boss turn land in the boss card’s order (R8.3, panel 5)', () => {
+  it('the order of the card, not of power, cadence or name; the plain attack comes after them', () => {
+    const move = (id: string, name: string, powerBp: number, every: number): BossMove => ({
+      id,
+      name,
+      pattern: { anchor: 'front', shape: 'single' },
+      powerBp,
+      every,
+      turn: 0,
+    });
+    const boss: BossDef = {
+      ...labBoss({ rows: 1, cols: 2, rounds: 4, atk: 1, hp: 1_000_000 }),
+      spd: 0,
+      moves: [
+        move('c', 'Zeta', 1_000, 1),
+        move('a', 'Alpha', 9_000, 2),
+        move('b', 'Mid', 5_000, 1),
+      ],
+    };
+    const r = fight(boss, [at('thornbuck', 0, 0), at('thornbuck', 0, 1)], {
+      rng: rng('order'),
+      log: true,
+    });
+    const rounds = new Map<number, string[]>();
+    for (const e of r.events.filter((x) => x.kind === 'move' || x.kind === 'target')) {
+      const names = rounds.get(e.round) ?? [];
+      names.push(e.kind === 'move' ? e.text : (/<- (\w+)$/.exec(e.text)?.[1] ?? e.text));
+      rounds.set(e.round, names);
+    }
+    const order = (round: number) =>
+      (rounds.get(round) ?? []).filter((t) => ['Zeta', 'Alpha', 'Mid', 'plain'].includes(t));
+    expect(order(1)).toEqual(['Zeta', 'Mid', 'plain']);
+    expect(order(2)).toEqual(['Zeta', 'Alpha', 'Mid', 'plain']);
   });
 });
 

@@ -42,7 +42,7 @@ export const LAB_RULES = {
   miredFadeEvery: 2,
   /** While a living creature has Clinging, Mired fades only every this many rounds. */
   miredClingingFadeEvery: 3,
-  /** Stubborn (Hold On): a hit that would knock it out leaves it at 1 HP or at this share of its Max HP, whichever is more. */
+  /** Stubborn (Hold On): once per fight (a raid: once per weekend), a hit that would knock it out leaves it at the lower of this share of its Max HP and its HP before the hit (never a heal). */
   holdOnLeaveBp: 4_000,
   /** Element Resistance: the resisted element's creatures' hits start from this share of their base damage (a quarter less; counters are not cut). */
   adaptElementBp: 7_500,

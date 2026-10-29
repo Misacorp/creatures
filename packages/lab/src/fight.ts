@@ -126,7 +126,10 @@ const grown = (s: State) => {
   };
 };
 
-/** The boss's moves now: its own, and its phase's once the phase change has applied. */
+/**
+ * The boss's moves now: its own, and its phase's once the phase change has applied, in the boss card's order. Moves due on
+ * one boss turn are announced and land in this order (R8.3, panel 5), then the plain attack.
+ */
 const movesOf = (s: State): readonly BossMove[] =>
   s.esc.phase && s.boss.escalation?.phase
     ? [...s.boss.moves, ...s.boss.escalation.phase.moves]
@@ -802,7 +805,9 @@ function targetsOf(s: State, p0: Pattern, plain: boolean): Fighter[] {
     const used: Fighter[] = [];
     const out: Fighter[] = [];
     for (let i = 0; i < count; i++) {
-      const next = i === 0 ? (taunter ?? anchorOf(s, p)) : anchorOf(s, p, used);
+      // R2.1 (panel 5): each further anchor is the best match not already inside the move's shape so far (an anchor that a
+      // neighbour's line, cross or chain already covers would only bunch the hits up).
+      const next = i === 0 ? (taunter ?? anchorOf(s, p)) : anchorOf(s, p, out);
       if (!next) break;
       used.push(next);
       for (const t of shapeAround(s, p, next)) if (!out.includes(t)) out.push(t);
@@ -969,17 +974,19 @@ function takeHit(
     log(s, 'blocked', `${taker.name} blocks the hit`);
     return;
   }
-  let heldOn = false;
   if (dmg >= taker.hp && k.holdOn && !taker.holdOnDone) {
+    // Stubborn, once per fight and (in a raid) once per weekend (panel 5): the hit leaves it at the lower of two fifths of
+    // its Max HP and its HP before the hit (at least 1 HP). It never heals.
     taker.holdOnDone = true;
-    heldOn = true;
     bump(taker, 'holdOn');
-    dmg = taker.hp - 1;
+    const leave = Math.max(
+      1,
+      Math.min(taker.hp, Math.floor((taker.maxHp * R.holdOnLeaveBp) / 10_000)),
+    );
+    dmg = taker.hp - leave;
     log(s, 'hold-on', `${taker.name} holds on`);
   }
   taker.hp = Math.max(0, taker.hp - dmg);
-  // Holding on leaves it at two fifths of its Max HP (at least 1 HP); reworked 2026-10-28: 1 HP alone gained about 2%.
-  if (heldOn) taker.hp = Math.max(taker.hp, Math.floor((taker.maxHp * R.holdOnLeaveBp) / 10_000));
   const wind = k.secondWindBp;
   if (wind && !taker.secondWindDone && taker.hp > 0 && taker.hp * 2 < taker.maxHp) {
     taker.secondWindDone = true;
@@ -1189,6 +1196,8 @@ export function fight(
   if (opts.carryHp) for (const f of fighters) f.hp = opts.carryHp.get(f.uid) ?? f.hp;
   // Catch Breath is once per raid weekend: a creature that used it in an earlier stage does not have it again.
   for (const f of fighters) if (opts.carryWindDone?.has(f.uid)) f.secondWindDone = true;
+  // So is Stubborn (panel 5: once per weekend, not per stage).
+  for (const f of fighters) if (opts.carryHoldOnDone?.has(f.uid)) f.holdOnDone = true;
   const carried = opts.carryEscalation;
   const s: State = {
     boss,
@@ -1276,7 +1285,7 @@ export function resistedElement(
 /**
  * A raid weekend with attrition (R14): stages share the boss's HP; creatures keep their HP between
  * stages, nobody heals between them, and a knocked-out creature stays out (its owner may bring a
- * replacement from `bench`, which takes the empty slot). HP carries, and so do Catch Breath's use (once per weekend) and
+ * replacement from `bench`, which takes the empty slot). HP carries, and so do Catch Breath's and Stubborn's use (once per weekend) and
  * the boss's escalation (step, phase and count, R22); marks, Stores, Mired and "each fight" effects start fresh each
  * stage. From stage 2 an adapting boss resists the reaction used most so far (Adapts) or the element whose creatures'
  * hits (reactions included, counters not) dealt the most damage so far, chosen at the stage break; a tie for the most
@@ -1294,6 +1303,7 @@ export function weekend(
   // Carried state is keyed by the uids of the next stage's fighters (see below).
   let hp = new Map<string, number>();
   let windDone = new Set<string>();
+  let holdDone = new Set<string>();
   let escalation: FightOptions['carryEscalation'];
   let bossHp = boss.hp;
   let replacements = 0;
@@ -1307,6 +1317,7 @@ export function weekend(
       ...opts,
       carryHp: hp,
       carryWindDone: windDone,
+      carryHoldOnDone: holdDone,
       ...(escalation ? { carryEscalation: escalation } : {}),
       bossHp,
       ...(resist ? { resistReaction: resist } : {}),
@@ -1342,6 +1353,7 @@ export function weekend(
     const nextFighters = placeFighters(next);
     const carried = new Map<string, number>();
     const winds = new Set<string>();
+    const holds = new Set<string>();
     nextFighters.forEach((nf) => {
       const prev = res.fighters.find(
         (f) =>
@@ -1353,9 +1365,11 @@ export function weekend(
       );
       carried.set(nf.uid, prev ? prev.hp : nf.maxHp);
       if (prev?.secondWindDone) winds.add(nf.uid);
+      if (prev?.holdOnDone) holds.add(nf.uid);
     });
     hp = carried;
     windDone = winds;
+    holdDone = holds;
     current = next;
   }
   return { stages, won: bossHp <= 0, replacements };

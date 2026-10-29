@@ -24,7 +24,7 @@ export interface Fighter {
   hitsLanded: number;
   /** Catch Breath fired this fight, or earlier in the raid weekend (once per weekend). */
   secondWindDone: boolean;
-  /** Hold On fired this fight. */
+  /** Hold On (Stubborn) fired this fight, or earlier in the raid weekend (once per weekend). */
   holdOnDone: boolean;
   row: number;
   col: number;
@@ -238,6 +238,8 @@ export interface FightOptions {
   readonly resistElement?: string;
   /** Carried from the earlier stages of a raid weekend: Catch Breath already used (uids of this stage's fighters). */
   readonly carryWindDone?: ReadonlySet<string>;
+  /** Carried from the earlier stages of a raid weekend: Stubborn already used (once per weekend; uids of this stage's fighters). */
+  readonly carryHoldOnDone?: ReadonlySet<string>;
   /** Carried from the earlier stages of a raid weekend: the boss's escalation (R22). */
   readonly carryEscalation?: {
     readonly step: number;

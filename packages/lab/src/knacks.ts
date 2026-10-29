@@ -104,7 +104,7 @@ export interface KnackFx {
   readonly lowHpAtkBp?: number;
   /** It takes this much less from area hits and charged landings (its own; adds to an aura). */
   readonly areaCutBp?: number;
-  /** Once per fight, a hit that would knock it out leaves it at 1 HP. */
+  /** Once per fight (a raid: per weekend), a hit that would knock it out leaves it at the lower of two fifths of its max HP and its HP before the hit. */
   readonly holdOn?: boolean;
   /** Its reaction bonus factor is this much higher (inside the cap, R7). */
   readonly reactionBonusBp?: number;
