@@ -3464,3 +3464,12 @@ The dungeon map's rooms were the only smooth, glowing art in the game. They are 
 ## 2026-10-29: The boss is the hero of the Raid screen on desktop
 
 Panel round 2 asked for it first: from 60 rem the boss card is a centred hero. The art is drawn at twice its size (whole pixels, no frame, only a soft glow of its element behind it), the name under it, then the tags, the HP and the move chips, with the rules text smaller and quieter below (nothing deleted; no new popover was made for it). From 80 rem the roster board (`ui/RaidBoard`) takes taller tiles with 3x sprites by itself and is exactly as wide as a whole number of lanes, so the right edge never cuts a tile (CSS `round()`; lanes snap to the left edge). The phone layout is unchanged. The dungeon map's panel takes the map's own ground on desktop, so the map and its panel are one surface. The XP bar's numbers use written-out bone and ink colours, so a look cannot make them unreadable on a full bar (`xp-text-colours.test.ts`).
+### 2026-10-29: CI skips the build and tests for documentation-only PRs
+
+Misa noticed that a PR adding only a retro file ran every CI job. He asked for a scope that saves CI time without leaving gaps.
+
+1. **The workflow still runs on every PR; jobs are skipped inside it.** GitHub's `paths-ignore` would skip the whole workflow, and then the required `ci` check never reports and the PR stays blocked. Instead a small `changes` job (a checkout of two commits and `git diff --name-only` between the PR's merge commit and its base) decides, and the build and test jobs run only when it finds code.
+2. **What counts as documentation is a short list; everything else is code.** Documentation is every Markdown file and everything under `docs/`, except `docs/compendium/`, which `packages/game/test/compendium.test.ts` reads. A new folder, a workflow, the lockfile or any file outside that list runs everything. That way, adding to the repo can never silently skip tests; the risk sits only in that list, and only one test reads from `docs/` today.
+3. **Always run:** the formatting check (Prettier formats Markdown, and it caught a merge slip on 2026-10-28) and the security job (secret scan and workflow audits).
+4. **`ci` accepts a skipped test job only when `changes` succeeded and found documentation only.** A skip for any other reason (`changes` failed, a job was cancelled) fails `ci`.
+5. **A gap found on the way:** CI didn't run `packages/lab`'s tests (added in #92). The `test-rest` job runs them now (about 15 s).
