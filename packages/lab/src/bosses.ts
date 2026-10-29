@@ -61,6 +61,7 @@ export function move(row: MoveRow): BossMove {
       anchor,
       shape,
       ...(x.n !== undefined ? { n: x.n } : {}),
+      ...(x.perColumns !== undefined ? { perColumns: x.perColumns } : {}),
       ...(x.decayBp !== undefined ? { decayBp: x.decayBp } : {}),
       ...(x.perColumns !== undefined ? { perColumns: x.perColumns } : {}),
     },
@@ -330,9 +331,9 @@ export function raidMode(boss: BossDef): Mode {
   return { id: 'raid', rows: boss.rows, cols: boss.cols, maxCopies: 4 };
 }
 
-/** Each of the four players keeps one Kilnmole with Draw Fire on the bench, as in the report's raid weekend. */
-export function raidBench(): Placement[] {
-  return [1, 2, 3, 4].map((i) => ({
+/** Each player (one per column, four in the usual raid) keeps one Kilnmole with Draw Fire on the bench, as in the report's raid weekend. */
+export function raidBench(players = 4): Placement[] {
+  return Array.from({ length: players }, (_, k) => k + 1).map((i) => ({
     owner: `p${i}`,
     formId: 'kilnmole',
     level: LEVEL,
@@ -357,21 +358,31 @@ export interface WeekendStats {
   readonly steps: number;
 }
 
-/** `runs` seeded raid weekends of `line` against `boss` (three stages, attrition, a bench). */
+/** `runs` seeded raid weekends of `line` against `boss` (three stages, attrition, a bench; a player for each column). */
 export function weekendStats(
   boss: BossDef,
   line: readonly Pick[],
   runs: number,
   salt: string,
 ): WeekendStats {
-  const mode = raidMode(boss);
+  return weekendStatsOf(boss, toPlacements(line, raidMode(boss)), raidBench(boss.cols), runs, salt);
+}
+
+/** `runs` seeded raid weekends of the placed creatures (any roster) against `boss`, with the players' benches. */
+export function weekendStatsOf(
+  boss: BossDef,
+  placements: readonly Placement[],
+  bench: readonly Placement[],
+  runs: number,
+  salt: string,
+): WeekendStats {
   let wins = 0,
     reps = 0,
     share = 0,
     steps = 0;
   const ko = [0, 0, 0];
   for (let i = 0; i < runs; i++) {
-    const w = weekend(boss, toPlacements(line, mode), raidBench(), {
+    const w = weekend(boss, placements, bench, {
       rng: createSeededRng(`weekend:${salt}:${i}`),
     });
     if (w.won) wins++;

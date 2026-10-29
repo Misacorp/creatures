@@ -8,9 +8,8 @@ import { content, createSeededRng, int, type Rng } from '@creatures/game';
 import { labBoss, type CardDef } from './cards';
 import { fight } from './fight';
 import { calibrateBossHp, fightScore } from './measure';
-import { formStats } from './species';
-import { GAUNTLET, LEVEL, RAID, bossFor, evaluate, toPlacements, type Pick } from './search';
-import { LINE_POOLS, TALENTS } from './talents';
+import { GAUNTLET, RAID, bossFor, evaluate, toPlacements, type Pick } from './search';
+import { LINE_POOLS, legalTalents } from './talents';
 
 /** The target: the average share over the cards, in percent, with the accepted band, and the least a casual roster should gain. */
 export const TEAM_SHARE = { target: 20, min: 17, max: 23, casualMaxOfBestPct: 60 } as const;
@@ -53,8 +52,7 @@ export const lineOf = (form: string): string =>
 
 /** The talents of a form's line pool that do something for its role (what a player would pick from). */
 export function fitTalents(form: string): string[] {
-  const role = formStats(form, LEVEL).role;
-  return (LINE_POOLS[lineOf(form)] ?? []).filter((t) => TALENTS[t]?.roles.includes(role));
+  return legalTalents(form);
 }
 
 /** The whole pool of a form's line, talents that are idle on its role too (what a roll can give). */

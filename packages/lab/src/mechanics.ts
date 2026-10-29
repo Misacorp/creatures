@@ -2,8 +2,9 @@
  * Which mechanics the bosses and foes call for (Misa, 2026-10-28: every mechanic should matter somewhere: each Knack
  * family, talent kind, keyword, armour, silence, Mired, marks, Charged moves, Taunt, intercept and cover should be the
  * answer or the problem for at least one boss or foe). Each mechanic has a predicate over a boss's data that returns why
- * it is called, or nothing; the report lists every mechanic that no boss or foe calls for. The predicates read the data,
- * so a change to a boss changes the list: nothing is claimed by hand.
+ * it is present, or nothing. These predicates only say a feature is PRESENT on a boss ("features present"); that a
+ * mechanic is really called for is measured (`ablation.ts`: taking it out of the boss's best line costs the line
+ * clearly). The predicates read the data, so a change to a boss changes the list: nothing is claimed by hand.
  */
 import { FAMILIES } from './knacks';
 import { KEYWORDS } from './keywords';
@@ -82,7 +83,12 @@ const shapes = (boss: BossDef, ...s: Pattern['shape'][]) =>
 const silences = (boss: BossDef) => attacksOf(boss).some((a) => a.silenceTurns > 0);
 const charged = (boss: BossDef) => attacksOf(boss).some((a) => a.charged);
 /** The boss's own dodge in Speed points (a card such as Elusive raises it). */
-const dodgy = (boss: BossDef) => boss.spd >= 300 || boss.spd >= 50;
+const dodgy = (boss: BossDef) => boss.spd >= 300;
+/** Shapes with no anchor (scatter, a random row, everything, the row ends): Taunt does not move them. */
+const ANCHORLESS_SHAPES: readonly Pattern['shape'][] = ['scatter', 'randomRow', 'all', 'rowEnds'];
+/** Whether Taunt can draw the boss's plain attack off its anchor: it has an anchor, and it is not the front already. */
+const tauntable = (b: BossDef) =>
+  !ANCHORLESS_SHAPES.includes(b.plain.pattern.shape) && b.plain.pattern.anchor !== 'front';
 const armoured = (boss: BossDef) => boss.armour >= 38;
 
 const first = (...reasons: Reason[]): Reason => reasons.find((r) => typeof r === 'string');
@@ -110,8 +116,7 @@ const FAMILY_CALLS: Readonly<Record<string, Mechanic['calls']>> = {
   Reach: (b) => shapes(b, 'row', 'rows', 'line3', 'cross') && 'area hits a Guard covers by reach',
   Intercept: (b) => attacksOf(b).some(aimed) && 'aimed hits a Guard can take',
   Taunt: (b) =>
-    b.plain.pattern.anchor !== 'front' &&
-    'its plain attack aims at the strongest, the loudest or a random slot',
+    tauntable(b) && 'its plain attack aims at the strongest, the loudest or a random slot',
   Evasion: (b) =>
     attacksOf(b).some((a) => a.plain && a.hits > 1) && 'many small hits dodge can turn away',
   'Evasion aura': (b) =>
@@ -152,7 +157,7 @@ const KEYWORD_CALLS: Readonly<Record<string, Mechanic['calls']>> = {
   Store: (b) =>
     (shapes(b, 'scatter') || b.plain.hits !== undefined) && 'many hits that fill a Store',
   Seal: (b) => b.mods.shedMarks && 'it sheds marks',
-  Taunt: (b) => b.plain.pattern.anchor !== 'front' && 'its plain attack can be drawn',
+  Taunt: (b) => tauntable(b) && 'its plain attack can be drawn',
   Intercept: (b) => attacksOf(b).some(aimed) && 'aimed hits',
   Retaliate: (b) =>
     attacksOf(b).some((a) => aimed(a) && a.powerBp >= 10_000) &&
@@ -161,7 +166,7 @@ const KEYWORD_CALLS: Readonly<Record<string, Mechanic['calls']>> = {
     (armoured(b) || attacksOf(b).some((a) => a.plain && a.hits > 1)) &&
     'armour turns small hits into Blocked',
   Silenced: (b) => silences(b) && 'it silences creatures',
-  'Wind-up': (b) => charged(b) && 'moves announced a round ahead',
+  'Wind-up': (b) => charged(b) && 'moves announced at round start',
   Scatter: (b) => shapes(b, 'scatter') && 'shells on random creatures',
   Leap: (b) => shapes(b, 'chain') && 'hits that jump from creature to creature',
   Cross: (b) => shapes(b, 'cross') && 'hits on a creature and the slots touching it',
@@ -238,13 +243,13 @@ const RULE_CALLS: readonly Mechanic[] = [
     id: 'rule:charged',
     name: 'Wind-up moves',
     group: 'Rule',
-    calls: (b) => charged(b) && 'it announces moves a round ahead',
+    calls: (b) => charged(b) && 'it announces moves at round start',
   },
   {
     id: 'rule:taunt',
     name: 'Taunt',
     group: 'Rule',
-    calls: (b) => b.plain.pattern.anchor !== 'front' && 'its plain attack can be drawn off',
+    calls: (b) => tauntable(b) && 'its plain attack can be drawn off',
   },
   {
     id: 'rule:intercept',

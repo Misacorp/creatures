@@ -268,10 +268,10 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'brace',
       name: 'Brace',
-      text: "It takes 40% less from the boss's moves ({Wind-up} on its slot included) and 20% less from its plain attack.",
+      text: 'It takes 40% less from a {Wind-up} hit aimed at its slot.',
       roles: ALL,
       intent:
-        "Reads off the boss's named moves (the Wind-up highlights of Great Wave, Crusher, Payoff Slam): a card-shaped talent, strong where the boss has moves. Reworked (2026-10-28): it also cuts the plain attack by half of that, because a talent that did nothing on most weeks gained under a point on every role.",
+        'Answers a telegraphed hit (Great Wave, Judgement Bolt, the Wind-up signatures): it is shown at round start, so the owner knows who will be aimed at. Nothing against other moves or the plain attack. Back to this design (2026-10-28 panel 4): the version that also cut other moves and the plain attack decided a boss by itself.',
       fx: { braceBp: 4_000 },
     }),
     T({
@@ -286,7 +286,7 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'catch-breath',
       name: 'Catch Breath',
-      text: 'Once per fight, when a hit drops it below half its max HP, it heals 40% of max HP.',
+      text: 'Once per fight (in a raid, once per weekend), when a hit drops it below half its max HP, it heals 40% of max HP.',
       roles: ALL,
       intent:
         'Survives one big hit (Crusher, Payoff Hunter). Not the gear line Second Wind, which is a chance each round to heal.',
@@ -295,11 +295,11 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'unbothered',
       name: 'Unbothered',
-      text: 'It cannot be {Silenced}, and has +6% Attack and +14% Max HP.',
+      text: 'It cannot be {Silenced}, and has +3% Attack and +6% Max HP.',
       roles: ALL,
       intent:
-        'The silence answer on the creature itself, for row ends and front rows. Reworked (2026-10-28): the immunity alone did nothing on the gauntlet, where a creature can always stand in the middle (a Guard gained nothing), so it carries a little Attack and HP as well, less than Sharp Claws or Hardy.',
-      fx: { ignoreSilence: true, atkBp: 600, hpBp: 1_400 },
+        'The silence answer on the creature itself, for row ends and front rows. Reworked (2026-10-28): the immunity alone did nothing on the gauntlet, where a creature can always stand in the middle (a Guard gained nothing), so it carries a little Attack and HP as well, less than Sharp Claws or Hardy. Shrunk (2026-10-28 panel 4, from +6% and +14%): it won a boss by its stats; it should win by its ward.',
+      fx: { ignoreSilence: true, atkBp: 300, hpBp: 600 },
     }),
     T({
       id: 'cull',
@@ -555,6 +555,56 @@ export function talentPool(line: string): PoolEntry[] {
  */
 export function talentIdleUnder(talentId: string, knackId: string | undefined): boolean {
   return talentId === 'triage' && knackId !== undefined && SUPPORT_SHAPE_KNACKS.has(knackId);
+}
+
+/** The line of a form (a form with no line is its own). */
+export const lineOfForm = (form: string): string =>
+  content.creatures.find((c) => c.id === form)?.line ?? form;
+
+/**
+ * The talents a creature of `form` may carry (R20): those in its line's pool that work for its role. A talent outside the
+ * pool cannot be rolled or learned, and one that does nothing for the role is idle (not a choice anyone makes).
+ */
+export function legalTalents(form: string): string[] {
+  const role = content.creatures.find((c) => c.id === form)?.role;
+  return (LINE_POOLS[lineOfForm(form)] ?? []).filter(
+    (t) => role !== undefined && TALENTS[t]?.roles.includes(role),
+  );
+}
+
+export interface IllegalTalent {
+  readonly formId: string;
+  readonly talent: string;
+  /** Why it is not legal on this form. */
+  readonly why: string;
+}
+
+/** The talents on `picks` that their creature may not carry (see `legalTalents`); an empty list means every one is legal. */
+export function illegalTalents(
+  picks: readonly { readonly formId: string; readonly talents?: readonly string[] | undefined }[],
+): IllegalTalent[] {
+  const out: IllegalTalent[] = [];
+  for (const p of picks)
+    for (const t of p.talents ?? []) {
+      if (!TALENTS[t]) out.push({ formId: p.formId, talent: t, why: 'no such talent' });
+      else if (!(LINE_POOLS[lineOfForm(p.formId)] ?? []).includes(t))
+        out.push({ formId: p.formId, talent: t, why: `not in the ${lineOfForm(p.formId)} pool` });
+      else if (!legalTalents(p.formId).includes(t))
+        out.push({ formId: p.formId, talent: t, why: 'idle for its role' });
+    }
+  return out;
+}
+
+/** Throws, naming the creature and the talent, when a line carries an illegal talent. `label` says whose line it is. */
+export function assertLegalTalents(
+  picks: readonly { readonly formId: string; readonly talents?: readonly string[] | undefined }[],
+  label: string,
+): void {
+  const bad = illegalTalents(picks);
+  if (bad.length)
+    throw new Error(
+      `${label}: illegal talents: ${bad.map((b) => `${b.formId} carries ${b.talent} (${b.why})`).join('; ')}`,
+    );
 }
 
 /** The lines with a talent pool. */

@@ -17,3 +17,5 @@ export * from './foes';
 export * from './dungeon';
 export * from './mechanics';
 export * from './bossAnswers';
+export * from './ablation';
+export * from './raidMeasure';
