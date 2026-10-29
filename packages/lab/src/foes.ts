@@ -46,7 +46,7 @@ export interface FoeSpec {
   readonly armour: number;
   readonly plain: BossDef['plain'];
   readonly moves: readonly MoveRow[];
-  /** A floor boss's landmark move: only at a landmark depth, announced a round ahead. */
+  /** A floor boss's landmark move: only at a landmark depth, announced at round start. */
   readonly signature?: MoveRow;
   readonly cards: readonly string[];
   readonly escalation?: Escalation;
@@ -175,7 +175,7 @@ export const FOE_SPECS: readonly FoeSpec[] = [
     cards: [],
     // A dungeon run is one player's own team, so a Build-up that feeds on knockouts blames no one: each creature that falls lets the water rise.
     escalation: { name: 'Rising Water', feed: 'knockouts', per: 1, cap: 2, grow: { atkBp: 1_200 } },
-    asks: 'The gates open on the whole line, and each creature that falls lets the water rise; at a landmark, a wave announced a round ahead.',
+    asks: 'The gates open on the whole line, and each creature that falls lets the water rise; at a landmark, a wave announced at round start.',
   },
   {
     id: 'slag-tyrant',

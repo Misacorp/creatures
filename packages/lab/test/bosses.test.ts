@@ -2,6 +2,7 @@
  * Content tests for the real bosses and foes: every raid boss has an arena, a plain attack, moves, cards and intended
  * answers; every dungeon foe has its stats per depth; names match the shipped content; every mechanic is called for.
  */
+import { bossLine, shapeText } from '../src/bossReport';
 import { content, createSeededRng, dungeonContent, isLandmark } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import {
@@ -20,6 +21,7 @@ import {
   RAID_COLS,
   RAID_ROUNDS,
   RAID_SPECS,
+  RAID_WIDTHS,
   TALENTS,
   answerLine,
   answerProblems,
@@ -30,13 +32,18 @@ import {
   foeFold,
   foeStats,
   gauntletStats,
+  marginOf,
+  mixedServer,
   mostCopies,
+  raidBench,
   raidBossOf,
   raidMode,
   runMap,
   runStats,
+  weekend,
   weekendScore,
   weekendStats,
+  widthOf,
   withoutTool,
   classicFor,
   toPlacements,
@@ -118,6 +125,46 @@ describe('the raid bosses', () => {
     expect(esc ? esc.per * (esc.phase?.atStep ?? 0) : 0).toBe(5_000);
   });
 
+  it('Thornmother’s Second Bloom comes at half of the weekend’s HP, announced a round ahead, with Mired on her or not', () => {
+    const b = raidBossOf('thornmother');
+    const weekendOf = (line: string, seed: string) =>
+      weekend(b, toPlacements(answerLine(line), raidMode(b)), raidBench(b.cols), {
+        rng: createSeededRng(seed),
+        log: true,
+      });
+    const mired = BOSS_ANSWERS['thornmother']?.find((a) => /squelch-song/.test(a.line));
+    const plain = BOSS_ANSWERS['thornmother']?.[0];
+    expect(mired).toBeDefined();
+    for (const [line, seed] of [
+      [mired?.line ?? '', 'sb1'],
+      [plain?.line ?? '', 'sb2'],
+      [
+        classicFor(raidMode(b))
+          .map((p) => `${p.formId}/${p.knack}`)
+          .join(' '),
+        'sb3',
+      ],
+    ] as const) {
+      const w = weekendOf(line, seed);
+      const events = w.stages.flatMap((st, k) => st.events.map((e) => ({ ...e, stage: k })));
+      const heads = events.filter(
+        (e) => e.kind === 'announce' && /Second Bloom begins/.test(e.text),
+      );
+      const blooms = events.filter((e) => e.kind === 'phase');
+      expect(heads.length, seed).toBeLessThanOrEqual(1);
+      expect(blooms.length, seed).toBe(heads.length);
+      // A team that beats her passes half of her HP, so it sees the Bloom coming.
+      if (seed !== 'sb3') expect(heads.length, seed).toBe(1);
+      const head = heads[0];
+      const bloom = blooms[0];
+      if (!head || !bloom) continue;
+      // Announced at one round start, in play at the next (round 1 of the next stage when it came at the last round).
+      const stageRounds = b.rounds;
+      const at = (e: { stage: number; round: number }) => e.stage * stageRounds + e.round;
+      expect(at(bloom) - at(head), seed).toBe(1);
+    }
+  });
+
   it('Rising Tide feeds on HP lost, and Forge Heat is not freed by skipping reactions: its Wyrm is armoured', () => {
     expect(raidBossOf('tidal-colossus').escalation?.feed).toBe('hpLost');
     expect(raidBossOf('cinder-wyrm').escalation?.feed).toBe('reactions');
@@ -142,12 +189,20 @@ describe('the raid bosses', () => {
     expect(hush?.pattern.shape).toBe('rowEnds');
   });
 
-  it('random hits and row ends scale with the width of the raid (perColumns)', () => {
+  it('counts scale with the width of the raid (perColumns): scatter, row ends, chains, several columns, and an event Build-up', () => {
     for (const id of RAID_BOSS_IDS) {
       const b = raidBossOf(id);
-      for (const m of [...b.moves, ...(b.escalation?.phase?.moves ?? [])])
-        if (m.pattern.shape === 'scatter' || m.pattern.shape === 'rowEnds')
-          expect(m.pattern.perColumns, `${id} ${m.name}`).toBe(RAID_COLS);
+      const patterns = [
+        b.plain.pattern,
+        ...[...b.moves, ...(b.escalation?.phase?.moves ?? [])].map((m) => m.pattern),
+      ];
+      for (const p of patterns)
+        if (['scatter', 'rowEnds', 'chain', 'columns'].includes(p.shape))
+          expect(p.perColumns, `${id} ${p.shape}`).toBe(RAID_COLS);
+      // A step of an event feed needs more units in a wider raid (the feed grows with the number of creatures).
+      const feed = b.escalation?.feed;
+      if (feed && !['hpLost', 'rounds'].includes(feed))
+        expect(b.escalation?.perColumns, `${id} ${feed}`).toBe(RAID_COLS);
     }
   });
 
@@ -264,6 +319,54 @@ describe('the intended answers (P-13)', () => {
   );
 });
 
+describe('the prepared line at the margin, at other widths and on a mixed server (panel 4)', () => {
+  const first = (id: string) => BOSS_ANSWERS[id]?.[0];
+  const lineOf = (id: string) => answerLine(first(id)?.line ?? '');
+
+  it.each(RAID_BOSS_IDS)(
+    '%s: the prepared line still wins at +10% Attack and at +10% HP (target 60%, floor 50%)',
+    (id) => {
+      const m = marginOf(raidBossOf(id), lineOf(id), 24, `margin:${id}`);
+      expect(m.base, id).toBeGreaterThanOrEqual(0.85);
+      expect(m.atk10, `${id} +10% Attack`).toBeGreaterThanOrEqual(0.5);
+      expect(m.hp10, `${id} +10% HP`).toBeGreaterThanOrEqual(0.5);
+    },
+  );
+
+  it.each(RAID_BOSS_IDS)(
+    '%s: at 5, 10 and 15 columns the classic party rarely wins and the prepared line does',
+    (id) => {
+      const b = raidBossOf(id);
+      for (const w of RAID_WIDTHS) {
+        const r = widthOf(b, lineOf(id), w, 12, `width:${id}`);
+        expect(r.classicWin, `${id} at ${w} columns`).toBeLessThanOrEqual(w === 15 ? 0.34 : 0.1);
+        expect(r.bestWin, `${id} at ${w} columns`).toBeGreaterThanOrEqual(0.8);
+      }
+    },
+  );
+
+  it.each(RAID_BOSS_IDS)(
+    '%s: a mixed server (2 min-maxers, 3 builders, 5 casual players) wins sometimes and not always',
+    (id) => {
+      const answers = BOSS_ANSWERS[id] ?? [];
+      const r = mixedServer(
+        raidBossOf(id),
+        lineOf(id),
+        answers.map((a) => answerLine(a.line)),
+        12,
+        96,
+        `mixed:${id}`,
+        first(id)?.core ?? [],
+        answers.map((a) => a.core ?? []),
+      );
+      // The target is 60% to 95%; the casual players' draws swing it widely, so this floor only guards against a boss no
+      // mixed server can beat (the report prints the measured number).
+      expect(r.winRate, id).toBeGreaterThanOrEqual(0.15);
+      expect(r.winRate, id).toBeLessThanOrEqual(0.98);
+    },
+  );
+});
+
 describe('names and words (P-06, the compendium tone)', () => {
   const FOE_MOVES = FOE_SPECS.flatMap((f) => [...f.moves, ...(f.signature ? [f.signature] : [])]);
   const RAID_MOVES = RAID_SPECS.flatMap((r) => [...r.moves, ...(r.escalation?.phase?.moves ?? [])]);
@@ -287,6 +390,14 @@ describe('names and words (P-06, the compendium tone)', () => {
     expect(KEYWORDS).not.toHaveProperty('Charged');
     expect(content.reactions.map((r) => r.markName)).toContain('Charged');
     for (const t of texts) expect(t, t).not.toMatch(/\bcharged\b/i);
+  });
+
+  it('the report says Wind-up and Most hurt, never Charged or wounded', () => {
+    const line = RAID_BOSS_IDS.map((id) => bossLine(raidBossOf(id))).join('\n');
+    expect(line).toMatch(/Wind-up/);
+    expect(line).not.toMatch(/charged|wounded/i);
+    expect(shapeText({ anchor: 'weakest', shape: 'single' })).toBe('the most hurt, one slot');
+    for (const t of texts) expect(t, t).not.toMatch(/\bwounded\b/i);
   });
 
   it('new words are keywords: the shapes, the anchors and the Build-up', () => {

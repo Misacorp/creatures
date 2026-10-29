@@ -134,7 +134,7 @@ const FAMILY_CALLS: Readonly<Record<string, Mechanic['calls']>> = {
   Sustain: (b) =>
     first(
       b.mods.healBp !== undefined && 'healing is cut (Wither)',
-      attacksOf(b).some((a) => a.pattern.anchor === 'weakest') && 'it picks the wounded',
+      attacksOf(b).some((a) => a.pattern.anchor === 'weakest') && 'it picks the most hurt',
       b.mods.reflectFirst && 'a reflected reaction hurts the Payoff',
     ),
   Store: (b) =>

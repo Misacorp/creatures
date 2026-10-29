@@ -18,6 +18,7 @@ import {
 import {
   MARGIN_TARGET,
   RAID_WIDTHS,
+  hpExponentOf,
   marginOf,
   mixedServer,
   widthOf,
@@ -60,7 +61,7 @@ const ANCHOR: Record<Pattern['anchor'], string> = {
   random: 'random',
   grudge: 'the top hitter',
   back: 'the back',
-  weakest: 'the most wounded',
+  weakest: 'the most hurt',
 };
 
 /** A move or plain attack in a few words: what it hits and when. */
@@ -97,7 +98,7 @@ export function shapeText(p: Pattern): string {
 }
 
 const moveText = (m: BossMove): string =>
-  `${m.name} (${m.silenceTurns ? `silences ${shapeText(m.pattern)} for ${m.silenceTurns}` : shapeText(m.pattern)}; every ${m.every}${m.charged ? ', Charged' : ''})`;
+  `${m.name} (${m.silenceTurns ? `silences ${shapeText(m.pattern)} for ${m.silenceTurns}` : shapeText(m.pattern)}; every ${m.every}${m.charged ? ', Wind-up' : ''})`;
 
 /** One line about a raid boss: arena, armour, plain attack, moves, cards, escalation. */
 export function bossLine(b: BossDef): string {
@@ -113,7 +114,7 @@ export function bossLine(b: BossDef): string {
     `moves: ${[...b.moves, ...(esc?.phase?.moves ?? [])].map(moveText).join('; ')}; ` +
     `cards: ${b.cards.join(', ') || 'none'}` +
     (esc
-      ? `; escalation: ${esc.name} (feeds on ${esc.feed}, a step per ${esc.per}${esc.feed === 'hpLost' ? ' bp of HP lost' : ''}, up to ${esc.cap}; each step: ${grow}${esc.phase ? `; ${esc.phase.name} from step ${esc.phase.atStep}` : ''})`
+      ? `; escalation: ${esc.name} (feeds on ${esc.feed}, a step per ${esc.per}${esc.feed === 'hpLost' ? ' bp of HP lost' : ''}${esc.perColumns ? ` per ${esc.perColumns} columns` : ''}, up to ${esc.cap}; each step: ${grow}${esc.phase ? `; ${esc.phase.name} from step ${esc.phase.atStep}` : ''})`
       : '')
   );
 }
@@ -128,6 +129,8 @@ interface Settings {
     weekends: number;
     /** Weekends for each width and each draw of the mixed server, and the number of casual draws. */
     mixedDraws: number;
+    /** Independent from-scratch searches per boss (the best on common fresh seeds is reported). */
+    scratchSearches: number;
   };
   readonly foe: {
     starts: number;
@@ -157,7 +160,8 @@ export const BOSS_SETTINGS = (quick: boolean): Settings =>
           seeds: 3,
           freshSeeds: 10,
           weekends: 20,
-          mixedDraws: 2,
+          mixedDraws: 4,
+          scratchSearches: 1,
         },
         foe: { starts: 40, keep: 6, rounds: 2, seeds: 3, freshSeeds: 10, fights: 16 },
         runs: { starts: 40, keep: 6, rounds: 2, search: 3, fresh: 12, stats: 24 },
@@ -171,7 +175,8 @@ export const BOSS_SETTINGS = (quick: boolean): Settings =>
           seeds: 5,
           freshSeeds: 40,
           weekends: 100,
-          mixedDraws: 5,
+          mixedDraws: 12,
+          scratchSearches: 3,
         },
         foe: { starts: 120, keep: 10, rounds: 3, seeds: 4, freshSeeds: 24, fights: 40 },
         runs: { starts: 250, keep: 16, rounds: 4, search: 6, fresh: 50, stats: 100 },
@@ -246,19 +251,26 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
       include: [classic, ...legalGiven.flatMap((g) => [g.picks, g.baseline])],
       score,
     });
-    const scratchRanked: Ranked[] = search(boss, mode, {
-      seed: `raidboss:${spec.id}:scratch`,
-      ...S.raid,
-      talents: true,
-      score,
-    });
+    // From scratch: a few independent searches (a search from nothing is a lottery), judged on the same fresh seeds.
+    const fresh = (l: readonly Pick[]) => score(l, S.raid.freshSeeds, `pick:${spec.id}`).score;
+    const scratchRanked: Ranked[] = Array.from({ length: S.raid.scratchSearches }, (_, i) =>
+      search(boss, mode, {
+        seed: `raidboss:${spec.id}:scratch${i === 0 ? '' : `:${i}`}`,
+        ...S.raid,
+        talents: true,
+        score,
+      }).slice(0, 5),
+    )
+      .flat()
+      .map((r) => ({ r, f: fresh(r.line) }))
+      .sort((a, b) => b.f - a.f)
+      .map((x) => x.r);
     const seeded = ranked[0];
     const scratch = scratchRanked[0];
     const key = (l: readonly Pick[]) => lineKey(l);
     const cl = ranked.find((r) => key(r.line) === key(classic));
     if (!seeded || !scratch || !cl) continue;
     // The overall best line is whichever of the two does better on the same fresh seeds.
-    const fresh = (l: readonly Pick[]) => score(l, S.raid.freshSeeds, `pick:${spec.id}`).score;
     const overall = fresh(scratch.line) >= fresh(seeded.line) ? scratch : seeded;
     const overallIs = overall === scratch ? 'from scratch' : 'seeded';
     bestRaidLines.push(scratch.line);
@@ -311,7 +323,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
       widthOf(boss, overall.line, w, S.raid.weekends, `report:${spec.id}:w${w}`),
     );
     widthRows.push(
-      `| ${boss.name} | ${widths.map((w) => `${pct(w.classicWin)} / ${pct(w.bestWin)}`).join(' | ')} |`,
+      `| ${boss.name} | ${hpExponentOf(boss)} | ${widths.map((w) => `${pct(w.classicWin)} / ${pct(w.bestWin)}`).join(' | ')} |`,
     );
     // A mixed server: 2 min-maxers, 3 builders, 5 casual players.
     const mixed: MixedResult = mixedServer(
@@ -321,6 +333,8 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
       S.raid.mixedDraws,
       S.raid.weekends,
       `report:${spec.id}:mixed`,
+      BOSS_ANSWERS[spec.id]?.[0]?.core ?? [],
+      legalGiven.map((g) => g.core ?? []),
     );
     mixedRows.push(`| ${boss.name} | ${pct(mixed.winRate)} | ${mixed.knockouts.toFixed(1)} |`);
     // Which mechanics the best line really needs: take each out and measure the win rate.
@@ -349,7 +363,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
   md.push(
     '### The best raid team and the classic party',
     '',
-    `The team search over a whole weekend (it also picks a legal talent for each creature) is run twice per boss: **seeded** with the classic party and the written answers, and **from scratch**, with nothing written. The Knack and form usage tables below count the from-scratch lines only, so they are not skewed by lines written by hand. Score is the search score (win rate x 100, plus 40 x the share of boss HP removed, minus half a point per knockout); the weekend columns are measured on their own seeds, ${S.raid.weekends} weekends each. Steps is how far the boss escalated in a weekend, on average. Cells read classic / seeded best / from-scratch best.`,
+    `The team search over a whole weekend (it also picks a legal talent for each creature) is run per boss **seeded** with the classic party and the written answers, and **from scratch**, with nothing written (the best of ${S.raid.scratchSearches} independent searches, judged on the same fresh seeds: a search from nothing is a lottery). The Knack and form usage tables below count the from-scratch lines only, so they are not skewed by lines written by hand. Score is the search score (win rate x 100, plus 40 x the share of boss HP removed, minus half a point per knockout); the weekend columns are measured on their own seeds, ${S.raid.weekends} weekends each. Steps is how far the boss escalated in a weekend, on average. Cells read classic / seeded best / from-scratch best.`,
     '',
     '| Boss | Classic weekend win | Seeded best win | From-scratch best win | Score (classic / seeded / scratch) | Knockouts | Escalation steps |',
     '| --- | ---: | ---: | ---: | --- | --- | --- |',
@@ -377,15 +391,15 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     '',
     '### The raid at other widths',
     '',
-    `Each player brings one column, so the arena is as wide as the server's raid: ${RAID_WIDTHS.join(', ')} columns a row. Cells read classic party / best line repeated to fill. A boss's HP and Attack do not grow with the arena, so a wider raid mostly shows how the arena's counts scale (a move's counts can be set per 4 columns, \`perColumns\`).`,
+    `Each player brings one column, so the arena is as wide as the server's raid: ${RAID_WIDTHS.join(', ')} columns a row. Cells read classic party / best line repeated to fill. The boss's weekend HP grows with the players as (players / 4) ^ e, where e is the boss's own exponent (the shipped bosses have one too: they answer differently to a bigger raid, and the shipped default is 1.1); its Attack does not grow, and its area counts scale with the width (a move's counts, and a Build-up's units per step, can be set per 4 columns, \`perColumns\`).`,
     '',
-    `| Boss | ${RAID_WIDTHS.map((w) => `${w} columns`).join(' | ')} |`,
-    `| --- | ${RAID_WIDTHS.map(() => '---:').join(' | ')} |`,
+    `| Boss | HP exponent | ${RAID_WIDTHS.map((w) => `${w} columns`).join(' | ')} |`,
+    `| --- | ---: | ${RAID_WIDTHS.map(() => '---:').join(' | ')} |`,
     ...widthRows,
     '',
     '### A mixed server weekend',
     '',
-    `Ten players, one column each, side by side: 2 min-maxers (a column of the best line), 3 builders (a column of a written answer, at most 2 copies of any form) and 5 casual players (a column of random forms from a random roster of 12, a random Knack each that the form can equip, and a random legal talent). ${S.raid.mixedDraws} different draws of the casual players and the builders' answers, ${S.raid.weekends} weekends in all.`,
+    `Ten players, one column each, side by side: 2 min-maxers (a column of the best line), 3 builders (a column of a written answer, at most 2 copies of any form; the min-maxers and builders have read the boss and bring the columns that hold its tool) and 5 casual players (a column of random forms from a random roster of 12, a random Knack each that the form can equip, and a random legal talent). ${S.raid.mixedDraws} different draws of the casual players and the builders' answers, ${S.raid.weekends} weekends in all.`,
     '',
     '| Boss | Weekend win | Knockouts |',
     '| --- | ---: | ---: |',

@@ -3,7 +3,7 @@
  * widths, and a mixed server weekend (min-maxers, builders and casual players side by side).
  */
 import { createSeededRng, int, type Rng } from '@creatures/game';
-import { raidBench, raidMode, weekendStats, weekendStatsOf } from './bosses';
+import { RAID_SPECS, raidBench, raidMode, weekendStats, weekendStatsOf } from './bosses';
 import { FORM_KNACKS } from './knacks';
 import { LEVEL, classicFor, type Pick } from './search';
 import { formStats } from './species';
@@ -32,6 +32,19 @@ export function marginOf(boss: BossDef, line: readonly Pick[], runs: number, sal
 /** The widths (columns, one player each) the raid is measured at, besides the usual four. */
 export const RAID_WIDTHS: readonly number[] = [5, 10, 15];
 
+/**
+ * How a raid boss's weekend HP grows with the number of players: `(players / 4) ^ e`, where `e` is the boss's own
+ * `hpExponent` (shipped bosses have one too: they answer differently to a bigger raid) or 1, a straight line. The boss's
+ * Attack does not grow; its area counts do (`perColumns`).
+ */
+export const hpExponentOf = (boss: BossDef): number =>
+  RAID_SPECS.find((s) => s.id === boss.id)?.hpExponent ?? 1;
+
+/** The boss in an arena of `cols` columns, one player each: the arena is wider and the weekend HP has grown with the players. */
+export function wideBoss(boss: BossDef, cols: number): BossDef {
+  return { ...boss, cols, hp: Math.round(boss.hp * (cols / boss.cols) ** hpExponentOf(boss)) };
+}
+
 /** A raid line (rows of `from` columns) repeated to fill rows of `to` columns: column c of each row is column c % from of it. */
 export function tileLine(line: readonly Pick[], from: number, to: number): Pick[] {
   const rows = Math.floor(line.length / from);
@@ -57,7 +70,7 @@ export function widthOf(
   runs: number,
   salt: string,
 ): WidthResult {
-  const wide: BossDef = { ...boss, cols: width };
+  const wide = wideBoss(boss, width);
   const classic = weekendStats(wide, classicFor(raidMode(wide)), runs, `${salt}:c`);
   const b = weekendStats(wide, tileLine(best, boss.cols, width), runs, `${salt}:b`);
   return {
@@ -133,9 +146,25 @@ export interface MixedResult {
 }
 
 /**
+ * The columns of a raid line (`cols` wide), best first for a player who brings the tool: the columns that hold the most
+ * creatures built on `core` (Knack ids, or `talent:<id>`) come first, ties to the left. With no `core`, left to right.
+ */
+export function toolColumns(
+  line: readonly Pick[],
+  cols: number,
+  core: readonly string[],
+): number[] {
+  const has = (p: Pick) =>
+    core.includes(p.knack) || (p.talents ?? []).some((t) => core.includes(`talent:${t}`));
+  const score = (c: number) => columnOf(line, cols, c).filter(has).length;
+  return Array.from({ length: cols }, (_, c) => c).sort((a, b) => score(b) - score(a) || a - b);
+}
+
+/**
  * A mixed server weekend against `boss`: ten players, one column each. The two min-maxers each bring a column of the best
  * line; the three builders each a column of a written answer (at most two copies of a form); the five casual players a
- * column of random forms, Knacks and talents. Over `draws` different casual rosters (and builder answers), `runs` weekends
+ * column of random forms, Knacks and talents. Min-maxers and builders have read the boss: they bring the columns that hold
+ * the tool (`core` for the best line, `answerCores` for each written answer), the most of it first. Over `draws` different casual rosters (and builder answers), `runs` weekends
  * in all.
  */
 export function mixedServer(
@@ -145,6 +174,8 @@ export function mixedServer(
   draws: number,
   runs: number,
   salt: string,
+  core: readonly string[] = [],
+  answerCores: readonly (readonly string[])[] = [],
 ): MixedResult {
   const rows = boss.rows;
   const per = Math.max(1, Math.floor(runs / draws));
@@ -156,10 +187,17 @@ export function mixedServer(
     let m = 0,
       b = 0;
     const columns: Pick[][] = MIXED_ORDER.map((kind) => {
-      if (kind === 'm') return columnOf(best, boss.cols, m++ % boss.cols);
+      if (kind === 'm')
+        return columnOf(
+          best,
+          boss.cols,
+          toolColumns(best, boss.cols, core)[m++ % boss.cols] as number,
+        );
       if (kind === 'b') {
-        const a = answers.length ? (answers[(b + d) % answers.length] as readonly Pick[]) : best;
-        const col = (b++ * 2 + d + 1) % boss.cols;
+        const k = answers.length ? (b + d) % answers.length : -1;
+        const a = k >= 0 ? (answers[k] as readonly Pick[]) : best;
+        const order = toolColumns(a, boss.cols, answerCores[k] ?? core);
+        const col = order[(b++ + d) % boss.cols] as number;
         return limitCopies(columnOf(a, boss.cols, col), BUILDER_MAX_COPIES, a);
       }
       return casualColumn(rng, rows);
@@ -177,7 +215,7 @@ export function mixedServer(
       })),
     );
     const w = weekendStatsOf(
-      { ...boss, cols: players },
+      wideBoss(boss, players),
       placements,
       raidBench(players),
       per,

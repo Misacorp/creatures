@@ -155,7 +155,7 @@ export const BOSS_ANSWERS: Readonly<Record<string, readonly BossAnswer[]>> = {
   ],
   'old-bogback': [
     {
-      label: 'Mud Wall keeps Mired on it while Drizzle and Hearth keep the wounded up',
+      label: 'Mud Wall keeps Mired on it while Drizzle and Hearth keep the most hurt up',
       tool: 'Mud Wall',
       core: ['mud-wall'],
       line: 'bogwarden/mud-wall+clinging drizzlewt/drizzle+overheal-spill sunfawn/none+kindred-boost pyrelynx/none+shoulder-to-shoulder | kilnmole/keep-the-heat-in+hardy zipmouse/zoom+deep-ink hearthshell/hearth+catch-breath gaiadrake/none+opportunist | ancientshell/living-shelter+stubborn bogwarden/mud-wall+flank-guard pyrelynx/guards-shadow+rally-cry squelch/ready-the-mark+heavy-hand',

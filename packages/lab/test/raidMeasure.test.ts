@@ -25,9 +25,12 @@ import {
   search,
   strip,
   tileLine,
+  toolColumns,
   toolOf,
   weekendScore,
   widthOf,
+  wideBoss,
+  hpExponentOf,
   type BossDef,
   type Pick,
 } from '../src';
@@ -158,6 +161,37 @@ describe('the margin, the widths and the mixed server', () => {
       expect(r.classicWin).toBeGreaterThanOrEqual(0);
       expect(r.bestKnockouts).toBeGreaterThanOrEqual(0);
     }
+  });
+
+  it('a wider raid has a bigger boss: the weekend HP grows with the players by the boss’s own exponent, its Attack does not', () => {
+    const b = raidBossOf('thornmother');
+    const exponent = hpExponentOf(b);
+    expect(exponent).toBeGreaterThan(0.4);
+    expect(exponent).toBeLessThanOrEqual(1.1);
+    for (const w of [5, 10, 15]) {
+      const wide = wideBoss(b, w);
+      expect(wide.cols).toBe(w);
+      expect(wide.atk).toBe(b.atk);
+      expect(wide.hp).toBe(Math.round(b.hp * (w / b.cols) ** exponent));
+    }
+    expect(wideBoss(b, b.cols).hp).toBe(b.hp);
+  });
+
+  it('players who read the boss bring the columns that hold its tool, the most of it first', () => {
+    const line = [
+      pick('a', 'x'),
+      pick('b'),
+      pick('c', 'x'),
+      pick('d'),
+      pick('e'),
+      pick('f', 'none', ['t']),
+      pick('g', 'x'),
+      pick('h', 'x'),
+    ];
+    // Columns of four: [a,e] [b,f] [c,g] [d,h]; Knack x is on a, c, g, h; the talent t on f.
+    expect(toolColumns(line, 4, ['x'])).toEqual([2, 0, 3, 1]);
+    expect(toolColumns(line, 4, ['talent:t'])).toEqual([1, 0, 2, 3]);
+    expect(toolColumns(line, 4, [])).toEqual([0, 1, 2, 3]);
   });
 
   it('a column of a line, and no more than two copies of a form in a builder column', () => {
