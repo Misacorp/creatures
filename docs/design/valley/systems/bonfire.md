@@ -8,7 +8,7 @@ Creatures without a post are not wasted: they gather at the bonfire in the middl
 
 ## Rules (draft)
 
-- **V-BON-1** Every creature a player owns earns XP every hour from one of: a fight (most), a post (steady), the bonfire (the floor). No daily cap on the total (Misa's goal), only the rates.
+- **V-BON-1** Every creature a player owns earns XP every hour from one of: a fight (most), a post (steady), the bonfire (the floor). No daily cap on the total (Misa's goal), only the rates and the away steps (V-POST-10: full for a day after a visit, then lower in steps).
 - **V-BON-2** Catch-up: a creature below the player's roster middle (example: the median level of their top 10) earns faster at the bonfire and at posts, fading to normal as it nears the middle. New catches become useful within days, not weeks.
 - **V-BON-3** The bonfire has no seats: every idle creature sits there. On screen it shows a handful around the fire, with "+N" for the rest.
 - **V-BON-4** Lounging (today's living room) stays the personal, social version: one creature on the couch, visible to friends, a little more XP and the Rested mark.

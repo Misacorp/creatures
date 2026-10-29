@@ -1,6 +1,6 @@
 # The commons: idling together for the whole server
 
-Status: **idea** (Misa, 2026-10-29). Evidence: `docs/research/idle-job-posts.md` ("Co-op idle in a small server"), `docs/research/idle-coop-raids.md`.
+Status: **proposed**; one shared valley with personal and shared progress taking turns as the limit is **accepted** (Misa, round 1, Q1). Evidence: `docs/research/idle-job-posts.md` ("Co-op idle in a small server"), `docs/research/idle-coop-raids.md`.
 
 ## The question
 
@@ -20,10 +20,11 @@ The valley's places belong to the whole server. Each place has a **server level*
 - **V-COM-2** Giving is recognised, never ranked: the place keeps a plaque of who helped build each level (names in order of their first gift), and the return story says "Sam and 3 others raised the Forge to level 3". No leaderboard of amounts.
 - **V-COM-3** Giving has a small personal thank-you so it never feels like a pure loss: example, a share of a project's completion reward to everyone who gave anything, the same for all.
 - **V-COM-4** Projects never fail, never decay and have no deadline (F-1). A finished level is kept for good.
-- **V-COM-5** Project size scales with the server's active players (a 5-player server and a 15-player server finish at a similar pace), and one big giver cannot finish a project alone in a normal week: past a weekly share, a player's gifts still count but at a lower rate (open: or a hard weekly cap).
+- **V-COM-5** Project size scales with the server's active players, counted as those who visited in the last 7 days, so members who drifted away never hold a project back (a 5-player server and a 15-player server finish at a similar pace), and one big giver cannot finish a project alone in a normal week: past a weekly share, a player's gifts still count but at a lower rate (open: or a hard weekly cap).
 - **V-COM-6** The scene shows progress: scaffolding rises as resources come in; creatures on communal posts are seen working; a delivered keystone sits in its place for good.
 - **V-COM-7** A newcomer joins a valley already built up and benefits from day one; the next project is open to them at once (F-7).
 - **V-COM-8** Server state is one row per project and one per player per project, updated on a gift (F-9); communal posts' output is computed lazily like any post.
+- **V-COM-10** Personal and shared progress take turns being the limit (round 1, Q1). A place's server level sets a per-player limit (anvils, scout seats, School seats); each player unlocks their own up to it with their own resources. On a new server the two alternate: a player outgrows the place, the server raises it, then the player's own resources are the limit again. Misa: "This hopefully motivates the player to push for the shared forge building upgrade."
 - **V-COM-9** Optional, opt-in weekly goals (Hay Day's Derby without its leaderboard): a festival project with a cosmetic for everyone who took part, never a penalty for those who did not.
 
 ## Examples (to test in the economy lab)
@@ -46,4 +47,3 @@ The valley's places belong to the whole server. Each place has a **server level*
 
 - Weekly soft share (gifts past it count less) or a hard cap?
 - Should places have a max level, after which projects become cosmetic (the endgame link to `later.md`)?
-- Can a player's own valley differ from the server's (personal decorations), or is the valley one shared place?

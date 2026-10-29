@@ -1,10 +1,10 @@
 # Job posts
 
-Status: **idea** (Misa, 2026-10-29). Evidence: `docs/research/idle-job-posts.md`.
+Status: **proposed**; posts replacing every timed task is **accepted** (Misa, round 1, Q2). Evidence: `docs/research/idle-job-posts.md`.
 
 ## The idea
 
-A creature is given a post somewhere in the valley and works there on its own until you move it. A post produces something (finds, crafted items, XP, help for the server) and the creature earns XP and grows in what the post asks of it. Today's timed tasks (trips, Workshop jobs) become posts that run continuously.
+A creature is given a post somewhere in the valley and works there on its own until you move it. A post produces something (finds, crafted items, XP, help for the server) and the creature earns XP and grows in what the post asks of it. Posts replace every timed task: today's trips and Workshop jobs go away (round 1, Q2). Misa: "It's laid back, works passively, and we can still build e.g., queue systems and configuration options to give players agency over what and how they're doing things. Example: which blueprints are being crafted, which areas are being explored."
 
 ## Rules (draft)
 
@@ -15,6 +15,8 @@ A creature is given a post somewhere in the valley and works there on its own un
 - **V-POST-5** Output accumulates into the post's store, computed lazily from timestamps on read (F-9). The store has a generous cap shown in advance; when full, the post pauses, nothing is lost, and its bubble says "full" (F-1).
 - **V-POST-6** No upkeep: no food, sanity, sickness or rest needed (F-2).
 - **V-POST-7** A creature on a post can still be picked for the dungeon or the raid; while away it leaves its seat warm (its post pauses for it) and returns to it after. (Open: or does it leave the post?)
+- **V-POST-9** Agency lives at the place, not on the creature: what a place works on is set there (the Forge's orders and queue of blueprints, which destination a scout explores). When a queue runs out, the post falls back to a plainer, less valuable default and keeps working (never idle by mistake); setting a new order is the reason to look in, never a timer. Queues stay short (example: up to 3 orders) so a place never turns into a schedule to fill (F-4). The chained output (scouts filling the stockpile the Forge draws on, with the away steps changing the rate) is computed lazily in one pass on read and priced against `docs/design/database-reads.md` before it is built (F-9).
+- **V-POST-10** Away growth in steps (round 1, Q3): every idle gain (posts and the bonfire) runs at the full rate for the first day after a visit, then drops in a few steps the longer the player is away, to near zero after about a month. One plain scalar from the time since the last visit, the same for every post. It applies to idle gains only, never to what fights pay. Example steps (the economy lab sets them): 100% for the first day, 50% to day 3, 25% to day 7, 10% to day 30, then near zero. A daily player gets everything; every other day about 75%; once a week about 43%.
 - **V-POST-8** A post that inputs something (the Forge needs scrap) slows when its input runs low and says why in a few words; a small fallback keeps it from stopping dead (F-5, see `forge.md`).
 
 ## Candidate posts
@@ -31,6 +33,5 @@ A creature is given a post somewhere in the valley and works there on its own un
 
 ## Open questions (also in `../questions.md`)
 
-- Do posts replace timed trips and Workshop jobs entirely, or do timed "big" tasks stay alongside as special events?
 - V-POST-7: does a raid or dungeon pick pull a creature off its post?
 - How many seats per post at the start, and how fast do they grow?

@@ -4,6 +4,8 @@ Status: **prototype** (`apps/activity/src/proto/valley/`, staging `prototype.htm
 
 ## What it is
 
+**One valley for the whole server** (Misa, round 1, Q1): everyone's creatures live and work in the same places, the places belong to the server, and each player's house is their own space. The valley shows the player's own creatures first and a few friends' at a time, so a 15-player server does not crowd it.
+
 One pixel-art valley, panned on a phone and seen whole on a desktop. Places are buildings and spots in it; tapping one zooms into a full-screen scene where its activity happens. Your creatures live in the valley and are always at hand in the creature tray. What needs you is a bubble over the place it is about. There is no dock, rail or page menu; a small "Places" flag is the escape hatch.
 
 ## Rules (draft)

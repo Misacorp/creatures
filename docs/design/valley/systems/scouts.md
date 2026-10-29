@@ -1,6 +1,6 @@
 # Scouts: expeditions as standing posts
 
-Status: **idea** (Misa, 2026-10-29: "expeditions could run constantly and turn up new finds as they progress").
+Status: **proposed**; standing scouts instead of timed trips are **accepted** (Misa, round 1, Q2: "which areas are being explored" is the player's choice).
 
 ## The idea
 
@@ -17,5 +17,4 @@ Instead of timed trips, a scout is posted to one of the eight destinations and r
 
 ## Open questions
 
-- Keep a few timed "expeditions" as special events (a festival trip, a rescue) on top of standing scouts?
 - How do new creatures arrive: straight to the Paddock gate (today's catch choices), or as a find the player claims?
