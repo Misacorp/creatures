@@ -6,12 +6,16 @@ import { createSeededRng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import {
   CARDS,
+  LEVEL,
   RAID_RANKS,
   RAID_SPECS,
   card,
   fight,
   labBoss,
+  raidBench,
   raidBossOf,
+  raidMode,
+  toPlacements,
   weekend,
   type BossDef,
   type Escalation,
@@ -283,6 +287,72 @@ describe('Boss Rank in the lab', () => {
     expect(RAID_RANKS.map((r) => r.id)).toEqual(['low', 'mid', 'high']);
     expect(RAID_RANKS.map((r) => r.rank)).toEqual(
       [...RAID_RANKS.map((r) => r.rank)].sort((a, b) => a - b),
+    );
+  });
+
+  it('every step down the ladder is softer in every respect (Misa, 2026-10-29): HP, Attack, armour, card strength and roster', () => {
+    for (const spec of RAID_SPECS) {
+      const [low, mid, high] = (['low', 'mid', 'high'] as const).map((rank) =>
+        raidBossOf(spec.id, { rank }),
+      ) as [BossDef, BossDef, BossDef];
+      expect(low.hp, spec.id).toBeLessThan(mid.hp);
+      expect(mid.hp, spec.id).toBeLessThan(high.hp);
+      expect(low.atk, spec.id).toBeLessThan(mid.atk);
+      expect(mid.atk, spec.id).toBeLessThan(high.atk);
+      // Clearly softer: the low rank is at least a tenth under the high rank in both, the mid rank under it by some.
+      expect(low.hp, spec.id).toBeLessThanOrEqual(high.hp * 0.9);
+      expect(low.atk, spec.id).toBeLessThanOrEqual(high.atk * 0.9);
+      expect(mid.hp, spec.id).toBeLessThanOrEqual(high.hp * 0.95);
+      expect(mid.atk, spec.id).toBeLessThanOrEqual(high.atk * 0.95);
+      expect(low.strengthBp, spec.id).toBeLessThan(mid.strengthBp ?? 0);
+      expect(low.rosterLevel, spec.id).toBeLessThan(mid.rosterLevel ?? 0);
+      expect(mid.rosterLevel, spec.id).toBeLessThan(high.rosterLevel ?? 0);
+    }
+    expect(RAID_RANKS.at(-1)?.level).toBe(LEVEL);
+  });
+
+  it('Thornmother’s bark is thinner at the lower ranks than the card’s share alone would make it', () => {
+    const spec = RAID_SPECS.find((s) => s.id === 'thornmother');
+    const low = raidBossOf('thornmother', { rank: 'low' });
+    expect(spec?.ranks?.low[2]).toBeDefined();
+    expect(low.armour).toBe(
+      Math.round(((spec?.armour ?? 0) * (spec?.ranks?.low[2] ?? 0)) / 10_000),
+    );
+    expect(low.armour).toBeLessThan(raidBossOf('thornmother', { rank: 'mid' }).armour);
+    expect(raidBossOf('thornmother', { rank: 'mid' }).armour).toBeLessThan(
+      raidBossOf('thornmother').armour,
+    );
+  });
+
+  it('the rank’s roster level reaches every creature the weekend places: the line, the bench and a wide arena', () => {
+    const low = raidBossOf('storm-sovereign', { rank: 'low' });
+    const high = raidBossOf('storm-sovereign');
+    expect(raidMode(low).level).toBe(RAID_RANKS[0]?.level);
+    expect(raidMode(high).level).toBe(LEVEL);
+    const line = [
+      { formId: 'tidewing', knack: 'none' },
+      { formId: 'tempestray', knack: 'none', level: 7 },
+    ];
+    // A pick that names a level keeps it; the others take the rank's.
+    expect(toPlacements(line, raidMode(low)).map((p) => p.level)).toEqual([low.rosterLevel, 7]);
+    expect(raidBench(4, low.rosterLevel).every((p) => p.level === low.rosterLevel)).toBe(true);
+    expect(raidBench(4).every((p) => p.level === LEVEL)).toBe(true);
+    // A weaker roster does less damage against the same boss.
+    const same = { ...high, hp: 1_000_000 };
+    const dmg = (b: BossDef) => {
+      const w = weekend(
+        b,
+        toPlacements(line.slice(0, 1), { ...raidMode(b), cols: 1, rows: 1 }),
+        [],
+        {
+          rng: rng('roster'),
+          stages: 1,
+        },
+      );
+      return 1_000_000 - (w.stages[0]?.bossHpLeft ?? 0);
+    };
+    expect(dmg({ ...same, rosterLevel: 12, rows: 1, cols: 1 })).toBeLessThan(
+      dmg({ ...same, rosterLevel: LEVEL, rows: 1, cols: 1 }),
     );
   });
 

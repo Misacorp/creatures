@@ -164,12 +164,22 @@ export type CasualKind = 'random' | 'top3';
  * `top3` (panel 5): the highest levels of the roster, one creature a row (the top three on a three-row arena), no Knack,
  * since migrated creatures start with none equipped.
  */
-export function casualColumn(rng: Rng, rows: number, kind: CasualKind = 'random'): Pick[] {
+export function casualColumn(
+  rng: Rng,
+  rows: number,
+  kind: CasualKind = 'random',
+  rosterLevel: number = LEVEL,
+): Pick[] {
   const forms = Object.keys(FORM_KNACKS);
   const roster = new Map<string, number>();
   while (roster.size < 12)
     roster.set(forms[int(rng, forms.length)] ?? 'tidewing', 8 + int(rng, 18));
-  const level = (f: string) => Math.min(roster.get(f) ?? 1, formStats(f, 30).levelCap);
+  // A server at an early Boss Rank has a weaker roster: every level is scaled by the rank's roster level over the endgame's.
+  const level = (f: string) =>
+    Math.max(
+      1,
+      Math.min(Math.round(((roster.get(f) ?? 1) * rosterLevel) / LEVEL), formStats(f, 30).levelCap),
+    );
   const owned = [...roster.keys()];
   const chosen =
     kind === 'top3'
@@ -305,14 +315,14 @@ export function mixedServer(
         const col = tc[(b++ + d) % boss.cols] as number;
         return limitCopies(columnOf(a, boss.cols, col), BUILDER_MAX_COPIES, a);
       }
-      return casualColumn(rng, rows, options.casual ?? 'random');
+      return casualColumn(rng, rows, options.casual ?? 'random', boss.rosterLevel);
     });
     const players = columns.length;
     const placements: Placement[] = columns.flatMap((col, c) =>
       col.map((p, r) => ({
         owner: `p${c + 1}`,
         formId: p.formId,
-        level: p.level ?? LEVEL,
+        level: p.level ?? boss.rosterLevel ?? LEVEL,
         knack: p.knack,
         ...(p.talents ? { talents: p.talents } : {}),
         row: r,
@@ -323,7 +333,7 @@ export function mixedServer(
       weekendStatsOf(
         wideBoss(boss, players, options.hpExponent, options.atkExponent),
         placements,
-        raidBench(players),
+        raidBench(players, boss.rosterLevel),
         per,
         `${salt}:${d}`,
       ),

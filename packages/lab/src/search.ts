@@ -42,6 +42,8 @@ export interface Mode {
   readonly cols: number;
   /** At most this many copies of a form (one per form in the gauntlet; in a raid, up to one per player). */
   readonly maxCopies: number;
+  /** The level of a pick that names none (default `LEVEL`): a raid at a Boss Rank whose roster is weaker than the endgame's. */
+  readonly level?: number;
 }
 
 export const GAUNTLET: Mode = { id: 'gauntlet', rows: 1, cols: 3, maxCopies: 1 };
@@ -57,7 +59,7 @@ export function toPlacements(line: readonly Pick[], mode: Mode): Placement[] {
     // A raid has a player for each column of the arena (four in the usual raid).
     owner: mode.id === 'gauntlet' ? 'p1' : `p${(i % mode.cols) + 1}`,
     formId: p.formId,
-    level: p.level ?? LEVEL,
+    level: p.level ?? mode.level ?? LEVEL,
     knack: p.knack,
     ...(p.talents ? { talents: p.talents } : {}),
     row: Math.floor(i / mode.cols),

@@ -29,6 +29,10 @@
  * Panel 5 (2026-10-29): the weekend HP grows with the players by one exponent for every boss (`RAID_HP_EXPONENT`,
  * `raidMeasure.ts`) and one smooth curve, with no kink; the per-boss exponents and the straight line past ten players are gone.
  *
+ * Rank ladder (Misa, 2026-10-29: low rank asks for a tool, high rank requires it; early raids must not expect an answer to every
+ * problem): HP, Attack, armour and card strength all rise from the low rank to the mid and the high rank, and so does the roster
+ * (`RAID_RANKS`: the lab's creatures are level 12, 18 and 25), so a lower rank is softer without being a walkover.
+ *
  * Panel 5, content and tuning (Misa, 2026-10-29: the primary measure is the share of the boss's HP removed in a weekend, with the
  * retreat tiers beside it; the kill is the cliff): Mired's cut is halved, the Colossus washes debuffs off (Shake It Off), Thornmother's
  * bark cracks at each Build-up step, every rule card and gate has a strength (`strengthBp`, 0% to 100%) that rises with the Boss Rank,
@@ -115,14 +119,16 @@ export interface RaidBossSpec {
   /** One line for the report: what the boss asks. */
   readonly asks: string;
   /**
-   * HP and Attack at the lower ranks, in bp of the spec's (the spec is the high rank). A lower rank softens the cards and gates, which
-   * would make the boss a walkover for everybody, so the lab roster (every creature at level 25 whatever the rank) meets a bigger pool
-   * there; each boss's rows were found by a grid over HP and Attack that keeps the classic party from killing it at any width, lets the
-   * prepared team kill, and puts the casual server between half and most of the HP (`scripts` in the lab log, 2026-10-29).
+   * HP, Attack and (optionally) armour at the lower ranks, in bp of the spec's (the spec is the high rank): every step down is softer
+   * in every respect, so each number is below the next rank's. The lab roster is weaker at a lower rank too (`RaidRank.level`), which
+   * is what keeps a softer boss from being a walkover. Each boss's rows come from a grid over HP and Attack at the rank's roster level
+   * (2026-10-29): the prepared team kills, its tool keeps adding at least ten points of the HP, the classic party never kills, and the
+   * mixed server removes more of the HP at a lower rank. The armour entry replaces the card's share (half the armour is the hide, the
+   * other half the card at the rank's strength) where the bark is the gate: Thornmother's.
    */
   readonly ranks?: {
-    readonly low: readonly [number, number];
-    readonly mid: readonly [number, number];
+    readonly low: readonly [hpBp: number, atkBp: number, armourBp?: number];
+    readonly mid: readonly [hpBp: number, atkBp: number, armourBp?: number];
   };
 }
 
@@ -149,7 +155,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       grow: { atkBp: 1_300, area: 1 },
     },
     asks: 'The whole sea sweeps the rows. Wide Reach and row wards turn the waves; who stands where?',
-    ranks: { low: [14500, 10000], mid: [12500, 10000] },
+    ranks: { low: [8_200, 8_200], mid: [9_000, 9_200] },
     moves: [
       ['undertow', 'Undertow', 3, 0, 'front', 'row', 9_000],
       ['spray', 'Spray', 2, 0, 'random', 'scatter', 5_000, { n: 4, perColumns: 4 }],
@@ -197,7 +203,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       grow: { atkBp: 1_000, targets: 1 },
     },
     asks: 'The forge turns the first reaction of every row back on you, and every reaction heats it. Keep Mired on it, or make each reaction count.',
-    ranks: { low: [15_000, 9_000], mid: [11_500, 10_000] },
+    ranks: { low: [6_000, 8_500], mid: [8_000, 9_000] },
     moves: [
       ['coil-crush', 'Coil Crush', 3, 0, 'front', 'line3', 15_000],
       ['scorch-lane', 'Scorch Lane', 2, 1, 'random', 'column', 7_000],
@@ -243,7 +249,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       },
     },
     asks: 'The row ends fall quiet. Keep what you cannot spare in the middle or ward it, and bring something for her thick bark.',
-    ranks: { low: [15_000, 7_000], mid: [10_000, 10_000] },
+    ranks: { low: [6_500, 7_000, 6_400], mid: [8_000, 8_500, 7_800] },
     moves: [
       // The one silencing move: every second round, the two ends of every row.
       [
@@ -303,7 +309,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       grow: { atkBp: 2_000, jumps: 1 },
     },
     asks: 'The Rod leaps from the strongest Payoff, round after round, and a Judgement Bolt, announced at round start, can fell it. Draw the Rod onto something that can take it, and have Night Watch beside the Payoff for the Bolt.',
-    ranks: { low: [15_000, 9_000], mid: [13_000, 8_000] },
+    ranks: { low: [8_500, 8_600], mid: [9_200, 9_100] },
     moves: [
       [
         'thunderclap',
@@ -372,7 +378,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
     },
     cards: ['shake-it-off', 'adapts-element'],
     asks: 'The fen pulls the most hurt creature down. Keep them up, and keep the Mired on it.',
-    ranks: { low: [11500, 9000], mid: [10000, 10000] },
+    ranks: { low: [7_000, 7_000], mid: [8_500, 8_500] },
     moves: [
       ['sinking-mud', 'Sinking Mud', 3, 2, 'random', 'randomRow', 11_000],
       ['belly-flop', 'Belly Flop', 4, 0, 'front', 'line3', 13_900, { anchors: 1, perColumns: 6 }],
@@ -418,8 +424,9 @@ function escalationOf(e: NonNullable<RaidBossSpec['escalation']>): Escalation {
  * Boss Rank in the lab (Misa, 2026-10-29): the strength of the boss's cards and gates rises with the rank, and so do its HP and
  * Attack, as in the shipped ladder (`RULES.raid.curve`: steep in the first ranks, nearly flat later). Three settings stand for
  * it: low (a rank 1 to 3 server), mid (about rank 5) and high (the endgame, rank 10 and up). The raid specs below are the
- * high rank's numbers; a lower rank takes a share of the HP, the Attack, the armour and every card. The shares are lab-scale
- * (every lab creature is level 25, so the shipped table's early ranks, a few percent of the pool, would be a boss nobody feels).
+ * high rank's numbers; a lower rank takes a share of the HP, the Attack, the armour and every card, and its server's creatures
+ * are lower level (`level`): the shipped table's early ranks are small because the roster is small, so the lab's roster grows with
+ * the rank too (a level 25 roster at every rank would make a boss softer than the high rank's a walkover).
  */
 export interface RaidRank {
   readonly id: 'low' | 'mid' | 'high';
@@ -430,12 +437,14 @@ export interface RaidRank {
   /** HP and Attack, in bp of the spec's. */
   readonly hpBp: number;
   readonly atkBp: number;
+  /** The level of the server's creatures (the rank's roster: a young server has lower levels, no gear and fewer talents). */
+  readonly level: number;
 }
 
 export const RAID_RANKS: readonly RaidRank[] = [
-  { id: 'low', rank: 2, strengthBp: 3_000, hpBp: 12_000, atkBp: 10_000 },
-  { id: 'mid', rank: 5, strengthBp: 6_500, hpBp: 11_000, atkBp: 10_000 },
-  { id: 'high', rank: 10, strengthBp: 10_000, hpBp: 10_000, atkBp: 10_000 },
+  { id: 'low', rank: 2, strengthBp: 3_000, hpBp: 12_000, atkBp: 10_000, level: 12 },
+  { id: 'mid', rank: 5, strengthBp: 6_500, hpBp: 11_000, atkBp: 10_000, level: 18 },
+  { id: 'high', rank: 10, strengthBp: 10_000, hpBp: 10_000, atkBp: 10_000, level: LEVEL },
 ];
 
 export type RankId = RaidRank['id'];
@@ -447,15 +456,15 @@ export const rankOf = (id: RankId): RaidRank => RAID_RANKS.find((r) => r.id === 
  */
 export function raidBossOf(
   id: string,
-  over: { hp?: number; atk?: number; armour?: number; rank?: RankId } = {},
+  over: { hp?: number; atk?: number; armour?: number; rank?: RankId; level?: number } = {},
 ): BossDef {
   const spec = RAID_SPECS.find((s) => s.id === id);
   const shipped = content.bosses.find((b) => b.id === id);
   if (!spec || !shipped) throw new Error(`unknown raid boss ${id}`);
   const rank = rankOf(over.rank ?? 'high');
   const st = rank.strengthBp;
-  const [hpBp, atkBp] =
-    rank.id === 'high' || !spec.ranks ? [rank.hpBp, rank.atkBp] : spec.ranks[rank.id];
+  const [hpBp, atkBp, armourBp] =
+    rank.id === 'high' || !spec.ranks ? [rank.hpBp, rank.atkBp, undefined] : spec.ranks[rank.id];
   let boss: BossDef = {
     id,
     name: shipped.name,
@@ -463,7 +472,8 @@ export function raidBossOf(
     hp: over.hp ?? Math.round((spec.hp * hpBp) / 10_000),
     atk: over.atk ?? Math.round((spec.atk * atkBp) / 10_000),
     // Half of a boss's armour is its hide and always there; the other half is its card, the strength's share of it.
-    armour: over.armour ?? Math.round((spec.armour * (5_000 + Math.floor(st / 2))) / 10_000),
+    armour:
+      over.armour ?? Math.round((spec.armour * (armourBp ?? 5_000 + Math.floor(st / 2))) / 10_000),
     spd: shipped.baseSpd ?? 0,
     rounds: RAID_ROUNDS,
     rows: spec.rows,
@@ -473,6 +483,7 @@ export function raidBossOf(
     cards: spec.cards,
     mods: {},
     strengthBp: st,
+    rosterLevel: over.level ?? rank.level,
     ...(spec.escalation
       ? { escalation: { ...escalationOf(spec.escalation), strengthBp: st } }
       : {}),
@@ -483,15 +494,21 @@ export function raidBossOf(
 
 /** The arena of a raid boss as a search mode: four players, one column each, up to four copies of a form. */
 export function raidMode(boss: BossDef): Mode {
-  return { id: 'raid', rows: boss.rows, cols: boss.cols, maxCopies: 4 };
+  return {
+    id: 'raid',
+    rows: boss.rows,
+    cols: boss.cols,
+    maxCopies: 4,
+    ...(boss.rosterLevel !== undefined ? { level: boss.rosterLevel } : {}),
+  };
 }
 
 /** Each player (one per column, four in the usual raid) keeps one Kilnmole with Draw Fire on the bench, as in the report's raid weekend. */
-export function raidBench(players = 4): Placement[] {
+export function raidBench(players = 4, level = LEVEL): Placement[] {
   return Array.from({ length: players }, (_, k) => k + 1).map((i) => ({
     owner: `p${i}`,
     formId: 'kilnmole',
-    level: LEVEL,
+    level,
     knack: 'draw-fire',
     row: 0,
     col: 0,
@@ -608,7 +625,13 @@ export function weekendStats(
   runs: number,
   salt: string,
 ): WeekendStats {
-  return weekendStatsOf(boss, toPlacements(line, raidMode(boss)), raidBench(boss.cols), runs, salt);
+  return weekendStatsOf(
+    boss,
+    toPlacements(line, raidMode(boss)),
+    raidBench(boss.cols, boss.rosterLevel),
+    runs,
+    salt,
+  );
 }
 
 /** `runs` seeded raid weekends of the placed creatures (any roster) against `boss`, with the players' benches. */

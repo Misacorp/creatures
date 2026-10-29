@@ -221,6 +221,12 @@ export interface BossDef {
    * added move's power) are built with it (`CardDef.apply`).
    */
   readonly strengthBp?: number;
+  /**
+   * The level of the players' creatures in a raid weekend against this boss when a pick names none (default `LEVEL`). Boss Rank
+   * (Misa, 2026-10-29) stands for a server's whole roster, not only the boss's numbers: an early rank's server has lower-level
+   * creatures, so its boss can be clearly softer in HP and Attack than the high rank's without being a walkover.
+   */
+  readonly rosterLevel?: number;
   /** The boss's Store, if it has one. */
   readonly escalation?: Escalation;
 }

@@ -286,6 +286,17 @@ describe('the margin, the widths and the mixed server', () => {
     expect(PLAYER_KINDS).toEqual(['m', 'b', 'c']);
   });
 
+  it('a casual column at a lower rank has a weaker roster: its levels scale with the rank’s roster level', () => {
+    const full = casualColumn(createSeededRng('lv'), 4);
+    const young = casualColumn(createSeededRng('lv'), 4, 'random', 12);
+    // The same forms, Knacks and talents (the dice are the same); only the levels differ.
+    expect(young.map((p) => [p.formId, p.knack, p.talents])).toEqual(
+      full.map((p) => [p.formId, p.knack, p.talents]),
+    );
+    expect(young.every((p, i) => (p.level ?? 0) < (full[i]?.level ?? 0))).toBe(true);
+    expect(Math.max(...young.map((p) => p.level ?? 0))).toBeLessThanOrEqual(12);
+  });
+
   it('the casual players with no Knack bring their top creatures by level, a legal talent each', () => {
     const a = casualColumn(createSeededRng('top3'), 3, 'top3');
     expect(a).toEqual(casualColumn(createSeededRng('top3'), 3, 'top3'));

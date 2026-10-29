@@ -780,17 +780,17 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     '',
     '### Boss Rank: the same weekends at a low, a mid and the high rank',
     '',
-    `Every rule card and boss gate has a strength from 0% to 100% (\`strengthBp\`), and the strength rises with the server's Boss Rank (Misa, 2026-10-29). Reflection returns that share of the reaction's bonus; Shake It Off clears that share of the Mired; Reaction and Element Resistance cut that share of what they cut at full strength; a Build-up step grows the boss by that share; a silence hits that share of its slots and lasts that share of its turns; Judgement Bolt hits for that share of the Payoff's Max HP (a one-shot at full strength, a heavy hit below it); half of a boss's armour is its hide and the other half is its card, the strength's share. A card *asks* for a tool at low strength and *requires* it at high strength. The three ranks are ${RAID_RANKS.map((r) => `**${r.id}** (about rank ${r.rank}: cards at ${r.strengthBp / 100}%)`).join(', ')}. HP and Attack follow each boss's ladder (\`ranks\` in its spec; the high rank is the spec): a lower rank keeps the same or a bigger pool, because its cards are soft and every lab creature is level 25 at every rank (the shipped ladder's early ranks are small because the roster is small; the lab has no roster to grow). ${S.raid.rankWeekends} weekends each, ${S.raid.rankDraws} draws of the mixed and casual servers, ${S.raid.rankTalentDraws} draws of random talents. Cells read the share of the boss's HP removed (sd between weekends), then tier 1 / tier 2 / kill.`,
+    `Every rule card and boss gate has a strength from 0% to 100% (\`strengthBp\`), and the strength rises with the server's Boss Rank (Misa, 2026-10-29). Reflection returns that share of the reaction's bonus; Shake It Off clears that share of the Mired; Reaction and Element Resistance cut that share of what they cut at full strength; a Build-up step grows the boss by that share; a silence hits that share of its slots and lasts that share of its turns; Judgement Bolt hits for that share of the Payoff's Max HP (a one-shot at full strength, a heavy hit below it); half of a boss's armour is its hide and the other half is its card, the strength's share. A card *asks* for a tool at low strength and *requires* it at high strength. The three ranks are ${RAID_RANKS.map((r) => `**${r.id}** (about rank ${r.rank}: cards at ${r.strengthBp / 100}%)`).join(', ')}. HP and Attack follow each boss's ladder (\`ranks\` in its spec; the high rank is the spec), and every step down is softer in every respect: a lower rank has less HP, less Attack, softer cards and, for Thornmother, a thinner bark. The server's roster grows with the rank, as in the shipped game (the shipped table's early ranks are small because the roster is small): the lab's creatures are level ${RAID_RANKS.map((r) => `${r.level} at the ${r.id} rank`).join(', ')}, the casual players' levels scaled the same way (a creature's stats grow with its level: a level 12 creature has about 70% of a level 25 one's). Without this the lab's level 25 roster would make every low rank boss a walkover unless it had more HP than the high rank's. ${S.raid.rankWeekends} weekends each, ${S.raid.rankDraws} draws of the mixed and casual servers, ${S.raid.rankTalentDraws} draws of random talents. Cells read the share of the boss's HP removed (sd between weekends), then tier 1 / tier 2 / kill.`,
     '',
     '#### The prepared line and its tool',
     '',
-    '| Boss | Rank | HP / Attack / armour | Prepared, as written | Prepared, random legal talents | Same line without its tool (random talents) | Tool adds | Talents add (random over none) |',
-    '| --- | --- | --- | --- | --- | --- | ---: | ---: |',
+    '| Boss | Rank | Roster level | HP / Attack / armour | Prepared, as written | Prepared, random legal talents | Same line without its tool (random talents) | Tool adds | Talents add (random over none) |',
+    '| --- | --- | ---: | --- | --- | --- | --- | ---: | ---: |',
     ...rankStudies.map((r) => {
       const cell = (w: WeekendStats) => `${share(w)} (${tiers(w)})`;
       const rnd = (x: Robustness['random']) =>
         `${pct(x.damageShare)} (sd ${Math.round(x.damageShareSd * 100)}; ${pct(x.tiers.t1)} / ${pct(x.tiers.t2)} / ${pct(x.tiers.kill)})`;
-      return `| ${r.bossName} | ${r.rank.id} | ${r.hp} / ${r.atk} / ${r.armour} | ${cell(r.robust.written)} | ${rnd(r.robust.random)} | ${rnd(r.noTool.random)} | ${pts(r.robust.random.damageShare - r.noTool.random.damageShare)} | ${pts(r.robust.random.damageShare - r.robust.none.damageShare)} |`;
+      return `| ${r.bossName} | ${r.rank.id} | ${r.rank.level} | ${r.hp} / ${r.atk} / ${r.armour} | ${cell(r.robust.written)} | ${rnd(r.robust.random)} | ${rnd(r.noTool.random)} | ${pts(r.robust.random.damageShare - r.noTool.random.damageShare)} | ${pts(r.robust.random.damageShare - r.robust.none.damageShare)} |`;
     }),
     '',
     '#### The unprepared: the classic party, a server of casual players, the mixed server',
@@ -863,6 +863,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     boss: r.bossId,
     rank: r.rank.id,
     strengthBp: r.rank.strengthBp,
+    rosterLevel: r.rank.level,
     hp: r.hp,
     atk: r.atk,
     armour: r.armour,
