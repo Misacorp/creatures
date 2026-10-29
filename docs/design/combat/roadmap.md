@@ -52,17 +52,11 @@ Big simulations come in phase 5 on purpose: week-by-week and Boss Rank numbers m
 
 PR #92 (design docs, lab, wiki) is merged. Work continues on branch `combat-v2-bosses` (no PR yet; batch the next steps into one).
 
-Latest lab numbers (`lab-report.md`, raid boss section): the classic party wins 0% of weekends; the prepared answer wins 98% to 100% and loses about 1 to 5 creatures a weekend; at a boss 10% stronger it still wins 73% to 100%; a mixed server (2 min-maxers, 3 builders, 5 casuals) wins 21% to 64%. The dungeon: an all-round team that plays the map clears 98% at depth 1 down to 68% at depth 8; the Undercroft 19%, 4%, 1%.
+Latest lab numbers (`lab-report.md`, raid boss section, after the balance pass of 2026-10-29): the classic party wins 0% of weekends (at most 8% at 15 columns); the prepared answer wins 98% to 100%, loses 1 to 7 creatures and ends at 44% to 65% HP; at a boss 10% stronger it wins 79% to 96%; a mixed server (2 min-maxers, 3 builders, 5 casuals) wins 36% to 65% and loses 22 to 33 creatures; each boss measurably calls for 12 to 20 mechanics. The dungeon: an all-round team that plays the map clears 99% at depth 1 down to 58% at depth 8; the Undercroft 19%, 5%, 1%. Talents' share of a team's result: 19% gauntlet, 23% raid.
 
 Next steps, in order:
 
-1. **Balance pass** against the real bosses:
-   - Measure creatures' **HP left** after each raid stage as well as knockouts (Misa, 2026-10-29: everyone alive but low is also a good result).
-   - Mixed servers should **feel** losses more than prepared ones; losses may go up if they matter.
-   - Tidal Colossus and Cinder Wyrm need margin: they are too easy at +10%.
-   - Old Bogback is too hard for mixed servers (21%).
-   - The best searched lines win with almost no losses, so most mechanics measure as "not needed": tighten them.
-   - Then Knacks never picked against real bosses (Night Watch, Primed by Pain and the near-dead list), Zigzag, species stats (stage 2 Payoffs now within about 10%), and the gear plan (which shipped gear lines change or retire).
+1. **Balance pass** against the real bosses: done (2026-10-29). Left over: Storm Sovereign's mixed server (36%, below the 50% aim, since raising it lets the classic party win at wide rows); the best searched lines on Tidal Colossus and Storm Sovereign still win with almost no losses; Baked Shell, Tunnel Through and Crown of Embers are still rarely picked against the real bosses; Zigzag is still near the "stands out" line (next step: separate its Taunt); the gear plan.
 2. **Panel 5** on the balance pass.
 3. **Phase 1 gate check** (phase 1 row in the table above), then a PR for Misa.
 4. Later content: a Mire Setter or Payoff (art), the Undercroft's own foes.
