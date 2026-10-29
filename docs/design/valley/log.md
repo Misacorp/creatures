@@ -27,3 +27,9 @@ One entry per session, newest last. Each says what was done, what was decided, a
 **Done.** The plan folder rendered as a phone-first page, published as the Claude artifact "Valley Plan" (https://claude.ai/artifact/LhzFbstKivpCJ4rk9t5Bqt), built by `reader/build.py`. The "Valley Map" artifact (places, shortcuts, posts idea) is https://claude.ai/artifact/Gme15KAUTmxiJ4e9FLRNpb. Both are private to Misa. Republish the plan page after any change to these docs.
 
 **Next.** Unchanged: Misa answers open questions 1 and 2, then posts and the bonfire in full.
+
+## 2026-10-29 (evening): question rounds, and round 1
+
+**Done.** Misa asked to go step by step with numbered rounds of one to three questions, to be challenged, and to be brave about scrapping today's systems ("I was there" mementos for players). Written down in `deciding.md` (accepted), goal G-0 in `goals.md`, an entry in `decisions.md`. Built the tools: the ledger `questions.md` (replaces `open-questions.md`; old questions 1 and 2 withdrawn, the rest queued), the `valley-round` skill (prepare, record, challenge check, publish), and `reader/build.py` now fills the phone page's tiles from the ledger and the roadmap. Asked round 1: Q1 one valley or one each, Q2 posts replace every timed task, Q3 how much opening the game matters (a challenge to "no daily XP limit" plus "away costs nothing").
+
+**Next.** Record Misa's answers to Q1 to Q3 (`valley-round`). Then the lead's scrap list (today's game: keep, rework or scrap), and round 2 from the queue.

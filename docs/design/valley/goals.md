@@ -4,6 +4,7 @@ Status of each entry: **proposed** (the lead wrote it from Misa's words; Misa ha
 
 ## What we want to achieve
 
+- **G-0, be brave** (accepted, Misa 2026-10-29). Nothing in today's game is kept because it exists. Every feature, system and design choice is judged on whether it makes a better, more enjoyable game that matches the vision; what does not is reworked or scrapped. Players who lose something they earned keep an "I was there" memento. The lead challenges Misa's own principles and answers when they contradict his goals, the research or the numbers ([`deciding.md`](deciding.md)).
 - **G-1, the world is the game** (accepted in spirit, 2026-10-29: Misa picked the valley). The game feels like a game, not a web form: a valley you walk around, places that are buildings, activities that happen inside scenes. Phone first, desktop uses the whole window.
 - **G-2, collecting them all is a boon** (proposed, Misa 2026-10-29). Every creature a player owns can grow at a steady pace and be viable, so raids and dungeons are played with a variety of creatures, not the top three. More creatures means more options, never more chores.
 - **G-3, idling is meaningful, rewarding and fun** (proposed, Misa 2026-10-29). Creatures work at posts on their own. Coming back is the reward: a short story of what happened, one surprise, one real choice. Being away never costs anything.

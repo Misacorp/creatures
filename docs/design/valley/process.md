@@ -8,7 +8,7 @@ The lead (Opus) plans, delegates and reviews, following `CLAUDE.md`. This page i
 2. **Research when unsure.** A researcher agent (read-only web) answers a narrow question; its report is filed in `docs/research/` with sources and confidence marks.
 3. **Simulate.** Once the economy lab exists: change its data, run it, read the report against the targets in `goals.md` (T-1...). Before it exists: a back-of-envelope table in the system doc, marked as examples.
 4. **Review.** Run the panel (below) on the doc or the prototype shots. Findings go to `reviews/YYYY-MM-DD-<topic>.md`.
-5. **Decide.** The lead folds in what clearly follows the goals and filters. Anything that trades against a filter, changes a design Misa has seen, or is a question of game feel goes to `open-questions.md` for Misa. Misa's answers become entries in `docs/design/decisions.md` (tagged "Valley") and the doc's status moves to `accepted`.
+5. **Decide.** The lead folds in what clearly follows the goals and filters. Anything that trades against a filter, changes a design Misa has seen, or is a question of game feel goes to the question ledger [`questions.md`](questions.md) and reaches Misa in a question round ([`deciding.md`](deciding.md), the `valley-round` skill). Misa's answers become entries in `docs/design/decisions.md` (tagged "Valley") and the doc's status moves to `accepted`.
 6. **Prototype.** When a system's rules are accepted, show its feel in the valley prototype (`apps/activity/src/proto/valley/`) on fixture data, and shoot it (`node apps/activity/scripts/proto-shoot.mjs`).
 7. **Log.** Every session ends with an entry in `log.md`: what was done, what was decided, what is next. This is what makes context compression safe.
 
@@ -34,7 +34,7 @@ For economy and systems docs, add a sixth, **Pia, the systems designer**: has sh
 ## Keeping track
 
 - `log.md`: one dated entry per session (newest last).
-- `open-questions.md`: questions waiting for Misa, removed once answered (the answer goes to `decisions.md`).
+- `questions.md`: the question ledger: waiting on Misa, queued, answered (with his words), withdrawn. The answer also goes to `decisions.md`.
 - `systems/*.md`: each with a status line at the top.
 - `reviews/`: one file per panel run.
 - The roadmap's "State" column and "Order inside phase 1".

@@ -26,6 +26,20 @@ def md(src, drop_h1=True):
         ln = lines[i]
         if not ln.strip():
             para(buf); buf = []; i += 1; continue
+        if ln.startswith('```'):
+            para(buf); buf = []
+            i += 1; code = []
+            while i < len(lines) and not lines[i].startswith('```'):
+                code.append(lines[i]); i += 1
+            out.append('<pre><code>' + html.escape('\n'.join(code)) + '</code></pre>')
+            i += 1; continue
+        if ln.startswith('>'):
+            para(buf); buf = []
+            quote = []
+            while i < len(lines) and lines[i].startswith('>'):
+                quote.append(lines[i].lstrip('>').strip()); i += 1
+            out.append('<blockquote>' + inline(' '.join(quote)) + '</blockquote>')
+            continue
         m = re.match(r'^(#{1,6})\s+(.*)', ln)
         if m:
             para(buf); buf = []
@@ -86,13 +100,28 @@ def status_of(src):
 
 SYSTEMS = [('valley.md','The valley'),('posts.md','Job posts'),('bonfire.md','The bonfire'),('return.md','The return moment'),('scouts.md','Scouts'),('forge.md','The Forge loop'),('school.md','The School'),('commons.md','The commons'),('defence.md','The raid as defence'),('later.md','Later')]
 
+def section(src, title):
+    m = re.search(r'^## ' + re.escape(title) + r'\n(.*?)(?=^## |\Z)', src, re.M | re.S)
+    return m.group(1) if m else ''
+
+qs = read('questions.md')
+waiting = re.findall(r'^### Q(\d+)\. (.*)', section(qs, 'Waiting on Misa'), re.M)
+answered = re.findall(r'^### Q(\d+)\.', section(qs, 'Answered'), re.M)
+rounds = sorted(set(re.findall(r'asked, round (\d+)', section(qs, 'Waiting on Misa'))))
+if waiting:
+    wait = f'<a href="#questions">Round {", ".join(rounds)}: ' + ', '.join('Q' + n for n, _ in waiting) + '</a>'
+else:
+    wait = 'Nothing right now'
+cur = re.search(r'^\| (\S+)\s*\| \*\*([^*]+)\*\*.*\*\*current\*\*', read('roadmap.md'), re.M)
+phase = f'{cur.group(1)} of 6: {html.escape(cur.group(2).rstrip("."))}' if cur else 'see the roadmap'
+decided = f'{len(answered)} answer{"s" if len(answered) != 1 else ""} recorded'
+
 sections = []
 readme = read('README.md')
 sections.append(('overview','Overview', md(readme)))
+sections.append(('questions','Questions', md(qs)))
 sections.append(('goals','Goals', md(read('goals.md'))))
 sections.append(('roadmap','Roadmap', md(read('roadmap.md'))))
-oq = read('open-questions.md')
-sections.append(('questions','Questions', md(oq)))
 sys_html = []
 for f, name in SYSTEMS:
     s = read('systems/'+f)
@@ -101,12 +130,13 @@ for f, name in SYSTEMS:
     sys_html.append(f'<details class="sys" id="sys-{f[:-3]}"><summary><span class="sname">{inline(first)}</span><span class="pill">{html.escape(st)}</span></summary><div class="sbody">{md(s)}</div></details>')
 sections.append(('systems','Systems', '<p class="lead">Tap a system to open it. Rules are numbered (V-POST-1…) so reviews and the simulator can point at them.</p>' + ''.join(sys_html)))
 sections.append(('economy','Economy lab', md(read('economy/model.md'))))
-sections.append(('process','Process', md(read('process.md'))))
+sections.append(('process','Process', md(read('deciding.md')) + md(read('process.md'))))
 sections.append(('log','Log', md(read('log.md'))))
 
-nq = len(re.findall(r'^\d+\.', oq, re.M))
 nav = ''.join(f'<a href="#{sid}">{name}</a>' for sid, name, _ in sections)
 body = ''.join(f'<section id="{sid}"><h2>{name}</h2>{content}</section>' for sid, name, content in sections)
 tpl = open(os.path.join(os.path.dirname(__file__), 'shell.html')).read()
-open(OUT, 'w').write(tpl.replace('{{NAV}}', nav).replace('{{BODY}}', body).replace('{{NQ}}', str(nq)))
-print('ok', len(body))
+for k, v in {'NAV': nav, 'BODY': body, 'WAIT': wait, 'PHASE': phase, 'DECIDED': decided}.items():
+    tpl = tpl.replace('{{' + k + '}}', v)
+open(OUT, 'w').write(tpl)
+print('ok', len(body), '| waiting:', [n for n, _ in waiting], '| phase:', phase, '|', decided)

@@ -42,7 +42,7 @@ The valley's places belong to the whole server. Each place has a **server level*
 - What share of a player's resources goes to the commons if they give "when it feels right", and does it starve their own Forge (T-4)?
 - How often does a keystone turn up per server, so it feels special but arrives within a few weeks?
 
-## Open questions (also in `../open-questions.md`)
+## Open questions (also in `../questions.md`)
 
 - Weekly soft share (gifts past it count less) or a hard cap?
 - Should places have a max level, after which projects become cosmetic (the endgame link to `later.md`)?

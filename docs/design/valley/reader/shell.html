@@ -29,6 +29,8 @@
     scroll-padding-top: calc(64px + env(safe-area-inset-top, 0px));
   }
   body {
+    margin: 0;
+    overflow-wrap: break-word;
     background: var(--ground);
     color: var(--text);
     font-family: var(--body);
@@ -200,6 +202,25 @@
   a {
     color: var(--gold);
   }
+  pre {
+    background: var(--ink);
+    padding: 10px 12px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+  }
+  blockquote {
+    margin: 10px 0;
+    padding: 6px 12px;
+    border-left: 4px solid var(--gold);
+    background: var(--panel);
+    color: var(--text);
+  }
   .lead {
     color: var(--muted);
   }
@@ -335,15 +356,9 @@
       <code>docs/design/valley/</code>.
     </p>
     <div class="glance">
-      <div><b>Phase</b><span>1 of 6: designing the base systems on paper</span></div>
-      <div>
-        <b>Waiting on you</b
-        ><span><a href="#questions">{{NQ}} open questions</a>, first: are the goals right?</span>
-      </div>
-      <div>
-        <b>Next</b
-        ><span>Job posts and the bonfire in full, then the panel, then the economy lab</span>
-      </div>
+      <div><b>Phase</b><span>{{PHASE}}</span></div>
+      <div><b>Waiting on you</b><span>{{WAIT}}</span></div>
+      <div><b>Decided</b><span>{{DECIDED}}</span></div>
     </div>
   </header>
   <nav class="tabs" id="tabs" aria-label="Sections">{{NAV}}</nav>

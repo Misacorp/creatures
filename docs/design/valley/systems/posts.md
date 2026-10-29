@@ -29,7 +29,7 @@ A creature is given a post somewhere in the valley and works there on its own un
 | Lounger                            | House          | rest XP (today's lounge)                                                 |                                   |
 | Later: gardener, angler, stargazer | see `later.md` | cosmetics, rare finds, forecasts                                         |                                   |
 
-## Open questions (also in `../open-questions.md`)
+## Open questions (also in `../questions.md`)
 
 - Do posts replace timed trips and Workshop jobs entirely, or do timed "big" tasks stay alongside as special events?
 - V-POST-7: does a raid or dungeon pick pull a creature off its post?

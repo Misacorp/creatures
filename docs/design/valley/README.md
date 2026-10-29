@@ -24,7 +24,7 @@ Numbers live in data, never in prose. A doc may give an example number, marked a
 1. This page, then [`log.md`](log.md) (the newest entries: where we are and what is next).
 2. [`goals.md`](goals.md): what we are trying to achieve, and the filters every idea must pass.
 3. [`roadmap.md`](roadmap.md): the phases, their gates, and the current phase.
-4. [`open-questions.md`](open-questions.md): what waits for Misa.
+4. [`questions.md`](questions.md): the question ledger (what waits for Misa, what is queued, what he answered), and [`deciding.md`](deciding.md): how we decide with him, in rounds of one to three questions.
 5. The system docs your task touches, in [`systems/`](systems/).
 6. [`process.md`](process.md): how we iterate (agents, the reviewer panel, the simulations).
 7. Research: [`docs/research/idle-job-posts.md`](../../research/idle-job-posts.md), [`collectors-idle-and-rewards.md`](../../research/collectors-idle-and-rewards.md), [`idle-coop-raids.md`](../../research/idle-coop-raids.md).
