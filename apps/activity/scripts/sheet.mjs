@@ -20,21 +20,30 @@ import { pathToFileURL } from 'node:url';
  * Draws `shots` ({ label, file }) side by side, each under its label, with an optional title, and
  * saves the sheet to `out`. Labels are set as text, never as markup.
  */
-export async function drawSheet(browser, shots, out, { title = null, numbered = false } = {}) {
+export async function drawSheet(
+  browser,
+  shots,
+  out,
+  { title = null, numbered = false, perRow = 0, scale = 1 } = {},
+) {
   const page = await browser.newPage({ deviceScaleFactor: 1 });
   await page.setContent(
     '<body style="margin:0;padding:24px;background:#17132b;width:max-content;font:bold 28px sans-serif;color:#ffd25a"></body>',
   );
   await page.evaluate(
-    ({ title, cells }) => {
+    ({ title, cells, perRow, scale }) => {
       if (title !== null) {
         const h = document.createElement('h1');
         h.textContent = title;
         h.style.cssText = 'margin:0 0 20px;font-size:32px;color:#f4ecd8';
         document.body.append(h);
       }
+      // `perRow` 0: one row of all the shots; else a grid that many wide. `scale` shrinks each shot.
       const row = document.createElement('div');
-      row.style.cssText = 'display:flex;gap:24px;align-items:flex-start';
+      row.style.cssText =
+        perRow === 0
+          ? 'display:flex;gap:24px;align-items:flex-start'
+          : `display:grid;gap:24px;align-items:start;grid-template-columns:repeat(${String(perRow)},max-content)`;
       for (const cell of cells) {
         const figure = document.createElement('figure');
         figure.style.margin = '0';
@@ -43,6 +52,11 @@ export async function drawSheet(browser, shots, out, { title = null, numbered = 
         caption.style.marginBottom = '12px';
         const img = document.createElement('img');
         img.src = cell.src;
+        if (scale !== 1) {
+          img.addEventListener('load', () => {
+            img.style.width = `${String(Math.round(img.naturalWidth * scale))}px`;
+          });
+        }
         figure.append(caption, img);
         row.append(figure);
       }
@@ -50,13 +64,15 @@ export async function drawSheet(browser, shots, out, { title = null, numbered = 
     },
     {
       title,
+      perRow,
+      scale,
       cells: shots.map((s, i) => ({
         label: numbered ? `${String(i + 1)}. ${s.label}` : s.label,
         src: `data:image/png;base64,${readFileSync(s.file).toString('base64')}`,
       })),
     },
   );
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(scale === 1 ? 200 : 500);
   await page.screenshot({ path: out, fullPage: true });
   await page.close();
 }

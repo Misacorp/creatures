@@ -91,3 +91,13 @@ A full run (all kinds) checks about 170 popovers, 145 drawers and 9 sheets in ab
 ## Game screens and looks (2026-10-28)
 
 `GameScreens` draws every main screen in the game's real frame (`src/AppFrame.tsx`, shared with `Game`) on fixture data, under a look (`src/looks.ts`, `data-look` on the root). `workbench.html?frame=1&bare=1#c=GameScreens` renders it straight into the page (no stage) so media queries and fixed bars behave as in the game. `node scripts/screens.mjs --out <dir> [--looks ..] [--screens ..] [--sizes phone,desktop,hd] [--room every,home]` shoots all of it and writes per-look contact sheets and per-screen comparisons. `--room` (the living room's place on a wide window, `ROOM_MODES` in `looks.ts`) with several values puts each mode in its own folder (`<out>/<look>-room-home/...`); with one value the layout is unchanged. The page has a `room` control too. The Raid tab is composed by hand (timeline, boss card, roster) because the real `Raid` loads from the server.
+
+## Prototype page (2026-10-29)
+
+`apps/activity/prototype.html` (`src/proto/`) holds the clickable concepts of the "a game, not a web form" brief. It is staging-only like the workbench and the combat lab: a build input only when `__DEV_TOOLS_BUILD__` is true (`vite.config.ts`), marker `PROTOTYPE_MARKER_3e8a`, checked by `src/dev-build.test.ts`, linked from the staging DEV panel ("Prototypes", `src/dev/prototype-link.ts`). It makes no API calls and shares nothing with the game but the stylesheet (fonts, tokens).
+
+- **Address:** `prototype.html#<proto>?step=<n>` (`valley` or `party`, step 1 to 7; `&bare=1` hides the small tour strip). No hash: a chooser with one button per prototype.
+- **Registry:** each prototype calls `registerProto({ id, title, steps, render({ step, setStep }) })` (`registry.ts`) in `src/proto/<id>/index.tsx`; `main.tsx` imports both. Its own CSS lives in its folder.
+- **Tour:** `tour.ts` has the seven steps (arrive, claim-trip, send-trip, workshop, raid, evolve, peek).
+- **World:** `world.ts` is one Saturday-morning state built from existing samples and fixtures, with pure helpers (`claimTrip`, `sendTrip`, `claimJob`, `startJob`, `placeRaid`, `evolve`), questions (`needs`, `freeCreatures`, ...), the canned choices `TOUR` and `worldAtStep(n)`. No network, no randomness.
+- **Shooter:** `node scripts/proto-shoot.mjs --out <dir> [--protos valley,party] [--sizes phone,desktop]` shoots every step at 390x844 (Discord safe areas) and 1440x900 into `<out>/<proto>/<nn>-<step>-<size>.png` and writes numbered flow sheets `<out>/<proto>-phone.png` and `<out>/<proto>-desktop.png`. About a minute for the full run.

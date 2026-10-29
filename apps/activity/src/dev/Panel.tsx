@@ -27,6 +27,7 @@ import type { CreatureChoice, ToolSpec } from './forms';
 import { CLOCK_SPECS, GOODS_SPECS, RESET_ACCOUNT_SPEC, orderedSections } from './specs';
 import { ToolForm } from './ToolForm';
 import { COMBAT_LAB_URL } from './combat-lab-link';
+import { PROTOTYPE_URL } from './prototype-link';
 import { WORKBENCH_URL } from './workbench-link';
 import { Accordion } from '../ui/Accordion';
 import { DataTable } from '../ui/DataTable';
@@ -176,6 +177,18 @@ function CombatLabLink({ onStatus }: { onStatus: (status: Status) => void }): JS
       name="Combat lab"
       url={COMBAT_LAB_URL}
       blurb="Set up a combat v2 prototype fight, run it and read what happened step by step. It opens in your browser, no sign-in."
+      onStatus={onStatus}
+    />
+  );
+}
+
+/** The link to the clickable concept prototypes (the valley, the party). */
+function PrototypeLink({ onStatus }: { onStatus: (status: Status) => void }): JSX.Element {
+  return (
+    <PageLink
+      name="Prototypes"
+      url={PROTOTYPE_URL}
+      blurb="Two clickable concepts for the game's next look: the valley as the menu, and your creatures running the show. Sample data only. It opens in your browser, no sign-in."
       onStatus={onStatus}
     />
   );
@@ -361,6 +374,13 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
               onToggle={toggle('combat-lab')}
             >
               <CombatLabLink onStatus={setStatus} />
+            </Section>
+            <Section
+              title="Prototypes"
+              open={sectionOpen('prototypes', false)}
+              onToggle={toggle('prototypes')}
+            >
+              <PrototypeLink onStatus={setStatus} />
             </Section>
             {orderedSections(tab).map((section) => (
               <Section

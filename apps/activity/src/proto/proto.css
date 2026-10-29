@@ -1,0 +1,85 @@
+/*
+  The prototype page's own chrome (staging only, `src/proto/`): the chooser and the tour strip. It reuses
+  the game's stylesheet (fonts, tokens); each prototype keeps its own CSS in its own folder. Classes are
+  prefixed `proto-`. Imported by the page's entry alone, so it never reaches the game or a production build.
+*/
+.proto-chooser {
+  display: grid;
+  gap: 1rem;
+  width: min(32rem, 100% - 2rem);
+  margin: 0 auto;
+  padding: calc(var(--discord-safe-area-inset-top, 0px) + 2rem) 0 2rem;
+}
+
+.proto-chooser h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 2.5rem;
+  font-weight: 400;
+  color: var(--gold);
+}
+
+.proto-chooser p {
+  margin: 0;
+  color: var(--haze);
+}
+
+.proto-chooser-buttons {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.proto-chooser-button {
+  display: block;
+  padding: 1.5rem 1rem;
+  background: var(--dusk-2);
+  box-shadow:
+    inset 0 var(--px) 0 var(--bevel-hi),
+    inset 0 calc(var(--px) * -1) 0 var(--bevel-lo),
+    0 0 0 var(--px) var(--ink);
+  color: var(--bone);
+  font-family: var(--display);
+  font-size: 1.75rem;
+  text-align: center;
+  text-decoration: none;
+}
+
+.proto-chooser-button:hover,
+.proto-chooser-button:focus-visible {
+  color: var(--gold);
+}
+
+/* The tour strip: a small dev control in the bottom-left corner, over the prototype. */
+.proto-strip {
+  position: fixed;
+  z-index: 1000;
+  left: 0.25rem;
+  bottom: calc(var(--discord-safe-area-inset-bottom, 0px) + 0.25rem);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--ink);
+  color: var(--bone);
+  font-size: var(--fs-small);
+  box-shadow: 0 0 0 var(--px) var(--line);
+}
+
+.proto-strip button {
+  min-height: 2rem;
+  min-width: 2rem;
+  padding: 0 0.5rem;
+  background: var(--dusk-2);
+  border: 0;
+  border-radius: 0;
+  color: var(--bone);
+  font: inherit;
+}
+
+.proto-strip button:disabled {
+  opacity: 0.4;
+}
+
+.proto-strip-step {
+  padding: 0 0.25rem;
+}
