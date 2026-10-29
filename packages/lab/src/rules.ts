@@ -34,9 +34,9 @@ export const LAB_RULES = {
   /** Opportunist: a mark with at least this many counts. */
   opportunistFromStacks: 2,
   /** Mired, the Mire debuff: per stack, the boss deals less damage and dodges less. */
-  miredPerStackBp: 300,
+  miredPerStackBp: 150,
   /** With Clinging on a living creature each stack counts for this much instead (reworked 2026-10-28). */
-  miredClingingStackBp: 450,
+  miredClingingStackBp: 225,
   miredMaxStacks: 5,
   /** Mired fades: one stack at the end of every second round; with Clinging on a living creature, never (panel 3, reworked 2026-10-28). */
   miredFadeEvery: 2,

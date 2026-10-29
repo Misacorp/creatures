@@ -58,6 +58,8 @@ export interface KnackFx {
   readonly bakedShell?: boolean;
   /** Hits by creatures beside it ignore this share of the boss's armour. */
   readonly pierceBesideBp?: number;
+  /** Its own hits ignore this share of the boss's armour. */
+  readonly pierceOwnBp?: number;
   /** Support verbs replaced or reshaped at round start. */
   readonly support?:
     | 'wideWarmth'
@@ -391,6 +393,16 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       intent: 'Answers armoured bosses for plain hitters.',
       fx: { pierceBesideBp: 5_000 },
     }),
+    // Pyrelynx (Ember Payoff): the second Pierce Knack, for the Payoff's own hits (panel 5: Thornmother's bark).
+    K({
+      id: 'gnaw-through',
+      name: 'Gnaw Through',
+      family: 'Pierce',
+      text: "Its own hits ignore a third of the boss's armour.",
+      intent:
+        "Pierce for a Payoff of a common species: its own plain and reaction hits get past thick bark (Thornmother, Tar Leech), where Tunnel Through helps the creatures beside a Support. Only the Payoff's hits, so it is a choice for one creature, not a row.",
+      fx: { pierceOwnBp: 3_333 },
+    }),
     // Kilnmole (Ember Guard, second branch)
     K({
       id: 'draw-fire',
@@ -480,10 +492,10 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'guards-shadow',
       name: "Guard's Shadow",
       family: 'Partner',
-      text: '+25% on its hits while a living Guard stands beside it.',
+      text: '+15% on its hits while a living Guard stands beside it. Armour -8.',
       intent:
         "A Payoff that wants a Guard partner, ideally another player's in the raid. The same name as the gear line with the same effect.",
-      fx: { besideGuardBp: 2_500 },
+      fx: { besideGuardBp: 1_500, armourBonus: -8 },
     }),
     K({
       id: 'crown-of-embers',
@@ -604,7 +616,7 @@ export const OWN_KNACKS: Readonly<Record<string, readonly string[]>> = {
   voltaro: ['zigzag'],
   ohmouse: ['catch-the-bolts', 'lightning-ears'],
   cindle: ['detonate', 'leave-a-trail'],
-  pyrelynx: ['guards-shadow'],
+  pyrelynx: ['guards-shadow', 'gnaw-through'],
   wickat: ['lead-the-way', 'steady-mark', 'double-mark'],
   mistnewt: ['wide-reach', 'hide-in-mist'],
   fogwyrm: ['thick-fog'],

@@ -72,7 +72,7 @@ export const FOE_SPECS: readonly FoeSpec[] = [
     plain: { pattern: { anchor: 'random', shape: 'single' }, powerBp: 4_500, hits: 4 },
     moves: [],
     cards: [],
-    asks: 'Many small splashes: does armour or dodge hold?',
+    asks: 'Many small splashes on random creatures: dodge turns them away, armour only wears them down.',
   },
   {
     id: 'drift-wisp',
@@ -109,7 +109,7 @@ export const FOE_SPECS: readonly FoeSpec[] = [
     plain: { pattern: { anchor: 'front', shape: 'line3' }, powerBp: 8_000 },
     moves: [],
     cards: ['fizzle'],
-    asks: 'Ash settles on a mark made by a reaction, so it cannot be cashed at once.',
+    asks: 'Ash settles on a mark made by a reaction, so it cannot be cashed at once, and the fight is long: a Guard that builds Heat doubles a reaction every few rounds.',
   },
   {
     id: 'bramble-hound',
@@ -139,7 +139,7 @@ export const FOE_SPECS: readonly FoeSpec[] = [
     moves: [['zap-dive', 'Zap Dive', 3, 0, 'strongest', 'chain', 11_000, { n: 2, decayBp: 6_000 }]],
     cards: ['stone-skin'],
     escalation: { name: 'Static Charge', feed: 'crits', per: 1, cap: 2, grow: { atkBp: 2_500 } },
-    asks: 'No hit deals more than a cap, it dives at the hardest hitter, and every crit on it charges it.',
+    asks: 'No hit deals more than a cap, it dives at the hardest hitter, and every crit on it charges it. Dodge keeps the team standing while it hits often.',
   },
   {
     id: 'flicker-swarm',
@@ -147,7 +147,7 @@ export const FOE_SPECS: readonly FoeSpec[] = [
     plain: { pattern: { anchor: 'random', shape: 'scatter', n: 2 }, powerBp: 5_000 },
     moves: [['buzz-cloud', 'Buzz Cloud', 2, 0, 'front', 'all', 5_000]],
     cards: [],
-    asks: 'Sparks everywhere: area hits on all three, every round.',
+    asks: 'Sparks everywhere: area hits on all three, every round. A row ward cuts every one of them.',
   },
   {
     id: 'bog-toad',
@@ -155,7 +155,7 @@ export const FOE_SPECS: readonly FoeSpec[] = [
     plain: { pattern: front, powerBp: 8_000 },
     moves: [['mud-spit', 'Mud Spit', 2, 0, 'random', 'scatter', 9_000, { n: 1 }]],
     cards: ['shake-it-off'],
-    asks: 'It washes every debuff off itself every third round.',
+    asks: 'It washes every debuff off itself every third round: a Mired that comes back every round holds it down.',
   },
   {
     id: 'tar-leech',
@@ -163,7 +163,7 @@ export const FOE_SPECS: readonly FoeSpec[] = [
     plain: { pattern: front, powerBp: 7_000 },
     moves: [['tar-cling', 'Tar Cling', 3, 0, 'front', 'line3', 13_000]],
     cards: ['wither'],
-    asks: 'Black, thick and draining: healing is halved, and little gets through its armour.',
+    asks: 'Black, thick and draining: healing is halved and little gets through its armour, so its heavy hits are dodged, not healed.',
   },
   // Floor bosses.
   {
@@ -188,7 +188,7 @@ export const FOE_SPECS: readonly FoeSpec[] = [
     signature: ['slag-spill', 'Slag Spill', 4, 0, 'strongest', 'line3', 24_000, { windUp: true }],
     cards: ['reflective-hide'],
     escalation: { name: 'Molten Shell', feed: 'reactions', per: 2, cap: 2, grow: { armour: 8 } },
-    asks: 'The first reaction after each of its turns burns the one who plays it, and every reaction heats it.',
+    asks: 'The first reaction after each of its turns burns the one who plays it, and every reaction heats it. A Mired that comes back every round holds its Molten Shell down.',
   },
   {
     id: 'bramble-matron',
@@ -209,7 +209,7 @@ export const FOE_SPECS: readonly FoeSpec[] = [
       { n: 1, windUp: true },
     ],
     cards: ['wither'],
-    asks: 'She silences the ends and drains healing; thorns land on two random creatures.',
+    asks: 'She silences the ends and drains healing; thorns land on two random creatures. A Guard that marks as it takes a hit does the Setter\u2019s work.',
   },
   {
     id: 'coil-baron',
@@ -225,7 +225,7 @@ export const FOE_SPECS: readonly FoeSpec[] = [
       cap: 3,
       grow: { atkBp: 1_500, jumps: 1 },
     },
-    asks: 'It always goes for the strongest, and the charge builds with every round: a race.',
+    asks: 'It always goes for the strongest, and the charge builds with every round: a race, where Heat doubles the reactions.',
   },
   {
     id: 'fen-lurker',
@@ -234,7 +234,7 @@ export const FOE_SPECS: readonly FoeSpec[] = [
     moves: [['sink-down', 'Sink Down', 3, 0, 'front', 'all', 6_000]],
     signature: ['fen-tug', 'Fen Tug', 4, 0, 'front', 'all', 11_000, { windUp: true }],
     cards: ['shake-it-off'],
-    asks: 'A heavy sweep of the line, and it washes off every debuff every third round.',
+    asks: 'A heavy sweep of the line announced at round start, and it washes off every debuff every third round. Night Watch takes the first Wind-up hit.',
   },
 ];
 

@@ -24,7 +24,7 @@ export interface BossAnswer {
   readonly talent?: string;
   /**
    * What makes it the tool: Knack ids, and talents as `talent:<id>`. Taking these off the line (`withoutTool`) must cost it
-   * (tested for every answer, panel 5: it must cost at least `TOOL_DROP_MIN` points of weekend win rate; the first answer of each boss must cost 40).
+   * (tested for every answer, panel 5: it must cost at least `TOOL_SHARE_MIN` of the boss's HP removed; the first answer of each boss must also cost `TOOL_DROP_MIN` points of kill rate).
    */
   readonly core?: readonly string[];
 }
@@ -54,6 +54,15 @@ export function answerProblems(line: readonly Pick[]): string[] {
   }
   return out;
 }
+
+/**
+ * The species a new player can have (Misa, 2026-10-29, panel 5 finding 10): the common ones, and Tempestray, the classic party's
+ * Payoff. Each boss's first answer is built from these only, so no rare or epic form is required to answer a boss.
+ */
+export const COMMON_OR_CLASSIC_FORMS: readonly string[] = [
+  ...content.creatures.filter((c) => c.rarity === 'common').map((c) => c.id),
+  'tempestray',
+];
 
 /** The most copies of one form in a line. */
 export function mostCopies(line: readonly Pick[]): number {
@@ -90,11 +99,15 @@ export const arenaSize = (bossId: string): number =>
   (RAID_SPECS.find((s) => s.id === bossId)?.rows ?? 0) * RAID_COLS;
 
 /**
- * The answers, found by the lab's team search with the tool required (`scratch` searches over legal rosters: a creature's
- * Knack from its form, its talents from its line's pool and its role), then written down. Each boss's first answer is the tool
- * it really asks for, and it uses at most two copies of any form (a roster a table of four players can bring). Tested: every line is
- * legal, beats the classic party, the first answer loses much of its win rate without its `core`, and every answer loses at least
- * 20 points (the answers that do not yet are listed in the test).
+ * The answers, found by the lab's team search (panel 5, content and tuning): the score is a team's result with random legal
+ * talents (a talent is about a fifth of a result, so it must not decide the weekend) minus a share of what the same line does
+ * without its tool, over a whole weekend and its share of the boss's HP removed (the primary measure, Misa 2026-10-29), with the tool
+ * required, at most two copies of a form (a roster four players can bring) and, for the first answer of each boss, common
+ * species only (`COMMON_OR_CLASSIC_FORMS`: no rare evolved form is needed). The written talents were then chosen so that the line
+ * with its tool does well and the same line without it does badly (they do not stand in for the tool). Each boss's first answer is the
+ * tool it really asks for. Tested: every line is legal, beats the classic party, removes nearly all of the HP, every answer
+ * removes at least `TOOL_SHARE_MIN` more of the boss's HP with its tool and the first loses `TOOL_DROP_MIN` points of kill rate
+ * without it, and the lines are checked for gates (no Knack family is a must on three bosses, `GATE_BOSSES`).
  */
 export const BOSS_ANSWERS: Readonly<Record<string, readonly BossAnswer[]>> = {
   'tidal-colossus': [
@@ -102,42 +115,42 @@ export const BOSS_ANSWERS: Readonly<Record<string, readonly BossAnswer[]>> = {
       label: 'Wide Reach Guards in every column cover the whole sweep',
       tool: 'Reach',
       core: ['wide-reach'],
-      line: 'voltaro/zoom+deep-ink bogwarden/wide-reach+clinging mudlump/wide-reach+long-shadow gaiadrake/leave-a-trail+finisher | tempestray/leave-a-trail tidewing/double-mark+owners-mark coralynx/detonate+finisher fogwyrm/wide-reach+flank-guard | bogwarden/wide-reach+flank-guard tempestray/none+catch-breath croakmire/squelch-song+heavy-hand geyserpup/puddle-maker+finisher',
+      line: 'kilnmole/keep-the-heat-in+brace bogwarden/wide-reach+long-shadow drizzlewt/clear-the-air+bright-boost tempestray/none+edge-walker | tidewing/lead-the-way+owners-mark fogwyrm/wide-reach+catch-breath voltaro/none+odd-one-out drizzlewt/curl-up+bright-boost | fogwyrm/wide-reach+unbothered sunfawn/curl-up+brace tempestray/leave-a-trail+slow-burn tidewing/double-mark+owners-mark',
     },
     {
-      label: 'Living Shelter and Keep the Heat In on every row blunt the waves',
+      label: 'Keep the Heat In and Living Shelter on every row blunt the waves',
       tool: 'Row Ward',
       core: ['living-shelter', 'keep-the-heat-in'],
-      line: 'bogwarden/mud-wall+clinging gaiadrake/carry-them+catch-breath kilnmole/keep-the-heat-in+brace gaiadrake/leave-a-trail+stubborn | ancientshell/living-shelter+finisher thornbuck/primed-by-pain+flank-guard ancientshell/living-shelter+finisher tempestray/detonate | lanternfin/sunbeam+overheal-spill fogwyrm/thick-fog+flank-guard lanternfin/none+triage tidewing/circle-round+finisher',
+      line: 'hearthshell/keep-the-heat-in+brace drizzlewt/clear-the-air+catch-breath halcyray/clear-the-air+bright-boost thornbuck/primed-by-pain+flank-guard | gaiadrake/detonate+catch-breath hearthshell/keep-the-heat-in+catch-breath ancientshell/living-shelter+finisher thornbuck/night-watch+flank-guard | halcyray/none+edge-walker gaiadrake/carry-them+finisher ancientshell/living-shelter+finisher bogwarden/wide-reach+flank-guard',
     },
   ],
   'cinder-wyrm': [
     {
       label:
-        'Squelch Song keeps Mired on the Wyrm, so Forge Heat cannot build and each hit lands softer',
+        'Squelch Song keeps Mired on the Wyrm, so Forge Heat builds slowly and each hit lands softer',
       tool: 'Debuff',
       core: ['squelch-song'],
-      line: 'geyserpup/none+finisher drizzlewt/curl-up+bright-boost bogwarden/wide-reach+long-shadow lanternfin/clear-the-air+odd-one-out | kilnmole/none+shoulder-charge tempestray/none+momentum magmole/wide-warmth+hardy fogwyrm/wide-reach+flank-guard | aurorix/starlight+rally-cry croakmire/squelch-song+catch-breath drizzlewt/drizzle+bright-boost aurorix/starlight+unbothered | bogwarden/wide-reach+flank-guard lanternfin/none+triage halcyray/none+bright-boost croakmire/squelch-song+clinging',
+      line: 'magmole/none fogwyrm/thick-fog ohmouse/none geyserpup/none+finisher | tidewing/circle-round+finisher magmole/tunnel-through+bright-boost fogwyrm/wide-reach+flank-guard drizzlewt/none+catch-breath | croakmire/squelch-song+clinging bogwarden/draw-fire+brace drizzlewt/none+bright-boost croakmire/squelch-song | splashet/none+hardy pyrelynx/gnaw-through bogwarden/draw-fire squelch/squelch-song',
     },
     {
       label: 'Circle Round and Clear the Air heal the Payoffs its reflected hits land on',
       tool: 'Sustain',
-      core: ['clear-the-air', 'circle-round'],
-      line: 'drizzlewt/clear-the-air+overheal-spill bogwarden/wide-reach+long-shadow lanternfin/clear-the-air+odd-one-out magmole/wide-warmth+kindred-boost | geyserpup/leave-a-trail+momentum fogwyrm/hide-in-mist+catch-breath lanternfin/none+overheal-spill fogwyrm/thick-fog+unbothered | croakmire/squelch-song+clinging coralynx/territorial+finisher sunfawn/curl-up+rally-cry bogwarden/draw-fire+flank-guard | tempestray/leave-a-trail+edge-walker kilnmole/draw-fire+odd-one-out drizzlewt/curl-up+catch-breath croakmire/squelch-song+clinging',
+      core: ['circle-round', 'clear-the-air'],
+      line: 'bogwarden/draw-fire+hardy tempestray/twin-strike+slow-burn hearthshell/draw-fire+shoulder-charge geyserpup/none+finisher | croakmire/squelch-song+clinging coralynx/leave-a-trail+finisher fogwyrm/hide-in-mist+flank-guard tempestray/twin-strike+slow-burn | geyserpup/puddle-maker+first-pounce ohmouse/none+shoulder-to-shoulder voltaro/zigzag+shoulder-to-shoulder sunfawn/sunbeam+hardy | fogwyrm/wide-reach+flank-guard croakmire/squelch-song+heavy-hand tidewing/circle-round+owners-mark tidewing/circle-round+owners-mark',
     },
   ],
   thornmother: [
     {
-      label: 'Tunnel Through gets hits past her thick bark',
+      label: 'Tunnel Through and Gnaw Through get hits past her thick bark',
       tool: 'Pierce',
-      core: ['tunnel-through'],
-      line: 'voltaro/zigzag bogwarden/mud-wall+clinging sunfawn/curl-up+kindred-boost bloomback/leave-a-trail+hardy | ancientshell/none+brace magmole/tunnel-through+bright-boost magmole/tunnel-through+bright-boost thornbuck/primed-by-pain+flank-guard | pyrelynx/none+first-pounce mudlump/wide-reach+clinging pyrelynx/detonate+first-pounce solmane/steady-mark+catch-breath',
+      core: ['tunnel-through', 'gnaw-through'],
+      line: 'kilnmole/keep-the-heat-in+brace magmole/tunnel-through+kindred-boost magmole/tunnel-through+hardy wickat/none+first-pounce | wickat/lead-the-way+first-pounce bogwarden/draw-fire+long-shadow sunfawn/none+triage sunfawn/ready-the-mark+shoulder-to-shoulder | fogwyrm/none+flank-guard pyrelynx/gnaw-through+first-pounce ohmouse/none pyrelynx/gnaw-through+rally-cry',
     },
     {
-      label: 'Lantern Glow keeps the creatures beside it from falling quiet at the row ends',
-      tool: 'Ward',
-      core: ['lantern-glow'],
-      line: 'bogwarden/mud-wall+clinging gaiadrake/none+opportunist magmole/tunnel-through+bright-boost fogwyrm/thick-fog+catch-breath | mudlump/wide-reach+flank-guard pyrelynx/none+shoulder-to-shoulder ashmole/none+kindred-boost bloomback/detonate+stubborn | voltaro/double-mark+shoulder-to-shoulder ohmouse/lightning-ears+flank-guard lanternfin/lantern-glow+odd-one-out gaiadrake/leave-a-trail+finisher',
+      label: 'Big reactions (Detonate, All at Once) go through the bark that stops plain hits',
+      tool: 'Reactions',
+      core: ['detonate', 'all-at-once'],
+      line: 'thornbuck/night-watch+hardy solmane/lead-the-way+catch-breath ohmouse/lightning-ears+shoulder-to-shoulder voltaro/double-mark+deep-ink | kilnmole/draw-fire+hardy solmane/crown-of-embers bloomback/all-at-once+finisher kilnmole/draw-fire+odd-one-out | ohmouse/lightning-ears geyserpup/all-at-once+finisher voltaro/none hearthshell/none',
     },
   ],
   'storm-sovereign': [
@@ -145,27 +158,27 @@ export const BOSS_ANSWERS: Readonly<Record<string, readonly BossAnswer[]>> = {
       label: 'Draw Fire pulls the Rod onto a Guard that can take it',
       tool: 'Taunt',
       core: ['draw-fire', 'zigzag'],
-      line: 'gaiadrake/detonate+opportunist hearthshell/draw-fire+stubborn hearthshell/hearth+stubborn bloomback/leave-a-trail+stubborn | mudlump/mud-wall+clinging zipmouse/double-mark+shoulder-to-shoulder aurorix/gather-calm+bright-boost bloomback/detonate+opportunist',
+      line: 'bogwarden/draw-fire+clinging sunfawn/curl-up+brace tidewing/lead-the-way+first-pounce croakmire/squelch-song+heavy-hand | tempestray/twin-strike+edge-walker sunfawn/curl-up+kindred-boost thornbuck/wide-reach+flank-guard tempestray/none+catch-breath',
     },
     {
       label: 'Night Watch takes the Judgement Bolt meant for the strongest Payoff',
       tool: 'Intercept',
       core: ['night-watch'],
-      line: 'thornbuck/night-watch+flank-guard voltaro/zoom+shoulder-to-shoulder voltaro/zigzag+momentum hearthshell/keep-the-heat-in+stubborn | bloomback/all-at-once+stubborn hearthshell/draw-fire+stubborn gaiadrake/detonate+opportunist croakmire/squelch-song+heavy-hand',
+      line: 'kilnmole/draw-fire+hardy sunfawn/curl-up+brace croakmire/squelch-song+clinging ohmouse/lightning-ears | halcyray/clear-skies gaiadrake/leave-a-trail+hardy sunfawn/curl-up+kindred-boost thornbuck/night-watch',
     },
   ],
   'old-bogback': [
     {
-      label: 'Mud Wall keeps Mired on it while Drizzle and Hearth keep the most hurt up',
-      tool: 'Mud Wall',
-      core: ['mud-wall', 'squelch-song'],
-      line: 'ancientshell/steady-mark+owners-mark bogwarden/mud-wall+hardy fogwyrm/hide-in-mist+rally-cry squelch/ready-the-mark+clinging | zipmouse/double-mark+momentum hearthshell/hearth+shoulder-to-shoulder mossback/feed-the-marks+finisher gaiadrake/carry-them+catch-breath | pyrelynx/detonate+rally-cry magmole/wide-warmth+kindred-boost fogwyrm/wide-reach+catch-breath bloomback/detonate+opportunist',
+      label: 'Circle Round heals the Setters and Payoffs the fen sinks first, row after row',
+      tool: 'Sustain',
+      core: ['hearth', 'circle-round', 'clear-the-air'],
+      line: 'tempestray/twin-strike magmole/tunnel-through+odd-one-out sunfawn/ready-the-mark+shoulder-to-shoulder thornbuck/night-watch+flank-guard | tidewing/circle-round kilnmole/keep-the-heat-in+hardy magmole/none+bright-boost tempestray/none+slow-burn | pyrelynx/none+rally-cry drizzlewt/clear-the-air+overheal-spill tidewing/circle-round+finisher mudlump/wide-reach',
     },
     {
-      label: 'Hearth at round start heals the creatures the fen sinks first',
-      tool: 'Sustain',
-      core: ['hearth'],
-      line: 'solmane/none+owners-mark drizzlewt/curl-up+rally-cry hearthshell/hearth+shoulder-charge tempestray/detonate+edge-walker | geyserpup/none+edge-walker solmane/none+deep-ink bogwarden/wide-reach+long-shadow ancientshell/living-shelter+hardy | geyserpup/leave-a-trail+edge-walker bogwarden/wide-reach+long-shadow pyrelynx/guards-shadow+shoulder-to-shoulder kilnmole/keep-the-heat-in+hardy',
+      label: 'Living Shelter and Keep the Heat In shield the creatures the mud sinks',
+      tool: 'Row Ward',
+      core: ['living-shelter', 'keep-the-heat-in'],
+      line: 'ancientshell/living-shelter+finisher sunfawn/curl-up+hardy wickat/none+sharp-claws stormray/none+edge-walker | pyrelynx/leave-a-trail+steady-rhythm hearthshell/hearth+brace coralynx/territorial+finisher kilnmole/keep-the-heat-in+hardy | geyserpup/puddle-maker croakmire/wide-warmth+catch-breath mistnewt/none bogwarden/none+flank-guard',
     },
   ],
 };

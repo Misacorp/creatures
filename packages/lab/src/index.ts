@@ -15,6 +15,7 @@ export * from './measure';
 export * from './bosses';
 export * from './foes';
 export * from './dungeon';
+export * from './foeQuestions';
 export * from './mechanics';
 export * from './bossAnswers';
 export * from './ablation';

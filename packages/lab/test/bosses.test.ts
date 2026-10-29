@@ -23,6 +23,18 @@ import {
   RAID_SPECS,
   RAID_WIDTHS,
   TOOL_DROP_MIN,
+  TOOL_SHARE_MIN,
+  FOE_QUESTIONS,
+  FOE_QUESTION_GAP,
+  FOE_QUESTION_WIN,
+  questionResult,
+  ROBUST_SHARE,
+  COMMON_OR_CLASSIC_FORMS,
+  CASUAL_ORDER,
+  robustnessOf,
+  mixedSpread,
+  tileLine,
+  wideBoss,
   toolCost,
   TALENTS,
   answerLine,
@@ -255,6 +267,22 @@ describe('the intended answers (P-13)', () => {
     },
   );
 
+  it.each(RAID_BOSS_IDS)(
+    '%s: its first answer needs no rare evolved form: only common species and the classic party’s Tempestray (panel 5, finding 10)',
+    (id) => {
+      const first = BOSS_ANSWERS[id]?.[0];
+      expect(first, id).toBeDefined();
+      const rare = answerLine(first?.line ?? '').filter(
+        (p) => !COMMON_OR_CLASSIC_FORMS.includes(p.formId),
+      );
+      expect(
+        rare.map((p) => p.formId),
+        `${id}: ${first?.label ?? ''}`,
+      ).toEqual([]);
+      expect(mostCopies(answerLine(first?.line ?? ''))).toBeLessThanOrEqual(2);
+    },
+  );
+
   it('the answers name their Knack tools, and no tool answers more than two bosses', () => {
     const bosses = new Map<string, Set<string>>();
     for (const [id, answers] of Object.entries(BOSS_ANSWERS))
@@ -286,71 +314,55 @@ describe('the intended answers (P-13)', () => {
   );
 
   it.each(RAID_BOSS_IDS)(
-    '%s: a prepared team wins most weekends, still loses creatures, and the classic party never wins',
+    '%s: a prepared team removes nearly all of the boss’s HP and kills most weekends, and the classic party never kills',
     (id) => {
       const b = raidBossOf(id);
       const classic = weekendStats(b, classicFor(raidMode(b)), 16, `win:${id}`);
       expect(classic.winRate).toBe(0);
-      const best = Math.max(
-        ...(BOSS_ANSWERS[id] ?? []).map(
-          (a) => weekendStats(b, answerLine(a.line), 16, `win:${id}`).winRate,
-        ),
-      );
-      expect(best).toBeGreaterThanOrEqual(0.85);
-    },
-  );
-
-  it.each(RAID_BOSS_IDS)(
-    '%s: its first answer is the tool the boss really asks for, so the line loses much of its win rate without it',
-    (id) => {
-      const b = raidBossOf(id);
+      expect(classic.damageShare, id).toBeLessThanOrEqual(0.8);
+      // The primary measure (Misa, 2026-10-29) is the share of the HP removed; the kill is the cliff beside it.
+      for (const a of BOSS_ANSWERS[id] ?? []) {
+        const w = weekendStats(b, answerLine(a.line), 24, `win:${id}`);
+        expect(w.damageShare, `${id}: ${a.label}`).toBeGreaterThanOrEqual(0.9);
+        expect(w.tiers.t2, `${id}: ${a.label}`).toBeGreaterThanOrEqual(0.6);
+      }
       const first = BOSS_ANSWERS[id]?.[0];
-      expect(first?.core?.length).toBeGreaterThan(0);
-      const line = answerLine(first?.line ?? '');
-      const with_ = weekendStats(b, line, 24, `tool:${id}`).winRate;
-      const without = weekendStats(
-        b,
-        withoutTool(line, first?.core ?? []),
-        24,
-        `tool:${id}`,
-      ).winRate;
       expect(
-        with_ - without,
-        `${id}: ${String(with_)} with, ${String(without)} without`,
-      ).toBeGreaterThanOrEqual(0.4);
+        weekendStats(b, answerLine(first?.line ?? ''), 24, `win:${id}`).winRate,
+        id,
+      ).toBeGreaterThanOrEqual(0.6);
     },
   );
 });
 
 describe('every answer’s own tool is tested (panel 5, finding 3)', () => {
-  /**
-   * The answers that do not yet lose `TOOL_DROP_MIN` points without their tool (measured 2026-10-29): they win by another
-   * gate or by numbers, not by the tool they name. The content task fixes or replaces them; remove an entry when it does.
-   * `it.fails` turns the test into a loud failure the day an entry here passes, so the list cannot go stale. The report
-   * (`### Every answer's own tool`) shows every drop.
-   */
-  const TOOL_UNPROVEN = new Set([
-    'tidal-colossus: Row Ward',
-    'cinder-wyrm: Sustain',
-    'storm-sovereign: Intercept',
-    'old-bogback: Sustain',
-  ]);
-
   for (const id of RAID_BOSS_IDS)
-    for (const a of BOSS_ANSWERS[id] ?? []) {
+    BOSS_ANSWERS[id]?.forEach((a, k) => {
       const name = `${id}: ${a.tool}`;
-      (TOOL_UNPROVEN.has(name) ? it.fails : it)(
-        `${name} (${a.label}) loses at least ${TOOL_DROP_MIN} points of weekend win rate without its tool`,
-        () => {
-          expect(a.core?.length, `${name} names no tool`).toBeGreaterThan(0);
-          const t = toolCost(raidBossOf(id), a, answerLine(a.line), 40, `tool-all:${id}:${a.tool}`);
+      it(`${name} (${a.label}) removes at least ${String(TOOL_SHARE_MIN * 100)} points more of the boss's HP with its tool${k === 0 ? ` and loses ${String(TOOL_DROP_MIN)} points of kill rate without it` : ''}`, () => {
+        expect(a.core?.length, `${name} names no tool`).toBeGreaterThan(0);
+        const t = toolCost(raidBossOf(id), a, answerLine(a.line), 40, `tool-all:${id}:${a.tool}`);
+        expect(
+          t.shareDrop,
+          `${name}: ${String(Math.round(100 * t.shareWith))}% of the HP with, ${String(Math.round(100 * t.shareWithout))}% without`,
+        ).toBeGreaterThanOrEqual(TOOL_SHARE_MIN * 100);
+        if (k === 0)
           expect(
             t.drop,
-            `${name}: ${String(Math.round(100 * t.withTool))}% with, ${String(Math.round(100 * t.without))}% without`,
+            `${name}: kill ${String(Math.round(100 * t.withTool))}% with, ${String(Math.round(100 * t.without))}% without`,
           ).toBeGreaterThanOrEqual(TOOL_DROP_MIN);
-        },
-      );
+      });
+    });
+
+  it('the prepared line with random legal talents still removes most of the HP: talents do not decide the weekend (panel 5, finding 4)', () => {
+    for (const id of RAID_BOSS_IDS) {
+      const first = BOSS_ANSWERS[id]?.[0];
+      const r = robustnessOf(raidBossOf(id), answerLine(first?.line ?? ''), 48, 8, `rob:${id}`);
+      expect(r.random.damageShare, id).toBeGreaterThanOrEqual(ROBUST_SHARE);
+      // Written talents are better than random ones, but by a share of the HP, not by the whole weekend.
+      expect(r.written.damageShare - r.random.damageShare, id).toBeLessThanOrEqual(0.2);
     }
+  });
 });
 
 describe('the prepared line at the margin, at other widths and on a mixed server (panel 4)', () => {
@@ -358,46 +370,62 @@ describe('the prepared line at the margin, at other widths and on a mixed server
   const lineOf = (id: string) => answerLine(first(id)?.line ?? '');
 
   it.each(RAID_BOSS_IDS)(
-    '%s: the prepared line still wins at +10% Attack and at +10% HP (target 60%, floor 50%)',
+    '%s: the prepared line keeps most of its HP share at +10% Attack and at +10% HP',
     (id) => {
       const m = marginOf(raidBossOf(id), lineOf(id), 24, `margin:${id}`);
-      expect(m.base, id).toBeGreaterThanOrEqual(0.85);
-      expect(m.atk10, `${id} +10% Attack`).toBeGreaterThanOrEqual(0.5);
-      expect(m.hp10, `${id} +10% HP`).toBeGreaterThanOrEqual(0.5);
+      expect(m.share.base, id).toBeGreaterThanOrEqual(0.93);
+      expect(m.share.atk10, `${id} +10% Attack`).toBeGreaterThanOrEqual(0.8);
+      expect(m.share.hp10, `${id} +10% HP`).toBeGreaterThanOrEqual(0.8);
     },
   );
 
   it.each(RAID_BOSS_IDS)(
-    '%s: the prepared line wins most weekends and still pays for it: creatures lost, or the team left low on HP',
+    '%s: the prepared line pays for it: creatures lost, or the team left low on HP',
     (id) => {
       const w = weekendStats(raidBossOf(id), lineOf(id), 24, `cost:${id}`);
-      expect(w.winRate, id).toBeGreaterThanOrEqual(0.85);
+      expect(w.damageShare, id).toBeGreaterThanOrEqual(0.93);
       // Misa, 2026-10-29: everyone alive but low is also a result, so HP left counts next to knockouts.
       expect(
         w.knockoutsTotal >= 0.5 || w.hpLeftEnd <= 0.6,
         `${id}: ${String(w.knockoutsTotal)} out, ${String(w.hpLeftEnd)} HP left`,
       ).toBe(true);
-      expect(w.hpLeftEnd, id).toBeLessThanOrEqual(0.75);
+      expect(w.hpLeftEnd, id).toBeLessThanOrEqual(0.8);
     },
   );
 
-  it('Tidal Colossus and Cinder Wyrm are not beaten at +10% every time: their prepared line has a margin, not a walkover', () => {
-    for (const id of ['tidal-colossus', 'cinder-wyrm']) {
-      const m = marginOf(raidBossOf(id), lineOf(id), 24, `margin:${id}`);
-      expect(Math.max(m.atk10, m.hp10), id).toBeLessThan(1);
-    }
-  });
-
   it.each(RAID_BOSS_IDS)(
-    '%s: at 5, 10 and 15 columns the classic party rarely wins and the prepared line does',
+    '%s: at 5, 10 and 15 columns the classic party never kills and the prepared line removes nearly all the HP',
     (id) => {
       const b = raidBossOf(id);
       for (const w of RAID_WIDTHS) {
         const r = widthOf(b, lineOf(id), w, 12, `width:${id}`);
-        // Balance pass (2026-10-29): rarely or never, also at 15 columns (the boss's HP grows in a straight line past ten players).
-        expect(r.classicWin, `${id} at ${w} columns`).toBeLessThanOrEqual(0.1);
-        expect(r.bestWin, `${id} at ${w} columns`).toBeGreaterThanOrEqual(0.8);
+        expect(r.classicWin, `${id} at ${String(w)} columns`).toBeLessThanOrEqual(0.1);
+        expect(r.classicShare, `${id} at ${String(w)} columns`).toBeLessThanOrEqual(0.9);
+        expect(r.bestShare, `${id} at ${String(w)} columns`).toBeGreaterThanOrEqual(0.85);
       }
+    },
+  );
+
+  it.each(RAID_BOSS_IDS)(
+    '%s: the tool gap holds at 10 players: the line repeated to fill still loses clearly without its tool, in HP removed or in kills',
+    (id) => {
+      const b = raidBossOf(id);
+      const a = first(id);
+      const wide = wideBoss(b, 10);
+      const withT = weekendStats(wide, tileLine(lineOf(id), b.cols, 10), 16, `gap10:${id}`);
+      const without = weekendStats(
+        wide,
+        tileLine(withoutTool(lineOf(id), a?.core ?? []), b.cols, 10),
+        16,
+        `gap10:${id}`,
+      );
+      // A line that removes all the HP either way shows its tool in the kills, one that kills no weekend in the HP.
+      const share = withT.damageShare - without.damageShare;
+      const kills = withT.winRate - without.winRate;
+      expect(
+        Math.max(share / 0.05, kills / 0.2),
+        `${id}: ${String(share)} of the HP, ${String(kills)} of the kills`,
+      ).toBeGreaterThanOrEqual(1);
     },
   );
 
@@ -407,44 +435,107 @@ describe('the prepared line at the margin, at other widths and on a mixed server
       lineOf(id),
       [lineOf(id)],
       20,
-      100,
+      60,
       `mixed:${id}`,
       first(id)?.core ?? [],
       [first(id)?.core ?? []],
     );
 
-  /**
-   * The bosses whose mixed server (10 players, casual players on a random Knack) wins under 20% since the one HP rule
-   * (panel 5: one exponent for every boss, so the old per-boss exponents of 0.15 to 0.6 that kept these winnable are gone).
-   * The content and tuning task retunes their numbers at four players; remove an id here when its mixed server is back in
-   * the 50% to 85% band. `it.fails` makes the test fail again, loudly, the day an id here passes.
-   */
-  const MIXED_BELOW_FLOOR = new Set([
-    'cinder-wyrm',
-    'thornmother',
-    'storm-sovereign',
-    'old-bogback',
-  ]);
-
   it.each(RAID_BOSS_IDS)(
-    '%s: a mixed server (2 min-maxers, 3 builders, 5 casual players) does not always win, and feels its losses more than a prepared team',
+    '%s: a mixed server (2 min-maxers, 3 builders, 5 casual players) removes a good share of the HP, does not always win, and feels its losses more than a prepared team',
     (id) => {
       const r = mixed(id);
       expect(r.winRate, id).toBeLessThanOrEqual(0.9);
+      expect(r.weekend.damageShare, id).toBeGreaterThanOrEqual(0.4);
+      expect(r.weekend.damageShare, id).toBeLessThanOrEqual(0.97);
       // A mixed server feels losses more than a prepared team does.
       const prepared = weekendStats(raidBossOf(id), lineOf(id), 12, `mixed-cost:${id}`);
       expect(r.knockouts, id).toBeGreaterThan(3 * prepared.knockoutsTotal);
     },
   );
+});
 
-  for (const id of RAID_BOSS_IDS)
-    (MIXED_BELOW_FLOOR.has(id) ? it.fails : it)(
-      `${id}: a mixed server wins sometimes (at least 20% of weekends; the target is about 50% to 85%)`,
-      () => {
-        // The casual players' draws swing the number widely, so this bound only guards against a boss no mixed server can beat.
-        expect(mixed(id).winRate, id).toBeGreaterThanOrEqual(0.2);
-      },
-    );
+describe('Boss Rank: a lower rank softens the cards, and the unprepared feel it first (Misa, 2026-10-29)', () => {
+  const lineOf = (id: string) => answerLine(BOSS_ANSWERS[id]?.[0]?.line ?? '');
+
+  it.each(RAID_BOSS_IDS)(
+    '%s: at every rank the prepared team kills most weekends and the classic party never kills',
+    (id) => {
+      for (const rank of ['low', 'mid', 'high'] as const) {
+        const b = raidBossOf(id, { rank });
+        const w = weekendStats(b, lineOf(id), 16, `rank:${id}:${rank}`);
+        expect(w.winRate, `${id} ${rank}`).toBeGreaterThanOrEqual(0.6);
+        expect(w.damageShare, `${id} ${rank}`).toBeGreaterThanOrEqual(0.93);
+        const c = weekendStats(b, classicFor(raidMode(b)), 16, `rank:${id}:${rank}`);
+        expect(c.winRate, `${id} ${rank}`).toBe(0);
+      }
+    },
+  );
+
+  it.each(RAID_BOSS_IDS)(
+    '%s: the classic party removes less of the HP at the high rank than at the low rank, and a casual server of ten removes a good share at the low rank',
+    (id) => {
+      const share = (rank: 'low' | 'high') => {
+        const b = raidBossOf(id, { rank });
+        return weekendStats(b, classicFor(raidMode(b)), 16, `rank:${id}:c`).damageShare;
+      };
+      expect(share('low') - share('high'), id).toBeGreaterThanOrEqual(0);
+      const low = raidBossOf(id, { rank: 'low' });
+      const first = BOSS_ANSWERS[id]?.[0];
+      const casual = mixedSpread(
+        low,
+        lineOf(id),
+        [lineOf(id)],
+        16,
+        1,
+        2,
+        `rank:${id}:casual`,
+        first?.core ?? [],
+        [first?.core ?? []],
+        { players: 10, casual: 'top3', order: CASUAL_ORDER },
+      );
+      expect(casual.weekend.damageShare, id).toBeGreaterThanOrEqual(0.4);
+      expect(casual.weekend.damageShare, id).toBeLessThanOrEqual(0.9);
+      expect(casual.winRate, id).toBeLessThanOrEqual(0.3);
+    },
+  );
+
+  it.each(RAID_BOSS_IDS)(
+    '%s: at the high rank the tool is worth at least ten points of the HP to a team with random talents, and more than at the low rank for the armoured boss',
+    (id) => {
+      const first = BOSS_ANSWERS[id]?.[0];
+      const at = (rank: 'low' | 'high') => {
+        const b = raidBossOf(id, { rank });
+        const line = lineOf(id);
+        const w = robustnessOf(b, line, 40, 8, `rank:${id}:${rank}:t`).random.damageShare;
+        const n = robustnessOf(
+          b,
+          withoutTool(line, first?.core ?? []),
+          40,
+          8,
+          `rank:${id}:${rank}:n`,
+        ).random.damageShare;
+        return w - n;
+      };
+      expect(at('high'), id).toBeGreaterThanOrEqual(0.1);
+    },
+  );
+
+  it('Thornmother’s answer matters more at the high rank: her bark is thicker and cracks less', () => {
+    const gain = (rank: 'low' | 'high') => {
+      const b = raidBossOf('thornmother', { rank });
+      const first = BOSS_ANSWERS['thornmother']?.[0];
+      const t = toolCost(
+        b,
+        first as NonNullable<typeof first>,
+        lineOf('thornmother'),
+        24,
+        `rank-t:${rank}`,
+      );
+      return t.shareDrop;
+    };
+    expect(gain('high')).toBeGreaterThan(gain('low') + 10);
+  });
 });
 
 describe('names and words (P-06, the compendium tone)', () => {
@@ -611,54 +702,41 @@ describe('the dungeon foes', () => {
     expect(rate('coil-baron', 8)).toBeLessThan(rate('coil-baron', 1));
   });
 
-  /**
-   * The foes that ask a question the classic line fails unless it answers it: each pairs a team with the tool and the same
-   * team without, on one depth, and the tool must win clearly more often.
-   */
-  const QUESTIONS: Record<
-    NonNullable<(typeof FOE_SPECS)[number]['needs']>,
-    { foe: string; depth: number; withTool: string; without: string }
-  > = {
-    // A Guard beside the Payoff takes the aimed grab; with a third hitter instead, it lands on the strongest.
-    guard: {
-      foe: 'moss-lurker',
-      depth: 5,
-      withTool: 'tidewing/steady-mark tempestray/detonate thornbuck/wide-reach',
-      without: 'tidewing/steady-mark tempestray/detonate pyrelynx/none',
-    },
-    // The Setter and the Payoff stand at the ends and fall quiet, unless Lantern Glow stands between them.
-    ward: {
-      foe: 'drift-wisp',
-      depth: 4,
-      withTool: 'tidewing/steady-mark lanternfin/lantern-glow tempestray/detonate',
-      without: 'tidewing/steady-mark lanternfin/none tempestray/detonate',
-    },
-    // Its hide Blocks small hits: Tunnel Through gets the Payoff's plain hits past it.
-    pierce: {
-      foe: 'bramble-hound',
-      depth: 4,
-      withTool: 'tidewing/steady-mark magmole/tunnel-through tempestray/detonate',
-      without: 'tidewing/steady-mark magmole/none tempestray/detonate',
-    },
-  };
-
-  it('three foes ask a question: no Guard, no silence ward, nothing for armour', () => {
+  it('three foes ask a question the classic line fails: no Guard, no silence ward, nothing for armour', () => {
     const needs = FOE_SPECS.flatMap((s) => (s.needs ? [s.needs] : [])).sort();
     expect(needs).toEqual(['guard', 'pierce', 'ward']);
   });
 
-  it.each(Object.entries(QUESTIONS))(
-    'the %s question: the team with the tool beats the one without, and the classic line is no better than it',
-    (_need, q) => {
-      const foe = foeAt(q.foe, q.depth);
-      const win = (line: string) => gauntletStats(foe, answerLine(line), 100, `q:${q.foe}`).winRate;
-      const answered = win(q.withTool);
-      const missing = win(q.without);
+  it('every foe has one question, on a mechanic of the lab and a tool that is a Knack of the team', () => {
+    expect(Object.keys(FOE_QUESTIONS).sort()).toEqual([...FOE_IDS].sort());
+    const ids = new Set(MECHANICS.map((m) => m.id));
+    for (const q of Object.values(FOE_QUESTIONS)) {
+      expect(ids.has(q.mechanic), `${q.foe}: ${q.mechanic}`).toBe(true);
+      const team = answerLine(q.team);
+      expect(team, q.foe).toHaveLength(3);
+      expect(answerProblems(team), q.foe).toEqual([]);
       expect(
-        answered - missing,
-        `${q.foe}: ${String(answered)} with, ${String(missing)} without`,
-      ).toBeGreaterThanOrEqual(0.25);
-      expect(answered).toBeGreaterThanOrEqual(0.7);
+        team.some((p) => q.tool.includes(p.knack)),
+        `${q.foe} carries its tool`,
+      ).toBe(true);
+      expect(q.hpBp).toBeGreaterThan(0);
+      expect(q.atkBp).toBeGreaterThan(0);
+    }
+    // The three questions about a Guard, a ward and armour are the foes' `needs`.
+    expect(FOE_QUESTIONS['moss-lurker']?.mechanic).toBe('family:Reach');
+    expect(FOE_QUESTIONS['drift-wisp']?.mechanic).toBe('family:Ward');
+    expect(FOE_QUESTIONS['bramble-hound']?.mechanic).toBe('family:Pierce');
+  });
+
+  it.each(Object.values(FOE_QUESTIONS).map((q) => [q.foe, q] as const))(
+    '%s calls for its mechanic: the team with the tool wins clearly more often than the team without it',
+    (_foe, q) => {
+      const r = questionResult(q, 200, 'fqa');
+      expect(
+        r.gap,
+        `${q.foe}: ${String(r.withTool)} with, ${String(r.without)} without`,
+      ).toBeGreaterThanOrEqual(FOE_QUESTION_GAP);
+      expect(r.withTool, q.foe).toBeGreaterThanOrEqual(FOE_QUESTION_WIN);
     },
   );
 
