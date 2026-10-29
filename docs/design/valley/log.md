@@ -21,3 +21,9 @@ One entry per session, newest last. Each says what was done, what was decided, a
 2. Write posts and the bonfire in full (phase 1, step 2), with back-of-envelope numbers marked as examples; run the panel with Pia (systems) added.
 3. Then the return moment, scouts and the Forge loop, the commons, the School.
 4. Start the economy lab's skeleton once posts and the bonfire are drafted.
+
+## 2026-10-29 (later): the plan as a phone page
+
+**Done.** The plan folder rendered as a phone-first page, published as the Claude artifact "Valley Plan" (https://claude.ai/artifact/LhzFbstKivpCJ4rk9t5Bqt), built by `reader/build.py`. The "Valley Map" artifact (places, shortcuts, posts idea) is https://claude.ai/artifact/Gme15KAUTmxiJ4e9FLRNpb. Both are private to Misa. Republish the plan page after any change to these docs.
+
+**Next.** Unchanged: Misa answers open questions 1 and 2, then posts and the bonfire in full.
