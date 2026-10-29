@@ -199,10 +199,10 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Wide Warmth
 
-- **Text:** Its boost also reaches one slot further on each side, 10% weaker.
+- **Text:** Its boost also reaches one slot further on each side, at full strength.
 - **Family:** Support shape
 - **Forms:** ashmole, magmole, croakmire
-- **Intent (for contributors, never shown to players):** Wide raid rows with several hitters.
+- **Intent (for contributors, never shown to players):** Wide rows with several hitters: a Support at the end of a line of three boosts both hitters, and in a raid row it reaches the far column too. Tar Leech asks for it.
 
 ### Tunnel Through
 
@@ -290,7 +290,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Guard's Shadow
 
-- **Text:** +15% on its hits while a living Guard stands beside it. Armour -8.
+- **Text:** +10% on its hits while a living Guard stands beside it. Armour -10.
 - **Family:** Partner
 - **Forms:** pyrelynx
 - **Intent (for contributors, never shown to players):** A Payoff that wants a Guard partner, ideally another player's in the raid. The same name as the gear line with the same effect.
