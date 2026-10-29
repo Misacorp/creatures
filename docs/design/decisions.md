@@ -3474,3 +3474,7 @@ Misa noticed that a PR adding only a retro file ran every CI job. He asked for a
 3. **Always run:** the formatting check (Prettier formats Markdown, and it caught a merge slip on 2026-10-28) and the security job (secret scan and workflow audits).
 4. **`ci` accepts a skipped test job only when `changes` succeeded and found documentation only.** A skip for any other reason (`changes` failed, a job was cancelled) fails `ci`.
 5. **A gap found on the way:** CI didn't run `packages/lab`'s tests (added in #92). The `test-rest` job runs them now (about 15 s).
+
+## 2026-10-29: The raid is defending the valley, with a battleground per element
+
+Misa, after trying the valley prototypes: the weekly raid is not a fun arena show the creatures take part in for entertainment. It is a dangerous trial they face to defend the valley from a threat, and it should look and read that way. Direction: one distinct battleground per raid boss element (Grove: an ancient temple in the forest; Spark: a thunderous mountaintop; Tide, Ember and Mire still to choose, proposed as a drowned sea gate, a caldera and a sunken shrine in the Fen), reached each week through a gauntlet (designed on another branch). In the valley prototype the raid's place is a Watchtower at the east gate, where creatures muster; the valley's own scenes are the hub. Player-facing raid text and art from now on use the defence framing; the compendium's boss entries are the place to grow it. Map of the valley's places: the "Valley Map" artifact of this session.
