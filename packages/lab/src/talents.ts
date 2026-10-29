@@ -268,10 +268,10 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'brace',
       name: 'Brace',
-      text: "It takes 40% less from the boss's moves ({Charged} on its slot included) and 20% less from its plain attack.",
+      text: "It takes 40% less from the boss's moves ({Wind-up} on its slot included) and 20% less from its plain attack.",
       roles: ALL,
       intent:
-        "Reads off the boss's named moves (the Charged highlights of Great Wave, Crusher, Payoff Slam): a card-shaped talent, strong where the boss has moves. Reworked (2026-10-28): it also cuts the plain attack by half of that, because a talent that did nothing on most weeks gained under a point on every role.",
+        "Reads off the boss's named moves (the Wind-up highlights of Great Wave, Crusher, Payoff Slam): a card-shaped talent, strong where the boss has moves. Reworked (2026-10-28): it also cuts the plain attack by half of that, because a talent that did nothing on most weeks gained under a point on every role.",
       fx: { braceBp: 4_000 },
     }),
     T({

@@ -77,6 +77,8 @@ export interface Pattern {
   readonly n?: number;
   /** chain: each jump deals this share (bp) of the hit before it. */
   readonly decayBp?: number;
+  /** `n` is the count for every this many columns of the arena (rounded up), so a pattern covers the same share of a wide row as of a four-wide one. */
+  readonly perColumns?: number;
 }
 
 export interface BossMove {
