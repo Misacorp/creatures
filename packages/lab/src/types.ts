@@ -141,7 +141,8 @@ export interface EscalationGrowth {
  * The boss's Store (Misa, 2026-10-28), one rule with data per boss: it fills from a `feed`, every `per` units is a step,
  * it stops at `cap` steps, and each step `grow`s the boss (R22, the escalation rules):
  * - Steps apply only at round start, after the round-start Knacks and before the Charged announcements, at most one step
- *   per round, and each is announced in the log first. An optional `phase` adds moves from a step on.
+ *   per round, and each is announced in the log first. An optional `phase` adds moves once the feed has reached `atStep`
+ *   steps' worth of units: announced at that round start, applied at the next, and Mired does not slow it (a phase is not a step).
  * - Step, phase and the feed's count carry across a raid weekend's stages like the boss's HP; event feeds keep counting
  *   (`rounds` too: the weekend's rounds, not the stage's).
  * - Mired slows it, it does not freeze it: each Mired stack on the boss at round start raises the units the next step
@@ -154,9 +155,16 @@ export interface Escalation {
   readonly name: string;
   readonly feed: EscalationFeed;
   readonly per: number;
+  /**
+   * `per` is for this many columns of the arena and grows with its width (`per x columns / perColumns`, at least 1): a raid
+   * of more players feeds an event feed (reactions, crits, dodges, knockouts, marks shed) faster, so it needs more units per
+   * step. Not for `hpLost` and `rounds`, which do not grow with the number of creatures.
+   */
+  readonly perColumns?: number;
   readonly cap: number;
   readonly grow: EscalationGrowth;
   readonly phase?: {
+    /** The phase starts when the feed has `atStep * per` units (announced a round ahead; Mired does not delay it). */
     readonly atStep: number;
     readonly name: string;
     readonly moves: readonly BossMove[];
@@ -227,6 +235,8 @@ export interface FightOptions {
   readonly carryEscalation?: {
     readonly step: number;
     readonly phase: boolean;
+    /** The phase change was announced and applies at the next round start. */
+    readonly phaseNext?: boolean;
     readonly count: number;
   };
   readonly log?: boolean;
@@ -253,6 +263,8 @@ export interface EscalationState {
   readonly nextAt: number | null;
   /** True once the phase change has applied. */
   readonly phase: boolean;
+  /** True from the round start the phase change was announced until it applies, one round later. */
+  readonly phaseNext: boolean;
 }
 
 /** Who defeated the boss (R21 draft): the creature whose hit, counter or Cull took its last HP. */

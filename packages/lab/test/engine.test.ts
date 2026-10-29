@@ -432,6 +432,95 @@ describe('escalation rules (R22)', () => {
     expect(carried.escalation?.count).toBe(4 + carried.reactions);
   });
 
+  it('a phase change is announced a round ahead and Mired does not stop it (a general rule)', () => {
+    const phaseMove: BossMove = {
+      id: 'p2',
+      name: 'Second Wind',
+      pattern: { anchor: 'front', shape: 'single' },
+      powerBp: 1,
+      every: 1,
+      turn: 0,
+    };
+    const boss = base(
+      esc({ per: 2, cap: 2, phase: { atStep: 1, name: 'P2', moves: [phaseMove] } }),
+      { rounds: 8 },
+    );
+    const miredTeam = [at('croakmire', 0, 0, { knack: 'squelch-song' }), ...team.slice(1)];
+    for (const t of [team, miredTeam]) {
+      const r = fight(boss, t, { rng: rng('ph'), log: true });
+      const ahead = r.events.find((e) => e.kind === 'announce' && /begins next round/.test(e.text));
+      const applied = r.events.find((e) => e.kind === 'phase');
+      // The feed reaches 2 rounds at round 3's start: announced then, applied at round 4's start, Mired or not.
+      expect(ahead?.round).toBe(3);
+      expect(applied?.round).toBe(4);
+    }
+    // The announcement carries over a stage break: announced in the last round, it applies in the next stage's first.
+    const w = weekend(
+      base(esc({ per: 2, cap: 2, phase: { atStep: 1, name: 'P2', moves: [phaseMove] } })),
+      team,
+      [],
+      {
+        rng: rng('ph2'),
+        stages: 2,
+        log: true,
+      },
+    );
+    expect(w.stages[0]?.escalation?.phase).toBe(false);
+    expect(w.stages[0]?.escalation?.phaseNext).toBe(true);
+    expect(w.stages[1]?.events.find((e) => e.kind === 'phase')?.round).toBe(1);
+  });
+
+  it('every feed carries across the weekend: its count never starts a stage lower than the last one ended', () => {
+    for (const feed of [
+      'reactions',
+      'hpLost',
+      'rounds',
+      'crits',
+      'dodges',
+      'knockouts',
+      'shed',
+    ] as const) {
+      const boss = base(esc({ feed, per: 1_000_000, cap: 1 }), {
+        hp: 400,
+        atk: 40,
+        spd: 5,
+        armour: 0,
+        mods: { shedMarks: true },
+      });
+      const w = weekend(
+        boss,
+        [at('tidewing', 0, 0), at('tempestray', 0, 1), at('thornbuck', 0, 2)],
+        [at('kilnmole', 0, 0)].map((p) => ({ ...p, owner: 'p1' })),
+        {
+          rng: rng(`carry-${feed}`),
+          stages: 3,
+        },
+      );
+      let last = 0;
+      for (const st of w.stages) {
+        const c = st.escalation?.count ?? 0;
+        expect(c, feed).toBeGreaterThanOrEqual(last);
+        last = c;
+      }
+    }
+  });
+
+  it('an event feed with perColumns needs more units a step in a wider arena; a feed without it does not', () => {
+    const e = esc({ feed: 'reactions', per: 2, perColumns: 4, cap: 9 });
+    const wideTeam = (n: number) =>
+      Array.from({ length: n }, (_, i) =>
+        at(['tidewing', 'tempestray', 'thornbuck'][i % 3] as string, 0, i),
+      );
+    const nextAt = (cols: number, esc: Escalation) =>
+      fight(base(esc, { cols, rounds: 1 }), wideTeam(cols), { rng: rng('pc2'), log: true })
+        .escalation?.nextAt;
+    // Step 1 needs `per` units for 4 columns: 2 at 4, 4 at 8, 1 at 2 (at least 1).
+    expect(nextAt(4, e)).toBe(2);
+    expect(nextAt(8, e)).toBe(4);
+    expect(nextAt(2, e)).toBe(1);
+    expect(nextAt(8, esc({ feed: 'reactions', per: 2, cap: 9 }))).toBe(2);
+  });
+
   it('at most one step a round, at round start, announced before the boss turn', () => {
     const boss = base(esc({ per: 1, cap: 5 }), { rounds: 6 });
     const r = fight(boss, team, {

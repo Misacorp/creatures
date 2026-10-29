@@ -57,7 +57,15 @@ interface State {
    * The boss's escalation (its Store, R22): units fed by events this stage, the units carried from earlier stages, the
    * step applied, the count read at the last round start and whether its phase change has applied.
    */
-  esc: { fed: number; base: number; step: number; count: number; phase: boolean };
+  esc: {
+    fed: number;
+    base: number;
+    step: number;
+    count: number;
+    phase: boolean;
+    /** The phase change was announced at an earlier round start and applies at the next. */
+    phaseNext: boolean;
+  };
   /** Targets of this round's announced moves (Charged, or with a roll in their targets), rolled at round start (by move id). */
   announced: Map<string, Fighter[]>;
   readonly events: FightEvent[];
@@ -95,6 +103,13 @@ const log = (s: State, kind: string, text: string, extra: Partial<FightEvent> = 
 function feed(s: State, kind: EscalationFeed): void {
   if (s.boss.escalation?.feed === kind) s.esc.fed++;
 }
+
+/** The units one step needs: `per`, or with `perColumns`, `per` for that many columns of the arena (a wider raid feeds the boss faster, so it needs more per step). */
+const perOf = (s: State): number => {
+  const e = s.boss.escalation;
+  if (!e) return 0;
+  return e.perColumns ? Math.max(1, Math.round((e.per * s.boss.cols) / e.perColumns)) : e.per;
+};
 
 /** What the escalation's steps add to the boss now. */
 const grown = (s: State) => {
@@ -135,8 +150,9 @@ function escalationState(s: State): EscalationState | null {
     count: escalationCount(s),
     step: s.esc.step,
     cap: e.cap,
-    nextAt: s.esc.step >= e.cap ? null : (s.esc.step + 1) * e.per,
+    nextAt: s.esc.step >= e.cap ? null : (s.esc.step + 1) * perOf(s),
     phase: s.esc.phase,
+    phaseNext: s.esc.phaseNext,
   };
 }
 
@@ -150,10 +166,23 @@ function escalate(s: State): void {
   const e = s.boss.escalation;
   if (!e) return;
   s.esc.count = escalationCount(s);
+  // The phase change is not a step: Mired does not slow it. It is announced at the round start the feed reaches its
+  // units (`atStep` steps' worth) and applies at the next round start, so players see it coming a round ahead.
+  if (e.phase && !s.esc.phase) {
+    if (s.esc.phaseNext) {
+      s.esc.phase = true;
+      s.esc.phaseNext = false;
+      log(s, 'phase', `${s.boss.name}: ${e.phase.name}`);
+    } else if (s.esc.count >= e.phase.atStep * perOf(s)) {
+      s.esc.phaseNext = true;
+      log(s, 'announce', `${s.boss.name}: ${e.phase.name} begins next round`);
+    }
+  }
   if (s.esc.step >= e.cap) return;
-  const due = (s.esc.step + 1) * e.per;
+  const per = perOf(s);
+  const due = (s.esc.step + 1) * per;
   if (s.esc.count < due) return;
-  if (s.esc.count * 10_000 < due * 10_000 + s.mired * e.per * R.miredSlowsEscalationBp) {
+  if (s.esc.count * 10_000 < due * 10_000 + s.mired * per * R.miredSlowsEscalationBp) {
     log(
       s,
       'escalation',
@@ -166,13 +195,9 @@ function escalate(s: State): void {
     s,
     'escalation',
     `${e.name}: step ${s.esc.step} of ${e.cap} (${s.esc.count} ${e.feed}); next at ${
-      s.esc.step >= e.cap ? 'the cap' : (s.esc.step + 1) * e.per
+      s.esc.step >= e.cap ? 'the cap' : (s.esc.step + 1) * per
     }`,
   );
-  if (e.phase && !s.esc.phase && s.esc.step >= e.phase.atStep) {
-    s.esc.phase = true;
-    log(s, 'phase', `${s.boss.name}: ${e.phase.name}`);
-  }
 }
 
 export function placeFighters(placements: readonly Placement[]): Fighter[] {
@@ -368,7 +393,7 @@ function roundStart(s: State): void {
     log(
       s,
       'announce',
-      `${m.name} (${m.id}${m.charged ? ', Charged' : ''}) will land on ${aimed.map((t) => `${t.name} (row ${t.row + 1}, slot ${t.col + 1})`).join(', ') || 'nobody'}`,
+      `${m.name} (${m.id}${m.charged ? ', Wind-up' : ''}) will land on ${aimed.map((t) => `${t.name} (row ${t.row + 1}, slot ${t.col + 1})`).join(', ') || 'nobody'}`,
       { move: m.id, slots: aimed.map((t) => [t.row, t.col] as const) },
     );
   }
@@ -1153,6 +1178,7 @@ export function fight(
       step: carried?.step ?? 0,
       count: carried?.count ?? 0,
       phase: carried?.phase ?? false,
+      phaseNext: carried?.phaseNext ?? false,
     },
     announced: new Map(),
     events: [],
@@ -1261,6 +1287,7 @@ export function weekend(
       escalation = {
         step: res.escalation.step,
         phase: res.escalation.phase,
+        phaseNext: res.escalation.phaseNext,
         count: res.escalation.count,
       };
     for (const [el, n] of Object.entries(res.reactionsByMark)) used[el] = (used[el] ?? 0) + n;

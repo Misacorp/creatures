@@ -343,7 +343,7 @@ describe('escalation (the boss Store)', () => {
     expect(hp.n).toBe(Math.floor(((4_000 - hp.r.bossHpLeft) * 10_000) / 4_000));
   });
 
-  it('a phase change adds moves from its step on, announced once', () => {
+  it('a phase change adds moves a round after its announcement, announced once', () => {
     const phaseMove: BossMove = {
       id: 'p2',
       name: 'Second Wind',
@@ -359,10 +359,13 @@ describe('escalation (the boss Store)', () => {
     const r = fight(boss, team, { rng: rng('ph'), log: true });
     const phase = r.events.filter((e) => e.kind === 'phase');
     expect(phase).toHaveLength(1);
-    expect(phase[0]?.round).toBe(5);
+    // The feed reaches 4 rounds at round 5's start (announced), the phase applies at round 6's.
+    const heads = r.events.filter((e) => e.kind === 'announce' && /begins next round/.test(e.text));
+    expect(heads.map((e) => e.round)).toEqual([5]);
+    expect(phase[0]?.round).toBe(6);
     const moves = r.events.filter((e) => e.kind === 'move' && e.text === 'Second Wind');
     expect(moves.length).toBeGreaterThan(0);
-    expect(moves.every((e) => e.round >= 5)).toBe(true);
+    expect(moves.every((e) => e.round >= 6)).toBe(true);
     expect(r.escalation?.phase).toBe(true);
   });
 
