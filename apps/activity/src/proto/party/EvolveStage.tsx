@@ -56,10 +56,19 @@ export function EvolveStage({
         <div class="pp-evolve-mid">
           <span class="pp-burst" aria-hidden="true">
             {Array.from({ length: SPARKS }, (_, i) => (
-              <Sprite key={i} sprite={glyphOrUnknown('sparkle')} scale={2} class={`pp-ray pp-ray-${String(i)}`} />
+              <Sprite
+                key={i}
+                sprite={glyphOrUnknown('sparkle')}
+                scale={2}
+                class={`pp-ray pp-ray-${String(i)}`}
+              />
             ))}
           </span>
-          <Sprite sprite={creatureSpriteOrFallback(c.species)} scale={big} alt={speciesName(c.species)} />
+          <Sprite
+            sprite={creatureSpriteOrFallback(c.species)}
+            scale={big}
+            alt={speciesName(c.species)}
+          />
         </div>
         <p class="pp-evolve-name">{speciesName(c.species)}!</p>
         <button

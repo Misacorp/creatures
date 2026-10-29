@@ -42,7 +42,10 @@ export function stationDef(id: StationId): StationDef {
 
 export type Verdict =
   | { ok: true; /** "send on a trip" */ does: string }
-  | { ok: false; /** The one word on the dimmed station; null: it takes no creature. */ word: string | null };
+  | {
+      ok: false;
+      /** The one word on the dimmed station; null: it takes no creature. */ word: string | null;
+    };
 
 const no = (word: string | null): Verdict => ({ ok: false, word });
 const yes = (does: string): Verdict => ({ ok: true, does });

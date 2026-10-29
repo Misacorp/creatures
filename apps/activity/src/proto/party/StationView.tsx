@@ -35,7 +35,7 @@ import {
   enterGames,
   goOnTrip,
   startCraft,
-  useStation,
+  sendToStation,
 } from './party-actions';
 import { CAVE_TEAM_SIZE, type PartyState, type StationId } from './party-state';
 import { Ground, PixelScene } from './Scene';
@@ -154,7 +154,8 @@ function RoadView({ state, setState, scale }: ViewProps) {
         {world.destinations.destinations.map((d) => {
           const shut = closedWord(d.closed);
           const rank = held?.explorer?.rank ?? 1;
-          const word = shut ?? (held !== null && rank < d.minRank ? `Rank ${String(d.minRank)}` : null);
+          const word =
+            shut ?? (held !== null && rank < d.minRank ? `Rank ${String(d.minRank)}` : null);
           const here = [...out, ...home].filter((t) => t.destination === d.id);
           const lit = word === null && (held !== null || state.ask === 'road');
           return (
@@ -182,6 +183,7 @@ function RoadView({ state, setState, scale }: ViewProps) {
                 }}
               >
                 <Sprite sprite={bannerArt(d.id)} scale={signScale} />
+                <span class="pp-sign-name">{destinationName(d.id)}</span>
                 <span class="pp-sign-who">
                   {here.map((t) => (
                     <Mon
@@ -321,7 +323,11 @@ function ForgeView({ state, setState, scale }: ViewProps) {
                   }}
                 >
                   {job.input.baseId !== undefined && (
-                    <ItemSprite baseId={job.input.baseId} scale={3} class={ready ? 'pp-float' : 'pp-ghost'} />
+                    <ItemSprite
+                      baseId={job.input.baseId}
+                      scale={3}
+                      class={ready ? 'pp-float' : 'pp-ghost'}
+                    />
                   )}
                   <Sprite sprite={glyphOrUnknown('anvil')} scale={scale * 3} />
                   <Mon species={worker.species} scale={3} class="pp-smith" />
@@ -352,14 +358,23 @@ function ForgeView({ state, setState, scale }: ViewProps) {
                 ]
                   .filter((c) => c !== '')
                   .join(' ')}
-                aria-label={here && held !== null ? `${creatureName(held)} at the anvil` : 'Who works? Pick a creature'}
+                aria-label={
+                  here && held !== null
+                    ? `${creatureName(held)} at the anvil`
+                    : 'Who works? Pick a creature'
+                }
                 onClick={() => {
                   if (held !== null && heldOk) return;
                   setState((s) => ({ ...s, ask: 'forge', said: 'Who works? Pick a creature.' }));
                 }}
               >
-                <Sprite sprite={here ? glyphOrUnknown('anvil') : greyed(glyphOrUnknown('anvil'))} scale={scale * 3} />
-                {here && held !== null && <Mon species={held.species} scale={3} class="pp-smith pp-hop" />}
+                <Sprite
+                  sprite={here ? glyphOrUnknown('anvil') : greyed(glyphOrUnknown('anvil'))}
+                  scale={scale * 3}
+                />
+                {here && held !== null && (
+                  <Mon species={held.species} scale={3} class="pp-smith pp-hop" />
+                )}
               </button>
             </div>
           );
@@ -419,7 +434,12 @@ function ArenaView({ state, setState, scale, wide }: ViewProps) {
     <ViewShell id="arena" state={state} setState={setState} scale={scale}>
       <div class="pp-ring" aria-hidden="true">
         {Array.from({ length: 10 }, (_, i) => (
-          <Sprite key={i} sprite={rock} scale={scale + 1} class={`pp-ring-rock pp-ring-${String(i)}`} />
+          <Sprite
+            key={i}
+            sprite={rock}
+            scale={scale + 1}
+            class={`pp-ring-rock pp-ring-${String(i)}`}
+          />
         ))}
       </div>
       <div class="pp-boss">
@@ -431,7 +451,12 @@ function ArenaView({ state, setState, scale, wide }: ViewProps) {
       </div>
       <div class="pp-allies" aria-label="Your party's other creatures">
         {allies.map((a) => (
-          <Mon key={`${a.ownerName}-${a.name}`} species={a.species} scale={2} alt={`${a.ownerName}'s ${a.name}`} />
+          <Mon
+            key={`${a.ownerName}-${a.name}`}
+            species={a.species}
+            scale={2}
+            alt={`${a.ownerName}'s ${a.name}`}
+          />
         ))}
       </div>
       <div class="pp-pedestals">
@@ -439,7 +464,12 @@ function ArenaView({ state, setState, scale, wide }: ViewProps) {
           const placed = team[i];
           if (placed !== undefined) {
             return (
-              <span key={i} class="pp-pedestal is-full" aria-label={`${placed.name} placed`} role="img">
+              <span
+                key={i}
+                class="pp-pedestal is-full"
+                aria-label={`${placed.name} placed`}
+                role="img"
+              >
                 <Mon species={placed.species} scale={3} />
                 <Sprite sprite={glyphOrUnknown('blade')} scale={2} class="pp-ped-mark" />
               </span>
@@ -451,10 +481,15 @@ function ArenaView({ state, setState, scale, wide }: ViewProps) {
               key={i}
               type="button"
               class={lit ? 'pp-pedestal is-lit' : 'pp-pedestal'}
-              aria-label={heldOk && state.held !== null ? `Place ${creatureName(creatureOf(world, state.held))} here` : 'Empty spot: pick a creature'}
+              aria-label={
+                heldOk && state.held !== null
+                  ? `Place ${creatureName(creatureOf(world, state.held))} here`
+                  : 'Empty spot: pick a creature'
+              }
               onClick={() => {
-                if (heldOk) setState((s) => useStation(s, 'arena'));
-                else setState((s) => ({ ...s, ask: 'arena', said: 'Pick a creature for the raid.' }));
+                if (heldOk) setState((s) => sendToStation(s, 'arena'));
+                else
+                  setState((s) => ({ ...s, ask: 'arena', said: 'Pick a creature for the raid.' }));
               }}
             >
               {lit && <i class="pp-arrow" aria-hidden="true" />}
@@ -464,7 +499,12 @@ function ArenaView({ state, setState, scale, wide }: ViewProps) {
       </div>
       <Visitor state={state} scale={3} />
       <span class="pp-arena-count">
-        <PipRow count={RAID_TEAM_SIZE} lit={team.length} size="md" label={`${String(team.length)} of ${String(RAID_TEAM_SIZE)} placed`} />
+        <PipRow
+          count={RAID_TEAM_SIZE}
+          lit={team.length}
+          size="md"
+          label={`${String(team.length)} of ${String(RAID_TEAM_SIZE)} placed`}
+        />
       </span>
     </ViewShell>
   );
@@ -480,7 +520,14 @@ function CaveView({ state, setState, scale }: ViewProps) {
   return (
     <ViewShell id="cave" state={state} setState={setState} scale={scale}>
       <div class="pp-cave-mouth">
-        <PixelScene art={{ width: 55, height: 44, placed: [{ sprite: greyed(worldSprite('emberCaves')), x: 0, y: 0 }] }} scale={scale + 1} />
+        <PixelScene
+          art={{
+            width: 55,
+            height: 44,
+            placed: [{ sprite: greyed(worldSprite('emberCaves')), x: 0, y: 0 }],
+          }}
+          scale={scale + 1}
+        />
         <span class={d.canRun ? 'pp-door is-open' : 'pp-door'}>
           <Sprite sprite={glyphOrUnknown(d.canRun ? 'map-door' : 'check')} scale={scale * 2} />
         </span>
@@ -496,7 +543,11 @@ function CaveView({ state, setState, scale }: ViewProps) {
           size="md"
           label={`${String(d.attemptsAllowed - d.attemptsToday)} of ${String(d.attemptsAllowed)} tries left today`}
         />
-        <span class="pp-fact" role="img" aria-label={`Resets at ${clock(d.resetsAt, world.timezone)}`}>
+        <span
+          class="pp-fact"
+          role="img"
+          aria-label={`Resets at ${clock(d.resetsAt, world.timezone)}`}
+        >
           <Sprite sprite={glyphOrUnknown('clock')} scale={2} />
           {clock(d.resetsAt, world.timezone)}
         </span>
@@ -507,7 +558,12 @@ function CaveView({ state, setState, scale }: ViewProps) {
           if (id !== undefined) {
             const c = creatureOf(world, id);
             return (
-              <span key={i} class="pp-team-slot is-full" role="img" aria-label={`${creatureName(c)} in the team`}>
+              <span
+                key={i}
+                class="pp-team-slot is-full"
+                role="img"
+                aria-label={`${creatureName(c)} in the team`}
+              >
                 <Mon species={c.species} scale={3} />
               </span>
             );
@@ -520,8 +576,13 @@ function CaveView({ state, setState, scale }: ViewProps) {
               class={lit ? 'pp-team-slot is-lit' : 'pp-team-slot'}
               aria-label={heldOk ? 'Join the team here' : 'Empty: pick a creature'}
               onClick={() => {
-                if (heldOk) setState((s) => useStation(s, 'cave'));
-                else setState((s) => ({ ...s, ask: 'cave', said: 'Pick a creature for today’s run.' }));
+                if (heldOk) setState((s) => sendToStation(s, 'cave'));
+                else
+                  setState((s) => ({
+                    ...s,
+                    ask: 'cave',
+                    said: 'Pick a creature for today’s run.',
+                  }));
               }}
             >
               {lit && <i class="pp-arrow" aria-hidden="true" />}
@@ -575,7 +636,15 @@ function HouseView({ state, setState, scale, wide }: ViewProps) {
   const lounger = state.lounger === null ? null : creatureOf(world, state.lounger);
   const others = world.residents.filter((r) => r.name !== 'You' && r.creature !== null);
   const sitters = [
-    ...(lounger === null ? [] : [{ key: lounger.id, species: lounger.species, label: `${creatureName(lounger)}, yours, lounging` }]),
+    ...(lounger === null
+      ? []
+      : [
+          {
+            key: lounger.id,
+            species: lounger.species,
+            label: `${creatureName(lounger)}, yours, lounging`,
+          },
+        ]),
     ...others.map((r) => ({
       key: r.userId,
       species: r.creature?.species ?? 'cindle',
@@ -593,7 +662,10 @@ function HouseView({ state, setState, scale, wide }: ViewProps) {
             <span
               key={s.key}
               class={i === 0 && lounger !== null ? 'pp-sitter is-mine' : 'pp-sitter'}
-              ref={cssVars({ '--x': `${String(seat.x * roomScale)}px`, '--y': `${String(seat.y * roomScale)}px` })}
+              ref={cssVars({
+                '--x': `${String(seat.x * roomScale)}px`,
+                '--y': `${String(seat.y * roomScale)}px`,
+              })}
               role="img"
               aria-label={s.label}
             >
@@ -612,7 +684,7 @@ function HouseView({ state, setState, scale, wide }: ViewProps) {
             label="Lounge"
             detail={state.held === null ? '' : creatureName(creatureOf(world, state.held))}
             onClick={() => {
-              setState((s) => useStation(s, 'house'));
+              setState((s) => sendToStation(s, 'house'));
             }}
           />
         </div>
@@ -635,7 +707,11 @@ function ChestView({ state, setState, scale }: ViewProps) {
       <div class="pp-chest-lid" aria-hidden="true">
         <Sprite sprite={glyphOrUnknown('map-cache')} scale={scale * 4} />
       </div>
-      <p class="pp-bag-count" role="img" aria-label={`${String(world.items.length)} of 60 in the bag`}>
+      <p
+        class="pp-bag-count"
+        role="img"
+        aria-label={`${String(world.items.length)} of 60 in the bag`}
+      >
         {String(world.items.length)}/60
       </p>
       <ul class="pp-pieces" aria-label="Gear in the bag">
@@ -722,9 +798,20 @@ function FairView({ state, setState, scale, wide }: ViewProps) {
   return (
     <ViewShell id="fair" state={state} setState={setState} scale={scale}>
       <div class="pp-fair-grounds" aria-hidden="true">
-        <PixelScene art={{ width: 56, height: 45, placed: [{ sprite: worldSprite('festivalGrounds'), x: 0, y: 0 }] }} scale={wide ? 4 : 3} />
+        <PixelScene
+          art={{
+            width: 56,
+            height: 45,
+            placed: [{ sprite: worldSprite('festivalGrounds'), x: 0, y: 0 }],
+          }}
+          scale={wide ? 4 : 3}
+        />
       </div>
-      <p class="pp-fair-when" role="img" aria-label={`The show starts at ${clock(games.showAt, world.timezone)}`}>
+      <p
+        class="pp-fair-when"
+        role="img"
+        aria-label={`The show starts at ${clock(games.showAt, world.timezone)}`}
+      >
         <Sprite sprite={glyphOrUnknown('trophy')} scale={2} />
         {clock(games.showAt, world.timezone)}
       </p>
@@ -747,7 +834,9 @@ function FairView({ state, setState, scale, wide }: ViewProps) {
                 onClick={() => {
                   setState((s) => {
                     const next = { ...s, fair: { ...s.fair, event: e.id } };
-                    return s.held !== null ? enterGames(next) : { ...next, ask: 'fair', said: `${e.name}: who enters?` };
+                    return s.held !== null
+                      ? enterGames(next)
+                      : { ...next, ask: 'fair', said: `${e.name}: who enters?` };
                   });
                 }}
               >

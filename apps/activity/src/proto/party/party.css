@@ -16,8 +16,12 @@
   display: flex;
   flex-direction: column;
   /* The page's body already pads for Discord's safe areas. */
-  height: calc(100vh - var(--discord-safe-area-inset-top, 0px) - var(--discord-safe-area-inset-bottom, 0px));
-  height: calc(100dvh - var(--discord-safe-area-inset-top, 0px) - var(--discord-safe-area-inset-bottom, 0px));
+  height: calc(
+    100vh - var(--discord-safe-area-inset-top, 0px) - var(--discord-safe-area-inset-bottom, 0px)
+  );
+  height: calc(
+    100dvh - var(--discord-safe-area-inset-top, 0px) - var(--discord-safe-area-inset-bottom, 0px)
+  );
   overflow: hidden;
   background: var(--night);
   color: var(--bone);
@@ -36,7 +40,8 @@
 }
 
 /* Things in the scene are buttons without the panel button's look: the art is the button. */
-.pp :is(
+.pp
+  :is(
     .pp-station,
     .pp-mon,
     .pp-sign,
@@ -932,21 +937,24 @@
 
 /* --- The haul --- */
 
+/* On a phone the haul lies on the grass over the clearing: the stations dim behind it. */
 .pp-haul {
   position: absolute;
-  right: 6px;
-  bottom: 6px;
-  left: 6px;
+  inset: 0;
   z-index: 3;
   display: grid;
+  align-content: safe end;
   gap: 0.5rem;
-  max-height: calc(100% - 12px);
   padding: 0.5rem 0.75rem 0.75rem;
   overflow-y: auto;
-  background: var(--dusk);
-  box-shadow:
-    0 0 0 3px var(--ink),
-    inset 0 3px 0 var(--bevel-hi);
+  background: rgb(var(--ink-rgb) / 55%);
+}
+
+.pp-haul .find-list,
+.pp-haul .xp-list,
+.pp-haul-counts {
+  padding: 4px;
+  background: rgb(var(--ink-rgb) / 75%);
 }
 
 .pp-panel .pp-haul {
@@ -986,8 +994,7 @@
 }
 
 .pp-sack-3 {
-  transform: rotate(90deg);
-  opacity: 0.8;
+  transform: scale(1.25, 0.7);
 }
 
 .pp-haul-counts {
@@ -1066,7 +1073,9 @@
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
+  justify-content: safe center;
   min-height: 100%;
+  isolation: isolate;
   padding: 3.25rem 0.5rem 1rem;
 }
 
@@ -1076,6 +1085,7 @@
 
 .pp-view > .pp-ground {
   position: absolute;
+  z-index: -1;
 }
 
 .pp-back {
@@ -1100,10 +1110,11 @@
   fill: var(--bone);
 }
 
+/* The held creature stands at the top right, on the back arrow's line, in the flow (never over the scene). */
 .pp-visitor {
-  position: absolute !important;
-  top: 6px;
-  right: 8px;
+  order: -1;
+  align-self: flex-end;
+  margin: -2.75rem 0.25rem 0 0;
   display: flex;
   align-items: end;
   gap: 4px;
@@ -1139,6 +1150,9 @@
 
 /* A little row of choices (lengths, supplies, blueprints) and the go button. */
 .pp-pack-row {
+  position: sticky !important;
+  bottom: 0;
+  z-index: 3;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1222,11 +1236,11 @@
   image-rendering: pixelated;
 }
 
-.pp-sign.is-chosen {
+.pp-sign.is-chosen canvas {
   box-shadow: var(--ring);
 }
 
-.pp-sign.is-lit {
+.pp-sign.is-lit canvas {
   box-shadow: 0 0 0 3px var(--gold);
 }
 
@@ -1238,16 +1252,38 @@
   cursor: not-allowed;
 }
 
+.pp-sign-name {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  padding-top: 3px;
+  color: var(--bone);
+  font-size: 1rem;
+  line-height: 1.1;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-shadow: var(--ink-outline-thin);
+  white-space: nowrap;
+}
+
+.is-wide .pp-sign-name {
+  font-size: 1.25rem;
+}
+
+.pp-sign.is-dim .pp-sign-name {
+  opacity: 0.5;
+}
+
 .pp-sign-who {
   position: absolute;
+  top: 4px;
   right: 2px;
-  bottom: -6px;
   display: flex;
   gap: 2px;
 }
 
 .pp-sign-word {
-  top: 50%;
+  top: 40%;
   left: 50%;
   transform: translate(-50%, -50%);
 }
@@ -1348,16 +1384,46 @@
   image-rendering: pixelated;
 }
 
-.pp-ring-0 { top: 8%; left: 18%; }
-.pp-ring-1 { top: 2%; left: 42%; }
-.pp-ring-2 { top: 8%; right: 18%; }
-.pp-ring-3 { top: 30%; left: 6%; }
-.pp-ring-4 { top: 30%; right: 6%; }
-.pp-ring-5 { top: 55%; left: 4%; }
-.pp-ring-6 { top: 55%; right: 4%; }
-.pp-ring-7 { bottom: 4%; left: 12%; }
-.pp-ring-8 { bottom: 4%; right: 12%; }
-.pp-ring-9 { bottom: 0; left: 46%; }
+.pp-ring-0 {
+  top: 8%;
+  left: 18%;
+}
+.pp-ring-1 {
+  top: 2%;
+  left: 42%;
+}
+.pp-ring-2 {
+  top: 8%;
+  right: 18%;
+}
+.pp-ring-3 {
+  top: 30%;
+  left: 6%;
+}
+.pp-ring-4 {
+  top: 30%;
+  right: 6%;
+}
+.pp-ring-5 {
+  top: 55%;
+  left: 4%;
+}
+.pp-ring-6 {
+  top: 55%;
+  right: 4%;
+}
+.pp-ring-7 {
+  bottom: 4%;
+  left: 12%;
+}
+.pp-ring-8 {
+  bottom: 4%;
+  right: 12%;
+}
+.pp-ring-9 {
+  bottom: 0;
+  left: 46%;
+}
 
 .pp-boss {
   display: grid;
@@ -1772,14 +1838,38 @@
   animation: pp-ray 600ms steps(4) 1 forwards;
 }
 
-.pp-ray-0 { --dx: 0; --dy: -1; }
-.pp-ray-1 { --dx: 0.7; --dy: -0.7; }
-.pp-ray-2 { --dx: 1; --dy: 0; }
-.pp-ray-3 { --dx: 0.7; --dy: 0.7; }
-.pp-ray-4 { --dx: 0; --dy: 1; }
-.pp-ray-5 { --dx: -0.7; --dy: 0.7; }
-.pp-ray-6 { --dx: -1; --dy: 0; }
-.pp-ray-7 { --dx: -0.7; --dy: -0.7; }
+.pp-ray-0 {
+  --dx: 0;
+  --dy: -1;
+}
+.pp-ray-1 {
+  --dx: 0.7;
+  --dy: -0.7;
+}
+.pp-ray-2 {
+  --dx: 1;
+  --dy: 0;
+}
+.pp-ray-3 {
+  --dx: 0.7;
+  --dy: 0.7;
+}
+.pp-ray-4 {
+  --dx: 0;
+  --dy: 1;
+}
+.pp-ray-5 {
+  --dx: -0.7;
+  --dy: 0.7;
+}
+.pp-ray-6 {
+  --dx: -1;
+  --dy: 0;
+}
+.pp-ray-7 {
+  --dx: -0.7;
+  --dy: -0.7;
+}
 
 @keyframes pp-ray {
   from {
@@ -1812,4 +1902,30 @@
   .pp-z-2 {
     display: none;
   }
+}
+
+/* The haul's blueprints: one row of pictures (each says its name), not a row each. */
+.pp-bps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: rgb(var(--ink-rgb) / 75%);
+}
+
+.pp-bps li {
+  position: relative;
+}
+
+.pp-bp-new {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  padding: 0 3px;
+  background: var(--good);
+  color: var(--ink);
+  font-size: 0.75rem;
+  line-height: 1rem;
 }

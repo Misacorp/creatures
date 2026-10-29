@@ -7,13 +7,7 @@ import { Sprite } from '../../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../../sprites/creature-sprites';
 import { PipRow } from '../../ui/PipRow';
 import { gearName } from '../../gear-view';
-import {
-  RAID_TEAM_SIZE,
-  creatureOf,
-  jobsReady,
-  raidTeamIds,
-  tripsHome,
-} from '../world';
+import { RAID_TEAM_SIZE, creatureOf, jobsReady, raidTeamIds, tripsHome } from '../world';
 import { pipsLeft } from './camp-state';
 import type { PartyState, StationId } from './party-state';
 import { Ground, PixelScene } from './Scene';
@@ -32,11 +26,20 @@ function Face({ species, class: extra }: { species: string; class?: string }) {
 }
 
 function Glyph({ id, scale = 2, class: extra }: { id: string; scale?: number; class?: string }) {
-  return <Sprite sprite={glyphOrUnknown(id)} scale={scale} {...(extra === undefined ? {} : { class: extra })} />;
+  return (
+    <Sprite
+      sprite={glyphOrUnknown(id)}
+      scale={scale}
+      {...(extra === undefined ? {} : { class: extra })}
+    />
+  );
 }
 
 /** What a station shows on its art, and the sentence that says it. */
-function stationState(id: StationId, state: PartyState): { marks: ComponentChildren; says: string } {
+function stationState(
+  id: StationId,
+  state: PartyState,
+): { marks: ComponentChildren; says: string } {
   const { world } = state;
   switch (id) {
     case 'road': {
@@ -107,7 +110,11 @@ function stationState(id: StationId, state: PartyState): { marks: ComponentChild
       return {
         marks: (
           <span class="pp-arena-pips">
-            {locked ? <Glyph id="lock" /> : <PipRow count={RAID_TEAM_SIZE} lit={placed} size="md" />}
+            {locked ? (
+              <Glyph id="lock" />
+            ) : (
+              <PipRow count={RAID_TEAM_SIZE} lit={placed} size="md" />
+            )}
           </span>
         ),
         says: locked
@@ -157,7 +164,11 @@ function stationState(id: StationId, state: PartyState): { marks: ComponentChild
         marks: (
           <>
             <Glyph id="journal" scale={3} class="pp-book" />
-            {!state.readJournal && <span class="pp-bub pp-bub-say pp-station-bang"><span class="pp-bang">!</span></span>}
+            {!state.readJournal && (
+              <span class="pp-bub pp-bub-say pp-station-bang">
+                <span class="pp-bang">!</span>
+              </span>
+            )}
           </>
         ),
         says: state.readJournal ? 'The Journal.' : 'The Journal. A new page.',

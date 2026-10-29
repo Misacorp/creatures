@@ -20,7 +20,8 @@ import {
 } from '../world';
 import { campOrder } from './camp-state';
 
-export type StationId = 'road' | 'forge' | 'arena' | 'cave' | 'house' | 'chest' | 'lectern' | 'fair';
+export type StationId =
+  'road' | 'forge' | 'arena' | 'cave' | 'house' | 'chest' | 'lectern' | 'fair';
 
 /** What is on screen beyond the clearing: a short scene the player is in the middle of. */
 export type Moment =

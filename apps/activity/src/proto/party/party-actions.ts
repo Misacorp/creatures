@@ -6,6 +6,7 @@
 import { content } from '@creatures/game';
 import { destinationName } from '../../trip-view';
 import {
+  RAID_TEAM_SIZE,
   TOUR,
   claimJob,
   claimTrip,
@@ -13,6 +14,7 @@ import {
   evolve,
   jobsReady,
   placeRaid,
+  raidTeamIds,
   sendTrip,
   startJob,
   tripsHome,
@@ -30,7 +32,7 @@ export function pick(state: PartyState, id: string): PartyState {
       return { ...state, held: id, ask: null, said: `${nameOf(state, id)} will go.` };
     }
     if (verdict.ok && state.ask === 'fair') return enterGames({ ...state, held: id });
-    if (verdict.ok) return useStation({ ...state, held: id }, state.open);
+    if (verdict.ok) return sendToStation({ ...state, held: id }, state.open);
     return { ...state, said: `${nameOf(state, id)} cannot: ${verdictWord(state, id)}.` };
   }
   const places = placesFor(id, state);
@@ -62,9 +64,12 @@ export function closeView(state: PartyState): PartyState {
 export function tapStation(state: PartyState, station: StationId): PartyState {
   if (state.held !== null) {
     const verdict = stationVerdict(station, state.held, state);
-    if (verdict.ok) return useStation(state, station);
+    if (verdict.ok) return sendToStation(state, station);
     if (!stationDef(station).takes) return tapStation(putDown(state), station);
-    return { ...state, said: `${stationDef(station).name}: ${(verdict.word ?? '').toLowerCase()}.` };
+    return {
+      ...state,
+      said: `${stationDef(station).name}: ${(verdict.word ?? '').toLowerCase()}.`,
+    };
   }
   return {
     ...state,
@@ -78,7 +83,7 @@ export function tapStation(state: PartyState, station: StationId): PartyState {
 }
 
 /** The held creature goes to the station (the caller checked the verdict). */
-export function useStation(state: PartyState, station: StationId): PartyState {
+export function sendToStation(state: PartyState, station: StationId): PartyState {
   const id = state.held;
   if (id === null) return state;
   const name = nameOf(state, id);
@@ -109,7 +114,10 @@ export function useStation(state: PartyState, station: StationId): PartyState {
     }
     case 'arena': {
       const world = placeRaid(state.world, id);
-      return { ...state, world, held: null, open: 'arena', ask: null, said: `${name} placed.` };
+      // Target first: the camp stays lit until the three spots are full.
+      const full = raidTeamIds(world).length >= RAID_TEAM_SIZE;
+      const ask = state.ask === 'arena' && !full ? state.ask : null;
+      return { ...state, world, held: null, open: 'arena', ask, said: `${name} placed.` };
     }
     case 'cave': {
       const caveTeam = [...state.caveTeam, id].slice(0, CAVE_TEAM_SIZE);
@@ -134,7 +142,12 @@ export function useStation(state: PartyState, station: StationId): PartyState {
       return { ...state, open: 'chest', ask: null, chestNew: false, said: `Equip ${name}.` };
     case 'fair':
       if (state.open === 'fair' && state.fair.event !== null) return enterGames(state);
-      return { ...state, open: 'fair', ask: null, said: `${name} at the fairground. Pick an event.` };
+      return {
+        ...state,
+        open: 'fair',
+        ask: null,
+        said: `${name} at the fairground. Pick an event.`,
+      };
     case 'lectern':
       return state;
   }

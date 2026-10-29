@@ -46,7 +46,12 @@ export interface CreatureBadge {
 export const TIMER_PIPS = 4;
 
 /** Lit pips for the time left (rounded up, so a running timer always shows at least one). */
-export function pipsLeft(startedAt: number, endsAt: number, now: number, count = TIMER_PIPS): number {
+export function pipsLeft(
+  startedAt: number,
+  endsAt: number,
+  now: number,
+  count = TIMER_PIPS,
+): number {
   const total = endsAt - startedAt;
   if (total <= 0 || now >= endsAt) return 0;
   const left = Math.min(total, endsAt - now);
@@ -115,7 +120,13 @@ export function creatureBadge(
     return { bubble: 'evolve', marks, pips: null, destination: null, label: say('Can evolve.') };
   }
   if (creature.waiting) {
-    return { bubble: 'rested', marks, pips: null, destination: null, label: say('Free. Its experience is waiting.') };
+    return {
+      bubble: 'rested',
+      marks,
+      pips: null,
+      destination: null,
+      label: say('Free. Its experience is waiting.'),
+    };
   }
   return { bubble: 'free', marks, pips: null, destination: null, label: say('Free.') };
 }

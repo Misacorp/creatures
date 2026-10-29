@@ -22,7 +22,7 @@ import {
   pick,
   putDown,
   tapStation,
-  useStation,
+  sendToStation,
 } from './party-actions';
 import { partyAtStep, type PartyState, type StationId } from './party-state';
 import { StationView } from './StationView';
@@ -75,7 +75,9 @@ export function PartyScreen({ step }: { step: number }) {
       const el = document
         .elementsFromPoint(p.x, p.y)
         .find((e) => e instanceof HTMLElement && e.dataset['station'] !== undefined);
-      return el instanceof HTMLElement ? ((el.dataset['station'] ?? null) as StationId | null) : null;
+      return el instanceof HTMLElement
+        ? ((el.dataset['station'] ?? null) as StationId | null)
+        : null;
     },
     onDrop: (creatureId, target) => {
       if (target === null) return dropOutcome('none', null, null, '');
@@ -85,7 +87,7 @@ export function PartyScreen({ step }: { step: number }) {
         setState((s) => ({ ...s, said: `${target}: cannot take it.` }));
         return dropOutcome('invalid', null, null, '');
       }
-      setState((s) => useStation({ ...s, held: creatureId }, target));
+      setState((s) => sendToStation({ ...s, held: creatureId }, target));
       return dropOutcome('valid', null, null, '');
     },
   });
@@ -129,7 +131,8 @@ export function PartyScreen({ step }: { step: number }) {
 
   const moment = state.moment;
   const evolving =
-    moment !== null && (moment.kind === 'evolve' || moment.kind === 'evolving' || moment.kind === 'evolved');
+    moment !== null &&
+    (moment.kind === 'evolve' || moment.kind === 'evolving' || moment.kind === 'evolved');
   const haul = moment?.kind === 'haul';
 
   let field;

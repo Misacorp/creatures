@@ -4,7 +4,9 @@ import { GlossaryTag } from '../../Glossary';
 import { LootList } from '../../LootList';
 import { giftTags } from '../../claim-view';
 import { creatureName } from '../../game';
+import { ItemFrame, ItemSprite } from '../../GearArt';
 import { GearItemsContext } from '../../gear-items-context';
+import { gearName } from '../../gear-view';
 import { glyphOrUnknown } from '../../glyphs';
 import { usePrefersReducedMotion } from '../../hooks';
 import { Sprite } from '../../sprites/Sprite';
@@ -74,7 +76,24 @@ export function HaulScene({
       {open && (
         <GearItemsContext.Provider value={state.world.items}>
           <div class="pp-haul-finds">
-            {view.loot !== null && <LootList loot={view.loot} counted label="Gear and blueprints" />}
+            {view.loot !== null && view.loot.gear.length > 0 && (
+              <LootList loot={{ ...view.loot, blueprints: [] }} counted label="Gear" />
+            )}
+            {(view.loot?.blueprints.length ?? 0) > 0 && (
+              <ul class="pp-bps" aria-label="Blueprints">
+                {view.loot?.blueprints.map((b) => (
+                  <li
+                    key={b.baseId}
+                    aria-label={`Blueprint: ${gearName(b.baseId)}${b.duplicate ? '' : ', new'}`}
+                  >
+                    <ItemFrame rarity="common" class="blueprint">
+                      <ItemSprite baseId={b.baseId} scale={3} />
+                    </ItemFrame>
+                    {!b.duplicate && <span class="pp-bp-new">New</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
             {counts.length > 0 && (
               <p class="pp-haul-counts">
                 {counts.map(({ key, ...badge }, i) => (

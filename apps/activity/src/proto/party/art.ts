@@ -69,7 +69,11 @@ function rockRing(width: number, top: number): Placed[] {
 export function stationArt(id: StationId, bossId: string): Composition {
   switch (id) {
     case 'road':
-      return { width: 58, height: 42, placed: [{ sprite: worldSprite('oldCrossroads'), x: 0, y: 0 }] };
+      return {
+        width: 58,
+        height: 42,
+        placed: [{ sprite: worldSprite('oldCrossroads'), x: 0, y: 0 }],
+      };
     case 'forge':
       return {
         width: 40,

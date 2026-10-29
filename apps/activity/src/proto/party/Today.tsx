@@ -33,10 +33,20 @@ export function nextTimers(world: ProtoWorld, count: number): Timer[] {
     list.push({ key: j.id, at: j.endsAt, icon: { glyph: 'anvil' }, label: 'craft done' });
   }
   if (world.games.next.open) {
-    list.push({ key: 'games', at: world.games.next.showAt, icon: { glyph: 'trophy' }, label: 'Games show' });
+    list.push({
+      key: 'games',
+      at: world.games.next.showAt,
+      icon: { glyph: 'trophy' },
+      label: 'Games show',
+    });
   }
   if (world.raid.next !== null) {
-    list.push({ key: 'raid', at: world.raid.next.at, icon: { glyph: 'blade' }, label: 'raid phase' });
+    list.push({
+      key: 'raid',
+      at: world.raid.next.at,
+      icon: { glyph: 'blade' },
+      label: 'raid phase',
+    });
   }
   return list
     .filter((t) => t.at > world.now)
@@ -52,7 +62,11 @@ export function Today({ state }: { state: PartyState }) {
       {timers.map((t) => (
         <li key={t.key} aria-label={`${t.label} at ${clock(t.at, state.world.timezone)}`}>
           <Sprite
-            sprite={'glyph' in t.icon ? glyphOrUnknown(t.icon.glyph) : creatureSpriteOrFallback(t.icon.species)}
+            sprite={
+              'glyph' in t.icon
+                ? glyphOrUnknown(t.icon.glyph)
+                : creatureSpriteOrFallback(t.icon.species)
+            }
             scale={'glyph' in t.icon ? 3 : 2}
           />
           <span class="pp-today-at">{clock(t.at, state.world.timezone)}</span>
