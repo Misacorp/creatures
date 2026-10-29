@@ -8,8 +8,10 @@ import { ablate, type Measured } from './ablation';
 import {
   GATE_BOSSES,
   GATE_DROP,
+  ROBUST_SHARE,
   ROBUST_TARGET,
   TOOL_DROP_MIN,
+  TOOL_SHARE_MIN,
   failingGates,
   familyDrops,
   familyGates,
@@ -25,17 +27,21 @@ import { BOSS_ANSWERS, answerLine, withoutTool, type BossAnswer } from './bossAn
 import {
   NOT_PORTED,
   RAID_BOSS_IDS,
+  RAID_RANKS,
   RAID_SPECS,
   raidBossOf,
   raidMode,
   weekendScore,
   weekendStats,
+  type RaidRank,
   type WeekendStats,
 } from './bosses';
 import {
+  CASUAL_ORDER,
   MARGIN_TARGET,
   MIXED_DRAWS,
   MIXED_SEEDS,
+  RAID_ATK_EXPONENT,
   RAID_HP_EXPONENT,
   RAID_WIDTHS,
   marginOf,
@@ -49,6 +55,7 @@ import {
 } from './raidMeasure';
 import { ALL_ROUND_BENCH, ALL_ROUND_TEAM, gauntletScore, gauntletStats, runStats } from './dungeon';
 import { DUNGEON_DEPTHS, FOE_IDS, FOE_SPECS, foeAt } from './foes';
+import { FOE_QUESTIONS, FOE_QUESTION_GAP, FOE_QUESTION_WIN, questionResult } from './foeQuestions';
 import { FORM_KNACKS, KNACKS } from './knacks';
 import { MECHANICS, coverage } from './mechanics';
 import {
@@ -68,6 +75,17 @@ const knackName = (k: string) => (k === 'none' ? 'no Knack' : (KNACKS[k]?.name ?
 const pickName = (p: Pick) =>
   `${p.formId} (${knackName(p.knack)}${p.talents?.length ? `, ${p.talents.join(', ')}` : ''})`;
 const pct = (x: number) => `${Math.round(x * 100)}%`;
+/** The primary measure (Misa, 2026-10-29): the share of the boss's HP removed, with its spread between weekends. */
+const share = (w: { damageShare: number; damageShareSd?: number }): string =>
+  `${pct(w.damageShare)}${w.damageShareSd === undefined ? '' : ` (sd ${Math.round(w.damageShareSd * 100)})`}`;
+/** The tiers beside it: weekends reaching the first retreat (30% removed), the second (85%) and the kill. */
+const tiers = (w: { tiers: { t1: number; t2: number; kill: number } }): string =>
+  `${pct(w.tiers.t1)} / ${pct(w.tiers.t2)} / ${pct(w.tiers.kill)}`;
+/** A difference in the primary measure: "+8" points of the boss's HP removed. */
+const pts = (x: number): string => {
+  const n = Math.round(100 * x);
+  return n > 0 ? `+${n}` : n < 0 ? `${n}` : '0';
+};
 /** Points lost when something is taken out: `-12`, or `+3` when the line did better without it. */
 const lost = (points: number): string => {
   const n = Math.round(points);
@@ -173,6 +191,10 @@ interface Settings {
     talentDraws: number;
     /** Draws of the mixed server in the HP exponent sensitivity table. */
     sensitivityDraws: number;
+    /** The Boss Rank table: weekends of each measure, draws of the mixed and casual servers, draws of random talents. */
+    rankWeekends: number;
+    rankDraws: number;
+    rankTalentDraws: number;
     /** Independent from-scratch searches per boss (the best on common fresh seeds is reported). */
     scratchSearches: number;
   };
@@ -209,6 +231,9 @@ export const BOSS_SETTINGS = (quick: boolean): Settings =>
           mixedWeekends: 1,
           talentDraws: 4,
           sensitivityDraws: 6,
+          rankWeekends: 20,
+          rankDraws: 8,
+          rankTalentDraws: 4,
           scratchSearches: 1,
         },
         foe: { starts: 40, keep: 6, rounds: 2, seeds: 3, freshSeeds: 10, fights: 16 },
@@ -228,6 +253,9 @@ export const BOSS_SETTINGS = (quick: boolean): Settings =>
           mixedWeekends: 2,
           talentDraws: 10,
           sensitivityDraws: 30,
+          rankWeekends: 60,
+          rankDraws: 40,
+          rankTalentDraws: 10,
           scratchSearches: 2,
         },
         foe: { starts: 120, keep: 10, rounds: 3, seeds: 4, freshSeeds: 24, fights: 40 },
@@ -242,8 +270,9 @@ interface AnswerStudy {
   readonly picks: readonly Pick[];
   readonly tool: ToolCost;
   readonly robust: Robustness;
-  /** What taking each mechanic out of it costs, in win-rate points. */
+  /** What taking each mechanic out of it costs, in win-rate points (the gate check) and in points of the boss's HP removed. */
   readonly measured: readonly Measured[];
+  readonly measuredShare: readonly Measured[];
 }
 
 interface MixedStudy {
@@ -252,6 +281,22 @@ interface MixedStudy {
   readonly casual: CasualKind;
   readonly players: number;
   readonly result: MixedSpread;
+}
+
+/** One boss at one Boss Rank (Misa, 2026-10-29): the prepared line, the same line without its tool, and the unprepared servers. */
+interface RankStudy {
+  readonly bossId: string;
+  readonly bossName: string;
+  readonly rank: RaidRank;
+  readonly hp: number;
+  readonly atk: number;
+  readonly armour: number;
+  readonly robust: Robustness;
+  readonly noTool: Robustness;
+  readonly classic: readonly { readonly width: number; readonly weekend: WeekendStats }[];
+  readonly casual: MixedSpread;
+  readonly mixedRandom: MixedSpread;
+  readonly mixedTop3: MixedSpread;
 }
 
 const CASUAL_KINDS: readonly CasualKind[] = ['random', 'top3'];
@@ -302,6 +347,8 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
   const studies: AnswerStudy[] = [];
   /** The mixed server of every boss at each width and for each kind of casual player. */
   const mixedStudies: MixedStudy[] = [];
+  /** The prepared line, the same without its tool, and the unprepared servers at each Boss Rank. */
+  const rankStudies: RankStudy[] = [];
   /** The prepared answer's tool gap at 4 (the usual raid), 5 and 10 players. */
   const gapRows: string[] = [];
   const gapData: Record<string, unknown> = {};
@@ -375,7 +422,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
       ? weekendStats(boss, prepared.picks, S.raid.weekends, `report:${spec.id}:ans`)
       : undefined;
     raidRows.push(
-      `| ${boss.name} | ${pct(wc.winRate)} | ${pct(wSeeded.winRate)} | ${pct(wScratch.winRate)} | ${Math.round(cl.score.score)} / ${Math.round(seeded.score.score)} / ${Math.round(scratch.score.score)} | ${wc.knockoutsTotal.toFixed(1)} / ${wSeeded.knockoutsTotal.toFixed(1)} / ${wScratch.knockoutsTotal.toFixed(1)} | ${boss.escalation ? `${wc.steps.toFixed(1)} / ${wSeeded.steps.toFixed(1)} / ${wScratch.steps.toFixed(1)} of ${boss.escalation.cap}` : 'none'} |`,
+      `| ${boss.name} | ${share(wc)} (${tiers(wc)}) | ${share(wSeeded)} (${tiers(wSeeded)}) | ${share(wScratch)} (${tiers(wScratch)}) | ${Math.round(cl.score.score)} / ${Math.round(seeded.score.score)} / ${Math.round(scratch.score.score)} | ${wc.knockoutsTotal.toFixed(1)} / ${wSeeded.knockoutsTotal.toFixed(1)} / ${wScratch.knockoutsTotal.toFixed(1)} | ${boss.escalation ? `${wc.steps.toFixed(1)} / ${wSeeded.steps.toFixed(1)} / ${wScratch.steps.toFixed(1)} of ${boss.escalation.cap}` : 'none'} |`,
     );
     bestLinesMd.push(
       `- ${boss.name}, seeded: ${rows(seeded.line, mode.cols)}`,
@@ -399,13 +446,14 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
       const wins = r !== undefined && r.score.score > base.score.score;
       if (wins) beat++;
       answerRows.push(
-        `| ${boss.name} | ${g.label} (${g.tool}) | ${r ? Math.round(r.score.score) : 'n/a'} vs ${Math.round(base.score.score)}${g.talent ? ` (classic with ${g.talent} where legal)` : ''} | ${pct(w.winRate)} (${pct(w.damageShare)} HP) vs ${pct(wbase.winRate)} (${pct(wbase.damageShare)} HP) | ${w.knockoutsTotal.toFixed(1)} | ${boss.escalation ? `${w.steps.toFixed(1)} of ${boss.escalation.cap}` : '-'} |`,
+        `| ${boss.name} | ${g.label} (${g.tool}) | ${r ? Math.round(r.score.score) : 'n/a'} vs ${Math.round(base.score.score)}${g.talent ? ` (classic with ${g.talent} where legal)` : ''} | ${share(w)} (${tiers(w)}) vs ${share(wbase)} (${tiers(wbase)}) | ${w.knockoutsTotal.toFixed(1)} | ${boss.escalation ? `${w.steps.toFixed(1)} of ${boss.escalation.cap}` : '-'} |`,
       );
       ansData.push({
         label: g.label,
         tool: g.tool,
         score: r ? Math.round(r.score.score) : null,
         winRate: w.winRate,
+        damageShare: w.damageShare,
         beatsClassic: wins,
       });
     }
@@ -428,6 +476,11 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
           g.picks,
           (l) => 100 * weekendStats(boss, l, S.raid.weekends, `report:${spec.id}:abl:${k}`).winRate,
         ),
+        measuredShare: ablate(
+          g.picks,
+          (l) =>
+            100 * weekendStats(boss, l, S.raid.weekends, `report:${spec.id}:abl:${k}`).damageShare,
+        ),
       });
     });
     // The margin: the prepared answer and the best line when the boss hits 10% harder, and when it has 10% more HP.
@@ -437,17 +490,17 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     const m = marginOf(boss, overall.line, S.raid.weekends, `report:${spec.id}:margin`);
     if (mp)
       marginRows.push(
-        `| ${boss.name} | prepared answer | ${pct(mp.base)} | ${pct(mp.atk10)} | ${pct(mp.hp10)} |`,
+        `| ${boss.name} | prepared answer | ${pct(mp.share.base)} (kill ${pct(mp.base)}) | ${pct(mp.share.atk10)} (kill ${pct(mp.atk10)}) | ${pct(mp.share.hp10)} (kill ${pct(mp.hp10)}) |`,
       );
     marginRows.push(
-      `| ${boss.name} | best searched (${overallIs}) | ${pct(m.base)} | ${pct(m.atk10)} | ${pct(m.hp10)} |`,
+      `| ${boss.name} | best searched (${overallIs}) | ${pct(m.share.base)} (kill ${pct(m.base)}) | ${pct(m.share.atk10)} (kill ${pct(m.atk10)}) | ${pct(m.share.hp10)} (kill ${pct(m.hp10)}) |`,
     );
     // Other widths: the classic party, and the best line repeated to fill.
     const widths: WidthResult[] = RAID_WIDTHS.map((w) =>
       widthOf(boss, overall.line, w, S.raid.weekends, `report:${spec.id}:w${w}`),
     );
     widthRows.push(
-      `| ${boss.name} | ${widths.map((w) => `${pct(w.classicWin)} / ${pct(w.bestWin)}`).join(' | ')} |`,
+      `| ${boss.name} | ${widths.map((w) => `${pct(w.classicShare)} (kill ${pct(w.classicWin)}) / ${pct(w.bestShare)} (kill ${pct(w.bestWin)})`).join(' | ')} |`,
     );
     // The mixed server (panel 5): 200 draws over 3 seeds, at 5, 10 and 15 players, with the casual players on a random Knack each
     // and on their top creatures by level with no Knack (the post-migration default). One answer per boss, the prepared line
@@ -478,6 +531,59 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
         (m) => m.bossId === spec.id && m.casual === 'random' && m.players === 10,
       ) as MixedStudy
     ).result;
+    // Boss Rank (Misa, 2026-10-29): the prepared line, the same line without its tool, the classic party, a server of casual
+    // players only and the mixed server, at the low, mid and high rank (cards and gates at 30%, 65% and 100% strength).
+    if (prepared) {
+      for (const rk of RAID_RANKS) {
+        const br = raidBossOf(spec.id, { rank: rk.id });
+        const none = withoutTool(prepared.picks, prepared.core ?? []);
+        const tag = `report:${spec.id}:rank:${rk.id}`;
+        const server = (casual: CasualKind, order?: typeof CASUAL_ORDER) =>
+          mixedSpread(
+            br,
+            prepared.picks,
+            [prepared.picks],
+            S.raid.rankDraws,
+            1,
+            2,
+            `${tag}:${casual}${order ? ':casual' : ''}`,
+            prepared.core ?? [],
+            [prepared.core ?? []],
+            { players: 10, casual, ...(order ? { order } : {}) },
+          );
+        rankStudies.push({
+          bossId: spec.id,
+          bossName: boss.name,
+          rank: rk,
+          hp: br.hp,
+          atk: br.atk,
+          armour: br.armour,
+          robust: robustnessOf(
+            br,
+            prepared.picks,
+            S.raid.rankWeekends,
+            S.raid.rankTalentDraws,
+            `${tag}:p`,
+          ),
+          noTool: robustnessOf(br, none, S.raid.rankWeekends, S.raid.rankTalentDraws, `${tag}:n`),
+          classic: [4, 10, 15].map((width) => {
+            const wide = wideBoss(br, width);
+            return {
+              width,
+              weekend: weekendStats(
+                wide,
+                classicFor(raidMode(wide)),
+                S.raid.rankWeekends / 2,
+                `${tag}:c${width}`,
+              ),
+            };
+          }),
+          casual: server('top3', CASUAL_ORDER),
+          mixedRandom: server('random'),
+          mixedTop3: server('top3'),
+        });
+      }
+    }
     // HP left (Misa, 2026-10-29): knockouts are not the only cost; creatures standing but low on HP count too.
     const teams: [string, WeekendStats | undefined][] = [
       ['classic party', wc],
@@ -493,7 +599,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     // Which mechanics the best line really needs: take each out and measure the win rate.
     const measured = ablate(
       overall.line,
-      (l) => 100 * weekendStats(boss, l, S.raid.weekends, `report:${spec.id}:abl`).winRate,
+      (l) => 100 * weekendStats(boss, l, S.raid.weekends, `report:${spec.id}:abl`).damageShare,
     );
     raidAblation.push({ id: spec.id, name: boss.name, measured });
     // The prepared line is a boss's own answer: a tool it cannot do without counts too (the search's best line often has
@@ -505,7 +611,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
         raidAblation.push({
           id: k === 0 ? `${spec.id}:prepared` : `${spec.id}:answer${k}`,
           name: k === 0 ? `${boss.name}, prepared line` : `${boss.name}, answer ${k + 1}`,
-          measured: [...x.measured],
+          measured: [...x.measuredShare],
         }),
       );
     // The tool gap at other widths and the HP exponent's trade (panel 5, finding 7).
@@ -528,22 +634,23 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
           shareWith: withT.damageShare,
           shareWithout: without.damageShare,
           gap: 100 * (withT.winRate - without.winRate),
+          shareGap: 100 * (withT.damageShare - without.damageShare),
         };
       });
       gapRows.push(
-        `| ${boss.name} | ${prepared.tool} | ${cells.map((c) => `${pct(c.withTool)} (${pct(c.shareWith)} HP) / ${pct(c.without)} (${pct(c.shareWithout)} HP); gap ${Math.round(c.gap)}`).join(' | ')} |`,
+        `| ${boss.name} | ${prepared.tool} | ${cells.map((c) => `${pct(c.shareWith)} / ${pct(c.shareWithout)}: **${pts(c.shareGap / 100)}** of the HP (kill ${pct(c.withTool)} / ${pct(c.without)})`).join(' | ')} |`,
       );
       gapData[spec.id] = cells;
     }
     sensitivityRows.push(
       `| ${boss.name} | ${SENSITIVITY_EXPONENTS.map((e) => {
         const wide = wideBoss(boss, 15, e);
-        const c15 = weekendStats(
+        const c15w = weekendStats(
           wide,
           classicFor(raidMode(wide)),
           Math.max(8, S.raid.weekends / 4),
           `report:${spec.id}:sens:${e}`,
-        ).winRate;
+        );
         const mx = mixedSpread(
           boss,
           prepared?.picks ?? overall.line,
@@ -565,15 +672,15 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
               tileLine(prepared.picks, boss.cols, 10),
               Math.max(8, S.raid.weekends / 4),
               `report:${spec.id}:sensgap:${e}`,
-            ).winRate -
+            ).damageShare -
               weekendStats(
                 wide10,
                 tileLine(withoutTool(prepared.picks, prepared.core ?? []), boss.cols, 10),
                 Math.max(8, S.raid.weekends / 4),
                 `report:${spec.id}:sensgap:${e}`,
-              ).winRate)
+              ).damageShare)
           : 0;
-        return `${pct(c15)} / ${pct(mx.winRate)} / ${Math.round(gap10)}`;
+        return `${pct(c15w.damageShare)} (kill ${pct(c15w.winRate)}) / ${pct(mx.weekend.damageShare)} (kill ${pct(mx.winRate)}) / ${pts(gap10 / 100)}`;
       }).join(' | ')} |`,
     );
     raidData[spec.id] = {
@@ -602,9 +709,9 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
   md.push(
     '### The best raid team and the classic party',
     '',
-    `The team search over a whole weekend (it also picks a legal talent for each creature) is run per boss **seeded** with the classic party and the written answers, and **from scratch**, with nothing written (the best of ${S.raid.scratchSearches} independent searches, judged on the same fresh seeds: a search from nothing is a lottery). The Knack and form usage tables below count the from-scratch lines only, so they are not skewed by lines written by hand. Score is the search score (win rate x 100, plus 40 x the share of boss HP removed, minus half a point per knockout); the weekend columns are measured on their own seeds, ${S.raid.weekends} weekends each. Steps is how far the boss escalated in a weekend, on average. Cells read classic / seeded best / from-scratch best.`,
+    `The team search over a whole weekend (it also picks a legal talent for each creature) is run per boss **seeded** with the classic party and the written answers, and **from scratch**, with nothing written (the best of ${S.raid.scratchSearches} independent searches, judged on the same fresh seeds: a search from nothing is a lottery). The Knack and form usage tables below count the from-scratch lines only, so they are not skewed by lines written by hand. **The primary measure (Misa, 2026-10-29) is the share of the boss's HP removed in a weekend** (mean and, in brackets, the standard deviation between weekends); beside it the share of weekends that reached each success tier of the shipped raid (the boss retreats when 30% of its HP is gone and again at 85%, and is defeated at 100%): tier 1 / tier 2 / kill. The kill rate is the secondary column. Score is the search score (win rate x 100, plus 40 x the share of boss HP removed, minus half a point per knockout); the weekend columns are measured on their own seeds, ${S.raid.weekends} weekends each, at the high Boss Rank (full cards). Steps is how far the boss escalated in a weekend, on average. Cells read classic / seeded best / from-scratch best.`,
     '',
-    '| Boss | Classic weekend win | Seeded best win | From-scratch best win | Score (classic / seeded / scratch) | Knockouts | Escalation steps |',
+    '| Boss | Classic: HP removed (tier 1 / tier 2 / kill) | Seeded best | From-scratch best | Score (classic / seeded / scratch) | Knockouts | Escalation steps |',
     '| --- | ---: | ---: | ---: | --- | --- | --- |',
     ...raidRows,
     '',
@@ -622,9 +729,9 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
       : []),
     '### Margin',
     '',
-    `The weekend win rate of the prepared answer (the first written answer) and of the best searched line on the real boss, with 10% more Attack, and with 10% more HP. Target: a well-prepared team wins about ${pct(MARGIN_TARGET)} or more at +10%, but not always (a boss that is beaten by a mile at +10% has no margin to ask for; one that is lost has none to give).`,
+    `The share of the boss's HP removed (and in brackets the kill rate) of the prepared answer (the first written answer) and of the best searched line on the real boss at high rank, with 10% more Attack, and with 10% more HP. A well-prepared team keeps most of its share at +10% (the kill rate is the cliff: about ${pct(MARGIN_TARGET)} or more at +10% is the old target).`,
     '',
-    '| Boss | Best line | Win | +10% Attack | +10% HP |',
+    '| Boss | Best line | HP removed | +10% Attack | +10% HP |',
     '| --- | --- | ---: | ---: | ---: |',
     ...marginRows,
     '',
@@ -638,7 +745,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     '',
     '### The raid at other widths',
     '',
-    `Each player brings one column, so the arena is as wide as the server's raid: ${RAID_WIDTHS.join(', ')} columns a row. Cells read classic party / best line repeated to fill. **The HP rule (panel 5): one exponent for every boss and one smooth curve, with no kink.** The boss's weekend HP is its HP for four players times (players / 4) ^ ${RAID_HP_EXPONENT}. The reason for one exponent: the per-boss exponents (0.15 to 0.6) were tuned to make each boss's mixed server come out, so a gate (Mired, Pierce) looked easier or harder by server size, and the straight line past ten players was a kink; with one exponent, what differs between bosses is only its numbers at four players. ${RAID_HP_EXPONENT} is the lowest exponent at which the classic party does not win at 15 columns on any boss (the table at the end of this section shows the trade). The boss's Attack does not grow, and its area counts scale with the width (a move's counts, and a Build-up's units per step, can be set per 4 columns, \`perColumns\`).`,
+    `Each player brings one column, so the arena is as wide as the server's raid: ${RAID_WIDTHS.join(', ')} columns a row, at the high Boss Rank. Cells read the classic party / the best line repeated to fill, as the share of the boss's HP removed with the kill rate in brackets. **The width rules (panel 5, and the tool-gap fix): one exponent for the HP and one for the Attack, for every boss, each one smooth curve with no kink.** The boss's weekend HP is its HP for four players times (players / 4) ^ ${RAID_HP_EXPONENT}, and its Attack times (players / 4) ^ ${RAID_ATK_EXPONENT}. The first version grew the HP alone and a wide line of the same creatures won without its tool (a boss that hits no harder spreads its hits over more creatures); the Attack exponent keeps the damage each creature takes near what it is at four players. Its area counts scale with the width too (a move's counts, and a Build-up's units per step, can be set per 4 columns, \`perColumns\`).`,
     '',
     `| Boss | ${RAID_WIDTHS.map((w) => `${w} columns`).join(' | ')} |`,
     `| --- | ${RAID_WIDTHS.map(() => '---:').join(' | ')} |`,
@@ -646,7 +753,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     '',
     '#### The tool gap at 4, 5 and 10 players',
     '',
-    `The prepared answer (the first written answer, repeated to fill the wider arena) with and without its own tool, on the same seeds (${S.raid.weekends} weekends each). Cells read win with tool (share of the boss's HP removed) / win without; gap in points. A gate should not depend on the server's size: the gap should stay near what it is at 4 players.`,
+    `The prepared answer (the first written answer, repeated to fill the wider arena) with and without its own tool, on the same seeds (${S.raid.weekends} weekends each), at the high rank. Cells read the share of the boss's HP removed with the tool / without it, in bold the difference in points of the HP, and the kill rates in brackets. A gate should not depend on the server's size: the gap should stay near what it is at 4 players (the Attack exponent is what keeps it: with the HP alone a wide line of the same creatures needed no tool).`,
     '',
     '| Boss | Tool | 4 players | 5 players | 10 players |',
     '| --- | --- | --- | --- | --- |',
@@ -654,7 +761,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     '',
     '#### What the exponent trades',
     '',
-    `Each cell reads the classic party's win rate at 15 columns / the mixed server of 10 (casual players on their top creatures with no Knack, ${S.raid.sensitivityDraws} draws) / the prepared answer's tool gap at 10 players (points), at the exponent in the header. A low exponent lets the classic party walk over a wide raid; a high one takes the mixed server's casual players out of reach of the boss. The tool gap at 10 players is gone at every exponent up to 1 on most bosses (measured on the prepared line repeated to fill): a wider line of the same creatures wins without the tool, so the HP is not what holds a gate at 10 players; the likely cause is that the boss's Attack and its aimed hits do not grow with the players (a content or rules question, not an exponent one). The rule uses ${RAID_HP_EXPONENT}; the boss numbers at four players are the content task's to retune.`,
+    `Each cell reads the classic party at 15 columns / the mixed server of 10 (casual players on their top creatures with no Knack, ${S.raid.sensitivityDraws} draws) / the prepared answer's tool gap at 10 players (points of the boss's HP), at the HP exponent in the header, with the Attack exponent at its rule. A low exponent lets the classic party walk over a wide raid; a high one takes the mixed server's casual players out of reach of the boss. The rule uses ${RAID_HP_EXPONENT} (it was 0.7 before the Attack exponent; kept, since 0.6 let the classic party reach tier 2 at 15 columns on three bosses).`,
     '',
     `| Boss | ${SENSITIVITY_EXPONENTS.map((e) => `e = ${e}`).join(' | ')} |`,
     `| --- | ${SENSITIVITY_EXPONENTS.map(() => '---:').join(' | ')} |`,
@@ -662,53 +769,78 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     '',
     '### A mixed server weekend',
     '',
-    `Players, one column each, side by side: about a fifth min-maxers, three tenths builders and half casual players (10 players: 2 min-maxers, 3 builders, 5 casual players; 5 and 15 keep the shares). Min-maxers and builders bring columns of the prepared line (the first written answer: one answer per boss, at most 2 copies of any form in a column; they have read the boss, so the min-maxers bring the columns with the most of its tool first and the builders take the columns in turn). Casual players have a roster of 12 random forms at random levels and a random legal talent each; the two variants differ in the Knack: **random Knack each** (today's players) and **top creatures by level, no Knack** (the default after the migration, P-14: one creature a row, the top three on a three-row arena). ${S.raid.mixedDraws} draws over ${S.raid.mixedSeeds} seeds (${S.raid.mixedWeekends} weekends a draw). Win is the mean over all draws, with the lowest and highest of the ${S.raid.mixedSeeds} seeds and the standard deviation of the draws' win rates (a draw is one set of casual rosters). Knockouts per player are the mean a weekend for one player of that kind (a min-maxer, a builder, a casual player); the HP column is the team's HP left at the weekend's end.`,
+    `Players, one column each, side by side: about a fifth min-maxers, three tenths builders and half casual players (10 players: 2 min-maxers, 3 builders, 5 casual players; 5 and 15 keep the shares). Min-maxers and builders bring columns of the prepared line (the first written answer: one answer per boss, at most 2 copies of any form in a column; they have read the boss, so the min-maxers bring the columns with the most of its tool first and the builders take the columns in turn). Casual players have a roster of 12 random forms at random levels and a random legal talent each; the two variants differ in the Knack: **random Knack each** (today's players) and **top creatures by level, no Knack** (the default after the migration, P-14: one creature a row, the top three on a three-row arena). ${S.raid.mixedDraws} draws over ${S.raid.mixedSeeds} seeds (${S.raid.mixedWeekends} weekends a draw). HP removed is the mean over all draws (sd between weekends), with the share of weekends reaching tier 1 (30% removed), tier 2 (85%) and the kill, and in brackets the lowest and highest kill rate of the ${S.raid.mixedSeeds} seeds; the draw spread is the standard deviation of the draws' kill rates (a draw is one set of casual rosters). Knockouts per player are the mean a weekend for one player of that kind (a min-maxer, a builder, a casual player); the HP column is the team's HP left at the weekend's end.`,
     '',
-    '| Boss | Players | Casual players | Win (seeds) | Draw spread (sd) | Knockouts | Per min-maxer / builder / casual | HP left (standing) |',
-    '| --- | ---: | --- | ---: | ---: | ---: | --- | --- |',
+    '| Boss | Players | Casual players | HP removed | Tier 1 / tier 2 / kill (kill by seed) | Draw spread of the kill rate (sd) | Knockouts | Per min-maxer / builder / casual | HP left (standing) |',
+    '| --- | ---: | --- | ---: | --- | ---: | ---: | --- | --- |',
     ...mixedStudies.map((m) => {
       const r = m.result;
-      return `| ${m.bossName} | ${m.players} | ${CASUAL_NAME[m.casual]} | ${pct(r.winRate)} (${pct(Math.min(...r.seedWins))} to ${pct(Math.max(...r.seedWins))}; ${pct(r.weekend.damageShare)} HP) | ${Math.round(r.drawSd * 100)} pts | ${r.knockouts.toFixed(1)} | ${r.knockoutsPerPlayer.m.toFixed(2)} / ${r.knockoutsPerPlayer.b.toFixed(2)} / ${r.knockoutsPerPlayer.c.toFixed(2)} | ${healthCells(r.weekend).slice(3).join(' ')} |`;
+      return `| ${m.bossName} | ${m.players} | ${CASUAL_NAME[m.casual]} | ${share(r.weekend)} | ${tiers(r.weekend)} (${pct(Math.min(...r.seedWins))} to ${pct(Math.max(...r.seedWins))}) | ${Math.round(r.drawSd * 100)} pts | ${r.knockouts.toFixed(1)} | ${r.knockoutsPerPlayer.m.toFixed(2)} / ${r.knockoutsPerPlayer.b.toFixed(2)} / ${r.knockoutsPerPlayer.c.toFixed(2)} | ${healthCells(r.weekend).slice(3).join(' ')} |`;
     }),
     '',
-    '### Every answer\u2019s own tool (panel 5)',
+    '### Boss Rank: the same weekends at a low, a mid and the high rank',
     '',
-    `Each written answer names its tool (\`core\`): its Knacks become no Knack and its talents are dropped, on the same seeds (${S.raid.weekends} weekends). A tool is worth it when the answer loses at least ${TOOL_DROP_MIN} points without it. The Mired column is what taking the whole Debuff family (Squelch Song, Mud Wall and the rest of the family) out of the answer costs, and the last column lists the other Knack families whose removal costs more than ${GATE_DROP} points (a gate carried from another boss).`,
+    `Every rule card and boss gate has a strength from 0% to 100% (\`strengthBp\`), and the strength rises with the server's Boss Rank (Misa, 2026-10-29). Reflection returns that share of the reaction's bonus; Shake It Off clears that share of the Mired; Reaction and Element Resistance cut that share of what they cut at full strength; a Build-up step grows the boss by that share; a silence hits that share of its slots and lasts that share of its turns; Judgement Bolt hits for that share of the Payoff's Max HP (a one-shot at full strength, a heavy hit below it); half of a boss's armour is its hide and the other half is its card, the strength's share. A card *asks* for a tool at low strength and *requires* it at high strength. The three ranks are ${RAID_RANKS.map((r) => `**${r.id}** (about rank ${r.rank}: cards at ${r.strengthBp / 100}%)`).join(', ')}. HP and Attack follow each boss's ladder (\`ranks\` in its spec; the high rank is the spec): a lower rank keeps the same or a bigger pool, because its cards are soft and every lab creature is level 25 at every rank (the shipped ladder's early ranks are small because the roster is small; the lab has no roster to grow). ${S.raid.rankWeekends} weekends each, ${S.raid.rankDraws} draws of the mixed and casual servers, ${S.raid.rankTalentDraws} draws of random talents. Cells read the share of the boss's HP removed (sd between weekends), then tier 1 / tier 2 / kill.`,
     '',
-    '| Boss | Answer (tool) | Win with | Win without | Drop (pts) | Own tool | Mired family (Debuff) removed | Other gates carried |',
-    '| --- | --- | ---: | ---: | ---: | --- | ---: | --- |',
+    '#### The prepared line and its tool',
+    '',
+    '| Boss | Rank | HP / Attack / armour | Prepared, as written | Prepared, random legal talents | Same line without its tool (random talents) | Tool adds | Talents add (random over none) |',
+    '| --- | --- | --- | --- | --- | --- | ---: | ---: |',
+    ...rankStudies.map((r) => {
+      const cell = (w: WeekendStats) => `${share(w)} (${tiers(w)})`;
+      const rnd = (x: Robustness['random']) =>
+        `${pct(x.damageShare)} (sd ${Math.round(x.damageShareSd * 100)}; ${pct(x.tiers.t1)} / ${pct(x.tiers.t2)} / ${pct(x.tiers.kill)})`;
+      return `| ${r.bossName} | ${r.rank.id} | ${r.hp} / ${r.atk} / ${r.armour} | ${cell(r.robust.written)} | ${rnd(r.robust.random)} | ${rnd(r.noTool.random)} | ${pts(r.robust.random.damageShare - r.noTool.random.damageShare)} | ${pts(r.robust.random.damageShare - r.robust.none.damageShare)} |`;
+    }),
+    '',
+    '#### The unprepared: the classic party, a server of casual players, the mixed server',
+    '',
+    `The classic party at 4, 10 and 15 columns (the same three creatures in every column); a server of ten casual players (their top creatures by level, no Knack, nobody has read the boss); the mixed server of ten (2 min-maxers, 3 builders, 5 casual players) with the casual players on a random Knack each and on no Knack.`,
+    '',
+    '| Boss | Rank | Classic, 4 columns | Classic, 10 | Classic, 15 | Casual server of 10 | Mixed 10, random Knack | Mixed 10, no Knack |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- |',
+    ...rankStudies.map((r) => {
+      const cell = (w: WeekendStats) => `${share(w)} (${tiers(w)})`;
+      return `| ${r.bossName} | ${r.rank.id} | ${r.classic.map((c) => cell(c.weekend)).join(' | ')} | ${cell(r.casual.weekend)} | ${cell(r.mixedRandom.weekend)} | ${cell(r.mixedTop3.weekend)} |`;
+    }),
+    '',
+    '### Every answer’s own tool (panel 5)',
+    '',
+    `Each written answer names its tool (\`core\`): its Knacks become no Knack and its talents are dropped, on the same seeds (${S.raid.weekends} weekends), at the high rank. **The primary measure is the share of the boss's HP removed** (Misa, 2026-10-29): a tool is worth it when the answer removes at least ${Math.round(TOOL_SHARE_MIN * 100)} points more of the HP with it. The kill rate is the cliff beside it (a drop of ${TOOL_DROP_MIN} points or more is the old test). The Mired column is what taking the whole Debuff family (Squelch Song, Mud Wall and the rest of the family) out of the answer costs in points of kill rate (and, in brackets, of the boss's HP removed), and the last column lists the other Knack families whose removal costs more than ${GATE_DROP} points of kill rate (a gate carried from another boss).`,
+    '',
+    '| Boss | Answer (tool) | HP removed with | HP removed without | Tool adds | Kill with / without (drop) | Own tool | Mired family (Debuff) removed | Other gates carried |',
+    '| --- | --- | --- | --- | ---: | --- | --- | ---: | --- |',
     ...studies.map((st) => {
       const own = ownFamilies(st.answer.core ?? []);
       const drops = familyDrops(st.measured);
       const other = Object.entries(drops)
         .filter(([f, d]) => d > GATE_DROP && !own.includes(f))
         .map(([f, d]) => `${f} (-${Math.round(d)})`);
-      return `| ${st.bossName} | ${st.answer.label} (${st.answer.tool}) | ${pct(st.tool.withTool)} (${pct(st.tool.shareWith)} HP) | ${pct(st.tool.without)} (${pct(st.tool.shareWithout)} HP) | ${Math.round(st.tool.drop)} | ${st.tool.drop >= TOOL_DROP_MIN ? 'ok' : '**fails**'} | ${drops['Debuff'] === undefined ? 'none carried' : lost(drops['Debuff'])} | ${other.join(', ') || '-'} |`;
+      return `| ${st.bossName} | ${st.answer.label} (${st.answer.tool}) | ${share(st.tool.withStats)} (${tiers(st.tool.withStats)}) | ${share(st.tool.withoutStats)} (${tiers(st.tool.withoutStats)}) | ${pts(st.tool.shareDrop / 100)} | ${pct(st.tool.withTool)} / ${pct(st.tool.without)} (${Math.round(st.tool.drop)}) | ${st.tool.shareDrop >= TOOL_SHARE_MIN * 100 ? 'ok' : '**fails**'} | ${drops['Debuff'] === undefined ? 'none carried' : `${lost(drops['Debuff'])} (HP ${lost(familyDrops(st.measuredShare)['Debuff'] ?? 0)})`} | ${other.join(', ') || '-'} |`;
     }),
     '',
-    `**${studies.filter((x) => x.tool.drop >= TOOL_DROP_MIN).length} of ${studies.length} written answers lose at least ${TOOL_DROP_MIN} points without their own tool.**`,
+    `**${studies.filter((x) => x.tool.shareDrop >= TOOL_SHARE_MIN * 100).length} of ${studies.length} written answers remove at least ${Math.round(TOOL_SHARE_MIN * 100)} points more of the boss's HP with their own tool; ${studies.filter((x) => x.tool.drop >= TOOL_DROP_MIN).length} lose at least ${TOOL_DROP_MIN} points of kill rate without it.**`,
     '',
     '### Robustness: random legal talents and no talents (panel 5)',
     '',
-    `Each written answer as written (the talents the search chose), with random legal talents (one talent for each creature, from its line's pool for its role, ${S.raid.talentDraws} draws; the mean win rate and the lowest and highest draw) and with no talents, ${S.raid.weekends} weekends each. In brackets, the mean share of the boss's HP the weekend removed. Talents are meant to be about a fifth of a result (R20). **Target: the prepared line with random legal talents wins about ${pct(ROBUST_TARGET)} or more.**`,
+    `Each written answer as written (the talents the search chose), with random legal talents (one talent for each creature, from its line's pool for its role, ${S.raid.talentDraws} draws) and with no talents, ${S.raid.weekends} weekends each, at the high rank. Cells read the share of the boss's HP removed (sd between weekends), with the tiers and the kill rate beside it; the random talents' range is the lowest and highest draw's mean share. The last two columns are what the talents add in points of the HP (written over none; random over none). Talents are meant to be about a fifth of a result (R20) and not to decide the weekend. **Target: the prepared line with random legal talents removes about ${pct(ROBUST_SHARE)} of the HP or more (and kills about ${pct(ROBUST_TARGET)} of weekends or more is the old, cliff version).**`,
     '',
-    '| Boss | Answer (tool) | As written | Random legal talents (range) | No talents | Target |',
-    '| --- | --- | --- | --- | --- | --- |',
+    '| Boss | Answer (tool) | As written | Random legal talents (range of draws) | No talents | Talents add: written / random | Target |',
+    '| --- | --- | --- | --- | --- | --- | --- |',
     ...studies.map((st, i) => {
       const first = studies.findIndex((x) => x.bossId === st.bossId) === i;
-      const cell = (w: { winRate: number; damageShare: number }) =>
-        `${pct(w.winRate)} (${pct(w.damageShare)} HP)`;
+      const cell = (w: WeekendStats) => `${share(w)} (${tiers(w)})`;
       const r = st.robust.random;
-      return `| ${st.bossName} | ${st.answer.label} (${st.answer.tool})${first ? ', prepared' : ''} | ${cell(st.robust.written)} | ${pct(r.winRate)} (${pct(r.minWin)} to ${pct(r.maxWin)}; ${pct(r.damageShare)} HP) | ${cell(st.robust.none)} | ${r.winRate >= ROBUST_TARGET ? 'met' : '**below**'} |`;
+      return `| ${st.bossName} | ${st.answer.label} (${st.answer.tool})${first ? ', prepared' : ''} | ${cell(st.robust.written)} | ${pct(r.damageShare)} (sd ${Math.round(r.damageShareSd * 100)}; ${pct(r.minShare)} to ${pct(r.maxShare)}; ${pct(r.tiers.t1)} / ${pct(r.tiers.t2)} / ${pct(r.tiers.kill)}) | ${cell(st.robust.none)} | ${pts(st.robust.written.damageShare - st.robust.none.damageShare)} / ${pts(r.damageShare - st.robust.none.damageShare)} | ${r.damageShare >= ROBUST_SHARE ? 'met' : '**below**'} |`;
     }),
     '',
-    `**The prepared line with random legal talents wins ${ROBUST_TARGET * 100}% or more on ${studies.filter((x, i) => studies.findIndex((y) => y.bossId === x.bossId) === i && x.robust.random.winRate >= ROBUST_TARGET).length} of ${new Set(studies.map((x) => x.bossId)).size} bosses.**`,
+    `**The prepared line with random legal talents removes ${pct(ROBUST_SHARE)} of the HP or more on ${studies.filter((x, i) => studies.findIndex((y) => y.bossId === x.bossId) === i && x.robust.random.damageShare >= ROBUST_SHARE).length} of ${new Set(studies.map((x) => x.bossId)).size} bosses (and kills ${pct(ROBUST_TARGET)} or more on ${studies.filter((x, i) => studies.findIndex((y) => y.bossId === x.bossId) === i && x.robust.random.winRate >= ROBUST_TARGET).length}).**`,
     '',
     '### Intended answers (P-13)',
     '',
-    'An answer works when its score beats the classic party’s on the same boss. Each boss has two or more, on different tools.',
+    'An answer works when its score beats the classic party’s on the same boss. Each boss has two or more, on different tools. The comparison is in the share of the boss’s HP removed, with the tiers (30% / 85% / kill) beside it.',
     '',
-    '| Boss | Answer (tool) | Score vs classic | Weekend win vs classic | Knockouts | Steps |',
+    '| Boss | Answer (tool) | Score vs classic | HP removed (tier 1 / tier 2 / kill) vs classic | Knockouts | Steps |',
     '| --- | --- | ---: | ---: | ---: | --- |',
     ...answerRows,
     '',
@@ -726,6 +858,25 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     drawSd: m.result.drawSd,
     knockouts: m.result.knockouts,
     knockoutsPerPlayer: m.result.knockoutsPerPlayer,
+  }));
+  data['ranks'] = rankStudies.map((r) => ({
+    boss: r.bossId,
+    rank: r.rank.id,
+    strengthBp: r.rank.strengthBp,
+    hp: r.hp,
+    atk: r.atk,
+    armour: r.armour,
+    preparedWritten: { share: r.robust.written.damageShare, tiers: r.robust.written.tiers },
+    preparedRandom: { share: r.robust.random.damageShare, tiers: r.robust.random.tiers },
+    noToolRandom: { share: r.noTool.random.damageShare, tiers: r.noTool.random.tiers },
+    classic: r.classic.map((c) => ({
+      width: c.width,
+      share: c.weekend.damageShare,
+      tiers: c.weekend.tiers,
+    })),
+    casual: { share: r.casual.weekend.damageShare, tiers: r.casual.weekend.tiers },
+    mixedRandom: { share: r.mixedRandom.weekend.damageShare, tiers: r.mixedRandom.weekend.tiers },
+    mixedTop3: { share: r.mixedTop3.weekend.damageShare, tiers: r.mixedTop3.weekend.tiers },
   }));
   data['raidAnswers'] = { beat, total: answers };
   data['illegalAnswers'] = illegalNotes;
@@ -884,7 +1035,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
   md.push(
     '## The gate check (P-05, P-10)',
     '',
-    `A Knack family is a **gate** on a boss when taking it out of one of the boss's written answers costs more than ${GATE_DROP} points of weekend win rate (${S.raid.weekends} weekends, the same seeds with and without). **Gate: no Knack family is a gate on ${GATE_BOSSES} or more bosses.** Panel 5 found Mired (the Debuff family) on 9 of the 10 answers.`,
+    `A Knack family is a **gate** on a boss when taking it out of one of the boss's written answers costs more than ${GATE_DROP} points of weekend kill rate (${S.raid.weekends} weekends, the same seeds with and without). **Gate: no Knack family is a gate on ${GATE_BOSSES} or more bosses.** Panel 5 found Mired (the Debuff family) on 9 of the 10 answers.`,
     '',
     '| Knack family | Bosses it gates | Answers |',
     '| --- | ---: | --- |',
@@ -928,9 +1079,9 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
       const boss = raidBossOf(st.bossId);
       const line = st.picks.map((p) => (p.knack === k ? { ...p, knack: 'none' } : p));
       const salt = `report:${st.bossId}:knack:${k}`;
-      const base = weekendStats(boss, st.picks, S.raid.weekends, salt).winRate;
-      const cut = weekendStats(boss, line, S.raid.weekends, salt).winRate;
-      return `${st.bossName}: ${lost(100 * (base - cut))}`;
+      const base = weekendStats(boss, st.picks, S.raid.weekends, salt);
+      const cut = weekendStats(boss, line, S.raid.weekends, salt);
+      return `${st.bossName}: ${pts(base.damageShare - cut.damageShare)} of the HP (kill ${lost(100 * (base.winRate - cut.winRate))})`;
     });
     const u = usageOf.get(k);
     return {
@@ -950,7 +1101,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     '',
     `The Knacks panel 5 named: six with almost no picks on the real bosses, and Guard's Shadow, far above the rest. Picks and ratio are from the table above; the last two columns are how many written answers carry it and what taking it out of each costs (points of weekend win rate, ${S.raid.weekends} weekends). A Knack that costs an answer nothing is not an answer's tool.`,
     '',
-    '| Knack | Forms | Picks | Ratio | Written answers carrying it | Win rate lost without it |',
+    '| Knack | Forms | Picks | Ratio | Written answers carrying it | Lost without it |',
     '| --- | --- | ---: | ---: | ---: | --- |',
     ...knackRows.map((r) => r.row),
     '',
@@ -985,7 +1136,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
   data['bossForms'] = Object.fromEntries(forms);
 
   // Which mechanics a boss or foe really calls for: take the mechanic out of its best line and measure what the line loses.
-  const RAID_DROP = 10;
+  const RAID_DROP = 5;
   const FOE_DROP = 10;
   const deepest = DUNGEON_DEPTHS[DUNGEON_DEPTHS.length - 1] ?? 7;
   const foeAblation: { id: string; name: string; measured: Measured[] }[] = [];
@@ -1000,6 +1151,13 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
       measured: ablate(line, (l) => score(l, S.foe.fights, `report:foe:${id}:abl`).score),
     });
   }
+  // The foes' questions (Misa, 2026-10-29): each foe asks one mechanic, measured as a team with its tool against the same without.
+  const questionResults = Object.values(FOE_QUESTIONS).map((q) =>
+    questionResult(q, quick ? 60 : 200, 'report:fq'),
+  );
+  const questionCalls = questionResults.filter(
+    (r) => r.gap >= FOE_QUESTION_GAP && r.withTool >= FOE_QUESTION_WIN,
+  );
   const calledBy = (mechanicId: string) => [
     ...raidAblation.flatMap((r) => {
       const m = r.measured.find((x) => x.mechanic.id === mechanicId);
@@ -1009,6 +1167,13 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
       const m = r.measured.find((x) => x.mechanic.id === mechanicId);
       return m && m.drop >= FOE_DROP ? [{ name: r.name, drop: m.drop, unit: 'score' }] : [];
     }),
+    ...questionCalls
+      .filter((r) => r.question.mechanic === mechanicId)
+      .map((r) => ({
+        name: `${foeAt(r.question.foe, 1).name}'s question`,
+        drop: 100 * r.gap,
+        unit: 'pts of win rate',
+      })),
   ];
   const measuredRows = MECHANICS.map((mechanic) => {
     const hasTool = raidAblation[0]?.measured.find((x) => x.mechanic.id === mechanic.id)?.hasTool;
@@ -1019,7 +1184,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
   md.push(
     '## Mechanics the bosses and foes call for (measured)',
     '',
-    `Every Knack family, keyword, rule and talent kind should be the answer or the problem for at least one boss or foe. A mechanic is **called for** by a raid boss only when taking it out of that boss's best line or of any of its written answers (its Knacks become none, its talents are dropped) lowers the weekend win rate by ${RAID_DROP} points or more, on the same seeds (${S.raid.weekends} weekends); a foe, when the best line's score at depth ${deepest} (where floor bosses have their signature) falls by ${FOE_DROP} or more (${S.foe.fights} fights). The drop is measured, not read off the boss's data. A mechanic only a boss has (an escalation feed, Adaptation) has no tool on a line to take out; those are in the features-present list below.`,
+    `Every Knack family, keyword, rule and talent kind should be the answer or the problem for at least one boss or foe. A mechanic is **called for** by a raid boss only when taking it out of that boss's best line or of any of its written answers (its Knacks become none, its talents are dropped) lowers the share of the boss's HP removed in a weekend by ${RAID_DROP} points or more, on the same seeds (${S.raid.weekends} weekends); a foe, when the best line's score at depth ${deepest} (where floor bosses have their signature) falls by ${FOE_DROP} or more (${S.foe.fights} fights), or when its **question** (below) is won clearly more often with the tool: a team of three with the mechanic's Knack and the same team without it, on the foe at the depth and the share of its HP and Attack the question names, at least ${Math.round(FOE_QUESTION_GAP * 100)} points more of the fights. The drop is measured, not read off the boss's data. A mechanic only a boss has (an escalation feed, Adaptation) has no tool on a line to take out; those are in the features-present list below.`,
     '',
     '| Mechanic | Kind | Called for by (measured drop) |',
     '| --- | --- | --- |',
@@ -1061,9 +1226,36 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     ...foeAblation.map((r) => ({
       id: r.id,
       name: r.name,
-      named: r.measured.filter((x) => x.drop >= FOE_DROP).map((x) => x.mechanic),
+      named: [
+        ...r.measured.filter((x) => x.drop >= FOE_DROP).map((x) => x.mechanic),
+        ...questionCalls
+          .filter((q) => q.question.foe === r.id)
+          .flatMap((q) => MECHANICS.filter((m) => m.id === q.question.mechanic)),
+      ].filter((m, i, all) => all.findIndex((y) => y.id === m.id) === i),
     })),
   ];
+  md.push(
+    '### What each foe asks: the questions',
+    '',
+    `Each foe has one question (\`packages/lab/src/foeQuestions.ts\`): a team of three with the tool and the same team without it, on the foe at the depth, HP and Attack shown (a foe at 150% HP is what it is in an elite room or deeper down; an ordinary foe at an ordinary depth is beaten by the best searched team whatever it carries, so the ablation above names little). The foe calls for the mechanic when the team with the tool wins at least ${Math.round(FOE_QUESTION_WIN * 100)}% of the fights and at least ${Math.round(FOE_QUESTION_GAP * 100)} points more often than the team without it (${quick ? 60 : 200} fights each).`,
+    '',
+    '| Foe | Asks | Mechanic (tool) | Depth / HP / Attack | Win with / without | Gap |',
+    '| --- | --- | --- | --- | --- | ---: |',
+    ...questionResults.map(
+      (r) =>
+        `| ${foeAt(r.question.foe, 1).name} | ${FOE_ASKS.get(r.question.foe) ?? ''} | ${MECHANICS.find((m) => m.id === r.question.mechanic)?.name ?? r.question.mechanic} (${r.question.tool.map(knackName).join(', ')}) | ${r.question.depth} / ${r.question.hpBp / 100}% / ${r.question.atkBp / 100}% | ${pct(r.withTool)} / ${pct(r.without)} | ${Math.round(100 * r.gap)} ${r.gap >= FOE_QUESTION_GAP && r.withTool >= FOE_QUESTION_WIN ? '' : '**fails**'} |`,
+    ),
+    '',
+    `**${questionCalls.length} of ${questionResults.length} foes call for their mechanic by their question.**`,
+    '',
+  );
+  data['foeQuestions'] = questionResults.map((r) => ({
+    foe: r.question.foe,
+    mechanic: r.question.mechanic,
+    withTool: r.withTool,
+    without: r.without,
+    gap: r.gap,
+  }));
   md.push(
     '### What each boss measurably calls for',
     '',

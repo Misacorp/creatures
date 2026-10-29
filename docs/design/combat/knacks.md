@@ -22,7 +22,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 | Evasion aura | Dodge for the creatures beside it or in its row (the largest aura applies). | Hide in Mist, Thick Fog |
 | Row Ward | Cuts area damage for its row or the creatures beside it (the largest applies). | Keep the Heat In, Living Shelter |
 | Ward | Keeps the creatures beside it from being silenced. | Lantern Glow |
-| Pierce | Ignores some boss armour. | Tunnel Through |
+| Pierce | Ignores some boss armour. | Tunnel Through, Gnaw Through |
 | Partner | A bonus on its hits while a given role is, or is not, beside it. | Guard's Shadow, Territorial |
 | Support shape | Changes where a Support's boost and heal land, or replaces them. | Clear Skies, Sunbeam, Curl Up, Wide Warmth, Drizzle, Starlight |
 | Sustain | Heals, on a reaction or at round start. | Circle Round, Clear the Air, Hearth |
@@ -50,7 +50,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 | voltaro | Zoom, Double Mark, Zigzag |
 | ohmouse | Catch the Bolts, Lightning Ears |
 | cindle | Detonate, Leave a Trail |
-| pyrelynx | Detonate, Leave a Trail, Guard's Shadow |
+| pyrelynx | Detonate, Leave a Trail, Guard's Shadow, Gnaw Through |
 | wickat | Lead the Way, Steady Mark, Double Mark |
 | mistnewt | Wide Reach, Hide in Mist |
 | fogwyrm | Wide Reach, Hide in Mist, Thick Fog |
@@ -211,6 +211,13 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 - **Forms:** magmole
 - **Intent (for contributors, never shown to players):** Answers armoured bosses for plain hitters.
 
+### Gnaw Through
+
+- **Text:** Its own hits ignore a third of the boss's armour.
+- **Family:** Pierce
+- **Forms:** pyrelynx
+- **Intent (for contributors, never shown to players):** Pierce for a Payoff of a common species: its own plain and reaction hits get past thick bark (Thornmother, Tar Leech), where Tunnel Through helps the creatures beside a Support. Only the Payoff's hits, so it is a choice for one creature, not a row.
+
 ### Draw Fire
 
 - **Text:** {Taunt}. Armour +15.
@@ -283,7 +290,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Guard's Shadow
 
-- **Text:** +25% on its hits while a living Guard stands beside it.
+- **Text:** +15% on its hits while a living Guard stands beside it. Armour -8.
 - **Family:** Partner
 - **Forms:** pyrelynx
 - **Intent (for contributors, never shown to players):** A Payoff that wants a Guard partner, ideally another player's in the raid. The same name as the gear line with the same effect.
