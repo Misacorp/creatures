@@ -3488,3 +3488,12 @@ Misa noticed that a PR adding only a retro file ran every CI job. He asked for a
 ## 2026-10-29: Opt-in harder raids belong to the endgame
 
 **Decision (Misa).** An optional harder version of the week's boss (an extra rule card, a better chest) is a good idea, but for the endgame: once players have crafted gear, max-level creatures and less to strive for, choosing more difficulty means more. Not in combat v2's first release.
+
+## 2026-10-29: Raid tuning aims at success tiers and robustness
+
+**Decision (lead).** The honest measures after panel 5 showed the raid fights are knife-edge damage races: prepared answers won 92% to 100% with their exact talents but 0% to 28% with random legal talents, and one HP rule for all bosses emptied mixed servers. Two changes of aim for the lab:
+
+- **Success tiers, as the shipped raid has them:** the boss retreats at 70% and at 15% of its HP left, and is defeated at 0 (`RULES.raid.phases[].clearAtLossBp`). The lab reports the share of weekends reaching each tier, not only the kill: a prepared team usually kills, a mixed server usually reaches the second retreat and sometimes kills, an unprepared party may reach the first.
+- **Robustness:** prepared answers are tuned to win with random legal talents too (about 60% or more), since a talent is meant to be about a fifth of a result, not the whole weekend.
+
+Also: Stubborn is once per weekend and never heals; further anchors of a move skip creatures already in its shape; moves on one boss turn land in the boss card's order (R8.3); one HP exponent (0.7) for every boss.
