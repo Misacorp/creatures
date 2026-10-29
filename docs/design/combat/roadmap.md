@@ -43,7 +43,28 @@ Big simulations come in phase 5 on purpose: week-by-week and Boss Rank numbers m
 
 ## Progress
 
-| Phase | State                                                                                                                                                                                                                                                                                                                                                               |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | In progress. Done: rules v0.6; Knacks for every form; combat talents (R20); panel 2. Done since: Knacks grow on evolution (R11), talent pools per line (R20). Next slices: Zigzag, the never-chosen Knacks, talent numbers, bosses and dungeon foes (with Thick Hide's armour and wide raid rows). Content gap: Mire has no Setter or Payoff (new species and art). |
-| 2–8   | Not started                                                                                                                                                                                                                                                                                                                                                         |
+| Phase | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | In progress (2026-10-29). Done: rules v0.8; Knacks for every form, growing on evolution (R11); the talent library with line pools, tuned so talents are about 20% of a team's result (R20, `modifiers.md`); armour per species; the five raid bosses and fifteen dungeon foes with Build-up, new attack shapes and announced attacks (R2, R8, R22, R23); a dungeon map model with the camp; panels 1 to 4. Next: see "Where we are" below. Content gap: Mire has no Setter or Payoff (new species and art). |
+| 2–8   | Not started                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+
+## Where we are (handoff, 2026-10-29)
+
+PR #92 (design docs, lab, wiki) is merged. Work continues on branch `combat-v2-bosses` (no PR yet; batch the next steps into one).
+
+Latest lab numbers (`lab-report.md`, raid boss section): the classic party wins 0% of weekends; the prepared answer wins 98% to 100% and loses about 1 to 5 creatures a weekend; at a boss 10% stronger it still wins 73% to 100%; a mixed server (2 min-maxers, 3 builders, 5 casuals) wins 21% to 64%. The dungeon: an all-round team that plays the map clears 98% at depth 1 down to 68% at depth 8; the Undercroft 19%, 4%, 1%.
+
+Next steps, in order:
+
+1. **Balance pass** against the real bosses:
+   - Measure creatures' **HP left** after each raid stage as well as knockouts (Misa, 2026-10-29: everyone alive but low is also a good result).
+   - Mixed servers should **feel** losses more than prepared ones; losses may go up if they matter.
+   - Tidal Colossus and Cinder Wyrm need margin: they are too easy at +10%.
+   - Old Bogback is too hard for mixed servers (21%).
+   - The best searched lines win with almost no losses, so most mechanics measure as "not needed": tighten them.
+   - Then Knacks never picked against real bosses (Night Watch, Primed by Pain and the near-dead list), Zigzag, species stats (stage 2 Payoffs now within about 10%), and the gear plan (which shipped gear lines change or retire).
+2. **Panel 5** on the balance pass.
+3. **Phase 1 gate check** (phase 1 row in the table above), then a PR for Misa.
+4. Later content: a Mire Setter or Payoff (art), the Undercroft's own foes.
+
+Open questions for Misa: none waiting.

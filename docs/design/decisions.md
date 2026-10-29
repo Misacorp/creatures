@@ -3466,3 +3466,7 @@ Misa asked for a creature's ribbons and Valley Games medals on its card in the c
 ## 2026-10-29: Combat v2 raid boss HP grows with the number of players
 
 **Decision (lead).** In the lab, a raid boss's weekend HP grows with the arena's width, as (players / 4) to the power of a per-boss exponent (0.55 to 1.23), like the shipped game's `hpExponent` (1.1). With a fixed HP, the classic party won every weekend in rows 10 and 15 wide, since more creatures simply deal more damage. Move counts scale with width too (`perColumns`), so a pattern covers the same share of a wide row as of a four-wide one. The exponents are lab numbers, tuned per boss; the port (roadmap phase 4) sets them with the shipped scaling.
+
+## 2026-10-29: Raid losses: mixed servers should feel them; measure HP left
+
+**Decision (Misa).** A prepared team losing about 1 to 5 creatures a weekend is fine, but mixed servers should feel losses more; creature losses may go up if that makes an impact. Also measure creatures' HP left after each raid stage: everyone alive but low on health is a good result too.

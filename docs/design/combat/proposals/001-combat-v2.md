@@ -1,6 +1,6 @@
 # Proposal 001: combat v2 rules
 
-Status: **proposed**, v0.7 (2026-10-28: the talent library and the third panel, `reviews/2026-10-28-panel-3.md`); v0.6 (2026-10-26; Misa answered the first panel's questions; the second panel's fixes for the species and talent slice are in, `reviews/2026-10-26-panel-2.md`). Author: lead agent, from the design conversation with Misa (2026-10-25 and 26), three reviews of v0.1, the first panel on v0.3 (`reviews/2026-10-26-panel-1.md`) and the lab. Prototype: `packages/lab` (its `fight.ts` follows these rules step by step; a test covers each rule that changed).
+Status: **proposed**, v0.8 (2026-10-29: the raid bosses, dungeon foes and Build-up, `reviews/2026-10-28-panel-4.md`); v0.7 (2026-10-28: the talent library and the third panel, `reviews/2026-10-28-panel-3.md`); v0.6 (2026-10-26; Misa answered the first panel's questions; the second panel's fixes for the species and talent slice are in, `reviews/2026-10-26-panel-2.md`). Author: lead agent, from the design conversation with Misa (2026-10-25 and 26), three reviews of v0.1, the first panel on v0.3 (`reviews/2026-10-26-panel-1.md`) and the lab. Prototype: `packages/lab` (its `fight.ts` follows these rules step by step; a test covers each rule that changed).
 
 ## Motivation
 
@@ -20,9 +20,11 @@ Each rule names what it replaces in `combat-rules.md`. Durations count the affec
 
 **R2. Targets are slots.**
 
-1. A boss attack is an **anchor** and a **shape**. Anchors: front-most (front row first, then leftmost), strongest (highest Attack; ties to the front, then the left), strongest Payoff (else strongest), random, Grudge (last round's top damage; in round 1, the strongest). Shapes: one slot, a line of three (the anchor and its row neighbours), the row, the column, the ends of every row, a random row, everything.
+1. A boss attack is an **anchor** and a **shape**. Anchors: front-most (front row first, then leftmost), back-most (the back-most living creature), strongest (highest Attack; ties to the front, then the left), strongest Payoff (else strongest), most hurt (lowest share of HP), random, Grudge (last round's top damage; in round 1, the strongest). Shapes: one slot, a line of three (the anchor and its row neighbours), the row, several rows, the column, several columns, a cross (the anchor and the slots touching it), a checker (every other slot), the ends of every row (the arena's first and last slots, R21.1), a random row, a **scatter** (several different random creatures), a **Leap** (below), everything. A count on a shape (scatter, row ends, Leap jumps, several columns) may be given per 4 columns, so a pattern covers the same share of a wide raid row as of a four-wide one.
 2. Each living creature in the shape takes its own hit. One slot is aimed. In a line of three, the anchor's hit is aimed and its neighbours' are area hits. Every other shape is area.
-3. Area hits are dodged at half chance; a Charged hit at full chance. Guards intercept aimed hits; area or Charged hits only with an effect that says so.
+3. Area hits are dodged at half chance; a Wind-up hit at full chance. Guards intercept aimed hits; area or Wind-up hits only with an effect that says so (a Wind-up single hit included). A Guard takes at most one hit of a move: if it intercepts one, it does not also take its own.
+4. **Leap** (panel 4): the anchor takes the aimed hit. Each jump goes to the strongest creature not yet hit in an adjacent slot (beside it, in front or behind; ties to the front, then the left) and deals the move's power times the decay per jump. Every jump is chosen before any hit lands; dodges and intercepts do not change the path.
+5. **Wind-up** is the name for a boss move announced with its slots (it was called Charged; the Spark mark keeps that name).
 
 **R3. Marks.** The boss can carry a mark of each element at once, each with a count from x1 to x3. A mark stays until cashed or shed. The board shows marks in one strip, oldest first.
 
@@ -49,14 +51,14 @@ Each rule names what it replaces in `combat-rules.md`. Durations count the affec
 **R8. The round and the arena.**
 
 1. The arena's row count is set by the boss (today three; Misa, 2026-10-26). Row 0 is the front.
-2. Round start, in three steps: a) every Support's verb (or the Support-shape Knack that replaces it), in slot order (front row first, left to right); b) round-start Knacks and talents (Hearth, Mud Wall's Mired), in slot order; c) the boss **announces** its Charged moves of the round: their slots are rolled now and shown.
+2. Round start, in three steps: a) every Support's verb (or the Support-shape Knack that replaces it), in slot order (front row first, left to right); b) round-start Knacks and talents (Hearth, Mud Wall's Mired), in slot order; b2) the boss's Build-up steps up if due (R22); c) the boss **announces** every move due this round whose targets use a roll (a random anchor, a scatter, a random row, a Leap) and every Wind-up move: their slots are rolled now and shown, with the move's icon on each targeted creature (Misa, 2026-10-28: players cannot stop it, but watching it come is exciting). An announced move lands on those slots; a target knocked out in the meantime is skipped; it never re-aims. Being a Wind-up only changes how its hits are dodged and intercepted.
 3. For each row from the front: its creatures act left to right (Supports hit too), then **the boss takes a turn**: its moves due on that turn, its plain attack, then Clean Scales sheds the marks that were on it when that turn began (unless Sealed).
 4. The boss takes a turn after every row of the arena, empty or not.
 5. Reflective Hide arms at the end of each boss turn (not before the first).
 6. **Debuffs fade** (Misa, 2026-10-28): at the end of every second round the boss loses 1 Mired stack (Clinging: every third round while a living creature has it; panel 3). A rule card may also clear every debuff on a round it announces at round start (Shake It Off: every 3 rounds, at the end of that round's last boss turn).
 7. The dungeon keeps its single line and today's order (one boss turn after the line).
 
-**R9. Taunt.** Taunt becomes the anchor of every plain attack, whatever its anchor; moves keep their own anchors. Several taunters: the front-most, then the leftmost. A Guard may still intercept for a non-Guard taunter after its failed dodge.
+**R9. Taunt.** Taunt becomes the anchor of every plain attack, whatever its anchor; moves keep their own anchors. Several taunters: the front-most, then the leftmost. A Guard may still intercept for a non-Guard taunter after its failed dodge. A plain attack with no anchor (a scatter, a random row, the ends of every row, everything) ignores Taunt.
 
 **R10. Store.** A Store holds up to 3 of a named resource. Gains past 3 are lost. It empties on knock-out and at the end of the fight. A spend on a turn that is dodged, skipped or silenced keeps it. A Store fed by reactions gains at most 1 per round (not per boss turn, so arenas with more rows do not fill it faster). At most one Store per creature line.
 
@@ -69,7 +71,9 @@ Each rule names what it replaces in `combat-rules.md`. Durations count the affec
 
 **R13. Armour and Blocked.** Foes and creatures have Armour, a flat amount taken off every hit. A hit at or below armour is **Blocked** and deals nothing (Misa, 2026-10-26). Guards are armoured rather than only high in HP. **Every creature has armour** (Misa, 2026-10-28): it is a stat of each species, not of its role, shown in the stat block like HP, Attack and Speed. Each line starts with its own base armour; lines that start as Guards lean higher, and an evolution never lowers it, whatever the new role. Talents, Knacks and gear (the Armor line included) may raise anyone's; no armour effect is limited to Guards. One species will have the highest armour and stand out for it: a choice to build around, balanced by its element, Knacks and talents.
 
-**R14. Raid attrition.** A raid weekend's stages share the boss's HP. Only HP carries: creatures keep their HP between stages, nobody heals between stages, and a knocked-out creature is out for the weekend. Marks, Stores, Mired and "each fight" effects start fresh each stage. Players may swap creatures between stages; a replacement takes an empty slot. A knocked-out creature does not come back that weekend (Misa, 2026-10-26: players have spare creatures by week 2, so no extra mechanic). The dungeon is unchanged. The round count restarts each stage.
+**R14. Raid attrition.** A raid weekend's stages share the boss's HP. Only HP carries: creatures keep their HP between stages, nobody heals between stages, and a knocked-out creature is out for the weekend. Marks, Stores, Mired and "each fight" effects start fresh each stage. Players may swap creatures between stages; a replacement takes an empty slot. A knocked-out creature does not come back that weekend (Misa, 2026-10-26: players have spare creatures by week 2, so no extra mechanic). The round count restarts each stage. A raid boss's weekend HP grows with the number of players (R14.1). **The dungeon** (panel 4): between rooms only HP carries; a knocked-out creature stays out until the camp's swap brings a fresh one; the camp keeps today's choices (rest, swap a creature, take a keepsake; push on or head home); a clear is beating the day's floor boss.
+
+1. Boss HP per weekend: base x (players / 4) to the power of the boss's exponent (lab: 0.55 to 1.23; shipped game: 1.1).
 
 **R15. Buffs and debuffs.** An effect stacks up to its own maximum; different effects add; all hit boosts together are capped (lab: +150%), and reaction-bonus factors have their own cap (R7). **Auras** (an effect a creature gives others: dodge beside it or in its row, area cut): of the auras of one kind reaching a creature, only the largest applies. A creature's own Knack and talents add to it. Debuffs on the boss (Mired) have their own maximum. Never design for "bring seven of this buff". **One cap on cuts** (panel 3): every cut a creature gets on one hit (Row Wards and other auras, cover, Long Shadow, Front-liner, Brace) multiplies, and the total cut is capped at 75%, before armour.
 
@@ -110,6 +114,17 @@ Each rule names what it replaces in `combat-rules.md`. Durations count the affec
 7. **Hits and counters:** a creature's hits are its own attacks (Twin Strike's two included). A counter (Retaliate, Shoulder Charge) deals damage and can land the killing blow, but it is not a hit: it never triggers Cull or an "its hits" effect.
 8. **Cover and reach:** cover comes from the Guard with the largest cover whose reach includes the taker; reach counts across empty and knocked-out slots; every reach effect (Hearth, Baked Shell) follows a Flank Guard's reshaped reach.
 
+**R22. Build-up** (a boss's Escalation; Misa's idea, 2026-10-28; panel 4).
+
+1. A boss may have one Build-up: a **feed** (reactions it takes, its HP lost, rounds, crits it takes, its dodges, creatures it knocks out, marks it sheds), a **count per step**, a **cap**, a **growth** per step (Attack, dodge, armour, attacks per turn, Leap jumps, scatter targets, area size) and an optional **change of pattern** at a step (Thornmother's Second Bloom). Growth adds up in a straight line.
+2. Feeds count when the event happens; HP lost and rounds are read at round start.
+3. **Steps** apply at round start (R8.2 b2), at most one per round. Each Mired stack on the boss then **slows** the count (lab: a quarter of a step per stack); Mired never freezes it.
+4. **Across a weekend** the count, the steps and any change of pattern carry like the boss's HP.
+5. A change of pattern at a share of the weekend's HP is **announced a round ahead** and is not slowed by Mired, so every server sees it.
+6. Build-up is not a Store (R10's limits do not apply).
+
+**R23. Element and Reaction Resistance** (rule cards). From stage 2 of a weekend, the element (or reaction) with the most total damage so far is resisted: its creatures' hits deal less from R6 step 1 (counters are not cut). It is shown at the stage break, before swaps; ties give no resistance.
+
 ## On the board (from the readability review)
 
 What the fight and the raid board must show, so each rule can be read before it plays (P-08). Everything stays small and in a fixed place; the boss stays the focus.
@@ -123,6 +138,11 @@ What the fight and the raid board must show, so each rule can be read before it 
 - **Cards and answers:** each rule card is an icon on the boss card; the same icon sits on creatures whose Knack answers it, **only once the lab shows that answer works** (P-13).
 - **Conditions and auras** (panel 2): every slot shows its role icon; a Knack or talent with a condition (Guard's Shadow, Territorial) has a chip that lights while the condition holds, and the picker previews it against the current placement; tapping a creature lights the slots its auras and reach cover, in a friendly look unlike boss-target lights; a creature that intercepts through an effect shows the same shield bracket under the slots it covers as a Guard.
 - **Silence wards:** a warded creature shows a small "no silence" mark; when a silencing move is announced, warded targets show that mark instead of the crossed-out Knack chip.
+- **The boss card** (panel 4), shown with the weekend's announcement: header (picture, name, element, armour, HP), then rule-card icons and the Build-up meter, then the plain attack, then the moves as small tiles (a tiny arena with the shape lit, how often in rounds, a Wind-up badge), grouped by what they aim at (front-most, strongest, Payoff, back-most, most hurt, row ends, anywhere). A change of pattern sits behind a notch ("at 50%"). About 8 tiles fit a row at 390 px.
+- **Build-up on the board:** HP-fed steps as notches on the boss HP bar; round-fed steps on the boss-turn strip; event-fed steps as a pip meter with the feed's icon ("3 / 5"); a mud lock while Mired slows it; shapes redrawn after a step.
+- **Announced attacks:** the move's icon on every targeted creature at round start (R8.2c).
+- **Resistances:** a chip on the boss during stage 1 showing the leading element or reaction; from stage 2 the resisted icon with a shield.
+- **Dungeon:** the map shows each room's foe, element, rule-card icon and its move tile up front; the camp repeats the rooms ahead and the floor boss, with carried HP and knocked-out creatures greyed.
 - **Talent conditions** (panel 3): a chip that lights while its condition holds and updates as creatures fall (Shoulder to Shoulder with its 0 to 2 count, Odd One Out, Edge-walker, Front-liner); counters for Slow Burn (the round and its bonus) and for rhythms (pips); once-per-fight talents lit until spent, then grey; a notch on the boss HP bar for Cull and Finisher, drawn only when a creature on the board has them; a small "fresh" spark on a mark added since the boss's last turn (Quick Draw); an arrow on a Flank Guard's chip toward the side it covers. The Talent Book previews whether each condition holds in the current placement.
 - **Talents on the card:** stat talents fold into the stat numbers with a small dot; only talents that change behaviour (Unflappable, Second Wind, First Strike, Big Finish) get a chip.
 - **Text:** Knack text at most two lines on a 390 px card, keywords as chips, reach and heal shapes as tiny grid icons. Intent, formulas and rule numbers never appear in the game.
