@@ -188,12 +188,12 @@ Twelve random forms at random levels (8 to 25, stage 1 forms at their cap), with
 
 | Card | Best gauntlet team | Without | With talents | Share | Talents | Raid share | Same team, random talents |
 | --- | --- | ---: | ---: | ---: | --- | ---: | ---: |
-| No card | ancientshell (no Knack), lanternfin (Clear the Air), pyrelynx (Leave a Trail) | 69.1 | 85.0 | +18.7% | ancientshell: Owner's Mark, lanternfin: Overheal Spill, pyrelynx: First Pounce | +34.9% | +10.5% |
-| Thick Hide | tempestray (Detonate), sunfawn (Curl Up), tidewing (Double Mark) | 72.8 | 87.6 | +17.0% | tempestray: Edge-walker, sunfawn: none, tidewing: Owner's Mark | +27.8% | +8.8% |
-| Stone Skin | voltaro (Zoom), sunfawn (Curl Up), gaiadrake (Carry Them) | 69.6 | 83.1 | +16.2% | voltaro: Odd One Out, sunfawn: Shoulder to Shoulder, gaiadrake: none | +15.3% | +4.9% |
-| Clean Scales | ancientshell (Steady Mark), lanternfin (Lantern Glow), pyrelynx (Guard's Shadow) | 64.5 | 85.5 | +24.6% | ancientshell: Owner's Mark, lanternfin: Odd One Out, pyrelynx: Steady Rhythm | +21.1% | +7.1% |
+| No card | ancientshell (no Knack), lanternfin (Clear the Air), pyrelynx (Leave a Trail) | 69.1 | 85.0 | +18.7% | ancientshell: Owner's Mark, lanternfin: Overheal Spill, pyrelynx: First Pounce | +34.4% | +10.5% |
+| Thick Hide | tempestray (Detonate), sunfawn (Curl Up), tidewing (Double Mark) | 72.8 | 87.6 | +17.0% | tempestray: Edge-walker, sunfawn: none, tidewing: Owner's Mark | +27.1% | +8.8% |
+| Stone Skin | voltaro (Zoom), sunfawn (Curl Up), gaiadrake (Carry Them) | 69.6 | 83.1 | +16.2% | voltaro: Odd One Out, sunfawn: Shoulder to Shoulder, gaiadrake: none | +9.8% | +4.9% |
+| Clean Scales | ancientshell (Steady Mark), lanternfin (Lantern Glow), pyrelynx (Guard's Shadow) | 64.5 | 85.5 | +24.6% | ancientshell: Owner's Mark, lanternfin: Odd One Out, pyrelynx: Steady Rhythm | +19.1% | +7.1% |
 | Reflective Hide | ancientshell (no Knack), lanternfin (no Knack), tempestray (Leave a Trail) | 71.4 | 84.7 | +15.7% | ancientshell: Finisher, lanternfin: Triage, tempestray: Edge-walker | +17.2% | +7.7% |
-| Elusive | ancientshell (Steady Mark), pyrelynx (Leave a Trail), geyserpup (All at Once) | 62.8 | 78.9 | +20.4% | ancientshell: Stubborn, pyrelynx: First Pounce, geyserpup: First Pounce | +35.8% | +12.1% |
+| Elusive | ancientshell (Steady Mark), pyrelynx (Leave a Trail), geyserpup (All at Once) | 62.8 | 75.2 | +16.5% | ancientshell: Stubborn, pyrelynx: First Pounce, geyserpup: First Pounce | +35.8% | +11.5% |
 | Bramble Bind | tempestray (Twin Strike), sunfawn (Curl Up), gaiadrake (Leave a Trail) | 68.6 | 83.9 | +18.2% | tempestray: Edge-walker, sunfawn: Kindred Boost, gaiadrake: none | +18.3% | +4.0% |
 | Wither | voltaro (Zoom), kilnmole (Baked Shell), bloomback (no Knack) | 67.7 | 84.7 | +20.1% | voltaro: Momentum, kilnmole: Shoulder Charge, bloomback: Finisher | +20.0% | +10.2% |
 | Payoff Hunter | ancientshell (Steady Mark), drizzlewt (Curl Up), pyrelynx (no Knack) | 72.0 | 86.3 | +16.6% | ancientshell: Owner's Mark, drizzlewt: Bright Boost, pyrelynx: Steady Rhythm | +23.7% | +8.4% |
@@ -202,11 +202,11 @@ Twelve random forms at random levels (8 to 25, stage 1 forms at their cap), with
 | Swarm | ancientshell (Living Shelter), thornbuck (Primed by Pain), pyrelynx (Detonate) | 69.7 | 85.5 | +18.6% | ancientshell: Owner's Mark, thornbuck: Shoulder to Shoulder, pyrelynx: Steady Rhythm | +15.9% | +7.0% |
 | Crusher | voltaro (Zoom), fogwyrm (Wide Reach), bloomback (Leave a Trail) | 61.3 | 82.3 | +25.6% | voltaro: Momentum, fogwyrm: Catch Breath, bloomback: Finisher | +22.7% | +14.6% |
 | Fizzle | ohmouse (Lightning Ears), voltaro (Double Mark), bloomback (All at Once) | 72.5 | 80.7 | +10.1% | ohmouse: Shoulder to Shoulder, voltaro: none, bloomback: Finisher | +21.1% | +1.7% |
-| Shake It Off | ancientshell (Feed the Marks), geyserpup (All at Once), solmane (Crown of Embers) | 70.8 | 86.7 | +18.3% | ancientshell: Stubborn, geyserpup: Finisher, solmane: Sharp Claws | +23.1% | +7.8% |
+| Shake It Off | ancientshell (Feed the Marks), geyserpup (All at Once), solmane (Crown of Embers) | 70.8 | 85.7 | +17.3% | ancientshell: Hardy, geyserpup: Finisher, solmane: Sharp Claws | +23.1% | +5.6% |
 
-**Average share, best-fit talents:** gauntlet +18.8% (pass), raid +22.7% (pass); target about 20% (17% to 23%).
+**Average share, best-fit talents:** gauntlet +18.5% (pass), raid +22.1% (pass); target about 20% (17% to 23%).
 
-**Casual roster, random talents** (the best lines of 4 random rosters on 4 cards, each with 8 random draws; No card +9.3%, Thick Hide +11.3%, Payoff Hunter +5.0%, Elusive +7.8%): gauntlet +8.4% (pass), and the best raid boards with a random talent per form +8.4% (pass); above 0 and at most 60% of the best fit. With a random talent that fits the creature's role (no idle rolls) the casual gauntlet gains +9.1%; the same best gauntlet teams with random talents on all cards: +8.8% (column above).
+**Casual roster, random talents** (the best lines of 4 random rosters on 4 cards, each with 8 random draws; No card +9.3%, Thick Hide +11.2%, Payoff Hunter +5.0%, Elusive +7.8%): gauntlet +8.3% (pass), and the best raid boards with a random talent per form +8.0% (pass); above 0 and at most 60% of the best fit. With a random talent that fits the creature's role (no idle rolls) the casual gauntlet gains +9.1%; the same best gauntlet teams with random talents on all cards: +8.6% (column above).
 
 **Team share check: pass.**
 
@@ -232,7 +232,7 @@ Twelve random forms at random levels (8 to 25, stage 1 forms at their cap), with
 | setter | Rally Cry | 73.6 | 72.6 | +0.9 | +1.2% | +5.6% | +0.9% | 0.80 / 0.80 | 13% | 7% | Crusher +4.6 (+10%) |  |
 | setter | Momentum | 73.5 | 70.8 | +2.7 | +3.8% | - | - | 0.83 / 0.88 | 95% | 7% | Reflective Hide +7.4 (+17%) |  |
 | setter | Brace | 69.1 | 69.0 | +0.1 | +0.2% | - | - | 0.94 / 0.94 | 7% | 0% | Great Wave +1.9 (+3%) |  |
-| setter | Stubborn | 70.3 | 69.0 | +1.3 | +1.9% | - | - | 0.86 / 0.94 | 15% | 0% | Payoff Hunter +8.7 (+12%) |  |
+| setter | Stubborn | 70.0 | 69.0 | +1.0 | +1.5% | - | - | 0.88 / 0.94 | 15% | 0% | Payoff Hunter +6.3 (+9%) |  |
 | setter | Catch Breath | 77.2 | 77.1 | +0.1 | +0.1% | - | - | 0.61 / 0.63 | 15% | 0% | Crusher +1.2 (+2%) |  |
 | payoff | Sharp Claws | 70.9 | 67.5 | +3.5 | +5.1% | - | - | 0.79 / 0.83 | always | always | Crusher +5.1 (+12%) |  |
 | payoff | Hardy | 80.9 | 80.9 | +0.0 | +0.0% | - | - | 0.44 / 0.45 | always | always | none |  |
@@ -261,7 +261,7 @@ Twelve random forms at random levels (8 to 25, stage 1 forms at their cap), with
 | guard | Long Shadow | 74.4 | 72.0 | +2.4 | +3.3% | +15.9% | +0.0% | 0.72 / 1.00 | 28% | 13% | Grudge +10.2 (+15%) |  |
 | guard | Shoulder Charge | 76.2 | 73.7 | +2.5 | +3.4% | - | - | 0.83 / 0.92 | 15% | 19% | Reflective Hide +4.5 (+11%) |  |
 | guard | Brace | 73.7 | 73.2 | +0.5 | +0.7% | - | - | 0.90 / 0.93 | 7% | 0% | Great Wave +7.5 (+12%) |  |
-| guard | Stubborn | 80.9 | 79.0 | +1.9 | +2.4% | - | - | 0.14 / 0.46 | 38% | 17% | Reflective Hide +4.4 (+10%) |  |
+| guard | Stubborn | 80.2 | 79.0 | +1.2 | +1.6% | - | - | 0.27 / 0.46 | 38% | 17% | Reflective Hide +3.6 (+8%) |  |
 | guard | Catch Breath | 77.6 | 74.5 | +3.1 | +4.2% | - | - | 0.53 / 0.89 | 90% | 18% | Great Wave +10.2 (+15%) |  |
 | guard | Unbothered | 72.8 | 72.3 | +0.6 | +0.8% | - | - | 1.06 / 1.10 | 7% | 0% | Wither +3.7 (+5%) |  |
 | guard | Heavy Hand | 75.3 | 73.8 | +1.5 | +2.1% | - | - | 0.79 / 0.87 | 99% | 27% | Grudge +6.7 (+10%) |  |
@@ -287,7 +287,7 @@ Twelve random forms at random levels (8 to 25, stage 1 forms at their cap), with
 **Per-talent checks** (Misa, 2026-10-28; "about" is 1 point either way; a raid-shaped talent is judged on its raid gain, 25 of 63 rows). The strength target is the team share at the top of this section; these find duds, must-picks and runaways:
 
 - Pools with no must-pick (every role of the line has at least 2 talents within 3 points of its best): 14 of 16. Short: gaiadrake (payoff: Finisher +9.5, Rally Cry +6.5, Front-liner +4.9), mudlump (guard: Long Shadow +15.9, Flank Guard +8.9, Hardy +3.1).
-- Duds (non-plain talents judged under +2%): 12 of 57: Brace (setter) +0.2%, Stubborn (setter) +1.9%, Catch Breath (setter) +0.1%, Brace (payoff) +0.0%, Stubborn (payoff) +0.1%, Catch Breath (payoff) +0.4%, Rally Cry (guard) +0.3%, Brace (guard) +0.7%, Unbothered (guard) +0.8%, Front-liner (support) +1.5%, Brace (support) +1.0%, Unbothered (support) +0.5%.
+- Duds (non-plain talents judged under +2%): 13 of 57: Brace (setter) +0.2%, Stubborn (setter) +1.5%, Catch Breath (setter) +0.1%, Brace (payoff) +0.0%, Stubborn (payoff) +0.1%, Catch Breath (payoff) +0.4%, Rally Cry (guard) +0.3%, Brace (guard) +0.7%, Stubborn (guard) +1.6%, Unbothered (guard) +0.8%, Front-liner (support) +1.5%, Brace (support) +1.0%, Unbothered (support) +0.5%.
 - Plain stat talents (Sharp Claws, Hardy) at +2% to +5%: 4 of 6 talent rows.
 - Soft warning, a best card over +50% (a spike on the card a talent fits is fine, a runaway is not): none.
 
@@ -310,6 +310,7 @@ Every element should have a Heavy Prime Setter, a Setter Knack that survives the
 About 95 characters fit two lines on a 390 px card (an estimate; check in the workbench). Over it:
 
 - Baked Shell: 155
+- Stubborn: 153
 - Flank Guard: 141
 - Gather Calm: 122
 - Cull: 120
@@ -346,23 +347,23 @@ The team search over a whole weekend (it also picks a legal talent for each crea
 | Boss | Classic weekend win | Seeded best win | From-scratch best win | Score (classic / seeded / scratch) | Knockouts | Escalation steps |
 | --- | ---: | ---: | ---: | --- | --- | --- |
 | Tidal Colossus | 0% | 100% | 100% | 13 / 140 / 140 | 16.0 / 0.0 / 0.8 | 2.0 / 3.0 / 3.0 of 3 |
-| Cinder Wyrm | 0% | 100% | 100% | -2 / 139 / 133 | 20.0 / 1.6 / 7.8 | 3.1 / 0.0 / 0.0 of 4 |
-| Thornmother | 0% | 100% | 100% | 3 / 140 / 139 | 16.0 / 1.5 / 1.8 | 1.0 / 2.4 / 2.9 of 3 |
-| Storm Sovereign | 0% | 100% | 84% | 7 / 140 / 120 | 12.0 / 0.7 / 4.2 | 3.0 / 3.0 / 3.0 of 3 |
-| Old Bogback | 0% | 99% | 100% | 15 / 139 / 135 | 15.5 / 1.4 / 5.1 | none |
+| Cinder Wyrm | 0% | 100% | 95% | -2 / 139 / 130 | 20.0 / 1.6 / 10.7 | 3.1 / 0.0 / 0.0 of 4 |
+| Thornmother | 0% | 100% | 99% | 3 / 140 / 129 | 16.0 / 1.5 / 5.6 | 1.0 / 2.4 / 2.9 of 3 |
+| Storm Sovereign | 0% | 99% | 88% | 7 / 140 / 130 | 12.0 / 0.7 / 4.6 | 3.0 / 3.0 / 3.0 of 3 |
+| Old Bogback | 0% | 99% | 99% | 15 / 139 / 136 | 15.5 / 1.4 / 2.7 | none |
 
 Best lines (rows front to back):
 
 - Tidal Colossus, seeded: voltaro (Zoom, deep-ink), bogwarden (Wide Reach, long-shadow), lanternfin (Clear the Air, overheal-spill), gaiadrake (Leave a Trail, finisher) / bogwarden (Wide Reach, flank-guard), tidewing (Double Mark, owners-mark), solmane (Lead the Way), tempestray (Leave a Trail, edge-walker) / fogwyrm (Wide Reach, flank-guard), tempestray (no Knack, catch-breath), croakmire (Squelch Song, heavy-hand), bloomback (Leave a Trail)
 - Tidal Colossus, from scratch: bogwarden (Mud Wall, clinging), ancientshell (Living Shelter, finisher), bogwarden (Draw Fire, long-shadow), gaiadrake (Carry Them, finisher) / aurorix (Starlight, hardy), drizzlewt (Drizzle), bogwarden (Draw Fire, long-shadow), voltaro (Zigzag, first-pounce) / aurorix (Starlight, bright-boost), lanternfin (Clear the Air, triage), sunfawn (no Knack, triage), ohmouse (Lightning Ears, flank-guard)
 - Cinder Wyrm, seeded: lanternfin (Lantern Glow), bogwarden (Wide Reach, long-shadow), lanternfin (Clear the Air, odd-one-out), geyserpup (Leave a Trail, first-pounce) / magmole (Wide Warmth, bright-boost), fogwyrm (Hide in Mist, unbothered), lanternfin (no Knack, catch-breath), croakmire (Squelch Song, clinging) / croakmire (Squelch Song, unbothered), coralynx (Territorial, finisher), sunfawn (Curl Up, rally-cry), bogwarden (Draw Fire, flank-guard) / tempestray (Leave a Trail, edge-walker), hearthshell (Keep the Heat In), drizzlewt (Curl Up, unbothered), fogwyrm (Thick Fog, rally-cry)
-- Cinder Wyrm, from scratch: bloomback (All at Once, stubborn), fogwyrm (Wide Reach, shoulder-charge), tempestray (Detonate, catch-breath), fogwyrm (Thick Fog, catch-breath) / bogwarden (no Knack), bogwarden (Mud Wall, flank-guard), croakmire (Squelch Song, hardy), geyserpup (All at Once, first-pounce) / bogwarden (Draw Fire, flank-guard), lanternfin (Clear the Air, triage), squelch (Squelch Song, clinging), hearthshell (Keep the Heat In, odd-one-out) / coralynx (Territorial, edge-walker), lanternfin (Sunbeam), fogwyrm (Thick Fog, flank-guard), drizzlewt (no Knack, overheal-spill)
+- Cinder Wyrm, from scratch: lanternfin (no Knack, catch-breath), fogwyrm (Wide Reach), tempestray (Detonate, catch-breath), fogwyrm (Thick Fog, unbothered) / thornbuck (Night Watch, flank-guard), geyserpup (All at Once, first-pounce), croakmire (Squelch Song, bright-boost), bogwarden (no Knack, shoulder-charge) / bogwarden (Draw Fire, flank-guard), lanternfin (Clear the Air, triage), squelch (Squelch Song, clinging), hearthshell (Keep the Heat In, odd-one-out) / coralynx (Territorial, edge-walker), lanternfin (Sunbeam, hardy), fogwyrm (Thick Fog, flank-guard), drizzlewt (no Knack, catch-breath)
 - Thornmother, seeded: voltaro (Zigzag, deep-ink), bogwarden (Mud Wall, clinging), sunfawn (Curl Up, kindred-boost), bloomback (Leave a Trail, opportunist) / thornbuck (Primed by Pain, flank-guard), pyrelynx (Detonate, first-pounce), magmole (Tunnel Through, bright-boost), ancientshell (no Knack, brace) / lanternfin (Clear the Air, front-liner), mudlump (Wide Reach, long-shadow), magmole (Tunnel Through, brace), pyrelynx (no Knack, first-pounce)
-- Thornmother, from scratch: bogwarden (Draw Fire), voltaro (Zoom, deep-ink), hearthshell (Keep the Heat In, catch-breath), bloomback (Leave a Trail, opportunist) / thornbuck (no Knack, flank-guard), bogwarden (Mud Wall, clinging), bloomback (Leave a Trail, opportunist), croakmire (Squelch Song, unbothered) / thornbuck (Night Watch, flank-guard), pyrelynx (Guard's Shadow, steady-rhythm), pyrelynx (Detonate, first-pounce), ancientshell (Feed the Marks, stubborn)
-- Storm Sovereign, seeded: gaiadrake (Detonate, opportunist), hearthshell (Draw Fire, stubborn), hearthshell (Hearth, stubborn), bloomback (Leave a Trail, stubborn) / mudlump (Mud Wall, clinging), zipmouse (Double Mark, deep-ink), bloomback (Detonate, opportunist), croakmire (Squelch Song, bright-boost)
-- Storm Sovereign, from scratch: voltaro (Zigzag, first-pounce), bogwarden (no Knack), squelch (Squelch Song, clinging), voltaro (no Knack, first-pounce) / bogwarden (Wide Reach, long-shadow), halcyray (Gather Calm, bright-boost), bloomback (Detonate, opportunist), gaiadrake (Leave a Trail, stubborn)
+- Thornmother, from scratch: bloomback (Detonate, finisher), bogwarden (Mud Wall, long-shadow), ancientshell (Living Shelter, owners-mark), ohmouse (Lightning Ears) / hearthshell (Draw Fire, shoulder-to-shoulder), kilnmole (Keep the Heat In, rally-cry), pyrelynx (Detonate, shoulder-to-shoulder), halcyray (Gather Calm, unbothered) / sunfawn (Ready the Mark, kindred-boost), ancientshell (Feed the Marks, owners-mark), bloomback (Leave a Trail, opportunist), wickat (no Knack, steady-rhythm)
+- Storm Sovereign, seeded: gaiadrake (Detonate, opportunist), hearthshell (Draw Fire, shoulder-to-shoulder), hearthshell (Hearth, catch-breath), bloomback (Leave a Trail, stubborn) / mudlump (Mud Wall, clinging), zipmouse (Double Mark, deep-ink), bloomback (Detonate, opportunist), voltaro (Double Mark)
+- Storm Sovereign, from scratch: voltaro (Zigzag, momentum), bogwarden (Mud Wall), squelch (Squelch Song, clinging), voltaro (no Knack, first-pounce) / pyrelynx (Detonate, first-pounce), bloomback (Detonate, opportunist), sunfawn (no Knack, kindred-boost), fogwyrm (Hide in Mist, flank-guard)
 - Old Bogback, seeded: gaiadrake (Carry Them, catch-breath), bogwarden (Mud Wall, long-shadow), fogwyrm (Hide in Mist, catch-breath), squelch (Ready the Mark, clinging) / zipmouse (Double Mark, momentum), hearthshell (Hearth, shoulder-to-shoulder), mossback (Feed the Marks, finisher), ancientshell (Steady Mark, owners-mark) / pyrelynx (Detonate, steady-rhythm), magmole (Wide Warmth, kindred-boost), fogwyrm (Wide Reach, catch-breath), bloomback (Detonate, opportunist)
-- Old Bogback, from scratch: kilnmole (Keep the Heat In, shoulder-charge), bogwarden (Mud Wall), cindle (Leave a Trail, first-pounce), aurorix (Clear Skies, unbothered) / voltaro (no Knack, deep-ink), ancientshell (Feed the Marks, owners-mark), bloomback (Leave a Trail, finisher), thornbuck (Night Watch, flank-guard) / bloomback (Detonate, opportunist), drizzlewt (Clear the Air, overheal-spill), ohmouse (Lightning Ears), pyrelynx (Guard's Shadow, first-pounce)
+- Old Bogback, from scratch: gaiadrake (no Knack, opportunist), bogwarden (Mud Wall, long-shadow), tidewing (Double Mark, owners-mark), thornbuck (no Knack, flank-guard) / wickat (Lead the Way, shoulder-to-shoulder), hearthshell (Hearth), tidewing (Circle Round, first-pounce), tempestray (Leave a Trail, quick-draw) / solmane (Lead the Way, owners-mark), tempestray (Leave a Trail, slow-burn), croakmire (Squelch Song, clinging), tempestray (Detonate, edge-walker)
 
 ### Margin
 
@@ -376,10 +377,10 @@ The weekend win rate of the prepared answer (the first written answer) and of th
 | Cinder Wyrm | best searched (seeded) | 100% | 72% | 100% |
 | Thornmother | prepared answer | 98% | 79% | 81% |
 | Thornmother | best searched (seeded) | 99% | 88% | 90% |
-| Storm Sovereign | prepared answer | 100% | 96% | 93% |
-| Storm Sovereign | best searched (seeded) | 100% | 100% | 96% |
+| Storm Sovereign | prepared answer | 97% | 76% | 73% |
+| Storm Sovereign | best searched (seeded) | 100% | 98% | 98% |
 | Old Bogback | prepared answer | 100% | 81% | 78% |
-| Old Bogback | best searched (from scratch) | 99% | 80% | 80% |
+| Old Bogback | best searched (from scratch) | 99% | 88% | 98% |
 
 ### HP left after each stage
 
@@ -390,47 +391,134 @@ Knockouts are one cost of a weekend; the creatures that stand but are low on HP 
 | Tidal Colossus | classic party | 0% | 16.0 | 23% (15%) | 0% (0%) | 0% (0%) | 0% (0%) |
 | Tidal Colossus | prepared answer | 100% | 3.7 | 66% (95%) | 43% (75%) | 97% (100%) | 44% (76%) |
 | Tidal Colossus | best searched (seeded) | 100% | 0.0 | 68% (100%) | 61% (100%) | - | 61% (100%) |
-| Tidal Colossus | mixed server | 56% | 28.1 | 53% (66%) | 33% (38%) | 9% (17%) | 27% (39%) |
+| Tidal Colossus | mixed server | 37% | 34.7 | 56% (68%) | 32% (29%) | 12% (18%) | 18% (23%) |
 | Cinder Wyrm | classic party | 0% | 20.0 | 0% (0%) | 0% (0%) | 0% (0%) | 0% (0%) |
 | Cinder Wyrm | prepared answer | 100% | 6.8 | 75% (93%) | 62% (78%) | 65% (85%) | 65% (85%) |
 | Cinder Wyrm | best searched (seeded) | 100% | 1.6 | 69% (100%) | 57% (91%) | 61% (99%) | 61% (99%) |
-| Cinder Wyrm | mixed server | 65% | 33.4 | 65% (71%) | 56% (63%) | 49% (59%) | 49% (60%) |
+| Cinder Wyrm | mixed server | 1% | 39.4 | 65% (70%) | 55% (66%) | 40% (36%) | 40% (36%) |
 | Thornmother | classic party | 0% | 16.0 | 25% (40%) | 0% (0%) | 0% (0%) | 0% (0%) |
 | Thornmother | prepared answer | 98% | 3.1 | 43% (92%) | 44% (83%) | 0% (0%) | 44% (83%) |
 | Thornmother | best searched (seeded) | 100% | 1.5 | 47% (93%) | 50% (94%) | 93% (100%) | 52% (96%) |
-| Thornmother | mixed server | 59% | 29.6 | 44% (50%) | 29% (40%) | 12% (12%) | 33% (46%) |
+| Thornmother | mixed server | 1% | 39.9 | 53% (66%) | 11% (7%) | 0% (0%) | 0% (0%) |
 | Storm Sovereign | classic party | 0% | 12.0 | 4% (2%) | 0% (0%) | 0% (0%) | 0% (0%) |
-| Storm Sovereign | prepared answer | 100% | 1.0 | 60% (100%) | 42% (88%) | 87% (92%) | 46% (92%) |
-| Storm Sovereign | best searched (seeded) | 100% | 0.7 | 63% (100%) | 45% (91%) | 72% (100%) | 47% (94%) |
-| Storm Sovereign | mixed server | 36% | 23.4 | 61% (69%) | 46% (43%) | 19% (19%) | 29% (31%) |
+| Storm Sovereign | prepared answer | 98% | 2.3 | 60% (100%) | 40% (73%) | 53% (60%) | 46% (80%) |
+| Storm Sovereign | best searched (seeded) | 99% | 0.7 | 66% (100%) | 48% (92%) | 44% (50%) | 49% (93%) |
+| Storm Sovereign | mixed server | 3% | 29.0 | 62% (68%) | 40% (30%) | 6% (5%) | 6% (5%) |
 | Old Bogback | classic party | 0% | 15.5 | 56% (74%) | 31% (60%) | 8% (6%) | 8% (6%) |
 | Old Bogback | prepared answer | 98% | 1.9 | 71% (100%) | 49% (91%) | 50% (93%) | 50% (93%) |
-| Old Bogback | best searched (from scratch) | 100% | 5.1 | 74% (84%) | 62% (83%) | 61% (90%) | 61% (90%) |
-| Old Bogback | mixed server | 54% | 21.8 | 64% (80%) | 52% (71%) | 48% (68%) | 48% (68%) |
+| Old Bogback | best searched (from scratch) | 99% | 2.7 | 78% (98%) | 66% (86%) | 67% (94%) | 67% (94%) |
+| Old Bogback | mixed server | 3% | 28.4 | 62% (76%) | 48% (70%) | 37% (45%) | 37% (45%) |
 
 ### The raid at other widths
 
-Each player brings one column, so the arena is as wide as the server's raid: 5, 10, 15 columns a row. Cells read classic party / best line repeated to fill. The boss's weekend HP grows with the players as (players / 4) ^ e up to 10 players, where e is the boss's own exponent (the shipped bosses have one too: they answer differently to a bigger raid, and the shipped default is 1.1), and in a straight line past that (a raid of 15 copies of the same three creatures should not walk over it); its Attack does not grow, and its area counts scale with the width (a move's counts, and a Build-up's units per step, can be set per 4 columns, `perColumns`).
+Each player brings one column, so the arena is as wide as the server's raid: 5, 10, 15 columns a row. Cells read classic party / best line repeated to fill. **The HP rule (panel 5): one exponent for every boss and one smooth curve, with no kink.** The boss's weekend HP is its HP for four players times (players / 4) ^ 0.7. The reason for one exponent: the per-boss exponents (0.15 to 0.6) were tuned to make each boss's mixed server come out, so a gate (Mired, Pierce) looked easier or harder by server size, and the straight line past ten players was a kink; with one exponent, what differs between bosses is only its numbers at four players. 0.7 is the lowest exponent at which the classic party does not win at 15 columns on any boss (the table at the end of this section shows the trade). The boss's Attack does not grow, and its area counts scale with the width (a move's counts, and a Build-up's units per step, can be set per 4 columns, `perColumns`).
 
-| Boss | HP exponent | 5 columns | 10 columns | 15 columns |
-| --- | ---: | ---: | ---: | ---: |
-| Tidal Colossus | 0.6 | 0% / 100% | 0% / 100% | 0% / 100% |
-| Cinder Wyrm | 0.36 | 0% / 100% | 0% / 100% | 0% / 100% |
-| Thornmother | 0.15 | 0% / 100% | 0% / 100% | 0% / 100% |
-| Storm Sovereign | 0.38 | 0% / 100% | 3% / 100% | 8% / 100% |
-| Old Bogback | 0.5 | 0% / 100% | 1% / 100% | 0% / 100% |
+| Boss | 5 columns | 10 columns | 15 columns |
+| --- | ---: | ---: | ---: |
+| Tidal Colossus | 0% / 100% | 0% / 100% | 0% / 100% |
+| Cinder Wyrm | 0% / 100% | 0% / 100% | 0% / 100% |
+| Thornmother | 0% / 100% | 0% / 100% | 0% / 100% |
+| Storm Sovereign | 0% / 100% | 0% / 100% | 0% / 100% |
+| Old Bogback | 0% / 96% | 0% / 100% | 0% / 100% |
+
+#### The tool gap at 4, 5 and 10 players
+
+The prepared answer (the first written answer, repeated to fill the wider arena) with and without its own tool, on the same seeds (100 weekends each). Cells read win with tool (share of the boss's HP removed) / win without; gap in points. A gate should not depend on the server's size: the gap should stay near what it is at 4 players.
+
+| Boss | Tool | 4 players | 5 players | 10 players |
+| --- | --- | --- | --- | --- |
+| Tidal Colossus | Reach | 100% (100% HP) / 1% (85% HP); gap 99 | 100% (100% HP) / 24% (97% HP); gap 76 | 100% (100% HP) / 100% (100% HP); gap 0 |
+| Cinder Wyrm | Debuff | 100% (100% HP) / 0% (76% HP); gap 100 | 100% (100% HP) / 3% (88% HP); gap 97 | 100% (100% HP) / 100% (100% HP); gap 0 |
+| Thornmother | Pierce | 100% (100% HP) / 28% (96% HP); gap 72 | 100% (100% HP) / 96% (100% HP); gap 4 | 100% (100% HP) / 100% (100% HP); gap 0 |
+| Storm Sovereign | Taunt | 95% (100% HP) / 0% (54% HP); gap 95 | 95% (100% HP) / 0% (74% HP); gap 95 | 100% (100% HP) / 100% (100% HP); gap 0 |
+| Old Bogback | Mud Wall | 99% (100% HP) / 30% (95% HP); gap 69 | 98% (100% HP) / 41% (95% HP); gap 57 | 100% (100% HP) / 83% (99% HP); gap 17 |
+
+#### What the exponent trades
+
+Each cell reads the classic party's win rate at 15 columns / the mixed server of 10 (casual players on their top creatures with no Knack, 30 draws) / the prepared answer's tool gap at 10 players (points), at the exponent in the header. A low exponent lets the classic party walk over a wide raid; a high one takes the mixed server's casual players out of reach of the boss. The tool gap at 10 players is gone at every exponent up to 1 on most bosses (measured on the prepared line repeated to fill): a wider line of the same creatures wins without the tool, so the HP is not what holds a gate at 10 players; the likely cause is that the boss's Attack and its aimed hits do not grow with the players (a content or rules question, not an exponent one). The rule uses 0.7; the boss numbers at four players are the content task's to retune.
+
+| Boss | e = 0.5 | e = 0.6 | e = 0.7 | e = 0.8 | e = 1 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Tidal Colossus | 100% / 90% / 0 | 20% / 68% / 0 | 0% / 48% / 0 | 0% / 37% / 0 | 0% / 5% / 56 |
+| Cinder Wyrm | 0% / 92% / 0 | 0% / 78% / 0 | 0% / 35% / 0 | 0% / 8% / 0 | 0% / 0% / 0 |
+| Thornmother | 0% / 17% / 0 | 0% / 5% / 0 | 0% / 0% / 0 | 0% / 0% / 4 | 0% / 0% / 36 |
+| Storm Sovereign | 88% / 55% / 0 | 4% / 17% / 0 | 0% / 10% / 0 | 0% / 2% / 0 | 0% / 0% / 4 |
+| Old Bogback | 100% / 75% / 0 | 12% / 45% / 0 | 0% / 10% / 8 | 0% / 0% / 80 | 0% / 0% / 48 |
 
 ### A mixed server weekend
 
-Ten players, one column each, side by side: 2 min-maxers and 3 builders (a column each of the prepared line, the first written answer: one answer per boss, at most 2 copies of any form in a column; they have read the boss, so the min-maxers bring the columns with the most of its tool first and the builders take the columns in turn) and 5 casual players (a column of random forms from a random roster of 12, a random Knack each that the form can equip, and a random legal talent). 40 different draws of the casual players and the builders' answers, 100 weekends in all.
+Players, one column each, side by side: about a fifth min-maxers, three tenths builders and half casual players (10 players: 2 min-maxers, 3 builders, 5 casual players; 5 and 15 keep the shares). Min-maxers and builders bring columns of the prepared line (the first written answer: one answer per boss, at most 2 copies of any form in a column; they have read the boss, so the min-maxers bring the columns with the most of its tool first and the builders take the columns in turn). Casual players have a roster of 12 random forms at random levels and a random legal talent each; the two variants differ in the Knack: **random Knack each** (today's players) and **top creatures by level, no Knack** (the default after the migration, P-14: one creature a row, the top three on a three-row arena). 200 draws over 3 seeds (2 weekends a draw). Win is the mean over all draws, with the lowest and highest of the 3 seeds and the standard deviation of the draws' win rates (a draw is one set of casual rosters). Knockouts per player are the mean a weekend for one player of that kind (a min-maxer, a builder, a casual player); the HP column is the team's HP left at the weekend's end.
 
-| Boss | Weekend win | Knockouts | HP left (standing) at the weekend end |
-| --- | ---: | ---: | --- |
-| Tidal Colossus | 56% | 28.1 | 27% (39%) |
-| Cinder Wyrm | 65% | 33.4 | 49% (60%) |
-| Thornmother | 59% | 29.6 | 33% (46%) |
-| Storm Sovereign | 36% | 23.4 | 29% (31%) |
-| Old Bogback | 54% | 21.8 | 48% (68%) |
+| Boss | Players | Casual players | Win (seeds) | Draw spread (sd) | Knockouts | Per min-maxer / builder / casual | HP left (standing) |
+| --- | ---: | --- | ---: | ---: | ---: | --- | --- |
+| Tidal Colossus | 5 | random Knack each | 1% (0% to 2%; 69% HP) | 8 pts | 19.8 | 3.96 / 3.96 / 3.96 | 2% (2%) |
+| Tidal Colossus | 10 | random Knack each | 37% (35% to 39%; 92% HP) | 44 pts | 34.7 | 3.28 / 3.42 / 3.58 | 18% (23%) |
+| Tidal Colossus | 15 | random Knack each | 92% (92% to 93%; 100% HP) | 24 pts | 31.3 | 1.86 / 1.88 / 2.33 | 47% (65%) |
+| Tidal Colossus | 5 | top creatures by level, no Knack | 5% (2% to 7%; 72% HP) | 19 pts | 19.6 | 3.92 / 3.92 / 3.92 | 3% (4%) |
+| Tidal Colossus | 10 | top creatures by level, no Knack | 56% (54% to 59%; 95% HP) | 48 pts | 29.0 | 2.71 / 2.89 / 2.99 | 28% (39%) |
+| Tidal Colossus | 15 | top creatures by level, no Knack | 100% (100% to 100%; 100% HP) | 0 pts | 19.0 | 1.21 / 1.12 / 1.39 | 58% (82%) |
+| Cinder Wyrm | 5 | random Knack each | 0% (0% to 0%; 46% HP) | 0 pts | 24.9 | 4.98 / 4.97 / 4.99 | 1% (1%) |
+| Cinder Wyrm | 10 | random Knack each | 1% (0% to 2%; 78% HP) | 8 pts | 39.4 | 3.86 / 3.52 / 4.23 | 40% (36%) |
+| Cinder Wyrm | 15 | random Knack each | 91% (89% to 93%; 100% HP) | 27 pts | 33.9 | 2.30 / 1.62 / 2.70 | 62% (85%) |
+| Cinder Wyrm | 5 | top creatures by level, no Knack | 0% (0% to 0%; 56% HP) | 0 pts | 24.9 | 4.99 / 4.96 / 4.98 | 2% (1%) |
+| Cinder Wyrm | 10 | top creatures by level, no Knack | 33% (29% to 39%; 94% HP) | 43 pts | 32.7 | 3.35 / 2.89 / 3.46 | 48% (54%) |
+| Cinder Wyrm | 15 | top creatures by level, no Knack | 100% (100% to 100%; 100% HP) | 0 pts | 22.9 | 1.77 / 1.08 / 1.75 | 67% (93%) |
+| Thornmother | 5 | random Knack each | 0% (0% to 0%; 49% HP) | 0 pts | 19.9 | 4.00 / 3.98 / 3.99 | 1% (0%) |
+| Thornmother | 10 | random Knack each | 1% (0% to 1%; 73% HP) | 5 pts | 39.9 | 4.00 / 3.99 / 4.00 | 0% (0%) |
+| Thornmother | 15 | random Knack each | 28% (25% to 32%; 95% HP) | 39 pts | 53.9 | 3.54 / 3.54 / 3.66 | 13% (18%) |
+| Thornmother | 5 | top creatures by level, no Knack | 0% (0% to 0%; 59% HP) | 0 pts | 20.0 | 4.00 / 3.99 / 3.99 | 0% (0%) |
+| Thornmother | 10 | top creatures by level, no Knack | 1% (0% to 1%; 81% HP) | 8 pts | 39.9 | 3.99 / 3.99 / 3.99 | 0% (0%) |
+| Thornmother | 15 | top creatures by level, no Knack | 49% (48% to 49%; 97% HP) | 41 pts | 48.3 | 3.21 / 3.19 / 3.24 | 24% (32%) |
+| Storm Sovereign | 5 | random Knack each | 0% (0% to 0%; 42% HP) | 0 pts | 15.0 | 3.00 / 3.00 / 3.00 | 0% (0%) |
+| Storm Sovereign | 10 | random Knack each | 3% (2% to 5%; 75% HP) | 16 pts | 29.0 | 2.94 / 2.89 / 2.89 | 6% (5%) |
+| Storm Sovereign | 15 | random Knack each | 57% (51% to 62%; 96% HP) | 44 pts | 29.6 | 1.90 / 1.99 / 1.99 | 44% (50%) |
+| Storm Sovereign | 5 | top creatures by level, no Knack | 0% (0% to 0%; 48% HP) | 0 pts | 15.0 | 3.00 / 3.00 / 3.00 | 0% (0%) |
+| Storm Sovereign | 10 | top creatures by level, no Knack | 9% (6% to 14%; 84% HP) | 24 pts | 28.5 | 2.89 / 2.88 / 2.82 | 8% (8%) |
+| Storm Sovereign | 15 | top creatures by level, no Knack | 86% (86% to 87%; 99% HP) | 28 pts | 21.9 | 1.47 / 1.56 / 1.39 | 55% (67%) |
+| Old Bogback | 5 | random Knack each | 0% (0% to 0%; 59% HP) | 0 pts | 12.2 | 2.11 / 2.28 / 2.78 | 40% (55%) |
+| Old Bogback | 10 | random Knack each | 3% (1% to 4%; 80% HP) | 15 pts | 28.4 | 2.56 / 2.54 / 3.12 | 37% (45%) |
+| Old Bogback | 15 | random Knack each | 37% (26% to 43%; 95% HP) | 43 pts | 33.4 | 1.86 / 1.89 / 2.62 | 48% (62%) |
+| Old Bogback | 5 | top creatures by level, no Knack | 0% (0% to 0%; 64% HP) | 0 pts | 11.3 | 2.00 / 2.33 / 2.34 | 43% (58%) |
+| Old Bogback | 10 | top creatures by level, no Knack | 12% (10% to 14%; 89% HP) | 27 pts | 26.7 | 2.59 / 2.53 / 2.78 | 42% (49%) |
+| Old Bogback | 15 | top creatures by level, no Knack | 75% (74% to 77%; 99% HP) | 38 pts | 27.5 | 1.64 / 1.66 / 2.04 | 51% (74%) |
+
+### Every answer’s own tool (panel 5)
+
+Each written answer names its tool (`core`): its Knacks become no Knack and its talents are dropped, on the same seeds (100 weekends). A tool is worth it when the answer loses at least 20 points without it. The Mired column is what taking the whole Debuff family (Squelch Song, Mud Wall and the rest of the family) out of the answer costs, and the last column lists the other Knack families whose removal costs more than 50 points (a gate carried from another boss).
+
+| Boss | Answer (tool) | Win with | Win without | Drop (pts) | Own tool | Mired family (Debuff) removed | Other gates carried |
+| --- | --- | ---: | ---: | ---: | --- | ---: | --- |
+| Tidal Colossus | Wide Reach Guards in every column cover the whole sweep (Reach) | 99% (100% HP) | 0% (85% HP) | 99 | ok | -100 | Debuff (-100) |
+| Tidal Colossus | Living Shelter and Keep the Heat In on every row blunt the waves (Row Ward) | 98% (100% HP) | 88% (100% HP) | 10 | **fails** | -95 | Debuff (-95) |
+| Cinder Wyrm | Squelch Song keeps Mired on the Wyrm, so Forge Heat cannot build and each hit lands softer (Debuff) | 100% (100% HP) | 0% (76% HP) | 100 | ok | -100 | Reach (-100) |
+| Cinder Wyrm | Circle Round and Clear the Air heal the Payoffs its reflected hits land on (Sustain) | 100% (100% HP) | 100% (100% HP) | 0 | **fails** | -100 | Taunt (-98), Support shape (-98), Debuff (-100) |
+| Thornmother | Tunnel Through gets hits past her thick bark (Pierce) | 100% (100% HP) | 38% (97% HP) | 62 | ok | -99 | Debuff (-99) |
+| Thornmother | Lantern Glow keeps the creatures beside it from falling quiet at the row ends (Ward) | 84% (99% HP) | 51% (97% HP) | 33 | ok | -92 | Heavy Prime (-60), Guard Prime (-92), Chain (-93), Debuff (-92) |
+| Storm Sovereign | Draw Fire pulls the Rod onto a Guard that can take it (Taunt) | 96% (100% HP) | 0% (55% HP) | 96 | ok | -92 | Heavy Prime (-92), Debuff (-92) |
+| Storm Sovereign | Night Watch takes the Judgement Bolt meant for the strongest Payoff (Intercept) | 42% (97% HP) | 42% (97% HP) | 0 | **fails** | -40 | - |
+| Old Bogback | Mud Wall keeps Mired on it while Drizzle and Hearth keep the most hurt up (Mud Wall) | 98% (100% HP) | 40% (95% HP) | 58 | ok | -62 | Heavy Prime (-98), Detonator (-83), Reach (-59) |
+| Old Bogback | Hearth at round start heals the creatures the fen sinks first (Sustain) | 91% (100% HP) | 82% (100% HP) | 9 | **fails** | none carried | Chain (-68) |
+
+**6 of 10 written answers lose at least 20 points without their own tool.**
+
+### Robustness: random legal talents and no talents (panel 5)
+
+Each written answer as written (the talents the search chose), with random legal talents (one talent for each creature, from its line's pool for its role, 10 draws; the mean win rate and the lowest and highest draw) and with no talents, 100 weekends each. In brackets, the mean share of the boss's HP the weekend removed. Talents are meant to be about a fifth of a result (R20). **Target: the prepared line with random legal talents wins about 60% or more.**
+
+| Boss | Answer (tool) | As written | Random legal talents (range) | No talents | Target |
+| --- | --- | --- | --- | --- | --- |
+| Tidal Colossus | Wide Reach Guards in every column cover the whole sweep (Reach), prepared | 100% (100% HP) | 3% (0% to 30%; 80% HP) | 0% (67% HP) | **below** |
+| Tidal Colossus | Living Shelter and Keep the Heat In on every row blunt the waves (Row Ward) | 100% (100% HP) | 3% (0% to 10%; 86% HP) | 0% (68% HP) | **below** |
+| Cinder Wyrm | Squelch Song keeps Mired on the Wyrm, so Forge Heat cannot build and each hit lands softer (Debuff), prepared | 100% (100% HP) | 2% (0% to 10%; 72% HP) | 0% (52% HP) | **below** |
+| Cinder Wyrm | Circle Round and Clear the Air heal the Payoffs its reflected hits land on (Sustain) | 100% (100% HP) | 32% (0% to 100%; 94% HP) | 0% (80% HP) | **below** |
+| Thornmother | Tunnel Through gets hits past her thick bark (Pierce), prepared | 100% (100% HP) | 8% (0% to 30%; 92% HP) | 0% (82% HP) | **below** |
+| Thornmother | Lantern Glow keeps the creatures beside it from falling quiet at the row ends (Ward) | 84% (100% HP) | 1% (0% to 10%; 82% HP) | 0% (70% HP) | **below** |
+| Storm Sovereign | Draw Fire pulls the Rod onto a Guard that can take it (Taunt), prepared | 92% (100% HP) | 0% (0% to 0%; 76% HP) | 0% (68% HP) | **below** |
+| Storm Sovereign | Night Watch takes the Judgement Bolt meant for the strongest Payoff (Intercept) | 39% (96% HP) | 7% (0% to 60%; 78% HP) | 0% (66% HP) | **below** |
+| Old Bogback | Mud Wall keeps Mired on it while Drizzle and Hearth keep the most hurt up (Mud Wall), prepared | 99% (100% HP) | 28% (0% to 60%; 92% HP) | 0% (79% HP) | **below** |
+| Old Bogback | Hearth at round start heals the creatures the fen sinks first (Sustain) | 85% (100% HP) | 4% (0% to 30%; 91% HP) | 0% (82% HP) | **below** |
+
+**The prepared line with random legal talents wins 60% or more on 0 of 5 bosses.**
 
 ### Intended answers (P-13)
 
@@ -438,16 +526,16 @@ An answer works when its score beats the classic party’s on the same boss. Eac
 
 | Boss | Answer (tool) | Score vs classic | Weekend win vs classic | Knockouts | Steps |
 | --- | --- | ---: | ---: | ---: | --- |
-| Tidal Colossus | Wide Reach Guards in every column cover the whole sweep (Reach) | 138 vs 13 | 100% vs 0% | 3.7 | 3.0 of 3 |
-| Tidal Colossus | Living Shelter and Keep the Heat In on every row blunt the waves (Row Ward) | 133 vs 13 | 100% vs 0% | 3.9 | 3.0 of 3 |
-| Cinder Wyrm | Squelch Song keeps Mired on the Wyrm, so Forge Heat cannot build and each hit lands softer (Debuff) | 137 vs -2 | 100% vs 0% | 6.8 | 0.0 of 4 |
-| Cinder Wyrm | Circle Round and Clear the Air heal the Payoffs its reflected hits land on (Sustain) | 138 vs -2 | 99% vs 0% | 4.7 | 0.0 of 4 |
-| Thornmother | Tunnel Through gets hits past her thick bark (Pierce) | 139 vs 3 | 98% vs 0% | 3.1 | 2.7 of 3 |
-| Thornmother | Lantern Glow keeps the creatures beside it from falling quiet at the row ends (Ward) | 129 vs 3 | 87% vs 0% | 8.2 | 3.0 of 3 |
-| Storm Sovereign | Draw Fire pulls the Rod onto a Guard that can take it (Taunt) | 140 vs 7 | 100% vs 0% | 1.0 | 3.0 of 3 |
-| Storm Sovereign | Night Watch takes the Judgement Bolt meant for the strongest Payoff (Intercept) | 133 vs 7 | 95% vs 0% | 3.1 | 3.0 of 3 |
-| Old Bogback | Mud Wall keeps Mired on it while Drizzle and Hearth keep the most hurt up (Mud Wall) | 139 vs 15 | 98% vs 0% | 1.9 | - |
-| Old Bogback | Hearth at round start heals the creatures the fen sinks first (Sustain) | 131 vs 15 | 93% vs 0% | 3.0 | - |
+| Tidal Colossus | Wide Reach Guards in every column cover the whole sweep (Reach) | 138 vs 13 | 100% (100% HP) vs 0% (53% HP) | 3.7 | 3.0 of 3 |
+| Tidal Colossus | Living Shelter and Keep the Heat In on every row blunt the waves (Row Ward) | 132 vs 13 | 99% (100% HP) vs 0% (53% HP) | 4.4 | 3.0 of 3 |
+| Cinder Wyrm | Squelch Song keeps Mired on the Wyrm, so Forge Heat cannot build and each hit lands softer (Debuff) | 137 vs -2 | 100% (100% HP) vs 0% (21% HP) | 6.8 | 0.0 of 4 |
+| Cinder Wyrm | Circle Round and Clear the Air heal the Payoffs its reflected hits land on (Sustain) | 138 vs -2 | 99% (100% HP) vs 0% (21% HP) | 4.7 | 0.0 of 4 |
+| Thornmother | Tunnel Through gets hits past her thick bark (Pierce) | 139 vs 3 | 98% (100% HP) vs 0% (28% HP) | 3.1 | 2.7 of 3 |
+| Thornmother | Lantern Glow keeps the creatures beside it from falling quiet at the row ends (Ward) | 123 vs 3 | 82% (100% HP) vs 0% (28% HP) | 8.6 | 3.0 of 3 |
+| Storm Sovereign | Draw Fire pulls the Rod onto a Guard that can take it (Taunt) | 134 vs 7 | 98% (100% HP) vs 0% (33% HP) | 2.3 | 3.0 of 3 |
+| Storm Sovereign | Night Watch takes the Judgement Bolt meant for the strongest Payoff (Intercept) | 66 vs 7 | 43% (97% HP) vs 0% (33% HP) | 9.2 | 3.0 of 3 |
+| Old Bogback | Mud Wall keeps Mired on it while Drizzle and Hearth keep the most hurt up (Mud Wall) | 139 vs 15 | 98% (100% HP) vs 0% (57% HP) | 1.9 | - |
+| Old Bogback | Hearth at round start heals the creatures the fen sinks first (Sustain) | 131 vs 15 | 93% (100% HP) vs 0% (57% HP) | 3.0 | - |
 
 **10 of 10 intended answers beat the classic party on their boss.**
 
@@ -491,20 +579,28 @@ Best teams at depth 5:
 - Coil Baron: sunfawn (Ready the Mark), pyrelynx (Guard's Shadow), bogwarden (Mud Wall)
 - Fen Lurker: ancientshell (no Knack), drizzlewt (no Knack), pyrelynx (Leave a Trail)
 
-### Runs and the camp
+### Map runs and the camp
 
-A run is two fights, the camp, two fights and the floor boss, with foes drawn without repeats; creatures keep their HP, a knocked-out creature stays out, and the camp's Rest heals the standing creatures by the dungeon's share. The all-round team is the best line the search finds against whole runs at that depth, so it has to answer many foes at once. 100 seeded runs each; the same routes and dice with and without the camp.
+A run is the shipped map (fights, elites, mystery rooms, caches, the camp and the floor boss) with foes drawn without repeats; creatures keep their HP, a knocked-out creature stays out until the camp's Swap, and the camp's Rest heals the standing creatures by the dungeon's share. The team is the lab's all-round team (ancientshell (Steady Mark, stubborn), pyrelynx (Guard's Shadow, first-pounce), bogwarden (Wide Reach, long-shadow)) with a bench of lanternfin (Lantern Glow, odd-one-out), fogwyrm (no Knack, unbothered). **Careful** plans: it prefers rooms that cost no HP, then the fight the team is strongest against, takes an elite only when healthy and strong against it, and at the camp swaps in a bench creature for one that is knocked out or nearly so, else rests when hurt, else takes the better keepsake. **Careless** takes the first exit every time, rests at the camp and takes the first free option, with no bench. The classic line takes the first exit too. A clear is beating the floor boss; the Undercroft columns are the share of all runs that went on to beat the keeper of that level. 100 seeded runs each, the same maps and dice for every team.
 
-| Depth | Team | Win with camp | Win without camp | Rooms cleared (with / without) | Knockouts at the end |
-| --- | --- | ---: | ---: | ---: | ---: |
-| 1 | Classic line | 67% | 58% | 3.7 / 3.6 | 1.2 |
-| 1 | All-round best: solmane (Lead the Way), bloomback (Leave a Trail), geyserpup (no Knack) | 87% | 82% | 4.0 / 3.9 | 0.5 |
-| 3 | Classic line | 30% | 18% | 3.0 / 2.8 | 2.3 |
-| 3 | All-round best: ancientshell (Steady Mark), tempestray (Detonate), pyrelynx (Leave a Trail) | 61% | 48% | 3.8 / 3.6 | 1.4 |
-| 5 | Classic line | 7% | 4% | 2.4 / 2.2 | 2.7 |
-| 5 | All-round best: ancientshell (no Knack), pyrelynx (Guard's Shadow), kilnmole (Draw Fire) | 36% | 30% | 3.0 / 3.0 | 2.0 |
-| 7 | Classic line | 7% | 5% | 1.8 / 1.7 | 2.8 |
-| 7 | All-round best: tidewing (Lead the Way), tempestray (Leave a Trail), bogwarden (Draw Fire) | 19% | 13% | 2.5 / 2.3 | 2.4 |
+| Depth | Careful: clear | Careful: knockouts at the end | Careless: clear | Classic line, careless: clear |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 99% | 0.0 | 92% | 47% |
+| 2 | 95% | 0.1 | 82% | 37% |
+| 3 | 91% | 0.1 | 77% | 9% |
+| 4 | 83% | 0.3 | 64% | 5% |
+| 5 | 85% | 0.5 | 65% | 2% |
+| 6 | 82% | 0.6 | 67% | 1% |
+| 7 | 69% | 1.3 | 38% | 2% |
+| 8 | 55% | 1.4 | 36% | 1% |
+
+The Undercroft below depth 8 (the share of all runs that beat the keeper of each level):
+
+| Undercroft level | Careful | Careless |
+| --- | ---: | ---: |
+| 1 | 19% | 9% |
+| 2 | 4% | 1% |
+| 3 | 0% | 0% |
 
 ## Knack usage across the real bosses (per creature)
 
@@ -512,99 +608,135 @@ A run is two fights, the camp, two fights and the floor boss, with foes drawn wi
 
 | Knack | Forms | Picks | Ratio |
 | --- | --- | ---: | ---: |
-| Guard's Shadow | pyrelynx | 32 | 4.8 |
+| Guard's Shadow | pyrelynx | 26 | 3.9 |
+| Living Shelter | ancientshell | 23 | 3.5 |
 | Puddle Maker | geyserpup | 20 | 3.0 |
 | Thick Fog | fogwyrm | 20 | 3.0 |
-| Living Shelter | ancientshell | 18 | 2.7 |
-| Mud Wall | mudlump, bogwarden | 34 | 2.6 |
 | Squelch Song | squelch, croakmire | 32 | 2.4 |
+| Mud Wall | mudlump, bogwarden | 30 | 2.3 |
 | Draw Fire | kilnmole, hearthshell, bogwarden | 39 | 2.0 |
 | Carry Them | gaiadrake | 13 | 2.0 |
-| All at Once | geyserpup, bloomback | 24 | 1.8 |
+| Hearth | hearthshell | 13 | 2.0 |
 | Zigzag | voltaro | 12 | 1.8 |
-| Hearth | hearthshell | 12 | 1.8 |
-| Night Watch | thornbuck | 11 | 1.7 |
+| Lightning Ears | ohmouse | 11 | 1.7 |
 | Starlight | aurorix | 11 | 1.7 |
-| Clear the Air | halcyray, drizzlewt, lanternfin | 33 | 1.7 |
-| Keep the Heat In | kilnmole, hearthshell | 21 | 1.6 |
-| Zoom | zipmouse, voltaro | 21 | 1.6 |
-| Lead the Way | splashet, tidewing, wickat, solmane | 38 | 1.4 |
-| Leave a Trail | geyserpup, stormray, tempestray, cindle, pyrelynx, bloomback, coralynx, gaiadrake | 74 | 1.4 |
-| Feed the Marks | mossback, ancientshell | 17 | 1.3 |
-| Detonate | stormray, tempestray, cindle, pyrelynx, bloomback, coralynx, gaiadrake | 58 | 1.3 |
-| Drizzle | drizzlewt | 8 | 1.2 |
-| Lightning Ears | ohmouse | 7 | 1.1 |
+| Detonate | stormray, tempestray, cindle, pyrelynx, bloomback, coralynx, gaiadrake | 73 | 1.6 |
+| Keep the Heat In | kilnmole, hearthshell | 20 | 1.5 |
+| Clear the Air | halcyray, drizzlewt, lanternfin | 28 | 1.4 |
+| Lead the Way | splashet, tidewing, wickat, solmane | 36 | 1.4 |
+| All at Once | geyserpup, bloomback | 18 | 1.4 |
+| Feed the Marks | mossback, ancientshell | 16 | 1.2 |
+| Leave a Trail | geyserpup, stormray, tempestray, cindle, pyrelynx, bloomback, coralynx, gaiadrake | 64 | 1.2 |
+| Zoom | zipmouse, voltaro | 16 | 1.2 |
+| Hide in Mist | mistnewt, fogwyrm | 15 | 1.1 |
+| Circle Round | tidewing | 6 | 0.9 |
 | Twin Strike | tempestray | 6 | 0.9 |
+| Night Watch | thornbuck | 6 | 0.9 |
 | Lantern Glow | lanternfin | 6 | 0.9 |
-| Circle Round | tidewing | 5 | 0.8 |
-| Hide in Mist | mistnewt, fogwyrm | 10 | 0.8 |
 | Territorial | coralynx | 5 | 0.8 |
 | Steady Mark | splashet, tidewing, wickat, mossback, ancientshell, solmane | 29 | 0.7 |
-| Clear Skies | halcyray, aurorix | 9 | 0.7 |
 | Gather Calm | halcyray, aurorix | 9 | 0.7 |
-| Wide Reach | sproutle, thornbuck, mistnewt, fogwyrm, mudlump, bogwarden | 25 | 0.6 |
-| no Knack | any | 137 | 0.6 |
+| no Knack | any | 151 | 0.7 |
+| Clear Skies | halcyray, aurorix | 8 | 0.6 |
 | Curl Up | sunfawn, drizzlewt | 8 | 0.6 |
 | Catch the Bolts | ohmouse | 4 | 0.6 |
+| Drizzle | drizzlewt | 4 | 0.6 |
+| Wide Reach | sproutle, thornbuck, mistnewt, fogwyrm, mudlump, bogwarden | 20 | 0.5 |
+| Ready the Mark | sunfawn, ashmole, magmole, squelch, croakmire | 14 | 0.4 |
 | Sunbeam | sunfawn, lanternfin | 5 | 0.4 |
 | Baked Shell | kilnmole | 2 | 0.3 |
-| Ready the Mark | sunfawn, ashmole, magmole, squelch, croakmire | 9 | 0.3 |
 | Primed by Pain | sproutle, thornbuck | 3 | 0.2 |
+| Double Mark | tidewing, zipmouse, voltaro, wickat | 6 | 0.2 |
 | Wide Warmth | ashmole, magmole, croakmire | 4 | 0.2 |
 | Tunnel Through | magmole | 1 | 0.2 |
 | Crown of Embers | solmane | 1 | 0.2 |
-| Double Mark | tidewing, zipmouse, voltaro, wickat | 1 | 0.0 |
+
+## The gate check (P-05, P-10)
+
+A Knack family is a **gate** on a boss when taking it out of one of the boss's written answers costs more than 50 points of weekend win rate (100 weekends, the same seeds with and without). **Gate: no Knack family is a gate on 3 or more bosses.** Panel 5 found Mired (the Debuff family) on 9 of the 10 answers.
+
+| Knack family | Bosses it gates | Answers |
+| --- | ---: | --- |
+| Debuff | 5 (Tidal Colossus, Cinder Wyrm, Thornmother, Storm Sovereign, Old Bogback) | Tidal Colossus: Wide Reach Guards in every column cover the whole sweep; Tidal Colossus: Living Shelter and Keep the Heat In on every row blunt the waves; Cinder Wyrm: Squelch Song keeps Mired on the Wyrm, so Forge Heat cannot build and each hit lands softer; Cinder Wyrm: Circle Round and Clear the Air heal the Payoffs its reflected hits land on; Thornmother: Tunnel Through gets hits past her thick bark; Thornmother: Lantern Glow keeps the creatures beside it from falling quiet at the row ends; Storm Sovereign: Draw Fire pulls the Rod onto a Guard that can take it; Old Bogback: Mud Wall keeps Mired on it while Drizzle and Hearth keep the most hurt up |
+| Heavy Prime | 3 (Thornmother, Storm Sovereign, Old Bogback) | Thornmother: Lantern Glow keeps the creatures beside it from falling quiet at the row ends; Storm Sovereign: Draw Fire pulls the Rod onto a Guard that can take it; Old Bogback: Mud Wall keeps Mired on it while Drizzle and Hearth keep the most hurt up |
+| Reach | 3 (Tidal Colossus, Cinder Wyrm, Old Bogback) | Tidal Colossus: Wide Reach Guards in every column cover the whole sweep; Cinder Wyrm: Squelch Song keeps Mired on the Wyrm, so Forge Heat cannot build and each hit lands softer; Old Bogback: Mud Wall keeps Mired on it while Drizzle and Hearth keep the most hurt up |
+| Chain | 2 (Thornmother, Old Bogback) | Thornmother: Lantern Glow keeps the creatures beside it from falling quiet at the row ends; Old Bogback: Hearth at round start heals the creatures the fen sinks first |
+| Taunt | 2 (Cinder Wyrm, Storm Sovereign) | Cinder Wyrm: Circle Round and Clear the Air heal the Payoffs its reflected hits land on; Storm Sovereign: Draw Fire pulls the Rod onto a Guard that can take it |
+| Detonator | 1 (Old Bogback) | Old Bogback: Mud Wall keeps Mired on it while Drizzle and Hearth keep the most hurt up |
+| Guard Prime | 1 (Thornmother) | Thornmother: Lantern Glow keeps the creatures beside it from falling quiet at the row ends |
+| Pierce | 1 (Thornmother) | Thornmother: Tunnel Through gets hits past her thick bark |
+| Support shape | 1 (Cinder Wyrm) | Cinder Wyrm: Circle Round and Clear the Air heal the Payoffs its reflected hits land on |
+
+**Gate FAILS: Debuff (5 bosses), Heavy Prime (3 bosses), Reach (3 bosses).**
+
+### Rarely used Knacks and the outlier (the content task’s list)
+
+The Knacks panel 5 named: six with almost no picks on the real bosses, and Guard's Shadow, far above the rest. Picks and ratio are from the table above; the last two columns are how many written answers carry it and what taking it out of each costs (points of weekend win rate, 100 weekends). A Knack that costs an answer nothing is not an answer's tool.
+
+| Knack | Forms | Picks | Ratio | Written answers carrying it | Win rate lost without it |
+| --- | --- | ---: | ---: | ---: | --- |
+| Double Mark | tidewing, zipmouse, voltaro, wickat | 6 | 0.2 | 4 | Tidal Colossus: -15; Thornmother: -47; Storm Sovereign: -91; Old Bogback: -62 |
+| Tunnel Through | magmole | 1 | 0.2 | 2 | Thornmother: -63; Thornmother: -27 |
+| Crown of Embers | solmane | 1 | 0.2 | 0 | - |
+| Primed by Pain | sproutle, thornbuck | 3 | 0.2 | 2 | Tidal Colossus: 0; Thornmother: 0 |
+| Wide Warmth | ashmole, magmole, croakmire | 4 | 0.2 | 3 | Cinder Wyrm: 0; Cinder Wyrm: 0; Old Bogback: -3 |
+| Keep the Heat In | kilnmole, hearthshell | 20 | 1.5 | 3 | Tidal Colossus: +1; Storm Sovereign: -3; Old Bogback: -20 |
+| Guard's Shadow | pyrelynx | 26 | 3.9 | 1 | Old Bogback: -55 |
+
+Other Knacks below ratio 0.3: none.
+
+Other Knacks at ratio 2 or more: Living Shelter (23, 3.5), Puddle Maker (20, 3.0), Thick Fog (20, 3.0), Squelch Song (32, 2.4), Mud Wall (30, 2.3).
 
 ### Forms in the best teams
 
-Of the 69 best teams (one per raid boss, one per foe and depth, one per run depth), the forms in most of them: pyrelynx (27, 39%), ancientshell (23, 33%), bloomback (20, 29%), hearthshell (16, 23%), tempestray (14, 20%), bogwarden (13, 19%). A form in most best teams is a new "top three" (P-11).
+Of the 65 best teams (one per raid boss, one per foe and depth), the forms in most of them: pyrelynx (25, 38%), ancientshell (20, 31%), hearthshell (17, 26%), bloomback (17, 26%), tempestray (13, 20%), bogwarden (12, 18%). A form in most best teams is a new "top three" (P-11).
 
 ## Mechanics the bosses and foes call for (measured)
 
-Every Knack family, keyword, rule and talent kind should be the answer or the problem for at least one boss or foe. A mechanic is **called for** by a raid boss only when taking it out of that boss's best line or of its prepared line, the first written answer (its Knacks become none, its talents are dropped) lowers the weekend win rate by 10 points or more, on the same seeds (100 weekends); a foe, when the best line's score at depth 7 (where floor bosses have their signature) falls by 10 or more (40 fights). The drop is measured, not read off the boss's data. A mechanic only a boss has (an escalation feed, Adaptation) has no tool on a line to take out; those are in the features-present list below.
+Every Knack family, keyword, rule and talent kind should be the answer or the problem for at least one boss or foe. A mechanic is **called for** by a raid boss only when taking it out of that boss's best line or of any of its written answers (its Knacks become none, its talents are dropped) lowers the weekend win rate by 10 points or more, on the same seeds (100 weekends); a foe, when the best line's score at depth 7 (where floor bosses have their signature) falls by 10 or more (40 fights). The drop is measured, not read off the boss's data. A mechanic only a boss has (an escalation feed, Adaptation) has no tool on a line to take out; those are in the features-present list below.
 
 | Mechanic | Kind | Called for by (measured drop) |
 | --- | --- | --- |
 | Seal | Knack family | **none** |
 | Lead | Knack family | **none** |
-| Heavy Prime | Knack family | 4: Storm Sovereign (-82 pts), Storm Sovereign, prepared line (-98 pts), Old Bogback (-18 pts), Old Bogback, prepared line (-100 pts) |
+| Heavy Prime | Knack family | 4: Thornmother, answer 2 (-60 pts), Storm Sovereign (-99 pts), Storm Sovereign, prepared line (-92 pts), Old Bogback, prepared line (-98 pts) |
 | Self Prime | Knack family | 1: Bramble Matron (-10 score) |
-| Guard Prime | Knack family | 1: Old Bogback (-68 pts) |
+| Guard Prime | Knack family | 1: Thornmother, answer 2 (-92 pts) |
 | Support Prime | Knack family | **none** |
-| Detonator | Knack family | 1: Old Bogback, prepared line (-76 pts) |
-| Chain | Knack family | 1: Thornmother, prepared line (-11 pts) |
+| Detonator | Knack family | 1: Old Bogback, prepared line (-83 pts) |
+| Chain | Knack family | 4: Thornmother, prepared line (-10 pts), Thornmother, answer 2 (-93 pts), Old Bogback (-23 pts), Old Bogback, answer 2 (-68 pts) |
 | Flurry | Knack family | **none** |
-| Reach | Knack family | 5: Tidal Colossus (-87 pts), Tidal Colossus, prepared line (-100 pts), Cinder Wyrm, prepared line (-100 pts), Thornmother (-17 pts), ... |
+| Reach | Knack family | 6: Tidal Colossus (-87 pts), Tidal Colossus, prepared line (-100 pts), Cinder Wyrm, prepared line (-100 pts), Thornmother (-17 pts), ... |
 | Intercept | Knack family | **none** |
-| Taunt | Knack family | 3: Cinder Wyrm (-36 pts), Storm Sovereign (-53 pts), Storm Sovereign, prepared line (-99 pts) |
-| Evasion | Knack family | **none** |
+| Taunt | Knack family | 5: Cinder Wyrm (-36 pts), Cinder Wyrm, answer 2 (-98 pts), Storm Sovereign (-99 pts), Storm Sovereign, prepared line (-92 pts), ... |
+| Evasion | Knack family | 1: Storm Sovereign, answer 2 (-35 pts) |
 | Evasion aura | Knack family | **none** |
-| Row Ward | Knack family | **none** |
-| Ward | Knack family | **none** |
-| Pierce | Knack family | 1: Thornmother, prepared line (-57 pts) |
-| Partner | Knack family | 1: Moss Lurker (-19 score) |
-| Support shape | Knack family | 3: Cinder Wyrm (-65 pts), Thornmother, prepared line (-26 pts), Drift Wisp (-76 score) |
-| Sustain | Knack family | 2: Old Bogback (-15 pts), Old Bogback, prepared line (-14 pts) |
+| Row Ward | Knack family | 1: Old Bogback, answer 2 (-42 pts) |
+| Ward | Knack family | 1: Thornmother, answer 2 (-32 pts) |
+| Pierce | Knack family | 2: Thornmother, prepared line (-63 pts), Thornmother, answer 2 (-39 pts) |
+| Partner | Knack family | 2: Old Bogback, answer 2 (-44 pts), Moss Lurker (-19 score) |
+| Support shape | Knack family | 5: Tidal Colossus, answer 2 (-14 pts), Cinder Wyrm (-65 pts), Cinder Wyrm, answer 2 (-98 pts), Thornmother, prepared line (-27 pts), ... |
+| Sustain | Knack family | 4: Storm Sovereign (-19 pts), Storm Sovereign, prepared line (-15 pts), Old Bogback (-94 pts), Old Bogback, prepared line (-16 pts) |
 | Store | Knack family | **none** |
-| Debuff | Knack family | 10: Tidal Colossus (-44 pts), Tidal Colossus, prepared line (-100 pts), Cinder Wyrm (-100 pts), Cinder Wyrm, prepared line (-100 pts), ... |
-| Mark | Keyword | 5: Tidal Colossus, prepared line (-16 pts), Storm Sovereign (-94 pts), Storm Sovereign, prepared line (-98 pts), Old Bogback (-98 pts), ... |
-| Reaction | Keyword | 8: Tidal Colossus, prepared line (-22 pts), Thornmother (-27 pts), Thornmother, prepared line (-11 pts), Storm Sovereign (-76 pts), ... |
-| Spend | Keyword | 1: Old Bogback, prepared line (-76 pts) |
-| Store | Keyword | **none** |
+| Debuff | Knack family | 14: Tidal Colossus (-44 pts), Tidal Colossus, prepared line (-100 pts), Tidal Colossus, answer 2 (-95 pts), Cinder Wyrm (-100 pts), ... |
+| Mark | Keyword | 8: Tidal Colossus, prepared line (-12 pts), Thornmother, answer 2 (-93 pts), Storm Sovereign (-99 pts), Storm Sovereign, prepared line (-92 pts), ... |
+| Reaction | Keyword | 11: Tidal Colossus, prepared line (-21 pts), Thornmother (-27 pts), Thornmother, prepared line (-10 pts), Thornmother, answer 2 (-93 pts), ... |
+| Spend | Keyword | 1: Old Bogback, prepared line (-83 pts) |
+| Store | Keyword | 1: Storm Sovereign, answer 2 (-31 pts) |
 | Seal | Keyword | **none** |
-| Taunt | Keyword | 3: Cinder Wyrm (-36 pts), Storm Sovereign (-53 pts), Storm Sovereign, prepared line (-99 pts) |
-| Intercept | Keyword | 1: Old Bogback (-82 pts) |
+| Taunt | Keyword | 5: Cinder Wyrm (-36 pts), Cinder Wyrm, answer 2 (-98 pts), Storm Sovereign (-99 pts), Storm Sovereign, prepared line (-92 pts), ... |
+| Intercept | Keyword | 1: Thornmother, answer 2 (-92 pts) |
 | Retaliate | Keyword | **none** |
 | Blocked | Keyword | **none** |
-| Silenced | Keyword | **none** |
-| Wind-up | Keyword | **none** |
-| Mired | Keyword | 10: Tidal Colossus (-44 pts), Tidal Colossus, prepared line (-100 pts), Cinder Wyrm (-100 pts), Cinder Wyrm, prepared line (-100 pts), ... |
-| Beside | Keyword | 1: Drift Wisp (-76 score) |
-| Row end | Keyword | **none** |
+| Silenced | Keyword | 1: Thornmother, answer 2 (-32 pts) |
+| Wind-up | Keyword | 1: Old Bogback, answer 2 (-36 pts) |
+| Mired | Keyword | 14: Tidal Colossus (-44 pts), Tidal Colossus, prepared line (-100 pts), Tidal Colossus, answer 2 (-95 pts), Cinder Wyrm (-100 pts), ... |
+| Beside | Keyword | 3: Thornmother, answer 2 (-37 pts), Old Bogback, answer 2 (-36 pts), Drift Wisp (-76 score) |
+| Row end | Keyword | 1: Old Bogback, answer 2 (-58 pts) |
 | Front row | Keyword | **none** |
-| Reach | Keyword | 5: Tidal Colossus (-47 pts), Tidal Colossus, prepared line (-100 pts), Cinder Wyrm, prepared line (-31 pts), Thornmother, prepared line (-10 pts), ... |
-| Boost | Keyword | 2: Thornmother, prepared line (-25 pts), Old Bogback, prepared line (-14 pts) |
-| Area hit | Keyword | **none** |
+| Reach | Keyword | 10: Tidal Colossus (-47 pts), Tidal Colossus, prepared line (-100 pts), Tidal Colossus, answer 2 (-94 pts), Cinder Wyrm, prepared line (-36 pts), ... |
+| Boost | Keyword | 3: Thornmother, prepared line (-22 pts), Thornmother, answer 2 (-48 pts), Old Bogback, prepared line (-15 pts) |
+| Area hit | Keyword | 1: Tidal Colossus, answer 2 (-12 pts) |
 | Scatter | Keyword | **none** |
 | Leap | Keyword | **none** |
 | Cross | Keyword | **none** |
@@ -612,21 +744,21 @@ Every Knack family, keyword, rule and talent kind should be the answer or the pr
 | Most hurt | Keyword | **none** |
 | Back-most | Keyword | **none** |
 | Build-up | Keyword | **none** |
-| Armour | Rule | 4: Cinder Wyrm (-36 pts), Thornmother, prepared line (-57 pts), Storm Sovereign (-53 pts), Storm Sovereign, prepared line (-99 pts) |
-| Dodge | Rule | 1: Drift Wisp (-76 score) |
-| Silence | Rule | 1: Old Bogback (-15 pts) |
-| Mired | Rule | 10: Tidal Colossus (-44 pts), Tidal Colossus, prepared line (-100 pts), Cinder Wyrm (-100 pts), Cinder Wyrm, prepared line (-100 pts), ... |
-| Marks | Rule | 8: Tidal Colossus, prepared line (-69 pts), Thornmother (-22 pts), Thornmother, prepared line (-16 pts), Storm Sovereign (-94 pts), ... |
+| Armour | Rule | 7: Cinder Wyrm (-36 pts), Cinder Wyrm, answer 2 (-98 pts), Thornmother, prepared line (-63 pts), Thornmother, answer 2 (-39 pts), ... |
+| Dodge | Rule | 2: Storm Sovereign, answer 2 (-36 pts), Drift Wisp (-76 score) |
+| Silence | Rule | 1: Thornmother, answer 2 (-32 pts) |
+| Mired | Rule | 14: Tidal Colossus (-44 pts), Tidal Colossus, prepared line (-100 pts), Tidal Colossus, answer 2 (-95 pts), Cinder Wyrm (-100 pts), ... |
+| Marks | Rule | 10: Tidal Colossus, prepared line (-72 pts), Thornmother (-22 pts), Thornmother, prepared line (-13 pts), Thornmother, answer 2 (-93 pts), ... |
 | Wind-up moves | Rule | **none** |
-| Taunt | Rule | 3: Cinder Wyrm (-36 pts), Storm Sovereign (-53 pts), Storm Sovereign, prepared line (-99 pts) |
-| Intercept | Rule | 1: Cinder Wyrm, prepared line (-100 pts) |
-| Cover | Rule | 6: Tidal Colossus (-100 pts), Tidal Colossus, prepared line (-100 pts), Cinder Wyrm (-26 pts), Cinder Wyrm, prepared line (-100 pts), ... |
+| Taunt | Rule | 5: Cinder Wyrm (-36 pts), Cinder Wyrm, answer 2 (-98 pts), Storm Sovereign (-99 pts), Storm Sovereign, prepared line (-92 pts), ... |
+| Intercept | Rule | 2: Cinder Wyrm, prepared line (-100 pts), Old Bogback, answer 2 (-84 pts) |
+| Cover | Rule | 13: Tidal Colossus (-100 pts), Tidal Colossus, prepared line (-100 pts), Tidal Colossus, answer 2 (-95 pts), Cinder Wyrm (-26 pts), ... |
 | Build-up | Rule | boss-side only (no tool to take out) |
 | Adaptation | Rule | boss-side only (no tool to take out) |
-| damage | Talent kind | 2: Tidal Colossus, prepared line (-17 pts), Thornmother, prepared line (-47 pts) |
-| marks | Talent kind | 4: Storm Sovereign (-81 pts), Storm Sovereign, prepared line (-90 pts), Old Bogback (-33 pts), Old Bogback, prepared line (-63 pts) |
-| protection | Talent kind | 8: Tidal Colossus (-100 pts), Tidal Colossus, prepared line (-100 pts), Cinder Wyrm, prepared line (-100 pts), Thornmother (-12 pts), ... |
-| team | Talent kind | 9: Tidal Colossus, prepared line (-50 pts), Cinder Wyrm (-21 pts), Cinder Wyrm, prepared line (-30 pts), Thornmother (-24 pts), ... |
+| damage | Talent kind | 6: Tidal Colossus, prepared line (-17 pts), Tidal Colossus, answer 2 (-33 pts), Thornmother, prepared line (-53 pts), Thornmother, answer 2 (-68 pts), ... |
+| marks | Talent kind | 6: Thornmother, answer 2 (-31 pts), Storm Sovereign (-98 pts), Storm Sovereign, prepared line (-91 pts), Storm Sovereign, answer 2 (-40 pts), ... |
+| protection | Talent kind | 13: Tidal Colossus (-100 pts), Tidal Colossus, prepared line (-100 pts), Tidal Colossus, answer 2 (-95 pts), Cinder Wyrm, prepared line (-100 pts), ... |
+| team | Talent kind | 13: Tidal Colossus, prepared line (-57 pts), Tidal Colossus, answer 2 (-33 pts), Cinder Wyrm (-21 pts), Cinder Wyrm, prepared line (-30 pts), ... |
 | reactions | Escalation feed | boss-side only (no tool to take out) |
 | hpLost | Escalation feed | boss-side only (no tool to take out) |
 | rounds | Escalation feed | boss-side only (no tool to take out) |
@@ -635,19 +767,19 @@ Every Knack family, keyword, rule and talent kind should be the answer or the pr
 | knockouts | Escalation feed | boss-side only (no tool to take out) |
 | shed | Escalation feed | boss-side only (no tool to take out) |
 
-**No boss or foe measurably calls for: Seal (Knack family), Lead (Knack family), Support Prime (Knack family), Flurry (Knack family), Intercept (Knack family), Evasion (Knack family), Evasion aura (Knack family), Row Ward (Knack family), Ward (Knack family), Store (Knack family), Store (Keyword), Seal (Keyword), Retaliate (Keyword), Blocked (Keyword), Silenced (Keyword), Wind-up (Keyword), Row end (Keyword), Front row (Keyword), Area hit (Keyword), Scatter (Keyword), Leap (Keyword), Cross (Keyword), Checker (Keyword), Most hurt (Keyword), Back-most (Keyword), Build-up (Keyword), Wind-up moves (Rule).**
+**No boss or foe measurably calls for: Seal (Knack family), Lead (Knack family), Support Prime (Knack family), Flurry (Knack family), Intercept (Knack family), Evasion aura (Knack family), Store (Knack family), Seal (Keyword), Retaliate (Keyword), Blocked (Keyword), Front row (Keyword), Scatter (Keyword), Leap (Keyword), Cross (Keyword), Checker (Keyword), Most hurt (Keyword), Back-most (Keyword), Build-up (Keyword), Wind-up moves (Rule).**
 
 ### What each boss measurably calls for
 
-The same measure read per boss: the mechanics whose removal from its best line or its prepared line costs the weekend win rate (raid) or the score (foe) the drop above. A boss that names few is one the best lines beat without needing much; the aim is at least three each.
+The same measure read per boss: the mechanics whose removal from its best line or one of its written answers costs the weekend win rate (raid) or the score (foe) the drop above. A boss that names few is one the best lines beat without needing much; the aim is at least three each.
 
 | Boss or foe | Mechanics named | Which |
 | --- | ---: | --- |
-| Tidal Colossus | 12 | Reach (Knack family), Debuff (Knack family), Mark (Keyword), Reaction (Keyword), Mired (Keyword), Reach (Keyword), Mired (Rule), Marks (Rule), Cover (Rule), damage (Talent kind), protection (Talent kind), team (Talent kind) |
+| Tidal Colossus | 14 | Reach (Knack family), Support shape (Knack family), Debuff (Knack family), Mark (Keyword), Reaction (Keyword), Mired (Keyword), Reach (Keyword), Area hit (Keyword), Mired (Rule), Marks (Rule), Cover (Rule), damage (Talent kind), protection (Talent kind), team (Talent kind) |
 | Cinder Wyrm | 14 | Reach (Knack family), Taunt (Knack family), Support shape (Knack family), Debuff (Knack family), Taunt (Keyword), Mired (Keyword), Reach (Keyword), Armour (Rule), Mired (Rule), Taunt (Rule), Intercept (Rule), Cover (Rule), protection (Talent kind), team (Talent kind) |
-| Thornmother | 16 | Chain (Knack family), Reach (Knack family), Pierce (Knack family), Support shape (Knack family), Debuff (Knack family), Reaction (Keyword), Mired (Keyword), Reach (Keyword), Boost (Keyword), Armour (Rule), Mired (Rule), Marks (Rule), Cover (Rule), damage (Talent kind), protection (Talent kind), team (Talent kind) |
-| Storm Sovereign | 14 | Heavy Prime (Knack family), Taunt (Knack family), Debuff (Knack family), Mark (Keyword), Reaction (Keyword), Taunt (Keyword), Mired (Keyword), Armour (Rule), Mired (Rule), Marks (Rule), Taunt (Rule), marks (Talent kind), protection (Talent kind), team (Talent kind) |
-| Old Bogback | 20 | Heavy Prime (Knack family), Guard Prime (Knack family), Detonator (Knack family), Reach (Knack family), Sustain (Knack family), Debuff (Knack family), Mark (Keyword), Reaction (Keyword), Spend (Keyword), Intercept (Keyword), Mired (Keyword), Reach (Keyword), Boost (Keyword), Silence (Rule), Mired (Rule), Marks (Rule), Cover (Rule), marks (Talent kind), protection (Talent kind), team (Talent kind) |
+| Thornmother | 25 | Heavy Prime (Knack family), Guard Prime (Knack family), Chain (Knack family), Reach (Knack family), Ward (Knack family), Pierce (Knack family), Support shape (Knack family), Debuff (Knack family), Mark (Keyword), Reaction (Keyword), Intercept (Keyword), Silenced (Keyword), Mired (Keyword), Beside (Keyword), Reach (Keyword), Boost (Keyword), Armour (Rule), Silence (Rule), Mired (Rule), Marks (Rule), Cover (Rule), damage (Talent kind), marks (Talent kind), protection (Talent kind), team (Talent kind) |
+| Storm Sovereign | 21 | Heavy Prime (Knack family), Taunt (Knack family), Evasion (Knack family), Sustain (Knack family), Debuff (Knack family), Mark (Keyword), Reaction (Keyword), Store (Keyword), Taunt (Keyword), Mired (Keyword), Reach (Keyword), Armour (Rule), Dodge (Rule), Mired (Rule), Marks (Rule), Taunt (Rule), Cover (Rule), damage (Talent kind), marks (Talent kind), protection (Talent kind), team (Talent kind) |
+| Old Bogback | 25 | Heavy Prime (Knack family), Detonator (Knack family), Chain (Knack family), Reach (Knack family), Row Ward (Knack family), Partner (Knack family), Sustain (Knack family), Debuff (Knack family), Mark (Keyword), Reaction (Keyword), Spend (Keyword), Wind-up (Keyword), Mired (Keyword), Beside (Keyword), Row end (Keyword), Reach (Keyword), Boost (Keyword), Mired (Rule), Marks (Rule), Intercept (Rule), Cover (Rule), damage (Talent kind), marks (Talent kind), protection (Talent kind), team (Talent kind) |
 | Puddle Imp | 0 | - |
 | Drift Wisp | 3 | Support shape (Knack family), Beside (Keyword), Dodge (Rule) |
 | Ember Mite | 0 | - |
@@ -663,6 +795,35 @@ The same measure read per boss: the mechanics whose removal from its best line o
 | Bramble Matron | 3 | Self Prime (Knack family), Reaction (Keyword), Marks (Rule) |
 | Coil Baron | 0 | - |
 | Fen Lurker | 0 | - |
+
+**Measurably call for nothing: Puddle Imp, Ember Mite, Ash Sprite, Bramble Hound, Static Bat, Flicker Swarm, Bog Toad, Tar Leech, Drowned Warden, Slag Tyrant, Coil Baron, Fen Lurker.**
+
+### The card hint, from measurement (P-13)
+
+The hint a boss card would show, generated from the measured table above instead of written from intent: the five mechanics (removal costs at least 10 points; a foe: 10 score) that most of the boss's lines (its best line and each written answer) cannot do without, then by the biggest drop; Knack families as "<family> Knacks" and talent kinds as "<kind> talents"; mechanics that take the same Knacks and talents off a line are one entry, and a keyword with a family's or rule's name is the same entry. The written hint is what the boss's spec says today.
+
+| Boss or foe | Written hint | Measured hint |
+| --- | --- | --- |
+| Tidal Colossus | The whole sea sweeps the rows. Wide Reach and row wards turn the waves; who stands where? | Debuff Knacks, Reach Knacks, Cover, Mired, protection talents |
+| Cinder Wyrm | The forge turns the first reaction of every row back on you, and every reaction heats it. Keep Mired on it, or make each reaction count. | Debuff Knacks, Cover, Mired, team talents, Reach Knacks |
+| Thornmother | The row ends fall quiet. Keep what you cannot spare in the middle or ward it, and bring something for her thick bark. | Debuff Knacks, Mired, Marks, protection talents, team talents |
+| Storm Sovereign | The Rod leaps from the strongest Payoff, round after round, and a Judgement Bolt, announced at round start, can fell it. Draw the Rod onto something that can take it, and have Night Watch beside the Payoff for the Bolt. | Debuff Knacks, Armour, Mired, Mark, team talents |
+| Old Bogback | The fen pulls the most hurt creature down. Keep them up, and keep the Mired on it. | Marks, Mark, Reaction, Sustain Knacks, Cover |
+| Puddle Imp | Many small splashes: does armour or dodge hold? | - |
+| Drift Wisp | Hard to hit, it keeps the ends of the line quiet, and every miss thickens the fog. Something must ward the ends. | Dodge |
+| Ember Mite | Its heat sheds your marks after every turn of its own, and each mark shed warms it. A sealed mark stays, and so does one left during its own turn. | - |
+| Ash Sprite | Ash settles on a mark made by a reaction, so it cannot be cashed at once. | - |
+| Bramble Hound | Bark turns small hits away, and it silences the ends of the line. Tunnel Through or a big hit gets past. | - |
+| Moss Lurker | It likes the loudest visitor: the one that dealt the most, and the strongest. A Guard beside it takes the hit. | Partner Knacks |
+| Static Bat | No hit deals more than a cap, it dives at the hardest hitter, and every crit on it charges it. | - |
+| Flicker Swarm | Sparks everywhere: area hits on all three, every round. | - |
+| Bog Toad | It washes every debuff off itself every third round. | - |
+| Tar Leech | Black, thick and draining: healing is halved, and little gets through its armour. | - |
+| Drowned Warden | The gates open on the whole line, and each creature that falls lets the water rise; at a landmark, a wave announced at round start. | - |
+| Slag Tyrant | The first reaction after each of its turns burns the one who plays it, and every reaction heats it. | - |
+| Bramble Matron | She silences the ends and drains healing; thorns land on two random creatures. | Self Prime Knacks, Marks |
+| Coil Baron | It always goes for the strongest, and the charge builds with every round: a race. | - |
+| Fen Lurker | A heavy sweep of the line, and it washes off every debuff every third round. | - |
 
 ### Features present (not measured)
 
