@@ -55,7 +55,15 @@ import {
 } from './raidMeasure';
 import { ALL_ROUND_BENCH, ALL_ROUND_TEAM, gauntletScore, gauntletStats, runStats } from './dungeon';
 import { DUNGEON_DEPTHS, FOE_IDS, FOE_SPECS, foeAt } from './foes';
-import { FOE_QUESTIONS, FOE_QUESTION_GAP, FOE_QUESTION_WIN, questionResult } from './foeQuestions';
+import {
+  FOE_QUESTIONS,
+  FOE_QUESTION_GAP,
+  FOE_QUESTION_WIN,
+  questionResult,
+  type FoeQuestion,
+  type FoeQuestionResult,
+} from './foeQuestions';
+import type { JobResults, JobSpec, Plan } from './jobs';
 import { FORM_KNACKS, KNACKS } from './knacks';
 import { MECHANICS, coverage } from './mechanics';
 import {
@@ -313,15 +321,751 @@ export interface BossSections {
   readonly data: Record<string, unknown>;
 }
 
-export function buildBossSections(opts: { quick?: boolean } = {}): BossSections {
+// ---------- Jobs ----------
+//
+// The raid bosses' studies and the dungeon foes' searches are independent of one another, so the report runs them as jobs
+// (`jobs.ts`). A job returns plain data (it may be posted between threads); a mechanic holds a function, so a measured
+// mechanic travels as its id and is looked up again when the sections are assembled.
+
+type Deps = Readonly<Record<string, unknown>>;
+
+/** A measured mechanic as it travels between jobs. */
+interface WireMeasured {
+  readonly mechanicId: string;
+  readonly hasTool: boolean;
+  readonly carried: boolean;
+  readonly drop: number;
+  readonly key: string;
+}
+
+const toWire = (ms: readonly Measured[]): WireMeasured[] =>
+  ms.map((m) => ({
+    mechanicId: m.mechanic.id,
+    hasTool: m.hasTool,
+    carried: m.carried,
+    drop: m.drop,
+    key: m.key,
+  }));
+
+const fromWire = (ws: readonly WireMeasured[]): Measured[] =>
+  ws.map((w) => {
+    const mechanic = MECHANICS.find((m) => m.id === w.mechanicId);
+    if (!mechanic) throw new Error(`unknown mechanic ${w.mechanicId}`);
+    return { mechanic, hasTool: w.hasTool, carried: w.carried, drop: w.drop, key: w.key };
+  });
+
+type AnswerStudyWire = Omit<AnswerStudy, 'measured' | 'measuredShare'> & {
+  readonly measured: WireMeasured[];
+  readonly measuredShare: WireMeasured[];
+};
+
+const hydrateStudy = (s: AnswerStudyWire): AnswerStudy => ({
+  ...s,
+  measured: fromWire(s.measured),
+  measuredShare: fromWire(s.measuredShare),
+});
+
+/** The Knacks the content task will use: the rarely used ones named by panel 5 and the outlier. */
+const WATCHED_KNACKS = [
+  'double-mark',
+  'tunnel-through',
+  'crown-of-embers',
+  'primed-by-pain',
+  'wide-warmth',
+  'keep-the-heat-in',
+  'guards-shadow',
+];
+
+/** What every piece of one raid boss's study starts from: the boss and its written answers (no fights are run here). */
+function raidSetup(id: string) {
+  const boss = raidBossOf(id);
+  const mode = raidMode(boss);
+  const classic = classicFor(mode);
+  const illegalNotes: string[] = [];
+  // A written answer may carry only legal talents; an illegal one is left out of the searches and reported.
+  const given = (BOSS_ANSWERS[id] ?? []).map((a) => {
+    const picks = answerLine(a.line);
+    const bad = illegalTalents(picks);
+    if (bad.length)
+      illegalNotes.push(
+        `${boss.name} / ${a.label}: ${bad.map((x) => `${x.formId} carries ${x.talent} (${x.why})`).join('; ')}`,
+      );
+    // A talent answer is read against the classic party with the talent on each creature that may carry it.
+    const baseline = a.talent
+      ? classic.map((p) =>
+          legalTalents(p.formId).includes(a.talent as string)
+            ? { ...p, talents: [a.talent as string] }
+            : p,
+        )
+      : classic;
+    return { ...a, picks, baseline, legal: bad.length === 0 };
+  });
+  const legalGiven = given.filter((g) => g.legal);
+  return {
+    boss,
+    mode,
+    classic,
+    illegalNotes,
+    given,
+    legalGiven,
+    prepared: legalGiven[0],
+    score: weekendScore(boss),
+  };
+}
+
+/** The team search over a whole weekend, seeded with the classic party and the written answers. */
+function raidSeededSearch(id: string, quick: boolean): Ranked[] {
+  const S = BOSS_SETTINGS(quick);
+  const { boss, mode, classic, legalGiven, score } = raidSetup(id);
+  return search(boss, mode, {
+    seed: `raidboss:${id}`,
+    ...S.raid,
+    talents: true,
+    include: [classic, ...legalGiven.flatMap((g) => [g.picks, g.baseline])],
+    score,
+  });
+}
+
+/** One search from nothing (a search from nothing is a lottery: the report runs a few and keeps the best of them). */
+function raidScratchSearch(id: string, i: number, quick: boolean): Ranked[] {
+  const S = BOSS_SETTINGS(quick);
+  const { boss, mode, score } = raidSetup(id);
+  return search(boss, mode, {
+    seed: `raidboss:${id}:scratch${i === 0 ? '' : `:${i}`}`,
+    ...S.raid,
+    talents: true,
+    score,
+  }).slice(0, 5);
+}
+
+/** The from-scratch lines ranked on the same fresh seeds, and which of the two best lines does better on them. */
+interface RaidPick {
+  readonly scratchRanked: Ranked[];
+  readonly overallIs: 'seeded' | 'from scratch';
+}
+
+function raidPick(
+  id: string,
+  quick: boolean,
+  seeded: readonly Ranked[],
+  scratch: readonly (readonly Ranked[])[],
+): RaidPick {
+  const S = BOSS_SETTINGS(quick);
+  const { score } = raidSetup(id);
+  const fresh = (l: readonly Pick[]) => score(l, S.raid.freshSeeds, `pick:${id}`).score;
+  const scratchRanked = scratch
+    .flat()
+    .map((r) => ({ r, f: fresh(r.line) }))
+    .sort((a, b) => b.f - a.f)
+    .map((x) => x.r);
+  const s = seeded[0];
+  const c = scratchRanked[0];
+  // The overall best line is whichever of the two does better on the same fresh seeds.
+  const overallIs = s && c && fresh(c.line) >= fresh(s.line) ? 'from scratch' : 'seeded';
+  return { scratchRanked, overallIs };
+}
+
+/** The searches' outcome and the boss's setup: what the pieces after the searches read. */
+function raidContext(id: string, quick: boolean, ranked: readonly Ranked[], pick: RaidPick) {
+  const setup = raidSetup(id);
+  const seeded = ranked[0];
+  const scratch = pick.scratchRanked[0];
+  const cl = ranked.find((r) => lineKey(r.line) === lineKey(setup.classic));
+  // A search that found nothing (or lost the classic line) leaves the boss out of the tables.
+  if (!seeded || !scratch || !cl) return undefined;
+  const overall = pick.overallIs === 'from scratch' ? scratch : seeded;
+  return {
+    ...setup,
+    id,
+    S: BOSS_SETTINGS(quick),
+    ranked,
+    seeded,
+    scratch,
+    cl,
+    overall,
+    overallIs: pick.overallIs,
+  };
+}
+type RaidContext = NonNullable<ReturnType<typeof raidContext>>;
+
+/** The weekends of the classic party, the two best lines and the written answers (the tables' first rows). */
+interface RaidStats {
+  readonly wc: WeekendStats;
+  readonly wSeeded: WeekendStats;
+  readonly wScratch: WeekendStats;
+  readonly wPrep: WeekendStats | undefined;
+  readonly raidRow: string;
+  readonly bestLines: string[];
+  readonly answerRows: string[];
+  readonly ansData: unknown[];
+  readonly answers: number;
+  readonly beat: number;
+}
+
+function raidStats(c: RaidContext): RaidStats {
+  const { id, S, boss, mode, seeded, scratch, cl, classic, ranked, given, prepared } = c;
+  const key = (l: readonly Pick[]) => lineKey(l);
+  const wSeeded = weekendStats(boss, seeded.line, S.raid.weekends, `report:${id}:seeded`);
+  const wScratch = weekendStats(boss, scratch.line, S.raid.weekends, `report:${id}:scratch`);
+  const wc = weekendStats(boss, classic, S.raid.weekends, `report:${id}:classic`);
+  // The prepared answer: the first written legal answer, the tool the boss asks for (the mixed server brings it too).
+  const wPrep = prepared
+    ? weekendStats(boss, prepared.picks, S.raid.weekends, `report:${id}:ans`)
+    : undefined;
+  const raidRow = `| ${boss.name} | ${share(wc)} (${tiers(wc)}) | ${share(wSeeded)} (${tiers(wSeeded)}) | ${share(wScratch)} (${tiers(wScratch)}) | ${Math.round(cl.score.score)} / ${Math.round(seeded.score.score)} / ${Math.round(scratch.score.score)} | ${wc.knockoutsTotal.toFixed(1)} / ${wSeeded.knockoutsTotal.toFixed(1)} / ${wScratch.knockoutsTotal.toFixed(1)} | ${boss.escalation ? `${wc.steps.toFixed(1)} / ${wSeeded.steps.toFixed(1)} / ${wScratch.steps.toFixed(1)} of ${boss.escalation.cap}` : 'none'} |`;
+  const bestLines = [
+    `- ${boss.name}, seeded: ${rows(seeded.line, mode.cols)}`,
+    `- ${boss.name}, from scratch: ${rows(scratch.line, mode.cols)}`,
+  ];
+  const answerRows: string[] = [];
+  const ansData: unknown[] = [];
+  let answers = 0,
+    beat = 0;
+  for (const g of given) {
+    if (!g.legal) {
+      answerRows.push(
+        `| ${boss.name} | ${g.label} (${g.tool}) | **illegal talent, not measured** | - | - | - |`,
+      );
+      continue;
+    }
+    const r = ranked.find((x) => key(x.line) === key(g.picks));
+    const base = ranked.find((x) => key(x.line) === key(g.baseline)) ?? cl;
+    const w = weekendStats(boss, g.picks, S.raid.weekends, `report:${id}:ans`);
+    const wbase = g.talent
+      ? weekendStats(boss, g.baseline, S.raid.weekends, `report:${id}:base`)
+      : wc;
+    answers++;
+    const wins = r !== undefined && r.score.score > base.score.score;
+    if (wins) beat++;
+    answerRows.push(
+      `| ${boss.name} | ${g.label} (${g.tool}) | ${r ? Math.round(r.score.score) : 'n/a'} vs ${Math.round(base.score.score)}${g.talent ? ` (classic with ${g.talent} where legal)` : ''} | ${share(w)} (${tiers(w)}) vs ${share(wbase)} (${tiers(wbase)}) | ${w.knockoutsTotal.toFixed(1)} | ${boss.escalation ? `${w.steps.toFixed(1)} of ${boss.escalation.cap}` : '-'} |`,
+    );
+    ansData.push({
+      label: g.label,
+      tool: g.tool,
+      score: r ? Math.round(r.score.score) : null,
+      winRate: w.winRate,
+      damageShare: w.damageShare,
+      beatsClassic: wins,
+    });
+  }
+  return { wc, wSeeded, wScratch, wPrep, raidRow, bestLines, answerRows, ansData, answers, beat };
+}
+
+/** Every legal answer: its own tool, random and no talents, and what each Knack family costs it (panel 5). */
+interface RaidStudies {
+  readonly studies: AnswerStudyWire[];
+  /** For each watched Knack, what taking it out of each written answer that carries it costs. */
+  readonly knackCosts: Record<string, string[]>;
+}
+
+function raidStudies(c: RaidContext): RaidStudies {
+  const { id, S, boss, legalGiven } = c;
+  const studies: AnswerStudyWire[] = legalGiven.map((g, k) => ({
+    bossId: id,
+    bossName: boss.name,
+    answer: g,
+    picks: g.picks,
+    tool: toolCost(boss, g, g.picks, S.raid.weekends, `report:${id}:tool:${k}`),
+    robust: robustnessOf(
+      boss,
+      g.picks,
+      S.raid.weekends,
+      S.raid.talentDraws,
+      `report:${id}:rob:${k}`,
+    ),
+    measured: toWire(
+      ablate(
+        g.picks,
+        (l) => 100 * weekendStats(boss, l, S.raid.weekends, `report:${id}:abl:${k}`).winRate,
+      ),
+    ),
+    measuredShare: toWire(
+      ablate(
+        g.picks,
+        (l) => 100 * weekendStats(boss, l, S.raid.weekends, `report:${id}:abl:${k}`).damageShare,
+      ),
+    ),
+  }));
+  const knackCosts: Record<string, string[]> = {};
+  for (const k of WATCHED_KNACKS)
+    knackCosts[k] = studies
+      .filter((st) => st.picks.some((p) => p.knack === k))
+      .map((st) => {
+        const line = st.picks.map((p) => (p.knack === k ? { ...p, knack: 'none' } : p));
+        const salt = `report:${st.bossId}:knack:${k}`;
+        const base = weekendStats(boss, st.picks, S.raid.weekends, salt);
+        const cut = weekendStats(boss, line, S.raid.weekends, salt);
+        return `${st.bossName}: ${pts(base.damageShare - cut.damageShare)} of the HP (kill ${lost(100 * (base.winRate - cut.winRate))})`;
+      });
+  return { studies, knackCosts };
+}
+
+/** The margin: the prepared answer and the best line when the boss hits 10% harder, and when it has 10% more HP; and other widths. */
+interface RaidMargins {
+  readonly mp: ReturnType<typeof marginOf> | undefined;
+  readonly m: ReturnType<typeof marginOf>;
+  readonly marginRows: string[];
+  readonly widths: WidthResult[];
+  readonly widthRow: string;
+}
+
+function raidMargins(c: RaidContext): RaidMargins {
+  const { id, S, boss, prepared, overall, overallIs } = c;
+  const mp = prepared
+    ? marginOf(boss, prepared.picks, S.raid.weekends, `report:${id}:margin:prepared`)
+    : undefined;
+  const m = marginOf(boss, overall.line, S.raid.weekends, `report:${id}:margin`);
+  const marginRows: string[] = [];
+  if (mp)
+    marginRows.push(
+      `| ${boss.name} | prepared answer | ${pct(mp.share.base)} (kill ${pct(mp.base)}) | ${pct(mp.share.atk10)} (kill ${pct(mp.atk10)}) | ${pct(mp.share.hp10)} (kill ${pct(mp.hp10)}) |`,
+    );
+  marginRows.push(
+    `| ${boss.name} | best searched (${overallIs}) | ${pct(m.share.base)} (kill ${pct(m.base)}) | ${pct(m.share.atk10)} (kill ${pct(m.atk10)}) | ${pct(m.share.hp10)} (kill ${pct(m.hp10)}) |`,
+  );
+  // Other widths: the classic party, and the best line repeated to fill.
+  const widths: WidthResult[] = RAID_WIDTHS.map((w) =>
+    widthOf(boss, overall.line, w, S.raid.weekends, `report:${id}:w${w}`),
+  );
+  const widthRow = `| ${boss.name} | ${widths.map((w) => `${pct(w.classicShare)} (kill ${pct(w.classicWin)}) / ${pct(w.bestShare)} (kill ${pct(w.bestWin)})`).join(' | ')} |`;
+  return { mp, m, marginRows, widths, widthRow };
+}
+
+/**
+ * The mixed server (panel 5): 200 draws over 3 seeds, at 5, 10 and 15 players, with the casual players on a random Knack each
+ * and on their top creatures by level with no Knack (the post-migration default). One answer per boss, the prepared line
+ * (the first written answer: the tool the boss asks for, at most two copies of a form): the min-maxers and builders bring
+ * its columns; the search's best line is tuned to its own four columns together, and its columns do not carry the tool.
+ */
+function raidMixed(c: RaidContext, casual: CasualKind, players: number): MixedSpread {
+  const { id, S, boss, prepared, overall, legalGiven } = c;
+  return mixedSpread(
+    boss,
+    prepared?.picks ?? overall.line,
+    prepared ? [prepared.picks] : legalGiven.map((g) => g.picks),
+    S.raid.mixedDraws,
+    S.raid.mixedSeeds,
+    S.raid.mixedWeekends,
+    `report:${id}:mixed:${casual}:${players}`,
+    prepared?.core ?? [],
+    prepared ? [prepared.core ?? []] : [],
+    { players, casual },
+  );
+}
+
+/**
+ * Boss Rank (Misa, 2026-10-29): the prepared line, the same line without its tool, the classic party, a server of casual
+ * players only and the mixed server, at the low, mid and high rank (cards and gates at 30%, 65% and 100% strength).
+ */
+function raidRank(c: RaidContext, rank: RaidRank['id']): RankStudy | undefined {
+  const { id, S, boss, prepared } = c;
+  const rk = RAID_RANKS.find((r) => r.id === rank);
+  if (!prepared || !rk) return undefined;
+  const br = raidBossOf(id, { rank: rk.id });
+  const none = withoutTool(prepared.picks, prepared.core ?? []);
+  const tag = `report:${id}:rank:${rk.id}`;
+  const server = (casual: CasualKind, order?: typeof CASUAL_ORDER) =>
+    mixedSpread(
+      br,
+      prepared.picks,
+      [prepared.picks],
+      S.raid.rankDraws,
+      1,
+      2,
+      `${tag}:${casual}${order ? ':casual' : ''}`,
+      prepared.core ?? [],
+      [prepared.core ?? []],
+      { players: 10, casual, ...(order ? { order } : {}) },
+    );
+  return {
+    bossId: id,
+    bossName: boss.name,
+    rank: rk,
+    hp: br.hp,
+    atk: br.atk,
+    armour: br.armour,
+    robust: robustnessOf(
+      br,
+      prepared.picks,
+      S.raid.rankWeekends,
+      S.raid.rankTalentDraws,
+      `${tag}:p`,
+    ),
+    noTool: robustnessOf(br, none, S.raid.rankWeekends, S.raid.rankTalentDraws, `${tag}:n`),
+    classic: [4, 10, 15].map((width) => {
+      const wide = wideBoss(br, width);
+      return {
+        width,
+        weekend: weekendStats(
+          wide,
+          classicFor(raidMode(wide)),
+          S.raid.rankWeekends / 2,
+          `${tag}:c${width}`,
+        ),
+      };
+    }),
+    casual: server('top3', CASUAL_ORDER),
+    mixedRandom: server('random'),
+    mixedTop3: server('top3'),
+  };
+}
+
+/** Which mechanics the best line really needs: take each out and measure the damage share. */
+function raidAblationOf(c: RaidContext): WireMeasured[] {
+  const { id, S, boss, overall } = c;
+  return toWire(
+    ablate(
+      overall.line,
+      (l) => 100 * weekendStats(boss, l, S.raid.weekends, `report:${id}:abl`).damageShare,
+    ),
+  );
+}
+
+/** The tool gap at other widths (panel 5, finding 7): a table row and the cells of the data file. */
+interface RaidGap {
+  readonly row: string;
+  readonly cells: unknown[];
+}
+
+function raidGap(c: RaidContext): RaidGap | undefined {
+  const { id, S, boss, prepared } = c;
+  if (!prepared) return undefined;
+  const cells = [4, 5, 10].map((w) => {
+    const wide = wideBoss(boss, w);
+    const win = (l: readonly Pick[], tag: string) =>
+      weekendStats(
+        wide,
+        tileLine(l, boss.cols, w),
+        S.raid.weekends,
+        `report:${id}:gap:${w}:${tag}`,
+      );
+    const withT = win(prepared.picks, 'with');
+    const without = win(withoutTool(prepared.picks, prepared.core ?? []), 'without');
+    return {
+      width: w,
+      withTool: withT.winRate,
+      without: without.winRate,
+      shareWith: withT.damageShare,
+      shareWithout: without.damageShare,
+      gap: 100 * (withT.winRate - without.winRate),
+      shareGap: 100 * (withT.damageShare - without.damageShare),
+    };
+  });
+  const row = `| ${boss.name} | ${prepared.tool} | ${cells.map((x) => `${pct(x.shareWith)} / ${pct(x.shareWithout)}: **${pts(x.shareGap / 100)}** of the HP (kill ${pct(x.withTool)} / ${pct(x.without)})`).join(' | ')} |`;
+  return { row, cells };
+}
+
+/** The HP exponent's trade (panel 5, finding 7): a table row. */
+function raidSensitivity(c: RaidContext): string {
+  const { id, S, boss, prepared, overall } = c;
+  return `| ${boss.name} | ${SENSITIVITY_EXPONENTS.map((e) => {
+    const wide = wideBoss(boss, 15, e);
+    const c15w = weekendStats(
+      wide,
+      classicFor(raidMode(wide)),
+      Math.max(8, S.raid.weekends / 4),
+      `report:${id}:sens:${e}`,
+    );
+    const mx = mixedSpread(
+      boss,
+      prepared?.picks ?? overall.line,
+      prepared ? [prepared.picks] : [],
+      S.raid.sensitivityDraws,
+      1,
+      2,
+      `report:${id}:sensmix:${e}`,
+      prepared?.core ?? [],
+      prepared ? [prepared.core ?? []] : [],
+      { hpExponent: e, casual: 'top3' },
+    );
+    // The prepared answer's tool gap at 10 players, tiled to fill the arena.
+    const wide10 = wideBoss(boss, 10, e);
+    const gap10 = prepared
+      ? 100 *
+        (weekendStats(
+          wide10,
+          tileLine(prepared.picks, boss.cols, 10),
+          Math.max(8, S.raid.weekends / 4),
+          `report:${id}:sensgap:${e}`,
+        ).damageShare -
+          weekendStats(
+            wide10,
+            tileLine(withoutTool(prepared.picks, prepared.core ?? []), boss.cols, 10),
+            Math.max(8, S.raid.weekends / 4),
+            `report:${id}:sensgap:${e}`,
+          ).damageShare)
+      : 0;
+    return `${pct(c15w.damageShare)} (kill ${pct(c15w.winRate)}) / ${pct(mx.weekend.damageShare)} (kill ${pct(mx.winRate)}) / ${pts(gap10 / 100)}`;
+  }).join(' | ')} |`;
+}
+
+/** One depth of one foe: the best team the search finds and the classic line, as a table cell. */
+interface FoeDepth {
+  readonly cell: string;
+  readonly best: readonly Pick[];
+  readonly bestWin: number;
+  readonly classicWin: number;
+  /** The top lines the usage tables count: not the classic line the search was seeded with. */
+  readonly topLines: (readonly Pick[])[];
+}
+
+function foeSearch(id: string, depth: number, quick: boolean): FoeDepth | undefined {
+  const S = BOSS_SETTINGS(quick);
+  const foe = foeAt(id, depth);
+  const ranked = search(foe, GAUNTLET, {
+    seed: `foe:${id}:${depth}`,
+    ...S.foe,
+    include: [CLASSIC_LINE],
+    score: gauntletScore(foe),
+  });
+  const best = ranked[0];
+  if (!best) return undefined;
+  const wb = gauntletStats(foe, best.line, S.foe.fights, `foe:${id}:${depth}:b`);
+  const wc = gauntletStats(foe, CLASSIC_LINE, S.foe.fights, `foe:${id}:${depth}:c`);
+  return {
+    cell: `${pct(wb.winRate)} (${pct(wb.hpLeft)} HP) / ${pct(wc.winRate)} (${pct(wc.hpLeft)} HP)`,
+    best: best.line,
+    bestWin: wb.winRate,
+    classicWin: wc.winRate,
+    topLines: ranked
+      .slice(0, 3)
+      .filter((r) => lineKey(r.line) !== lineKey(CLASSIC_LINE))
+      .map((r) => r.line),
+  };
+}
+
+/** What taking each mechanic out of a foe's best line at the deepest depth costs (the measured mechanics). */
+function foeAblationOf(id: string, quick: boolean, best: readonly Pick[]): WireMeasured[] {
+  const S = BOSS_SETTINGS(quick);
+  const foe = foeAt(id, DUNGEON_DEPTHS[DUNGEON_DEPTHS.length - 1] ?? 7);
+  const score = gauntletScore(foe);
+  return toWire(ablate(best, (l) => score(l, S.foe.fights, `report:foe:${id}:abl`).score));
+}
+
+/** The shipped map's runs at a depth (a careful route, a careless one, the classic line), and the Undercroft below the deepest. */
+const MAP_DEPTHS = [1, 2, 3, 4, 5, 6, 7, 8];
+const UNDERCROFT_LEVELS = 3;
+
+interface MapRun {
+  readonly carefulWin: number;
+  readonly carefulKnockouts: number;
+  readonly carelessWin: number;
+  readonly classicWin: number;
+}
+
+function mapRun(depth: number, quick: boolean): MapRun {
+  const S = BOSS_SETTINGS(quick);
+  const careful = runStats(ALL_ROUND_TEAM, depth, true, S.runs.stats, 'map', {
+    policy: 'smart',
+    bench: ALL_ROUND_BENCH,
+  });
+  const careless = runStats(ALL_ROUND_TEAM, depth, true, S.runs.stats, 'map', { policy: 'first' });
+  const classic = runStats([...CLASSIC_LINE], depth, true, S.runs.stats, 'map', {
+    policy: 'first',
+  });
+  return {
+    carefulWin: careful.winRate,
+    carefulKnockouts: careful.knockouts,
+    carelessWin: careless.winRate,
+    classicWin: classic.winRate,
+  };
+}
+
+interface Undercroft {
+  readonly careful: readonly number[];
+  readonly careless: readonly number[];
+}
+
+function undercroftRuns(quick: boolean): Undercroft {
+  const S = BOSS_SETTINGS(quick);
+  const deepest = MAP_DEPTHS[MAP_DEPTHS.length - 1] ?? 8;
+  const careful = runStats(ALL_ROUND_TEAM, deepest, true, S.runs.stats, 'map-under', {
+    policy: 'smart',
+    bench: ALL_ROUND_BENCH,
+    levels: UNDERCROFT_LEVELS,
+  });
+  const careless = runStats(ALL_ROUND_TEAM, deepest, true, S.runs.stats, 'map-under', {
+    policy: 'first',
+    levels: UNDERCROFT_LEVELS,
+  });
+  return { careful: careful.undercroft, careless: careless.undercroft };
+}
+
+const raidJobId = (id: string, piece: string) => `boss:raid:${id}:${piece}`;
+const foeJobId = (id: string, depth: number) => `boss:foe:${id}:${depth}`;
+const foeAblationJobId = (id: string) => `boss:foe:${id}:ablation`;
+const mapJobId = (depth: number | 'undercroft') => `boss:map:${depth}`;
+const questionJobId = (key: string) => `boss:question:${key}`;
+const mixedPiece = (casual: CasualKind, players: number) => `mixed:${casual}:${players}`;
+const rankPiece = (rank: RaidRank['id']) => `rank:${rank}`;
+
+/** The arguments of a job of the real bosses' sections (`runBossJob`). */
+export interface BossJobArgs {
+  readonly quick: boolean;
+  readonly part: 'raid' | 'foe' | 'foe-ablation' | 'map' | 'undercroft' | 'question';
+  /** The raid boss, foe or question. */
+  readonly id?: string;
+  /** Raid: the piece (`seeded`, `scratch0`, `pick`, `stats`, `studies`, ...). */
+  readonly piece?: string;
+  readonly depth?: number;
+}
+
+/** Runs one job of the real bosses' sections: its result is plain data (see `jobs.ts`). */
+export function runBossJob(args: BossJobArgs, deps: Deps): unknown {
+  const { quick } = args;
+  const id = args.id ?? '';
+  switch (args.part) {
+    case 'foe':
+      return foeSearch(id, args.depth ?? 1, quick);
+    case 'foe-ablation': {
+      const best = deps[foeJobId(id, DUNGEON_DEPTHS[DUNGEON_DEPTHS.length - 1] ?? 7)] as
+        FoeDepth | undefined;
+      return best ? foeAblationOf(id, quick, best.best) : undefined;
+    }
+    case 'map':
+      return mapRun(args.depth ?? 1, quick);
+    case 'undercroft':
+      return undercroftRuns(quick);
+    case 'question':
+      return questionResult(FOE_QUESTIONS[id] as FoeQuestion, quick ? 60 : 200, 'report:fq');
+    case 'raid':
+      return runRaidPiece(id, args.piece ?? '', quick, deps);
+  }
+}
+
+function runRaidPiece(id: string, piece: string, quick: boolean, deps: Deps): unknown {
+  if (piece === 'seeded') return raidSeededSearch(id, quick);
+  const scratchIndex = /^scratch(\d+)$/.exec(piece)?.[1];
+  if (scratchIndex !== undefined) return raidScratchSearch(id, Number(scratchIndex), quick);
+  const seeded = deps[raidJobId(id, 'seeded')] as Ranked[];
+  if (piece === 'pick') {
+    const scratch = Array.from(
+      { length: BOSS_SETTINGS(quick).raid.scratchSearches },
+      (_, i) => deps[raidJobId(id, `scratch${i}`)] as Ranked[],
+    );
+    return raidPick(id, quick, seeded, scratch);
+  }
+  const c = raidContext(id, quick, seeded, deps[raidJobId(id, 'pick')] as RaidPick);
+  if (!c) return undefined;
+  const mixed = /^mixed:(random|top3):(\d+)$/.exec(piece);
+  if (mixed) return raidMixed(c, mixed[1] as CasualKind, Number(mixed[2]));
+  const rank = /^rank:(low|mid|high)$/.exec(piece);
+  if (rank) return raidRank(c, rank[1] as RaidRank['id']);
+  switch (piece) {
+    case 'stats':
+      return raidStats(c);
+    case 'studies':
+      return raidStudies(c);
+    case 'margins':
+      return raidMargins(c);
+    case 'ablation':
+      return raidAblationOf(c);
+    case 'gap':
+      return raidGap(c);
+    case 'sensitivity':
+      return raidSensitivity(c);
+    default:
+      throw new Error(`unknown piece ${piece} of ${id}`);
+  }
+}
+
+export interface BossOptions {
+  readonly quick?: boolean;
+  /** Only this raid boss's sections (for a tuning loop): none of the foes, and none of the tables across bosses. */
+  readonly only?: string;
+}
+
+/** The sections on the real bosses as jobs: the searches first (the longest), then the studies that read them. */
+export function planBosses(opts: BossOptions = {}): Plan<BossSections> {
   const quick = opts.quick ?? false;
   const S = BOSS_SETTINGS(quick);
+  const raidIds = opts.only ? [opts.only] : RAID_BOSS_IDS;
+  const wholeReport = opts.only === undefined;
+  const job = (
+    id: string,
+    section: string,
+    args: Omit<BossJobArgs, 'quick'>,
+    needs: readonly string[] = [],
+  ): JobSpec => ({ id, section, kind: 'boss', args: { quick, ...args }, needs });
+  const searches = raidIds.flatMap((id) => [
+    job(raidJobId(id, 'seeded'), 'Raid bosses: team searches', {
+      part: 'raid',
+      id,
+      piece: 'seeded',
+    }),
+    ...Array.from({ length: S.raid.scratchSearches }, (_, i) =>
+      job(raidJobId(id, `scratch${i}`), 'Raid bosses: team searches', {
+        part: 'raid',
+        id,
+        piece: `scratch${i}`,
+      }),
+    ),
+  ]);
+  const foeDepths = wholeReport
+    ? FOE_IDS.flatMap((id) =>
+        DUNGEON_DEPTHS.map((depth) =>
+          job(foeJobId(id, depth), 'Dungeon foes: team searches', { part: 'foe', id, depth }),
+        ),
+      )
+    : [];
+  const picks = raidIds.map((id) =>
+    job(raidJobId(id, 'pick'), 'Raid bosses: team searches', { part: 'raid', id, piece: 'pick' }, [
+      raidJobId(id, 'seeded'),
+      ...Array.from({ length: S.raid.scratchSearches }, (_, i) => raidJobId(id, `scratch${i}`)),
+    ]),
+  );
+  const piece = (id: string, section: string, name: string): JobSpec =>
+    job(raidJobId(id, name), section, { part: 'raid', id, piece: name }, [
+      raidJobId(id, 'seeded'),
+      raidJobId(id, 'pick'),
+    ]);
+  const pieces = raidIds.flatMap((id) => [
+    ...CASUAL_KINDS.flatMap((casual) =>
+      MIXED_WIDTHS.map((players) =>
+        piece(id, 'Raid bosses: mixed server', mixedPiece(casual, players)),
+      ),
+    ),
+    ...RAID_RANKS.map((rk) => piece(id, 'Raid bosses: Boss Rank', rankPiece(rk.id))),
+    piece(id, 'Raid bosses: answer studies', 'studies'),
+    piece(id, 'Raid bosses: weekends and answers', 'stats'),
+    piece(id, 'Raid bosses: HP exponent and tool gap', 'sensitivity'),
+    piece(id, 'Raid bosses: margins and widths', 'margins'),
+    piece(id, 'Raid bosses: ablation', 'ablation'),
+    piece(id, 'Raid bosses: HP exponent and tool gap', 'gap'),
+  ]);
+  const rest: JobSpec[] = wholeReport
+    ? [
+        ...FOE_IDS.map((id) =>
+          job(foeAblationJobId(id), 'Dungeon foes: ablation', { part: 'foe-ablation', id }, [
+            foeJobId(id, DUNGEON_DEPTHS[DUNGEON_DEPTHS.length - 1] ?? 7),
+          ]),
+        ),
+        ...MAP_DEPTHS.map((depth) => job(mapJobId(depth), 'Map runs', { part: 'map', depth })),
+        job(mapJobId('undercroft'), 'Map runs', { part: 'undercroft' }),
+        ...Object.keys(FOE_QUESTIONS).map((key) =>
+          job(questionJobId(key), 'Foe questions', { part: 'question', id: key }),
+        ),
+      ]
+    : [];
+  return {
+    jobs: [...searches, ...foeDepths, ...picks, ...pieces, ...rest],
+    assemble: (results) =>
+      assembleBosses({ quick, ...(opts.only ? { only: opts.only } : {}) }, results),
+  };
+}
+
+function assembleBosses(opts: BossOptions, results: JobResults): BossSections {
+  const quick = opts.quick ?? false;
+  const S = BOSS_SETTINGS(quick);
+  const raidIds = opts.only ? [opts.only] : RAID_BOSS_IDS;
   const md: string[] = [];
   const data: Record<string, unknown> = {};
   /** Every best line of every search here, counted for the Knack usage and form tables. */
   const topLines: (readonly Pick[])[] = [];
   const bestRaidLines: (readonly Pick[])[] = [];
   const bestFoeLines: (readonly Pick[])[] = [];
+  const got = <T>(id: string, piece: string): T => results.get(raidJobId(id, piece)) as T;
 
   // ---------- Raid bosses ----------
   md.push(
@@ -330,7 +1074,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     `The five raid bosses of the shipped game, in the combat v2 grammar (\`packages/lab/src/bosses.ts\`). Players know the one boss in advance and build against it, so each is strong and has many attacks, most of them area attacks in varied shapes; a weekend should cost the party creatures. A weekend is three stages of 8 rounds that share the boss's HP; HP carries, knocked-out creatures stay out, four players each keep one Kilnmole on the bench. The arena is four slots wide (one column per player) and as many rows as the boss has. Best team: the team search over a whole weekend (wins first, then the boss's HP removed, then fewer knockouts), ${S.raid.weekends} weekends each. The classic raid party is four players with Tidewing (Steady Mark), Tempestray (Detonate) and Thornbuck (Wide Reach) in order across the rows.`,
     '',
   );
-  for (const id of RAID_BOSS_IDS) md.push(`- ${bossLine(raidBossOf(id))}`);
+  for (const id of raidIds) md.push(`- ${bossLine(raidBossOf(id))}`);
   md.push('');
 
   const raidRows: string[] = [];
@@ -345,6 +1089,8 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
   const raidAblation: { id: string; name: string; measured: Measured[] }[] = [];
   /** Every legal written answer, measured: its tool, with other talents, and what each Knack family costs it. */
   const studies: AnswerStudy[] = [];
+  /** For each watched Knack, what taking it out of each written answer that carries it costs (in the order of `studies`). */
+  const knackCosts = new Map<string, string[]>(WATCHED_KNACKS.map((k) => [k, []]));
   /** The mixed server of every boss at each width and for each kind of casual player. */
   const mixedStudies: MixedStudy[] = [];
   /** The prepared line, the same without its tool, and the unprepared servers at each Boss Rank. */
@@ -356,233 +1102,46 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
   const sensitivityRows: string[] = [];
   let answers = 0,
     beat = 0;
-  for (const spec of RAID_SPECS) {
-    const boss = raidBossOf(spec.id);
-    const mode = raidMode(boss);
-    const classic = classicFor(mode);
-    // A written answer may carry only legal talents; an illegal one is left out of the searches and reported.
-    const given = (BOSS_ANSWERS[spec.id] ?? []).map((a) => {
-      const picks = answerLine(a.line);
-      const bad = illegalTalents(picks);
-      if (bad.length)
-        illegalNotes.push(
-          `${boss.name} / ${a.label}: ${bad.map((x) => `${x.formId} carries ${x.talent} (${x.why})`).join('; ')}`,
-        );
-      // A talent answer is read against the classic party with the talent on each creature that may carry it.
-      const baseline = a.talent
-        ? classic.map((p) =>
-            legalTalents(p.formId).includes(a.talent as string)
-              ? { ...p, talents: [a.talent as string] }
-              : p,
-          )
-        : classic;
-      return { ...a, picks, baseline, legal: bad.length === 0 };
-    });
-    const legalGiven = given.filter((g) => g.legal);
-    const score = weekendScore(boss);
-    // Seeded with the written answers (and the classic party), and from scratch: the two are reported apart.
-    const ranked: Ranked[] = search(boss, mode, {
-      seed: `raidboss:${spec.id}`,
-      ...S.raid,
-      talents: true,
-      include: [classic, ...legalGiven.flatMap((g) => [g.picks, g.baseline])],
-      score,
-    });
-    // From scratch: a few independent searches (a search from nothing is a lottery), judged on the same fresh seeds.
-    const fresh = (l: readonly Pick[]) => score(l, S.raid.freshSeeds, `pick:${spec.id}`).score;
-    const scratchRanked: Ranked[] = Array.from({ length: S.raid.scratchSearches }, (_, i) =>
-      search(boss, mode, {
-        seed: `raidboss:${spec.id}:scratch${i === 0 ? '' : `:${i}`}`,
-        ...S.raid,
-        talents: true,
-        score,
-      }).slice(0, 5),
-    )
-      .flat()
-      .map((r) => ({ r, f: fresh(r.line) }))
-      .sort((a, b) => b.f - a.f)
-      .map((x) => x.r);
-    const seeded = ranked[0];
-    const scratch = scratchRanked[0];
-    const key = (l: readonly Pick[]) => lineKey(l);
-    const cl = ranked.find((r) => key(r.line) === key(classic));
-    if (!seeded || !scratch || !cl) continue;
-    // The overall best line is whichever of the two does better on the same fresh seeds.
-    const overall = fresh(scratch.line) >= fresh(seeded.line) ? scratch : seeded;
-    const overallIs = overall === scratch ? 'from scratch' : 'seeded';
+  for (const id of raidIds) {
+    const { boss } = raidSetup(id);
+    illegalNotes.push(...raidSetup(id).illegalNotes);
+    const stats = got<RaidStats | undefined>(id, 'stats');
+    // A search that found nothing leaves the boss out of the tables.
+    if (!stats) continue;
+    const pick = got<RaidPick>(id, 'pick');
+    const seeded = got<Ranked[]>(id, 'seeded')[0] as Ranked;
+    const scratch = pick.scratchRanked[0] as Ranked;
+    const overallIs = pick.overallIs;
     bestRaidLines.push(scratch.line);
-    for (const r of scratchRanked.slice(0, 5)) topLines.push(r.line);
-    const wSeeded = weekendStats(boss, seeded.line, S.raid.weekends, `report:${spec.id}:seeded`);
-    const wScratch = weekendStats(boss, scratch.line, S.raid.weekends, `report:${spec.id}:scratch`);
-    const wc = weekendStats(boss, classic, S.raid.weekends, `report:${spec.id}:classic`);
-    // The prepared answer: the first written legal answer, the tool the boss asks for (the mixed server brings it too).
-    const prepared = legalGiven[0];
-    const wOverall = overall === scratch ? wScratch : wSeeded;
-    const wPrep = prepared
-      ? weekendStats(boss, prepared.picks, S.raid.weekends, `report:${spec.id}:ans`)
-      : undefined;
-    raidRows.push(
-      `| ${boss.name} | ${share(wc)} (${tiers(wc)}) | ${share(wSeeded)} (${tiers(wSeeded)}) | ${share(wScratch)} (${tiers(wScratch)}) | ${Math.round(cl.score.score)} / ${Math.round(seeded.score.score)} / ${Math.round(scratch.score.score)} | ${wc.knockoutsTotal.toFixed(1)} / ${wSeeded.knockoutsTotal.toFixed(1)} / ${wScratch.knockoutsTotal.toFixed(1)} | ${boss.escalation ? `${wc.steps.toFixed(1)} / ${wSeeded.steps.toFixed(1)} / ${wScratch.steps.toFixed(1)} of ${boss.escalation.cap}` : 'none'} |`,
-    );
-    bestLinesMd.push(
-      `- ${boss.name}, seeded: ${rows(seeded.line, mode.cols)}`,
-      `- ${boss.name}, from scratch: ${rows(scratch.line, mode.cols)}`,
-    );
-    const ansData: unknown[] = [];
-    for (const g of given) {
-      if (!g.legal) {
-        answerRows.push(
-          `| ${boss.name} | ${g.label} (${g.tool}) | **illegal talent, not measured** | - | - | - |`,
-        );
-        continue;
-      }
-      const r = ranked.find((x) => key(x.line) === key(g.picks));
-      const base = ranked.find((x) => key(x.line) === key(g.baseline)) ?? cl;
-      const w = weekendStats(boss, g.picks, S.raid.weekends, `report:${spec.id}:ans`);
-      const wbase = g.talent
-        ? weekendStats(boss, g.baseline, S.raid.weekends, `report:${spec.id}:base`)
-        : wc;
-      answers++;
-      const wins = r !== undefined && r.score.score > base.score.score;
-      if (wins) beat++;
-      answerRows.push(
-        `| ${boss.name} | ${g.label} (${g.tool}) | ${r ? Math.round(r.score.score) : 'n/a'} vs ${Math.round(base.score.score)}${g.talent ? ` (classic with ${g.talent} where legal)` : ''} | ${share(w)} (${tiers(w)}) vs ${share(wbase)} (${tiers(wbase)}) | ${w.knockoutsTotal.toFixed(1)} | ${boss.escalation ? `${w.steps.toFixed(1)} of ${boss.escalation.cap}` : '-'} |`,
-      );
-      ansData.push({
-        label: g.label,
-        tool: g.tool,
-        score: r ? Math.round(r.score.score) : null,
-        winRate: w.winRate,
-        damageShare: w.damageShare,
-        beatsClassic: wins,
-      });
-    }
-    // Every legal answer: its own tool, random and no talents, and what each Knack family costs it (panel 5).
-    legalGiven.forEach((g, k) => {
-      studies.push({
-        bossId: spec.id,
-        bossName: boss.name,
-        answer: g,
-        picks: g.picks,
-        tool: toolCost(boss, g, g.picks, S.raid.weekends, `report:${spec.id}:tool:${k}`),
-        robust: robustnessOf(
-          boss,
-          g.picks,
-          S.raid.weekends,
-          S.raid.talentDraws,
-          `report:${spec.id}:rob:${k}`,
-        ),
-        measured: ablate(
-          g.picks,
-          (l) => 100 * weekendStats(boss, l, S.raid.weekends, `report:${spec.id}:abl:${k}`).winRate,
-        ),
-        measuredShare: ablate(
-          g.picks,
-          (l) =>
-            100 * weekendStats(boss, l, S.raid.weekends, `report:${spec.id}:abl:${k}`).damageShare,
-        ),
-      });
-    });
-    // The margin: the prepared answer and the best line when the boss hits 10% harder, and when it has 10% more HP.
-    const mp = prepared
-      ? marginOf(boss, prepared.picks, S.raid.weekends, `report:${spec.id}:margin:prepared`)
-      : undefined;
-    const m = marginOf(boss, overall.line, S.raid.weekends, `report:${spec.id}:margin`);
-    if (mp)
-      marginRows.push(
-        `| ${boss.name} | prepared answer | ${pct(mp.share.base)} (kill ${pct(mp.base)}) | ${pct(mp.share.atk10)} (kill ${pct(mp.atk10)}) | ${pct(mp.share.hp10)} (kill ${pct(mp.hp10)}) |`,
-      );
-    marginRows.push(
-      `| ${boss.name} | best searched (${overallIs}) | ${pct(m.share.base)} (kill ${pct(m.base)}) | ${pct(m.share.atk10)} (kill ${pct(m.atk10)}) | ${pct(m.share.hp10)} (kill ${pct(m.hp10)}) |`,
-    );
-    // Other widths: the classic party, and the best line repeated to fill.
-    const widths: WidthResult[] = RAID_WIDTHS.map((w) =>
-      widthOf(boss, overall.line, w, S.raid.weekends, `report:${spec.id}:w${w}`),
-    );
-    widthRows.push(
-      `| ${boss.name} | ${widths.map((w) => `${pct(w.classicShare)} (kill ${pct(w.classicWin)}) / ${pct(w.bestShare)} (kill ${pct(w.bestWin)})`).join(' | ')} |`,
-    );
-    // The mixed server (panel 5): 200 draws over 3 seeds, at 5, 10 and 15 players, with the casual players on a random Knack each
-    // and on their top creatures by level with no Knack (the post-migration default). One answer per boss, the prepared line
-    // (the first written answer: the tool the boss asks for, at most two copies of a form): the min-maxers and builders bring
-    // its columns; the search's best line is tuned to its own four columns together, and its columns do not carry the tool.
+    for (const r of pick.scratchRanked.slice(0, 5)) topLines.push(r.line);
+    const { wc, wSeeded, wScratch, wPrep } = stats;
+    const wOverall = overallIs === 'from scratch' ? wScratch : wSeeded;
+    raidRows.push(stats.raidRow);
+    bestLinesMd.push(...stats.bestLines);
+    answerRows.push(...stats.answerRows);
+    answers += stats.answers;
+    beat += stats.beat;
+    const bossStudies = got<RaidStudies>(id, 'studies');
+    const hydrated = bossStudies.studies.map(hydrateStudy);
+    studies.push(...hydrated);
+    for (const [k, costs] of Object.entries(bossStudies.knackCosts))
+      knackCosts.get(k)?.push(...costs);
+    const margins = got<RaidMargins>(id, 'margins');
+    marginRows.push(...margins.marginRows);
+    widthRows.push(margins.widthRow);
     for (const casual of CASUAL_KINDS)
       for (const players of MIXED_WIDTHS)
         mixedStudies.push({
-          bossId: spec.id,
+          bossId: id,
           bossName: boss.name,
           casual,
           players,
-          result: mixedSpread(
-            boss,
-            prepared?.picks ?? overall.line,
-            prepared ? [prepared.picks] : legalGiven.map((g) => g.picks),
-            S.raid.mixedDraws,
-            S.raid.mixedSeeds,
-            S.raid.mixedWeekends,
-            `report:${spec.id}:mixed:${casual}:${players}`,
-            prepared?.core ?? [],
-            prepared ? [prepared.core ?? []] : [],
-            { players, casual },
-          ),
+          result: got<MixedSpread>(id, mixedPiece(casual, players)),
         });
-    const mixed = (
-      mixedStudies.find(
-        (m) => m.bossId === spec.id && m.casual === 'random' && m.players === 10,
-      ) as MixedStudy
-    ).result;
-    // Boss Rank (Misa, 2026-10-29): the prepared line, the same line without its tool, the classic party, a server of casual
-    // players only and the mixed server, at the low, mid and high rank (cards and gates at 30%, 65% and 100% strength).
-    if (prepared) {
-      for (const rk of RAID_RANKS) {
-        const br = raidBossOf(spec.id, { rank: rk.id });
-        const none = withoutTool(prepared.picks, prepared.core ?? []);
-        const tag = `report:${spec.id}:rank:${rk.id}`;
-        const server = (casual: CasualKind, order?: typeof CASUAL_ORDER) =>
-          mixedSpread(
-            br,
-            prepared.picks,
-            [prepared.picks],
-            S.raid.rankDraws,
-            1,
-            2,
-            `${tag}:${casual}${order ? ':casual' : ''}`,
-            prepared.core ?? [],
-            [prepared.core ?? []],
-            { players: 10, casual, ...(order ? { order } : {}) },
-          );
-        rankStudies.push({
-          bossId: spec.id,
-          bossName: boss.name,
-          rank: rk,
-          hp: br.hp,
-          atk: br.atk,
-          armour: br.armour,
-          robust: robustnessOf(
-            br,
-            prepared.picks,
-            S.raid.rankWeekends,
-            S.raid.rankTalentDraws,
-            `${tag}:p`,
-          ),
-          noTool: robustnessOf(br, none, S.raid.rankWeekends, S.raid.rankTalentDraws, `${tag}:n`),
-          classic: [4, 10, 15].map((width) => {
-            const wide = wideBoss(br, width);
-            return {
-              width,
-              weekend: weekendStats(
-                wide,
-                classicFor(raidMode(wide)),
-                S.raid.rankWeekends / 2,
-                `${tag}:c${width}`,
-              ),
-            };
-          }),
-          casual: server('top3', CASUAL_ORDER),
-          mixedRandom: server('random'),
-          mixedTop3: server('top3'),
-        });
-      }
+    const mixed = got<MixedSpread>(id, mixedPiece('random', 10));
+    for (const rk of RAID_RANKS) {
+      const study = got<RankStudy | undefined>(id, rankPiece(rk.id));
+      if (study) rankStudies.push(study);
     }
     // HP left (Misa, 2026-10-29): knockouts are not the only cost; creatures standing but low on HP count too.
     const teams: [string, WeekendStats | undefined][] = [
@@ -597,93 +1156,29 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
           `| ${boss.name} | ${label} | ${pct(w.winRate)} | ${w.knockoutsTotal.toFixed(1)} | ${healthCells(w).join(' | ')} |`,
         );
     // Which mechanics the best line really needs: take each out and measure the win rate.
-    const measured = ablate(
-      overall.line,
-      (l) => 100 * weekendStats(boss, l, S.raid.weekends, `report:${spec.id}:abl`).damageShare,
-    );
-    raidAblation.push({ id: spec.id, name: boss.name, measured });
+    raidAblation.push({
+      id,
+      name: boss.name,
+      measured: fromWire(got<WireMeasured[]>(id, 'ablation')),
+    });
     // The prepared line is a boss's own answer: a tool it cannot do without counts too (the search's best line often has
     // several tools that cover for each other).
     // The other written answers are measured the same way: a boss calls for what its intended answers cannot do without.
-    studies
-      .filter((x) => x.bossId === spec.id)
-      .forEach((x, k) =>
-        raidAblation.push({
-          id: k === 0 ? `${spec.id}:prepared` : `${spec.id}:answer${k}`,
-          name: k === 0 ? `${boss.name}, prepared line` : `${boss.name}, answer ${k + 1}`,
-          measured: [...x.measuredShare],
-        }),
-      );
-    // The tool gap at other widths and the HP exponent's trade (panel 5, finding 7).
-    if (prepared) {
-      const cells = [4, 5, 10].map((w) => {
-        const wide = wideBoss(boss, w);
-        const win = (l: readonly Pick[], tag: string) =>
-          weekendStats(
-            wide,
-            tileLine(l, boss.cols, w),
-            S.raid.weekends,
-            `report:${spec.id}:gap:${w}:${tag}`,
-          );
-        const withT = win(prepared.picks, 'with');
-        const without = win(withoutTool(prepared.picks, prepared.core ?? []), 'without');
-        return {
-          width: w,
-          withTool: withT.winRate,
-          without: without.winRate,
-          shareWith: withT.damageShare,
-          shareWithout: without.damageShare,
-          gap: 100 * (withT.winRate - without.winRate),
-          shareGap: 100 * (withT.damageShare - without.damageShare),
-        };
-      });
-      gapRows.push(
-        `| ${boss.name} | ${prepared.tool} | ${cells.map((c) => `${pct(c.shareWith)} / ${pct(c.shareWithout)}: **${pts(c.shareGap / 100)}** of the HP (kill ${pct(c.withTool)} / ${pct(c.without)})`).join(' | ')} |`,
-      );
-      gapData[spec.id] = cells;
-    }
-    sensitivityRows.push(
-      `| ${boss.name} | ${SENSITIVITY_EXPONENTS.map((e) => {
-        const wide = wideBoss(boss, 15, e);
-        const c15w = weekendStats(
-          wide,
-          classicFor(raidMode(wide)),
-          Math.max(8, S.raid.weekends / 4),
-          `report:${spec.id}:sens:${e}`,
-        );
-        const mx = mixedSpread(
-          boss,
-          prepared?.picks ?? overall.line,
-          prepared ? [prepared.picks] : [],
-          S.raid.sensitivityDraws,
-          1,
-          2,
-          `report:${spec.id}:sensmix:${e}`,
-          prepared?.core ?? [],
-          prepared ? [prepared.core ?? []] : [],
-          { hpExponent: e, casual: 'top3' },
-        );
-        // The prepared answer's tool gap at 10 players, tiled to fill the arena.
-        const wide10 = wideBoss(boss, 10, e);
-        const gap10 = prepared
-          ? 100 *
-            (weekendStats(
-              wide10,
-              tileLine(prepared.picks, boss.cols, 10),
-              Math.max(8, S.raid.weekends / 4),
-              `report:${spec.id}:sensgap:${e}`,
-            ).damageShare -
-              weekendStats(
-                wide10,
-                tileLine(withoutTool(prepared.picks, prepared.core ?? []), boss.cols, 10),
-                Math.max(8, S.raid.weekends / 4),
-                `report:${spec.id}:sensgap:${e}`,
-              ).damageShare)
-          : 0;
-        return `${pct(c15w.damageShare)} (kill ${pct(c15w.winRate)}) / ${pct(mx.weekend.damageShare)} (kill ${pct(mx.winRate)}) / ${pts(gap10 / 100)}`;
-      }).join(' | ')} |`,
+    hydrated.forEach((x, k) =>
+      raidAblation.push({
+        id: k === 0 ? `${id}:prepared` : `${id}:answer${k}`,
+        name: k === 0 ? `${boss.name}, prepared line` : `${boss.name}, answer ${k + 1}`,
+        measured: [...x.measuredShare],
+      }),
     );
-    raidData[spec.id] = {
+    // The tool gap at other widths and the HP exponent's trade (panel 5, finding 7).
+    const gap = got<RaidGap | undefined>(id, 'gap');
+    if (gap) {
+      gapRows.push(gap.row);
+      gapData[id] = gap.cells;
+    }
+    sensitivityRows.push(got<string>(id, 'sensitivity'));
+    raidData[id] = {
       seededBest: seeded.line,
       scratchBest: scratch.line,
       overall: overallIs,
@@ -694,16 +1189,16 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
       seededKnockouts: wSeeded.knockoutsTotal,
       scratchKnockouts: wScratch.knockoutsTotal,
       steps: { classic: wc.steps, seeded: wSeeded.steps, scratch: wScratch.steps },
-      margin: m,
-      preparedMargin: mp,
+      margin: margins.m,
+      preparedMargin: margins.mp,
       health: {
         classic: wc,
         prepared: wPrep,
         best: wOverall,
         mixed: mixed.weekend,
       },
-      widths,
-      answers: ansData,
+      widths: margins.widths,
+      answers: stats.ansData,
     };
   }
   md.push(
@@ -881,6 +1376,8 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
   }));
   data['raidAnswers'] = { beat, total: answers };
   data['illegalAnswers'] = illegalNotes;
+  // A tuning loop on one boss reads the raid tables only: the foes and the tables across bosses are not measured.
+  if (opts.only) return { md, data };
 
   // ---------- Dungeon foes ----------
   md.push(
@@ -905,26 +1402,15 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     for (const d of DUNGEON_DEPTHS) {
       const foe = foeAt(id, d);
       name = foe.name;
-      const ranked = search(foe, GAUNTLET, {
-        seed: `foe:${id}:${d}`,
-        ...S.foe,
-        include: [CLASSIC_LINE],
-        score: gauntletScore(foe),
-      });
-      const best = ranked[0];
-      if (!best) continue;
+      const found = results.get(foeJobId(id, d)) as FoeDepth | undefined;
+      if (!found) continue;
       // The usage tables count what the search found, not the classic line it was seeded with.
-      for (const r of ranked.slice(0, 3))
-        if (lineKey(r.line) !== lineKey(CLASSIC_LINE)) topLines.push(r.line);
-      bestFoeLines.push(best.line);
-      if (d === DUNGEON_DEPTHS[DUNGEON_DEPTHS.length - 1]) foeBest.set(id, best.line);
-      const wb = gauntletStats(foe, best.line, S.foe.fights, `foe:${id}:${d}:b`);
-      const wc = gauntletStats(foe, CLASSIC_LINE, S.foe.fights, `foe:${id}:${d}:c`);
-      cells.push(
-        `${pct(wb.winRate)} (${pct(wb.hpLeft)} HP) / ${pct(wc.winRate)} (${pct(wc.hpLeft)} HP)`,
-      );
-      per[d] = { best: best.line, bestWin: wb.winRate, classicWin: wc.winRate };
-      if (d === mid) bestAtMid.push(`- ${foe.name}: ${best.line.map(pickName).join(', ')}`);
+      topLines.push(...found.topLines);
+      bestFoeLines.push(found.best);
+      if (d === DUNGEON_DEPTHS[DUNGEON_DEPTHS.length - 1]) foeBest.set(id, found.best);
+      cells.push(found.cell);
+      per[d] = { best: found.best, bestWin: found.bestWin, classicWin: found.classicWin };
+      if (d === mid) bestAtMid.push(`- ${foe.name}: ${found.best.map(pickName).join(', ')}`);
     }
     md.push(`| ${name} | ${FOE_ASKS.get(id) ?? ''} | ${cells.join(' | ')} |`);
     foeData[id] = per;
@@ -933,7 +1419,6 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
   data['foes'] = foeData;
 
   // Map runs (panel 5): the shipped map, a careful route and a careless first-exit route, at every depth and in the Undercroft.
-  const UNDERCROFT_LEVELS = 3;
   md.push(
     '### Map runs and the camp',
     '',
@@ -943,33 +1428,19 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     '| --- | ---: | ---: | ---: | ---: |',
   );
   const runData: Record<string, unknown> = {};
-  const MAP_DEPTHS = [1, 2, 3, 4, 5, 6, 7, 8];
   for (const d of MAP_DEPTHS) {
-    const careful = runStats(ALL_ROUND_TEAM, d, true, S.runs.stats, 'map', {
-      policy: 'smart',
-      bench: ALL_ROUND_BENCH,
-    });
-    const careless = runStats(ALL_ROUND_TEAM, d, true, S.runs.stats, 'map', { policy: 'first' });
-    const classic = runStats([...CLASSIC_LINE], d, true, S.runs.stats, 'map', { policy: 'first' });
+    const run = results.get(mapJobId(d)) as MapRun;
     md.push(
-      `| ${d} | ${pct(careful.winRate)} | ${careful.knockouts.toFixed(1)} | ${pct(careless.winRate)} | ${pct(classic.winRate)} |`,
+      `| ${d} | ${pct(run.carefulWin)} | ${run.carefulKnockouts.toFixed(1)} | ${pct(run.carelessWin)} | ${pct(run.classicWin)} |`,
     );
     runData[`depth${d}`] = {
-      careful: careful.winRate,
-      careless: careless.winRate,
-      classic: classic.winRate,
+      careful: run.carefulWin,
+      careless: run.carelessWin,
+      classic: run.classicWin,
     };
   }
   const deepest8 = MAP_DEPTHS[MAP_DEPTHS.length - 1] ?? 8;
-  const underCareful = runStats(ALL_ROUND_TEAM, deepest8, true, S.runs.stats, 'map-under', {
-    policy: 'smart',
-    bench: ALL_ROUND_BENCH,
-    levels: UNDERCROFT_LEVELS,
-  });
-  const underCareless = runStats(ALL_ROUND_TEAM, deepest8, true, S.runs.stats, 'map-under', {
-    policy: 'first',
-    levels: UNDERCROFT_LEVELS,
-  });
+  const under = results.get(mapJobId('undercroft')) as Undercroft;
   md.push(
     '',
     `The Undercroft below depth ${deepest8} (the share of all runs that beat the keeper of each level):`,
@@ -978,12 +1449,11 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
     '| --- | ---: | ---: |',
     ...Array.from(
       { length: UNDERCROFT_LEVELS },
-      (_, k) =>
-        `| ${k + 1} | ${pct(underCareful.undercroft[k] ?? 0)} | ${pct(underCareless.undercroft[k] ?? 0)} |`,
+      (_, k) => `| ${k + 1} | ${pct(under.careful[k] ?? 0)} | ${pct(under.careless[k] ?? 0)} |`,
     ),
     '',
   );
-  runData['undercroft'] = { careful: underCareful.undercroft, careless: underCareless.undercroft };
+  runData['undercroft'] = { careful: under.careful, careless: under.careless };
   data['mapRuns'] = runData;
 
   // ---------- Knack usage, forms and mechanics ----------
@@ -1064,26 +1534,10 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
   };
 
   // Knacks the content task will use: the rarely used ones named by panel 5 and the outlier, with what taking each out costs.
-  const WATCHED = [
-    'double-mark',
-    'tunnel-through',
-    'crown-of-embers',
-    'primed-by-pain',
-    'wide-warmth',
-    'keep-the-heat-in',
-    'guards-shadow',
-  ];
+  const WATCHED = WATCHED_KNACKS;
   const usageOf = new Map(usage.map((u) => [u.k, u]));
   const knackRows = WATCHED.map((k) => {
-    const carrying = studies.filter((st) => st.picks.some((p) => p.knack === k));
-    const costs = carrying.map((st) => {
-      const boss = raidBossOf(st.bossId);
-      const line = st.picks.map((p) => (p.knack === k ? { ...p, knack: 'none' } : p));
-      const salt = `report:${st.bossId}:knack:${k}`;
-      const base = weekendStats(boss, st.picks, S.raid.weekends, salt);
-      const cut = weekendStats(boss, line, S.raid.weekends, salt);
-      return `${st.bossName}: ${pts(base.damageShare - cut.damageShare)} of the HP (kill ${lost(100 * (base.winRate - cut.winRate))})`;
-    });
+    const costs = knackCosts.get(k) ?? [];
     const u = usageOf.get(k);
     return {
       k,
@@ -1092,7 +1546,7 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
         .map(([f]) => f)
         .join(
           ', ',
-        )} | ${u?.n ?? 0} | ${(u?.ratio ?? 0).toFixed(1)} | ${carrying.length} | ${costs.join('; ') || '-'} |`,
+        )} | ${u?.n ?? 0} | ${(u?.ratio ?? 0).toFixed(1)} | ${costs.length} | ${costs.join('; ') || '-'} |`,
     };
   });
   const rare = usage.filter((u) => u.k !== 'none' && u.ratio < 0.3 && !WATCHED.includes(u.k));
@@ -1142,19 +1596,13 @@ export function buildBossSections(opts: { quick?: boolean } = {}): BossSections 
   const deepest = DUNGEON_DEPTHS[DUNGEON_DEPTHS.length - 1] ?? 7;
   const foeAblation: { id: string; name: string; measured: Measured[] }[] = [];
   for (const id of FOE_IDS) {
-    const line = foeBest.get(id);
-    if (!line) continue;
-    const foe = foeAt(id, deepest);
-    const score = gauntletScore(foe);
-    foeAblation.push({
-      id,
-      name: foe.name,
-      measured: ablate(line, (l) => score(l, S.foe.fights, `report:foe:${id}:abl`).score),
-    });
+    const measured = results.get(foeAblationJobId(id)) as WireMeasured[] | undefined;
+    if (!measured) continue;
+    foeAblation.push({ id, name: foeAt(id, deepest).name, measured: fromWire(measured) });
   }
   // The foes' questions (Misa, 2026-10-29): each foe asks one mechanic, measured as a team with its tool against the same without.
-  const questionResults = Object.values(FOE_QUESTIONS).map((q) =>
-    questionResult(q, quick ? 60 : 200, 'report:fq'),
+  const questionResults = Object.keys(FOE_QUESTIONS).map(
+    (key) => results.get(questionJobId(key)) as FoeQuestionResult,
   );
   const questionCalls = questionResults.filter(
     (r) => r.gap >= FOE_QUESTION_GAP && r.withTool >= FOE_QUESTION_WIN,
