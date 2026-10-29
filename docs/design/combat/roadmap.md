@@ -50,17 +50,27 @@ Big simulations come in phase 5 on purpose: week-by-week and Boss Rank numbers m
 
 ## Where we are (handoff, 2026-10-29)
 
-PR #92 (design docs, lab, wiki) is merged. Work continues on branch `combat-v2-bosses` (no PR yet; batch the next steps into one).
+**Merged:** PR #92 (design docs, the lab, the wiki). **In review:** the PR from branch `combat-v2-bosses` (the five raid bosses, the fifteen dungeon foes, Build-up, new attack shapes, announced attacks, rule-card strength by Boss Rank, the dungeon map model, panels 4 and 5 with their fixes). It changes nothing in the live game except the wiki's draft sections, which are generated from the lab's data.
 
-Latest lab numbers (2026-10-29, after panel 5's fixes; the main measure is now the share of boss HP removed, with Boss Rank low / mid / high setting each rule card's strength): a prepared team with random legal talents removes 84% to 100% of the HP at high rank; each boss's tool adds 11 to 27 points of HP removed; no Knack family gates more than 2 bosses; a mixed server at 10 players removes 56% to 64% at high rank without killing; the unprepared classic party never kills at high rank but still removes 14% to 81%. The dungeon: careful routes clear 99% at depth 1 down to 54% at depth 8, and every foe asks for something.
+**Where the numbers stand** (`lab-report.md`; the main measure is the share of boss HP removed, with the retreat tiers 30%, 85% and the kill; Boss Rank low / mid / high sets rule-card strength, boss stats and the lab roster's level 12 / 18 / 25):
 
-Next steps, in order:
+- A prepared team removes 98% to 100% at every rank and kills 73% to 100% of weekends; with random legal talents it still removes 84% to 100%.
+- Without the boss's tool a team still removes 67% to 90%: the tool adds 9 to 33 points ("asks" at low rank, closer to "requires" at high).
+- A mixed server (10 players) removes 56% to 79%; the unprepared classic party never kills, removing 14% to 76%.
+- No Knack family gates more than 2 bosses; talents are about 20% of a team's result.
+- The dungeon: careful routes clear 99% at depth 1 down to 52% at depth 8; every foe asks for something; the Undercroft drops to 19%, 4%, 1%.
 
-0. **Rank ladder:** done (2026-10-29): rosters follow rank (levels 12, 18, 25), and HP, Attack, armour and card strength rise from low to high. Left: the unprepared party at high rank still removes about two thirds of Tidal Colossus's and Old Bogback's HP (needs a new gate and re-searched answers); a low-rank mixed server reaches 61% to 79%, not the 85% tier; Living Shelter is the new most-picked Knack.
+**Next steps, in order:**
 
-1. **Balance pass** against the real bosses: done (2026-10-29). Left over: Storm Sovereign's mixed server (36%, below the 50% aim, since raising it lets the classic party win at wide rows); the best searched lines on Tidal Colossus and Storm Sovereign still win with almost no losses; Baked Shell, Tunnel Through and Crown of Embers are still rarely picked against the real bosses; Zigzag is still near the "stands out" line (next step: separate its Taunt); the gear plan.
-2. **Panel 5** on the balance pass: done (`reviews/2026-10-29-panel-5.md`). The phase 1 gate fails on three items; the fix round is next: first measurement and rules (Stubborn, every answer's tool tested, prepared lines with random talents, mixed servers on more seeds with casuals on no Knack, anchors and move order, one HP rule, hints from measurement, the dungeon map in the report), then content (Mired's cut halved and a second cleanse boss, Thornmother's cracking bark, common-species answers, rarely used Knacks, Guard's Shadow).
-3. **Phase 1 gate check** (phase 1 row in the table above), then a PR for Misa.
-4. Later content: a Mire Setter or Payoff (art), the Undercroft's own foes.
+1. **Leftovers from the bosses:**
+   - At high rank the unprepared party still removes about two thirds of Tidal Colossus's and Old Bogback's HP, more than a mixed server: they need a gate the classic trio lacks, and re-searched answers.
+   - A low-rank mixed server reaches 61% to 79%, not the 85% tier.
+   - Living Shelter is now the most picked Knack (Ancientshell's only one in the searches).
+   - Zigzag still near the "stands out" line (idea: separate its Taunt).
+   - Baked Shell and Crown of Embers still rarely picked.
+2. **The gear plan:** which shipped gear lines change, merge with a talent's name or retire in combat v2 (proposal, "Gear: what changes"), with the lab measuring the main ones.
+3. **Panel 6** on the leftovers and the gear plan.
+4. **Phase 1 gate check** (the phase 1 row above): panel without must-fix findings, every card's answers beat the classic line, no Knack used almost everywhere and none never used, the casual roster beyond its top three, the classic line losing on most cards. Then a PR, and phase 2 (the engine port) can start.
+5. **Later content:** a Mire Setter or Payoff (needs art); the Undercroft's own foes; an opt-in harder boss for the endgame (Misa, 2026-10-29).
 
-Open questions for Misa: none waiting.
+**Open questions for Misa:** none waiting.
