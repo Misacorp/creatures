@@ -1,0 +1,624 @@
+/*
+  The valley prototype's insides of places, the haul, the zoom and the Places hatch (staging only). Every
+  class starts `pv-`. Pixel rules as in `valley.css`.
+*/
+
+/* --- The zoom into a place --- */
+.pv-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  width: 100%;
+  height: 100%;
+  background: #0d0a1a;
+}
+
+/* --- The haul, opened under the signpost --- */
+.pv-haul {
+  position: absolute;
+  z-index: 25;
+  left: 0;
+  right: 0;
+  top: calc(var(--discord-safe-area-inset-top, 0px) + 3.5rem);
+  max-height: 46%;
+  overflow-y: auto;
+  padding: 0 0.75rem 0.75rem;
+  background: var(--dusk);
+  box-shadow:
+    0 calc(var(--px) * -1) 0 var(--ink),
+    inset 0 var(--px) 0 var(--bevel-hi);
+}
+
+@media (min-width: 900px) {
+  .pv-haul {
+    left: auto;
+    right: 1rem;
+    width: 24rem;
+    max-height: calc(100% - 6rem);
+    box-shadow:
+      0 0 0 var(--px) var(--ink),
+      inset 0 var(--px) 0 var(--bevel-hi);
+  }
+}
+
+.pv-haul-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  padding: 0.5rem 0 0.25rem;
+}
+
+.pv-haul-who.hop {
+  transform: translateY(-6px);
+}
+
+.pv-haul-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.125rem;
+  font-weight: 400;
+  color: var(--gold);
+}
+
+.pv-haul-body {
+  display: grid;
+  gap: 0.5rem;
+  visibility: hidden;
+}
+
+.pv-haul-body.open {
+  visibility: visible;
+}
+
+.pv-haul-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0;
+}
+
+/* --- Inside a place --- */
+.pv-interior {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding-top: 3.5rem;
+  background: var(--ground, var(--night));
+}
+
+.pv-scene-pan {
+  flex: none;
+  overflow: hidden;
+  scrollbar-width: none;
+}
+
+.pv-scene-pan::-webkit-scrollbar {
+  display: none;
+}
+
+.pv-scene-pan.pans {
+  overflow-x: auto;
+  cursor: grab;
+}
+
+.pv-scene {
+  position: relative;
+  width: var(--w);
+  height: var(--h);
+}
+
+.pv-front {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+
+.pv-leave {
+  position: absolute;
+  z-index: 15;
+  left: 0.375rem;
+  top: calc(var(--sh) + 0.25rem);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+  background: var(--dusk);
+  border: 0;
+  border-radius: 0;
+  box-shadow:
+    inset 0 var(--px) 0 var(--bevel-hi),
+    inset 0 calc(var(--px) * -1) 0 var(--bevel-lo),
+    0 0 0 var(--px) var(--ink);
+}
+
+.pv-leave:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.pv-in-signpost .pv-leave {
+  top: 4rem;
+}
+
+.pv-in-signpost {
+  overflow-y: auto;
+  background: var(--night);
+}
+
+.pv-in-signpost .pv-floor {
+  flex: none;
+  overflow: visible;
+}
+
+@media (min-width: 900px) {
+  .pv-in-signpost {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 26rem;
+    align-items: start;
+    overflow: hidden;
+  }
+
+  .pv-in-signpost .pv-floor {
+    height: 100%;
+    overflow-y: auto;
+  }
+}
+
+.pv-floor {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.75rem;
+  background: var(--ground, var(--night));
+}
+
+.pv-setup,
+.pv-reveal {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 30rem;
+  margin: 0 auto;
+}
+
+.pv-floor-note {
+  margin: 0;
+  color: var(--bone);
+  text-align: center;
+}
+
+.pv-stub {
+  margin: 0;
+}
+
+/* Things in a scene that are buttons: invisible over the art, ringed on focus. */
+.pv-anvil,
+.pv-chest,
+.pv-thing,
+.pv-own,
+.pv-boss-button,
+.pv-raid-slot {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--pw);
+  height: var(--ph);
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  line-height: 0;
+  cursor: pointer;
+}
+
+.pv-chest,
+.pv-boss-button {
+  width: auto;
+  height: auto;
+}
+
+.pv-anvil:focus-visible,
+.pv-chest:focus-visible,
+.pv-thing:focus-visible,
+.pv-own:focus-visible,
+.pv-boss-button:focus-visible,
+.pv-raid-slot:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.pv-anvil.empty {
+  outline: 2px dashed var(--bone);
+  outline-offset: -4px;
+}
+
+.pv-anvil.on {
+  box-shadow: var(--ring);
+}
+
+.pv-plus {
+  position: absolute;
+  left: 50%;
+  top: 0.25rem;
+  transform: translateX(-50%);
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--bone);
+}
+
+.pv-anvil-timer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  line-height: normal;
+  font-size: var(--fs-small);
+  color: var(--bone);
+}
+
+.pv-shelf {
+  pointer-events: auto;
+}
+
+.pv-shelf-parts {
+  display: flex;
+  gap: 2px;
+  line-height: normal;
+}
+
+.pv-blueprints,
+.pv-packs,
+.pv-forms,
+.pv-lineup {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pv-blueprint,
+.pv-pack {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.25rem;
+  min-height: 3.25rem;
+  padding: 0.25rem;
+  background: rgb(var(--ink-rgb) / 0.35);
+  border: 0;
+  border-radius: 0;
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.pv-pack-n {
+  position: absolute;
+  right: 2px;
+  bottom: 0;
+  color: var(--bone);
+  line-height: 1;
+}
+
+.pv-pick {
+  display: grid;
+  justify-items: center;
+  gap: 0;
+  min-width: 4rem;
+  padding: 0.25rem 0.25rem 0.375rem;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: var(--bone);
+}
+
+.pv-pick .pv-creature {
+  margin-bottom: 2px;
+}
+
+.pv-pick-name {
+  max-width: 5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.pv-pick-level {
+  font-size: 0.875rem;
+  line-height: 1;
+  color: var(--haze);
+}
+
+.pv-pick.on,
+.pv-blueprint.on,
+.pv-pack.on {
+  box-shadow: var(--ring);
+}
+
+.pv-pick.on .pv-creature {
+  transform: translateY(-3px);
+}
+
+.pv-pick:focus-visible,
+.pv-blueprint:focus-visible,
+.pv-pack:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* --- Arena --- */
+.pv-sign {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: #9a6036;
+  box-shadow:
+    0 0 0 2px var(--ink),
+    inset 0 2px 0 #c98a52;
+  color: #fbf3df;
+  font-size: 1rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.pv-sign-at .pv-sign {
+  position: static;
+}
+
+.pv-board {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pv-raid-slot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.pv-raid-slot.empty {
+  outline: 2px dashed rgb(var(--ink-rgb) / 0.45);
+  outline-offset: -2px;
+}
+
+.pv-raid-slot.empty.lit {
+  outline-color: var(--ink);
+  background: rgb(255 255 255 / 0.25);
+}
+
+.pv-raid-slot.on {
+  box-shadow: var(--ring);
+}
+
+.pv-raid-slot.mine {
+  background: rgb(var(--ink-rgb) / 0.18);
+}
+
+.pv-raid-slot:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.pv-owner {
+  position: absolute;
+  left: 50%;
+  bottom: -0.875rem;
+  transform: translateX(-50%);
+  font-size: 0.875rem;
+  line-height: 1;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.pv-raid-icons {
+  display: flex;
+  justify-content: center;
+}
+
+/* --- House --- */
+.pv-evolved {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--gold);
+}
+
+.pv-own .pv-bubble {
+  bottom: calc(100% + 8px);
+}
+
+.pv-sparkles {
+  width: 48px;
+  height: 48px;
+}
+
+.pv-spark {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: #fff2a8;
+  box-shadow: 0 0 0 1px var(--ink);
+}
+
+.pv-spark.a {
+  left: -6px;
+  top: 4px;
+}
+
+.pv-spark.b {
+  left: 50px;
+  top: 2px;
+}
+
+.pv-spark.c {
+  left: -4px;
+  top: 34px;
+}
+
+.pv-spark.d {
+  left: 48px;
+  top: 36px;
+}
+
+.pv-sparkles.f1 .pv-spark.a {
+  left: -10px;
+  top: 0;
+}
+
+.pv-sparkles.f1 .pv-spark.b {
+  left: 54px;
+  top: -2px;
+}
+
+.pv-sparkles.f1 .pv-spark.c {
+  left: -8px;
+  top: 38px;
+}
+
+.pv-sparkles.f1 .pv-spark.d {
+  left: 52px;
+  top: 40px;
+}
+
+.pv-sparkles.f2 .pv-spark.a {
+  left: -14px;
+  top: -4px;
+}
+
+.pv-sparkles.f2 .pv-spark.b {
+  left: 58px;
+  top: -6px;
+}
+
+.pv-sparkles.f2 .pv-spark.c {
+  left: -12px;
+  top: 42px;
+}
+
+.pv-sparkles.f2 .pv-spark.d {
+  left: 56px;
+  top: 44px;
+}
+
+/* --- Signpost (the world map) --- */
+.pv-map {
+  flex: none;
+}
+
+/* --- Cave, fairground --- */
+.pv-under {
+  color: var(--bone);
+}
+
+.pv-dungeon-map {
+  overflow-x: auto;
+}
+
+.pv-stalls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pv-stall-button {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: 0 0 0 2px var(--ink);
+  overflow: hidden;
+}
+
+.pv-stall-button:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.pv-stall-name {
+  position: absolute;
+  left: 0.25rem;
+  top: 0.25rem;
+  padding: 0 0.375rem;
+  background: var(--ink);
+  color: var(--bone);
+  font-size: 1.125rem;
+}
+
+.pv-stall-who {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+}
+
+/* --- The Places hatch --- */
+.pv-hatch-list {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pv-hatch-row {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: var(--bone);
+  text-align: left;
+}
+
+.pv-hatch-name {
+  font-size: 1.125rem;
+}
+
+.pv-hatch-what {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--haze);
+  font-size: var(--fs-row);
+}
+
+.pv-hatch-row.needs .pv-hatch-what {
+  color: var(--gold);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-pick.on .pv-creature,
+  .pv-haul-who.hop {
+    transform: none;
+  }
+}
