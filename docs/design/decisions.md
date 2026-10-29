@@ -3444,3 +3444,13 @@ Misa asked for a creature's ribbons and Valley Games medals on its card in the c
 ## 2026-10-28: Random talent rolls stay situational
 
 **Decision (Misa).** A casual player with random talents gaining about 7% to 9% (against about 20% for the best fit) is fine: random rolls should stay well away from the best fit, so talents stay situational rather than flat. Finisher, picked by 9 of the 15 best teams, is fine for now; watch it. The lab's team check now asks that random rolls gain something but at most 60% of the best fit's share (the old 10% floor is gone).
+
+### 2026-10-29: CI skips the build and tests for documentation-only PRs
+
+Misa noticed that a PR adding only a retro file ran every CI job. He asked for a scope that saves CI time without leaving gaps.
+
+1. **The workflow still runs on every PR; jobs are skipped inside it.** GitHub's `paths-ignore` would skip the whole workflow, and then the required `ci` check never reports and the PR stays blocked. Instead a small `changes` job (a checkout of two commits and `git diff --name-only` between the PR's merge commit and its base) decides, and the build and test jobs run only when it finds code.
+2. **What counts as documentation is a short list; everything else is code.** Documentation is every Markdown file and everything under `docs/`, except `docs/compendium/`, which `packages/game/test/compendium.test.ts` reads. A new folder, a workflow, the lockfile or any file outside that list runs everything. That way, adding to the repo can never silently skip tests; the risk sits only in that list, and only one test reads from `docs/` today.
+3. **Always run:** the formatting check (Prettier formats Markdown, and it caught a merge slip on 2026-10-28) and the security job (secret scan and workflow audits).
+4. **`ci` accepts a skipped test job only when `changes` succeeded and found documentation only.** A skip for any other reason (`changes` failed, a job was cancelled) fails `ci`.
+5. **A gap found on the way:** CI didn't run `packages/lab`'s tests (added in #92). The `test-rest` job runs them now (about 15 s).

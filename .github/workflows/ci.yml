@@ -12,8 +12,46 @@ concurrency:
 jobs:
   # The checks run as parallel jobs; the final `ci` job is the one the main ruleset requires, so its
   # name must stay `ci`. Testing plan and speed budgets: docs/design/testing.md.
+  #
+  # A PR that only changes documentation skips the build and the tests (`changes` decides). Documentation is
+  # every Markdown file and everything under docs/, except docs/compendium/, which a test reads. Anything
+  # else, a new folder included, runs everything. Formatting and the security job always run.
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    outputs:
+      code: ${{ steps.files.outputs.code }}
+    steps:
+      # The PR's merge commit and its first parent, the base it was merged onto.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+
+      - name: Does the PR change anything besides documentation?
+        id: files
+        run: |
+          git diff --name-only --no-renames HEAD^1 HEAD > changed.txt
+          echo "Changed files:"
+          cat changed.txt
+          code=false
+          if [ ! -s changed.txt ]; then code=true; fi
+          while IFS= read -r f || [ -n "$f" ]; do
+            case "$f" in
+              docs/compendium/*) code=true ;;
+              docs/* | *.md) ;;
+              *) code=true ;;
+            esac
+          done < changed.txt
+          echo "code=${code}"
+          echo "code=${code}" >> "$GITHUB_OUTPUT"
+
   checks:
     name: checks
+    needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -32,12 +70,17 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm build
+      - if: needs.changes.outputs.code == 'true'
+        run: pnpm lint
+      - if: needs.changes.outputs.code == 'true'
+        run: pnpm typecheck
+      - if: needs.changes.outputs.code == 'true'
+        run: pnpm build
 
   test-worker:
     name: test-worker (${{ matrix.shard }}/2)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -63,6 +106,8 @@ jobs:
 
   test-sim:
     name: test-sim
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -84,6 +129,8 @@ jobs:
 
   test-rest:
     name: test-rest
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -101,7 +148,7 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @creatures/game --filter @creatures/engine --filter @creatures/activity test
+      - run: pnpm --filter @creatures/game --filter @creatures/engine --filter @creatures/lab --filter @creatures/activity test
       - run: pnpm --filter @creatures/worker exec node --test 'scripts/*.test.mjs'
       # The contract fixtures must be what the server really answers (docs/design/testing.md, layer 3).
       - run: pnpm fixtures:capture --check
@@ -109,18 +156,27 @@ jobs:
   ci:
     name: ci
     if: always()
-    needs: [checks, test-worker, test-sim, test-rest]
+    needs: [changes, checks, test-worker, test-sim, test-rest]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     permissions: {}
     steps:
+      # Every job in `needs` must succeed (a job added there later is covered too). `changes` and `checks` always
+      # run; another job may be skipped only when `changes` succeeded and found nothing but documentation. A skip
+      # for any other reason (a failed `changes`, say) fails.
       - name: All checks passed
         env:
+          CHANGES: ${{ needs.changes.result }}
+          CODE: ${{ needs.changes.outputs.code }}
+          CHECKS: ${{ needs.checks.result }}
           RESULTS: ${{ join(needs.*.result, ' ') }}
         run: |
-          echo "Results: ${RESULTS}"
+          echo "changes: ${CHANGES} (code: ${CODE}), checks: ${CHECKS}, all: ${RESULTS}"
+          if [ "$CHANGES" != "success" ] || [ "$CHECKS" != "success" ]; then exit 1; fi
           for r in ${RESULTS}; do
-            if [ "$r" != "success" ]; then exit 1; fi
+            if [ "$r" = "success" ]; then continue; fi
+            if [ "$r" = "skipped" ] && [ "$CODE" = "false" ]; then continue; fi
+            exit 1
           done
 
   security:
