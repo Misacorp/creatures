@@ -6,49 +6,53 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q10. Does a player who plays less get help catching up?
+### Q13. What do we call the currency that replaces Bait?
 
-Status: asked, round 4 (2026-10-29). Was the queued **returners**. Touches: `bonfire.md` V-BON-2, `posts.md` V-POST-10, `defence.md`; a seam with combat v2 (what a level is worth in the raid).
+Status: asked, round 5 (2026-10-29). Was the queued **currency-name**. Touches: every doc and screen that says Bait; the compendium (`docs/compendium/world.md`, `items.md`).
 
-**Why it matters.** With the away steps, a once-a-week player grows about 43% as fast as a daily one, and someone back after a month has barely grown. Everyone fights the same raid boss together, so a roster far behind adds little and can feel like dead weight. Today's plan only helps a player's own weakest creatures catch up to that player's best.
+**Why it matters.** It's the word players see most. In the valley it pays for your own posts (lures, tools) and the server's projects, and leets keep paying it. The compendium's rule: it's an in-world thing, and the lore never says where it comes from.
 
-- **A. No help: that is the cost of playing less.** Example: Juho plays on Sundays; Juho's creatures are ten levels behind the server's, and Juho knows why.
-- **B. Catch-up toward the server.** Creatures behind the server's middle grow faster while their player is present, fading as they close in. Example: Juho comes back after a month; within about a week of daily visits Juho's best team is close to the server's middle again.
-- **C. Level sync in the raid.** In the raid every creature fights at the server's level, so levels matter only outside it. Example: Juho's level 12 Pip fights as level 20 on Sunday.
+- **A. Acorns.** Small, everywhere, every creature wants one. Example: "Sanni dropped 200 acorns in the Signpost's bowl."
+- **B. Kindling.** Everything in the valley runs on it: the bonfire, the Forge, the beacon. Example: "the hearth needs 2,000 kindling for level 3."
+- **C. Buttons.** What the valley's folk trade among themselves, odd and charming. Example: "a Kelp Lure costs 40 buttons."
+- **D. Coppers.** A plain coin, clear at once. Example: "40 coppers."
 
-**Lead's pick: B.** A returning player gets back into the fight quickly, which is what keeps a small server's raid alive, and levels still mean something in the raid, so growing your roster stays rewarding. C would make the raid ignore the growth the whole valley is built around. The catch-up only runs while the player is present, so it never undoes the away steps.
+**Lead's pick: A, Acorns.** It reads as money at a glance, fits a valley of creatures, and works for both uses (you spend acorns on a lure, you give acorns to the Forge). Kindling is lovely for the bonfire but odd for buying a lure; Coppers is clear but has no character.
 
-### Q11. Is the bonfire the same for everyone, or something the server builds?
+### Q14. Are these the right battlegrounds for the other three bosses?
 
-Status: asked, round 4 (2026-10-29). Was the queued **bonfire**. Touches: `bonfire.md`, `commons.md`.
+Status: asked, round 5 (2026-10-29). Was the queued **battlegrounds**. Touches: `defence.md` (battlegrounds table), `docs/compendium/bosses.md`; art for each.
 
-**Why it matters.** Creatures without a post sit at the bonfire and grow slowly; it's the floor that keeps a whole roster useful. It is also the one place every player's creatures share, so it's a natural first project for the server.
+**Why it matters.** You set the first two: the Thornmother (Grove) in an ancient temple swallowed by roots, the Storm Sovereign (Spark) on a thunderous mountaintop. The other three need a place where the valley meets the threat. Each is a full scene to draw.
 
-- **A. A flat floor.** Every idle creature grows at the same fixed rate on every server. Nothing to build. Example: Sanni's bench grows the same on a busy server and a quiet one.
-- **B. A communal hearth.** The server raises the bonfire's level with gifts and a lamplighter post; each level makes everyone's bench grow a little faster and adds something to see (a bigger fire, benches, lanterns). Example: the server feeds the fire for a week and every player's idle creatures grow 10% faster from then on.
-- **C. Your own campfire.** Each player upgrades their own fire with their own resources. Example: Sanni buys a better log pile and her bench grows faster.
+- **A. Yes to all three:**
+  - Tidal Colossus (Tide): a drowned sea gate past the Tidepools' shelf.
+  - Cinder Wyrm (Ember): a caldera below the Ember Caves.
+  - Old Bogback (Mire): a sunken shrine in the Sunken Fen.
+- **B. Swap some:**
+  - Tide: a lighthouse on a storm-beaten cape.
+  - Ember: a forest's burning edge, where the fire reaches the valley.
+  - Mire: a drowned battlefield of old banners and broken spears.
+- **C. Your own ideas** for any of them.
 
-**Lead's pick: B.** It is the project that helps everyone most evenly, newcomers included from day one, and the easiest one for a new server to rally around in its first week. The floor stays: a level-1 hearth is A's flat rate, so a quiet server is never worse off.
+**Lead's pick: A, with Ember from B.** A drowned sea gate and a sunken shrine fit "the threat comes to the valley's door" well. For Ember, a caldera is far away, while a forest's burning edge is the fire arriving at the valley itself, which is the defence story you asked for. Mix and match freely.
 
-### Q12. Do the server's places stop growing at some level?
+### Q15. Should creatures guarding the Watchtower during the week help in the raid?
 
-Status: asked, round 4 (2026-10-29). Was the queued **place-max**. Touches: `commons.md`, `later.md`, goal G-7 (the endgame is cosmetic).
+Status: asked, round 5 (2026-10-29). Was the queued **sentries**. Touches: `defence.md` V-DEF-4, `posts.md` (sentry post); a seam with combat v2, which owns the raid's numbers.
 
-**Why it matters.** Places grow through the server's projects. If they grow forever, every level adds a little power, the economy has to keep finding new bonuses, and an old server pulls ever further ahead of a new one. If they stop, the server needs something else to build.
+**Why it matters.** A sentry is a post at the Watchtower. If sentries help the raid, everyone's idle creatures contribute to the weekend fight, which fits the server defending together. But anything that changes the raid's power has to be balanced in combat v2's lab, and makes the raid depend on how much the server idled.
 
-- **A. A max level, then projects turn cosmetic.** After the last level, projects add banners, statues, a fountain, seasonal decorations everyone sees. Example: the Forge maxes at level 5; the next project is a copper weathervane on its roof.
-- **B. No max.** Every level adds a small bonus forever, idle-game style. Example: Forge level 23 gives +1% speed.
-- **C. A max level, then a new place opens.** Finishing the valley's places unlocks a new place to build. Example: when every place reaches level 5, the road to the Lighthouse opens.
+- **A. A small power bonus.** Example: each sentry on the server takes a sliver off the boss's HP at the first stage.
+- **B. A scouting report.** Sentries spot the threat early: the more sentries, the more of the boss's first moves are shown before the weekend. Example: with 6 sentries posted, Friday's stage shows the boss's first three moves ahead of time.
+- **C. Nothing for the raid.** The raid stays purely the weekend's fight; sentries do something else (watch for rare visitors, read the weather).
 
-**Lead's pick: A now, with C as later content.** A matches your endgame (cosmetics, housing and decorations) and keeps the balance in one known range the economy lab can test, so old and new servers stay comparable. New places can arrive later on top of the same system (G-6).
+**Lead's pick: B.** Information fits the defence story ("we saw it coming"), helps every player plan their column, and changes no raid numbers, so combat v2 can stay balanced on its own. A would tie the raid's difficulty to idling.
 
 ## Queue
 
 In order. Each becomes a numbered question when asked; entries name what they wait on.
 
-- **currency-name.** Bait needs a new name (round 3, Q9). The lead proposes three or four names from the compendium's world (`docs/compendium/`), each with a line of flavour.
-- **battlegrounds.** Battlegrounds for Tide, Ember and Mire: a drowned sea gate, a caldera, a sunken shrine; or other ideas? (`defence.md`.)
-- **sentries.** Should sentries posted at the Watchtower add to the server's raid readiness, or should the raid stay purely the weekend's fight? (`defence.md` V-DEF-4.)
 - **targets.** What the economy lab measures and which numbers feel right (T-1 to T-5 in `goals.md`). Asked with the lab's first report, as concrete examples, not as a list to approve.
 
 ## Answered
@@ -194,6 +198,54 @@ Status: answered, round 3 (2026-10-29). From the scrap list. Touches: `commons.m
 **Answer (2026-10-29): C.** "We don't have to keep calling it bait either."
 
 Became: Bait is the everyday currency for a player's own posts (lures, tools, supplies) and the server's projects; leets keep paying it; the daily allowance builds up like an idle gain (the lead's call stood, Misa did not object). A new name is queued (**currency-name**). `commons.md`, `scouts.md`, `scrap-list.md`.
+
+### Q10. Does a player who plays less get help catching up?
+
+Status: answered, round 4 (2026-10-29). Was the queued **returners**. Touches: `bonfire.md` V-BON-2, `posts.md` V-POST-10, `defence.md`; a seam with combat v2 (what a level is worth in the raid).
+
+**Why it matters.** With the away steps, a once-a-week player grows about 43% as fast as a daily one, and someone back after a month has barely grown. Everyone fights the same raid boss together, so a roster far behind adds little and can feel like dead weight. Today's plan only helps a player's own weakest creatures catch up to that player's best.
+
+- **A. No help: that is the cost of playing less.** Example: Juho plays on Sundays; Juho's creatures are ten levels behind the server's, and Juho knows why.
+- **B. Catch-up toward the server.** Creatures behind the server's middle grow faster while their player is present, fading as they close in. Example: Juho comes back after a month; within about a week of daily visits Juho's best team is close to the server's middle again.
+- **C. Level sync in the raid.** In the raid every creature fights at the server's level, so levels matter only outside it. Example: Juho's level 12 Pip fights as level 20 on Sunday.
+
+**Lead's pick: B.** A returning player gets back into the fight quickly, which is what keeps a small server's raid alive, and levels still mean something in the raid, so growing your roster stays rewarding. C would make the raid ignore the growth the whole valley is built around. The catch-up only runs while the player is present, so it never undoes the away steps.
+
+**Answer (2026-10-29): B.**
+
+Became: V-BON-6, catch-up toward the server's middle while the player is present; no level sync in the raid.
+
+### Q11. Is the bonfire the same for everyone, or something the server builds?
+
+Status: answered, round 4 (2026-10-29). Was the queued **bonfire**. Touches: `bonfire.md`, `commons.md`.
+
+**Why it matters.** Creatures without a post sit at the bonfire and grow slowly; it's the floor that keeps a whole roster useful. It is also the one place every player's creatures share, so it's a natural first project for the server.
+
+- **A. A flat floor.** Every idle creature grows at the same fixed rate on every server. Nothing to build. Example: Sanni's bench grows the same on a busy server and a quiet one.
+- **B. A communal hearth.** The server raises the bonfire's level with gifts and a lamplighter post; each level makes everyone's bench grow a little faster and adds something to see (a bigger fire, benches, lanterns). Example: the server feeds the fire for a week and every player's idle creatures grow 10% faster from then on.
+- **C. Your own campfire.** Each player upgrades their own fire with their own resources. Example: Sanni buys a better log pile and her bench grows faster.
+
+**Lead's pick: B.** It is the project that helps everyone most evenly, newcomers included from day one, and the easiest one for a new server to rally around in its first week. The floor stays: a level-1 hearth is A's flat rate, so a quiet server is never worse off.
+
+**Answer (2026-10-29): B.** "This could be slightly incremental."
+
+Became: V-BON-7, the communal hearth: a server level raised like any place, each level a slight increase to every idle creature's growth; level 1 is the flat floor.
+
+### Q12. Do the server's places stop growing at some level?
+
+Status: answered, round 4 (2026-10-29). Was the queued **place-max**. Touches: `commons.md`, `later.md`, goal G-7 (the endgame is cosmetic).
+
+**Why it matters.** Places grow through the server's projects. If they grow forever, every level adds a little power, the economy has to keep finding new bonuses, and an old server pulls ever further ahead of a new one. If they stop, the server needs something else to build.
+
+- **A. A max level, then projects turn cosmetic.** After the last level, projects add banners, statues, a fountain, seasonal decorations everyone sees. Example: the Forge maxes at level 5; the next project is a copper weathervane on its roof.
+- **B. No max.** Every level adds a small bonus forever, idle-game style. Example: Forge level 23 gives +1% speed.
+- **C. A max level, then a new place opens.** Finishing the valley's places unlocks a new place to build. Example: when every place reaches level 5, the road to the Lighthouse opens.
+
+**Lead's pick: A now, with C as later content.** A matches your endgame (cosmetics, housing and decorations) and keeps the balance in one known range the economy lab can test, so old and new servers stay comparable. New places can arrive later on top of the same system (G-6).
+
+**Answer (2026-10-29): A, with new places any time.** "Your take is good. We can open new places even before max level, but these shared upgrades should get increasingly difficult over time."
+
+Became: V-COM-11, a max level per place, each level's project bigger than the last, cosmetic projects after the max; new places can open as content at any time. G-7 accepted in part.
 
 ## Withdrawn
 

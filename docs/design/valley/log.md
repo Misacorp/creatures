@@ -53,3 +53,9 @@ Then the scrap list ([`scrap-list.md`](scrap-list.md)), from an agent's inventor
 **Done.** Recorded round 3: dungeon passes stacking to 3, each able to run one of the last 3 days' maps (Q7); the Valley Games as a weekly Wednesday fair with about 5 events (Q8); Bait as the one everyday currency for a player's own posts and the server's projects, to be renamed (Q9). `scrap-list.md` updated. The lead's check found no conflicts in these narrow answers, so no challenger agent ran. Asked round 4: Q10 catch-up for players who play less, Q11 the bonfire as a flat floor or a communal hearth, Q12 a max level for places.
 
 **Next.** Record round 4; then round 5 from the queue (currency-name, battlegrounds, sentries). After the queue, phase 1 moves on to writing posts and the bonfire in full with example numbers, and the panel with Pia.
+
+## 2026-10-29 (later still): round 4 answered, round 5 asked
+
+**Done.** Recorded round 4: catch-up toward the server's middle while present, no raid level sync (Q10, V-BON-6); the bonfire as a communal hearth with slight increments per level (Q11, V-BON-7); a max level per place, each level harder than the last, cosmetic projects after, new places any time (Q12, V-COM-11). The lead's check found no conflicts; the lab will check how a lone player fares at high place levels, since projects now grow per level. Asked round 5, the last of the queue: Q13 the currency's new name, Q14 the battlegrounds for Tide, Ember and Mire, Q15 whether sentries help the raid.
+
+**Next.** Record round 5. The queue is then empty except **targets** (waits on the lab), so phase 1 moves on: write posts and the bonfire in full with example numbers, run the panel with Pia, and bring what it raises to Misa as new rounds.

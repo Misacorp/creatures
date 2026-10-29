@@ -1,6 +1,6 @@
 # The commons: idling together for the whole server
 
-Status: **proposed**; one shared valley with personal and shared progress taking turns as the limit is **accepted** (Misa, round 1, Q1). Evidence: `docs/research/idle-job-posts.md` ("Co-op idle in a small server"), `docs/research/idle-coop-raids.md`.
+Status: **proposed**; accepted so far: one shared valley with personal and shared progress taking turns as the limit (round 1, Q1), gifts counting in full (round 2, Q4), a max level per place then cosmetic projects (round 4, Q12). Evidence: `docs/research/idle-job-posts.md` ("Co-op idle in a small server"), `docs/research/idle-coop-raids.md`.
 
 ## The question
 
@@ -25,6 +25,7 @@ The valley's places belong to the whole server. Each place has a **server level*
 - **V-COM-7** A newcomer joins a valley already built up and benefits from day one; the next project is open to them at once (F-7).
 - **V-COM-8** Server state is one row per project and one per player per project, updated on a gift (F-9); communal posts' output is computed lazily like any post.
 - **V-COM-10** Personal and shared progress take turns being the limit (round 1, Q1). A place's server level sets a per-player limit (anvils, scout seats, School seats); each player unlocks their own up to it with their own resources. On a new server the two alternate: a player outgrows the place, the server raises it, then the player's own resources are the limit again. Misa: "This hopefully motivates the player to push for the shared forge building upgrade."
+- **V-COM-11** Each place has a max level (round 4, Q12; example: 5). Each level's project is bigger than the last, so shared upgrades get increasingly difficult over time. After the max, projects are cosmetic: banners, statues, a weathervane, seasonal decorations everyone sees (G-7). New places can open at any time as content, not only after every place is maxed.
 - **V-COM-9** Optional, opt-in weekly goals (Hay Day's Derby without its leaderboard): a festival project with a cosmetic for everyone who took part, never a penalty for those who did not.
 
 ## Examples (to test in the economy lab)
@@ -44,5 +45,3 @@ The valley's places belong to the whole server. Each place has a **server level*
 - How often does a keystone turn up per server, so it feels special but arrives within a few weeks?
 
 ## Open questions (also in `../questions.md`)
-
-- Should places have a max level, after which projects become cosmetic (the endgame link to `later.md`)?

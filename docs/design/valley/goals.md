@@ -11,7 +11,7 @@ Status of each entry: **proposed** (the lead wrote it from Misa's words; Misa ha
 - **G-4, the server idles together** (accepted, round 1: Q1). One valley for the whole server: its places belong to the server, and each player's house is their own space. Players put their resources and creatures to work for the common good, and the places grow when everyone builds them up, through many shared resources or a rare find made for the purpose. Personal and shared progress take turns being the limit: a player outgrows a place, the server raises it, then the player's own progress is the limit again.
 - **G-5, the raid is defending the valley** (accepted, Misa 2026-10-29; `decisions.md`). A dangerous trial, framed and drawn as one, with a battleground per boss element.
 - **G-6, base systems first, content on top** (proposed, Misa 2026-10-29). Plan about a dozen weeks of a player's life in detail; more places, posts and content are added later on systems that are right.
-- **G-7, the endgame is cosmetic and personal** (idea, Misa 2026-10-29). Cosmetics, player housing and decorations are the long-term sink; gardening, fishing and stargazing are possible future posts or pastimes.
+- **G-7, the endgame is cosmetic and personal** (accepted in part, round 4, Q12: places stop at a max level and later projects are cosmetic; the rest is an idea, Misa 2026-10-29). Cosmetics, player housing and decorations are the long-term sink; gardening, fishing and stargazing are possible future posts or pastimes.
 
 ## Filters every idea must pass
 

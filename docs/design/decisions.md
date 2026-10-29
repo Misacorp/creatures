@@ -3510,3 +3510,11 @@ Misa's answers to the valley plan's round 3 (`docs/design/valley/questions.md`, 
 - **Dungeon passes (Q7).** "Keep the dungeon seeds for the last 3 days so the player can run the same content as everyone else did. We can basically give players "dungeon passes" that stack up when needed." One pass a day, stacking to 3; a pass runs today's map or one of the last 3 days' maps (the stored day seeds; every fight's seed is still a fresh crypto draw on entry). The streak becomes runs played in a week (lead's call).
 - **The Valley Games become a weekly fair (Q8)** every Wednesday, with about 5 events ("Increase the number of events to maybe 5 to compensate"), entries open all week and the Prize Stall the same day.
 - **Bait is the everyday currency for a player's own posts and the server's projects (Q9),** so every spend is a choice between "my valley" and "our valley". Leets keep paying it; the daily allowance builds up like an idle gain instead of paying for opening the game. "We don't have to keep calling it bait either": a new name is queued.
+
+## 2026-10-29: Valley: catch-up toward the server, a communal hearth, places with a max level (round 4)
+
+Misa's answers to the valley plan's round 4 (`docs/design/valley/questions.md`, Q10 to Q12).
+
+- **Players who play less catch up toward the server (Q10).** A player whose best team is behind the server's middle grows faster on days they visit, fading as they close in; no level sync in the raid (V-BON-6).
+- **The bonfire is a communal hearth (Q11).** The server raises its level like any place; each level adds a slight increase to every idle creature's growth ("This could be slightly incremental"); level 1 is the flat floor (V-BON-7).
+- **Places have a max level, then cosmetic projects (Q12).** "We can open new places even before max level, but these shared upgrades should get increasingly difficult over time." Each level's project is bigger than the last; after the max, projects add decorations everyone sees; new places are content that can open at any time (V-COM-11).
