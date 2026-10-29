@@ -503,7 +503,7 @@ function ArenaView({ state, setState, scale, wide }: ViewProps) {
           count={RAID_TEAM_SIZE}
           lit={team.length}
           size="md"
-          label={`${String(team.length)} of ${String(RAID_TEAM_SIZE)} placed`}
+          label={`Placed: ${String(team.length)} / ${String(RAID_TEAM_SIZE)}`}
         />
       </span>
     </ViewShell>
@@ -541,7 +541,7 @@ function CaveView({ state, setState, scale }: ViewProps) {
           count={d.attemptsAllowed}
           lit={d.attemptsAllowed - d.attemptsToday}
           size="md"
-          label={`${String(d.attemptsAllowed - d.attemptsToday)} of ${String(d.attemptsAllowed)} tries left today`}
+          label={`Tries left today: ${String(d.attemptsAllowed - d.attemptsToday)} / ${String(d.attemptsAllowed)}`}
         />
         <span
           class="pp-fact"
@@ -710,7 +710,7 @@ function ChestView({ state, setState, scale }: ViewProps) {
       <p
         class="pp-bag-count"
         role="img"
-        aria-label={`${String(world.items.length)} of 60 in the bag`}
+        aria-label={`In the bag: ${String(world.items.length)} / 60`}
       >
         {String(world.items.length)}/60
       </p>

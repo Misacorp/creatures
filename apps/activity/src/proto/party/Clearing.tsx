@@ -67,7 +67,7 @@ function stationState(
           </>
         ),
         says:
-          `${String(free)} of ${String(world.slots.total)} trip slots free.` +
+          `Trip slots free: ${String(free)} / ${String(world.slots.total)}.` +
           (homeCreature === null ? '' : ` ${creatureName(homeCreature)} is home with loot.`),
       };
     }
@@ -100,7 +100,7 @@ function stationState(
         ),
         says:
           ready === undefined
-            ? `${String(open.length)} of ${String(world.jobSlots.total)} anvils busy.`
+            ? `Anvils busy: ${String(open.length)} / ${String(world.jobSlots.total)}.`
             : `${gearName(ready.input.baseId ?? 'kelp-cap')} is ready.`,
       };
     }
@@ -119,7 +119,7 @@ function stationState(
         ),
         says: locked
           ? `${world.raid.boss.name}. Locked.`
-          : `${world.raid.boss.name}. ${String(placed)} of ${String(RAID_TEAM_SIZE)} placed.`,
+          : `${world.raid.boss.name}. Placed: ${String(placed)} / ${String(RAID_TEAM_SIZE)}.`,
       };
     }
     case 'cave':
@@ -157,7 +157,7 @@ function stationState(
             </span>
           </>
         ),
-        says: `${String(world.items.length)} of ${String(BAG_SIZE)} in the bag.${state.chestNew ? ' Something new.' : ''}`,
+        says: `In the bag: ${String(world.items.length)} / ${String(BAG_SIZE)}.${state.chestNew ? ' Something new.' : ''}`,
       };
     case 'lectern':
       return {
