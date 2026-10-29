@@ -94,6 +94,7 @@ export function HaulScene({
       id="haul"
       label={`${name}'s haul from ${view.place?.name ?? 'a trip'}`}
       onBack={done}
+      pinnedHeight={230}
       pinned={
         <div class="pp-haul-strip">
           {counts.length > 0 && (

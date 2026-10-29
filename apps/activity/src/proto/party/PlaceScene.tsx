@@ -42,6 +42,7 @@ export function PlaceScene({
   pinned,
   start,
   maxScale = 6,
+  pinnedHeight,
 }: {
   id: SceneId;
   label: string;
@@ -51,6 +52,8 @@ export function PlaceScene({
   /** Scene x to centre on when the scene pans. */
   start?: number;
   maxScale?: number;
+  /** The pinned strip's height (CSS px) when it is taller than one button (the haul's). */
+  pinnedHeight?: number;
 }) {
   const def = SCENES[id];
   const rootRef = useRef<HTMLElement | null>(null);
@@ -58,7 +61,7 @@ export function PlaceScene({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const size = useSize(rootRef);
   // The pinned strip (the main button) keeps its own room under the content.
-  const reserve = pinned === undefined || pinned === null ? 8 : 76;
+  const reserve = pinned === undefined || pinned === null ? 8 : (pinnedHeight ?? 76);
   const view = { width: size.width, height: Math.max(0, size.height - reserve - 48) };
   const s = fitScale(view, def, 3, maxScale);
   const pans = def.width * s > size.width;

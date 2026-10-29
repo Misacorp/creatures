@@ -293,7 +293,7 @@ function ForgeView({ state, setState }: ViewProps) {
             }
             if (i === madeAnvil && made !== null) {
               return (
-                <At key="made" g={g} x={a.x + 2} y={a.y - 12}>
+                <At key="made" g={g} x={a.x + 2} y={a.y - 10}>
                   <button
                     ref={madeRef}
                     type="button"

@@ -113,7 +113,6 @@ export const SCENES: Readonly<Record<SceneId, SceneDef>> = {
       // Past the content's edges (a wide window): stock and tools.
       { sprite: propSprite('crate'), x: ox - 46, y: oy + 80 },
       { sprite: propSprite('barrel'), x: ox - 24, y: oy + 76 },
-      { sprite: propSprite('bucket'), x: ox + 4, y: oy + 84 },
       { sprite: propSprite('barrel'), x: ox + 140, y: oy + 76 },
       { sprite: propSprite('crate'), x: ox + 162, y: oy + 80 },
       { sprite: roomProp('bookshelf'), x: ox - 40, y: oy + 36 },

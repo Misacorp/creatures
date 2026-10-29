@@ -415,8 +415,20 @@
   justify-items: center;
   gap: 6px;
   padding: 8px 12px 10px;
+  pointer-events: none;
+}
+
+.pp-pinned > * {
+  pointer-events: auto;
+}
+
+.pp-pinned .xp-list,
+.pp-pinned .pp-hint,
+.pp-pinned .pp-picks,
+.pp-haul-strip {
+  padding: 4px 8px;
   background: rgb(var(--ink-rgb) / 88%);
-  box-shadow: 0 -3px 0 var(--ink);
+  box-shadow: 0 0 0 2px var(--ink);
 }
 
 .pp-pinned .action-btn {
