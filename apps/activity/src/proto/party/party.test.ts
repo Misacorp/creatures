@@ -1,8 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { RAID_TEAM_SIZE, TOUR, creatureOf, initialWorld, raidTeamIds, worldAtStep } from '../world';
-import { greyOf } from './art';
 import { campOrder, creatureBadge, inOrder, pipsLeft } from './camp-state';
-import { artScale, campColumns, fitScale, lPath, trailDashes, WIDE_PX } from './layout';
+import { dropSpot } from './HaulScene';
+import { sceneOrigin } from './PlaceScene';
+import { placeRaidAt } from './raid-place';
+import {
+  centreOffset,
+  fitScale,
+  overlaps,
+  trayColumns,
+  tuftSpots,
+  worldLayout,
+} from './world-layout';
 import {
   closeView,
   enterGames,
@@ -126,46 +135,78 @@ describe('stationVerdict', () => {
   });
 });
 
-describe('layout math', () => {
-  it('picks the art scale by width', () => {
-    expect(artScale(390)).toBe(2);
-    expect(artScale(360)).toBe(2);
-    expect(artScale(WIDE_PX)).toBe(3);
+describe('world layout', () => {
+  for (const mode of ['phone', 'wide'] as const) {
+    const layout = worldLayout(mode);
+    it(`${mode}: every station is inside the world, none overlap, none on the road`, () => {
+      const boxes = Object.values(layout.stations);
+      expect(boxes).toHaveLength(8);
+      for (const b of boxes) {
+        expect(b.x).toBeGreaterThanOrEqual(0);
+        expect(b.x + b.width).toBeLessThanOrEqual(layout.width);
+        expect(b.y + b.height).toBeLessThanOrEqual(layout.height);
+        expect(overlaps(b, layout.road)).toBe(false);
+      }
+      for (const [i, a] of boxes.entries()) {
+        for (const c of boxes.slice(i + 1)) expect(overlaps(a, c)).toBe(false);
+      }
+    });
+  }
+
+  it('fits one whole scale for the window (3 on a phone, 5 on a desktop)', () => {
+    expect(fitScale({ width: 390, height: 548 }, worldLayout('phone'), 2, 6)).toBe(3);
+    expect(fitScale({ width: 360, height: 440 }, worldLayout('phone'), 2, 6)).toBe(2);
+    expect(fitScale({ width: 1440, height: 690 }, worldLayout('wide'), 2, 6)).toBe(5);
+    expect(fitScale({ width: 10, height: 10 }, worldLayout('wide'), 2, 6)).toBe(2);
   });
 
-  it('counts the camp columns', () => {
-    expect(campColumns(10, 2)).toBe(5);
-    expect(campColumns(11, 2)).toBe(6);
-    expect(campColumns(0, 2)).toBe(1);
-    expect(campColumns(3, 0)).toBe(3);
+  it('centres the world on whole pixels', () => {
+    expect(centreOffset({ width: 390, height: 548 }, { width: 128, height: 176 }, 3)).toEqual({
+      x: 1,
+      y: 3,
+    });
   });
 
-  it('fits a whole-number scale', () => {
-    expect(fitScale(64, 200, 2, 6)).toBe(3);
-    expect(fitScale(64, 10, 2, 6)).toBe(2);
-    expect(fitScale(10, 1000, 2, 6)).toBe(6);
+  it('scatters tufts off the stations and the road, the same every time', () => {
+    const avoid = [{ x: 0, y: 0, width: 50, height: 50 }];
+    const spots = tuftSpots(200, 100, avoid);
+    expect(spots.length).toBeGreaterThan(5);
+    expect(spots.some((p) => p.x < 52 && p.y < 52)).toBe(false);
+    expect(tuftSpots(200, 100, avoid)).toEqual(spots);
   });
 
-  it('draws an L-shaped trail along x, then y, on whole pixels', () => {
-    expect(lPath({ x: 0, y: 0 }, { x: 6, y: 6 }, 3)).toEqual([
-      { x: 0, y: 0 },
-      { x: 3, y: 0 },
-      { x: 6, y: 0 },
-      { x: 6, y: 3 },
-      { x: 6, y: 6 },
-    ]);
-    expect(lPath({ x: 5, y: 5 }, { x: 5, y: -1 }, 3)).toEqual([
-      { x: 5, y: 5 },
-      { x: 5, y: 2 },
-      { x: 5, y: -1 },
-    ]);
-    expect(trailDashes([{ x: 3, y: 0 }], { x: 0, y: 0 }, 3)).toHaveLength(2);
+  it('counts the tray columns that fit', () => {
+    expect(trayColumns(374, 70, 4)).toBe(5);
+    expect(trayColumns(10, 70, 4)).toBe(1);
   });
 
-  it('greys a colour to its lightness', () => {
-    expect(greyOf('#000000')).toBe('#00000a');
-    expect(greyOf('#ffffff')).toBe('#f9fbff');
-    expect(greyOf('not a colour')).toBe('not a colour');
+  it('places a scene under the back button, centred, on a whole tile', () => {
+    expect(sceneOrigin({ width: 390, height: 500 }, { width: 128, height: 118 }, 3, false)).toEqual(
+      {
+        x: 1,
+        y: 16,
+      },
+    );
+    expect(sceneOrigin({ width: 390, height: 500 }, { width: 288, height: 72 }, 3, true).x).toBe(0);
+  });
+
+  it('drops the haul’s finds left and right of the sack in turn', () => {
+    expect(dropSpot(0).x).toBeGreaterThan(58);
+    expect(dropSpot(1).x).toBeLessThan(58);
+    expect(dropSpot(2).x).toBeGreaterThan(dropSpot(0).x);
+  });
+});
+
+describe('placeRaidAt', () => {
+  it('places on the tapped seat when it is empty, else on the first empty one', () => {
+    const world = worldAtStep(5);
+    const id = TOUR.raidCreatureIds[0] ?? '';
+    const at8 = placeRaidAt(world, id, 8);
+    expect(at8.raid.party?.row.find((s) => s.slot === 8)?.creature?.creatureId).toBe(id);
+    expect(at8.raid.you.team?.creatures[0]?.slot).toBe(8);
+    const taken = placeRaidAt(world, id, 3); // Aino's seat
+    expect(taken.raid.party?.row.find((s) => s.slot === 0)?.creature?.creatureId).toBe(id);
+    expect(placeRaidAt(world, id, null).raid.party?.row[0]?.creature?.creatureId).toBe(id);
   });
 });
 
@@ -178,6 +219,7 @@ describe('partyAtStep', () => {
     expect(partyAtStep(4).moment?.kind).toBe('crafted');
     expect(raidTeamIds(partyAtStep(5).world)).toHaveLength(2);
     expect(partyAtStep(6).moment?.kind).toBe('evolve');
+    expect(partyAtStep(6).open).toBe('house');
     expect(partyAtStep(7).ask).toBe('cave');
   });
 });

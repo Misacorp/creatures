@@ -70,6 +70,10 @@ export interface PartyState {
   fair: { event: string | null; entries: Record<string, string[]> };
   /** The new Journal page was read. */
   readJournal: boolean;
+  /** The arena seat tapped while asking the camp for a creature. */
+  seat: number | null;
+  /** The form picked in the living room, before the evolution is confirmed. */
+  form: string | null;
   /** The last thing that happened, for the live region. */
   said: string;
 }
@@ -95,6 +99,8 @@ function base(world: ProtoWorld): PartyState {
     chestNew: false,
     readJournal: false,
     fair: { event: null, entries: {} },
+    seat: null,
+    form: null,
     said: '',
   };
 }
@@ -145,12 +151,17 @@ export function partyAtStep(step: number): PartyState {
       for (const id of [first, second]) if (id !== undefined) world = placeRaid(world, id);
       return { ...start, world, open: 'arena', held: third ?? null };
     }
-    case 6:
+    case 6: {
+      // In the living room: Cindle on the rug between its two forms, the main one picked, confirm on screen.
+      const evo = start.world.creatures.find((c) => c.id === TOUR.evolveId)?.evolution;
       return {
         ...start,
         held: TOUR.evolveId,
+        open: 'house',
         moment: { kind: 'evolve', creatureId: TOUR.evolveId },
+        form: evo?.toSpecies ?? null,
       };
+    }
     case 7:
       // The cave mouth: today's run, one in the team, the empty spots asking the camp.
       return { ...start, open: 'cave', caveTeam: [TOUR.evolveId], ask: 'cave' };

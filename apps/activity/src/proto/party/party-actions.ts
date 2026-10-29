@@ -13,7 +13,6 @@ import {
   creatureOf,
   evolve,
   jobsReady,
-  placeRaid,
   raidTeamIds,
   sendTrip,
   startJob,
@@ -21,6 +20,7 @@ import {
 } from '../world';
 import { CAVE_TEAM_SIZE, nameOf, type PartyState, type StationId } from './party-state';
 import { placesFor, stationDef, stationVerdict } from './stations';
+import { placeRaidAt } from './raid-place';
 
 /** Picks a creature up (or puts it down when it is the one held). */
 export function pick(state: PartyState, id: string): PartyState {
@@ -57,7 +57,7 @@ export function putDown(state: PartyState): PartyState {
 
 /** Closes the open station view (and whatever moment), back to the clearing. */
 export function closeView(state: PartyState): PartyState {
-  return { ...state, open: null, ask: null, moment: null, forgeBase: null };
+  return { ...state, open: null, ask: null, moment: null, forgeBase: null, seat: null, form: null };
 }
 
 /** A tap on a station: with a creature held, the station takes it (when it can); else its view opens. */
@@ -113,11 +113,19 @@ export function sendToStation(state: PartyState, station: StationId): PartyState
       };
     }
     case 'arena': {
-      const world = placeRaid(state.world, id);
+      const world = placeRaidAt(state.world, id, state.seat);
       // Target first: the camp stays lit until the three spots are full.
       const full = raidTeamIds(world).length >= RAID_TEAM_SIZE;
       const ask = state.ask === 'arena' && !full ? state.ask : null;
-      return { ...state, world, held: null, open: 'arena', ask, said: `${name} placed.` };
+      return {
+        ...state,
+        world,
+        held: null,
+        open: 'arena',
+        ask,
+        seat: null,
+        said: `${name} placed.`,
+      };
     }
     case 'cave': {
       const caveTeam = [...state.caveTeam, id].slice(0, CAVE_TEAM_SIZE);

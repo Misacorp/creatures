@@ -1,31 +1,30 @@
 import type { ComponentChildren, JSX } from 'preact';
-import { greyed, stationArt } from './art';
+import { useEffect, useMemo, useRef } from 'preact/hooks';
+import { cssVars } from '../../css-vars';
 import { ItemSprite } from '../../GearArt';
 import { creatureName } from '../../game';
+import { gearName } from '../../gear-view';
 import { glyphOrUnknown } from '../../glyphs';
+import { TILE } from '../../games/art/tiles';
 import { Sprite } from '../../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../../sprites/creature-sprites';
 import { PipRow } from '../../ui/PipRow';
-import { gearName } from '../../gear-view';
 import { RAID_TEAM_SIZE, creatureOf, jobsReady, raidTeamIds, tripsHome } from '../world';
 import { pipsLeft } from './camp-state';
+import { paint } from './paint';
 import type { PartyState, StationId } from './party-state';
-import { Ground, PixelScene } from './Scene';
 import { STATIONS, stationVerdict, type Verdict } from './stations';
+import { useSize } from './use-size';
+import { clearingPlacements } from './world-draw';
+import { centreOffset, fitScale, worldLayout, type Mode } from './world-layout';
 
 const BAG_SIZE = 60;
 
-function Face({ species, class: extra }: { species: string; class?: string }) {
-  return (
-    <Sprite
-      sprite={creatureSpriteOrFallback(species)}
-      scale={2}
-      class={extra === undefined ? 'pp-face' : `pp-face ${extra}`}
-    />
-  );
+function Face({ species, scale }: { species: string; scale: number }) {
+  return <Sprite sprite={creatureSpriteOrFallback(species)} scale={scale} class="pp-face" />;
 }
 
-function Glyph({ id, scale = 2, class: extra }: { id: string; scale?: number; class?: string }) {
+function Glyph({ id, scale, class: extra }: { id: string; scale: number; class?: string }) {
   return (
     <Sprite
       sprite={glyphOrUnknown(id)}
@@ -35,10 +34,11 @@ function Glyph({ id, scale = 2, class: extra }: { id: string; scale?: number; cl
   );
 }
 
-/** What a station shows on its art, and the sentence that says it. */
+/** What a station shows on its art (marks at the mark scale `m`), and the sentence that says it. */
 function stationState(
   id: StationId,
   state: PartyState,
+  m: number,
 ): { marks: ComponentChildren; says: string } {
   const { world } = state;
   switch (id) {
@@ -49,19 +49,15 @@ function stationState(
       return {
         marks: (
           <>
-            <span class="pp-flags">
-              {Array.from({ length: world.slots.total }, (_, i) => (
-                <Sprite
-                  key={i}
-                  sprite={i < free ? glyphOrUnknown('flag') : greyed(glyphOrUnknown('flag'))}
-                  scale={2}
-                />
+            <span class="pp-mk pp-mk-tl" role="img" aria-label={`Free trip slots: ${String(free)}`}>
+              {Array.from({ length: free }, (_, i) => (
+                <Glyph key={i} id="flag" scale={m} />
               ))}
             </span>
             {homeCreature !== null && (
-              <span class="pp-sign-face">
-                <Face species={homeCreature.species} />
-                <Glyph id="satchel" />
+              <span class="pp-mk pp-mk-br pp-bob">
+                <Face species={homeCreature.species} scale={m} />
+                <Glyph id="satchel" scale={m} />
               </span>
             )}
           </>
@@ -74,30 +70,21 @@ function stationState(
     case 'forge': {
       const open = world.jobs.filter((j) => j.status !== 'claimed');
       const ready = jobsReady(world)[0];
-      const anvils = Array.from({ length: world.jobSlots.total }, (_, i) => open[i] ?? null);
+      const running = open.find((j) => j.status === 'running');
+      const shown = ready ?? running;
       return {
-        marks: (
-          <span class="pp-anvils">
-            {anvils.map((job, i) =>
-              job === null ? (
-                <span key={i} class="pp-anvil is-empty">
-                  <Sprite sprite={greyed(glyphOrUnknown('anvil'))} scale={3} />
-                </span>
-              ) : (
-                <span key={i} class="pp-anvil">
-                  {job.status === 'ready' && job.input.baseId !== undefined && (
-                    <ItemSprite baseId={job.input.baseId} scale={2} class="pp-float" />
-                  )}
-                  <Glyph id="anvil" scale={3} />
-                  <Face species={creatureOf(world, job.creatureId).species} class="pp-worker" />
-                  {job.status !== 'ready' && (
-                    <PipRow count={4} lit={pipsLeft(job.startedAt, job.endsAt, world.now)} />
-                  )}
-                </span>
-              ),
-            )}
-          </span>
-        ),
+        marks:
+          shown === undefined ? null : (
+            <span class="pp-mk pp-mk-br">
+              {ready !== undefined && ready.input.baseId !== undefined && (
+                <ItemSprite baseId={ready.input.baseId} scale={m} class="pp-bob pp-anvil-item" />
+              )}
+              <Face species={creatureOf(world, shown.creatureId).species} scale={m} />
+              {ready === undefined && (
+                <PipRow count={4} lit={pipsLeft(shown.startedAt, shown.endsAt, world.now)} />
+              )}
+            </span>
+          ),
         says:
           ready === undefined
             ? `Anvils busy: ${String(open.length)} / ${String(world.jobSlots.total)}.`
@@ -109,9 +96,9 @@ function stationState(
       const locked = world.raid.party === null || !world.raid.you.canEdit;
       return {
         marks: (
-          <span class="pp-arena-pips">
+          <span class="pp-mk pp-mk-b">
             {locked ? (
-              <Glyph id="lock" />
+              <Glyph id="lock" scale={m} />
             ) : (
               <PipRow count={RAID_TEAM_SIZE} lit={placed} size="md" />
             )}
@@ -124,65 +111,55 @@ function stationState(
     }
     case 'cave':
       return {
-        marks: (
-          <span class={world.dungeon.canRun ? 'pp-door is-open' : 'pp-door'}>
-            <Glyph id={world.dungeon.canRun ? 'map-door' : 'check'} scale={3} />
+        marks: world.dungeon.canRun ? null : (
+          <span class="pp-mk pp-mk-c">
+            <Glyph id="check" scale={m} />
           </span>
         ),
         says: world.dungeon.canRun ? 'Today’s run is open.' : 'Done for today.',
       };
     case 'house': {
       const lounger = state.lounger === null ? null : creatureOf(world, state.lounger);
-      const others = world.residents.filter((r) => r.name !== 'You').length;
       return {
-        marks: (
-          <>
-            {lounger !== null && <Face species={lounger.species} class="pp-lounger" />}
-            <span class="pp-count">{String(others)}</span>
-          </>
-        ),
-        says:
-          (lounger === null ? 'Nobody lounging.' : `${creatureName(lounger)} lounges.`) +
-          ` ${String(others)} friends here.`,
+        marks:
+          lounger === null ? null : (
+            <span class="pp-mk pp-mk-window">
+              <Face species={lounger.species} scale={Math.max(1, m - 1)} />
+            </span>
+          ),
+        says: lounger === null ? 'Nobody lounging.' : `${creatureName(lounger)} lounges.`,
       };
     }
     case 'chest':
       return {
-        marks: (
-          <>
-            <Glyph id="map-cache" scale={5} class="pp-chest" />
-            {state.chestNew && <Glyph id="gift" class="pp-gift" />}
-            <span class="pp-count">
-              {String(world.items.length)}/{String(BAG_SIZE)}
-            </span>
-          </>
-        ),
+        marks: state.chestNew ? (
+          <span class="pp-mk pp-mk-tr pp-bob">
+            <Glyph id="gift" scale={m} />
+          </span>
+        ) : null,
         says: `In the bag: ${String(world.items.length)} / ${String(BAG_SIZE)}.${state.chestNew ? ' Something new.' : ''}`,
       };
     case 'lectern':
       return {
-        marks: (
-          <>
-            <Glyph id="journal" scale={3} class="pp-book" />
-            {!state.readJournal && (
-              <span class="pp-bub pp-bub-say pp-station-bang">
-                <span class="pp-bang">!</span>
-              </span>
-            )}
-          </>
+        marks: state.readJournal ? null : (
+          <span class="pp-mk pp-mk-tr">
+            <span class="pp-bub pp-bub-say">
+              <span class="pp-bang">!</span>
+            </span>
+          </span>
         ),
         says: state.readJournal ? 'The Journal.' : 'The Journal. A new page.',
       };
     case 'fair': {
       const events = world.games.next.open ? world.games.next.lineup.length : 0;
       return {
-        marks: (
-          <span class="pp-trophy">
-            <Glyph id="trophy" scale={2} />
-            <span class="pp-count">{String(events)}</span>
-          </span>
-        ),
-        says: events === 0 ? 'The Games are closed.' : `${String(events)} Games events open.`,
+        marks:
+          events === 0 ? null : (
+            <span class="pp-mk pp-mk-tr">
+              <Glyph id="trophy" scale={m} />
+            </span>
+          ),
+        says: events === 0 ? 'The Games are closed.' : `Games events open: ${String(events)}.`,
       };
     }
   }
@@ -197,94 +174,90 @@ function stationLabel(name: string, says: string, verdict: Verdict | null): stri
     : `${name}, unavailable: ${verdict.word.toLowerCase()}. ${says}`;
 }
 
-export function Station({
-  id,
-  name,
-  state,
-  scale,
-  over,
-  shaking,
-  onTap,
-}: {
-  id: StationId;
-  name: string;
-  state: PartyState;
-  scale: number;
-  /** A carried creature is over it. */
-  over: boolean;
-  shaking: boolean;
-  onTap: () => void;
-}) {
-  const verdict = state.held === null ? null : stationVerdict(id, state.held, state);
-  const { marks, says } = stationState(id, state);
-  const classes = [
-    'pp-station',
-    `pp-st-${id}`,
-    verdict?.ok === true ? 'is-lit' : '',
-    verdict !== null && !verdict.ok ? 'is-dim' : '',
-    over ? 'is-over' : '',
-    shaking ? 'is-shake' : '',
-  ]
-    .filter((c) => c !== '')
-    .join(' ');
-  return (
-    <button
-      type="button"
-      class={classes}
-      data-station={id}
-      aria-label={stationLabel(name, says, verdict)}
-      onClick={onTap}
-    >
-      <span class="pp-st-art">
-        <PixelScene art={stationArt(id, state.world.raid.boss.id)} scale={scale} />
-        <span class="pp-st-marks">{marks}</span>
-        {verdict?.ok === true && <i class="pp-arrow" aria-hidden="true" />}
-      </span>
-      <span class="pp-st-name">{name}</span>
-      {verdict !== null && !verdict.ok && verdict.word !== null && (
-        <span class="pp-word pp-st-word">{verdict.word}</span>
-      )}
-    </button>
-  );
-}
-
-/** The clearing: the eight stations on the grass, the trails between them and the camp fire. */
+/** The clearing: one pixel scene of grass, a road and the eight places, scaled to fill the field. */
 export function Clearing({
   state,
-  scale,
+  mode,
   over,
   shake,
   onTap,
   children,
 }: {
   state: PartyState;
-  scale: number;
+  mode: Mode;
   over: StationId | null;
   shake: StationId | null;
   onTap: (id: StationId) => void;
-  /** Laid over the clearing (a haul on the grass). */
   children?: ComponentChildren;
 }): JSX.Element {
+  const ref = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const size = useSize(ref);
+  const layout = worldLayout(mode);
+  const s = fitScale(size, layout, 2, 6);
+  const off = centreOffset(size, layout, s);
+  const cols = Math.ceil(size.width / s / TILE) + 1;
+  const rows = Math.ceil(size.height / s / TILE) + 1;
+  const bossId = state.world.raid.boss.id;
+  const placements = useMemo(
+    () => clearingPlacements(layout, cols, rows, off.x, off.y, bossId),
+    [mode, cols, rows, off.x, off.y, bossId],
+  );
+  useEffect(() => {
+    const ctx = canvasRef.current?.getContext('2d');
+    if (ctx) paint(ctx, placements, s);
+  }, [placements, s]);
+  const m = Math.max(2, s - 1);
   return (
-    <div class="pp-clearing">
-      <Ground scale={scale} version={`${String(scale)}`} />
-      <span class="pp-hub" data-hub aria-hidden="true" />
-      <div class="pp-stations">
-        {STATIONS.map((s) => (
-          <Station
-            key={s.id}
-            id={s.id}
-            name={s.name}
-            state={state}
-            scale={scale}
-            over={over === s.id}
-            shaking={shake === s.id}
-            onTap={() => {
-              onTap(s.id);
-            }}
-          />
-        ))}
-      </div>
+    <div ref={ref} class="pp-clearing">
+      <canvas
+        ref={canvasRef}
+        class="pp-world"
+        width={cols * TILE * s}
+        height={rows * TILE * s}
+        aria-hidden="true"
+      />
+      {size.width > 0 &&
+        STATIONS.map((st) => {
+          const box = layout.stations[st.id];
+          const verdict = state.held === null ? null : stationVerdict(st.id, state.held, state);
+          const { marks, says } = stationState(st.id, state, m);
+          const classes = [
+            'pp-station',
+            `pp-st-${st.id}`,
+            verdict?.ok === true ? 'is-lit' : '',
+            verdict !== null && !verdict.ok ? 'is-dim' : '',
+            over === st.id ? 'is-over' : '',
+            shake === st.id ? 'is-shake' : '',
+          ]
+            .filter((c) => c !== '')
+            .join(' ');
+          return (
+            <button
+              key={st.id}
+              type="button"
+              class={classes}
+              data-station={st.id}
+              aria-label={stationLabel(st.name, says, verdict)}
+              ref={cssVars({
+                '--x': `${String((box.x + off.x) * s)}px`,
+                '--y': `${String((box.y + off.y) * s)}px`,
+                '--w': `${String(box.width * s)}px`,
+                '--h': `${String(box.height * s)}px`,
+              })}
+              onClick={() => {
+                onTap(st.id);
+              }}
+            >
+              <span class="pp-st-marks">{marks}</span>
+              {verdict?.ok === true && <i class="pp-arrow" aria-hidden="true" />}
+              <span class="pp-plate">{st.name}</span>
+              {verdict !== null && !verdict.ok && verdict.word !== null && (
+                <span class="pp-word pp-st-word">{verdict.word}</span>
+              )}
+            </button>
+          );
+        })}
       {children}
     </div>
   );

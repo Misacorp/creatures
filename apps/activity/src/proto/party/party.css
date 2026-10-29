@@ -1,15 +1,12 @@
 /*
-  The party prototype (`src/proto/party/`, staging only): a clearing of stations over a camp of creatures.
-  Every class starts with `pp-`. Pixel rules: hard edges, no radius, no blur or glow, stepped motion, and
-  everything still under prefers-reduced-motion (the bottom of the file).
+  The party prototype (`src/proto/party/`, staging only): the clearing (or a place's scene) over a camp of
+  creatures. Every class starts with `pp-`. Pixel rules: hard edges, no radius, no blur or glow, stepped
+  motion, and everything still under prefers-reduced-motion (the end of the file).
 */
 
 .pp {
-  --pp-grass-ink: #1f3a24;
   --pp-dirt: #4a3020;
   --pp-dirt-hi: #6b4428;
-  --pp-stone: #5d5684;
-  --pp-stone-hi: #7d76a8;
   --pp-cell-w: 64px;
   --pp-cell-h: 88px;
 
@@ -31,8 +28,8 @@
 }
 
 .pp.is-wide {
-  --pp-cell-w: 72px;
-  --pp-cell-h: 96px;
+  --pp-cell-w: 96px;
+  --pp-cell-h: 150px;
 }
 
 .pp button {
@@ -44,21 +41,30 @@
   :is(
     .pp-station,
     .pp-mon,
-    .pp-sign,
-    .pp-big-anvil,
-    .pp-piece,
     .pp-hud-btn,
     .pp-x,
+    .pp-anvil-btn,
+    .pp-bp,
+    .pp-form,
+    .pp-piece,
     .pp-event,
-    .pp-team-slot,
-    .pp-pedestal
+    .pp-find
   ) {
   min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
+  color: var(--bone);
 }
 
-.pp :is(.pp-station, .pp-mon, .pp-sign, .pp-big-anvil, .pp-piece):hover:not(:disabled) {
+.pp :is(.pp-station, .pp-mon, .pp-anvil-btn, .pp-seat, .pp-form, .pp-piece):hover:not(:disabled) {
   filter: none;
+}
+
+.pp canvas {
+  image-rendering: pixelated;
 }
 
 /* --- HUD --- */
@@ -82,11 +88,6 @@
   place-items: center;
   min-width: 40px;
   height: 36px;
-  padding: 0 4px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--bone);
 }
 
 .pp-hud .currency-pile {
@@ -118,11 +119,6 @@
 
 .pp-places button {
   width: 100%;
-  min-height: 2.25rem;
-  border: 0;
-  border-radius: 0;
-  background: var(--dusk-2);
-  color: var(--bone);
   font-size: 1rem;
   text-align: left;
 }
@@ -133,157 +129,94 @@
   font-size: var(--fs-small);
 }
 
-/* --- Layout --- */
-
-.pp-layout {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-}
-
-.pp-layout.wide.with-panel {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 25rem;
-  gap: 0;
-  align-items: stretch;
-}
-
-.pp-main {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-}
+/* --- The field: the clearing or a place --- */
 
 .pp-field {
   position: relative;
   flex: 1;
   min-height: 0;
-  overflow: hidden auto;
-  scrollbar-width: none;
+  overflow: hidden;
 }
 
-.pp-panel.side-panel {
-  position: static;
-  max-height: none;
-  height: 100%;
-  margin: 0;
-  overflow-y: auto;
-  border-radius: 0;
-}
-
-/* --- The clearing --- */
-
-.pp-clearing {
+.pp-clearing,
+.pp-place {
   position: relative;
-  min-height: 100%;
+  width: 100%;
   height: 100%;
+  overflow: hidden;
 }
 
-.pp-ground {
+.pp-world {
   position: absolute;
   top: 0;
   left: 0;
-  image-rendering: pixelated;
-}
-
-.pp-hub {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 1px;
-  height: 1px;
-}
-
-.pp-stations {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: repeat(4, minmax(100px, 1fr));
-  height: 100%;
-  padding: 4px;
-}
-
-.is-wide .pp-stations {
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(2, minmax(200px, 1fr));
-  column-gap: 1rem;
-  padding: 1.5rem 2rem;
-}
-
-.pp-scene {
   display: block;
-  image-rendering: pixelated;
 }
 
-.pp-station {
-  position: relative;
-  display: grid;
-  grid-template-rows: 1fr auto;
-  justify-items: center;
-  align-items: end;
-  min-width: 0;
-  min-height: 96px;
-  padding: 2px 4px 4px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
+/* A short name plate: bone on an ink plate. */
+.pp-plate {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  background: var(--ink);
   color: var(--bone);
-  cursor: pointer;
-}
-
-.pp-st-art {
-  position: relative;
-  display: block;
-}
-
-.pp-st-marks {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.pp-st-name {
-  max-width: 100%;
-  overflow: hidden;
-  font-size: 1.125rem;
-  line-height: 1.1;
-  text-overflow: ellipsis;
-  text-shadow: var(--ink-outline-thin);
+  font-size: 1rem;
+  line-height: 1.25rem;
   white-space: nowrap;
 }
 
-.is-wide .pp-st-name {
-  font-size: 1.375rem;
+.is-wide .pp-plate {
+  font-size: 1.25rem;
+  line-height: 1.5rem;
+}
+
+/* --- Stations --- */
+
+.pp-station {
+  position: absolute;
+  top: var(--y);
+  left: var(--x);
+  width: var(--w);
+  height: var(--h);
+  cursor: pointer;
+}
+
+.pp-station > .pp-plate {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  z-index: 1;
+  transform: translateX(-50%);
 }
 
 .pp-station:focus-visible {
+  outline: 3px solid var(--bone);
+  outline-offset: 3px;
+}
+
+.pp-station.is-lit {
   outline: 3px solid var(--gold);
-  outline-offset: -3px;
+  outline-offset: 3px;
 }
 
-/* Lit: a hard gold outline round the art, and an arrow stepping over it. */
-.pp-station.is-lit .pp-scene,
-.pp-station.is-lit .pp-chest {
-  filter: drop-shadow(2px 0 0 var(--gold)) drop-shadow(-2px 0 0 var(--gold))
-    drop-shadow(0 2px 0 var(--gold)) drop-shadow(0 -2px 0 var(--gold));
+.pp-station.is-lit > .pp-plate {
+  background: var(--gold);
+  color: var(--ink);
 }
 
-.pp-station.is-lit .pp-st-name {
-  color: var(--gold);
+.pp-station.is-dim::after {
+  position: absolute;
+  inset: -4px;
+  background: rgb(var(--ink-rgb) / 55%);
+  content: '';
 }
 
-.pp-station.is-dim .pp-st-art,
-.pp-station.is-dim .pp-st-name {
-  opacity: 0.45;
-}
-
-.pp-station.is-over .pp-st-art {
+.pp-station.is-over {
   transform: translateY(-3px);
 }
 
-.pp-station.is-shake .pp-st-art {
+.pp-station.is-shake {
   animation: pp-shake 450ms steps(6) 1;
 }
 
@@ -303,11 +236,62 @@
   }
 }
 
+.pp-st-marks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.pp-mk {
+  position: absolute;
+  display: flex;
+  align-items: end;
+  gap: 2px;
+}
+
+.pp-mk-tl {
+  top: 4%;
+  left: 42%;
+}
+
+.pp-mk-tr {
+  top: -10px;
+  right: -8px;
+}
+
+.pp-mk-br {
+  right: -10px;
+  bottom: 4px;
+}
+
+.pp-mk-b {
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.pp-mk-c {
+  top: 40%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.pp-mk-window {
+  top: 52%;
+  left: 14%;
+}
+
+.pp-anvil-item {
+  align-self: start;
+  margin-top: -10px;
+}
+
 /* The down-arrow: a stepped triangle of 3 px rows. */
 .pp-arrow {
   position: absolute;
-  top: -14px;
+  top: -16px;
   left: 50%;
+  z-index: 2;
   width: 15px;
   height: 9px;
   margin-left: -7px;
@@ -351,73 +335,12 @@
 }
 
 .pp-st-word {
-  top: 38%;
+  top: 30%;
   left: 50%;
   transform: translateX(-50%);
 }
 
-/* Station marks. */
-.pp-flags {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: flex;
-  gap: 2px;
-}
-
-.pp-sign-face {
-  position: absolute;
-  right: -6px;
-  bottom: 4px;
-  display: flex;
-  align-items: end;
-}
-
-.pp-face,
-.pp-st-marks canvas {
-  image-rendering: pixelated;
-}
-
-.pp-anvils {
-  position: absolute;
-  right: -28px;
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.is-wide .pp-anvils {
-  right: -48px;
-}
-
-.pp-anvil {
-  position: relative;
-  display: flex;
-  align-items: end;
-}
-
-.pp-anvil .pp-float {
-  position: absolute;
-  top: -22px;
-  left: 2px;
-}
-
-.pp-anvil .pips {
-  position: absolute;
-  bottom: -6px;
-  left: 0;
-}
-
-.pp-worker {
-  margin-left: -4px;
-}
-
-.pp-anvil.is-empty {
-  opacity: 0.6;
-}
-
-.pp-float {
+.pp-bob {
   animation: pp-bob 1s steps(1) infinite;
 }
 
@@ -427,211 +350,718 @@
   }
 }
 
-.pp-arena-pips {
+/* --- Places --- */
+
+.pp-pan {
   position: absolute;
-  bottom: -2px;
-  left: 50%;
+  inset: 0;
+  overflow: hidden;
+}
+
+.pp-pan.pans {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pp-stage {
+  position: relative;
+  width: var(--w);
+  height: var(--h);
+}
+
+.pp-at {
+  position: absolute;
+  top: var(--y);
+  left: var(--x);
+  line-height: 0;
+}
+
+.pp-centre {
   transform: translateX(-50%);
 }
 
-.pp-arena-pips .pips:not(:has(.on)) i {
-  animation: pp-blink 600ms steps(1) 2;
+.pp-back {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 12px 0 10px;
+  border: 0;
+  border-radius: 0;
+  background: var(--ink);
+  box-shadow: 0 0 0 2px var(--line);
+  color: var(--bone);
+  font-size: 1.125rem;
 }
 
-@keyframes pp-blink {
+.pp-back svg {
+  width: 8px;
+  height: 14px;
+  fill: var(--bone);
+}
+
+/* The one main button of a place, pinned at the bottom of the field: always on screen. */
+.pp-pinned {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 4;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 8px 12px 10px;
+  background: rgb(var(--ink-rgb) / 88%);
+  box-shadow: 0 -3px 0 var(--ink);
+}
+
+.pp-pinned .action-btn {
+  min-width: min(100%, 18rem);
+}
+
+.pp-hint {
+  margin: 0;
+  color: var(--haze);
+  font-size: 1rem;
+}
+
+/* Little choices (lengths, supplies). */
+.pp-picks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 12px;
+}
+
+.pp-lengths,
+.pp-supplies {
+  display: flex;
+  gap: 4px;
+}
+
+.pp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 0;
+  background: var(--dusk-2);
+  box-shadow: 0 0 0 2px var(--ink);
+  color: var(--bone);
+  font-size: 1.125rem;
+}
+
+/* Selected: a thick frame and a fill. */
+.pp-chip.is-on {
+  background: var(--gold);
+  box-shadow:
+    0 0 0 2px var(--ink),
+    inset 0 0 0 3px var(--gold-shade);
+  color: var(--ink);
+}
+
+/* Road: the world map fills the field. */
+.pp-map {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  scrollbar-width: none;
+  padding-bottom: 150px;
+}
+
+/* Forge. */
+.pp-anvil-btn {
+  position: relative;
+  display: flex;
+  align-items: end;
+  gap: 0;
+  min-width: 60px;
+  min-height: 60px;
+}
+
+.pp-anvil-btn .pp-on-anvil {
+  position: absolute;
+  bottom: 40%;
+  left: 62%;
+}
+
+.pp-anvil-btn.is-ready {
+  cursor: pointer;
+}
+
+.pp-anvil-pips {
+  position: absolute;
+  bottom: -8px;
+  left: 60%;
+}
+
+.pp-ghost {
+  opacity: 0.5;
+}
+
+.pp-bounce {
+  animation: pp-bounce 600ms steps(1) infinite;
+}
+
+@keyframes pp-bounce {
   50% {
-    background: var(--gold);
+    transform: translateY(-6px);
   }
 }
 
-.pp-door {
+.pp-anvil-btn.is-free {
+  justify-content: end;
+  width: 100%;
+}
+
+.pp-plus {
+  margin: 0 0 30px 40px;
+  color: var(--ink);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.pp-anvil-btn.is-lit .pp-plus {
+  background: var(--gold);
+}
+
+.pp-blueprints {
+  display: flex;
+  gap: 3px;
+}
+
+.pp-bp {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 2px;
+  background: rgb(var(--ink-rgb) / 30%);
+}
+
+.pp-bp:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.pp-bp.is-on {
+  background: var(--gold);
+  box-shadow:
+    0 0 0 3px var(--ink),
+    inset 0 0 0 3px var(--gold-shade);
+}
+
+.pp-made {
+  display: grid;
+  gap: 2px;
+  width: 15rem;
+  padding: 4px;
+  background: var(--ink);
+  box-shadow: 0 0 0 2px var(--line);
+  line-height: normal;
+}
+
+.pp-made-at {
+  z-index: 3;
+}
+
+/* Arena. */
+.pp-boss {
+  display: block;
+}
+
+.pp-plate-boss {
+  color: var(--gold);
+}
+
+/* A seat: a rug drawn in the sand's own colours (under a creature or empty). */
+.pp-seat {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: calc(22px * var(--s, 3));
+  height: calc(20px * var(--s, 3));
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  line-height: 0;
+  background: #d9b672;
+  box-shadow:
+    inset 0 0 0 var(--px) #b48a4e,
+    inset 0 calc(var(--px) * -2) 0 #a07a42;
+}
+
+.pp-seat.is-mine {
+  background: #e8c98a;
+}
+
+.pp-seat.is-empty.is-lit {
+  box-shadow:
+    inset 0 0 0 3px #b48a4e,
+    0 0 0 4px var(--gold);
+}
+
+.pp-seat.is-empty:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.pp-seat-name {
   position: absolute;
-  bottom: 18%;
+  bottom: -14px;
   left: 50%;
-  transform: translateX(-50%);
-}
-
-.pp-door.is-open canvas {
-  filter: drop-shadow(2px 0 0 var(--gold)) drop-shadow(-2px 0 0 var(--gold))
-    drop-shadow(0 2px 0 var(--gold)) drop-shadow(0 -2px 0 var(--gold));
-}
-
-.pp-lounger {
-  position: absolute;
-  bottom: 6px;
-  left: 30%;
-}
-
-.is-wide .pp-lounger {
-  bottom: 10px;
-}
-
-.pp-count {
-  position: absolute;
-  right: -4px;
-  bottom: 0;
-  padding: 0 3px;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 0 4px;
   background: var(--ink);
   color: var(--bone);
-  font-size: 0.9375rem;
-  line-height: 1.1;
+  font-size: 0.875rem;
+  line-height: 1.125rem;
+  text-overflow: ellipsis;
+  transform: translateX(-50%);
+  white-space: nowrap;
 }
 
-.pp-st-chest .pp-st-art {
-  width: 40px;
-  height: 40px;
+.pp-seat.is-mine .pp-seat-name {
+  background: var(--gold);
+  color: var(--ink);
 }
 
-.is-wide .pp-st-chest .pp-st-art {
-  width: 60px;
-  height: 60px;
-}
-
-.pp-chest {
+.pp-seat-flag {
   position: absolute;
-  bottom: 0;
-  left: 0;
+  top: -6px;
+  right: -4px;
 }
 
-.is-wide .pp-chest {
-  transform: scale(1.5);
-  transform-origin: bottom left;
+/* Cave. */
+.pp-team-slot {
+  position: relative;
+  display: grid;
+  place-items: end center;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  width: 54px;
+  height: 54px;
+  line-height: 0;
 }
 
-.pp-st-chest .pp-count {
-  right: -48px;
+.is-wide .pp-team-slot {
+  width: 84px;
+  height: 84px;
 }
 
-.pp-gift {
+.pp-team-slot:not(.is-full) {
+  background: rgb(var(--ink-rgb) / 45%);
+  box-shadow: inset 0 0 0 3px #7a7c96;
+}
+
+.pp-team-slot.is-lit {
+  box-shadow:
+    inset 0 0 0 3px #7a7c96,
+    0 0 0 4px var(--gold);
+}
+
+.pp-cave-facts {
+  z-index: 2;
+}
+
+/* House and evolution. */
+.pp-form {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  line-height: 0;
+}
+
+.pp-form canvas {
+  opacity: 0.55;
+}
+
+.pp-form.is-on canvas {
+  opacity: 1;
+}
+
+.pp-form.is-on {
+  box-shadow:
+    0 0 0 3px var(--ink),
+    0 0 0 6px var(--gold);
+  background: rgb(var(--gold-rgb) / 35%);
+}
+
+.pp-form.is-gone {
+  visibility: hidden;
+}
+
+.pp-form-name {
   position: absolute;
-  top: -12px;
-  right: -14px;
-  animation: pp-bob 1s steps(1) infinite;
+  bottom: -16px;
+  padding: 0 4px;
+  background: var(--ink);
+  font-size: 0.875rem;
+  line-height: 1.125rem;
+  white-space: nowrap;
 }
 
-.pp-book {
+.pp-evolver.is-flash canvas {
+  animation: pp-flash 900ms steps(1) 1 forwards;
+}
+
+@keyframes pp-flash {
+  0%,
+  33%,
+  66% {
+    filter: brightness(0) invert(1);
+  }
+
+  16%,
+  50% {
+    filter: none;
+  }
+
+  83%,
+  100% {
+    filter: brightness(0) invert(1);
+  }
+}
+
+.pp-burst {
   position: absolute;
-  bottom: -4px;
-  right: -20px;
+  top: 50%;
+  left: 50%;
 }
 
-.pp-station-bang {
+.pp-ray {
   position: absolute;
-  top: -18px;
-  right: -14px;
+  animation: pp-ray 600ms steps(4) 1 forwards;
 }
 
-.pp-trophy {
+.pp-ray-0 {
+  --dx: 0;
+  --dy: -1;
+}
+
+.pp-ray-1 {
+  --dx: 0.7;
+  --dy: -0.7;
+}
+
+.pp-ray-2 {
+  --dx: 1;
+  --dy: 0;
+}
+
+.pp-ray-3 {
+  --dx: 0.7;
+  --dy: 0.7;
+}
+
+.pp-ray-4 {
+  --dx: 0;
+  --dy: 1;
+}
+
+.pp-ray-5 {
+  --dx: -0.7;
+  --dy: 0.7;
+}
+
+.pp-ray-6 {
+  --dx: -1;
+  --dy: 0;
+}
+
+.pp-ray-7 {
+  --dx: -0.7;
+  --dy: -0.7;
+}
+
+@keyframes pp-ray {
+  from {
+    transform: translate(-8px, -8px);
+  }
+
+  to {
+    transform: translate(calc(var(--dx) * 72px - 8px), calc(var(--dy) * 72px - 8px));
+  }
+}
+
+/* Chest. */
+.pp-piece {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  box-shadow: inset 0 -3px 0 var(--pp-rarity, #a8a8b8);
+}
+
+.pp-r-rare {
+  --pp-rarity: var(--rarity-rare);
+}
+
+.pp-r-epic {
+  --pp-rarity: var(--rarity-epic);
+}
+
+.pp-r-common {
+  --pp-rarity: var(--rarity-common);
+}
+
+/* Lectern. */
+.pp-page {
+  display: grid;
+  gap: 0.5rem;
+  width: min(80vw, 24rem);
+  padding: 1rem 1.25rem;
+  background: #efe2b4;
+  box-shadow:
+    0 0 0 3px var(--ink),
+    inset 0 -6px 0 #d4c08a;
+  color: var(--ink);
+  line-height: normal;
+}
+
+.pp-page-title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.5rem;
+  font-weight: 400;
+}
+
+.pp-page-text {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+/* Fairground. */
+.pp-event {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-width: 96px;
+  padding: 2px 2px 6px;
+  line-height: normal;
+}
+
+.pp-event.is-on {
+  box-shadow: 0 0 0 4px var(--gold);
+}
+
+.pp-event-name {
+  max-width: 120px;
+  overflow: hidden;
+  padding: 0 4px;
+  background: var(--ink);
+  font-size: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pp-event-team {
+  display: flex;
+  gap: 3px;
+  min-height: 24px;
+}
+
+.pp-event-seat {
+  width: 24px;
+  height: 24px;
+  background: rgb(var(--ink-rgb) / 40%);
+  box-shadow: inset 0 0 0 3px var(--ink);
+}
+
+/* --- The haul --- */
+
+.pp-drop {
+  animation: pp-pop 240ms steps(3) 1 backwards;
+}
+
+@keyframes pp-pop {
+  0% {
+    transform: translate(-24px, -24px);
+  }
+
+  50% {
+    transform: translate(-12px, -30px);
+  }
+}
+
+.pp-find {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.pp-bp-new {
   position: absolute;
-  top: 0;
-  right: -8px;
-}
-
-.pp-trophy .pp-count {
-  right: -14px;
+  right: -6px;
   bottom: -6px;
+  padding: 0 3px;
+  background: var(--good);
+  color: var(--ink);
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.pp-haul-strip {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  width: min(100%, 30rem);
+}
+
+.pp-haul-strip .xp-list {
+  width: 100%;
+}
+
+.pp-haul-counts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem 0.5rem;
+  margin: 0;
+}
+
+.pp-rank-up {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--gold);
+  font-size: 1.25rem;
+}
+
+.pp-hop {
+  animation: pp-hop 1.2s steps(1) infinite;
+}
+
+@keyframes pp-hop {
+  0%,
+  80% {
+    transform: translateY(0);
+  }
+
+  90% {
+    transform: translateY(-4px);
+  }
 }
 
 /* --- The camp --- */
 
 .pp-camp {
-  position: relative;
   display: flex;
   flex: none;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 6px 6px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 8px 6px;
   background: var(--pp-dirt);
   box-shadow:
     inset 0 3px 0 var(--pp-dirt-hi),
     inset 0 6px 0 var(--ink);
-  scrollbar-width: none;
+}
+
+.is-wide .pp-camp {
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  padding: 10px 1rem 8px;
+}
+
+.is-wide .pp-camp > :not(.pp-tray) {
+  flex: none;
+  width: 22rem;
+}
+
+.pp-tray {
+  position: relative;
+  min-width: 0;
+}
+
+.is-wide .pp-tray {
+  flex: 1;
+  order: -1;
 }
 
 .pp-camp-grid {
   display: grid;
-  grid-auto-columns: var(--pp-cell-w);
+  grid-auto-columns: calc((100% - 16px) / 5);
   grid-auto-flow: column;
   grid-template-rows: repeat(2, var(--pp-cell-h));
   gap: 2px 4px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
 }
 
-.pp-camp.is-collapsed .pp-camp-grid {
+.pp-rows-1 .pp-camp-grid {
   grid-template-rows: var(--pp-cell-h);
 }
 
-.is-wide .pp-camp {
-  justify-content: center;
-}
-
 .is-wide .pp-camp-grid {
-  grid-template-rows: repeat(2, var(--pp-cell-h));
+  grid-auto-columns: var(--pp-cell-w);
 }
 
-/* The campfire: logs and a two-frame flame, drawn with 3 px squares. */
-.pp-fire {
-  position: relative;
-  flex: none;
-  width: 21px;
-  height: 24px;
-  align-self: center;
-}
-
-.pp-fire::before {
+/* More creatures to the right: a stepped arrow on an ink tab at the edge. */
+.pp-more {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 21px;
-  height: 6px;
-  background: #7a4a24;
-  box-shadow:
-    inset 0 -3px 0 #3b2414,
-    0 0 0 0 transparent;
-  content: '';
+  top: 50%;
+  right: -8px;
+  width: 15px;
+  height: 27px;
+  margin-top: -13px;
+  background: var(--ink);
+  pointer-events: none;
 }
 
-.pp-fire i {
+.pp-more::after {
   position: absolute;
-  bottom: 6px;
-  left: 6px;
+  top: 6px;
+  left: 4px;
   width: 9px;
-  height: 12px;
-  background: var(--ember);
-  box-shadow:
-    3px -3px 0 -0px var(--gold),
-    0 -6px 0 -3px var(--gold);
-  clip-path: polygon(0 3px, 3px 3px, 3px 0, 6px 0, 6px 3px, 9px 3px, 9px 12px, 0 12px);
-  animation: pp-flame 500ms steps(1) infinite;
-}
-
-@keyframes pp-flame {
-  50% {
-    transform: scaleX(-1);
-    background: #ff8a4a;
-  }
+  height: 15px;
+  background: var(--gold);
+  clip-path: polygon(
+    0 0,
+    3px 0,
+    3px 3px,
+    6px 3px,
+    6px 6px,
+    9px 6px,
+    9px 9px,
+    6px 9px,
+    6px 12px,
+    3px 12px,
+    3px 15px,
+    0 15px
+  );
+  content: '';
 }
 
 .pp-mon {
   position: relative;
   display: grid;
-  grid-template-rows: 22px 48px 16px;
+  grid-template-rows: 22px 48px 18px;
   justify-items: center;
-  width: var(--pp-cell-w);
+  width: 100%;
   height: var(--pp-cell-h);
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--bone);
   scroll-snap-align: start;
   touch-action: pan-x;
   cursor: grab;
 }
 
 .is-wide .pp-mon {
-  grid-template-rows: 26px 48px 18px;
+  grid-template-rows: 28px 96px 22px;
 }
 
 .pp-mon:focus-visible {
@@ -649,36 +1079,66 @@
 
 .pp-mon-body {
   position: relative;
+  line-height: 0;
 }
 
 .pp-mon-sprite {
   display: block;
-  image-rendering: pixelated;
+}
+
+/* A free creature just idles: a two-frame bob, no icon. */
+.pp-mon-free .pp-mon-sprite {
+  animation: pp-idle 1.4s steps(1) infinite;
+  animation-delay: calc(var(--pp-i, 0) * -170ms);
+}
+
+@keyframes pp-idle {
+  50% {
+    transform: translateY(-3px);
+  }
 }
 
 .pp-pack {
   position: absolute;
   right: -10px;
   bottom: -2px;
+  line-height: 0;
+}
+
+.pp-pack-dest {
+  position: absolute;
+  top: 10px;
+  left: 8px;
+  line-height: 0;
+}
+
+.is-wide .pp-pack {
+  right: -14px;
+}
+
+.pp-marks {
+  position: absolute;
+  bottom: -2px;
+  left: -10px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .pp-mon-feet {
   display: flex;
   align-items: center;
-  gap: 2px;
+  justify-content: center;
   font-size: 0.9375rem;
   line-height: 1;
 }
 
-.pp-lv {
-  color: var(--haze);
+.is-wide .pp-mon-feet {
+  font-size: 1.125rem;
 }
 
-.pp-mon-pips {
-  position: absolute;
-  bottom: 18px;
-  left: 50%;
-  transform: translateX(-50%);
+.pp-lv {
+  color: var(--haze);
 }
 
 .pp-mon.is-held {
@@ -700,13 +1160,13 @@
 }
 
 .pp-mon-word {
-  top: 34px;
+  top: 34%;
   left: 50%;
   transform: translateX(-50%);
   font-size: 0.875rem;
 }
 
-/* Bubbles. */
+/* Bubbles: one shape per state, every glyph at least 16 px. */
 .pp-bub {
   position: relative;
   display: inline-flex;
@@ -715,9 +1175,9 @@
 }
 
 .pp-bub-say {
-  min-width: 18px;
-  height: 18px;
-  padding: 0 2px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 3px;
   background: var(--bone);
   box-shadow: 0 0 0 2px var(--ink);
   color: var(--ink);
@@ -736,18 +1196,18 @@
 
 .pp-bang {
   color: var(--bad);
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   line-height: 1;
 }
 
 .pp-mon-needs .pp-bub,
 .pp-mon-loot .pp-bub,
 .pp-mon-evolve .pp-bub {
-  animation: pp-pop 240ms steps(2) 1 backwards;
+  animation: pp-pop-in 240ms steps(2) 1 backwards;
   animation-delay: calc(var(--pp-i, 0) * 120ms);
 }
 
-@keyframes pp-pop {
+@keyframes pp-pop-in {
   0% {
     transform: scale(0);
   }
@@ -759,25 +1219,18 @@
 
 .pp-bub-loot {
   position: absolute;
-  right: 0;
-  bottom: -30px;
+  right: -2px;
+  bottom: -34px;
   z-index: 1;
-  animation: pp-hopper 3s steps(1) infinite;
 }
 
-@keyframes pp-hopper {
-  0%,
-  90% {
-    transform: translateY(0);
-  }
-
-  95% {
-    transform: translateY(-4px);
-  }
+.is-wide .pp-bub-loot {
+  right: 4px;
+  bottom: -60px;
 }
 
 .pp-bub-evolve {
-  width: 56px;
+  width: 48px;
   height: 22px;
 }
 
@@ -793,30 +1246,26 @@
 
 .pp-spk-2 {
   top: 0;
-  left: 24px;
-  animation-delay: -300ms;
-}
-
-.pp-spk-3 {
-  top: 6px;
   right: 4px;
-  animation-delay: -600ms;
+  animation-delay: -450ms;
 }
 
 @keyframes pp-spark {
-  33% {
-    transform: translate(2px, -2px);
+  50% {
+    transform: translate(2px, -3px);
   }
+}
 
-  66% {
-    opacity: 0;
-  }
+.pp-bub-job {
+  padding: 2px;
+  background: var(--bone);
+  box-shadow: 0 0 0 2px var(--ink);
 }
 
 .pp-sweat {
   position: absolute;
   top: 2px;
-  right: -6px;
+  right: -7px;
   width: 3px;
   height: 3px;
   background: var(--tide);
@@ -830,14 +1279,15 @@
 }
 
 .pp-bub-z {
-  gap: 3px;
-  color: var(--haze);
-  font-size: 1rem;
+  gap: 2px;
+  color: var(--bone);
+  font-size: 1.25rem;
   line-height: 1;
+  text-shadow: var(--ink-outline-thin);
 }
 
 .pp-z-2 {
-  font-size: 0.75rem;
+  font-size: 1rem;
   transform: translateY(-6px);
 }
 
@@ -851,39 +1301,27 @@
   }
 }
 
-.pp-moon {
-  margin-right: 2px;
-}
-
-/* --- The held creature's card --- */
+/* --- The held creature's card (in the camp) --- */
 
 .pp-card {
   position: relative;
   display: grid;
-  flex: none;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 2.75rem 0.5rem 0.5rem;
+  padding: 0.375rem 2.75rem 0.375rem 0.5rem;
   background: var(--dusk);
   box-shadow:
-    inset 0 3px 0 var(--bevel-hi),
-    inset 0 -3px 0 var(--bevel-lo);
+    0 0 0 3px var(--ink),
+    inset 0 3px 0 var(--bevel-hi);
 }
 
-.pp-panel .pp-card {
+.is-wide .pp-card {
   grid-template-columns: auto minmax(0, 1fr);
-  padding: 1rem 2.75rem 1rem 1rem;
-  box-shadow: none;
-  background: transparent;
 }
 
-.pp-panel .pp-card-act {
+.is-wide .pp-card-act {
   grid-column: 1 / -1;
-}
-
-.pp-card-sprite {
-  image-rendering: pixelated;
 }
 
 .pp-card-who {
@@ -928,957 +1366,28 @@
   place-items: center;
   width: 40px;
   height: 40px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--bone);
 }
 
-/* --- The haul --- */
-
-/* On a phone the haul lies on the grass over the clearing: the stations dim behind it. */
-.pp-haul {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  display: grid;
-  align-content: safe end;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem 0.75rem;
-  overflow-y: auto;
-  background: rgb(var(--ink-rgb) / 55%);
-}
-
-.pp-haul .find-list,
-.pp-haul .xp-list,
-.pp-haul-counts {
-  padding: 4px;
-  background: rgb(var(--ink-rgb) / 75%);
-}
-
-.pp-panel .pp-haul {
-  position: static;
-  max-height: none;
-  box-shadow: none;
-  background: transparent;
-}
-
-.pp-haul-top {
-  display: flex;
-  align-items: end;
-  gap: 0.5rem;
-}
-
-.pp-haul-place {
-  margin-left: auto;
-  color: var(--haze);
-  font-size: 1rem;
-}
-
-.pp-sack {
-  display: inline-block;
-  transform-origin: bottom center;
-}
-
-.pp-sack-0 {
-  transform: scale(1, 1);
-}
-
-.pp-sack-1 {
-  transform: scale(1.15, 0.85);
-}
-
-.pp-sack-2 {
-  transform: scale(0.85, 1.15) translateY(-3px);
-}
-
-.pp-sack-3 {
-  transform: scale(1.25, 0.7);
-}
-
-.pp-haul-counts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.5rem;
-  margin: 0;
-}
-
-.pp-haul-finds {
-  display: grid;
-  gap: 0.5rem;
-  animation: pp-rise 360ms steps(4) 1 backwards;
-}
-
-@keyframes pp-rise {
-  0% {
-    transform: translateY(24px);
-    opacity: 0;
-  }
-}
-
-.pp-done {
-  justify-self: end;
-  min-height: 40px;
-  padding: 0 1rem;
-  border: 0;
-  border-radius: 0;
-  background: var(--dusk-2);
-  box-shadow: 0 0 0 2px var(--ink);
-  color: var(--bone);
-  font-size: 1.125rem;
-}
-
-.pp-hop {
-  animation: pp-hop 1.2s steps(1) infinite;
-}
-
-@keyframes pp-hop {
-  0%,
-  80% {
-    transform: translateY(0);
-  }
-
-  90% {
-    transform: translateY(-4px);
-  }
-}
-
-/* --- The wide screen's Today strip --- */
+/* --- Today (wide screen, in the camp) --- */
 
 .pp-today {
-  display: grid;
-  gap: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
   margin: 0;
-  padding: 1rem;
+  padding: 0.5rem;
   list-style: none;
 }
 
 .pp-today li {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  font-size: 1.5rem;
-}
-
-.pp-today-at {
-  color: var(--bone);
-}
-
-/* --- Station views --- */
-
-.pp-view {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  justify-content: safe center;
-  min-height: 100%;
-  isolation: isolate;
-  padding: 3.25rem 0.5rem 1rem;
-}
-
-.pp-view > * {
-  position: relative;
-}
-
-.pp-view > .pp-ground {
-  position: absolute;
-  z-index: -1;
-}
-
-.pp-back {
-  position: absolute !important;
-  top: 6px;
-  left: 6px;
-  z-index: 4;
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
+  gap: 0.5rem;
+  padding: 2px 8px;
   background: var(--ink);
-  box-shadow: 0 0 0 2px var(--line);
-}
-
-.pp-back svg {
-  width: 10px;
-  height: 14px;
-  fill: var(--bone);
-}
-
-/* The held creature stands at the top right, on the back arrow's line, in the flow (never over the scene). */
-.pp-visitor {
-  order: -1;
-  align-self: flex-end;
-  margin: -2.75rem 0.25rem 0 0;
-  display: flex;
-  align-items: end;
-  gap: 4px;
-}
-
-.pp-visitor-name {
-  font-size: 1rem;
-  text-shadow: var(--ink-outline-thin);
-}
-
-.pp-v-mon {
-  position: relative;
-  display: inline-block;
-  line-height: 0;
-}
-
-.pp-v-mon canvas {
-  image-rendering: pixelated;
-}
-
-.pp-note {
-  margin: 0;
-  color: var(--haze);
-  font-size: 0.9375rem;
-  text-shadow: var(--ink-outline-thin);
-}
-
-.pp-view-go {
-  display: grid;
-  justify-items: center;
-  gap: 0.25rem;
-}
-
-/* A little row of choices (lengths, supplies, blueprints) and the go button. */
-.pp-pack-row {
-  position: sticky !important;
-  bottom: 0;
-  z-index: 3;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  max-width: 40rem;
-  padding: 0.5rem;
-  background: rgb(var(--ink-rgb) / 80%);
-  box-shadow: 0 0 0 2px var(--ink);
-}
-
-.pp-lengths,
-.pp-supplies,
-.pp-blueprints {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 4px;
-}
-
-.pp-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0 6px;
-  border: 0;
-  border-radius: 0;
-  background: var(--dusk-2);
-  box-shadow: 0 0 0 2px var(--ink);
-  color: var(--bone);
-  font-size: 1rem;
-}
-
-.pp-chip.is-on {
-  background: var(--gold);
-  color: var(--ink);
-}
-
-.pp-bp {
-  justify-content: center;
-}
-
-.pp-cost {
-  display: inline-flex;
-  align-items: center;
-  font-size: 1rem;
-}
-
-.pp-cost-have {
-  color: var(--haze);
-}
-
-/* Road. */
-.pp-signs {
-  display: grid;
-  grid-template-columns: repeat(2, auto);
-  gap: 10px 12px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.is-wide .pp-signs {
-  grid-template-columns: repeat(4, auto);
-  gap: 1.25rem 1.5rem;
-}
-
-.pp-sign {
-  position: relative;
-  display: block;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  line-height: 0;
-}
-
-.pp-sign canvas {
-  image-rendering: pixelated;
-}
-
-.pp-sign.is-chosen canvas {
-  box-shadow: var(--ring);
-}
-
-.pp-sign.is-lit canvas {
-  box-shadow: 0 0 0 3px var(--gold);
-}
-
-.pp-sign.is-dim canvas {
-  opacity: 0.4;
-}
-
-.pp-sign:disabled {
-  cursor: not-allowed;
-}
-
-.pp-sign-name {
-  display: block;
-  max-width: 100%;
-  overflow: hidden;
-  padding-top: 3px;
-  color: var(--bone);
-  font-size: 1rem;
-  line-height: 1.1;
-  text-align: center;
-  text-overflow: ellipsis;
-  text-shadow: var(--ink-outline-thin);
-  white-space: nowrap;
-}
-
-.is-wide .pp-sign-name {
   font-size: 1.25rem;
-}
-
-.pp-sign.is-dim .pp-sign-name {
-  opacity: 0.5;
-}
-
-.pp-sign-who {
-  position: absolute;
-  top: 4px;
-  right: 2px;
-  display: flex;
-  gap: 2px;
-}
-
-.pp-sign-word {
-  top: 40%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-/* Forge. */
-.pp-forge-back canvas {
-  image-rendering: pixelated;
-}
-
-.pp-anvil-row {
-  display: flex;
-  gap: 2.5rem;
-  justify-content: center;
-}
-
-.pp-anvil-spot {
-  display: grid;
-  justify-items: center;
-  gap: 4px;
-  min-width: 120px;
-}
-
-.pp-big-anvil {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  align-items: end;
-  min-width: 96px;
-  min-height: 96px;
-  padding: 24px 0 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
-
-.pp-big-anvil canvas {
-  image-rendering: pixelated;
-}
-
-.pp-big-anvil .pp-float,
-.pp-big-anvil .pp-ghost {
-  position: absolute;
-  top: -6px;
-}
-
-.pp-big-anvil .pp-ghost {
-  opacity: 0.6;
-}
-
-.pp-smith {
-  position: absolute;
-  bottom: 0;
-  left: -34px;
-}
-
-.pp-big-anvil.is-free:not(.is-here) {
-  opacity: 0.7;
-}
-
-.pp-big-anvil.is-lit > canvas,
-.pp-big-anvil.is-ready > canvas:last-of-type {
-  filter: drop-shadow(2px 0 0 var(--gold)) drop-shadow(-2px 0 0 var(--gold))
-    drop-shadow(0 2px 0 var(--gold)) drop-shadow(0 -2px 0 var(--gold));
-}
-
-.pp-anvil-timer {
-  width: 120px;
-}
-
-.pp-anvil-timer .timer-state {
-  margin: 0;
-  text-align: center;
-  text-shadow: var(--ink-outline-thin);
-}
-
-.pp-made {
-  display: grid;
-  gap: 0.25rem;
-  width: min(100%, 24rem);
-  padding: 0.5rem;
-  background: rgb(var(--ink-rgb) / 80%);
-  box-shadow: 0 0 0 2px var(--ink);
-}
-
-/* Arena. */
-.pp-view-arena {
-  justify-content: center;
-}
-
-.pp-ring {
-  position: absolute !important;
-  inset: 3rem 0 4rem;
-  pointer-events: none;
-}
-
-.pp-ring-rock {
-  position: absolute;
-  image-rendering: pixelated;
-}
-
-.pp-ring-0 {
-  top: 8%;
-  left: 18%;
-}
-.pp-ring-1 {
-  top: 2%;
-  left: 42%;
-}
-.pp-ring-2 {
-  top: 8%;
-  right: 18%;
-}
-.pp-ring-3 {
-  top: 30%;
-  left: 6%;
-}
-.pp-ring-4 {
-  top: 30%;
-  right: 6%;
-}
-.pp-ring-5 {
-  top: 55%;
-  left: 4%;
-}
-.pp-ring-6 {
-  top: 55%;
-  right: 4%;
-}
-.pp-ring-7 {
-  bottom: 4%;
-  left: 12%;
-}
-.pp-ring-8 {
-  bottom: 4%;
-  right: 12%;
-}
-.pp-ring-9 {
-  bottom: 0;
-  left: 46%;
-}
-
-.pp-boss {
-  display: grid;
-  justify-items: center;
-  gap: 0.25rem;
-}
-
-.pp-boss-art {
-  image-rendering: pixelated;
-}
-
-.pp-boss-tags {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.pp-boss-name {
-  color: var(--gold);
-  font-size: 1.25rem;
-  text-shadow: var(--ink-outline-thin);
-}
-
-.pp-allies {
-  display: flex;
-  gap: 1.25rem;
-  opacity: 0.85;
-}
-
-.pp-pedestals {
-  display: flex;
-  gap: 1rem;
-}
-
-.pp-pedestal {
-  position: relative;
-  display: grid;
-  place-items: end center;
-  width: 72px;
-  height: 72px;
-  padding: 0 0 12px;
-  border: 0;
-  border-radius: 0;
-  background:
-    linear-gradient(var(--pp-stone-hi), var(--pp-stone-hi)) bottom / 100% 12px no-repeat,
-    rgb(var(--ink-rgb) / 35%);
-  box-shadow: inset 0 0 0 3px var(--ink);
-}
-
-.pp-pedestal.is-lit {
-  box-shadow:
-    inset 0 0 0 3px var(--ink),
-    0 0 0 3px var(--gold);
-}
-
-.pp-pedestal.is-lit .pp-arrow {
-  top: 18px;
-}
-
-.pp-ped-mark {
-  position: absolute;
-  right: 3px;
-  bottom: 0;
-}
-
-.pp-arena-count {
-  margin-top: 0.25rem;
-}
-
-/* Cave. */
-.pp-cave-mouth {
-  position: relative;
-  line-height: 0;
-}
-
-.pp-cave-mouth canvas {
-  image-rendering: pixelated;
-}
-
-.pp-cave-mouth .pp-door {
-  bottom: 14%;
-}
-
-.pp-cave-facts {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-size: 1.25rem;
-  text-shadow: var(--ink-outline-thin);
-}
-
-.pp-fact {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.pp-team {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.pp-team-slot {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: rgb(var(--ink-rgb) / 55%);
-  box-shadow: inset 0 0 0 3px var(--line);
-}
-
-.pp-team-slot.is-lit {
-  box-shadow:
-    inset 0 0 0 3px var(--ink),
-    0 0 0 3px var(--gold);
-}
-
-.pp-team-slot.is-lit .pp-arrow {
-  top: 8px;
-}
-
-/* House. */
-.pp-view-house {
-  background: var(--velvet-dark);
-}
-
-.pp-room-wrap {
-  position: relative;
-  line-height: 0;
-  box-shadow: 0 0 0 3px var(--ink);
-}
-
-.pp-room {
-  image-rendering: pixelated;
-}
-
-.pp-sitter {
-  position: absolute;
-  top: var(--y);
-  left: var(--x);
-}
-
-.pp-sitter canvas {
-  image-rendering: pixelated;
-}
-
-.pp-room-count {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0;
-  font-size: 1.125rem;
-}
-
-/* Chest. */
-.pp-chest-lid {
-  line-height: 0;
-}
-
-.pp-chest-lid canvas {
-  image-rendering: pixelated;
-}
-
-.pp-bag-count {
-  margin: -0.5rem 0 0;
-  font-size: 1.25rem;
-  text-shadow: var(--ink-outline-thin);
-}
-
-.pp-pieces {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, 56px);
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  max-width: 36rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.pp-piece {
-  display: grid;
-  place-items: center;
-  width: 56px;
-  height: 56px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
-
-/* Lectern. */
-.pp-view-lectern .pp-book {
-  position: relative;
-  right: auto;
-  bottom: auto;
-  display: grid;
-  justify-items: center;
-  gap: 0.5rem;
-  max-width: 26rem;
-  padding: 1rem 1.25rem;
-  background: #efe2b4;
-  box-shadow:
-    0 0 0 3px var(--ink),
-    inset 0 -6px 0 #d4c08a;
-  color: var(--ink);
-}
-
-.pp-page-title {
-  margin: 0;
-  font-family: var(--display);
-  font-size: 1.5rem;
-  font-weight: 400;
-}
-
-.pp-page-text {
-  margin: 0;
-  font-size: 1rem;
-  line-height: 1.45;
-}
-
-/* Fairground. */
-.pp-fair-grounds canvas {
-  image-rendering: pixelated;
-}
-
-.pp-fair-when {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0;
-  font-size: 1.25rem;
-  text-shadow: var(--ink-outline-thin);
-}
-
-.pp-events {
-  display: grid;
-  gap: 0.5rem;
-  width: min(100%, 26rem);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.pp-event {
-  position: relative;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  min-height: 52px;
-  padding: 0 0.5rem;
-  border: 0;
-  border-radius: 0;
-  background: rgb(var(--ink-rgb) / 70%);
-  color: var(--bone);
-  text-align: left;
-}
-
-.pp-event.is-chosen,
-.pp-event.is-lit {
-  box-shadow: 0 0 0 3px var(--gold);
-}
-
-.pp-event .pp-arrow {
-  top: -8px;
-  left: 1.5rem;
-}
-
-.pp-event-name {
-  overflow: hidden;
-  font-size: 1.25rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pp-event-team {
-  display: flex;
-  gap: 4px;
-}
-
-.pp-event-seat {
-  width: 24px;
-  height: 24px;
-  box-shadow: inset 0 0 0 3px var(--line);
-}
-
-/* --- Evolution --- */
-
-.pp-evolve {
-  position: relative;
-  display: grid;
-  align-content: center;
-  justify-items: center;
-  gap: 0.75rem;
-  min-height: 100%;
-  padding: 1rem;
-  background: var(--ink);
-}
-
-.pp-evolve-row {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  grid-template-areas: 'a mid b';
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.pp-evolve-mid {
-  position: relative;
-  grid-area: mid;
-  line-height: 0;
-}
-
-.pp-evolve-mid canvas {
-  image-rendering: pixelated;
-}
-
-.pp-branch {
-  display: grid;
-  justify-items: center;
-  gap: 4px;
-  padding: 6px;
-  border: 0;
-  border-radius: 0;
-  background: var(--dusk);
-  box-shadow: 0 0 0 3px var(--gold);
-  color: var(--bone);
-}
-
-.pp-branch-0 {
-  grid-area: a;
-}
-
-.pp-branch-1 {
-  grid-area: b;
-  box-shadow: 0 0 0 3px var(--line);
-}
-
-.pp-branch canvas {
-  image-rendering: pixelated;
-}
-
-.pp-branch-name {
-  font-size: 1.125rem;
-}
-
-.pp-branch-cost {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--gold);
-  font-size: 1rem;
-}
-
-.pp-branch:disabled {
-  opacity: 0.5;
-}
-
-.pp-evolve-name {
-  margin: 0;
-  color: var(--gold);
-  font-size: 2rem;
-}
-
-.pp-evolve-x {
-  top: 0.5rem;
-  right: 0.5rem;
-}
-
-.pp-evolve.is-flash .pp-evolver {
-  animation: pp-flash 900ms steps(1) 1 forwards;
-}
-
-.pp-evolve.is-flash .pp-branch:not(.is-picked) {
-  visibility: hidden;
-}
-
-@keyframes pp-flash {
-  0%,
-  33%,
-  66% {
-    filter: brightness(0) invert(1);
-  }
-
-  16%,
-  50% {
-    filter: none;
-  }
-
-  83%,
-  100% {
-    filter: brightness(0) invert(1);
-    transform: scale(1.5);
-  }
-}
-
-.pp-burst {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-}
-
-.pp-ray {
-  position: absolute;
-  animation: pp-ray 600ms steps(4) 1 forwards;
-}
-
-.pp-ray-0 {
-  --dx: 0;
-  --dy: -1;
-}
-.pp-ray-1 {
-  --dx: 0.7;
-  --dy: -0.7;
-}
-.pp-ray-2 {
-  --dx: 1;
-  --dy: 0;
-}
-.pp-ray-3 {
-  --dx: 0.7;
-  --dy: 0.7;
-}
-.pp-ray-4 {
-  --dx: 0;
-  --dy: 1;
-}
-.pp-ray-5 {
-  --dx: -0.7;
-  --dy: 0.7;
-}
-.pp-ray-6 {
-  --dx: -1;
-  --dy: 0;
-}
-.pp-ray-7 {
-  --dx: -0.7;
-  --dy: -0.7;
-}
-
-@keyframes pp-ray {
-  from {
-    transform: translate(-8px, -8px);
-  }
-
-  to {
-    transform: translate(calc(var(--dx) * 80px - 8px), calc(var(--dy) * 80px - 8px));
-  }
 }
 
 .drag-ghost {
@@ -1894,38 +1403,51 @@
   }
 
   .pp-ray {
-    transform: translate(calc(var(--dx) * 64px - 8px), calc(var(--dy) * 64px - 8px));
+    transform: translate(calc(var(--dx) * 56px - 8px), calc(var(--dy) * 56px - 8px));
   }
 
   .pp-spk-2,
-  .pp-spk-3,
   .pp-z-2 {
     display: none;
   }
 }
 
-/* The haul's blueprints: one row of pictures (each says its name), not a row each. */
-.pp-bps {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+/* The forge's hit areas: an anvil with its worker; a free anvil's "+". */
+.pp-anvil-hit {
+  display: block;
+  width: calc(38px * var(--s, 3));
+  height: calc(30px * var(--s, 3));
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  min-height: 0;
+}
+
+.pp-anvil-hit.is-ready:focus-visible,
+.pp-plus-btn:focus-visible {
+  outline: 3px solid var(--gold);
+}
+
+.pp .pp-plus-btn {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.pp-plus-btn .pp-plus {
   margin: 0;
-  padding: 6px;
-  list-style: none;
-  background: rgb(var(--ink-rgb) / 75%);
 }
 
-.pp-bps li {
-  position: relative;
+.pp-plus-btn.is-lit .pp-plus {
+  background: var(--gold);
 }
 
-.pp-bp-new {
-  position: absolute;
-  right: -4px;
-  bottom: -4px;
-  padding: 0 3px;
-  background: var(--good);
-  color: var(--ink);
-  font-size: 0.75rem;
-  line-height: 1rem;
+.pp-plate * {
+  line-height: normal;
 }

@@ -5,13 +5,10 @@ import { creatureName } from '../../game';
 import { useDragDrop } from '../../use-drag-drop';
 import { DragGhost } from '../../ui/DragGhost';
 import { LiveRegion } from '../../ui/LiveRegion';
-import { SidePanel } from '../../ui/SidePanel';
-import { WideLayout } from '../../ui/WideLayout';
 import { useWide } from '../../ui/wide-layout';
 import { creatureOf } from '../world';
 import { Camp } from './Camp';
 import { Clearing } from './Clearing';
-import { EvolveStage } from './EvolveStage';
 import { HaulScene } from './HaulScene';
 import { HeldCard } from './HeldCard';
 import { HudExtras } from './HudExtras';
@@ -21,8 +18,8 @@ import {
   openHaul,
   pick,
   putDown,
-  tapStation,
   sendToStation,
+  tapStation,
 } from './party-actions';
 import { partyAtStep, type PartyState, type StationId } from './party-state';
 import { StationView } from './StationView';
@@ -39,8 +36,10 @@ function hatchAsked(): boolean {
 }
 
 /**
- * The party prototype: the clearing of stations above, the camp of creatures below, the HUD on top.
- * Everything starts from a creature: pick it up (tap, or drag) and the stations that can take it light up.
+ * The party prototype: the clearing (or a place's scene) fills the window under the HUD, the camp of
+ * creatures runs along the bottom. Everything starts from a creature: pick it up (tap, or drag) and the
+ * places that can take it light up. On a wide screen the creature's card and the day's timers sit in the
+ * camp beside the creatures; there is no side panel.
  */
 export function PartyScreen({ step }: { step: number }) {
   const [state, setState] = useState<PartyState>(() => partyAtStep(step));
@@ -48,7 +47,6 @@ export function PartyScreen({ step }: { step: number }) {
   const shakeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fieldRef = useRef<HTMLDivElement>(null);
   const wide = useWide();
-  const scale = wide ? 3 : 2;
   const hatch = hatchAsked();
 
   useEffect(() => {
@@ -68,7 +66,7 @@ export function PartyScreen({ step }: { step: number }) {
   };
 
   const dnd = useDragDrop<StationId>({
-    disabled: state.moment !== null,
+    disabled: state.moment !== null || state.open !== null,
     stripRef: fieldRef,
     touchHoldMs: TOUCH_HOLD_MS,
     locate: (p) => {
@@ -82,9 +80,10 @@ export function PartyScreen({ step }: { step: number }) {
     onDrop: (creatureId, target) => {
       if (target === null) return dropOutcome('none', null, null, '');
       const held = { ...state, held: creatureId };
-      if (!stationVerdict(target, creatureId, held).ok) {
+      const verdict = stationVerdict(target, creatureId, held);
+      if (!verdict.ok) {
         shakeStation(target);
-        setState((s) => ({ ...s, said: `${target}: cannot take it.` }));
+        setState((s) => ({ ...s, said: `${target}: ${(verdict.word ?? 'no').toLowerCase()}.` }));
         return dropOutcome('invalid', null, null, '');
       }
       setState((s) => sendToStation({ ...s, held: creatureId }, target));
@@ -92,13 +91,13 @@ export function PartyScreen({ step }: { step: number }) {
     },
   });
 
-  // While a creature is carried, the stations answer for it.
+  // While a creature is carried, the places answer for it.
   const carried = dnd.drag?.creatureId ?? null;
   const shown: PartyState = carried === null ? state : { ...state, held: carried, ask: null };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key !== 'Escape') return;
+      if (e.key !== 'Escape' || document.querySelector('[role="dialog"]') !== null) return;
       setState((s) => (s.held !== null ? putDown(s) : s.open !== null ? closeView(s) : s));
     };
     window.addEventListener('keydown', onKey);
@@ -111,7 +110,14 @@ export function PartyScreen({ step }: { step: number }) {
     if (dnd.consumeClick()) return;
     update((s) => pick(s, id));
   };
-  const card = (
+
+  const moment = state.moment;
+  const evolving =
+    moment !== null &&
+    (moment.kind === 'evolve' || moment.kind === 'evolving' || moment.kind === 'evolved');
+  const haul = moment?.kind === 'haul';
+  const showCard = shown.held !== null && !haul && !evolving;
+  const card = showCard ? (
     <HeldCard
       state={shown}
       onClose={() => {
@@ -124,50 +130,38 @@ export function PartyScreen({ step }: { step: number }) {
         update((s) => collectCraft(s, jobId));
       }}
       onEvolve={(id) => {
-        update((s) => ({ ...s, moment: { kind: 'evolve', creatureId: id }, open: null }));
+        update((s) => ({
+          ...s,
+          open: 'house',
+          ask: null,
+          form: null,
+          moment: { kind: 'evolve', creatureId: id },
+        }));
       }}
     />
-  );
-
-  const moment = state.moment;
-  const evolving =
-    moment !== null &&
-    (moment.kind === 'evolve' || moment.kind === 'evolving' || moment.kind === 'evolved');
-  const haul = moment?.kind === 'haul';
+  ) : null;
 
   let field;
-  if (evolving) {
-    field = <EvolveStage state={state} setState={setState} scale={scale} />;
-  } else if (state.open !== null) {
-    field = <StationView state={shown} setState={setState} scale={scale} wide={wide} />;
-  } else {
+  if (haul) field = <HaulScene state={state} setState={setState} />;
+  else if (state.open !== null)
+    field = <StationView state={shown} setState={setState} wide={wide} />;
+  else {
     field = (
       <Clearing
         state={shown}
-        scale={scale}
+        mode={wide ? 'wide' : 'phone'}
         over={dnd.drag?.over ?? null}
         shake={shake}
         onTap={(id) => {
           update((s) => tapStation(s, id));
         }}
-      >
-        {haul && !wide && <HaulScene state={state} setState={setState} />}
-      </Clearing>
+      />
     );
   }
 
-  const panel = !wide ? null : haul ? (
-    <SidePanel class="pp-panel">
-      <HaulScene state={state} setState={setState} />
-    </SidePanel>
-  ) : shown.held !== null && !evolving ? (
-    <SidePanel class="pp-panel">{card}</SidePanel>
-  ) : (
-    <SidePanel class="pp-panel">
-      <Today state={state} />
-    </SidePanel>
-  );
-
+  // The phone's camp: two rows, or one under the held creature's card or a place's scene.
+  const rows: 1 | 2 = wide || card !== null || state.open !== null || haul ? 1 : 2;
+  const side = wide ? (card ?? <Today state={state} />) : card;
   const heldCreature = carried === null ? undefined : creatureOf(state.world, carried);
   return (
     <div class={wide ? 'pp is-wide' : 'pp'}>
@@ -181,38 +175,29 @@ export function PartyScreen({ step }: { step: number }) {
         />
         <CurrencyPile balances={state.world.balances} loadLedger={() => Promise.resolve([])} />
       </header>
-      <WideLayout
-        wide={wide}
-        class="pp-layout"
-        mainClass="pp-main"
-        main={
-          <>
-            <div ref={fieldRef} class="pp-field">
-              {field}
-            </div>
-            {!wide && !haul && !evolving && card}
-            <Camp
-              state={shown}
-              collapsed={!wide && (state.open !== null || evolving)}
-              onPick={onPick}
-              onPointerDown={(id, e) => {
-                dnd.startDrag(id, e);
-              }}
-            />
-          </>
-        }
-        panel={panel}
+      <div ref={fieldRef} class="pp-field">
+        {field}
+      </div>
+      <Camp
+        state={shown}
+        rows={rows}
+        scale={wide ? 6 : 3}
+        onPick={onPick}
+        onPointerDown={(id, e) => {
+          dnd.startDrag(id, e);
+        }}
       >
-        <DragGhost
-          ghostRef={dnd.ghostRef}
-          creature={
-            heldCreature === undefined
-              ? undefined
-              : { species: heldCreature.species, name: creatureName(heldCreature) }
-          }
-        />
-        <LiveRegion>{state.said}</LiveRegion>
-      </WideLayout>
+        {side}
+      </Camp>
+      <DragGhost
+        ghostRef={dnd.ghostRef}
+        creature={
+          heldCreature === undefined
+            ? undefined
+            : { species: heldCreature.species, name: creatureName(heldCreature) }
+        }
+      />
+      <LiveRegion>{state.said}</LiveRegion>
     </div>
   );
 }
