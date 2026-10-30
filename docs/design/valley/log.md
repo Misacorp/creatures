@@ -109,3 +109,7 @@ Research filed as `docs/research/gear-lottery.md`. Asked round 10: Q24 storage a
 Round 10 answered: worn gear off the bag, a bag of 200, filter, sort, search, bulk dismantle, stats at a glance, a creature-side "best item" flow, exciting items highlighted (Q24, V-GEAR-6, V-GEAR-7); a rising server item level cap, tried and watched (Q25, V-GEAR-8); no pity floor, partial wins from more lines, deterministic pools, and blueprint quality (marks, restored) as the consolation (Q26, V-GEAR-9). Asked round 11: Q27 the item level ladder, Q28 element pools, Q29 lines per rarity.
 
 **Next.** Record round 11. Then the commons in full.
+
+## 2026-10-30 (afternoon): a message from the combat v2 session
+
+The combat v2 session (branch `combat-v2-track`) wrote, at Misa's request, about its fixed boss track and the **roster profile** it tunes bosses against (per kind of player and week: 1st/3rd/10th/20th creature levels, roster size, forms, talent slots, gear), currently fed by placeholder numbers from `systems/posts.md`. Recorded as seams in `roadmap.md`; the economy lab's outputs now include that shape for 24 weeks (`economy/model.md`); `gear.md` V-GEAR-8 notes that a "raid win" is a kill on a fixed track, which can stall, so the cap's slow rise with time matters more. Valley decisions that assume a raid pace are flagged, not settled.

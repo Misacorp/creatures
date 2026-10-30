@@ -19,6 +19,7 @@ Follow combat v2's lab (`packages/lab`): a separate, pure package for the **prop
 
 ## Outputs (a generated report, `economy/report.md`, never edited by hand)
 
+- **The roster profile for combat v2** (the seam in `roadmap.md`): per kind of player (daily, weekly, new with a join week) and per week 1 to 24, the levels of the 1st, 3rd, 10th and 20th creature, roster size, forms available, talent slots filled, and gear (slots usable, item level), in the shape of `packages/lab/src/roster.ts` on branch `combat-v2-track`. The lab runs 24 weeks for this, though the valley's own targets look at 12.
 - Per profile, per week: the level of the 1st, 3rd, 10th and 20th creature (T-1); total XP by source (fights, posts, bonfire, lounge); resources in, out and stored; anvil-hours slowed for want of input (T-4).
 - Per server, per week: each place's level, project progress, keystones found, the share of resources given to the commons (T-3), the top giver's share of each project, how many weeks a lone player takes to finish one, how much a newcomer has caught up by week 12.
 - Per profile: the gain of a player who looks in four times a day over a daily one (V-POST-11 keeps it small; upgrade costs grow faster than output).
