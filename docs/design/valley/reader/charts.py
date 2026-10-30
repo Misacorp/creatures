@@ -13,7 +13,7 @@ W, H = 340, 190
 L, R, T, B = 34, 54, 10, 24
 
 
-def _line_chart(title, note, series, ymax, yticks, yfmt=str, ref=None):
+def _line_chart(title, note, series, ymax, yticks, yfmt=str, ref=None, short=None):
     """series: [(label, [value per week 1..n])]; ref: (label, [values]) drawn dashed in muted ink."""
     n = max(len(v) for _, v in series)
     x = lambda i: L + (W - L - R) * i / (n - 1)
@@ -39,12 +39,12 @@ def _line_chart(title, note, series, ymax, yticks, yfmt=str, ref=None):
         for i, v in enumerate(vals):
             out.append(f'<circle class="hit" cx="{x(i):.1f}" cy="{y(v):.1f}" r="5">'
                        f'<title>{html.escape(label)}, week {i + 1}: {yfmt(round(v, 1))}</title></circle>')
-        ends.append([y(vals[-1]), label, c])
+        ends.append([y(vals[-1]), short[k] if short else label.split(' ')[0], c])
     ends.sort()
     for i in range(1, len(ends)):  # keep end labels at least 11px apart
         ends[i][0] = max(ends[i][0], ends[i - 1][0] + 11)
     for ey, label, c in ends:
-        out.append(f'<text class="end" x="{W - R + 4}" y="{ey + 3:.1f}">{html.escape(label.split(" ")[0])}</text>')
+        out.append(f'<text class="end" x="{W - R + 4}" y="{ey + 3:.1f}">{html.escape(label)}</text>')
     out.append('</svg><div class="legend">')
     for k, (label, _) in enumerate(series):
         out.append(f'<span><i class="sw" data-c="{k}"></i>{html.escape(label)}</span>')
@@ -54,12 +54,38 @@ def _line_chart(title, note, series, ymax, yticks, yfmt=str, ref=None):
     return ''.join(out)
 
 
+def _split_bars(title, note, rows, labels):
+    """rows: [(name, [share per part])] as horizontal 100% bars; labels name the parts."""
+    bh, gap, lw = 16, 8, 92
+    h = len(rows) * (bh + gap) + 4
+    out = [f'<figure class="chart"><figcaption><strong>{html.escape(title)}</strong>'
+           f'<span>{html.escape(note)}</span></figcaption><svg viewBox="0 0 {W} {h}" role="img" aria-label="{html.escape(title)}">']
+    for r, (name, parts) in enumerate(rows):
+        y0 = 2 + r * (bh + gap)
+        out.append(f'<text class="tick" x="{lw - 6}" y="{y0 + bh / 2 + 3:.1f}" text-anchor="end">{html.escape(name)}</text>')
+        x0 = lw
+        for k, v in enumerate(parts):
+            w = (W - lw - 8) * v
+            if w <= 0:
+                continue
+            out.append(f'<rect x="{x0:.1f}" y="{y0}" width="{max(w - 2, 1):.1f}" height="{bh}" rx="3" fill="{SERIES[k]}">'
+                       f'<title>{html.escape(name)}: {html.escape(labels[k])} {round(v * 100)}%</title></rect>')
+            if w > 30:
+                out.append(f'<text class="inbar" x="{x0 + 5:.1f}" y="{y0 + bh / 2 + 3.5:.1f}">{round(v * 100)}%</text>')
+            x0 += w
+    out.append('</svg><div class="legend">')
+    for k, lab in enumerate(labels):
+        out.append(f'<span><i class="sw" data-c="{k}"></i>{html.escape(lab)}</span>')
+    out.append('</div></figure>')
+    return ''.join(out)
+
+
 def charts(root):
     path = os.path.join(root, 'economy', 'report-data.json')
     if not os.path.exists(path):
         return ''
     d = json.load(open(path))
-    parts = ['<h3>The first run in four pictures</h3>'
+    parts = ['<h3>The lab\'s run in pictures</h3>'
              '<p class="lead">Tap or hover a point for its number. The full tables follow in the report.</p>']
 
     # 1. Stockpiles of a daily player, in weeks of their own income (one common base).
@@ -77,7 +103,22 @@ def charts(root):
            ('Weekly: best', [p['median'] for p in g['weekly']['first']]),
            ('Weekly: 10th', [p['median'] for p in g['weekly']['tenth']])]
     parts.append(_line_chart('How creatures grow', 'Levels of the best and the 10th creature. The level cap is 30.',
-                             ser, 30, [0, 10, 20, 30]))
+                             ser, 30, [0, 10, 20, 30], short=['D best', 'D 10th', 'W best', 'W 10th']))
+
+    # Forge time per kind of player.
+    names = {'daily': 'Daily', 'active': '3 a day', 'every-other-day': 'Every 2 days', 'weekend-off': 'Weekend off', 'weekly': 'Weekly', 'returner': 'Returner'}
+    fr = {r['profile']: r['share'] for r in d['forge']}
+    rows = [(names[k], [fr[k]['work'], fr[k]['shard'], fr[k]['scrap'] + fr[k]['floor'] + fr[k]['nothing']]) for k in names if k in fr]
+    parts.append(_split_bars('What the Forge does all day', 'Share of anvil time over 24 weeks. Scrap never runs out; the wait is for a shard of the right element, though shards pile up overall.',
+                             rows, ['Making pieces', 'Waiting for a shard', 'Other (full floor, nothing to make)']))
+
+    # Roster against the species available.
+    if 'available' in g['daily']:
+        ser = [('Species in the game', [p if isinstance(p, (int, float)) else p['median'] for p in g['daily']['available']]),
+               ('Daily: owned', [p['median'] for p in g['daily']['species']]),
+               ('Weekly: owned', [p['median'] for p in g['weekly']['species']])]
+        parts.append(_line_chart('How the collection grows', 'Kinds of creature owned, against the species in the game (34, then 12 more every 4 weeks: an example).',
+                                 ser, 120, [0, 40, 80, 120], short=['Species', 'Daily', 'Weekly']))
 
     # 3. Place level-ups on a server of 8 against the plan.
     s8 = next(s for s in d['servers'] if s['id'] == 'mixed8')

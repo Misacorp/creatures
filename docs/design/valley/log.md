@@ -135,3 +135,11 @@ Misa asked whether everything is written down before compacting. Brought the fro
 **Done.** Misa chose A: build the economy lab ("maybe you could do that and see what comes back"), and asked to see what resources the valley has, how they interact and what each is for. Wrote the resource map (`economy/resources.md`: things you spend, collect and track; where the list is crowded; what the lab watches for each), filed research on resource design (`docs/research/resource-design.md`: Brawl Stars, Clash of Clans' Clan Capital, Stardew, Cook's value chains), brought `economy/model.md` up to date as the lab's build spec, and added a first take on Misa's doubt about the School (`systems/school.md`). Queued two questions: **resources** and **school**. An implementer is building `packages/econ` in its own worktree.
 
 **Next.** Review the lab, merge it, put its report in front of Misa with the **resources** question.
+
+## 2026-10-30 (night): the lab's first report, round 14
+
+**Done.** The economy lab (`packages/econ`) is built, reviewed by a second agent and fixed (gifts are Acorns only by default, collection sockets have kinds, T-2c and T-4 measure what `goals.md` asks, a growing species pool per Misa: 34 now, more every 4 weeks). Findings: almost every resource piles up and Acorns run out of things to buy by week 8; the valley builds at about the planned pace with Acorns-only gifts (7 level-ups by week 12, the fire at 70); a daily player's Forge waits for a shard of the right element about half the time; a weekly player grows at about half a daily player's pace; the collection grows fast. Misa likes the charts: numbers now come as charts on the phone page (`deciding.md` rule 10, `reader/charts.py`). Misa asked that tuning not repeat combat v2's loop of agents re-running reports: the lab gets targets as data, quick runs, an automatic tuner and a speed budget before any tuning (`economy/model.md`); being built now. The round's challenger was the lab and its reviewer, so no separate challenger agent ran.
+
+Asked round 14: Q33 which resources to keep, Q34 shards of the right element (a challenge to Q23), Q35 how far behind a weekly player is (T-2 against Q3).
+
+**Next.** Record round 14; then tune with the tuner against the answers.
