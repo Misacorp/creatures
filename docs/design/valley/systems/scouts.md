@@ -13,7 +13,7 @@ Instead of timed trips, a scout is posted to one of the eight destinations and r
 - **V-SCOUT-3** The store holds a generous number of finds; when full, the scout keeps exploring but stops picking up (a bubble says "pack full"), nothing is lost.
 - **V-SCOUT-4** Night and festival places keep their rules (Moonlit Reef by night, Festival Grounds in festival weeks); a scout there waits at camp when the place is closed.
 - **V-SCOUT-5** Supplies become **kit** kept at the seat (`posts.md` V-POST-11): a lure, a lantern or a satchel tilts what the scout brings home, bought once with Acorns, no timer, no levels.
-- **V-SCOUT-6** "Push on" becomes a rare event at the post: a scout finds a way deeper and asks (in the return story) whether to follow it.
+- **V-SCOUT-6** "Push on" becomes a rare event at the post: a scout finds a way deeper and the return walk can offer it as its one decision (`return.md` V-RET-3). Going deeper is a trade-off, never a free yes (example: rarer finds and the deeper area's residents, but fewer Acorns and scrap while there).
 
 ## Open questions
 

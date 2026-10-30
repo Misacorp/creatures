@@ -85,3 +85,9 @@ Research filed as `docs/research/worker-identity.md`: permanent mastery where ma
 **Done.** Recorded Q19: mastery per kind of work in three visible steps, permanent, a Master's perk at another kind of post and "ready to learn something new", making room for newcomers (V-POST-12). Posts and the bonfire are drafted, reviewed and decided apart from the numbers, which wait for the economy lab.
 
 **Next.** Phase 1, step 3: the return moment (`systems/return.md`) in full, then its panel, then round 8.
+
+## 2026-10-30 (late night): the return moment, its panel, round 8
+
+**Done.** Wrote `systems/return.md` in full, ran the panel (owner's proxy, Sanni, Joonas; `reviews/2026-10-30-return.md`) and revised it: the return is a short walk through the valley ending at one decision chosen by how much it matters; at most three lines, as bubbles over creatures; creatures carry their piles home (no collect button; V-POST-5 fixed); a surprise only past a rarity bar, otherwise a resting creature's small moment; your own part first in server news; weekly beats replace lines; a skipped raid gets one line. Push on got a trade-off (V-SCOUT-6). Asked round 8: Q20 where numbers live, Q21 raid preparation in the walk.
+
+**Next.** Record round 8. Then phase 1, step 4: scouts and the Forge loop in full.
