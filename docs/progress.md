@@ -47,7 +47,7 @@ See "Open design questions" in `docs/roadmap.md`.
 
 ## Notes for future agents
 
-- Pixel art: draw it with the art studio (`pnpm art <set>`, `design/art-studio.md`), concept sets in `apps/activity/src/sprites/concepts/`.
+- Pixel art: draw it with the art studio (`pnpm art <set>`, `design/art-studio.md`). Art drawn ahead of content is kept in the art library, catalogue `docs/art/README.md`; check it before adding content.
 
 - Staging's last-week leet credits are simulated; real ones from 2026-10-11 on.
 - `redirect: 'error'` is rejected by workerd; always use `'manual'`.

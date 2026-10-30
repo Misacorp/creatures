@@ -71,6 +71,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
       - run: pnpm decisions check
+      - run: pnpm art library --check
       - if: needs.changes.outputs.code == 'true'
         run: pnpm lint
       - if: needs.changes.outputs.code == 'true'

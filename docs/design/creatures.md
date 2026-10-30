@@ -128,6 +128,7 @@ Tests (`packages/game/test/lore.test.ts`) also check that palettes match the ele
 
 ## Adding or changing a species
 
+0. Check the art library (`docs/art/README.md`) for a concept drawn for it; if there is one, its sprite becomes the species sprite (`art-studio.md`, "The library").
 1. Add it to `creatures.json` (stats, ability).
 2. Add its entry to `species-lore.json`. For a stage 2 form, include `fromStage1`.
 3. For a new line, add 2 to 3 against-type quirks to `quirks.json` under the stage 1 species id.

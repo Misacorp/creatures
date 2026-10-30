@@ -28,6 +28,14 @@ export const VOID_CONCEPTS: ConceptSet = {
   id: 'void',
   title: 'Void, four roles',
   element: 'void',
+  requested:
+    '2026-10-30: imagine the Void element on creatures; four creatures, one per role, no names or stats.',
+  status: 'liked',
+  notes: [
+    'Misa chose the dark purple body over the pale first draft and said they look pretty good (2026-10-30).',
+    'Needs before use: the Void element in the content (element chart, marks, a place), names, stats, lore, shiny palettes.',
+    "The payoff's ear windows are the faintest detail; look again when it is promoted.",
+  ],
   sprites: {
     'void-guard': {
       kind: 'creature',

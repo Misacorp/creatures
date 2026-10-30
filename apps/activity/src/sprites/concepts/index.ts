@@ -1,8 +1,10 @@
 /**
- * Concept art: sprites drawn ahead of their content. A concept has a working code (`void-guard`), a
+ * The art library: sprites drawn ahead of their content. A concept has a working code (`void-guard`), a
  * kind (which sets its size and rules) and a note, but no name, stats or lore; nothing in the game
  * imports this folder. `scripts/art.mts` draws and lints a set; when the content lands, the sprite
  * moves into `data/` under the species id and the concept is deleted (`docs/design/art-studio.md`).
+ * `pnpm art library` writes the catalogue, `docs/art/README.md`, and a sheet per set; `pnpm check`
+ * fails when the catalogue is out of date.
  */
 import type { SpriteDef } from '../sprite-data';
 import type { ArtKind } from '../sprite-lint';
@@ -17,7 +19,15 @@ export interface Concept {
   sprite: SpriteDef;
   /** Other palettes to compare (a colour direction, a shiny), as palette overrides by name. */
   alts?: Readonly<Record<string, Readonly<Record<string, string>>>>;
+  /** Overrides the set's status for this sprite. */
+  status?: ConceptStatus;
 }
+
+/**
+ * `draft`: drawn, Misa has not said yet. `liked`: Misa approved the look; use it when the content
+ * comes. `redo`: Misa wants it changed before use (say what in `notes`).
+ */
+export type ConceptStatus = 'draft' | 'liked' | 'redo';
 
 export interface ConceptSet {
   /** The set's code, also the studio's argument (`art.mts void`). */
@@ -25,6 +35,11 @@ export interface ConceptSet {
   title: string;
   /** The element whose colour family the set is checked against. */
   element?: string;
+  /** What Misa asked for, with the date (`2026-10-30: four Void creatures, one per role`). */
+  requested: string;
+  status: ConceptStatus;
+  /** What the content needs to use this art, Misa's feedback, open ideas. One line each. */
+  notes?: readonly string[];
   sprites: Readonly<Record<string, Concept>>;
 }
 
