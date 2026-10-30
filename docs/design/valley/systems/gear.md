@@ -28,13 +28,17 @@ Status: **direction set by Misa** (round 9, Q22, 2026-10-30); the system is **to
 - **V-GEAR-4 The best first.** When a batch of pieces comes home, the best are shown first and celebrated in the return walk (V-RET-2).
 - **V-GEAR-5 No currency orbs at the start.** Improving existing items is a later Forge job ("work on this until some criteria is met"), designed after the base loop.
 
-## Open, waiting on research (`docs/research/`, round 10)
+## Open, asked in round 10 (Q24 to Q26; research in `docs/research/gear-lottery.md`)
 
 - **Item volume and storage.** A bag of 60 cannot hold a roster's worn gear plus a Forge's output. What separates worn items from the bag, how pieces that are not worth keeping go away by themselves (salvage rules, filters), and how big storage should be.
 - **What sets item level.** A combination of sources (the smith's level and mastery, the Forge's server level, the blueprint, the dungeon's depth, the raid's Boss Rank), possibly under a server-wide cap that rises slowly.
 - **The craft-until loop.** How "craft these until you find the best item" works on a once-a-day visit: what the player sets, when the smith stops or keeps going, what comes home.
-- **Improving items later**, without orbs.
+- **Improving items later**, without orbs. The research's direction, for later: Last Epoch-style potential (a few visible attempts per item, more on epics; never lowers or bricks; the last attempt succeeds), with the top tier left to the lottery.
 - **Keeping the lottery fun** for a casual player: floors, celebration, choosing what to chase.
+
+## Cheap to store
+
+Melted pieces are counts, never rows; a batch keeps only its best few as items (the read budget, `docs/design/database-reads.md`). Crafts resolve on the owner's visit with live randomness, capped per day.
 
 ## Today, for reference (`packages/game/src/rules/config.ts`, `gear`)
 

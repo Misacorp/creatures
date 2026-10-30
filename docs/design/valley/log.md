@@ -104,4 +104,6 @@ Round 8 answered: numbers inside each place (Q20, V-RET-9); raid preparation onc
 
 **Done.** Recorded round 9: Misa's Path of Exile-style gear vision (Q22) in a new doc, `systems/gear.md` (decided: big rolls and a lottery, the Forge as the main source of rolls, item level as quality with no wear requirement, the best shown first, no orbs at the start; open: storage and volume, what sets item level, a craft-until loop, improving items, keeping the lottery fun); crafting waits on element shards, with stockpiles allowed (Q23, V-FORGE-4). A researcher is looking at item level sources and server caps, loot volume and filters, craft-until loops and safe lotteries.
 
-**Next.** File the research, then round 10: gear directions. Then the commons in full.
+Research filed as `docs/research/gear-lottery.md`. Asked round 10: Q24 storage and what melts away, Q25 what sets item level (a rising server cap), Q26 a floor for the lottery (a challenge).
+
+**Next.** Record round 10, write the gear loop into `gear.md` and `forge.md`. Then the commons in full.

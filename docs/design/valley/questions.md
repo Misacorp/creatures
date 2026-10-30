@@ -6,7 +6,41 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-Nothing right now (gear directions come back as round 10 once the research is in).
+### Q24. How do a lot more items fit, and which go away by themselves?
+
+Status: asked, round 10 (2026-10-30). From Misa's gear vision (Q22) and research (`docs/research/gear-lottery.md`). Touches: `gear.md`, `forge.md`, the bag (today 60 items, worn ones included).
+
+**Why it matters.** You want many more rolls, and a roster of 20 or more creatures already fills a bag of 60 with what it wears. Diablo IV's lesson was "spend more time obliterating and less time sorting"; idle players' worst story is losing a great item to a bag full of junk.
+
+- **A. A bigger bag, sorted by hand.** Example: the bag holds 200; you dismantle what you don't want.
+- **B. Worn gear off the bag, plus a keep rule.** Items a creature wears don't count. The Forge's batch comes home best first, and pieces that are neither an upgrade nor carry a strong roll melt into materials on arrival, by a sensible default rule you can change. Rare and epic pieces and anything with a 4- or 5-pip line are never melted and never lost to a full bag. The same rule is what "craft until" stops on. Example: Sanni's Forge made 20 Tide Scarves this week; she sees the best three, one an upgrade for Mossback; the other 17 became scrap and shards.
+- **C. B, but you set every rule yourself** (a loot filter, Last Epoch style).
+
+**Lead's pick: B.** It keeps the lottery's thrill (the best first, nothing good ever lost) and removes the sorting chore, with no setup needed. The rule can be changed by anyone who cares to.
+
+### Q25. What sets an item's level, now that it means quality only?
+
+Status: asked, round 10 (2026-10-30). From Misa's gear vision (Q22: "maybe a combination of many things... tied to some kind of a server item level cap... increase this slowly"). Touches: `gear.md`, the raid (Boss Rank), the dungeon, the Forge's server level; combat v2 (how strong a modifier tier is).
+
+**Why it matters.** Item level decides how big the rolls can get, so it is the long-term ladder of the whole gear chase. The research found nothing on server-wide caps that rise in other games: it's a bet. The one clear lesson is that hard gates on progress annoy players (Diablo IV removed its world-tier level gates within days).
+
+- **A. Each source sets its own.** A smith's level at the Forge, the depth in the dungeon, the Boss Rank in the raid. No server cap.
+- **B. The source sets it, under a server cap that rises.** Nothing made or found goes above the server's item level cap. The cap rises a step with each raid win and slowly with time even for a server that struggles, never falls, and is shown at the Forge with its next step. Example: the cap reaches 12 after Sunday's win; Monday's batch can roll 12s, and the Forge shows "next: 13".
+- **C. The server cap alone.** Everything made or found is at the current cap.
+
+**Lead's pick: B.** It is your combination, and it turns each raid win into a moment the whole server feels at the Forge on Monday. The slow rise with time keeps a struggling server from stalling. We would watch it closely, since no game has proven it.
+
+### Q26. Should the lottery have a floor? (a challenge)
+
+Status: asked, round 10 (2026-10-30). Challenges: Misa's "Big rolls, big lottery. It's based on luck... the perfect item would obviously be just down to luck" (Q22) against F-10 (light, fun and predictable) and the research. Touches: `gear.md`, `forge.md`.
+
+**Why it matters.** Pure luck can mean weeks of misses for a casual player, which the research ties to the slot-machine feeling players resent. Pity floors are widely approved (86.9% in one survey) and every recent crafting overhaul (Last Epoch, Diablo IV) removed loss and dread while keeping the jackpot random.
+
+- **A. Pure luck.** Visible odds, no floor.
+- **B. A soft floor per blueprint.** A bar fills with each piece made; when full, the next piece is guaranteed a strong line (example: one 4-pip line within 30 pieces). The perfect item, five pips on every line of an epic, stays pure luck.
+- **C. B, plus misses that add up.** Every melted piece also adds to a small bar that pays a bonus (example: a free reach for Rare).
+
+**Lead's pick: B.** It guarantees a good result, not the best one, so the jackpot stays luck and every week still has a win to show. It's a counter, not an orb, so it fits "no orbs at the start".
 
 ## Queue
 
