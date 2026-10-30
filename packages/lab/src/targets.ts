@@ -6,9 +6,9 @@
  * for each Boss Rank, what a boss's numbers (HP, Attack, armour) should achieve, as bounds on measures the report already takes.
  * The tuner searches the numbers for the best fit and says which targets cannot be met together.
  *
- * DRAFT: the values of `RAID_TARGETS` are drafts from the decisions of 2026-10-29 (success tiers, robustness, HP removed, rule-card
- * strength by Boss Rank, roster levels by rank) and await Misa's confirmation. Changing one is a one-line edit here; no test pins
- * what the tuner proposes, only these numbers (`test/tuner.test.ts`).
+ * The values of `RAID_TARGETS` are Misa's, 2026-10-30 (a failed boss returns next week; a raid measures the HP removed;
+ * `docs/design/decisions/raids.md`). Changing one is a one-line edit here; no test pins what the tuner proposes, only these
+ * numbers (`test/tuner.test.ts`).
  */
 
 /** An answer's own tool must be worth at least this many win-rate points (panel 5, finding 3). */
@@ -27,8 +27,15 @@ export const GATE_DROP = 50;
 export const GATE_BOSSES = 3;
 /** And remove at least this share of the boss's HP (the primary measure) with random legal talents. */
 export const ROBUST_SHARE = 0.8;
-/** The prepared line with random legal talents should still win about this share of weekends (panel 5, finding 4). */
+/**
+ * The old kill-rate target of the prepared line with random legal talents (panel 5, finding 4). The report still shows it; the
+ * tuner no longer targets it (Misa, 2026-10-30: the kill is measured as `prepared.beat2` on the written talents instead).
+ */
 export const ROBUST_TARGET = 0.6;
+/** A prepared team usually beats the boss within two weekends (Misa, 2026-10-30): the chance of a kill in at most two is this. */
+export const BEAT2_MIN = 0.75;
+/** A mixed server's and the classic party's weeks to a kill show as "20+" beyond this. */
+export const WEEKS_CAP = 20;
 /** The boss's win rate target at +10% Attack and at +10% HP (a well-prepared team should usually win, but not by a mile). */
 export const MARGIN_TARGET = 0.6;
 
@@ -38,9 +45,13 @@ export const TARGET_RANKS: readonly TargetRank[] = ['low', 'mid', 'high'];
 
 /**
  * What the tuner measures for one boss at one rank (all shares and rates are 0 to 1):
- * - `prepared.*`: the prepared line (the boss's first written answer) with random legal talents: the mean share of the boss's HP
- *   removed and the share of weekends that kill (`robustnessOf`, `.random`).
- * - `tool.share`: what the tool is worth: that share minus the same line's with its tool taken off (`withoutTool`).
+ * - `prepared.share`, `prepared.kill`: the prepared line (the boss's first written answer) with random legal talents: the mean
+ *   share of the boss's HP removed and the share of weekends that kill (`robustnessOf`, `.random`). The kill rate is information.
+ * - `prepared.written`: the kill rate of the same line with its written talents (a server facing a returning boss can re-pick
+ *   talents from its Talent Book); `prepared.beat2` is the chance to kill in at most two weekends from it (`beatWithin`).
+ * - `tool.share`: what the tool is worth with random legal talents: that share minus the same line's with its tool taken off
+ *   (`withoutTool`). `tool.written`: the same gap with the line's written talents, as `test/bossAnswers.test.ts` measures it
+ *   (`toolCost`'s `shareDrop`). Both must reach `TOOL_SHARE_MIN`, so the tuner cannot propose numbers that test rejects.
  * - `classic.*`: the classic party (`classicFor`) on the usual four columns.
  * - `mixed.*`: the mixed server of ten (2 min-maxers, 3 builders, 5 casual players on their top creatures with no Knack, as
  *   `mixedSpread` measures it).
@@ -48,7 +59,10 @@ export const TARGET_RANKS: readonly TargetRank[] = ['low', 'mid', 'high'];
 export const RAID_MEASURES = [
   'prepared.share',
   'prepared.kill',
+  'prepared.written',
+  'prepared.beat2',
   'tool.share',
+  'tool.written',
   'classic.share',
   'classic.kill',
   'mixed.share',
@@ -75,53 +89,59 @@ const preparedTargets = (): RaidTarget[] => [
     why: 'A prepared team removes most of the HP even with random legal talents (robustness, 2026-10-29)',
   },
   {
-    measure: 'prepared.kill',
-    min: ROBUST_TARGET,
+    measure: 'prepared.beat2',
+    min: BEAT2_MIN,
     weight: 2,
-    why: 'A prepared team usually kills, with random legal talents too',
+    why: 'A prepared team usually wins within two weekends: a kill in about half of its weekends or more (Misa, 2026-10-30)',
   },
   {
     measure: 'tool.share',
     min: TOOL_SHARE_MIN,
     weight: 1,
-    why: 'The boss’s tool is worth at least ten points of its HP removed (rule cards ask before they require)',
+    why: 'The boss’s tool is worth at least ten points of its HP removed with random legal talents (rule cards ask before they require)',
+  },
+  {
+    measure: 'tool.written',
+    min: TOOL_SHARE_MIN,
+    weight: 1,
+    why: 'and with the written talents too (the answer test’s own measure)',
   },
 ];
 
+// The unprepared classic party may get anything but a clean kill, so its HP removed has no limit; the mixed server has no target
+// (its numbers are information, `RAID_MEASURES`).
 const unpreparedTargets = (): RaidTarget[] => [
   {
     measure: 'classic.kill',
-    max: 0.02,
+    max: 0.05,
     weight: 1,
-    why: 'The unprepared classic party never kills',
-  },
-  {
-    measure: 'classic.share',
-    max: 0.5,
-    weight: 1,
-    why: 'It removes no more than half the HP (today two bosses reach about two thirds at the high rank: a known gap)',
-  },
-  {
-    measure: 'mixed.share',
-    min: 0.6,
-    max: 0.9,
-    weight: 1,
-    why: 'A mixed server usually reaches the second retreat (85%) but not always',
-  },
-  {
-    measure: 'mixed.kill',
-    max: 0.5,
-    weight: 1,
-    why: 'and sometimes kills, but not most weekends',
+    why: 'The unprepared classic party kills at most about 5% of weekends (Misa, 2026-10-30)',
   },
 ];
 
-/** DRAFT, awaiting Misa: the same bounds at every rank (the ranks differ in the boss's numbers, not in what is asked of them). */
+/** Misa's targets, 2026-10-30: the same bounds at every rank (the ranks differ in the boss's numbers, not in what is asked of them). */
 export const RAID_TARGETS: Readonly<Record<TargetRank, readonly RaidTarget[]>> = {
   low: [...preparedTargets(), ...unpreparedTargets()],
   mid: [...preparedTargets(), ...unpreparedTargets()],
   high: [...preparedTargets(), ...unpreparedTargets()],
 };
+
+/** The chance to kill in at most `weekends` weekends when each has the kill rate `p`, attempts assumed alike: `1 - (1 - p)^weekends`. */
+export const beatWithin = (p: number, weekends: number): number => 1 - (1 - p) ** weekends;
+
+/**
+ * The expected number of weekends to the first kill, `1 / p` (a fixed track: a failed boss returns at full HP, attempts assumed
+ * alike). Infinity when `p` is 0.
+ */
+export const weeksToBeat = (p: number): number => (p > 0 ? 1 / p : Number.POSITIVE_INFINITY);
+
+/** Weeks to beat as text: "never" when `p` is 0, "20+" beyond `WEEKS_CAP`, else one decimal ("2.0"). */
+export function weeksText(p: number): string {
+  const w = weeksToBeat(p);
+  if (w === Number.POSITIVE_INFINITY) return 'never';
+  if (w > WEEKS_CAP) return `${WEEKS_CAP}+`;
+  return w.toFixed(1);
+}
 
 /**
  * The ladder (a hard constraint, `test/strength.test.ts`): HP, Attack and armour rise from the low rank to the mid and the high

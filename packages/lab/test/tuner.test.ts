@@ -17,28 +17,36 @@ import {
   answerLine,
   raidBossOf,
   robustnessOf,
+  toolCost,
 } from '../src';
 import { main } from '../src/cli';
 import type { Executor } from '../src/jobs';
 import {
+  BEAT2_MIN,
   LADDER,
+  RAID_MEASURES,
   RAID_TARGETS,
   TARGET_RANKS,
+  beatWithin,
   comfortOf,
   lossOf,
   metBy,
   missOf,
+  weeksText,
+  weeksToBeat,
   type RaidMeasures,
   type RaidTarget,
 } from '../src/targets';
 import {
   absoluteOf,
   describeTarget,
+  evalCandidate,
   findConflicts,
   fitsBetter,
   ladderBox,
   nativeOf,
   randomTalentMeasure,
+  rebaseOn,
   searchPoints,
   todayAbsolute,
   tuneBoss,
@@ -46,16 +54,20 @@ import {
   type Axis,
   type Level,
   type Point,
+  type Numbers,
   type Scored,
   type TuneEvalArgs,
 } from '../src/tuner';
 
-/** Measures that meet every target of the draft. */
+/** Measures that meet every target. */
 const GOOD: RaidMeasures = {
   'prepared.share': 0.9,
-  'prepared.kill': 0.7,
+  'prepared.kill': 0.3,
+  'prepared.written': 0.6,
+  'prepared.beat2': 0.84,
   'tool.share': 0.15,
-  'classic.share': 0.3,
+  'tool.written': 0.15,
+  'classic.share': 0.9,
   'classic.kill': 0,
   'mixed.share': 0.75,
   'mixed.kill': 0.2,
@@ -72,19 +84,56 @@ describe('targets: the numbers the tests used before, in one place', () => {
     expect(MARGIN_TARGET).toBe(0.6);
   });
 
-  it('pins the draft targets of every rank and the ladder', () => {
+  it('pins Misa’s targets of 2026-10-30 at every rank and the ladder', () => {
+    expect(BEAT2_MIN).toBe(0.75);
     for (const rank of TARGET_RANKS) {
       const t = (m: string) => RAID_TARGETS[rank].find((x) => x.measure === m);
       expect(t('prepared.share')?.min).toBe(ROBUST_SHARE);
-      expect(t('prepared.kill')?.min).toBe(ROBUST_TARGET);
+      expect(t('prepared.beat2')?.min).toBe(BEAT2_MIN);
       expect(t('tool.share')?.min).toBe(TOOL_SHARE_MIN);
-      expect(t('classic.kill')?.max).toBe(0.02);
-      expect(t('classic.share')?.max).toBe(0.5);
-      expect([t('mixed.share')?.min, t('mixed.share')?.max]).toEqual([0.6, 0.9]);
-      expect(t('mixed.kill')?.max).toBe(0.5);
-      expect(RAID_TARGETS[rank]).toHaveLength(7);
+      expect(t('tool.written')?.min).toBe(TOOL_SHARE_MIN);
+      expect(t('classic.kill')?.max).toBe(0.05);
+      // No target: the random-talent kill rate, the classic party's HP removed, the mixed server.
+      for (const m of [
+        'prepared.kill',
+        'prepared.written',
+        'classic.share',
+        'mixed.share',
+        'mixed.kill',
+      ])
+        expect(t(m), `${rank} ${m}`).toBeUndefined();
+      expect(RAID_TARGETS[rank]).toHaveLength(5);
     }
     expect(LADDER).toEqual({ lowOfHigh: 0.9, midOfHigh: 0.95 });
+  });
+});
+
+describe('weeks to beat', () => {
+  it('beat2 is the chance of a kill in at most two weekends, 1 - (1 - p)^2', () => {
+    expect(beatWithin(0, 2)).toBe(0);
+    expect(beatWithin(1, 2)).toBe(1);
+    expect(beatWithin(0.5, 2)).toBeCloseTo(0.75, 12);
+    expect(beatWithin(0.3, 3)).toBeCloseTo(1 - 0.7 ** 3, 12);
+    // The target of 75% is a kill rate of one half.
+    expect(beatWithin(0.5, 2)).toBeGreaterThanOrEqual(BEAT2_MIN);
+    expect(beatWithin(0.49, 2)).toBeLessThan(BEAT2_MIN);
+  });
+
+  it('is 1 / p weekends, "never" at p 0 and "20+" beyond twenty', () => {
+    expect(weeksToBeat(0.5)).toBe(2);
+    expect(weeksToBeat(1)).toBe(1);
+    expect(weeksToBeat(0)).toBe(Number.POSITIVE_INFINITY);
+    expect(weeksText(0)).toBe('never');
+    expect(weeksText(1)).toBe('1.0');
+    expect(weeksText(0.4)).toBe('2.5');
+    expect(weeksText(0.05)).toBe('20.0');
+    expect(weeksText(0.04)).toBe('20+');
+    expect(weeksText(0.001)).toBe('20+');
+  });
+
+  it('every measure the tuner reads is listed once', () => {
+    expect(new Set(RAID_MEASURES).size).toBe(RAID_MEASURES.length);
+    expect(Object.keys(GOOD).sort()).toEqual([...RAID_MEASURES].sort());
   });
 });
 
@@ -99,38 +148,42 @@ describe('the loss', () => {
     expect(lossOf(targets, GOOD)).toBe(0);
     const edges = set({
       'prepared.share': 0.8,
-      'prepared.kill': 0.6,
+      'prepared.beat2': 0.75,
       'tool.share': 0.1,
-      'classic.share': 0.5,
-      'classic.kill': 0.02,
-      'mixed.share': 0.9,
-      'mixed.kill': 0.5,
+      'tool.written': 0.1,
+      'classic.kill': 0.05,
     });
     expect(lossOf(targets, edges)).toBe(0);
-    expect(lossOf(targets, set({ 'mixed.share': 0.6 }))).toBe(0);
+    // No target: the classic party's HP removed, the mixed server, the random-talent kill rate.
+    expect(
+      lossOf(
+        targets,
+        set({
+          'classic.share': 1,
+          'mixed.share': 0,
+          'mixed.kill': 1,
+          'prepared.kill': 0,
+          'prepared.written': 0.5,
+        }),
+      ),
+    ).toBe(0);
     // One step outside any bound is a loss.
     for (const [m, v] of [
       ['prepared.share', 0.79],
-      ['prepared.kill', 0.59],
+      ['prepared.beat2', 0.74],
       ['tool.share', 0.09],
-      ['classic.share', 0.51],
-      ['classic.kill', 0.03],
-      ['mixed.share', 0.59],
-      ['mixed.share', 0.91],
-      ['mixed.kill', 0.51],
+      ['tool.written', 0.09],
+      ['classic.kill', 0.06],
     ] as const)
       expect(lossOf(targets, set({ [m]: v })), `${m} ${String(v)}`).toBeGreaterThan(0);
   });
 
   it('is the weighted distance to the bound, summed', () => {
     const t = (m: string) => targets.find((x) => x.measure === m) as RaidTarget;
-    expect(missOf(t('classic.share'), 0.7)).toBeCloseTo(0.2, 12);
-    const loss = lossOf(targets, set({ 'prepared.share': 0.7, 'classic.share': 0.7 }));
-    expect(loss).toBeCloseTo(
-      t('prepared.share').weight * 0.1 + t('classic.share').weight * 0.2,
-      12,
-    );
-    expect(metBy(t('mixed.share'), 0.75)).toBe(true);
+    expect(missOf(t('classic.kill'), 0.25)).toBeCloseTo(0.2, 12);
+    const loss = lossOf(targets, set({ 'prepared.share': 0.7, 'classic.kill': 0.25 }));
+    expect(loss).toBeCloseTo(t('prepared.share').weight * 0.1 + t('classic.kill').weight * 0.2, 12);
+    expect(metBy(t('prepared.beat2'), 0.75)).toBe(true);
   });
 
   it('comfort tells apart two candidates of loss 0: more room inside the bounds is better', () => {
@@ -414,7 +467,89 @@ describe('the boss and its ladder', () => {
   });
 });
 
+describe('lower ranks against a new high rank', () => {
+  const rebuilt = (bp: Numbers, high: Numbers): Numbers => ({
+    hp: Math.round((high.hp * bp.hp) / 10_000),
+    atk: Math.round((high.atk * bp.atk) / 10_000),
+    armour: Math.round((high.armour * bp.armour) / 10_000),
+  });
+
+  it('gives bp that rebuild the measured absolute numbers, tidy where it can', () => {
+    // A synthetic case: the high rank moves from 11,000 / 99 / 170 to 9,500 / 89 / 209; the mid rank was measured at 7,260 / 79 / 182.
+    const high = { hp: 9_500, atk: 89, armour: 209 };
+    const mid = { hp: 7_260, atk: 79, armour: 182 };
+    const bp = rebaseOn(mid, high);
+    expect(rebuilt(bp, high)).toEqual(mid);
+    // 7,260 / 9,500 is 7,642 bp: no multiple of 100 or 10 rebuilds it (7,640 gives 7,258), so the whole bp is used.
+    expect(bp.hp).toBe(7_642);
+    expect(bp.armour).toBe(8_700);
+    // A small high rank (armour 6) still rebuilds exactly.
+    const small = { hp: 14_100, atk: 70, armour: 6 };
+    const low = { hp: 12_325, atk: 63, armour: 5 };
+    expect(rebuilt(rebaseOn(low, small), small)).toEqual(low);
+    expect(rebaseOn(low, small).armour).toBe(8_300);
+  });
+
+  it('rebuilds every number in a sweep, and an unchanged high rank gives back the same bp', () => {
+    for (let hi = 3; hi < 400; hi += 7)
+      for (let abs = 1; abs <= hi + 5; abs++) {
+        const n = rebaseOn({ hp: 1, atk: abs, armour: abs }, { hp: 1_000, atk: hi, armour: hi });
+        expect(
+          rebuilt(n, { hp: 1_000, atk: hi, armour: hi }).atk,
+          `${String(abs)} of ${String(hi)}`,
+        ).toBe(abs);
+      }
+    const high = { hp: 20_200, atk: 116, armour: 34 };
+    expect(rebaseOn({ hp: 18_180, atk: 107, armour: 28 }, high)).toEqual({
+      hp: 9_000,
+      atk: 9_200,
+      armour: 8_200,
+    });
+  });
+
+  it('the tuner’s paste for the lower ranks is a share of the proposed high rank when it moves', async () => {
+    const results = await tuneBoss('tidal-colossus', TARGET_RANKS, true, { exec: fake, slots: 4 });
+    const high = results[0]?.best?.absolute;
+    expect(high).toBeDefined();
+    expect(high?.hp).not.toBe(20_200);
+    for (const r of results.slice(1)) {
+      expect(r.rebasedOn).toEqual(high);
+      const bp = rebaseOn(r.best?.absolute as Numbers, high as Numbers);
+      expect(rebuilt(bp, high as Numbers)).toEqual(r.best?.absolute);
+      const grouped = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '_');
+      expect(r.paste).toContain(
+        `ranks.${r.rank}): [${grouped(bp.hp)}, ${grouped(bp.atk)}, ${grouped(bp.armour)}]`,
+      );
+    }
+    expect(results[0]?.rebasedOn).toBeUndefined();
+  });
+});
+
 describe('the measure', () => {
+  it('the tool gap with written talents is the answer test’s own (toolCost), and the kill rate the same line’s', () => {
+    const id = 'storm-sovereign';
+    const answer = BOSS_ANSWERS[id]?.[0];
+    if (!answer) throw new Error('no answer');
+    const numbers = absoluteOf(id, 'high', nativeOf(id, 'high'));
+    const r = evalCandidate({
+      boss: id,
+      rank: 'high',
+      numbers,
+      fidelity: { weekends: 6, draws: 3, classicWeekends: 2, mixedDraws: 1, mixedWeekends: 1 },
+      salt: 'tuner:tool',
+    });
+    const cost = toolCost(
+      raidBossOf(id, { rank: 'high', ...numbers }),
+      answer,
+      answerLine(answer.line),
+      6,
+      'tuner:tool:w',
+    );
+    expect(r.measures['tool.written']).toBeCloseTo(cost.shareDrop / 100, 12);
+    expect(r.measures['prepared.written']).toBe(cost.withStats.tiers.kill);
+    expect(r.measures['prepared.beat2']).toBeCloseTo(1 - (1 - cost.withStats.tiers.kill) ** 2, 12);
+  });
+
   it('random talents give the numbers robustnessOf gives for them, without the measures the tuner does not read', () => {
     const id = 'tidal-colossus';
     const boss = raidBossOf(id, { rank: 'low' });
@@ -497,7 +632,7 @@ describe('the orchestration', () => {
   });
 
   it('reports a clash of targets as a content problem, not a numbers problem', async () => {
-    // Every candidate: the prepared team does well exactly when the classic party does.
+    // Every candidate: the prepared team does well exactly when the classic party kills.
     const clash: Executor = (job) => {
       const r = (job.args as TuneEvalArgs).numbers.hp / 20_200;
       return Promise.resolve({
@@ -505,7 +640,7 @@ describe('the orchestration', () => {
           measures: {
             ...GOOD,
             'prepared.share': r > 0.97 ? 0.9 : 0.5,
-            'classic.share': r > 0.97 ? 0.7 : 0.3,
+            'classic.kill': r > 0.97 ? 0.3 : 0,
           },
           weekends: 1,
         },
@@ -517,7 +652,7 @@ describe('the orchestration', () => {
       slots: 2,
     });
     expect(r.conflicts.conflicts.map((k) => `${k.a.measure}+${k.b.measure}`)).toEqual([
-      'prepared.share+classic.share',
+      'prepared.share+classic.kill',
     ]);
     expect(r.best?.loss).toBeGreaterThan(0);
   });

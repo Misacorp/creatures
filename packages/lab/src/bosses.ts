@@ -309,7 +309,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       grow: { atkBp: 2_000, jumps: 1 },
     },
     asks: 'The Rod leaps from the strongest Payoff, round after round, and a Judgement Bolt, announced at round start, can fell it. Draw the Rod onto something that can take it, and have Night Watch beside the Payoff for the Bolt.',
-    ranks: { low: [8_500, 8_600], mid: [9_200, 9_100] },
+    ranks: { low: [9_000, 8_800, 8_200], mid: [9_500, 9_400, 9_400] },
     moves: [
       [
         'thunderclap',

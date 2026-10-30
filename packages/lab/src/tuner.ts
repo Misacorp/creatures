@@ -32,12 +32,15 @@ import { mixedSpread } from './raidMeasure';
 import { classicFor, type Pick } from './search';
 import {
   LADDER,
+  RAID_MEASURES,
   RAID_TARGETS,
   TARGET_RANKS,
+  beatWithin,
   comfortOf,
   lossOf,
   metBy,
   missOf,
+  weeksText,
   type RaidMeasures,
   type RaidTarget,
   type TargetRank,
@@ -480,7 +483,7 @@ export interface TuneEvalResult {
   readonly weekends: number;
 }
 
-/** Measures one candidate (what a `tune-eval` job runs): the seven measures of `targets.ts` for the boss with these numbers. */
+/** Measures one candidate (what a `tune-eval` job runs): the measures of `targets.ts` for the boss with these numbers. */
 export function evalCandidate(a: TuneEvalArgs): TuneEvalResult {
   const { line, core } = preparedOf(a.boss);
   const boss = raidBossOf(a.boss, { rank: a.rank, ...a.numbers });
@@ -493,6 +496,10 @@ export function evalCandidate(a: TuneEvalArgs): TuneEvalResult {
     f.draws,
     `${a.salt}:n`,
   );
+  // The line with its written talents: a server facing a returning boss can re-pick them from its Talent Book.
+  const written = weekendStats(boss, line, f.weekends, `${a.salt}:w`);
+  // The tool's worth with them, on the same seeds (`toolCost`, as `test/bossAnswers.test.ts` measures it).
+  const writtenWithout = weekendStats(boss, withoutTool(line, core), f.weekends, `${a.salt}:w`);
   const classic = weekendStats(boss, classicFor(raidMode(boss)), f.classicWeekends, `${a.salt}:c`);
   const mixed = mixedSpread(
     boss,
@@ -510,7 +517,10 @@ export function evalCandidate(a: TuneEvalArgs): TuneEvalResult {
     measures: {
       'prepared.share': withTool.share,
       'prepared.kill': withTool.kill,
+      'prepared.written': written.tiers.kill,
+      'prepared.beat2': beatWithin(written.tiers.kill, 2),
       'tool.share': withTool.share - without.share,
+      'tool.written': written.damageShare - writtenWithout.damageShare,
       'classic.share': classic.damageShare,
       'classic.kill': classic.tiers.kill,
       'mixed.share': mixed.weekend.damageShare,
@@ -518,6 +528,7 @@ export function evalCandidate(a: TuneEvalArgs): TuneEvalResult {
     },
     weekends:
       2 * Math.max(1, Math.floor(f.weekends / f.draws)) * f.draws +
+      2 * f.weekends +
       f.classicWeekends +
       f.mixedDraws * f.mixedWeekends,
   };
@@ -559,6 +570,8 @@ export interface RankResult {
   readonly seconds: number;
   /** The lines to paste into `bosses.ts`. */
   readonly paste: string;
+  /** Set when a lower rank's paste is expressed against a proposed high rank other than today's (`rebaseOn`). */
+  readonly rebasedOn?: Numbers;
 }
 
 /** Where the candidates run: `exec` runs one job, `slots` at a time (the same shape as the report's `JobRunner`). */
@@ -573,6 +586,27 @@ function pasteOf(id: string, rank: TargetRank, n: Numbers): string {
   if (rank === 'high')
     return `${id} (RAID_SPECS, high rank): hp: ${grouped(n.hp)}, atk: ${n.atk}, armour: ${n.armour}`;
   return `${id} (RAID_SPECS, ranks.${rank}): [${grouped(n.hp)}, ${grouped(n.atk)}, ${grouped(n.armour)}]  // [hpBp, atkBp, armourBp]`;
+}
+
+/**
+ * The numbers of a lower rank as bp of a high rank (the spec's units), such that `raidBossOf` rebuilds `absolute` from them
+ * (`Math.round(high * bp / 10_000) === absolute`). The tidiest bp that does: a multiple of 100 when one works, else of 10, else
+ * the nearest whole bp (which always works while the high rank's number is below 10,000).
+ */
+export function rebaseOn(absolute: Numbers, high: Numbers): Numbers {
+  const one = (abs: number, hi: number): number => {
+    const exact = (abs * 10_000) / hi;
+    for (const step of [100, 10, 1]) {
+      const bp = Math.round(exact / step) * step;
+      if (Math.round((hi * bp) / 10_000) === abs) return bp;
+    }
+    return Math.round(exact);
+  };
+  return {
+    hp: one(absolute.hp, high.hp),
+    atk: one(absolute.atk, high.atk),
+    armour: one(absolute.armour, high.armour),
+  };
 }
 
 function rowOf(
@@ -804,6 +838,23 @@ export async function tuneBoss(
         native[rank] = r.best.numbers;
       }
     }
+  // A lower rank's numbers are a share of the high rank's. The ranks were measured as absolute numbers, so when the high rank is
+  // proposed to change, the paste for the lower ranks is expressed against the new high rank, and the boss rebuilds as measured.
+  const high = results.get('high')?.best?.absolute;
+  const todayHigh = today.high;
+  if (
+    high &&
+    (high.hp !== todayHigh.hp || high.atk !== todayHigh.atk || high.armour !== todayHigh.armour)
+  )
+    for (const rank of order) {
+      const r = results.get(rank) as RankResult;
+      if (rank !== 'high' && r.best)
+        results.set(rank, {
+          ...r,
+          paste: pasteOf(id, rank, rebaseOn(r.best.absolute, high)),
+          rebasedOn: high,
+        });
+    }
   return order.map((rank) => results.get(rank) as RankResult);
 }
 
@@ -818,7 +869,7 @@ const NAMES: Readonly<Record<string, string>> = {
 };
 
 const value = (m: string, v: number): string =>
-  m.endsWith('.kill') || m.endsWith('.share') ? pct(v) : String(v);
+  /\.(kill|share|written|beat2)$/.test(m) ? pct(v) : String(v);
 const numbersText = (rank: TargetRank, n: Numbers): string =>
   rank === 'high'
     ? `HP ${grouped(n.hp)}, Attack ${n.atk}, armour ${n.armour}`
@@ -842,9 +893,35 @@ export function summaryOf(r: RankResult): string[] {
     };
     lines.push(`| ${describeTarget(t)} | ${cell(r.today)} | ${cell(r.best)} |`);
   });
+  // Information without a target: the measures no target reads, and the weeks to beat (the expected number of weekends to the
+  // first kill, 1 / p, for a fixed track where a failed boss returns at full HP).
+  const info = RAID_MEASURES.filter((m) => !r.targets.some((t) => t.measure === m));
+  const weeks: [string, string][] = [
+    ['prepared line (written talents)', 'prepared.written'],
+    ['classic party', 'classic.kill'],
+    ['mixed server', 'mixed.kill'],
+  ];
+  lines.push(
+    '',
+    'Information (no target):',
+    '',
+    '| Measure | Today | Best found |',
+    '| --- | --- | --- |',
+  );
+  const cells = (f: (row: Row) => string) => `${f(r.today)} | ${r.best ? f(r.best) : '-'}`;
+  for (const m of info) lines.push(`| ${m} | ${cells((row) => value(m, row.measures[m]))} |`);
+  for (const [label, m] of weeks)
+    lines.push(
+      `| weeks to beat, ${label} | ${cells((row) => weeksText(row.measures[m as keyof RaidMeasures]))} |`,
+    );
   lines.push('', `Today: ${numbersText(r.rank, r.today.numbers)}.`);
   if (r.best) {
     lines.push(`Best: ${numbersText(r.rank, r.best.numbers)}.`, '', `Paste: \`${r.paste}\``);
+    if (r.rebasedOn)
+      lines.push(
+        '',
+        `The paste is a share of the proposed high rank (${numbersText('high', r.rebasedOn)}), so that the boss has the numbers measured here (${numbersText('high', r.best.absolute)}); apply the high rank's paste with it.`,
+      );
     if (r.atEdge.length)
       lines.push(
         '',
@@ -882,7 +959,7 @@ export function summaryAll(
 ): string[] {
   const out = [`## Boss tuner${quick ? ' (quick)' : ''}`, ''];
   out.push(
-    'Proposals only: nothing was applied to `bosses.ts`. The targets are drafts (`targets.ts`) awaiting Misa.',
+    'Proposals only: nothing was applied to `bosses.ts`. The targets are Misa’s, 2026-10-30 (`targets.ts`). Weeks to beat is the expected number of weekends to the first kill, 1 / p (a failed boss returns at full HP, attempts assumed alike; "20+" beyond 20).',
     '',
   );
   for (const r of results) out.push(...summaryOf(r));
