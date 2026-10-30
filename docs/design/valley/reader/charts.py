@@ -129,8 +129,8 @@ def charts(root):
 
     # 4. The Forge's fire.
     fd = d['fireByDial']
-    ref = [10 + 3 * (i + 1) for i in range(len(fd['all']['fire']))]
-    parts.append(_line_chart('The Forge\'s fire (the item level cap)', 'On a server of 8, by how many raid bosses it kills. The gear ladder ends at about 100; the plan\'s floor (+3 a week) is dashed.',
+    ref = [10 + 3.75 * i for i in range(len(fd['all']['fire']))]
+    parts.append(_line_chart('The Forge\'s fire (the item level cap)', 'On a server of 8, by how many raid bosses it kills. The gear ladder ends at about 100; the time floor (+3.75 a week, tuned) is dashed.',
                              [('All bosses', fd['all']['fire']), ('Half', fd['half']['fire']), ('None', fd['none']['fire'])],
-                             180, [0, 50, 100, 150], ref=('The plan\'s floor', ref)))
+                             180, [0, 50, 100, 150], ref=('The time floor', ref)))
     return ''.join(parts)

@@ -6,7 +6,41 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-Nothing waiting.
+### Q36. Should the shard exchange happen by itself when something waits? (a follow-up)
+
+Status: asked, round 15 (2026-10-30). Follow-up to Q34 (the exchange), held until the lab could show it. Touches: `forge.md` V-FORGE-4 and V-FORGE-10, ribbons, F-1 and F-5 in `goals.md`.
+
+**Why it matters.** With the exchange, a daily player's Forge waits for a shard only 7% of the time (it was about half). But a player who never taps the exchange still has creatures stuck at a ribbon (levels 10 and 20) for want of their own element's shards: about 13 creatures waiting at week 12, losing a lot of growth, while the right shards could be traded from the pile. Our filters say nothing should wait on the player for long (F-1, no babysitting) and the fix is one tap (F-5).
+
+- **A. By itself when something waits.** When a piece or a ribbon waits on a shard you lack, the Forge trades for it at the standard rate on its own, and the return walk mentions it (with a crit when it happens). Example: "Pip was waiting for Tide shards; the Forge traded 15 Ember shards for 5 Tide (a lucky trade: 6!)." You still trade by hand for anything else, and traders with better rates stay a choice.
+- **B. One tap, shown where it waits.** The creature's card and the return walk say "Pip waits for 5 Tide shards: trade 15 Ember?" Nothing happens without the tap. Example: Juho, who looks in on Sundays, sees three such taps waiting.
+- **C. Ribbons take any element's shards; only the Forge needs the right element.** Example: Pip's ribbon takes whatever shards you have; the exchange is only for crafting.
+
+**Lead's pick: A.** It keeps your exchange (the rates, the crits, traders later) and stops creatures waiting for weeks on a trade nobody would refuse. The pull to look in daily stays with the stores and new finds, not with chores.
+
+### Q37. Should what the server builds move the item level cap, or mostly time? (a challenge)
+
+Status: asked, round 15 (2026-10-30). Challenges: Q27 (the cap "fed by many systems", building upgrades and rare finds like a Stardew community house) against the panel's time floor (V-COM-13). Touches: `commons.md` V-COM-13, `gear.md` V-GEAR-8 and V-GEAR-10.
+
+**Why it matters.** The lab tuned the Forge's fire (the item level cap) to the plan's numbers: about 50 at week 12 and not past the gear ladder's end (about 100) before week 24. The only way it found was to let the weekly time floor do almost all the work and shrink what building, collections and boss kills add to a quarter. Now a server that kills every boss and one that kills none have almost the same cap (the fire chart: the three lines sit on top of each other). Your Q27 answer wanted many systems to feed it.
+
+- **A. Mostly a clock.** The cap rises steadily for everyone; building and bosses add a little. Example: every server reaches item level 50 around week 11, whatever it does. Predictable and fair to quiet servers, but building doesn't change your gear.
+- **B. Building drives it, with a slow floor.** The floor rises slowly (example: about half today's pace) and building, collections and boss kills add most of the heat. Example: a busy server reaches 55 at week 12, a quiet one 35; a server that can't beat a boss still moves, just slower.
+- **C. No floor.** Only building and kills warm the fire. Example: a server stuck on a boss and not building stays at 30 for weeks.
+
+**Lead's pick: B.** It is what you asked for in Q27 (everything the server builds or beats makes better gear), while the slow floor keeps a struggling server moving (F-7). The tuner then sets the numbers so a busy server stays under 100 before week 24.
+
+### Q38. How fast should a collection grow?
+
+Status: asked, round 15 (2026-10-30). Touches: `scouts.md` (creature finds), T-1 in `goals.md`, combat v2's roster profile (`roadmap.md`).
+
+**Why it matters.** To keep a player's 10th creature close to their 3rd (T-1), the tuner nearly doubled how often scouts find creatures. Now a daily player owns about 19 kinds at week 4, 47 at week 12 and 81 at week 24 (of 106 in the game by then, with 12 new species every 4 weeks); a weekly player about 10, 30 and 55. The plan's example was 15 at week 4, and combat v2 tunes its bosses for about 36 creatures at week 24. More finds mean more "new creature!" moments, but also more duplicates and less to look forward to.
+
+- **A. Slower, like the plan.** About 15 at week 4 and 30 at week 12; the 10th creature catches up through faster growth instead (catch-up). Example: a new species is an event every few days.
+- **B. As tuned.** About 20 at week 4, 45 at week 12, 80 at week 24, owning about three quarters of what exists. Example: most visits in the first weeks bring someone new; later, new species drops are what you chase.
+- **C. Faster.** Almost everything that exists within a few weeks of its release. Example: each content drop is caught within a fortnight.
+
+**Lead's pick: B.** It keeps something to chase (about a quarter of the species are always still out there, and each drop adds more), and the first weeks feel generous. If you pick it, the combat v2 session gets the new roster sizes before tuning against them.
 
 ## Queue
 
