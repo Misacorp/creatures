@@ -9,11 +9,8 @@
 import type { SpriteDef } from '../sprite-data';
 import type { ArtKind } from '../sprite-lint';
 import { VOID_CONCEPTS } from './void';
-<<<<<<< HEAD
-import { VOID_GEAR_CONCEPTS } from './void-gear';
-=======
 import { VOID_FOES_CONCEPTS } from './void-foes';
->>>>>>> origin/claude/void-art
+import { VOID_GEAR_CONCEPTS } from './void-gear';
 
 export interface Concept {
   kind: ArtKind;
@@ -50,8 +47,8 @@ export interface ConceptSet {
   sprites: Readonly<Record<string, Concept>>;
 }
 
-<<<<<<< HEAD
-export const CONCEPT_SETS: readonly ConceptSet[] = [VOID_CONCEPTS, VOID_GEAR_CONCEPTS];
-=======
-export const CONCEPT_SETS: readonly ConceptSet[] = [VOID_CONCEPTS, VOID_FOES_CONCEPTS];
->>>>>>> origin/claude/void-art
+export const CONCEPT_SETS: readonly ConceptSet[] = [
+  VOID_CONCEPTS,
+  VOID_FOES_CONCEPTS,
+  VOID_GEAR_CONCEPTS,
+];

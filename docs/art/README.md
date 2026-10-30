@@ -10,6 +10,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | --- | --- | --- | --- |
 | [Void creatures, two stages](#void) | liked | 8 | 2026-10-30: imagine the Void element on creatures; four creatures, one per role, no names or stats. |
 | [Void, a raid boss, three foes and two floor bosses](#void-foes) | draft | 6 | 2026-10-31: a Void raid boss, dungeon foes and dungeon bosses. |
+| [Void gear: tint, plain pieces, a set, a shard](#void-gear) | draft | 11 | 2026-10-31: design Void gear. |
 
 <a id="void"></a>
 
@@ -59,3 +60,32 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `void-crab` | foe |  | draft | Drift Crab: a low round shell with a window and two big claws; it tucks in and hides. |
 | `void-floor-jelly` | boss |  | draft | Lantern Drifter: a floating bell with a starry window, two glinting eyes and trailing tendrils tipped with stars. |
 | `void-floor-sentinel` | boss |  | draft | Dim Sentinel: a tall standing stone with a doorway of night in its belly, glinting eyes and two shards orbiting it. |
+
+<a id="void-gear"></a>
+
+## Void gear: tint, plain pieces, a set, a shard
+
+![Void gear: tint, plain pieces, a set, a shard](void-gear.png)
+
+- **Status:** draft
+- **Requested:** 2026-10-31: design Void gear.
+- **Element:** void
+- **Source:** `apps/activity/src/sprites/concepts/void-gear.ts` (draw it with `pnpm art void-gear`)
+- **Sheet of:** `da4d774f7e18`
+- Needs before use: the Void element in the content (an element tag, a Void Hat, Scarf and Charm at three tiers in gear.json, the set in gear-sets.json, a Void shard in the part kinds), the tint in TINTS and SET_TINTS (gear-sprites.ts), names and flavour confirmed, and the charm flair in item-flair.ts.
+- Proposed tint: t #7468bc, u #463c86, h #b4aae8 (the Void creatures, a little lighter so a dark item stands out on the panels).
+- The charm is the shared trail-charm with a Void flair (the variant); every other piece is its own look, as the shipped hats and scarves are.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `void-cap` | item |  | draft | Dusk Cap: a round cap with a star on a stalk and a band of starry window. |
+| `void-hood` | item |  | draft | Gloaming Hood: a pointed cloth hood; inside it shows a round window of night with one star. |
+| `void-crown` | item |  | draft | Stargazer's Crown: a three-point crown with a tilted ring in orbit around its tips and a star in its window. |
+| `void-scarf` | item |  | draft | Twilight Scarf: a soft wound scarf with a star on the band and one long tail, notched at the end. |
+| `void-shawl` | item |  | draft | Nightfall Shawl: a triangle of cloth hanging to a point, a lit window across the chest, a star at the tip. |
+| `void-mantle` | item |  | draft | Stargazer's Mantle: sloping shoulders, a collar, a crescent clasp, a front seam and a scalloped hem. |
+| `void-charm` | item |  | draft | Starwell Charm: the shared trail-charm with a Void flair (a window with a star, and a glint); the variant is the plain shipped stone. |
+| `void-set-hat` | item | set | draft | Starkeeper's Hat: a tall pointed hat with a gold star at the tip and a gold band round a starry window. |
+| `void-set-scarf` | item | set | draft | Starkeeper's Loop: a gold-striped wound scarf with a long tail, a star on it and a gold tassel. |
+| `void-set-charm` | item | set | draft | Starkeeper's Lens: a gold ring, like a lens held up to the sky, with a starry window inside. |
+| `void-shard` | part |  | draft | Void shard: a crescent-shaped crystal with a star caught in its hollow. |
