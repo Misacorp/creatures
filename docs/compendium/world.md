@@ -107,6 +107,21 @@ Status: design, not shipped (`(design: speed-and-dodge.md section 5)`). Everythi
 
 **Mire as a force** `(compendium detail, not shipped)`: Grove is living patience, which grows. Mire is patience that keeps: it does not grow, it holds. Where Grove shelters, Mire keeps. Where Tide washes, Mire stays put. Its creatures are guards and debuffers, the ones who make a fight slower, which is how patience wins. Together with Ember it forms the first pair of elements that are strong against each other.
 
+### Void: a concept, art first (not shipped)
+
+Status: concept art only (2026-10-30). No creatures, names, stats, marks or place yet; nothing in the content. Everything below is `(compendium detail, not shipped)` and may change when Misa designs the element.
+
+**Void is the dark between the stars.** It is the quiet the night sky is made of, the place things drift off to and, sometimes, come back from. Where Spark is a flash in the dark, Void is the dark itself. It fits the motif "light in the dark" (section 4) from the other side: Void creatures carry a little of the dark, and a star in it.
+
+**The look.** The game is drawn on a night-sky UI, so a dark creature would vanish. Void creatures are **pale moon-lilac** (soft greys with a touch of violet, low saturation, light), and each carries a **window**: a patch of starry night with one warm star, as if it had a piece of the sky inside. The window always sits inside the pale body, never against the outline, and never just under the face (there it reads as an open mouth). One cool glint (pale cyan) is the accent. The palette, keys and concept sprites are in `apps/activity/src/sprites/concepts/void.ts`; how they were made is in `docs/design/art-studio.md`.
+
+| Role    | Concept                                                                                | Where the window is               |
+| ------- | -------------------------------------------------------------------------------------- | --------------------------------- |
+| Guard   | An eclipse hood: a wide pale crescent over a sturdy body, held like a shield.          | Inside the hood                   |
+| Setter  | A floating wisp with a feeler that ends in a star; it points at the boss and marks it. | On the forehead, like a third eye |
+| Support | A small planet with a ring for a halo and two moons in orbit; it lifts its neighbours. | A round moon on the forehead      |
+| Payoff  | A lynx of the night: tall ears full of stars, a small star crest.                      | Inside the ears                   |
+
 ### Balance as a world idea (inferred)
 
 Nothing in the content says any element is good. Every element is strong against one and weak to another, and the reactions reward teams that use the loop. A world-level reading: no force wins for good; the loop keeps turning. The "wheel" line `(content)` supports this.

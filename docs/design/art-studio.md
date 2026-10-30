@@ -1,0 +1,56 @@
+# The art studio: how to make pixel art for the game
+
+Status: 2026-10-30. Written while drawing the first Void concepts, from what was hard about it. Read this before drawing any sprite: a creature, boss, item, part or banner. The style rules themselves are in `creatures.md` ("Art direction for sprites") and `m6-look.md`; this doc is the workflow and the tools.
+
+## The short version
+
+1. **Brief.** Write what the art must say in one line (the silhouette) and where it goes. For new content, read the compendium first (`docs/compendium/`). Concept art needs no name or stats.
+2. **Start from the template.** `pnpm art new creature` prints a 16×16 grid with the shared chibi face already in place (eyes, blush, mouth at the coordinates the tests check). Other kinds: `boss`, `item`, `part`, `banner` print an empty grid of the right size.
+3. **Draw in a concept set.** Concept sprites live in `apps/activity/src/sprites/concepts/<set>.ts` under working codes (`void-guard`), with a kind, a role and a one-line note. Nothing in the game imports this folder. Register a new set in `concepts/index.ts`.
+4. **Render and lint.** `pnpm art <set>` (about 0.2 s, no browser). It prints every rule the art breaks, with coordinates, and writes PNGs to `apps/activity/scratch/art/<set>/` (git ignores it).
+5. **Look at the PNGs**, not only the lint: the close-up card of each sprite and the set sheet (below). Fix, render again. Most sprites take three to five rounds.
+6. **Show Misa the set sheet** (`<set>.png`) and, for a detail, the sprite's card. Alternative palettes appear as their own labelled rows, so a colour choice is a choice he can see.
+7. **Promote** when the content lands: move the sprite into `src/sprites/data/` under the content id, add its shiny palette in `art.ts`, delete the concept. The sprite tests then apply to it.
+
+## What the studio draws
+
+- **`<id>.png`, the card.** A large zoom with a coordinate grid: x across the top, y down the side, a stronger line every 4 pixels, and a yellow line at the mirror axis of a mirrored sprite. Transparent pixels are a checker. Beside it, the sprite at 1×, 2×, 3× and 4× on each of the three panel colours (`--night`, `--dusk`, `--dusk-2`), the solid silhouette on a light card, and each alternative palette at 4×. Name fixes by coordinate ("row 6, x 3 should be shade").
+- **`<set>.png`, the set sheet.** Every sprite of the set at 6× with its role, one row per alternative palette, then the nearest shipped sprite by silhouette under each one (with the number of pixels they differ by), then a row at 3× where the concepts sit among shipped creatures, as a player would see them in a list.
+- **The lint** (`src/sprites/sprite-lint.ts`, pure and unit-tested; every shipped creature and boss passes it): grid and size for the kind, palette keys all used, the shared ink, at most 11 colours, nothing of the body cut by the canvas edge, the chibi face in place, a sensible footprint, a silhouette at least 12 pixels from every shipped creature, the element's colour family, and contrast with the dark panels (a warning). Alternative palettes are linted too but never fail the run.
+
+`pnpm art <set> --only id,id` draws a few; `--out <dir>` writes somewhere else (your scratchpad).
+
+## What was hard, and the rule it became
+
+Each of these cost a round while drawing the Void concepts or showed up in earlier retros.
+
+| What was hard                                                                                                                                                                    | Now                                                                                                                                                                  |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Seeing art before it is content.** The contact sheet (`scripts/sprite-sheet.mjs`) draws only species and bosses in `creatures.json`, and starts Vite and Chromium (about 9 s). | The studio draws any concept set, without a browser, in about 0.2 s. Draw, look, fix in a tight loop.                                                                |
+| **Naming a pixel.** Rows of characters with a mirrored half are easy to miscount; "the left ear" is vague.                                                                       | The card's coordinate grid and mirror line. Lint findings name x and y.                                                                                              |
+| **The rules lived only in tests,** in three copies (`hueSat` and `pixelDifference` in two test files), and ran only on content.                                                  | One lint module, used by the studio and by the tests.                                                                                                                |
+| **Dark on dark.** The game draws sprites on a night-sky UI. A dark area against the ink outline vanishes: the first Void hood and ears were invisible on `--dusk`.               | The contrast warning. **A dark area always has a lighter border inside the ink.** Dark creatures need a pale rim or a pale body (Void went pale).                    |
+| **A dark patch under the face reads as an open mouth** (the first Void belly windows looked like mouths full of teeth).                                                          | Put dark marks above the eyes, on ears, hoods, shells or tails; keep the area under the mouth light.                                                                 |
+| **The size table was out of date.** The shared face makes every creature's head 14 px wide, so "tiny is 6 to 8 px" could not be drawn.                                           | `creatures.md`'s size table now describes size by what grows around the head.                                                                                        |
+| **Every creature is the same blob.** The shared body means only top features, ears, wings and tails tell creatures apart.                                                        | Draw the distinguishing feature first and check it in the "in a list at 3×" row: if you cannot tell the concept from its neighbours there, the feature is too small. |
+| **Colour choices were described, not shown.**                                                                                                                                    | `alts` on a concept: each alternative palette is a labelled row in the set sheet.                                                                                    |
+| **Details that were never asked for** (retro 2026-10-28: ink lines added to ribbons).                                                                                            | Unchanged rule from `ux-patterns.md`: art rounds change only what was asked, and anything added is named in the message.                                             |
+
+## Kinds and sizes
+
+| Kind       | Size     | Rules beyond the common ones                                                 | Shipped examples          |
+| ---------- | -------- | ---------------------------------------------------------------------------- | ------------------------- |
+| `creature` | 16×16    | the chibi face, no body pixel on the edge, footprint, silhouette 12 px apart | `data/species-sprites.ts` |
+| `boss`     | 24×24    | only ink on the edge, footprint 16×16 or more                                | `data/boss-sprites.ts`    |
+| `item`     | 12×12    | (gear: tinted by element, `gear-sprites.ts`)                                 | `gear-sprites.ts`         |
+| `part`     | 8×8      |                                                                              | `gear-sprites.ts`         |
+| `banner`   | 64×24    |                                                                              | `data/banner-sprites.ts`  |
+| `free`     | up to 64 | none beyond the grid and palette                                             | glyphs, icons             |
+
+**Scenes are not covered yet.** Places, the world map and the living room are composed in code from several sprites and paths (`world-map-art.ts`, `room-art.ts`) and are bigger than 64 px. Shoot them in the workbench (`scripts/shoot.mjs`, with `--zoom` for a close crop). Next step when location art starts: a `scene` kind in the studio that lays out a concept scene from tiles.
+
+## Palette notes
+
+- The ink `#0d0a1a`, the eye white `#fbf8ec` and the blush `#ff8fab` are shared by every creature.
+- An element's colour family is in `ELEMENT_FAMILIES` (`sprite-lint.ts`): the hue range and, where it matters, saturation and lightness. A new element gets its family there before its first concept.
+- Void (concept): pale moon-lilac greys, low saturation and light, with a dark starry window and one warm star. See `docs/compendium/world.md`, "Void".

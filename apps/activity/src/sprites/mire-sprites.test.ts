@@ -20,6 +20,7 @@ import {
 import { MIRE_SPECIES_SPRITE_DATA } from './data/mire-species-sprites';
 import { BUNDLED_ELEMENT_ICONS, ICON_SIZE, elementIcon } from './element-icons';
 import { expandRows, parseSprite, swapPalette, type SpriteDef } from './sprite-data';
+import { hsl, silhouetteDifference } from './sprite-lint';
 
 // The Mire art was drawn ahead of its content. Everything is registered now (the bundled maps spread
 // the Mire maps in), and these tests keep the art honest: size, ink, palette, edge, silhouette.
@@ -42,41 +43,14 @@ function bounds(def: SpriteDef): { width: number; height: number } {
   };
 }
 
-/** Hue (0-360) and saturation (0-1) of a `#rrggbb` colour. */
-function hueSat(hex: string): { hue: number; sat: number } {
-  const [r = 0, g = 0, b = 0] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const d = max - min;
-  if (d === 0) return { hue: 0, sat: 0 };
-  let hue: number;
-  if (max === r) hue = ((g - b) / d) % 6;
-  else if (max === g) hue = (b - r) / d + 2;
-  else hue = (r - g) / d + 4;
-  hue = (hue * 60 + 360) % 360;
-  return { hue, sat: d / max };
-}
-
 /** Mire's colour family: peat brown and ochre, between a warm orange and a yellow. */
 const MIRE_HUES = [20, 50] as const;
 
 function hasMireColour(def: SpriteDef): boolean {
   return Object.values(def.palette).some((colour) => {
-    const { hue, sat } = hueSat(colour);
+    const { hue, sat } = hsl(colour);
     return sat >= 0.5 && hue >= MIRE_HUES[0] && hue <= MIRE_HUES[1];
   });
-}
-
-function pixelDifference(a: SpriteDef, b: SpriteDef): number {
-  const x = expandRows(a);
-  const y = expandRows(b);
-  let different = 0;
-  for (const [row, line] of x.entries()) {
-    for (const [col, ch] of [...line].entries()) {
-      if ((ch !== '.') !== ((y[row]?.[col] ?? '.') !== '.')) different += 1;
-    }
-  }
-  return different;
 }
 
 function unusedKeys(def: SpriteDef): string[] {
@@ -145,11 +119,13 @@ describe('the Mire species sprites', () => {
     for (const { id, def } of entries) {
       if (def === undefined) throw new Error(id);
       for (const [otherId, other] of others) {
-        expect(pixelDifference(def, other), `${id} vs ${otherId}`).toBeGreaterThanOrEqual(12);
+        expect(silhouetteDifference(def, other), `${id} vs ${otherId}`).toBeGreaterThanOrEqual(12);
       }
       for (const mine of entries) {
         if (mine.id === id || mine.def === undefined) continue;
-        expect(pixelDifference(def, mine.def), `${id} vs ${mine.id}`).toBeGreaterThanOrEqual(12);
+        expect(silhouetteDifference(def, mine.def), `${id} vs ${mine.id}`).toBeGreaterThanOrEqual(
+          12,
+        );
       }
     }
   });

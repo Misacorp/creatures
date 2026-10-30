@@ -101,6 +101,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [creatures.md](creatures.md): Catching, pity, species, evolutions, levels and XP, training, talents and the Talent Book, fusion, ribbons, creature lore.
 
+- 2026-10-30 Concept art runs ahead of content, drawn with the art studio
 - 2026-10-28 Ribbons and medals on the creature card
 - 2026-10-26 A private note per creature
 - 2026-10-25 Evolution short of Essence shows on the creature page

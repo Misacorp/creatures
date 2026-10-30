@@ -51,12 +51,14 @@ An input brief for anyone making images of the creature: a sprite artist, an ill
 
 ### Size and footprint
 
-| `size`   | Width of the sprite body at 16×16 (creatures) | Example            |
-| -------- | --------------------------------------------- | ------------------ |
-| `tiny`   | about 6 to 8 px                               | Zipmouse           |
-| `small`  | about 8 to 10 px                              | Splashet, Cindle   |
-| `medium` | about 10 to 13 px                             | Tidewing, Stormray |
-| `large`  | about 13 to 16 px, filling the frame          | Gaiadrake, Solmane |
+Since the shared chibi face (eyes at x 4-5 and 10-11, blush at x 3 and 12, checked by a test), every creature's head is 14 px wide with its outline, so `size` no longer changes the body's width at 16×16. Size shows in what grows around the head: ears, wings, fins, shells and how much of the 16×16 frame they fill. (The old table of 6 to 16 px body widths predates the shared face; Zipmouse, the `tiny` example, is 14 px at the eyes and 15 at most. Found while drawing the Void concepts, `art-studio.md`.)
+
+| `size`   | At 16×16 (creatures)                                    | Example            |
+| -------- | ------------------------------------------------------- | ------------------ |
+| `tiny`   | the bare head, small ears or tufts, frame mostly empty  | Zipmouse           |
+| `small`  | the head and one small feature above it                 | Splashet, Cindle   |
+| `medium` | features reach the frame edge on one or two sides       | Tidewing, Stormray |
+| `large`  | the full 16 px width, features to the edges, filling it | Gaiadrake, Solmane |
 
 Bosses are 24×24: `large` is about 16 to 20 px, `huge` about 20 to 24 px.
 
@@ -142,5 +144,5 @@ The upcoming look is **chunky pixel art, cute and round, on a dark night-sky UI*
 - **Outline:** one pixel, a dark hue-shifted shade (never pure black), the same for every sprite so a team looks like a set.
 - **Evolution:** keep the head shape, ears, eyes and colours from stage 1 and change body proportions and one signature detail. A stage 2 form is bigger, not a different animal.
 - **Animation:** two-frame idle bob (1 px up and down); stepped, short motions. Shiny variants swap the palette only.
-- **Check:** the sprite must be recognisable at 1×, as a black silhouette and on a `dusk` panel, and still read at 2×, 3× and 4×.
+- **Check:** the sprite must be recognisable at 1×, as a black silhouette and on a `dusk` panel, and still read at 2×, 3× and 4×. `pnpm art <set>` draws all of these and runs the rules (`art-studio.md`).
 - **Bosses:** the same language with more weight: heavier proportions, one or two glowing details (eyes, seams, crown) and a clear element colour. Never scary-gory; this is a game for a friendly Discord server.

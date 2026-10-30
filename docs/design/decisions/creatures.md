@@ -4,6 +4,14 @@ Catching, pity, species, evolutions, levels and XP, training, talents and the Ta
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-30: Concept art runs ahead of content, drawn with the art studio
+
+ID: `2026-10-30-concept-art-runs-ahead-of-content` · Status: current
+
+**Decision.** Sprites can be drawn before their creature, boss or item exists. Concept sprites live in `apps/activity/src/sprites/concepts/<set>.ts` under working codes (`void-guard`), with a kind, role and note but no name or stats, and nothing in the game imports them. They are drawn and checked with the art studio (`pnpm art <set>`, `apps/activity/scripts/art.mts`): a browser-free PNG renderer (a coordinate-grid zoom, 1x to 4x on the three panel colours, the silhouette, alternative palettes, a set sheet with the nearest shipped sprite) and one pure lint (`src/sprites/sprite-lint.ts`) that holds the art rules the tests used to copy. Every shipped creature and boss passes the lint (a test). New rule: a contrast warning for colours inside the outline that melt into the dark panels; it flags Cinder Wyrm and the Tar Leech, so it stays a warning, not an error. When the content lands the sprite moves into `data/` and the concept is deleted. Process: `docs/design/art-studio.md`. The first set is Void (four roles, pale moon-lilac with a starry window; compendium `world.md`, "Void"), not yet seen by Misa.
+
+**Reasoning.** Misa wants art for upcoming creatures and places before their design, and easier art-making. Drawing the first Void concepts showed where the time goes: art outside the content could not be seen, the old contact sheet took about 9 s through Vite and Chromium, pixels were hard to name, and the rules lived only in tests (two copies of the same colour and silhouette helpers). The studio renders in about 0.2 s with the repo's own PNG writer, so drawing is a tight look-and-fix loop. The contrast rule came from the first Void drafts, whose dark hood and ears vanished on `--dusk`.
+
 ## 2026-10-28: Ribbons and medals on the creature card
 
 ID: `2026-10-28-ribbons-and-medals-on-the-creature` · Status: current
