@@ -105,7 +105,7 @@ export const GEAR_CLASS: Readonly<Record<string, GearClass>> = {
   },
   'crit-damage': {
     ...c('damage', HIT, 'stat'),
-    text: 'Crits hit harder, in points on top of the double. Crit chance, Knacks and talents add to it, with no cap in the lab.',
+    text: 'Crits hit harder: the multiplier adds on top of the 2x (+1x makes a 3x crit). Crit chance, Knacks and talents add to it, with no cap in the lab.',
   },
   'all-damage-taken': c('protection', ANY, 'stat'),
   'area-ward': c('protection', ANY, 'stat'),
@@ -312,7 +312,7 @@ export const IDEAS: readonly Idea[] = [
   },
   {
     name: 'Steady Rhythm',
-    text: 'Every third hit it makes is a crit, and its crits deal 20% more.',
+    text: 'Every third hit that lands is a crit, +0.1x on crits.',
     class: ['damage', HIT, 'rhythm'],
   },
   {

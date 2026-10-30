@@ -605,6 +605,36 @@ describe('escalation rules (R22)', () => {
     expect(LAB_RULES.miredSlowsEscalationBp).toBeGreaterThan(0);
   });
 
+  it("Mired slows only the growth that helps the boss: a falling armour comes at the step's plain count (R22.3)", () => {
+    // Thornmother's step is Attack up and armour down together; Mired holds the first back, never the second.
+    const boss = base(esc({ per: 1, cap: 3, grow: { atkBp: 5_000, armour: -30 } }), {
+      rounds: 4,
+      armour: 200,
+    });
+    const squelch = [at('croakmire', 0, 0, { knack: 'squelch-song' }), ...team.slice(1)];
+    const free = fight(boss, [at('croakmire', 0, 0), ...team.slice(1)], {
+      rng: rng('fall'),
+      log: true,
+    });
+    const mired = fight(boss, squelch, { rng: rng('fall'), log: true });
+    expect(free.escalation?.step).toBe(3);
+    expect(free.escalation?.fallStep).toBe(3);
+    // Mired: the boss-helping step is behind, the falling one is not.
+    expect(mired.escalation?.step).toBeLessThan(3);
+    expect(mired.escalation?.fallStep).toBe(3);
+    // A growth with no falling part keeps one count: nothing to split.
+    const plain = fight(base(esc({ per: 1, cap: 3 }), { rounds: 4 }), squelch, {
+      rng: rng('fall'),
+      log: true,
+    });
+    expect(plain.escalation?.fallStep).toBe(plain.escalation?.step);
+    // The falling step carries across a weekend with the others.
+    const w = weekend(boss, team, [], { rng: rng('fall'), stages: 2 });
+    expect(w.stages[1]?.escalation?.fallStep).toBeGreaterThanOrEqual(
+      w.stages[0]?.escalation?.fallStep ?? 0,
+    );
+  });
+
   it('growth adds up in a straight line', () => {
     const boss = base(esc({ feed: 'rounds', per: 1, cap: 3, grow: { atkBp: 10_000 } }), {
       atk: 100,

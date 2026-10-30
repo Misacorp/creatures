@@ -102,9 +102,9 @@ export interface KnackFx {
   readonly hpBp?: number;
   /** A crit deals this much more on top of the base crit. */
   readonly critDamageBp?: number;
-  /** After it dodges: +1 Crit Charge. A charge is spent on its next hit that lands, a guaranteed crit that deals this much more (Perfect Timing). */
+  /** After it dodges: +1 Sure Crit. A Sure Crit is spent on its next hit that lands, a guaranteed crit that deals this much more (Perfect Timing). */
   readonly dodgeCritBp?: number;
-  /** Each time the hits it intercepts add up to `guardChargeShareBp` of its Max HP: +1 Crit Charge, spent like Perfect Timing's; the guaranteed crit deals this much more (Hold the Line). */
+  /** Each time the hits it intercepts add up to `guardSureCritShareBp` of its Max HP: +1 Sure Crit, spent like Perfect Timing's; the guaranteed crit deals this much more (Hold the Line). */
   readonly guardCritBp?: number;
   /** Crits on it, and on the creatures beside it, deal this much less extra damage (an aura: the largest applies). */
   readonly critWardBp?: number;
@@ -597,7 +597,7 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'wild-swing',
       name: 'Wild Swing',
       family: 'Luck',
-      text: 'Its hit deals 25% less, but it has +20% crit chance and its {Crit}s deal +50% more.',
+      text: 'Its hit deals 25% less, but it has +20 crit chance points and its {Crit}s get +0.5x.',
       intent:
         'A crit machine: a softer plain hit that crits often, so it stacks with Crit Chance, Crit Damage and a crit species. The wrong pick against a boss that caps a hit (Stone Skin) or one that Blocks small hits, and where a steady hit matters more than swing.',
       fx: { plainBp: 7_500, critChanceBp: 2_000, critDamageBp: 5_000 },
