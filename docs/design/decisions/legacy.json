@@ -1,0 +1,1338 @@
+{
+  "2026-10-10: Hosting on Cloudflare, all-in": {
+    "id": "2026-10-10-hosting-on-cloudflare-all-in",
+    "hash": "cc9c862315541df53aa0f24ac8ce70ab04f46662a21970bbc3cd50f7427f018c"
+  },
+  "2026-10-10: One Durable Object per Discord server": {
+    "id": "2026-10-10-one-durable-object-per-discord-server",
+    "hash": "6a284c7eabb7deabb33793336da2c1578d0729960ee57ccf9bb98021567bf919"
+  },
+  "2026-10-10: Scheduling in Helsinki time": {
+    "id": "2026-10-10-scheduling-in-helsinki-time",
+    "hash": "8bbe9a38863ab4c0aaba6633a17cefe6569f40a6e0c17558848d2b57815c7f4c"
+  },
+  "2026-10-10: Staging environment": {
+    "id": "2026-10-10-staging-environment",
+    "hash": "09467659c753e70ec9707cd654d7e526018037e0674e822c62693e23bfb095a2"
+  },
+  "2026-10-10: Frontend stack": {
+    "id": "2026-10-10-frontend-stack",
+    "hash": "82779accf342a93bc7f4462dbf55fbd9851e12546798acc1810474de4c81dc4e"
+  },
+  "2026-10-10: Validation library": {
+    "id": "2026-10-10-validation-library",
+    "hash": "d9d1a86cb9954385365766cbf698306b9fb5903161e4bee3534bd45cc1b6374f"
+  },
+  "2026-10-10: Leet points to Bait conversion": {
+    "id": "2026-10-10-leet-points-to-bait-conversion",
+    "hash": "499fc5fae9a612525cfa7684e22449b451f5d23f9a775e267f30e660357f9d9b"
+  },
+  "2026-10-10: Name and tone": {
+    "id": "2026-10-10-name-and-tone",
+    "hash": "0d4fe933bc2faf8105031efbddf345bc2f10783041c8daf3676a62a748d39ad6"
+  },
+  "2026-10-10: Live finale time and length": {
+    "id": "2026-10-10-live-finale-time-and-length",
+    "hash": "8bdea41d7ef92e6949e4b1c4481da136dbb9ef76585468086c1aa1f875cbffd6"
+  },
+  "2026-10-10: Alarm safety net without cron (for now)": {
+    "id": "2026-10-10-alarm-safety-net-without-cron-for",
+    "hash": "b44f8677f52c2538c2110934dbaa93717c08f11d01a612a9e38a2395ce768ff6"
+  },
+  "2026-10-10: Ledger and spending": {
+    "id": "2026-10-10-ledger-and-spending",
+    "hash": "58f123e54705990f4f7c418cdf17f1cffdd6cc33d2791066e72f0796af452c4f"
+  },
+  "2026-10-10: Game rules from the research review": {
+    "id": "2026-10-10-game-rules-from-the-research-review",
+    "hash": "f613abd1ff3e9087afd83f983125fb7db282c6f58b8b022d4339dbbf1b3b9111"
+  },
+  "2026-10-10: M2 collection on the server (implementation choices)": {
+    "id": "2026-10-10-m2-collection-on-the-server-implementation",
+    "hash": "b1ed661ecf897ac7294ca22825401684dead2957934d417cbf08ac1e52ee694b"
+  },
+  "2026-10-10: Balance simulator (M3b) interpretations": {
+    "id": "2026-10-10-balance-simulator-m3b-interpretations",
+    "hash": "fefd2945b7f0f5302ce8e1f73c695d33d72c4149b5e71e1fddfc1f8ea218ca09"
+  },
+  "2026-10-10: First balance tuning pass": {
+    "id": "2026-10-10-first-balance-tuning-pass",
+    "hash": "2e16e11e37c9412551d841c4001c26a3876fbf5cdc158399404055f916c7eeed"
+  },
+  "2026-10-10: Real leet points": {
+    "id": "2026-10-10-real-leet-points",
+    "hash": "0921a9489cbc6779286dfd0d42315f9b42ce4a770b8637e220c0ce16afc493a4"
+  },
+  "2026-10-10: Per-guild timezone": {
+    "id": "2026-10-10-per-guild-timezone",
+    "hash": "6a3abf7b9970d89023a59a4e1e5cbf6f0a0f97a3aba664ebc353b8f8eb465a67"
+  },
+  "2026-10-10: Leet sync status visible to players": {
+    "id": "2026-10-10-leet-sync-status-visible-to-players",
+    "hash": "693170960643f405b99e0634b8a04f15b65bf9e7b742b2cd135e88ad539e22d0"
+  },
+  "2026-10-10: Leet points table": {
+    "id": "2026-10-10-leet-points-table",
+    "hash": "91f5f012e2c1bb3a375e1bf38645f6a4ccd21f7ee8e3133545ee2e35bf6f27ef"
+  },
+  "2026-10-10: No raid sign-up; parties of up to 15": {
+    "id": "2026-10-10-no-raid-sign-up-parties-of",
+    "hash": "25ad93db0a3755f6b8c01a07d64026e9508666fedf2f936e9cc0ff89545a66cf"
+  },
+  "2026-10-10: M4 raid server (implementation choices)": {
+    "id": "2026-10-10-m4-raid-server-implementation-choices",
+    "hash": "1758b3799e01640cd06c8a063dcf05c2a752e3462326f28ce2e265761aaf4b89"
+  },
+  "2026-10-10: Discord raid posts": {
+    "id": "2026-10-10-discord-raid-posts",
+    "hash": "53cd4e7d680e0d77e10e3f700cbcffeddc1f72592f0bd4cf0dba5b38846968e0"
+  },
+  "2026-10-11: Second balance tuning pass": {
+    "id": "2026-10-11-second-balance-tuning-pass",
+    "hash": "f0aa9965721ccdda66d198feaf29b97f27d4411b589754f0ae626dc58008d073"
+  },
+  "2026-10-11: Live finale over short polling first": {
+    "id": "2026-10-11-live-finale-over-short-polling-first",
+    "hash": "76d9fcffdd675dcb6011ce89e6198fa156f56ef2b307d44007f61aa60b39ec23"
+  },
+  "2026-10-11: M5a live finale server (implementation choices)": {
+    "id": "2026-10-11-m5a-live-finale-server-implementation-choices",
+    "hash": "b5e6860bba4f4fcb5bab8a69f18254cf8cbb9e83f61c628fe53ae25c3ecfaead"
+  },
+  "2026-10-11: Misa's answers after testing M4 and M5 on staging": {
+    "id": "2026-10-11-misa-s-answers-after-testing-m4",
+    "hash": "c4ca369d39dc1477380f04e29824e031d591b243674aabde61986f8898a0b134"
+  },
+  "2026-10-11: Pinning the raid-post channel from the Activity": {
+    "id": "2026-10-11-pinning-the-raid-post-channel-from",
+    "hash": "b2ab91a2d9fc6a548480bb3cd232db77c9f15c501ca51fe80b38180f233a2a83"
+  },
+  "2026-10-11: Creature abilities, phase 1 (content, engine, simulator, pity)": {
+    "id": "2026-10-11-creature-abilities-phase-1-content-engine",
+    "hash": "b3c0b186614049d330cad9780faa8a917ef9789e6e953d3137cac30c2fb4fa3b"
+  },
+  "2026-10-11: Creature abilities, phase 2 (server and client)": {
+    "id": "2026-10-11-creature-abilities-phase-2-server-and",
+    "hash": "d8c9d2ab4c2f15e3f531c5066899bd571345dab6d018a4946bb2d0fa62fe6f50"
+  },
+  "2026-10-11: Ability weight, defence and luck (Misa)": {
+    "id": "2026-10-11-ability-weight-defence-and-luck",
+    "hash": "589a893155dae761247d9504fb7ad5544ae1dec7331cc20c8deedfc0e287e296"
+  },
+  "2026-10-11: Crits are in; progression proposal": {
+    "id": "2026-10-11-crits-are-in-progression-proposal",
+    "hash": "73c2bcbc2e1e41f2c117ebc78ed268e1b3d654ce54c2b1a3813f478759ed7e22"
+  },
+  "2026-10-11: Progression decisions (Misa)": {
+    "id": "2026-10-11-progression-decisions",
+    "hash": "ce4823411f2e80cdd825630fefa26ca853d5a4db9b7d8f2dc5d0264618f7620f"
+  },
+  "2026-10-11: After-action card (implementation choices)": {
+    "id": "2026-10-11-after-action-card-implementation-choices",
+    "hash": "8259333a18e24c30565a7843dba2429b4a6f03bdb74e9a8d46c0fbbe87e4f746"
+  },
+  "2026-10-11: Crits, boss crits, knockouts and guards measured (study, nothing switched on)": {
+    "id": "2026-10-11-crits-boss-crits-knockouts-and-guards",
+    "hash": "4d663c1101aaca229a6fbe64479c50e3a7dbda9b1073ee0127373187002dc850"
+  },
+  "2026-10-11: Progression, phase 1 (rules, content, simulator)": {
+    "id": "2026-10-11-progression-phase-1-rules-content-simulator",
+    "hash": "b1031f1209f51da7528ecc06e14fff4ee07e22a6badc5aed17d3db4cc214faa5"
+  },
+  "2026-10-11: Progression, phase 2 (worker and client)": {
+    "id": "2026-10-11-progression-phase-2-worker-and-client",
+    "hash": "fc9cc44a8276fc7fd23aa9c92319d304b9f04ffeba318a4cd9aaba29a1a1d974"
+  },
+  "2026-10-11: Ladder feel accepted (Misa)": {
+    "id": "2026-10-11-ladder-feel-accepted",
+    "hash": "774edc2a29656a2929084121fef57f57a243a42aa05b207622cad70be0662e53"
+  },
+  "2026-10-11: Creature lore, visual briefs, traits and personality quirks": {
+    "id": "2026-10-11-creature-lore-visual-briefs-traits-and",
+    "hash": "558884beaff9af3e2c9cf30c419abae3d39236e3e16e5a7ec80088ca18a04c3e"
+  },
+  "2026-10-11: M6 visual foundation choices": {
+    "id": "2026-10-11-m6-visual-foundation-choices",
+    "hash": "f49d31e7919668b8e685942184f34c4d4d3ce3ee38b438bfbcf3c421d0b75b07"
+  },
+  "2026-10-11: Live stage as rows, abilities on the creatures, Auto fire toggle **[Misa]**": {
+    "id": "2026-10-11-live-stage-as-rows-abilities-on",
+    "hash": "37ff25b5327416e644e59ad76dc798c26e455379709f9202fce50ff08223d02b"
+  },
+  "2026-10-11: Pre-fight countdown, Auto fire preferences, tap fix **[Misa]**": {
+    "id": "2026-10-11-pre-fight-countdown-auto-fire-preferences",
+    "hash": "c91db59fddf689c97987092d3eab65a89c56600a23ee7272de9a22e89a7c3427"
+  },
+  "2026-10-11: Slower, readable fights, a round intro and a hidden jackpot **[Misa]**": {
+    "id": "2026-10-11-slower-readable-fights-a-round-intro",
+    "hash": "6f58db6883711b1ec19006e67b0a5e0c5362558660bcc4230c621df39bb98b47"
+  },
+  "2026-10-11: Content-paced rounds, smooth effects and a boss telegraph **[Misa]**": {
+    "id": "2026-10-11-content-paced-rounds-smooth-effects-and",
+    "hash": "8d7c91cbb8ce78746e2c675cfa2fdbf8bb06f1cc72b8256243f36bbeafcb6204"
+  },
+  "2026-10-13: Roadmap after M6 (Misa)": {
+    "id": "2026-10-13-roadmap-after-m6",
+    "hash": "b80aeecab5d23bbd06c937506cfbb757660867ac5815710747abd6203f9ef172"
+  },
+  "2026-10-13: Roadmap reorder, crafting direction, production may change freely (Misa)": {
+    "id": "2026-10-13-roadmap-reorder-crafting-direction-production-may",
+    "hash": "bfa149d335b4544818767d0df853b06b355fb7e3b80ed93b3ed06268058c1c61"
+  },
+  "2026-10-13: Analytics event log (step 1 of `design/analytics.md`)": {
+    "id": "2026-10-13-analytics-event-log-step-1-of",
+    "hash": "90ff9f3bcc6754796de3a2c59fff6aa5af87e847d312981a7c5ee4b6e69431aa"
+  },
+  "2026-10-13: Gear and crafting v1 (server and content)": {
+    "id": "2026-10-13-gear-and-crafting-v1-server-and",
+    "hash": "0e2dfba959a887b8acb957eb5e71b8b66850f63660aebc5553b404007a482b81"
+  },
+  "2026-10-13: Gear and crafting v1 (client)": {
+    "id": "2026-10-13-gear-and-crafting-v1-client",
+    "hash": "ae469d8f621d94271a30b759ddc58ceea14f3d276a957a0aaa59f8876648ed05"
+  },
+  "2026-10-13: Gear numbers set by simulation": {
+    "id": "2026-10-13-gear-numbers-set-by-simulation",
+    "hash": "d6a08c5aac7a6410a84cd7a6a63d846f820d23780df6010097ed6d60edee030c"
+  },
+  "2026-10-13: Expeditions v2 spec (Misa)": {
+    "id": "2026-10-13-expeditions-v2-spec",
+    "hash": "67cb3c4186cde141b918206f7cf940b962bce3749f80b4447fd8d651c95f8234"
+  },
+  "2026-10-13: Daily dungeon v1 (engine, content, server and balance model)": {
+    "id": "2026-10-13-daily-dungeon-v1-engine-content-server",
+    "hash": "f65b7b020a30141a10ca819543e7211777711279a2ca68124a5d375d06347eef"
+  },
+  "2026-10-13: Daily dungeon v1 (client)": {
+    "id": "2026-10-13-daily-dungeon-v1-client",
+    "hash": "49652eac9538d6687c02ba1c79c1be4255a0bd77f0ca518a271b1b77226223dc"
+  },
+  "2026-10-13: Daily dungeon foe sprites and How to play section": {
+    "id": "2026-10-13-daily-dungeon-foe-sprites-and-how",
+    "hash": "969dd8f8346d0503977ef393b7eaaba381693caa4476c8a103e6f5f053da3ff3"
+  },
+  "2026-10-13: The game day resets at 13:37, not midnight": {
+    "id": "2026-10-13-the-game-day-resets-at-13",
+    "hash": "92917e2a9a33f777df739aa939b7a96492d970d387cafa4a5fab5d99fec77132"
+  },
+  "2026-10-13: Expeditions v2 numbers set by simulation": {
+    "id": "2026-10-13-expeditions-v2-numbers-set-by-simulation",
+    "hash": "9ebb0582f1e2cc7ee8437ca90cc2c41ba874b5bdbb470ccececb4d79880b7378"
+  },
+  "2026-10-13: Expeditions v2 merged into the daily dungeon branch": {
+    "id": "2026-10-13-expeditions-v2-merged-into-the-daily",
+    "hash": "974e9ecdba38c97a68e1933c663d13e042b25c623ef5c2319c7d31fd56dee20b"
+  },
+  "2026-10-13: Daily dungeon: one row, a constant stage and a fuller end report (Misa's playtest)": {
+    "id": "2026-10-13-daily-dungeon-one-row-a-constant",
+    "hash": "0f2e3dd711d607c9f436574ff280dd508d39caa02a5eee21988be57579f57632"
+  },
+  "2026-10-13: Expeditions v2 client (banner cards, send flow, push-on, journal)": {
+    "id": "2026-10-13-expeditions-v2-client-banner-cards-send",
+    "hash": "cdc6fe042f378dccfd3af5641727cd4d2deb47c960f69c57c24e42608846a1f3"
+  },
+  "2026-10-13: Combined balance pass (gear, dungeon and expeditions v2 together)": {
+    "id": "2026-10-13-combined-balance-pass-gear-dungeon-and",
+    "hash": "bcfe6d52f48812849d1ba7cf6d1bf29921eb63b004540a559a33946f3bddd851"
+  },
+  "2026-10-13: Dungeon days never go backwards, and push-ons use their stored odds": {
+    "id": "2026-10-13-dungeon-days-never-go-backwards-and",
+    "hash": "25e350f1a08c0611760bbe628d68766c8387d17680e0763ed4265c4138319566"
+  },
+  "2026-10-13: The slot wipe spares finished trips (Misa)": {
+    "id": "2026-10-13-the-slot-wipe-spares-finished-trips",
+    "hash": "7ed1c4b193004fcaf4feac395de01ca272de83c64873a5bf5eba0ff2ddc1ec08"
+  },
+  "2026-10-13: UX pass 1, Raid tab (R1 to R6, approved by Misa)": {
+    "id": "2026-10-13-ux-pass-1-raid-tab-r1",
+    "hash": "3db5a99cf077023cf1316723afc477472f5ff84f563336f87a7a535c414ab92e"
+  },
+  "2026-10-13: UX pass 1, Dungeon (less text, no ability picks) and glossary copy": {
+    "id": "2026-10-13-ux-pass-1-dungeon-less-text",
+    "hash": "321a2734424234ea128ef98085b0fc0da16f9a49fd1451563302c2357688462a"
+  },
+  "2026-10-13: UX pass 1, Expeditions: rank-up gifts, no chances on screen": {
+    "id": "2026-10-13-ux-pass-1-expeditions-rank-up",
+    "hash": "9fe06af55217c484afb3621747b400fe546f2ff6e45eff515ef983e18284851f"
+  },
+  "2026-10-13: Compendium contradictions resolved": {
+    "id": "2026-10-13-compendium-contradictions-resolved",
+    "hash": "1689f08d337533125d506b7bbf807634afcbd008d2930955ed3add952b2756ec"
+  },
+  "2026-10-13: Festival gear stays a Festival-only prize (Misa)": {
+    "id": "2026-10-13-festival-gear-stays-a-festival-only",
+    "hash": "b32fddc7f765cdb74b6d0752d079df59292b2f96d9f08ba1c0553428004c42f1"
+  },
+  "2026-10-13: Scalars registry and patch notes draft (balance loop, parts 1 and 3)": {
+    "id": "2026-10-13-scalars-registry-and-patch-notes-draft",
+    "hash": "1c4102958e570f84133528aab49089e4403f883c26104531e5bbba8a5d0fe496"
+  },
+  "2026-10-13: Analytics phase 2, server side: rollups, guild directory, ops report": {
+    "id": "2026-10-13-analytics-phase-2-server-side-rollups",
+    "hash": "7803802b87dabdfb421ed39929b0a8df93250c7c7e4f9187a9ebc48f5f5c8858"
+  },
+  "2026-10-13: Dev tools: the gate, the dev clock and where forced state lives": {
+    "id": "2026-10-13-dev-tools-the-gate-the-dev",
+    "hash": "e7cc178a44af24b2c28feae3bc2eeae948c1961e7c6ed3ed9de57f95f6b7bfc5"
+  },
+  "2026-10-13: Live analysis and live-calibrated sim (`pnpm analyze`, `pnpm sim:live`)": {
+    "id": "2026-10-13-live-analysis-and-live-calibrated-sim",
+    "hash": "ecd0feb2280e186fb1e9c51cd1646d41b7cce372607ee01a3c89cb47f808c0df"
+  },
+  "2026-10-13: Dev tools: the client panel": {
+    "id": "2026-10-13-dev-tools-the-client-panel",
+    "hash": "43e2089d2fd1a57a180de3dd0387a1155e9c93c8727d848ea9dacb57396f8687"
+  },
+  "2026-10-13: Analytics security review fixes": {
+    "id": "2026-10-13-analytics-security-review-fixes",
+    "hash": "b6014fb54717886dc82f3740f17b2ad60b4967738aae4aa498e869ad73376f8b"
+  },
+  "2026-10-13: Cleanup 1: one keyed-action helper and the key namespace rule": {
+    "id": "2026-10-13-cleanup-1-one-keyed-action-helper",
+    "hash": "69ded3cb3f4cd9e5053d7d47a1afade4c9e7813dc483d302d8ef2ea45610a2f7"
+  },
+  "2026-10-14: Stylesheet split and colour tokens (cleanup pass 1, slices 10–11)": {
+    "id": "2026-10-14-stylesheet-split-and-colour-tokens-cleanup",
+    "hash": "03573c57bb8ecf1dae83bb73c2ad0119fe65932e82758a951ca8059dc851db15"
+  },
+  "2026-10-14: One popover shell (cleanup pass 1, slice 17)": {
+    "id": "2026-10-14-one-popover-shell-cleanup-pass-1",
+    "hash": "5aa8949f6d4b7883a4d31c43b3d14c4b8aae29bec7067d2089cdc220ae1a17a8"
+  },
+  "2026-10-14: One slot row (cleanup pass 1, slice 18)": {
+    "id": "2026-10-14-one-slot-row-cleanup-pass-1",
+    "hash": "6b7858b27a5c5114b782c3fe92836e1b6db80dae8fb245608892a2d87b9a20a5"
+  },
+  "2026-10-14: A home-grown component workbench on staging": {
+    "id": "2026-10-14-a-home-grown-component-workbench-on",
+    "hash": "93ec247f131e61aca849aff4725c744e569470ff4bebcd3f1920a324e95aab0f"
+  },
+  "2026-10-14: The daily dungeon always acts left to right, and the order is shown": {
+    "id": "2026-10-14-the-daily-dungeon-always-acts-left",
+    "hash": "8a8b7c995057ae6a5d3146b5fc39bc04804893a5be3311005c9a779cc35b2b35"
+  },
+  "2026-10-14: Counts use a spaced slash (\"1 / 3\"), never \"of\"": {
+    "id": "2026-10-14-counts-use-a-spaced-slash-1",
+    "hash": "01b35b0efafe906c83578162c13de47614af9072a0a5e0843f688775e1e8cb14"
+  },
+  "2026-10-14: The living room's lounger and `/api/room`": {
+    "id": "2026-10-14-the-living-room-s-lounger-and",
+    "hash": "71e6bb12e8e566ae012cb89a89d6b60704a8df3ad2d8c6bccbc2d3579608dec9"
+  },
+  "2026-10-14: Living room presence comes from the Discord SDK, not the server": {
+    "id": "2026-10-14-living-room-presence-comes-from-the",
+    "hash": "255987cb5ff9b860547e3de7c51d3babd584cd68487dcf7ff1307c11ed1942b1"
+  },
+  "2026-10-14: Raid phases end at a floor, and bosses enrage when time runs out": {
+    "id": "2026-10-14-raid-phases-end-at-a-floor",
+    "hash": "3c22227e6ee720830322eaf280960b3339e0cfa1a5c38bd08f85124dc05ddc1a"
+  },
+  "2026-10-14: Raid neighbours stop at row edges": {
+    "id": "2026-10-14-raid-neighbours-stop-at-row-edges",
+    "hash": "97b41e9c95202cc12e83abfba5e1a59f1a78e6f017e67c55486021d46487a9ff"
+  },
+  "2026-10-14: Raid UX pass 2, slices 4, 6 and 10 (stage head, glossary, finale row, coach mark)": {
+    "id": "2026-10-14-raid-ux-pass-2-slices-4",
+    "hash": "acbac7681f5d32a1755ec2df36ea0e1773d8eebdb93dd759a891f88fc551c09a"
+  },
+  "2026-10-14: Raid board tiles, sit-out removal": {
+    "id": "2026-10-14-raid-board-tiles-sit-out-removal",
+    "hash": "58550cd63418007d3ec1ba20cbf5acb598ccb7f3ddcadae6c08d474b319faf20"
+  },
+  "2026-10-14: The raid stage is a lane grid, like the placement board": {
+    "id": "2026-10-14-the-raid-stage-is-a-lane",
+    "hash": "d94354c37609003b6b31985629696936f4935a98d74750dd76f28655703e5e97"
+  },
+  "2026-10-14: Raid UX pass 2, slices 8 and 9 (placement cues, influence, the shared `affects` helper)": {
+    "id": "2026-10-14-raid-ux-pass-2-slices-8",
+    "hash": "5e0e93eee3b40edb3af2ba9bfaa54ca5666d291a5dfe8e0ef3f5cd25aaf8466c"
+  },
+  "2026-10-14: Raid Roster: you bring the creatures you place": {
+    "id": "2026-10-14-raid-roster-you-bring-the-creatures",
+    "hash": "b6dc232c09dab00dd63340b63390af4e29aa4f4a8addded8318a920308430a33"
+  },
+  "2026-10-14: A player could have four creatures on the board (bug and repair)": {
+    "id": "2026-10-14-a-player-could-have-four-creatures",
+    "hash": "077765f227ca78f115e52beb04109fbdb05edd900f6bfd5875b22eeed7889ac2"
+  },
+  "2026-10-14: The creature picker's effect preview is behind `SHOW_PICKER_EFFECTS`": {
+    "id": "2026-10-14-the-creature-picker-s-effect-preview",
+    "hash": "7dcad83f2dc0e3c9fc1b3636feea440d285e31c74be1a5abd8e60bccd63256e9"
+  },
+  "2026-10-15: Raid page feedback (phone test): boss card holds only the boss": {
+    "id": "2026-10-15-raid-page-feedback-phone-test-boss",
+    "hash": "2c69a7cfd36c475006f9124990299b5d3d305bb90640ee64ccc6ef5b83e25ec7"
+  },
+  "2026-10-15: Dungeon team board and Recommended": {
+    "id": "2026-10-15-dungeon-team-board-and-recommended",
+    "hash": "7dc9ea2dd6634390d58fe2d9d9d794d3d8a2d9a36e7edd50476d551d66af59e4"
+  },
+  "2026-10-15: the dungeon setup opens with the player's last team": {
+    "id": "2026-10-15-the-dungeon-setup-opens-with-the",
+    "hash": "b76de99f0ecce7d49a54d01b2d201b86e0d8dc47738bdcb8bf31c1b2d5a834f4"
+  },
+  "2026-10-15: the dungeon's pre-run screen is one card": {
+    "id": "2026-10-15-the-dungeon-s-pre-run-screen",
+    "hash": "4d17305a783322c739db88511e6a2ad4e8b3b9bd6108b1084d0ce6f42cf6f61b"
+  },
+  "2026-10-15: A player's living-room spot is stored per player; the client settles conflicts": {
+    "id": "2026-10-15-a-player-s-living-room-spot",
+    "hash": "914f88a85a00fac4a915bb7fd6ce88761d5a3863fe73d081bb17cab9f8a3bc01"
+  },
+  "2026-10-15: A 45 s living-room refresh while others are present": {
+    "id": "2026-10-15-a-45-s-living-room-refresh",
+    "hash": "11867c05a88a62812ad3a1c76d849eec83ca959de74b6d9844e61b757246708c"
+  },
+  "2026-10-15: Dungeon fight feedback: bigger team tiles, a longer room intro, no spoiled round count, traits on the stage": {
+    "id": "2026-10-15-dungeon-fight-feedback-bigger-team-tiles",
+    "hash": "e01ef02bcc22e63794699547c532ea96e9b1c8bb06dbb7c2bd37031a274c4fdc"
+  },
+  "2026-10-15: boss and foe abilities only ever target living creatures": {
+    "id": "2026-10-15-boss-and-foe-abilities-only-ever",
+    "hash": "f87d5a6729ca3746a35629b4f4756b6b3c35545eda53a457dd240ba5c9016815"
+  },
+  "2026-10-15: the raid retune: attack patterns, phase floors and enrage (how it is built)": {
+    "id": "2026-10-15-the-raid-retune-attack-patterns-phase",
+    "hash": "a54b704c52ad00a7e1bf3fadf4f85c8edfd28f7fd1caf8116894508557b591e6"
+  },
+  "2026-10-15: Misa's answers on the retune: floors, overtime, the Wyrm, and the Guard reworked": {
+    "id": "2026-10-15-misa-s-answers-on-the-retune",
+    "hash": "1121b406fe81071a60078ed41fac4c24e0afd2dddbdd707ef79f6e4f94896b2e"
+  },
+  "2026-10-15: Guard follow-ups: one pick rule, healing credit, the client reads the fight's Guard": {
+    "id": "2026-10-15-guard-follow-ups-one-pick-rule",
+    "hash": "c88944395a0111a87e07299688e06a52ecc9e153a60fe0ceca13b8bce2a9c0d3"
+  },
+  "2026-10-15: Staging deploys only on request; main locked against agents": {
+    "id": "2026-10-15-staging-deploys-only-on-request-main",
+    "hash": "52c4e3c2b5324ebd1b989a9f2946a60a349f8714ff81aa07daf76c0b9785ab41"
+  },
+  "2026-10-15: a player journey simulator, and the planned Bait allowance": {
+    "id": "2026-10-15-a-player-journey-simulator-and-the",
+    "hash": "cb46a562ed06cd742370aeaa4ee7d2a2cf287f39031624da7eaf3cbcc788394c"
+  },
+  "2026-10-15: an open raid week is declared again when the difficulty rules change": {
+    "id": "2026-10-15-an-open-raid-week-is-declared",
+    "hash": "8141a4ead8447ea62bd216582581a41e5ef940d0ee6aa9cae7ba4a132f72708e"
+  },
+  "2026-10-15: the Bait allowance and leet bonus ship": {
+    "id": "2026-10-15-the-bait-allowance-and-leet-bonus",
+    "hash": "14d9c973a46ed287566b420303b42a2e7bfabc1d8015f24ce9599c3f64d3d4f3"
+  },
+  "2026-10-15: rank-gated boss moves, more boss attacks, and two targeting options that punish setups": {
+    "id": "2026-10-15-rank-gated-boss-moves-more-boss",
+    "hash": "dbcfbc6761b99a405dd089b3ef00a8b78461e90600361a3bd7acf0b1c24bea5f"
+  },
+  "2026-10-15: the raid finale pays a reward slot: gear (pre-upgraded by rank) or a blueprint": {
+    "id": "2026-10-15-the-raid-finale-pays-a-reward",
+    "hash": "57efcb7fb4db2b6d6f2d1cf2c7ec3a7c35a286b41a5b4c5b826ecf32a89a1b2b"
+  },
+  "2026-10-16: the raid curve replaces 1.4^rank; every server starts at rank 1": {
+    "id": "2026-10-16-the-raid-curve-replaces-1-4",
+    "hash": "05ebaa088e589c5450ba0c070e01df3eb25d1fdd1083b95097db94876278b696"
+  },
+  "2026-10-15: Tab pips, a saved dungeon team, and the page follows a claim": {
+    "id": "2026-10-15-tab-pips-a-saved-dungeon-team",
+    "hash": "28e2532686deccf417096218ad9ad51ec22c4538797ba869a5b156d9e3025e5e"
+  },
+  "2026-10-16: Misa's direction after the raid retune: supplies now, a systems review, then gear and creature revamps": {
+    "id": "2026-10-16-misa-s-direction-after-the-raid",
+    "hash": "7c510133bffb0679a6beb9468c509e19d1da7083ced34db9b08e205887acba7e"
+  },
+  "2026-10-16: supplies cannot be bought; the dungeon drops one on every run; crafting is how you choose": {
+    "id": "2026-10-16-supplies-cannot-be-bought-the-dungeon",
+    "hash": "c7ad87f88799ada574199c7fe926b964df603ef109244032ed86e849e146591c"
+  },
+  "2026-10-16: Misa's answers to the systems review (they replace parts of its proposals)": {
+    "id": "2026-10-16-misa-s-answers-to-the-systems",
+    "hash": "769f71d11aa195bf72c1fd6a67282421393654b0e062f0dc00c9143c7d9086be"
+  },
+  "2026-10-16: Misa's second round on the revamps: weighted slot pools, training by activity, Boons and Omens": {
+    "id": "2026-10-16-misa-s-second-round-on-the",
+    "hash": "ab919d1ed97f69279ece0b0f49fa61ebee97ab6a3d88f364d4634452dc4ae569"
+  },
+  "2026-10-16: converted gear matches a fresh drop, and an item needs its level to be worn": {
+    "id": "2026-10-16-converted-gear-matches-a-fresh-drop",
+    "hash": "d8513689a67fa65df8850db7e1869b6a82ee707f68b91742ce56c9e47da79b58"
+  },
+  "2026-10-16: Misa agrees with the podcast's points; Market Day boosts only the day's first crafts": {
+    "id": "2026-10-16-misa-agrees-with-the-podcast-s",
+    "hash": "1a52bf51ab29e3fc4a6b7d68c003db3f08963b8dfb3237d562c2663993c88b2e"
+  },
+  "2026-10-16: roll out fast, balance at the end; slot ladder, golden talents, the weather calendar": {
+    "id": "2026-10-16-roll-out-fast-balance-at-the",
+    "hash": "9c6983fb3ac3ddb5ad6f05f2f7566824204c35765e64808647d19bbde4c07b28"
+  },
+  "2026-10-16: top-tier rolls stay at about 1 line in 7": {
+    "id": "2026-10-16-top-tier-rolls-stay-at-about",
+    "hash": "ce2bdb8b2463779c41b86aa80cef2ffa465e1fb5f3562a1159256d96097e788b"
+  },
+  "2026-10-16: groundwork built: the modifier sheet in the engine, the Guard's shadow line, fight-scored power": {
+    "id": "2026-10-16-groundwork-built-the-modifier-sheet-in",
+    "hash": "493826f875eddfef06ec0dce4eba609a30f52c47c7d2764694b56451bf91daaf"
+  },
+  "2026-10-16: Misa's answers to the review page's last questions": {
+    "id": "2026-10-16-misa-s-answers-to-the-review",
+    "hash": "70198e6f841f51218e8e92a2e384a990d3a1176ef0caa6b66a6930ad2cc52196"
+  },
+  "2026-10-16: fewer organic catches and Bait-crafted lures; treats as a checkbox; no catch-up bonus; lean UI": {
+    "id": "2026-10-16-fewer-organic-catches-and-bait-crafted",
+    "hash": "5a04572f7ac0687b4c157bc77a612637f1de73faad30b40e6a47f248630ed143"
+  },
+  "2026-10-16: Gear A built: Hat, Scarf and Charm, item levels, tiered lines, Equip best, conversion (migration 27)": {
+    "id": "2026-10-16-gear-a-built-hat-scarf-and",
+    "hash": "d338a973b8a9e3ec604b5a66767c50d12bb3a6ebe648eef479409bbba4ce6157"
+  },
+  "2026-10-16: Gear A review fixes": {
+    "id": "2026-10-16-gear-a-review-fixes",
+    "hash": "250a40f7f30eedfdec264a30633a07da72d717dc6707bbd7a9c907cb2f12c73c"
+  },
+  "2026-10-16: Gear B built: Reach, dismantle jobs, well-thumbed marks (migration 29)": {
+    "id": "2026-10-16-gear-b-built-reach-dismantle-jobs",
+    "hash": "6789c57d49cf32678726359b5a5130798f53802bb1321f1d076c47db02e640fb"
+  },
+  "2026-10-16: Gear B: no free lottery (a craft's scrap follows the item level; a dismantle returns under half; a Reach needs no extra shards)": {
+    "id": "2026-10-16-gear-b-no-free-lottery-a",
+    "hash": "c34e96dbd26b1d257b969109a490b78b969341e1e964ff9fc70b4a7d0dbaf83a"
+  },
+  "2026-10-16: Creatures A built: talents, the duplicate choice, the Talent Book, lures and fewer catches (migration 28)": {
+    "id": "2026-10-16-creatures-a-built-talents-the-duplicate",
+    "hash": "6cf396a1001d4be453aa1f361a64635dd712a266b7f9d9d262a4be38c0c82668"
+  },
+  "2026-10-16: Player feedback through `/feedback`, public issues, private screenshots": {
+    "id": "2026-10-16-player-feedback-through-feedback-public-issues",
+    "hash": "6e053d01ac055290ed94250e0fd5f34f7f0cf1d3fb543a3e98fe0d77b6f1f086"
+  },
+  "2026-10-17: Creatures B built: training by activity, treats, ribbons (migration 30)": {
+    "id": "2026-10-17-creatures-b-built-training-by-activity",
+    "hash": "a6b14afcf3ccda40abd9ee85e66b25a731acf133338fa08e57eb5a719f29ae75"
+  },
+  "2026-10-17: new-species pity: after 60 dry rolls a species the player lacks; a creature at least every 10 rolls": {
+    "id": "2026-10-17-new-species-pity-after-60-dry",
+    "hash": "45dd53f71dbf7e17bfda49ea353da2a42a9762c3ff9d72a58ece7161c46d69b8"
+  },
+  "2026-10-17: creature levels halved at the switch to training by activity, Bait refunded": {
+    "id": "2026-10-17-creature-levels-halved-at-the-switch",
+    "hash": "6d5d7aad9050fd7e29afde5c72ad2c2225732041e317353a44fce0ac98259b67"
+  },
+  "2026-10-17: items carry base stats; local and global lines; Festival gear is special, not stronger": {
+    "id": "2026-10-17-items-carry-base-stats-local-and",
+    "hash": "71622f7ab0b62cb987a4c2231fbb90588ac7475f1cda2cd87a1429dc17129b81"
+  },
+  "2026-10-17: staging held the first gear v2; rows of that shape are normalised at start, views skip what they cannot read": {
+    "id": "2026-10-17-staging-held-the-first-gear-v2",
+    "hash": "a45a2e1a11cdc2dcc0c19d7ea56370d33c7dc8e5f548816be0ca0c1a61b738b2"
+  },
+  "2026-10-17: the creature card is small, \"More\" holds the rest, and the Creatures tab has find and filter": {
+    "id": "2026-10-17-the-creature-card-is-small-more",
+    "hash": "23c98cc966300d9aada2c019e756c8b4eaa9a372aef11764134311f3e3701248"
+  },
+  "2026-10-17: Boons and Omens built: the valley's weather (migration 31)": {
+    "id": "2026-10-17-boons-and-omens-built-the-valley",
+    "hash": "f3b7a2b1d820e320063d1a3567571516684fa1b4f6401957756283a57d0b84a4"
+  },
+  "2026-10-17: the creature page replaces \"More\"; text pass on Creatures, gear and Workshop": {
+    "id": "2026-10-17-the-creature-page-replaces-more-text",
+    "hash": "84e99d4fefb12b7284f2a0ff0e488cc5ebccbd9e4a02ef5ca81918da3153e942"
+  },
+  "2026-10-17: one Accordion for every expand and collapse": {
+    "id": "2026-10-17-one-accordion-for-every-expand-and",
+    "hash": "dd74011354928e9678d7987327d3d57ee113603bc7bbbcb26a9cbae3ab1a4408"
+  },
+  "2026-10-17: Accordion rolled out; golden talents shimmer; Talent Book shows states": {
+    "id": "2026-10-17-accordion-rolled-out-golden-talents-shimmer",
+    "hash": "1719aae6ea9751bba324fc8a2c2d8b5cb842f6f5acafe3bf3be00d624ae4ab10"
+  },
+  "2026-10-17: creature page v3 (design round, workbench only): slots, bottom drawer, no forward-looking text": {
+    "id": "2026-10-17-creature-page-v3-design-round-workbench",
+    "hash": "6818b3e7eec60a68287c7ab6bfb7593b087d4348e7f907bed58dd12190a14ca1"
+  },
+  "2026-10-17: creature page v3 is the live page; rarity colours and creature rarity borders": {
+    "id": "2026-10-17-creature-page-v3-is-the-live",
+    "hash": "a7077d2321294193ef8b1bbde76b76cffe99cf171a29236e866cd11875eb8e5d"
+  },
+  "2026-10-17: creature rarity by name colour; gear rarity by one border (polish v5)": {
+    "id": "2026-10-17-creature-rarity-by-name-colour-gear",
+    "hash": "6fd4a77ad5acf459516334e0b1347c698f5a22ac1cdb4be7328a54e76020972d"
+  },
+  "2026-10-17: one item-level indicator; item card and compact rows (polish v6)": {
+    "id": "2026-10-17-one-item-level-indicator-item-card",
+    "hash": "7649fd57baad8b5d17dac48ded05e4f583645c849a5bc9cc51a4e99783d296c7"
+  },
+  "2026-10-17: Workshop bag polish (Misa's feedback on the v6 screenshots)": {
+    "id": "2026-10-17-workshop-bag-polish-misa-s-feedback",
+    "hash": "b59024c216ab4b9db68437c76a0cc08dbda34c086db223232e4cad39f952a3e1"
+  },
+  "2026-10-17: Item corners everywhere, and tags that explain themselves by context": {
+    "id": "2026-10-17-item-corners-everywhere-and-tags-that",
+    "hash": "55d5548c803e719c643899d29f20e47f2f7ea0d9a8ca55ffa92cd5dd54f372f8"
+  },
+  "2026-10-17: How to play pass for the revamp": {
+    "id": "2026-10-17-how-to-play-pass-for-the",
+    "hash": "8127ae611b7d60cf755f6e3bb2b31a50bea2a6aabddd5d69c2ae3d067e664081"
+  },
+  "2026-10-18: The daily dungeon becomes a path on a daily map (camps, keepsakes and a pack)": {
+    "id": "2026-10-18-the-daily-dungeon-becomes-a-path",
+    "hash": "b02c542e05b760930d8a9f4c7a22d1f302677fa8ef235491ead25d661ea9ee9f"
+  },
+  "2026-10-18: The trip result screen, and Teach goes to the Talent Book": {
+    "id": "2026-10-18-the-trip-result-screen-and-teach",
+    "hash": "6ca12d1cbe30dc68efb13d69306dd858bfd0dab16e86494704f46c3acd8d7764"
+  },
+  "2026-10-18: The Undercroft (a deeper, optional level) and the carved door": {
+    "id": "2026-10-18-the-undercroft-a-deeper-optional-level",
+    "hash": "fadd3f9b022b8cb811da4e246fdd31dcb23e9dfeead4a6fe19bedde60409adc5"
+  },
+  "2026-10-18: The fight uses the board's rows (issue #29)": {
+    "id": "2026-10-18-the-fight-uses-the-board-s",
+    "hash": "b161cac036352f2a3264388d55d3e45bd01382963194f3bb770d0f4cdad11e92"
+  },
+  "2026-10-18: Auto-joining creatures are on the board; teammates can move an away player's creatures (issue #29)": {
+    "id": "2026-10-18-auto-joining-creatures-are-on-the",
+    "hash": "79f31f93f1791921d202864dc3d71ca2b0629dc53e21aedf388f1156ec5369e3"
+  },
+  "2026-10-18: Auto tiles are soft and muted (issue #29)": {
+    "id": "2026-10-18-auto-tiles-are-soft-and-muted",
+    "hash": "f9845235c206c624a3644005e70dd64fe152b41232c1f54b4d736947dab69e60"
+  },
+  "2026-10-18: The lounge message replaces Discord's launch card": {
+    "id": "2026-10-18-the-lounge-message-replaces-discord-s",
+    "hash": "25833ef670bd7b2096b42478c9180280c9fcfcd4e9d969177e0b3dc0a6dd9876"
+  },
+  "2026-10-18: Branch evolutions built: Sunfawn and Ohmouse, Keep is live": {
+    "id": "2026-10-18-branch-evolutions-built-sunfawn-and-ohmouse",
+    "hash": "114ba33b48ea91fa01fe8f82cab761a824477d1e8653d2555ac7fbc79bbf3377"
+  },
+  "2026-10-18: The last three weathers are live: Kind Rain, Morning Haze, Bramble Season": {
+    "id": "2026-10-18-the-last-three-weathers-are-live",
+    "hash": "361cb2cf2f292406f429ef712ee9a5c4a7370f532a20ac66c4f55474ef8ff7dc"
+  },
+  "2026-10-18: More gear and modifiers: position lines, one special line per item, and gear sets": {
+    "id": "2026-10-18-more-gear-and-modifiers-position-lines",
+    "hash": "f703bce26764ed8b4f6f3032f1ee631b9fd412fd679297a95a01a76ccc798475"
+  },
+  "2026-10-18: Weather numbers a player can read": {
+    "id": "2026-10-18-weather-numbers-a-player-can-read",
+    "hash": "8afb0b7763246d9a1bd3277d92a7111fed71bc723a124823dbc6b61f3b157819"
+  },
+  "2026-10-18: Chance lines and trigger lines": {
+    "id": "2026-10-18-chance-lines-and-trigger-lines",
+    "hash": "edfce6dc1a5a8236517f44f1dfdc29ce1e34dfa8df1e31853f72512eea2fa0ea"
+  },
+  "2026-10-18: flipping between creatures and items": {
+    "id": "2026-10-18-flipping-between-creatures-and-items",
+    "hash": "8466a1d2e4f29ca5f35d5050a0f3575b6bcc816ed395b3e7c89767f04fda7dcf"
+  },
+  "2026-10-18: Second forms for the six other evolving lines: every line grows two ways": {
+    "id": "2026-10-18-second-forms-for-the-six-other",
+    "hash": "ad1ce0ffd22df8ef79910bf1916d7ed4dc057b9b382aff8f481e879d21475728"
+  },
+  "2026-10-18: The flip arrows look the same everywhere": {
+    "id": "2026-10-18-the-flip-arrows-look-the-same",
+    "hash": "5e69d4b754f819d3bb66256e64118ca77afa749724a5a647619de23146dcd03a"
+  },
+  "2026-10-18: Compare in the item picker (what Equip would change)": {
+    "id": "2026-10-18-compare-in-the-item-picker-what",
+    "hash": "31454f0b275ee00da1b473f43eec3ab2886e6f44013186e4681aeaa126cef5dc"
+  },
+  "2026-10-18: Compare inline on the item card, with a switch": {
+    "id": "2026-10-18-compare-inline-on-the-item-card",
+    "hash": "b6e048ba64f50e19eeb815af6a334487d6f3d2ab89759309b475868bacac261e"
+  },
+  "2026-10-18: The scroll hint (a reusable building block)": {
+    "id": "2026-10-18-the-scroll-hint-a-reusable-building",
+    "hash": "5d32f28195cb69ec4c6537bf07b1d9b9da888cefbb1140a5946b77c00aa5e59a"
+  },
+  "2026-10-18: A second tap closes the item details in the picker": {
+    "id": "2026-10-18-a-second-tap-closes-the-item",
+    "hash": "0303d6966e1a0171ec24ffc60e8219ed10531c3e735b1711d757c49a813d02bd"
+  },
+  "2026-10-18: Item grid cells are square": {
+    "id": "2026-10-18-item-grid-cells-are-square",
+    "hash": "b65f0ce99cc23ade0f25155755ef79762cad0f8eb39c1c3970fa24022fb7501d"
+  },
+  "2026-10-18: One item grid": {
+    "id": "2026-10-18-one-item-grid",
+    "hash": "064895755e5d50114c65167066675e320c6af6bcc6496de7ecc78b706ac7920e"
+  },
+  "2026-10-18: Keeping the gear fold fast": {
+    "id": "2026-10-18-keeping-the-gear-fold-fast",
+    "hash": "3a7e926c3c0dbfb31959121665765cf2f3c66035b1d90e49647af1e163ead14e"
+  },
+  "2026-10-18: Play-test round 2: one type scale, one pixel font per panel, Equip on, dismantle as badges": {
+    "id": "2026-10-18-play-test-round-2-one-type",
+    "hash": "7177ec6322e7c230b3711cb4bc63e11f94c462bc6383c4dc294487458de17b6f"
+  },
+  "2026-10-18: Never stack drawers; one width inside a drawer; the item picker opens with nothing selected": {
+    "id": "2026-10-18-never-stack-drawers-one-width-inside",
+    "hash": "2ddc110b3fdb5444f5bed787ec562fe0282e6aaa007b68ee2db2fd7d2aa7b39c"
+  },
+  "2026-10-18: Close for the item details, the job result as a picture with one XP component, reasons on the right, Dismantle last": {
+    "id": "2026-10-18-close-for-the-item-details-the",
+    "hash": "39f09d87a15113321208f8defc8696560a594fa2ec79c02ae519301386d7ef7c"
+  },
+  "2026-10-18: \"Level up!\" is the shared XP line's job": {
+    "id": "2026-10-18-level-up-is-the-shared-xp",
+    "hash": "3aaac7c3b1b445c0bd9eee6b7158ad5b35353878c540b04a8e13e43a1e23fe10"
+  },
+  "2026-10-18: UX patterns written down": {
+    "id": "2026-10-18-ux-patterns-written-down",
+    "hash": "64d583d9de5241712c0ad7507f8868de6afbffb9a3cdbeb93b0c46b5a8df2997"
+  },
+  "2026-10-18: A fallen creature gets back up on the way down into the Undercroft (B-021)": {
+    "id": "2026-10-18-a-fallen-creature-gets-back-up",
+    "hash": "5ce7a56f6ccef486bee003698810add3ddbf17c62ad93fc6f0da2e612205c299"
+  },
+  "2026-10-18: Dungeon terminology: room vs floor": {
+    "id": "2026-10-18-dungeon-terminology-room-vs-floor",
+    "hash": "17504308f2a7c0306acae76ad5c8ed26fde0e688b31304e40353ccb0b94c5d2b"
+  },
+  "2026-10-18: The dungeon map goes downward; the page follows the run": {
+    "id": "2026-10-18-the-dungeon-map-goes-downward-the",
+    "hash": "7f223cc06883bf7ec76e83a06dfe3fc9e43a10fda9e798c2e15e74cf495f1958"
+  },
+  "2026-10-18: The camp's row can be rearranged on the entry's board, and a recruit can be placed in the same act": {
+    "id": "2026-10-18-the-camp-s-row-can-be",
+    "hash": "378e084438a164bc6d156849a91fa3829b3886cb316c419ef651701d5f4244ba"
+  },
+  "2026-10-18: The dungeon results screen, reworked": {
+    "id": "2026-10-18-the-dungeon-results-screen-reworked",
+    "hash": "92491ed0a50902ce0f3941b3835be2acd560abaa38a9d7ad47d1e43c1221e552"
+  },
+  "2026-10-18: Part 2 meets the dungeon paths (merging main #32 into #35)": {
+    "id": "2026-10-18-part-2-meets-the-dungeon-paths",
+    "hash": "359d428e6997804ec8cea7243b473c45b92615f0833bfd08dc19acae251e60d0"
+  },
+  "2026-10-18: Raid posts are embeds that sum up the raid": {
+    "id": "2026-10-18-raid-posts-are-embeds-that-sum",
+    "hash": "7e8523740d4e80791ce4b4a25b3a05bd592d0894155cf972897e0a06ce0aae81"
+  },
+  "2026-10-18: Engine and test cleanup from the audit (E2 to E7, E9, B13 step 1)": {
+    "id": "2026-10-18-engine-and-test-cleanup-from-the",
+    "hash": "9d2f2cd067a926405f5cc923d8f46cacbe2a94f945b423ac1453f4b1555862d0"
+  },
+  "2026-10-18: `pnpm fixtures:capture` and stable fixture ids (roadmap polish item 10)": {
+    "id": "2026-10-18-pnpm-fixtures-capture-and-stable-fixture",
+    "hash": "75bed79771ce3af4893c53059a544dfa093b26cd3a10eb5a227c733383413aaf"
+  },
+  "2026-10-19: Overnight cleanup after #32 and #35 (the lead's calls)": {
+    "id": "2026-10-19-overnight-cleanup-after-32-and-35",
+    "hash": "48788e490c2418fc9a100ae65b8945e0c3ba50f6b3fd3cfb73f78ee06c2e1a4a"
+  },
+  "2026-10-19: The simulator picks second forms like players, and the legacy digest is retired": {
+    "id": "2026-10-19-the-simulator-picks-second-forms-like",
+    "hash": "009eddf055d9f56b5a8a8ba145ef8b459a73e65c3beea671b94fbffa9b7dcc44"
+  },
+  "2026-10-19: Look and feel pass, six approved changes (type scale everywhere, pixel cards, camp Back, one XP row, rooms recap, reset line)": {
+    "id": "2026-10-19-look-and-feel-pass-six-approved",
+    "hash": "b075b2c5bfad349ab3c7e8c362742b37191d0ea595c2c7e90769c62de3fa4e75"
+  },
+  "2026-10-19: `fight.ts` split into modules (B13 step 2); Lantern Light lengthens basic abilities too": {
+    "id": "2026-10-19-fight-ts-split-into-modules-b13",
+    "hash": "22840972ff36701e49ebbd675f2b6b3e61f8df84d095268867ad8fd8e259d071"
+  },
+  "2026-10-19: Lantern Cap can drop, mystery line goes away, worker files split (wave 2, worker)": {
+    "id": "2026-10-19-lantern-cap-can-drop-mystery-line",
+    "hash": "3670ba8ef204d59e93e9dd9edf48b814546b02fb76eb3b5cdcaba83a2922f972"
+  },
+  "2026-10-19: Frontend splits with no visual change (audit F15, F16; Misa approved)": {
+    "id": "2026-10-19-frontend-splits-with-no-visual-change",
+    "hash": "e01b8c6d85699b8f3f8dead951ecf6d7ff5a3c7fb5afba9f4544721a60ebcde1"
+  },
+  "2026-10-19: The type scale one rung smaller (Misa: \"smaller everywhere\"); creature card variant E in the workbench": {
+    "id": "2026-10-19-the-type-scale-one-rung-smaller",
+    "hash": "19c76e62cb992f6ed62f73eb8cdea34a4ca80d2d423f1c3c0e6d22681991b879"
+  },
+  "2026-10-19: Every XP gain is the \"Count-up\" row, with a treat icon and one multiplier chip": {
+    "id": "2026-10-19-every-xp-gain-is-the-count",
+    "hash": "d98f060593ae75220d543107f27a8871d8714a7b653c819b37f076327a437881"
+  },
+  "2026-10-19: The creature card is variant E, with the talents one to a row": {
+    "id": "2026-10-19-the-creature-card-is-variant-e",
+    "hash": "7d682c8ff54bea159a4e2c54ddff56f504bc9c5cc82e651395a2f0ee4a7eb317"
+  },
+  "2026-10-19: Round 5 touch-ups: the multiplier tag in plain colours, \"Evolve\", one-row card button, a tighter Lounging badge": {
+    "id": "2026-10-19-round-5-touch-ups-the-multiplier",
+    "hash": "760539f9d68f95652be3b712c46dc395cc647bee81d7306fb105cad0d8798b03"
+  },
+  "2026-10-19: Every XP multiplier multiplies, and one rule in `xp-boost.ts` pays and explains every gain": {
+    "id": "2026-10-19-every-xp-multiplier-multiplies-and-one",
+    "hash": "a8b60efe08728af47104a52b1816be1e88bcc4f5aab7d614096a3814dcd11e18"
+  },
+  "2026-10-19: The level tag and the XP bar share one height; the creature page starts like the card; one shared action button": {
+    "id": "2026-10-19-the-level-tag-and-the-xp",
+    "hash": "09eb6f2a2e155ef19f7eee0f0f9aa4a3124ceb466987500f471bd1ba6b3b90d3"
+  },
+  "2026-10-19: Every evolve goes through the evolve screen; a data table panel (wave 7)": {
+    "id": "2026-10-19-every-evolve-goes-through-the-evolve",
+    "hash": "84f8b2f663ecc024e2d9860cec138dd2a64d820f85e6fb9a9f906fd3ff8b6535"
+  },
+  "2026-10-19: The XP bar's look is \"grown\"; the action button centres its detail": {
+    "id": "2026-10-19-the-xp-bar-s-look-is",
+    "hash": "4831b25f42973b3409f9c46e3a5818b92d8670899b566cf145e67e5dbd62a00d"
+  },
+  "2026-10-19: Serpentine, dodge, status effects and Mire": {
+    "id": "2026-10-19-serpentine-dodge-status-effects-and-mire",
+    "hash": "ca6a39f955db58bca7d790000b30231e35bd9e4765792f529570d1767ff267f3"
+  },
+  "2026-10-19: The element chart is content, and a mark can have several triggers": {
+    "id": "2026-10-19-the-element-chart-is-content-and",
+    "hash": "221667d7c6fea9ae8762775a741a380b61852fab4d1e69bb5b08c9fc8e00fd1a"
+  },
+  "2026-10-20: Mire content: Old Bogback, the bog foes, Muddy and the Sunken Fen (slice 5b)": {
+    "id": "2026-10-20-mire-content-old-bogback-the-bog",
+    "hash": "709fc6187d20e5e4d40c77fbb36411b9809f2312a3e4beda49e5af56823ce2e4"
+  },
+  "2026-10-20: Riposte stops the boss's turn; Mire passives in every fight": {
+    "id": "2026-10-20-riposte-stops-the-boss-s-turn",
+    "hash": "6b4a74ee72db935d99bffc63f1bf8a7fedda918e9e04d4f7f9662e27ed4a5a03"
+  },
+  "2026-10-19: Raid summary mock-ups for Misa to pick, workbench only": {
+    "id": "2026-10-19-raid-summary-mock-ups-for-misa",
+    "hash": "39273dda67105b60cab382755d7de2662bba19c0ba49a594253baaf57d5a8f2f"
+  },
+  "2026-10-19: WebSocket push for the lounge, as a prototype behind a flag": {
+    "id": "2026-10-19-websocket-push-for-the-lounge-as",
+    "hash": "0be4096239b218d7d6dc11cbff99d0b14970869c16024315469ec4c69bf964ec"
+  },
+  "2026-10-19: The footer and the dev clock are data tables": {
+    "id": "2026-10-19-the-footer-and-the-dev-clock",
+    "hash": "dc71450cab54ee0d9cc9a9661bf1cddd88092a8c10383f537ed33b9fc612f1da"
+  },
+  "2026-10-19: Preact 11.0.1; the Workers test plugin stays at 1.4.0": {
+    "id": "2026-10-19-preact-11-0-1-the-workers",
+    "hash": "c8e2f0d2d2cf96689d77cf1f201dd9585cd0fe923aacabc91c118823fa23b7fe"
+  },
+  "2026-10-20: The raid summary ships: scoreboard first, with the boss header (A plus B)": {
+    "id": "2026-10-20-the-raid-summary-ships-scoreboard-first",
+    "hash": "913a14ea926adcb6808f2c60183116c5135d0731eb6d67a63a0db51f02caed43"
+  },
+  "2026-10-20: The raid summary, round two, and the Find components": {
+    "id": "2026-10-20-the-raid-summary-round-two-and",
+    "hash": "7affed7b7d16785e443ec16b5feb4b6c3e5ac919572469aa1a620c7a61232d83"
+  },
+  "2026-10-20: No \"?\" on tags, anywhere": {
+    "id": "2026-10-20-no-on-tags-anywhere",
+    "hash": "a4e48e481132274170a4005562106eb28d95c4f75d8f935b6ecb2e59e700226e"
+  },
+  "2026-10-20: Lounging with company earns XP; the live lounge goes to production": {
+    "id": "2026-10-20-lounging-with-company-earns-xp-the",
+    "hash": "d34af2f2fb572bf6bbe8b2b9abea26399c130589e828afe0086fae54a42dc4eb"
+  },
+  "2026-10-20: Push-on extra time starts at the decision": {
+    "id": "2026-10-20-push-on-extra-time-starts-at",
+    "hash": "cd200d4143646f23102c8c889568418d66ae7872cb267d661862d412411a8f72"
+  },
+  "2026-10-20: Workshop conversions, Refine and Recycle": {
+    "id": "2026-10-20-workshop-conversions-refine-and-recycle",
+    "hash": "1a16b7e3994ea5f90aa39ea0b1b4f2997448b3b1b002cf11573be07e8e8a1b69"
+  },
+  "2026-10-20: Expedition trips pay in ticks": {
+    "id": "2026-10-20-expedition-trips-pay-in-ticks",
+    "hash": "bcdb69815818fabcbba58cc1e0c0ec4ad183f5f13b575eb80e667edbcf4597a5"
+  },
+  "2026-10-20: The daily dungeon pays more, and its choices pay more again (B-024)": {
+    "id": "2026-10-20-the-daily-dungeon-pays-more-and",
+    "hash": "249b9b8ff9d94e4fa18f20c09bd06493b9aa74f523baef2627791ff3ad29e490"
+  },
+  "2026-10-20: A recall pays explorer XP too": {
+    "id": "2026-10-20-a-recall-pays-explorer-xp-too",
+    "hash": "9ddcc9af19808b46d5ea5c2d8be20e67f0aef7da08f441954c17027856061707"
+  },
+  "2026-10-20: Economy targets, tested exactly": {
+    "id": "2026-10-20-economy-targets-tested-exactly",
+    "hash": "fcb79c7ce89681b997a1ec953a2d7fee6a1d672051758eedbcf70ef67e3952cd"
+  },
+  "2026-10-20: The lantern gets a bonus deep creature roll": {
+    "id": "2026-10-20-the-lantern-gets-a-bonus-deep",
+    "hash": "8a5fe629133599bf273f12bfe1844caa56600acecf789deea432985932a3f65f"
+  },
+  "2026-10-20: The Workshop's supplies become one compact picker (version C)": {
+    "id": "2026-10-20-the-workshop-s-supplies-become-one",
+    "hash": "883fa81ea347ce945ea8788b02c2e65fd8c08eb3eb9970634890945680fc843a"
+  },
+  "2026-10-20: A deeper-area find is the deep species 20% of the time (was 35%)": {
+    "id": "2026-10-20-a-deeper-area-find-is-the",
+    "hash": "4bda870c4492a7cfde927cb52b4b03070b0c366d033eea9b8df7108e1a8283bc"
+  },
+  "2026-10-20: The send screen picks supplies from the Workshop grid": {
+    "id": "2026-10-20-the-send-screen-picks-supplies-from",
+    "hash": "bd598c9ea78f4ae8cccbb9465e024ee79f38c7e637db9ed0e2896bf8f7f28314"
+  },
+  "2026-10-20: Fusion goes up in points, slowly at the top": {
+    "id": "2026-10-20-fusion-goes-up-in-points-slowly",
+    "hash": "4e3f9f945e1b23589739e46ef00fe47c55fa6df4c53b1db92effbc2ae156eda6"
+  },
+  "2026-10-20: Raids harder for the tick economy; steeper fusion; early gear at a lower level": {
+    "id": "2026-10-20-raids-harder-for-the-tick-economy",
+    "hash": "1b7fa3aedcb8e350028a7e09ed9c3b9d7e2eccdeb9011ba51f904f1725d50185"
+  },
+  "2026-10-20: Lounging XP fixes after the first production test": {
+    "id": "2026-10-20-lounging-xp-fixes-after-the-first",
+    "hash": "14fc19f16395405276ff92bf7031e215f78997651a93fca59c34a9675cdaf5ea"
+  },
+  "2026-10-20: The dungeon card is where the team gets ready (the creature configurator), and one gear list": {
+    "id": "2026-10-20-the-dungeon-card-is-where-the",
+    "hash": "4f7c5484020cd84b69cd67b6e2f48359a4dcff976538ac62aa3409185aedcd17"
+  },
+  "2026-10-20: The item picker does not move gear off another creature": {
+    "id": "2026-10-20-the-item-picker-does-not-move",
+    "hash": "fd92bddbbdaf4373be1ff828c36885e21b8e74ca5f7393f7794e7268b96c3f5a"
+  },
+  "2026-10-20: Configurator buttons in one row; Compare against an empty slot": {
+    "id": "2026-10-20-configurator-buttons-in-one-row-compare",
+    "hash": "5e4c35b1754862630b97c8593db2d277189c08b211bc1260757ae77a3fe5bee0"
+  },
+  "2026-10-20: Lounging XP, the evening check": {
+    "id": "2026-10-20-lounging-xp-the-evening-check",
+    "hash": "10a57ed115647635da185149785e06d36349e0cff7765222406f878d88832e90"
+  },
+  "2026-10-21: The configurator on the Raid Roster, gear during a dungeon run, and a font sweep": {
+    "id": "2026-10-21-the-configurator-on-the-raid-roster",
+    "hash": "fa87ac0e6b44924120ee3747b7d721fc72858a08539df0639f175ba2fbe3fd28"
+  },
+  "2026-10-21: Send screen polish (supplies step and the expected-haul summary)": {
+    "id": "2026-10-21-send-screen-polish-supplies-step-and",
+    "hash": "ac1c215691c3c624ad4f5d302ab473129d0447afbd13cad231d6175bc2db4e9b"
+  },
+  "2026-10-21: Richer rank gifts, and \"Set out with\" on the claim screen": {
+    "id": "2026-10-21-richer-rank-gifts-and-set-out",
+    "hash": "a4a856ed0c95fb52bf572883422c0ce4afdd91bc0189b73a90369f01ef7b526f"
+  },
+  "2026-10-21: Supplies are explained by tier words and a boost bracket, never by counts": {
+    "id": "2026-10-21-supplies-are-explained-by-tier-words",
+    "hash": "ab6236090449808dc43aeda5f8a13f1cf87c745233e9ba8e9f62122a3ee93ff9"
+  },
+  "2026-10-21: One line per supply, its strength word anchored to a reference trip": {
+    "id": "2026-10-21-one-line-per-supply-its-strength",
+    "hash": "3416752237195b09a4378328fd01104d969c99bc64a204076bb5658a474186d1"
+  },
+  "2026-10-21: \"Pack a treat\" is a pixel switch row": {
+    "id": "2026-10-21-pack-a-treat-is-a-pixel",
+    "hash": "f5d691a1a2fb916d3e1851e01379161d41d09b6468bd24469ed5799bcb113503"
+  },
+  "2026-10-21: The bag may overflow; a full bag warns where you set off": {
+    "id": "2026-10-21-the-bag-may-overflow-a-full",
+    "hash": "9964c31d3a72bee093c530e41866e44940957d597605a966f75999ca36ecd65c"
+  },
+  "2026-10-21: At the camp a tap shows the creature; only a drag moves it": {
+    "id": "2026-10-21-at-the-camp-a-tap-shows",
+    "hash": "e04bc994a794c9d09beaed0d5fb728181138a24154e487e8387a7296c4250619"
+  },
+  "2026-10-21: The run strip's pack is a backpack, and the keepsakes get their own panel": {
+    "id": "2026-10-21-the-run-strip-s-pack-is",
+    "hash": "2c8e8acb55db1fa1523b3e355e326605faf967e959de639b5dfd7d425d6c35f9"
+  },
+  "2026-10-21: One Alert component for notices, warnings and errors; the pack rolls out of the backpack": {
+    "id": "2026-10-21-one-alert-component-for-notices-warnings",
+    "hash": "e44133f770ca56a5a3dd1eae135261e23a9a81f1b9db2c476291328f0b73c4fd"
+  },
+  "2026-10-21: The keepsakes get a locket and a velvet canvas; the canvases reach further under the picture": {
+    "id": "2026-10-21-the-keepsakes-get-a-locket-and",
+    "hash": "6af7415fc82030bb46d6ea7621941f05c0b206faa5d1dbe5a0cda595728cc28d"
+  },
+  "2026-10-21: The Trips view is a world map": {
+    "id": "2026-10-21-the-trips-view-is-a-world",
+    "hash": "83974163d7cc35c2f63f5819a7a619529b95f929bf0bf819a98e7263f27ad6ae"
+  },
+  "2026-10-21: the step-by-step wizard is its own component, not part of the Drawer": {
+    "id": "2026-10-21-the-step-by-step-wizard-is",
+    "hash": "7d366154a67e54749618686f2be4e135ac672bed3db9c592d2e73957b372a958"
+  },
+  "2026-10-21: \"Equip on\" shows what is already worn": {
+    "id": "2026-10-21-equip-on-shows-what-is-already",
+    "hash": "521d690ed22d5c5484bf4a11a5e00149cbdf8fa12cb10e71ae839dbcb3102e47"
+  },
+  "2026-10-21: A found item opens its item card (tap, or hover with a mouse)": {
+    "id": "2026-10-21-a-found-item-opens-its-item",
+    "hash": "aed642c580875cc4e442e0c47302216f6abb8f1c7df03256fe7ff0e56f2529fe"
+  },
+  "2026-10-21: The Blue Chasm, a rare mystery room with a treasure shown first": {
+    "id": "2026-10-21-the-blue-chasm-a-rare-mystery",
+    "hash": "a8e217fbec78680adb59a1fb500aa119c62d61edbc5ab0daac8c9e4c197dcbee"
+  },
+  "2026-10-21: The dungeon pays experience per room a creature stood in, and the end screen recaps it": {
+    "id": "2026-10-21-the-dungeon-pays-experience-per-room",
+    "hash": "fec7bc99813ea2dc918e0338df62ebbea54001ec6c90b06ad7016772aadc8aa8"
+  },
+  "2026-10-21: the Workshop's supply jobs are one wizard in a drawer; level limits may fold in job pickers": {
+    "id": "2026-10-21-the-workshop-s-supply-jobs-are",
+    "hash": "5f9a1799ed46ca8a345818d8e1270e6d372aa5cf1ddfe5230faf19e576644327"
+  },
+  "2026-10-22: The Wizard branches, and the dungeon camp runs on it": {
+    "id": "2026-10-22-the-wizard-branches-and-the-dungeon",
+    "hash": "476f4eef5e5b0ac431395651cab7c25936e327bd0eb74b8c94bb91ce001d0576"
+  },
+  "2026-10-21: One creature list for every creature pick": {
+    "id": "2026-10-21-one-creature-list-for-every-creature",
+    "hash": "24f4b0571919ef3d12d96ae6caa5f8b249007c11a8c39203a53dff20698d74b6"
+  },
+  "2026-10-22: The Sealed Vault, a rare mystery room that marks the fights ahead, and a generic room badge on the map": {
+    "id": "2026-10-22-the-sealed-vault-a-rare-mystery",
+    "hash": "ff4f60117da54a88cf7575403bd1d42a8f7b7fcffb73510cbdbe6e613e9d4ecf"
+  },
+  "2026-10-22: Four more mystery rooms (Training Post, Crystal Hollow, Cursed Idol, Hungry Door), curses, and one rule for rare rooms": {
+    "id": "2026-10-22-four-more-mystery-rooms-training-post",
+    "hash": "0e52932998cebc20091db5ae6e983606d2cd5231fdb0c4d92af2169ebc767c2b"
+  },
+  "2026-10-22: Sealed Vault and the other rooms merged: one rare roll for all three rare rooms": {
+    "id": "2026-10-22-sealed-vault-and-the-other-rooms",
+    "hash": "7a892f4f18d854abb7894e0c9cb36409c71c61aa22c291cab02109b93318e7f1"
+  },
+  "2026-10-22: A curse is a keepsake with a curse effect, and the Sealed Vault doubles everything material": {
+    "id": "2026-10-22-a-curse-is-a-keepsake-with",
+    "hash": "587c632d3178b2f3437d00da68457197220d6688b0f0964d03d7fa5647c4e2f4"
+  },
+  "2026-10-22: Rare rooms: one roll, one pool": {
+    "id": "2026-10-22-rare-rooms-one-roll-one-pool",
+    "hash": "cc86acf7a8806abe991d9614ad1554297026b2e702c36df83d70e68165886a66"
+  },
+  "2026-10-22: The dungeon's reflect is split in two: spiky armour (Thorns) and a reflective shield (Molten Shell). The raid is unchanged": {
+    "id": "2026-10-22-the-dungeon-s-reflect-is-split",
+    "hash": "318de4776c932c5fb8fc37d39d3505e8785aa65f15c7d8a72817ceebcb66ebd4"
+  },
+  "2026-10-22: Molten Shell is a frequent partial Backlash, not a rare full reflect (replaces the reflective shield above)": {
+    "id": "2026-10-22-molten-shell-is-a-frequent-partial",
+    "hash": "43d0b34d6549a10dcad856e10211911a956e1cf38bb5112eb3b50e0e82704f60"
+  },
+  "2026-10-22: Foe move lines say what a move hits; \"Charged:\" replaces \"announced a round ahead\"": {
+    "id": "2026-10-22-foe-move-lines-say-what-a",
+    "hash": "d0d0466865c2c5fd518cff2201cbfa593bf928cf2296eed99929c5aa3c1e035b"
+  },
+  "2026-10-22: Desktop Expeditions map: full width until a place is chosen, the panel runs the wizard": {
+    "id": "2026-10-22-desktop-expeditions-map-full-width-until",
+    "hash": "a85f2f2c261ca5f76b694f8d3857878b08136e8cbfa24b2433df84ec48084ff7"
+  },
+  "2026-10-22: Pixel scrollbars on desktop, the system's own on phones": {
+    "id": "2026-10-22-pixel-scrollbars-on-desktop-the-system",
+    "hash": "ec77325f9029ef7bc048919af2a8dbbb5412db264c2f927c12346e0f40afe52f"
+  },
+  "2026-10-22: Valley Games engine: five kinds, stats against the field, a timeline the client only plays": {
+    "id": "2026-10-22-valley-games-engine-five-kinds-stats",
+    "hash": "0185d6f37347ab54faa0eeba46d1d5e8a2f0c2c02a8d8f6627679f248c2b69f9"
+  },
+  "2026-10-22: Valley Games on the server: days, auto-entry, awards and the Prize Stall": {
+    "id": "2026-10-22-valley-games-on-the-server-days",
+    "hash": "09283fed7487e3b89b20d8574c9fe8671c5b3edf0923904f96df396bd997c81d"
+  },
+  "2026-10-23: Valley Games polish: commentary by priority, paced exits, real finishes, stacks and a relay": {
+    "id": "2026-10-23-valley-games-polish-commentary-by-priority",
+    "hash": "d02ede0f92016446c499411c61284239009c8035734bd3f050900269c7651312"
+  },
+  "2026-10-23: Valley Games: three events a day, a bonus event on Wednesdays": {
+    "id": "2026-10-23-valley-games-three-events-a-day",
+    "hash": "84c8db389dd5d937c164bab2168b77bf15e36503962150f7eeb01cec31f01478"
+  },
+  "2026-10-23: The alarm's cleanup runs once a game day; old dungeon steps are deleted": {
+    "id": "2026-10-23-the-alarm-s-cleanup-runs-once",
+    "hash": "2b085aba96843e0802d19d8aae699df4856cab76ceed356856c219611f70c9af"
+  },
+  "2026-10-23: Games migration renumbered to 39": {
+    "id": "2026-10-23-games-migration-renumbered-to-39",
+    "hash": "26c1ee1d2cbf71ea0567029c44c5e5280bcb5152d8f0b319e6c0cd9e38982484"
+  },
+  "2026-10-23: No Valley Games results post": {
+    "id": "2026-10-23-no-valley-games-results-post",
+    "hash": "f9bfe2d7827ada29e2087cc7ea86ccfcdf001d77f729db035595c8a61afe3b13"
+  },
+  "2026-10-23: Team events are real team sports: Log Carry and Pumpkin Push; Sauna Stack and Shark Relay retired": {
+    "id": "2026-10-23-team-events-are-real-team-sports",
+    "hash": "bfe14fca4e094c1748f05dbd87602151824bd39828918462ecb8c90f7a986fe9"
+  },
+  "2026-10-23: Valley Games: no level, a \"Good fit\" badge, event badges, no auto-entry": {
+    "id": "2026-10-23-valley-games-no-level-a-good",
+    "hash": "77a957c2fff9f143784d8ba78005426c9bf0abe5e0a5cb84e7be0bae6e4eeb36"
+  },
+  "2026-10-23: Three more team events, all played at once: Bucket Brigade, Crate Tower, Kite Flight": {
+    "id": "2026-10-23-three-more-team-events-all-played",
+    "hash": "b0b070c46775dceb60e21c5be8ac37cad4badead756bc5b41468f34eda72089f"
+  },
+  "2026-10-23: Valley Games fit their parent, the Expeditions map's side panel for the leaderboard, one favour line per favour": {
+    "id": "2026-10-23-valley-games-fit-their-parent-the",
+    "hash": "3fcbdbc13228c4df0915a05deea775c812d31fc7b808c8fb02afab3670c6f896"
+  },
+  "2026-10-24: Valley Games polish: crowding solved at display time, a calm leaderboard, one icon box": {
+    "id": "2026-10-24-valley-games-polish-crowding-solved-at",
+    "hash": "be2f418f6bad8a8af90c2bb031a10ce24e0a0f7a3f66c5deef998a76cdc842a5"
+  },
+  "2026-10-22: The live finale plays about three times slower": {
+    "id": "2026-10-22-the-live-finale-plays-about-three",
+    "hash": "41cf1f05b49abe516f9ea9d0f1be7707115ee745cd564fba073ffacd9e79f126"
+  },
+  "2026-10-22: The live finale is pushed over the live socket": {
+    "id": "2026-10-22-the-live-finale-is-pushed-over",
+    "hash": "865aed7437380045799430e6bda4001ccdc5c5726f166ca9e486b3317ee03d1f"
+  },
+  "2026-10-22: Guards have a reach": {
+    "id": "2026-10-22-guards-have-a-reach",
+    "hash": "5aad9a815f7e00d2b75fc49504f4e703b31d295c8419a9ed02e1a8d9a763cba7"
+  },
+  "2026-10-22: Lounging time is stored at every check": {
+    "id": "2026-10-22-lounging-time-is-stored-at-every",
+    "hash": "4843897ad28fdee64a9be096e48e8d37ce10cc267bcaa0536dec36434133f4fe"
+  },
+  "2026-10-22: The boss's move track, and fixed places for buffs and debuffs": {
+    "id": "2026-10-22-the-boss-s-move-track-and",
+    "hash": "eaf2d3c14660d1a64bb635f8e219ce373fa689316dd1c5f6a657fb3557dfaf94"
+  },
+  "2026-10-22: Four looks for the move track; the boss's attacks fly": {
+    "id": "2026-10-22-four-looks-for-the-move-track",
+    "hash": "21da636bf4bdecb6c4be624b4ca3d7992ee8b530955550f5d389bf10d2c78426"
+  },
+  "2026-10-23: Themed boss attacks in pixel style, the countdown track, quieter marks": {
+    "id": "2026-10-23-themed-boss-attacks-in-pixel-style",
+    "hash": "a43502fa3007b95954e4b42086f823ab4c2ab28eab3b96e3759d3c0f664c1da7"
+  },
+  "2026-10-24: A barrier over the foe, a track of rows, the boss in the middle": {
+    "id": "2026-10-24-a-barrier-over-the-foe-a",
+    "hash": "58a3f607df8c5a777a64f584331bda368c27b8d1d561caefcaa0090f436ac861"
+  },
+  "2026-10-24: The barrier is shimmering triangles; the track points at this round": {
+    "id": "2026-10-24-the-barrier-is-shimmering-triangles-the",
+    "hash": "755ff1b897289c5dd85f67d1b571f8fa56035de48a2d14057de94248b70d2900"
+  },
+  "2026-10-24: The barrier is a hexagon that spills around the foe": {
+    "id": "2026-10-24-the-barrier-is-a-hexagon-that",
+    "hash": "e5ff739cce137932f7cbb728376d36737d754049815c3d83563d1908ae4502d2"
+  },
+  "2026-10-24: The raid party sits dead centre on a wide screen": {
+    "id": "2026-10-24-the-raid-party-sits-dead-centre",
+    "hash": "66c96679707b6ad4b9c20ca8a8af582523413f27408b6e600a8dc9f0fb7077d6"
+  },
+  "2026-10-24: No acting order under the creatures": {
+    "id": "2026-10-24-no-acting-order-under-the-creatures",
+    "hash": "199ce37b0d293667a41cb4e83cea576af994f146e1e061f092b07aebf2236455"
+  },
+  "2026-10-24: Creature names on the raid board, and a tiny HP bar in the raid": {
+    "id": "2026-10-24-creature-names-on-the-raid-board",
+    "hash": "a32fbeffb9c22d43303ba6ed67f23ef53910e1df407ec860150296250ab1d3c7"
+  },
+  "2026-10-24: Faster lint, a staging check, check:changed and other fixes from the retro": {
+    "id": "2026-10-24-faster-lint-a-staging-check-check",
+    "hash": "16e5e33cd8c69155544e3fc6d161c51f98a8a4ec12882f96b966caa1afc02bd9"
+  },
+  "2026-10-24: The main navigation is a dock on a phone and a rail on a desktop, with a HUD on top": {
+    "id": "2026-10-24-the-main-navigation-is-a-dock",
+    "hash": "687b6d0f3112425e1ccdd3b679d8faaa1ebe613e27b99253784918b0b9f20474"
+  },
+  "2026-10-24: The phone dock is three group buttons with upward sub-menus": {
+    "id": "2026-10-24-the-phone-dock-is-three-group",
+    "hash": "7a2bf7446ee4dd9b0a56c2bcd64638cf2cf2cbc6468080d8c7be124857c141d9"
+  },
+  "2026-10-24: The dock reaches the bottom edge, and the lounge is a button in the middle": {
+    "id": "2026-10-24-the-dock-reaches-the-bottom-edge",
+    "hash": "b5d8d771b6bd8154b5e00b89063a6f54aa62b426578aca929a03adce491ae6a4"
+  },
+  "2026-10-24: Home is a page: the Today board, with tilted notices and optional quiet ones": {
+    "id": "2026-10-24-home-is-a-page-the-today",
+    "hash": "92df9e43e6b814fdb522c5be1cc51dfcf85ba24e1d6def7f49c6d9d8a15550cd"
+  },
+  "2026-10-24: Shell polish: smaller navigation, scroll to top, Bait income in the currency popover, no footer": {
+    "id": "2026-10-24-shell-polish-smaller-navigation-scroll-to",
+    "hash": "971856341e44400de54dadf81daa20d5800efba12d0c81fe0e373282441971f6"
+  },
+  "2026-10-24: The Journal and the Stats are pinned to the Home board; Expeditions is only the map": {
+    "id": "2026-10-24-the-journal-and-the-stats-are",
+    "hash": "e923c2d308c9beccf33b1d80391381e03ddc941794a6ba379cb88dd9ca967b2e"
+  },
+  "2026-10-24: Collection group with the Journal, Settings behind a cog, a creatures notice and a starter pin": {
+    "id": "2026-10-24-collection-group-with-the-journal-settings",
+    "hash": "db9ef543de261aaec8ed17a49a89019998ea05fd4b69cc67e6b2bf5e7e65dc12"
+  },
+  "2026-10-24: The new UX patterns, reviewed: one \"frame\" section in ux-patterns.md": {
+    "id": "2026-10-24-the-new-ux-patterns-reviewed-one",
+    "hash": "1b641f480ab1176d7c90a7706cfe798141ea1b4c032aaa757026aaab909b3760"
+  },
+  "2026-10-25: Home board: Journal and Stats off the board (Stats is a Collection place), a How to play pin, flush notices by default, no sway, smaller board text": {
+    "id": "2026-10-25-home-board-journal-and-stats-off",
+    "hash": "ea2991f1ab5f4460c0540d3869c6db2b15012fb074b73b067a8b146a48b1d68d"
+  },
+  "2026-10-25: A fixed top bar on phones, see-through pin shadows": {
+    "id": "2026-10-25-a-fixed-top-bar-on-phones",
+    "hash": "a15ab9bbb7a9ee3688144ae4413a1b80a57aba8f227fa37f7b55b50db2798e62"
+  },
+  "2026-10-25: Opt-in Discord DMs, derived from the game's tables": {
+    "id": "2026-10-25-opt-in-discord-dms-derived-from",
+    "hash": "8bb02967a012d6f8505c7d5191dda339c0f44ed04f872200edf98be6238148ea"
+  },
+  "2026-10-25: One bottom bar between the phone and the wide window (prototype)": {
+    "id": "2026-10-25-one-bottom-bar-between-the-phone",
+    "hash": "15419400223e4c511217e7cb017bcafa1c719d6ac0464d10d5e3002afc73645c"
+  },
+  "2026-10-25: Evolution short of Essence shows on the creature page": {
+    "id": "2026-10-25-evolution-short-of-essence-shows-on",
+    "hash": "9da3705818f33771faefdf2218dd6426d9c7d132e32b959d819d2d3edcea9e4c"
+  },
+  "2026-10-25: The start-up passes run once per deployed build": {
+    "id": "2026-10-25-the-start-up-passes-run-once",
+    "hash": "8a3a99db2472800a0a70a87f9a88c8ae24c1912677ca336f9f770eb239c4dc63"
+  },
+  "2026-10-25: A read budget test and rows read in the ops report": {
+    "id": "2026-10-25-a-read-budget-test-and-rows",
+    "hash": "cb4386c6c38fb12ed892e218cabce87a17bd88d5406342f9e13d68a5eda8f033"
+  },
+  "2026-10-25: Lounge reads: one-row lounger, XP over the socket": {
+    "id": "2026-10-25-lounge-reads-one-row-lounger-xp",
+    "hash": "7bb7df8f55cd3d84c2aa23e3b24aeecb6f35fb8b68c9d7f858bdf5699a02a777"
+  },
+  "2026-10-25: Indexes for a player's recent trips and worn gear (migration 44)": {
+    "id": "2026-10-25-indexes-for-a-player-s-recent",
+    "hash": "bfa73838383e0e7816381b20930d6489810816dbd150a202d9304bce57bf0f86"
+  },
+  "2026-10-25: The raid view stores its readiness bands and teammates' teams (migration 45)": {
+    "id": "2026-10-25-the-raid-view-stores-its-readiness",
+    "hash": "d2e81c6f66286d9400f8a1e1d32aaa00c60c96c267854d6db8ddce0a1936e7a8"
+  },
+  "2026-10-25: Old game data is deleted once nobody can use it": {
+    "id": "2026-10-25-old-game-data-is-deleted-once",
+    "hash": "613052d2dadde96c04336e965f94cb916f378e95ce007e93827e57d2adde51af"
+  },
+  "2026-10-26: While you were away: missed rewards on the notice board": {
+    "id": "2026-10-26-while-you-were-away-missed-rewards",
+    "hash": "f82e6ac76c2a36a3a4d9b0370b7dc37b5f5a42d40519008f388892a4b2b04fa2"
+  },
+  "2026-10-26: Raids: you join by placing; no auto teams": {
+    "id": "2026-10-26-raids-you-join-by-placing-no",
+    "hash": "393a3d902698ff1b0f0ca477ea90789921c4eace0b263e31b98b04d34a04236f"
+  },
+  "2026-10-26: The raid board is live over the sockets": {
+    "id": "2026-10-26-the-raid-board-is-live-over",
+    "hash": "4e5bbcbf01c05ff577830305da39656ff87cc422ebb44008e27ee6fd3f7e9e53"
+  },
+  "2026-10-26: Raids: join until the finale; new servers start at Rank 1": {
+    "id": "2026-10-26-raids-join-until-the-finale-new",
+    "hash": "5bc0f281fa6d8afd5d13e1d06a171566acce7f23fe82cc0bfa8cea8a68de443e"
+  },
+  "2026-10-26: What the rows_read week taught us (standing principles)": {
+    "id": "2026-10-26-what-the-rows-read-week-taught",
+    "hash": "f8298f223fd4317445acda845c297d9a51e36576d597968c9baf7b63979c9f28"
+  },
+  "2026-10-26: A query plan audit and a day-in-the-life read budget": {
+    "id": "2026-10-26-a-query-plan-audit-and-a",
+    "hash": "9dbeda97eccc0eb8f150a20cc534f58b8f3b3af40de5d0fdd9223b5bedacccc8"
+  },
+  "2026-10-26: Raid results show real damage and a separate score": {
+    "id": "2026-10-26-raid-results-show-real-damage-and",
+    "hash": "cefcd838839ba91f1d5147bef46107fa4f355c541e5aefb6fdf54b7dbf03ab44"
+  },
+  "2026-10-26: A private note per creature": {
+    "id": "2026-10-26-a-private-note-per-creature",
+    "hash": "0427853d833401c53fa21e2f19a50c720e1a1616c355bbb16e47f3b4c88fe437"
+  },
+  "2026-10-26: Combat v2 is designed in a lab before it touches the engine": {
+    "id": "2026-10-26-combat-v2-is-designed-in-a",
+    "hash": "6988eb9cd2488b7952f913860f1c38f4f20f2d3a43610a1be7370ee755e65f4a"
+  },
+  "2026-10-26: Combat v2: Misa's answers to the first panel": {
+    "id": "2026-10-26-combat-v2-misa-s-answers-to",
+    "hash": "53511c194cf7af1ca004f95d7f0619cf1e21d1daffb13d8766e02c26d5103e42"
+  },
+  "2026-10-26: Combat v2: Knacks for every species, talents by role (panel 2)": {
+    "id": "2026-10-26-combat-v2-knacks-for-every-species",
+    "hash": "55623deeebc7bcd238f348937f695b6dc5926b37c7b4db007ef453c1c1d99c65"
+  },
+  "2026-10-27: A generated wiki page of the game's configuration": {
+    "id": "2026-10-27-a-generated-wiki-page-of-the",
+    "hash": "cce19430a8f76952c61a8ec9d92ff9f45b269f8050caddef050e4b36f5d02b21"
+  },
+  "2026-10-27: Combat v2: Knacks grow on evolution, talents by line, golden stays golden": {
+    "id": "2026-10-27-combat-v2-knacks-grow-on-evolution",
+    "hash": "9d7da7220070972de792208e8b7a4b509feef45e6c024a3ed99120bb62831f76"
+  },
+  "2026-10-27: Combat v2: which talents can appear on which creatures": {
+    "id": "2026-10-27-combat-v2-which-talents-can-appear",
+    "hash": "57f29ac66d530477e3814ff6d6396962b3e2ab95de36f8b4e9fe6867ecd27e28"
+  },
+  "2026-10-28: Content changes are not held back by existing rolls; modifiers, luck and fading debuffs": {
+    "id": "2026-10-28-content-changes-are-not-held-back",
+    "hash": "30936b68319faf95000ff3e6bae95b0ea007af9b371afe90b2c424e42fce229f"
+  },
+  "2026-10-28: Armour works for every creature; the first talent batch is in the lab": {
+    "id": "2026-10-28-armour-works-for-every-creature-the",
+    "hash": "f2754e2b3540ddcdab3642df96c5f1c0ce15a580fa5e638e44612ac06043dce6"
+  },
+  "2026-10-27: Marked items, dismantled as a pile": {
+    "id": "2026-10-27-marked-items-dismantled-as-a-pile",
+    "hash": "c5fb46f7c90324cd57fffc1e80ea3b9933ef6a01382e9f22c87c4727d7c56065"
+  },
+  "2026-10-27: Bulk selection replaces marking": {
+    "id": "2026-10-27-bulk-selection-replaces-marking",
+    "hash": "1df636f67dbdc6bf4a2af7544247dd4b318730aab2ddb12f279257665adc21eb"
+  },
+  "2026-10-28: Selecting several is shared": {
+    "id": "2026-10-28-selecting-several-is-shared",
+    "hash": "671cedc22b5dee138a38d88b7e6e43ee4f4f90c828246046dbb85072680fbd0a"
+  },
+  "2026-10-28: One spacing scale inside popovers": {
+    "id": "2026-10-28-one-spacing-scale-inside-popovers",
+    "hash": "b2498993fe45790c29a296a8f154639fce2fe658b4530d12d9a7e4c36967fe5f"
+  },
+  "2026-10-28: One spacing scale inside drawers and sheets": {
+    "id": "2026-10-28-one-spacing-scale-inside-drawers-and",
+    "hash": "8c999ad06e7b642266b22fefff83d6578131db49218d0911667cf0d84ba3a36a"
+  },
+  "2026-10-28: Ribbons and medals on the creature card": {
+    "id": "2026-10-28-ribbons-and-medals-on-the-creature",
+    "hash": "a93db7338aed728bed56f431aa18aff8abe3bc011f81088a7e7ccb3306270851"
+  },
+  "2026-10-28: Armour per species; talents go into the line's book automatically": {
+    "id": "2026-10-28-armour-per-species-talents-go-into",
+    "hash": "dd65916a082cb3b7807db971360c994463b7fc8b48e10a1703f510884a9f5867"
+  },
+  "2026-10-28: How strong a talent should be": {
+    "id": "2026-10-28-how-strong-a-talent-should-be",
+    "hash": "a64f69dc457e23df30034ce88a4752c66409ce0c9a0b986fafa4f02ca7062021"
+  },
+  "2026-10-28: Talent strength is a share of the team's result": {
+    "id": "2026-10-28-talent-strength-is-a-share-of",
+    "hash": "c653f1d5c195de14cd26f9923086d315ebb826b83582964d5fbc947e5c11ea42"
+  },
+  "2026-10-28: Random talent rolls stay situational": {
+    "id": "2026-10-28-random-talent-rolls-stay-situational",
+    "hash": "b0dbd24a6624f4362919023e023cc7cab587f5cde853ac46bb581d3c666d7e42"
+  },
+  "2026-10-28: Combat v2 content direction: raids hyper-focused, dungeons all-round": {
+    "id": "2026-10-28-combat-v2-content-direction-raids-hyper",
+    "hash": "b9da50ab806efcdfbc9c61151e0a71deb117ecffc050f680f785d27fa7eefee9"
+  },
+  "2026-10-28: A well-prepared raid team should usually win": {
+    "id": "2026-10-28-a-well-prepared-raid-team-should",
+    "hash": "5520f56486b85d2a6150918c7943da917a2d96a312101b4439d7bf68f9d2356b"
+  },
+  "2026-10-28: Announced random attacks; dungeon clear target; the camp stays": {
+    "id": "2026-10-28-announced-random-attacks-dungeon-clear-target",
+    "hash": "0e9970b2739dc593dc564828cd7c66be0603a396cbc4af55e5dac8cac9d102c4"
+  },
+  "2026-10-29: Combat v2 raid boss HP grows with the number of players": {
+    "id": "2026-10-29-combat-v2-raid-boss-hp-grows",
+    "hash": "cdeff4844421496f55f2835ae66547f267c1e03dfd543ab9dcba57d82667c5ee"
+  },
+  "2026-10-29: Raid losses: mixed servers should feel them; measure HP left": {
+    "id": "2026-10-29-raid-losses-mixed-servers-should-feel",
+    "hash": "f1882ba33e8db17901f83cb19a84a1a3b04ce80e34086299f4e2b66f91e2c388"
+  },
+  "2026-10-29: Combat v2 balance pass against the real bosses": {
+    "id": "2026-10-29-combat-v2-balance-pass-against-the",
+    "hash": "eec452bb9181c6e8a0972c1cdac59806d79b4cd440332d8a544a6402e17cfe7f"
+  },
+  "2026-10-29: CI skips the build and tests for documentation-only PRs": {
+    "id": "2026-10-29-ci-skips-the-build-and-tests",
+    "hash": "31b7f76595914beeb1be5bcb97765f5ffefe6eb87365ca2dc805339d81b1e500"
+  },
+  "2026-10-29: Opt-in harder raids belong to the endgame": {
+    "id": "2026-10-29-opt-in-harder-raids-belong-to",
+    "hash": "c179ce530e5c7abf8f3d08cc86a2c048739eada0a0e47eca774f2b7f52213454"
+  },
+  "2026-10-29: Raid tuning aims at success tiers and robustness": {
+    "id": "2026-10-29-raid-tuning-aims-at-success-tiers",
+    "hash": "2e7d33556ee8531ce6039a7a1ac4cae832bc30a57d6d6ef25df632892f31a2ea"
+  },
+  "2026-10-29: Measure HP removed; rule cards ask before they require": {
+    "id": "2026-10-29-measure-hp-removed-rule-cards-ask",
+    "hash": "0318040feba5ed582e5446cb02cbe954024970f744f1b851f520c5178189b98b"
+  },
+  "2026-10-29: The lab's raid roster levels follow Boss Rank": {
+    "id": "2026-10-29-the-lab-s-raid-roster-levels",
+    "hash": "6d06ca5c482a96afbf46ea6cb7935184d109675adc2d6d75682dc9e7b12fdc22"
+  }
+}

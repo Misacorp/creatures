@@ -1,6 +1,6 @@
 # UX patterns: how Leet Creatures screens are built
 
-The standing rules for the Activity's UI, learned from Misa's play-test feedback (October 2026). Read this before any UI work, together with `decisions.md` (the reasoning and history behind each rule). When a rule here and a screen disagree, the screen is the bug. When a new pattern is settled, add it here in a line or two and link its decision.
+The standing rules for the Activity's UI, learned from Misa's play-test feedback (October 2026). Read this before any UI work, together with `decisions/ui.md` (the reasoning and history behind each rule; `pnpm decisions search <word>` finds a rule's entry). When a rule here and a screen disagree, the screen is the bug. When a new pattern is settled, add it here in a line or two and link its decision.
 
 Everything is checked at 390 px wide first (Discord on a phone), in the component workbench (`docs/design/workbench.md`).
 
