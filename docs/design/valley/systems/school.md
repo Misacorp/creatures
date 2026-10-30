@@ -19,3 +19,15 @@ A creature placed at the School teaches the talents it knows to other creatures 
 
 - Can a creature learn any talent, or only ones that suit its role or element (combat v2 decides)?
 - Is learning free, or does it cost something (Essence, a page)?
+
+## The lead's first take (2026-10-30, for the **school** question)
+
+Misa (Q32): "What do we want to teach in a school? Or is the school building even necessary? Is it a dumb way to do things that I just came up with because it felt cool?"
+
+Not dumb: the need behind it is real. Spare and duplicate creatures need a use (G-2), and a place where creatures grow in ways other than levels gives the valley a reason to collect. But it is the one place whose purpose is borrowed: it exists to teach combat v2's talents, so it is only as good as what there is to teach. A place earns its spot if it gives a decision no other place gives.
+
+- If combat v2's talents are **learnable and swappable**, the School is the natural home: a known teacher, a chosen student, a visible wait.
+- If talents are **few and fixed per species**, there is nothing to teach: scrap the School, and give duplicates their use elsewhere (fusion at the Paddock, or a gift to a project).
+- A middle way: fold teaching into the **bonfire**, where resting creatures learn from each other in the small moments, with no seats to manage.
+
+Decided with Misa once combat v2 says what a talent is (the **school** entry in `questions.md`).

@@ -3574,3 +3574,7 @@ Misa's answer to the valley plan's Q30 (`docs/design/valley/questions.md`; `docs
 ## 2026-10-30: Valley: communal seats are extra; co-op never takes away personal progression (round 12)
 
 Misa's answer to the valley plan's Q31: a communal seat is an extra seat per place, never one of the player's own (`docs/design/valley/systems/commons.md` V-COM-14). "Let's absolutely keep any such initiatives something that doesn't take away personal progression": a new standing filter, F-11 in `docs/design/valley/goals.md`. He is unsure communal seats will be fun, so they are tested in the phase 3 prototype before being built.
+
+## 2026-10-30: Valley: build the economy lab next (round 13, Q32)
+
+Misa: "The economy simulation building would be something that could work out as I travel home from work... I'm interested in seeing what kind of resources we have, how they interact. What's used for what." Phase 2 starts: a resource map (`docs/design/valley/economy/resources.md`) and the lab (`economy/model.md`, package `packages/econ`). His open thinking on how many resources the valley needs, and his doubt about the School ("is the school building even necessary?"), became two queued questions (**resources**, **school**) in `docs/design/valley/questions.md`. Research: `docs/research/resource-design.md`.

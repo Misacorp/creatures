@@ -6,22 +6,14 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q32. What should come next?
-
-Status: asked, round 13 (2026-10-30). The question queue is empty apart from **targets** (which waits on the economy lab). Touches: `roadmap.md`.
-
-**Why it matters.** Phase 1 (the base systems on paper) has every system drafted, reviewed and mostly decided, except the School, which waits on combat v2's talents. Almost every number in the docs is still an example. The combat v2 session is tuning its bosses against our placeholder numbers until our economy lab can give real ones.
-
-- **A. Build the economy lab now (phase 2).** A deterministic simulation of these rules over 12 to 24 weeks, for daily, weekly and new players on servers of 5, 8 and 15. It checks the targets, finds where the numbers break, and gives combat v2 the roster profile it needs. The School joins it later.
-- **B. Design the School first,** together with the combat v2 session, so phase 1 is complete.
-- **C. Prototype the feel first (phase 3).** The return walk with a scout, the Forge and the bonfire on staging, to see whether it reads like a story before tuning numbers.
-
-**Lead's pick: A.** The panels kept finding number problems (Acorns compounding, gear flooding, the commons' pace), and only a simulation settles them. It also unblocks the combat v2 session. The School and the prototype come right after.
+Nothing waiting.
 
 ## Queue
 
 In order. Each becomes a numbered question when asked; entries name what they wait on.
 
+- **resources.** How many resources the valley needs, and which kinds (Misa's two instincts in Q32: many resources with relative values, or as few as possible; world materials for buildings and an abstract currency). Asked with the resource map (`economy/resources.md`), the research and the lab's first report, as a challenge to the current list.
+- **school.** Keep the School, fold it into another place, or scrap it (Misa in Q32: "Is it a dumb way to do things that I just came up with because it felt cool?"). Waits on combat v2's talents; the lead's first take is in `systems/school.md`.
 - **targets.** What the economy lab measures and which numbers feel right (T-1 to T-5 in `goals.md`). Asked with the lab's first report, as concrete examples, not as a list to approve.
 
 ## Answered
@@ -524,6 +516,22 @@ Status: answered, round 12 (2026-10-30); reworded after Misa asked for it to be 
 **Answer (2026-10-30): A, an extra seat.** "Let's make it like a communal seat. It's a good idea that way. I cannot comment on whether assigning creatures to work for the community like this is something that's cool. Probably not. Who knows? If you feel like building it, then let's just roll with it. But what I do want to say here is that let's absolutely keep any such initiatives something that doesn't take away personal progression."
 
 Became: V-COM-14 (an extra seat per place, never one of the player's own); filter F-11 in `goals.md` (co-op never takes away personal progression); communal seats marked to be tested for fun in the phase 3 prototype.
+
+### Q32. What should come next?
+
+Status: answered, round 13 (2026-10-30). The question queue is empty apart from **targets** (which waits on the economy lab). Touches: `roadmap.md`.
+
+**Why it matters.** Phase 1 (the base systems on paper) has every system drafted, reviewed and mostly decided, except the School, which waits on combat v2's talents. Almost every number in the docs is still an example. The combat v2 session is tuning its bosses against our placeholder numbers until our economy lab can give real ones.
+
+- **A. Build the economy lab now (phase 2).** A deterministic simulation of these rules over 12 to 24 weeks, for daily, weekly and new players on servers of 5, 8 and 15. It checks the targets, finds where the numbers break, and gives combat v2 the roster profile it needs. The School joins it later.
+- **B. Design the School first,** together with the combat v2 session, so phase 1 is complete.
+- **C. Prototype the feel first (phase 3).** The return walk with a scout, the Forge and the bonfire on staging, to see whether it reads like a story before tuning numbers.
+
+**Lead's pick: A.** The panels kept finding number problems (Acorns compounding, gear flooding, the commons' pace), and only a simulation settles them. It also unblocks the combat v2 session. The School and the prototype come right after.
+
+**Answer (2026-10-30): A.** "The economy simulation building would be something that could work out as I travel home from work... I'm interested in seeing what kind of resources we have, how they interact. What's used for what, and understanding that kind of a system." His open thinking, recorded for the resources question: "in a game like this we're going to need to be interacting with a lot of resources and those resources need to have some kind of relative value against each other... And on the other hand, my understanding of game economies is that the less resources you have, the better. Or especially resources that kind of track progress... maybe there's different resource types... part of them are from the game world itself, and they're used to actually upgrade buildings in there. And then other resources are maybe these superficial and more abstract, acorns that just come out of the daily income or loot." On pacing: "players have things that they feel are progressing and they're not limited by or being starved of resources or things to upgrade. But then at the same time, having content for longer play sessions... it's a co-op idle game. And it's meant to be taken slowly." On the School: "the school is so dependent on what comes out of the combat rework... What do we want to teach in a school? Or is the school building even necessary? Is it a dumb way to do things that I just came up with because it felt cool?"
+
+Became: phase 2 starts: the resource map (`economy/resources.md`) and the economy lab (`economy/model.md`, `packages/econ`). Two new queue entries: **resources** (how many, which kinds) and **school** (keep, fold or scrap).
 
 ## Withdrawn
 
