@@ -3570,3 +3570,7 @@ Misa's answers to the valley plan's Q27 to Q29 (`docs/design/valley/questions.md
 ## 2026-10-30: Valley: every place builds its own project, after a guided start (round 12)
 
 Misa's answer to the valley plan's Q30 (`docs/design/valley/questions.md`; `docs/design/valley/systems/commons.md` V-COM-5, V-COM-15): every place has its own open project, and the server's players choose together where to give ("let's not take the agency out of players' hands by holding their hand"). A new server starts with one small project, then a second, and every place opens once those two have levelled; first levels are small and done within two or three weeks. A place's max level keeps one place from running far ahead; a place builds for three days between levels, so a hoard raises at most one level per place. Q31 (whether a communal seat costs one of the player's own seats) was reworded and asked again.
+
+## 2026-10-30: Valley: communal seats are extra; co-op never takes away personal progression (round 12)
+
+Misa's answer to the valley plan's Q31: a communal seat is an extra seat per place, never one of the player's own (`docs/design/valley/systems/commons.md` V-COM-14). "Let's absolutely keep any such initiatives something that doesn't take away personal progression": a new standing filter, F-11 in `docs/design/valley/goals.md`. He is unsure communal seats will be fun, so they are tested in the phase 3 prototype before being built.

@@ -1,6 +1,6 @@
 # The commons: idling together for the whole server
 
-Status: **proposed**, revised after the panel (`reviews/2026-10-30-commons.md`). Decided by Misa after the panel: every place has its own open project, with a guided start (round 12, Q30). Waiting on Misa: Q31 (does a communal seat cost one of your own?). Accepted by Misa so far: one shared valley where personal and shared progress take turns as the limit (round 1, Q1); gifts counting in full (round 2, Q4); a max level per place, then cosmetic projects, each level harder than the last (round 4, Q12); the bonfire as a communal hearth (Q11); the item level cap raised by many systems, including "really rare finds that players have to collect five of different types, like a Stardew Valley type of thing where you upgrade the community house" (round 11, Q27). Evidence: `docs/research/idle-job-posts.md` ("Co-op idle in a small server"), `docs/research/idle-coop-raids.md`, `docs/research/gear-lottery.md`.
+Status: **proposed**, revised after the panel (`reviews/2026-10-30-commons.md`). Decided by Misa after the panel: every place has its own open project, with a guided start (round 12, Q30). Accepted by Misa so far: one shared valley where personal and shared progress take turns as the limit (round 1, Q1); gifts counting in full (round 2, Q4); a max level per place, then cosmetic projects, each level harder than the last (round 4, Q12); the bonfire as a communal hearth (Q11); the item level cap raised by many systems, including "really rare finds that players have to collect five of different types, like a Stardew Valley type of thing where you upgrade the community house" (round 11, Q27). Evidence: `docs/research/idle-job-posts.md` ("Co-op idle in a small server"), `docs/research/idle-coop-raids.md`, `docs/research/gear-lottery.md`.
 
 ## The question
 
@@ -48,7 +48,7 @@ The valley's places (the Forge, the Signpost, the Paddock, the School, the bonfi
 
 ### Communal seats
 
-- **V-COM-14** Communal seats (`posts.md` V-POST-13): one per player per place (example). Their work fills the open project's bar as a steady trickle, worked out lazily and credited when the contributor visits (V-POST-14). Whether the seat is extra or one of the player's own is Q31.
+- **V-COM-14** Communal seats (`posts.md` V-POST-13): one per player per place (example). Their work fills the open project's bar as a steady trickle, worked out lazily and credited when the contributor visits (V-POST-14). The communal seat is an extra seat, never one of the player's own (round 12, Q31; F-11). Misa is unsure it will be fun ("Probably not. Who knows? If you feel like building it, then let's just roll with it"), so it is tested in the phase 3 prototype before it is built.
 - **V-COM-9** Moved: the optional weekly festival goal is a later idea (`later.md`).
 
 ## Example numbers (the economy lab sets the real ones)

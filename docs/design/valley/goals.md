@@ -28,6 +28,8 @@ From Misa's standing priorities (`docs/design/review-brief.md`) and the research
 - **F-9, cheap to run.** Every timed or idle system is priced against the Durable Object read budget before it ships (`docs/design/database-reads.md`): idle output is computed lazily from timestamps on read, never by ticking per creature.
 - **F-10, light, fun and predictable.** A player can say what will happen if they do nothing, and roughly what a choice will give.
 
+- **F-11, co-op never takes away personal progression** (Misa, round 12, Q31: "let's absolutely keep any such initiatives something that doesn't take away personal progression"). Helping the server is always on top of a player's own progress: communal seats are extra seats, creatures there grow as at any post, and nothing shared ever takes from a player without their choice.
+
 ## How we know it works (targets for the simulations)
 
 Example numbers are placeholders until the economy lab sets them (marked as examples).

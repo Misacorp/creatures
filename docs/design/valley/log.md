@@ -120,4 +120,6 @@ The combat v2 session (branch `combat-v2-track`) wrote, at Misa's request, about
 
 Round 12: Q30 answered (every place its own project, a guided start, V-COM-15); Q31 reworded and asked again, since it was unclear.
 
-**Next.** Record Q31. Then phase 1's last system, the School (waits on combat v2's talents), or the economy lab's skeleton.
+Q31 answered: the communal seat is extra; new filter F-11, co-op never takes away personal progression. Asked Q32: what comes next (the lead's pick: build the economy lab).
+
+**Next.** Whatever Q32 decides.

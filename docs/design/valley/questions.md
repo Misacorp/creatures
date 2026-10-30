@@ -6,16 +6,17 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q31. When your creature helps build the server's project, does that cost you one of your own seats?
+### Q32. What should come next?
 
-Status: asked, round 12 (2026-10-30); reworded after Misa asked for it to be opened up. From the commons panel (finding 13: Sanni against a cost, Joonas for one). Touches: `commons.md` V-COM-14, `posts.md` V-POST-13.
+Status: asked, round 13 (2026-10-30). The question queue is empty apart from **targets** (which waits on the economy lab). Touches: `roadmap.md`.
 
-**What it is about.** At each place you have a few seats of your own: for example 2 scout seats at the Signpost and 2 anvils at the Forge. Creatures there work for **you**. A **communal seat** is a place's seat where your creature works for the **server's** project instead: it hauls timber for the Forge's new chimney, mends the road for the Signpost's next level, and so on. The creature still earns its own XP and mastery. The question is where that communal seat comes from.
+**Why it matters.** Phase 1 (the base systems on paper) has every system drafted, reviewed and mostly decided, except the School, which waits on combat v2's talents. Almost every number in the docs is still an example. The combat v2 session is tuning its bosses against our placeholder numbers until our economy lab can give real ones.
 
-- **A. An extra seat, on top of yours.** Every player gets one communal seat per place in addition to their own seats. Putting a resting creature from the bonfire there costs you nothing. Example: Sanni keeps both her scouts at the Tidepools, and also sends Sprout, who was resting at the bonfire, to haul for the Forge's chimney.
-- **B. One of your own seats, turned to the server.** Helping means giving up some of your own output. Example: Sanni has 2 scout seats; to help the Signpost's road she turns one of them into a road mender, so she finds half as much at the Tidepools until she turns it back.
+- **A. Build the economy lab now (phase 2).** A deterministic simulation of these rules over 12 to 24 weeks, for daily, weekly and new players on servers of 5, 8 and 15. It checks the targets, finds where the numbers break, and gives combat v2 the roster profile it needs. The School joins it later.
+- **B. Design the School first,** together with the combat v2 session, so phase 1 is complete.
+- **C. Prototype the feel first (phase 3).** The return walk with a scout, the Forge and the bonfire on staging, to see whether it reads like a story before tuning numbers.
 
-**Lead's pick: A.** It is the gentlest way a player who plays less still helps build, and it gives resting creatures a job. The real "my valley or our valley" choice already lives in where your Acorns go. B makes helping cost something, which the veteran reviewer liked, but it can make a casual player feel she is choosing between herself and her friends.
+**Lead's pick: A.** The panels kept finding number problems (Acorns compounding, gear flooding, the commons' pace), and only a simulation settles them. It also unblocks the combat v2 session. The School and the prototype come right after.
 
 ## Queue
 
@@ -508,6 +509,21 @@ Status: answered, round 12 (2026-10-30). From the commons panel (`reviews/2026-1
 **Answer (2026-10-30): A, every place its own project, with a guided start.** "Players on the Discord server would just communicate on what they want to figure out first and focus on. They can build all five at the same time, and kind of reap less benefits if they all finish by week 12. Or they could pool their resources into one... Not sure if we need a valley level or something to keep the Forge from becoming level 10 before some Watchtower still sits at level 1. Or maybe that's the fun of it... let's not take the agency out of players' hands by holding their hand through this stuff. It could be a good idea to have this sort of a new player experience where the very first levels of these buildings are built within one or two or three weeks, and those could be handheld, so players start off with a single type of a shared building that's being upgraded, and the first level doesn't necessarily have to be quite big... then as each building has increased its level, or maybe the first two buildings have been increased by one level, then the remaining buildings that can still be increased would open up... and discuss it together."
 
 Became: V-COM-5 and V-COM-15 in `commons.md`: every place has its own open project and players choose together; a new server starts with one small project, a second opens when it is done, and the rest open once those two have levelled. A place's max level (V-COM-11) already keeps one place from running far ahead. Each place builds for three days between its levels (the hoarding guard), so a hoard raises at most one level per place.
+
+### Q31. When your creature helps build the server's project, does that cost you one of your own seats?
+
+Status: answered, round 12 (2026-10-30); reworded after Misa asked for it to be opened up. From the commons panel (finding 13: Sanni against a cost, Joonas for one). Touches: `commons.md` V-COM-14, `posts.md` V-POST-13.
+
+**What it is about.** At each place you have a few seats of your own: for example 2 scout seats at the Signpost and 2 anvils at the Forge. Creatures there work for **you**. A **communal seat** is a place's seat where your creature works for the **server's** project instead: it hauls timber for the Forge's new chimney, mends the road for the Signpost's next level, and so on. The creature still earns its own XP and mastery. The question is where that communal seat comes from.
+
+- **A. An extra seat, on top of yours.** Every player gets one communal seat per place in addition to their own seats. Putting a resting creature from the bonfire there costs you nothing. Example: Sanni keeps both her scouts at the Tidepools, and also sends Sprout, who was resting at the bonfire, to haul for the Forge's chimney.
+- **B. One of your own seats, turned to the server.** Helping means giving up some of your own output. Example: Sanni has 2 scout seats; to help the Signpost's road she turns one of them into a road mender, so she finds half as much at the Tidepools until she turns it back.
+
+**Lead's pick: A.** It is the gentlest way a player who plays less still helps build, and it gives resting creatures a job. The real "my valley or our valley" choice already lives in where your Acorns go. B makes helping cost something, which the veteran reviewer liked, but it can make a casual player feel she is choosing between herself and her friends.
+
+**Answer (2026-10-30): A, an extra seat.** "Let's make it like a communal seat. It's a good idea that way. I cannot comment on whether assigning creatures to work for the community like this is something that's cool. Probably not. Who knows? If you feel like building it, then let's just roll with it. But what I do want to say here is that let's absolutely keep any such initiatives something that doesn't take away personal progression."
+
+Became: V-COM-14 (an extra seat per place, never one of the player's own); filter F-11 in `goals.md` (co-op never takes away personal progression); communal seats marked to be tested for fun in the phase 3 prototype.
 
 ## Withdrawn
 
