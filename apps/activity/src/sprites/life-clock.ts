@@ -2,7 +2,8 @@
  * One shared timer for every blinking or twinkling sprite. Each sprite has its own deterministic
  * rhythm taken from a seed (never `Math.random`): it blinks for 150 ms about every 3 to 7 s, and a
  * shiny one twinkles (dot, plus, dot, 150 ms each) about every 4 to 8 s at a spot that changes each
- * time. The timer runs only while a sprite is listening, and does nothing under reduced motion.
+ * time. The timer runs only while a sprite is listening and motion is not reduced: under reduced motion
+ * no interval runs at all, and it starts again when the setting turns off.
  */
 
 export const BLINK_MS = 150;
@@ -63,16 +64,52 @@ interface Listener {
 const listeners = new Set<Listener>();
 let timer: ReturnType<typeof setInterval> | undefined;
 let started = 0;
+let query: MediaQueryList | undefined;
+
+/** The reduced-motion query, looked up once; undefined where `matchMedia` does not exist. */
+function motionQuery(): MediaQueryList | undefined {
+  if (query === undefined && typeof matchMedia === 'function') {
+    query = matchMedia('(prefers-reduced-motion: reduce)');
+    query.addEventListener('change', onMotionChange);
+  }
+  return query;
+}
 
 function reduced(): boolean {
-  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return motionQuery()?.matches === true;
+}
+
+function stopTimer(): void {
+  if (timer !== undefined) {
+    clearInterval(timer);
+    timer = undefined;
+  }
+}
+
+function startTimer(): void {
+  if (timer !== undefined || listeners.size === 0 || reduced()) return;
+  started = performance.now();
+  timer = setInterval(tick, TICK_MS);
+}
+
+function onMotionChange(): void {
+  if (reduced()) {
+    stopTimer();
+    for (const l of listeners) {
+      if (l.last !== REST) {
+        l.last = REST;
+        l.notify(REST);
+      }
+    }
+  } else {
+    startTimer();
+  }
 }
 
 function tick(): void {
-  const still = reduced();
   const now = performance.now() - started;
   for (const l of listeners) {
-    const next = still ? REST : lifeAt(l.seed, l.shiny, now);
+    const next = lifeAt(l.seed, l.shiny, now);
     // The spot only matters while a twinkle shows, so a new round alone is not a change.
     const changed =
       next.blink !== l.last.blink ||
@@ -85,23 +122,22 @@ function tick(): void {
   }
 }
 
-/** Starts listening; returns the way to stop. The shared timer runs while anyone listens. */
+/** How many sprites listen now (for tests). */
+export function listenerCount(): number {
+  return listeners.size;
+}
+
+/** Starts listening; returns the way to stop. The shared timer runs while anyone listens and motion is on. */
 export function subscribeLife(
   seed: string,
   shiny: boolean,
   notify: (state: LifeState) => void,
 ): () => void {
   const listener: Listener = { seed, shiny, last: REST, notify };
-  if (listeners.size === 0) {
-    started = performance.now();
-    timer = setInterval(tick, TICK_MS);
-  }
   listeners.add(listener);
+  startTimer();
   return () => {
     listeners.delete(listener);
-    if (listeners.size === 0 && timer !== undefined) {
-      clearInterval(timer);
-      timer = undefined;
-    }
+    if (listeners.size === 0) stopTimer();
   };
 }

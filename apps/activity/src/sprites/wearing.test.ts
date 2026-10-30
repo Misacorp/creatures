@@ -1,7 +1,7 @@
 import { gearContent } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { itemLookId } from '../gear-sprites';
-import { wornLook, wornSprite } from '../worn-gear';
+import { wornLook } from '../worn-gear';
 import {
   CHARM_CLASSES,
   HAT_CLASSES,
@@ -174,16 +174,15 @@ describe('wearing', () => {
     expect(wearing(sprite, [])).toBe(sprite);
     expect(wearing(sprite, [look('cap'), look('hood')])).toEqual(wearing(sprite, [look('hood')]));
   });
-});
 
-describe('wornSprite', () => {
-  it('returns the same object for the same outfit, and the bare sprite for none', () => {
-    const first = gearContent.bases[0];
-    if (first === undefined) throw new Error('no gear');
-    const gear = [{ baseId: first.id }];
-    expect(wornSprite('splashet', gear)).toBe(wornSprite('splashet', gear));
-    expect(wornSprite('splashet', [])).toBe(species('splashet'));
-    expect(wornSprite('no-such-species', gear)).toBeUndefined();
-    expect(wornSprite('splashet', [{ baseId: 'nope' }])).toBe(species('splashet'));
+  it('takes the last piece given of a slot, and any order across slots', () => {
+    const sprite = species('splashet');
+    expect(wearing(sprite, [look('hood'), look('cap')])).toEqual(wearing(sprite, [look('cap')]));
+    expect(wearing(sprite, [look('hood'), look('cap')])).not.toEqual(
+      wearing(sprite, [look('hood')]),
+    );
+    const [hat, scarf, charm] = OUTFIT;
+    if (hat === undefined || scarf === undefined || charm === undefined) throw new Error('outfit');
+    expect(wearing(sprite, [charm, hat, scarf])).toEqual(wearing(sprite, [hat, scarf, charm]));
   });
 });

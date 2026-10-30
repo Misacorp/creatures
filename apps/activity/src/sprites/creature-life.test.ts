@@ -3,6 +3,7 @@ import { content } from '@creatures/game';
 import { blinkSprite, EYE_PIXELS, twinkleSpots, twinkleSprite } from './creature-life';
 import { creatureSprite } from './creature-sprites';
 import { BLINK_MS, blinkRhythm, fnv1a, lifeAt, twinkleRhythm } from './life-clock';
+import { wearing, type WornLook } from './wearing';
 import { expandRows, parseSprite, spriteSize, type SpriteDef } from './sprite-data';
 
 const species = content.creatures.flatMap((c) => {
@@ -120,5 +121,38 @@ describe('life clock', () => {
       expect(lifeAt('s', false, ms).twinkle).toBe(0);
     }
     expect(frames.join('')).toContain('0123');
+  });
+});
+
+describe('life on a creature that wears gear', () => {
+  const tint = { t: '#aa0000', u: '#00aa00', h: '#0000aa' };
+  const outfit: WornLook[] = [
+    { cls: 'crown', set: true, colours: tint },
+    { cls: 'mantle', set: false, colours: tint },
+    { cls: 'pendant', set: true, colours: tint },
+  ];
+  const eyes = new Set(EYE_PIXELS.map(([x, y]) => `${String(x)},${String(y)}`));
+
+  it('blinks by changing only eye pixels, at the same size', () => {
+    for (const { id, def } of species) {
+      const worn = wearing(def, outfit);
+      const blinked = blinkSprite(worn);
+      expect(spriteSize(blinked), id).toEqual(spriteSize(worn));
+      const before = colours(worn);
+      const after = colours(blinked);
+      for (const key of new Set([...before.keys(), ...after.keys()])) {
+        if (before.get(key) !== after.get(key)) expect(eyes.has(key), `${id} ${key}`).toBe(true);
+      }
+    }
+  });
+
+  it('twinkles only on empty pixels, never on a worn one', () => {
+    for (const { id, def } of species) {
+      const worn = wearing(def, outfit);
+      const filled = colours(worn);
+      const spots = twinkleSpots(worn);
+      expect(spots.length, id).toBeGreaterThan(0);
+      for (const { x, y } of spots) expect(filled.has(`${String(x)},${String(y)}`), id).toBe(false);
+    }
   });
 });

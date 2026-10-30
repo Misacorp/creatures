@@ -43,7 +43,12 @@ export function Sprite({
   const shiny = life?.shiny === true;
   useEffect(() => {
     if (seed === undefined || hold !== undefined) return undefined;
-    return subscribeLife(seed, shiny, setTicking);
+    const stop = subscribeLife(seed, shiny, setTicking);
+    return () => {
+      stop();
+      // The next listener starts at rest and only notifies on a change, so clear a blink or twinkle left over.
+      setTicking(REST);
+    };
   }, [seed, shiny, hold]);
   const state: LifeState =
     life === undefined ? REST : hold !== undefined ? { ...REST, ...hold } : ticking;
