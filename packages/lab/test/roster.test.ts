@@ -1,14 +1,10 @@
-/** The roster profile: the placeholder's documented points, the curve, the speeds, new players, and a column at a week's levels. */
+/** The roster profile: the valley's data and its loader, the speeds, new players, and a column at a week's levels. */
 import { describe, expect, it } from 'vitest';
 import {
   LEVEL_CAP,
-  NEW_CATCH_UP,
-  PLACEHOLDER_ROSTER,
   ROSTER_SPEEDS,
   ROSTER_WEEKS,
   SPEED_FACTOR,
-  WEEKLY_GROWTH,
-  curveOf,
   levelOfCreature,
   levelledColumn,
   rosterLevels,
@@ -16,72 +12,51 @@ import {
   talentSlotsAt,
   type RosterWeek,
 } from '../src/roster';
+import {
+  COVERAGE_SERVERS,
+  VALLEY_COVERAGE,
+  VALLEY_ROSTER,
+  coverageAt,
+  parseRosterProfile,
+  parseServerCoverage,
+} from '../src/valley';
 import { formStats } from '../src/species';
 import { FORM_KNACKS } from '../src/knacks';
 
-const daily = (week: number): RosterWeek => rosterWeek(PLACEHOLDER_ROSTER, 'daily', week);
+const daily = (week: number): RosterWeek => rosterWeek(VALLEY_ROSTER, 'daily', week);
 
-describe('the curve', () => {
-  it('passes through its points, never overshoots and is flat outside', () => {
-    const f = curveOf([
-      [0, 1],
-      [2, 10],
-      [6, 20],
-      [10, 21],
-    ]);
-    expect(f(0)).toBe(1);
-    expect(f(2)).toBeCloseTo(10);
-    expect(f(6)).toBeCloseTo(20);
-    expect(f(10)).toBe(21);
-    expect(f(-3)).toBe(1);
-    expect(f(40)).toBe(21);
-    let last = 0;
-    for (let t = 0; t <= 10; t += 0.25) {
-      expect(f(t)).toBeGreaterThanOrEqual(last);
-      expect(f(t)).toBeLessThanOrEqual(21);
-      last = f(t);
-    }
-  });
-});
-
-describe('the placeholder profile', () => {
+describe('the valley profile', () => {
   it('covers weeks 1 to 24 for every kind', () => {
-    expect(PLACEHOLDER_ROSTER.daily).toHaveLength(ROSTER_WEEKS);
-    expect(PLACEHOLDER_ROSTER.weekly).toHaveLength(ROSTER_WEEKS);
-    expect(PLACEHOLDER_ROSTER.newPlayer).toHaveLength(ROSTER_WEEKS);
+    expect(VALLEY_ROSTER.daily).toHaveLength(ROSTER_WEEKS);
+    expect(VALLEY_ROSTER.weekly).toHaveLength(ROSTER_WEEKS);
+    expect(VALLEY_ROSTER.newPlayer).toHaveLength(ROSTER_WEEKS);
     expect(daily(1).week).toBe(1);
     expect(daily(24).week).toBe(24);
   });
 
-  it('hits the valley docs examples for a daily player', () => {
-    // Best three at about 19, 25 and 29 at weeks 4, 8 and 12.
-    expect(daily(4).third).toBeCloseTo(19, 0);
-    expect(daily(8).third).toBeCloseTo(25, 0);
-    expect(daily(12).third).toBeCloseTo(29, 0);
-    // The 10th creature at 15 to 17 at week 4, and 15 creatures by then.
-    expect(daily(4).tenth).toBeGreaterThanOrEqual(15);
-    expect(daily(4).tenth).toBeLessThanOrEqual(17);
-    expect(daily(4).size).toBeGreaterThanOrEqual(15);
+  it('keeps the valley numbers as they are, fractions included', () => {
+    expect(daily(1).first).toBe(11);
+    expect(daily(2).tenth).toBe(8.5);
+    expect(daily(24).size).toBe(60);
+    expect(rosterWeek(VALLEY_ROSTER, 'weekly', 1).first).toBe(9);
   });
 
-  it('still grows at week 12 and reaches the cap late', () => {
-    expect(daily(13).third).toBeGreaterThan(daily(12).third);
+  it('grows to the cap late', () => {
+    expect(daily(8).third).toBeGreaterThan(daily(4).third);
     expect(daily(12).third).toBeLessThan(LEVEL_CAP);
     expect(daily(24).third).toBe(LEVEL_CAP);
   });
 
-  it('is monotone: levels never fall, never pass the cap, the best is never below the next', () => {
-    for (const table of [
-      PLACEHOLDER_ROSTER.daily,
-      PLACEHOLDER_ROSTER.weekly,
-      PLACEHOLDER_ROSTER.newPlayer,
-    ])
+  it('keeps the levels in order, within 1 and the cap, and the best three and the roster size growing', () => {
+    // The 20th creature may fall from one week to the next while the roster is smaller than 20 (the valley reports the lowest
+    // owned level for a creature not owned), so only the first, third and tenth are checked week to week.
+    for (const table of [VALLEY_ROSTER.daily, VALLEY_ROSTER.weekly, VALLEY_ROSTER.newPlayer])
       table.forEach((r, i) => {
         expect(r.first).toBeGreaterThanOrEqual(r.third);
         expect(r.third).toBeGreaterThanOrEqual(r.tenth);
-        expect(r.tenth).toBeGreaterThanOrEqual(r.twentieth);
         expect(r.first).toBeLessThanOrEqual(LEVEL_CAP);
         expect(r.twentieth).toBeGreaterThanOrEqual(1);
+        expect(r.size).toBeGreaterThanOrEqual(1);
         const before = table[i - 1];
         if (before) {
           expect(r.first).toBeGreaterThanOrEqual(before.first);
@@ -92,44 +67,119 @@ describe('the placeholder profile', () => {
       });
   });
 
-  it('carries the extra fields: all forms, talent slots by level, gear unused', () => {
+  it('carries the extra fields: all forms, talent slots that follow the best level, gear unused', () => {
     expect(daily(1).forms).toBe('all');
     expect(daily(1).talentSlots).toBe(1);
-    expect(daily(12).talentSlots).toBe(3);
-    expect(daily(1).gear).toBe(0);
+    expect(daily(24).talentSlots).toBe(3);
+    expect(daily(1).gear).toBeGreaterThan(0);
     expect(talentSlotsAt(19)).toBe(1);
     expect(talentSlotsAt(20)).toBe(2);
     expect(talentSlotsAt(25)).toBe(3);
+    for (const r of VALLEY_ROSTER.daily) expect(r.talentSlots).toBe(talentSlotsAt(r.first));
   });
 
-  it('gives a weekly player the daily player at 77.5% of the weeks played', () => {
-    expect(WEEKLY_GROWTH).toBeGreaterThanOrEqual(0.75);
-    expect(WEEKLY_GROWTH).toBeLessThanOrEqual(0.8);
-    for (const w of [4, 8, 12, 20]) {
-      const weekly = rosterWeek(PLACEHOLDER_ROSTER, 'weekly', w);
+  it('gives a weekly player no more than a daily player, week for week', () => {
+    for (const w of [1, 4, 8, 12, 20]) {
+      const weekly = rosterWeek(VALLEY_ROSTER, 'weekly', w);
+      expect(weekly.first).toBeLessThanOrEqual(daily(w).first);
       expect(weekly.third).toBeLessThanOrEqual(daily(w).third);
-      // Between the daily player's levels of the two weeks around 0.775 w.
-      expect(weekly.third).toBeGreaterThanOrEqual(daily(Math.floor(WEEKLY_GROWTH * w)).third - 0.1);
-      expect(weekly.third).toBeLessThanOrEqual(daily(Math.ceil(WEEKLY_GROWTH * w)).third + 0.1);
+      expect(weekly.size).toBeLessThanOrEqual(daily(w).size);
     }
+  });
+});
+
+describe('the valley loader', () => {
+  const week = (n: number) => ({
+    week: n,
+    first: 10,
+    third: 9,
+    tenth: 5,
+    twentieth: 2,
+    size: 5,
+    forms: 'all',
+    talentSlots: 1,
+    talentsPicked: false,
+    gear: 3,
+  });
+  const weeks = (f: (n: number) => unknown = week) =>
+    Array.from({ length: ROSTER_WEEKS }, (_, i) => f(i + 1));
+  const profile = () => ({ daily: weeks(), weekly: weeks(), newPlayer: weeks() });
+
+  it('accepts a well-formed profile, with a form list instead of "all"', () => {
+    expect(parseRosterProfile(profile()).daily).toHaveLength(ROSTER_WEEKS);
+    const withList = { ...profile(), daily: weeks((n) => ({ ...week(n), forms: ['splashet'] })) };
+    expect(parseRosterProfile(withList).daily[0]?.forms).toEqual(['splashet']);
+  });
+
+  it('throws a clear message for a wrong shape', () => {
+    expect(() => parseRosterProfile(null)).toThrow(/must be an object/);
+    expect(() => parseRosterProfile({ ...profile(), weekly: weeks().slice(1) })).toThrow(
+      /weekly must list 24 weeks/,
+    );
+    expect(() =>
+      parseRosterProfile({ ...profile(), daily: weeks((n) => ({ ...week(n), first: 31 })) }),
+    ).toThrow(/daily\[0\]\.first must be a number from 1 to 30/);
+    expect(() =>
+      parseRosterProfile({ ...profile(), daily: weeks((n) => ({ ...week(n), size: 2.5 })) }),
+    ).toThrow(/size must be a whole number/);
+    expect(() =>
+      parseRosterProfile({ ...profile(), daily: weeks((n) => ({ ...week(n), forms: 'some' })) }),
+    ).toThrow(/forms must be "all" or a list/);
+    expect(() =>
+      parseRosterProfile({ ...profile(), daily: weeks((n) => ({ ...week(n), forms: [3] })) }),
+    ).toThrow(/forms must be "all" or a list/);
+    expect(() =>
+      parseRosterProfile({ ...profile(), newPlayer: weeks((n) => ({ ...week(n + 1) })) }),
+    ).toThrow(/newPlayer\[0\]\.week must be 1/);
+    expect(() =>
+      parseRosterProfile({ ...profile(), daily: weeks((n) => ({ ...week(n), talentsPicked: 1 })) }),
+    ).toThrow(/talentsPicked/);
+  });
+
+  const cover = (n: number) => ({ week: n, common: 1, rare: 0.5, epic: 0 });
+  const coverage = () => ({ mixed5: weeks(cover), mixed8: weeks(cover), mixed15: weeks(cover) });
+
+  it('checks the coverage the same way', () => {
+    expect(parseServerCoverage(coverage()).mixed8).toHaveLength(ROSTER_WEEKS);
+    expect(() => parseServerCoverage({ ...coverage(), mixed8: undefined })).toThrow(
+      /mixed8 must list 24 weeks/,
+    );
+    expect(() =>
+      parseServerCoverage({ ...coverage(), mixed5: weeks((n) => ({ ...cover(n), rare: 1.2 })) }),
+    ).toThrow(/mixed5\[0\]\.rare must be a number from 0 to 1/);
+  });
+
+  it('loads the files in the repo: three servers, shares between 0 and 1, more of the common species owned than of the epic', () => {
+    for (const server of COVERAGE_SERVERS)
+      expect(VALLEY_COVERAGE[server]).toHaveLength(ROSTER_WEEKS);
+    for (const w of [1, 12, 24])
+      expect(coverageAt(VALLEY_COVERAGE, 'mixed8', 'common', w)).toBeGreaterThanOrEqual(
+        coverageAt(VALLEY_COVERAGE, 'mixed8', 'epic', w),
+      );
+    // A bigger server owns at least as much by the end.
+    expect(coverageAt(VALLEY_COVERAGE, 'mixed15', 'rare', 24)).toBeGreaterThanOrEqual(
+      coverageAt(VALLEY_COVERAGE, 'mixed5', 'rare', 24),
+    );
+    expect(coverageAt(VALLEY_COVERAGE, 'mixed8', 'rare', 99)).toBe(
+      Math.max(...VALLEY_COVERAGE.mixed8.map((w) => w.rare)),
+    );
   });
 });
 
 describe('new players', () => {
   it('start low, catch up and never pass a daily player', () => {
-    const at = (w: number) => rosterWeek(PLACEHOLDER_ROSTER, 'new', w, 6);
+    const at = (w: number) => rosterWeek(VALLEY_ROSTER, 'new', w, 6);
     expect(at(6).third).toBeLessThan(daily(6).third);
     expect(at(6).week).toBe(6);
     for (let w = 6; w <= 24; w++) expect(at(w).third).toBeLessThanOrEqual(daily(w).third);
-    expect(NEW_CATCH_UP).toBeGreaterThan(1);
     expect(at(20).third).toBe(daily(20).third);
     // A week later the new player has more.
     expect(at(7).third).toBeGreaterThan(at(6).third);
   });
 
   it('need a join week, and have nothing before it', () => {
-    expect(() => rosterWeek(PLACEHOLDER_ROSTER, 'new', 5)).toThrow(/join week/);
-    expect(() => rosterWeek(PLACEHOLDER_ROSTER, 'new', 4, 6)).toThrow(/week 6/);
+    expect(() => rosterWeek(VALLEY_ROSTER, 'new', 5)).toThrow(/join week/);
+    expect(() => rosterWeek(VALLEY_ROSTER, 'new', 4, 6)).toThrow(/week 6/);
   });
 });
 
@@ -145,13 +195,11 @@ describe('levels of the creatures', () => {
   });
 
   it('are whole numbers, best first, at most the roster size', () => {
-    const levels = rosterLevels(PLACEHOLDER_ROSTER, 'daily', 8, 'expected', 5);
+    const levels = rosterLevels(VALLEY_ROSTER, 'daily', 8, 'expected', 5);
     expect(levels).toHaveLength(5);
     expect(levels.every(Number.isInteger)).toBe(true);
     expect([...levels].sort((a, b) => b - a)).toEqual(levels);
-    expect(rosterLevels(PLACEHOLDER_ROSTER, 'daily', 1, 'expected', 50)).toHaveLength(
-      daily(1).size,
-    );
+    expect(rosterLevels(VALLEY_ROSTER, 'daily', 1, 'expected', 50)).toHaveLength(daily(1).size);
   });
 });
 
@@ -159,9 +207,9 @@ describe('the speeds', () => {
   it('are one function of the profile: slow 20% behind, fast 20% ahead, capped at 30', () => {
     expect(ROSTER_SPEEDS).toEqual(['slow', 'expected', 'fast']);
     for (const week of [1, 4, 8, 12, 24]) {
-      const expected = rosterLevels(PLACEHOLDER_ROSTER, 'daily', week, 'expected', 10);
-      const slow = rosterLevels(PLACEHOLDER_ROSTER, 'daily', week, 'slow', 10);
-      const fast = rosterLevels(PLACEHOLDER_ROSTER, 'daily', week, 'fast', 10);
+      const expected = rosterLevels(VALLEY_ROSTER, 'daily', week, 'expected', 10);
+      const slow = rosterLevels(VALLEY_ROSTER, 'daily', week, 'slow', 10);
+      const fast = rosterLevels(VALLEY_ROSTER, 'daily', week, 'fast', 10);
       const r = daily(week);
       expected.forEach((l, k) => {
         const raw = levelOfCreature(r, k + 1);
@@ -172,7 +220,7 @@ describe('the speeds', () => {
         expect(fast[k] as number).toBeGreaterThanOrEqual(l);
       });
     }
-    expect(rosterLevels(PLACEHOLDER_ROSTER, 'daily', 24, 'fast', 1)).toEqual([LEVEL_CAP]);
+    expect(rosterLevels(VALLEY_ROSTER, 'daily', 24, 'fast', 1)).toEqual([LEVEL_CAP]);
     expect(SPEED_FACTOR.slow).toBe(0.8);
     expect(SPEED_FACTOR.fast).toBe(1.2);
   });

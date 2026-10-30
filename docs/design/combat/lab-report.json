@@ -10690,5 +10690,203 @@
   "feed:knockouts": [],
   "feed:shed": []
  },
- "featuresMissing": []
+ "featuresMissing": [],
+ "ownability": [
+  {
+   "slot": 1,
+   "boss": "tidal-colossus",
+   "week": 1,
+   "toolNeeds": [],
+   "chance": {
+    "mixed5": 1,
+    "mixed8": 1,
+    "mixed15": 1
+   },
+   "pass": true
+  },
+  {
+   "slot": 2,
+   "boss": "cinder-wyrm",
+   "week": 2,
+   "toolNeeds": [],
+   "chance": {
+    "mixed5": 1,
+    "mixed8": 1,
+    "mixed15": 1
+   },
+   "pass": true
+  },
+  {
+   "slot": 3,
+   "boss": "storm-sovereign",
+   "week": 3,
+   "toolNeeds": [
+    "stormray"
+   ],
+   "chance": {
+    "mixed5": 0.2857142857142857,
+    "mixed8": 0.5714285714285714,
+    "mixed15": 0.7142857142857143
+   },
+   "pass": true
+  },
+  {
+   "slot": 4,
+   "boss": "old-bogback",
+   "week": 4,
+   "toolNeeds": [
+    "stormray"
+   ],
+   "chance": {
+    "mixed5": 0.3181818181818182,
+    "mixed8": 0.5714285714285714,
+    "mixed15": 0.7142857142857143
+   },
+   "pass": true
+  },
+  {
+   "slot": 5,
+   "boss": "thornmother",
+   "week": 5,
+   "toolNeeds": [],
+   "chance": {
+    "mixed5": 1,
+    "mixed8": 1,
+    "mixed15": 1
+   },
+   "pass": true
+  },
+  {
+   "slot": 6,
+   "boss": "tidal-colossus",
+   "week": 7,
+   "toolNeeds": [
+    "stormray"
+   ],
+   "chance": {
+    "mixed5": 0.5454545454545454,
+    "mixed8": 0.7272727272727273,
+    "mixed15": 0.9090909090909091
+   },
+   "pass": true
+  },
+  {
+   "slot": 7,
+   "boss": "cinder-wyrm",
+   "week": 8,
+   "toolNeeds": [],
+   "chance": {
+    "mixed5": 1,
+    "mixed8": 1,
+    "mixed15": 1
+   },
+   "pass": true
+  },
+  {
+   "slot": 8,
+   "boss": "storm-sovereign",
+   "week": 9,
+   "toolNeeds": [
+    "stormray"
+   ],
+   "chance": {
+    "mixed5": 0.5454545454545454,
+    "mixed8": 0.7272727272727273,
+    "mixed15": 0.9090909090909091
+   },
+   "pass": true
+  },
+  {
+   "slot": 9,
+   "boss": "old-bogback",
+   "week": 10,
+   "toolNeeds": [
+    "stormray"
+   ],
+   "chance": {
+    "mixed5": 0.6,
+    "mixed8": 0.7333333333333333,
+    "mixed15": 0.9333333333333333
+   },
+   "pass": true
+  },
+  {
+   "slot": 10,
+   "boss": "thornmother",
+   "week": 12,
+   "toolNeeds": [],
+   "chance": {
+    "mixed5": 1,
+    "mixed8": 1,
+    "mixed15": 1
+   },
+   "pass": true
+  },
+  {
+   "slot": 11,
+   "boss": "tidal-colossus",
+   "week": 13,
+   "toolNeeds": [
+    "stormray"
+   ],
+   "chance": {
+    "mixed5": 0.631578947368421,
+    "mixed8": 0.8666666666666667,
+    "mixed15": 1
+   },
+   "pass": true
+  },
+  {
+   "slot": 12,
+   "boss": "cinder-wyrm",
+   "week": 14,
+   "toolNeeds": [],
+   "chance": {
+    "mixed5": 1,
+    "mixed8": 1,
+    "mixed15": 1
+   },
+   "pass": true
+  },
+  {
+   "slot": 13,
+   "boss": "storm-sovereign",
+   "week": 15,
+   "toolNeeds": [
+    "stormray"
+   ],
+   "chance": {
+    "mixed5": 0.7894736842105263,
+    "mixed8": 0.8947368421052632,
+    "mixed15": 1
+   },
+   "pass": true
+  },
+  {
+   "slot": 14,
+   "boss": "old-bogback",
+   "week": 17,
+   "toolNeeds": [
+    "stormray"
+   ],
+   "chance": {
+    "mixed5": 0.7894736842105263,
+    "mixed8": 0.8947368421052632,
+    "mixed15": 1
+   },
+   "pass": true
+  },
+  {
+   "slot": 15,
+   "boss": "thornmother",
+   "week": 18,
+   "toolNeeds": [],
+   "chance": {
+    "mixed5": 1,
+    "mixed8": 1,
+    "mixed15": 1
+   },
+   "pass": true
+  }
+ ]
 }

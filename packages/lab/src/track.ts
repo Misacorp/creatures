@@ -5,7 +5,9 @@
  * a win moves it one slot on; after the last boss the track starts again with the next, stronger cards (the slot number is the
  * Boss Rank, and the strength follows the rank up to the cap). Failing a boss keeps the slot (`path.ts` plays that out).
  */
+import { BOSS_ANSWERS, answerLine } from './bossAnswers';
 import { RAID_RANKS, raidBossOf } from './bosses';
+import type { Pick } from './search';
 import { absoluteOf, nativeOf, type Numbers } from './tuner';
 import type { BossDef } from './types';
 
@@ -52,25 +54,32 @@ export type SlotTable = Readonly<Record<number, SlotNumbers>>;
 /**
  * Per-slot numbers (slot number to HP, Attack and armour, absolute before cards), data. A slot without an entry interpolates the
  * three ranks' numbers (`rankNumbers`). Tuned by `node scripts/report.mjs --tune --track` (`trackTuner.ts`) for the roster the path
- * says arrives at each slot; slots 1 to 15 (three laps), later laps follow the high rank's numbers.
+ * says arrives at each slot (`SLOT_WEEKS`); slots 1 to 15 (three laps), later laps follow the high rank's numbers.
  */
 export const SLOT_NUMBERS: SlotTable = {
-  1: { hp: 14_600, atk: 71, armour: 40 }, // tidal-colossus
-  2: { hp: 4_800, atk: 150, armour: 70 }, // cinder-wyrm
+  1: { hp: 12_400, atk: 89, armour: 31 }, // tidal-colossus
+  2: { hp: 4_800, atk: 143, armour: 83 }, // cinder-wyrm
   3: { hp: 14_300, atk: 53, armour: 6 }, // storm-sovereign
-  4: { hp: 25_200, atk: 100, armour: 19 }, // old-bogback
-  5: { hp: 16_800, atk: 77, armour: 118 }, // thornmother
-  6: { hp: 29_600, atk: 83, armour: 27 }, // tidal-colossus
-  7: { hp: 11_600, atk: 185, armour: 39 }, // cinder-wyrm
-  8: { hp: 7_800, atk: 92, armour: 11 }, // storm-sovereign
-  9: { hp: 28_200, atk: 112, armour: 43 }, // old-bogback
+  4: { hp: 23_700, atk: 100, armour: 19 }, // old-bogback
+  5: { hp: 6_500, atk: 140, armour: 124 }, // thornmother
+  6: { hp: 16_700, atk: 107, armour: 47 }, // tidal-colossus
+  7: { hp: 10_200, atk: 192, armour: 37 }, // cinder-wyrm
+  8: { hp: 7_800, atk: 96, armour: 9 }, // storm-sovereign
+  9: { hp: 26_700, atk: 118, armour: 36 }, // old-bogback
   10: { hp: 8_500, atk: 97, armour: 155 }, // thornmother
-  11: { hp: 21_300, atk: 114, armour: 32 }, // tidal-colossus
-  12: { hp: 11_500, atk: 199, armour: 43 }, // cinder-wyrm
-  13: { hp: 13_500, atk: 57, armour: 9 }, // storm-sovereign
+  11: { hp: 20_200, atk: 120, armour: 34 }, // tidal-colossus
+  12: { hp: 11_500, atk: 199, armour: 50 }, // cinder-wyrm
+  13: { hp: 15_100, atk: 57, armour: 10 }, // storm-sovereign
   14: { hp: 31_200, atk: 123, armour: 31 }, // old-bogback
   15: { hp: 8_500, atk: 92, armour: 162 }, // thornmother
 };
+
+/**
+ * The week each slot's numbers were tuned for (index 0 is slot 1): the median week a dedicated server arrives there at the expected
+ * roster speed, from the path with `SLOT_NUMBERS` (`trackTuner.ts` prints it with the table). The ownability check reads it
+ * (`ownability.ts`: a slot's tool line must be ownable in the week the slot arrives).
+ */
+export const SLOT_WEEKS: readonly number[] = [1, 2, 3, 4, 5, 7, 8, 9, 10, 12, 13, 14, 15, 17, 18];
 
 /**
  * The young-server ramp, a column of the track's data (Misa, 2026-10-30; `docs/design/decisions/raids.md`): a new server has only
@@ -94,11 +103,38 @@ export const SLOT_CARDS: Readonly<Record<number, SlotRules>> = {
  */
 export const SLOT_WALL: Readonly<Record<number, true>> = { 5: true };
 
+/**
+ * A slot's own prepared line (a line spec as in `bossAnswers.ts`), used by the track tuner and the path in place of the boss's first
+ * written answer (`slotPreparedOf`). Slot 1 only: the tutorial boss is tuned for the creatures a week-1 server has. Its boss's first
+ * answer uses Tempestray, a rare, which a server of 8 owns with a chance of 14% in week 1; with commons only the line reached 88% to
+ * 90% potential at best (Cindle 56%, Pyrelynx 66%, Geyserpup 75%, Geyserpup with Puddle Maker in both swapped slots 88%, and 90% with
+ * Edge-walker on the first one), so the line below is that one: the first answer's line with both Tempestrays replaced by
+ * Geyserpup with Puddle Maker (Edge-walker kept where legal). The ownability rule (`ownability.ts`) reads this line on every slot.
+ */
+export const SLOT_LINE: Readonly<Record<number, string>> = {
+  1: 'kilnmole/keep-the-heat-in+brace bogwarden/wide-reach+long-shadow drizzlewt/clear-the-air+bright-boost geyserpup/puddle-maker+edge-walker | tidewing/lead-the-way+owners-mark fogwyrm/wide-reach+catch-breath voltaro/none+odd-one-out drizzlewt/curl-up+bright-boost | fogwyrm/wide-reach+unbothered sunfawn/curl-up+brace geyserpup/puddle-maker tidewing/double-mark+owners-mark',
+};
+
 /** Whether a slot is a wall (`SLOT_WALL`). */
 export const isWallSlot = (slot: number): boolean => SLOT_WALL[slot] === true;
 
 /** The rules of a slot's boss: its `SLOT_CARDS` entry, else the full set. */
 export const slotRules = (slot: number): SlotRules => SLOT_CARDS[slot] ?? { buildUp: true };
+
+/**
+ * A slot's prepared line and its tool (`core`): its `SLOT_LINE` when it has one, else the first written answer of its boss. What the
+ * track tuner measures as "prepared" and what a dedicated server fields on the path.
+ */
+export function slotPreparedOf(
+  slot: number,
+  order: readonly string[] = TRACK_ORDER,
+): { line: Pick[]; core: readonly string[] } {
+  const bossId = trackSlot(slot, order).bossId;
+  const first = BOSS_ANSWERS[bossId]?.[0];
+  if (!first) throw new Error(`${bossId} has no written answer`);
+  const spec = SLOT_LINE[slot] ?? first.line;
+  return { line: answerLine(spec), core: first.core ?? [] };
+}
 
 /** The strength of a slot's cards, by slot, when set by hand (bp). Empty: the rank ladder (`rankStrengthBp`). */
 export const SLOT_STRENGTH: Readonly<Record<number, number>> = {};

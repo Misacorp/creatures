@@ -1014,6 +1014,33 @@ What the bosses and foes have, read off their data by the predicates in `src/mec
 - Room modifiers (Flooded, Thorns and the rest), rare rooms, carved doors, loot, experience and the Sealed Vault: a run here is the shipped map (fights, elites, mystery rooms, caches, the camp and the floor boss) and the Undercroft below it. Keepsakes are applied as shares off the foe, not as team stats.
 
 
+## The boss track: ownability
+
+### Ownability of the tool lines
+
+A slot's tool line (the line the tuner measures: the boss's first answer, or the slot's own line) is ownable at the slot's arrival week when the chance that a mixed server of 8 owns every non-common line it uses is at least 50%. The chance is the product, over the distinct non-common lines, of that rarity's coverage at that week (`server-coverage.json`, as its running maximum over the weeks; an evolved form counts as its line, with the rarity of the line's first stage). Arrival weeks: the committed `SLOT_WEEKS` (1 2 3 4 5 7 8 9 10 12 13 14 15 17 18), the weeks the track was tuned for.
+
+| Slot | Boss | Week | Tool line needs | Chance, servers of 5 / 8 / 15 | Tool line | Other answers: needs, chance on 5 / 8 / 15 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | tidal-colossus | 1 | none (all common) | 100% / 100% / 100% | pass | hearthshell (epic), stormray (rare), gaiadrake (epic), mossback (rare): 0% / 0% / 0% |
+| 2 | cinder-wyrm | 2 | none (all common) | 100% / 100% / 100% | pass | stormray (rare), hearthshell (epic), coralynx (rare): 0% / 0% / 7% |
+| 3 | storm-sovereign | 3 | stormray (rare) | 29% / 57% / 71% | pass | stormray (rare), gaiadrake (epic): 6% / 6% / 29% |
+| 4 | old-bogback | 4 | stormray (rare) | 32% / 57% / 71% | pass | mossback (rare), stormray (rare), hearthshell (epic), coralynx (rare): 1% / 3% / 15% |
+| 5 | thornmother | 5 | none (all common) | 100% / 100% / 100% | pass | solmane (epic), mossback (rare), hearthshell (epic): 2% / 1% / 15% |
+| 6 | tidal-colossus | 7 | stormray (rare) | 55% / 73% / 91% | pass | hearthshell (epic), stormray (rare), gaiadrake (epic), mossback (rare): 2% / 2% / 15% |
+| 7 | cinder-wyrm | 8 | none (all common) | 100% / 100% / 100% | pass | stormray (rare), hearthshell (epic), coralynx (rare): 9% / 12% / 37% |
+| 8 | storm-sovereign | 9 | stormray (rare) | 55% / 73% / 91% | pass | stormray (rare), gaiadrake (epic): 16% / 16% / 51% |
+| 9 | old-bogback | 10 | stormray (rare) | 60% / 73% / 93% | pass | mossback (rare), stormray (rare), hearthshell (epic), coralynx (rare): 6% / 13% / 50% |
+| 10 | thornmother | 12 | none (all common) | 100% / 100% / 100% | pass | solmane (epic), mossback (rare), hearthshell (epic): 7% / 10% / 44% |
+| 11 | tidal-colossus | 13 | stormray (rare) | 63% / 87% / 100% | pass | hearthshell (epic), stormray (rare), gaiadrake (epic), mossback (rare): 4% / 10% / 44% |
+| 12 | cinder-wyrm | 14 | none (all common) | 100% / 100% / 100% | pass | stormray (rare), hearthshell (epic), coralynx (rare): 18% / 27% / 68% |
+| 13 | storm-sovereign | 15 | stormray (rare) | 79% / 89% / 100% | pass | stormray (rare), gaiadrake (epic): 32% / 41% / 73% |
+| 14 | old-bogback | 17 | stormray (rare) | 79% / 89% / 100% | pass | mossback (rare), stormray (rare), hearthshell (epic), coralynx (rare): 21% / 33% / 77% |
+| 15 | thornmother | 18 | none (all common) | 100% / 100% / 100% | pass | solmane (epic), mossback (rare), hearthshell (epic): 17% / 19% / 65% |
+
+All 15 slots pass.
+
+
 ## What this cannot tell
 
 - It is a prototype: gear, heal crits on screen and the raid board UI are simplified or missing; talents are measured one at a time in the per-talent table, and as a share of the team result (one talent per creature, never searched with the Knacks).

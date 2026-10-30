@@ -10,6 +10,8 @@ import { weekend } from './fight';
 import { KEYWORDS } from './keywords';
 import { FAMILIES, FORM_KNACKS, KNACKS } from './knacks';
 import { planBosses, type BossSections } from './bossReport';
+import { ownabilityMarkdown, ownabilityTable } from './ownability';
+import { SLOT_WEEKS } from './track';
 import type { JobResults, JobSpec, Plan } from './jobs';
 import { planTalents, type TalentSection } from './talentReport';
 import type { TeamInputs } from './teamShareReport';
@@ -680,6 +682,26 @@ function assembleReport(
   const bossSections = bossesOf(results);
   md.push(...bossSections.md);
   Object.assign(data, bossSections.data);
+
+  // 12. The boss track: can a server own the creatures of each slot's tool line when the slot arrives?
+  const ownable = ownabilityTable();
+  data['ownability'] = ownable.map((r) => ({
+    slot: r.slot,
+    boss: r.bossId,
+    week: r.week,
+    toolNeeds: r.tool.needed.map((n) => n.line),
+    chance: r.tool.chance,
+    pass: r.pass,
+  }));
+  md.push(
+    '',
+    '## The boss track: ownability',
+    '',
+    ...ownabilityMarkdown(
+      ownable,
+      `the committed \`SLOT_WEEKS\` (${SLOT_WEEKS.join(' ')}), the weeks the track was tuned for`,
+    ),
+  );
 
   md.push(
     '',

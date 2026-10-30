@@ -2,7 +2,8 @@ import { writeFileSync } from 'node:fs';
 import { CARDS } from './cards';
 import { RAID_BOSS_IDS } from './bosses';
 import { planBosses } from './bossReport';
-import { DETERMINATION, planPath } from './path';
+import { DETERMINATION, planPath, type PathSummary } from './path';
+import { ownabilityMarkdown, ownabilityTable } from './ownability';
 import { ROSTER_SPEEDS, type RosterSpeed } from './roster';
 import { inProcessExecutor } from './jobRunners';
 import { runJobs, timingLines, type Executor, type JobRun, type JobSpec, type Plan } from './jobs';
@@ -11,7 +12,7 @@ import { TARGET_RANKS, type TargetRank } from './targets';
 import { planTalents, talentTeamId } from './talentReport';
 import type { TeamShareSummary } from './teamShareReport';
 import { trackSummary, tuneTrack } from './trackTuner';
-import { TRACK_ORDER } from './track';
+import { SLOT_WEEKS, TRACK_ORDER } from './track';
 import { summaryAll, tuneBoss, type RankResult } from './tuner';
 
 /** Where the jobs run: `exec` runs one job, `slots` of them at a time (`scripts/report.mjs` sets both from `--jobs`). */
@@ -204,12 +205,31 @@ async function path(args: readonly string[], quick: boolean, run: JobRunner): Pr
     mds.push(on.value.md.join('\n'));
     timings += '\n' + on.timings;
   }
+  mds.push(ownabilityOfPath(plain.value.data).join('\n'));
   const md = mds.join('\n');
   console.log(md);
   if (out) writeFileSync(out, md + '\n');
   console.log(`path in ${secondsSince(t0)} s`);
   console.log(timings);
   return 0;
+}
+
+/**
+ * The ownability table (`ownability.ts`) at the arrival weeks of this path: the median week a dedicated server arrives at each slot
+ * 1 to 15 at the expected speed when the run has it, else the committed `SLOT_WEEKS` (the weeks the track was tuned for).
+ */
+function ownabilityOfPath(data: readonly PathSummary[]): string[] {
+  const dedicated = data.find((d) => d.server === 'dedicated' && d.speed === 'expected');
+  const weeks = SLOT_WEEKS.map((committed, i) => {
+    const slot = dedicated?.slots[i];
+    return slot && slot.reachedShare > 0 ? slot.week.median : committed;
+  });
+  return ownabilityMarkdown(
+    ownabilityTable(weeks),
+    dedicated
+      ? 'the median of a dedicated server at the expected speed, from this path'
+      : 'the committed `SLOT_WEEKS` (this run has no expected-speed path)',
+  );
 }
 
 /** `1-12` or `5` as a first and last slot; undefined when it is neither. */

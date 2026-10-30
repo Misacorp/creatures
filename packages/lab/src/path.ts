@@ -12,7 +12,6 @@
  * pool (`jobs.ts`) and `summarisePath` turns them into the report's table.
  */
 import { createSeededRng } from '@creatures/game';
-import { preparedOf } from './tuner';
 import {
   columnOf,
   casualColumn,
@@ -26,7 +25,6 @@ import {
 import { raidBench, weekendStatsOf } from './bosses';
 import type { JobResults, JobSpec, Plan } from './jobs';
 import {
-  PLACEHOLDER_ROSTER,
   ROSTER_WEEKS,
   levelledColumn,
   rosterLevels,
@@ -34,8 +32,9 @@ import {
   type RosterProfile,
   type RosterSpeed,
 } from './roster';
+import { VALLEY_ROSTER } from './valley';
 import { LEVEL, type Pick } from './search';
-import { TRACK_ORDER, slotBoss, trackSlot, type SlotTable } from './track';
+import { TRACK_ORDER, slotBoss, slotPreparedOf, trackSlot, type SlotTable } from './track';
 import type { BossDef, Placement } from './types';
 
 /** A Festival every 5th week: no raid that week, the track waits. */
@@ -208,12 +207,12 @@ export function serverWeekend(
   week: number,
   speed: RosterSpeed,
   seed: string,
-  profile: RosterProfile = PLACEHOLDER_ROSTER,
+  profile: RosterProfile = VALLEY_ROSTER,
   run: PathRun = {},
 ): { boss: BossDef; placements: Placement[]; bench: Placement[] } {
   const base = slotBoss(slot, run.table ? { table: run.table } : {});
   const rows = base.rows;
-  const { line, core } = preparedOf(base.id);
+  const { line, core } = slotPreparedOf(slot);
   const boss = server.players.length === base.cols ? base : wideBoss(base, server.players.length);
   const whole = server.players.length === base.cols;
   let m = 0;
@@ -266,7 +265,7 @@ export function weekendKill(
   week: number,
   speed: RosterSpeed,
   seed: string,
-  profile: RosterProfile = PLACEHOLDER_ROSTER,
+  profile: RosterProfile = VALLEY_ROSTER,
   run: PathRun = {},
   stacks = 0,
 ): boolean {
@@ -283,7 +282,7 @@ export function pathOf(
   server: PathServer,
   speed: RosterSpeed,
   index: number,
-  profile: RosterProfile = PLACEHOLDER_ROSTER,
+  profile: RosterProfile = VALLEY_ROSTER,
   run: PathRun = {},
 ): ServerPath {
   const seed = `${server.id}:${index}`;
@@ -424,7 +423,7 @@ export const runPathJob = (args: unknown): ServerPath => {
   const a = args as PathJobArgs;
   const server = PATH_SERVERS.find((s) => s.id === a.server);
   if (!server) throw new Error(`unknown path server ${a.server}`);
-  return pathOf(server, a.speed, a.index, PLACEHOLDER_ROSTER, runOf(a));
+  return pathOf(server, a.speed, a.index, VALLEY_ROSTER, runOf(a));
 };
 
 export interface PathPlanOptions extends PathRun {

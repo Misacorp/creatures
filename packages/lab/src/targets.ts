@@ -15,6 +15,8 @@
  * numbers (`test/tuner.test.ts`).
  */
 
+import type { CoverageServer } from './valley';
+
 /** An answer's own tool must be worth at least this many win-rate points (panel 5, finding 3). */
 export const TOOL_DROP_MIN = 20;
 /**
@@ -63,6 +65,14 @@ export const CLASSIC_POTENTIAL_AIM = 0.8;
 export const WALL_CLASSIC_POTENTIAL_MIN = 0.3;
 export const WALL_CLASSIC_POTENTIAL_MAX = 0.6;
 export const WALL_CLASSIC_POTENTIAL_AIM = 0.45;
+/**
+ * Ownability (the lead's call, 2026-10-30; Misa's constraint in the valley's round 15: "it's okay to require a rare here or there because
+ * players will be able to pool their rarer creatures together in the raid roster; a 100% common requirement is too limiting"): a slot's
+ * tool line (the boss's first answer) is ownable at the week the slot arrives when the chance that a mixed server of `OWNABLE_SERVER`
+ * owns every non-common line it uses is at least `OWNABLE_CHANCE_MIN` (`ownability.ts`).
+ */
+export const OWNABLE_CHANCE_MIN = 0.5;
+export const OWNABLE_SERVER: CoverageServer = 'mixed8';
 /**
  * A miss of a potential target costs this times the distance (the weight of the other targets is 1 to 2): the potentials are the
  * main targets, so where the tool's worth cannot be met together with them (the potential is damage over HP, and a tool worth ten

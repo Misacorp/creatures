@@ -25,7 +25,7 @@
  */
 import { createSeededRng } from '@creatures/game';
 import { randomTalents } from './answerMeasure';
-import { answerLine, BOSS_ANSWERS, withoutTool } from './bossAnswers';
+import { withoutTool } from './bossAnswers';
 import {
   RAID_SPECS,
   combinePotential,
@@ -41,13 +41,13 @@ import { runJobs, type JobSpec } from './jobs';
 import { MIXED, planPath, serverWeekend } from './path';
 import { columnOf } from './raidMeasure';
 import {
-  PLACEHOLDER_ROSTER,
   ROSTER_WEEKS,
   levelledColumn,
   rosterLevels,
   type RosterProfile,
   type RosterSpeed,
 } from './roster';
+import { VALLEY_ROSTER } from './valley';
 import { classicFor, type Pick } from './search';
 import {
   RAID_MEASURES,
@@ -86,6 +86,7 @@ import {
   rankNumbers,
   slotBoss,
   slotNumbers,
+  slotPreparedOf,
   trackSlot,
   type SlotTable,
 } from './track';
@@ -132,7 +133,7 @@ export function dedicatedTeam(
   line: readonly Pick[],
   week: number,
   speed: RosterSpeed,
-  profile: RosterProfile = PLACEHOLDER_ROSTER,
+  profile: RosterProfile = VALLEY_ROSTER,
 ): { placements: Placement[]; bench: Placement[] } {
   const placements: Placement[] = [];
   const bench: Placement[] = [];
@@ -180,13 +181,6 @@ export interface SlotEvalResult {
 const unmeasured = (): Record<RaidMeasure, number> =>
   Object.fromEntries(RAID_MEASURES.map((m) => [m, Number.NaN])) as Record<RaidMeasure, number>;
 
-/** The first written answer of a boss: its line and its tool (`core`). */
-function preparedOf(id: string): { line: Pick[]; core: readonly string[] } {
-  const first = BOSS_ANSWERS[id]?.[0];
-  if (!first) throw new Error(`${id} has no written answer`);
-  return { line: answerLine(first.line), core: first.core ?? [] };
-}
-
 /** One speed of a slot's measurement: the weekends of the fidelity, the mixed server only when the fidelity asks for it. */
 function measureSpeed(
   a: SlotEvalArgs,
@@ -196,7 +190,7 @@ function measureSpeed(
   profile: RosterProfile,
 ): { measures: RaidMeasures; weekends: number } {
   const boss = slotBoss(a.slot, { table });
-  const { line, core } = preparedOf(boss.id);
+  const { line, core } = slotPreparedOf(a.slot);
   const prepared = (picks: readonly Pick[], runs: number, salt: string): WeekendStats => {
     const { placements, bench } = dedicatedTeam(boss, picks, a.week, speed, profile);
     return weekendStatsOf(boss, placements, bench, runs, salt);
@@ -302,10 +296,7 @@ function measureSpeed(
  * roster's at the week and the speed of the arguments. The same seeds for every candidate of a level, so a difference between
  * candidates is the numbers' effect.
  */
-export function evalSlot(
-  a: SlotEvalArgs,
-  profile: RosterProfile = PLACEHOLDER_ROSTER,
-): SlotEvalResult {
+export function evalSlot(a: SlotEvalArgs, profile: RosterProfile = VALLEY_ROSTER): SlotEvalResult {
   const table: SlotTable = { [a.slot]: a.numbers };
   return measureSpeed(a, table, a.speed, a.fidelity, profile);
 }
@@ -766,6 +757,11 @@ export function pasteOf(table: SlotTable, first: number, last: number): string[]
   return lines;
 }
 
+/** The `SLOT_WEEKS` line (`track.ts`) for the weeks the final table was tuned for, slots `first` to `last` (a full run, from slot 1, is the whole line). */
+export function weeksPasteOf(weeks: readonly number[]): string {
+  return `export const SLOT_WEEKS: readonly number[] = [${weeks.join(', ')}];`;
+}
+
 /** The markdown of a run: the rounds, one table of the slots (numbers, targets, misses) and the paste. */
 export function trackSummary(
   r: TrackTuneResult,
@@ -861,10 +857,12 @@ export function trackSummary(
     out.push('');
   }
   out.push(
-    '### Paste into `SLOT_NUMBERS` (`track.ts`)',
+    '### Paste into `SLOT_NUMBERS` and `SLOT_WEEKS` (`track.ts`)',
     '',
     '```ts',
     ...pasteOf(r.loop.table, o.first, o.last),
+    '',
+    weeksPasteOf(r.loop.weeks),
     '```',
     '',
   );
@@ -893,7 +891,7 @@ export function killByHp(
   week: number,
   numbers: Numbers,
   o: { from: number; to: number; step: number; weekends: number; speed?: RosterSpeed },
-  profile: RosterProfile = PLACEHOLDER_ROSTER,
+  profile: RosterProfile = VALLEY_ROSTER,
 ): KillPoint[] {
   const out: KillPoint[] = [];
   const count = Math.round((o.to - o.from) / o.step);
@@ -901,7 +899,7 @@ export function killByHp(
     const factor = o.from + i * o.step;
     const hp = Math.round((numbers.hp * factor) / 100) * 100;
     const boss = slotBoss(slot, { table: { [slot]: { ...numbers, hp } } });
-    const { line } = preparedOf(boss.id);
+    const { line } = slotPreparedOf(slot);
     const { placements, bench } = dedicatedTeam(boss, line, week, o.speed ?? TUNE_SPEED, profile);
     const kill = weekendStatsOf(boss, placements, bench, o.weekends, `cliff:${slot}`).tiers.kill;
     out.push({ factor, hp, kill });
