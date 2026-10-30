@@ -43,6 +43,8 @@ export interface TrackSlot {
   readonly rules: SlotRules;
   /** A deliberate wall (`SLOT_WALL`): the unprepared classic party is asked to fall far short (`slotTargetsFor`). */
   readonly wall: boolean;
+  /** The cards this slot adds to its boss on top of its own (`SLOT_EXTRA_CARDS`: a later lap's new card). */
+  readonly extraCards: readonly string[];
 }
 
 /** The numbers a slot may set by hand (absolute, before cards), replacing the ones interpolated from the ranks. */
@@ -114,6 +116,34 @@ export const SLOT_WALL: Readonly<Record<number, true>> = { 5: true };
 export const SLOT_LINE: Readonly<Record<number, string>> = {
   1: 'kilnmole/keep-the-heat-in+brace bogwarden/wide-reach+long-shadow drizzlewt/clear-the-air+bright-boost geyserpup/puddle-maker+edge-walker | tidewing/lead-the-way+owners-mark fogwyrm/wide-reach+catch-breath voltaro/none+odd-one-out drizzlewt/curl-up+bright-boost | fogwyrm/wide-reach+unbothered sunfawn/curl-up+brace geyserpup/puddle-maker tidewing/double-mark+owners-mark',
 };
+
+/**
+ * A later lap's new card, a column of the track's data (Misa, 2026-10-31, "Lucky Strike and Slippery both go on raid bosses" in
+ * `docs/design/decisions/raids.md`): slot to the rule cards the boss gains from that slot on, on top of its own. An entry holds for
+ * its slot and every later slot of the same boss (slot 7 and 12 for the Cinder Wyrm), at the slot's card strength, so a known boss's
+ * second lap is stronger by one new card. Each card must be one the lab has (`cards.ts`) and have an answer a server can own at the
+ * slot's week (`ownability.ts`, tested). An absent slot adds nothing.
+ */
+export const SLOT_EXTRA_CARDS: Readonly<Record<number, readonly string[]>> = {
+  6: ['slippery'], // tidal-colossus
+  8: ['lucky-strike'], // storm-sovereign, from its second lap (slots 8 and 13)
+};
+
+/**
+ * The extra cards of a slot: the entries of `SLOT_EXTRA_CARDS` at this slot or at an earlier slot of the same boss (every `order.length`
+ * slots), in slot order.
+ */
+export function slotExtraCards(
+  slot: number,
+  order: readonly string[] = TRACK_ORDER,
+  table: Readonly<Record<number, readonly string[]>> = SLOT_EXTRA_CARDS,
+): string[] {
+  return Object.entries(table)
+    .map(([from, cards]) => [Number(from), cards] as const)
+    .filter(([from]) => from <= slot && (slot - from) % order.length === 0)
+    .sort((a, b) => a[0] - b[0])
+    .flatMap(([, cards]) => cards);
+}
 
 /** Whether a slot is a wall (`SLOT_WALL`). */
 export const isWallSlot = (slot: number): boolean => SLOT_WALL[slot] === true;
@@ -215,6 +245,7 @@ export function trackSlot(slot: number, order: readonly string[] = TRACK_ORDER):
     strengthBp: SLOT_STRENGTH[slot] ?? rankStrengthBp(slot),
     rules: slotRules(slot),
     wall: isWallSlot(slot),
+    extraCards: slotExtraCards(slot, order),
   };
 }
 
@@ -258,5 +289,6 @@ export function slotBoss(
     level: roster.level ?? rankLevel(slot),
     ...(s.rules.cards === undefined ? {} : { cards: s.rules.cards }),
     buildUp: s.rules.buildUp,
+    ...(s.extraCards.length ? { extraCards: s.extraCards } : {}),
   });
 }

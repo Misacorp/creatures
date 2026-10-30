@@ -468,6 +468,8 @@ export function raidBossOf(
     cards?: number;
     /** Whether the boss has its Build-up (the escalation), default yes; the ramp's first two slots do not. */
     buildUp?: boolean;
+    /** Cards the boss carries on top of its spec's, at the same strength (the track's later laps add a luck card, `SLOT_EXTRA_CARDS` in `track.ts`). */
+    extraCards?: readonly string[];
   } = {},
 ): BossDef {
   const spec = RAID_SPECS.find((s) => s.id === id);
@@ -475,7 +477,10 @@ export function raidBossOf(
   if (!spec || !shipped) throw new Error(`unknown raid boss ${id}`);
   const rank = rankOf(over.rank ?? 'high');
   const st = over.strengthBp ?? rank.strengthBp;
-  const cards = over.cards === undefined ? spec.cards : spec.cards.slice(0, over.cards);
+  const cards = [
+    ...(over.cards === undefined ? spec.cards : spec.cards.slice(0, over.cards)),
+    ...(over.extraCards ?? []),
+  ];
   const buildUp = over.buildUp ?? true;
   const [hpBp, atkBp, armourBp] =
     rank.id === 'high' || !spec.ranks ? [rank.hpBp, rank.atkBp, undefined] : spec.ranks[rank.id];
