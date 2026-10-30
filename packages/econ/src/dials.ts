@@ -107,6 +107,26 @@ export const DIALS: readonly Dial[] = [
     step: 0.125,
   },
   {
+    id: 'visitorPrice',
+    label: "the weekly visitor's base prices (Acorns and scrap of a reroll at item level 10)",
+    paths: [
+      ['visitor', 'acorns'],
+      ['visitor', 'scrap'],
+    ],
+    integer: true,
+    min: 0.25,
+    max: 4,
+    step: 0.25,
+  },
+  {
+    id: 'visitorGrowth',
+    label: 'how much dearer each reroll in the same week is (x1.5 today)',
+    paths: [['visitor', 'growth']],
+    min: 0.7,
+    max: 1.6,
+    step: 0.1,
+  },
+  {
     id: 'kitPrice',
     label: 'kit price',
     paths: [['kit', 'price']],

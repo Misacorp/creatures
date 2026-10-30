@@ -189,6 +189,25 @@ export const RulesSchema = v.strictObject({
     communalPerHour: num,
     communalCreaturesPerSeat: pos,
   }),
+  gear: v.strictObject({
+    lines: v.pipe(v.array(int), v.length(3)),
+    pipFrom: v.pipe(v.array(int), v.length(4)),
+    topPipChance: share,
+  }),
+  visitor: v.strictObject({
+    arriveDay: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(6)),
+    leaveHour: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(168)),
+    baseLevel: pos,
+    acorns: num,
+    scrap: num,
+    growth: pos,
+    reserveAcorns: num,
+    reserveScrap: num,
+    maxRerolls: int,
+    goodTop: v.pipe(v.array(int), v.length(3)),
+    blueprintAcorns: num,
+    blueprintScrap: num,
+  }),
   collections: v.strictObject({
     boards: v.record(
       v.string(),

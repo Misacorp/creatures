@@ -877,14 +877,12 @@ export function targetsOf(results: Results, rules: Rules): TargetLine[] {
     measured: `${round(m.waitingEvolve12 ?? NaN, 1)} creatures of a daily player wait at their evolution level for Essence at week 12`,
     target: 'at most 3: Essence must not be starved to keep the pile down',
   });
-  // T-7: no dead resource before week 12. Report-only (Q42 B: piling up is alright for the first weeks; the sinks come later).
+  // T-7: no dead resource before week 12 (judged again now that the weekly visitor is a sink).
   lines.push({
     id: 'T-7',
-    pass: (m.deadBefore12 ?? NaN) === 0,
-    info: true,
+    pass: metLine('T-7'),
     measured: `${round(m.deadBefore12 ?? NaN)} of a daily player's 4 resources (Acorns, scrap, shards, Essence) are dead (a pile rising 4 weeks running to 4 weeks of what the resource is spent on) before week 12`,
-    target:
-      'none (resources.md: nothing that only piles up). Shown, not judged, until the visitor and decorations are modelled (Q42 B: sinks come later; piling up is alright for the first few weeks). The dead flags stay in the ledger',
+    target: 'none (resources.md: nothing that only piles up)',
   });
   // T-6: growth lasts the arc.
   const reach30 = daily.flatMap((p) =>

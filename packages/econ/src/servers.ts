@@ -27,6 +27,8 @@ export interface ServerConfig {
   readonly creatureRate?: number;
   /** Replaces the fire's time floor, in levels a week (the "slow floor" variants set `SLOW_FLOOR`; the default is none, Q40 B). */
   readonly fireFloor?: number;
+  /** Whether the weekly visitor comes (V-VIS; default yes). */
+  readonly visitor?: boolean;
   /** Whether catch-up also multiplies what the dungeon and the raid pay (a sensitivity run for T-2d). */
   readonly catchUpFights?: boolean;
 }
@@ -75,18 +77,20 @@ const EIGHT = {
 
 const MIXED_8 = server('mixed8', 'Mixed server of 8', EIGHT, { seedKey: 'mixed8' });
 
+const MIXED_15 = server('mixed15', 'Mixed server of 15', {
+  daily: 4,
+  active: 2,
+  'every-other-day': 2,
+  'weekend-off': 2,
+  weekly: 3,
+  new: 1,
+  returner: 1,
+});
+
 export const SERVERS: readonly ServerConfig[] = [
   server('mixed5', 'Mixed server of 5', { daily: 2, active: 1, 'every-other-day': 1, weekly: 1 }),
   MIXED_8,
-  server('mixed15', 'Mixed server of 15', {
-    daily: 4,
-    active: 2,
-    'every-other-day': 2,
-    'weekend-off': 2,
-    weekly: 3,
-    new: 1,
-    returner: 1,
-  }),
+  MIXED_15,
   server('lone', 'A lone keen player', { active: 1 }),
   server('hoarder', 'A hoarder server (4 hoarders, 4 daily)', { hoarder: 4, daily: 4 }),
 ];
@@ -117,6 +121,20 @@ export const VARIANTS: readonly ServerConfig[] = [
     id: 'mixed8-noexchange',
     label: 'Mixed 8, no shard exchange',
     shardExchange: false,
+  },
+  // The same servers with no weekly visitor (V-VIS), for "with and without" (the draws are shared: the seed key stays the server's).
+  {
+    ...MIXED_8,
+    id: 'mixed8-novisitor',
+    label: 'Mixed 8, no weekly visitor',
+    visitor: false,
+  },
+  {
+    ...MIXED_15,
+    id: 'mixed15-novisitor',
+    seedKey: 'mixed15',
+    label: 'Mixed 15, no weekly visitor',
+    visitor: false,
   },
   {
     ...MIXED_8,
