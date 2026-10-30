@@ -175,6 +175,13 @@ export const BUNDLED_SET_SPRITES: Readonly<Record<GearSlot, SpriteDef>> = {
 
 export const GEAR_SLOT_IDS = ['hat', 'scarf', 'charm'] as const satisfies readonly GearSlot[];
 
+/**
+ * The coat of an item with no element and no set (Misa, 2026-10-31): the neutral pieces and the role
+ * and explorer charms. A low-saturation oat beige instead of the bare grey, kept clear of Mire's
+ * saturated ochre and of the explorer set's brighter tan.
+ */
+export const NEUTRAL_PAINT = { t: '#bba88c', u: '#7f6e58', h: '#e4d8c2' } as const;
+
 /** The palette swap that gives an item its element's colours; undefined for neutral (the base palette). */
 export function tintPalette(tint: string | null): Readonly<Record<string, string>> | undefined {
   return tint !== null && Object.hasOwn(TINTS, tint) ? TINTS[tint] : undefined;
@@ -285,7 +292,7 @@ export function itemArt(baseId: string): {
     sprite = FLAIRED.get(baseId) ?? withFlair(plain, flair);
     FLAIRED.set(baseId, sprite);
   }
-  return { sprite, palette: tintPalette(baseElement(base)) };
+  return { sprite, palette: tintPalette(baseElement(base)) ?? NEUTRAL_PAINT };
 }
 
 // --- Parts (8x8) ---

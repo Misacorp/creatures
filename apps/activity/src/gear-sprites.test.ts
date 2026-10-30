@@ -6,6 +6,7 @@ import {
   BUNDLED_SET_SPRITES,
   GEAR_SLOT_IDS,
   ITEM_LOOK_SPRITES,
+  NEUTRAL_PAINT,
   ITEM_SIZE,
   itemLookId,
   itemFlair,
@@ -21,7 +22,7 @@ import { glyph } from './glyphs';
 import { elementIcon } from './sprites/element-icons';
 import { ITEM_FLAIR } from './sprites/data/item-flair';
 import { expandRows, swapPalette, validateSprite, type SpriteDef } from './sprites/sprite-data';
-import { lintSprite, silhouetteDifference } from './sprites/sprite-lint';
+import { hsl, lintSprite, silhouetteDifference } from './sprites/sprite-lint';
 
 const shape = (rows: readonly string[]): string => rows.join('/');
 
@@ -69,7 +70,7 @@ describe('item sprites', () => {
         continue;
       }
       const element = baseElement(base);
-      expect(art.palette, base.id).toBe(element === null ? undefined : tintPalette(element));
+      expect(art.palette, base.id).toBe(element === null ? NEUTRAL_PAINT : tintPalette(element));
     }
   });
 
@@ -170,6 +171,25 @@ describe('item sprites', () => {
     }
     colours.add(BUNDLED_ITEM_SPRITES.hat.palette['t'] ?? '');
     expect(colours.size).toBe(5);
+  });
+
+  it('paints items with no element a beige of their own, apart from every element and set colour', () => {
+    const { hue, sat } = hsl(NEUTRAL_PAINT.t);
+    expect(sat, 'low saturation').toBeLessThan(0.3);
+    expect(hue, 'beige to brown').toBeGreaterThanOrEqual(25);
+    expect(hue, 'beige to brown').toBeLessThanOrEqual(50);
+    const others = [
+      ...['tide', 'ember', 'grove', 'spark', 'mire'].map((t) => tintPalette(t)),
+      ...gearContent.sets.map((set) => setTintPalette(set.tag)),
+    ];
+    for (const other of others) {
+      if (other === undefined) throw new Error('missing tint');
+      expect(NEUTRAL_PAINT.t).not.toBe(other['t']);
+      // Mire and the explorer set are the nearest browns: at least this far apart in saturation.
+      expect(
+        Math.abs(hsl(other['t'] ?? '').sat - sat) + Math.abs(hsl(other['t'] ?? '').hue - hue) / 360,
+      ).toBeGreaterThan(0.1);
+    }
   });
 
   it('knows a tint for every element of the content, and none for neutral or unknown', () => {

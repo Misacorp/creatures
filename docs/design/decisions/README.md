@@ -309,6 +309,7 @@ Superseded: 1 entry (see the topic file).
 
 [gear.md](gear.md): Gear items, lines and sets, crafting, dismantling, conversions, the bag and the item picker.
 
+- 2026-10-31 \[Misa\] Items with no element get an oat-beige coat instead of grey
 - 2026-10-31 \[Misa\] Element versions of a shared item get a small element flair
 - 2026-10-30 \[Misa\] Every named item has its own sprite; element versions share one, tinted (amended)
 - 2026-10-27 Marked items, dismantled as a pile (amended)

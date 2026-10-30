@@ -4,6 +4,14 @@ Gear items, lines and sets, crafting, dismantling, conversions, the bag and the 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: [Misa] Items with no element get an oat-beige coat instead of grey
+
+ID: `2026-10-31-items-with-no-element-get-an` · Status: current · Amends: `2026-10-30-every-named-item-has-its-own`
+
+**Decision.** Misa (2026-10-31): neutral items "are quite bland and gray. Would it be possible to give them a coat of paint of their own? It can still be low in saturation, but ... light beige or brownish. Not to be confused with the tones of mire." An item with no element tint and no set (the neutral pieces, and the role and explorer charms such as Warden's Bell and Crossroads Compass, which were grey for the same reason) is drawn in `NEUTRAL_PAINT` (`apps/activity/src/gear-sprites.ts`): `t #bba88c`, `u #7f6e58`, `h #e4d8c2`, an oat beige. The sprites keep their grey base palette, so the paint is the tint like any element's. A test keeps it low in saturation, in the beige-to-brown hues, and apart from every element and set colour.
+
+**Reasoning.** Three beiges were compared beside Mire and the explorer set (the two nearest browns): a pale linen, this oat, and a grey driftwood. Oat reads as beige-brown at a glance, while Mire stays a saturated ochre and the explorer set a brighter golden tan. The role charms take the same coat: leaving them grey would keep the bland look Misa pointed at, and a role's own colour belongs to its set.
+
 ## 2026-10-31: [Misa] Element versions of a shared item get a small element flair
 
 ID: `2026-10-31-element-versions-of-a-shared-item` · Status: current · Amends: `2026-10-30-every-named-item-has-its-own`
@@ -14,7 +22,7 @@ ID: `2026-10-31-element-versions-of-a-shared-item` · Status: current · Amends:
 
 ## 2026-10-30: [Misa] Every named item has its own sprite; element versions share one, tinted
 
-ID: `2026-10-30-every-named-item-has-its-own` · Status: current, amended by `2026-10-31-element-versions-of-a-shared-item`
+ID: `2026-10-30-every-named-item-has-its-own` · Status: current, amended by `2026-10-31-element-versions-of-a-shared-item`, `2026-10-31-items-with-no-element-get-an`
 
 **Decision.** Misa (2026-10-30): "Each item with a unique name should have a unique sprite. If items have identical stats but they're just a different element version, then let's just use the color tint that exists today." An item base is drawn with its **look** (`itemLookId` in `apps/activity/src/gear-sprites.ts`): two bases share a look when they are the same slot, have the same stats, neither is a set piece, and each is neutral or an element (so a role or explorer charm, or a set piece, always has its own). The first base in content order names the look; the others wear its sprite in their element's tint, as before. With today's content that is 60 looks for 77 items (for example Trail Cap and Kelp Cap share one; Wayfarer's Hood and Tidecaller's Crown share one because their stats are identical). The sprites live in `src/sprites/data/item-{hat,scarf,charm}-sprites.ts`, drawn in the neutral greys `t`/`u`/`h` that the tint swaps; set pieces keep the gold trim (`g`, `w`) and their set tag's tint. The old six shared sprites stay as the fallback for a base drawn before its own sprite. `pnpm art items` draws every item as the game does, labelled by name, plus a card per look with each tinted version.
 
