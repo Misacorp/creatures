@@ -4,7 +4,7 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
-## 2026-10-30: How the boss track is tuned: welcome boss, tool by card strength, robust to roster speed
+## 2026-10-30: How the boss track is tuned: welcome boss, tool by card strength, a 60% first-weekend aim
 
 ID: `2026-10-30-how-the-boss-track-is-tuned` · Status: current · Amends: `2026-10-30-the-boss-track-is-tuned-against`
 
@@ -12,10 +12,11 @@ ID: `2026-10-30-how-the-boss-track-is-tuned` · Status: current · Amends: `2026
 
 - **The first slot is a welcome boss:** a new server has its starters, so on slot 1 there is no limit on the unprepared party winning; a prepared team must still win within two weekends.
 - **The tool a slot asks for scales with its card strength:** 6, 8 and 10 points of HP at 30%, 65% and 100% cards (the line the rank tests already use), down to 3 points at 0%.
-- **Robust to the roster's speed:** a candidate's loss counts the expected roster in full and the slow and fast ones (levels 20% behind or ahead) at half weight.
+- **Tuned for the expected roster; slow and fast are a sensitivity check.** The path is run at all three speeds (levels 20% behind or ahead) and reported, but the numbers are not tuned for them: a slow server arrives at a slot later and keeps growing while a failed boss returns, and the numbers are re-tuned when the valley's real roster data arrives.
+- **No numeric lap floor:** a later lap's card strength never falls, but its HP, Attack and armour may be lower than an earlier lap's when its stronger cards make up for it.
 - **Difficulty aim:** among numbers that meet every target, the tuner prefers a prepared team's first-weekend kill rate near 60% (about 84% within two weekends), not the easiest numbers.
 
-**Reasoning.** "Rule cards ask before they require" (Misa, 2026-10-29) means early slots cannot demand a tool's full worth, and at week 1 a prepared team and an unprepared one have the same starters. The valley's pace is unknown, so numbers that hold only at one speed would be wasted when it lands. The first tuning picked the most comfortable numbers, so every boss fell on the first weekend and tools mattered only near the kill line; aiming at about 60% keeps Misa's "a prepared team usually wins within two weekends" and lets a returning boss show progress.
+**Reasoning.** "Rule cards ask before they require" (Misa, 2026-10-29) means early slots cannot demand a tool's full worth, and at week 1 a prepared team and an unprepared one have the same starters. A raid weekend is a cliff: a prepared team's kill rate goes from almost always to almost never over about a tenth of the boss's HP, and a roster 20% behind moves that edge by 15% to 20% of the HP, so no numbers give a 60% kill at all three speeds; tuning for all three made every boss trivial. Tuning for the expected roster and re-tuning when real data arrives wastes nothing, because only the numbers move. Holding later laps' numbers at the earlier lap's level made Storm Sovereign's later laps, with near-full cards, almost unbeatable. The first tuning picked the most comfortable numbers, so every boss fell on the first weekend and tools mattered only near the kill line; aiming at about 60% keeps Misa's "a prepared team usually wins within two weekends" and lets a returning boss show progress.
 
 ## 2026-10-30: The boss track is tuned against a roster profile the valley will supply
 
