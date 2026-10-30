@@ -1,0 +1,24 @@
+{
+  "name": "@creatures/econ",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --cache --cache-strategy content --cache-location node_modules/.cache/eslint/ .",
+    "test": "vitest run",
+    "report": "node scripts/report.mjs"
+  },
+  "dependencies": {
+    "@creatures/game": "workspace:*",
+    "valibot": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}

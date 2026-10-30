@@ -1,0 +1,69 @@
+import { RULES as GAME } from '@creatures/game';
+import { playersOf, type Results } from './scenarios';
+import type { PlayerRun } from './sim';
+import { levelOf, round } from './stats';
+import { median } from './util';
+
+/**
+ * The roster profile: the seam between combat v2 and the valley, in the shape of `RosterProfile` in `packages/lab/src/roster.ts`
+ * on branch `combat-v2-track` (copied here as types so this package does not depend on that branch). Plain data: for each kind
+ * of player and each week from 1 to 24, the levels of the player's 1st, 3rd, 10th and 20th creature, how many creatures they own,
+ * which forms they can have, the open talent slots of their best creature, whether talents are picked, and a gear level.
+ */
+export const ROSTER_WEEKS = 24;
+
+export interface RosterWeek {
+  readonly week: number;
+  readonly first: number;
+  readonly third: number;
+  readonly tenth: number;
+  readonly twentieth: number;
+  readonly size: number;
+  readonly forms: 'all' | readonly string[];
+  readonly talentSlots: number;
+  readonly talentsPicked: boolean;
+  readonly gear: number;
+}
+
+export interface RosterProfile {
+  readonly daily: readonly RosterWeek[];
+  readonly weekly: readonly RosterWeek[];
+  /** A new player's roster by weeks since joining (index 0: the week they join). */
+  readonly newPlayer: readonly RosterWeek[];
+}
+
+const talentSlotsAt = (level: number): number =>
+  GAME.talents.slotLevels.filter((l) => level >= l).length;
+
+/** The median player of a kind, week by week (index 0 is each player's first week). */
+function weeksFor(players: readonly PlayerRun[]): RosterWeek[] {
+  return Array.from({ length: ROSTER_WEEKS }, (_, i) => {
+    const records = players.flatMap((p) => (p.weeks[i] ? [p.weeks[i]] : []));
+    const level = (k: number): number =>
+      round(Math.min(30, median(records.map((w) => levelOf(w, k)))), 1);
+    const first = level(1);
+    return {
+      week: i + 1,
+      first,
+      third: level(3),
+      tenth: level(10),
+      twentieth: level(20),
+      size: Math.round(median(records.map((w) => w.size))),
+      forms: 'all' as const,
+      talentSlots: talentSlotsAt(first),
+      talentsPicked: false,
+      gear: Math.round(median(records.map((w) => w.avgGear))),
+    };
+  });
+}
+
+export function rosterProfile(results: Results): RosterProfile {
+  const pooled = (profile: string): PlayerRun[] =>
+    ['mixed5', 'mixed8', 'mixed15'].flatMap((id) => playersOf(results[id], profile));
+  return {
+    daily: weeksFor(pooled('daily')),
+    weekly: weeksFor(pooled('weekly')),
+    // The 30-week server's week-6 joiner has 25 weeks since joining.
+    newPlayer: weeksFor(playersOf(results['mixed8-long'], 'new')),
+  };
+}
