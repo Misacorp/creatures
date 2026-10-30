@@ -14,11 +14,12 @@ import {
 import { FORM_KNACKS } from './knacks';
 import { LEVEL, classicFor, type Pick } from './search';
 import { formStats } from './species';
+import { MARGIN_TARGET } from './targets';
 import { legalTalents } from './talents';
 import type { BossDef, Placement } from './types';
 
-/** The boss's win rate target at +10% Attack and at +10% HP (a well-prepared team should usually win, but not by a mile). */
-export const MARGIN_TARGET = 0.6;
+// The target lives in `targets.ts` (the boss tuner reads it too); it is still exported from here.
+export { MARGIN_TARGET };
 
 export interface Margin {
   readonly base: number;

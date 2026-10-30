@@ -11,27 +11,19 @@ import { combineWeekends, weekendStats, type Tiers, type WeekendStats } from './
 import { KNACKS } from './knacks';
 import type { Mechanic } from './mechanics';
 import type { Pick } from './search';
+import {
+  GATE_BOSSES,
+  GATE_DROP,
+  ROBUST_SHARE,
+  ROBUST_TARGET,
+  TOOL_DROP_MIN,
+  TOOL_SHARE_MIN,
+} from './targets';
 import { legalTalents } from './talents';
 import type { BossDef } from './types';
 
-/** An answer's own tool must be worth at least this many win-rate points (panel 5, finding 3). */
-export const TOOL_DROP_MIN = 20;
-/**
- * An answer's own tool must also be worth at least this many points of the boss's HP removed (Misa, 2026-10-29: the share of HP
- * removed is the primary measure; the kill rate is the cliff). Tested at the high rank, with the line's written talents.
- */
-export const TOOL_SHARE_MIN = 0.1;
-/**
- * A Knack family is a gate on a boss when taking it out of an answer costs more than this many points of kill rate (the cliff:
- * "required"). The same removal is also shown as points of the boss's HP removed, the primary measure (Misa, 2026-10-29).
- */
-export const GATE_DROP = 50;
-/** The gate check fails for a family that is a gate on this many bosses or more. */
-export const GATE_BOSSES = 3;
-/** And remove at least this share of the boss's HP (the primary measure) with random legal talents. */
-export const ROBUST_SHARE = 0.8;
-/** The prepared line with random legal talents should still win about this share of weekends (panel 5, finding 4). */
-export const ROBUST_TARGET = 0.6;
+// The thresholds live in `targets.ts` (the boss tuner reads them too); they are still exported from here.
+export { GATE_BOSSES, GATE_DROP, ROBUST_SHARE, ROBUST_TARGET, TOOL_DROP_MIN, TOOL_SHARE_MIN };
 
 /** `line` with one random legal talent on each creature that can carry one (what a player may have rolled), replacing any it had. */
 export function randomTalents(

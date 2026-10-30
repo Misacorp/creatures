@@ -50,7 +50,7 @@ Big simulations come in phase 5 on purpose: week-by-week and Boss Rank numbers m
 
 ## Where we are (handoff, 2026-10-29)
 
-**Merged:** PR #92 (design docs, the lab, the wiki). **In review:** PR #104 from branch `combat-v2-bosses` (the five raid bosses, the fifteen dungeon foes, Build-up, new attack shapes, announced attacks, rule-card strength by Boss Rank, the dungeon map model, panels 4 and 5 with their fixes). It changes nothing in the live game except the wiki's draft sections, which are generated from the lab's data.
+**Merged:** PR #92 (design docs, the lab, the wiki) and PR #104 (the five raid bosses, the fifteen dungeon foes, Build-up, new attack shapes, announced attacks, rule-card strength by Boss Rank, the dungeon map model, panels 4 and 5 with their fixes). Next work goes on a new branch from `main` (`combat-v2-next`).
 
 **Where the numbers stand** (`lab-report.md`; the main measure is the share of boss HP removed, with the retreat tiers 30%, 85% and the kill; Boss Rank low / mid / high sets rule-card strength, boss stats and the lab roster's level 12 / 18 / 25):
 
@@ -61,6 +61,16 @@ Big simulations come in phase 5 on purpose: week-by-week and Boss Rank numbers m
 - The dungeon: careful routes clear 99% at depth 1 down to 52% at depth 8; every foe asks for something; the Undercroft drops to 19%, 4%, 1%.
 
 **Next steps, in order:**
+
+0. **First: find and fix drastic inefficiencies in the lab setup** (Misa, 2026-10-29). The bosses work took about 14 hours of agent time, mostly serial; the full lab report took 517 to 585 s on one of 4 cores. **Done (2026-10-30):**
+   - **Profiled:** 95% of the time was the fight simulation itself, on one core (raid boss sections 62%, talent section 25%); only about 15% of weekends were exact repeats, so caching results would not have helped much.
+   - **Faster fights** (about 2.25x): a cached list of living creatures, scans instead of sorting, memoised effects and stats, and passes skipped for effects nobody carries. Same random draws in the same order: the report is byte-identical.
+   - **All cores:** the report is a plan of independent jobs (per boss search and study, per foe, per talent form, per card) on worker threads, assembled in the original order; `--jobs 1` gives the same output. `--bosses --boss <id>` runs one raid boss; every run ends with per-section timings and the longest jobs.
+   - **Tests split:** the 22 s boss test file is six files by topic.
+   - **Result** (4 cores): full report 585 s to **80 s**, quick report 76 s to **13 s**, one boss 17 s (5 s quick), lab tests 25 s to **11 s**. **Speed budget:** full report under 2 minutes, quick under 20 s, one boss under 20 s, lab tests about 10 s (`docs/design/testing.md`). A change that breaks the budget profiles first (`node --cpu-prof scripts/report.mjs --quick`) and says why in its PR.
+   - **Automatic tuner:** the raid targets are data (`packages/lab/src/targets.ts`, one place for the tests, the report and the tuner; the per-rank targets are drafts), and `node scripts/report.mjs --tune [--boss <id>] [--rank low|mid|high|all] [--quick]` searches each boss's HP, Attack and armour per Boss Rank (grid, then local refinement, common seeds, today's numbers kept unless clearly beaten, the rank ladder respected). It prints the best fit, numbers ready to paste, and which targets can never be met together, which is a content problem, not a numbers one. All five bosses at all three ranks take about 2 minutes (488,000 weekends). **Agents change rules and content; the tuner sets the numbers.** Use full mode for decisions: quick mode is optimistic.
+   - **First tuner findings** (draft targets, 2026-10-30): Cinder Wyrm and Thornmother meet every target at every rank. Tidal Colossus and Old Bogback: the unprepared classic party removes 67% to 71% of the HP and no HP, Attack or armour brings it to 50% without breaking the prepared team or the mixed server (a content conflict, as known). Storm Sovereign and Tidal Colossus: a prepared team with random talents kills only 2% to 37% of weekends (draft target 60%) while removing 81% to 97% of the HP. Mixed servers almost never kill (0% to 4%). Nothing was applied: the targets come first.
+   - **Still to do:** Misa confirms the targets (open questions below), then one tuning pass with the tuner, and content changes where it reports a conflict. Caching by input hash is not needed at these speeds.
 
 1. **Leftovers from the bosses:**
    - At high rank the unprepared party still removes about two thirds of Tidal Colossus's and Old Bogback's HP, more than a mixed server: they need a gate the classic trio lacks, and re-searched answers.
@@ -73,4 +83,8 @@ Big simulations come in phase 5 on purpose: week-by-week and Boss Rank numbers m
 4. **Phase 1 gate check** (the phase 1 row above): panel without must-fix findings, every card's answers beat the classic line, no Knack used almost everywhere and none never used, the casual roster beyond its top three, the classic line losing on most cards. Then a PR, and phase 2 (the engine port) can start.
 5. **Later content:** a Mire Setter or Payoff (needs art); the Undercroft's own foes; an opt-in harder boss for the endgame (Misa, 2026-10-29).
 
-**Open questions for Misa:** none waiting.
+**Open questions for Misa** (asked 2026-10-30, the success targets; the tuner then sets the numbers):
+
+1. How often should a well-prepared team kill the boss when its talents are random? Draft: 60% of weekends. Today Tidal Colossus and Storm Sovereign are at 2% to 7%, though they remove 81% to 92% of its HP.
+2. How much of the HP may an unprepared but decent party (the classic trio, no tools) remove? Draft: at most half. Tidal Colossus and Old Bogback allow about 70%; fixing that needs a content change (a gate the trio lacks).
+3. Should a mixed server (2 min-maxers, 3 builders, 5 casuals) sometimes kill, say at least 10% of weekends? Today almost never (0% to 4%), while it removes 60% to 80% of the HP.
