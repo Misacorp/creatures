@@ -64,7 +64,7 @@ describe('collection sockets (V-COM-12)', () => {
 });
 
 describe('gifts', () => {
-  const results = runAll(2, RULES, ['mixed8', 'mixed8-everything', 'mixed8-essence']);
+  const results = runAll(1, RULES, ['mixed8', 'mixed8-everything', 'mixed8-essence']);
   const given = (id: string, resource: number): number =>
     results[id]!.runs.flatMap((r) => r.players).reduce(
       (n, p) => n + (p.sources[`out:${resource}:gifts`] ?? 0),

@@ -22,6 +22,7 @@ import { playersOf, type Results } from './scenarios';
 import type { PlayerRun } from './sim';
 import { rosterProfile, type RosterProfile } from './roster';
 import { levelOf, medianOf, round, total } from './stats';
+import { THRESHOLDS } from './targets';
 import { median, sum } from './util';
 
 /** The numbers behind the report (written as `report-data.json`, for charts). */
@@ -135,36 +136,54 @@ function journey(
   });
 }
 
-export function buildReportData(results: Results, seeds: number, rules: Rules = RULES): ReportData {
+/** Seconds each section of the report took (printed by the CLI, never part of the data: the data is deterministic). */
+export type Timings = Record<string, number>;
+
+export function buildReportData(
+  results: Results,
+  seeds: number,
+  rules: Rules = RULES,
+  timings: Timings = {},
+): ReportData {
+  const time = <T>(name: string, f: () => T): T => {
+    const t = Date.now();
+    const out = f();
+    timings[name] = (timings[name] ?? 0) + (Date.now() - t) / 1000;
+    return out;
+  };
   const ledger: Record<string, ResourceLedger[]> = {};
   const growth: GrowthRow[] = [];
   const forge: ForgeRow[] = [];
-  for (const id of LEDGER_PROFILES) {
-    const players = profilePlayers(results, id);
-    if (players.length === 0) continue;
-    ledger[id] = ledgerOf(players, rules);
-    growth.push(growthOf(players, id));
-    forge.push(forgeOf(players, id, rules));
-  }
-  const servers = ['mixed5', 'mixed8', 'mixed15', 'lone', 'hoarder']
-    .map((id) => serverOf(results, id))
-    .filter((s): s is ServerRow => s !== null);
+  time('ledger, growth and Forge', () => {
+    for (const id of LEDGER_PROFILES) {
+      const players = profilePlayers(results, id);
+      if (players.length === 0) continue;
+      ledger[id] = ledgerOf(players);
+      growth.push(growthOf(players, id));
+      forge.push(forgeOf(players, id, rules));
+    }
+  });
+  const servers = time('servers', () =>
+    ['mixed5', 'mixed8', 'mixed15', 'lone', 'hoarder']
+      .map((id) => serverOf(results, id))
+      .filter((s): s is ServerRow => s !== null),
+  );
   const mixed8 = servers.find((s) => s.id === 'mixed8') ?? null;
   const jw = [1, 2, 4, 8, 12, 24];
   return {
     seeds,
-    targets: targetsOf(results, rules),
+    targets: time('targets', () => targetsOf(results, rules)),
     ledger,
-    prices: priceTable(profilePlayers(results, 'daily'), rules),
+    prices: time('prices', () => priceTable(profilePlayers(results, 'daily'), rules)),
     growth,
     forge,
     servers,
-    fireByDial: {
+    fireByDial: time('servers', () => ({
       all: serverOf(results, 'mixed8-all'),
       half: serverOf(results, 'mixed8'),
       none: serverOf(results, 'mixed8-none'),
-    },
-    variants: variantsOf(results),
+    })),
+    variants: time('variants', () => variantsOf(results)),
     rosterByRate: Array.from({ length: 24 }, (_, i) => {
       const at = (id: string, pick: (w: PlayerRun['weeks'][number]) => number): number =>
         median(
@@ -181,12 +200,12 @@ export function buildReportData(results: Results, seeds: number, rules: Rules = 
         fastShare: at('mixed8-creatures2', share),
       };
     }),
-    roster: rosterProfile(results),
-    journeys: {
+    roster: time('roster profile', () => rosterProfile(results)),
+    journeys: time('journeys', () => ({
       daily: journey(profilePlayers(results, 'daily'), mixed8, jw),
       weekly: journey(profilePlayers(results, 'weekly'), mixed8, jw),
-    },
-    cost: costOf(results),
+    })),
+    cost: time('cost', () => costOf(results)),
   };
 }
 
@@ -457,7 +476,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
   );
   const back = data.growth.find((g) => g.profile === 'returner')?.catchUpDays;
   push(
-    `A returner (away weeks 5 to 8) is within ${rules.flags.agreeWithin} levels of the server's middle ${back === null || back === undefined ? 'never within the run' : `after ${num(back, 1)} days of visits`}.`,
+    `A returner (away weeks 5 to 8) is within ${THRESHOLDS.agreeWithin} levels of the server's middle ${back === null || back === undefined ? 'never within the run' : `after ${num(back, 1)} days of visits`}.`,
     '',
   );
 

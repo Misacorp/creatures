@@ -1,4 +1,5 @@
 import { ELEMENTS, RULES, type Rules } from './rules';
+import { THRESHOLDS } from './targets';
 import { awayShare, hearthMultiplier } from './curves';
 import {
   checkKeystones,
@@ -226,7 +227,6 @@ function dayStart(p: Player, day: number): void {
 
 /** The evening sample (for "days to the next thing", "starved", and T-6): where the player stands after the day's visits. */
 function sampleDay(p: Player, server: Server, hour: number): void {
-  const rules = p.rules;
   const day = Math.floor(hour / 24);
   const wk = p.wk;
   wk.daysSampled += 1;
@@ -253,7 +253,7 @@ function sampleDay(p: Player, server: Server, hour: number): void {
       // As V-BON-2 does: the player's 3rd-best creature against the server's middle.
       const lv = levelsDesc(p);
       const third = lv[Math.min(2, lv.length - 1)] ?? 1;
-      if (third >= server.middle - rules.flags.agreeWithin) p.catchUpDays = day - p.backAt;
+      if (third >= server.middle - THRESHOLDS.agreeWithin) p.catchUpDays = day - p.backAt;
     }
   }
 }

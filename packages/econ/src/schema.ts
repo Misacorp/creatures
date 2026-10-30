@@ -195,13 +195,6 @@ export const RulesSchema = v.strictObject({
     }),
     thresholds: v.array(int),
   }),
-  flags: v.strictObject({
-    deadWeeks: int,
-    deadPileWeeks: pos,
-    starvedZeroShare: share,
-    tinkerSmallShare: share,
-    agreeWithin: num,
-  }),
 });
 
 const hour = v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(23));

@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint --cache --cache-strategy content --cache-location node_modules/.cache/eslint/ .",
     "test": "vitest run",
-    "report": "node scripts/report.mjs"
+    "report": "node scripts/report.mjs",
+    "tune": "node scripts/tune.mjs",
+    "speed": "node scripts/speed.mjs"
   },
   "dependencies": {
     "@creatures/game": "workspace:*",
