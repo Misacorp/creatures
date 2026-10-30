@@ -146,7 +146,11 @@ export function StageUnit(props: UnitProps) {
     <>
       <span class="unit-top">{mine && <span class="you-pip pix">you</span>}</span>
       <span class="unit-art">
-        <Sprite sprite={creatureSpriteOrFallback(c.species)} scale={props.scale} />
+        <Sprite
+          sprite={creatureSpriteOrFallback(c.species)}
+          scale={props.scale}
+          {...(props.scale >= 3 && !ko ? { life: { seed: c.id } } : {})}
+        />
         {icon !== undefined && (
           <span class="unit-element">
             <Sprite sprite={icon} scale={2} />

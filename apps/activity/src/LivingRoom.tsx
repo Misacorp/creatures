@@ -435,6 +435,14 @@ export function LivingRoom({
                     sprite={creatureSpriteOrFallback(seat.resident.creature.species)}
                     scale={scale}
                     bob
+                    {...(scale >= 3
+                      ? {
+                          life: {
+                            seed: seat.resident.creature.id,
+                            shiny: seat.resident.creature.shiny,
+                          },
+                        }
+                      : {})}
                     {...(seat.resident.creature.shiny &&
                     shinyPalette(seat.resident.creature.species) !== undefined
                       ? {

@@ -143,6 +143,7 @@ export function CreatureHead({
           sprite={creatureSpriteOrFallback(creature.species)}
           scale={4}
           bob
+          life={{ seed: creature.id, shiny: creature.shiny }}
           alt={portraitAlt(name, creature.shiny)}
           {...(shinyColours === undefined ? {} : { palette: shinyColours })}
         />
