@@ -32,7 +32,7 @@ Seats per player by the place's server level (levels 1 to 5, V-COM-11).
 | Place    | Post                   | Likes (one)                  | Seats per player, level 1 → 5  | Default when its queue runs out         |
 | -------- | ---------------------- | ---------------------------- | ------------------------------ | --------------------------------------- |
 | Signpost | scout, per destination | the destination's element    | 2 → 6 (one more a level)       | none: a scout always explores its place |
-| Forge    | smith, per anvil       | the Crafting role (or trait) | 2 → 4 (levels 2 and 4 add one) | refine or recycle (V-FORGE-1)           |
+| Forge    | smith, per anvil       | the Crafting role (or trait) | 2 → 4 (levels 2 and 4 add one) | tinkering (V-FORGE-2)                   |
 | Paddock  | keeper                 | supports                     | 1 → 2 (level 3 adds one)       | none                                    |
 | School   | teacher, student       | (waits on combat v2)         | 1 teacher, 2 students → more   | a teacher reads (waits on `school.md`)  |
 | Bonfire  | everyone resting       | none                         | no seats                       | none                                    |

@@ -93,3 +93,9 @@ Research filed as `docs/research/worker-identity.md`: permanent mastery where ma
 Round 8 answered: numbers inside each place (Q20, V-RET-9); raid preparation once a week in the walk (Q21).
 
 **Next.** Phase 1, step 4: scouts and the Forge loop in full, then their panel.
+
+## 2026-10-30 (very late): scouts and the Forge, their panel, round 9
+
+**Done.** Wrote `systems/scouts.md` and `systems/forge.md` in full, ran the panel (owner's proxy, Sanni, Joonas, Pia; `reviews/2026-10-30-scouts-forge.md`) and revised both. Adopted: scouts find no Acorns (they compounded with seats; Acorns come from the allowance, leets and the dungeon, about 50 a day); place find profiles on the Signpost; kit as pictures working with profiles; push on with a real cost and a "deep" mark; one keystone clock per place per server; half creature chance for a player's second scout at one place; closed places send scouts back; duplicates as a count that takes today's Recommended answer after a day; one Forge fallback (tinkering); two rarity levers (Reach, loupe), marks gone; item level from the smith's or scout's level; a "for my team" order; the Forge's shortage shown inside it; binomial draws per stretch in the lazy pass. Asked round 9: Q22 what the Forge makes, Q23 whether crafting depends on where scouts are.
+
+**Next.** Record round 9. Then phase 1, step 5: the commons in full.
