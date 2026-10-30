@@ -4,7 +4,7 @@
   {
    "id": "T-1",
    "pass": false,
-   "measured": "at week 4 the worst creature a daily player has owned for a week or more is 4 levels below their 3rd best (the median such creature 2; leaving out those waiting at the evolution level 3); at week 8 the worst is 10 (median 3; without those waiting 7); the 6th creature (a second team's best) is 2 below the 3rd at week 8. An optimiser's worst at week 4 is 3 (pass). It also depends on how fast creatures arrive: at the docs' 2% an hour (the default here is 1.3%) a set-and-forget player's worst at week 4 is 4 (pass) and an optimiser's 3 (pass)",
+   "measured": "of the creatures a daily player has owned for a week or more, 100% are within 5 levels of their 3rd best at week 4 (worst 4 levels below the 3rd best, median 2, worst without those held at the evolution level 3) and 69% at week 8 (worst 10 levels below the 3rd best, median 3, worst without those held at the evolution level 7); the 6th creature (a second team's best) is 2 below the 3rd at week 8. An optimiser's share at week 4 is 100% (pass). It also depends on how fast creatures arrive: at the docs' 2% an hour (the default here is 1.3%) a set-and-forget player's share at week 4 is 100% (pass) and an optimiser's 100% (pass)",
    "target": "creatures owned a week or more within 5 levels of the 3rd best at weeks 4 and 8, and two strong teams at week 8"
   },
   {
@@ -71,7 +71,7 @@
   {
    "id": "T-7",
    "pass": false,
-   "measured": "2 of a daily player's 4 resources (Acorns, scrap, shards, Essence) are dead (a pile rising 4 weeks running to 4 weeks of income) before week 12",
+   "measured": "3 of a daily player's 4 resources (Acorns, scrap, shards, Essence) are dead (a pile rising 4 weeks running to 4 weeks of what the resource is spent on) before week 12",
    "target": "none (resources.md: nothing that only piles up)"
   },
   {
@@ -289,9 +289,9 @@
     "noNextShare": 0.6358695652173914,
     "zeroShare": 0.0029503105590062114,
     "choices": 1.0395962732919255,
-    "dead": 12,
+    "dead": 10,
     "starved": false,
-    "pileWeeks": 8.456043956043956
+    "pileWeeks": 25.385567010309277
    },
    {
     "resource": "scrap",
@@ -499,9 +499,9 @@
     "noNextShare": 0.9782608695652174,
     "zeroShare": 0,
     "choices": 0.011335403726708075,
-    "dead": 9,
+    "dead": 2,
     "starved": false,
-    "pileWeeks": 8.03778929569665
+    "pileWeeks": 22.06945809282771
    },
    {
     "resource": "shards",
@@ -709,9 +709,9 @@
     "noNextShare": 1,
     "zeroShare": 0,
     "choices": 0,
-    "dead": 9,
+    "dead": 4,
     "starved": false,
-    "pileWeeks": 7.108072298686915
+    "pileWeeks": 13.884206201183428
    },
    {
     "resource": "essence",
@@ -921,7 +921,7 @@
     "choices": 1.1743788819875776,
     "dead": null,
     "starved": false,
-    "pileWeeks": 0.7591362126245847
+    "pileWeeks": 0.8462962962962963
    }
   ],
   "active": [
@@ -1133,7 +1133,7 @@
     "choices": 1.0238095238095237,
     "dead": null,
     "starved": false,
-    "pileWeeks": 1.2445054945054945
+    "pileWeeks": 1.0498261877172654
    },
    {
     "resource": "scrap",
@@ -1341,9 +1341,9 @@
     "noNextShare": 0.9543478260869566,
     "zeroShare": 0,
     "choices": 0.004037267080745342,
-    "dead": 8,
+    "dead": 1,
     "starved": false,
-    "pileWeeks": 8.801998544203197
+    "pileWeeks": 18.42940379390325
    },
    {
     "resource": "shards",
@@ -1551,9 +1551,9 @@
     "noNextShare": 1,
     "zeroShare": 0,
     "choices": 0,
-    "dead": 10,
+    "dead": 2,
     "starved": false,
-    "pileWeeks": 6.611810931985841
+    "pileWeeks": 10.271502516556014
    },
    {
     "resource": "essence",
@@ -1763,7 +1763,7 @@
     "choices": 0.7031055900621118,
     "dead": null,
     "starved": false,
-    "pileWeeks": 0.9032815198618307
+    "pileWeeks": 0.9685185185185186
    }
   ],
   "every-other-day": [
@@ -1973,9 +1973,9 @@
     "noNextShare": 0.5782608695652174,
     "zeroShare": 0.013664596273291925,
     "choices": 1.0790123456790124,
-    "dead": 13,
+    "dead": 12,
     "starved": false,
-    "pileWeeks": 6.538043478260869
+    "pileWeeks": 22.433566433566433
    },
    {
     "resource": "scrap",
@@ -2183,9 +2183,9 @@
     "noNextShare": 0.9695652173913043,
     "zeroShare": 0,
     "choices": 0.022222222222222223,
-    "dead": 9,
+    "dead": 2,
     "starved": false,
-    "pileWeeks": 9.508093399163217
+    "pileWeeks": 40.74804037383426
    },
    {
     "resource": "shards",
@@ -2393,9 +2393,9 @@
     "noNextShare": 1,
     "zeroShare": 0,
     "choices": 0,
-    "dead": 9,
+    "dead": 3,
     "starved": false,
-    "pileWeeks": 6.828622906815957
+    "pileWeeks": 15.271165902590926
    },
    {
     "resource": "essence",
@@ -2605,7 +2605,7 @@
     "choices": 2.0228395061728395,
     "dead": null,
     "starved": false,
-    "pileWeeks": 0.7840136054421769
+    "pileWeeks": 0.903921568627451
    }
   ],
   "weekend-off": [
@@ -2815,9 +2815,9 @@
     "noNextShare": 0.5956521739130435,
     "zeroShare": 0.016459627329192546,
     "choices": 1.0582608695652174,
-    "dead": 13,
+    "dead": 11,
     "starved": false,
-    "pileWeeks": 7.6646795827123695
+    "pileWeeks": 23.011185682326623
    },
    {
     "resource": "scrap",
@@ -3025,9 +3025,9 @@
     "noNextShare": 0.9739130434782609,
     "zeroShare": 0,
     "choices": 0.015217391304347827,
-    "dead": 10,
+    "dead": 2,
     "starved": false,
-    "pileWeeks": 10.125382227963035
+    "pileWeeks": 28.940158657237664
    },
    {
     "resource": "shards",
@@ -3235,9 +3235,9 @@
     "noNextShare": 1,
     "zeroShare": 0,
     "choices": 0,
-    "dead": 10,
+    "dead": 4,
     "starved": false,
-    "pileWeeks": 7.396692021030841
+    "pileWeeks": 14.52265959504342
    },
    {
     "resource": "essence",
@@ -3447,7 +3447,7 @@
     "choices": 1.48,
     "dead": null,
     "starved": false,
-    "pileWeeks": 0.8701067615658363
+    "pileWeeks": 1.01875
    }
   ],
   "weekly": [
@@ -3657,9 +3657,9 @@
     "noNextShare": 0,
     "zeroShare": 0,
     "choices": 1.3,
-    "dead": 10,
+    "dead": 2,
     "starved": false,
-    "pileWeeks": 1.7954545454545454
+    "pileWeeks": 1.7490774907749078
    },
    {
     "resource": "scrap",
@@ -3867,9 +3867,9 @@
     "noNextShare": 0.8239130434782609,
     "zeroShare": 0,
     "choices": 0.12173913043478261,
-    "dead": 9,
+    "dead": 1,
     "starved": false,
-    "pileWeeks": 8.26627197546775
+    "pileWeeks": 27.10186388253294
    },
    {
     "resource": "shards",
@@ -4077,9 +4077,9 @@
     "noNextShare": 1,
     "zeroShare": 0,
     "choices": 0,
-    "dead": 10,
+    "dead": 3,
     "starved": false,
-    "pileWeeks": 5.436079949494732
+    "pileWeeks": 11.062944164343984
    },
    {
     "resource": "essence",
@@ -4289,7 +4289,7 @@
     "choices": 3.756521739130435,
     "dead": null,
     "starved": false,
-    "pileWeeks": 1.3424657534246576
+    "pileWeeks": 1.5076923076923077
    }
   ],
   "new": [
@@ -4461,7 +4461,7 @@
     "choices": 1.0706349206349206,
     "dead": null,
     "starved": false,
-    "pileWeeks": 1.0494505494505495
+    "pileWeeks": 1.0737877723120168
    },
    {
     "resource": "scrap",
@@ -4629,9 +4629,9 @@
     "noNextShare": 0.9333333333333333,
     "zeroShare": 0,
     "choices": 0.013888888888888888,
-    "dead": 5,
+    "dead": 1,
     "starved": false,
-    "pileWeeks": 13.194413860909687
+    "pileWeeks": 31.31165978409238
    },
    {
     "resource": "shards",
@@ -4799,9 +4799,9 @@
     "noNextShare": 1,
     "zeroShare": 0,
     "choices": 0,
-    "dead": 8,
+    "dead": 3,
     "starved": false,
-    "pileWeeks": 6.553556915382168
+    "pileWeeks": 9.992493896748732
    },
    {
     "resource": "essence",
@@ -4971,7 +4971,7 @@
     "choices": 2.340079365079365,
     "dead": null,
     "starved": false,
-    "pileWeeks": 0.8245033112582781
+    "pileWeeks": 1.0375
    }
   ],
   "returner": [
@@ -5181,9 +5181,9 @@
     "noNextShare": 0.4391304347826087,
     "zeroShare": 0.006211180124223602,
     "choices": 1.0421052631578946,
-    "dead": 16,
+    "dead": 14,
     "starved": false,
-    "pileWeeks": 5.936037045247242
+    "pileWeeks": 17.820350387381414
    },
    {
     "resource": "scrap",
@@ -5391,9 +5391,9 @@
     "noNextShare": 0.9739130434782609,
     "zeroShare": 0,
     "choices": 0.009022556390977444,
-    "dead": 11,
+    "dead": 5,
     "starved": false,
-    "pileWeeks": 9.08544362307308
+    "pileWeeks": 28.56492613645457
    },
    {
     "resource": "shards",
@@ -5601,9 +5601,9 @@
     "noNextShare": 1,
     "zeroShare": 0,
     "choices": 0,
-    "dead": 13,
+    "dead": 9,
     "starved": false,
-    "pileWeeks": 6.621519436171671
+    "pileWeeks": 13.110439223478107
    },
    {
     "resource": "essence",
@@ -5813,7 +5813,7 @@
     "choices": 1.575563909774436,
     "dead": null,
     "starved": false,
-    "pileWeeks": 0.9721115537848606
+    "pileWeeks": 1.161904761904762
    }
   ],
   "hoarder": [
@@ -6023,9 +6023,9 @@
     "noNextShare": 0.5619565217391305,
     "zeroShare": 0.038198757763975154,
     "choices": 1.041226708074534,
-    "dead": 14,
+    "dead": 12,
     "starved": false,
-    "pileWeeks": 7.225274725274725
+    "pileWeeks": 21.690721649484537
    },
    {
     "resource": "scrap",
@@ -6233,9 +6233,9 @@
     "noNextShare": 0.9233695652173913,
     "zeroShare": 0.006211180124223602,
     "choices": 0.012732919254658385,
-    "dead": 12,
+    "dead": 6,
     "starved": false,
-    "pileWeeks": 7.7676092065178794
+    "pileWeeks": 27.213871539806092
    },
    {
     "resource": "shards",
@@ -6443,9 +6443,9 @@
     "noNextShare": 1,
     "zeroShare": 0,
     "choices": 0,
-    "dead": 12,
+    "dead": 8,
     "starved": false,
-    "pileWeeks": 6.414920512638264
+    "pileWeeks": 13.379560249065998
    },
    {
     "resource": "essence",
@@ -6655,7 +6655,7 @@
     "choices": 1.178726708074534,
     "dead": null,
     "starved": false,
-    "pileWeeks": 0.996309963099631
+    "pileWeeks": 1.125
    }
   ]
  },

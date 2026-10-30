@@ -339,15 +339,37 @@ describe('where a set-and-forget scout starts', () => {
 });
 
 describe('the dead flag', () => {
-  it('needs 4 weeks of rising stock and a pile of 4 weeks of income', () => {
-    const income = [10, 10, 10, 10, 10, 10, 10, 10];
-    expect(deadFrom([10, 20, 30, 40, 50, 60, 70, 80], income, 4, 4)).toBe(1);
-    // Rising, but the pile never reaches 4 weeks of income.
-    expect(deadFrom([1, 2, 3, 4, 5, 6, 7, 8], income, 4, 4)).toBeNull();
+  const income = [10, 10, 10, 10, 10, 10, 10, 10];
+  const spend = [4, 4, 4, 4, 4, 4, 4, 4];
+  const dead = (stock: number[], out = spend, inn = income): number | null =>
+    deadFrom(stock, out, inn, 4, 4, 0.25);
+
+  it('needs 4 weeks of rising stock and a pile of 4 weeks of spending', () => {
+    expect(dead([10, 20, 30, 40, 50, 60, 70, 80])).toBe(1);
+    // Rising, but the pile never reaches 4 weeks of spending (16).
+    expect(dead([1, 2, 3, 4, 5, 6, 7, 8])).toBeNull();
     // A big pile that is not rising.
-    expect(deadFrom([100, 90, 100, 90, 100, 90, 100, 90], income, 4, 4)).toBeNull();
+    expect(dead([100, 90, 100, 90, 100, 90, 100, 90])).toBeNull();
     // Starts later: the pile appears in week 3.
-    expect(deadFrom([5, 5, 5, 20, 30, 40, 50, 60], income, 4, 4)).toBe(3);
+    expect(dead([5, 5, 5, 20, 30, 40, 50, 60])).toBe(3);
+  });
+
+  it('is measured against spending, so a bigger income does not hide a pile', () => {
+    const stock = [10, 20, 30, 40, 50, 60, 70, 80];
+    expect(dead(stock, spend, income)).toBe(1);
+    expect(
+      dead(
+        stock,
+        spend,
+        income.map((x) => x * 3),
+      ),
+    ).toBe(1);
+  });
+
+  it('counts a resource nothing takes as dead once the pile is a week of income', () => {
+    const none = [0, 0, 0, 0, 0, 0, 0, 0];
+    expect(dead([3, 6, 9, 12, 15, 18, 21, 24], none)).toBe(1);
+    expect(dead([1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5], none)).toBeNull();
   });
 });
 

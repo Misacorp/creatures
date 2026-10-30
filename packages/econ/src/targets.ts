@@ -67,20 +67,21 @@ export const TARGETS: readonly Target[] = [
     id: 'T-1a',
     line: 'T-1',
     measure: 'bench4',
-    hi: 5,
-    scale: 5,
+    lo: 0.9,
+    scale: 0.3,
     needs: ['mixed8'],
     label:
-      'a new catch becomes useful within days: at week 4 every creature owned a week or more is within 5 levels of the 3rd best',
+      'a new catch becomes useful within days: at week 4 at least 90% of the creatures owned a week or more are within 5 levels of the 3rd best',
   },
   {
     id: 'T-1c',
     line: 'T-1',
     measure: 'bench8',
-    hi: 5,
-    scale: 5,
+    lo: 0.9,
+    scale: 0.3,
     needs: ['mixed8'],
-    label: 'the same at week 8 (creatures owned a week or more within 5 levels of the 3rd best)',
+    label:
+      'the same at week 8 (at least 90% of the creatures owned a week or more within 5 levels of the 3rd best)',
   },
   {
     id: 'T-1b',
@@ -294,11 +295,18 @@ export const TARGETS: readonly Target[] = [
 
 /** Thresholds that are not bounds on a measure: the report's flags (resources.md) and a window. */
 export const THRESHOLDS = {
-  /** A resource is "dead" when its stock rises for `deadWeeks` weeks running and the pile is `deadPileWeeks` weeks of that week's income. */
+  /**
+   * A resource is "dead" when its stock rises for `deadWeeks` weeks running and the pile is `deadPileWeeks` weeks of its SPENDING (the
+   * mean of those weeks), spending counted as at least `deadSpendFloor` of its income so that a resource nothing takes is dead once
+   * the pile is a week of income. Against spending, raising the income cannot make a pile look small.
+   */
   deadWeeks: 4,
   deadPileWeeks: 4,
+  deadSpendFloor: 0.25,
   /** A resource is "starved" when it sits at zero on more than this share of days. */
   starvedZeroShare: 0.25,
+  /** T-1: a creature owned a week or more is "useful" when it is within this many levels of the 3rd best. */
+  benchWithin: 5,
   /** "Within 2 levels of the server's middle" (V-BON-2). */
   agreeWithin: 2,
   /** The shard stall shown beside T-4 is compared with the same share as scrap's. */

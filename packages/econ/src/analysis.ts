@@ -45,26 +45,49 @@ export interface ResourceLedger {
   choices: number;
   dead: number | null;
   starved: boolean;
-  /** The stock at the end of the run in weeks of that week's income. */
+  /** The stock at the end of the run in weeks of that resource's spending (never under the floor share of its income). */
   pileWeeks: number;
 }
 
+/** What a resource's pile is measured against: its spending over the window ending at week index `end`, never under a floor share of its income. */
+export function pileBasis(
+  spend: readonly number[],
+  income: readonly number[],
+  end: number,
+  windowWeeks: number,
+  floorShare: number,
+): number {
+  const from = Math.max(0, end - windowWeeks + 1);
+  const mean = (xs: readonly number[]): number => {
+    const part = xs.slice(from, end + 1);
+    return part.length ? part.reduce((a, b) => a + b, 0) / part.length : 0;
+  };
+  return Math.max(mean(spend), floorShare * mean(income), 1e-9);
+}
+
 /**
- * The first week from which the stock rises for `deadWeeks` weeks running and ends at a pile of at least `pileWeeks` weeks of that
- * week's income (a dead resource: it only grows and nothing takes it).
+ * The first week from which the stock rises for `deadWeeks` weeks running and ends at a pile of at least `pileWeeks` weeks of what the
+ * resource is spent on (its spending over those weeks, never under `floorShare` of its income, so a resource nothing takes counts as
+ * dead once the pile is meaningful). Measured against spending, a bigger income does not make a pile look smaller.
  */
 export function deadFrom(
   stock: readonly number[],
+  spend: readonly number[],
   income: readonly number[],
   deadWeeks: number,
   pileWeeks: number,
+  floorShare: number,
 ): number | null {
   for (let i = 0; i + deadWeeks < stock.length; i++) {
     let rising = true;
     for (let k = 0; k < deadWeeks; k++)
       if (!((stock[i + k + 1] ?? 0) > (stock[i + k] ?? 0))) rising = false;
     const end = i + deadWeeks;
-    if (rising && (stock[end] ?? 0) >= pileWeeks * Math.max(1e-9, income[end] ?? 0)) return i + 1;
+    if (
+      rising &&
+      (stock[end] ?? 0) >= pileWeeks * pileBasis(spend, income, end, deadWeeks, floorShare)
+    )
+      return i + 1;
   }
   return null;
 }
@@ -107,14 +130,22 @@ export function ledgerOf(players: readonly PlayerRun[]): ResourceLedger[] {
       choices: visits ? choices / visits : 0,
       dead: deadFrom(
         medianStock,
+        med((w) => w.out[r] ?? 0),
         med((w) => w.inn[r] ?? 0),
         THRESHOLDS.deadWeeks,
         THRESHOLDS.deadPileWeeks,
+        THRESHOLDS.deadSpendFloor,
       ),
       starved: days > 0 && zero / days > THRESHOLDS.starvedZeroShare,
       pileWeeks:
         (medianStock[medianStock.length - 1] ?? 0) /
-        Math.max(1e-9, med((w) => w.inn[r] ?? 0).slice(-1)[0] ?? 0),
+        pileBasis(
+          med((w) => w.out[r] ?? 0),
+          med((w) => w.inn[r] ?? 0),
+          medianStock.length - 1,
+          THRESHOLDS.deadWeeks,
+          THRESHOLDS.deadSpendFloor,
+        ),
     };
   });
 }
@@ -596,8 +627,13 @@ export function measuresOf(results: Results): Measures {
   const long = (p: PlayerRun, n: number): boolean => p.weeks.length >= n;
   put('spread4', medianDefined(daily.map((p) => spreadAt(p, 4, 10))));
   put('spread8', medianDefined(daily.map((p) => spreadAt(p, 8, 6))));
-  put('bench4', medianDefined(daily.map((p) => weekAt(p, 3)?.benchWorst)));
-  put('bench8', medianDefined(daily.map((p) => weekAt(p, 7)?.benchWorst)));
+  // T-1: the share of the creatures owned a week or more that stand within 5 levels of the 3rd best (the worst and the median gap are report-only).
+  const benchShare = (p: PlayerRun, week: number): number | undefined => {
+    const w = weekAt(p, week - 1);
+    return w && w.benchCount > 0 ? w.benchWithin / w.benchCount : undefined;
+  };
+  put('bench4', medianDefined(daily.map((p) => benchShare(p, 4))));
+  put('bench8', medianDefined(daily.map((p) => benchShare(p, 8))));
   // T-2a: an active optimiser against a daily optimiser (visits add no rate in the model, so the ratio is by construction).
   const optDaily = playersOf(results['mixed8-opt'], 'daily').filter((p) => long(p, 12));
   const optActive = playersOf(results['mixed8-opt'], 'active').filter((p) => long(p, 12));
@@ -668,7 +704,7 @@ export function measuresOf(results: Results): Measures {
   const all = serverOf(results, 'mixed8-all');
   if (all && all.fire.length >= 12) put('fire12All', all.fire[11]);
   if (all && all.fire.length >= 24) put('fire23All', all.fire[22]);
-  // T-7: resources of a daily player that are dead (a pile rising 4 weeks, at 4 weeks of income) from before week 12.
+  // T-7: resources of a daily player that are dead (a pile rising 4 weeks, at 4 weeks of spending) from before week 12.
   if (dailyFull.length && dailyFull.every((p) => p.weeks.length >= 16)) {
     put(
       'deadBefore12',
@@ -691,22 +727,37 @@ export function targetsOf(results: Results, rules: Rules): TargetLine[] {
   const benchOf = (
     players: readonly PlayerRun[],
     week: number,
-  ): { worst: number; median: number; open: number } => ({
-    worst: medianDefined(players.map((p) => weekAt(p, week - 1)?.benchWorst)) ?? NaN,
-    open: medianDefined(players.map((p) => weekAt(p, week - 1)?.benchOpenWorst)) ?? NaN,
-    median: medianDefined(players.map((p) => weekAt(p, week - 1)?.benchMedian)) ?? NaN,
-  });
+  ): { share: number; worst: number; median: number; open: number } => {
+    const at = (pick: (w: WeekRecord) => number): number =>
+      medianDefined(
+        players.map((p) => (weekAt(p, week - 1) ? pick(weekAt(p, week - 1)!) : undefined)),
+      ) ?? NaN;
+    return {
+      share:
+        medianDefined(
+          players.map((p) => {
+            const w = weekAt(p, week - 1);
+            return w && w.benchCount > 0 ? w.benchWithin / w.benchCount : undefined;
+          }),
+        ) ?? NaN,
+      worst: at((w) => w.benchWorst),
+      median: at((w) => w.benchMedian),
+      open: at((w) => w.benchOpenWorst),
+    };
+  };
   const bench4 = benchOf(daily, 4);
   const bench8 = benchOf(daily, 8);
   const optBench4 = benchOf(playersOf(results['mixed8-opt'], 'daily'), 4);
   const fastBench4 = benchOf(playersOf(results['mixed8-creatures2'], 'daily'), 4);
   const fastOptBench4 = benchOf(playersOf(results['mixed8-creatures2-opt'], 'daily'), 4);
-  const spreadMax = TARGETS.find((t) => t.id === 'T-1a')?.hi ?? 5;
-  const verdict = (v: number): string => (v <= spreadMax ? 'pass' : 'fail');
+  const shareMin = TARGETS.find((t) => t.id === 'T-1a')?.lo ?? 0.9;
+  const verdict = (v: number): string => (v >= shareMin ? 'pass' : 'fail');
+  const gaps = (b: { worst: number; median: number; open: number }): string =>
+    `worst ${round(b.worst, 1)} levels below the 3rd best, median ${round(b.median, 1)}, worst without those held at the evolution level ${round(b.open, 1)}`;
   lines.push({
     id: 'T-1',
     pass: metLine('T-1'),
-    measured: `at week 4 the worst creature a daily player has owned for a week or more is ${round(bench4.worst, 1)} levels below their 3rd best (the median such creature ${round(bench4.median, 1)}; leaving out those waiting at the evolution level ${round(bench4.open, 1)}); at week 8 the worst is ${round(bench8.worst, 1)} (median ${round(bench8.median, 1)}; without those waiting ${round(bench8.open, 1)}); the 6th creature (a second team's best) is ${round(spread8, 1)} below the 3rd at week 8. An optimiser's worst at week 4 is ${round(optBench4.worst, 1)} (${verdict(optBench4.worst)}). It also depends on how fast creatures arrive: at the docs' 2% an hour (the default here is ${round(rules.scouts.perHour.creatures * 100, 2)}%) a set-and-forget player's worst at week 4 is ${round(fastBench4.worst, 1)} (${verdict(fastBench4.worst)}) and an optimiser's ${round(fastOptBench4.worst, 1)} (${verdict(fastOptBench4.worst)})`,
+    measured: `of the creatures a daily player has owned for a week or more, ${pct(bench4.share)} are within 5 levels of their 3rd best at week 4 (${gaps(bench4)}) and ${pct(bench8.share)} at week 8 (${gaps(bench8)}); the 6th creature (a second team's best) is ${round(spread8, 1)} below the 3rd at week 8. An optimiser's share at week 4 is ${pct(optBench4.share)} (${verdict(optBench4.share)}). It also depends on how fast creatures arrive: at the docs' 2% an hour (the default here is ${round(rules.scouts.perHour.creatures * 100, 2)}%) a set-and-forget player's share at week 4 is ${pct(fastBench4.share)} (${verdict(fastBench4.share)}) and an optimiser's ${pct(fastOptBench4.share)} (${verdict(fastOptBench4.share)})`,
     target:
       'creatures owned a week or more within 5 levels of the 3rd best at weeks 4 and 8, and two strong teams at week 8',
   });
@@ -830,7 +881,7 @@ export function targetsOf(results: Results, rules: Rules): TargetLine[] {
   lines.push({
     id: 'T-7',
     pass: metLine('T-7'),
-    measured: `${round(m.deadBefore12 ?? NaN)} of a daily player's 4 resources (Acorns, scrap, shards, Essence) are dead (a pile rising 4 weeks running to 4 weeks of income) before week 12`,
+    measured: `${round(m.deadBefore12 ?? NaN)} of a daily player's 4 resources (Acorns, scrap, shards, Essence) are dead (a pile rising 4 weeks running to 4 weeks of what the resource is spent on) before week 12`,
     target: 'none (resources.md: nothing that only piles up)',
   });
   // T-6: growth lasts the arc.

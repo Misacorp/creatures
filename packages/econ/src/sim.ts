@@ -303,6 +303,7 @@ function endWeek(p: Player, server: Server): void {
     .map((c) => Math.max(0, third - c.level));
   wk.benchOpenWorst = open.length ? Math.max(...open) : 0;
   wk.benchCount = gaps.length;
+  wk.benchWithin = gaps.filter((g) => g <= THRESHOLDS.benchWithin).length;
   wk.benchWorst = gaps[gaps.length - 1] ?? 0;
   wk.benchMedian = gaps.length
     ? (gaps[Math.floor((gaps.length - 1) / 2)]! + gaps[Math.floor(gaps.length / 2)]!) / 2

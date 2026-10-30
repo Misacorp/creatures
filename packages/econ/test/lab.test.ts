@@ -220,6 +220,7 @@ describe('the dials', () => {
         p.weeks.forEach((w, i) => {
           expect(w.benchWorst).toBeGreaterThanOrEqual(w.benchMedian);
           expect(w.benchOpenWorst).toBeLessThanOrEqual(w.benchWorst);
+          expect(w.benchWithin).toBeLessThanOrEqual(w.benchCount);
           // Nobody joined this week (or the one before) owns anything that is a week old.
           if (i === 0) expect(w.benchCount).toBeLessThanOrEqual(w.size);
         });

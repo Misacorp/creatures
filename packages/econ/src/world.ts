@@ -109,6 +109,7 @@ export const blankWeek = (week: number): WeekRecord => ({
   availableByRarity: [0, 0, 0],
   startCommons: 0,
   benchCount: 0,
+  benchWithin: 0,
   benchWorst: 0,
   benchMedian: 0,
   benchOpenWorst: 0,

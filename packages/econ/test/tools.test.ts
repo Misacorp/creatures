@@ -39,8 +39,8 @@ describe('the targets as data', () => {
       const t = TARGETS.find((x) => x.id === id);
       return [t?.lo, t?.hi];
     };
-    expect(value('T-1a')).toEqual([undefined, 5]);
-    expect(value('T-1c')).toEqual([undefined, 5]);
+    expect(value('T-1a')).toEqual([0.9, undefined]);
+    expect(value('T-1c')).toEqual([0.9, undefined]);
     expect(value('T-8a')).toEqual([9, 12]);
     expect(value('T-8b')).toEqual([20, 28]);
     expect(value('T-2b')).toEqual([0.95, undefined]);
@@ -60,7 +60,7 @@ describe('the targets as data', () => {
     expect(missOf(t, 0.78)).toBe(0);
     expect(missOf(t, 0.6)).toBeCloseTo(1, 9);
     expect(boundsText(t)).toBe('0.7 to 0.85');
-    const judged = judge(TARGETS, { bench4: 9 });
+    const judged = judge(TARGETS, { bench4: 0.5 });
     expect(judged.find((j) => j.target.id === 'T-1a')?.met).toBe(false);
     expect(judged.find((j) => j.target.id === 'T-2c')?.met).toBeNull();
   });

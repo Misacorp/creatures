@@ -6,7 +6,7 @@
 
 ## 1. The targets
 
-- **FAIL** T-1: at week 4 the worst creature a daily player has owned for a week or more is 4 levels below their 3rd best (the median such creature 2; leaving out those waiting at the evolution level 3); at week 8 the worst is 10 (median 3; without those waiting 7); the 6th creature (a second team's best) is 2 below the 3rd at week 8. An optimiser's worst at week 4 is 3 (pass). It also depends on how fast creatures arrive: at the docs' 2% an hour (the default here is 1.3%) a set-and-forget player's worst at week 4 is 4 (pass) and an optimiser's 3 (pass). Target: creatures owned a week or more within 5 levels of the 3rd best at weeks 4 and 8, and two strong teams at week 8.
+- **FAIL** T-1: of the creatures a daily player has owned for a week or more, 100% are within 5 levels of their 3rd best at week 4 (worst 4 levels below the 3rd best, median 2, worst without those held at the evolution level 3) and 69% at week 8 (worst 10 levels below the 3rd best, median 3, worst without those held at the evolution level 7); the 6th creature (a second team's best) is 2 below the 3rd at week 8. An optimiser's share at week 4 is 100% (pass). It also depends on how fast creatures arrive: at the docs' 2% an hour (the default here is 1.3%) a set-and-forget player's share at week 4 is 100% (pass) and an optimiser's 100% (pass). Target: creatures owned a week or more within 5 levels of the 3rd best at weeks 4 and 8, and two strong teams at week 8.
 - **PASS** T-2a: an optimiser visiting three times a day gets 104% of an optimiser visiting once in XP and 100% in posts' and the allowance's output over 24 weeks. In the model extra visits add no rate (idle gains run at the same rate however often a player looks in), so this passes by construction: it shows only that nothing in the rules pays a frequent visitor more, not that choices are worth little. Target: under 110%.
 - **PASS** T-2b: a weekend-off player gets 98% of a daily player's idle growth (effective hours, weeks 1 to 12). Target: about 100% (a weekend off costs almost nothing).
 - **PASS** T-2c: a weekly player's XP per creature, catch-up included, is 83% of a daily player's (idle gains alone: 79%; with fights: 85%; their best creature is level 27 at week 12 against a daily player's 29). Their scouts bring home 41% of a daily player's finds per seat (stores of three days: about 72 of 168 hours). Target: about 75% to 80% of a daily player's XP per creature (goals.md T-2).
@@ -17,59 +17,59 @@
 - **INFO** T-4 (shards): for want of a shard of the element the team needs, the worst week is 88% (weekly, week 4); averaged over weeks 2 to 12 that profile loses 61%. With the Forge floor full the worst week is 16% (weekly, week 5), mean 3%. Target: goals.md T-4 names scrap only; shards are shown for the same 10%.
 - **PASS** T-8: a daily player owns 11 lines at week 4 and 25 at week 12 (with the forms they evolved into: 16 and 43); 100% of the starting pool's commons are owned by week 6; at week 24 37% of the rares and 13% of the epics released are owned. Target: about 9 to 12 lines at week 4, 20 to 28 at week 12, most commons within 6 weeks, rares over months (15% to 60% by week 24), epics rarely (at most 35%).
 - **PASS** T-9: 2.5 creatures of a daily player wait at their evolution level for Essence at week 12. Target: at most 3: Essence must not be starved to keep the pile down.
-- **FAIL** T-7: 2 of a daily player's 4 resources (Acorns, scrap, shards, Essence) are dead (a pile rising 4 weeks running to 4 weeks of income) before week 12. Target: none (resources.md: nothing that only piles up).
+- **FAIL** T-7: 3 of a daily player's 4 resources (Acorns, scrap, shards, Essence) are dead (a pile rising 4 weeks running to 4 weeks of what the resource is spent on) before week 12. Target: none (resources.md: nothing that only piles up).
 - **PASS** T-6: a daily player's best creature is level 27 at week 10 and 29 at week 12; it reaches level 30 on day 89. Target: still growing in week 12 (example: level 29 of 30), not capped by week 10.
 
 (T-5, that the best team differs across bosses, is checked in combat v2's lab.)
 
 ## 2. The resource ledger
 
-Per spendable resource, in the mixed server of 8 (a daily and a weekly player shown; every profile is in `report-data.json`). "In" and "out" are per week; stock is at the end of weeks 1, 2, 4, 8, 12 and 24; waste is what a full store did not pick up over 24 weeks; "days to next" is how long until the player can afford the next thing worth buying (median over weeks 2 to 12; "-" means there was nothing to buy that week); choices is the things a player could do at a visit, counted under each resource it needs. A resource is flagged "dead" when its stock rises for 4 or more weeks running and the pile is at least 4 weeks of that week's income (the report shows the week it starts); "starved" when it sits at zero on more than 25% of days.
+Per spendable resource, in the mixed server of 8 (a daily and a weekly player shown; every profile is in `report-data.json`). "In" and "out" are per week; stock is at the end of weeks 1, 2, 4, 8, 12 and 24; waste is what a full store did not pick up over 24 weeks; "days to next" is how long until the player can afford the next thing worth buying (median over weeks 2 to 12; "-" means there was nothing to buy that week); choices is the things a player could do at a visit, counted under each resource it needs. A resource is flagged "dead" when its stock rises for 4 or more weeks running and the pile is at least 4 weeks of what the resource is spent on (its spending over those weeks, counted as at least a quarter of its income, so a resource nothing takes is dead once the pile is a week of income; the report shows the week it starts); "starved" when it sits at zero on more than 25% of days.
 
 ### Daily (one evening visit)
 
 | Resource | In /wk (wk 4 / 12 / 24) | Out /wk | Stock (wk 1 / 2 / 4 / 8 / 12 / 24) | Waste | Days to next | Choices /visit | Flag |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| acorns | 364 / 364 / 364 | 121 / 121 / 121 | 180 / 353 / 839 / 436 / 532 / 3078 | 0 | - | 1 | DEAD from week 12 (pile = 8.5 weeks of income) |
-| scrap | 1323 / 2720 / 3361 | 658 / 1044 / 1494 | 452 / 753 / 1873 / 5753 / 9853 / 27013 | 0 | - | 0 | DEAD from week 9 (pile = 8 weeks of income) |
-| shards | 81 / 155 / 206 | 63 / 88 / 119 | 24 / 55 / 107 / 287 / 545 / 1467 | 0 | - | 0 | DEAD from week 9 (pile = 7.1 weeks of income) |
+| acorns | 364 / 364 / 364 | 121 / 121 / 121 | 180 / 353 / 839 / 436 / 532 / 3078 | 0 | - | 1 | DEAD from week 10 (pile = 25.4 weeks of spending) |
+| scrap | 1323 / 2720 / 3361 | 658 / 1044 / 1494 | 452 / 753 / 1873 / 5753 / 9853 / 27013 | 0 | - | 0 | DEAD from week 2 (pile = 22.1 weeks of spending) |
+| shards | 81 / 155 / 206 | 63 / 88 / 119 | 24 / 55 / 107 / 287 / 545 / 1467 | 0 | - | 0 | DEAD from week 4 (pile = 13.9 weeks of spending) |
 | essence | 58 / 68 / 75 | 60 / 60 / 90 | 59 / 90 / 58 / 50 / 58 / 57 | 0 | 2.6 | 1.2 | ok |
 
 ### Weekly (Sundays)
 
 | Resource | In /wk (wk 4 / 12 / 24) | Out /wk | Stock (wk 1 / 2 / 4 / 8 / 12 / 24) | Waste | Days to next | Choices /visit | Flag |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| acorns | 132 / 132 / 132 | 45 / 44 / 44 | 119 / 41 / 216 / 287 / 422 / 237 | 1797 | 26.9 | 1.3 | DEAD from week 10 (pile = 1.8 weeks of income) |
-| scrap | 458 / 852 / 1446 | 72 / 324 / 630 | 209 / 308 / 887 / 1887 / 3341 / 11952 | 15073 | - | 0.1 | DEAD from week 9 (pile = 8.3 weeks of income) |
-| shards | 33 / 46 / 84 | 19 / 32 / 44 | 10 / 26 / 51 / 105 / 157 / 455 | 879 | - | 0 | DEAD from week 10 (pile = 5.4 weeks of income) |
+| acorns | 132 / 132 / 132 | 45 / 44 / 44 | 119 / 41 / 216 / 287 / 422 / 237 | 1797 | 26.9 | 1.3 | DEAD from week 2 (pile = 1.7 weeks of spending) |
+| scrap | 458 / 852 / 1446 | 72 / 324 / 630 | 209 / 308 / 887 / 1887 / 3341 / 11952 | 15073 | - | 0.1 | DEAD from week 1 (pile = 27.1 weeks of spending) |
+| shards | 33 / 46 / 84 | 19 / 32 / 44 | 10 / 26 / 51 / 105 / 157 / 455 | 879 | - | 0 | DEAD from week 3 (pile = 11.1 weeks of spending) |
 | essence | 55 / 31 / 55 | 90 / 30 / 45 | 55 / 83 / 72 / 72 / 78 / 74 | 0 | 0.2 | 3.8 | ok |
 
 ### Flags for every profile
 
 | Profile | Resource | Dead | Starved |
 | --- | --- | --- | --- |
-| Daily (one evening visit) | acorns | dead from week 12, pile = 8.5 weeks of income |  |
-| Daily (one evening visit) | scrap | dead from week 9, pile = 8 weeks of income |  |
-| Daily (one evening visit) | shards | dead from week 9, pile = 7.1 weeks of income |  |
-| Active (3 visits a day) | scrap | dead from week 8, pile = 8.8 weeks of income |  |
-| Active (3 visits a day) | shards | dead from week 10, pile = 6.6 weeks of income |  |
-| Every other day | acorns | dead from week 13, pile = 6.5 weeks of income |  |
-| Every other day | scrap | dead from week 9, pile = 9.5 weeks of income |  |
-| Every other day | shards | dead from week 9, pile = 6.8 weeks of income |  |
-| Weekend off | acorns | dead from week 13, pile = 7.7 weeks of income |  |
-| Weekend off | scrap | dead from week 10, pile = 10.1 weeks of income |  |
-| Weekend off | shards | dead from week 10, pile = 7.4 weeks of income |  |
-| Weekly (Sundays) | acorns | dead from week 10, pile = 1.8 weeks of income |  |
-| Weekly (Sundays) | scrap | dead from week 9, pile = 8.3 weeks of income |  |
-| Weekly (Sundays) | shards | dead from week 10, pile = 5.4 weeks of income |  |
-| New (joins in week 6) | scrap | dead from week 5, pile = 13.2 weeks of income |  |
-| New (joins in week 6) | shards | dead from week 8, pile = 6.6 weeks of income |  |
-| Returner (away weeks 5 to 8) | acorns | dead from week 16, pile = 5.9 weeks of income |  |
-| Returner (away weeks 5 to 8) | scrap | dead from week 11, pile = 9.1 weeks of income |  |
-| Returner (away weeks 5 to 8) | shards | dead from week 13, pile = 6.6 weeks of income |  |
-| Hoarder (saves 4 weeks, then gives all) | acorns | dead from week 14, pile = 7.2 weeks of income |  |
-| Hoarder (saves 4 weeks, then gives all) | scrap | dead from week 12, pile = 7.8 weeks of income |  |
-| Hoarder (saves 4 weeks, then gives all) | shards | dead from week 12, pile = 6.4 weeks of income |  |
+| Daily (one evening visit) | acorns | dead from week 10, pile = 25.4 weeks of spending |  |
+| Daily (one evening visit) | scrap | dead from week 2, pile = 22.1 weeks of spending |  |
+| Daily (one evening visit) | shards | dead from week 4, pile = 13.9 weeks of spending |  |
+| Active (3 visits a day) | scrap | dead from week 1, pile = 18.4 weeks of spending |  |
+| Active (3 visits a day) | shards | dead from week 2, pile = 10.3 weeks of spending |  |
+| Every other day | acorns | dead from week 12, pile = 22.4 weeks of spending |  |
+| Every other day | scrap | dead from week 2, pile = 40.7 weeks of spending |  |
+| Every other day | shards | dead from week 3, pile = 15.3 weeks of spending |  |
+| Weekend off | acorns | dead from week 11, pile = 23 weeks of spending |  |
+| Weekend off | scrap | dead from week 2, pile = 28.9 weeks of spending |  |
+| Weekend off | shards | dead from week 4, pile = 14.5 weeks of spending |  |
+| Weekly (Sundays) | acorns | dead from week 2, pile = 1.7 weeks of spending |  |
+| Weekly (Sundays) | scrap | dead from week 1, pile = 27.1 weeks of spending |  |
+| Weekly (Sundays) | shards | dead from week 3, pile = 11.1 weeks of spending |  |
+| New (joins in week 6) | scrap | dead from week 1, pile = 31.3 weeks of spending |  |
+| New (joins in week 6) | shards | dead from week 3, pile = 10 weeks of spending |  |
+| Returner (away weeks 5 to 8) | acorns | dead from week 14, pile = 17.8 weeks of spending |  |
+| Returner (away weeks 5 to 8) | scrap | dead from week 5, pile = 28.6 weeks of spending |  |
+| Returner (away weeks 5 to 8) | shards | dead from week 9, pile = 13.1 weeks of spending |  |
+| Hoarder (saves 4 weeks, then gives all) | acorns | dead from week 12, pile = 21.7 weeks of spending |  |
+| Hoarder (saves 4 weeks, then gives all) | scrap | dead from week 6, pile = 27.2 weeks of spending |  |
+| Hoarder (saves 4 weeks, then gives all) | shards | dead from week 8, pile = 13.4 weeks of spending |  |
 
 ### What things cost, in hours of a daily player's idle income
 

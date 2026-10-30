@@ -106,6 +106,8 @@ export interface WeekRecord {
   startCommons: number;
   /** T-1: of the creatures owned a week or more at the end of the week, how many, the largest gap to the 3rd best and the median gap. */
   benchCount: number;
+  /** How many of them are within `THRESHOLDS.benchWithin` levels of the 3rd best. */
+  benchWithin: number;
   benchWorst: number;
   benchMedian: number;
   /** The largest of those gaps among creatures not held at the evolution level (waiting on Essence). */

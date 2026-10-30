@@ -349,7 +349,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
   push(
     '## 2. The resource ledger',
     '',
-    'Per spendable resource, in the mixed server of 8 (a daily and a weekly player shown; every profile is in `report-data.json`). "In" and "out" are per week; stock is at the end of weeks 1, 2, 4, 8, 12 and 24; waste is what a full store did not pick up over 24 weeks; "days to next" is how long until the player can afford the next thing worth buying (median over weeks 2 to 12; "-" means there was nothing to buy that week); choices is the things a player could do at a visit, counted under each resource it needs. A resource is flagged "dead" when its stock rises for 4 or more weeks running and the pile is at least 4 weeks of that week\'s income (the report shows the week it starts); "starved" when it sits at zero on more than 25% of days.',
+    'Per spendable resource, in the mixed server of 8 (a daily and a weekly player shown; every profile is in `report-data.json`). "In" and "out" are per week; stock is at the end of weeks 1, 2, 4, 8, 12 and 24; waste is what a full store did not pick up over 24 weeks; "days to next" is how long until the player can afford the next thing worth buying (median over weeks 2 to 12; "-" means there was nothing to buy that week); choices is the things a player could do at a visit, counted under each resource it needs. A resource is flagged "dead" when its stock rises for 4 or more weeks running and the pile is at least 4 weeks of what the resource is spent on (its spending over those weeks, counted as at least a quarter of its income, so a resource nothing takes is dead once the pile is a week of income; the report shows the week it starts); "starved" when it sits at zero on more than 25% of days.',
     '',
   );
   const ledgerRows = (id: string): string[][] =>
@@ -363,7 +363,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
       num(l.choices, 1),
       [
         l.dead !== null
-          ? `DEAD from week ${l.dead} (pile = ${num(l.pileWeeks, 1)} weeks of income)`
+          ? `DEAD from week ${l.dead} (pile = ${num(l.pileWeeks, 1)} weeks of spending)`
           : '',
         l.starved ? `STARVED (${num(l.zeroShare * 100)}% of days at zero)` : '',
       ]
@@ -397,7 +397,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
         profileLabel(id),
         l.resource,
         l.dead !== null
-          ? `dead from week ${l.dead}, pile = ${num(l.pileWeeks, 1)} weeks of income`
+          ? `dead from week ${l.dead}, pile = ${num(l.pileWeeks, 1)} weeks of spending`
           : '',
         l.starved ? `starved (${num(l.zeroShare * 100)}% of days at zero)` : '',
       ]),
