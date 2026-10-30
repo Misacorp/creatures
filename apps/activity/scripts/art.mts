@@ -131,7 +131,14 @@ function drawCard(id: string, concept: Concept, file: string): void {
   const zoomW = width * zoom;
   const zoomH = height * zoom;
   const smallW = width * (1 + 2 + 3 + 4) + 5 * 12;
-  const alts = Object.entries(concept.alts ?? {});
+  // Alternative palettes, then other whole drawings, each shown at 4x beside the silhouette.
+  const alts: [string, SpriteDef][] = [
+    ...Object.entries(concept.alts ?? {}).map(([name, overrides]): [string, SpriteDef] => [
+      name,
+      { ...def, palette: { ...def.palette, ...overrides } },
+    ]),
+    ...Object.entries(concept.variants ?? {}),
+  ];
   // The silhouette and each alternative palette get a column wide enough for the sprite and its label.
   const colW = Math.max(
     width * 4 + 16,
@@ -197,10 +204,10 @@ function drawCard(id: string, concept: Concept, file: string): void {
   // Black on a light card, so the shape shows (the solid shape has to read without its colours).
   c.rect(ax - 4, y + 18, width * 4 + 8, height * 4 + 8, TEXT);
   c.sprite(def, ax, y + 22, 4, '#000000');
-  for (const [name, overrides] of alts) {
+  for (const [name, alt] of alts) {
     ax += colW;
     c.text(name, ax, y, 2, MUTED);
-    c.sprite({ ...def, palette: { ...def.palette, ...overrides } }, ax, y + 22, 4);
+    c.sprite(alt, ax, y + 22, 4);
   }
   c.save(file);
 }
@@ -445,9 +452,16 @@ async function drawItems(slot: string | undefined, out: string): Promise<void> {
       );
       for (const f of findings) console.log(`  ${f.level} ${f.rule}: ${f.message}`);
       errors += findings.filter((f) => f.level === 'error').length;
-      const alts: Record<string, Readonly<Record<string, string>>> = {};
-      for (const w of wearers) alts[w.name.slice(0, 13)] = gear.itemArt(w.id).palette ?? {};
-      drawCard(look, { kind: 'item', note: '', sprite, alts }, join(out, `${look}.png`));
+      // Each item that wears the look as the game draws it: its tint and its element's flair.
+      const variants: Record<string, SpriteDef> = {};
+      for (const w of wearers) {
+        const art = gear.itemArt(w.id);
+        variants[w.name.slice(0, 13)] = {
+          ...art.sprite,
+          palette: { ...art.sprite.palette, ...(art.palette ?? {}) },
+        };
+      }
+      drawCard(look, { kind: 'item', note: '', sprite, variants }, join(out, `${look}.png`));
     }
     if (errors > 0) process.exitCode = 1;
   } finally {

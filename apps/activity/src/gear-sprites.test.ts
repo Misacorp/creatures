@@ -8,6 +8,9 @@ import {
   ITEM_LOOK_SPRITES,
   ITEM_SIZE,
   itemLookId,
+  itemFlair,
+  withFlair,
+  type Flair,
   PART_SIZE,
   itemArt,
   partIcon,
@@ -16,10 +19,21 @@ import {
 } from './gear-sprites';
 import { glyph } from './glyphs';
 import { elementIcon } from './sprites/element-icons';
-import { expandRows, swapPalette, validateSprite } from './sprites/sprite-data';
+import { ITEM_FLAIR } from './sprites/data/item-flair';
+import { expandRows, swapPalette, validateSprite, type SpriteDef } from './sprites/sprite-data';
 import { lintSprite, silhouetteDifference } from './sprites/sprite-lint';
 
 const shape = (rows: readonly string[]): string => rows.join('/');
+
+/** How many pixels a flair paints a key that is not in the plain tint keys. */
+function changedKeys(def: SpriteDef, flair: Flair): number {
+  const rows = expandRows(def);
+  let n = 0;
+  for (const [y, row] of flair.rows.entries()) {
+    for (const [x, ch] of [...row].entries()) if (ch !== '.' && ch !== rows[y]?.[x]) n += 1;
+  }
+  return n;
+}
 
 describe('item sprites', () => {
   it('has a well-formed 12x12 sprite for each slot of the content', () => {
@@ -45,7 +59,10 @@ describe('item sprites', () => {
       const fallback = (base.set === undefined ? BUNDLED_ITEM_SPRITES : BUNDLED_SET_SPRITES)[
         base.slot
       ];
-      expect(art.sprite, base.id).toBe(ITEM_LOOK_SPRITES[itemLookId(base.id)] ?? fallback);
+      const plain = ITEM_LOOK_SPRITES[itemLookId(base.id)] ?? fallback;
+      const flair = itemFlair(base.id);
+      if (flair === undefined) expect(art.sprite, base.id).toBe(plain);
+      else expect(art.sprite, base.id).toEqual(withFlair(plain, flair));
       if (base.set !== undefined) {
         const set = gearContent.sets.find((x) => x.id === base.set);
         expect(art.palette, base.id).toBe(setTintPalette(set?.tag ?? base.tag));
@@ -86,6 +103,33 @@ describe('item sprites', () => {
         expect(Object.hasOwn(def.palette, key), `${id} ${key}`).toBe(true);
       const base = gearContent.bases.find((b) => b.id === id);
       if (base?.set !== undefined) expect(def.palette['g'], `${id} gold trim`).toBeDefined();
+    }
+  });
+
+  it('draws flair only on element versions of a shared look, each well-formed and visible', () => {
+    for (const base of gearContent.bases) {
+      const look = itemLookId(base.id);
+      const sharers = gearContent.bases.filter((b) => itemLookId(b.id) === look);
+      const element = base.set === undefined ? baseElement(base) : null;
+      const wanted = sharers.length > 1 && element !== null;
+      if (!wanted) expect(itemFlair(base.id), base.id).toBeUndefined();
+    }
+    for (const [look, byElement] of Object.entries(ITEM_FLAIR)) {
+      for (const [element, flair] of Object.entries(byElement)) {
+        expect(flair.rows.length, `${look} ${element}`).toBe(12);
+        for (const row of flair.rows) expect(row.length, `${look} ${element}`).toBe(12);
+        const def = ITEM_LOOK_SPRITES[look];
+        if (def === undefined) throw new Error(look);
+        const errors = lintSprite(withFlair(def, flair), { kind: 'item' }).filter(
+          (f) => f.level === 'error',
+        );
+        expect(errors, `${look} ${element}`).toEqual([]);
+        // The flair shows: it changes pixels, not only colours the tint would change anyway.
+        expect(
+          silhouetteDifference(def, withFlair(def, flair)) + changedKeys(def, flair),
+          `${look} ${element}`,
+        ).toBeGreaterThanOrEqual(3);
+      }
     }
   });
 

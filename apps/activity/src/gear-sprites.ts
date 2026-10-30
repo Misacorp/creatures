@@ -15,9 +15,10 @@ import {
   type PartKind,
 } from '@creatures/game';
 import { CHARM_SPRITE_DATA } from './sprites/data/item-charm-sprites';
+import { ITEM_FLAIR } from './sprites/data/item-flair';
 import { HAT_SPRITE_DATA } from './sprites/data/item-hat-sprites';
 import { SCARF_SPRITE_DATA } from './sprites/data/item-scarf-sprites';
-import type { SpriteDef } from './sprites/sprite-data';
+import { expandRows, type SpriteDef } from './sprites/sprite-data';
 
 export const ITEM_SIZE = { width: 12, height: 12 } as const;
 export const PART_SIZE = { width: 8, height: 8 } as const;
@@ -232,6 +233,33 @@ export function itemLookId(baseId: string): string {
   return gearContent.bases.find((other) => sameLook(other, base))?.id ?? base.id;
 }
 
+/** An element's touch over a shared item look: 12x12 rows where `.` keeps the shared pixel. */
+export interface Flair {
+  rows: readonly string[];
+  palette: Readonly<Record<string, string>>;
+}
+
+/** The shared sprite with a flair drawn over it (both expanded to full rows; the result is not mirrored). */
+export function withFlair(def: SpriteDef, flair: Flair): SpriteDef {
+  const rows = expandRows(def).map((row, y) => {
+    const over = flair.rows[y] ?? '';
+    return [...row]
+      .map((ch, x) => (over[x] === undefined || over[x] === '.' ? ch : over[x]))
+      .join('');
+  });
+  return { rows, palette: { ...def.palette, ...flair.palette } };
+}
+
+/** The flair of an element version of a shared look, or undefined (neutral, a set piece, none drawn). */
+export function itemFlair(baseId: string): Flair | undefined {
+  const base = gearBase(baseId);
+  const element = base === undefined || base.set !== undefined ? null : baseElement(base);
+  if (element === null) return undefined;
+  return ITEM_FLAIR[itemLookId(baseId)]?.[element];
+}
+
+const FLAIRED = new Map<string, SpriteDef>();
+
 /** The sprite of an item base and the palette that tints it. */
 export function itemArt(baseId: string): {
   sprite: SpriteDef;
@@ -249,10 +277,15 @@ export function itemArt(baseId: string): {
       palette: setTintPalette(set?.tag ?? base.tag),
     };
   }
-  return {
-    sprite: own ?? BUNDLED_ITEM_SPRITES[base.slot],
-    palette: tintPalette(baseElement(base)),
-  };
+  const plain = own ?? BUNDLED_ITEM_SPRITES[base.slot];
+  const flair = itemFlair(baseId);
+  let sprite = plain;
+  if (flair !== undefined) {
+    // One sprite object per base, so a screen redraw gets the same object back.
+    sprite = FLAIRED.get(baseId) ?? withFlair(plain, flair);
+    FLAIRED.set(baseId, sprite);
+  }
+  return { sprite, palette: tintPalette(baseElement(base)) };
 }
 
 // --- Parts (8x8) ---

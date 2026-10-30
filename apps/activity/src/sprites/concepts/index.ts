@@ -19,6 +19,8 @@ export interface Concept {
   sprite: SpriteDef;
   /** Other palettes to compare (a colour direction, a shiny), as palette overrides by name. */
   alts?: Readonly<Record<string, Readonly<Record<string, string>>>>;
+  /** Other whole drawings to compare (an item with its element's flair), by name. */
+  variants?: Readonly<Record<string, SpriteDef>>;
   /** Overrides the set's status for this sprite. */
   status?: ConceptStatus;
 }
