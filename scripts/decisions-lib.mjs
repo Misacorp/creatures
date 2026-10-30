@@ -119,49 +119,79 @@ const DATED = /^(#{2,3}) (\d{4}-\d{2}-\d{2}): (\S.*)$/;
 const LOOKS_DATED = /^#{2,3}\s+\d{4}-\d/;
 const FENCE = /^ {0,3}(`{3,}|~{3,})(.*)$/;
 
+const CONFLICT_MARKER = /^(<{7}|={7}|>{7}|\|{7})( |$)/;
+
+/** Turns a scan problem into a message. `name` is the file's name for the message. */
+export function formatProblem(p, name) {
+  if (p.kind === 'conflict') return `unresolved merge conflict in ${name}:${p.line}`;
+  if (p.kind === 'fence') return `unclosed code fence starting at ${name}:${p.line}`;
+  return `${name}:${p.line}: ${p.text}`;
+}
+
 /**
  * Splits a markdown document at dated headings. `mode` is 'legacy' (`##` and `###` start an entry)
  * or 'topic' (only `##`; a dated `###` is a problem). Headings inside code fences are ignored.
- * Returns the lines before the first entry, the entries (each with the raw lines after its
- * heading) and problems.
+ * Returns the lines before the first entry, the entries (each with its heading's line number and
+ * the raw lines after it) and problems ({ line, kind, text }).
  */
 export function scanDocument(text, mode) {
+  const lines = text.replace(/\r\n/g, '\n').split('\n');
   const head = [];
   const entries = [];
   const problems = [];
   let current = null;
   let fence = null;
-  for (const line of text.replace(/\r\n/g, '\n').split('\n')) {
+  let fenceLine = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const n = i + 1;
     const fenceMatch = FENCE.exec(line);
     if (fenceMatch) {
       const marker = fenceMatch[1];
-      if (fence === null) fence = marker;
-      else if (marker[0] === fence[0] && marker.length >= fence.length && !fenceMatch[2].trim()) {
+      if (fence === null) {
+        fence = marker;
+        fenceLine = n;
+      } else if (marker[0] === fence[0] && marker.length >= fence.length && !fenceMatch[2].trim()) {
         fence = null;
       }
     } else if (fence === null) {
       const m = DATED.exec(line);
       const isEntry = m && (mode === 'legacy' || m[1] === '##');
       if (isEntry) {
-        current = { level: m[1].length, date: m[2], title: m[3].trim(), lines: [] };
+        current = { level: m[1].length, date: m[2], title: m[3].trim(), line: n, lines: [] };
         entries.push(current);
         continue;
       }
       if (mode === 'topic') {
-        // The separator between current and superseded entries is generated; it is not body text.
-        if (line === SEPARATOR_COMMENT || line === SEPARATOR_HEADING) continue;
-        if (m) problems.push(`dated ### heading (use ##): ${line}`);
+        if (CONFLICT_MARKER.test(line)) problems.push({ line: n, kind: 'conflict', text: line });
+        // The separator between current and superseded entries is generated: exactly this pair of
+        // lines. A lone `# Superseded` is body text.
+        if (
+          line === SEPARATOR_COMMENT &&
+          lines[i + 1] === '' &&
+          lines[i + 2] === SEPARATOR_HEADING
+        ) {
+          i += 2;
+          continue;
+        }
+        if (m)
+          problems.push({ line: n, kind: 'text', text: `dated ### heading (use ##): ${line}` });
       }
-      if (!m && LOOKS_DATED.test(line)) problems.push(`malformed dated heading: ${line}`);
+      if (!m && LOOKS_DATED.test(line)) {
+        problems.push({ line: n, kind: 'text', text: `malformed dated heading: ${line}` });
+      }
     }
     (current ? current.lines : head).push(line);
   }
+  if (fence !== null) problems.push({ line: fenceLine, kind: 'fence', text: fence });
   return { head, entries, problems };
 }
 
 /** The legacy file's entries: { date, title, heading, body, hash } in source order. */
-export function parseLegacy(text) {
-  return scanDocument(text, 'legacy').entries.map((e) => {
+export function parseLegacy(text, problemsOut = []) {
+  const scanned = scanDocument(text, 'legacy');
+  for (const p of scanned.problems) if (p.kind === 'fence') problemsOut.push(p);
+  return scanned.entries.map((e) => {
     const body = trimBlankLines(e.lines).join('\n');
     return {
       date: e.date,
@@ -175,19 +205,33 @@ export function parseLegacy(text) {
 
 const META_START = /^(ID|Status|Supersedes|Amends): /;
 
-function ticked(value) {
-  return [...value.matchAll(/`([^`]+)`/g)].map((m) => m[1]);
+const ID_SHAPED = /^\d{4}-\d{2}-\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/** Ids in a Supersedes/Amends value: backticked or bare, split on commas and spaces. */
+function parseRefs(value, bad) {
+  const ids = [];
+  for (const token of value
+    .replaceAll('`', ' ')
+    .split(/[,\s]+/)
+    .filter(Boolean)) {
+    if (ID_SHAPED.test(token)) ids.push(token);
+    else bad.push(token);
+  }
+  return ids;
 }
 
-/** Reads a meta line into { id, supersedes, amends }. Status is derived, so it is ignored. */
+/**
+ * Reads a meta line into { id, supersedes, amends, bad }. Status is derived, so it is ignored;
+ * `bad` lists reference values that are not id-shaped.
+ */
 export function parseMeta(line) {
-  const meta = { id: null, supersedes: [], amends: [] };
+  const meta = { id: null, supersedes: [], amends: [], bad: [] };
   for (const part of line.split(' · ')) {
     const m = /^(\w+): (.*)$/.exec(part.trim());
     if (!m) continue;
     if (m[1] === 'ID') meta.id = m[2].replaceAll('`', '').trim() || null;
-    else if (m[1] === 'Supersedes') meta.supersedes = ticked(m[2]);
-    else if (m[1] === 'Amends') meta.amends = ticked(m[2]);
+    else if (m[1] === 'Supersedes') meta.supersedes = parseRefs(m[2], meta.bad);
+    else if (m[1] === 'Amends') meta.amends = parseRefs(m[2], meta.bad);
   }
   return meta;
 }
@@ -195,19 +239,24 @@ export function parseMeta(line) {
 /** Reads a topic file's text into entries: { date, title, id, supersedes, amends, body }. */
 export function parseTopicFile(text) {
   const scanned = scanDocument(text, 'topic');
+  const problems = [...scanned.problems];
   const entries = scanned.entries.map((e) => {
     const lines = e.lines;
     let i = 0;
     while (i < lines.length && lines[i].trim() === '') i++;
     let meta = { id: null, supersedes: [], amends: [] };
     if (i < lines.length && META_START.test(lines[i])) {
-      meta = parseMeta(lines[i]);
+      const { bad, ...parsed } = parseMeta(lines[i]);
+      meta = parsed;
+      for (const token of bad) {
+        problems.push({ line: e.line, kind: 'text', text: `"${token}" is not an entry id` });
+      }
       i++;
     }
     const body = trimBlankLines(lines.slice(i)).join('\n');
     return { date: e.date, title: e.title, ...meta, body };
   });
-  return { entries, problems: scanned.problems };
+  return { entries, problems };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -329,6 +378,7 @@ export function loadState(root) {
   const topics = loadTopics(root);
   const problems = [];
   const missingFiles = [];
+  let fatal = 0; // Problems that stop fix from writing.
   const byTopic = new Map();
   for (const topic of topics) {
     const rel = `${DIR}/${topic.id}.md`;
@@ -337,7 +387,8 @@ export function loadState(root) {
     if (existsSync(abs)) {
       const parsed = parseTopicFile(readText(abs));
       entries = parsed.entries;
-      for (const p of parsed.problems) problems.push(`${rel}: ${p}`);
+      for (const p of parsed.problems) problems.push(formatProblem(p, rel));
+      fatal += parsed.problems.length;
     } else {
       missingFiles.push(rel);
     }
@@ -350,7 +401,7 @@ export function loadState(root) {
       problems.push(`${DIR}/${name} is not a topic in topics.json.`);
     }
   }
-  return { root, topics, byTopic, problems, missingFiles };
+  return { root, topics, byTopic, problems, missingFiles, fatal };
 }
 
 /** Every id in use, as a Set. */
@@ -434,6 +485,7 @@ export function writeFileMaking(root, rel, text) {
 
 /** Writes the files that differ; returns their paths. */
 export function writePlan(root, plan) {
+  if (plan.fatal > 0) return [];
   const changed = changedFiles(root, plan);
   for (const rel of changed) writeFileMaking(root, rel, plan.outputs.get(rel));
   return changed;

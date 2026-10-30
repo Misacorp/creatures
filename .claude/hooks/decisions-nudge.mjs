@@ -44,7 +44,7 @@ function nudgeText(cwd) {
     'this branch changes code but records no decision.',
     'Before you finish, decide whether it made a decision worth keeping (a rule, a trade-off, a reason, an answer from Misa).',
     `If yes, record it with \`pnpm decisions new --topic <t> --title "..."\` (topics: ${topics(cwd)}), write the body, and update docs/progress.md if a roadmap step landed.`,
-    'If no, just finish. This reminder will not repeat for these files.',
+    'If no, just finish. This reminder will not repeat until more code files change.',
   ].join(' ');
 }
 

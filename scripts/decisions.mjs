@@ -19,6 +19,7 @@ import {
   buildPlan,
   changedFiles,
   finalise,
+  formatProblem,
   isCurrent,
   loadState,
   makeId,
@@ -41,7 +42,7 @@ const VALUE_FLAGS = new Set([
   'assign',
   'assign-file',
 ]);
-const BOOL_FLAGS = new Set(['all', 'misa', 'quiet', 'dry-run']);
+const BOOL_FLAGS = new Set(['all', 'misa', 'quiet', 'dry-run', 'help']);
 
 const USAGE = `Usage: pnpm decisions <command>
 
@@ -63,6 +64,10 @@ export function parseArgs(argv) {
   const flags = {};
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
+    if (arg === '--') {
+      positionals.push(...argv.slice(i + 1)); // Everything after -- is a plain argument.
+      break;
+    }
     if (!arg.startsWith('--')) {
       positionals.push(arg);
       continue;
@@ -196,6 +201,13 @@ function cmdSearch(ctx, args) {
 // ---------------------------------------------------------------------------------------------
 // Writing
 
+/** True for a real calendar date written YYYY-MM-DD (2026-02-31 is not). */
+export function isRealDate(date) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+  const parsed = new Date(`${date}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().startsWith(date);
+}
+
 /** Today's date in Helsinki as YYYY-MM-DD. */
 export function todayHelsinki(now = new Date()) {
   return new Intl.DateTimeFormat('en-CA', {
@@ -204,6 +216,13 @@ export function todayHelsinki(now = new Date()) {
     month: '2-digit',
     day: '2-digit',
   }).format(now);
+}
+
+/** Stops a command that would write when a topic file has problems fix cannot repair. */
+function refuseIfBroken(state) {
+  if (state.fatal > 0) {
+    throw new UserError(`Nothing was written. Fix these first:\n${state.problems.join('\n')}`);
+  }
 }
 
 function printProblems(ctx, problems) {
@@ -226,13 +245,14 @@ function cmdNew(ctx, args) {
   const { topic: topicId, title: rawTitle } = args.flags;
   if (!topicId || !rawTitle) throw new UserError('new needs --topic and --title.');
   const state = loadState(ctx.root);
+  refuseIfBroken(state);
   if (!state.topics.some((t) => t.id === topicId)) {
     throw new UserError(
       `Unknown topic "${topicId}". Topics: ${state.topics.map((t) => t.id).join(', ')}.`,
     );
   }
   const date = args.flags.date ?? todayHelsinki();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(`${date}T00:00:00Z`))) {
+  if (!isRealDate(date)) {
     throw new UserError(`--date must be a real date like 2026-10-28, not "${date}".`);
   }
   let title = rawTitle.replace(/\s+/g, ' ').trim();
@@ -352,15 +372,29 @@ function gitShow(root, ref) {
 const MARKER_LINE = /^(<{7}|\|{7}|>{7})( .*)?$|^={7}$/;
 const STUB_FIRST_LINE = STUB.split('\n')[0];
 
-/** The branch's own last old-format version of the file: { text, label }, or null if none. */
-function findBranchVersion(root) {
+function gitOut(root, args) {
+  return execFileSync('git', args, {
+    cwd: root,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim();
+}
+
+/**
+ * The last old-format version of the file reachable from `start` along first parents:
+ * { sha, text, label }, or null if there is none (or no git).
+ */
+function lastOldFormat(root, start) {
   let shas;
   try {
-    shas = execFileSync(
-      'git',
-      ['rev-list', '--first-parent', '--max-count=1000', 'HEAD', '--', LEGACY_FILE],
-      { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
-    )
+    shas = gitOut(root, [
+      'rev-list',
+      '--first-parent',
+      '--max-count=1000',
+      start,
+      '--',
+      LEGACY_FILE,
+    ])
       .split('\n')
       .filter(Boolean);
   } catch {
@@ -374,33 +408,66 @@ function findBranchVersion(root) {
       continue; // The file does not exist in this commit.
     }
     if (text.startsWith(STUB_FIRST_LINE)) continue;
-    const subject = execFileSync('git', ['log', '-1', '--format=%h %s', sha], {
-      cwd: root,
-      encoding: 'utf8',
-    }).trim();
-    return { text, label: `commit ${subject}` };
+    return { sha, text, label: `commit ${gitOut(root, ['log', '-1', '--format=%h %s', sha])}` };
   }
   return null;
 }
 
 /**
- * Where the legacy entries come from: { entries, labels }. With --from, one file or git ref.
- * Without: the branch's own last old-format commit (reliable, unlike a merged working-tree
- * file) plus entries that exist only in the working-tree file (appended after the merge).
+ * The old file as it was where the branch left main: the last old-format version at the merge
+ * base of `sha` and the other side (the merge in progress, the merge parent, or origin/main).
+ * Returns Map heading -> body hash, or null when no base can be found.
+ */
+function findBaseHashes(root, sha) {
+  if (!sha) return null;
+  for (const other of ['MERGE_HEAD', 'HEAD^2', 'origin/main']) {
+    let base;
+    try {
+      base = gitOut(root, ['merge-base', sha, other]);
+    } catch {
+      continue;
+    }
+    const version = lastOldFormat(root, base);
+    if (version) return new Map(parseLegacy(version.text).map((e) => [e.heading, e.hash]));
+  }
+  return null;
+}
+
+/** Parses an old-format text; an unclosed code fence would swallow later entries, so stop. */
+function parseSource(text, name) {
+  const problems = [];
+  const entries = parseLegacy(text, problems);
+  if (problems.length) throw new UserError(formatProblem(problems[0], name));
+  return entries;
+}
+
+/**
+ * Where the legacy entries come from: { entries, labels, base }. `base` maps each heading to its
+ * body hash in the version the branch started from (null when unknown). With --from, one file or
+ * git ref. Without: the branch's own last old-format commit (reliable, unlike a merged
+ * working-tree file) plus entries that exist only in the working-tree file (appended after the
+ * merge).
  */
 function readMigrationSource(ctx, from) {
   if (from) {
     const path = resolve(ctx.cwd, from);
     if (existsSync(path) && statSync(path).isFile()) {
-      return { entries: parseLegacy(readText(path)), labels: [`file ${from}`] };
+      return { entries: parseSource(readText(path), from), labels: [`file ${from}`], base: null };
     }
-    return { entries: parseLegacy(gitShow(ctx.root, from)), labels: [`git ref ${from}`] };
+    const entries = parseSource(gitShow(ctx.root, from), `${from}:${LEGACY_FILE}`);
+    let sha = null;
+    try {
+      sha = gitOut(ctx.root, ['rev-parse', '--verify', '-q', `${from}^{commit}`]);
+    } catch {
+      // Not a commit; no base.
+    }
+    return { entries, labels: [`git ref ${from}`], base: findBaseHashes(ctx.root, sha) };
   }
   const entries = [];
   const labels = [];
-  const primary = findBranchVersion(ctx.root);
+  const primary = lastOldFormat(ctx.root, 'HEAD');
   if (primary) {
-    entries.push(...parseLegacy(primary.text));
+    entries.push(...parseSource(primary.text, `${primary.sha.slice(0, 7)}:${LEGACY_FILE}`));
     labels.push(primary.label);
   }
   const path = join(ctx.root, LEGACY_FILE);
@@ -410,13 +477,13 @@ function readMigrationSource(ctx, from) {
       .filter((l) => !MARKER_LINE.test(l))
       .join('\n');
     const have = new Set(entries.map((e) => e.heading));
-    const extra = parseLegacy(clean).filter((e) => !have.has(e.heading));
+    const extra = parseSource(clean, LEGACY_FILE).filter((e) => !have.has(e.heading));
     if (extra.length) {
       entries.push(...extra);
       labels.push(`working tree ${LEGACY_FILE} (${extra.length} entries not in the commit)`);
     }
   }
-  return { entries, labels };
+  return { entries, labels, base: findBaseHashes(ctx.root, primary?.sha ?? null) };
 }
 
 function readAssignments(ctx, args) {
@@ -453,7 +520,7 @@ function readLegacyJson(root) {
 }
 
 /** Sorts the source entries into skip, update, conflict and new. */
-function classify(source, legacy, state) {
+function classify(source, legacy, state, base) {
   const byId = new Map();
   const byHeading = new Map();
   for (const entries of state.byTopic.values()) {
@@ -462,18 +529,26 @@ function classify(source, legacy, state) {
       if (!byHeading.has(`${e.date}: ${e.title}`)) byHeading.set(`${e.date}: ${e.title}`, e);
     }
   }
-  const result = { skipped: 0, updates: [], conflicts: [], fresh: [], ids: new Map() };
+  const result = { skipped: 0, updates: [], conflicts: [], unknown: [], fresh: [], ids: new Map() };
   for (const src of source) {
     const old = legacy?.[src.heading];
     if (old && old.hash === src.hash) {
       result.skipped++;
     } else if (old) {
       const target = byId.get(old.id);
-      if (!target)
+      if (!target) {
         result.conflicts.push({ src, why: `entry ${old.id} is gone from the topic files` });
-      else if (bodyHashOf(target) === src.hash) result.skipped++;
-      else if (bodyHashOf(target) === old.hash) result.updates.push({ src, target });
-      else result.conflicts.push({ src, target, why: 'both sides changed it' });
+      } else if (bodyHashOf(target) === src.hash) {
+        result.skipped++; // Already applied.
+      } else if (!base) {
+        result.unknown.push({ src, target });
+      } else if (base.get(src.heading) === src.hash) {
+        result.skipped++; // The branch did not touch it: the difference is main's own edit.
+      } else if (base.get(src.heading) === old.hash && bodyHashOf(target) === old.hash) {
+        result.updates.push({ src, target });
+      } else {
+        result.conflicts.push({ src, target, why: 'both sides changed it' });
+      }
     } else if (byHeading.has(src.heading)) {
       result.ids.set(src.heading, byHeading.get(src.heading).id);
       result.skipped++;
@@ -487,14 +562,15 @@ function classify(source, legacy, state) {
 const bodyHashOf = (entry) => bodyHash(entry.body);
 
 function cmdMigrate(ctx, args) {
-  const { entries: source, labels } = readMigrationSource(ctx, args.flags.from);
+  const { entries: source, labels, base } = readMigrationSource(ctx, args.flags.from);
   ctx.out(
     `Reading old decisions from ${labels.join(' and ') || 'nothing (no old version found)'}.`,
   );
   const legacy = readLegacyJson(ctx.root);
   const state = loadState(ctx.root);
+  refuseIfBroken(state);
   assignIds(state);
-  const found = classify(source, legacy, state);
+  const found = classify(source, legacy, state, base);
 
   if (legacy && source.length) {
     const inSource = new Set(source.map((s) => s.heading));
@@ -552,10 +628,10 @@ function cmdMigrate(ctx, args) {
   const writeLegacy = legacy === null && source.length > 0;
   const summary =
     `${found.fresh.length} new, ${found.updates.length} updated, ${found.skipped} already migrated, ` +
-    `${found.conflicts.length} in conflict.`;
+    `${found.conflicts.length} in conflict, ${found.unknown.length} undecided.`;
   if (args.flags['dry-run']) {
     ctx.out(`Dry run, nothing written: ${summary}`);
-    return found.conflicts.length ? 1 : 0;
+    return found.conflicts.length || found.unknown.length ? 1 : 0;
   }
 
   const written = writePlan(ctx.root, plan);
@@ -578,10 +654,15 @@ function cmdMigrate(ctx, args) {
     ctx.err(`CONFLICT: "${c.src.heading}": ${c.why}. Merge it by hand in the topic file.`);
     ctx.err(`The branch's version of the body is:\n${c.src.body}\n(end of the branch's version)`);
   }
+  if (found.unknown.length) {
+    ctx.err(
+      `Could not tell whether your branch edited these (no common base found), so they were not applied; check by hand: ${found.unknown.map((u) => u.target.id).join(', ')}`,
+    );
+  }
   ctx.out(
     `Next: git add ${LEGACY_FILE} ${DIR}/ and finish the merge or commit. Then run pnpm decisions check.`,
   );
-  return found.conflicts.length || plan.problems.length ? 1 : 0;
+  return found.conflicts.length || found.unknown.length || plan.problems.length ? 1 : 0;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -604,13 +685,13 @@ const COMMANDS = {
 export function run(argv, io) {
   const ctx = { out: io.out, err: io.err, cwd: io.cwd, root: '' };
   try {
-    const [command = 'help', ...rest] = argv;
+    const args = parseArgs(argv);
+    const command = args.flags.help ? 'help' : (args.positionals.shift() ?? 'help');
     const handler = COMMANDS[command];
     if (!handler) {
-      (command === 'help' || command === '--help' ? ctx.out : ctx.err)(USAGE);
-      return command === 'help' || command === '--help' ? 0 : 1;
+      (command === 'help' ? ctx.out : ctx.err)(USAGE);
+      return command === 'help' ? 0 : 1;
     }
-    const args = parseArgs(rest);
     ctx.root = resolve(
       io.cwd,
       args.flags.root ?? join(dirname(fileURLToPath(import.meta.url)), '..'),

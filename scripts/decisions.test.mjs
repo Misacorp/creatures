@@ -138,7 +138,10 @@ describe('parsing', () => {
       ...extra,
     });
     const entries = [
-      entry('2026-10-12', 'B', '2026-10-12-b', { supersedes: ['2026-10-10-a'], amends: ['x'] }),
+      entry('2026-10-12', 'B', '2026-10-12-b', {
+        supersedes: ['2026-10-10-a'],
+        amends: ['2026-10-01-x'],
+      }),
       entry('2026-10-10', 'A', '2026-10-10-a'),
     ];
     const text = renderTopicFile(TOPICS[0], [entries[0]], [entries[1]], () => 'current');
@@ -300,11 +303,11 @@ describe('check', () => {
     write(
       root,
       'docs/design/decisions/gear.md',
-      gear.replace(`ID: \`${id}\``, `ID: \`${id}\` · Supersedes: \`${id}\`, \`nope\``),
+      gear.replace(`ID: \`${id}\``, `ID: \`${id}\` · Supersedes: \`${id}\`, \`2026-01-01-nope\``),
     );
     const r = cli(root, 'check');
     assert.match(r.err, /refers to itself/);
-    assert.match(r.err, /unknown id nope/);
+    assert.match(r.err, /unknown id 2026-01-01-nope/);
   });
 
   test('catches duplicate ids', () => {
@@ -439,43 +442,86 @@ describe('migrate', () => {
     assert.match(cli(root, 'migrate', '--assign', '9=gear').err, /no new entry number 9/);
   });
 
-  test('a branch edit of a migrated entry updates the body', () => {
+  const commit = (root, msg) =>
+    git(root, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', msg);
+
+  /**
+   * main and a branch both start from the old format. The branch commits `branchText`; main
+   * optionally commits `mainText` and then does the split; main is merged into the branch.
+   */
+  function mergeScenario({ branchText, mainText }) {
     const root = makeRoot({ legacy: LEGACY });
-    migrateAll(root);
-    const edited = LEGACY.replace('Four.', 'Four, but the branch changed it.');
-    write(root, 'docs/design/decisions.md', edited);
-    const r = cli(root, 'migrate');
-    assert.equal(r.code, 0, r.err);
-    assert.match(r.out, /1 updated/);
-    const ui = read(root, 'docs/design/decisions/ui.md');
-    assert.match(ui, /Four, but the branch changed it\./);
-    assert.match(ui, /ID: `2026-10-14-fourth-thing` · Status: current/);
-    // Running it again on the same source is quiet and not a conflict.
-    write(root, 'docs/design/decisions.md', edited);
-    assert.equal(cli(root, 'migrate').code, 0);
+    git(root, 'init', '-q', '-b', 'main');
+    git(root, 'add', 'docs/design/decisions.md');
+    commit(root, 'old format');
+    git(root, 'checkout', '-q', '-b', 'feature');
+    write(root, 'docs/design/decisions.md', branchText);
+    git(root, 'add', 'docs/design/decisions.md');
+    commit(root, 'branch edits');
+    git(root, 'checkout', '-q', 'main');
+    if (mainText) {
+      write(root, 'docs/design/decisions.md', mainText);
+      git(root, 'add', 'docs/design/decisions.md');
+      commit(root, 'main edits the old file');
+    }
+    assert.equal(migrateAll(root).code, 0);
+    rmSync(join(root, 'assign.json'));
+    git(root, 'add', '-A');
+    commit(root, 'split');
+    git(root, 'checkout', '-q', 'feature');
+    spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', 'merge', '--no-edit', 'main'], {
+      cwd: root,
+    });
+    return root;
+  }
+
+  test("a branch edit is applied, a new entry added, and main's own earlier edit is kept", () => {
+    const root = mergeScenario({
+      // The branch has the old text of "First thing", edits "Fourth thing" and appends one entry.
+      branchText: `${LEGACY.replace('Four.', 'Four, branch edit.')}\n## 2026-10-25: Branch entry\n\nFrom the branch.\n`,
+      mainText: LEGACY.replace('**Decision.** One.', '**Decision.** One, main edit.'),
+    });
+    const ask = cli(root, 'migrate');
+    assert.equal(ask.code, 1, ask.out + ask.err);
+    assert.match(ask.err, /1\. 2026-10-25: Branch entry/);
+    assert.doesNotMatch(ask.err, /2\. /);
+    const done = cli(root, 'migrate', '--assign', '1=ui');
+    assert.equal(done.code, 0, done.err);
+    assert.match(done.out, /1 new, 1 updated/);
+    assert.match(read(root, 'docs/design/decisions/ui.md'), /Four, branch edit\./);
+    assert.match(read(root, 'docs/design/decisions/ui.md'), /From the branch\./);
+    const gear = read(root, 'docs/design/decisions/gear.md');
+    assert.match(gear, /One, main edit\./);
+    assert.doesNotMatch(gear, /\*\*Decision\.\*\* One\.\n/);
+    assert.equal(read(root, 'docs/design/decisions.md'), STUB);
+    const again = cli(root, 'migrate');
+    assert.equal(again.code, 0, again.err);
+    assert.match(again.out, /0 new, 0 updated/);
   });
 
-  test('both sides changing an entry is reported as a conflict, after the rest is done', () => {
-    const root = makeRoot({ legacy: LEGACY });
-    migrateAll(root);
-    const uiFile = join(root, 'docs/design/decisions/ui.md');
-    writeFileSync(uiFile, readFileSync(uiFile, 'utf8').replace('Four.', 'Four, main edit.'));
-    write(
-      root,
-      'docs/design/decisions.md',
-      `${LEGACY.replace('Four.', 'Four, branch edit.')}\n## 2026-10-20: Extra\n\nx\n`,
-    );
+  test('both sides editing the same entry is a conflict, after the rest is done', () => {
+    const root = mergeScenario({
+      branchText: `${LEGACY.replace('Four.', 'Four, branch edit.')}\n## 2026-10-25: Branch entry\n\nx\n`,
+      mainText: LEGACY.replace('Four.', 'Four, main edit.'),
+    });
     const r = cli(root, 'migrate', '--assign', '1=gear');
     assert.equal(r.code, 1);
     assert.match(r.err, /CONFLICT: "2026-10-14: Fourth thing": both sides changed it/);
     assert.match(r.err, /Four, branch edit\./);
     assert.match(read(root, 'docs/design/decisions/ui.md'), /Four, main edit\./);
-    assert.match(read(root, 'docs/design/decisions/gear.md'), /## 2026-10-20: Extra/);
+    assert.match(read(root, 'docs/design/decisions/gear.md'), /## 2026-10-25: Branch entry/);
     assert.equal(read(root, 'docs/design/decisions.md'), STUB);
   });
 
-  const commit = (root, msg) =>
-    git(root, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', msg);
+  test('without a common base, differing entries are listed and not applied', () => {
+    const root = makeRoot({ legacy: LEGACY });
+    migrateAll(root);
+    write(root, 'edited.md', LEGACY.replace('Four.', 'Four, edited.'));
+    const r = cli(root, 'migrate', '--from', join(root, 'edited.md'));
+    assert.equal(r.code, 1);
+    assert.match(r.err, /Could not tell whether your branch edited these.*2026-10-14-fourth-thing/);
+    assert.doesNotMatch(read(root, 'docs/design/decisions/ui.md'), /Four, edited\./);
+  });
 
   test('merging the split into a branch that edited the old file: migrate reads the branch commit', () => {
     const root = makeRoot({ legacy: LEGACY });
@@ -668,8 +714,8 @@ describe('queries and new', () => {
 
     assert.match(cli(root, 'new', '--topic', 'nope', '--title', 'x').err, /Unknown topic/);
     assert.match(
-      cli(root, 'new', '--topic', 'ui', '--title', 'x', '--supersedes', 'zzz').err,
-      /Unknown entry id "zzz"/,
+      cli(root, 'new', '--topic', 'ui', '--title', 'x', '--supersedes', '2026-01-01-zzz').err,
+      /Unknown entry id "2026-01-01-zzz"/,
     );
     assert.match(
       cli(root, 'new', '--topic', 'ui', '--title', 'x', '--date', '2026-13-45').err,
@@ -794,10 +840,144 @@ describe('hooks', () => {
     const file = join(root, 'docs/design/decisions/gear.md');
     writeFileSync(
       file,
-      `${readFileSync(file, 'utf8')}\n## 2026-10-30: Bad ref\n\nID: \`2026-10-30-bad-ref\` · Supersedes: \`ghost\`\n\nx\n`,
+      `${readFileSync(file, 'utf8')}\n## 2026-10-30: Bad ref\n\nID: \`2026-10-30-bad-ref\` · Supersedes: \`2026-01-01-ghost\`\n\nx\n`,
     );
     const out = hook('decisions-fix.mjs', root, { tool_input: { file_path: file } });
     assert.equal(out.decision, 'block');
-    assert.match(out.reason, /unknown id ghost/);
+    assert.match(out.reason, /unknown id 2026-01-01-ghost/);
+  });
+});
+
+describe('hardening', () => {
+  const GEAR = '## 2026-10-10: Old rule\n\nID: `2026-10-10-old-rule` · Status: current\n\nBody.\n';
+  const gearRoot = (text) => {
+    const root = makeRoot();
+    write(root, 'docs/design/decisions/gear.md', text);
+    return root;
+  };
+
+  test('merge conflict markers in a topic file stop fix and fail check', () => {
+    const marked = `<<<<<<< HEAD\n${GEAR}=======\n${GEAR}>>>>>>> main\n`;
+    const root = gearRoot(marked);
+    const fix = cli(root, 'fix');
+    assert.equal(fix.code, 1);
+    assert.match(fix.err, /unresolved merge conflict in docs\/design\/decisions\/gear\.md:1/);
+    assert.equal(read(root, 'docs/design/decisions/gear.md'), marked);
+    assert.equal(existsSync(join(root, 'docs/design/decisions/README.md')), false);
+    assert.match(cli(root, 'check').err, /unresolved merge conflict in .*gear\.md:1/);
+    // Inside a body, and inside a code fence (which is fine).
+    const inBody = gearRoot(`${GEAR}\n=======\n`);
+    assert.match(cli(inBody, 'check').err, /unresolved merge conflict in .*gear\.md:\d+/);
+    const fenced = gearRoot(`${GEAR}\n\`\`\`\n=======\n\`\`\`\n`);
+    assert.doesNotMatch(cli(fenced, 'check').err, /merge conflict/);
+  });
+
+  test('bare ids in Supersedes and Amends are accepted; other values are reported', () => {
+    const root = makeRoot();
+    write(
+      root,
+      'docs/design/decisions/gear.md',
+      '## 2026-10-10: A\n\nBody.\n\n## 2026-10-12: B\n\nID: `2026-10-12-b` · Supersedes: 2026-10-10-a, 2026-10-09-gone\n\nBody.\n',
+    );
+    assert.equal(cli(root, 'fix').code, 1); // 2026-10-09-gone is unknown, the rest is fine
+    const gear = read(root, 'docs/design/decisions/gear.md');
+    assert.match(gear, /Status: superseded by `2026-10-12-b`/);
+    assert.match(gear, /Supersedes: `2026-10-10-a`, `2026-10-09-gone`/);
+
+    const bad = gearRoot(
+      '## 2026-10-10: A\n\nID: `2026-10-10-a` · Amends: not an id, `Foo`\n\nBody.\n',
+    );
+    const r = cli(bad, 'fix');
+    assert.equal(r.code, 1);
+    assert.match(r.err, /gear\.md:1: "not" is not an entry id/);
+    assert.match(r.err, /"Foo" is not an entry id/);
+    assert.match(read(bad, 'docs/design/decisions/gear.md'), /not an id, `Foo`/);
+  });
+
+  test('an unclosed code fence is reported and fix does not write', () => {
+    const text = `${GEAR}\nText.\n\n\`\`\`js\nnever closed\n`;
+    const root = gearRoot(text);
+    const r = cli(root, 'fix');
+    assert.equal(r.code, 1);
+    assert.match(r.err, /unclosed code fence starting at docs\/design\/decisions\/gear\.md:9/);
+    assert.equal(read(root, 'docs/design/decisions/gear.md'), text);
+    assert.match(cli(root, 'check').err, /unclosed code fence/);
+  });
+
+  test('an unclosed code fence in the old file stops migrate', () => {
+    const root = makeRoot({ legacy: `${LEGACY}\n\`\`\`\nopen\n` });
+    const r = migrateAll(root);
+    assert.equal(r.code, 1);
+    assert.match(r.err, /unclosed code fence starting at docs\/design\/decisions\.md:\d+/);
+    assert.equal(existsSync(join(root, 'docs/design/decisions/legacy.json')), false);
+  });
+
+  test('only the generated separator pair is dropped, a lone "# Superseded" in a body stays', () => {
+    const root = gearRoot(`${GEAR}\nIntro.\n\n# Superseded\n\nMore.\n`);
+    assert.equal(cli(root, 'fix').code, 0);
+    const gear = read(root, 'docs/design/decisions/gear.md');
+    assert.match(gear, /Intro\.\n\n# Superseded\n\nMore\./);
+    // A lone separator comment stays too; the real pair is still regenerated and removed.
+    const withComment = gearRoot(`${GEAR}\n${SEPARATOR_COMMENT}\n\ntext\n`);
+    cli(withComment, 'fix');
+    assert.match(read(withComment, 'docs/design/decisions/gear.md'), /Superseded entries below/);
+    assert.equal(cli(withComment, 'fix').out, '');
+  });
+
+  test('new rejects dates that are not on the calendar', () => {
+    const root = gearRoot(GEAR);
+    assert.match(
+      cli(root, 'new', '--topic', 'gear', '--title', 'x', '--date', '2026-02-31').err,
+      /--date/,
+    );
+    assert.equal(
+      cli(root, 'new', '--topic', 'gear', '--title', 'x', '--date', '2028-02-29').code,
+      0,
+    );
+  });
+
+  test('options may come first, and -- ends them', () => {
+    const root = gearRoot(GEAR);
+    const first = run(['--root', root, 'fix'], { out: () => {}, err: () => {}, cwd: root });
+    assert.equal(first, 0);
+    assert.ok(existsSync(join(root, 'docs/design/decisions/README.md')));
+    const out = [];
+    run(['search', '--root', root, '--', '--foo'], {
+      out: (s) => out.push(s),
+      err: () => {},
+      cwd: root,
+    });
+    assert.deepEqual(out, []);
+    write(root, 'docs/design/decisions/gear.md', GEAR.replace('Body.', 'Use --foo here.'));
+    const found = [];
+    run(['search', '--root', root, '--', '--foo'], {
+      out: (s) => found.push(s),
+      err: () => {},
+      cwd: root,
+    });
+    assert.match(found.join('\n'), /Use --foo here\./);
+  });
+});
+
+describe('hooks (hardening)', () => {
+  test('editing README.md runs fix as well as blocking', () => {
+    const root = makeRoot();
+    mkdirSync(join(root, 'scripts'), { recursive: true });
+    for (const f of ['decisions.mjs', 'decisions-lib.mjs']) {
+      writeFileSync(join(root, 'scripts', f), readFileSync(join(REPO, 'scripts', f)));
+    }
+    write(root, 'docs/design/decisions/gear.md', '## 2026-10-10: A\n\nBody.\n');
+    git(root, 'init', '-q');
+    cli(root, 'fix');
+    const readme = join(root, 'docs/design/decisions/README.md');
+    const good = readFileSync(readme, 'utf8');
+    writeFileSync(readme, 'hand edit\n');
+    const r = spawnSync('node', [join(REPO, '.claude/hooks/decisions-fix.mjs')], {
+      input: JSON.stringify({ cwd: root, tool_input: { file_path: readme } }),
+      encoding: 'utf8',
+      env: { ...process.env, CLAUDE_PROJECT_DIR: root },
+    });
+    assert.equal(JSON.parse(r.stdout).decision, 'block');
+    assert.equal(readFileSync(readme, 'utf8'), good);
   });
 });
