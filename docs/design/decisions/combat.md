@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-30: A boss's tool line must be ownable at the week its slot arrives (the roster comes from the valley)
+
+ID: `2026-10-30-a-boss-s-tool-line-must` · Status: current
+
+**Decision.** The combat lab's roster is the valley's: `packages/lab/data/valley/roster-profile.json` and `server-coverage.json`, copied from the valley branch (`ccr-93a1de17-yutb1a`, commit `8ffe5d0`) and read by `src/valley.ts`, replacing the placeholder curves. The speeds (slow, expected, fast) stay as sensitivity factors on the valley's levels. A slot's **tool line** (the boss's first answer) must be **ownable** at the slot's arrival week: the chance that a mixed server of 8 owns every non-common line it uses is at least 50%. Ownership is counted per line (an evolved form is owned by owning its line's stage 1 form, with that form's rarity); the chance is the product, over the distinct non-common lines, of that rarity's coverage at that week. An all-common answer is always ownable. The numbers are `OWNABLE_CHANCE_MIN` and `OWNABLE_SERVER` in `targets.ts`; the check is `ownability.ts`, held by `test/ownability.test.ts` and printed by `--path` and the full report.
+
+**Reasoning.** Misa's constraint in the valley's round 15: it is fine to require a rare here or there, because players pool their rarer creatures in the raid roster, but a 100% common requirement is too limiting, and epics should not be needed early. One rare line is fine once rare coverage reaches 50% (about week 6 on a server of 8), two need about 71%, an epic is out until late. The valley counts 34 forms as 34 species; reading its share as the chance a given line is owned is an accepted approximation. The classic party also uses Tempestray; it measures an unprepared but decent team and is left alone.
+
 ## 2026-10-30: Luck is a build: crit builds, crit charges, boss crits and evasion **[Misa]**
 
 ID: `2026-10-30-luck-is-a-build-crit-builds` · Status: current

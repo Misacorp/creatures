@@ -4,14 +4,14 @@ How the lab plans which raid boss a server meets at which Boss Rank, and how it 
 
 ## The split
 
-| Part                                                            | Owner      | Where                                                                                 |
-| --------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------- |
-| The challenges: which boss at which rank, its cards and numbers | combat v2  | `packages/lab/src/track.ts` (the track), `bosses.ts` (the bosses), the tuner          |
-| The targets: what a server should achieve against them          | combat v2  | `packages/lab/src/targets.ts` (Misa's targets, 2026-10-30)                            |
-| The roster: what a server's players have at week N              | the valley | `packages/lab/src/roster.ts` today (placeholder data); the valley's economy lab later |
-| The path: where a server is at week N, and how long it stays    | both meet  | `packages/lab/src/path.ts`: the track, the targets and the roster run together        |
+| Part                                                            | Owner      | Where                                                                                     |
+| --------------------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------- |
+| The challenges: which boss at which rank, its cards and numbers | combat v2  | `packages/lab/src/track.ts` (the track), `bosses.ts` (the bosses), the tuner              |
+| The targets: what a server should achieve against them          | combat v2  | `packages/lab/src/targets.ts` (Misa's targets, 2026-10-30)                                |
+| The roster: what a server's players have at week N              | the valley | `packages/lab/data/valley/` (the valley's files), read by `src/valley.ts` and `roster.ts` |
+| The path: where a server is at week N, and how long it stays    | both meet  | `packages/lab/src/path.ts`: the track, the targets and the roster run together            |
 
-The roster is the only thing the valley changes. When its economy lab exists, it writes the same roster data, and the tuner reruns (about 4 minutes); the track, the bosses, the targets and the path code stay.
+The roster is the only thing the valley changes. When the valley has new numbers it copies them over its two files in `packages/lab/data/valley/`, and the tuner reruns (about 4 minutes); the track, the bosses, the targets and the path code stay.
 
 ## The seam: a roster profile
 
@@ -24,7 +24,9 @@ A roster profile says, for each kind of player and each week from 1 to 24:
 
 Kinds of player: **daily** (the valley's "Sanni"), **weekly** (about 75% to 80% of a daily player's idle growth, valley target T-2) and **new** (joins late and catches up).
 
-**Placeholder data until the valley's lab exists**, from the valley docs' worked examples (all marked there as examples): a daily player's best three at about level 19 at week 4, 25 at week 8 and 29 at week 12; the 10th creature at about 15 to 17 at week 4; 15 creatures by week 4; catch-up brings a new catch to the 3rd-best creature's level in about a week. Three speeds are kept: **slow** (levels 20% behind), **expected**, **fast** (20% ahead).
+**The data is the valley's** (2026-10-30): `packages/lab/data/valley/roster-profile.json` (exactly the profile above) and `server-coverage.json` (see "Ownability"), copied from the valley branch `ccr-93a1de17-yutb1a`, commit `8ffe5d0`, `docs/design/valley/economy/`. `src/valley.ts` loads them, checks their shape (24 weeks per kind, numbers in range, `forms` is `'all'` or a list) and throws a clear error otherwise, so a bad drop-in fails loudly. Some values are fractions (a 10th creature at level 8.5); the 20th creature's level can drop from one week to the next while the roster is smaller than 20 (the valley reports the lowest owned level for a creature not owned). The new player's week-1 row is ahead of the daily player's; `rosterWeek` caps it at the daily player's level. `gear` is the average worn item level and is still unused.
+
+The three **speeds** stay: **slow** (levels 20% behind), **expected**, **fast** (20% ahead). They are sensitivity factors on the valley's levels, not data of the valley: they show how the path moves if servers grow slower or faster than the valley says.
 
 ## The track
 
@@ -58,6 +60,16 @@ Each slot is tuned for the roster a dedicated server has in the week it usually 
 **Determination** (after WoW's; off by default; `path.ts`, `DETERMINATION`): each failed weekend on the same boss gives the server +5% damage and healing (`FightOptions.determinationBp`), at most 10 stacks, reset by a kill; a Festival week changes nothing. `--path --determination` plays the same servers with it on and prints that beside the path with it off. The track tuner never uses it, so the table does not rely on it; whether to turn it on is decided once the valley's systems land.
 
 There is no numeric floor from the lap before: a later lap's cards are never weaker, its HP, Attack and armour may be lower when they make up for it, and the rule is that its first-weekend kill rate is not above the lap before's by more than noise (the tuner reports it). The lab tests' rules (`raidRules.ts`) stay with the three fixed ranks and are not applied to slots.
+
+## Ownability
+
+A raid answer must be built from creatures a server can own at the week the slot arrives (2026-10-30; Misa's constraint in the valley's round 15: it is fine to require a rare here or there, since players pool their rarer creatures in the raid roster, but an all-common requirement is too limiting, and epics should not be needed early).
+
+- **Per line.** An evolved form cannot be found by scouts: a player owns it by owning its line's stage 1 and evolving it. So a form counts as its line, and the line has its stage 1 form's rarity. Rare lines: stormray (stormray, halcyray, tempestray), mossback (mossback, ancientshell, bloomback), coralynx. Epic lines: aurorix, gaiadrake, hearthshell, lanternfin, solmane.
+- **The coverage.** `server-coverage.json` gives, for a mixed server of 5, 8 or 15 players and each week, the share of each rarity's species that at least one player owns: the chance a given species of that rarity can be pooled into the raid roster. The valley counts 34 forms as 34 species; using that share as the chance that a given line is owned is the approximation we accept.
+- **The rule.** A slot's **tool line** (the boss's first answer in `BOSS_ANSWERS`, the line the track tuner measures as "prepared") is **ownable** at the slot's arrival week when the chance that a mixed server of 8 owns every non-common line it uses is at least 50%. That chance is the product, over the distinct non-common lines in the answer, of that rarity's coverage at that week. An all-common answer is always ownable. So one rare line is fine once rare coverage reaches 50%, two need about 71%, and an epic is out until late. The numbers are `OWNABLE_CHANCE_MIN` and `OWNABLE_SERVER` in `targets.ts`; the check is `ownability.ts`, shared by the test (`test/ownability.test.ts`) and the report (`--path` and the full report's track section print, per slot, the lines each answer needs, the chance on servers of 5, 8 and 15, and pass or fail).
+- The slot's arrival week is the committed `SLOT_WEEKS` in `track.ts`: the weeks the table was tuned for, the dedicated server's median.
+- The classic party also uses Tempestray (a rare). It is a measure of an unprepared but decent team, so it is left alone.
 
 ## What survives the meeting
 
