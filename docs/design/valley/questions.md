@@ -6,29 +6,7 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q20. Where do numbers live, for players who want them?
-
-Status: asked, round 8 (2026-10-30). From the return moment's panel (`reviews/2026-10-30-return.md`, finding 8). Touches: `return.md`, `posts.md`, the place scenes; `docs/design/review-brief.md` (fewer boxes, show don't tell).
-
-**Why it matters.** The return walk now shows a story and never a number that could feel like a loss. The veteran reviewer pointed out that a player who likes to plan then has nowhere to see how fast a post works, why (fit, mastery, kit), when its store fills, or how far the next server project is. Sanni never needs any of it.
-
-- **A. Only what the world shows.** Piles at posts, bubbles, badges and the places' looks. No numbers beyond counts.
-- **B. Details inside each place.** Tap the Forge and its scene shows each anvil's pace and what makes it up, when its store fills ("full in 2 days 14 hours"), and the Forge's next project ("level 4: 70%, short on scrap"), always phrased as what happens next, never as what was lost.
-- **C. B, plus one ledger screen.** A single overview of every post, rate and event since your last visit, one tap from the valley (a side panel on desktop).
-
-**Lead's pick: B.** It gives planners everything at the place it belongs to, keeps the valley free of tables, and keeps your "fewer boxes" rule. C is a web form by another name.
-
-### Q21. Does the return walk ask you to prepare for the raid?
-
-Status: asked, round 8 (2026-10-30). From the panel (finding 9: Joonas for, Sanni against). Touches: `return.md` V-RET-3 and V-RET-8, `defence.md`; Misa's Q15 answer ("we need to give players the entire week to prepare").
-
-**Why it matters.** From Monday everyone knows the week's threat and its rule cards. The veteran wants "prepare for the raid" to be the week's most important decision. The casual player says rule cards are "reading I will skip", and a fight she wasn't in makes her feel behind. The walk ends at one decision, so this decides how often that decision is the raid.
-
-- **A. Every visit until you've chosen defenders.** From Monday, the walk ends at the Watchtower until you place your creatures (unless a new species turns up).
-- **B. Once a week.** The first visit after the threat is sighted ends at the Watchtower: the threat, its rule cards, and "choose your defenders". After that, the beacon simply stays lit.
-- **C. Never.** The walk shows the threat on the horizon and the lit beacon; preparing is something you go and do.
-
-**Lead's pick: B.** One clear nudge gives everyone the whole week to prepare, as you wanted, without the walk nagging a player who isn't joining this week.
+Nothing right now.
 
 ## Queue
 
@@ -346,6 +324,38 @@ Status: answered, round 7 (2026-10-30). Q17 again, with research (`docs/research
 **Answer (2026-10-30): B, mastery of the work in general.** "B sounds like a good way to go. Maybe not kelp cap mastery specifically but Smithing in general (though that was probably your proposal all along). A maximum level reached in a certain profession is a nice way of opening the floor for newcomers into the same profession."
 
 Became: V-POST-12, mastery per kind of work (scouting, smithing, keeping, teaching) in three visible steps; a Master keeps the badge and title for good, gets a small perk at another kind of post, and its card says "ready to learn something new", so it makes room for a newcomer; no per-recipe signature.
+
+### Q20. Where do numbers live, for players who want them?
+
+Status: answered, round 8 (2026-10-30). From the return moment's panel (`reviews/2026-10-30-return.md`, finding 8). Touches: `return.md`, `posts.md`, the place scenes; `docs/design/review-brief.md` (fewer boxes, show don't tell).
+
+**Why it matters.** The return walk now shows a story and never a number that could feel like a loss. The veteran reviewer pointed out that a player who likes to plan then has nowhere to see how fast a post works, why (fit, mastery, kit), when its store fills, or how far the next server project is. Sanni never needs any of it.
+
+- **A. Only what the world shows.** Piles at posts, bubbles, badges and the places' looks. No numbers beyond counts.
+- **B. Details inside each place.** Tap the Forge and its scene shows each anvil's pace and what makes it up, when its store fills ("full in 2 days 14 hours"), and the Forge's next project ("level 4: 70%, short on scrap"), always phrased as what happens next, never as what was lost.
+- **C. B, plus one ledger screen.** A single overview of every post, rate and event since your last visit, one tap from the valley (a side panel on desktop).
+
+**Lead's pick: B.** It gives planners everything at the place it belongs to, keeps the valley free of tables, and keeps your "fewer boxes" rule. C is a web form by another name.
+
+**Answer (2026-10-30): B.**
+
+Became: V-RET-9, numbers live inside each place, phrased as what happens next; no overview screen.
+
+### Q21. Does the return walk ask you to prepare for the raid?
+
+Status: answered, round 8 (2026-10-30). From the panel (finding 9: Joonas for, Sanni against). Touches: `return.md` V-RET-3 and V-RET-8, `defence.md`; Misa's Q15 answer ("we need to give players the entire week to prepare").
+
+**Why it matters.** From Monday everyone knows the week's threat and its rule cards. The veteran wants "prepare for the raid" to be the week's most important decision. The casual player says rule cards are "reading I will skip", and a fight she wasn't in makes her feel behind. The walk ends at one decision, so this decides how often that decision is the raid.
+
+- **A. Every visit until you've chosen defenders.** From Monday, the walk ends at the Watchtower until you place your creatures (unless a new species turns up).
+- **B. Once a week.** The first visit after the threat is sighted ends at the Watchtower: the threat, its rule cards, and "choose your defenders". After that, the beacon simply stays lit.
+- **C. Never.** The walk shows the threat on the horizon and the lit beacon; preparing is something you go and do.
+
+**Lead's pick: B.** One clear nudge gives everyone the whole week to prepare, as you wanted, without the walk nagging a player who isn't joining this week.
+
+**Answer (2026-10-30): B.**
+
+Became: V-RET-3, the first visit after the threat is sighted ends at the Watchtower once a week; after that the beacon stays lit.
 
 ## Withdrawn
 

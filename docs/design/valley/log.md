@@ -90,4 +90,6 @@ Research filed as `docs/research/worker-identity.md`: permanent mastery where ma
 
 **Done.** Wrote `systems/return.md` in full, ran the panel (owner's proxy, Sanni, Joonas; `reviews/2026-10-30-return.md`) and revised it: the return is a short walk through the valley ending at one decision chosen by how much it matters; at most three lines, as bubbles over creatures; creatures carry their piles home (no collect button; V-POST-5 fixed); a surprise only past a rarity bar, otherwise a resting creature's small moment; your own part first in server news; weekly beats replace lines; a skipped raid gets one line. Push on got a trade-off (V-SCOUT-6). Asked round 8: Q20 where numbers live, Q21 raid preparation in the walk.
 
-**Next.** Record round 8. Then phase 1, step 4: scouts and the Forge loop in full.
+Round 8 answered: numbers inside each place (Q20, V-RET-9); raid preparation once a week in the walk (Q21).
+
+**Next.** Phase 1, step 4: scouts and the Forge loop in full, then their panel.
