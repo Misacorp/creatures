@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-30: The boss track is tuned against a roster profile the valley will supply
+
+ID: `2026-10-30-the-boss-track-is-tuned-against` · Status: current
+
+**Decision (lead, from Misa's direction of 2026-10-30).** Combat v2 owns the challenges and the valley owns the roster, with one data shape between them (`docs/design/combat/boss-track.md`). The boss track (which boss at which Boss Rank, with its card strength), the bosses' numbers and the targets are lab data. A **roster profile** says what each kind of player (daily, weekly, new) has at each week: the levels of their 1st, 3rd, 10th and 20th creature, roster size, available forms, talent slots and gear. A path simulator plays servers week by week against the track (a failed boss returns), and the tuner sets each slot's numbers for the roster a dedicated server has when it usually arrives there. Until the valley's economy lab exists, the roster profile is placeholder data from the valley docs' worked examples, with slow, expected and fast speeds (levels 20% behind or ahead).
+
+**Reasoning.** Misa: two big systems are changing independently, and balance against player progression is not possible until they talk; combat v2's role is to set the challenges, make them easy to configure, and find the expected path for a server. The valley's planned economy lab already reports the 1st, 3rd, 10th and 20th creature's level per week, so the same shape lets its output replace the placeholder with no change to the track, the bosses' content, the targets or the path code; the numbers are re-tuned in minutes. Tuning at three speeds shows how sensitive the raid is to the valley's pace before either ships.
+
 ## 2026-10-30: The combat lab runs on every core, with a speed budget
 
 ID: `2026-10-30-the-combat-lab-runs-on-every` · Status: current
