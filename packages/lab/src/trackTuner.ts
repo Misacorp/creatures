@@ -10,7 +10,8 @@
  * potential of 125% or more and usually beats the boss within two weekends, removes most of the HP with random legal talents, its
  * tool is worth what the cards ask in points of potential (the HP-share tool measures are information only here), and the classic party reaches a potential of 70% to 90%
  * and kills at most 5% of weekends. Slot 1 also asks that the mixed server (the path's mapping) kills it in its first weekend in at
- * least 80% of weekends (`TUTORIAL_MIXED_KILL_MIN`); on every other slot the mixed server is information only (its potential is shown).
+ * least 80% of weekends (`TUTORIAL_MIXED_KILL_MIN`); every other slot asks it to kill within three weekends in half of its runs
+ * (`MIXED_KILL_MIN`, a weight below the dedicated targets, so a dedicated target wins where both cannot hold).
  * A creature under its form's evolution level fights as its stage 1 form (`gatedPick`, `roster.ts`) in every team here.
  * Information measures (`SlotInfo`, never targets) are taken in the full measurement: the classic party beside decent trios with
  * rotated elements, the prepared line at middling ranks and with random talents. Determination (`path.ts`) is never used here. The lab tests' rules (`raidRules.ts`) belong to the three fixed ranks and are not applied here.
@@ -65,6 +66,7 @@ import {
   metBy,
   missOf,
   slotTargetsFor,
+  weeksText,
   WALL_CLASSIC_POTENTIAL_AIM,
   type RaidMeasure,
   type RaidMeasures,
@@ -319,26 +321,24 @@ function measureSpeed(
         };
       })()
     : undefined;
-  // The mixed server of ten at the path's mapping: information only.
+  // The mixed server of ten at the path's mapping: its kill rate is a target (`MIXED_KILL_MIN`, slot 1's `TUTORIAL_MIXED_KILL_MIN`);
+  // its potential is information, taken in the full measurement only.
   const mixedDraws = Array.from({ length: f.mixedDraws }, (_, d) => {
     const w = serverWeekend(MIXED, a.slot, a.week, speed, `${a.salt}:m${d}`, profile, { table });
     return {
       stats: weekendStatsOf(w.boss, w.placements, w.bench, f.mixedWeekends, `${a.salt}:m${d}`),
-      potential: weekendPotentialOf(
-        w.boss,
-        w.placements,
-        w.bench,
-        f.mixedWeekends,
-        `${a.salt}:m${d}`,
-      ),
+      potential: f.info
+        ? weekendPotentialOf(w.boss, w.placements, w.bench, f.mixedWeekends, `${a.salt}:m${d}`)
+        : undefined,
     };
   });
   const mixed: WeekendStats | undefined = f.mixedDraws
     ? combineWeekends(mixedDraws.map((d) => d.stats))
     : undefined;
-  const mixedPot = f.mixedDraws
-    ? combinePotential(mixedDraws.map((d) => d.potential)).mean
-    : undefined;
+  const mixedPot =
+    f.mixedDraws && f.info
+      ? combinePotential(mixedDraws.flatMap((d) => (d.potential ? [d.potential] : []))).mean
+      : Number.NaN;
   return {
     measures: {
       ...unmeasured(),
@@ -354,7 +354,7 @@ function measureSpeed(
       'classic.potential': classicPot,
       'tool.potential': toolPot,
       ...info,
-      ...(mixed && mixedPot !== undefined
+      ...(mixed
         ? {
             'mixed.share': mixed.damageShare,
             'mixed.kill': mixed.winRate,
@@ -367,10 +367,10 @@ function measureSpeed(
       2 * f.weekends +
       f.classicWeekends +
       f.mixedDraws * f.mixedWeekends +
-      // The potential weekends: written, classic, the mixed server's and the line without its tool; the information ones (random draws).
+      // The potential weekends: written, classic and the line without its tool; the information ones (random draws, the mixed server's).
       f.weekends +
       f.classicWeekends +
-      f.mixedDraws * f.mixedWeekends +
+      (f.info ? f.mixedDraws * f.mixedWeekends : 0) +
       f.weekends +
       (f.info ? per * f.draws + ROTATED_TRIOS.length * f.classicWeekends + f.weekends : 0),
     ...(slotInfo ? { info: slotInfo } : {}),
@@ -531,13 +531,11 @@ export const distanceOf = (n: Numbers, ref: Numbers): number =>
   NAMES.length;
 
 /**
- * The fidelity a slot is measured at. Slot 1 also holds the tutorial's mixed-kill target (`TUTORIAL_MIXED_KILL_MIN`), so it takes the
- * mixed server in every pass, with the draws the boss tuner's own pass of that level takes (`FIDELITY`); the other slots leave the mixed
- * server (information only) to the full measurement.
+ * The fidelity a slot is measured at. The mixed server is a target on every slot (slot 1: `TUTORIAL_MIXED_KILL_MIN`, the others:
+ * `MIXED_KILL_MIN`), so every pass takes it, with the draws the boss tuner's own pass of that level takes (`FIDELITY`).
  */
-export function slotFidelity(slot: number, quick: boolean, level: Level): Fidelity {
+export function slotFidelity(_slot: number, quick: boolean, level: Level): Fidelity {
   const f = SLOT_FIDELITY(quick)[level];
-  if (slot !== 1) return f;
   const own = FIDELITY(quick)[level];
   return { ...f, mixedDraws: own.mixedDraws, mixedWeekends: own.mixedWeekends };
 }
@@ -771,7 +769,13 @@ export async function tuneTrack(o: TrackTuneOptions): Promise<TrackTuneResult> {
   let tuneSeconds = 0;
   const arrivals = async (table: SlotTable): Promise<number[]> => {
     const p0 = Date.now();
-    const plan = planPath({ quick: o.quick, speeds: [TUNE_SPEED], kinds: ['dedicated'], table });
+    const plan = planPath({
+      quick: o.quick,
+      speeds: [TUNE_SPEED],
+      kinds: ['dedicated'],
+      table,
+      determination: 'off',
+    });
     const { results } = await runJobs(plan.jobs, o.run.exec, o.run.slots);
     pathSeconds += (Date.now() - p0) / 1000;
     const dedicated = plan.assemble(results).data.find((d) => d.server === 'dedicated');
@@ -965,7 +969,7 @@ export function trackSummary(
     '',
     '### Slots',
     '',
-    '| Slot | Boss | Week | Rules | Cards | HP | Attack | Armour | prepared potential (written) | prepared potential (random) | prepared.share | first-weekend kill | prepared.beat2 | tool.share (info) | tool.written (info) | tool potential | tool target | classic potential | classic.kill | mixed potential / kill / share (info; slot 1: the kill is a target) | Misses | At the edge of the search |',
+    '| Slot | Boss | Week | Rules | Cards | HP | Attack | Armour | prepared potential (written) | prepared potential (random) | prepared.share | first-weekend kill | prepared.beat2 | tool.share (info) | tool.written (info) | tool potential | tool target | classic potential | classic.kill | mixed potential / kill (target) / share / weekends to a kill | Misses | At the edge of the search |',
     `| ${Array.from({ length: 22 }, () => '---').join(' | ')} |`,
   );
   for (const s of r.slots) {
@@ -989,12 +993,12 @@ export function trackSummary(
         .map((k) => cell(t, k, m))
         .join(
           ' | ',
-        )} | ${cell(t, 'tool.potential', m)} | ${tool === undefined ? 'none' : `≥ ${pct(tool)}`} | ${cell(t, 'classic.potential', m)} | ${cell(t, 'classic.kill', m)} | ${pct(m['mixed.potential'])} / ${cell(t, 'mixed.kill', m)} / ${pct(m['mixed.share'])} | ${missed.length ? missed.join('; ') : 'none'} | ${s.atEdge.length ? s.atEdge.join(', ') : '-'} |`,
+        )} | ${cell(t, 'tool.potential', m)} | ${tool === undefined ? 'none' : `≥ ${pct(tool)}`} | ${cell(t, 'classic.potential', m)} | ${cell(t, 'classic.kill', m)} | ${pct(m['mixed.potential'])} / ${cell(t, 'mixed.kill', m)} / ${pct(m['mixed.share'])} / ${weeksText(m['mixed.kill'])} | ${missed.length ? missed.join('; ') : 'none'} | ${s.atEdge.length ? s.atEdge.join(', ') : '-'} |`,
     );
   }
   out.push(
     '',
-    '(A value in bold misses its target, as measured at the expected speed. Slot 1 is the tutorial boss: no rule cards, no limit on the classic party, no tool target and one more target, that the mixed server kills it in 80% of weekends or more (the tool target is in points of potential, `toolPotentialMinAt`; the HP-share tool measures are information only on the track); slot 2 has one card. Potentials are the mean damage dealt over the boss’s HP when the boss cannot die; the written talents are the solved puzzle. The values are from the full measurement of the proposal.)',
+    '(A value in bold misses its target, as measured at the expected speed. Slot 1 is the tutorial boss: no rule cards, no limit on the classic party, no tool target and one more target, that the mixed server kills it in 80% of weekends or more (every other slot asks the mixed server to kill within three weekends in half of its runs, a kill rate of 21% or more, with a weight below the rest; the tool target is in points of potential, `toolPotentialMinAt`; the HP-share tool measures are information only on the track); slot 2 has one card. Potentials are the mean damage dealt over the boss’s HP when the boss cannot die; the written talents are the solved puzzle. The values are from the full measurement of the proposal.)',
     '',
   );
   const infoRows = r.slots.flatMap((x) =>

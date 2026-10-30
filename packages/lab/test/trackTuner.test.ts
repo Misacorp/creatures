@@ -18,6 +18,10 @@ import {
   slotTargetsFor,
   toolPotentialMinAt,
   toolShareMinAt,
+  MIXED_BEAT_MIN,
+  MIXED_KILL_MIN,
+  MIXED_WEEKENDS_MAX,
+  MIXED_WEIGHT,
   TUTORIAL_MIXED_KILL_MIN,
   WALL_CLASSIC_POTENTIAL_AIM,
   WALL_CLASSIC_POTENTIAL_MAX,
@@ -272,7 +276,7 @@ describe('a slot’s weekend', () => {
     }
   });
 
-  it('is measured the same every time, with the mixed server only when asked', () => {
+  it('is measured the same every time, with the mixed server only when asked for', () => {
     const table: SlotTable = { 2: { hp: 14_000, atk: 100, armour: 35 } };
     const tiny = {
       weekends: 4,
@@ -291,9 +295,13 @@ describe('a slot’s weekend', () => {
     };
     const a = evalSlot(args);
     expect(evalSlot(args)).toEqual(a);
-    for (const t of slotTargets(2)) expect(a.measures[t.measure]).toBeGreaterThanOrEqual(0);
+    // The mixed server is measured only when the fidelity has draws of it (the tuner asks for them in every pass: `slotFidelity`).
+    for (const t of slotTargets(2).filter((x) => x.measure !== 'mixed.kill'))
+      expect(a.measures[t.measure]).toBeGreaterThanOrEqual(0);
     expect(a.measures['mixed.kill']).toBeNaN();
     const b = evalSlot({ ...args, fidelity: { ...tiny, mixedDraws: 1 } });
+    for (const t of slotTargets(2)) expect(b.measures[t.measure]).toBeGreaterThanOrEqual(0);
+    expect(b.measures['mixed.potential']).toBeNaN();
     expect(b.measures['mixed.kill']).toBeGreaterThanOrEqual(0);
     expect(b.measures['mixed.share']).toBeLessThanOrEqual(1);
     // A boss that cannot hurt is beaten, with or without a tool; one with enormous HP is never.
@@ -358,6 +366,7 @@ describe('a slot’s weekend', () => {
       'tool.potential',
       'classic.potential',
       'classic.kill',
+      'mixed.kill',
     ]);
     // Slot 1, the tutorial (no rule cards): any decent team may win it, so no classic limit, and there is no card to ask a tool for.
     // The mixed server must also win it in its first weekend (a tutorial for every server).
@@ -371,7 +380,19 @@ describe('a slot’s weekend', () => {
       TUTORIAL_MIXED_KILL_MIN,
     );
     expect(TUTORIAL_MIXED_KILL_MIN).toBe(0.8);
-    for (const slot of [2, 5, 10]) expect(measures(slot)).not.toContain('mixed.kill');
+    // Every other slot asks the mixed server to kill within three weekends in half of its runs, with a weight below every other target's.
+    for (const slot of [2, 5, 10]) {
+      const t = slotTargets(slot).find((x) => x.measure === 'mixed.kill');
+      expect(t?.min).toBeCloseTo(MIXED_KILL_MIN);
+      expect(beatWithin(t?.min ?? 0, MIXED_WEEKENDS_MAX)).toBeCloseTo(MIXED_BEAT_MIN);
+      expect(Math.min(...slotTargets(slot).map((x) => x.weight))).toBe(MIXED_WEIGHT);
+      expect(t?.weight).toBe(MIXED_WEIGHT);
+    }
+    expect(MIXED_KILL_MIN).toBeGreaterThan(0.2);
+    expect(MIXED_KILL_MIN).toBeLessThan(0.21);
+    // The wall slot keeps it too; slot 1's own is the stronger one.
+    expect(slotTargets(5).some((x) => x.measure === 'mixed.kill')).toBe(true);
+    expect(slotTargets(1).filter((x) => x.measure === 'mixed.kill')).toHaveLength(1);
     // The rest of the bounds are Misa's.
     for (const m of [
       'prepared.potential',
@@ -756,14 +777,13 @@ describe('the information measures of a slot (not targets)', () => {
     expect(sum(mid.placements)).toBeLessThan(sum(best.placements));
   });
 
-  it('holds the tutorial’s mixed-kill target by measuring the mixed server in every pass of slot 1 only', () => {
+  it('holds the mixed server’s targets by measuring it in every pass of every slot', () => {
     for (const quick of [true, false])
-      for (const level of ['search', 'check', 'final'] as const) {
-        expect(slotFidelity(1, quick, level).mixedDraws, `${quick} ${level}`).toBeGreaterThan(0);
-        expect(slotFidelity(2, quick, level).mixedDraws === 0, `${quick} ${level}`).toBe(
-          level !== 'final',
-        );
-      }
+      for (const level of ['search', 'check', 'final'] as const)
+        for (const slot of [1, 2, 5])
+          expect(slotFidelity(slot, quick, level).mixedDraws, `${quick} ${level}`).toBeGreaterThan(
+            0,
+          );
     const r = evalSlot({
       slot: 1,
       week: 1,

@@ -51,19 +51,22 @@ export const STUCK_WEEKS = 4;
 export const STUCK_SHARE_MAX = 0.1;
 
 /**
- * Determination (Misa, 2026-10-30; after WoW's, +5% a wipe, at most 10 stacks): a dial of the path, OFF BY DEFAULT. Each failed
- * weekend on the same boss gives the server `stackBp` more damage and healing, at most `maxStacks` stacks, and a kill resets it.
- * A Festival week (no weekend) changes nothing. The track tuner never uses it (`trackTuner.ts`); `--path --determination` shows
- * the path with it beside the path without it.
+ * Determination (Misa, 2026-10-30; after WoW's): each failed weekend on the same boss gives the server `stackBp` more damage and
+ * healing, at most `maxStacks` stacks, and a kill resets it. A Festival week (no weekend) changes nothing. **On by default from the
+ * second lap** (Misa, 2026-10-30, panel 6): `fromSlot` is the first slot it applies to, so slots 1 to 5 never get it, and the cap is
+ * +25%. The track tuner never uses it (`trackTuner.ts` asks the path for `'off'`): the table must not rely on it. `--path` shows the
+ * path with it on and, with `--determination`, beside the path without it (`--no-determination` shows only the latter).
  */
 export interface Determination {
   /** Damage and healing, in bp, for each stack. */
   readonly stackBp: number;
   readonly maxStacks: number;
+  /** The first slot it applies to (a stack counted on an earlier slot does nothing). */
+  readonly fromSlot: number;
 }
 
-/** The default: +5% damage and healing a stack, at most 10 stacks (+50%). */
-export const DETERMINATION: Determination = { stackBp: 500, maxStacks: 10 };
+/** The default: +5% damage and healing a stack, at most 5 stacks (+25%), from slot 6 (the second lap) on. */
+export const DETERMINATION: Determination = { stackBp: 500, maxStacks: 5, fromSlot: 6 };
 
 // ---------- the walk ----------
 
@@ -96,8 +99,8 @@ export interface ServerPath {
  */
 export interface PathRun {
   readonly table?: SlotTable;
-  /** Play the path with Determination (off by default). */
-  readonly determination?: Determination;
+  /** The Determination the path plays with: `DETERMINATION` when absent, none for `'off'` (the track tuner, and the comparison run). */
+  readonly determination?: Determination | 'off';
 }
 
 export interface WalkOptions {
@@ -106,6 +109,8 @@ export interface WalkOptions {
   readonly festivalEase?: number;
   /** Determination's cap: the fight is told its stacks (failed weekends on this boss since the last kill, at most this many). Absent: always 0. */
   readonly determinationStacks?: number;
+  /** The first slot Determination applies to (default 1: every slot): on an earlier slot the fight is told 0 stacks. */
+  readonly determinationFromSlot?: number;
 }
 
 /**
@@ -119,7 +124,7 @@ export type Fight = (slot: number, week: number, stacks: number) => boolean;
  * "The longest run on one boss" is the most weekends it took to kill one boss for the first time (`attempts`): a server that lost
  * four lost weekends and won the fifth ran five.
  * With `determinationStacks` each lost weekend on the boss of the slot adds a stack for the next fight there (up to the cap), and a
- * kill clears them; a Festival week keeps them.
+ * kill clears them; a Festival week keeps them. The stacks only count from slot `determinationFromSlot` on.
  */
 export function walkPath(fight: Fight, options: WalkOptions = {}): ServerPath {
   const weeks = options.weeks ?? ROSTER_WEEKS;
@@ -132,6 +137,7 @@ export function walkPath(fight: Fight, options: WalkOptions = {}): ServerPath {
   const attempts: number[] = [0];
   const killed = new Set<number>();
   const cap = options.determinationStacks ?? 0;
+  const from = options.determinationFromSlot ?? 1;
   let failed = 0;
   let slot = 1;
   let furthest = 1;
@@ -145,7 +151,7 @@ export function walkPath(fight: Fight, options: WalkOptions = {}): ServerPath {
     // The arrival week of a slot is the first week it is fought: a slot won in the week before a Festival is fought after it.
     if (!reached[slot - 1]) reached[slot - 1] = week;
     furthest = Math.max(furthest, slot);
-    const win = fight(slot, week, Math.min(cap, failed));
+    const win = fight(slot, week, slot >= from ? Math.min(cap, failed) : 0);
     fought.push(slot);
     won.push(win);
     weekends[slot - 1] = (weekends[slot - 1] ?? 0) + 1;
@@ -228,6 +234,10 @@ export const PATH_SERVERS: readonly PathServer[] = [DEDICATED, MIXED, BUILDERS];
 /** The kinds of server a path plan plays unless told otherwise (the builder server is asked for: `--path` does). */
 export const DEFAULT_PATH_KINDS: readonly PathServer['id'][] = ['dedicated', 'mixed'];
 
+/** The Determination a run plays with: the default (`DETERMINATION`) unless the run says `'off'` or gives its own. */
+export const determinationOf = (run: PathRun): Determination | undefined =>
+  run.determination === 'off' ? undefined : (run.determination ?? DETERMINATION);
+
 /** The placements, bench and boss of one server's weekend: everyone's creatures at their roster's levels in that week. */
 export function serverWeekend(
   server: PathServer,
@@ -300,7 +310,8 @@ export function weekendKill(
   stacks = 0,
 ): boolean {
   const { boss, placements, bench } = serverWeekend(server, slot, week, speed, seed, profile, run);
-  const determinationBp = run.determination ? stacks * run.determination.stackBp : 0;
+  const dial = determinationOf(run);
+  const determinationBp = dial && slot >= dial.fromSlot ? stacks * dial.stackBp : 0;
   return (
     weekendStatsOf(boss, placements, bench, 1, `path:${seed}:w${week}`, { determinationBp })
       .winRate === 1
@@ -318,7 +329,12 @@ export function pathOf(
   const seed = `${server.id}:${index}`;
   return walkPath(
     (slot, week, stacks) => weekendKill(server, slot, week, speed, seed, profile, run, stacks),
-    run.determination ? { determinationStacks: run.determination.maxStacks } : {},
+    (() => {
+      const dial = determinationOf(run);
+      return dial
+        ? { determinationStacks: dial.maxStacks, determinationFromSlot: dial.fromSlot }
+        : {};
+    })(),
   );
 }
 
@@ -509,9 +525,12 @@ export function planPath(options: PathPlanOptions): Plan<PathReport> {
         pathMarkdown(
           speed,
           data.filter((d) => d.speed === speed),
-          options.determination
-            ? ` with Determination (+${options.determination.stackBp / 100}% a failed week, at most ${options.determination.maxStacks} stacks)`
-            : '',
+          (() => {
+            const dial = determinationOf(options);
+            return dial
+              ? ` with Determination (+${dial.stackBp / 100}% a failed weekend from slot ${dial.fromSlot}, at most ${dial.maxStacks} stacks)`
+              : ' without Determination';
+          })(),
         ),
       );
       return { md, data };

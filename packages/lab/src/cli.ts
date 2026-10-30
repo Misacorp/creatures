@@ -2,7 +2,7 @@ import { writeFileSync } from 'node:fs';
 import { CARDS } from './cards';
 import { RAID_BOSS_IDS } from './bosses';
 import { planBosses } from './bossReport';
-import { DETERMINATION, planPath, type PathSummary } from './path';
+import { planPath, type PathSummary } from './path';
 import { ownabilityMarkdown, ownabilityTable } from './ownability';
 import { ROSTER_SPEEDS, type RosterSpeed } from './roster';
 import { inProcessExecutor } from './jobRunners';
@@ -174,8 +174,9 @@ async function tune(args: readonly string[], quick: boolean, run: JobRunner): Pr
  * `--path [--speed slow|expected|fast|all] [--determination] [--quick] [--out <file.md>]`: the path simulator (`path.ts`). It plays many seeded
  * servers (40, or 8 with `--quick`) of each kind through the boss track week by week and prints, per roster speed, the week each
  * slot is reached, the weekends spent on it and the share of servers stuck for more than four weeks on one boss. Nothing is tuned.
- * `--determination` plays the same servers again with Determination on (`DETERMINATION`: +5% damage and healing for each failed week
- * on the same boss, at most 10 stacks, reset by a kill) and prints that beside the path without it; it is off otherwise.
+ * The path plays with Determination, which is on by default from the second lap (`DETERMINATION`: +5% damage and healing for each failed
+ * weekend on the same boss, at most 5 stacks, from slot 6, reset by a kill). `--determination` also plays the same servers without it and
+ * prints that beside it, as a comparison; `--no-determination` prints only the path without it.
  */
 async function path(args: readonly string[], quick: boolean, run: JobRunner): Promise<number> {
   const speedArg = flagValue(args, '--speed') ?? 'expected';
@@ -195,19 +196,34 @@ async function path(args: readonly string[], quick: boolean, run: JobRunner): Pr
     return 1;
   }
   const t0 = Date.now();
-  // `--determination`: the same servers also with Determination on (`DETERMINATION`), reported beside the path without it.
-  const withDetermination = args.includes('--determination');
+  // The path has Determination on (`DETERMINATION`). `--determination` adds the same servers without it as a comparison;
+  // `--no-determination` plays only without it.
+  const comparison = args.includes('--determination');
+  const dial = args.includes('--no-determination') ? ('off' as const) : undefined;
   // The builder server (four daily players with random legal talents) is shown beside the dedicated and the mixed server.
   const plain = await runPlan(
-    planPath({ quick, speeds, kinds: ['dedicated', 'mixed', 'builders'] }),
+    planPath({
+      quick,
+      speeds,
+      kinds: ['dedicated', 'mixed', 'builders'],
+      ...(dial ? { determination: dial } : {}),
+    }),
     run,
   );
   const mds = [plain.value.md.join('\n')];
   let timings = plain.timings;
-  if (withDetermination) {
-    const on = await runPlan(planPath({ quick, speeds, determination: DETERMINATION }), run);
-    mds.push(on.value.md.join('\n'));
-    timings += '\n' + on.timings;
+  if (comparison && !dial) {
+    const off = await runPlan(
+      planPath({
+        quick,
+        speeds,
+        kinds: ['dedicated', 'mixed', 'builders'],
+        determination: 'off',
+      }),
+      run,
+    );
+    mds.push(off.value.md.join('\n'));
+    timings += '\n' + off.timings;
   }
   mds.push(ownabilityOfPath(plain.value.data).join('\n'));
   // The information measures at the arrival weeks of this path (slots 1 to 15, the committed `SLOT_NUMBERS`).
