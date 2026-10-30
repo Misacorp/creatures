@@ -23,6 +23,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [direction.md](direction.md): Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work.
 
+- 2026-10-31 After the combat and valley reworks the game resets; today's players become the pioneering first settlers \[Misa\]
 - 2026-10-30 Decisions live in topic files, kept in step by pnpm decisions
 - 2026-10-28 Content changes are not held back by existing rolls; modifiers, luck and fading debuffs
 - 2026-10-18 Part 2 meets the dungeon paths (merging main #32 into #35)
@@ -180,6 +181,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [raids.md](raids.md): Raid schedule, parties and joining, bosses and the raid curve, the live finale, raid board and summaries, raid Discord posts.
 
+- 2026-10-31 Lucky Strike and Slippery both go on raid bosses \[Misa\]
 - 2026-10-31 Mixed servers are tuned too; Determination on from the second lap, capped at +25%; a track strip, and no boss is called a wall \[Misa\]
 - 2026-10-30 Thornmother is a deliberate wall at the end of the first lap \[Misa\] (amended)
 - 2026-10-30 Raids are tuned on damage potential; young servers ramp in; Determination built but off \[Misa\] (amended)
@@ -311,6 +313,7 @@ Superseded: 1 entry (see the topic file).
 
 [gear.md](gear.md): Gear items, lines and sets, crafting, dismantling, conversions, the bag and the item picker.
 
+- 2026-10-31 Gear in combat v2: talents lead early, a balance mid-game, gear leads the endgame; no slot level requirements; gear alone can build crit \[Misa\]
 - 2026-10-27 Marked items, dismantled as a pile (amended)
 - 2026-10-21 the Workshop's supply jobs are one wizard in a drawer; level limits may fold in job pickers (amended)
 - 2026-10-21 A found item opens its item card (tap, or hover with a mouse)

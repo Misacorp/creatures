@@ -221,11 +221,11 @@ For the lead (2026-10-30: the lead takes each recommendation below as the workin
 9. **Lines with no home in v2.** Second Breath (no overtime) and Lingering (the live finale input of R18). Recommend: retire Second Breath now; keep Lingering until the input goes.
 10. **Remap the ladder.** Every `minItemLevel` (bases 5, 10, 12; lines 10, 12, 15) moves to 1 to 100; times five (25, 50, 60; 50, 60, 75) is a start, with the valley's pip thresholds. Flat base stats and the flat local lines (+12 Attack, +75 HP) were priced for item level 20 and a level cap of 30 and do not scale: they favour low levels. Recommend: accept it (it narrows level gaps, P-01), re-price in the lab.
 
-For Misa (game feel; each with a recommended pick):
+For Misa (answered 2026-10-31, `decisions/gear.md`, "Gear in combat v2: talents lead early..."):
 
-11. **How strong is a full set of gear next to a talent?** (A) A typical set is about one good talent (+8 to +15% for the team), and the lucky rolls reach two. (B) A typical set is about two talents, so gear is the main way to grow. **Recommend A**: the species and Knack stay the reason to bring a creature, and the chase for rolls still pays out at the top.
-12. **Scarf at level 7 and Charm at level 13?** (A) Drop them; every slot opens at level 1. (B) Keep them. (C) Lower them to 3 and 6. **Recommend A**: the valley's players' lower creatures are the ones locked out, and gear is the prize of the lottery.
-13. **Can gear alone build a crit creature?** (A) Yes: two chance lines and a damage line give about +20% damage, less than a talent pair. (B) No: halve the crit lines, so crit builds need talents. **Recommend A**: "luck is a build", and gear is where a lucky player finds it.
+11. **How strong is a full set of gear next to a talent?** **Answered:** it grows with the game. Early a talent is worth more than gear, mid-game the two balance, and in the endgame gear is the main way to grow and the top-tier lines are the chase. So the budget per piece (section 3) rises with item level until a typical endgame set is worth more than a good talent; the rarity factors and the pip ladder are tuned to that curve when gear enters the lab.
+12. **Scarf at level 7 and Charm at level 13?** **Answered: dropped**; every slot opens at level 1 (with combat v2's port).
+13. **Can gear alone build a crit creature?** **Answered: yes** (about +20% damage), strongest together with the crit talents.
 
 More for the lead (panel 6):
 

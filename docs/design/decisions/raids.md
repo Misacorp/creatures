@@ -4,6 +4,14 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: Lucky Strike and Slippery both go on raid bosses **[Misa]**
+
+ID: `2026-10-31-lucky-strike-and-slippery-both-go` · Status: current
+
+**Decision (Misa, 2026-10-31).** Both luck cards go on raid bosses: **Lucky Strike** (the boss's hits can crit; Cool Head answers it) and **Slippery** (the boss dodges more; Clear Skies answers it). They bring randomness on purpose. Which bosses carry them, and from which lap, is the lead's call, measured in the lab (each must keep its answer ownable and worth its tool, like every card).
+
+**Reasoning.** Misa: "Both are included to introduce randomness. If players know bosses can dodge, they'll understand that a payoff's reaction was also dodged." Panel 6 had suggested Lucky Strike only, because only one Knack gets past Slippery's dodge; Misa reads a dodge the boss card announces as fair, not as a hidden rule.
+
 ## 2026-10-31: Mixed servers are tuned too; Determination on from the second lap, capped at +25%; a track strip, and no boss is called a wall **[Misa]**
 
 ID: `2026-10-31-mixed-servers-are-tuned-too-determination` · Status: current · Amends: `2026-10-30-raids-are-tuned-on-damage-potential`, `2026-10-30-thornmother-is-a-deliberate-wall-at`

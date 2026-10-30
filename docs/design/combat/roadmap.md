@@ -79,10 +79,6 @@ Big simulations come in phase 5 on purpose: week-by-week and Boss Rank numbers m
 5. **Phase 1 gate check** (the phase 1 row above), then a PR, and phase 2 (the engine port) can start.
 6. **Later content:** a Mire Setter or Payoff (needs art); the Undercroft's own foes; an opt-in harder boss for the endgame.
 
-**Open questions for Misa:**
+**Open questions for Misa:** none.
 
-1. Should Lucky Strike (the boss crits) or Slippery (the boss dodges more) go on any raid boss, and which? (Content call; both are measured and have answers.)
-2. Before phase 6 (migration): keep each server's Boss Rank or reset to rank 1; convert existing gear to the new lines or reroll it.
-3. The gear plan's three calls (`gear-plan.md`, section 6, questions 11 to 13): how strong a full set is next to a talent (recommended: about one good talent); drop the Scarf 7 and Charm 13 slot levels (recommended); can gear alone build a crit creature (recommended: yes).
-
-**Answered 2026-10-31 (panel 6):** mixed servers are tuned too where possible (at most 3 weekends a boss); Determination is on from the second lap, at most +25%; a track strip on the raid screen; no boss is ever called a wall where players look.
+**Answered 2026-10-31 (panel 6):** mixed servers are tuned too where possible (at most 3 weekends a boss); Determination is on from the second lap, at most +25%; a track strip on the raid screen; no boss is ever called a wall where players look. Also answered 2026-10-31: Lucky Strike and Slippery both go on raid bosses (which bosses and laps is the lead's call, measured); gear's weight grows with the game (talents lead early, a balance mid-game, gear leads the endgame), the slot levels are dropped, gear alone can build crit; and after the combat and valley reworks the game resets, so phase 6 migrates nothing (today's players are recorded as the first settlers).
