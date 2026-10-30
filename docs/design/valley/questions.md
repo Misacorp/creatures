@@ -612,7 +612,7 @@ Status: answered, round 15 (2026-10-30). Touches: `scouts.md` (creature finds), 
 
 **Answer (2026-10-30): commons fast, rarer creatures slower.** "It seems like an awful lot. On the other hand we do want players to catch a lot of species so they can create combinations of creatures to answer raid boss challenges. Maybe it's still too much. Could we have a good set of common creatures that are found at the 'week 4 pace' but then make it slow down as rarer creatures are harder to find? They shouldn't be essential to find for boss cards, just offer more variety."
 
-Became: V-SCOUT-12, creature finds by rarity: commons at about the plan's pace (about 15 kinds at week 4), rarer species slower; rare and epic species are variety, never needed to answer a boss (a constraint sent to combat v2). The lab tunes the odds.
+Became: V-SCOUT-12, creature finds by rarity: commons at about the plan's pace (about 15 kinds at week 4), rarer species slower; rare and epic species are mostly variety. Follow-up the same day: "it's okay to require a rare here or there because players will be able to pool their rarer creatures together in the raid roster. A 100% common requirement is too limiting in design space", so a boss may now and then need a rare the server can pool. The lab tunes the odds.
 
 ### Q39. Ribbons: drop them, or trials as an honour?
 
