@@ -59,3 +59,9 @@ Then the scrap list ([`scrap-list.md`](scrap-list.md)), from an agent's inventor
 **Done.** Recorded round 4: catch-up toward the server's middle while present, no raid level sync (Q10, V-BON-6); the bonfire as a communal hearth with slight increments per level (Q11, V-BON-7); a max level per place, each level harder than the last, cosmetic projects after, new places any time (Q12, V-COM-11). The lead's check found no conflicts; the lab will check how a lone player fares at high place levels, since projects now grow per level. Asked round 5, the last of the queue: Q13 the currency's new name, Q14 the battlegrounds for Tide, Ember and Mire, Q15 whether sentries help the raid.
 
 **Next.** Record round 5. The queue is then empty except **targets** (waits on the lab), so phase 1 moves on: write posts and the bonfire in full with example numbers, run the panel with Pia, and bring what it raises to Misa as new rounds.
+
+## 2026-10-30: round 5 answered; the queue is empty
+
+**Done.** Recorded round 5: Bait becomes Acorns, with a generic resource library as the source of truth for every resource's name (first task of phase 4, `decisions.md` has the plan); the three battlegrounds accepted and the raid framed as proactive defence in far away places (G-5, compendium `bosses.md`); no sentry post, the raid's information is everyone's from Monday, the Watchtower only the raid's place for now (V-DEF-1, V-DEF-4). Watchtower projects and the Stormglass keystone left `commons.md`. The queue now holds only **targets**, which waits on the economy lab.
+
+**Next.** Phase 1, step 2: posts and the bonfire written in full with example numbers, then the panel with Pia; what it raises goes to Misa as round 6.

@@ -27,7 +27,7 @@ One pixel-art valley, panned on a phone and seen whole on a desktop. Places are 
 | Signpost         | expeditions, the haul, push on                                                                                | scouts per destination                        |
 | Cave             | the dungeon: dungeon passes stack to 3, and a pass can run any of the last 3 days' maps (round 3, Q7)         |                                               |
 | Fairground       | the Valley Games as a weekly fair every Wednesday, about 5 events, the Prize Stall the same day (round 3, Q8) |                                               |
-| Watchtower (new) | the raid: muster, the defence weekend                                                                         | sentries                                      |
+| Watchtower (new) | the raid: muster and set out; the week's threat and rule cards from Monday (no post)                          |                                               |
 | School (new)     |                                                                                                               | teacher, students                             |
 
 ## Known work (from the prototype panel, 2026-10-29)

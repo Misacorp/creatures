@@ -26,7 +26,6 @@ A creature is given a post somewhere in the valley and works there on its own un
 | ---------------------------------- | -------------- | ------------------------------------------------------------------------ | --------------------------------- |
 | Scout (one per destination)        | Signpost       | finds over time: Bait, parts, scrap, lore pages, now and then a creature | the destination's element         |
 | Smith                              | Forge          | crafts the set blueprint on a loop                                       | Crafting level / a Workshop trait |
-| Sentry                             | Watchtower     | raid readiness for the server (see `defence.md`)                         | guards                            |
 | Keeper                             | Paddock        | new arrivals start stronger; catches settle faster                       | supports                          |
 | Teacher, student                   | School         | talents (see `school.md`)                                                |                                   |
 | Lounger                            | House          | rest XP (today's lounge)                                                 |                                   |

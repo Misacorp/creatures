@@ -10,9 +10,9 @@ Misa: "Could players offer some of their own resources for the common good? Coul
 
 The valley's places belong to the whole server. Each place has a **server level**, raised by **projects** the server works on together. Players give in three ways, all optional:
 
-1. **Resources.** Each place has a project board (a crate, a scaffold, a donation bowl, drawn in the scene) where a player drops scrap, parts, Bait, supplies. Bait (to be renamed) is the everyday currency both for a player's own posts (lures, tools) and for the server's projects, so every spend is a choice between "my valley" and "our valley" (round 3, Q9). Common resources in large amounts: no one player finishes a project alone in a normal week.
-2. **Creatures.** Some posts are **communal posts**: seats any player's creature can take, whose output goes to the server, not the player (road menders at the Signpost, haulers at the Forge's project, sentries at the Watchtower, a lamplighter at the bonfire). The creature still earns its own XP there.
-3. **Keystones.** Rare finds made for a purpose: a Stormglass from Storm Ridge for the Watchtower's beacon, an Ancient Root from Verdant Hollow for the School's tree. A scout turns one up only now and then. Delivering a keystone completes a project's special step at once, or opens a branch the common route cannot.
+1. **Resources.** Each place has a project board (a crate, a scaffold, a donation bowl, drawn in the scene) where a player drops scrap, parts, Bait, supplies. Acorns (Bait renamed, round 5, Q13) is the everyday currency both for a player's own posts (lures, tools) and for the server's projects, so every spend is a choice between "my valley" and "our valley" (round 3, Q9). Common resources in large amounts: no one player finishes a project alone in a normal week.
+2. **Creatures.** Some posts are **communal posts**: seats any player's creature can take, whose output goes to the server, not the player (road menders at the Signpost, haulers at the Forge's project, a lamplighter at the bonfire). The creature still earns its own XP there.
+3. **Keystones.** Rare finds made for a purpose: an Ancient Root from Verdant Hollow for the School's tree. A scout turns one up only now and then. Delivering a keystone completes a project's special step at once, or opens a branch the common route cannot.
 
 ## Rules (draft)
 
@@ -30,13 +30,12 @@ The valley's places belong to the whole server. Each place has a **server level*
 
 ## Examples (to test in the economy lab)
 
-| Place      | Level up gives everyone                           | Common route                               | Keystone                                    |
-| ---------- | ------------------------------------------------- | ------------------------------------------ | ------------------------------------------- |
-| Forge      | a third anvil; a recipe tier                      | scrap, parts, haulers on its communal post | a Heartcoal from the Ember Caves            |
-| Signpost   | a new road (a destination seat), rarer finds      | Bait, supplies, road menders               | a Wayfinder's stone from the Old Crossroads |
-| Watchtower | readiness for the first stage; the beacon's reach | parts, sentries                            | a Stormglass from Storm Ridge               |
-| School     | a second teacher seat; visitors from further away | pages, Essence                             | an Ancient Root from Verdant Hollow         |
-| Bonfire    | faster catch-up for everyone's bench              | Bait, a lamplighter                        | an Ember of the first fire                  |
+| Place    | Level up gives everyone                           | Common route                               | Keystone                                    |
+| -------- | ------------------------------------------------- | ------------------------------------------ | ------------------------------------------- |
+| Forge    | a third anvil; a recipe tier                      | scrap, parts, haulers on its communal post | a Heartcoal from the Ember Caves            |
+| Signpost | a new road (a destination seat), rarer finds      | Bait, supplies, road menders               | a Wayfinder's stone from the Old Crossroads |
+| School   | a second teacher seat; visitors from further away | pages, Essence                             | an Ancient Root from Verdant Hollow         |
+| Bonfire  | faster catch-up for everyone's bench              | Bait, a lamplighter                        | an Ember of the first fire                  |
 
 ## Questions for the economy lab
 

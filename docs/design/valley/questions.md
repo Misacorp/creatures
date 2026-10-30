@@ -6,48 +6,7 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q13. What do we call the currency that replaces Bait?
-
-Status: asked, round 5 (2026-10-29). Was the queued **currency-name**. Touches: every doc and screen that says Bait; the compendium (`docs/compendium/world.md`, `items.md`).
-
-**Why it matters.** It's the word players see most. In the valley it pays for your own posts (lures, tools) and the server's projects, and leets keep paying it. The compendium's rule: it's an in-world thing, and the lore never says where it comes from.
-
-- **A. Acorns.** Small, everywhere, every creature wants one. Example: "Sanni dropped 200 acorns in the Signpost's bowl."
-- **B. Kindling.** Everything in the valley runs on it: the bonfire, the Forge, the beacon. Example: "the hearth needs 2,000 kindling for level 3."
-- **C. Buttons.** What the valley's folk trade among themselves, odd and charming. Example: "a Kelp Lure costs 40 buttons."
-- **D. Coppers.** A plain coin, clear at once. Example: "40 coppers."
-
-**Lead's pick: A, Acorns.** It reads as money at a glance, fits a valley of creatures, and works for both uses (you spend acorns on a lure, you give acorns to the Forge). Kindling is lovely for the bonfire but odd for buying a lure; Coppers is clear but has no character.
-
-### Q14. Are these the right battlegrounds for the other three bosses?
-
-Status: asked, round 5 (2026-10-29). Was the queued **battlegrounds**. Touches: `defence.md` (battlegrounds table), `docs/compendium/bosses.md`; art for each.
-
-**Why it matters.** You set the first two: the Thornmother (Grove) in an ancient temple swallowed by roots, the Storm Sovereign (Spark) on a thunderous mountaintop. The other three need a place where the valley meets the threat. Each is a full scene to draw.
-
-- **A. Yes to all three:**
-  - Tidal Colossus (Tide): a drowned sea gate past the Tidepools' shelf.
-  - Cinder Wyrm (Ember): a caldera below the Ember Caves.
-  - Old Bogback (Mire): a sunken shrine in the Sunken Fen.
-- **B. Swap some:**
-  - Tide: a lighthouse on a storm-beaten cape.
-  - Ember: a forest's burning edge, where the fire reaches the valley.
-  - Mire: a drowned battlefield of old banners and broken spears.
-- **C. Your own ideas** for any of them.
-
-**Lead's pick: A, with Ember from B.** A drowned sea gate and a sunken shrine fit "the threat comes to the valley's door" well. For Ember, a caldera is far away, while a forest's burning edge is the fire arriving at the valley itself, which is the defence story you asked for. Mix and match freely.
-
-### Q15. Should creatures guarding the Watchtower during the week help in the raid?
-
-Status: asked, round 5 (2026-10-29). Was the queued **sentries**. Touches: `defence.md` V-DEF-4, `posts.md` (sentry post); a seam with combat v2, which owns the raid's numbers.
-
-**Why it matters.** A sentry is a post at the Watchtower. If sentries help the raid, everyone's idle creatures contribute to the weekend fight, which fits the server defending together. But anything that changes the raid's power has to be balanced in combat v2's lab, and makes the raid depend on how much the server idled.
-
-- **A. A small power bonus.** Example: each sentry on the server takes a sliver off the boss's HP at the first stage.
-- **B. A scouting report.** Sentries spot the threat early: the more sentries, the more of the boss's first moves are shown before the weekend. Example: with 6 sentries posted, Friday's stage shows the boss's first three moves ahead of time.
-- **C. Nothing for the raid.** The raid stays purely the weekend's fight; sentries do something else (watch for rare visitors, read the weather).
-
-**Lead's pick: B.** Information fits the defence story ("we saw it coming"), helps every player plan their column, and changes no raid numbers, so combat v2 can stay balanced on its own. A would tie the raid's difficulty to idling.
+Nothing right now.
 
 ## Queue
 
@@ -246,6 +205,61 @@ Status: answered, round 4 (2026-10-29). Was the queued **place-max**. Touches: `
 **Answer (2026-10-29): A, with new places any time.** "Your take is good. We can open new places even before max level, but these shared upgrades should get increasingly difficult over time."
 
 Became: V-COM-11, a max level per place, each level's project bigger than the last, cosmetic projects after the max; new places can open as content at any time. G-7 accepted in part.
+
+### Q13. What do we call the currency that replaces Bait?
+
+Status: answered, round 5 (2026-10-30). Was the queued **currency-name**. Touches: every doc and screen that says Bait; the compendium (`docs/compendium/world.md`, `items.md`).
+
+**Why it matters.** It's the word players see most. In the valley it pays for your own posts (lures, tools) and the server's projects, and leets keep paying it. The compendium's rule: it's an in-world thing, and the lore never says where it comes from.
+
+- **A. Acorns.** Small, everywhere, every creature wants one. Example: "Sanni dropped 200 acorns in the Signpost's bowl."
+- **B. Kindling.** Everything in the valley runs on it: the bonfire, the Forge, the beacon. Example: "the hearth needs 2,000 kindling for level 3."
+- **C. Buttons.** What the valley's folk trade among themselves, odd and charming. Example: "a Kelp Lure costs 40 buttons."
+- **D. Coppers.** A plain coin, clear at once. Example: "40 coppers."
+
+**Lead's pick: A, Acorns.** It reads as money at a glance, fits a valley of creatures, and works for both uses (you spend acorns on a lure, you give acorns to the Forge). Kindling is lovely for the bonfire but odd for buying a lure; Coppers is clear but has no character.
+
+**Answer (2026-10-30): A, Acorns.** "Acorns is fine but make sure we have some kind of resource library acting as a source of truth so we can easily change it later. It needs to be pretty generic."
+
+Became: Bait is renamed Acorns in the plan; a resource library (one data file naming every resource) is the first build task of phase 4 (`roadmap.md`, `decisions.md`).
+
+### Q14. Are these the right battlegrounds for the other three bosses?
+
+Status: answered, round 5 (2026-10-30). Was the queued **battlegrounds**. Touches: `defence.md` (battlegrounds table), `docs/compendium/bosses.md`; art for each.
+
+**Why it matters.** You set the first two: the Thornmother (Grove) in an ancient temple swallowed by roots, the Storm Sovereign (Spark) on a thunderous mountaintop. The other three need a place where the valley meets the threat. Each is a full scene to draw.
+
+- **A. Yes to all three:**
+  - Tidal Colossus (Tide): a drowned sea gate past the Tidepools' shelf.
+  - Cinder Wyrm (Ember): a caldera below the Ember Caves.
+  - Old Bogback (Mire): a sunken shrine in the Sunken Fen.
+- **B. Swap some:**
+  - Tide: a lighthouse on a storm-beaten cape.
+  - Ember: a forest's burning edge, where the fire reaches the valley.
+  - Mire: a drowned battlefield of old banners and broken spears.
+- **C. Your own ideas** for any of them.
+
+**Lead's pick: A, with Ember from B.** A drowned sea gate and a sunken shrine fit "the threat comes to the valley's door" well. For Ember, a caldera is far away, while a forest's burning edge is the fire arriving at the valley itself, which is the defence story you asked for. Mix and match freely.
+
+**Answer (2026-10-30): A.** "The raid is proactive defense and happens in far away places."
+
+Became: the three battlegrounds accepted (`defence.md`, compendium `bosses.md`); G-5 says the raid is proactive defence in far away places, so the lead's Ember swap (a threat at the valley's edge) did not fit.
+
+### Q15. Should creatures guarding the Watchtower during the week help in the raid?
+
+Status: answered, round 5 (2026-10-30). Was the queued **sentries**. Touches: `defence.md` V-DEF-4, `posts.md` (sentry post); a seam with combat v2, which owns the raid's numbers.
+
+**Why it matters.** A sentry is a post at the Watchtower. If sentries help the raid, everyone's idle creatures contribute to the weekend fight, which fits the server defending together. But anything that changes the raid's power has to be balanced in combat v2's lab, and makes the raid depend on how much the server idled.
+
+- **A. A small power bonus.** Example: each sentry on the server takes a sliver off the boss's HP at the first stage.
+- **B. A scouting report.** Sentries spot the threat early: the more sentries, the more of the boss's first moves are shown before the weekend. Example: with 6 sentries posted, Friday's stage shows the boss's first three moves ahead of time.
+- **C. Nothing for the raid.** The raid stays purely the weekend's fight; sentries do something else (watch for rare visitors, read the weather).
+
+**Lead's pick: B.** Information fits the defence story ("we saw it coming"), helps every player plan their column, and changes no raid numbers, so combat v2 can stay balanced on its own. A would tie the raid's difficulty to idling.
+
+**Answer (2026-10-30): no post.** "I'm still skeptical about the watchtower concept in general. It needs to provide benefits across the entire week if it is to be a post. The raid has limited options for player agency beyond its "rule cards" and we need to give players the entire week to prepare for those, so I'd want any hypothetical watchtower to give that info already on Monday. If we can't find a use for the watchtower, drop it as a post. No need to shoe horn it in."
+
+Became: V-DEF-4, no sentry post; the boss and its rule cards are known to everyone from Monday (a wish for combat v2); the Watchtower stays only as the raid's place in the valley, its name and role to revisit with the art; Watchtower projects and the Stormglass keystone removed from `commons.md`.
 
 ## Withdrawn
 
