@@ -19,7 +19,7 @@ Each creature has a next **trial**: a short checklist of things it does across t
 - **V-TRIAL-3** Only the next trial shows, as pips on the creature's card; the list is a tap away. The valley shows "2 ready to graduate".
 - **V-TRIAL-4** Graduation is a daily moment at the bonfire (Misa's idea), worked out lazily: a creature whose boxes are ticked graduates at the next ceremony whether or not you are there, and the return walk tells it, several in one line ("Three of yours graduated at the bonfire").
 - **V-TRIAL-5** Craft routes count a creature's own smithing over days, not single pieces, so swapping creatures through anvils gains nothing.
-- Today's ribbons become "I was there" mementos at the migration (phase 6). The lab moves ribbons' scrap and shard sink elsewhere.
+- Today's ribbons are recorded with each player's accomplishments before the reset (phase 6), when today's players become the lore's first settlers. The lab moves ribbons' scrap and shard sink elsewhere.
 
 ## Example trials (a sketch)
 
