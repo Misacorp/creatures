@@ -241,9 +241,16 @@ function drawSet(set: ConceptSet, ids: string[], file: string, library = false):
     : Math.max(48 + ids.length * col, 48 + (lineup.length + ids.length) * (16 * 3 + 12));
   const rowH = maxH + 52;
   // The library's sheet shows only the set, so a change to a shipped sprite never makes it stale.
+  // Rows: the set, each alternative, then (outside the library) the nearest shipped sprites when the
+  // kinds have any, and the list row when every concept is a creature.
+  const hasNearest = big.some((concept) => poolFor(concept.kind) !== undefined);
+  const allCreatures = big.every((concept) => concept.kind === 'creature');
   const H = library
     ? 64 + rowH * (1 + altNames.length)
-    : 64 + rowH * (2 + altNames.length) + 8 + 22 + 16 * 3 + 32;
+    : 64 +
+      rowH * (1 + altNames.length + (hasNearest ? 1 : 0)) +
+      8 +
+      (allCreatures ? 22 + 16 * 3 + 32 : 0);
   const c = new Canvas(W, H, NIGHT);
   c.text(set.title, 24, 18, 3, TEXT);
   const tile = (
