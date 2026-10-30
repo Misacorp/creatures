@@ -1,7 +1,7 @@
 import type { Rules } from './rules';
 import { ELEMENTS } from './rules';
 import { serverMiddle } from './growth';
-import { setCollectionFind } from './scouts';
+import { setCollectionFind } from './collections';
 import type { Player, Server } from './types';
 import { HOURS_PER_WEEK, R } from './types';
 import { credit, debit, debitShard } from './world';
@@ -102,6 +102,7 @@ function offer(
   unitValue: number,
   available: number,
   take: (amount: number) => void,
+  only?: readonly string[],
 ): number {
   const rules = p.rules;
   let left = available;
@@ -109,7 +110,7 @@ function offer(
   for (let tries = 0; tries < 6 && left > 1e-9; tries++) {
     const open = server.places
       .map((pl, i) => ({ pl, i }))
-      .filter(({ pl }) => pl.open && pl.progress < pl.size);
+      .filter(({ pl }) => pl.open && pl.progress < pl.size && (!only || only.includes(pl.id)));
     if (open.length === 0) break;
     const pick =
       open[
@@ -129,8 +130,9 @@ function offer(
 }
 
 /**
- * A visit's gifts (resources.md: Acorns, scrap and shards; Essence goes to creatures). A player gives their share of what
- * came in since the last gift, scrap and shards only from what is above a reserve for the Forge; a hoarder saves, then gives all.
+ * A visit's gifts. By default Acorns only (commons.md's example); in the "everything counts" variant scrap and shards too, from
+ * what is above a reserve for the Forge and the ribbons; in the "Essence to projects" variant spare Essence goes to the Paddock
+ * and School. A player gives their share of what came in since the last gift; a hoarder saves, then gives all.
  */
 export function giveGifts(p: Player, server: Server, hour: number): void {
   const rules = p.rules;
@@ -150,9 +152,10 @@ export function giveGifts(p: Player, server: Server, hour: number): void {
     p.giftBudget[R.acorns] = Math.max(0, (p.giftBudget[R.acorns] ?? 0) - given / value.acorns);
     total += given;
   }
+  const everything = server.config.gifts === 'everything';
   const scrap = budget(
     R.scrap,
-    Math.max(0, (p.stock[R.scrap] ?? 0) - rules.forge.giveReserveScrap),
+    everything ? Math.max(0, (p.stock[R.scrap] ?? 0) - rules.forge.giveReserveScrap) : 0,
   );
   if (scrap >= 1) {
     const given = offer(p, server, hour, value.scrap, scrap, (a) => {
@@ -164,7 +167,7 @@ export function giveGifts(p: Player, server: Server, hour: number): void {
   for (let e = 0; e < ELEMENTS.length; e++) {
     const shards = budget(
       R.shards,
-      Math.max(0, (p.shards[e] ?? 0) - rules.forge.giveReserveShards),
+      everything ? Math.max(0, (p.shards[e] ?? 0) - rules.forge.giveReserveShards) : 0,
     );
     if (shards < 1) continue;
     const given = offer(p, server, hour, value.shards, shards, (a) => {
@@ -172,6 +175,27 @@ export function giveGifts(p: Player, server: Server, hour: number): void {
     });
     p.giftBudget[R.shards] = Math.max(0, (p.giftBudget[R.shards] ?? 0) - given / value.shards);
     total += given;
+  }
+  if (server.config.essenceToProjects) {
+    const essence = budget(
+      R.essence,
+      Math.max(0, (p.stock[R.essence] ?? 0) - rules.forge.reachReserveEssence),
+    );
+    if (essence >= 1) {
+      const given = offer(
+        p,
+        server,
+        hour,
+        value.essence,
+        essence,
+        (a) => {
+          debit(p, R.essence, a, 'gifts');
+        },
+        rules.commons.essencePlaces,
+      );
+      p.giftBudget[R.essence] = Math.max(0, (p.giftBudget[R.essence] ?? 0) - given / value.essence);
+      total += given;
+    }
   }
   p.wk.gifts += total;
   server.gifts[p.id] = (server.gifts[p.id] ?? 0) + total;
@@ -210,7 +234,8 @@ export function checkKeystones(
       const scouts = Math.min(p.seats.length, p.creatures.length);
       if (!p.seats.slice(0, scouts).some((s) => s.dest === d)) continue;
       server.keystonesFound += 1;
-      if (!setCollectionFind(server, 'keystone', rules))
+      const place = rules.scouts.destinations[d]?.id ?? '';
+      if (!setCollectionFind(server, `keystone:${place}`, rules, hour))
         credit(p, R.essence, rules.collections.meltEssence, 'melted finds');
       server.keystoneReady[d] =
         hour - Math.log(1 - uniform(server.rng)) * rules.scouts.keystoneMeanDays * 24;

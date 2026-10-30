@@ -1,4 +1,5 @@
 import { masteryBonus } from './curves';
+import { setCollectionFind } from './collections';
 import { equipOrBag, hasMasterSmith, rollRarity } from './forge';
 import { levelsDesc } from './growth';
 import type { Destination, KitName, Rules } from './rules';
@@ -52,11 +53,11 @@ const thirdBestLevel = (p: Player): number => {
   return lv[Math.min(2, lv.length - 1)] ?? 1;
 };
 
-/** Which of the 34 forms arrives: places lean toward their element, a lure toward species the player lacks (V-SCOUT-3, V-SCOUT-5). */
+/** Which of the species available that week arrives: places lean toward their element, a lure toward species the player lacks (V-SCOUT-3, V-SCOUT-5). */
 function pickSpecies(p: Player, dest: Destination, lure: boolean): number {
   const rules = p.rules;
   const elements = speciesElements(rules);
-  const weights = elements.map((element, species) => {
+  const weights = elements.slice(0, p.available).map((element, species) => {
     let w =
       dest.element !== null && ELEMENTS[element] === dest.element ? rules.scouts.placeAffinity : 1;
     if (lure && (p.speciesCount[species] ?? 0) > 0) w *= rules.scouts.lureOwnedWeight;
@@ -66,7 +67,7 @@ function pickSpecies(p: Player, dest: Destination, lure: boolean): number {
 }
 
 /** Brings one seat's store home (the owner's visit): the expected finds, then the rare ones as seeded draws (V-SCOUT-2). */
-export function collectSeat(p: Player, index: number, server: Server): void {
+export function collectSeat(p: Player, index: number, server: Server, hour: number): void {
   const rules = p.rules;
   const seat = p.seats[index]!;
   const hours = seat.store;
@@ -93,7 +94,9 @@ export function collectSeat(p: Player, index: number, server: Server): void {
   const shardElement = dest.element === null ? -1 : ELEMENTS.indexOf(dest.element);
   const shardTotal = hours * shardPer;
   if (shardElement >= 0) creditShard(p, shardElement, shardTotal, 'scouts');
-  else for (let e = 0; e < 4; e++) creditShard(p, e, shardTotal / 4, 'scouts');
+  else
+    for (let e = 0; e < ELEMENTS.length; e++)
+      creditShard(p, e, shardTotal / ELEMENTS.length, 'scouts');
   wasteOf(p, R.shards, lost * shardPer);
 
   const creaturesPer =
@@ -110,6 +113,12 @@ export function collectSeat(p: Player, index: number, server: Server): void {
   for (let n = poisson(p.rng, hours * creaturesPer); n > 0; n--) {
     const species = pickSpecies(p, dest, p.scoutKit === 'lure');
     p.wk.arrivals += 1;
+    // A rare resident's token sets itself into the Paddock's collection (V-COM-12); a spare melts.
+    if (uniform(p.rng) < rules.collections.residentPerArrival) {
+      const token = `resident:${1 + Math.floor(uniform(p.rng) * 4)}`;
+      if (!setCollectionFind(server, token, rules, hour))
+        credit(p, R.essence, rules.collections.meltEssence, 'melted finds');
+    }
     if ((p.speciesCount[species] ?? 0) === 0) {
       addCreature(p, species);
       p.firsts.creature ??= p.wk.week;
@@ -121,7 +130,7 @@ export function collectSeat(p: Player, index: number, server: Server): void {
   }
   // Gear at the place's element (V-SCOUT: a scout's found gear starts at its owner's level, never above the fire).
   for (let n = poisson(p.rng, hours * rate.gear * rarePer); n > 0; n--) {
-    const element = shardElement >= 0 ? shardElement : Math.floor(uniform(p.rng) * 4);
+    const element = shardElement >= 0 ? shardElement : Math.floor(uniform(p.rng) * ELEMENTS.length);
     const level = Math.min(server.fire, thirdBestLevel(p));
     equipOrBag(
       p,
@@ -141,34 +150,16 @@ export function collectSeat(p: Player, index: number, server: Server): void {
   const pages = poisson(p.rng, hours * rate.pages * rarePer);
   p.pages += pages;
   p.wk.pages += pages;
-  // Everyday rare finds set themselves into a collection socket (V-COM-12); a spare one melts into Essence.
-  for (let n = poisson(p.rng, hours * rate.rareFinds * rarePer); n > 0; n--) {
-    if (!setCollectionFind(server, 'everyday', rules))
+  // A page belongs to one of the School's set; a page already set melts into Essence.
+  for (let n = 0; n < pages; n++) {
+    if (uniform(p.rng) >= rules.collections.pageInSetChance) continue;
+    const page = `page:${1 + Math.floor(uniform(p.rng) * 4)}`;
+    if (!setCollectionFind(server, page, rules, hour))
       credit(p, R.essence, rules.collections.meltEssence, 'melted finds');
   }
-}
-
-/** V-COM-12: a find sets itself into the first collection that wants one of its kind; false if every socket of that kind is full. */
-export function setCollectionFind(
-  server: Server,
-  kind: 'everyday' | 'keystone',
-  rules: Rules,
-): boolean {
-  const everyday = rules.collections.everydaySockets;
-  const keystoneSockets = rules.collections.sockets - everyday;
-  for (let i = 0; i < server.sockets.length; i++) {
-    const c = server.sockets[i]!;
-    const full = c.everyday >= everyday && c.keystones >= keystoneSockets;
-    if (full) continue;
-    if (kind === 'everyday' ? c.everyday < everyday : c.keystones < keystoneSockets) {
-      if (kind === 'everyday') c.everyday += 1;
-      else c.keystones += 1;
-      if (c.everyday >= everyday && c.keystones >= keystoneSockets) {
-        server.collectionsDone += 1;
-        server.warmth.collections = (server.warmth.collections ?? 0) + rules.fire.warmth.collection;
-      }
-      return true;
-    }
+  // Everyday rare finds set themselves into a collection socket (V-COM-12); a spare one melts into Essence.
+  for (let n = poisson(p.rng, hours * rate.rareFinds * rarePer); n > 0; n--) {
+    if (!setCollectionFind(server, 'everyday', rules, hour))
+      credit(p, R.essence, rules.collections.meltEssence, 'melted finds');
   }
-  return false;
 }

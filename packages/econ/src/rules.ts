@@ -68,7 +68,8 @@ export const RULES = {
 
   /** V-BON-2 catch-up and V-BON-7 the hearth. */
   bonfire: {
-    catchUp: { maxMultiplier: 2, fullAtGap: 6, holdHours: 24 },
+    // ASSUMPTION: catch-up multiplies idle XP only, not what fights pay (V-BON-2 says "XP only, never output"; a sensitivity run applies it to fights too).
+    catchUp: { maxMultiplier: 2, fullAtGap: 6, holdHours: 24, appliesToFights: false },
     hearth: { perLevel: 0.04 },
   },
 
@@ -149,7 +150,11 @@ export const RULES = {
     keystoneMeanDays: 21,
     // ASSUMPTION: a destination whose element a creature has doubles its weight when a new creature arrives (the shipped 2x).
     placeAffinity: 2,
-    // ASSUMPTION: the 34 forms the docs count as species (Pia's list); arrivals draw among them with these elements.
+    // ASSUMPTION: the species pool grows with content (Misa: the plan is 100 or more species, with drops from about week 4).
+    // It starts at today's 34 forms (Pia's list), then `dropCount` more arrive every `dropEveryWeeks` weeks from `dropFromWeek`
+    // (50 at week 4, 62 at week 8 ... 106 at week 24). Arrivals and duplicates draw from the species available that week.
+    species: { start: 34, dropFromWeek: 4, dropEveryWeeks: 4, dropCount: 12 },
+    // ASSUMPTION: the element mix of the first 34 (tide 8, ember 8, grove 7, spark 7, mire 4); later species repeat the same mix.
     speciesPerElement: [8, 8, 7, 7, 4],
     // ASSUMPTION: a lure halves the weight of species the player already owns.
     lureOwnedWeight: 0.5,
@@ -190,10 +195,10 @@ export const RULES = {
     tidyAt: 180,
     // ASSUMPTION: scouts' finds and the dungeon's drops carry rarity with the same odds as a plain craft.
     foundGearOdds: [0.85, 0.13, 0.02],
-    // ASSUMPTION: a player keeps this much scrap and this many of each shard for the Forge before giving the rest (about two
-    // weeks of pieces).
+    // ASSUMPTION: a player keeps this much scrap and this many of each shard for the Forge and the ribbons before giving the rest
+    // (never less than the dearest ribbon: 15 scrap, 5 shards).
     giveReserveScrap: 72,
-    giveReserveShards: 4,
+    giveReserveShards: 5,
     // ASSUMPTION: an optimiser keeps this much Essence for evolutions before it reaches for rarity.
     reachReserveEssence: 60,
   },
@@ -257,9 +262,12 @@ export const RULES = {
     buildHours: 72,
     // ASSUMPTION: a player's weight by visit days in the last 7: 0.4 for one day (a weekly player), 1 from four days.
     weight: { oneDay: 0.4, fullAtDays: 4 },
-    // ASSUMPTION: what one scrap and one shard are worth toward a project, in Acorns ("projects take everything"). Scrap is the
-    // plentiful one (a daily player earns about three times more of it than Acorns), so it counts half.
-    giftValue: { acorns: 1, scrap: 0.5, shards: 2 },
+    // ASSUMPTION: in the variant where everything counts, what one scrap, one shard and one Essence are worth toward a project, in
+    // Acorns. Scrap is the plentiful one (a daily player earns about three times more of it than Acorns), so it counts half. The
+    // default gives Acorns only, as commons.md's example does (8 players giving a third of 50 Acorns a day).
+    giftValue: { acorns: 1, scrap: 0.5, shards: 2, essence: 2 },
+    // ASSUMPTION: in the "Essence to projects" variant only these places take Essence (commons.md: Paddock and School routes).
+    essencePlaces: ['paddock', 'school'] as readonly string[],
     // ASSUMPTION: the server's gifts pick an open place by these weights (the guided start overrides at first).
     placeWeights: { bonfire: 2, forge: 3, signpost: 2, paddock: 1, school: 1 } as Record<
       string,
@@ -270,10 +278,42 @@ export const RULES = {
     communalCreaturesPerSeat: 3,
   },
 
-  /** V-COM-12: collections, five sockets each, one filled by ordinary idle play. */
+  /**
+   * V-COM-12: collections. Each place's board has five sockets, each for one particular find from one source, and at least one
+   * socket per board is filled by ordinary idle play ('everyday'). A find fills only its own socket; a spare copy melts.
+   * Sources: `keystone:<destination>` (V-SCOUT-9, the server's clock for that destination), `landmark:<n>` (the dungeon's five
+   * landmarks), `resident:<n>` (a rare resident's token, found with a creature), `page:<n>` (a journal page of the School's set),
+   * `everyday` (a rare find from a scout's ordinary work).
+   */
   collections: {
-    sockets: 5,
-    everydaySockets: 1,
+    // ASSUMPTION: which five finds each place's board wants (commons.md examples: the Forge's Heartcoal from each element's place,
+    // the Signpost's stones from deeper areas, the bonfire's embers from the dungeon's landmarks, the Paddock's tokens from rare
+    // residents, the School's pages of one set), each with one ordinary-play socket as V-COM-12 requires.
+    boards: {
+      forge: [
+        'keystone:tidepools',
+        'keystone:ember-caves',
+        'keystone:verdant-hollow',
+        'keystone:storm-ridge',
+        'everyday',
+      ],
+      signpost: [
+        'keystone:sunken-fen',
+        'keystone:old-crossroads',
+        'keystone:tidepools',
+        'keystone:storm-ridge',
+        'everyday',
+      ],
+      bonfire: ['landmark:1', 'landmark:2', 'landmark:3', 'landmark:4', 'everyday'],
+      paddock: ['resident:1', 'resident:2', 'resident:3', 'resident:4', 'everyday'],
+      school: ['page:1', 'page:2', 'page:3', 'page:4', 'everyday'],
+    } as Record<string, readonly string[]>,
+    // ASSUMPTION: a dungeon run turns up one of the four landmark embers with this chance (about one a week for 8 daily players).
+    landmarkPerRun: 0.02,
+    // ASSUMPTION: only this share of the journal pages scouts find belong to the School's set (there are several sets), uniform over its pages.
+    pageInSetChance: 0.15,
+    // ASSUMPTION: a creature arriving is a rare resident with its token with this chance.
+    residentPerArrival: 0.04,
     // ASSUMPTION: a find that no open socket wants melts into this much Essence.
     meltEssence: 5,
   },
@@ -296,6 +336,8 @@ export const RULES = {
   /** Thresholds the report flags with (resources.md "dead" and "starved"; goals.md T-4). */
   flags: {
     deadWeeks: 4,
+    // A resource is dead when it rises for deadWeeks weeks running and the pile is at least this many weeks of that week's income.
+    deadPileWeeks: 4,
     starvedZeroShare: 0.25,
     tinkerSmallShare: 0.1,
     agreeWithin: 2,

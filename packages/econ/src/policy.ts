@@ -35,8 +35,20 @@ const nextKit = (p: Player): KitName | null => {
   return rules.kit.buyOrder.find((k) => !p.kitOwned[k]) ?? null;
 };
 
-const defaultDestination = (p: Player): number =>
-  (p.id + p.seats.length) % p.rules.scouts.destinations.length;
+/**
+ * Where a new seat's scout starts: the place of the element of the player's best creatures, one element per seat in turn
+ * (what "for my team" will need shards of), as a player looking at their roster would place it. A set-and-forget player keeps it.
+ */
+export function defaultDestination(p: Player): number {
+  const { destinations } = p.rules.scouts;
+  const ranked = [...p.creatures].sort((a, b) => b.level - a.level || b.xp - a.xp);
+  const elements = [...new Set(ranked.map((c) => c.element))];
+  const element = elements[p.seats.length % Math.max(1, elements.length)];
+  const found = destinations.findIndex(
+    (d) => d.element !== null && ELEMENTS.indexOf(d.element) === element,
+  );
+  return found >= 0 ? found : p.seats.length % destinations.length;
+}
 
 export const newSeat = (p: Player): void => {
   p.seats.push({ dest: defaultDestination(p), store: 0, wasted: 0, mastery: 0 });
@@ -138,7 +150,7 @@ function needsOf(p: Player): Needs {
       const share = p.creatures.filter((c) => c.element === e).length / n;
       return needFactor(p.shards[e] ?? 0, 8) * (0.4 + 2 * share);
     }),
-    creature: owned < p.speciesCount.length * 0.9 ? 1.3 : 0.3,
+    creature: owned < p.available * 0.9 ? 1.3 : 0.3,
     glimmer: needFactor(p.stock[R.glimmer] ?? 0, 6) * (rules.xp.ribbons.length > 0 ? 1 : 0.5),
   };
 }

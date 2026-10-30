@@ -40,7 +40,12 @@ export const RulesSchema = v.strictObject({
   }),
   away: v.strictObject({ A: stepList, B: stepList, beyond: share }),
   bonfire: v.strictObject({
-    catchUp: v.strictObject({ maxMultiplier: pos, fullAtGap: pos, holdHours: pos }),
+    catchUp: v.strictObject({
+      maxMultiplier: pos,
+      fullAtGap: pos,
+      holdHours: pos,
+      appliesToFights: v.boolean(),
+    }),
     hearth: v.strictObject({ perLevel: num }),
   }),
   posts: v.strictObject({
@@ -90,6 +95,7 @@ export const RulesSchema = v.strictObject({
     ),
     keystoneMeanDays: pos,
     placeAffinity: pos,
+    species: v.strictObject({ start: int, dropFromWeek: int, dropEveryWeeks: int, dropCount: int }),
     speciesPerElement: v.array(int),
     lureOwnedWeight: num,
     blueprintPool: int,
@@ -156,12 +162,26 @@ export const RulesSchema = v.strictObject({
     referenceWeight: pos,
     buildHours: num,
     weight: v.strictObject({ oneDay: share, fullAtDays: pos }),
-    giftValue: v.strictObject({ acorns: pos, scrap: pos, shards: pos }),
+    giftValue: v.strictObject({ acorns: pos, scrap: pos, shards: pos, essence: pos }),
+    essencePlaces: v.array(v.string()),
     placeWeights: v.record(v.string(), pos),
     communalPerHour: num,
     communalCreaturesPerSeat: pos,
   }),
-  collections: v.strictObject({ sockets: int, everydaySockets: int, meltEssence: num }),
+  collections: v.strictObject({
+    boards: v.record(
+      v.string(),
+      v.pipe(
+        v.array(v.string()),
+        v.length(5),
+        v.check((b) => b.includes('everyday'), 'a board needs a socket for ordinary idle play'),
+      ),
+    ),
+    landmarkPerRun: share,
+    residentPerArrival: share,
+    pageInSetChance: share,
+    meltEssence: num,
+  }),
   fire: v.strictObject({
     start: int,
     floorPerWeek: num,
@@ -177,6 +197,7 @@ export const RulesSchema = v.strictObject({
   }),
   flags: v.strictObject({
     deadWeeks: int,
+    deadPileWeeks: pos,
     starvedZeroShare: share,
     tinkerSmallShare: share,
     agreeWithin: num,

@@ -37,10 +37,15 @@ describe('a store', () => {
 
   it('is emptied by a visit: the finds come home and the missed ones are waste, not stock', () => {
     const p = player();
-    const server = createServer('test', 1, 'half', true, RULES);
+    const server = createServer(
+      'test',
+      1,
+      { bossKills: 'half', communalSeats: true, gifts: 'acorns', essenceToProjects: false },
+      RULES,
+    );
     for (let h = 0; h < 100; h++) accrueSeats(p, 1, 1);
     const scrapBefore = p.stock[1]!;
-    collectSeat(p, 0, server);
+    collectSeat(p, 0, server, 0);
     const seat = p.seats[0]!;
     expect(seat.store).toBe(0);
     expect(seat.wasted).toBe(0);
