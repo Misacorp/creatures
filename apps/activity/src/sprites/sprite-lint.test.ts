@@ -88,6 +88,7 @@ describe('lintSprite', () => {
 describe('concept art', () => {
   it('parses at its kind size, so the studio can always draw it', () => {
     for (const set of CONCEPT_SETS) {
+      expect(Object.keys(set.sprites).length, `${set.id} has no sprites`).toBeGreaterThan(0);
       for (const [id, concept] of Object.entries(set.sprites)) {
         const findings = lintSprite(concept.sprite, { kind: concept.kind });
         expect(

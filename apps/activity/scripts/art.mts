@@ -12,9 +12,8 @@
 // (as a player sees them in a list), and prints the lint findings (`src/sprites/sprite-lint.ts`).
 // `new` prints a starter grid with the shared chibi face already in place.
 // The PNGs are for looking at and for showing Misa; nothing here ships in the game.
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { tmpdir } from 'node:os';
 import { register } from 'node:module';
 import { join, resolve } from 'node:path';
 import type { SpriteDef } from '../src/sprites/sprite-data.ts';
@@ -311,7 +310,8 @@ const STARTER: Readonly<Record<string, string[]>> = {
 
 /** The library's catalogue: every concept set, its status, what was asked and where the art is. */
 function catalogue(): string {
-  const cell = (s: string): string => s.replace(/\|/g, '\\|');
+  // Table cells and link text: escape the characters that would end them.
+  const cell = (s: string): string => s.replace(/[|[\]]/g, (ch) => `\\${ch}`);
   const lines = [
     '# Art library',
     '',
@@ -349,7 +349,7 @@ function catalogue(): string {
       '| --- | --- | --- | --- | --- |',
       ...Object.entries(set.sprites).map(
         ([id, c]) =>
-          `| \`${id}\` | ${c.kind} | ${c.role ?? ''} | ${c.status ?? set.status} | ${cell(c.note)} |`,
+          `| \`${id}\` | ${cell(c.kind)} | ${cell(c.role ?? '')} | ${c.status ?? set.status} | ${cell(c.note)} |`,
       ),
     );
   }
@@ -359,35 +359,28 @@ function catalogue(): string {
 const args = process.argv.slice(2);
 if (args[0] === 'library') {
   const docs = resolve(import.meta.dirname, '..', '..', '..', 'docs', 'art');
-  const check = args.includes('--check');
-  const target = check ? mkdtempSync(join(tmpdir(), 'art-library-')) : docs;
-  mkdirSync(target, { recursive: true });
-  for (const set of CONCEPT_SETS) {
-    drawSet(set, Object.keys(set.sprites), join(target, `${set.id}.png`), true);
-  }
-  writeFileSync(join(target, 'README.md'), catalogue());
-  if (!check) {
+  if (!args.includes('--check')) {
+    mkdirSync(docs, { recursive: true });
+    for (const set of CONCEPT_SETS) {
+      drawSet(set, Object.keys(set.sprites), join(docs, `${set.id}.png`), true);
+    }
+    writeFileSync(join(docs, 'README.md'), catalogue());
     console.log(`wrote ${docs}`);
     process.exit(0);
   }
-  rmSync(target, { recursive: true, force: true });
-  // The README carries each set's fingerprint, so comparing it (and that every sheet exists) is
-  // enough; PNG bytes can differ between zlib versions.
+  // The README carries each set's fingerprint, so comparing it (and that the sheets are exactly one
+  // per set) is enough; PNG bytes can differ between zlib versions, so nothing is drawn here.
   let have = '';
+  let sheets: string[] = [];
   try {
     have = readFileSync(join(docs, 'README.md'), 'utf8');
+    sheets = readdirSync(docs).filter((f) => f.endsWith('.png'));
   } catch {
     // Missing: stale.
   }
-  const missing = CONCEPT_SETS.filter((set) => {
-    try {
-      readFileSync(join(docs, `${set.id}.png`));
-      return false;
-    } catch {
-      return true;
-    }
-  });
-  if (have !== catalogue() || missing.length > 0) {
+  const want = CONCEPT_SETS.map((set) => `${set.id}.png`);
+  const sameSheets = sheets.length === want.length && want.every((f) => sheets.includes(f));
+  if (have !== catalogue() || !sameSheets) {
     console.error('The art library (docs/art/) is out of date. Run: pnpm art library');
     process.exit(1);
   }
