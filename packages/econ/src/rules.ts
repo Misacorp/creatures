@@ -382,8 +382,9 @@ export const RULES = {
   /** V-COM-13, V-GEAR-8, V-GEAR-10: the Forge's fire. */
   fire: {
     start: 10,
-    // Q37 B: a SLOW time floor (about half of the 3.75 a week the last tuning chose); building, collections and boss kills drive the fire.
-    floorPerWeek: 1.875,
+    // Q40 B: no time floor under the fire (Misa dropped the clock); building, collections and boss kills drive it. The slow floor of
+    // Q37 B (1.875 levels a week) stays as the "slow floor" variants of the report (`SLOW_FLOOR` in servers.ts) for comparison.
+    floorPerWeek: 0,
     warmth: {
       // Q37 B: warmth back up from the last tuning's quarter of commons.md's table (3, 5, 4, 2, 1); the tuner took it to half, over the slow floor.
       // TUNED 2026-10-30 (round 15): were 0.75, 1.25, 1, 0.5 and 0.25 after the last tuning; now half of commons.md's table.
