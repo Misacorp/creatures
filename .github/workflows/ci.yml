@@ -70,6 +70,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
+      - run: pnpm decisions check
       - if: needs.changes.outputs.code == 'true'
         run: pnpm lint
       - if: needs.changes.outputs.code == 'true'
@@ -150,6 +151,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @creatures/game --filter @creatures/engine --filter @creatures/lab --filter @creatures/activity test
       - run: pnpm --filter @creatures/worker exec node --test 'scripts/*.test.mjs'
+      - run: node --test 'scripts/*.test.mjs'
       # The contract fixtures must be what the server really answers (docs/design/testing.md, layer 3).
       - run: pnpm fixtures:capture --check
 

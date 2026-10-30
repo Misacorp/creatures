@@ -2,12 +2,12 @@
 
 Leet Creatures is a Discord Activity: a creature collector plus a co-op weekly raid auto battler with an idle weekday loop, for small Discord communities (5–15 active players per server). It runs on Cloudflare at `creatures.misacorp.dev`.
 
-Read this file first. Design decisions live in `docs/design/` (start with `decisions.md`; for any UI work also read `docs/design/ux-patterns.md`, the standing UX rules and shared components), research in `docs/research/`, security practice in `docs/security.md`. The combat rework (combat v2) is designed in `docs/design/combat/` (start with its `README.md`) and prototyped in `packages/lab`; it does not change the shipped engine until Misa accepts it. Lore, names, places and flavour live in the dev-only compendium, `docs/compendium/` (start with its `README.md`): read it before writing any player-facing text or new content, and add to it when content ships.
+Read this file first. Design docs live in `docs/design/`. Decisions live in `docs/design/decisions/`, one file per topic: read its `README.md` (the index of decisions in force), then only the topic files your work touches, or query them with `pnpm decisions` (see Decisions and progress below). For any UI work also read `docs/design/ux-patterns.md`, the standing UX rules and shared components. Research is in `docs/research/`, security practice in `docs/security.md`. The combat rework (combat v2) is designed in `docs/design/combat/` (start with its `README.md`) and prototyped in `packages/lab`; it does not change the shipped engine until Misa accepts it. Lore, names, places and flavour live in the dev-only compendium, `docs/compendium/` (start with its `README.md`): read it before writing any player-facing text or new content, and add to it when content ships.
 
 ## The owner and how we work
 
 - The owner is **Misa**. He **does not read code.** He reads PR titles and descriptions, tests in Discord, and merges. Agents own security, correctness and tests.
-- Ask Misa about game feel and priorities, not implementation details. Make technical decisions yourself and record them in `docs/design/decisions.md` (newest last, with date and reasoning).
+- Ask Misa about game feel and priorities, not implementation details. Make technical decisions yourself and record them in `docs/design/decisions/` (date, decision, reasoning; see Decisions and progress).
 - When Misa must do something manually (Discord portal, Cloudflare token, GitHub setting, secret), give him one short **numbered checklist** with exact names and values, and say what to send back. Batch requests. Never ask him to paste a secret into chat; secrets go straight into GitHub or Cloudflare.
 - Keep messages to him short, plain English.
 - Ask a waiting question once. When a notification arrives and nothing new needs his answer, say what changed and end with a summary line, not the same question again.
@@ -37,7 +37,7 @@ Read this file first. Design decisions live in `docs/design/` (start with `decis
 - Agents may start that staging run (the GitHub tools' workflow trigger, workflow `deploy.yml`, `ref` = the branch) **only when Misa asks for it in that session**. Then wait for it to be live (`node apps/worker/scripts/deployed.mjs --expect HEAD --wait 600`, the `staging` skill) and tell Misa it is ready. With several sessions open, only the one Misa asked deploys. To see what is on staging at any time, run the same script without `--expect`.
 - **Never push to `main` or merge a pull request.** Only Misa merges. GitHub's ruleset on `main` (PR required, no bypass) rejects direct pushes from everyone. Merges it cannot tell apart, because the GitHub connection acts as Misa's account, so `.claude/settings.json` denies the merge and auto-merge tools and `gh pr merge`.
 - **Push after the checks pass.** If checks are still running when a turn ends, say so and push when they finish. A stop hook's "unpushed" or "uncommitted" nudge is not a reason to push early.
-- **Before each staging deploy and before telling Misa a PR is ready,** merge the latest `main` into the branch and check the PR is mergeable. GitHub runs no CI on a PR with a merge conflict, so a conflicted PR looks quiet, not red. Resolve conflicts first (migrations: a released number is never reused or edited). Right after the merge run `pnpm format:check` (seconds) before any long check, and put it first in any chained command: two branches that each append to the end of `docs/design/decisions.md` merge without the blank line between them (retro 2026-10-28: two full check runs lost to that).
+- **Before each staging deploy and before telling Misa a PR is ready,** merge the latest `main` into the branch and check the PR is mergeable. GitHub runs no CI on a PR with a merge conflict, so a conflicted PR looks quiet, not red. Resolve conflicts first (migrations: a released number is never reused or edited). Right after the merge run `pnpm format:check` (seconds) before any long check, and put it first in any chained command: two branches that each add to the same doc can merge without the blank line between them (retro 2026-10-28: two full check runs lost to that). Then run `pnpm decisions check`; a branch that still has entries in the old `docs/design/decisions.md` (a conflict there after the split) runs `pnpm decisions migrate`.
 - **Batch work into fewer PRs** (Misa's preference): agents may use several local branches, but merge finished work together locally and open one PR for Misa to merge into `main`. Large PRs are fine; each commit inside should still be one coherent change.
 - **Other repositories** (for example `Misacorp/leetbot-aws`): only open PRs there; Misa merges them manually. Never push to their default branch.
 - Every PR description has:
@@ -62,7 +62,7 @@ Full details and sources: `docs/security.md`.
 - **Input:** validate every request payload with a schema (strict, reject unknown keys, length limits). Nicknames: NFKC-normalise, trim, length-limit in code points, reject control/format/bidi/zero-width characters. Store as plain text; render as text only (never `innerHTML` / `dangerouslySetInnerHTML`, banned by lint). When posting to Discord: escape markdown and always send `allowed_mentions: { parse: [] }`.
 - Rate-limit API requests per player.
 
-## Architecture (summary; details in `docs/design/decisions.md`)
+## Architecture (summary; details in `docs/design/decisions/platform.md`)
 
 - **One Cloudflare Worker** serves the Activity frontend (static assets) and the API (`/api/*`). Discord's proxy fronts it at `<client_id>.discordsays.com`; the frontend uses relative URLs.
 - **Durable Objects** (SQLite-backed), one per Discord server (guild), hold that server's game state and serialise all writes. The live Sunday finale polls the same object every 2 s (WebSocket push is planned, roadmap item 8).
@@ -71,6 +71,14 @@ Full details and sources: `docs/security.md`.
 - **One combat engine package** is shared by live raids and the balance simulator. It is pure (no I/O) and takes an injected RNG.
 - **Feature flags and mutator hooks** (on round start, on reaction, on catch, and so on) keep seasonal additions isolated and switchable.
 - The **leet bot** is a separate app on AWS. This game only **reads** its API (`docs/design/leet-api.md`) and keeps its own ledger. It never writes to the leet ledger. The game stands on its own thematically; leet is just a currency source.
+
+## Decisions and progress
+
+- **Record a decision when you make it** (a technical call, a trade-off and its reason, an answer from Misa): `pnpm decisions new --topic <topic> --title "..."` and fill in the body (**Decision.** and **Reasoning.**), or write a `## YYYY-MM-DD: Title` entry at the top of the topic file. Topics: `pnpm decisions topics`. Game-feel decisions Misa confirmed carry **[Misa]** in the title.
+- **Change history by adding, not rewriting.** A new entry that replaces an earlier one says `Supersedes:` its ID (`--supersedes <id>`); one that changes part of it says `Amends:` (`--amends <id>`). The tool marks the old entry and moves superseded entries to the bottom of their file.
+- **The tool keeps the rest in step.** IDs, statuses, order and the `README.md` index are derived: never edit them by hand. A hook runs `pnpm decisions fix` after every edit to a topic file; CI runs `pnpm decisions check`. Find things with `pnpm decisions search <regex>` and `pnpm decisions show <id or title>` instead of reading whole files. An old citation like "decisions.md 2026-10-24, <title>" resolves with `pnpm decisions show "<title>"`.
+- **The old `docs/design/decisions.md` is a stub.** Never add entries there. A branch that did (before the split) runs `pnpm decisions migrate` after merging `main`; it moves the branch's entries, asks for a topic for each new one, and restores the stub.
+- **Progress.** When a roadmap step lands or the plan changes, update `docs/progress.md` (and `docs/roadmap.md` if the plan moved). A stop hook asks once when a branch changes code but records no decision and no progress; record one if the work made a decision, otherwise just finish.
 
 ## Repo layout
 

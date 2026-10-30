@@ -1,12 +1,12 @@
-# Design decisions
+# Design decisions (moved)
 
-Newest last. Each entry: date, decision, reasoning. Technical decisions are made by the lead agent; game-feel decisions are confirmed with Misa (marked **[Misa]**).
+Design decisions now live in `docs/design/decisions/`, one file per topic. Start with its [README.md](decisions/README.md), the index.
 
-## 2026-10-10: Hosting on Cloudflare, all-in
+Query them with `pnpm decisions` (try `pnpm decisions help`).
 
-**Decision.** One Cloudflare Worker at `creatures.misacorp.dev` serves both the Activity frontend (Workers Static Assets) and the API (`/api/*`, `run_worker_first`). State lives in SQLite-backed Durable Objects. No AWS backend.
+Do not add entries to this file. CI rejects them.
 
-**Reasoning.**
+If you are resolving a merge conflict in this file, or your branch added entries here before the split, run `pnpm decisions migrate`. It moves your branch's entries into the topic files, asks you which topic each new one belongs to, and restores this stub.
 
 - A Discord Activity needs a backend for the OAuth code exchange (client secret), so static hosting alone isn't enough.
 - Serving frontend and API from one origin keeps Discord's URL mapping to a single `/` entry, and relative `/api/...` calls work through Discord's proxy with no extra mappings.
@@ -3513,3 +3513,4 @@ Also: Stubborn is once per weekend and never heals; further anchors of a move sk
 ## 2026-10-30: The combat lab runs on every core, with a speed budget
 
 **Decision (lead).** Misa asked why the bosses work took about 14 hours of agent time. A profile showed 95% of the lab report's 585 s was fight simulation on one of four cores, and each tuning step reran the whole report. The fight engine is now about 2.25x faster (caches and scans, same random draws in the same order) and the report runs as independent jobs on worker threads, assembled in the original order, so its output is byte-identical to the serial run. The full report takes 80 s, the quick one 13 s, one raid boss 17 s (`--bosses --boss <id>`), the lab tests 11 s. **Budget:** full report under 2 minutes, quick under 20 s, lab tests about 10 s; a change that breaks it profiles first. Caching results by input hash was dropped: only about 15% of the simulated weekends were repeats. The next fix is the automatic tuner, so agents change rules and content while a search sets the numbers against targets Misa has agreed.
+Old references such as "decisions.md 2026-10-24, Some title" still resolve: `pnpm decisions show "Some title"`.

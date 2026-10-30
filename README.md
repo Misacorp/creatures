@@ -3,7 +3,7 @@
 A Discord Activity for small communities: collect creatures, send them on expeditions, and take on a weekly co-op raid boss together. Runs on Cloudflare at `creatures.misacorp.dev`.
 
 - Rules for contributors and agents: [`CLAUDE.md`](CLAUDE.md)
-- Design decisions: [`docs/design/decisions.md`](docs/design/decisions.md)
+- Design decisions: [`docs/design/decisions/`](docs/design/decisions/README.md) (by topic; query with `pnpm decisions`)
 - Security: [`docs/security.md`](docs/security.md)
 - Research: [`docs/research/`](docs/research/)
 
