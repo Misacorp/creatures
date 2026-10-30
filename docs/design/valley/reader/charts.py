@@ -134,13 +134,12 @@ def charts(root):
     parts.append(_line_chart('How fast the valley builds', 'Level-ups across the five places on a server of 8. The plan said about 5 or 6 by week 12; every place tops out at level 5 (20 level-ups).',
                              [('Server of 8', ups)], 20, [0, 5, 10, 15, 20], ref=('The plan', ref)))
 
-    # 4. The Forge's fire, with the slow floor and without it.
+    # 4. The Forge's fire (no time floor since round 16), with the old slow floor for comparison.
     fd = d['fireByDial']
-    nf = d.get('fireNoFloor', {})
-    ser = [('All bosses', fd['all']['fire']), ('No bosses', fd['none']['fire'])]
-    if 'none' in nf:
-        ser.append(('No bosses, no floor', nf['none']['fire']))
-    ref = [10 + 1.875 * i for i in range(len(fd['all']['fire']))]
-    parts.append(_line_chart('The Forge\'s fire (the item level cap)', 'On a server of 8. Building and boss kills drive it; the slow time floor (dashed) only matters to a quiet server late in the season.',
-                             ser, 100, [0, 25, 50, 75, 100], ref=('The time floor', ref), short=['All', 'None', 'No floor']))
+    sf = d.get('fireSlowFloor', {})
+    ser = [('All bosses', fd['all']['fire']), ('Half', fd['half']['fire']), ('No bosses', fd['none']['fire'])]
+    if 'none' in sf:
+        ser.append(('No bosses, old slow floor', sf['none']['fire']))
+    parts.append(_line_chart('The Forge\'s fire (the item level cap)', 'On a server of 8, by how many raid bosses it kills. Only building, collections and boss kills warm it (no time floor); the old slow floor would only have helped a server that never wins.',
+                             ser, 100, [0, 25, 50, 75, 100], short=['All', 'Half', 'None', 'Old floor']))
     return ''.join(parts)
