@@ -5,8 +5,10 @@ import { planBosses } from './bossReport';
 import { inProcessExecutor } from './jobRunners';
 import { runJobs, timingLines, type Executor, type JobRun, type JobSpec, type Plan } from './jobs';
 import { planReport, buildCatalogue, buildKeywords } from './report';
+import { TARGET_RANKS, type TargetRank } from './targets';
 import { planTalents, talentTeamId } from './talentReport';
 import type { TeamShareSummary } from './teamShareReport';
+import { summaryAll, tuneBoss, type RankResult } from './tuner';
 
 /** Where the jobs run: `exec` runs one job, `slots` of them at a time (`scripts/report.mjs` sets both from `--jobs`). */
 export interface JobRunner {
@@ -33,11 +35,12 @@ async function runPlan<T>(
 /**
  * `pnpm --filter @creatures/lab report [-- --quick] [--out <file>] [--jobs <n>]`: writes the lab report; `--talents` prints
  * only the talent section, `--team` only its team share, `--bosses` only the real raid bosses and dungeon foes
- * (`--boss <id>` only one raid boss). `--jobs` is how many jobs run at a time (default: one per core; 1 is the serial path).
+ * (`--boss <id>` only one raid boss), `--tune` the boss tuner (below). `--jobs` is how many jobs run at a time (default: one per core; 1 is the serial path).
  * Every run ends with the seconds each section took.
  */
 export async function main(args: readonly string[], run: JobRunner = serial): Promise<number> {
   const quick = args.includes('--quick');
+  if (args.includes('--tune')) return tune(args, quick, run);
   const bossAt = args.indexOf('--boss');
   if (args.includes('--bosses') || bossAt >= 0) {
     // Only the real raid bosses and dungeon foes, to the console (nothing is written).
@@ -108,5 +111,54 @@ export async function main(args: readonly string[], run: JobRunner = serial): Pr
   }
   console.log(`lab report written to ${out} in ${secondsSince(t)} s`);
   console.log(timings);
+  return 0;
+}
+
+/** The value after a flag, or undefined. */
+const flagValue = (args: readonly string[], flag: string): string | undefined => {
+  const at = args.indexOf(flag);
+  return at >= 0 ? args[at + 1] : undefined;
+};
+
+/**
+ * `--tune [--boss <id>] [--rank low|mid|high|all] [--quick] [--out <file.md>]`: the boss tuner (`tuner.ts`). It searches each
+ * boss's HP, Attack and armour against the targets (`targets.ts`) and prints a short markdown summary: today's numbers, the best
+ * found (ready to paste) and the targets that conflict. Nothing is applied. With `--out` the summary is also written to the file
+ * and the full result next to it as JSON. Without `--boss` every boss is tuned (the bosses side by side on the same cores).
+ */
+async function tune(args: readonly string[], quick: boolean, run: JobRunner): Promise<number> {
+  const boss = args.includes('--boss') ? flagValue(args, '--boss') : undefined;
+  if (args.includes('--boss') && (boss === undefined || !RAID_BOSS_IDS.includes(boss))) {
+    console.error(
+      `${boss === undefined ? 'Missing boss id' : `Unknown raid boss "${boss}"`}. Raid bosses: ${RAID_BOSS_IDS.join(', ')}`,
+    );
+    return 1;
+  }
+  const rankArg = flagValue(args, '--rank') ?? 'high';
+  const ranks: readonly TargetRank[] | undefined =
+    rankArg === 'all'
+      ? TARGET_RANKS
+      : TARGET_RANKS.find((r) => r === rankArg)
+        ? [rankArg as TargetRank]
+        : undefined;
+  if (!ranks) {
+    console.error(`Unknown rank "${rankArg}". Ranks: ${[...TARGET_RANKS, 'all'].join(', ')}`);
+    return 1;
+  }
+  const out = args.includes('--out') ? flagValue(args, '--out') : undefined;
+  if (args.includes('--out') && !out) {
+    console.error('--out needs a file name');
+    return 1;
+  }
+  const t0 = Date.now();
+  const results: RankResult[] = (
+    await Promise.all((boss ? [boss] : RAID_BOSS_IDS).map((id) => tuneBoss(id, ranks, quick, run)))
+  ).flat();
+  const summary = summaryAll(results, (Date.now() - t0) / 1000, quick);
+  console.log(summary.join('\n'));
+  if (out) {
+    writeFileSync(out, summary.join('\n') + '\n');
+    writeFileSync(out.replace(/(\.md)?$/, '.json'), JSON.stringify(results, null, 1) + '\n');
+  }
   return 0;
 }

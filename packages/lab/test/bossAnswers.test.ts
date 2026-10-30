@@ -2,13 +2,11 @@
  * The intended answers of the raid bosses: legal rosters, named Knack tools, and every answer's own tool is tested.
  */
 import { describe, expect, it } from 'vitest';
+import { ROBUST_SHARE, TOOL_DROP_MIN, TOOL_SHARE_MIN } from '../src/targets';
 import {
   BOSS_ANSWERS,
   KNACKS,
   RAID_BOSS_IDS,
-  TOOL_DROP_MIN,
-  TOOL_SHARE_MIN,
-  ROBUST_SHARE,
   COMMON_OR_CLASSIC_FORMS,
   robustnessOf,
   toolCost,

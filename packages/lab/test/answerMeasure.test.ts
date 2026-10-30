@@ -4,10 +4,9 @@
  */
 import { createSeededRng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
+import { GATE_BOSSES, GATE_DROP } from '../src/targets';
 import {
   BOSS_ANSWERS,
-  GATE_BOSSES,
-  GATE_DROP,
   MECHANICS,
   answerLine,
   answerProblems,

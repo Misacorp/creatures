@@ -6,12 +6,6 @@
  */
 import { ablate, type Measured } from './ablation';
 import {
-  GATE_BOSSES,
-  GATE_DROP,
-  ROBUST_SHARE,
-  ROBUST_TARGET,
-  TOOL_DROP_MIN,
-  TOOL_SHARE_MIN,
   failingGates,
   familyDrops,
   familyGates,
@@ -38,7 +32,6 @@ import {
 } from './bosses';
 import {
   CASUAL_ORDER,
-  MARGIN_TARGET,
   MIXED_DRAWS,
   MIXED_SEEDS,
   RAID_ATK_EXPONENT,
@@ -76,6 +69,15 @@ import {
   type Pick,
   type Ranked,
 } from './search';
+import {
+  GATE_BOSSES,
+  GATE_DROP,
+  MARGIN_TARGET,
+  ROBUST_SHARE,
+  ROBUST_TARGET,
+  TOOL_DROP_MIN,
+  TOOL_SHARE_MIN,
+} from './targets';
 import { illegalTalents, legalTalents } from './talents';
 import type { BossDef, BossMove, Pattern } from './types';
 

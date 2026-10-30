@@ -21,6 +21,7 @@ import {
 } from './talentReport';
 import { TEAM_BOSS_WIN_RATE } from './teamShare';
 import { buildTeamShareSection } from './teamShareReport';
+import { runTuneJob } from './tuner';
 
 /** Runs the job and returns its result: plain data, so that it can be posted between threads. */
 export function runJob(job: JobSpec, deps: Readonly<Record<string, unknown>>): unknown {
@@ -61,6 +62,8 @@ export function runJob(job: JobSpec, deps: Readonly<Record<string, unknown>>): u
     }
     case 'boss':
       return runBossJob(job.args as BossJobArgs, deps);
+    case 'tune-eval':
+      return runTuneJob(job.args);
     default:
       throw new Error(`unknown job kind ${job.kind}`);
   }
