@@ -10,6 +10,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | --- | --- | --- | --- |
 | [Void creatures, two stages](#void) | liked | 8 | 2026-10-30: imagine the Void element on creatures; four creatures, one per role, no names or stats. |
 | [Void, a raid boss, three foes and two floor bosses](#void-foes) | draft | 6 | 2026-10-31: a Void raid boss, dungeon foes and dungeon bosses. |
+| [Void place, the Quiet Verge (banners)](#void-place) | draft | 2 | 2026-10-31: design a Void area that can be explored (banner and place). |
 
 <a id="void"></a>
 
@@ -59,3 +60,24 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `void-crab` | foe |  | draft | Drift Crab: a low round shell with a window and two big claws; it tucks in and hides. |
 | `void-floor-jelly` | boss |  | draft | Lantern Drifter: a floating bell with a starry window, two glinting eyes and trailing tendrils tipped with stars. |
 | `void-floor-sentinel` | boss |  | draft | Dim Sentinel: a tall standing stone with a doorway of night in its belly, glinting eyes and two shards orbiting it. |
+
+<a id="void-place"></a>
+
+## Void place, the Quiet Verge (banners)
+
+![Void place, the Quiet Verge (banners)](void-place.png)
+
+- **Status:** draft
+- **Requested:** 2026-10-31: design a Void area that can be explored (banner and place).
+- **Element:** void
+- **Source:** `apps/activity/src/sprites/concepts/void-place.ts` (draw it with `pnpm art void-place`)
+- **Sheet of:** `daa071502d5a`
+- Place concept: docs/compendium/places.md, "Quiet Verge" (working name). Concept, not shipped.
+- Needs before use: the Void element in the content (element chart, marks, creatures from void.ts with names, stats, lore, shiny palettes), an entry in destinations.json with these palette colours and the deeper area, an access rule, journal pages, push-on flavour and a glossary entry, then the compendium entry moved out of concept.
+- To ship: move the banners into data/ (a void-banner-sprites.ts registered in BANNER_SPRITE_DATA under the destination id) and delete this set.
+- Each banner uses 11 colours or fewer (the studio cap), where shipped banners use 12 to 14.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `void-place-banner` | banner |  | draft | The Quiet Verge: a dusk plain of lilac dust, a still pool that holds the stars, leaning stones, a dark moon and a stone arch with one warm star at the far end. |
+| `void-place-deep` | banner |  | draft | The far side: the ground ends, stepping stones cross the open sky, and a great ring hangs ahead with one warm star at its middle. |

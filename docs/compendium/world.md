@@ -122,6 +122,8 @@ Status: concept art only (2026-10-30). No creatures, names, stats, marks or plac
 | Support | A small planet with a ring for a halo and two moons in orbit; it lifts its neighbours. | A round moon on the forehead      |
 | Payoff  | A lynx of the night: tall ears full of stars, a small star crest.                      | Inside the ears                   |
 
+**A place to explore (concept, not shipped, 2026-10-31):** the Quiet Verge, a dusk plain at the edge of the map where the night sky carries on underneath. See `places.md`, "The Quiet Verge", and the banners in `apps/activity/src/sprites/concepts/void-place.ts`.
+
 ### Balance as a world idea (inferred)
 
 Nothing in the content says any element is good. Every element is strong against one and weak to another, and the reactions reward teams that use the loop. A world-level reading: no force wins for good; the loop keeps turning. The "wheel" line `(content)` supports this.
