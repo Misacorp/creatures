@@ -10,7 +10,7 @@ Misa: "Could players offer some of their own resources for the common good? Coul
 
 The valley's places (the Forge, the Signpost, the Paddock, the School, the bonfire) belong to the whole server. Each has a **server level**, raised by **projects** built from many common gifts. Each also has **collections**: sets of rare finds that the server gathers and sets into the building, Stardew Valley style. And everything the server builds warms the **Forge's fire**: the item level cap of everything made or found (`gear.md` V-GEAR-10). Players give in three ways, all optional:
 
-1. **Resources** on a place's project board (a crate, a scaffold, a donation bowl): Acorns, scrap, shards, Essence.
+1. **Resources** on a place's project board (a crate, a scaffold, a donation bowl): world materials (scrap and shards) plus Acorns (round 14, Q33). Essence goes to creatures, not buildings.
 2. **Creatures** on communal seats, whose work goes to the server's project (haulers at the Forge, road menders at the Signpost, a lamplighter at the bonfire). The creature earns its own XP and skill there.
 3. **Rare finds** that fill a collection: a find made for the purpose, turned up by scouts, the dungeon, the raid or the fair. A find sets itself into its socket when it is found.
 

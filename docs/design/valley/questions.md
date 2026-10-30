@@ -6,41 +6,7 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q33. Which resources should the valley keep?
-
-Status: asked, round 14 (2026-10-30), with the lab's first report and the charts on the phone page. From the **resources** queue entry (Misa's two instincts in Q32). Touches: `economy/resources.md`, `forge.md`, `commons.md`, `scouts.md`.
-
-**Why it matters.** Today the plan has ten numbers a player spends (Acorns, scrap, five kinds of shard, glimmer, Essence, medals). The lab shows most of them piling up with too little to spend on: by week 24 a daily player holds about 14 weeks of scrap income, 12 of shards, 10 of glimmer and 12 of Essence, and Acorns run out of things to buy by week 8. The research finds no limit on how many resources players accept, but says: give each one a clear source, a clear use and a place in the world, and cut or merge any that do the same job (`docs/research/resource-design.md`).
-
-- **A. Three kinds, each with one job.** Acorns for your own valley (seats, kit). Scrap and shards from the world, for the Forge and the server's buildings: projects are built from materials plus Acorns, which gives the piles a use. Essence, the prize from fights, for creatures (evolution, Reach). Glimmer goes; journal pages stay as lore and collection pieces, never spent. Example: the Signpost's next level asks for 600 scrap, 80 Tide shards and 300 Acorns, and you can see the scaffolding fill with crates of scrap.
-- **B. Fewer still.** Acorns plus one material (scrap). Shards, glimmer and Essence go; evolution costs Acorns. Example: everything you see is either Acorns or scrap. Simpler, but where your scouts are no longer matters to the Forge (it undoes Q23).
-- **C. Keep all six kinds and give each more uses.** Example: glimmer buys hats, Essence buys a creature's second evolution branch. More to collect, more to explain.
-
-**Lead's pick: A.** It is your own split ("part of them are from the game world itself, and they're used to actually upgrade buildings... and then other resources are... acorns"), and it turns today's biggest problem, the piles of scrap and shards, into the server's building material. Acorns also need more to spend on later in the season (the lab tunes this).
-
-### Q34. Shards of the right element: keep the wait, but smarter? (a challenge)
-
-Status: asked, round 14 (2026-10-30). Challenges: Q23 ("if you're waiting for Reef shards, then you need to have explorers out in the Reef"). Touches: `forge.md` V-FORGE-4, ribbons, `scouts.md`.
-
-**Why it matters.** You decided that each piece the Forge makes needs a shard of its element. The lab shows the cost: a daily player's Forge makes pieces only about half the time and waits for a shard the other half, even while shards pile up overall, because they are the wrong element. A player who never moves their scouts also has creatures stuck at a ribbon (levels 10 and 20) for want of their own element's shards. More elements are coming, which makes this worse.
-
-- **A. Keep the wait, make the Forge smarter.** "For my team" orders make pieces for the elements you have shards for first, and only wait when nothing can be made; ribbons take shards of any element. Where your scouts are still decides what you can make. Example: Sanni's scouts are in the Ember Caves, so her smiths make Ember pieces for her team, and the Forge suggests the Tidepools for the Tide pieces it can't make yet.
-- **B. Keep the wait, add a swap at the Forge.** Three shards of any element trade for one of the element you need, at the Forge. Example: Sanni trades 3 Ember shards for a Tide shard with one tap.
-- **C. Drop the element from shards.** One kind of shard; where your scouts are matters only for creatures and rare finds. Simplest, and the problem goes away, but it undoes your production chain.
-
-**Lead's pick: A.** It keeps your chain (scouts' places decide what the Forge makes) while a hands-off player's Forge never sits idle when it could make something. B adds a conversion to explain; C undoes Q23.
-
-### Q35. How far behind should a once-a-week player be? (a challenge)
-
-Status: asked, round 14 (2026-10-30). Challenges: T-2 ("a weekly player gets most of a daily player's idle growth, about 75% to 80%") against Q3 ("our other systems will keep bringing players back organically because their storages likely fill up"). Touches: `bonfire.md` V-BON-2, `posts.md` V-POST-5, `goals.md` T-2.
-
-**Why it matters.** The lab says a player who opens the game on Sundays only gets about half a daily player's creature growth (51%), not the 75% to 80% we aimed for, and their scouts bring home 41% of a daily player's finds. The idle rate itself does give 79%, but daily players also get catch-up every day (it runs only in the 24 hours after a visit) and fight more. Your two goals pull apart: full stores are meant to pull players back, yet weekly players were meant to stay close.
-
-- **A. Accept it: weekly players grow at about half the pace.** Change T-2. Example: Juho's best creature is level 25 at week 12, against Sanni's 29; Juho's 10th is about 9 levels behind Sanni's.
-- **B. Close the growth gap, keep the finds gap.** Catch-up lasts until the next visit instead of 24 hours, so a weekly player's creatures grow at about 75% of a daily player's, but their scouts still stop picking up when the stores fill. Example: Juho's creatures are close to Sanni's, but Sanni has more scrap, finds and new creatures, because she looked in every day.
-- **C. Close both.** Stores hold a week, so a weekly player brings home almost everything too. Example: Juho misses almost nothing, and there is little pull to look in more often than once a week.
-
-**Lead's pick: B.** It keeps both of your goals: a weekly friend's creatures can still raid with everyone (growth is fair), and looking in daily still pays in things, not levels (the stores' pull you wanted). The lab checks it against the target before anything is changed.
+Nothing waiting.
 
 ## Queue
 
@@ -565,6 +531,54 @@ Status: answered, round 13 (2026-10-30). The question queue is empty apart from 
 **Answer (2026-10-30): A.** "The economy simulation building would be something that could work out as I travel home from work... I'm interested in seeing what kind of resources we have, how they interact. What's used for what, and understanding that kind of a system." His open thinking, recorded for the resources question: "in a game like this we're going to need to be interacting with a lot of resources and those resources need to have some kind of relative value against each other... And on the other hand, my understanding of game economies is that the less resources you have, the better. Or especially resources that kind of track progress... maybe there's different resource types... part of them are from the game world itself, and they're used to actually upgrade buildings in there. And then other resources are maybe these superficial and more abstract, acorns that just come out of the daily income or loot." On pacing: "players have things that they feel are progressing and they're not limited by or being starved of resources or things to upgrade. But then at the same time, having content for longer play sessions... it's a co-op idle game. And it's meant to be taken slowly." On the School: "the school is so dependent on what comes out of the combat rework... What do we want to teach in a school? Or is the school building even necessary? Is it a dumb way to do things that I just came up with because it felt cool?"
 
 Became: phase 2 starts: the resource map (`economy/resources.md`) and the economy lab (`economy/model.md`, `packages/econ`). Two new queue entries: **resources** (how many, which kinds) and **school** (keep, fold or scrap).
+
+### Q33. Which resources should the valley keep?
+
+Status: answered, round 14 (2026-10-30), with the lab's first report and the charts on the phone page. From the **resources** queue entry (Misa's two instincts in Q32). Touches: `economy/resources.md`, `forge.md`, `commons.md`, `scouts.md`.
+
+**Why it matters.** Today the plan has ten numbers a player spends (Acorns, scrap, five kinds of shard, glimmer, Essence, medals). The lab shows most of them piling up with too little to spend on: by week 24 a daily player holds about 14 weeks of scrap income, 12 of shards, 10 of glimmer and 12 of Essence, and Acorns run out of things to buy by week 8. The research finds no limit on how many resources players accept, but says: give each one a clear source, a clear use and a place in the world, and cut or merge any that do the same job (`docs/research/resource-design.md`).
+
+- **A. Three kinds, each with one job.** Acorns for your own valley (seats, kit). Scrap and shards from the world, for the Forge and the server's buildings: projects are built from materials plus Acorns, which gives the piles a use. Essence, the prize from fights, for creatures (evolution, Reach). Glimmer goes; journal pages stay as lore and collection pieces, never spent. Example: the Signpost's next level asks for 600 scrap, 80 Tide shards and 300 Acorns, and you can see the scaffolding fill with crates of scrap.
+- **B. Fewer still.** Acorns plus one material (scrap). Shards, glimmer and Essence go; evolution costs Acorns. Example: everything you see is either Acorns or scrap. Simpler, but where your scouts are no longer matters to the Forge (it undoes Q23).
+- **C. Keep all six kinds and give each more uses.** Example: glimmer buys hats, Essence buys a creature's second evolution branch. More to collect, more to explain.
+
+**Lead's pick: A.** It is your own split ("part of them are from the game world itself, and they're used to actually upgrade buildings... and then other resources are... acorns"), and it turns today's biggest problem, the piles of scrap and shards, into the server's building material. Acorns also need more to spend on later in the season (the lab tunes this).
+
+**Answer (2026-10-30): A.** "33 A is good and we can look at introducing glimmer type resources when we actually have a use for them."
+
+Became: three kinds of spendables (`economy/resources.md`): Acorns for your own valley; scrap and shards from the world for the Forge and the server's buildings (projects are built from materials plus Acorns); Essence for creatures. Glimmer goes; a new resource is added only when it has a use. Journal pages are never spent.
+
+### Q34. Shards of the right element: keep the wait, but smarter? (a challenge)
+
+Status: answered, round 14 (2026-10-30). Challenges: Q23 ("if you're waiting for Reef shards, then you need to have explorers out in the Reef"). Touches: `forge.md` V-FORGE-4, ribbons, `scouts.md`.
+
+**Why it matters.** You decided that each piece the Forge makes needs a shard of its element. The lab shows the cost: a daily player's Forge makes pieces only about half the time and waits for a shard the other half, even while shards pile up overall, because they are the wrong element. A player who never moves their scouts also has creatures stuck at a ribbon (levels 10 and 20) for want of their own element's shards. More elements are coming, which makes this worse.
+
+- **A. Keep the wait, make the Forge smarter.** "For my team" orders make pieces for the elements you have shards for first, and only wait when nothing can be made; ribbons take shards of any element. Where your scouts are still decides what you can make. Example: Sanni's scouts are in the Ember Caves, so her smiths make Ember pieces for her team, and the Forge suggests the Tidepools for the Tide pieces it can't make yet.
+- **B. Keep the wait, add a swap at the Forge.** Three shards of any element trade for one of the element you need, at the Forge. Example: Sanni trades 3 Ember shards for a Tide shard with one tap.
+- **C. Drop the element from shards.** One kind of shard; where your scouts are matters only for creatures and rare finds. Simplest, and the problem goes away, but it undoes your production chain.
+
+**Lead's pick: A.** It keeps your chain (scouts' places decide what the Forge makes) while a hands-off player's Forge never sits idle when it could make something. B adds a conversion to explain; C undoes Q23.
+
+**Answer (2026-10-30): B.** "B sounds best. What better way to create relationships between currencies than a currency exchange. This paves the way for things like visiting traders or even permanent upgrades that offer better exchange rates. Currency exchange crits are also a fun idea."
+
+Became: V-FORGE-10, a shard exchange at the Forge (example: 3 of any element for 1 of the one you need, with a small chance of a bonus); visiting traders and better rates as later ideas (`later.md`). The lab checks whether a hands-off player's Forge still stalls; if it does, the smarter ordering of option A is raised once as an addition.
+
+### Q35. How far behind should a once-a-week player be? (a challenge)
+
+Status: answered, round 14 (2026-10-30). Challenges: T-2 ("a weekly player gets most of a daily player's idle growth, about 75% to 80%") against Q3 ("our other systems will keep bringing players back organically because their storages likely fill up"). Touches: `bonfire.md` V-BON-2, `posts.md` V-POST-5, `goals.md` T-2.
+
+**Why it matters.** The lab says a player who opens the game on Sundays only gets about half a daily player's creature growth (51%), not the 75% to 80% we aimed for, and their scouts bring home 41% of a daily player's finds. The idle rate itself does give 79%, but daily players also get catch-up every day (it runs only in the 24 hours after a visit) and fight more. Your two goals pull apart: full stores are meant to pull players back, yet weekly players were meant to stay close.
+
+- **A. Accept it: weekly players grow at about half the pace.** Change T-2. Example: Juho's best creature is level 25 at week 12, against Sanni's 29; Juho's 10th is about 9 levels behind Sanni's.
+- **B. Close the growth gap, keep the finds gap.** Catch-up lasts until the next visit instead of 24 hours, so a weekly player's creatures grow at about 75% of a daily player's, but their scouts still stop picking up when the stores fill. Example: Juho's creatures are close to Sanni's, but Sanni has more scrap, finds and new creatures, because she looked in every day.
+- **C. Close both.** Stores hold a week, so a weekly player brings home almost everything too. Example: Juho misses almost nothing, and there is little pull to look in more often than once a week.
+
+**Lead's pick: B.** It keeps both of your goals: a weekly friend's creatures can still raid with everyone (growth is fair), and looking in daily still pays in things, not levels (the stores' pull you wanted). The lab checks it against the target before anything is changed.
+
+**Answer (2026-10-30): B.** "35 B"
+
+Became: V-BON-2, catch-up's multiplier holds until the next visit (not 24 hours); T-2 keeps its 75% to 80% growth target, and the finds gap (full stores) stays as the pull to look in more often.
 
 ## Withdrawn
 

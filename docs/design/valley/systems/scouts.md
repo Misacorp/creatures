@@ -9,7 +9,7 @@ A scout is posted to one of the destinations and roams it all the time. Finds tu
 ## Rules
 
 - **V-SCOUT-1** Seats: each player has scout seats at the Signpost (example: 2 at its level 1, one more a level, `posts.md`). A seat is posted to one destination; moving it is free.
-- **V-SCOUT-2** Finds. A scout's finds are worked out for each stretch of effective time (the away steps apply, V-POST-10), on the server, on the owner's own visit, with live randomness (F-8). Each place has a **find profile** that sets what it is rich in: scrap, shards of its element, creatures, or rare finds (gear, blueprints, glimmer, journal pages). Example rates are below.
+- **V-SCOUT-2** Finds. A scout's finds are worked out for each stretch of effective time (the away steps apply, V-POST-10), on the server, on the owner's own visit, with live randomness (F-8). Each place has a **find profile** that sets what it is rich in: scrap, shards of its element, creatures, or rare finds (gear, blueprints, journal pages). Example rates are below.
 - **V-SCOUT-3** New creatures arrive at the Paddock gate. A new species is kept, celebrated in the return walk (V-RET-2) and joins the roster at once. Duplicates gather at the gate as one bubble with a count; after a day each takes today's Recommended answer (teach, fuse or keep) by itself, and the player can step in any time before. Nothing piles up.
 - **V-SCOUT-4** The store holds about three days of effective time (V-POST-5); when full, the scout keeps exploring (and growing) but stops picking up, and its bubble says "pack full". Nothing is lost.
 - **V-SCOUT-5** Kit (V-POST-11), shown as a picture of what it brings: a **lure** (a creature silhouette) draws creatures, leaning toward a species the player lacks with a hint of which; a **lantern** (a blueprint) draws rare finds; a **satchel** (a sack) brings more scrap and shards. Kit works with the place's profile: a lure is best at a creature-rich place, a lantern at a rare-rich one. One at a time; switching between owned kit is free.
@@ -32,11 +32,10 @@ Today's trips pay in "ticks" of about an hour (`RULES.expeditions.tick`). A scou
 | A creature                         | 2% chance            | about 0.5                                   |
 | A gear piece (the place's element) | 1% chance            | about 0.25                                  |
 | A blueprint                        | 0.3% chance          | one every two weeks or so                   |
-| Glimmer                            | 0.6% chance          | one every week or so                        |
 | A journal page                     | 0.4% chance          | one every ten days or so                    |
 | The place's keystone               | one clock per server | about one per server every three weeks      |
 
-Kit tilts (examples): a lure x2 creature chance and a lean toward a missing species; a lantern x1.5 gear, blueprints, glimmer and pages; a satchel x1.4 scrap and shards. Fit adds 25% to everything; mastery up to 15%.
+Kit tilts (examples): a lure x2 creature chance and a lean toward a missing species; a lantern x1.5 gear, blueprints and pages; a satchel x1.4 scrap and shards. Fit adds 25% to everything; mastery up to 15%.
 
 With two scouts at fitting places, a daily player brings home about 45 scrap, 12 shards and a creature a day.
 

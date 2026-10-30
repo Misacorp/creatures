@@ -3578,3 +3578,13 @@ Misa's answer to the valley plan's Q31: a communal seat is an extra seat per pla
 ## 2026-10-30: Valley: build the economy lab next (round 13, Q32)
 
 Misa: "The economy simulation building would be something that could work out as I travel home from work... I'm interested in seeing what kind of resources we have, how they interact. What's used for what." Phase 2 starts: a resource map (`docs/design/valley/economy/resources.md`) and the lab (`economy/model.md`, package `packages/econ`). His open thinking on how many resources the valley needs, and his doubt about the School ("is the school building even necessary?"), became two queued questions (**resources**, **school**) in `docs/design/valley/questions.md`. Research: `docs/research/resource-design.md`.
+
+## 2026-10-30: Valley: three kinds of resources, a shard exchange, catch-up until the next visit (round 14, Q33 to Q35)
+
+Asked with the economy lab's first report, which showed most resources piling up, a daily player's Forge waiting on shards of the wrong element about half the time, and a weekly player growing at about half a daily player's pace.
+
+- **Q33, A:** three kinds of spendables: Acorns for your own valley; scrap and shards from the world, for the Forge and the server's buildings (projects are built from materials plus Acorns); Essence from fights, for creatures. Glimmer is cut: "we can look at introducing glimmer type resources when we actually have a use for them." Journal pages are never spent. (`docs/design/valley/economy/resources.md`)
+- **Q34, B:** a shard exchange at the Forge (example: 3 of any element for 1 of the one you need, with a small chance of a bonus). "What better way to create relationships between currencies than a currency exchange. This paves the way for things like visiting traders or even permanent upgrades that offer better exchange rates. Currency exchange crits are also a fun idea." (`forge.md` V-FORGE-10; traders in `later.md`)
+- **Q35, B:** catch-up's multiplier holds until the next visit instead of 24 hours, so a weekly player's creatures grow at about 75% of a daily player's, while full stores still reward looking in more often. (`bonfire.md` V-BON-2; T-2 unchanged)
+
+The economy lab models all three and is being tuned with its automatic tuner.

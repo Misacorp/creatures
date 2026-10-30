@@ -1,6 +1,6 @@
 # The resource map: what the valley runs on
 
-Status: **draft** (lead, 2026-10-30), for the **resources** question in `questions.md`. Written because Misa asked, when starting the economy lab (round 13, Q32): "I'm interested in seeing what kind of resources we have, how they interact. What's used for what." The lab (`model.md`) simulates every row of this map; its report shows each one's flow by week.
+Status: **decided** (Misa, round 14, Q33: A, "we can look at introducing glimmer type resources when we actually have a use for them"; Q34: B, a shard exchange). The tables below show the map as it was before the decision; the decided list is in "The decided list". Written because Misa asked, when starting the economy lab (round 13, Q32): "I'm interested in seeing what kind of resources we have, how they interact. What's used for what." The lab (`model.md`) simulates every row of this map; its report shows each one's flow by week.
 
 ## Misa's two instincts
 
@@ -47,6 +47,16 @@ Creature levels and XP; mastery titles; blueprint quality; each place's level; t
 6. **Medals** are decided with the Fairground: their own loop, or paid in Acorns.
 
 If all six went the lead's way, the spendable list becomes: **Acorns** (yours), **scrap and shards** (the world's), **Essence** (the fights'). Three kinds, matching Misa's "world resources for buildings, an abstract currency" plus the fights' prize.
+
+## The decided list (round 14)
+
+| Kind           | Resources                                  | Comes from                                       | Goes to                                                                  |
+| -------------- | ------------------------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------ |
+| Your own       | **Acorns**                                 | the allowance, leets, the dungeon, small moments | seats, anvils, kit, the Acorn part of projects                           |
+| From the world | **Scrap** and **shards** (one per element) | scouts, tinkering, dismantling                   | Forge pieces, ribbons, the server's buildings; shards trade at the Forge |
+| From fights    | **Essence**                                | the raid, the dungeon, spare rare finds          | evolution and Reach                                                      |
+
+Glimmer is gone; Reach costs Essence only. Medals are decided with the Fairground. A new resource is added only when it has a use (Misa). The **shard exchange** (V-FORGE-10) is the first link between resources: 3 shards of any element for 1 of the one you need, with a small chance of a bonus; visiting traders and better rates come later (`systems/later.md`).
 
 ## What the lab watches for each resource
 

@@ -9,7 +9,7 @@ Creatures without a post rest at the bonfire in the middle of the valley. They g
 ## Rules
 
 - **V-BON-1** Every creature a player owns earns the idle XP rate every hour, at a post or at the fire; fights pay on top. No daily cap (Misa's goal); only the rate, the hearth, catch-up and the away steps (V-POST-10).
-- **V-BON-2** Catch-up (round 4, Q10, merged with the roster catch-up): each creature catches up toward a target, the higher of its player's 3rd-best creature's level and the server's middle (the median of active players' top-three levels). A creature 6 or more levels below the target earns x2, fading evenly to x1 at it (examples). XP only, never output. The multiplier is fixed at each visit and applies for the 24 hours after it, so it never undoes the away steps and cannot be farmed by staying away. A creature being caught up shows a small "warming up" flame. A new catch becomes useful within days; a player back after a month is near the server's middle in about two weeks of daily visits. Levels still count in the raid (no level sync).
+- **V-BON-2** Catch-up (round 4, Q10, merged with the roster catch-up): each creature catches up toward a target, the higher of its player's 3rd-best creature's level and the server's middle (the median of active players' top-three levels). A creature 6 or more levels below the target earns x2, fading evenly to x1 at it (examples). XP only, never output. The multiplier is fixed at each visit and holds until the next visit (round 14, Q35: B), so a once-a-week player's creatures keep catching up all week; it never lifts a creature above the target, and the away steps still apply, so staying away gains nothing. A creature being caught up shows a small "warming up" flame. A new catch becomes useful within days; a player back after a month is near the server's middle in about two weeks of daily visits. Levels still count in the raid (no level sync).
 - **V-BON-3** Resting, not benched. The fire has no seats: every creature without a post rests there. The word in the game is "resting". On screen a rotating few sit around the fire, with "+N" for the rest; a tap shows them all.
 - **V-BON-4** No couch (Misa, round 6, Q16: "the couch is kind of outdated at this point... this entire thing, like the bonfire and everything, moves that setting into the valley itself"). The valley shows who is online right now, and their creatures appear around the bonfire. No XP or other mechanical boost for company. Gifts left at each other's houses are a later idea (`later.md`).
 - **V-BON-7** The communal hearth (round 4, Q11): the bonfire has a server level, raised like any place (gifts of Acorns, the lamplighter's communal seat, a keystone such as an Ember of the first fire). Each level adds a slight increase to every idle creature's growth on the server ("This could be slightly incremental"; example: +4% a level, +16% at level 5) and something to see: a bigger fire, log benches, lanterns, a ring of stones. Level 1 is the plain fire, so a quiet server is never worse off.
@@ -18,12 +18,12 @@ Creatures without a post rest at the bonfire in the middle of the valley. They g
 
 ## Example numbers (the economy lab sets the real ones)
 
-| What                    | Example                                                            |
-| ----------------------- | ------------------------------------------------------------------ |
-| Idle XP, hearth level 1 | 5 an hour (120 a day), the same at a post                          |
-| Hearth levels           | +4% a level, level 5 at most (+16%)                                |
-| Catch-up                | x2 at 6+ levels below the target, x1 at it; 24 hours after a visit |
-| Small moments           | one or two lines a visit                                           |
+| What                    | Example                                                          |
+| ----------------------- | ---------------------------------------------------------------- |
+| Idle XP, hearth level 1 | 5 an hour (120 a day), the same at a post                        |
+| Hearth levels           | +4% a level, level 5 at most (+16%)                              |
+| Catch-up                | x2 at 6+ levels below the target, x1 at it; until the next visit |
+| Small moments           | one or two lines a visit                                         |
 
 A new catch on day 30 (level 1, the player's 3rd-best at level 19) earns about 240 a day on visit days and reaches level 10 in about a week.
 
