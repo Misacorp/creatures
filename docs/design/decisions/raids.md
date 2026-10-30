@@ -4,9 +4,17 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-30: Thornmother is a deliberate wall at the end of the first lap **[Misa]**
+
+ID: `2026-10-30-thornmother-is-a-deliberate-wall-at` · Status: current · Amends: `2026-10-30-raids-are-tuned-on-damage-potential`
+
+**Decision (Misa; placement and targets by the lead).** Thornmother's bark (heavy armour that cracks as she loses HP) makes a team with an answer far stronger against her than one without, and that is wanted: placed right on the boss track, she is a wall that makes a server rethink its raid roster. She moves to the end of the track's first lap (slot 5, about week 5, after four other bosses), and her slot is marked as a **wall** in the track data: a prepared team with her answer still reaches 125% potential or more, while a team without it may fall well below the usual 70% to 90% (target 30% to 60%, no kill). Her later laps are tuned as normal slots, since a server that passed the wall has learned the answer.
+
+**Reasoning.** Misa: "If we time it right in the progression track players can absolutely hit a wall and it's a good place to make them think about their raid rosters." Week 3 was too early for a wall (servers are still finding their first creatures); by the end of the first lap a server has a roster to rethink. Marking the slot keeps later tuning from smoothing her back into the normal band.
+
 ## 2026-10-30: Raids are tuned on damage potential; young servers ramp in; Determination built but off **[Misa]**
 
-ID: `2026-10-30-raids-are-tuned-on-damage-potential` · Status: current · Amends: `2026-10-30-a-failed-raid-boss-returns-next`, `2026-10-30-how-the-boss-track-is-tuned`
+ID: `2026-10-30-raids-are-tuned-on-damage-potential` · Status: current, amended by `2026-10-30-thornmother-is-a-deliberate-wall-at` · Amends: `2026-10-30-a-failed-raid-boss-returns-next`, `2026-10-30-how-the-boss-track-is-tuned`
 
 **Decision (Misa).**
 
