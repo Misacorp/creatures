@@ -42,21 +42,28 @@ Numbers live in data, never in prose. A doc may give an example number, marked a
 
 Today's game against the vision, system by system (keep, rework or scrap): [`scrap-list.md`](scrap-list.md).
 
+## Where we are (2026-10-30)
+
+- **Phase 1** (the base systems on paper): every system is drafted in full, reviewed by the panel (`reviews/`) and decided by Misa in 13 rounds of questions (`questions.md`, 31 answers), except the School, which waits on combat v2's talents. Nearly every number is still an example.
+- **Waiting on Misa:** Q32, what comes next (the lead's pick: build the economy lab, phase 2).
+- **How to continue:** read the last entry of `log.md`, then `questions.md`'s "Waiting on Misa"; run the `valley-round` skill to record answers and ask the next round.
+- **Seams with combat v2** (`combat-v2-track`): the roster profile the economy lab must output, the fixed boss track, gear's stats and lines (`roadmap.md`). The combat session can message this one.
+
 ## The systems (one doc each)
 
-| System                                                    | Doc                                        | Status                                                    |
-| --------------------------------------------------------- | ------------------------------------------ | --------------------------------------------------------- |
-| The valley as the world and the menu                      | [`systems/valley.md`](systems/valley.md)   | prototype                                                 |
-| Job posts                                                 | [`systems/posts.md`](systems/posts.md)     | idea                                                      |
-| The bonfire: roster-wide growth                           | [`systems/bonfire.md`](systems/bonfire.md) | idea                                                      |
-| The return moment ("while you were away")                 | [`systems/return.md`](systems/return.md)   | idea                                                      |
-| Scouts: expeditions as standing posts                     | [`systems/scouts.md`](systems/scouts.md)   | idea                                                      |
-| The Forge loop: crafting fed by finds                     | [`systems/forge.md`](systems/forge.md)     | idea                                                      |
-| The School and visiting teachers                          | [`systems/school.md`](systems/school.md)   | idea                                                      |
-| The commons: co-op idling for the whole server            | [`systems/commons.md`](systems/commons.md) | idea                                                      |
-| Gear: crafting, item level and the lottery                | [`systems/gear.md`](systems/gear.md)       | direction set by Misa; to design                          |
-| The raid as defending the valley                          | [`systems/defence.md`](systems/defence.md) | direction set by Misa; combat lives on `combat-v2-bosses` |
-| Later: cosmetics, housing, gardening, fishing, stargazing | [`systems/later.md`](systems/later.md)     | parked                                                    |
+| System                                                    | Doc                                        | Status                                                             |
+| --------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------ |
+| The valley as the world and the menu                      | [`systems/valley.md`](systems/valley.md)   | prototype                                                          |
+| Job posts                                                 | [`systems/posts.md`](systems/posts.md)     | proposed; core rules decided (rounds 1–7); panel 2026-10-30        |
+| The bonfire: roster-wide growth                           | [`systems/bonfire.md`](systems/bonfire.md) | proposed; core rules decided (rounds 4–6); panel 2026-10-30        |
+| The return moment ("while you were away")                 | [`systems/return.md`](systems/return.md)   | proposed; core rules decided (round 8); panel 2026-10-30           |
+| Scouts: expeditions as standing posts                     | [`systems/scouts.md`](systems/scouts.md)   | proposed; panel 2026-10-30; numbers wait on the lab                |
+| The Forge loop: crafting fed by finds                     | [`systems/forge.md`](systems/forge.md)     | proposed; decided rounds 9–10; panel 2026-10-30                    |
+| The School and visiting teachers                          | [`systems/school.md`](systems/school.md)   | idea; waits on combat v2's talents                                 |
+| The commons: co-op idling for the whole server            | [`systems/commons.md`](systems/commons.md) | proposed; decided rounds 1–12; panel 2026-10-30                    |
+| Gear: crafting, item level and the lottery                | [`systems/gear.md`](systems/gear.md)       | decided in part (rounds 9–11); cap sources proposed                |
+| The raid as defending the valley                          | [`systems/defence.md`](systems/defence.md) | direction set by Misa (round 5); combat lives on `combat-v2-track` |
+| Later: cosmetics, housing, gardening, fishing, stargazing | [`systems/later.md`](systems/later.md)     | parked                                                             |
 
 ## Relationship to other work
 

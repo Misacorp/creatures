@@ -15,13 +15,13 @@ Each phase ends at a **gate**: what must be true before the next phase starts. M
 
 ## Order inside phase 1 (current)
 
-1. **Question rounds** with Misa ([`deciding.md`](deciding.md), the ledger [`questions.md`](questions.md)): the foundations first (one valley or many, posts instead of timers, how much opening the game matters), then the **scrap list** ([`scrap-list.md`](scrap-list.md): today's game, keep, rework or scrap), then each system's open choices. The goals in [`goals.md`](goals.md) change with each answer.
-2. **Posts** and **the bonfire** first: they decide how XP flows, which everything else depends on.
-3. **The return moment**: what a player sees and decides; it shapes how outputs are reported.
-4. **Scouts** and **the Forge loop**: the first chain (finds feed crafting).
-5. **The commons**: contributions, server posts, communal place upgrades.
-6. **The School**: last, because it waits on combat v2's talent rework.
-7. **The economy model** written once the rules above are drafted, so phase 2 can start.
+1. **Question rounds** with Misa (ongoing; 13 rounds so far) ([`deciding.md`](deciding.md), the ledger [`questions.md`](questions.md)): the foundations first (one valley or many, posts instead of timers, how much opening the game matters), then the **scrap list** ([`scrap-list.md`](scrap-list.md): today's game, keep, rework or scrap), then each system's open choices. The goals in [`goals.md`](goals.md) change with each answer.
+2. **Done.** **Posts** and **the bonfire** first: they decide how XP flows, which everything else depends on.
+3. **Done.** **The return moment**: what a player sees and decides; it shapes how outputs are reported.
+4. **Done.** **Scouts** and **the Forge loop** (and gear, `systems/gear.md`): the first chain (finds feed crafting).
+5. **Done.** **The commons** (with collections and the Forge's fire): contributions, server posts, communal place upgrades.
+6. **Waiting.** **The School**: last, because it waits on combat v2's talent rework.
+7. **Next, if Misa agrees (Q32).** **The economy model** brought up to date with the decisions, then built (phase 2). Pia's measurement lists are in each review in `reviews/`.
 
 ## Seams with combat v2 (agree before building)
 

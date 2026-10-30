@@ -123,3 +123,9 @@ Round 12: Q30 answered (every place its own project, a guided start, V-COM-15); 
 Q31 answered: the communal seat is extra; new filter F-11, co-op never takes away personal progression. Asked Q32: what comes next (the lead's pick: build the economy lab).
 
 **Next.** Whatever Q32 decides.
+
+## 2026-10-30 (night): ready for a context compression
+
+Misa asked whether everything is written down before compacting. Brought the front door up to date: a "Where we are" section in `README.md`, the systems table's statuses, phase 1's order in `roadmap.md` (steps 2 to 5 done, the School waiting, the economy lab next if Q32 agrees), and `economy/model.md` noted to be brought up to date with the decisions and the panels' measurement lists before it is built. Panel reports are summarised in `reviews/` (the raw reports were scratch files and are not needed).
+
+**Pick up here:** Q32 (what next) waits on Misa in `questions.md`; record it with the `valley-round` skill. The "Valley Plan" artifact (link in the 2026-10-29 entry) is current.
