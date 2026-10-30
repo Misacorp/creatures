@@ -244,10 +244,11 @@ describe('Determination (on by default from the second lap, at most +25%)', () =
         (j) => (j.args as { determination?: unknown }).determination === 'off',
       ),
     ).toBe(true);
-    // Stacks (+5% damage and healing each) beat a boss that the plain team loses to (slot 6 with 36_000 HP, week 12; the plain team
-    // loses it, the five stacks of the cap, +25%, win it). On slot 5 the same stacks do nothing: Determination starts at slot 6.
+    // Stacks (+5% damage and healing each) beat a boss that the plain team loses to (slot 6 with 30_000 HP, week 12, Slippery on; the
+    // plain team loses it, the five stacks of the cap, +25%, win it from 27_000 to 34_000 HP). On slot 5 the same stacks do nothing:
+    // Determination starts at slot 6.
     const table = {
-      6: { hp: 36_000, atk: 107, armour: 47 },
+      6: { hp: 30_000, atk: 107, armour: 47 },
       5: { hp: 36_000, atk: 150, armour: 25 },
     };
     const kill = (slot: number, n: number, dial: object) =>
