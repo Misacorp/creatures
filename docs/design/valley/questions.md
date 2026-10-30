@@ -6,17 +6,7 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q19. How does a creature grow into "the one who's good at something"?
-
-Status: asked, round 7 (2026-10-30). Q17 again, with research (`docs/research/worker-identity.md`). Touches: `posts.md` V-POST-4 and V-POST-12, `forge.md`, `scouts.md`, the creature card.
-
-**Why it matters.** You want creatures to "grow into some kind of an identity that they're good at something", and players to be "still encouraged to do something else with their creatures". The research found one pattern that serves both: mastery that is permanent, where mastering one thing opens something elsewhere, so moving on gains instead of loses (Final Fantasy's jobs, Kairosoft's management games). Per-item mastery (Melvor Idle) turns out to be the player's checklist rather than a unit's identity, and players complain about the number of counters. Hidden numbers and random-roll traits are disliked everywhere.
-
-- **A. Per recipe, as you floated.** Each creature gets better at each recipe it makes. Example: Pip becomes "the Kelp Cap maker". Many counters, and it only covers the Forge.
-- **B. Mastery per kind of work, with a signature and carry-over.** About four kinds (scouting, smithing, keeping, teaching), each shown as a badge on the creature. It fills fast at first. A mastered kind is permanent, earns a **signature** from what the creature did most (your "the guy who crafts this item", without a counter per recipe), and opens a small perk at another kind of post. The card then says "ready to learn something new". Moving is always free, and a species can lean toward a kind (learns it faster) without being barred from any. Example: Pip masters smithing in three weeks, mostly making Kelp Caps, and becomes "Pip, Kelp Cap smith": a little better at Kelp Caps for good. Sent scouting, Pip keeps all that and, as a master smith, brings home a little more scrap.
-- **C. Species perks and earned titles.** Each species has one fixed work perk (Mossback finds pearls at water places), and each creature earns a title from deeds ("Far-Walker") that is flavour only. Easy to read, but it is the sorting you were wary of, and nothing asks a creature to move.
-
-**Lead's pick: B.** It gives identity (badges and a signature you can name) and a reason to move (the carry-over perk and "ready to learn something new") with the fewest counters. It builds on the skill steps already in `posts.md`. The weekly demand idea from Q17 can still sit on top later, if the raid needs it.
+Nothing right now.
 
 ## Queue
 
@@ -318,6 +308,22 @@ Status: answered, round 6 (2026-10-30). From the panel (finding 7, Sanni). Chall
 **Answer (2026-10-30): gentler.** "I think the drop to half is quite strong to begin with, so I would explore something like a 15% drop after 24 hours or 48 hours. The idea is that let the players keep a weekend off, so when they log in on Monday morning after the weekend, they'll not see a significant drop in economy. We'll run some numbers on that. I know Opus Miner does 15% decrease while you're offline... It could be good, and then go down from there. The instant drop to half is quite a lot."
 
 Became: V-POST-10 with candidate curves in `posts.md` (A: full for 24 h then 85%...; B: full for 48 h then 85%..., the lead's lean: a weekend off keeps 97%, weekly about 79%, a month away about nine days of growth); T-2 restated; stores about three days so a weekend off fills nothing (the lead's call, from Misa's Q5 "keep the rewards rolling even longer"). The economy lab picks the curve.
+
+### Q19. How does a creature grow into "the one who's good at something"?
+
+Status: answered, round 7 (2026-10-30). Q17 again, with research (`docs/research/worker-identity.md`). Touches: `posts.md` V-POST-4 and V-POST-12, `forge.md`, `scouts.md`, the creature card.
+
+**Why it matters.** You want creatures to "grow into some kind of an identity that they're good at something", and players to be "still encouraged to do something else with their creatures". The research found one pattern that serves both: mastery that is permanent, where mastering one thing opens something elsewhere, so moving on gains instead of loses (Final Fantasy's jobs, Kairosoft's management games). Per-item mastery (Melvor Idle) turns out to be the player's checklist rather than a unit's identity, and players complain about the number of counters. Hidden numbers and random-roll traits are disliked everywhere.
+
+- **A. Per recipe, as you floated.** Each creature gets better at each recipe it makes. Example: Pip becomes "the Kelp Cap maker". Many counters, and it only covers the Forge.
+- **B. Mastery per kind of work, with a signature and carry-over.** About four kinds (scouting, smithing, keeping, teaching), each shown as a badge on the creature. It fills fast at first. A mastered kind is permanent, earns a **signature** from what the creature did most (your "the guy who crafts this item", without a counter per recipe), and opens a small perk at another kind of post. The card then says "ready to learn something new". Moving is always free, and a species can lean toward a kind (learns it faster) without being barred from any. Example: Pip masters smithing in three weeks, mostly making Kelp Caps, and becomes "Pip, Kelp Cap smith": a little better at Kelp Caps for good. Sent scouting, Pip keeps all that and, as a master smith, brings home a little more scrap.
+- **C. Species perks and earned titles.** Each species has one fixed work perk (Mossback finds pearls at water places), and each creature earns a title from deeds ("Far-Walker") that is flavour only. Easy to read, but it is the sorting you were wary of, and nothing asks a creature to move.
+
+**Lead's pick: B.** It gives identity (badges and a signature you can name) and a reason to move (the carry-over perk and "ready to learn something new") with the fewest counters. It builds on the skill steps already in `posts.md`. The weekly demand idea from Q17 can still sit on top later, if the raid needs it.
+
+**Answer (2026-10-30): B, mastery of the work in general.** "B sounds like a good way to go. Maybe not kelp cap mastery specifically but Smithing in general (though that was probably your proposal all along). A maximum level reached in a certain profession is a nice way of opening the floor for newcomers into the same profession."
+
+Became: V-POST-12, mastery per kind of work (scouting, smithing, keeping, teaching) in three visible steps; a Master keeps the badge and title for good, gets a small perk at another kind of post, and its card says "ready to learn something new", so it makes room for a newcomer; no per-recipe signature.
 
 ## Withdrawn
 

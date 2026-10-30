@@ -79,3 +79,9 @@ Then the scrap list ([`scrap-list.md`](scrap-list.md)), from an agent's inventor
 Research filed as `docs/research/worker-identity.md`: permanent mastery where mastering one thing opens another serves both identity and rotation; per-item mastery and hidden or random traits are disliked. Asked Q19 (round 7) with it.
 
 **Next.** Record Q19. Then phase 1, step 3: the return moment.
+
+## 2026-10-30 (night): Q19 answered; the return moment next
+
+**Done.** Recorded Q19: mastery per kind of work in three visible steps, permanent, a Master's perk at another kind of post and "ready to learn something new", making room for newcomers (V-POST-12). Posts and the bonfire are drafted, reviewed and decided apart from the numbers, which wait for the economy lab.
+
+**Next.** Phase 1, step 3: the return moment (`systems/return.md`) in full, then its panel, then round 8.
