@@ -228,25 +228,94 @@
     overflow-x: auto;
     margin: 10px 0;
   }
-  .chart { margin: 18px 0; padding: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
-  .chart figcaption { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
-  .chart figcaption span { color: var(--muted); font-size: 0.9em; }
-  .chart svg { width: 100%; height: auto; display: block; }
-  .chart .grid { stroke: var(--line); stroke-width: 1; }
-  .chart .tick, .chart .end { fill: var(--muted); font: 10px var(--body); }
-  .chart .end { fill: var(--text); }
-  .chart .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
-  .chart .ref { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 4 3; }
-  .chart .hit { fill: transparent; }
-  .chart .hit:hover { fill: var(--text); }
-  .chart .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; font-size: 0.85em; color: var(--muted); }
-  .chart .sw { display: inline-block; width: 12px; height: 3px; margin-right: 5px; vertical-align: middle; border-radius: 2px; }
-  .chart .sw[data-c="0"] { background: #3987e5; }
-  .chart .sw[data-c="1"] { background: #d95926; }
-  .chart .sw[data-c="2"] { background: #199e70; }
-  .chart .sw[data-c="3"] { background: #c98500; }
-  .chart .sw[data-c="4"] { background: #d55181; }
-  .chart .sw.ref { background: none; border-top: 2px dashed var(--muted); height: 0; }
+  .chart {
+    margin: 18px 0;
+    padding: 10px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+  .chart figcaption {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 6px;
+  }
+  .chart figcaption span {
+    color: var(--muted);
+    font-size: 0.9em;
+  }
+  .chart svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .chart .grid {
+    stroke: var(--line);
+    stroke-width: 1;
+  }
+  .chart .tick,
+  .chart .end {
+    fill: var(--muted);
+    font: 10px var(--body);
+  }
+  .chart .end {
+    fill: var(--text);
+  }
+  .chart .line {
+    fill: none;
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+  .chart .ref {
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 1.5;
+    stroke-dasharray: 4 3;
+  }
+  .chart .hit {
+    fill: transparent;
+  }
+  .chart .hit:hover {
+    fill: var(--text);
+  }
+  .chart .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin-top: 6px;
+    font-size: 0.85em;
+    color: var(--muted);
+  }
+  .chart .sw {
+    display: inline-block;
+    width: 12px;
+    height: 3px;
+    margin-right: 5px;
+    vertical-align: middle;
+    border-radius: 2px;
+  }
+  .chart .sw[data-c='0'] {
+    background: #3987e5;
+  }
+  .chart .sw[data-c='1'] {
+    background: #d95926;
+  }
+  .chart .sw[data-c='2'] {
+    background: #199e70;
+  }
+  .chart .sw[data-c='3'] {
+    background: #c98500;
+  }
+  .chart .sw[data-c='4'] {
+    background: #d55181;
+  }
+  .chart .sw.ref {
+    background: none;
+    border-top: 2px dashed var(--muted);
+    height: 0;
+  }
   table {
     border-collapse: collapse;
     width: 100%;
