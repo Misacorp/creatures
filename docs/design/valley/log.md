@@ -129,3 +129,9 @@ Q31 answered: the communal seat is extra; new filter F-11, co-op never takes awa
 Misa asked whether everything is written down before compacting. Brought the front door up to date: a "Where we are" section in `README.md`, the systems table's statuses, phase 1's order in `roadmap.md` (steps 2 to 5 done, the School waiting, the economy lab next if Q32 agrees), and `economy/model.md` noted to be brought up to date with the decisions and the panels' measurement lists before it is built. Panel reports are summarised in `reviews/` (the raw reports were scratch files and are not needed).
 
 **Pick up here:** Q32 (what next) waits on Misa in `questions.md`; record it with the `valley-round` skill. The "Valley Plan" artifact (link in the 2026-10-29 entry) is current.
+
+## 2026-10-30 (late evening): Q32 answered, phase 2 starts
+
+**Done.** Misa chose A: build the economy lab ("maybe you could do that and see what comes back"), and asked to see what resources the valley has, how they interact and what each is for. Wrote the resource map (`economy/resources.md`: things you spend, collect and track; where the list is crowded; what the lab watches for each), filed research on resource design (`docs/research/resource-design.md`: Brawl Stars, Clash of Clans' Clan Capital, Stardew, Cook's value chains), brought `economy/model.md` up to date as the lab's build spec, and added a first take on Misa's doubt about the School (`systems/school.md`). Queued two questions: **resources** and **school**. An implementer is building `packages/econ` in its own worktree.
+
+**Next.** Review the lab, merge it, put its report in front of Misa with the **resources** question.
