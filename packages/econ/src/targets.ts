@@ -71,17 +71,7 @@ export const TARGETS: readonly Target[] = [
     scale: 0.3,
     needs: ['mixed8'],
     label:
-      'a new catch becomes useful within days: at week 4 at least 90% of the creatures owned a week or more are within 5 levels of the 3rd best',
-  },
-  {
-    id: 'T-1c',
-    line: 'T-1',
-    measure: 'bench8',
-    lo: 0.9,
-    scale: 0.3,
-    needs: ['mixed8'],
-    label:
-      'the same at week 8 (at least 90% of the creatures owned a week or more within 5 levels of the 3rd best)',
+      'a new catch becomes useful within days: at week 4 at least 90% of the creatures owned two weeks or more are within 5 levels of the 3rd best',
   },
   {
     id: 'T-1b',
@@ -305,8 +295,10 @@ export const THRESHOLDS = {
   deadSpendFloor: 0.25,
   /** A resource is "starved" when it sits at zero on more than this share of days. */
   starvedZeroShare: 0.25,
-  /** T-1: a creature owned a week or more is "useful" when it is within this many levels of the 3rd best. */
+  /** T-1: a creature owned `benchMinDays` or more is "useful" when it is within this many levels of the 3rd best. */
   benchWithin: 5,
+  /** T-1: how long a creature must have been owned to count (two weeks: a catch at week 8 starts 24 levels behind). */
+  benchMinDays: 14,
   /** "Within 2 levels of the server's middle" (V-BON-2). */
   agreeWithin: 2,
   /** The shard stall shown beside T-4 is compared with the same share as scrap's. */

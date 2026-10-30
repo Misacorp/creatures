@@ -627,7 +627,7 @@ export function measuresOf(results: Results): Measures {
   const long = (p: PlayerRun, n: number): boolean => p.weeks.length >= n;
   put('spread4', medianDefined(daily.map((p) => spreadAt(p, 4, 10))));
   put('spread8', medianDefined(daily.map((p) => spreadAt(p, 8, 6))));
-  // T-1: the share of the creatures owned a week or more that stand within 5 levels of the 3rd best (the worst and the median gap are report-only).
+  // T-1: the share of the creatures owned two weeks or more that stand within 5 levels of the 3rd best (the worst and the median gap are report-only).
   const benchShare = (p: PlayerRun, week: number): number | undefined => {
     const w = weekAt(p, week - 1);
     return w && w.benchCount > 0 ? w.benchWithin / w.benchCount : undefined;
@@ -722,7 +722,7 @@ export function targetsOf(results: Results, rules: Rules): TargetLine[] {
   const metLine = (line: string): boolean =>
     judged.filter((j) => j.target.line === line).every((j) => j.met === true);
   const daily = playersOf(results.mixed8, 'daily');
-  // T-1: a new catch becomes useful within days (the creatures owned a week or more stand within 5 levels of the 3rd best).
+  // T-1: a new catch becomes useful within days (the creatures owned two weeks or more stand within 5 levels of the 3rd best).
   const spread8 = m.spread8 ?? NaN;
   const benchOf = (
     players: readonly PlayerRun[],
@@ -757,9 +757,9 @@ export function targetsOf(results: Results, rules: Rules): TargetLine[] {
   lines.push({
     id: 'T-1',
     pass: metLine('T-1'),
-    measured: `of the creatures a daily player has owned for a week or more, ${pct(bench4.share)} are within 5 levels of their 3rd best at week 4 (${gaps(bench4)}) and ${pct(bench8.share)} at week 8 (${gaps(bench8)}); the 6th creature (a second team's best) is ${round(spread8, 1)} below the 3rd at week 8. An optimiser's share at week 4 is ${pct(optBench4.share)} (${verdict(optBench4.share)}). It also depends on how fast creatures arrive: at the docs' 2% an hour (the default here is ${round(rules.scouts.perHour.creatures * 100, 2)}%) a set-and-forget player's share at week 4 is ${pct(fastBench4.share)} (${verdict(fastBench4.share)}) and an optimiser's ${pct(fastOptBench4.share)} (${verdict(fastOptBench4.share)})`,
+    measured: `of the creatures a daily player has owned for two weeks or more, ${pct(bench4.share)} are within 5 levels of their 3rd best at week 4 (${gaps(bench4)}) and ${pct(bench8.share)} at week 8 (${gaps(bench8)}); the 6th creature (a second team's best) is ${round(spread8, 1)} below the 3rd at week 8. An optimiser's share at week 4 is ${pct(optBench4.share)} (${verdict(optBench4.share)}). It also depends on how fast creatures arrive: at the docs' 2% an hour (the default here is ${round(rules.scouts.perHour.creatures * 100, 2)}%) a set-and-forget player's share at week 4 is ${pct(fastBench4.share)} (${verdict(fastBench4.share)}) and an optimiser's ${pct(fastOptBench4.share)} (${verdict(fastOptBench4.share)})`,
     target:
-      'creatures owned a week or more within 5 levels of the 3rd best at weeks 4 and 8, and two strong teams at week 8',
+      'creatures owned two weeks or more within 5 levels of the 3rd best at weeks 4 and 8, and two strong teams at week 8',
   });
   // T-2: idle floor and active ceiling.
   lines.push({

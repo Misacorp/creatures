@@ -292,10 +292,10 @@ function endWeek(p: Player, server: Server): void {
       if (species < p.rules.scouts.species.start && r === 0) wk.startCommons += 1;
     }
   });
-  // T-1: the gap to the 3rd best of every creature owned for a week or more.
+  // T-1: the gap to the 3rd best of every creature owned for `benchMinDays` or more.
   const third = wk.levels[Math.min(2, wk.levels.length - 1)] ?? 1;
   const weekEnd = wk.week * HOURS_PER_WEEK;
-  const owned = p.creatures.filter((c) => c.arrived <= weekEnd - HOURS_PER_WEEK);
+  const owned = p.creatures.filter((c) => c.arrived <= weekEnd - THRESHOLDS.benchMinDays * 24);
   const gaps = owned.map((c) => Math.max(0, third - c.level)).sort((a, b) => a - b);
   // The ones not held at the evolution gate (waiting on Essence is T-9's matter, not a slow catch-up).
   const open = owned

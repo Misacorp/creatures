@@ -29,6 +29,18 @@ Status: asked, round 16 (2026-10-30). Follow-up to Q39 ("make the bronze ribbon 
 
 **Lead's pick: B.** It keeps your dungeon clear in Bronze and makes it easy, one creature a day without changing the team, and it gives the dungeon a small daily moment. Silver (the Undercroft) and Gold (a raid) stay for fighters.
 
+### Q42. What should players spend their surplus on?
+
+Status: asked, round 16 (2026-10-30). From the lab: target T-7 ("nothing only piles up") is the one target the tuner cannot meet. Touches: `economy/resources.md`, `later.md` (cosmetics), `forge.md` (traders), the research's "in a slow game, hoarding is the likelier failure" (`docs/research/resource-design.md`).
+
+**Why it matters.** With ribbons gone, a daily player earns Acorns, scrap and shards two to three times faster than anything takes them. By week 10 a daily player's Acorns are about 25 weeks of their spending, scrap 22 and shards 14. The tuner tried every price and rate: making things dearer hits the Forge's limits (anvils can only make so much), and finding less slows the valley's buildings. A pile with nothing worth buying is what the research calls a dead resource: players stop caring about it.
+
+- **A. Earn less.** Scouts and the allowance pay less, and projects shrink to keep the valley's pace. Example: a find of 20 scrap feels like something, but there is less to do with Acorns early on.
+- **B. More worth buying.** Bring a small part of the cosmetics forward: decorations for your house and the valley (bought with Acorns and materials), more kit, and the shard exchange's visiting traders. Example: Sanni buys a lantern string for the bonfire with 400 Acorns and 120 scrap; a trader offers a rare blueprint for 300 Acorns and 40 Tide shards.
+- **C. Let it pile for now.** Savings are fine in a cozy game; add things to buy as content arrives. Example: Sanni has 3,000 Acorns at week 12 and nothing she wants.
+
+**Lead's pick: B.** `later.md` already names cosmetics as the long-term sink for surplus, and you suggested traders (Q34). Bringing a small set forward gives every resource a use all season; the lab then prices it.
+
 ## Queue
 
 In order. Each becomes a numbered question when asked; entries name what they wait on.

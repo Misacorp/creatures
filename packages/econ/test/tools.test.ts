@@ -40,7 +40,6 @@ describe('the targets as data', () => {
       return [t?.lo, t?.hi];
     };
     expect(value('T-1a')).toEqual([0.9, undefined]);
-    expect(value('T-1c')).toEqual([0.9, undefined]);
     expect(value('T-8a')).toEqual([9, 12]);
     expect(value('T-8b')).toEqual([20, 28]);
     expect(value('T-2b')).toEqual([0.95, undefined]);

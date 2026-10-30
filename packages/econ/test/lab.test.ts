@@ -214,7 +214,7 @@ describe('the dials', () => {
     }
   });
 
-  it('counts, for T-1, only creatures owned a week or more, and the open ones are never worse than all', () => {
+  it('counts, for T-1, only creatures owned two weeks or more, and the open ones are never worse than all', () => {
     for (const run of results.mixed8!.runs)
       for (const p of run.players)
         p.weeks.forEach((w, i) => {

@@ -15,7 +15,7 @@ export const HOURS_PER_WEEK = 168;
 export interface Creature {
   species: number;
   element: number;
-  /** The hour it joined the roster (T-1: a creature owned for a week or more should be close to the best). */
+  /** The hour it joined the roster (T-1: a creature owned for two weeks or more should be close to the best). */
   arrived: number;
   xp: number;
   level: number;
@@ -104,7 +104,7 @@ export interface WeekRecord {
   kindsByRarity: number[];
   availableByRarity: number[];
   startCommons: number;
-  /** T-1: of the creatures owned a week or more at the end of the week, how many, the largest gap to the 3rd best and the median gap. */
+  /** T-1: of the creatures owned two weeks or more at the end of the week, how many, the largest gap to the 3rd best and the median gap. */
   benchCount: number;
   /** How many of them are within `THRESHOLDS.benchWithin` levels of the 3rd best. */
   benchWithin: number;
