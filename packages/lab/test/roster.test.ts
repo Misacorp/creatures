@@ -6,8 +6,11 @@ import {
   ROSTER_WEEKS,
   SPEED_FACTOR,
   levelOfCreature,
+  evolutionOf,
+  gatedPick,
   levelledColumn,
   rosterLevels,
+  rosterLevelsFrom,
   rosterWeek,
   talentSlotsAt,
   type RosterWeek,
@@ -359,5 +362,81 @@ describe('a column at a week', () => {
     expect(levelledColumn(picks, [5])[0]?.talents).toEqual(['a']);
     expect(levelledColumn(picks, [20])[0]?.talents).toEqual(cap >= 20 ? ['a', 'b'] : ['a']);
     expect(levelledColumn([{ formId: form, knack: 'none' }], [5])[0]).not.toHaveProperty('talents');
+  });
+});
+
+describe('the evolution gate (design panel 6)', () => {
+  it('reads the evolution level from the content: 15 for every line, either branch of a branching line', () => {
+    expect(evolutionOf('tidewing')).toEqual({ from: 'splashet', level: 15 });
+    expect(evolutionOf('geyserpup')).toEqual({ from: 'splashet', level: 15 });
+    expect(evolutionOf('kilnmole')?.from).toBe('ashmole');
+    // A stage 1 form has nothing to wait for.
+    expect(evolutionOf('splashet')).toBeUndefined();
+    expect(evolutionOf('solmane')).toBeUndefined();
+  });
+
+  it('fights as the stage 1 form under the evolution level, and as written at or above it', () => {
+    const tide = { formId: 'tidewing', knack: 'double-mark', talents: ['x'] };
+    // Splashet cannot equip Double Mark (it is Tidewing's own): its first Knack instead.
+    expect(gatedPick(tide, 14)).toMatchObject({ formId: 'splashet', knack: 'steady-mark' });
+    expect(gatedPick(tide, 15)).toBe(tide);
+    // A Knack the stage 1 form can equip stays, and 'none' stays none.
+    expect(gatedPick({ formId: 'tidewing', knack: 'lead-the-way' }, 3)).toMatchObject({
+      formId: 'splashet',
+      knack: 'lead-the-way',
+    });
+    expect(gatedPick({ formId: 'tidewing', knack: 'none' }, 3)).toMatchObject({
+      formId: 'splashet',
+      knack: 'none',
+    });
+    // A stage 1 form is never changed.
+    const first = { formId: 'splashet', knack: 'steady-mark' };
+    expect(gatedPick(first, 1)).toBe(first);
+  });
+
+  it('levels a column through the gate: a week-1 team is stage 1, a week-3 best creature has evolved', () => {
+    const column = [
+      { formId: 'tidewing', knack: 'double-mark' },
+      { formId: 'tidewing', knack: 'double-mark' },
+    ];
+    expect(levelledColumn(column, [11, 11]).map((p) => p.formId)).toEqual(['splashet', 'splashet']);
+    expect(levelledColumn(column, [17, 12]).map((p) => [p.formId, p.level])).toEqual([
+      ['tidewing', 17],
+      ['splashet', 12],
+    ]);
+    // The stage 1 form keeps its own cap (15): the level is the roster's, within it.
+    expect(levelledColumn(column, [11, 11])[0]?.level).toBe(11);
+    // gate: false leaves the forms as written.
+    expect(levelledColumn(column, [11, 11], false).map((p) => p.formId)).toEqual([
+      'tidewing',
+      'tidewing',
+    ]);
+  });
+
+  it('keeps only the talents the stage 1 form can carry', () => {
+    const col = levelledColumn(
+      [{ formId: 'tidewing', knack: 'none', talents: ['no-such-talent'] }],
+      [5],
+    );
+    expect(col[0]).not.toHaveProperty('talents');
+  });
+
+  it('puts a daily player’s week-1 to week-3 best creatures as the design panel says: 11, 14, 17', () => {
+    expect([1, 2, 3].map((w) => rosterLevels(VALLEY_ROSTER, 'daily', w, 'expected', 1)[0])).toEqual(
+      [11, 14, 17],
+    );
+  });
+
+  it('reads middling ranks from the profile: the 8th to 11th best, a player with fewer creatures fielding their weakest', () => {
+    const best = rosterLevels(VALLEY_ROSTER, 'daily', 8, 'expected', 4);
+    const mid = rosterLevelsFrom(VALLEY_ROSTER, 'daily', 8, 'expected', 8, 4);
+    expect(mid).toHaveLength(4);
+    expect(mid[0]).toBeLessThan(best[0] as number);
+    // Week 1: the player owns few creatures, so every rank is their weakest.
+    const early = rosterLevelsFrom(VALLEY_ROSTER, 'daily', 1, 'expected', 8, 4);
+    expect(new Set(early).size).toBe(1);
+    expect(rosterLevelsFrom(VALLEY_ROSTER, 'daily', 8, 'expected', 1, 3)).toEqual(
+      rosterLevels(VALLEY_ROSTER, 'daily', 8, 'expected', 3),
+    );
   });
 });

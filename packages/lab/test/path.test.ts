@@ -4,12 +4,14 @@ import { main } from '../src/cli';
 import { inProcessExecutor } from '../src/jobRunners';
 import { runJobs, type Executor } from '../src/jobs';
 import {
+  BUILDERS,
   DETERMINATION,
   DEDICATED,
   FESTIVAL_EASE,
   FESTIVAL_EVERY,
   MIXED,
   STUCK_WEEKS,
+  type PathServer,
   pathOf,
   planPath,
   serverWeekend,
@@ -32,7 +34,8 @@ describe('walkPath with a fake fight', () => {
       return true;
     });
     expect(path.fought.slice(0, 9)).toEqual([1, 2, 3, 4, 0, 5, 6, 7, 8]);
-    expect(path.reached.slice(0, 6)).toEqual([1, 2, 3, 4, 5, 7]);
+    // The arrival week is the first week a slot is fought: slot 5 is won in week 4, so it is first fought in week 6 (week 5 is the Festival).
+    expect(path.reached.slice(0, 6)).toEqual([1, 2, 3, 4, 6, 7]);
     expect(path.attempts.every((a) => a === 1)).toBe(true);
     expect(path.longestRun).toBe(1);
     // Four Festival weeks in 24: twenty fights.
@@ -53,7 +56,7 @@ describe('walkPath with a fake fight', () => {
     let n = 0;
     const path = walkPath(() => ++n % 2 === 0);
     expect(path.fought.slice(0, 9)).toEqual([1, 1, 2, 2, 0, 3, 3, 4, 4]);
-    expect(path.reached.slice(0, 4)).toEqual([1, 3, 5, 8]);
+    expect(path.reached.slice(0, 4)).toEqual([1, 3, 6, 8]);
     expect(path.attempts.slice(0, 3)).toEqual([2, 2, 2]);
     // The Festival moves nobody back: slot 2 was fought twice, and beaten at the second try.
     expect(path.weekends[1]).toBe(2);
@@ -97,6 +100,54 @@ describe('walkPath with a fake fight', () => {
     expect(late.attempts).toEqual([3]);
     const win = walkPath(() => true, { weeks: 2 });
     expect(win.reached).toEqual([1, 2]);
+  });
+});
+
+describe('the arrival week is the week of the first fight (design panel 6)', () => {
+  it('counts the Festival clock from the server’s first week: a server that wins slot 4 in week 4 fights slot 5 first in week 6', () => {
+    expect(FESTIVAL_EVERY).toBe(5);
+    const path = walkPath(() => true);
+    expect(path.fought.slice(0, 7)).toEqual([1, 2, 3, 4, 0, 5, 6]);
+    expect(path.reached[4]).toBe(6);
+    // Every slot's arrival is a week it was fought, never a Festival week.
+    for (const [i, week] of path.reached.entries()) {
+      expect(week % FESTIVAL_EVERY, `slot ${i + 1}`).not.toBe(0);
+      expect(path.fought[week - 1]).toBe(i + 1);
+    }
+  });
+
+  it('keeps a lost boss’s slot, and reaches the next one only when it is fought', () => {
+    // Slot 4 is lost in week 4 and again in week 6, won in week 7: slot 5 is first fought in week 8.
+    const path = walkPath((slot, week) => slot < 4 || week === 7);
+    expect(path.fought.slice(0, 8)).toEqual([1, 2, 3, 4, 0, 4, 4, 5]);
+    expect(path.reached.slice(0, 5)).toEqual([1, 2, 3, 4, 8]);
+  });
+});
+
+describe('the builder server', () => {
+  it('is four daily players with random legal talents, played only when asked', () => {
+    expect(BUILDERS.players).toHaveLength(4);
+    expect(BUILDERS.players.every((p) => p.roster === 'daily' && p.talents === 'random')).toBe(
+      true,
+    );
+    const ids = (kinds?: readonly PathServer['id'][]) =>
+      planPath({ quick: true, servers: 1, ...(kinds ? { kinds } : {}) }).jobs.map((j) => j.id);
+    expect(ids().some((id) => id.includes('builders'))).toBe(false);
+    expect(ids(['builders'])).toEqual(['path:builders:expected:0']);
+  });
+
+  it('fields the slot’s line with random legal talents, the same for the same server and slot, never the written ones by chance alone', () => {
+    const a = serverWeekend(BUILDERS, 5, 9, 'expected', 'builders:0');
+    const b = serverWeekend(BUILDERS, 5, 9, 'expected', 'builders:0');
+    const c = serverWeekend(BUILDERS, 5, 9, 'expected', 'builders:1');
+    const d = serverWeekend(DEDICATED, 5, 9, 'expected', 'dedicated:0');
+    expect(a.placements).toEqual(b.placements);
+    // The forms and Knacks are the dedicated server's line; the talents are drawn.
+    const shape = (w: typeof a) => w.placements.map((p) => `${p.formId}/${p.knack}/${p.level}`);
+    expect(shape(a)).toEqual(shape(d));
+    const talents = (w: typeof a) => w.placements.map((p) => (p.talents ?? []).join('+'));
+    expect(talents(a)).not.toEqual(talents(d));
+    expect(talents(a)).not.toEqual(talents(c));
   });
 });
 

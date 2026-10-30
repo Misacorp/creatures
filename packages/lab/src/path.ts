@@ -12,6 +12,7 @@
  * pool (`jobs.ts`) and `summarisePath` turns them into the report's table.
  */
 import { createSeededRng } from '@creatures/game';
+import { randomTalents } from './answerMeasure';
 import {
   columnOf,
   casualColumn,
@@ -37,7 +38,11 @@ import { LEVEL, type Pick } from './search';
 import { TRACK_ORDER, slotBoss, slotPreparedOf, trackSlot, type SlotTable } from './track';
 import type { BossDef, Placement } from './types';
 
-/** A Festival every 5th week: no raid that week, the track waits. */
+/**
+ * A Festival every 5th week: no raid that week, the track waits. The Festival clock is the server's age in weeks, counted from week 1,
+ * the server's first raid week: weeks 5, 10, 15 and 20 fight nothing, whatever slot the server is on. A server that wins slot 4 in
+ * week 4 has slot 5 as its slot in the Festival week and fights it first in week 6.
+ */
 export const FESTIVAL_EVERY = 5;
 /** The slots the track eases back after a Festival: none (Misa, 2026-10-30). `walkPath` can still be asked for more, for a comparison. */
 export const FESTIVAL_EASE = 0;
@@ -68,7 +73,11 @@ export interface ServerPath {
   readonly fought: readonly number[];
   /** Whether the weekend was a kill (false for a Festival week). */
   readonly won: readonly boolean[];
-  /** The week each slot first became the server's slot (index 0 is slot 1: week 1); 0 for a slot it never reached. */
+  /**
+   * The week each slot was first fought (index 0 is slot 1: week 1); 0 for a slot never fought. A slot won in the week before a
+   * Festival is first fought after it (a server that reaches slot 5 in week 5 fights it in week 6), so this is the week of the
+   * first fight, not the week the slot became the server's.
+   */
   readonly reached: readonly number[];
   /** The weekends fought against each slot (index 0 is slot 1), re-fights included (a Festival moves nobody back). */
   readonly weekends: readonly number[];
@@ -118,7 +127,7 @@ export function walkPath(fight: Fight, options: WalkOptions = {}): ServerPath {
   const ease = options.festivalEase ?? FESTIVAL_EASE;
   const fought: number[] = [];
   const won: boolean[] = [];
-  const reached: number[] = [1];
+  const reached: number[] = [];
   const weekends: number[] = [0];
   const attempts: number[] = [0];
   const killed = new Set<number>();
@@ -133,6 +142,9 @@ export function walkPath(fight: Fight, options: WalkOptions = {}): ServerPath {
       slot = Math.max(1, slot - ease);
       continue;
     }
+    // The arrival week of a slot is the first week it is fought: a slot won in the week before a Festival is fought after it.
+    if (!reached[slot - 1]) reached[slot - 1] = week;
+    furthest = Math.max(furthest, slot);
     const win = fight(slot, week, Math.min(cap, failed));
     fought.push(slot);
     won.push(win);
@@ -142,11 +154,6 @@ export function walkPath(fight: Fight, options: WalkOptions = {}): ServerPath {
     if (win) {
       killed.add(slot);
       slot++;
-      // The new slot is the server's from the next week (a kill in the last week reaches nothing within the weeks).
-      if (slot > furthest && week < weeks) {
-        furthest = slot;
-        reached[slot - 1] = week + 1;
-      }
     }
   }
   const out = Array.from({ length: furthest }, (_, i) => reached[i] ?? 0);
@@ -171,10 +178,15 @@ export interface PathPlayer {
   /** Whose roster it is (`roster.ts`). */
   readonly roster: RosterKind;
   readonly joinWeek?: number;
+  /**
+   * A prepared player's talents: the line's written ones (the solved puzzle: default), or random legal ones, drawn for the player
+   * and the slot (a player who builds the line from what they rolled).
+   */
+  readonly talents?: 'written' | 'random';
 }
 
 export interface PathServer {
-  readonly id: 'dedicated' | 'mixed';
+  readonly id: 'dedicated' | 'mixed' | 'builders';
   readonly players: readonly PathPlayer[];
 }
 
@@ -198,7 +210,23 @@ export const MIXED: PathServer = {
   }),
 };
 
-export const PATH_SERVERS: readonly PathServer[] = [DEDICATED, MIXED];
+/**
+ * A builder server (information, design panel 6): four daily players who field the slot's prepared line, each creature with a random
+ * legal talent instead of the written one. It shows whether a wall, such as Thornmother's at slot 5, stops anyone who has the line's
+ * forms and Knacks but not its talents. The path report prints it with the other servers (`--path`); the track tuner never plays it.
+ */
+export const BUILDERS: PathServer = {
+  id: 'builders',
+  players: Array.from({ length: 4 }, (): PathPlayer => ({
+    role: 'prepared',
+    roster: 'daily',
+    talents: 'random',
+  })),
+};
+
+export const PATH_SERVERS: readonly PathServer[] = [DEDICATED, MIXED, BUILDERS];
+/** The kinds of server a path plan plays unless told otherwise (the builder server is asked for: `--path` does). */
+export const DEFAULT_PATH_KINDS: readonly PathServer['id'][] = ['dedicated', 'mixed'];
 
 /** The placements, bench and boss of one server's weekend: everyone's creatures at their roster's levels in that week. */
 export function serverWeekend(
@@ -223,14 +251,16 @@ export function serverWeekend(
     // One more creature than the column holds: the bench's.
     const levels = rosterLevels(profile, p.roster, week, speed, rows + 1, p.joinWeek);
     let column: Pick[];
-    if (p.role === 'prepared')
+    if (p.role === 'prepared') {
       // A server with a player for every column fields the line as written; a wider or narrower one takes the tool's columns first.
       column = columnOf(
         line,
         base.cols,
         whole ? c : (toolColumns(line, base.cols, core)[m++ % base.cols] as number),
       );
-    else if (p.role === 'builder')
+      if (p.talents === 'random')
+        column = randomTalents(createSeededRng(`path:${seed}:talents:${slot}:${c}`), column);
+    } else if (p.role === 'builder')
       column = limitCopies(
         columnOf(line, base.cols, toolColumns(line, base.cols, core)[b++ % base.cols] as number),
         BUILDER_MAX_COPIES,
@@ -314,7 +344,7 @@ export interface SlotSummary {
   readonly bossId: string;
   /** The share of servers that reached the slot within the weeks. */
   readonly reachedShare: number;
-  /** The week the servers that reached it first had it as their slot. */
+  /** The week the servers that reached it first fought it (a Festival week is never one). */
   readonly week: Spread;
   /** The weekends fought against it, over the servers that reached it. */
   readonly weekends: Spread;
@@ -370,7 +400,7 @@ const weekCell = (s: SlotSummary): string =>
     ? '-'
     : `${s.week.median} (${s.week.p25}-${s.week.p75})${s.reachedShare < 1 ? `, ${pct(s.reachedShare)} reach` : ''}`;
 
-/** The markdown of one speed: a table of the week each slot is reached and the weekends spent on it, dedicated and mixed side by side, then the stuck share. */
+/** The markdown of one speed: a table of the week each slot is first fought and the weekends spent on it, dedicated and mixed side by side, then the stuck share. */
 export function pathMarkdown(
   speed: RosterSpeed,
   summaries: readonly PathSummary[],
@@ -380,7 +410,7 @@ export function pathMarkdown(
   const lines = [
     `### Boss track at the ${speed} roster speed${label}`,
     '',
-    `| Slot | Boss | ${summaries.map((s) => `${s.server}: week reached | ${s.server}: weekends`).join(' | ')} |`,
+    `| Slot | Boss | ${summaries.map((s) => `${s.server}: week first fought | ${s.server}: weekends`).join(' | ')} |`,
     `| --- | --- | ${summaries.map(() => '--- | ---').join(' | ')} |`,
   ];
   for (let i = 0; i < rows; i++) {
@@ -429,7 +459,7 @@ export const runPathJob = (args: unknown): ServerPath => {
 export interface PathPlanOptions extends PathRun {
   readonly quick: boolean;
   readonly speeds?: readonly RosterSpeed[];
-  /** Only these kinds of server (default: both). */
+  /** Only these kinds of server (default: the dedicated and the mixed server, `DEFAULT_PATH_KINDS`). */
   readonly kinds?: readonly PathServer['id'][];
   /** Servers of each kind, instead of `pathServers(quick)` (the tests use a few). */
   readonly servers?: number;
@@ -447,7 +477,8 @@ export interface PathReport {
 export function planPath(options: PathPlanOptions): Plan<PathReport> {
   const speeds = options.speeds ?? ['expected'];
   const n = options.servers ?? pathServers(options.quick);
-  const kinds = PATH_SERVERS.filter((s) => !options.kinds || options.kinds.includes(s.id));
+  const wanted = options.kinds ?? DEFAULT_PATH_KINDS;
+  const kinds = PATH_SERVERS.filter((s) => wanted.includes(s.id));
   const cells = speeds.flatMap((speed) => kinds.map((s) => ({ speed, server: s.id })));
   const jobs: JobSpec[] = cells.flatMap((c) =>
     Array.from({ length: n }, (_, index) => {

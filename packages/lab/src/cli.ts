@@ -11,7 +11,7 @@ import { planReport, buildCatalogue, buildKeywords } from './report';
 import { TARGET_RANKS, type TargetRank } from './targets';
 import { planTalents, talentTeamId } from './talentReport';
 import type { TeamShareSummary } from './teamShareReport';
-import { trackSummary, tuneTrack } from './trackTuner';
+import { planSlotInfo, slotInfoMarkdown, trackSummary, tuneTrack } from './trackTuner';
 import { SLOT_WEEKS, TRACK_ORDER } from './track';
 import { summaryAll, tuneBoss, type RankResult } from './tuner';
 
@@ -197,7 +197,11 @@ async function path(args: readonly string[], quick: boolean, run: JobRunner): Pr
   const t0 = Date.now();
   // `--determination`: the same servers also with Determination on (`DETERMINATION`), reported beside the path without it.
   const withDetermination = args.includes('--determination');
-  const plain = await runPlan(planPath({ quick, speeds }), run);
+  // The builder server (four daily players with random legal talents) is shown beside the dedicated and the mixed server.
+  const plain = await runPlan(
+    planPath({ quick, speeds, kinds: ['dedicated', 'mixed', 'builders'] }),
+    run,
+  );
   const mds = [plain.value.md.join('\n')];
   let timings = plain.timings;
   if (withDetermination) {
@@ -206,6 +210,16 @@ async function path(args: readonly string[], quick: boolean, run: JobRunner): Pr
     timings += '\n' + on.timings;
   }
   mds.push(ownabilityOfPath(plain.value.data).join('\n'));
+  // The information measures at the arrival weeks of this path (slots 1 to 15, the committed `SLOT_NUMBERS`).
+  const info = await runPlan(planSlotInfo({ quick, weeks: arrivalWeeksOf(plain.value.data) }), run);
+  mds.push(
+    [
+      '### Information measures at the arrival weeks (not targets)',
+      '',
+      ...slotInfoMarkdown(info.value),
+    ].join('\n'),
+  );
+  timings += '\n' + info.timings;
   const md = mds.join('\n');
   console.log(md);
   if (out) writeFileSync(out, md + '\n');
@@ -218,12 +232,17 @@ async function path(args: readonly string[], quick: boolean, run: JobRunner): Pr
  * The ownability table (`ownability.ts`) at the arrival weeks of this path: the median week a dedicated server arrives at each slot
  * 1 to 15 at the expected speed when the run has it, else the committed `SLOT_WEEKS` (the weeks the track was tuned for).
  */
-function ownabilityOfPath(data: readonly PathSummary[]): string[] {
+function arrivalWeeksOf(data: readonly PathSummary[]): number[] {
   const dedicated = data.find((d) => d.server === 'dedicated' && d.speed === 'expected');
-  const weeks = SLOT_WEEKS.map((committed, i) => {
+  return SLOT_WEEKS.map((committed, i) => {
     const slot = dedicated?.slots[i];
     return slot && slot.reachedShare > 0 ? slot.week.median : committed;
   });
+}
+
+function ownabilityOfPath(data: readonly PathSummary[]): string[] {
+  const dedicated = data.find((d) => d.server === 'dedicated' && d.speed === 'expected');
+  const weeks = arrivalWeeksOf(data);
   return ownabilityMarkdown(
     ownabilityTable(weeks),
     dedicated

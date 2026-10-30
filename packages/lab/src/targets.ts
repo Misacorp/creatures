@@ -66,6 +66,12 @@ export const WALL_CLASSIC_POTENTIAL_MIN = 0.3;
 export const WALL_CLASSIC_POTENTIAL_MAX = 0.6;
 export const WALL_CLASSIC_POTENTIAL_AIM = 0.45;
 /**
+ * The tutorial must be a tutorial for every server (design panel 6, the lead's verdict, 2026-10-30): slot 1, the boss with no rule cards,
+ * is also beaten in its first weekend by the mixed server (the path's mixed mapping: two min-maxers, three builders and five casual
+ * players, `MIXED` in `path.ts`) in at least this share of weekends. Slot 1 only (`slotTargetsFor`); the prepared potential target stays.
+ */
+export const TUTORIAL_MIXED_KILL_MIN = 0.8;
+/**
  * Ownability (the lead's call, 2026-10-30; Misa's constraint in the valley's round 15: "it's okay to require a rare here or there because
  * players will be able to pool their rarer creatures together in the raid roster; a 100% common requirement is too limiting"): a slot's
  * tool line (the boss's first answer) is ownable at the week the slot arrives when the chance that a mixed server of `OWNABLE_SERVER`
@@ -392,7 +398,8 @@ export const TOOL_POTENTIAL_WEIGHT = 2;
  * - slot 1 is the welcome boss, a tutorial with no rule cards (`SLOT_CARDS` in `track.ts`): a new server has its starters, so any
  *   decent team may win it and the classic party has no limit (`classic.kill`, `classic.potential`); with no card there is no tool to
  *   ask for, so the tool's worth has no target there either. Its targets are the prepared potential, `prepared.beat2` and the prepared
- *   line's HP removed with random talents (Misa, 2026-10-30).
+ *   line's HP removed with random talents (Misa, 2026-10-30), and one more (`TUTORIAL_MIXED_KILL_MIN`): the mixed server kills it in
+ *   its first weekend in at least 80% of weekends (design panel 6, 2026-10-30), so the tutorial is a tutorial for every server.
  * - a wall slot (`wall`, from `TrackSlot.wall`: Thornmother's first appearance, slot 5) asks the classic party for a potential of 30% to 60% instead of
  *   70% to 90% (`WALL_CLASSIC_POTENTIAL_*`; the decision "Thornmother is a deliberate wall at the end of the first lap"); all else as usual.
  */
@@ -404,7 +411,16 @@ export function slotTargetsFor(slot: number, strengthBp: number, wall = false): 
       t.measure !== 'tool.written' &&
       !(slot === 1 && welcome(t.measure)),
   );
-  if (slot === 1) return targets;
+  if (slot === 1)
+    return [
+      ...targets,
+      {
+        measure: 'mixed.kill',
+        min: TUTORIAL_MIXED_KILL_MIN,
+        weight: 2,
+        why: 'The tutorial is a tutorial for every server: the mixed server (ten players, five of them casual) kills it in its first weekend in at least 80% of weekends (design panel 6, the lead, 2026-10-30)',
+      },
+    ];
   const tool: RaidTarget = {
     measure: 'tool.potential',
     min: toolPotentialMinAt(strengthBp),
