@@ -12,6 +12,14 @@ ID: `2026-10-31-creatures-blink-and-shiny-creatures-twinkle` · Status: current
 
 **Reasoning.** A tiny stepped blink makes the idle creatures feel alive and a shiny twinkle makes a shiny special, for no new art and no layout change (everything is drawn inside the sprite's own canvas). At 2x the eyes are 2 screen pixels and a blink would read as flicker, and a list of rows would flicker in many places at once.
 
+## 2026-10-31: Creatures wear their gear on their sprite
+
+ID: `2026-10-31-creatures-wear-their-gear-on-their` · Status: current
+
+**Decision.** A creature's sprite shows the hat, scarf and charm it wears, on the creature page header, the creature list rows (pickers) and the living room. It is drawn on the client by a pure function, `wearing(sprite, looks)` (`src/sprites/wearing.ts`), which returns a new 16x16 sprite, so no layout changes. Each of the 60 item looks maps to one of ten worn shape classes in `src/sprites/data/worn-sprites.ts` (hats: cap, hood, crown, pointed, brimmed; scarves: scarf, mantle; charms: pendant, bell, token); the class is painted in the item's own tint, with gold trim for set pieces. Anchors come from the creature's own pixels: the hat sits on the first row where x 5 to 10 are all filled (so between ears, antlers and flames), centred on x 7.5 and moved down if it would pass row 0; the scarf covers rows 11 and 12 inside the body outline; the charm's bottom row sits on the body's bottom outline. Rows 8 to 10, x 3 to 12 (the face) are never painted. Worn colours live under their own palette keys (hat `1 2 3`, scarf `4 5 6`, charm `7 8 9`, shared `K G W C`), so a shiny body palette never touches them. Small icons (`CreatureIcon`), the dungeon and the raid stage stay bare.
+
+**Reasoning.** Gear was only visible as tiles; Misa asked that creatures visibly wear what they have. Classes instead of 60 drawings keep the art work small and make a new item cheap (add one row to the table). Finding anchors from the sprite means a new species needs nothing extra, and a test checks the face and the 16x16 grid for every species with every class. The 2x icons stay bare because three pixels of hat at that size is noise.
+
 ## 2026-10-28: One spacing scale inside drawers and sheets
 
 ID: `2026-10-28-one-spacing-scale-inside-drawers-and` · Status: current

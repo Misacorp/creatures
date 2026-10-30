@@ -28,6 +28,7 @@ import {
   type RoomScene,
 } from './sprites/room-art';
 import { Sprite } from './sprites/Sprite';
+import { wornSprite } from './worn-gear';
 import type { SpriteDef } from './sprites/sprite-data';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { dropOutcome } from './slot-outcome';
@@ -432,7 +433,10 @@ export function LivingRoom({
                   {...(seat === own ? { action: ownActions } : {})}
                 >
                   <Sprite
-                    sprite={creatureSpriteOrFallback(seat.resident.creature.species)}
+                    sprite={
+                      wornSprite(seat.resident.creature.species, seat.resident.creature.gear) ??
+                      creatureSpriteOrFallback(seat.resident.creature.species)
+                    }
                     scale={scale}
                     bob
                     {...(scale >= 3

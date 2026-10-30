@@ -7,6 +7,7 @@ import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import { gearName, rarityName } from '../gear-view';
 import { getSpecies } from '../game';
 import { ItemThumb } from '../GearArt';
+import { wornSprite } from '../worn-gear';
 import { FoldRow } from './FoldRow';
 import { Tag } from './Tag';
 import { XpTrack } from './XpTrack';
@@ -130,7 +131,12 @@ function RowContent<T extends PickerOption>({ o, props }: { o: T; props: Creatur
   const wornItems = wornOf(o);
   return (
     <>
-      {o.action !== true && <Sprite sprite={creatureSpriteOrFallback(o.species)} scale={2} />}
+      {o.action !== true && (
+        <Sprite
+          sprite={wornSprite(o.species, o.outfit ?? []) ?? creatureSpriteOrFallback(o.species)}
+          scale={2}
+        />
+      )}
       <span class="ro-text">
         <span class="ro-line">
           <span class={rarity === undefined ? 'ro-name' : `ro-name rarity-name rarity-${rarity}`}>
