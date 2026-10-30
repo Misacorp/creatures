@@ -6,28 +6,7 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q22. What should the Forge make?
-
-Status: asked, round 9 (2026-10-30). From the panel on scouts and the Forge (`reviews/2026-10-30-scouts-forge.md`, finding 2, all four reviewers). Touches: `forge.md`, gear (combat v2 owns gear's lines and stats), the bag.
-
-**Why it matters.** A Forge that works all day makes far more gear than a roster can wear. Two anvils at today's pace would make 40 to 60 pieces a week; a player's fighting creatures have about 15 gear slots, full within days. The rest is dismantled (a chore) or fills the bag. So the question is what the Forge's steady work is _for_.
-
-- **A. New gear, made slowly.** One piece takes most of a day, so two anvils make about three a day, and pieces worse than what is worn go straight to scrap if you tick a box (a salvage bin). Example: Sanni's Forge makes a few hats a week; the duds melt down by themselves.
-- **B. New gear on order, and improving what is worn the rest of the time.** When there is no order, smiths improve the gear your creatures already wear, a little at a time (its item level creeps up). Example: Pip's old Kelp Cap slowly becomes a better Kelp Cap while Pip wears it. Today gear has no upgrades by design, so this is new.
-- **C. B, plus parts for the server.** Smiths can also forge the beams, bolts and fittings the server's projects ask for, as a communal order (`commons.md`). Example: the Signpost's new road needs 40 iron fittings; Sanni's spare anvil makes them for a week.
-
-**Lead's pick: C.** Improving worn gear turns the Forge's steady work into something you feel on your favourite creatures (identity, G-2), with no flood and no dismantling chore. Parts for projects tie the Forge to the server (G-4). It is a change to gear that combat v2 must agree to; A is the safe fallback if it does not.
-
-### Q23. Should what you can craft depend on where your scouts are?
-
-Status: asked, round 9 (2026-10-30). From the panel (finding 3: the owner's proxy against, Joonas and Pia for). Touches: `forge.md` V-FORGE-4, `scouts.md` V-SCOUT-2; Misa's original Forge idea (2026-10-29).
-
-**Why it matters.** Today a common piece costs scrap and one shard of its element, and shards come only from that element's places. Scrap will be plentiful, so shards are what the Forge actually waits on. That links where your scouts are to what your smiths can make. Your first description of the Forge was exactly this: players "wouldn't have to intervene unless their workers are in the wrong positions and the workshop is lagging behind".
-
-- **A. No: common pieces cost scrap only.** Shards are needed only when reaching for a better rarity. Scouting and crafting stay mostly separate. Example: Sanni chases a Reef creature with lures, and her Forge never minds.
-- **B. Yes: each piece needs a shard of its element.** The Forge says "waiting for Reef shards" inside its scene, and the fix is one tap (move or re-kit a scout, or change the order). Example: Sanni orders Kelp Caps while both scouts are in the Ember Caves; the Forge slows and suggests the Tidepools.
-
-**Lead's pick: B.** It is your original idea, and it is what makes where a scout stands matter all game, not just until the collection is done. The research's conditions for a fun chain hold: the bottleneck is named, the fix is one tap, and nothing stops dead (the smith tinkers meanwhile). A is calmer but leaves scouting and crafting as two separate lists.
+Nothing right now (gear directions come back as round 10 once the research is in).
 
 ## Queue
 
@@ -377,6 +356,37 @@ Status: answered, round 8 (2026-10-30). From the panel (finding 9: Joonas for, S
 **Answer (2026-10-30): B.**
 
 Became: V-RET-3, the first visit after the threat is sighted ends at the Watchtower once a week; after that the beacon stays lit.
+
+### Q22. What should the Forge make?
+
+Status: answered, round 9 (2026-10-30). From the panel on scouts and the Forge (`reviews/2026-10-30-scouts-forge.md`, finding 2, all four reviewers). Touches: `forge.md`, gear (combat v2 owns gear's lines and stats), the bag.
+
+**Why it matters.** A Forge that works all day makes far more gear than a roster can wear. Two anvils at today's pace would make 40 to 60 pieces a week; a player's fighting creatures have about 15 gear slots, full within days. The rest is dismantled (a chore) or fills the bag. So the question is what the Forge's steady work is _for_.
+
+- **A. New gear, made slowly.** One piece takes most of a day, so two anvils make about three a day, and pieces worse than what is worn go straight to scrap if you tick a box (a salvage bin). Example: Sanni's Forge makes a few hats a week; the duds melt down by themselves.
+- **B. New gear on order, and improving what is worn the rest of the time.** When there is no order, smiths improve the gear your creatures already wear, a little at a time (its item level creeps up). Example: Pip's old Kelp Cap slowly becomes a better Kelp Cap while Pip wears it. Today gear has no upgrades by design, so this is new.
+- **C. B, plus parts for the server.** Smiths can also forge the beams, bolts and fittings the server's projects ask for, as a communal order (`commons.md`). Example: the Signpost's new road needs 40 iron fittings; Sanni's spare anvil makes them for a week.
+
+**Lead's pick: C.** Improving worn gear turns the Forge's steady work into something you feel on your favourite creatures (identity, G-2), with no flood and no dismantling chore. Parts for projects tie the Forge to the server (G-4). It is a change to gear that combat v2 must agree to; A is the safe fallback if it does not.
+
+**Answer (2026-10-30): a vision, with directions asked for.** Misa described his gear vision, inspired by Path of Exile: small fixed base stats, item level deciding how strong rolled modifiers can be, rarity deciding how many, "big rolls, big lottery", many chances to roll from the Forge's steady work ("give it a blueprint and say, hey, craft these until you find the best item"), the best results shown first and celebrated, no currency orbs at the start, improving existing items as a later Forge job, a bigger reward and more items than a bag of 60 can hold, and item level as quality only, with no level requirement to wear ("What determines item level? I don't know. Maybe it's a combination of many things... maybe tied to some kind of a server item level cap"). His full words are in `systems/gear.md`.
+
+Became: `systems/gear.md` (the direction and what is open); research on item volume, item level sources, craft-until loops and keeping a lottery fun; directions come back as round 10.
+
+### Q23. Should what you can craft depend on where your scouts are?
+
+Status: answered, round 9 (2026-10-30). From the panel (finding 3: the owner's proxy against, Joonas and Pia for). Touches: `forge.md` V-FORGE-4, `scouts.md` V-SCOUT-2; Misa's original Forge idea (2026-10-29).
+
+**Why it matters.** Today a common piece costs scrap and one shard of its element, and shards come only from that element's places. Scrap will be plentiful, so shards are what the Forge actually waits on. That links where your scouts are to what your smiths can make. Your first description of the Forge was exactly this: players "wouldn't have to intervene unless their workers are in the wrong positions and the workshop is lagging behind".
+
+- **A. No: common pieces cost scrap only.** Shards are needed only when reaching for a better rarity. Scouting and crafting stay mostly separate. Example: Sanni chases a Reef creature with lures, and her Forge never minds.
+- **B. Yes: each piece needs a shard of its element.** The Forge says "waiting for Reef shards" inside its scene, and the fix is one tap (move or re-kit a scout, or change the order). Example: Sanni orders Kelp Caps while both scouts are in the Ember Caves; the Forge slows and suggests the Tidepools.
+
+**Lead's pick: B.** It is your original idea, and it is what makes where a scout stands matter all game, not just until the collection is done. The research's conditions for a fun chain hold: the bottleneck is named, the fix is one tap, and nothing stops dead (the smith tinkers meanwhile). A is calmer but leaves scouting and crafting as two separate lists.
+
+**Answer (2026-10-30): B, with stockpiles.** "I think we do need to build some kind of a production chain here. So depending on the blueprints that you're crafting, you should be able to source those resources from somewhere... if you're waiting for Reef shards, then you need to have explorers out in the Reef finding those Reef shards for you. Or then maybe you've stockpiled a lot of them up and then you just want to use them, then sure, let's go."
+
+Became: V-FORGE-4, the Forge waits on the element shards its orders need, named inside its scene, with the one-tap fixes; a stockpile of shards carries an order without scouts at that place.
 
 ## Withdrawn
 

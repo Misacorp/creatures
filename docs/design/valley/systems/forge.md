@@ -1,6 +1,6 @@
 # The Forge loop: crafting fed by finds
 
-Status: **proposed**, revised after the panel (`reviews/2026-10-30-scouts-forge.md`). Accepted by Misa so far: the Forge working continuously from the player's orders instead of timed Workshop jobs ("which blueprints are being crafted", round 1, Q2); a queue that falls back to a plainer job (Q3); the Forge's server level limiting each player's anvils (round 1, Q1, his example); mastery of smithing in general (round 7, Q19). Waiting on Misa: Q22 (what the Forge makes) and Q23 (whether what you craft depends on where your scouts are). Misa was unsure players would like a production chain, so research was asked for: players enjoy a chain only when the bottleneck is visible and fixed with one action, and hate silent stalls, upkeep and checking every post (`docs/research/idle-job-posts.md`).
+Status: **proposed**, revised after the panel (`reviews/2026-10-30-scouts-forge.md`). Accepted by Misa so far: the Forge working continuously from the player's orders instead of timed Workshop jobs ("which blueprints are being crafted", round 1, Q2); a queue that falls back to a plainer job (Q3); the Forge's server level limiting each player's anvils (round 1, Q1, his example); mastery of smithing in general (round 7, Q19). Decided in round 9: the Forge is the main source of gear rolls in Misa's Path of Exile-style lottery (Q22, `gear.md`, details open); its orders wait on the element shards they need (Q23). Misa was unsure players would like a production chain, so research was asked for: players enjoy a chain only when the bottleneck is visible and fixed with one action, and hate silent stalls, upkeep and checking every post (`docs/research/idle-job-posts.md`).
 
 ## The idea
 
@@ -11,8 +11,8 @@ Smiths at the Forge make gear from the player's blueprints, one piece after anot
 - **V-FORGE-1** Orders. Each anvil has a short queue (example: up to 3 orders). An order is a blueprint and a count ("Kelp Cap x3"), optionally reaching for a better rarity (today's Reach: Essence and glimmer for better odds, slower), or **"for my team"**: the smith makes pieces for the player's creatures with empty or weaker slots, repeating until they are filled.
 - **V-FORGE-2** Tinkering, the one fallback. When an anvil cannot make its order (the queue ran out, or an input is short), its smith tinkers: no piece is made, the smith still grows in smithing, and a trickle of scrap comes back (example: 1 every 12 hours), which restarts a waiting order by itself. It needs no attention and is never mentioned in the return walk (V-POST-9).
 - **V-FORGE-3** The shelf. Inputs come from the player's own stockpile (scrap, shards, Essence, glimmer), shown on the Forge's shelf. An order takes its inputs when a piece starts.
-- **V-FORGE-4** Running short. The Forge shows inside its scene which input is short and why (an empty spot on the shelf, "waiting for Reef shards"; "Mossback is deep in the Reef"), with the one-tap fixes (V-RET-9). A bubble over the Forge appears only when a shortage has lasted more than a day, never in the return walk.
-- **V-FORGE-5** Finished pieces collect on the Forge floor (the store, about three days of pieces) and come home with the return walk (V-RET-4). What happens when the bag fills depends on Q22.
+- **V-FORGE-4** Running short (round 9, Q23: "if you're waiting for Reef shards, then you need to have explorers out in the Reef finding those Reef shards for you. Or then maybe you've stockpiled a lot of them up"). Each piece needs a shard of its element; a stockpile carries an order without scouts at that place. The Forge shows inside its scene which input is short and why (an empty spot on the shelf, "waiting for Reef shards"; "Mossback is deep in the Reef"), with the one-tap fixes (V-RET-9). A bubble over the Forge appears only when a shortage has lasted more than a day, never in the return walk.
+- **V-FORGE-5** Finished pieces collect on the Forge floor (the store, about three days of pieces) and come home with the return walk (V-RET-4). How pieces are stored and which go away by themselves is open (`gear.md`).
 - **V-FORGE-6** The server's Forge level (`commons.md`) sets how many anvils each player may have (example: 2 at level 1, 3 at level 2, 4 at level 4) and unlocks recipe tiers for everyone. A player's own anvils are unlocked with their own Acorns and scrap, up to that limit (V-COM-10; Misa's example: "A player might have all the resources to unlock a third anvil, but the forge may not be able to fit three anvils per player yet.").
 - **V-FORGE-7** Mastery in smithing (V-POST-12): each step makes pieces faster; a **Master Smith** also brings home a little more scrap at any other post (the carry-over perk). A crafted piece's item level follows its smith's own level (example: twice the level, capped as today).
 - **V-FORGE-8** Rarity has two levers only: Reach on an order, and the **loupe**, the anvil's kit (slower, a better chance of a rarity step up). The other anvil kit, **tongs**, makes pieces faster.
@@ -20,12 +20,12 @@ Smiths at the Forge make gear from the player's blueprints, one piece after anot
 
 ## Example numbers (the economy lab sets the real ones)
 
-| What                     | Example                                                                                           |
-| ------------------------ | ------------------------------------------------------------------------------------------------- |
-| A common piece           | 16 effective hours (about 1.5 a day per anvil); 6 scrap, and 1 shard of the piece's element (Q23) |
-| Reaching for Rare / Epic | 32 / 48 hours; plus 25 Essence / 70 Essence and 1 glimmer (today's Reach)                         |
-| Tinkering                | 1 scrap back every 12 hours, and smithing mastery time                                            |
-| Two busy anvils, per day | about 3 commons, using about 18 scrap and 3 shards                                                |
+| What                     | Example                                                                                                                                               |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A common piece           | 16 effective hours (about 1.5 a day per anvil); 6 scrap and 1 shard of the piece's element (Q23); the pace may rise with Q22's "many chances to roll" |
+| Reaching for Rare / Epic | 32 / 48 hours; plus 25 Essence / 70 Essence and 1 glimmer (today's Reach)                                                                             |
+| Tinkering                | 1 scrap back every 12 hours, and smithing mastery time                                                                                                |
+| Two busy anvils, per day | about 3 commons, using about 18 scrap and 3 shards                                                                                                    |
 
 Two scouts at fitting places bring about 45 scrap and 12 shards a day (`scouts.md`); the rest feeds ribbons and the commons.
 

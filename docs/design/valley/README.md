@@ -54,6 +54,7 @@ Today's game against the vision, system by system (keep, rework or scrap): [`scr
 | The Forge loop: crafting fed by finds                     | [`systems/forge.md`](systems/forge.md)     | idea                                                      |
 | The School and visiting teachers                          | [`systems/school.md`](systems/school.md)   | idea                                                      |
 | The commons: co-op idling for the whole server            | [`systems/commons.md`](systems/commons.md) | idea                                                      |
+| Gear: crafting, item level and the lottery                | [`systems/gear.md`](systems/gear.md)       | direction set by Misa; to design                          |
 | The raid as defending the valley                          | [`systems/defence.md`](systems/defence.md) | direction set by Misa; combat lives on `combat-v2-bosses` |
 | Later: cosmetics, housing, gardening, fishing, stargazing | [`systems/later.md`](systems/later.md)     | parked                                                    |
 

@@ -3542,3 +3542,10 @@ Misa's answer to the valley plan's Q19 (`docs/design/valley/questions.md`), afte
 ## 2026-10-30: Valley: numbers live inside each place; the walk asks for raid preparation once a week (round 8)
 
 Misa's answers to the valley plan's Q20 and Q21 (`docs/design/valley/questions.md`), after the panel on the return moment (`docs/design/valley/reviews/2026-10-30-return.md`). Tapping a place shows its posts' pace and what makes it up, when stores fill and the next project's progress, always phrased as what happens next; there is no overview screen of every number (V-RET-9). The first visit after the week's threat is sighted ends the return walk at the Watchtower with the threat, its rule cards and "choose your defenders"; after that the beacon stays lit (V-RET-3).
+
+## 2026-10-30: Valley: gear is a Path of Exile-style lottery fed by the Forge; crafting waits on shards (round 9)
+
+Misa's answers to the valley plan's Q22 and Q23 (`docs/design/valley/questions.md`; his full words in `docs/design/valley/systems/gear.md`).
+
+- **Gear (Q22), the direction.** "Very inspired by Path of Exile": base items with small fixed stats, item level deciding how strong rolled modifiers can be, rarity deciding how many; "big rolls, big lottery"; the Forge's steady work is the main source of rolls ("give it a blueprint and say, hey, craft these until you find the best item"); the best results shown first and celebrated; no currency orbs at the start; improving existing items as a later Forge job; more items than a bag of 60 can hold; item level becomes quality only, with no level requirement to wear. What sets item level, storage and the craft-until loop are open, researched for round 10. Combat v2 owns gear's stats and lines.
+- **Crafting waits on shards (Q23).** "If you're waiting for Reef shards, then you need to have explorers out in the Reef finding those Reef shards for you. Or then maybe you've stockpiled a lot of them up and then you just want to use them." Each piece needs a shard of its element; the Forge names a short input inside its scene with the one-tap fixes (V-FORGE-4).
