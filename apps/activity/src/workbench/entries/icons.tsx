@@ -40,12 +40,27 @@ const sprite: Entry = {
     scale: { kind: 'number', min: 1, max: 12 },
     shiny: { kind: 'toggle' },
     bob: { kind: 'toggle' },
+    alive: { kind: 'toggle' },
+    shut: { kind: 'toggle' },
+    twinkle: { kind: 'number', min: 0, max: 3 },
   },
-  defaults: { sprite: 'creature: cindle', scale: 6, shiny: false, bob: false },
+  defaults: {
+    sprite: 'creature: cindle',
+    scale: 6,
+    shiny: false,
+    bob: false,
+    alive: false,
+    shut: false,
+    twinkle: 0,
+  },
   presets: [
     { name: 'Creature', props: {} },
     { name: 'Shiny creature', props: { shiny: true } },
     { name: 'Idle bob', props: { bob: true } },
+    { name: 'Alive (blinks, shiny twinkles; still under reduced motion)', props: { alive: true } },
+    { name: 'Mid-blink, held still', props: { shut: true, scale: 12 } },
+    { name: 'Shiny mid-twinkle (plus), held still', props: { shiny: true, twinkle: 2, scale: 12 } },
+    { name: 'Shiny alive', props: { shiny: true, alive: true } },
     { name: 'Boss', props: { sprite: 'boss: storm-sovereign', scale: 4 } },
     { name: 'Banner', props: { sprite: 'banner: tidepools', scale: 3 } },
     { name: 'Tiny (scale 1)', props: { scale: 1 } },
@@ -62,6 +77,19 @@ const sprite: Entry = {
         scale={num(p, 'scale')}
         bob={bool(p, 'bob')}
         alt={name}
+        {...(species === ''
+          ? {}
+          : bool(p, 'shut') || num(p, 'twinkle') > 0
+            ? {
+                life: { seed: species, shiny: bool(p, 'shiny') },
+                hold: {
+                  blink: bool(p, 'shut'),
+                  twinkle: Math.min(3, num(p, 'twinkle')) as 0 | 1 | 2 | 3,
+                },
+              }
+            : bool(p, 'alive')
+              ? { life: { seed: species, shiny: bool(p, 'shiny') } }
+              : {})}
         {...(palette === undefined ? {} : { palette })}
       />
     );

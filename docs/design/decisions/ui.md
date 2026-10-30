@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: Creatures blink, and shiny creatures twinkle
+
+ID: `2026-10-31-creatures-blink-and-shiny-creatures-twinkle` · Status: current
+
+**Decision.** Creatures drawn at 3x or larger (the creature page header, the find card, the living room, stage units) blink for 150 ms every 3 to 7 s, and shiny ones twinkle (dot, plus, dot, 150 ms a frame, every 4 to 8 s) at an empty pixel by the outline. The blink frame is derived from the shared face (`blinkSprite`: row 9 an ink line, row 8 the body colour from just outside the eye), the twinkle spots from the silhouette, so no species needs extra art. One shared timer (`sprites/life-clock.ts`, runs only while a sprite listens) drives all of them; each sprite's rhythm is a hash of a seed (the creature's id, the species for finds), never `Math.random`, so neighbours are out of step. Reduced motion: no blinking and no twinkle. Bosses, foes and items do not blink. The 2x icons (buttons, list rows) stay still.
+
+**Reasoning.** A tiny stepped blink makes the idle creatures feel alive and a shiny twinkle makes a shiny special, for no new art and no layout change (everything is drawn inside the sprite's own canvas). At 2x the eyes are 2 screen pixels and a blink would read as flicker, and a list of rows would flicker in many places at once.
+
 ## 2026-10-28: One spacing scale inside drawers and sheets
 
 ID: `2026-10-28-one-spacing-scale-inside-drawers-and` · Status: current
