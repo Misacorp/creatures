@@ -9,6 +9,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | Set | Status | Pieces | Requested |
 | --- | --- | --- | --- |
 | [Void, four roles](#void) | liked | 4 | 2026-10-30: imagine the Void element on creatures; four creatures, one per role, no names or stats. |
+| [Void place, the Quiet Verge (banners)](#void-place) | draft | 2 | 2026-10-31: design a Void area that can be explored (banner and place). |
 
 <a id="void"></a>
 
@@ -31,3 +32,24 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `void-setter` | creature | setter | liked | A floating wisp with a feeler that ends in a star: it points at the boss and marks it. |
 | `void-support` | creature | support | liked | A small planet with a ring for a halo and two moons in orbit: it lifts its neighbours. |
 | `void-payoff` | creature | payoff | liked | A lynx of the night: tall ears that are windows full of stars, a star-tipped crest. |
+
+<a id="void-place"></a>
+
+## Void place, the Quiet Verge (banners)
+
+![Void place, the Quiet Verge (banners)](void-place.png)
+
+- **Status:** draft
+- **Requested:** 2026-10-31: design a Void area that can be explored (banner and place).
+- **Element:** void
+- **Source:** `apps/activity/src/sprites/concepts/void-place.ts` (draw it with `pnpm art void-place`)
+- **Sheet of:** `daa071502d5a`
+- Place concept: docs/compendium/places.md, "Quiet Verge" (working name). Concept, not shipped.
+- Needs before use: the Void element in the content (element chart, marks, creatures from void.ts with names, stats, lore, shiny palettes), an entry in destinations.json with these palette colours and the deeper area, an access rule, journal pages, push-on flavour and a glossary entry, then the compendium entry moved out of concept.
+- To ship: move the banners into data/ (a void-banner-sprites.ts registered in BANNER_SPRITE_DATA under the destination id) and delete this set.
+- Each banner uses 11 colours or fewer (the studio cap), where shipped banners use 12 to 14.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `void-place-banner` | banner |  | draft | The Quiet Verge: a dusk plain of lilac dust, a still pool that holds the stars, leaning stones, a dark moon and a stone arch with one warm star at the far end. |
+| `void-place-deep` | banner |  | draft | The far side: the ground ends, stepping stones cross the open sky, and a great ring hangs ahead with one warm star at its middle. |
