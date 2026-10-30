@@ -121,7 +121,7 @@ readme = read('README.md')
 sections.append(('overview','Overview', md(readme)))
 sections.append(('questions','Questions', md(qs)))
 sections.append(('goals','Goals', md(read('goals.md'))))
-sections.append(('roadmap','Roadmap', md(read('roadmap.md'))))
+sections.append(('roadmap','Roadmap', md(read('roadmap.md')) + (md(read('phase3-plan.md')) if os.path.exists(os.path.join(ROOT,'phase3-plan.md')) else '')))
 sections.append(('scrap','Scrap list', md(read('scrap-list.md'))))
 sys_html = []
 for f, name in SYSTEMS:
