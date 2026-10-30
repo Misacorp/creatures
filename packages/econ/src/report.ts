@@ -158,6 +158,8 @@ export interface CoverageRow {
   epic: number;
   /** The same counted in forms (a line's evolved form counts once some player has evolved one). */
   forms: { common: number; rare: number; epic: number };
+  /** The launch lines only (the 14 the scouts find from the start, per rarity): content drops do not make this dip. */
+  launch: { common: number; rare: number; epic: number };
 }
 
 export function serverCoverage(data: ReportData): Record<string, CoverageRow[]> {
@@ -176,6 +178,11 @@ export function serverCoverage(data: ReportData): Record<string, CoverageRow[]> 
             common: s.formCoverage[i]?.[0] ?? 0,
             rare: s.formCoverage[i]?.[1] ?? 0,
             epic: s.formCoverage[i]?.[2] ?? 0,
+          },
+          launch: {
+            common: s.launchCoverage[i]?.[0] ?? 0,
+            rare: s.launchCoverage[i]?.[1] ?? 0,
+            epic: s.launchCoverage[i]?.[2] ?? 0,
           },
         })),
       ]),
@@ -788,7 +795,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
   push(
     '### Server coverage of the creatures (Q38)',
     '',
-    "Players pool their creatures in the raid, so a boss card may sometimes want a rare one. The share of each rarity's available LINES (a line's stage 1: scouts never find evolved forms) that at least one player on the server owns (median over seeds). The same counted in forms is in `server-coverage.json`.",
+    "Players pool their creatures in the raid, so a boss card may sometimes want a rare one. The share of each rarity's available LINES (a line's stage 1: scouts never find evolved forms) that at least one player on the server owns (median over seeds). In brackets the same share of the launch lines only (the lines the scouts find from the start), which does not dip when content drops. The same counted in forms, and the launch share, are in `server-coverage.json`.",
     '',
   );
   const coverageWeeks = [4, 8, 12, 24];
@@ -801,7 +808,10 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
           ['common', 'rare', 'epic'].map((name, r) => [
             `${s.label}`,
             name,
-            ...coverageWeeks.map((w) => `${num((s.coverage[w - 1]?.[r] ?? 0) * 100)}%`),
+            ...coverageWeeks.map(
+              (w) =>
+                `${num((s.coverage[w - 1]?.[r] ?? 0) * 100)}% (launch lines ${num((s.launchCoverage[w - 1]?.[r] ?? 0) * 100)}%)`,
+            ),
           ]),
         ),
     ),

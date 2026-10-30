@@ -6,7 +6,7 @@
 
 ## 1. The targets
 
-- **FAIL** T-1: a daily player's 10th creature is 8 levels below the 3rd at week 4; the 6th (a second team's best) is 2 below the 3rd at week 8. An optimiser's spread at week 4 is 6 (fail). It also depends on how fast creatures arrive: at the docs' 2% an hour (the default here is 1.3%) a set-and-forget player's spread at week 4 is 6 (fail) and an optimiser's 3 (pass). Target: within 5 levels at week 4, and two strong teams at week 8.
+- **FAIL** T-1: at week 4 the worst creature a daily player has owned for a week or more is 4 levels below their 3rd best (the median such creature 2; leaving out those waiting at the evolution level 3); at week 8 the worst is 10 (median 3; without those waiting 7); the 6th creature (a second team's best) is 2 below the 3rd at week 8. An optimiser's worst at week 4 is 3 (pass). It also depends on how fast creatures arrive: at the docs' 2% an hour (the default here is 1.3%) a set-and-forget player's worst at week 4 is 4 (pass) and an optimiser's 3 (pass). Target: creatures owned a week or more within 5 levels of the 3rd best at weeks 4 and 8, and two strong teams at week 8.
 - **PASS** T-2a: an optimiser visiting three times a day gets 104% of an optimiser visiting once in XP and 100% in posts' and the allowance's output over 24 weeks. In the model extra visits add no rate (idle gains run at the same rate however often a player looks in), so this passes by construction: it shows only that nothing in the rules pays a frequent visitor more, not that choices are worth little. Target: under 110%.
 - **PASS** T-2b: a weekend-off player gets 98% of a daily player's idle growth (effective hours, weeks 1 to 12). Target: about 100% (a weekend off costs almost nothing).
 - **PASS** T-2c: a weekly player's XP per creature, catch-up included, is 83% of a daily player's (idle gains alone: 79%; with fights: 85%; their best creature is level 27 at week 12 against a daily player's 29). Their scouts bring home 41% of a daily player's finds per seat (stores of three days: about 72 of 168 hours). Target: about 75% to 80% of a daily player's XP per creature (goals.md T-2).
@@ -15,7 +15,7 @@
 - **PASS** T-3 (pace): by week 12 a server of 8 has 5 place level-ups across the valley and a fire of 47 if it kills every boss (65 at week 23). Target: about 5 to 6 level-ups by week 12; the fire about 50 at week 12 and under about 100 before week 24 (commons.md).
 - **PASS** T-4: in the worst week (weeks 2 to 12) a typical player's anvils tinker for want of scrap 0% of the time (daily, week 2). Target: at most 10% for want of scrap.
 - **INFO** T-4 (shards): for want of a shard of the element the team needs, the worst week is 88% (weekly, week 4); averaged over weeks 2 to 12 that profile loses 61%. With the Forge floor full the worst week is 16% (weekly, week 5), mean 3%. Target: goals.md T-4 names scrap only; shards are shown for the same 10%.
-- **FAIL** T-8: a daily player owns 16 kinds at week 4 and 43 at week 12; 100% of the starting pool's commons are owned by week 6; at week 24 37% of the rares and 13% of the epics released are owned. Target: about 15 kinds at week 4, 30 to 40 at week 12, most commons within 6 weeks, rares over months (15% to 60% by week 24), epics rarely (at most 35%).
+- **PASS** T-8: a daily player owns 11 lines at week 4 and 25 at week 12 (with the forms they evolved into: 16 and 43); 100% of the starting pool's commons are owned by week 6; at week 24 37% of the rares and 13% of the epics released are owned. Target: about 9 to 12 lines at week 4, 20 to 28 at week 12, most commons within 6 weeks, rares over months (15% to 60% by week 24), epics rarely (at most 35%).
 - **PASS** T-9: 2.5 creatures of a daily player wait at their evolution level for Essence at week 12. Target: at most 3: Essence must not be starved to keep the pile down.
 - **FAIL** T-7: 2 of a daily player's 4 resources (Acorns, scrap, shards, Essence) are dead (a pile rising 4 weeks running to 4 weeks of income) before week 12. Target: none (resources.md: nothing that only piles up).
 - **PASS** T-6: a daily player's best creature is level 27 at week 10 and 29 at week 12; it reaches level 30 on day 89. Target: still growing in week 12 (example: level 29 of 30), not capped by week 10.
@@ -373,19 +373,19 @@ Projects are built from Acorns, scrap and shards (Q33), and players give their s
 
 ### Server coverage of the creatures (Q38)
 
-Players pool their creatures in the raid, so a boss card may sometimes want a rare one. The share of each rarity's available LINES (a line's stage 1: scouts never find evolved forms) that at least one player on the server owns (median over seeds). The same counted in forms is in `server-coverage.json`.
+Players pool their creatures in the raid, so a boss card may sometimes want a rare one. The share of each rarity's available LINES (a line's stage 1: scouts never find evolved forms) that at least one player on the server owns (median over seeds). In brackets the same share of the launch lines only (the lines the scouts find from the start), which does not dip when content drops. The same counted in forms, and the launch share, are in `server-coverage.json`.
 
 | Server | Rarity | Week 4 | Week 8 | Week 12 | Week 24 |
 | --- | --- | --- | --- | --- | --- |
-| Mixed server of 5 | common | 93% | 95% | 96% | 98% |
-| Mixed server of 5 | rare | 57% | 64% | 67% | 81% |
-| Mixed server of 5 | epic | 20% | 29% | 33% | 60% |
-| Mixed server of 8 | common | 100% | 95% | 98% | 100% |
-| Mixed server of 8 | rare | 57% | 64% | 77% | 89% |
-| Mixed server of 8 | epic | 20% | 43% | 44% | 73% |
-| Mixed server of 15 | common | 100% | 100% | 100% | 100% |
-| Mixed server of 15 | rare | 71% | 82% | 80% | 93% |
-| Mixed server of 15 | epic | 60% | 71% | 67% | 87% |
+| Mixed server of 5 | common | 93% (launch lines 100%) | 95% (launch lines 100%) | 96% (launch lines 100%) | 98% (launch lines 100%) |
+| Mixed server of 5 | rare | 57% (launch lines 100%) | 64% (launch lines 100%) | 67% (launch lines 100%) | 81% (launch lines 100%) |
+| Mixed server of 5 | epic | 20% (launch lines 33%) | 29% (launch lines 67%) | 33% (launch lines 67%) | 60% (launch lines 83%) |
+| Mixed server of 8 | common | 100% (launch lines 100%) | 95% (launch lines 100%) | 98% (launch lines 100%) | 100% (launch lines 100%) |
+| Mixed server of 8 | rare | 57% (launch lines 100%) | 64% (launch lines 100%) | 77% (launch lines 100%) | 89% (launch lines 100%) |
+| Mixed server of 8 | epic | 20% (launch lines 33%) | 43% (launch lines 50%) | 44% (launch lines 67%) | 73% (launch lines 100%) |
+| Mixed server of 15 | common | 100% (launch lines 100%) | 100% (launch lines 100%) | 100% (launch lines 100%) | 100% (launch lines 100%) |
+| Mixed server of 15 | rare | 71% (launch lines 100%) | 82% (launch lines 100%) | 80% (launch lines 100%) | 93% (launch lines 100%) |
+| Mixed server of 15 | epic | 60% (launch lines 67%) | 71% (launch lines 100%) | 67% (launch lines 100%) | 87% (launch lines 100%) |
 
 ## 6. The roster profile for combat v2
 
@@ -393,9 +393,9 @@ The full table is `roster-profile.json` (the shape of `RosterProfile` in `packag
 
 | Kind | Week 1 | Week 4 | Week 8 | Week 12 | Week 24 |
 | --- | --- | --- | --- | --- | --- |
-| daily | 11/11/6/6, 5 | 19/19/11/8, 11 | 25/25/21/8, 18 | 29/29/26/17, 26 | 30/30/30/30, 50 |
-| weekly | 9/9/9/9, 3 | 16/16/3/3, 7 | 23/23/15/3, 13 | 27/27/23/3, 19 | 30/30/30/28, 37 |
-| new (weeks since joining) | 15/15/6/4.5, 7 | 24/22/15/7, 19 | 29/27/22.5/15, 26 | 30/30/29/19, 34 | 30/30/30/30, 79 |
+| daily | 11/11/0/0, 5 | 19/19/11/0, 11 | 25/25/21/0, 18 | 29/29/26/17, 26 | 30/30/30/30, 50 |
+| weekly | 9/9/0/0, 3 | 16/16/0/0, 7 | 23/23/15/0, 13 | 27/27/23/0, 19 | 30/30/30/28, 37 |
+| new (weeks since joining) | 15/15/0/0, 7 | 24/22/15/0, 19 | 29/27/22.5/15, 26 | 30/30/29/19, 34 | 30/30/30/30, 79 |
 
 ## 7. Journeys
 

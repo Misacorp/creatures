@@ -108,6 +108,10 @@ export const blankWeek = (week: number): WeekRecord => ({
   kindsByRarity: [0, 0, 0],
   availableByRarity: [0, 0, 0],
   startCommons: 0,
+  benchCount: 0,
+  benchWorst: 0,
+  benchMedian: 0,
+  benchOpenWorst: 0,
   waitingEvolve: 0,
   forge: new Array<number>(FORGE_BUCKETS.length).fill(0),
   piecesMade: 0,
@@ -191,11 +195,12 @@ export function refreshCeiling(rules: Rules, c: Creature): void {
   c.capXp = c.ceiling >= MAX_LEVEL ? (LEVEL_XP[MAX_LEVEL] ?? 0) : (LEVEL_XP[c.ceiling + 1] ?? 0);
 }
 
-export function addCreature(p: Player, species: number): Creature {
+export function addCreature(p: Player, species: number, hour = 0): Creature {
   const rules = p.rules;
   const c: Creature = {
     species,
     element: speciesElements(rules)[species] ?? 0,
+    arrived: hour,
     xp: 0,
     level: 1,
     honour: 0,

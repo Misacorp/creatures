@@ -4,7 +4,7 @@ import { buildReportData, renderReport, serverCoverage } from '../src/report';
 import { RULES } from '../src/rules';
 import rulesSource from '../src/rules.ts?raw';
 import { rosterProfile, ROSTER_WEEKS } from '../src/roster';
-import { runAll } from '../src/scenarios';
+import { playersOf, runAll } from '../src/scenarios';
 import { ALL_SERVERS } from '../src/servers';
 import { N_RES } from '../src/types';
 
@@ -152,6 +152,12 @@ describe('the report', () => {
     expect(Object.keys(coverage)).toEqual(['mixed5', 'mixed8', 'mixed15']);
     for (const rows of Object.values(coverage)) {
       expect(rows).toHaveLength(24);
+      // The launch lines' share never dips (content drops do not enter it).
+      rows.forEach((row, i) => {
+        if (i === 0) return;
+        for (const r of ['common', 'rare', 'epic'] as const)
+          expect(row.launch[r]).toBeGreaterThanOrEqual(rows[i - 1]!.launch[r]);
+      });
       for (const row of rows) {
         expect(row.unit).toBe('line');
         for (const v of [
@@ -161,6 +167,9 @@ describe('the report', () => {
           row.forms.common,
           row.forms.rare,
           row.forms.epic,
+          row.launch.common,
+          row.launch.rare,
+          row.launch.epic,
         ]) {
           expect(v).toBeGreaterThanOrEqual(0);
           expect(v).toBeLessThanOrEqual(1);
@@ -205,6 +214,19 @@ describe('the dials', () => {
     }
   });
 
+  it('counts, for T-1, only creatures owned a week or more, and the open ones are never worse than all', () => {
+    for (const run of results.mixed8!.runs)
+      for (const p of run.players)
+        p.weeks.forEach((w, i) => {
+          expect(w.benchWorst).toBeGreaterThanOrEqual(w.benchMedian);
+          expect(w.benchOpenWorst).toBeLessThanOrEqual(w.benchWorst);
+          // Nobody joined this week (or the one before) owns anything that is a week old.
+          if (i === 0) expect(w.benchCount).toBeLessThanOrEqual(w.size);
+        });
+    const week8 = playersOf(results.mixed8, 'daily').map((p) => p.weeks[7]);
+    expect(week8.some((w) => (w?.benchCount ?? 0) > 0)).toBe(true);
+  });
+
   it('a creature held at a gate banks XP only up to the next level and loses the rest', () => {
     const lost = results
       .mixed8!.runs.flatMap((r) => r.players)
@@ -234,6 +256,15 @@ describe('the roster profile for combat v2', () => {
         }
       });
     }
+  });
+
+  it('has no level for a rank the median player has not reached (never a lower creature standing in)', () => {
+    for (const kind of [roster.daily, roster.weekly, roster.newPlayer])
+      for (const w of kind) {
+        if (w.size < 20) expect(w.twentieth).toBe(0);
+        if (w.size < 10) expect(w.tenth).toBe(0);
+        if (w.size >= 20) expect(w.twentieth).toBeGreaterThan(0);
+      }
   });
 
   it('has a weekly player behind a daily player', () => {

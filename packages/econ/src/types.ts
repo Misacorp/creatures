@@ -15,6 +15,8 @@ export const HOURS_PER_WEEK = 168;
 export interface Creature {
   species: number;
   element: number;
+  /** The hour it joined the roster (T-1: a creature owned for a week or more should be close to the best). */
+  arrived: number;
   xp: number;
   level: number;
   /** Honours held (0 none, 1 Bronze, 2 Silver, 3 Gold): never a gate. */
@@ -102,6 +104,12 @@ export interface WeekRecord {
   kindsByRarity: number[];
   availableByRarity: number[];
   startCommons: number;
+  /** T-1: of the creatures owned a week or more at the end of the week, how many, the largest gap to the 3rd best and the median gap. */
+  benchCount: number;
+  benchWorst: number;
+  benchMedian: number;
+  /** The largest of those gaps among creatures not held at the evolution level (waiting on Essence). */
+  benchOpenWorst: number;
   /** Creatures held at their evolution level at the end of the week. */
   waitingEvolve: number;
   forge: number[];
@@ -261,4 +269,6 @@ export interface ServerWeek {
   coverage: number[];
   /** The same counted in forms: a line is owned as its stage 1, and its evolved form once some player has evolved one. */
   formCoverage: number[];
+  /** The same for the launch lines only (the lines the scouts find from the start), so content drops do not make it dip. */
+  launchCoverage: number[];
 }

@@ -40,6 +40,9 @@ describe('the targets as data', () => {
       return [t?.lo, t?.hi];
     };
     expect(value('T-1a')).toEqual([undefined, 5]);
+    expect(value('T-1c')).toEqual([undefined, 5]);
+    expect(value('T-8a')).toEqual([9, 12]);
+    expect(value('T-8b')).toEqual([20, 28]);
     expect(value('T-2b')).toEqual([0.95, undefined]);
     expect(value('T-2c')).toEqual([0.7, 0.85]);
     expect(value('T-2d2')).toEqual([undefined, 14]);
@@ -57,7 +60,7 @@ describe('the targets as data', () => {
     expect(missOf(t, 0.78)).toBe(0);
     expect(missOf(t, 0.6)).toBeCloseTo(1, 9);
     expect(boundsText(t)).toBe('0.7 to 0.85');
-    const judged = judge(TARGETS, { spread4: 9 });
+    const judged = judge(TARGETS, { bench4: 9 });
     expect(judged.find((j) => j.target.id === 'T-1a')?.met).toBe(false);
     expect(judged.find((j) => j.target.id === 'T-2c')?.met).toBeNull();
   });
@@ -68,6 +71,8 @@ describe('the targets as data', () => {
     for (const name of [
       'spread4',
       'spread8',
+      'bench4',
+      'bench8',
       'weeklyXpShare',
       'returnDays',
       'firstLevelDay',
@@ -78,7 +83,7 @@ describe('the targets as data', () => {
       expect(long[name]).toBeTypeOf('number');
     expect(long.activeXpRatio).toBeUndefined();
     const short = measuresOf({ mixed8: runScenario({ ...config, weeks: 6 }, 1) });
-    expect(short.spread4).toBeTypeOf('number');
+    expect(short.bench4).toBeTypeOf('number');
     expect(short.best12).toBeUndefined();
     expect(short.collections12).toBeUndefined();
   });
@@ -108,11 +113,33 @@ describe('the dials', () => {
     expect(seats.seats.scoutPrices).toEqual(
       RULES.seats.scoutPrices.map((p) => Math.round(p * 0.5)),
     );
-    expect(seats.seats.anvilScrap).toEqual(RULES.seats.anvilScrap.map((p) => Math.round(p * 0.5)));
+    expect(seats.seats.anvilScrap).toEqual(RULES.seats.anvilScrap);
+    expect(applyDial(RULES, dialById('anvilScrap'), 0.5).seats.anvilScrap).toEqual(
+      RULES.seats.anvilScrap.map((p) => Math.round(p * 0.5)),
+    );
+    expect(applyDials(RULES, { dupScrap: 2 }).scouts.duplicateCreatureScrap).toBe(
+      RULES.scouts.duplicateCreatureScrap * 2,
+    );
     expect(applyDials(RULES, { scoutScrap: 0.5, kitPrice: 2 }).scouts.perHour.scrap).toBe(
       RULES.scouts.perHour.scrap * 0.5,
     );
     expect(applyDials(RULES, { kitPrice: 2 }).kit.price).toBe(RULES.kit.price * 2);
+  });
+
+  it('move the share of a project paid in materials and keep the shares at 1', () => {
+    const split = (m: number) => applyDials(RULES, { materialShare: m }).commons.costSplit;
+    const more = split(1.25);
+    expect(more.scrap).toBeCloseTo(RULES.commons.costSplit.scrap * 1.25, 6);
+    expect(more.acorns + more.scrap + more.shards).toBeCloseTo(1, 9);
+    expect(more.acorns).toBeGreaterThan(0);
+    const dial = dialById('materialShare');
+    const top = applyDial(RULES, dial, dial.max).commons.costSplit;
+    expect(top.acorns).toBeGreaterThanOrEqual(0.09);
+  });
+
+  it('keep the scrap of a Forge piece under about 60', () => {
+    const dial = dialById('pieceCost');
+    expect(applyDial(RULES, dial, dial.max).forge.scrap).toBeLessThanOrEqual(60);
   });
 
   it('have sane bounds, today (1) inside them, and a known id', () => {

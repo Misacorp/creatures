@@ -134,7 +134,7 @@ export function collectSeat(p: Player, index: number, server: Server, hour: numb
         credit(p, R.essence, rules.collections.meltEssence, 'melted finds');
     }
     if ((p.speciesCount[species] ?? 0) === 0) {
-      addCreature(p, species);
+      addCreature(p, species, hour);
       p.firsts.creature ??= p.wk.week;
     } else {
       p.speciesCount[species] = (p.speciesCount[species] ?? 0) + 1;

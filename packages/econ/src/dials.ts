@@ -13,6 +13,8 @@ export interface Dial {
   readonly paths: readonly (readonly string[])[];
   /** Whether the results are whole numbers (prices). */
   readonly integer?: boolean;
+  /** A dial that is not a plain multiplier (the shares of a project, which must add up to 1) says how it changes the rules. */
+  readonly custom?: (rules: Rules, m: number) => Rules;
   readonly min: number;
   readonly max: number;
   readonly step: number;
@@ -61,16 +63,48 @@ export const DIALS: readonly Dial[] = [
   },
   {
     id: 'seatPrices',
-    label: 'seat prices (scout seats, anvils and their scrap)',
+    label: 'seat prices in Acorns (scout seats and anvils)',
     paths: [
       ['seats', 'scoutPrices'],
       ['seats', 'anvilPrices'],
-      ['seats', 'anvilScrap'],
     ],
     integer: true,
     min: 0.25,
     max: 4,
     step: 0.25,
+  },
+  {
+    id: 'anvilScrap',
+    label: 'scrap an anvil costs besides its Acorns',
+    paths: [['seats', 'anvilScrap']],
+    integer: true,
+    min: 0.25,
+    max: 2,
+    step: 0.25,
+  },
+  {
+    id: 'dupScrap',
+    label: 'scrap a duplicate creature melts into',
+    paths: [['scouts', 'duplicateCreatureScrap']],
+    integer: true,
+    min: 0.5,
+    max: 4,
+    step: 0.5,
+  },
+  {
+    id: 'materialShare',
+    label:
+      "the share of a project paid in scrap and shards (the rest in Acorns; today's 60%, at most 90%)",
+    paths: [],
+    custom: (rules, m) => {
+      const scrap = Math.round(rules.commons.costSplit.scrap * m * 1e6) / 1e6;
+      const shards = Math.round(rules.commons.costSplit.shards * m * 1e6) / 1e6;
+      const acorns = Math.round((1 - scrap - shards) * 1e6) / 1e6;
+      return { ...rules, commons: { ...rules.commons, costSplit: { acorns, scrap, shards } } };
+    },
+    min: 0.5,
+    max: 1.5,
+    step: 0.125,
   },
   {
     id: 'kitPrice',
@@ -134,12 +168,12 @@ export const DIALS: readonly Dial[] = [
   },
   {
     id: 'pieceCost',
-    label: 'scrap a Forge piece takes',
+    label: 'scrap a Forge piece takes (kept under about 60: at most 1.6 times 36)',
     paths: [['forge', 'scrap']],
     integer: true,
     min: 0.5,
-    max: 8,
-    step: 0.5,
+    max: 1.6,
+    step: 0.1,
   },
   {
     id: 'communal',
@@ -239,6 +273,7 @@ export function applyDial(rules: Rules, dial: Dial, m: number): Rules {
     const scaled = x * m;
     return dial.integer ? Math.round(scaled) : Math.round(scaled * 1e6) / 1e6;
   };
+  if (dial.custom) return dial.custom(rules, m);
   let out = rules as unknown as Tree;
   for (const path of dial.paths)
     out = updateAt(out, path, (old) =>

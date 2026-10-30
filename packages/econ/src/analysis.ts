@@ -316,6 +316,8 @@ export interface ServerRow {
   collections: number[];
   /** Server coverage by week: the share of each rarity's available LINES that at least one player owns (common, rare, epic), and the same counted in forms. */
   coverage: number[][];
+  /** The same for the launch lines only (no content drops in the pool). */
+  launchCoverage: number[][];
   formCoverage: number[][];
   /** The week each fire threshold opened (median over seeds; null: not within the horizon). */
   thresholds: (number | null)[];
@@ -386,6 +388,9 @@ export function serverOf(results: Results, id: string): ServerRow | null {
     collections: at((l) => l.collections),
     formCoverage: Array.from({ length: weeks }, (_, i) =>
       [0, 1, 2].map((r) => median(runs.map((run) => run.log[i]?.formCoverage[r] ?? 0))),
+    ),
+    launchCoverage: Array.from({ length: weeks }, (_, i) =>
+      [0, 1, 2].map((r) => median(runs.map((run) => run.log[i]?.launchCoverage[r] ?? 0))),
     ),
     coverage: Array.from({ length: weeks }, (_, i) =>
       [0, 1, 2].map((r) => median(runs.map((run) => run.log[i]?.coverage[r] ?? 0))),
@@ -591,6 +596,8 @@ export function measuresOf(results: Results): Measures {
   const long = (p: PlayerRun, n: number): boolean => p.weeks.length >= n;
   put('spread4', medianDefined(daily.map((p) => spreadAt(p, 4, 10))));
   put('spread8', medianDefined(daily.map((p) => spreadAt(p, 8, 6))));
+  put('bench4', medianDefined(daily.map((p) => weekAt(p, 3)?.benchWorst)));
+  put('bench8', medianDefined(daily.map((p) => weekAt(p, 7)?.benchWorst)));
   // T-2a: an active optimiser against a daily optimiser (visits add no rate in the model, so the ratio is by construction).
   const optDaily = playersOf(results['mixed8-opt'], 'daily').filter((p) => long(p, 12));
   const optActive = playersOf(results['mixed8-opt'], 'active').filter((p) => long(p, 12));
@@ -625,9 +632,9 @@ export function measuresOf(results: Results): Measures {
     const stall = worstStall(results, FORGE_BUCKETS.indexOf('scrap'), 12);
     put('scrapStall', stall.share);
   }
-  // T-8 (Q38): kinds (the forms: lines found plus the forms they evolved into) owned by a daily player: how many, how many of the starting pool's commons, how many rares and epics.
+  // T-8 (Q38): lines (what scouts find; evolved forms are reported beside them) owned by a daily player: how many, how many of the starting pool's commons, how many rares and epics.
   const kindsAt = (week: number): number | undefined =>
-    medianDefined(daily.map((p) => weekAt(p, week - 1)?.forms));
+    medianDefined(daily.map((p) => weekAt(p, week - 1)?.species));
   put('kinds4', kindsAt(4));
   put('kinds12', kindsAt(12));
   const startCommons = RULES.scouts.lines.first.filter((l) => l.rarity === 0).length;
@@ -679,27 +686,29 @@ export function targetsOf(results: Results, rules: Rules): TargetLine[] {
   const metLine = (line: string): boolean =>
     judged.filter((j) => j.target.line === line).every((j) => j.met === true);
   const daily = playersOf(results.mixed8, 'daily');
-  // T-1: roster spread.
-  const spread4 = m.spread4 ?? NaN;
+  // T-1: a new catch becomes useful within days (the creatures owned a week or more stand within 5 levels of the 3rd best).
   const spread8 = m.spread8 ?? NaN;
-  const optSpread4 = median(
-    playersOf(results['mixed8-opt'], 'daily').map(
-      (p) => levelOf(p.weeks[3]!, 3) - levelOf(p.weeks[3]!, 10),
-    ),
-  );
-  const fastDaily = playersOf(results['mixed8-creatures2'], 'daily');
-  const fastOpt4 = median(
-    playersOf(results['mixed8-creatures2-opt'], 'daily').map(
-      (p) => levelOf(p.weeks[3]!, 3) - levelOf(p.weeks[3]!, 10),
-    ),
-  );
-  const fast4 = median(fastDaily.map((p) => levelOf(p.weeks[3]!, 3) - levelOf(p.weeks[3]!, 10)));
+  const benchOf = (
+    players: readonly PlayerRun[],
+    week: number,
+  ): { worst: number; median: number; open: number } => ({
+    worst: medianDefined(players.map((p) => weekAt(p, week - 1)?.benchWorst)) ?? NaN,
+    open: medianDefined(players.map((p) => weekAt(p, week - 1)?.benchOpenWorst)) ?? NaN,
+    median: medianDefined(players.map((p) => weekAt(p, week - 1)?.benchMedian)) ?? NaN,
+  });
+  const bench4 = benchOf(daily, 4);
+  const bench8 = benchOf(daily, 8);
+  const optBench4 = benchOf(playersOf(results['mixed8-opt'], 'daily'), 4);
+  const fastBench4 = benchOf(playersOf(results['mixed8-creatures2'], 'daily'), 4);
+  const fastOptBench4 = benchOf(playersOf(results['mixed8-creatures2-opt'], 'daily'), 4);
   const spreadMax = TARGETS.find((t) => t.id === 'T-1a')?.hi ?? 5;
+  const verdict = (v: number): string => (v <= spreadMax ? 'pass' : 'fail');
   lines.push({
     id: 'T-1',
     pass: metLine('T-1'),
-    measured: `a daily player's 10th creature is ${round(spread4, 1)} levels below the 3rd at week 4; the 6th (a second team's best) is ${round(spread8, 1)} below the 3rd at week 8. An optimiser's spread at week 4 is ${round(optSpread4, 1)} (${optSpread4 <= spreadMax ? 'pass' : 'fail'}). It also depends on how fast creatures arrive: at the docs' 2% an hour (the default here is ${round(rules.scouts.perHour.creatures * 100, 2)}%) a set-and-forget player's spread at week 4 is ${round(fast4, 1)} (${fast4 <= spreadMax ? 'pass' : 'fail'}) and an optimiser's ${round(fastOpt4, 1)} (${fastOpt4 <= spreadMax ? 'pass' : 'fail'})`,
-    target: 'within 5 levels at week 4, and two strong teams at week 8',
+    measured: `at week 4 the worst creature a daily player has owned for a week or more is ${round(bench4.worst, 1)} levels below their 3rd best (the median such creature ${round(bench4.median, 1)}; leaving out those waiting at the evolution level ${round(bench4.open, 1)}); at week 8 the worst is ${round(bench8.worst, 1)} (median ${round(bench8.median, 1)}; without those waiting ${round(bench8.open, 1)}); the 6th creature (a second team's best) is ${round(spread8, 1)} below the 3rd at week 8. An optimiser's worst at week 4 is ${round(optBench4.worst, 1)} (${verdict(optBench4.worst)}). It also depends on how fast creatures arrive: at the docs' 2% an hour (the default here is ${round(rules.scouts.perHour.creatures * 100, 2)}%) a set-and-forget player's worst at week 4 is ${round(fastBench4.worst, 1)} (${verdict(fastBench4.worst)}) and an optimiser's ${round(fastOptBench4.worst, 1)} (${verdict(fastOptBench4.worst)})`,
+    target:
+      'creatures owned a week or more within 5 levels of the 3rd best at weeks 4 and 8, and two strong teams at week 8',
   });
   // T-2: idle floor and active ceiling.
   lines.push({
@@ -807,9 +816,9 @@ export function targetsOf(results: Results, rules: Rules): TargetLine[] {
   lines.push({
     id: 'T-8',
     pass: metLine('T-8'),
-    measured: `a daily player owns ${round(m.kinds4 ?? NaN)} kinds at week 4 and ${round(m.kinds12 ?? NaN)} at week 12; ${pct(m.commons6 ?? NaN)} of the starting pool's commons are owned by week 6; at week 24 ${pct(m.rares24 ?? NaN)} of the rares and ${pct(m.epics24 ?? NaN)} of the epics released are owned`,
+    measured: `a daily player owns ${round(m.kinds4 ?? NaN)} lines at week 4 and ${round(m.kinds12 ?? NaN)} at week 12 (with the forms they evolved into: ${round(medianDefined(daily.map((p) => weekAt(p, 3)?.forms)) ?? NaN)} and ${round(medianDefined(daily.map((p) => weekAt(p, 11)?.forms)) ?? NaN)}); ${pct(m.commons6 ?? NaN)} of the starting pool's commons are owned by week 6; at week 24 ${pct(m.rares24 ?? NaN)} of the rares and ${pct(m.epics24 ?? NaN)} of the epics released are owned`,
     target:
-      'about 15 kinds at week 4, 30 to 40 at week 12, most commons within 6 weeks, rares over months (15% to 60% by week 24), epics rarely (at most 35%)',
+      'about 9 to 12 lines at week 4, 20 to 28 at week 12, most commons within 6 weeks, rares over months (15% to 60% by week 24), epics rarely (at most 35%)',
   });
   lines.push({
     id: 'T-9',

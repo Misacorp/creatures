@@ -131,7 +131,7 @@ export function join(p: Player, server: Server, hour: number): void {
   while (p.creatures.length < rules.acorns.starterCreatures) {
     const species = Math.floor(uniform(p.rng) * total);
     if ((p.speciesCount[species] ?? 0) === 0 && speciesRarities(rules)[species] === 0)
-      addCreature(p, species);
+      addCreature(p, species, hour);
   }
   newSeat(p);
   newAnvil(p);
@@ -292,6 +292,21 @@ function endWeek(p: Player, server: Server): void {
       if (species < p.rules.scouts.species.start && r === 0) wk.startCommons += 1;
     }
   });
+  // T-1: the gap to the 3rd best of every creature owned for a week or more.
+  const third = wk.levels[Math.min(2, wk.levels.length - 1)] ?? 1;
+  const weekEnd = wk.week * HOURS_PER_WEEK;
+  const owned = p.creatures.filter((c) => c.arrived <= weekEnd - HOURS_PER_WEEK);
+  const gaps = owned.map((c) => Math.max(0, third - c.level)).sort((a, b) => a - b);
+  // The ones not held at the evolution gate (waiting on Essence is T-9's matter, not a slow catch-up).
+  const open = owned
+    .filter((c) => !(c.canEvolve && !c.evolved && c.level >= p.rules.xp.evolveLevel))
+    .map((c) => Math.max(0, third - c.level));
+  wk.benchOpenWorst = open.length ? Math.max(...open) : 0;
+  wk.benchCount = gaps.length;
+  wk.benchWorst = gaps[gaps.length - 1] ?? 0;
+  wk.benchMedian = gaps.length
+    ? (gaps[Math.floor((gaps.length - 1) / 2)]! + gaps[Math.floor(gaps.length / 2)]!) / 2
+    : 0;
   wk.waitingEvolve = p.creatures.filter(
     (c) => c.canEvolve && !c.evolved && c.level >= p.rules.xp.evolveLevel,
   ).length;
@@ -348,7 +363,7 @@ function serverCoverage(
   players: readonly Player[],
   hour: number,
   rules: Rules,
-): { lines: number[]; forms: number[] } {
+): { lines: number[]; forms: number[]; launch: number[] } {
   const rarity = speciesRarities(rules);
   const formsOf = lineForms(rules);
   const available = speciesAvailable(rules, hour);
@@ -359,20 +374,29 @@ function serverCoverage(
   const haveLines = [0, 0, 0];
   const totalLines = [0, 0, 0];
   const haveForms = [0, 0, 0];
+  const haveLaunch = [0, 0, 0];
+  const totalLaunch = [0, 0, 0];
   const totalForms = [0, 0, 0];
   for (let line = 0; line < available; line++) {
     const r = rarity[line] ?? 0;
     const forms = formsOf[line] ?? 1;
     totalLines[r] = (totalLines[r] ?? 0) + 1;
     totalForms[r] = (totalForms[r] ?? 0) + forms;
+    const isLaunch = line < rules.scouts.species.start;
+    if (isLaunch) totalLaunch[r] = (totalLaunch[r] ?? 0) + 1;
     if (joined.some((p) => (p.speciesCount[line] ?? 0) > 0)) {
+      if (isLaunch) haveLaunch[r] = (haveLaunch[r] ?? 0) + 1;
       haveLines[r] = (haveLines[r] ?? 0) + 1;
       haveForms[r] = (haveForms[r] ?? 0) + 1 + (evolved.has(line) && forms > 1 ? 1 : 0);
     }
   }
   const share = (have: number[], total: number[]): number[] =>
     have.map((h, r) => ((total[r] ?? 0) > 0 ? h / (total[r] as number) : 0));
-  return { lines: share(haveLines, totalLines), forms: share(haveForms, totalForms) };
+  return {
+    lines: share(haveLines, totalLines),
+    forms: share(haveForms, totalForms),
+    launch: share(haveLaunch, totalLaunch),
+  };
 }
 
 /** Runs one server for the horizon with one seed: hour by hour. */
@@ -452,7 +476,7 @@ export function runServer(config: ServerConfig, seed: number, base: Rules = RULE
         visits: visitsThisWeek,
         ...(() => {
           const c = serverCoverage(players, h, rules);
-          return { coverage: c.lines, formCoverage: c.forms };
+          return { coverage: c.lines, formCoverage: c.forms, launchCoverage: c.launch };
         })(),
       });
       visitsThisWeek = 0;

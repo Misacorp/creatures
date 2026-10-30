@@ -8,7 +8,7 @@ import { median } from './util';
  * The roster profile: the seam between combat v2 and the valley, in the shape of `RosterProfile` in `packages/lab/src/roster.ts`
  * on branch `combat-v2-track` (copied here as types so this package does not depend on that branch). Plain data: for each kind
  * of player and each week from 1 to 24, the levels of the player's 1st, 3rd, 10th and 20th creature, how many creatures they own,
- * which forms they can have, the open talent slots of their best creature, whether talents are picked, and a gear level.
+ * which forms they can have (a level is 0 where the median player owns fewer creatures than the rank asks for: `size` says so), the open talent slots of their best creature, whether talents are picked, and a gear level.
  */
 export const ROSTER_WEEKS = 24;
 
@@ -39,8 +39,10 @@ const talentSlotsAt = (level: number): number =>
 function weeksFor(players: readonly PlayerRun[]): RosterWeek[] {
   return Array.from({ length: ROSTER_WEEKS }, (_, i) => {
     const records = players.flatMap((p) => (p.weeks[i] ? [p.weeks[i]] : []));
+    const size = Math.round(median(records.map((w) => w.size)));
+    // The level of the k-th best creature; 0 when the median player owns fewer than k creatures (never the level of a lower one).
     const level = (k: number): number =>
-      round(Math.min(30, median(records.map((w) => levelOf(w, k)))), 1);
+      size < k ? 0 : round(Math.min(30, median(records.map((w) => levelOf(w, k)))), 1);
     const first = level(1);
     return {
       week: i + 1,
@@ -48,7 +50,7 @@ function weeksFor(players: readonly PlayerRun[]): RosterWeek[] {
       third: level(3),
       tenth: level(10),
       twentieth: level(20),
-      size: Math.round(median(records.map((w) => w.size))),
+      size,
       forms: 'all' as const,
       talentSlots: talentSlotsAt(first),
       talentsPicked: false,

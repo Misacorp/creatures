@@ -35,6 +35,10 @@ const num = (x: number | undefined, digits = 2): string =>
 
 /** What a dial's value means in the rules: the first number it moves, today and with the dial applied. */
 function effectText(rules: Rules, dial: Dial, m: number): string {
+  if (dial.custom) {
+    const show = (r: Rules): string => JSON.stringify(r.commons.costSplit);
+    return `commons.costSplit: ${show(rules)} -> ${show(dial.custom(rules, m))}`;
+  }
   const path = dial.paths[0] as readonly string[];
   const read = (r: Rules): unknown =>
     path.reduce<unknown>((o, k) => (o as Record<string, unknown>)[k], r);
