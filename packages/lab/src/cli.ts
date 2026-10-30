@@ -2,6 +2,8 @@ import { writeFileSync } from 'node:fs';
 import { CARDS } from './cards';
 import { RAID_BOSS_IDS } from './bosses';
 import { planBosses } from './bossReport';
+import { planPath } from './path';
+import { ROSTER_SPEEDS, type RosterSpeed } from './roster';
 import { inProcessExecutor } from './jobRunners';
 import { runJobs, timingLines, type Executor, type JobRun, type JobSpec, type Plan } from './jobs';
 import { planReport, buildCatalogue, buildKeywords } from './report';
@@ -41,6 +43,7 @@ async function runPlan<T>(
 export async function main(args: readonly string[], run: JobRunner = serial): Promise<number> {
   const quick = args.includes('--quick');
   if (args.includes('--tune')) return tune(args, quick, run);
+  if (args.includes('--path')) return path(args, quick, run);
   const bossAt = args.indexOf('--boss');
   if (args.includes('--bosses') || bossAt >= 0) {
     // Only the real raid bosses and dungeon foes, to the console (nothing is written).
@@ -160,5 +163,37 @@ async function tune(args: readonly string[], quick: boolean, run: JobRunner): Pr
     writeFileSync(out, summary.join('\n') + '\n');
     writeFileSync(out.replace(/(\.md)?$/, '.json'), JSON.stringify(results, null, 1) + '\n');
   }
+  return 0;
+}
+
+/**
+ * `--path [--speed slow|expected|fast|all] [--quick] [--out <file.md>]`: the path simulator (`path.ts`). It plays many seeded
+ * servers (40, or 8 with `--quick`) of each kind through the boss track week by week and prints, per roster speed, the week each
+ * slot is reached, the weekends spent on it and the share of servers stuck for more than four weeks on one boss. Nothing is tuned.
+ */
+async function path(args: readonly string[], quick: boolean, run: JobRunner): Promise<number> {
+  const speedArg = flagValue(args, '--speed') ?? 'expected';
+  const speeds: readonly RosterSpeed[] | undefined =
+    speedArg === 'all'
+      ? ROSTER_SPEEDS
+      : ROSTER_SPEEDS.find((s) => s === speedArg)
+        ? [speedArg as RosterSpeed]
+        : undefined;
+  if (!speeds) {
+    console.error(`Unknown speed "${speedArg}". Speeds: ${[...ROSTER_SPEEDS, 'all'].join(', ')}`);
+    return 1;
+  }
+  const out = args.includes('--out') ? flagValue(args, '--out') : undefined;
+  if (args.includes('--out') && !out) {
+    console.error('--out needs a file name');
+    return 1;
+  }
+  const t0 = Date.now();
+  const { value, timings } = await runPlan(planPath({ quick, speeds }), run);
+  const md = value.md.join('\n');
+  console.log(md);
+  if (out) writeFileSync(out, md + '\n');
+  console.log(`path in ${secondsSince(t0)} s`);
+  console.log(timings);
   return 0;
 }
