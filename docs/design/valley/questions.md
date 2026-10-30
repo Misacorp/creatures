@@ -6,46 +6,13 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q16. What should the couch give now that XP has no daily cap?
-
-Status: asked, round 6 (2026-10-30). From the panel (`reviews/2026-10-30-posts-bonfire.md`, finding 5). Revisits Misa's choice of 2026-10-20, "lounging with company". Touches: `bonfire.md` V-BON-4, today's lounge.
-
-**Why it matters.** Today a lounger earns 1 XP every 2 minutes while you and a friend are both in the Activity, up to 60 a day. The cap was what kept it small. With no daily caps in the valley, two friends (or one player with a second account) leaving the Activity open all day would earn about 720 XP a day for one creature, more than fights. It also only works when friends are online at the same moment, which casual players rarely are.
-
-- **A. Keep it, with today's cap.** Company time pays up to 60 XP a day, as now. Example: Sanni and Juho are both online for an hour, and both loungers earn 30.
-- **B. Company over a day, not a moment.** If a friend also visited today, at any time, your lounger and theirs each get a small fixed bonus. Example: Sanni plays at 8 in the morning and Juho at 9 at night; both loungers get +60 XP.
-- **C. Social only.** No extra XP. Friends see who is lounging, and visiting a friend's house leaves a small gift (a few Acorns) once a day.
-
-**Lead's pick: B.** It keeps your idea that company matters, works for friends whose evenings never overlap, and can't be farmed by leaving a tab open (F-8).
-
-### Q17. What decides where a creature works?
-
-Status: asked, round 6 (2026-10-30). From the panel (finding 6, Joonas). Touches: `posts.md` V-POST-4, `scouts.md`, `forge.md`; content work per species (the compendium); a seam with combat v2 (what counters a boss).
-
-**Why it matters.** In the draft, each post likes one element or role, and a creature that fits produces 25% more. The veteran reviewer called that sorting, not choosing: you match elements once and never look again. This decides whether placing creatures stays a real choice after the first evening, and whether each species you catch adds something new.
-
-- **A. Fit by element**, as drafted. Simple, and solved once.
-- **B. Species work perks.** Every species brings something of its own to work, as in Pokémon Sleep. Example: Mossback turns up pearls at water places; Sparkit brings double scrap but no Acorns. Each new species is a new option. Cost: a perk for each species (34 today).
-- **C. B, plus weekly demand.** The week's raid threat, known from Monday, makes the finds and recipes that counter it worth more, so moving a few creatures before Friday pays off. Example: in a Cinder Wyrm week, Tide shards and Kelp gear are in demand, so Sanni moves her pearl-finder to the Tidepools on Tuesday.
-
-**Lead's pick: C.** It gives a real decision, a reason to look again each week, and a value for every species caught (G-2). It also gives the valley the week-long role in raid preparation you wanted from the Watchtower (Q15), without a post. Cost: a perk per species, and combat v2's lab must say what counters each boss.
-
-### Q18. Should one missed day already slow the valley? (a challenge)
-
-Status: asked, round 6 (2026-10-30). From the panel (finding 7, Sanni). Challenges: Misa's round 1 answer to Q3, "Daily check in for full exp is good, then drop in a few steps". Touches: `posts.md` V-POST-10, T-2.
-
-**Why it matters.** With the steps as drafted, skipping one day puts the valley at half speed for that day. The casual reviewer called it "the you fell behind feeling I quit over". The research points the same way: absence should feel safe, and Pokémon Sleep deliberately avoided rewarding perfect daily schedules. Your reason for the steps, that someone back after a month shouldn't find a game they don't recognise, is about long absences, not one busy day.
-
-- **A. Keep it: full for 1 day, then steps.** Every other day gets about 75%; once a week about 43%.
-- **B. Full for 2 days, then steps** (half to day 4, a quarter to day 7, a tenth to day 30). Every other day gets everything; every third day about 83%; once a week about 54%.
-- **C. Full for 3 days, then steps.** Once a week about 64%.
-
-**Lead's pick: B.** A busy day costs nothing, so missing one never feels like falling behind, while daily players still lose nothing and the month-away drop you wanted stays as it is.
+Nothing right now (Q17 comes back as **work-identity** once the research is in).
 
 ## Queue
 
 In order. Each becomes a numbered question when asked; entries name what they wait on.
 
+- **work-identity.** Q17 again, with research: how a creature grows an identity ("good at something") while players are still encouraged to move creatures around; Misa's per-recipe Forge proficiency, species work perks, weekly demand from the raid's threat.
 - **targets.** What the economy lab measures and which numbers feel right (T-1 to T-5 in `goals.md`). Asked with the lab's first report, as concrete examples, not as a list to approve.
 
 ## Answered
@@ -294,6 +261,54 @@ Status: answered, round 5 (2026-10-30). Was the queued **sentries**. Touches: `d
 **Answer (2026-10-30): no post.** "I'm still skeptical about the watchtower concept in general. It needs to provide benefits across the entire week if it is to be a post. The raid has limited options for player agency beyond its "rule cards" and we need to give players the entire week to prepare for those, so I'd want any hypothetical watchtower to give that info already on Monday. If we can't find a use for the watchtower, drop it as a post. No need to shoe horn it in."
 
 Became: V-DEF-4, no sentry post; the boss and its rule cards are known to everyone from Monday (a wish for combat v2); the Watchtower stays only as the raid's place in the valley, its name and role to revisit with the art; Watchtower projects and the Stormglass keystone removed from `commons.md`.
+
+### Q16. What should the couch give now that XP has no daily cap?
+
+Status: answered, round 6 (2026-10-30). From the panel (`reviews/2026-10-30-posts-bonfire.md`, finding 5). Revisits Misa's choice of 2026-10-20, "lounging with company". Touches: `bonfire.md` V-BON-4, today's lounge.
+
+**Why it matters.** Today a lounger earns 1 XP every 2 minutes while you and a friend are both in the Activity, up to 60 a day. The cap was what kept it small. With no daily caps in the valley, two friends (or one player with a second account) leaving the Activity open all day would earn about 720 XP a day for one creature, more than fights. It also only works when friends are online at the same moment, which casual players rarely are.
+
+- **A. Keep it, with today's cap.** Company time pays up to 60 XP a day, as now. Example: Sanni and Juho are both online for an hour, and both loungers earn 30.
+- **B. Company over a day, not a moment.** If a friend also visited today, at any time, your lounger and theirs each get a small fixed bonus. Example: Sanni plays at 8 in the morning and Juho at 9 at night; both loungers get +60 XP.
+- **C. Social only.** No extra XP. Friends see who is lounging, and visiting a friend's house leaves a small gift (a few Acorns) once a day.
+
+**Lead's pick: B.** It keeps your idea that company matters, works for friends whose evenings never overlap, and can't be farmed by leaving a tab open (F-8).
+
+**Answer (2026-10-30): no couch.** "I think the couch is kind of outdated at this point. The idea was that it's fun to be in a social setting, but this entire thing, like the bonfire and everything, moves that setting into the valley itself. So what I'm thinking is that eventually it'd be cool if people could leave gifts at each other's houses or something like that, but we're not gonna go there at this point. So maybe just show who's online and have them visible around the bonfire or something as we originally planned, but no need for any kind of mechanical experience boosts or stuff like that."
+
+Became: V-BON-4, no couch and no company XP; who is online shows in the valley, their creatures around the bonfire; gifts at houses in `later.md`; the lounge mechanic scrapped (`scrap-list.md`).
+
+### Q17. What decides where a creature works?
+
+Status: answered, round 6 (2026-10-30). From the panel (finding 6, Joonas). Touches: `posts.md` V-POST-4, `scouts.md`, `forge.md`; content work per species (the compendium); a seam with combat v2 (what counters a boss).
+
+**Why it matters.** In the draft, each post likes one element or role, and a creature that fits produces 25% more. The veteran reviewer called that sorting, not choosing: you match elements once and never look again. This decides whether placing creatures stays a real choice after the first evening, and whether each species you catch adds something new.
+
+- **A. Fit by element**, as drafted. Simple, and solved once.
+- **B. Species work perks.** Every species brings something of its own to work, as in Pokémon Sleep. Example: Mossback turns up pearls at water places; Sparkit brings double scrap but no Acorns. Each new species is a new option. Cost: a perk for each species (34 today).
+- **C. B, plus weekly demand.** The week's raid threat, known from Monday, makes the finds and recipes that counter it worth more, so moving a few creatures before Friday pays off. Example: in a Cinder Wyrm week, Tide shards and Kelp gear are in demand, so Sanni moves her pearl-finder to the Tidepools on Tuesday.
+
+**Lead's pick: C.** It gives a real decision, a reason to look again each week, and a value for every species caught (G-2). It also gives the valley the week-long role in raid preparation you wanted from the Watchtower (Q15), without a post. Cost: a perk per species, and combat v2's lab must say what counters each boss.
+
+**Answer (2026-10-30): open; research asked for.** "This is honestly a tough one, and I guess it really matters where players find it fun. So, you know, the sorting versus matching or whatever argument that was raised doesn't really hold up if we just make it based on another stat instead of element or role or whatever... I just think it would be nice to have these creatures grow into some kind of an identity that they're good at something. And with the forge, I was thinking, well, what if we don't have a crafting level per creature that actually brews something, but they just get proficient with a single recipe? So then you could have the guy who crafts this item, and then you could have the other guy who crafts that other item. Might be too granular, not sure, but just trying to find a way that players still feel encouraged to do something else with their creatures. Instead of just having them in a single place all the time. But if research points that that's the best way to go, then let's do that. So maybe you can get back to me with more information."
+
+Became: research on worker identity against rotation (`docs/research/`); asked again with the findings as **work-identity** at the head of the queue. Misa's point stands: matching on any single stat is the same sorting problem, so the answer has to come from how the identity grows, not which stat it reads.
+
+### Q18. Should one missed day already slow the valley? (a challenge)
+
+Status: answered, round 6 (2026-10-30). From the panel (finding 7, Sanni). Challenges: Misa's round 1 answer to Q3, "Daily check in for full exp is good, then drop in a few steps". Touches: `posts.md` V-POST-10, T-2.
+
+**Why it matters.** With the steps as drafted, skipping one day puts the valley at half speed for that day. The casual reviewer called it "the you fell behind feeling I quit over". The research points the same way: absence should feel safe, and Pokémon Sleep deliberately avoided rewarding perfect daily schedules. Your reason for the steps, that someone back after a month shouldn't find a game they don't recognise, is about long absences, not one busy day.
+
+- **A. Keep it: full for 1 day, then steps.** Every other day gets about 75%; once a week about 43%.
+- **B. Full for 2 days, then steps** (half to day 4, a quarter to day 7, a tenth to day 30). Every other day gets everything; every third day about 83%; once a week about 54%.
+- **C. Full for 3 days, then steps.** Once a week about 64%.
+
+**Lead's pick: B.** A busy day costs nothing, so missing one never feels like falling behind, while daily players still lose nothing and the month-away drop you wanted stays as it is.
+
+**Answer (2026-10-30): gentler.** "I think the drop to half is quite strong to begin with, so I would explore something like a 15% drop after 24 hours or 48 hours. The idea is that let the players keep a weekend off, so when they log in on Monday morning after the weekend, they'll not see a significant drop in economy. We'll run some numbers on that. I know Opus Miner does 15% decrease while you're offline... It could be good, and then go down from there. The instant drop to half is quite a lot."
+
+Became: V-POST-10 with candidate curves in `posts.md` (A: full for 24 h then 85%...; B: full for 48 h then 85%..., the lead's lean: a weekend off keeps 97%, weekly about 79%, a month away about nine days of growth); T-2 restated; stores about three days so a weekend off fills nothing (the lead's call, from Misa's Q5 "keep the rewards rolling even longer"). The economy lab picks the curve.
 
 ## Withdrawn
 

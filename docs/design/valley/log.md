@@ -71,3 +71,9 @@ Then the scrap list ([`scrap-list.md`](scrap-list.md)), from an agent's inventor
 **Done.** Wrote `systems/posts.md` and `systems/bonfire.md` in full with example numbers and worked days, then ran the panel (owner's proxy, Sanni, Joonas, Pia; `reviews/2026-10-30-posts-bonfire.md`). Adopted: the per-seat tool ladder scrapped for kit that tilts output (V-POST-11, V-SCOUT-5); one idle XP rate at posts and at the fire; one catch-up toward the higher of the player's 3rd-best and the server's middle, XP only, fixed at a visit for 24 hours (V-BON-2); three visible skill steps in effective hours, below fit (V-POST-12); no stand-in setting, one tap to fill a raider's seat (V-POST-7); resting creatures' small moments (V-BON-9); no nagging fallback; the one-pass lazy computation (V-POST-14); visit-weighted project sizing and a minimum gift for a completion share (`commons.md`); target T-6 (growth lasts the 12 weeks), with top creatures at about 310 XP a day. Asked round 6: Q16 the couch, Q17 species work perks and weekly demand, Q18 whether one missed day slows the valley.
 
 **Next.** Record round 6. Then phase 1, step 3: the return moment, then scouts and the Forge loop; the economy lab skeleton after those, with Pia's six measurements first.
+
+## 2026-10-30 (evening): round 6 answered
+
+**Done.** Recorded round 6: no couch and no company XP, presence shown at the bonfire (Q16, V-BON-4); gentler away steps, a weekend off costing almost nothing, with candidate curves in `posts.md` and stores of about three days (Q18, V-POST-10, T-2); work identity left open, with research asked for (Q17). A researcher is looking at worker identity against rotation (per-recipe mastery, job mastery that rewards moving on, species work perks).
+
+**Next.** File the research in `docs/research/`, ask **work-identity** as Q19 with it. Then phase 1, step 3: the return moment.

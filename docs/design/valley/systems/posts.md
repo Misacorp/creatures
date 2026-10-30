@@ -1,6 +1,6 @@
 # Job posts
 
-Status: **proposed**, revised after the panel (`reviews/2026-10-30-posts-bonfire.md`). Accepted by Misa so far: posts replace every timed task (round 1, Q2), agency at the place (Q2), away growth in steps (Q3), stores of a day and a half and "being present pays a little" (round 2, Q5), a raider's seat waits (Q6). Waiting on Misa: Q16 to Q18 in `questions.md`. Evidence: `docs/research/idle-job-posts.md`.
+Status: **proposed**, revised after the panel (`reviews/2026-10-30-posts-bonfire.md`). Accepted by Misa so far: posts replace every timed task (round 1, Q2), agency at the place (Q2), away growth in steps (Q3), stores of a day and a half and "being present pays a little" (round 2, Q5), a raider's seat waits (Q6). Waiting on Misa: Q17 (what decides where a creature works), being researched. Evidence: `docs/research/idle-job-posts.md`.
 
 ## The idea
 
@@ -14,11 +14,11 @@ What a player does with posts, in one breath: put creatures where they fit, tell
 - **V-POST-2** Seats. Each post has a number of seats per player, set by the place's server level (V-COM-10); each player unlocks their own seats up to that limit with their own Acorns (and parts at the Forge), each seat dearer than the last. Never fetch quests.
 - **V-POST-3** XP. Every creature earns the same idle XP rate wherever it is, at a post or resting at the bonfire (`bonfire.md`). Where a creature works changes what comes home, never how fast it grows. Fights pay on top and are the fastest way to grow.
 - **V-POST-4** Fit. Each post names **one** thing it likes (an element or a role), drawn as an icon on the post. A creature that fits produces more (example: +25%); dragging a creature over a post previews the change as one arrow and one number. Any creature can work anywhere. (Q17 may replace this with species work perks.)
-- **V-POST-5** The store. Output collects in the post's store. It holds at least about a day and a half of output (round 2, Q5), so a daily player never meets a full one; when full, the post stops picking up finds, nothing is lost, and its bubble says "full" (F-1). XP is never stored, so a full store never cuts growth. Collecting is walking past the post or one tap on the return story.
+- **V-POST-5** The store. Output collects in the post's store. It holds at least about a day and a half of output (round 2, Q5), and about three days in the examples, so a weekend off fills nothing (round 6, Q18; Misa in Q5: "keep the rewards rolling even longer"); when full, the post stops picking up finds, nothing is lost, and its bubble says "full" (F-1). XP is never stored, so a full store never cuts growth. Collecting is walking past the post or one tap on the return story.
 - **V-POST-7** Fights. A creature on a post can still fight (round 2, Q6). The dungeon is a quick run and pauses nothing. A creature in the raid is away from the first stage's lock (Friday) to the end of the finale (Sunday); its seat is kept and its post pauses, and the post says who is away defending. One tap seats a resting creature there until the raider returns, which it does on its own; nothing to set up in advance. Only a creature without a post and not in the raid can fill in. A creature knocked out stays out for the weekend (combat v2) and comes home the same way.
 - **V-POST-8** Inputs. A post that consumes something (the Forge needs scrap) slows when its input runs low and says why in a few words; a small fallback keeps it from stopping dead (F-5, `forge.md`).
 - **V-POST-9** Agency lives at the place: what a place works on is set there (the Forge's queue of orders, which destination a scout explores). Queues stay short (example: up to 3 orders). When a queue runs out, the post falls back to a plainer, less valuable default and keeps working; the fallback needs no attention (no "empty" bubble, no story line), and only a finished order is mentioned.
-- **V-POST-10** Away steps (round 1, Q3): every idle gain (XP, output, skill time) runs at the full rate for the first day after a visit, then drops in a few steps, to near zero after about a month. One plain scalar from the time since the last visit, never applied to what fights pay, and never shown as a meter of what was lost. (Q18 asks whether the first step comes later.)
+- **V-POST-10** Away steps (round 1, Q3; made gentler in round 6, Q18): every idle gain (XP, output, skill time) runs at the full rate for the first day or two after a visit, then drops gently (about 15% first) and further the longer the player is away, to near zero after about a month. A player can take a weekend off and come back on Monday to almost no drop. One plain scalar from the time since the last visit, never applied to what fights pay, and never shown as a meter of what was lost. Candidate curves and what they give are below; the economy lab picks one.
 - **V-POST-11** Kit: being present pays a little, through choices (round 2, Q5). Each seat may hold one kit item, bought once with Acorns and kept at the post, that tilts what comes home rather than adding a flat bonus. Examples: at a scout, a **lure** (a better chance of a creature, with a hint of which), a **lantern** (rarer finds), a **satchel** (more Acorns and scrap); at a smith, **tongs** (faster common pieces) or a **loupe** (better rarity, slower). A player who looks in more often re-tilts their seats to what they need now (scrap for the Forge, a missing species) and so gains a little more (T-2: under 10% over a daily player). Kit replaces today's supplies (V-SCOUT-5).
 - **V-POST-12** Skill. A creature grows in each kind of work it does (scouting, smithing, keeping, teaching, lamplighting) in three visible steps, counted in effective hours (the away steps apply). Examples: **Skilled** after 2 days of work (+5%), **Expert** after 7 (+10%), **Master** after 21 (+15%), always below fit. Each step is shown on the creature and opens something at its kind of post: a scout's deeper area, a smith's next recipe tier. Today's explorer ranks and Crafting skill become these. A new catch is competitive within a week, so moving a creature is never a mistake for long.
 - **V-POST-13** Communal posts (`commons.md`): some seats send their output to a server project instead of the player (haulers at the Forge's project, road menders at the Signpost, the lamplighter at the bonfire). The creature earns XP and skill like any post. One communal seat per player per place (example).
@@ -35,22 +35,21 @@ Seats per player by the place's server level (levels 1 to 5, V-COM-11).
 | Forge    | smith, per anvil       | the Crafting role (or trait) | 2 → 4 (levels 2 and 4 add one) | refine or recycle (V-FORGE-1)           |
 | Paddock  | keeper                 | supports                     | 1 → 2 (level 3 adds one)       | none                                    |
 | School   | teacher, student       | (waits on combat v2)         | 1 teacher, 2 students → more   | a teacher reads (waits on `school.md`)  |
-| House    | the couch              | none                         | 1                              | none                                    |
 | Bonfire  | everyone resting       | none                         | no seats                       | none                                    |
 | Each     | communal seat          | the place's like             | 1                              | none                                    |
 
 ## Example numbers (the economy lab sets the real ones)
 
-| What                       | Example                                                                     |
-| -------------------------- | --------------------------------------------------------------------------- |
-| Idle XP, any creature      | 5 an hour, 120 a day at full rate (hearth level 1)                          |
-| Fights, per top creature   | dungeon about 120 a day, raid about 70 a day averaged (combat v2 sets them) |
-| Catch-up                   | x2 at 6 or more levels below the target, fading to x1 at it (`bonfire.md`)  |
-| Fit / skill / kit          | +25% / +5 to +15% / a tilt, not a bonus                                     |
-| Store                      | 36 hours of output                                                          |
-| Away steps                 | 100% day 1, 50% to day 3, 25% to day 7, 10% to day 30, then near zero       |
-| Acorn income, daily player | about 150 a day (the allowance building up, scouts' finds, leets)           |
-| Seats                      | a player's own seats cost about three weeks of Acorn income in all          |
+| What                       | Example                                                                                                     |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Idle XP, any creature      | 5 an hour, 120 a day at full rate (hearth level 1)                                                          |
+| Fights, per top creature   | dungeon about 120 a day, raid about 70 a day averaged (combat v2 sets them)                                 |
+| Catch-up                   | x2 at 6 or more levels below the target, fading to x1 at it (`bonfire.md`)                                  |
+| Fit / skill / kit          | +25% / +5 to +15% / a tilt, not a bonus                                                                     |
+| Store                      | about 3 days of output, so a weekend off fills nothing                                                      |
+| Away steps                 | 100% for 48 h, 85% to day 4, 60% to day 7, 30% to day 14, 10% to day 30, then near zero (candidate B below) |
+| Acorn income, daily player | about 150 a day (the allowance building up, scouts' finds, leets)                                           |
+| Seats                      | a player's own seats cost about three weeks of Acorn income in all                                          |
 
 For scale: today's curve needs about 1,700 XP for level 10, 9,700 for level 20 and 28,000 for level 30.
 
@@ -64,7 +63,19 @@ Sanni opens the game once each evening and has 15 creatures by week 4.
 
 ### The same month for a weekly player
 
-Juho opens the game on Sundays only. Idle gains run at about 43% of Sanni's (the away steps), and catch-up only runs in the day after a visit. Juho's best creatures still fight in the raid. On Sunday Juho re-tilts a seat or two and places new catches.
+Juho opens the game on Sundays only. Idle gains run at about 75% to 80% of Sanni's (the away steps), and catch-up only runs in the day after a visit. Juho's best creatures still fight in the raid. On Sunday Juho re-tilts a seat or two and places new catches.
+
+## The away steps: candidate curves
+
+Misa, round 6, Q18: "the drop to half is quite strong to begin with, so I would explore something like a 15% drop after 24 hours or 48 hours. The idea is that let the players keep a weekend off, so when they log in on Monday morning after the weekend, they'll not see a significant drop in economy." Share of a daily player's idle gains (computed by the lead; the lab confirms):
+
+| Curve                                                                      | Every 2 days | Weekend off (60 h) | Every 3 days | Weekly | A month away gives   |
+| -------------------------------------------------------------------------- | ------------ | ------------------ | ------------ | ------ | -------------------- |
+| A: 100% for 24 h, 85% to day 3, 60% to day 7, 30% to day 14, 10% to day 30 | 92%          | 91%                | 90%          | 73%    | about 9 days' growth |
+| B: 100% for 48 h, 85% to day 4, 60% to day 7, 30% to day 14, 10% to day 30 | 100%         | 97%                | 95%          | 79%    | about 9 days' growth |
+| Round 1's steps (for comparison): 100% for 24 h, then 50%, 25%, 10%        | 75%          | 70%                | 67%          | 43%    | about 5 days' growth |
+
+The lead leans to B, which meets the weekend-off goal best; a month away still gives only about nine days of growth, so a returning player still recognises their game.
 
 ## What it replaces
 
