@@ -119,6 +119,8 @@ function inHue(hue: number, [from, to]: readonly [number, number]): boolean {
 /** Whether a colour is in a family. */
 export function inFamily(colour: string, family: ColourFamily): boolean {
   const { hue, sat, light } = hsl(colour);
+  // A grey has no hue (hsl reports 0, which is inside Ember's range), so it is in no family.
+  if (sat === 0) return false;
   return (
     family.hues.some((range) => inHue(hue, range)) &&
     sat >= (family.minSat ?? 0) &&

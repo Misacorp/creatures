@@ -228,7 +228,8 @@ function drawSet(set: ConceptSet, ids: string[], file: string): void {
   ): void => {
     c.rect(x, y, col - 12, maxH + 40, ground);
     c.sprite(def, x + 12, y + 8, scale);
-    c.text(text, x + 12, y + maxH + 18, 2, ink);
+    // Cut the label to the tile, so a long role or palette name never runs into the next one.
+    c.text(text.slice(0, Math.floor((col - 24) / 12)), x + 12, y + maxH + 18, 2, ink);
   };
   let y = 64;
   for (const alt of [undefined, ...altNames]) {
@@ -299,8 +300,11 @@ const STARTER: Readonly<Record<string, string[]>> = {
 const args = process.argv.slice(2);
 if (args[0] === 'new') {
   const kind = (args[1] ?? 'creature') as keyof typeof KIND_SIZE;
-  const size = KIND_SIZE[kind];
-  if (size === undefined) throw new Error(`Unknown kind "${String(args[1])}".`);
+  const size = Object.hasOwn(KIND_SIZE, kind) ? KIND_SIZE[kind] : undefined;
+  if (size === undefined) {
+    console.error(`usage: art.mts new creature|boss|item|part|banner`);
+    process.exit(2);
+  }
   const rows = STARTER[kind] ?? Array.from({ length: size.height }, () => '.'.repeat(size.width));
   console.log('// palette: k ink #0d0a1a, e #fbf8ec, q #ff8fab, b base, h highlight, s shade');
   console.log(`rows: [\n${rows.map((r) => `  '${r}',`).join('\n')}\n],`);
@@ -322,6 +326,10 @@ const only = opt('--only')?.split(',');
 const out = resolve(opt('--out') ?? join(import.meta.dirname, '..', 'scratch', 'art', set.id));
 mkdirSync(out, { recursive: true });
 const ids = Object.keys(set.sprites).filter((id) => only === undefined || only.includes(id));
+if (ids.length === 0) {
+  console.error(`No sprite matches --only. Ids: ${Object.keys(set.sprites).join(', ')}`);
+  process.exit(2);
+}
 let errors = 0;
 for (const id of ids) {
   const concept = set.sprites[id];

@@ -42,7 +42,7 @@ Each of these cost a round while drawing the Void concepts or showed up in earli
 | ---------- | -------- | ---------------------------------------------------------------------------- | ------------------------- |
 | `creature` | 16×16    | the chibi face, no body pixel on the edge, footprint, silhouette 12 px apart | `data/species-sprites.ts` |
 | `boss`     | 24×24    | only ink on the edge, footprint 16×16 or more                                | `data/boss-sprites.ts`    |
-| `item`     | 12×12    | (gear: tinted by element, `gear-sprites.ts`)                                 | `gear-sprites.ts`         |
+| `item`     | 12×12    | (gear: tinted by element)                                                    | `gear-sprites.ts`         |
 | `part`     | 8×8      |                                                                              | `gear-sprites.ts`         |
 | `banner`   | 64×24    |                                                                              | `data/banner-sprites.ts`  |
 | `free`     | up to 64 | none beyond the grid and palette                                             | glyphs, icons             |
