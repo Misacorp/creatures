@@ -106,13 +106,13 @@ describe('item sprites', () => {
     }
   });
 
-  it('draws flair only on element versions of a shared look, each well-formed and visible', () => {
+  it('gives every element version of a shared look its own flair, and only those', () => {
     for (const base of gearContent.bases) {
       const look = itemLookId(base.id);
       const sharers = gearContent.bases.filter((b) => itemLookId(b.id) === look);
       const element = base.set === undefined ? baseElement(base) : null;
       const wanted = sharers.length > 1 && element !== null;
-      if (!wanted) expect(itemFlair(base.id), base.id).toBeUndefined();
+      expect(itemFlair(base.id) !== undefined, base.id).toBe(wanted);
     }
     for (const [look, byElement] of Object.entries(ITEM_FLAIR)) {
       for (const [element, flair] of Object.entries(byElement)) {
