@@ -6,7 +6,28 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-Nothing right now.
+### Q30. One project at a time for the whole valley, or one per place?
+
+Status: asked, round 12 (2026-10-30). From the commons panel (`reviews/2026-10-30-commons.md`, finding 1: the owner's proxy and Pia). Touches: `commons.md` V-COM-5, the fire (V-COM-13), T-3.
+
+**Why it matters.** The server's giving is one pot (about 150 Acorns' worth a day for 8 players). Split over five places' project boards, every place crawls: by week 12 each would be at level 2, and the fire that place levels warm would barely move. One project at a time puts the whole server behind one visible build.
+
+- **A. Every place has its own open project.** Players pick where to give; progress is spread thin. Example: by week 12, five places at level 2.
+- **B. One project at a time for the whole valley,** in an order shown in advance. Everyone's gifts and communal seats go to it. Example: "Now building: the Forge's second chimney (70%). Next: the Signpost's new road." By week 12, about five level-ups (two places at level 3).
+- **C. One at a time, and the server chooses the next.** When a project finishes, the next is the place most givers pointed their gifts at during the last one, a quiet vote with no deadline.
+
+**Lead's pick: B.** One shared build is easy to see and rally around, it is what makes "the server built this" feel real, and it fixes the pace and the hoarding hole together. C adds a choice, but also a vote someone can lose; it could come later.
+
+### Q31. Does a communal seat cost one of your own seats?
+
+Status: asked, round 12 (2026-10-30). From the commons panel (finding 13: Sanni against, Joonas for). Touches: `commons.md` V-COM-14, `posts.md` V-POST-13.
+
+**Why it matters.** A communal seat puts one of your creatures to work for the server's project. If it is free, everyone should simply fill it, so it is kindness without a choice. If it takes one of your own seats, it is a real "my valley or our valley" choice, but a casual player may feel she is choosing between herself and her friends.
+
+- **A. Free, an extra seat.** Every player can put one creature to work for the server at no cost to their own posts; it is gently suggested on day one.
+- **B. It takes one of your own seats.** Example: Sanni moves a scout off the Tidepools to haul for the Forge's project.
+
+**Lead's pick: A.** The communal seat is the gentlest way a player who plays less still helps build, and the real "my valley or our valley" choice already lives in where Acorns go. It also gives the bench's resting creatures a job.
 
 ## Queue
 

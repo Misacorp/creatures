@@ -113,3 +113,9 @@ Round 10 answered: worn gear off the bag, a bag of 200, filter, sort, search, bu
 ## 2026-10-30 (afternoon): a message from the combat v2 session
 
 The combat v2 session (branch `combat-v2-track`) wrote, at Misa's request, about its fixed boss track and the **roster profile** it tunes bosses against (per kind of player and week: 1st/3rd/10th/20th creature levels, roster size, forms, talent slots, gear), currently fed by placeholder numbers from `systems/posts.md`. Recorded as seams in `roadmap.md`; the economy lab's outputs now include that shape for 24 weeks (`economy/model.md`); `gear.md` V-GEAR-8 notes that a "raid win" is a kill on a fixed track, which can stall, so the cap's slow rise with time matters more. Valley decisions that assume a raid pace are flagged, not settled.
+
+## 2026-10-30 (evening): round 11 answered; the commons, its panel, round 12
+
+**Done.** Recorded round 11 (item level ladder to about 100 with thresholds and multi-level steps; elements own their lines; lines per rarity 1/3/5; the cap fed by many systems). Wrote `systems/commons.md` in full with collections (Misa's Stardew Valley idea) and the Forge's fire (the item level cap), ran the panel (`reviews/2026-10-30-commons.md`) and revised it: crafts come out at the fire's level; time is a floor, not heat; a boss warms the fire once; Master titles replace the hidden growth milestone; finds set themselves; one collection per place at launch with an idle-filled socket in each; the thank-you is a keepsake for any giver; each giver sees their own part privately; three build days between projects; the weekly goal moved to `later.md`; kit priced; example numbers redone. Asked round 12: Q30 one project at a time, Q31 the communal seat's cost.
+
+**Next.** Record round 12. Then phase 1's last system, the School (waits on combat v2's talents), or the economy lab's skeleton.
