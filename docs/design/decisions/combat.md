@@ -4,6 +4,28 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-30: How the boss track is tuned: welcome boss, tool by card strength, a 60% first-weekend aim
+
+ID: `2026-10-30-how-the-boss-track-is-tuned` · Status: current · Amends: `2026-10-30-the-boss-track-is-tuned-against`
+
+**Decision (lead).** The track tuner (`packages/lab/src/trackTuner.ts`) tunes each slot for the roster a dedicated server has when it arrives there, in one sweep up the track, with these choices (all data in `targets.ts`; Misa can change any of them):
+
+- **The first slot is a welcome boss:** a new server has its starters, so on slot 1 there is no limit on the unprepared party winning; a prepared team must still win within two weekends.
+- **The tool a slot asks for scales with its card strength:** 6, 8 and 10 points of HP at 30%, 65% and 100% cards (the line the rank tests already use), down to 3 points at 0%.
+- **Tuned for the expected roster; slow and fast are a sensitivity check.** The path is run at all three speeds (levels 20% behind or ahead) and reported, but the numbers are not tuned for them: a slow server arrives at a slot later and keeps growing while a failed boss returns, and the numbers are re-tuned when the valley's real roster data arrives.
+- **No numeric lap floor:** a later lap's card strength never falls, but its HP, Attack and armour may be lower than an earlier lap's when its stronger cards make up for it.
+- **Difficulty aim:** among numbers that meet every target, the tuner prefers a prepared team's first-weekend kill rate near 60% (about 84% within two weekends), not the easiest numbers.
+
+**Reasoning.** "Rule cards ask before they require" (Misa, 2026-10-29) means early slots cannot demand a tool's full worth, and at week 1 a prepared team and an unprepared one have the same starters. A raid weekend is a cliff: a prepared team's kill rate goes from almost always to almost never over about a tenth of the boss's HP, and a roster 20% behind moves that edge by 15% to 20% of the HP, so no numbers give a 60% kill at all three speeds; tuning for all three made every boss trivial. Tuning for the expected roster and re-tuning when real data arrives wastes nothing, because only the numbers move. Holding later laps' numbers at the earlier lap's level made Storm Sovereign's later laps, with near-full cards, almost unbeatable. The first tuning picked the most comfortable numbers, so every boss fell on the first weekend and tools mattered only near the kill line; aiming at about 60% keeps Misa's "a prepared team usually wins within two weekends" and lets a returning boss show progress.
+
+## 2026-10-30: The boss track is tuned against a roster profile the valley will supply
+
+ID: `2026-10-30-the-boss-track-is-tuned-against` · Status: current, amended by `2026-10-30-how-the-boss-track-is-tuned`
+
+**Decision (lead, from Misa's direction of 2026-10-30).** Combat v2 owns the challenges and the valley owns the roster, with one data shape between them (`docs/design/combat/boss-track.md`). The boss track (which boss at which Boss Rank, with its card strength), the bosses' numbers and the targets are lab data. A **roster profile** says what each kind of player (daily, weekly, new) has at each week: the levels of their 1st, 3rd, 10th and 20th creature, roster size, available forms, talent slots and gear. A path simulator plays servers week by week against the track (a failed boss returns), and the tuner sets each slot's numbers for the roster a dedicated server has when it usually arrives there. Until the valley's economy lab exists, the roster profile is placeholder data from the valley docs' worked examples, with slow, expected and fast speeds (levels 20% behind or ahead).
+
+**Reasoning.** Misa: two big systems are changing independently, and balance against player progression is not possible until they talk; combat v2's role is to set the challenges, make them easy to configure, and find the expected path for a server. The valley's planned economy lab already reports the 1st, 3rd, 10th and 20th creature's level per week, so the same shape lets its output replace the placeholder with no change to the track, the bosses' content, the targets or the path code; the numbers are re-tuned in minutes. Tuning at three speeds shows how sensitive the raid is to the valley's pace before either ships.
+
 ## 2026-10-30: The combat lab runs on every core, with a speed budget
 
 ID: `2026-10-30-the-combat-lab-runs-on-every` · Status: current

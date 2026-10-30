@@ -4,6 +4,7 @@
  */
 import { CARDS } from './cards';
 import { runBossJob, type BossJobArgs } from './bossReport';
+import { runPathJob } from './path';
 import type { Executor, JobOutcome, JobSpec } from './jobs';
 import {
   reportAnswers,
@@ -21,6 +22,7 @@ import {
 } from './talentReport';
 import { TEAM_BOSS_WIN_RATE } from './teamShare';
 import { buildTeamShareSection } from './teamShareReport';
+import { runSlotJob } from './trackTuner';
 import { runTuneJob } from './tuner';
 
 /** Runs the job and returns its result: plain data, so that it can be posted between threads. */
@@ -62,8 +64,12 @@ export function runJob(job: JobSpec, deps: Readonly<Record<string, unknown>>): u
     }
     case 'boss':
       return runBossJob(job.args as BossJobArgs, deps);
+    case 'path-server':
+      return runPathJob(job.args);
     case 'tune-eval':
       return runTuneJob(job.args);
+    case 'slot-eval':
+      return runSlotJob(job.args);
     default:
       throw new Error(`unknown job kind ${job.kind}`);
   }

@@ -129,6 +129,8 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-10-30 How the boss track is tuned: welcome boss, tool by card strength, a 60% first-weekend aim
+- 2026-10-30 The boss track is tuned against a roster profile the valley will supply (amended)
 - 2026-10-30 The combat lab runs on every core, with a speed budget
 - 2026-10-29 The lab's raid roster levels follow Boss Rank
 - 2026-10-29 Measure HP removed; rule cards ask before they require
@@ -174,7 +176,8 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [raids.md](raids.md): Raid schedule, parties and joining, bosses and the raid curve, the live finale, raid board and summaries, raid Discord posts.
 
-- 2026-10-30 A failed raid boss returns next week; raids measure HP removed \[Misa\]
+- 2026-10-30 Festival weeks pause the boss track; no rank ease \[Misa\]
+- 2026-10-30 A failed raid boss returns next week; raids measure HP removed \[Misa\] (amended)
 - 2026-10-26 Raid results show real damage and a separate score
 - 2026-10-26 Raids: join until the finale; new servers start at Rank 1
 - 2026-10-26 The raid board is live over the sockets
