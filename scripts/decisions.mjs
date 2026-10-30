@@ -349,22 +349,74 @@ function gitShow(root, ref) {
   }
 }
 
-/** Where the legacy entries come from: { text, label }. */
+const MARKER_LINE = /^(<{7}|\|{7}|>{7})( .*)?$|^={7}$/;
+const STUB_FIRST_LINE = STUB.split('\n')[0];
+
+/** The branch's own last old-format version of the file: { text, label }, or null if none. */
+function findBranchVersion(root) {
+  let shas;
+  try {
+    shas = execFileSync(
+      'git',
+      ['rev-list', '--first-parent', '--max-count=1000', 'HEAD', '--', LEGACY_FILE],
+      { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+    )
+      .split('\n')
+      .filter(Boolean);
+  } catch {
+    return null; // Not a git repository, or no commits yet.
+  }
+  for (const sha of shas) {
+    let text;
+    try {
+      text = gitShow(root, sha);
+    } catch {
+      continue; // The file does not exist in this commit.
+    }
+    if (text.startsWith(STUB_FIRST_LINE)) continue;
+    const subject = execFileSync('git', ['log', '-1', '--format=%h %s', sha], {
+      cwd: root,
+      encoding: 'utf8',
+    }).trim();
+    return { text, label: `commit ${subject}` };
+  }
+  return null;
+}
+
+/**
+ * Where the legacy entries come from: { entries, labels }. With --from, one file or git ref.
+ * Without: the branch's own last old-format commit (reliable, unlike a merged working-tree
+ * file) plus entries that exist only in the working-tree file (appended after the merge).
+ */
 function readMigrationSource(ctx, from) {
   if (from) {
     const path = resolve(ctx.cwd, from);
     if (existsSync(path) && statSync(path).isFile()) {
-      return { text: readText(path), label: `file ${from}` };
+      return { entries: parseLegacy(readText(path)), labels: [`file ${from}`] };
     }
-    return { text: gitShow(ctx.root, from), label: `git ref ${from}` };
+    return { entries: parseLegacy(gitShow(ctx.root, from)), labels: [`git ref ${from}`] };
+  }
+  const entries = [];
+  const labels = [];
+  const primary = findBranchVersion(ctx.root);
+  if (primary) {
+    entries.push(...parseLegacy(primary.text));
+    labels.push(primary.label);
   }
   const path = join(ctx.root, LEGACY_FILE);
-  const text = existsSync(path) ? readText(path) : null;
-  if (text !== null && !/^<{7}/m.test(text)) return { text, label: `working tree ${LEGACY_FILE}` };
-  return {
-    text: gitShow(ctx.root, 'HEAD'),
-    label: `git HEAD (the working-tree file is ${text === null ? 'missing' : 'in conflict'})`,
-  };
+  if (existsSync(path)) {
+    const clean = readText(path)
+      .split('\n')
+      .filter((l) => !MARKER_LINE.test(l))
+      .join('\n');
+    const have = new Set(entries.map((e) => e.heading));
+    const extra = parseLegacy(clean).filter((e) => !have.has(e.heading));
+    if (extra.length) {
+      entries.push(...extra);
+      labels.push(`working tree ${LEGACY_FILE} (${extra.length} entries not in the commit)`);
+    }
+  }
+  return { entries, labels };
 }
 
 function readAssignments(ctx, args) {
@@ -435,9 +487,10 @@ function classify(source, legacy, state) {
 const bodyHashOf = (entry) => bodyHash(entry.body);
 
 function cmdMigrate(ctx, args) {
-  const { text, label } = readMigrationSource(ctx, args.flags.from);
-  ctx.out(`Reading old decisions from ${label}.`);
-  const source = parseLegacy(text);
+  const { entries: source, labels } = readMigrationSource(ctx, args.flags.from);
+  ctx.out(
+    `Reading old decisions from ${labels.join(' and ') || 'nothing (no old version found)'}.`,
+  );
   const legacy = readLegacyJson(ctx.root);
   const state = loadState(ctx.root);
   assignIds(state);

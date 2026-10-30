@@ -282,7 +282,7 @@ export function renderReadme(sections) {
     // no links or ids (\`pnpm decisions show "<title>"\` prints an entry with both).
     const bullets = s.current.map((e) => {
       const amended = s.infoOf(e).amended;
-      const tail = amended.length ? ` (amended by ${listOf(amended)})` : '';
+      const tail = amended.length ? ' (amended)' : '';
       return `- ${e.date} ${plainTitle(e.title)}${tail}`;
     });
     if (bullets.length) blocks.push(bullets.join('\n'));

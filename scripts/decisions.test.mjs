@@ -224,7 +224,7 @@ ID: \`2026-10-20-new-rule\` · Amends: \`2026-10-05-ancient\`
     assert.doesNotMatch(ui, /# Superseded/);
     const readme = read(root, 'docs/design/decisions/README.md');
     assert.match(readme, /Superseded: 1 entry \(see the topic file\)\./);
-    assert.match(readme, /^- 2026-10-20 Newer rule \(amended by `2026-10-18-note`\)$/m);
+    assert.match(readme, /^- 2026-10-20 Newer rule \(amended\)$/m);
     assert.doesNotMatch(readme, /Old rule/);
     // The separator is regenerated, never read as body text.
     assert.equal(cli(root, 'fix').out, '');
@@ -474,25 +474,87 @@ describe('migrate', () => {
     assert.equal(read(root, 'docs/design/decisions.md'), STUB);
   });
 
-  test('a source with conflict markers falls back to git HEAD', () => {
+  const commit = (root, msg) =>
+    git(root, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', msg);
+
+  test('merging the split into a branch that edited the old file: migrate reads the branch commit', () => {
     const root = makeRoot({ legacy: LEGACY });
-    migrateAll(root);
-    // The branch's own committed old file, plus a new entry; the working tree is mid-merge.
-    const committed = `${LEGACY}\n## 2026-10-21: Committed on the branch\n\nb.\n`;
-    write(root, 'docs/design/decisions.md', committed);
-    git(root, 'init', '-q');
+    git(root, 'init', '-q', '-b', 'main');
     git(root, 'add', 'docs/design/decisions.md');
-    git(root, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'branch');
+    commit(root, 'old format');
+    // The branch edits one body and appends one entry.
+    git(root, 'checkout', '-q', '-b', 'feature');
     write(
       root,
       'docs/design/decisions.md',
-      `<<<<<<< HEAD\n${committed}=======\n${STUB}>>>>>>> origin/main\n`,
+      `${LEGACY.replace('**Decision.** One.', '**Decision.** One, edited on the branch.')}\n## 2026-10-25: Branch entry\n\nFrom the branch.\n`,
+    );
+    git(root, 'add', 'docs/design/decisions.md');
+    commit(root, 'branch edits');
+    // Main does the split.
+    git(root, 'checkout', '-q', 'main');
+    assert.equal(migrateAll(root).code, 0);
+    rmSync(join(root, 'assign.json'));
+    git(root, 'add', '-A');
+    commit(root, 'split');
+    // The merge may or may not conflict (git can merge the stub and old file without a conflict);
+    // either way the working-tree file is unreliable and migrate must use the branch's commit.
+    git(root, 'checkout', '-q', 'feature');
+    spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', 'merge', '--no-edit', 'main'], {
+      cwd: root,
+    });
+
+    const ask = cli(root, 'migrate');
+    assert.equal(ask.code, 1, ask.out + ask.err);
+    assert.match(ask.out, /Reading old decisions from commit [0-9a-f]+ /);
+    assert.match(ask.err, /1 new entries need a topic/);
+    assert.match(ask.err, /1\. 2026-10-25: Branch entry/);
+    assert.doesNotMatch(ask.err, /2\. /);
+
+    const done = cli(root, 'migrate', '--assign', '1=ui');
+    assert.equal(done.code, 0, done.err);
+    assert.match(done.out, /1 new, 1 updated/);
+    assert.match(read(root, 'docs/design/decisions/ui.md'), /From the branch\./);
+    assert.match(read(root, 'docs/design/decisions/gear.md'), /One, edited on the branch\./);
+    assert.equal(read(root, 'docs/design/decisions.md'), STUB);
+    assert.equal(cli(root, 'check').code, 0);
+
+    const again = cli(root, 'migrate');
+    assert.equal(again.code, 0, again.err);
+    assert.match(again.out, /0 new, 0 updated/);
+  });
+
+  test('an entry appended to the stub after migrating is picked up as new', () => {
+    const root = makeRoot({ legacy: LEGACY });
+    git(root, 'init', '-q', '-b', 'main');
+    git(root, 'add', 'docs/design/decisions.md');
+    commit(root, 'old format');
+    migrateAll(root);
+    assert.match(cli(root, 'migrate').out, /0 new, 0 updated, 4 already migrated/);
+    write(root, 'docs/design/decisions.md', `${STUB}\n## 2026-10-26: Late entry\n\nLate.\n`);
+    const ask = cli(root, 'migrate');
+    assert.equal(ask.code, 1);
+    assert.match(ask.err, /1\. 2026-10-26: Late entry/);
+    const done = cli(root, 'migrate', '--assign', '1=gear');
+    assert.equal(done.code, 0, done.err);
+    assert.match(read(root, 'docs/design/decisions/gear.md'), /Late\./);
+    assert.equal(read(root, 'docs/design/decisions.md'), STUB);
+  });
+
+  test('conflict marker lines in the working tree are ignored', () => {
+    const root = makeRoot({ legacy: LEGACY });
+    migrateAll(root);
+    write(
+      root,
+      'docs/design/decisions.md',
+      `<<<<<<< HEAD\n${STUB}=======\n## 2026-10-27: Marked\n\nBody.\n>>>>>>> branch\n`,
     );
     const r = cli(root, 'migrate', '--assign', '1=ui');
     assert.equal(r.code, 0, r.err);
-    assert.match(r.out, /Reading old decisions from git HEAD/);
-    assert.match(read(root, 'docs/design/decisions/ui.md'), /Committed on the branch/);
-    assert.equal(read(root, 'docs/design/decisions.md'), STUB);
+    assert.match(
+      read(root, 'docs/design/decisions/ui.md'),
+      /## 2026-10-27: Marked\n\nID: [^\n]*\n\nBody\.\n/,
+    );
   });
 
   test('--from can name a git ref', () => {
