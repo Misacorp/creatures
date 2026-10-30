@@ -44,3 +44,13 @@ Each slot is tuned for the roster a dedicated server has in the week it usually 
 ## What survives the meeting
 
 The track, the bosses' content (what each one asks), the targets, the path and the tuner do not depend on the valley's numbers. Only the roster profile is replaced, and the bosses' HP, Attack and armour are re-tuned from it.
+
+## Touch points with the valley
+
+Raised by the valley session (2026-10-30) and kept open on both sides until the systems meet:
+
+- **The server's item level cap** was to rise a step with each raid win; on the track a win is a kill, so its slow rise with time carries the weight.
+- **Fight XP** is combat v2's to set. The valley's examples assume about 120 a day from the dungeon and 70 from the raid for a top creature.
+- **Gear slot unlock levels** (Scarf 7, Charm 13) are combat v2's call, still open; Misa may drop them.
+- **Gear lines** the valley is asking Misa about (an item level ladder of about 1 to 100, element pieces rolling only their own element's lines, 1, 3 or 5 lines by rarity) will change the stat sizes the lab's gear step measures.
+- **Levels count in the raid** (no level sync), which the tuning assumes.
