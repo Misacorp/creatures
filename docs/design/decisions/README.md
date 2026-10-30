@@ -121,7 +121,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 - 2026-10-11 Ladder feel accepted (Misa)
 - 2026-10-11 Progression, phase 2 (worker and client) (amended)
 - 2026-10-11 Progression, phase 1 (rules, content, simulator) (amended)
-- 2026-10-11 Progression decisions (Misa)
+- 2026-10-11 Progression decisions (Misa) (amended)
 - 2026-10-10 M2 collection on the server (implementation choices) (amended)
 
 ## Combat engine and balance
@@ -131,7 +131,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 - 2026-10-30 The combat lab runs on every core, with a speed budget
 - 2026-10-29 The lab's raid roster levels follow Boss Rank
 - 2026-10-29 Measure HP removed; rule cards ask before they require
-- 2026-10-29 Raid tuning aims at success tiers and robustness
+- 2026-10-29 Raid tuning aims at success tiers and robustness (amended)
 - 2026-10-29 Opt-in harder raids belong to the endgame
 - 2026-10-29 Combat v2 balance pass against the real bosses
 - 2026-10-29 Raid losses: mixed servers should feel them; measure HP left
@@ -173,6 +173,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [raids.md](raids.md): Raid schedule, parties and joining, bosses and the raid curve, the live finale, raid board and summaries, raid Discord posts.
 
+- 2026-10-30 A failed raid boss returns next week; raids measure HP removed \[Misa\]
 - 2026-10-26 Raid results show real damage and a separate score
 - 2026-10-26 Raids: join until the finale; new servers start at Rank 1
 - 2026-10-26 The raid board is live over the sockets

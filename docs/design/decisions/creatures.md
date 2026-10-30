@@ -325,7 +325,7 @@ ID: `2026-10-11-progression-phase-1-rules-content-simulator` · Status: current,
 
 ## 2026-10-11: Progression decisions (Misa)
 
-ID: `2026-10-11-progression-decisions` · Status: current
+ID: `2026-10-11-progression-decisions` · Status: current, amended by `2026-10-30-a-failed-raid-boss-returns-next`
 
 On `docs/design/progression.md`:
 
