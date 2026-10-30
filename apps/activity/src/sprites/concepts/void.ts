@@ -1,6 +1,7 @@
 /**
  * Void, concept art (not in the game; no names or stats yet). Void is the dark between the stars,
- * drawn so it never melts into the night-sky UI: a pale moon-lilac body, and somewhere on it a
+ * drawn so it never melts into the night-sky UI: a dusk-purple body (Misa's pick, 2026-10-30) with a
+ * light lilac rim and belly, and somewhere on it a
  * **window**, a patch of starry night with one warm star, as if the creature had a piece of the sky
  * inside. Keys: `k` ink, `e` eye highlight, `q` blush, `b` base, `h` highlight, `s` shade, `p` belly,
  * `w` the window, `t` a star, `g` the glint (one cool accent). The look is in
@@ -12,15 +13,16 @@ const VOID = {
   k: '#0d0a1a',
   e: '#fbf8ec',
   q: '#ff8fab',
-  b: '#c4bde3',
-  h: '#ece8fb',
-  s: '#8a82b4',
-  w: '#1c1638',
-  t: '#ffe9a3',
+  b: '#6f62b8',
+  h: '#9d92dc',
+  s: '#463c86',
+  p: '#a99fe0',
+  w: '#100c22',
+  t: '#fff1b8',
 } as const;
 
-/** The other colour direction: a dusk-violet body (darker, closer to Spark's violet). */
-const DUSK_BODY = { b: '#6f62b8', h: '#9d92dc', s: '#463c86' } as const;
+/** The first colour direction, for comparison: a pale moon-lilac body. */
+const PALE = { b: '#c4bde3', h: '#ece8fb', s: '#8a82b4', p: '#ddd7f2' } as const;
 
 export const VOID_CONCEPTS: ConceptSet = {
   id: 'void',
@@ -33,13 +35,13 @@ export const VOID_CONCEPTS: ConceptSet = {
       note: 'An eclipse hood: a wide dark crescent of night sky over a sturdy body, like a shield.',
       sprite: {
         mirror: true,
-        palette: { ...VOID, p: '#ddd7f2' },
+        palette: { ...VOID, g: '#9fe8ff' },
         rows: [
           '..kkkkkk',
           '.khhhhhh',
-          'khwwwwww',
+          'khwwwwgw',
           'khwtwwww',
-          'kbwwkkkk',
+          'khwwkkkk',
           'kbkkhhhh',
           'kbkhbbbb',
           'kbkbbbbb',
@@ -53,23 +55,23 @@ export const VOID_CONCEPTS: ConceptSet = {
           '..kkkkkk',
         ],
       },
-      alts: { 'dusk body': DUSK_BODY },
+      alts: { 'pale (first)': PALE },
     },
     'void-setter': {
       kind: 'creature',
       role: 'setter',
       note: 'A floating wisp with a feeler that ends in a star: it points at the boss and marks it.',
       sprite: {
-        palette: { ...VOID, p: '#ddd7f2', g: '#9fe8ff' },
+        palette: { ...VOID, g: '#9fe8ff' },
         rows: [
           '............t...',
           '...........tgt..',
           '............t...',
           '.....kkkkkk.g...',
-          '...kkhhhhhbkg...',
+          '...kkhhhhhhkg...',
           '..khhhwwwhbbkk..',
-          '.khbbwwtwwbbbbk.',
-          '.khbbbwwwbbbbbk.',
+          '.khbhwwtwwhbbbk.',
+          '.khbbhwwwhbbbbk.',
           '.kbbekbbbbkebbk.',
           '.kbbkkbbbbkkbbk.',
           '.kbqbbbkkbbbqbk.',
@@ -80,7 +82,7 @@ export const VOID_CONCEPTS: ConceptSet = {
           '.......kkkk.....',
         ],
       },
-      alts: { 'dusk body': DUSK_BODY },
+      alts: { 'pale (first)': PALE },
     },
     'void-support': {
       kind: 'creature',
@@ -88,16 +90,16 @@ export const VOID_CONCEPTS: ConceptSet = {
       note: 'A small planet with a ring for a halo and two moons in orbit: it lifts its neighbours.',
       sprite: {
         mirror: true,
-        palette: { ...VOID, p: '#ddd7f2', g: '#9fe8ff' },
+        palette: { ...VOID, g: '#9fe8ff' },
         rows: [
           '........',
           '...ggggg',
           'ttg.....',
           'tt.g.kkk',
           '...kkhhh',
-          '..khhbbw',
-          '.khbbbwt',
-          '.kbbbbbw',
+          '..khhbhw',
+          '.khbbhwt',
+          '.kbbbbhw',
           '.kbbekbb',
           '.kbbkkbb',
           '.kbqbbbk',
@@ -108,7 +110,7 @@ export const VOID_CONCEPTS: ConceptSet = {
           '.....kkk',
         ],
       },
-      alts: { 'dusk body': DUSK_BODY },
+      alts: { 'pale (first)': PALE },
     },
     'void-payoff': {
       kind: 'creature',
@@ -116,7 +118,7 @@ export const VOID_CONCEPTS: ConceptSet = {
       note: 'A lynx of the night: tall ears that are windows full of stars, a star-tipped crest.',
       sprite: {
         mirror: true,
-        palette: { ...VOID, p: '#ddd7f2' },
+        palette: { ...VOID },
         rows: [
           '.k......',
           '.kk.....',
@@ -136,7 +138,7 @@ export const VOID_CONCEPTS: ConceptSet = {
           '....kkkk',
         ],
       },
-      alts: { 'dusk body': DUSK_BODY },
+      alts: { 'pale (first)': PALE },
     },
   },
 };

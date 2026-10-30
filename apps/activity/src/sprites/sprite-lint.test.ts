@@ -80,7 +80,7 @@ describe('lintSprite', () => {
     expect(contrast('#ffffff', '#000000')).toBeCloseTo(21);
     expect(hsl('#ff0000').hue).toBe(0);
     expect(inFamily('#ef6a3a', ELEMENT_FAMILIES.ember ?? { hues: [], min: 0 })).toBe(true);
-    expect(inFamily('#c9c3e6', ELEMENT_FAMILIES.void ?? { hues: [], min: 0 })).toBe(true);
+    expect(inFamily('#6f62b8', ELEMENT_FAMILIES.void ?? { hues: [], min: 0 })).toBe(true);
     expect(inFamily('#9a9a9a', ELEMENT_FAMILIES.ember ?? { hues: [], min: 0 })).toBe(false);
   });
 });

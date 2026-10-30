@@ -56,9 +56,9 @@ export const ELEMENT_FAMILIES: Readonly<Record<string, ColourFamily>> = {
     min: 2,
   },
   mire: { hues: [[20, 50]], minSat: 0.5, min: 1 },
-  // Concept, not shipped (docs/compendium/world.md, "Void"): pale moon-lilac greys, low saturation
-  // and light, plus the dark starry window (checked by `voidWindow` below).
-  void: { hues: [[230, 300]], maxSat: 0.3, minLight: 0.55, min: 2 },
+  // Concept, not shipped (docs/compendium/world.md, "Void"): dusk purples, muted (less saturated
+  // than Spark's storm violet), plus the dark starry window.
+  void: { hues: [[240, 270]], minSat: 0.25, maxSat: 0.55, minLight: 0.3, min: 2 },
 };
 
 export interface Finding {
