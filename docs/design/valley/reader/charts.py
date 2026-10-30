@@ -108,17 +108,24 @@ def charts(root):
     # Forge time per kind of player.
     names = {'daily': 'Daily', 'active': '3 a day', 'every-other-day': 'Every 2 days', 'weekend-off': 'Weekend off', 'weekly': 'Weekly', 'returner': 'Returner'}
     fr = {r['profile']: r['share'] for r in d['forge']}
-    rows = [(names[k], [fr[k]['work'], fr[k]['shard'], fr[k]['scrap'] + fr[k]['floor'] + fr[k]['nothing']]) for k in names if k in fr]
-    parts.append(_split_bars('What the Forge does all day', 'Share of anvil time over 24 weeks. Scrap never runs out; the wait is for a shard of the right element, though shards pile up overall.',
-                             rows, ['Making pieces', 'Waiting for a shard', 'Other (full floor, nothing to make)']))
+    rows = [(names[k], [fr[k]['work'], fr[k]['shard'], max(0.0, 1 - fr[k]['work'] - fr[k]['shard'])]) for k in names if k in fr]
+    parts.append(_split_bars('What the Forge does all day', 'Share of anvil time over 24 weeks, with the shard exchange. Scrap never runs out; the wait is for a shard of the right element.',
+                             rows, ['Making pieces', 'Waiting for a shard', 'Other (tinkering, a full floor)']))
 
-    # Roster against the species available.
-    if 'available' in g['daily']:
-        ser = [('Species in the game', [p if isinstance(p, (int, float)) else p['median'] for p in g['daily']['available']]),
-               ('Daily: owned', [p['median'] for p in g['daily']['species']]),
-               ('Weekly: owned', [p['median'] for p in g['weekly']['species']])]
-        parts.append(_line_chart('How the collection grows', 'Kinds of creature owned, against the species in the game (34, then 12 more every 4 weeks: an example).',
-                                 ser, 120, [0, 40, 80, 120], short=['Species', 'Daily', 'Weekly']))
+    # Kinds owned by rarity (a daily player), and what a server of 8 owns between its players.
+    br = g['daily'].get('byRarity')
+    if br:
+        ser = [(f'{name} owned', [p['median'] for p in br['owned'][k]]) for k, name in enumerate(['Commons', 'Rares', 'Epics'])]
+        ser += [('Commons in the game', [p['median'] for p in br['available'][0]])]
+        parts.append(_line_chart('How the collection grows', "A daily player's kinds by rarity, against the commons in the game (new species every 4 weeks: an example). Commons come fast, rarer ones slowly.",
+                                 ser, 60, [0, 20, 40, 60], short=['Commons', 'Rares', 'Epics', 'In game']))
+    cov_path = os.path.join(root, 'economy', 'server-coverage.json')
+    if os.path.exists(cov_path):
+        cov = json.load(open(cov_path)).get('mixed8', [])
+        if cov:
+            ser = [(name, [100 * w[key] for w in cov]) for name, key in (('Commons', 'common'), ('Rares', 'rare'), ('Epics', 'epic'))]
+            parts.append(_line_chart('What a server of 8 can pool for the raid', 'Share of each rarity\'s species in the game that at least one player owns.',
+                                     ser, 100, [0, 25, 50, 75, 100], lambda v: f'{v:g}%', short=['Commons', 'Rares', 'Epics']))
 
     # 3. Place level-ups on a server of 8 against the plan.
     s8 = next(s for s in d['servers'] if s['id'] == 'mixed8')
@@ -127,10 +134,13 @@ def charts(root):
     parts.append(_line_chart('How fast the valley builds', 'Level-ups across the five places on a server of 8. The plan said about 5 or 6 by week 12; every place tops out at level 5 (20 level-ups).',
                              [('Server of 8', ups)], 20, [0, 5, 10, 15, 20], ref=('The plan', ref)))
 
-    # 4. The Forge's fire.
+    # 4. The Forge's fire, with the slow floor and without it.
     fd = d['fireByDial']
-    ref = [10 + 3.75 * i for i in range(len(fd['all']['fire']))]
-    parts.append(_line_chart('The Forge\'s fire (the item level cap)', 'On a server of 8, by how many raid bosses it kills. The gear ladder ends at about 100; the time floor (+3.75 a week, tuned) is dashed.',
-                             [('All bosses', fd['all']['fire']), ('Half', fd['half']['fire']), ('None', fd['none']['fire'])],
-                             180, [0, 50, 100, 150], ref=('The time floor', ref)))
+    nf = d.get('fireNoFloor', {})
+    ser = [('All bosses', fd['all']['fire']), ('No bosses', fd['none']['fire'])]
+    if 'none' in nf:
+        ser.append(('No bosses, no floor', nf['none']['fire']))
+    ref = [10 + 1.875 * i for i in range(len(fd['all']['fire']))]
+    parts.append(_line_chart('The Forge\'s fire (the item level cap)', 'On a server of 8. Building and boss kills drive it; the slow time floor (dashed) only matters to a quiet server late in the season.',
+                             ser, 100, [0, 25, 50, 75, 100], ref=('The time floor', ref), short=['All', 'None', 'No floor']))
     return ''.join(parts)

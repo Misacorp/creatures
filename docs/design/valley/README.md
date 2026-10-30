@@ -46,7 +46,7 @@ Today's game against the vision, system by system (keep, rework or scrap): [`scr
 
 - **Phase 1** (the base systems on paper): every system is drafted in full, reviewed by the panel (`reviews/`) and decided by Misa in 13 rounds of questions (`questions.md`, 35 answers), except the School, which waits on combat v2's talents. Nearly every number is still an example.
 - **Phase 2 started** (Q32): the resource map (`economy/resources.md`) and the economy lab (`economy/model.md`, `packages/econ`), being built.
-- **Waiting on Misa:** nothing. Round 15 decided: building drives the item level cap (Q37), creatures found by rarity (Q38), ribbon gates dropped and trials kept as honours (Q39, `systems/trials.md`); the lab is modelling and tuning them. Queued: **school** (keep, fold or scrap) once combat v2 says what a talent is.
+- **Waiting on Misa:** round 16, Q40 (drop the time floor) and Q41 (how widely Bronze is earned), asked with the round 15 lab report. Queued: **school** (keep, fold or scrap) once combat v2 says what a talent is.
 - **How to continue:** read the last entry of `log.md`, then `questions.md`'s "Waiting on Misa"; run the `valley-round` skill to record answers and ask the next round.
 - **Seams with combat v2** (`combat-v2-track`): the roster profile the economy lab must output, the fixed boss track, gear's stats and lines (`roadmap.md`). The combat session can message this one.
 

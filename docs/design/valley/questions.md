@@ -6,7 +6,28 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-Nothing waiting.
+### Q40. Drop the time floor under the item level cap?
+
+Status: asked, round 16 (2026-10-30). Follow-up to Q37 ("honestly I'm skeptical of the clock"). Touches: `commons.md` V-COM-13.
+
+**Why it matters.** The lab now compares the slow floor with no floor on the same servers. While a server builds, the floor changes nothing: building and boss kills carry the fire (week 12: 45 with the floor, 44 without, for a server that kills its bosses). It only matters to a server that never kills a boss: at week 24 its fire is 53 with the floor and 40 without, and it still rises slowly from building either way.
+
+- **A. Keep the slow floor.** A stuck server's gear keeps improving with time. Example: a server stuck on one boss for two months still reaches item level 53.
+- **B. Drop it.** Only building, collections and boss kills warm the fire. Example: the same stuck server reaches 40, and its fire rises only when it builds or wins. One system fewer to explain.
+
+**Lead's pick: B.** The numbers say the clock does almost nothing for an active server, a stuck server still moves through building, and you doubted it. If a quiet server feels stuck in the live game, a floor can come back later as a catch-up for servers far behind.
+
+### Q41. Should most creatures earn Bronze, or only the ones that fight?
+
+Status: asked, round 16 (2026-10-30). Follow-up to Q39 ("make the bronze ribbon touch on many game systems but still be quite easy to attain"). Touches: `trials.md` V-TRIAL-2.
+
+**Why it matters.** Bronze needs a dungeon clear, and a dungeon team is three creatures a day. In the lab a daily player who never changes the team has only about 1 creature in 20 with Bronze at week 24: the same three fight every day. A player who rotates the team every day gets Bronze on about half the roster, but that is a daily chore.
+
+- **A. Keep it.** Bronze goes to creatures you take to the dungeon; rotate to earn more. Example: Sanni's best three have Bronze; the rest don't.
+- **B. A learner's place in the dungeon.** Each run takes one extra creature along that doesn't fight and ticks its dungeon box. The valley suggests one (the one closest to Bronze), so it is one tap or none. Example: "Sprout came along to watch the Cave run, and earned its Bronze."
+- **C. Bronze's combat box takes any fight or a week at posts.** Example: Sprout earns Bronze after a week at the Forge.
+
+**Lead's pick: B.** It keeps your dungeon clear in Bronze and makes it easy, one creature a day without changing the team, and it gives the dungeon a small daily moment. Silver (the Undercroft) and Gold (a raid) stay for fighters.
 
 ## Queue
 
