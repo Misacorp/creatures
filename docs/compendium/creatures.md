@@ -1186,6 +1186,68 @@ Their rule: the Festival Grounds is the Festival week's place, and the Festival 
 
 ---
 
+## Void concepts, stage 2 (not shipped)
+
+**Concept, not shipped (2026-10-31).** Evolved forms of the four Void concept creatures (`void-guard`, `void-setter`, `void-support`, `void-payoff`; drawn in `apps/activity/src/sprites/concepts/void.ts`, see `world.md`, "Void"). There are no names, stats or abilities yet, and the Void element is not in the content; the working codes below are the sprite ids. Each form keeps its stage 1 palette (dusk purple `#6f62b8`, lilac `#9d92dc`, shade `#463c86`, belly `#a99fe0`, window `#100c22`, warm star `#fff1b8`, cool glint `#9fe8ff`). The shiny of the whole line is one shift to sea-teal (`#3f9a94`, `#7fd0c4`, `#236a6a`, `#a6e6d8`, rose star, peach glint), the same for both stages. The look blocks use the visual brief fields of `docs/design/creatures.md`.
+
+### void-guard-2 (stage 2 of void-guard, Guard)
+
+**Look** (concept):
+
+- Silhouette: a broad, hooded body under a wide dark crescent, now with horned corners and raised shoulder plates.
+- Size: large.
+- Palette: Dusk Purple `#6f62b8`, Lilac Rim `#9d92dc`, Deep Shade `#463c86`, Night Window `#100c22`, Warm Star `#fff1b8`, Cool Glint `#9fe8ff`.
+- Features: the eclipse hood with a small horn at each top corner; the hood's night window holds two warm stars and a cyan corona on its lower edge; shoulder plates in lilac with a cyan glint; a lilac belly; the shared chibi face.
+- Pose: planted and square, hood up.
+- Always: the eclipse hood with its night window; a light edge inside the ink on every dark area.
+- Never: a dark patch under the face (it reads as a mouth); a hood without a lilac rim.
+
+**From stage 1** (concept): keeps the eclipse hood, the head, the face and the colours. Changes: horned hood corners, a second star and a corona in the window, raised shoulder plates with a glint.
+
+### void-setter-2 (stage 2 of void-setter, Setter)
+
+**Look** (concept):
+
+- Silhouette: a floating round wisp with a tall star-tipped feeler, a small second feeler, side wisps and a ragged trailing tail.
+- Size: medium.
+- Palette: Dusk Purple `#6f62b8`, Lilac Rim `#9d92dc`, Deep Shade `#463c86`, Night Window `#100c22`, Warm Star `#fff1b8`, Cool Glint `#9fe8ff`.
+- Features: the star feeler, a little bigger, with sparkles; a short second feeler on the left; a wider third-eye window with two warm stars; small side wisps at the cheeks; a tail that trails into three points.
+- Pose: floating, feeler raised toward the boss.
+- Always: the star-tipped feeler; the third-eye window above the eyes.
+- Never: a window under the face; feet or legs.
+
+**From stage 1** (concept): keeps the round head, the feeler that ends in a star, the third-eye window, the face and the colours. Changes: a second, smaller feeler, a wider window with a second star, side wisps, a trailing tail.
+
+### void-support-2 (stage 2 of void-support, Support)
+
+**Look** (concept):
+
+- Silhouette: a round little planet under a double halo, with bigger moons at its shoulders and a ring round its belly.
+- Size: large.
+- Palette: Dusk Purple `#6f62b8`, Lilac Rim `#9d92dc`, Deep Shade `#463c86`, Night Window `#100c22`, Warm Star `#fff1b8`, Cool Glint `#9fe8ff`.
+- Features: two cyan halo lines over the head; larger warm moons on each side plus a small third moon; the small night window on the forehead; a cyan ring across the lower body; lilac belly.
+- Pose: hovering calmly, moons in orbit.
+- Always: the ring and the moons; the halo above the head.
+- Never: a dark window under the face; a ring in front of the face.
+
+**From stage 1** (concept): keeps the ring halo, the moons, the window, the face and the colours. Changes: a double halo, bigger moons and a third one, the ring wrapped round the belly.
+
+### void-payoff-2 (stage 2 of void-payoff, Payoff)
+
+**Look** (concept):
+
+- Silhouette: a lynx of the night with wide pointed ears, a star-shaped crest between them and a ruffed cheek.
+- Size: large.
+- Palette: Dusk Purple `#6f62b8`, Lilac Rim `#9d92dc`, Deep Shade `#463c86`, Night Window `#100c22`, Warm Star `#fff1b8`.
+- Features: tall ears with starry windows, now wider and holding two stars; a star-shaped crest in warm yellow between the ears; lilac cheek ruff on both sides; a lilac belly; the shared chibi face.
+- Pose: sitting tall, ears forward.
+- Always: starry ear windows with a lilac edge; the star crest.
+- Never: a dark patch under the face; smooth round ears.
+
+**From stage 1** (concept): keeps the lynx head and ears, the starry windows, the face and the colours. Changes: wider ear windows with a second star, a star-shaped crest instead of one star, a cheek ruff, a wider chest.
+
+---
+
 ## Guest creatures (roster only)
 
 `guests.json` lists three guests. The file gives only a name and a species; no description, look or role is shipped. `(content: guests.json)`

@@ -8,7 +8,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 
 | Set | Status | Pieces | Requested |
 | --- | --- | --- | --- |
-| [Void, four roles](#void) | liked | 4 | 2026-10-30: imagine the Void element on creatures; four creatures, one per role, no names or stats. |
+| [Void, four roles](#void) | liked | 8 | 2026-10-30: imagine the Void element on creatures; four creatures, one per role, no names or stats. |
 
 <a id="void"></a>
 
@@ -20,7 +20,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Requested:** 2026-10-30: imagine the Void element on creatures; four creatures, one per role, no names or stats.
 - **Element:** void
 - **Source:** `apps/activity/src/sprites/concepts/void.ts` (draw it with `pnpm art void`)
-- **Sheet of:** `85e33ea434d9`
+- **Sheet of:** `bf4737245b93`
 - Misa chose the dark purple body over the pale first draft and said they look pretty good (2026-10-30).
 - Needs before use: the Void element in the content (element chart, marks, a place), names, stats, lore, shiny palettes.
 - The payoff's ear windows are the faintest detail; look again when it is promoted.
@@ -31,3 +31,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `void-setter` | creature | setter | liked | A floating wisp with a feeler that ends in a star: it points at the boss and marks it. |
 | `void-support` | creature | support | liked | A small planet with a ring for a halo and two moons in orbit: it lifts its neighbours. |
 | `void-payoff` | creature | payoff | liked | A lynx of the night: tall ears that are windows full of stars, a star-tipped crest. |
+| `void-guard-2` | creature | guard | draft | The Eclipse Hood grown: horned corners, a second star and a cyan corona in the window, raised shoulder plates with a glint. |
+| `void-setter-2` | creature | setter | draft | The star-feeler wisp grown: a second small feeler, a wider third-eye window with two stars, side wisps and a trailing tail. |
+| `void-support-2` | creature | support | draft | The ringed planet grown: a double halo, bigger moons, a third moon and the ring wrapped round its belly. |
+| `void-payoff-2` | creature | payoff | draft | The night lynx grown: wider ear windows with two stars, a star-shaped crest and a cheek ruff. |
