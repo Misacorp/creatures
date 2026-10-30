@@ -73,6 +73,8 @@ export const blankWeek = (week: number): WeekRecord => ({
   piecesMade: 0,
   piecesWorn: 0,
   piecesDismantled: 0,
+  exchanges: 0,
+  exchangeCrits: 0,
   bag: 0,
   bagNever: 0,
   avgGear: 0,
@@ -162,7 +164,7 @@ export function addCreature(p: Player, species: number): Creature {
     ceiling: 1,
     capXp: 0,
     catchMult: 1,
-    catchUntil: 0,
+    catchTarget: 0,
     gear: new Array<number>(rules.forge.slotsPerCreature).fill(0),
   };
   refreshCeiling(rules, c);
@@ -226,6 +228,7 @@ export function createPlayer(
     giftBudget: new Array<number>(N_RES).fill(0),
     hoardDone: false,
     forgeCursor: 0,
+    waitingShard: -1,
     raidThisWeek: false,
     blueprints: 1,
     pages: 0,
@@ -260,6 +263,8 @@ export function createServer(
     opensAt: 0,
     progress: 0,
     size: 0,
+    need: [0, 0, 0],
+    have: [0, 0, 0],
     cosmetic: 0,
     openedAt: 0,
   }));

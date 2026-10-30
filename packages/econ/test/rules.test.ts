@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import * as v from 'valibot';
 import { awayShare, catchUpMultiplier, hearthMultiplier, masteryBonus } from '../src/curves';
 import { PROFILES } from '../src/profiles';
-import { assumptionsFrom } from '../src/report';
+import { assumptionsFrom, tunedFrom } from '../src/report';
 import { RULES } from '../src/rules';
 import rulesSource from '../src/rules.ts?raw';
 import { ProfileSchema, RulesSchema } from '../src/schema';
@@ -89,10 +89,11 @@ describe('the away steps (V-POST-10, posts.md curve B and A)', () => {
 });
 
 describe('the other curves', () => {
-  it('catch-up: x2 at 6 or more levels below the target, fading to x1 at it', () => {
-    expect(catchUpMultiplier(RULES, 6)).toBe(2);
-    expect(catchUpMultiplier(RULES, 20)).toBe(2);
-    expect(catchUpMultiplier(RULES, 3)).toBe(1.5);
+  it('catch-up: the top multiplier at 6 or more levels below the target, fading to x1 at it', () => {
+    const top = RULES.bonfire.catchUp.maxMultiplier;
+    expect(catchUpMultiplier(RULES, 6)).toBe(top);
+    expect(catchUpMultiplier(RULES, 20)).toBe(top);
+    expect(catchUpMultiplier(RULES, 3)).toBe(1 + (top - 1) / 2);
     expect(catchUpMultiplier(RULES, 0)).toBe(1);
     expect(catchUpMultiplier(RULES, -4)).toBe(1);
   });
@@ -108,10 +109,20 @@ describe('the other curves', () => {
 
 describe('the assumptions list', () => {
   it('lists every ASSUMPTION marker of rules.ts', () => {
-    const markers = (rulesSource.match(/\/\/ ASSUMPTION:/g) ?? []).length;
+    const markers = (rulesSource.match(/\/\/ ASSUMPTION(?: \(Q[0-9]+\))?:/g) ?? []).length;
     const listed = assumptionsFrom(rulesSource);
     expect(markers).toBeGreaterThan(20);
     expect(listed).toHaveLength(markers);
     for (const a of listed) expect(a.text.length).toBeGreaterThan(10);
+  });
+});
+
+describe('the tuned values list', () => {
+  it('lists every TUNED marker of rules.ts and says what each value was', () => {
+    const markers = (rulesSource.match(/\/\/ TUNED [0-9-]+:/g) ?? []).length;
+    const listed = tunedFrom(rulesSource);
+    expect(markers).toBeGreaterThan(5);
+    expect(listed).toHaveLength(markers);
+    for (const t of listed) expect(t.text).toMatch(/was|were/);
   });
 });

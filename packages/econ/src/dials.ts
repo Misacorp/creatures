@@ -28,6 +28,14 @@ export const DIALS: readonly Dial[] = [
     step: 0.25,
   },
   {
+    id: 'firstProject',
+    label: "the first level's project (level 1 to 2, small on purpose: V-COM-15)",
+    paths: [['commons', 'levelFactor', '0']],
+    min: 0.25,
+    max: 2,
+    step: 0.25,
+  },
+  {
     id: 'scoutScrap',
     label: "scouts' scrap rate",
     paths: [['scouts', 'perHour', 'scrap']],
@@ -101,7 +109,89 @@ export const DIALS: readonly Dial[] = [
     id: 'allowance',
     label: 'the daily Acorn allowance',
     paths: [['acorns', 'allowancePerDay']],
+    min: 0.75,
+    max: 3,
+    step: 0.25,
+  },
+  {
+    id: 'catchUp',
+    label: "catch-up's top multiplier (x2 today)",
+    paths: [['bonfire', 'catchUp', 'maxMultiplier']],
+    min: 0.5,
+    max: 3,
+    step: 0.25,
+  },
+  {
+    id: 'pieceCost',
+    label: 'scrap a Forge piece takes',
+    paths: [['forge', 'scrap']],
+    integer: true,
+    min: 0.5,
+    max: 8,
+    step: 0.5,
+  },
+  {
+    id: 'ribbonCost',
+    label: 'scrap and shards of the two ribbons',
+    paths: [
+      ['xp', 'ribbons', '0', 'scrap'],
+      ['xp', 'ribbons', '0', 'shards'],
+      ['xp', 'ribbons', '1', 'scrap'],
+      ['xp', 'ribbons', '1', 'shards'],
+    ],
+    integer: true,
+    min: 0.5,
+    max: 2,
+    step: 0.5,
+  },
+  {
+    id: 'communal',
+    label: "a communal seat's output toward its project",
+    paths: [['commons', 'communalPerHour']],
     min: 0.25,
+    max: 8,
+    step: 0.25,
+  },
+  {
+    id: 'fireWarmth',
+    label: 'what each thing adds to the fire (place levels, collections, boss kills ...)',
+    paths: [
+      ['fire', 'warmth', 'placeLevel'],
+      ['fire', 'warmth', 'forgeLevel'],
+      ['fire', 'warmth', 'collection'],
+      ['fire', 'warmth', 'bossKill'],
+      ['fire', 'warmth', 'cosmetic'],
+    ],
+    min: 0.25,
+    max: 3,
+    step: 0.25,
+  },
+  {
+    id: 'fireFloor',
+    label: "the fire's rise a week with time",
+    paths: [['fire', 'floorPerWeek']],
+    min: 0,
+    max: 3,
+    step: 0.25,
+  },
+  {
+    id: 'evolveCost',
+    label: 'Essence an evolution costs',
+    paths: [['xp', 'evolveEssence']],
+    integer: true,
+    min: 0.5,
+    max: 4,
+    step: 0.5,
+  },
+  {
+    id: 'essenceIncome',
+    label: 'Essence from the raid and the dungeon',
+    paths: [
+      ['fights', 'raid', 'essenceKill'],
+      ['fights', 'raid', 'essencePhases'],
+      ['fights', 'dungeon', 'essence'],
+    ],
+    min: 0.5,
     max: 3,
     step: 0.25,
   },
@@ -137,10 +227,13 @@ function updateAt(tree: Tree, path: readonly string[], change: (old: unknown) =>
   const [head, ...rest] = path;
   if (head === undefined) return tree;
   const old = tree[head];
-  return {
-    ...tree,
-    [head]: rest.length === 0 ? change(old) : updateAt(old as Tree, rest, change),
-  };
+  const value = rest.length === 0 ? change(old) : updateAt(old as Tree, rest, change);
+  if (Array.isArray(tree)) {
+    const copy = [...(tree as unknown[])];
+    copy[Number(head)] = value;
+    return copy as unknown as Tree;
+  }
+  return { ...tree, [head]: value };
 }
 
 /** The rules with one dial multiplied by `m` (a copy; today's rules are never edited). */

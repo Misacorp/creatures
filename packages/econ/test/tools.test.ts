@@ -31,7 +31,7 @@ describe('the targets as data', () => {
       expect(t.scale).toBeGreaterThan(0);
       for (const id of t.needs) expect(scenarios.has(id)).toBe(true);
     }
-    expect(scenariosFor(TARGETS).sort()).toEqual(['mixed8', 'mixed8-opt']);
+    expect(scenariosFor(TARGETS).sort()).toEqual(['mixed8', 'mixed8-all', 'mixed8-opt']);
   });
 
   it('hold every threshold of goals.md in one file', () => {

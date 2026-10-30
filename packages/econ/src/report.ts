@@ -1,5 +1,6 @@
 import {
   LEDGER_PROFILES,
+  exchangeRowsOf,
   forgeOf,
   growthOf,
   ledgerOf,
@@ -10,6 +11,7 @@ import {
   targetsOf,
   variantsOf,
   type ForgeRow,
+  type ExchangeRow,
   type GrowthRow,
   type PriceRow,
   type ResourceLedger,
@@ -36,6 +38,8 @@ export interface ReportData {
   servers: ServerRow[];
   fireByDial: Record<string, ServerRow | null>;
   variants: VariantRow[];
+  /** A daily player's Forge by policy, with and without the shard exchange (weeks 2 to 12). */
+  exchangeByPolicy: ExchangeRow[];
   /** A daily player's roster by week at the default arrival rate and at the docs' 2% an hour. */
   rosterByRate: {
     week: number;
@@ -130,7 +134,7 @@ function journey(
       `Week ${week}: ${n((w) => w.size)} creatures, the best at level ${n((w) => levelOf(w, 1))} and the tenth at ${n((w) => levelOf(w, 10))}. ` +
       `${n((w) => w.scoutSeats)} scouts, ${n((w) => w.anvils)} anvils, ${n((w) => w.kit)} kit items. ` +
       `That week: ${n((w) => w.arrivals)} arrivals, ${n((w) => w.piecesMade)} pieces made, ${n((w) => w.gifts)} given to projects. ` +
-      `Holding ${n((w) => w.stock[0] ?? 0)} Acorns, ${n((w) => w.stock[1] ?? 0)} scrap and ${n((w) => w.stock[3] ?? 0, 1)} glimmer. ` +
+      `Holding ${n((w) => w.stock[0] ?? 0)} Acorns, ${n((w) => w.stock[1] ?? 0)} scrap and ${n((w) => w.stock[2] ?? 0)} shards. ` +
       `Valley places at ${places.join('/') || '-'} (hearth, forge, signpost, paddock, school).`
     );
   });
@@ -184,6 +188,7 @@ export function buildReportData(
       none: serverOf(results, 'mixed8-none'),
     })),
     variants: time('variants', () => variantsOf(results)),
+    exchangeByPolicy: time('exchange', () => exchangeRowsOf(results)),
     rosterByRate: Array.from({ length: 24 }, (_, i) => {
       const at = (id: string, pick: (w: PlayerRun['weeks'][number]) => number): number =>
         median(
@@ -223,20 +228,22 @@ const table = (
 const num = (x: number, digits = 0): string => String(round(x, digits));
 const at = <T>(list: readonly T[], week: number): T | undefined => list[week - 1];
 
-/** `// ASSUMPTION:` comments from `rules.ts`, each with the line of data it sits on (the report lists them all). */
-export function assumptionsFrom(source: string): { where: string; text: string }[] {
+/** The comments of `rules.ts` that start with a marker (`ASSUMPTION` or `TUNED 2026-10-30`), each with the line of data it sits on. */
+function markedComments(source: string, marker: RegExp): { where: string; text: string }[] {
   const lines = source.split('\n');
   const out: { where: string; text: string }[] = [];
+  const marked = /^\s*\/\/ (ASSUMPTION|TUNED [0-9-]+)(\s*\(Q[0-9]+\))?:/;
   for (let i = 0; i < lines.length; i++) {
-    const m = /^\s*\/\/ ASSUMPTION: (.*)$/.exec(lines[i] ?? '');
+    const m = marker.exec(lines[i] ?? '');
     if (!m) continue;
     let text = m[1] ?? '';
     let j = i + 1;
-    while (/^\s*\/\/ /.test(lines[j] ?? '') && !/ASSUMPTION:/.test(lines[j] ?? '')) {
+    while (/^\s*\/\/ /.test(lines[j] ?? '') && !marked.test(lines[j] ?? '')) {
       text += ' ' + (lines[j] ?? '').replace(/^\s*\/\/ /, '');
       j += 1;
     }
-    // The name of the number the comment sits on (the key of the next line of data).
+    // The name of the number the comment sits on (the key of the next line of data that is not another comment).
+    while (marked.test(lines[j] ?? '') || /^\s*\/\//.test(lines[j] ?? '')) j += 1;
     const key =
       /^\s*([A-Za-z0-9_]+):/.exec(lines[j] ?? '')?.[1] ?? (lines[j] ?? '').trim().slice(0, 40);
     out.push({ where: key, text });
@@ -244,18 +251,26 @@ export function assumptionsFrom(source: string): { where: string; text: string }
   return out;
 }
 
+/** `// ASSUMPTION:` comments from `rules.ts` (the report lists them all). */
+export const assumptionsFrom = (source: string): { where: string; text: string }[] =>
+  markedComments(source, /^\s*\/\/ ASSUMPTION(?:\s*\(Q[0-9]+\))?: (.*)$/);
+
+/** `// TUNED 2026-10-30:` comments from `rules.ts`: what the tuner moved and what it was before. */
+export const tunedFrom = (source: string): { where: string; text: string }[] =>
+  markedComments(source, /^\s*\/\/ TUNED [0-9-]+: (.*)$/);
+
 export const SIMPLIFICATIONS: readonly string[] = [
   "Combat is not simulated. The dungeon pays 120 XP, 10 Acorns, 10 scrap and a little Essence per run (one pass a day, up to three stacked), the raid 490 XP per fighting creature for a week with a visit between Friday and Sunday, and its Essence depends on the server's boss dial (all, half or none). The three best creatures fight.",
   "A creature's post does not change how fast it grows (V-POST-3), so creatures are not tracked per post: the lab counts scout seats, anvils and communal seats as long as the player has creatures to stand on them (the first scout and anvil need two of the three starters).",
-  "Fit is an average (a set-and-forget player's creatures fit about 30% of the time, an optimiser's 90%), not a per-creature draw; kit tilts are expected values; scrap, shards, Acorns and XP are expected values and only creatures, gear, blueprints, glimmer, pages, keystones and rare finds are seeded draws.",
+  "Fit is an average (a set-and-forget player's creatures fit about 30% of the time, an optimiser's 90%), not a per-creature draw; kit tilts are expected values; scrap, shards, Acorns and XP are expected values and only creatures, gear, blueprints, pages, keystones and rare finds are seeded draws.",
   'Mastery is counted per seat (the effective hours a seat has worked), not per creature, and a Master never moves on; the Master Scout perk (a blueprint at the Forge) is not modelled.',
   "The School and Paddock have levels, projects and warmth but no seats or output (the docs leave them open until combat v2 and `school.md`); push on, deep areas, opening hours of the Reef and the week's twist are not modelled.",
   'Gear is counts and item level only: three slots per creature, pieces at the fire\'s level, a slot is "weaker" when its item level is more than 6 below the fire. Gear stats, modifier lines, blueprint quality and the loupe\'s effect beyond a higher rare and epic share are not modelled; blueprints are counted, not required by orders.',
   "The species pool starts at today's 34 forms and grows by content drops (assumed +12 every 4 weeks from week 4, toward Misa's 100 or more); arrivals and duplicates use the pool available that week, all species alike, places lean toward their element. Evolution only lifts a first stage's level cap and costs Essence. Rarity of species is not modelled.",
   'The lab keeps 5 elements and 6 destinations. More elements will mean more kinds of shard (every ribbon and piece takes a shard of its element, so each new element is one more chain a player must cover with scouts) and more destinations to cover them; the shard stalls shown here would grow with them.',
-  "Catch-up applies to idle XP only (not to fights). A player who is away is not counted in the server's middle after seven days.",
-  'Project gifts are chosen by weight among the open projects; a gift never exceeds what the project still needs, the rest stays with the giver. By default only Acorns are given (variants: scrap and shards too; Essence to the Paddock and School). A find fills only its own collection socket; a spare melts into Essence. Sources of the sockets that are not keystones (dungeon landmarks, resident tokens, pages) use made-up rates.',
-  'Silver ribbons ask only for scrap, shards and glimmer: the docs\' replacement for "5 finished trips" (hours of work at posts) is not modelled.',
+  "Catch-up applies to idle XP only (not to fights). Its multiplier is fixed at each visit and holds until the next one (Q35 B), but never above the target it was fixed for: it fades as the creature closes the gap, so a player who visits less often cannot earn more of it than one who visits daily. A player who is away is not counted in the server's middle after seven days.",
+  "Project gifts are chosen by weight among the open projects; a gift never exceeds what the project still needs, the rest stays with the giver. A project's cost is an Acorn part, a scrap part and a shard part (Q33), each filled by gifts from what a player has above a reserve for their own Forge and ribbons; shards go to a project only as shards of the element tied to its place; Essence never goes to projects and journal pages are never spent. A find fills only its own collection socket; a spare melts into Essence. Sources of the sockets that are not keystones (dungeon landmarks, resident tokens, pages) use made-up rates.",
+  'Silver ribbons ask only for scrap and shards (glimmer is removed): the docs\' replacement for "5 finished trips" (hours of work at posts) is not modelled.',
   "The cost estimate counts rows from the shape of a visit (one player row, the creature rows, seat rows, the valley's rows); it is not a measured query plan.",
   "T-5 (the best team differs across bosses) belongs to combat v2's lab.",
 ];
@@ -521,6 +536,38 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
     '',
   );
 
+  push(
+    '### Shard stalls by policy, with and without the exchange (a daily player, weeks 2 to 12)',
+    '',
+    'The shard exchange (Q34 B) trades 3 shards of any other element for 1 of the one needed. "Waiting for a shard" is the share of anvil-hours the anvils tinkered for want of a shard of the element the team needs; "waiting at a ribbon gate" counts creatures held at level 10 or 20 at week 12 for want of shards of their own element.',
+    '',
+  );
+  push(
+    ...table(
+      [
+        'Policy',
+        'Exchange',
+        'Making pieces',
+        'Waiting for a shard (mean)',
+        '... worst week',
+        'Creatures waiting at a ribbon gate, week 12',
+        'XP lost, weeks 1 to 12',
+        'Exchanges a week',
+      ],
+      data.exchangeByPolicy.map((e) => [
+        e.policy,
+        e.exchange ? 'yes' : 'no',
+        `${num(e.making * 100)}%`,
+        `${num(e.shardStallMean * 100)}%`,
+        `${num(e.shardStallWorst * 100)}%`,
+        num(e.waitingRibbon12, 1),
+        num(e.xpLost),
+        num(e.exchangesPerWeek, 1),
+      ]),
+    ),
+    '',
+  );
+
   // 5. The server.
   push(
     '## 5. The server',
@@ -609,7 +656,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
   push(
     '### Variants of the mixed server of 8',
     '',
-    "**Default gifts are Acorns only**, because commons.md's own example is Acorns only (8 daily players each giving a third of about 50 Acorns a day, about 150 a day into projects). Counting scrap and shards as gifts as well (\"everything counts\") roughly doubles what a server gives, because scouts bring far more scrap than the sinks use, and builds the valley out in about half the time; both are shown. The other rows change one thing at a time: the away curve (A instead of B), no communal seats, every player a set-and-forget player or an optimiser, Essence to the Paddock and School, the scouts' creature chance at the docs' 2% an hour, and everyone giving 10% or 60% of income (the generosity dial; the default is a third).",
+    "Projects are built from Acorns, scrap and shards (Q33), and players give their share of each by the generosity dial (a third by default). The rows change one thing at a time: the away curve (A instead of B), no communal seats, every player a set-and-forget player or an optimiser, no shard exchange, the scouts' creature chance at the docs' 2% an hour, catch-up also on fight XP, and everyone giving 10% or 60% of income.",
     '',
   );
   push(
@@ -735,9 +782,18 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
   for (const s of SIMPLIFICATIONS) push(`- ${s}`);
   push(
     '',
+    '### Tuned values (from `src/rules.ts`, each marked `// TUNED` there)',
+    '',
+    "The tuner (`pnpm --filter @creatures/econ tune`) moved these from the docs' example numbers so that every target in `src/targets.ts` passes; each says what it was before. Change them with the tuner, not by hand.",
+    '',
+  );
+  for (const t of tunedFrom(rulesSource)) push(`- \`${t.where}\`: ${t.text}`);
+  push(
+    '',
     '### Policies',
     '',
     '- **Set-and-forget** places a catch once, keeps its first kit, rotates "for my team" orders through the elements the shelf can supply, tidies the bag only when it nears full, and never reaches. **Optimiser** re-tilts every seat each visit to what it needs (scrap, a missing shard, a new species), keeps the kit that suits, reaches for rarity with spare Essence and bulk-dismantles every visit.',
+    '- **The shard exchange (Q34 B)** trades 3 shards of any other element for 1 of the one needed (a 10% chance of 2). An optimiser exchanges at every visit for what its orders and the ribbons waiting need; a set-and-forget player only when an anvil is waiting on a shard at that visit (the one-tap fix; it does not exchange for ribbons).',
     "- Both buy seats and anvils as soon as the place's level and the Acorns allow, then kit with Acorns to spare (a set-and-forget player buys two items, an optimiser all five), give their share of income, spend Essence on evolutions first and buy ribbons as soon as they are affordable.",
     '',
   );

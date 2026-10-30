@@ -129,7 +129,6 @@ describe('the report', () => {
         'acorns',
         'scrap',
         'shards',
-        'glimmer',
         'essence',
       ]);
   });
@@ -149,7 +148,7 @@ describe('the report', () => {
   });
 
   it('lists every assumption in the appendix', () => {
-    const markers = (rulesSource.match(/\/\/ ASSUMPTION:/g) ?? []).length;
+    const markers = (rulesSource.match(/\/\/ ASSUMPTION(?: \(Q[0-9]+\))?:/g) ?? []).length;
     const appendix = markdown.slice(
       markdown.indexOf('### Assumptions'),
       markdown.indexOf('### Simplifications'),

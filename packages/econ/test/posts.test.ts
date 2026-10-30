@@ -40,7 +40,7 @@ describe('a store', () => {
     const server = createServer(
       'test',
       1,
-      { bossKills: 'half', communalSeats: true, gifts: 'acorns', essenceToProjects: false },
+      { bossKills: 'half', communalSeats: true, shardExchange: true },
       RULES,
     );
     for (let h = 0; h < 100; h++) accrueSeats(p, 1, 1);

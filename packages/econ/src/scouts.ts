@@ -106,8 +106,6 @@ export function collectSeat(p: Player, index: number, server: Server, hour: numb
     tilt.creatures *
     (second ? rules.scouts.secondScoutCreatures : 1);
   const rarePer = richRare * mult * tilt.rare;
-  const glimmerPer = rate.glimmer * rarePer;
-  wasteOf(p, R.glimmer, lost * glimmerPer);
 
   // New creatures at the Paddock gate; a duplicate takes the Recommended answer (scrap).
   for (let n = poisson(p.rng, hours * creaturesPer); n > 0; n--) {
@@ -145,8 +143,6 @@ export function collectSeat(p: Player, index: number, server: Server, hour: numb
       p.wk.blueprints += 1;
     } else credit(p, R.scrap, rules.scouts.duplicateBlueprintScrap, 'duplicates');
   }
-  const glimmerFound = poisson(p.rng, hours * glimmerPer);
-  if (glimmerFound > 0) credit(p, R.glimmer, glimmerFound, 'scouts');
   const pages = poisson(p.rng, hours * rate.pages * rarePer);
   p.pages += pages;
   p.wk.pages += pages;

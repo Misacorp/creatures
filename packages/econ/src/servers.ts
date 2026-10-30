@@ -19,10 +19,8 @@ export interface ServerConfig {
   readonly communalSeats: boolean;
   /** The generosity dial: replaces every player's share of income given to projects (a hoarder still saves first). */
   readonly giveShare?: number;
-  /** What players give: Acorns only (the default: commons.md's example), or everything (scrap and shards count too). */
-  readonly gifts: 'acorns' | 'everything';
-  /** Whether the Paddock and School projects take Essence too. */
-  readonly essenceToProjects: boolean;
+  /** Whether the Forge's shard exchange exists (Q34). */
+  readonly shardExchange: boolean;
   /** Replaces the scouts' creature chance an hour (a sensitivity run for T-1). */
   readonly creatureRate?: number;
   /** Whether catch-up also multiplies what the dungeon and the raid pay (a sensitivity run for T-2d). */
@@ -44,8 +42,7 @@ const server = (
   weeks: 24,
   curve: 'B',
   communalSeats: true,
-  gifts: 'acorns',
-  essenceToProjects: false,
+  shardExchange: true,
   ...more,
 });
 
@@ -96,17 +93,23 @@ export const VARIANTS: readonly ServerConfig[] = [
   { ...MIXED_8, id: 'mixed8-none', label: 'Mixed 8, no boss killed', bossKills: 'none' },
   withPolicy(MIXED_8, 'setAndForget', 'mixed8-sf', 'Mixed 8, everyone set-and-forget'),
   withPolicy(MIXED_8, 'optimiser', 'mixed8-opt', 'Mixed 8, everyone an optimiser'),
+  withPolicy(
+    { ...MIXED_8, shardExchange: false },
+    'setAndForget',
+    'mixed8-sf-noexchange',
+    'Mixed 8, set-and-forget, no shard exchange',
+  ),
+  withPolicy(
+    { ...MIXED_8, shardExchange: false },
+    'optimiser',
+    'mixed8-opt-noexchange',
+    'Mixed 8, optimisers, no shard exchange',
+  ),
   {
     ...MIXED_8,
-    id: 'mixed8-everything',
-    label: 'Mixed 8, everything counts (scrap and shards given too)',
-    gifts: 'everything',
-  },
-  {
-    ...MIXED_8,
-    id: 'mixed8-essence',
-    label: 'Mixed 8, Essence to the Paddock and School',
-    essenceToProjects: true,
+    id: 'mixed8-noexchange',
+    label: 'Mixed 8, no shard exchange',
+    shardExchange: false,
   },
   {
     ...MIXED_8,

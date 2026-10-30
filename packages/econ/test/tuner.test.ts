@@ -136,6 +136,18 @@ describe('tune', () => {
     expect(Math.abs(a - 1) + Math.abs(b - 1)).toBeLessThanOrEqual(0.5 + 1e-9);
   });
 
+  it('keeps refining after a round that moves nothing: a narrow target is found by the smaller steps', () => {
+    // Only a = 1.25 meets the target; the first rounds' big steps jump over it.
+    const evaluate: Evaluate = (v) => ({ best12: 20 + 20 * Math.abs((v.a ?? 1) - 1.25) });
+    const result = tune(
+      [axis('a', 1, 0, 3, 0.25)],
+      [target('T-6b', 'best12', { hi: 20.1 })],
+      evaluate,
+    );
+    expect(result.best.values.a).toBe(1.25);
+    expect(result.best.failed).toBe(0);
+  });
+
   it('is deterministic: the same inputs give the same proposal and the same measurements in the same order', () => {
     const calls: string[] = [];
     const run = (): string => {

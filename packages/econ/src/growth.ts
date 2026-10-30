@@ -19,17 +19,27 @@ export function relevel(c: Creature): void {
 }
 
 /** One hour of idle XP for every creature, at a post or at the fire (V-POST-3, V-BON-1), with the hearth, the away step and catch-up. */
-export function accrueIdleXp(p: Player, hour: number, share: number, hearth: number): void {
+export function accrueIdleXp(p: Player, share: number, hearth: number): void {
   const base = p.rules.xp.idlePerHour * hearth * share;
   let bonus = 0;
   for (const c of p.creatures) {
-    const mult = hour < c.catchUntil ? c.catchMult : 1;
+    const mult = effectiveCatchUp(p, c);
     bonus += base * (mult - 1);
     addXp(p, c, base * mult);
   }
   p.wk.xpIdle += base * p.creatures.length;
   p.wk.creatureHours += p.creatures.length;
   p.wk.xpCatch += bonus;
+}
+
+/**
+ * V-BON-2 (Q35 B): the multiplier a creature earns now. It was fixed at the last visit and holds until the next one, but never above
+ * the target it was fixed for: it fades as the creature closes the gap, exactly as it would if it were worked out every hour, and it
+ * never rises, so a player who visits less often cannot earn more of it than one who visits daily (tested).
+ */
+export function effectiveCatchUp(p: Player, c: Creature): number {
+  if (c.catchMult <= 1) return 1;
+  return Math.min(c.catchMult, catchUpMultiplier(p.rules, c.catchTarget - c.level));
 }
 
 /** The levels of a player's creatures, best first. */
@@ -42,28 +52,22 @@ export function topThreeMean(p: Player): number {
   return lv.length ? lv.reduce((a, b) => a + b, 0) / lv.length : 1;
 }
 
-/** V-BON-2: fixes each creature's catch-up multiplier for the next 24 hours, toward the higher of the 3rd best and the server's middle. */
-export function setCatchUp(p: Player, hour: number, middle: number): void {
+/** V-BON-2 (Q35 B): fixes each creature's catch-up multiplier at a visit, toward the higher of the 3rd best and the server's middle; it holds until the next visit. */
+export function setCatchUp(p: Player, middle: number): void {
   const lv = levelsDesc(p);
   const third = lv[Math.min(2, lv.length - 1)] ?? 1;
   const target = Math.max(third, middle);
   for (const c of p.creatures) {
     c.catchMult = catchUpMultiplier(p.rules, target - c.level);
-    c.catchUntil = hour + p.rules.bonfire.catchUp.holdHours;
+    c.catchTarget = target;
   }
 }
 
 /** Fight XP to the `team` best creatures (the dungeon and the raid; away steps and catch-up never apply, V-POST-10). */
-export function fightXp(
-  p: Player,
-  amount: number,
-  source: 'xpDungeon' | 'xpRaid',
-  hour: number,
-): void {
+export function fightXp(p: Player, amount: number, source: 'xpDungeon' | 'xpRaid'): void {
   const team = [...p.creatures].sort((a, b) => b.xp - a.xp).slice(0, p.rules.fights.team);
   for (const c of team) {
-    const boosted =
-      p.rules.bonfire.catchUp.appliesToFights && hour < c.catchUntil ? c.catchMult : 1;
+    const boosted = p.rules.bonfire.catchUp.appliesToFights ? effectiveCatchUp(p, c) : 1;
     addXp(p, c, amount * boosted);
     p.wk[source] += amount * boosted;
   }

@@ -7,8 +7,8 @@
  * `measuresOf`, or a tiny fake model in the tests). It is pure and deterministic: no randomness, no clock; the same inputs give
  * the same proposal.
  *
- * Passes: a coarse grid when there are one or two dials, then coordinate descent (one dial at a time, around the best so far,
- * the step halving each round), all on the cheap level (few seeds). The best few of those and today's values are then measured
+ * Passes: a coarse grid when there are one or two dials, then coordinate descent (one dial at a time, and for up to five dials two
+ * at a time, around the best so far, the step halving each round, every round run), all on the cheap level (few seeds). The best few of those and today's values are then measured
  * again at the final level (the report's own number of seeds); the winner is chosen on those. A candidate fits better with fewer
  * missed targets, then a smaller total miss, then a smaller change from today.
  */
@@ -76,10 +76,15 @@ export function gridOf(axis: Axis, n: number): number[] {
 }
 
 /** The values to try for one dial around `current` in a descent round: a step of a quarter of the range, halving each round. */
-export function neighboursOf(axis: Axis, current: number, round: number): number[] {
+export function neighboursOf(
+  axis: Axis,
+  current: number,
+  round: number,
+  ks: readonly number[] = [-2, -1, 1, 2],
+): number[] {
   const span = (axis.max - axis.min) / 4 / 2 ** round;
   const step = Math.max(axis.step, snap(span, axis.step));
-  const values = [-2, -1, 1, 2].map((k) => clampTo(axis, current + k * step));
+  const values = ks.map((k) => clampTo(axis, current + k * step));
   return [...new Set(values)].filter((v) => Math.abs(v - current) > EPS);
 }
 
@@ -184,17 +189,29 @@ export function tune(
   }
   // 2. Coordinate descent around the best: one dial at a time, a smaller step each round.
   for (let round = 0; round < plan.rounds; round++) {
-    let moved = false;
     for (const axis of axes) {
       for (const v of neighboursOf(axis, best.values[axis.id] ?? axis.start, round)) {
         const c = measure({ ...best.values, [axis.id]: v });
         if (fitsBetter(c, best)) {
           best = c;
-          moved = true;
         }
       }
     }
-    if (!moved && round > 0) break;
+    // Two dials at once (a target that needs one up and another down is not reached by moving one at a time): for few dials only.
+    if (axes.length >= 2 && axes.length <= 5) {
+      for (let i = 0; i < axes.length; i++)
+        for (let j = i + 1; j < axes.length; j++) {
+          const a = axes[i] as Axis;
+          const b = axes[j] as Axis;
+          for (const va of neighboursOf(a, best.values[a.id] ?? a.start, round, [-1, 1]))
+            for (const vb of neighboursOf(b, best.values[b.id] ?? b.start, round, [-1, 1])) {
+              const c = measure({ ...best.values, [a.id]: va, [b.id]: vb });
+              if (fitsBetter(c, best)) {
+                best = c;
+              }
+            }
+        }
+    }
   }
 
   // 3. The best few, and today's values, measured again at the final level.
