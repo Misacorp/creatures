@@ -74,7 +74,7 @@ Misa: "just record the stats and delete the details when players can no longer i
 
 ## 2026-10-25: The raid view stores its readiness bands and teammates' teams (migration 45)
 
-ID: `2026-10-25-the-raid-view-stores-its-readiness` · Status: current
+ID: `2026-10-25-the-raid-view-stores-its-readiness` · Status: current · Amends: `2026-10-11-progression-phase-2-worker-and-client`
 
 _2026-10-26: the stored teammate teams (`raid_team_cache`, `shownRaidTeam`) are gone: a team is just the placed creatures, loaded by id. The table stays (a released migration), unused. The stored readiness bands stay._
 
@@ -93,7 +93,7 @@ The read budget test's growth check found two paths that read more every month: 
 
 ## 2026-10-25: Lounge reads: one-row lounger, XP over the socket
 
-ID: `2026-10-25-lounge-reads-one-row-lounger-xp` · Status: current
+ID: `2026-10-25-lounge-reads-one-row-lounger-xp` · Status: current · Amends: `2026-10-14-the-living-room-s-lounger-and`
 
 The lounge was the next biggest source of Durable Object rows read. While players are in the lounge the guild alarm runs the lounge check every 60 s, and for each player in the room it read the player's whole creature list twice (the lounger lookup and its idle filter). Separately, the client reloaded the whole state (`GET /api/state`, 200 to 300 rows) every 2 minutes only to move the lounge XP bar.
 
@@ -114,7 +114,7 @@ The account went past the free tier's 5,000,000 Durable Object `rows_read` a day
 
 ## 2026-10-25: The start-up passes run once per deployed build
 
-ID: `2026-10-25-the-start-up-passes-run-once` · Status: current
+ID: `2026-10-25-the-start-up-passes-run-once` · Status: current · Amends: `2026-10-17-staging-held-the-first-gear-v2`, `2026-10-23-the-alarm-s-cleanup-runs-once`
 
 Cloudflare stopped Durable Object requests for the day: the account went past the free tier's 5,000,000 `rows_read`, two days after the cleanup fix above. Production had one guild and about 8 players a day, so the reads came from work that repeats, not from big tables. A probe that counted the rows each statement read (12 players, three weeks of play) found it:
 
@@ -141,7 +141,7 @@ From the retro of the raid finale visuals (`docs/retros/2026-10-24-raid-finale-v
 
 ## 2026-10-23: Games migration renumbered to 39
 
-ID: `2026-10-23-games-migration-renumbered-to-39` · Status: current
+ID: `2026-10-23-games-migration-renumbered-to-39` · Status: current · Amends: `2026-10-22-valley-games-on-the-server-days`
 
 **Decision.** Main released the daily maintenance mark as migration 38 (#68) while the Valley Games branch, already deployed to staging, had its tables as 38. The Games now run as **migration 39** (`gamesMigrationV39` in `apps/worker/src/games-migration.ts`), which adds the Games tables when they are missing and the maintenance mark when a database recorded 38 for the Games instead. Neither released migration was edited.
 
@@ -149,7 +149,7 @@ ID: `2026-10-23-games-migration-renumbered-to-39` · Status: current
 
 ## 2026-10-23: The alarm's cleanup runs once a game day; old dungeon steps are deleted
 
-ID: `2026-10-23-the-alarm-s-cleanup-runs-once` · Status: current
+ID: `2026-10-23-the-alarm-s-cleanup-runs-once` · Status: current, amended by `2026-10-25-the-start-up-passes-run-once` · Amends: `2026-10-13-daily-dungeon-v1-engine-content-server`
 
 Cloudflare warned that the account had used 90% of the free tier's 5,000,000 Durable Object `rows_read` in a day. A local probe that counted the rows each query read (a month of play for 12 players) showed where they went.
 
@@ -180,7 +180,7 @@ ID: `2026-10-19-frontend-splits-with-no-visual-change` · Status: current
 
 ## 2026-10-19: Lantern Cap can drop, mystery line goes away, worker files split (wave 2, worker)
 
-ID: `2026-10-19-lantern-cap-can-drop-mystery-line` · Status: current
+ID: `2026-10-19-lantern-cap-can-drop-mystery-line` · Status: current · Amends: `2026-10-18-more-gear-and-modifiers-position-lines`
 
 - **A Festival win gives a Lantern Night piece the player lacks (Misa: yes; audit E1).** The Lantern Cap (Grove) could never drop: the piece was picked by the Festival creature's element, and there is no Grove Festival creature, so the Lantern Night set could not be completed. Now `festivalBaseFor(rng, owned)` draws evenly among the Festival bases the player does not own yet, and among all of them once they own every one. "Own" is any item in `gear_items` (in the bag or worn; `ownedBaseIds`). The element plays no part and the grant no longer takes it (`grantFestivalGear(deps, userId, weekId, rank, bossId)`; the sim's `grantFinaleLoot` takes a `festival` flag and reads the player's bag and worn items). The base is drawn first, one extra draw, so the drawn rarity and lines of a seeded Festival piece moved: the gear fixtures re-captured (the Hearth Scarf's lines in `gear-*` and `workshop-*` fixtures, nothing else). A game test proves every Festival base is reachable and that two of three owned always gives the third; a worker test proves it through the grant (one in the bag, one worn). Grant keys and idempotency are unchanged.
 - **The mystery room's line is shown only until the next move (Misa: yes; audit U13).** `applyMove` clears `lastEvent` once a move is accepted, so the run strip shows "Sleeping Beetle: Take one coin. You find 1 scrap." right after the pick and not for the rest of the run. The step log keeps what the room did. Nine dungeon fixtures re-captured (`lastEvent` is `null` where a move followed an event).
@@ -215,7 +215,7 @@ ID: `2026-10-18-pnpm-fixtures-capture-and-stable-fixture` · Status: current
 
 ## 2026-10-17: staging held the first gear v2; rows of that shape are normalised at start, views skip what they cannot read
 
-ID: `2026-10-17-staging-held-the-first-gear-v2` · Status: current
+ID: `2026-10-17-staging-held-the-first-gear-v2` · Status: current, amended by `2026-10-25-the-start-up-passes-run-once` · Amends: `2026-10-17-items-carry-base-stats-local-and`
 
 **What broke.** Staging ran b9cb38d (the first gear v2: migration 27 with `festival` as a rarity, percentage implicits, the old lines) and then 20b9c42, which changed migration 27 and the item shape in place. A migration that has run anywhere (staging counts) is released and must not be edited; the "PR is unmerged, so migration 27 may change" rule above was wrong for that reason. Misa's Workshop said "The Workshop could not be loaded": `GET /api/gear` answered 500 because one of his items held the line `sturdy-blow`, which the base-stats work removed, and the item view threw on the unknown line (the same row also kept his level reset pending, and would have thrown in the Creatures view and in fights once he wore it).
 
@@ -244,7 +244,7 @@ ID: `2026-10-16-player-feedback-through-feedback-public-issues` · Status: curre
 
 ## 2026-10-15: Staging deploys only on request; main locked against agents
 
-ID: `2026-10-15-staging-deploys-only-on-request-main` · Status: current
+ID: `2026-10-15-staging-deploys-only-on-request-main` · Status: current · Amends: `2026-10-10-staging-environment`
 
 **Decision.** Pushing a branch no longer deploys staging. Staging changes only with a manual run of the `deploy` workflow (`workflow_dispatch`) on a chosen branch; a manual run always targets staging, even on `main`. Production still deploys from every push to `main`, and only from that (a guard step fails the job otherwise). The deployed branch shows in the footer (`BRANCH` Worker var, set by CI, validated before `/api/config` shows it).
 
@@ -277,7 +277,7 @@ Worker half of cleanup pass 1 (`cleanup-1-audit.md` section 10). No behaviour ch
 
 ## 2026-10-13: Analytics security review fixes
 
-ID: `2026-10-13-analytics-security-review-fixes` · Status: current
+ID: `2026-10-13-analytics-security-review-fixes` · Status: current · Amends: `2026-10-13-analytics-phase-2-server-side-rollups`, `2026-10-13-dev-tools-the-gate-the-dev`
 
 Fixes from the security review of the analytics work. Decisions:
 
@@ -320,7 +320,7 @@ Phase 2 items 4 to 6 of `design/analytics.md`, in `packages/sim` (`live-report.t
 
 ## 2026-10-13: Dev tools: the gate, the dev clock and where forced state lives
 
-ID: `2026-10-13-dev-tools-the-gate-the-dev` · Status: current
+ID: `2026-10-13-dev-tools-the-gate-the-dev` · Status: current, amended by `2026-10-13-analytics-security-review-fixes`
 
 Server side of `docs/design/dev-tools.md`, staging only.
 
@@ -335,7 +335,7 @@ Server side of `docs/design/dev-tools.md`, staging only.
 
 ## 2026-10-13: Analytics phase 2, server side: rollups, guild directory, ops report
 
-ID: `2026-10-13-analytics-phase-2-server-side-rollups` · Status: current
+ID: `2026-10-13-analytics-phase-2-server-side-rollups` · Status: current, amended by `2026-10-13-analytics-security-review-fixes`
 
 Built per `design/analytics.md` (steps 2 to 5, phase 2 items 1 to 3 and 6). Decisions:
 
@@ -369,7 +369,7 @@ The per-guild event log is in, invisible to players: no route reads it yet, and 
 
 ## 2026-10-10: Per-guild timezone
 
-ID: `2026-10-10-per-guild-timezone` · Status: current
+ID: `2026-10-10-per-guild-timezone` · Status: current · Amends: `2026-10-10-scheduling-in-helsinki-time`
 
 **Decision.** Each guild's timezone is stored in that guild's data (`guild_meta.timezone`, an IANA name, added by migration 5) and `Europe/Helsinki` is only the default (`DEFAULT_GUILD_TIMEZONE`). The guild object resolves the timezone once per operation (cached in memory, cleared when it changes) and passes it explicitly to everything that computes guild-local dates: the leet sync (including `since_date` and the mock source), alarm scheduling, and later the raid calendar. No function has a default timezone parameter, so a missing timezone is a compile error. A stored value that is not a valid zone falls back to the default and logs a warning without the value. `GET /api/state` and `GET /api/me` return `timezone` so the client can show guild-local times. There is no endpoint to change it yet; `GuildCore.setTimezone` validates (`isValidTimeZone`) and re-arms the alarm for when an admin setting is added.
 
@@ -401,7 +401,7 @@ ID: `2026-10-10-frontend-stack` · Status: current
 
 ## 2026-10-10: Staging environment
 
-ID: `2026-10-10-staging-environment` · Status: current
+ID: `2026-10-10-staging-environment` · Status: current, amended by `2026-10-15-staging-deploys-only-on-request-main`
 
 **Decision.** Pushing any branch other than `main` in this repo deploys to `creatures-staging.misacorp.dev`, which is mapped in a separate **dev Discord app**. Merging to `main` deploys to production. Fork PRs never deploy (they only trigger `pull_request` CI without secrets).
 
@@ -409,7 +409,7 @@ ID: `2026-10-10-staging-environment` · Status: current
 
 ## 2026-10-10: Scheduling in Helsinki time
 
-ID: `2026-10-10-scheduling-in-helsinki-time` · Status: current
+ID: `2026-10-10-scheduling-in-helsinki-time` · Status: current, amended by `2026-10-10-per-guild-timezone`
 
 **Decision.** Weekly events (Mon/Fri/Sat 13:37, Sunday finale, daily leet sync) are scheduled with Durable Object alarms. The next fire time is computed from the schedule configuration in `Europe/Helsinki` and converted to UTC with the `Intl` API, so DST transitions are handled. Each guild object re-arms its alarm on every authenticated request (see the 2026-10-10 entry on alarm safety nets). Every scheduled job is idempotent per (event, week) key. Tests cover the DST switch weeks (last Sunday of March and October).
 

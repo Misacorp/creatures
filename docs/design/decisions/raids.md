@@ -6,7 +6,7 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 ## 2026-10-26: Raid results show real damage and a separate score
 
-ID: `2026-10-26-raid-results-show-real-damage-and` · Status: current
+ID: `2026-10-26-raid-results-show-real-damage-and` · Status: current · Amends: `2026-10-11-after-action-card-implementation-choices`, `2026-10-20-the-raid-summary-ships-scoreboard-first`
 
 A player reported (#86) that the scoreboard's "Damage" added up to about half the boss's HP lost, and that a Payoff like Gaiadrake showed a third of what the fight log said it hit for. The column was the engine's `CreatureTotals.damage`: the hitter's share of the credit, after the setter's 60% of a reaction's bonus and the Supports' share of buffed damage had moved to other creatures. Misa: a "Damage" column must show damage; the credit is the score, and the results say what each one means.
 
@@ -19,7 +19,7 @@ A player reported (#86) that the scoreboard's "Damage" added up to about half th
 
 ## 2026-10-26: Raids: join until the finale; new servers start at Rank 1
 
-ID: `2026-10-26-raids-join-until-the-finale-new` · Status: current
+ID: `2026-10-26-raids-join-until-the-finale-new` · Status: current · Amends: `2026-10-26-raids-you-join-by-placing-no`
 
 Amends rule 6 of "Raids: you join by placing; no auto teams" (joining closed at Phase 1). Misa asked for two changes.
 
@@ -47,7 +47,7 @@ Misa wanted teammates' placements to appear on the Raid tab as they happen. Unti
 
 ## 2026-10-26: Raids: you join by placing; no auto teams
 
-ID: `2026-10-26-raids-you-join-by-placing-no` · Status: current
+ID: `2026-10-26-raids-you-join-by-placing-no` · Status: current, amended by `2026-10-26-raids-join-until-the-finale-new` · Supersedes: `2026-10-18-auto-tiles-are-soft-and-muted` · Amends: `2026-10-10-no-raid-sign-up-parties-of`, `2026-10-14-raid-roster-you-bring-the-creatures`, `2026-10-18-auto-joining-creatures-are-on-the`
 
 Misa reversed the 2026-10-10 rule: "Their occupied slots only hinder the active players. Therefore let's only add players to the raid if they legitimately actually assign their creatures to the board." It also removes the expensive part of the raid view and of every fight build, "find a player's best three" (every creature, talent and worn item of every member). He approved these seven rules exactly:
 
@@ -85,7 +85,7 @@ Misa, after a solo finale on staging: show the creatures' own names on the raid 
 
 ## 2026-10-24: No acting order under the creatures
 
-ID: `2026-10-24-no-acting-order-under-the-creatures` · Status: current
+ID: `2026-10-24-no-acting-order-under-the-creatures` · Status: current · Amends: `2026-10-14-raid-ux-pass-2-slices-4`, `2026-10-14-the-daily-dungeon-always-acts-left`
 
 Misa: drop the "1st, 2nd, 3rd" under each creature on the fight stage; the move track under the boss's side already tells players what is coming, which is enough to follow the round.
 
@@ -103,7 +103,7 @@ Misa, on desktop: the creature board stayed at the left while the boss is centre
 
 ## 2026-10-24: The barrier is a hexagon that spills around the foe
 
-ID: `2026-10-24-the-barrier-is-a-hexagon-that` · Status: current
+ID: `2026-10-24-the-barrier-is-a-hexagon-that` · Status: current · Amends: `2026-10-24-the-barrier-is-shimmering-triangles-the`
 
 Misa, on the triangle barrier: slightly smaller triangles, a shield big enough to spill around the boss (it sat on top of it and was hard to see), about 10% less opaque, a hexagon rather than the rough square, and a shimmer that starts at the top left and travels to the bottom right with a nicer timing.
 
@@ -113,7 +113,7 @@ Misa, on the triangle barrier: slightly smaller triangles, a shield big enough t
 
 ## 2026-10-24: The barrier is shimmering triangles; the track points at this round
 
-ID: `2026-10-24-the-barrier-is-shimmering-triangles-the` · Status: current
+ID: `2026-10-24-the-barrier-is-shimmering-triangles-the` · Status: current, amended by `2026-10-24-the-barrier-is-a-hexagon-that` · Amends: `2026-10-24-a-barrier-over-the-foe-a`
 
 Misa, on the first barrier: its border was too pronounced; build it instead from small equilateral triangles whose opacity and saturation shift and shimmer, with no border, and on a shatter let the triangles fly out and fade. On the track, "NOW" was bulky and out of line with the other rows' numbers: a small right-pointing triangle that moves a little, like the Valley Games' marker over your own creatures.
 
@@ -122,7 +122,7 @@ Misa, on the first barrier: its border was too pronounced; build it instead from
 
 ## 2026-10-24: A barrier over the foe, a track of rows, the boss in the middle
 
-ID: `2026-10-24-a-barrier-over-the-foe-a` · Status: current
+ID: `2026-10-24-a-barrier-over-the-foe-a` · Status: current, amended by `2026-10-24-the-barrier-is-shimmering-triangles-the` · Amends: `2026-10-23-themed-boss-attacks-in-pixel-style`
 
 Misa, after trying the pixel attacks on staging: Backdraft is a lasting effect that "pops" on the first reaction, so show it on the boss, "a semi transparent shield that overlays the boss, like a magical barrier that breaks when a reaction hits", and make it "a more generic but configurable barrier" for every similar effect on every foe. On a phone the move list took "a ton of screen space that should belong to the boss": the boss should always sit in the middle of the stage, the track should lean on icons, with tiny text if any, and each round should be a row with its moves side by side.
 
@@ -136,7 +136,7 @@ Misa, after trying the pixel attacks on staging: Backdraft is a lasting effect t
 
 ## 2026-10-23: Themed boss attacks in pixel style, the countdown track, quieter marks
 
-ID: `2026-10-23-themed-boss-attacks-in-pixel-style` · Status: current
+ID: `2026-10-23-themed-boss-attacks-in-pixel-style` · Status: current, amended by `2026-10-24-a-barrier-over-the-foe-a` · Amends: `2026-10-22-four-looks-for-the-move-track`
 
 Misa, on the flying attacks: the projectiles were "all over the place", flying in from off screen; tint them by the boss's colour, element or the move's theme; the move track and the status effects were still "boxes in boxes on boxes"; the boss targets creatures "with just boxes"; be more imaginative ("vines coming in from below to tangle an entire row and shake them", "a meteor falling from off-screen to smash and shatter a creature and its neighbours"); the round intro should play at full speed. He asked for a few agents with different personalities to review the result and for the work to follow their feedback. Four reviewers (a raid leader, a casual phone player, an accessibility reviewer and a pixel-art director) looked at screenshots and stills of every boss's attacks.
 
@@ -151,7 +151,7 @@ Misa, on the flying attacks: the projectiles were "all over the place", flying i
 
 ## 2026-10-22: Four looks for the move track; the boss's attacks fly
 
-ID: `2026-10-22-four-looks-for-the-move-track` · Status: current
+ID: `2026-10-22-four-looks-for-the-move-track` · Status: current, amended by `2026-10-23-themed-boss-attacks-in-pixel-style` · Amends: `2026-10-22-the-boss-s-move-track-and`
 
 Misa, on the first move track: "the right idea but the UI looks clunky and rough"; a move used every round should show in every round's box; the lines under the boss that announce what happens are redundant with the track; the boss and the raid roster are the main focus, so the moves can be smaller and less pronounced. Four versions to choose from, and better attack animations: "a slight curved boomerang shaped arc of glowing light that glides at a creature", a white flash and big damage numbers, special and area moves with their own flavour, overlapping numbers are fine, reuse and tint rather than add files.
 
@@ -165,7 +165,7 @@ Misa, on the first move track: "the right idea but the UI looks clunky and rough
 
 ## 2026-10-22: The boss's move track, and fixed places for buffs and debuffs
 
-ID: `2026-10-22-the-boss-s-move-track-and` · Status: current
+ID: `2026-10-22-the-boss-s-move-track-and` · Status: current, amended by `2026-10-22-four-looks-for-the-move-track`
 
 Misa: boxes of moves that "come up from underneath", like notes in Guitar Hero, so players see a move coming; an empty box when the boss does nothing special; several moves side by side; tap (or hover with a mouse) for what a move does. Buffs and debuffs: no titles, always in the same place, with up and down triangles.
 
@@ -177,7 +177,7 @@ Misa: boxes of moves that "come up from underneath", like notes in Guitar Hero, 
 
 ## 2026-10-22: The live finale is pushed over the live socket
 
-ID: `2026-10-22-the-live-finale-is-pushed-over` · Status: current
+ID: `2026-10-22-the-live-finale-is-pushed-over` · Status: current · Amends: `2026-10-11-live-finale-over-short-polling-first`
 
 The finale polled `GET /api/raid/live` every 2 s. The lounge's WebSocket push has been in production since 2026-10-20, so the finale now rides the same machinery (`finale-live.md`).
 
@@ -189,7 +189,7 @@ The finale polled `GET /api/raid/live` every 2 s. The lounge's WebSocket push ha
 
 ## 2026-10-22: The live finale plays about three times slower
 
-ID: `2026-10-22-the-live-finale-plays-about-three` · Status: current
+ID: `2026-10-22-the-live-finale-plays-about-three` · Status: current · Amends: `2026-10-10-live-finale-time-and-length`, `2026-10-11-content-paced-rounds-smooth-effects-and`
 
 Misa: the last finale "was over very quick"; "make it run much slower so people actually have time to react and see what's going on", about 8 minutes, with no pause between rounds.
 
@@ -201,7 +201,7 @@ Misa: the last finale "was over very quick"; "make it run much slower so people 
 
 ## 2026-10-20: The raid summary, round two, and the Find components
 
-ID: `2026-10-20-the-raid-summary-round-two-and` · Status: current
+ID: `2026-10-20-the-raid-summary-round-two-and` · Status: current, amended by `2026-10-20-no-on-tags-anywhere` · Amends: `2026-10-20-the-raid-summary-ships-scoreboard-first`
 
 Misa on the raid summary (quotes are his): "Drop 'damage, share of the raid' from beside the Scoreboard heading." The table has headings now, so the note is gone.
 
@@ -224,7 +224,7 @@ Misa on the dungeon results (the picture is a run with one gear piece and a day 
 
 ## 2026-10-20: The raid summary ships: scoreboard first, with the boss header (A plus B)
 
-ID: `2026-10-20-the-raid-summary-ships-scoreboard-first` · Status: current
+ID: `2026-10-20-the-raid-summary-ships-scoreboard-first` · Status: current, amended by `2026-10-20-the-raid-summary-round-two-and`, `2026-10-26-raid-results-show-real-damage-and`
 
 Misa picked the mock-ups of 2026-10-19: "A plus B's boss header". The live finale reveal and the Raid tab's result cards now draw it (`RaidSummary` fetches, `RaidSummaryCard` draws; the workbench page `RaidSummaryCard` shows the five samples). His changes to the mock-up, in his words:
 
@@ -249,7 +249,7 @@ ID: `2026-10-19-raid-summary-mock-ups-for-misa` · Status: current
 
 ## 2026-10-18: Raid posts are embeds that sum up the raid
 
-ID: `2026-10-18-raid-posts-are-embeds-that-sum` · Status: current
+ID: `2026-10-18-raid-posts-are-embeds-that-sum` · Status: current · Amends: `2026-10-10-discord-raid-posts`
 
 **Problem.** The raid posts were plain text lists of everything we knew (contribution numbers, Essence, the sky, every first with its catcher), so the news got lost.
 
@@ -259,17 +259,21 @@ ID: `2026-10-18-raid-posts-are-embeds-that-sum` · Status: current
 
 **Why.** Misa wants the Discord posts to be a pleasure to read: the status at a glance and a few highlights, with the details in the game.
 
-## 2026-10-18: Auto tiles are soft and muted (issue #29)
+## 2026-10-18: The fight uses the board's rows (issue #29)
 
-ID: `2026-10-18-auto-tiles-are-soft-and-muted` · Status: current
+ID: `2026-10-18-the-fight-uses-the-board-s` · Status: current
 
-**Decision.** A player may drop their own creature onto a slot that shows another player's auto tile: their creature takes the slot, and the auto creature moves to a free slot by the normal auto rules. Nothing is stored for an auto creature (the board is built at read time), so the server's `place` already allowed this; tests now pin it (auto creature ends in a free slot, nobody is lost, board and fight agree, and with three members of three creatures each the board is exactly full, so a free slot always exists). A creature that was placed stays hard (`slot_taken`). Teammate moves for an away player (`raid-assist.ts`) follow the same rule: another member's auto tile makes room, another member's placed creature is `slot_taken`, and the owner's own placed creature is still `not_movable`. No invariant breaks: the owner's team is pinned first, other members' autos are never stored, and the cap of three per player holds.
+**Problem.** The raid board is a line of `rowLength` slots (three per player, or nine with guests) cut into Front, Middle and Back on that full length. The fight got only the creatures, with empty slots dropped, and the engine cut that shorter line again by `floor(n / 3)`. A player with fewer than three creatures, or a hole in the board, moved creatures across row boundaries, so pincers, sweeps, lances, "beside", Guard cover, the forecast and the replay stage used rows that differed from the board.
 
-**Client.** The drop is no longer refused. While a creature is carried over another player's auto tile the page says "<creature> makes room." (text only), and the drop announcement says the same. Auto tiles are muted so they read as suggestions: the dashed outline and "auto" tag stay, the sprite is faded and half desaturated, and the text uses the quiet text colour (about 6.5:1 on the tile, above AA); hover, focus and a drag over the tile bring the full look back so it never looks disabled. The workbench's "Others join by themselves" toggle shows the same look.
+**Decision.** The fight input carries the board's positions: `FightInput.board` is `{ length, slots }`, where `length` is the board row's full length and `slots[i]` the board slot of `row[i]` (strictly increasing, each below `length`). `buildPhaseInput` reads it off the board after auto-placement and guests (`sparseBoard`), and the stored input keeps it, so replays read the same positions. The engine builds one shape per fight (`fightRowShape`) and every helper derives from it: zone of creature i is the board formula on the full length applied to its slot (`zoneOfIndex`), its lane is the slot minus its zone's first slot (`laneOfIndex`), "beside" is the creatures whose slot is exactly one left or right in the same zone (a gap breaks adjacency, `zoneNeighbours`), and the lane count is the board's row width (`laneCount`). All accept a plain length (a dense row) or the board (`RowShape`). An invalid board (length below the row, wrong slot count, slots not strictly increasing integers below the length) throws a `RangeError` when the fight starts. The first version of this change carried only row sizes (`zones`, never merged); it could not keep columns, so lances and "beside" still differed from the board. Misa wants the fight to be exactly the board, so positions replaced sizes. The dungeon (a row of three, `neighbours`) is unchanged.
+
+**Old inputs.** An input without `board` is the dense row (creature i in slot i, the `floor(n / 3)` formula), so stored fights and replays replay identically (a test compares an input without a board to the same row with the dense board written out, and the sim's legacy digest is unchanged). The views send `board` to the client when the stored input has it. The stage, the replay and the forecast use it, and the stage grid draws an empty cell where the board has a gap, so it looks like the placement board (rows by lanes).
+
+**Silence by row.** `silence_ends` now has a required `scope`, like the pincer: `rows` silences the leftmost and rightmost living creature of each board row (a row with one creature once, an empty row skipped), `row` is the whole line. Raid bosses (Bramble Bind, Choking Vines) use `rows`; dungeon foes use `row`, so dungeon fights are unchanged. Powers, turns and periods are not retuned (no balance pass). The forecast, the move text, the Discord post, the glossary, the Thornmother lore and the journal page say "each row"; the forecast marks the ends of each row as for the pincer.
 
 ## 2026-10-18: Auto-joining creatures are on the board; teammates can move an away player's creatures (issue #29)
 
-ID: `2026-10-18-auto-joining-creatures-are-on-the` · Status: current
+ID: `2026-10-18-auto-joining-creatures-are-on-the` · Status: current, amended by `2026-10-26-raids-you-join-by-placing-no`
 
 > **Superseded 2026-10-26** ("Raids: you join by placing; no auto teams"): there are no auto-joining creatures and no away-player assist any more. The board shows only what players placed.
 
@@ -288,21 +292,9 @@ ID: `2026-10-18-auto-joining-creatures-are-on-the` · Status: current
 
 **Why.** Misa's call: a player who is not around should not leave the party with a badly placed row, and the party can fix it, but only until the owner is back, and never what the owner chose themselves. Placing onto a slot where a teammate's auto creature is drawn still works server-side as before (the autos are placed again around it); the client refuses that drop.
 
-## 2026-10-18: The fight uses the board's rows (issue #29)
-
-ID: `2026-10-18-the-fight-uses-the-board-s` · Status: current
-
-**Problem.** The raid board is a line of `rowLength` slots (three per player, or nine with guests) cut into Front, Middle and Back on that full length. The fight got only the creatures, with empty slots dropped, and the engine cut that shorter line again by `floor(n / 3)`. A player with fewer than three creatures, or a hole in the board, moved creatures across row boundaries, so pincers, sweeps, lances, "beside", Guard cover, the forecast and the replay stage used rows that differed from the board.
-
-**Decision.** The fight input carries the board's positions: `FightInput.board` is `{ length, slots }`, where `length` is the board row's full length and `slots[i]` the board slot of `row[i]` (strictly increasing, each below `length`). `buildPhaseInput` reads it off the board after auto-placement and guests (`sparseBoard`), and the stored input keeps it, so replays read the same positions. The engine builds one shape per fight (`fightRowShape`) and every helper derives from it: zone of creature i is the board formula on the full length applied to its slot (`zoneOfIndex`), its lane is the slot minus its zone's first slot (`laneOfIndex`), "beside" is the creatures whose slot is exactly one left or right in the same zone (a gap breaks adjacency, `zoneNeighbours`), and the lane count is the board's row width (`laneCount`). All accept a plain length (a dense row) or the board (`RowShape`). An invalid board (length below the row, wrong slot count, slots not strictly increasing integers below the length) throws a `RangeError` when the fight starts. The first version of this change carried only row sizes (`zones`, never merged); it could not keep columns, so lances and "beside" still differed from the board. Misa wants the fight to be exactly the board, so positions replaced sizes. The dungeon (a row of three, `neighbours`) is unchanged.
-
-**Old inputs.** An input without `board` is the dense row (creature i in slot i, the `floor(n / 3)` formula), so stored fights and replays replay identically (a test compares an input without a board to the same row with the dense board written out, and the sim's legacy digest is unchanged). The views send `board` to the client when the stored input has it. The stage, the replay and the forecast use it, and the stage grid draws an empty cell where the board has a gap, so it looks like the placement board (rows by lanes).
-
-**Silence by row.** `silence_ends` now has a required `scope`, like the pincer: `rows` silences the leftmost and rightmost living creature of each board row (a row with one creature once, an empty row skipped), `row` is the whole line. Raid bosses (Bramble Bind, Choking Vines) use `rows`; dungeon foes use `row`, so dungeon fights are unchanged. Powers, turns and periods are not retuned (no balance pass). The forecast, the move text, the Discord post, the glossary, the Thornmother lore and the journal page say "each row"; the forecast marks the ends of each row as for the pincer.
-
 ## 2026-10-16: the raid curve replaces 1.4^rank; every server starts at rank 1
 
-ID: `2026-10-16-the-raid-curve-replaces-1-4` · Status: current
+ID: `2026-10-16-the-raid-curve-replaces-1-4` · Status: current · Amends: `2026-10-11-progression-phase-1-rules-content-simulator`
 
 **Decision (Misa's brief).** No rank skipping: a win is income and an achievement. Instead of "each rank is 40% tougher", the raid has a custom curve that we control and do not explain to players: "HP and damage on the raid boss are just some variables we control. Later bosses can vary attack patterns, crits, how many times the boss attacks, which moves the boss uses ... Everything should be based on what we expect from players and their progress." Every week must be winnable ("a full raid team, optimized loadouts, positioning and maybe just good luck"); a server that loses should rearrange and improve; and the first raid week should be clearable fairly easily even by mostly casual players.
 
@@ -367,7 +359,7 @@ ID: `2026-10-15-misa-s-answers-on-the-retune` · Status: current
 
 ## 2026-10-15: the raid retune: attack patterns, phase floors and enrage (how it is built)
 
-ID: `2026-10-15-the-raid-retune-attack-patterns-phase` · Status: current
+ID: `2026-10-15-the-raid-retune-attack-patterns-phase` · Status: current · Amends: `2026-10-14-raid-phases-end-at-a-floor`
 
 Misa decided the game feel on 2026-10-14 (`attack-patterns.md` section 7, `raid-ux-2.md` "Raid structure"). These are the technical choices the lead made while building it:
 
@@ -412,7 +404,7 @@ ID: `2026-10-14-a-player-could-have-four-creatures` · Status: current
 
 ## 2026-10-14: Raid Roster: you bring the creatures you place
 
-ID: `2026-10-14-raid-roster-you-bring-the-creatures` · Status: current
+ID: `2026-10-14-raid-roster-you-bring-the-creatures` · Status: current, amended by `2026-10-26-raids-you-join-by-placing-no` · Amends: `2026-10-13-ux-pass-1-raid-tab-r1`
 
 **Decision (Misa, 2026-10-14).** The raid placement section is redesigned. A player's raid creatures for the week are **the creatures they placed on the board, at most three** (`RULES.raid.teamSize`). The chosen-team feature is gone: no "Choose team", no "Use automatic team", no tray. At every lock (a phase resolving, and the finale's start) each player's empty places up to three are filled with their strongest unplaced owned creatures (`autoTeam` order: power, then the older creature, then the smaller id) and placed with the existing `autoPlace`. A player who placed nothing gets the full automatic team, as before. Misa explicitly wants the auto-fill with the strongest.
 
@@ -440,7 +432,7 @@ ID: `2026-10-14-raid-ux-pass-2-slices-8` · Status: current
 
 ## 2026-10-14: The raid stage is a lane grid, like the placement board
 
-ID: `2026-10-14-the-raid-stage-is-a-lane` · Status: current
+ID: `2026-10-14-the-raid-stage-is-a-lane` · Status: current · Amends: `2026-10-11-live-stage-as-rows-abilities-on`
 
 **Decision.** The raid fight stage (replay and live finale) draws its party the way the placement board does: Front, Middle and Back are three lines that never wrap, a lane is a column, the row names are a fixed column at the left, and the three lines scroll sideways together in one scroller. Tiles are small (sprite scale 2, 3.25 rem wide, one-line name with an ellipsis) so about four lanes fit on a 360 px phone. Before the fight starts the stage scrolls to the viewer's own creatures; as it plays it follows the creature that acts, and only moves when that creature is not on screen with a tile to spare. The scroll is instant under `prefers-reduced-motion`, and it waits four seconds after the player scrolls by hand. A lane-number row sits above the grid; the lane pips are not used on the stage, because the stage is already tall and the numbers give the same orientation. The dungeon's single row is unchanged (checked pixel for pixel at 360 and 390 px).
 
@@ -452,7 +444,7 @@ ID: `2026-10-14-the-raid-stage-is-a-lane` · Status: current
 
 ## 2026-10-14: Raid board tiles, sit-out removal
 
-ID: `2026-10-14-raid-board-tiles-sit-out-removal` · Status: current
+ID: `2026-10-14-raid-board-tiles-sit-out-removal` · Status: current · Amends: `2026-10-13-ux-pass-1-raid-tab-r1`
 
 **Decisions.**
 
@@ -465,7 +457,7 @@ ID: `2026-10-14-raid-board-tiles-sit-out-removal` · Status: current
 
 ## 2026-10-14: Raid UX pass 2, slices 4, 6 and 10 (stage head, glossary, finale row, coach mark)
 
-ID: `2026-10-14-raid-ux-pass-2-slices-4` · Status: current
+ID: `2026-10-14-raid-ux-pass-2-slices-4` · Status: current, amended by `2026-10-24-no-acting-order-under-the-creatures`
 
 **Stage head (decided 3).** `ui/StageHead` is the one head of the fight stage, for the dungeon and the raid: the room or phase at the top left ("Room 1 / 3", "Phase 1 / 3") and the round at the top right ("Round 2 / 12"). It replaces the joined "Room 1 / 3 · Round 2 / 2" of PR #18. The finale is the third phase but goes by its own name, "Finale" (`phaseLine` in `raid-text.ts`), as it does on every other screen. The raid stage names the boss under its sprite and writes its HP on the bar (the shared `SegmentBar` `text`), so the head no longer carries "Boss HP x / y".
 
@@ -500,7 +492,7 @@ No retune was made; the numbers are handed to the lead. `exp-casual-discovery` a
 
 ## 2026-10-14: Raid phases end at a floor, and bosses enrage when time runs out
 
-ID: `2026-10-14-raid-phases-end-at-a-floor` · Status: current
+ID: `2026-10-14-raid-phases-end-at-a-floor` · Status: current, amended by `2026-10-15-the-raid-retune-attack-patterns-phase`
 
 **Decision (Misa, 2026-10-14).** Every week has a finale. Each raid phase has an HP floor; when the boss reaches it, it turns immune and the phase ends. Damage past the floor counts for nothing (no overkill), because counting it would be unintuitive; instead the replay and the phase card say clearly why the boss is gone and what happens next, in a per-boss line with a shared fallback. The finale carries 15% of the boss's HP (the Phase 2 floor), which Misa finds "lots to do and it's still exciting". When the finale's rounds run out, the boss enrages: multi-target hits at high damage that wipe a typical row in 2–3 rounds, with a slim chance of a win. Dungeon boss rooms enrage too instead of simply timing out, so players learn the mechanic daily; Misa may walk this back if it plays badly. An enrage loss is a normal loss.
 
@@ -508,7 +500,7 @@ ID: `2026-10-14-raid-phases-end-at-a-floor` · Status: current
 
 ## 2026-10-13: UX pass 1, Raid tab (R1 to R6, approved by Misa)
 
-ID: `2026-10-13-ux-pass-1-raid-tab-r1` · Status: current
+ID: `2026-10-13-ux-pass-1-raid-tab-r1` · Status: current, amended by `2026-10-14-raid-board-tiles-sit-out-removal`, `2026-10-14-raid-roster-you-bring-the-creatures`
 
 The Raid tab is client-only work; the server, the schemas and every rule it enforces are unchanged.
 
@@ -522,7 +514,7 @@ The Raid tab is client-only work; the server, the schemas and every rule it enfo
 
 ## 2026-10-11: Content-paced rounds, smooth effects and a boss telegraph **[Misa]**
 
-ID: `2026-10-11-content-paced-rounds-smooth-effects-and` · Status: current
+ID: `2026-10-11-content-paced-rounds-smooth-effects-and` · Status: current, amended by `2026-10-22-the-live-finale-plays-about-three` · Amends: `2026-10-11-slower-readable-fights-a-round-intro`
 
 **Context.** Misa tried the slower stage on staging: more time to see damage and effects was a step in the right direction. His feedback: the round switch text should be 1 to 2 seconds shorter; damage numbers should linger even longer, overlap, and keep floating up so new ones appear below older ones; some numbers, especially on his creatures, were choppy; the idle wait at the end of each round dragged (give effects about 2 seconds, then go straight on); and he could not read when and whom the boss attacks.
 
@@ -542,7 +534,7 @@ ID: `2026-10-11-content-paced-rounds-smooth-effects-and` · Status: current
 
 ## 2026-10-11: Slower, readable fights, a round intro and a hidden jackpot **[Misa]**
 
-ID: `2026-10-11-slower-readable-fights-a-round-intro` · Status: current
+ID: `2026-10-11-slower-readable-fights-a-round-intro` · Status: current, amended by `2026-10-11-content-paced-rounds-smooth-effects-and`
 
 **Context.** Misa watched the first real live finale in production: "it feels like a speed run; combos and crits just aren't picked up by my eyes". He also asked to keep the jackpot and pity "behind the scenes".
 
@@ -580,7 +572,7 @@ ID: `2026-10-11-pre-fight-countdown-auto-fire-preferences` · Status: current
 
 ## 2026-10-11: Live stage as rows, abilities on the creatures, Auto fire toggle **[Misa]**
 
-ID: `2026-10-11-live-stage-as-rows-abilities-on` · Status: current
+ID: `2026-10-11-live-stage-as-rows-abilities-on` · Status: current, amended by `2026-10-14-the-raid-stage-is-a-lane` · Amends: `2026-10-11-m5a-live-finale-server-implementation-choices`
 
 **Context.** Misa tried the practice fight on staging: the zones side by side did not fit a phone, names were cut off, and the ability cards under the stage were far from the creatures they belong to. He also asked to replace "Hold" with a clearer control.
 
@@ -597,7 +589,7 @@ ID: `2026-10-11-live-stage-as-rows-abilities-on` · Status: current
 
 ## 2026-10-11: After-action card (implementation choices)
 
-ID: `2026-10-11-after-action-card-implementation-choices` · Status: current
+ID: `2026-10-11-after-action-card-implementation-choices` · Status: current, amended by `2026-10-26-raid-results-show-real-damage-and`
 
 **Decision.** Every resolved stage (Phase 1, Phase 2, finale) has an after-action card in the Raid tab results and on the finale loot reveal (the Raid tab one and the one at the end of the live finale), following item 5 of Misa's progression decisions. It states facts and never gives advice. Interpretations:
 
@@ -632,7 +624,7 @@ ID: `2026-10-11-pinning-the-raid-post-channel-from` · Status: current
 
 ## 2026-10-11: Misa's answers after testing M4 and M5 on staging
 
-ID: `2026-10-11-misa-s-answers-after-testing-m4` · Status: current
+ID: `2026-10-11-misa-s-answers-after-testing-m4` · Status: current · Amends: `2026-10-10-discord-raid-posts`
 
 - **Reactions** at about half of all damage (balance pass 2): accepted **[Misa]**.
 - **Live finale Fire/Hold**: accepted **[Misa]**.
@@ -643,7 +635,7 @@ ID: `2026-10-11-misa-s-answers-after-testing-m4` · Status: current
 
 ## 2026-10-11: M5a live finale server (implementation choices)
 
-ID: `2026-10-11-m5a-live-finale-server-implementation-choices` · Status: current
+ID: `2026-10-11-m5a-live-finale-server-implementation-choices` · Status: current, amended by `2026-10-11-live-stage-as-rows-abilities-on`
 
 **Decision.** The server side of the live finale follows `docs/design/m5-finale.md`. Where the spec left room, these are the choices:
 
@@ -662,7 +654,7 @@ ID: `2026-10-11-m5a-live-finale-server-implementation-choices` · Status: curren
 
 ## 2026-10-11: Live finale over short polling first
 
-ID: `2026-10-11-live-finale-over-short-polling-first` · Status: current
+ID: `2026-10-11-live-finale-over-short-polling-first` · Status: current, amended by `2026-10-22-the-live-finale-is-pushed-over`
 
 **Decision.** The live Sunday finale (M5) runs on the guild Durable Object with the fight's state derived from the clock. The client polls `GET /api/raid/live` every 2 s and acts with `POST /api/raid/live/action`. WebSocket push on the same object comes later, after a staging spike inside real Discord. The fight input and seed are frozen at the start, rounds come from `floor((now - start) / 10 s)`, and every read re-simulates the fight with the abilities known so far. That stays consistent because of the engine's prefix property (rounds 1..r depend only on abilities fired in rounds 1..r), which a test pins down. Present players can **Fire** (takes effect next round) or **Hold** (keep it past the default round; an unused held ability fires in the last round). Everyone else fires at the default round **[Misa: absent players fire at default; Hold rule to confirm]**. Details: `docs/design/m5-finale.md`.
 
@@ -670,7 +662,7 @@ ID: `2026-10-11-live-finale-over-short-polling-first` · Status: current
 
 ## 2026-10-10: Discord raid posts
 
-ID: `2026-10-10-discord-raid-posts` · Status: current
+ID: `2026-10-10-discord-raid-posts` · Status: current, amended by `2026-10-11-misa-s-answers-after-testing-m4`, `2026-10-18-raid-posts-are-embeds-that-sum`
 
 **Decision.**
 
@@ -697,9 +689,17 @@ ID: `2026-10-10-m4-raid-server-implementation-choices` · Status: current
 
 **Reasoning.** Server-authoritative and race-safe like the rest of the game, with one alarm to re-arm and no duplicated schedulers; replays are exact because input and seed are stored.
 
+## 2026-10-10: Live finale time and length
+
+ID: `2026-10-10-live-finale-time-and-length` · Status: current, amended by `2026-10-22-the-live-finale-plays-about-three`
+
+**Decision.** The Sunday finale starts at 20:00 Europe/Helsinki (default, configurable) **[Misa: accepted default]**. The fight itself is short: **2 minutes by default, never more than 5** **[Misa]**. Length is a boss parameter (a modifier can stretch a boss to the full 5 minutes later, when players are stronger). The server runs fixed-length rounds (about 10 seconds each, so 12 rounds at the default), and the fight ends early if the boss falls. Players who join a few minutes late can still watch the replay and get their loot reveal.
+
+**Reasoning.** An hour-long window is far too long for this game; a short, intense finale is easier to attend together and keeps the single manual ability meaningful.
+
 ## 2026-10-10: No raid sign-up; parties of up to 15
 
-ID: `2026-10-10-no-raid-sign-up-parties-of` · Status: current
+ID: `2026-10-10-no-raid-sign-up-parties-of` · Status: current, amended by `2026-10-26-raids-you-join-by-placing-no`
 
 > **Superseded 2026-10-26** ("Raids: you join by placing; no auto teams"): a player is only in the raid once they place a creature, nothing is auto-picked, there is no opt-out and no snake draft. The 15-player party cap stands.
 
@@ -707,10 +707,14 @@ ID: `2026-10-10-no-raid-sign-up-parties-of` · Status: current
 
 **Reasoning.** Absent players should still count (the server's power doesn't drop), but long-gone players shouldn't inflate the boss or collect loot. A 15-player cap keeps the row readable and coordination possible; the engine itself handles hundreds of creatures in milliseconds, so the cap is about play, not performance.
 
-## 2026-10-10: Live finale time and length
+<!-- Superseded entries below: kept for history, no longer in force. -->
 
-ID: `2026-10-10-live-finale-time-and-length` · Status: current
+# Superseded
 
-**Decision.** The Sunday finale starts at 20:00 Europe/Helsinki (default, configurable) **[Misa: accepted default]**. The fight itself is short: **2 minutes by default, never more than 5** **[Misa]**. Length is a boss parameter (a modifier can stretch a boss to the full 5 minutes later, when players are stronger). The server runs fixed-length rounds (about 10 seconds each, so 12 rounds at the default), and the fight ends early if the boss falls. Players who join a few minutes late can still watch the replay and get their loot reveal.
+## 2026-10-18: Auto tiles are soft and muted (issue #29)
 
-**Reasoning.** An hour-long window is far too long for this game; a short, intense finale is easier to attend together and keeps the single manual ability meaningful.
+ID: `2026-10-18-auto-tiles-are-soft-and-muted` · Status: superseded by `2026-10-26-raids-you-join-by-placing-no`
+
+**Decision.** A player may drop their own creature onto a slot that shows another player's auto tile: their creature takes the slot, and the auto creature moves to a free slot by the normal auto rules. Nothing is stored for an auto creature (the board is built at read time), so the server's `place` already allowed this; tests now pin it (auto creature ends in a free slot, nobody is lost, board and fight agree, and with three members of three creatures each the board is exactly full, so a free slot always exists). A creature that was placed stays hard (`slot_taken`). Teammate moves for an away player (`raid-assist.ts`) follow the same rule: another member's auto tile makes room, another member's placed creature is `slot_taken`, and the owner's own placed creature is still `not_movable`. No invariant breaks: the owner's team is pinned first, other members' autos are never stored, and the cap of three per player holds.
+
+**Client.** The drop is no longer refused. While a creature is carried over another player's auto tile the page says "<creature> makes room." (text only), and the drop announcement says the same. Auto tiles are muted so they read as suggestions: the dashed outline and "auto" tag stay, the sprite is faded and half desaturated, and the text uses the quiet text colour (about 6.5:1 on the tile, above AA); hover, focus and a drag over the tile bring the full look back so it never looks disabled. The workbench's "Others join by themselves" toggle shows the same look.

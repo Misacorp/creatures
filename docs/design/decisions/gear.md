@@ -6,7 +6,7 @@ Gear items, lines and sets, crafting, dismantling, conversions, the bag and the 
 
 ## 2026-10-27: Marked items, dismantled as a pile
 
-ID: `2026-10-27-marked-items-dismantled-as-a-pile` · Status: current
+ID: `2026-10-27-marked-items-dismantled-as-a-pile` · Status: current, amended by `2026-10-27-bulk-selection-replaces-marking` · Amends: `2026-10-16-gear-b-built-reach-dismantle-jobs`, `2026-10-16-misa-agrees-with-the-podcast-s`, `2026-10-21-the-workshop-s-supply-jobs-are`
 
 A player asked for a quick way to clear items past the 60-item bag. Misa's rules: mark items, then one free creature dismantles the whole marked pile at once; worn items and items in an open job cannot be marked; equipping a marked item clears its mark; the request names the exact items the confirmation showed (409 and nothing taken if the marked set changed); the creature must be free (not away, not on a job); it gains Crafting XP but no creature experience; Market Day's bonus goes to the most valuable items; the old timed dismantle job goes.
 
@@ -20,7 +20,7 @@ A player asked for a quick way to clear items past the 60-item bag. Misa's rules
 
 ## 2026-10-21: the Workshop's supply jobs are one wizard in a drawer; level limits may fold in job pickers
 
-ID: `2026-10-21-the-workshop-s-supply-jobs-are` · Status: current
+ID: `2026-10-21-the-workshop-s-supply-jobs-are` · Status: current, amended by `2026-10-27-marked-items-dismantled-as-a-pile` · Amends: `2026-10-20-the-workshop-s-supplies-become-one`
 
 Craft, Refine and Recycle on the supply card now open one drawer, `JobDrawer`, built on the shared Wizard (`ui/Wizard`). The recipe (in, arrow, out, time) sits once at the top, pinned in the drawer's toolbar slot, and the "?" help is beside the title. Step 1, Who crafts: creatures who can do the job first (best crafter first, each with its time), busy ones at the level greyed with "On a job" / "Away on a trip", and the creatures under the job's Crafting level folded into one greyed row ("4 more creatures need Crafting level 3") that expands on a tap. Step 2, Ready: who and their time, and the treat box. The footer is the gold start ("Craft", "Start refine", "Start recycle", with the Bait badge for a packed treat) and always says why it is off. Back on Who and Escape on Who close the drawer; Escape elsewhere goes one step back. The start call is the same as before (same request, same idempotency key). A failed start keeps the drawer open and shows the server's error in the footer: the game's own error line sits behind the drawer, so `Game` passes its `error` down through `Workshop` and `SupplyCrafting`, and the drawer shows it only after its own start failed.
 
@@ -58,7 +58,7 @@ Misa: the Workshop item drawer's "Equip on" list did not show which creatures al
 
 ## 2026-10-20: The item picker does not move gear off another creature
 
-ID: `2026-10-20-the-item-picker-does-not-move` · Status: current
+ID: `2026-10-20-the-item-picker-does-not-move` · Status: current · Amends: `2026-10-18-one-item-grid`
 
 Misa: "Items in the item picker… give no indication that it's worn on some other creature. This easily leads to players accidentally unequipping items from some creatures when they equip them on others. Maybe disable those items now and somehow indicate someone is wearing them."
 
@@ -68,13 +68,13 @@ Misa: "Items in the item picker… give no indication that it's worn on some oth
 
 ## 2026-10-20: The Workshop's supplies become one compact picker (version C)
 
-ID: `2026-10-20-the-workshop-s-supplies-become-one` · Status: current
+ID: `2026-10-20-the-workshop-s-supplies-become-one` · Status: current, amended by `2026-10-21-the-workshop-s-supply-jobs-are` · Amends: `2026-10-20-workshop-conversions-refine-and-recycle`
 
 Misa chose version C and asked to keep it compact throughout. The long supply list and the separate Refine and Recycle section (`ConversionCrafting`, removed) are now one picker (`SupplyCrafting`): a grid of the 12 supplies as pictures (4 kinds across, 3 tiers down, rarity edges grey, blue and pink, stock in a corner, supplies no creature can craft yet dimmed but selectable) and one card under it for the chosen supply with its effect text from content, cost, time, Crafting level and actions: a primary Craft and small Refine and Recycle text buttons, each opening the same creature picker and server jobs as before (no API change). `ui/RecipeCard` gained a `compact` mode (no button or reason) to show a recipe inputs and outputs above the picker. The section keeps the id `ws-supplies` that the trip screen scrolls to. Reason: one phone screen instead of two long lists.
 
 ## 2026-10-20: Workshop conversions, Refine and Recycle
 
-ID: `2026-10-20-workshop-conversions-refine-and-recycle` · Status: current
+ID: `2026-10-20-workshop-conversions-refine-and-recycle` · Status: current, amended by `2026-10-20-the-workshop-s-supplies-become-one`
 
 Misa: players can turn expedition supplies into other things in the Workshop, as timed jobs like dismantling.
 
@@ -95,7 +95,7 @@ PR #35's CI timed out on a nine-week sim run (`dungeon.test.ts`, 120 s): part 2 
 
 ## 2026-10-18: One item grid
 
-ID: `2026-10-18-one-item-grid` · Status: current
+ID: `2026-10-18-one-item-grid` · Status: current, amended by `2026-10-20-the-item-picker-does-not-move`
 
 Misa did not want two item grids. The item picker's look won (lead's call, Misa asked which): the rarity is the tile's single edge (the bag drew a dark tile and a framed image inside it, two edges, against the "one border" rule of 2026-10-17), the art fills the square, a gold "Worn" flag sits at the top right, and the selected tile is lit with a light edge. `ItemTile.tsx` is the one tile and `.item-grid` the one grid (`styles/components/item-tile.css`); the picker and the Workshop bag (`InventoryGrid`) both use them. A selected tile scrolls itself into view. The bag's own styles (`views/inventory.css`) are gone.
 
@@ -107,13 +107,13 @@ Misa expected square item cells. The picker grid (`.ip-cell`) and the Workshop b
 
 ## 2026-10-18: A second tap closes the item details in the picker
 
-ID: `2026-10-18-a-second-tap-closes-the-item` · Status: current
+ID: `2026-10-18-a-second-tap-closes-the-item` · Status: current, amended by `2026-10-18-never-stack-drawers-one-width-inside`, `2026-10-18-play-test-round-2-one-type`
 
 Misa asked how a player gets back to the grid once an item's details fill the bottom of the picker. Tapping the item shown again now closes its details (its cell's `aria-pressed` goes false), so the grid has the whole drawer and scrolls freely; tapping any item opens them again. With nothing shown, the Prev / Next row gives way to the "N in the bag" count. The picker still opens with an item shown (the worn one, else the first choice). Then (Misa): the item shown, or shown last after its details closed, keeps a selected look in the grid (lit from inside, with a light edge inside the rarity edge) and is scrolled into view when its details close; the creature list marks the card of the creature whose page was open last the same way (`current`), and Back makes sure that card is in view even if the list moved meanwhile.
 
 ## 2026-10-18: Compare inline on the item card, with a switch
 
-ID: `2026-10-18-compare-inline-on-the-item-card` · Status: current
+ID: `2026-10-18-compare-inline-on-the-item-card` · Status: current, amended by `2026-10-20-configurator-buttons-in-one-row-compare` · Supersedes: `2026-10-18-compare-in-the-item-picker-what`
 
 Misa saw the compare row and wanted the changes shown on the card itself, where they belong, with a switch. In the creature page's item picker (not the Workshop: it has no creature) the selected item's card now compares itself with the item worn in that slot.
 
@@ -127,17 +127,6 @@ Misa saw the compare row and wanted the changes shown on the card itself, where 
 **Follow-up 2 (same day).** Misa dropped the stat change box beside Equip: the totals and set lines for the creature are gone, with their code, styles and tests, and so is the shared `compareGear` of `packages/game` (nothing else used it; the earlier paragraphs about the row and `compareGear` no longer apply). What is left is the inline compare on the card. The detail panel has one bottom row: the Compare switch at the left and the action at the right (Equip, Take off, or the reason an item cannot be worn), so actions always sit in the same place and Equip is no longer in the card's corner. The switch is hidden when there is nothing to compare (empty slot, worn item) and the action stays at the right. **Compare is off by default**, and a viewer who switches it on keeps it on (`localStorage` key `creatures:picker-compare`, read and written in try/catch; without storage it starts off). Workbench: K1 to K4 show it on, K5 an empty slot, K6 the default off.
 
 **Follow-up 3 (same day).** Every lost line stays listed (no cap). Instead the picker's detail panel cannot grow without limit: the card sits in its own scroll box (`ip-detail-scroll`, `max-height: 40dvh`, with a `vh` fallback; 338 px on a 390 x 844 phone), and the bottom row (Compare switch left, Equip or Take off right) is outside it, so the actions are always visible. Why 40%: the drawer is at most 88% of the screen (743 px), its handle and heading take about 75 px and the action row about 56 px, which leaves the grid more than the 200 px its two rows need. A vertical drag scrolls the box (the flip area only takes a sideways swipe, `touch-action: pan-y`), `overscroll-behavior: contain` keeps it from dragging the page, and the box takes keyboard focus (`tabindex="0"`, a labelled group) so it can be scrolled with the keys. Workbench preset K7 shows a long Epic against a long worn Epic.
-
-## 2026-10-18: Compare in the item picker (what Equip would change)
-
-ID: `2026-10-18-compare-in-the-item-picker-what` · Status: current
-
-Selecting an item in a slot's picker that is not the worn one now shows what wearing it would change for this creature, in a row under the item card: the changes on the left, the Equip button on the right (so it reads as the answer to "what does Equip do?"; the button moved out of the card's top right corner for wearable items, Take off and the reason stay there).
-
-- **One fold, no copy.** The rules are `compareGear` in `packages/game/src/rules/gear-compare.ts`: it runs `applyGear` twice (the worn items now, and with the item in place of its slot's) and takes the difference, so a set's plain lines, percent lines, the item's own stats and talents are counted as the server counts them. The client (`creature-page/compare-view.ts`) only builds the input from what it holds: effective stats from level and fusion, the species' crit, the worn items looked up in the bag for their lines, and the active talents (`activeTalents` over the creature's Talent Book). If a worn item is missing from the bag, or the creature cannot wear the item (the picker already says why), there is no block.
-- **What shows.** Only stats that change: HP, Attack, Speed, then crit chance and crit damage in points ("Attack +12", "HP −30", "Crit damage +20 pt"), green for up and red for down, with the sign in the words and a spoken copy ("minus 30"), so colour is never the only signal. Set lines only when a set's bonus changes (0 to 1 piece and a swap inside one set say nothing): "Forge-Warm Kit 3 / 3: both bonuses", "Hollow Weave 2 / 3: 2 piece bonus", "Loses Hollow Weave 2 / 3". The item's own lines are not repeated (the card lists them). An empty slot compares to nothing, so every number is a gain. When nothing changes it says "No stat change".
-- **Limits.** Position lines, a fight's neighbours and lines that only matter in a fight are not in a stat number, so they never show here (the fold the server uses for the creature page's numbers has no placement either). A set's three-piece effect that does nothing for this creature's element still says "both bonuses" (the card's set block says the same).
-- **Workbench.** `CreaturePage` scenes K1 to K5 (better item, worse item, completes a set, breaks a set, empty slot). The sample bag now uses the game's own base stats and a real local Attack line on epics, so the card and the compare agree. `ItemPickerDrawer` got an optional `initialPicked`.
 
 ## 2026-10-18: Chance lines and trigger lines
 
@@ -169,7 +158,7 @@ Builds sections 6.3 and 6.4 of `gear-and-creatures-v2.md`. Technical decisions b
 
 ## 2026-10-18: More gear and modifiers: position lines, one special line per item, and gear sets
 
-ID: `2026-10-18-more-gear-and-modifiers-position-lines` · Status: current
+ID: `2026-10-18-more-gear-and-modifiers-position-lines` · Status: current, amended by `2026-10-19-lantern-cap-can-drop-mystery-line`
 
 Misa asked for more gear and modifiers. This builds section 6.1 (position lines) and 6.2 (set bonuses) of `gear-and-creatures-v2.md`; chance and trigger lines (6.3, 6.4) and the two position lines that need a per-round engine check (Warm burrow, Lane anchor) wait for their own work. Technical decisions by the lead agent and the implementer. No migration: set membership is the base's id in content, so stored items are untouched.
 
@@ -217,7 +206,7 @@ Every effect that names a reaction works for a wearer of the element that cashes
 
 ## 2026-10-17: Workshop bag polish (Misa's feedback on the v6 screenshots)
 
-ID: `2026-10-17-workshop-bag-polish-misa-s-feedback` · Status: current
+ID: `2026-10-17-workshop-bag-polish-misa-s-feedback` · Status: current · Amends: `2026-10-16-gear-a-built-hat-scarf-and`, `2026-10-16-gear-b-built-reach-dismantle-jobs`, `2026-10-17-one-item-level-indicator-item-card`
 
 - **The item-level label may cover a corner of the item art**, also on small pictures (Misa: "perfectly fine and expected").
 - **Workshop bag.** "Bag: 3 / 60" sits on the Gear heading's line, at the right. The "Equip best on your top 3" and "Dismantle several" buttons are gone: choosing the best gear is the player's puzzle, and the extra buttons cluttered the view. The server's equip-best endpoint and the client's API call stay for now (unused by the UI); bulk dismantling is still possible in the server's job API (one job, several items) for a later, leaner UI if wanted.
@@ -228,7 +217,7 @@ ID: `2026-10-17-workshop-bag-polish-misa-s-feedback` · Status: current
 
 ## 2026-10-17: one item-level indicator; item card and compact rows (polish v6)
 
-ID: `2026-10-17-one-item-level-indicator-item-card` · Status: current
+ID: `2026-10-17-one-item-level-indicator-item-card` · Status: current, amended by `2026-10-17-workshop-bag-polish-misa-s-feedback` · Amends: `2026-10-17-creature-rarity-by-name-colour-gear`
 
 Misa's changes after polish v5, with the lead's decision on item levels.
 
@@ -239,7 +228,7 @@ Misa's changes after polish v5, with the lead's decision on item levels.
 
 ## 2026-10-17: items carry base stats; local and global lines; Festival gear is special, not stronger
 
-ID: `2026-10-17-items-carry-base-stats-local-and` · Status: current
+ID: `2026-10-17-items-carry-base-stats-local-and` · Status: current, amended by `2026-10-17-staging-held-the-first-gear-v2` · Amends: `2026-10-16-gear-a-built-hat-scarf-and`
 
 Misa's direction (2026-10-17), built on the gear v2 branch before it merges (so migration 27 and the conversion changed, no new migration). The design is `gear-and-creatures-v2.md` section 2.5; the numbers and their tuning are `docs/balance/log.md` B-018. Technical decisions by the lead and the implementer:
 
@@ -253,7 +242,7 @@ Misa's direction (2026-10-17), built on the gear v2 branch before it merges (so 
 
 ## 2026-10-16: Gear B: no free lottery (a craft's scrap follows the item level; a dismantle returns under half; a Reach needs no extra shards)
 
-ID: `2026-10-16-gear-b-no-free-lottery-a` · Status: current
+ID: `2026-10-16-gear-b-no-free-lottery-a` · Status: current · Amends: `2026-10-16-gear-b-built-reach-dismantle-jobs`
 
 The lead's decision on B-013 (`docs/balance/log.md`), from Misa's rule that a dismantle returns "a fraction of its costs". Numbers are starting values; B-015 has the study.
 
@@ -265,7 +254,7 @@ The lead's decision on B-013 (`docs/balance/log.md`), from Misa's rule that a di
 
 ## 2026-10-16: Gear B built: Reach, dismantle jobs, well-thumbed marks (migration 29)
 
-ID: `2026-10-16-gear-b-built-reach-dismantle-jobs` · Status: current
+ID: `2026-10-16-gear-b-built-reach-dismantle-jobs` · Status: current, amended by `2026-10-16-gear-b-no-free-lottery-a`, `2026-10-17-workshop-bag-polish-misa-s-feedback`, `2026-10-18-play-test-round-2-one-type`, `2026-10-27-marked-items-dismantled-as-a-pile`
 
 Step 3 of the build order in `gear-and-creatures-v2.md` (section 14), per section 3 and the 2026-10-16 decisions (the review page's last questions, the lean UI, Market Day). Technical decisions by the lead and implementer; the numbers are starting values in `RULES.gear` and the sim reports where they land (`docs/balance/log.md` B-013).
 
@@ -304,7 +293,7 @@ A review of Gear A found six problems, fixed in the first commits of the Gear B 
 
 ## 2026-10-16: Gear A built: Hat, Scarf and Charm, item levels, tiered lines, Equip best, conversion (migration 27)
 
-ID: `2026-10-16-gear-a-built-hat-scarf-and` · Status: current
+ID: `2026-10-16-gear-a-built-hat-scarf-and` · Status: current, amended by `2026-10-17-items-carry-base-stats-local-and`, `2026-10-17-workshop-bag-polish-misa-s-feedback` · Amends: `2026-10-13-gear-and-crafting-v1-server-and`
 
 Step 2 of the build order in `gear-and-creatures-v2.md` (section 14). Technical decisions made by the lead and implementer; the numbers are starting values in `RULES.gear` and the content files, and the sim reports where they land (`docs/balance/log.md` B-012).
 
@@ -329,7 +318,7 @@ Misa agrees: at the highest item level about 1 line in 7 rolls tier V. A perfect
 
 ## 2026-10-16: Misa agrees with the podcast's points; Market Day boosts only the day's first crafts
 
-ID: `2026-10-16-misa-agrees-with-the-podcast-s` · Status: current
+ID: `2026-10-16-misa-agrees-with-the-podcast-s` · Status: current, amended by `2026-10-27-marked-items-dismantled-as-a-pile`
 
 Misa listened to the review episodes and agrees with the changes they proposed unless he says otherwise. One change: **Market Day** must not reward hoarding items until it rolls. Its Workshop bonus now applies only to the day's first craft (+5 pt one-step-up chance) and the first 2 dismantle jobs (top of the refund range). The inventory cap of 60 also limits hoarding. The same rule applies to any future Boon that boosts a spend: limit it to the first few actions of the day.
 
@@ -350,7 +339,7 @@ Festival gear is won only by clearing a Festival finale. There are no Festival b
 
 ## 2026-10-13: Gear numbers set by simulation
 
-ID: `2026-10-13-gear-numbers-set-by-simulation` · Status: current
+ID: `2026-10-13-gear-numbers-set-by-simulation` · Status: current · Amends: `2026-10-13-gear-and-crafting-v1-server-and`
 
 The balance simulator now plays gear and crafting (`packages/sim/src/gear.ts`, with the game's own pure functions) and `RULES.gear` was tuned against six new targets (`docs/design/balance-targets.md`, report `docs/balance/report-2026-10-13-gear.md`). All 33 targets pass on the full run with seed `leet`.
 
@@ -393,7 +382,7 @@ The gear share grows from 2% in week 1 to 7% in week 4, 12% in week 8 and 13% in
 
 ## 2026-10-13: Gear and crafting v1 (client)
 
-ID: `2026-10-13-gear-and-crafting-v1-client` · Status: current
+ID: `2026-10-13-gear-and-crafting-v1-client` · Status: current, amended by `2026-10-17-creature-rarity-by-name-colour-gear`
 
 The Workshop tab, the gear slot on creature cards and the loot lists are in; they only display the server's views and send intents.
 
@@ -408,7 +397,7 @@ The Workshop tab, the gear slot on creature cards and the loot lists are in; the
 
 ## 2026-10-13: Gear and crafting v1 (server and content)
 
-ID: `2026-10-13-gear-and-crafting-v1-server-and` · Status: current
+ID: `2026-10-13-gear-and-crafting-v1-server-and` · Status: current, amended by `2026-10-13-gear-numbers-set-by-simulation`, `2026-10-16-gear-a-built-hat-scarf-and`, `2026-10-21-the-bag-may-overflow-a-full`
 
 The server and content half of `design/gear.md` ("v1 build spec") is in; the Workshop UI, sprites and the sim model come separately. Defaults held: one gear slot per creature, one shared busy state for expeditions and jobs, one skill (Crafting), no trading, no gear on sprites. All numbers are in `RULES.gear` and are starting values for the sim to tune.
 
@@ -427,3 +416,18 @@ The server and content half of `design/gear.md` ("v1 build spec") is in; the Wor
 - **Client contract.** `GET /api/gear` is `{ serverNow, balances, inventory, items, parts, blueprints, jobs, slots, skills, grants }`; the actions answer `{ result, gear, state }`. The loot of raids is not added to the Raid view (that would change every raid fixture); the loot reveal reads `grants` (keys above) for the week it shows. Expedition claims have `result.loot`. Fixtures were captured from real server output and the Worker's `gear-fixtures.test.ts` fails when the shape changes. New error codes: `insufficient_parts`, `creature_on_job`, `workshop_full`, `inventory_full`, `item_busy`, `not_ready`, `max_level`, `same_enchant`, `blueprint_unknown`, `nothing_to_improve`, `invalid_secondary`, `invalid_blueprint`, `invalid_enchant`, `item_gone` (plus the usual `key_conflict`, `insufficient_funds`, `creature_away`, `not_found`, `invalid_body`).
 - **Analytics.** `gear_drop`, `gear_equip`, `gear_upgrade`, `gear_dismantle`, `job_start` and `job_claim`, one event per action that changed something, with content ids (bases, enchants), enums and integers only, rebuilt on write like the others. Raid drops are guild level (no actor); the rest carry the actor hash. The privacy scan covers all six.
 - **Not done here.** Sprites and the Workshop UI; the daily dungeon's parts; the sim does not model gear yet (its slots are still without it, and its targets pass unchanged); nothing was balanced by simulation.
+
+<!-- Superseded entries below: kept for history, no longer in force. -->
+
+# Superseded
+
+## 2026-10-18: Compare in the item picker (what Equip would change)
+
+ID: `2026-10-18-compare-in-the-item-picker-what` · Status: superseded by `2026-10-18-compare-inline-on-the-item-card`
+
+Selecting an item in a slot's picker that is not the worn one now shows what wearing it would change for this creature, in a row under the item card: the changes on the left, the Equip button on the right (so it reads as the answer to "what does Equip do?"; the button moved out of the card's top right corner for wearable items, Take off and the reason stay there).
+
+- **One fold, no copy.** The rules are `compareGear` in `packages/game/src/rules/gear-compare.ts`: it runs `applyGear` twice (the worn items now, and with the item in place of its slot's) and takes the difference, so a set's plain lines, percent lines, the item's own stats and talents are counted as the server counts them. The client (`creature-page/compare-view.ts`) only builds the input from what it holds: effective stats from level and fusion, the species' crit, the worn items looked up in the bag for their lines, and the active talents (`activeTalents` over the creature's Talent Book). If a worn item is missing from the bag, or the creature cannot wear the item (the picker already says why), there is no block.
+- **What shows.** Only stats that change: HP, Attack, Speed, then crit chance and crit damage in points ("Attack +12", "HP −30", "Crit damage +20 pt"), green for up and red for down, with the sign in the words and a spoken copy ("minus 30"), so colour is never the only signal. Set lines only when a set's bonus changes (0 to 1 piece and a swap inside one set say nothing): "Forge-Warm Kit 3 / 3: both bonuses", "Hollow Weave 2 / 3: 2 piece bonus", "Loses Hollow Weave 2 / 3". The item's own lines are not repeated (the card lists them). An empty slot compares to nothing, so every number is a gain. When nothing changes it says "No stat change".
+- **Limits.** Position lines, a fight's neighbours and lines that only matter in a fight are not in a stat number, so they never show here (the fold the server uses for the creature page's numbers has no placement either). A set's three-piece effect that does nothing for this creature's element still says "both bonuses" (the card's set block says the same).
+- **Workbench.** `CreaturePage` scenes K1 to K5 (better item, worse item, completes a set, breaks a set, empty slot). The sample bag now uses the game's own base stats and a real local Attack line on epics, so the card and the compare agree. `ItemPickerDrawer` got an optional `initialPicked`.

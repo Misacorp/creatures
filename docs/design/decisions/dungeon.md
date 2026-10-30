@@ -14,7 +14,7 @@ ID: `2026-10-22-foe-move-lines-say-what-a` · Status: current
 
 ## 2026-10-22: Molten Shell is a frequent partial Backlash, not a rare full reflect (replaces the reflective shield above)
 
-ID: `2026-10-22-molten-shell-is-a-frequent-partial` · Status: current
+ID: `2026-10-22-molten-shell-is-a-frequent-partial` · Status: current · Amends: `2026-10-22-the-dungeon-s-reflect-is-split`
 
 Misa found a 5% full reflect too swingy: a lucky roll ruins a good run, and most runs never see it. The `reflect_chance` op is replaced by `backlash` (`chanceBp`, `shareBp`; the old op was never in a release, so no stored run holds it, and the raid's `reflect_first_reaction` stays so stored runs with the old Thorns reflect still replay).
 
@@ -26,7 +26,7 @@ Misa found a 5% full reflect too swingy: a lucky roll ruins a good run, and most
 
 ## 2026-10-22: The dungeon's reflect is split in two: spiky armour (Thorns) and a reflective shield (Molten Shell). The raid is unchanged
 
-ID: `2026-10-22-the-dungeon-s-reflect-is-split` · Status: current
+ID: `2026-10-22-the-dungeon-s-reflect-is-split` · Status: current, amended by `2026-10-22-molten-shell-is-a-frequent-partial`
 
 Misa's call, after the balance work in B-002: reflect knocked out a creature in 97 to 100% of the runs that met it (the Thorns room modifier, or the Slag Tyrant's Molten Shell). The first reaction of each round came back whole, uncapped and undodgeable, so players learnt to avoid reactions, which is the opposite of what the game wants. The raid is untouched, because many players fight it together and its balance (the Cinder Wyrm's Backdraft, Bramble Season) was tuned as it is (B-007). Dungeon only:
 
@@ -39,7 +39,7 @@ Misa's call, after the balance work in B-002: reflect knocked out a creature in 
 
 ## 2026-10-22: Rare rooms: one roll, one pool
 
-ID: `2026-10-22-rare-rooms-one-roll-one-pool` · Status: current
+ID: `2026-10-22-rare-rooms-one-roll-one-pool` · Status: current · Amends: `2026-10-21-the-blue-chasm-a-rare-mystery`, `2026-10-22-four-more-mystery-rooms-training-post`, `2026-10-22-sealed-vault-and-the-other-rooms`, `2026-10-22-the-sealed-vault-a-rare-mystery`
 
 Misa found three separate chances (25%, 20%, 15%) and a pick among the hits too fiddly, and asked for two pools. When a run steps into a mystery room, **one roll** (`RULES.dungeon.rareRoomChanceBp`, 4000 = 40%; the three chances gave about 49% together from depth 3 on and less at the shallow depths, so this is about the same share, a little lower) decides whether it is a rare room. If it is, the room is picked **evenly among the eligible rare rooms**: each keeps its `fromDepth` (vault 1, door 2, chasm 3), the vault's "a fight must lie ahead" filter (`rareEventsAt`), and never one the run already met (`rareSeen`). If none is eligible the room stays the normal one and no dice are drawn.
 
@@ -49,7 +49,7 @@ Misa found three separate chances (25%, 20%, 15%) and a pick among the hits too 
 
 ## 2026-10-22: A curse is a keepsake with a curse effect, and the Sealed Vault doubles everything material
 
-ID: `2026-10-22-a-curse-is-a-keepsake-with` · Status: current
+ID: `2026-10-22-a-curse-is-a-keepsake-with` · Status: current · Amends: `2026-10-22-four-more-mystery-rooms-training-post`, `2026-10-22-the-sealed-vault-a-rare-mystery`
 
 Misa, after testing the new rooms: "a curse is a keepsake with a curse effect" (not its own warning note and tag), and "the vault doubles everything" (not only the pack).
 
@@ -58,15 +58,9 @@ Misa, after testing the new rooms: "a curse is a keepsake with a curse effect" (
 - **The Sealed Vault doubles all material rewards.** Marked fight: Bait, Essence, scrap and shards as before. New: **gear and supplies**, which no fight drops itself (the run's gear and supply come with its end grant), so each marked fight cleared adds one more gear roll and one more supply to the end grant (`rollSealedBonus`; the run then holds two of each instead of one). The gear roll uses the same chance as the full clear's (certain today, so one piece), then rarity, base and rolls at the run's depth, from the live gear rng and drawn after the run's own dice (nothing is drawn without a marked fight). Counted in `RunState.sealedWins` (old runs: 0), paid by the same grant under the same key (idempotent on retry), a full bag turns the gear into parts like any dungeon gear. Like the run's own supply it is earned when the fight is cleared and paid whatever the outcome. **Keepsakes:** a marked elite gives two (distinct, none already held; as many as are left), the second as `bonusKeepsake` on the fight's log entry (a marked plain fight gives none, as a plain fight gives none). **Experience is not doubled** (still the epic amount). The option text says only "The next fight is epic, with double rewards." (Misa, 2026-10-22: name the promise, not the exact effects, which may change).
 - **A marked room wears the epic skull on the map** (`nodeGlyphOf` uses the shown kind) while the mark lasts, with the x2 badge; the ring and the element tint stay the room's own.
 
-## 2026-10-22: Sealed Vault and the other rooms merged: one rare roll for all three rare rooms
-
-ID: `2026-10-22-sealed-vault-and-the-other-rooms` · Status: current
-
-The Sealed Vault (25% from depth 1), the Hungry Door (20% from depth 2) and the Blue Chasm (15% from depth 3) all go through the one generalised `rollRareEvent` (one draw per unmet rare room that has reached its depth, one more to pick evenly among several hits). The vault rule "never with no fight ahead" stays: the worker passes `rareEventsAt(map, node)`, which leaves the vault out of the list, so it takes no draw. Each rare room appears at most once a run; the marginals are about 11.9% (chasm), 16.3% (door) and 20.9% (vault). The vault balance entry stays B-029 and the four-rooms entry is B-030.
-
 ## 2026-10-22: Four more mystery rooms (Training Post, Crystal Hollow, Cursed Idol, Hungry Door), curses, and one rule for rare rooms
 
-ID: `2026-10-22-four-more-mystery-rooms-training-post` · Status: current
+ID: `2026-10-22-four-more-mystery-rooms-training-post` · Status: current, amended by `2026-10-22-a-curse-is-a-keepsake-with`, `2026-10-22-rare-rooms-one-roll-one-pool` · Amends: `2026-10-21-the-blue-chasm-a-rare-mystery`, `2026-10-22-the-sealed-vault-a-rare-mystery`
 
 Misa approved four rooms. Lore is in `docs/compendium/dungeon.md` (and `places.md` for the Hollow); design in `docs/design/dungeon-paths.md`.
 
@@ -81,7 +75,7 @@ Misa approved four rooms. Lore is in `docs/compendium/dungeon.md` (and `places.m
 
 ## 2026-10-22: The Sealed Vault, a rare mystery room that marks the fights ahead, and a generic room badge on the map
 
-ID: `2026-10-22-the-sealed-vault-a-rare-mystery` · Status: current
+ID: `2026-10-22-the-sealed-vault-a-rare-mystery` · Status: current, amended by `2026-10-22-a-curse-is-a-keepsake-with`, `2026-10-22-four-more-mystery-rooms-training-post`, `2026-10-22-rare-rooms-one-roll-one-pool`
 
 Misa asked for a mystery room whose bad-ish answer makes the next fight epic with double rewards, and for a generic way to show such an effect on the map ("a generic modifier icon that can be attached to a room ... it could show 'x2'"). It is `sealed-vault` in `dungeon-events.json`; full rules in `docs/design/dungeon-paths.md` ("The Sealed Vault"), lore in `docs/compendium/dungeon.md`.
 
@@ -94,9 +88,15 @@ Misa asked for a mystery room whose bad-ish answer makes the next fight epic wit
 - **Simulator and economy.** Unchanged by construction (the sim plays no rare room): see B-029 in `docs/balance/log.md` for the sim run before and after and an estimate of what the vault pays.
 - **Compendium rule changed.** The compendium said no mystery room is ever a fight; the vault is the second exception (after the chasm's fall), on the player's own choice.
 
+## 2026-10-22: Sealed Vault and the other rooms merged: one rare roll for all three rare rooms
+
+ID: `2026-10-22-sealed-vault-and-the-other-rooms` · Status: current, amended by `2026-10-22-rare-rooms-one-roll-one-pool`
+
+The Sealed Vault (25% from depth 1), the Hungry Door (20% from depth 2) and the Blue Chasm (15% from depth 3) all go through the one generalised `rollRareEvent` (one draw per unmet rare room that has reached its depth, one more to pick evenly among several hits). The vault rule "never with no fight ahead" stays: the worker passes `rareEventsAt(map, node)`, which leaves the vault out of the list, so it takes no draw. Each rare room appears at most once a run; the marginals are about 11.9% (chasm), 16.3% (door) and 20.9% (vault). The vault balance entry stays B-029 and the four-rooms entry is B-030.
+
 ## 2026-10-21: The dungeon pays experience per room a creature stood in, and the end screen recaps it
 
-ID: `2026-10-21-the-dungeon-pays-experience-per-room` · Status: current
+ID: `2026-10-21-the-dungeon-pays-experience-per-room` · Status: current · Amends: `2026-10-18-the-daily-dungeon-becomes-a-path`
 
 Misa: "experience should be paid per fight that a creature was in, and the dungeon end screen should show a recap and exp gain for each creature that earned experience... higher for harder fights, a bit for cache rooms but not as much as fights, and as an effect in mystery rooms."
 
@@ -111,7 +111,7 @@ Misa: "experience should be paid per fight that a creature was in, and the dunge
 
 ## 2026-10-21: The Blue Chasm, a rare mystery room with a treasure shown first
 
-ID: `2026-10-21-the-blue-chasm-a-rare-mystery` · Status: current
+ID: `2026-10-21-the-blue-chasm-a-rare-mystery` · Status: current, amended by `2026-10-22-four-more-mystery-rooms-training-post`, `2026-10-22-rare-rooms-one-roll-one-pool`
 
 Misa asked for a rare mystery room: a plank over a chasm, a valuable treasure on the other side, 50/50 to cross or the whole team falls and the run ends. He wanted it kept at 50/50 with a full defeat, and made tempting by the prize. It is `blue-chasm` in `dungeon-events.json`, lore in `docs/compendium/dungeon.md`.
 
@@ -130,7 +130,7 @@ Misa asked for a rare mystery room: a plank over a chasm, a valuable treasure on
 
 ## 2026-10-21: The keepsakes get a locket and a velvet canvas; the canvases reach further under the picture
 
-ID: `2026-10-21-the-keepsakes-get-a-locket-and` · Status: current
+ID: `2026-10-21-the-keepsakes-get-a-locket-and` · Status: current · Amends: `2026-10-21-the-run-strip-s-pack-is`
 
 Misa's next round on the run strip: the leather should start at least from the backpack's middle, and the keepsakes should get the same treatment with a picture of their own.
 
@@ -146,7 +146,7 @@ Misa's next round on the run strip: the leather should start at least from the b
 
 ## 2026-10-21: The run strip's pack is a backpack, and the keepsakes get their own panel
 
-ID: `2026-10-21-the-run-strip-s-pack-is` · Status: current
+ID: `2026-10-21-the-run-strip-s-pack-is` · Status: current, amended by `2026-10-21-the-keepsakes-get-a-locket-and`
 
 Misa: the "In your pack" line said what you carry, but not visually that it can be lost; the fonts were wrong, "At risk" sat out of line, and "Keepsakes ? Chalk Mark" read as one jumbled line.
 
@@ -158,7 +158,7 @@ Misa: the "In your pack" line said what you carry, but not visually that it can 
 
 ## 2026-10-21: At the camp a tap shows the creature; only a drag moves it
 
-ID: `2026-10-21-at-the-camp-a-tap-shows` · Status: current
+ID: `2026-10-21-at-the-camp-a-tap-shows` · Status: current · Amends: `2026-10-18-the-camp-s-row-can-be`
 
 Misa, play-testing the camp: tapping a creature to see it (what it wears) and then tapping another swapped the two, and he felt he lost control. Tap-to-swap is gone.
 
@@ -170,7 +170,7 @@ Misa, play-testing the camp: tapping a creature to see it (what it wears) and th
 
 ## 2026-10-20: The dungeon card is where the team gets ready (the creature configurator), and one gear list
 
-ID: `2026-10-20-the-dungeon-card-is-where-the` · Status: current
+ID: `2026-10-20-the-dungeon-card-is-where-the` · Status: current · Amends: `2026-10-15-dungeon-team-board-and-recommended`
 
 Misa: "I'd like to have the ability to see the gear equipped on my creatures in the dungeon team select… Plan a way for me to be able to do the gear switching and why not even talent switching etc. in a way that the dungeon team composition screen is my 'base of operations'." After four mock-ups (all three at once, the tapped one, the Creatures tab's cards, a tile that opens the page) Misa chose the tapped one: "a lightweight 'creature configurator' where the goal is to allow the user to understand what the creature is and does… and configure it for a task ahead."
 
@@ -182,7 +182,7 @@ Misa: "I'd like to have the ability to see the gear equipped on my creatures in 
 
 ## 2026-10-20: The daily dungeon pays more, and its choices pay more again (B-024)
 
-ID: `2026-10-20-the-daily-dungeon-pays-more-and` · Status: current
+ID: `2026-10-20-the-daily-dungeon-pays-more-and` · Status: current · Amends: `2026-10-13-combined-balance-pass-gear-dungeon-and`
 
 - **Why.** Misa: a full run paid 2 to 4 scrap, which felt like nothing. New target: a full clear of the main map pays, in expectation, about 1.5 crafts of parts (about 10 scrap and 1.5 shards) and one gear piece, and choices made inside the dungeon (elites, risky mystery options, the carved door, the Undercroft descent) raise that.
 - **What.** Scalars, plus one new pack field: fight rooms can drop a shard of their foe's element into the pack (`RULES.dungeon.shardBp` by room kind: fight 15%, elite 40%, epic 60%, floor boss and Undercroft keeper a sure one), at risk like the rest of the pack; it replaces `bossShardBp`. Room loot, the boss chest (every full clear drops a gear piece), the mystery rooms' options and the Undercroft's chest and epic fight pay more; the numbers and the before and after are in `docs/balance/log.md`, B-024. Difficulty is unchanged.
@@ -200,7 +200,7 @@ ID: `2026-10-20-mire-content-old-bogback-the-bog` · Status: current
 
 ## 2026-10-18: The dungeon results screen, reworked
 
-ID: `2026-10-18-the-dungeon-results-screen-reworked` · Status: current
+ID: `2026-10-18-the-dungeon-results-screen-reworked` · Status: current · Amends: `2026-10-13-daily-dungeon-one-row-a-constant`
 
 **Decision.** Misa's feedback on the end-of-run screen:
 
@@ -213,7 +213,7 @@ ID: `2026-10-18-the-dungeon-results-screen-reworked` · Status: current
 
 ## 2026-10-18: The camp's row can be rearranged on the entry's board, and a recruit can be placed in the same act
 
-ID: `2026-10-18-the-camp-s-row-can-be` · Status: current
+ID: `2026-10-18-the-camp-s-row-can-be` · Status: current, amended by `2026-10-21-at-the-camp-a-tap-shows` · Amends: `2026-10-18-the-daily-dungeon-becomes-a-path`
 
 **Problem.** Misa swapped a downed creature for another at the camp and could not set the team up around the new recruit. The server already took an `order` with the camp act, but it was applied before the choice, so the recruit (not yet in the row) could not be placed, and the client's only control was small Left/Right buttons that were easy to miss.
 
@@ -258,7 +258,7 @@ ID: `2026-10-18-a-fallen-creature-gets-back-up` · Status: current
 
 ## 2026-10-18: The Undercroft (a deeper, optional level) and the carved door
 
-ID: `2026-10-18-the-undercroft-a-deeper-optional-level` · Status: current
+ID: `2026-10-18-the-undercroft-a-deeper-optional-level` · Status: current · Amends: `2026-10-18-the-daily-dungeon-becomes-a-path`
 
 - **Why:** runs should grow longer as players progress, by the player's choice (Misa). Design in `docs/design/dungeon-paths.md`, "The Undercroft".
 - **Server shape:** the main boss at depth 8 or more does not end the run. Depth +1 is written to `dungeon_progress` at once (`MAX`), and the chest opens: its gear, shard, glimmer and supply are paid right then under the grant key `dungeon:<day>:<attempt>:chest` (an Undercroft keeper's under `...:u<level>`), and its Essence and scrap go into the pack. A defeat below or a run left open can therefore never undo the depth or the banked gear. The run's end pays the pack through the usual ledger keys and adds what the chests paid to the summary's rewards, without paying it again.
@@ -271,7 +271,7 @@ ID: `2026-10-18-the-undercroft-a-deeper-optional-level` · Status: current
 
 ## 2026-10-18: The daily dungeon becomes a path on a daily map (camps, keepsakes and a pack)
 
-ID: `2026-10-18-the-daily-dungeon-becomes-a-path` · Status: current
+ID: `2026-10-18-the-daily-dungeon-becomes-a-path` · Status: current, amended by `2026-10-18-the-camp-s-row-can-be`, `2026-10-18-the-undercroft-a-deeper-optional-level`, `2026-10-21-the-dungeon-pays-experience-per-room` · Amends: `2026-10-13-daily-dungeon-v1-engine-content-server`
 
 - **Misa (2026-10-17):** a Slay the Spire style loop in the existing room format: players push on and make choices on where to go, with push-your-luck mechanics, built on top of the gear and creature revamp. Design: `dungeon-paths.md`; research summary at its end (Slay the Spire's visible map and optional elites, Hades' rewards shown on the door, Loop Hero's camp retreat and partial loss, Quacks' safety net, daily seeds shared by everyone).
 - **The map:** seven floors, 2 or 3 rooms on most floors, the camp on floor 3 and the room boss on floor 6; fights, elites, mystery rooms and one cache, with Slay the Spire's placement rules (floor 0 all fights, no elites before floor 2, different kinds on sibling exits). **One map per server per day**, drawn from the day's seed (already a crypto draw) and stored, so everyone sees the same map and can compare routes; every fight's seed is still a fresh crypto draw when the player steps in. Foe numbers follow each player's depth.
@@ -285,7 +285,7 @@ ID: `2026-10-18-the-daily-dungeon-becomes-a-path` · Status: current
 
 ## 2026-10-15: Dungeon fight feedback: bigger team tiles, a longer room intro, no spoiled round count, traits on the stage
 
-ID: `2026-10-15-dungeon-fight-feedback-bigger-team-tiles` · Status: current
+ID: `2026-10-15-dungeon-fight-feedback-bigger-team-tiles` · Status: current · Amends: `2026-10-15-the-dungeon-s-pre-run-screen`
 
 Misa's feedback after trying the dungeon, five changes (Activity only, no server change):
 
@@ -297,19 +297,19 @@ Misa's feedback after trying the dungeon, five changes (Activity only, no server
 
 ## 2026-10-15: the dungeon's pre-run screen is one card
 
-ID: `2026-10-15-the-dungeon-s-pre-run-screen` · Status: current
+ID: `2026-10-15-the-dungeon-s-pre-run-screen` · Status: current, amended by `2026-10-15-dungeon-fight-feedback-bigger-team-tiles` · Amends: `2026-10-13-ux-pass-1-dungeon-less-text`, `2026-10-15-dungeon-team-board-and-recommended`
 
 Misa's feedback: the dungeon is like the raid boss, and the team assembles below it. So "Daily dungeon" and "Your team" are one card, in this order: a header (a big "Daily Dungeon" title with a "?" for its glossary entry at the left, the streak row with its gift days at the right, or under the title on a phone), the three rooms, the depth track, the team board centred with roomy padding, the order line (quiet), the "3 / 3 placed" count with its check, and Enter (with its disabled state and the "Place 3 creatures to enter" line). The title is the shared `PixelHeading` at the boss name's size, not a copy of its CSS. The streak, which PR #18 moved to the end report, is back in the header as `StreakTrack` inside a streak glossary tag. The board is the Raid Roster's `RaidBoard` in its single-row mode, now at the raid's own compact tile size (the larger single-row tiles are gone) and centred; it takes any number of slots in one row. When a run starts, the page scrolls to the fight (smooth, instant under `prefers-reduced-motion`). Nothing changes on the server. The blocked ("Not today") state keeps its separate message under the card.
 
 ## 2026-10-15: the dungeon setup opens with the player's last team
 
-ID: `2026-10-15-the-dungeon-setup-opens-with-the` · Status: current
+ID: `2026-10-15-the-dungeon-setup-opens-with-the` · Status: current · Amends: `2026-10-15-dungeon-team-board-and-recommended`
 
 Misa's call: the dungeon team setup opens with the player's last team, each creature in the slot it stood in, with no explanatory text. The server already keeps the ordered team of every run in the run's `summary_json` (which, unlike the replay input, is kept after the retention period), so no new table or migration: `GET /api/dungeon/today` (and the `today` inside a run response) now carries `lastTeam`, the creature ids of the caller's newest run on any day, or `null` before the first run. It is read from the verified session's own runs only, through a schema that checks the ids and the team size; a damaged summary gives `null`. The client (`startingTeam` in `dungeon-team.ts`) keeps each id in its slot if the player still owns the creature and the picker offers it, leaves other slots empty without shifting anyone, and falls back to the strongest three on the first run (and if none of the last team can be placed any more, so the row is never empty). Edits made in the setup without starting a run are not stored.
 
 ## 2026-10-15: Dungeon team board and Recommended
 
-ID: `2026-10-15-dungeon-team-board-and-recommended` · Status: current
+ID: `2026-10-15-dungeon-team-board-and-recommended` · Status: current, amended by `2026-10-15-the-dungeon-s-pre-run-screen`, `2026-10-15-the-dungeon-setup-opens-with-the`, `2026-10-20-the-dungeon-card-is-where-the` · Amends: `2026-10-13-daily-dungeon-one-row-a-constant`
 
 **Decision (Misa, 2026-10-15).** (1) The dungeon team setup uses the Raid Roster's board and interactions: `ui/RaidBoard` has a `single` mode (one row of three places, no row labels, no lane header, no scroller, larger tiles) and `DungeonTeam` is built on it. Tapping an empty place or pressing Enter opens the same creature picker, with its "In this slot:" line read in the dungeon's left-to-right order; tapping a creature opens the standard popover with "Remove from team"; creatures move by drag (press and hold on touch, a drop on another creature swaps, the popover closes when a drag starts); keyboard users use the picker. The count line is "3 / 3 placed" with the green check, no board total. Removed: the "Your creatures" tray list, "Use my strongest three" (as in the raid), "Take out", tap-then-tap-a-slot, and their code (`CreatureTray`, the `SlotRow` component, the selection state, the keyboard pick-up mode, the tray drop target, the geometric key fallback of `dnd-core`), styles, tests and workbench pages. `ui/SlotRow.tsx` became `ui/SlotButton.tsx` because the shared tile is all that is left in it. (2) The creature picker, for both raid and dungeon, shows a small "Recommended" tag on the player's three strongest creatures: no reason or explanation (Misa: "Let's not offer any context into why it's recommended"), no sorting, the same three whatever the slot.
 
@@ -323,7 +323,7 @@ ID: `2026-10-15-dungeon-team-board-and-recommended` · Status: current
 
 ## 2026-10-14: The daily dungeon always acts left to right, and the order is shown
 
-ID: `2026-10-14-the-daily-dungeon-always-acts-left` · Status: current
+ID: `2026-10-14-the-daily-dungeon-always-acts-left` · Status: current, amended by `2026-10-24-no-acting-order-under-the-creatures` · Amends: `2026-10-13-daily-dungeon-one-row-a-constant`, `2026-10-13-daily-dungeon-v1-engine-content-server`
 
 **Decision (Misa, 2026-10-14).** "Dungeons could be the more simple fighting experience. Left to right by default ... The raid can have these mechanics because it's a single fight people can prepare for, not three changing rooms. The other modifiers are what make dungeons interesting." Any change to the normal rules must be shown before the run, or, for a mystery modifier, announced when it happens. Players optimise their loadout and order, and the dungeon must reward that planning.
 
@@ -351,7 +351,7 @@ ID: `2026-10-14-the-daily-dungeon-always-acts-left` · Status: current
 
 ## 2026-10-13: UX pass 1, Dungeon (less text, no ability picks) and glossary copy
 
-ID: `2026-10-13-ux-pass-1-dungeon-less-text` · Status: current
+ID: `2026-10-13-ux-pass-1-dungeon-less-text` · Status: current, amended by `2026-10-15-the-dungeon-s-pre-run-screen` · Amends: `2026-10-13-daily-dungeon-v1-client`, `2026-10-13-daily-dungeon-v1-engine-content-server`
 
 Spec: `design/ux-pass-1.md`, Dungeon items 1 to 5 and "Glossary copy".
 
@@ -371,7 +371,7 @@ ID: `2026-10-13-dungeon-days-never-go-backwards-and` · Status: current
 
 ## 2026-10-13: Daily dungeon: one row, a constant stage and a fuller end report (Misa's playtest)
 
-ID: `2026-10-13-daily-dungeon-one-row-a-constant` · Status: current
+ID: `2026-10-13-daily-dungeon-one-row-a-constant` · Status: current, amended by `2026-10-14-the-daily-dungeon-always-acts-left`, `2026-10-15-dungeon-team-board-and-recommended`, `2026-10-18-the-dungeon-results-screen-reworked` · Amends: `2026-10-13-daily-dungeon-v1-client`, `2026-10-13-daily-dungeon-v1-engine-content-server`
 
 **Context.** Misa played the dungeon on staging: fights should happen on one row (compact, easy to read, room for row-end and right-to-left ideas later), the fight area must not change size between rooms, the end report should lead with the rewards and then show the rooms and the team as pictures, and tapping a small creature should say what it is.
 
@@ -405,7 +405,7 @@ ID: `2026-10-13-daily-dungeon-foe-sprites-and-how` · Status: current
 
 ## 2026-10-13: Daily dungeon v1 (client)
 
-ID: `2026-10-13-daily-dungeon-v1-client` · Status: current
+ID: `2026-10-13-daily-dungeon-v1-client` · Status: current, amended by `2026-10-13-daily-dungeon-one-row-a-constant`, `2026-10-13-ux-pass-1-dungeon-less-text`
 
 The Dungeon tab, built against the server's real output (`dungeon-*.json` fixtures, now covered by the server-contract tests like the gear ones).
 
@@ -418,7 +418,7 @@ The Dungeon tab, built against the server's real output (`dungeon-*.json` fixtur
 
 ## 2026-10-13: Daily dungeon v1 (engine, content, server and balance model)
 
-ID: `2026-10-13-daily-dungeon-v1-engine-content-server` · Status: current
+ID: `2026-10-13-daily-dungeon-v1-engine-content-server` · Status: current, amended by `2026-10-13-combined-balance-pass-gear-dungeon-and`, `2026-10-13-daily-dungeon-one-row-a-constant`, `2026-10-13-ux-pass-1-dungeon-less-text`, `2026-10-14-the-daily-dungeon-always-acts-left`, `2026-10-18-the-daily-dungeon-becomes-a-path`, `2026-10-23-the-alarm-s-cleanup-runs-once`
 
 The engine, content, server and simulator half of `design/daily-dungeon.md` is in; the UI comes next (`apps/activity/src/dungeon-types.ts` and the `dungeon-*.json` fixtures are what it builds against). All 37 simulator targets (33 old, 4 new) pass on the full run with seed `leet`.
 

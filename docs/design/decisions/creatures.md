@@ -28,7 +28,7 @@ A player asked (#76) for a short note on a creature, next to Rename, to remember
 
 ## 2026-10-25: Evolution short of Essence shows on the creature page
 
-ID: `2026-10-25-evolution-short-of-essence-shows-on` · Status: current
+ID: `2026-10-25-evolution-short-of-essence-shows-on` · Status: current · Amends: `2026-10-17-the-creature-card-is-small-more`
 
 A player's level 15 Cindle showed nothing about evolving: the server's `evolution.available` needs the level and the Essence, and the page drew the Evolve button only when it was true. Misa: show it greyed with the exact cost, as the ribbon does when it is short of parts.
 
@@ -40,7 +40,7 @@ A player's level 15 Cindle showed nothing about evolving: the server's `evolutio
 
 ## 2026-10-20: Fusion goes up in points, slowly at the top
 
-ID: `2026-10-20-fusion-goes-up-in-points-slowly` · Status: current
+ID: `2026-10-20-fusion-goes-up-in-points-slowly` · Status: current, amended by `2026-10-20-raids-harder-for-the-tick-economy`
 
 Expeditions now bring many more duplicates, and with one level of fusion per duplicate the raid team was fully fused (fusion 5) within two to four weeks for committed players (the creatures study, 8 weeks: a min-maxer's team averaged fusion 4.0 by week 2 and 2.9 of 3 creatures at 5 by week 4; fusion was 13% of fight-scored power and 7% of the Attack + HP score). Misa asked for fusion to be more incremental, with the first levels easy and the last ones much harder, and to stay fairly hidden.
 
@@ -50,7 +50,7 @@ The client shows it quietly: the creature page says "Fusion 2 · 4/6" (level and
 
 ## 2026-10-19: Every evolve goes through the evolve screen; a data table panel (wave 7)
 
-ID: `2026-10-19-every-evolve-goes-through-the-evolve` · Status: current
+ID: `2026-10-19-every-evolve-goes-through-the-evolve` · Status: current · Amends: `2026-10-18-branch-evolutions-built-sunfawn-and-ohmouse`, `2026-10-19-round-5-touch-ups-the-multiplier`
 
 Misa: "Even with one evolution, let's use the same flow where they get to see that only one form is available." (and, once he saw it would need words: "Show, don't tell.") And: "On the creature card, give the stats 'table' a somewhat darker background and some padding. I'd like to use that kind of a reusable element when showing what is essentially a table of data. The same component could go into the exp multiplier breakdown popover."
 
@@ -60,7 +60,7 @@ Misa: "Even with one evolution, let's use the same flow where they get to see th
 
 ## 2026-10-19: Every XP multiplier multiplies, and one rule in `xp-boost.ts` pays and explains every gain
 
-ID: `2026-10-19-every-xp-multiplier-multiplies-and-one` · Status: current
+ID: `2026-10-19-every-xp-multiplier-multiplies-and-one` · Status: current · Amends: `2026-10-19-every-xp-gain-is-the-count`
 
 Misa decided that every XP multiplier multiplies: a gain's total is the product of all its parts (the treat, each Boon and Omen, each gear line, each trip bonus), not the treat times one plus the shares added together. This replaces the additive note in the follow-up of "Every XP gain is the Count-up row" above (3x with +25% and -20% is 3 x 1.25 x 0.8 = 3x, no longer 3.15x). Reasoning: players read the breakdown as a list of multipliers, so the Total should be the lines multiplied out; the old rule made the lines not multiply out to the total when two shares met.
 
@@ -72,7 +72,7 @@ Misa decided that every XP multiplier multiplies: a gain's total is the product 
 
 ## 2026-10-18: Second forms for the six other evolving lines: every line grows two ways
 
-ID: `2026-10-18-second-forms-for-the-six-other` · Status: current
+ID: `2026-10-18-second-forms-for-the-six-other` · Status: current, amended by `2026-10-19-the-simulator-picks-second-forms-like`
 
 Step 7 of `gear-and-creatures-v2.md` (section 8.4) finished: after Sproutle and Zipmouse, the other six evolving lines get a second form too, so every evolving line has two, each element has all four roles at stage 2 between its lines, and Keep is offered for every evolving line. Names are working names from the lead agent's brief (Misa may rename; they sit in `creatures.json`, the lore, the sprites and the compendium). Technical decisions by the implementer, for the lead's review. No migration (a stored creature keeps its species; the new forms are only reachable through the evolve request), no `RULES` change, no balance tuning.
 
@@ -99,7 +99,7 @@ Step 7 of `gear-and-creatures-v2.md` (section 8.4) finished: after Sproutle and 
 
 ## 2026-10-18: Branch evolutions built: Sunfawn and Ohmouse, Keep is live
 
-ID: `2026-10-18-branch-evolutions-built-sunfawn-and-ohmouse` · Status: current
+ID: `2026-10-18-branch-evolutions-built-sunfawn-and-ohmouse` · Status: current, amended by `2026-10-19-every-evolve-goes-through-the-evolve`, `2026-10-19-the-simulator-picks-second-forms-like` · Amends: `2026-10-11-creature-abilities-phase-1-content-engine`
 
 Step 7 of `gear-and-creatures-v2.md` (section 8.4). Sproutle grows into Thornbuck or Sunfawn, Zipmouse into Voltaro or Ohmouse; the choice is permanent; a Kept duplicate (a second creature of the line) can grow the other way. Technical decisions by the lead and implementer; Misa kept the names Sunfawn and Ohmouse (2026-10-18).
 
@@ -119,7 +119,7 @@ Step 7 of `gear-and-creatures-v2.md` (section 8.4). Sproutle grows into Thornbuc
 
 ## 2026-10-17: creature page v3 is the live page; rarity colours and creature rarity borders
 
-ID: `2026-10-17-creature-page-v3-is-the-live` · Status: current
+ID: `2026-10-17-creature-page-v3-is-the-live` · Status: current, amended by `2026-10-17-creature-rarity-by-name-colour-gear` · Amends: `2026-10-17-the-creature-page-replaces-more-text`
 
 Misa approved v3 (with changes) from the screenshots. It replaces the live `CreaturePage`; the workbench keeps scenes for it (the `CreaturePage` entry) and the sample data. Nothing of the round's other options (item picker list P-A, find and filter P-C) is in the game bundle (a test searches the production build).
 
@@ -146,7 +146,7 @@ Misa's feedback on the creature page, built in the workbench as "Creature page v
 
 ## 2026-10-17: the creature page replaces "More"; text pass on Creatures, gear and Workshop
 
-ID: `2026-10-17-the-creature-page-replaces-more-text` · Status: current
+ID: `2026-10-17-the-creature-page-replaces-more-text` · Status: current, amended by `2026-10-17-creature-page-v3-is-the-live` · Amends: `2026-10-17-the-creature-card-is-small-more`
 
 **What.** Misa: tapping a creature card opens a **creature page** in the list's place, and the card's "More" expansion is gone. The page holds everything "More" held (gear per slot with the picker and Equip best, talents and the Talent Book, stats, finale ability, About, fusion, ribbons, explorer facts, Lounge, Rename) plus the ribbon, evolve and "answer a waiting catch" buttons. It opens at the top (a gear icon on the card opens it on that slot's picker, the talent chips on the talents).
 
@@ -158,7 +158,7 @@ ID: `2026-10-17-the-creature-page-replaces-more-text` · Status: current
 
 ## 2026-10-17: the creature card is small, "More" holds the rest, and the Creatures tab has find and filter
 
-ID: `2026-10-17-the-creature-card-is-small-more` · Status: current
+ID: `2026-10-17-the-creature-card-is-small-more` · Status: current, amended by `2026-10-17-the-creature-page-replaces-more-text`, `2026-10-25-evolution-short-of-essence-shows-on`
 
 **What.** Misa chose "Option B, Focused" for the card and "Find and filter" for jumping to a creature (from the card options mock). A card shows only what the daily decision needs: sprite, name (nickname), element icon, level, the XP bar with what comes next ("Next: Scarf at 7", "Full: earn the Bronze Ribbon to keep growing"), the three gear slots as icons, the talents as chips, and **one gold button only when something is ready**. About 250 px tall at 390 px. Away, On a job and Lounging show on the card (they change what you can do); everything else moved under **More**.
 
@@ -202,7 +202,7 @@ The lead's decision (B-014 follow-up): the catalogue pace had no friction that w
 
 ## 2026-10-17: Creatures B built: training by activity, treats, ribbons (migration 30)
 
-ID: `2026-10-17-creatures-b-built-training-by-activity` · Status: current
+ID: `2026-10-17-creatures-b-built-training-by-activity` · Status: current · Amends: `2026-10-11-second-balance-tuning-pass`
 
 Step 5 of the build order in `gear-and-creatures-v2.md` (section 14), per 9.1 to 9.3a, 12 and the 2026-10-16 decisions ("no catch-up bonus", "treats as a checkbox", "lean UI"). Technical decisions by the lead and implementer; the numbers are starting values in `RULES.experience` and the sim reports where they land (`docs/balance/log.md` B-016).
 
@@ -219,7 +219,7 @@ Step 5 of the build order in `gear-and-creatures-v2.md` (section 14), per 9.1 to
 
 ## 2026-10-16: Creatures A built: talents, the duplicate choice, the Talent Book, lures and fewer catches (migration 28)
 
-ID: `2026-10-16-creatures-a-built-talents-the-duplicate` · Status: current
+ID: `2026-10-16-creatures-a-built-talents-the-duplicate` · Status: current, amended by `2026-10-18-the-trip-result-screen-and-teach` · Amends: `2026-10-10-m2-collection-on-the-server-implementation`, `2026-10-11-progression-phase-2-worker-and-client`
 
 Step 4 of the build order in `gear-and-creatures-v2.md` (section 14) with the expedition change of 9.5. Technical decisions made by the lead and implementer; the numbers are starting values in `RULES.talents`, `RULES.expeditions` and the content files, and the sim reports where they land (`docs/balance/log.md` B-014).
 
@@ -281,7 +281,7 @@ PR #7 is merged and production runs it.
 
 ## 2026-10-11: Progression, phase 2 (worker and client)
 
-ID: `2026-10-11-progression-phase-2-worker-and-client` · Status: current
+ID: `2026-10-11-progression-phase-2-worker-and-client` · Status: current, amended by `2026-10-16-creatures-a-built-talents-the-duplicate`, `2026-10-25-the-raid-view-stores-its-readiness`
 
 **Decision.** The Boss Rank ladder, seasons, Festival weeks, rank-scaled payouts, the Festival creature and the readiness band are live on the server and in the Raid tab (`docs/design/progression.md`, "Phase 2: what was built"). The lead's numbers and Misa's decisions are unchanged; these are the interpretations:
 
@@ -305,7 +305,7 @@ ID: `2026-10-11-progression-phase-2-worker-and-client` · Status: current
 
 ## 2026-10-11: Progression, phase 1 (rules, content, simulator)
 
-ID: `2026-10-11-progression-phase-1-rules-content-simulator` · Status: current
+ID: `2026-10-11-progression-phase-1-rules-content-simulator` · Status: current, amended by `2026-10-16-the-raid-curve-replaces-1-4` · Amends: `2026-10-11-second-balance-tuning-pass`
 
 **Decision.** Misa's progression decisions are built in the rules, content and simulator (`docs/design/progression.md`, "Phase 1: what was built"; measurements in `docs/balance/report-2026-10-11-progression.md`). The worker and client follow in phase 2. Choices and interpretations:
 
@@ -338,7 +338,7 @@ On `docs/design/progression.md`:
 
 ## 2026-10-10: M2 collection on the server (implementation choices)
 
-ID: `2026-10-10-m2-collection-on-the-server-implementation` · Status: current
+ID: `2026-10-10-m2-collection-on-the-server-implementation` · Status: current, amended by `2026-10-16-creatures-a-built-talents-the-duplicate`
 
 **Decision.**
 

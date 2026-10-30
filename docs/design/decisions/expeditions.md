@@ -6,7 +6,7 @@ Trips, supplies, the world map, the send flow, rank gifts, Boons and Omens weath
 
 ## 2026-10-22: Desktop Expeditions map: full width until a place is chosen, the panel runs the wizard
 
-ID: `2026-10-22-desktop-expeditions-map-full-width-until` · Status: current
+ID: `2026-10-22-desktop-expeditions-map-full-width-until` · Status: current · Amends: `2026-10-21-the-trips-view-is-a-world`
 
 Misa's feedback on the desktop world map, after testing it.
 
@@ -18,7 +18,7 @@ Misa's feedback on the desktop world map, after testing it.
 
 ## 2026-10-21: The Trips view is a world map
 
-ID: `2026-10-21-the-trips-view-is-a-world` · Status: current
+ID: `2026-10-21-the-trips-view-is-a-world` · Status: current, amended by `2026-10-22-desktop-expeditions-map-full-width-until` · Amends: `2026-10-13-expeditions-v2-client-banner-cards-send`
 
 Misa approved the world-map design for the Expeditions tab (mockups MapPhone / MapDesktop). The Trips view now shows a pixel map with a marker per place instead of the catalogue and the send screen; Journal, Profile and every other tab are unchanged.
 
@@ -33,7 +33,7 @@ Misa approved the world-map design for the Expeditions tab (mockups MapPhone / M
 
 ## 2026-10-21: The bag may overflow; a full bag warns where you set off
 
-ID: `2026-10-21-the-bag-may-overflow-a-full` · Status: current
+ID: `2026-10-21-the-bag-may-overflow-a-full` · Status: current · Amends: `2026-10-13-gear-and-crafting-v1-server-and`
 
 Misa found a dungeon find turned into parts because his bag was full, with no warning beforehand. It felt like a loss the game never explained. The new rule:
 
@@ -61,7 +61,7 @@ Misa asked for a better treat box, then reviewed the screenshots: no gold edge w
 
 ## 2026-10-21: One line per supply, its strength word anchored to a reference trip
 
-ID: `2026-10-21-one-line-per-supply-its-strength` · Status: current
+ID: `2026-10-21-one-line-per-supply-its-strength` · Status: current · Amends: `2026-10-21-supplies-are-explained-by-tier-words`
 
 Misa did not like a supply's effect split over several lines on the send screen, and did like blurbs that refer to a reference trip.
 
@@ -73,7 +73,7 @@ Misa did not like a supply's effect split over several lines on the send screen,
 
 ## 2026-10-21: Supplies are explained by tier words and a boost bracket, never by counts
 
-ID: `2026-10-21-supplies-are-explained-by-tier-words` · Status: current
+ID: `2026-10-21-supplies-are-explained-by-tier-words` · Status: current, amended by `2026-10-21-one-line-per-supply-its-strength`
 
 Misa wants supplies explained honestly without exact numbers. Two parts:
 
@@ -83,7 +83,7 @@ Misa wants supplies explained honestly without exact numbers. Two parts:
 
 ## 2026-10-21: Richer rank gifts, and "Set out with" on the claim screen
 
-ID: `2026-10-21-richer-rank-gifts-and-set-out` · Status: current
+ID: `2026-10-21-richer-rank-gifts-and-set-out` · Status: current · Amends: `2026-10-13-ux-pass-1-expeditions-rank-up`
 
 Misa asked for two changes on the claim screen.
 
@@ -98,37 +98,37 @@ Misa asked for two changes on the claim screen.
 
 ## 2026-10-21: Send screen polish (supplies step and the expected-haul summary)
 
-ID: `2026-10-21-send-screen-polish-supplies-step-and` · Status: current
+ID: `2026-10-21-send-screen-polish-supplies-step-and` · Status: current · Amends: `2026-10-20-the-send-screen-picks-supplies-from`
 
 Misa tested the send screen on a phone. The Supplies step title row now has the "?" help tag (the `supplies` glossary entry) and, at the right, a compact "Craft" button with the Workshop (anvil) icon; the paragraph under the title and the "Packed: ..." line are gone (the expected haul lists the kit). A packed supply is shown by the tick only: a new 8x8 `tick` glyph (gold tick on an ink badge) replaces the "✓" character; the card under the grid and the selection ring show only for a packed supply, so taking one out hides both. The item card is now `SupplyCard`, shared with the summary. The expected haul's "A 12 h trip with ..." line became `TripSummary` in the body font: duration, place, explorer, each supply as a dotted button that opens its card in a popover, a treat (a plain read of the send state), when the trip is back in the guild's local time ("Back at 20:15", or with the weekday on another day; never the timezone ID), and "Also in play": today's Boon and Omen when they have trip lines, and the weekly twist when the place is that week's special. Each opens a small popover with its trip lines. Other talent-drawer and raid-timeline ticks are text in other components and were left as they are. Reason: one glance shows everything that affects the trip.
 
 ## 2026-10-20: The send screen picks supplies from the Workshop grid
 
-ID: `2026-10-20-the-send-screen-picks-supplies-from` · Status: current
+ID: `2026-10-20-the-send-screen-picks-supplies-from` · Status: current, amended by `2026-10-21-send-screen-polish-supplies-step-and` · Amends: `2026-10-13-expeditions-v2-client-banner-cards-send`
 
 Misa asked for the Workshop's compact supply grid on the expedition send screen too. `SupplyPicker` now draws `ui/SupplyGrid` (4 kinds across, 3 tiers down, rarity edges, stock badges) instead of the per-kind rows, and the separate `LurePicker` row is removed (lures are the first column). Tapping packs a supply (a tick; `aria-pressed`), tapping it again removes it, another tier of a packed kind swaps it, and the kit holds at most `RULES.expeditions.maxSupplies` kinds. Supplies with no stock, and (once the kit is full) the kinds not in the kit, are muted and disabled, with the reason in the button label. One card under the grid shows the last tapped supply (blurb and choice mark) and a "Packed:" line lists the kit. The send request is unchanged. `SupplyGrid` gained optional `disabled` and `packed` cell fields; the Workshop use is unchanged. Reason: one phone screen, one picker to learn.
 
 ## 2026-10-20: A deeper-area find is the deep species 20% of the time (was 35%)
 
-ID: `2026-10-20-a-deeper-area-find-is-the` · Status: current
+ID: `2026-10-20-a-deeper-area-find-is-the` · Status: current · Amends: `2026-10-13-expeditions-v2-numbers-set-by-simulation`
 
 Misa (owner) wanted the deep species to stay a rare find: `RULES.expeditions.familiarity.deepFindBp` 3500 to 2000, so a deeper-area roll is one of the place's deep species 1 time in 5. The 35% in the Familiarity entries above is now 20%. The three lanterns' sure deep creature (`bonusBp`) was raised to keep the economy targets (`docs/balance/log.md`, B-025, "Follow-up: deep species 20%").
 
 ## 2026-10-20: The lantern gets a bonus deep creature roll
 
-ID: `2026-10-20-the-lantern-gets-a-bonus-deep` · Status: current
+ID: `2026-10-20-the-lantern-gets-a-bonus-deep` · Status: current · Amends: `2026-10-20-expedition-trips-pay-in-ticks`
 
 Misa's rule is that every supply must be worth it on short trips too. The lantern's fixed part (`firstDeepBp`, the first creature of the trip comes from the deeper area) needed a creature to come, so it was worth 0.36 to 0.53 of its parts on a 2 h trip. It now works like the lure's bonus roll: `bonusBp` is the chance of one bonus creature roll that surely brings a creature drawn from the deeper area, on a finished trip only (a recall never rolls it), and only where the deeper area is open (a lantern opens it; a place with no deeper content gets no bonus and its chance is not drawn; a place with a rarity push but no deeper species still gives the bonus creature the deeper rarity shift). `firstDeepBp` is gone, `deepBp` (the per-creature chance) stays. Draw order: the lure's bonus chance, the lantern's bonus chance, the ticks, the lure's bonus roll, the lantern's bonus roll. The three lanterns were retuned (B-025 follow-up) and the `lanternShortRoi` exception is removed: every supply now meets the ROI targets on every length.
 
 ## 2026-10-20: A recall pays explorer XP too
 
-ID: `2026-10-20-a-recall-pays-explorer-xp-too` · Status: current
+ID: `2026-10-20-a-recall-pays-explorer-xp-too` · Status: current · Amends: `2026-10-20-expedition-trips-pay-in-ticks`
 
 Misa's rule is that each tick gives a fixed XP. A recall already paid loot, creatures and parts for its whole hours, so it now also pays `RULES.expeditions.tick.xp` per tick of those hours (milestone, twist and Trail XP shares apply). It is still not a finished trip: no creature experience, familiarity trip, journal page or account stats, and the explorer's trip count (`explorer_progress.trips`) does not move. A recall can raise the rank, so rank gifts and slot unlocks work in the recall claim too (`payExplorerXp` in `apps/worker/src/expedition-claim.ts`). A recall before the first whole hour pays nothing, as before.
 
 ## 2026-10-20: Expedition trips pay in ticks
 
-ID: `2026-10-20-expedition-trips-pay-in-ticks` · Status: current
+ID: `2026-10-20-expedition-trips-pay-in-ticks` · Status: current, amended by `2026-10-20-a-recall-pays-explorer-xp-too`, `2026-10-20-the-lantern-gets-a-bonus-deep` · Amends: `2026-10-13-expeditions-v2-numbers-set-by-simulation`
 
 Player feedback: a 12 h trip was no better than six 2 h ones, rewards were tiny, supplies felt useless, catches were rare and nobody could craft. Misa's answer, built the same day (`docs/design/expeditions-v2.md`, "Ticks"):
 
@@ -143,19 +143,19 @@ Player feedback: a 12 h trip was no better than six 2 h ones, rewards were tiny,
 
 ## 2026-10-20: Push-on extra time starts at the decision
 
-ID: `2026-10-20-push-on-extra-time-starts-at` · Status: current
+ID: `2026-10-20-push-on-extra-time-starts-at` · Status: current · Amends: `2026-10-13-expeditions-v2-numbers-set-by-simulation`
 
 Misa's call. The extra hours of a push-on used to count from the end of the trip, so a player who opened the app late found it already over and the creature acted as if it had pushed on all along. Now `push_started_at` is the moment of the choice and `push_ends_at` is that plus the goal's extra hours: pushing on carries its price in time, and the creature stays busy until then. Claiming earlier still means coming home (the push-on is skipped). Trips already pushing on keep their stored times (no migration). This replaces the "loses no time" line of the push-on entry above.
 
 ## 2026-10-18: Weather numbers a player can read
 
-ID: `2026-10-18-weather-numbers-a-player-can-read` · Status: current
+ID: `2026-10-18-weather-numbers-a-player-can-read` · Status: current · Amends: `2026-10-17-boons-and-omens-built-the-valley`
 
 Misa's forecast showed "31.2% more parts" and "Crit chance +3.7 pt": a Boon or Omen's number times the day's strength (x1.25, x1.5, x2.5) gave odd decimals. `scaleStrength` (`packages/game/src/rules/weather.ts`) now rounds the scaled number towards zero to whole percent or points from 10 up and to halves below (31.25% is 31%, 3.75 pt is 3.5 pt, 2.5% stays). It is the one function the rules and the text both use, so the number shown is still the number applied. The changes are at most half a point; the sim's legacy hashes moved and its headline numbers did not. Lead's call.
 
 ## 2026-10-18: The last three weathers are live: Kind Rain, Morning Haze, Bramble Season
 
-ID: `2026-10-18-the-last-three-weathers-are-live` · Status: current
+ID: `2026-10-18-the-last-three-weathers-are-live` · Status: current · Amends: `2026-10-17-boons-and-omens-built-the-valley`
 
 Finishes step 6 of `gear-and-creatures-v2.md` (section 14): all 10 Boons and all 10 Omens are in the valley. Technical decisions by the implementer, for the lead's review. No migration, no change to `RULES`, no raid or dungeon number tuned (another branch is reworking the dungeon).
 
@@ -170,7 +170,7 @@ Finishes step 6 of `gear-and-creatures-v2.md` (section 14): all 10 Boons and all
 
 ## 2026-10-18: The trip result screen, and Teach goes to the Talent Book
 
-ID: `2026-10-18-the-trip-result-screen-and-teach` · Status: current
+ID: `2026-10-18-the-trip-result-screen-and-teach` · Status: current · Amends: `2026-10-13-expeditions-v2-client-banner-cards-send`, `2026-10-16-creatures-a-built-talents-the-duplicate`
 
 - **One trip result card** (`TripResult.tsx`, replacing `TripReveal`, `CatchList` and `DuplicateCard`):
   - the place's banner with the explorer standing on it, then one sentence: "Sproutle spent 12 hours at Tidepools and found…";
@@ -195,7 +195,7 @@ ID: `2026-10-18-the-trip-result-screen-and-teach` · Status: current
 
 ## 2026-10-17: Boons and Omens built: the valley's weather (migration 31)
 
-ID: `2026-10-17-boons-and-omens-built-the-valley` · Status: current
+ID: `2026-10-17-boons-and-omens-built-the-valley` · Status: current, amended by `2026-10-18-the-last-three-weathers-are-live`, `2026-10-18-weather-numbers-a-player-can-read`
 
 Step 6 of the build order in `gear-and-creatures-v2.md` (section 14), per section 10 and the 2026-10-16 decisions (the wall calendar, "lean UI", Market Day's limits). Technical decisions by the lead and implementer. The numbers are starting values in `RULES.weather`; the sim reports what they do to the raid (`docs/balance/log.md` B-017) and the raid was not tuned.
 
@@ -216,7 +216,7 @@ Step 6 of the build order in `gear-and-creatures-v2.md` (section 14), per sectio
 
 ## 2026-10-16: supplies cannot be bought; the dungeon drops one on every run; crafting is how you choose
 
-ID: `2026-10-16-supplies-cannot-be-bought-the-dungeon` · Status: current
+ID: `2026-10-16-supplies-cannot-be-bought-the-dungeon` · Status: current · Amends: `2026-10-13-expeditions-v2-spec`
 
 **Decision (Misa, after the progression study).** Buying supplies with Bait was a trap (a min-maxer was 13% weaker at week 6 for buying them) and nobody crafted one. Supplies now come from three places: the daily dungeon, finds on trips, and the Workshop. Supplies a player already owns keep working. Numbers and the sim comparison: `docs/balance/log.md` B-011.
 
@@ -232,7 +232,7 @@ ID: `2026-10-16-supplies-cannot-be-bought-the-dungeon` · Status: current
 
 ## 2026-10-13: UX pass 1, Expeditions: rank-up gifts, no chances on screen
 
-ID: `2026-10-13-ux-pass-1-expeditions-rank-up` · Status: current
+ID: `2026-10-13-ux-pass-1-expeditions-rank-up` · Status: current, amended by `2026-10-21-richer-rank-gifts-and-set-out` · Amends: `2026-10-13-expeditions-v2-client-banner-cards-send`
 
 Misa's review asked for every explorer rank to unlock something, and for the Expeditions screens to stop showing chances. What changed, and the numbers.
 
@@ -267,13 +267,13 @@ Totals per creature over all nine ranks: 395 Bait, 47 scrap, 16 glimmer, 7 suppl
 
 ## 2026-10-13: The slot wipe spares finished trips (Misa)
 
-ID: `2026-10-13-the-slot-wipe-spares-finished-trips` · Status: current
+ID: `2026-10-13-the-slot-wipe-spares-finished-trips` · Status: current · Amends: `2026-10-13-expeditions-v2-numbers-set-by-simulation`
 
 Migration 19 now cancels only trips that are still running (the oldest running trip per player keeps going); trips that have already ended stay active so players can claim their catches and loot as usual. The extra slots close as those trips are claimed. Cancelled trips still get their Bait refunded once.
 
 ## 2026-10-13: Expeditions v2 client (banner cards, send flow, push-on, journal)
 
-ID: `2026-10-13-expeditions-v2-client-banner-cards-send` · Status: current
+ID: `2026-10-13-expeditions-v2-client-banner-cards-send` · Status: current, amended by `2026-10-13-ux-pass-1-expeditions-rank-up`, `2026-10-18-the-trip-result-screen-and-teach`, `2026-10-20-the-send-screen-picks-supplies-from`, `2026-10-21-the-trips-view-is-a-world`
 
 **Context.** The server half of expeditions v2 was done; this is the Activity side. The client only shows state and sends intents: the numbers on screen come from the server's state or from `@creatures/game` (never copied), and the pure rules of every screen live in tested `*.ts` helpers.
 
@@ -296,7 +296,7 @@ ID: `2026-10-13-expeditions-v2-client-banner-cards-send` · Status: current
 
 ## 2026-10-13: Expeditions v2 numbers set by simulation
 
-ID: `2026-10-13-expeditions-v2-numbers-set-by-simulation` · Status: current
+ID: `2026-10-13-expeditions-v2-numbers-set-by-simulation` · Status: current, amended by `2026-10-13-the-slot-wipe-spares-finished-trips`, `2026-10-20-a-deeper-area-find-is-the`, `2026-10-20-expedition-trips-pay-in-ticks`, `2026-10-20-push-on-extra-time-starts-at`
 
 Built from the spec above: the content, the server (migration 19, routes, Workshop supply jobs, analytics) and the simulator. The client UI is a separate task. Numbers live in `RULES.expeditions` (`packages/game/src/rules/config.ts`) and the content files in `packages/game/src/content/data` (`destinations.json`, `supplies.json`, `push-on-goals.json`, `journal.json`, `weekly-specials.json`); the full run is `docs/balance/report-2026-10-13-expeditions.md`. The v1 table `RULES.expedition` (singular) stays for trips that were running at launch and for the old client.
 
@@ -321,6 +321,6 @@ How the numbers were found (and what the sim taught us):
 
 ## 2026-10-13: Expeditions v2 spec (Misa)
 
-ID: `2026-10-13-expeditions-v2-spec` · Status: current
+ID: `2026-10-13-expeditions-v2-spec` · Status: current, amended by `2026-10-16-supplies-cannot-be-bought-the-dungeon` · Amends: `2026-10-10-game-rules-from-the-research-review`
 
 Reviewed in a shared doc. Expeditions become creature-centred: an explorer rank and per-destination familiarity per creature, with account-wide stats and only very small account bonuses. Slots start at 1, the 2nd comes on day one, then about a month, four months and a year, from the sum of creature explorer ranks; at launch, trips in slots 2–3 are cancelled with no reward. Trips without supplies are free. Supplies (bought with Bait, crafted or found) give a meaningful boost, and the best ones guarantee an end-of-trip push-on choice with clearly flagged risk. The minimum trip is 2 h, and rewards grow faster than the hours. There is a pre-written Journal that hints at mechanics, banner cards instead of a map, and a weekly special. Raids stay the main source of big loot. Targeted trips are deferred. Full spec in `design/expeditions-v2.md`.

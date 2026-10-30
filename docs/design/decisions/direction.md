@@ -39,7 +39,7 @@ The dungeon paths (PR #32) were merged to `main` first; this is how part 2's wor
 
 ## 2026-10-16: Misa's answers to the review page's last questions
 
-ID: `2026-10-16-misa-s-answers-to-the-review` · Status: current
+ID: `2026-10-16-misa-s-answers-to-the-review` · Status: current · Amends: `2026-10-16-misa-s-second-round-on-the`
 
 - **Dismantling takes a little time** (Commons in bundles of up to 5 in 15 minutes, a Rare 1 hour, an Epic 2 hours; may grow longer later) and gives both Crafting XP and creature experience, like any Workshop job: downtime work for idle creatures. The **refund does not depend on the dismantler's Crafting level**, so one master crafter is not the only creature worth using; the "Tinker's eye" gear line is dropped for the same reason.
 - **Treats stay simple:** no treat item to stockpile or spoil. When sending a creature on a trip, into the dungeon team or onto a Workshop job, one toggle "Pack a treat (N Bait)" doubles the experience that activity gives that creature. Raids take no treats. Nothing to hoard, nothing to expire, one line of UI.
@@ -58,7 +58,7 @@ ID: `2026-10-16-roll-out-fast-balance-at-the` · Status: current
 
 ## 2026-10-16: Misa's second round on the revamps: weighted slot pools, training by activity, Boons and Omens
 
-ID: `2026-10-16-misa-s-second-round-on-the` · Status: current
+ID: `2026-10-16-misa-s-second-round-on-the` · Status: current, amended by `2026-10-16-misa-s-answers-to-the-review` · Amends: `2026-10-16-misa-s-answers-to-the-systems`
 
 1. **Slots: Hat, Scarf, Charm** (Cape kept as a possible future slot). Slots are **not** locked to one kind of stat: each slot's roll pool is **weighted** toward its theme (Hats lean to attack, and so on) and may roll other lines too. A few lines are **exclusive** to one or two slots (Path of Exile style: only boots, rings and amulets roll movement speed), so players know where to hunt for them. Charms are **not** role-locked as a rule; role-locked items may exist, but the interesting choice is finding the item with the right lines for a particular creature.
 2. **Gear upgrades (+1 to +5) go away.** An item's level is fixed when it drops or is crafted.
@@ -72,7 +72,7 @@ ID: `2026-10-16-misa-s-second-round-on-the` · Status: current
 
 ## 2026-10-16: Misa's answers to the systems review (they replace parts of its proposals)
 
-ID: `2026-10-16-misa-s-answers-to-the-systems` · Status: current
+ID: `2026-10-16-misa-s-answers-to-the-systems` · Status: current, amended by `2026-10-16-misa-s-second-round-on-the`
 
 Answers to the ten questions in `docs/design/systems-review.md`. Where they differ from the review's proposals, these win.
 
@@ -135,7 +135,7 @@ Both branches started from the same base, so the merge kept the work of both (ru
 
 ## 2026-10-13: Roadmap reorder, crafting direction, production may change freely (Misa)
 
-ID: `2026-10-13-roadmap-reorder-crafting-direction-production-may` · Status: current
+ID: `2026-10-13-roadmap-reorder-crafting-direction-production-may` · Status: current · Amends: `2026-10-13-roadmap-after-m6`
 
 - **Order:** how to play, then gear and crafting, then expeditions v2, then the daily dungeon, then analytics reports. The analytics **event log** ships with how to play so data builds up early; the reports and the `OPS_TOKEN` secret come later.
 - **Gear becomes crafting:** dismantle into parts, upgrade, improve, craft from blueprint drops, enchant. Creatures get long **downtime jobs** and crafting skills that level very slowly, for the idle RPG pillar. Slow gear at first is fine. Sketch in `design/gear.md`.
@@ -145,7 +145,7 @@ ID: `2026-10-13-roadmap-reorder-crafting-direction-production-may` · Status: cu
 
 ## 2026-10-13: Roadmap after M6 (Misa)
 
-ID: `2026-10-13-roadmap-after-m6` · Status: current
+ID: `2026-10-13-roadmap-after-m6` · Status: current, amended by `2026-10-13-roadmap-reorder-crafting-direction-production-may`
 
 Misa set the forward plan, recorded in `docs/roadmap.md` with design docs for each bigger item:
 
@@ -161,7 +161,7 @@ Misa set the forward plan, recorded in `docs/roadmap.md` with design docs for ea
 
 ## 2026-10-10: Game rules from the research review
 
-ID: `2026-10-10-game-rules-from-the-research-review` · Status: current
+ID: `2026-10-10-game-rules-from-the-research-review` · Status: current, amended by `2026-10-13-expeditions-v2-spec`
 
 Misa reviewed the research defaults (`docs/research/`). **[Misa]** on all of these:
 

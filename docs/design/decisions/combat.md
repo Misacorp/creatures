@@ -22,7 +22,7 @@ ID: `2026-10-29-measure-hp-removed-rule-cards-ask` · Status: current
 
 ## 2026-10-29: Raid tuning aims at success tiers and robustness
 
-ID: `2026-10-29-raid-tuning-aims-at-success-tiers` · Status: current
+ID: `2026-10-29-raid-tuning-aims-at-success-tiers` · Status: current · Amends: `2026-10-29-combat-v2-raid-boss-hp-grows`
 
 **Decision (lead).** The honest measures after panel 5 showed the raid fights are knife-edge damage races: prepared answers won 92% to 100% with their exact talents but 0% to 28% with random legal talents, and one HP rule for all bosses emptied mixed servers. Two changes of aim for the lab:
 
@@ -39,7 +39,7 @@ ID: `2026-10-29-opt-in-harder-raids-belong-to` · Status: current
 
 ## 2026-10-29: Combat v2 balance pass against the real bosses
 
-ID: `2026-10-29-combat-v2-balance-pass-against-the` · Status: current
+ID: `2026-10-29-combat-v2-balance-pass-against-the` · Status: current · Amends: `2026-10-29-combat-v2-raid-boss-hp-grows`
 
 **Decisions (lead).** Lab rules from the balance pass: aimed boss moves may pick several targets per 4 columns, so a wide raid does not thin them out (R2.1); boss HP grows in a straight line past 10 players (R14.1); raid measures report HP left after each stage beside knockouts (Misa's note). Content: Thornmother's armour is 98, so only a Pierce line gets through (her tool); Storm Sovereign's Judgement Bolt is a one-shot on the strongest Payoff that only Night Watch takes (so Night Watch has a boss); Primed by Pain marks at every interception (x2, once a round); Baked Shell builds Heat at round start; Circle Round heals 14%; Lightning Ears costs 8 armour; Zigzag is +12 dodge and +1 count. Results: prepared teams win 98% to 100% and lose 1 to 7 creatures; mixed servers win 36% to 65% and lose 22 to 33. Storm Sovereign's mixed result (36%) is below the aim; raising it lets the classic party win in wide rows, so it stays for the panel.
 
@@ -51,7 +51,7 @@ ID: `2026-10-29-raid-losses-mixed-servers-should-feel` · Status: current
 
 ## 2026-10-29: Combat v2 raid boss HP grows with the number of players
 
-ID: `2026-10-29-combat-v2-raid-boss-hp-grows` · Status: current
+ID: `2026-10-29-combat-v2-raid-boss-hp-grows` · Status: current, amended by `2026-10-29-combat-v2-balance-pass-against-the`, `2026-10-29-raid-tuning-aims-at-success-tiers`
 
 **Decision (lead).** In the lab, a raid boss's weekend HP grows with the arena's width, as (players / 4) to the power of a per-boss exponent (0.55 to 1.23), like the shipped game's `hpExponent` (1.1). With a fixed HP, the classic party won every weekend in rows 10 and 15 wide, since more creatures simply deal more damage. Move counts scale with width too (`perColumns`), so a pattern covers the same share of a wide row as of a four-wide one. The exponents are lab numbers, tuned per boss; the port (roadmap phase 4) sets them with the shipped scaling.
 
@@ -87,7 +87,7 @@ ID: `2026-10-28-random-talent-rolls-stay-situational` · Status: current
 
 ## 2026-10-28: Talent strength is a share of the team's result
 
-ID: `2026-10-28-talent-strength-is-a-share-of` · Status: current
+ID: `2026-10-28-talent-strength-is-a-share-of` · Status: current · Amends: `2026-10-28-how-strong-a-talent-should-be`
 
 **Decision (Misa).** "About 20%" means the share of a team's success that comes from talents, on average: the same team with its talents taken away does about 20% worse (talents' share = 1 - without / with, the measure the journey sim's creatures study already uses). A single talent may spike above that on the week it fits best (option B), as long as no pool has a single must-pick. This replaces the earlier reading of +20% as a per-card ceiling.
 
@@ -95,7 +95,7 @@ ID: `2026-10-28-talent-strength-is-a-share-of` · Status: current
 
 ## 2026-10-28: How strong a talent should be
 
-ID: `2026-10-28-how-strong-a-talent-should-be` · Status: current
+ID: `2026-10-28-how-strong-a-talent-should-be` · Status: current, amended by `2026-10-28-talent-strength-is-a-share-of`
 
 **Decision (Misa).** Talent choice should feel like it has a big impact. Roughly **+20%** on a team's result is the upper target for a talent at its best (Misa's guess, to be checked in play). Power comes from many sources (Knacks, gear, placement and synergies, stats, levels), so what talents gain is taken from those. Too strong and players think each creature has only one valuable talent, so no pool may have a single must-pick.
 
@@ -103,7 +103,7 @@ ID: `2026-10-28-how-strong-a-talent-should-be` · Status: current
 
 ## 2026-10-28: Armour per species; talents go into the line's book automatically
 
-ID: `2026-10-28-armour-per-species-talents-go-into` · Status: current
+ID: `2026-10-28-armour-per-species-talents-go-into` · Status: current · Amends: `2026-10-27-combat-v2-which-talents-can-appear`
 
 **Decision (Misa).**
 
@@ -123,7 +123,7 @@ ID: `2026-10-28-armour-works-for-every-creature-the` · Status: current
 
 ## 2026-10-27: Combat v2: which talents can appear on which creatures
 
-ID: `2026-10-27-combat-v2-which-talents-can-appear` · Status: current
+ID: `2026-10-27-combat-v2-which-talents-can-appear` · Status: current, amended by `2026-10-28-armour-per-species-talents-go-into`
 
 **Decision (Misa).** A line's talent pool says which talents can appear on its creatures. A creature starts with the talent it was found with (a starter with a set talent), and grows its own Talent Book through Teach: a found talent goes only into the book of the creature it was found for, and must be found again for another creature. When an evolution changes the role, slotted talents that become idle are rerolled from the pool among the talents that work for the new role, shown as unknown cards on the evolution screen (phase 4); until then idle talents after a role change are accepted.
 
@@ -131,7 +131,7 @@ ID: `2026-10-27-combat-v2-which-talents-can-appear` · Status: current
 
 ## 2026-10-27: Combat v2: Knacks grow on evolution, talents by line, golden stays golden
 
-ID: `2026-10-27-combat-v2-knacks-grow-on-evolution` · Status: current
+ID: `2026-10-27-combat-v2-knacks-grow-on-evolution` · Status: current · Amends: `2026-10-26-combat-v2-knacks-for-every-species`
 
 **Decision (Misa).** (1) A creature knows its form's Knacks from the catch, and evolving adds the new form's own Knacks (R11), so base forms work from day one and evolving brings something new. (2) Talent pools are per creature line, drawn from one shared library with one name per effect (R20), so two lines of the same role can roll different tools. (3) At the migration a golden talent rolls golden.
 
@@ -139,7 +139,7 @@ ID: `2026-10-27-combat-v2-knacks-grow-on-evolution` · Status: current
 
 ## 2026-10-26: Combat v2: Knacks for every species, talents by role (panel 2)
 
-ID: `2026-10-26-combat-v2-knacks-for-every-species` · Status: current
+ID: `2026-10-26-combat-v2-knacks-for-every-species` · Status: current, amended by `2026-10-27-combat-v2-knacks-grow-on-evolution`
 
 Tagged combat v2. Lead agent, after the second panel (`docs/design/combat/reviews/2026-10-26-panel-2.md`); proposal v0.6.
 
@@ -210,14 +210,14 @@ ID: `2026-10-19-serpentine-dodge-status-effects-and-mire` · Status: current
 
 ## 2026-10-19: `fight.ts` split into modules (B13 step 2); Lantern Light lengthens basic abilities too
 
-ID: `2026-10-19-fight-ts-split-into-modules-b13` · Status: current
+ID: `2026-10-19-fight-ts-split-into-modules-b13` · Status: current · Amends: `2026-10-18-engine-and-test-cleanup-from-the`
 
 - **`fight.ts` split.** `simulateFight` was one closure of about 1900 lines over about 30 mutable variables. They are now one explicit `FightState` object (`fight-state.ts`, with the creature and mark types and the small shared helpers: crediting, mutator hooks, who stands beside whom). `hurt` and its Guard helpers are in `fight-damage.ts`, `hitBoss` in `fight-strike.ts`, the boss's gimmicks, charges and attacks in `fight-boss.ts`, and the round-start work (Support buffs, Kind Rain, gear lines, finale abilities) in `fight-round.ts`. `fight.ts` keeps the input checks, the dice draws in their fixed order, the round loop and the totals. Behaviour-neutral: both replay locks (`replay.test.ts`, `replay-rules.test.ts`) pass byte for byte with no re-pin, every other engine test is unchanged, and the engine's public exports are unchanged.
 - **Lantern Light lengthens basic abilities too (Misa: yes).** New optional `FightInput.lingerAllRounds` (0 to 3; absent: 0, so every stored fight replays as it was) adds rounds to the Rally, Shield Wall and timed Purge of every ability, basic ones included. One source only: `weatherSky` carries it (`lingerAllRounds`) and the raid, the dungeon run and the simulator pass it on with the other sky fields. `weatherSheet` no longer puts the day's linger on a creature's sheet, so a creature's own ability is not lengthened twice; gear and set linger (`lingerRounds`) stay per creature and add on top. The weather text is back to the full promise: "Shield Walls and other lasting abilities last 1 more round, basic abilities too."
 
 ## 2026-10-19: The simulator picks second forms like players, and the legacy digest is retired
 
-ID: `2026-10-19-the-simulator-picks-second-forms-like` · Status: current
+ID: `2026-10-19-the-simulator-picks-second-forms-like` · Status: current · Amends: `2026-10-18-branch-evolutions-built-sunfawn-and-ohmouse`, `2026-10-18-second-forms-for-the-six-other`
 
 Two changes to the balance simulator, neither touching a game rule or content (the lead's calls from the cleanup night, approved by Misa).
 
@@ -227,7 +227,7 @@ Two changes to the balance simulator, neither touching a game rule or content (t
 
 ## 2026-10-18: Engine and test cleanup from the audit (E2 to E7, E9, B13 step 1)
 
-ID: `2026-10-18-engine-and-test-cleanup-from-the` · Status: current
+ID: `2026-10-18-engine-and-test-cleanup-from-the` · Status: current, amended by `2026-10-19-fight-ts-split-into-modules-b13`
 
 - **A second replay lock.** `packages/engine/test/replay-rules.test.ts` hashes the whole result of 200 fixed seeded fights that use what `replay.json` leaves out: the combat `rules`, every attack pattern and charge, sparse boards, the phase floor, enrage, extra boss attacks, luck of every kind, the day's sky, adaptations, creature abilities, partial HP and modifier sheets that stand for gear, sets, talents and weather. Everything the fights read from outside the engine is pinned in the test file, so a content retune never moves it; coverage tests fail if a new `SlotMods` field is not exercised. It is the gate for splitting `fight.ts` later (B13 step 2).
 - **Backdraft is announced once a round (E3).** The duplicate `gimmick` event on the boss's turn is gone; the trap is announced when it is armed. 120 fights of `replay.json` and 20 of the new lock changed their event lists only: outcome, HP and credit are identical (checked by hashing each result with its events removed, before and after). Fights stored before this change still carry the second event, so the stage keeps its one-cue-a-round de-dup for them.
@@ -337,7 +337,7 @@ ID: `2026-10-11-creature-abilities-phase-2-server-and` · Status: current
 
 ## 2026-10-11: Creature abilities, phase 1 (content, engine, simulator, pity)
 
-ID: `2026-10-11-creature-abilities-phase-1-content-engine` · Status: current
+ID: `2026-10-11-creature-abilities-phase-1-content-engine` · Status: current, amended by `2026-10-18-branch-evolutions-built-sunfawn-and-ohmouse` · Amends: `2026-10-10-balance-simulator-m3b-interpretations`
 
 **Decision.** The spec is `docs/design/creature-abilities.md` (agreed with Misa). Phase 1 implements the content, engine and simulator side; the live server and client follow in phase 2. Implementation choices:
 
@@ -351,7 +351,7 @@ ID: `2026-10-11-creature-abilities-phase-1-content-engine` · Status: current
 
 ## 2026-10-11: Second balance tuning pass
 
-ID: `2026-10-11-second-balance-tuning-pass` · Status: current
+ID: `2026-10-11-second-balance-tuning-pass` · Status: current, amended by `2026-10-11-progression-phase-1-rules-content-simulator`, `2026-10-17-creatures-b-built-training-by-activity` · Amends: `2026-10-10-first-balance-tuning-pass`
 
 **Decision.** From the simulator (full run, seed `leet`: 12 of 21 targets passed before, 19 after; `docs/balance/report-2026-10-11.md`):
 
@@ -367,7 +367,7 @@ ID: `2026-10-11-second-balance-tuning-pass` · Status: current
 
 ## 2026-10-10: First balance tuning pass
 
-ID: `2026-10-10-first-balance-tuning-pass` · Status: current
+ID: `2026-10-10-first-balance-tuning-pass` · Status: current, amended by `2026-10-11-second-balance-tuning-pass`
 
 **Decision.** From the first simulator run (`docs/balance/report-2026-10-10.md`): Phase 1 now clears at 20% of the boss pool and Phase 2 at 45% (were 30% / 60%), and Cinder Wyrm's base HP drops from 8500 to 6000. Result (`docs/balance/report-2026-10-10-tuned.md`): typical-group Phase 1 and the boss spread now meet their targets; Phase 2 (≈94%) and the typical finale (≈68%) run slightly easy, and 15-player raids are much too easy.
 
@@ -377,7 +377,7 @@ ID: `2026-10-10-first-balance-tuning-pass` · Status: current
 
 ## 2026-10-10: Balance simulator (M3b) interpretations
 
-ID: `2026-10-10-balance-simulator-m3b-interpretations` · Status: current
+ID: `2026-10-10-balance-simulator-m3b-interpretations` · Status: current, amended by `2026-10-11-creature-abilities-phase-1-content-engine`
 
 **Decision.** `packages/sim` (`pnpm sim`, `pnpm sim:quick`) is deterministic for a seed and uses only `createSeededRng`. Where the design left room, it does this (all documented in the report's Method section):
 

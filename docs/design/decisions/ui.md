@@ -38,7 +38,7 @@ Misa asked whether the next list that needs "select several and act on them" cou
 
 ## 2026-10-27: Bulk selection replaces marking
 
-ID: `2026-10-27-bulk-selection-replaces-marking` · Status: current
+ID: `2026-10-27-bulk-selection-replaces-marking` · Status: current · Amends: `2026-10-17-item-corners-everywhere-and-tags-that`, `2026-10-27-marked-items-dismantled-as-a-pile`
 
 Misa tested the marked-items build (above) on staging: he liked the interaction and the results screen, but testers read the "Dismantle items" button as "dismantle now". He asked for a general multi-select with bulk actions, started by gesture, plus a direct Dismantle on one item. This replaces the UI and the persisted marks of the entry above; the pile rules (rolls, XP, Market Day, ledger, no Workshop slot) stand.
 
@@ -71,13 +71,13 @@ Misa: "accumulate missed rewards from older activities into a single place and s
 
 ## 2026-10-25: One bottom bar between the phone and the wide window (prototype)
 
-ID: `2026-10-25-one-bottom-bar-between-the-phone` · Status: current
+ID: `2026-10-25-one-bottom-bar-between-the-phone` · Status: current · Amends: `2026-10-24-the-main-navigation-is-a-dock`
 
 Misa asked whether the desktop's links, all in one bottom bar, could work on a screen that is neither a phone nor a desktop, and for the best breakpoint range per layout. Measured in a real window (Playwright, the real buttons, nine places, "Expeditions" the longest word): the words fit their equal share from about 600 px (no room left) and have about 8 px a side from 720 px; at 880 px it is roomy. Below 720 px the three-button dock stays (from about 600 px its buttons only get very wide). The rail is kept from 60 rem: at 720 px it would leave the page about 515 px, a phone page in desktop chrome; from 960 px the page gets about 760 px. So: under 45 rem the dock, 45 to 60 rem the bar (`BAR_QUERY`, `MainNav`'s `bar`), from 60 rem the rail. In the bar Home is first and gold but not raised (one place of nine), there are no trays, and its buttons answer a touch at once like the dock's (`instantPress`). The HUD stays fixed as on a phone (the bar is a dock). Each new place needs about 80 px more, so `BAR_QUERY` moves up with the list (Items splitting from the Workshop: about 50 rem). Misa may not merge it; it is a prototype to try.
 
 ## 2026-10-25: A fixed top bar on phones, see-through pin shadows
 
-ID: `2026-10-25-a-fixed-top-bar-on-phones` · Status: current
+ID: `2026-10-25-a-fixed-top-bar-on-phones` · Status: current · Amends: `2026-10-24-the-main-navigation-is-a-dock`
 
 - **The HUD is fixed, not sticky, on a phone** (Misa: "keep it at the top, full width of the viewport, always the same regardless of scroll position"). A sticky bar sat lower at the top of a page than once scrolled, and the strip above it (Discord's safe area) showed the page scrolling by. Now `main.card:has(.main-nav.dock) > .hud` is `position: fixed` across the window, padded down by `--discord-safe-area-inset-top` so its own colour fills the strip, and the card starts 0.75rem below it; the How to play page's head works the same way. The selector keeps workbench frames (no `main.card`) and wide windows (no dock) on the static bar.
 - **Board pins:** 44 px, 0.5rem from the board's top, a shadow in see-through ink so the cork or a notice shows through it.
@@ -86,7 +86,7 @@ ID: `2026-10-25-a-fixed-top-bar-on-phones` · Status: current
 
 ## 2026-10-25: Home board: Journal and Stats off the board (Stats is a Collection place), a How to play pin, flush notices by default, no sway, smaller board text
 
-ID: `2026-10-25-home-board-journal-and-stats-off` · Status: current
+ID: `2026-10-25-home-board-journal-and-stats-off` · Status: current · Amends: `2026-10-24-collection-group-with-the-journal-settings`, `2026-10-24-home-is-a-page-the-today`, `2026-10-24-the-journal-and-the-stats-are`
 
 Misa's feedback on the Today board: the Journal and Stats pins did not fit under "Needs you", and their teasers loaded late (they needed the profile), so the layout jumped.
 
@@ -110,7 +110,7 @@ Misa asked for an assessment of the patterns this day's navigation and Home work
 
 ## 2026-10-24: Collection group with the Journal, Settings behind a cog, a creatures notice and a starter pin
 
-ID: `2026-10-24-collection-group-with-the-journal-settings` · Status: current
+ID: `2026-10-24-collection-group-with-the-journal-settings` · Status: current, amended by `2026-10-25-home-board-journal-and-stats-off` · Amends: `2026-10-24-the-dock-reaches-the-bottom-edge`, `2026-10-24-the-journal-and-the-stats-are`
 
 Misa's round 3 of the navigation and Home work.
 
@@ -124,7 +124,7 @@ Misa's round 3 of the navigation and Home work.
 
 ## 2026-10-24: The Journal and the Stats are pinned to the Home board; Expeditions is only the map
 
-ID: `2026-10-24-the-journal-and-the-stats-are` · Status: current
+ID: `2026-10-24-the-journal-and-the-stats-are` · Status: current, amended by `2026-10-24-collection-group-with-the-journal-settings`, `2026-10-25-home-board-journal-and-stats-off`
 
 Misa: "Let's move the journal and stats pages onto the notice board as some cool fitting elements. They get dropped from the expeditions page and therefore the menu on that page can also go. The new stats page doesn't need to have a list of explorers. Move the trip count into each creature's page instead as expedition count. The new stats page could include more stats like dungeons attempted, succeeded, if we have those."
 
@@ -138,7 +138,7 @@ Misa: "Let's move the journal and stats pages onto the notice board as some cool
 
 ## 2026-10-24: Shell polish: smaller navigation, scroll to top, Bait income in the currency popover, no footer
 
-ID: `2026-10-24-shell-polish-smaller-navigation-scroll-to` · Status: current
+ID: `2026-10-24-shell-polish-smaller-navigation-scroll-to` · Status: current · Amends: `2026-10-19-the-footer-and-the-dev-clock`, `2026-10-24-the-main-navigation-is-a-dock`
 
 Misa, after testing on his phone: the dock and its sub-menus were too big; a menu item should open its page at the top, not scrolled down; bait income should sit behind the currency popover and "Recent Bait activity" go; and "remove the signed in as element and everything below it, including diagnostics".
 
@@ -149,7 +149,7 @@ Misa, after testing on his phone: the dock and its sub-menus were too big; a men
 
 ## 2026-10-24: Home is a page: the Today board, with tilted notices and optional quiet ones
 
-ID: `2026-10-24-home-is-a-page-the-today` · Status: current
+ID: `2026-10-24-home-is-a-page-the-today` · Status: current, amended by `2026-10-25-home-board-journal-and-stats-off` · Amends: `2026-10-24-the-dock-reaches-the-bottom-edge`
 
 Misa chose option A, the "Today board", from two Home mock-ups: "I like the notice board style. Maybe we could go one step braver and tilt the notices a bit ... we could even animate the tilt. If there is nothing that is ongoing or needs the user's attention, let's consider dropping the entire notice to save space. A setup that allows either behavior is probably good if we ever let users control this. The coming up and valley news sections are a nice touch to bring the community together." He also asked that tapping a creature in the lounge shows its "first on server" tag. This replaces the Lounge button and sheet of the entry above the same day.
 
@@ -164,7 +164,7 @@ Misa chose option A, the "Today board", from two Home mock-ups: "I like the noti
 
 ## 2026-10-24: The dock reaches the bottom edge, and the lounge is a button in the middle
 
-ID: `2026-10-24-the-dock-reaches-the-bottom-edge` · Status: current
+ID: `2026-10-24-the-dock-reaches-the-bottom-edge` · Status: current, amended by `2026-10-24-collection-group-with-the-journal-settings`, `2026-10-24-home-is-a-page-the-today` · Amends: `2026-10-24-the-phone-dock-is-three-group`
 
 Misa tested the three-button dock on a real phone (Discord on Android, full screen): the dock still sat above an empty dark strip of about 45 px ("The menu could start from the way bottom of the screen"). He also said: "I'm also starting to think if we should get rid of the lounge on mobile and move it into a menu. ... the middle button in the menu could be a primary button type that says 'Lounge'. The left button could be something that refers to creatures, items, workshop. The right could be the current adventures button but it could include the games section too." This changes the phone part of the entries above; the desktop (room band, rail, HUD), `navPlaces`, the pips and their timers stay.
 
@@ -177,7 +177,7 @@ Misa tested the three-button dock on a real phone (Discord on Android, full scre
 
 ## 2026-10-24: The phone dock is three group buttons with upward sub-menus
 
-ID: `2026-10-24-the-phone-dock-is-three-group` · Status: current
+ID: `2026-10-24-the-phone-dock-is-three-group` · Status: current, amended by `2026-10-24-the-dock-reaches-the-bottom-edge` · Amends: `2026-10-24-the-main-navigation-is-a-dock`
 
 Misa tested the six-button dock on his phone (Discord on Android): "there's an awkward space below the bottom bar but that space is also rounded off by the phone corner bezels. I'm thinking six items is too much to fit here. Can we have three buttons instead? Something like the home / adventure split ... Having those buttons open cool sub menus (upward) could also be a thing." This changes the phone part of the entry above; the desktop rail, the HUD, `navPlaces`, the pips and their timers stay.
 
@@ -190,7 +190,7 @@ Misa tested the six-button dock on his phone (Discord on Android): "there's an a
 
 ## 2026-10-24: The main navigation is a dock on a phone and a rail on a desktop, with a HUD on top
 
-ID: `2026-10-24-the-main-navigation-is-a-dock` · Status: current
+ID: `2026-10-24-the-main-navigation-is-a-dock` · Status: current, amended by `2026-10-24-shell-polish-smaller-navigation-scroll-to`, `2026-10-24-the-phone-dock-is-three-group`, `2026-10-25-a-fixed-top-bar-on-phones`, `2026-10-25-one-bottom-bar-between-the-phone`
 
 Misa chose "Option 1: dock and rail" from three mock-ups ("let's build it now. The phone rail might need some work to make it a top class UX experience that scales with new features"), and wants the game to move "more into game territory", fully playable on a phone, and on a desktop toward the Expeditions screen's wide layout. This replaces the six-tab bar (roadmap item "Main menu redesign": with Games the bar barely fitted 360 px). The mock-up page (`MainNavMockups`, options 2 and 3 as well) is gone; its Option 1 is now the real thing and has a workbench page.
 
@@ -270,7 +270,7 @@ Misa picked three follow-ups of the configurator work: the raid's team screen, g
 
 ## 2026-10-20: Configurator buttons in one row; Compare against an empty slot
 
-ID: `2026-10-20-configurator-buttons-in-one-row-compare` · Status: current
+ID: `2026-10-20-configurator-buttons-in-one-row-compare` · Status: current · Amends: `2026-10-18-compare-inline-on-the-item-card`
 
 From Misa's staging test on a phone: "The buttons at the bottom are ugly in their positioning and alignment. The remove button could be red." And in the item picker, for an empty slot: "the equip button looks wonky on its own row. Normally there'd be the compare toggle in the bottom left corner… we could 'compare against no gear', resulting in a bunch of green lines."
 
@@ -279,7 +279,7 @@ From Misa's staging test on a phone: "The buttons at the bottom are ugly in thei
 
 ## 2026-10-20: No "?" on tags, anywhere
 
-ID: `2026-10-20-no-on-tags-anywhere` · Status: current
+ID: `2026-10-20-no-on-tags-anywhere` · Status: current · Amends: `2026-10-20-the-raid-summary-round-two-and`
 
 Misa: "drop the question mark icons on the tags here too. I think that could be done globally. I constantly find myself not liking question mark icons on tags."
 
@@ -289,14 +289,14 @@ Misa: "drop the question mark icons on the tags here too. I think that could be 
 
 ## 2026-10-19: The footer and the dev clock are data tables
 
-ID: `2026-10-19-the-footer-and-the-dev-clock` · Status: current
+ID: `2026-10-19-the-footer-and-the-dev-clock` · Status: current, amended by `2026-10-24-shell-polish-smaller-navigation-scroll-to`
 
 - **The app footer** (Environment, Server version, Branch, Guild ID, API health) and **the dev panel's clock** are now `ui/DataTable`s (rows built by `footerRows` in `footer-rows.ts` and `clockRows` in `dev/dev-api.ts`, both tested). The footer's own `.row` style and the `.dev-clock` grid are gone. The clock's raid line, which was one long sentence that squeezed the labels at 360 px, is three short rows (Raid week, Raid status, Raid boss) plus Simulated players when there are any.
 - **Looked at and left alone:** the explorer profile's stat tiles (two columns of bordered cards, the value larger under the label, in the same card style as the milestone and explorer rows below them: a card grid, not a table of rows); the evolve card's HP / Attack / Speed line (three small figures side by side inside a button); `ItemLines` (glossary-tag lines with tier pips and compare marks, not label and value); `WornItemLines` and `ItemCard` (item rows with pictures; there is no label and value table in them). Converting any of these would change a deliberate look or drop the colours and compare marks.
 
 ## 2026-10-19: The XP bar's look is "grown"; the action button centres its detail
 
-ID: `2026-10-19-the-xp-bar-s-look-is` · Status: current
+ID: `2026-10-19-the-xp-bar-s-look-is` · Status: current · Amends: `2026-10-19-the-level-tag-and-the-xp`
 
 - **Misa picked "grown"** of the four XpTrack looks ("the best IMO because the text in the bar is properly centered"): the bar is enlarged to the level tag's height (1.5 rem) and its numbers are one step up. `DEFAULT_XP_SIZE` is `grown`; the other looks stay as workbench presets.
 - **The detail of `ui/ActionButton` is centred on the label** (`align-items: center`, was `baseline`). Misa: "the 20 essence text on it isn't vertically aligned with the Evolve text". The pixel label and the body-font detail have different letter heights, so lining up their baselines put the small words low; centred, the ink of "Evolve" and "20 Essence" sits within half a pixel of the same middle.
@@ -304,7 +304,7 @@ ID: `2026-10-19-the-xp-bar-s-look-is` · Status: current
 
 ## 2026-10-19: The level tag and the XP bar share one height; the creature page starts like the card; one shared action button
 
-ID: `2026-10-19-the-level-tag-and-the-xp` · Status: current
+ID: `2026-10-19-the-level-tag-and-the-xp` · Status: current, amended by `2026-10-19-the-xp-bar-s-look-is` · Amends: `2026-10-19-the-creature-card-is-variant-e`
 
 Misa: "Could we ensure the level's container is always the same height as the exp bar? In the creature preview it's larger. Show me versions where it's shrunken to the xp bar's height. Then show me a version where the exp bar is enlarged to the badge's height. I hope you can make this 'size lock' in the exp bar component itself." Also: "On the creature page, let's mimic the order of elements so that it looks like the creature preview (in the creature list) ... Also make the evolve button span the entire width of a mobile screen, and pretty big on a desktop." And: "The evolve button in the creature list has too much bottom padding below its text. Probably a leftover from removing the second row of text. Make sure the button component that does this stops doing it if the bottom text is empty, so we don't replicate it elsewhere in the app by accident."
 
@@ -315,7 +315,7 @@ Misa: "Could we ensure the level's container is always the same height as the ex
 
 ## 2026-10-19: Round 5 touch-ups: the multiplier tag in plain colours, "Evolve", one-row card button, a tighter Lounging badge
 
-ID: `2026-10-19-round-5-touch-ups-the-multiplier` · Status: current
+ID: `2026-10-19-round-5-touch-ups-the-multiplier` · Status: current, amended by `2026-10-19-every-evolve-goes-through-the-evolve` · Amends: `2026-10-19-every-xp-gain-is-the-count`
 
 Misa, after round 5: "the 2x (or similar) modifier in exp could be the default tag color instead of the varying color it is now. It's a modifier that can appear on any type of exp"; "The lounging tag has a bit too much space between the armchair icon and text. Let's also change the evolution button text to just "Evolve". I guess we can keep the price but let's bring it to the same row (saves vertical space)." He also kept the cherries as the treat icon.
 
@@ -326,7 +326,7 @@ Misa, after round 5: "the 2x (or similar) modifier in exp could be the default t
 
 ## 2026-10-19: The creature card is variant E, with the talents one to a row
 
-ID: `2026-10-19-the-creature-card-is-variant-e` · Status: current
+ID: `2026-10-19-the-creature-card-is-variant-e` · Status: current, amended by `2026-10-19-the-level-tag-and-the-xp` · Amends: `2026-10-19-the-type-scale-one-rung-smaller`
 
 Misa approved variant E of the creature card (the workbench mock of the same day) with one change: "I'd only want the talents to always display on new rows instead of on the same row (see Festive and [20 - 25] displaying inline since they're short)." It is now the game's card (`CreatureCard`, `CreatureHead`, `creature-focus.css`); the workbench mock, its `variant` switch and `creature-card-variants.css` are gone.
 
@@ -339,7 +339,7 @@ Misa approved variant E of the creature card (the workbench mock of the same day
 
 ## 2026-10-19: Every XP gain is the "Count-up" row, with a treat icon and one multiplier chip
 
-ID: `2026-10-19-every-xp-gain-is-the-count` · Status: current
+ID: `2026-10-19-every-xp-gain-is-the-count` · Status: current, amended by `2026-10-19-every-xp-multiplier-multiplies-and-one`, `2026-10-19-round-5-touch-ups-the-multiplier` · Amends: `2026-10-19-look-and-feel-pass-six-approved`
 
 Misa picked variant D, "Count-up", of the XP-gain designs, and asked: "Let's make an icon for treat and use that in place of the worded treat-badge. It could be a melon slice or other easily recognizable fruit. It would have a small footprint and be clickable for more info. Let's also make a conscious decision to not show extra stuff like 'treat gave 2x experience' so all representations of gaining exp are uniform. If we want, we could experiment with the treat icon badge including a modifier for the actual XP multiplier: 3x on some weather days, and modifiable by things like gear. Clicking on it would open a breakdown of the exp multiplier effects that applied, in a popover." He then changed one part: no number on the melon ("melon ×3" reads as three treats); the multiplier is its own small chip.
 
@@ -354,7 +354,7 @@ Misa picked variant D, "Count-up", of the XP-gain designs, and asked: "Let's mak
 
 ## 2026-10-19: The type scale one rung smaller (Misa: "smaller everywhere"); creature card variant E in the workbench
 
-ID: `2026-10-19-the-type-scale-one-rung-smaller` · Status: current
+ID: `2026-10-19-the-type-scale-one-rung-smaller` · Status: current, amended by `2026-10-19-the-creature-card-is-variant-e` · Amends: `2026-10-18-play-test-round-2-one-type`
 
 - **New token values** (`styles/base/tokens.css`): `--fs-title` 1.5 to 1.25 rem, `--fs-heading` 1.25 to 1 rem, `--fs-row` 1 to 0.875 rem, `--fs-small` 0.875 to 0.75 rem (24 / 20 / 16 / 14 px became 20 / 16 / 14 / 12 px). Misa tried it on his 360 px phone in the creature card round and asked to keep it everywhere. The proposed values held up in practice, so they shipped as proposed.
 - **The tab bar loses its raw size.** At 360 px it had a 0.625 rem override (10 px); it now uses `--fs-small` (12 px) at every width, so it reads better than before on the narrowest phone. At 12 px "Expeditions" is 61 px wide and a fifth of the bar is 58 px, so a tab is no longer allowed to be narrower than its word (`min-width: min-content` instead of `0`): the tabs still share the width evenly, and Expeditions takes the 3 px it needs from the others. This also ends the spill at 390 px, where "Expeditions" (14 px) ran 12 px past its tab. `type-scale.test.ts` no longer allows a raw size in `tabs.css`.
@@ -363,7 +363,7 @@ ID: `2026-10-19-the-type-scale-one-rung-smaller` · Status: current
 
 ## 2026-10-19: Look and feel pass, six approved changes (type scale everywhere, pixel cards, camp Back, one XP row, rooms recap, reset line)
 
-ID: `2026-10-19-look-and-feel-pass-six-approved` · Status: current
+ID: `2026-10-19-look-and-feel-pass-six-approved` · Status: current, amended by `2026-10-19-every-xp-gain-is-the-count`
 
 Misa approved six items from the overnight audit (U2, U8, U11, U14, F11, F17, F18). All are visible; before and after screenshots are in the PR.
 
@@ -388,7 +388,7 @@ Misa asked why the job result showed a level change and "Waiting at this level" 
 
 ## 2026-10-18: Close for the item details, the job result as a picture with one XP component, reasons on the right, Dismantle last
 
-ID: `2026-10-18-close-for-the-item-details-the` · Status: current
+ID: `2026-10-18-close-for-the-item-details-the` · Status: current · Amends: `2026-10-18-play-test-round-2-one-type`
 
 Misa's next notes on PR #35.
 
@@ -400,7 +400,7 @@ Misa's next notes on PR #35.
 
 ## 2026-10-18: Never stack drawers; one width inside a drawer; the item picker opens with nothing selected
 
-ID: `2026-10-18-never-stack-drawers-one-width-inside` · Status: current
+ID: `2026-10-18-never-stack-drawers-one-width-inside` · Status: current · Amends: `2026-10-18-a-second-tap-closes-the-item`, `2026-10-18-play-test-round-2-one-type`
 
 Misa found a sheet opening on top of a drawer stressful, saw the sheet's Close button sit further right than the content below it, and did not want the item picker to choose an item for him.
 
@@ -414,7 +414,7 @@ Misa found a sheet opening on top of a drawer stressful, saw the sheet's Close b
 
 ## 2026-10-18: Play-test round 2: one type scale, one pixel font per panel, Equip on, dismantle as badges
 
-ID: `2026-10-18-play-test-round-2-one-type` · Status: current
+ID: `2026-10-18-play-test-round-2-one-type` · Status: current, amended by `2026-10-18-close-for-the-item-details-the`, `2026-10-18-never-stack-drawers-one-width-inside`, `2026-10-19-the-type-scale-one-rung-smaller` · Amends: `2026-10-16-gear-b-built-reach-dismantle-jobs`, `2026-10-18-a-second-tap-closes-the-item`, `2026-10-18-flipping-between-creatures-and-items`, `2026-10-18-the-flip-arrows-look-the-same`
 
 Misa's feedback on PR #35's drawers. Each point and what was decided:
 
@@ -443,13 +443,13 @@ Misa: players may not notice that the picker's detail panel scrolls, because it 
 
 ## 2026-10-18: The flip arrows look the same everywhere
 
-ID: `2026-10-18-the-flip-arrows-look-the-same` · Status: current
+ID: `2026-10-18-the-flip-arrows-look-the-same` · Status: current, amended by `2026-10-18-play-test-round-2-one-type` · Amends: `2026-10-18-flipping-between-creatures-and-items`
 
 Misa: the arrows looked different on the creature page and in the item drawers. Now they are one full-width row in both: previous at the left, the position ("3 / 12") in the middle, next at the right, same button size. On the creature page the row sits under Back and Lounge; in a drawer it is its own row under the heading (`.drawer-flip`), no longer squeezed into the handle strip. The small variant of `FlipNav` is gone. Then (Misa, same day): the buttons say Prev and Next beside the arrows (the words are hidden from screen readers, which hear the button's label); the creature page's row has a little margin above and below; the drawer's row has a gap before the content; and the Workshop item drawer shows no X (a tap outside, the handle or Escape closes it; the close button still takes the keyboard focus and shows when focused). Later the same day Misa made it a rule: **no drawer shows an X** (the picker, the Talent Book, the evolve drawer, every one). A tap outside, the handle or Escape closes a drawer; the close button stays for the keyboard and screen readers and shows only while focused (`drawer.css`).
 
 ## 2026-10-18: flipping between creatures and items
 
-ID: `2026-10-18-flipping-between-creatures-and-items` · Status: current
+ID: `2026-10-18-flipping-between-creatures-and-items` · Status: current, amended by `2026-10-18-play-test-round-2-one-type`, `2026-10-18-the-flip-arrows-look-the-same`
 
 Misa: both detail views (the creature page, the item drawer) should let you flip to the next or previous thing, by swipe on a phone and by buttons and keys on a desktop, and the two should work the same. One shared building block, `ui/Flipper.tsx` (`FlipNav`, `FlipArea`, `FlipLive`) with its pure rules in `ui/flip-logic.ts` and the key handler in `ui/flip-keys.ts`; the owners of a list build the props with `flipOver`.
 
@@ -475,7 +475,7 @@ ID: `2026-10-17-how-to-play-pass-for-the` · Status: current
 
 ## 2026-10-17: Item corners everywhere, and tags that explain themselves by context
 
-ID: `2026-10-17-item-corners-everywhere-and-tags-that` · Status: current
+ID: `2026-10-17-item-corners-everywhere-and-tags-that` · Status: current, amended by `2026-10-27-bulk-selection-replaces-marking`
 
 - **Every item image that shows its level also shows its slot** (Misa). One component, `ItemCorners` (`GearArt.tsx`), draws both: the slot icon top left, "Lv N" bottom right; the slot comes from the item's base. `ItemFrame` uses it, and so do the creature page slots and the picker cells; a test fails if `ItemLevel` is drawn on its own anywhere else. The picker's "Worn" flag moves to the top right to make room. Loot-list names take their rarity colour too, like the item card.
 - **An element explains itself by whose it is** (Misa: "the Ember help on items is super good, do the same elsewhere"). `ElementChip` takes a `context`:
@@ -492,7 +492,7 @@ ID: `2026-10-17-item-corners-everywhere-and-tags-that` · Status: current
 
 ## 2026-10-17: creature rarity by name colour; gear rarity by one border (polish v5)
 
-ID: `2026-10-17-creature-rarity-by-name-colour-gear` · Status: current
+ID: `2026-10-17-creature-rarity-by-name-colour-gear` · Status: current, amended by `2026-10-17-one-item-level-indicator-item-card` · Amends: `2026-10-13-gear-and-crafting-v1-client`, `2026-10-17-creature-page-v3-is-the-live`
 
 Misa's changes after trying v3 live.
 
@@ -503,7 +503,7 @@ Misa's changes after trying v3 live.
 
 ## 2026-10-17: Accordion rolled out; golden talents shimmer; Talent Book shows states
 
-ID: `2026-10-17-accordion-rolled-out-golden-talents-shimmer` · Status: current
+ID: `2026-10-17-accordion-rolled-out-golden-talents-shimmer` · Status: current · Amends: `2026-10-17-one-accordion-for-every-expand-and`
 
 Misa's feedback on the first Accordion and the creature page, and the rollout the earlier entry promised.
 
@@ -514,7 +514,7 @@ Misa's feedback on the first Accordion and the creature page, and the rollout th
 
 ## 2026-10-17: one Accordion for every expand and collapse
 
-ID: `2026-10-17-one-accordion-for-every-expand-and` · Status: current
+ID: `2026-10-17-one-accordion-for-every-expand-and` · Status: current, amended by `2026-10-17-accordion-rolled-out-golden-talents-shimmer`
 
 Misa: the open and close pattern (Workshop, creature card "More", Talent Book, "Recent Bait activity", Rename, item Details) looked different in each place, so players could not tell what opens what. `ui/Accordion.tsx` is the one component for all of them (plus `AccordionGroup`, optionally one open at a time). Built and shown in the workbench first; existing views move to it in later changes.
 

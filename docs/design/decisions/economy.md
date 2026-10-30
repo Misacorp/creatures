@@ -6,7 +6,7 @@ Leet points, Bait, the ledger and spending, economy targets, rewards that cut ac
 
 ## 2026-10-20: Raids harder for the tick economy; steeper fusion; early gear at a lower level
 
-ID: `2026-10-20-raids-harder-for-the-tick-economy` · Status: current
+ID: `2026-10-20-raids-harder-for-the-tick-economy` · Status: current · Amends: `2026-10-20-fusion-goes-up-in-points-slowly`
 
 Misa: "We should make raids harder. Raids shouldn't be a pushover, but neither should they be impossible to win at the early stages." With expedition ticks, the dungeon payout and gradual fusion in, the sim's teams won every raid (typical finale 99.3%, four bosses at 100%, 1.9% of creatures knocked out). Decisions, all through scalars (balance log B-026):
 
@@ -23,7 +23,7 @@ Expedition and crafting balance is now checked with exact expected values (`pack
 
 ## 2026-10-15: the Bait allowance and leet bonus ship
 
-ID: `2026-10-15-the-bait-allowance-and-leet-bonus` · Status: current
+ID: `2026-10-15-the-bait-allowance-and-leet-bonus` · Status: current · Amends: `2026-10-10-leet-points-table`, `2026-10-15-a-player-journey-simulator-and-the`
 
 - **Numbers are the `RULES.income` contract**, not the earlier planning numbers in the journey design (30 and 15 to 25): a daily allowance of 25 Bait and a leet bonus of 15 to 32 (`leetBonusForDay`, by how many players leeted that day). A solo leet day pays 40, a day with 10 or more leeters 57. The balance pass still follows with the sim.
 - **A leet credits `leetBonusForDay(n)`**, not `baitForDay(n)`. The sync only sees finalised days, so `n` is the day's final count and there is no top-up; the per-player key `leet:<day id>` still keeps a re-delivered day from paying anyone twice. Leet points are still computed and kept in the ledger meta (`points`, with the new `bonus`). `baitForDay` stays exported for the simulator's "current" income model and is unused by the game.
@@ -33,14 +33,14 @@ ID: `2026-10-15-the-bait-allowance-and-leet-bonus` · Status: current
 
 ## 2026-10-15: a player journey simulator, and the planned Bait allowance
 
-ID: `2026-10-15-a-player-journey-simulator-and-the` · Status: current
+ID: `2026-10-15-a-player-journey-simulator-and-the` · Status: current, amended by `2026-10-15-the-bait-allowance-and-leet-bonus`
 
 - **Journey simulator (Misa: "sounds good").** The balance sim gets player profiles as dials (login days, check-in times including night, leet rate, how many creatures share the Bait, expedition uptime, dungeon and raid skill, crafting), four presets (min-maxer, engaged, regular, drop-in), and a per-player journey log: milestones, power, the one limit holding the player back at each check-in, and waits. The raid and dungeon sims then draw rosters from journeys. Design: `docs/design/player-journey-sim.md`. Built after PR #24.
 - **Planned Bait income (Misa, numbers by the lead).** A daily allowance of 30 Bait for opening the game, plus a leet bonus of 15 to 25 Bait by how many players leeted (15 for 1 or 2, then 17, 19, 20, 21, 22, 23, 24, 25 at 10 or more), keeping the leet table's rules (more leeters never pays less, solo equals double, each extra adds less). A day pays 30 to 55. Not shipped yet: the sims model it as a second income rule first, and it ships with its own balance pass.
 
 ## 2026-10-13: Combined balance pass (gear, dungeon and expeditions v2 together)
 
-ID: `2026-10-13-combined-balance-pass-gear-dungeon-and` · Status: current
+ID: `2026-10-13-combined-balance-pass-gear-dungeon-and` · Status: current, amended by `2026-10-20-the-daily-dungeon-pays-more-and` · Amends: `2026-10-13-daily-dungeon-v1-engine-content-server`
 
 The merge left 3 of 47 targets failing on seed `leet` (setup credit share 13.9%, lowest creature 0.58x, Crafting level at day 30 of 7). After this pass **all 47 pass** on the full run (report: `docs/balance/report-2026-10-13-combined.md`). Raids stay the main source of big loot; the 2 hour trip minimum, the slot days (about 1, 30, 120 and 365: 1, 27.5, 121, 370), the push-on fairness (0.96 to 1.00) and the gear power numbers are untouched. Boss HP, ranks and species stats were **not** changed.
 
@@ -70,7 +70,7 @@ The merge's 3 failures became: setup share 13.9% to 16.0% (s2 16.4%, s3 16.5%), 
 
 ## 2026-10-10: Leet points table
 
-ID: `2026-10-10-leet-points-table` · Status: current
+ID: `2026-10-10-leet-points-table` · Status: current, amended by `2026-10-15-the-bait-allowance-and-leet-bonus` · Amends: `2026-10-10-leet-points-to-bait-conversion`
 
 **Decision.** Leet points per day come from a fixed table by the number of players who leeted that day **[Misa]**:
 
@@ -106,7 +106,7 @@ ID: `2026-10-10-ledger-and-spending` · Status: current
 
 ## 2026-10-10: Leet points to Bait conversion
 
-ID: `2026-10-10-leet-points-to-bait-conversion` · Status: current
+ID: `2026-10-10-leet-points-to-bait-conversion` · Status: current, amended by `2026-10-10-leet-points-table`
 
 **Decision.** The leet bot API reports **facts only** (who leeted, in which server, on which day). The game owns the scoring rules as tunable balance config:
 

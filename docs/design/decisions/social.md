@@ -22,7 +22,7 @@ Misa chose four kinds of DM from the game's bot, all off by default: a trip come
 
 ## 2026-10-22: Lounging time is stored at every check
 
-ID: `2026-10-22-lounging-time-is-stored-at-every` · Status: current
+ID: `2026-10-22-lounging-time-is-stored-at-every` · Status: current · Amends: `2026-10-20-lounging-xp-the-evening-check`
 
 Misa: "the lounge experience counting is definitely flawed in some way". The cause: company time collected in memory until it made one XP (2 minutes), while the lounge check runs a minute apart. The live sockets (2026-10-19) use the Hibernation API, which lets the runtime evict the object while it sleeps between two alarms, and then the collected minute was lost every time: two players could sit together for an hour and earn nothing. A test that restarts the object between every check paid 0 XP for 20 minutes together before the fix and 10 after.
 
@@ -32,7 +32,7 @@ Misa: "the lounge experience counting is definitely flawed in some way". The cau
 
 ## 2026-10-20: Lounging XP, the evening check
 
-ID: `2026-10-20-lounging-xp-the-evening-check` · Status: current
+ID: `2026-10-20-lounging-xp-the-evening-check` · Status: current, amended by `2026-10-22-lounging-time-is-stored-at-every` · Amends: `2026-10-20-lounging-xp-fixes-after-the-first`
 
 Misa: "People report not getting as much exp as they expect, and even losing some if the game disconnects… I want to make sure our end of the deal is solid." The production report could not help yet (it covers days up to two days back; lounging went live today), so the code was audited for every way our end loses time.
 
@@ -42,7 +42,7 @@ Misa: "People report not getting as much exp as they expect, and even losing som
 
 ## 2026-10-20: Lounging XP fixes after the first production test
 
-ID: `2026-10-20-lounging-xp-fixes-after-the-first` · Status: current
+ID: `2026-10-20-lounging-xp-fixes-after-the-first` · Status: current, amended by `2026-10-20-lounging-xp-the-evening-check` · Amends: `2026-10-20-lounging-with-company-earns-xp-the`
 
 Misa and a friend lounged together in production and saw no XP ("My friend said they had to swap their lounging creature to another one in order to start gaining experience"). Then: "Let's say I never actually disconnect from the lounge, just switch tabs… When I return to the game, can we sync the missing intermediate time… Ideally other players who don't know that I'm in another browser tab would see their EXP tick up naturally."
 
@@ -54,7 +54,7 @@ Misa and a friend lounged together in production and saw no XP ("My friend said 
 
 ## 2026-10-20: Lounging with company earns XP; the live lounge goes to production
 
-ID: `2026-10-20-lounging-with-company-earns-xp-the` · Status: current
+ID: `2026-10-20-lounging-with-company-earns-xp-the` · Status: current, amended by `2026-10-20-lounging-xp-fixes-after-the-first` · Amends: `2026-10-19-websocket-push-for-the-lounge-as`
 
 Misa: "Let's enable the websocket based lounge for production… I'd also like to include a passive EXP tick for a creature that is lounging IF there is another creature present. An empty lounge earns no experience, but lounging with a friend does. It needs to be quite small." On the cap: "If we cap it at 60 EXP per day, then that means that players will have the incentive to stop lounging at some point. If we can give each creature 60 daily EXP for lounging, we'll encourage leveling up those lower leveled creatures." He chose option C of `living-room.md`, "Lounging with company".
 
@@ -69,7 +69,7 @@ Misa: "Let's enable the websocket based lounge for production… I'd also like t
 
 ## 2026-10-19: WebSocket push for the lounge, as a prototype behind a flag
 
-ID: `2026-10-19-websocket-push-for-the-lounge-as` · Status: current
+ID: `2026-10-19-websocket-push-for-the-lounge-as` · Status: current, amended by `2026-10-20-lounging-with-company-earns-xp-the` · Amends: `2026-10-15-a-45-s-living-room-refresh`
 
 Misa: "a prototype of websockets, but not in the raid yet. Try it in the lounge! Easier to test and opens up more cozy options." Misa is on the Cloudflare Workers Free plan, and nobody deploys staging or production overnight. Design in `docs/design/lounge-live.md`.
 
@@ -94,7 +94,7 @@ ID: `2026-10-18-the-lounge-message-replaces-discord-s` · Status: current
 
 ## 2026-10-15: A 45 s living-room refresh while others are present
 
-ID: `2026-10-15-a-45-s-living-room-refresh` · Status: current
+ID: `2026-10-15-a-45-s-living-room-refresh` · Status: current, amended by `2026-10-19-websocket-push-for-the-lounge-as` · Amends: `2026-10-14-living-room-presence-comes-from-the`
 
 **Decision.** While at least one other participant is in the activity instance and the page is visible, each client refetches `POST /api/room` every 45 s (one `setTimeout` chain in `room-loader.ts`). Alone or hidden, no timer waits. Misa approved low-frequency polling so lounger and spot changes reach others without a join.
 
@@ -116,7 +116,7 @@ ID: `2026-10-15-a-player-s-living-room-spot` · Status: current
 
 ## 2026-10-14: Living room presence comes from the Discord SDK, not the server
 
-ID: `2026-10-14-living-room-presence-comes-from-the` · Status: current
+ID: `2026-10-14-living-room-presence-comes-from-the` · Status: current, amended by `2026-10-15-a-45-s-living-room-refresh`
 
 **Decision.** Who is "here" is the activity instance's participant list from the Embedded App SDK (`getInstanceConnectedParticipants` plus `ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE`). The server keeps no presence: no heartbeat, no WebSocket, no polling. A client asks `POST /api/room` once at start, then only for newcomers (debounced 2 s); leaves cost nothing; a tab switch refetches only when the data is over 60 s old.
 
@@ -128,7 +128,7 @@ ID: `2026-10-14-living-room-presence-comes-from-the` · Status: current
 
 ## 2026-10-14: The living room's lounger and `/api/room`
 
-ID: `2026-10-14-the-living-room-s-lounger-and` · Status: current
+ID: `2026-10-14-the-living-room-s-lounger-and` · Status: current, amended by `2026-10-25-lounge-reads-one-row-lounger-xp`
 
 **Decision.** Each player has one **lounger**, the creature that sits in the living room, stored on the player (`players.lounger_id`, a nullable column from migration 21, no backfill). It is picked lazily: whenever `GET /api/state` or `POST /api/room` reads it and finds it missing, gone (fused away) or busy, the server picks a new idle creature of the player at random (`crypto.getRandomValues` through `pickLounger` in `@creatures/game`) and stores it, or stores NULL when every creature is busy. A player with no creatures gets null and nothing is written. The choice is not remembered for later: whoever is on the couch is the lounger. `PUT /api/lounger` lets the player choose (404 `creature_not_found` unless theirs, 409 `creature_busy` on an expedition or a workshop job).
 

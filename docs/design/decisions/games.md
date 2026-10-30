@@ -31,7 +31,7 @@ Misa: "Make sure each game arena fits inside its parent container", and "make th
 
 ## 2026-10-23: Three more team events, all played at once: Bucket Brigade, Crate Tower, Kite Flight
 
-ID: `2026-10-23-three-more-team-events-all-played` · Status: current
+ID: `2026-10-23-three-more-team-events-all-played` · Status: current · Amends: `2026-10-23-team-events-are-real-team-sports`
 
 Misa's rule for team events holds: a team event's length never grows with the number of teammates or teams. All five team events are now in the daily draw (`chooseLineup` is unchanged: it picks the day's team event from every live team event).
 
@@ -46,7 +46,7 @@ Misa's rule for team events holds: a team event's length never grows with the nu
 
 ## 2026-10-23: Valley Games: no level, a "Good fit" badge, event badges, no auto-entry
 
-ID: `2026-10-23-valley-games-no-level-a-good` · Status: current
+ID: `2026-10-23-valley-games-no-level-a-good` · Status: current · Amends: `2026-10-22-valley-games-engine-five-kinds-stats`, `2026-10-22-valley-games-on-the-server-days`
 
 Misa's decisions for the v1 scope (`valley-games.md`, "v1 scope", items 2 to 4).
 
@@ -59,7 +59,7 @@ Misa's decisions for the v1 scope (`valley-games.md`, "v1 scope", items 2 to 4).
 
 ## 2026-10-23: Team events are real team sports: Log Carry and Pumpkin Push; Sauna Stack and Shark Relay retired
 
-ID: `2026-10-23-team-events-are-real-team-sports` · Status: current
+ID: `2026-10-23-team-events-are-real-team-sports` · Status: current, amended by `2026-10-23-three-more-team-events-all-played` · Amends: `2026-10-22-valley-games-engine-five-kinds-stats`, `2026-10-23-valley-games-polish-commentary-by-priority`
 
 Misa: "Could we drop the sauna and ice room to just one per player? I don't think all the events work as team sports, but something like pushing a boulder or carrying a big item easily works." Then: a team event's length must not grow with the number of teammates or teams. One team event a day stays (three creatures means more bench experience), but only real team sports.
 
@@ -73,7 +73,7 @@ Misa: "Could we drop the sauna and ice room to just one per player? I don't thin
 
 ## 2026-10-23: No Valley Games results post
 
-ID: `2026-10-23-no-valley-games-results-post` · Status: current
+ID: `2026-10-23-no-valley-games-results-post` · Status: current · Amends: `2026-10-22-valley-games-on-the-server-days`
 
 **Decision (Misa).** The Games post nothing to Discord: the podium post that went out at the award is gone (`games-posts.ts` removed). **Why:** the show can be watched as a replay until the next one, and a results post spoils it for everyone who watches later. The results stay in the Games tab, for players who have watched or chose to look.
 
@@ -91,7 +91,7 @@ Misa: four events every day felt like a bit much. Now three a day (`RULES.games.
 
 ## 2026-10-23: Valley Games polish: commentary by priority, paced exits, real finishes, stacks and a relay
 
-ID: `2026-10-23-valley-games-polish-commentary-by-priority` · Status: current
+ID: `2026-10-23-valley-games-polish-commentary-by-priority` · Status: current, amended by `2026-10-23-team-events-are-real-team-sports`
 
 Round 3 of the Games engine (the 2026-10-22 entry above).
 
@@ -104,7 +104,7 @@ Round 3 of the Games engine (the 2026-10-22 entry above).
 
 ## 2026-10-22: Valley Games on the server: days, auto-entry, awards and the Prize Stall
 
-ID: `2026-10-22-valley-games-on-the-server-days` · Status: current
+ID: `2026-10-22-valley-games-on-the-server-days` · Status: current, amended by `2026-10-23-games-migration-renumbered-to-39`, `2026-10-23-no-valley-games-results-post`, `2026-10-23-valley-games-no-level-a-good`
 
 The worker side of the Games (`apps/worker/src/games*.ts`, migration 38). Choices made while building it:
 
@@ -119,7 +119,7 @@ The worker side of the Games (`apps/worker/src/games*.ts`, migration 38). Choice
 
 ## 2026-10-22: Valley Games engine: five kinds, stats against the field, a timeline the client only plays
 
-ID: `2026-10-22-valley-games-engine-five-kinds-stats` · Status: current
+ID: `2026-10-22-valley-games-engine-five-kinds-stats` · Status: current, amended by `2026-10-23-team-events-are-real-team-sports`, `2026-10-23-valley-games-no-level-a-good`
 
 The simulation core of the Valley Games (`docs/design/valley-games.md`). Code: `packages/engine/src/games/`, content `games-events.json`, rules `RULES.games` and `rules/games.ts`, study `pnpm sim:games`.
 
