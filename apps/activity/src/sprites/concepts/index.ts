@@ -9,6 +9,7 @@
 import type { SpriteDef } from '../sprite-data';
 import type { ArtKind } from '../sprite-lint';
 import { VOID_CONCEPTS } from './void';
+import { VOID_FOES_CONCEPTS } from './void-foes';
 
 export interface Concept {
   kind: ArtKind;
@@ -45,4 +46,4 @@ export interface ConceptSet {
   sprites: Readonly<Record<string, Concept>>;
 }
 
-export const CONCEPT_SETS: readonly ConceptSet[] = [VOID_CONCEPTS];
+export const CONCEPT_SETS: readonly ConceptSet[] = [VOID_CONCEPTS, VOID_FOES_CONCEPTS];
