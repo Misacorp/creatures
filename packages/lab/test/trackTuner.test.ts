@@ -16,6 +16,9 @@ import {
   slotTargetsFor,
   toolPotentialMinAt,
   toolShareMinAt,
+  WALL_CLASSIC_POTENTIAL_AIM,
+  WALL_CLASSIC_POTENTIAL_MAX,
+  WALL_CLASSIC_POTENTIAL_MIN,
 } from '../src/targets';
 import type { Executor } from '../src/jobs';
 import {
@@ -355,7 +358,7 @@ describe('a slot’s weekend', () => {
       'classic.potential',
       'classic.kill',
     ] as const)
-      expect(slotTargets(5).find((t) => t.measure === m)).toEqual(
+      expect(slotTargets(4).find((t) => t.measure === m)).toEqual(
         RAID_TARGETS.high.find((t) => t.measure === m),
       );
     // The tool's worth is in points of damage potential; the HP-share tool measures are information only on the track.
@@ -463,6 +466,62 @@ const flatRoster = (level: number): RosterProfile => {
   const weeks = Array.from({ length: ROSTER_WEEKS }, (_, i) => week(i + 1));
   return { daily: weeks, weekly: weeks, newPlayer: weeks };
 };
+
+describe('a wall slot’s targets (Misa, 2026-10-30)', () => {
+  const at = (slot: number, wall: boolean) =>
+    slotTargetsFor(slot, trackSlot(slot).strengthBp, wall);
+  const get = (ts: ReturnType<typeof at>, m: string) => ts.find((t) => t.measure === m);
+
+  it('lowers the classic potential band to 30% to 60% and leaves every other target as on a normal slot', () => {
+    const wall = at(5, true);
+    const normal = at(5, false);
+    expect([WALL_CLASSIC_POTENTIAL_MIN, WALL_CLASSIC_POTENTIAL_MAX]).toEqual([0.3, 0.6]);
+    expect(get(wall, 'classic.potential')).toMatchObject({ min: 0.3, max: 0.6 });
+    expect(get(normal, 'classic.potential')).toMatchObject({
+      min: CLASSIC_POTENTIAL_MIN,
+      max: CLASSIC_POTENTIAL_MAX,
+    });
+    expect(wall.map((t) => t.measure)).toEqual(normal.map((t) => t.measure));
+    for (const t of normal)
+      if (t.measure !== 'classic.potential') expect(get(wall, t.measure)).toEqual(t);
+    // The prepared potential stays 125% or more, the beat2 and the classic kill limit as usual, and the tool target is there.
+    expect(get(wall, 'prepared.potential')?.min).toBe(PREPARED_POTENTIAL_MIN);
+    expect(PREPARED_POTENTIAL_MIN).toBe(1.25);
+    expect(get(wall, 'prepared.beat2')?.min).toBe(BEAT2_MIN);
+    expect(get(wall, 'classic.kill')?.max).toBe(0.05);
+    expect(get(wall, 'tool.potential')?.min).toBeCloseTo(
+      toolPotentialMinAt(trackSlot(5).strengthBp),
+    );
+  });
+
+  it('is what the track gives slot 5, and only slot 5', () => {
+    expect(get(slotTargets(5), 'classic.potential')).toMatchObject({ min: 0.3, max: 0.6 });
+    for (const slot of [2, 3, 4, 6, 10, 15])
+      expect(get(slotTargets(slot), 'classic.potential')).toMatchObject({
+        min: CLASSIC_POTENTIAL_MIN,
+        max: CLASSIC_POTENTIAL_MAX,
+      });
+    // The tutorial still has no classic target.
+    expect(get(slotTargets(1), 'classic.potential')).toBeUndefined();
+  });
+
+  it('aims the classic potential at 45% on a wall, inside its band, and the prepared one at 130%', () => {
+    expect(WALL_CLASSIC_POTENTIAL_AIM).toBe(0.45);
+    expect(WALL_CLASSIC_POTENTIAL_AIM).toBeGreaterThanOrEqual(WALL_CLASSIC_POTENTIAL_MIN);
+    expect(WALL_CLASSIC_POTENTIAL_AIM).toBeLessThanOrEqual(WALL_CLASSIC_POTENTIAL_MAX);
+    const m = (prepared: number, classic: number) =>
+      ({ 'prepared.potential': prepared, 'classic.potential': classic }) as unknown as RaidMeasures;
+    expect(
+      aimComfort(m(PREPARED_POTENTIAL_AIM, 0.45), true, WALL_CLASSIC_POTENTIAL_AIM),
+    ).toBeCloseTo(0);
+    // 80% is the normal aim and is 35 points from the wall's.
+    expect(
+      aimComfort(m(PREPARED_POTENTIAL_AIM, 0.8), true, WALL_CLASSIC_POTENTIAL_AIM),
+    ).toBeCloseTo(-0.35);
+    expect(aimComfort(m(PREPARED_POTENTIAL_AIM, 0.8))).toBeCloseTo(0);
+    expect(aimComfort(m(PREPARED_POTENTIAL_AIM, 0.45))).toBeCloseTo(-0.35);
+  });
+});
 
 describe('the slot measure at the high rank’s own setting', () => {
   // A level 25 roster, full cards (slots 10 and up) and the high rank's numbers must give what the rank measure gives, for every boss:

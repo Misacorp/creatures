@@ -56,6 +56,14 @@ export const CLASSIC_POTENTIAL_MAX = 0.9;
 export const PREPARED_POTENTIAL_AIM = 1.3;
 export const CLASSIC_POTENTIAL_AIM = 0.8;
 /**
+ * A wall slot (`SLOT_WALL` in `track.ts`; Misa, 2026-10-30, "Thornmother is a deliberate wall at the end of the first lap" in
+ * `docs/design/decisions/raids.md`): a prepared team still reaches `PREPARED_POTENTIAL_MIN`, but the classic party, which has no
+ * answer, sits far lower, between these two (no kill: `classic.kill` is unchanged). The tuner aims at the middle of the band.
+ */
+export const WALL_CLASSIC_POTENTIAL_MIN = 0.3;
+export const WALL_CLASSIC_POTENTIAL_MAX = 0.6;
+export const WALL_CLASSIC_POTENTIAL_AIM = 0.45;
+/**
  * A miss of a potential target costs this times the distance (the weight of the other targets is 1 to 2): the potentials are the
  * main targets, so where the tool's worth cannot be met together with them (the potential is damage over HP, and a tool worth ten
  * points of the HP share needs a team without it to fall short of the kill), the tuner keeps the potentials and misses the tool.
@@ -294,13 +302,15 @@ const preparedTargets = (): RaidTarget[] => [
 
 // The unprepared classic party may get anything but a clean kill, so its HP removed has no limit, but its damage potential sits
 // between 70% and 90%; the mixed server has no target (its numbers are information, `RAID_MEASURES`).
-const unpreparedTargets = (): RaidTarget[] => [
+const unpreparedTargets = (wall = false): RaidTarget[] => [
   {
     measure: 'classic.potential',
-    min: CLASSIC_POTENTIAL_MIN,
-    max: CLASSIC_POTENTIAL_MAX,
+    min: wall ? WALL_CLASSIC_POTENTIAL_MIN : CLASSIC_POTENTIAL_MIN,
+    max: wall ? WALL_CLASSIC_POTENTIAL_MAX : CLASSIC_POTENTIAL_MAX,
     weight: POTENTIAL_WEIGHT,
-    why: 'The unprepared but decent classic party reaches a damage potential of 70% to 90%: a slightly prepared team can push into a kill (Misa, 2026-10-30)',
+    why: wall
+      ? 'A wall slot: the unprepared classic party, with no answer, reaches a damage potential of only 30% to 60% (Misa, 2026-10-30: Thornmother is a deliberate wall)'
+      : 'The unprepared but decent classic party reaches a damage potential of 70% to 90%: a slightly prepared team can push into a kill (Misa, 2026-10-30)',
   },
   {
     measure: 'classic.kill',
@@ -365,15 +375,18 @@ export const TOOL_POTENTIAL_WEIGHT = 2;
 
 /**
  * Misa's targets for slot `slot` of the boss track, whose cards have strength `strengthBp`: `RAID_TARGETS` (the same bounds at every
- * rank) with changes of the lead's and Misa's, which Misa can change:
+ * rank) with changes of the lead's and Misa's, which Misa can change (`wall` is the slot's flag, `SLOT_WALL` in `track.ts`, passed in
+ * because `track.ts` reads this module's tuner):
  * - the tool's worth is a target in points of damage potential, by its cards' strength (`toolPotentialMinAt`), and not in points of the
  *   HP share (`tool.share`, `tool.written`: information only here);
  * - slot 1 is the welcome boss, a tutorial with no rule cards (`SLOT_CARDS` in `track.ts`): a new server has its starters, so any
  *   decent team may win it and the classic party has no limit (`classic.kill`, `classic.potential`); with no card there is no tool to
  *   ask for, so the tool's worth has no target there either. Its targets are the prepared potential, `prepared.beat2` and the prepared
  *   line's HP removed with random talents (Misa, 2026-10-30).
+ * - a wall slot (`wall`, from `TrackSlot.wall`: Thornmother's first appearance, slot 5) asks the classic party for a potential of 30% to 60% instead of
+ *   70% to 90% (`WALL_CLASSIC_POTENTIAL_*`; the decision "Thornmother is a deliberate wall at the end of the first lap"); all else as usual.
  */
-export function slotTargetsFor(slot: number, strengthBp: number): RaidTarget[] {
+export function slotTargetsFor(slot: number, strengthBp: number, wall = false): RaidTarget[] {
   const welcome = (m: RaidMeasure): boolean => m === 'classic.kill' || m === 'classic.potential';
   const targets = RAID_TARGETS.high.filter(
     (t) =>
@@ -390,7 +403,13 @@ export function slotTargetsFor(slot: number, strengthBp: number): RaidTarget[] {
   };
   // The tool target sits where the HP-share tool targets stood (after the prepared targets, before the classic party's).
   const at = targets.findIndex((t) => t.measure === 'classic.potential');
-  return [...targets.slice(0, at), tool, ...targets.slice(at)];
+  // A wall slot swaps the classic party's potential band for the wall's (the prepared targets and the kill limit stay).
+  const classic = unpreparedTargets(wall);
+  return [
+    ...targets.slice(0, at),
+    tool,
+    ...targets.slice(at).map((t) => classic.find((c) => c.measure === t.measure) ?? t),
+  ];
 }
 
 /**

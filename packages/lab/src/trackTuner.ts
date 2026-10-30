@@ -59,6 +59,7 @@ import {
   metBy,
   missOf,
   slotTargetsFor,
+  WALL_CLASSIC_POTENTIAL_AIM,
   type RaidMeasure,
   type RaidMeasures,
   type RaidTarget,
@@ -95,7 +96,7 @@ export const MAX_ROUNDS = 4;
 
 /** Misa's targets for a slot (`slotTargetsFor`, by the strength of the slot's cards). */
 export const slotTargets = (slot: number, order: readonly string[] = TRACK_ORDER): RaidTarget[] =>
-  slotTargetsFor(slot, trackSlot(slot, order).strengthBp);
+  slotTargetsFor(slot, trackSlot(slot, order).strengthBp, trackSlot(slot, order).wall);
 
 /** The speed the track is tuned at (the path's expected roster speed); the other speeds only check it. */
 export const TUNE_SPEED: RosterSpeed = 'expected';
@@ -418,7 +419,8 @@ export interface SlotResult {
  * two distances, each in steps of `AIM_STEP`), and between about equal ones the nearer to the ranks' line. `distanceOf` is the mean of
  * the numbers' log ratios to the reference and counts `NEAR_WEIGHT` against the comfort: a last tie-break within a step of `AIM_STEP`
  * of the aim (the HP-for-Attack trade lies along a ridge of equal potential, and the pull keeps the boss near the ranks' line on it
- * instead of at a glass cannon or a wall). The slot 1 tutorial has no classic target, so it aims at the prepared potential alone.
+ * instead of at a glass cannon or a wall). The slot 1 tutorial has no classic target, so it aims at the prepared potential alone;
+ * a wall slot (`TrackSlot.wall`) aims its classic potential at `WALL_CLASSIC_POTENTIAL_AIM` (45%) instead.
  */
 export const NEAR_WEIGHT = 0.1;
 /** The distance of a potential to its aim counts in steps of this: within a step the measure is noise, and the pull to the ranks' line decides. */
@@ -429,14 +431,19 @@ export const quantised = (loss: number): number => Math.round(loss / LOSS_STEP) 
 /**
  * The aim as a comfort: how near the prepared potential is to `PREPARED_POTENTIAL_AIM` and the classic potential to
  * `CLASSIC_POTENTIAL_AIM`, each distance in whole steps of `AIM_STEP`, summed and negated (0 at both aims). A measure not taken counts 0;
- * `withClassic` false (the tutorial slot, no limit on the classic party) leaves the classic one out.
+ * `withClassic` false (the tutorial slot, no limit on the classic party) leaves the classic one out; `classicAim` is a wall slot's
+ * 45% instead of 80%.
  */
-export const aimComfort = (m: RaidMeasures, withClassic = true): number => {
+export const aimComfort = (
+  m: RaidMeasures,
+  withClassic = true,
+  classicAim = CLASSIC_POTENTIAL_AIM,
+): number => {
   const steps = (v: number, aim: number): number =>
     isMeasured(v) ? Math.round(Math.abs(v - aim) / AIM_STEP) * AIM_STEP : 0;
   return -(
     steps(m['prepared.potential'], PREPARED_POTENTIAL_AIM) +
-    (withClassic ? steps(m['classic.potential'], CLASSIC_POTENTIAL_AIM) : 0)
+    (withClassic ? steps(m['classic.potential'], classicAim) : 0)
   );
 };
 export const distanceOf = (n: Numbers, ref: Numbers): number =>
@@ -518,6 +525,7 @@ export async function tuneSlot(o: TuneSlotOptions): Promise<SlotResult> {
           aimComfort(
             r.measures,
             targets.some((t) => t.measure === 'classic.potential'),
+            trackSlot(o.slot, order).wall ? WALL_CLASSIC_POTENTIAL_AIM : CLASSIC_POTENTIAL_AIM,
           ) -
           NEAR_WEIGHT * distanceOf(fromPoint(p), reference),
         data: r,

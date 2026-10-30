@@ -6,9 +6,11 @@ import {
   SLOT_CARDS,
   SLOT_NUMBERS,
   SLOT_STRENGTH,
+  SLOT_WALL,
   TRACK,
   TRACK_ORDER,
   buildTrack,
+  isWallSlot,
   rankLevel,
   rankNumbers,
   rankStrengthBp,
@@ -18,9 +20,21 @@ import {
 } from '../src/track';
 
 describe('the track order', () => {
-  it('is the shipped boss order, made of lab bosses', () => {
-    expect(TRACK_ORDER).toEqual(content.bosses.map((b) => b.id));
+  it('lists every shipped boss once, in the order Misa chose, all of them lab bosses', () => {
+    expect([...TRACK_ORDER].sort()).toEqual(content.bosses.map((b) => b.id).sort());
     for (const id of TRACK_ORDER) expect(RAID_BOSS_IDS).toContain(id);
+  });
+
+  it('puts Thornmother at the end of the first lap: slots 5, 10 and 15 (2026-10-30)', () => {
+    expect(TRACK_ORDER).toEqual([
+      'tidal-colossus',
+      'cinder-wyrm',
+      'storm-sovereign',
+      'old-bogback',
+      'thornmother',
+    ]);
+    for (const slot of [5, 10, 15]) expect(trackSlot(slot).bossId).toBe('thornmother');
+    for (const slot of [3, 8, 13]) expect(trackSlot(slot).bossId).toBe('storm-sovereign');
   });
 
   it('starts at slot 1 and repeats after the last boss', () => {
@@ -38,6 +52,23 @@ describe('the track order', () => {
   it('takes another order in one line, and refuses a slot below 1', () => {
     expect(trackSlot(3, ['a', 'b']).bossId).toBe('a');
     expect(() => trackSlot(0)).toThrow(/from 1/);
+  });
+});
+
+describe('the wall slot (Misa, 2026-10-30)', () => {
+  it('is slot 5 only, Thornmother’s first appearance; her later laps are normal slots', () => {
+    expect(SLOT_WALL).toEqual({ 5: true });
+    expect(TRACK.filter((s) => s.wall).map((s) => s.slot)).toEqual([5]);
+    expect(trackSlot(5).wall).toBe(true);
+    expect(trackSlot(5).bossId).toBe('thornmother');
+    for (const slot of [1, 4, 6, 10, 15, 30]) expect(trackSlot(slot).wall).toBe(false);
+    expect(isWallSlot(5)).toBe(true);
+    expect(isWallSlot(10)).toBe(false);
+  });
+
+  it('every wall slot has a boss, and the flag does not depend on the order', () => {
+    expect(trackSlot(5, ['a', 'b']).wall).toBe(true);
+    expect(trackSlot(5).rules).toEqual({ buildUp: true });
   });
 });
 
