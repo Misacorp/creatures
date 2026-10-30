@@ -51,7 +51,7 @@ const SHINY_NO_GLINT = {
 
 export const VOID_CONCEPTS: ConceptSet = {
   id: 'void',
-  title: 'Void, four roles',
+  title: 'Void creatures, two stages',
   element: 'void',
   requested:
     '2026-10-30: imagine the Void element on creatures; four creatures, one per role, no names or stats.',

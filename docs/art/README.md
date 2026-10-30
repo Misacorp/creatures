@@ -8,13 +8,13 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 
 | Set | Status | Pieces | Requested |
 | --- | --- | --- | --- |
-| [Void, four roles](#void) | liked | 8 | 2026-10-30: imagine the Void element on creatures; four creatures, one per role, no names or stats. |
+| [Void creatures, two stages](#void) | liked | 8 | 2026-10-30: imagine the Void element on creatures; four creatures, one per role, no names or stats. |
 
 <a id="void"></a>
 
-## Void, four roles
+## Void creatures, two stages
 
-![Void, four roles](void.png)
+![Void creatures, two stages](void.png)
 
 - **Status:** liked
 - **Requested:** 2026-10-30: imagine the Void element on creatures; four creatures, one per role, no names or stats.
