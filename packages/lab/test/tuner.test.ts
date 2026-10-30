@@ -24,7 +24,13 @@ import type { Executor } from '../src/jobs';
 import {
   BEAT2_MIN,
   BOSS_ARMOUR_MIN,
+  CLASSIC_POTENTIAL_AIM,
+  CLASSIC_POTENTIAL_MAX,
+  CLASSIC_POTENTIAL_MIN,
+  INFO_MEASURES,
   LADDER,
+  PREPARED_POTENTIAL_AIM,
+  PREPARED_POTENTIAL_MIN,
   RAID_MEASURES,
   RAID_TARGETS,
   REPORTED_MEASURES,
@@ -81,6 +87,11 @@ const GOOD: RaidMeasures = {
   'classic.kill': 0,
   'mixed.share': 0.75,
   'mixed.kill': 0.2,
+  'prepared.potential': 1.3,
+  'classic.potential': 0.8,
+  'prepared.potentialRandom': 1.2,
+  'tool.potential': 0.15,
+  'mixed.potential': 0.9,
   // The lab tests' rules (`RULE_TARGETS`), each inside its bounds.
   'answers.classicKill': 0,
   'answers.classicShare': 0.5,
@@ -137,16 +148,25 @@ describe('targets: the numbers the tests used before, in one place', () => {
       expect(t('tool.share')?.min).toBe(TOOL_SHARE_MIN);
       expect(t('tool.written')?.min).toBe(TOOL_SHARE_MIN);
       expect(t('classic.kill')?.max).toBe(0.05);
-      // No target: the random-talent kill rate, the classic party's HP removed, the mixed server.
+      // Damage potential (Misa, 2026-10-30): the prepared line with its written talents 125% or more, the classic party 70% to 90%.
+      expect(t('prepared.potential')?.min).toBe(PREPARED_POTENTIAL_MIN);
+      expect(PREPARED_POTENTIAL_MIN).toBe(1.25);
+      expect(t('classic.potential')?.min).toBe(CLASSIC_POTENTIAL_MIN);
+      expect(t('classic.potential')?.max).toBe(CLASSIC_POTENTIAL_MAX);
+      expect([CLASSIC_POTENTIAL_MIN, CLASSIC_POTENTIAL_MAX]).toEqual([0.7, 0.9]);
+      // No target: the random-talent kill rate and potential, the classic party's HP removed, the tool's potential, the mixed server.
       for (const m of [
         'prepared.kill',
         'prepared.written',
+        'prepared.potentialRandom',
+        'tool.potential',
         'classic.share',
         'mixed.share',
         'mixed.kill',
+        'mixed.potential',
       ])
         expect(t(m), `${rank} ${m}`).toBeUndefined();
-      expect(RAID_TARGETS[rank]).toHaveLength(5);
+      expect(RAID_TARGETS[rank]).toHaveLength(7);
     }
     expect(LADDER).toEqual({ lowOfHigh: 0.9, midOfHigh: 0.95 });
   });
@@ -196,8 +216,11 @@ describe('the loss', () => {
       'tool.share': 0.1,
       'tool.written': 0.1,
       'classic.kill': 0.05,
+      'prepared.potential': 1.25,
+      'classic.potential': 0.7,
     });
     expect(lossOf(targets, edges)).toBe(0);
+    expect(lossOf(targets, set({ 'classic.potential': 0.9 }))).toBe(0);
     // No target: the classic party's HP removed, the mixed server, the random-talent kill rate.
     expect(
       lossOf(
@@ -218,6 +241,9 @@ describe('the loss', () => {
       ['tool.share', 0.09],
       ['tool.written', 0.09],
       ['classic.kill', 0.06],
+      ['prepared.potential', 1.24],
+      ['classic.potential', 0.69],
+      ['classic.potential', 0.91],
     ] as const)
       expect(lossOf(targets, set({ [m]: v })), `${m} ${String(v)}`).toBeGreaterThan(0);
   });
@@ -228,6 +254,17 @@ describe('the loss', () => {
     const loss = lossOf(targets, set({ 'prepared.share': 0.7, 'classic.kill': 0.25 }));
     expect(loss).toBeCloseTo(t('prepared.share').weight * 0.1 + t('classic.kill').weight * 0.2, 12);
     expect(metBy(t('prepared.beat2'), 0.75)).toBe(true);
+  });
+
+  it('the potential targets: 125% or more for the prepared line, 70% to 90% for the classic party', () => {
+    const t = (m: string) => targets.find((x) => x.measure === m) as RaidTarget;
+    expect(missOf(t('prepared.potential'), 1.05)).toBeCloseTo(0.2, 12);
+    expect(missOf(t('classic.potential'), 1.0)).toBeCloseTo(0.1, 12);
+    expect(missOf(t('classic.potential'), 0.6)).toBeCloseTo(0.1, 12);
+    expect(metBy(t('classic.potential'), 0.8)).toBe(true);
+    expect(PREPARED_POTENTIAL_AIM).toBeGreaterThanOrEqual(PREPARED_POTENTIAL_MIN);
+    expect(CLASSIC_POTENTIAL_AIM).toBeGreaterThanOrEqual(CLASSIC_POTENTIAL_MIN);
+    expect(CLASSIC_POTENTIAL_AIM).toBeLessThanOrEqual(CLASSIC_POTENTIAL_MAX);
   });
 
   it('comfort tells apart two candidates of loss 0: more room inside the bounds is better', () => {
@@ -573,11 +610,15 @@ describe('lower ranks against a new high rank', () => {
     const results = await tuneBoss('tidal-colossus', TARGET_RANKS, true, { exec: fake, slots: 4 });
     const high = results[0]?.best?.absolute;
     expect(high).toBeDefined();
-    expect(high?.hp).not.toBe(20_200);
+    expect(high?.hp).not.toBe(19_100);
     for (const r of results.slice(1)) {
       expect(r.rebasedOn).toEqual(high);
       const bp = rebaseOn(r.best?.absolute as Numbers, high as Numbers);
-      expect(rebuilt(bp, high as Numbers)).toEqual(r.best?.absolute);
+      // A bp of the high rank is exact for numbers below 10,000; above that one bp is more than one HP, so the rebuilt HP is within 1.
+      const back = rebuilt(bp, high as Numbers);
+      const want = r.best?.absolute as Numbers;
+      expect(back).toMatchObject({ atk: want.atk, armour: want.armour });
+      expect(Math.abs(back.hp - want.hp)).toBeLessThanOrEqual(1);
       const grouped = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '_');
       expect(r.paste).toContain(
         `ranks.${r.rank}): [${grouped(bp.hp)}, ${grouped(bp.atk)}, ${grouped(bp.armour)}]`,
@@ -624,15 +665,15 @@ describe('the measure', () => {
 });
 
 /**
- * A fake executor: a boss that gets easier as its HP falls. Every target is met at an HP of about 96.8% of today's high rank's or
- * less (today's just misses), and the ladder holds the high rank above 19,137, so the tuner's orchestration runs without a fight.
+ * A fake executor: a boss that gets easier as its HP falls. Every target is met at an HP of about 97.5% of today's high rank's or
+ * less (today's just misses), and the ladder holds the high rank above 18,405 (its low rank), so the tuner's orchestration runs without a fight.
  */
 const fake: Executor = (job) => {
   const a = job.args as TuneEvalArgs;
-  const r = a.numbers.hp / 20_200;
+  const r = a.numbers.hp / 19_100;
   const measures: RaidMeasures = {
     ...GOOD,
-    'prepared.share': 1.1 - 0.31 * r,
+    'prepared.share': 1.1 - 0.3077 * r,
     'classic.share': 0.9 * r - 0.45,
   };
   return Promise.resolve({ result: { measures, weekends: 10 }, seconds: 0.5 });
@@ -648,9 +689,9 @@ describe('the orchestration', () => {
     });
     expect(r.best).toBeDefined();
     expect(r.best?.loss).toBe(0);
-    // The ladder: the mid rank's HP of 18,180 must stay at most 0.95 of the high rank's.
-    expect(r.best?.numbers.hp ?? 0).toBeGreaterThanOrEqual(Math.ceil(18_180 / 0.95));
-    expect(r.today.numbers).toEqual({ hp: 20_200, atk: 116, armour: 34 });
+    // The ladder: the mid rank's HP of 16,766 must stay at most 0.95 of the high rank's.
+    expect(r.best?.numbers.hp ?? 0).toBeGreaterThanOrEqual(Math.ceil(16_766 / 0.95));
+    expect(r.today.numbers).toEqual({ hp: 19_100, atk: 114, armour: 28 });
     expect(r.conflicts.allMet).toBeGreaterThan(0);
     expect(r.paste).toContain('tidal-colossus');
     expect(r.paste).toContain(`atk: ${String(r.best?.numbers.atk)}`);
@@ -698,7 +739,7 @@ describe('the orchestration', () => {
   it('reports a clash of targets as a content problem, not a numbers problem', async () => {
     // Every candidate: the prepared team does well exactly when the classic party kills.
     const clash: Executor = (job) => {
-      const r = (job.args as TuneEvalArgs).numbers.hp / 20_200;
+      const r = (job.args as TuneEvalArgs).numbers.hp / 19_100;
       return Promise.resolve({
         result: {
           measures: {
@@ -741,9 +782,11 @@ describe('the orchestration', () => {
 describe('the lab tests’ rules are targets of the tuner', () => {
   const measuresOf = (list: readonly RaidTarget[]) => new Set(list.map((t) => t.measure));
 
-  it('every measure beyond the reported ten is read by a rule, and no target reads a measure twice at one rank', () => {
+  it('every measure beyond the reported twelve and the information ones is read by a rule, and no target reads a measure twice at one rank', () => {
     const rules = new Set(TARGET_RANKS.flatMap((r) => [...measuresOf(RULE_TARGETS[r])]));
-    const extra = RAID_MEASURES.filter((m) => !REPORTED_MEASURES.includes(m));
+    const extra = RAID_MEASURES.filter(
+      (m) => !REPORTED_MEASURES.includes(m) && !INFO_MEASURES.includes(m),
+    );
     expect([...rules].sort()).toEqual([...extra].sort());
     for (const rank of TARGET_RANKS) {
       const list = [...RAID_TARGETS[rank], ...RULE_TARGETS[rank]];
@@ -787,7 +830,7 @@ describe('the lab tests’ rules are targets of the tuner', () => {
     ]);
     expect(skippedCross('thornmother', 'mid')).toEqual([]);
     // Misa's targets come first and unchanged.
-    expect(plain.slice(0, 5)).toEqual(RAID_TARGETS.low);
+    expect(plain.slice(0, 7)).toEqual(RAID_TARGETS.low);
   });
 
   it('an exclusive bound counts a value on it as outside; a measure that was not taken is neither met nor missed', () => {
@@ -904,6 +947,19 @@ describe('the rule measures', () => {
     const bare = evalCandidate({ boss: id, rank: 'high', numbers, fidelity: f, salt: 't' });
     for (const m of RAID_MEASURES.filter((x) => !REPORTED_MEASURES.includes(x)))
       expect(bare.measures[m], m).toBeNaN();
+    // The potentials of the two main targets are taken in every pass; the information ones only with `info`.
+    expect(bare.measures['prepared.potential']).toBeGreaterThan(0);
+    expect(bare.measures['classic.potential']).toBeGreaterThan(0);
+    const info = evalCandidate({
+      boss: id,
+      rank: 'high',
+      numbers,
+      fidelity: { ...f, info: true },
+      salt: 't',
+    });
+    for (const m of INFO_MEASURES.filter((x) => x !== 'mixed.potential'))
+      expect(info.measures[m], m).not.toBeNaN();
+    expect(info.measures['mixed.potential']).toBeNaN();
     for (const m of REPORTED_MEASURES) expect(bare.measures[m], m).not.toBeNaN();
     const cheap = evalCandidate({
       boss: id,

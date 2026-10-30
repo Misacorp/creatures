@@ -140,9 +140,9 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
   {
     id: 'tidal-colossus',
     rows: 3,
-    armour: 34,
-    atk: 116,
-    hp: 20_200,
+    armour: 28,
+    atk: 114,
+    hp: 19_100,
     plain: { pattern: { anchor: 'front', shape: 'row' }, powerBp: 2_500 },
     // The sea washes the mud off it (Shake It Off), so Mired is no must-have here; reactions it resists from stage 2.
     cards: ['adapts', 'shake-it-off'],
@@ -155,7 +155,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       grow: { atkBp: 1_300, area: 1 },
     },
     asks: 'The whole sea sweeps the rows. Wide Reach and row wards turn the waves; who stands where?',
-    ranks: { low: [8_200, 8_200], mid: [9_000, 9_200] },
+    ranks: { low: [8_672, 8_300, 7_900], mid: [8_778, 9_400, 8_900] },
     moves: [
       ['undertow', 'Undertow', 3, 0, 'front', 'row', 9_000],
       ['spray', 'Spray', 2, 0, 'random', 'scatter', 5_000, { n: 4, perColumns: 4 }],
@@ -203,7 +203,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       grow: { atkBp: 1_000, targets: 1 },
     },
     asks: 'The forge turns the first reaction of every row back on you, and every reaction heats it. Keep Mired on it, or make each reaction count.',
-    ranks: { low: [6_000, 8_500], mid: [8_000, 9_000] },
+    ranks: { low: [3_700, 9_000, 9_100], mid: [5_600, 9_400, 10_000] },
     moves: [
       ['coil-crush', 'Coil Crush', 3, 0, 'front', 'line3', 15_000],
       ['scorch-lane', 'Scorch Lane', 2, 1, 'random', 'column', 7_000],
@@ -369,16 +369,16 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
   {
     id: 'old-bogback',
     rows: 3,
-    armour: 23,
-    atk: 105,
-    hp: 34_000,
+    armour: 32,
+    atk: 112,
+    hp: 26_200,
     plain: {
       pattern: { anchor: 'front', shape: 'line3', anchors: 1, perColumns: 6 },
       powerBp: 4_500,
     },
     cards: ['shake-it-off', 'adapts-element'],
     asks: 'The fen pulls the most hurt creature down. Keep them up, and keep the Mired on it.',
-    ranks: { low: [7_000, 7_000], mid: [8_500, 8_500] },
+    ranks: { low: [8_305, 6_200, 5_600], mid: [9_473, 8_100, 5_900] },
     moves: [
       ['sinking-mud', 'Sinking Mud', 3, 2, 'random', 'randomRow', 11_000],
       ['belly-flop', 'Belly Flop', 4, 0, 'front', 'line3', 13_900, { anchors: 1, perColumns: 6 }],
@@ -464,6 +464,10 @@ export function raidBossOf(
     level?: number;
     /** The strength of every card and gate, instead of the rank's (the boss track's slots sit between the three ranks, `track.ts`). */
     strengthBp?: number;
+    /** How many of the spec's rule cards the boss has, the first ones (default: all; the young-server ramp gives slot 1 none and slot 2 one, `track.ts`). */
+    cards?: number;
+    /** Whether the boss has its Build-up (the escalation), default yes; the ramp's first two slots do not. */
+    buildUp?: boolean;
   } = {},
 ): BossDef {
   const spec = RAID_SPECS.find((s) => s.id === id);
@@ -471,6 +475,8 @@ export function raidBossOf(
   if (!spec || !shipped) throw new Error(`unknown raid boss ${id}`);
   const rank = rankOf(over.rank ?? 'high');
   const st = over.strengthBp ?? rank.strengthBp;
+  const cards = over.cards === undefined ? spec.cards : spec.cards.slice(0, over.cards);
+  const buildUp = over.buildUp ?? true;
   const [hpBp, atkBp, armourBp] =
     rank.id === 'high' || !spec.ranks ? [rank.hpBp, rank.atkBp, undefined] : spec.ranks[rank.id];
   let boss: BossDef = {
@@ -488,15 +494,15 @@ export function raidBossOf(
     cols: RAID_COLS,
     plain: spec.plain,
     moves: spec.moves.map(move),
-    cards: spec.cards,
+    cards,
     mods: {},
     strengthBp: st,
     rosterLevel: over.level ?? rank.level,
-    ...(spec.escalation
+    ...(spec.escalation && buildUp
       ? { escalation: { ...escalationOf(spec.escalation), strengthBp: st } }
       : {}),
   };
-  for (const c of spec.cards) boss = card(c).apply(boss, st);
+  for (const c of cards) boss = card(c).apply(boss, st);
   return boss;
 }
 
@@ -642,6 +648,11 @@ export function weekendStats(
   );
 }
 
+/** What a weekend may add to a fight besides its seeds: Determination (the path's dial, `FightOptions.determinationBp`). */
+export interface WeekendExtra {
+  readonly determinationBp?: number;
+}
+
 /** `runs` seeded raid weekends of the placed creatures (any roster) against `boss`, with the players' benches. */
 export function weekendStatsOf(
   boss: BossDef,
@@ -649,6 +660,7 @@ export function weekendStatsOf(
   bench: readonly Placement[],
   runs: number,
   salt: string,
+  extra: WeekendExtra = {},
 ): WeekendStats {
   let wins = 0,
     reps = 0,
@@ -667,6 +679,7 @@ export function weekendStatsOf(
   for (let i = 0; i < runs; i++) {
     const w = weekend(boss, placements, bench, {
       rng: createSeededRng(`weekend:${salt}:${i}`),
+      ...extra,
     });
     if (w.won) wins++;
     reps += w.replacements;
@@ -708,6 +721,72 @@ export function weekendStatsOf(
     hpLeftEnd: hpEnd / runs,
     standingEnd: upEnd / runs,
     knockoutsByOwner: Object.fromEntries(Object.entries(byOwner).map(([o, n]) => [o, n / runs])),
+  };
+}
+
+/**
+ * Damage potential over `runs` seeded raid weekends (Misa, 2026-10-30): the weekend is fought as if the boss could not die
+ * (`FightOptions.potential`: all rounds and stages play, nothing is wasted on overkill), and the measure is the total damage dealt
+ * divided by the boss's HP, so 1.4 is 140%. Knockouts, attrition between stages and Build-up run as in a real weekend. The seeds are
+ * the ones `weekendStatsOf` uses, so the two measures fight the same weekend until the boss would have died.
+ */
+export interface WeekendPotential {
+  readonly runs: number;
+  /** Mean potential (1 is the boss's HP) and its standard deviation between weekends. */
+  readonly mean: number;
+  readonly sd: number;
+}
+
+export function weekendPotentialOf(
+  boss: BossDef,
+  placements: readonly Placement[],
+  bench: readonly Placement[],
+  runs: number,
+  salt: string,
+  extra: WeekendExtra = {},
+): WeekendPotential {
+  let sum = 0,
+    sq = 0;
+  for (let i = 0; i < runs; i++) {
+    const w = weekend(boss, placements, bench, {
+      rng: createSeededRng(`weekend:${salt}:${i}`),
+      potential: true,
+      ...extra,
+    });
+    const p = w.stages.reduce((n, st) => n + st.damage, 0) / boss.hp;
+    sum += p;
+    sq += p * p;
+  }
+  const mean = sum / runs;
+  return { runs, mean, sd: Math.sqrt(Math.max(0, sq / runs - mean * mean)) };
+}
+
+/** `runs` potential weekends of `line` against `boss` (a player for each column, a bench), as `weekendStats` places it. */
+export function weekendPotential(
+  boss: BossDef,
+  line: readonly Pick[],
+  runs: number,
+  salt: string,
+): WeekendPotential {
+  return weekendPotentialOf(
+    boss,
+    toPlacements(line, raidMode(boss)),
+    raidBench(boss.cols, boss.rosterLevel),
+    runs,
+    salt,
+  );
+}
+
+/** Several potential measures as one, each weighted by its runs (pooled spread: the law of total variance). */
+export function combinePotential(parts: readonly WeekendPotential[]): WeekendPotential {
+  const runs = parts.reduce((n, p) => n + p.runs, 0);
+  const w = (f: (p: WeekendPotential) => number) =>
+    parts.reduce((n, p) => n + f(p) * p.runs, 0) / runs;
+  const mean = w((p) => p.mean);
+  return {
+    runs,
+    mean,
+    sd: Math.sqrt(Math.max(0, w((p) => p.sd ** 2) + w((p) => p.mean ** 2) - mean ** 2)),
   };
 }
 

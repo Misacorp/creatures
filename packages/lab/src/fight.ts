@@ -468,6 +468,7 @@ function heal(s: State, target: Fighter, amountBp: number, critOk = true, src?: 
   if (critOk && roll(s, R.critChanceBp)) amt = Math.floor((amt * R.critBp) / 10_000);
   amt = Math.floor((amt * (s.boss.mods.healBp ?? 10_000)) / 10_000);
   amt = Math.floor((amt * (10_000 + (fx(target).healReceivedBp ?? 0))) / 10_000);
+  if (s.opts.determinationBp) amt = Math.floor((amt * (10_000 + s.opts.determinationBp)) / 10_000);
   const real = Math.min(amt, target.maxHp - target.hp);
   target.hp += real;
   s.count.healed += real;
@@ -626,12 +627,16 @@ function supportVerb(s: State, f: Fighter, k: KnackFx): void {
  * shared HP) defeats it outright; the HP that was left counts as the killing blow, not as damage dealt.
  * The creature whose damage or Cull takes the last HP lands the killing blow (the first one only).
  */
-function hitBoss(s: State, f: Fighter, dmg: number, isHit: boolean): void {
-  const real = Math.min(dmg, s.bossHp);
-  s.bossHp -= real;
+function hitBoss(s: State, f: Fighter, rawDmg: number, isHit: boolean): void {
+  const dmg = s.opts.determinationBp
+    ? Math.floor((rawDmg * (10_000 + s.opts.determinationBp)) / 10_000)
+    : rawDmg;
+  // Damage potential: every point of damage counts and the boss stays at 1 HP instead of dying (`FightOptions.potential`).
+  const real = s.opts.potential ? dmg : Math.min(dmg, s.bossHp);
+  s.bossHp = s.opts.potential ? Math.max(1, s.bossHp - real) : s.bossHp - real;
   const dealt = real;
   let culled = false;
-  const cull = isHit ? fx(f).cullBp : undefined;
+  const cull = isHit && !s.opts.potential ? fx(f).cullBp : undefined;
   if (cull && real > 0 && s.bossHp > 0 && s.bossHp * 10_000 < s.boss.hp * cull) {
     s.bossHp = 0;
     culled = true;

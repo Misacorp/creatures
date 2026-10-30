@@ -266,6 +266,17 @@ export interface FightOptions {
   /** Carried state from an earlier raid stage (attrition, R14): HP by uid. */
   readonly carryHp?: ReadonlyMap<string, number>;
   readonly bossHp?: number;
+  /**
+   * Damage potential (Misa, 2026-10-30): the boss goes below 0 HP without dying, so a raid weekend plays out all its rounds and
+   * stages and `FightResult.damage` adds up every hit in full, overkill included (a Cull does not end it). The boss's HP stays
+   * at 1 once it is gone, so every "boss below X% HP" rule keeps applying. Divide the weekend's damage by the boss's HP.
+   */
+  readonly potential?: boolean;
+  /**
+   * Determination (Misa, 2026-10-30; after WoW's): the server's creatures deal and heal this many bp more, for each failed week on
+   * the same boss (`path.ts` sets it; off, 0 and absent are the same).
+   */
+  readonly determinationBp?: number;
   readonly resistReaction?: string;
   /** The element the boss resists this fight (Element Resistance: their hits' base damage is `LAB_RULES.adaptElementBp` of itself; counters are not cut). */
   readonly resistElement?: string;

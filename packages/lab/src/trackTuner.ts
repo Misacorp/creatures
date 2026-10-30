@@ -4,17 +4,18 @@
  * Slot k is fought by a dedicated server in the week the path says it usually arrives there (the median week, at the expected roster
  * speed). In that week the prepared line, the classic party and the mixed server get their creatures' levels from the roster profile
  * (`roster.ts`: daily players for the prepared line and the classic party, the mixed mapping `path.ts` uses), and the slot's cards
- * are at the slot's strength. The search moves the slot's HP, Attack and armour against Misa's targets (`slotTargetsFor`: the
- * `RAID_TARGETS` bounds, the tool's worth scaled by the strength of the cards, the classic limit dropped on the welcome boss of
- * slot 1): the prepared line usually beats the boss within two weekends, removes most of the HP with random legal talents, its tool
- * is worth what the cards ask with written and with random talents, and the classic party kills at most 5% of weekends.
- * The mixed server is information only. The lab tests' rules (`raidRules.ts`) belong to the three fixed ranks and are not applied here.
+ * are at the slot's strength, and only the rules the young-server ramp gives it (`SLOT_CARDS`). The search moves the slot's HP, Attack
+ * and armour against Misa's targets (`slotTargetsFor`: the `RAID_TARGETS` bounds, the tool's worth scaled by the strength of the cards,
+ * the classic limits and the tool dropped on the tutorial boss of slot 1): the prepared line (written talents) reaches a damage
+ * potential of 125% or more and usually beats the boss within two weekends, removes most of the HP with random legal talents, its
+ * tool is worth what the cards ask with written and with random talents, and the classic party reaches a potential of 70% to 90%
+ * and kills at most 5% of weekends. The mixed server is information only (its potential is shown). Determination (`path.ts`) is never used here. The lab tests' rules (`raidRules.ts`) belong to the three fixed ranks and are not applied here.
  * The track is tuned at the expected speed only: a slow server arrives later and keeps growing while a failed boss returns, so
  * the path (`path.ts`, at three speeds) is where the speed's effect shows, not a measure at the arrival week of the expected one.
  *
  * A later lap of a boss has cards that are never weaker (`rankStrengthBp`), and its HP, Attack and armour may be lower than an
  * earlier lap's when its stronger cards make up for it. The rule is on the kill rate: a later lap's prepared first-weekend kill rate
- * is not above the earlier lap's by more than noise (`lapKillViolations`); it should follow from the aim (`PREPARED_KILL_AIM`).
+ * is not above the earlier lap's by more than noise (`lapKillViolations`).
  *
  * Path and tuning alternate (`tuneLoop`): the path gives each slot's arrival week, the tuner proposes numbers for that week's roster,
  * the path runs again with them, until the arrival weeks equal the weeks the table was tuned for (at most `MAX_ROUNDS` tunings). A
@@ -27,10 +28,13 @@ import { randomTalents } from './answerMeasure';
 import { answerLine, BOSS_ANSWERS, withoutTool } from './bossAnswers';
 import {
   RAID_SPECS,
+  combinePotential,
   combineWeekends,
   raidBench,
   raidMode,
+  weekendPotentialOf,
   weekendStatsOf,
+  type WeekendPotential,
   type WeekendStats,
 } from './bosses';
 import { runJobs, type JobSpec } from './jobs';
@@ -48,7 +52,8 @@ import { classicFor, type Pick } from './search';
 import {
   RAID_MEASURES,
   beatWithin,
-  PREPARED_KILL_AIM,
+  CLASSIC_POTENTIAL_AIM,
+  PREPARED_POTENTIAL_AIM,
   isMeasured,
   lossOf,
   metBy,
@@ -109,6 +114,11 @@ export const SLOT_MEASURES: readonly RaidMeasure[] = [
   'classic.kill',
   'mixed.share',
   'mixed.kill',
+  'prepared.potential',
+  'classic.potential',
+  'prepared.potentialRandom',
+  'tool.potential',
+  'mixed.potential',
 ];
 
 /**
@@ -190,6 +200,11 @@ function measureSpeed(
     const { placements, bench } = dedicatedTeam(boss, picks, a.week, speed, profile);
     return weekendStatsOf(boss, placements, bench, runs, salt);
   };
+  // The same team and seeds, played as damage potential (the boss cannot die).
+  const potential = (picks: readonly Pick[], runs: number, salt: string): WeekendPotential => {
+    const { placements, bench } = dedicatedTeam(boss, picks, a.week, speed, profile);
+    return weekendPotentialOf(boss, placements, bench, runs, salt);
+  };
   // The prepared line with random legal talents, with its tool and without it, over `draws` draws.
   const per = Math.max(1, Math.floor(f.weekends / f.draws));
   const random = (picks: readonly Pick[], salt: string): { share: number; kill: number } => {
@@ -203,22 +218,50 @@ function measureSpeed(
     }
     return { share: share / f.draws, kill: kill / f.draws };
   };
+  const randomPotential = (picks: readonly Pick[], salt: string): number => {
+    let sum = 0;
+    for (let d = 0; d < f.draws; d++) {
+      const rng = createSeededRng(`talents:${salt}:${d}`);
+      sum += potential(randomTalents(rng, picks), per, `${salt}:r${d}`).mean;
+    }
+    return sum / f.draws;
+  };
   const withTool = random(line, `${a.salt}:p`);
   const without = random(withoutTool(line, core), `${a.salt}:n`);
   // The line with its written talents (a server facing a returning boss re-picks them from its Talent Book).
   const written = prepared(line, f.weekends, `${a.salt}:w`);
   const writtenWithout = prepared(withoutTool(line, core), f.weekends, `${a.salt}:w`);
   const classic = prepared(classicFor(raidMode(boss)), f.classicWeekends, `${a.salt}:c`);
+  // Damage potential, written talents: the prepared line and the classic party (the main targets).
+  const writtenPot = potential(line, f.weekends, `${a.salt}:w`).mean;
+  const classicPot = potential(classicFor(raidMode(boss)), f.classicWeekends, `${a.salt}:c`).mean;
+  // Information, in the full measurement only: random talents, and the tool's worth in potential points (written talents).
+  const info = f.info
+    ? {
+        'prepared.potentialRandom': randomPotential(line, `${a.salt}:p`),
+        'tool.potential':
+          writtenPot - potential(withoutTool(line, core), f.weekends, `${a.salt}:w`).mean,
+      }
+    : {};
   // The mixed server of ten at the path's mapping: information only.
+  const mixedDraws = Array.from({ length: f.mixedDraws }, (_, d) => {
+    const w = serverWeekend(MIXED, a.slot, a.week, speed, `${a.salt}:m${d}`, profile, { table });
+    return {
+      stats: weekendStatsOf(w.boss, w.placements, w.bench, f.mixedWeekends, `${a.salt}:m${d}`),
+      potential: weekendPotentialOf(
+        w.boss,
+        w.placements,
+        w.bench,
+        f.mixedWeekends,
+        `${a.salt}:m${d}`,
+      ),
+    };
+  });
   const mixed: WeekendStats | undefined = f.mixedDraws
-    ? combineWeekends(
-        Array.from({ length: f.mixedDraws }, (_, d) => {
-          const w = serverWeekend(MIXED, a.slot, a.week, speed, `${a.salt}:m${d}`, profile, {
-            table,
-          });
-          return weekendStatsOf(w.boss, w.placements, w.bench, f.mixedWeekends, `${a.salt}:m${d}`);
-        }),
-      )
+    ? combineWeekends(mixedDraws.map((d) => d.stats))
+    : undefined;
+  const mixedPot = f.mixedDraws
+    ? combinePotential(mixedDraws.map((d) => d.potential)).mean
     : undefined;
   return {
     measures: {
@@ -231,10 +274,27 @@ function measureSpeed(
       'tool.written': written.damageShare - writtenWithout.damageShare,
       'classic.share': classic.damageShare,
       'classic.kill': classic.tiers.kill,
-      ...(mixed ? { 'mixed.share': mixed.damageShare, 'mixed.kill': mixed.winRate } : {}),
+      'prepared.potential': writtenPot,
+      'classic.potential': classicPot,
+      ...info,
+      ...(mixed && mixedPot !== undefined
+        ? {
+            'mixed.share': mixed.damageShare,
+            'mixed.kill': mixed.winRate,
+            'mixed.potential': mixedPot,
+          }
+        : {}),
     },
     weekends:
-      2 * per * f.draws + 2 * f.weekends + f.classicWeekends + f.mixedDraws * f.mixedWeekends,
+      2 * per * f.draws +
+      2 * f.weekends +
+      f.classicWeekends +
+      f.mixedDraws * f.mixedWeekends +
+      // The potential weekends: written, classic and the mixed server's; the information ones (random draws, without the tool).
+      f.weekends +
+      f.classicWeekends +
+      f.mixedDraws * f.mixedWeekends +
+      (f.info ? per * f.draws + f.weekends : 0),
   };
 }
 
@@ -306,6 +366,7 @@ export const SLOT_FIDELITY = (
     classicWeekends: x.classicWeekends,
     mixedDraws: x.mixedDraws,
     mixedWeekends: x.mixedWeekends,
+    ...(x.info ? { info: true } : {}),
   });
   return {
     search: { ...noRules(f.search), mixedDraws: 0 },
@@ -354,23 +415,32 @@ export interface SlotResult {
 }
 
 /**
- * Among numbers that meet every target (a loss within `LOSS_STEP` of none), the search takes the boss whose prepared
- * first-weekend kill rate is closest to `PREPARED_KILL_AIM` (`aimComfort`: minus the distance), and between about equal ones the nearer to
- * the ranks' line. `distanceOf` is the mean of the numbers' log ratios to the reference and counts `NEAR_WEIGHT` against the comfort: a
- * last tie-break within a step of `AIM_STEP` of the aim (the HP-for-Attack trade lies along a ridge of equal kill rate, and the pull keeps the
- * boss near the ranks' line on it instead of at a glass cannon or a wall).
+ * Among numbers that meet every target (a loss within `LOSS_STEP` of none), the search takes the boss whose prepared damage potential
+ * is closest to `PREPARED_POTENTIAL_AIM` and whose classic potential is closest to `CLASSIC_POTENTIAL_AIM` (`aimComfort`: minus the
+ * two distances, each in steps of `AIM_STEP`), and between about equal ones the nearer to the ranks' line. `distanceOf` is the mean of
+ * the numbers' log ratios to the reference and counts `NEAR_WEIGHT` against the comfort: a last tie-break within a step of `AIM_STEP`
+ * of the aim (the HP-for-Attack trade lies along a ridge of equal potential, and the pull keeps the boss near the ranks' line on it
+ * instead of at a glass cannon or a wall). The slot 1 tutorial has no classic target, so it aims at the prepared potential alone.
  */
 export const NEAR_WEIGHT = 0.1;
-/** The distance of the kill rate to the aim counts in steps of this: within a step the kill rate is noise, and the pull to the ranks' line decides. */
+/** The distance of a potential to its aim counts in steps of this: within a step the measure is noise, and the pull to the ranks' line decides. */
 export const AIM_STEP = 0.05;
 /** Losses are compared in steps of this: below it a loss is noise (a measurement of 20 to 60 weekends), so the aim decides. */
 export const LOSS_STEP = 0.03;
 export const quantised = (loss: number): number => Math.round(loss / LOSS_STEP) * LOSS_STEP;
-/** The aim as a comfort: how near the prepared line's first-weekend kill rate is to `PREPARED_KILL_AIM`, negated (0 at the aim). */
-export const aimComfort = (m: RaidMeasures): number =>
-  isMeasured(m['prepared.written'])
-    ? -Math.round(Math.abs(m['prepared.written'] - PREPARED_KILL_AIM) / AIM_STEP) * AIM_STEP
-    : 0;
+/**
+ * The aim as a comfort: how near the prepared potential is to `PREPARED_POTENTIAL_AIM` and the classic potential to
+ * `CLASSIC_POTENTIAL_AIM`, each distance in whole steps of `AIM_STEP`, summed and negated (0 at both aims). A measure not taken counts 0;
+ * `withClassic` false (the tutorial slot, no limit on the classic party) leaves the classic one out.
+ */
+export const aimComfort = (m: RaidMeasures, withClassic = true): number => {
+  const steps = (v: number, aim: number): number =>
+    isMeasured(v) ? Math.round(Math.abs(v - aim) / AIM_STEP) * AIM_STEP : 0;
+  return -(
+    steps(m['prepared.potential'], PREPARED_POTENTIAL_AIM) +
+    (withClassic ? steps(m['classic.potential'], CLASSIC_POTENTIAL_AIM) : 0)
+  );
+};
 export const distanceOf = (n: Numbers, ref: Numbers): number =>
   NAMES.reduce((sum, k) => sum + Math.abs(Math.log(Math.max(1, n[k]) / Math.max(1, ref[k]))), 0) /
   NAMES.length;
@@ -446,7 +516,12 @@ export async function tuneSlot(o: TuneSlotOptions): Promise<SlotResult> {
       const r = o.cache.get(cacheKey(o.slot, o.week, level, fromPoint(p))) as SlotEvalResult;
       return {
         loss: quantised(lossOf(targets, r.measures)),
-        comfort: aimComfort(r.measures) - NEAR_WEIGHT * distanceOf(fromPoint(p), reference),
+        comfort:
+          aimComfort(
+            r.measures,
+            targets.some((t) => t.measure === 'classic.potential'),
+          ) -
+          NEAR_WEIGHT * distanceOf(fromPoint(p), reference),
         data: r,
       };
     });
@@ -715,21 +790,36 @@ export function trackSummary(
     '',
     '### Slots',
     '',
-    '| Slot | Boss | Week | Cards | HP | Attack | Armour | prepared.share | first-weekend kill | prepared.beat2 | tool.share | tool.written | tool target | classic.kill | mixed kill / share (info) | Misses | At the edge of the search |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    '| Slot | Boss | Week | Rules | Cards | HP | Attack | Armour | prepared potential (written) | prepared potential (random) | prepared.share | first-weekend kill | prepared.beat2 | tool.share | tool.written | tool target | tool potential | classic potential | classic.kill | mixed potential / kill / share (info) | Misses | At the edge of the search |',
+    `| ${Array.from({ length: 22 }, () => '---').join(' | ')} |`,
   );
   for (const s of r.slots) {
     const m = s.best.measures;
     const t = s.targets;
     const missed = s.best.misses.filter((x) => x.miss > 0).map((x) => x.target);
-    const tool = t.find((x) => x.measure === 'tool.share')?.min ?? 0;
+    const tool = t.find((x) => x.measure === 'tool.share')?.min;
+    const rules = trackSlot(s.slot).rules;
     out.push(
-      `| ${s.slot} | ${s.bossId} | ${s.week} | ${Math.round(trackSlot(s.slot).strengthBp / 100)}% | ${grouped(s.best.numbers.hp)} | ${s.best.numbers.atk} | ${s.best.numbers.armour} | ${(['prepared.share', 'prepared.written', 'prepared.beat2', 'tool.share', 'tool.written', 'classic.kill'] as const).map((k, i) => `${cell(t, k, m)}${i === 4 ? ` | ≥ ${pct(tool)}` : ''}`).join(' | ')} | ${pct(m['mixed.kill'])} / ${pct(m['mixed.share'])} | ${missed.length ? missed.join('; ') : 'none'} | ${s.atEdge.length ? s.atEdge.join(', ') : '-'} |`,
+      `| ${s.slot} | ${s.bossId} | ${s.week} | ${rules.cards === 0 ? 'none' : rules.cards === undefined ? 'full' : `${rules.cards} card${rules.cards === 1 ? '' : 's'}`} | ${Math.round(trackSlot(s.slot).strengthBp / 100)}% | ${grouped(s.best.numbers.hp)} | ${s.best.numbers.atk} | ${s.best.numbers.armour} | ${(
+        [
+          'prepared.potential',
+          'prepared.potentialRandom',
+          'prepared.share',
+          'prepared.written',
+          'prepared.beat2',
+          'tool.share',
+          'tool.written',
+        ] as const
+      )
+        .map((k) => cell(t, k, m))
+        .join(
+          ' | ',
+        )} | ${tool === undefined ? 'none' : `≥ ${pct(tool)}`} | ${cell(t, 'tool.potential', m)} | ${cell(t, 'classic.potential', m)} | ${cell(t, 'classic.kill', m)} | ${pct(m['mixed.potential'])} / ${pct(m['mixed.kill'])} / ${pct(m['mixed.share'])} | ${missed.length ? missed.join('; ') : 'none'} | ${s.atEdge.length ? s.atEdge.join(', ') : '-'} |`,
     );
   }
   out.push(
     '',
-    '(A value in bold misses its target, as measured at the expected speed. Slot 1 has no limit on the classic party. The shares are from the full measurement of the proposal.)',
+    '(A value in bold misses its target, as measured at the expected speed. Slot 1 is the tutorial boss: no rule cards, no limit on the classic party and no tool target; slot 2 has one card. Potentials are the mean damage dealt over the boss’s HP when the boss cannot die; the written talents are the solved puzzle. The values are from the full measurement of the proposal.)',
     '',
   );
   const lapKills = new Map(r.slots.map((x) => [x.slot, x.best.measures['prepared.written']]));

@@ -1,8 +1,9 @@
 /** The boss track: the order and its repeat, the strength ladder, and the boss of a slot against `raidBossOf`. */
 import { content } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import { RAID_BOSS_IDS, RAID_RANKS, raidBossOf } from '../src/bosses';
+import { RAID_BOSS_IDS, RAID_RANKS, RAID_SPECS, raidBossOf } from '../src/bosses';
 import {
+  SLOT_CARDS,
   SLOT_NUMBERS,
   SLOT_STRENGTH,
   TRACK,
@@ -12,6 +13,7 @@ import {
   rankNumbers,
   rankStrengthBp,
   slotBoss,
+  slotRules,
   trackSlot,
 } from '../src/track';
 
@@ -66,8 +68,7 @@ describe('the strength ladder', () => {
 
 describe('the boss of a slot', () => {
   it('without table entries is raidBossOf at the three ranks the lab sets up', () => {
-    // Slots 2, 5 and 10 are Boss Ranks low, mid and high.
-    expect(slotBoss(2, { table: {} })).toEqual(raidBossOf(trackSlot(2).bossId, { rank: 'low' }));
+    // Slots 5 and 10 are Boss Ranks mid and high (slots 1 and 2 are the young-server ramp, below).
     expect(slotBoss(5, { table: {} })).toEqual(raidBossOf(trackSlot(5).bossId, { rank: 'mid' }));
     expect(slotBoss(10, { table: {} })).toEqual(raidBossOf(trackSlot(10).bossId, { rank: 'high' }));
   });
@@ -115,5 +116,65 @@ describe('the boss of a slot', () => {
       numbers[3] = kept;
       delete strength[3];
     }
+  });
+});
+
+describe('the young-server ramp (Misa, 2026-10-30)', () => {
+  const spec = (id: string) => RAID_SPECS.find((x) => x.id === id) as (typeof RAID_SPECS)[number];
+
+  it('is a column of the track: slot 1 no rules, slot 2 one card, slot 3 on the full set', () => {
+    expect(SLOT_CARDS[1]).toEqual({ cards: 0, buildUp: false });
+    expect(SLOT_CARDS[2]).toEqual({ cards: 1, buildUp: false });
+    expect(slotRules(1)).toEqual(SLOT_CARDS[1]);
+    for (const slot of [3, 4, 10, 25]) expect(slotRules(slot)).toEqual({ buildUp: true });
+    expect(trackSlot(1).rules).toEqual(SLOT_CARDS[1]);
+    expect(trackSlot(3).rules).toEqual({ buildUp: true });
+  });
+
+  it('slot 1 is a tutorial: no rule cards and no Build-up, but its plain attack and its moves stay', () => {
+    const boss = slotBoss(1);
+    const full = raidBossOf(trackSlot(1).bossId, { strengthBp: trackSlot(1).strengthBp });
+    expect(boss.cards).toEqual([]);
+    expect(boss.mods).toEqual({});
+    expect(boss.escalation).toBeUndefined();
+    expect(spec(boss.id).cards.length).toBeGreaterThan(0);
+    expect(full.cards.length).toBeGreaterThan(0);
+    expect(boss.plain).toEqual(full.plain);
+    expect(boss.moves).toEqual(full.moves);
+  });
+
+  it('slot 2 has one rule card, the boss’s first, at the slot’s low strength, and no Build-up', () => {
+    const boss = slotBoss(2);
+    expect(boss.cards).toEqual([spec(boss.id).cards[0]]);
+    expect(boss.strengthBp).toBe(rankStrengthBp(2));
+    expect(boss.strengthBp).toBeLessThanOrEqual(3_000);
+    expect(boss.escalation).toBeUndefined();
+    expect(boss.moves).toEqual(raidBossOf(boss.id, { rank: 'low' }).moves);
+  });
+
+  it('slot 3 onward is the full set at the slot’s strength, as raidBossOf builds it', () => {
+    for (const slot of [3, 4, 5, 10, 11]) {
+      const s = trackSlot(slot);
+      const boss = slotBoss(slot, { table: {} });
+      const full = raidBossOf(s.bossId, {
+        ...rankNumbers(s.bossId, slot),
+        strengthBp: s.strengthBp,
+        level: rankLevel(slot),
+      });
+      expect(boss, `slot ${slot}`).toEqual(full);
+      expect(boss.cards).toEqual(spec(s.bossId).cards);
+    }
+    expect(slotBoss(5, { table: {} })).toEqual(raidBossOf(trackSlot(5).bossId, { rank: 'mid' }));
+    expect(slotBoss(10, { table: {} })).toEqual(raidBossOf(trackSlot(10).bossId, { rank: 'high' }));
+  });
+
+  it('raidBossOf gives the first cards asked for, and Build-up on request; by default everything', () => {
+    const id = 'cinder-wyrm';
+    expect(raidBossOf(id).cards).toEqual(spec(id).cards);
+    expect(raidBossOf(id).escalation).toBeDefined();
+    expect(raidBossOf(id, { cards: 1 }).cards).toEqual([spec(id).cards[0]]);
+    expect(raidBossOf(id, { cards: 1 }).escalation).toBeDefined();
+    expect(raidBossOf(id, { cards: 0, buildUp: false }).escalation).toBeUndefined();
+    expect(raidBossOf(id, { cards: 0 }).mods).toEqual({});
   });
 });
