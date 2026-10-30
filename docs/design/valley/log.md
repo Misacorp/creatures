@@ -143,3 +143,5 @@ Misa asked whether everything is written down before compacting. Brought the fro
 Asked round 14: Q33 which resources to keep, Q34 shards of the right element (a challenge to Q23), Q35 how far behind a weekly player is (T-2 against Q3).
 
 **Next.** Record round 14; then tune with the tuner against the answers.
+
+The lab's tools are in (before any tuning): targets as data (`src/targets.ts`), quick runs (`--scenario mixed8 --seeds 5`, about 3 s), an automatic tuner over 11 named dials that reports unreachable and conflicting targets (`pnpm --filter @creatures/econ tune`), per-phase timings, a speed budget (`docs/design/testing.md` layer 6) and one scenario per core (full report 45 s to 17 s). A trial tuner run confirmed that project size and scrap cannot fix T-1, T-2c or the returner target: those depend on Q34 and Q35's answers.
