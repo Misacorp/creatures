@@ -71,6 +71,17 @@ describe('lintSprite', () => {
     expect(rules.map((f) => f.rule)).toEqual(['element']);
   });
 
+  it('checks a dungeon foe like a creature but without the chibi face', () => {
+    const def = face('#c9c3e6');
+    const faceless: SpriteDef = { ...def, rows: def.rows.map((r) => r.replace(/[eq]/g, 'b')) };
+    const palette = Object.fromEntries(
+      Object.entries(faceless.palette).filter(([key]) => key !== 'e' && key !== 'q'),
+    );
+    const foe = { ...faceless, palette };
+    expect(lintSprite(foe, { kind: 'foe' })).toEqual([]);
+    expect(lintSprite(foe, { kind: 'creature' }).map((f) => f.rule)).toContain('face');
+  });
+
   it('stops at a grid that does not parse', () => {
     const bad: SpriteDef = { palette: { k: '#0d0a1a' }, rows: ['kk', 'k'] };
     expect(lintSprite(bad, { kind: 'free' }).map((f) => f.rule)).toEqual(['grid']);

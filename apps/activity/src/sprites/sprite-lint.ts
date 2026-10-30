@@ -11,10 +11,12 @@
  */
 import { expandRows, parseSprite, SpriteError, type SpriteDef } from './sprite-data';
 
-export type ArtKind = 'creature' | 'boss' | 'item' | 'part' | 'banner' | 'free';
+/** `foe`: a 16x16 dungeon foe, drawn like a creature but without the shared chibi face. */
+export type ArtKind = 'creature' | 'foe' | 'boss' | 'item' | 'part' | 'banner' | 'free';
 
 export const KIND_SIZE: Readonly<Record<ArtKind, { width: number; height: number } | undefined>> = {
   creature: { width: 16, height: 16 },
+  foe: { width: 16, height: 16 },
   boss: { width: 24, height: 24 },
   item: { width: 12, height: 12 },
   part: { width: 8, height: 8 },
@@ -198,7 +200,10 @@ export function lintSprite(def: SpriteDef, options: LintOptions): Finding[] {
           'edge',
           `Boss pixel "${ch}" at x ${String(x)}, y ${String(y)} is on the canvas edge (only ink may be).`,
         );
-      } else if (options.kind === 'creature' && BODY_KEYS.includes(ch)) {
+      } else if (
+        (options.kind === 'creature' || options.kind === 'foe') &&
+        BODY_KEYS.includes(ch)
+      ) {
         add(
           'edge',
           `Body pixel "${ch}" at x ${String(x)}, y ${String(y)} is cut by the canvas edge.`,
@@ -226,7 +231,10 @@ export function lintSprite(def: SpriteDef, options: LintOptions): Finding[] {
     if (def.palette.q !== BLUSH) add('face', `The blush "q" must be ${BLUSH}.`);
   }
 
-  if (cells.length > 0 && (options.kind === 'creature' || options.kind === 'boss')) {
+  if (
+    cells.length > 0 &&
+    (options.kind === 'creature' || options.kind === 'foe' || options.kind === 'boss')
+  ) {
     const xs = cells.map((c) => c.x);
     const ys = cells.map((c) => c.y);
     const width = Math.max(...xs) - Math.min(...xs) + 1;
@@ -242,7 +250,9 @@ export function lintSprite(def: SpriteDef, options: LintOptions): Finding[] {
 
   if (options.others !== undefined) {
     const near = nearestSilhouette(def, options.others, options.id);
-    const need = options.minDifferentPixels ?? (options.kind === 'creature' ? 12 : 1);
+    const need =
+      options.minDifferentPixels ??
+      (options.kind === 'creature' || options.kind === 'foe' ? 12 : 1);
     if (near !== undefined && near.different < need) {
       add(
         'silhouette',

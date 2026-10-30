@@ -110,6 +110,14 @@ class Canvas {
   }
 }
 
+/** The shipped sprites a concept of `kind` must keep clear of (its size and kind), or none. */
+function poolFor(kind: string): Readonly<Record<string, SpriteDef>> | undefined {
+  if (kind === 'creature') return BUNDLED_CREATURE_SPRITES;
+  if (kind === 'foe') return { ...BUNDLED_DUNGEON_FOE_SPRITES, ...BUNDLED_CREATURE_SPRITES };
+  if (kind === 'boss') return { ...BUNDLED_BOSS_SPRITES, ...BUNDLED_DUNGEON_BOSS_SPRITES };
+  return undefined;
+}
+
 const textWidth = (s: string, scale: number): number => [...s].length * 6 * scale;
 const NIGHT = PANELS[0];
 const DUSK = PANELS[1];
@@ -263,9 +271,9 @@ function drawSet(set: ConceptSet, ids: string[], file: string, library = false):
     return;
   }
   for (const [n, concept] of big.entries()) {
-    const pool = concept.kind === 'boss' ? BUNDLED_BOSS_SPRITES : BUNDLED_CREATURE_SPRITES;
-    const near = nearestSilhouette(concept.sprite, pool);
-    const other = near === undefined ? undefined : pool[near.id];
+    const pool = poolFor(concept.kind);
+    const near = pool === undefined ? undefined : nearestSilhouette(concept.sprite, pool);
+    const other = near === undefined || pool === undefined ? undefined : pool[near.id];
     if (near === undefined || other === undefined) continue;
     tile(
       other,
@@ -550,16 +558,13 @@ let errors = 0;
 for (const id of ids) {
   const concept = set.sprites[id];
   if (concept === undefined) continue;
-  const pool = concept.kind === 'boss' ? BUNDLED_BOSS_SPRITES : BUNDLED_CREATURE_SPRITES;
+  const pool = poolFor(concept.kind);
   const findings = lintSprite(concept.sprite, {
     kind: concept.kind,
     element: set.element,
-    others: concept.kind === 'creature' || concept.kind === 'boss' ? pool : undefined,
+    others: pool,
   });
-  const near =
-    concept.kind === 'creature' || concept.kind === 'boss'
-      ? nearestSilhouette(concept.sprite, pool)
-      : undefined;
+  const near = pool === undefined ? undefined : nearestSilhouette(concept.sprite, pool);
   const nearText =
     near === undefined ? '' : ` (nearest: ${near.id}, ${String(near.different)} px apart)`;
   console.log(
