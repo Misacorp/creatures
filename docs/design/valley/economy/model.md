@@ -43,6 +43,16 @@ A generated report, `economy/report.md` (never edited by hand), and `economy/ros
 7. **Journeys:** one daily and one weekly player's story by week, in a few plain lines each, to check the pace feels right.
 8. **Cost:** rows read per visit and per server day for the lazy pass, as an estimate from the number of rows a visit touches (Pia's lists in `reviews/2026-10-30-posts-bonfire.md` and `reviews/2026-10-30-scouts-forge.md`).
 
+## Speed, and tuning without loops
+
+Combat v2's lab learned this the hard way (its full report went from 585 s to 80 s, and it gained an automatic tuner; commit d6394eb on `combat-v2-track`): agents changing numbers by hand and re-running the whole report is slow and expensive. This lab is cheap today (the full report, 15 servers x 20 seeds x 24 weeks, about 24 s; tests about 7 s), and is kept that way before any tuning starts:
+
+- **Targets as data** in one file (`src/targets.ts`), read by the report and the tuner alike.
+- **Quick runs:** `--scenario <id> --seeds <n>` runs one server for a quick look; the full report only at the end.
+- **An automatic tuner:** given the dials it may move (example: project size, scout scrap rate, seat prices) and their bounds, it searches for values that pass every target and reports conflicting targets, instead of an agent editing and re-running.
+- **Timings and a budget:** the report prints how long each section took; a speed budget in `docs/design/testing.md` (example: full report under 30 s, tests under 15 s).
+- **Later, if needed:** step from visit to visit in one pass (as the server will) instead of hour by hour, and run servers on every core.
+
 ## How agents use it
 
 1. Change `src/rules.ts` or a policy.
