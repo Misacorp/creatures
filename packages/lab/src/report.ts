@@ -93,6 +93,20 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
     ['Clear the Air', 'tidewing/steady-mark tempestray/none halcyray/clear-the-air'],
   ],
   elusive: [['Clear Skies', 'tidewing/steady-mark tempestray/none halcyray/clear-skies']],
+  slippery: [
+    [
+      'Clear Skies beside both hitters',
+      'tidewing/steady-mark halcyray/clear-skies tempestray/none',
+    ],
+    [
+      'All at Once (marks are never dodged)',
+      'tidewing/steady-mark tempestray/all-at-once thornbuck/wide-reach',
+    ],
+  ],
+  'lucky-strike': [
+    ['Cool Head in the middle', 'tidewing/steady-mark thornbuck/cool-head tempestray/none'],
+    ['Hide in Mist', 'tidewing/steady-mark fogwyrm/hide-in-mist tempestray/none'],
+  ],
   'bramble-bind': [
     ['Setter in the middle', 'thornbuck/wide-reach tidewing/steady-mark tempestray/none'],
     ['Lantern Glow in the middle', 'tidewing/steady-mark lanternfin/lantern-glow tempestray/none'],

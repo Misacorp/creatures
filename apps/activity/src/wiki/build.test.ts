@@ -51,6 +51,8 @@ function fake(): WikiData {
         capStats: { hp: 11, atk: 12, spd: 13 },
         growth: { hp: 1, atk: 1, spd: 1 },
         armour: 7,
+        critChanceBp: 500,
+        critDamageBp: 10_000,
         evolvesTo: [],
         festival: false,
         flavor: evil,
@@ -399,10 +401,32 @@ describe('stat blocks and the game tags', () => {
         `+${String(c.growth.spd)}`,
       ]);
       expect(cells('Armour'), c.id).toEqual([String(c.armour), String(c.armour), '-']);
-      expect(part, c.id).toContain('Armour is the combat v2 draft value');
+      // Crit chance and crit damage are draft species stats too: the same at both ends, no growth.
+      expect(cells('Crit chance'), c.id).toEqual([
+        `${String(c.critChanceBp / 100)}%`,
+        `${String(c.critChanceBp / 100)}%`,
+        '-',
+      ]);
+      expect(cells('Crit damage'), c.id).toEqual([
+        `+${String(c.critDamageBp / 100)}%`,
+        `+${String(c.critDamageBp / 100)}%`,
+        '-',
+      ]);
+      expect(part, c.id).toContain('Armour and crit are the combat v2 draft values');
       // The cap values follow from the game's rule: never below level 1.
       expect(c.capStats.hp).toBeGreaterThanOrEqual(c.baseStats.hp);
     }
+  });
+
+  it('shows the crit machines with their own crit chance and crit damage, and every other creature with the base', () => {
+    const cindle = data.creatures.find((c) => c.id === 'cindle');
+    expect(cindle?.critChanceBp).toBeGreaterThan(500);
+    expect(cindle?.critDamageBp).toBeGreaterThan(10_000);
+    for (const c of data.creatures)
+      if (!['cindle', 'pyrelynx', 'coralynx'].includes(c.id)) {
+        expect(c.critChanceBp, c.id).toBe(500);
+        expect(c.critDamageBp, c.id).toBe(10_000);
+      }
   });
 
   it('shows each creature element, role and rarity as the game chips, links to entries that have cards', () => {

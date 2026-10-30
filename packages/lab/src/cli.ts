@@ -2,7 +2,7 @@ import { writeFileSync } from 'node:fs';
 import { CARDS } from './cards';
 import { RAID_BOSS_IDS } from './bosses';
 import { planBosses } from './bossReport';
-import { planPath } from './path';
+import { DETERMINATION, planPath } from './path';
 import { ROSTER_SPEEDS, type RosterSpeed } from './roster';
 import { inProcessExecutor } from './jobRunners';
 import { runJobs, timingLines, type Executor, type JobRun, type JobSpec, type Plan } from './jobs';
@@ -170,9 +170,11 @@ async function tune(args: readonly string[], quick: boolean, run: JobRunner): Pr
 }
 
 /**
- * `--path [--speed slow|expected|fast|all] [--quick] [--out <file.md>]`: the path simulator (`path.ts`). It plays many seeded
+ * `--path [--speed slow|expected|fast|all] [--determination] [--quick] [--out <file.md>]`: the path simulator (`path.ts`). It plays many seeded
  * servers (40, or 8 with `--quick`) of each kind through the boss track week by week and prints, per roster speed, the week each
  * slot is reached, the weekends spent on it and the share of servers stuck for more than four weeks on one boss. Nothing is tuned.
+ * `--determination` plays the same servers again with Determination on (`DETERMINATION`: +5% damage and healing for each failed week
+ * on the same boss, at most 10 stacks, reset by a kill) and prints that beside the path without it; it is off otherwise.
  */
 async function path(args: readonly string[], quick: boolean, run: JobRunner): Promise<number> {
   const speedArg = flagValue(args, '--speed') ?? 'expected';
@@ -192,8 +194,17 @@ async function path(args: readonly string[], quick: boolean, run: JobRunner): Pr
     return 1;
   }
   const t0 = Date.now();
-  const { value, timings } = await runPlan(planPath({ quick, speeds }), run);
-  const md = value.md.join('\n');
+  // `--determination`: the same servers also with Determination on (`DETERMINATION`), reported beside the path without it.
+  const withDetermination = args.includes('--determination');
+  const plain = await runPlan(planPath({ quick, speeds }), run);
+  const mds = [plain.value.md.join('\n')];
+  let timings = plain.timings;
+  if (withDetermination) {
+    const on = await runPlan(planPath({ quick, speeds, determination: DETERMINATION }), run);
+    mds.push(on.value.md.join('\n'));
+    timings += '\n' + on.timings;
+  }
+  const md = mds.join('\n');
   console.log(md);
   if (out) writeFileSync(out, md + '\n');
   console.log(`path in ${secondsSince(t0)} s`);

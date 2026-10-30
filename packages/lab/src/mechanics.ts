@@ -124,6 +124,12 @@ const FAMILY_CALLS: Readonly<Record<string, Mechanic['calls']>> = {
   'Row Ward': (b) => shapes(b, 'row', 'rows', 'all', 'randomRow') && 'whole rows hit at once',
   Ward: (b) => silences(b) && 'it silences creatures',
   Pierce: (b) => armoured(b) && 'armour that Blocks small hits',
+  Luck: (b) =>
+    first(
+      b.mods.capPerHit !== undefined && 'no hit deals more than a cap: a crit’s size is lost',
+      b.escalation?.feed === 'crits' && 'its escalation feeds on crits: crit often, or not at all',
+      (b.critChanceBp ?? 0) > 0 && 'it crits: a Guard can take the sting out',
+    ),
   Partner: (b) =>
     shapes(b, 'chain', 'cross', 'checker') && 'who stands beside whom decides who is hit',
   'Support shape': (b) =>
@@ -159,6 +165,15 @@ const KEYWORD_CALLS: Readonly<Record<string, Mechanic['calls']>> = {
   Seal: (b) => b.mods.shedMarks && 'it sheds marks',
   Taunt: (b) => tauntable(b) && 'its plain attack can be drawn',
   Intercept: (b) => attacksOf(b).some(aimed) && 'aimed hits',
+  Crit: (b) =>
+    first(
+      b.escalation?.feed === 'crits' && 'every crit on it feeds its escalation',
+      b.mods.capPerHit !== undefined && 'a cap on one hit blunts a crit',
+      (b.critChanceBp ?? 0) > 0 && 'it crits too',
+    ),
+  'Crit Charge': (b) =>
+    attacksOf(b).some((a) => aimed(a) && a.powerBp >= 10_000) &&
+    'heavy aimed hits a dodge or a Guard can turn into a crit',
   Retaliate: (b) =>
     attacksOf(b).some((a) => aimed(a) && a.powerBp >= 10_000) &&
     'heavy aimed hits a dodge can turn away',

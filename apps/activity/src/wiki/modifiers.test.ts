@@ -53,6 +53,23 @@ describe('the modifier library data', () => {
     expect(data.modifiers.filter((m) => m.status === 'game').length).toBeGreaterThan(80);
   });
 
+  it('shows the luck content (2026-10-30): the crit talents on the crit gear lines, the charge talents and the Knacks', () => {
+    const line = (id: string) => data.modifiers.find((m) => m.id === id);
+    // One name each: the talents are the gear lines Crit chance and Crit damage.
+    expect(line('crit-chance')?.status).toBe('game');
+    expect(line('crit-chance')?.draftTalents).toContain('crit-chance');
+    expect(line('crit-damage')?.draftTalents).toContain('crit-damage');
+    expect(line('talent-perfect-timing')?.draftTalents).toEqual(['perfect-timing']);
+    expect(line('talent-hold-the-line')?.draftTalents).toEqual(['hold-the-line']);
+    expect(data.knacks.map((k) => k.id)).toEqual(
+      expect.arrayContaining(['wild-swing', 'cool-head']),
+    );
+    expect(data.keywords.map((k) => k.name)).toEqual(
+      expect.arrayContaining(['Crit', 'Crit Charge']),
+    );
+    expect(html).toContain('Perfect Timing');
+  });
+
   it('has a unique id and anchor for every modifier', () => {
     const ids = data.modifiers.map((m) => m.id);
     expect(new Set(ids).size).toBe(ids.length);

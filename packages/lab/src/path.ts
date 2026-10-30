@@ -46,6 +46,21 @@ export const FESTIVAL_EASE = 0;
 export const STUCK_WEEKS = 4;
 export const STUCK_SHARE_MAX = 0.1;
 
+/**
+ * Determination (Misa, 2026-10-30; after WoW's, +5% a wipe, at most 10 stacks): a dial of the path, OFF BY DEFAULT. Each failed
+ * weekend on the same boss gives the server `stackBp` more damage and healing, at most `maxStacks` stacks, and a kill resets it.
+ * A Festival week (no weekend) changes nothing. The track tuner never uses it (`trackTuner.ts`); `--path --determination` shows
+ * the path with it beside the path without it.
+ */
+export interface Determination {
+  /** Damage and healing, in bp, for each stack. */
+  readonly stackBp: number;
+  readonly maxStacks: number;
+}
+
+/** The default: +5% damage and healing a stack, at most 10 stacks (+50%). */
+export const DETERMINATION: Determination = { stackBp: 500, maxStacks: 10 };
+
 // ---------- the walk ----------
 
 /** One server's 24 weeks. */
@@ -73,21 +88,30 @@ export interface ServerPath {
  */
 export interface PathRun {
   readonly table?: SlotTable;
+  /** Play the path with Determination (off by default). */
+  readonly determination?: Determination;
 }
 
 export interface WalkOptions {
   readonly weeks?: number;
   readonly festivalEvery?: number;
   readonly festivalEase?: number;
+  /** Determination's cap: the fight is told its stacks (failed weekends on this boss since the last kill, at most this many). Absent: always 0. */
+  readonly determinationStacks?: number;
 }
 
-/** A fight: whether the server killed the boss of `slot` in the weekend of `week`. */
-export type Fight = (slot: number, week: number) => boolean;
+/**
+ * A fight: whether the server killed the boss of `slot` in the weekend of `week`, with `stacks` Determination stacks (0 unless the
+ * walk is given `determinationStacks`; the fight turns the stacks into damage and healing).
+ */
+export type Fight = (slot: number, week: number, stacks: number) => boolean;
 
 /**
  * Plays one server: slot 1 in week 1, a kill moves on, a loss stays, a Festival week fights nothing (and eases the slot after it by `festivalEase`, none by default).
  * "The longest run on one boss" is the most weekends it took to kill one boss for the first time (`attempts`): a server that lost
- * four weekends and won the fifth ran five.
+ * four lost weekends and won the fifth ran five.
+ * With `determinationStacks` each lost weekend on the boss of the slot adds a stack for the next fight there (up to the cap), and a
+ * kill clears them; a Festival week keeps them.
  */
 export function walkPath(fight: Fight, options: WalkOptions = {}): ServerPath {
   const weeks = options.weeks ?? ROSTER_WEEKS;
@@ -99,6 +123,8 @@ export function walkPath(fight: Fight, options: WalkOptions = {}): ServerPath {
   const weekends: number[] = [0];
   const attempts: number[] = [0];
   const killed = new Set<number>();
+  const cap = options.determinationStacks ?? 0;
+  let failed = 0;
   let slot = 1;
   let furthest = 1;
   for (let week = 1; week <= weeks; week++) {
@@ -108,11 +134,12 @@ export function walkPath(fight: Fight, options: WalkOptions = {}): ServerPath {
       slot = Math.max(1, slot - ease);
       continue;
     }
-    const win = fight(slot, week);
+    const win = fight(slot, week, Math.min(cap, failed));
     fought.push(slot);
     won.push(win);
     weekends[slot - 1] = (weekends[slot - 1] ?? 0) + 1;
     if (!killed.has(slot)) attempts[slot - 1] = (attempts[slot - 1] ?? 0) + 1;
+    failed = win ? 0 : failed + 1;
     if (win) {
       killed.add(slot);
       slot++;
@@ -241,9 +268,14 @@ export function weekendKill(
   seed: string,
   profile: RosterProfile = PLACEHOLDER_ROSTER,
   run: PathRun = {},
+  stacks = 0,
 ): boolean {
   const { boss, placements, bench } = serverWeekend(server, slot, week, speed, seed, profile, run);
-  return weekendStatsOf(boss, placements, bench, 1, `path:${seed}:w${week}`).winRate === 1;
+  const determinationBp = run.determination ? stacks * run.determination.stackBp : 0;
+  return (
+    weekendStatsOf(boss, placements, bench, 1, `path:${seed}:w${week}`, { determinationBp })
+      .winRate === 1
+  );
 }
 
 /** One server of the kind, seeded by its index (the same servers at every speed, so the speeds compare on equal luck). */
@@ -255,7 +287,10 @@ export function pathOf(
   run: PathRun = {},
 ): ServerPath {
   const seed = `${server.id}:${index}`;
-  return walkPath((slot, week) => weekendKill(server, slot, week, speed, seed, profile, run));
+  return walkPath(
+    (slot, week, stacks) => weekendKill(server, slot, week, speed, seed, profile, run, stacks),
+    run.determination ? { determinationStacks: run.determination.maxStacks } : {},
+  );
 }
 
 // ---------- the summary ----------
@@ -337,10 +372,14 @@ const weekCell = (s: SlotSummary): string =>
     : `${s.week.median} (${s.week.p25}-${s.week.p75})${s.reachedShare < 1 ? `, ${pct(s.reachedShare)} reach` : ''}`;
 
 /** The markdown of one speed: a table of the week each slot is reached and the weekends spent on it, dedicated and mixed side by side, then the stuck share. */
-export function pathMarkdown(speed: RosterSpeed, summaries: readonly PathSummary[]): string[] {
+export function pathMarkdown(
+  speed: RosterSpeed,
+  summaries: readonly PathSummary[],
+  label = '',
+): string[] {
   const rows = Math.max(0, ...summaries.map((s) => s.slots.length));
   const lines = [
-    `### Boss track at the ${speed} roster speed`,
+    `### Boss track at the ${speed} roster speed${label}`,
     '',
     `| Slot | Boss | ${summaries.map((s) => `${s.server}: week reached | ${s.server}: weekends`).join(' | ')} |`,
     `| --- | --- | ${summaries.map(() => '--- | ---').join(' | ')} |`,
@@ -377,6 +416,7 @@ export const pathJobId = (a: PathJobArgs): string => `path:${a.server}:${a.speed
 /** The run options of job args or plan options (the table, when given). */
 const runOf = (a: PathRun): PathRun => ({
   ...(a.table ? { table: a.table } : {}),
+  ...(a.determination ? { determination: a.determination } : {}),
 });
 
 /** What a `path-server` job runs. */
@@ -439,6 +479,9 @@ export function planPath(options: PathPlanOptions): Plan<PathReport> {
         pathMarkdown(
           speed,
           data.filter((d) => d.speed === speed),
+          options.determination
+            ? ` with Determination (+${options.determination.stackBp / 100}% a failed week, at most ${options.determination.maxStacks} stacks)`
+            : '',
         ),
       );
       return { md, data };

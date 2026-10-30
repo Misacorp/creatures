@@ -18,7 +18,7 @@
  * the loot and the pack, experience, the Sealed Vault, and the shipped enrage. Keepsakes are applied as they come
  * out for the foe, because the lab's fights have no team stat folds: a keepsake's team Attack is the same share off the foe's HP,
  * its team HP the same share off the foe's Attack (an element's keepsake counts the share of the team of that element),
- * a crit point is half a point of Attack (a crit deals 1.5x). That is close, not exact, and it is enough to read a clear rate.
+ * a crit point is a full point of Attack (a crit deals 2x, R7.1). That is close, not exact, and it is enough to read a clear rate.
  */
 import {
   RULES,
@@ -46,6 +46,7 @@ import {
   type Rng,
 } from '@creatures/game';
 import { fight } from './fight';
+import { LAB_RULES } from './rules';
 import { foeAt } from './foes';
 import { GAUNTLET, toPlacements, type Pick, type Score } from './search';
 import { formStats } from './species';
@@ -126,7 +127,7 @@ export function foeFold(
         if (e.stat === 'atk') hp = inverse(hp, factor);
         if (e.stat === 'hp') atk = inverse(atk, factor);
       } else if (e.op === 'team_crit') {
-        hp = inverse(hp, 10_000 + Math.floor(e.chanceBp / 2));
+        hp = inverse(hp, 10_000 + Math.floor((e.chanceBp * (LAB_RULES.critBp - 10_000)) / 10_000));
       } else if (e.op === 'foe_stat') {
         if (e.stat === 'hp') hp = scale(hp, e.bp);
         else atk = scale(atk, e.bp);

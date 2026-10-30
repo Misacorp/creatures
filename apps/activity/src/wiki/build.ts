@@ -135,7 +135,10 @@ function foundOn(page: Page, creatures: readonly WikiCreature[]): string {
   )}</p>`;
 }
 
-/** The stat block: the game's creature-page stat table, with the level 1 and level cap values and the growth, plus the draft's armour. */
+/** A share in basis points as a whole percent: 500 is "5%", 12_500 is "125%". */
+const percent = (bp: number): string => `${String(Math.round(bp / 100))}%`;
+
+/** The stat block: the game's creature-page stat table, with the level 1 and level cap values and the growth, plus the draft's armour and crit stats. */
 function statBlock(c: WikiCreature): string {
   const rows: [string, 'hp' | 'atk' | 'spd'][] = [
     ['HP', 'hp'],
@@ -150,10 +153,16 @@ function statBlock(c: WikiCreature): string {
     .join('');
   // Armour is a species stat of the combat v2 draft, flat across levels: the same value at both ends, no growth.
   const armour = `<tr class="data-row"><th scope="row"><span class="data-label">Armour</span></th><td>${String(c.armour)}</td><td>${String(c.armour)}</td><td class="data-extra">-</td></tr>`;
+  // Crit chance and crit damage are species stats of the draft too (luck is a build): flat across levels, most species have the base.
+  const crit = (label: string, value: string): string =>
+    `<tr class="data-row"><th scope="row"><span class="data-label">${label}</span></th><td>${value}</td><td>${value}</td><td class="data-extra">-</td></tr>`;
+  const luck =
+    crit('Crit chance', percent(c.critChanceBp)) +
+    crit('Crit damage', `+${percent(c.critDamageBp)}`);
   return `<div class="cp-block stats pix-panel">
 <h5 class="cp-title">Stats</h5>
-<table class="data-table headed tabular" aria-label="Stats of ${esc(c.name)}"><thead><tr><th scope="col">Stat</th><th scope="col">Lv 1</th><th scope="col">Lv ${String(c.levelCap)}</th><th scope="col">Per level</th></tr></thead><tbody>${body}${armour}</tbody></table>
-<p class="intent">Armour is the combat v2 draft value; the other stats are the game's today.</p>
+<table class="data-table headed tabular" aria-label="Stats of ${esc(c.name)}"><thead><tr><th scope="col">Stat</th><th scope="col">Lv 1</th><th scope="col">Lv ${String(c.levelCap)}</th><th scope="col">Per level</th></tr></thead><tbody>${body}${armour}${luck}</tbody></table>
+<p class="intent">Armour and crit are the combat v2 draft values; the other stats are the game's today.</p>
 </div>`;
 }
 

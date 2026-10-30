@@ -1,7 +1,7 @@
 /** The lab's stat overrides for combat v2 (fourth panel, 2026-10-28): small, documented, and read by `formStats`. */
 import { content } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import { FORM_ARMOUR, STAT_OVERRIDES, formStats } from '../src';
+import { FORM_ARMOUR, LAB_RULES, STAT_OVERRIDES, formStats } from '../src';
 
 const shipped = (id: string) => content.creatures.find((c) => c.id === id);
 
@@ -55,8 +55,37 @@ describe('lab stat overrides', () => {
     expect(payoffs.map((c) => c.id).sort()).toEqual(
       ['bloomback', 'gaiadrake', 'geyserpup', 'pyrelynx', 'tempestray'].sort(),
     );
-    const atk = payoffs.map((c) => formStats(c.id, 25).atk);
-    expect(Math.max(...atk) / Math.min(...atk)).toBeLessThanOrEqual(1.11);
+    // The comparison is the average hit: Attack times what its crits add (a crit machine hits softer and crits more, 2026-10-30).
+    const average = (id: string): number => {
+      const s = formStats(id, 25);
+      const chance = (LAB_RULES.critChanceBp + s.critChanceBp) / 10_000;
+      const extra = (LAB_RULES.critBp + s.critDamageBp - 10_000) / 10_000;
+      return s.atk * (1 + chance * extra);
+    };
+    const avg = payoffs.map((c) => average(c.id));
+    expect(Math.max(...avg) / Math.min(...avg)).toBeLessThanOrEqual(1.11);
+  });
+
+  it('a crit machine hits softer and crits more: about the same average hit as its siblings, with far more swing', () => {
+    const machines = Object.entries(STAT_OVERRIDES).filter(
+      ([, o]) => (o.critChanceBp ?? 0) > 0 || (o.critDamageBp ?? 0) > 0,
+    );
+    expect(machines.map(([id]) => id).sort()).toEqual(['cindle', 'coralynx', 'pyrelynx']);
+    for (const [id, o] of machines) {
+      const s = formStats(id, 25);
+      expect(s.critChanceBp, id).toBe(o.critChanceBp);
+      expect(s.critDamageBp, id).toBe(o.critDamageBp);
+      // Its Attack is lower than its shipped Attack plus the panel's change, and its crit chance is at least three times the base.
+      expect(LAB_RULES.critChanceBp + s.critChanceBp, id).toBeGreaterThanOrEqual(
+        3 * LAB_RULES.critChanceBp,
+      );
+    }
+    // Every other form has the base crit.
+    for (const c of content.creatures) {
+      if (machines.some(([id]) => id === c.id)) continue;
+      expect(formStats(c.id, 25).critChanceBp, c.id).toBe(0);
+      expect(formStats(c.id, 25).critDamageBp, c.id).toBe(0);
+    }
   });
 
   it('Ancientshell has its armour or its top Setter HP and Attack, not both: its armour is below the best Guard’s', () => {

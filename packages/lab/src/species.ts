@@ -14,6 +14,9 @@ export interface FormStats {
   readonly atk: number;
   readonly spd: number;
   readonly armour: number;
+  /** The species' own crit chance (bp over the base) and crit damage (bp over the base crit): 0 for most (`stats.ts`). */
+  readonly critChanceBp: number;
+  readonly critDamageBp: number;
 }
 
 /** A form's stats at a level, from the shipped species data (levels above its cap are capped), then the lab's overrides (`stats.ts`). Armour is the form's own base (`FORM_ARMOUR`), flat across levels. */
@@ -35,6 +38,8 @@ export function formStats(formId: string, level: number): FormStats {
     atk: over?.atkBp === undefined ? atk : Math.floor((atk * over.atkBp) / 10_000),
     spd: s.baseStats.spd + s.growth.spd * (L - 1),
     armour: over?.armour ?? formArmour(s.id),
+    critChanceBp: over?.critChanceBp ?? 0,
+    critDamageBp: over?.critDamageBp ?? 0,
   };
 }
 
