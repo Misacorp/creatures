@@ -1,6 +1,6 @@
 # The weekly visitor: a merchant with rerolls
 
-Status: **draft** (Misa's idea, round 16, Q42, 2026-10-30; the lead's draft below, from the research in `docs/research/weekly-visitor.md`). The panel reviews it next (`reviews/2026-10-30-visitor.md`).
+Status: **proposed**, revised after the panel (`reviews/2026-10-30-visitor.md`: all four "adopt with changes"). Misa's idea (round 16, Q42); research in `docs/research/weekly-visitor.md`. Waiting on Misa: Q43 (how long he stays) and Q44 (how rerolls reach players).
 
 ## Misa's idea
 
@@ -10,19 +10,12 @@ Misa (Q42: "B is the way to go and we can expand on what options we give players
 
 Once a week a mysterious visitor arrives in the valley, with a small, changing stock and one service: hand over a piece of gear and it rerolls all its modifier lines. It is the valley's first way to improve an item after it is made (`gear.md` V-GEAR-5 kept orbs out "at the start"), and the first big sink for the piles of Acorns, scrap and shards.
 
-## The lead's draft (from the research)
+## As revised after the panel
 
-- **V-VIS-1 When.** The visitor arrives on Thursday and leaves when the raid starts (Misa). Its next arrival is shown all week (Warframe's Baro Ki'Teer shows a countdown in every relay), and its stock is revealed on arrival. It arrives in the return walk ("A hooded stranger waits at the crossroads until Saturday").
-- **V-VIS-2 Nobody misses out.** A player can leave a piece at the visitor's empty stall any day of the week; the visitor rerolls it on arrival and the result waits, even for a player who only opens the game on Sundays (F-1, T-2). The research found no evidence that a two-day window works in an idle game, and Palia's limited event was only accepted once it was promised to return.
-- **V-VIS-3 The reroll** (Misa: "a Chaos Orb type of item that just randomly rerolls all the stats of an item"): all of a piece's modifier lines are rolled again, from the same pools (`gear.md` V-GEAR-9), at the piece's item level. The player sees before and after. Priced in Acorns, scrap and shards together, so several piles drain (Baro prices in two currencies); each further reroll in the same visit costs more.
-- **V-VIS-4 Stock, per player and fixed for the visit.** Three or four things, the same kind for everyone and never sold out by someone else (one rich player can't empty it; Xûr's stock stopped being rerollable): examples, an orb to keep (a reroll for later), a rare blueprint, a lure toward a rare line the player lacks, a decoration for the valley. Stock rotates through a pool and missed items come back.
-- **V-VIS-5 No new currency.** The research's idea of a visitor-only token (Baro's Ducats) would add a spendable, against round 14's three kinds (Q33); prices use the resources that pile up.
-- **V-VIS-6 A second trader, later**: plainer deals such as better shard-exchange rates (`later.md`).
-
-## Open choices (for the panel and then Misa)
-
-1. **When:** Thursday until the raid starts (Saturday, if the raid moves). A once-a-week player who opens the game on Sundays would never meet the visitor (T-2, F-1).
-2. **The reroll:** all lines (Misa's Chaos Orb) or one line (Path of Exile 2's newer Chaos Orb, "the item you start out with matters a whole lot more"); whether the player may keep the old version once (a reroll then never makes an item worse, but the gamble is gentler); how many per visit.
-3. **Stock:** what the visitor sells (rare blueprints, kit, a creature lure, a keystone hint, an orb), how limited (per player or for the whole server), and how it changes week to week.
-4. **A second trader:** a separate, plainer trader for other deals (the shard exchange's better rates, `later.md`).
-5. **Where and how it shows:** a figure in the valley, a line in the return walk ("A hooded stranger is at the crossroads until Saturday"), the stock visible from Monday?
+- **V-VIS-1 When.** The visitor arrives on Thursday (Misa) and leaves when the raid starts, or at the raid's finale (Q43). His empty spot at the crossroads says "back Thursday"; there is no ticking timer and no "until Saturday" line (V-RET-7). His stock is hidden until he arrives, and his arrival is one line in the return walk and one post in the server's Discord channel (the game's "where is Xûr" moment).
+- **V-VIS-2 The reroll** (Misa: "a Chaos Orb type of item that just randomly rerolls all the stats of an item... a chance to gamble"): all of a piece's modifier lines are rolled again, from the same pools at the piece's item level (`gear.md` V-GEAR-9); rarity and item level stay. No keeping the old version: the gamble is the point, and keeping the better would bring back "one item forever" (V-GEAR-8). The odds and a before-and-after are shown, with one confirm.
+- **V-VIS-3 The price.** Acorns and scrap, the biggest piles; shards stay with the Forge and its exchange (the piece's own element would worsen the Forge's waits). The price scales with the piece's item level and rises with each reroll in the same week (example: x1.5), reset weekly, so "when to stop" is a decision. Example: a base of 60 Acorns and 400 scrap; three rerolls a week cost about one daily player's weekly surplus.
+- **V-VIS-4 How a reroll reaches a player** (Q44): a service at his stall while he is here (with a drop-off for absent players), orbs bought from him and kept for use at the Forge (each counting toward the week's rising price), or a standing order ("reroll up to N times until a line I pick appears").
+- **V-VIS-5 Stock**, per player and fixed for the visit, the same list for everyone and never sold out by someone else: at launch, the reroll and one rotating rare blueprint with something found nowhere else; the pool is large and missed items come back. Decorations and lures come later (they need art and new systems).
+- **V-VIS-6** No second trader yet; better exchange rates stay at the Forge (`later.md`).
+- Power: rerolls make top-line Epics appear on most servers within a few months; combat v2 tunes lines with that in mind.
