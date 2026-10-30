@@ -22,11 +22,11 @@ Status: **direction set by Misa** (round 9, Q22, 2026-10-30); the system is **to
 
 ## What is decided
 
-- **V-GEAR-1** Big rolls, big lottery.** Base items have small fixed stats; item level sets how strong rolled modifiers can be; rarity sets how many roll; the best item is luck on top of a good base, a high item level and an epic roll. The chase is the fun.
-- **V-GEAR-2** Many chances to roll.** The Forge's steady work is the main source of rolls: a player sets a blueprint (and its element) and the smiths keep making pieces, so "did I get anything good?" has an answer every visit.
-- **V-GEAR-3** Item level is quality, not a requirement.** Any creature can wear any item; the wear rule (wearer level at least item level, `RULES.gear`) goes. Item level only says how good an item and its rolls can be. (Today's slot unlock levels, Scarf at 7 and Charm at 13, are combat v2's to keep or drop.)
-- **V-GEAR-4** The best first.** When a batch of pieces comes home, the best are shown first and celebrated in the return walk (V-RET-2).
-- **V-GEAR-5** No currency orbs at the start.** Improving existing items is a later Forge job ("work on this until some criteria is met"), designed after the base loop.
+- **V-GEAR-1 Big rolls, big lottery.** Base items have small fixed stats; item level sets how strong rolled modifiers can be; rarity sets how many roll; the best item is luck on top of a good base, a high item level and an epic roll. The chase is the fun.
+- **V-GEAR-2 Many chances to roll.** The Forge's steady work is the main source of rolls: a player sets a blueprint (and its element) and the smiths keep making pieces, so "did I get anything good?" has an answer every visit.
+- **V-GEAR-3 Item level is quality, not a requirement.** Any creature can wear any item; the wear rule (wearer level at least item level, `RULES.gear`) goes. Item level only says how good an item and its rolls can be. (Today's slot unlock levels, Scarf at 7 and Charm at 13, are combat v2's to keep or drop.)
+- **V-GEAR-4 The best first.** When a batch of pieces comes home, the best are shown first and celebrated in the return walk (V-RET-2).
+- **V-GEAR-5 No currency orbs at the start.** Improving existing items is a later Forge job ("work on this until some criteria is met"), designed after the base loop.
 
 ## Open, waiting on research (`docs/research/`, round 10)
 
