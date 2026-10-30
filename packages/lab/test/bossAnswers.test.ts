@@ -2,23 +2,31 @@
  * The intended answers of the raid bosses: legal rosters, named Knack tools, and every answer's own tool is tested.
  */
 import { describe, expect, it } from 'vitest';
-import { ROBUST_SHARE, TOOL_DROP_MIN, TOOL_SHARE_MIN } from '../src/targets';
+import {
+  ANSWER_CLASSIC_KILL_MAX,
+  ANSWER_CLASSIC_SHARE_MAX,
+  ANSWER_FIRST_KILL_MIN,
+  ANSWER_SHARE_MIN,
+  ANSWER_T2_MIN,
+  ROBUST_GAP_MAX,
+  ROBUST_SHARE,
+  TOOL_DROP_MIN,
+  TOOL_SHARE_MIN,
+} from '../src/targets';
 import {
   BOSS_ANSWERS,
   KNACKS,
   RAID_BOSS_IDS,
   COMMON_OR_CLASSIC_FORMS,
-  robustnessOf,
-  toolCost,
+  answerToolCost,
+  answersBeat,
+  answersWin,
+  robustRule,
   TALENTS,
   answerLine,
   answerProblems,
   mostCopies,
   raidBossOf,
-  raidMode,
-  weekendScore,
-  weekendStats,
-  classicFor,
 } from '../src';
 
 describe('the intended answers (P-13)', () => {
@@ -77,40 +85,24 @@ describe('the intended answers (P-13)', () => {
   it.each(RAID_BOSS_IDS)(
     '%s: every intended answer beats the classic party over weekends',
     (id) => {
-      const b = raidBossOf(id);
-      const score = weekendScore(b);
-      const classic = score(classicFor(raidMode(b)), 16, `ans:${id}`).score;
-      for (const a of BOSS_ANSWERS[id] ?? []) {
-        const baseline = a.talent
-          ? score(
-              classicFor(raidMode(b)).map((p) => ({ ...p, talents: [a.talent as string] })),
-              16,
-              `ans:${id}`,
-            ).score
-          : classic;
-        expect(score(answerLine(a.line), 16, `ans:${id}`).score, a.label).toBeGreaterThan(baseline);
-      }
+      // The measure (`answersBeat`, raidRules.ts): each answer's weekend score minus the baseline it has to beat (the bare classic
+      // party, or with the answer's talent); the answer beats it when that is above 0.
+      for (const a of answersBeat(id, raidBossOf(id))) expect(a.margin, a.label).toBeGreaterThan(0);
     },
   );
 
   it.each(RAID_BOSS_IDS)(
     '%s: a prepared team removes nearly all of the boss’s HP and kills most weekends, and the classic party never kills',
     (id) => {
-      const b = raidBossOf(id);
-      const classic = weekendStats(b, classicFor(raidMode(b)), 16, `win:${id}`);
-      expect(classic.winRate).toBe(0);
-      expect(classic.damageShare, id).toBeLessThanOrEqual(0.8);
+      const r = answersWin(id, raidBossOf(id));
+      expect(r.classicKill).toBe(ANSWER_CLASSIC_KILL_MAX);
+      expect(r.classicShare, id).toBeLessThanOrEqual(ANSWER_CLASSIC_SHARE_MAX);
       // The primary measure (Misa, 2026-10-29) is the share of the HP removed; the kill is the cliff beside it.
-      for (const a of BOSS_ANSWERS[id] ?? []) {
-        const w = weekendStats(b, answerLine(a.line), 24, `win:${id}`);
-        expect(w.damageShare, `${id}: ${a.label}`).toBeGreaterThanOrEqual(0.9);
-        expect(w.tiers.t2, `${id}: ${a.label}`).toBeGreaterThanOrEqual(0.6);
+      for (const w of r.answers) {
+        expect(w.share, `${id}: ${w.label}`).toBeGreaterThanOrEqual(ANSWER_SHARE_MIN);
+        expect(w.t2, `${id}: ${w.label}`).toBeGreaterThanOrEqual(ANSWER_T2_MIN);
       }
-      const first = BOSS_ANSWERS[id]?.[0];
-      expect(
-        weekendStats(b, answerLine(first?.line ?? ''), 24, `win:${id}`).winRate,
-        id,
-      ).toBeGreaterThanOrEqual(0.6);
+      expect(r.answers[0]?.kill, id).toBeGreaterThanOrEqual(ANSWER_FIRST_KILL_MIN);
     },
   );
 });
@@ -121,7 +113,7 @@ describe('every answer’s own tool is tested (panel 5, finding 3)', () => {
       const name = `${id}: ${a.tool}`;
       it(`${name} (${a.label}) removes at least ${String(TOOL_SHARE_MIN * 100)} points more of the boss's HP with its tool${k === 0 ? ` and loses ${String(TOOL_DROP_MIN)} points of kill rate without it` : ''}`, () => {
         expect(a.core?.length, `${name} names no tool`).toBeGreaterThan(0);
-        const t = toolCost(raidBossOf(id), a, answerLine(a.line), 40, `tool-all:${id}:${a.tool}`);
+        const t = answerToolCost(id, k, raidBossOf(id));
         expect(
           t.shareDrop,
           `${name}: ${String(Math.round(100 * t.shareWith))}% of the HP with, ${String(Math.round(100 * t.shareWithout))}% without`,
@@ -136,11 +128,10 @@ describe('every answer’s own tool is tested (panel 5, finding 3)', () => {
 
   it('the prepared line with random legal talents still removes most of the HP: talents do not decide the weekend (panel 5, finding 4)', () => {
     for (const id of RAID_BOSS_IDS) {
-      const first = BOSS_ANSWERS[id]?.[0];
-      const r = robustnessOf(raidBossOf(id), answerLine(first?.line ?? ''), 48, 8, `rob:${id}`);
-      expect(r.random.damageShare, id).toBeGreaterThanOrEqual(ROBUST_SHARE);
+      const r = robustRule(id, raidBossOf(id));
+      expect(r.random, id).toBeGreaterThanOrEqual(ROBUST_SHARE);
       // Written talents are better than random ones, but by a share of the HP, not by the whole weekend.
-      expect(r.written.damageShare - r.random.damageShare, id).toBeLessThanOrEqual(0.2);
+      expect(r.written - r.random, id).toBeLessThanOrEqual(ROBUST_GAP_MAX);
     }
   });
 });

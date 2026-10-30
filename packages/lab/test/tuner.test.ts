@@ -23,15 +23,21 @@ import { main } from '../src/cli';
 import type { Executor } from '../src/jobs';
 import {
   BEAT2_MIN,
+  BOSS_ARMOUR_MIN,
   LADDER,
   RAID_MEASURES,
   RAID_TARGETS,
+  REPORTED_MEASURES,
+  RULE_TARGETS,
   TARGET_RANKS,
   beatWithin,
   comfortOf,
+  isCrossMeasure,
   lossOf,
   metBy,
   missOf,
+  skippedCross,
+  targetsFor,
   weeksText,
   weeksToBeat,
   type RaidMeasures,
@@ -53,11 +59,15 @@ import {
   tuneRank,
   type Axis,
   type Level,
+  meetsEveryTarget,
+  summaryOf,
   type Point,
   type Numbers,
   type Scored,
   type TuneEvalArgs,
 } from '../src/tuner';
+import { drawsAt, ruleMeasures, weekendsAt } from '../src/raidRules';
+import * as T from '../src/targets';
 
 /** Measures that meet every target. */
 const GOOD: RaidMeasures = {
@@ -71,6 +81,40 @@ const GOOD: RaidMeasures = {
   'classic.kill': 0,
   'mixed.share': 0.75,
   'mixed.kill': 0.2,
+  // The lab tests' rules (`RULE_TARGETS`), each inside its bounds.
+  'answers.classicKill': 0,
+  'answers.classicShare': 0.5,
+  'answers.share': 0.95,
+  'answers.t2': 0.9,
+  'answers.firstKill': 0.9,
+  'answers.beatClassic': 10,
+  'answers.toolShare': 0.2,
+  'answers.toolKill': 0.4,
+  'robust.share': 0.9,
+  'robust.gap': 0.05,
+  'margin.base': 0.97,
+  'margin.atk10': 0.9,
+  'margin.hp10': 0.9,
+  'cost.share': 0.97,
+  'cost.pays': 1,
+  'cost.hpLeft': 0.5,
+  'width.classicKill': 0,
+  'width.classicShare': 0.5,
+  'width.bestShare': 0.95,
+  gap10: 2,
+  'server.kill': 0.3,
+  'server.share': 0.7,
+  'server.knockouts': 5,
+  'content.knockouts': 6,
+  'content.classicKill': 0,
+  'rank.preparedKill': 0.9,
+  'rank.preparedShare': 0.97,
+  'rank.classicKill': 0,
+  'rank.toolShare': 0.15,
+  'casual.share': 0.6,
+  'casual.kill': 0,
+  'cross.classicLadder': 0.1,
+  'cross.toolGap': 0.2,
 };
 
 describe('targets: the numbers the tests used before, in one place', () => {
@@ -306,15 +350,33 @@ describe('the search', () => {
       Promise.resolve(points.map((p) => ({ loss: loss(p[0] as number), comfort: 0, data: null })));
     const one: Axis[] = [{ name: 'x', lo: 0, hi: 100, quantum: 1 }];
     const plan1 = { gridPoints: 5, rounds: 1, keep: 2, checks: 10, finalists: 3 };
-    // The start (30) is 0.005 worse than the best (50): within the noise of a measurement, so the start stays.
+    // The start (30) is 0.001 worse than the best (50): within the noise of a measurement, so the start stays.
     const near = await searchPoints(
       one,
       () => true,
       [30],
       plan1,
-      flat((x) => (x === 50 ? 0 : x === 30 ? 0.005 : 0.5)),
+      flat((x) => (x === 50 ? 0 : x === 30 ? 0.001 : 0.5)),
     );
     expect(near.best?.point).toEqual([30]);
+    // A start that misses a target moves for a smaller gain than one that meets them all would need (`MIN_GAIN.missed`), so that a
+    // boss that misses can move step by step (the ranks pull on each other: one rank's step opens the next rank's).
+    const step = await searchPoints(
+      one,
+      () => true,
+      [30],
+      plan1,
+      flat((x) => (x === 50 ? 0.1 : x === 30 ? 0.105 : 0.5)),
+    );
+    expect(step.best?.point).toEqual([50]);
+    const tiny = await searchPoints(
+      one,
+      () => true,
+      [30],
+      plan1,
+      flat((x) => (x === 50 ? 0.1 : x === 30 ? 0.101 : 0.5)),
+    );
+    expect(tiny.best?.point).toEqual([30]);
     // 0.2 worse is a reason to move.
     const far = await searchPoints(
       one,
@@ -620,7 +682,9 @@ describe('the orchestration', () => {
     const calls = new Map<string, number>();
     const counting: Executor = (job, deps) => {
       const a = job.args as TuneEvalArgs;
-      const k = `${a.rank} ${a.salt} ${a.numbers.hp},${a.numbers.atk},${a.numbers.armour}`;
+      // The same candidate against another rank's numbers is another measurement (the cross-rank rules read them).
+      const o = a.other ? ` vs ${a.other.rank} ${JSON.stringify(a.other.numbers)}` : '';
+      const k = `${a.rank} ${a.salt} ${a.numbers.hp},${a.numbers.atk},${a.numbers.armour}${o}`;
       calls.set(k, (calls.get(k) ?? 0) + 1);
       return fake(job, deps);
     };
@@ -671,5 +735,300 @@ describe('the orchestration', () => {
     expect(text).toContain('### Cinder Wyrm, high rank');
     expect(text).toContain('### Cinder Wyrm, low rank');
     expect(text).toContain('Proposals only');
+  });
+});
+
+describe('the lab tests’ rules are targets of the tuner', () => {
+  const measuresOf = (list: readonly RaidTarget[]) => new Set(list.map((t) => t.measure));
+
+  it('every measure beyond the reported ten is read by a rule, and no target reads a measure twice at one rank', () => {
+    const rules = new Set(TARGET_RANKS.flatMap((r) => [...measuresOf(RULE_TARGETS[r])]));
+    const extra = RAID_MEASURES.filter((m) => !REPORTED_MEASURES.includes(m));
+    expect([...rules].sort()).toEqual([...extra].sort());
+    for (const rank of TARGET_RANKS) {
+      const list = [...RAID_TARGETS[rank], ...RULE_TARGETS[rank]];
+      expect(new Set(list.map((t) => t.measure)).size, rank).toBe(list.length);
+    }
+  });
+
+  it('the rules of each rank: every rank, the casual server at the low rank, the heavy rules and the cross-rank ones at the ends', () => {
+    const at = (rank: (typeof TARGET_RANKS)[number]) => measuresOf(RULE_TARGETS[rank]);
+    for (const rank of TARGET_RANKS) expect(at(rank).has('rank.toolShare'), rank).toBe(true);
+    expect(at('low').has('casual.share')).toBe(true);
+    expect(at('mid').has('casual.share')).toBe(false);
+    expect(at('mid').size).toBe(4);
+    expect(at('high').has('server.share')).toBe(true);
+    expect(at('low').has('server.share')).toBe(false);
+    for (const rank of ['low', 'high'] as const)
+      expect(at(rank).has('cross.classicLadder')).toBe(true);
+    expect(at('mid').has('cross.classicLadder')).toBe(false);
+    // Each rank's own threshold for the tool.
+    const tool = (rank: (typeof TARGET_RANKS)[number]) =>
+      RULE_TARGETS[rank].find((t) => t.measure === 'rank.toolShare')?.min;
+    expect([tool('high'), tool('mid'), tool('low')]).toEqual([0.1, 0.08, 0.06]);
+  });
+
+  it('a rule weighs ten times its own weight: a test failure is not traded for the softer targets', () => {
+    expect(RULE_TARGETS.high.find((t) => t.measure === 'margin.base')?.weight).toBe(10);
+    expect(RULE_TARGETS.high.find((t) => t.measure === 'gap10')?.weight).toBe(5);
+  });
+
+  it('cross-rank rules are only in the targets when asked for, and Thornmother’s tool gap only for her', () => {
+    const plain = targetsFor('thornmother', 'low');
+    expect(plain.some((t) => isCrossMeasure(t.measure))).toBe(false);
+    const cross = targetsFor('thornmother', 'low', true);
+    expect(cross.map((t) => t.measure)).toContain('cross.toolGap');
+    expect(cross.map((t) => t.measure)).toContain('cross.classicLadder');
+    expect(targetsFor('tidal-colossus', 'low', true).map((t) => t.measure)).not.toContain(
+      'cross.toolGap',
+    );
+    expect(skippedCross('tidal-colossus', 'high').map((t) => t.measure)).toEqual([
+      'cross.classicLadder',
+    ]);
+    expect(skippedCross('thornmother', 'mid')).toEqual([]);
+    // Misa's targets come first and unchanged.
+    expect(plain.slice(0, 5)).toEqual(RAID_TARGETS.low);
+  });
+
+  it('an exclusive bound counts a value on it as outside; a measure that was not taken is neither met nor missed', () => {
+    const strict: RaidTarget = {
+      measure: 'cross.toolGap',
+      min: 0.1,
+      strictMin: true,
+      weight: 1,
+      why: '',
+    };
+    expect(metBy(strict, 0.1)).toBe(false);
+    expect(missOf(strict, 0.1)).toBeGreaterThan(0);
+    expect(missOf(strict, 0.1)).toBeLessThan(1e-6);
+    expect(metBy(strict, 0.1001)).toBe(true);
+    expect(missOf(strict, 0.09)).toBeCloseTo(0.01, 12);
+    expect(describeTarget(strict)).toBe('cross.toolGap > 10%');
+    const untaken = { ...GOOD, 'prepared.share': Number.NaN };
+    const prepared = RAID_TARGETS.high.find((t) => t.measure === 'prepared.share') as RaidTarget;
+    expect(metBy(prepared, Number.NaN)).toBe(false);
+    expect(missOf(prepared, Number.NaN)).toBe(0);
+    expect(lossOf(RAID_TARGETS.high, untaken)).toBe(0);
+    // The comfort counts the targets that were measured only.
+    expect(Number.isNaN(comfortOf(RAID_TARGETS.high, untaken))).toBe(false);
+    expect(comfortOf([prepared], untaken)).toBe(0);
+  });
+
+  it('a conflict is judged on the candidates that have both measures', () => {
+    const a = RAID_TARGETS.high.find((t) => t.measure === 'prepared.share') as RaidTarget;
+    const b = RAID_TARGETS.high.find((t) => t.measure === 'classic.kill') as RaidTarget;
+    const m = (o: Partial<Record<keyof RaidMeasures, number>>): RaidMeasures => ({
+      ...GOOD,
+      ...o,
+    });
+    const r = findConflicts(
+      [a, b],
+      [
+        // Cheap passes: one measure each, never both (not a clash).
+        m({ 'prepared.share': 0.9, 'classic.kill': Number.NaN }),
+        m({ 'prepared.share': 0.5, 'classic.kill': Number.NaN }),
+        m({ 'prepared.share': Number.NaN, 'classic.kill': 0 }),
+        // Full passes: the two never together.
+        m({ 'prepared.share': 0.9, 'classic.kill': 0.3 }),
+        m({ 'prepared.share': 0.5, 'classic.kill': 0 }),
+      ],
+    );
+    expect(r.conflicts).toHaveLength(1);
+    expect(r.conflicts[0]?.of).toBe(2);
+    expect(r.allMet).toBe(0);
+    // A target nobody measured is not "met nowhere".
+    const none = findConflicts([a], [m({ 'prepared.share': Number.NaN })]);
+    expect(none.unreachable).toEqual([]);
+    expect(none.allMet).toBe(0);
+  });
+
+  it('the ladder keeps Cinder Wyrm’s armour at the floor the content test sets, at the high rank only', () => {
+    const floor = BOSS_ARMOUR_MIN['cinder-wyrm'] as number;
+    expect(floor).toBe(50);
+    expect(ladderBox('cinder-wyrm', 'high', {}).armour[0]).toBeGreaterThanOrEqual(floor);
+    expect(ladderBox('cinder-wyrm', 'mid', {}).armour[0]).toBeLessThan(floor);
+    expect(ladderBox('tidal-colossus', 'high', {}).armour[0]).toBeLessThan(floor);
+  });
+});
+
+describe('the rule measures', () => {
+  it('fight exactly the tests’ weekends at scale 1, and a prefix of them below', () => {
+    expect(weekendsAt(16, 1)).toBe(16);
+    expect(weekendsAt(40, 1)).toBe(40);
+    expect(weekendsAt(16, 0.25)).toBe(4);
+    expect(weekendsAt(3, 0.1)).toBe(1);
+    expect(drawsAt(48, 8, 1)).toEqual([48, 8]);
+    expect(drawsAt(40, 8, 1)).toEqual([40, 8]);
+    expect(drawsAt(60, 20, 1)).toEqual([60, 20]);
+    // Fewer draws, the same weekends per draw.
+    expect(drawsAt(40, 8, 0.5)).toEqual([20, 4]);
+  });
+
+  it('the rule measures of one boss and rank: the light ones always, the heavy ones at the high rank only, the cross-rank ones with the other rank', () => {
+    const id = 'tidal-colossus';
+    const boss = (rank: 'low' | 'mid' | 'high') => raidBossOf(id, { rank });
+    const light = ruleMeasures(id, 'high', boss('high'), 0.05, undefined, false);
+    expect(Object.keys(light.values).sort()).toEqual(
+      ['rank.classicKill', 'rank.preparedKill', 'rank.preparedShare', 'rank.toolShare'].sort(),
+    );
+    const heavy = ruleMeasures(id, 'high', boss('high'), 0.05, {
+      rank: 'low',
+      boss: boss('low'),
+    });
+    const keys = Object.keys(heavy.values);
+    expect(keys).toContain('server.share');
+    expect(keys).toContain('cross.classicLadder');
+    expect(keys).not.toContain('cross.toolGap');
+    expect(keys).not.toContain('casual.share');
+    expect(heavy.weekends).toBeGreaterThan(light.weekends);
+    const low = ruleMeasures(id, 'low', boss('low'), 0.05, undefined, true);
+    expect(Object.keys(low.values)).toContain('casual.share');
+    expect(Object.keys(low.values)).not.toContain('answers.share');
+    expect(Object.keys(low.values)).not.toContain('cross.classicLadder');
+    // Thornmother's tool gap needs both her ranks.
+    const thorn = (rank: 'low' | 'high') => raidBossOf('thornmother', { rank });
+    expect(
+      Object.keys(
+        ruleMeasures('thornmother', 'low', thorn('low'), 0.05, {
+          rank: 'high',
+          boss: thorn('high'),
+        }).values,
+      ),
+    ).toContain('cross.toolGap');
+  });
+
+  it('a candidate measured without the rules has no rule measures; with them the cheap pass leaves out the heavy ones', () => {
+    const id = 'tidal-colossus';
+    const numbers = absoluteOf(id, 'high', nativeOf(id, 'high'));
+    const f = { weekends: 2, draws: 1, classicWeekends: 1, mixedDraws: 1, mixedWeekends: 1 };
+    const bare = evalCandidate({ boss: id, rank: 'high', numbers, fidelity: f, salt: 't' });
+    for (const m of RAID_MEASURES.filter((x) => !REPORTED_MEASURES.includes(x)))
+      expect(bare.measures[m], m).toBeNaN();
+    for (const m of REPORTED_MEASURES) expect(bare.measures[m], m).not.toBeNaN();
+    const cheap = evalCandidate({
+      boss: id,
+      rank: 'high',
+      numbers,
+      fidelity: { ...f, rules: 0.05, heavyRules: false },
+      salt: 't',
+    });
+    expect(cheap.measures['rank.preparedShare']).not.toBeNaN();
+    expect(cheap.measures['server.share']).toBeNaN();
+    const full = evalCandidate({
+      boss: id,
+      rank: 'high',
+      numbers,
+      fidelity: { ...f, rules: 0.05 },
+      salt: 't',
+      other: { rank: 'low', numbers: absoluteOf(id, 'low', nativeOf(id, 'low')) },
+    });
+    expect(full.measures['server.share']).not.toBeNaN();
+    expect(full.measures['cross.classicLadder']).not.toBeNaN();
+    expect(full.weekends).toBeGreaterThan(cheap.weekends);
+  });
+
+  it('one rank on its own lists the cross-rank rules as not checked; all the ranks check them', async () => {
+    const run = { exec: fake, slots: 2 };
+    const alone = await tuneBoss('tidal-colossus', ['high'], true, run);
+    expect(alone[0]?.skipped.map((t) => t.measure)).toEqual(['cross.classicLadder']);
+    expect(alone[0]?.targets.some((t) => isCrossMeasure(t.measure))).toBe(false);
+    const text = summaryOf(alone[0] as NonNullable<(typeof alone)[0]>).join('\n');
+    expect(text).toContain('| cross.classicLadder ≥ -5% | needs --rank all | needs --rank all |');
+    const all = await tuneBoss('tidal-colossus', TARGET_RANKS, true, run);
+    for (const r of all) expect(r.skipped, r.rank).toEqual([]);
+    expect(all.find((r) => r.rank === 'high')?.targets.map((t) => t.measure)).toContain(
+      'cross.classicLadder',
+    );
+    expect(all.find((r) => r.rank === 'mid')?.targets.map((t) => t.measure)).not.toContain(
+      'cross.classicLadder',
+    );
+  });
+});
+
+describe('the thresholds that moved here from the lab tests keep their values', () => {
+  it('pins them, with the test each came from', () => {
+    // bossAnswers.test.ts
+    expect([T.ANSWER_SHARE_MIN, T.ANSWER_T2_MIN, T.ANSWER_FIRST_KILL_MIN]).toEqual([0.9, 0.6, 0.6]);
+    expect([T.ANSWER_CLASSIC_KILL_MAX, T.ANSWER_CLASSIC_SHARE_MAX, T.ROBUST_GAP_MAX]).toEqual([
+      0, 0.8, 0.2,
+    ]);
+    // bossRank.test.ts, bossRankTool.test.ts
+    expect([T.RANK_PREPARED_KILL_MIN, T.RANK_PREPARED_SHARE_MIN, T.RANK_CLASSIC_KILL_MAX]).toEqual([
+      0.6, 0.93, 0,
+    ]);
+    expect([T.RANK_CLASSIC_LADDER_SLACK, T.THORN_TOOL_GAP_POINTS]).toEqual([0.05, 10]);
+    expect([T.CASUAL_SHARE_MIN, T.CASUAL_SHARE_MAX, T.CASUAL_KILL_MAX]).toEqual([0.3, 0.9, 0.3]);
+    expect(T.RANK_TOOL_SHARE_MIN).toEqual({ high: 0.1, mid: 0.08, low: 0.06 });
+    // bossMargin.test.ts
+    expect([T.MARGIN_BASE_MIN, T.MARGIN_PLUS10_MIN]).toEqual([0.93, 0.8]);
+    expect([
+      T.COST_SHARE_MIN,
+      T.COST_KNOCKOUTS_MIN,
+      T.COST_HP_LEFT_LOW,
+      T.COST_HP_LEFT_MAX,
+    ]).toEqual([0.93, 0.5, 0.6, 0.8]);
+    expect([T.WIDTH_CLASSIC_KILL_MAX, T.WIDTH_CLASSIC_SHARE_MAX, T.WIDTH_BEST_SHARE_MIN]).toEqual([
+      0.1, 0.9, 0.85,
+    ]);
+    expect([T.GAP10_SHARE_UNIT, T.GAP10_KILL_UNIT, T.GAP10_MIN]).toEqual([0.05, 0.2, 1]);
+    expect([
+      T.SERVER_KILL_MAX,
+      T.SERVER_SHARE_MIN,
+      T.SERVER_SHARE_MAX,
+      T.SERVER_KNOCKOUT_FACTOR,
+    ]).toEqual([0.9, 0.4, 0.97, 3]);
+    // bossContent.test.ts
+    expect([T.CONTENT_KNOCKOUTS_MIN, T.CONTENT_CLASSIC_KILL_MAX]).toEqual([3, 0.5]);
+    expect(T.BOSS_ARMOUR_MIN).toEqual({ 'cinder-wyrm': 50 });
+  });
+});
+
+describe('what was not measured is not reported as met', () => {
+  const a = RAID_TARGETS.high.find((t) => t.measure === 'prepared.share') as RaidTarget;
+  const m = (o: Partial<Record<keyof RaidMeasures, number>>): RaidMeasures => ({ ...GOOD, ...o });
+
+  it('counts only the candidates measured in full as meeting every target, and says how many there were', () => {
+    const rows = [m({}), m({}), m({ 'prepared.share': 0.5 })];
+    // Without levels every candidate counts; with them only the final level does.
+    expect(findConflicts([a], rows).allMet).toBe(2);
+    const r = findConflicts([a], rows, [false, true, true]);
+    expect(r.allMet).toBe(1);
+    expect(r.fullOf).toBe(2);
+    expect(r.of).toBe(3);
+  });
+
+  it('a target whose measure is NaN is "not measured" in the summary and the loss line, and the row does not meet every target', async () => {
+    const nan: Executor = (job, deps) =>
+      fake(job, deps).then((out) => ({
+        ...out,
+        result: {
+          ...(out.result as { measures: RaidMeasures; weekends: number }),
+          measures: {
+            ...(out.result as { measures: RaidMeasures }).measures,
+            'rank.toolShare': Number.NaN,
+          },
+        },
+      }));
+    const r = await tuneRank('tidal-colossus', 'high', todayAbsolute('tidal-colossus'), true, {
+      exec: nan,
+      slots: 2,
+    });
+    // The loss does not count the unmeasured target, so it can be 0 while the row is not "every target met".
+    expect(r.best?.loss).toBe(0);
+    expect(r.best?.unmeasured).toBe(1);
+    expect(meetsEveryTarget(r.best)).toBe(false);
+    expect(r.conflicts.allMet).toBe(0);
+    const text = summaryOf(r).join('\n');
+    expect(text).toContain('| rank.toolShare ≥ 10% | not measured | not measured |');
+    expect(text).toContain('1 targets not measured for best found');
+    expect(text).not.toMatch(/\| rank\.toolShare[^|]*\| [^|]*met /);
+    // Measured in full, the same row meets every target.
+    const ok = await tuneRank('tidal-colossus', 'high', todayAbsolute('tidal-colossus'), true, {
+      exec: fake,
+      slots: 2,
+    });
+    expect(meetsEveryTarget(ok.best)).toBe(true);
+    expect(summaryOf(ok).join('\n')).not.toContain('not measured');
+    expect(meetsEveryTarget(undefined)).toBe(false);
   });
 });
