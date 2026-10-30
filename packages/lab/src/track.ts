@@ -47,21 +47,21 @@ export type SlotTable = Readonly<Record<number, SlotNumbers>>;
  * says arrives at each slot; slots 1 to 15 (three laps), later laps follow the high rank's numbers.
  */
 export const SLOT_NUMBERS: SlotTable = {
-  1: { hp: 13_100, atk: 84, armour: 38 }, // tidal-colossus
-  2: { hp: 4_500, atk: 143, armour: 76 }, // cinder-wyrm
-  3: { hp: 1_600, atk: 184, armour: 112 }, // thornmother
-  4: { hp: 15_100, atk: 49, armour: 8 }, // storm-sovereign
-  5: { hp: 26_000, atk: 105, armour: 14 }, // old-bogback
-  6: { hp: 16_500, atk: 122, armour: 40 }, // tidal-colossus
-  7: { hp: 31_100, atk: 46, armour: 39 }, // cinder-wyrm
-  8: { hp: 10_400, atk: 106, armour: 112 }, // thornmother
-  9: { hp: 16_800, atk: 45, armour: 8 }, // storm-sovereign
-  10: { hp: 37_400, atk: 83, armour: 31 }, // old-bogback
-  11: { hp: 31_300, atk: 84, armour: 34 }, // tidal-colossus
-  12: { hp: 35_000, atk: 46, armour: 37 }, // cinder-wyrm
-  13: { hp: 8_100, atk: 155, armour: 112 }, // thornmother
-  14: { hp: 18_400, atk: 45, armour: 9 }, // storm-sovereign
-  15: { hp: 33_600, atk: 110, armour: 29 }, // old-bogback
+  1: { hp: 14_200, atk: 78, armour: 39 }, // tidal-colossus
+  2: { hp: 4_800, atk: 143, armour: 77 }, // cinder-wyrm
+  3: { hp: 8_100, atk: 52, armour: 112 }, // thornmother
+  4: { hp: 15_100, atk: 53, armour: 7 }, // storm-sovereign
+  5: { hp: 26_000, atk: 105, armour: 18 }, // old-bogback
+  6: { hp: 18_700, atk: 110, armour: 37 }, // tidal-colossus
+  7: { hp: 11_600, atk: 185, armour: 39 }, // cinder-wyrm
+  8: { hp: 8_800, atk: 91, armour: 137 }, // thornmother
+  9: { hp: 7_800, atk: 92, armour: 8 }, // storm-sovereign
+  10: { hp: 32_700, atk: 117, armour: 25 }, // old-bogback
+  11: { hp: 27_400, atk: 83, armour: 43 }, // tidal-colossus
+  12: { hp: 11_500, atk: 199, armour: 43 }, // cinder-wyrm
+  13: { hp: 8_600, atk: 82, armour: 168 }, // thornmother
+  14: { hp: 14_300, atk: 57, armour: 8 }, // storm-sovereign
+  15: { hp: 32_100, atk: 116, armour: 36 }, // old-bogback
 };
 
 /**

@@ -140,7 +140,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
   {
     id: 'tidal-colossus',
     rows: 3,
-    armour: 28,
+    armour: 34,
     atk: 114,
     hp: 19_100,
     plain: { pattern: { anchor: 'front', shape: 'row' }, powerBp: 2_500 },
@@ -155,7 +155,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       grow: { atkBp: 1_300, area: 1 },
     },
     asks: 'The whole sea sweeps the rows. Wide Reach and row wards turn the waves; who stands where?',
-    ranks: { low: [8_672, 8_300, 7_900], mid: [8_778, 9_400, 8_900] },
+    ranks: { low: [8_672, 8_300, 6_500], mid: [8_778, 9_400, 7_400] },
     moves: [
       ['undertow', 'Undertow', 3, 0, 'front', 'row', 9_000],
       ['spray', 'Spray', 2, 0, 'random', 'scatter', 5_000, { n: 4, perColumns: 4 }],
@@ -190,7 +190,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
     rows: 4,
     armour: 60,
     atk: 130,
-    hp: 22_600,
+    hp: 24_000,
     plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 6_000 },
     cards: ['reflective-hide', 'adapts-element'],
     // Every cashed reaction stokes the forge: the fire grows hotter and throws more shells. Few, big reactions or Mired hold it down.
@@ -203,7 +203,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       grow: { atkBp: 1_000, targets: 1 },
     },
     asks: 'The forge turns the first reaction of every row back on you, and every reaction heats it. Keep Mired on it, or make each reaction count.',
-    ranks: { low: [3_700, 9_000, 9_100], mid: [5_600, 9_400, 10_000] },
+    ranks: { low: [3_708, 9_000, 9_200], mid: [5_833, 9_400, 10_000] },
     moves: [
       ['coil-crush', 'Coil Crush', 3, 0, 'front', 'line3', 15_000],
       ['scorch-lane', 'Scorch Lane', 2, 1, 'random', 'column', 7_000],
@@ -228,7 +228,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
     rows: 3,
     armour: 224,
     atk: 92,
-    hp: 8_200,
+    hp: 9_200,
     plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 7_000 },
     cards: ['adapts'],
     // Each fifth of her HP lost wakes her further; at half she blooms (Second Bloom) and the whole arena is in play.
@@ -249,7 +249,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       },
     },
     asks: 'The row ends fall quiet. Keep what you cannot spare in the middle or ward it, and bring something for her thick bark.',
-    ranks: { low: [8_451, 8_000, 5_300], mid: [9_390, 9_100, 7_600] },
+    ranks: { low: [7_533, 8_000, 5_300], mid: [8_370, 9_100, 7_600] },
     moves: [
       // The one silencing move: every second round, the two ends of every row.
       [
@@ -369,16 +369,16 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
   {
     id: 'old-bogback',
     rows: 3,
-    armour: 32,
+    armour: 36,
     atk: 112,
-    hp: 26_200,
+    hp: 27_000,
     plain: {
       pattern: { anchor: 'front', shape: 'line3', anchors: 1, perColumns: 6 },
       powerBp: 4_500,
     },
     cards: ['shake-it-off', 'adapts-element'],
     asks: 'The fen pulls the most hurt creature down. Keep them up, and keep the Mired on it.',
-    ranks: { low: [8_305, 6_200, 5_600], mid: [9_473, 8_100, 5_900] },
+    ranks: { low: [8_059, 6_200, 5_000], mid: [9_192, 8_100, 5_300] },
     moves: [
       ['sinking-mud', 'Sinking Mud', 3, 2, 'random', 'randomRow', 11_000],
       ['belly-flop', 'Belly Flop', 4, 0, 'front', 'line3', 13_900, { anchors: 1, perColumns: 6 }],

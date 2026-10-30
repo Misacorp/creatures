@@ -691,7 +691,7 @@ describe('the orchestration', () => {
     expect(r.best?.loss).toBe(0);
     // The ladder: the mid rank's HP of 16,766 must stay at most 0.95 of the high rank's.
     expect(r.best?.numbers.hp ?? 0).toBeGreaterThanOrEqual(Math.ceil(16_766 / 0.95));
-    expect(r.today.numbers).toEqual({ hp: 19_100, atk: 114, armour: 28 });
+    expect(r.today.numbers).toEqual({ hp: 19_100, atk: 114, armour: 34 });
     expect(r.conflicts.allMet).toBeGreaterThan(0);
     expect(r.paste).toContain('tidal-colossus');
     expect(r.paste).toContain(`atk: ${String(r.best?.numbers.atk)}`);

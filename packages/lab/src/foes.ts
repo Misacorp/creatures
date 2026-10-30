@@ -101,7 +101,7 @@ export const FOE_SPECS: readonly FoeSpec[] = [
     asks: 'Its heat sheds your marks after every turn of its own, and each mark shed warms it. A sealed mark stays, and so does one left during its own turn.',
     // A longer fight (balance pass 2026-10-29), so keeping marks is worth a team's slot: Seal does it, and so does Primed by Pain
     // (it leaves its mark while the foe is taking its turn, after the shedding began).
-    hpBp: 14_000,
+    hpBp: 15_000,
   },
   {
     id: 'ash-sprite',
@@ -179,6 +179,8 @@ export const FOE_SPECS: readonly FoeSpec[] = [
     // A dungeon run is one player's own team, so a Build-up that feeds on knockouts blames no one: each creature that falls lets the water rise.
     escalation: { name: 'Rising Water', feed: 'knockouts', per: 1, cap: 2, grow: { atkBp: 1_200 } },
     asks: 'The gates open on the whole line, and each creature that falls lets the water rise; at a landmark, a wave announced at round start.',
+    // Retuned after crits doubled (2026-10-30): the all-round team clears over half of its depth-7 runs again.
+    hpBp: 9_500,
   },
   {
     id: 'slag-tyrant',
@@ -189,6 +191,8 @@ export const FOE_SPECS: readonly FoeSpec[] = [
     cards: ['reflective-hide'],
     escalation: { name: 'Molten Shell', feed: 'reactions', per: 2, cap: 2, grow: { armour: 8 } },
     asks: 'The first reaction after each of its turns burns the one who plays it, and every reaction heats it. A Mired that comes back every round holds its Molten Shell down.',
+    // Eased like the Drowned Warden (at depth 8, with no signature, it still stopped too many runs).
+    hpBp: 9_000,
   },
   {
     id: 'bramble-matron',

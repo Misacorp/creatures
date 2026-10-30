@@ -339,24 +339,58 @@ export function toolShareMinAt(strengthBp: number): number {
 }
 
 /**
+ * The tool's worth a slot's cards ask for on the boss track, in points of damage potential (the lead's call, 2026-10-30): 0.05 at 0% of
+ * the cards' strength, 0.10 at 30%, then straight up to 0.35 at 100%, flat above. A card asks at low strength and requires at full: a
+ * team with the tool reaches about 130%, and without it at full strength falls under 100% (130% minus 35 points). On the track this
+ * replaces the HP-share tool targets (`toolShareMinAt`), which cannot hold once a prepared team's potential is 125% or more: such a team
+ * removes nearly all the HP whether it brings the tool or not. They stay as information, and the fixed ranks' rules keep them.
+ */
+export function toolPotentialMinAt(strengthBp: number): number {
+  const points: readonly (readonly [number, number])[] = [
+    [0, 0.05],
+    [3_000, 0.1],
+    [10_000, 0.35],
+  ];
+  if (strengthBp >= 10_000) return 0.35;
+  for (let i = 1; i < points.length; i++) {
+    const [s0, v0] = points[i - 1] as readonly [number, number];
+    const [s1, v1] = points[i] as readonly [number, number];
+    if (strengthBp <= s1) return v0 + ((v1 - v0) * (Math.max(0, strengthBp) - s0)) / (s1 - s0);
+  }
+  return 0.35;
+}
+
+/** A miss of the track's tool target costs this times the distance (a card asks for it, so less than the potentials' `POTENTIAL_WEIGHT`). */
+export const TOOL_POTENTIAL_WEIGHT = 2;
+
+/**
  * Misa's targets for slot `slot` of the boss track, whose cards have strength `strengthBp`: `RAID_TARGETS` (the same bounds at every
  * rank) with changes of the lead's and Misa's, which Misa can change:
- * - the tool's worth (`tool.share`, `tool.written`) is what its cards' strength asks for (`toolShareMinAt`), not always ten points;
+ * - the tool's worth is a target in points of damage potential, by its cards' strength (`toolPotentialMinAt`), and not in points of the
+ *   HP share (`tool.share`, `tool.written`: information only here);
  * - slot 1 is the welcome boss, a tutorial with no rule cards (`SLOT_CARDS` in `track.ts`): a new server has its starters, so any
  *   decent team may win it and the classic party has no limit (`classic.kill`, `classic.potential`); with no card there is no tool to
  *   ask for, so the tool's worth has no target there either. Its targets are the prepared potential, `prepared.beat2` and the prepared
  *   line's HP removed with random talents (Misa, 2026-10-30).
  */
 export function slotTargetsFor(slot: number, strengthBp: number): RaidTarget[] {
-  const welcome = (m: RaidMeasure): boolean =>
-    m === 'classic.kill' || m === 'classic.potential' || m === 'tool.share' || m === 'tool.written';
-  return RAID_TARGETS.high
-    .filter((t) => !(slot === 1 && welcome(t.measure)))
-    .map((t) =>
-      t.measure === 'tool.share' || t.measure === 'tool.written'
-        ? { ...t, min: toolShareMinAt(strengthBp) }
-        : t,
-    );
+  const welcome = (m: RaidMeasure): boolean => m === 'classic.kill' || m === 'classic.potential';
+  const targets = RAID_TARGETS.high.filter(
+    (t) =>
+      t.measure !== 'tool.share' &&
+      t.measure !== 'tool.written' &&
+      !(slot === 1 && welcome(t.measure)),
+  );
+  if (slot === 1) return targets;
+  const tool: RaidTarget = {
+    measure: 'tool.potential',
+    min: toolPotentialMinAt(strengthBp),
+    weight: TOOL_POTENTIAL_WEIGHT,
+    why: 'The slot’s tool is worth this many points of damage potential, by the strength of its cards: a card asks at low strength and requires at full (the lead, 2026-10-30)',
+  };
+  // The tool target sits where the HP-share tool targets stood (after the prepared targets, before the classic party's).
+  const at = targets.findIndex((t) => t.measure === 'classic.potential');
+  return [...targets.slice(0, at), tool, ...targets.slice(at)];
 }
 
 /**
