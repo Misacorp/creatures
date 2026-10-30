@@ -9,10 +9,10 @@ Instead of timed trips, a scout is posted to one of the eight destinations and r
 ## Rules (draft)
 
 - **V-SCOUT-1** Each destination has scout seats (example: 1 per player at the start). A scout's finds roll on the server at the moment they are read (lazy, from elapsed time), with live randomness, never a seed the client knows (F-8).
-- **V-SCOUT-2** Finds are the destination's own: Bait, parts and scrap (feeding the Forge), supplies, lore pages, and now and then a creature that lives there. A scout's explorer rank grows with time at the place and raises rare odds, as today's explorer ranks do.
+- **V-SCOUT-2** Finds are the destination's own: Acorns, parts and scrap (feeding the Forge), supplies, lore pages, and now and then a creature that lives there. A scout's skill steps (`posts.md` V-POST-12, which replace today's explorer ranks) open the deeper area and raise rare odds.
 - **V-SCOUT-3** The store holds a generous number of finds; when full, the scout keeps exploring but stops picking up (a bubble says "pack full"), nothing is lost.
 - **V-SCOUT-4** Night and festival places keep their rules (Moonlit Reef by night, Festival Grounds in festival weeks); a scout there waits at camp when the place is closed.
-- **V-SCOUT-5** Supplies change from "packed for one trip" to "kept at the post" (a lantern at the Ember Caves lasts a while and raises a particular find), so they stay a choice without a timer. They are bought with Bait (to be renamed, round 3, Q9), as are lures that draw a particular creature to a scout's post, with the hint shown.
+- **V-SCOUT-5** Supplies become **kit** kept at the seat (`posts.md` V-POST-11): a lure, a lantern or a satchel tilts what the scout brings home, bought once with Acorns, no timer, no levels.
 - **V-SCOUT-6** "Push on" becomes a rare event at the post: a scout finds a way deeper and asks (in the return story) whether to follow it.
 
 ## Open questions

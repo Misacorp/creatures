@@ -36,4 +36,5 @@ Example numbers are placeholders until the economy lab sets them (marked as exam
 - **T-2, idle floor and active ceiling.** A once-a-day player gets the full idle rate (round 1, Q3); a twice-a-day player gains from choices, not from rate (example: under 10% more). A weekly player still brings a grown roster to the raid (example: about 40% of a daily player's idle growth). A player back after a month recognises their roster.
 - **T-3, commons pacing.** A typical server of 8 players lifts its first communal place a level in the first two weeks, and the rare-find route matters without being required.
 - **T-4, no dead chains.** In no simulated week does a typical player's Forge sit idle for want of scrap for more than a small share of the time.
+- **T-6, growth lasts the arc.** A daily player's best creature is still growing in week 12 (example: level 29 of 30), not capped by week 10 with nothing left to grow (panel, 2026-10-30).
 - **T-5, choice stays real.** Even with the roster levelled, the best team differs across bosses (checked with combat v2's lab).
