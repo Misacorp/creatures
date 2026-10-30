@@ -332,16 +332,6 @@ export const RULES = {
     },
     thresholds: [10, 25, 50, 80],
   },
-
-  /** Thresholds the report flags with (resources.md "dead" and "starved"; goals.md T-4). */
-  flags: {
-    deadWeeks: 4,
-    // A resource is dead when it rises for deadWeeks weeks running and the pile is at least this many weeks of that week's income.
-    deadPileWeeks: 4,
-    starvedZeroShare: 0.25,
-    tinkerSmallShare: 0.1,
-    agreeWithin: 2,
-  },
 };
 
 export type Rules = typeof RULES;

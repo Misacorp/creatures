@@ -40,6 +40,14 @@ in the worker.
    most. Balance itself is checked by the `sim` workflow (`pnpm sim:quick` on PRs that touch rules, engine,
    content or sim; `pnpm sim` on demand), whose target misses are reported, not failed. Budget: under 15 s per
    test, under 2 min for the package.
+6. **Economy lab** (`packages/econ`, the valley's proposed rules). Tests run the model on one or two seeds with
+   short horizons and check invariants (no negative balances, conservation, determinism), the tuner on a tiny fake
+   model, and the targets and dials as data. Speed budget: the full report (`pnpm --filter @creatures/econ report`,
+   15+ servers over 20 seeds, one worker thread per core) under 30 s, the package's tests under 15 s. The report
+   prints its seconds per section and a warning when over; `pnpm --filter @creatures/econ speed` runs the tests and
+   fails when over. Over budget is a finding: speed the model up or move a check down a layer, do not raise it
+   quietly. A quick look is `report -- --scenario <id> --seeds 5` (a second or two); changing numbers is the tuner's
+   job (`tune -- --dials a,b`), not an agent's edit-and-rerun loop.
 
 **Rules**
 

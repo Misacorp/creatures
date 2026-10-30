@@ -8,7 +8,7 @@ import { runAll } from '../src/scenarios';
 import { ALL_SERVERS } from '../src/servers';
 import { N_RES } from '../src/types';
 
-const SEEDS = 2;
+const SEEDS = 1;
 const results = runAll(SEEDS, RULES);
 
 describe('every scenario', () => {

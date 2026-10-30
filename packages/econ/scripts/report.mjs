@@ -1,33 +1,40 @@
-// Runs the economy lab report CLI (src/cli.ts) without a build step.
+// Runs the economy lab report CLI (src/cli.ts) without a build step (see load.mjs for how the TypeScript is loaded).
 //
-// Why Vite: the workspace packages export TypeScript sources with extensionless imports, which
-// Node's own type stripping cannot resolve, and `tsx` is not installed. Vite is already a
-// devDependency of the repo (pinned in the catalog); its SSR module loader transforms the
-// TypeScript on the fly and runs it in this process, so the CLI runs at native Node speed.
+// The report is split into one job per scenario (src/jobs.ts). `--jobs <n>` is how many run at a time: by default one per
+// core, each on its own worker thread (pool.mjs, worker.mjs); `--jobs 1` runs them one after another in this process. The
+// output is the same either way. A quick look at one server (`--scenario <id>`) runs in this process.
 /* global console */
-import { URL, fileURLToPath } from 'node:url';
+import { availableParallelism } from 'node:os';
 import process from 'node:process';
-import { createServer } from 'vite';
+import { loadModule } from './load.mjs';
+import { createPool } from './pool.mjs';
 
-const root = fileURLToPath(new URL('..', import.meta.url));
+const args = process.argv.slice(2);
+const quick = args.includes('--scenario');
+let jobs = availableParallelism();
+const at = args.indexOf('--jobs');
+if (at >= 0) {
+  jobs = Number(args[at + 1]);
+  if (!Number.isInteger(jobs) || jobs < 1) {
+    console.error('--jobs needs a whole number of at least 1 (1 runs everything in this process)');
+    process.exit(1);
+  }
+}
 
-const server = await createServer({
-  root,
-  configFile: false,
-  appType: 'custom',
-  logLevel: 'error',
-  server: { middlewareMode: true, ws: false, watch: null },
-  optimizeDeps: { noDiscovery: true, include: [] },
-});
-
+let loaded;
 let code;
+// The workers load the sources while this process loads them too.
+const starting = jobs > 1 && !quick ? createPool(jobs) : undefined;
+starting?.catch(() => {});
 try {
-  const cli = await server.ssrLoadModule('/src/cli.ts');
-  code = cli.main(process.argv.slice(2));
+  loaded = await loadModule('/src/cli.ts');
+  const pool = await starting;
+  code = await loaded.mod.main(args, pool ? { exec: pool.exec, slots: jobs } : undefined);
 } catch (error) {
   console.error(error instanceof Error ? (error.stack ?? error.message) : String(error));
   code = 1;
 } finally {
-  await server.close();
+  await (await starting?.catch(() => undefined))?.close();
+  await loaded?.close();
 }
 process.exitCode = code;
