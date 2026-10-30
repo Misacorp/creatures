@@ -6,41 +6,7 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q27. How long should the item level ladder be?
-
-Status: asked, round 11 (2026-10-30). From Q25 ("How much of a difference going from item level 12 to item level 13 makes, I honestly don't know. There might be a reason why Path of Exile has item levels that go up to like 100"). Touches: `gear.md` V-GEAR-8; combat v2 (line values per tier).
-
-**Why it matters.** Today item level runs 1 to 20, and each modifier tier unlocks at 1, 5, 10, 15 and 20. With a server cap that rises, the ladder's shape decides how a rise feels: a small number creeping up, or a big moment. It also decides your worry, whether last week's perfect craft becomes outdated. In Path of Exile, item level runs to about 100 and each modifier tier has its own item level threshold, so most levels change little and a threshold is a jump.
-
-- **A. Keep 1 to 20.** The cap rises a level at a time; each level matters a little. Example: the cap goes from 12 to 13, and the new pieces are a bit better.
-- **B. A longer ladder with thresholds.** Item level runs to about 100; the cap rises often in small steps; each modifier tier (pips 1 to 5) unlocks at a threshold, so only a threshold makes old pieces look dated. Example: the cap climbs from 58 to 61 over a week of raids; at 60 the Forge announces "4-pip lines can now roll".
-- **C. A few grades.** Item level is a short list of named grades (Plain, Fine, Masterwork...) that the cap unlocks one by one.
-
-**Lead's pick: B.** Small steps give the server something every week, and the big moments come at thresholds everyone can see coming. A perfect piece only falls behind at a threshold, so "the craft I finished last week is outdated" stays rare.
-
-### Q28. Should an element's piece roll only its own element's lines?
-
-Status: asked, round 11 (2026-10-30). From Q26 ("should we just exclude modifiers from elemental gear as well? So a Tide scarf would only roll Tide modifiers"). Touches: `gear.md` V-GEAR-9, `gear-lines.json`; combat v2.
-
-**Why it matters.** Today each line has a weight per slot (0 means it never rolls there), and an element piece makes its own element's lines three times as likely. You asked for slots to include or exclude lines without favouring, and wondered whether element pieces should be exclusive. This decides how well a player knows what they're chasing, and it ties straight into the chain: scout the Tidepools, get Tide shards, craft Tide pieces.
-
-- **A. Elements favour.** An element piece rolls its own element's lines more often (as today), and other elements' lines rarely.
-- **B. Elements own their lines.** An element piece rolls its own element's lines and neutral lines, never another element's. Example: a Tide Scarf can roll Tide damage but never Ember damage.
-- **C. No element lines on pieces.** Elements only change the base; every piece rolls from the slot's neutral pool.
-
-**Lead's pick: B.** It is the determinism you asked for: a player who wants a Tide line knows to craft Tide pieces, and the whole chain from scouting to crafting points at one goal. Neutral lines keep every piece useful to any creature.
-
-### Q29. How many lines should each rarity roll?
-
-Status: asked, round 11 (2026-10-30). From Q26 ("if an epic rolled four lines or five lines, maybe we could have three good lines out of those five"). Touches: `gear.md` V-GEAR-9, `RULES.gear.rolledLines`; combat v2 (line values must shrink if pieces carry more lines).
-
-**Why it matters.** Today a common rolls 1 line, a rare 2 and an epic 3. More lines make partial wins common (a piece with a few great lines and some duds), which is your answer to having no pity floor. But more lines means more power per piece, so combat v2 has to scale line values down to match.
-
-- **A. Keep 1 / 2 / 3.**
-- **B. 1 / 3 / 5.** An epic has five chances; three great lines make it great. Rarity matters a lot.
-- **C. 2 / 3 / 4.** A smaller gap between rarities; every piece has a little something.
-
-**Lead's pick: B.** It is your "three good lines out of five", it makes an epic a real event, and it gives a lot of partial wins along the way. The line values are combat v2's to tune.
+Nothing right now.
 
 ## Queue
 
@@ -469,6 +435,54 @@ Status: answered, round 10 (2026-10-30). Challenges: Misa's "Big rolls, big lott
 **Answer (2026-10-30): no pity floor; partial wins and a consolation instead.** "I do like the mechanic of pity timers, but then that would just make good rolls more guaranteed... kind of like not a fan of introducing a pity timer into this particular mechanic, but I would love to be proven wrong... it could be a cool idea to just add more lines to the gear... if an epic rolled four lines or five lines, maybe we could have three good lines out of those five... There needs to be some sort of determinism here... maybe lock some modifiers out... the slots themselves either just exclude or include rolls, but they don't favor rolls based on slots. Favoring can be done by elements... should we just exclude modifiers from elemental gear as well? So a Tide scarf would only roll Tide modifiers... if you craft junk, and you dismantle junk, you'll increase your blueprint quality... that's acting as a consolation prize... lots of scalars here that we can tweak." He asked how Path of Exile does it: it has no floor; its control comes from currency and a deterministic crafting bench.
 
 Became: V-GEAR-9; blueprint quality (marks) restored as the consolation (`forge.md` V-FORGE-8 and V-FORGE-9); line counts asked as Q29, element pools as Q28.
+
+### Q27. How long should the item level ladder be?
+
+Status: answered, round 11 (2026-10-30). From Q25 ("How much of a difference going from item level 12 to item level 13 makes, I honestly don't know. There might be a reason why Path of Exile has item levels that go up to like 100"). Touches: `gear.md` V-GEAR-8; combat v2 (line values per tier).
+
+**Why it matters.** Today item level runs 1 to 20, and each modifier tier unlocks at 1, 5, 10, 15 and 20. With a server cap that rises, the ladder's shape decides how a rise feels: a small number creeping up, or a big moment. It also decides your worry, whether last week's perfect craft becomes outdated. In Path of Exile, item level runs to about 100 and each modifier tier has its own item level threshold, so most levels change little and a threshold is a jump.
+
+- **A. Keep 1 to 20.** The cap rises a level at a time; each level matters a little. Example: the cap goes from 12 to 13, and the new pieces are a bit better.
+- **B. A longer ladder with thresholds.** Item level runs to about 100; the cap rises often in small steps; each modifier tier (pips 1 to 5) unlocks at a threshold, so only a threshold makes old pieces look dated. Example: the cap climbs from 58 to 61 over a week of raids; at 60 the Forge announces "4-pip lines can now roll".
+- **C. A few grades.** Item level is a short list of named grades (Plain, Fine, Masterwork...) that the cap unlocks one by one.
+
+**Lead's pick: B.** Small steps give the server something every week, and the big moments come at thresholds everyone can see coming. A perfect piece only falls behind at a threshold, so "the craft I finished last week is outdated" stays rare.
+
+**Answer (2026-10-30): B, and a step can be several levels.** "Longer ladder is good. And we could even do it in a way where a win doesn't necessarily increase the max item level by just one. It could go up multiple levels, whatever seems fit." With it, about the cap: "let's give players the option of raising the item level cap in a multitude of ways... making the track for upgrading the item level cap something that's based on generally improving the valley or improving the player's own levels... not just a fixed relationship to the raid. Because that would just mean that if players can't beat the raid, tough luck... maybe it can be building upgrades that are done by resources or these really rare dungeon finds that players have to collect five of different types, like a Stardew Valley type of thing where you upgrade the community house... the more intertwined they are, probably better... I do have a lot of trust in your ability to figure these out and then just stick to systems that make sense intuitively for players."
+
+Became: V-GEAR-8 (the ladder to about 100 with tier thresholds; steps of several levels) and V-GEAR-10 (the cap raised by many systems, designed with the commons).
+
+### Q28. Should an element's piece roll only its own element's lines?
+
+Status: answered, round 11 (2026-10-30). From Q26 ("should we just exclude modifiers from elemental gear as well? So a Tide scarf would only roll Tide modifiers"). Touches: `gear.md` V-GEAR-9, `gear-lines.json`; combat v2.
+
+**Why it matters.** Today each line has a weight per slot (0 means it never rolls there), and an element piece makes its own element's lines three times as likely. You asked for slots to include or exclude lines without favouring, and wondered whether element pieces should be exclusive. This decides how well a player knows what they're chasing, and it ties straight into the chain: scout the Tidepools, get Tide shards, craft Tide pieces.
+
+- **A. Elements favour.** An element piece rolls its own element's lines more often (as today), and other elements' lines rarely.
+- **B. Elements own their lines.** An element piece rolls its own element's lines and neutral lines, never another element's. Example: a Tide Scarf can roll Tide damage but never Ember damage.
+- **C. No element lines on pieces.** Elements only change the base; every piece rolls from the slot's neutral pool.
+
+**Lead's pick: B.** It is the determinism you asked for: a player who wants a Tide line knows to craft Tide pieces, and the whole chain from scouting to crafting points at one goal. Neutral lines keep every piece useful to any creature.
+
+**Answer (2026-10-30): B.** "The most logical and intuitive system for a player would be that elements own their own lines. But this would also mean that so far we've been giving out Ember gear from Ember Caves all the time, that we would also be dropping gear that's neutral or rarer, other elements maybe less often from Ember Caves... Further systems in the future could maybe open up the ability to craft other gear lines onto different elements... Wouldn't look into it too much right now."
+
+Became: V-GEAR-11: an element piece rolls its own element's lines and neutral lines only; places and bosses drop mostly their element's pieces, plus neutral pieces and now and then another element's; cross-element lines are a later idea.
+
+### Q29. How many lines should each rarity roll?
+
+Status: answered, round 11 (2026-10-30). From Q26 ("if an epic rolled four lines or five lines, maybe we could have three good lines out of those five"). Touches: `gear.md` V-GEAR-9, `RULES.gear.rolledLines`; combat v2 (line values must shrink if pieces carry more lines).
+
+**Why it matters.** Today a common rolls 1 line, a rare 2 and an epic 3. More lines make partial wins common (a piece with a few great lines and some duds), which is your answer to having no pity floor. But more lines means more power per piece, so combat v2 has to scale line values down to match.
+
+- **A. Keep 1 / 2 / 3.**
+- **B. 1 / 3 / 5.** An epic has five chances; three great lines make it great. Rarity matters a lot.
+- **C. 2 / 3 / 4.** A smaller gap between rarities; every piece has a little something.
+
+**Lead's pick: B.** It is your "three good lines out of five", it makes an epic a real event, and it gives a lot of partial wins along the way. The line values are combat v2's to tune.
+
+**Answer (2026-10-30): B, 1 / 3 / 5.** "Definitely more than today... 1, 3, 5 is good, so rares are already really good at that point, and then epics at 5 are actually a really exciting drop."
+
+Became: V-GEAR-12; the line values are combat v2's to scale.
 
 ## Withdrawn
 
