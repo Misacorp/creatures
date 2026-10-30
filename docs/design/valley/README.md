@@ -46,7 +46,7 @@ Today's game against the vision, system by system (keep, rework or scrap): [`scr
 
 - **Phase 1** (the base systems on paper): every system is drafted in full, reviewed by the panel (`reviews/`) and decided by Misa in 13 rounds of questions (`questions.md`, 35 answers), except the School, which waits on combat v2's talents. Nearly every number is still an example.
 - **Phase 2 started** (Q32): the resource map (`economy/resources.md`) and the economy lab (`economy/model.md`, `packages/econ`), being built.
-- **Waiting on Misa:** round 17, Q43 (how long the visitor stays) and Q44 (orbs to keep, a service, or a standing order), after the visitor's panel. Queued: **school** (keep, fold or scrap) once combat v2 says what a talent is.
+- **Waiting on Misa:** nothing. Round 17 decided the visitor stays Thursday to the raid finale and rerolls are a service at his stall. Queued: **school** (keep, fold or scrap) once combat v2 says what a talent is.
 - **How to continue:** read the last entry of `log.md`, then `questions.md`'s "Waiting on Misa"; run the `valley-round` skill to record answers and ask the next round.
 - **Seams with combat v2** (`combat-v2-track`): the roster profile the economy lab must output, the fixed boss track, gear's stats and lines (`roadmap.md`). The combat session can message this one.
 

@@ -6,28 +6,7 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q43. How long should the visitor stay?
-
-Status: asked, round 17 (2026-10-30), after the panel (`reviews/2026-10-30-visitor.md`). From Q42 ("Maybe the trader comes around on Thursday, leaves when the raid starts"). Touches: `visitor.md` V-VIS-1, T-2, F-1.
-
-**Why it matters.** If he leaves when the raid starts, a player who only opens the game at the weekend never meets him, and the research found no evidence that a two-day window works in an idle game (Bungie has since turned Xûr into a permanent shop). Two reviewers suggested he stay through the raid, when the whole server is online anyway.
-
-- **A. Thursday until the raid starts** (your words). Example: Juho, who plays on Sundays, only ever sees the "back Thursday" sign.
-- **B. Thursday until the raid's finale on Sunday evening.** Example: Juho meets him on Sunday morning before the finale; Sanni meets him on Thursday evening.
-
-**Lead's pick: B.** It keeps the Thursday arrival as the event and lets every kind of player meet him, without a drop-off service to build.
-
-### Q44. How should a reroll reach players?
-
-Status: asked, round 17 (2026-10-30), after the panel. From Q42 ("introduce the first path of exile type 'orbs'... How the items are used is another thing... offers a service: 'give your item to me and I'll reroll the modifiers on it'"). Touches: `visitor.md` V-VIS-4, `economy/resources.md` (round 14's three kinds of spendables), `gear.md`.
-
-**Why it matters.** You described both an orb and a service. The panel split three ways. Each reroll rolls all lines (your Chaos Orb), costs Acorns and scrap, and gets dearer with each one in the same week; the question is only where and when you use it.
-
-- **A. A service at his stall while he is here.** Hand over a piece, see the result. Example: on Thursday evening Sanni rerolls her Epic scarf twice and stops when a good line appears.
-- **B. Orbs you buy from him and keep,** used at the Forge any time (each counts toward that week's rising price). Example: Sanni buys two orbs on Thursday and uses one on Tuesday, when the Forge finishes an Epic. One new item to hold, against round 14's three kinds of spendables.
-- **C. A standing order at his stall:** "reroll this up to 4 times, stop when a fire line appears", resolved while you are away. Example: Juho leaves a scarf with an order on Sunday and finds the result next week. Your own Forge idea ("work on this until some criteria is met").
-
-**Lead's pick: B.** It is your "orbs", the simplest to build, and works for every player whatever the visiting days, because the gamble happens when you choose. An orb has a clear use from day one, which is the rule you set for new resources (Q33). C is a good later upgrade at the Forge.
+Nothing waiting.
 
 ## Queue
 
@@ -697,6 +676,37 @@ Status: answered, round 16 (2026-10-30). From the lab: target T-7 ("nothing only
 **Answer (2026-10-30): B, starting with a weekly visitor.** "42 B is the way to go and we can expand on what options we give players over time. Piling up is alright for the first few weeks and that buys us time to build the sinks." His idea, a Xûr-like weekly visitor with limited stock and a Chaos Orb-like reroll service, and "I'm afraid of housing right now because it requires a ton of new systems and art", are quoted in full in `systems/visitor.md`.
 
 Became: `systems/visitor.md` (an idea, to research and the panel); T-7 is report-only until the visitor and decorations are modelled; housing stays parked. Raid days: Misa "eventually" wants phase 1 on Saturday, phase 2 on Sunday and the finale on Sunday evening (passed to combat v2).
+
+### Q43. How long should the visitor stay?
+
+Status: answered, round 17 (2026-10-30), after the panel (`reviews/2026-10-30-visitor.md`). From Q42 ("Maybe the trader comes around on Thursday, leaves when the raid starts"). Touches: `visitor.md` V-VIS-1, T-2, F-1.
+
+**Why it matters.** If he leaves when the raid starts, a player who only opens the game at the weekend never meets him, and the research found no evidence that a two-day window works in an idle game (Bungie has since turned Xûr into a permanent shop). Two reviewers suggested he stay through the raid, when the whole server is online anyway.
+
+- **A. Thursday until the raid starts** (your words). Example: Juho, who plays on Sundays, only ever sees the "back Thursday" sign.
+- **B. Thursday until the raid's finale on Sunday evening.** Example: Juho meets him on Sunday morning before the finale; Sanni meets him on Thursday evening.
+
+**Lead's pick: B.** It keeps the Thursday arrival as the event and lets every kind of player meet him, without a drop-off service to build.
+
+**Answer (2026-10-31): B.** "43: B"
+
+Became: V-VIS-1, the visitor arrives on Thursday and leaves at the raid's finale on Sunday evening.
+
+### Q44. How should a reroll reach players?
+
+Status: answered, round 17 (2026-10-30), after the panel. From Q42 ("introduce the first path of exile type 'orbs'... How the items are used is another thing... offers a service: 'give your item to me and I'll reroll the modifiers on it'"). Touches: `visitor.md` V-VIS-4, `economy/resources.md` (round 14's three kinds of spendables), `gear.md`.
+
+**Why it matters.** You described both an orb and a service. The panel split three ways. Each reroll rolls all lines (your Chaos Orb), costs Acorns and scrap, and gets dearer with each one in the same week; the question is only where and when you use it.
+
+- **A. A service at his stall while he is here.** Hand over a piece, see the result. Example: on Thursday evening Sanni rerolls her Epic scarf twice and stops when a good line appears.
+- **B. Orbs you buy from him and keep,** used at the Forge any time (each counts toward that week's rising price). Example: Sanni buys two orbs on Thursday and uses one on Tuesday, when the Forge finishes an Epic. One new item to hold, against round 14's three kinds of spendables.
+- **C. A standing order at his stall:** "reroll this up to 4 times, stop when a fire line appears", resolved while you are away. Example: Juho leaves a scarf with an order on Sunday and finds the result next week. Your own Forge idea ("work on this until some criteria is met").
+
+**Lead's pick: B.** It is your "orbs", the simplest to build, and works for every player whatever the visiting days, because the gamble happens when you choose. An orb has a clear use from day one, which is the rule you set for new resources (Q33). C is a good later upgrade at the Forge.
+
+**Answer (2026-10-31): A.** "44: A"
+
+Became: V-VIS-4, the reroll is a service at his stall while he is here (Thursday to the Sunday finale); no orbs to hold and no drop-off, so round 14's three kinds of spendables stand. A standing order stays a later Forge idea.
 
 ## Withdrawn
 

@@ -3611,3 +3611,8 @@ The economy lab models all three and is being tuned with its automatic tuner.
 ## 2026-10-31: Valley: the reset replaces the migration; gear slots open at level 1 (from the combat v2 session)
 
 Misa decided with the combat v2 session (branch `combat-v2-roster`, commit 17a343c, verified there): "I plan on recording each player's current accomplishments and creatures down somewhere, using them as fuel for content later on (they are the mystical pioneering first settlers) and resetting the game." For the valley this settles phase 6: no migration, the "I was there" mementos become the recorded settlers (`docs/design/valley/roadmap.md`, `deciding.md` rule 7). Also from that session: gear slot unlock levels are dropped (all three slots open at level 1), and gear's weight grows with the game, talents leading early and gear the endgame (`docs/design/valley/systems/gear.md` V-GEAR-3). The economy lab's roster profile follows on its next run.
+
+## 2026-10-31: Valley: the visitor stays until the raid finale; rerolls are a service at his stall (round 17, Q43 and Q44)
+
+- **Q43, B:** the weekly visitor arrives on Thursday and leaves at the raid's finale on Sunday evening, so weekend players meet him too.
+- **Q44, A:** a reroll (all of a piece's modifier lines, priced in Acorns and scrap, dearer with each reroll in a week) is a service at his stall while he is here: no orbs to hold, no drop-off. Round 14's three kinds of spendables stand. (`docs/design/valley/systems/visitor.md`)
