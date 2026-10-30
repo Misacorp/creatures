@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { ledgerOf, measuresOf, serverOf } from './analysis';
 import { BUDGET, budgetLine } from './budget';
 import { inProcess, runScenarios, type Executor } from './jobs';
@@ -8,8 +8,25 @@ import { RULES } from './rules';
 import rulesSource from './rules.ts?raw';
 import { DEFAULT_SEEDS, runScenario, type Results } from './scenarios';
 import { ALL_SERVERS } from './servers';
+import { runServer } from './sim';
 import { TARGETS, boundsText, judge } from './targets';
 import { playersOf } from './scenarios';
+
+/** The journey export: the visits of the first daily and the first weekly player of the mixed server of 8 (seed 1), weeks 1 to 4. */
+export function journeyFiles(): Record<
+  string,
+  { profile: string; server: string; seed: number; weeks: number; visits: unknown[] }
+> {
+  const config = ALL_SERVERS.find((s) => s.id === 'mixed8');
+  if (!config) throw new Error('no mixed8 server');
+  const run = runServer(config, 1, RULES, { profiles: ['daily', 'weekly'], weeks: 4 });
+  return Object.fromEntries(
+    Object.entries(run.journeys ?? {}).map(([profile, visits]) => [
+      profile,
+      { profile, server: config.id, seed: 1, weeks: 4, visits },
+    ]),
+  );
+}
 
 /** The worker pool of `scripts/report.mjs` (when there is one): the executor and how many jobs it runs at once. */
 export interface Pool {
@@ -113,6 +130,11 @@ export async function main(args: readonly string[], pool?: Pool): Promise<number
     `${dir}/roster-profile.json`,
     JSON.stringify(rosterProfile(results), null, 1) + '\n',
   );
+  // The journey export (phase 3): every visit of a daily and a weekly player of the mixed server of 8, seed 1, weeks 1 to 4.
+  const journeys = journeyFiles();
+  mkdirSync(`${dir}/journeys`, { recursive: true });
+  for (const [id, file] of Object.entries(journeys))
+    writeFileSync(`${dir}/journeys/${id}.json`, JSON.stringify(file, null, 1) + '\n');
   const written = (Date.now() - t3) / 1000;
   const total = (Date.now() - t0) / 1000;
   console.log(`economy report written to ${dir}`);

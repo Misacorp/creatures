@@ -1,0 +1,920 @@
+{
+ "profile": "daily",
+ "server": "mixed8",
+ "seed": 1,
+ "weeks": 4,
+ "visits": [
+  {
+   "week": 1,
+   "day": 1,
+   "weekday": "Monday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 57,
+    "scrap": 65.36,
+    "shards": {
+     "spark": 2.84
+    },
+    "creatures": [
+     {
+      "line": "splashet",
+      "count": 1,
+      "newLine": true
+     }
+    ],
+    "pieces": {
+     "collected": 0,
+     "worn": 1,
+     "bagged": 0
+    }
+   },
+   "events": [
+    "new line: splashet"
+   ],
+   "top5": [
+    5,
+    5,
+    5,
+    1
+   ]
+  },
+  {
+   "week": 1,
+   "day": 2,
+   "weekday": "Tuesday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 118.88,
+    "shards": {
+     "ember": 6.81,
+     "spark": 3.41
+    },
+    "creatures": [],
+    "pieces": {
+     "collected": 1,
+     "worn": 2,
+     "bagged": 0
+    }
+   },
+   "events": [],
+   "top5": [
+    6,
+    6,
+    6,
+    4
+   ]
+  },
+  {
+   "week": 1,
+   "day": 3,
+   "weekday": "Wednesday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 124.32,
+    "shards": {
+     "ember": 7.15,
+     "spark": 3.58
+    },
+    "creatures": [],
+    "pieces": {
+     "collected": 2,
+     "worn": 2,
+     "bagged": 3
+    }
+   },
+   "events": [
+    "mastery: scout seat 1 reached Apprentice",
+    "mastery: scout seat 2 reached Apprentice",
+    "mastery: anvil 1 reached Apprentice"
+   ],
+   "top5": [
+    7,
+    7,
+    7,
+    5
+   ]
+  },
+  {
+   "week": 1,
+   "day": 4,
+   "weekday": "Thursday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 132.32,
+    "shards": {
+     "ember": 7.15,
+     "spark": 3.58
+    },
+    "creatures": [
+     {
+      "line": "mistnewt",
+      "count": 1,
+      "newLine": false
+     }
+    ],
+    "pieces": {
+     "collected": 1,
+     "worn": 1,
+     "bagged": 0
+    }
+   },
+   "events": [
+    "visitor: he is in the valley until the raid finale"
+   ],
+   "top5": [
+    8,
+    8,
+    8,
+    6
+   ]
+  },
+  {
+   "week": 1,
+   "day": 5,
+   "weekday": "Friday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 124.32,
+    "shards": {
+     "tide": 2,
+     "ember": 4.15,
+     "spark": 0.58
+    },
+    "creatures": [],
+    "pieces": {
+     "collected": 1,
+     "worn": 1,
+     "bagged": 4
+    }
+   },
+   "events": [],
+   "top5": [
+    8,
+    8,
+    8,
+    7
+   ]
+  },
+  {
+   "week": 1,
+   "day": 6,
+   "weekday": "Saturday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 124.32,
+    "shards": {
+     "tide": 2,
+     "ember": 4.15,
+     "spark": 0.58
+    },
+    "creatures": [],
+    "pieces": {
+     "collected": 2,
+     "worn": 2,
+     "bagged": 1
+    }
+   },
+   "events": [
+    "mastery: anvil 2 reached Apprentice"
+   ],
+   "top5": [
+    9,
+    9,
+    9,
+    8
+   ]
+  },
+  {
+   "week": 1,
+   "day": 7,
+   "weekday": "Sunday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 129.32,
+    "shards": {
+     "tide": 2,
+     "ember": 4.15,
+     "spark": 0.58
+    },
+    "creatures": [],
+    "pieces": {
+     "collected": 2,
+     "worn": 2,
+     "bagged": 1
+    }
+   },
+   "events": [],
+   "top5": [
+    10,
+    10,
+    10,
+    8
+   ]
+  },
+  {
+   "week": 2,
+   "day": 8,
+   "weekday": "Monday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 129.76,
+    "shards": {
+     "ember": 7.49,
+     "spark": 3.75
+    },
+    "creatures": [],
+    "pieces": {
+     "collected": 2,
+     "worn": 2,
+     "bagged": 0
+    }
+   },
+   "events": [
+    "mastery: scout seat 1 reached Expert",
+    "mastery: scout seat 2 reached Expert",
+    "mastery: anvil 1 reached Expert",
+    "graduation: 3 creatures earned Bronze",
+    "place level-up: bonfire reached level 2"
+   ],
+   "top5": [
+    11,
+    11,
+    11,
+    9
+   ]
+  },
+  {
+   "week": 2,
+   "day": 9,
+   "weekday": "Tuesday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 137.76,
+    "shards": {
+     "ember": 7.49,
+     "spark": 3.75
+    },
+    "creatures": [
+     {
+      "line": "sproutle",
+      "count": 1,
+      "newLine": true
+     },
+     {
+      "line": "zipmouse",
+      "count": 1,
+      "newLine": false
+     }
+    ],
+    "pieces": {
+     "collected": 1,
+     "worn": 1,
+     "bagged": 2
+    }
+   },
+   "events": [
+    "new line: sproutle"
+   ],
+   "top5": [
+    12,
+    12,
+    12,
+    10,
+    1
+   ]
+  },
+  {
+   "week": 2,
+   "day": 10,
+   "weekday": "Wednesday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 145.76,
+    "shards": {
+     "ember": 4.49,
+     "grove": 2,
+     "spark": 0.75
+    },
+    "creatures": [
+     {
+      "line": "sproutle",
+      "count": 1,
+      "newLine": false
+     },
+     {
+      "line": "mistnewt",
+      "count": 1,
+      "newLine": false
+     },
+     {
+      "line": "squelch",
+      "count": 1,
+      "newLine": true
+     }
+    ],
+    "pieces": {
+     "collected": 0,
+     "worn": 0,
+     "bagged": 1
+    }
+   },
+   "events": [
+    "new line: squelch"
+   ],
+   "top5": [
+    12,
+    12,
+    12,
+    10,
+    6
+   ]
+  },
+  {
+   "week": 2,
+   "day": 11,
+   "weekday": "Thursday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 129.76,
+    "shards": {
+     "ember": 4.49,
+     "spark": 0.75,
+     "mire": 3
+    },
+    "creatures": [],
+    "pieces": {
+     "collected": 2,
+     "worn": 2,
+     "bagged": 0
+    }
+   },
+   "events": [
+    "visitor: he is in the valley until the raid finale",
+    "mastery: anvil 2 reached Expert"
+   ],
+   "top5": [
+    12,
+    12,
+    12,
+    11,
+    8
+   ]
+  },
+  {
+   "week": 2,
+   "day": 12,
+   "weekday": "Friday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 129.76,
+    "shards": {
+     "ember": 7.49,
+     "grove": 2,
+     "spark": -2.25
+    },
+    "creatures": [],
+    "pieces": {
+     "collected": 2,
+     "worn": 2,
+     "bagged": 1
+    }
+   },
+   "events": [],
+   "top5": [
+    13,
+    13,
+    13,
+    11,
+    9
+   ]
+  },
+  {
+   "week": 2,
+   "day": 13,
+   "weekday": "Saturday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 129.76,
+    "shards": {
+     "ember": 7.49,
+     "spark": 3.75
+    },
+    "creatures": [],
+    "pieces": {
+     "collected": 2,
+     "worn": 2,
+     "bagged": 1
+    }
+   },
+   "events": [],
+   "top5": [
+    13,
+    13,
+    13,
+    12,
+    10
+   ]
+  },
+  {
+   "week": 2,
+   "day": 14,
+   "weekday": "Sunday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 145.76,
+    "shards": {
+     "ember": 7.49,
+     "spark": 3.75
+    },
+    "creatures": [
+     {
+      "line": "sproutle",
+      "count": 1,
+      "newLine": false
+     },
+     {
+      "line": "zipmouse",
+      "count": 1,
+      "newLine": false
+     },
+     {
+      "line": "mudlump",
+      "count": 1,
+      "newLine": true
+     }
+    ],
+    "pieces": {
+     "collected": 0,
+     "worn": 0,
+     "bagged": 1
+    }
+   },
+   "events": [
+    "new line: mudlump",
+    "visitor: bought the week's blueprint for 40 Acorns and 50 shards"
+   ],
+   "top5": [
+    14,
+    14,
+    14,
+    12,
+    11
+   ]
+  },
+  {
+   "week": 3,
+   "day": 15,
+   "weekday": "Monday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 137.76,
+    "shards": {
+     "ember": 7.49,
+     "spark": 3.75
+    },
+    "creatures": [
+     {
+      "line": "mudlump",
+      "count": 1,
+      "newLine": false
+     }
+    ],
+    "pieces": {
+     "collected": 0,
+     "worn": 1,
+     "bagged": 2
+    }
+   },
+   "events": [],
+   "top5": [
+    15,
+    15,
+    15,
+    12,
+    11
+   ]
+  },
+  {
+   "week": 3,
+   "day": 16,
+   "weekday": "Tuesday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 129.76,
+    "shards": {
+     "ember": 1.49,
+     "spark": 3.75,
+     "mire": 2
+    },
+    "creatures": [],
+    "pieces": {
+     "collected": 0,
+     "worn": 0,
+     "bagged": 0
+    }
+   },
+   "events": [],
+   "top5": [
+    15,
+    15,
+    15,
+    13,
+    12
+   ]
+  },
+  {
+   "week": 3,
+   "day": 17,
+   "weekday": "Wednesday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 142.76,
+    "shards": {
+     "ember": 7.49,
+     "spark": 3.75
+    },
+    "creatures": [
+     {
+      "line": "mistnewt",
+      "count": 1,
+      "newLine": false
+     }
+    ],
+    "pieces": {
+     "collected": 2,
+     "worn": 2,
+     "bagged": 2
+    }
+   },
+   "events": [],
+   "top5": [
+    15,
+    15,
+    15,
+    13,
+    13
+   ]
+  },
+  {
+   "week": 3,
+   "day": 18,
+   "weekday": "Thursday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 129.76,
+    "shards": {
+     "ember": 7.49,
+     "spark": 3.75
+    },
+    "creatures": [
+     {
+      "line": "ashmole",
+      "count": 1,
+      "newLine": true
+     }
+    ],
+    "pieces": {
+     "collected": 0,
+     "worn": 0,
+     "bagged": 0
+    }
+   },
+   "events": [
+    "new line: ashmole",
+    "visitor: he is in the valley until the raid finale",
+    "visitor: rerolled a epic piece (item level 11.5) for 69 Acorns and 460 scrap: lines [1, 1, 1, 1, 1] became [1, 1, 1, 1, 1] (0 at the top pip)"
+   ],
+   "top5": [
+    15,
+    15,
+    15,
+    14,
+    13
+   ]
+  },
+  {
+   "week": 3,
+   "day": 19,
+   "weekday": "Friday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 137.76,
+    "shards": {
+     "ember": 7.49,
+     "spark": 3.75
+    },
+    "creatures": [
+     {
+      "line": "splashet",
+      "count": 1,
+      "newLine": false
+     }
+    ],
+    "pieces": {
+     "collected": 2,
+     "worn": 2,
+     "bagged": 0
+    }
+   },
+   "events": [],
+   "top5": [
+    16,
+    15,
+    15,
+    14,
+    13
+   ]
+  },
+  {
+   "week": 3,
+   "day": 20,
+   "weekday": "Saturday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 129.76,
+    "shards": {
+     "ember": 7.49,
+     "spark": 3.75
+    },
+    "creatures": [],
+    "pieces": {
+     "collected": 1,
+     "worn": 1,
+     "bagged": 0
+    }
+   },
+   "events": [],
+   "top5": [
+    16,
+    15,
+    15,
+    14,
+    14
+   ]
+  },
+  {
+   "week": 3,
+   "day": 21,
+   "weekday": "Sunday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 145.76,
+    "shards": {
+     "ember": 7.49,
+     "spark": 3.75
+    },
+    "creatures": [
+     {
+      "line": "cindle",
+      "count": 1,
+      "newLine": false
+     },
+     {
+      "line": "squelch",
+      "count": 1,
+      "newLine": false
+     }
+    ],
+    "pieces": {
+     "collected": 0,
+     "worn": 0,
+     "bagged": 4
+    }
+   },
+   "events": [],
+   "top5": [
+    16,
+    15,
+    15,
+    14,
+    14
+   ]
+  },
+  {
+   "week": 4,
+   "day": 22,
+   "weekday": "Monday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 141.47,
+    "shards": {
+     "ember": 7.83,
+     "spark": 3.92
+    },
+    "creatures": [],
+    "pieces": {
+     "collected": 0,
+     "worn": 1,
+     "bagged": 1
+    }
+   },
+   "events": [
+    "mastery: scout seat 1 reached Master",
+    "mastery: scout seat 2 reached Master",
+    "mastery: anvil 1 reached Master"
+   ],
+   "top5": [
+    17,
+    16,
+    16,
+    15,
+    14
+   ]
+  },
+  {
+   "week": 4,
+   "day": 23,
+   "weekday": "Tuesday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 146.47,
+    "shards": {
+     "ember": 7.83,
+     "spark": 3.92
+    },
+    "creatures": [],
+    "pieces": {
+     "collected": 1,
+     "worn": 1,
+     "bagged": 2
+    }
+   },
+   "events": [],
+   "top5": [
+    17,
+    16,
+    16,
+    15,
+    15
+   ]
+  },
+  {
+   "week": 4,
+   "day": 24,
+   "weekday": "Wednesday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 141.47,
+    "shards": {
+     "ember": 7.83,
+     "spark": 3.92
+    },
+    "creatures": [],
+    "pieces": {
+     "collected": 0,
+     "worn": 0,
+     "bagged": 2
+    }
+   },
+   "events": [],
+   "top5": [
+    18,
+    16,
+    16,
+    15,
+    15
+   ]
+  },
+  {
+   "week": 4,
+   "day": 25,
+   "weekday": "Thursday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 141.47,
+    "shards": {
+     "ember": 7.83,
+     "spark": 3.92
+    },
+    "creatures": [],
+    "pieces": {
+     "collected": 0,
+     "worn": 0,
+     "bagged": 0
+    }
+   },
+   "events": [
+    "visitor: he is in the valley until the raid finale",
+    "visitor: bought the week's blueprint for 40 Acorns and 50 shards",
+    "visitor: rerolled a epic piece (item level 11.5) for 69 Acorns and 460 scrap: lines [1, 1, 1, 1, 1] became [1, 1, 1, 2, 1] (1 at the top pip)",
+    "mastery: anvil 2 reached Master"
+   ],
+   "top5": [
+    18,
+    16,
+    16,
+    15,
+    15
+   ]
+  },
+  {
+   "week": 4,
+   "day": 26,
+   "weekday": "Friday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 141.47,
+    "shards": {
+     "ember": 7.83,
+     "spark": 3.92
+    },
+    "creatures": [],
+    "pieces": {
+     "collected": 0,
+     "worn": 0,
+     "bagged": 0
+    }
+   },
+   "events": [],
+   "top5": [
+    18,
+    17,
+    17,
+    15,
+    15
+   ]
+  },
+  {
+   "week": 4,
+   "day": 27,
+   "weekday": "Saturday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 141.47,
+    "shards": {
+     "ember": 7.83,
+     "spark": 3.92
+    },
+    "creatures": [],
+    "pieces": {
+     "collected": 2,
+     "worn": 3,
+     "bagged": 4
+    }
+   },
+   "events": [],
+   "top5": [
+    18,
+    17,
+    17,
+    15,
+    15
+   ]
+  },
+  {
+   "week": 4,
+   "day": 28,
+   "weekday": "Sunday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 52,
+    "scrap": 141.47,
+    "shards": {
+     "tide": 2,
+     "ember": 4.83,
+     "spark": 3.92
+    },
+    "creatures": [],
+    "pieces": {
+     "collected": 4,
+     "worn": 5,
+     "bagged": 5
+    }
+   },
+   "events": [],
+   "top5": [
+    18,
+    17,
+    17,
+    16,
+    15
+   ]
+  }
+ ]
+}

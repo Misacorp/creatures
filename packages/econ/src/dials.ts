@@ -119,6 +119,15 @@ export const DIALS: readonly Dial[] = [
     step: 0.25,
   },
   {
+    id: 'blueprintShards',
+    label: "the shards (of any element) the visitor's weekly blueprint costs",
+    paths: [['visitor', 'blueprintShards']],
+    integer: true,
+    min: 0.25,
+    max: 8,
+    step: 0.25,
+  },
+  {
     id: 'visitorGrowth',
     label: 'how much dearer each reroll in the same week is (x1.5 today)',
     paths: [['visitor', 'growth']],

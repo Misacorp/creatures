@@ -2,7 +2,9 @@ import { rollLines, topCount, wornPieces, type Worn } from './lines';
 import type { Rules } from './rules';
 import type { Player, Server } from './types';
 import { HOURS_PER_WEEK, R } from './types';
-import { debit } from './world';
+import { sum } from './util';
+import { note } from './journey';
+import { debit, debitShard } from './world';
 
 /**
  * The weekly visitor (docs/design/valley/systems/visitor.md, V-VIS-1..5). He is here from Thursday 00:00 until the raid's finale on
@@ -28,13 +30,32 @@ const affordable = (p: Player, acorns: number, scrap: number): boolean =>
   (p.stock[R.acorns] ?? 0) - acorns >= p.rules.visitor.reserveAcorns &&
   (p.stock[R.scrap] ?? 0) - scrap >= p.rules.visitor.reserveScrap;
 
+/** Pays `amount` shards of any element, one at a time from the element the player has most of. */
+function payShards(p: Player, amount: number): void {
+  let left = amount;
+  while (left > 1e-9) {
+    let top = 0;
+    for (let e = 1; e < p.shards.length; e++)
+      if ((p.shards[e] ?? 0) > (p.shards[top] ?? 0)) top = e;
+    const take = Math.min(left, p.shards[top] ?? 0);
+    if (take <= 0) throw new Error('not enough shards for the blueprint');
+    debitShard(p, top, take, 'visitor');
+    left -= take;
+  }
+}
+
 /** Rerolls one worn piece: pays, then draws its lines again (never keeping the old ones: the gamble is the point, V-VIS-2). */
 function reroll(p: Player, w: Worn): void {
   const [acorns, scrap] = rerollPrice(p.rules, w.ilvl, p.rerollsThisWeek);
   debit(p, R.acorns, acorns, 'visitor');
   debit(p, R.scrap, scrap, 'visitor');
   const c = p.creatures[w.creature]!;
+  const was = c.gearLines[w.slot] ?? [];
   c.gearLines[w.slot] = rollLines(p.lineRng, p.rules, w.rarity, w.ilvl);
+  note(
+    p,
+    `visitor: rerolled a ${['common', 'rare', 'epic'][w.rarity]} piece (item level ${w.ilvl}) for ${acorns} Acorns and ${scrap} scrap: lines [${was.join(', ')}] became [${(c.gearLines[w.slot] ?? []).join(', ')}] (${topCount(p.rules, w.ilvl, c.gearLines[w.slot] ?? [])} at the top pip)`,
+  );
   p.rerollsThisWeek += 1;
   p.wk.rerolls += 1;
   p.wk.visitorAcorns += acorns;
@@ -69,21 +90,27 @@ export function visitVisitor(p: Player, server: Server, hour: number): void {
     p.rerollsThisWeek = 0;
     p.blueprintBought = false;
     p.wk.visitorMet += 1;
+    note(p, 'visitor: he is in the valley until the raid finale');
   }
   const v = rules.visitor;
   if (
     !p.blueprintBought &&
     p.blueprints < rules.scouts.blueprintPool &&
-    affordable(p, v.blueprintAcorns, v.blueprintScrap)
+    affordable(p, v.blueprintAcorns, 0) &&
+    sum(p.shards) >= v.blueprintShards
   ) {
     debit(p, R.acorns, v.blueprintAcorns, 'visitor');
-    debit(p, R.scrap, v.blueprintScrap, 'visitor');
+    payShards(p, v.blueprintShards);
     p.blueprints += 1;
     p.wk.blueprints += 1;
     p.wk.visitorBlueprints += 1;
     p.blueprintBought = true;
+    note(
+      p,
+      `visitor: bought the week's blueprint for ${v.blueprintAcorns} Acorns and ${v.blueprintShards} shards`,
+    );
     p.wk.visitorAcorns += v.blueprintAcorns;
-    p.wk.visitorScrap += v.blueprintScrap;
+    p.wk.visitorShards += v.blueprintShards;
   }
   if (p.policy === 'setAndForget') {
     if (p.rerollsThisWeek >= 1) return;

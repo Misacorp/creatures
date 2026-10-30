@@ -2,6 +2,7 @@ import type { Rng } from '@creatures/game';
 import type { KitName, Resource, Rules } from './rules';
 import type { PlayerProfile } from './schema';
 import type { BossDial, Policy } from './servers';
+import type { Tracer } from './journey';
 
 export const R = {
   acorns: 0,
@@ -118,6 +119,7 @@ export interface WeekRecord {
   rerolls: number;
   visitorAcorns: number;
   visitorScrap: number;
+  visitorShards: number;
   visitorBlueprints: number;
   /** Modifier lines at the end of the week: the best worn piece's pips (sum), its share of the most its level allows, the epics worn, and whether an epic has 4 or more top-pip lines. */
   bestPips: number;
@@ -198,6 +200,8 @@ export interface Player {
   visitorWeek: number;
   rerollsThisWeek: number;
   blueprintBought: boolean;
+  /** The journey export's recorder (null unless this player is traced; recording never changes the run). */
+  trace: Tracer | null;
   /** A stream of its own for modifier lines, so rerolls never shift the other random draws. */
   lineRng: Rng;
   masters: number;

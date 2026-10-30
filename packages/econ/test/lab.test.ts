@@ -139,7 +139,7 @@ describe('the report', () => {
     expect(v.rerolls.daily).toHaveLength(24);
     expect(v.acorns.daily!.some((x) => x > 0)).toBe(true);
     expect(v.scrap.daily!.some((x) => x > 0)).toBe(true);
-    // He drains what the Forge and the projects do not: the visitor's sink shows in the ledger as its own line.
+    // The visitor's sink shows in the ledger as its own line.
     const sink = (r: number): number =>
       sum(
         results
@@ -148,8 +148,8 @@ describe('the report', () => {
       );
     expect(sink(0)).toBeGreaterThan(0);
     expect(sink(1)).toBeGreaterThan(0);
-    // Shards stay with the Forge (V-VIS-3).
-    expect(sink(2)).toBe(0);
+    // Shards pay only for the week's blueprint (any element).
+    expect(sink(2)).toBeGreaterThan(0);
     // Without him the same server has no rerolls and piles at least as high in Acorns.
     expect(
       sum(

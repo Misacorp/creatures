@@ -29,6 +29,7 @@ import {
 } from './forge';
 import { bestPiece, hasFourOfFive, wornPieces } from './lines';
 import { visitVisitor } from './visitor';
+import { beginVisit, endVisit, homeDone, newTracer, type JourneyEntry } from './journey';
 import { accrueIdleXp, atTopLevel, fightXp, levelsDesc, setCatchUp } from './growth';
 import {
   buyEvolutions,
@@ -83,6 +84,8 @@ export interface ServerRun {
   seed: number;
   players: PlayerRun[];
   log: ServerWeek[];
+  /** The journey export (only when asked for): the visits of the traced players. */
+  journeys?: Record<string, JourneyEntry[]>;
   levelUps: Server['levelUps'];
   projectDurations: number[];
   thresholds: (number | null)[];
@@ -154,6 +157,7 @@ export function visit(p: Player, server: Server, hour: number): void {
   p.wk.visits += 1;
   if (first) p.wk.visitDays += 1;
   const arrivalsBefore = p.wk.arrivals;
+  beginVisit(p);
 
   // Everything that built up comes home.
   const allowanceRate = rules.acorns.allowancePerDay / 24;
@@ -176,6 +180,8 @@ export function visit(p: Player, server: Server, hour: number): void {
     if (day % 7 >= 4) p.raidThisWeek = true;
   }
 
+  homeDone(p);
+
   // What the player could do now, then what they do.
   const options = countOptions(p, server);
   options.forEach((n, r) => (p.wk.choices[r] = (p.wk.choices[r] ?? 0) + n));
@@ -196,6 +202,7 @@ export function visit(p: Player, server: Server, hour: number): void {
   recomputeWeak(p, server.fire);
   setCatchUp(p, server.middle);
   p.lastVisit = hour;
+  endVisit(p, server, hour);
 
   // The rows this visit touches (the lazy pass reads the player, the creatures, the seats and the valley's rows and writes them back).
   const n = p.creatures.length;
@@ -411,7 +418,18 @@ function serverCoverage(
 }
 
 /** Runs one server for the horizon with one seed: hour by hour. */
-export function runServer(config: ServerConfig, seed: number, base: Rules = RULES): ServerRun {
+/** Which players' visits to record for the journey export: the first player of each of these profiles, up to `weeks`. */
+export interface TraceOptions {
+  readonly profiles: readonly string[];
+  readonly weeks: number;
+}
+
+export function runServer(
+  config: ServerConfig,
+  seed: number,
+  base: Rules = RULES,
+  trace?: TraceOptions,
+): ServerRun {
   const rules: Rules = {
     ...base,
     scouts: {
@@ -436,6 +454,13 @@ export function runServer(config: ServerConfig, seed: number, base: Rules = RULE
   const players = config.players.map((entry, i) =>
     createPlayer(rules, key, seed, i, playerProfile(entry, config.giveShare), config.weeks),
   );
+  const traced = new Map<string, Player>();
+  if (trace)
+    for (const p of players)
+      if (trace.profiles.includes(p.profile.id) && !traced.has(p.profile.id)) {
+        p.trace = newTracer();
+        traced.set(p.profile.id, p);
+      }
   const server = createServer(
     key,
     seed,
@@ -511,6 +536,16 @@ export function runServer(config: ServerConfig, seed: number, base: Rules = RULE
       firsts: p.firsts,
       stockEnd: p.stock,
     })),
+    ...(trace
+      ? {
+          journeys: Object.fromEntries(
+            [...traced].map(([id, p]) => [
+              id,
+              (p.trace?.entries ?? []).filter((e) => e.week <= trace.weeks),
+            ]),
+          ),
+        }
+      : {}),
     log: server.log,
     levelUps: server.levelUps,
     projectDurations: server.projectDurations,

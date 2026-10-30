@@ -8,7 +8,7 @@ import { runServer } from '../src/sim';
 import { ALL_SERVERS } from '../src/servers';
 import { R } from '../src/types';
 import { rerollPrice, visitVisitor, visitorHere } from '../src/visitor';
-import { addCreature, createPlayer, createServer } from '../src/world';
+import { addCreature, createPlayer, createServer, creditShard } from '../src/world';
 
 const THURSDAY = 3 * 24;
 const SUNDAY_EVENING = 6 * 24 + 20;
@@ -24,6 +24,8 @@ const setup = (policy: 'setAndForget' | 'optimiser', visitor = true) => {
   );
   p.stock[R.acorns] = 100_000;
   p.stock[R.scrap] = 100_000;
+  creditShard(p, 0, RULES.visitor.blueprintShards * 0.6, 'test');
+  creditShard(p, 1, RULES.visitor.blueprintShards * 0.6, 'test');
   return { p, server };
 };
 
@@ -129,9 +131,9 @@ describe('a visit that meets him', () => {
     visitVisitor(p, server, THURSDAY + 24 + 20);
     expect(p.wk.rerolls).toBe(1);
     const [acorns, scrap] = rerollPrice(RULES, 45, 0);
-    const bp = [RULES.visitor.blueprintAcorns, RULES.visitor.blueprintScrap];
-    expect(before[0]! - p.stock[R.acorns]!).toBe(acorns + bp[0]!);
-    expect(before[1]! - p.stock[R.scrap]!).toBe(scrap + bp[1]!);
+    // The blueprint is paid in Acorns and shards, never scrap.
+    expect(before[0]! - p.stock[R.acorns]!).toBe(acorns + RULES.visitor.blueprintAcorns);
+    expect(before[1]! - p.stock[R.scrap]!).toBe(scrap);
     // The best epic (ilvl 45) was the one redrawn; the lower epic and the rare were not.
     expect(p.creatures[0]!.gearLines[0]).toEqual([1, 1, 1, 1, 1]);
     // Next week it can do it again (the count resets).
@@ -159,6 +161,28 @@ describe('a visit that meets him', () => {
     wear(p, 0, 0, 40, 2, [3, 3, 3, 3, 1]);
     visitVisitor(p, server, THURSDAY + 20);
     expect(p.wk.rerolls).toBe(0);
+  });
+
+  it('pays the blueprint in shards of any element, from the most-stocked first', () => {
+    const { p, server } = setup('setAndForget');
+    visitVisitor(p, server, THURSDAY + 20);
+    expect(p.wk.visitorBlueprints).toBe(1);
+    // 0.6 and 0.6 of the price held: the first pile goes first, then the rest comes from the other.
+    const price = RULES.visitor.blueprintShards;
+    expect(p.shards[0]).toBeCloseTo(0, 9);
+    expect(p.shards[1]).toBeCloseTo(0.2 * price, 9);
+    expect(p.stock[R.shards]).toBeCloseTo(0.2 * price, 9);
+    expect(p.wk.visitorShards).toBe(RULES.visitor.blueprintShards);
+  });
+
+  it('cannot buy the blueprint without the shards, and then keeps its Acorns', () => {
+    const { p, server } = setup('setAndForget');
+    p.shards.fill(0);
+    p.stock[R.shards] = 0;
+    const acorns = p.stock[R.acorns]!;
+    visitVisitor(p, server, THURSDAY + 20);
+    expect(p.wk.visitorBlueprints).toBe(0);
+    expect(p.stock[R.acorns]).toBe(acorns);
   });
 
   it('sells the week once: one blueprint, until the pool is known', () => {

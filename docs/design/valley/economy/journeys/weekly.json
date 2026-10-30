@@ -1,0 +1,185 @@
+{
+ "profile": "weekly",
+ "server": "mixed8",
+ "seed": 1,
+ "weeks": 4,
+ "visits": [
+  {
+   "week": 1,
+   "day": 7,
+   "weekday": "Sunday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 132,
+    "scrap": 209.48,
+    "shards": {
+     "mire": 21.46
+    },
+    "creatures": [
+     {
+      "line": "mudlump",
+      "count": 1,
+      "newLine": false
+     }
+    ],
+    "pieces": {
+     "collected": 0,
+     "worn": 2,
+     "bagged": 2
+    }
+   },
+   "events": [
+    "visitor: he is in the valley until the raid finale",
+    "mastery: scout seat 1 reached Apprentice",
+    "mastery: anvil 1 reached Apprentice"
+   ],
+   "top5": [
+    8,
+    8,
+    8
+   ]
+  },
+  {
+   "week": 2,
+   "day": 14,
+   "weekday": "Sunday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 132,
+    "scrap": 381.13,
+    "shards": {
+     "ember": 21.46,
+     "mire": 22.48
+    },
+    "creatures": [
+     {
+      "line": "cindle",
+      "count": 1,
+      "newLine": true
+     },
+     {
+      "line": "mistnewt",
+      "count": 1,
+      "newLine": true
+     }
+    ],
+    "pieces": {
+     "collected": 4,
+     "worn": 6,
+     "bagged": 2
+    }
+   },
+   "events": [
+    "new line: cindle",
+    "new line: mistnewt",
+    "visitor: he is in the valley until the raid finale",
+    "mastery: scout seat 1 reached Expert",
+    "mastery: scout seat 2 reached Apprentice",
+    "mastery: anvil 1 reached Expert",
+    "graduation: 2 creatures earned Bronze",
+    "place level-up: bonfire reached level 2"
+   ],
+   "top5": [
+    11,
+    11,
+    11,
+    1,
+    1
+   ]
+  },
+  {
+   "week": 3,
+   "day": 21,
+   "weekday": "Sunday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 132,
+    "scrap": 389.29,
+    "shards": {
+     "tide": 2,
+     "ember": 22.48,
+     "mire": 16.48
+    },
+    "creatures": [
+     {
+      "line": "splashet",
+      "count": 1,
+      "newLine": true
+     }
+    ],
+    "pieces": {
+     "collected": 4,
+     "worn": 4,
+     "bagged": 2
+    }
+   },
+   "events": [
+    "new line: splashet",
+    "visitor: he is in the valley until the raid finale",
+    "mastery: scout seat 2 reached Expert",
+    "mastery: anvil 2 reached Apprentice",
+    "graduation: 1 creature earned Bronze"
+   ],
+   "top5": [
+    14,
+    14,
+    14,
+    11,
+    11
+   ]
+  },
+  {
+   "week": 4,
+   "day": 28,
+   "weekday": "Sunday",
+   "hour": 20,
+   "cameHome": {
+    "acorns": 132,
+    "scrap": 431.83,
+    "shards": {
+     "tide": 2,
+     "ember": 22.48,
+     "mire": 17.5
+    },
+    "creatures": [
+     {
+      "line": "coralynx",
+      "count": 1,
+      "newLine": true
+     },
+     {
+      "line": "squelch",
+      "count": 1,
+      "newLine": false
+     },
+     {
+      "line": "new line 16 (common)",
+      "count": 2,
+      "newLine": true
+     }
+    ],
+    "pieces": {
+     "collected": 2,
+     "worn": 3,
+     "bagged": 0
+    }
+   },
+   "events": [
+    "new line: coralynx",
+    "new line: new line 16 (common)",
+    "visitor: he is in the valley until the raid finale",
+    "visitor: bought the week's blueprint for 40 Acorns and 50 shards",
+    "mastery: scout seat 1 reached Master",
+    "mastery: anvil 1 reached Master",
+    "mastery: anvil 2 reached Expert"
+   ],
+   "top5": [
+    16,
+    16,
+    16,
+    14,
+    14
+   ]
+  }
+ ]
+}

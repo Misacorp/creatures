@@ -66,17 +66,17 @@
    "third": 22,
    "tenth": 15,
    "twentieth": 0,
-   "size": 15,
+   "size": 14,
    "forms": "all",
    "talentSlots": 2,
    "talentsPicked": false,
-   "gear": 27
+   "gear": 26
   },
   {
    "week": 7,
    "first": 23,
    "third": 23,
-   "tenth": 17,
+   "tenth": 18,
    "twentieth": 0,
    "size": 16,
    "forms": "all",
@@ -88,7 +88,7 @@
    "week": 8,
    "first": 25,
    "third": 25,
-   "tenth": 20,
+   "tenth": 20.5,
    "twentieth": 0,
    "size": 18,
    "forms": "all",
@@ -101,8 +101,8 @@
    "first": 26,
    "third": 26,
    "tenth": 22,
-   "twentieth": 13,
-   "size": 21,
+   "twentieth": 12,
+   "size": 20,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
@@ -130,14 +130,14 @@
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 39
+   "gear": 40
   },
   {
    "week": 12,
    "first": 29,
    "third": 29,
    "tenth": 26,
-   "twentieth": 16,
+   "twentieth": 17,
    "size": 26,
    "forms": "all",
    "talentSlots": 3,
@@ -154,7 +154,7 @@
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 43
+   "gear": 42
   },
   {
    "week": 14,
@@ -166,7 +166,7 @@
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 46
+   "gear": 44
   },
   {
    "week": 15,
@@ -178,7 +178,7 @@
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 47
+   "gear": 46
   },
   {
    "week": 16,
@@ -190,7 +190,7 @@
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 48
+   "gear": 47
   },
   {
    "week": 17,
@@ -202,7 +202,7 @@
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 49
+   "gear": 47
   },
   {
    "week": 18,
@@ -238,7 +238,7 @@
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 52
+   "gear": 51
   },
   {
    "week": 21,
@@ -246,11 +246,11 @@
    "third": 30,
    "tenth": 30,
    "twentieth": 30,
-   "size": 43,
+   "size": 44,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 53
+   "gear": 52
   },
   {
    "week": 22,
@@ -258,11 +258,11 @@
    "third": 30,
    "tenth": 30,
    "twentieth": 30,
-   "size": 45,
+   "size": 46,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 54
+   "gear": 53
   },
   {
    "week": 23,
@@ -274,7 +274,7 @@
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 55
+   "gear": 54
   },
   {
    "week": 24,
@@ -282,7 +282,7 @@
    "third": 30,
    "tenth": 30,
    "twentieth": 30,
-   "size": 49,
+   "size": 50,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
@@ -344,11 +344,11 @@
    "third": 18,
    "tenth": 0,
    "twentieth": 0,
-   "size": 8,
+   "size": 9,
    "forms": "all",
    "talentSlots": 1,
    "talentsPicked": false,
-   "gear": 22
+   "gear": 21
   },
   {
    "week": 6,
@@ -360,7 +360,7 @@
    "forms": "all",
    "talentSlots": 2,
    "talentsPicked": false,
-   "gear": 25
+   "gear": 24
   },
   {
    "week": 7,
@@ -372,7 +372,7 @@
    "forms": "all",
    "talentSlots": 2,
    "talentsPicked": false,
-   "gear": 28
+   "gear": 27
   },
   {
    "week": 8,
@@ -396,7 +396,7 @@
    "forms": "all",
    "talentSlots": 2,
    "talentsPicked": false,
-   "gear": 34
+   "gear": 33
   },
   {
    "week": 10,
@@ -420,7 +420,7 @@
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 38
+   "gear": 39
   },
   {
    "week": 12,
@@ -432,7 +432,7 @@
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 41
+   "gear": 40
   },
   {
    "week": 13,
@@ -444,7 +444,7 @@
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 43
+   "gear": 41
   },
   {
    "week": 14,
@@ -452,11 +452,11 @@
    "third": 29,
    "tenth": 26,
    "twentieth": 13,
-   "size": 21,
+   "size": 22,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 44
+   "gear": 43
   },
   {
    "week": 15,
@@ -468,7 +468,7 @@
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 45
+   "gear": 44
   },
   {
    "week": 16,
@@ -476,23 +476,23 @@
    "third": 30,
    "tenth": 28,
    "twentieth": 15,
-   "size": 25,
+   "size": 24,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 47
+   "gear": 46
   },
   {
    "week": 17,
    "first": 30,
    "third": 30,
-   "tenth": 28.5,
+   "tenth": 29,
    "twentieth": 16,
    "size": 26,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 48
+   "gear": 47
   },
   {
    "week": 18,
@@ -504,7 +504,7 @@
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 49
+   "gear": 48
   },
   {
    "week": 19,
@@ -512,11 +512,11 @@
    "third": 30,
    "tenth": 29,
    "twentieth": 21,
-   "size": 29,
+   "size": 28,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 50
+   "gear": 49
   },
   {
    "week": 20,
@@ -524,11 +524,11 @@
    "third": 30,
    "tenth": 30,
    "twentieth": 24,
-   "size": 31,
+   "size": 30,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 51
+   "gear": 50
   },
   {
    "week": 21,
@@ -540,7 +540,7 @@
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 52
+   "gear": 51
   },
   {
    "week": 22,
@@ -548,23 +548,23 @@
    "third": 30,
    "tenth": 30,
    "twentieth": 27,
-   "size": 34,
+   "size": 33,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 53
+   "gear": 52
   },
   {
    "week": 23,
    "first": 30,
    "third": 30,
    "tenth": 30,
-   "twentieth": 28,
+   "twentieth": 27,
    "size": 35,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 55
+   "gear": 54
   },
   {
    "week": 24,
@@ -576,7 +576,7 @@
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 56
+   "gear": 55
   }
  ],
  "newPlayer": [
@@ -590,31 +590,31 @@
    "forms": "all",
    "talentSlots": 1,
    "talentsPicked": false,
-   "gear": 24
+   "gear": 23
   },
   {
    "week": 2,
    "first": 20,
    "third": 15,
-   "tenth": 10.5,
+   "tenth": 8,
    "twentieth": 0,
    "size": 11,
    "forms": "all",
    "talentSlots": 2,
    "talentsPicked": false,
-   "gear": 26
+   "gear": 25
   },
   {
    "week": 3,
    "first": 22,
-   "third": 19.5,
-   "tenth": 15,
+   "third": 19,
+   "tenth": 14.5,
    "twentieth": 0,
    "size": 15,
    "forms": "all",
    "talentSlots": 2,
    "talentsPicked": false,
-   "gear": 27
+   "gear": 28
   },
   {
    "week": 4,
@@ -622,7 +622,7 @@
    "third": 22,
    "tenth": 15,
    "twentieth": 0,
-   "size": 18,
+   "size": 19,
    "forms": "all",
    "talentSlots": 2,
    "talentsPicked": false,
@@ -633,12 +633,12 @@
    "first": 26,
    "third": 24,
    "tenth": 15,
-   "twentieth": 13,
+   "twentieth": 11,
    "size": 21,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 32
+   "gear": 33
   },
   {
    "week": 6,
@@ -650,7 +650,7 @@
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 35
+   "gear": 34
   },
   {
    "week": 7,
@@ -658,7 +658,7 @@
    "third": 26,
    "tenth": 19,
    "twentieth": 15,
-   "size": 26,
+   "size": 25,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
@@ -670,7 +670,7 @@
    "third": 27,
    "tenth": 22.5,
    "twentieth": 15,
-   "size": 29,
+   "size": 27,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
@@ -682,11 +682,11 @@
    "third": 28,
    "tenth": 25,
    "twentieth": 15,
-   "size": 31,
+   "size": 30,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 40
+   "gear": 39
   },
   {
    "week": 10,
@@ -694,11 +694,11 @@
    "third": 29,
    "tenth": 27,
    "twentieth": 15,
-   "size": 32,
+   "size": 31,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 41
+   "gear": 40
   },
   {
    "week": 11,
@@ -706,7 +706,7 @@
    "third": 30,
    "tenth": 28,
    "twentieth": 16,
-   "size": 34,
+   "size": 35,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
@@ -729,8 +729,8 @@
    "first": 30,
    "third": 30,
    "tenth": 29,
-   "twentieth": 22.5,
-   "size": 38,
+   "twentieth": 23,
+   "size": 39,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
@@ -741,8 +741,8 @@
    "first": 30,
    "third": 30,
    "tenth": 30,
-   "twentieth": 25.5,
-   "size": 39,
+   "twentieth": 25,
+   "size": 40,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
@@ -766,11 +766,11 @@
    "third": 30,
    "tenth": 30,
    "twentieth": 28,
-   "size": 46,
+   "size": 44,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 46
+   "gear": 48
   },
   {
    "week": 17,
@@ -778,11 +778,11 @@
    "third": 30,
    "tenth": 30,
    "twentieth": 29,
-   "size": 47,
+   "size": 46,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 47
+   "gear": 48
   },
   {
    "week": 18,
@@ -790,11 +790,11 @@
    "third": 30,
    "tenth": 30,
    "twentieth": 29,
-   "size": 49,
+   "size": 48,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 48
+   "gear": 49
   },
   {
    "week": 19,
@@ -802,11 +802,11 @@
    "third": 30,
    "tenth": 30,
    "twentieth": 30,
-   "size": 52,
+   "size": 50,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 49
+   "gear": 50
   },
   {
    "week": 20,
@@ -818,22 +818,10 @@
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 51
-  },
-  {
-   "week": 21,
-   "first": 30,
-   "third": 30,
-   "tenth": 30,
-   "twentieth": 30,
-   "size": 55,
-   "forms": "all",
-   "talentSlots": 3,
-   "talentsPicked": false,
    "gear": 52
   },
   {
-   "week": 22,
+   "week": 21,
    "first": 30,
    "third": 30,
    "tenth": 30,
@@ -845,16 +833,28 @@
    "gear": 53
   },
   {
+   "week": 22,
+   "first": 30,
+   "third": 30,
+   "tenth": 30,
+   "twentieth": 30,
+   "size": 58,
+   "forms": "all",
+   "talentSlots": 3,
+   "talentsPicked": false,
+   "gear": 54
+  },
+  {
    "week": 23,
    "first": 30,
    "third": 30,
    "tenth": 30,
    "twentieth": 30,
-   "size": 59,
+   "size": 60,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 54
+   "gear": 55
   },
   {
    "week": 24,
@@ -862,11 +862,11 @@
    "third": 30,
    "tenth": 30,
    "twentieth": 30,
-   "size": 62,
+   "size": 61,
    "forms": "all",
    "talentSlots": 3,
    "talentsPicked": false,
-   "gear": 56
+   "gear": 57
   }
  ]
 }

@@ -162,7 +162,8 @@ export const RULES = {
       // TUNED 2026-10-30: scrap was 0.75 (scouts.md example).
       // TUNED 2026-10-30 (round 15): scrap was 1.425 and shards 0.2 (and 0.75 and 0.2 before the first tuning).
       scrap: 2.11,
-      shards: 0.12,
+      // TUNED 2026-10-30 (the shard blueprint): shards were 0.12.
+      shards: 0.132,
       // ASSUMPTION: 0.75% an hour, not the docs' 2%: with 2% a daily player has all 34 forms by week 8, and posts.md's worked month
       // ("15 creatures by week 4") needs about 0.75%. The two numbers in the docs disagree; this one follows the worked month.
       // TUNED 2026-10-30: was 0.0075.
@@ -411,9 +412,11 @@ export const RULES = {
     maxRerolls: 12,
     // ASSUMPTION: an optimiser rerolls an epic until 4 of its 5 lines are the top pip, a rare until 2 of its 3 (a set-and-forget player rerolls once a week on the best epic that is not there yet).
     goodTop: [1, 2, 4] as readonly number[],
-    // ASSUMPTION: the week's rotating rare blueprint costs this much; a player buys it when they can afford it above the reserves and know fewer than the pool.
+    // ASSUMPTION: the week's rotating rare blueprint costs this many Acorns and this many shards of ANY element (taken from the most-stocked
+    // elements first); a player buys it when they can afford it above the Acorn reserve and know fewer than the pool.
     blueprintAcorns: 40,
-    blueprintScrap: 250,
+    // TUNED 2026-10-30 (the shard blueprint): was 20.
+    blueprintShards: 50,
   },
 
   /** V-COM-13, V-GEAR-8, V-GEAR-10: the Forge's fire. */
