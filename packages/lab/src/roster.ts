@@ -32,8 +32,9 @@ export interface RosterWeek {
   readonly week: number;
   /**
    * The level of the player's best, 3rd best, 10th best and 20th best creature. Levels between are interpolated, none is above the cap.
-   * Fractions are fine (the valley's `tenth: 8.5`). The 20th can fall from one week to the next when the roster is smaller than 20
-   * (the valley reports the lowest owned level for a creature not owned).
+   * Fractions are fine (the valley's `tenth: 8.5`). **0 means no such creature** (the median player has not reached that rank yet),
+   * never a level: `levelOfCreature` skips it. Only the best creature is always at least 1. When a player's 3rd, 10th or 20th is
+   * ahead of the daily player's 0, `rosterWeek` takes the 0 (the roster size is capped the same way).
    */
   readonly first: number;
   readonly third: number;
@@ -108,21 +109,28 @@ export function rosterWeek(
   };
 }
 
-/** The level of the `i`-th best creature (1-based): straight lines between the 1st, 3rd, 10th and 20th, flat beyond the 20th. */
+/**
+ * The level of the `i`-th best creature (1-based): straight lines between the 1st, 3rd, 10th and 20th, flat beyond the last of them.
+ * An anchor of 0 is "no such creature" (the valley's median player has not reached that rank), not a level: it is skipped, never
+ * interpolated toward, so a creature ranked past the last non-zero anchor takes that anchor's level (the size cap still limits how
+ * many creatures there are).
+ */
 export function levelOfCreature(r: RosterWeek, i: number): number {
-  const at: readonly (readonly [number, number])[] = [
-    [1, r.first],
-    [3, r.third],
-    [10, r.tenth],
-    [20, r.twentieth],
-  ];
+  const at = (
+    [
+      [1, r.first],
+      [3, r.third],
+      [10, r.tenth],
+      [20, r.twentieth],
+    ] as const
+  ).filter(([, level]) => level > 0);
   if (i <= 1) return r.first;
   for (let k = 1; k < at.length; k++) {
     const [i0, l0] = at[k - 1] as readonly [number, number];
     const [i1, l1] = at[k] as readonly [number, number];
     if (i <= i1) return l0 + ((l1 - l0) * (i - i0)) / (i1 - i0);
   }
-  return r.twentieth;
+  return (at[at.length - 1] as readonly [number, number])[1];
 }
 
 /**
