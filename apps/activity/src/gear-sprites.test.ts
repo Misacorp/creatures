@@ -70,6 +70,11 @@ describe('item sprites', () => {
     }
   });
 
+  it('has its own sprite for every look of the content', () => {
+    const looks = new Set(gearContent.bases.map((b) => itemLookId(b.id)));
+    expect(Object.keys(ITEM_LOOK_SPRITES).sort()).toEqual([...looks].sort());
+  });
+
   it('draws only looks of the content, each well-formed and tintable', () => {
     const looks = new Set(gearContent.bases.map((b) => itemLookId(b.id)));
     for (const id of Object.keys(ITEM_LOOK_SPRITES)) expect(looks.has(id), id).toBe(true);
