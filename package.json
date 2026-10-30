@@ -10,10 +10,11 @@
   "scripts": {
     "build": "pnpm --filter @creatures/activity build && pnpm --filter @creatures/worker build",
     "typecheck": "pnpm -r --if-present typecheck",
-    "lint": "pnpm -r --workspace-concurrency=2 lint && eslint --cache --cache-strategy content --cache-location node_modules/.cache/eslint/root .claude eslint.config.js",
+    "lint": "pnpm -r --workspace-concurrency=2 lint && eslint --cache --cache-strategy content --cache-location node_modules/.cache/eslint/root scripts .claude eslint.config.js",
+    "decisions": "node scripts/decisions.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm build && pnpm -r --workspace-concurrency=1 --if-present test && pnpm fixtures:capture --check",
+    "check": "pnpm format:check && pnpm decisions check && pnpm lint && pnpm typecheck && pnpm build && pnpm -r --workspace-concurrency=1 --if-present test && node --test 'scripts/*.test.mjs' && pnpm fixtures:capture --check",
     "check:changed": "pnpm format:check && pnpm -r --filter \"...[origin/main]\" --filter \"!{.}\" --workspace-concurrency=2 --if-present lint && pnpm -r --filter \"...[origin/main]\" --filter \"!{.}\" --if-present typecheck && pnpm -r --filter \"...[origin/main]\" --filter \"!{.}\" --workspace-concurrency=1 --if-present test",
     "test": "pnpm -r --if-present test",
     "fixtures:capture": "pnpm --filter @creatures/worker exec node scripts/capture-fixtures.mjs",
