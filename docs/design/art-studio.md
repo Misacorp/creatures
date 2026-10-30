@@ -52,6 +52,7 @@ Each of these cost a round while drawing the Void concepts or showed up in earli
 | Kind       | Size     | Rules beyond the common ones                                                 | Shipped examples          |
 | ---------- | -------- | ---------------------------------------------------------------------------- | ------------------------- |
 | `creature` | 16×16    | the chibi face, no body pixel on the edge, footprint, silhouette 12 px apart | `data/species-sprites.ts` |
+| `foe`      | 16×16    | like a creature without the chibi face (dungeon foes)                        | `data/dungeon-sprites.ts` |
 | `boss`     | 24×24    | only ink on the edge, footprint 16×16 or more                                | `data/boss-sprites.ts`    |
 | `item`     | 12×12    | (gear: tinted by element)                                                    | `gear-sprites.ts`         |
 | `part`     | 8×8      |                                                                              | `gear-sprites.ts`         |
