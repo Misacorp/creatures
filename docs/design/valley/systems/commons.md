@@ -43,7 +43,7 @@ The valley's places (the Forge, the Signpost, the Paddock, the School, the bonfi
 - **V-COM-13** The item level cap (`gear.md` V-GEAR-8, V-GEAR-10) is the Forge's fire, drawn as a flame that grows, with a picture of what comes next ("better scarves soon") and its numbers behind a tap. In one sentence: everything the server builds or beats makes the fire hotter, and a hotter fire makes better gear.
   - **What the Forge makes** comes out at the fire's level, so every warming lifts the next pieces (V-FORGE-7). Found gear comes at its source's level (the dungeon's depth, the finale's rank), never above the fire.
   - **What warms it**, each by a step of one or more levels: a place's level-up (the Forge's the most), a completed collection, the first kill of each boss on combat v2's track, the server's creatures earning Master titles (every few titles), and cosmetic projects (a little).
-  - **A slow floor that rises with time** (round 15, Q37: B, "honestly I'm skeptical of the clock"): building, collections and boss kills do most of the warming; the fire is never below a level that rises slowly each week, so a server that can't beat a raid boss still moves; time adds nothing for a server already above it. The lab compares it with no floor, and the floor goes if a quiet server moves without it.
+  - **No time floor** (round 16, Q40: B; Misa had doubted the clock in Q37). Only building, collections and boss kills warm the fire; the lab showed a floor changed nothing for a building server, and a stuck server still moves through building. A floor can return later as a catch-up for servers far behind.
   - It never falls. The tap shows the next modifier threshold and the last five things that warmed it.
 
 ### Communal seats

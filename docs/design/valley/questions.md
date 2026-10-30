@@ -6,45 +6,13 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q40. Drop the time floor under the item level cap?
-
-Status: asked, round 16 (2026-10-30). Follow-up to Q37 ("honestly I'm skeptical of the clock"). Touches: `commons.md` V-COM-13.
-
-**Why it matters.** The lab now compares the slow floor with no floor on the same servers. While a server builds, the floor changes nothing: building and boss kills carry the fire (week 12: 45 with the floor, 44 without, for a server that kills its bosses). It only matters to a server that never kills a boss: at week 24 its fire is 53 with the floor and 40 without, and it still rises slowly from building either way.
-
-- **A. Keep the slow floor.** A stuck server's gear keeps improving with time. Example: a server stuck on one boss for two months still reaches item level 53.
-- **B. Drop it.** Only building, collections and boss kills warm the fire. Example: the same stuck server reaches 40, and its fire rises only when it builds or wins. One system fewer to explain.
-
-**Lead's pick: B.** The numbers say the clock does almost nothing for an active server, a stuck server still moves through building, and you doubted it. If a quiet server feels stuck in the live game, a floor can come back later as a catch-up for servers far behind.
-
-### Q41. Should most creatures earn Bronze, or only the ones that fight?
-
-Status: asked, round 16 (2026-10-30). Follow-up to Q39 ("make the bronze ribbon touch on many game systems but still be quite easy to attain"). Touches: `trials.md` V-TRIAL-2.
-
-**Why it matters.** Bronze needs a dungeon clear, and a dungeon team is three creatures a day. In the lab a daily player who never changes the team has only about 1 creature in 20 with Bronze at week 24: the same three fight every day. A player who rotates the team every day gets Bronze on about half the roster, but that is a daily chore.
-
-- **A. Keep it.** Bronze goes to creatures you take to the dungeon; rotate to earn more. Example: Sanni's best three have Bronze; the rest don't.
-- **B. A learner's place in the dungeon.** Each run takes one extra creature along that doesn't fight and ticks its dungeon box. The valley suggests one (the one closest to Bronze), so it is one tap or none. Example: "Sprout came along to watch the Cave run, and earned its Bronze."
-- **C. Bronze's combat box takes any fight or a week at posts.** Example: Sprout earns Bronze after a week at the Forge.
-
-**Lead's pick: B.** It keeps your dungeon clear in Bronze and makes it easy, one creature a day without changing the team, and it gives the dungeon a small daily moment. Silver (the Undercroft) and Gold (a raid) stay for fighters.
-
-### Q42. What should players spend their surplus on?
-
-Status: asked, round 16 (2026-10-30). From the lab: target T-7 ("nothing only piles up") is the one target the tuner cannot meet. Touches: `economy/resources.md`, `later.md` (cosmetics), `forge.md` (traders), the research's "in a slow game, hoarding is the likelier failure" (`docs/research/resource-design.md`).
-
-**Why it matters.** With ribbons gone, a daily player earns Acorns, scrap and shards two to three times faster than anything takes them. By week 10 a daily player's Acorns are about 25 weeks of their spending, scrap 22 and shards 14. The tuner tried every price and rate: making things dearer hits the Forge's limits (anvils can only make so much), and finding less slows the valley's buildings. A pile with nothing worth buying is what the research calls a dead resource: players stop caring about it.
-
-- **A. Earn less.** Scouts and the allowance pay less, and projects shrink to keep the valley's pace. Example: a find of 20 scrap feels like something, but there is less to do with Acorns early on.
-- **B. More worth buying.** Bring a small part of the cosmetics forward: decorations for your house and the valley (bought with Acorns and materials), more kit, and the shard exchange's visiting traders. Example: Sanni buys a lantern string for the bonfire with 400 Acorns and 120 scrap; a trader offers a rare blueprint for 300 Acorns and 40 Tide shards.
-- **C. Let it pile for now.** Savings are fine in a cozy game; add things to buy as content arrives. Example: Sanni has 3,000 Acorns at week 12 and nothing she wants.
-
-**Lead's pick: B.** `later.md` already names cosmetics as the long-term sink for surplus, and you suggested traders (Q34). Bringing a small set forward gives every resource a use all season; the lab then prices it.
+Nothing waiting.
 
 ## Queue
 
 In order. Each becomes a numbered question when asked; entries name what they wait on.
 
+- **visitor.** The weekly visitor (`systems/visitor.md`): asked after the research and the panel.
 - **school.** Keep the School, fold it into another place, or scrap it (Misa in Q32: "Is it a dumb way to do things that I just came up with because it felt cool?"). Waits on combat v2's talents; the lead's first take is in `systems/school.md`.
 - **targets.** What the economy lab measures and which numbers feel right (T-1 to T-5 in `goals.md`). Asked with the lab's first report, as concrete examples, not as a list to approve.
 
@@ -662,6 +630,53 @@ Status: answered, round 15 (2026-10-30), after the panel (`reviews/2026-10-30-tr
 **Answer (2026-10-30): drop the ribbon gates; trials as honours (B), with combat feats per tier.** On ribbons: "I do feel like the ribbon system is an awful lot of work for essentially... nothing. Let's drop it." On trials: "The honours system is kind of cool, despite what I previously said about dropping them. Let's make the bronze ribbon touch on many game systems but still be quite easy to attain. The combat part can be tuned in each one. Clearing a dungeon for bronze, clearing Undercroft (or 2+ levels, depending on balance) for silver and clearing a raid for gold. If we don't gate any progress behind ribbons, there shouldn't be an issue of requiring rare combat feats for them."
 
 Became: `systems/trials.md` accepted: no gates; Bronze, Silver and Gold as honours, each with one combat feat (a dungeon clear, an Undercroft clear or two levels deep, a raid clear) plus boxes from the valley's other systems; Bronze easy and broad. Misa's point overrides the panel's "no fight-only boxes": that worry was about gates, and an honour may be rare.
+
+### Q40. Drop the time floor under the item level cap?
+
+Status: answered, round 16 (2026-10-30). Follow-up to Q37 ("honestly I'm skeptical of the clock"). Touches: `commons.md` V-COM-13.
+
+**Why it matters.** The lab now compares the slow floor with no floor on the same servers. While a server builds, the floor changes nothing: building and boss kills carry the fire (week 12: 45 with the floor, 44 without, for a server that kills its bosses). It only matters to a server that never kills a boss: at week 24 its fire is 53 with the floor and 40 without, and it still rises slowly from building either way.
+
+- **A. Keep the slow floor.** A stuck server's gear keeps improving with time. Example: a server stuck on one boss for two months still reaches item level 53.
+- **B. Drop it.** Only building, collections and boss kills warm the fire. Example: the same stuck server reaches 40, and its fire rises only when it builds or wins. One system fewer to explain.
+
+**Lead's pick: B.** The numbers say the clock does almost nothing for an active server, a stuck server still moves through building, and you doubted it. If a quiet server feels stuck in the live game, a floor can come back later as a catch-up for servers far behind.
+
+**Answer (2026-10-30): B.** "40 B"
+
+Became: V-COM-13, no time floor: only building, collections and boss kills warm the Forge's fire. A floor can come back later as a catch-up for servers far behind if the live game shows one stuck.
+
+### Q41. Should most creatures earn Bronze, or only the ones that fight?
+
+Status: answered, round 16 (2026-10-30). Follow-up to Q39 ("make the bronze ribbon touch on many game systems but still be quite easy to attain"). Touches: `trials.md` V-TRIAL-2.
+
+**Why it matters.** Bronze needs a dungeon clear, and a dungeon team is three creatures a day. In the lab a daily player who never changes the team has only about 1 creature in 20 with Bronze at week 24: the same three fight every day. A player who rotates the team every day gets Bronze on about half the roster, but that is a daily chore.
+
+- **A. Keep it.** Bronze goes to creatures you take to the dungeon; rotate to earn more. Example: Sanni's best three have Bronze; the rest don't.
+- **B. A learner's place in the dungeon.** Each run takes one extra creature along that doesn't fight and ticks its dungeon box. The valley suggests one (the one closest to Bronze), so it is one tap or none. Example: "Sprout came along to watch the Cave run, and earned its Bronze."
+- **C. Bronze's combat box takes any fight or a week at posts.** Example: Sprout earns Bronze after a week at the Forge.
+
+**Lead's pick: B.** It keeps your dungeon clear in Bronze and makes it easy, one creature a day without changing the team, and it gives the dungeon a small daily moment. Silver (the Undercroft) and Gold (a raid) stay for fighters.
+
+**Answer (2026-10-30): A.** "41 A (players will learn that two creatures can tutor a lower level third for its ribbon, and eventually I might want to implement the dungeon difficulty picker too)"
+
+Became: V-TRIAL-2 unchanged: Bronze's combat box is a dungeon clear with the creature in the team; two strong creatures can carry a lower-level third. A dungeon difficulty picker is a later idea (`later.md`).
+
+### Q42. What should players spend their surplus on?
+
+Status: answered, round 16 (2026-10-30). From the lab: target T-7 ("nothing only piles up") is the one target the tuner cannot meet. Touches: `economy/resources.md`, `later.md` (cosmetics), `forge.md` (traders), the research's "in a slow game, hoarding is the likelier failure" (`docs/research/resource-design.md`).
+
+**Why it matters.** With ribbons gone, a daily player earns Acorns, scrap and shards two to three times faster than anything takes them. By week 10 a daily player's Acorns are about 25 weeks of their spending, scrap 22 and shards 14. The tuner tried every price and rate: making things dearer hits the Forge's limits (anvils can only make so much), and finding less slows the valley's buildings. A pile with nothing worth buying is what the research calls a dead resource: players stop caring about it.
+
+- **A. Earn less.** Scouts and the allowance pay less, and projects shrink to keep the valley's pace. Example: a find of 20 scrap feels like something, but there is less to do with Acorns early on.
+- **B. More worth buying.** Bring a small part of the cosmetics forward: decorations for your house and the valley (bought with Acorns and materials), more kit, and the shard exchange's visiting traders. Example: Sanni buys a lantern string for the bonfire with 400 Acorns and 120 scrap; a trader offers a rare blueprint for 300 Acorns and 40 Tide shards.
+- **C. Let it pile for now.** Savings are fine in a cozy game; add things to buy as content arrives. Example: Sanni has 3,000 Acorns at week 12 and nothing she wants.
+
+**Lead's pick: B.** `later.md` already names cosmetics as the long-term sink for surplus, and you suggested traders (Q34). Bringing a small set forward gives every resource a use all season; the lab then prices it.
+
+**Answer (2026-10-30): B, starting with a weekly visitor.** "42 B is the way to go and we can expand on what options we give players over time. Piling up is alright for the first few weeks and that buys us time to build the sinks." His idea, a Xûr-like weekly visitor with limited stock and a Chaos Orb-like reroll service, and "I'm afraid of housing right now because it requires a ton of new systems and art", are quoted in full in `systems/visitor.md`.
+
+Became: `systems/visitor.md` (an idea, to research and the panel); T-7 is report-only until the visitor and decorations are modelled; housing stays parked. Raid days: Misa "eventually" wants phase 1 on Saturday, phase 2 on Sunday and the finale on Sunday evening (passed to combat v2).
 
 ## Withdrawn
 

@@ -26,7 +26,7 @@ Status: **direction set by Misa** (round 9, Q22) and **decided in part** (rounds
 - **V-GEAR-2 Many chances to roll.** The Forge's steady work is the main source of rolls: a player sets a blueprint (and its element) and the smiths keep making pieces, so "did I get anything good?" has an answer every visit.
 - **V-GEAR-3 Item level is quality, not a requirement.** Any creature can wear any item; the wear rule (wearer level at least item level, `RULES.gear`) goes. Item level only says how good an item and its rolls can be. (Today's slot unlock levels, Scarf at 7 and Charm at 13, are combat v2's to keep or drop.)
 - **V-GEAR-4 The best first.** When a batch of pieces comes home, the best are shown first and celebrated in the return walk (V-RET-2).
-- **V-GEAR-5 No currency orbs at the start.** Improving existing items is a later Forge job ("work on this until some criteria is met"), designed after the base loop.
+- **V-GEAR-5 No currency orbs at the start.** Improving existing items is a later Forge job ("work on this until some criteria is met"), designed after the base loop. The first reroll comes with the weekly visitor (`visitor.md`, round 16, Q42: "a Chaos Orb type of item that just randomly rerolls all the stats of an item").
 
 ## Decided in round 10 (Q24 to Q26)
 
