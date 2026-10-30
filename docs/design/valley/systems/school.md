@@ -1,6 +1,6 @@
 # The School and visiting teachers
 
-Status: **idea** (Misa, 2026-10-29). Waits on the talent rework in `combat-v2-bosses` (`docs/design/combat/modifiers.md` there): what a talent is, its slots and rarity come from combat v2.
+Status: **idea** (Misa, 2026-10-29), to be decided in the morning list (Q45). Combat v2's talent rules are now known (branch `combat-v2-roster`; summarised below).
 
 ## The idea
 
@@ -19,6 +19,16 @@ A creature placed at the School teaches the talents it knows to other creatures 
 
 - Can a creature learn any talent, or only ones that suit its role or element (combat v2 decides)?
 - Is learning free, or does it cost something (Essence, a page)?
+
+## What combat v2 decided about talents (2026-10-31, from `combat-v2-roster`)
+
+- **Knacks** come from the species: a creature knows every Knack of its form from the moment it is caught; nothing teaches them (Misa, R11).
+- **A talent** is one modifier with its number, from one shared library; each creature **line** has a pool of 7 (Misa, 2026-10-27).
+- **The Talent Book is per line and fills itself:** every talent found goes into its line's book automatically; a duplicate's talent is recorded there, and the duplicate choice becomes Fuse, Release or Keep. **Teaching as a duplicate option goes away** (Misa, 2026-10-28).
+- **Learning costs once, swapping is free:** a creature pays the first time it learns a talent from its line's book, then swaps freely until the raid locks (Misa, 2026-10-28). Slots: one at catch, a second at level 20, a third at 25 for rare and epic lines (unchanged so far).
+- Combat's own note: "**Idea for later:** if creatures ever 'work' at places, a school where a creature learns a **random** talent from its line's book after some time."
+
+So the School's first purpose (teaching between creatures, a use for duplicates) is already done by the book, and talents stay inside a line.
 
 ## The lead's first take (2026-10-30, for the **school** question)
 

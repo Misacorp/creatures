@@ -6,13 +6,22 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-Nothing waiting.
+### Q45. Keep the School, give it a new job, or scrap it?
+
+Status: asked for the morning, round 18 (2026-10-31). From the **school** queue entry (Misa in Q32: "is the school building even necessary? Is it a dumb way to do things that I just came up with because it felt cool?"). Touches: `systems/school.md`, `systems/trials.md`, `commons.md` (the School's project and collection), the valley's art.
+
+**Why it matters.** The School was meant to teach talents between creatures and give duplicates a use. Combat v2 has since decided (with you) that each creature line has a Talent Book that fills itself from every talent found, duplicates included, and a creature learns from its line's book (paying once, then swapping freely). So the book already does the School's job. A place in the valley should earn its spot with a decision no other place gives.
+
+- **A. Scrap it.** Learning happens from the creature's card; graduation stays at the bonfire; the School's project and collection go to other places. Example: Sanni opens Pip's card, picks "Thorn Guard" from the Tidepools book, pays once. One building fewer to draw and explain.
+- **B. The School is where the books live.** Learning a talent from the book happens at the School: the first learning costs Acorns (a sink for the piles) and a short stay at a School seat (about a day), drawn as the creature at a desk; graduation is held there too. Example: Pip sits at the School for a day and comes home knowing "Thorn Guard"; swapping afterwards is free, from the card.
+- **C. Combat's later idea: a School post that teaches a random talent** from the line's book over time, free. Example: Sprout studies for three days and learns something from its line's book; you don't choose what.
+
+**Lead's pick: B.** It gives learning a place in the world (the valley is the menu), drains Acorns, and gives graduation a home, without new rules: it uses combat's book exactly as decided. A is the brave, simple answer if you'd rather have one place fewer; C takes away your choice of talent.
 
 ## Queue
 
 In order. Each becomes a numbered question when asked; entries name what they wait on.
 
-- **school.** Keep the School, fold it into another place, or scrap it (Misa in Q32: "Is it a dumb way to do things that I just came up with because it felt cool?"). Waits on combat v2's talents; the lead's first take is in `systems/school.md`.
 - **targets.** What the economy lab measures and which numbers feel right (T-1 to T-5 in `goals.md`). Asked with the lab's first report, as concrete examples, not as a list to approve.
 
 ## Answered
