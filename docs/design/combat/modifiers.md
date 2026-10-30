@@ -126,8 +126,8 @@ Crits are something a creature is built for. The rules are R7.1; the names, one 
 | Crit damage            | gear line, talent **Crit Damage**         | Crits deal +100% more on top of the double (talent, Payoffs); the line adds points.                                  |
 | Crit machines          | species stat (Cindle, Pyrelynx, Coralynx) | +10 points of chance and +50 points of damage, Attack x0.86 (about the same average hit, far more swing).            |
 | Wild Swing             | Knack (family Luck)                       | Its hit deals 25% less, +20% crit chance, crits +50% more.                                                           |
-| Perfect Timing         | talent (hitters)                          | A dodge stores a Crit Charge; the next hit that lands is a crit, +100% more.                                         |
-| Hold the Line          | talent (Guards)                           | Hits it takes for others worth 25% of its Max HP store a Crit Charge, +100% more on the crit.                        |
+| Perfect Timing         | talent (hitters)                          | A dodge stores a Sure Crit; the next hit that lands (and is not already a crit) is a 3x crit.                        |
+| Hold the Line          | talent (Guards)                           | Hits it takes for others worth 25% of its Max HP store a Sure Crit (3x).                                             |
 | Cool Head              | Knack (family Luck, Guards)               | Boss crits on it and on the creatures beside it deal half the extra damage.                                          |
 | Lucky Strike, Slippery | rule cards                                | A crit chance for the boss (a crit doubles its hit, before cuts and armour); a flat dodge that Mired does not lower. |
 
