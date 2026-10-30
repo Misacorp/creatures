@@ -198,14 +198,6 @@ export const DIALS: readonly Dial[] = [
     step: 0.25,
   },
   {
-    id: 'fireFloor',
-    label: "the fire's rise a week with time (kept slow: at most 1.25 times the slow floor, Q37 B)",
-    paths: [['fire', 'floorPerWeek']],
-    min: 0,
-    max: 1.25,
-    step: 0.25,
-  },
-  {
     id: 'evolveCost',
     label: 'Essence an evolution costs',
     paths: [['xp', 'evolveEssence']],

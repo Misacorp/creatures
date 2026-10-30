@@ -20,8 +20,9 @@ const fightBoxOpen = (rules: Rules, c: Creature): boolean => {
 };
 
 /**
- * The creatures that fight (the dungeon and the raid): the best by XP. An optimiser gives the last place to the highest-level creature
- * that still needs a fight box for its next honour (a set-and-forget player leaves the team as it is).
+ * The creatures that fight (the dungeon and the raid): the best by XP. An optimiser carries one lower-level creature with two strong
+ * ones (Q41 A: players learn that two creatures can tutor a lower level third for its Bronze): the last place goes to the highest-level
+ * creature that still needs a fight box for its next honour (a set-and-forget player leaves the team as it is).
  */
 export function fightTeam(p: Player): Creature[] {
   const n = p.rules.fights.team;

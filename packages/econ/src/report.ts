@@ -24,6 +24,7 @@ import { playersOf, type Results } from './scenarios';
 import type { PlayerRun } from './sim';
 import { rosterProfile, type RosterProfile } from './roster';
 import { levelOf, medianOf, round, total } from './stats';
+import { SLOW_FLOOR } from './servers';
 import { THRESHOLDS } from './targets';
 import { median, sum } from './util';
 
@@ -37,8 +38,8 @@ export interface ReportData {
   forge: ForgeRow[];
   servers: ServerRow[];
   fireByDial: Record<string, ServerRow | null>;
-  /** The same with no time floor under the fire (Q37 B: Misa is sceptical of the clock). */
-  fireNoFloor: Record<string, ServerRow | null>;
+  /** The same with the old slow time floor under the fire (Q40 B dropped it; kept for comparison). */
+  fireSlowFloor: Record<string, ServerRow | null>;
   variants: VariantRow[];
   /** A daily player's Forge by policy, with and without the shard exchange (weeks 2 to 12). */
   exchangeByPolicy: ExchangeRow[];
@@ -228,10 +229,10 @@ export function buildReportData(
     growth,
     forge,
     servers,
-    fireNoFloor: time('servers', () => ({
-      all: serverOf(results, 'mixed8-all-nofloor'),
-      half: serverOf(results, 'mixed8-nofloor'),
-      none: serverOf(results, 'mixed8-none-nofloor'),
+    fireSlowFloor: time('servers', () => ({
+      all: serverOf(results, 'mixed8-all-slowfloor'),
+      half: serverOf(results, 'mixed8-slowfloor'),
+      none: serverOf(results, 'mixed8-none-slowfloor'),
     })),
     fireByDial: time('servers', () => ({
       all: serverOf(results, 'mixed8-all'),
@@ -715,9 +716,9 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
     '',
   );
   push(
-    "### The Forge's fire by boss kills, with a slow time floor and with none (mixed server of 8)",
+    "### The Forge's fire by boss kills, with no time floor and with a slow one (mixed server of 8)",
     '',
-    `Kill chance a week: all ${rules.fights.raid.bossKillChance.all}, half ${rules.fights.raid.bossKillChance.half}, none ${rules.fights.raid.bossKillChance.none}. The slow floor is ${rules.fire.floorPerWeek} levels a week (Q37 B: building, collections and boss kills drive the fire over it); "no floor" is the same server with the clock switched off, for Misa to compare. Thresholds ${rules.fire.thresholds.join(', ')} are where lines of 2, 3, 4 and 5 pips unlock (gear.md).`,
+    `Kill chance a week: all ${rules.fights.raid.bossKillChance.all}, half ${rules.fights.raid.bossKillChance.half}, none ${rules.fights.raid.bossKillChance.none}. There is no time floor (Q40 B: only building, collections and boss kills drive the fire; the fire floor is ${rules.fire.floorPerWeek} levels a week); "slow floor" is the same server with the old Q37 B floor of ${SLOW_FLOOR} levels a week, kept for comparison. Thresholds ${rules.fire.thresholds.join(', ')} are where lines of 2, 3, 4 and 5 pips unlock (gear.md).`,
     '',
   );
   const dials = ['all', 'half', 'none'] as const;
@@ -725,13 +726,13 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
     ...table(
       [
         'Week',
-        ...dials.map((d) => `Slow floor, bosses ${d}`),
         ...dials.map((d) => `No floor, bosses ${d}`),
+        ...dials.map((d) => `Slow floor, bosses ${d}`),
       ],
       [1, 2, 4, 8, 12, 16, 20, 24].map((w) => [
         w,
         ...dials.map((d) => num(data.fireByDial[d]?.fire[w - 1] ?? 0)),
-        ...dials.map((d) => num(data.fireNoFloor[d]?.fire[w - 1] ?? 0)),
+        ...dials.map((d) => num(data.fireSlowFloor[d]?.fire[w - 1] ?? 0)),
       ]),
     ),
     '',
@@ -740,12 +741,12 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
     ...table(
       [
         'Threshold',
-        ...dials.map((d) => `Opens in week: slow floor, ${d}`),
-        ...dials.map((d) => `No floor, ${d}`),
+        ...dials.map((d) => `Opens in week: no floor, ${d}`),
+        ...dials.map((d) => `Slow floor, ${d}`),
       ],
       rules.fire.thresholds.map((t, i) => [
         t,
-        ...[data.fireByDial, data.fireNoFloor].flatMap((set) =>
+        ...[data.fireByDial, data.fireSlowFloor].flatMap((set) =>
           dials.map((d) => {
             const w = set[d]?.thresholds[i];
             return w === null || w === undefined ? 'not by week 24' : num(w);

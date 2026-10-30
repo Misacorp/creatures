@@ -25,7 +25,7 @@ export interface ServerConfig {
   readonly shardExchange: boolean;
   /** Replaces the scouts' creature chance an hour (a sensitivity run for T-1). */
   readonly creatureRate?: number;
-  /** Replaces the fire's time floor, in levels a week (a "no floor" variant sets 0). */
+  /** Replaces the fire's time floor, in levels a week (the "slow floor" variants set `SLOW_FLOOR`; the default is none, Q40 B). */
   readonly fireFloor?: number;
   /** Whether catch-up also multiplies what the dungeon and the raid pay (a sensitivity run for T-2d). */
   readonly catchUpFights?: boolean;
@@ -91,6 +91,9 @@ export const SERVERS: readonly ServerConfig[] = [
   server('hoarder', 'A hoarder server (4 hoarders, 4 daily)', { hoarder: 4, daily: 4 }),
 ];
 
+/** The slow time floor of Q37 B (levels a week), kept for the fire's comparison now that the default has none (Q40 B). */
+export const SLOW_FLOOR = 1.875;
+
 /** Variants of the mixed server of 8 for the targets and the fire. */
 export const VARIANTS: readonly ServerConfig[] = [
   { ...MIXED_8, id: 'mixed8-all', label: 'Mixed 8, every boss killed', bossKills: 'all' },
@@ -115,20 +118,25 @@ export const VARIANTS: readonly ServerConfig[] = [
     label: 'Mixed 8, no shard exchange',
     shardExchange: false,
   },
-  { ...MIXED_8, id: 'mixed8-nofloor', label: 'Mixed 8, no time floor on the fire', fireFloor: 0 },
   {
     ...MIXED_8,
-    id: 'mixed8-all-nofloor',
-    label: 'Mixed 8, every boss killed, no time floor',
-    bossKills: 'all',
-    fireFloor: 0,
+    id: 'mixed8-slowfloor',
+    label: 'Mixed 8, with a slow time floor',
+    fireFloor: SLOW_FLOOR,
   },
   {
     ...MIXED_8,
-    id: 'mixed8-none-nofloor',
-    label: 'Mixed 8, no boss killed, no time floor',
+    id: 'mixed8-all-slowfloor',
+    label: 'Mixed 8, every boss killed, slow time floor',
+    bossKills: 'all',
+    fireFloor: SLOW_FLOOR,
+  },
+  {
+    ...MIXED_8,
+    id: 'mixed8-none-slowfloor',
+    label: 'Mixed 8, no boss killed, slow time floor',
     bossKills: 'none',
-    fireFloor: 0,
+    fireFloor: SLOW_FLOOR,
   },
   {
     ...MIXED_8,

@@ -214,16 +214,6 @@ export const TARGETS: readonly Target[] = [
     label: "a daily player's best creature is still growing at week 12",
   },
   {
-    id: 'T-7',
-    line: 'T-7',
-    measure: 'deadBefore12',
-    hi: 0,
-    scale: 2,
-    needs: ['mixed8'],
-    label:
-      'no resource of a daily player is dead before week 12 (resources.md: a pile growing 4 weeks to 4 weeks of income)',
-  },
-  {
     id: 'T-8a',
     line: 'T-8',
     measure: 'kinds4',

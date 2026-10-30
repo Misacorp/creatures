@@ -6,6 +6,7 @@ import rulesSource from '../src/rules.ts?raw';
 import { rosterProfile, ROSTER_WEEKS } from '../src/roster';
 import { playersOf, runAll } from '../src/scenarios';
 import { ALL_SERVERS } from '../src/servers';
+import { TARGETS } from '../src/targets';
 import { N_RES } from '../src/types';
 
 const SEEDS = 1;
@@ -121,6 +122,14 @@ describe('the report', () => {
     for (const id of ['T-1', 'T-2', 'T-3', 'T-4', 'T-6']) expect(ids).toContain(id);
     for (const t of data.targets) expect(t.measured).toMatch(/\d/);
     expect(markdown).toMatch(/- \*\*(PASS|FAIL)\*\* T-1:/);
+  });
+
+  it('shows T-7 (dead resources) without judging it, and keeps the dead flags in the ledger (Q42 B)', () => {
+    const t7 = data.targets.find((t) => t.id === 'T-7');
+    expect(t7?.info).toBe(true);
+    expect(markdown).toMatch(/- \*\*INFO\*\* T-7:/);
+    expect(TARGETS.some((t) => t.line === 'T-7')).toBe(false);
+    expect(data.ledger.daily?.every((l) => l.dead === null || l.dead > 0)).toBe(true);
   });
 
   it('ledgers every spendable resource for daily and weekly players', () => {

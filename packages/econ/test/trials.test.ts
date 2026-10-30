@@ -13,7 +13,7 @@ import {
 import { newAnvil, newSeat } from '../src/policy';
 import { profileById } from '../src/profiles';
 import { RULES } from '../src/rules';
-import { ALL_SERVERS } from '../src/servers';
+import { ALL_SERVERS, SLOW_FLOOR } from '../src/servers';
 import { runServer } from '../src/sim';
 import {
   addCreature,
@@ -106,7 +106,7 @@ describe('honours (trials.md)', () => {
     expect(c.level).toBe(25);
   });
 
-  it('fight in a team of the best three; an optimiser gives the last place to a creature that still needs a fight box', () => {
+  it('fight in a team of the best three; an optimiser carries one lower-level creature that still needs a fight box with two strong ones', () => {
     const sf = player('setAndForget');
     sf.creatures.forEach((c, i) => (c.xp = 1000 - i * 100));
     expect(fightTeam(sf).map((c) => c.xp)).toEqual([1000, 900, 800]);
@@ -223,19 +223,17 @@ describe('creature rarities (Q38)', () => {
   });
 });
 
-describe('the fire with and without a time floor (Q37 B)', () => {
-  it('a server with no floor and no boss kills stays below one with the slow floor', () => {
-    const base = ALL_SERVERS.find((s) => s.id === 'mixed8-none')!;
-    const slow = runServer({ ...base, weeks: 12 }, 5);
-    const none = runServer(
-      { ...ALL_SERVERS.find((s) => s.id === 'mixed8-none-nofloor')!, weeks: 12 },
+describe('the fire with and without a time floor (Q40 B: none is the default)', () => {
+  it('has no floor in the rules, and a server with the slow floor stays above the one without', () => {
+    expect(RULES.fire.floorPerWeek).toBe(0);
+    const none = runServer({ ...ALL_SERVERS.find((s) => s.id === 'mixed8-none')!, weeks: 12 }, 5);
+    const slow = runServer(
+      { ...ALL_SERVERS.find((s) => s.id === 'mixed8-none-slowfloor')!, weeks: 12 },
       5,
     );
     expect(none.log[11]!.fire).toBeLessThanOrEqual(slow.log[11]!.fire);
-    expect(slow.log[11]!.fire).toBeGreaterThanOrEqual(
-      RULES.fire.start + RULES.fire.floorPerWeek * 11,
-    );
-    // Without the floor the fire is only what was built.
-    expect(none.log[11]!.fire).toBeLessThan(RULES.fire.start + RULES.fire.floorPerWeek * 11 + 30);
+    expect(slow.log[11]!.fire).toBeGreaterThanOrEqual(RULES.fire.start + SLOW_FLOOR * 11);
+    // Without the floor, and no boss killed, the fire is only what was built.
+    expect(none.log[11]!.fire).toBeLessThan(RULES.fire.start + SLOW_FLOOR * 11 + 30);
   });
 });
