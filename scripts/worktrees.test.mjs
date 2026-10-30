@@ -26,9 +26,21 @@ describe('parseWorktrees', () => {
       '',
     ].join('\n');
     assert.deepEqual(parseWorktrees(out), [
-      { path: '/repo', branch: 'main', locked: false },
-      { path: '/repo/.claude/worktrees/agent-1', branch: 'worktree-agent-1', locked: true },
-      { path: '/repo/.claude/worktrees/agent-2', branch: null, locked: false },
+      { path: '/repo', head: 'abc', branch: 'main', locked: false, prunable: false },
+      {
+        path: '/repo/.claude/worktrees/agent-1',
+        head: 'def',
+        branch: 'worktree-agent-1',
+        locked: true,
+        prunable: false,
+      },
+      {
+        path: '/repo/.claude/worktrees/agent-2',
+        head: '123',
+        branch: null,
+        locked: false,
+        prunable: false,
+      },
     ]);
   });
 });
@@ -68,8 +80,13 @@ describe('run, on a throwaway repo', () => {
     git('init', '-q', '-b', 'main');
     commit(root, 'a.txt', 'a');
     const wt = (name) => join(root, '.claude', 'worktrees', name);
-    for (const name of ['merged', 'unmerged', 'dirty', 'locked'])
+    for (const name of ['merged', 'unmerged', 'dirty', 'locked', 'here'])
       git('worktree', 'add', '-q', '-b', `wt-${name}`, wt(name));
+    // A detached worktree with a commit no branch holds, and one whose folder was deleted.
+    git('worktree', 'add', '-q', '--detach', wt('detached work'));
+    commit(wt('detached work'), 'x.txt', 'x');
+    git('worktree', 'add', '-q', '-b', 'wt-gone', wt('gone'));
+    rmSync(wt('gone'), { recursive: true, force: true });
     commit(wt('merged'), 'm.txt', 'm');
     git('-c', 'user.name=t', '-c', 'user.email=t@t', 'cherry-pick', 'wt-merged');
     commit(wt('unmerged'), 'u.txt', 'u');
@@ -80,12 +97,18 @@ describe('run, on a throwaway repo', () => {
     const original = console.log;
     console.log = (line) => log.push(line);
     try {
-      run(['--yes'], root);
+      // Run from inside the `here` worktree: it must never remove itself.
+      run(['--yes'], root, wt('here'));
     } finally {
       console.log = original;
     }
     assert.equal(existsSync(wt('merged')), false);
-    for (const name of ['unmerged', 'dirty', 'locked']) assert.equal(existsSync(wt(name)), true);
+    for (const name of ['unmerged', 'dirty', 'locked', 'here', 'detached work'])
+      assert.equal(existsSync(wt(name)), true, name);
+    assert.ok(log.some((l) => l.startsWith('keep    here: you are running from it')));
+    assert.ok(log.some((l) => l.startsWith('keep    detached work: 1 commit not in')));
+    // The stale entry was pruned and did not stop the run.
+    assert.doesNotMatch(git('worktree', 'list'), /gone/);
     assert.ok(log.some((l) => l.startsWith('removed merged')));
     assert.ok(log.some((l) => l.includes('1 commit not in the current branch')));
     assert.ok(log.some((l) => l.includes('uncommitted change')));
