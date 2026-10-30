@@ -2,7 +2,7 @@
 
 Give this file to every agent asked to review UX, UI, art or game feel (paste it into the prompt, or point the agent at it). A reviewer weighs each suggestion against these priorities and says which one it trades against, if any. The lead applies a suggestion that trades against one only as a choice put to Misa, never as the new default (retro 2026-10-24: a reviewer pick took the screen away from the boss).
 
-The rules behind each line are in `ux-patterns.md` and `decisions.md`; this is the short list.
+The rules behind each line are in `ux-patterns.md` and `decisions/ui.md`; this is the short list.
 
 ## What matters most
 
