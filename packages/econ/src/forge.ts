@@ -1,4 +1,5 @@
 import { masteryBonus } from './curves';
+import { waitsForRibbon } from './growth';
 import type { Rules } from './rules';
 import { ELEMENTS } from './rules';
 import type { Anvil, Piece, Player, Server } from './types';
@@ -50,19 +51,81 @@ function chooseElement(p: Player): number {
   return next;
 }
 
+/**
+ * Q34 B: the Forge's shard exchange. Trades `rate` shards of another element (the biggest pile above `keep`) for 1 of `element`,
+ * with a chance of a crit that gives more, until the player has `want` of it or no other pile can pay. Returns the shards gained.
+ */
+export function exchangeFor(p: Player, element: number, want: number, keep: number): number {
+  const { rate, critChance, critYield } = p.rules.forge.exchange;
+  let gained = 0;
+  while ((p.shards[element] ?? 0) < want) {
+    let donor = -1;
+    let best = rate - 1e-9;
+    for (let e = 0; e < ELEMENTS.length; e++) {
+      const spare = (p.shards[e] ?? 0) - keep;
+      if (e !== element && spare > best) {
+        best = spare;
+        donor = e;
+      }
+    }
+    if (donor < 0) break;
+    debitShard(p, donor, rate, 'exchange');
+    const got = uniform(p.rng) < critChance ? critYield : 1;
+    creditShard(p, element, got, 'exchange');
+    p.wk.exchanges += 1;
+    if (got > 1) p.wk.exchangeCrits += 1;
+    gained += got;
+  }
+  return gained;
+}
+
+/**
+ * A visit's exchanges (Q34 B). An optimiser exchanges at every visit for what its orders and the ribbons waiting need; a
+ * set-and-forget player only when an anvil is waiting on a shard at that visit (the one-tap fix, enough for one piece on each anvil).
+ */
+export function exchangeAtVisit(p: Player): void {
+  const rules = p.rules;
+  const keep = rules.forge.giveReserveShards;
+  if (p.policy === 'setAndForget') {
+    if (p.waitingShard >= 0)
+      exchangeFor(p, p.waitingShard, Math.max(1, p.anvils.length) * rules.forge.shard, keep);
+    p.waitingShard = -1;
+    return;
+  }
+  const want = new Array<number>(ELEMENTS.length).fill(0);
+  for (const c of p.creatures) {
+    if (!waitsForRibbon(rules, c)) continue;
+    const ribbon = rules.xp.ribbons[c.ribbons];
+    if (ribbon) want[c.element] = (want[c.element] ?? 0) + ribbon.shards;
+  }
+  for (let e = 0; e < ELEMENTS.length; e++) {
+    const orders = Math.min(
+      (p.weakByElement[e] ?? 0) - (p.pendingByElement[e] ?? 0),
+      p.anvils.length * 3,
+    );
+    if (orders > 0) want[e] = (want[e] ?? 0) + orders * rules.forge.shard;
+  }
+  const order = want.map((w, e) => ({ w, e })).sort((a, b) => b.w - a.w);
+  for (const { w, e } of order) if (w > 0) exchangeFor(p, e, w, keep);
+  p.waitingShard = -1;
+}
+
 /** What an idle anvil does at the start of an hour: begin a piece if it has an order and the inputs, else say what is missing. */
 function tryStart(p: Player, anvil: Anvil): 'started' | 'scrap' | 'shard' | 'nothing' {
   const rules = p.rules;
   const element = chooseElement(p);
   if (element < 0) return 'nothing';
   if ((p.stock[R.scrap] ?? 0) < rules.forge.scrap) return 'scrap';
-  if ((p.shards[element] ?? 0) < rules.forge.shard) return 'shard';
+  if ((p.shards[element] ?? 0) < rules.forge.shard) {
+    p.waitingShard = element;
+    return 'shard';
+  }
   // Reach (V-FORGE-8): an optimiser reaches for better rarity with Essence it does not need elsewhere.
   let reach: 'rare' | 'epic' | null = null;
   if (p.policy === 'optimiser') {
     const spare = (p.stock[R.essence] ?? 0) - rules.forge.reachReserveEssence;
     const epic = rules.forge.reach.epic;
-    if (spare >= epic.essence && (p.stock[R.glimmer] ?? 0) >= epic.glimmer + 2) reach = 'epic';
+    if (spare >= epic.essence) reach = 'epic';
     else if (spare >= rules.forge.reach.rare.essence) reach = 'rare';
   }
   debit(p, R.scrap, rules.forge.scrap, 'pieces');
@@ -72,7 +135,6 @@ function tryStart(p: Player, anvil: Anvil): 'started' | 'scrap' | 'shard' | 'not
   if (reach) {
     const r = rules.forge.reach[reach];
     debit(p, R.essence, r.essence, 'reach');
-    if (r.glimmer > 0) debit(p, R.glimmer, r.glimmer, 'reach');
     hours = r.hours;
     odds = r.odds;
   }
@@ -195,7 +257,6 @@ export function dismantleBag(p: Player): void {
     credit(p, R.scrap, n * y.scrap, 'dismantling');
     for (let e = 0; e < ELEMENTS.length; e++)
       creditShard(p, e, (n * y.shards) / ELEMENTS.length, 'dismantling');
-    credit(p, R.glimmer, n * y.glimmer, 'dismantling');
     credit(p, R.essence, n * y.essence, 'dismantling');
     p.wk.piecesDismantled += n;
     p.bag[rarity] = 0;

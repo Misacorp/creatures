@@ -72,22 +72,17 @@ export function buyEvolutions(p: Player): void {
   }
 }
 
-/** Ribbons: scrap, shards of the creature's element and glimmer let a creature past its gate; the best waiting creature first. */
+/** Ribbons: scrap and shards of the creature's element let a creature past its gate; the best waiting creature first. */
 export function buyRibbons(p: Player): void {
   const rules = p.rules;
   const waiting = p.creatures.filter((c) => waitsForRibbon(rules, c)).sort((a, b) => b.xp - a.xp);
   for (const c of waiting) {
     const ribbon = rules.xp.ribbons[c.ribbons];
     if (!ribbon) continue;
-    if (
-      (p.stock[R.scrap] ?? 0) < ribbon.scrap ||
-      (p.shards[c.element] ?? 0) < ribbon.shards ||
-      (p.stock[R.glimmer] ?? 0) < ribbon.glimmer
-    )
+    if ((p.stock[R.scrap] ?? 0) < ribbon.scrap || (p.shards[c.element] ?? 0) < ribbon.shards)
       continue;
     debit(p, R.scrap, ribbon.scrap, 'ribbons');
     debitShard(p, c.element, ribbon.shards, 'ribbons');
-    debit(p, R.glimmer, ribbon.glimmer, 'ribbons');
     c.ribbons += 1;
     refreshCeiling(rules, c);
     relevel(c);
@@ -137,11 +132,9 @@ interface Needs {
   scrap: number;
   shard: number[];
   creature: number;
-  glimmer: number;
 }
 
 function needsOf(p: Player): Needs {
-  const rules = p.rules;
   const n = Math.max(1, p.creatures.length);
   const owned = p.speciesCount.filter((c) => c > 0).length;
   return {
@@ -151,7 +144,6 @@ function needsOf(p: Player): Needs {
       return needFactor(p.shards[e] ?? 0, 8) * (0.4 + 2 * share);
     }),
     creature: owned < p.available * 0.9 ? 1.3 : 0.3,
-    glimmer: needFactor(p.stock[R.glimmer] ?? 0, 6) * (rules.xp.ribbons.length > 0 ? 1 : 0.5),
   };
 }
 
@@ -177,12 +169,7 @@ function seatScore(
       (second ? rules.scouts.secondScoutCreatures : 1) *
       needs.creature *
       20 +
-    rare *
-      (r.gear * 6 +
-        r.blueprints * 8 +
-        r.glimmer * needs.glimmer * 40 +
-        r.rareFinds * 60 +
-        r.pages * 2)
+    rare * (r.gear * 6 + r.blueprints * 8 + r.rareFinds * 60 + r.pages * 2)
   );
 }
 
@@ -250,12 +237,10 @@ export function countOptions(p: Player, server: Server): number[] {
       if (
         ribbon &&
         (have[R.scrap] ?? 0) >= ribbon.scrap &&
-        (p.shards[c.element] ?? 0) >= ribbon.shards &&
-        (have[R.glimmer] ?? 0) >= ribbon.glimmer
+        (p.shards[c.element] ?? 0) >= ribbon.shards
       ) {
         out[R.scrap] = (out[R.scrap] ?? 0) + 1;
         out[R.shards] = (out[R.shards] ?? 0) + 1;
-        if (ribbon.glimmer > 0) out[R.glimmer] = (out[R.glimmer] ?? 0) + 1;
       }
     }
     if (
@@ -289,12 +274,11 @@ export function nextPrice(p: Player, r: number, server: Server): number | null {
       const ribbon = rules.xp.ribbons[c.ribbons];
       if (ribbon && near(ribbonGate(rules, c.ribbons), c.level)) prices.push(ribbon.scrap);
     }
-  } else if (r === R.shards || r === R.glimmer) {
+  } else if (r === R.shards) {
     for (const c of p.creatures) {
       const ribbon = rules.xp.ribbons[c.ribbons];
       if (!ribbon || !near(ribbonGate(rules, c.ribbons), c.level)) continue;
-      const cost = r === R.shards ? ribbon.shards : ribbon.glimmer;
-      if (cost > 0) prices.push(cost);
+      if (ribbon.shards > 0) prices.push(ribbon.shards);
     }
   } else if (r === R.essence) {
     if (p.creatures.some((c) => c.canEvolve && !c.evolved && near(rules.xp.evolveLevel, c.level)))

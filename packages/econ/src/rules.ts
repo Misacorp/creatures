@@ -11,7 +11,7 @@ export const ELEMENTS = ['tide', 'ember', 'grove', 'spark', 'mire'] as const;
 export type Element = (typeof ELEMENTS)[number];
 
 /** The spendable resources the lab watches (resources.md). Shards are one number here (five elements inside). */
-export const RESOURCES = ['acorns', 'scrap', 'shards', 'glimmer', 'essence'] as const;
+export const RESOURCES = ['acorns', 'scrap', 'shards', 'essence'] as const;
 export type Resource = (typeof RESOURCES)[number];
 
 export type KitName = 'lure' | 'lantern' | 'satchel' | 'tongs' | 'loupe';
@@ -23,6 +23,12 @@ export interface Destination {
   readonly rich: FindFamily | 'none';
 }
 
+/** The two ribbons that gate a creature (levels from the shipped game; the costs are tuned). */
+const RIBBONS = [
+  { level: GAME.experience.ribbons[0]?.level ?? 10, scrap: 9, shards: 3 },
+  { level: GAME.experience.ribbons[1]?.level ?? 20, scrap: 23, shards: 8 },
+];
+
 export const RULES = {
   /** The horizon: weeks of play simulated. */
   horizon: { weeks: 24 },
@@ -32,18 +38,15 @@ export const RULES = {
     idlePerHour: 5,
     maxLevel: GAME.experience.maxLevel,
     /** Ribbons gate a creature at these levels until bought (shipped: bronze at 10, silver at 20; gold is free at 30). */
-    ribbons: GAME.experience.ribbons.map((r) => ({
-      level: r.level,
-      scrap: r.scrap,
-      shards: r.shards,
-      glimmer: r.glimmer,
-    })),
+    // TUNED 2026-10-30: the costs were the shipped game's (bronze 6 scrap and 2 shards, silver 15 and 5); the tuner (ribbonCost x1.5).
+    ribbons: RIBBONS,
     /** A first stage waits for its evolution at this level (shipped). */
     evolveLevel: 15,
     // ASSUMPTION: 60% of creatures are first stages with an evolution (the shipped roster: 10 of 16 lines evolve).
     evolveShare: 0.6,
     /** An evolution costs this much Essence (shipped: every evolving species in creatures.json, 20 Essence at level 15). */
-    evolveEssence: 20,
+    // TUNED 2026-10-30: was 20 (shipped).
+    evolveEssence: 30,
   },
 
   /** V-POST-10 away steps: the share of idle gains by hours since the last visit. Curve B is the lead's pick, A the variant. */
@@ -68,8 +71,10 @@ export const RULES = {
 
   /** V-BON-2 catch-up and V-BON-7 the hearth. */
   bonfire: {
+    // Q35 B: the multiplier is fixed at each visit and holds until the next visit (never above the target it was fixed for).
     // ASSUMPTION: catch-up multiplies idle XP only, not what fights pay (V-BON-2 says "XP only, never output"; a sensitivity run applies it to fights too).
-    catchUp: { maxMultiplier: 2, fullAtGap: 6, holdHours: 24, appliesToFights: false },
+    // TUNED 2026-10-30: maxMultiplier was 2 (bonfire.md's example), the tuner took it to 3 and then 3.75.
+    catchUp: { maxMultiplier: 3.75, fullAtGap: 6, appliesToFights: false },
     hearth: { perLevel: 0.04 },
   },
 
@@ -93,10 +98,12 @@ export const RULES = {
   seats: {
     // ASSUMPTION: the first seat at each place is free; the rest cost these Acorns (the docs: "about three weeks of Acorn
     // income in all", about 1,000 for the seats a player reaches by week 8).
-    scoutPrices: [0, 120, 200, 300, 420, 560],
-    anvilPrices: [0, 130, 260, 420],
+    // TUNED 2026-10-30: were [0, 120, 200, 300, 420, 560] and [0, 130, 260, 420] (seat prices x0.75).
+    scoutPrices: [0, 90, 150, 225, 315, 420],
+    anvilPrices: [0, 98, 195, 315],
     // ASSUMPTION: an anvil also takes scrap ("own anvils unlocked with their own Acorns and scrap", V-FORGE-6).
-    anvilScrap: [0, 40, 80, 120],
+    // TUNED 2026-10-30: was [0, 40, 80, 120].
+    anvilScrap: [0, 30, 60, 90],
     /** Each place level above 1 makes every seat this much dearer. */
     levelSurcharge: 0.15,
     /** Seats allowed by place level 1..5 (posts.md table). */
@@ -107,7 +114,8 @@ export const RULES = {
   /** V-POST-11 kit: bought once, kept; a tilt, not a flat bonus. */
   kit: {
     // ASSUMPTION: about a week of Acorn income each (posts.md), any kind.
-    price: 350,
+    // TUNED 2026-10-30: was 350 (about a week of Acorn income).
+    price: 875,
     lure: { creatures: 2 },
     lantern: { rare: 1.5 },
     satchel: { scrap: 1.4, shards: 1.4 },
@@ -123,14 +131,15 @@ export const RULES = {
   /** V-SCOUT-2, V-SCOUT-9, V-SCOUT-10: finds per effective hour of one scout, before fit, mastery and kit. */
   scouts: {
     perHour: {
-      scrap: 0.75,
+      // TUNED 2026-10-30: scrap was 0.75 (scouts.md example).
+      scrap: 1.425,
       shards: 0.2,
       // ASSUMPTION: 0.75% an hour, not the docs' 2%: with 2% a daily player has all 34 forms by week 8, and posts.md's worked month
       // ("15 creatures by week 4") needs about 0.75%. The two numbers in the docs disagree; this one follows the worked month.
-      creatures: 0.0075,
+      // TUNED 2026-10-30: was 0.0075.
+      creatures: 0.013,
       gear: 0.01,
       blueprints: 0.003,
-      glimmer: 0.006,
       pages: 0.004,
       // ASSUMPTION: the "everyday" rare find that fills one socket of a collection (V-COM-12) about every 28 scout-days.
       rareFinds: 0.0015,
@@ -168,13 +177,17 @@ export const RULES = {
   /** V-FORGE-1..9 and V-GEAR-6: anvils, pieces, tinkering, the bag. */
   forge: {
     pieceHours: 16,
-    scrap: 6,
+    // TUNED 2026-10-30: scrap was 6 (forge.md example).
+    scrap: 18,
     shard: 1,
     /** Reach (shipped prices; hours from forge.md). Odds are [common, rare, epic]. */
     reach: {
-      rare: { hours: 32, essence: 25, glimmer: 0, odds: [0.4, 0.6, 0] },
-      epic: { hours: 48, essence: 70, glimmer: 1, odds: [0.15, 0.55, 0.3] },
+      rare: { hours: 32, essence: 25, odds: [0.4, 0.6, 0] },
+      epic: { hours: 48, essence: 70, odds: [0.15, 0.55, 0.3] },
     },
+    // Q34 B: the Forge's shard exchange: `rate` shards of any one other element for 1 of the element you need.
+    // ASSUMPTION: an "exchange crit" gives `critYield` instead of 1 with this chance (Misa's example, 10% for 2).
+    exchange: { rate: 3, critChance: 0.1, critYield: 2 },
     // ASSUMPTION: odds of a plain piece's rarity (the shipped game's crafting is 'common' unless reached).
     baseOdds: [0.85, 0.13, 0.02],
     tinkerScrapEveryHours: 12,
@@ -187,18 +200,18 @@ export const RULES = {
     weakMargin: 6,
     // ASSUMPTION: what dismantling a piece gives, from the shipped ranges' middles (scrap is about 40% of the craft's 6).
     dismantle: [
-      { scrap: 2.5, shards: 0, glimmer: 0, essence: 0 },
-      { scrap: 3, shards: 1, glimmer: 0, essence: 5.5 },
-      { scrap: 3.5, shards: 1.5, glimmer: 0.5, essence: 17.5 },
+      { scrap: 2.5, shards: 0, essence: 0 },
+      { scrap: 3, shards: 1, essence: 5.5 },
+      { scrap: 3.5, shards: 1.5, essence: 17.5 },
     ],
     // ASSUMPTION: a set-and-forget player bulk-dismantles when the bag reaches this many; an optimiser every visit.
     tidyAt: 180,
     // ASSUMPTION: scouts' finds and the dungeon's drops carry rarity with the same odds as a plain craft.
     foundGearOdds: [0.85, 0.13, 0.02],
     // ASSUMPTION: a player keeps this much scrap and this many of each shard for the Forge and the ribbons before giving the rest
-    // (never less than the dearest ribbon: 15 scrap, 5 shards).
+    // (never less than the dearest ribbon: here its shards).
     giveReserveScrap: 72,
-    giveReserveShards: 5,
+    giveReserveShards: Math.max(...RIBBONS.map((b) => b.shards)),
     // ASSUMPTION: an optimiser keeps this much Essence for evolutions before it reaches for rarity.
     reachReserveEssence: 60,
   },
@@ -229,7 +242,6 @@ export const RULES = {
       acorns: 10,
       scrap: 10,
       essence: 1,
-      glimmer: 0.05,
       gearPieces: 0.5,
       /** The dungeon's item level base (shipped: base 1 + depth/3). */
       itemLevel: 10,
@@ -251,9 +263,11 @@ export const RULES = {
     places: ['bonfire', 'forge', 'signpost', 'paddock', 'school'] as readonly string[],
     maxLevel: 5,
     // A project's size in Acorns' worth: the first about two weeks of 8 players' giving (commons.md).
-    baseSize: 2000,
+    // TUNED 2026-10-30: was 2000 (commons.md example).
+    baseSize: 9000,
     // ASSUMPTION: level 1 to 2 costs 35% of the base (V-COM-15: "small enough to finish in a few days"), then the base, x1.25, x1.25.
-    levelFactor: [0.35, 1, 1.25, 1.5625],
+    // TUNED 2026-10-30: the first level was 0.35.
+    levelFactor: [0.0875, 1, 1.25, 1.5625],
     // ASSUMPTION: cosmetic projects after the max level cost twice the base, repeating.
     cosmeticFactor: 2,
     // ASSUMPTION: size grows with the active weight W as (W / 8) ^ 0.7 ("more slowly than the player count").
@@ -262,12 +276,20 @@ export const RULES = {
     buildHours: 72,
     // ASSUMPTION: a player's weight by visit days in the last 7: 0.4 for one day (a weekly player), 1 from four days.
     weight: { oneDay: 0.4, fullAtDays: 4 },
-    // ASSUMPTION: in the variant where everything counts, what one scrap, one shard and one Essence are worth toward a project, in
-    // Acorns. Scrap is the plentiful one (a daily player earns about three times more of it than Acorns), so it counts half. The
-    // default gives Acorns only, as commons.md's example does (8 players giving a third of 50 Acorns a day).
-    giftValue: { acorns: 1, scrap: 0.5, shards: 2, essence: 2 },
-    // ASSUMPTION: in the "Essence to projects" variant only these places take Essence (commons.md: Paddock and School routes).
-    essencePlaces: ['paddock', 'school'] as readonly string[],
+    // ASSUMPTION: what one Acorn, one scrap and one shard are worth toward a project, in Acorns' worth (the project's size unit).
+    // Scrap is the plentiful one (a daily player earns about three times more of it than Acorns), so it counts half.
+    giftValue: { acorns: 1, scrap: 0.5, shards: 2 },
+    // ASSUMPTION (Q33): a project's cost is split by value into an Acorn part, a scrap part and a shard part in these shares.
+    costSplit: { acorns: 0.4, scrap: 0.4, shards: 0.2 },
+    // ASSUMPTION (Q33): the shard part of a place's project takes shards of this element (a simple tie of element to place); shards of
+    // any other element count at the exchange's rate (3 for 1), so one scarce element never holds a project back.
+    placeElement: {
+      bonfire: 'ember',
+      forge: 'ember',
+      signpost: 'grove',
+      paddock: 'tide',
+      school: 'spark',
+    } as Record<string, string>,
     // ASSUMPTION: the server's gifts pick an open place by these weights (the guided start overrides at first).
     placeWeights: { bonfire: 2, forge: 3, signpost: 2, paddock: 1, school: 1 } as Record<
       string,
@@ -321,14 +343,16 @@ export const RULES = {
   /** V-COM-13, V-GEAR-8, V-GEAR-10: the Forge's fire. */
   fire: {
     start: 10,
-    floorPerWeek: 3,
+    // TUNED 2026-10-30: was 3 (commons.md: +3 a week, 46 at week 12).
+    floorPerWeek: 3.75,
     warmth: {
-      placeLevel: 3,
-      forgeLevel: 5,
-      collection: 4,
-      bossKill: 2,
+      // TUNED 2026-10-30: were 3, 5, 4, 2 and 1 (commons.md's warmth table; x0.25).
+      placeLevel: 0.75,
+      forgeLevel: 1.25,
+      collection: 1,
+      bossKill: 0.5,
       masterTitlesPerPoint: 5,
-      cosmetic: 1,
+      cosmetic: 0.25,
     },
     thresholds: [10, 25, 50, 80],
   },

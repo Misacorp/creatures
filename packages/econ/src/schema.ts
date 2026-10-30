@@ -24,7 +24,7 @@ const odds = v.pipe(
   v.tuple([share, share, share]),
   v.check((o) => Math.abs(o[0] + o[1] + o[2] - 1) < 1e-9, 'odds must add up to 1'),
 );
-const rarityRow = v.strictObject({ scrap: num, shards: num, glimmer: num, essence: num });
+const rarityRow = v.strictObject({ scrap: num, shards: num, essence: num });
 
 export const RulesSchema = v.strictObject({
   horizon: v.strictObject({
@@ -33,7 +33,7 @@ export const RulesSchema = v.strictObject({
   xp: v.strictObject({
     idlePerHour: pos,
     maxLevel: int,
-    ribbons: v.array(v.strictObject({ level: int, scrap: int, shards: int, glimmer: int })),
+    ribbons: v.array(v.strictObject({ level: int, scrap: int, shards: int })),
     evolveLevel: int,
     evolveShare: share,
     evolveEssence: int,
@@ -43,7 +43,6 @@ export const RulesSchema = v.strictObject({
     catchUp: v.strictObject({
       maxMultiplier: pos,
       fullAtGap: pos,
-      holdHours: pos,
       appliesToFights: v.boolean(),
     }),
     hearth: v.strictObject({ perLevel: num }),
@@ -80,7 +79,6 @@ export const RulesSchema = v.strictObject({
       creatures: share,
       gear: share,
       blueprints: share,
-      glimmer: share,
       pages: share,
       rareFinds: share,
     }),
@@ -107,9 +105,10 @@ export const RulesSchema = v.strictObject({
     scrap: int,
     shard: int,
     reach: v.strictObject({
-      rare: v.strictObject({ hours: pos, essence: int, glimmer: int, odds }),
-      epic: v.strictObject({ hours: pos, essence: int, glimmer: int, odds }),
+      rare: v.strictObject({ hours: pos, essence: int, odds }),
+      epic: v.strictObject({ hours: pos, essence: int, odds }),
     }),
+    exchange: v.strictObject({ rate: pos, critChance: share, critYield: pos }),
     baseOdds: odds,
     tinkerScrapEveryHours: pos,
     floorPiecesPerAnvil: int,
@@ -139,7 +138,6 @@ export const RulesSchema = v.strictObject({
       acorns: num,
       scrap: num,
       essence: num,
-      glimmer: num,
       gearPieces: num,
       itemLevel: int,
     }),
@@ -162,8 +160,15 @@ export const RulesSchema = v.strictObject({
     referenceWeight: pos,
     buildHours: num,
     weight: v.strictObject({ oneDay: share, fullAtDays: pos }),
-    giftValue: v.strictObject({ acorns: pos, scrap: pos, shards: pos, essence: pos }),
-    essencePlaces: v.array(v.string()),
+    giftValue: v.strictObject({ acorns: pos, scrap: pos, shards: pos }),
+    costSplit: v.pipe(
+      v.strictObject({ acorns: share, scrap: share, shards: share }),
+      v.check(
+        (s) => Math.abs(s.acorns + s.scrap + s.shards - 1) < 1e-9,
+        'the shares of a project must add up to 1',
+      ),
+    ),
+    placeElement: v.record(v.string(), v.picklist(ELEMENTS)),
     placeWeights: v.record(v.string(), pos),
     communalPerHour: num,
     communalCreaturesPerSeat: pos,

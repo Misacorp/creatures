@@ -160,10 +160,8 @@ export function priceTable(daily: readonly PlayerRun[], rules: Rules): PriceRow[
   rules.xp.ribbons.forEach((rb, i) => {
     rows.push(row('scrap', `ribbon ${i + 1} (level ${rb.level}) scrap`, rb.scrap));
     rows.push(row('shards', `ribbon ${i + 1} shards`, rb.shards));
-    if (rb.glimmer > 0) rows.push(row('glimmer', `ribbon ${i + 1} glimmer`, rb.glimmer));
   });
   rows.push(row('shards', 'one Forge piece', rules.forge.shard));
-  rows.push(row('glimmer', 'Reach for Epic', rules.forge.reach.epic.glimmer));
   rows.push(row('essence', 'one evolution', rules.xp.evolveEssence));
   rows.push(row('essence', 'Reach for Rare', rules.forge.reach.rare.essence));
   rows.push(row('essence', 'Reach for Epic', rules.forge.reach.epic.essence));
@@ -399,6 +397,56 @@ export function serverOf(results: Results, id: string): ServerRow | null {
   };
 }
 
+// ---------- the shard exchange by policy ----------
+
+export interface ExchangeRow {
+  policy: string;
+  exchange: boolean;
+  /** The share of anvil-hours spent waiting for a shard, mean over weeks 2 to 12 and its worst week. */
+  shardStallMean: number;
+  shardStallWorst: number;
+  /** The share spent making pieces. */
+  making: number;
+  /** XP lost to ribbon gates and evolution waits over weeks 1 to 12, and creatures waiting at a ribbon gate at week 12. */
+  xpLost: number;
+  waitingRibbon12: number;
+  /** Exchanges a week (weeks 2 to 12) and the share that were crits. */
+  exchangesPerWeek: number;
+}
+
+export function exchangeRowsOf(results: Results): ExchangeRow[] {
+  const cases: [string, boolean, string][] = [
+    ['set-and-forget', false, 'mixed8-sf-noexchange'],
+    ['set-and-forget', true, 'mixed8-sf'],
+    ['optimiser', false, 'mixed8-opt-noexchange'],
+    ['optimiser', true, 'mixed8-opt'],
+  ];
+  const shardIdx = FORGE_BUCKETS.indexOf('shard');
+  const workIdx = FORGE_BUCKETS.indexOf('work');
+  return cases.flatMap(([policy, exchange, id]) => {
+    const players = playersOf(results[id], 'daily');
+    if (players.length === 0) return [];
+    const stall = series(players, 12, (w) => forgeShares(w)[shardIdx] ?? 0)
+      .slice(1)
+      .map((b) => b.median);
+    const making = series(players, 12, (w) => forgeShares(w)[workIdx] ?? 0)
+      .slice(1)
+      .map((b) => b.median);
+    return [
+      {
+        policy,
+        exchange,
+        shardStallMean: sum(stall) / Math.max(1, stall.length),
+        shardStallWorst: Math.max(0, ...stall),
+        making: sum(making) / Math.max(1, making.length),
+        xpLost: medianOf(players, (p) => total(p, 1, 12, (w) => w.xpLost)),
+        waitingRibbon12: median(players.map((p) => p.weeks[11]?.waitingRibbon ?? 0)),
+        exchangesPerWeek: medianOf(players, (p) => total(p, 2, 12, (w) => w.exchanges) / 11),
+      },
+    ];
+  });
+}
+
 // ---------- variants ----------
 
 export interface VariantRow {
@@ -574,6 +622,19 @@ export function measuresOf(results: Results): Measures {
   if (server && server.levels.length >= 12) {
     put('firstLevelDay', server.firstLevelDay ?? NEVER_DAYS);
     put('collections12', server.collections[11] ?? 0);
+    put('levelUps12', server.levelUpsByWeek12);
+  }
+  // The fire of a server that kills every boss: about 50 at week 12 (commons.md), under the gear ladder's top before week 24.
+  const all = serverOf(results, 'mixed8-all');
+  if (all && all.fire.length >= 12) put('fire12All', all.fire[11]);
+  if (all && all.fire.length >= 24) put('fire23All', all.fire[22]);
+  // T-7: resources of a daily player that are dead (a pile rising 4 weeks, at 4 weeks of income) from before week 12.
+  if (dailyFull.length && dailyFull.every((p) => p.weeks.length >= 16)) {
+    put(
+      'deadBefore12',
+      ledgerOf(playersOf(results.mixed8, 'daily')).filter((l) => l.dead !== null && l.dead < 12)
+        .length,
+    );
   }
   return m;
 }
@@ -682,6 +743,14 @@ export function targetsOf(results: Results, rules: Rules): TargetLine[] {
     target:
       'first level within 14 days; the rare-find route matters (at least one collection by week 12) without being required',
   });
+  const levelUps12 = m.levelUps12 ?? NaN;
+  lines.push({
+    id: 'T-3 (pace)',
+    pass: metLine('T-3p'),
+    measured: `by week 12 a server of 8 has ${round(levelUps12)} place level-ups across the valley and a fire of ${round(m.fire12All ?? NaN)} if it kills every boss (${round(m.fire23All ?? NaN)} at week 23)`,
+    target:
+      'about 5 to 6 level-ups by week 12; the fire about 50 at week 12 and under about 100 before week 24 (commons.md)',
+  });
   // T-4: no dead chains: the share of anvil-hours spent tinkering for want of scrap in the worst week (goals.md). Shard stalls and a
   // full floor are reported next to it, not judged.
   const scrapWorst = worstStall(results, FORGE_BUCKETS.indexOf('scrap'), 12);
@@ -700,6 +769,13 @@ export function targetsOf(results: Results, rules: Rules): TargetLine[] {
     info: true,
     measured: `for want of a shard of the element the team needs, the worst week is ${pct(shardWorst.share)} (${shardWorst.id}, week ${shardWorst.week}); averaged over weeks 2 to 12 that profile loses ${pct(shardWorst.mean)}. With the Forge floor full the worst week is ${pct(floorWorst.share)} (${floorWorst.id}, week ${floorWorst.week}), mean ${pct(floorWorst.mean)}`,
     target: `goals.md T-4 names scrap only; shards are shown for the same ${pct(stallMax)}`,
+  });
+  // T-7: no dead resource before week 12.
+  lines.push({
+    id: 'T-7',
+    pass: metLine('T-7'),
+    measured: `${round(m.deadBefore12 ?? NaN)} of a daily player's 4 resources (Acorns, scrap, shards, Essence) are dead (a pile rising 4 weeks running to 4 weeks of income) before week 12`,
+    target: 'none (resources.md: nothing that only piles up)',
   });
   // T-6: growth lasts the arc.
   const reach30 = daily.flatMap((p) =>

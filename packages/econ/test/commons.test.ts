@@ -2,24 +2,28 @@
 import { describe, expect, it } from 'vitest';
 import { deadFrom } from '../src/analysis';
 import { setCollectionFind } from '../src/collections';
-import { RULES } from '../src/rules';
+import { ELEMENTS, RESOURCES, RULES } from '../src/rules';
 import { collectSeat } from '../src/scouts';
 import { runAll } from '../src/scenarios';
-import { defaultDestination, newSeat } from '../src/policy';
+import { defaultDestination, newAnvil, newSeat } from '../src/policy';
 import { profileById } from '../src/profiles';
 import { join, runServer, visit } from '../src/sim';
 import { ALL_SERVERS } from '../src/servers';
-import { addCreature, createPlayer, createServer, speciesAvailable } from '../src/world';
-import { LEVEL_XP } from '../src/curves';
-import { fightXp } from '../src/growth';
+import {
+  addCreature,
+  createPlayer,
+  createServer,
+  creditShard,
+  refreshCeiling,
+  speciesAvailable,
+} from '../src/world';
+import { LEVEL_XP, awayShare } from '../src/curves';
+import { accrueIdleXp, effectiveCatchUp, fightXp, setCatchUp } from '../src/growth';
+import { contributePart, dailyServer, giveGifts } from '../src/commons';
+import { exchangeAtVisit, exchangeFor } from '../src/forge';
 import { R } from '../src/types';
 
-const options = {
-  bossKills: 'half',
-  communalSeats: true,
-  gifts: 'acorns',
-  essenceToProjects: false,
-} as const;
+const options = { bossKills: 'half', communalSeats: true, shardExchange: true } as const;
 const server = (opts: Partial<typeof options> = {}) =>
   createServer('test', 1, { ...options, ...opts }, RULES);
 
@@ -63,26 +67,69 @@ describe('collection sockets (V-COM-12)', () => {
   });
 });
 
-describe('gifts', () => {
-  const results = runAll(1, RULES, ['mixed8', 'mixed8-everything', 'mixed8-essence']);
-  const given = (id: string, resource: number): number =>
-    results[id]!.runs.flatMap((r) => r.players).reduce(
-      (n, p) => n + (p.sources[`out:${resource}:gifts`] ?? 0),
-      0,
-    );
+describe('projects and gifts (Q33)', () => {
+  const results = runAll(1, RULES, ['mixed8']);
+  const given = (resource: number): number =>
+    results
+      .mixed8!.runs.flatMap((r) => r.players)
+      .reduce((n, p) => n + (p.sources[`out:${resource}:gifts`] ?? 0), 0);
 
-  it('give Acorns only by default', () => {
-    expect(given('mixed8', R.acorns)).toBeGreaterThan(0);
-    expect(given('mixed8', R.scrap)).toBe(0);
-    expect(given('mixed8', R.shards)).toBe(0);
-    expect(given('mixed8', R.essence)).toBe(0);
+  it('are paid in Acorns, scrap and shards, never Essence', () => {
+    expect(given(R.acorns)).toBeGreaterThan(0);
+    expect(given(R.scrap)).toBeGreaterThan(0);
+    expect(given(R.shards)).toBeGreaterThan(0);
+    expect(given(R.essence)).toBe(0);
   });
 
-  it('give scrap and shards too when everything counts, and Essence only in its variant', () => {
-    expect(given('mixed8-everything', R.scrap)).toBeGreaterThan(0);
-    expect(given('mixed8-everything', R.shards)).toBeGreaterThan(0);
-    expect(given('mixed8-essence', R.essence)).toBeGreaterThan(0);
-    expect(given('mixed8-essence', R.scrap)).toBe(0);
+  it('cost an Acorn part, a scrap part and a shard part that add up to the size, and need all three', () => {
+    const s = server();
+    dailyServer(s, [], 0, RULES);
+    const bonfire = s.places[0]!;
+    expect(bonfire.open).toBe(true);
+    const v = RULES.commons.giftValue;
+    const value =
+      bonfire.need[0]! * v.acorns + bonfire.need[1]! * v.scrap + bonfire.need[2]! * v.shards;
+    expect(value).toBeCloseTo(bonfire.size, 6);
+    expect((bonfire.need[0]! * v.acorns) / bonfire.size).toBeCloseTo(
+      RULES.commons.costSplit.acorns,
+      9,
+    );
+    // Acorns and scrap alone never finish it; the shards do.
+    contributePart(s, 0, 0, 1e9, 10, RULES);
+    contributePart(s, 0, 1, 1e9, 10, RULES);
+    expect(s.places[0]!.level).toBe(1);
+    expect(bonfire.have[0]).toBe(bonfire.need[0]);
+    contributePart(s, 0, 2, 1e9, 10, RULES);
+    expect(s.places[0]!.level).toBe(2);
+    expect(s.places[0]!.open).toBe(false);
+  });
+
+  it("take the place's own element in full and any other at the exchange rate, keeping a reserve", () => {
+    const s = server();
+    dailyServer(s, [], 0, RULES);
+    const p = createPlayer(RULES, 'test', 1, 0, profileById('daily'), 4);
+    join(p, s, 0);
+    const tide = ELEMENTS.indexOf('tide');
+    const ember = ELEMENTS.indexOf(RULES.commons.placeElement.bonfire as (typeof ELEMENTS)[number]);
+    const rate = RULES.forge.exchange.rate;
+    const reserve = RULES.forge.giveReserveShards;
+    p.giftBudget.fill(1e6);
+    creditShard(p, tide, 100, 'test');
+    giveGifts(p, s, 5);
+    const spent = 100 - p.shards[tide]!;
+    expect(spent).toBeGreaterThan(0);
+    expect(p.shards[tide]).toBeGreaterThanOrEqual(reserve);
+    expect(s.places[0]!.have[2]).toBeCloseTo(spent / rate, 9);
+    const s2 = server();
+    dailyServer(s2, [], 0, RULES);
+    const q = createPlayer(RULES, 'test', 1, 1, profileById('daily'), 4);
+    join(q, s2, 0);
+    q.giftBudget.fill(1e6);
+    creditShard(q, ember, 100, 'test');
+    giveGifts(q, s2, 5);
+    // The place's own element counts one for one.
+    expect(100 - q.shards[ember]!).toBeCloseTo(s2.places[0]!.have[2]!, 9);
+    expect(q.shards[ember]).toBeGreaterThanOrEqual(reserve);
   });
 
   it('keep the shards a ribbon needs: the reserve is at least the dearest ribbon', () => {
@@ -95,19 +142,179 @@ describe('gifts', () => {
   });
 });
 
+describe('glimmer is gone (Q33)', () => {
+  it('is not a resource, a find, a cost or a drop', () => {
+    expect(RESOURCES).toEqual(['acorns', 'scrap', 'shards', 'essence']);
+    expect(JSON.stringify(RULES)).not.toContain('glimmer');
+  });
+});
+
+describe('the shard exchange (Q34)', () => {
+  const player = (policy: 'setAndForget' | 'optimiser') => {
+    const p = createPlayer(RULES, 'test', 1, 0, { ...profileById('daily'), policy }, 4);
+    for (let sp = 0; sp < 3; sp++) addCreature(p, sp);
+    newSeat(p);
+    newAnvil(p);
+    return p;
+  };
+
+  it('trades 3 shards of another element for 1 of the one needed, from the biggest pile above the reserve', () => {
+    const p = player('optimiser');
+    creditShard(p, 0, 20, 'test');
+    creditShard(p, 1, 8, 'test');
+    const before = p.wk.exchanges;
+    exchangeFor(p, 2, 1, 5);
+    expect(p.shards[2]).toBeGreaterThanOrEqual(1);
+    expect(p.shards[0]).toBe(17);
+    expect(p.shards[1]).toBe(8);
+    expect(p.wk.exchanges - before).toBe(1);
+  });
+
+  it('never trades below the reserve, and stops when no pile can pay', () => {
+    const p = player('optimiser');
+    creditShard(p, 0, 7, 'test');
+    expect(exchangeFor(p, 2, 10, 5)).toBe(0);
+    expect(p.shards[0]).toBe(7);
+  });
+
+  it('has a crit that gives 2, drawn from the seeded generator: the same player gives the same crits', () => {
+    const run = (): number[] => {
+      const p = player('optimiser');
+      creditShard(p, 0, 3000, 'test');
+      const gains: number[] = [];
+      for (let i = 0; i < 200; i++) gains.push(exchangeFor(p, 2, (p.shards[2] ?? 0) + 1, 0));
+      return gains;
+    };
+    const gains = run();
+    expect(gains).toEqual(run());
+    const crits = gains.filter((g) => g === 2).length;
+    expect(crits).toBeGreaterThan(5);
+    expect(crits).toBeLessThan(45);
+    expect(gains.every((g) => g === 1 || g === 2)).toBe(true);
+  });
+
+  it('is used by a set-and-forget player only when the Forge is waiting on a shard', () => {
+    const p = player('setAndForget');
+    creditShard(p, 0, 30, 'test');
+    exchangeAtVisit(p);
+    expect(p.shards[2]).toBe(0);
+    expect(p.wk.exchanges).toBe(0);
+    p.waitingShard = 2;
+    exchangeAtVisit(p);
+    expect(p.shards[2]).toBeGreaterThanOrEqual(p.anvils.length);
+    expect(p.waitingShard).toBe(-1);
+  });
+
+  it('is used by an optimiser at each visit for what its ribbons need', () => {
+    const p = player('optimiser');
+    creditShard(p, 0, 30, 'test');
+    const c = p.creatures[1]!;
+    c.element = 2;
+    c.level = 10;
+    c.xp = LEVEL_XP[11]!;
+    c.canEvolve = false;
+    exchangeAtVisit(p);
+    expect(p.shards[2]).toBeGreaterThanOrEqual(RULES.xp.ribbons[0]!.shards);
+  });
+
+  it('shows in the ledger: the trade is shards out and shards in', () => {
+    const p = player('optimiser');
+    creditShard(p, 0, 30, 'test');
+    exchangeFor(p, 2, 1, 5);
+    expect(p.sources.get(`out:${R.shards}:exchange`)).toBe(3);
+    expect(p.sources.get(`in:${R.shards}:exchange`)).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('catch-up (Q35 B)', () => {
+  /** Plays `days` days of one player: a visit every `every` days at 20:00, the idle XP of every hour between. */
+  function play(every: number, days: number): { xp: number; best: number } {
+    const p = createPlayer(RULES, 'farm', 1, 0, profileById('daily'), 4);
+    for (let sp = 0; sp < 6; sp++) addCreature(p, sp);
+    // Two creatures far behind the server's middle: the catch-up has something to work with.
+    p.creatures.forEach((c, i) => {
+      c.xp = i < 2 ? LEVEL_XP[18]! : LEVEL_XP[3]!;
+      c.level = i < 2 ? 18 : 3;
+      c.canEvolve = false;
+      c.ribbons = 2;
+      refreshCeiling(RULES, c);
+    });
+    p.lastVisit = 0;
+    for (let h = 0; h < days * 24; h++) {
+      const day = Math.floor(h / 24);
+      if (h % 24 === 20 && day % every === 0) {
+        setCatchUp(p, 18);
+        p.lastVisit = h;
+      }
+      accrueIdleXp(p, awayShare(RULES, 'B', h - p.lastVisit), 1);
+    }
+    return {
+      xp: p.creatures.reduce((n, c) => n + c.xp, 0),
+      best: Math.max(...p.creatures.map((c) => c.level)),
+    };
+  }
+
+  it('holds from one visit to the next, not for 24 hours', () => {
+    const p = createPlayer(RULES, 'farm', 1, 0, profileById('daily'), 4);
+    const c = addCreature(p, 0);
+    c.level = 3;
+    c.canEvolve = false;
+    refreshCeiling(RULES, c);
+    setCatchUp(p, 18);
+    const top = RULES.bonfire.catchUp.maxMultiplier;
+    expect(c.catchMult).toBe(top);
+    const first = effectiveCatchUp(p, c);
+    expect(first).toBe(top);
+    // Three days on, nothing has refreshed it and it still holds (the creature is still far below the target).
+    expect(effectiveCatchUp(p, c)).toBe(top);
+  });
+
+  it('never lifts a creature above the target it was fixed for, and fades as the creature closes the gap', () => {
+    const p = createPlayer(RULES, 'farm', 1, 0, profileById('daily'), 4);
+    const c = addCreature(p, 0);
+    c.level = 3;
+    c.canEvolve = false;
+    refreshCeiling(RULES, c);
+    setCatchUp(p, 18);
+    c.level = 15;
+    expect(effectiveCatchUp(p, c)).toBeCloseTo(
+      1 + (RULES.bonfire.catchUp.maxMultiplier - 1) * (3 / 6),
+      9,
+    );
+    c.level = 18;
+    expect(effectiveCatchUp(p, c)).toBe(1);
+    c.level = 25;
+    expect(effectiveCatchUp(p, c)).toBe(1);
+  });
+
+  it('cannot be farmed: a player who skips days never out-grows one who visits daily', () => {
+    const days = 60;
+    const daily = play(1, days);
+    for (const every of [2, 3, 5, 7]) {
+      const skipper = play(every, days);
+      expect(skipper.xp, `visiting every ${every} days`).toBeLessThanOrEqual(daily.xp + 1e-6);
+      expect(skipper.best).toBeLessThanOrEqual(daily.best);
+    }
+  });
+});
+
 describe('a visit', () => {
   it('buys a ribbon before it gives, so a gift never takes what the ribbon needs', () => {
-    // No reserve, plenty of gift budget and an open project: only the order keeps the shards for the ribbon.
+    // No reserve, plenty of gift budget and an open project that wants this element: only the order keeps the shards for the ribbon.
     const rules = {
       ...RULES,
       forge: { ...RULES.forge, giveReserveShards: 0, giveReserveScrap: 0 },
     };
-    const s = createServer('test', 1, { ...options, gifts: 'everything' }, rules);
-    s.places[0]!.open = true;
-    s.places[0]!.size = 1e9;
+    const s = createServer('test', 1, options, rules);
+    const place = s.places[0]!;
+    place.open = true;
+    place.size = 1e9;
+    place.need = [1e9, 1e9, 1e9];
+    place.have = [0, 0, 0];
     const p = createPlayer(rules, 'test', 1, 0, profileById('daily'), 4);
     join(p, s, 0);
     const c = p.creatures[0]!;
+    c.element = ELEMENTS.indexOf(rules.commons.placeElement.bonfire as (typeof ELEMENTS)[number]);
     c.level = 10;
     c.xp = LEVEL_XP[11]!;
     c.canEvolve = false;
@@ -187,8 +394,8 @@ describe('catch-up and fights (V-BON-2)', () => {
       const p = createPlayer(rules, 'test', 1, 0, profileById('daily'), 4);
       const c = addCreature(p, 0);
       c.catchMult = 2;
-      c.catchUntil = 100;
-      fightXp(p, 100, 'xpDungeon', 50);
+      c.catchTarget = 30;
+      fightXp(p, 100, 'xpDungeon');
       return c.xp;
     };
     expect(xp(false)).toBe(100);

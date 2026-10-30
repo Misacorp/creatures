@@ -12,6 +12,7 @@ import {
 import {
   collectFloor,
   dismantleBag,
+  exchangeAtVisit,
   equipOrBag,
   recomputeWeak,
   rollRarity,
@@ -94,7 +95,7 @@ function runDungeon(p: Player, server: Server, hour: number): void {
   const d = p.rules.fights.dungeon;
   while (p.passes > 0) {
     p.passes -= 1;
-    fightXp(p, d.xp, 'xpDungeon', hour);
+    fightXp(p, d.xp, 'xpDungeon');
     credit(p, R.acorns, d.acorns, 'dungeon');
     credit(p, R.scrap, d.scrap, 'dungeon');
     credit(p, R.essence, d.essence, 'dungeon');
@@ -104,8 +105,6 @@ function runDungeon(p: Player, server: Server, hour: number): void {
       if (!setCollectionFind(server, ember, p.rules, hour))
         credit(p, R.essence, p.rules.collections.meltEssence, 'melted finds');
     }
-    const glimmer = poisson(p.rng, d.glimmer);
-    if (glimmer > 0) credit(p, R.glimmer, glimmer, 'dungeon');
     for (let n = poisson(p.rng, d.gearPieces); n > 0; n--) {
       equipOrBag(
         p,
@@ -158,6 +157,8 @@ export function visit(p: Player, server: Server, hour: number): void {
   creditCommunal(p, server, hour);
   collectFloor(p, server);
   dismantleBag(p);
+  if (server.config.shardExchange) exchangeAtVisit(p);
+  else p.waitingShard = -1;
   if (first) {
     credit(p, R.acorns, rules.acorns.leetPerVisitDay, 'leets');
     credit(p, R.acorns, rules.acorns.smallMomentPerVisitDay, 'small moments');
@@ -181,7 +182,7 @@ export function visit(p: Player, server: Server, hour: number): void {
   buySeatsAndKit(p, server);
   retilt(p);
   recomputeWeak(p, server.fire);
-  setCatchUp(p, hour, server.middle);
+  setCatchUp(p, server.middle);
   p.lastVisit = hour;
 
   // The rows this visit touches (the lazy pass reads the player, the creatures, the seats and the valley's rows and writes them back).
@@ -202,7 +203,7 @@ function accrue(
   const share = awayShare(rules, curve, hour - p.lastVisit);
   const { scouts, anvils } = activeCounts(p);
   p.wk.effHours += share;
-  accrueIdleXp(p, hour, share, hearth);
+  accrueIdleXp(p, share, hearth);
   accrueSeats(p, share, scouts);
   const cap = rules.posts.storeHours;
   const room = cap - p.allowance;
@@ -296,7 +297,7 @@ function resolveRaid(server: Server, players: readonly Player[], hour: number, r
   for (const p of players) {
     if (hour < p.joinHour || !p.raidThisWeek) continue;
     p.raidThisWeek = false;
-    fightXp(p, raid.xpPerWeek, 'xpRaid', hour);
+    fightXp(p, raid.xpPerWeek, 'xpRaid');
     credit(p, R.scrap, raid.scrap, 'raid');
     credit(p, R.essence, kill ? raid.essenceKill : raid.essencePhases, 'raid');
     if (kill) {
@@ -344,8 +345,7 @@ export function runServer(config: ServerConfig, seed: number, base: Rules = RULE
     {
       bossKills: config.bossKills,
       communalSeats: config.communalSeats,
-      gifts: config.gifts,
-      essenceToProjects: config.essenceToProjects,
+      shardExchange: config.shardExchange,
     },
     rules,
   );

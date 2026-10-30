@@ -110,7 +110,7 @@ const flag = (args: readonly string[], name: string): string | undefined => {
 };
 
 /**
- * `pnpm --filter @creatures/econ tune -- --dials projectSize,scoutScrap [--targets T-3a,T-4] [--seeds 3] [--confirm 20] [--weeks 16]`.
+ * `pnpm --filter @creatures/econ tune -- --dials projectSize,scoutScrap [--targets T-3a,T-4] [--seeds 3] [--confirm 20] [--weeks 24]`.
  * Searches the named dials for the values that meet the most targets with the smallest change from today, and prints the
  * proposal and the targets that conflict. It proposes; it never edits `rules.ts`.
  */
@@ -136,7 +136,7 @@ export function main(args: readonly string[]): number {
     search: Number(flag(args, '--seeds') ?? 3),
     final: Number(flag(args, '--confirm') ?? 20),
   };
-  const weeks = Number(flag(args, '--weeks') ?? 16);
+  const weeks = Number(flag(args, '--weeks') ?? 24);
   const t = Date.now();
   const axes: Axis[] = dials.map(axisOf);
   const result = tune(axes, targets, ruleEvaluator(RULES, targets, seeds, weeks), DEFAULT_PLAN);

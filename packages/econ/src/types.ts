@@ -7,10 +7,9 @@ export const R = {
   acorns: 0,
   scrap: 1,
   shards: 2,
-  glimmer: 3,
-  essence: 4,
+  essence: 3,
 } as const satisfies Record<Resource, number>;
-export const N_RES = 5;
+export const N_RES = 4;
 export const HOURS_PER_WEEK = 168;
 
 export interface Creature {
@@ -26,7 +25,7 @@ export interface Creature {
   capXp: number;
   /** V-BON-2: the multiplier fixed at the last visit, and the hour it stops. */
   catchMult: number;
-  catchUntil: number;
+  catchTarget: number;
   /** Item level worn in each slot (0 = empty). */
   gear: number[];
 }
@@ -95,6 +94,9 @@ export interface WeekRecord {
   piecesMade: number;
   piecesWorn: number;
   piecesDismantled: number;
+  /** Shard exchanges made this week and how many of them were crits. */
+  exchanges: number;
+  exchangeCrits: number;
   bag: number;
   bagNever: number;
   avgGear: number;
@@ -146,6 +148,8 @@ export interface Player {
   giftBudget: number[];
   hoardDone: boolean;
   forgeCursor: number;
+  /** The element an anvil last waited for shards of (-1: none): the one-tap fix of a set-and-forget player. */
+  waitingShard: number;
   raidThisWeek: boolean;
   blueprints: number;
   pages: number;
@@ -175,8 +179,12 @@ export interface Place {
   open: boolean;
   /** The hour the next project opens (after a level, build days run first). */
   opensAt: number;
+  /** What is filled, in Acorns' worth, and the project's size in the same unit. */
   progress: number;
   size: number;
+  /** The units each part needs and has (Acorns, scrap, shards: Q33). */
+  need: number[];
+  have: number[];
   cosmetic: number;
   openedAt: number;
 }
@@ -185,10 +193,8 @@ export interface Place {
 export interface ServerOptions {
   bossKills: BossDial;
   communalSeats: boolean;
-  /** `acorns`: players give Acorns only (the default, as commons.md's example); `everything`: scrap and shards count too. */
-  gifts: 'acorns' | 'everything';
-  /** Whether the Paddock and School projects also take Essence. */
-  essenceToProjects: boolean;
+  /** Whether the Forge's shard exchange exists (Q34: 3 shards of any element for 1 of the one needed). */
+  shardExchange: boolean;
 }
 
 export interface Server {
