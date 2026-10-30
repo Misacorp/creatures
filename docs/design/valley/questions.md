@@ -6,28 +6,16 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q30. One project at a time for the whole valley, or one per place?
+### Q31. When your creature helps build the server's project, does that cost you one of your own seats?
 
-Status: asked, round 12 (2026-10-30). From the commons panel (`reviews/2026-10-30-commons.md`, finding 1: the owner's proxy and Pia). Touches: `commons.md` V-COM-5, the fire (V-COM-13), T-3.
+Status: asked, round 12 (2026-10-30); reworded after Misa asked for it to be opened up. From the commons panel (finding 13: Sanni against a cost, Joonas for one). Touches: `commons.md` V-COM-14, `posts.md` V-POST-13.
 
-**Why it matters.** The server's giving is one pot (about 150 Acorns' worth a day for 8 players). Split over five places' project boards, every place crawls: by week 12 each would be at level 2, and the fire that place levels warm would barely move. One project at a time puts the whole server behind one visible build.
+**What it is about.** At each place you have a few seats of your own: for example 2 scout seats at the Signpost and 2 anvils at the Forge. Creatures there work for **you**. A **communal seat** is a place's seat where your creature works for the **server's** project instead: it hauls timber for the Forge's new chimney, mends the road for the Signpost's next level, and so on. The creature still earns its own XP and mastery. The question is where that communal seat comes from.
 
-- **A. Every place has its own open project.** Players pick where to give; progress is spread thin. Example: by week 12, five places at level 2.
-- **B. One project at a time for the whole valley,** in an order shown in advance. Everyone's gifts and communal seats go to it. Example: "Now building: the Forge's second chimney (70%). Next: the Signpost's new road." By week 12, about five level-ups (two places at level 3).
-- **C. One at a time, and the server chooses the next.** When a project finishes, the next is the place most givers pointed their gifts at during the last one, a quiet vote with no deadline.
+- **A. An extra seat, on top of yours.** Every player gets one communal seat per place in addition to their own seats. Putting a resting creature from the bonfire there costs you nothing. Example: Sanni keeps both her scouts at the Tidepools, and also sends Sprout, who was resting at the bonfire, to haul for the Forge's chimney.
+- **B. One of your own seats, turned to the server.** Helping means giving up some of your own output. Example: Sanni has 2 scout seats; to help the Signpost's road she turns one of them into a road mender, so she finds half as much at the Tidepools until she turns it back.
 
-**Lead's pick: B.** One shared build is easy to see and rally around, it is what makes "the server built this" feel real, and it fixes the pace and the hoarding hole together. C adds a choice, but also a vote someone can lose; it could come later.
-
-### Q31. Does a communal seat cost one of your own seats?
-
-Status: asked, round 12 (2026-10-30). From the commons panel (finding 13: Sanni against, Joonas for). Touches: `commons.md` V-COM-14, `posts.md` V-POST-13.
-
-**Why it matters.** A communal seat puts one of your creatures to work for the server's project. If it is free, everyone should simply fill it, so it is kindness without a choice. If it takes one of your own seats, it is a real "my valley or our valley" choice, but a casual player may feel she is choosing between herself and her friends.
-
-- **A. Free, an extra seat.** Every player can put one creature to work for the server at no cost to their own posts; it is gently suggested on day one.
-- **B. It takes one of your own seats.** Example: Sanni moves a scout off the Tidepools to haul for the Forge's project.
-
-**Lead's pick: A.** The communal seat is the gentlest way a player who plays less still helps build, and the real "my valley or our valley" choice already lives in where Acorns go. It also gives the bench's resting creatures a job.
+**Lead's pick: A.** It is the gentlest way a player who plays less still helps build, and it gives resting creatures a job. The real "my valley or our valley" choice already lives in where your Acorns go. B makes helping cost something, which the veteran reviewer liked, but it can make a casual player feel she is choosing between herself and her friends.
 
 ## Queue
 
@@ -504,6 +492,22 @@ Status: answered, round 11 (2026-10-30). From Q26 ("if an epic rolled four lines
 **Answer (2026-10-30): B, 1 / 3 / 5.** "Definitely more than today... 1, 3, 5 is good, so rares are already really good at that point, and then epics at 5 are actually a really exciting drop."
 
 Became: V-GEAR-12; the line values are combat v2's to scale.
+
+### Q30. One project at a time for the whole valley, or one per place?
+
+Status: answered, round 12 (2026-10-30). From the commons panel (`reviews/2026-10-30-commons.md`, finding 1: the owner's proxy and Pia). Touches: `commons.md` V-COM-5, the fire (V-COM-13), T-3.
+
+**Why it matters.** The server's giving is one pot (about 150 Acorns' worth a day for 8 players). Split over five places' project boards, every place crawls: by week 12 each would be at level 2, and the fire that place levels warm would barely move. One project at a time puts the whole server behind one visible build.
+
+- **A. Every place has its own open project.** Players pick where to give; progress is spread thin. Example: by week 12, five places at level 2.
+- **B. One project at a time for the whole valley,** in an order shown in advance. Everyone's gifts and communal seats go to it. Example: "Now building: the Forge's second chimney (70%). Next: the Signpost's new road." By week 12, about five level-ups (two places at level 3).
+- **C. One at a time, and the server chooses the next.** When a project finishes, the next is the place most givers pointed their gifts at during the last one, a quiet vote with no deadline.
+
+**Lead's pick: B.** One shared build is easy to see and rally around, it is what makes "the server built this" feel real, and it fixes the pace and the hoarding hole together. C adds a choice, but also a vote someone can lose; it could come later.
+
+**Answer (2026-10-30): A, every place its own project, with a guided start.** "Players on the Discord server would just communicate on what they want to figure out first and focus on. They can build all five at the same time, and kind of reap less benefits if they all finish by week 12. Or they could pool their resources into one... Not sure if we need a valley level or something to keep the Forge from becoming level 10 before some Watchtower still sits at level 1. Or maybe that's the fun of it... let's not take the agency out of players' hands by holding their hand through this stuff. It could be a good idea to have this sort of a new player experience where the very first levels of these buildings are built within one or two or three weeks, and those could be handheld, so players start off with a single type of a shared building that's being upgraded, and the first level doesn't necessarily have to be quite big... then as each building has increased its level, or maybe the first two buildings have been increased by one level, then the remaining buildings that can still be increased would open up... and discuss it together."
+
+Became: V-COM-5 and V-COM-15 in `commons.md`: every place has its own open project and players choose together; a new server starts with one small project, a second opens when it is done, and the rest open once those two have levelled. A place's max level (V-COM-11) already keeps one place from running far ahead. Each place builds for three days between its levels (the hoarding guard), so a hoard raises at most one level per place.
 
 ## Withdrawn
 

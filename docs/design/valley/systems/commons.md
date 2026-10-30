@@ -1,6 +1,6 @@
 # The commons: idling together for the whole server
 
-Status: **proposed**, revised after the panel (`reviews/2026-10-30-commons.md`). Waiting on Misa: Q30 (one project at a time for the whole valley?) and Q31 (does the communal seat cost one of your own?). Accepted by Misa so far: one shared valley where personal and shared progress take turns as the limit (round 1, Q1); gifts counting in full (round 2, Q4); a max level per place, then cosmetic projects, each level harder than the last (round 4, Q12); the bonfire as a communal hearth (Q11); the item level cap raised by many systems, including "really rare finds that players have to collect five of different types, like a Stardew Valley type of thing where you upgrade the community house" (round 11, Q27). Evidence: `docs/research/idle-job-posts.md` ("Co-op idle in a small server"), `docs/research/idle-coop-raids.md`, `docs/research/gear-lottery.md`.
+Status: **proposed**, revised after the panel (`reviews/2026-10-30-commons.md`). Decided by Misa after the panel: every place has its own open project, with a guided start (round 12, Q30). Waiting on Misa: Q31 (does a communal seat cost one of your own?). Accepted by Misa so far: one shared valley where personal and shared progress take turns as the limit (round 1, Q1); gifts counting in full (round 2, Q4); a max level per place, then cosmetic projects, each level harder than the last (round 4, Q12); the bonfire as a communal hearth (Q11); the item level cap raised by many systems, including "really rare finds that players have to collect five of different types, like a Stardew Valley type of thing where you upgrade the community house" (round 11, Q27). Evidence: `docs/research/idle-job-posts.md` ("Co-op idle in a small server"), `docs/research/idle-coop-raids.md`, `docs/research/gear-lottery.md`.
 
 ## The question
 
@@ -22,12 +22,14 @@ The valley's places (the Forge, the Signpost, the Paddock, the School, the bonfi
 - **V-COM-2** Giving is recognised, never ranked: each level keeps a plaque of everyone who helped build it; no amounts and no order by amount. Each giver privately sees their own part ("you laid 31% of this chimney"). In the return walk, your own part comes first (V-RET-5).
 - **V-COM-3** The thank-you is a keepsake: anyone who gave anything, or had a creature on a communal seat while the project was built, gets the same small keepsake for their house and a name on the plaque. It has no value to farm, so there is no threshold and no rule against new accounts.
 - **V-COM-4** Projects never fail, decay or expire (F-1); a finished level is kept for good.
-- **V-COM-5** Size and pace. Gifts always count in full (round 2, Q4). A project's size is fixed when it opens and scales with the server's active players, counted by how often they visited in the last 7 days (a weekly player counts about 0.4), more slowly than the player count, so a lone player can finish one in weeks. A finished project builds for about three visible days before the next one opens, so a hoard raises one level, never several in a day. Which projects are open at once is Q30.
+- **V-COM-5** Size and pace. Gifts always count in full (round 2, Q4). A project's size is fixed when it opens and scales with the server's active players, counted by how often they visited in the last 7 days (a weekly player counts about 0.4), more slowly than the player count, so a lone player can finish one in weeks. A finished project builds for about three visible days before the next one opens, so a hoard raises one level, never several in a day. Every place has its own open project, and the server chooses together where to put its gifts (round 12, Q30: "let's not take the agency out of players' hands"). Each place builds for three days between its levels, so a hoard raises at most one level per place.
 - **V-COM-6** The scene shows progress: scaffolding rises as gifts come in, and creatures on communal seats are seen working. Names are not shown in the scene; what a project still needs shows on a tap, worded as an invitation.
 - **V-COM-7** A newcomer joins a valley already built up and benefits from day one; the open project is open to them at once (F-7).
 - **V-COM-8** Cheap to run (F-9): one row per project, one per player per project, one per collection socket; gifts are single writes; a daily job writes the active players' weights and the fire's time floor into the fire's row; duplicates of finds are counts.
 - **V-COM-10** Personal and shared progress take turns being the limit (round 1, Q1): a place's level sets each player's limit (anvils, scout seats, School seats); each player unlocks their own up to it, each seat's price rising with the place's level.
 - **V-COM-11** Each place has a max level (example: 5); each level's project is bigger than the last. After the max, projects are cosmetic (a weathervane, statues, seasonal decorations everyone sees, G-7) and still warm the fire a little. New places can open as content at any time.
+
+- **V-COM-15** A guided start for a new server (round 12, Q30). The valley opens with one place's project (example: the bonfire's hearth), small enough to finish in a few days, so the whole server pools into it and learns how building works. When it is done, a second place's project opens; when those two have levelled, every place's project is open and the server chooses together. Every first level is small (finished within the first two or three weeks); the size grows from level 2 on.
 
 ### Collections
 
@@ -53,16 +55,17 @@ The valley's places (the Forge, the Signpost, the Paddock, the School, the bonfi
 
 A server of 8 daily players, each earning about 50 Acorns a day and giving about a third of it, plus communal seats: about 150 Acorns' worth a day into projects.
 
-| What                    | Example                                                                                                                                           |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A project               | the first about two weeks of the server's giving (about 2,000 Acorns' worth); each next x1.25; three build days between                           |
-| Place levels by week 12 | if one project at a time (Q30): about five level-ups across the valley (two places at level 3, one at level 2)                                    |
-| A collection            | five finds; the first done in about three to four weeks                                                                                           |
-| The fire's start        | 10 on a new server                                                                                                                                |
-| The fire's floor        | +3 a week (46 at week 12)                                                                                                                         |
-| Warmth                  | a place level-up +3 (the Forge's +5); a collection +4; a boss's first kill +2; every 5 Master titles +1; a cosmetic project +1                    |
-| Modifier thresholds     | 2 pips from 10, 3 from 25, 4 from 50, 5 from 80 (`gear.md`)                                                                                       |
-| The fire at week 12     | about 50 for a server that kills its bosses, about 46 (the floor) for one that kills none: 4-pip lines in reach for both, 5-pip lines months away |
+| What                          | Example                                                                                                                                           |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A project                     | the first about two weeks of the server's giving (about 2,000 Acorns' worth); each next x1.25; three build days between                           |
+| A new server's first projects | the first place's level 2 in about 3 days of giving; the second in about a week; the rest open by week 2 or 3                                     |
+| Place levels by week 12       | about five or six level-ups across the valley, wherever the server put them (all five at level 2, or one place at level 4)                        |
+| A collection                  | five finds; the first done in about three to four weeks                                                                                           |
+| The fire's start              | 10 on a new server                                                                                                                                |
+| The fire's floor              | +3 a week (46 at week 12)                                                                                                                         |
+| Warmth                        | a place level-up +3 (the Forge's +5); a collection +4; a boss's first kill +2; every 5 Master titles +1; a cosmetic project +1                    |
+| Modifier thresholds           | 2 pips from 10, 3 from 25, 4 from 50, 5 from 80 (`gear.md`)                                                                                       |
+| The fire at week 12           | about 50 for a server that kills its bosses, about 46 (the floor) for one that kills none: 4-pip lines in reach for both, 5-pip lines months away |
 
 ## Places, projects and collections (examples)
 

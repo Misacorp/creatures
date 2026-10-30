@@ -118,4 +118,6 @@ The combat v2 session (branch `combat-v2-track`) wrote, at Misa's request, about
 
 **Done.** Recorded round 11 (item level ladder to about 100 with thresholds and multi-level steps; elements own their lines; lines per rarity 1/3/5; the cap fed by many systems). Wrote `systems/commons.md` in full with collections (Misa's Stardew Valley idea) and the Forge's fire (the item level cap), ran the panel (`reviews/2026-10-30-commons.md`) and revised it: crafts come out at the fire's level; time is a floor, not heat; a boss warms the fire once; Master titles replace the hidden growth milestone; finds set themselves; one collection per place at launch with an idle-filled socket in each; the thank-you is a keepsake for any giver; each giver sees their own part privately; three build days between projects; the weekly goal moved to `later.md`; kit priced; example numbers redone. Asked round 12: Q30 one project at a time, Q31 the communal seat's cost.
 
-**Next.** Record round 12. Then phase 1's last system, the School (waits on combat v2's talents), or the economy lab's skeleton.
+Round 12: Q30 answered (every place its own project, a guided start, V-COM-15); Q31 reworded and asked again, since it was unclear.
+
+**Next.** Record Q31. Then phase 1's last system, the School (waits on combat v2's talents), or the economy lab's skeleton.
