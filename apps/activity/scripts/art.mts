@@ -561,7 +561,9 @@ for (const id of ids) {
   const pool = poolFor(concept.kind);
   const findings = lintSprite(concept.sprite, {
     kind: concept.kind,
-    element: set.element,
+    // An item is drawn in neutral greys that its element's tint swaps, so the family is checked on the
+    // tinted alternatives below, not on the grey base.
+    element: concept.kind === 'item' ? undefined : set.element,
     others: pool,
   });
   const near = pool === undefined ? undefined : nearestSilhouette(concept.sprite, pool);
