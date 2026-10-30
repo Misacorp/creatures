@@ -146,7 +146,7 @@ Misa asked (2026-10-28) whether protection needs a cap. An **intercepted** hit n
 
 ## How this shapes a roster
 
-A creature carries the talents it found (its own Talent Book, R20) and swapping the slotted one costs a little Bait. So a player who wants both an Edge-walker Cindle and a Shoulder to Shoulder Cindle keeps two Cindles: the incentive to own more than the top three that P-11 asks for. In the raid, neighbour and position talents give players a reason to talk about placement and use swap requests (R19).
+Every talent found on a line goes into that line's Talent Book (R20; Misa, 2026-10-28): a creature learns a talent from the book for Bait once, then swaps among the ones it has learned for free until the raid locks. A creature still fills only its own slots, so a player who wants an Edge-walker Cindle and a Shoulder to Shoulder Cindle in the same raid keeps two Cindles: the incentive to own more than the top three that P-11 asks for. In the raid, neighbour and position talents give players a reason to talk about placement and use swap requests (R19).
 
 ## Misa's answers (2026-10-28)
 
