@@ -106,4 +106,6 @@ Round 8 answered: numbers inside each place (Q20, V-RET-9); raid preparation onc
 
 Research filed as `docs/research/gear-lottery.md`. Asked round 10: Q24 storage and what melts away, Q25 what sets item level (a rising server cap), Q26 a floor for the lottery (a challenge).
 
-**Next.** Record round 10, write the gear loop into `gear.md` and `forge.md`. Then the commons in full.
+Round 10 answered: worn gear off the bag, a bag of 200, filter, sort, search, bulk dismantle, stats at a glance, a creature-side "best item" flow, exciting items highlighted (Q24, V-GEAR-6, V-GEAR-7); a rising server item level cap, tried and watched (Q25, V-GEAR-8); no pity floor, partial wins from more lines, deterministic pools, and blueprint quality (marks, restored) as the consolation (Q26, V-GEAR-9). Asked round 11: Q27 the item level ladder, Q28 element pools, Q29 lines per rarity.
+
+**Next.** Record round 11. Then the commons in full.

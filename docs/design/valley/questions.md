@@ -6,41 +6,41 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q24. How do a lot more items fit, and which go away by themselves?
+### Q27. How long should the item level ladder be?
 
-Status: asked, round 10 (2026-10-30). From Misa's gear vision (Q22) and research (`docs/research/gear-lottery.md`). Touches: `gear.md`, `forge.md`, the bag (today 60 items, worn ones included).
+Status: asked, round 11 (2026-10-30). From Q25 ("How much of a difference going from item level 12 to item level 13 makes, I honestly don't know. There might be a reason why Path of Exile has item levels that go up to like 100"). Touches: `gear.md` V-GEAR-8; combat v2 (line values per tier).
 
-**Why it matters.** You want many more rolls, and a roster of 20 or more creatures already fills a bag of 60 with what it wears. Diablo IV's lesson was "spend more time obliterating and less time sorting"; idle players' worst story is losing a great item to a bag full of junk.
+**Why it matters.** Today item level runs 1 to 20, and each modifier tier unlocks at 1, 5, 10, 15 and 20. With a server cap that rises, the ladder's shape decides how a rise feels: a small number creeping up, or a big moment. It also decides your worry, whether last week's perfect craft becomes outdated. In Path of Exile, item level runs to about 100 and each modifier tier has its own item level threshold, so most levels change little and a threshold is a jump.
 
-- **A. A bigger bag, sorted by hand.** Example: the bag holds 200; you dismantle what you don't want.
-- **B. Worn gear off the bag, plus a keep rule.** Items a creature wears don't count. The Forge's batch comes home best first, and pieces that are neither an upgrade nor carry a strong roll melt into materials on arrival, by a sensible default rule you can change. Rare and epic pieces and anything with a 4- or 5-pip line are never melted and never lost to a full bag. The same rule is what "craft until" stops on. Example: Sanni's Forge made 20 Tide Scarves this week; she sees the best three, one an upgrade for Mossback; the other 17 became scrap and shards.
-- **C. B, but you set every rule yourself** (a loot filter, Last Epoch style).
+- **A. Keep 1 to 20.** The cap rises a level at a time; each level matters a little. Example: the cap goes from 12 to 13, and the new pieces are a bit better.
+- **B. A longer ladder with thresholds.** Item level runs to about 100; the cap rises often in small steps; each modifier tier (pips 1 to 5) unlocks at a threshold, so only a threshold makes old pieces look dated. Example: the cap climbs from 58 to 61 over a week of raids; at 60 the Forge announces "4-pip lines can now roll".
+- **C. A few grades.** Item level is a short list of named grades (Plain, Fine, Masterwork...) that the cap unlocks one by one.
 
-**Lead's pick: B.** It keeps the lottery's thrill (the best first, nothing good ever lost) and removes the sorting chore, with no setup needed. The rule can be changed by anyone who cares to.
+**Lead's pick: B.** Small steps give the server something every week, and the big moments come at thresholds everyone can see coming. A perfect piece only falls behind at a threshold, so "the craft I finished last week is outdated" stays rare.
 
-### Q25. What sets an item's level, now that it means quality only?
+### Q28. Should an element's piece roll only its own element's lines?
 
-Status: asked, round 10 (2026-10-30). From Misa's gear vision (Q22: "maybe a combination of many things... tied to some kind of a server item level cap... increase this slowly"). Touches: `gear.md`, the raid (Boss Rank), the dungeon, the Forge's server level; combat v2 (how strong a modifier tier is).
+Status: asked, round 11 (2026-10-30). From Q26 ("should we just exclude modifiers from elemental gear as well? So a Tide scarf would only roll Tide modifiers"). Touches: `gear.md` V-GEAR-9, `gear-lines.json`; combat v2.
 
-**Why it matters.** Item level decides how big the rolls can get, so it is the long-term ladder of the whole gear chase. The research found nothing on server-wide caps that rise in other games: it's a bet. The one clear lesson is that hard gates on progress annoy players (Diablo IV removed its world-tier level gates within days).
+**Why it matters.** Today each line has a weight per slot (0 means it never rolls there), and an element piece makes its own element's lines three times as likely. You asked for slots to include or exclude lines without favouring, and wondered whether element pieces should be exclusive. This decides how well a player knows what they're chasing, and it ties straight into the chain: scout the Tidepools, get Tide shards, craft Tide pieces.
 
-- **A. Each source sets its own.** A smith's level at the Forge, the depth in the dungeon, the Boss Rank in the raid. No server cap.
-- **B. The source sets it, under a server cap that rises.** Nothing made or found goes above the server's item level cap. The cap rises a step with each raid win and slowly with time even for a server that struggles, never falls, and is shown at the Forge with its next step. Example: the cap reaches 12 after Sunday's win; Monday's batch can roll 12s, and the Forge shows "next: 13".
-- **C. The server cap alone.** Everything made or found is at the current cap.
+- **A. Elements favour.** An element piece rolls its own element's lines more often (as today), and other elements' lines rarely.
+- **B. Elements own their lines.** An element piece rolls its own element's lines and neutral lines, never another element's. Example: a Tide Scarf can roll Tide damage but never Ember damage.
+- **C. No element lines on pieces.** Elements only change the base; every piece rolls from the slot's neutral pool.
 
-**Lead's pick: B.** It is your combination, and it turns each raid win into a moment the whole server feels at the Forge on Monday. The slow rise with time keeps a struggling server from stalling. We would watch it closely, since no game has proven it.
+**Lead's pick: B.** It is the determinism you asked for: a player who wants a Tide line knows to craft Tide pieces, and the whole chain from scouting to crafting points at one goal. Neutral lines keep every piece useful to any creature.
 
-### Q26. Should the lottery have a floor? (a challenge)
+### Q29. How many lines should each rarity roll?
 
-Status: asked, round 10 (2026-10-30). Challenges: Misa's "Big rolls, big lottery. It's based on luck... the perfect item would obviously be just down to luck" (Q22) against F-10 (light, fun and predictable) and the research. Touches: `gear.md`, `forge.md`.
+Status: asked, round 11 (2026-10-30). From Q26 ("if an epic rolled four lines or five lines, maybe we could have three good lines out of those five"). Touches: `gear.md` V-GEAR-9, `RULES.gear.rolledLines`; combat v2 (line values must shrink if pieces carry more lines).
 
-**Why it matters.** Pure luck can mean weeks of misses for a casual player, which the research ties to the slot-machine feeling players resent. Pity floors are widely approved (86.9% in one survey) and every recent crafting overhaul (Last Epoch, Diablo IV) removed loss and dread while keeping the jackpot random.
+**Why it matters.** Today a common rolls 1 line, a rare 2 and an epic 3. More lines make partial wins common (a piece with a few great lines and some duds), which is your answer to having no pity floor. But more lines means more power per piece, so combat v2 has to scale line values down to match.
 
-- **A. Pure luck.** Visible odds, no floor.
-- **B. A soft floor per blueprint.** A bar fills with each piece made; when full, the next piece is guaranteed a strong line (example: one 4-pip line within 30 pieces). The perfect item, five pips on every line of an epic, stays pure luck.
-- **C. B, plus misses that add up.** Every melted piece also adds to a small bar that pays a bonus (example: a free reach for Rare).
+- **A. Keep 1 / 2 / 3.**
+- **B. 1 / 3 / 5.** An epic has five chances; three great lines make it great. Rarity matters a lot.
+- **C. 2 / 3 / 4.** A smaller gap between rarities; every piece has a little something.
 
-**Lead's pick: B.** It guarantees a good result, not the best one, so the jackpot stays luck and every week still has a win to show. It's a counter, not an orb, so it fits "no orbs at the start".
+**Lead's pick: B.** It is your "three good lines out of five", it makes an epic a real event, and it gives a lot of partial wins along the way. The line values are combat v2's to tune.
 
 ## Queue
 
@@ -421,6 +421,54 @@ Status: answered, round 9 (2026-10-30). From the panel (finding 3: the owner's p
 **Answer (2026-10-30): B, with stockpiles.** "I think we do need to build some kind of a production chain here. So depending on the blueprints that you're crafting, you should be able to source those resources from somewhere... if you're waiting for Reef shards, then you need to have explorers out in the Reef finding those Reef shards for you. Or then maybe you've stockpiled a lot of them up and then you just want to use them, then sure, let's go."
 
 Became: V-FORGE-4, the Forge waits on the element shards its orders need, named inside its scene, with the one-tap fixes; a stockpile of shards carries an order without scouts at that place.
+
+### Q24. How do a lot more items fit, and which go away by themselves?
+
+Status: answered, round 10 (2026-10-30). From Misa's gear vision (Q22) and research (`docs/research/gear-lottery.md`). Touches: `gear.md`, `forge.md`, the bag (today 60 items, worn ones included).
+
+**Why it matters.** You want many more rolls, and a roster of 20 or more creatures already fills a bag of 60 with what it wears. Diablo IV's lesson was "spend more time obliterating and less time sorting"; idle players' worst story is losing a great item to a bag full of junk.
+
+- **A. A bigger bag, sorted by hand.** Example: the bag holds 200; you dismantle what you don't want.
+- **B. Worn gear off the bag, plus a keep rule.** Items a creature wears don't count. The Forge's batch comes home best first, and pieces that are neither an upgrade nor carry a strong roll melt into materials on arrival, by a sensible default rule you can change. Rare and epic pieces and anything with a 4- or 5-pip line are never melted and never lost to a full bag. The same rule is what "craft until" stops on. Example: Sanni's Forge made 20 Tide Scarves this week; she sees the best three, one an upgrade for Mossback; the other 17 became scrap and shards.
+- **C. B, but you set every rule yourself** (a loot filter, Last Epoch style).
+
+**Lead's pick: B.** It keeps the lottery's thrill (the best first, nothing good ever lost) and removes the sorting chore, with no setup needed. The rule can be changed by anyone who cares to.
+
+**Answer (2026-10-30): worn gear off the bag, a bag of 200, and tools instead of rules.** "Let's make the bag not count worn items... 200 is fine. And then we need to give players more control over the bag... we don't have any filtering or searching or sorting of any kind... make these basic filter controls, so you can filter by rarity, you can sort by rarity, you can sort by item levels, you can find the item with the most attack or speed or crit chance, or find items from gear modifier rolls... bring back the options to just, you know, destroy common items or destroy items in bulk... filter to see only common items and only items whose item level is below a certain threshold... select all and delete those items, dismantle them... The loot filter rule is kind of cool, but it's ultimately made for an even bigger item type of thing... over here, there's like no game being played behind the scenes... What we can do is build a system that visually highlights the items that are actually exciting... a common item with a high item level is more valuable than an epic item with a low item level." Also: stats on hover rather than a drawer per click ("the stats comparing is really good"), and a flow from the creature's side to find its best item.
+
+Became: V-GEAR-6 and V-GEAR-7 in `gear.md`.
+
+### Q25. What sets an item's level, now that it means quality only?
+
+Status: answered, round 10 (2026-10-30). From Misa's gear vision (Q22: "maybe a combination of many things... tied to some kind of a server item level cap... increase this slowly"). Touches: `gear.md`, the raid (Boss Rank), the dungeon, the Forge's server level; combat v2 (how strong a modifier tier is).
+
+**Why it matters.** Item level decides how big the rolls can get, so it is the long-term ladder of the whole gear chase. The research found nothing on server-wide caps that rise in other games: it's a bet. The one clear lesson is that hard gates on progress annoy players (Diablo IV removed its world-tier level gates within days).
+
+- **A. Each source sets its own.** A smith's level at the Forge, the depth in the dungeon, the Boss Rank in the raid. No server cap.
+- **B. The source sets it, under a server cap that rises.** Nothing made or found goes above the server's item level cap. The cap rises a step with each raid win and slowly with time even for a server that struggles, never falls, and is shown at the Forge with its next step. Example: the cap reaches 12 after Sunday's win; Monday's batch can roll 12s, and the Forge shows "next: 13".
+- **C. The server cap alone.** Everything made or found is at the current cap.
+
+**Lead's pick: B.** It is your combination, and it turns each raid win into a moment the whole server feels at the Forge on Monday. The slow rise with time keeps a struggling server from stalling. We would watch it closely, since no game has proven it.
+
+**Answer (2026-10-30): B, tried and watched.** "Do players actually feel like it's a good thing that they're all progressing together to defeat bosses and then unlock higher item levels? Or will they just feel like... this perfect craft that I finished last week already is kind of outdated. Maybe not... So I am a bit skeptical, and I would like to encourage players to rather roll for new items and craft new items as time goes on. So maybe option B here is the one that does feel best, or something that we could try. How much of a difference going from item level 12 to item level 13 makes, I honestly don't know. There might be a reason why Path of Exile has item levels that go up to like 100, and there's bigger gaps between each item."
+
+Became: V-GEAR-8; the scale asked as Q27.
+
+### Q26. Should the lottery have a floor? (a challenge)
+
+Status: answered, round 10 (2026-10-30). Challenges: Misa's "Big rolls, big lottery. It's based on luck... the perfect item would obviously be just down to luck" (Q22) against F-10 (light, fun and predictable) and the research. Touches: `gear.md`, `forge.md`.
+
+**Why it matters.** Pure luck can mean weeks of misses for a casual player, which the research ties to the slot-machine feeling players resent. Pity floors are widely approved (86.9% in one survey) and every recent crafting overhaul (Last Epoch, Diablo IV) removed loss and dread while keeping the jackpot random.
+
+- **A. Pure luck.** Visible odds, no floor.
+- **B. A soft floor per blueprint.** A bar fills with each piece made; when full, the next piece is guaranteed a strong line (example: one 4-pip line within 30 pieces). The perfect item, five pips on every line of an epic, stays pure luck.
+- **C. B, plus misses that add up.** Every melted piece also adds to a small bar that pays a bonus (example: a free reach for Rare).
+
+**Lead's pick: B.** It guarantees a good result, not the best one, so the jackpot stays luck and every week still has a win to show. It's a counter, not an orb, so it fits "no orbs at the start".
+
+**Answer (2026-10-30): no pity floor; partial wins and a consolation instead.** "I do like the mechanic of pity timers, but then that would just make good rolls more guaranteed... kind of like not a fan of introducing a pity timer into this particular mechanic, but I would love to be proven wrong... it could be a cool idea to just add more lines to the gear... if an epic rolled four lines or five lines, maybe we could have three good lines out of those five... There needs to be some sort of determinism here... maybe lock some modifiers out... the slots themselves either just exclude or include rolls, but they don't favor rolls based on slots. Favoring can be done by elements... should we just exclude modifiers from elemental gear as well? So a Tide scarf would only roll Tide modifiers... if you craft junk, and you dismantle junk, you'll increase your blueprint quality... that's acting as a consolation prize... lots of scalars here that we can tweak." He asked how Path of Exile does it: it has no floor; its control comes from currency and a deterministic crafting bench.
+
+Became: V-GEAR-9; blueprint quality (marks) restored as the consolation (`forge.md` V-FORGE-8 and V-FORGE-9); line counts asked as Q29, element pools as Q28.
 
 ## Withdrawn
 

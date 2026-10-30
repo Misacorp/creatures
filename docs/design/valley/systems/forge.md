@@ -15,8 +15,8 @@ Smiths at the Forge make gear from the player's blueprints, one piece after anot
 - **V-FORGE-5** Finished pieces collect on the Forge floor (the store, about three days of pieces) and come home with the return walk (V-RET-4). How pieces are stored and which go away by themselves is open (`gear.md`).
 - **V-FORGE-6** The server's Forge level (`commons.md`) sets how many anvils each player may have (example: 2 at level 1, 3 at level 2, 4 at level 4) and unlocks recipe tiers for everyone. A player's own anvils are unlocked with their own Acorns and scrap, up to that limit (V-COM-10; Misa's example: "A player might have all the resources to unlock a third anvil, but the forge may not be able to fit three anvils per player yet.").
 - **V-FORGE-7** Mastery in smithing (V-POST-12): each step makes pieces faster; a **Master Smith** also brings home a little more scrap at any other post (the carry-over perk). A crafted piece's item level follows its smith's own level (example: twice the level, capped as today).
-- **V-FORGE-8** Rarity has two levers only: Reach on an order, and the **loupe**, the anvil's kit (slower, a better chance of a rarity step up). The other anvil kit, **tongs**, makes pieces faster.
-- **V-FORGE-9** Blueprints come from scouts' finds, the raid's finale and dismantling, as today; a known blueprint found again turns into scrap (marks are gone). Dismantling stays a choice made on an item, not a post.
+- **V-FORGE-8** Rarity has three levers: Reach on an order, blueprint quality (V-FORGE-9), and the **loupe**, the anvil's kit (slower, a better chance of a rarity step up). The other anvil kit, **tongs**, makes pieces faster.
+- **V-FORGE-9** Blueprints come from scouts' finds, the raid's finale and dismantling, as today; a known blueprint found again, and every piece of it crafted or dismantled, raises its quality (today's marks; Misa, round 10, Q26, reversing the panel's removal), and quality raises the chance of better rarity. Dismantling stays a choice made on an item, not a post.
 
 ## Example numbers (the economy lab sets the real ones)
 

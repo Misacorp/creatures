@@ -1,6 +1,6 @@
 # Gear in the valley: crafting, item level and the lottery
 
-Status: **direction set by Misa** (round 9, Q22, 2026-10-30); the system is **to design**, with research under way. Combat v2 (`docs/design/combat/`, branch `combat-v2-bosses`) owns gear's stats, lines and their tuning; this doc owns how items are made, improved, stored and found in the valley, and what sets their item level. Agree changes on that seam with the combat lead.
+Status: **direction set by Misa** (round 9, Q22) and **decided in part** (round 10, Q24 to Q26, 2026-10-30); open: Q27 to Q29. Research: `docs/research/gear-lottery.md`. Combat v2 (`docs/design/combat/`, branch `combat-v2-bosses`) owns gear's stats, lines and their tuning; this doc owns how items are made, improved, stored and found in the valley, and what sets their item level. Agree changes on that seam with the combat lead.
 
 ## Misa's vision (round 9, Q22, in his words, shortened)
 
@@ -28,13 +28,23 @@ Status: **direction set by Misa** (round 9, Q22, 2026-10-30); the system is **to
 - **V-GEAR-4 The best first.** When a batch of pieces comes home, the best are shown first and celebrated in the return walk (V-RET-2).
 - **V-GEAR-5 No currency orbs at the start.** Improving existing items is a later Forge job ("work on this until some criteria is met"), designed after the base loop.
 
-## Open, asked in round 10 (Q24 to Q26; research in `docs/research/gear-lottery.md`)
+## Decided in round 10 (Q24 to Q26)
 
-- **Item volume and storage.** A bag of 60 cannot hold a roster's worn gear plus a Forge's output. What separates worn items from the bag, how pieces that are not worth keeping go away by themselves (salvage rules, filters), and how big storage should be.
-- **What sets item level.** A combination of sources (the smith's level and mastery, the Forge's server level, the blueprint, the dungeon's depth, the raid's Boss Rank), possibly under a server-wide cap that rises slowly.
-- **The craft-until loop.** How "craft these until you find the best item" works on a once-a-day visit: what the player sets, when the smith stops or keeps going, what comes home.
-- **Improving items later**, without orbs. The research's direction, for later: Last Epoch-style potential (a few visible attempts per item, more on epics; never lowers or bricks; the last attempt succeeds), with the top tier left to the lottery.
-- **Keeping the lottery fun** for a casual player: floors, celebration, choosing what to chase.
+- **V-GEAR-6 Worn gear does not count; the bag holds 200** (Q24). Items a creature wears live on it.
+- **V-GEAR-7 Tools to manage the bag, not rules that hide loot** (Q24). No loot filter: "there's no game being played behind the scenes. You're just looking at the results of a crafting process. So you're kind of expecting to see this big pile of loot". Instead:
+  - **Filter, sort and search**: by rarity, item level, slot, element, a stat ("the most attack, speed or crit chance") and modifier lines.
+  - **Bulk dismantle**: filter (example: commons below an item level), select all, dismantle.
+  - **Stats at a glance**: an item's stats and today's comparison ("the stats comparing is really good") without opening a drawer (hover on desktop; the phone needs its own answer).
+  - **From the creature's side**: "find the best item for this creature" as its own flow, not browsing the bag.
+  - **Exciting items stand out**: a visual highlight by how good an item really is, not by rarity alone ("a common item with a high item level is more valuable than an epic item with a low item level").
+  - Batches come home best first (V-GEAR-4).
+  - This is UI work for the valley's phase 4, following `docs/design/ux-patterns.md`.
+- **V-GEAR-8 A server item level cap that rises, tried and watched** (Q25). The source sets an item's level, never above the server's cap; the cap rises with raid wins and slowly with time, never falls, and is shown at the Forge with its next step. Misa is sceptical and wants it watched: "this perfect craft that I finished last week already is kind of outdated. Maybe not. Maybe they'll think that it's a great way to have something more to craft". He prefers players rolling new items over upgrading one item forever ("If done wrong, this will lead to players just having a single item that they would never let go of"). The scale is open (Q27).
+- **V-GEAR-9 No pity floor** (Q26). Pure luck, with odds shown. Path of Exile has no floor either: its control comes from currency and a deterministic crafting bench. Instead, partial wins and a consolation:
+  - **More lines, so partial wins are common** (an epic with "three good lines out of five"): the counts are open (Q29).
+  - **Deterministic pools**: a slot includes or excludes lines but never favours them; an element may favour its own lines, or own them outright (Q28). A player who wants dodge knows which pieces can roll it.
+  - **Blueprint quality is the consolation prize**: crafting and dismantling pieces of a blueprint raise its quality (today's marks, back after the scouts and Forge panel removed them), and quality raises the chance of better rarity. With many more rolls it must fill more slowly, and its cap and effect can grow with the Forge's server level and the player's mastery of the blueprint.
+- **Improving items later** stays a later Forge job, bounded so it never makes one item worth keeping forever (V-GEAR-8).
 
 ## Cheap to store
 
