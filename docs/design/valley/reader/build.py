@@ -132,7 +132,9 @@ for f, name in SYSTEMS:
 sections.append(('systems','Systems', '<p class="lead">Tap a system to open it. Rules are numbered (V-POST-1…) so reviews and the simulator can point at them.</p>' + ''.join(sys_html)))
 econ = md(read('economy/resources.md')) + md(read('economy/model.md'))
 if os.path.exists(os.path.join(ROOT,'economy/report.md')):
-    econ += md(read('economy/report.md'))
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from charts import charts
+    econ += charts(ROOT) + md(read('economy/report.md'))
 sections.append(('economy','Economy lab', econ))
 sections.append(('process','Process', md(read('deciding.md')) + md(read('process.md'))))
 sections.append(('log','Log', md(read('log.md'))))
