@@ -4,6 +4,19 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-30: Raids are tuned on damage potential; young servers ramp in; Determination built but off **[Misa]**
+
+ID: `2026-10-30-raids-are-tuned-on-damage-potential` · Status: current · Amends: `2026-10-30-a-failed-raid-boss-returns-next`, `2026-10-30-how-the-boss-track-is-tuned`
+
+**Decision (Misa).**
+
+- **Damage potential is the tuning measure.** The lab plays the whole raid weekend as if the boss could not die and adds up the damage, as a share of the boss's HP. A **prepared** team (the boss's puzzle solved) reaches **125% or more**, so it wins with room to spare instead of on the last turn; an **unprepared but decent** team reaches **70% to 90%**, so a slightly prepared team can push into a kill. Mixed servers stay information. The lab does not model a half-prepared team separately (lead's call): servers sit between the two targets, and where they really sit comes from live data.
+- **Young servers ramp in:** the first week's boss is a tutorial with no rule cards, the second has one card at low strength, and the full set arrives in the third week. It is a column of the track's data.
+- **Determination** (a boost for each failed week, capped, reset on a kill; after WoW's) is built into the path simulator as a dial, **off by default**. Whether to turn it on is decided once the valley's systems land; the tuning does not rely on it.
+- **Tuning follows live data.** Misa tunes the game for his server as it goes; the boss track is not a fixed 12-week promise. Later (the port), the game can read live production data and simulate the coming raid before it happens, so a boss can be adjusted to match.
+
+**Reasoning.** A raid weekend is a cliff: the kill flips over a few percent of the boss's HP. Potential is smooth, so tuning on it puts a solved puzzle well past the cliff and an unprepared team well before it, which keeps the puzzle sharp (Misa wants it) while making a solved puzzle an easier win. A 25% margin also absorbs a valley that levels creatures about 20% slower than its examples. New servers have only starters and are still finding their footing in the valley, so the first weeks ask little. Determination and luck are built as tools in reserve rather than tuned around while several systems change at once.
+
 ## 2026-10-30: Festival weeks pause the boss track; no rank ease **[Misa]**
 
 ID: `2026-10-30-festival-weeks-pause-the-boss-track` · Status: current · Amends: `2026-10-11-progression-decisions`, `2026-10-30-a-failed-raid-boss-returns-next`
@@ -14,7 +27,7 @@ ID: `2026-10-30-festival-weeks-pause-the-boss-track` · Status: current · Amend
 
 ## 2026-10-30: A failed raid boss returns next week; raids measure HP removed **[Misa]**
 
-ID: `2026-10-30-a-failed-raid-boss-returns-next` · Status: current, amended by `2026-10-30-festival-weeks-pause-the-boss-track` · Amends: `2026-10-29-raid-tuning-aims-at-success-tiers`, `2026-10-11-progression-decisions`
+ID: `2026-10-30-a-failed-raid-boss-returns-next` · Status: current, amended by `2026-10-30-festival-weeks-pause-the-boss-track`, `2026-10-30-raids-are-tuned-on-damage-potential` · Amends: `2026-10-29-raid-tuning-aims-at-success-tiers`, `2026-10-11-progression-decisions`
 
 **Decision (Misa).** For combat v2 (the shipped game changes only at the port):
 
