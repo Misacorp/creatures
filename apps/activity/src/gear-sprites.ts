@@ -5,7 +5,18 @@
  * palette approach as the creature sprites and glyphs (draw them with `<Sprite>`). Every kind has
  * its own shape and every part its own silhouette, so colour is never the only cue. Pure data.
  */
-import { baseElement, gearBase, gearSet, type GearSlot, type PartKind } from '@creatures/game';
+import {
+  baseElement,
+  gearBase,
+  gearContent,
+  gearSet,
+  type GearBase,
+  type GearSlot,
+  type PartKind,
+} from '@creatures/game';
+import { CHARM_SPRITE_DATA } from './sprites/data/item-charm-sprites';
+import { HAT_SPRITE_DATA } from './sprites/data/item-hat-sprites';
+import { SCARF_SPRITE_DATA } from './sprites/data/item-scarf-sprites';
 import type { SpriteDef } from './sprites/sprite-data';
 
 export const ITEM_SIZE = { width: 12, height: 12 } as const;
@@ -191,6 +202,36 @@ export function setTintPalette(tag: string): Readonly<Record<string, string>> | 
 /** A plain grey silhouette for an item whose base is not in the content (so a screen never breaks). */
 const FALLBACK_ITEM: SpriteDef = charm;
 
+/** Every item look's own sprite (12x12), by look id (`itemLookId`). */
+export const ITEM_LOOK_SPRITES: Readonly<Record<string, SpriteDef>> = {
+  ...HAT_SPRITE_DATA,
+  ...SCARF_SPRITE_DATA,
+  ...CHARM_SPRITE_DATA,
+};
+
+/** Whether two bases are the same item in another element: one slot, the same stats, no set. */
+function sameLook(a: GearBase, b: GearBase): boolean {
+  const plain = (x: GearBase): boolean =>
+    x.set === undefined && (x.tag === 'neutral' || baseElement(x) !== null);
+  return (
+    a.slot === b.slot &&
+    plain(a) &&
+    plain(b) &&
+    JSON.stringify(a.stats ?? null) === JSON.stringify(b.stats ?? null)
+  );
+}
+
+/**
+ * The look an item base is drawn with (Misa, 2026-10-30): every item with its own name has its own
+ * sprite, except element versions of one item (same slot, same stats, no set), which share the first
+ * one's sprite in content order and are told apart by the element tint.
+ */
+export function itemLookId(baseId: string): string {
+  const base = gearBase(baseId);
+  if (base === undefined) return baseId;
+  return gearContent.bases.find((other) => sameLook(other, base))?.id ?? base.id;
+}
+
 /** The sprite of an item base and the palette that tints it. */
 export function itemArt(baseId: string): {
   sprite: SpriteDef;
@@ -198,15 +239,20 @@ export function itemArt(baseId: string): {
 } {
   const base = gearBase(baseId);
   if (base === undefined) return { sprite: FALLBACK_ITEM, palette: undefined };
-  // A gear set piece has its own trimmed sprite, tinted by its set's tag (the Festival pieces by the Festival's).
+  const own = ITEM_LOOK_SPRITES[itemLookId(baseId)];
+  // A gear set piece is tinted by its set's tag (the Festival pieces by the Festival's); the slot's
+  // shared sprites are the fallback for a base drawn before its own sprite.
   if (base.set !== undefined) {
     const set = gearSet(base.set);
     return {
-      sprite: BUNDLED_SET_SPRITES[base.slot],
+      sprite: own ?? BUNDLED_SET_SPRITES[base.slot],
       palette: setTintPalette(set?.tag ?? base.tag),
     };
   }
-  return { sprite: BUNDLED_ITEM_SPRITES[base.slot], palette: tintPalette(baseElement(base)) };
+  return {
+    sprite: own ?? BUNDLED_ITEM_SPRITES[base.slot],
+    palette: tintPalette(baseElement(base)),
+  };
 }
 
 // --- Parts (8x8) ---

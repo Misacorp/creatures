@@ -4,6 +4,7 @@
 //   pnpm art <set> [--only id,id] [--out dir]     (out defaults to apps/activity/scratch/art/<set>)
 //   pnpm art new creature|boss|item|part|banner
 //   pnpm art library [--check]     (writes docs/art/: the catalogue README.md and a sheet per set)
+//   pnpm art items [--slot hat|scarf|charm] [--out dir]   (every shipped item, tinted, by name)
 //
 // For each sprite of the set it writes `<id>.png`: a large zoom with a coordinate grid (x across the
 // top, y down the side, so a fix can be named "row 8, x 4"), the sprite at 1x to 4x on the three
@@ -49,6 +50,7 @@ const EXTRA: Readonly<Record<string, readonly string[]>> = {
   '8': ['.###.', '#...#', '#...#', '.###.', '#...#', '#...#', '.###.'],
   '9': ['.###.', '#...#', '#...#', '.####', '....#', '....#', '.###.'],
   '-': ['.....', '.....', '.....', '#####', '.....', '.....', '.....'],
+  "'": ['..#..', '..#..', '.....', '.....', '.....', '.....', '.....'],
 };
 
 type RGB = [number, number, number];
@@ -356,7 +358,118 @@ function catalogue(): string {
   return `${lines.join('\n')}\n`;
 }
 
+/** Words of `text` in lines of at most `max` letters. */
+function wrap(text: string, max: number): string[] {
+  const lines: string[] = [];
+  for (const word of text.split(' ')) {
+    const last = lines[lines.length - 1];
+    if (last !== undefined && last.length + 1 + word.length <= max)
+      lines[lines.length - 1] = `${last} ${word}`;
+    else lines.push(word);
+  }
+  return lines;
+}
+
+/**
+ * Every shipped item as the game draws it (its look, tinted), labelled by name, a row of sections by
+ * slot; and a card per look with each tinted version as an alternative. Loads the game through Vite,
+ * since the content imports JSON.
+ */
+async function drawItems(slot: string | undefined, out: string): Promise<void> {
+  const { createServer } = await import('vite');
+  const server = await createServer({
+    root: resolve(import.meta.dirname, '..'),
+    server: { middlewareMode: true },
+    appType: 'custom',
+    logLevel: 'error',
+  });
+  try {
+    const gear = await server.ssrLoadModule('/src/gear-sprites.ts');
+    const { gearContent } = await server.ssrLoadModule('@creatures/game');
+    type Base = { id: string; name: string; slot: string; flavor?: string; set?: string };
+    const bases = (gearContent.bases as Base[]).filter(
+      (b) => slot === undefined || b.slot === slot,
+    );
+    const scale = 6;
+    const tileW = 168;
+    const tileH = 12 * scale + 16 + 3 * 16 + 8;
+    const perRow = 8;
+    const slots = ['hat', 'scarf', 'charm'].filter((x) => bases.some((b) => b.slot === x));
+    const rowsOf = (x: string): number =>
+      Math.ceil(bases.filter((b) => b.slot === x).length / perRow);
+    const W = 24 + perRow * (tileW + 8) + 16;
+    const H = 64 + slots.reduce((h, x) => h + 30 + rowsOf(x) * (tileH + 8) + 16, 0);
+    const c = new Canvas(W, H, NIGHT);
+    c.text(
+      `items ${String(bases.length)} looks ${String(new Set(bases.map((b) => gear.itemLookId(b.id))).size)}`,
+      24,
+      18,
+      3,
+      TEXT,
+    );
+    let y = 64;
+    for (const x of slots) {
+      c.text(x === 'scarf' ? 'scarves' : `${x}s`, 24, y, 2, MUTED);
+      y += 30;
+      for (const [n, base] of bases.filter((b) => b.slot === x).entries()) {
+        const tx = 24 + (n % perRow) * (tileW + 8);
+        const ty = y + Math.floor(n / perRow) * (tileH + 8);
+        const art = gear.itemArt(base.id);
+        const def = { ...art.sprite, palette: { ...art.sprite.palette, ...(art.palette ?? {}) } };
+        const shared = gear.itemLookId(base.id) !== base.id;
+        c.rect(tx, ty, tileW, tileH, shared ? '#1d1836' : DUSK);
+        c.sprite(def, tx + Math.floor((tileW - 12 * scale) / 2), ty + 8, scale);
+        for (const [i, line] of wrap(base.name, 13).slice(0, 3).entries()) {
+          c.text(line, tx + 8, ty + 12 * scale + 16 + i * 16, 2, shared ? MUTED : TEXT);
+        }
+      }
+      y += rowsOf(x) * (tileH + 8) + 16;
+    }
+    c.save(join(out, slot === undefined ? 'items.png' : `items-${slot}.png`));
+    // A card per look: its sprite and each base that wears it, tinted.
+    const looks = new Map<string, Base[]>();
+    for (const base of bases) {
+      const look = gear.itemLookId(base.id);
+      looks.set(look, [...(looks.get(look) ?? []), base]);
+    }
+    let errors = 0;
+    for (const [look, wearers] of looks) {
+      const sprite = gear.ITEM_LOOK_SPRITES[look] as SpriteDef | undefined;
+      if (sprite === undefined) {
+        console.log(`${look}: no sprite yet (${wearers.map((w) => w.name).join(', ')})`);
+        continue;
+      }
+      const findings = lintSprite(sprite, { kind: 'item' });
+      console.log(
+        `${look}: ${findings.length === 0 ? 'clean' : `${String(findings.length)} finding(s)`}`,
+      );
+      for (const f of findings) console.log(`  ${f.level} ${f.rule}: ${f.message}`);
+      errors += findings.filter((f) => f.level === 'error').length;
+      const alts: Record<string, Readonly<Record<string, string>>> = {};
+      for (const w of wearers) alts[w.name.slice(0, 13)] = gear.itemArt(w.id).palette ?? {};
+      drawCard(look, { kind: 'item', note: '', sprite, alts }, join(out, `${look}.png`));
+    }
+    if (errors > 0) process.exitCode = 1;
+  } finally {
+    await server.close();
+  }
+}
+
 const args = process.argv.slice(2);
+if (args[0] === 'items') {
+  const at = args.indexOf('--slot');
+  const slot = at < 0 ? undefined : args[at + 1];
+  const outAt = args.indexOf('--out');
+  const out = resolve(
+    outAt < 0
+      ? join(import.meta.dirname, '..', 'scratch', 'art', 'items')
+      : (args[outAt + 1] ?? '.'),
+  );
+  mkdirSync(out, { recursive: true });
+  await drawItems(slot, out);
+  console.log(`wrote ${out}`);
+  process.exit();
+}
 if (args[0] === 'library') {
   const docs = resolve(import.meta.dirname, '..', '..', '..', 'docs', 'art');
   if (!args.includes('--check')) {

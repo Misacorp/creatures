@@ -1,11 +1,13 @@
-import { GEAR_RARITIES, PART_KINDS, baseElement, gearContent } from '@creatures/game';
+import { GEAR_RARITIES, PART_KINDS, baseElement, gearBase, gearContent } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import {
   BUNDLED_ITEM_SPRITES,
   BUNDLED_PART_ICONS,
   BUNDLED_SET_SPRITES,
   GEAR_SLOT_IDS,
+  ITEM_LOOK_SPRITES,
   ITEM_SIZE,
+  itemLookId,
   PART_SIZE,
   itemArt,
   partIcon,
@@ -15,6 +17,7 @@ import {
 import { glyph } from './glyphs';
 import { elementIcon } from './sprites/element-icons';
 import { expandRows, swapPalette, validateSprite } from './sprites/sprite-data';
+import { lintSprite, silhouetteDifference } from './sprites/sprite-lint';
 
 const shape = (rows: readonly string[]): string => rows.join('/');
 
@@ -36,39 +39,57 @@ describe('item sprites', () => {
     expect(new Set(shapes).size).toBe(GEAR_SLOT_IDS.length);
   });
 
-  it('draws every plain base of the content, tinted by its element and grey when it has none', () => {
-    for (const base of gearContent.bases.filter((b) => b.set === undefined)) {
+  it('draws every base with its look, tinted by its element (grey when it has none) or its set tag', () => {
+    for (const base of gearContent.bases) {
       const art = itemArt(base.id);
-      expect(art.sprite, base.id).toBe(BUNDLED_ITEM_SPRITES[base.slot]);
-      const element = baseElement(base);
-      if (element === null) {
-        expect(art.palette, base.id).toBeUndefined();
-      } else {
-        expect(art.palette, base.id).toBe(tintPalette(element));
-        expect(art.palette, base.id).toBeDefined();
+      const fallback = (base.set === undefined ? BUNDLED_ITEM_SPRITES : BUNDLED_SET_SPRITES)[
+        base.slot
+      ];
+      expect(art.sprite, base.id).toBe(ITEM_LOOK_SPRITES[itemLookId(base.id)] ?? fallback);
+      if (base.set !== undefined) {
+        const set = gearContent.sets.find((x) => x.id === base.set);
+        expect(art.palette, base.id).toBe(setTintPalette(set?.tag ?? base.tag));
+        continue;
       }
+      const element = baseElement(base);
+      expect(art.palette, base.id).toBe(element === null ? undefined : tintPalette(element));
     }
   });
 
-  it('draws a gear set piece with its own trimmed sprite, tinted by its set tag', () => {
-    for (const slot of GEAR_SLOT_IDS) {
-      const def = BUNDLED_SET_SPRITES[slot];
-      expect(() => {
-        validateSprite(def, ITEM_SIZE);
-      }, slot).not.toThrow();
-      // A set piece is never the plain sprite of its slot, so a set is known at a glance.
-      expect(shape(expandRows(def)), slot).not.toBe(shape(expandRows(BUNDLED_ITEM_SPRITES[slot])));
-      // It has gold trim that no tint changes.
-      expect(def.palette['g'], slot).toBeDefined();
+  it('shares a sprite only between element versions of one item (same slot and stats, no set)', () => {
+    expect(itemLookId('kelp-cap')).toBe('trail-cap');
+    expect(itemLookId('ember-muffler')).toBe('patch-scarf');
+    expect(itemLookId('bog-charm')).toBe('trail-charm');
+    // Own names that are not element versions: a set piece, a role charm, different stats.
+    expect(itemLookId('tidepool-cowl')).toBe('tidepool-cowl');
+    expect(itemLookId('wardens-bell')).toBe('wardens-bell');
+    expect(itemLookId('forge-hood')).toBe('forge-hood');
+    for (const base of gearContent.bases) {
+      const look = gearContent.bases.find((b) => b.id === itemLookId(base.id));
+      expect(look?.slot, base.id).toBe(base.slot);
     }
-    const shapes = GEAR_SLOT_IDS.map((slot) => shape(expandRows(BUNDLED_SET_SPRITES[slot])));
-    expect(new Set(shapes).size).toBe(GEAR_SLOT_IDS.length);
-    for (const set of gearContent.sets) {
-      for (const base of gearContent.bases.filter((b) => b.set === set.id)) {
-        const art = itemArt(base.id);
-        expect(art.sprite, base.id).toBe(BUNDLED_SET_SPRITES[base.slot]);
-        expect(art.palette, base.id).toBe(setTintPalette(set.tag));
-        expect(art.palette, base.id).toBeDefined();
+  });
+
+  it('draws only looks of the content, each well-formed and tintable', () => {
+    const looks = new Set(gearContent.bases.map((b) => itemLookId(b.id)));
+    for (const id of Object.keys(ITEM_LOOK_SPRITES)) expect(looks.has(id), id).toBe(true);
+    for (const [id, def] of Object.entries(ITEM_LOOK_SPRITES)) {
+      const errors = lintSprite(def, { kind: 'item' }).filter((f) => f.level === 'error');
+      expect(errors, id).toEqual([]);
+      // The tint swaps t, u and h, so the item's main colour must be drawn with them.
+      for (const key of ['t', 'u'])
+        expect(Object.hasOwn(def.palette, key), `${id} ${key}`).toBe(true);
+      const base = gearContent.bases.find((b) => b.id === id);
+      if (base?.set !== undefined) expect(def.palette['g'], `${id} gold trim`).toBeDefined();
+    }
+  });
+
+  it('keeps every look clearly different from every other of its slot', () => {
+    const entries = Object.entries(ITEM_LOOK_SPRITES);
+    for (const [i, [a, x]] of entries.entries()) {
+      for (const [b, y] of entries.slice(i + 1)) {
+        if (gearBase(a)?.slot !== gearBase(b)?.slot) continue;
+        expect(silhouetteDifference(x, y), `${a} vs ${b}`).toBeGreaterThanOrEqual(4);
       }
     }
   });
