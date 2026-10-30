@@ -8,20 +8,20 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 
 | Set | Status | Pieces | Requested |
 | --- | --- | --- | --- |
-| [Void, four roles](#void) | liked | 4 | 2026-10-30: imagine the Void element on creatures; four creatures, one per role, no names or stats. |
-| [Void gear: tint, plain pieces, a set, a shard](#void-gear) | draft | 11 | 2026-10-31: design Void gear. |
+| [Void creatures, two stages](#void) | liked | 8 | 2026-10-30: imagine the Void element on creatures; four creatures, one per role, no names or stats. |
+| [Void, a raid boss, three foes and two floor bosses](#void-foes) | draft | 6 | 2026-10-31: a Void raid boss, dungeon foes and dungeon bosses. |
 
 <a id="void"></a>
 
-## Void, four roles
+## Void creatures, two stages
 
-![Void, four roles](void.png)
+![Void creatures, two stages](void.png)
 
 - **Status:** liked
 - **Requested:** 2026-10-30: imagine the Void element on creatures; four creatures, one per role, no names or stats.
 - **Element:** void
 - **Source:** `apps/activity/src/sprites/concepts/void.ts` (draw it with `pnpm art void`)
-- **Sheet of:** `85e33ea434d9`
+- **Sheet of:** `bf4737245b93`
 - Misa chose the dark purple body over the pale first draft and said they look pretty good (2026-10-30).
 - Needs before use: the Void element in the content (element chart, marks, a place), names, stats, lore, shiny palettes.
 - The payoff's ear windows are the faintest detail; look again when it is promoted.
@@ -32,32 +32,30 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `void-setter` | creature | setter | liked | A floating wisp with a feeler that ends in a star: it points at the boss and marks it. |
 | `void-support` | creature | support | liked | A small planet with a ring for a halo and two moons in orbit: it lifts its neighbours. |
 | `void-payoff` | creature | payoff | liked | A lynx of the night: tall ears that are windows full of stars, a star-tipped crest. |
+| `void-guard-2` | creature | guard | draft | The Eclipse Hood grown: horned corners, a second star and a cyan corona in the window, raised shoulder plates with a glint. |
+| `void-setter-2` | creature | setter | draft | The star-feeler wisp grown: a second small feeler, a wider third-eye window with two stars, side wisps and a trailing tail. |
+| `void-support-2` | creature | support | draft | The ringed planet grown: a double halo, bigger moons, a third moon and the ring wrapped round its belly. |
+| `void-payoff-2` | creature | payoff | draft | The night lynx grown: wider ear windows with two stars, a star-shaped crest and a cheek ruff. |
 
-<a id="void-gear"></a>
+<a id="void-foes"></a>
 
-## Void gear: tint, plain pieces, a set, a shard
+## Void, a raid boss, three foes and two floor bosses
 
-![Void gear: tint, plain pieces, a set, a shard](void-gear.png)
+![Void, a raid boss, three foes and two floor bosses](void-foes.png)
 
 - **Status:** draft
-- **Requested:** 2026-10-31: design Void gear.
+- **Requested:** 2026-10-31: a Void raid boss, dungeon foes and dungeon bosses.
 - **Element:** void
-- **Source:** `apps/activity/src/sprites/concepts/void-gear.ts` (draw it with `pnpm art void-gear`)
-- **Sheet of:** `08a117034275`
-- Needs before use: the Void element in the content (an element tag, a Void Hat, Scarf and Charm at three tiers in gear.json, the set in gear-sets.json, a Void shard in the part kinds), the tint in TINTS and SET_TINTS (gear-sprites.ts), names and flavour confirmed, and the charm flair in item-flair.ts.
-- Proposed tint: t #7468bc, u #463c86, h #b4aae8 (the Void creatures, a little lighter so a dark item stands out on the panels).
-- The charm is the shared trail-charm with a Void flair (the variant); every other piece is its own look, as the shipped hats and scarves are.
+- **Source:** `apps/activity/src/sprites/concepts/void-foes.ts` (draw it with `pnpm art void-foes`)
+- **Sheet of:** `91871f7ffde6`
+- Needs before use: the Void element in the content, names, stats, gimmicks, lore and a place.
+- Working names and ideas are in docs/compendium/bosses.md and dungeon.md ("Concept, not shipped").
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
-| `void-cap` | item |  | draft | Dusk Cap: a round cap with a star on a stalk and a band of starry window. |
-| `void-hood` | item |  | draft | Gloaming Hood: a deep pointed hood whose face opening is a window of night with one star in it. |
-| `void-crown` | item |  | draft | Stargazer's Crown: a three-point crown with a ring in orbit above it and a star in its window. |
-| `void-scarf` | item |  | draft | Twilight Scarf: a wound band of starry window, one tail (the notch in it is too small to read as a crescent). |
-| `void-shawl` | item |  | draft | Nightfall Shawl: a triangle of cloth hanging to a point, a lit window across the chest, a star at the tip. |
-| `void-mantle` | item |  | draft | Stargazer's Mantle: a high collar, a ring clasp holding a starry window, and a hem of crescents. |
-| `void-charm` | item |  | draft | Starwell Charm: the shared trail-charm. The variant is the same stone with the Void flair: a window with a star, and a glint. |
-| `void-set-hat` | item | set | draft | Starkeeper's Hat: a tall pointed hat with a gold star at the tip and a gold band round a starry window. |
-| `void-set-scarf` | item | set | draft | Starkeeper's Loop: a scarf wound in a loop like an orbit, gold edges, a star in its side. |
-| `void-set-charm` | item | set | draft | Starkeeper's Lens: a gold ring, like a lens held up to the sky, with a starry window inside. |
-| `void-shard` | part |  | draft | Void shard: a crescent-shaped crystal with a star caught in its hollow. |
+| `void-raid-boss` | boss |  | draft | Hollow Crown: a huge hooded giant under a crescent crown, two glinting eyes in the hood and a starry window in its chest. |
+| `void-moth` | foe |  | draft | Dusk Moth: wide wings, each with a starry window, a glowing eye pair; it eats light. |
+| `void-lantern` | foe |  | draft | Hollow Lantern: a hanging lantern whose glass is a window of night with one warm star; it hides what it lights. |
+| `void-crab` | foe |  | draft | Drift Crab: a low round shell with a window and two big claws; it tucks in and hides. |
+| `void-floor-jelly` | boss |  | draft | Lantern Drifter: a floating bell with a starry window, two glinting eyes and trailing tendrils tipped with stars. |
+| `void-floor-sentinel` | boss |  | draft | Dim Sentinel: a tall standing stone with a doorway of night in its belly, glinting eyes and two shards orbiting it. |

@@ -225,6 +225,34 @@ Status: 2026-10-20. Shipped (`bosses.json`, `bosses-lore.json`) from `docs/desig
 
 ---
 
+## The Hollow Crown (Void) - concept, not shipped (2026-10-31)
+
+Status: concept only. A working name, a look and ideas for Misa to react to; nothing is in the content, and no numbers are set. The sprite is `void-raid-boss` in `apps/activity/src/sprites/concepts/void-foes.ts` (see `docs/art/README.md`). Everything here is `(compendium detail, not shipped)`.
+
+### Lore
+
+- It is the oldest dark between the stars, and it came down to be seen. A giant in a deep hood, crowned with two crescent horns, that stands in the night as if the night were a room it owns. Where it passes, the sky behind it goes quiet, one star at a time.
+- The stars it "takes" are not gone. They sit in the window in its chest, which is why it is never in a hurry: it keeps the light safe, in its own way.
+- It is not cruel. It is the Void as a force: patient, tall, and very good at making things go missing.
+- Flavour line: "It does not hide the stars. It keeps them for you, until the fight is over."
+
+### Look
+
+- **Silhouette:** huge, hooded, with two crescent horns, wide hanging sleeves and a ragged hem.
+- **Palette:** the Void family: dusk purple, lilac rim, ink.
+- **Glowing details:** two pale cyan eyes in the dark of the hood, and one warm star in a round window in its chest.
+- **Pose:** upright and still, arms hanging, facing the viewer.
+- **Never:** teeth, a scowl, or anything gory. The dark in the hood always has a lilac border.
+
+### Fighting style (idea)
+
+- **Gimmick, Lights Out:** every few rounds it puts out the light on one creature, which is marked a round ahead. That creature goes dark: its reaction bonus is taken away until its next turn, and its Mark or Shield effects fade. A team that keeps one trick alive for everything feels it, and a team with spare ways to start a reaction does not.
+- **Hide:** now and then it steps into the dark and cannot be targeted for one round; the dark thins, a star blinks in its chest, and it is back. A star in the window shows when it is about to return, so a team can wait for it instead of guessing.
+- **Takes, then gives back:** whatever Lights Out takes returns when the round ends, so it is a puzzle of timing, not a punishment.
+- **Reading:** a boss about taking things away for a while. Guards that cover and Supports that relight are how a team answers it.
+
+---
+
 ## Raid bosses as a set
 
 - **Shape of the set** `(inferred)`: each boss keeps one of the four old ways a fight can change: a zone attack (Undertow), a reflected reaction (Backdraft), a silence (Bramble Bind), and a targeted strike (Lightning Rod). The new moves add sweeps across rows, shells on random creatures, splashes, lanes, row ends and moves announced a round ahead. The floor bosses in `dungeon.md` reuse these ideas on a smaller scale.

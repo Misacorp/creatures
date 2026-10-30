@@ -33,8 +33,12 @@ const { expandRows } = await import('../src/sprites/sprite-data.ts');
 const { lintSprite, nearestSilhouette, PANELS, KIND_SIZE } =
   await import('../src/sprites/sprite-lint.ts');
 const { CONCEPT_SETS } = await import('../src/sprites/concepts/index.ts');
-const { BUNDLED_CREATURE_SPRITES, BUNDLED_BOSS_SPRITES } =
-  await import('../src/sprites/creature-sprites.ts');
+const {
+  BUNDLED_CREATURE_SPRITES,
+  BUNDLED_BOSS_SPRITES,
+  BUNDLED_DUNGEON_FOE_SPRITES,
+  BUNDLED_DUNGEON_BOSS_SPRITES,
+} = await import('../src/sprites/creature-sprites.ts');
 const { glyph } = await import('../src/sprites/world-map-font.ts');
 
 /** Digits and a few marks in the 5x7 shape of the world map's letters. */

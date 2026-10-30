@@ -24,9 +24,34 @@ const VOID = {
 /** The first colour direction, for comparison: a pale moon-lilac body. */
 const PALE = { b: '#c4bde3', h: '#ece8fb', s: '#8a82b4', p: '#ddd7f2' } as const;
 
+/**
+ * The shiny of the whole line (concept): one hue shift, dusk purple to sea-teal, the same for both
+ * stages. Every colour except the ink `k`, the eye highlight `e` and the blush `q` shifts; the star
+ * `t` turns rose and the glint `g` warm peach, so the window still has a warm star and one accent.
+ */
+const SHINY = {
+  b: '#3f9a94',
+  h: '#7fd0c4',
+  s: '#236a6a',
+  p: '#a6e6d8',
+  w: '#0a1c1e',
+  t: '#ffc6d4',
+  g: '#ffcf9f',
+} as const;
+
+/** The same shift for the payoff line, which has no glint. */
+const SHINY_NO_GLINT = {
+  b: SHINY.b,
+  h: SHINY.h,
+  s: SHINY.s,
+  p: SHINY.p,
+  w: SHINY.w,
+  t: SHINY.t,
+} as const;
+
 export const VOID_CONCEPTS: ConceptSet = {
   id: 'void',
-  title: 'Void, four roles',
+  title: 'Void creatures, two stages',
   element: 'void',
   requested:
     '2026-10-30: imagine the Void element on creatures; four creatures, one per role, no names or stats.',
@@ -63,7 +88,7 @@ export const VOID_CONCEPTS: ConceptSet = {
           '..kkkkkk',
         ],
       },
-      alts: { 'pale (first)': PALE },
+      alts: { 'pale (first)': PALE, shiny: SHINY },
     },
     'void-setter': {
       kind: 'creature',
@@ -90,7 +115,7 @@ export const VOID_CONCEPTS: ConceptSet = {
           '.......kkkk.....',
         ],
       },
-      alts: { 'pale (first)': PALE },
+      alts: { 'pale (first)': PALE, shiny: SHINY },
     },
     'void-support': {
       kind: 'creature',
@@ -118,7 +143,7 @@ export const VOID_CONCEPTS: ConceptSet = {
           '.....kkk',
         ],
       },
-      alts: { 'pale (first)': PALE },
+      alts: { 'pale (first)': PALE, shiny: SHINY },
     },
     'void-payoff': {
       kind: 'creature',
@@ -146,7 +171,122 @@ export const VOID_CONCEPTS: ConceptSet = {
           '....kkkk',
         ],
       },
-      alts: { 'pale (first)': PALE },
+      alts: { 'pale (first)': PALE, shiny: SHINY_NO_GLINT },
+    },
+    'void-guard-2': {
+      kind: 'creature',
+      role: 'guard',
+      status: 'draft',
+      note: 'The Eclipse Hood grown: horned corners, a second star and a cyan corona in the window, raised shoulder plates with a glint.',
+      sprite: {
+        mirror: true,
+        palette: { ...VOID, g: '#9fe8ff' },
+        rows: [
+          'k.kkkkkk',
+          'kkhhhhhh',
+          'khwwwgwt',
+          'khwtwwww',
+          'khwgkkkk',
+          'kbkkhhhh',
+          'kbkhbbbb',
+          'kbkbbbbb',
+          'kbkbekbb',
+          'kkkbkkbb',
+          'khhqbbbk',
+          'kghbpppp',
+          'kbbbpppp',
+          'kssbbppp',
+          '.kssssss',
+          '..kkkkkk',
+        ],
+      },
+      alts: { 'pale (first)': PALE, shiny: SHINY },
+    },
+    'void-setter-2': {
+      kind: 'creature',
+      role: 'setter',
+      status: 'draft',
+      note: 'The star-feeler wisp grown: a second small feeler, a wider third-eye window with two stars, side wisps and a trailing tail.',
+      sprite: {
+        palette: { ...VOID, g: '#9fe8ff' },
+        rows: [
+          '............t.t.',
+          '..t........tgt..',
+          '..g.........t...',
+          '...g.kkkkkk.g...',
+          '...kkhhhhhhkg...',
+          '..khhwwwwwhbkk..',
+          '.khbhwtwtwhbbbk.',
+          '.khbbhwwwhbbbbk.',
+          'kkbbekbbbbkebbkk',
+          'khbbkkbbbbkkbbhk',
+          '.kbqbbbkkbbbqbk.',
+          '.ksbbppppbbbbsk.',
+          '..ksbbppbbbbsk..',
+          '...kssbbbbbsk...',
+          '..kkksssssskkk..',
+          '.....kkkkkk.....',
+        ],
+      },
+      alts: { 'pale (first)': PALE, shiny: SHINY },
+    },
+    'void-support-2': {
+      kind: 'creature',
+      role: 'support',
+      status: 'draft',
+      note: 'The ringed planet grown: a double halo, bigger moons, a third moon and the ring wrapped round its belly.',
+      sprite: {
+        mirror: true,
+        palette: { ...VOID, g: '#9fe8ff' },
+        rows: [
+          '..gggggg',
+          'ttg.gggg',
+          'tt.g....',
+          'tt.kkkkk',
+          '...kkhhh',
+          '..khhbhw',
+          '.khbbhwt',
+          'tkbbbbhw',
+          '.kbbekbb',
+          '.kbbkkbb',
+          '.kbqbbbk',
+          '.kbbbbpp',
+          '.ksbpppp',
+          'gggggggg',
+          '...kksss',
+          '.....kkk',
+        ],
+      },
+      alts: { 'pale (first)': PALE, shiny: SHINY },
+    },
+    'void-payoff-2': {
+      kind: 'creature',
+      role: 'payoff',
+      status: 'draft',
+      note: 'The night lynx grown: wider ear windows with two stars, a star-shaped crest and a cheek ruff.',
+      sprite: {
+        mirror: true,
+        palette: { ...VOID },
+        rows: [
+          'kk......',
+          'kkk....t',
+          'khhk...t',
+          'khhhk.tt',
+          'khwhkkkt',
+          'khwthhhh',
+          'khwwwbbb',
+          'khwtbbbb',
+          'kbbbekbb',
+          'khbbkkbb',
+          'khbqbbbk',
+          'khbbbppp',
+          '.kbbbppp',
+          '.ksbbbpp',
+          '..ksssbb',
+          '...kkkkk',
+        ],
+      },
+      alts: { 'pale (first)': PALE, shiny: SHINY_NO_GLINT },
     },
   },
 };
