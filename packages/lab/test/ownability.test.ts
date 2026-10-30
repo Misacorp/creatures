@@ -7,6 +7,7 @@ import {
   lineFindable,
   lineOfForm,
   lineRarity,
+  evolvedAt,
   nonCommonLines,
   ownabilityMarkdown,
   ownabilityTable,
@@ -198,14 +199,14 @@ describe('the track', () => {
   it('asks every slot, slot 1 included, for the line the tuner measures: slot 1’s own line is all common, so it passes on its own', () => {
     const s = slotOwnability(1, 1, flat(0, 0));
     expect(s.tool.needed).toEqual([]);
-    expect(s.pass).toBe(true);
+    expect(s.tool.ownable).toBe(true);
     expect(slotPreparedOf(1).line).toEqual(answerLine(SLOT_LINE[1] as string));
     // Without its own line the boss's first answer would need a rare line and fail in week 1.
     expect(
       answerOwnability(BOSS_ANSWERS['tidal-colossus']?.[0] as BossAnswer, 1, flat(0, 0)).ownable,
     ).toBe(false);
-    expect(slotOwnability(3, 3, flat(0, 0)).pass).toBe(false);
-    expect(slotOwnability(2, 2, flat(0, 0)).pass).toBe(true);
+    expect(slotOwnability(3, 3, flat(0, 0)).tool.ownable).toBe(false);
+    expect(slotOwnability(2, 2, flat(0, 0)).tool.ownable).toBe(true);
   });
 
   it('gives a slot its own prepared line only where SLOT_LINE names one, a legal line of the same boss’s shape', () => {
@@ -231,7 +232,7 @@ describe('the track', () => {
   // The rule of `boss-track.md`, "Ownability". If a slot fails here the content is the problem (the first answer of a boss uses a rare
   // line before rare lines are common enough): the lead decides whether to change the answer, the slot or the rule. Do not loosen it here.
   it('has a tool line every slot’s server can own at the week the slot arrives', () => {
-    const failing = ownabilityTable().filter((r) => !r.pass);
+    const failing = ownabilityTable().filter((r) => !r.tool.ownable);
     expect(
       failing.map(
         (r) =>
@@ -239,6 +240,31 @@ describe('the track', () => {
       ),
     ).toEqual([]);
   });
+  // The evolution gate (design panel 6): the second half of the rule. A creature of the tool line under its form's evolution level
+  // fights as its stage 1 form, so the line the tuner measures is not the line the slot is tuned for. If a slot fails here the lead
+  // decides (a different line, a later week, or a different rule). Do not loosen it here.
+  it('has a tool line whose every creature is at or above its form’s evolution level at the arrival week, at the expected speed', () => {
+    const failing = ownabilityTable().filter((r) => r.unevolved.length);
+    expect(
+      failing.map(
+        (r) =>
+          `slot ${r.slot} ${r.bossId} week ${r.week}: ${r.unevolved.map((b) => `${b.formId} row ${b.row + 1} level ${b.level} under ${b.evolvesAt}`).join(', ')}`,
+      ),
+    ).toEqual([]);
+  });
+
+  it('finds the creatures of a line under their evolution level: a week-1 slot 1 line is stage 2 forms at level 11, a late week has none', () => {
+    const early = evolvedAt(1, 1);
+    expect(early.length).toBeGreaterThan(0);
+    expect(early.every((b) => b.level < b.evolvesAt && b.evolvesAt === 15)).toBe(true);
+    expect(slotOwnability(1, 1).pass).toBe(false);
+    expect(slotOwnability(1, 1).unevolved).toEqual(early);
+    expect(evolvedAt(1, 24)).toEqual([]);
+    expect(slotOwnability(1, 24).pass).toBe(slotOwnability(1, 24).tool.ownable);
+    // A form is listed once for a row, not once for each column that brings it.
+    expect(new Set(early.map((b) => `${b.formId}/${b.row}`)).size).toBe(early.length);
+  });
+
   // No written answer may use a festival prize (Hearthshell, Lanternfin: scouts cannot find them), and every answer must be
   // possible for a server of any size by the last slot's week: a chance of 0 means a line nobody can own.
   it('has no written answer that needs a line nobody can own at the last slot’s week', () => {

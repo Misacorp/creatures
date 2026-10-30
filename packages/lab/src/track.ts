@@ -75,9 +75,10 @@ export const SLOT_NUMBERS: SlotTable = {
 };
 
 /**
- * The week each slot's numbers were tuned for (index 0 is slot 1): the median week a dedicated server arrives there at the expected
- * roster speed, from the path with `SLOT_NUMBERS` (`trackTuner.ts` prints it with the table). The ownability check reads it
- * (`ownability.ts`: a slot's tool line must be ownable in the week the slot arrives).
+ * The week each slot's numbers were tuned for (index 0 is slot 1): the median week a dedicated server first FIGHTS the slot at the
+ * expected roster speed, from the path with `SLOT_NUMBERS` (`trackTuner.ts` prints it with the table). Never a Festival week: a server
+ * that reaches slot 5 in week 5 fights it first in week 6 (the Festival clock is the server's age in weeks, `path.ts`). The ownability
+ * check reads it (`ownability.ts`: a slot's tool line must be ownable and evolved in the week the slot arrives).
  */
 export const SLOT_WEEKS: readonly number[] = [1, 2, 3, 4, 5, 7, 8, 9, 10, 12, 13, 14, 15, 17, 18];
 
@@ -110,6 +111,8 @@ export const SLOT_WALL: Readonly<Record<number, true>> = { 5: true };
  * 90% potential at best (Cindle 56%, Pyrelynx 66%, Geyserpup 75%, Geyserpup with Puddle Maker in both swapped slots 88%, and 90% with
  * Edge-walker on the first one), so the line below is that one: the first answer's line with both Tempestrays replaced by
  * Geyserpup with Puddle Maker (Edge-walker kept where legal). The ownability rule (`ownability.ts`) reads this line on every slot.
+ * A creature of it under its form's evolution level fights as its stage 1 form (`gatedPick` in `roster.ts`), so a week-1 server fields
+ * the line's stage 1 forms; the ownability rule asks that the line be evolved at the slot's arrival week.
  */
 export const SLOT_LINE: Readonly<Record<number, string>> = {
   1: 'kilnmole/keep-the-heat-in+brace bogwarden/wide-reach+long-shadow drizzlewt/clear-the-air+bright-boost geyserpup/puddle-maker+edge-walker | tidewing/lead-the-way+owners-mark fogwyrm/wide-reach+catch-breath voltaro/none+odd-one-out drizzlewt/curl-up+bright-boost | fogwyrm/wide-reach+unbothered sunfawn/curl-up+brace geyserpup/puddle-maker tidewing/double-mark+owners-mark',

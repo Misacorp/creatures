@@ -4,12 +4,15 @@ import { main } from '../src/cli';
 import { inProcessExecutor } from '../src/jobRunners';
 import { runJobs, type Executor } from '../src/jobs';
 import {
+  BUILDERS,
   DETERMINATION,
+  determinationOf,
   DEDICATED,
   FESTIVAL_EASE,
   FESTIVAL_EVERY,
   MIXED,
   STUCK_WEEKS,
+  type PathServer,
   pathOf,
   planPath,
   serverWeekend,
@@ -32,7 +35,8 @@ describe('walkPath with a fake fight', () => {
       return true;
     });
     expect(path.fought.slice(0, 9)).toEqual([1, 2, 3, 4, 0, 5, 6, 7, 8]);
-    expect(path.reached.slice(0, 6)).toEqual([1, 2, 3, 4, 5, 7]);
+    // The arrival week is the first week a slot is fought: slot 5 is won in week 4, so it is first fought in week 6 (week 5 is the Festival).
+    expect(path.reached.slice(0, 6)).toEqual([1, 2, 3, 4, 6, 7]);
     expect(path.attempts.every((a) => a === 1)).toBe(true);
     expect(path.longestRun).toBe(1);
     // Four Festival weeks in 24: twenty fights.
@@ -53,7 +57,7 @@ describe('walkPath with a fake fight', () => {
     let n = 0;
     const path = walkPath(() => ++n % 2 === 0);
     expect(path.fought.slice(0, 9)).toEqual([1, 1, 2, 2, 0, 3, 3, 4, 4]);
-    expect(path.reached.slice(0, 4)).toEqual([1, 3, 5, 8]);
+    expect(path.reached.slice(0, 4)).toEqual([1, 3, 6, 8]);
     expect(path.attempts.slice(0, 3)).toEqual([2, 2, 2]);
     // The Festival moves nobody back: slot 2 was fought twice, and beaten at the second try.
     expect(path.weekends[1]).toBe(2);
@@ -100,7 +104,55 @@ describe('walkPath with a fake fight', () => {
   });
 });
 
-describe('Determination (a dial, off by default)', () => {
+describe('the arrival week is the week of the first fight (design panel 6)', () => {
+  it('counts the Festival clock from the server’s first week: a server that wins slot 4 in week 4 fights slot 5 first in week 6', () => {
+    expect(FESTIVAL_EVERY).toBe(5);
+    const path = walkPath(() => true);
+    expect(path.fought.slice(0, 7)).toEqual([1, 2, 3, 4, 0, 5, 6]);
+    expect(path.reached[4]).toBe(6);
+    // Every slot's arrival is a week it was fought, never a Festival week.
+    for (const [i, week] of path.reached.entries()) {
+      expect(week % FESTIVAL_EVERY, `slot ${i + 1}`).not.toBe(0);
+      expect(path.fought[week - 1]).toBe(i + 1);
+    }
+  });
+
+  it('keeps a lost boss’s slot, and reaches the next one only when it is fought', () => {
+    // Slot 4 is lost in week 4 and again in week 6, won in week 7: slot 5 is first fought in week 8.
+    const path = walkPath((slot, week) => slot < 4 || week === 7);
+    expect(path.fought.slice(0, 8)).toEqual([1, 2, 3, 4, 0, 4, 4, 5]);
+    expect(path.reached.slice(0, 5)).toEqual([1, 2, 3, 4, 8]);
+  });
+});
+
+describe('the builder server', () => {
+  it('is four daily players with random legal talents, played only when asked', () => {
+    expect(BUILDERS.players).toHaveLength(4);
+    expect(BUILDERS.players.every((p) => p.roster === 'daily' && p.talents === 'random')).toBe(
+      true,
+    );
+    const ids = (kinds?: readonly PathServer['id'][]) =>
+      planPath({ quick: true, servers: 1, ...(kinds ? { kinds } : {}) }).jobs.map((j) => j.id);
+    expect(ids().some((id) => id.includes('builders'))).toBe(false);
+    expect(ids(['builders'])).toEqual(['path:builders:expected:0']);
+  });
+
+  it('fields the slot’s line with random legal talents, the same for the same server and slot, never the written ones by chance alone', () => {
+    const a = serverWeekend(BUILDERS, 5, 9, 'expected', 'builders:0');
+    const b = serverWeekend(BUILDERS, 5, 9, 'expected', 'builders:0');
+    const c = serverWeekend(BUILDERS, 5, 9, 'expected', 'builders:1');
+    const d = serverWeekend(DEDICATED, 5, 9, 'expected', 'dedicated:0');
+    expect(a.placements).toEqual(b.placements);
+    // The forms and Knacks are the dedicated server's line; the talents are drawn.
+    const shape = (w: typeof a) => w.placements.map((p) => `${p.formId}/${p.knack}/${p.level}`);
+    expect(shape(a)).toEqual(shape(d));
+    const talents = (w: typeof a) => w.placements.map((p) => (p.talents ?? []).join('+'));
+    expect(talents(a)).not.toEqual(talents(d));
+    expect(talents(a)).not.toEqual(talents(c));
+  });
+});
+
+describe('Determination (on by default from the second lap, at most +25%)', () => {
   /** A fight that is won once the server has at least `need` stacks: the stacks the walk gave it are recorded. */
   const needing = (need: number) => {
     const seen: [number, number, number][] = [];
@@ -111,13 +163,39 @@ describe('Determination (a dial, off by default)', () => {
     return { seen, fight };
   };
 
-  it('is off by default: the fight gets no stacks however often it loses', () => {
+  it('is a dial of the path, not of the bare walk: the walk gives no stacks unless asked, however often it loses', () => {
     const { seen, fight } = needing(99);
     walkPath(fight);
     expect(seen.length).toBeGreaterThan(10);
     expect(seen.every(([, , stacks]) => stacks === 0)).toBe(true);
-    // The default dial is Misa's: +5% a stack, at most 10 stacks.
-    expect(DETERMINATION).toEqual({ stackBp: 500, maxStacks: 10 });
+    // The default dial is Misa's (2026-10-30, panel 6): +5% a stack, at most 5 stacks (+25%), from slot 6, the second lap.
+    expect(DETERMINATION).toEqual({ stackBp: 500, maxStacks: 5, fromSlot: 6 });
+    expect(determinationOf({})).toBe(DETERMINATION);
+    expect(determinationOf({ determination: 'off' })).toBeUndefined();
+  });
+
+  it('gives no stacks on slots 1 to 5 and counts them from slot 6', () => {
+    // Loses every weekend at slot 1 until week 3, then wins everything up to slot 6, where it loses again.
+    const seen: [number, number][] = [];
+    const fight = (slot: number, _week: number, stacks: number) => {
+      seen.push([slot, stacks]);
+      return slot < 6 || stacks >= 3;
+    };
+    walkPath(fight, {
+      determinationStacks: DETERMINATION.maxStacks,
+      determinationFromSlot: DETERMINATION.fromSlot,
+      festivalEvery: 0,
+      weeks: 12,
+    });
+    expect(seen.filter(([slot]) => slot < 6).every(([, stacks]) => stacks === 0)).toBe(true);
+    expect(seen.filter(([slot]) => slot === 6).map(([, stacks]) => stacks)).toEqual([0, 1, 2, 3]);
+    // A slot-1 server stuck for ever never gets a stack.
+    const stuck: number[] = [];
+    walkPath((_slot, _week, stacks) => (stuck.push(stacks), false), {
+      determinationStacks: 5,
+      determinationFromSlot: 6,
+    });
+    expect(stuck.every((x) => x === 0)).toBe(true);
   });
 
   it('gives a stack for each failed weekend on the same boss, up to the cap', () => {
@@ -150,66 +228,84 @@ describe('Determination (a dial, off by default)', () => {
 
   it('turns the stacks into damage and healing in the real weekend, and travels in the job arguments', () => {
     const run = { determination: DETERMINATION };
+    const off = { determination: 'off' as const };
     const plan = planPath({ quick: true, servers: 1, kinds: ['dedicated'], ...run });
     expect(plan.jobs.every((j) => (j.args as { determination?: unknown }).determination)).toBe(
       true,
     );
+    // A plan with no say in it plays the default dial (the job carries nothing and the path reads `DETERMINATION`); 'off' travels.
     expect(
       planPath({ quick: true, servers: 1, kinds: ['dedicated'] }).jobs.some(
         (j) => 'determination' in (j.args as object),
       ),
     ).toBe(false);
-    // Ten stacks (+50% damage and healing) beat a boss that the plain team loses to (slot 5 with 36_000 HP, week 12, found by a probe:
-    // the plain team loses it, five stacks win it, ten win it up to 48_000 HP).
-    const table = { 5: { hp: 36_000, atk: 150, armour: 25 } };
-    const stacks = (n: number) =>
-      weekendKill(DEDICATED, 5, 12, 'expected', 'det', undefined, { table, ...run }, n);
-    const plain = weekendKill(DEDICATED, 5, 12, 'expected', 'det', undefined, { table });
-    expect(plain).toBe(false);
-    expect(stacks(0)).toBe(false);
-    expect(stacks(DETERMINATION.maxStacks)).toBe(true);
+    expect(
+      planPath({ quick: true, servers: 1, kinds: ['dedicated'], determination: 'off' }).jobs.every(
+        (j) => (j.args as { determination?: unknown }).determination === 'off',
+      ),
+    ).toBe(true);
+    // Stacks (+5% damage and healing each) beat a boss that the plain team loses to (slot 6 with 36_000 HP, week 12; the plain team
+    // loses it, the five stacks of the cap, +25%, win it). On slot 5 the same stacks do nothing: Determination starts at slot 6.
+    const table = {
+      6: { hp: 36_000, atk: 107, armour: 47 },
+      5: { hp: 36_000, atk: 150, armour: 25 },
+    };
+    const kill = (slot: number, n: number, dial: object) =>
+      weekendKill(DEDICATED, slot, 12, 'expected', 'det', undefined, { table, ...dial }, n);
+    expect(kill(6, 0, off)).toBe(false);
+    expect(kill(6, 0, run)).toBe(false);
+    expect(kill(6, DETERMINATION.maxStacks, off)).toBe(false);
+    expect(kill(6, DETERMINATION.maxStacks, run)).toBe(true);
+    expect(kill(5, DETERMINATION.maxStacks, run)).toBe(kill(5, 0, off));
   }, 60_000);
 
   it('labels the report and a path with it on gets further than one without', async () => {
-    const off = planPath({ quick: true, servers: 3, kinds: ['mixed'] });
-    const on = planPath({
-      quick: true,
-      servers: 3,
-      kinds: ['mixed'],
-      determination: DETERMINATION,
-    });
+    const off = planPath({ quick: true, servers: 3, kinds: ['mixed'], determination: 'off' });
+    const on = planPath({ quick: true, servers: 3, kinds: ['mixed'] });
     const run = async (p: typeof off) =>
       p.assemble((await runJobs(p.jobs, inProcessExecutor, 4)).results);
     const a = await run(off);
     const b = await run(on);
-    expect(a.md.join('\n')).not.toContain('Determination');
-    expect(b.md.join('\n')).toContain('with Determination (+5% a failed week, at most 10 stacks)');
+    expect(a.md.join('\n')).toContain('without Determination');
+    expect(b.md.join('\n')).toContain(
+      'with Determination (+5% a failed weekend from slot 6, at most 5 stacks)',
+    );
     const reached = (r: typeof a) => r.data[0]?.slots.length ?? 0;
     expect(reached(b)).toBeGreaterThanOrEqual(reached(a));
   }, 120_000);
 });
 
-describe('--path --determination', () => {
-  it('prints the path with Determination on beside the path without it (the plain path alone otherwise)', async () => {
+describe('--path and Determination', () => {
+  it('plays with it by default, `--determination` adds the path without it as a comparison, `--no-determination` plays without it only', async () => {
     const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const text = () => log.mock.calls.map((c) => String(c[0])).join('\n');
+    const withDial = 'with Determination (+5% a failed weekend from slot 6, at most 5 stacks)';
     try {
       expect(await main(['--path', '--quick'], { exec: inProcessExecutor, slots: 4 })).toBe(0);
-      const plain = log.mock.calls.map((c) => String(c[0])).join('\n');
-      expect(plain).toContain('### Boss track at the expected roster speed');
-      expect(plain).not.toContain('Determination');
+      expect(text()).toContain('### Boss track at the expected roster speed' + ' ' + withDial);
+      expect(text()).not.toContain('without Determination');
       log.mockClear();
       expect(
         await main(['--path', '--quick', '--determination'], { exec: inProcessExecutor, slots: 4 }),
       ).toBe(0);
-      const both = log.mock.calls.map((c) => String(c[0])).join('\n');
-      const off = both.indexOf('### Boss track at the expected roster speed\n');
-      const on = both.indexOf('with Determination (+5% a failed week, at most 10 stacks)');
-      expect(off).toBeGreaterThanOrEqual(0);
-      expect(on).toBeGreaterThan(off);
+      const both = text();
+      const on = both.indexOf(withDial);
+      const off = both.indexOf('without Determination');
+      expect(on).toBeGreaterThanOrEqual(0);
+      expect(off).toBeGreaterThan(on);
+      log.mockClear();
+      expect(
+        await main(['--path', '--quick', '--no-determination'], {
+          exec: inProcessExecutor,
+          slots: 4,
+        }),
+      ).toBe(0);
+      expect(text()).toContain('without Determination');
+      expect(text()).not.toContain(withDial);
     } finally {
       log.mockRestore();
     }
-  }, 120_000);
+  }, 180_000);
 });
 
 describe('the summary', () => {

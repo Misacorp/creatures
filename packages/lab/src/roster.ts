@@ -8,8 +8,10 @@
  * read it. The data is the valley's (`valley.ts`: `VALLEY_ROSTER`, from `data/valley/roster-profile.json`); when the valley
  * writes new numbers in the same shape, the file is replaced and nothing else here changes.
  */
-import { RULES } from '@creatures/game';
+import { RULES, content } from '@creatures/game';
+import { FORM_KNACKS } from './knacks';
 import { formStats } from './species';
+import { legalTalents } from './talents';
 import type { Pick } from './search';
 
 /** The creature level cap. */
@@ -152,18 +154,75 @@ export function rosterLevels(
 }
 
 /**
- * A player's column of a raid line at a week: the same forms, Knacks and talents, each creature at the level of the player's
- * creature of that row (the best at the front row), capped by the form's own cap, with the talents the level has slots for.
+ * The levels of a player's creatures ranked `from` to `from + count - 1` by level (1 is the best), the same whole numbers as
+ * `rosterLevels`. A player with fewer creatures than a rank has their weakest one there. Information only: the answer at middling ranks
+ * (`trackTuner.ts`), a player who fields their 8th to 11th best instead of their best.
  */
-export function levelledColumn(column: readonly Pick[], levels: readonly number[]): Pick[] {
-  return column.map((p, row) => {
-    const level = Math.max(
+export function rosterLevelsFrom(
+  profile: RosterProfile,
+  kind: RosterKind,
+  week: number,
+  speed: RosterSpeed,
+  from: number,
+  count: number,
+  joinWeek?: number,
+): number[] {
+  const r = rosterWeek(profile, kind, week, joinWeek);
+  return Array.from({ length: count }, (_, k) => {
+    const rank = Math.min(from + k, Math.max(1, r.size));
+    return Math.max(
       1,
-      Math.min(
-        Math.round(levels[row] ?? levels[levels.length - 1] ?? 1),
-        formStats(p.formId, LEVEL_CAP).levelCap,
-      ),
+      Math.min(LEVEL_CAP, Math.round(levelOfCreature(r, rank) * SPEED_FACTOR[speed])),
     );
+  });
+}
+
+/**
+ * The evolution a stage 2 form comes from: its line's stage 1 form and the level that form evolves at (the stage 1 form's
+ * `evolvesTo`, or `altEvolvesTo` for the second branch of a line; read from the shipped content, 15 for every line today).
+ * Undefined for a stage 1 form, which has nothing to wait for.
+ */
+export function evolutionOf(formId: string): { from: string; level: number } | undefined {
+  const form = content.creatures.find((c) => c.id === formId);
+  if (!form || form.stage < 2) return undefined;
+  const first = content.creatures.find((c) => c.line === form.line && c.stage === 1);
+  if (!first) return undefined;
+  const way = [first.evolvesTo, first.altEvolvesTo].find((e) => e?.species === formId);
+  return way ? { from: first.id, level: way.level } : undefined;
+}
+
+/**
+ * The evolution gate (the lead, 2026-10-30, design panel 6): a creature below its form's evolution level has not evolved yet, so it
+ * fights as its stage 1 form. A daily player's best creature is level 11 in week 1, 14 in week 2 and 17 in week 3, while the lab
+ * used to field stage 2 forms (which evolve at 15) from week 1. The Knack stays when the stage 1 form can equip it (or there is
+ * none), else it is the stage 1 form's first Knack; the talents stay when the stage 1 form can carry them legally. A creature at or
+ * above its evolution level, and any stage 1 form, is unchanged.
+ */
+export function gatedPick(pick: Pick, level: number): Pick {
+  const evo = evolutionOf(pick.formId);
+  if (!evo || level >= evo.level) return pick;
+  const knacks = FORM_KNACKS[evo.from] ?? [];
+  const knack =
+    pick.knack === 'none' || knacks.includes(pick.knack) ? pick.knack : (knacks[0] ?? 'none');
+  const { talents, ...rest } = pick;
+  const kept = (talents ?? []).filter((t) => legalTalents(evo.from).includes(t));
+  return { ...rest, formId: evo.from, knack, ...(kept.length ? { talents: kept } : {}) };
+}
+
+/**
+ * A player's column of a raid line at a week: the same forms, Knacks and talents, each creature at the level of the player's
+ * creature of that row (the best at the front row), capped by the form's own cap, with the talents the level has slots for. A
+ * creature under its form's evolution level fights as its stage 1 form (`gatedPick`); `gate: false` leaves the forms as written.
+ */
+export function levelledColumn(
+  column: readonly Pick[],
+  levels: readonly number[],
+  gate = true,
+): Pick[] {
+  return column.map((written, row) => {
+    const rostered = Math.round(levels[row] ?? levels[levels.length - 1] ?? 1);
+    const p = gate ? gatedPick(written, rostered) : written;
+    const level = Math.max(1, Math.min(rostered, formStats(p.formId, LEVEL_CAP).levelCap));
     const { talents, ...rest } = p;
     const kept = (talents ?? []).slice(0, talentSlotsAt(level));
     return { ...rest, level, ...(kept.length ? { talents: kept } : {}) };

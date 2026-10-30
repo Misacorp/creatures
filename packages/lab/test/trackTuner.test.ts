@@ -1,5 +1,7 @@
 /** The track tuner: the lap rule (on the kill rate), the loop's stop (with fake measures), the table over `slotBoss`, the ranks untouched, and a slot's weekend. */
 import { describe, expect, it } from 'vitest';
+import { content } from '@creatures/game';
+import { OWN_KNACKS } from '../src/knacks';
 import { RAID_BOSS_IDS, RAID_RANKS, RAID_SPECS, raidBossOf } from '../src/bosses';
 import { DEDICATED, serverWeekend } from '../src/path';
 import { ROSTER_WEEKS, type RosterProfile, type RosterWeek } from '../src/roster';
@@ -16,6 +18,11 @@ import {
   slotTargetsFor,
   toolPotentialMinAt,
   toolShareMinAt,
+  MIXED_BEAT_MIN,
+  MIXED_KILL_MIN,
+  MIXED_WEEKENDS_MAX,
+  MIXED_WEIGHT,
+  TUTORIAL_MIXED_KILL_MIN,
   WALL_CLASSIC_POTENTIAL_AIM,
   WALL_CLASSIC_POTENTIAL_MAX,
   WALL_CLASSIC_POTENTIAL_MIN,
@@ -25,6 +32,8 @@ import {
   MAX_ROUNDS,
   LOSS_STEP,
   NEAR_WEIGHT,
+  MIDDLING_FROM,
+  ROTATED_TRIOS,
   SLOT_FIDELITY,
   aimComfort,
   arrivalWeeks,
@@ -40,6 +49,10 @@ import {
   quantised,
   slotTargets,
   slotAxes,
+  slotFidelity,
+  slotInfoMarkdown,
+  planSlotInfo,
+  trioLine,
   tuneSlot,
   type SlotEvalArgs,
   type SlotEvalResult,
@@ -52,6 +65,7 @@ import {
   rankNumbers,
   slotBoss,
   slotNumbers,
+  slotPreparedOf,
   trackSlot,
   type SlotTable,
 } from '../src/track';
@@ -262,7 +276,7 @@ describe('a slot’s weekend', () => {
     }
   });
 
-  it('is measured the same every time, with the mixed server only when asked', () => {
+  it('is measured the same every time, with the mixed server only when asked for', () => {
     const table: SlotTable = { 2: { hp: 14_000, atk: 100, armour: 35 } };
     const tiny = {
       weekends: 4,
@@ -281,9 +295,13 @@ describe('a slot’s weekend', () => {
     };
     const a = evalSlot(args);
     expect(evalSlot(args)).toEqual(a);
-    for (const t of slotTargets(2)) expect(a.measures[t.measure]).toBeGreaterThanOrEqual(0);
+    // The mixed server is measured only when the fidelity has draws of it (the tuner asks for them in every pass: `slotFidelity`).
+    for (const t of slotTargets(2).filter((x) => x.measure !== 'mixed.kill'))
+      expect(a.measures[t.measure]).toBeGreaterThanOrEqual(0);
     expect(a.measures['mixed.kill']).toBeNaN();
     const b = evalSlot({ ...args, fidelity: { ...tiny, mixedDraws: 1 } });
+    for (const t of slotTargets(2)) expect(b.measures[t.measure]).toBeGreaterThanOrEqual(0);
+    expect(b.measures['mixed.potential']).toBeNaN();
     expect(b.measures['mixed.kill']).toBeGreaterThanOrEqual(0);
     expect(b.measures['mixed.share']).toBeLessThanOrEqual(1);
     // A boss that cannot hurt is beaten, with or without a tool; one with enormous HP is never.
@@ -348,9 +366,33 @@ describe('a slot’s weekend', () => {
       'tool.potential',
       'classic.potential',
       'classic.kill',
+      'mixed.kill',
     ]);
     // Slot 1, the tutorial (no rule cards): any decent team may win it, so no classic limit, and there is no card to ask a tool for.
-    expect(measures(1)).toEqual(['prepared.potential', 'prepared.share', 'prepared.beat2']);
+    // The mixed server must also win it in its first weekend (a tutorial for every server).
+    expect(measures(1)).toEqual([
+      'prepared.potential',
+      'prepared.share',
+      'prepared.beat2',
+      'mixed.kill',
+    ]);
+    expect(slotTargets(1).find((t) => t.measure === 'mixed.kill')?.min).toBe(
+      TUTORIAL_MIXED_KILL_MIN,
+    );
+    expect(TUTORIAL_MIXED_KILL_MIN).toBe(0.8);
+    // Every other slot asks the mixed server to kill within three weekends in half of its runs, with a weight below every other target's.
+    for (const slot of [2, 5, 10]) {
+      const t = slotTargets(slot).find((x) => x.measure === 'mixed.kill');
+      expect(t?.min).toBeCloseTo(MIXED_KILL_MIN);
+      expect(beatWithin(t?.min ?? 0, MIXED_WEEKENDS_MAX)).toBeCloseTo(MIXED_BEAT_MIN);
+      expect(Math.min(...slotTargets(slot).map((x) => x.weight))).toBe(MIXED_WEIGHT);
+      expect(t?.weight).toBe(MIXED_WEIGHT);
+    }
+    expect(MIXED_KILL_MIN).toBeGreaterThan(0.2);
+    expect(MIXED_KILL_MIN).toBeLessThan(0.21);
+    // The wall slot keeps it too; slot 1's own is the stronger one.
+    expect(slotTargets(5).some((x) => x.measure === 'mixed.kill')).toBe(true);
+    expect(slotTargets(1).filter((x) => x.measure === 'mixed.kill')).toHaveLength(1);
     // The rest of the bounds are Misa's.
     for (const m of [
       'prepared.potential',
@@ -664,5 +706,110 @@ describe('how sharply the kill rate falls with the HP', () => {
     expect(curve[0]?.kill).toBe(1);
     expect(curve[1]?.kill).toBe(0);
     expect(curve[0]?.hp).toBeLessThan(curve[1]?.hp ?? 0);
+  });
+});
+
+describe('the information measures of a slot (not targets)', () => {
+  const tiny = { weekends: 2, draws: 1, classicWeekends: 1, mixedDraws: 0, mixedWeekends: 1 };
+  const args = {
+    slot: 3,
+    week: 8,
+    speed: 'expected' as const,
+    numbers: { hp: 14_000, atk: 53, armour: 6 },
+    fidelity: tiny,
+    salt: 'info',
+  };
+
+  it('takes them in the full measurement only, and leaves the target measures as they were', () => {
+    const a = evalSlot(args);
+    expect(a.info).toBeUndefined();
+    const b = evalSlot({ ...args, fidelity: { ...tiny, info: true } });
+    const info = b.info as NonNullable<typeof b.info>;
+    expect(info.trios.each).toHaveLength(ROTATED_TRIOS.length);
+    expect(info.trios.min).toBeLessThanOrEqual(info.trios.mean);
+    expect(info.trios.mean).toBeLessThanOrEqual(info.trios.max);
+    for (const x of [info.classic, info.prepared, info.middling, info.random, info.trios.mean])
+      expect(x).toBeGreaterThan(0);
+    // The classic party and the prepared line are the target measures themselves; the random one is the measure of the same name.
+    expect(info.classic).toBe(b.measures['classic.potential']);
+    expect(info.prepared).toBe(b.measures['prepared.potential']);
+    expect(info.random).toBe(b.measures['prepared.potentialRandom']);
+    expect(b.measures['prepared.potential']).toBe(a.measures['prepared.potential']);
+    // Middling ranks: a player's 8th to 11th best are weaker than their best, so the prepared line does worse.
+    expect(MIDDLING_FROM).toBe(8);
+    expect(info.middling).toBeLessThan(info.prepared);
+  });
+
+  it('chooses decent trios of common forms with their first Knack, with element mixes that differ', () => {
+    const boss = slotBoss(3);
+    const mixes = new Set<string>();
+    for (const t of ROTATED_TRIOS) {
+      expect(t.forms).toHaveLength(3);
+      const rows = t.forms.map((f) => content.creatures.find((c) => c.id === f));
+      expect(rows.map((c) => c?.rarity)).toEqual(['common', 'common', 'common']);
+      expect(rows.map((c) => c?.role).sort()).toEqual(['guard', 'payoff', 'setter']);
+      mixes.add(
+        rows
+          .map((c) => c?.element)
+          .sort()
+          .join(),
+      );
+      const line = trioLine(t.forms, {
+        id: 'raid',
+        rows: boss.rows,
+        cols: boss.cols,
+        maxCopies: 4,
+      });
+      expect(line).toHaveLength(boss.rows * boss.cols);
+      for (const f of t.forms)
+        expect(line.find((p) => p.formId === f)?.knack).toBe(OWN_KNACKS[f]?.[0]);
+    }
+    expect(mixes.size).toBe(ROTATED_TRIOS.length);
+  });
+
+  it('fields the 8th to 11th best creatures when asked (information: the same line, weaker levels)', () => {
+    const boss = slotBoss(3);
+    const { line } = slotPreparedOf(3);
+    const best = dedicatedTeam(boss, line, 8, 'expected');
+    const mid = dedicatedTeam(boss, line, 8, 'expected', undefined, MIDDLING_FROM);
+    expect(mid.placements).toHaveLength(best.placements.length);
+    const sum = (ps: { level: number }[]) => ps.reduce((n, p) => n + p.level, 0);
+    expect(sum(mid.placements)).toBeLessThan(sum(best.placements));
+  });
+
+  it('holds the mixed server’s targets by measuring it in every pass of every slot', () => {
+    for (const quick of [true, false])
+      for (const level of ['search', 'check', 'final'] as const)
+        for (const slot of [1, 2, 5])
+          expect(slotFidelity(slot, quick, level).mixedDraws, `${quick} ${level}`).toBeGreaterThan(
+            0,
+          );
+    const r = evalSlot({
+      slot: 1,
+      week: 1,
+      speed: 'expected',
+      numbers: { hp: 13_000, atk: 80, armour: 30 },
+      fidelity: { ...tiny, mixedDraws: 2 },
+      salt: 'tutorial-mixed',
+    });
+    expect(r.measures['mixed.kill']).toBeGreaterThanOrEqual(0);
+    expect(r.measures['mixed.kill']).toBeLessThanOrEqual(1);
+  });
+
+  it('plans one full measurement per slot at its week, and prints a table', () => {
+    const plan = planSlotInfo({ quick: true, weeks: [1, 3] });
+    expect(plan.jobs.map((j) => (j.args as SlotEvalArgs).week)).toEqual([1, 3]);
+    expect(plan.jobs.every((j) => (j.args as SlotEvalArgs).fidelity.info === true)).toBe(true);
+    const info = {
+      classic: 0.8,
+      trios: { mean: 0.7, min: 0.6, max: 0.85, each: [0.6, 0.7, 0.85] },
+      prepared: 1.3,
+      middling: 1.1,
+      random: 1.2,
+    };
+    const md = slotInfoMarkdown([{ slot: 3, bossId: 'storm-sovereign', week: 8, info }]).join('\n');
+    expect(md).toContain(
+      '| 3 | storm-sovereign | 8 | 80% | 70% (60% to 85%) | 130% | 110% | 120% |',
+    );
   });
 });

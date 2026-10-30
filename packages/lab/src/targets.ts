@@ -66,6 +66,25 @@ export const WALL_CLASSIC_POTENTIAL_MIN = 0.3;
 export const WALL_CLASSIC_POTENTIAL_MAX = 0.6;
 export const WALL_CLASSIC_POTENTIAL_AIM = 0.45;
 /**
+ * The tutorial must be a tutorial for every server (design panel 6, the lead's verdict, 2026-10-30): slot 1, the boss with no rule cards,
+ * is also beaten in its first weekend by the mixed server (the path's mixed mapping: two min-maxers, three builders and five casual
+ * players, `MIXED` in `path.ts`) in at least this share of weekends. Slot 1 only (`slotTargetsFor`); the prepared potential target stays.
+ */
+export const TUTORIAL_MIXED_KILL_MIN = 0.8;
+/**
+ * Mixed servers are tuned too (Misa, 2026-10-30, panel 6: "if possible"): on every slot but the tutorial, a mixed server (the path's
+ * mixed mapping, ten players, expected speed) needs at most `MIXED_WEEKENDS_MAX` weekends. How it is measured, in the way the tuner can
+ * afford: the mixed server's kill rate per weekend `p` at the slot's numbers (`mixed.kill`, which the tuner already takes), read as
+ * the chance of a kill within three weekends, `beatWithin(p, 3)`, the way `prepared.beat2` reads the prepared line. That chance is at
+ * least `MIXED_BEAT_MIN` (half of the servers kill within three weekends) exactly when `p` is at least `MIXED_KILL_MIN` (about 21%).
+ * The weight is below every dedicated target's, so where both cannot hold together the dedicated ones win and the miss is reported.
+ * Slot 1's 80% first-weekend kill (`TUTORIAL_MIXED_KILL_MIN`) is the tutorial's own, stronger version, and replaces this one there.
+ */
+export const MIXED_WEEKENDS_MAX = 3;
+export const MIXED_BEAT_MIN = 0.5;
+export const MIXED_KILL_MIN = 1 - (1 - MIXED_BEAT_MIN) ** (1 / MIXED_WEEKENDS_MAX);
+export const MIXED_WEIGHT = 0.5;
+/**
  * Ownability (the lead's call, 2026-10-30; Misa's constraint in the valley's round 15: "it's okay to require a rare here or there because
  * players will be able to pool their rarer creatures together in the raid roster; a 100% common requirement is too limiting"): a slot's
  * tool line (the boss's first answer) is ownable at the week the slot arrives when the chance that a mixed server of `OWNABLE_SERVER`
@@ -392,7 +411,9 @@ export const TOOL_POTENTIAL_WEIGHT = 2;
  * - slot 1 is the welcome boss, a tutorial with no rule cards (`SLOT_CARDS` in `track.ts`): a new server has its starters, so any
  *   decent team may win it and the classic party has no limit (`classic.kill`, `classic.potential`); with no card there is no tool to
  *   ask for, so the tool's worth has no target there either. Its targets are the prepared potential, `prepared.beat2` and the prepared
- *   line's HP removed with random talents (Misa, 2026-10-30).
+ *   line's HP removed with random talents (Misa, 2026-10-30), and one more (`TUTORIAL_MIXED_KILL_MIN`): the mixed server kills it in
+ *   its first weekend in at least 80% of weekends (design panel 6, 2026-10-30), so the tutorial is a tutorial for every server.
+ * - every other slot asks the mixed server to kill within three weekends in half of its runs (`MIXED_KILL_MIN`, weight below the rest).
  * - a wall slot (`wall`, from `TrackSlot.wall`: Thornmother's first appearance, slot 5) asks the classic party for a potential of 30% to 60% instead of
  *   70% to 90% (`WALL_CLASSIC_POTENTIAL_*`; the decision "Thornmother is a deliberate wall at the end of the first lap"); all else as usual.
  */
@@ -404,7 +425,22 @@ export function slotTargetsFor(slot: number, strengthBp: number, wall = false): 
       t.measure !== 'tool.written' &&
       !(slot === 1 && welcome(t.measure)),
   );
-  if (slot === 1) return targets;
+  if (slot === 1)
+    return [
+      ...targets,
+      {
+        measure: 'mixed.kill',
+        min: TUTORIAL_MIXED_KILL_MIN,
+        weight: 2,
+        why: 'The tutorial is a tutorial for every server: the mixed server (ten players, five of them casual) kills it in its first weekend in at least 80% of weekends (design panel 6, the lead, 2026-10-30)',
+      },
+    ];
+  const mixed: RaidTarget = {
+    measure: 'mixed.kill',
+    min: MIXED_KILL_MIN,
+    weight: MIXED_WEIGHT,
+    why: 'Mixed servers are tuned too: a mixed server (ten players, five of them casual) kills the slot within three weekends in half of its runs or more, a kill rate per weekend of about 21% or more (Misa, 2026-10-30)',
+  };
   const tool: RaidTarget = {
     measure: 'tool.potential',
     min: toolPotentialMinAt(strengthBp),
@@ -419,6 +455,7 @@ export function slotTargetsFor(slot: number, strengthBp: number, wall = false): 
     ...targets.slice(0, at),
     tool,
     ...targets.slice(at).map((t) => classic.find((c) => c.measure === t.measure) ?? t),
+    mixed,
   ];
 }
 
