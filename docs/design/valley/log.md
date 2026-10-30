@@ -76,4 +76,6 @@ Then the scrap list ([`scrap-list.md`](scrap-list.md)), from an agent's inventor
 
 **Done.** Recorded round 6: no couch and no company XP, presence shown at the bonfire (Q16, V-BON-4); gentler away steps, a weekend off costing almost nothing, with candidate curves in `posts.md` and stores of about three days (Q18, V-POST-10, T-2); work identity left open, with research asked for (Q17). A researcher is looking at worker identity against rotation (per-recipe mastery, job mastery that rewards moving on, species work perks).
 
-**Next.** File the research in `docs/research/`, ask **work-identity** as Q19 with it. Then phase 1, step 3: the return moment.
+Research filed as `docs/research/worker-identity.md`: permanent mastery where mastering one thing opens another serves both identity and rotation; per-item mastery and hidden or random traits are disliked. Asked Q19 (round 7) with it.
+
+**Next.** Record Q19. Then phase 1, step 3: the return moment.

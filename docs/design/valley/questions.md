@@ -6,13 +6,22 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-Nothing right now (Q17 comes back as **work-identity** once the research is in).
+### Q19. How does a creature grow into "the one who's good at something"?
+
+Status: asked, round 7 (2026-10-30). Q17 again, with research (`docs/research/worker-identity.md`). Touches: `posts.md` V-POST-4 and V-POST-12, `forge.md`, `scouts.md`, the creature card.
+
+**Why it matters.** You want creatures to "grow into some kind of an identity that they're good at something", and players to be "still encouraged to do something else with their creatures". The research found one pattern that serves both: mastery that is permanent, where mastering one thing opens something elsewhere, so moving on gains instead of loses (Final Fantasy's jobs, Kairosoft's management games). Per-item mastery (Melvor Idle) turns out to be the player's checklist rather than a unit's identity, and players complain about the number of counters. Hidden numbers and random-roll traits are disliked everywhere.
+
+- **A. Per recipe, as you floated.** Each creature gets better at each recipe it makes. Example: Pip becomes "the Kelp Cap maker". Many counters, and it only covers the Forge.
+- **B. Mastery per kind of work, with a signature and carry-over.** About four kinds (scouting, smithing, keeping, teaching), each shown as a badge on the creature. It fills fast at first. A mastered kind is permanent, earns a **signature** from what the creature did most (your "the guy who crafts this item", without a counter per recipe), and opens a small perk at another kind of post. The card then says "ready to learn something new". Moving is always free, and a species can lean toward a kind (learns it faster) without being barred from any. Example: Pip masters smithing in three weeks, mostly making Kelp Caps, and becomes "Pip, Kelp Cap smith": a little better at Kelp Caps for good. Sent scouting, Pip keeps all that and, as a master smith, brings home a little more scrap.
+- **C. Species perks and earned titles.** Each species has one fixed work perk (Mossback finds pearls at water places), and each creature earns a title from deeds ("Far-Walker") that is flavour only. Easy to read, but it is the sorting you were wary of, and nothing asks a creature to move.
+
+**Lead's pick: B.** It gives identity (badges and a signature you can name) and a reason to move (the carry-over perk and "ready to learn something new") with the fewest counters. It builds on the skill steps already in `posts.md`. The weekly demand idea from Q17 can still sit on top later, if the raid needs it.
 
 ## Queue
 
 In order. Each becomes a numbered question when asked; entries name what they wait on.
 
-- **work-identity.** Q17 again, with research: how a creature grows an identity ("good at something") while players are still encouraged to move creatures around; Misa's per-recipe Forge proficiency, species work perks, weekly demand from the raid's threat.
 - **targets.** What the economy lab measures and which numbers feel right (T-1 to T-5 in `goals.md`). Asked with the lab's first report, as concrete examples, not as a list to approve.
 
 ## Answered
