@@ -49,16 +49,16 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Requested:** 2026-10-31: a Void raid boss, dungeon foes and dungeon bosses.
 - **Element:** void
 - **Source:** `apps/activity/src/sprites/concepts/void-foes.ts` (draw it with `pnpm art void-foes`)
-- **Sheet of:** `91871f7ffde6`
+- **Sheet of:** `5cc2ffa984ae`
 - Needs before use: the Void element in the content, names, stats, gimmicks, lore and a place.
 - Working names and ideas are in docs/compendium/bosses.md and dungeon.md ("Concept, not shipped").
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
-| `void-raid-boss` | boss |  | draft | Hollow Crown: a huge hooded giant under a crescent crown, two glinting eyes in the hood and a starry window in its chest. |
+| `void-raid-boss` | boss |  | draft | Hollow Crown: a huge hooded giant under a crescent crown, two glinting eyes in the hood and a cloak that opens on a starfield. |
 | `void-moth` | foe |  | draft | Dusk Moth: wide wings, each with a starry window, a glowing eye pair; it eats light. |
-| `void-lantern` | foe |  | draft | Hollow Lantern: a hanging lantern whose glass is a window of night with one warm star; it hides what it lights. |
-| `void-crab` | foe |  | draft | Drift Crab: a low round shell with a window and two big claws; it tucks in and hides. |
+| `void-lantern` | foe |  | draft | Hollow Lantern: a hanging lantern (hook, cap, glass, base) whose glass holds a small night with stars; it hides what it lights. |
+| `void-crab` | foe |  | draft | Drift Crab: a crab on eye stalks with two raised claws, a starry window in its shell; it tucks in and hides. |
 | `void-floor-jelly` | boss |  | draft | Lantern Drifter: a floating bell with a starry window, two glinting eyes and trailing tendrils tipped with stars. |
 | `void-floor-sentinel` | boss |  | draft | Dim Sentinel: a tall standing stone with a doorway of night in its belly, glinting eyes and two shards orbiting it. |
 
