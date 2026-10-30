@@ -170,7 +170,7 @@ function offerPart(
 
 /**
  * A visit's gifts (Q33): a project's cost is Acorns, scrap and shards, and a player gives their share of what came in since the last
- * gift of each, from what is above a reserve for their own Forge and ribbons. Shards go to a project only as shards of the element
+ * gift of each, from what is above a reserve for their own Forge. Shards go to a project only as shards of the element
  * tied to its place. A hoarder saves, then gives all. Essence never goes to projects (it is for creatures).
  */
 export function giveGifts(p: Player, server: Server, hour: number): void {

@@ -37,6 +37,8 @@ export interface ReportData {
   forge: ForgeRow[];
   servers: ServerRow[];
   fireByDial: Record<string, ServerRow | null>;
+  /** The same with no time floor under the fire (Q37 B: Misa is sceptical of the clock). */
+  fireNoFloor: Record<string, ServerRow | null>;
   variants: VariantRow[];
   /** A daily player's Forge by policy, with and without the shard exchange (weeks 2 to 12). */
   exchangeByPolicy: ExchangeRow[];
@@ -143,6 +145,28 @@ function journey(
 /** Seconds each section of the report took (printed by the CLI, never part of the data: the data is deterministic). */
 export type Timings = Record<string, number>;
 
+/**
+ * `server-coverage.json`: for each of the servers of 5, 8 and 15, by week, the share of the common, rare and epic species available
+ * that at least one player owns. Separate from `roster-profile.json` so that file keeps the shape combat v2 reads.
+ */
+export function serverCoverage(
+  data: ReportData,
+): Record<string, { week: number; common: number; rare: number; epic: number }[]> {
+  return Object.fromEntries(
+    data.servers
+      .filter((s) => ['mixed5', 'mixed8', 'mixed15'].includes(s.id))
+      .map((s) => [
+        s.id,
+        s.coverage.map((c, i) => ({
+          week: i + 1,
+          common: c[0] ?? 0,
+          rare: c[1] ?? 0,
+          epic: c[2] ?? 0,
+        })),
+      ]),
+  );
+}
+
 export function buildReportData(
   results: Results,
   seeds: number,
@@ -182,6 +206,11 @@ export function buildReportData(
     growth,
     forge,
     servers,
+    fireNoFloor: time('servers', () => ({
+      all: serverOf(results, 'mixed8-all-nofloor'),
+      half: serverOf(results, 'mixed8-nofloor'),
+      none: serverOf(results, 'mixed8-none-nofloor'),
+    })),
     fireByDial: time('servers', () => ({
       all: serverOf(results, 'mixed8-all'),
       half: serverOf(results, 'mixed8'),
@@ -267,10 +296,10 @@ export const SIMPLIFICATIONS: readonly string[] = [
   "The School and Paddock have levels, projects and warmth but no seats or output (the docs leave them open until combat v2 and `school.md`); push on, deep areas, opening hours of the Reef and the week's twist are not modelled.",
   'Gear is counts and item level only: three slots per creature, pieces at the fire\'s level, a slot is "weaker" when its item level is more than 6 below the fire. Gear stats, modifier lines, blueprint quality and the loupe\'s effect beyond a higher rare and epic share are not modelled; blueprints are counted, not required by orders.',
   "The species pool starts at today's 34 forms and grows by content drops (assumed +12 every 4 weeks from week 4, toward Misa's 100 or more); arrivals and duplicates use the pool available that week, all species alike, places lean toward their element. Evolution only lifts a first stage's level cap and costs Essence. Rarity of species is not modelled.",
-  'The lab keeps 5 elements and 6 destinations. More elements will mean more kinds of shard (every ribbon and piece takes a shard of its element, so each new element is one more chain a player must cover with scouts) and more destinations to cover them; the shard stalls shown here would grow with them.',
+  'The lab keeps 5 elements and 6 destinations. More elements will mean more kinds of shard (every Forge piece takes a shard of its element, so each new element is one more chain a player must cover with scouts) and more destinations to cover them; the shard stalls shown here would grow with them.',
   "Catch-up applies to idle XP only (not to fights). Its multiplier is fixed at each visit and holds until the next one (Q35 B), but never above the target it was fixed for: it fades as the creature closes the gap, so a player who visits less often cannot earn more of it than one who visits daily. A player who is away is not counted in the server's middle after seven days.",
-  "Project gifts are chosen by weight among the open projects; a gift never exceeds what the project still needs, the rest stays with the giver. A project's cost is an Acorn part, a scrap part and a shard part (Q33), each filled by gifts from what a player has above a reserve for their own Forge and ribbons; shards go to a project only as shards of the element tied to its place; Essence never goes to projects and journal pages are never spent. A find fills only its own collection socket; a spare melts into Essence. Sources of the sockets that are not keystones (dungeon landmarks, resident tokens, pages) use made-up rates.",
-  'Silver ribbons ask only for scrap and shards (glimmer is removed): the docs\' replacement for "5 finished trips" (hours of work at posts) is not modelled.',
+  "Project gifts are chosen by weight among the open projects; a gift never exceeds what the project still needs, the rest stays with the giver. A project's cost is an Acorn part, a scrap part and a shard part (Q33), each filled by gifts from what a player has above a reserve for their own Forge; shards go to a project only as shards of the element tied to its place; Essence never goes to projects and journal pages are never spent. A find fills only its own collection socket; a spare melts into Essence. Sources of the sockets that are not keystones (dungeon landmarks, resident tokens, pages) use made-up rates.",
+  "Ribbons are dropped (Misa): levels never stop. Honours (trials.md) replace them and gate nothing. Creatures are not tracked per post, so the lab places creatures on seats itself: a new seat takes a creature not at a post yet (fewest hours of work, then highest level), a set-and-forget player never moves anyone, and an optimiser moves a Master on and puts an unworked creature in its seat. A creature's hours of work, the dungeon and raid clears it was in and the finds it brought home tick its trial boxes. Combat is not simulated: a share of dungeon runs (an assumption) count as an Undercroft clear, and the raid party is the same team that fights; an optimiser gives the team's last place to the highest-level creature that still needs a fight box, a set-and-forget player does not.",
   "The cost estimate counts rows from the shape of a visit (one player row, the creature rows, seat rows, the valley's rows); it is not a measured query plan.",
   "T-5 (the best team differs across bosses) belongs to combat v2's lab.",
 ];
@@ -455,7 +484,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
     '',
   );
   push(
-    'XP by source over weeks 1 to 12 (median per player; "lost" is XP above a ribbon gate or an evolution wait that a creature could not bank):',
+    'XP by source over weeks 1 to 12 (median per player; "lost" is XP above an evolution wait that a creature could not bank):',
     '',
   );
   push(
@@ -490,6 +519,47 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
     '',
   );
   const back = data.growth.find((g) => g.profile === 'returner')?.catchUpDays;
+  push(
+    'Honours (trials.md; they gate nothing). The share of the roster holding Bronze / Silver / Gold at the end of the week (median):',
+    '',
+  );
+  const hw = [4, 8, 12, 24];
+  push(
+    ...table(
+      ['Profile', ...hw.map((w) => `Week ${w}`)],
+      data.growth.map((g) => [
+        profileLabel(g.profile),
+        ...hw.map((w) =>
+          at(g.first, w)
+            ? [0, 1, 2]
+                .map((h) => `${num((g.honours[h]?.[w - 1]?.median ?? 0) * 100)}%`)
+                .join(' / ')
+            : '-',
+        ),
+      ]),
+    ),
+    '',
+  );
+  push(
+    'Kinds owned by rarity (Q38): common / rare / epic, and in brackets the kinds available of each rarity that week (median):',
+    '',
+  );
+  push(
+    ...table(
+      ['Profile', ...hw.filter((w) => w !== 8).map((w) => `Week ${w}`)],
+      data.growth.map((g) => [
+        profileLabel(g.profile),
+        ...hw
+          .filter((w) => w !== 8)
+          .map((w) =>
+            at(g.first, w)
+              ? `${[0, 1, 2].map((k) => num(g.byRarity.owned[k]?.[w - 1]?.median ?? 0)).join(' / ')} (of ${[0, 1, 2].map((k) => num(g.byRarity.available[k]?.[w - 1]?.median ?? 0)).join(' / ')})`
+              : '-',
+          ),
+      ]),
+    ),
+    '',
+  );
   push(
     `A returner (away weeks 5 to 8) is within ${THRESHOLDS.agreeWithin} levels of the server's middle ${back === null || back === undefined ? 'never within the run' : `after ${num(back, 1)} days of visits`}.`,
     '',
@@ -539,7 +609,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
   push(
     '### Shard stalls by policy, with and without the exchange (a daily player, weeks 2 to 12)',
     '',
-    'The shard exchange (Q34 B) trades 3 shards of any other element for 1 of the one needed. "Waiting for a shard" is the share of anvil-hours the anvils tinkered for want of a shard of the element the team needs; "waiting at a ribbon gate" counts creatures held at level 10 or 20 at week 12 for want of shards of their own element.',
+    'The shard exchange (Q34 B) trades 3 shards of any other element for 1 of the one needed. "Waiting for a shard" is the share of anvil-hours the anvils tinkered for want of a shard of the element the team needs; "waiting to evolve" counts creatures held at level 15 at week 12 for want of Essence.',
     '',
   );
   push(
@@ -550,7 +620,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
         'Making pieces',
         'Waiting for a shard (mean)',
         '... worst week',
-        'Creatures waiting at a ribbon gate, week 12',
+        'Creatures waiting to evolve, week 12',
         'XP lost, weeks 1 to 12',
         'Exchanges a week',
       ],
@@ -560,7 +630,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
         `${num(e.making * 100)}%`,
         `${num(e.shardStallMean * 100)}%`,
         `${num(e.shardStallWorst * 100)}%`,
-        num(e.waitingRibbon12, 1),
+        num(e.waitingEvolve12, 1),
         num(e.xpLost),
         num(e.exchangesPerWeek, 1),
       ]),
@@ -623,31 +693,42 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
     '',
   );
   push(
-    "### The Forge's fire by boss kills (mixed server of 8)",
+    "### The Forge's fire by boss kills, with a slow time floor and with none (mixed server of 8)",
     '',
-    `Kill chance a week: all ${rules.fights.raid.bossKillChance.all}, half ${rules.fights.raid.bossKillChance.half}, none ${rules.fights.raid.bossKillChance.none}. Thresholds ${rules.fire.thresholds.join(', ')} are where lines of 2, 3, 4 and 5 pips unlock (gear.md).`,
+    `Kill chance a week: all ${rules.fights.raid.bossKillChance.all}, half ${rules.fights.raid.bossKillChance.half}, none ${rules.fights.raid.bossKillChance.none}. The slow floor is ${rules.fire.floorPerWeek} levels a week (Q37 B: building, collections and boss kills drive the fire over it); "no floor" is the same server with the clock switched off, for Misa to compare. Thresholds ${rules.fire.thresholds.join(', ')} are where lines of 2, 3, 4 and 5 pips unlock (gear.md).`,
     '',
   );
   const dials = ['all', 'half', 'none'] as const;
   push(
     ...table(
-      ['Week', ...dials.map((d) => `Fire, bosses killed: ${d}`)],
+      [
+        'Week',
+        ...dials.map((d) => `Slow floor, bosses ${d}`),
+        ...dials.map((d) => `No floor, bosses ${d}`),
+      ],
       [1, 2, 4, 8, 12, 16, 20, 24].map((w) => [
         w,
         ...dials.map((d) => num(data.fireByDial[d]?.fire[w - 1] ?? 0)),
+        ...dials.map((d) => num(data.fireNoFloor[d]?.fire[w - 1] ?? 0)),
       ]),
     ),
     '',
   );
   push(
     ...table(
-      ['Threshold', ...dials.map((d) => `Opens in week (${d})`)],
+      [
+        'Threshold',
+        ...dials.map((d) => `Opens in week: slow floor, ${d}`),
+        ...dials.map((d) => `No floor, ${d}`),
+      ],
       rules.fire.thresholds.map((t, i) => [
         t,
-        ...dials.map((d) => {
-          const w = data.fireByDial[d]?.thresholds[i];
-          return w === null || w === undefined ? 'not by week 24' : num(w);
-        }),
+        ...[data.fireByDial, data.fireNoFloor].flatMap((set) =>
+          dials.map((d) => {
+            const w = set[d]?.thresholds[i];
+            return w === null || w === undefined ? 'not by week 24' : num(w);
+          }),
+        ),
       ]),
     ),
     '',
@@ -685,6 +766,29 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
         `${num(v.weekendShare * 100)}%`,
         `${num(v.weeklyShare * 100)}%`,
       ]),
+    ),
+    '',
+  );
+
+  push(
+    '### Server coverage of the creatures (Q38)',
+    '',
+    "Players pool their creatures in the raid, so a boss card may sometimes want a rare one. The share of each rarity's available species that at least one player on the server owns (median over seeds):",
+    '',
+  );
+  const coverageWeeks = [4, 8, 12, 24];
+  push(
+    ...table(
+      ['Server', 'Rarity', ...coverageWeeks.map((w) => `Week ${w}`)],
+      data.servers
+        .filter((s) => ['mixed5', 'mixed8', 'mixed15'].includes(s.id))
+        .flatMap((s) =>
+          ['common', 'rare', 'epic'].map((name, r) => [
+            `${s.label}`,
+            name,
+            ...coverageWeeks.map((w) => `${num((s.coverage[w - 1]?.[r] ?? 0) * 100)}%`),
+          ]),
+        ),
     ),
     '',
   );
@@ -793,8 +897,8 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
     '### Policies',
     '',
     '- **Set-and-forget** places a catch once, keeps its first kit, rotates "for my team" orders through the elements the shelf can supply, tidies the bag only when it nears full, and never reaches. **Optimiser** re-tilts every seat each visit to what it needs (scrap, a missing shard, a new species), keeps the kit that suits, reaches for rarity with spare Essence and bulk-dismantles every visit.',
-    '- **The shard exchange (Q34 B)** trades 3 shards of any other element for 1 of the one needed (a 10% chance of 2). An optimiser exchanges at every visit for what its orders and the ribbons waiting need; a set-and-forget player only when an anvil is waiting on a shard at that visit (the one-tap fix; it does not exchange for ribbons).',
-    "- Both buy seats and anvils as soon as the place's level and the Acorns allow, then kit with Acorns to spare (a set-and-forget player buys two items, an optimiser all five), give their share of income, spend Essence on evolutions first and buy ribbons as soon as they are affordable.",
+    '- **The shard exchange (Q34 B)** trades 3 shards of any other element for 1 of the one needed (a 10% chance of 2). An optimiser exchanges at every visit for what its orders need; a set-and-forget player only when an anvil is waiting on a shard at that visit (the one-tap fix).',
+    "- Both buy seats and anvils as soon as the place's level and the Acorns allow, then kit with Acorns to spare (a set-and-forget player buys two items, an optimiser all five), give their share of income and spend Essence on evolutions first.",
     '',
   );
   return out.join('\n');

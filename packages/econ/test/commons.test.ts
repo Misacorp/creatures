@@ -7,7 +7,7 @@ import { collectSeat } from '../src/scouts';
 import { runAll } from '../src/scenarios';
 import { defaultDestination, newAnvil, newSeat } from '../src/policy';
 import { profileById } from '../src/profiles';
-import { join, runServer, visit } from '../src/sim';
+import { join, runServer } from '../src/sim';
 import { ALL_SERVERS } from '../src/servers';
 import {
   addCreature,
@@ -132,13 +132,9 @@ describe('projects and gifts (Q33)', () => {
     expect(q.shards[ember]).toBeGreaterThanOrEqual(reserve);
   });
 
-  it('keep the shards a ribbon needs: the reserve is at least the dearest ribbon', () => {
-    expect(RULES.forge.giveReserveShards).toBeGreaterThanOrEqual(
-      Math.max(...RULES.xp.ribbons.map((r) => r.shards)),
-    );
-    expect(RULES.forge.giveReserveScrap).toBeGreaterThanOrEqual(
-      Math.max(...RULES.xp.ribbons.map((r) => r.scrap)),
-    );
+  it('keep a reserve for the Forge: at least a piece of scrap and a piece of shards', () => {
+    expect(RULES.forge.giveReserveShards).toBeGreaterThanOrEqual(RULES.forge.shard);
+    expect(RULES.forge.giveReserveScrap).toBeGreaterThanOrEqual(RULES.forge.scrap);
   });
 });
 
@@ -205,16 +201,15 @@ describe('the shard exchange (Q34)', () => {
     expect(p.waitingShard).toBe(-1);
   });
 
-  it('is used by an optimiser at each visit for what its ribbons need', () => {
+  it('is used by an optimiser at each visit for what its orders need', () => {
     const p = player('optimiser');
     creditShard(p, 0, 30, 'test');
-    const c = p.creatures[1]!;
-    c.element = 2;
-    c.level = 10;
-    c.xp = LEVEL_XP[11]!;
-    c.canEvolve = false;
+    // The team has weak slots to fill with pieces of element 2; the exchange stocks shards of it for the anvils.
+    p.weakByElement[2] = 5;
     exchangeAtVisit(p);
-    expect(p.shards[2]).toBeGreaterThanOrEqual(RULES.xp.ribbons[0]!.shards);
+    expect(p.shards[2]).toBeGreaterThanOrEqual(
+      Math.min(5, p.anvils.length * 3) * RULES.forge.shard,
+    );
   });
 
   it('shows in the ledger: the trade is shards out and shards in', () => {
@@ -236,7 +231,6 @@ describe('catch-up (Q35 B)', () => {
       c.xp = i < 2 ? LEVEL_XP[18]! : LEVEL_XP[3]!;
       c.level = i < 2 ? 18 : 3;
       c.canEvolve = false;
-      c.ribbons = 2;
       refreshCeiling(RULES, c);
     });
     p.lastVisit = 0;
@@ -295,38 +289,6 @@ describe('catch-up (Q35 B)', () => {
       expect(skipper.xp, `visiting every ${every} days`).toBeLessThanOrEqual(daily.xp + 1e-6);
       expect(skipper.best).toBeLessThanOrEqual(daily.best);
     }
-  });
-});
-
-describe('a visit', () => {
-  it('buys a ribbon before it gives, so a gift never takes what the ribbon needs', () => {
-    // No reserve, plenty of gift budget and an open project that wants this element: only the order keeps the shards for the ribbon.
-    const rules = {
-      ...RULES,
-      forge: { ...RULES.forge, giveReserveShards: 0, giveReserveScrap: 0 },
-    };
-    const s = createServer('test', 1, options, rules);
-    const place = s.places[0]!;
-    place.open = true;
-    place.size = 1e9;
-    place.need = [1e9, 1e9, 1e9];
-    place.have = [0, 0, 0];
-    const p = createPlayer(rules, 'test', 1, 0, profileById('daily'), 4);
-    join(p, s, 0);
-    const c = p.creatures[0]!;
-    c.element = ELEMENTS.indexOf(rules.commons.placeElement.bonfire as (typeof ELEMENTS)[number]);
-    c.level = 10;
-    c.xp = LEVEL_XP[11]!;
-    c.canEvolve = false;
-    const ribbon = rules.xp.ribbons[0]!;
-    p.stock[R.scrap] = 20;
-    p.shards[c.element] = ribbon.shards;
-    p.stock[R.shards] = ribbon.shards;
-    p.giftBudget.fill(1e6);
-    visit(p, s, 20);
-    expect(c.ribbons).toBe(1);
-    expect(p.shards[c.element]).toBe(0);
-    expect(p.wk.out[R.shards]).toBe(ribbon.shards);
   });
 });
 
@@ -395,7 +357,7 @@ describe('catch-up and fights (V-BON-2)', () => {
       const c = addCreature(p, 0);
       c.catchMult = 2;
       c.catchTarget = 30;
-      fightXp(p, 100, 'xpDungeon');
+      fightXp(p, 100, 'xpDungeon', [c]);
       return c.xp;
     };
     expect(xp(false)).toBe(100);

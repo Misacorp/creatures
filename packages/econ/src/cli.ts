@@ -2,7 +2,7 @@ import { writeFileSync } from 'node:fs';
 import { ledgerOf, measuresOf, serverOf } from './analysis';
 import { BUDGET, budgetLine } from './budget';
 import { inProcess, runScenarios, type Executor } from './jobs';
-import { buildReportData, renderReport, type Timings } from './report';
+import { buildReportData, renderReport, serverCoverage, type Timings } from './report';
 import { rosterProfile } from './roster';
 import { RULES } from './rules';
 import rulesSource from './rules.ts?raw';
@@ -105,6 +105,10 @@ export async function main(args: readonly string[], pool?: Pool): Promise<number
   const t3 = Date.now();
   writeFileSync(`${dir}/report.md`, markdown + '\n');
   writeFileSync(`${dir}/report-data.json`, JSON.stringify(data, null, 1) + '\n');
+  writeFileSync(
+    `${dir}/server-coverage.json`,
+    JSON.stringify(serverCoverage(data), null, 1) + '\n',
+  );
   writeFileSync(
     `${dir}/roster-profile.json`,
     JSON.stringify(rosterProfile(results), null, 1) + '\n',

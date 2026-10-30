@@ -23,29 +23,21 @@ export interface Destination {
   readonly rich: FindFamily | 'none';
 }
 
-/** The two ribbons that gate a creature (levels from the shipped game; the costs are tuned). */
-const RIBBONS = [
-  { level: GAME.experience.ribbons[0]?.level ?? 10, scrap: 9, shards: 3 },
-  { level: GAME.experience.ribbons[1]?.level ?? 20, scrap: 23, shards: 8 },
-];
-
 export const RULES = {
   /** The horizon: weeks of play simulated. */
   horizon: { weeks: 24 },
 
-  /** V-POST-3, V-BON-1: one idle XP rate everywhere. The curve and the ribbon costs are the shipped game's (`@creatures/game`). */
+  /** V-POST-3, V-BON-1: one idle XP rate everywhere. The level curve is the shipped game's (`@creatures/game`). Levels never stop (Misa dropped the ribbons). */
   xp: {
     idlePerHour: 5,
     maxLevel: GAME.experience.maxLevel,
-    /** Ribbons gate a creature at these levels until bought (shipped: bronze at 10, silver at 20; gold is free at 30). */
-    // TUNED 2026-10-30: the costs were the shipped game's (bronze 6 scrap and 2 shards, silver 15 and 5); the tuner (ribbonCost x1.5).
-    ribbons: RIBBONS,
     /** A first stage waits for its evolution at this level (shipped). */
     evolveLevel: 15,
     // ASSUMPTION: 60% of creatures are first stages with an evolution (the shipped roster: 10 of 16 lines evolve).
     evolveShare: 0.6,
     /** An evolution costs this much Essence (shipped: every evolving species in creatures.json, 20 Essence at level 15). */
     // TUNED 2026-10-30: was 20 (shipped).
+    // TUNED 2026-10-30 (round 15): was 20 (shipped), 30 after the last tuning; the tuner tried 60 and went back to 30.
     evolveEssence: 30,
   },
 
@@ -73,8 +65,8 @@ export const RULES = {
   bonfire: {
     // Q35 B: the multiplier is fixed at each visit and holds until the next visit (never above the target it was fixed for).
     // ASSUMPTION: catch-up multiplies idle XP only, not what fights pay (V-BON-2 says "XP only, never output"; a sensitivity run applies it to fights too).
-    // TUNED 2026-10-30: maxMultiplier was 2 (bonfire.md's example), the tuner took it to 3 and then 3.75.
-    catchUp: { maxMultiplier: 3.75, fullAtGap: 6, appliesToFights: false },
+    // TUNED 2026-10-30: maxMultiplier was 2 (bonfire.md's example), the tuner took it to 3, then 3.75, then 4.7 (round 15; was 3.75).
+    catchUp: { maxMultiplier: 4.7, fullAtGap: 6, appliesToFights: false },
     hearth: { perLevel: 0.04 },
   },
 
@@ -94,16 +86,30 @@ export const RULES = {
     masterSmithScrapPerk: 0.05,
   },
 
+  /**
+   * V-TRIAL-1..5 (trials.md, Misa 2026-10-30): honours, never a gate. Each honour has a fight box and a work box, ticked as a creature
+   * lives its life; a creature graduates at the daily ceremony once the boxes are ticked and it has the level.
+   * Bronze (level 10): a dungeon clear with it in the team, a day at a post, and a find brought home or a day of smithing.
+   * Silver (level 20): an Undercroft clear and Expert (7 days) in any work. Gold (level 30): a raid clear and Master (21 days) in any work.
+   */
+  honours: {
+    levels: [10, 20, 30],
+    bronzePostHours: 24,
+    bronzeSmithHours: 24,
+    // ASSUMPTION: combat is not simulated, so this share of dungeon runs counts as an Undercroft clear (or 2+ levels deep).
+    undercroftShare: 0.3,
+  },
+
   /** V-POST-2 seats: each player's own seats, bought with Acorns, dearer each time and at a higher place level. */
   seats: {
     // ASSUMPTION: the first seat at each place is free; the rest cost these Acorns (the docs: "about three weeks of Acorn
     // income in all", about 1,000 for the seats a player reaches by week 8).
-    // TUNED 2026-10-30: were [0, 120, 200, 300, 420, 560] and [0, 130, 260, 420] (seat prices x0.75).
-    scoutPrices: [0, 90, 150, 225, 315, 420],
-    anvilPrices: [0, 98, 195, 315],
+    // TUNED 2026-10-30: were [0, 120, 200, 300, 420, 560] and [0, 130, 260, 420], then [0, 90, 150, 225, 315, 420] and [0, 98, 195, 315] (round 15: x1.25).
+    scoutPrices: [0, 113, 188, 281, 394, 525],
+    anvilPrices: [0, 123, 244, 394],
     // ASSUMPTION: an anvil also takes scrap ("own anvils unlocked with their own Acorns and scrap", V-FORGE-6).
-    // TUNED 2026-10-30: was [0, 40, 80, 120].
-    anvilScrap: [0, 30, 60, 90],
+    // TUNED 2026-10-30: was [0, 40, 80, 120], then [0, 30, 60, 90] (round 15: x1.25).
+    anvilScrap: [0, 38, 75, 113],
     /** Each place level above 1 makes every seat this much dearer. */
     levelSurcharge: 0.15,
     /** Seats allowed by place level 1..5 (posts.md table). */
@@ -132,8 +138,9 @@ export const RULES = {
   scouts: {
     perHour: {
       // TUNED 2026-10-30: scrap was 0.75 (scouts.md example).
-      scrap: 1.425,
-      shards: 0.2,
+      // TUNED 2026-10-30 (round 15): scrap was 1.425 and shards 0.2 (and 0.75 and 0.2 before the first tuning).
+      scrap: 2.11,
+      shards: 0.12,
       // ASSUMPTION: 0.75% an hour, not the docs' 2%: with 2% a daily player has all 34 forms by week 8, and posts.md's worked month
       // ("15 creatures by week 4") needs about 0.75%. The two numbers in the docs disagree; this one follows the worked month.
       // TUNED 2026-10-30: was 0.0075.
@@ -165,6 +172,17 @@ export const RULES = {
     species: { start: 34, dropFromWeek: 4, dropEveryWeeks: 4, dropCount: 12 },
     // ASSUMPTION: the element mix of the first 34 (tide 8, ember 8, grove 7, spark 7, mire 4); later species repeat the same mix.
     speciesPerElement: [8, 8, 7, 7, 4],
+    // ASSUMPTION (Q38): species have rarities. The first 34 follow today's spread (22 common, 7 rare, 5 epic: 0 common, 1 rare, 2 epic)
+    // in this order; each content drop of 12 repeats the pattern in `drop` (6 common, 4 rare, 2 epic). Arrivals weigh a species by its
+    // rarity's weight, so commons come at the "week 4 pace" and rarer species take months.
+    rarity: {
+      first: [
+        0, 0, 1, 0, 0, 1, 2, 0, 0, 1, 0, 0, 1, 2, 0, 0, 0, 1, 0, 0, 0, 2, 1, 0, 0, 0, 0, 2, 0, 0, 1,
+        0, 0, 2,
+      ],
+      drop: [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2],
+      weights: [1, 0.15, 0.04],
+    },
     // ASSUMPTION: a lure halves the weight of species the player already owns.
     lureOwnedWeight: 0.5,
     // ASSUMPTION: known blueprints of a pool this size; a known one found again is scrap (shipped: 5).
@@ -178,7 +196,8 @@ export const RULES = {
   forge: {
     pieceHours: 16,
     // TUNED 2026-10-30: scrap was 6 (forge.md example).
-    scrap: 18,
+    // TUNED 2026-10-30 (round 15): was 18 (6 in forge.md).
+    scrap: 36,
     shard: 1,
     /** Reach (shipped prices; hours from forge.md). Odds are [common, rare, epic]. */
     reach: {
@@ -208,10 +227,9 @@ export const RULES = {
     tidyAt: 180,
     // ASSUMPTION: scouts' finds and the dungeon's drops carry rarity with the same odds as a plain craft.
     foundGearOdds: [0.85, 0.13, 0.02],
-    // ASSUMPTION: a player keeps this much scrap and this many of each shard for the Forge and the ribbons before giving the rest
-    // (never less than the dearest ribbon: here its shards).
+    // ASSUMPTION: a player keeps this much scrap and this many of each shard for the Forge (and the exchange) before giving the rest.
     giveReserveScrap: 72,
-    giveReserveShards: Math.max(...RIBBONS.map((b) => b.shards)),
+    giveReserveShards: 8,
     // ASSUMPTION: an optimiser keeps this much Essence for evolutions before it reaches for rarity.
     reachReserveEssence: 60,
   },
@@ -241,7 +259,8 @@ export const RULES = {
       // each, a boss's Essence, a landmark's glimmer now and then, a full clear's gear piece about half the time).
       acorns: 10,
       scrap: 10,
-      essence: 1,
+      // TUNED 2026-10-30 (round 15): was 1 (then 0.5 in this round's first pass).
+      essence: 0.75,
       gearPieces: 0.5,
       /** The dungeon's item level base (shipped: base 1 + depth/3). */
       itemLevel: 10,
@@ -251,8 +270,9 @@ export const RULES = {
       xpPerWeek: 490,
       scrap: 7,
       // ASSUMPTION: Essence from a week's raid: a kill pays more than the phases alone (shipped flat 10 + 15 + 25, +30% pool).
-      essenceKill: 70,
-      essencePhases: 25,
+      // TUNED 2026-10-30 (round 15): were 70 and 25 (35 and 12.5 in this round's first pass).
+      essenceKill: 52.5,
+      essencePhases: 18.75,
       gearOnKill: 1,
       bossKillChance: { all: 1, half: 0.5, none: 0 },
     },
@@ -343,16 +363,17 @@ export const RULES = {
   /** V-COM-13, V-GEAR-8, V-GEAR-10: the Forge's fire. */
   fire: {
     start: 10,
-    // TUNED 2026-10-30: was 3 (commons.md: +3 a week, 46 at week 12).
-    floorPerWeek: 3.75,
+    // Q37 B: a SLOW time floor (about half of the 3.75 a week the last tuning chose); building, collections and boss kills drive the fire.
+    floorPerWeek: 1.875,
     warmth: {
-      // TUNED 2026-10-30: were 3, 5, 4, 2 and 1 (commons.md's warmth table; x0.25).
-      placeLevel: 0.75,
-      forgeLevel: 1.25,
-      collection: 1,
-      bossKill: 0.5,
+      // Q37 B: warmth back up from the last tuning's quarter of commons.md's table (3, 5, 4, 2, 1); the tuner took it to half, over the slow floor.
+      // TUNED 2026-10-30 (round 15): were 0.75, 1.25, 1, 0.5 and 0.25 after the last tuning; now half of commons.md's table.
+      placeLevel: 1.5,
+      forgeLevel: 2.5,
+      collection: 2,
+      bossKill: 1,
       masterTitlesPerPoint: 5,
-      cosmetic: 0.25,
+      cosmetic: 0.5,
     },
     thresholds: [10, 25, 50, 80],
   },

@@ -157,10 +157,6 @@ export function priceTable(daily: readonly PlayerRun[], rules: Rules): PriceRow[
     if (s > 0) rows.push(row('scrap', `anvil ${i + 1}'s scrap`, s));
   });
   rows.push(row('scrap', 'one Forge piece', rules.forge.scrap));
-  rules.xp.ribbons.forEach((rb, i) => {
-    rows.push(row('scrap', `ribbon ${i + 1} (level ${rb.level}) scrap`, rb.scrap));
-    rows.push(row('shards', `ribbon ${i + 1} shards`, rb.shards));
-  });
   rows.push(row('shards', 'one Forge piece', rules.forge.shard));
   rows.push(row('essence', 'one evolution', rules.xp.evolveEssence));
   rows.push(row('essence', 'Reach for Rare', rules.forge.reach.rare.essence));
@@ -187,8 +183,12 @@ export interface GrowthRow {
   /** Days since joining until the 1st, 3rd and 10th creature stood at level 30: the median of those that did, and how many did. */
   day30: { median: number | null; reached: number; of: number }[];
   catchUpDays: number | null;
-  /** Creatures held at a ribbon gate or at their evolution level at the end of week 4, 12 and 24 (median). */
-  waiting: { week: number; ribbon: number; evolve: number }[];
+  /** Creatures held at their evolution level (waiting for Essence) at the end of week 4, 12 and 24 (median). */
+  waiting: { week: number; evolve: number }[];
+  /** Kinds owned by rarity (common, rare, epic) by week, and the kinds available of each rarity (Q38). */
+  byRarity: { owned: Band[][]; available: Band[][] };
+  /** The share of the roster holding at least Bronze, Silver and Gold by week (honours never gate anything). */
+  honours: Band[][];
   /** The week the player owns 20, 34 and 60 kinds (median; null: not within the run), and duplicates arriving per visit. */
   speciesWeeks: (number | null)[];
   duplicatesPerVisit: number;
@@ -226,13 +226,17 @@ export function growthOf(players: readonly PlayerRun[], profile: string): Growth
     catchUpDays: back.length ? median(back) : null,
     waiting: [4, 12, 24].map((week) => ({
       week,
-      ribbon: median(
-        players.flatMap((p) => (p.weeks[week - 1] ? [p.weeks[week - 1]!.waitingRibbon] : [])),
-      ),
       evolve: median(
         players.flatMap((p) => (p.weeks[week - 1] ? [p.weeks[week - 1]!.waitingEvolve] : [])),
       ),
     })),
+    byRarity: {
+      owned: [0, 1, 2].map((r) => series(players, weeks, (w) => w.kindsByRarity[r] ?? 0)),
+      available: [0, 1, 2].map((r) => series(players, weeks, (w) => w.availableByRarity[r] ?? 0)),
+    },
+    honours: [0, 1, 2].map((h) =>
+      series(players, weeks, (w) => (w.size > 0 ? (w.honours[h] ?? 0) / w.size : 0)),
+    ),
     speciesWeeks: [20, 34, 60].map((n) => {
       const week = series(players, weeks, (w) => w.species).findIndex((b) => b.median >= n);
       return week >= 0 ? week + 1 : null;
@@ -306,6 +310,8 @@ export interface ServerRow {
   fire: number[];
   keystones: number[];
   collections: number[];
+  /** Server coverage by week: the share of each rarity's available species that at least one player owns (common, rare, epic). */
+  coverage: number[][];
   /** The week each fire threshold opened (median over seeds; null: not within the horizon). */
   thresholds: (number | null)[];
   firstLevelDay: number | null;
@@ -373,6 +379,9 @@ export function serverOf(results: Results, id: string): ServerRow | null {
     fire: at((l) => l.fire),
     keystones: at((l) => l.keystones),
     collections: at((l) => l.collections),
+    coverage: Array.from({ length: weeks }, (_, i) =>
+      [0, 1, 2].map((r) => median(runs.map((run) => run.log[i]?.coverage[r] ?? 0))),
+    ),
     thresholds,
     firstLevelDay: first.length ? median(first) : null,
     firstCollectionWeek: (() => {
@@ -407,9 +416,9 @@ export interface ExchangeRow {
   shardStallWorst: number;
   /** The share spent making pieces. */
   making: number;
-  /** XP lost to ribbon gates and evolution waits over weeks 1 to 12, and creatures waiting at a ribbon gate at week 12. */
+  /** XP lost to evolution waits over weeks 1 to 12, and creatures waiting at their evolution level at week 12. */
   xpLost: number;
-  waitingRibbon12: number;
+  waitingEvolve12: number;
   /** Exchanges a week (weeks 2 to 12) and the share that were crits. */
   exchangesPerWeek: number;
 }
@@ -440,7 +449,7 @@ export function exchangeRowsOf(results: Results): ExchangeRow[] {
         shardStallWorst: Math.max(0, ...stall),
         making: sum(making) / Math.max(1, making.length),
         xpLost: medianOf(players, (p) => total(p, 1, 12, (w) => w.xpLost)),
-        waitingRibbon12: median(players.map((p) => p.weeks[11]?.waitingRibbon ?? 0)),
+        waitingEvolve12: median(players.map((p) => p.weeks[11]?.waitingEvolve ?? 0)),
         exchangesPerWeek: medianOf(players, (p) => total(p, 2, 12, (w) => w.exchanges) / 11),
       },
     ];
@@ -608,6 +617,22 @@ export function measuresOf(results: Results): Measures {
     const stall = worstStall(results, FORGE_BUCKETS.indexOf('scrap'), 12);
     put('scrapStall', stall.share);
   }
+  // T-8 (Q38): kinds owned by a daily player: how many, how many of the starting pool's commons, how many rares and epics.
+  const kindsAt = (week: number): number | undefined =>
+    medianDefined(daily.map((p) => weekAt(p, week - 1)?.species));
+  put('kinds4', kindsAt(4));
+  put('kinds12', kindsAt(12));
+  const startCommons = RULES.scouts.rarity.first.filter((r) => r === 0).length;
+  const commonsOwned = medianDefined(daily.map((p) => weekAt(p, 5)?.startCommons));
+  put('commons6', commonsOwned === undefined ? undefined : commonsOwned / startCommons);
+  const shareOf = (r: number): number | undefined => {
+    const owned = medianDefined(daily.map((p) => weekAt(p, 23)?.kindsByRarity[r]));
+    const avail = medianDefined(daily.map((p) => weekAt(p, 23)?.availableByRarity[r]));
+    return owned !== undefined && avail ? owned / avail : undefined;
+  };
+  put('rares24', shareOf(1));
+  put('waitingEvolve12', medianDefined(daily.map((p) => weekAt(p, 11)?.waitingEvolve)));
+  put('epics24', shareOf(2));
   // T-2d: a returner (back in week 9) keeps their levels and gets within 2 levels of the middle (censored at NEVER_DAYS).
   const returner = playersOf(results.mixed8, 'returner').filter((p) => long(p, 9));
   if (returner.length) {
@@ -665,7 +690,7 @@ export function targetsOf(results: Results, rules: Rules): TargetLine[] {
   lines.push({
     id: 'T-1',
     pass: metLine('T-1'),
-    measured: `a daily player's 10th creature is ${round(spread4, 1)} levels below the 3rd at week 4; the 6th (a second team's best) is ${round(spread8, 1)} below the 3rd at week 8. A set-and-forget player's creatures of an element their scouts never visit wait at a ribbon gate for shards of that element; an optimiser's spread at week 4 is ${round(optSpread4, 1)} (${optSpread4 <= spreadMax ? 'pass' : 'fail'}). It also depends on how fast creatures arrive: at the docs' 2% an hour (the default here is ${round(rules.scouts.perHour.creatures * 100, 2)}%) a set-and-forget player's spread at week 4 is ${round(fast4, 1)} (${fast4 <= spreadMax ? 'pass' : 'fail'}) and an optimiser's ${round(fastOpt4, 1)} (${fastOpt4 <= spreadMax ? 'pass' : 'fail'})`,
+    measured: `a daily player's 10th creature is ${round(spread4, 1)} levels below the 3rd at week 4; the 6th (a second team's best) is ${round(spread8, 1)} below the 3rd at week 8. An optimiser's spread at week 4 is ${round(optSpread4, 1)} (${optSpread4 <= spreadMax ? 'pass' : 'fail'}). It also depends on how fast creatures arrive: at the docs' 2% an hour (the default here is ${round(rules.scouts.perHour.creatures * 100, 2)}%) a set-and-forget player's spread at week 4 is ${round(fast4, 1)} (${fast4 <= spreadMax ? 'pass' : 'fail'}) and an optimiser's ${round(fastOpt4, 1)} (${fastOpt4 <= spreadMax ? 'pass' : 'fail'})`,
     target: 'within 5 levels at week 4, and two strong teams at week 8',
   });
   // T-2: idle floor and active ceiling.
@@ -769,6 +794,20 @@ export function targetsOf(results: Results, rules: Rules): TargetLine[] {
     info: true,
     measured: `for want of a shard of the element the team needs, the worst week is ${pct(shardWorst.share)} (${shardWorst.id}, week ${shardWorst.week}); averaged over weeks 2 to 12 that profile loses ${pct(shardWorst.mean)}. With the Forge floor full the worst week is ${pct(floorWorst.share)} (${floorWorst.id}, week ${floorWorst.week}), mean ${pct(floorWorst.mean)}`,
     target: `goals.md T-4 names scrap only; shards are shown for the same ${pct(stallMax)}`,
+  });
+  // T-8 (Q38): collection pace.
+  lines.push({
+    id: 'T-8',
+    pass: metLine('T-8'),
+    measured: `a daily player owns ${round(m.kinds4 ?? NaN)} kinds at week 4 and ${round(m.kinds12 ?? NaN)} at week 12; ${pct(m.commons6 ?? NaN)} of the starting pool's commons are owned by week 6; at week 24 ${pct(m.rares24 ?? NaN)} of the rares and ${pct(m.epics24 ?? NaN)} of the epics released are owned`,
+    target:
+      'about 15 kinds at week 4, 30 to 40 at week 12, most commons within 6 weeks, rares over months (15% to 60% by week 24), epics rarely (at most 35%)',
+  });
+  lines.push({
+    id: 'T-9',
+    pass: metLine('T-9'),
+    measured: `${round(m.waitingEvolve12 ?? NaN, 1)} creatures of a daily player wait at their evolution level for Essence at week 12`,
+    target: 'at most 3: Essence must not be starved to keep the pile down',
   });
   // T-7: no dead resource before week 12.
   lines.push({

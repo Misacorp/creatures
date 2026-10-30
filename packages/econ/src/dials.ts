@@ -114,6 +114,17 @@ export const DIALS: readonly Dial[] = [
     step: 0.25,
   },
   {
+    id: 'rarity',
+    label: 'how often rare and epic species arrive (their weights; commons stay the same)',
+    paths: [
+      ['scouts', 'rarity', 'weights', '1'],
+      ['scouts', 'rarity', 'weights', '2'],
+    ],
+    min: 0.25,
+    max: 4,
+    step: 0.25,
+  },
+  {
     id: 'catchUp',
     label: "catch-up's top multiplier (x2 today)",
     paths: [['bonfire', 'catchUp', 'maxMultiplier']],
@@ -128,20 +139,6 @@ export const DIALS: readonly Dial[] = [
     integer: true,
     min: 0.5,
     max: 8,
-    step: 0.5,
-  },
-  {
-    id: 'ribbonCost',
-    label: 'scrap and shards of the two ribbons',
-    paths: [
-      ['xp', 'ribbons', '0', 'scrap'],
-      ['xp', 'ribbons', '0', 'shards'],
-      ['xp', 'ribbons', '1', 'scrap'],
-      ['xp', 'ribbons', '1', 'shards'],
-    ],
-    integer: true,
-    min: 0.5,
-    max: 2,
     step: 0.5,
   },
   {
@@ -168,10 +165,10 @@ export const DIALS: readonly Dial[] = [
   },
   {
     id: 'fireFloor',
-    label: "the fire's rise a week with time",
+    label: "the fire's rise a week with time (kept slow: at most 1.25 times the slow floor, Q37 B)",
     paths: [['fire', 'floorPerWeek']],
     min: 0,
-    max: 3,
+    max: 1.25,
     step: 0.25,
   },
   {
@@ -184,6 +181,14 @@ export const DIALS: readonly Dial[] = [
     step: 0.5,
   },
   {
+    id: 'evolveShare',
+    label: 'the share of creatures that evolve at level 15',
+    paths: [['xp', 'evolveShare']],
+    min: 0.25,
+    max: 1.5,
+    step: 0.25,
+  },
+  {
     id: 'essenceIncome',
     label: 'Essence from the raid and the dungeon',
     paths: [
@@ -191,7 +196,7 @@ export const DIALS: readonly Dial[] = [
       ['fights', 'raid', 'essencePhases'],
       ['fights', 'dungeon', 'essence'],
     ],
-    min: 0.5,
+    min: 0.25,
     max: 3,
     step: 0.25,
   },

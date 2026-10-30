@@ -17,7 +17,15 @@ export interface Creature {
   element: number;
   xp: number;
   level: number;
-  ribbons: number;
+  /** Honours held (0 none, 1 Bronze, 2 Silver, 3 Gold): never a gate. */
+  honour: number;
+  /** The boxes of the trials (ticked as the creature lives): fights and the work it has done, in effective hours. */
+  dungeonClears: number;
+  undercroftClears: number;
+  raidClears: number;
+  scoutHours: number;
+  smithHours: number;
+  brought: boolean;
   canEvolve: boolean;
   evolved: boolean;
   /** The level it cannot pass now, and the XP it banks at most. */
@@ -86,9 +94,13 @@ export interface WeekRecord {
   scoutSeats: number;
   anvils: number;
   kit: number;
-  ribbons: number;
-  /** Creatures held at a ribbon gate, and at their evolution level, at the end of the week. */
-  waitingRibbon: number;
+  /** Creatures holding at least Bronze, Silver and Gold at the end of the week (honours: they never gate anything). */
+  honours: number[];
+  /** Kinds owned by rarity (common, rare, epic), the kinds available, and the starting pool's commons owned. */
+  kindsByRarity: number[];
+  availableByRarity: number[];
+  startCommons: number;
+  /** Creatures held at their evolution level at the end of the week. */
   waitingEvolve: number;
   forge: number[];
   piecesMade: number;
@@ -130,6 +142,9 @@ export interface Player {
   available: number;
   seats: Seat[];
   anvils: Anvil[];
+  /** Which creature stands at each scout seat and each anvil (an index into `creatures`, -1: nobody yet). */
+  scoutOcc: number[];
+  anvilOcc: number[];
   stock: number[];
   shards: number[];
   kitOwned: Record<KitName, boolean>;
@@ -240,4 +255,6 @@ export interface ServerWeek {
   keystones: number;
   collections: number;
   visits: number;
+  /** Server coverage (Q38): the share of each rarity's available species (common, rare, epic) that at least one player owns. */
+  coverage: number[];
 }

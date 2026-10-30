@@ -38,8 +38,3 @@ export function masteryBonus(rules: Rules, hours: number): number {
   for (const step of rules.posts.mastery) if (hours >= step.hours) bonus = step.bonus;
   return bonus;
 }
-
-/** The ribbon level a creature with `ribbons` ribbons cannot pass, or the top. */
-export function ribbonGate(rules: Rules, ribbons: number): number {
-  return rules.xp.ribbons[ribbons]?.level ?? MAX_LEVEL;
-}

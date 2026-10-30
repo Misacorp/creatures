@@ -1,8 +1,8 @@
 import { placeLevel } from './commons';
-import { ribbonGate } from './curves';
 import { kitTilt } from './scouts';
-import { relevel, waitsForRibbon } from './growth';
-import { refreshCeiling, debit, debitShard } from './world';
+import { relevel } from './growth';
+import { pickOccupant } from './honours';
+import { refreshCeiling, debit } from './world';
 import { ELEMENTS, type Destination, type KitName, type Rules } from './rules';
 import type { Player, Server } from './types';
 import { R } from './types';
@@ -52,9 +52,11 @@ export function defaultDestination(p: Player): number {
 
 export const newSeat = (p: Player): void => {
   p.seats.push({ dest: defaultDestination(p), store: 0, wasted: 0, mastery: 0 });
+  p.scoutOcc.push(pickOccupant(p));
 };
 export const newAnvil = (p: Player): void => {
   p.anvils.push({ working: false, progress: 0, need: 0, element: 0, rarity: 0, mastery: 0 });
+  p.anvilOcc.push(pickOccupant(p));
 };
 
 /** Evolutions (an Essence sink): a creature waiting at the evolve level takes the Essence when there is enough, best first. */
@@ -67,23 +69,6 @@ export function buyEvolutions(p: Player): void {
     if ((p.stock[R.essence] ?? 0) < rules.xp.evolveEssence) return;
     debit(p, R.essence, rules.xp.evolveEssence, 'evolution');
     c.evolved = true;
-    refreshCeiling(rules, c);
-    relevel(c);
-  }
-}
-
-/** Ribbons: scrap and shards of the creature's element let a creature past its gate; the best waiting creature first. */
-export function buyRibbons(p: Player): void {
-  const rules = p.rules;
-  const waiting = p.creatures.filter((c) => waitsForRibbon(rules, c)).sort((a, b) => b.xp - a.xp);
-  for (const c of waiting) {
-    const ribbon = rules.xp.ribbons[c.ribbons];
-    if (!ribbon) continue;
-    if ((p.stock[R.scrap] ?? 0) < ribbon.scrap || (p.shards[c.element] ?? 0) < ribbon.shards)
-      continue;
-    debit(p, R.scrap, ribbon.scrap, 'ribbons');
-    debitShard(p, c.element, ribbon.shards, 'ribbons');
-    c.ribbons += 1;
     refreshCeiling(rules, c);
     relevel(c);
   }
@@ -232,17 +217,6 @@ export function countOptions(p: Player, server: Server): number[] {
   if (server.places.some((pl) => pl.open) && (have[R.acorns] ?? 0) >= 1)
     out[R.acorns] = (out[R.acorns] ?? 0) + 1;
   for (const c of p.creatures) {
-    if (waitsForRibbon(rules, c)) {
-      const ribbon = rules.xp.ribbons[c.ribbons];
-      if (
-        ribbon &&
-        (have[R.scrap] ?? 0) >= ribbon.scrap &&
-        (p.shards[c.element] ?? 0) >= ribbon.shards
-      ) {
-        out[R.scrap] = (out[R.scrap] ?? 0) + 1;
-        out[R.shards] = (out[R.shards] ?? 0) + 1;
-      }
-    }
     if (
       c.canEvolve &&
       !c.evolved &&
@@ -270,16 +244,6 @@ export function nextPrice(p: Player, r: number, server: Server): number | null {
   } else if (r === R.scrap) {
     const anvil = nextSeat(p, server, 'anvil');
     if (anvil && anvil.scrap > 0) prices.push(anvil.scrap);
-    for (const c of p.creatures) {
-      const ribbon = rules.xp.ribbons[c.ribbons];
-      if (ribbon && near(ribbonGate(rules, c.ribbons), c.level)) prices.push(ribbon.scrap);
-    }
-  } else if (r === R.shards) {
-    for (const c of p.creatures) {
-      const ribbon = rules.xp.ribbons[c.ribbons];
-      if (!ribbon || !near(ribbonGate(rules, c.ribbons), c.level)) continue;
-      if (ribbon.shards > 0) prices.push(ribbon.shards);
-    }
   } else if (r === R.essence) {
     if (p.creatures.some((c) => c.canEvolve && !c.evolved && near(rules.xp.evolveLevel, c.level)))
       prices.push(rules.xp.evolveEssence);
