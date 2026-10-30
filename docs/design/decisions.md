@@ -3557,3 +3557,12 @@ Misa's answers to the valley plan's Q24 to Q26 (`docs/design/valley/questions.md
 - **The bag (Q24).** Worn items do not count; the bag holds 200. Players get filter, sort and search (rarity, item level, slot, element, stats, modifier lines), bulk dismantling, stats and comparison at a glance instead of a drawer per item, a creature-side flow to find a creature's best item, and a visual highlight for items that are really good (a high item level common can beat a low item level epic). No loot filter rules: "you're kind of expecting to see this big pile of loot".
 - **Item level (Q25).** The source sets it under a server cap that rises with raid wins and slowly with time; tried and watched, since Misa doubts players will welcome their best craft being outdated, and he prefers new crafts over upgrading one item forever.
 - **No pity floor (Q26).** Pure luck with visible odds; partial wins from more lines per piece; deterministic pools (slots include or exclude lines without favouring; elements favour or own theirs); blueprint quality, raised by crafting and dismantling, is the consolation prize. This restores blueprint marks, which the scouts and Forge panel had removed.
+
+## 2026-10-30: Valley: a long item level ladder, elements own their lines, 1/3/5 lines, a cap warmed by the whole valley (round 11)
+
+Misa's answers to the valley plan's Q27 to Q29 (`docs/design/valley/questions.md`; `docs/design/valley/systems/gear.md` V-GEAR-8, V-GEAR-10 to V-GEAR-12).
+
+- **The ladder (Q27).** Item level runs to about 100, with each modifier tier unlocking at a threshold; a step of the cap can be several levels.
+- **The cap's sources.** "Give players the option of raising the item level cap in a multitude of ways... not just a fixed relationship to the raid. Because that would just mean that if players can't beat the raid, tough luck." Proposed by the lead in `systems/commons.md` (V-COM-13, "the Forge's fire"): place level-ups, completed collections of rare finds set into buildings (Misa's Stardew Valley community center idea), raid kills on combat v2's track, the server's creatures growing, and a slow rise with time.
+- **Elements own their lines (Q28).** An element piece rolls its own element's lines and neutral lines only; places and bosses drop mostly their element's pieces, plus neutral and now and then other elements'. Cross-element lines are a later idea.
+- **Lines per rarity 1 / 3 / 5 (Q29).** Combat v2 scales line values to match.
