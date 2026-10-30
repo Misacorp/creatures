@@ -1066,6 +1066,8 @@ function assembleBosses(opts: BossOptions, results: JobResults): BossSections {
   /** Every best line of every search here, counted for the Knack usage and form tables. */
   const topLines: (readonly Pick[])[] = [];
   const bestRaidLines: (readonly Pick[])[] = [];
+  /** The same lines, kept by raid boss or foe, for the raid-only Knack usage columns and the "who picks it" column. */
+  const taggedLines: { source: string; raid: boolean; line: readonly Pick[] }[] = [];
   const bestFoeLines: (readonly Pick[])[] = [];
   const got = <T>(id: string, piece: string): T => results.get(raidJobId(id, piece)) as T;
 
@@ -1115,7 +1117,10 @@ function assembleBosses(opts: BossOptions, results: JobResults): BossSections {
     const scratch = pick.scratchRanked[0] as Ranked;
     const overallIs = pick.overallIs;
     bestRaidLines.push(scratch.line);
-    for (const r of pick.scratchRanked.slice(0, 5)) topLines.push(r.line);
+    for (const r of pick.scratchRanked.slice(0, 5)) {
+      topLines.push(r.line);
+      taggedLines.push({ source: raidBossOf(id).name, raid: true, line: r.line });
+    }
     const { wc, wSeeded, wScratch, wPrep } = stats;
     const wOverall = overallIs === 'from scratch' ? wScratch : wSeeded;
     raidRows.push(stats.raidRow);
@@ -1408,6 +1413,7 @@ function assembleBosses(opts: BossOptions, results: JobResults): BossSections {
       if (!found) continue;
       // The usage tables count what the search found, not the classic line it was seeded with.
       topLines.push(...found.topLines);
+      for (const line of found.topLines) taggedLines.push({ source: foe.name, raid: false, line });
       bestFoeLines.push(found.best);
       if (d === DUNGEON_DEPTHS[DUNGEON_DEPTHS.length - 1]) foeBest.set(id, found.best);
       cells.push(found.cell);
@@ -1470,18 +1476,44 @@ function assembleBosses(opts: BossOptions, results: JobResults): BossSections {
       picks++;
       appear.set(p.knack, (appear.get(p.knack) ?? 0) + 1);
     }
+  // The same count for the raid lines alone, and which bosses' searches pick each Knack.
+  const sourceAppear = new Map<string, Map<string, number>>();
+  const raidAppear = new Map<string, number>();
+  let raidPicks = 0;
+  for (const { source, raid, line } of taggedLines)
+    for (const p of line) {
+      if (raid) {
+        raidPicks++;
+        raidAppear.set(p.knack, (raidAppear.get(p.knack) ?? 0) + 1);
+      }
+      const bySource = sourceAppear.get(p.knack) ?? new Map<string, number>();
+      bySource.set(source, (bySource.get(source) ?? 0) + 1);
+      sourceAppear.set(p.knack, bySource);
+    }
+  const raidCount = (k: string) => raidAppear.get(k) ?? 0;
+  const raidBosses = (k: string) =>
+    [...(sourceAppear.get(k) ?? [])]
+      .sort((a, b) => b[1] - a[1])
+      .map(([b, n]) => `${b} ${n}`)
+      .join(', ') || '-';
   const usage = [...appear.entries()]
-    .map(([k, n]) => ({ k, n, ratio: n / Math.max(1, picks) / poolShare(k) }))
+    .map(([k, n]) => ({
+      k,
+      n,
+      ratio: n / Math.max(1, picks) / poolShare(k),
+      raidN: raidCount(k),
+      raidRatio: raidCount(k) / Math.max(1, raidPicks) / poolShare(k),
+    }))
     .sort((a, b) => b.ratio - a.ratio);
   md.push(
     '## Knack usage across the real bosses (per creature)',
     '',
-    `${picks} creatures in the top 5 from-scratch raid lines of each boss (not the lines written by hand or the classic party) and the top 3 gauntlet lines of each foe at each depth. Ratio is the Knack's share of those picks over its share of the pool of every form and Knack: 1.0 is what random picks would give, above 2 stands out, below 0.3 is rarely chosen.`,
+    `${picks} creatures in the top 5 from-scratch raid lines of each boss (not the lines written by hand or the classic party) and the top 3 gauntlet lines of each foe at each depth. Ratio is the Knack's share of those picks over its share of the pool of every form and Knack: 1.0 is what random picks would give, above 2 stands out, below 0.3 is rarely chosen. The last three columns count the ${raidPicks} creatures of the raid lines alone and name the raid bosses and foes whose searches pick it.`,
     '',
-    '| Knack | Forms | Picks | Ratio |',
-    '| --- | --- | ---: | ---: |',
+    '| Knack | Forms | Picks | Ratio | Raid picks | Raid ratio | Picked by (picks) |',
+    '| --- | --- | ---: | ---: | ---: | ---: | --- |',
     ...usage.map(
-      ({ k, n, ratio }) =>
+      ({ k, n, ratio, raidN, raidRatio }) =>
         `| ${knackName(k)} | ${
           k === 'none'
             ? 'any'
@@ -1489,12 +1521,20 @@ function assembleBosses(opts: BossOptions, results: JobResults): BossSections {
                 .filter(([, ks]) => ks.includes(k))
                 .map(([f]) => f)
                 .join(', ')
-        } | ${n} | ${ratio.toFixed(1)} |`,
+        } | ${n} | ${ratio.toFixed(1)} | ${raidN} | ${raidRatio.toFixed(1)} | ${raidBosses(k)} |`,
     ),
     '',
   );
   data['bossKnackUsage'] = Object.fromEntries(
-    usage.map((u) => [u.k, { picks: u.n, ratio: Math.round(u.ratio * 100) / 100 }]),
+    usage.map((u) => [
+      u.k,
+      {
+        picks: u.n,
+        ratio: Math.round(u.ratio * 100) / 100,
+        raidPicks: u.raidN,
+        raidRatio: Math.round(u.raidRatio * 100) / 100,
+      },
+    ]),
   );
   // The gate check (P-05, P-10): no Knack family may be a must-have on three or more bosses.
   const gates = familyGates(

@@ -527,9 +527,9 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'thick-fog',
       name: 'Thick Fog',
       family: 'Evasion aura',
-      text: 'Every creature in its row gets +8 dodge.',
+      text: 'Every creature in its row gets +6 dodge.',
       intent: 'The wide version for long raid rows.',
-      fx: { rowDodgeBp: 800 },
+      fx: { rowDodgeBp: 600 },
     }),
     K({
       id: 'drizzle',
@@ -543,10 +543,10 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'living-shelter',
       name: 'Living Shelter',
       family: 'Row Ward',
-      text: 'Creatures beside it take 25% less from {Area hit}s.',
+      text: 'Creatures beside it take 18% less from {Area hit}s.',
       intent:
         'Ancientshell hosts small creatures: a Setter that shelters its neighbours from sweeps.',
-      fx: { besideAreaCutBp: 2_500 },
+      fx: { besideAreaCutBp: 1_800 },
     }),
     K({
       id: 'territorial',

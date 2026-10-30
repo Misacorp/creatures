@@ -312,7 +312,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Thick Fog
 
-- **Text:** Every creature in its row gets +8 dodge.
+- **Text:** Every creature in its row gets +6 dodge.
 - **Family:** Evasion aura
 - **Forms:** fogwyrm
 - **Intent (for contributors, never shown to players):** The wide version for long raid rows.
@@ -326,7 +326,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Living Shelter
 
-- **Text:** Creatures beside it take 25% less from {Area hit}s.
+- **Text:** Creatures beside it take 18% less from {Area hit}s.
 - **Family:** Row Ward
 - **Forms:** ancientshell
 - **Intent (for contributors, never shown to players):** Ancientshell hosts small creatures: a Setter that shelters its neighbours from sweeps.
