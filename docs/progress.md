@@ -47,6 +47,8 @@ See "Open design questions" in `docs/roadmap.md`.
 
 ## Notes for future agents
 
+- Art review page for Misa: `https://claude.ai/artifact/36APiGzTDAhvx359SHVkyX` (Like / Redo / note per piece; answers in its database, collection `reviews`, one document per piece with `piece`, `verdict`, `note`). Read it with the ArtifactData tool before changing library art. Regenerate it from the library after art changes (the generator lives in the lead's scratchpad, not the repo; rebuild from `CONCEPT_SETS` and `itemArt` if it is gone).
+- Overnight 2026-10-31 (branch `claude/void-art`): Void concept sets in the library (creatures with stage 2 and shiny, the Quiet Verge place, gear, raid boss, foes, floor bosses), creatures wear their gear on their sprite, creatures blink and shiny ones twinkle.
 - Pixel art: draw it with the art studio (`pnpm art <set>`, `design/art-studio.md`). Art drawn ahead of content is kept in the art library, catalogue `docs/art/README.md`; check it before adding content.
 
 - Staging's last-week leet credits are simulated; real ones from 2026-10-11 on.
