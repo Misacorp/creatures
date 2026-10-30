@@ -4,9 +4,17 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-30: Festival weeks pause the boss track; no rank ease **[Misa]**
+
+ID: `2026-10-30-festival-weeks-pause-the-boss-track` · Status: current · Amends: `2026-10-11-progression-decisions`, `2026-10-30-a-failed-raid-boss-returns-next`
+
+**Decision (Misa).** For combat v2: a Festival week is a lighthearted break, a way to have fun with the creatures and a pool of resources, creatures and effects that are otherwise unavailable. It pauses the boss track: afterwards the server continues where it was, against the boss it failed the week before or the next boss in line if it had won. The shipped rule that eases the rank by one after a Festival (the season reset) is dropped.
+
+**Reasoning.** With a fixed boss track, easing the rank meant re-fighting a boss the server had already beaten, which cost an extra week after every Festival and undid progress for no reason. The Festival's relief is the week off itself; the track is the server's progress.
+
 ## 2026-10-30: A failed raid boss returns next week; raids measure HP removed **[Misa]**
 
-ID: `2026-10-30-a-failed-raid-boss-returns-next` · Status: current · Amends: `2026-10-29-raid-tuning-aims-at-success-tiers`, `2026-10-11-progression-decisions`
+ID: `2026-10-30-a-failed-raid-boss-returns-next` · Status: current, amended by `2026-10-30-festival-weeks-pause-the-boss-track` · Amends: `2026-10-29-raid-tuning-aims-at-success-tiers`, `2026-10-11-progression-decisions`
 
 **Decision (Misa).** For combat v2 (the shipped game changes only at the port):
 

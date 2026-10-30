@@ -174,7 +174,8 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [raids.md](raids.md): Raid schedule, parties and joining, bosses and the raid curve, the live finale, raid board and summaries, raid Discord posts.
 
-- 2026-10-30 A failed raid boss returns next week; raids measure HP removed \[Misa\]
+- 2026-10-30 Festival weeks pause the boss track; no rank ease \[Misa\]
+- 2026-10-30 A failed raid boss returns next week; raids measure HP removed \[Misa\] (amended)
 - 2026-10-26 Raid results show real damage and a separate score
 - 2026-10-26 Raids: join until the finale; new servers start at Rank 1
 - 2026-10-26 The raid board is live over the sockets

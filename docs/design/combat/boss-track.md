@@ -32,7 +32,7 @@ The track is data: an ordered list of slots, each a boss and the strength of its
 
 ## The path
 
-`path.ts` plays a server week by week: the roster at that week fights the boss of its current slot over a weekend; a kill moves it on, a loss keeps it. Festival weeks keep the shipped rule (every fifth week, an easier boss; the rank eases by one after). It reports, per kind of server (dedicated, mixed) and per roster speed:
+`path.ts` plays a server week by week: the roster at that week fights the boss of its current slot over a weekend; a kill moves it on, a loss keeps it. Festival weeks (every fifth week) pause the track: no raid boss that week, and afterwards the server continues where it was, with no rank ease (Misa, 2026-10-30). It reports, per kind of server (dedicated, mixed) and per roster speed:
 
 - the week a server reaches each slot, and the weekends it spends there;
 - the longest run on one boss, and the share of servers stuck more than 4 weeks (the shipped balance target allows at most 10%).
