@@ -13,6 +13,7 @@ import {
 } from './game';
 import { glyphOrUnknown } from './glyphs';
 import { Sprite } from './sprites/Sprite';
+import { wornSprite } from './worn-gear';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { elementIcon } from './sprites/element-icons';
 import { ElementChip } from './sprites/ElementChip';
@@ -140,7 +141,10 @@ export function CreatureHead({
     <div class="cc-head">
       <div class={`portrait${sparkleFrame ? ' sparkle-frame' : ''}`}>
         <Sprite
-          sprite={creatureSpriteOrFallback(creature.species)}
+          sprite={
+            wornSprite(creature.species, creature.gear) ??
+            creatureSpriteOrFallback(creature.species)
+          }
           scale={4}
           bob
           alt={portraitAlt(name, creature.shiny)}
