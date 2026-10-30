@@ -295,9 +295,11 @@ describe('catch-up (Q35 B)', () => {
 describe('where a set-and-forget scout starts', () => {
   it('goes to the place of the element of the best creature, then the next element', () => {
     const p = createPlayer(RULES, 'test', 1, 3, profileById('daily'), 4);
-    const mire = addCreature(p, 30);
-    addCreature(p, 0);
-    addCreature(p, 8);
+    const line = (element: string): number =>
+      RULES.scouts.lines.first.findIndex((l) => l.element === element);
+    const mire = addCreature(p, line('mire'));
+    addCreature(p, line('tide'));
+    addCreature(p, line('ember'));
     mire.level = 9;
     p.creatures[1]!.level = 5;
     const id = (i: number): string => RULES.scouts.destinations[i]!.id;
@@ -313,7 +315,10 @@ describe('where a set-and-forget scout starts', () => {
   it('does not depend on the player id', () => {
     const dest = (playerId: number): number => {
       const p = createPlayer(RULES, 'test', 1, playerId, profileById('daily'), 4);
-      addCreature(p, 17);
+      addCreature(
+        p,
+        RULES.scouts.lines.first.findIndex((l) => l.element === 'grove'),
+      );
       return defaultDestination(p);
     };
     expect(dest(0)).toBe(dest(5));
@@ -368,8 +373,8 @@ describe('catch-up and fights (V-BON-2)', () => {
 describe('the species pool (content drops)', () => {
   const at = (week: number): number => speciesAvailable(RULES, (week - 1) * 168);
 
-  it('starts at 34 and grows by 12 every 4 weeks from week 4', () => {
-    expect([1, 3, 4, 7, 8, 12, 24].map(at)).toEqual([34, 34, 46, 46, 58, 70, 106]);
+  it('starts at the 14 findable lines and grows by 12 lines every 4 weeks from week 4', () => {
+    expect([1, 3, 4, 7, 8, 12, 24].map(at)).toEqual([14, 14, 26, 26, 38, 50, 86]);
   });
 
   it('gives arrivals only from the species available that week', () => {
@@ -379,7 +384,7 @@ describe('the species pool (content drops)', () => {
         expect(w.available).toBe(at(w.week));
         expect(w.species).toBeLessThanOrEqual(w.available);
       }
-    // Before the first drop nobody owns more than today's 34.
-    for (const p of run.players) expect(p.weeks[2]?.species ?? 0).toBeLessThanOrEqual(34);
+    // Before the first drop nobody owns more than today's 14 lines.
+    for (const p of run.players) expect(p.weeks[2]?.species ?? 0).toBeLessThanOrEqual(14);
   });
 });

@@ -149,9 +149,18 @@ export type Timings = Record<string, number>;
  * `server-coverage.json`: for each of the servers of 5, 8 and 15, by week, the share of the common, rare and epic species available
  * that at least one player owns. Separate from `roster-profile.json` so that file keeps the shape combat v2 reads.
  */
-export function serverCoverage(
-  data: ReportData,
-): Record<string, { week: number; common: number; rare: number; epic: number }[]> {
+export interface CoverageRow {
+  week: number;
+  /** The unit of `common`, `rare` and `epic`: lines (a line's stage 1; scouts never find evolved forms). */
+  unit: 'line';
+  common: number;
+  rare: number;
+  epic: number;
+  /** The same counted in forms (a line's evolved form counts once some player has evolved one). */
+  forms: { common: number; rare: number; epic: number };
+}
+
+export function serverCoverage(data: ReportData): Record<string, CoverageRow[]> {
   return Object.fromEntries(
     data.servers
       .filter((s) => ['mixed5', 'mixed8', 'mixed15'].includes(s.id))
@@ -159,9 +168,15 @@ export function serverCoverage(
         s.id,
         s.coverage.map((c, i) => ({
           week: i + 1,
+          unit: 'line' as const,
           common: c[0] ?? 0,
           rare: c[1] ?? 0,
           epic: c[2] ?? 0,
+          forms: {
+            common: s.formCoverage[i]?.[0] ?? 0,
+            rare: s.formCoverage[i]?.[1] ?? 0,
+            epic: s.formCoverage[i]?.[2] ?? 0,
+          },
         })),
       ]),
   );
@@ -295,7 +310,7 @@ export const SIMPLIFICATIONS: readonly string[] = [
   'Mastery is counted per seat (the effective hours a seat has worked), not per creature, and a Master never moves on; the Master Scout perk (a blueprint at the Forge) is not modelled.',
   "The School and Paddock have levels, projects and warmth but no seats or output (the docs leave them open until combat v2 and `school.md`); push on, deep areas, opening hours of the Reef and the week's twist are not modelled.",
   'Gear is counts and item level only: three slots per creature, pieces at the fire\'s level, a slot is "weaker" when its item level is more than 6 below the fire. Gear stats, modifier lines, blueprint quality and the loupe\'s effect beyond a higher rare and epic share are not modelled; blueprints are counted, not required by orders.',
-  "The species pool starts at today's 34 forms and grows by content drops (assumed +12 every 4 weeks from week 4, toward Misa's 100 or more); arrivals and duplicates use the pool available that week, all species alike, places lean toward their element. Evolution only lifts a first stage's level cap and costs Essence. Rarity of species is not modelled.",
+  "The scout pool is LINES: scouts find a line's stage 1, never an evolved form (evolving at level 15 gives the next form, for Essence: 20 for a common line and 40 for a rare one in the content, scaled by the tuned base). The content has 16 lines (34 forms); 14 can be found by scouts (8 common, 3 rare, 3 epic) and the two festival epics (Lanternfin, Hearthshell) cannot. A content drop adds 12 lines (6 common, 4 rare, 2 epic) every 4 weeks from week 4, a line having 3, 2 or 1 forms by rarity (assumed). Arrivals and duplicates use the lines available that week and weigh a line by rarity; places lean toward their element. A player keeps one creature of a line (duplicates become scrap) and so owns at most one evolved form of it: a line's two evolution branches are not both collected.",
   'The lab keeps 5 elements and 6 destinations. More elements will mean more kinds of shard (every Forge piece takes a shard of its element, so each new element is one more chain a player must cover with scouts) and more destinations to cover them; the shard stalls shown here would grow with them.',
   "Catch-up applies to idle XP only (not to fights). Its multiplier is fixed at each visit and holds until the next one (Q35 B), but never above the target it was fixed for: it fades as the creature closes the gap, so a player who visits less often cannot earn more of it than one who visits daily. A player who is away is not counted in the server's middle after seven days.",
   "Project gifts are chosen by weight among the open projects; a gift never exceeds what the project still needs, the rest stays with the giver. A project's cost is an Acorn part, a scrap part and a shard part (Q33), each filled by gifts from what a player has above a reserve for their own Forge; shards go to a project only as shards of the element tied to its place; Essence never goes to projects and journal pages are never spent. A find fills only its own collection socket; a spare melts into Essence. Sources of the sockets that are not keystones (dungeon landmarks, resident tokens, pages) use made-up rates.",
@@ -434,7 +449,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
         profileLabel(g.profile),
         ...wk.map((w) =>
           at(g.size, w)
-            ? `${num(at(g.size, w)?.median ?? 0)} (${num(at(g.species, w)?.median ?? 0)} kinds, ${num((at(g.speciesShare, w)?.median ?? 0) * 100)}% of ${num(at(g.available, w)?.median ?? 0)})`
+            ? `${num(at(g.size, w)?.median ?? 0)} (${num(at(g.species, w)?.median ?? 0)} lines, ${num(at(g.forms, w)?.median ?? 0)} forms; ${num((at(g.speciesShare, w)?.median ?? 0) * 100)}% of ${num(at(g.available, w)?.median ?? 0)} lines)`
             : '-',
         ),
       ]),
@@ -442,7 +457,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
     '',
   );
   push(
-    "A daily player's roster at the default arrival rate (0.75% an hour per scout) and at the docs' table (2% an hour): creatures owned, and the share of the species available that week:",
+    "A daily player's roster at the default arrival rate (0.75% an hour per scout) and at the docs' table (2% an hour): creatures owned, and the share of the lines available that week:",
     '',
   );
   push(
@@ -469,12 +484,12 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
     '',
   );
   push(
-    "The week a player owns 20, 34 (all of today's forms) and 60 kinds, and duplicates arriving per visit (a duplicate takes the Recommended answer and pays a little scrap):",
+    "The week a player owns 10 lines, all 14 of today's lines and 30 lines, and duplicates arriving per visit (a duplicate takes the Recommended answer and pays a little scrap):",
     '',
   );
   push(
     ...table(
-      ['Profile', '20 kinds', '34 kinds', '60 kinds', 'Duplicates /visit'],
+      ['Profile', '10 lines', "14 lines (all of today's)", '30 lines', 'Duplicates /visit'],
       data.growth.map((g) => [
         profileLabel(g.profile),
         ...g.speciesWeeks.map((w) => (w === null ? 'not by the end' : `week ${w}`)),
@@ -541,7 +556,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
     '',
   );
   push(
-    'Kinds owned by rarity (Q38): common / rare / epic, and in brackets the kinds available of each rarity that week (median):',
+    'Lines owned by rarity (Q38): common / rare / epic, in brackets the lines available of each rarity that week, then the forms owned out of the forms available (a line plus the form it evolved into; median):',
     '',
   );
   push(
@@ -553,7 +568,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
           .filter((w) => w !== 8)
           .map((w) =>
             at(g.first, w)
-              ? `${[0, 1, 2].map((k) => num(g.byRarity.owned[k]?.[w - 1]?.median ?? 0)).join(' / ')} (of ${[0, 1, 2].map((k) => num(g.byRarity.available[k]?.[w - 1]?.median ?? 0)).join(' / ')})`
+              ? `${[0, 1, 2].map((k) => num(g.byRarity.owned[k]?.[w - 1]?.median ?? 0)).join(' / ')} (of ${[0, 1, 2].map((k) => num(g.byRarity.available[k]?.[w - 1]?.median ?? 0)).join(' / ')}); ${num(at(g.forms, w)?.median ?? 0)} of ${num(at(g.availableForms, w)?.median ?? 0)} forms`
               : '-',
           ),
       ]),
@@ -773,7 +788,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
   push(
     '### Server coverage of the creatures (Q38)',
     '',
-    "Players pool their creatures in the raid, so a boss card may sometimes want a rare one. The share of each rarity's available species that at least one player on the server owns (median over seeds):",
+    "Players pool their creatures in the raid, so a boss card may sometimes want a rare one. The share of each rarity's available LINES (a line's stage 1: scouts never find evolved forms) that at least one player on the server owns (median over seeds). The same counted in forms is in `server-coverage.json`.",
     '',
   );
   const coverageWeeks = [4, 8, 12, 24];

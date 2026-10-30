@@ -1,6 +1,6 @@
 /** The whole lab on few seeds: no negative balances, conservation, determinism, the report and the roster profile. */
 import { describe, expect, it } from 'vitest';
-import { buildReportData, renderReport } from '../src/report';
+import { buildReportData, renderReport, serverCoverage } from '../src/report';
 import { RULES } from '../src/rules';
 import rulesSource from '../src/rules.ts?raw';
 import { rosterProfile, ROSTER_WEEKS } from '../src/roster';
@@ -145,6 +145,28 @@ describe('the report', () => {
     ]);
     // More bosses killed never cools the fire.
     expect(data.fireByDial.all!.fire[23]!).toBeGreaterThanOrEqual(data.fireByDial.none!.fire[23]!);
+  });
+
+  it('writes server coverage per line, with the forms beside it', () => {
+    const coverage = serverCoverage(data);
+    expect(Object.keys(coverage)).toEqual(['mixed5', 'mixed8', 'mixed15']);
+    for (const rows of Object.values(coverage)) {
+      expect(rows).toHaveLength(24);
+      for (const row of rows) {
+        expect(row.unit).toBe('line');
+        for (const v of [
+          row.common,
+          row.rare,
+          row.epic,
+          row.forms.common,
+          row.forms.rare,
+          row.forms.epic,
+        ]) {
+          expect(v).toBeGreaterThanOrEqual(0);
+          expect(v).toBeLessThanOrEqual(1);
+        }
+      }
+    }
   });
 
   it('lists every assumption in the appendix', () => {

@@ -56,6 +56,7 @@ import {
   createPlayer,
   createServer,
   credit,
+  lineForms,
   speciesAvailable,
   speciesRarities,
   wasteOf,
@@ -272,14 +273,20 @@ function endWeek(p: Player, server: Server): void {
   wk.size = p.creatures.length;
   wk.species = p.speciesCount.filter((c) => c > 0).length;
   wk.available = p.available;
+  const evolvedLines = new Set(p.creatures.filter((c) => c.evolved).map((c) => c.species));
+  wk.forms = wk.species + evolvedLines.size;
   wk.scoutSeats = p.seats.length;
   wk.anvils = p.anvils.length;
   wk.kit = Object.values(p.kitOwned).filter(Boolean).length;
   wk.honours = honourCounts(p);
   const rarity = speciesRarities(p.rules);
+  const forms = lineForms(p.rules);
   p.speciesCount.forEach((count, species) => {
     const r = rarity[species] ?? 0;
-    if (species < p.available) wk.availableByRarity[r] = (wk.availableByRarity[r] ?? 0) + 1;
+    if (species < p.available) {
+      wk.availableByRarity[r] = (wk.availableByRarity[r] ?? 0) + 1;
+      wk.availableForms += forms[species] ?? 1;
+    }
     if (count > 0) {
       wk.kindsByRarity[r] = (wk.kindsByRarity[r] ?? 0) + 1;
       if (species < p.rules.scouts.species.start && r === 0) wk.startCommons += 1;
@@ -333,19 +340,39 @@ function resolveRaid(server: Server, players: readonly Player[], hour: number, r
   }
 }
 
-/** Server coverage (Q38: players pool their creatures in the raid): the share of each rarity's available species some player owns. */
-function serverCoverage(players: readonly Player[], hour: number, rules: Rules): number[] {
+/**
+ * Server coverage (Q38: players pool their creatures in the raid): the share of each rarity's available LINES that at least one player
+ * owns, and the same counted in forms (a line's stage 1 is owned with the line; its evolved form once some player has evolved one).
+ */
+function serverCoverage(
+  players: readonly Player[],
+  hour: number,
+  rules: Rules,
+): { lines: number[]; forms: number[] } {
   const rarity = speciesRarities(rules);
+  const formsOf = lineForms(rules);
   const available = speciesAvailable(rules, hour);
-  const have = [0, 0, 0];
-  const total = [0, 0, 0];
-  for (let s = 0; s < available; s++) {
-    const r = rarity[s] ?? 0;
-    total[r] = (total[r] ?? 0) + 1;
-    if (players.some((p) => hour >= p.joinHour && (p.speciesCount[s] ?? 0) > 0))
-      have[r] = (have[r] ?? 0) + 1;
+  const joined = players.filter((p) => hour >= p.joinHour);
+  const evolved = new Set(
+    joined.flatMap((p) => p.creatures.filter((c) => c.evolved).map((c) => c.species)),
+  );
+  const haveLines = [0, 0, 0];
+  const totalLines = [0, 0, 0];
+  const haveForms = [0, 0, 0];
+  const totalForms = [0, 0, 0];
+  for (let line = 0; line < available; line++) {
+    const r = rarity[line] ?? 0;
+    const forms = formsOf[line] ?? 1;
+    totalLines[r] = (totalLines[r] ?? 0) + 1;
+    totalForms[r] = (totalForms[r] ?? 0) + forms;
+    if (joined.some((p) => (p.speciesCount[line] ?? 0) > 0)) {
+      haveLines[r] = (haveLines[r] ?? 0) + 1;
+      haveForms[r] = (haveForms[r] ?? 0) + 1 + (evolved.has(line) && forms > 1 ? 1 : 0);
+    }
   }
-  return have.map((h, r) => ((total[r] ?? 0) > 0 ? h / (total[r] as number) : 0));
+  const share = (have: number[], total: number[]): number[] =>
+    have.map((h, r) => ((total[r] ?? 0) > 0 ? h / (total[r] as number) : 0));
+  return { lines: share(haveLines, totalLines), forms: share(haveForms, totalForms) };
 }
 
 /** Runs one server for the horizon with one seed: hour by hour. */
@@ -423,7 +450,10 @@ export function runServer(config: ServerConfig, seed: number, base: Rules = RULE
         keystones: server.keystonesFound,
         collections: server.collectionsDone,
         visits: visitsThisWeek,
-        coverage: serverCoverage(players, h, rules),
+        ...(() => {
+          const c = serverCoverage(players, h, rules);
+          return { coverage: c.lines, formCoverage: c.forms };
+        })(),
       });
       visitsThisWeek = 0;
       for (const p of players) if (h >= p.joinHour) endWeek(p, server);

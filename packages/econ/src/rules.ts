@@ -1,4 +1,4 @@
-import { RULES as GAME } from '@creatures/game';
+import { RULES as GAME, content } from '@creatures/game';
 
 /**
  * Every rate, cost, cap and odds of the PROPOSED valley, as data (docs/design/valley/economy/model.md). Each group names the
@@ -23,6 +23,28 @@ export interface Destination {
   readonly rich: FindFamily | 'none';
 }
 
+/**
+ * The lines scouts can find today, from the shipped content (`@creatures/game`): scouts find a line's stage 1, never an evolved form
+ * (evolved forms come from evolving at level 15). 14 lines are findable: 8 common, 3 rare and 3 epic (the deeper areas' Solmane,
+ * Gaiadrake and Aurorix). The 18 forms of the content that scouts never find are the evolutions and the two festival prizes
+ * (Lanternfin and Hearthshell, not catchable). `forms` counts the forms of the line (stage 1 and its evolutions).
+ */
+const RARITY_INDEX = { common: 0, rare: 1, epic: 2 } as const;
+const FIRST_LINES = content.creatures
+  .filter((c) => c.stage === 1 && c.catchable)
+  .map((c) => ({
+    element: c.element,
+    rarity: RARITY_INDEX[c.rarity],
+    forms: content.creatures.filter((f) => f.line === c.line).length,
+  }));
+
+/** What evolving costs by rarity, as a multiple of a common's (shipped: 20 Essence for a common line, 40 for a rare one). */
+const evolveCostOf = (rarity: 'common' | 'rare' | 'epic'): number => {
+  const cost = (r: string): number =>
+    content.creatures.find((c) => c.rarity === r && c.evolvesTo)?.evolvesTo?.essence ?? 0;
+  return cost(rarity) > 0 && cost('common') > 0 ? cost(rarity) / cost('common') : 1;
+};
+
 export const RULES = {
   /** The horizon: weeks of play simulated. */
   horizon: { weeks: 24 },
@@ -33,10 +55,10 @@ export const RULES = {
     maxLevel: GAME.experience.maxLevel,
     /** A first stage waits for its evolution at this level (shipped). */
     evolveLevel: 15,
-    // ASSUMPTION: 60% of creatures are first stages with an evolution (the shipped roster: 10 of 16 lines evolve).
-    evolveShare: 0.6,
+    // From the content: a line with more than one form evolves at level 15 (so every common line and the rare lines but Coralynx; the
+    // epics never evolve); a rare line costs twice a common line (40 Essence against 20).
+    evolveCostByRarity: [1, evolveCostOf('rare'), 1],
     /** An evolution costs this much Essence (shipped: every evolving species in creatures.json, 20 Essence at level 15). */
-    // TUNED 2026-10-30: was 20 (shipped).
     // TUNED 2026-10-30 (round 15): was 20 (shipped), 30 after the last tuning; the tuner tried 60 and went back to 30.
     evolveEssence: 30,
   },
@@ -166,23 +188,20 @@ export const RULES = {
     keystoneMeanDays: 21,
     // ASSUMPTION: a destination whose element a creature has doubles its weight when a new creature arrives (the shipped 2x).
     placeAffinity: 2,
-    // ASSUMPTION: the species pool grows with content (Misa: the plan is 100 or more species, with drops from about week 4).
-    // It starts at today's 34 forms (Pia's list), then `dropCount` more arrive every `dropEveryWeeks` weeks from `dropFromWeek`
-    // (50 at week 4, 62 at week 8 ... 106 at week 24). Arrivals and duplicates draw from the species available that week.
-    species: { start: 34, dropFromWeek: 4, dropEveryWeeks: 4, dropCount: 12 },
-    // ASSUMPTION: the element mix of the first 34 (tide 8, ember 8, grove 7, spark 7, mire 4); later species repeat the same mix.
-    speciesPerElement: [8, 8, 7, 7, 4],
-    // ASSUMPTION (Q38): species have rarities. The first 34 follow today's spread (22 common, 7 rare, 5 epic: 0 common, 1 rare, 2 epic)
-    // in this order; each content drop of 12 repeats the pattern in `drop` (6 common, 4 rare, 2 epic). Arrivals weigh a species by its
-    // rarity's weight, so commons come at the "week 4 pace" and rarer species take months.
-    rarity: {
-      first: [
-        0, 0, 1, 0, 0, 1, 2, 0, 0, 1, 0, 0, 1, 2, 0, 0, 0, 1, 0, 0, 0, 2, 1, 0, 0, 0, 0, 2, 0, 0, 1,
-        0, 0, 2,
-      ],
+    // The scout pool is LINES (a line's stage 1; evolved forms come from evolving). It starts at the 14 lines the content lets scouts find,
+    // then `dropCount` more lines arrive every `dropEveryWeeks` weeks from `dropFromWeek` (Misa: the plan is 100 or more species, with
+    // drops from about week 4). Arrivals and duplicates draw from the lines available that week.
+    // ASSUMPTION: a content drop adds 12 lines, 6 common, 4 rare and 2 epic (`drop`; the earlier 6/4/2 kept, now counted as lines),
+    // with elements cycling through the five; and a line's typical number of forms by rarity is `forms` (a common line 3, as most
+    // today; a rare line 2; an epic line 1, as today's epics), so a drop is about 28 forms.
+    species: { start: FIRST_LINES.length, dropFromWeek: 4, dropEveryWeeks: 4, dropCount: 12 },
+    lines: {
+      first: FIRST_LINES,
       drop: [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2],
-      weights: [1, 0.15, 0.04],
+      forms: [3, 2, 1],
     },
+    // ASSUMPTION (Q38): arrivals weigh a line by its rarity, so commons come at the "week 4 pace" and rarer lines take months.
+    rarity: { weights: [1, 0.15, 0.04] },
     // ASSUMPTION: a lure halves the weight of species the player already owns.
     lureOwnedWeight: 0.5,
     // ASSUMPTION: known blueprints of a pool this size; a known one found again is scrap (shipped: 5).

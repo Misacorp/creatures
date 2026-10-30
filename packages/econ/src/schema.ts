@@ -34,7 +34,7 @@ export const RulesSchema = v.strictObject({
     idlePerHour: pos,
     maxLevel: int,
     evolveLevel: int,
-    evolveShare: share,
+    evolveCostByRarity: v.tuple([pos, pos, pos]),
     evolveEssence: int,
   }),
   away: v.strictObject({ A: stepList, B: stepList, beyond: share }),
@@ -99,12 +99,18 @@ export const RulesSchema = v.strictObject({
     keystoneMeanDays: pos,
     placeAffinity: pos,
     species: v.strictObject({ start: int, dropFromWeek: int, dropEveryWeeks: int, dropCount: int }),
-    speciesPerElement: v.array(int),
-    rarity: v.strictObject({
-      first: v.array(v.picklist([0, 1, 2])),
+    lines: v.strictObject({
+      first: v.array(
+        v.strictObject({
+          element: v.picklist(ELEMENTS),
+          rarity: v.picklist([0, 1, 2]),
+          forms: v.pipe(v.number(), v.integer(), v.minValue(1)),
+        }),
+      ),
       drop: v.array(v.picklist([0, 1, 2])),
-      weights: v.tuple([pos, num, num]),
+      forms: v.tuple([int, int, int]),
     }),
+    rarity: v.strictObject({ weights: v.tuple([pos, num, num]) }),
     lureOwnedWeight: num,
     blueprintPool: int,
     duplicateBlueprintScrap: int,

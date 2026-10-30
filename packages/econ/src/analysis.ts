@@ -175,6 +175,8 @@ export interface GrowthRow {
   twentieth: Band[];
   size: Band[];
   species: Band[];
+  forms: Band[];
+  availableForms: Band[];
   /** Species available that week (the pool grows with content drops) and the share of them the player owns. */
   available: Band[];
   speciesShare: Band[];
@@ -189,7 +191,7 @@ export interface GrowthRow {
   byRarity: { owned: Band[][]; available: Band[][] };
   /** The share of the roster holding at least Bronze, Silver and Gold by week (honours never gate anything). */
   honours: Band[][];
-  /** The week the player owns 20, 34 and 60 kinds (median; null: not within the run), and duplicates arriving per visit. */
+  /** The week the player owns 10, 14 and 30 lines (median; null: not within the run), and duplicates arriving per visit. */
   speciesWeeks: (number | null)[];
   duplicatesPerVisit: number;
 }
@@ -215,6 +217,8 @@ export function growthOf(players: readonly PlayerRun[], profile: string): Growth
     species: series(players, weeks, (w) => w.species),
     available: series(players, weeks, (w) => w.available),
     speciesShare: series(players, weeks, (w) => (w.available > 0 ? w.species / w.available : 0)),
+    forms: series(players, weeks, (w) => w.forms),
+    availableForms: series(players, weeks, (w) => w.availableForms),
     xp: {
       idle: xp((w) => w.xpIdle),
       catchUp: xp((w) => w.xpCatch),
@@ -237,7 +241,7 @@ export function growthOf(players: readonly PlayerRun[], profile: string): Growth
     honours: [0, 1, 2].map((h) =>
       series(players, weeks, (w) => (w.size > 0 ? (w.honours[h] ?? 0) / w.size : 0)),
     ),
-    speciesWeeks: [20, 34, 60].map((n) => {
+    speciesWeeks: [10, 14, 30].map((n) => {
       const week = series(players, weeks, (w) => w.species).findIndex((b) => b.median >= n);
       return week >= 0 ? week + 1 : null;
     }),
@@ -310,8 +314,9 @@ export interface ServerRow {
   fire: number[];
   keystones: number[];
   collections: number[];
-  /** Server coverage by week: the share of each rarity's available species that at least one player owns (common, rare, epic). */
+  /** Server coverage by week: the share of each rarity's available LINES that at least one player owns (common, rare, epic), and the same counted in forms. */
   coverage: number[][];
+  formCoverage: number[][];
   /** The week each fire threshold opened (median over seeds; null: not within the horizon). */
   thresholds: (number | null)[];
   firstLevelDay: number | null;
@@ -379,6 +384,9 @@ export function serverOf(results: Results, id: string): ServerRow | null {
     fire: at((l) => l.fire),
     keystones: at((l) => l.keystones),
     collections: at((l) => l.collections),
+    formCoverage: Array.from({ length: weeks }, (_, i) =>
+      [0, 1, 2].map((r) => median(runs.map((run) => run.log[i]?.formCoverage[r] ?? 0))),
+    ),
     coverage: Array.from({ length: weeks }, (_, i) =>
       [0, 1, 2].map((r) => median(runs.map((run) => run.log[i]?.coverage[r] ?? 0))),
     ),
@@ -617,12 +625,12 @@ export function measuresOf(results: Results): Measures {
     const stall = worstStall(results, FORGE_BUCKETS.indexOf('scrap'), 12);
     put('scrapStall', stall.share);
   }
-  // T-8 (Q38): kinds owned by a daily player: how many, how many of the starting pool's commons, how many rares and epics.
+  // T-8 (Q38): kinds (the forms: lines found plus the forms they evolved into) owned by a daily player: how many, how many of the starting pool's commons, how many rares and epics.
   const kindsAt = (week: number): number | undefined =>
-    medianDefined(daily.map((p) => weekAt(p, week - 1)?.species));
+    medianDefined(daily.map((p) => weekAt(p, week - 1)?.forms));
   put('kinds4', kindsAt(4));
   put('kinds12', kindsAt(12));
-  const startCommons = RULES.scouts.rarity.first.filter((r) => r === 0).length;
+  const startCommons = RULES.scouts.lines.first.filter((l) => l.rarity === 0).length;
   const commonsOwned = medianDefined(daily.map((p) => weekAt(p, 5)?.startCommons));
   put('commons6', commonsOwned === undefined ? undefined : commonsOwned / startCommons);
   const shareOf = (r: number): number | undefined => {

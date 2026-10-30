@@ -2,7 +2,7 @@ import { placeLevel } from './commons';
 import { kitTilt } from './scouts';
 import { relevel } from './growth';
 import { pickOccupant } from './honours';
-import { refreshCeiling, debit } from './world';
+import { evolveCost, refreshCeiling, debit } from './world';
 import { ELEMENTS, type Destination, type KitName, type Rules } from './rules';
 import type { Player, Server } from './types';
 import { R } from './types';
@@ -66,8 +66,9 @@ export function buyEvolutions(p: Player): void {
     .filter((c) => c.canEvolve && !c.evolved && c.level >= rules.xp.evolveLevel)
     .sort((a, b) => b.level - a.level);
   for (const c of waiting) {
-    if ((p.stock[R.essence] ?? 0) < rules.xp.evolveEssence) return;
-    debit(p, R.essence, rules.xp.evolveEssence, 'evolution');
+    const cost = evolveCost(rules, c.species);
+    if ((p.stock[R.essence] ?? 0) < cost) continue;
+    debit(p, R.essence, cost, 'evolution');
     c.evolved = true;
     refreshCeiling(rules, c);
     relevel(c);
@@ -221,7 +222,7 @@ export function countOptions(p: Player, server: Server): number[] {
       c.canEvolve &&
       !c.evolved &&
       c.level >= rules.xp.evolveLevel &&
-      (have[R.essence] ?? 0) >= rules.xp.evolveEssence
+      (have[R.essence] ?? 0) >= evolveCost(rules, c.species)
     )
       out[R.essence] = (out[R.essence] ?? 0) + 1;
   }

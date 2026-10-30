@@ -28,34 +28,55 @@ export function speciesAvailable(rules: Rules, hour: number): number {
   return start + dropCount * (Math.floor((week - dropFromWeek) / dropEveryWeeks) + 1);
 }
 
-/** The rarity of each species (0 common, 1 rare, 2 epic): the first 34 as listed, then each content drop's pattern. */
+/** The rarity of each line (0 common, 1 rare, 2 epic): the first lines from the content, then each content drop's pattern. */
 const RARITY_CACHE = new WeakMap<Rules, number[]>();
 export function speciesRarities(rules: Rules): number[] {
   let cached = RARITY_CACHE.get(rules);
   if (!cached) {
-    const { first, drop } = rules.scouts.rarity;
+    const { first, drop } = rules.scouts.lines;
     const start = rules.scouts.species.start;
     cached = Array.from({ length: maxSpecies(rules) }, (_, i) =>
-      i < start ? (first[i] ?? 0) : (drop[(i - start) % drop.length] ?? 0),
+      i < start ? (first[i]?.rarity ?? 0) : (drop[(i - start) % drop.length] ?? 0),
     );
     RARITY_CACHE.set(rules, cached);
   }
   return cached;
 }
 
-/** The element index of each species: the first 34 grouped by element, later species repeat that mix. */
+/** The element index of each line: the first lines from the content, dropped lines cycle through the elements. */
 const SPECIES_CACHE = new WeakMap<Rules, number[]>();
 export function speciesElements(rules: Rules): number[] {
   let cached = SPECIES_CACHE.get(rules);
   if (!cached) {
-    const base = rules.scouts.speciesPerElement.flatMap((n, element) =>
-      Array.from({ length: n }, () => element),
+    const { first } = rules.scouts.lines;
+    cached = Array.from({ length: maxSpecies(rules) }, (_, i) =>
+      i < first.length ? ELEMENTS.indexOf(first[i]!.element) : i % ELEMENTS.length,
     );
-    cached = Array.from({ length: maxSpecies(rules) }, (_, i) => base[i % base.length] ?? 0);
     SPECIES_CACHE.set(rules, cached);
   }
   return cached;
 }
+
+/** How many forms each line has (stage 1 and its evolutions): the content's for the first lines, a typical number by rarity for drops. */
+const FORMS_CACHE = new WeakMap<Rules, number[]>();
+export function lineForms(rules: Rules): number[] {
+  let cached = FORMS_CACHE.get(rules);
+  if (!cached) {
+    const { first, forms } = rules.scouts.lines;
+    const rarity = speciesRarities(rules);
+    cached = Array.from({ length: maxSpecies(rules) }, (_, i) =>
+      i < first.length ? (first[i]?.forms ?? 1) : (forms[rarity[i] ?? 0] ?? 1),
+    );
+    FORMS_CACHE.set(rules, cached);
+  }
+  return cached;
+}
+
+/** The Essence an evolution costs for a creature of a line: the base price times its rarity's multiple. */
+export const evolveCost = (rules: Rules, line: number): number =>
+  Math.round(
+    rules.xp.evolveEssence * (rules.xp.evolveCostByRarity[speciesRarities(rules)[line] ?? 0] ?? 1),
+  );
 
 export const blankWeek = (week: number): WeekRecord => ({
   week,
@@ -75,7 +96,9 @@ export const blankWeek = (week: number): WeekRecord => ({
   levels: [],
   size: 0,
   species: 0,
+  forms: 0,
   available: 0,
+  availableForms: 0,
   arrivals: 0,
   duplicates: 0,
   scoutSeats: 0,
@@ -182,7 +205,7 @@ export function addCreature(p: Player, species: number): Creature {
     scoutHours: 0,
     smithHours: 0,
     brought: false,
-    canEvolve: uniform(p.rng) < rules.xp.evolveShare,
+    canEvolve: (lineForms(rules)[species] ?? 1) > 1,
     evolved: false,
     ceiling: 1,
     capXp: 0,

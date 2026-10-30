@@ -15,7 +15,15 @@ import { profileById } from '../src/profiles';
 import { RULES } from '../src/rules';
 import { ALL_SERVERS } from '../src/servers';
 import { runServer } from '../src/sim';
-import { addCreature, createPlayer, refreshCeiling, speciesRarities } from '../src/world';
+import {
+  addCreature,
+  createPlayer,
+  evolveCost,
+  lineForms,
+  refreshCeiling,
+  speciesRarities,
+} from '../src/world';
+import { content } from '@creatures/game';
 
 const player = (policy: 'setAndForget' | 'optimiser' = 'setAndForget') => {
   const p = createPlayer(RULES, 'trials', 1, 0, { ...profileById('daily'), policy }, 4);
@@ -152,13 +160,36 @@ describe('honours (trials.md)', () => {
 });
 
 describe('creature rarities (Q38)', () => {
-  it("the first 34 follow today's spread and each drop repeats its own pattern", () => {
-    const r = speciesRarities(RULES);
-    const first = r.slice(0, 34);
-    expect([0, 1, 2].map((k) => first.filter((x) => x === k).length)).toEqual([22, 7, 5]);
-    const drop = r.slice(34, 46);
+  it('the findable lines come from the content (8 common, 3 rare, 3 epic) and each drop repeats its own pattern', () => {
+    const rar = speciesRarities(RULES);
+    const first = rar.slice(0, RULES.scouts.species.start);
+    expect(first).toHaveLength(14);
+    expect([0, 1, 2].map((k) => first.filter((x) => x === k).length)).toEqual([8, 3, 3]);
+    const drop = rar.slice(14, 26);
     expect([0, 1, 2].map((k) => drop.filter((x) => x === k).length)).toEqual([6, 4, 2]);
-    expect(r.slice(46, 58)).toEqual(drop);
+    expect(rar.slice(26, 38)).toEqual(drop);
+  });
+
+  it("count the forms of a line: the content's for today's lines, a typical number by rarity for drops", () => {
+    const forms = lineForms(RULES);
+    const findable = new Set(
+      content.creatures.filter((c) => c.stage === 1 && c.catchable).map((c) => c.line),
+    );
+    expect(forms.slice(0, 14).reduce((a, b) => a + b, 0)).toBe(
+      content.creatures.filter((c) => findable.has(c.line)).length,
+    );
+    expect(forms.slice(14, 26).reduce((a, b) => a + b, 0)).toBe(6 * 3 + 4 * 2 + 2 * 1);
+  });
+
+  it('evolve for Essence by rarity: a rare line costs what the content says, twice a common one; epics do not evolve', () => {
+    expect(RULES.xp.evolveCostByRarity[1]).toBe(2);
+    const p = createPlayer(RULES, 'trials', 1, 0, profileById('daily'), 4);
+    const common = RULES.scouts.lines.first.findIndex((l) => l.rarity === 0);
+    const rare = RULES.scouts.lines.first.findIndex((l) => l.rarity === 1 && l.forms > 1);
+    const epic = RULES.scouts.lines.first.findIndex((l) => l.rarity === 2);
+    expect(evolveCost(RULES, rare)).toBe(2 * evolveCost(RULES, common));
+    expect(addCreature(p, epic).canEvolve).toBe(false);
+    expect(addCreature(p, common).canEvolve).toBe(true);
   });
 
   it('arrive as commons mostly: a daily player owns more commons than rares and more rares than epics, over a run', () => {

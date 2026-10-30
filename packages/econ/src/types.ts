@@ -86,9 +86,11 @@ export interface WeekRecord {
   storeLost: number;
   levels: number[];
   size: number;
+  /** Lines owned (the scout pool), the forms owned (lines plus the forms they evolved into), and what is available of each. */
   species: number;
-  /** Species available at the end of the week (the pool of that week). */
+  forms: number;
   available: number;
+  availableForms: number;
   arrivals: number;
   duplicates: number;
   scoutSeats: number;
@@ -257,4 +259,6 @@ export interface ServerWeek {
   visits: number;
   /** Server coverage (Q38): the share of each rarity's available species (common, rare, epic) that at least one player owns. */
   coverage: number[];
+  /** The same counted in forms: a line is owned as its stage 1, and its evolved form once some player has evolved one. */
+  formCoverage: number[];
 }

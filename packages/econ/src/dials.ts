@@ -181,14 +181,6 @@ export const DIALS: readonly Dial[] = [
     step: 0.5,
   },
   {
-    id: 'evolveShare',
-    label: 'the share of creatures that evolve at level 15',
-    paths: [['xp', 'evolveShare']],
-    min: 0.25,
-    max: 1.5,
-    step: 0.25,
-  },
-  {
     id: 'essenceIncome',
     label: 'Essence from the raid and the dungeon',
     paths: [
