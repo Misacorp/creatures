@@ -33,7 +33,6 @@ export const RulesSchema = v.strictObject({
   xp: v.strictObject({
     idlePerHour: pos,
     maxLevel: int,
-    ribbons: v.array(v.strictObject({ level: int, scrap: int, shards: int })),
     evolveLevel: int,
     evolveShare: share,
     evolveEssence: int,
@@ -46,6 +45,12 @@ export const RulesSchema = v.strictObject({
       appliesToFights: v.boolean(),
     }),
     hearth: v.strictObject({ perLevel: num }),
+  }),
+  honours: v.strictObject({
+    levels: v.tuple([int, int, int]),
+    bronzePostHours: num,
+    bronzeSmithHours: num,
+    undercroftShare: share,
   }),
   posts: v.strictObject({
     fitBonus: num,
@@ -95,6 +100,11 @@ export const RulesSchema = v.strictObject({
     placeAffinity: pos,
     species: v.strictObject({ start: int, dropFromWeek: int, dropEveryWeeks: int, dropCount: int }),
     speciesPerElement: v.array(int),
+    rarity: v.strictObject({
+      first: v.array(v.picklist([0, 1, 2])),
+      drop: v.array(v.picklist([0, 1, 2])),
+      weights: v.tuple([pos, num, num]),
+    }),
     lureOwnedWeight: num,
     blueprintPool: int,
     duplicateBlueprintScrap: int,

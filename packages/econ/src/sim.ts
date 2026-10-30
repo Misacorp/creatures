@@ -1,3 +1,12 @@
+import {
+  fightTeam,
+  fillEmptyPosts,
+  graduate,
+  honourCounts,
+  rotateMasters,
+  tickDungeon,
+  tickRaid,
+} from './honours';
 import { ELEMENTS, RULES, type Rules } from './rules';
 import { THRESHOLDS } from './targets';
 import { awayShare, hearthMultiplier } from './curves';
@@ -18,17 +27,9 @@ import {
   rollRarity,
   stepAnvils,
 } from './forge';
-import {
-  accrueIdleXp,
-  atTopLevel,
-  fightXp,
-  levelsDesc,
-  setCatchUp,
-  waitsForRibbon,
-} from './growth';
+import { accrueIdleXp, atTopLevel, fightXp, levelsDesc, setCatchUp } from './growth';
 import {
   buyEvolutions,
-  buyRibbons,
   buySeatsAndKit,
   countOptions,
   newAnvil,
@@ -56,6 +57,7 @@ import {
   createServer,
   credit,
   speciesAvailable,
+  speciesRarities,
   wasteOf,
 } from './world';
 
@@ -95,7 +97,9 @@ function runDungeon(p: Player, server: Server, hour: number): void {
   const d = p.rules.fights.dungeon;
   while (p.passes > 0) {
     p.passes -= 1;
-    fightXp(p, d.xp, 'xpDungeon');
+    const team = fightTeam(p);
+    tickDungeon(team, uniform(p.rng) < p.rules.honours.undercroftShare);
+    fightXp(p, d.xp, 'xpDungeon', team);
     credit(p, R.acorns, d.acorns, 'dungeon');
     credit(p, R.scrap, d.scrap, 'dungeon');
     credit(p, R.essence, d.essence, 'dungeon');
@@ -125,7 +129,8 @@ export function join(p: Player, server: Server, hour: number): void {
   const total = rules.scouts.species.start;
   while (p.creatures.length < rules.acorns.starterCreatures) {
     const species = Math.floor(uniform(p.rng) * total);
-    if ((p.speciesCount[species] ?? 0) === 0) addCreature(p, species);
+    if ((p.speciesCount[species] ?? 0) === 0 && speciesRarities(rules)[species] === 0)
+      addCreature(p, species);
   }
   newSeat(p);
   newAnvil(p);
@@ -175,9 +180,10 @@ export function visit(p: Player, server: Server, hour: number): void {
   p.wk.choicesTotal +=
     sum(options) + (p.wk.arrivals - arrivalsBefore) + (p.policy === 'optimiser' ? 1 : 0);
   const giftsBefore = p.wk.gifts;
-  // Growth first (evolutions, ribbons), then the gifts from what is left, then seats and kit.
+  // Growth first (evolutions), then the gifts from what is left, then seats and kit.
+  fillEmptyPosts(p);
+  rotateMasters(p);
   buyEvolutions(p);
-  buyRibbons(p);
   giveGifts(p, server, hour);
   buySeatsAndKit(p, server);
   retilt(p);
@@ -223,6 +229,7 @@ function dayStart(p: Player, day: number): void {
   if (slot) slot.fill(0);
   p.visitDays[day % 7] = 0;
   p.visitedToday = false;
+  graduate(p);
   p.passes = Math.min(p.rules.fights.dungeon.maxPasses, p.passes + 1);
 }
 
@@ -268,8 +275,16 @@ function endWeek(p: Player, server: Server): void {
   wk.scoutSeats = p.seats.length;
   wk.anvils = p.anvils.length;
   wk.kit = Object.values(p.kitOwned).filter(Boolean).length;
-  wk.ribbons = sum(p.creatures.map((c) => c.ribbons));
-  wk.waitingRibbon = p.creatures.filter((c) => waitsForRibbon(p.rules, c)).length;
+  wk.honours = honourCounts(p);
+  const rarity = speciesRarities(p.rules);
+  p.speciesCount.forEach((count, species) => {
+    const r = rarity[species] ?? 0;
+    if (species < p.available) wk.availableByRarity[r] = (wk.availableByRarity[r] ?? 0) + 1;
+    if (count > 0) {
+      wk.kindsByRarity[r] = (wk.kindsByRarity[r] ?? 0) + 1;
+      if (species < p.rules.scouts.species.start && r === 0) wk.startCommons += 1;
+    }
+  });
   wk.waitingEvolve = p.creatures.filter(
     (c) => c.canEvolve && !c.evolved && c.level >= p.rules.xp.evolveLevel,
   ).length;
@@ -297,7 +312,9 @@ function resolveRaid(server: Server, players: readonly Player[], hour: number, r
   for (const p of players) {
     if (hour < p.joinHour || !p.raidThisWeek) continue;
     p.raidThisWeek = false;
-    fightXp(p, raid.xpPerWeek, 'xpRaid');
+    const team = fightTeam(p);
+    fightXp(p, raid.xpPerWeek, 'xpRaid', team);
+    if (kill) tickRaid(team);
     credit(p, R.scrap, raid.scrap, 'raid');
     credit(p, R.essence, kill ? raid.essenceKill : raid.essencePhases, 'raid');
     if (kill) {
@@ -316,6 +333,21 @@ function resolveRaid(server: Server, players: readonly Player[], hour: number, r
   }
 }
 
+/** Server coverage (Q38: players pool their creatures in the raid): the share of each rarity's available species some player owns. */
+function serverCoverage(players: readonly Player[], hour: number, rules: Rules): number[] {
+  const rarity = speciesRarities(rules);
+  const available = speciesAvailable(rules, hour);
+  const have = [0, 0, 0];
+  const total = [0, 0, 0];
+  for (let s = 0; s < available; s++) {
+    const r = rarity[s] ?? 0;
+    total[r] = (total[r] ?? 0) + 1;
+    if (players.some((p) => hour >= p.joinHour && (p.speciesCount[s] ?? 0) > 0))
+      have[r] = (have[r] ?? 0) + 1;
+  }
+  return have.map((h, r) => ((total[r] ?? 0) > 0 ? h / (total[r] as number) : 0));
+}
+
 /** Runs one server for the horizon with one seed: hour by hour. */
 export function runServer(config: ServerConfig, seed: number, base: Rules = RULES): ServerRun {
   const rules: Rules = {
@@ -327,6 +359,7 @@ export function runServer(config: ServerConfig, seed: number, base: Rules = RULE
         creatures: config.creatureRate ?? base.scouts.perHour.creatures,
       },
     },
+    fire: { ...base.fire, floorPerWeek: config.fireFloor ?? base.fire.floorPerWeek },
     bonfire: {
       ...base.bonfire,
       catchUp: {
@@ -335,12 +368,14 @@ export function runServer(config: ServerConfig, seed: number, base: Rules = RULE
       },
     },
   };
+  // Variants of a server share its random draws (common random numbers), so a difference between them is the change, not noise.
+  const key = config.seedKey ?? config.id;
   const hours = config.weeks * HOURS_PER_WEEK;
   const players = config.players.map((entry, i) =>
-    createPlayer(rules, config.id, seed, i, playerProfile(entry, config.giveShare), config.weeks),
+    createPlayer(rules, key, seed, i, playerProfile(entry, config.giveShare), config.weeks),
   );
   const server = createServer(
-    config.id,
+    key,
     seed,
     {
       bossKills: config.bossKills,
@@ -388,6 +423,7 @@ export function runServer(config: ServerConfig, seed: number, base: Rules = RULE
         keystones: server.keystonesFound,
         collections: server.collectionsDone,
         visits: visitsThisWeek,
+        coverage: serverCoverage(players, h, rules),
       });
       visitsThisWeek = 0;
       for (const p of players) if (h >= p.joinHour) endWeek(p, server);

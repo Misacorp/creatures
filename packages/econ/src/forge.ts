@@ -1,5 +1,4 @@
 import { masteryBonus } from './curves';
-import { waitsForRibbon } from './growth';
 import type { Rules } from './rules';
 import { ELEMENTS } from './rules';
 import type { Anvil, Piece, Player, Server } from './types';
@@ -80,7 +79,7 @@ export function exchangeFor(p: Player, element: number, want: number, keep: numb
 }
 
 /**
- * A visit's exchanges (Q34 B). An optimiser exchanges at every visit for what its orders and the ribbons waiting need; a
+ * A visit's exchanges (Q34 B). An optimiser exchanges at every visit for what its orders need; a
  * set-and-forget player only when an anvil is waiting on a shard at that visit (the one-tap fix, enough for one piece on each anvil).
  */
 export function exchangeAtVisit(p: Player): void {
@@ -93,11 +92,6 @@ export function exchangeAtVisit(p: Player): void {
     return;
   }
   const want = new Array<number>(ELEMENTS.length).fill(0);
-  for (const c of p.creatures) {
-    if (!waitsForRibbon(rules, c)) continue;
-    const ribbon = rules.xp.ribbons[c.ribbons];
-    if (ribbon) want[c.element] = (want[c.element] ?? 0) + ribbon.shards;
-  }
   for (let e = 0; e < ELEMENTS.length; e++) {
     const orders = Math.min(
       (p.weakByElement[e] ?? 0) - (p.pendingByElement[e] ?? 0),
@@ -155,6 +149,8 @@ export function stepAnvils(p: Player, share: number, count: number, server: Serv
   for (let i = 0; i < count; i++) {
     const anvil = p.anvils[i]!;
     anvil.mastery += share;
+    const smith = p.creatures[p.anvilOcc[i] ?? -1];
+    if (smith) smith.smithHours += share;
     if (anvil.working && anvil.progress >= anvil.need) {
       if (p.floor.length >= cap) {
         wk[3] = (wk[3] ?? 0) + share;

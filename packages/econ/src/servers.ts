@@ -8,6 +8,8 @@ export type Policy = PlayerProfile['policy'];
 
 export interface ServerConfig {
   readonly id: string;
+  /** The name the random draws are keyed by (variants of a server share it); the id when missing. */
+  readonly seedKey?: string;
   readonly label: string;
   /** One entry per player: a profile id, and optionally a policy replacing the profile's default. */
   readonly players: readonly { readonly profile: string; readonly policy?: Policy }[];
@@ -23,6 +25,8 @@ export interface ServerConfig {
   readonly shardExchange: boolean;
   /** Replaces the scouts' creature chance an hour (a sensitivity run for T-1). */
   readonly creatureRate?: number;
+  /** Replaces the fire's time floor, in levels a week (a "no floor" variant sets 0). */
+  readonly fireFloor?: number;
   /** Whether catch-up also multiplies what the dungeon and the raid pay (a sensitivity run for T-2d). */
   readonly catchUpFights?: boolean;
 }
@@ -69,7 +73,7 @@ const EIGHT = {
   returner: 1,
 };
 
-const MIXED_8 = server('mixed8', 'Mixed server of 8', EIGHT);
+const MIXED_8 = server('mixed8', 'Mixed server of 8', EIGHT, { seedKey: 'mixed8' });
 
 export const SERVERS: readonly ServerConfig[] = [
   server('mixed5', 'Mixed server of 5', { daily: 2, active: 1, 'every-other-day': 1, weekly: 1 }),
@@ -110,6 +114,21 @@ export const VARIANTS: readonly ServerConfig[] = [
     id: 'mixed8-noexchange',
     label: 'Mixed 8, no shard exchange',
     shardExchange: false,
+  },
+  { ...MIXED_8, id: 'mixed8-nofloor', label: 'Mixed 8, no time floor on the fire', fireFloor: 0 },
+  {
+    ...MIXED_8,
+    id: 'mixed8-all-nofloor',
+    label: 'Mixed 8, every boss killed, no time floor',
+    bossKills: 'all',
+    fireFloor: 0,
+  },
+  {
+    ...MIXED_8,
+    id: 'mixed8-none-nofloor',
+    label: 'Mixed 8, no boss killed, no time floor',
+    bossKills: 'none',
+    fireFloor: 0,
   },
   {
     ...MIXED_8,

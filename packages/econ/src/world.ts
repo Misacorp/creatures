@@ -1,5 +1,5 @@
 import { createSeededRng } from '@creatures/game';
-import { LEVEL_XP, MAX_LEVEL, ribbonGate } from './curves';
+import { LEVEL_XP, MAX_LEVEL } from './curves';
 import { ELEMENTS, type Rules } from './rules';
 import type { PlayerProfile } from './schema';
 import {
@@ -26,6 +26,21 @@ export function speciesAvailable(rules: Rules, hour: number): number {
   const week = Math.floor(hour / HOURS_PER_WEEK) + 1;
   if (week < dropFromWeek) return start;
   return start + dropCount * (Math.floor((week - dropFromWeek) / dropEveryWeeks) + 1);
+}
+
+/** The rarity of each species (0 common, 1 rare, 2 epic): the first 34 as listed, then each content drop's pattern. */
+const RARITY_CACHE = new WeakMap<Rules, number[]>();
+export function speciesRarities(rules: Rules): number[] {
+  let cached = RARITY_CACHE.get(rules);
+  if (!cached) {
+    const { first, drop } = rules.scouts.rarity;
+    const start = rules.scouts.species.start;
+    cached = Array.from({ length: maxSpecies(rules) }, (_, i) =>
+      i < start ? (first[i] ?? 0) : (drop[(i - start) % drop.length] ?? 0),
+    );
+    RARITY_CACHE.set(rules, cached);
+  }
+  return cached;
 }
 
 /** The element index of each species: the first 34 grouped by element, later species repeat that mix. */
@@ -66,8 +81,10 @@ export const blankWeek = (week: number): WeekRecord => ({
   scoutSeats: 0,
   anvils: 0,
   kit: 0,
-  ribbons: 0,
-  waitingRibbon: 0,
+  honours: [0, 0, 0],
+  kindsByRarity: [0, 0, 0],
+  availableByRarity: [0, 0, 0],
+  startCommons: 0,
   waitingEvolve: 0,
   forge: new Array<number>(FORGE_BUCKETS.length).fill(0),
   piecesMade: 0,
@@ -145,9 +162,9 @@ export function wasteOf(p: Player, r: number, amount: number): void {
 // ---------- creating things ----------
 
 export function refreshCeiling(rules: Rules, c: Creature): void {
-  let ceiling = ribbonGate(rules, c.ribbons);
+  let ceiling: number = MAX_LEVEL;
   if (c.canEvolve && !c.evolved) ceiling = Math.min(ceiling, rules.xp.evolveLevel);
-  c.ceiling = Math.min(ceiling, MAX_LEVEL);
+  c.ceiling = ceiling;
   c.capXp = c.ceiling >= MAX_LEVEL ? (LEVEL_XP[MAX_LEVEL] ?? 0) : (LEVEL_XP[c.ceiling + 1] ?? 0);
 }
 
@@ -158,7 +175,13 @@ export function addCreature(p: Player, species: number): Creature {
     element: speciesElements(rules)[species] ?? 0,
     xp: 0,
     level: 1,
-    ribbons: 0,
+    honour: 0,
+    dungeonClears: 0,
+    undercroftClears: 0,
+    raidClears: 0,
+    scoutHours: 0,
+    smithHours: 0,
+    brought: false,
     canEvolve: uniform(p.rng) < rules.xp.evolveShare,
     evolved: false,
     ceiling: 1,
@@ -210,6 +233,8 @@ export function createPlayer(
     available: rules.scouts.species.start,
     seats: [],
     anvils: [],
+    scoutOcc: [],
+    anvilOcc: [],
     stock: new Array<number>(N_RES).fill(0),
     shards: new Array<number>(ELEMENTS.length).fill(0),
     kitOwned: { lure: false, lantern: false, satchel: false, tongs: false, loupe: false },

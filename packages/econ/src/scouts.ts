@@ -6,7 +6,14 @@ import type { Destination, KitName, Rules } from './rules';
 import { ELEMENTS } from './rules';
 import type { Player, Server } from './types';
 import { R } from './types';
-import { addCreature, credit, creditShard, speciesElements, wasteOf } from './world';
+import {
+  addCreature,
+  credit,
+  creditShard,
+  speciesElements,
+  speciesRarities,
+  wasteOf,
+} from './world';
 import { poisson, uniform, weighted } from './util';
 
 /** How many seats and anvils have a creature to stand on: three starters cover the first scout and anvil. */
@@ -45,6 +52,8 @@ export function accrueSeats(p: Player, share: number, scouts: number): void {
     seat.store += add;
     seat.wasted += share - add;
     seat.mastery += share;
+    const worker = p.creatures[p.scoutOcc[i] ?? -1];
+    if (worker) worker.scoutHours += share;
   }
 }
 
@@ -57,9 +66,12 @@ const thirdBestLevel = (p: Player): number => {
 function pickSpecies(p: Player, dest: Destination, lure: boolean): number {
   const rules = p.rules;
   const elements = speciesElements(rules);
+  const rarity = speciesRarities(rules);
   const weights = elements.slice(0, p.available).map((element, species) => {
     let w =
       dest.element !== null && ELEMENTS[element] === dest.element ? rules.scouts.placeAffinity : 1;
+    // Q38: rarer species come less often.
+    w *= rules.scouts.rarity.weights[rarity[species] ?? 0] ?? 1;
     if (lure && (p.speciesCount[species] ?? 0) > 0) w *= rules.scouts.lureOwnedWeight;
     return w;
   });
@@ -75,6 +87,10 @@ export function collectSeat(p: Player, index: number, server: Server, hour: numb
   seat.store = 0;
   seat.wasted = 0;
   if (hours <= 0 && lost <= 0) return;
+  if (hours > 0) {
+    const worker = p.creatures[p.scoutOcc[index] ?? -1];
+    if (worker) worker.brought = true;
+  }
   p.wk.storeHours += hours;
   p.wk.storeLost += lost;
   const rate = rules.scouts.perHour;

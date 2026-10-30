@@ -1,5 +1,4 @@
 import { LEVEL_XP, MAX_LEVEL, catchUpMultiplier } from './curves';
-import type { Rules } from './rules';
 import type { Creature, Player } from './types';
 import { median } from './util';
 
@@ -13,7 +12,7 @@ export function addXp(p: Player, c: Creature, amount: number): void {
   relevel(c);
 }
 
-/** Raises a creature's level to what its XP and ceiling allow (also after a ribbon or an evolution opens the way). */
+/** Raises a creature's level to what its XP and ceiling allow (also after an evolution opens the way). */
 export function relevel(c: Creature): void {
   while (c.level < c.ceiling && c.xp >= (LEVEL_XP[c.level + 1] ?? Infinity)) c.level += 1;
 }
@@ -63,9 +62,13 @@ export function setCatchUp(p: Player, middle: number): void {
   }
 }
 
-/** Fight XP to the `team` best creatures (the dungeon and the raid; away steps and catch-up never apply, V-POST-10). */
-export function fightXp(p: Player, amount: number, source: 'xpDungeon' | 'xpRaid'): void {
-  const team = [...p.creatures].sort((a, b) => b.xp - a.xp).slice(0, p.rules.fights.team);
+/** Fight XP to a team (the dungeon and the raid; away steps and catch-up never apply, V-POST-10). */
+export function fightXp(
+  p: Player,
+  amount: number,
+  source: 'xpDungeon' | 'xpRaid',
+  team: readonly Creature[],
+): void {
   for (const c of team) {
     const boosted = p.rules.bonfire.catchUp.appliesToFights ? effectiveCatchUp(p, c) : 1;
     addXp(p, c, amount * boosted);
@@ -79,9 +82,3 @@ export const serverMiddle = (players: readonly Player[], activeIds: readonly num
 
 export const atTopLevel = (p: Player): number =>
   p.creatures.filter((c) => c.level >= MAX_LEVEL).length;
-
-/** Whether a creature waits at its gate for a ribbon (its way is shut by the next ribbon, not by an evolution). */
-export const waitsForRibbon = (rules: Rules, c: Creature): boolean =>
-  c.level >= c.ceiling &&
-  c.ceiling < MAX_LEVEL &&
-  c.ceiling === (rules.xp.ribbons[c.ribbons]?.level ?? 0);
