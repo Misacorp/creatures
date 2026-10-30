@@ -4,6 +4,14 @@ Gear items, lines and sets, crafting, dismantling, conversions, the bag and the 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-30: [Misa] Every named item has its own sprite; element versions share one, tinted
+
+ID: `2026-10-30-every-named-item-has-its-own` · Status: current
+
+**Decision.** Misa (2026-10-30): "Each item with a unique name should have a unique sprite. If items have identical stats but they're just a different element version, then let's just use the color tint that exists today." An item base is drawn with its **look** (`itemLookId` in `apps/activity/src/gear-sprites.ts`): two bases share a look when they are the same slot, have the same stats, neither is a set piece, and each is neutral or an element (so a role or explorer charm, or a set piece, always has its own). The first base in content order names the look; the others wear its sprite in their element's tint, as before. With today's content that is 60 looks for 77 items (for example Trail Cap and Kelp Cap share one; Wayfarer's Hood and Tidecaller's Crown share one because their stats are identical). The sprites live in `src/sprites/data/item-{hat,scarf,charm}-sprites.ts`, drawn in the neutral greys `t`/`u`/`h` that the tint swaps; set pieces keep the gold trim (`g`, `w`) and their set tag's tint. The old six shared sprites stay as the fallback for a base drawn before its own sprite. `pnpm art items` draws every item as the game does, labelled by name, plus a card per look with each tinted version.
+
+**Reasoning.** The rule is computed, not listed, so a new element version of an item shares its sibling's sprite with no art work, and a new item with its own stats shows up as a missing sprite in the tests. Keying shared looks on identical stats is Misa's wording; it pairs a few names that are not obviously one item (the hood and the crown), and those sprites are drawn to read as both.
+
 ## 2026-10-27: Marked items, dismantled as a pile
 
 ID: `2026-10-27-marked-items-dismantled-as-a-pile` · Status: current, amended by `2026-10-27-bulk-selection-replaces-marking` · Amends: `2026-10-16-gear-b-built-reach-dismantle-jobs`, `2026-10-16-misa-agrees-with-the-podcast-s`, `2026-10-21-the-workshop-s-supply-jobs-are`

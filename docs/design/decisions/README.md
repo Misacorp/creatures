@@ -309,6 +309,7 @@ Superseded: 1 entry (see the topic file).
 
 [gear.md](gear.md): Gear items, lines and sets, crafting, dismantling, conversions, the bag and the item picker.
 
+- 2026-10-30 \[Misa\] Every named item has its own sprite; element versions share one, tinted
 - 2026-10-27 Marked items, dismantled as a pile (amended)
 - 2026-10-21 the Workshop's supply jobs are one wizard in a drawer; level limits may fold in job pickers (amended)
 - 2026-10-21 A found item opens its item card (tap, or hover with a mouse)

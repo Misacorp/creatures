@@ -27,6 +27,8 @@ Art Misa requests is kept until the content that uses it exists. **The catalogue
 - **`<set>.png`, the set sheet.** Every sprite of the set at 6× with its role, one row per alternative palette, then the nearest shipped sprite by silhouette under each one (with the number of pixels they differ by), then a row at 3× where the concepts sit among shipped creatures, as a player would see them in a list.
 - **The lint** (`src/sprites/sprite-lint.ts`, pure and unit-tested; every shipped creature and boss passes it): grid and size for the kind, palette keys all used, the shared ink, at most 11 colours, nothing of the body cut by the canvas edge, the chibi face in place, a sensible footprint, a silhouette at least 12 pixels from every shipped creature, the element's colour family, and contrast with the dark panels (a warning). Alternative palettes are linted too but never fail the run.
 
+- **`pnpm art items [--slot hat|scarf|charm]`** draws every shipped gear item as the game does (its look, in its tint), labelled by name, and a card per look with each item that wears it in its own tint. Every item with its own name has its own look; element versions with the same stats share one (`itemLookId`, decision of 2026-10-30 in `decisions/gear.md`). Item sprites are in `src/sprites/data/item-*-sprites.ts`, drawn in the neutral greys the tint swaps.
+
 `pnpm art <set> --only id,id` draws a few; `--out <dir>` writes somewhere else (your scratchpad).
 
 ## What was hard, and the rule it became
