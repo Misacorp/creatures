@@ -207,7 +207,7 @@ Not in the lab and not needed: the trip, workshop, dungeon and Festival lines, L
 
 ## 6. Open questions
 
-For the lead:
+For the lead (2026-10-30: the lead takes each recommendation below as the working call; panel 6 reviews them):
 
 1. **Two names, one effect (P-06).** Creature Attack is the talent Sharp Claws, Creature HP is Hardy. Misa's 2026-10-28 answer says a talent takes the line's name; the lab, wiki and reviews use the talent names. Recommend: the talent names win for these two. The proposal's gear section still says First Strike and Unflappable; the lab's talents are First Pounce and Unbothered, so that text is stale.
 2. **Same name, different effect.** Stubborn (line: 1 HP; talent: two fifths of max HP), Clinging (line: debuffs last longer; talent: fades every third round), Flank guard (line: a fixed side; talent: the longer side, cover +50%), Momentum (the talent also fires when a Guard takes a hit aimed at it). Recommend: the line takes the talent's effect and the talent's number sets the line's top pip.
