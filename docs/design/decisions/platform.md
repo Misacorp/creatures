@@ -4,6 +4,14 @@ Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, sec
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-30: Prettier's cache, and a cleanup script for agent worktrees
+
+ID: `2026-10-30-prettier-s-cache-and-a-cleanup` · Status: current
+
+**Decision (lead, asked by Misa).** `pnpm format` and `pnpm format:check` use Prettier's cache (`--cache --cache-strategy content`, kept in `node_modules/.cache/prettier`), and `pnpm worktrees:clean [--yes]` (`scripts/worktrees.mjs`) removes agent worktrees under `.claude/worktrees/` whose work is done: clean, not locked (a running agent's worktree is locked) and every commit already in the current branch, compared by content so cherry-picked work counts. CLAUDE.md tells the lead to run it after merging an agent's work.
+
+**Reasoning.** Misa asked whether the agent worktrees pile up or get walked. Measured: they are not walked (git, ESLint and Prettier all ignore `.claude/worktrees`; a 2,000-file fake worktree added 0.3 s), but they did pile up: worktrees with commits are not cleaned up on their own, and one session left 16 (about 900 MB). The slow format check that looked like a walk was Prettier itself: about 17 ms a file on this machine, about 50 s a run; with its cache a repeat run takes about 6 s. CI starts without the cache and behaves as before.
+
 ## 2026-10-29: CI skips the build and tests for documentation-only PRs
 
 ID: `2026-10-29-ci-skips-the-build-and-tests` · Status: current

@@ -42,6 +42,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [platform.md](platform.md): Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, security, database reads, data cleanup, analytics, dev tools, the workbench, player feedback, sockets.
 
+- 2026-10-30 Prettier's cache, and a cleanup script for agent worktrees
 - 2026-10-29 CI skips the build and tests for documentation-only PRs
 - 2026-10-27 A generated wiki page of the game's configuration
 - 2026-10-26 A query plan audit and a day-in-the-life read budget
