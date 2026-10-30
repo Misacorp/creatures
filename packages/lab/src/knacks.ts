@@ -102,6 +102,12 @@ export interface KnackFx {
   readonly hpBp?: number;
   /** A crit deals this much more on top of the base crit. */
   readonly critDamageBp?: number;
+  /** After it dodges: +1 Crit Charge. A charge is spent on its next hit that lands, a guaranteed crit that deals this much more (Perfect Timing). */
+  readonly dodgeCritBp?: number;
+  /** Each time the hits it intercepts add up to `guardChargeShareBp` of its Max HP: +1 Crit Charge, spent like Perfect Timing's; the guaranteed crit deals this much more (Hold the Line). */
+  readonly guardCritBp?: number;
+  /** Crits on it, and on the creatures beside it, deal this much less extra damage (an aura: the largest applies). */
+  readonly critWardBp?: number;
   /** Its hits deal this much more while it is below half its max HP. */
   readonly lowHpAtkBp?: number;
   /** It takes this much less from area hits and charged landings (its own; adds to an aura). */
@@ -197,6 +203,7 @@ export const FAMILIES: Readonly<Record<string, string>> = {
   'Row Ward': 'Cuts area damage for its row or the creatures beside it (the largest applies).',
   Ward: 'Keeps the creatures beside it from being silenced.',
   Pierce: 'Ignores some boss armour.',
+  Luck: 'Trades hit size for crits, or takes the sting out of a boss crit.',
   Partner: 'A bonus on its hits while a given role is, or is not, beside it.',
   'Support shape': "Changes where a Support's boost and heal land, or replaces them.",
   Sustain: 'Heals, on a reaction or at round start.',
@@ -585,6 +592,25 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
         'Hearthshell hosts friends around its fire: a Guard that heals the creatures it protects.',
       fx: { guardMendBp: 600 },
     }),
+    // Luck (Misa, 2026-10-30: luck is a build): a crit machine and the answer to a boss that crits.
+    K({
+      id: 'wild-swing',
+      name: 'Wild Swing',
+      family: 'Luck',
+      text: 'Its hit deals 25% less, but it has +20% crit chance and its {Crit}s deal +50% more.',
+      intent:
+        'A crit machine: a softer plain hit that crits often, so it stacks with Crit Chance, Crit Damage and a crit species. The wrong pick against a boss that caps a hit (Stone Skin) or one that Blocks small hits, and where a steady hit matters more than swing.',
+      fx: { plainBp: 7_500, critChanceBp: 2_000, critDamageBp: 5_000 },
+    }),
+    K({
+      id: 'cool-head',
+      name: 'Cool Head',
+      family: 'Luck',
+      text: '{Crit}s on it and on the creatures {Beside} it deal 50% less extra damage.',
+      intent:
+        'The answer to a boss that crits (Lucky Strike): a Guard that keeps a double hit to a hit and a half for itself and its neighbours. Nothing against a boss that never crits.',
+      fx: { critWardBp: 5_000 },
+    }),
   ].map((k) => [k.id, k]),
 );
 
@@ -604,11 +630,11 @@ export const OWN_KNACKS: Readonly<Record<string, readonly string[]>> = {
   splashet: ['steady-mark', 'lead-the-way'],
   tidewing: ['double-mark', 'circle-round'],
   geyserpup: ['leave-a-trail', 'puddle-maker', 'all-at-once'],
-  stormray: ['detonate', 'leave-a-trail'],
+  stormray: ['detonate', 'leave-a-trail', 'wild-swing'],
   tempestray: ['twin-strike'],
   halcyray: ['clear-skies', 'clear-the-air', 'gather-calm'],
   sproutle: ['wide-reach', 'primed-by-pain'],
-  thornbuck: ['night-watch'],
+  thornbuck: ['night-watch', 'cool-head'],
   sunfawn: ['sunbeam', 'curl-up', 'ready-the-mark'],
   ashmole: ['wide-warmth', 'ready-the-mark'],
   magmole: ['tunnel-through'],
@@ -616,7 +642,7 @@ export const OWN_KNACKS: Readonly<Record<string, readonly string[]>> = {
   zipmouse: ['zoom', 'double-mark'],
   voltaro: ['zigzag'],
   ohmouse: ['catch-the-bolts', 'lightning-ears'],
-  cindle: ['detonate', 'leave-a-trail'],
+  cindle: ['detonate', 'leave-a-trail', 'wild-swing'],
   pyrelynx: ['guards-shadow', 'gnaw-through'],
   wickat: ['lead-the-way', 'steady-mark', 'double-mark'],
   mistnewt: ['wide-reach', 'hide-in-mist'],
@@ -625,7 +651,7 @@ export const OWN_KNACKS: Readonly<Record<string, readonly string[]>> = {
   mossback: ['steady-mark', 'feed-the-marks'],
   ancientshell: ['living-shelter'],
   bloomback: ['all-at-once', 'detonate', 'leave-a-trail'],
-  coralynx: ['detonate', 'leave-a-trail', 'territorial'],
+  coralynx: ['detonate', 'leave-a-trail', 'territorial', 'wild-swing'],
   solmane: ['lead-the-way', 'steady-mark', 'crown-of-embers'],
   gaiadrake: ['detonate', 'leave-a-trail', 'carry-them'],
   aurorix: ['starlight', 'clear-skies', 'gather-calm'],

@@ -5,16 +5,31 @@
  * a win moves it one slot on; after the last boss the track starts again with the next, stronger cards (the slot number is the
  * Boss Rank, and the strength follows the rank up to the cap). Failing a boss keeps the slot (`path.ts` plays that out).
  */
-import { content } from '@creatures/game';
 import { RAID_RANKS, raidBossOf } from './bosses';
 import { absoluteOf, nativeOf, type Numbers } from './tuner';
 import type { BossDef } from './types';
 
 /**
- * The order of the bosses on the track: the shipped game's boss order (`content.bosses`). It is one line to change: Misa may
- * reorder it, or list a boss twice (every id must be one of `RAID_BOSS_IDS`; `test/track.test.ts` checks it).
+ * The order of the bosses on the track. It is one line to change: Misa may reorder it, or list a boss twice (every id must be one
+ * of `RAID_BOSS_IDS`; `test/track.test.ts` checks it). Thornmother is last on purpose (Misa, 2026-10-30, "Thornmother is a
+ * deliberate wall at the end of the first lap"): slots 5, 10 and 15, the first of them a wall (`SLOT_WALL`).
  */
-export const TRACK_ORDER: readonly string[] = content.bosses.map((b) => b.id);
+export const TRACK_ORDER: readonly string[] = [
+  'tidal-colossus',
+  'cinder-wyrm',
+  'storm-sovereign',
+  'old-bogback',
+  'thornmother',
+];
+
+/**
+ * What of its rules a slot's boss has (the young-server ramp, Misa, 2026-10-30): `cards` is how many of its rule cards, the boss's
+ * first ones in order (absent: all), and `buildUp` whether it has its Build-up (the Store that grows it as the weekend goes on).
+ */
+export interface SlotRules {
+  readonly cards?: number;
+  readonly buildUp: boolean;
+}
 
 export interface TrackSlot {
   /** The slot, and the Boss Rank it stands for (slot 1 is Boss Rank 1). */
@@ -22,6 +37,10 @@ export interface TrackSlot {
   readonly bossId: string;
   /** The strength of every card and gate (bp of the full card). */
   readonly strengthBp: number;
+  /** The rules the boss has at this slot (`SLOT_CARDS`). */
+  readonly rules: SlotRules;
+  /** A deliberate wall (`SLOT_WALL`): the unprepared classic party is asked to fall far short (`slotTargetsFor`). */
+  readonly wall: boolean;
 }
 
 /** The numbers a slot may set by hand (absolute, before cards), replacing the ones interpolated from the ranks. */
@@ -36,22 +55,50 @@ export type SlotTable = Readonly<Record<number, SlotNumbers>>;
  * says arrives at each slot; slots 1 to 15 (three laps), later laps follow the high rank's numbers.
  */
 export const SLOT_NUMBERS: SlotTable = {
-  1: { hp: 12_000, atk: 120, armour: 22 }, // tidal-colossus
-  2: { hp: 8_300, atk: 129, armour: 64 }, // cinder-wyrm
-  3: { hp: 7_100, atk: 126, armour: 162 }, // thornmother
-  4: { hp: 22_500, atk: 53, armour: 6 }, // storm-sovereign
-  5: { hp: 29_800, atk: 121, armour: 24 }, // old-bogback
-  6: { hp: 17_700, atk: 158, armour: 38 }, // tidal-colossus
-  7: { hp: 22_400, atk: 164, armour: 40 }, // cinder-wyrm
-  8: { hp: 7_600, atk: 150, armour: 220 }, // thornmother
-  9: { hp: 13_600, atk: 96, armour: 5 }, // storm-sovereign
-  10: { hp: 31_700, atk: 138, armour: 31 }, // old-bogback
-  11: { hp: 23_300, atk: 134, armour: 36 }, // tidal-colossus
-  12: { hp: 21_100, atk: 171, armour: 52 }, // cinder-wyrm
-  13: { hp: 13_200, atk: 130, armour: 194 }, // thornmother
-  14: { hp: 11_000, atk: 111, armour: 9 }, // storm-sovereign
-  15: { hp: 27_900, atk: 150, armour: 27 }, // old-bogback
+  1: { hp: 14_600, atk: 71, armour: 40 }, // tidal-colossus
+  2: { hp: 4_800, atk: 150, armour: 70 }, // cinder-wyrm
+  3: { hp: 14_300, atk: 53, armour: 6 }, // storm-sovereign
+  4: { hp: 25_200, atk: 100, armour: 19 }, // old-bogback
+  5: { hp: 16_800, atk: 77, armour: 118 }, // thornmother
+  6: { hp: 29_600, atk: 83, armour: 27 }, // tidal-colossus
+  7: { hp: 11_600, atk: 185, armour: 39 }, // cinder-wyrm
+  8: { hp: 7_800, atk: 92, armour: 11 }, // storm-sovereign
+  9: { hp: 28_200, atk: 112, armour: 43 }, // old-bogback
+  10: { hp: 8_500, atk: 97, armour: 155 }, // thornmother
+  11: { hp: 21_300, atk: 114, armour: 32 }, // tidal-colossus
+  12: { hp: 11_500, atk: 199, armour: 43 }, // cinder-wyrm
+  13: { hp: 13_500, atk: 57, armour: 9 }, // storm-sovereign
+  14: { hp: 31_200, atk: 123, armour: 31 }, // old-bogback
+  15: { hp: 8_500, atk: 92, armour: 162 }, // thornmother
 };
+
+/**
+ * The young-server ramp, a column of the track's data (Misa, 2026-10-30; `docs/design/decisions/raids.md`): a new server has only
+ * starters and is still finding its footing, so the first week's boss is a **tutorial** and the second asks little.
+ * - Slot 1: no rule cards and no Build-up. The boss keeps its plain attack and its moves (the announced attacks, which are the
+ *   boss and not rules; they are not scaled by card strength, only by the slot's HP and Attack, which the tuner sets); it has no
+ *   Store to grow it and nothing to answer, so no tool is asked of the team there (`slotTargetsFor`).
+ * - Slot 2: one rule card, the boss's first, at the slot's low strength (about 30%), and no Build-up (it arrives with the full set).
+ * - Slot 3 onward: the full set (every card and the Build-up) at the slot's strength. A slot without an entry has it.
+ */
+export const SLOT_CARDS: Readonly<Record<number, SlotRules>> = {
+  1: { cards: 0, buildUp: false },
+  2: { cards: 1, buildUp: false },
+};
+
+/**
+ * The slots that are a deliberate wall (Misa, 2026-10-30; `docs/design/decisions/raids.md`, "Thornmother is a deliberate wall at the
+ * end of the first lap"): slot 5 only, Thornmother's first appearance. A prepared team still reaches 125% potential there, but a team
+ * without her answer is asked for a classic potential of 30% to 60% instead of 70% to 90% (`WALL_CLASSIC_POTENTIAL_*`). Her later
+ * laps (slots 10 and 15) are normal slots, since a server that passed the wall has learned the answer.
+ */
+export const SLOT_WALL: Readonly<Record<number, true>> = { 5: true };
+
+/** Whether a slot is a wall (`SLOT_WALL`). */
+export const isWallSlot = (slot: number): boolean => SLOT_WALL[slot] === true;
+
+/** The rules of a slot's boss: its `SLOT_CARDS` entry, else the full set. */
+export const slotRules = (slot: number): SlotRules => SLOT_CARDS[slot] ?? { buildUp: true };
 
 /** The strength of a slot's cards, by slot, when set by hand (bp). Empty: the rank ladder (`rankStrengthBp`). */
 export const SLOT_STRENGTH: Readonly<Record<number, number>> = {};
@@ -130,6 +177,8 @@ export function trackSlot(slot: number, order: readonly string[] = TRACK_ORDER):
     slot,
     bossId: order[(slot - 1) % order.length] as string,
     strengthBp: SLOT_STRENGTH[slot] ?? rankStrengthBp(slot),
+    rules: slotRules(slot),
+    wall: isWallSlot(slot),
   };
 }
 
@@ -155,7 +204,7 @@ export function slotNumbers(
 
 /**
  * The boss of a slot, built with `raidBossOf`: its numbers (`slotNumbers`: the table, else interpolated from the ranks), its cards at
- * the slot's strength. `level` is the roster level the boss names for its picks (the lab's creatures at that rank by default); the
+ * the slot's strength, and only the rules the ramp column gives it (`SLOT_CARDS`). `level` is the roster level the boss names for its picks (the lab's creatures at that rank by default); the
  * path gives every creature its own level and does not read it. `table` replaces `SLOT_NUMBERS` (the tuner tries numbers this way).
  */
 export function slotBoss(
@@ -171,5 +220,7 @@ export function slotBoss(
     ...slotNumbers(slot, roster.table, roster.order),
     strengthBp: s.strengthBp,
     level: roster.level ?? rankLevel(slot),
+    ...(s.rules.cards === undefined ? {} : { cards: s.rules.cards }),
+    buildUp: s.rules.buildUp,
   });
 }

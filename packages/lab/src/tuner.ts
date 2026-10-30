@@ -16,22 +16,26 @@
  * effect, not noise. The first passes use few weekends; the finalists and today's numbers are measured again on the report's own
  * number of weekends. When several candidates meet every target, the one with the most room inside its bounds wins (`comfortOf`).
  */
+import { createSeededRng } from '@creatures/game';
 import { BOSS_ANSWERS, answerLine, withoutTool } from './bossAnswers';
 import {
   RAID_RANKS,
   RAID_SPECS,
   raidBossOf,
   raidMode,
+  weekendPotential,
   weekendStats,
   type RaidBossSpec,
 } from './bosses';
 import { runJobs, type Executor, type JobSpec } from './jobs';
 import { mixedSpread } from './raidMeasure';
+import { randomTalents } from './answerMeasure';
 import { randomTalentMeasure, ruleMeasures } from './raidRules';
 import { classicFor, type Pick } from './search';
 import {
   BOSS_ARMOUR_MIN,
   LADDER,
+  INFO_MEASURES,
   REPORTED_MEASURES,
   RAID_MEASURES,
   TARGET_RANKS,
@@ -52,6 +56,7 @@ import {
   type TargetRank,
 } from './targets';
 import { illegalTalents } from './talents';
+import type { BossDef } from './types';
 
 export { randomTalentMeasure };
 
@@ -438,6 +443,11 @@ export interface Fidelity {
   readonly rules?: number;
   /** Whether the heavy rules (the high rank's many fights) are taken too, or only the light ones (the rank rules, the casual server, the cross-rank rules). Default: both. */
   readonly heavyRules?: boolean;
+  /**
+   * Whether the information measures are taken too (`INFO_MEASURES`: the prepared line's potential with random talents, the tool's
+   * worth in potential points): more fights, so only the full measurement of a proposal. Default: no (NaN).
+   */
+  readonly info?: boolean;
 }
 
 /**
@@ -473,6 +483,7 @@ export const FIDELITY = (
           mixedDraws: 8,
           mixedWeekends: 2,
           rules: 1,
+          info: true,
         },
         plan: { gridPoints: 4, rounds: 1, keep: 3, checks: 12, finalists: 4 },
       }
@@ -501,9 +512,30 @@ export const FIDELITY = (
           mixedDraws: 40,
           mixedWeekends: 2,
           rules: 1,
+          info: true,
         },
         plan: { gridPoints: 6, rounds: 3, keep: 4, checks: 40, finalists: 8 },
       };
+
+/**
+ * The damage potential of a line with random legal talents: the mean over the same draws and seeds as `randomTalentMeasure`
+ * (`weekends` split over `draws`), so it fights the same weekends until the boss would have died.
+ */
+export function randomTalentPotential(
+  boss: BossDef,
+  line: readonly Pick[],
+  weekends: number,
+  draws: number,
+  salt: string,
+): number {
+  const per = Math.max(1, Math.floor(weekends / draws));
+  let sum = 0;
+  for (let d = 0; d < draws; d++) {
+    const rng = createSeededRng(`talents:${salt}:${d}`);
+    sum += weekendPotential(boss, randomTalents(rng, line), per, `${salt}:r${d}`).mean;
+  }
+  return sum / draws;
+}
 
 /** The prepared line of a boss: its first written answer (and its tool). */
 export function preparedOf(id: string): { line: Pick[]; core: readonly string[] } {
@@ -552,6 +584,28 @@ export function evalCandidate(a: TuneEvalArgs): TuneEvalResult {
   // The tool's worth with them, on the same seeds (`toolCost`, as `test/bossAnswers.test.ts` measures it).
   const writtenWithout = weekendStats(boss, withoutTool(line, core), f.weekends, `${a.salt}:w`);
   const classic = weekendStats(boss, classicFor(raidMode(boss)), f.classicWeekends, `${a.salt}:c`);
+  // Damage potential (written talents; the same seeds as the kill measures above).
+  const writtenPot = weekendPotential(boss, line, f.weekends, `${a.salt}:w`).mean;
+  const classicPot = weekendPotential(
+    boss,
+    classicFor(raidMode(boss)),
+    f.classicWeekends,
+    `${a.salt}:c`,
+  ).mean;
+  const info = f.info
+    ? {
+        'prepared.potentialRandom': randomTalentPotential(
+          boss,
+          line,
+          f.weekends,
+          f.draws,
+          `${a.salt}:p`,
+        ),
+        'tool.potential':
+          writtenPot -
+          weekendPotential(boss, withoutTool(line, core), f.weekends, `${a.salt}:w`).mean,
+      }
+    : {};
   const mixed = mixedSpread(
     boss,
     line,
@@ -597,11 +651,17 @@ export function evalCandidate(a: TuneEvalArgs): TuneEvalResult {
       'classic.kill': classic.tiers.kill,
       'mixed.share': mixed.weekend.damageShare,
       'mixed.kill': mixed.winRate,
+      'prepared.potential': writtenPot,
+      'classic.potential': classicPot,
+      ...info,
     },
     weekends:
       2 * Math.max(1, Math.floor(f.weekends / f.draws)) * f.draws +
       2 * f.weekends +
       f.classicWeekends +
+      f.weekends +
+      f.classicWeekends +
+      (f.info ? f.weekends + f.weekends : 0) +
       f.mixedDraws * f.mixedWeekends +
       (rules?.weekends ?? 0),
   };
@@ -1082,7 +1142,9 @@ export function summaryOf(r: RankResult): string[] {
     lines.push(`| ${describeTarget(t)} | needs --rank all | needs --rank all |`);
   // Information without a target: the measures no target reads, and the weeks to beat (the expected number of weekends to the
   // first kill, 1 / p, for a fixed track where a failed boss returns at full HP).
-  const info = REPORTED_MEASURES.filter((m) => !r.targets.some((t) => t.measure === m));
+  const info = [...REPORTED_MEASURES, ...INFO_MEASURES].filter(
+    (m) => !r.targets.some((t) => t.measure === m),
+  );
   const weeks: [string, string][] = [
     ['prepared line (written talents)', 'prepared.written'],
     ['classic party', 'classic.kill'],

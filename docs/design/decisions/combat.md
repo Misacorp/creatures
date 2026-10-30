@@ -4,9 +4,21 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-30: Luck is a build: crit builds, crit charges, boss crits and evasion **[Misa]**
+
+ID: `2026-10-30-luck-is-a-build-crit-builds` · Status: current
+
+**Decision (Misa).** Luck in combat v2 is something players build, not only noise:
+
+- **Crit builds:** crit chance and crit damage come from talents, Knacks, creatures and gear rolls (new gear lines for crit chance and crit damage), and stack, so a creature built for crits can deal +200% or more on a crit; +50% alone is underwhelming. A crit machine may hit less hard but crits often.
+- **Crit charges:** effects that store a charge from what happened to a creature in a round and spend it on a crit, for example a dodge that gives a charge for a bigger crit next round, or a Guard that gains a guaranteed crit after blocking enough damage. They tie crits to other mechanics.
+- **Boss luck:** a boss can crit, and some bosses dodge more (luck-based rule cards).
+
+**Reasoning.** Misa likes luck and swings; the lab barely used it (5% crit for +50%, a few talents, one gear line, no boss crits). Luck that players can build for is a choice, and more swing inside a weekend also widens the raid's win cliff a little. Crit builds stay within the talent share rule (talents about a fifth of a team's result).
+
 ## 2026-10-30: How the boss track is tuned: welcome boss, tool by card strength, a 60% first-weekend aim
 
-ID: `2026-10-30-how-the-boss-track-is-tuned` · Status: current · Amends: `2026-10-30-the-boss-track-is-tuned-against`
+ID: `2026-10-30-how-the-boss-track-is-tuned` · Status: current, amended by `2026-10-30-raids-are-tuned-on-damage-potential` · Amends: `2026-10-30-the-boss-track-is-tuned-against`
 
 **Decision (lead).** The track tuner (`packages/lab/src/trackTuner.ts`) tunes each slot for the roster a dedicated server has when it arrives there, in one sweep up the track, with these choices (all data in `targets.ts`; Misa can change any of them):
 

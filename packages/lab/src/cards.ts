@@ -63,6 +63,20 @@ export const CARDS: readonly CardDef[] = [
     apply: (b, st = 10_000) => ({ ...b, spd: b.spd + share(300, st) }),
   },
   {
+    id: 'slippery',
+    name: 'Slippery',
+    asks: 'The boss slips away from a quarter of the hits, and a debuff does not slow it; can you make hits land?',
+    // A flat dodge (bp) that Mired does not lower: only a hit that cannot be dodged (Clear Skies) gets past it for certain.
+    apply: (b, st = 10_000) => ({ ...b, dodgeBp: share(2_500, st) }),
+  },
+  {
+    id: 'lucky-strike',
+    name: 'Lucky Strike',
+    asks: 'The boss now and then lands a double hit; can you turn it away or take the sting out of it?',
+    // A crit chance (bp) on every damaging hit that lands: each crit doubles the hit before cuts and armour (R7.1).
+    apply: (b, st = 10_000) => ({ ...b, critChanceBp: share(2_000, st) }),
+  },
+  {
     id: 'bramble-bind',
     name: 'Bramble Bind',
     asks: 'The ends of every row are silenced; who stands at the ends?',

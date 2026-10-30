@@ -21,7 +21,9 @@ import {
   FORM_KNACKS,
   KEYWORDS,
   formArmour,
+  formStats,
   KNACKS,
+  LAB_RULES,
   LINE_POOLS,
   MODIFIER_CATEGORIES,
   MODIFIERS,
@@ -71,6 +73,8 @@ export function loadWikiData(): WikiData {
       capStats: { ...effectiveStats(c, c.levelCap, 0) },
       growth: { ...c.growth },
       armour: formArmour(c.id),
+      critChanceBp: LAB_RULES.critChanceBp + formStats(c.id, 1).critChanceBp,
+      critDamageBp: LAB_RULES.critBp - 10_000 + formStats(c.id, 1).critDamageBp,
       evolvesTo: [c.evolvesTo?.species, c.altEvolvesTo?.species].filter(
         (id): id is string => id !== undefined,
       ),

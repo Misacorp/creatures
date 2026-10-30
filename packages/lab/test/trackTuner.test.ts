@@ -5,12 +5,20 @@ import { DEDICATED, serverWeekend } from '../src/path';
 import { ROSTER_WEEKS, type RosterProfile, type RosterWeek } from '../src/roster';
 import {
   BEAT2_MIN,
-  PREPARED_KILL_AIM,
+  CLASSIC_POTENTIAL_AIM,
+  CLASSIC_POTENTIAL_MAX,
+  CLASSIC_POTENTIAL_MIN,
+  PREPARED_POTENTIAL_AIM,
+  PREPARED_POTENTIAL_MIN,
   RANK_TOOL_SHARE_MIN,
   RAID_TARGETS,
   beatWithin,
   slotTargetsFor,
+  toolPotentialMinAt,
   toolShareMinAt,
+  WALL_CLASSIC_POTENTIAL_AIM,
+  WALL_CLASSIC_POTENTIAL_MAX,
+  WALL_CLASSIC_POTENTIAL_MIN,
 } from '../src/targets';
 import type { Executor } from '../src/jobs';
 import {
@@ -286,25 +294,83 @@ describe('a slot’s weekend', () => {
     expect(wall.measures['classic.kill']).toBe(0);
   });
 
+  it('takes the damage potentials: the targets (prepared, classic, the tool’s worth) always, the information ones only when asked', () => {
+    const tiny = { weekends: 4, draws: 2, classicWeekends: 2, mixedDraws: 0, mixedWeekends: 1 };
+    const args = {
+      slot: 5,
+      week: 8,
+      speed: 'expected' as const,
+      numbers: { hp: 20_000, atk: 100, armour: 35 },
+      fidelity: tiny,
+      salt: 'pot',
+    };
+    const a = evalSlot(args);
+    expect(a.measures['prepared.potential']).toBeGreaterThan(0);
+    expect(a.measures['classic.potential']).toBeGreaterThan(0);
+    expect(a.measures['tool.potential']).not.toBeNaN();
+    for (const m of ['prepared.potentialRandom', 'mixed.potential'] as const)
+      expect(a.measures[m], m).toBeNaN();
+    const b = evalSlot({ ...args, fidelity: { ...tiny, info: true, mixedDraws: 1 } });
+    for (const m of ['prepared.potentialRandom', 'tool.potential', 'mixed.potential'] as const)
+      expect(b.measures[m], m).not.toBeNaN();
+    // The target measures do not depend on the information ones: same weekends, same seeds.
+    expect(b.measures['prepared.potential']).toBe(a.measures['prepared.potential']);
+    expect(b.measures['classic.potential']).toBe(a.measures['classic.potential']);
+    expect(b.measures['tool.potential']).toBe(a.measures['tool.potential']);
+    // A huge boss: potential is a small share; a boss of nothing: many times the HP.
+    const wall = evalSlot({ ...args, numbers: { hp: 10_000_000, atk: 100, armour: 35 } });
+    expect(wall.measures['prepared.potential']).toBeLessThan(0.05);
+    const soft = evalSlot({ ...args, numbers: { hp: 500, atk: 1, armour: 1 } });
+    expect(soft.measures['prepared.potential']).toBeGreaterThan(5);
+  });
+
+  it('the tutorial slot is measured against a boss with no rule cards', () => {
+    const tiny = { weekends: 2, draws: 1, classicWeekends: 1, mixedDraws: 0, mixedWeekends: 1 };
+    const r = evalSlot({
+      slot: 1,
+      week: 1,
+      speed: 'expected',
+      numbers: { hp: 13_000, atk: 80, armour: 30 },
+      fidelity: tiny,
+      salt: 'tutorial',
+    });
+    expect(r.measures['prepared.potential']).toBeGreaterThan(0);
+    expect(slotBoss(1).cards).toEqual([]);
+  });
+
   it('is judged on Misa’s targets, with the tool’s worth by the cards’ strength and no classic limit on the welcome boss, and the search leans to the ranks’ line only a little', () => {
     const measures = (slot: number) => slotTargets(slot).map((t) => t.measure);
     expect(measures(2)).toEqual([
+      'prepared.potential',
       'prepared.share',
       'prepared.beat2',
-      'tool.share',
-      'tool.written',
+      'tool.potential',
+      'classic.potential',
       'classic.kill',
     ]);
-    // Slot 1: any decent team may win it.
-    expect(measures(1)).toEqual(['prepared.share', 'prepared.beat2', 'tool.share', 'tool.written']);
+    // Slot 1, the tutorial (no rule cards): any decent team may win it, so no classic limit, and there is no card to ask a tool for.
+    expect(measures(1)).toEqual(['prepared.potential', 'prepared.share', 'prepared.beat2']);
     // The rest of the bounds are Misa's.
-    for (const m of ['prepared.share', 'prepared.beat2', 'classic.kill'] as const)
-      expect(slotTargets(5).find((t) => t.measure === m)).toEqual(
+    for (const m of [
+      'prepared.potential',
+      'prepared.share',
+      'prepared.beat2',
+      'classic.potential',
+      'classic.kill',
+    ] as const)
+      expect(slotTargets(4).find((t) => t.measure === m)).toEqual(
         RAID_TARGETS.high.find((t) => t.measure === m),
       );
-    expect(slotTargets(10).find((t) => t.measure === 'tool.share')?.min).toBeCloseTo(0.1);
-    expect(slotTargets(2).find((t) => t.measure === 'tool.written')?.min).toBeCloseTo(0.06);
-    expect(slotTargets(1).find((t) => t.measure === 'tool.share')?.min).toBeLessThan(0.06);
+    // The tool's worth is in points of damage potential; the HP-share tool measures are information only on the track.
+    expect(slotTargets(10).find((t) => t.measure === 'tool.potential')?.min).toBeCloseTo(
+      toolPotentialMinAt(trackSlot(10).strengthBp),
+    );
+    for (const slot of [1, 2, 10])
+      for (const m of ['tool.share', 'tool.written'])
+        expect(
+          slotTargets(slot).find((t) => t.measure === m),
+          `slot ${slot} ${m}`,
+        ).toBeUndefined();
     const ref = { hp: 10_000, atk: 100, armour: 20 };
     expect(distanceOf(ref, ref)).toBe(0);
     expect(distanceOf({ hp: 20_000, atk: 100, armour: 20 }, ref)).toBeCloseTo(Math.log(2) / 3);
@@ -321,6 +387,10 @@ describe('a slot’s weekend', () => {
       }
       expect(f.search.mixedDraws).toBe(0);
       expect(f.final.mixedDraws).toBeGreaterThan(0);
+      // The information measures (random-talent potential, the mixed server) only in the full measurement of the proposal.
+      expect(f.search.info).toBeUndefined();
+      expect(f.check.info).toBeUndefined();
+      expect(f.final.info).toBe(true);
     }
   });
 
@@ -351,11 +421,29 @@ describe('the tool’s worth by the strength of the cards', () => {
   });
 
   it('gives a slot its cards’ strength, from the track', () => {
-    for (const slot of [2, 5, 8])
-      for (const t of slotTargetsFor(slot, trackSlot(slot).strengthBp).filter((x) =>
+    for (const slot of [2, 5, 8]) {
+      const tools = slotTargetsFor(slot, trackSlot(slot).strengthBp).filter((x) =>
         x.measure.startsWith('tool.'),
-      ))
-        expect(t.min).toBeCloseTo(toolShareMinAt(trackSlot(slot).strengthBp));
+      );
+      expect(tools.map((x) => x.measure)).toEqual(['tool.potential']);
+      expect(tools[0]?.min).toBeCloseTo(toolPotentialMinAt(trackSlot(slot).strengthBp));
+    }
+  });
+});
+
+describe('the tool’s worth in points of potential by the strength of the cards', () => {
+  it('is 0.05 at 0%, 0.10 at 30%, straight up to 0.35 at 100%, and flat above', () => {
+    expect(toolPotentialMinAt(0)).toBeCloseTo(0.05);
+    expect(toolPotentialMinAt(1_500)).toBeCloseTo(0.075);
+    expect(toolPotentialMinAt(3_000)).toBeCloseTo(0.1);
+    expect(toolPotentialMinAt(6_500)).toBeCloseTo(0.225);
+    expect(toolPotentialMinAt(10_000)).toBeCloseTo(0.35);
+    expect(toolPotentialMinAt(15_000)).toBeCloseTo(0.35);
+    let before = 0;
+    for (let b = 0; b <= 10_000; b += 250) {
+      expect(toolPotentialMinAt(b)).toBeGreaterThanOrEqual(before);
+      before = toolPotentialMinAt(b);
+    }
   });
 });
 
@@ -378,6 +466,62 @@ const flatRoster = (level: number): RosterProfile => {
   const weeks = Array.from({ length: ROSTER_WEEKS }, (_, i) => week(i + 1));
   return { daily: weeks, weekly: weeks, newPlayer: weeks };
 };
+
+describe('a wall slot’s targets (Misa, 2026-10-30)', () => {
+  const at = (slot: number, wall: boolean) =>
+    slotTargetsFor(slot, trackSlot(slot).strengthBp, wall);
+  const get = (ts: ReturnType<typeof at>, m: string) => ts.find((t) => t.measure === m);
+
+  it('lowers the classic potential band to 30% to 60% and leaves every other target as on a normal slot', () => {
+    const wall = at(5, true);
+    const normal = at(5, false);
+    expect([WALL_CLASSIC_POTENTIAL_MIN, WALL_CLASSIC_POTENTIAL_MAX]).toEqual([0.3, 0.6]);
+    expect(get(wall, 'classic.potential')).toMatchObject({ min: 0.3, max: 0.6 });
+    expect(get(normal, 'classic.potential')).toMatchObject({
+      min: CLASSIC_POTENTIAL_MIN,
+      max: CLASSIC_POTENTIAL_MAX,
+    });
+    expect(wall.map((t) => t.measure)).toEqual(normal.map((t) => t.measure));
+    for (const t of normal)
+      if (t.measure !== 'classic.potential') expect(get(wall, t.measure)).toEqual(t);
+    // The prepared potential stays 125% or more, the beat2 and the classic kill limit as usual, and the tool target is there.
+    expect(get(wall, 'prepared.potential')?.min).toBe(PREPARED_POTENTIAL_MIN);
+    expect(PREPARED_POTENTIAL_MIN).toBe(1.25);
+    expect(get(wall, 'prepared.beat2')?.min).toBe(BEAT2_MIN);
+    expect(get(wall, 'classic.kill')?.max).toBe(0.05);
+    expect(get(wall, 'tool.potential')?.min).toBeCloseTo(
+      toolPotentialMinAt(trackSlot(5).strengthBp),
+    );
+  });
+
+  it('is what the track gives slot 5, and only slot 5', () => {
+    expect(get(slotTargets(5), 'classic.potential')).toMatchObject({ min: 0.3, max: 0.6 });
+    for (const slot of [2, 3, 4, 6, 10, 15])
+      expect(get(slotTargets(slot), 'classic.potential')).toMatchObject({
+        min: CLASSIC_POTENTIAL_MIN,
+        max: CLASSIC_POTENTIAL_MAX,
+      });
+    // The tutorial still has no classic target.
+    expect(get(slotTargets(1), 'classic.potential')).toBeUndefined();
+  });
+
+  it('aims the classic potential at 45% on a wall, inside its band, and the prepared one at 130%', () => {
+    expect(WALL_CLASSIC_POTENTIAL_AIM).toBe(0.45);
+    expect(WALL_CLASSIC_POTENTIAL_AIM).toBeGreaterThanOrEqual(WALL_CLASSIC_POTENTIAL_MIN);
+    expect(WALL_CLASSIC_POTENTIAL_AIM).toBeLessThanOrEqual(WALL_CLASSIC_POTENTIAL_MAX);
+    const m = (prepared: number, classic: number) =>
+      ({ 'prepared.potential': prepared, 'classic.potential': classic }) as unknown as RaidMeasures;
+    expect(
+      aimComfort(m(PREPARED_POTENTIAL_AIM, 0.45), true, WALL_CLASSIC_POTENTIAL_AIM),
+    ).toBeCloseTo(0);
+    // 80% is the normal aim and is 35 points from the wall's.
+    expect(
+      aimComfort(m(PREPARED_POTENTIAL_AIM, 0.8), true, WALL_CLASSIC_POTENTIAL_AIM),
+    ).toBeCloseTo(-0.35);
+    expect(aimComfort(m(PREPARED_POTENTIAL_AIM, 0.8))).toBeCloseTo(0);
+    expect(aimComfort(m(PREPARED_POTENTIAL_AIM, 0.45))).toBeCloseTo(-0.35);
+  });
+});
 
 describe('the slot measure at the high rank’s own setting', () => {
   // A level 25 roster, full cards (slots 10 and up) and the high rank's numbers must give what the rank measure gives, for every boss:
@@ -411,23 +555,31 @@ describe('the slot measure at the high rank’s own setting', () => {
 });
 
 describe('the difficulty aim', () => {
-  it('is a kill rate that beats within two weekends as often as Misa’s floor asks', () => {
-    expect(PREPARED_KILL_AIM).toBeGreaterThan(0);
-    expect(PREPARED_KILL_AIM).toBeLessThan(1);
-    expect(beatWithin(PREPARED_KILL_AIM, 2)).toBeGreaterThanOrEqual(BEAT2_MIN);
+  it('aims inside the potential bounds, at 130% for the prepared line and 80% for the classic party', () => {
+    expect(PREPARED_POTENTIAL_AIM).toBe(1.3);
+    expect(CLASSIC_POTENTIAL_AIM).toBe(0.8);
+    expect(PREPARED_POTENTIAL_AIM).toBeGreaterThanOrEqual(PREPARED_POTENTIAL_MIN);
+    expect(CLASSIC_POTENTIAL_AIM).toBeGreaterThanOrEqual(CLASSIC_POTENTIAL_MIN);
+    expect(CLASSIC_POTENTIAL_AIM).toBeLessThanOrEqual(CLASSIC_POTENTIAL_MAX);
   });
 
-  it('is a comfort of minus the distance of the first-weekend kill rate to the aim', () => {
-    const m = (kill: number) => ({ 'prepared.written': kill }) as unknown as RaidMeasures;
-    expect(aimComfort(m(PREPARED_KILL_AIM))).toBeCloseTo(0);
-    expect(aimComfort(m(1))).toBeCloseTo(-(1 - PREPARED_KILL_AIM));
-    expect(aimComfort(m(PREPARED_KILL_AIM + 0.1))).toBeCloseTo(
-      aimComfort(m(PREPARED_KILL_AIM - 0.1)),
+  it('is a comfort of minus the distances of the two potentials to their aims', () => {
+    const m = (prepared: number, classic = CLASSIC_POTENTIAL_AIM) =>
+      ({ 'prepared.potential': prepared, 'classic.potential': classic }) as unknown as RaidMeasures;
+    expect(aimComfort(m(PREPARED_POTENTIAL_AIM))).toBeCloseTo(0);
+    expect(aimComfort(m(PREPARED_POTENTIAL_AIM + 0.3))).toBeCloseTo(-0.3);
+    expect(aimComfort(m(PREPARED_POTENTIAL_AIM + 0.1))).toBeCloseTo(
+      aimComfort(m(PREPARED_POTENTIAL_AIM - 0.1)),
     );
-    expect(aimComfort(m(0.5))).toBeGreaterThan(aimComfort(m(0.9)));
-    // Within a step of the aim the kill rate is noise.
-    expect(aimComfort(m(PREPARED_KILL_AIM + 0.01))).toBe(aimComfort(m(PREPARED_KILL_AIM - 0.01)));
-    expect(aimComfort(m(Number.NaN))).toBe(0);
+    expect(aimComfort(m(1.4))).toBeGreaterThan(aimComfort(m(1.9)));
+    // The classic party counts the same way, and not at all on the tutorial slot.
+    expect(aimComfort(m(PREPARED_POTENTIAL_AIM, 0.9))).toBeCloseTo(-0.1);
+    expect(aimComfort(m(PREPARED_POTENTIAL_AIM, 0.9), false)).toBeCloseTo(0);
+    // Within a step of an aim the measure is noise.
+    expect(aimComfort(m(PREPARED_POTENTIAL_AIM + 0.01))).toBe(
+      aimComfort(m(PREPARED_POTENTIAL_AIM - 0.01)),
+    );
+    expect(aimComfort({ ...m(1.3), 'prepared.potential': Number.NaN })).toBeCloseTo(0);
   });
 
   it('compares losses in steps, so that noise below a step does not decide', () => {
@@ -436,14 +588,20 @@ describe('the difficulty aim', () => {
     expect(NEAR_WEIGHT).toBeLessThan(0.2);
   });
 
-  /** A world where the kill rate falls with HP (1 at 8_000 HP, 0 at 18_000) and every other target is met: only the aim tells HPs apart. */
+  /**
+   * A world where the prepared potential falls with HP (2.0 at 8_000 HP, 1.0 at 16_000), the kill rate with it, and every other target
+   * is met (the classic potential sits at its aim): only the aim tells HPs apart.
+   */
   const fakeWorld =
     (seen: SlotEvalArgs[]): Executor =>
     (job) => {
       const a = job.args as SlotEvalArgs;
       seen.push(a);
-      const kill = Math.min(1, Math.max(0, 1 - (a.numbers.hp - 8_000) / 10_000));
+      const potential = 2 - (a.numbers.hp - 8_000) / 8_000;
+      const kill = Math.min(1, Math.max(0, (potential - 0.8) / 0.6));
       const measures = {
+        'prepared.potential': potential,
+        'classic.potential': CLASSIC_POTENTIAL_AIM,
         'prepared.share': 0.95,
         'prepared.kill': kill,
         'prepared.written': kill,
@@ -459,7 +617,7 @@ describe('the difficulty aim', () => {
       return Promise.resolve({ result, seconds: 0 });
     };
 
-  it('picks the boss whose first-weekend kill is nearest the aim among those that meet every target', async () => {
+  it('picks the boss whose prepared potential is nearest the aim among those that meet every target', async () => {
     const seen: SlotEvalArgs[] = [];
     const r = await tuneSlot({
       slot: 2,
@@ -469,9 +627,11 @@ describe('the difficulty aim', () => {
       run: { exec: fakeWorld(seen), slots: 1 },
       cache: new Map(),
     });
-    // The most comfortable boss (1 weekend in 1) and the hardest that is still beaten in two weekends both meet every target.
+    // The softest boss (potential 2.0) and the hardest that still reaches 125% both meet every target.
     expect(r.best.loss).toBe(0);
-    expect(Math.abs(r.best.measures['prepared.written'] - PREPARED_KILL_AIM)).toBeLessThan(0.12);
+    expect(Math.abs(r.best.measures['prepared.potential'] - PREPARED_POTENTIAL_AIM)).toBeLessThan(
+      0.12,
+    );
     expect(r.best.measures['prepared.beat2']).toBeGreaterThanOrEqual(BEAT2_MIN);
     expect(seen.length).toBeGreaterThan(0);
   });

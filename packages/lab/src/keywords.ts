@@ -136,6 +136,18 @@ export const KEYWORDS: Readonly<
     not: 'A phase of the raid',
     step: 'R8',
   },
+  Crit: {
+    means:
+      'A lucky hit that deals double. Crit chance starts at 5%; the creature, its Knack, talents and items add points of chance and add to the extra damage, and a boss with a Lucky Strike crits too.',
+    not: 'A reaction',
+    step: 'R6, R7.1',
+  },
+  'Crit Charge': {
+    means:
+      'A counter on the creature, up to 3, stored from something that happened to it (a dodge, a hit taken for another creature). Its next hit that lands spends one and is a guaranteed crit, with the extra damage the effect names.',
+    not: 'A Store of a Knack, or a lasting buff',
+    step: 'R7.1, R10',
+  },
 };
 
 /** The keywords a text uses, `{Like} {This}`. */

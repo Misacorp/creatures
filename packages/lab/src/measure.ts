@@ -175,7 +175,7 @@ export interface FormMeasure {
 }
 
 /** Effect fields that are plain stats (always on): no condition to count. */
-const FLAT_FIELDS: ReadonlySet<string> = new Set(['atkBp', 'hpBp']);
+const FLAT_FIELDS: ReadonlySet<string> = new Set(['atkBp', 'hpBp', 'critChanceBp', 'critDamageBp']);
 
 export const isFlat = (tid: string): boolean =>
   Object.keys(TALENTS[tid]?.fx ?? {}).every((k) => FLAT_FIELDS.has(k));
