@@ -33,25 +33,24 @@ export type SlotTable = Readonly<Record<number, SlotNumbers>>;
 /**
  * Per-slot numbers (slot number to HP, Attack and armour, absolute before cards), data. A slot without an entry interpolates the
  * three ranks' numbers (`rankNumbers`). Tuned by `node scripts/report.mjs --tune --track` (`trackTuner.ts`) for the roster the path
- * says arrives at each slot; slots 1 to 15 (three laps), later laps follow the high rank's numbers but never fall below the lap before
- * (`slotNumbers`).
+ * says arrives at each slot; slots 1 to 15 (three laps), later laps follow the high rank's numbers.
  */
 export const SLOT_NUMBERS: SlotTable = {
-  1: { hp: 15_400, atk: 83, armour: 25 }, // tidal-colossus
-  2: { hp: 10_900, atk: 118, armour: 39 }, // cinder-wyrm
-  3: { hp: 9_400, atk: 54, armour: 187 }, // thornmother
-  4: { hp: 8_600, atk: 96, armour: 7 }, // storm-sovereign
-  5: { hp: 37_400, atk: 58, armour: 13 }, // old-bogback
-  6: { hp: 17_000, atk: 128, armour: 29 }, // tidal-colossus
-  7: { hp: 21_000, atk: 125, armour: 51 }, // cinder-wyrm
-  8: { hp: 9_400, atk: 69, armour: 258 }, // thornmother
-  9: { hp: 8_600, atk: 105, armour: 8 }, // storm-sovereign
-  10: { hp: 37_400, atk: 96, armour: 19 }, // old-bogback
-  11: { hp: 17_000, atk: 128, armour: 30 }, // tidal-colossus
-  12: { hp: 22_500, atk: 130, armour: 59 }, // cinder-wyrm
-  13: { hp: 9_400, atk: 87, armour: 261 }, // thornmother
-  14: { hp: 8_600, atk: 109, armour: 8 }, // storm-sovereign
-  15: { hp: 37_400, atk: 96, armour: 24 }, // old-bogback
+  1: { hp: 12_000, atk: 120, armour: 22 }, // tidal-colossus
+  2: { hp: 8_300, atk: 129, armour: 64 }, // cinder-wyrm
+  3: { hp: 7_100, atk: 126, armour: 162 }, // thornmother
+  4: { hp: 22_500, atk: 53, armour: 6 }, // storm-sovereign
+  5: { hp: 29_800, atk: 121, armour: 24 }, // old-bogback
+  6: { hp: 17_700, atk: 158, armour: 38 }, // tidal-colossus
+  7: { hp: 22_400, atk: 164, armour: 40 }, // cinder-wyrm
+  8: { hp: 7_600, atk: 150, armour: 220 }, // thornmother
+  9: { hp: 13_600, atk: 96, armour: 5 }, // storm-sovereign
+  10: { hp: 31_700, atk: 138, armour: 31 }, // old-bogback
+  11: { hp: 23_300, atk: 134, armour: 36 }, // tidal-colossus
+  12: { hp: 21_100, atk: 171, armour: 52 }, // cinder-wyrm
+  13: { hp: 13_200, atk: 130, armour: 194 }, // thornmother
+  14: { hp: 11_000, atk: 111, armour: 9 }, // storm-sovereign
+  15: { hp: 27_900, atk: 150, armour: 27 }, // old-bogback
 };
 
 /** The strength of a slot's cards, by slot, when set by hand (bp). Empty: the rank ladder (`rankStrengthBp`). */
@@ -142,34 +141,16 @@ export const buildTrack = (length: number, order: readonly string[] = TRACK_ORDE
 export const TRACK: readonly TrackSlot[] = buildTrack(30);
 
 /**
- * A slot's own numbers: its `table` entry (any number the entry leaves out comes from the ranks' lines, `rankNumbers`), without the
- * lap rule.
- */
-export function ownNumbers(
-  slot: number,
-  table: SlotTable = SLOT_NUMBERS,
-  order: readonly string[] = TRACK_ORDER,
-): Numbers {
-  return { ...rankNumbers(trackSlot(slot, order).bossId, slot), ...table[slot] };
-}
-
-/**
- * A slot's HP, Attack and armour: its own numbers, but never below the same boss's on the lap before (a later lap is never
- * easier; Misa, 2026-10-30), checked up the laps (slot - n, slot - 2n, ... for a track of n bosses).
+ * A slot's HP, Attack and armour: its `table` entry, and for any number the entry leaves out the ranks' line (`rankNumbers`). There
+ * is no floor from the lap before: a later lap's cards are never weaker (`rankStrengthBp`), so its numbers may be lower when its cards
+ * make up for it (Misa, 2026-10-30); the rule is on the kill rate (`lapKillViolations` in `trackTuner.ts`).
  */
 export function slotNumbers(
   slot: number,
   table: SlotTable = SLOT_NUMBERS,
   order: readonly string[] = TRACK_ORDER,
 ): Numbers {
-  const own = ownNumbers(slot, table, order);
-  if (slot <= order.length) return own;
-  const before = slotNumbers(slot - order.length, table, order);
-  return {
-    hp: Math.max(own.hp, before.hp),
-    atk: Math.max(own.atk, before.atk),
-    armour: Math.max(own.armour, before.armour),
-  };
+  return { ...rankNumbers(trackSlot(slot, order).bossId, slot), ...table[slot] };
 }
 
 /**

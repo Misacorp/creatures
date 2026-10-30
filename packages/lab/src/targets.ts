@@ -38,6 +38,13 @@ export const ROBUST_SHARE = 0.8;
 export const ROBUST_TARGET = 0.6;
 /** A prepared team usually beats the boss within two weekends (Misa, 2026-10-30): the chance of a kill in at most two is this. */
 export const BEAT2_MIN = 0.75;
+/**
+ * How hard the boss track should be for the prepared team: among numbers that meet every target, the track tuner prefers the boss whose
+ * first-weekend kill rate for the prepared line (written talents, expected roster speed) is closest to this. 0.6 is the lead's reading
+ * of Misa's "a prepared team usually wins within two weekends" (2026-10-30): a kill in 0.6 of weekends beats within two weekends
+ * 1 - 0.4^2 = 84% of the time. Misa can change it (`BEAT2_MIN` is the floor Misa set; this is where above it to aim).
+ */
+export const PREPARED_KILL_AIM = 0.6;
 /** A mixed server's and the classic party's weeks to a kill show as "20+" beyond this. */
 export const WEEKS_CAP = 20;
 /** The boss's win rate target at +10% Attack and at +10% HP (a well-prepared team should usually win, but not by a mile). */

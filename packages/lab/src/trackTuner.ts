@@ -9,11 +9,12 @@
  * slot 1): the prepared line usually beats the boss within two weekends, removes most of the HP with random legal talents, its tool
  * is worth what the cards ask with written and with random talents, and the classic party kills at most 5% of weekends.
  * The mixed server is information only. The lab tests' rules (`raidRules.ts`) belong to the three fixed ranks and are not applied here.
- * A candidate's loss is the loss at the expected speed plus half the losses at the slow and the fast roster (`robustLoss`), so a
- * boss is not tuned to a knife edge of the expected roster.
+ * The track is tuned at the expected speed only: a slow server arrives later and keeps growing while a failed boss returns, so
+ * the path (`path.ts`, at three speeds) is where the speed's effect shows, not a measure at the arrival week of the expected one.
  *
- * A later lap of a boss is never easier than the earlier one (`slotNumbers`): the search of slot k stays at or above the numbers
- * the same boss has on the lap before.
+ * A later lap of a boss has cards that are never weaker (`rankStrengthBp`), and its HP, Attack and armour may be lower than an
+ * earlier lap's when its stronger cards make up for it. The rule is on the kill rate: a later lap's prepared first-weekend kill rate
+ * is not above the earlier lap's by more than noise (`lapKillViolations`); it should follow from the aim (`PREPARED_KILL_AIM`).
  *
  * Path and tuning alternate (`tuneLoop`): the path gives each slot's arrival week, the tuner proposes numbers for that week's roster,
  * the path runs again with them, until the arrival weeks equal the weeks the table was tuned for (at most `MAX_ROUNDS` tunings). A
@@ -47,7 +48,7 @@ import { classicFor, type Pick } from './search';
 import {
   RAID_MEASURES,
   beatWithin,
-  comfortOf,
+  PREPARED_KILL_AIM,
   isMeasured,
   lossOf,
   metBy,
@@ -154,20 +155,13 @@ export interface SlotEvalArgs {
   readonly week: number;
   readonly speed: RosterSpeed;
   readonly numbers: Numbers;
-  /** The effective numbers of the same boss's earlier laps (the lap rule reads them), as table entries. */
-  readonly earlier: SlotTable;
   readonly fidelity: Fidelity;
-  /** The weekends of the slow and the fast roster speed (the loss counts them, `robustLoss`); none: they are not measured. */
-  readonly side?: Fidelity;
   readonly salt: string;
 }
 
 export interface SlotEvalResult {
   /** The measures at the speed of the arguments (the expected one in the tuner). */
   readonly measures: RaidMeasures;
-  /** The same at the slow and the fast roster speed (without the mixed server). */
-  readonly slow?: RaidMeasures;
-  readonly fast?: RaidMeasures;
   /** Weekends fought (a mixed server's weekends are ten players wide). */
   readonly weekends: number;
 }
@@ -246,34 +240,15 @@ function measureSpeed(
 
 /**
  * Measures one slot at one set of numbers (what a `slot-eval` job runs). The boss is the slot's at the numbers, the creatures are the
- * roster's at the week, at the speed of the arguments and (with `side`) at the slow and the fast one too. The same seeds for every
- * candidate of a level, so a difference between candidates is the numbers' effect.
+ * roster's at the week and the speed of the arguments. The same seeds for every candidate of a level, so a difference between
+ * candidates is the numbers' effect.
  */
 export function evalSlot(
   a: SlotEvalArgs,
   profile: RosterProfile = PLACEHOLDER_ROSTER,
 ): SlotEvalResult {
-  const table: SlotTable = { ...a.earlier, [a.slot]: a.numbers };
-  const main = measureSpeed(a, table, a.speed, a.fidelity, profile);
-  if (!a.side) return main;
-  const slow = measureSpeed(a, table, 'slow', a.side, profile);
-  const fast = measureSpeed(a, table, 'fast', a.side, profile);
-  return {
-    measures: main.measures,
-    slow: slow.measures,
-    fast: fast.measures,
-    weekends: main.weekends + slow.weekends + fast.weekends,
-  };
-}
-
-/**
- * The loss of a candidate: the loss at the expected speed plus half the sum of the losses at the slow and the fast roster speed (the
- * speeds the valley's growth may land on). A measurement without the side speeds is judged on its own speed.
- */
-export function robustLoss(targets: readonly RaidTarget[], r: SlotEvalResult): number {
-  const own = lossOf(targets, r.measures);
-  if (!r.slow || !r.fast) return own;
-  return own + 0.5 * (lossOf(targets, r.slow) + lossOf(targets, r.fast));
+  const table: SlotTable = { [a.slot]: a.numbers };
+  return measureSpeed(a, table, a.speed, a.fidelity, profile);
 }
 
 /** What a `slot-eval` job runs (`jobRunners.ts`). */
@@ -284,7 +259,7 @@ export const runSlotJob = (args: unknown): SlotEvalResult => evalSlot(args as Sl
 /** How far a slot's numbers may lie from the high rank's (the spec's), as factors of it: wide, since a slot's roster may be far from the rank's. */
 const SLOT_RANGE: Record<keyof Numbers, readonly [number, number]> = {
   hp: [0.2, 2],
-  atk: [0.3, 1.6],
+  atk: [0.3, 2],
   armour: [0, 1.4],
 };
 const QUANTUM: Numbers = { hp: 100, atk: 1, armour: 1 };
@@ -303,34 +278,16 @@ function specOf(id: string) {
   return spec;
 }
 
-/** The earlier laps of a slot, as table entries with their effective numbers (`slotNumbers`). */
-export function earlierLaps(
-  slot: number,
-  table: SlotTable,
-  order: readonly string[] = TRACK_ORDER,
-): SlotTable {
-  const out: Record<number, Numbers> = {};
-  for (let s = slot - order.length; s >= 1; s -= order.length)
-    out[s] = slotNumbers(s, table, order);
-  return out;
-}
-
-/** The inclusive range of each number of a slot: wide around the spec's, never below the lap before, armour never below the boss's hide. */
-export function slotAxes(
-  slot: number,
-  table: SlotTable,
-  order: readonly string[] = TRACK_ORDER,
-): Axis[] {
+/** The inclusive range of each number of a slot: wide around the spec's, armour never below the boss's hide. */
+export function slotAxes(slot: number, order: readonly string[] = TRACK_ORDER): Axis[] {
   const id = trackSlot(slot, order).bossId;
   const spec = specOf(id);
-  const floor = slot > order.length ? slotNumbers(slot - order.length, table, order) : undefined;
   const hide = Math.round(spec.armour / 2);
   const base: Numbers = { hp: spec.hp, atk: spec.atk, armour: spec.armour };
   return NAMES.map((name) => {
     const q = QUANTUM[name];
     const [flo, fhi] = SLOT_RANGE[name];
-    const lo0 = Math.max(name === 'armour' ? hide : q, snap(base[name] * flo, q));
-    const lo = Math.ceil(Math.max(lo0, floor?.[name] ?? 0) / q) * q;
+    const lo = Math.ceil(Math.max(name === 'armour' ? hide : q, snap(base[name] * flo, q)) / q) * q;
     const hi = Math.max(lo, Math.floor((base[name] * fhi) / q) * q);
     return { name, lo, hi, quantum: q };
   });
@@ -358,47 +315,23 @@ export const SLOT_FIDELITY = (
   };
 };
 
-/** The weekends of the slow and the fast speed: half of those of the expected one, and no mixed server. */
-export const sideOf = (f: Fidelity): Fidelity => ({
-  weekends: Math.max(f.draws, Math.floor(f.weekends / 2)),
-  draws: f.draws,
-  classicWeekends: Math.max(4, Math.floor(f.classicWeekends / 2)),
-  mixedDraws: 0,
-  mixedWeekends: f.mixedWeekends,
-});
-
-/** One set of numbers of a slot, measured: how it stands against Misa's targets (at the expected speed; the loss counts the other speeds). */
+/** One set of numbers of a slot, measured: how it stands against Misa's targets at the expected speed. */
 export interface SlotRow {
   readonly numbers: Numbers;
   readonly measures: RaidMeasures;
-  readonly slow?: RaidMeasures;
-  readonly fast?: RaidMeasures;
-  /** The robust loss (`robustLoss`). */
   readonly loss: number;
   readonly misses: Miss[];
-  /** The targets missed at the slow and at the fast roster speed. */
-  readonly sideMisses: { readonly slow: string[]; readonly fast: string[] };
 }
-
-const missedAt = (targets: readonly RaidTarget[], m: RaidMeasures | undefined): string[] =>
-  m
-    ? targets
-        .filter((t) => isMeasured(m[t.measure]) && missOf(t, m[t.measure]) > 0)
-        .map(describeTarget)
-    : [];
 
 const rowOf = (targets: readonly RaidTarget[], numbers: Numbers, r: SlotEvalResult): SlotRow => ({
   numbers,
   measures: r.measures,
-  ...(r.slow ? { slow: r.slow } : {}),
-  ...(r.fast ? { fast: r.fast } : {}),
-  loss: robustLoss(targets, r),
+  loss: lossOf(targets, r.measures),
   misses: targets.map((t) => ({
     target: describeTarget(t),
     value: r.measures[t.measure],
     miss: missOf(t, r.measures[t.measure]),
   })),
-  sideMisses: { slow: missedAt(targets, r.slow), fast: missedAt(targets, r.fast) },
 });
 
 export interface SlotResult {
@@ -421,11 +354,23 @@ export interface SlotResult {
 }
 
 /**
- * Among numbers that meet every target, the search takes the most comfortable (`comfortOf`) and, between about equal ones, the nearer to
- * the ranks' line: the targets say nothing about a boss that hardly hits back, and nothing but comfort would send Attack to the edge of its range.
- * `distanceOf` is the mean of the numbers' log ratios to the reference, and counts this much against the comfort (a margin is at most 0.2).
+ * Among numbers that meet every target (a loss within `LOSS_STEP` of none), the search takes the boss whose prepared
+ * first-weekend kill rate is closest to `PREPARED_KILL_AIM` (`aimComfort`: minus the distance), and between about equal ones the nearer to
+ * the ranks' line. `distanceOf` is the mean of the numbers' log ratios to the reference and counts `NEAR_WEIGHT` against the comfort: a
+ * last tie-break within a step of `AIM_STEP` of the aim (the HP-for-Attack trade lies along a ridge of equal kill rate, and the pull keeps the
+ * boss near the ranks' line on it instead of at a glass cannon or a wall).
  */
 export const NEAR_WEIGHT = 0.1;
+/** The distance of the kill rate to the aim counts in steps of this: within a step the kill rate is noise, and the pull to the ranks' line decides. */
+export const AIM_STEP = 0.05;
+/** Losses are compared in steps of this: below it a loss is noise (a measurement of 20 to 60 weekends), so the aim decides. */
+export const LOSS_STEP = 0.03;
+export const quantised = (loss: number): number => Math.round(loss / LOSS_STEP) * LOSS_STEP;
+/** The aim as a comfort: how near the prepared line's first-weekend kill rate is to `PREPARED_KILL_AIM`, negated (0 at the aim). */
+export const aimComfort = (m: RaidMeasures): number =>
+  isMeasured(m['prepared.written'])
+    ? -Math.round(Math.abs(m['prepared.written'] - PREPARED_KILL_AIM) / AIM_STEP) * AIM_STEP
+    : 0;
 export const distanceOf = (n: Numbers, ref: Numbers): number =>
   NAMES.reduce((sum, k) => sum + Math.abs(Math.log(Math.max(1, n[k]) / Math.max(1, ref[k]))), 0) /
   NAMES.length;
@@ -437,7 +382,7 @@ const cacheKey = (slot: number, week: number, level: Level, n: Numbers): string 
 export interface TuneSlotOptions {
   readonly slot: number;
   readonly week: number;
-  /** The table so far: the earlier laps' numbers set the floor. */
+  /** The table so far: the search starts from the slot's entry (or the ranks' line). */
   readonly table: SlotTable;
   readonly quick: boolean;
   readonly run: TuneRunner;
@@ -450,8 +395,7 @@ export async function tuneSlot(o: TuneSlotOptions): Promise<SlotResult> {
   const order = o.order ?? TRACK_ORDER;
   const fidelity = SLOT_FIDELITY(o.quick);
   const targets = slotTargets(o.slot, order);
-  const axes = slotAxes(o.slot, o.table, order);
-  const earlier = earlierLaps(o.slot, o.table, order);
+  const axes = slotAxes(o.slot, order);
   const clamp = (n: Numbers): Numbers =>
     fromPoint(
       toPoint(n).map((v, i) => {
@@ -483,9 +427,7 @@ export async function tuneSlot(o: TuneSlotOptions): Promise<SlotResult> {
             week: o.week,
             speed: TUNE_SPEED,
             numbers: fromPoint(p),
-            earlier,
             fidelity: fidelity[level],
-            side: sideOf(fidelity[level]),
             // The same seeds for every candidate of a level (and for a slot across runs).
             salt: `slot:${o.slot}:${level}`,
           } satisfies SlotEvalArgs,
@@ -503,14 +445,12 @@ export async function tuneSlot(o: TuneSlotOptions): Promise<SlotResult> {
     return points.map((p) => {
       const r = o.cache.get(cacheKey(o.slot, o.week, level, fromPoint(p))) as SlotEvalResult;
       return {
-        loss: robustLoss(targets, r),
-        comfort: comfortOf(targets, r.measures) - NEAR_WEIGHT * distanceOf(fromPoint(p), reference),
+        loss: quantised(lossOf(targets, r.measures)),
+        comfort: aimComfort(r.measures) - NEAR_WEIGHT * distanceOf(fromPoint(p), reference),
         data: r,
       };
     });
   };
-  const lapFloor =
-    o.slot > order.length ? slotNumbers(o.slot - order.length, o.table, order) : undefined;
   const found = await searchPoints(axes, feasible, toPoint(start), fidelity.plan, evaluate);
   const row = (p: Point, r: SlotEvalResult): SlotRow => rowOf(targets, fromPoint(p), r);
   const best = found.best ?? found.start;
@@ -530,10 +470,7 @@ export async function tuneSlot(o: TuneSlotOptions): Promise<SlotResult> {
     atEdge: axes.flatMap((a, i) => {
       const v = toPoint(bestRow.numbers)[i] as number;
       if (a.lo === a.hi) return [];
-      if (v === a.lo) {
-        const held = lapFloor !== undefined && lapFloor[a.name as keyof Numbers] >= a.lo;
-        return [`${a.name} at its lower limit${held ? ' (held by the lap before)' : ''}`];
-      }
+      if (v === a.lo) return [`${a.name} at its lower limit`];
       if (v === a.hi) return [`${a.name} at its upper limit`];
       return [];
     }),
@@ -715,6 +652,25 @@ const cell = (targets: readonly RaidTarget[], measure: RaidMeasure, m: RaidMeasu
 };
 const grouped = (n: number): string => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '_');
 
+/** A later lap's first-weekend kill rate may be above the lap before's by this much (a measurement of 60 weekends) before it is a violation. */
+export const LAP_KILL_NOISE = 0.1;
+
+/**
+ * The later laps whose prepared first-weekend kill rate is above the lap before's by more than `LAP_KILL_NOISE` (a later lap is not
+ * easier than the one before for the roster it meets). `kills` maps a slot to its kill rate; slots without the lap before are not checked.
+ */
+export function lapKillViolations(
+  kills: ReadonlyMap<number, number>,
+  laps: number = TRACK_ORDER.length,
+): { slot: number; kill: number; before: number }[] {
+  const out: { slot: number; kill: number; before: number }[] = [];
+  for (const [slot, kill] of kills) {
+    const before = kills.get(slot - laps);
+    if (before !== undefined && kill > before + LAP_KILL_NOISE) out.push({ slot, kill, before });
+  }
+  return out.sort((a, b) => a.slot - b.slot);
+}
+
 /** The `SLOT_NUMBERS` table as TypeScript, ready to paste into `track.ts`. */
 export function pasteOf(table: SlotTable, first: number, last: number): string[] {
   const lines = ['export const SLOT_NUMBERS: SlotTable = {'];
@@ -736,7 +692,7 @@ export function trackSummary(
 ): string[] {
   const out = [`## Track tuner${o.quick ? ' (quick)' : ''}`, ''];
   out.push(
-    `Proposals only: nothing was applied to \`track.ts\`. Each slot is tuned for the roster a dedicated server has in its arrival week at the ${TUNE_SPEED} speed, against Misa’s targets (\`targets.ts\`, 2026-10-30), with the lap rule (a later lap is never easier). The mixed server is information only.`,
+    `Proposals only: nothing was applied to \`track.ts\`. Each slot is tuned for the roster a dedicated server has in its arrival week at the ${TUNE_SPEED} speed, against Misa’s targets (\`targets.ts\`, 2026-10-30), with the lap rule that a later lap's first-weekend kill rate is not above the lap before's by more than noise. The mixed server is information only.`,
     '',
     '### Rounds (path, then tune for its arrival weeks)',
     '',
@@ -759,8 +715,8 @@ export function trackSummary(
     '',
     '### Slots',
     '',
-    '| Slot | Boss | Week | Cards | HP | Attack | Armour | prepared.share | prepared.beat2 | tool.share | tool.written | tool target | classic.kill | mixed kill / share (info) | Misses | Missed at slow / fast | At the edge of the search |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    '| Slot | Boss | Week | Cards | HP | Attack | Armour | prepared.share | first-weekend kill | prepared.beat2 | tool.share | tool.written | tool target | classic.kill | mixed kill / share (info) | Misses | At the edge of the search |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
   );
   for (const s of r.slots) {
     const m = s.best.measures;
@@ -768,12 +724,20 @@ export function trackSummary(
     const missed = s.best.misses.filter((x) => x.miss > 0).map((x) => x.target);
     const tool = t.find((x) => x.measure === 'tool.share')?.min ?? 0;
     out.push(
-      `| ${s.slot} | ${s.bossId} | ${s.week} | ${Math.round(trackSlot(s.slot).strengthBp / 100)}% | ${grouped(s.best.numbers.hp)} | ${s.best.numbers.atk} | ${s.best.numbers.armour} | ${(['prepared.share', 'prepared.beat2', 'tool.share', 'tool.written', 'classic.kill'] as const).map((k, i) => `${cell(t, k, m)}${i === 3 ? ` | ≥ ${pct(tool)}` : ''}`).join(' | ')} | ${pct(m['mixed.kill'])} / ${pct(m['mixed.share'])} | ${missed.length ? missed.join('; ') : 'none'} | ${s.best.sideMisses.slow.length} / ${s.best.sideMisses.fast.length} | ${s.atEdge.length ? s.atEdge.join(', ') : '-'} |`,
+      `| ${s.slot} | ${s.bossId} | ${s.week} | ${Math.round(trackSlot(s.slot).strengthBp / 100)}% | ${grouped(s.best.numbers.hp)} | ${s.best.numbers.atk} | ${s.best.numbers.armour} | ${(['prepared.share', 'prepared.written', 'prepared.beat2', 'tool.share', 'tool.written', 'classic.kill'] as const).map((k, i) => `${cell(t, k, m)}${i === 4 ? ` | ≥ ${pct(tool)}` : ''}`).join(' | ')} | ${pct(m['mixed.kill'])} / ${pct(m['mixed.share'])} | ${missed.length ? missed.join('; ') : 'none'} | ${s.atEdge.length ? s.atEdge.join(', ') : '-'} |`,
     );
   }
   out.push(
     '',
-    '(A value in bold misses its target, as measured at the expected speed; "missed at slow / fast" counts the targets missed at the slow and the fast roster speed, which the loss counts at half weight. Slot 1 has no limit on the classic party. The shares are from the full measurement of the proposal.)',
+    '(A value in bold misses its target, as measured at the expected speed. Slot 1 has no limit on the classic party. The shares are from the full measurement of the proposal.)',
+    '',
+  );
+  const lapKills = new Map(r.slots.map((x) => [x.slot, x.best.measures['prepared.written']]));
+  const lapBad = lapKillViolations(lapKills);
+  out.push(
+    lapBad.length
+      ? `Lap check: **${lapBad.map((x) => `slot ${x.slot} (${pct(x.kill)}, the lap before ${pct(x.before)})`).join('; ')}** have a first-weekend kill rate above the lap before's by more than ${pct(LAP_KILL_NOISE)}.`
+      : `Lap check: no later lap has a first-weekend kill rate above the lap before's by more than ${pct(LAP_KILL_NOISE)}.`,
     '',
   );
   const missing = r.slots.filter((s) => s.best.misses.some((x) => x.miss > 0));
@@ -795,7 +759,7 @@ export function trackSummary(
           .map((x) => `${x.target} (${pct(x.value)})`)
           .join(
             '; ',
-          )}.${notes.length ? ` ${notes.join('; ')}: a content problem, not a numbers problem.` : ' Each target is met somewhere in the search, but no candidate met all of them (the loss counts the slow and the fast roster too).'}${s.atEdge.length ? ` At the edge: ${s.atEdge.join(', ')}.` : ''}`,
+          )}.${notes.length ? ` ${notes.join('; ')}: a content problem, not a numbers problem.` : ' Each target is met somewhere in the search, but no candidate met all of them.'}${s.atEdge.length ? ` At the edge: ${s.atEdge.join(', ')}.` : ''}`,
       );
     }
     out.push('');
@@ -814,4 +778,62 @@ export function trackSummary(
     '',
   );
   return out;
+}
+
+// ---------- how sharp the kill rate falls with the boss's HP ----------
+
+export interface KillPoint {
+  readonly factor: number;
+  readonly hp: number;
+  readonly kill: number;
+}
+
+/**
+ * The prepared line's first-weekend kill rate (written talents) of slot `slot` at the roster of `week`, as the boss's HP moves from
+ * `from` to `to` times `numbers.hp` in steps of `step` (Attack and armour as given): the same seeds at every point.
+ */
+export function killByHp(
+  slot: number,
+  week: number,
+  numbers: Numbers,
+  o: { from: number; to: number; step: number; weekends: number; speed?: RosterSpeed },
+  profile: RosterProfile = PLACEHOLDER_ROSTER,
+): KillPoint[] {
+  const out: KillPoint[] = [];
+  const count = Math.round((o.to - o.from) / o.step);
+  for (let i = 0; i <= count; i++) {
+    const factor = o.from + i * o.step;
+    const hp = Math.round((numbers.hp * factor) / 100) * 100;
+    const boss = slotBoss(slot, { table: { [slot]: { ...numbers, hp } } });
+    const { line } = preparedOf(boss.id);
+    const { placements, bench } = dedicatedTeam(boss, line, week, o.speed ?? TUNE_SPEED, profile);
+    const kill = weekendStatsOf(boss, placements, bench, o.weekends, `cliff:${slot}`).tiers.kill;
+    out.push({ factor, hp, kill });
+  }
+  return out;
+}
+
+/**
+ * How wide the cliff is: the HP at which the kill rate (falling with HP) crosses `high` (default 90%) and `low` (10%), and the width
+ * between them as a share of the HP at 50%. Undefined when the curve does not cross both.
+ */
+export function cliffWidth(
+  curve: readonly KillPoint[],
+  high = 0.9,
+  low = 0.1,
+): { hpHigh: number; hpLow: number; hpHalf: number; widthShare: number } | undefined {
+  const cross = (level: number): number | undefined => {
+    for (let i = 1; i < curve.length; i++) {
+      const a = curve[i - 1] as KillPoint;
+      const b = curve[i] as KillPoint;
+      if (a.kill >= level && b.kill < level)
+        return a.hp + ((a.kill - level) / (a.kill - b.kill)) * (b.hp - a.hp);
+    }
+    return undefined;
+  };
+  const hpHigh = cross(high);
+  const hpLow = cross(low);
+  const hpHalf = cross(0.5);
+  if (hpHigh === undefined || hpLow === undefined || hpHalf === undefined) return undefined;
+  return { hpHigh, hpLow, hpHalf, widthShare: (hpLow - hpHigh) / hpHalf };
 }

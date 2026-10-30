@@ -1,23 +1,39 @@
-/** The track tuner: the lap rule, the loop's stop (with fake measures), the table over `slotBoss`, the ranks untouched, and a slot's weekend. */
+/** The track tuner: the lap rule (on the kill rate), the loop's stop (with fake measures), the table over `slotBoss`, the ranks untouched, and a slot's weekend. */
 import { describe, expect, it } from 'vitest';
 import { RAID_BOSS_IDS, RAID_RANKS, RAID_SPECS, raidBossOf } from '../src/bosses';
 import { DEDICATED, serverWeekend } from '../src/path';
 import { ROSTER_WEEKS, type RosterProfile, type RosterWeek } from '../src/roster';
-import { RANK_TOOL_SHARE_MIN, RAID_TARGETS, slotTargetsFor, toolShareMinAt } from '../src/targets';
+import {
+  BEAT2_MIN,
+  PREPARED_KILL_AIM,
+  RANK_TOOL_SHARE_MIN,
+  RAID_TARGETS,
+  beatWithin,
+  slotTargetsFor,
+  toolShareMinAt,
+} from '../src/targets';
+import type { Executor } from '../src/jobs';
 import {
   MAX_ROUNDS,
+  LOSS_STEP,
   NEAR_WEIGHT,
   SLOT_FIDELITY,
+  aimComfort,
   arrivalWeeks,
   dedicatedTeam,
+  cliffWidth,
   distanceOf,
-  earlierLaps,
+  killByHp,
+  lapKillViolations,
+  LAP_KILL_NOISE,
   evalSlot,
   pasteOf,
-  robustLoss,
-  sideOf,
+  quantised,
   slotTargets,
   slotAxes,
+  tuneSlot,
+  type SlotEvalArgs,
+  type SlotEvalResult,
   tuneLoop,
   type LoopOps,
 } from '../src/trackTuner';
@@ -36,59 +52,60 @@ import { absoluteOf, evalCandidate, nativeOf, preparedOf } from '../src/tuner';
 const N = TRACK_ORDER.length;
 
 describe('the lap rule', () => {
-  it('a later lap of a boss is never below the lap before, in any number, over the whole track', () => {
-    // A table that tries to make lap 2 and 3 easier than lap 1.
-    const hostile: SlotTable = {
+  it('has no numeric floor: a later lap’s numbers may be below the lap before’s when its cards make up for it', () => {
+    const table: SlotTable = {
       1: { hp: 30_000, atk: 200, armour: 90 },
       [1 + N]: { hp: 1_000, atk: 1, armour: 1 },
-      [1 + 2 * N]: { hp: 2_000, atk: 2, armour: 2 },
     };
-    for (const table of [SLOT_NUMBERS, hostile])
-      for (let s = N + 1; s <= 6 * N; s++) {
-        const now = slotNumbers(s, table);
-        const before = slotNumbers(s - N, table);
-        expect(now.hp).toBeGreaterThanOrEqual(before.hp);
-        expect(now.atk).toBeGreaterThanOrEqual(before.atk);
-        expect(now.armour).toBeGreaterThanOrEqual(before.armour);
-      }
-    expect(slotNumbers(1 + N, hostile)).toEqual({ hp: 30_000, atk: 200, armour: 90 });
-    expect(slotNumbers(1 + 2 * N, hostile)).toEqual({ hp: 30_000, atk: 200, armour: 90 });
+    expect(slotNumbers(1 + N, table)).toEqual({ hp: 1_000, atk: 1, armour: 1 });
+    expect(slotBoss(1 + N, { table }).hp).toBe(1_000);
+    expect(slotBoss(1, { table }).hp).toBe(30_000);
   });
 
-  it('the boss of a slot has those numbers', () => {
-    const hostile: SlotTable = { 1: { hp: 30_000 }, [1 + N]: { hp: 1_000 } };
-    expect(slotBoss(1 + N, { table: hostile }).hp).toBe(30_000);
-    expect(slotBoss(1, { table: hostile }).hp).toBe(30_000);
+  it('keeps the cards of a later lap at least as strong as the lap before’s', () => {
+    for (let s = N + 1; s <= 6 * N; s++)
+      expect(trackSlot(s).strengthBp).toBeGreaterThanOrEqual(trackSlot(s - N).strengthBp);
   });
 
-  it('the shipped table fills slots 1 to 15 and holds the rule in its own entries', () => {
+  it('flags a later lap whose first-weekend kill rate is above the lap before’s by more than noise', () => {
+    const kills = new Map<number, number>([
+      [1, 0.6],
+      [1 + N, 0.62],
+      [1 + 2 * N, 0.75],
+      [2, 0.5],
+      [2 + N, 0.3],
+      [3, 0.9],
+      [3 + N, 0.9 + LAP_KILL_NOISE + 0.01],
+    ]);
+    expect(lapKillViolations(kills, N)).toEqual(
+      [
+        { slot: 3 + N, kill: 0.9 + LAP_KILL_NOISE + 0.01, before: 0.9 },
+        { slot: 1 + 2 * N, kill: 0.75, before: 0.62 },
+      ].sort((a, b) => a.slot - b.slot),
+    );
+    // Lap 1 has no lap before.
+    expect(lapKillViolations(new Map([[1, 1]]), N)).toEqual([]);
+  });
+
+  it('fills slots 1 to 15 of the shipped table', () => {
     for (let s = 1; s <= 3 * N; s++) {
       const own = SLOT_NUMBERS[s];
       expect(own?.hp).toBeGreaterThan(0);
       expect(own?.atk).toBeGreaterThan(0);
       expect(own?.armour).toBeGreaterThan(0);
-      if (s > N) {
-        const before = SLOT_NUMBERS[s - N] as Required<NonNullable<(typeof SLOT_NUMBERS)[number]>>;
-        expect(own?.hp).toBeGreaterThanOrEqual(before.hp);
-        expect(own?.atk).toBeGreaterThanOrEqual(before.atk);
-        expect(own?.armour).toBeGreaterThanOrEqual(before.armour);
-      }
     }
   });
 
-  it('the search of a slot never goes below the lap before, and armour never below the hide', () => {
-    const table: SlotTable = { 1: { hp: 18_000, atk: 100, armour: 30 } };
-    const axes = slotAxes(1 + N, table);
-    expect(axes.map((a) => a.lo)).toEqual(expect.arrayContaining([18_000, 100, 30]));
-    for (const a of axes) expect(a.lo).toBeLessThanOrEqual(a.hi);
-    // Lap 1: wide, armour from the boss's hide (half of its high-rank armour).
-    const first = slotAxes(2, {});
+  it('searches a wide range of numbers, armour never below the boss’s hide', () => {
+    for (let slot = 1; slot <= 2 * N; slot++)
+      for (const a of slotAxes(slot)) expect(a.lo).toBeLessThanOrEqual(a.hi);
+    const first = slotAxes(2);
     const spec = RAID_SPECS.find((s) => s.id === trackSlot(2).bossId);
     expect(first[2]?.lo).toBe(Math.round((spec?.armour ?? 0) / 2));
     expect(first[0]?.lo).toBeLessThan(spec?.hp ?? 0);
     expect(first[0]?.hi).toBeGreaterThan(spec?.hp ?? 0);
-    // The earlier laps are handed to the measurement as table entries.
-    expect(Object.keys(earlierLaps(1 + 2 * N, table))).toEqual(['1', String(1 + N)]);
+    // The same range on every lap.
+    expect(slotAxes(2 + N)).toEqual(first);
   });
 });
 
@@ -250,14 +267,12 @@ describe('a slot’s weekend', () => {
       week: 6,
       speed: 'expected' as const,
       numbers: table[2] as { hp: number; atk: number; armour: number },
-      earlier: {},
       fidelity: tiny,
       salt: 'test',
     };
     const a = evalSlot(args);
     expect(evalSlot(args)).toEqual(a);
     for (const t of slotTargets(2)) expect(a.measures[t.measure]).toBeGreaterThanOrEqual(0);
-    expect(a.slow).toBeUndefined();
     expect(a.measures['mixed.kill']).toBeNaN();
     const b = evalSlot({ ...args, fidelity: { ...tiny, mixedDraws: 1 } });
     expect(b.measures['mixed.kill']).toBeGreaterThanOrEqual(0);
@@ -269,31 +284,6 @@ describe('a slot’s weekend', () => {
     const wall = evalSlot({ ...args, numbers: { hp: 10_000_000, atk: 100, armour: 35 } });
     expect(wall.measures['prepared.written']).toBe(0);
     expect(wall.measures['classic.kill']).toBe(0);
-  });
-
-  it('measures the slow and the fast roster too when asked, and the loss counts them at half weight', () => {
-    const tiny = { weekends: 4, draws: 2, classicWeekends: 2, mixedDraws: 0, mixedWeekends: 1 };
-    const r = evalSlot({
-      slot: 2,
-      week: 6,
-      speed: 'expected',
-      numbers: { hp: 14_000, atk: 100, armour: 35 },
-      earlier: {},
-      fidelity: tiny,
-      side: sideOf(tiny),
-      salt: 'side',
-    });
-    expect(r.slow?.['prepared.share']).toBeGreaterThanOrEqual(0);
-    expect(r.fast?.['prepared.share']).toBeGreaterThanOrEqual(0);
-    expect(sideOf(tiny).mixedDraws).toBe(0);
-    const t = slotTargets(2);
-    const own = robustLoss(t, { measures: r.measures, weekends: 0 });
-    expect(robustLoss(t, r)).toBeCloseTo(
-      own +
-        0.5 *
-          (robustLoss(t, { measures: r.slow as RaidMeasures, weekends: 0 }) +
-            robustLoss(t, { measures: r.fast as RaidMeasures, weekends: 0 })),
-    );
   });
 
   it('is judged on Misa’s targets, with the tool’s worth by the cards’ strength and no classic limit on the welcome boss, and the search leans to the ranks’ line only a little', () => {
@@ -402,7 +392,7 @@ describe('the slot measure at the high rank’s own setting', () => {
     const fid = { weekends: 40, draws: 8, classicWeekends: 20, mixedDraws: 1, mixedWeekends: 1 };
     const rank = evalCandidate({ boss: id, rank: 'high', numbers, fidelity: fid, salt: 'cmp' });
     const slotMeasure = evalSlot(
-      { slot, week: 8, speed: 'expected', numbers, earlier: {}, fidelity: fid, salt: 'cmp' },
+      { slot, week: 8, speed: 'expected', numbers, fidelity: fid, salt: 'cmp' },
       flatRoster(25),
     );
     const tolerance = {
@@ -417,5 +407,100 @@ describe('the slot measure at the high rank’s own setting', () => {
         Math.abs(slotMeasure.measures[m] - rank.measures[m]),
         `${id} ${m}`,
       ).toBeLessThanOrEqual(tol);
+  });
+});
+
+describe('the difficulty aim', () => {
+  it('is a kill rate that beats within two weekends as often as Misa’s floor asks', () => {
+    expect(PREPARED_KILL_AIM).toBeGreaterThan(0);
+    expect(PREPARED_KILL_AIM).toBeLessThan(1);
+    expect(beatWithin(PREPARED_KILL_AIM, 2)).toBeGreaterThanOrEqual(BEAT2_MIN);
+  });
+
+  it('is a comfort of minus the distance of the first-weekend kill rate to the aim', () => {
+    const m = (kill: number) => ({ 'prepared.written': kill }) as unknown as RaidMeasures;
+    expect(aimComfort(m(PREPARED_KILL_AIM))).toBeCloseTo(0);
+    expect(aimComfort(m(1))).toBeCloseTo(-(1 - PREPARED_KILL_AIM));
+    expect(aimComfort(m(PREPARED_KILL_AIM + 0.1))).toBeCloseTo(
+      aimComfort(m(PREPARED_KILL_AIM - 0.1)),
+    );
+    expect(aimComfort(m(0.5))).toBeGreaterThan(aimComfort(m(0.9)));
+    // Within a step of the aim the kill rate is noise.
+    expect(aimComfort(m(PREPARED_KILL_AIM + 0.01))).toBe(aimComfort(m(PREPARED_KILL_AIM - 0.01)));
+    expect(aimComfort(m(Number.NaN))).toBe(0);
+  });
+
+  it('compares losses in steps, so that noise below a step does not decide', () => {
+    expect(quantised(0)).toBe(quantised(LOSS_STEP * 0.4));
+    expect(quantised(LOSS_STEP * 2.2)).not.toBe(quantised(0));
+    expect(NEAR_WEIGHT).toBeLessThan(0.2);
+  });
+
+  /** A world where the kill rate falls with HP (1 at 8_000 HP, 0 at 18_000) and every other target is met: only the aim tells HPs apart. */
+  const fakeWorld =
+    (seen: SlotEvalArgs[]): Executor =>
+    (job) => {
+      const a = job.args as SlotEvalArgs;
+      seen.push(a);
+      const kill = Math.min(1, Math.max(0, 1 - (a.numbers.hp - 8_000) / 10_000));
+      const measures = {
+        'prepared.share': 0.95,
+        'prepared.kill': kill,
+        'prepared.written': kill,
+        'prepared.beat2': beatWithin(kill, 2),
+        'tool.share': 0.3,
+        'tool.written': 0.3,
+        'classic.share': 0.5,
+        'classic.kill': 0,
+        'mixed.share': Number.NaN,
+        'mixed.kill': Number.NaN,
+      } as unknown as RaidMeasures;
+      const result: SlotEvalResult = { measures, weekends: 1 };
+      return Promise.resolve({ result, seconds: 0 });
+    };
+
+  it('picks the boss whose first-weekend kill is nearest the aim among those that meet every target', async () => {
+    const seen: SlotEvalArgs[] = [];
+    const r = await tuneSlot({
+      slot: 2,
+      week: 4,
+      table: {},
+      quick: false,
+      run: { exec: fakeWorld(seen), slots: 1 },
+      cache: new Map(),
+    });
+    // The most comfortable boss (1 weekend in 1) and the hardest that is still beaten in two weekends both meet every target.
+    expect(r.best.loss).toBe(0);
+    expect(Math.abs(r.best.measures['prepared.written'] - PREPARED_KILL_AIM)).toBeLessThan(0.12);
+    expect(r.best.measures['prepared.beat2']).toBeGreaterThanOrEqual(BEAT2_MIN);
+    expect(seen.length).toBeGreaterThan(0);
+  });
+});
+
+describe('how sharply the kill rate falls with the HP', () => {
+  it('reads the cliff off a curve: the HP at 90% and 10% kill, and the width as a share of the HP at 50%', () => {
+    const curve = [
+      { factor: 0.8, hp: 8_000, kill: 1 },
+      { factor: 0.9, hp: 9_000, kill: 0.95 },
+      { factor: 1, hp: 10_000, kill: 0.7 },
+      { factor: 1.1, hp: 11_000, kill: 0.3 },
+      { factor: 1.2, hp: 12_000, kill: 0 },
+    ];
+    const c = cliffWidth(curve);
+    expect(c?.hpHigh).toBeCloseTo(9_200);
+    expect(c?.hpHalf).toBeCloseTo(10_500);
+    expect(c?.hpLow).toBeCloseTo(11_000 + (0.2 / 0.3) * 1_000);
+    expect(c?.widthShare).toBeCloseTo((11_000 + (0.2 / 0.3) * 1_000 - 9_200) / 10_500);
+    // A curve that never falls below the level has no cliff.
+    expect(cliffWidth(curve.map((x) => ({ ...x, kill: 1 })))).toBeUndefined();
+  });
+
+  it('measures a slot’s kill rate over the HP: a soft boss is always beaten, a huge one never', () => {
+    const numbers = { hp: 12_000, atk: 100, armour: 30 };
+    const curve = killByHp(2, 6, numbers, { from: 0.05, to: 20, step: 19.95, weekends: 4 });
+    expect(curve).toHaveLength(2);
+    expect(curve[0]?.kill).toBe(1);
+    expect(curve[1]?.kill).toBe(0);
+    expect(curve[0]?.hp).toBeLessThan(curve[1]?.hp ?? 0);
   });
 });

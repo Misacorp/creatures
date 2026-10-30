@@ -233,7 +233,12 @@ async function tuneTrackCli(
     return 1;
   }
   const [first, last] = range;
-  const result = await tuneTrack({ first, last, quick, run });
+  const result = await tuneTrack({
+    first,
+    last,
+    quick,
+    run,
+  });
   const md = trackSummary(result, { quick, first, last }).join('\n');
   console.log(md);
   if (out) {
