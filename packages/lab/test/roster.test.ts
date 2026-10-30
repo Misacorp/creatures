@@ -161,7 +161,7 @@ describe('the valley loader', () => {
       coverageAt(VALLEY_COVERAGE, 'mixed5', 'rare', 24),
     );
     expect(coverageAt(VALLEY_COVERAGE, 'mixed8', 'rare', 99)).toBe(
-      coverageAt(VALLEY_COVERAGE, 'mixed8', 'rare', 24),
+      Math.max(...VALLEY_COVERAGE.mixed8.map((w) => w.rare)),
     );
   });
 });

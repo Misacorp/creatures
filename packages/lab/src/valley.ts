@@ -127,7 +127,13 @@ export const VALLEY_ROSTER: RosterProfile = parseRosterProfile(rosterJson);
 /** The valley's server coverage: the share of each rarity's species a mixed server of 5, 8 or 15 owns, by week. */
 export const VALLEY_COVERAGE: ServerCoverage = parseServerCoverage(coverageJson);
 
-/** The share of `rarity`'s species a mixed server owns at `week` (clamped to 1..24). */
+/**
+ * The share of `rarity`'s species a mixed server owns by `week` (clamped to 1..24): **the running maximum** of the valley's share up to
+ * that week, per server size and rarity. A species already in the pool never becomes less owned, so the share can only fall because a
+ * content drop (about every 4th week in the valley's data) adds species nobody owns yet to the denominator. The answer lines use only
+ * the first content's 34 forms, so the running maximum is a lower bound for the chance that one of those is owned (its ownership never
+ * falls). It becomes exact if the valley reports the coverage of the first content separately.
+ */
 export function coverageAt(
   coverage: ServerCoverage,
   server: CoverageServer,
@@ -135,5 +141,5 @@ export function coverageAt(
   week: number,
 ): number {
   const w = Math.min(ROSTER_WEEKS, Math.max(1, Math.round(week)));
-  return (coverage[server][w - 1] as CoverageWeek)[rarity];
+  return Math.max(...coverage[server].slice(0, w).map((x) => x[rarity]));
 }

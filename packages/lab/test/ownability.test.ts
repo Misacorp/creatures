@@ -15,7 +15,13 @@ import {
 import { OWNABLE_CHANCE_MIN, OWNABLE_SERVER } from '../src/targets';
 import { SLOT_WEEKS, TRACK_ORDER } from '../src/track';
 import { ROSTER_WEEKS } from '../src/roster';
-import { VALLEY_COVERAGE, type ServerCoverage } from '../src/valley';
+import {
+  COVERAGE_RARITIES,
+  COVERAGE_SERVERS,
+  VALLEY_COVERAGE,
+  coverageAt,
+  type ServerCoverage,
+} from '../src/valley';
 
 /** A coverage where every server has these shares at every week. */
 const flat = (rare: number, epic: number): ServerCoverage => {
@@ -95,6 +101,24 @@ describe('the chance', () => {
     expect(answerOwnability(allCommon, 1, flat(0, 0)).ownable).toBe(true);
   });
 
+  it('reads the running maximum of the coverage: a dip when a content drop joins does not lower it', () => {
+    const dip = flat(0.5, 0);
+    const weeks = dip.mixed8.map((w) => (w.week === 4 ? { ...w, rare: 0.4 } : w));
+    const cov = { ...dip, mixed8: weeks };
+    expect(ownableChance(rareTwo, 3, 'mixed8', cov)).toBeCloseTo(0.25);
+    expect(ownableChance(rareTwo, 4, 'mixed8', cov)).toBeCloseTo(0.25);
+    // The valley's own dip at week 4 (0.57 to 0.45 on a server of 8) does not show.
+    expect(coverageAt(VALLEY_COVERAGE, 'mixed8', 'rare', 4)).toBe(
+      coverageAt(VALLEY_COVERAGE, 'mixed8', 'rare', 3),
+    );
+    for (const server of COVERAGE_SERVERS)
+      for (const rarity of COVERAGE_RARITIES)
+        for (let w = 2; w <= ROSTER_WEEKS; w++)
+          expect(coverageAt(VALLEY_COVERAGE, server, rarity, w)).toBeGreaterThanOrEqual(
+            coverageAt(VALLEY_COVERAGE, server, rarity, w - 1),
+          );
+  });
+
   it('reads the coverage at the week asked', () => {
     const early = ownableChance(rareTwo, 1, 'mixed8', VALLEY_COVERAGE);
     const late = ownableChance(rareTwo, 24, 'mixed8', VALLEY_COVERAGE);
@@ -113,11 +137,22 @@ describe('the track', () => {
   });
 
   it('takes the tool line as the boss’s first answer, with every answer listed', () => {
-    const s = slotOwnability(1);
-    expect(s.bossId).toBe(TRACK_ORDER[0]);
+    const s = slotOwnability(3);
+    expect(s.bossId).toBe(TRACK_ORDER[2]);
     expect(s.answers).toHaveLength(BOSS_ANSWERS[s.bossId]?.length as number);
     expect(s.tool).toBe(s.answers[0]);
     expect(s.pass).toBe(s.tool.ownable);
+  });
+
+  it('does not ask a slot without rule cards for a tool: slot 1, the tutorial, passes whatever its line needs', () => {
+    const s = slotOwnability(1, 1, flat(0, 0));
+    expect(s.tool.ownable).toBe(false);
+    expect(s.applies).toBe(false);
+    expect(s.pass).toBe(true);
+    // Slot 2 has one card, so it has a tool (its first answer is all common).
+    expect(slotOwnability(2, 2, flat(0, 0)).applies).toBe(true);
+    expect(slotOwnability(3, 3, flat(0, 0)).pass).toBe(false);
+    expect(ownabilityMarkdown([s], 'a test').join('\n')).toContain('n/a (no rule cards');
   });
 
   it('prints one row for each slot, naming the failures', () => {
