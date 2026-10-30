@@ -4,9 +4,22 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: Mixed servers are tuned too; Determination on from the second lap, capped at +25%; a track strip, and no boss is called a wall **[Misa]**
+
+ID: `2026-10-31-mixed-servers-are-tuned-too-determination` · Status: current · Amends: `2026-10-30-raids-are-tuned-on-damage-potential`, `2026-10-30-thornmother-is-a-deliberate-wall-at`
+
+**Decision (Misa, answering design panel 6, `docs/design/combat/reviews/2026-10-31-panel-6.md`).**
+
+- **Mixed servers are tuned too, where possible.** A mixed server (the usual server: a few engaged players and several casual ones) should need at most 3 weekends a boss at the expected roster speed. The track tuner holds it as a target on every slot, weighted below the dedicated targets; where both cannot hold, the dedicated targets win and the miss is reported. The tutorial (slot 1) asks more: a mixed server kills it in its first weekend in 80% of weekends.
+- **Determination is on from the second lap** (slot 6 onward): +5% damage and healing per failed weekend on the same boss, at most +25% (5 stacks), kept over a Festival, cleared by a kill. Off on the first lap. The track tuner still never uses it, so the bosses' numbers do not rely on it.
+- **A track strip on the raid screen:** the lap's five boss portraits, the current one lit, the beaten ones ticked. Never on the fight screen.
+- **No boss is called a wall, anywhere a player looks.** Thornmother keeps her place at the end of the first lap and her tuning (the `SLOT_WALL` flag stays a tuning term in the lab), but no text, hint, strip or card marks her or any boss as a wall or warns of one.
+
+**Reasoning.** Panel 6 measured that 88% of mixed servers spent more than 4 weekends on one boss at the expected speed, even on the card-less tutorial, because the numbers were fitted to four dedicated players only. With Determination on, slow dedicated servers stuck over 4 weekends fell from 15% to 0% and mixed ones from 88% to 48%; at its old +50% it would make the puzzle optional, so the cap is +25%, and the first lap stays clean. Misa on the wall: "They're just bosses. If players actually hit walls by design or accident, so be it. Let's not call them that. It robs players the experience of finding out. They know the boss's rules up front and can deduce from there."
+
 ## 2026-10-30: Thornmother is a deliberate wall at the end of the first lap **[Misa]**
 
-ID: `2026-10-30-thornmother-is-a-deliberate-wall-at` · Status: current · Amends: `2026-10-30-raids-are-tuned-on-damage-potential`
+ID: `2026-10-30-thornmother-is-a-deliberate-wall-at` · Status: current, amended by `2026-10-31-mixed-servers-are-tuned-too-determination` · Amends: `2026-10-30-raids-are-tuned-on-damage-potential`
 
 **Decision (Misa; placement and targets by the lead).** Thornmother's bark (heavy armour that cracks as she loses HP) makes a team with an answer far stronger against her than one without, and that is wanted: placed right on the boss track, she is a wall that makes a server rethink its raid roster. She moves to the end of the track's first lap (slot 5, about week 5, after four other bosses), and her slot is marked as a **wall** in the track data: a prepared team with her answer still reaches 125% potential or more, while a team without it may fall well below the usual 70% to 90% (target 30% to 60%, no kill). Her later laps are tuned as normal slots, since a server that passed the wall has learned the answer.
 
@@ -14,7 +27,7 @@ ID: `2026-10-30-thornmother-is-a-deliberate-wall-at` · Status: current · Amend
 
 ## 2026-10-30: Raids are tuned on damage potential; young servers ramp in; Determination built but off **[Misa]**
 
-ID: `2026-10-30-raids-are-tuned-on-damage-potential` · Status: current, amended by `2026-10-30-thornmother-is-a-deliberate-wall-at` · Amends: `2026-10-30-a-failed-raid-boss-returns-next`, `2026-10-30-how-the-boss-track-is-tuned`
+ID: `2026-10-30-raids-are-tuned-on-damage-potential` · Status: current, amended by `2026-10-30-thornmother-is-a-deliberate-wall-at`, `2026-10-31-mixed-servers-are-tuned-too-determination` · Amends: `2026-10-30-a-failed-raid-boss-returns-next`, `2026-10-30-how-the-boss-track-is-tuned`
 
 **Decision (Misa).**
 

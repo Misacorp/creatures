@@ -84,3 +84,5 @@ Big simulations come in phase 5 on purpose: week-by-week and Boss Rank numbers m
 1. Should Lucky Strike (the boss crits) or Slippery (the boss dodges more) go on any raid boss, and which? (Content call; both are measured and have answers.)
 2. Before phase 6 (migration): keep each server's Boss Rank or reset to rank 1; convert existing gear to the new lines or reroll it.
 3. The gear plan's three calls (`gear-plan.md`, section 6, questions 11 to 13): how strong a full set is next to a talent (recommended: about one good talent); drop the Scarf 7 and Charm 13 slot levels (recommended); can gear alone build a crit creature (recommended: yes).
+
+**Answered 2026-10-31 (panel 6):** mixed servers are tuned too where possible (at most 3 weekends a boss); Determination is on from the second lap, at most +25%; a track strip on the raid screen; no boss is ever called a wall where players look.

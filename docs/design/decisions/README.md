@@ -180,7 +180,8 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [raids.md](raids.md): Raid schedule, parties and joining, bosses and the raid curve, the live finale, raid board and summaries, raid Discord posts.
 
-- 2026-10-30 Thornmother is a deliberate wall at the end of the first lap \[Misa\]
+- 2026-10-31 Mixed servers are tuned too; Determination on from the second lap, capped at +25%; a track strip, and no boss is called a wall \[Misa\]
+- 2026-10-30 Thornmother is a deliberate wall at the end of the first lap \[Misa\] (amended)
 - 2026-10-30 Raids are tuned on damage potential; young servers ramp in; Determination built but off \[Misa\] (amended)
 - 2026-10-30 Festival weeks pause the boss track; no rank ease \[Misa\]
 - 2026-10-30 A failed raid boss returns next week; raids measure HP removed \[Misa\] (amended)
