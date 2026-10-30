@@ -6,31 +6,7 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q38. How fast should a collection grow?
-
-Status: asked, round 15 (2026-10-30). Touches: `scouts.md` (creature finds), T-1 in `goals.md`, combat v2's roster profile (`roadmap.md`).
-
-**Why it matters.** To keep a player's 10th creature close to their 3rd (T-1), the tuner nearly doubled how often scouts find creatures. Now a daily player owns about 19 kinds at week 4, 47 at week 12 and 81 at week 24 (of 106 in the game by then, with 12 new species every 4 weeks); a weekly player about 10, 30 and 55. The plan's example was 15 at week 4, and combat v2 tunes its bosses for about 36 creatures at week 24. More finds mean more "new creature!" moments, but also more duplicates and less to look forward to.
-
-- **A. Slower, like the plan.** About 15 at week 4 and 30 at week 12; the 10th creature catches up through faster growth instead (catch-up). Example: a new species is an event every few days.
-- **B. As tuned.** About 20 at week 4, 45 at week 12, 80 at week 24, owning about three quarters of what exists. Example: most visits in the first weeks bring someone new; later, new species drops are what you chase.
-- **C. Faster.** Almost everything that exists within a few weeks of its release. Example: each content drop is caught within a fortnight.
-
-**Misa's follow-up (2026-10-30):** "are these unique creature species or individual possibly duplicate finds?" Lead: unique species (kinds owned). Duplicates come on top, about one a visit for a daily player and one or two for a weekly one, and settle by themselves after a day (V-SCOUT-3).
-
-**Lead's pick: B.** It keeps something to chase (about a quarter of the species are always still out there, and each drop adds more), and the first weeks feel generous. If you pick it, the combat v2 session gets the new roster sizes before tuning against them.
-
-### Q39. Ribbons: drop them, or trials as an honour?
-
-Status: asked, round 15 (2026-10-30), after the panel (`reviews/2026-10-30-trials.md`). From Misa's reply to Q36. Touches: `systems/trials.md`, today's ribbons, T-1, T-7.
-
-**Why it matters.** You suggested replacing material-gated ribbons with trials: a checklist across the valley's systems, shown from day one, with a graduation. The panel does not hate it; all four reviewers say "adopt with changes", and all four make the same main change: a trial must never stop a creature's levels. The lab agrees: ribbon gates cost a daily player about a quarter of their creatures' idle growth in the first 12 weeks, and hold back the bench, not the best creatures. They also warn that fight-only boxes can't work (3 raid seats a week against 50 creatures) and that a ceremony at a set time feels like a timer.
-
-- **A. Drop ribbons entirely.** Levels just flow. Example: Pip goes from 9 to 31 without stopping. Simplest; nothing replaces the story.
-- **B. Trials as an honour.** Levels never stop. Each creature has a next trial (Bronze, Silver, Gold) of three boxes, each with a choice of routes (a dungeon run or Skilled in any work; a raid or a week at posts; an Epic piece or a rare find). Ticked boxes lead to graduation at the bonfire's daily ceremony, whether or not you are there, told in the return walk. The reward is a badge, a title and a ribbon worn on the sprite. Example: "Pip graduated Silver: stood guard in the raid, made a Rare scarf, pushed on into the deep Reef."
-- **C. Trials as a gate.** As B, but a creature stops at levels 10 and 20 until it graduates. Example: Pip waits at level 20 until it has taken part in a raid or worked a week at posts.
-
-**Lead's pick: B.** It keeps what you liked (the systems tied together, the list visible from day one, graduation) without a wait on 50 to 80 creatures, and gives each creature a story on its card. C keeps the waste the lab found; A loses the story.
+Nothing waiting.
 
 ## Queue
 
@@ -619,6 +595,40 @@ Status: answered, round 15 (2026-10-30). Challenges: Q27 (the cap "fed by many s
 **Answer (2026-10-30): B, with doubts about the clock.** "37 B but honestly I'm skeptical of the clock."
 
 Became: V-COM-13, building, collections and boss kills drive the Forge's fire, over a slow time floor. Because of Misa's doubt, the lab reports the slow floor and no floor (C) side by side, so the floor can be dropped if a quiet server still moves without it.
+
+### Q38. How fast should a collection grow?
+
+Status: answered, round 15 (2026-10-30). Touches: `scouts.md` (creature finds), T-1 in `goals.md`, combat v2's roster profile (`roadmap.md`).
+
+**Why it matters.** To keep a player's 10th creature close to their 3rd (T-1), the tuner nearly doubled how often scouts find creatures. Now a daily player owns about 19 kinds at week 4, 47 at week 12 and 81 at week 24 (of 106 in the game by then, with 12 new species every 4 weeks); a weekly player about 10, 30 and 55. The plan's example was 15 at week 4, and combat v2 tunes its bosses for about 36 creatures at week 24. More finds mean more "new creature!" moments, but also more duplicates and less to look forward to.
+
+- **A. Slower, like the plan.** About 15 at week 4 and 30 at week 12; the 10th creature catches up through faster growth instead (catch-up). Example: a new species is an event every few days.
+- **B. As tuned.** About 20 at week 4, 45 at week 12, 80 at week 24, owning about three quarters of what exists. Example: most visits in the first weeks bring someone new; later, new species drops are what you chase.
+- **C. Faster.** Almost everything that exists within a few weeks of its release. Example: each content drop is caught within a fortnight.
+
+**Misa's follow-up (2026-10-30):** "are these unique creature species or individual possibly duplicate finds?" Lead: unique species (kinds owned). Duplicates come on top, about one a visit for a daily player and one or two for a weekly one, and settle by themselves after a day (V-SCOUT-3).
+
+**Lead's pick: B.** It keeps something to chase (about a quarter of the species are always still out there, and each drop adds more), and the first weeks feel generous. If you pick it, the combat v2 session gets the new roster sizes before tuning against them.
+
+**Answer (2026-10-30): commons fast, rarer creatures slower.** "It seems like an awful lot. On the other hand we do want players to catch a lot of species so they can create combinations of creatures to answer raid boss challenges. Maybe it's still too much. Could we have a good set of common creatures that are found at the 'week 4 pace' but then make it slow down as rarer creatures are harder to find? They shouldn't be essential to find for boss cards, just offer more variety."
+
+Became: V-SCOUT-12, creature finds by rarity: commons at about the plan's pace (about 15 kinds at week 4), rarer species slower; rare and epic species are variety, never needed to answer a boss (a constraint sent to combat v2). The lab tunes the odds.
+
+### Q39. Ribbons: drop them, or trials as an honour?
+
+Status: answered, round 15 (2026-10-30), after the panel (`reviews/2026-10-30-trials.md`). From Misa's reply to Q36. Touches: `systems/trials.md`, today's ribbons, T-1, T-7.
+
+**Why it matters.** You suggested replacing material-gated ribbons with trials: a checklist across the valley's systems, shown from day one, with a graduation. The panel does not hate it; all four reviewers say "adopt with changes", and all four make the same main change: a trial must never stop a creature's levels. The lab agrees: ribbon gates cost a daily player about a quarter of their creatures' idle growth in the first 12 weeks, and hold back the bench, not the best creatures. They also warn that fight-only boxes can't work (3 raid seats a week against 50 creatures) and that a ceremony at a set time feels like a timer.
+
+- **A. Drop ribbons entirely.** Levels just flow. Example: Pip goes from 9 to 31 without stopping. Simplest; nothing replaces the story.
+- **B. Trials as an honour.** Levels never stop. Each creature has a next trial (Bronze, Silver, Gold) of three boxes, each with a choice of routes (a dungeon run or Skilled in any work; a raid or a week at posts; an Epic piece or a rare find). Ticked boxes lead to graduation at the bonfire's daily ceremony, whether or not you are there, told in the return walk. The reward is a badge, a title and a ribbon worn on the sprite. Example: "Pip graduated Silver: stood guard in the raid, made a Rare scarf, pushed on into the deep Reef."
+- **C. Trials as a gate.** As B, but a creature stops at levels 10 and 20 until it graduates. Example: Pip waits at level 20 until it has taken part in a raid or worked a week at posts.
+
+**Lead's pick: B.** It keeps what you liked (the systems tied together, the list visible from day one, graduation) without a wait on 50 to 80 creatures, and gives each creature a story on its card. C keeps the waste the lab found; A loses the story.
+
+**Answer (2026-10-30): drop the ribbon gates; trials as honours (B), with combat feats per tier.** On ribbons: "I do feel like the ribbon system is an awful lot of work for essentially... nothing. Let's drop it." On trials: "The honours system is kind of cool, despite what I previously said about dropping them. Let's make the bronze ribbon touch on many game systems but still be quite easy to attain. The combat part can be tuned in each one. Clearing a dungeon for bronze, clearing Undercroft (or 2+ levels, depending on balance) for silver and clearing a raid for gold. If we don't gate any progress behind ribbons, there shouldn't be an issue of requiring rare combat feats for them."
+
+Became: `systems/trials.md` accepted: no gates; Bronze, Silver and Gold as honours, each with one combat feat (a dungeon clear, an Undercroft clear or two levels deep, a raid clear) plus boxes from the valley's other systems; Bronze easy and broad. Misa's point overrides the panel's "no fight-only boxes": that worry was about gates, and an honour may be rare.
 
 ## Withdrawn
 

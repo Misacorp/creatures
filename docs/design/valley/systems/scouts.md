@@ -18,6 +18,7 @@ A scout is posted to one of the destinations and roams it all the time. Finds tu
 - **V-SCOUT-8** Opening hours: the Moonlit Reef is open all day and gives more at night; the Festival Grounds are open in festival weeks, and when they close, a scout there walks back to its last open place by itself.
 - **V-SCOUT-9** Keystones: each place keeps one keystone clock for the whole server (example: one in about 21 server-days), found by a scout posted there; it does not grow with the number of scouts. Keystones are collection finds (`commons.md` V-COM-12).
 - **V-SCOUT-10** A player's second and later scout at the same place finds creatures at half the chance; everything else is the same.
+- **V-SCOUT-12** Creatures by rarity (round 15, Q38): common species are found at a steady pace (example: about 15 kinds by week 4 for a daily player, most of a content drop's commons within a few weeks of release); rare and epic species are harder to find and take months. They add variety and are never needed to answer a raid boss (combat v2's boss cards must be answerable with commons).
 - **V-SCOUT-11** The week's twist (today's weekly special) still lands on one destination and changes what it gives for the week, shown on the Signpost from Monday.
 - A scout's found gear has the scout's own level as its item level base (today it followed explorer rank).
 
