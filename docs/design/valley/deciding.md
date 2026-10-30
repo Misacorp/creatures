@@ -19,6 +19,7 @@ Status: **accepted** (Misa, 2026-10-29). This is how the valley plan moves forwa
 7. **Remember the players, not the systems.** When a change removes something players earned, they keep an "I was there" memento (a title, a badge, a relic in the house), decided once at the migration (roadmap phase 6). Old systems are not kept alive to protect progress.
 8. **Follow-ups are welcome.** An answer that raises new questions puts them at the head of the queue. Several rounds in a row on one topic are fine.
 9. **A waiting round is asked once.** If Misa has not answered, the lead does other work that does not depend on it and does not repeat the questions (`CLAUDE.md`).
+10. **Show numbers as pictures.** When a round or a report rests on numbers over time, show them as a few simple charts on the phone page, with the tables behind them (Misa, 2026-10-30: "those graphs were really interesting and I like that way of presenting information"). Charts are generated from the lab's data (`reader/charts.py`), never drawn by hand.
 
 ## The question template
 
