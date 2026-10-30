@@ -65,11 +65,11 @@ describe('the strength ladder', () => {
 });
 
 describe('the boss of a slot', () => {
-  it('is raidBossOf at the three ranks the lab sets up', () => {
+  it('without table entries is raidBossOf at the three ranks the lab sets up', () => {
     // Slots 2, 5 and 10 are Boss Ranks low, mid and high.
-    expect(slotBoss(2)).toEqual(raidBossOf(trackSlot(2).bossId, { rank: 'low' }));
-    expect(slotBoss(5)).toEqual(raidBossOf(trackSlot(5).bossId, { rank: 'mid' }));
-    expect(slotBoss(10)).toEqual(raidBossOf(trackSlot(10).bossId, { rank: 'high' }));
+    expect(slotBoss(2, { table: {} })).toEqual(raidBossOf(trackSlot(2).bossId, { rank: 'low' }));
+    expect(slotBoss(5, { table: {} })).toEqual(raidBossOf(trackSlot(5).bossId, { rank: 'mid' }));
+    expect(slotBoss(10, { table: {} })).toEqual(raidBossOf(trackSlot(10).bossId, { rank: 'high' }));
   });
 
   it('interpolates the numbers between the ranks and is flat outside them', () => {
@@ -99,6 +99,7 @@ describe('the boss of a slot', () => {
 
   it('takes per-slot numbers and strength from the tables', () => {
     const numbers = SLOT_NUMBERS as Record<number, unknown>;
+    const kept = numbers[3];
     const strength = SLOT_STRENGTH as Record<number, number>;
     try {
       numbers[3] = { hp: 12_345, atk: 67 };
@@ -111,7 +112,7 @@ describe('the boss of a slot', () => {
       // Another slot is untouched.
       expect(slotBoss(4).hp).not.toBe(12_345);
     } finally {
-      delete numbers[3];
+      numbers[3] = kept;
       delete strength[3];
     }
   });

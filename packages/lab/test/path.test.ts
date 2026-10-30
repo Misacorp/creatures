@@ -4,6 +4,7 @@ import { inProcessExecutor } from '../src/jobRunners';
 import { runJobs, type Executor } from '../src/jobs';
 import {
   DEDICATED,
+  FESTIVAL_EASE,
   FESTIVAL_EVERY,
   MIXED,
   STUCK_WEEKS,
@@ -17,17 +18,18 @@ import {
 } from '../src/path';
 import { PLACEHOLDER_ROSTER, rosterLevels } from '../src/roster';
 import { MIXED_ORDER } from '../src/raidMeasure';
+import { preparedOf } from '../src/tuner';
 import { TRACK_ORDER } from '../src/track';
 
 describe('walkPath with a fake fight', () => {
-  it('always winning: one slot a week, a Festival week pays one slot back', () => {
+  it('always winning: one slot a week, a Festival week only skips the raid', () => {
     const fights: number[][] = [];
     const path = walkPath((slot, week) => {
       fights.push([slot, week]);
       return true;
     });
-    expect(path.fought.slice(0, 9)).toEqual([1, 2, 3, 4, 0, 4, 5, 6, 7]);
-    expect(path.reached.slice(0, 6)).toEqual([1, 2, 3, 4, 5, 8]);
+    expect(path.fought.slice(0, 9)).toEqual([1, 2, 3, 4, 0, 5, 6, 7, 8]);
+    expect(path.reached.slice(0, 6)).toEqual([1, 2, 3, 4, 5, 7]);
     expect(path.attempts.every((a) => a === 1)).toBe(true);
     expect(path.longestRun).toBe(1);
     // Four Festival weeks in 24: twenty fights.
@@ -47,31 +49,38 @@ describe('walkPath with a fake fight', () => {
   it('winning every second weekend: two tries a boss, Festival detours not counted', () => {
     let n = 0;
     const path = walkPath(() => ++n % 2 === 0);
-    expect(path.fought.slice(0, 9)).toEqual([1, 1, 2, 2, 0, 2, 2, 3, 3]);
-    expect(path.reached.slice(0, 4)).toEqual([1, 3, 5, 10]);
+    expect(path.fought.slice(0, 9)).toEqual([1, 1, 2, 2, 0, 3, 3, 4, 4]);
+    expect(path.reached.slice(0, 4)).toEqual([1, 3, 5, 8]);
     expect(path.attempts.slice(0, 3)).toEqual([2, 2, 2]);
-    // Slot 2 was fought four times in all (the re-fight after the Festival's ease), but beaten at the second try.
-    expect(path.weekends[1]).toBe(4);
+    // The Festival moves nobody back: slot 2 was fought twice, and beaten at the second try.
+    expect(path.weekends[1]).toBe(2);
     expect(path.longestRun).toBe(2);
     expect(summarisePath('x', 'expected', [path]).stuckShare).toBe(0);
   });
 
-  it('keeps the Festival rule: the boss waits and the slot eases by 1 after it, never below 1', () => {
+  it('keeps the Festival rule (Misa, 2026-10-30): the track waits, then goes on where it was', () => {
     const calls: number[] = [];
     walkPath((slot, week) => {
       calls.push(week);
       return slot < 3;
     });
     for (let w = FESTIVAL_EVERY; w <= 24; w += FESTIVAL_EVERY) expect(calls).not.toContain(w);
-    // Lost at slot 3 from week 3: weeks 3 and 4, then the Festival eases to slot 2 (a win), back to slot 3.
+    // Lost at slot 3 from week 3: weeks 3 and 4, then the Festival, then the same boss returns.
     const path = walkPath((slot) => slot < 3);
-    expect(path.fought.slice(0, 8)).toEqual([1, 2, 3, 3, 0, 2, 3, 3]);
-    // Slot 1 has nothing to ease to.
+    expect(path.fought.slice(0, 8)).toEqual([1, 2, 3, 3, 0, 3, 3, 3]);
+    // A server that had won goes on to the next boss.
+    const won = walkPath((slot, week) => slot < 3 || week === 4);
+    expect(won.fought.slice(0, 8)).toEqual([1, 2, 3, 3, 0, 4, 4, 4]);
     const stuck = walkPath(() => false);
     expect(stuck.fought.slice(4, 7)).toEqual([0, 1, 1]);
   });
 
-  it('can turn the Festival off or ease by more', () => {
+  it('can still ease by one (the shipped rule), turn the Festival off or ease by more', () => {
+    expect(FESTIVAL_EASE).toBe(0);
+    const one = walkPath(() => true, { festivalEase: 1 });
+    expect(one.fought.slice(0, 7)).toEqual([1, 2, 3, 4, 0, 4, 5]);
+    const slotOne = walkPath(() => false, { festivalEase: 1 });
+    expect(slotOne.fought.slice(4, 7)).toEqual([0, 1, 1]);
     const none = walkPath(() => true, { festivalEvery: 0 });
     expect(none.fought.every((s) => s > 0)).toBe(true);
     expect(none.reached).toHaveLength(24);
@@ -153,6 +162,17 @@ describe('the servers', () => {
     expect(slow.placements.some((p, i) => p.level !== fast.placements[i]?.level)).toBe(true);
   });
 
+  it('fields the line as written when there is a player for every column', () => {
+    const w = serverWeekend(DEDICATED, 3, 8, 'expected', 'columns');
+    const { line } = preparedOf(w.boss.id);
+    DEDICATED.players.forEach((_, c) => {
+      const mine = w.placements.filter((x) => x.col === c).sort((a, b) => a.row - b.row);
+      expect(mine.map((x) => x.formId)).toEqual(
+        Array.from({ length: w.boss.rows }, (_, r) => line[r * w.boss.cols + c]?.formId),
+      );
+    });
+  });
+
   it('fight reproducibly: same server, same weekend, same result', () => {
     const a = pathOf(DEDICATED, 'expected', 3);
     expect(pathOf(DEDICATED, 'expected', 3)).toEqual(a);
@@ -165,6 +185,35 @@ describe('the servers', () => {
     const reach = (speed: 'slow' | 'fast') =>
       [0, 1].map((i) => pathOf(DEDICATED, speed, i).reached.length).reduce((a, b) => a + b, 0);
     expect(reach('fast')).toBeGreaterThanOrEqual(reach('slow'));
+  });
+});
+
+describe('a table of slot numbers', () => {
+  const table = { 2: { hp: 4_321, atk: 55, armour: 7 } };
+
+  it('is the boss the path fights: serverWeekend takes it instead of SLOT_NUMBERS', () => {
+    const w = serverWeekend(DEDICATED, 2, 6, 'expected', 'table', undefined, { table });
+    expect(w.boss).toMatchObject({ hp: 4_321, atk: 55, armour: 7 });
+    expect(serverWeekend(DEDICATED, 2, 6, 'expected', 'table').boss.hp).not.toBe(4_321);
+  });
+
+  it('travels in the job arguments, and a plan can ask for one kind of server', () => {
+    const plan = planPath({ quick: true, servers: 2, kinds: ['dedicated'], table });
+    expect(plan.jobs).toHaveLength(2);
+    expect(plan.jobs.every((j) => (j.args as { server: string }).server === 'dedicated')).toBe(
+      true,
+    );
+    expect(plan.jobs.every((j) => (j.args as { table?: unknown }).table === table)).toBe(true);
+    const plain = planPath({ quick: true, servers: 1 });
+    expect(plain.jobs).toHaveLength(2);
+    expect(plain.jobs.some((j) => 'table' in (j.args as object))).toBe(false);
+  });
+
+  it('an easy slot 1 is beaten at once', () => {
+    const easy = { 1: { hp: 1_000, atk: 1, armour: 1 } };
+    const p = pathOf(DEDICATED, 'expected', 0, undefined, { table: easy });
+    expect(p.attempts[0]).toBe(1);
+    expect(p.reached[1]).toBe(2);
   });
 });
 

@@ -22,6 +22,7 @@ import {
 } from './talentReport';
 import { TEAM_BOSS_WIN_RATE } from './teamShare';
 import { buildTeamShareSection } from './teamShareReport';
+import { runSlotJob } from './trackTuner';
 import { runTuneJob } from './tuner';
 
 /** Runs the job and returns its result: plain data, so that it can be posted between threads. */
@@ -67,6 +68,8 @@ export function runJob(job: JobSpec, deps: Readonly<Record<string, unknown>>): u
       return runPathJob(job.args);
     case 'tune-eval':
       return runTuneJob(job.args);
+    case 'slot-eval':
+      return runSlotJob(job.args);
     default:
       throw new Error(`unknown job kind ${job.kind}`);
   }

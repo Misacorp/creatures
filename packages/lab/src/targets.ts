@@ -272,6 +272,43 @@ export const RAID_TARGETS: Readonly<Record<TargetRank, readonly RaidTarget[]>> =
 };
 
 /**
+ * The tool's worth a boss's cards ask for, by the strength of its cards (bp of the full card): "rule cards ask before they require"
+ * (Misa, 2026-10-29). The tests' own line through the three ranks (`RANK_TOOL_SHARE_MIN`: 0.06, 0.08 and 0.10 at 30%, 65% and 100%),
+ * straight between them, flat above 100%, and below 30% falling straight to 0.03 at 0%.
+ */
+export function toolShareMinAt(strengthBp: number): number {
+  const points: readonly (readonly [number, number])[] = [
+    [0, RANK_TOOL_SHARE_MIN.low / 2],
+    [3_000, RANK_TOOL_SHARE_MIN.low],
+    [6_500, RANK_TOOL_SHARE_MIN.mid],
+    [10_000, RANK_TOOL_SHARE_MIN.high],
+  ];
+  if (strengthBp >= 10_000) return RANK_TOOL_SHARE_MIN.high;
+  for (let i = 1; i < points.length; i++) {
+    const [s0, v0] = points[i - 1] as readonly [number, number];
+    const [s1, v1] = points[i] as readonly [number, number];
+    if (strengthBp <= s1) return v0 + ((v1 - v0) * (Math.max(0, strengthBp) - s0)) / (s1 - s0);
+  }
+  return RANK_TOOL_SHARE_MIN.high;
+}
+
+/**
+ * Misa's targets for slot `slot` of the boss track, whose cards have strength `strengthBp`: `RAID_TARGETS` (the same bounds at every
+ * rank) with two changes of the lead's, which Misa can change:
+ * - the tool's worth (`tool.share`, `tool.written`) is what its cards' strength asks for (`toolShareMinAt`), not always ten points;
+ * - slot 1 is a welcome boss: a new server has its starters, so any decent team may win it and `classic.kill` has no limit there.
+ */
+export function slotTargetsFor(slot: number, strengthBp: number): RaidTarget[] {
+  return RAID_TARGETS.high
+    .filter((t) => !(slot === 1 && t.measure === 'classic.kill'))
+    .map((t) =>
+      t.measure === 'tool.share' || t.measure === 'tool.written'
+        ? { ...t, min: toolShareMinAt(strengthBp) }
+        : t,
+    );
+}
+
+/**
  * A miss of a test rule costs this times the weight given to the rule: a boss that fails a lab test cannot be applied, so the tuner
  * does not trade a test failure for a better fit to the softer targets (Misa's, `RAID_TARGETS`, and the tool's worth).
  */

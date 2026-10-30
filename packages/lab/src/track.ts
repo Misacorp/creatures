@@ -27,11 +27,32 @@ export interface TrackSlot {
 /** The numbers a slot may set by hand (absolute, before cards), replacing the ones interpolated from the ranks. */
 export type SlotNumbers = Partial<Numbers>;
 
+/** A table of per-slot numbers (slot number to HP, Attack and armour), like `SLOT_NUMBERS`. */
+export type SlotTable = Readonly<Record<number, SlotNumbers>>;
+
 /**
- * Per-slot numbers, overridable (slot number to HP, Attack and armour). Empty: every slot interpolates the three ranks' numbers
- * (`rankNumbers`). The tuner will fill it in a later step, one entry per slot, tuned for the roster the path says arrives there.
+ * Per-slot numbers (slot number to HP, Attack and armour, absolute before cards), data. A slot without an entry interpolates the
+ * three ranks' numbers (`rankNumbers`). Tuned by `node scripts/report.mjs --tune --track` (`trackTuner.ts`) for the roster the path
+ * says arrives at each slot; slots 1 to 15 (three laps), later laps follow the high rank's numbers but never fall below the lap before
+ * (`slotNumbers`).
  */
-export const SLOT_NUMBERS: Readonly<Record<number, SlotNumbers>> = {};
+export const SLOT_NUMBERS: SlotTable = {
+  1: { hp: 15_400, atk: 83, armour: 25 }, // tidal-colossus
+  2: { hp: 10_900, atk: 118, armour: 39 }, // cinder-wyrm
+  3: { hp: 9_400, atk: 54, armour: 187 }, // thornmother
+  4: { hp: 8_600, atk: 96, armour: 7 }, // storm-sovereign
+  5: { hp: 37_400, atk: 58, armour: 13 }, // old-bogback
+  6: { hp: 17_000, atk: 128, armour: 29 }, // tidal-colossus
+  7: { hp: 21_000, atk: 125, armour: 51 }, // cinder-wyrm
+  8: { hp: 9_400, atk: 69, armour: 258 }, // thornmother
+  9: { hp: 8_600, atk: 105, armour: 8 }, // storm-sovereign
+  10: { hp: 37_400, atk: 96, armour: 19 }, // old-bogback
+  11: { hp: 17_000, atk: 128, armour: 30 }, // tidal-colossus
+  12: { hp: 22_500, atk: 130, armour: 59 }, // cinder-wyrm
+  13: { hp: 9_400, atk: 87, armour: 261 }, // thornmother
+  14: { hp: 8_600, atk: 109, armour: 8 }, // storm-sovereign
+  15: { hp: 37_400, atk: 96, armour: 24 }, // old-bogback
+};
 
 /** The strength of a slot's cards, by slot, when set by hand (bp). Empty: the rank ladder (`rankStrengthBp`). */
 export const SLOT_STRENGTH: Readonly<Record<number, number>> = {};
@@ -121,18 +142,52 @@ export const buildTrack = (length: number, order: readonly string[] = TRACK_ORDE
 export const TRACK: readonly TrackSlot[] = buildTrack(30);
 
 /**
- * The boss of a slot, built with `raidBossOf`: its numbers interpolated from the ranks (or `SLOT_NUMBERS`), its cards at the slot's
- * strength. `level` is the roster level the boss names for its picks (the lab's creatures at that rank by default); the path gives
- * every creature its own level and does not read it.
+ * A slot's own numbers: its `table` entry (any number the entry leaves out comes from the ranks' lines, `rankNumbers`), without the
+ * lap rule.
+ */
+export function ownNumbers(
+  slot: number,
+  table: SlotTable = SLOT_NUMBERS,
+  order: readonly string[] = TRACK_ORDER,
+): Numbers {
+  return { ...rankNumbers(trackSlot(slot, order).bossId, slot), ...table[slot] };
+}
+
+/**
+ * A slot's HP, Attack and armour: its own numbers, but never below the same boss's on the lap before (a later lap is never
+ * easier; Misa, 2026-10-30), checked up the laps (slot - n, slot - 2n, ... for a track of n bosses).
+ */
+export function slotNumbers(
+  slot: number,
+  table: SlotTable = SLOT_NUMBERS,
+  order: readonly string[] = TRACK_ORDER,
+): Numbers {
+  const own = ownNumbers(slot, table, order);
+  if (slot <= order.length) return own;
+  const before = slotNumbers(slot - order.length, table, order);
+  return {
+    hp: Math.max(own.hp, before.hp),
+    atk: Math.max(own.atk, before.atk),
+    armour: Math.max(own.armour, before.armour),
+  };
+}
+
+/**
+ * The boss of a slot, built with `raidBossOf`: its numbers (`slotNumbers`: the table, else interpolated from the ranks), its cards at
+ * the slot's strength. `level` is the roster level the boss names for its picks (the lab's creatures at that rank by default); the
+ * path gives every creature its own level and does not read it. `table` replaces `SLOT_NUMBERS` (the tuner tries numbers this way).
  */
 export function slotBoss(
   slot: number,
-  roster: { readonly level?: number; readonly order?: readonly string[] } = {},
+  roster: {
+    readonly level?: number;
+    readonly order?: readonly string[];
+    readonly table?: SlotTable;
+  } = {},
 ): BossDef {
   const s = trackSlot(slot, roster.order);
-  const n = { ...rankNumbers(s.bossId, slot), ...SLOT_NUMBERS[slot] };
   return raidBossOf(s.bossId, {
-    ...n,
+    ...slotNumbers(slot, roster.table, roster.order),
     strengthBp: s.strengthBp,
     level: roster.level ?? rankLevel(slot),
   });

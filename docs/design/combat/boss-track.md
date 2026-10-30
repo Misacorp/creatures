@@ -39,7 +39,7 @@ The track is data: an ordered list of slots, each a boss and the strength of its
 
 ## Tuning
 
-Each slot is tuned for the roster a dedicated server has in the week it usually arrives there (the path says when), against Misa's targets. Path and tuning repeat until the arrival weeks stop moving. Numbers are tuned at the expected speed and checked at slow and fast; the report shows how the path moves with the speed, so a valley change that speeds levelling up or slows it shows its effect on the raid before it ships.
+Each slot is tuned for the roster a dedicated server has in the week it usually arrives there (the path says when), against Misa's targets. Path and tuning repeat until the arrival weeks equal the weeks the table was tuned for (`node scripts/report.mjs --tune --track [--slots 1-15] [--quick]`, `trackTuner.ts`, about 3 minutes on 4 cores). A tuning is a sweep up the track, because a slot's arrival depends only on the slots before it; one sweep settles it from an empty table. The result is the `SLOT_NUMBERS` table in `track.ts`; a later lap of a boss is never below the lap before. A candidate's loss is the loss at the expected speed plus half of those at the slow and fast speeds. The tool's worth a slot asks for scales with the strength of its cards, and slot 1 has no limit on the classic party (`slotTargetsFor`). The lab tests' rules (`raidRules.ts`) stay with the three fixed ranks and are not applied to slots. Numbers are tuned at the expected speed and checked at slow and fast; the report shows how the path moves with the speed, so a valley change that speeds levelling up or slows it shows its effect on the raid before it ships.
 
 ## What survives the meeting
 

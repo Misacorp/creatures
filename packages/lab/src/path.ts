@@ -4,8 +4,9 @@
  * A server is a mix of player kinds and a roster speed. Week by week from 1 to 24 its roster (`roster.ts`) fights the boss of its
  * current slot (`track.ts`) over one raid weekend: a kill moves it to the next slot, a loss keeps the slot and the boss returns next
  * week at full HP (Misa, 2026-10-30). Every `FESTIVAL_EVERY`-th week is a Festival (`docs/design/progression.md`, "The ladder rule"
- * and "Relief on a schedule"): the boss of the server's slot waits, nothing is fought, and the slot eases by `FESTIVAL_EASE` after
- * it (never below 1). The shipped Festival boss fights at rank - 3 and a win does not raise the rank, so it never moves the track.
+ * and "Relief on a schedule"): the boss of the server's slot waits and nothing is fought. After it the server continues where it
+ * was: the boss it failed the week before returns, or the next one in line if it had won (Misa, 2026-10-30: no rank ease after a
+ * Festival; the shipped game's ease by one is dropped).
  *
  * `walkPath` is the pure walk with an injected fight; `weekendKill` is the real fight; `planPath` runs many seeded servers on the job
  * pool (`jobs.ts`) and `summarisePath` turns them into the report's table.
@@ -34,12 +35,13 @@ import {
   type RosterSpeed,
 } from './roster';
 import { LEVEL, type Pick } from './search';
-import { TRACK_ORDER, slotBoss, trackSlot } from './track';
+import { TRACK_ORDER, slotBoss, trackSlot, type SlotTable } from './track';
 import type { BossDef, Placement } from './types';
 
-/** The shipped Festival: every 5th week, the server's slot eases by 1 after it. */
+/** A Festival every 5th week: no raid that week, the track waits. */
 export const FESTIVAL_EVERY = 5;
-export const FESTIVAL_EASE = 1;
+/** The slots the track eases back after a Festival: none (Misa, 2026-10-30). `walkPath` can still be asked for more, for a comparison. */
+export const FESTIVAL_EASE = 0;
 /** The shipped balance target: at most this share of servers is stuck for more than `STUCK_WEEKS` weeks (weekends to a first kill) on one boss. */
 export const STUCK_WEEKS = 4;
 export const STUCK_SHARE_MAX = 0.1;
@@ -54,7 +56,7 @@ export interface ServerPath {
   readonly won: readonly boolean[];
   /** The week each slot first became the server's slot (index 0 is slot 1: week 1); 0 for a slot it never reached. */
   readonly reached: readonly number[];
-  /** The weekends fought against each slot (index 0 is slot 1), re-fights after a Festival's ease included. */
+  /** The weekends fought against each slot (index 0 is slot 1), re-fights included (a Festival moves nobody back). */
   readonly weekends: readonly number[];
   /**
    * The weekends it took to kill each slot's boss for the first time, counting the kill itself (index 0 is slot 1; 1 is a kill at the
@@ -63,6 +65,14 @@ export interface ServerPath {
   readonly attempts: readonly number[];
   /** The most of those: the longest run on one boss. */
   readonly longestRun: number;
+}
+
+/**
+ * What a path run may change besides the roster: the per-slot numbers it fights (default `SLOT_NUMBERS`; the tuner passes its
+ * proposals this way, also to worker threads, which do not share memory).
+ */
+export interface PathRun {
+  readonly table?: SlotTable;
 }
 
 export interface WalkOptions {
@@ -75,7 +85,7 @@ export interface WalkOptions {
 export type Fight = (slot: number, week: number) => boolean;
 
 /**
- * Plays one server: slot 1 in week 1, a kill moves on, a loss stays, a Festival week fights nothing and eases the slot after it.
+ * Plays one server: slot 1 in week 1, a kill moves on, a loss stays, a Festival week fights nothing (and eases the slot after it by `festivalEase`, none by default).
  * "The longest run on one boss" is the most weekends it took to kill one boss for the first time (`attempts`): a server that lost
  * four weekends and won the fifth ran five.
  */
@@ -172,11 +182,13 @@ export function serverWeekend(
   speed: RosterSpeed,
   seed: string,
   profile: RosterProfile = PLACEHOLDER_ROSTER,
+  run: PathRun = {},
 ): { boss: BossDef; placements: Placement[]; bench: Placement[] } {
-  const base = slotBoss(slot);
+  const base = slotBoss(slot, run.table ? { table: run.table } : {});
   const rows = base.rows;
   const { line, core } = preparedOf(base.id);
   const boss = server.players.length === base.cols ? base : wideBoss(base, server.players.length);
+  const whole = server.players.length === base.cols;
   let m = 0;
   let b = 0;
   const placements: Placement[] = [];
@@ -186,10 +198,11 @@ export function serverWeekend(
     const levels = rosterLevels(profile, p.roster, week, speed, rows + 1, p.joinWeek);
     let column: Pick[];
     if (p.role === 'prepared')
+      // A server with a player for every column fields the line as written; a wider or narrower one takes the tool's columns first.
       column = columnOf(
         line,
         base.cols,
-        toolColumns(line, base.cols, core)[m++ % base.cols] as number,
+        whole ? c : (toolColumns(line, base.cols, core)[m++ % base.cols] as number),
       );
     else if (p.role === 'builder')
       column = limitCopies(
@@ -227,8 +240,9 @@ export function weekendKill(
   speed: RosterSpeed,
   seed: string,
   profile: RosterProfile = PLACEHOLDER_ROSTER,
+  run: PathRun = {},
 ): boolean {
-  const { boss, placements, bench } = serverWeekend(server, slot, week, speed, seed, profile);
+  const { boss, placements, bench } = serverWeekend(server, slot, week, speed, seed, profile, run);
   return weekendStatsOf(boss, placements, bench, 1, `path:${seed}:w${week}`).winRate === 1;
 }
 
@@ -238,9 +252,10 @@ export function pathOf(
   speed: RosterSpeed,
   index: number,
   profile: RosterProfile = PLACEHOLDER_ROSTER,
+  run: PathRun = {},
 ): ServerPath {
   const seed = `${server.id}:${index}`;
-  return walkPath((slot, week) => weekendKill(server, slot, week, speed, seed, profile));
+  return walkPath((slot, week) => weekendKill(server, slot, week, speed, seed, profile, run));
 }
 
 // ---------- the summary ----------
@@ -351,7 +366,7 @@ export function pathMarkdown(speed: RosterSpeed, summaries: readonly PathSummary
 
 // ---------- the plan: servers as jobs ----------
 
-export interface PathJobArgs {
+export interface PathJobArgs extends PathRun {
   readonly server: PathServer['id'];
   readonly speed: RosterSpeed;
   readonly index: number;
@@ -359,17 +374,24 @@ export interface PathJobArgs {
 
 export const pathJobId = (a: PathJobArgs): string => `path:${a.server}:${a.speed}:${a.index}`;
 
+/** The run options of job args or plan options (the table, when given). */
+const runOf = (a: PathRun): PathRun => ({
+  ...(a.table ? { table: a.table } : {}),
+});
+
 /** What a `path-server` job runs. */
 export const runPathJob = (args: unknown): ServerPath => {
   const a = args as PathJobArgs;
   const server = PATH_SERVERS.find((s) => s.id === a.server);
   if (!server) throw new Error(`unknown path server ${a.server}`);
-  return pathOf(server, a.speed, a.index);
+  return pathOf(server, a.speed, a.index, PLACEHOLDER_ROSTER, runOf(a));
 };
 
-export interface PathPlanOptions {
+export interface PathPlanOptions extends PathRun {
   readonly quick: boolean;
   readonly speeds?: readonly RosterSpeed[];
+  /** Only these kinds of server (default: both). */
+  readonly kinds?: readonly PathServer['id'][];
   /** Servers of each kind, instead of `pathServers(quick)` (the tests use a few). */
   readonly servers?: number;
 }
@@ -386,10 +408,11 @@ export interface PathReport {
 export function planPath(options: PathPlanOptions): Plan<PathReport> {
   const speeds = options.speeds ?? ['expected'];
   const n = options.servers ?? pathServers(options.quick);
-  const cells = speeds.flatMap((speed) => PATH_SERVERS.map((s) => ({ speed, server: s.id })));
+  const kinds = PATH_SERVERS.filter((s) => !options.kinds || options.kinds.includes(s.id));
+  const cells = speeds.flatMap((speed) => kinds.map((s) => ({ speed, server: s.id })));
   const jobs: JobSpec[] = cells.flatMap((c) =>
     Array.from({ length: n }, (_, index) => {
-      const args: PathJobArgs = { ...c, index };
+      const args: PathJobArgs = { ...c, index, ...runOf(options) };
       return {
         id: pathJobId(args),
         section: `Path: ${c.server}, ${c.speed}`,

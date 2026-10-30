@@ -10,6 +10,8 @@ import { planReport, buildCatalogue, buildKeywords } from './report';
 import { TARGET_RANKS, type TargetRank } from './targets';
 import { planTalents, talentTeamId } from './talentReport';
 import type { TeamShareSummary } from './teamShareReport';
+import { trackSummary, tuneTrack } from './trackTuner';
+import { TRACK_ORDER } from './track';
 import { summaryAll, tuneBoss, type RankResult } from './tuner';
 
 /** Where the jobs run: `exec` runs one job, `slots` of them at a time (`scripts/report.mjs` sets both from `--jobs`). */
@@ -42,7 +44,8 @@ async function runPlan<T>(
  */
 export async function main(args: readonly string[], run: JobRunner = serial): Promise<number> {
   const quick = args.includes('--quick');
-  if (args.includes('--tune')) return tune(args, quick, run);
+  if (args.includes('--tune'))
+    return args.includes('--track') ? tuneTrackCli(args, quick, run) : tune(args, quick, run);
   if (args.includes('--path')) return path(args, quick, run);
   const bossAt = args.indexOf('--boss');
   if (args.includes('--bosses') || bossAt >= 0) {
@@ -195,5 +198,47 @@ async function path(args: readonly string[], quick: boolean, run: JobRunner): Pr
   if (out) writeFileSync(out, md + '\n');
   console.log(`path in ${secondsSince(t0)} s`);
   console.log(timings);
+  return 0;
+}
+
+/** `1-12` or `5` as a first and last slot; undefined when it is neither. */
+function slotRange(text: string): readonly [number, number] | undefined {
+  const m = /^(\d+)(?:-(\d+))?$/.exec(text);
+  if (!m) return undefined;
+  const first = Number(m[1]);
+  const last = m[2] === undefined ? first : Number(m[2]);
+  return first >= 1 && last >= first ? [first, last] : undefined;
+}
+
+/**
+ * `--tune --track [--slots 1-15] [--quick] [--out <file.md>]`: the track tuner (`trackTuner.ts`). The path (expected speed) gives each
+ * slot's arrival week, each slot is tuned for the roster of that week against Misa's targets, the proposals go into the table in
+ * memory and the path runs again, until no arrival week moves (at most four tunings). Prints the rounds, the numbers per slot and the
+ * lines to paste into `SLOT_NUMBERS` (`track.ts`). Nothing is applied.
+ */
+async function tuneTrackCli(
+  args: readonly string[],
+  quick: boolean,
+  run: JobRunner,
+): Promise<number> {
+  const slotsArg = flagValue(args, '--slots') ?? `1-${3 * TRACK_ORDER.length}`;
+  const range = slotRange(slotsArg);
+  if (!range) {
+    console.error(`--slots needs a slot or a range such as 1-12, not "${slotsArg}"`);
+    return 1;
+  }
+  const out = args.includes('--out') ? flagValue(args, '--out') : undefined;
+  if (args.includes('--out') && !out) {
+    console.error('--out needs a file name');
+    return 1;
+  }
+  const [first, last] = range;
+  const result = await tuneTrack({ first, last, quick, run });
+  const md = trackSummary(result, { quick, first, last }).join('\n');
+  console.log(md);
+  if (out) {
+    writeFileSync(out, md + '\n');
+    writeFileSync(out.replace(/(\.md)?$/, '.json'), JSON.stringify(result, null, 1) + '\n');
+  }
   return 0;
 }
