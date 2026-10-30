@@ -1,7 +1,7 @@
 /** Ownability: a slot's tool line must be ownable by a mixed server at the week the slot arrives (`ownability.ts`, `boss-track.md`). */
 import { describe, expect, it } from 'vitest';
 import { content } from '@creatures/game';
-import { BOSS_ANSWERS, answerLine } from '../src/bossAnswers';
+import { BOSS_ANSWERS, answerLine, answerProblems, type BossAnswer } from '../src/bossAnswers';
 import {
   answerOwnability,
   lineOfForm,
@@ -13,7 +13,7 @@ import {
   slotOwnability,
 } from '../src/ownability';
 import { OWNABLE_CHANCE_MIN, OWNABLE_SERVER } from '../src/targets';
-import { SLOT_WEEKS, TRACK_ORDER } from '../src/track';
+import { SLOT_LINE, SLOT_WEEKS, TRACK_ORDER, slotPreparedOf, trackSlot } from '../src/track';
 import { ROSTER_WEEKS } from '../src/roster';
 import {
   COVERAGE_RARITIES,
@@ -136,7 +136,7 @@ describe('the track', () => {
     });
   });
 
-  it('takes the tool line as the boss’s first answer, with every answer listed', () => {
+  it('takes the tool line as the line the tuner measures, with every answer listed', () => {
     const s = slotOwnability(3);
     expect(s.bossId).toBe(TRACK_ORDER[2]);
     expect(s.answers).toHaveLength(BOSS_ANSWERS[s.bossId]?.length as number);
@@ -144,15 +144,29 @@ describe('the track', () => {
     expect(s.pass).toBe(s.tool.ownable);
   });
 
-  it('does not ask a slot without rule cards for a tool: slot 1, the tutorial, passes whatever its line needs', () => {
+  it('asks every slot, slot 1 included, for the line the tuner measures: slot 1’s own line is all common, so it passes on its own', () => {
     const s = slotOwnability(1, 1, flat(0, 0));
-    expect(s.tool.ownable).toBe(false);
-    expect(s.applies).toBe(false);
+    expect(s.tool.needed).toEqual([]);
     expect(s.pass).toBe(true);
-    // Slot 2 has one card, so it has a tool (its first answer is all common).
-    expect(slotOwnability(2, 2, flat(0, 0)).applies).toBe(true);
+    expect(slotPreparedOf(1).line).toEqual(answerLine(SLOT_LINE[1] as string));
+    // Without its own line the boss's first answer would need a rare line and fail in week 1.
+    expect(
+      answerOwnability(BOSS_ANSWERS['tidal-colossus']?.[0] as BossAnswer, 1, flat(0, 0)).ownable,
+    ).toBe(false);
     expect(slotOwnability(3, 3, flat(0, 0)).pass).toBe(false);
-    expect(ownabilityMarkdown([s], 'a test').join('\n')).toContain('n/a (no rule cards');
+    expect(slotOwnability(2, 2, flat(0, 0)).pass).toBe(true);
+  });
+
+  it('gives a slot its own prepared line only where SLOT_LINE names one, a legal line of the same boss’s shape', () => {
+    for (const [slot, spec] of Object.entries(SLOT_LINE)) {
+      const own = answerLine(spec);
+      const first = answerLine(BOSS_ANSWERS[trackSlot(Number(slot)).bossId]?.[0]?.line as string);
+      expect(answerProblems(own)).toEqual([]);
+      expect(own).toHaveLength(first.length);
+    }
+    expect(slotPreparedOf(3).line).toEqual(
+      answerLine(BOSS_ANSWERS[trackSlot(3).bossId]?.[0]?.line as string),
+    );
   });
 
   it('prints one row for each slot, naming the failures', () => {

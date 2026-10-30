@@ -12,7 +12,6 @@
  * pool (`jobs.ts`) and `summarisePath` turns them into the report's table.
  */
 import { createSeededRng } from '@creatures/game';
-import { preparedOf } from './tuner';
 import {
   columnOf,
   casualColumn,
@@ -35,7 +34,7 @@ import {
 } from './roster';
 import { VALLEY_ROSTER } from './valley';
 import { LEVEL, type Pick } from './search';
-import { TRACK_ORDER, slotBoss, trackSlot, type SlotTable } from './track';
+import { TRACK_ORDER, slotBoss, slotPreparedOf, trackSlot, type SlotTable } from './track';
 import type { BossDef, Placement } from './types';
 
 /** A Festival every 5th week: no raid that week, the track waits. */
@@ -213,7 +212,7 @@ export function serverWeekend(
 ): { boss: BossDef; placements: Placement[]; bench: Placement[] } {
   const base = slotBoss(slot, run.table ? { table: run.table } : {});
   const rows = base.rows;
-  const { line, core } = preparedOf(base.id);
+  const { line, core } = slotPreparedOf(slot);
   const boss = server.players.length === base.cols ? base : wideBoss(base, server.players.length);
   const whole = server.players.length === base.cols;
   let m = 0;

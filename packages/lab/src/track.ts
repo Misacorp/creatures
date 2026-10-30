@@ -5,7 +5,9 @@
  * a win moves it one slot on; after the last boss the track starts again with the next, stronger cards (the slot number is the
  * Boss Rank, and the strength follows the rank up to the cap). Failing a boss keeps the slot (`path.ts` plays that out).
  */
+import { BOSS_ANSWERS, answerLine } from './bossAnswers';
 import { RAID_RANKS, raidBossOf } from './bosses';
+import type { Pick } from './search';
 import { absoluteOf, nativeOf, type Numbers } from './tuner';
 import type { BossDef } from './types';
 
@@ -55,7 +57,7 @@ export type SlotTable = Readonly<Record<number, SlotNumbers>>;
  * says arrives at each slot (`SLOT_WEEKS`); slots 1 to 15 (three laps), later laps follow the high rank's numbers.
  */
 export const SLOT_NUMBERS: SlotTable = {
-  1: { hp: 16_700, atk: 107, armour: 20 }, // tidal-colossus
+  1: { hp: 12_400, atk: 89, armour: 31 }, // tidal-colossus
   2: { hp: 4_800, atk: 143, armour: 83 }, // cinder-wyrm
   3: { hp: 14_300, atk: 53, armour: 6 }, // storm-sovereign
   4: { hp: 23_700, atk: 100, armour: 19 }, // old-bogback
@@ -101,11 +103,38 @@ export const SLOT_CARDS: Readonly<Record<number, SlotRules>> = {
  */
 export const SLOT_WALL: Readonly<Record<number, true>> = { 5: true };
 
+/**
+ * A slot's own prepared line (a line spec as in `bossAnswers.ts`), used by the track tuner and the path in place of the boss's first
+ * written answer (`slotPreparedOf`). Slot 1 only: the tutorial boss is tuned for the creatures a week-1 server has. Its boss's first
+ * answer uses Tempestray, a rare, which a server of 8 owns with a chance of 14% in week 1; with commons only the line reached 88% to
+ * 90% potential at best (Cindle 56%, Pyrelynx 66%, Geyserpup 75%, Geyserpup with Puddle Maker in both swapped slots 88%, and 90% with
+ * Edge-walker on the first one), so the line below is that one: the first answer's line with both Tempestrays replaced by
+ * Geyserpup with Puddle Maker (Edge-walker kept where legal). The ownability rule (`ownability.ts`) reads this line on every slot.
+ */
+export const SLOT_LINE: Readonly<Record<number, string>> = {
+  1: 'kilnmole/keep-the-heat-in+brace bogwarden/wide-reach+long-shadow drizzlewt/clear-the-air+bright-boost geyserpup/puddle-maker+edge-walker | tidewing/lead-the-way+owners-mark fogwyrm/wide-reach+catch-breath voltaro/none+odd-one-out drizzlewt/curl-up+bright-boost | fogwyrm/wide-reach+unbothered sunfawn/curl-up+brace geyserpup/puddle-maker tidewing/double-mark+owners-mark',
+};
+
 /** Whether a slot is a wall (`SLOT_WALL`). */
 export const isWallSlot = (slot: number): boolean => SLOT_WALL[slot] === true;
 
 /** The rules of a slot's boss: its `SLOT_CARDS` entry, else the full set. */
 export const slotRules = (slot: number): SlotRules => SLOT_CARDS[slot] ?? { buildUp: true };
+
+/**
+ * A slot's prepared line and its tool (`core`): its `SLOT_LINE` when it has one, else the first written answer of its boss. What the
+ * track tuner measures as "prepared" and what a dedicated server fields on the path.
+ */
+export function slotPreparedOf(
+  slot: number,
+  order: readonly string[] = TRACK_ORDER,
+): { line: Pick[]; core: readonly string[] } {
+  const bossId = trackSlot(slot, order).bossId;
+  const first = BOSS_ANSWERS[bossId]?.[0];
+  if (!first) throw new Error(`${bossId} has no written answer`);
+  const spec = SLOT_LINE[slot] ?? first.line;
+  return { line: answerLine(spec), core: first.core ?? [] };
+}
 
 /** The strength of a slot's cards, by slot, when set by hand (bp). Empty: the rank ladder (`rankStrengthBp`). */
 export const SLOT_STRENGTH: Readonly<Record<number, number>> = {};

@@ -9,14 +9,15 @@
  * pooled into the raid roster. The share is read as its running maximum over the weeks (`coverageAt`): a species already in the pool
  * never becomes less owned, and the share dips only when a content drop adds unowned species to the denominator. The chance a server owns every non-common line an answer uses is the product of those shares, one for
  * each distinct non-common line (the valley counts 34 forms as 34 species; reading the share as the chance a given line is owned is the
- * approximation we accept). An all-common answer is always ownable. A slot with no rule cards (slot 1, the tutorial: `SLOT_CARDS`) has no
- * tool, so the rule does not apply to it. The test and the report read the same functions.
+ * approximation we accept). An all-common answer is always ownable. The rule holds on every slot, for the line the tuner measures as
+ * prepared: the boss's first answer, or the slot's own line (`SLOT_LINE`; slot 1's is all common, so it passes on its own). The test
+ * and the report read the same functions.
  */
 import { content } from '@creatures/game';
 import { BOSS_ANSWERS, answerLine, type BossAnswer } from './bossAnswers';
 import type { Pick } from './search';
 import { OWNABLE_CHANCE_MIN, OWNABLE_SERVER } from './targets';
-import { SLOT_WEEKS, slotRules, trackSlot } from './track';
+import { SLOT_LINE, SLOT_WEEKS, trackSlot } from './track';
 import {
   COVERAGE_SERVERS,
   VALLEY_COVERAGE,
@@ -97,17 +98,15 @@ export function answerOwnability(
   };
 }
 
-/** A track slot at its arrival week: every answer of its boss, the first being the tool line the rule is about. */
+/** A track slot at its arrival week: every answer of its boss, the first being the tool line the rule is about (the slot's own line when it has one). */
 export interface SlotOwnability {
   readonly slot: number;
   readonly bossId: string;
   readonly week: number;
   readonly answers: readonly AnswerOwnability[];
-  /** The tool line: the boss's first answer. */
+  /** The tool line: the line the tuner measures (the slot's own, else the boss's first answer). */
   readonly tool: AnswerOwnability;
-  /** Whether the rule applies: only slots with at least one rule card have a tool (slot 1, the tutorial, has none). */
-  readonly applies: boolean;
-  /** Whether the slot passes: the tool line is ownable at the arrival week, or the rule does not apply. */
+  /** Whether the tool line is ownable at the arrival week. */
   readonly pass: boolean;
 }
 
@@ -118,11 +117,15 @@ export function slotOwnability(
   coverage: ServerCoverage = VALLEY_COVERAGE,
 ): SlotOwnability {
   const bossId = trackSlot(slot).bossId;
-  const answers = (BOSS_ANSWERS[bossId] ?? []).map((a) => answerOwnability(a, week, coverage));
+  const written = BOSS_ANSWERS[bossId] ?? [];
+  // The tool line is the line the tuner measures: the slot's own (`SLOT_LINE`) or the boss's first answer.
+  const own = SLOT_LINE[slot];
+  const answers = written.map((a, i) =>
+    answerOwnability(i === 0 && own ? { ...a, line: own } : a, week, coverage),
+  );
   const tool = answers[0];
   if (!tool) throw new Error(`${bossId} has no written answer`);
-  const applies = slotRules(slot).cards !== 0;
-  return { slot, bossId, week, answers, tool, applies, pass: !applies || tool.ownable };
+  return { slot, bossId, week, answers, tool, pass: tool.ownable };
 }
 
 /** Every slot with a week: slot `i + 1` at `weeks[i]` (default the committed `SLOT_WEEKS`, slots 1 to 15). */
@@ -140,7 +143,7 @@ export function ownabilityMarkdown(rows: readonly SlotOwnability[], weeksFrom: s
   const out = [
     '### Ownability of the tool lines',
     '',
-    `A slot's tool line (the boss's first answer) is ownable at the slot's arrival week (only for slots with a rule card; slot 1 has none and no tool) when the chance that a mixed server of ${OWNABLE_SERVER.slice(5)} owns every non-common line it uses is at least ${pct(OWNABLE_CHANCE_MIN)}. The chance is the product, over the distinct non-common lines, of that rarity's coverage at that week (\`server-coverage.json\`, as its running maximum over the weeks; an evolved form counts as its line, with the rarity of the line's first stage). Arrival weeks: ${weeksFrom}.`,
+    `A slot's tool line (the line the tuner measures: the boss's first answer, or the slot's own line) is ownable at the slot's arrival week when the chance that a mixed server of ${OWNABLE_SERVER.slice(5)} owns every non-common line it uses is at least ${pct(OWNABLE_CHANCE_MIN)}. The chance is the product, over the distinct non-common lines, of that rarity's coverage at that week (\`server-coverage.json\`, as its running maximum over the weeks; an evolved form counts as its line, with the rarity of the line's first stage). Arrival weeks: ${weeksFrom}.`,
     '',
     '| Slot | Boss | Week | Tool line needs | Chance, servers of 5 / 8 / 15 | Tool line | Other answers: needs, chance on 5 / 8 / 15 |',
     '| --- | --- | --- | --- | --- | --- | --- |',
@@ -149,7 +152,7 @@ export function ownabilityMarkdown(rows: readonly SlotOwnability[], weeksFrom: s
     COVERAGE_SERVERS.map((s) => pct(a.chance[s])).join(' / ');
   for (const r of rows)
     out.push(
-      `| ${r.slot} | ${r.bossId} | ${r.week} | ${needText(r.tool.needed)} | ${chances(r.tool)} | ${r.applies ? (r.pass ? 'pass' : '**FAIL**') : 'n/a (no rule cards, no tool)'} | ${
+      `| ${r.slot} | ${r.bossId} | ${r.week} | ${needText(r.tool.needed)} | ${chances(r.tool)} | ${r.pass ? 'pass' : '**FAIL**'} | ${
         r.answers
           .slice(1)
           .map((a) => `${needText(a.needed)}: ${chances(a)}`)

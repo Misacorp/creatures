@@ -1018,11 +1018,11 @@ What the bosses and foes have, read off their data by the predicates in `src/mec
 
 ### Ownability of the tool lines
 
-A slot's tool line (the boss's first answer) is ownable at the slot's arrival week (only for slots with a rule card; slot 1 has none and no tool) when the chance that a mixed server of 8 owns every non-common line it uses is at least 50%. The chance is the product, over the distinct non-common lines, of that rarity's coverage at that week (`server-coverage.json`, as its running maximum over the weeks; an evolved form counts as its line, with the rarity of the line's first stage). Arrival weeks: the committed `SLOT_WEEKS` (1 2 3 4 5 7 8 9 10 12 13 14 15 17 18), the weeks the track was tuned for.
+A slot's tool line (the line the tuner measures: the boss's first answer, or the slot's own line) is ownable at the slot's arrival week when the chance that a mixed server of 8 owns every non-common line it uses is at least 50%. The chance is the product, over the distinct non-common lines, of that rarity's coverage at that week (`server-coverage.json`, as its running maximum over the weeks; an evolved form counts as its line, with the rarity of the line's first stage). Arrival weeks: the committed `SLOT_WEEKS` (1 2 3 4 5 7 8 9 10 12 13 14 15 17 18), the weeks the track was tuned for.
 
 | Slot | Boss | Week | Tool line needs | Chance, servers of 5 / 8 / 15 | Tool line | Other answers: needs, chance on 5 / 8 / 15 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | tidal-colossus | 1 | stormray (rare) | 0% / 14% / 29% | n/a (no rule cards, no tool) | hearthshell (epic), stormray (rare), gaiadrake (epic), mossback (rare): 0% / 0% / 0% |
+| 1 | tidal-colossus | 1 | none (all common) | 100% / 100% / 100% | pass | hearthshell (epic), stormray (rare), gaiadrake (epic), mossback (rare): 0% / 0% / 0% |
 | 2 | cinder-wyrm | 2 | none (all common) | 100% / 100% / 100% | pass | stormray (rare), hearthshell (epic), coralynx (rare): 0% / 0% / 7% |
 | 3 | storm-sovereign | 3 | stormray (rare) | 29% / 57% / 71% | pass | stormray (rare), gaiadrake (epic): 6% / 6% / 29% |
 | 4 | old-bogback | 4 | stormray (rare) | 32% / 57% / 71% | pass | mossback (rare), stormray (rare), hearthshell (epic), coralynx (rare): 1% / 3% / 15% |

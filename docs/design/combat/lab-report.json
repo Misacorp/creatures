@@ -10696,13 +10696,11 @@
    "slot": 1,
    "boss": "tidal-colossus",
    "week": 1,
-   "toolNeeds": [
-    "stormray"
-   ],
+   "toolNeeds": [],
    "chance": {
-    "mixed5": 0,
-    "mixed8": 0.14285714285714285,
-    "mixed15": 0.2857142857142857
+    "mixed5": 1,
+    "mixed8": 1,
+    "mixed15": 1
    },
    "pass": true
   },

@@ -25,7 +25,7 @@
  */
 import { createSeededRng } from '@creatures/game';
 import { randomTalents } from './answerMeasure';
-import { answerLine, BOSS_ANSWERS, withoutTool } from './bossAnswers';
+import { withoutTool } from './bossAnswers';
 import {
   RAID_SPECS,
   combinePotential,
@@ -86,6 +86,7 @@ import {
   rankNumbers,
   slotBoss,
   slotNumbers,
+  slotPreparedOf,
   trackSlot,
   type SlotTable,
 } from './track';
@@ -180,13 +181,6 @@ export interface SlotEvalResult {
 const unmeasured = (): Record<RaidMeasure, number> =>
   Object.fromEntries(RAID_MEASURES.map((m) => [m, Number.NaN])) as Record<RaidMeasure, number>;
 
-/** The first written answer of a boss: its line and its tool (`core`). */
-function preparedOf(id: string): { line: Pick[]; core: readonly string[] } {
-  const first = BOSS_ANSWERS[id]?.[0];
-  if (!first) throw new Error(`${id} has no written answer`);
-  return { line: answerLine(first.line), core: first.core ?? [] };
-}
-
 /** One speed of a slot's measurement: the weekends of the fidelity, the mixed server only when the fidelity asks for it. */
 function measureSpeed(
   a: SlotEvalArgs,
@@ -196,7 +190,7 @@ function measureSpeed(
   profile: RosterProfile,
 ): { measures: RaidMeasures; weekends: number } {
   const boss = slotBoss(a.slot, { table });
-  const { line, core } = preparedOf(boss.id);
+  const { line, core } = slotPreparedOf(a.slot);
   const prepared = (picks: readonly Pick[], runs: number, salt: string): WeekendStats => {
     const { placements, bench } = dedicatedTeam(boss, picks, a.week, speed, profile);
     return weekendStatsOf(boss, placements, bench, runs, salt);
@@ -905,7 +899,7 @@ export function killByHp(
     const factor = o.from + i * o.step;
     const hp = Math.round((numbers.hp * factor) / 100) * 100;
     const boss = slotBoss(slot, { table: { [slot]: { ...numbers, hp } } });
-    const { line } = preparedOf(boss.id);
+    const { line } = slotPreparedOf(slot);
     const { placements, bench } = dedicatedTeam(boss, line, week, o.speed ?? TUNE_SPEED, profile);
     const kill = weekendStatsOf(boss, placements, bench, o.weekends, `cliff:${slot}`).tiers.kill;
     out.push({ factor, hp, kill });
