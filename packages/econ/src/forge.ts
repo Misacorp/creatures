@@ -1,7 +1,8 @@
 import { masteryBonus } from './curves';
 import type { Rules } from './rules';
 import { ELEMENTS } from './rules';
-import type { Anvil, Piece, Player, Server } from './types';
+import { rollLines } from './lines';
+import type { Anvil, Creature, Piece, Player, Server } from './types';
 import { R } from './types';
 import { credit, creditShard, debit, debitShard } from './world';
 import { uniform } from './util';
@@ -201,7 +202,7 @@ export const bagTotal = (p: Player): number => (p.bag[0] ?? 0) + (p.bag[1] ?? 0)
  */
 export function equipOrBag(p: Player, piece: Piece, fire: number): boolean {
   const limit = fire - p.rules.forge.weakMargin;
-  let target: { gear: number[]; slot: number } | null = null;
+  let target: { creature: Creature; slot: number } | null = null;
   let weakest = Infinity;
   for (const c of p.creatures) {
     if (c.element !== piece.element) continue;
@@ -209,13 +210,20 @@ export function equipOrBag(p: Player, piece: Piece, fire: number): boolean {
       const g = c.gear[s]!;
       if (g < limit && g < piece.ilvl && g < weakest) {
         weakest = g;
-        target = { gear: c.gear, slot: s };
+        target = { creature: c, slot: s };
       }
     }
   }
   if (target) {
-    const old = target.gear[target.slot]!;
-    target.gear[target.slot] = piece.ilvl;
+    const old = target.creature.gear[target.slot]!;
+    target.creature.gear[target.slot] = piece.ilvl;
+    target.creature.gearRarity[target.slot] = piece.rarity;
+    target.creature.gearLines[target.slot] = rollLines(
+      p.lineRng,
+      p.rules,
+      piece.rarity,
+      piece.ilvl,
+    );
     p.wk.piecesWorn += 1;
     if (old > 0 && bagTotal(p) < p.rules.forge.bag) {
       p.bag[0] = (p.bag[0] ?? 0) + 1;

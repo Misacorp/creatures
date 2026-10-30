@@ -27,6 +27,8 @@ import {
   rollRarity,
   stepAnvils,
 } from './forge';
+import { bestPiece, hasFourOfFive, wornPieces } from './lines';
+import { visitVisitor } from './visitor';
 import { accrueIdleXp, atTopLevel, fightXp, levelsDesc, setCatchUp } from './growth';
 import {
   buyEvolutions,
@@ -181,12 +183,15 @@ export function visit(p: Player, server: Server, hour: number): void {
   p.wk.choicesTotal +=
     sum(options) + (p.wk.arrivals - arrivalsBefore) + (p.policy === 'optimiser' ? 1 : 0);
   const giftsBefore = p.wk.gifts;
+  const rerollsBefore = p.wk.rerolls;
   // Growth first (evolutions), then the gifts from what is left, then seats and kit.
   fillEmptyPosts(p);
   rotateMasters(p);
   buyEvolutions(p);
   giveGifts(p, server, hour);
   buySeatsAndKit(p, server);
+  visitVisitor(p, server, hour);
+  p.wk.rowsWritten += p.wk.rerolls - rerollsBefore;
   retilt(p);
   recomputeWeak(p, server.fire);
   setCatchUp(p, server.middle);
@@ -308,6 +313,11 @@ function endWeek(p: Player, server: Server): void {
   wk.benchMedian = gaps.length
     ? (gaps[Math.floor((gaps.length - 1) / 2)]! + gaps[Math.floor(gaps.length / 2)]!) / 2
     : 0;
+  const best = bestPiece(p);
+  wk.bestPips = best.pips;
+  wk.bestPipsShare = best.share;
+  wk.epicsWorn = wornPieces(p).filter((w) => w.rarity === 2).length;
+  wk.fourOfFive = hasFourOfFive(p) ? 1 : 0;
   wk.waitingEvolve = p.creatures.filter(
     (c) => c.canEvolve && !c.evolved && c.level >= p.rules.xp.evolveLevel,
   ).length;
@@ -433,6 +443,7 @@ export function runServer(config: ServerConfig, seed: number, base: Rules = RULE
       bossKills: config.bossKills,
       communalSeats: config.communalSeats,
       shardExchange: config.shardExchange,
+      visitor: config.visitor !== false,
     },
     rules,
   );
@@ -475,6 +486,8 @@ export function runServer(config: ServerConfig, seed: number, base: Rules = RULE
         keystones: server.keystonesFound,
         collections: server.collectionsDone,
         visits: visitsThisWeek,
+        fourOfFive: players.filter((p) => h >= p.joinHour && hasFourOfFive(p)).length,
+        rerolls: players.reduce((n, p) => n + (h >= p.joinHour ? p.wk.rerolls : 0), 0),
         ...(() => {
           const c = serverCoverage(players, h, rules);
           return { coverage: c.lines, formCoverage: c.forms, launchCoverage: c.launch };

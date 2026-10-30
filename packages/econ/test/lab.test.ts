@@ -8,6 +8,7 @@ import { playersOf, runAll } from '../src/scenarios';
 import { ALL_SERVERS } from '../src/servers';
 import { TARGETS } from '../src/targets';
 import { N_RES } from '../src/types';
+import { sum } from '../src/util';
 
 const SEEDS = 1;
 const results = runAll(SEEDS, RULES);
@@ -124,12 +125,44 @@ describe('the report', () => {
     expect(markdown).toMatch(/- \*\*(PASS|FAIL)\*\* T-1:/);
   });
 
-  it('shows T-7 (dead resources) without judging it, and keeps the dead flags in the ledger (Q42 B)', () => {
+  it('judges T-7 (dead resources) again now that the visitor is a sink, and keeps the dead flags in the ledger', () => {
     const t7 = data.targets.find((t) => t.id === 'T-7');
-    expect(t7?.info).toBe(true);
-    expect(markdown).toMatch(/- \*\*INFO\*\* T-7:/);
-    expect(TARGETS.some((t) => t.line === 'T-7')).toBe(false);
+    expect(t7?.info).toBeUndefined();
+    expect(markdown).toMatch(/- \*\*(PASS|FAIL)\*\* T-7:/);
+    expect(TARGETS.some((t) => t.line === 'T-7')).toBe(true);
     expect(data.ledger.daily?.every((l) => l.dead === null || l.dead > 0)).toBe(true);
+  });
+
+  it('reports the weekly visitor: rerolls and what they drain by week, piles and lines with and without him', () => {
+    const v = data.visitor;
+    expect(Object.keys(v.rerolls)).toContain('daily');
+    expect(v.rerolls.daily).toHaveLength(24);
+    expect(v.acorns.daily!.some((x) => x > 0)).toBe(true);
+    expect(v.scrap.daily!.some((x) => x > 0)).toBe(true);
+    // He drains what the Forge and the projects do not: the visitor's sink shows in the ledger as its own line.
+    const sink = (r: number): number =>
+      sum(
+        results
+          .mixed8!.runs.flatMap((run) => run.players)
+          .map((p) => p.sources[`out:${r}:visitor`] ?? 0),
+      );
+    expect(sink(0)).toBeGreaterThan(0);
+    expect(sink(1)).toBeGreaterThan(0);
+    // Shards stay with the Forge (V-VIS-3).
+    expect(sink(2)).toBe(0);
+    // Without him the same server has no rerolls and piles at least as high in Acorns.
+    expect(
+      sum(
+        results['mixed8-novisitor']!.runs.flatMap((r) => r.players).flatMap((p) =>
+          p.weeks.map((w) => w.rerolls),
+        ),
+      ),
+    ).toBe(0);
+    expect(v.piles.some((r) => r.profile === 'daily' && r.resource === 'acorns')).toBe(true);
+    for (const id of ['mixed5', 'mixed8', 'mixed15'])
+      expect(v.fourOfFive.find((r) => r.id === id)?.on).toHaveLength(24);
+    expect(v.fourOfFive.find((r) => r.id === 'mixed8')?.off).toHaveLength(24);
+    expect(markdown).toContain('### The weekly visitor');
   });
 
   it('ledgers every spendable resource for daily and weekly players', () => {

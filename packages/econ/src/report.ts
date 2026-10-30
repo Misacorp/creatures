@@ -26,6 +26,7 @@ import { rosterProfile, type RosterProfile } from './roster';
 import { levelOf, medianOf, round, total } from './stats';
 import { SLOW_FLOOR } from './servers';
 import { THRESHOLDS } from './targets';
+import { VISITOR_PROFILES, visitorOf, type VisitorData } from './visitorData';
 import { median, sum } from './util';
 
 /** The numbers behind the report (written as `report-data.json`, for charts). */
@@ -41,6 +42,8 @@ export interface ReportData {
   /** The same with the old slow time floor under the fire (Q40 B dropped it; kept for comparison). */
   fireSlowFloor: Record<string, ServerRow | null>;
   variants: VariantRow[];
+  /** The weekly visitor (V-VIS): rerolls and what they drain by week, piles with and without him, the best piece's lines, 4-of-5 epics. */
+  visitor: VisitorData;
   /** A daily player's Forge by policy, with and without the shard exchange (weeks 2 to 12). */
   exchangeByPolicy: ExchangeRow[];
   /** A daily player's roster by week at the default arrival rate and at the docs' 2% an hour. */
@@ -240,6 +243,7 @@ export function buildReportData(
       none: serverOf(results, 'mixed8-none'),
     })),
     variants: time('variants', () => variantsOf(results)),
+    visitor: time('visitor', () => visitorOf(results)),
     exchangeByPolicy: time('exchange', () => exchangeRowsOf(results)),
     rosterByRate: Array.from({ length: 24 }, (_, i) => {
       const at = (id: string, pick: (w: PlayerRun['weeks'][number]) => number): number =>
@@ -315,9 +319,10 @@ export const SIMPLIFICATIONS: readonly string[] = [
   "Combat is not simulated. The dungeon pays 120 XP, 10 Acorns, 10 scrap and a little Essence per run (one pass a day, up to three stacked), the raid 490 XP per fighting creature for a week with a visit between Friday and Sunday, and its Essence depends on the server's boss dial (all, half or none). The three best creatures fight.",
   "A creature's post does not change how fast it grows (V-POST-3), so creatures are not tracked per post: the lab counts scout seats, anvils and communal seats as long as the player has creatures to stand on them (the first scout and anvil need two of the three starters).",
   "Fit is an average (a set-and-forget player's creatures fit about 30% of the time, an optimiser's 90%), not a per-creature draw; kit tilts are expected values; scrap, shards, Acorns and XP are expected values and only creatures, gear, blueprints, pages, keystones and rare finds are seeded draws.",
+  "Modifier lines are minimal: a worn piece has 1, 3 or 5 lines by rarity, each only a pip tier (the top tier its item level allows with a fixed chance, else a lower one), rolled when the piece is worn and again at each reroll; the visitor's reroll redraws all of them and never keeps the old ones. Gear slots are open from level 1 (there are no slot unlock levels in the lab). A piece in the bag has no lines, and a worn piece is never moved to another creature.",
   'Mastery is counted per seat (the effective hours a seat has worked), not per creature, and a Master never moves on; the Master Scout perk (a blueprint at the Forge) is not modelled.',
   "The School and Paddock have levels, projects and warmth but no seats or output (the docs leave them open until combat v2 and `school.md`); push on, deep areas, opening hours of the Reef and the week's twist are not modelled.",
-  'Gear is counts and item level only: three slots per creature, pieces at the fire\'s level, a slot is "weaker" when its item level is more than 6 below the fire. Gear stats, modifier lines, blueprint quality and the loupe\'s effect beyond a higher rare and epic share are not modelled; blueprints are counted, not required by orders.',
+  'Gear is counts and item level only: three slots per creature, pieces at the fire\'s level, a slot is "weaker" when its item level is more than 6 below the fire. Gear stats, what a modifier line does, blueprint quality and the loupe\'s effect beyond a higher rare and epic share are not modelled; blueprints are counted, not required by orders.',
   "The scout pool is LINES: scouts find a line's stage 1, never an evolved form (evolving at level 15 gives the next form, for Essence: 20 for a common line and 40 for a rare one in the content, scaled by the tuned base). The content has 16 lines (34 forms); 14 can be found by scouts (8 common, 3 rare, 3 epic) and the two festival epics (Lanternfin, Hearthshell) cannot. A content drop adds 12 lines (6 common, 4 rare, 2 epic) every 4 weeks from week 4, a line having 3, 2 or 1 forms by rarity (assumed). Arrivals and duplicates use the lines available that week and weigh a line by rarity; places lean toward their element. A player keeps one creature of a line (duplicates become scrap) and so owns at most one evolved form of it: a line's two evolution branches are not both collected.",
   'The lab keeps 5 elements and 6 destinations. More elements will mean more kinds of shard (every Forge piece takes a shard of its element, so each new element is one more chain a player must cover with scouts) and more destinations to cover them; the shard stalls shown here would grow with them.',
   "Catch-up applies to idle XP only (not to fights). Its multiplier is fixed at each visit and holds until the next one (Q35 B), but never above the target it was fixed for: it fades as the creature closes the gap, so a player who visits less often cannot earn more of it than one who visits daily. A player who is away is not counted in the server's middle after seven days.",
@@ -815,6 +820,100 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
             ),
           ]),
         ),
+    ),
+    '',
+  );
+
+  // The weekly visitor.
+  const vis = data.visitor;
+  const profileName = (id: string): string => profileLabel(id);
+  push(
+    '### The weekly visitor (V-VIS)',
+    '',
+    `He is in the valley from Thursday 00:00 to the raid's finale on Sunday evening; a player meets him only on a visit in that window. He rerolls every modifier line of a worn piece for Acorns and scrap: ${rules.visitor.acorns} Acorns and ${rules.visitor.scrap} scrap at item level ${rules.visitor.baseLevel}, linear in the piece's item level, times ${rules.visitor.growth} for each reroll that player already made that week (reset weekly), and one rotating rare blueprint for ${rules.visitor.blueprintAcorns} Acorns and ${rules.visitor.blueprintScrap} scrap. A set-and-forget player rerolls once a week, on the best epic it wears, keeping ${rules.visitor.reserveAcorns} Acorns and ${rules.visitor.reserveScrap} scrap; an optimiser rerolls epics, then rares, until the next price would pass its reserves or its pieces are good (an epic with ${rules.visitor.goodTop[2]} of its ${rules.gear.lines[2]} lines at the top pip, a rare with ${rules.visitor.goodTop[1]} of ${rules.gear.lines[1]}). The lab does not model what a line does: a piece has ${rules.gear.lines.join(' / ')} lines by rarity, each a pip tier from what its item level allows (the top tier with chance ${rules.gear.topPipChance}).`,
+    '',
+    'Rerolls a week and what they drain, median over seeds and players of a kind (mixed server of 8), averaged over the weeks shown:',
+    '',
+  );
+  const visWeeks: [string, number, number][] = [
+    ['weeks 1 to 8', 0, 8],
+    ['weeks 9 to 16', 8, 16],
+    ['weeks 17 to 24', 16, 24],
+  ];
+  const avg = (xs: readonly number[] | undefined, a: number, b: number): number =>
+    sum((xs ?? []).slice(a, b)) / Math.max(1, b - a);
+  push(
+    ...table(
+      [
+        'Player',
+        'Met him (weeks of 24)',
+        ...visWeeks.map(([label]) => `Rerolls a week, ${label}`),
+        'Acorns a week, weeks 9 to 24',
+        'Scrap a week, weeks 9 to 24',
+      ],
+      VISITOR_PROFILES.filter((id) => vis.rerolls[id]).map((id) => [
+        profileName(id),
+        num(vis.met[id] ?? 0),
+        ...visWeeks.map(([, a, b]) => num(avg(vis.rerolls[id], a, b), 1)),
+        num(avg(vis.acorns[id], 8, 24)),
+        num(avg(vis.scrap[id], 8, 24)),
+      ]),
+    ),
+    '',
+    'Piles in weeks of spending (never counting spending below a quarter of income), with and without him (the same servers run again with no visitor):',
+    '',
+  );
+  push(
+    ...table(
+      [
+        'Player',
+        'Resource',
+        ...vis.piles[0]!.weeks.map((w) => `Week ${w}, with / without`),
+        'Dead from week, with / without',
+      ],
+      vis.piles.map((r) => [
+        profileName(r.profile),
+        r.resource,
+        ...r.weeks.map((_, i) => `${num(r.on[i] ?? 0, 1)} / ${num(r.off[i] ?? 0, 1)}`),
+        `${r.deadOn ?? '-'} / ${r.deadOff ?? '-'}`,
+      ]),
+    ),
+    '',
+    "The best worn piece's lines (the piece with the most pips in all): pips and their share of what its level allows, with and without him, and epics worn:",
+    '',
+  );
+  const lineWeeks = [4, 8, 12, 24];
+  push(
+    ...table(
+      [
+        'Player',
+        ...lineWeeks.map((w) => `Week ${w}: best pips (share), without`),
+        'Epics worn, week 12 / 24',
+      ],
+      VISITOR_PROFILES.filter((id) => vis.linesOn[id]).map((id) => [
+        profileName(id),
+        ...lineWeeks.map((w) => {
+          const a = vis.linesOn[id];
+          const b = vis.linesOff[id];
+          return `${num(a?.bestPips[w - 1] ?? 0, 1)} (${num((a?.share[w - 1] ?? 0) * 100)}%), ${num(b?.bestPips[w - 1] ?? 0, 1)} (${num((b?.share[w - 1] ?? 0) * 100)}%)`;
+        }),
+        `${num(vis.linesOn[id]?.epics[11] ?? 0, 1)} / ${num(vis.linesOn[id]?.epics[23] ?? 0, 1)}`,
+      ]),
+    ),
+    '',
+    `The share of servers (runs) where some player wears an epic with 4 or more top-pip lines (the panel guessed about 55% of ten-player servers by week 10, with about 30 rerolls over 10 weeks; here the servers of 5, 8 and 15 make ${vis.rerollsByWeek10.map((r) => `${num(r.rerolls)} (${r.players} players)`).join(', ')} in weeks 1 to 10):`,
+    '',
+  );
+  push(
+    ...table(
+      ['Server', 'Week 8, with / without', 'Week 10', 'Week 12', 'Week 24'],
+      vis.fourOfFive.map((r) => [
+        r.label,
+        ...[8, 10, 12, 24].map(
+          (w) =>
+            `${num((r.on[w - 1] ?? 0) * 100)}%${r.off ? ` / ${num((r.off[w - 1] ?? 0) * 100)}%` : ''}`,
+        ),
+      ]),
     ),
     '',
   );

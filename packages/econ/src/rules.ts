@@ -379,6 +379,43 @@ export const RULES = {
     meltEssence: 5,
   },
 
+  /**
+   * Modifier lines, minimal (V-GEAR-12): the lab does not model what a line does, only how many a piece has and how high each is, so the
+   * visitor's rerolls can be reported as "the best item's lines".
+   */
+  gear: {
+    // V-GEAR-12: lines per rarity (common, rare, epic).
+    lines: [1, 3, 5] as readonly number[],
+    // V-GEAR-8's example: a line can have 2 pips from item level 10, 3 from 25, 4 from 50 and 5 from 80 (1 pip below 10).
+    pipFrom: [10, 25, 50, 80] as readonly number[],
+    // ASSUMPTION: a line is the top pip its piece's item level allows with this chance, else a lower tier with equal chances. Chosen so
+    // about 3 rerolls on a player's epics give a 4-of-5 top-pip epic about 8% of the time (the visitor panel's estimate).
+    topPipChance: 0.3,
+  },
+
+  /** V-VIS-1..5: the weekly visitor (docs/design/valley/systems/visitor.md). */
+  visitor: {
+    // V-VIS-1: he arrives on Thursday 00:00 (day 3 of a Monday-first week) and leaves at the raid's finale (Sunday 23:00, hour 167 of the week).
+    arriveDay: 3,
+    leaveHour: 167,
+    // ASSUMPTION: the price of a reroll is linear in the piece's item level: this much Acorns and scrap at item level `baseLevel`
+    // (the doc's example: "a base of 60 Acorns and 400 scrap"), times 1.5 for each reroll already made that week by that player.
+    baseLevel: 10,
+    acorns: 60,
+    scrap: 400,
+    growth: 1.5,
+    // ASSUMPTION: a player does not spend below these piles at his stall (Acorns for seats, kit and evolutions; scrap for pieces).
+    reserveAcorns: 100,
+    reserveScrap: 300,
+    // ASSUMPTION: the most rerolls an optimiser makes in one week.
+    maxRerolls: 12,
+    // ASSUMPTION: an optimiser rerolls an epic until 4 of its 5 lines are the top pip, a rare until 2 of its 3 (a set-and-forget player rerolls once a week on the best epic that is not there yet).
+    goodTop: [1, 2, 4] as readonly number[],
+    // ASSUMPTION: the week's rotating rare blueprint costs this much; a player buys it when they can afford it above the reserves and know fewer than the pool.
+    blueprintAcorns: 40,
+    blueprintScrap: 250,
+  },
+
   /** V-COM-13, V-GEAR-8, V-GEAR-10: the Forge's fire. */
   fire: {
     start: 10,

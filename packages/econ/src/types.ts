@@ -38,6 +38,9 @@ export interface Creature {
   catchTarget: number;
   /** Item level worn in each slot (0 = empty). */
   gear: number[];
+  /** The rarity of the piece in each slot, and its modifier lines (a pip tier each; empty when the slot is). */
+  gearRarity: number[];
+  gearLines: number[][];
 }
 
 /** A scout seat (V-SCOUT-1): the store holds effective hours of work not yet brought home. */
@@ -110,6 +113,17 @@ export interface WeekRecord {
   benchWithin: number;
   benchWorst: number;
   benchMedian: number;
+  /** The visitor (V-VIS): the weeks he was met on a visit, the rerolls bought, what they and the blueprint cost, and blueprints bought. */
+  visitorMet: number;
+  rerolls: number;
+  visitorAcorns: number;
+  visitorScrap: number;
+  visitorBlueprints: number;
+  /** Modifier lines at the end of the week: the best worn piece's pips (sum), its share of the most its level allows, the epics worn, and whether an epic has 4 or more top-pip lines. */
+  bestPips: number;
+  bestPipsShare: number;
+  epicsWorn: number;
+  fourOfFive: number;
   /** The largest of those gaps among creatures not held at the evolution level (waiting on Essence). */
   benchOpenWorst: number;
   /** Creatures held at their evolution level at the end of the week. */
@@ -180,6 +194,12 @@ export interface Player {
   raidThisWeek: boolean;
   blueprints: number;
   pages: number;
+  /** The visitor: the week index of the last visit that met him, the rerolls made that week, and whether the blueprint was bought. */
+  visitorWeek: number;
+  rerollsThisWeek: number;
+  blueprintBought: boolean;
+  /** A stream of its own for modifier lines, so rerolls never shift the other random draws. */
+  lineRng: Rng;
   masters: number;
   /** Visit days in the last 7 days, one flag per day. */
   visitDays: number[];
@@ -222,6 +242,8 @@ export interface ServerOptions {
   communalSeats: boolean;
   /** Whether the Forge's shard exchange exists (Q34: 3 shards of any element for 1 of the one needed). */
   shardExchange: boolean;
+  /** Whether the weekly visitor comes (V-VIS). */
+  visitor?: boolean;
 }
 
 export interface Server {
@@ -273,4 +295,8 @@ export interface ServerWeek {
   formCoverage: number[];
   /** The same for the launch lines only (the lines the scouts find from the start), so content drops do not make it dip. */
   launchCoverage: number[];
+  /** Players holding an epic with 4 or more top-pip lines at the end of the week. */
+  fourOfFive: number;
+  /** Rerolls bought by the server's players this week. */
+  rerolls: number;
 }
