@@ -456,13 +456,21 @@ export const rankOf = (id: RankId): RaidRank => RAID_RANKS.find((r) => r.id === 
  */
 export function raidBossOf(
   id: string,
-  over: { hp?: number; atk?: number; armour?: number; rank?: RankId; level?: number } = {},
+  over: {
+    hp?: number;
+    atk?: number;
+    armour?: number;
+    rank?: RankId;
+    level?: number;
+    /** The strength of every card and gate, instead of the rank's (the boss track's slots sit between the three ranks, `track.ts`). */
+    strengthBp?: number;
+  } = {},
 ): BossDef {
   const spec = RAID_SPECS.find((s) => s.id === id);
   const shipped = content.bosses.find((b) => b.id === id);
   if (!spec || !shipped) throw new Error(`unknown raid boss ${id}`);
   const rank = rankOf(over.rank ?? 'high');
-  const st = rank.strengthBp;
+  const st = over.strengthBp ?? rank.strengthBp;
   const [hpBp, atkBp, armourBp] =
     rank.id === 'high' || !spec.ranks ? [rank.hpBp, rank.atkBp, undefined] : spec.ranks[rank.id];
   let boss: BossDef = {

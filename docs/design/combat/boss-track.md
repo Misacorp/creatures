@@ -1,0 +1,56 @@
+# The boss track and the roster seam
+
+How the lab plans which raid boss a server meets at which Boss Rank, and how it tunes those bosses without knowing yet how fast servers grow. Misa, 2026-10-30: combat v2's role is to set the challenges and make them easy to configure, then find the expected path for a server (first boss, next boss, and so on) and tune for it. Another branch is redesigning the passive systems at the same time (the valley: posts, scouts, the Forge, catch-up; `docs/design/valley/` on its branch), so the speed at which rosters grow is unknown. Work here must not be wasted when the two systems meet.
+
+## The split
+
+| Part                                                            | Owner      | Where                                                                                 |
+| --------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------- |
+| The challenges: which boss at which rank, its cards and numbers | combat v2  | `packages/lab/src/track.ts` (the track), `bosses.ts` (the bosses), the tuner          |
+| The targets: what a server should achieve against them          | combat v2  | `packages/lab/src/targets.ts` (Misa's targets, 2026-10-30)                            |
+| The roster: what a server's players have at week N              | the valley | `packages/lab/src/roster.ts` today (placeholder data); the valley's economy lab later |
+| The path: where a server is at week N, and how long it stays    | both meet  | `packages/lab/src/path.ts`: the track, the targets and the roster run together        |
+
+The roster is the only thing the valley changes. When its economy lab exists, it writes the same roster data, and the tuner reruns (about 4 minutes); the track, the bosses, the targets and the path code stay.
+
+## The seam: a roster profile
+
+A roster profile says, for each kind of player and each week from 1 to 24:
+
+- **Levels:** of the player's 1st, 3rd, 10th and 20th creature (the four the valley's economy lab plans to report; levels between are interpolated). The level cap is 30.
+- **Roster size:** how many creatures the player has, and which lines (lab forms) a new server can have (starters plus what scouts find).
+- **Talents:** how many talent slots are filled (slot 2 at level 20, slot 3 at 25 today) and whether they are picked or random.
+- **Gear:** slots that can be worn and the item level. The lab has no gear yet (the gear plan is a later step), so this field is carried but unused until then.
+
+Kinds of player: **daily** (the valley's "Sanni"), **weekly** (about 75% to 80% of a daily player's idle growth, valley target T-2) and **new** (joins late and catches up).
+
+**Placeholder data until the valley's lab exists**, from the valley docs' worked examples (all marked there as examples): a daily player's best three at about level 19 at week 4, 25 at week 8 and 29 at week 12; the 10th creature at about 15 to 17 at week 4; 15 creatures by week 4; catch-up brings a new catch to the 3rd-best creature's level in about a week. Three speeds are kept: **slow** (levels 20% behind), **expected**, **fast** (20% ahead).
+
+## The track
+
+The track is data: an ordered list of slots, each a boss and the strength of its cards. A server starts at slot 1; a win moves it to the next slot (the Boss Rank rises by one); a failed boss returns the next week at full HP with last week's best on its bar (Misa, 2026-10-30). After the last boss the track starts again with stronger cards. The first order is the shipped game's boss order; it is one line to change.
+
+## The path
+
+`path.ts` plays a server week by week: the roster at that week fights the boss of its current slot over a weekend; a kill moves it on, a loss keeps it. Festival weeks (every fifth week) pause the track: no raid boss that week, and afterwards the server continues where it was, with no rank ease (Misa, 2026-10-30). It reports, per kind of server (dedicated, mixed) and per roster speed:
+
+- the week a server reaches each slot, and the weekends it spends there;
+- the longest run on one boss, and the share of servers stuck more than 4 weeks (the shipped balance target allows at most 10%).
+
+## Tuning
+
+Each slot is tuned for the roster a dedicated server has in the week it usually arrives there (the path says when), against Misa's targets, at the expected roster speed only: a slow server arrives later and keeps growing while a failed boss returns, so the path at three speeds, not a measure at the expected arrival week, is where the speed's effect shows. Path and tuning repeat until the arrival weeks equal the weeks the table was tuned for (`node scripts/report.mjs --tune --track [--slots 1-15] [--quick]`, `trackTuner.ts`, about 2 minutes on 4 cores). A tuning is a sweep up the track, because a slot's arrival depends only on the slots before it; one sweep settles it from an empty table. The result is the `SLOT_NUMBERS` table in `track.ts`. Among numbers that meet every target the search takes the boss whose prepared first-weekend kill rate is nearest `PREPARED_KILL_AIM` (0.6, the lead's reading of "usually wins within two weekends"; `targets.ts`), and on a tie the one nearest the old ranks' line. The tool's worth a slot asks for scales with the strength of its cards, and slot 1 has no limit on the classic party (`slotTargetsFor`). There is no numeric floor from the lap before: a later lap's cards are never weaker, its HP, Attack and armour may be lower when they make up for it, and the rule is that its first-weekend kill rate is not above the lap before's by more than noise (the tuner reports it). The kill rate falls from about 90% to 10% within 5% to 30% of the boss's HP (slot 4: 5%; slot 6: 28%), so a slow roster, 20% lower in level, sits on the wrong side of the cliff. The lab tests' rules (`raidRules.ts`) stay with the three fixed ranks and are not applied to slots.
+
+## What survives the meeting
+
+The track, the bosses' content (what each one asks), the targets, the path and the tuner do not depend on the valley's numbers. Only the roster profile is replaced, and the bosses' HP, Attack and armour are re-tuned from it.
+
+## Touch points with the valley
+
+Raised by the valley session (2026-10-30) and kept open on both sides until the systems meet:
+
+- **The server's item level cap** was to rise a step with each raid win; on the track a win is a kill, so its slow rise with time carries the weight.
+- **Fight XP** is combat v2's to set. The valley's examples assume about 120 a day from the dungeon and 70 from the raid for a top creature.
+- **Gear slot unlock levels** (Scarf 7, Charm 13) are combat v2's call, still open; Misa may drop them.
+- **Gear lines** the valley is asking Misa about (an item level ladder of about 1 to 100, element pieces rolling only their own element's lines, 1, 3 or 5 lines by rarity) will change the stat sizes the lab's gear step measures.
+- **Levels count in the raid** (no level sync), which the tuning assumes.

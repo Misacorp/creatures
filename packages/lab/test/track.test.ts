@@ -1,0 +1,119 @@
+/** The boss track: the order and its repeat, the strength ladder, and the boss of a slot against `raidBossOf`. */
+import { content } from '@creatures/game';
+import { describe, expect, it } from 'vitest';
+import { RAID_BOSS_IDS, RAID_RANKS, raidBossOf } from '../src/bosses';
+import {
+  SLOT_NUMBERS,
+  SLOT_STRENGTH,
+  TRACK,
+  TRACK_ORDER,
+  buildTrack,
+  rankLevel,
+  rankNumbers,
+  rankStrengthBp,
+  slotBoss,
+  trackSlot,
+} from '../src/track';
+
+describe('the track order', () => {
+  it('is the shipped boss order, made of lab bosses', () => {
+    expect(TRACK_ORDER).toEqual(content.bosses.map((b) => b.id));
+    for (const id of TRACK_ORDER) expect(RAID_BOSS_IDS).toContain(id);
+  });
+
+  it('starts at slot 1 and repeats after the last boss', () => {
+    const n = TRACK_ORDER.length;
+    expect(trackSlot(1).bossId).toBe(TRACK_ORDER[0]);
+    expect(trackSlot(n).bossId).toBe(TRACK_ORDER[n - 1]);
+    expect(trackSlot(n + 1).bossId).toBe(TRACK_ORDER[0]);
+    expect(trackSlot(2 * n + 2).bossId).toBe(TRACK_ORDER[1]);
+    expect(TRACK.map((s) => s.slot)).toEqual(Array.from({ length: TRACK.length }, (_, i) => i + 1));
+    expect(buildTrack(7).map((s) => s.bossId)).toEqual(
+      Array.from({ length: 7 }, (_, i) => TRACK_ORDER[i % n]),
+    );
+  });
+
+  it('takes another order in one line, and refuses a slot below 1', () => {
+    expect(trackSlot(3, ['a', 'b']).bossId).toBe('a');
+    expect(() => trackSlot(0)).toThrow(/from 1/);
+  });
+});
+
+describe('the strength ladder', () => {
+  it('is the ranks 2, 5 and 10 settings, straight between, capped at 100%', () => {
+    for (const r of RAID_RANKS) expect(rankStrengthBp(r.rank)).toBe(r.strengthBp);
+    expect(rankStrengthBp(3)).toBeGreaterThan(3_000);
+    expect(rankStrengthBp(3)).toBeLessThan(6_500);
+    expect(rankStrengthBp(10)).toBe(10_000);
+    expect(rankStrengthBp(25)).toBe(10_000);
+    expect(rankStrengthBp(1)).toBeGreaterThan(0);
+    expect(rankStrengthBp(1)).toBeLessThan(3_000);
+  });
+
+  it('never falls along the track, and a repeated boss has stronger cards than its first time', () => {
+    for (let s = 2; s <= 30; s++)
+      expect(trackSlot(s).strengthBp).toBeGreaterThanOrEqual(trackSlot(s - 1).strengthBp);
+    const n = TRACK_ORDER.length;
+    expect(trackSlot(n + 1).strengthBp).toBeGreaterThan(trackSlot(1).strengthBp);
+  });
+
+  it('pairs the ranks with the lab rosters (12, 18, 25)', () => {
+    expect(RAID_RANKS.map((r) => rankLevel(r.rank))).toEqual([12, 18, 25]);
+    expect(rankLevel(1)).toBe(12);
+    expect(rankLevel(40)).toBe(25);
+  });
+});
+
+describe('the boss of a slot', () => {
+  it('without table entries is raidBossOf at the three ranks the lab sets up', () => {
+    // Slots 2, 5 and 10 are Boss Ranks low, mid and high.
+    expect(slotBoss(2, { table: {} })).toEqual(raidBossOf(trackSlot(2).bossId, { rank: 'low' }));
+    expect(slotBoss(5, { table: {} })).toEqual(raidBossOf(trackSlot(5).bossId, { rank: 'mid' }));
+    expect(slotBoss(10, { table: {} })).toEqual(raidBossOf(trackSlot(10).bossId, { rank: 'high' }));
+  });
+
+  it('interpolates the numbers between the ranks and is flat outside them', () => {
+    for (const id of TRACK_ORDER) {
+      const low = rankNumbers(id, 2);
+      const mid = rankNumbers(id, 5);
+      const high = rankNumbers(id, 10);
+      for (const k of ['hp', 'atk', 'armour'] as const) {
+        const between = rankNumbers(id, 3)[k];
+        expect(between).toBeGreaterThanOrEqual(Math.min(low[k], mid[k]));
+        expect(between).toBeLessThanOrEqual(Math.max(low[k], mid[k]));
+        const upper = rankNumbers(id, 7)[k];
+        expect(upper).toBeGreaterThanOrEqual(Math.min(mid[k], high[k]));
+        expect(upper).toBeLessThanOrEqual(Math.max(mid[k], high[k]));
+      }
+      expect(rankNumbers(id, 1)).toEqual(low);
+      expect(rankNumbers(id, 30)).toEqual(high);
+    }
+  });
+
+  it('builds the cards at the slot strength', () => {
+    expect(slotBoss(1).strengthBp).toBe(rankStrengthBp(1));
+    expect(slotBoss(4).strengthBp).toBe(rankStrengthBp(4));
+    expect(slotBoss(6).rosterLevel).toBe(rankLevel(6));
+    expect(slotBoss(6, { level: 9 }).rosterLevel).toBe(9);
+  });
+
+  it('takes per-slot numbers and strength from the tables', () => {
+    const numbers = SLOT_NUMBERS as Record<number, unknown>;
+    const kept = numbers[3];
+    const strength = SLOT_STRENGTH as Record<number, number>;
+    try {
+      numbers[3] = { hp: 12_345, atk: 67 };
+      strength[3] = 4_321;
+      const boss = slotBoss(3);
+      expect(boss.hp).toBe(12_345);
+      expect(boss.atk).toBe(67);
+      expect(boss.strengthBp).toBe(4_321);
+      expect(trackSlot(3).strengthBp).toBe(4_321);
+      // Another slot is untouched.
+      expect(slotBoss(4).hp).not.toBe(12_345);
+    } finally {
+      numbers[3] = kept;
+      delete strength[3];
+    }
+  });
+});
