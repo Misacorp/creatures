@@ -5,7 +5,7 @@
 import { gearBase } from '@creatures/game';
 import { itemArt, itemLookId } from './gear-sprites';
 import { creatureSprite } from './sprites/creature-sprites';
-import { LOOK_CLASS } from './sprites/data/worn-sprites';
+import { LOOK_CLASS, classSlot } from './sprites/data/worn-sprites';
 import type { SpriteDef } from './sprites/sprite-data';
 import { wearing, type WornLook } from './sprites/wearing';
 
@@ -32,20 +32,46 @@ export function wornLook(baseId: string): WornLook | null {
 }
 
 const CACHE = new Map<string, SpriteDef>();
+/** The most outfits kept; the oldest goes first. */
+export const CACHE_LIMIT = 500;
+const SLOT_ORDER = ['hat', 'scarf', 'charm'] as const;
+
+/** The outfit's key: per slot in a fixed order, the look that wins (the last piece of that slot). */
+function outfitKey(species: string, looks: readonly WornLook[]): string {
+  const bySlot = new Map<string, WornLook>();
+  for (const look of looks) bySlot.set(classSlot(look.cls), look);
+  const parts = SLOT_ORDER.map((slot) => {
+    const look = bySlot.get(slot);
+    return look === undefined
+      ? ''
+      : `${look.cls}:${look.set ? 1 : 0}:${look.colours.t}:${look.colours.u}:${look.colours.h}`;
+  });
+  return `${species}|${parts.join('|')}`;
+}
 
 /**
  * The sprite of a species wearing some items; the species' own sprite when it wears nothing or has no
- * sprite drawn. One object per species and outfit, so a redraw gets the same object back.
+ * sprite drawn. One object per species and resolved outfit (the order the server lists it in does not
+ * matter), so a redraw gets the same object back.
  */
 export function wornSprite(species: string, gear: readonly WornPiece[]): SpriteDef | undefined {
   const base = creatureSprite(species);
   if (base === undefined || gear.length === 0) return base;
   const looks = gear.flatMap((piece) => wornLook(piece.baseId) ?? []);
   if (looks.length === 0) return base;
-  const key = `${species}|${gear.map((g) => g.baseId).join(',')}`;
+  const key = outfitKey(species, looks);
   const cached = CACHE.get(key);
   if (cached !== undefined) return cached;
   const result = wearing(base, looks);
+  if (CACHE.size >= CACHE_LIMIT) {
+    const oldest = CACHE.keys().next();
+    if (oldest.done !== true) CACHE.delete(oldest.value);
+  }
   CACHE.set(key, result);
   return result;
+}
+
+/** Empties the cache (for tests). */
+export function clearWornCache(): void {
+  CACHE.clear();
 }

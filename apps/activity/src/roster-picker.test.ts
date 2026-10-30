@@ -7,6 +7,7 @@ import {
   ON_BOARD_NOTE,
   SHOW_PICKER_EFFECTS,
   allPlaced,
+  baseOption,
   boardTotalLine,
   effectPreview,
   pickerOptions,
@@ -244,5 +245,15 @@ describe('the picker and the board count', () => {
     expect(options.find((o) => o.id === 'a')?.onBoard).toBe(true);
     expect(options.find((o) => o.id === 'b')?.onBoard).toBe(true);
     expect(options.find((o) => o.id === 'c')?.onBoard).toBe(false);
+  });
+});
+
+describe('baseOption outfit', () => {
+  const c = { id: 'c1', species: 'splashet', nickname: null, level: 3 };
+  it('passes the worn gear through, and omits it for a bare creature', () => {
+    const gear = [{ baseId: 'a' }, { baseId: 'b' }];
+    expect(baseOption({ ...c, gear } as Parameters<typeof baseOption>[0]).outfit).toEqual(gear);
+    expect('outfit' in baseOption(c)).toBe(false);
+    expect('outfit' in baseOption({ ...c, gear: [] })).toBe(false);
   });
 });

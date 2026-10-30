@@ -174,8 +174,8 @@ function wearCharm(grid: Grid, look: WornLook): void {
 }
 
 /**
- * The creature with its gear on. `looks` may hold one piece per slot (a later one of a slot wins); the
- * order they are given in does not matter. A sprite that is not 16x16 comes back unchanged.
+ * The creature with its gear on. One piece is worn per slot: when `looks` holds several of a slot, the
+ * last one given wins. Pieces of different slots may come in any order. A sprite that is not 16x16 comes back unchanged.
  */
 export function wearing(sprite: SpriteDef, looks: readonly WornLook[]): SpriteDef {
   validateSprite(sprite);
