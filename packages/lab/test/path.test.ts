@@ -18,7 +18,8 @@ import {
   walkPath,
   weekendKill,
 } from '../src/path';
-import { PLACEHOLDER_ROSTER, rosterLevels } from '../src/roster';
+import { rosterLevels } from '../src/roster';
+import { VALLEY_ROSTER } from '../src/valley';
 import { MIXED_ORDER } from '../src/raidMeasure';
 import { preparedOf } from '../src/tuner';
 import { TRACK_ORDER } from '../src/track';
@@ -259,7 +260,7 @@ describe('the servers', () => {
       expect(new Set(w.placements.map((p) => p.owner)).size).toBe(players);
       expect(w.bench).toHaveLength(players);
       server.players.forEach((p, c) => {
-        const levels = rosterLevels(PLACEHOLDER_ROSTER, p.roster, 8, 'expected', 4);
+        const levels = rosterLevels(VALLEY_ROSTER, p.roster, 8, 'expected', 4);
         const mine = w.placements.filter((x) => x.col === c).sort((a, b) => a.row - b.row);
         expect(mine).toHaveLength(w.boss.rows);
         // At the roster's level (a form with a lower cap sits below it).

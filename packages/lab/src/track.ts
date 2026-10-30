@@ -52,25 +52,32 @@ export type SlotTable = Readonly<Record<number, SlotNumbers>>;
 /**
  * Per-slot numbers (slot number to HP, Attack and armour, absolute before cards), data. A slot without an entry interpolates the
  * three ranks' numbers (`rankNumbers`). Tuned by `node scripts/report.mjs --tune --track` (`trackTuner.ts`) for the roster the path
- * says arrives at each slot; slots 1 to 15 (three laps), later laps follow the high rank's numbers.
+ * says arrives at each slot (`SLOT_WEEKS`); slots 1 to 15 (three laps), later laps follow the high rank's numbers.
  */
 export const SLOT_NUMBERS: SlotTable = {
-  1: { hp: 14_600, atk: 71, armour: 40 }, // tidal-colossus
-  2: { hp: 4_800, atk: 150, armour: 70 }, // cinder-wyrm
+  1: { hp: 16_700, atk: 107, armour: 20 }, // tidal-colossus
+  2: { hp: 4_800, atk: 143, armour: 83 }, // cinder-wyrm
   3: { hp: 14_300, atk: 53, armour: 6 }, // storm-sovereign
-  4: { hp: 25_200, atk: 100, armour: 19 }, // old-bogback
-  5: { hp: 16_800, atk: 77, armour: 118 }, // thornmother
-  6: { hp: 29_600, atk: 83, armour: 27 }, // tidal-colossus
-  7: { hp: 11_600, atk: 185, armour: 39 }, // cinder-wyrm
-  8: { hp: 7_800, atk: 92, armour: 11 }, // storm-sovereign
-  9: { hp: 28_200, atk: 112, armour: 43 }, // old-bogback
+  4: { hp: 23_700, atk: 100, armour: 19 }, // old-bogback
+  5: { hp: 6_500, atk: 140, armour: 124 }, // thornmother
+  6: { hp: 16_700, atk: 107, armour: 47 }, // tidal-colossus
+  7: { hp: 10_200, atk: 192, armour: 37 }, // cinder-wyrm
+  8: { hp: 7_800, atk: 96, armour: 9 }, // storm-sovereign
+  9: { hp: 26_700, atk: 118, armour: 36 }, // old-bogback
   10: { hp: 8_500, atk: 97, armour: 155 }, // thornmother
-  11: { hp: 21_300, atk: 114, armour: 32 }, // tidal-colossus
-  12: { hp: 11_500, atk: 199, armour: 43 }, // cinder-wyrm
-  13: { hp: 13_500, atk: 57, armour: 9 }, // storm-sovereign
+  11: { hp: 20_200, atk: 120, armour: 34 }, // tidal-colossus
+  12: { hp: 11_500, atk: 199, armour: 50 }, // cinder-wyrm
+  13: { hp: 15_100, atk: 57, armour: 10 }, // storm-sovereign
   14: { hp: 31_200, atk: 123, armour: 31 }, // old-bogback
   15: { hp: 8_500, atk: 92, armour: 162 }, // thornmother
 };
+
+/**
+ * The week each slot's numbers were tuned for (index 0 is slot 1): the median week a dedicated server arrives there at the expected
+ * roster speed, from the path with `SLOT_NUMBERS` (`trackTuner.ts` prints it with the table). The ownability check reads it
+ * (`ownability.ts`: a slot's tool line must be ownable in the week the slot arrives).
+ */
+export const SLOT_WEEKS: readonly number[] = [1, 2, 3, 4, 5, 7, 8, 9, 10, 12, 13, 14, 15, 17, 18];
 
 /**
  * The young-server ramp, a column of the track's data (Misa, 2026-10-30; `docs/design/decisions/raids.md`): a new server has only

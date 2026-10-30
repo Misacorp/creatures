@@ -36,6 +36,7 @@ import {
   LAP_KILL_NOISE,
   evalSlot,
   pasteOf,
+  weeksPasteOf,
   quantised,
   slotTargets,
   slotAxes,
@@ -401,6 +402,7 @@ describe('a slot’s weekend', () => {
       `  1: { hp: 12_345, atk: 9, armour: 4 }, // ${trackSlot(1).bossId}`,
       '};',
     ]);
+    expect(weeksPasteOf([1, 2, 4])).toBe('export const SLOT_WEEKS: readonly number[] = [1, 2, 4];');
   });
 });
 

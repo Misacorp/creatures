@@ -41,13 +41,13 @@ import { runJobs, type JobSpec } from './jobs';
 import { MIXED, planPath, serverWeekend } from './path';
 import { columnOf } from './raidMeasure';
 import {
-  PLACEHOLDER_ROSTER,
   ROSTER_WEEKS,
   levelledColumn,
   rosterLevels,
   type RosterProfile,
   type RosterSpeed,
 } from './roster';
+import { VALLEY_ROSTER } from './valley';
 import { classicFor, type Pick } from './search';
 import {
   RAID_MEASURES,
@@ -132,7 +132,7 @@ export function dedicatedTeam(
   line: readonly Pick[],
   week: number,
   speed: RosterSpeed,
-  profile: RosterProfile = PLACEHOLDER_ROSTER,
+  profile: RosterProfile = VALLEY_ROSTER,
 ): { placements: Placement[]; bench: Placement[] } {
   const placements: Placement[] = [];
   const bench: Placement[] = [];
@@ -302,10 +302,7 @@ function measureSpeed(
  * roster's at the week and the speed of the arguments. The same seeds for every candidate of a level, so a difference between
  * candidates is the numbers' effect.
  */
-export function evalSlot(
-  a: SlotEvalArgs,
-  profile: RosterProfile = PLACEHOLDER_ROSTER,
-): SlotEvalResult {
+export function evalSlot(a: SlotEvalArgs, profile: RosterProfile = VALLEY_ROSTER): SlotEvalResult {
   const table: SlotTable = { [a.slot]: a.numbers };
   return measureSpeed(a, table, a.speed, a.fidelity, profile);
 }
@@ -766,6 +763,11 @@ export function pasteOf(table: SlotTable, first: number, last: number): string[]
   return lines;
 }
 
+/** The `SLOT_WEEKS` line (`track.ts`) for the weeks the final table was tuned for, slots `first` to `last` (a full run, from slot 1, is the whole line). */
+export function weeksPasteOf(weeks: readonly number[]): string {
+  return `export const SLOT_WEEKS: readonly number[] = [${weeks.join(', ')}];`;
+}
+
 /** The markdown of a run: the rounds, one table of the slots (numbers, targets, misses) and the paste. */
 export function trackSummary(
   r: TrackTuneResult,
@@ -861,10 +863,12 @@ export function trackSummary(
     out.push('');
   }
   out.push(
-    '### Paste into `SLOT_NUMBERS` (`track.ts`)',
+    '### Paste into `SLOT_NUMBERS` and `SLOT_WEEKS` (`track.ts`)',
     '',
     '```ts',
     ...pasteOf(r.loop.table, o.first, o.last),
+    '',
+    weeksPasteOf(r.loop.weeks),
     '```',
     '',
   );
@@ -893,7 +897,7 @@ export function killByHp(
   week: number,
   numbers: Numbers,
   o: { from: number; to: number; step: number; weekends: number; speed?: RosterSpeed },
-  profile: RosterProfile = PLACEHOLDER_ROSTER,
+  profile: RosterProfile = VALLEY_ROSTER,
 ): KillPoint[] {
   const out: KillPoint[] = [];
   const count = Math.round((o.to - o.from) / o.step);
