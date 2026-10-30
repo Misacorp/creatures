@@ -3,6 +3,7 @@
  * answers; names match the shipped content; every mechanic is called for.
  */
 import { bossLine, shapeText } from '../src/bossReport';
+import { BOSS_ARMOUR_MIN, CONTENT_CLASSIC_KILL_MAX, CONTENT_KNOCKOUTS_MIN } from '../src/targets';
 import { content, createSeededRng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import {
@@ -26,7 +27,7 @@ import {
   raidBossOf,
   raidMode,
   weekend,
-  weekendStats,
+  contentRule,
   classicFor,
   toPlacements,
   type BossDef,
@@ -139,7 +140,9 @@ describe('the raid bosses', () => {
   it('Rising Tide feeds on HP lost, and Forge Heat is not freed by skipping reactions: its Wyrm is armoured', () => {
     expect(raidBossOf('tidal-colossus').escalation?.feed).toBe('hpLost');
     expect(raidBossOf('cinder-wyrm').escalation?.feed).toBe('reactions');
-    expect(raidBossOf('cinder-wyrm').armour).toBeGreaterThanOrEqual(50);
+    expect(raidBossOf('cinder-wyrm').armour).toBeGreaterThanOrEqual(
+      BOSS_ARMOUR_MIN['cinder-wyrm'] ?? 0,
+    );
   });
 
   it('a boss silences with one move at most, and never twice in a round', () => {
@@ -189,10 +192,9 @@ describe('the raid bosses', () => {
 
   it('a weekend costs the classic party creatures and the classic party loses most of them', () => {
     for (const id of RAID_BOSS_IDS) {
-      const b = raidBossOf(id);
-      const w = weekendStats(b, classicFor(raidMode(b)), 12, `content:${id}`);
-      expect(w.knockoutsTotal).toBeGreaterThanOrEqual(3);
-      expect(w.winRate).toBeLessThanOrEqual(0.5);
+      const w = contentRule(id, raidBossOf(id));
+      expect(w.knockouts).toBeGreaterThanOrEqual(CONTENT_KNOCKOUTS_MIN);
+      expect(w.kill).toBeLessThanOrEqual(CONTENT_CLASSIC_KILL_MAX);
     }
   });
 });

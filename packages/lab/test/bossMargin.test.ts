@@ -1,59 +1,72 @@
 /**
- * The prepared line at the margin, at other widths and on a mixed server (panel 4).
+ * The prepared line at the margin, at other widths and on a mixed server (panel 4). The thresholds are in `src/targets.ts` and the
+ * measures in `src/raidRules.ts`, where the boss tuner reads them too.
  */
 import { describe, expect, it } from 'vitest';
 import {
-  BOSS_ANSWERS,
+  COST_HP_LEFT_LOW,
+  COST_HP_LEFT_MAX,
+  COST_KNOCKOUTS_MIN,
+  COST_SHARE_MIN,
+  GAP10_MIN,
+  MARGIN_BASE_MIN,
+  MARGIN_PLUS10_MIN,
+  SERVER_KILL_MAX,
+  SERVER_KNOCKOUT_FACTOR,
+  SERVER_SHARE_MAX,
+  SERVER_SHARE_MIN,
+  WIDTH_BEST_SHARE_MIN,
+  WIDTH_CLASSIC_KILL_MAX,
+  WIDTH_CLASSIC_SHARE_MAX,
+} from '../src/targets';
+import {
   RAID_BOSS_IDS,
-  RAID_WIDTHS,
-  tileLine,
-  wideBoss,
-  answerLine,
-  marginOf,
-  mixedServer,
+  costRule,
+  gap10Rule,
+  marginRule,
   raidBossOf,
-  weekendStats,
-  widthOf,
-  withoutTool,
+  serverRule,
+  widthRule,
 } from '../src';
 
 describe('the prepared line at the margin, at other widths and on a mixed server (panel 4)', () => {
-  const first = (id: string) => BOSS_ANSWERS[id]?.[0];
-  const lineOf = (id: string) => answerLine(first(id)?.line ?? '');
-
   it.each(RAID_BOSS_IDS)(
     '%s: the prepared line keeps most of its HP share at +10% Attack and at +10% HP',
     (id) => {
-      const m = marginOf(raidBossOf(id), lineOf(id), 24, `margin:${id}`);
-      expect(m.share.base, id).toBeGreaterThanOrEqual(0.93);
-      expect(m.share.atk10, `${id} +10% Attack`).toBeGreaterThanOrEqual(0.8);
-      expect(m.share.hp10, `${id} +10% HP`).toBeGreaterThanOrEqual(0.8);
+      const m = marginRule(id, raidBossOf(id));
+      expect(m.share.base, id).toBeGreaterThanOrEqual(MARGIN_BASE_MIN);
+      expect(m.share.atk10, `${id} +10% Attack`).toBeGreaterThanOrEqual(MARGIN_PLUS10_MIN);
+      expect(m.share.hp10, `${id} +10% HP`).toBeGreaterThanOrEqual(MARGIN_PLUS10_MIN);
     },
   );
 
   it.each(RAID_BOSS_IDS)(
     '%s: the prepared line pays for it: creatures lost, or the team left low on HP',
     (id) => {
-      const w = weekendStats(raidBossOf(id), lineOf(id), 24, `cost:${id}`);
-      expect(w.damageShare, id).toBeGreaterThanOrEqual(0.93);
+      const w = costRule(id, raidBossOf(id));
+      expect(w.damageShare, id).toBeGreaterThanOrEqual(COST_SHARE_MIN);
       // Misa, 2026-10-29: everyone alive but low is also a result, so HP left counts next to knockouts.
       expect(
-        w.knockoutsTotal >= 0.5 || w.hpLeftEnd <= 0.6,
+        w.knockoutsTotal >= COST_KNOCKOUTS_MIN || w.hpLeftEnd <= COST_HP_LEFT_LOW,
         `${id}: ${String(w.knockoutsTotal)} out, ${String(w.hpLeftEnd)} HP left`,
       ).toBe(true);
-      expect(w.hpLeftEnd, id).toBeLessThanOrEqual(0.8);
+      expect(w.hpLeftEnd, id).toBeLessThanOrEqual(COST_HP_LEFT_MAX);
     },
   );
 
   it.each(RAID_BOSS_IDS)(
     '%s: at 5, 10 and 15 columns the classic party never kills and the prepared line removes nearly all the HP',
     (id) => {
-      const b = raidBossOf(id);
-      for (const w of RAID_WIDTHS) {
-        const r = widthOf(b, lineOf(id), w, 12, `width:${id}`);
-        expect(r.classicWin, `${id} at ${String(w)} columns`).toBeLessThanOrEqual(0.1);
-        expect(r.classicShare, `${id} at ${String(w)} columns`).toBeLessThanOrEqual(0.9);
-        expect(r.bestShare, `${id} at ${String(w)} columns`).toBeGreaterThanOrEqual(0.85);
+      for (const r of widthRule(id, raidBossOf(id))) {
+        expect(r.classicWin, `${id} at ${String(r.width)} columns`).toBeLessThanOrEqual(
+          WIDTH_CLASSIC_KILL_MAX,
+        );
+        expect(r.classicShare, `${id} at ${String(r.width)} columns`).toBeLessThanOrEqual(
+          WIDTH_CLASSIC_SHARE_MAX,
+        );
+        expect(r.bestShare, `${id} at ${String(r.width)} columns`).toBeGreaterThanOrEqual(
+          WIDTH_BEST_SHARE_MIN,
+        );
       }
     },
   );
@@ -61,48 +74,25 @@ describe('the prepared line at the margin, at other widths and on a mixed server
   it.each(RAID_BOSS_IDS)(
     '%s: the tool gap holds at 10 players: the line repeated to fill still loses clearly without its tool, in HP removed or in kills',
     (id) => {
-      const b = raidBossOf(id);
-      const a = first(id);
-      const wide = wideBoss(b, 10);
-      const withT = weekendStats(wide, tileLine(lineOf(id), b.cols, 10), 16, `gap10:${id}`);
-      const without = weekendStats(
-        wide,
-        tileLine(withoutTool(lineOf(id), a?.core ?? []), b.cols, 10),
-        16,
-        `gap10:${id}`,
-      );
-      // A line that removes all the HP either way shows its tool in the kills, one that kills no weekend in the HP.
-      const share = withT.damageShare - without.damageShare;
-      const kills = withT.winRate - without.winRate;
+      // A line that removes all the HP either way shows its tool in the kills, one that kills no weekend in the HP
+      // (`gap10Rule`: the larger of the two gaps in units of `GAP10_SHARE_UNIT` and `GAP10_KILL_UNIT`).
+      const g = gap10Rule(id, raidBossOf(id));
       expect(
-        Math.max(share / 0.05, kills / 0.2),
-        `${id}: ${String(share)} of the HP, ${String(kills)} of the kills`,
-      ).toBeGreaterThanOrEqual(1);
+        g.gap,
+        `${id}: ${String(g.share)} of the HP, ${String(g.kills)} of the kills`,
+      ).toBeGreaterThanOrEqual(GAP10_MIN);
     },
   );
-
-  const mixed = (id: string) =>
-    mixedServer(
-      raidBossOf(id),
-      lineOf(id),
-      [lineOf(id)],
-      20,
-      60,
-      `mixed:${id}`,
-      first(id)?.core ?? [],
-      [first(id)?.core ?? []],
-    );
 
   it.each(RAID_BOSS_IDS)(
     '%s: a mixed server (2 min-maxers, 3 builders, 5 casual players) removes a good share of the HP, does not always win, and feels its losses more than a prepared team',
     (id) => {
-      const r = mixed(id);
-      expect(r.winRate, id).toBeLessThanOrEqual(0.9);
-      expect(r.weekend.damageShare, id).toBeGreaterThanOrEqual(0.4);
-      expect(r.weekend.damageShare, id).toBeLessThanOrEqual(0.97);
+      const r = serverRule(id, raidBossOf(id));
+      expect(r.kill, id).toBeLessThanOrEqual(SERVER_KILL_MAX);
+      expect(r.share, id).toBeGreaterThanOrEqual(SERVER_SHARE_MIN);
+      expect(r.share, id).toBeLessThanOrEqual(SERVER_SHARE_MAX);
       // A mixed server feels losses more than a prepared team does.
-      const prepared = weekendStats(raidBossOf(id), lineOf(id), 12, `mixed-cost:${id}`);
-      expect(r.knockouts, id).toBeGreaterThan(3 * prepared.knockoutsTotal);
+      expect(r.knockouts, id).toBeGreaterThan(SERVER_KNOCKOUT_FACTOR * r.prepared);
     },
   );
 });

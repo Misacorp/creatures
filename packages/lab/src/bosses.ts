@@ -226,9 +226,9 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
   {
     id: 'thornmother',
     rows: 3,
-    armour: 170,
-    atk: 99,
-    hp: 11_000,
+    armour: 224,
+    atk: 92,
+    hp: 8_200,
     plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 7_000 },
     cards: ['adapts'],
     // Each fifth of her HP lost wakes her further; at half she blooms (Second Bloom) and the whole arena is in play.
@@ -237,7 +237,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       feed: 'hpLost',
       per: 2_500,
       cap: 3,
-      // The bark cracks at every step: her armour drops by 30 each fifth of her HP lost (170 at the start, 80 at the cap), so only a Pierce line or a big reaction gets in early.
+      // The bark cracks at every step: her armour drops by 30 each fifth of her HP lost (224 at the start, 134 at the cap), so only a Pierce line or a big reaction gets in early.
       grow: { atkBp: 800, jumps: 1, armour: -30 },
       phase: {
         atStep: 2,
@@ -249,7 +249,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       },
     },
     asks: 'The row ends fall quiet. Keep what you cannot spare in the middle or ward it, and bring something for her thick bark.',
-    ranks: { low: [6_500, 7_000, 6_400], mid: [8_000, 8_500, 7_800] },
+    ranks: { low: [8_451, 8_000, 5_300], mid: [9_390, 9_100, 7_600] },
     moves: [
       // The one silencing move: every second round, the two ends of every row.
       [
@@ -291,7 +291,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
   {
     id: 'storm-sovereign',
     rows: 2,
-    armour: 7,
+    armour: 8,
     atk: 73,
     hp: 14_500,
     // Lightning Rod: the plain attack leaps from the strongest Payoff, twice a round. A Taunt takes the first strike.
@@ -309,7 +309,7 @@ export const RAID_SPECS: readonly RaidBossSpec[] = [
       grow: { atkBp: 2_000, jumps: 1 },
     },
     asks: 'The Rod leaps from the strongest Payoff, round after round, and a Judgement Bolt, announced at round start, can fell it. Draw the Rod onto something that can take it, and have Night Watch beside the Payoff for the Bolt.',
-    ranks: { low: [8_500, 8_600], mid: [9_200, 9_100] },
+    ranks: { low: [9_000, 8_900, 6_300], mid: [9_500, 9_500, 8_800] },
     moves: [
       [
         'thunderclap',

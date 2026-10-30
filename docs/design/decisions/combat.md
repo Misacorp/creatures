@@ -28,7 +28,7 @@ ID: `2026-10-29-measure-hp-removed-rule-cards-ask` · Status: current
 
 ## 2026-10-29: Raid tuning aims at success tiers and robustness
 
-ID: `2026-10-29-raid-tuning-aims-at-success-tiers` · Status: current · Amends: `2026-10-29-combat-v2-raid-boss-hp-grows`
+ID: `2026-10-29-raid-tuning-aims-at-success-tiers` · Status: current, amended by `2026-10-30-a-failed-raid-boss-returns-next` · Amends: `2026-10-29-combat-v2-raid-boss-hp-grows`
 
 **Decision (lead).** The honest measures after panel 5 showed the raid fights are knife-edge damage races: prepared answers won 92% to 100% with their exact talents but 0% to 28% with random legal talents, and one HP rule for all bosses emptied mixed servers. Two changes of aim for the lab:
 

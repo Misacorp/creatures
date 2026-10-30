@@ -4,6 +4,21 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-30: A failed raid boss returns next week; raids measure HP removed **[Misa]**
+
+ID: `2026-10-30-a-failed-raid-boss-returns-next` · Status: current · Amends: `2026-10-29-raid-tuning-aims-at-success-tiers`, `2026-10-11-progression-decisions`
+
+**Decision (Misa).** For combat v2 (the shipped game changes only at the port):
+
+- **A boss the server did not defeat returns the next week, at full HP.** Players who invested in a counter can try it again instead of chasing a new one, and each server climbs a fixed, known track of bosses (it replaces today's rotation by calendar week). After a kill the next boss on the track is known a week ahead, which fits raids that are announced in advance.
+- **The boss's HP bar shows last week's best** ("12% left last time"), so a returning boss shows the server's progress. No boost per lost week for now (Misa declined "Resolve" in October): the Festival week still breaks up long streaks, and the simulator checks whether servers get stuck before any boost is added.
+- **The share of HP removed is the measure of a raid; a kill is what moves the server up a rank.** Targets for the lab's tuner:
+  - a **prepared** team usually wins within two weekends (a kill in about half of its weekends or more), and removes most of the HP even with random talents;
+  - an **unprepared but decent** party (the classic trio, no tools) may get anything but a clean kill: it kills at most about 5% of weekends, with no limit on the HP it removes (a team that brute-forces a boss with overpowered creatures spent its time elsewhere and is not playing efficiently);
+  - **mixed servers** have no target: the lab reports how many weeks they take to rank up (three weeks where a dedicated server takes one is fine).
+
+**Reasoning.** Research on visible progress backs measuring HP removed: effort rises as a visible goal gets closer (goal gradient, Kivetz et al. 2006), a head start raises completion (endowed progress, Nunes and Drèze 2006), and after a failure, showing what is left motivates more than showing what was done. Damage-scored co-op bosses are an established pattern (Clash of Clans' Capital raids carry damage between attacks; Raid: Shadow Legends' clan bosses pay by damage). Games that repeat a boss add relief against getting stuck (WoW's Determination, +5% per wipe up to 10 stacks; FFXIV's Echo; WoW's Icecrown buff that rose about every 4 weeks); no research says how many failed attempts are too many, so that is measured, not assumed. A fixed track also lets the lab tune each boss at the exact rank it appears.
+
 ## 2026-10-26: Raid results show real damage and a separate score
 
 ID: `2026-10-26-raid-results-show-real-damage-and` · Status: current · Amends: `2026-10-11-after-action-card-implementation-choices`, `2026-10-20-the-raid-summary-ships-scoreboard-first`

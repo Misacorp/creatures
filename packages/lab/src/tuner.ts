@@ -16,8 +16,6 @@
  * effect, not noise. The first passes use few weekends; the finalists and today's numbers are measured again on the report's own
  * number of weekends. When several candidates meet every target, the one with the most room inside its bounds wins (`comfortOf`).
  */
-import { createSeededRng } from '@creatures/game';
-import { randomTalents } from './answerMeasure';
 import { BOSS_ANSWERS, answerLine, withoutTool } from './bossAnswers';
 import {
   RAID_RANKS,
@@ -29,21 +27,33 @@ import {
 } from './bosses';
 import { runJobs, type Executor, type JobSpec } from './jobs';
 import { mixedSpread } from './raidMeasure';
+import { randomTalentMeasure, ruleMeasures } from './raidRules';
 import { classicFor, type Pick } from './search';
 import {
+  BOSS_ARMOUR_MIN,
   LADDER,
-  RAID_TARGETS,
+  REPORTED_MEASURES,
+  RAID_MEASURES,
   TARGET_RANKS,
+  beatWithin,
   comfortOf,
+  isCrossMeasure,
+  isMeasured,
+  isShareMeasure,
   lossOf,
   metBy,
   missOf,
+  skippedCross,
+  targetsFor,
+  weeksText,
+  type RaidMeasure,
   type RaidMeasures,
   type RaidTarget,
   type TargetRank,
 } from './targets';
 import { illegalTalents } from './talents';
-import type { BossDef } from './types';
+
+export { randomTalentMeasure };
 
 // ---------- 1. the search ----------
 
@@ -90,8 +100,8 @@ export interface SearchPlan {
 
 const EPS = 1e-9;
 
-/** How much better than today's numbers a point must be to be proposed: in loss, or (at a loss within that) in comfort. */
-export const MIN_GAIN = { loss: 0.01, comfort: 0.02 } as const;
+/** How much better than today's numbers a point must be to be proposed: in loss (`missed` when today's numbers miss a target, so a boss that misses can move step by step), or (at a loss within `loss`) in comfort. */
+export const MIN_GAIN = { loss: 0.01, comfort: 0.02, missed: 0.002 } as const;
 
 /** Whether `a` fits better than `b`: a smaller loss, or the same loss with more room inside the bounds. */
 export function fitsBetter(a: Scored, b: Scored): boolean {
@@ -212,7 +222,7 @@ export async function searchPoints<D>(
   const clearer =
     top !== undefined &&
     kept !== undefined &&
-    (top.loss < kept.loss - MIN_GAIN.loss ||
+    (top.loss < kept.loss - (kept.loss > EPS ? MIN_GAIN.missed : MIN_GAIN.loss) ||
       (Math.abs(top.loss - kept.loss) <= MIN_GAIN.loss &&
         top.comfort > kept.comfort + MIN_GAIN.comfort));
   const best = kept && !clearer ? kept : top;
@@ -242,29 +252,38 @@ export interface Conflicts {
   readonly conflicts: Conflict[];
   /** Targets no candidate met: not a clash with another target, the searched numbers cannot reach it at all. */
   readonly unreachable: RaidTarget[];
-  /** Candidates that met every target. */
+  /** Candidates that met every target, of those measured in full (`fullOf`: the final level, every rule at the tests' own weekends). */
   readonly allMet: number;
+  /** Candidates measured in full. */
+  readonly fullOf: number;
   readonly of: number;
 }
 
 /**
  * Which pairs of targets clash in the searched space: each is met by at least one measured candidate, but no candidate meets both.
  * A target no candidate meets is `unreachable` (listed apart). When no pair clashes yet no candidate meets everything, the tension
- * is between three or more targets (`allMet` is 0 and `conflicts` is empty).
+ * is between three or more targets (`allMet` is 0 and `conflicts` is empty). `full[k]` says candidate k was measured in full (the final
+ * level); only those count towards `allMet`, since a cheaper pass shrinks the rules' weekends (default: every candidate counts).
  */
 export function findConflicts(
   targets: readonly RaidTarget[],
   measured: readonly RaidMeasures[],
+  full?: readonly boolean[],
 ): Conflicts {
+  // A measure a cheap pass did not take (NaN) is neither met nor missed: a pair is judged on the candidates that have both.
   const met = measured.map((m) => targets.map((t) => metBy(t, m[t.measure])));
+  const taken = measured.map((m) => targets.map((t) => isMeasured(m[t.measure])));
   const count = (f: (row: boolean[]) => boolean) => met.filter(f).length;
-  const unreachable = targets.filter((_, i) => count((row) => row[i] === true) === 0);
+  const unreachable = targets.filter(
+    (_, i) => taken.some((row) => row[i] === true) && count((row) => row[i] === true) === 0,
+  );
   const conflicts: Conflict[] = [];
   for (let i = 0; i < targets.length; i++)
     for (let j = i + 1; j < targets.length; j++) {
-      const metA = count((row) => row[i] === true);
-      const metB = count((row) => row[j] === true);
-      const both = count((row) => row[i] === true && row[j] === true);
+      const rows = met.filter((_, k) => taken[k]?.[i] === true && taken[k]?.[j] === true);
+      const metA = rows.filter((row) => row[i] === true).length;
+      const metB = rows.filter((row) => row[j] === true).length;
+      const both = rows.filter((row) => row[i] === true && row[j] === true).length;
       if (metA > 0 && metB > 0 && both === 0)
         conflicts.push({
           a: targets[i] as RaidTarget,
@@ -272,13 +291,14 @@ export function findConflicts(
           metA,
           metB,
           both,
-          of: measured.length,
+          of: rows.length,
         });
     }
   return {
     conflicts,
     unreachable,
-    allMet: count((row) => row.every(Boolean)),
+    allMet: met.filter((row, k) => (full?.[k] ?? true) && row.every(Boolean)).length,
+    fullOf: full ? full.filter(Boolean).length : measured.length,
     of: measured.length,
   };
 }
@@ -287,10 +307,10 @@ const pct = (x: number): string => `${Math.round(x * 100)}%`;
 
 /** A target in a few words: `prepared.share ≥ 80%`, `mixed.share 60% to 90%`. */
 export function describeTarget(t: RaidTarget): string {
-  if (t.min !== undefined && t.max !== undefined)
-    return `${t.measure} ${pct(t.min)} to ${pct(t.max)}`;
-  if (t.min !== undefined) return `${t.measure} ≥ ${pct(t.min)}`;
-  return `${t.measure} ≤ ${pct(t.max ?? 0)}`;
+  const f = (x: number): string => (isShareMeasure(t.measure) ? pct(x) : String(x));
+  if (t.min !== undefined && t.max !== undefined) return `${t.measure} ${f(t.min)} to ${f(t.max)}`;
+  if (t.min !== undefined) return `${t.measure} ${t.strictMin ? '>' : '≥'} ${f(t.min)}`;
+  return `${t.measure} ≤ ${f(t.max ?? 0)}`;
 }
 
 // ---------- 3. the raid boss ----------
@@ -386,7 +406,9 @@ export function ladderBox(
       : rank === 'mid'
         ? [Math.max(hide, low?.armour ?? 0), high?.armour ?? inf]
         : [hide, Math.min(mid?.armour ?? inf, high?.armour ?? inf)];
-  return { hp: box('hp'), atk: box('atk'), armour };
+  // A floor the content test sets (`BOSS_ARMOUR_MIN`, the high rank): Forge Heat is not freed by skipping reactions.
+  const floor = rank === 'high' ? (BOSS_ARMOUR_MIN[id] ?? 0) : 0;
+  return { hp: box('hp'), atk: box('atk'), armour: [Math.max(armour[0], floor), armour[1]] };
 }
 
 /** How far a search may move each number from today's, as factors of it. */
@@ -409,26 +431,77 @@ export interface Fidelity {
   /** Draws of the mixed server (ten players) and weekends of each. */
   readonly mixedDraws: number;
   readonly mixedWeekends: number;
+  /**
+   * The weekends of the lab tests' rules (`raidRules.ts`) as a share of the tests' own: 1 is exactly what the tests fight, 0 or no
+   * value leaves the rules out (their measures are NaN, so no target counts them). A proposal is only ever judged at 1 (`final`).
+   */
+  readonly rules?: number;
+  /** Whether the heavy rules (the high rank's many fights) are taken too, or only the light ones (the rank rules, the casual server, the cross-rank rules). Default: both. */
+  readonly heavyRules?: boolean;
 }
 
 /**
  * The cheap passes use few weekends, the second look more. The full measurement is the report's own Boss Rank study (`BOSS_SETTINGS`: 60 weekends over
- * 10 talent draws, 30 classic weekends, 40 mixed draws of 2 weekends; quick: 20 over 4, 10, 8 of 2).
+ * 10 talent draws, 30 classic weekends, 40 mixed draws of 2 weekends; quick: 20 over 4, 10, 8 of 2), and the tests' rules at exactly the tests' weekends.
  */
 export const FIDELITY = (
   quick: boolean,
 ): { search: Fidelity; check: Fidelity; final: Fidelity; plan: SearchPlan } =>
   quick
     ? {
-        search: { weekends: 8, draws: 4, classicWeekends: 6, mixedDraws: 4, mixedWeekends: 1 },
-        check: { weekends: 12, draws: 4, classicWeekends: 8, mixedDraws: 6, mixedWeekends: 2 },
-        final: { weekends: 20, draws: 4, classicWeekends: 10, mixedDraws: 8, mixedWeekends: 2 },
+        search: {
+          weekends: 8,
+          draws: 4,
+          classicWeekends: 6,
+          mixedDraws: 4,
+          mixedWeekends: 1,
+          rules: 0.25,
+          heavyRules: false,
+        },
+        check: {
+          weekends: 12,
+          draws: 4,
+          classicWeekends: 8,
+          mixedDraws: 6,
+          mixedWeekends: 2,
+          rules: 0.25,
+        },
+        final: {
+          weekends: 20,
+          draws: 4,
+          classicWeekends: 10,
+          mixedDraws: 8,
+          mixedWeekends: 2,
+          rules: 1,
+        },
         plan: { gridPoints: 4, rounds: 1, keep: 3, checks: 12, finalists: 4 },
       }
     : {
-        search: { weekends: 20, draws: 4, classicWeekends: 12, mixedDraws: 10, mixedWeekends: 1 },
-        check: { weekends: 40, draws: 8, classicWeekends: 20, mixedDraws: 20, mixedWeekends: 2 },
-        final: { weekends: 60, draws: 10, classicWeekends: 30, mixedDraws: 40, mixedWeekends: 2 },
+        search: {
+          weekends: 20,
+          draws: 4,
+          classicWeekends: 12,
+          mixedDraws: 10,
+          mixedWeekends: 1,
+          rules: 0.25,
+          heavyRules: false,
+        },
+        check: {
+          weekends: 40,
+          draws: 8,
+          classicWeekends: 20,
+          mixedDraws: 20,
+          mixedWeekends: 2,
+          rules: 0.5,
+        },
+        final: {
+          weekends: 60,
+          draws: 10,
+          classicWeekends: 30,
+          mixedDraws: 40,
+          mixedWeekends: 2,
+          rules: 1,
+        },
         plan: { gridPoints: 6, rounds: 3, keep: 4, checks: 40, finalists: 8 },
       };
 
@@ -442,36 +515,17 @@ export function preparedOf(id: string): { line: Pick[]; core: readonly string[] 
 }
 
 /**
- * The prepared line with random legal talents, as `robustnessOf(...).random` measures it, without the two measures of that function
- * the tuner does not read (the line as written and with no talents): the mean share of HP removed and the mean kill rate over the
- * draws, with the same salts, so the numbers equal `robustnessOf`'s (tested).
+ * One candidate to measure: a boss at a rank with these absolute numbers, how many weekends, and the salt every candidate shares.
+ * `other` is the boss's absolute numbers at the other rank a cross-rank rule compares (the low rank's for the high, the high's for the
+ * low): given only when the ranks are tuned together.
  */
-export function randomTalentMeasure(
-  boss: BossDef,
-  line: readonly Pick[],
-  weekends: number,
-  draws: number,
-  salt: string,
-): { share: number; kill: number } {
-  const per = Math.max(1, Math.floor(weekends / draws));
-  let share = 0,
-    kill = 0;
-  for (let d = 0; d < draws; d++) {
-    const rng = createSeededRng(`talents:${salt}:${d}`);
-    const w = weekendStats(boss, randomTalents(rng, line), per, `${salt}:r${d}`);
-    share += w.damageShare;
-    kill += w.tiers.kill;
-  }
-  return { share: share / draws, kill: kill / draws };
-}
-
-/** One candidate to measure: a boss at a rank with these absolute numbers, how many weekends, and the salt every candidate shares. */
 export interface TuneEvalArgs {
   readonly boss: string;
   readonly rank: TargetRank;
   readonly numbers: Numbers;
   readonly fidelity: Fidelity;
   readonly salt: string;
+  readonly other?: { readonly rank: TargetRank; readonly numbers: Numbers };
 }
 
 export interface TuneEvalResult {
@@ -480,7 +534,7 @@ export interface TuneEvalResult {
   readonly weekends: number;
 }
 
-/** Measures one candidate (what a `tune-eval` job runs): the seven measures of `targets.ts` for the boss with these numbers. */
+/** Measures one candidate (what a `tune-eval` job runs): the measures of `targets.ts` for the boss with these numbers. */
 export function evalCandidate(a: TuneEvalArgs): TuneEvalResult {
   const { line, core } = preparedOf(a.boss);
   const boss = raidBossOf(a.boss, { rank: a.rank, ...a.numbers });
@@ -493,6 +547,10 @@ export function evalCandidate(a: TuneEvalArgs): TuneEvalResult {
     f.draws,
     `${a.salt}:n`,
   );
+  // The line with its written talents: a server facing a returning boss can re-pick them from its Talent Book.
+  const written = weekendStats(boss, line, f.weekends, `${a.salt}:w`);
+  // The tool's worth with them, on the same seeds (`toolCost`, as `test/bossAnswers.test.ts` measures it).
+  const writtenWithout = weekendStats(boss, withoutTool(line, core), f.weekends, `${a.salt}:w`);
   const classic = weekendStats(boss, classicFor(raidMode(boss)), f.classicWeekends, `${a.salt}:c`);
   const mixed = mixedSpread(
     boss,
@@ -506,11 +564,35 @@ export function evalCandidate(a: TuneEvalArgs): TuneEvalResult {
     [core],
     { players: 10, casual: 'top3' },
   );
+  // The lab tests' rules, measured as the tests measure them (the cheap passes leave them out or shrink them).
+  const rules = f.rules
+    ? ruleMeasures(
+        a.boss,
+        a.rank,
+        boss,
+        f.rules,
+        a.other
+          ? {
+              rank: a.other.rank,
+              boss: raidBossOf(a.boss, { rank: a.other.rank, ...a.other.numbers }),
+            }
+          : undefined,
+        f.heavyRules ?? true,
+      )
+    : undefined;
   return {
     measures: {
+      ...(Object.fromEntries(RAID_MEASURES.map((m) => [m, Number.NaN])) as Record<
+        (typeof RAID_MEASURES)[number],
+        number
+      >),
+      ...rules?.values,
       'prepared.share': withTool.share,
       'prepared.kill': withTool.kill,
+      'prepared.written': written.tiers.kill,
+      'prepared.beat2': beatWithin(written.tiers.kill, 2),
       'tool.share': withTool.share - without.share,
+      'tool.written': written.damageShare - writtenWithout.damageShare,
       'classic.share': classic.damageShare,
       'classic.kill': classic.tiers.kill,
       'mixed.share': mixed.weekend.damageShare,
@@ -518,8 +600,10 @@ export function evalCandidate(a: TuneEvalArgs): TuneEvalResult {
     },
     weekends:
       2 * Math.max(1, Math.floor(f.weekends / f.draws)) * f.draws +
+      2 * f.weekends +
       f.classicWeekends +
-      f.mixedDraws * f.mixedWeekends,
+      f.mixedDraws * f.mixedWeekends +
+      (rules?.weekends ?? 0),
   };
 }
 
@@ -539,7 +623,13 @@ export interface Row {
   readonly measures: RaidMeasures;
   readonly loss: number;
   readonly misses: Miss[];
+  /** How many of the targets' measures were not taken (NaN): the loss does not count them, so a loss of 0 is "every target met" only at 0 here. */
+  readonly unmeasured: number;
 }
+
+/** Whether a row meets every target: no loss, and nothing left unmeasured. */
+export const meetsEveryTarget = (row: Row | undefined): boolean =>
+  row !== undefined && row.loss === 0 && row.unmeasured === 0;
 
 export interface RankResult {
   readonly boss: string;
@@ -559,6 +649,10 @@ export interface RankResult {
   readonly seconds: number;
   /** The lines to paste into `bosses.ts`. */
   readonly paste: string;
+  /** Set when a lower rank's paste is expressed against a proposed high rank other than today's (`rebaseOn`). */
+  readonly rebasedOn?: Numbers;
+  /** Rules that compare ranks and were not checked, because the ranks were not tuned together (they need `--rank all`). */
+  readonly skipped: readonly RaidTarget[];
 }
 
 /** Where the candidates run: `exec` runs one job, `slots` at a time (the same shape as the report's `JobRunner`). */
@@ -575,6 +669,27 @@ function pasteOf(id: string, rank: TargetRank, n: Numbers): string {
   return `${id} (RAID_SPECS, ranks.${rank}): [${grouped(n.hp)}, ${grouped(n.atk)}, ${grouped(n.armour)}]  // [hpBp, atkBp, armourBp]`;
 }
 
+/**
+ * The numbers of a lower rank as bp of a high rank (the spec's units), such that `raidBossOf` rebuilds `absolute` from them
+ * (`Math.round(high * bp / 10_000) === absolute`). The tidiest bp that does: a multiple of 100 when one works, else of 10, else
+ * the nearest whole bp (which always works while the high rank's number is below 10,000).
+ */
+export function rebaseOn(absolute: Numbers, high: Numbers): Numbers {
+  const one = (abs: number, hi: number): number => {
+    const exact = (abs * 10_000) / hi;
+    for (const step of [100, 10, 1]) {
+      const bp = Math.round(exact / step) * step;
+      if (Math.round((hi * bp) / 10_000) === abs) return bp;
+    }
+    return Math.round(exact);
+  };
+  return {
+    hp: one(absolute.hp, high.hp),
+    atk: one(absolute.atk, high.atk),
+    armour: one(absolute.armour, high.armour),
+  };
+}
+
 function rowOf(
   id: string,
   rank: TargetRank,
@@ -587,12 +702,18 @@ function rowOf(
     absolute: absoluteOf(id, rank, numbers),
     measures,
     loss: lossOf(targets, measures),
+    unmeasured: targets.filter((t) => !isMeasured(measures[t.measure])).length,
     misses: targets.map((t) => ({
       target: describeTarget(t),
       value: measures[t.measure],
       miss: missOf(t, measures[t.measure]),
     })),
   };
+}
+
+/** What a measurement is cached under: the level, the boss's absolute numbers and, for a cross-rank rule, the other rank's. */
+function candidateKey(level: Level, n: Numbers, other?: TuneEvalArgs['other']): string {
+  return `${level}:${toPoint(n).join(',')}${other ? `|${other.rank}:${toPoint(other.numbers).join(',')}` : ''}`;
 }
 
 /**
@@ -605,7 +726,7 @@ export async function tuneRank(
   others: Partial<Record<TargetRank, Numbers>>,
   quick: boolean,
   run: TuneRunner,
-  targets: readonly RaidTarget[] = RAID_TARGETS[rank],
+  targets: readonly RaidTarget[] = targetsFor(id, rank),
   incumbent?: Numbers,
   cache: Map<string, TuneEvalResult> = new Map(),
 ): Promise<RankResult> {
@@ -644,15 +765,23 @@ export async function tuneRank(
     const a = absoluteOf(id, rank, fromPoint(p));
     return NUMBER_NAMES.every((k) => a[k] >= box[k][0] && a[k] <= box[k][1]);
   };
+  // A rule that compares two ranks reads the other rank's numbers as they stand (low for high, high for low); only when asked for.
+  const crossOn = targets.some((t) => isCrossMeasure(t.measure));
+  const otherRank: TargetRank | undefined =
+    rank === 'high' ? 'low' : rank === 'low' ? 'high' : undefined;
+  const otherNumbers = otherRank ? others[otherRank] : undefined;
+  const other =
+    crossOn && otherRank && otherNumbers ? { rank: otherRank, numbers: otherNumbers } : undefined;
   let seconds = 0,
     weekends = 0,
     batch = 0;
   const evaluate: BatchEvaluator<TuneEvalResult> = async (points, level) => {
     const n = batch++;
     const fid = fidelity[level];
-    // A candidate already measured at this level (by an earlier pass of the ranks) is not fought again: the seeds are the same.
+    // A candidate already measured at this level (by an earlier pass of the ranks) is not fought again: the seeds are the same
+    // (unless the other rank moved, which a cross-rank rule reads).
     const keyOf = (p: Point): string =>
-      `${level}:${toPoint(absoluteOf(id, rank, fromPoint(p))).join(',')}`;
+      candidateKey(level, absoluteOf(id, rank, fromPoint(p)), other);
     // Two shares that round to the same boss are one candidate.
     const pending = new Set<string>();
     const jobs: JobSpec[] = points.flatMap((p, i) =>
@@ -670,6 +799,7 @@ export async function tuneRank(
                 fidelity: fid,
                 // The same seeds for every candidate of a level (and for a boss and rank across runs).
                 salt: `tune:${id}:${rank}:${level}`,
+                ...(other ? { other } : {}),
               } satisfies TuneEvalArgs,
               needs: [],
             },
@@ -708,6 +838,7 @@ export async function tuneRank(
     conflicts: findConflicts(
       targets,
       found.all.map((f) => f.data.measures),
+      found.all.map((f) => f.level === 'final'),
     ),
     searched: found.all.map((f) => ({
       numbers: fromPoint(f.point),
@@ -727,6 +858,47 @@ export async function tuneRank(
     weekends,
     seconds,
     paste: best ? pasteOf(id, rank, best.numbers) : '',
+    skipped: crossOn ? [] : skippedCross(id, rank),
+  };
+}
+
+/**
+ * The numbers measured once more in full against the other rank as it finally stands (`other`), reusing the measurement if the
+ * search already took it. The coordinate descent leaves a rank's cross-rank rules measured against the other rank as it was then.
+ */
+async function measureFinal(
+  id: string,
+  rank: TargetRank,
+  numbers: Numbers,
+  other: NonNullable<TuneEvalArgs['other']>,
+  quick: boolean,
+  run: TuneRunner,
+  cache: Map<string, TuneEvalResult>,
+): Promise<{ result: TuneEvalResult; seconds: number; fought: number }> {
+  const key = candidateKey('final', numbers, other);
+  const hit = cache.get(key);
+  if (hit) return { result: hit, seconds: 0, fought: 0 };
+  const job: JobSpec = {
+    id: `tune:${id}:${rank}:verify`,
+    section: 'Boss tuner',
+    kind: 'tune-eval',
+    args: {
+      boss: id,
+      rank,
+      numbers,
+      fidelity: FIDELITY(quick).final,
+      salt: `tune:${id}:${rank}:final`,
+      other,
+    } satisfies TuneEvalArgs,
+    needs: [],
+  };
+  const { results, runs } = await runJobs([job], run.exec, run.slots);
+  const result = results.get(job.id) as TuneEvalResult;
+  cache.set(key, result);
+  return {
+    result,
+    seconds: runs.reduce((s, r) => s + r.seconds, 0),
+    fought: result.weekends,
   };
 }
 
@@ -766,7 +938,10 @@ export async function tuneBoss(
   const caches = new Map<TargetRank, Map<string, TuneEvalResult>>(
     TARGET_RANKS.map((r) => [r, new Map()]),
   );
-  for (let pass = 0; pass < (ranks.length > 1 ? 2 : 1); pass++)
+  // The rules that compare two ranks are checked only when every rank is tuned together (`--rank all`).
+  const crossOn = TARGET_RANKS.every((r) => ranks.includes(r));
+  // Up to three passes (the ranks pull on each other, so a pass can open a move for the next); it stops after a pass that leaves every rank meeting every target.
+  for (let pass = 0; pass < (ranks.length > 1 ? 3 : 1); pass++) {
     for (const rank of order) {
       const rest = Object.fromEntries(Object.entries(current).filter(([r]) => r !== rank));
       const r = await tuneRank(
@@ -775,7 +950,7 @@ export async function tuneBoss(
         rest,
         quick,
         run,
-        RAID_TARGETS[rank],
+        targetsFor(id, rank, crossOn),
         native[rank],
         caches.get(rank),
       );
@@ -792,6 +967,7 @@ export async function tuneBoss(
               conflicts: findConflicts(
                 r.targets,
                 merged.map((c) => c.measures),
+                merged.map((c) => c.level === 'final'),
               ),
               candidates: merged.length,
               weekends: before.weekends + r.weekends,
@@ -803,6 +979,54 @@ export async function tuneBoss(
         current[rank] = r.best.absolute;
         native[rank] = r.best.numbers;
       }
+    }
+    if (
+      order.every((rank) => meetsEveryTarget(results.get(rank)?.best ?? results.get(rank)?.today))
+    )
+      break;
+  }
+  // The rules that compare ranks were measured against the other rank as it stood then; the second pass may have moved it. Measure
+  // the final numbers of the high and the low rank once more against each other's final numbers, and report that.
+  if (crossOn)
+    for (const rank of ['high', 'low'] as const) {
+      const r = results.get(rank);
+      if (!r) continue;
+      // A rank with no search space (no `best`) keeps today's numbers: its `today` row is the one to re-measure.
+      const row = r.best ?? r.today;
+      const otherRank = rank === 'high' ? 'low' : 'high';
+      const m = await measureFinal(
+        id,
+        rank,
+        row.absolute,
+        { rank: otherRank, numbers: current[otherRank] },
+        quick,
+        run,
+        caches.get(rank) as Map<string, TuneEvalResult>,
+      );
+      const again = rowOf(id, rank, r.targets, row.numbers, m.result.measures);
+      results.set(rank, {
+        ...r,
+        ...(r.best ? { best: again } : { today: again }),
+        weekends: r.weekends + m.fought,
+        seconds: r.seconds + m.seconds,
+      });
+    }
+  // A lower rank's numbers are a share of the high rank's. The ranks were measured as absolute numbers, so when the high rank is
+  // proposed to change, the paste for the lower ranks is expressed against the new high rank, and the boss rebuilds as measured.
+  const high = results.get('high')?.best?.absolute;
+  const todayHigh = today.high;
+  if (
+    high &&
+    (high.hp !== todayHigh.hp || high.atk !== todayHigh.atk || high.armour !== todayHigh.armour)
+  )
+    for (const rank of order) {
+      const r = results.get(rank) as RankResult;
+      if (rank !== 'high' && r.best)
+        results.set(rank, {
+          ...r,
+          paste: pasteOf(id, rank, rebaseOn(r.best.absolute, high)),
+          rebasedOn: high,
+        });
     }
   return order.map((rank) => results.get(rank) as RankResult);
 }
@@ -817,8 +1041,8 @@ const NAMES: Readonly<Record<string, string>> = {
   'old-bogback': 'Old Bogback',
 };
 
-const value = (m: string, v: number): string =>
-  m.endsWith('.kill') || m.endsWith('.share') ? pct(v) : String(v);
+const value = (m: RaidMeasure, v: number): string =>
+  !isMeasured(v) ? '-' : isShareMeasure(m) ? pct(v) : String(Math.round(v * 100) / 100);
 const numbersText = (rank: TargetRank, n: Numbers): string =>
   rank === 'high'
     ? `HP ${grouped(n.hp)}, Attack ${n.atk}, armour ${n.armour}`
@@ -830,7 +1054,16 @@ export function summaryOf(r: RankResult): string[] {
   const lines = [
     `### ${name}, ${r.rank} rank`,
     '',
-    `Loss ${r.today.loss.toFixed(3)} today${r.best ? `, ${r.best.loss.toFixed(3)} best found` : ''} (0 is every target met).`,
+    `Loss ${r.today.loss.toFixed(3)} today${r.best ? `, ${r.best.loss.toFixed(3)} best found` : ''} (0 is every target met).${[
+      ['today', r.today] as const,
+      ['best found', r.best] as const,
+    ]
+      .filter(([, row]) => row && row.unmeasured > 0)
+      .map(
+        ([label, row]) =>
+          ` ${String(row?.unmeasured)} targets not measured for ${label}: its loss counts only the measured ones.`,
+      )
+      .join('')}`,
     '',
     '| Target | Today | Best found |',
     '| --- | --- | --- |',
@@ -838,13 +1071,44 @@ export function summaryOf(r: RankResult): string[] {
   r.targets.forEach((t, i) => {
     const cell = (row: Row | undefined) => {
       const m = row?.misses[i];
-      return m ? `${value(t.measure, m.value)} ${m.miss === 0 ? 'met' : '**missed**'}` : '-';
+      if (!m) return '-';
+      if (!isMeasured(m.value)) return 'not measured';
+      return `${value(t.measure, m.value)} ${m.miss === 0 ? 'met' : '**missed**'}`;
     };
     lines.push(`| ${describeTarget(t)} | ${cell(r.today)} | ${cell(r.best)} |`);
   });
+  // Rules that compare ranks cannot be checked from one rank on its own: say so, so that "met" is never read as "all rules met".
+  for (const t of r.skipped)
+    lines.push(`| ${describeTarget(t)} | needs --rank all | needs --rank all |`);
+  // Information without a target: the measures no target reads, and the weeks to beat (the expected number of weekends to the
+  // first kill, 1 / p, for a fixed track where a failed boss returns at full HP).
+  const info = REPORTED_MEASURES.filter((m) => !r.targets.some((t) => t.measure === m));
+  const weeks: [string, string][] = [
+    ['prepared line (written talents)', 'prepared.written'],
+    ['classic party', 'classic.kill'],
+    ['mixed server', 'mixed.kill'],
+  ];
+  lines.push(
+    '',
+    'Information (no target):',
+    '',
+    '| Measure | Today | Best found |',
+    '| --- | --- | --- |',
+  );
+  const cells = (f: (row: Row) => string) => `${f(r.today)} | ${r.best ? f(r.best) : '-'}`;
+  for (const m of info) lines.push(`| ${m} | ${cells((row) => value(m, row.measures[m]))} |`);
+  for (const [label, m] of weeks)
+    lines.push(
+      `| weeks to beat, ${label} | ${cells((row) => weeksText(row.measures[m as keyof RaidMeasures]))} |`,
+    );
   lines.push('', `Today: ${numbersText(r.rank, r.today.numbers)}.`);
   if (r.best) {
     lines.push(`Best: ${numbersText(r.rank, r.best.numbers)}.`, '', `Paste: \`${r.paste}\``);
+    if (r.rebasedOn)
+      lines.push(
+        '',
+        `The paste is a share of the proposed high rank (${numbersText('high', r.rebasedOn)}), so that the boss has the numbers measured here (${numbersText('high', r.best.absolute)}); apply the high rank's paste with it.`,
+      );
     if (r.atEdge.length)
       lines.push(
         '',
@@ -863,9 +1127,12 @@ export function summaryOf(r: RankResult): string[] {
     );
   if (c.allMet === 0 && !c.conflicts.length && !c.unreachable.length)
     lines.push(
-      `- No pair of targets clashes, but none of the ${c.of} candidates meets all of them: the tension is among three or more (a content problem too).`,
+      `- No pair of targets clashes, but none of the ${c.fullOf} candidates measured in full meets all of them: the tension is among three or more (a content problem too).`,
     );
-  if (c.allMet > 0) lines.push(`- ${c.allMet} of ${c.of} candidates meet every target.`);
+  if (c.allMet > 0)
+    lines.push(
+      `- ${c.allMet} of the ${c.fullOf} candidates measured in full (the final level) meet every target.`,
+    );
   lines.push(
     '',
     `${r.candidates} candidates, ${r.weekends} weekends fought, ${r.seconds.toFixed(1)} s of work.`,
@@ -882,7 +1149,7 @@ export function summaryAll(
 ): string[] {
   const out = [`## Boss tuner${quick ? ' (quick)' : ''}`, ''];
   out.push(
-    'Proposals only: nothing was applied to `bosses.ts`. The targets are drafts (`targets.ts`) awaiting Misa.',
+    'Proposals only: nothing was applied to `bosses.ts`. The targets are Misa’s, 2026-10-30 (`targets.ts`). Weeks to beat is the expected number of weekends to the first kill, 1 / p (a failed boss returns at full HP, attempts assumed alike; "20+" beyond 20).',
     '',
   );
   for (const r of results) out.push(...summaryOf(r));
