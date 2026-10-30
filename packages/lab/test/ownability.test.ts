@@ -14,8 +14,17 @@ import {
   ownableChance,
   slotOwnability,
 } from '../src/ownability';
+import { ANSWERS } from '../src/report';
 import { OWNABLE_CHANCE_MIN, OWNABLE_SERVER } from '../src/targets';
-import { SLOT_LINE, SLOT_WEEKS, TRACK_ORDER, slotPreparedOf, trackSlot } from '../src/track';
+import {
+  SLOT_EXTRA_CARDS,
+  SLOT_LINE,
+  SLOT_WEEKS,
+  TRACK_ORDER,
+  slotExtraCards,
+  slotPreparedOf,
+  trackSlot,
+} from '../src/track';
 import { ROSTER_WEEKS } from '../src/roster';
 import {
   COVERAGE_RARITIES,
@@ -280,5 +289,28 @@ describe('the track', () => {
             );
       }
     expect(zero).toEqual([]);
+  });
+
+  // A later lap's new card (`SLOT_EXTRA_CARDS`, Misa 2026-10-31) is a rule card like any other: a server must be able to own an answer to
+  // it in the week its slot arrives. Cool Head is on Thornbuck (common), Clear Skies on Halcyray (the Stormray line, rare).
+  it('has an answer built on the card’s own Knack that a server can own, at each slot that carries it', () => {
+    const knackOf: Record<string, string> = {
+      'lucky-strike': 'cool-head',
+      slippery: 'clear-skies',
+    };
+    const cards = new Set(Object.values(SLOT_EXTRA_CARDS).flat());
+    expect(cards.size).toBeGreaterThan(0);
+    const failing: string[] = [];
+    SLOT_WEEKS.forEach((week, i) => {
+      for (const card of slotExtraCards(i + 1)) {
+        const knack = knackOf[card] as string;
+        const answers = (ANSWERS[card] ?? [])
+          .filter(([, line]) => answerLine(line).some((p) => p.knack === knack))
+          .map(([label, line]) => answerOwnability({ label, tool: knack, line }, week));
+        if (!answers.some((a) => a.ownable))
+          failing.push(`slot ${i + 1} week ${week}: no ownable ${knack} answer to ${card}`);
+      }
+    });
+    expect(failing).toEqual([]);
   });
 });

@@ -64,6 +64,7 @@ import {
   TRACK_ORDER,
   rankNumbers,
   slotBoss,
+  slotExtraCards,
   slotNumbers,
   slotPreparedOf,
   trackSlot,
@@ -571,8 +572,12 @@ describe('the slot measure at the high rank’s own setting', () => {
   // A level 25 roster, full cards (slots 10 and up) and the high rank's numbers must give what the rank measure gives, for every boss:
   // the same seeds, so only a difference in how the weekend is set up (columns, levels, bench, talents) shows. (Found 2026-10-30: the
   // path put the dedicated server's columns in tool-column order, and the prepared line, tuned that way, looked 15 points weaker.)
+  // A boss that gains a luck card on a later lap (`SLOT_EXTRA_CARDS`) is left out: the rank measure has no such card. The same boss is
+  // checked structurally in `track.test.ts` (the slot's boss equals `raidBossOf` with the card), and the other bosses prove the setup.
   it.each(
-    RAID_BOSS_IDS.map((id) => [id, TRACK_ORDER.indexOf(id) + 1 + 2 * TRACK_ORDER.length] as const),
+    RAID_BOSS_IDS.map(
+      (id) => [id, TRACK_ORDER.indexOf(id) + 1 + 2 * TRACK_ORDER.length] as const,
+    ).filter(([, slot]) => slotExtraCards(slot).length === 0),
   )('%s', (id, slot) => {
     expect(trackSlot(slot).bossId).toBe(id);
     expect(trackSlot(slot).strengthBp).toBe(10_000);

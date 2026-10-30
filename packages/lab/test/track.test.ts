@@ -2,8 +2,10 @@
 import { content } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { RAID_BOSS_IDS, RAID_RANKS, RAID_SPECS, raidBossOf } from '../src/bosses';
+import { CARDS } from '../src/cards';
 import {
   SLOT_CARDS,
+  SLOT_EXTRA_CARDS,
   SLOT_NUMBERS,
   SLOT_STRENGTH,
   SLOT_WALL,
@@ -15,6 +17,7 @@ import {
   rankNumbers,
   rankStrengthBp,
   slotBoss,
+  slotExtraCards,
   slotRules,
   trackSlot,
 } from '../src/track';
@@ -191,9 +194,10 @@ describe('the young-server ramp (Misa, 2026-10-30)', () => {
         ...rankNumbers(s.bossId, slot),
         strengthBp: s.strengthBp,
         level: rankLevel(slot),
+        extraCards: s.extraCards,
       });
       expect(boss, `slot ${slot}`).toEqual(full);
-      expect(boss.cards).toEqual(spec(s.bossId).cards);
+      expect(boss.cards).toEqual([...spec(s.bossId).cards, ...s.extraCards]);
     }
     expect(slotBoss(5, { table: {} })).toEqual(raidBossOf(trackSlot(5).bossId, { rank: 'mid' }));
     expect(slotBoss(10, { table: {} })).toEqual(raidBossOf(trackSlot(10).bossId, { rank: 'high' }));
@@ -207,5 +211,87 @@ describe('the young-server ramp (Misa, 2026-10-30)', () => {
     expect(raidBossOf(id, { cards: 1 }).escalation).toBeDefined();
     expect(raidBossOf(id, { cards: 0, buildUp: false }).escalation).toBeUndefined();
     expect(raidBossOf(id, { cards: 0 }).mods).toEqual({});
+  });
+});
+
+describe('the luck cards, a later lap’s new card (Misa, 2026-10-31)', () => {
+  const n = TRACK_ORDER.length;
+  const first = (card: string): number =>
+    Number(Object.entries(SLOT_EXTRA_CARDS).find(([, cards]) => cards.includes(card))?.[0]);
+
+  it('puts Lucky Strike on the Storm Sovereign and Slippery on the Tidal Colossus, each from its second lap', () => {
+    expect(SLOT_EXTRA_CARDS).toEqual({ 6: ['slippery'], 8: ['lucky-strike'] });
+    expect(trackSlot(first('lucky-strike')).bossId).toBe('storm-sovereign');
+    expect(trackSlot(first('slippery')).bossId).toBe('tidal-colossus');
+    for (const card of ['lucky-strike', 'slippery']) {
+      // The lap after the first: slots 6 to 10, so the boss's first meeting is as it was.
+      expect(first(card)).toBeGreaterThan(n);
+      expect(first(card)).toBeLessThanOrEqual(2 * n);
+      expect(CARDS.map((c) => c.id)).toContain(card);
+    }
+  });
+
+  it('adds a card to its boss from that slot on and never earlier', () => {
+    const from = { slippery: 6, 'lucky-strike': 8 } as const;
+    for (let s = 1; s <= 4 * n; s++) {
+      const expected = (Object.keys(from) as (keyof typeof from)[]).filter(
+        (card) => s >= from[card] && (s - from[card]) % n === 0,
+      );
+      expect(slotExtraCards(s), `slot ${s}`).toEqual(expected);
+      expect(trackSlot(s).extraCards, `slot ${s}`).toEqual(expected);
+      for (const card of Object.keys(from))
+        expect(slotBoss(s).cards.includes(card), `${card} at slot ${s}`).toBe(
+          expected.includes(card as keyof typeof from),
+        );
+    }
+    // The first lap has none, and no boss has more than one.
+    for (let s = 1; s <= n; s++) expect(trackSlot(s).extraCards).toEqual([]);
+    expect(TRACK.filter((s) => s.extraCards.length).map((s) => s.slot)).toEqual([
+      6, 8, 11, 13, 16, 18, 21, 23, 26, 28,
+    ]);
+    for (const s of TRACK) expect(s.extraCards.length).toBeLessThanOrEqual(1);
+  });
+
+  it('builds the card on the boss at the slot’s strength: a crit chance for Lucky Strike, a flat dodge for Slippery', () => {
+    const storm = slotBoss(8);
+    expect(storm.cards.slice(-1)).toEqual(['lucky-strike']);
+    expect(storm.critChanceBp).toBe(Math.floor((2_000 * trackSlot(8).strengthBp) / 10_000));
+    expect(storm.dodgeBp ?? 0).toBe(0);
+    const colossus = slotBoss(6);
+    expect(colossus.cards.slice(-1)).toEqual(['slippery']);
+    expect(colossus.dodgeBp).toBe(Math.floor((2_500 * trackSlot(6).strengthBp) / 10_000));
+    expect(colossus.critChanceBp ?? 0).toBe(0);
+    // Stronger on the lap after.
+    expect(slotBoss(13).critChanceBp as number).toBeGreaterThan(storm.critChanceBp as number);
+    expect(slotBoss(11).dodgeBp as number).toBeGreaterThan(colossus.dodgeBp as number);
+    // A boss without the card is as before.
+    expect(slotBoss(7).critChanceBp ?? 0).toBe(0);
+    expect(slotBoss(7).dodgeBp ?? 0).toBe(0);
+    expect(slotBoss(3).cards).toEqual(RAID_SPECS.find((x) => x.id === 'storm-sovereign')?.cards);
+  });
+
+  it('is what raidBossOf builds with the card, at every slot that has one', () => {
+    for (const slot of [6, 8, 11, 13]) {
+      const s = trackSlot(slot);
+      expect(slotBoss(slot, { table: {} })).toEqual(
+        raidBossOf(s.bossId, {
+          ...rankNumbers(s.bossId, slot),
+          strengthBp: s.strengthBp,
+          level: rankLevel(slot),
+          extraCards: s.extraCards,
+        }),
+      );
+    }
+    expect(raidBossOf('storm-sovereign', { extraCards: ['lucky-strike'] }).critChanceBp).toBe(
+      2_000,
+    );
+    expect(raidBossOf('storm-sovereign').critChanceBp ?? 0).toBe(0);
+  });
+
+  it('takes another table and order, and a card repeats on the boss’s later laps only', () => {
+    expect(slotExtraCards(3, ['a', 'b'], { 2: ['x'] })).toEqual([]);
+    expect(slotExtraCards(4, ['a', 'b'], { 2: ['x'] })).toEqual(['x']);
+    expect(slotExtraCards(6, ['a', 'b'], { 2: ['x'], 4: ['y'] })).toEqual(['x', 'y']);
+    expect(slotExtraCards(1, TRACK_ORDER, {})).toEqual([]);
   });
 });

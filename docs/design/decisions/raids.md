@@ -4,9 +4,23 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: Lucky Strike goes on the Storm Sovereign and Slippery on the Tidal Colossus, from their second lap
+
+ID: `2026-10-31-lucky-strike-goes-on-the-storm` · Status: current · Amends: `2026-10-31-lucky-strike-and-slippery-both-go`
+
+**Decision.** Each luck card arrives as the **new card of a boss's second lap**, on one boss, from that boss's slot 6 to 10 and on its later laps, at the slot's card strength (`SLOT_EXTRA_CARDS` in `track.ts`, `docs/design/combat/boss-track.md`): **Slippery on the Tidal Colossus** (slots 6, 11, 16, ...; Clear Skies answers) and **Lucky Strike on the Storm Sovereign** (slots 8, 13, 18, ...; Cool Head answers). The first lap has no extra card. No new written answer: the first answers cope once the slots are retuned. The tuner's proposal for the four slots is not applied here (the lead applies the table).
+
+**Reasoning.** Measured in the lab at the committed numbers and with the track tuner (`--tune --track`, expected roster speed; the dedicated server's roster at each slot's arrival week):
+
+- **Ownable.** Cool Head is on Thornbuck (a common line): 100% at every slot. Clear Skies is on Halcyray (the Stormray line, rare): 100% on mixed servers of 5, 8 and 15 from week 3; the lines of slots 6 to 15 arrive in weeks 7 to 18. (Aurorix, epic, would be 33% to 67% on a server of 8, so it is not the answer used.)
+- **The first answer copes after the retune.** At the committed numbers the card lowers the prepared potential (Colossus slot 6: 132% to 111% with Slippery; Sovereign slot 8: 155% to 128% with Lucky Strike). The tuner then finds numbers that meet every target at both laps: slot 6 14_500 HP, 119 Attack, 27 armour (prepared 130%, tool 46 points, classic 82%); slot 8 7_800, 88, 8 (142%, 37 points, 72%); slot 11 15_600, 113, 40 (128%, 38 points, 84%); slot 13 10_200, 64, 8 (184%, 38 points, 77%). No miss. Slots 5 and 15 (Thornmother) miss their tool target by a rounding step; they were not touched.
+- **The other placements were worse.** Slippery on the Cinder Wyrm: the tuner cannot meet slot 7 (classic potential 70% at the edge) or slot 12 (tool 33 points against 35, HP and armour at their limits). Lucky Strike on the Wyrm: tool 22 points against 27 at slot 7. Slippery on the Sovereign: tool 29 against 30 at slot 8, kill 83%. Either card on Old Bogback cuts the prepared kill from 98% to 42% to 60% (slots 9 and 14). Thornmother is the wall and already sits at 195% to 260% prepared, so a card there would only be noise.
+- **The theme fits.** The Sovereign's lightning "strikes"; the Colossus is a body of slick sea water that slips away.
+- **The answers are worth points, modestly.** In a team search at the slot (tool required, two copies of a form at most) Cool Head is worth about 9 points of potential at slot 8 and 4 to 6 at slot 13, and Clear Skies 0 to 3 at slot 6 and 8 at slot 11. These are well under the first answer's tool (30 to 45 points), so the card adds a choice, not a second must. Lines built on the card's Knack did not beat the first answers at slot 8 (121% against 146%) or slot 6 (120% against 130%), and at the later laps they only edge past them (slot 13: 201% against 180%; slot 11: 140% against 129%, a line that needs a rare), so no `BOSS_ANSWERS` entry was added; reaction lines (marks are never dodged) already beat Slippery without Clear Skies. Cool Head gives Thornbuck, whose Night Watch and Primed by Pain do little on the bosses, a job.
+
 ## 2026-10-31: Lucky Strike and Slippery both go on raid bosses **[Misa]**
 
-ID: `2026-10-31-lucky-strike-and-slippery-both-go` · Status: current
+ID: `2026-10-31-lucky-strike-and-slippery-both-go` · Status: current, amended by `2026-10-31-lucky-strike-goes-on-the-storm`
 
 **Decision (Misa, 2026-10-31).** Both luck cards go on raid bosses: **Lucky Strike** (the boss's hits can crit; Cool Head answers it) and **Slippery** (the boss dodges more; Clear Skies answers it). They bring randomness on purpose. Which bosses carry them, and from which lap, is the lead's call, measured in the lab (each must keep its answer ownable and worth its tool, like every card).
 
