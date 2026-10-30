@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: Combat v2: Knack usage is read within the form
+
+ID: `2026-10-31-combat-v2-knack-usage-is-read` · Status: current
+
+**Decision.** The Knack usage tables of the lab report (the full report's "Knack usage in the top 5 teams" and the boss report's "Knack usage across the real bosses") now read each Knack within its form: the Knack's picks over what random would give among the choices of the forms that can equip it, "no Knack" counted as one of the choices. "Stands out" (2 or more) and "rarely chosen" (under 0.3) apply to that within-form ratio; the overall ratio (share of all picks over share of the pool) stays as context. The boss table also gets raid-only columns (raid picks, raid ratio) and names the raid bosses and foes that pick each Knack, and says the raid searches are saturated. Knack numbers are unchanged: Living Shelter stays at 25% and Thick Fog at +8. The same change takes the festival-prize line Hearthshell out of the written answers (four boss answers now use Kilnmole, one with Baked Shell in place of Hearth) and adds a test that no written answer needs a line nobody can own at the last slot's week. Cinder Wyrm's slots 2, 7 and 12 were retuned on the track tuner's table.
+
+**Reasoning.** Living Shelter read 3.7 and Thick Fog 3.4 on the overall ratio, the two highest. Taking each off the lines that picked it showed it was worth about 0 there (under 1.3 points of score on foe lines, about 165 a line), so the searches picked it at random, and within its form it was chosen 34% (Living Shelter, of Ancientshell's picks) and 40% (Thick Fog, of Fogwyrm's) against 25% at random. The overall ratio followed how often the two forms are picked (Ancientshell 67 picks, Fogwyrm 52, about 27 on average), which no Knack number changes: cutting the numbers to 18% and +6 moved the foe picks not at all (15 and 13 at every value tried) and made the answers that use Living Shelter fragile. A Knack of a popular form therefore read high whatever it did. Reading within the form removes that. The raid searches are saturated (every boss at 100% kill, a raid line scoring about 140), so near-worthless Knacks are picked about at random there and one run of the table moves a ratio by about 1 (Drizzle read 2.1, 4.0, 3.7 and 1.4 in runs that changed only other Knacks); a Knack is to be judged on the within-form ratio and on what taking it out costs a line, not on a single raid run. Hearthshell is a festival prize that scouts cannot find, so an answer that needs it can never be owned.
+
 ## 2026-10-30: Ownability reads the valley's launch coverage per line; a festival prize is never ownable
 
 ID: `2026-10-30-ownability-reads-the-valley-s-launch` · Status: current · Amends: `2026-10-30-a-boss-s-tool-line-must`

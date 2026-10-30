@@ -121,7 +121,7 @@ export const BOSS_ANSWERS: Readonly<Record<string, readonly BossAnswer[]>> = {
       label: 'Keep the Heat In and Living Shelter on every row blunt the waves',
       tool: 'Row Ward',
       core: ['living-shelter', 'keep-the-heat-in'],
-      line: 'hearthshell/keep-the-heat-in+brace drizzlewt/clear-the-air+catch-breath halcyray/clear-the-air+bright-boost thornbuck/primed-by-pain+flank-guard | gaiadrake/detonate+catch-breath hearthshell/keep-the-heat-in+catch-breath ancientshell/living-shelter+finisher thornbuck/night-watch+flank-guard | halcyray/none+edge-walker gaiadrake/carry-them+finisher ancientshell/living-shelter+finisher bogwarden/wide-reach+flank-guard',
+      line: 'kilnmole/keep-the-heat-in+brace drizzlewt/clear-the-air+catch-breath halcyray/clear-the-air+bright-boost thornbuck/primed-by-pain+flank-guard | gaiadrake/detonate+catch-breath kilnmole/keep-the-heat-in+hardy ancientshell/living-shelter+finisher thornbuck/night-watch+flank-guard | halcyray/none+edge-walker gaiadrake/carry-them+finisher ancientshell/living-shelter+finisher bogwarden/wide-reach+flank-guard',
     },
   ],
   'cinder-wyrm': [
@@ -136,7 +136,7 @@ export const BOSS_ANSWERS: Readonly<Record<string, readonly BossAnswer[]>> = {
       label: 'Circle Round and Clear the Air heal the Payoffs its reflected hits land on',
       tool: 'Sustain',
       core: ['circle-round', 'clear-the-air'],
-      line: 'bogwarden/draw-fire+hardy tempestray/twin-strike+slow-burn hearthshell/draw-fire+shoulder-charge geyserpup/none+finisher | croakmire/squelch-song+clinging coralynx/leave-a-trail+finisher fogwyrm/hide-in-mist+flank-guard tempestray/twin-strike+slow-burn | geyserpup/puddle-maker+first-pounce ohmouse/none+shoulder-to-shoulder voltaro/zigzag+shoulder-to-shoulder sunfawn/sunbeam+hardy | fogwyrm/wide-reach+flank-guard croakmire/squelch-song+heavy-hand tidewing/circle-round+owners-mark tidewing/circle-round+owners-mark',
+      line: 'bogwarden/draw-fire+hardy tempestray/twin-strike+slow-burn kilnmole/draw-fire+shoulder-charge geyserpup/none+finisher | croakmire/squelch-song+clinging coralynx/leave-a-trail+finisher fogwyrm/hide-in-mist+flank-guard tempestray/twin-strike+slow-burn | geyserpup/puddle-maker+first-pounce ohmouse/none+shoulder-to-shoulder voltaro/zigzag+shoulder-to-shoulder sunfawn/sunbeam+hardy | fogwyrm/wide-reach+flank-guard croakmire/squelch-song+heavy-hand tidewing/circle-round+owners-mark tidewing/circle-round+owners-mark',
     },
   ],
   thornmother: [
@@ -150,7 +150,7 @@ export const BOSS_ANSWERS: Readonly<Record<string, readonly BossAnswer[]>> = {
       label: 'Big reactions (Detonate, All at Once) go through the bark that stops plain hits',
       tool: 'Reactions',
       core: ['detonate', 'all-at-once'],
-      line: 'thornbuck/night-watch+hardy solmane/lead-the-way+catch-breath ohmouse/lightning-ears+shoulder-to-shoulder voltaro/double-mark+deep-ink | kilnmole/draw-fire+hardy solmane/crown-of-embers bloomback/all-at-once+finisher kilnmole/draw-fire+odd-one-out | ohmouse/lightning-ears geyserpup/all-at-once+finisher voltaro/none hearthshell/none',
+      line: 'thornbuck/night-watch+hardy solmane/lead-the-way+catch-breath ohmouse/lightning-ears+shoulder-to-shoulder voltaro/double-mark+deep-ink | kilnmole/draw-fire+hardy solmane/crown-of-embers bloomback/all-at-once+finisher kilnmole/draw-fire+odd-one-out | ohmouse/lightning-ears geyserpup/all-at-once+finisher voltaro/none kilnmole/none',
     },
   ],
   'storm-sovereign': [
@@ -178,7 +178,7 @@ export const BOSS_ANSWERS: Readonly<Record<string, readonly BossAnswer[]>> = {
       label: 'Living Shelter and Keep the Heat In shield the creatures the mud sinks',
       tool: 'Row Ward',
       core: ['living-shelter', 'keep-the-heat-in'],
-      line: 'ancientshell/living-shelter+finisher sunfawn/curl-up+hardy wickat/none+sharp-claws stormray/none+edge-walker | pyrelynx/leave-a-trail+steady-rhythm hearthshell/hearth+brace coralynx/territorial+finisher kilnmole/keep-the-heat-in+hardy | geyserpup/puddle-maker croakmire/wide-warmth+catch-breath mistnewt/none bogwarden/none+flank-guard',
+      line: 'ancientshell/living-shelter+finisher sunfawn/curl-up+hardy wickat/none+sharp-claws stormray/none+edge-walker | pyrelynx/leave-a-trail+steady-rhythm kilnmole/baked-shell+brace coralynx/territorial+finisher kilnmole/keep-the-heat-in+hardy | geyserpup/puddle-maker croakmire/wide-warmth+catch-breath mistnewt/none bogwarden/none+flank-guard',
     },
   ],
 };

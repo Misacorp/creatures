@@ -9,6 +9,7 @@ import { CARDS, labBoss } from './cards';
 import { weekend } from './fight';
 import { KEYWORDS } from './keywords';
 import { FAMILIES, FORM_KNACKS, KNACKS } from './knacks';
+import { withinFormRatio } from './knackUsage';
 import { planBosses, type BossSections } from './bossReport';
 import { ownabilityMarkdown, ownabilityTable } from './ownability';
 import { SLOT_WEEKS } from './track';
@@ -496,6 +497,7 @@ function assembleReport(
     [...Object.keys(KNACKS), 'none'].map((k) => [k, 0] as [string, number]),
   );
   let picks = 0;
+  const formPicks = new Map<string, number>();
   let classicBeaten = 0,
     classicSpeciesBeaten = 0;
   const bestSpecies = new Map<string, number>();
@@ -517,6 +519,7 @@ function assembleReport(
         const useful = usefulKnacks(top);
         for (const p of top) {
           picks++;
+          formPicks.set(p.formId, (formPicks.get(p.formId) ?? 0) + 1);
           if (useful.has(p.knack)) appear.set(p.knack, (appear.get(p.knack) ?? 0) + 1);
         }
       }
@@ -565,17 +568,22 @@ function assembleReport(
   const pool = poolOf();
   const poolShare = (k: string) => pool.filter((p) => p.knack === k).length / pool.length;
   const rows = [...appear.entries()]
-    .map(([k, n]) => ({ k, n, ratio: n / Math.max(1, picks) / poolShare(k) }))
-    .sort((a, b) => b.ratio - a.ratio);
+    .map(([k, n]) => ({
+      k,
+      n,
+      ratio: n / Math.max(1, picks) / poolShare(k),
+      within: withinFormRatio(k, n, formPicks),
+    }))
+    .sort((a, b) => b.within - a.within);
   md.push(
     '## Knack usage in the top 5 teams of every search (per creature)',
     '',
-    `${picks} creatures in the top 5 lines of every search (${cards.length} cards, gauntlet and raid). Ratio is the Knack's share of those picks over its share of the pool of every form and Knack: 1.0 is what random picks would give, above 2 stands out, below 0.3 is rarely chosen. Leave a Trail counts only when another Payoff in the line can cash its mark. Never chosen: rework candidates. Far above the rest: needs a counter card (P-10).`,
+    `${picks} creatures in the top 5 lines of every search (${cards.length} cards, gauntlet and raid). **Within form** is the Knack's picks over what random would give among the choices of the forms that can equip it ("no Knack" counts as one of the choices): 1.0 is random within the form, **2 or more stands out, under 0.3 is rarely chosen**. Ratio, kept as context, is the Knack's share of all picks over its share of the pool of every form and Knack; it also follows how often the Knack's form is picked at all, so a Knack of a popular form reads high on it. Leave a Trail counts only when another Payoff in the line can cash its mark. Never chosen: rework candidates. Far above the rest: needs a counter card (P-10).`,
     '',
-    '| Knack | Forms | Picks | Ratio |',
-    '| --- | --- | ---: | ---: |',
+    '| Knack | Forms | Picks | Within form | Ratio |',
+    '| --- | --- | ---: | ---: | ---: |',
   );
-  for (const { k, n, ratio } of rows)
+  for (const { k, n, ratio, within } of rows)
     md.push(
       `| ${knackName(k)} | ${
         k === 'none'
@@ -584,10 +592,17 @@ function assembleReport(
               .filter(([, ks]) => ks.includes(k))
               .map(([f]) => f)
               .join(', ')
-      } | ${n} | ${ratio.toFixed(1)} |`,
+      } | ${n} | ${within.toFixed(1)} | ${ratio.toFixed(1)} |`,
     );
   data['knackUsage'] = Object.fromEntries(
-    rows.map((r) => [r.k, { picks: r.n, ratio: Math.round(r.ratio * 100) / 100 }]),
+    rows.map((r) => [
+      r.k,
+      {
+        picks: r.n,
+        ratio: Math.round(r.ratio * 100) / 100,
+        withinForm: Math.round(r.within * 100) / 100,
+      },
+    ]),
   );
   md.push('');
 

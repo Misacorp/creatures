@@ -58,17 +58,17 @@ export type SlotTable = Readonly<Record<number, SlotNumbers>>;
  */
 export const SLOT_NUMBERS: SlotTable = {
   1: { hp: 12_400, atk: 89, armour: 31 }, // tidal-colossus
-  2: { hp: 4_800, atk: 143, armour: 83 }, // cinder-wyrm
+  2: { hp: 7_500, atk: 143, armour: 54 }, // cinder-wyrm
   3: { hp: 14_300, atk: 53, armour: 6 }, // storm-sovereign
   4: { hp: 23_700, atk: 100, armour: 19 }, // old-bogback
   5: { hp: 6_500, atk: 140, armour: 124 }, // thornmother
   6: { hp: 16_700, atk: 107, armour: 47 }, // tidal-colossus
-  7: { hp: 10_200, atk: 192, armour: 37 }, // cinder-wyrm
+  7: { hp: 10_200, atk: 185, armour: 49 }, // cinder-wyrm
   8: { hp: 7_800, atk: 96, armour: 9 }, // storm-sovereign
   9: { hp: 26_700, atk: 118, armour: 36 }, // old-bogback
   10: { hp: 8_500, atk: 97, armour: 155 }, // thornmother
   11: { hp: 20_200, atk: 120, armour: 34 }, // tidal-colossus
-  12: { hp: 11_500, atk: 199, armour: 50 }, // cinder-wyrm
+  12: { hp: 11_500, atk: 199, armour: 49 }, // cinder-wyrm
   13: { hp: 15_100, atk: 57, armour: 10 }, // storm-sovereign
   14: { hp: 31_200, atk: 123, armour: 31 }, // old-bogback
   15: { hp: 8_500, atk: 92, armour: 162 }, // thornmother

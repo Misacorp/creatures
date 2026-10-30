@@ -4,6 +4,7 @@
  * team and the classic line at a few depths, runs with and without the camp), Knack usage across all of them and the
  * mechanics that no boss or foe calls for. `pnpm --filter @creatures/lab report -- --bosses` prints only these.
  */
+import { formPickCounts, withinFormRatio } from './knackUsage';
 import { ablate, type Measured } from './ablation';
 import {
   failingGates,
@@ -1496,24 +1497,28 @@ function assembleBosses(opts: BossOptions, results: JobResults): BossSections {
       .sort((a, b) => b[1] - a[1])
       .map(([b, n]) => `${b} ${n}`)
       .join(', ') || '-';
+  const formPicks = formPickCounts(topLines);
   const usage = [...appear.entries()]
     .map(([k, n]) => ({
       k,
       n,
       ratio: n / Math.max(1, picks) / poolShare(k),
+      within: withinFormRatio(k, n, formPicks),
       raidN: raidCount(k),
       raidRatio: raidCount(k) / Math.max(1, raidPicks) / poolShare(k),
     }))
-    .sort((a, b) => b.ratio - a.ratio);
+    .sort((a, b) => b.within - a.within);
   md.push(
     '## Knack usage across the real bosses (per creature)',
     '',
-    `${picks} creatures in the top 5 from-scratch raid lines of each boss (not the lines written by hand or the classic party) and the top 3 gauntlet lines of each foe at each depth. Ratio is the Knack's share of those picks over its share of the pool of every form and Knack: 1.0 is what random picks would give, above 2 stands out, below 0.3 is rarely chosen. The last three columns count the ${raidPicks} creatures of the raid lines alone and name the raid bosses and foes whose searches pick it.`,
+    `${picks} creatures in the top 5 from-scratch raid lines of each boss (not the lines written by hand or the classic party) and the top 3 gauntlet lines of each foe at each depth. **Within form** is the Knack's picks over what random would give among the choices of the forms that can equip it ("no Knack" counts as one of the choices): 1.0 is random within the form, **2 or more stands out, under 0.3 is rarely chosen**. Ratio, kept as context, is the Knack's share of all picks over its share of the pool of every form and Knack; it also follows how often the Knack's form is picked at all, so a Knack of a popular form reads high on it. The last three columns count the ${raidPicks} creatures of the raid lines alone and name the raid bosses and foes whose searches pick it.`,
     '',
-    '| Knack | Forms | Picks | Ratio | Raid picks | Raid ratio | Picked by (picks) |',
-    '| --- | --- | ---: | ---: | ---: | ---: | --- |',
+    'The raid searches are saturated: every boss is beaten in every weekend or nearly (100% kill, top score 140), so a Knack worth next to nothing on a raid line is picked close to at random there, and one run of this table moves a ratio by about 1. Measured when this was added (2026-10-31): Living Shelter and Thick Fog were worth 0 to 1.3 points of score on almost every foe line that picked them, and Drizzle 0 to 6 on the raid lines (a raid line scores about 140, a foe line about 165); the overall ratio of Drizzle read 2.1, 4.0, 3.7 and 1.4 in runs that changed only the numbers of other Knacks.',
+    '',
+    '| Knack | Forms | Picks | Within form | Ratio | Raid picks | Raid ratio | Picked by (picks) |',
+    '| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |',
     ...usage.map(
-      ({ k, n, ratio, raidN, raidRatio }) =>
+      ({ k, n, ratio, within, raidN, raidRatio }) =>
         `| ${knackName(k)} | ${
           k === 'none'
             ? 'any'
@@ -1521,7 +1526,7 @@ function assembleBosses(opts: BossOptions, results: JobResults): BossSections {
                 .filter(([, ks]) => ks.includes(k))
                 .map(([f]) => f)
                 .join(', ')
-        } | ${n} | ${ratio.toFixed(1)} | ${raidN} | ${raidRatio.toFixed(1)} | ${raidBosses(k)} |`,
+        } | ${n} | ${within.toFixed(1)} | ${ratio.toFixed(1)} | ${raidN} | ${raidRatio.toFixed(1)} | ${raidBosses(k)} |`,
     ),
     '',
   );
@@ -1531,6 +1536,7 @@ function assembleBosses(opts: BossOptions, results: JobResults): BossSections {
       {
         picks: u.n,
         ratio: Math.round(u.ratio * 100) / 100,
+        withinForm: Math.round(u.within * 100) / 100,
         raidPicks: u.raidN,
         raidRatio: Math.round(u.raidRatio * 100) / 100,
       },
@@ -1588,23 +1594,23 @@ function assembleBosses(opts: BossOptions, results: JobResults): BossSections {
         .map(([f]) => f)
         .join(
           ', ',
-        )} | ${u?.n ?? 0} | ${(u?.ratio ?? 0).toFixed(1)} | ${costs.length} | ${costs.join('; ') || '-'} |`,
+        )} | ${u?.n ?? 0} | ${(u?.within ?? 0).toFixed(1)} | ${(u?.ratio ?? 0).toFixed(1)} | ${costs.length} | ${costs.join('; ') || '-'} |`,
     };
   });
-  const rare = usage.filter((u) => u.k !== 'none' && u.ratio < 0.3 && !WATCHED.includes(u.k));
-  const loud = usage.filter((u) => u.k !== 'none' && u.ratio >= 2 && !WATCHED.includes(u.k));
+  const rare = usage.filter((u) => u.k !== 'none' && u.within < 0.3 && !WATCHED.includes(u.k));
+  const loud = usage.filter((u) => u.k !== 'none' && u.within >= 2 && !WATCHED.includes(u.k));
   md.push(
     '### Rarely used Knacks and the outlier (the content task\u2019s list)',
     '',
-    `The Knacks panel 5 named: six with almost no picks on the real bosses, and Guard's Shadow, far above the rest. Picks and ratio are from the table above; the last two columns are how many written answers carry it and what taking it out of each costs (points of weekend win rate, ${S.raid.weekends} weekends). A Knack that costs an answer nothing is not an answer's tool.`,
+    `The Knacks panel 5 named: six with almost no picks on the real bosses, and Guard's Shadow, far above the rest. Picks and ratios are from the table above (within form first); the last two columns are how many written answers carry it and what taking it out of each costs (points of weekend win rate, ${S.raid.weekends} weekends). A Knack that costs an answer nothing is not an answer's tool.`,
     '',
-    '| Knack | Forms | Picks | Ratio | Written answers carrying it | Lost without it |',
-    '| --- | --- | ---: | ---: | ---: | --- |',
+    '| Knack | Forms | Picks | Within form | Ratio | Written answers carrying it | Lost without it |',
+    '| --- | --- | ---: | ---: | ---: | ---: | --- |',
     ...knackRows.map((r) => r.row),
     '',
-    `Other Knacks below ratio 0.3: ${rare.map((u) => `${knackName(u.k)} (${u.n}, ${u.ratio.toFixed(1)})`).join(', ') || 'none'}.`,
+    `Other Knacks below within-form ratio 0.3: ${rare.map((u) => `${knackName(u.k)} (${u.n}, ${u.within.toFixed(1)})`).join(', ') || 'none'}.`,
     '',
-    `Other Knacks at ratio 2 or more: ${loud.map((u) => `${knackName(u.k)} (${u.n}, ${u.ratio.toFixed(1)})`).join(', ') || 'none'}.`,
+    `Other Knacks at within-form ratio 2 or more: ${loud.map((u) => `${knackName(u.k)} (${u.n}, ${u.within.toFixed(1)})`).join(', ') || 'none'}.`,
     '',
   );
   data['knackWatch'] = Object.fromEntries(
@@ -1613,6 +1619,7 @@ function assembleBosses(opts: BossOptions, results: JobResults): BossSections {
       {
         picks: usageOf.get(k)?.n ?? 0,
         ratio: Math.round((usageOf.get(k)?.ratio ?? 0) * 100) / 100,
+        withinForm: Math.round((usageOf.get(k)?.within ?? 0) * 100) / 100,
       },
     ]),
   );

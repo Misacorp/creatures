@@ -239,4 +239,20 @@ describe('the track', () => {
       ),
     ).toEqual([]);
   });
+  // No written answer may use a festival prize (Hearthshell, Lanternfin: scouts cannot find them), and every answer must be
+  // possible for a server of any size by the last slot's week: a chance of 0 means a line nobody can own.
+  it('has no written answer that needs a line nobody can own at the last slot’s week', () => {
+    const week = SLOT_WEEKS[SLOT_WEEKS.length - 1] as number;
+    const zero: string[] = [];
+    for (const [bossId, answers] of Object.entries(BOSS_ANSWERS))
+      for (const a of answers) {
+        const o = answerOwnability(a, week);
+        for (const server of COVERAGE_SERVERS)
+          if (!(o.chance[server] > 0))
+            zero.push(
+              `${bossId} / ${a.label} on ${server}: needs ${o.needed.map((n) => `${n.line}${n.findable ? '' : ' (festival prize)'}`).join(', ')}`,
+            );
+      }
+    expect(zero).toEqual([]);
+  });
 });
