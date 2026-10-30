@@ -240,7 +240,7 @@ Status: concept only. A working name, a look and ideas for Misa to react to; not
 
 - **Silhouette:** huge, hooded, with two crescent horns, wide hanging sleeves and a ragged hem.
 - **Palette:** the Void family: dusk purple, lilac rim, ink.
-- **Glowing details:** two pale cyan eyes in the dark of the hood, and one warm star in a round window in its chest.
+- **Glowing details:** two pale cyan eyes in the dark of the hood, and a cloak that opens on a field of stars (warm ones and cool ones) down its front.
 - **Pose:** upright and still, arms hanging, facing the viewer.
 - **Never:** teeth, a scowl, or anything gory. The dark in the hood always has a lilac border.
 
