@@ -48,7 +48,7 @@ Seats per player by the place's server level (levels 1 to 5, V-COM-11).
 | Fit / skill / kit          | +25% / +5 to +15% / a tilt, not a bonus                                                                     |
 | Store                      | about 3 days of output, so a weekend off fills nothing                                                      |
 | Away steps                 | 100% for 48 h, 85% to day 4, 60% to day 7, 30% to day 14, 10% to day 30, then near zero (candidate B below) |
-| Acorn income, daily player | about 150 a day (the allowance building up, scouts' finds, leets)                                           |
+| Acorn income, daily player | about 50 a day (the allowance building up, leets, the dungeon); scouts find no Acorns                       |
 | Seats                      | a player's own seats cost about three weeks of Acorn income in all                                          |
 
 For scale: today's curve needs about 1,700 XP for level 10, 9,700 for level 20 and 28,000 for level 30.
