@@ -4,9 +4,17 @@ Gear items, lines and sets, crafting, dismantling, conversions, the bag and the 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: [Misa] Element versions of a shared item get a small element flair
+
+ID: `2026-10-31-element-versions-of-a-shared-item` · Status: current · Amends: `2026-10-30-every-named-item-has-its-own`
+
+**Decision.** Misa (2026-10-31): "Could we add some small flair to the Trail charm and the items that are the same shape? Spark one a bit spiky, grove one with vines, you know." Each element version of a shared look gets a small overlay (`ITEM_FLAIR` in `apps/activity/src/sprites/data/item-flair.ts`, by look id and element), drawn over the shared sprite by `withFlair` in `itemArt`: Spark spikes, Grove a vine or leaf, Tide a drop or shell, Ember a flame flick, Mire a mud drip or reed. The neutral version stays plain; set pieces and items with a look of their own get none. The overlay's `t`, `u` and `h` are still tinted by the element. `gear-sprites.test.ts` requires a flair for every element version of a shared look and none elsewhere, each visible and passing the item lint.
+
+**Reasoning.** Element versions keep one shape (Misa's earlier rule: same stats, same sprite), so a set still reads as one item, while the touch makes each element recognisable without colour alone, which also helps colour-blind players. An overlay rather than a second full sprite keeps the shape in one place: a change to the shared sprite carries to every version.
+
 ## 2026-10-30: [Misa] Every named item has its own sprite; element versions share one, tinted
 
-ID: `2026-10-30-every-named-item-has-its-own` · Status: current
+ID: `2026-10-30-every-named-item-has-its-own` · Status: current, amended by `2026-10-31-element-versions-of-a-shared-item`
 
 **Decision.** Misa (2026-10-30): "Each item with a unique name should have a unique sprite. If items have identical stats but they're just a different element version, then let's just use the color tint that exists today." An item base is drawn with its **look** (`itemLookId` in `apps/activity/src/gear-sprites.ts`): two bases share a look when they are the same slot, have the same stats, neither is a set piece, and each is neutral or an element (so a role or explorer charm, or a set piece, always has its own). The first base in content order names the look; the others wear its sprite in their element's tint, as before. With today's content that is 60 looks for 77 items (for example Trail Cap and Kelp Cap share one; Wayfarer's Hood and Tidecaller's Crown share one because their stats are identical). The sprites live in `src/sprites/data/item-{hat,scarf,charm}-sprites.ts`, drawn in the neutral greys `t`/`u`/`h` that the tint swaps; set pieces keep the gold trim (`g`, `w`) and their set tag's tint. The old six shared sprites stay as the fallback for a base drawn before its own sprite. `pnpm art items` draws every item as the game does, labelled by name, plus a card per look with each tinted version.
 
