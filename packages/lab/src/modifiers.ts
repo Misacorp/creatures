@@ -98,8 +98,15 @@ export const GEAR_CLASS: Readonly<Record<string, GearClass>> = {
   attack: c('damage', ANY, 'stat'),
   hp: c('protection', ANY, 'stat'),
   'thick-coat': c('protection', ANY, 'stat'),
-  'crit-chance': c('damage', HIT, 'stat'),
-  'crit-damage': c('damage', HIT, 'stat'),
+  // Luck is a build (Misa, 2026-10-30): a crit doubles a hit (R7.1), and these add to it. The lab's words for the shipped lines.
+  'crit-chance': {
+    ...c('damage', HIT, 'stat'),
+    text: 'More chance to crit, in points. A crit doubles the hit; the species, Knack and talents add to it, with no cap in the lab.',
+  },
+  'crit-damage': {
+    ...c('damage', HIT, 'stat'),
+    text: 'Crits hit harder, in points on top of the double. Crit chance, Knacks and talents add to it, with no cap in the lab.',
+  },
   'all-damage-taken': c('protection', ANY, 'stat'),
   'area-ward': c('protection', ANY, 'stat'),
   'aimed-ward': c('protection', ANY, 'stat'),
@@ -214,6 +221,9 @@ export const TALENT_IS_GEAR: Readonly<Record<string, string>> = {
   'light-feet': 'light-footed',
   'keen-eye': 'crit-chance',
   'mighty-blow': 'crit-damage',
+  // The talents Crit Chance and Crit Damage are the shipped lines of the same names (luck is a build, 2026-10-30).
+  'crit-chance': 'crit-chance',
+  'crit-damage': 'crit-damage',
   'first-pounce': 'first-pounce',
   unbothered: 'unbothered',
   'tough-hide': 'armor',
@@ -241,6 +251,8 @@ const LAB_CLASS: Readonly<Record<string, Class>> = {
   'big-finish': ['marks', PAYOFF, 'trigger'],
   hungry: ['marks', PAYOFF, 'stat'],
   cornered: ['damage', HIT, 'condition'],
+  'perfect-timing': ['damage', HIT, 'trigger'],
+  'hold-the-line': ['damage', GUARD, 'trigger'],
 };
 
 interface Idea {

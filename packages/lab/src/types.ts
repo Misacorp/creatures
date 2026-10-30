@@ -43,6 +43,13 @@ export interface Fighter {
   damageLastRound: number;
   /** The boss turn on which it last gained a reaction-fed Store point (at most one per boss turn). */
   lastStoreRound: number;
+  /** The species' own crit chance (bp over the base) and crit damage (bp over the base crit): stats, so silence does not take them away. */
+  readonly critChanceBp: number;
+  readonly critDamageBp: number;
+  /** Crit Charges it stores (at most `LAB_RULES.critChargeMax`): each is spent on its next hit that lands, a guaranteed crit (Perfect Timing, Hold the Line). */
+  critCharges: number;
+  /** Damage it has taken from hits it intercepted since its last Crit Charge from them (Hold the Line). */
+  guardTaken: number;
   /** Hits it has made this fight, for rhythms (Steady Rhythm: every third is a crit). */
   hitsMade: number;
   /** Set when it dodges unsilenced; its next unsilenced hit uses it up (Momentum). */
@@ -213,6 +220,17 @@ export interface BossDef {
   readonly moves: readonly BossMove[];
   readonly cards: readonly string[];
   readonly mods: BossMods;
+  /**
+   * The boss's crit chance (bp, default 0; the Lucky Strike card gives it). Each damaging hit of a move or the plain attack that
+   * lands on a creature rolls it after the dodge and the intercept, and a crit doubles the hit (`LAB_RULES.critBp`) before the cuts
+   * and the armour (R7.1). A one-shot (a share of Max HP) never crits.
+   */
+  readonly critChanceBp?: number;
+  /**
+   * A flat dodge chance (bp, default 0) on top of the Speed's, which Mired does not lower (the Slippery card gives it). Only a hit
+   * that cannot be dodged (Clear Skies) gets past it for certain.
+   */
+  readonly dodgeBp?: number;
   /**
    * The strength of the boss's rule cards and gates (bp, default 10000 = full): reflection returns this share of the
    * reaction's bonus, Shake It Off clears this share of the Mired, Clean Scales and Fizzle take hold on this share of the

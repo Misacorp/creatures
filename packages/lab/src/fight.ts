@@ -365,6 +365,10 @@ export function placeFighters(placements: readonly Placement[]): Fighter[] {
       atk: st.atk,
       spd: st.spd,
       baseArmour: st.armour,
+      critChanceBp: st.critChanceBp,
+      critDamageBp: st.critDamageBp,
+      critCharges: 0,
+      guardTaken: 0,
       knack: k,
       talents: p.talents ?? [],
       fxAll,
@@ -465,7 +469,7 @@ function addMark(
 function heal(s: State, target: Fighter, amountBp: number, critOk = true, src?: Fighter): void {
   if (target.hp <= 0) return;
   let amt = Math.floor((target.maxHp * amountBp) / 10_000);
-  if (critOk && roll(s, R.critChanceBp)) amt = Math.floor((amt * R.critBp) / 10_000);
+  if (critOk && roll(s, R.critChanceBp)) amt = Math.floor((amt * R.healCritBp) / 10_000);
   amt = Math.floor((amt * (s.boss.mods.healBp ?? 10_000)) / 10_000);
   amt = Math.floor((amt * (10_000 + (fx(target).healReceivedBp ?? 0))) / 10_000);
   if (s.opts.determinationBp) amt = Math.floor((amt * (10_000 + s.opts.determinationBp)) / 10_000);
@@ -726,21 +730,38 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
   let plain = k.noDamage
     ? 0
     : Math.floor((((base * (10_000 + bonusSum)) / 10_000) * shareBp * (k.plainBp ?? 10_000)) / 1e8);
-  let crit = plain > 0 && roll(s, R.critChanceBp + (k.critChanceBp ?? 0));
+  // Crit chance and crit damage stack from the base, the species, the Knack and the talents (R7.1); the roll is always drawn.
+  let crit = plain > 0 && roll(s, R.critChanceBp + f.critChanceBp + (k.critChanceBp ?? 0));
   // Steady Rhythm: every third hit it makes is a crit, no luck.
   if (plain > 0 && k.steadyRhythm && ++f.hitsMade % 3 === 0) {
     crit = true;
     bump(f, 'steadyRhythm');
   }
-  if (crit) plain = Math.floor((plain * (R.critBp + (k.critDamageBp ?? 0))) / 10_000);
+  // A Crit Charge makes the hit a crit with more extra damage; it is spent below, if the hit gets past the boss's dodge (R10).
+  const spendsCharge = plain > 0 && f.critCharges > 0 && !silenced(f);
+  if (spendsCharge) crit = true;
+  if (crit) {
+    const extra = spendsCharge ? (k.dodgeCritBp ?? 0) + (k.guardCritBp ?? 0) : 0;
+    plain = Math.floor(
+      (plain * (R.critBp + f.critDamageBp + (k.critDamageBp ?? 0) + extra)) / 10_000,
+    );
+  }
   // 2. The boss rolls dodge (14.4). A hit that deals no damage is not rolled. Setup never misses.
   const bossDodge = f.undodgeable
     ? 0
-    : Math.max(
-        0,
-        Math.min(R.dodgeMaxBp, s.boss.spd * R.dodgePerSpdBp + grown(s).dodgeBp - miredCut(s)),
+    : Math.min(
+        R.dodgeMaxBp,
+        Math.max(
+          0,
+          Math.min(R.dodgeMaxBp, s.boss.spd * R.dodgePerSpdBp + grown(s).dodgeBp - miredCut(s)),
+        ) + (s.boss.dodgeBp ?? 0),
       );
   const dodged = !k.noDamage && roll(s, bossDodge);
+  if (spendsCharge && !dodged) {
+    f.critCharges--;
+    if (s.opts.log) log(s, 'charge', `${f.name} spends a Crit Charge (${f.critCharges} left)`);
+  }
+  if (crit && !dodged && !k.noDamage && s.opts.log) log(s, 'crit', `${f.name} crits`);
   if (dodged) {
     feed(s, 'dodges');
     s.count.dodges++;
@@ -1089,6 +1110,33 @@ function dodgeOf(s: State, f: Fighter, area: boolean): number {
   );
 }
 
+/** A Crit Charge for `f` (at most `R.critChargeMax`), counted as the effect `key` firing. */
+function gainCharge(s: State, f: Fighter, key: keyof KnackFx): void {
+  if (f.critCharges >= R.critChargeMax) return;
+  f.critCharges++;
+  bump(f, key);
+  if (s.opts.log) log(s, 'charge', `${f.name} stores a Crit Charge (${f.critCharges})`);
+}
+
+/**
+ * How much of a boss crit's extra damage `taker` is spared (bp): its own Cool Head, or the largest one on a living creature
+ * beside it (an aura: the largest applies, R15). Counted for the creature that gives it.
+ */
+function critWardOf(s: State, taker: Fighter): number {
+  if (!s.carries.has('critWardBp')) return 0;
+  let ward = fx(taker).critWardBp ?? 0;
+  let by: Fighter | undefined = ward > 0 ? taker : undefined;
+  for (const o of beside(s, taker)) {
+    const w = fx(o).critWardBp ?? 0;
+    if (w > ward) {
+      ward = w;
+      by = o;
+    }
+  }
+  if (by) bump(by, 'critWardBp');
+  return ward;
+}
+
 /** What is left of a hit (bp) after one more cut of `bp`. */
 const cutOf = (left: number, bp: number): number =>
   Math.floor((left * (10_000 - Math.min(10_000, bp))) / 10_000);
@@ -1185,6 +1233,15 @@ function takeHit(
   if (taker.hp === 0) {
     s.live = null;
     s.liveBySlot = null;
+  }
+  // Hold the Line: the damage it takes from hits it intercepted builds a Crit Charge each time it adds up to a share of its Max HP.
+  if (taker !== target && k.guardCritBp && taker.hp > 0) {
+    taker.guardTaken += dmg;
+    const per = Math.max(1, Math.floor((taker.maxHp * R.guardChargeShareBp) / 10_000));
+    while (taker.guardTaken >= per) {
+      taker.guardTaken -= per;
+      gainCharge(s, taker, 'guardCritBp');
+    }
   }
   const wind = k.secondWindBp;
   if (wind && !taker.secondWindDone && taker.hp > 0 && taker.hp * 2 < taker.maxHp) {
@@ -1304,8 +1361,9 @@ function bossHits(
       // Retaliate ignores armour: the hit back is a counter, not a hit (keywords).
       if (k.retaliateBp) counter(s, t, k.retaliateBp);
       if (k.storeDodgeStacks) t.store = Math.min(3, t.store + 1);
-      // Momentum: its next hit deals more.
+      // Momentum: its next hit deals more. Perfect Timing: it stores a Crit Charge.
       if (k.momentumBp) t.momentum = true;
+      if (k.dodgeCritBp) gainCharge(s, t, 'dodgeCritBp');
       continue;
     }
     // Only if the dodge failed: a Guard in reach intercepts, if the hit is one it may take.
@@ -1372,6 +1430,13 @@ function bossHits(
       }
     }
     took.add(taker);
+    // A boss crit (R7.1): rolled for each hit that lands on a creature, after the dodge and the intercept and before the cuts
+    // and the armour, so Cool Head, the cover, Brace and armour all work on the doubled hit. A one-shot never crits.
+    if (!move.oneShotBp && proposed > 0 && roll(s, s.boss.critChanceBp ?? 0)) {
+      const ward = critWardOf(s, taker);
+      proposed += Math.floor((proposed * (R.critBp - 10_000) * (10_000 - ward)) / 1e8);
+      if (s.opts.log) log(s, 'boss-crit', `${s.boss.name} crits ${taker.name}`);
+    }
     takeHit(s, taker, proposed, move.charged ? 'charged' : area ? 'area' : 'aimed', t, watched);
   }
 }

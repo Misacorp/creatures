@@ -16,6 +16,9 @@ export interface WikiCreature {
   growth: { hp: number; atk: number; spd: number };
   /** Armour, a species stat of the combat v2 draft (flat: no growth per level). */
   armour: number;
+  /** Crit chance in basis points (the base 5% and the species' own) and the extra damage of a crit over a normal hit (the base +100% and the species' own). */
+  critChanceBp: number;
+  critDamageBp: number;
   /** The forms this one evolves into (one or two). */
   evolvesTo: string[];
   festival: boolean;

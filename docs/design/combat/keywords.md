@@ -29,3 +29,5 @@ Generated from `packages/lab/src/keywords.ts` by `pnpm --filter @creatures/lab r
 | Most hurt | The creature with the lowest share of its max HP. | The creature with the least HP | R2 |
 | Back-most | The living creature in the row furthest from the boss (the leftmost, if several). | The creature in the last slot | R2 |
 | Build-up | A boss that grows as a weekend goes on. It fills from something its text names (rounds, HP lost, reactions), grows a step each time it fills, up to a cap, carries across the weekend, and Mired slows it. | A phase of the raid | R8 |
+| Crit | A lucky hit that deals double. Crit chance starts at 5%; the creature, its Knack, talents and items add points of chance and add to the extra damage, and a boss with a Lucky Strike crits too. | A reaction | R6, R7.1 |
+| Crit Charge | A counter on the creature, up to 3, stored from something that happened to it (a dodge, a hit taken for another creature). Its next hit that lands spends one and is a guaranteed crit, with the extra damage the effect names. | A Store of a Knack, or a lasting buff | R7.1, R10 |
