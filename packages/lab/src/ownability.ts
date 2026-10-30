@@ -4,14 +4,15 @@
  *
  * An evolved form cannot be found by scouts: a player owns it by owning its line's stage 1 form and evolving it. So ownership is counted
  * per line, with the rarity of the line's stage 1 form (the rare lines are stormray, mossback and coralynx; the epic ones aurorix,
- * gaiadrake, hearthshell, lanternfin and solmane). The valley's coverage (`server-coverage.json`) says, for a mixed server of 5, 8 or 15
- * players and each week, the share of each rarity's species at least one player owns: the chance a given species of that rarity can be
- * pooled into the raid roster. The share is read as its running maximum over the weeks (`coverageAt`): a species already in the pool
- * never becomes less owned, and the share dips only when a content drop adds unowned species to the denominator. The chance a server owns every non-common line an answer uses is the product of those shares, one for
- * each distinct non-common line (the valley counts 34 forms as 34 species; reading the share as the chance a given line is owned is the
- * approximation we accept). An all-common answer is always ownable. The rule holds on every slot, for the line the tuner measures as
- * prepared: the boss's first answer, or the slot's own line (`SLOT_LINE`; slot 1's is all common, so it passes on its own). The test
- * and the report read the same functions.
+ * gaiadrake, solmane and the two festival prizes, hearthshell and lanternfin). The valley's coverage (`server-coverage.json`) is per line
+ * too: for a mixed server of 5, 8 or 15 players and each week, the share of the launch content's lines of each rarity that at least one
+ * player owns (`launch`; Lanternfin and Hearthshell are not in it). That is the chance a given launch line of that rarity can be pooled
+ * into the raid roster, exact for the lines the answers use, and it never dips (`coverageAt`). The chance a server owns every non-common
+ * line an answer uses is the product of those shares, one for each distinct non-common line (reading the share as the chance a given
+ * line is owned is the approximation we accept). A line scouts cannot find (its stage 1 form is not `catchable`: a festival prize) has
+ * a chance of 0: a boss must not need it, and the report shows it as "festival prize". An all-common answer is always ownable. The rule
+ * holds on every slot, for the line the tuner measures as prepared: the boss's first answer, or the slot's own line (`SLOT_LINE`; slot
+ * 1's is all common, so it passes on its own). The test and the report read the same functions.
  */
 import { content } from '@creatures/game';
 import { BOSS_ANSWERS, answerLine, type BossAnswer } from './bossAnswers';
@@ -41,11 +42,23 @@ export function lineRarity(line: string): 'common' | 'rare' | 'epic' {
   return first.rarity;
 }
 
+/**
+ * Whether scouts can find the line: its stage 1 form is `catchable`. A line that is not (Lanternfin, Hearthshell) is a festival prize,
+ * read from `content.creatures`.
+ */
+export function lineFindable(line: string): boolean {
+  const first = content.creatures.find((c) => c.line === line && c.stage === 1);
+  if (!first) throw new Error(`line ${line} has no stage 1 form`);
+  return first.catchable;
+}
+
 /** A non-common line an answer needs, and the forms of it the answer uses. */
 export interface NeededLine {
   readonly line: string;
   readonly rarity: 'rare' | 'epic';
   readonly forms: readonly string[];
+  /** False for a festival prize: scouts cannot find it, so its ownable chance is 0. */
+  readonly findable: boolean;
 }
 
 /** The distinct non-common lines of a raid line (in the order they first appear), each with the forms of it the line uses. */
@@ -59,17 +72,28 @@ export function nonCommonLines(picks: readonly Pick[]): NeededLine[] {
     if (!at.forms.includes(p.formId)) at.forms.push(p.formId);
     out.set(line, at);
   }
-  return [...out.entries()].map(([line, v]) => ({ line, rarity: v.rarity, forms: v.forms }));
+  return [...out.entries()].map(([line, v]) => ({
+    line,
+    rarity: v.rarity,
+    forms: v.forms,
+    findable: lineFindable(line),
+  }));
 }
 
-/** The chance a mixed `server` owns every one of `needed` at `week`: the product of each line's rarity coverage (1 when none is needed). */
+/**
+ * The chance a mixed `server` owns every one of `needed` at `week`: the product of each line's launch coverage for its rarity (1 when
+ * none is needed), and 0 when one of them is a festival prize.
+ */
 export function ownableChance(
   needed: readonly NeededLine[],
   week: number,
   server: CoverageServer,
   coverage: ServerCoverage = VALLEY_COVERAGE,
 ): number {
-  return needed.reduce((p, n) => p * coverageAt(coverage, server, n.rarity, week), 1);
+  return needed.reduce(
+    (p, n) => p * (n.findable ? coverageAt(coverage, server, n.rarity, week) : 0),
+    1,
+  );
 }
 
 /** One answer of a boss at a week: the non-common lines it needs, the chance on each mixed server, and whether it is ownable. */
@@ -136,14 +160,16 @@ export const ownabilityTable = (
 
 const pct = (x: number): string => `${Math.round(100 * x)}%`;
 const needText = (n: readonly NeededLine[]): string =>
-  n.length ? n.map((x) => `${x.line} (${x.rarity})`).join(', ') : 'none (all common)';
+  n.length
+    ? n.map((x) => `${x.line} (${x.rarity}${x.findable ? '' : ', festival prize'})`).join(', ')
+    : 'none (all common)';
 
 /** The markdown of the ownability table. `weeksFrom` says where the arrival weeks come from (a path run, or the committed table). */
 export function ownabilityMarkdown(rows: readonly SlotOwnability[], weeksFrom: string): string[] {
   const out = [
     '### Ownability of the tool lines',
     '',
-    `A slot's tool line (the line the tuner measures: the boss's first answer, or the slot's own line) is ownable at the slot's arrival week when the chance that a mixed server of ${OWNABLE_SERVER.slice(5)} owns every non-common line it uses is at least ${pct(OWNABLE_CHANCE_MIN)}. The chance is the product, over the distinct non-common lines, of that rarity's coverage at that week (\`server-coverage.json\`, as its running maximum over the weeks; an evolved form counts as its line, with the rarity of the line's first stage). Arrival weeks: ${weeksFrom}.`,
+    `A slot's tool line (the line the tuner measures: the boss's first answer, or the slot's own line) is ownable at the slot's arrival week when the chance that a mixed server of ${OWNABLE_SERVER.slice(5)} owns every non-common line it uses is at least ${pct(OWNABLE_CHANCE_MIN)}. The chance is the product, over the distinct non-common lines, of that rarity's launch coverage at that week (\`server-coverage.json\`, \`launch\`; an evolved form counts as its line, with the rarity of the line's first stage). A festival prize (a line scouts cannot find) has a chance of 0. Arrival weeks: ${weeksFrom}.`,
     '',
     '| Slot | Boss | Week | Tool line needs | Chance, servers of 5 / 8 / 15 | Tool line | Other answers: needs, chance on 5 / 8 / 15 |',
     '| --- | --- | --- | --- | --- | --- | --- |',

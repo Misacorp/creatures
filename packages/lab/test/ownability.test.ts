@@ -4,6 +4,7 @@ import { content } from '@creatures/game';
 import { BOSS_ANSWERS, answerLine, answerProblems, type BossAnswer } from '../src/bossAnswers';
 import {
   answerOwnability,
+  lineFindable,
   lineOfForm,
   lineRarity,
   nonCommonLines,
@@ -23,13 +24,18 @@ import {
   type ServerCoverage,
 } from '../src/valley';
 
-/** A coverage where every server has these shares at every week. */
+/**
+ * A coverage where every server has these launch shares at every week. The all-lines shares are set to something else (0.1), so a
+ * test fails if the code reads them instead of the launch shares.
+ */
 const flat = (rare: number, epic: number): ServerCoverage => {
   const weeks = Array.from({ length: ROSTER_WEEKS }, (_, i) => ({
     week: i + 1,
-    common: 1,
-    rare,
-    epic,
+    common: 0.1,
+    rare: 0.1,
+    epic: 0.1,
+    forms: { common: 0.1, rare: 0.1, epic: 0.1 },
+    launch: { common: 1, rare, epic },
   }));
   return { mixed5: weeks, mixed8: weeks, mixed15: weeks };
 };
@@ -60,6 +66,18 @@ describe('lines and rarity', () => {
     ]);
   });
 
+  it('reads from the content which lines scouts cannot find: the festival prizes', () => {
+    const lines = [...new Set(content.creatures.map((c) => c.line))];
+    expect(lines.filter((l) => !lineFindable(l)).sort()).toEqual(['hearthshell', 'lanternfin']);
+    // The launch content is 16 lines, and scouts find 14 of them: 8 common, 3 rare, 3 epic (the valley's numbers).
+    expect(lines).toHaveLength(16);
+    const count = (r: string) => lines.filter((l) => lineFindable(l) && lineRarity(l) === r).length;
+    expect([count('common'), count('rare'), count('epic')]).toEqual([8, 3, 3]);
+    // No common line is a festival prize, so `nonCommonLines` loses none.
+    expect(lines.filter((l) => !lineFindable(l) && lineRarity(l) === 'common')).toEqual([]);
+    expect(() => lineFindable('nothing')).toThrow(/no stage 1 form/);
+  });
+
   it('lists each non-common line once, with the forms of it the line uses', () => {
     const needed = nonCommonLines(
       answerLine('tempestray/none halcyray/none tempestray/none splashet/none gaiadrake/none'),
@@ -69,6 +87,7 @@ describe('lines and rarity', () => {
       ['gaiadrake', 'epic'],
     ]);
     expect(needed[0]?.forms).toEqual(['tempestray', 'halcyray']);
+    expect(needed.map((n) => n.findable)).toEqual([true, true]);
     expect(nonCommonLines(answerLine('splashet/none tidewing/none'))).toEqual([]);
   });
 });
@@ -89,6 +108,30 @@ describe('the chance', () => {
     expect(ownableChance([], 1, 'mixed5', flat(0, 0))).toBe(1);
   });
 
+  it('is 0 for a festival prize (a line scouts cannot find), even when every share is 1', () => {
+    const prize = nonCommonLines(answerLine('lanternfin/none tempestray/none'));
+    expect(prize.map((n) => [n.line, n.findable])).toEqual([
+      ['lanternfin', false],
+      ['stormray', true],
+    ]);
+    for (const server of COVERAGE_SERVERS)
+      expect(ownableChance(prize, 24, server, flat(1, 1))).toBe(0);
+    const shell = { label: 'x', tool: 'x', line: 'hearthshell/none splashet/none' };
+    const a = answerOwnability(shell, 24, flat(1, 1));
+    expect(a.chance).toEqual({ mixed5: 0, mixed8: 0, mixed15: 0 });
+    expect(a.ownable).toBe(false);
+    // An epic scouts can find is ownable by its coverage.
+    expect(
+      ownableChance(nonCommonLines(answerLine('solmane/none')), 24, 'mixed8', flat(1, 1)),
+    ).toBe(1);
+    // The report names it.
+    const md = ownabilityMarkdown(
+      [{ ...slotOwnability(1, 1, flat(1, 1)), tool: a, answers: [a], pass: false }],
+      'a test',
+    ).join('\n');
+    expect(md).toContain('hearthshell (epic, festival prize)');
+  });
+
   it('is ownable from the minimum chance on the rule’s server, and not below it', () => {
     const answer = { label: 'x', tool: 'x', line: 'tempestray/none splashet/none' };
     expect(answerOwnability(answer, 1, flat(OWNABLE_CHANCE_MIN, 0)).ownable).toBe(true);
@@ -101,16 +144,24 @@ describe('the chance', () => {
     expect(answerOwnability(allCommon, 1, flat(0, 0)).ownable).toBe(true);
   });
 
-  it('reads the running maximum of the coverage: a dip when a content drop joins does not lower it', () => {
-    const dip = flat(0.5, 0);
-    const weeks = dip.mixed8.map((w) => (w.week === 4 ? { ...w, rare: 0.4 } : w));
-    const cov = { ...dip, mixed8: weeks };
-    expect(ownableChance(rareTwo, 3, 'mixed8', cov)).toBeCloseTo(0.25);
-    expect(ownableChance(rareTwo, 4, 'mixed8', cov)).toBeCloseTo(0.25);
-    // The valley's own dip at week 4 (0.57 to 0.45 on a server of 8) does not show.
-    expect(coverageAt(VALLEY_COVERAGE, 'mixed8', 'rare', 4)).toBe(
-      coverageAt(VALLEY_COVERAGE, 'mixed8', 'rare', 3),
+  it('reads the launch shares, not the all-lines shares that dip when a content drop joins', () => {
+    // `flat` gives the all-lines shares 0.1 and the launch shares what the test says.
+    expect(ownableChance(rareTwo, 5, 'mixed8', flat(0.6, 0.2))).toBeCloseTo(0.36);
+    // The valley's all-lines share dips at a content drop; the launch share is read as it is, week to week, and does not.
+    const dips = COVERAGE_SERVERS.flatMap((server) =>
+      VALLEY_COVERAGE[server].filter((w, i, all) => i > 0 && w.rare < (all[i - 1]?.rare ?? 0)),
     );
+    expect(dips.length).toBeGreaterThan(0);
+    const dipped = VALLEY_COVERAGE.mixed8.find(
+      (w, i, all) => i > 0 && w.rare < (all[i - 1]?.rare ?? 0),
+    );
+    expect(dipped).toBeDefined();
+    expect(coverageAt(VALLEY_COVERAGE, 'mixed8', 'rare', dipped?.week ?? 1)).toBe(
+      dipped?.launch.rare,
+    );
+  });
+
+  it('has a launch share that never falls, on every server and rarity', () => {
     for (const server of COVERAGE_SERVERS)
       for (const rarity of COVERAGE_RARITIES)
         for (let w = 2; w <= ROSTER_WEEKS; w++)
