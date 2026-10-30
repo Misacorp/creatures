@@ -10,7 +10,7 @@
  */
 import { chance, int } from '@creatures/game';
 import { KNACKS, knack, type KnackFx } from './knacks';
-import { TALENTS, mergeFx, talent, talentIdleUnder } from './talents';
+import { STAT_FIELDS, TALENTS, mergeFx, talent, talentIdleUnder } from './talents';
 import { LAB_RULES as R } from './rules';
 import {
   ELEMENTS,
@@ -21,6 +21,7 @@ import {
 import type {
   BossDef,
   BossMove,
+  Escalation,
   EscalationFeed,
   EscalationState,
   FightEvent,
@@ -66,6 +67,11 @@ interface State {
   readonly opts: FightOptions;
   readonly fighters: Fighter[];
   bossHp: number;
+  /**
+   * The boss's real HP in potential mode (`FightOptions.potential`): it keeps falling below 1 (and below 0) while `bossHp` stays
+   * at 1, and every "boss below a share of its HP" rule (Finisher, Cull, the Build-up's HP feed) reads it. Otherwise equal to `bossHp`.
+   */
+  shadowHp: number;
   marks: Map<string, Mark>;
   markAge: number;
   mired: number;
@@ -80,7 +86,10 @@ interface State {
   esc: {
     fed: number;
     base: number;
+    /** Steps applied: the Build-up's growth that helps the boss, which Mired slows (R22.3). */
     step: number;
+    /** Steps applied to the growth that helps the players (a falling armour): the same rule without Mired's slowing (R22.3). */
+    fall: number;
     count: number;
     phase: boolean;
     /** The phase change was announced at an earlier round start and applies at the next. */
@@ -112,8 +121,9 @@ interface State {
    * blanks them). A pass over the living for an effect nobody carries can be skipped (see `carried`).
    */
   readonly carries: ReadonlySet<keyof KnackFx>;
-  /** `grown` for the escalation step `grownStep` (it only changes when the step does). */
+  /** `grown` for the escalation steps `grownStep` and `grownFall` (it only changes when a step does). */
   grownStep: number;
+  grownFall: number;
   grownNow: Grown | null;
   /** The boss's moves with its phase's, once the phase change has applied (see `movesOf`). */
   phaseMoves: readonly BossMove[] | null;
@@ -147,10 +157,13 @@ function effectsCarried(fighters: readonly Fighter[]): ReadonlySet<keyof KnackFx
   return out;
 }
 
-/** What a silenced creature's effects are: none. One shared object, never changed. */
-const NO_FX: KnackFx = Object.freeze({});
-const fx = (f: Fighter): KnackFx => (f.silencedTurns > 0 ? NO_FX : f.fxAll);
-/** Silence blanks the creature: its Knack and its role's verb (Misa, 2026-10-26). Stats still work. */
+/**
+ * What a creature's effects are now: all of them, or while it is silenced only its talents' plain stat lines (R12, amended in
+ * panel 6: Attack, Max HP, Armour, Speed, crit chance and crit damage survive; effect lines and the Knack, its stat bonuses
+ * included, are blanked).
+ */
+const fx = (f: Fighter): KnackFx => (f.silencedTurns > 0 ? f.fxStat : f.fxAll);
+/** Silence blanks the creature: its Knack and its role's verb (Misa, 2026-10-26). Stat lines of talents and the species' stats still work. */
 const silenced = (f: Fighter) => f.silencedTurns > 0;
 const ownArmour = (f: Fighter) => f.baseArmour + (fx(f).armourBonus ?? 0);
 /** The living fighters, in placement order. */
@@ -207,11 +220,14 @@ const strong = (s: State, st: number): boolean => st >= FULL_STRENGTH_BP || roll
 const grown = (s: State): Grown => {
   const n = s.esc.step;
   // It is asked for on every hit but only changes with the step, so it is worked out once a step.
-  if (s.grownNow && s.grownStep === n) return s.grownNow;
+  if (s.grownNow && s.grownStep === n && s.grownFall === s.esc.fall) return s.grownNow;
   const g = s.boss.escalation?.grow ?? {};
   const st = s.boss.escalation?.strengthBp ?? strengthOf(s);
-  const part = (v: number | undefined) => Math.trunc((n * (v ?? 0) * st) / 10_000);
+  // A growth that falls (a negative number) helps the players and comes in on the steps Mired does not slow (R22.3).
+  const part = (v: number | undefined) =>
+    Math.trunc((((v ?? 0) < 0 ? s.esc.fall : n) * (v ?? 0) * st) / 10_000);
   s.grownStep = n;
+  s.grownFall = s.esc.fall;
   return (s.grownNow = {
     atk: Math.floor((s.boss.atk * (10_000 + part(g.atkBp))) / 10_000),
     dodgeBp: part(g.dodgeBp),
@@ -237,7 +253,9 @@ function escalationCount(s: State): number {
   const e = s.boss.escalation;
   if (!e) return 0;
   if (e.feed === 'rounds') return s.esc.base + s.round - 1;
-  if (e.feed === 'hpLost') return Math.floor(((s.boss.hp - s.bossHp) * 10_000) / s.boss.hp);
+  // Read from the real HP (the shadow in potential mode), at most all of it: a boss cannot lose more than its HP.
+  if (e.feed === 'hpLost')
+    return Math.min(10_000, Math.floor(((s.boss.hp - s.shadowHp) * 10_000) / s.boss.hp));
   return s.esc.base + s.esc.fed;
 }
 
@@ -249,6 +267,7 @@ function escalationState(s: State): EscalationState | null {
     feed: e.feed,
     count: escalationCount(s),
     step: s.esc.step,
+    fallStep: s.esc.fall,
     cap: e.cap,
     nextAt: s.esc.step >= e.cap ? null : (s.esc.step + 1) * perOf(s),
     phase: s.esc.phase,
@@ -278,8 +297,23 @@ function escalate(s: State): void {
       if (s.opts.log) log(s, 'announce', `${s.boss.name}: ${e.phase.name} begins next round`);
     }
   }
-  if (s.esc.step >= e.cap) return;
   const per = perOf(s);
+  // The growth that helps the players (a falling armour) steps on the same bar but is never slowed: one step at most a round (R22.3).
+  const falls = Object.values(e.grow).some((v) => (v ?? 0) < 0);
+  if (falls && s.esc.fall < e.cap && s.esc.count >= (s.esc.fall + 1) * per) {
+    s.esc.fall++;
+    log(
+      s,
+      'escalation',
+      `${e.name}: what helps the players falls to step ${s.esc.fall} of ${e.cap}; Mired does not slow it`,
+    );
+  }
+  if (s.esc.step < e.cap) stepUp(s, e, per);
+  if (!falls) s.esc.fall = s.esc.step;
+}
+
+/** The Build-up's steps that help the boss: one step if the count has reached the next bar, raised by the Mired (R22.3). */
+function stepUp(s: State, e: Escalation, per: number): void {
   const due = (s.esc.step + 1) * per;
   if (s.esc.count < due) return;
   if (s.esc.count * 10_000 < due * 10_000 + s.mired * per * R.miredSlowsEscalationBp) {
@@ -321,6 +355,7 @@ function uniformFx(merged: KnackFx): KnackFx {
 
 /** The merged effects of a Knack and talents, and the stats of a form at a level: worked out once, they never change. */
 const FX_MEMO = new Map<string, KnackFx>();
+const STAT_FX_MEMO = new Map<string, KnackFx>();
 const STATS_MEMO = new Map<string, ReturnType<typeof formStats>>();
 
 function fxOf(knackId: string | undefined, talents: readonly string[]): KnackFx {
@@ -334,6 +369,21 @@ function fxOf(knackId: string | undefined, talents: readonly string[]): KnackFx 
     CARRIED.set(fxAll, carriedBy(fxAll));
   }
   return fxAll;
+}
+
+/** The talents' plain stat lines alone (`STAT_FIELDS`): what silence leaves (R12). */
+function statFxOf(talents: readonly string[]): KnackFx {
+  const key = talents.join(',');
+  let stat = STAT_FX_MEMO.get(key);
+  if (!stat) {
+    const merged = mergeFx(talents.map((id) => talent(id)?.fx ?? {})) as Record<string, unknown>;
+    const only: Record<string, unknown> = {};
+    for (const name of Object.keys(merged))
+      if (STAT_FIELDS.has(name as keyof KnackFx)) only[name] = merged[name];
+    stat = uniformFx(only);
+    STAT_FX_MEMO.set(key, stat);
+  }
+  return stat;
 }
 
 function statsOf(formId: string, level: number): ReturnType<typeof formStats> {
@@ -367,11 +417,12 @@ export function placeFighters(placements: readonly Placement[]): Fighter[] {
       baseArmour: st.armour,
       critChanceBp: st.critChanceBp,
       critDamageBp: st.critDamageBp,
-      critCharges: 0,
+      sureCrits: 0,
       guardTaken: 0,
       knack: k,
       talents: p.talents ?? [],
       fxAll,
+      fxStat: statFxOf(p.talents ?? []),
       hitsLanded: 0,
       secondWindDone: false,
       holdOnDone: false,
@@ -636,13 +687,17 @@ function hitBoss(s: State, f: Fighter, rawDmg: number, isHit: boolean): void {
     ? Math.floor((rawDmg * (10_000 + s.opts.determinationBp)) / 10_000)
     : rawDmg;
   // Damage potential: every point of damage counts and the boss stays at 1 HP instead of dying (`FightOptions.potential`).
+  // The boss's real HP (the shadow) keeps falling; the HP the fight reads for life and death stays at 1.
   const real = s.opts.potential ? dmg : Math.min(dmg, s.bossHp);
-  s.bossHp = s.opts.potential ? Math.max(1, s.bossHp - real) : s.bossHp - real;
+  s.shadowHp -= real;
+  s.bossHp = s.opts.potential ? Math.max(1, s.shadowHp) : s.shadowHp;
   const dealt = real;
   let culled = false;
-  const cull = isHit && !s.opts.potential ? fx(f).cullBp : undefined;
-  if (cull && real > 0 && s.bossHp > 0 && s.bossHp * 10_000 < s.boss.hp * cull) {
-    s.bossHp = 0;
+  const cull = isHit ? fx(f).cullBp : undefined;
+  if (cull && real > 0 && s.shadowHp > 0 && s.shadowHp * 10_000 < s.boss.hp * cull) {
+    // In potential the boss lives on (it stays at 1 HP), but it counts as defeated by the Cull for every HP-share rule.
+    s.shadowHp = 0;
+    s.bossHp = s.opts.potential ? 1 : 0;
     culled = true;
     bump(f, 'cullBp');
     if (s.opts.log) log(s, 'cull', `${f.name} culls ${s.boss.name}`);
@@ -710,7 +765,12 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       Math.min(rounds * (k.slowBurnBp ?? 0), k.slowBurnCapBp ?? 0),
       rounds > 0,
     ) +
-    conditional(f, 'finisherBp', k.finisherBp, s.bossHp * 10_000 < s.boss.hp * R.finisherBelowBp) +
+    conditional(
+      f,
+      'finisherBp',
+      k.finisherBp,
+      s.shadowHp * 10_000 < s.boss.hp * R.finisherBelowBp,
+    ) +
     conditional(f, 'momentumBp', k.momentumBp, f.momentum) +
     conditional(f, 'vengefulBp', k.vengefulBp, f.avenged);
   // A silenced creature does not use up its stored Momentum: what was stored before the silence stays.
@@ -730,22 +790,6 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
   let plain = k.noDamage
     ? 0
     : Math.floor((((base * (10_000 + bonusSum)) / 10_000) * shareBp * (k.plainBp ?? 10_000)) / 1e8);
-  // Crit chance and crit damage stack from the base, the species, the Knack and the talents (R7.1); the roll is always drawn.
-  let crit = plain > 0 && roll(s, R.critChanceBp + f.critChanceBp + (k.critChanceBp ?? 0));
-  // Steady Rhythm: every third hit it makes is a crit, no luck.
-  if (plain > 0 && k.steadyRhythm && ++f.hitsMade % 3 === 0) {
-    crit = true;
-    bump(f, 'steadyRhythm');
-  }
-  // A Crit Charge makes the hit a crit with more extra damage; it is spent below, if the hit gets past the boss's dodge (R10).
-  const spendsCharge = plain > 0 && f.critCharges > 0 && !silenced(f);
-  if (spendsCharge) crit = true;
-  if (crit) {
-    const extra = spendsCharge ? (k.dodgeCritBp ?? 0) + (k.guardCritBp ?? 0) : 0;
-    plain = Math.floor(
-      (plain * (R.critBp + f.critDamageBp + (k.critDamageBp ?? 0) + extra)) / 10_000,
-    );
-  }
   // 2. The boss rolls dodge (14.4). A hit that deals no damage is not rolled. Setup never misses.
   const bossDodge = f.undodgeable
     ? 0
@@ -757,22 +801,14 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
         ) + (s.boss.dodgeBp ?? 0),
       );
   const dodged = !k.noDamage && roll(s, bossDodge);
-  if (spendsCharge && !dodged) {
-    f.critCharges--;
-    if (s.opts.log) log(s, 'charge', `${f.name} spends a Crit Charge (${f.critCharges} left)`);
-  }
-  if (crit && !dodged && !k.noDamage && s.opts.log) log(s, 'crit', `${f.name} crits`);
   if (dodged) {
     feed(s, 'dodges');
     s.count.dodges++;
     if (s.opts.log) log(s, 'boss-dodge', `${s.boss.name} dodges ${f.name}`);
   }
-  // 3. Reaction (R5): only a Payoff cashes; of the marks this hit may cash, the oldest.
-  let bonus = 0;
-  let reacted = false;
+  // 3. Reaction (R5): only a Payoff cashes; of the marks this hit may cash, the oldest. Chosen here, worked out after the crit.
+  let cand: [string, Mark] | undefined;
   if (!dodged && !k.noDamage && f.role === 'payoff' && !silenced(f)) {
-    // Of the marks this hit may cash, the oldest.
-    let cand: [string, Mark] | undefined;
     for (const entry of s.marks) {
       const [el, m] = entry;
       if (
@@ -783,75 +819,100 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       )
         cand = entry;
     }
-    if (cand) {
-      const [el, mark] = cand;
-      const spent = k.spendAllBp !== undefined ? mark.stacks : 1;
-      // The bonus factor (R7): the Knack's own factor, extra counts, Baked Shell; capped together.
-      let factor = ((k.bonusBp ?? 10_000) * (10_000 + (spent - 1) * (k.spendAllBp ?? 0))) / 10_000;
-      const shell = s.carries.has('bakedShell')
-        ? beside(s, f).find((o) => fx(o).bakedShell && o.store >= 3)
-        : undefined;
-      if (shell) {
-        factor *= 2;
-        shell.store = 0;
-      }
-      // Talents raise the factor, inside the cap (R7): a crit talent on a crit, Hungry always.
-      if (crit && k.reactionCritBp) factor = (factor * (10_000 + k.reactionCritBp)) / 10_000;
-      if (k.reactionBonusBp) factor = (factor * (10_000 + k.reactionBonusBp)) / 10_000;
-      // Mark conditions: a mark at x3, a mark set this boss turn, a mark a Setter's talent left.
-      const raise = (who: Fighter, key: keyof KnackFx, bp: number | undefined, holds: boolean) => {
-        if (bp && holds) {
-          factor = (factor * (10_000 + bp)) / 10_000;
-          bump(who, key);
-        }
-      };
-      raise(f, 'cashHighBp', k.cashHighBp, mark.stacks >= R.opportunistFromStacks);
-      raise(f, 'freshMarkBp', k.freshMarkBp, mark.turnSet === s.bossTurnsDone);
-      if (s.carries.has('ownMarkBp'))
-        for (const o of alive(s)) raise(o, 'ownMarkBp', fx(o).ownMarkBp, mark.owners.has(o.uid));
-      factor = Math.min(factor, R.maxBonusFactorBp);
-      bonus = Math.floor((((plain * (R.payoffMultBp - 10_000)) / 10_000) * factor) / 10_000);
-      // Reaction Resistance: half the bonus at full strength, less below it.
-      if (s.opts.resistReaction === el)
-        bonus = Math.floor(
-          (bonus * (10_000 - Math.floor((5_000 * strengthOf(s)) / 10_000))) / 10_000,
-        );
-      mark.stacks -= spent;
-      if (mark.stacks <= 0) s.marks.delete(el);
-      reacted = true;
-      feed(s, 'reactions');
-      s.count.reactions++;
-      s.byMark[el] = (s.byMark[el] ?? 0) + 1;
-      if (s.opts.log) log(s, 'reaction', `${f.name} cashes ${el} x${spent} for +${bonus}`);
-      for (const o of alive(s)) {
-        const ok = fx(o);
-        if (ok.support === 'gatherCalm' && o.lastStoreRound !== s.round) {
-          o.store = Math.min(3, o.store + 1);
-          o.lastStoreRound = s.round;
-        }
-        if (ok.healOnReactionBp && o.element === el) heal(s, f, ok.healOnReactionBp, false, o);
-        if (ok.support === 'clearAir' && beside(s, o).includes(f)) {
-          heal(s, f, 1_000, false, o);
-          f.silencedTurns = 0;
-        }
-      }
-      if (s.boss.mods.reflectFirst && s.reflectArmed) {
-        s.reflectArmed = false;
-        // Reflective Hide: the card's strength is the share of the bonus that bounces back; the rest lands.
-        const back = Math.floor((bonus * strengthOf(s)) / 10_000);
-        if (s.opts.log) log(s, 'reflect', `${s.boss.name} reflects ${back} at ${f.name}`);
-        takeHit(s, f, back, 'reflected');
-        bonus -= back;
-      }
-      // Leave a Trail: one link per chain, so a reaction on a trail mark leaves no trail.
-      if (k.trail && !mark.fromTrail)
-        addMark(s, f.element, 1, {
-          sealed: k.seal ?? false,
-          fromTrail: true,
-          fizzle: true,
-          by: f,
-        });
+  }
+  // 3b. Crit (R6.3b): after the dodge and the choice of the reaction (so an effect may read both), before the reaction's bonus,
+  // the cap and the armour. Chance and damage stack from the base, the species, the Knack and the talents (R7.1).
+  let crit = false;
+  // Steady Rhythm: every third hit that lands is a crit, no luck (a dodged or Blocked hit is not counted).
+  let rhythmCrit = false;
+  // A Sure Crit makes a hit that is not already a crit one, with more extra damage; it is spent below, only if the hit lands.
+  let spendsSureCrit = false;
+  if (!dodged && plain > 0) {
+    crit = roll(s, R.critChanceBp + f.critChanceBp + (k.critChanceBp ?? 0));
+    if (k.steadyRhythm && (f.hitsMade + 1) % 3 === 0) {
+      crit = true;
+      rhythmCrit = true;
     }
+    spendsSureCrit = !crit && f.sureCrits > 0 && !silenced(f);
+    if (spendsSureCrit) crit = true;
+    if (crit) {
+      const extra = spendsSureCrit ? (k.dodgeCritBp ?? 0) + (k.guardCritBp ?? 0) : 0;
+      plain = Math.floor(
+        (plain * (R.critBp + f.critDamageBp + (k.critDamageBp ?? 0) + extra)) / 10_000,
+      );
+      if (s.opts.log) log(s, 'crit', `${f.name} crits`);
+    }
+  }
+  let bonus = 0;
+  let reacted = false;
+  if (cand) {
+    const [el, mark] = cand;
+    const spent = k.spendAllBp !== undefined ? mark.stacks : 1;
+    // The bonus factor (R7): the Knack's own factor, extra counts, Baked Shell; capped together.
+    let factor = ((k.bonusBp ?? 10_000) * (10_000 + (spent - 1) * (k.spendAllBp ?? 0))) / 10_000;
+    const shell = s.carries.has('bakedShell')
+      ? beside(s, f).find((o) => fx(o).bakedShell && o.store >= 3)
+      : undefined;
+    if (shell) {
+      factor *= 2;
+      shell.store = 0;
+    }
+    // Talents raise the factor, inside the cap (R7): a crit talent on a crit, Hungry always.
+    if (crit && k.reactionCritBp) factor = (factor * (10_000 + k.reactionCritBp)) / 10_000;
+    if (k.reactionBonusBp) factor = (factor * (10_000 + k.reactionBonusBp)) / 10_000;
+    // Mark conditions: a mark at x3, a mark set this boss turn, a mark a Setter's talent left.
+    const raise = (who: Fighter, key: keyof KnackFx, bp: number | undefined, holds: boolean) => {
+      if (bp && holds) {
+        factor = (factor * (10_000 + bp)) / 10_000;
+        bump(who, key);
+      }
+    };
+    raise(f, 'cashHighBp', k.cashHighBp, mark.stacks >= R.opportunistFromStacks);
+    raise(f, 'freshMarkBp', k.freshMarkBp, mark.turnSet === s.bossTurnsDone);
+    if (s.carries.has('ownMarkBp'))
+      for (const o of alive(s)) raise(o, 'ownMarkBp', fx(o).ownMarkBp, mark.owners.has(o.uid));
+    factor = Math.min(factor, R.maxBonusFactorBp);
+    bonus = Math.floor((((plain * (R.payoffMultBp - 10_000)) / 10_000) * factor) / 10_000);
+    // Reaction Resistance: half the bonus at full strength, less below it.
+    if (s.opts.resistReaction === el)
+      bonus = Math.floor(
+        (bonus * (10_000 - Math.floor((5_000 * strengthOf(s)) / 10_000))) / 10_000,
+      );
+    mark.stacks -= spent;
+    if (mark.stacks <= 0) s.marks.delete(el);
+    reacted = true;
+    feed(s, 'reactions');
+    s.count.reactions++;
+    s.byMark[el] = (s.byMark[el] ?? 0) + 1;
+    if (s.opts.log) log(s, 'reaction', `${f.name} cashes ${el} x${spent} for +${bonus}`);
+    for (const o of alive(s)) {
+      const ok = fx(o);
+      if (ok.support === 'gatherCalm' && o.lastStoreRound !== s.round) {
+        o.store = Math.min(3, o.store + 1);
+        o.lastStoreRound = s.round;
+      }
+      if (ok.healOnReactionBp && o.element === el) heal(s, f, ok.healOnReactionBp, false, o);
+      if (ok.support === 'clearAir' && beside(s, o).includes(f)) {
+        heal(s, f, 1_000, false, o);
+        f.silencedTurns = 0;
+      }
+    }
+    if (s.boss.mods.reflectFirst && s.reflectArmed) {
+      s.reflectArmed = false;
+      // Reflective Hide: the card's strength is the share of the bonus that bounces back; the rest lands.
+      const back = Math.floor((bonus * strengthOf(s)) / 10_000);
+      if (s.opts.log) log(s, 'reflect', `${s.boss.name} reflects ${back} at ${f.name}`);
+      takeHit(s, f, back, 'reflected');
+      bonus -= back;
+    }
+    // Leave a Trail: one link per chain, so a reaction on a trail mark leaves no trail.
+    if (k.trail && !mark.fromTrail)
+      addMark(s, f.element, 1, {
+        sealed: k.seal ?? false,
+        fromTrail: true,
+        fizzle: true,
+        by: f,
+      });
   }
   // 4. Cap, then armour: at or below armour the hit is Blocked (R13). A spent mark stays spent.
   if (!dodged && !k.noDamage) {
@@ -870,6 +931,16 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
     }
     // A hit made while silenced does not use up a first-hit effect (panel 3).
     if (dmg > 0 && !silenced(f)) f.hitsLanded++;
+    // A hit that lands (past the dodge and the armour, R20.6) counts for Steady Rhythm and spends a Sure Crit, if it was not
+    // a crit already (no Sure Crit was used then). A Blocked hit counts for neither and keeps its Sure Crit (R10).
+    if (dmg > 0 && k.steadyRhythm) {
+      f.hitsMade++;
+      if (rhythmCrit) bump(f, 'steadyRhythm');
+    }
+    if (dmg > 0 && spendsSureCrit) {
+      f.sureCrits--;
+      if (s.opts.log) log(s, 'sure-crit', `${f.name} spends a Sure Crit (${f.sureCrits} left)`);
+    }
     hitBoss(s, f, dmg, true);
   }
   // 5. Mark (R4): a hit that set off a reaction leaves no mark by the base rules.
@@ -1110,12 +1181,12 @@ function dodgeOf(s: State, f: Fighter, area: boolean): number {
   );
 }
 
-/** A Crit Charge for `f` (at most `R.critChargeMax`), counted as the effect `key` firing. */
-function gainCharge(s: State, f: Fighter, key: keyof KnackFx): void {
-  if (f.critCharges >= R.critChargeMax) return;
-  f.critCharges++;
+/** A Sure Crit for `f` (at most `R.sureCritMax`), counted as the effect `key` firing. */
+function gainSureCrit(s: State, f: Fighter, key: keyof KnackFx): void {
+  if (f.sureCrits >= R.sureCritMax) return;
+  f.sureCrits++;
   bump(f, key);
-  if (s.opts.log) log(s, 'charge', `${f.name} stores a Crit Charge (${f.critCharges})`);
+  if (s.opts.log) log(s, 'sure-crit', `${f.name} stores a Sure Crit (${f.sureCrits})`);
 }
 
 /**
@@ -1234,13 +1305,13 @@ function takeHit(
     s.live = null;
     s.liveBySlot = null;
   }
-  // Hold the Line: the damage it takes from hits it intercepted builds a Crit Charge each time it adds up to a share of its Max HP.
+  // Hold the Line: the damage it takes from hits it intercepted builds a Sure Crit each time it adds up to a share of its Max HP.
   if (taker !== target && k.guardCritBp && taker.hp > 0) {
     taker.guardTaken += dmg;
-    const per = Math.max(1, Math.floor((taker.maxHp * R.guardChargeShareBp) / 10_000));
+    const per = Math.max(1, Math.floor((taker.maxHp * R.guardSureCritShareBp) / 10_000));
     while (taker.guardTaken >= per) {
       taker.guardTaken -= per;
-      gainCharge(s, taker, 'guardCritBp');
+      gainSureCrit(s, taker, 'guardCritBp');
     }
   }
   const wind = k.secondWindBp;
@@ -1266,7 +1337,10 @@ function takeHit(
  * killing blow, but it is not one of the creature's hits: no Cull, no "its hits" talent.
  */
 function counter(s: State, f: Fighter, shareBp: number): void {
-  hitBoss(s, f, Math.floor((f.atk * shareBp) / 10_000), false);
+  // A counter is not a hit: no crit roll, no Sure Crit spent, no Steady Rhythm count, no Cull (R6, R21.7).
+  const dmg = Math.floor((f.atk * shareBp) / 10_000);
+  if (s.opts.log) log(s, 'counter', `${f.name} strikes back for ${dmg}`);
+  hitBoss(s, f, dmg, false);
 }
 
 /**
@@ -1361,9 +1435,9 @@ function bossHits(
       // Retaliate ignores armour: the hit back is a counter, not a hit (keywords).
       if (k.retaliateBp) counter(s, t, k.retaliateBp);
       if (k.storeDodgeStacks) t.store = Math.min(3, t.store + 1);
-      // Momentum: its next hit deals more. Perfect Timing: it stores a Crit Charge.
+      // Momentum: its next hit deals more. Perfect Timing: it stores a Sure Crit.
       if (k.momentumBp) t.momentum = true;
-      if (k.dodgeCritBp) gainCharge(s, t, 'dodgeCritBp');
+      if (k.dodgeCritBp) gainSureCrit(s, t, 'dodgeCritBp');
       continue;
     }
     // Only if the dodge failed: a Guard in reach intercepts, if the hit is one it may take.
@@ -1491,6 +1565,8 @@ export function fight(
     opts,
     fighters,
     bossHp: opts.bossHp ?? boss.hp,
+    // A potential stage carried on from an earlier one starts at the real HP (below 1), not at the 1 the boss was held at.
+    shadowHp: opts.potential ? (opts.shadowHp ?? opts.bossHp ?? boss.hp) : (opts.bossHp ?? boss.hp),
     marks: new Map(),
     markAge: 0,
     mired: 0,
@@ -1503,6 +1579,7 @@ export function fight(
       fed: 0,
       base: carried?.count ?? 0,
       step: carried?.step ?? 0,
+      fall: carried?.fallStep ?? carried?.step ?? 0,
       count: carried?.count ?? 0,
       phase: carried?.phase ?? false,
       phaseNext: carried?.phaseNext ?? false,
@@ -1516,6 +1593,7 @@ export function fight(
     live: null,
     liveBySlot: null,
     grownStep: -1,
+    grownFall: -1,
     grownNow: null,
     phaseMoves: null,
   };
@@ -1548,6 +1626,7 @@ export function fight(
   return {
     damage: s.count.damage,
     bossHpLeft: s.bossHp,
+    bossHpReal: s.shadowHp,
     won: s.bossHp <= 0,
     killingBlow: s.killer,
     wiped: alive(s).length === 0,
@@ -1598,6 +1677,8 @@ export function weekend(
   let holdDone = new Set<string>();
   let escalation: FightOptions['carryEscalation'];
   let bossHp = boss.hp;
+  // Damage potential: the real HP (below 1) carries from stage to stage, while the boss is held at 1 HP.
+  let shadowHp = boss.hp;
   let replacements = 0;
   const used: Record<string, number> = {};
   const dealt: Record<string, number> = {};
@@ -1612,14 +1693,17 @@ export function weekend(
       carryHoldOnDone: holdDone,
       ...(escalation ? { carryEscalation: escalation } : {}),
       bossHp,
+      shadowHp,
       ...(resist ? { resistReaction: resist } : {}),
       ...(resistEl ? { resistElement: resistEl } : {}),
     });
     stages.push(res);
     bossHp = res.bossHpLeft;
+    shadowHp = res.bossHpReal;
     if (res.escalation)
       escalation = {
         step: res.escalation.step,
+        fallStep: res.escalation.fallStep,
         phase: res.escalation.phase,
         phaseNext: res.escalation.phaseNext,
         count: res.escalation.count,

@@ -37,6 +37,19 @@ export interface TalentDef {
 }
 
 /**
+ * The plain stat lines of a talent or gear line (R12, amended in panel 6): Attack, Max HP, Armour, Speed (as the dodge it gives),
+ * crit chance and crit damage. They survive silence; every other effect and the whole Knack (its stat bonuses too) is blanked.
+ */
+export const STAT_FIELDS: ReadonlySet<keyof KnackFx> = new Set<keyof KnackFx>([
+  'atkBp',
+  'hpBp',
+  'armourBonus',
+  'dodgeBonusBp',
+  'critChanceBp',
+  'critDamageBp',
+]);
+
+/**
  * Effect fields whose values add when a Knack and talents combine (a talent may use only these).
  * Numbers add, flags combine (`mergeFx`); a field whose merge is neither is never listed here.
  */
@@ -178,16 +191,16 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'steady-rhythm',
       name: 'Steady Rhythm',
-      text: 'Every third hit it makes is a crit, and its crits deal 10% more.',
+      text: 'Every third hit that lands is a crit, +0.1x on crits.',
       roles: HITTERS,
       intent: 'Crits you can plan for (P-04): a rhythm instead of a chance.',
       fx: { steadyRhythm: true, critDamageBp: 1_000 },
     }),
-    // Luck is a build (Misa, 2026-10-30): crit chance and crit damage stack, and crit charges tie crits to dodging and guarding.
+    // Luck is a build (Misa, 2026-10-30): crit chance and crit damage stack, and Sure Crits tie crits to dodging and guarding.
     T({
       id: 'crit-chance',
       name: 'Crit Chance',
-      text: '+12% crit chance.',
+      text: '+12 crit chance points.',
       roles: HITTERS,
       intent:
         'The same effect as the gear line Crit chance, under its name. A crit doubles a hit, so it is worth about 12% x 100% = +12% damage on average, in swings; it stacks with Wild Swing, a crit species and items, and pairs with Crit Damage. A hitter that Stone Skin caps or Thick Hide Blocks gains less.',
@@ -196,7 +209,7 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'crit-damage',
       name: 'Crit Damage',
-      text: 'Its {Crit}s deal +100% more.',
+      text: 'Its {Crit}s are 3x.',
       roles: ['payoff'],
       intent:
         'The same effect as the gear line Crit damage, under its name. Small alone (it needs crits to boost) and big with Crit Chance or a crit species: the crit build is the pair. Stacks without a cap in the lab; the measures say whether it needs one.',
@@ -205,7 +218,7 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'perfect-timing',
       name: 'Perfect Timing',
-      text: 'After it dodges, it stores a {Crit Charge} (up to 3). Its next hit that lands is a crit that deals +100% more.',
+      text: 'After it dodges, it stores a {Sure Crit} (up to 3): its next hit that lands is a 3x crit.',
       roles: HITTERS,
       intent:
         'Crits from evasion: a fast creature, a Zigzag or Zoom Setter, a dodge aura beside it. A dodge is rare, so the reward is big (a sure crit, +100% more than the double). Not the Guard-takes-it clause of Momentum: that happens every round, and a sure crit every round is a runaway (first measure, 2026-10-30). Silence stops it storing (R12.2); what it stored stays.',
@@ -214,10 +227,10 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'hold-the-line',
       name: 'Hold the Line',
-      text: 'Each time the hits it {Intercept}s add up to 25% of its max HP, it stores a {Crit Charge} (up to 3). Its next hit that lands is a crit that deals +100% more.',
+      text: 'When hits it {Intercept}s add up to 25% of its max HP, it stores a {Sure Crit} (3x, up to 3).',
       roles: ['guard'],
       intent:
-        'Crits from guarding: a Guard that takes enough damage for others hits back harder. Its own hit is small, so this is a little extra for a Guard that stands in a busy spot, not a reason to pick the Guard. It was a charge for every interception, which fired every round and was the best Guard talent on most cards (first measure, 2026-10-30).',
+        'Crits from guarding: a Guard that takes enough damage for others hits back harder. Its own hit is small, so this is a little extra for a Guard that stands in a busy spot, not a reason to pick the Guard. It was a Sure Crit for every interception, which fired every round and was the best Guard talent on most cards (first measure, 2026-10-30).',
       fx: { guardCritBp: 10_000 },
     }),
     // Marks and reactions.

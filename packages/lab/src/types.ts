@@ -18,8 +18,10 @@ export interface Fighter {
   readonly baseArmour: number;
   readonly knack: string | undefined;
   readonly talents: readonly string[];
-  /** The Knack's and the talents' effects together (silence blanks all of it, R12). */
+  /** The Knack's and the talents' effects together (silence blanks all of it but the talents' stat lines, R12). */
   readonly fxAll: import('./knacks').KnackFx;
+  /** The talents' plain stat lines alone (`STAT_FIELDS`): what a silenced creature keeps (R12). */
+  readonly fxStat: import('./knacks').KnackFx;
   /** Hits made unsilenced that got past dodge and armour this fight (First Pounce counts the first). */
   hitsLanded: number;
   /** Catch Breath fired this fight, or earlier in the raid weekend (once per weekend). */
@@ -46,11 +48,11 @@ export interface Fighter {
   /** The species' own crit chance (bp over the base) and crit damage (bp over the base crit): stats, so silence does not take them away. */
   readonly critChanceBp: number;
   readonly critDamageBp: number;
-  /** Crit Charges it stores (at most `LAB_RULES.critChargeMax`): each is spent on its next hit that lands, a guaranteed crit (Perfect Timing, Hold the Line). */
-  critCharges: number;
-  /** Damage it has taken from hits it intercepted since its last Crit Charge from them (Hold the Line). */
+  /** Sure Crits it stores (at most `LAB_RULES.sureCritMax`): each is spent on its next hit that lands, a guaranteed crit (Perfect Timing, Hold the Line). */
+  sureCrits: number;
+  /** Damage it has taken from hits it intercepted since its last Sure Crit from them (Hold the Line). */
   guardTaken: number;
-  /** Hits it has made this fight, for rhythms (Steady Rhythm: every third is a crit). */
+  /** Hits it has landed this fight (past the dodge and the armour), for rhythms (Steady Rhythm: every third is a crit). */
   hitsMade: number;
   /** Set when it dodges unsilenced; its next unsilenced hit uses it up (Momentum). */
   momentum: boolean;
@@ -150,7 +152,12 @@ export const ESCALATION_FEEDS = [
 ] as const;
 export type EscalationFeed = (typeof ESCALATION_FEEDS)[number];
 
-/** What each step of an escalation adds to the boss. Growth adds up in a straight line: step 3 adds three times what step 1 does. */
+/**
+ * What each step of an escalation adds to the boss. Growth adds up in a straight line: step 3 adds three times what step 1 does.
+ * A positive number helps the boss and a negative one helps the players (it **falls**): Mired slows the growth that helps the
+ * boss, not the one that falls (R22.3), so a boss with both (Thornmother: Attack and jumps up, armour down) gets the falling
+ * part on time.
+ */
 export interface EscalationGrowth {
   /** Attack, in bp of the boss's own. */
   readonly atkBp?: number;
@@ -291,6 +298,11 @@ export interface FightOptions {
    */
   readonly potential?: boolean;
   /**
+   * With `potential`, the boss's real HP at the start (a stage of a weekend: the earlier stage's `bossHpReal`, which can be below 1);
+   * `bossHp` is where the boss is held. Default `bossHp`. Every HP-share rule (Finisher, Cull, the Build-up's HP feed) reads the real HP.
+   */
+  readonly shadowHp?: number;
+  /**
    * Determination (Misa, 2026-10-30; after WoW's): the server's creatures deal and heal this many bp more, for each failed week on
    * the same boss (`path.ts` sets it; off, 0 and absent are the same).
    */
@@ -305,6 +317,8 @@ export interface FightOptions {
   /** Carried from the earlier stages of a raid weekend: the boss's escalation (R22). */
   readonly carryEscalation?: {
     readonly step: number;
+    /** Steps of the falling growth (default `step`). */
+    readonly fallStep?: number;
     readonly phase: boolean;
     /** The phase change was announced and applies at the next round start. */
     readonly phaseNext?: boolean;
@@ -328,7 +342,10 @@ export interface EscalationState {
   readonly feed: EscalationFeed;
   /** Feed units so far this fight (for `hpLost` and `rounds`, the figure it was last read at). */
   readonly count: number;
+  /** Steps of the growth that helps the boss (Mired slows them). */
   readonly step: number;
+  /** Steps of the growth that helps the players (a falling armour; Mired does not slow them). Equal to `step` when nothing falls. */
+  readonly fallStep: number;
   readonly cap: number;
   /** The count at which the next step applies, or null at the cap. */
   readonly nextAt: number | null;
@@ -352,6 +369,8 @@ export interface KillingBlow {
 export interface FightResult {
   readonly damage: number;
   readonly bossHpLeft: number;
+  /** The boss's real HP at the end: equal to `bossHpLeft`, but in potential mode it goes on below 1 (and below 0) while the boss is held at 1. */
+  readonly bossHpReal: number;
   readonly won: boolean;
   /** The creature that landed the killing blow (no loot in the lab), or null if the boss lived. */
   readonly killingBlow: KillingBlow | null;

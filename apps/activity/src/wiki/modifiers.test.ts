@@ -64,9 +64,7 @@ describe('the modifier library data', () => {
     expect(data.knacks.map((k) => k.id)).toEqual(
       expect.arrayContaining(['wild-swing', 'cool-head']),
     );
-    expect(data.keywords.map((k) => k.name)).toEqual(
-      expect.arrayContaining(['Crit', 'Crit Charge']),
-    );
+    expect(data.keywords.map((k) => k.name)).toEqual(expect.arrayContaining(['Crit', 'Sure Crit']));
     expect(html).toContain('Perfect Timing');
   });
 

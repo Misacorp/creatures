@@ -138,13 +138,13 @@ export const KEYWORDS: Readonly<
   },
   Crit: {
     means:
-      'A lucky hit that deals double. Crit chance starts at 5%; the creature, its Knack, talents and items add points of chance and add to the extra damage, and a boss with a Lucky Strike crits too.',
+      'A lucky hit that deals double (2x). Crit chance starts at 5%; the creature, its Knack, talents and items add points of chance and add to the multiplier (+1x makes a 3x crit), and a boss with a Lucky Strike crits too.',
     not: 'A reaction',
     step: 'R6, R7.1',
   },
-  'Crit Charge': {
+  'Sure Crit': {
     means:
-      'A counter on the creature, up to 3, stored from something that happened to it (a dodge, a hit taken for another creature). Its next hit that lands spends one and is a guaranteed crit, with the extra damage the effect names.',
+      'A counter on the creature, up to 3, stored from something that happened to it (a dodge, a hit taken for another creature). Its next hit that lands and is not already a crit spends one and is a guaranteed crit, with the extra damage the effect names (a hit that is a crit anyway keeps it).',
     not: 'A Store of a Knack, or a lasting buff',
     step: 'R7.1, R10',
   },
