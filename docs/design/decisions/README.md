@@ -128,6 +128,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-10-30 The combat lab runs on every core, with a speed budget
 - 2026-10-29 The lab's raid roster levels follow Boss Rank
 - 2026-10-29 Measure HP removed; rule cards ask before they require
 - 2026-10-29 Raid tuning aims at success tiers and robustness

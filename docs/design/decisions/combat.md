@@ -4,6 +4,12 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-30: The combat lab runs on every core, with a speed budget
+
+ID: `2026-10-30-the-combat-lab-runs-on-every` · Status: current
+
+**Decision (lead).** Misa asked why the bosses work took about 14 hours of agent time. A profile showed 95% of the lab report's 585 s was fight simulation on one of four cores, and each tuning step reran the whole report. The fight engine is now about 2.25x faster (caches and scans, same random draws in the same order) and the report runs as independent jobs on worker threads, assembled in the original order, so its output is byte-identical to the serial run. The full report takes 80 s, the quick one 13 s, one raid boss 17 s (`--bosses --boss <id>`), the lab tests 11 s. **Budget:** full report under 2 minutes, quick under 20 s, lab tests about 10 s; a change that breaks it profiles first. Caching results by input hash was dropped: only about 15% of the simulated weekends were repeats. The next fix is the automatic tuner, so agents change rules and content while a search sets the numbers against targets Misa has agreed.
+
 ## 2026-10-29: The lab's raid roster levels follow Boss Rank
 
 ID: `2026-10-29-the-lab-s-raid-roster-levels` · Status: current
