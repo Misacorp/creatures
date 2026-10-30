@@ -6,30 +6,6 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q36. Should the shard exchange happen by itself when something waits? (a follow-up)
-
-Status: asked, round 15 (2026-10-30). Follow-up to Q34 (the exchange), held until the lab could show it. Touches: `forge.md` V-FORGE-4 and V-FORGE-10, ribbons, F-1 and F-5 in `goals.md`.
-
-**Why it matters.** With the exchange, a daily player's Forge waits for a shard only 7% of the time (it was about half). But a player who never taps the exchange still has creatures stuck at a ribbon (levels 10 and 20) for want of their own element's shards: about 13 creatures waiting at week 12, losing a lot of growth, while the right shards could be traded from the pile. Our filters say nothing should wait on the player for long (F-1, no babysitting) and the fix is one tap (F-5).
-
-- **A. By itself when something waits.** When a piece or a ribbon waits on a shard you lack, the Forge trades for it at the standard rate on its own, and the return walk mentions it (with a crit when it happens). Example: "Pip was waiting for Tide shards; the Forge traded 15 Ember shards for 5 Tide (a lucky trade: 6!)." You still trade by hand for anything else, and traders with better rates stay a choice.
-- **B. One tap, shown where it waits.** The creature's card and the return walk say "Pip waits for 5 Tide shards: trade 15 Ember?" Nothing happens without the tap. Example: Juho, who looks in on Sundays, sees three such taps waiting.
-- **C. Ribbons take any element's shards; only the Forge needs the right element.** Example: Pip's ribbon takes whatever shards you have; the exchange is only for crafting.
-
-**Lead's pick: A.** It keeps your exchange (the rates, the crits, traders later) and stops creatures waiting for weeks on a trade nobody would refuse. The pull to look in daily stays with the stores and new finds, not with chores.
-
-### Q37. Should what the server builds move the item level cap, or mostly time? (a challenge)
-
-Status: asked, round 15 (2026-10-30). Challenges: Q27 (the cap "fed by many systems", building upgrades and rare finds like a Stardew community house) against the panel's time floor (V-COM-13). Touches: `commons.md` V-COM-13, `gear.md` V-GEAR-8 and V-GEAR-10.
-
-**Why it matters.** The lab tuned the Forge's fire (the item level cap) to the plan's numbers: about 50 at week 12 and not past the gear ladder's end (about 100) before week 24. The only way it found was to let the weekly time floor do almost all the work and shrink what building, collections and boss kills add to a quarter. Now a server that kills every boss and one that kills none have almost the same cap (the fire chart: the three lines sit on top of each other). Your Q27 answer wanted many systems to feed it.
-
-- **A. Mostly a clock.** The cap rises steadily for everyone; building and bosses add a little. Example: every server reaches item level 50 around week 11, whatever it does. Predictable and fair to quiet servers, but building doesn't change your gear.
-- **B. Building drives it, with a slow floor.** The floor rises slowly (example: about half today's pace) and building, collections and boss kills add most of the heat. Example: a busy server reaches 55 at week 12, a quiet one 35; a server that can't beat a boss still moves, just slower.
-- **C. No floor.** Only building and kills warm the fire. Example: a server stuck on a boss and not building stays at 30 for weeks.
-
-**Lead's pick: B.** It is what you asked for in Q27 (everything the server builds or beats makes better gear), while the slow floor keeps a struggling server moving (F-7). The tuner then sets the numbers so a busy server stays under 100 before week 24.
-
 ### Q38. How fast should a collection grow?
 
 Status: asked, round 15 (2026-10-30). Touches: `scouts.md` (creature finds), T-1 in `goals.md`, combat v2's roster profile (`roadmap.md`).
@@ -40,7 +16,21 @@ Status: asked, round 15 (2026-10-30). Touches: `scouts.md` (creature finds), T-1
 - **B. As tuned.** About 20 at week 4, 45 at week 12, 80 at week 24, owning about three quarters of what exists. Example: most visits in the first weeks bring someone new; later, new species drops are what you chase.
 - **C. Faster.** Almost everything that exists within a few weeks of its release. Example: each content drop is caught within a fortnight.
 
+**Misa's follow-up (2026-10-30):** "are these unique creature species or individual possibly duplicate finds?" Lead: unique species (kinds owned). Duplicates come on top, about one a visit for a daily player and one or two for a weekly one, and settle by themselves after a day (V-SCOUT-3).
+
 **Lead's pick: B.** It keeps something to chase (about a quarter of the species are always still out there, and each drop adds more), and the first weeks feel generous. If you pick it, the combat v2 session gets the new roster sizes before tuning against them.
+
+### Q39. Ribbons: drop them, or trials as an honour?
+
+Status: asked, round 15 (2026-10-30), after the panel (`reviews/2026-10-30-trials.md`). From Misa's reply to Q36. Touches: `systems/trials.md`, today's ribbons, T-1, T-7.
+
+**Why it matters.** You suggested replacing material-gated ribbons with trials: a checklist across the valley's systems, shown from day one, with a graduation. The panel does not hate it; all four reviewers say "adopt with changes", and all four make the same main change: a trial must never stop a creature's levels. The lab agrees: ribbon gates cost a daily player about a quarter of their creatures' idle growth in the first 12 weeks, and hold back the bench, not the best creatures. They also warn that fight-only boxes can't work (3 raid seats a week against 50 creatures) and that a ceremony at a set time feels like a timer.
+
+- **A. Drop ribbons entirely.** Levels just flow. Example: Pip goes from 9 to 31 without stopping. Simplest; nothing replaces the story.
+- **B. Trials as an honour.** Levels never stop. Each creature has a next trial (Bronze, Silver, Gold) of three boxes, each with a choice of routes (a dungeon run or Skilled in any work; a raid or a week at posts; an Epic piece or a rare find). Ticked boxes lead to graduation at the bonfire's daily ceremony, whether or not you are there, told in the return walk. The reward is a badge, a title and a ribbon worn on the sprite. Example: "Pip graduated Silver: stood guard in the raid, made a Rare scarf, pushed on into the deep Reef."
+- **C. Trials as a gate.** As B, but a creature stops at levels 10 and 20 until it graduates. Example: Pip waits at level 20 until it has taken part in a raid or worked a week at posts.
+
+**Lead's pick: B.** It keeps what you liked (the systems tied together, the list visible from day one, graduation) without a wait on 50 to 80 creatures, and gives each creature a story on its card. C keeps the waste the lab found; A loses the story.
 
 ## Queue
 
@@ -614,7 +604,39 @@ Status: answered, round 14 (2026-10-30). Challenges: T-2 ("a weekly player gets 
 
 Became: V-BON-2, catch-up's multiplier holds until the next visit (not 24 hours); T-2 keeps its 75% to 80% growth target, and the finds gap (full stores) stays as the pull to look in more often.
 
+### Q37. Should what the server builds move the item level cap, or mostly time? (a challenge)
+
+Status: answered, round 15 (2026-10-30). Challenges: Q27 (the cap "fed by many systems", building upgrades and rare finds like a Stardew community house) against the panel's time floor (V-COM-13). Touches: `commons.md` V-COM-13, `gear.md` V-GEAR-8 and V-GEAR-10.
+
+**Why it matters.** The lab tuned the Forge's fire (the item level cap) to the plan's numbers: about 50 at week 12 and not past the gear ladder's end (about 100) before week 24. The only way it found was to let the weekly time floor do almost all the work and shrink what building, collections and boss kills add to a quarter. Now a server that kills every boss and one that kills none have almost the same cap (the fire chart: the three lines sit on top of each other). Your Q27 answer wanted many systems to feed it.
+
+- **A. Mostly a clock.** The cap rises steadily for everyone; building and bosses add a little. Example: every server reaches item level 50 around week 11, whatever it does. Predictable and fair to quiet servers, but building doesn't change your gear.
+- **B. Building drives it, with a slow floor.** The floor rises slowly (example: about half today's pace) and building, collections and boss kills add most of the heat. Example: a busy server reaches 55 at week 12, a quiet one 35; a server that can't beat a boss still moves, just slower.
+- **C. No floor.** Only building and kills warm the fire. Example: a server stuck on a boss and not building stays at 30 for weeks.
+
+**Lead's pick: B.** It is what you asked for in Q27 (everything the server builds or beats makes better gear), while the slow floor keeps a struggling server moving (F-7). The tuner then sets the numbers so a busy server stays under 100 before week 24.
+
+**Answer (2026-10-30): B, with doubts about the clock.** "37 B but honestly I'm skeptical of the clock."
+
+Became: V-COM-13, building, collections and boss kills drive the Forge's fire, over a slow time floor. Because of Misa's doubt, the lab reports the slow floor and no floor (C) side by side, so the floor can be dropped if a quiet server still moves without it.
+
 ## Withdrawn
+
+### Q36. Should the shard exchange happen by itself when something waits? (a follow-up)
+
+Status: withdrawn, round 15 (2026-10-30). Follow-up to Q34 (the exchange), held until the lab could show it. Touches: `forge.md` V-FORGE-4 and V-FORGE-10, ribbons, F-1 and F-5 in `goals.md`.
+
+**Why it matters.** With the exchange, a daily player's Forge waits for a shard only 7% of the time (it was about half). But a player who never taps the exchange still has creatures stuck at a ribbon (levels 10 and 20) for want of their own element's shards: about 13 creatures waiting at week 12, losing a lot of growth, while the right shards could be traded from the pile. Our filters say nothing should wait on the player for long (F-1, no babysitting) and the fix is one tap (F-5).
+
+- **A. By itself when something waits.** When a piece or a ribbon waits on a shard you lack, the Forge trades for it at the standard rate on its own, and the return walk mentions it (with a crit when it happens). Example: "Pip was waiting for Tide shards; the Forge traded 15 Ember shards for 5 Tide (a lucky trade: 6!)." You still trade by hand for anything else, and traders with better rates stay a choice.
+- **B. One tap, shown where it waits.** The creature's card and the return walk say "Pip waits for 5 Tide shards: trade 15 Ember?" Nothing happens without the tap. Example: Juho, who looks in on Sundays, sees three such taps waiting.
+- **C. Ribbons take any element's shards; only the Forge needs the right element.** Example: Pip's ribbon takes whatever shards you have; the exchange is only for crafting.
+
+**Lead's pick: A.** It keeps your exchange (the rates, the crits, traders later) and stops creatures waiting for weeks on a trade nobody would refuse. The pull to look in daily stays with the stores and new finds, not with chores.
+
+**Misa's reply (2026-10-30), questioning the ribbons themselves:** "I'm circumventing the question by questioning the resource gated ribbons to begin with. We originally added in a vain attempt to limit how fast the top creatures in someone's roster level. They turned out to do nothing on that front. Should we drop them entirely or build another type of 'trial' for the creature to complete?" (his full idea is quoted in `systems/trials.md`).
+
+Became: the question is replaced by the **trials** idea (`systems/trials.md`), reviewed by the panel before it comes back as a question.
 
 - **"Are the goals G-2 to G-4 and G-6 right as written?"** (old open question 1, 2026-10-29). Too big to answer at once; the goals are now settled through the concrete questions above, and `goals.md` changes with each answer.
 - **"Are T-1 to T-5 the right things to measure?"** (old open question 2). Moved to the queue as **targets**, to be asked with the lab's numbers.

@@ -98,7 +98,7 @@ def status_of(src):
     m = re.search(r'^Status:\s*\*\*([^*]+)\*\*', src, re.M)
     return m.group(1) if m else ''
 
-SYSTEMS = [('valley.md','The valley'),('posts.md','Job posts'),('bonfire.md','The bonfire'),('return.md','The return moment'),('scouts.md','Scouts'),('forge.md','The Forge loop'),('gear.md','Gear'),('school.md','The School'),('commons.md','The commons'),('defence.md','The raid as defence'),('later.md','Later')]
+SYSTEMS = [('valley.md','The valley'),('posts.md','Job posts'),('bonfire.md','The bonfire'),('return.md','The return moment'),('scouts.md','Scouts'),('forge.md','The Forge loop'),('gear.md','Gear'),('school.md','The School'),('trials.md','Trials'),('commons.md','The commons'),('defence.md','The raid as defence'),('later.md','Later')]
 
 def section(src, title):
     m = re.search(r'^## ' + re.escape(title) + r'\n(.*?)(?=^## |\Z)', src, re.M | re.S)

@@ -3588,3 +3588,9 @@ Asked with the economy lab's first report, which showed most resources piling up
 - **Q35, B:** catch-up's multiplier holds until the next visit instead of 24 hours, so a weekly player's creatures grow at about 75% of a daily player's, while full stores still reward looking in more often. (`bonfire.md` V-BON-2; T-2 unchanged)
 
 The economy lab models all three and is being tuned with its automatic tuner.
+
+## 2026-10-30: Valley: building drives the item level cap; ribbons questioned (round 15)
+
+- **Q37, B:** building, collections and boss kills drive the Forge's fire (the item level cap) over a slow time floor. Misa: "B but honestly I'm skeptical of the clock", so the economy lab reports the slow floor and no floor side by side. (`docs/design/valley/systems/commons.md` V-COM-13)
+- **Q36 withdrawn:** Misa questioned the material-gated ribbons themselves ("They turned out to do nothing on that front") and proposed **trials**, a checklist across the valley's systems with a graduation. Written up in `docs/design/valley/systems/trials.md` and sent to the panel.
+- **Q38** waits: Misa asked whether the counts are species or finds (species).
