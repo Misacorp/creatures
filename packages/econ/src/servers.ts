@@ -19,6 +19,14 @@ export interface ServerConfig {
   readonly communalSeats: boolean;
   /** The generosity dial: replaces every player's share of income given to projects (a hoarder still saves first). */
   readonly giveShare?: number;
+  /** What players give: Acorns only (the default: commons.md's example), or everything (scrap and shards count too). */
+  readonly gifts: 'acorns' | 'everything';
+  /** Whether the Paddock and School projects take Essence too. */
+  readonly essenceToProjects: boolean;
+  /** Replaces the scouts' creature chance an hour (a sensitivity run for T-1). */
+  readonly creatureRate?: number;
+  /** Whether catch-up also multiplies what the dungeon and the raid pay (a sensitivity run for T-2d). */
+  readonly catchUpFights?: boolean;
 }
 
 const server = (
@@ -36,6 +44,8 @@ const server = (
   weeks: 24,
   curve: 'B',
   communalSeats: true,
+  gifts: 'acorns',
+  essenceToProjects: false,
   ...more,
 });
 
@@ -86,6 +96,36 @@ export const VARIANTS: readonly ServerConfig[] = [
   { ...MIXED_8, id: 'mixed8-none', label: 'Mixed 8, no boss killed', bossKills: 'none' },
   withPolicy(MIXED_8, 'setAndForget', 'mixed8-sf', 'Mixed 8, everyone set-and-forget'),
   withPolicy(MIXED_8, 'optimiser', 'mixed8-opt', 'Mixed 8, everyone an optimiser'),
+  {
+    ...MIXED_8,
+    id: 'mixed8-everything',
+    label: 'Mixed 8, everything counts (scrap and shards given too)',
+    gifts: 'everything',
+  },
+  {
+    ...MIXED_8,
+    id: 'mixed8-essence',
+    label: 'Mixed 8, Essence to the Paddock and School',
+    essenceToProjects: true,
+  },
+  {
+    ...MIXED_8,
+    id: 'mixed8-creatures2',
+    label: "Mixed 8, creatures at 2% an hour (the docs' table)",
+    creatureRate: 0.02,
+  },
+  withPolicy(
+    { ...MIXED_8, creatureRate: 0.02 },
+    'optimiser',
+    'mixed8-creatures2-opt',
+    'Mixed 8, creatures at 2% an hour, everyone an optimiser',
+  ),
+  {
+    ...MIXED_8,
+    id: 'mixed8-catchfights',
+    label: 'Mixed 8, catch-up also on fight XP',
+    catchUpFights: true,
+  },
   { ...MIXED_8, id: 'mixed8-give10', label: 'Mixed 8, everyone gives 10%', giveShare: 0.1 },
   { ...MIXED_8, id: 'mixed8-give60', label: 'Mixed 8, everyone gives 60%', giveShare: 0.6 },
   { ...MIXED_8, id: 'mixed8-curveA', label: 'Mixed 8, away curve A', curve: 'A' },

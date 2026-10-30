@@ -18,7 +18,7 @@ import {
   type VariantRow,
 } from './analysis';
 import { RULES, type Rules } from './rules';
-import type { Results } from './scenarios';
+import { playersOf, type Results } from './scenarios';
 import type { PlayerRun } from './sim';
 import { rosterProfile, type RosterProfile } from './roster';
 import { levelOf, medianOf, round, total } from './stats';
@@ -35,6 +35,15 @@ export interface ReportData {
   servers: ServerRow[];
   fireByDial: Record<string, ServerRow | null>;
   variants: VariantRow[];
+  /** A daily player's roster by week at the default arrival rate and at the docs' 2% an hour. */
+  rosterByRate: {
+    week: number;
+    size: number;
+    share: number;
+    available: number;
+    fastSize: number;
+    fastShare: number;
+  }[];
   roster: RosterProfile;
   journeys: Record<string, string[]>;
   cost: CostData;
@@ -156,6 +165,22 @@ export function buildReportData(results: Results, seeds: number, rules: Rules = 
       none: serverOf(results, 'mixed8-none'),
     },
     variants: variantsOf(results),
+    rosterByRate: Array.from({ length: 24 }, (_, i) => {
+      const at = (id: string, pick: (w: PlayerRun['weeks'][number]) => number): number =>
+        median(
+          playersOf(results[id], 'daily').flatMap((p) => (p.weeks[i] ? [pick(p.weeks[i])] : [])),
+        );
+      const share = (w: PlayerRun['weeks'][number]): number =>
+        w.available ? w.species / w.available : 0;
+      return {
+        week: i + 1,
+        size: at('mixed8', (w) => w.size),
+        share: at('mixed8', share),
+        available: at('mixed8', (w) => w.available),
+        fastSize: at('mixed8-creatures2', (w) => w.size),
+        fastShare: at('mixed8-creatures2', share),
+      };
+    }),
     roster: rosterProfile(results),
     journeys: {
       daily: journey(profilePlayers(results, 'daily'), mixed8, jw),
@@ -207,9 +232,10 @@ export const SIMPLIFICATIONS: readonly string[] = [
   'Mastery is counted per seat (the effective hours a seat has worked), not per creature, and a Master never moves on; the Master Scout perk (a blueprint at the Forge) is not modelled.',
   "The School and Paddock have levels, projects and warmth but no seats or output (the docs leave them open until combat v2 and `school.md`); push on, deep areas, opening hours of the Reef and the week's twist are not modelled.",
   'Gear is counts and item level only: three slots per creature, pieces at the fire\'s level, a slot is "weaker" when its item level is more than 6 below the fire. Gear stats, modifier lines, blueprint quality and the loupe\'s effect beyond a higher rare and epic share are not modelled; blueprints are counted, not required by orders.',
-  "The 34 forms are the species pool for arrivals (all alike, places lean toward their element); evolution only lifts a first stage's level cap and costs Essence. Rarity of species is not modelled.",
+  "The species pool starts at today's 34 forms and grows by content drops (assumed +12 every 4 weeks from week 4, toward Misa's 100 or more); arrivals and duplicates use the pool available that week, all species alike, places lean toward their element. Evolution only lifts a first stage's level cap and costs Essence. Rarity of species is not modelled.",
+  'The lab keeps 5 elements and 6 destinations. More elements will mean more kinds of shard (every ribbon and piece takes a shard of its element, so each new element is one more chain a player must cover with scouts) and more destinations to cover them; the shard stalls shown here would grow with them.',
   "Catch-up applies to idle XP only (not to fights). A player who is away is not counted in the server's middle after seven days.",
-  'Project gifts are chosen by weight among the open projects; a gift never exceeds what the project still needs, the rest stays with the giver. Essence is not given to projects (resources.md: fight prizes go to creatures).',
+  'Project gifts are chosen by weight among the open projects; a gift never exceeds what the project still needs, the rest stays with the giver. By default only Acorns are given (variants: scrap and shards too; Essence to the Paddock and School). A find fills only its own collection socket; a spare melts into Essence. Sources of the sockets that are not keystones (dungeon landmarks, resident tokens, pages) use made-up rates.',
   'Silver ribbons ask only for scrap, shards and glimmer: the docs\' replacement for "5 finished trips" (hours of work at posts) is not modelled.',
   "The cost estimate counts rows from the shape of a visit (one player row, the creature rows, seat rows, the valley's rows); it is not a measured query plan.",
   "T-5 (the best team differs across bosses) belongs to combat v2's lab.",
@@ -229,14 +255,16 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
     '',
   );
   for (const t of data.targets)
-    push(`- **${t.pass ? 'PASS' : 'FAIL'}** ${t.id}: ${t.measured}. Target: ${t.target}.`);
+    push(
+      `- **${t.info ? 'INFO' : t.pass ? 'PASS' : 'FAIL'}** ${t.id}: ${t.measured}. Target: ${t.target}.`,
+    );
   push('', "(T-5, that the best team differs across bosses, is checked in combat v2's lab.)", '');
 
   // 2. The ledger.
   push(
     '## 2. The resource ledger',
     '',
-    'Per spendable resource, in the mixed server of 8 (a daily and a weekly player shown; every profile is in `report-data.json`). "In" and "out" are per week; stock is at the end of weeks 1, 2, 4, 8, 12 and 24; waste is what a full store did not pick up over 24 weeks; "days to next" is how long until the player can afford the next thing worth buying (median over weeks 2 to 12; "-" means there was nothing to buy that week); choices is the things a player could do at a visit, counted under each resource it needs.',
+    'Per spendable resource, in the mixed server of 8 (a daily and a weekly player shown; every profile is in `report-data.json`). "In" and "out" are per week; stock is at the end of weeks 1, 2, 4, 8, 12 and 24; waste is what a full store did not pick up over 24 weeks; "days to next" is how long until the player can afford the next thing worth buying (median over weeks 2 to 12; "-" means there was nothing to buy that week); choices is the things a player could do at a visit, counted under each resource it needs. A resource is flagged "dead" when its stock rises for 4 or more weeks running and the pile is at least 4 weeks of that week\'s income (the report shows the week it starts); "starved" when it sits at zero on more than 25% of days.',
     '',
   );
   const ledgerRows = (id: string): string[][] =>
@@ -332,7 +360,10 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
     ),
     '',
   );
-  push('Roster size (creatures owned, kinds in brackets):', '');
+  push(
+    'Roster size (creatures owned; in brackets the kinds owned and their share of the species available that week, as new content drops lift the pool: 34 at the start, +12 every 4 weeks from week 4):',
+    '',
+  );
   push(
     ...table(
       ['Profile', ...wk.map((w) => `Week ${w}`)],
@@ -340,7 +371,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
         profileLabel(g.profile),
         ...wk.map((w) =>
           at(g.size, w)
-            ? `${num(at(g.size, w)?.median ?? 0)} (${num(at(g.species, w)?.median ?? 0)})`
+            ? `${num(at(g.size, w)?.median ?? 0)} (${num(at(g.species, w)?.median ?? 0)} kinds, ${num((at(g.speciesShare, w)?.median ?? 0) * 100)}% of ${num(at(g.available, w)?.median ?? 0)})`
             : '-',
         ),
       ]),
@@ -348,12 +379,39 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
     '',
   );
   push(
-    'The week a player owns 20, 30 and 34 kinds, and duplicates arriving per visit (a duplicate takes the Recommended answer and pays a little scrap):',
+    "A daily player's roster at the default arrival rate (0.75% an hour per scout) and at the docs' table (2% an hour): creatures owned, and the share of the species available that week:",
     '',
   );
   push(
     ...table(
-      ['Profile', '20 kinds', '30 kinds', '34 kinds', 'Duplicates /visit'],
+      [
+        'Week',
+        'Species available',
+        'Default: creatures',
+        'Default: share of species',
+        '2% an hour: creatures',
+        '2% an hour: share of species',
+      ],
+      data.rosterByRate
+        .filter((r) => wk.includes(r.week))
+        .map((r) => [
+          r.week,
+          num(r.available),
+          num(r.size),
+          `${num(r.share * 100)}%`,
+          num(r.fastSize),
+          `${num(r.fastShare * 100)}%`,
+        ]),
+    ),
+    '',
+  );
+  push(
+    "The week a player owns 20, 34 (all of today's forms) and 60 kinds, and duplicates arriving per visit (a duplicate takes the Recommended answer and pays a little scrap):",
+    '',
+  );
+  push(
+    ...table(
+      ['Profile', '20 kinds', '34 kinds', '60 kinds', 'Duplicates /visit'],
       data.growth.map((g) => [
         profileLabel(g.profile),
         ...g.speciesWeeks.map((w) => (w === null ? 'not by the end' : `week ${w}`)),
@@ -468,7 +526,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
       '',
     );
     push(
-      `- First place level-up on day ${s.firstLevelDay === null ? 'never' : num(s.firstLevelDay, 1)}; ${num(s.levelUpsByWeek12)} level-ups by week 12.`,
+      `- First place level-up on day ${s.firstLevelDay === null ? 'never' : num(s.firstLevelDay, 1)}; ${num(s.levelUpsByWeek12)} level-ups by week 12. First collection ${s.firstCollectionWeek === null ? 'not done in the run' : `in week ${s.firstCollectionWeek}`}; ${num(s.collections[11] ?? 0)} done by week 12.`,
       `- The first three projects took ${s.projectDays.map((d) => `${num(d, 1)} days`).join(', ')} from opening to done.`,
       `- Share of income given to projects: ${num(s.givingShare * 100)}%; the top giver gave ${num(s.topGiverShare * 100)}% of all gifts; communal seats made ${num(s.communalShare * 100)}% of project progress.`,
       '',
@@ -532,7 +590,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
   push(
     '### Variants of the mixed server of 8',
     '',
-    'The same server with one thing changed: the away curve (A instead of B), no communal seats, every player a set-and-forget player or an optimiser, and everyone giving 10% or 60% of income (the generosity dial; the default is a third).',
+    "**Default gifts are Acorns only**, because commons.md's own example is Acorns only (8 daily players each giving a third of about 50 Acorns a day, about 150 a day into projects). Counting scrap and shards as gifts as well (\"everything counts\") roughly doubles what a server gives, because scouts bring far more scrap than the sinks use, and builds the valley out in about half the time; both are shown. The other rows change one thing at a time: the away curve (A instead of B), no communal seats, every player a set-and-forget player or an optimiser, Essence to the Paddock and School, the scouts' creature chance at the docs' 2% an hour, and everyone giving 10% or 60% of income (the generosity dial; the default is a third).",
     '',
   );
   push(
@@ -541,8 +599,10 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
         'Variant',
         'First level-up (day)',
         'Level-ups by week 12',
+        'Place levels, week 12 (hearth/forge/signpost/paddock/school)',
         'Fire, week 12',
         'Collections, week 12',
+        'T-1 spread at week 4',
         "Daily player's best, week 12",
         'Weekend-off share of idle growth',
         'Weekly share',
@@ -551,8 +611,10 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
         v.label,
         v.firstLevelDay === null ? 'never' : num(v.firstLevelDay, 1),
         num(v.levelUpsByWeek12),
+        v.levelsWeek12.map((l) => num(l)).join('/'),
         num(v.fireWeek12),
         num(v.collectionsWeek12),
+        num(v.spreadWeek4, 1),
         num(v.dailyBestWeek12),
         `${num(v.weekendShare * 100)}%`,
         `${num(v.weeklyShare * 100)}%`,

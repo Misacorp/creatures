@@ -73,11 +73,15 @@ export interface WeekRecord {
   xpLost: number;
   /** Effective hours of idle gain this week (the away steps), and what the scouts' stores brought home or lost. */
   effHours: number;
+  /** Creature-hours of the week (creatures owned, summed over the hours). */
+  creatureHours: number;
   storeHours: number;
   storeLost: number;
   levels: number[];
   size: number;
   species: number;
+  /** Species available at the end of the week (the pool of that week). */
+  available: number;
   arrivals: number;
   duplicates: number;
   scoutSeats: number;
@@ -120,6 +124,8 @@ export interface Player {
   visitAt: Uint8Array;
   creatures: Creature[];
   speciesCount: number[];
+  /** How many species are available now (content drops). */
+  available: number;
   seats: Seat[];
   anvils: Anvil[];
   stock: number[];
@@ -175,8 +181,18 @@ export interface Place {
   openedAt: number;
 }
 
+/** The server's dials (see `ServerConfig`). */
+export interface ServerOptions {
+  bossKills: BossDial;
+  communalSeats: boolean;
+  /** `acorns`: players give Acorns only (the default, as commons.md's example); `everything`: scrap and shards count too. */
+  gifts: 'acorns' | 'everything';
+  /** Whether the Paddock and School projects also take Essence. */
+  essenceToProjects: boolean;
+}
+
 export interface Server {
-  config: { id: string; bossKills: BossDial; communalSeats: boolean };
+  config: ServerOptions & { id: string };
   rng: Rng;
   places: Place[];
   /** V-COM-13: warmth by source, summed (fire = start + warmth, unless the time floor is higher). */
@@ -189,9 +205,11 @@ export interface Server {
   /** V-SCOUT-9: the hour each destination's keystone is ready. */
   keystoneReady: number[];
   keystonesFound: number;
-  /** Sockets filled in each place's collection: [everyday filled, keystones filled]. */
-  sockets: { everyday: number; keystones: number }[];
+  /** Which sockets of each place's collection board are filled (in the order of `rules.collections.boards`). */
+  sockets: boolean[][];
   collectionsDone: number;
+  /** The hour the first collection was completed. */
+  firstCollectionHour: number | null;
   thresholds: (number | null)[];
   /** Gifts in Acorn value by player. */
   gifts: number[];

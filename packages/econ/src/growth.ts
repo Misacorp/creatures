@@ -28,6 +28,7 @@ export function accrueIdleXp(p: Player, hour: number, share: number, hearth: num
     addXp(p, c, base * mult);
   }
   p.wk.xpIdle += base * p.creatures.length;
+  p.wk.creatureHours += p.creatures.length;
   p.wk.xpCatch += bonus;
 }
 
@@ -53,11 +54,18 @@ export function setCatchUp(p: Player, hour: number, middle: number): void {
 }
 
 /** Fight XP to the `team` best creatures (the dungeon and the raid; away steps and catch-up never apply, V-POST-10). */
-export function fightXp(p: Player, amount: number, source: 'xpDungeon' | 'xpRaid'): void {
+export function fightXp(
+  p: Player,
+  amount: number,
+  source: 'xpDungeon' | 'xpRaid',
+  hour: number,
+): void {
   const team = [...p.creatures].sort((a, b) => b.xp - a.xp).slice(0, p.rules.fights.team);
   for (const c of team) {
-    addXp(p, c, amount);
-    p.wk[source] += amount;
+    const boosted =
+      p.rules.bonfire.catchUp.appliesToFights && hour < c.catchUntil ? c.catchMult : 1;
+    addXp(p, c, amount * boosted);
+    p.wk[source] += amount * boosted;
   }
 }
 

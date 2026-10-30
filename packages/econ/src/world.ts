@@ -2,7 +2,6 @@ import { createSeededRng } from '@creatures/game';
 import { LEVEL_XP, MAX_LEVEL, ribbonGate } from './curves';
 import { ELEMENTS, type Rules } from './rules';
 import type { PlayerProfile } from './schema';
-import type { BossDial } from './servers';
 import {
   FORGE_BUCKETS,
   HOURS_PER_WEEK,
@@ -11,18 +10,33 @@ import {
   type Creature,
   type Player,
   type Server,
+  type ServerOptions,
   type WeekRecord,
 } from './types';
-import { sum, uniform } from './util';
+import { uniform } from './util';
 
-/** The element index of each of the species the arrivals draw from (grouped by element, as the docs' 34 forms). */
+/** The most species the pool ever holds in a run of up to 104 weeks (the size of the counters). */
+export function maxSpecies(rules: Rules): number {
+  return speciesAvailable(rules, 104 * HOURS_PER_WEEK);
+}
+
+/** How many species are available at an hour: today's pool, plus each content drop that has happened (Misa's 100+ species plan). */
+export function speciesAvailable(rules: Rules, hour: number): number {
+  const { start, dropFromWeek, dropEveryWeeks, dropCount } = rules.scouts.species;
+  const week = Math.floor(hour / HOURS_PER_WEEK) + 1;
+  if (week < dropFromWeek) return start;
+  return start + dropCount * (Math.floor((week - dropFromWeek) / dropEveryWeeks) + 1);
+}
+
+/** The element index of each species: the first 34 grouped by element, later species repeat that mix. */
 const SPECIES_CACHE = new WeakMap<Rules, number[]>();
 export function speciesElements(rules: Rules): number[] {
   let cached = SPECIES_CACHE.get(rules);
   if (!cached) {
-    cached = rules.scouts.speciesPerElement.flatMap((n, element) =>
+    const base = rules.scouts.speciesPerElement.flatMap((n, element) =>
       Array.from({ length: n }, () => element),
     );
+    cached = Array.from({ length: maxSpecies(rules) }, (_, i) => base[i % base.length] ?? 0);
     SPECIES_CACHE.set(rules, cached);
   }
   return cached;
@@ -40,11 +54,13 @@ export const blankWeek = (week: number): WeekRecord => ({
   xpRaid: 0,
   xpLost: 0,
   effHours: 0,
+  creatureHours: 0,
   storeHours: 0,
   storeLost: 0,
   levels: [],
   size: 0,
   species: 0,
+  available: 0,
   arrivals: 0,
   duplicates: 0,
   scoutSeats: 0,
@@ -188,7 +204,8 @@ export function createPlayer(
     joinHour,
     visitAt: buildSchedule(profile, id, weeks),
     creatures: [],
-    speciesCount: new Array<number>(sum(rules.scouts.speciesPerElement)).fill(0),
+    speciesCount: new Array<number>(maxSpecies(rules)).fill(0),
+    available: rules.scouts.species.start,
     seats: [],
     anvils: [],
     stock: new Array<number>(N_RES).fill(0),
@@ -233,8 +250,7 @@ export function createPlayer(
 export function createServer(
   serverId: string,
   seed: number,
-  bossKills: BossDial,
-  communalSeats: boolean,
+  options: ServerOptions,
   rules: Rules,
 ): Server {
   const places = rules.commons.places.map((id) => ({
@@ -249,7 +265,7 @@ export function createServer(
   }));
   const rng = createSeededRng(`${serverId}|${seed}|server`);
   return {
-    config: { id: serverId, bossKills, communalSeats },
+    config: { id: serverId, ...options },
     rng,
     places,
     warmth: {},
@@ -261,8 +277,9 @@ export function createServer(
       () => -Math.log(1 - uniform(rng)) * rules.scouts.keystoneMeanDays * 24,
     ),
     keystonesFound: 0,
-    sockets: places.map(() => ({ everyday: 0, keystones: 0 })),
+    sockets: places.map((place) => (rules.collections.boards[place.id] ?? []).map(() => false)),
     collectionsDone: 0,
+    firstCollectionHour: null,
     thresholds: rules.fire.thresholds.map(() => null),
     gifts: [],
     log: [],
