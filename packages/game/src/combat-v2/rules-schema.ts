@@ -49,7 +49,7 @@ export const RulesSchema = v.pipe(
     /** With Clinging on a living creature each stack counts for this much instead (reworked 2026-10-28). */
     miredClingingStackBp: Int,
     miredMaxStacks: Int,
-    /** Mired fades: one stack at the end of every second round; with Clinging on a living creature, never (panel 3, reworked 2026-10-28). */
+    /** Mired fades: one stack at the end of every this many rounds (1: every round, 2026-11-01); with Clinging on a living creature, every `miredClingingFadeEvery` instead. */
     miredFadeEvery: Int,
     /** While a living creature has Clinging, Mired fades only every this many rounds. */
     miredClingingFadeEvery: Int,

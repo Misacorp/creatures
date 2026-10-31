@@ -253,36 +253,36 @@ describe('Mired (R22.3, panel 3)', () => {
   const sing = (talent: object, rounds: number, over: Partial<BossDef> = {}) =>
     play(boss({ rounds, ...over }), [spec({ name: 'S', fx: { miresAtStart: true, ...talent } })]);
 
-  it('Mired fades by 1 at the end of every second round, so Squelch Song alone builds stacks', () => {
-    // The song adds a stack at each round start; the fade comes at the end of rounds 2, 4 and 6.
-    expect(mired(sing({}, 6))).toEqual([
+  it('Mired fades by 1 at the end of every round, so Squelch Song alone holds one stack', () => {
+    // The song adds a stack at each round start; the fade takes it again at the end of every round.
+    expect(mired(sing({}, 4))).toEqual([
       'Mired x1',
-      'Mired x2',
+      'Mired x0',
       'Mired x1',
-      'Mired x2',
-      'Mired x3',
-      'Mired x2',
-      'Mired x3',
-      'Mired x4',
-      'Mired x3',
+      'Mired x0',
+      'Mired x1',
+      'Mired x0',
+      'Mired x1',
+      'Mired x0',
     ]);
   });
 
-  it('Clinging: Mired fades only every third round while it stands', () => {
+  it('Clinging: Mired fades only at the end of every second round while it stands', () => {
     const r = sing({ clinging: true }, 6);
-    // With Clinging the fade comes at the end of rounds 3 and 6 only.
+    // With Clinging the fade comes at the end of rounds 2, 4 and 6 only, so the song builds stacks.
     expect(mired(r)).toEqual([
+      'Mired x1',
+      'Mired x2',
       'Mired x1',
       'Mired x2',
       'Mired x3',
       'Mired x2',
       'Mired x3',
       'Mired x4',
-      'Mired x5',
-      'Mired x4',
+      'Mired x3',
     ]);
-    // It held back the base fade at the end of rounds 2 and 4.
-    expect(by(r, 'S').fires['clinging']).toBe(2);
+    // It held back the base fade at the end of rounds 1, 3 and 5.
+    expect(by(r, 'S').fires['clinging']).toBe(3);
   });
 
   it('a Mired stack takes more off the boss damage while Clinging stands', () => {
@@ -304,11 +304,12 @@ describe('Mired (R22.3, panel 3)', () => {
   it('Wicked: its Mired has its number as the chance to add 1 extra stack', () => {
     const roll = (draw: number, fx: object = { miredExtraBp: 3_000 }) =>
       mired(playScripted(boss(), [spec({ fx: { miresAtStart: true, ...fx } })], [draw]).res);
-    expect(roll(2_999)).toEqual(['Mired x2']);
-    expect(roll(3_000)).toEqual(['Mired x1']);
+    // One round: the stacks are put on at its start, one fades at its end.
+    expect(roll(2_999)).toEqual(['Mired x2', 'Mired x1']);
+    expect(roll(3_000)).toEqual(['Mired x1', 'Mired x0']);
     // Without it, never, and no die is drawn for it.
     const none = playScripted(boss(), [spec({ fx: { miresAtStart: true } })], [0]);
-    expect(mired(none.res)).toEqual(['Mired x1']);
+    expect(mired(none.res)).toEqual(['Mired x1', 'Mired x0']);
   });
 
   it('Sticky Mud: each hit it takes puts a Mired stack on the boss, Blocked or not', () => {
@@ -318,8 +319,9 @@ describe('Mired (R22.3, panel 3)', () => {
           spec({ role: 'guard', baseArmour: armour, fx: { miresOnHit: true } }),
         ]),
       );
-    expect(hit(0)).toEqual(['Mired x1', 'Mired x2', 'Mired x1']);
-    expect(hit(50)).toEqual(['Mired x1', 'Mired x2', 'Mired x1']);
+    // One stack a round, faded at the end of each.
+    expect(hit(0)).toEqual(['Mired x1', 'Mired x0', 'Mired x1', 'Mired x0']);
+    expect(hit(50)).toEqual(['Mired x1', 'Mired x0', 'Mired x1', 'Mired x0']);
   });
 
   it('Mired takes off the boss damage and its dodge, per stack, and stops at the most stacks', () => {
@@ -332,12 +334,13 @@ describe('Mired (R22.3, panel 3)', () => {
 
   it('Shake It Off: announced at round start, the boss clears every debuff when that round ends', () => {
     const r = play(boss({ rounds: 4, mods: { shakeEvery: 3 } }), [
-      spec({ name: 'S', fx: { miresAtStart: true } }),
+      spec({ name: 'S', fx: { miresAtStart: true, clinging: true } }),
     ]);
     expect(r.events.filter((e) => e.kind === 'announce')).toHaveLength(1);
     expect(r.events.find((e) => e.kind === 'announce')?.round).toBe(3);
     expect(texts(r, 'shake')).toHaveLength(1);
-    // x1, x2 (faded to x1 at the end of round 2), x2 in round 3, shaken to x0, round 4 starts from nothing.
+    // With Clinging: x1, x2 (faded to x1 at the end of round 2), x2 in round 3, shaken to x0, round 4 starts from nothing
+    // (x1, faded at its end).
     expect(mired(r)).toEqual([
       'Mired x1',
       'Mired x2',

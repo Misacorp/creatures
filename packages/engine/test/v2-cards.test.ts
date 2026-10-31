@@ -202,6 +202,24 @@ describe('applyCard', () => {
       expect(hitsAt(6_250)).toBe(3);
       expect(hitsAt(0)).toBe(1);
     });
+    it('replace with a scatter: the hits become its n (different creatures), rounded by the strength, at least 1', () => {
+      const ops: CardOp[] = [
+        {
+          op: 'plain',
+          replace: { pattern: { anchor: 'random', shape: 'scatter' }, powerBp: 4_500 },
+          hits: 4,
+        },
+      ];
+      expect(applyCard(base(), ops).plain).toEqual({
+        pattern: { anchor: 'random', shape: 'scatter', n: 4 },
+        powerBp: 4_500,
+      });
+      const nAt = (st: number) => applyCard(base(), ops, st).plain.pattern.n;
+      expect(nAt(5_000)).toBe(2);
+      expect(nAt(3_000)).toBe(1);
+      expect(nAt(6_250)).toBe(3);
+      expect(nAt(0)).toBe(1);
+    });
   });
 
   it('runs the operations in order (Wither: Attack, then healing)', () => {

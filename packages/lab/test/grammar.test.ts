@@ -155,7 +155,7 @@ describe('attack shapes and anchors', () => {
 
   it('back anchors on the back-most creature, weakest on the one with the lowest share of its HP', () => {
     const back = mover({ anchor: 'back', shape: 'single' }, 3, 2);
-    expect(aimed(back, full(3, 2))).toEqual(['2,0']);
+    expect(aimed(back, full(3, 2))).toEqual(['2,1']);
     const weak = mover({ anchor: 'weakest', shape: 'single' }, 1, 3);
     const team = full(1, 3);
     const hp = new Map<string, number>();

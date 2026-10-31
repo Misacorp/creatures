@@ -83,7 +83,7 @@
       "boss": "storm-sovereign",
       "hp": 7000,
       "atk": 96,
-      "armour": 4,
+      "armour": 5,
       "strengthBp": 8600,
       "cards": 2,
       "buildUp": true,

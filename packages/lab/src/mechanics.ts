@@ -69,6 +69,9 @@ const AREA_SHAPES: readonly Pattern['shape'][] = [
   'cross',
   'checker',
 ];
+/** Many small hits on the team: a plain attack that repeats, or a plain Scatter of several (Swarm, Puddle Imp). */
+const manySmallHits = (a: Attack) =>
+  a.plain && (a.hits > 1 || (a.pattern.shape === 'scatter' && (a.pattern.n ?? 1) > 1));
 const dealsDamage = (a: Attack) => a.silenceTurns === 0 && a.powerBp > 0;
 const area = (a: Attack) => dealsDamage(a) && AREA_SHAPES.includes(a.pattern.shape);
 /** An aimed hit: one slot, or the first slot of a line, chain or cross. */
@@ -117,8 +120,7 @@ const FAMILY_CALLS: Readonly<Record<string, Mechanic['calls']>> = {
   Intercept: (b) => attacksOf(b).some(aimed) && 'aimed hits a Guard can take',
   Taunt: (b) =>
     tauntable(b) && 'its plain attack aims at the strongest, the loudest or a random slot',
-  Evasion: (b) =>
-    attacksOf(b).some((a) => a.plain && a.hits > 1) && 'many small hits dodge can turn away',
+  Evasion: (b) => attacksOf(b).some(manySmallHits) && 'many small hits dodge can turn away',
   'Evasion aura': (b) =>
     shapes(b, 'scatter', 'all', 'row', 'rows', 'columns') && 'area hits are dodged at half chance',
   'Row Ward': (b) => shapes(b, 'row', 'rows', 'all', 'randomRow') && 'whole rows hit at once',
@@ -178,8 +180,7 @@ const KEYWORD_CALLS: Readonly<Record<string, Mechanic['calls']>> = {
     attacksOf(b).some((a) => aimed(a) && a.powerBp >= 10_000) &&
     'heavy aimed hits a dodge can turn away',
   Blocked: (b) =>
-    (armoured(b) || attacksOf(b).some((a) => a.plain && a.hits > 1)) &&
-    'armour turns small hits into Blocked',
+    (armoured(b) || attacksOf(b).some(manySmallHits)) && 'armour turns small hits into Blocked',
   Silenced: (b) => silences(b) && 'it silences creatures',
   'Wind-up': (b) => charged(b) && 'moves announced at round start',
   Scatter: (b) => shapes(b, 'scatter') && 'shells on random creatures',
@@ -212,8 +213,7 @@ const RULE_CALLS: readonly Mechanic[] = [
     calls: (b) =>
       first(
         armoured(b) && 'its armour Blocks small hits',
-        attacksOf(b).some((a) => a.plain && a.hits > 1) &&
-          'many small hits meet the creatures’ armour',
+        attacksOf(b).some(manySmallHits) && 'many small hits meet the creatures’ armour',
       ),
   },
   {

@@ -38,12 +38,26 @@ export type CardOp =
   | { readonly op: 'move'; readonly move: BossMove; readonly scale: 'power' | 'gate' }
   /** The plain attack aims at a new pattern, its power raised by the share of `raiseBp` (Grudge). */
   | { readonly op: 'plain'; readonly aim: Pattern; readonly raiseBp: number }
-  /** The plain attack is replaced; its `hits` are the full card's, rounded by strength, at least 1 (Swarm). */
+  /**
+   * The plain attack is replaced; its `hits` are the full card's number of small hits, rounded by strength, at least 1.
+   * Under a scatter pattern they are the scatter's `n` (different creatures, Swarm); under any other pattern they are
+   * separate plain attacks.
+   */
   | {
       readonly op: 'plain';
       readonly replace: { readonly pattern: Pattern; readonly powerBp: number };
       readonly hits: number;
     };
+
+/** A replaced plain attack with `hits` small hits: a scatter hits that many different creatures, any other pattern repeats. */
+function replaced(
+  r: { readonly pattern: Pattern; readonly powerBp: number },
+  hits: number,
+): BossDef['plain'] {
+  return r.pattern.shape === 'scatter'
+    ? { pattern: { ...r.pattern, n: hits }, powerBp: r.powerBp }
+    : { pattern: r.pattern, powerBp: r.powerBp, hits };
+}
 
 /** The card's operations built on `boss` at `strengthBp` (default full); the boss's own `strengthBp` becomes the card's. */
 export function applyCard(
@@ -105,11 +119,7 @@ export function applyCard(
               }
             : {
                 ...b,
-                plain: {
-                  pattern: o.replace.pattern,
-                  powerBp: o.replace.powerBp,
-                  hits: Math.max(1, Math.round((o.hits * strengthBp) / 10_000)),
-                },
+                plain: replaced(o.replace, Math.max(1, Math.round((o.hits * strengthBp) / 10_000))),
               };
         break;
     }

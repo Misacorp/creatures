@@ -56,8 +56,8 @@ function anchorOf(s: State, p: Pattern, exclude: readonly Fighter[] = []): Fight
     case 'random':
       return live[int(s.rng, live.length)];
     case 'back':
-      // The back-most living creature (the highest row, then the leftmost).
-      return best(live, (a, b) => b.row - a.row || a.col - b.col);
+      // The back-most living creature is the last to act: the turn order (`bySlot`, row by row, left to right) reversed.
+      return best(live, (a, b) => bySlot(b, a));
     case 'weakest':
       // The lowest share of its max HP; ties to the front, then the left.
       return best(live, (a, b) => a.hp * b.maxHp - b.hp * a.maxHp || bySlot(a, b));

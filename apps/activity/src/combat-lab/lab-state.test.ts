@@ -186,7 +186,8 @@ describe('the combat lab setup', () => {
     const setup: Setup = { ...defaultSetup(), rounds: 4, atk: 200, cards: ['swarm'] };
     const boss = bossOf(setup);
     expect(boss).toMatchObject({ rounds: 4, atk: 200, rows: 1, cols: 3, hp: DAMAGE_TEST_HP });
-    expect(boss.plain.hits).toBe(4);
+    // Swarm: the plain attack is a Scatter of four different creatures.
+    expect(boss.plain.pattern).toMatchObject({ shape: 'scatter', n: 4 });
     expect(bossOf({ ...setup, damageTest: false, hp: 900 }).hp).toBe(900);
   });
 });
