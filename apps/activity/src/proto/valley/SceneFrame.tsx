@@ -10,7 +10,9 @@ import { useEffect, useMemo, useRef } from 'preact/hooks';
 import { cssVars } from '../../css-vars';
 import { paint } from './paint';
 import { useSize } from './parts';
-import type { Placement } from './valley-art';
+import { StageAt, StoryPlate, type Waiting } from '../welcome/PlaceStories';
+import { stageSpot } from './scene-art';
+import type { PlaceId, Placement } from './valley-art';
 
 export interface SceneGeometry {
   /** The world scale (CSS px per scene pixel). */
@@ -58,9 +60,10 @@ export function SceneFrame({
   onLeave,
   children,
   act,
+  waiting,
   ground = 'var(--night)',
 }: {
-  id: string;
+  id: PlaceId;
   /** The place's spoken name ("Forge, Workshop"). */
   label: string;
   /** The scene in scene pixels, filling `g.W` x `g.H`. */
@@ -69,6 +72,8 @@ export function SceneFrame({
   children: (g: SceneGeometry) => ComponentChildren;
   /** The main action, pinned at the bottom of the scene. */
   act?: ComponentChildren;
+  /** The stories waiting here (a welcome-back marker led in): who acts stands in the scene, the stories sit above `act`. */
+  waiting?: Waiting | undefined;
   /** The colour behind the canvas (shows only while it loads). */
   ground?: string;
 }) {
@@ -95,6 +100,9 @@ export function SceneFrame({
     };
   }, [onLeave]);
 
+  const spot = waiting === undefined ? null : stageSpot(id, g);
+  const hasAct = act !== undefined && act !== null;
+  const hasStories = waiting !== undefined && waiting.stories.length > 0;
   return (
     <section
       ref={(el) => {
@@ -107,8 +115,16 @@ export function SceneFrame({
       <div class="pv-scene" ref={cssVars({ '--w': `${String(pxW)}px`, '--h': `${String(pxH)}px` })}>
         <canvas ref={canvasRef} class="pv-canvas" width={pxW} height={pxH} aria-hidden="true" />
         {children(g)}
+        {waiting !== undefined && spot !== null && (
+          <StageAt waiting={waiting} x={g.X(spot.x)} y={g.Y(spot.y)} s={g.s} />
+        )}
       </div>
-      {act !== undefined && act !== null && <div class="pv-act">{act}</div>}
+      {(hasAct || hasStories) && (
+        <div class="pv-act">
+          {waiting !== undefined && <StoryPlate waiting={waiting} strip={spot === null} />}
+          {hasAct && act}
+        </div>
+      )}
     </section>
   );
 }

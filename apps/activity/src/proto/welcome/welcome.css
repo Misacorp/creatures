@@ -190,3 +190,55 @@
   background: var(--ink);
   line-height: 0;
 }
+
+/* --- A place's waiting stories: a clipping of the Gazette's paper pinned above the place's main action --- */
+.wb-clip {
+  --scroll-hint-bg: #efe3c2;
+
+  /* In the Signpost's two-column action area it takes the whole row. */
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+  background: #efe3c2;
+  box-shadow: 0 0 0 3px var(--ink);
+  color: var(--ink);
+}
+
+.wb-clip-scroll {
+  /* A place with several stories shows what fits, and the rest scrolls inside the clipping. */
+  max-height: min(34dvh, 15rem);
+}
+
+.wb-clip-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wb-clip-story {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* The pixel font's glyphs are taller than a tight line, which would count as "more below" and fade the text. */
+.wb-clip-story .wb-brief-headline {
+  line-height: 1.25;
+}
+
+.wb-clip-story + .wb-clip-story {
+  padding-top: 8px;
+  border-top: 2px solid var(--ink);
+}
+
+/* The creatures that act, when the place has no floor of its own to stand them on. */
+.wb-clip-strip {
+  position: relative;
+  height: 68px;
+  border-bottom: 2px solid var(--ink);
+  overflow: hidden;
+}

@@ -15,6 +15,7 @@ import { whenText } from '../../home-view';
 import { PACK_ART } from '../../sprites/pack-art';
 import { ActionButton } from '../../ui/ActionButton';
 import { Drawer } from '../../ui/Drawer';
+import type { Waiting } from '../welcome/PlaceStories';
 import { freeCreatures, type ProtoWorld } from '../world';
 import { At, CreatureSprite, Glyph, Pic, Plate } from './parts';
 import { SceneFrame } from './SceneFrame';
@@ -28,7 +29,14 @@ function Stub({ what, onClose }: { what: string | null; onClose: () => void }) {
   );
 }
 
-export function CaveScene({ world, onLeave }: { world: ProtoWorld; onLeave: () => void }) {
+/** What a place takes besides the world: the way out, and the stories a welcome-back marker led in with. */
+interface PeekProps {
+  world: ProtoWorld;
+  onLeave: () => void;
+  waiting?: Waiting | undefined;
+}
+
+export function CaveScene({ world, onLeave, waiting }: PeekProps) {
   const [stub, setStub] = useState<string | null>(null);
   const team = freeCreatures(world).slice(0, 3);
   const map = world.dungeon.map;
@@ -39,6 +47,7 @@ export function CaveScene({ world, onLeave }: { world: ProtoWorld; onLeave: () =
         label="Cave, Dungeon"
         draw={caveDraw}
         onLeave={onLeave}
+        waiting={waiting}
         ground="#0b0818"
         act={
           <ActionButton
@@ -92,7 +101,7 @@ export function CaveScene({ world, onLeave }: { world: ProtoWorld; onLeave: () =
   );
 }
 
-export function FairScene({ world, onLeave }: { world: ProtoWorld; onLeave: () => void }) {
+export function FairScene({ world, onLeave, waiting }: PeekProps) {
   const [stub, setStub] = useState<string | null>(null);
   const next = world.games.next;
   return (
@@ -102,6 +111,7 @@ export function FairScene({ world, onLeave }: { world: ProtoWorld; onLeave: () =
         label="Fairground, Valley Games"
         draw={fairDraw}
         onLeave={onLeave}
+        waiting={waiting}
         ground="#57ad52"
       >
         {(g) => (
@@ -148,10 +158,16 @@ export function FairScene({ world, onLeave }: { world: ProtoWorld; onLeave: () =
   );
 }
 
-export function PaddockScene({ world, onLeave }: { world: ProtoWorld; onLeave: () => void }) {
+export function PaddockScene({ world, onLeave, waiting }: PeekProps) {
   const home = world.creatures.filter((c) => !c.away);
   return (
-    <SceneFrame id="paddock" label="Paddock, your creatures" draw={paddockDraw} onLeave={onLeave}>
+    <SceneFrame
+      id="paddock"
+      label="Paddock, your creatures"
+      draw={paddockDraw}
+      onLeave={onLeave}
+      waiting={waiting}
+    >
       {(g) => {
         const cols = Math.max(3, Math.floor((g.W - 16) / 24));
         const x0 = g.cx - Math.floor((Math.min(cols, home.length) * 24) / 2);

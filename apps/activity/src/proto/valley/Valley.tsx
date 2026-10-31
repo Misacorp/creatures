@@ -43,6 +43,8 @@ import { bubblesOf, placeLabel, readingOrder } from './valley-logic';
 import { ValleyMap } from './ValleyMap';
 import { ZoomCut } from './ZoomCut';
 import type { Cast, Welcome } from '../welcome/highlights';
+import type { Waiting } from '../welcome/PlaceStories';
+import { storiesAt, unseenMarkers } from '../welcome/place-stories';
 import { WelcomeSheet } from '../welcome/WelcomeSheet';
 import { markerBubbles, startsClosed } from '../welcome/welcome-world';
 
@@ -145,6 +147,8 @@ export function Valley({
   const [zoom, setZoom] = useState<PlaceId | null>(null);
   const pending = useRef<(() => void) | null>(null);
   const [hatch, setHatch] = useState(false);
+  /** The places whose waiting stories were told and left (a welcome-back marker is gone once its place was seen). */
+  const [seen, setSeen] = useState<PlaceId[]>([]);
   const reduced = usePrefersReducedMotion();
   const still = reduced || isStill();
 
@@ -221,6 +225,8 @@ export function Valley({
   const leave = (): void => {
     const from = view.scene;
     if (from === 'valley') return;
+    // Leaving a place counts what waited there as seen: nothing needs a tap (F-1).
+    setSeen((list) => (list.includes(from) ? list : [...list, from]));
     setView((v) => ({ ...v, scene: 'valley', at: from, focus: from, held: null }));
   };
 
@@ -271,6 +277,14 @@ export function Valley({
     enter(id, pick);
   };
 
+  const markers = welcome === undefined ? [] : unseenMarkers(welcome.welcome.markers, seen);
+  const waitingAt = (place: PlaceId): Waiting | undefined => {
+    if (welcome === undefined) return undefined;
+    const stories = storiesAt(welcome.welcome.markers, place, seen);
+    return stories.length === 0
+      ? undefined
+      : { stories, cast: welcome.cast, items: welcome.world.items };
+  };
   const haul = view.haul === null ? null : haulOf(world, view.haul);
   let body;
   switch (view.scene) {
@@ -283,7 +297,7 @@ export function Valley({
             at={view.at}
             focus={view.focus}
             departing={view.departing}
-            bubbles={welcome === undefined ? undefined : markerBubbles(welcome.welcome.markers)}
+            bubbles={welcome === undefined ? undefined : markerBubbles(markers)}
             onPlace={onPlace}
             lit={lit}
             haulOpen={haul !== null}
@@ -320,6 +334,7 @@ export function Valley({
           onProgress={() => {
             progress(5);
           }}
+          waiting={waitingAt('forge')}
         />
       );
       break;
@@ -335,6 +350,7 @@ export function Valley({
           onProgress={() => {
             progress(6);
           }}
+          waiting={waitingAt('arena')}
         />
       );
       break;
@@ -350,6 +366,7 @@ export function Valley({
           onProgress={() => {
             progress(7);
           }}
+          waiting={waitingAt('house')}
         />
       );
       break;
@@ -361,21 +378,22 @@ export function Valley({
           held={view.held}
           onSend={send}
           onLeave={leave}
+          waiting={waitingAt('signpost')}
         />
       );
       break;
     case 'cave':
-      body = <CaveScene world={world} onLeave={leave} />;
+      body = <CaveScene world={world} onLeave={leave} waiting={waitingAt('cave')} />;
       break;
     case 'fair':
-      body = <FairScene world={world} onLeave={leave} />;
+      body = <FairScene world={world} onLeave={leave} waiting={waitingAt('fair')} />;
       break;
     case 'paddock':
-      body = <PaddockScene world={world} onLeave={leave} />;
+      body = <PaddockScene world={world} onLeave={leave} waiting={waitingAt('paddock')} />;
       break;
   }
 
-  const bubbles = welcome === undefined ? bubblesOf(world) : markerBubbles(welcome.welcome.markers);
+  const bubbles = welcome === undefined ? bubblesOf(world) : markerBubbles(markers);
   const where = view.scene === 'valley' ? null : placeOf(view.scene);
   return (
     <PopoverHost onOpenHowTo={() => undefined}>

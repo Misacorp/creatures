@@ -13,6 +13,7 @@ import { destinationName, supplyKindOf, supplyName } from '../../trip-view';
 import { ActionButton } from '../../ui/ActionButton';
 import { GameIcon } from '../../ui/GameIcon';
 import { WorldMap } from '../../WorldMap';
+import { StoryPlate, type Waiting } from '../welcome/PlaceStories';
 import { TOUR, isFree, type ProtoWorld, type SendTripChoice } from '../world';
 import { useSize } from './parts';
 import { HUD_HEIGHT } from './SceneFrame';
@@ -33,6 +34,7 @@ export function SignpostScene({
   held,
   onSend,
   onLeave,
+  waiting,
 }: {
   world: ProtoWorld;
   picks: SendPicks;
@@ -40,6 +42,8 @@ export function SignpostScene({
   held: string | null;
   onSend: (choice: SendTripChoice) => void;
   onLeave: () => void;
+  /** Stories a welcome-back marker led here with: the scouts stand on their clipping (the road map has no floor). */
+  waiting?: Waiting | undefined;
 }) {
   const [place, setPlace] = useState<string | null>(picks.place);
   const [supply, setSupply] = useState<string | null>(picks.supply);
@@ -108,6 +112,7 @@ export function SignpostScene({
         />
       </div>
       <div class="pv-act pv-act-map">
+        {waiting !== undefined && <StoryPlate waiting={waiting} strip />}
         {place !== null && closed.length === 0 && !full && (
           <ul class="pv-packs" aria-label="Pack a supply">
             {stock.map(([id, n]) => (

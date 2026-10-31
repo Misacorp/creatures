@@ -10,7 +10,8 @@ import {
   type Page,
 } from '../../test-dom';
 import { Finds } from './Gazette';
-import { welcomeOf, type Find } from './highlights';
+import { welcomeOf, type Find, type Story } from './highlights';
+import { StoryPlate } from './PlaceStories';
 import { DAILY, WEEKLY } from './journey';
 import { castOf, markerBubbles, welcomeWorld } from './welcome-world';
 
@@ -120,5 +121,61 @@ describe('what a story found', () => {
   it('draws nothing for a story with no finds', () => {
     const p = draw([]);
     expect(byClass(p.root, 'wb-finds')).toHaveLength(0);
+  });
+});
+
+describe('a place telling its waiting stories', () => {
+  /** A phone: no hover. The plate is drawn on its own (the creatures' strip is only for a place with no floor). */
+  function drawPlate(stories: readonly Story[]): Page {
+    if (!('window' in globalThis)) {
+      vi.stubGlobal('window', {
+        matchMedia: () => ({ matches: false }),
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      });
+    }
+    page = createPage();
+    page.draw(
+      <PopoverHost onOpenHowTo={() => undefined}>
+        <StoryPlate waiting={{ stories, cast, items: world.items }} />
+      </PopoverHost>,
+    );
+    return page;
+  }
+
+  /** The untold stories of the weekly player's last visit that wait at the Signpost. */
+  const waiting = (): Story[] => {
+    const w = welcomeOf(WEEKLY, WEEKLY.visits.length - 1, cast);
+    return w.markers.find((m) => m.place === 'signpost')?.stories ?? [];
+  };
+
+  it('tells each story as the Gazette does, a headline and its line, in the order given', () => {
+    const stories = waiting();
+    expect(stories.length).toBeGreaterThan(0);
+    const p = drawPlate(stories);
+    const text = visibleText(p.root);
+    let at = -1;
+    for (const s of stories) {
+      const next = text.indexOf(s.headline);
+      expect(next).toBeGreaterThan(at);
+      at = next;
+      if (s.blurb !== '') expect(text).toContain(s.blurb);
+    }
+    expect(byClass(p.root, 'wb-brief-headline')).toHaveLength(stories.length);
+  });
+
+  it('shows the finds as the shared Find components, a piece opening its full card on a tap', () => {
+    const stories = waiting().filter((s) => s.finds.some((f) => f.kind === 'item'));
+    expect(stories.length).toBeGreaterThan(0);
+    const p = drawPlate(stories);
+    const button = first(byClass(p.root, 'find-row-button'));
+    p.click(button);
+    expect(byRole(p.root, 'dialog')).toHaveLength(1);
+    expect(byClass(p.root, 'idc')).toHaveLength(1);
+  });
+
+  it('draws nothing when no story waits', () => {
+    const p = drawPlate([]);
+    expect(byClass(p.root, 'wb-clip')).toHaveLength(0);
   });
 });
