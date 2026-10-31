@@ -109,8 +109,9 @@ export const VOID_PLACE_CONCEPTS: ConceptSet = {
   title: 'Void place, the Quiet Verge (banners)',
   element: 'void',
   requested: '2026-10-31: design a Void area that can be explored (banner and place).',
-  status: 'draft',
+  status: 'liked',
   notes: [
+    'Misa liked both banners on the art review page (2026-10-31).',
     'Place concept: docs/compendium/places.md, "Quiet Verge" (working name). Concept, not shipped.',
     'Needs before use: the Void element in the content (element chart, marks, creatures from void.ts with names, stats, lore, shiny palettes), an entry in destinations.json with these palette colours and the deeper area, an access rule, journal pages, push-on flavour and a glossary entry, then the compendium entry moved out of concept.',
     'To ship: move the banners into data/ (a void-banner-sprites.ts registered in BANNER_SPRITE_DATA under the destination id) and delete this set.',
