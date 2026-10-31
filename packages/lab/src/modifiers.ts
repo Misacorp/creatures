@@ -212,38 +212,13 @@ export const GEAR_CLASS: Readonly<Record<string, GearClass>> = {
 
 /**
  * Draft talents that are the same effect as a gear line: the talent id and the gear line id (a raw id, see
- * `GEAR_CLASS`). The line keeps its name (Misa, 2026-10-28: a talent takes the gear line's name when it is
- * the same effect). A talent not listed here, and not of a gear line's name, is a lab effect of its own.
+ * `GEAR_CLASS`), read from the talent's `gearLine` in `talents.json` (the game's data, checked at load to be a shipped
+ * line). The line keeps its name (Misa, 2026-10-28: a talent takes the gear line's name when it is the same effect).
+ * A talent without one, and not of a gear line's name, is a lab effect of its own.
  */
-export const TALENT_IS_GEAR: Readonly<Record<string, string>> = {
-  'sharp-claws': 'attack',
-  hardy: 'hp',
-  'light-feet': 'light-footed',
-  'keen-eye': 'crit-chance',
-  'mighty-blow': 'crit-damage',
-  // The talents Crit Chance and Amplified Crits are the shipped lines Crit chance and Crit damage (luck is a build, 2026-10-30; gear takes the talent names when it moves to combat v2).
-  'crit-chance': 'crit-chance',
-  'crit-damage': 'crit-damage',
-  'first-pounce': 'first-pounce',
-  unbothered: 'unbothered',
-  'tough-hide': 'armor',
-  'hunker-down': 'area-ward',
-  stubborn: 'stubborn',
-  'broad-back': 'cover',
-  'big-heart': 'boost',
-  'gentle-touch': 'mend',
-  // The same effect as the shipped line of the same name (the name is the line's).
-  'rally-cry': 'rally-cry',
-  'heavy-hand': 'heavy-hand',
-  clinging: 'clinging',
-  'odd-one-out': 'odd-one-out',
-  'edge-walker': 'edge-walker',
-  'front-liner': 'front-liner',
-  'shoulder-to-shoulder': 'shoulder-to-shoulder',
-  'owners-mark': 'owners-mark',
-  brace: 'brace',
-  momentum: 'momentum',
-};
+export const TALENT_IS_GEAR: Readonly<Record<string, string>> = Object.fromEntries(
+  Object.values(TALENTS).flatMap((t) => (t.gearLine === undefined ? [] : [[t.id, t.gearLine]])),
+);
 
 /** The class of a lab-only effect that the guess from its effect would get wrong. */
 const LAB_CLASS: Readonly<Record<string, Class>> = {

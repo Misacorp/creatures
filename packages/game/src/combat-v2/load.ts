@@ -46,6 +46,8 @@ export interface RawCombatV2 {
 export interface CombatShippedRefs {
   readonly bosses: readonly { readonly id: string }[];
   readonly foes: readonly { readonly id: string }[];
+  /** The shipped gear lines (ids), which a talent's `gearLine` must name. */
+  readonly gearLines: readonly { readonly id: string }[];
 }
 
 /** A shipped species, as far as the checks need it. */
@@ -142,7 +144,7 @@ function checkBoss(
  * Validates the raw files and returns the typed pack. Throws an Error naming the first problem. Checks: every
  * Knack's family exists; every form is a shipped form and every shipped form has an entry with at least one own
  * Knack; every Knack a form names exists and every Knack is on at least one form; ids are unique; every talent
- * in a pool exists, each pool holds seven talents and each pool is a shipped line's; a talent's effects use only
+ * in a pool exists, each pool holds seven talents and each pool is a shipped line's; a talent's `gearLine` is a shipped gear line; a talent's effects use only
  * the additive fields and never Seal; every rules field is present (the schema). The raid track: every boss is a raid boss, slot n
  * is `order[(n - 1) % order.length]`, slots run 1, 2, 3 ... with no gaps, a slot has no more cards than its boss, its extra cards exist
  * and are not the boss's own, strength is 0 to 10000.
@@ -196,9 +198,14 @@ export function loadCombatV2(
     if (!onAForm.has(id)) fail(`Knack "${id}" is on no form`);
   }
 
+  const gearLineIds = new Set(shipped.gearLines.map((l) => l.id));
   const talents: Record<string, TalentDef> = {};
   for (const t of talentFile.talents) {
     if (Object.hasOwn(talents, t.id)) fail(`duplicate talent id "${t.id}"`);
+    if (t.gearLine !== undefined && !gearLineIds.has(t.gearLine))
+      fail(
+        `talent "${t.id}" names the gear line "${t.gearLine}", which is not a shipped gear line`,
+      );
     if (t.fx.seal !== undefined) fail(`talent "${t.id}" uses seal, which is never a talent`);
     for (const field of Object.keys(t.fx)) {
       if (!ADDITIVE.has(field))

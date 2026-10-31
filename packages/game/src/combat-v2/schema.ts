@@ -57,7 +57,8 @@
  *   choice.
  * - Talents use only fields that add up (`ADDITIVE_FIELDS`), never a Knack's multipliers.
  * - A talent that does nothing for a form's role is idle on it (`roles` lists the roles it works for).
- * - A talent takes the name of the shipped gear line when it is the same effect (Misa, 2026-10-28).
+ * - A talent takes the name of the shipped gear line when it is the same effect (Misa, 2026-10-28); `gearLine` names the line,
+ *   checked at load to be a shipped one, and the content test holds that a talent of a line's name has it.
  * - Every pool holds seven talents; a pool is a line's.
  *
  * Each pool was chosen for the line's forms and flavour (branch forms share the line's pool). Every role in a
@@ -138,6 +139,8 @@ export const TalentSchema = v.pipe(
     roles: v.pipe(v.array(RoleSchema), v.minLength(1), v.readonly()),
     /** Design intent for contributors (never shown to players). */
     intent: Intent,
+    /** The shipped gear line (`gear-lines.json` id) that is the same effect, when it is one: the talent then shares the line's name (P-06). */
+    gearLine: v.exactOptional(IdSchema),
     fx: FxSchema,
   }),
   v.readonly(),

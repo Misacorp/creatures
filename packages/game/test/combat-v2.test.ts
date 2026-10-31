@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { content } from '../src';
 import { dungeonContent } from '../src/content/dungeon';
+import { gearContent } from '../src/content/gear';
 import { ADDITIVE_FIELDS, combatV2, loadCombatV2 } from '../src/combat-v2';
 import cards from '../src/combat-v2/data/cards.json';
 import foes from '../src/combat-v2/data/foes.json';
@@ -22,7 +23,15 @@ interface Files {
   };
   forms: { id: string; armour: number; ownKnacks: string[] }[];
   talents: {
-    talents: { id: string; name: string; text: string; roles: string[]; intent: string; fx: Fx }[];
+    talents: {
+      id: string;
+      name: string;
+      text: string;
+      roles: string[];
+      intent: string;
+      gearLine?: string;
+      fx: Fx;
+    }[];
     pools: Record<string, string[]>;
   };
   cards: {
@@ -117,6 +126,7 @@ function broken(edit: (r: Files) => void): () => unknown {
     return loadCombatV2(r, content.creatures, {
       bosses: content.bosses,
       foes: dungeonContent.foes,
+      gearLines: gearContent.lines,
     });
   };
 }
@@ -253,6 +263,12 @@ describe('combat v2 content', () => {
   it('rejects a talent that uses seal', () => {
     expect(broken((r) => (first(r.talents.talents).fx = { seal: true }))).toThrow(
       /talent "sharp-claws" uses seal/,
+    );
+  });
+
+  it('rejects a talent whose gear line is not a shipped one', () => {
+    expect(broken((r) => (first(r.talents.talents).gearLine = 'no-such-line'))).toThrow(
+      /talent "sharp-claws" names the gear line "no-such-line"/,
     );
   });
 

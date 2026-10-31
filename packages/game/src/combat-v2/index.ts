@@ -7,6 +7,7 @@
  */
 import { content } from '../content';
 import { dungeonContent } from '../content/dungeon';
+import { gearContent } from '../content/gear';
 import cards from './data/cards.json';
 import foes from './data/foes.json';
 import forms from './data/forms.json';
@@ -29,5 +30,5 @@ export * from './track-schema';
 export const combatV2: CombatV2Pack = loadCombatV2(
   { rules, knacks, forms, talents, cards, raidBosses, raidTrack, foes, keywords },
   content.creatures,
-  { bosses: content.bosses, foes: dungeonContent.foes },
+  { bosses: content.bosses, foes: dungeonContent.foes, gearLines: gearContent.lines },
 );
