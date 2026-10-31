@@ -73,7 +73,7 @@ describe('learning at the School', () => {
     expect(poor.stock[R.acorns]).toBe(RULES.school.price - 1);
   });
 
-  it('has a visiting teacher once a week, from his day, at the price of a first learning', () => {
+  it('has a visiting teacher whose offer stays until claimed or the next teacher comes: once a week, from his day', () => {
     const p = setup(3);
     for (const c of p.creatures) c.learned = 1;
     startLearning(p, MONDAY);
@@ -81,12 +81,28 @@ describe('learning at the School', () => {
     startLearning(p, WEDNESDAY);
     expect(p.wk.teacherLessons).toBe(1);
     expect(p.wk.learnAcorns).toBe(RULES.school.price);
-    // Not twice in a week, whatever the seats.
+    // Not twice for the same teacher, whatever the seats and the day (up to the Tuesday after).
     startLearning(p, WEDNESDAY + 24);
+    startLearning(p, 168 + 20);
     expect(p.wk.teacherLessons).toBe(1);
     // A lesson teaches no slot: the creature has the slots it had.
     for (let h = 0; h < RULES.school.hours; h++) stepSchool(p, 1);
     expect(p.creatures.every((c) => c.learned === 1)).toBe(true);
+    // The next teacher (the next Wednesday) has a new lesson.
+    startLearning(p, 168 + WEDNESDAY);
+    expect(p.wk.teacherLessons).toBe(2);
+  });
+
+  it('lets a Sunday-only player take the lesson of the teacher who came on Wednesday', () => {
+    const p = setup(3);
+    for (const c of p.creatures) c.learned = 1;
+    startLearning(p, 6 * 24 + 20);
+    expect(p.wk.teacherLessons).toBe(1);
+    // The Sunday before his first Wednesday had no teacher yet.
+    const early = setup(3);
+    for (const c of early.creatures) c.learned = 1;
+    startLearning(early, 24 + 20);
+    expect(early.wk.teacherLessons).toBe(0);
   });
 });
 

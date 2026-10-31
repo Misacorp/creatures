@@ -733,6 +733,38 @@ export function measuresOf(results: Results): Measures {
   return m;
 }
 
+/** A daily player's scrap over weeks 13 to 24: the top three sources and sinks, a week (median over players). */
+export function lateScrapOf(players: readonly PlayerRun[]): {
+  sources: { name: string; perWeek: number }[];
+  sinks: { name: string; perWeek: number }[];
+} {
+  const late = players.filter((p) => p.sourcesAtWeek12 && p.weeks.length > 12);
+  const keys = new Set(late.flatMap((p) => Object.keys(p.sources)));
+  const rows: { kind: string; name: string; perWeek: number }[] = [];
+  for (const key of keys) {
+    const [kind, resource, ...rest] = key.split(':');
+    if (resource !== '1') continue;
+    rows.push({
+      kind: kind ?? '',
+      name: rest.join(':'),
+      perWeek: median(
+        late.map(
+          (p) =>
+            ((p.sources[key] ?? 0) - (p.sourcesAtWeek12?.[key] ?? 0)) /
+            Math.max(1, p.weeks.length - 12),
+        ),
+      ),
+    });
+  }
+  const top = (kind: string): { name: string; perWeek: number }[] =>
+    rows
+      .filter((r) => r.kind === kind && r.perWeek > 0)
+      .sort((a, b) => b.perWeek - a.perWeek)
+      .slice(0, 3)
+      .map(({ name, perWeek }) => ({ name, perWeek }));
+  return { sources: top('in'), sinks: top('out') };
+}
+
 export function targetsOf(results: Results, rules: Rules): TargetLine[] {
   const lines: TargetLine[] = [];
   const m = measuresOf(results);
@@ -786,8 +818,9 @@ export function targetsOf(results: Results, rules: Rules): TargetLine[] {
   const weeklySpread4 = medianDefined(weeklyPlayers.map((p) => spreadAt(p, 4, 10)));
   lines.push({
     id: 'T-1 (original)',
-    pass: metLine('T-1o'),
-    measured: `a daily player's 10th creature is ${round(m.spread4 ?? NaN, 1)} levels below the 3rd at week 4 (the wording of goals.md, which the bench share above replaced because a player can own creatures that are new or held at the evolution level; this is the plain reading)`,
+    pass: (m.spread4 ?? NaN) <= 5,
+    info: true,
+    measured: `a daily player's 10th creature is ${round(m.spread4 ?? NaN, 1)} levels below the 3rd at week 4 (the wording of goals.md, which the bench share above replaced because a player can own creatures that are new or held at the evolution level; this is the plain reading). Shown, not judged: Misa accepted the restated T-1 (round 18, Q47: A)`,
     target: 'within 5 levels at week 4 (goals.md T-1 as written)',
   });
   lines.push({
@@ -860,7 +893,7 @@ export function targetsOf(results: Results, rules: Rules): TargetLine[] {
   lines.push({
     id: 'T-2d',
     pass: metLine('T-2d'),
-    measured: `a player back after four weeks away keeps every level (best creature ${kept >= 0 ? '+' : ''}${round(kept, 1)} levels vs before) and their 3rd-best creature is within ${THRESHOLDS.agreeWithin} levels of the server's middle after ${daysText(back)} days of visits (the target is about 15, "about two weeks"; if catch-up also boosted fight XP: ${daysText(backFights)} days)`,
+    measured: `a player back after four weeks away keeps every level (best creature ${kept >= 0 ? '+' : ''}${round(kept, 1)} levels vs before) and their 3rd-best creature is within ${THRESHOLDS.agreeWithin} levels of the server's middle after ${daysText(back)} days of visits (the target is about 16 days, limit 17: goals.md said about two weeks and Misa accepted about 16; if catch-up also boosted fight XP: ${daysText(backFights)} days)`,
     target:
       "recognises the roster; within about two weeks of daily visits of the server's middle (V-BON-2)",
   });
@@ -946,10 +979,11 @@ export function targetsOf(results: Results, rules: Rules): TargetLine[] {
   const deadNames = ledgerOf(playersOf(results.mixed8, 'daily'))
     .filter((l) => l.dead !== null)
     .map((l) => `${l.resource} from week ${l.dead}`);
+  const late = lateScrapOf(playersOf(results.mixed8, 'daily'));
   lines.push({
     id: 'T-7b',
     pass: metLine('T-7b'),
-    measured: `${round(m.deadBefore24 ?? NaN)} of a daily player's 4 resources are dead at some point of the 24 weeks${deadNames.length ? ` (${deadNames.join(', ')})` : ''}`,
+    measured: `${round(m.deadBefore24 ?? NaN)} of a daily player's 4 resources are dead at some point of the 24 weeks${deadNames.length ? ` (${deadNames.join(', ')})` : ''}. A daily player's scrap in weeks 13 to 24, a week: it comes from ${late.sources.map((r) => `${r.name} ${round(r.perWeek)}`).join(', ')}; it goes to ${late.sinks.map((r) => `${r.name} ${round(r.perWeek)}`).join(', ')}`,
     target:
       'none, over the whole run (the visitor is the only sink for Acorns and scrap after the first weeks; shards go to the Forge, projects and his blueprint)',
   });

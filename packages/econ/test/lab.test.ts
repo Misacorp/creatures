@@ -173,12 +173,12 @@ describe('the report', () => {
     expect(byId('T-4')?.info).toBeUndefined();
     expect(byId('T-4')?.target).toMatch(/shard/);
     expect(byId('T-7b')?.info).toBeUndefined();
-    expect(byId('T-1 (original)')?.info).toBeUndefined();
+    expect(byId('T-1 (original)')?.info).toBe(true);
     expect(byId('T-1 (weekly player)')?.info).toBe(true);
     expect(byId('T-4 (shards, all players)')?.info).toBe(true);
     expect(byId('T-3 (places beyond level 2)')?.info).toBe(true);
     expect(byId('T-6 (joiners)')?.info).toBe(true);
-    expect(TARGETS.some((x) => x.id === 'T-1o')).toBe(true);
+    expect(TARGETS.some((x) => x.id === 'T-1o')).toBe(false);
   });
 
   it('says plainly which targets pass by construction or follow from the away curve, and the band used for T-2c', () => {
@@ -197,6 +197,31 @@ describe('the report', () => {
     c.evolved = true;
     expect(heldForms(p).map(formName)).toEqual([formName(1)]);
     expect(formName(0)).not.toBe(formName(1));
+  });
+
+  it("names where a daily player's late scrap comes from and goes in the T-7b line", () => {
+    const t7b = data.targets.find((t) => t.id === 'T-7b');
+    expect(t7b?.measured).toMatch(/scrap in weeks 13 to 24, a week: it comes from .+; it goes to /);
+  });
+
+  it('reports the shard stall by week with and without the broker, and the Market as a project', () => {
+    const b = data.broker;
+    for (const id of ['daily', 'every-other-day', 'weekend-off', 'weekly']) {
+      expect(b.noBroker[id]).toHaveLength(24);
+      expect(b.withBroker[id]).toHaveLength(24);
+      expect(b.needElements[id]).toHaveLength(24);
+      expect(b.scoutElements[id]).toHaveLength(24);
+    }
+    // No broker means more waiting for a shard than a broker from day one, over the first weeks.
+    const early = (xs: number[] | undefined): number => sum((xs ?? []).slice(0, 12));
+    expect(early(b.noBroker.daily)).toBeGreaterThanOrEqual(early(b.withBroker.daily));
+    expect(b.market.map((r) => r.id)).toEqual([
+      'mixed5-market',
+      'mixed8-market',
+      'mixed15-market',
+      'mixed8-market-shards',
+    ]);
+    expect(markdown).toContain('### Is the Forge short of a shard, and since when?');
   });
 
   it('keeps the tuned values list whole and mentions the shipped Essence cost that differs', () => {

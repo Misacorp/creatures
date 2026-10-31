@@ -333,9 +333,11 @@ export const RULES = {
       signpost: 'grove',
       paddock: 'tide',
       school: 'spark',
+      // The Market (the broker's building, built as a project in the "market as a project" variant): its shards are mire's.
+      market: 'mire',
     } as Record<string, string>,
     // ASSUMPTION: the server's gifts pick an open place by these weights (the guided start overrides at first).
-    placeWeights: { bonfire: 2, forge: 3, signpost: 2, paddock: 1, school: 1 } as Record<
+    placeWeights: { bonfire: 2, forge: 3, signpost: 2, paddock: 1, school: 1, market: 3 } as Record<
       string,
       number
     >,
@@ -431,7 +433,7 @@ export const RULES = {
     // ASSUMPTION: the first learning of slot N costs N times this many Acorns (the doc's example: 60).
     // TUNED 2026-10-30 (round 18): was 60 (the doc's example), which took most of a daily player's Acorns and left the visitor none.
     price: 12,
-    // ASSUMPTION: a visiting teacher comes on this weekday (0 = Monday) and stays the week; a player takes one lesson a week, which costs the
+    // ASSUMPTION: a visiting teacher comes on this weekday (0 = Monday) and his offer stays until it is claimed or the next teacher replaces him (V-SCH-4); a player takes one lesson a week, which costs the
     // price of a first learning and a seat for a stay, and counts toward the talents found (no other economy effect).
     teacherDay: 2,
   },

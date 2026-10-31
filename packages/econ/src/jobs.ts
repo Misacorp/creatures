@@ -1,6 +1,12 @@
 import { RULES } from './rules';
-import { runScenario, type Results, type ScenarioResult } from './scenarios';
-import { ALL_SERVERS } from './servers';
+import {
+  isStudyVariant,
+  runScenario,
+  studySeedsFor,
+  type Results,
+  type ScenarioResult,
+} from './scenarios';
+import { ALL_SERVERS, SERVERS } from './servers';
 
 /**
  * The report's jobs: one scenario over its seeds. A job is plain data (it can be sent to a worker thread, `scripts/pool.mjs`); its
@@ -32,13 +38,15 @@ export const inProcess: Executor = (job) => Promise.resolve(runScenarioJob(job))
 
 /**
  * Runs the scenarios (all, or `only`) with `exec`, at most `slots` at a time, and returns their results in the order of
- * `ALL_SERVERS` (so the output does not depend on which job finished first) with the seconds each took.
+ * `ALL_SERVERS` (so the output does not depend on which job finished first) with the seconds each took. The five main servers run
+ * `seeds` seeds and the variants `variantSeeds` (the seeds 1.. of the same draws, so a variant is a subset of a main server's runs).
  */
 export async function runScenarios(
   seeds: number,
   exec: Executor,
   slots: number,
   only?: readonly string[],
+  variantSeeds: number = seeds,
 ): Promise<{ results: Results; seconds: Record<string, number> }> {
   const ids = ALL_SERVERS.map((s) => s.id).filter((id) => !only || only.includes(id));
   const outcomes = new Map<string, JobOutcome>();
@@ -52,7 +60,9 @@ export async function runScenarios(
   const lane = async (): Promise<void> => {
     for (let i = next++; i < order.length; i = next++) {
       const id = order[i] as string;
-      outcomes.set(id, await exec({ id, seeds }));
+      const main = SERVERS.some((s) => s.id === id);
+      const n = main ? seeds : isStudyVariant(id) ? studySeedsFor(variantSeeds) : variantSeeds;
+      outcomes.set(id, await exec({ id, seeds: n }));
     }
   };
   await Promise.all(Array.from({ length: Math.max(1, Math.min(slots, ids.length)) }, lane));

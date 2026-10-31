@@ -32,6 +32,7 @@ import { bestPiece, hasFourOfFive, wornPieces } from './lines';
 import { visitVisitor } from './visitor';
 import { heldForms } from './forms';
 import { openSlots, startLearning, stepSchool } from './school';
+import { MARKET_OPENS_AT, openMarket } from './commons';
 import { beginVisit, endVisit, homeDone, newTracer, type JourneyEntry } from './journey';
 import { accrueIdleXp, atTopLevel, fightXp, levelsDesc, setCatchUp } from './growth';
 import {
@@ -47,6 +48,7 @@ import { setCollectionFind } from './collections';
 import { accrueSeats, activeCounts, collectSeat } from './scouts';
 import { playerProfile, type ServerConfig } from './servers';
 import {
+  FORGE_BUCKETS,
   HOURS_PER_WEEK,
   N_RES,
   R,
@@ -75,6 +77,8 @@ export interface PlayerRun {
   joinWeek: number;
   weeks: WeekRecord[];
   sources: Record<string, number>;
+  /** The sources at the end of the player's 12th week (null for a player with fewer weeks). */
+  sourcesAtWeek12: Record<string, number> | null;
   day30: (number | null)[];
   catchUpDays: number | null;
   firsts: Record<string, number>;
@@ -89,6 +93,9 @@ export interface ServerRun {
   log: ServerWeek[];
   /** The journey export (only when asked for): the visits of the traced players. */
   journeys?: Record<string, JourneyEntry[]>;
+  /** The hours the Market project opened and was finished (the market variant; null: not yet). */
+  marketOpenedHour: number | null;
+  marketDoneHour: number | null;
   levelUps: Server['levelUps'];
   projectDurations: number[];
   thresholds: (number | null)[];
@@ -214,6 +221,15 @@ export function visit(p: Player, server: Server, hour: number): void {
   p.wk.rowsWritten += 1 + n + p.seats.length + p.anvils.length + (p.wk.gifts > giftsBefore ? 4 : 0);
 }
 
+/** Whether the broker's seat exists on this server now (V-FORGE-11): always, never, or once the Market is built. */
+export function brokerSeatOn(server: Server): boolean {
+  const mode = server.config.broker ?? 'always';
+  return (
+    mode === 'always' ||
+    ((mode === 'market' || mode === 'market-shards') && server.marketDoneHour !== null)
+  );
+}
+
 /** One hour of everything that runs without the player (stores, stocks, anvils, XP). */
 function accrue(
   p: Player,
@@ -224,7 +240,7 @@ function accrue(
   hearth: number,
 ): void {
   const share = awayShare(rules, curve, hour - p.lastVisit);
-  const { scouts, anvils, brokers } = activeCounts(p);
+  const { scouts, anvils, brokers } = activeCounts(p, brokerSeatOn(server));
   p.wk.effHours += share;
   accrueIdleXp(p, share, hearth);
   accrueSeats(p, share, scouts);
@@ -320,6 +336,13 @@ function endWeek(p: Player, server: Server): void {
     .filter((c) => !(c.canEvolve && !c.evolved && c.level >= p.rules.xp.evolveLevel))
     .map((c) => Math.max(0, third - c.level));
   wk.held = heldForms(p);
+  wk.needElements = p.weakByElement.filter((n) => n > 0).length;
+  wk.scoutElements = new Set(
+    p.seats
+      .slice(0, Math.min(p.seats.length, p.creatures.length))
+      .map((s) => p.rules.scouts.destinations[s.dest]?.element)
+      .filter((e) => e),
+  ).size;
   const top = [...p.creatures].sort((a, b) => b.level - a.level)[0];
   wk.bestSlots = top ? openSlots(p.rules, top) : 0;
   wk.bestLearned = top ? Math.min(top.learned, wk.bestSlots) : 0;
@@ -345,6 +368,7 @@ function endWeek(p: Player, server: Server): void {
   wk.masters = p.masters;
   wk.stock = p.stock.map((s) => s);
   void server;
+  if (p.weeks.length === 11) p.sourcesMark = Object.fromEntries(p.sources);
   p.weeks.push(wk);
   p.wk = blankWeek(wk.week + 1);
 }
@@ -441,6 +465,19 @@ export interface TraceOptions {
   readonly weeks: number;
 }
 
+/** The share of the server's anvil time this week spent waiting for a shard (all joined players, the week that ends at `hour`). */
+function weekShardStall(players: readonly Player[], hour: number): number {
+  const shardBucket = FORGE_BUCKETS.indexOf('shard');
+  let waiting = 0;
+  let all = 0;
+  for (const p of players) {
+    if (hour < p.joinHour) continue;
+    waiting += p.wk.forge[shardBucket] ?? 0;
+    all += sum(p.wk.forge);
+  }
+  return all > 0 ? waiting / all : 0;
+}
+
 export function runServer(
   config: ServerConfig,
   seed: number,
@@ -485,6 +522,7 @@ export function runServer(
       bossKills: config.bossKills,
       communalSeats: config.communalSeats,
       shardExchange: config.shardExchange,
+      broker: config.broker ?? 'always',
       visitor: config.visitor !== false,
     },
     rules,
@@ -512,6 +550,13 @@ export function runServer(
     if (hourOfDay === 22) for (const p of players) if (h >= p.joinHour) sampleDay(p, server, h);
     if (day % 7 === 6 && hourOfDay === 23) resolveRaid(server, players, h, rules);
     if ((h + 1) % HOURS_PER_WEEK === 0) {
+      // The Market project opens (market variant) once the server's anvils spent MARKET_OPENS_AT of the week waiting for a shard.
+      if (
+        (config.broker === 'market' || config.broker === 'market-shards') &&
+        server.marketOpenedHour === null &&
+        weekShardStall(players, h) >= MARKET_OPENS_AT
+      )
+        openMarket(server, h);
       const gifts = sum(server.gifts) - giftsMark;
       giftsMark = sum(server.gifts);
       server.log.push({
@@ -528,6 +573,8 @@ export function runServer(
         keystones: server.keystonesFound,
         collections: server.collectionsDone,
         visits: visitsThisWeek,
+        shardStall: weekShardStall(players, h),
+        market: server.marketDoneHour !== null ? 2 : server.marketOpenedHour !== null ? 1 : 0,
         fourOfFive: players.filter((p) => h >= p.joinHour && hasFourOfFive(p)).length,
         rerolls: players.reduce((n, p) => n + (h >= p.joinHour ? p.wk.rerolls : 0), 0),
         ...(() => {
@@ -548,6 +595,7 @@ export function runServer(
       joinWeek: p.profile.joinWeek,
       weeks: p.weeks,
       sources: Object.fromEntries(p.sources),
+      sourcesAtWeek12: p.sourcesMark,
       day30: p.day30,
       catchUpDays: p.catchUpDays,
       firsts: p.firsts,
@@ -563,6 +611,8 @@ export function runServer(
           ),
         }
       : {}),
+    marketOpenedHour: server.marketOpenedHour,
+    marketDoneHour: server.marketDoneHour,
     log: server.log,
     levelUps: server.levelUps,
     projectDurations: server.projectDurations,

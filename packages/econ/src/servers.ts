@@ -3,6 +3,12 @@ import { profileById } from './profiles';
 import type { PlayerProfile } from './schema';
 
 /** The servers the lab runs (model.md "Servers"): who plays, and the server's dials. */
+/**
+ * When the broker's seat exists (V-FORGE-11): from day one, never, once the server has built the Market (paid in Acorns and scrap, the
+ * shards being what is short), or once it has built the Market paid like the other projects (Acorns, scrap and shards).
+ */
+export type BrokerMode = 'always' | 'never' | 'market' | 'market-shards';
+
 export type BossDial = 'all' | 'half' | 'none';
 export type Policy = PlayerProfile['policy'];
 
@@ -27,6 +33,8 @@ export interface ServerConfig {
   readonly creatureRate?: number;
   /** Replaces the fire's time floor, in levels a week (the "slow floor" variants set `SLOW_FLOOR`; the default is none, Q40 B). */
   readonly fireFloor?: number;
+  /** The broker's seat: from day one (the default), never, or only after the server builds the Market (a communal project). */
+  readonly broker?: BrokerMode;
   /** Whether the weekly visitor comes (V-VIS; default yes). */
   readonly visitor?: boolean;
   /** Whether catch-up also multiplies what the dungeon and the raid pay (a sensitivity run for T-2d). */
@@ -87,8 +95,11 @@ const MIXED_15 = server('mixed15', 'Mixed server of 15', {
   returner: 1,
 });
 
+const FIVE = { daily: 2, active: 1, 'every-other-day': 1, weekly: 1 };
+const MIXED_5 = server('mixed5', 'Mixed server of 5', FIVE);
+
 export const SERVERS: readonly ServerConfig[] = [
-  server('mixed5', 'Mixed server of 5', { daily: 2, active: 1, 'every-other-day': 1, weekly: 1 }),
+  MIXED_5,
   MIXED_8,
   MIXED_15,
   server('lone', 'A lone keen player', { active: 1 }),
@@ -121,6 +132,34 @@ export const VARIANTS: readonly ServerConfig[] = [
     id: 'mixed8-noexchange',
     label: 'Mixed 8, no shard exchange',
     shardExchange: false,
+  },
+  // The broker without a seat (the exchange is a tap only), and the broker as a project the server builds (the Market, when anvils start to wait).
+  {
+    ...MIXED_8,
+    id: 'mixed8-nobroker',
+    label: 'Mixed 8, no broker (the exchange is a tap)',
+    broker: 'never',
+  },
+  {
+    ...MIXED_5,
+    id: 'mixed5-market',
+    label: 'Mixed 5, the Market as a project',
+    seedKey: 'mixed5',
+    broker: 'market',
+  },
+  { ...MIXED_8, id: 'mixed8-market', label: 'Mixed 8, the Market as a project', broker: 'market' },
+  {
+    ...MIXED_8,
+    id: 'mixed8-market-shards',
+    label: 'Mixed 8, the Market paid like the other projects (with shards)',
+    broker: 'market-shards',
+  },
+  {
+    ...MIXED_15,
+    id: 'mixed15-market',
+    label: 'Mixed 15, the Market as a project',
+    seedKey: 'mixed15',
+    broker: 'market',
   },
   // The same servers with no weekly visitor (V-VIS), for "with and without" (the draws are shared: the seed key stays the server's).
   {

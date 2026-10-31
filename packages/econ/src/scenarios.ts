@@ -10,6 +10,15 @@ export interface ScenarioResult {
 
 export const DEFAULT_SEEDS = 20;
 
+/** The seeds the report runs the variants of the mixed server of 8 with: half of the main servers' (the speed budget). */
+/** The broker and Market variants (a study of one question) run with this share of the variants' seeds, to stay inside the speed budget. */
+export const isStudyVariant = (id: string): boolean =>
+  id.includes('-market') || id.endsWith('-nobroker');
+export const studySeedsFor = (variantSeeds: number): number =>
+  Math.max(1, Math.round(variantSeeds * 0.6));
+
+export const variantSeedsFor = (seeds: number): number => Math.max(1, Math.ceil(seeds / 2));
+
 export function runScenario(
   config: ServerConfig,
   seeds: number,
