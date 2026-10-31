@@ -6,7 +6,17 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-Nothing waiting.
+### Q49. What should soak up the scrap that piles up late in the season?
+
+Status: asked, round 20 (2026-10-31). From the economy lab (T-7b, the last failing target) and your answer that piling is fine early "while sinks are built". Touches: `forge.md`, `gear.md`, `visitor.md`, `scouts` (V-SCOUT), T-7b in `goals.md`.
+
+**Why it matters.** From about week 13 scrap comes in about 500 a week faster than pieces, project gifts and the visitor take it, so by week 24 a daily player sits on about 14k scrap with nothing worth buying. The lab tried one sink, **tempering**: it soaks up about 650 a week and the pile stays flat, but only just (a slightly cheaper price fails again), it takes about a quarter of what players used to spend at the visitor, and weekly players barely use it. Research on sinks says a sink can tune a pile but cannot fix a tap that runs too fast (`docs/research/weekly-visitor.md`, "Sinks").
+
+- **A. Tempering at the Forge.** A worn rare or epic piece that has fallen behind the Forge's fire can be raised to the fire, keeping its lines and any rerolls, paid mostly in scrap. It appears just when the fire starts leaving pieces behind, the same weeks scrap starts piling up. Example: in week 15 Sanni's epic charm, rerolled twice at the visitor, is 6 levels behind; she tempers it for about 600 scrap instead of hoping for a new one as good.
+- **B. Scouts bring less scrap late.** The tap slows instead: from about week 12, the places scouts know well give fewer scrap and more of the things that are still scarce (shards, keystones, blueprint pages). Example: Mossback's trips to the Tidepools bring 30% less scrap in week 16 than in week 8, and a Tide shard more often.
+- **C. Both.** Tempering as the thing players choose, and a gentle late taper on scouts' scrap as the safety margin, so tempering's price can stay friendly.
+
+**Lead's pick: C.** Tempering is your G-8 pattern (the problem and its fix arrive together, with a goal and a reward) and it makes the visitor's rerolls last, which the research says makes a reroll feel earned. But on its own the lab's pass is too narrow to trust; a small taper on the tap makes it hold without pricing tempering high.
 
 ## Queue
 
