@@ -64,14 +64,14 @@ export const SLOT_NUMBERS: SlotTable = {
   3: { hp: 13_500, atk: 53, armour: 6 }, // storm-sovereign
   4: { hp: 28_200, atk: 82, armour: 19 }, // old-bogback
   5: { hp: 6_500, atk: 150, armour: 124 }, // thornmother
-  6: { hp: 14_500, atk: 119, armour: 27 }, // tidal-colossus
+  6: { hp: 15_600, atk: 113, armour: 21 }, // tidal-colossus
   7: { hp: 10_200, atk: 185, armour: 48 }, // cinder-wyrm
   8: { hp: 7_000, atk: 100, armour: 7 }, // storm-sovereign
   9: { hp: 32_800, atk: 100, armour: 33 }, // old-bogback
   10: { hp: 8_000, atk: 102, armour: 149 }, // thornmother
-  11: { hp: 14_500, atk: 119, armour: 36 }, // tidal-colossus
+  11: { hp: 13_400, atk: 137, armour: 40 }, // tidal-colossus
   12: { hp: 11_500, atk: 199, armour: 49 }, // cinder-wyrm
-  13: { hp: 14_300, atk: 48, armour: 8 }, // storm-sovereign
+  13: { hp: 14_300, atk: 48, armour: 10 }, // storm-sovereign
   14: { hp: 32_700, atk: 117, armour: 31 }, // old-bogback
   15: { hp: 9_000, atk: 97, armour: 156 }, // thornmother
 };
@@ -203,7 +203,10 @@ export function slotAnswersOf(slot: number, order: readonly string[] = TRACK_ORD
  * week in the full measurement and proposes the best (`trackSummary` prints the lines to paste). The dedicated server always keeps the
  * slot's prepared line.
  */
-export const SLOT_MIXED_ANSWER: Readonly<Record<number, number>> = {};
+export const SLOT_MIXED_ANSWER: Readonly<Record<number, number>> = {
+  6: 1, // tidal-colossus
+  11: 1, // tidal-colossus
+};
 
 /** The answer the mixed server fields at a slot: `index` (default `SLOT_MIXED_ANSWER`'s entry, else the first answer). */
 export function slotMixedOf(

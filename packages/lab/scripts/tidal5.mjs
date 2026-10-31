@@ -10,7 +10,12 @@ mod.patchKnack('living-shelter', { besideAreaCutBp: beside });
 const f = (m) => `kill ${(m.kill * 100).toFixed(0)}% pot ${(m.pot * 100).toFixed(0)}%`;
 const t = mod.committed;
 console.log(`slot ${slot} row ward ${row} beside ${beside}`);
-console.log(' classic', f(mod.measureClassic(slot, t)), '| prepared (answer 1 line)', f(mod.measurePrepared(slot, t)));
+console.log(
+  ' classic',
+  f(mod.measureClassic(slot, t)),
+  '| prepared (answer 1 line)',
+  f(mod.measurePrepared(slot, t)),
+);
 console.log(' mixed answer 1 (Reach)', f(mod.measureMixed(slot, t, {}, 40, 2, undefined, 0)));
 console.log(' mixed answer 2 (Row Ward)', f(mod.measureMixed(slot, t, {}, 40, 2, undefined, 1)));
 await close();

@@ -1249,7 +1249,10 @@ function takeHit(
     // Auras of one kind: the largest applies. The creature's own cut is a cut of its own.
     left = cutOf(left, Math.min(7_500, Math.floor((Math.max(ward, shelter) * wardMul) / 10_000)));
     // Tide Guard: a boss whose sweeps are cut in any column that holds a living Guard.
-    if (s.boss.mods.columnGuardCutBp && alive(s).some((o) => o.col === taker.col && o.role === 'guard' && !silenced(o)))
+    if (
+      s.boss.mods.columnGuardCutBp &&
+      alive(s).some((o) => o.col === taker.col && o.role === 'guard' && !silenced(o))
+    )
       left = cutOf(left, s.boss.mods.columnGuardCutBp);
     left = cutOf(left, k.areaCutBp ?? 0);
     // Cover: the Guard with the largest cover whose reach includes the taker, with every bonus. A hit a

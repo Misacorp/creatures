@@ -9,16 +9,22 @@ if (card === 'breakwater') cards.WARD_BOOST_BP.v = v;
 if (card === 'tide-guard') cards.COLUMN_GUARD_CUT_BP.v = v;
 const f = (m) => `kill ${(m.kill * 100).toFixed(0)}% pot ${(m.pot * 100).toFixed(0)}%`;
 const t = mod.committed;
-const extra = card === 'none' ? undefined : { 6: ['slippery', card] , 8: ['lucky-strike'] };
+const extra = card === 'none' ? undefined : { 6: ['slippery', card], 8: ['lucky-strike'] };
 for (const slot of slots) {
   mod.withTidal(
     () => ({}),
     () => {
-      console.log(`${card} ${v} slot ${slot}:`,
-        'classic', f(mod.measureClassic(slot, t)),
-        '| prepared', f(mod.measurePrepared(slot, t)),
-        '| mixed A1', f(mod.measureMixed(slot, t, {}, 40, 2, undefined, 0)),
-        '| mixed A2', f(mod.measureMixed(slot, t, {}, 40, 2, undefined, 1)));
+      console.log(
+        `${card} ${v} slot ${slot}:`,
+        'classic',
+        f(mod.measureClassic(slot, t)),
+        '| prepared',
+        f(mod.measurePrepared(slot, t)),
+        '| mixed A1',
+        f(mod.measureMixed(slot, t, {}, 40, 2, undefined, 0)),
+        '| mixed A2',
+        f(mod.measureMixed(slot, t, {}, 40, 2, undefined, 1)),
+      );
     },
     extra,
   );

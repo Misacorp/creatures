@@ -115,6 +115,12 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
       'tidewing/steady-mark tempestray/all-at-once thornbuck/wide-reach',
     ],
   ],
+  breakwater: [
+    [
+      'Keep the Heat In on a Kilnmole in the row',
+      'tidewing/steady-mark kilnmole/keep-the-heat-in tempestray/none',
+    ],
+  ],
   'lucky-strike': [
     ['Cool Head in the middle', 'tidewing/steady-mark thornbuck/cool-head tempestray/none'],
     ['Hide in Mist', 'tidewing/steady-mark fogwyrm/hide-in-mist tempestray/none'],

@@ -4,12 +4,34 @@
  */
 import { createSeededRng, int } from '@creatures/game';
 import { content } from '@creatures/game';
-import { raidBench, weekendPotentialOf, weekendStatsOf, combineWeekends, combinePotential } from './bosses';
-import { casualColumn, columnOf, limitCopies, toolColumns, wideBoss, BUILDER_MAX_COPIES, MIXED_ORDER, type PlayerKind } from './raidMeasure';
+import {
+  raidBench,
+  weekendPotentialOf,
+  weekendStatsOf,
+  combineWeekends,
+  combinePotential,
+} from './bosses';
+import {
+  casualColumn,
+  columnOf,
+  limitCopies,
+  toolColumns,
+  wideBoss,
+  BUILDER_MAX_COPIES,
+  MIXED_ORDER,
+  type PlayerKind,
+} from './raidMeasure';
 import { levelledColumn, rosterLevels, type RosterKind } from './roster';
 import { VALLEY_ROSTER } from './valley';
 import { LEVEL, classicFor, type Pick } from './search';
-import { slotBoss, slotMixedOf, slotPreparedOf, SLOT_NUMBERS, SLOT_WEEKS, type SlotTable } from './track';
+import {
+  slotBoss,
+  slotMixedOf,
+  slotPreparedOf,
+  SLOT_NUMBERS,
+  SLOT_WEEKS,
+  type SlotTable,
+} from './track';
 import { raidMode } from './bosses';
 import { OWN_KNACKS } from './knacks';
 import { dedicatedTeam } from './trackTuner';
@@ -34,23 +56,37 @@ const ALL_FORMS = Object.keys(OWN_KNACKS);
 
 /** How often a casual column (the path's: top three of twelve random forms) holds each role. */
 export function casualStats(n = 4000): Record<string, number> {
-  const out: Record<string, number> = { guard: 0, setter: 0, payoff: 0, support: 0, setterAndPayoff: 0, guardAndSetterPayoff: 0, noGuard: 0 };
+  const out: Record<string, number> = {
+    guard: 0,
+    setter: 0,
+    payoff: 0,
+    support: 0,
+    setterAndPayoff: 0,
+    guardAndSetterPayoff: 0,
+    noGuard: 0,
+  };
   const roles: Record<string, number> = {};
   for (const f of ALL_FORMS) roles[roleOf(f) ?? '?'] = (roles[roleOf(f) ?? '?'] ?? 0) + 1;
   for (let i = 0; i < n; i++) {
     const col = casualColumn(createSeededRng(`stat:${i}`), 3, 'top3', LEVEL);
     const r = new Set(col.map((p) => roleOf(p.formId)));
     for (const k of ['guard', 'setter', 'payoff', 'support']) if (r.has(k as never)) out[k]!++;
-    if (r.has('setter' as never) && r.has('payoff' as never)) out.setterAndPayoff!++;
-    if (r.has('setter' as never) && r.has('payoff' as never) && r.has('guard' as never)) out.guardAndSetterPayoff!++;
-    if (!r.has('guard' as never)) out.noGuard!++;
+    if (r.has('setter') && r.has('payoff')) out.setterAndPayoff!++;
+    if (r.has('setter') && r.has('payoff') && r.has('guard'))
+      out.guardAndSetterPayoff!++;
+    if (!r.has('guard')) out.noGuard!++;
   }
   for (const k of Object.keys(out)) out[k] = (out[k] as number) / n;
-  return { ...out, ...Object.fromEntries(Object.entries(roles).map(([k, v]) => ['forms:' + k, v])) };
+  return {
+    ...out,
+    ...Object.fromEntries(Object.entries(roles).map(([k, v]) => ['forms:' + k, v])),
+  };
 }
 
 const roleOf = (f: string) => content.creatures.find((c) => c.id === f)?.role;
-const COMMON_GUARDS = content.creatures.filter((c) => c.role === 'guard' && c.stage === 1).map((c) => c.id);
+const COMMON_GUARDS = content.creatures
+  .filter((c) => c.role === 'guard' && c.stage === 1)
+  .map((c) => c.id);
 
 export interface ServerSpec {
   /** Kinds of the columns (the path's mapping by default). */
@@ -82,7 +118,11 @@ export function mixedWeekend(
     const levels = rosterLevels(VALLEY_ROSTER, roster, week, 'expected', rows + 1);
     let column: Pick[];
     if (kind === 'm')
-      column = columnOf(line, base.cols, toolColumns(line, base.cols, core)[m++ % base.cols] as number);
+      column = columnOf(
+        line,
+        base.cols,
+        toolColumns(line, base.cols, core)[m++ % base.cols] as number,
+      );
     else if (kind === 'b')
       column = limitCopies(
         columnOf(line, base.cols, toolColumns(line, base.cols, core)[b++ % base.cols] as number),
@@ -107,7 +147,9 @@ export function mixedWeekend(
       if (cs.guard === 'force' && !column.some((p) => roleOf(p.formId) === 'guard')) {
         const g = COMMON_GUARDS[int(rng, COMMON_GUARDS.length)] as string;
         const at = Math.min(rows - 1, cs.guardRow ?? 1);
-        column = column.map((p, r) => (r === at ? { formId: g, knack: cs.guardKnack ?? 'none' } : p));
+        column = column.map((p, r) =>
+          r === at ? { formId: g, knack: cs.guardKnack ?? 'none' } : p,
+        );
       }
     }
     levelledColumn(column, levels).forEach((pick, r) =>
@@ -122,14 +164,24 @@ export function mixedWeekend(
       }),
     );
     bench.push(
-      ...raidBench(1, levels[rows] ?? levels[levels.length - 1] ?? 1).map((x) => ({ ...x, owner: `p${c + 1}` })),
+      ...raidBench(1, levels[rows] ?? levels[levels.length - 1] ?? 1).map((x) => ({
+        ...x,
+        owner: `p${c + 1}`,
+      })),
     );
   });
   return { boss, placements, bench };
 }
 
 /** Mean knockouts a weekend per column of each kind on the mixed server (real fights, the boss can die). */
-export function koByKind(slot: number, table: SlotTable, spec: ServerSpec, draws = 40, runs = 2, week = SLOT_WEEKS[slot - 1] ?? 7) {
+export function koByKind(
+  slot: number,
+  table: SlotTable,
+  spec: ServerSpec,
+  draws = 40,
+  runs = 2,
+  week = SLOT_WEEKS[slot - 1] ?? 7,
+) {
   const order = spec.order ?? MIXED_ORDER;
   const sum: Record<string, number> = {};
   const n: Record<string, number> = {};
@@ -148,7 +200,9 @@ export function koByKind(slot: number, table: SlotTable, spec: ServerSpec, draws
   return {
     standingEnd: standing,
     hpLeftEnd: hpLeft,
-    koPerColumn: Object.fromEntries(Object.keys(sum).map((k) => [k, (sum[k] as number) / (n[k] as number)])),
+    koPerColumn: Object.fromEntries(
+      Object.keys(sum).map((k) => [k, (sum[k] as number) / (n[k] as number)]),
+    ),
   };
 }
 
@@ -180,19 +234,37 @@ export function measureMixed(
 }
 
 /** Classic party (4 columns) and tool-line prepared team at a slot. */
-export function measureClassic(slot: number, table: SlotTable, week = SLOT_WEEKS[slot - 1] ?? 7, runs = 30): Meas {
+export function measureClassic(
+  slot: number,
+  table: SlotTable,
+  week = SLOT_WEEKS[slot - 1] ?? 7,
+  runs = 30,
+): Meas {
   const boss = slotBoss(slot, { table });
   const t = dedicatedTeam(boss, classicFor(raidMode(boss)), week, 'expected');
   const s = weekendStatsOf(boss, t.placements, t.bench, runs, 'x:c');
-  return { kill: s.winRate, pot: weekendPotentialOf(boss, t.placements, t.bench, runs, 'x:c').mean, share: s.damageShare };
+  return {
+    kill: s.winRate,
+    pot: weekendPotentialOf(boss, t.placements, t.bench, runs, 'x:c').mean,
+    share: s.damageShare,
+  };
 }
 
-export function measurePrepared(slot: number, table: SlotTable, week = SLOT_WEEKS[slot - 1] ?? 7, runs = 30): Meas {
+export function measurePrepared(
+  slot: number,
+  table: SlotTable,
+  week = SLOT_WEEKS[slot - 1] ?? 7,
+  runs = 30,
+): Meas {
   const boss = slotBoss(slot, { table });
   const { line } = slotPreparedOf(slot);
   const t = dedicatedTeam(boss, line, week, 'expected');
   const s = weekendStatsOf(boss, t.placements, t.bench, runs, 'x:p');
-  return { kill: s.winRate, pot: weekendPotentialOf(boss, t.placements, t.bench, runs, 'x:p').mean, share: s.damageShare };
+  return {
+    kill: s.winRate,
+    pot: weekendPotentialOf(boss, t.placements, t.bench, runs, 'x:p').mean,
+    share: s.damageShare,
+  };
 }
 
 /** A server of `n` columns that all field the 3-creature classic trio at `roster` levels, tiled across rows (information). */
@@ -212,14 +284,27 @@ export function measureClassicWide(
   const bench: Placement[] = [];
   for (let c = 0; c < n; c++) {
     const levels = rosterLevels(VALLEY_ROSTER, 'daily', week, 'expected', rows + 1);
-    const col = Array.from({ length: rows }, (_, r) => cl[r * n + c] as Pick).map((p) => (knack ? p : { ...p, knack: 'none' }));
+    const col = Array.from({ length: rows }, (_, r) => cl[r * n + c] as Pick).map((p) =>
+      knack ? p : { ...p, knack: 'none' },
+    );
     levelledColumn(col, levels).forEach((pick, r) =>
-      placements.push({ owner: `p${c + 1}`, formId: pick.formId, level: pick.level ?? 1, knack: pick.knack, row: r, col: c }),
+      placements.push({
+        owner: `p${c + 1}`,
+        formId: pick.formId,
+        level: pick.level ?? 1,
+        knack: pick.knack,
+        row: r,
+        col: c,
+      }),
     );
     bench.push(...raidBench(1, levels[rows] ?? 1).map((x) => ({ ...x, owner: `p${c + 1}` })));
   }
   const s = weekendStatsOf(boss, placements, bench, runs, 'x:cw');
-  return { kill: s.winRate, pot: weekendPotentialOf(boss, placements, bench, runs, 'x:cw').mean, share: s.damageShare };
+  return {
+    kill: s.winRate,
+    pot: weekendPotentialOf(boss, placements, bench, runs, 'x:cw').mean,
+    share: s.damageShare,
+  };
 }
 
 export const committed: SlotTable = SLOT_NUMBERS;
