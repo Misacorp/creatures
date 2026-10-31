@@ -72,8 +72,7 @@ export function casualStats(n = 4000): Record<string, number> {
     const r = new Set(col.map((p) => roleOf(p.formId)));
     for (const k of ['guard', 'setter', 'payoff', 'support']) if (r.has(k as never)) out[k]!++;
     if (r.has('setter') && r.has('payoff')) out.setterAndPayoff!++;
-    if (r.has('setter') && r.has('payoff') && r.has('guard'))
-      out.guardAndSetterPayoff!++;
+    if (r.has('setter') && r.has('payoff') && r.has('guard')) out.guardAndSetterPayoff!++;
     if (!r.has('guard')) out.noGuard!++;
   }
   for (const k of Object.keys(out)) out[k] = (out[k] as number) / n;
