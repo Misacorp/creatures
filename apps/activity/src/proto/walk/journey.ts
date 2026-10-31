@@ -120,7 +120,8 @@ export function parseEvent(text: string): JourneyEvent {
     };
   }
 
-  const learning = /^school: a creature began learning its talent (\d+) \((\d+) Acorns, \d+ hours\)$/.exec(text);
+  const learning =
+    /^school: a creature began learning its talent (\d+) \((\d+) Acorns, \d+ hours\)$/.exec(text);
   if (learning?.[1] !== undefined && learning[2] !== undefined) {
     return {
       kind: 'school-learning',
@@ -129,7 +130,9 @@ export function parseEvent(text: string): JourneyEvent {
     };
   }
 
-  const teacher = /^school: a visiting teacher's lesson for a creature \((\d+) Acorns\)$/.exec(text);
+  const teacher = /^school: a visiting teacher's lesson for a creature \((\d+) Acorns\)$/.exec(
+    text,
+  );
   if (teacher?.[1] !== undefined) {
     return { kind: 'school-teacher', acorns: Number.parseInt(teacher[1], 10) };
   }
