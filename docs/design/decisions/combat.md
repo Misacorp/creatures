@@ -4,6 +4,19 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: Slots 1 and 2 field stage 1 lines; the mixed server fields the written answer that suits it
+
+ID: `2026-10-31-slots-1-and-2-field-stage` · Status: current
+
+**Decision (lead).** Two changes to the boss track in the lab, design panel 6's last integration pass:
+
+- **Slots 1 and 2 name stage 1 lines** (`SLOT_LINE` in `track.ts`): the gated version of the line each had (each stage 2 form its stage 1 form, with the Knack and talents the gate keeps). A week-1 or week-2 server has no evolved forms (the evolution level is 15; a daily player's best creature is level 11 in week 1 and 14 in week 2). Slot 2's line keeps its tool, Squelch Song on three Squelch. The ownability test's evolved half passes for every slot.
+- **The mixed server fields the written answer that suits it** (`SLOT_MIXED_ANSWER`, `slotAnswersOf` in `track.ts`; `measureSpeed` in `trackTuner.ts`). The mixed server's min-maxers and builders field whichever of the boss's written answers gives the mixed server the best kill rate at the slot's numbers and week, chosen once per slot in the tuner's full measurement. Only answers a mixed server of 8 can own at the week are candidates, and another answer replaces the first only by 5 points of kill rate. The dedicated server keeps the slot's prepared line.
+
+Result: both slots tune to every target (slot 1 3,800 HP / 83 / 19, with the HP at the search's lower limit; slot 2 7,500 / 80 / 42). **No second answer beats the first at any slot**, so `SLOT_MIXED_ANSWER` is empty, and the mixed server stays at 0% on Tidal Colossus's laps 2 and 3 (slots 6 and 11): a content problem, reported in `boss-track.md`, "Results".
+
+**Reasoning.** The gate had made slots 1 and 2's lines stage 1 lines in practice; the data now says so, and slot 2's line is measured and ownable as what a week-2 server fields. A team search over the common stage 1 forms found lines with more raw potential at equal numbers (slot 1 277% against 132%, slot 2 177% against 132%) but retuned they were worse where the tuner looks (the lower limit of the search again, and 107% to 115% with random talents), so the gated lines stay. The panel guessed the Colossus's mixed failure was the first answer's Wide Reach Guard in every column, which casual columns leave gaps in, and that the second answer's Row Ward could carry them. Measured, the second answer is no better (Keep the Heat In takes 15% off a row's area hits), and even ten prepared players reach only about 100% potential against the wide Colossus, which is weaker against it than the classic party; so the cause is the boss's area moves and HP on a wide arena, not the gap in the answer.
+
 ## 2026-10-31: Combat v2: Knack usage is read within the form
 
 ID: `2026-10-31-combat-v2-knack-usage-is-read` · Status: current

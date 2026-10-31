@@ -130,6 +130,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-10-31 Slots 1 and 2 field stage 1 lines; the mixed server fields the written answer that suits it
 - 2026-10-31 Combat v2: Knack usage is read within the form
 - 2026-10-30 Ownability reads the valley's launch coverage per line; a festival prize is never ownable
 - 2026-10-30 A boss's tool line must be ownable at the week its slot arrives (the roster comes from the valley) (amended)

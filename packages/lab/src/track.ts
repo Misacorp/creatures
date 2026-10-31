@@ -59,21 +59,21 @@ export type SlotTable = Readonly<Record<number, SlotNumbers>>;
  * says arrives at each slot (`SLOT_WEEKS`); slots 1 to 15 (three laps), later laps follow the high rank's numbers.
  */
 export const SLOT_NUMBERS: SlotTable = {
-  1: { hp: 12_400, atk: 89, armour: 31 }, // tidal-colossus
-  2: { hp: 7_500, atk: 143, armour: 54 }, // cinder-wyrm
-  3: { hp: 14_300, atk: 53, armour: 6 }, // storm-sovereign
-  4: { hp: 23_700, atk: 100, armour: 19 }, // old-bogback
-  5: { hp: 6_500, atk: 140, armour: 124 }, // thornmother
-  6: { hp: 16_700, atk: 107, armour: 47 }, // tidal-colossus
+  1: { hp: 3_800, atk: 83, armour: 19 }, // tidal-colossus
+  2: { hp: 7_500, atk: 80, armour: 42 }, // cinder-wyrm
+  3: { hp: 13_500, atk: 53, armour: 6 }, // storm-sovereign
+  4: { hp: 28_200, atk: 82, armour: 19 }, // old-bogback
+  5: { hp: 6_500, atk: 150, armour: 124 }, // thornmother
+  6: { hp: 14_500, atk: 119, armour: 27 }, // tidal-colossus
   7: { hp: 10_200, atk: 185, armour: 49 }, // cinder-wyrm
-  8: { hp: 7_800, atk: 96, armour: 9 }, // storm-sovereign
-  9: { hp: 26_700, atk: 118, armour: 36 }, // old-bogback
-  10: { hp: 8_500, atk: 97, armour: 155 }, // thornmother
-  11: { hp: 20_200, atk: 120, armour: 34 }, // tidal-colossus
+  8: { hp: 7_000, atk: 92, armour: 8 }, // storm-sovereign
+  9: { hp: 31_300, atk: 106, armour: 35 }, // old-bogback
+  10: { hp: 8_000, atk: 102, armour: 149 }, // thornmother
+  11: { hp: 14_500, atk: 119, armour: 42 }, // tidal-colossus
   12: { hp: 11_500, atk: 199, armour: 49 }, // cinder-wyrm
-  13: { hp: 15_100, atk: 57, armour: 10 }, // storm-sovereign
+  13: { hp: 10_200, atk: 64, armour: 8 }, // storm-sovereign
   14: { hp: 31_200, atk: 123, armour: 31 }, // old-bogback
-  15: { hp: 8_500, atk: 92, armour: 162 }, // thornmother
+  15: { hp: 8_500, atk: 102, armour: 156 }, // thornmother
 };
 
 /**
@@ -82,7 +82,7 @@ export const SLOT_NUMBERS: SlotTable = {
  * that reaches slot 5 in week 5 fights it first in week 6 (the Festival clock is the server's age in weeks, `path.ts`). The ownability
  * check reads it (`ownability.ts`: a slot's tool line must be ownable and evolved in the week the slot arrives).
  */
-export const SLOT_WEEKS: readonly number[] = [1, 2, 3, 4, 5, 7, 8, 9, 10, 12, 13, 14, 15, 17, 18];
+export const SLOT_WEEKS: readonly number[] = [1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 16, 17, 18];
 
 /**
  * The young-server ramp, a column of the track's data (Misa, 2026-10-30; `docs/design/decisions/raids.md`): a new server has only
@@ -108,16 +108,20 @@ export const SLOT_WALL: Readonly<Record<number, true>> = { 5: true };
 
 /**
  * A slot's own prepared line (a line spec as in `bossAnswers.ts`), used by the track tuner and the path in place of the boss's first
- * written answer (`slotPreparedOf`). Slot 1 only: the tutorial boss is tuned for the creatures a week-1 server has. Its boss's first
- * answer uses Tempestray, a rare, which a server of 8 owns with a chance of 14% in week 1; with commons only the line reached 88% to
- * 90% potential at best (Cindle 56%, Pyrelynx 66%, Geyserpup 75%, Geyserpup with Puddle Maker in both swapped slots 88%, and 90% with
- * Edge-walker on the first one), so the line below is that one: the first answer's line with both Tempestrays replaced by
- * Geyserpup with Puddle Maker (Edge-walker kept where legal). The ownability rule (`ownability.ts`) reads this line on every slot.
- * A creature of it under its form's evolution level fights as its stage 1 form (`gatedPick` in `roster.ts`), so a week-1 server fields
- * the line's stage 1 forms; the ownability rule asks that the line be evolved at the slot's arrival week.
+ * written answer (`slotPreparedOf`). Slots 1 and 2: a server there has no evolved forms (a stage 2 form evolves at level 15, and a daily
+ * player's best creature is level 11 in week 1 and 14 in week 2), so each line is the line such a server really fields, the gated
+ * version of the line it had (`gatedPick` in `roster.ts`: each stage 2 form is its stage 1 form, with the Knack and the talents the
+ * gate keeps; an evolved line would be fielded as these anyway, and the ownability rule asks that a slot's line be evolved at its week).
+ * - Slot 1 (the tutorial boss): the old line, the boss's first answer with both Tempestrays replaced by Geyserpup with Puddle Maker
+ *   (Tempestray is a rare, which a server of 8 owns with a chance of 33% in week 1), gated. All common.
+ * - Slot 2: the Cinder Wyrm's first answer, gated; it keeps the tool (the first card's answer, Squelch Song, on three Squelch).
+ * A team search over the common stage 1 forms found lines with more raw potential at the same numbers (slot 1: 277% against 132%;
+ * slot 2: 177% against 132%), but retuned they were worse where the tuner looks: slot 1 at the lower limit of the search again with a
+ * prepared potential of 180% and 115% with random talents, slot 2 at 4,800 HP with 107% with random talents. These lines are kept.
  */
 export const SLOT_LINE: Readonly<Record<number, string>> = {
-  1: 'kilnmole/keep-the-heat-in+brace bogwarden/wide-reach+long-shadow drizzlewt/clear-the-air+bright-boost geyserpup/puddle-maker+edge-walker | tidewing/lead-the-way+owners-mark fogwyrm/wide-reach+catch-breath voltaro/none+odd-one-out drizzlewt/curl-up+bright-boost | fogwyrm/wide-reach+unbothered sunfawn/curl-up+brace geyserpup/puddle-maker tidewing/double-mark+owners-mark',
+  1: 'ashmole/wide-warmth+brace mudlump/wide-reach+long-shadow mistnewt/wide-reach splashet/steady-mark+edge-walker | splashet/lead-the-way+owners-mark mistnewt/wide-reach+catch-breath zipmouse/none+odd-one-out mistnewt/wide-reach | mistnewt/wide-reach+unbothered sproutle/wide-reach+brace splashet/steady-mark splashet/steady-mark+owners-mark',
+  2: 'ashmole/none mistnewt/wide-reach zipmouse/none splashet/none+finisher | splashet/steady-mark+finisher ashmole/wide-warmth+bright-boost mistnewt/wide-reach+flank-guard mistnewt/none+catch-breath | squelch/squelch-song+clinging mudlump/mud-wall+brace mistnewt/none squelch/squelch-song | splashet/none+hardy cindle/detonate mudlump/mud-wall squelch/squelch-song',
 };
 
 /**
@@ -167,6 +171,51 @@ export function slotPreparedOf(
   if (!first) throw new Error(`${bossId} has no written answer`);
   const spec = SLOT_LINE[slot] ?? first.line;
   return { line: answerLine(spec), core: first.core ?? [] };
+}
+
+/** One written answer of a slot's boss as the track fields it: its label, its raid line and its tool (`core`). */
+export interface SlotAnswer {
+  readonly label: string;
+  readonly line: Pick[];
+  readonly core: readonly string[];
+}
+
+/**
+ * Every written answer of a slot's boss (`BOSS_ANSWERS`), in order, as the track fields them: the first answer's line is the slot's own
+ * line where `SLOT_LINE` names one (the same line `slotPreparedOf` gives), the others are as written. A creature under its form's
+ * evolution level fights as its stage 1 form wherever the line is levelled (`gatedPick` in `roster.ts`).
+ */
+export function slotAnswersOf(slot: number, order: readonly string[] = TRACK_ORDER): SlotAnswer[] {
+  const written = BOSS_ANSWERS[trackSlot(slot, order).bossId] ?? [];
+  if (!written.length) throw new Error(`${trackSlot(slot, order).bossId} has no written answer`);
+  return written.map((a, i) => ({
+    label: a.label,
+    line: answerLine(i === 0 ? (SLOT_LINE[slot] ?? a.line) : a.line),
+    core: a.core ?? [],
+  }));
+}
+
+/**
+ * Which written answer the mixed server's min-maxers and builders field at a slot (an index into `slotAnswersOf`; absent: 0, the
+ * first answer, the slot's prepared line), a column of the track's data (design panel 6, the lead, 2026-10-30). The first answer wants
+ * a Wide Reach Guard in every column, and every casual column of a mixed server leaves a gap; an answer that covers whole rows (Row
+ * Ward) lets one builder per row carry the casual players. The tuner measures each answer's mixed kill rate at the slot's numbers and
+ * week in the full measurement and proposes the best (`trackSummary` prints the lines to paste). The dedicated server always keeps the
+ * slot's prepared line.
+ */
+export const SLOT_MIXED_ANSWER: Readonly<Record<number, number>> = {};
+
+/** The answer the mixed server fields at a slot: `index` (default `SLOT_MIXED_ANSWER`'s entry, else the first answer). */
+export function slotMixedOf(
+  slot: number,
+  index?: number,
+  order: readonly string[] = TRACK_ORDER,
+): SlotAnswer {
+  const answers = slotAnswersOf(slot, order);
+  const at = index ?? SLOT_MIXED_ANSWER[slot] ?? 0;
+  const answer = answers[at];
+  if (!answer) throw new Error(`slot ${slot} has no written answer number ${at}`);
+  return answer;
 }
 
 /** The strength of a slot's cards, by slot, when set by hand (bp). Empty: the rank ladder (`rankStrengthBp`). */

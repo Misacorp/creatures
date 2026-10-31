@@ -128,6 +128,18 @@ export function answerOwnability(
   };
 }
 
+/**
+ * Whether a raid line (as picks) is ownable at `week`: the chance that a mixed server of `OWNABLE_SERVER` owns every non-common line it
+ * uses is at least `OWNABLE_CHANCE_MIN` (the same rule as `answerOwnability`, for a line that is not a written answer's text).
+ */
+export function lineOwnable(
+  picks: readonly Pick[],
+  week: number,
+  coverage: ServerCoverage = VALLEY_COVERAGE,
+): boolean {
+  return ownableChance(nonCommonLines(picks), week, OWNABLE_SERVER, coverage) >= OWNABLE_CHANCE_MIN;
+}
+
 /** A creature of a tool line that has not evolved yet at the arrival week: its form, the level of its row, and the level it evolves at. */
 export interface BelowEvolution {
   readonly formId: string;

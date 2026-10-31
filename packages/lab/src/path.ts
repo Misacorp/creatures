@@ -35,7 +35,14 @@ import {
 } from './roster';
 import { VALLEY_ROSTER } from './valley';
 import { LEVEL, type Pick } from './search';
-import { TRACK_ORDER, slotBoss, slotPreparedOf, trackSlot, type SlotTable } from './track';
+import {
+  TRACK_ORDER,
+  slotBoss,
+  slotMixedOf,
+  slotPreparedOf,
+  trackSlot,
+  type SlotTable,
+} from './track';
 import type { BossDef, Placement } from './types';
 
 /**
@@ -101,6 +108,11 @@ export interface PathRun {
   readonly table?: SlotTable;
   /** The Determination the path plays with: `DETERMINATION` when absent, none for `'off'` (the track tuner, and the comparison run). */
   readonly determination?: Determination | 'off';
+  /**
+   * Which written answer the mixed server's min-maxers and builders field (an index into `slotAnswersOf`): the slot's `SLOT_MIXED_ANSWER`
+   * entry when absent. The tuner sets it to measure each answer; the dedicated and builder servers always field the slot's prepared line.
+   */
+  readonly mixedAnswer?: number;
 }
 
 export interface WalkOptions {
@@ -250,7 +262,10 @@ export function serverWeekend(
 ): { boss: BossDef; placements: Placement[]; bench: Placement[] } {
   const base = slotBoss(slot, run.table ? { table: run.table } : {});
   const rows = base.rows;
-  const { line, core } = slotPreparedOf(slot);
+  // The dedicated and the builder server field the slot's prepared line; the mixed server's min-maxers and builders field the written
+  // answer that suits it at this slot (`SLOT_MIXED_ANSWER`).
+  const { line, core } =
+    server.id === 'mixed' ? slotMixedOf(slot, run.mixedAnswer) : slotPreparedOf(slot);
   const boss = server.players.length === base.cols ? base : wideBoss(base, server.players.length);
   const whole = server.players.length === base.cols;
   let m = 0;

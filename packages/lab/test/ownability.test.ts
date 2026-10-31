@@ -1,7 +1,13 @@
 /** Ownability: a slot's tool line must be ownable by a mixed server at the week the slot arrives (`ownability.ts`, `boss-track.md`). */
 import { describe, expect, it } from 'vitest';
 import { content } from '@creatures/game';
-import { BOSS_ANSWERS, answerLine, answerProblems, type BossAnswer } from '../src/bossAnswers';
+import {
+  BOSS_ANSWERS,
+  answerLine,
+  answerProblems,
+  withoutTool,
+  type BossAnswer,
+} from '../src/bossAnswers';
 import {
   answerOwnability,
   lineFindable,
@@ -25,7 +31,7 @@ import {
   slotPreparedOf,
   trackSlot,
 } from '../src/track';
-import { ROSTER_WEEKS } from '../src/roster';
+import { ROSTER_WEEKS, gatedPick } from '../src/roster';
 import {
   COVERAGE_RARITIES,
   COVERAGE_SERVERS,
@@ -262,16 +268,45 @@ describe('the track', () => {
     ).toEqual([]);
   });
 
-  it('finds the creatures of a line under their evolution level: a week-1 slot 1 line is stage 2 forms at level 11, a late week has none', () => {
-    const early = evolvedAt(1, 1);
+  it('finds the creatures of a line under their evolution level: slot 3’s line is stage 2 forms, under 15 at level 11 in week 1, and a late week has none', () => {
+    const early = evolvedAt(3, 1);
     expect(early.length).toBeGreaterThan(0);
     expect(early.every((b) => b.level < b.evolvesAt && b.evolvesAt === 15)).toBe(true);
-    expect(slotOwnability(1, 1).pass).toBe(false);
-    expect(slotOwnability(1, 1).unevolved).toEqual(early);
-    expect(evolvedAt(1, 24)).toEqual([]);
-    expect(slotOwnability(1, 24).pass).toBe(slotOwnability(1, 24).tool.ownable);
+    expect(slotOwnability(3, 1).pass).toBe(false);
+    expect(slotOwnability(3, 1).unevolved).toEqual(early);
+    expect(evolvedAt(3, 24)).toEqual([]);
+    expect(slotOwnability(3, 24).pass).toBe(slotOwnability(3, 24).tool.ownable);
     // A form is listed once for a row, not once for each column that brings it.
     expect(new Set(early.map((b) => `${b.formId}/${b.row}`)).size).toBe(early.length);
+  });
+
+  // A week-1 or week-2 server has no evolved forms (the evolution level is 15; a daily player's best creature is level 11 in week 1 and
+  // 14 in week 2), so slots 1 and 2 name a stage 1 line of their own: the gated version of the boss's first answer.
+  it('gives slots 1 and 2 a line of stage 1 forms, evolved by definition, that passes at the weeks they arrive', () => {
+    for (const slot of [1, 2]) {
+      const { line } = slotPreparedOf(slot);
+      expect(line.length).toBeGreaterThan(0);
+      for (const p of line)
+        expect(content.creatures.find((c) => c.id === p.formId)?.stage, `${slot} ${p.formId}`).toBe(
+          1,
+        );
+      expect(evolvedAt(slot, SLOT_WEEKS[slot - 1] as number)).toEqual([]);
+      expect(slotOwnability(slot).pass).toBe(true);
+    }
+  });
+
+  it('keeps slot 2’s tool on a stage 1 line: the boss’s first card’s answer (Squelch Song) is on a Squelch', () => {
+    const { line, core } = slotPreparedOf(2);
+    expect(core).toEqual(BOSS_ANSWERS['cinder-wyrm']?.[0]?.core);
+    const carriers = line.filter((p) => core.includes(p.knack));
+    expect(carriers.length).toBeGreaterThanOrEqual(3);
+    expect(carriers.every((p) => p.formId === 'squelch')).toBe(true);
+    expect(withoutTool(line, core).some((p) => core.includes(p.knack))).toBe(false);
+  });
+
+  it('is, for slot 2, the gated version of the boss’s first answer: the same shape, each stage 2 form its stage 1 form', () => {
+    const first = answerLine(BOSS_ANSWERS[trackSlot(2).bossId]?.[0]?.line as string);
+    expect(slotPreparedOf(2).line).toEqual(first.map((p) => gatedPick(p, 1)));
   });
 
   // No written answer may use a festival prize (Hearthshell, Lanternfin: scouts cannot find them), and every answer must be

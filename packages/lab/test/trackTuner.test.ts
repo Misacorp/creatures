@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { content } from '@creatures/game';
 import { OWN_KNACKS } from '../src/knacks';
 import { RAID_BOSS_IDS, RAID_RANKS, RAID_SPECS, raidBossOf } from '../src/bosses';
-import { DEDICATED, serverWeekend } from '../src/path';
+import { DEDICATED, MIXED, serverWeekend } from '../src/path';
+import { weekendStatsOf } from '../src/bosses';
+import { lineOwnable } from '../src/ownability';
 import { ROSTER_WEEKS, type RosterProfile, type RosterWeek } from '../src/roster';
 import {
   BEAT2_MIN,
@@ -44,6 +46,8 @@ import {
   lapKillViolations,
   LAP_KILL_NOISE,
   evalSlot,
+  MIXED_ANSWER_MARGIN,
+  mixedAnswerPasteOf,
   pasteOf,
   weeksPasteOf,
   quantised,
@@ -65,6 +69,7 @@ import {
   rankNumbers,
   slotBoss,
   slotExtraCards,
+  slotAnswersOf,
   slotNumbers,
   slotPreparedOf,
   trackSlot,
@@ -816,5 +821,81 @@ describe('the information measures of a slot (not targets)', () => {
     expect(md).toContain(
       '| 3 | storm-sovereign | 8 | 80% | 70% (60% to 85%) | 130% | 110% | 120% |',
     );
+  });
+});
+
+describe('the answer the mixed server fields (design panel 6)', () => {
+  const tiny = { weekends: 2, draws: 1, classicWeekends: 1, mixedDraws: 3, mixedWeekends: 1 };
+  const args = {
+    slot: 11,
+    week: 13,
+    speed: 'expected' as const,
+    numbers: { hp: 14_000, atk: 100, armour: 30 },
+    fidelity: tiny,
+    salt: 'mixed-answer',
+  };
+
+  it('measures every written answer on the same casual rosters and seeds, and keeps the best only when it clears the margin', () => {
+    const r = evalSlot(args);
+    const mixed = r.mixed as NonNullable<typeof r.mixed>;
+    const answers = slotAnswersOf(args.slot);
+    expect(mixed.kills).toHaveLength(answers.length);
+    // Each answer's kill rate is the mixed server's weekends with that answer, as the path plays them.
+    mixed.kills.forEach((kill, k) => {
+      const wins = Array.from({ length: tiny.mixedDraws }, (_, d) => {
+        const w = serverWeekend(
+          MIXED,
+          args.slot,
+          args.week,
+          args.speed,
+          `${args.salt}:m${d}`,
+          undefined,
+          { table: { [args.slot]: args.numbers }, mixedAnswer: k },
+        );
+        return weekendStatsOf(w.boss, w.placements, w.bench, 1, `${args.salt}:m${d}`).winRate;
+      });
+      expect(kill).toBeCloseTo(wins.reduce((a, b) => a + b, 0) / wins.length, 10);
+    });
+    // The first answer is the default; another replaces it only if it is ownable at the week and kills better by the margin.
+    const other = mixed.kills.findIndex(
+      (kill, k) =>
+        k > 0 &&
+        lineOwnable(answers[k]?.line ?? [], args.week) &&
+        kill > (mixed.kills[0] as number) + MIXED_ANSWER_MARGIN,
+    );
+    expect(mixed.answer).toBe(other >= 0 ? other : 0);
+    // The target measure is the chosen answer's.
+    expect(r.measures['mixed.kill']).toBeCloseTo(mixed.kills[mixed.answer] as number, 10);
+    // Without draws of the mixed server nothing is chosen.
+    expect(evalSlot({ ...args, fidelity: { ...tiny, mixedDraws: 0 } }).mixed).toBeUndefined();
+  });
+
+  it('never takes an answer the mixed server cannot own at the slot’s week', () => {
+    // Slot 6 in week 7: the second Tidal Colossus answer needs three rare and epic lines a server of 8 owns with a chance under 50%.
+    expect(lineOwnable(slotAnswersOf(6)[1]?.line ?? [], 7)).toBe(false);
+    expect(lineOwnable(slotAnswersOf(6)[0]?.line ?? [], 7)).toBe(true);
+    // A soft boss that every answer beats: the first stays (no margin to clear), and the unownable one can never be chosen.
+    const r = evalSlot({
+      ...args,
+      slot: 6,
+      week: 7,
+      numbers: { hp: 500, atk: 1, armour: 1 },
+    });
+    expect(r.mixed?.answer).toBe(0);
+  });
+
+  it('prints the answers to paste: only the slots that field a later answer', () => {
+    const best = (answer: number) => ({ mixed: { answer } });
+    expect(
+      mixedAnswerPasteOf([
+        { slot: 3, best: best(0) },
+        { slot: 4, best: best(1) },
+        { slot: 6, best: {} },
+      ]),
+    ).toEqual([
+      'export const SLOT_MIXED_ANSWER: Readonly<Record<number, number>> = {',
+      `  4: 1, // ${trackSlot(4).bossId}`,
+      '};',
+    ]);
   });
 });

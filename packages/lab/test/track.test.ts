@@ -6,6 +6,8 @@ import { CARDS } from '../src/cards';
 import {
   SLOT_CARDS,
   SLOT_EXTRA_CARDS,
+  SLOT_LINE,
+  SLOT_MIXED_ANSWER,
   SLOT_NUMBERS,
   SLOT_STRENGTH,
   SLOT_WALL,
@@ -16,11 +18,15 @@ import {
   rankLevel,
   rankNumbers,
   rankStrengthBp,
+  slotAnswersOf,
   slotBoss,
   slotExtraCards,
+  slotMixedOf,
+  slotPreparedOf,
   slotRules,
   trackSlot,
 } from '../src/track';
+import { BOSS_ANSWERS, answerLine } from '../src/bossAnswers';
 
 describe('the track order', () => {
   it('lists every shipped boss once, in the order Misa chose, all of them lab bosses', () => {
@@ -293,5 +299,42 @@ describe('the luck cards, a later lap’s new card (Misa, 2026-10-31)', () => {
     expect(slotExtraCards(4, ['a', 'b'], { 2: ['x'] })).toEqual(['x']);
     expect(slotExtraCards(6, ['a', 'b'], { 2: ['x'], 4: ['y'] })).toEqual(['x', 'y']);
     expect(slotExtraCards(1, TRACK_ORDER, {})).toEqual([]);
+  });
+});
+
+describe('the written answers of a slot and the one the mixed server fields (design panel 6)', () => {
+  it('lists every written answer of the boss, the first being the slot’s prepared line', () => {
+    for (const slot of [1, 2, 3, 6, 11]) {
+      const written = BOSS_ANSWERS[trackSlot(slot).bossId] ?? [];
+      const answers = slotAnswersOf(slot);
+      expect(answers).toHaveLength(written.length);
+      expect(answers.length).toBeGreaterThanOrEqual(2);
+      // The first is what the dedicated server fields (`SLOT_LINE` where the slot names one); the others are as written.
+      expect(answers[0]?.line).toEqual(slotPreparedOf(slot).line);
+      expect(answers[0]?.core).toEqual(slotPreparedOf(slot).core);
+      answers.slice(1).forEach((a, i) => {
+        expect(a.line).toEqual(answerLine((written[i + 1] as { line: string }).line));
+        expect(a.core).toEqual(written[i + 1]?.core);
+        expect(a.label).toBe(written[i + 1]?.label);
+      });
+    }
+    expect(slotAnswersOf(1)[0]?.line).toEqual(answerLine(SLOT_LINE[1] as string));
+  });
+
+  it('gives the mixed server the first answer unless the slot says otherwise, and takes an index', () => {
+    expect(slotMixedOf(3)).toEqual(slotAnswersOf(3)[SLOT_MIXED_ANSWER[3] ?? 0]);
+    expect(slotMixedOf(3, 0)).toEqual(slotAnswersOf(3)[0]);
+    expect(slotMixedOf(3, 1)).toEqual(slotAnswersOf(3)[1]);
+    expect(slotMixedOf(3, 1).line).not.toEqual(slotMixedOf(3, 0).line);
+    expect(() => slotMixedOf(3, 9)).toThrow(/no written answer number 9/);
+  });
+
+  it('only names answers a boss has, on slots of the track', () => {
+    for (const [slot, index] of Object.entries(SLOT_MIXED_ANSWER)) {
+      expect(Number(slot)).toBeGreaterThanOrEqual(1);
+      expect(Number.isInteger(index)).toBe(true);
+      expect(index).toBeGreaterThanOrEqual(0);
+      expect(index).toBeLessThan(slotAnswersOf(Number(slot)).length);
+    }
   });
 });

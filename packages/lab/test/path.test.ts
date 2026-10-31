@@ -25,7 +25,14 @@ import { rosterLevels } from '../src/roster';
 import { VALLEY_ROSTER } from '../src/valley';
 import { MIXED_ORDER } from '../src/raidMeasure';
 import { preparedOf } from '../src/tuner';
-import { TRACK_ORDER } from '../src/track';
+import {
+  SLOT_MIXED_ANSWER,
+  TRACK_ORDER,
+  slotAnswersOf,
+  slotBoss,
+  slotMixedOf,
+  slotPreparedOf,
+} from '../src/track';
 
 describe('walkPath with a fake fight', () => {
   it('always winning: one slot a week, a Festival week only skips the raid', () => {
@@ -383,6 +390,72 @@ describe('the servers', () => {
         Array.from({ length: w.boss.rows }, (_, r) => line[r * w.boss.cols + c]?.formId),
       );
     });
+  });
+
+  it('has the mixed server’s min-maxers and builders field the written answer asked for, and the dedicated and builder servers keep the slot’s prepared line', () => {
+    const slot = 6;
+    const week = 8;
+    const formsOf = (server: PathServer, players: readonly number[], mixedAnswer?: number) => {
+      const w = serverWeekend(server, slot, week, 'expected', 'answer', VALLEY_ROSTER, {
+        ...(mixedAnswer === undefined ? {} : { mixedAnswer }),
+      });
+      return players.map((c) =>
+        w.placements
+          .filter((x) => x.col === c)
+          .sort((a, b) => a.row - b.row)
+          .map((x) => `${x.formId}/${x.knack}`),
+      );
+    };
+    // Players 0, 2, 4, 6 and 8 of the mixed server are min-maxers and builders (the casual ones are the odd columns).
+    const prepared = [0, 2, 4, 6, 8];
+    const first = formsOf(MIXED, prepared, 0);
+    const second = formsOf(MIXED, prepared, 1);
+    expect(second).not.toEqual(first);
+    // Every column of either is a column of that written answer (a builder's has at most two copies of a form).
+    for (const [mixedAnswer, columns] of [
+      [0, first],
+      [1, second],
+    ] as const) {
+      const { line } = slotMixedOf(slot, mixedAnswer);
+      const cols = slotBoss(slot).cols;
+      const whole = Array.from({ length: cols }, (_, c) =>
+        Array.from(
+          { length: line.length / cols },
+          (_, r) => line[r * cols + c] as (typeof line)[0],
+        ),
+      );
+      const wholeKnacks = whole.map((col) => col.map((p) => p.knack));
+      for (const col of columns)
+        expect(wholeKnacks.some((k) => k.join() === col.map((x) => x.split('/')[1]).join())).toBe(
+          true,
+        );
+    }
+    // The casual players do not read the boss: the answer changes none of their columns.
+    expect(formsOf(MIXED, [1, 3, 5, 7, 9], 0)).toEqual(formsOf(MIXED, [1, 3, 5, 7, 9], 1));
+    // The dedicated server and the builder server always field the slot's prepared line.
+    expect(formsOf(DEDICATED, [0, 1, 2, 3], 1)).toEqual(formsOf(DEDICATED, [0, 1, 2, 3], 0));
+    expect(formsOf(BUILDERS, [0, 1, 2, 3], 1)).toEqual(formsOf(BUILDERS, [0, 1, 2, 3], 0));
+    const { line } = slotPreparedOf(slot);
+    const cols = slotBoss(slot).cols;
+    expect(formsOf(DEDICATED, [0], 1)[0]).toEqual(
+      Array.from({ length: line.length / cols }, (_, r) => {
+        const p = line[r * cols] as (typeof line)[0];
+        return `${p.formId}/${p.knack}`;
+      }),
+    );
+    expect(slotAnswersOf(slot).length).toBeGreaterThan(1);
+  });
+
+  it('fights the mixed answer’s line when no answer is asked for: the slot’s SLOT_MIXED_ANSWER entry', () => {
+    const same = (a: ReturnType<typeof serverWeekend>, b: ReturnType<typeof serverWeekend>) =>
+      expect(a.placements).toEqual(b.placements);
+    for (const slot of [1, 3, 6]) {
+      const entry = SLOT_MIXED_ANSWER[slot] ?? 0;
+      same(
+        serverWeekend(MIXED, slot, 9, 'expected', 'dflt'),
+        serverWeekend(MIXED, slot, 9, 'expected', 'dflt', VALLEY_ROSTER, { mixedAnswer: entry }),
+      );
+    }
   });
 
   it('fight reproducibly: same server, same weekend, same result', () => {

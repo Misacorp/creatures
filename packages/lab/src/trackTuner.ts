@@ -12,6 +12,7 @@
  * and kills at most 5% of weekends. Slot 1 also asks that the mixed server (the path's mapping) kills it in its first weekend in at
  * least 80% of weekends (`TUTORIAL_MIXED_KILL_MIN`); every other slot asks it to kill within three weekends in half of its runs
  * (`MIXED_KILL_MIN`, a weight below the dedicated targets, so a dedicated target wins where both cannot hold).
+ * The mixed server's min-maxers and builders field whichever written answer of the boss kills best for the mixed server at the slot's numbers and week (`measureSpeed`: each ownable answer on the same rosters and seeds; `SLOT_MIXED_ANSWER` in `track.ts` is the committed choice the path plays).
  * A creature under its form's evolution level fights as its stage 1 form (`gatedPick`, `roster.ts`) in every team here.
  * Information measures (`SlotInfo`, never targets) are taken in the full measurement: the classic party beside decent trios with
  * rotated elements, the prepared line at middling ranks and with random talents. Determination (`path.ts`) is never used here. The lab tests' rules (`raidRules.ts`) belong to the three fixed ranks and are not applied here.
@@ -44,6 +45,7 @@ import {
 } from './bosses';
 import { runJobs, type JobSpec, type Plan } from './jobs';
 import { MIXED, planPath, serverWeekend } from './path';
+import { lineOwnable } from './ownability';
 import { columnOf } from './raidMeasure';
 import {
   ROSTER_WEEKS,
@@ -94,6 +96,7 @@ import {
   rankNumbers,
   slotBoss,
   slotNumbers,
+  slotAnswersOf,
   slotPreparedOf,
   trackSlot,
   type SlotTable,
@@ -175,6 +178,9 @@ export function dedicatedTeam(
   return { placements, bench };
 }
 
+/** The kill rate another written answer must beat the first's by for the mixed server to field it instead (`measureSpeed`). */
+export const MIXED_ANSWER_MARGIN = 0.05;
+
 /** What a slot measurement takes: how many weekends of each (`Fidelity`; its rules are not used). */
 export interface SlotEvalArgs {
   readonly slot: number;
@@ -237,6 +243,12 @@ export interface SlotEvalResult {
   readonly weekends: number;
   /** The information measures, in the full measurement (`Fidelity.info`) only. */
   readonly info?: SlotInfo;
+  /**
+   * The mixed server's answer: the index (into `slotAnswersOf`) of the written answer its min-maxers and builders field because it kills
+   * best at these numbers, and the kill rate of each answer (a measurement of the mixed server, same seeds). Absent when the mixed
+   * server was not measured.
+   */
+  readonly mixed?: { readonly answer: number; readonly kills: readonly number[] };
 }
 
 const unmeasured = (): Record<RaidMeasure, number> =>
@@ -322,22 +334,48 @@ function measureSpeed(
       })()
     : undefined;
   // The mixed server of ten at the path's mapping: its kill rate is a target (`MIXED_KILL_MIN`, slot 1's `TUTORIAL_MIXED_KILL_MIN`);
-  // its potential is information, taken in the full measurement only.
-  const mixedDraws = Array.from({ length: f.mixedDraws }, (_, d) => {
-    const w = serverWeekend(MIXED, a.slot, a.week, speed, `${a.salt}:m${d}`, profile, { table });
-    return {
-      stats: weekendStatsOf(w.boss, w.placements, w.bench, f.mixedWeekends, `${a.salt}:m${d}`),
-      potential: f.info
-        ? weekendPotentialOf(w.boss, w.placements, w.bench, f.mixedWeekends, `${a.salt}:m${d}`)
-        : undefined,
-    };
+  // its potential is information, taken in the full measurement only. Its min-maxers and builders field whichever written answer of the
+  // boss gives the mixed server the best kill rate at the slot's numbers (`SLOT_MIXED_ANSWER`): each answer is measured on the same
+  // casual rosters and seeds, and the best one (the first on a tie) is the mixed server's.
+  const mixedDrawsOf = (answer: number) =>
+    Array.from({ length: f.mixedDraws }, (_, d) => {
+      const w = serverWeekend(MIXED, a.slot, a.week, speed, `${a.salt}:m${d}`, profile, {
+        table,
+        mixedAnswer: answer,
+      });
+      return {
+        w,
+        stats: weekendStatsOf(w.boss, w.placements, w.bench, f.mixedWeekends, `${a.salt}:m${d}`),
+      };
+    });
+  const answers = f.mixedDraws ? slotAnswersOf(a.slot).length : 0;
+  const tried = Array.from({ length: answers }, (_, k) => {
+    const draws = mixedDrawsOf(k);
+    return { draws, stats: combineWeekends(draws.map((d) => d.stats)) };
   });
-  const mixed: WeekendStats | undefined = f.mixedDraws
-    ? combineWeekends(mixedDraws.map((d) => d.stats))
-    : undefined;
+  // Only an answer the mixed server can own at this week is a candidate (`lineOwnable`; the first, the slot's prepared line, always is),
+  // and another answer replaces the first only when it kills more often by `MIXED_ANSWER_MARGIN` (a measurement is noisy: the table
+  // should not flip on luck).
+  const bestAnswer = tried.reduce((best, t, k) => {
+    if (k === 0 || !lineOwnable(slotAnswersOf(a.slot)[k]?.line ?? [], a.week)) return best;
+    const need = (tried[best]?.stats.winRate ?? 0) + (best === 0 ? MIXED_ANSWER_MARGIN : 0);
+    return t.stats.winRate > need ? k : best;
+  }, 0);
+  const chosen = tried[bestAnswer];
+  const mixed: WeekendStats | undefined = chosen?.stats;
   const mixedPot =
-    f.mixedDraws && f.info
-      ? combinePotential(mixedDraws.flatMap((d) => (d.potential ? [d.potential] : []))).mean
+    chosen && f.info
+      ? combinePotential(
+          chosen.draws.map((d, i) =>
+            weekendPotentialOf(
+              d.w.boss,
+              d.w.placements,
+              d.w.bench,
+              f.mixedWeekends,
+              `${a.salt}:m${i}`,
+            ),
+          ),
+        ).mean
       : Number.NaN;
   return {
     measures: {
@@ -366,7 +404,7 @@ function measureSpeed(
       2 * per * f.draws +
       2 * f.weekends +
       f.classicWeekends +
-      f.mixedDraws * f.mixedWeekends +
+      answers * f.mixedDraws * f.mixedWeekends +
       // The potential weekends: written, classic and the line without its tool; the information ones (random draws, the mixed server's).
       f.weekends +
       f.classicWeekends +
@@ -374,6 +412,9 @@ function measureSpeed(
       f.weekends +
       (f.info ? per * f.draws + ROTATED_TRIOS.length * f.classicWeekends + f.weekends : 0),
     ...(slotInfo ? { info: slotInfo } : {}),
+    ...(tried.length
+      ? { mixed: { answer: bestAnswer, kills: tried.map((t) => t.stats.winRate) } }
+      : {}),
   };
 }
 
@@ -458,6 +499,8 @@ export interface SlotRow {
   readonly measures: RaidMeasures;
   /** The information measures (the full measurement of the proposal only). */
   readonly info?: SlotInfo;
+  /** The mixed server's answer at these numbers and each answer's kill rate (`SlotEvalResult.mixed`). */
+  readonly mixed?: { readonly answer: number; readonly kills: readonly number[] };
   readonly loss: number;
   readonly misses: Miss[];
 }
@@ -466,6 +509,7 @@ const rowOf = (targets: readonly RaidTarget[], numbers: Numbers, r: SlotEvalResu
   numbers,
   measures: r.measures,
   ...(r.info ? { info: r.info } : {}),
+  ...(r.mixed ? { mixed: r.mixed } : {}),
   loss: lossOf(targets, r.measures),
   misses: targets.map((t) => ({
     target: describeTarget(t),
@@ -939,6 +983,25 @@ export function weeksPasteOf(weeks: readonly number[]): string {
   return `export const SLOT_WEEKS: readonly number[] = [${weeks.join(', ')}];`;
 }
 
+/** The mixed server's answer of a slot as a table cell: the answer it fields (1-based, as the written order) and every answer's kill rate. */
+const mixedAnswerText = (m: SlotRow['mixed']): string =>
+  m ? `${m.answer + 1} (${m.kills.map((k) => `${Math.round(k * 100)}%`).join(' / ')})` : '-';
+
+/** The `SLOT_MIXED_ANSWER` table (`track.ts`) for slots `first` to `last`: the answer each slot's mixed server fields (0 is the first answer, left out). */
+export function mixedAnswerPasteOf(
+  slots: readonly {
+    readonly slot: number;
+    readonly best: { readonly mixed?: { readonly answer: number } };
+  }[],
+): string[] {
+  const lines = ['export const SLOT_MIXED_ANSWER: Readonly<Record<number, number>> = {'];
+  for (const s of slots)
+    if (s.best.mixed && s.best.mixed.answer > 0)
+      lines.push(`  ${s.slot}: ${s.best.mixed.answer}, // ${trackSlot(s.slot).bossId}`);
+  lines.push('};');
+  return lines;
+}
+
 /** The markdown of a run: the rounds, one table of the slots (numbers, targets, misses) and the paste. */
 export function trackSummary(
   r: TrackTuneResult,
@@ -946,7 +1009,7 @@ export function trackSummary(
 ): string[] {
   const out = [`## Track tuner${o.quick ? ' (quick)' : ''}`, ''];
   out.push(
-    `Proposals only: nothing was applied to \`track.ts\`. Each slot is tuned for the roster a dedicated server has in its arrival week at the ${TUNE_SPEED} speed, against Misa’s targets (\`targets.ts\`, 2026-10-30), with the lap rule that a later lap's first-weekend kill rate is not above the lap before's by more than noise. The mixed server is information only.`,
+    `Proposals only: nothing was applied to \`track.ts\`. Each slot is tuned for the roster a dedicated server has in its arrival week at the ${TUNE_SPEED} speed, against Misa’s targets (\`targets.ts\`, 2026-10-30), with the lap rule that a later lap's first-weekend kill rate is not above the lap before's by more than noise. Every slot but the first asks the mixed server to kill within three weekends in half of its runs, fielding the written answer that suits it best (\`SLOT_MIXED_ANSWER\`).`,
     '',
     '### Rounds (path, then tune for its arrival weeks)',
     '',
@@ -969,8 +1032,8 @@ export function trackSummary(
     '',
     '### Slots',
     '',
-    '| Slot | Boss | Week | Rules | Cards | HP | Attack | Armour | prepared potential (written) | prepared potential (random) | prepared.share | first-weekend kill | prepared.beat2 | tool.share (info) | tool.written (info) | tool potential | tool target | classic potential | classic.kill | mixed potential / kill (target) / share / weekends to a kill | Misses | At the edge of the search |',
-    `| ${Array.from({ length: 22 }, () => '---').join(' | ')} |`,
+    '| Slot | Boss | Week | Rules | Cards | HP | Attack | Armour | prepared potential (written) | prepared potential (random) | prepared.share | first-weekend kill | prepared.beat2 | tool.share (info) | tool.written (info) | tool potential | tool target | classic potential | classic.kill | mixed potential / kill (target) / share / weekends to a kill | mixed answer (kill of each written answer) | Misses | At the edge of the search |',
+    `| ${Array.from({ length: 23 }, () => '---').join(' | ')} |`,
   );
   for (const s of r.slots) {
     const m = s.best.measures;
@@ -993,7 +1056,7 @@ export function trackSummary(
         .map((k) => cell(t, k, m))
         .join(
           ' | ',
-        )} | ${cell(t, 'tool.potential', m)} | ${tool === undefined ? 'none' : `≥ ${pct(tool)}`} | ${cell(t, 'classic.potential', m)} | ${cell(t, 'classic.kill', m)} | ${pct(m['mixed.potential'])} / ${cell(t, 'mixed.kill', m)} / ${pct(m['mixed.share'])} / ${weeksText(m['mixed.kill'])} | ${missed.length ? missed.join('; ') : 'none'} | ${s.atEdge.length ? s.atEdge.join(', ') : '-'} |`,
+        )} | ${cell(t, 'tool.potential', m)} | ${tool === undefined ? 'none' : `≥ ${pct(tool)}`} | ${cell(t, 'classic.potential', m)} | ${cell(t, 'classic.kill', m)} | ${pct(m['mixed.potential'])} / ${cell(t, 'mixed.kill', m)} / ${pct(m['mixed.share'])} / ${weeksText(m['mixed.kill'])} | ${mixedAnswerText(s.best.mixed)} | ${missed.length ? missed.join('; ') : 'none'} | ${s.atEdge.length ? s.atEdge.join(', ') : '-'} |`,
     );
   }
   out.push(
@@ -1041,12 +1104,14 @@ export function trackSummary(
     out.push('');
   }
   out.push(
-    '### Paste into `SLOT_NUMBERS` and `SLOT_WEEKS` (`track.ts`)',
+    '### Paste into `SLOT_NUMBERS`, `SLOT_WEEKS` and `SLOT_MIXED_ANSWER` (`track.ts`)',
     '',
     '```ts',
     ...pasteOf(r.loop.table, o.first, o.last),
     '',
     weeksPasteOf(r.loop.weeks),
+    '',
+    ...mixedAnswerPasteOf(r.slots),
     '```',
     '',
   );
