@@ -175,11 +175,11 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'opportunist',
       name: 'Opportunist',
-      text: 'Its {Reaction} bonus +120% when it cashes a {Mark} at x2 or more.',
+      text: 'Its {Reaction} bonus +100% when it cashes a {Mark} at x2 or more.',
       roles: ['payoff'],
       intent:
         'Rewards waiting for a bigger mark (x2 or x3); pairs with Setters that leave x2, and with a second Setter. Was x3 only (2026-10-28): a mark almost never reached x3 when cashed, so the talent did nothing.',
-      fx: { cashHighBp: 12_000 },
+      fx: { cashHighBp: 10_000 },
     }),
     T({
       id: 'quick-draw',
@@ -193,11 +193,11 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'owners-mark',
       name: "Owner's Mark",
-      text: '{Reaction}s on a {Mark} it left have a +15% bonus while it stands.',
+      text: '{Reaction}s on a {Mark} it left have a +12% bonus while it stands.',
       roles: ['setter'],
       intent:
         'A Setter that makes its own marks worth more, whoever cashes them, while it stands and is not silenced.',
-      fx: { ownMarkBp: 1_500 },
+      fx: { ownMarkBp: 1_200 },
     }),
     T({
       id: 'deep-ink',
@@ -276,11 +276,11 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'catch-breath',
       name: 'Catch Breath',
-      text: 'Once per fight (in a raid, once per weekend), when a hit drops it below half its max HP, it heals 40% of max HP.',
+      text: 'Once per fight (in a raid, once per weekend), when a hit drops it below half its max HP, it heals 30% of max HP.',
       roles: ALL,
       intent:
         'Survives one big hit (Crusher, Payoff Hunter). Not the gear line Second Wind, which is a chance each round to heal.',
-      fx: { secondWindBp: 4_000 },
+      fx: { secondWindBp: 3_000 },
     }),
     T({
       id: 'unbothered',
