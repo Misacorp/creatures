@@ -9,7 +9,7 @@ import { buildReportData, type Timings } from '../src/report';
 import { RULES } from '../src/rules';
 import { runAll, runScenario, variantSeedsFor } from '../src/scenarios';
 import { RulesSchema } from '../src/schema';
-import { ALL_SERVERS } from '../src/servers';
+import { ALL_SERVERS, temperingVariantId } from '../src/servers';
 import {
   MEASURES,
   TARGETS,
@@ -202,11 +202,20 @@ describe('the scenario scheduler', () => {
       20,
       exec,
       2,
-      ['mixed8', 'mixed15', 'mixed8-opt', 'mixed8-novisitor', 'mixed8-market', 'mixed8-nobroker'],
+      [
+        'mixed8',
+        'mixed15',
+        'mixed8-opt',
+        'mixed8-novisitor',
+        'mixed8-market',
+        'mixed8-nobroker',
+        temperingVariantId('mixed8'),
+      ],
       10,
     );
     expect(seen.get('mixed8-market')).toBe(6);
     expect(seen.get('mixed8-nobroker')).toBe(6);
+    expect(seen.get(temperingVariantId('mixed8'))).toBe(10);
     expect(seen.get('mixed8')).toBe(20);
     expect(seen.get('mixed15')).toBe(20);
     expect(seen.get('mixed8-opt')).toBe(10);

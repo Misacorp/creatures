@@ -44,6 +44,8 @@ export interface Creature {
   /** The rarity of the piece in each slot, and its modifier lines (a pip tier each; empty when the slot is). */
   gearRarity: number[];
   gearLines: number[][];
+  /** How many times the visitor has rerolled the piece in each slot (a piece the player paid to reroll is worth keeping: tempering). */
+  gearRerolls: number[];
 }
 
 /** A scout seat (V-SCOUT-1): the store holds effective hours of work not yet brought home. */
@@ -132,10 +134,17 @@ export interface WeekRecord {
   visitorBlueprints: number;
   /** Of those bought, how many were copies of one already known (each raises that blueprint's quality, V-FORGE-9). */
   visitorCopies: number;
+  /** Tempering at the Forge: pieces raised to the fire this week, how many of them had been rerolled at the visitor, what they cost in scrap and Acorns, and the levels gained. */
+  tempered: number;
+  temperedRerolled: number;
+  temperScrap: number;
+  temperAcorns: number;
+  temperLevels: number;
   /** Modifier lines at the end of the week: the best worn piece's pips (sum), its share of the most its level allows, the epics worn, and whether an epic has 4 or more top-pip lines. */
   bestPips: number;
   bestPipsShare: number;
   epicsWorn: number;
+  raresWorn: number;
   fourOfFive: number;
   /** The largest of those gaps among creatures not held at the evolution level (waiting on Essence). */
   benchOpenWorst: number;
@@ -149,6 +158,8 @@ export interface WeekRecord {
   brokerHours: number;
   /** At the end of the week: how many elements the player's Forge orders need (slots below the fire) and how many different ones their scouts bring. */
   needElements: number;
+  /** Slots below the fire by more than the margin at the end of the week (the Forge's "for my team" orders). */
+  weakSlots: number;
   scoutElements: number;
   /** The forms the creatures are at the end of the week (line * 2, plus 1 for an evolved creature: see `forms.ts`). */
   held: number[];
@@ -284,6 +295,8 @@ export interface ServerOptions {
   broker?: BrokerMode;
   /** Whether the weekly visitor comes (V-VIS). */
   visitor?: boolean;
+  /** Whether tempering at the Forge exists (replaces `rules.tempering.on`). */
+  tempering?: boolean;
 }
 
 export interface Server {

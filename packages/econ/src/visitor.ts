@@ -52,6 +52,7 @@ function reroll(p: Player, w: Worn): void {
   const c = p.creatures[w.creature]!;
   const was = c.gearLines[w.slot] ?? [];
   c.gearLines[w.slot] = rollLines(p.lineRng, p.rules, w.rarity, w.ilvl);
+  c.gearRerolls[w.slot] = (c.gearRerolls[w.slot] ?? 0) + 1;
   note(
     p,
     `visitor: rerolled a ${['common', 'rare', 'epic'][w.rarity]} piece (item level ${w.ilvl}) for ${acorns} Acorns and ${scrap} scrap: lines [${was.join(', ')}] became [${(c.gearLines[w.slot] ?? []).join(', ')}] (${topCount(p.rules, w.ilvl, c.gearLines[w.slot] ?? [])} at the top pip)`,
@@ -66,7 +67,7 @@ function reroll(p: Player, w: Worn): void {
  * The pieces a player would reroll, best first: epics before rares, then the higher item level, skipping the ones whose lines are
  * already good (`goodTop`); commons are never worth his price.
  */
-function wanted(p: Player): Worn[] {
+export function wanted(p: Player): Worn[] {
   const rules = p.rules;
   return wornPieces(p)
     .filter(

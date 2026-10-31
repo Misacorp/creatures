@@ -1,10 +1,10 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { ledgerOf, measuresOf, serverOf } from './analysis';
+import { lateScrapAll, ledgerOf, measuresOf, serverOf } from './analysis';
 import { BUDGET, budgetLine } from './budget';
 import { inProcess, runScenarios, type Executor } from './jobs';
 import { buildReportData, renderReport, serverCoverage, type Timings } from './report';
 import { rosterProfile } from './roster';
-import { RULES } from './rules';
+import { RULES, type Rules } from './rules';
 import rulesSource from './rules.ts?raw';
 import { DEFAULT_SEEDS, runScenario, variantSeedsFor, type Results } from './scenarios';
 import { ALL_SERVERS } from './servers';
@@ -42,6 +42,30 @@ const flag = (args: readonly string[], name: string): string | undefined => {
 const num = (x: number, digits = 1): string => String(Math.round(x * 10 ** digits) / 10 ** digits);
 
 /**
+ * `--set a.b.c=1;a.d=[1,2]` (a quick run only): a copy of the rules with those numbers replaced (JSON values), to try a price before it goes
+ * into `rules.ts`. A path that does not exist in the rules is an error.
+ */
+export function rulesWith(base: Rules, spec: string | undefined): Rules {
+  const rules = JSON.parse(JSON.stringify(base)) as Record<string, unknown>;
+  if (!spec) return rules as Rules;
+  for (const part of spec.split(';')) {
+    const [path, value] = part.split('=');
+    if (!path || value === undefined) throw new Error(`--set needs path=value, got "${part}"`);
+    const keys = path.split('.');
+    const last = keys.pop() as string;
+    let at: Record<string, unknown> = rules;
+    for (const k of keys) {
+      const next = at[k];
+      if (typeof next !== 'object' || next === null) throw new Error(`no rule at ${path}`);
+      at = next as Record<string, unknown>;
+    }
+    if (!(last in at)) throw new Error(`no rule at ${path}`);
+    at[last] = JSON.parse(value);
+  }
+  return rules as Rules;
+}
+
+/**
  * A quick look at one server (`--scenario <id> [--seeds n] [--weeks n]`): the targets it can judge and a short ledger, in a
  * second or two, with no files written. Targets whose scenario or week this run does not have are skipped, not failed.
  */
@@ -59,7 +83,13 @@ export function quickRun(args: readonly string[]): number {
     return 1;
   }
   const t = Date.now();
-  const result = runScenario({ ...config, weeks }, seeds, RULES);
+  const tempering = flag(args, '--tempering');
+  const rules = rulesWith(RULES, flag(args, '--set'));
+  const result = runScenario(
+    { ...config, weeks, ...(tempering ? { tempering: tempering === 'on' } : {}) },
+    seeds,
+    rules,
+  );
   // The targets read the mixed server of 8 (and its optimiser variant): a run of another server stands in for it.
   const results: Results = { mixed8: result, [id]: result };
   const judged = judge(TARGETS, measuresOf(results));
@@ -88,6 +118,18 @@ export function quickRun(args: readonly string[]): number {
         `    ${l.resource.padEnd(8)} in ${num(l.inn[last] ?? 0, 0).padStart(6)}  out ${num(l.out[last] ?? 0, 0).padStart(6)}  stock ${at(4)} / ${at(12)} / ${at(last + 1)}${l.dead !== null ? `  DEAD from week ${l.dead}` : ''}${l.starved ? '  STARVED' : ''}`,
       );
     }
+  }
+  if (players.length > 0 && weeks > 12) {
+    const rows = lateScrapAll(players).filter((r) => r.perWeek >= 1);
+    const show = (kind: string): string =>
+      rows
+        .filter((r) => r.kind === kind)
+        .map((r) => `${r.name} ${Math.round(r.perWeek)}`)
+        .join(', ');
+    console.log('');
+    console.log(
+      `  Scrap a week in weeks 13 to ${weeks} (median): in ${show('in')}; out ${show('out')}`,
+    );
   }
   const server = serverOf(results, id);
   if (server) {

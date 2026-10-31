@@ -30,6 +30,7 @@ import {
 } from './forge';
 import { bestPiece, hasFourOfFive, wornPieces } from './lines';
 import { visitVisitor } from './visitor';
+import { temperAtVisit } from './tempering';
 import { heldForms } from './forms';
 import { openSlots, startLearning, stepSchool } from './school';
 import { MARKET_OPENS_AT, openMarket } from './commons';
@@ -177,6 +178,8 @@ export function visit(p: Player, server: Server, hour: number): void {
   p.allowanceWasted = 0;
   for (let i = 0; i < p.seats.length; i++) collectSeat(p, i, server, hour);
   creditCommunal(p, server, hour);
+  // Tempering comes before the floor: a piece worth keeping is raised before a crafted replacement can take its slot.
+  temperAtVisit(p, server);
   collectFloor(p, server);
   dismantleBag(p);
   if (server.config.shardExchange) exchangeAtVisit(p);
@@ -337,6 +340,7 @@ function endWeek(p: Player, server: Server): void {
     .map((c) => Math.max(0, third - c.level));
   wk.held = heldForms(p);
   wk.needElements = p.weakByElement.filter((n) => n > 0).length;
+  wk.weakSlots = sum(p.weakByElement);
   wk.scoutElements = new Set(
     p.seats
       .slice(0, Math.min(p.seats.length, p.creatures.length))
@@ -357,6 +361,7 @@ function endWeek(p: Player, server: Server): void {
   wk.bestPips = best.pips;
   wk.bestPipsShare = best.share;
   wk.epicsWorn = wornPieces(p).filter((w) => w.rarity === 2).length;
+  wk.raresWorn = wornPieces(p).filter((w) => w.rarity === 1).length;
   wk.fourOfFive = hasFourOfFive(p) ? 1 : 0;
   wk.waitingEvolve = p.creatures.filter(
     (c) => c.canEvolve && !c.evolved && c.level >= p.rules.xp.evolveLevel,
@@ -524,6 +529,7 @@ export function runServer(
       shardExchange: config.shardExchange,
       broker: config.broker ?? 'always',
       visitor: config.visitor !== false,
+      tempering: config.tempering ?? rules.tempering.on,
     },
     rules,
   );
