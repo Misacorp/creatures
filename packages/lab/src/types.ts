@@ -274,6 +274,10 @@ export interface BossMods {
   readonly adapts?: boolean;
   /** In a raid weekend, from stage 2 the boss takes less from the element that dealt the most damage so far (Element Resistance). */
   readonly adaptsElement?: boolean;
+  /** Experiment: a Row Ward or beside-cut aura cuts this many bp of its cut (10000 = as is, 20000 = twice as much, before the 75% cap). */
+  readonly wardBp?: number;
+  /** Experiment: area and Wind-up hits are cut by this much (bp) on a creature whose column holds a living Guard. */
+  readonly columnGuardCutBp?: number;
 }
 
 export interface Placement {

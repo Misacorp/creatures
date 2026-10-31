@@ -28,6 +28,10 @@ const scaledMove = (move: BossMove, strengthBp: number): BossMove => ({
   powerBp: Math.max(1, share(move.powerBp, strengthBp)),
 });
 
+/** Experiment knobs (mutable so a harness can sweep them). */
+export const WARD_BOOST_BP = { v: 30_000 };
+export const COLUMN_GUARD_CUT_BP = { v: 4_000 };
+
 export const CARDS: readonly CardDef[] = [
   { id: 'plain', name: 'No card', asks: 'Baseline.', apply: (b) => b },
   {
@@ -197,6 +201,27 @@ export const CARDS: readonly CardDef[] = [
     name: 'Shake It Off',
     asks: 'Every 3 rounds the boss clears all its debuffs, announced at round start; can you put them back?',
     apply: (b, st = 10_000) => ({ ...b, strengthBp: st, mods: { ...b.mods, shakeEvery: 3 } }),
+  },
+  {
+    id: 'breakwater',
+    name: 'Breakwater',
+    asks: 'The waves break on a ward: a Row Ward or Living Shelter cuts far more of its sweeps than it does elsewhere. Who wards the rows?',
+    // Experiment: wards cut (1 + X) times as much against it, X the strength's share of `WARD_BOOST_BP`.
+    apply: (b, st = 10_000) => ({
+      ...b,
+      strengthBp: st,
+      mods: { ...b.mods, wardBp: 10_000 + share(WARD_BOOST_BP.v, st) },
+    }),
+  },
+  {
+    id: 'tide-guard',
+    name: 'Tide Guard',
+    asks: 'A Guard in a column turns the waves aside: its column takes less from sweeps. Does every column hold a Guard?',
+    apply: (b, st = 10_000) => ({
+      ...b,
+      strengthBp: st,
+      mods: { ...b.mods, columnGuardCutBp: share(COLUMN_GUARD_CUT_BP.v, st) },
+    }),
   },
   {
     id: 'adapts',
