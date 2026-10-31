@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: The welcome-back popup is the Gazette: short prose, items that speak, tappable for a popover **[Misa]**
+
+ID: `2026-10-31-the-welcome-back-popup-is-the` · Status: current
+
+**Decision.** Of the two welcome-back looks tried on staging, the Valley Gazette stays and the comic strip goes. Its prose is condensed: the items, creatures and places shown do the talking where they can. The headline story's item card is tappable and opens a popover with its details, and other things in it (creatures, places, smaller items) may do the same, for the curious; nothing else is required to read it. Its visual style is revisited much later.
+
+**Reasoning.** Misa: "I like the content on the gazette but feel like it's a slightly overused trope to frame it as a newspaper. On the other hand it's easily recognizable and serves a clear purpose that way. Let's go with the gazette. I'd like the top item card to be clickable on it and maybe other similar things to be interactive. Just a popover for the curious visitors. Let's roll with it, try to condense the prose a bit (letting the items do the talking when applicable) and revisit the visual style much later."
+
 ## 2026-10-31: The return moment is a welcome-back popup, not a walk; the player directs, creatures act **[Misa]**
 
 ID: `2026-10-31-the-return-moment-is-a-welcome` · Status: current
