@@ -332,9 +332,9 @@ describe('Cool Head and boss crits (R7.1)', () => {
     expect(count(a, 'boss-crit')).toBe(0);
   });
 
-  it('Cool Head: crits on it and on the creatures beside it deal half as much extra', () => {
+  it('Cool Head: crits on it and on the creatures beside it deal no extra damage (2026-10-31: was half)', () => {
     const ward = KNACKS['cool-head']?.fx.critWardBp ?? 0;
-    expect(ward).toBe(5_000);
+    expect(ward).toBe(10_000);
     // Its own crit damage taken: the creature has the Knack itself.
     expect(landed(crits(10_000), [at('kilnmole', 0, 0, 'cool-head')], 'Kilnmole')).toBe(
       critted(110, ward) - armour,

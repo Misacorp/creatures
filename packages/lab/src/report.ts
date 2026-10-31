@@ -93,9 +93,18 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
   ],
   'reflective-hide': [
     ['Circle Round', 'tidewing/circle-round tempestray/none thornbuck/wide-reach'],
-    ['Clear the Air', 'tidewing/steady-mark tempestray/none halcyray/clear-the-air'],
+    // Beside both: the heal reaches the Payoff whose reaction bounces back (a Support at the end heals one side only).
+    [
+      'Clear the Air in the middle',
+      'tidewing/steady-mark halcyray/clear-the-air tempestray/detonate',
+    ],
   ],
-  elusive: [['Clear Skies', 'tidewing/steady-mark tempestray/none halcyray/clear-skies']],
+  elusive: [
+    [
+      'Clear Skies beside both hitters',
+      'tidewing/steady-mark halcyray/clear-skies tempestray/none',
+    ],
+  ],
   slippery: [
     [
       'Clear Skies beside both hitters',
@@ -121,11 +130,15 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
   grudge: [['Draw Fire', 'tidewing/steady-mark tempestray/none kilnmole/draw-fire']],
   'great-wave': [
     ['Night Watch', 'tidewing/steady-mark tempestray/none thornbuck/night-watch'],
-    ['Keep the Heat In', 'tidewing/steady-mark tempestray/none kilnmole/keep-the-heat-in'],
+    [
+      'Keep the Heat In in the middle',
+      'tidewing/steady-mark hearthshell/keep-the-heat-in tempestray/none',
+    ],
     ['Living Shelter', 'pyrelynx/none ancientshell/living-shelter thornbuck/wide-reach'],
   ],
   swarm: [
-    ['Zoom', 'voltaro/zoom tempestray/none thornbuck/wide-reach'],
+    // A Spark Setter's mark is cashed by a Grove Payoff (Tempestray is Spark: it would cash nothing).
+    ['Zoom', 'voltaro/zoom bloomback/none thornbuck/wide-reach'],
     ['Hide in Mist', 'tidewing/steady-mark fogwyrm/hide-in-mist tempestray/none'],
   ],
   crusher: [

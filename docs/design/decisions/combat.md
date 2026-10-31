@@ -4,6 +4,18 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: Phase 1 gate: five intended answers fixed, and four Knacks given a real use (Catch the Bolts, Night Watch, Cool Head, Twin Strike)
+
+ID: `2026-10-31-phase-1-gate-five-intended-answers` · Status: current
+
+**Decision (implementer, for the lead's review).** Phase 1 gate, items 1 and 2:
+
+- **Intended answers: 23 of 23 beat the classic line (was 18).** Four were lines, not Knacks: Swarm's Zoom put Voltaro (a Spark Setter) with Tempestray (Spark), so the line never reacted (now Bloomback, Grove, +14%); Reflective Hide's Clear the Air, Elusive's Clear Skies and Great Wave's Keep the Heat In stood at the end of the line, where the Support or Guard reaches one neighbour (now in the middle, beside both: +31%, +10%, +43%; Clear the Air keeps the classic Detonate Payoff, Keep the Heat In uses Hearthshell). One was a number: Twin Strike 55% to 58% per hit (Stone Skin, -1% to +3%). 60% gave +6% but took the Storm Sovereign's Draw Fire tool test below its 10 points (9.7), so 58% is the highest value that keeps both.
+- **Catch the Bolts** takes the area hit it intercepts with its own cover's cut (it used to take the whole hit and was worse than no Knack on Great Wave). Night Watch takes the Wind-up hit it intercepts at a quarter (the largest cut there is) instead of the cover's 40% (`watchCutBp`). **Cool Head** removes the whole extra damage of a crit on it and its neighbours (was half). All three keep their family and intent.
+- **Primed by Pain is not dead:** it is the best thornbuck Knack on 12 of 17 cards in an exhaustive search of every line (`best` studies, 2026-10-31) and in the report's card usage (within form 0.8 to 1.7); on the bosses the foe searches miss lines that win (Bramble Matron at depth 7: the report's best line wins 45%, a Primed by Pain line wins 93%), so its boss usage is the search's, not the Knack's. No change.
+
+**Reasoning.** The lab's own tools, not a guess: each Knack taken in and out of the same line on its own card, and an exhaustive search over every pair of partners with the Knack fixed (a Knack that ties with no Knack outside its card is a niche answer; one that loses to no Knack is a trap, as Catch the Bolts was). Night Watch and Cool Head are single-card answers (Great Wave and the Wind-up bosses; Lucky Strike), so a team search of the whole pool can pick them on only that card: their within-form ratio is capped near 0.3 to 0.5 unless the card set grows. They do win on their card against their form-mates (Night Watch 4238 against Primed by Pain 4174 on Great Wave; Cool Head 4221 against 4197 on Lucky Strike). The casual metric ("1.3 of 3 beyond the top three") is noise: over 20 re-drawn sets of rosters (320 searches) the mean is 1.31 before and after this change, one set of four rosters ranges 0.8 to 1.8 (sd 0.25), and 6 of 20 draws reach 1.5; main's 1.5 was a high draw of the same rosters. Open for Misa and the lead: the Lucky Strike entry above measured Cool Head at 9 points of potential at slot 8 with the half ward; it is worth more now, so slots 8 and 13 want a `--tune --track` look.
+
 ## 2026-10-31: Slots 1 and 2 field stage 1 lines; the mixed server fields the written answer that suits it
 
 ID: `2026-10-31-slots-1-and-2-field-stage` · Status: current

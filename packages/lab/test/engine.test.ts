@@ -15,6 +15,7 @@ import {
   fight,
   formStats,
   illegalTalents,
+  KNACKS,
   labBoss,
   legalTalents,
   placeFighters,
@@ -150,7 +151,7 @@ describe('Charged moves land on the creatures shown at round start (R2.3, R8.2 c
   });
 });
 
-describe('Night Watch takes the first Charged hit each boss turn, with its cover cut', () => {
+describe('Night Watch takes the first Charged hit each boss turn, cut to a quarter', () => {
   const wave = (id: string): BossMove => ({
     id,
     name: id,
@@ -186,7 +187,7 @@ describe('Night Watch takes the first Charged hit each boss turn, with its cover
     expect(r.events.filter((e) => e.kind === 'intercept')).toHaveLength(1);
   });
 
-  it("the hit it takes is cut by its own cover's cut", () => {
+  it('the hit it takes is cut to a quarter (2026-10-31: more than its cover cut, the most any cut can take)', () => {
     const boss = mover({ anchor: 'front', shape: 'row' }, 1, 3, { atk: 1_000 }, { charged: true });
     const team = (knack?: string) => [
       at('tempestray', 0, 0),
@@ -202,9 +203,57 @@ describe('Night Watch takes the first Charged hit each boss turn, with its cover
         r.events.find((e) => e.kind === 'hit' && e.text.startsWith('Thornbuck'))?.text ?? '',
       )?.[1],
     );
-    // atk 1000 x 1.0 = 1000 raw, cut by cover (40%), minus Thornbuck's armour.
+    // atk 1000 x 1.0 = 1000 raw, cut by Night Watch's own cut (75%, more than the cover's 40%), minus Thornbuck's armour.
     const armour = formStats('thornbuck', 25).armour;
-    expect(taken).toBe(Math.floor((1_000 * (10_000 - LAB_RULES.coverBp)) / 10_000) - armour);
+    const cut = KNACKS['night-watch']?.fx.watchCutBp ?? 0;
+    expect(cut).toBe(LAB_RULES.cutMaxBp);
+    expect(cut).toBeGreaterThan(LAB_RULES.coverBp);
+    expect(taken).toBe(Math.floor((1_000 * (10_000 - cut)) / 10_000) - armour);
+  });
+});
+
+describe('Catch the Bolts takes an area hit with its cover cut (2026-10-31)', () => {
+  const sweep = mover({ anchor: 'front', shape: 'row' }, 1, 3, { atk: 1_000 });
+  const team = (knack: string) => [
+    at('tempestray', 0, 0),
+    at('ohmouse', 0, 1, { knack }),
+    at('tidewing', 0, 2),
+  ];
+  const takenBy = (r: FightResult, who: string): number =>
+    Number(
+      /takes (\d+)/.exec(
+        r.events.find((e) => e.kind === 'hit' && e.text.startsWith(who))?.text ?? '',
+      )?.[1],
+    );
+
+  it('an area hit it intercepts is cut by its cover (the cover of 40%), where it used to land whole', () => {
+    const r = seedWhere(
+      (seed) => fight(sweep, team('catch-the-bolts'), { rng: rng(seed), log: true }),
+      (x) => x.intercepts >= 1 && !x.events.some((e) => e.kind === 'dodge'),
+    );
+    const armour = formStats('ohmouse', 25).armour;
+    expect(takenBy(r, 'Ohmouse')).toBe(
+      Math.floor((1_000 * (10_000 - LAB_RULES.coverBp)) / 10_000) - armour,
+    );
+    // The creature it covered took nothing from that hit.
+    expect(r.events.filter((e) => e.kind === 'intercept').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('without it, a Guard does not take area hits: every creature takes its own', () => {
+    for (let i = 0; i < 20; i++)
+      expect(fight(sweep, team('none'), { rng: rng(`cb${i}`) }).intercepts).toBe(0);
+  });
+
+  it('a hit aimed at one creature is taken by the Guard whole, as before (the cut is for area hits)', () => {
+    const aimed = mover({ anchor: 'strongest', shape: 'single' }, 1, 3, { atk: 1_000 });
+    const r = seedWhere(
+      (seed) => fight(aimed, team('catch-the-bolts'), { rng: rng(seed), log: true }),
+      (x) =>
+        x.intercepts === 1 &&
+        !x.events.some((e) => e.kind === 'dodge') &&
+        x.events.some((e) => e.kind === 'hit' && e.text.startsWith('Ohmouse')),
+    );
+    expect(takenBy(r, 'Ohmouse')).toBe(1_000 - formStats('ohmouse', 25).armour);
   });
 });
 
