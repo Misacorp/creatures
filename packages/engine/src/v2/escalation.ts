@@ -1,5 +1,5 @@
 /**
- * The boss's escalation and Mired (R22): the Store's feed, the Build-up's steps and the phase change, what the steps add to the boss
+ * The boss's escalation and Mired (R22): the Store's feed, the escalation's steps and the phase change, what the steps add to the boss
  * (`grown`), and the Mired stacks that slow it and cut the boss's damage and dodge (R22.3). Docs: docs/design/combat/proposals/001-combat-v2.md.
  */
 import type { BossMove, Escalation, EscalationFeed, EscalationState, Fighter } from './types';
@@ -23,7 +23,7 @@ const perOf = (s: State): number => {
   return e.perColumns ? Math.max(1, Math.round((e.per * s.boss.cols) / e.perColumns)) : e.per;
 };
 
-/** What the escalation's steps add to the boss now: `grow` for each step, at the Build-up's strength (a share of it). */
+/** What the escalation's steps add to the boss now: `grow` for each step, at the escalation's strength (a share of it). */
 export const grown = (s: State): Grown => {
   const n = s.esc.step;
   // It is asked for on every hit but only changes with the step, so it is worked out once a step.
@@ -119,7 +119,7 @@ export function escalate(s: State): void {
   if (!falls) s.esc.fall = s.esc.step;
 }
 
-/** The Build-up's steps that help the boss: one step if the count has reached the next bar, raised by the Mired (R22.3). */
+/** The escalation's steps that help the boss: one step if the count has reached the next bar, raised by the Mired (R22.3). */
 function stepUp(s: State, e: Escalation, per: number): void {
   const R = s.ctx.rules;
   const due = (s.esc.step + 1) * per;

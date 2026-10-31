@@ -71,7 +71,7 @@ export const SCENARIOS: Readonly<Record<string, string>> = {
   'Dodge tank: Zigzag beside a Guard': 'voltaro/zigzag ohmouse/catch-the-bolts tempestray/none',
   'Mire: Sticky Mud and Squelch Song': 'bogwarden/mud-wall tempestray/none croakmire/squelch-song',
   'No reactions: plain hitters': 'tempestray/twin-strike magmole/tunnel-through kilnmole/draw-fire',
-  "Guard's Shadow: Pyrelynx beside Kilnmole":
+  'Reliably Covered: Pyrelynx beside Kilnmole':
     'ancientshell/steady-mark pyrelynx/guards-shadow kilnmole/draw-fire',
   'Crown of Embers into a Territorial Coralynx':
     'solmane/crown-of-embers coralynx/territorial kilnmole/draw-fire',

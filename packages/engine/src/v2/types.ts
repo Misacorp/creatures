@@ -314,7 +314,7 @@ export interface BossDef {
   readonly cards: readonly string[];
   readonly mods: BossMods;
   /**
-   * The boss's crit chance (bp, default 0; the Lucky Strike card gives it). Each damaging hit of a move or the plain attack that
+   * The boss's crit chance (bp, default 0; the Double Strike card gives it). Each damaging hit of a move or the plain attack that
    * lands on a creature rolls it after the dodge and the intercept, and a crit doubles the hit (`rules.critBp`) before the cuts
    * and the armour (R7.1). A one-shot (a share of Max HP) never crits.
    */
@@ -377,7 +377,7 @@ export interface FightOptions {
   readonly potential?: boolean;
   /**
    * With `potential`, the boss's real HP at the start (a stage of a weekend: the earlier stage's `bossHpReal`, which can be below 1);
-   * `bossHp` is where the boss is held. Default `bossHp`. Every HP-share rule (Finisher, Culling Strike, the Build-up's HP feed) reads the real HP.
+   * `bossHp` is where the boss is held. Default `bossHp`. Every HP-share rule (Finisher, Culling Strike, the escalation's HP feed) reads the real HP.
    */
   readonly shadowHp?: number;
   /**

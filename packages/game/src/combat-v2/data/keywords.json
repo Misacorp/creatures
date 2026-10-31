@@ -1,19 +1,19 @@
 [
   {
     "name": "Mark",
-    "means": "The boss carries an element, with a count from x1 to x3.",
+    "means": "The boss carries an element, with 1 to 3 stacks.",
     "not": "A debuff",
     "step": "R3, R4"
   },
   {
     "name": "Reaction",
-    "means": "A Payoff of the right element cashes a mark: its hit gets a bonus and the count drops by 1.",
+    "means": "A Payoff hits a Mark its element is strong against: bonus damage, and the mark loses 1 stack.",
     "not": "Any hit that meets a mark",
     "step": "R5, R7"
   },
   {
     "name": "Spend",
-    "means": "Pay a cost to do something: part of a mark's count, a Store, or HP. The effect says what and how much.",
+    "means": "Pay a cost to do something: part of a mark's stacks, a Store, or HP. The effect says what and how much.",
     "not": "A free bonus",
     "step": "R17"
   },
@@ -31,13 +31,13 @@
   },
   {
     "name": "Taunt",
-    "means": "Every plain attack of the boss aims at this creature (moves do not).",
+    "means": "The boss's plain attack, its basic hit, not its named moves, aims at this creature. With several Taunts, the first to act draws it.",
     "not": "Moves aim at it too",
     "step": "R9"
   },
   {
     "name": "Intercept",
-    "means": "Takes a hit meant for a creature in its reach, after that creature's failed dodge.",
+    "means": "Takes a hit meant for a creature in its Reach.",
     "not": "It rolls dodge itself",
     "step": "R1"
   },
@@ -67,7 +67,7 @@
   },
   {
     "name": "Mired",
-    "means": "A debuff on the boss: per count it deals less damage and dodges less (at most x5). It fades by 1 at the end of every second round.",
+    "means": "A debuff on the boss: per stack it deals less damage and dodges less (at most 5 stacks). It fades by 1 at the end of every second round.",
     "not": "A mark",
     "step": "R15"
   },
@@ -97,7 +97,7 @@
   },
   {
     "name": "Boost",
-    "means": "A Support's bonus on a creature's next hit.",
+    "means": "A Support's bonus damage on a creature's next hit.",
     "not": "A lasting buff",
     "step": "R16"
   },
@@ -144,14 +144,14 @@
     "step": "R2"
   },
   {
-    "name": "Build-up",
-    "means": "A boss that grows as a weekend goes on. It fills from something its text names (rounds, HP lost, reactions), grows a step each time it fills, up to a cap, carries across the weekend, and Mired slows it.",
+    "name": "Escalating",
+    "means": "A boss that is Escalating grows as a weekend goes on. It fills from something its text names (rounds, HP lost, reactions), grows a step each time it fills, up to a cap, carries across the weekend, and Mired slows it.",
     "not": "A phase of the raid",
     "step": "R8"
   },
   {
     "name": "Crit",
-    "means": "A lucky hit that deals double (2x). Crit chance starts at 5%; the creature, its Knack, talents and items add points of chance and add to the multiplier (+1x makes a 3x crit), and a boss with a Lucky Strike crits too.",
+    "means": "A lucky hit that deals double (2x). Crit chance starts at 5%; the creature, its Knack, talents and items add points of chance and add to the multiplier (+1x makes a 3x crit), and a boss with Double Strike crits too.",
     "not": "A reaction",
     "step": "R6, R7.1"
   },

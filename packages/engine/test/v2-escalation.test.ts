@@ -1,5 +1,5 @@
 /**
- * Combat v2: the boss's Build-up (R22: steps, phases, feeds, strength, how Mired slows it) and Mired itself (stacks, fading, Clinging,
+ * Combat v2: the boss's escalation (R22: steps, phases, feeds, strength, how Mired slows it) and Mired itself (stacks, fading, Clinging,
  * Wicked, Shake It Off). Creatures and boss are built by hand with their effects named directly; the dice are scripted or a fixed
  * seed checks an invariant of the whole fight. These were the lab's `engine`, `strength` and `talents` rule tests about escalation.
  */
@@ -46,7 +46,7 @@ const phaseMove: BossMove = move(
   { id: 'p2', name: 'Second Wind', powerBp: 1 },
 );
 
-describe('the Build-up carries across a raid weekend like HP (R22)', () => {
+describe('the escalation carries across a raid weekend like HP (R22)', () => {
   const weekend = (b: BossDef, stages: number) =>
     playWeekend(
       b,

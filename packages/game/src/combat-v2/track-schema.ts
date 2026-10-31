@@ -6,7 +6,7 @@
  * bosses, repeating after the last (slot n has `order[(n - 1) % order.length]`). Each slot lists every number the game needs
  * for that meeting, written out, so nothing has to be derived: the boss's HP, Attack and armour (absolute, before its rule cards;
  * the track tuner writes them), the strength of its rule cards in bp, how many of the boss's own cards it has (the first ones, in
- * the order of `raid-bosses.json`) and whether it has its Build-up (the young-server ramp: a new server meets a boss with fewer
+ * the order of `raid-bosses.json`) and whether it has its escalation (the young-server ramp: a new server meets a boss with fewer
  * rules), and the extra cards the slot adds on top of the boss's own (a later lap's new card; a card that stays on a boss's
  * later laps is listed at each of its slots). The lab's tuning-only parts (the arrival weeks, the prepared lines, the tuning
  * targets) stay in the lab.
@@ -30,7 +30,7 @@ export const TrackSlotSchema = v.pipe(
     strengthBp: v.pipe(Int, v.minValue(0), v.maxValue(10_000)),
     /** How many of the boss's own rule cards it has: the first ones, in order. */
     cards: v.pipe(Int, v.minValue(0)),
-    /** Whether the boss has its Build-up. */
+    /** Whether the boss has its escalation. */
     buildUp: v.boolean(),
     /** Rule cards (ids) the slot adds to the boss on top of its own, at the slot's strength. */
     extraCards: v.pipe(v.array(IdSchema), v.readonly()),

@@ -178,7 +178,7 @@ function casualLine(boss: BossDef, key: string): Pick[] {
   );
 }
 
-/** The track's first three laps: between them Slippery, Lucky Strike, Breakwater, strength, the Build-up, Adapts and Element Resistance all appear. */
+/** The track's first three laps: between them Slippery, Double Strike, Breakwater, strength, the escalation, Adapts and Element Resistance all appear. */
 const SLOTS = Array.from({ length: 15 }, (_, i) => i + 1);
 
 export function parityCases(): ParityCase[] {
@@ -231,7 +231,7 @@ export function parityCases(): ParityCase[] {
     for (const [label, line] of lines)
       fightCase(`gauntlet:${c.id}:${label}`, boss, placed(line, GAUNTLET), 3);
   }
-  // Stacked cards: Lucky Strike with Slippery and Breakwater with Stone Skin and Wither (cards are applied in order).
+  // Stacked cards: Double Strike with Slippery and Breakwater with Stone Skin and Wither (cards are applied in order).
   fightCase(
     'gauntlet:stack:luck',
     bossFor(GAUNTLET, ['slippery', 'lucky-strike', 'stone-skin']),

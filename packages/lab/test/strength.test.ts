@@ -1,7 +1,7 @@
 /**
  * Strength (Misa, 2026-10-29): every rule card and boss gate has a strength from 0 to 10000 bp instead of on or off; a card asks for a
  * tool at low strength and requires it at high strength. Boss Rank sets the strengths. What the engine does with a strength (Reflective
- * Hide, Shake It Off, Build-up, silence, one-shots, Reaction and Element Resistance) is proved in the engine tests (`v2-boss`,
+ * Hide, Shake It Off, escalation, silence, one-shots, Reaction and Element Resistance) is proved in the engine tests (`v2-boss`,
  * `v2-escalation`, `v2-weekend`); this file is the content: what a card builds at a strength, and what each rank is.
  */
 import { createSeededRng } from '@creatures/game';

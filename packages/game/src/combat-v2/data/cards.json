@@ -31,21 +31,21 @@
   {
     "id": "elusive",
     "name": "Elusive",
-    "asks": "The boss dodges a lot; can you make hits land?",
+    "asks": "The boss is quick: it dodges more often, and debuffs that slow it work as usual; can you make hits land?",
     "ops": [{ "op": "add", "stat": "spd", "value": 300 }],
     "answers": ["Support shape"]
   },
   {
     "id": "slippery",
     "name": "Slippery",
-    "asks": "The boss slips away from a quarter of the hits, and a debuff does not slow it; can you make hits land?",
+    "asks": "The boss slips away from a quarter of all hits, whatever debuffs it has; can you make hits land?",
     "ops": [{ "op": "set", "stat": "dodgeBp", "value": 2500 }],
     "answers": ["Support shape", "Detonator"]
   },
   {
     "id": "lucky-strike",
-    "name": "Lucky Strike",
-    "asks": "The boss now and then lands a double hit; can you turn it away or take the sting out of it?",
+    "name": "Double Strike",
+    "asks": "The boss's hits sometimes Crit for double damage; can you turn them away or take the sting out?",
     "ops": [{ "op": "set", "stat": "critChanceBp", "value": 2000 }],
     "answers": ["Luck", "Evasion aura"]
   },
@@ -59,7 +59,7 @@
         "scale": "gate",
         "move": {
           "id": "bramble-bind",
-          "name": "Bramble Bind",
+          "name": "Hush",
           "every": 2,
           "turn": 0,
           "pattern": { "anchor": "front", "shape": "rowEnds", "n": 1 },
@@ -109,14 +109,14 @@
   {
     "id": "great-wave",
     "name": "Great Wave",
-    "asks": "Every 3 rounds a Wind-up sweep of a row, announced at round start; who stands there?",
+    "asks": "Every 3 rounds a Wind-up sweep of a row; who stands there?",
     "ops": [
       {
         "op": "move",
         "scale": "power",
         "move": {
           "id": "great-wave",
-          "name": "Great Wave",
+          "name": "Wild Sweep",
           "every": 3,
           "pattern": { "anchor": "random", "shape": "randomRow" },
           "powerBp": 18000,
@@ -149,7 +149,7 @@
         "scale": "power",
         "move": {
           "id": "crush",
-          "name": "Crush",
+          "name": "Nemesis Strike",
           "every": 3,
           "pattern": { "anchor": "strongest", "shape": "single" },
           "powerBp": 40000
@@ -168,14 +168,14 @@
   {
     "id": "shake-it-off",
     "name": "Shake It Off",
-    "asks": "Every 3 rounds the boss clears all its debuffs, announced at round start; can you put them back?",
+    "asks": "Every 3 rounds the boss clears all its debuffs; can you put them back?",
     "ops": [{ "op": "mod", "mod": "shakeEvery", "base": 3 }],
     "answers": ["Debuff"]
   },
   {
     "id": "breakwater",
     "name": "Breakwater",
-    "asks": "Its waves break on wards: Row Ward cuts against its sweeps count x2.4 to x3 (by strength)",
+    "asks": "Row Wards are up to 3 times as strong against its Area hits",
     "ops": [{ "op": "mod", "mod": "wardBp", "base": 10000, "plus": 20000 }],
     "answers": ["Row Ward"]
   },

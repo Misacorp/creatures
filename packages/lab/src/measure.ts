@@ -384,7 +384,7 @@ export function raidPlacements(row: number, col: number, form: Pick): Placement[
   return toPlacements(picks, RAID_ROW);
 }
 
-/** The raid boss's Great Wave comes this often (rounds). */
+/** The raid boss's Wild Sweep (Great Wave) comes this often (rounds). */
 export const RAID_WAVE_EVERY = 2;
 
 /** The raid boss: four players' worth of attack, with the raid cards. */

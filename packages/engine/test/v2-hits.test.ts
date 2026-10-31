@@ -388,7 +388,7 @@ describe('hit bonuses by position and state (the talent hooks)', () => {
     expect(by(fight(2), 'C2').damageDealt).toBe(100 + 100);
   });
 
-  it("Guard's Shadow and Territorial: a Payoff's bonus depends on who stands beside it", () => {
+  it("Reliably Covered and Territorial: a Payoff's bonus depends on who stands beside it", () => {
     const payoff = (fx: object, over: object = {}) =>
       spec({ name: 'T', role: 'payoff', element: 'spark', col: 1, fx, ...over });
     const beside = (other: ReturnType<typeof spec>, fx: object) => dealt(2, [other, payoff(fx)]);

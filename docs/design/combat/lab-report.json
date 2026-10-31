@@ -888,7 +888,7 @@
     "ko": 1
    }
   },
-  "Guard's Shadow: Pyrelynx beside Kilnmole": {
+  "Reliably Covered: Pyrelynx beside Kilnmole": {
    "plain": {
     "damage": 4468,
     "ko": 0.8333333333333334
@@ -10427,7 +10427,7 @@
   "keyword:Checker",
   "keyword:Most hurt",
   "keyword:Back-most",
-  "keyword:Build-up",
+  "keyword:Escalating",
   "keyword:Crit",
   "keyword:Sure Crit",
   "rule:silence",
@@ -10905,7 +10905,7 @@
   "keyword:Checker": [],
   "keyword:Most hurt": [],
   "keyword:Back-most": [],
-  "keyword:Build-up": [],
+  "keyword:Escalating": [],
   "keyword:Crit": [],
   "keyword:Sure Crit": [],
   "rule:armour": [

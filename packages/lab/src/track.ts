@@ -29,7 +29,7 @@ export const TRACK_ORDER: readonly string[] = TRACK_DATA.order;
 
 /**
  * What of its rules a slot's boss has (the young-server ramp, Misa, 2026-10-30): `cards` is how many of its rule cards, the boss's
- * first ones in order (absent: all), and `buildUp` whether it has its Build-up (the Store that grows it as the weekend goes on).
+ * first ones in order (absent: all), and `buildUp` whether it has its escalation (the Store that grows it as the weekend goes on).
  */
 export interface SlotRules {
   readonly cards?: number;
@@ -77,11 +77,11 @@ export const SLOT_WEEKS: readonly number[] = [1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 13
 /**
  * The young-server ramp, a column of the track's data (Misa, 2026-10-30; `docs/design/decisions/raids.md`): a new server has only
  * starters and is still finding its footing, so the first week's boss is a **tutorial** and the second asks little.
- * - Slot 1: no rule cards and no Build-up. The boss keeps its plain attack and its moves (the announced attacks, which are the
+ * - Slot 1: no rule cards and no escalation. The boss keeps its plain attack and its moves (the announced attacks, which are the
  *   boss and not rules; they are not scaled by card strength, only by the slot's HP and Attack, which the tuner sets); it has no
  *   Store to grow it and nothing to answer, so no tool is asked of the team there (`slotTargetsFor`).
- * - Slot 2: one rule card, the boss's first, at the slot's low strength (about 30%), and no Build-up (it arrives with the full set).
- * - Slot 3 onward: the full set (every card and the Build-up) at the slot's strength. A slot without an entry has it.
+ * - Slot 2: one rule card, the boss's first, at the slot's low strength (about 30%), and no escalation (it arrives with the full set).
+ * - Slot 3 onward: the full set (every card and the escalation) at the slot's strength. A slot without an entry has it.
  * The data writes the column out for every slot (`cards`, `buildUp`); here the full set is the absence of an entry.
  */
 export const SLOT_CARDS: Readonly<Record<number, SlotRules>> = Object.fromEntries(
@@ -89,7 +89,7 @@ export const SLOT_CARDS: Readonly<Record<number, SlotRules>> = Object.fromEntrie
     const own = combatV2.raidBosses[s.boss]?.cards.length ?? s.cards;
     const rules: SlotRules =
       s.cards < own ? { cards: s.cards, buildUp: s.buildUp } : { buildUp: s.buildUp };
-    // The full set is the default (`slotRules`), so a slot with every card and its Build-up has no entry.
+    // The full set is the default (`slotRules`), so a slot with every card and its escalation has no entry.
     return rules.cards === undefined && rules.buildUp ? [] : [[s.slot, rules] as const];
   }),
 );

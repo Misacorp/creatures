@@ -1,6 +1,6 @@
 /**
  * Bosses as the engine's `BossDef` (combat v2): a raid boss at a strength, and a dungeon foe at a depth. Name, element and Speed come
- * from the shipped content (so they cannot drift), the arena, armour, plain attack, moves, cards and Build-up from the pack, and every
+ * from the shipped content (so they cannot drift), the arena, armour, plain attack, moves, cards and escalation from the pack, and every
  * rule card is built on at the boss's strength (`applyCard`). What stays with the caller is measurement: which rank a boss stands for,
  * the lab's raid width, the numbers a tuner tries; it passes the numbers in.
  */
@@ -52,7 +52,7 @@ export interface RaidBossOptions {
   readonly strengthBp?: number;
   /** How many of the spec's rule cards the boss has, the first ones (default: all). */
   readonly cards?: number;
-  /** Whether the boss has its Build-up (the escalation), default yes. */
+  /** Whether the boss is Escalating (the `escalation` data), default yes. */
   readonly buildUp?: boolean;
   /** Cards on top of the spec's, built at the same strength. */
   readonly extraCards?: readonly string[];
@@ -62,7 +62,7 @@ export interface RaidBossOptions {
 
 /**
  * A raid boss by id: name, element and Speed from the shipped content, the rest from its spec in the pack, with `options` over it. Every
- * card and the Build-up are built at the strength. Throws for an unknown boss.
+ * card and the escalation are built at the strength. Throws for an unknown boss.
  */
 export function raidBoss(
   pack: Pick<CombatV2Pack, 'raidBosses' | 'cards'>,

@@ -34,8 +34,11 @@ function stable(value: unknown): string {
   return JSON.stringify(value);
 }
 
-/** A move is one thing by its id and numbers: the same id with the same numbers on several bosses is one move. */
-const moveThing = (m: BossMoveDef): string => `move ${m.id} ${stable(m)}`;
+/**
+ * A move name is one thing: it stands for a shape and a target, never for one number (Misa, 2026-11-01), so every boss that
+ * has a Barrage has its own power for it. What the moves of one name share is the next rule (`moveShapeKey`).
+ */
+const moveThing = (m: BossMoveDef): string => `move ${m.name}`;
 
 /** The moves a card adds (`move` operations). */
 const cardMoves = (c: CardDef): BossMoveDef[] =>
@@ -49,9 +52,9 @@ function combatPlaces(): Place[] {
   const addMove = (kind: string, m: BossMoveDef, owner: string) =>
     add(kind, m.name, `${owner} / ${m.id}`, moveThing(m));
   const addBuildUp = (owner: string, e: NonNullable<(typeof pack.foes)[string]['escalation']>) => {
-    add('Build-up', e.name, owner);
+    add('Escalating', e.name, owner);
     if (e.phase !== undefined) {
-      add('Build-up phase', e.phase.name, owner);
+      add('Escalating phase', e.phase.name, owner);
       for (const m of e.phase.moves) addMove('phase move', m, owner);
     }
   };
@@ -66,9 +69,8 @@ function combatPlaces(): Place[] {
   }
   for (const c of Object.values(pack.cards)) {
     if (c.id === 'plain') continue;
-    // A card that adds a move may give the move its own name: the card and its move are one thing.
-    const same = cardMoves(c).find((m) => m.name === c.name);
-    add('card', c.name, c.id, same === undefined ? `card ${c.id}` : moveThing(same));
+    // A card and the move it adds have different names (the move is named by its shape and target), so a card is its own thing.
+    add('card', c.name, c.id);
     for (const m of cardMoves(c)) addMove('card move', m, c.id);
   }
   for (const b of Object.values(pack.raidBosses)) {
@@ -102,19 +104,15 @@ const describeClash = ([name, list]: [string, Place[]]): string =>
  * fails when an entry no longer clashes, so the list is the to-do and never stale. Key: the name, lower case.
  */
 const KNOWN_CLASHES: Readonly<Record<string, string>> = {
-  // The card Great Wave adds a move "Great Wave" (power 18000); the Tidal Colossus has its own move "Great Wave" (power 13900).
-  // Same name, different numbers. Waits for the next names batch to Misa, which renames one of the two moves.
-  'great wave': 'the next names batch to Misa (docs/design/combat/content-as-data.md, section 7)',
+  // Empty since names batches 3 and 4 (2026-11-01): the Great Wave card and the Colossus move that shared a name are now the card
+  // Great Wave and the move Wild Sweep.
 };
 
 /**
- * Knacks (by id) that have the name of a shipped gear line today: a pending naming question. The Knack Guard's Shadow gives +10% while
- * a living Guard stands beside it and costs 10 armour; the gear line Guard's shadow gives more Attack in the same place. Same name,
- * not the same effect. Waits for the next names batch to Misa (rename one, or make them one effect).
+ * Knacks (by id) that have the name of a shipped gear line today: a pending naming question. Empty since names batches 3 and 4
+ * (2026-11-01): the Knack Guard's Shadow is now Reliably Covered, and the gear line Guard's shadow keeps its name.
  */
-const KNACK_GEAR_CLASHES: Readonly<Record<string, string>> = {
-  'guards-shadow': "the gear line Guard's shadow; the next names batch to Misa",
-};
+const KNACK_GEAR_CLASHES: Readonly<Record<string, string>> = {};
 
 /**
  * Knacks (by id) that have the name of a combat v1 talent (`content/data/talents.json`). Not a naming question: the v1 talents go
@@ -126,7 +124,7 @@ const V1_TALENT_CLASHES: Readonly<Record<string, string>> = {
 };
 
 describe('combat v2 content gate: unique names (P-06)', () => {
-  it('a name appears once in combat v2, except a card and the move it adds, and one move reused with the same numbers', () => {
+  it('a name appears once in combat v2, except a move name shared by several moves (see the shape rule below)', () => {
     const found = clashes(combatPlaces());
     const unexpected = [...found].filter(([name]) => !Object.hasOwn(KNOWN_CLASHES, name));
     expect(unexpected.map(describeClash), 'names used for two things').toEqual([]);
@@ -140,19 +138,53 @@ describe('combat v2 content gate: unique names (P-06)', () => {
       );
   });
 
+  /** The moves of the raid bosses and foes (with signatures and phases). */
+  const bossMoves = (): BossMoveDef[] => [
+    ...Object.values(pack.raidBosses).flatMap((b) => [
+      ...b.moves,
+      ...(b.escalation?.phase?.moves ?? []),
+    ]),
+    ...Object.values(pack.foes).flatMap((f) => [
+      ...f.moves,
+      ...(f.signature ? [f.signature] : []),
+      ...(f.escalation?.phase?.moves ?? []),
+    ]),
+  ];
+  /** Every move of the pack: the bosses' and foes' and the ones the cards add. */
+  const allMoves = (): BossMoveDef[] => [
+    ...bossMoves(),
+    ...Object.values(pack.cards).flatMap(cardMoves),
+  ];
+
+  /**
+   * What a move name stands for: the shape of the hit, whom it picks (the anchor) and whether it silences. One column and several
+   * columns are one shape (Lance), and so are one row and several rows (Sweep): how many is a number, not a shape. Power, cadence,
+   * how many and Wind-up may differ between the moves of one name; the silence's length too.
+   */
+  const SHAPE_FAMILY: Readonly<Record<string, string>> = { column: 'columns', row: 'rows' };
+  const moveShapeKey = (m: BossMoveDef): string =>
+    `${SHAPE_FAMILY[m.pattern.shape] ?? m.pattern.shape} / ${m.pattern.anchor} / ${
+      (m.silenceTurns ?? 0) > 0 ? 'silences' : 'no silence'
+    }`;
+
+  it('every move of one name has the same shape, anchor and silence (a name stands for a shape and a target, never for one number)', () => {
+    const byName = new Map<string, Set<string>>();
+    for (const m of allMoves())
+      byName.set(m.name, (byName.get(m.name) ?? new Set()).add(moveShapeKey(m)));
+    const differing = [...byName]
+      .filter(([, keys]) => keys.size > 1)
+      .map(([name, keys]) => `${name}: ${[...keys].join(' | ')}`);
+    expect(differing, 'a move name for two shapes or targets').toEqual([]);
+    // Guard the rule itself: the names that are shared are real (a Barrage, a Quake, a Hush ...), not an empty loop.
+    const names = allMoves().map((m) => m.name);
+    expect(new Set(names).size, 'move names, fewer than moves: names are shared').toBeLessThan(
+      names.length - 10,
+    );
+  });
+
   it('one move id reused on several bosses or foes has the same numbers every time', () => {
     const byId = new Map<string, Set<string>>();
-    const all: BossMoveDef[] = [
-      ...Object.values(pack.raidBosses).flatMap((b) => [
-        ...b.moves,
-        ...(b.escalation?.phase?.moves ?? []),
-      ]),
-      ...Object.values(pack.foes).flatMap((f) => [
-        ...f.moves,
-        ...(f.signature ? [f.signature] : []),
-        ...(f.escalation?.phase?.moves ?? []),
-      ]),
-    ];
+    const all = bossMoves();
     for (const m of all) byId.set(m.id, (byId.get(m.id) ?? new Set()).add(stable(m)));
     const differing = [...byId].filter(([, forms]) => forms.size > 1).map(([id]) => id);
     expect(differing, 'a move id with two sets of numbers').toEqual([]);
@@ -240,8 +272,8 @@ const BOARD_KEYWORDS: ReadonlySet<string> = new Set<string>([
   'Checker',
   'Most hurt',
   'Back-most',
-  // The boss's Build-up meter; a Build-up shows its own name in the text, and no text says the word itself.
-  'Build-up',
+  // The boss's Escalating meter; an Escalating boss shows its own name in the text, and no text says the word itself.
+  'Escalating',
 ]);
 
 describe('combat v2 content gate: keywords', () => {
@@ -468,7 +500,7 @@ describe('combat v2 content gate: names and words of the bosses (the compendium 
     }
   });
 
-  it('new words are keywords: the shapes, the anchors and the Build-up', () => {
+  it('new words are keywords: the shapes, the anchors and Escalating', () => {
     for (const k of [
       'Scatter',
       'Leap',
@@ -477,11 +509,12 @@ describe('combat v2 content gate: names and words of the bosses (the compendium 
       'Wind-up',
       'Most hurt',
       'Back-most',
-      'Build-up',
+      'Escalating',
     ])
       expect(pack.keywords, k).toHaveProperty(k);
-    expect(pack.keywords['Build-up']?.means).toMatch(/Mired slows it/);
-    expect(pack.keywords['Build-up']?.means).toMatch(/weekend/);
+    expect(pack.keywords).not.toHaveProperty('Build-up');
+    expect(pack.keywords['Escalating']?.means).toMatch(/Mired slows it/);
+    expect(pack.keywords['Escalating']?.means).toMatch(/weekend/);
   });
 
   it('no boss or foe move and no card has the name of a reaction', () => {
@@ -490,14 +523,16 @@ describe('combat v2 content gate: names and words of the bosses (the compendium 
       expect(reactions.has(name.toLowerCase()), name).toBe(false);
   });
 
-  it('the Bramble Bind card is the only Bramble Bind, and a card that is a move too is one thing under one name', () => {
-    const bramble = [...raidMoves, ...foeMoves].filter((m) => m.name === 'Bramble Bind');
-    expect(bramble).toEqual([]);
+  it('a card is not named like a move: the card Bramble Bind adds the move Hush, and no boss move has a card’s name', () => {
+    const moves = [...raidMoves, ...foeMoves].map((m) => m.name.toLowerCase());
     for (const c of Object.values(pack.cards)) {
-      const same = [...raidMoves, ...foeMoves].filter((m) => m.name === c.name);
-      // A boss move with a card's name is the move that card adds, with the card's id.
-      for (const m of same) expect(m.id, `${c.name}: boss move and card`).toBe(c.id);
+      expect(moves, `${c.name}: a boss move with the name of a card`).not.toContain(
+        c.name.toLowerCase(),
+      );
+      for (const m of cardMoves(c))
+        expect(m.name.toLowerCase(), `${c.id}: its move`).not.toBe(c.name.toLowerCase());
     }
+    expect(cardMoves(pack.cards['bramble-bind']!).map((m) => m.name)).toEqual(['Hush']);
   });
 
   it('Molten Shell grows armour and Wisp Fog grows dodge, as their names say', () => {

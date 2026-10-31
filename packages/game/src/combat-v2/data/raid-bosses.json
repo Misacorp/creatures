@@ -9,7 +9,7 @@
     "moves": [
       {
         "id": "undertow",
-        "name": "Undertow",
+        "name": "Front Sweep",
         "every": 3,
         "turn": 0,
         "pattern": { "anchor": "front", "shape": "row" },
@@ -17,7 +17,7 @@
       },
       {
         "id": "spray",
-        "name": "Spray",
+        "name": "Barrage",
         "every": 2,
         "turn": 0,
         "pattern": { "anchor": "random", "shape": "scatter", "n": 4, "perColumns": 4 },
@@ -25,7 +25,7 @@
       },
       {
         "id": "tidal-pull",
-        "name": "Tidal Pull",
+        "name": "Nemesis Lance",
         "every": 2,
         "turn": 1,
         "pattern": { "anchor": "strongest", "shape": "columns", "n": 2, "perColumns": 4 },
@@ -33,7 +33,7 @@
       },
       {
         "id": "riptide",
-        "name": "Riptide",
+        "name": "Wild Lance",
         "every": 4,
         "turn": 1,
         "pattern": { "anchor": "random", "shape": "columns", "n": 1, "perColumns": 4 },
@@ -42,7 +42,7 @@
       },
       {
         "id": "spring-tide",
-        "name": "Spring Tide",
+        "name": "Payoff Sweep",
         "every": 6,
         "turn": 1,
         "pattern": { "anchor": "payoff", "shape": "row" },
@@ -51,7 +51,7 @@
       },
       {
         "id": "great-wave",
-        "name": "Great Wave",
+        "name": "Wild Sweep",
         "every": 3,
         "turn": 2,
         "pattern": { "anchor": "random", "shape": "randomRow" },
@@ -60,7 +60,7 @@
       },
       {
         "id": "deepwater-spear",
-        "name": "Deepwater Spear",
+        "name": "Nemesis Lance",
         "every": 5,
         "turn": 2,
         "pattern": { "anchor": "strongest", "shape": "columns", "n": 1, "perColumns": 4 },
@@ -68,7 +68,7 @@
       },
       {
         "id": "breaker",
-        "name": "Breaker",
+        "name": "Rear Sweep",
         "every": 7,
         "turn": 0,
         "pattern": { "anchor": "back", "shape": "rows", "n": 2 },
@@ -100,7 +100,7 @@
     "moves": [
       {
         "id": "coil-crush",
-        "name": "Coil Crush",
+        "name": "Front Slam",
         "every": 3,
         "turn": 0,
         "pattern": { "anchor": "front", "shape": "line3" },
@@ -108,7 +108,7 @@
       },
       {
         "id": "scorch-lane",
-        "name": "Scorch Lane",
+        "name": "Wild Lance",
         "every": 2,
         "turn": 1,
         "pattern": { "anchor": "random", "shape": "column" },
@@ -116,7 +116,7 @@
       },
       {
         "id": "magma-spit",
-        "name": "Magma Spit",
+        "name": "Payoff Slam",
         "every": 4,
         "turn": 1,
         "pattern": { "anchor": "payoff", "shape": "line3" },
@@ -124,7 +124,7 @@
       },
       {
         "id": "cinder-fall",
-        "name": "Cinder Fall",
+        "name": "Barrage",
         "every": 2,
         "turn": 3,
         "pattern": { "anchor": "random", "shape": "scatter", "n": 5, "perColumns": 4 },
@@ -132,7 +132,7 @@
       },
       {
         "id": "ember-leap",
-        "name": "Ember Leap",
+        "name": "Leaping Strike",
         "every": 3,
         "turn": 2,
         "pattern": {
@@ -154,7 +154,7 @@
       },
       {
         "id": "eruption",
-        "name": "Eruption",
+        "name": "Quake",
         "every": 5,
         "turn": 3,
         "pattern": { "anchor": "front", "shape": "all" },
@@ -188,7 +188,7 @@
     "moves": [
       {
         "id": "bramble-hush",
-        "name": "Bramble Hush",
+        "name": "Hush",
         "every": 2,
         "turn": 2,
         "pattern": { "anchor": "front", "shape": "rowEnds", "n": 1, "perColumns": 4 },
@@ -197,7 +197,7 @@
       },
       {
         "id": "briar-pincer",
-        "name": "Briar Pincer",
+        "name": "Pincer",
         "every": 3,
         "turn": 1,
         "pattern": { "anchor": "front", "shape": "rowEnds", "n": 1, "perColumns": 4 },
@@ -213,7 +213,7 @@
       },
       {
         "id": "seed-burst",
-        "name": "Seed Burst",
+        "name": "Barrage",
         "every": 4,
         "turn": 1,
         "pattern": { "anchor": "random", "shape": "scatter", "n": 5, "perColumns": 4 },
@@ -222,7 +222,7 @@
       },
       {
         "id": "thorn-lash",
-        "name": "Thorn Lash",
+        "name": "Leaping Strike",
         "every": 3,
         "turn": 2,
         "pattern": {
@@ -236,7 +236,7 @@
       },
       {
         "id": "root-snare",
-        "name": "Root Snare",
+        "name": "Wild Lance",
         "every": 5,
         "turn": 2,
         "pattern": { "anchor": "random", "shape": "columns", "n": 2, "perColumns": 4 },
@@ -244,7 +244,7 @@
       },
       {
         "id": "back-thorns",
-        "name": "Back Thorns",
+        "name": "Rear Sweep",
         "every": 4,
         "turn": 2,
         "pattern": { "anchor": "back", "shape": "row" },
@@ -264,7 +264,7 @@
         "moves": [
           {
             "id": "bloom-storm",
-            "name": "Bloom Storm",
+            "name": "Barrage",
             "every": 2,
             "turn": 0,
             "pattern": { "anchor": "random", "shape": "scatter", "n": 6, "perColumns": 4 },
@@ -272,7 +272,7 @@
           },
           {
             "id": "thorn-wall",
-            "name": "Thorn Wall",
+            "name": "Front Sweep",
             "every": 4,
             "turn": 2,
             "pattern": { "anchor": "front", "shape": "rows", "n": 2 },
@@ -286,7 +286,7 @@
       "mid": { "hpBp": 8370, "atkBp": 9100, "armourBp": 7600 }
     },
     "asks": "The row ends fall quiet. Keep what you cannot spare in the middle or ward it, and bring something for her thick bark.",
-    "note": "Bramble Hush is the one silencing move: every second round, the two ends of every row. Each fifth of her HP lost wakes her further; at half she blooms (Second Bloom) and the whole arena is in play. The bark cracks at every step: her armour drops by 30 each fifth of her HP lost (224 at the start, 134 at the cap), so only a Pierce line or a big reaction gets in early."
+    "note": "Hush is the one silencing move: every second round, the two ends of every row. Each fifth of her HP lost wakes her further; at half she blooms (Second Bloom) and the whole arena is in play. The bark cracks at every step: her armour drops by 30 each fifth of her HP lost (224 at the start, 134 at the cap), so only a Pierce line or a big reaction gets in early."
   },
   {
     "id": "storm-sovereign",
@@ -301,7 +301,7 @@
     "moves": [
       {
         "id": "thunderclap",
-        "name": "Thunderclap",
+        "name": "Nemesis Slam",
         "every": 3,
         "turn": 0,
         "pattern": { "anchor": "strongest", "shape": "line3", "anchors": 1, "perColumns": 6 },
@@ -309,7 +309,7 @@
       },
       {
         "id": "forked-lightning",
-        "name": "Forked Lightning",
+        "name": "Wild Lance",
         "every": 2,
         "turn": 0,
         "pattern": { "anchor": "random", "shape": "columns", "n": 2, "perColumns": 4 },
@@ -317,7 +317,7 @@
       },
       {
         "id": "static-field",
-        "name": "Static Field",
+        "name": "Payoff Slam",
         "every": 3,
         "turn": 1,
         "pattern": { "anchor": "payoff", "shape": "line3", "anchors": 1, "perColumns": 6 },
@@ -325,7 +325,7 @@
       },
       {
         "id": "ball-lightning",
-        "name": "Ball Lightning",
+        "name": "Barrage",
         "every": 4,
         "turn": 1,
         "pattern": { "anchor": "random", "shape": "scatter", "n": 3, "perColumns": 4 },
@@ -343,7 +343,7 @@
       },
       {
         "id": "storm-front",
-        "name": "Storm Front",
+        "name": "Quake",
         "every": 5,
         "turn": 1,
         "pattern": { "anchor": "front", "shape": "all" },
@@ -352,7 +352,7 @@
       },
       {
         "id": "spark-dive",
-        "name": "Spark Dive",
+        "name": "Payoff Strike",
         "every": 2,
         "turn": 1,
         "pattern": { "anchor": "payoff", "shape": "single", "anchors": 1, "perColumns": 6 },
@@ -387,7 +387,7 @@
     "moves": [
       {
         "id": "sinking-mud",
-        "name": "Sinking Mud",
+        "name": "Wild Sweep",
         "every": 3,
         "turn": 2,
         "pattern": { "anchor": "random", "shape": "randomRow" },
@@ -395,7 +395,7 @@
       },
       {
         "id": "belly-flop",
-        "name": "Belly Flop",
+        "name": "Front Slam",
         "every": 4,
         "turn": 0,
         "pattern": { "anchor": "front", "shape": "line3", "anchors": 1, "perColumns": 6 },
@@ -403,7 +403,7 @@
       },
       {
         "id": "bog-lob",
-        "name": "Bog Lob",
+        "name": "Payoff Slam",
         "every": 5,
         "turn": 1,
         "pattern": { "anchor": "payoff", "shape": "line3", "anchors": 1, "perColumns": 6 },
@@ -411,7 +411,7 @@
       },
       {
         "id": "mud-slide",
-        "name": "Mud Slide",
+        "name": "Wild Lance",
         "every": 2,
         "turn": 2,
         "pattern": { "anchor": "random", "shape": "columns", "n": 2, "perColumns": 4 },
@@ -419,7 +419,7 @@
       },
       {
         "id": "rising-bubbles",
-        "name": "Rising Bubbles",
+        "name": "Barrage",
         "every": 4,
         "turn": 1,
         "pattern": { "anchor": "random", "shape": "scatter", "n": 4, "perColumns": 4 },
@@ -428,7 +428,7 @@
       },
       {
         "id": "sinkhole",
-        "name": "Sinkhole",
+        "name": "Vulture Strike",
         "every": 6,
         "turn": 0,
         "pattern": { "anchor": "weakest", "shape": "single", "anchors": 1, "perColumns": 6 },
@@ -436,7 +436,7 @@
       },
       {
         "id": "peat-wave",
-        "name": "Peat Wave",
+        "name": "Rear Sweep",
         "every": 5,
         "turn": 0,
         "pattern": { "anchor": "back", "shape": "rows", "n": 2 },

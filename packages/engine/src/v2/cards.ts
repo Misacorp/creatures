@@ -5,7 +5,7 @@
  *
  * Strength is bp of the full card (10000 is full). `share(v)` is `floor(v x strength / 10000)`: a number a card adds or sets is
  * its share at the card's strength, so a weaker card changes less. Applying any card also sets `boss.strengthBp` to the card's
- * strength, which the engine reads for the gates (reflection, Shake It Off, silences, the Build-up, ...); every place that
+ * strength, which the engine reads for the gates (reflection, Shake It Off, silences, the escalation, ...); every place that
  * applies a card does so at the boss's own strength or at full strength, and an unset strength is full, so nothing else moves.
  */
 import { FULL_STRENGTH_BP, type BossDef, type BossMove, type Pattern } from './types';
@@ -18,7 +18,7 @@ export type CardModNumber = 'shakeEvery' | 'wardBp' | 'healBp';
 export type CardOp =
   /** A stat plus its share: Thick Hide (armour 70), Elusive (Speed 300). */
   | { readonly op: 'add'; readonly stat: 'armour' | 'spd'; readonly value: number }
-  /** A stat set to its share: Slippery (dodge 2500 bp), Lucky Strike (crit chance 2000 bp). */
+  /** A stat set to its share: Slippery (dodge 2500 bp), Double Strike (crit chance 2000 bp). */
   | { readonly op: 'set'; readonly stat: 'dodgeBp' | 'critChanceBp'; readonly value: number }
   /** A stat raised by the share of `bp`: Wither (Attack, 2000 bp), rounded down. */
   | { readonly op: 'raise'; readonly stat: 'atk'; readonly bp: number }

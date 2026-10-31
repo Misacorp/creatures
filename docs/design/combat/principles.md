@@ -88,7 +88,7 @@ Trades against: P-08 (shapes must stay readable on the board).
 ### P-08 Show it on the board
 
 Status: proposed
-Statement: Everything a fight uses is visible before it starts: marks with counts (x3), the boss's next patterns as slot highlights, and rule-card icons on the creatures whose Knack answers them.
+Statement: Everything a fight uses is visible before it starts: marks with stacks (up to 3), the boss's next patterns as slot highlights, and rule-card icons on the creatures whose Knack answers them.
 Pass: a boss card that lights up the three slots its slam will hit.
 Fail: a hidden rule players must read about after a loss.
 Review question: Could a player predict this effect from the board alone?

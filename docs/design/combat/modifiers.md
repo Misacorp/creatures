@@ -10,13 +10,13 @@ Everything that changes a creature in a fight is a **modifier**: "Attack +8%", "
 
 A modifier is a sentence with up to five parts. Most interesting ones use at least one part besides the number.
 
-| Part                    | Asks                  | Examples                                                                                                                |
-| ----------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **When** (condition)    | Is it on right now?   | while both neighbours share its element; at a row end; below half HP; while the boss carries a mark at x3; from round 4 |
-| **On** (trigger)        | What makes it happen? | when it dodges; when it intercepts; when a neighbour is knocked out; when it crits                                      |
-| **What**                | What changes?         | damage, a stat, a Guard's reach, a heal, a mark's count, a debuff's stacks                                              |
-| **Who / where** (shape) | Which creatures?      | itself; beside it; its row; to its left only; further away counts more                                                  |
-| **Limit** (rhythm)      | How often?            | once per fight; once per round; every third hit; up to 3                                                                |
+| Part                    | Asks                  | Examples                                                                                                                      |
+| ----------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **When** (condition)    | Is it on right now?   | while both neighbours share its element; at a row end; below half HP; while the boss carries a mark at 3 stacks; from round 4 |
+| **On** (trigger)        | What makes it happen? | when it dodges; when it intercepts; when a neighbour is knocked out; when it crits                                            |
+| **What**                | What changes?         | damage, a stat, a Guard's reach, a heal, a mark's stacks, a debuff's stacks                                                   |
+| **Who / where** (shape) | Which creatures?      | itself; beside it; its row; to its left only; further away counts more                                                        |
+| **Limit** (rhythm)      | How often?            | once per fight; once per round; every third hit; up to 3                                                                      |
 
 Kinds that follow from the parts: **stat** (only What and a number: "Attack +8%"), **condition**, **trigger**, **shape**, **transfer** (gives part of its own stat to others), **rhythm** (every Nth time, no luck) and **rule bender** ("cannot be silenced", "counts as a Guard for...").
 
@@ -47,9 +47,9 @@ These use the new interactions (marks with counts, boss turns after each row, Ch
 | New modifier                   | Kind            | What it does (example number)                                                                                   | Why it is interesting                                                                                                                  |
 | ------------------------------ | --------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | Distance cover ("Long Shadow") | shape           | A Guard's cover and the cut on hits it intercepts grow by 10 points per slot of distance.                       | With Flank guard (left) a Guard at the right end of a long raid row protects the far creatures best: a placement puzzle (Misa's idea). |
-| Count hunter ("Opportunist")   | condition       | +40% on a reaction that cashes a mark at x3.                                                                    | Rewards waiting for a full mark; pairs with Double Mark Setters.                                                                       |
+| Count hunter ("Opportunist")   | condition       | +40% on a reaction that cashes a mark at 3 stacks.                                                              | Rewards waiting for a full mark; pairs with Double Mark Setters.                                                                       |
 | Fresh mark ("Quick Draw")      | condition       | +30% on a reaction that cashes a mark set this boss turn.                                                       | The opposite timing: cash right after the Setter, before Clean Scales sheds it.                                                        |
-| Mark painter ("Deep Ink")      | trigger, rhythm | Its first mark each fight starts at x2.                                                                         | A Setter talent that changes the opening without adding marks from nowhere (marks still come only from Setters and Knacks).            |
+| Mark painter ("Deep Ink")      | trigger, rhythm | Its first mark each fight starts at 2 stacks.                                                                   | A Setter talent that changes the opening without adding marks from nowhere (marks still come only from Setters and Knacks).            |
 | Slow burn                      | condition       | +8% per round from round 2, up to +48%.                                                                         | Strong in long raid stages, weak in the dungeon: a reason to own two of the same species.                                              |
 | Finisher                       | condition       | +50% while the boss is below a third of its HP.                                                                 | With shared boss HP across a raid weekend (R14), stage 3 creatures differ from stage 1.                                                |
 | Vengeful (Rally cry, sure)     | trigger         | +50% for the rest of the fight after a creature beside it is knocked out.                                       | Turns attrition into a comeback.                                                                                                       |
@@ -87,10 +87,10 @@ A talent is one modifier with its number. Conditional talents get **big** number
 | Finisher                     | hitters        | +50% while the boss is below a third of its HP (+62%)                                         | fight state (new)             |
 | First Strike                 | hitters        | Its first hit that lands each fight deals +60% (+75%)                                         | fight state (G: First pounce) |
 | Steady Rhythm                | hitters        | Every third hit it makes is a crit (every third, and crits +15%)                              | rhythm (new)                  |
-| Opportunist                  | Payoff         | +40% on a reaction that cashes a mark at x3 (+50%)                                            | marks (new)                   |
+| Opportunist                  | Payoff         | +40% on a reaction that cashes a mark at 3 stacks (+50%)                                      | marks (new)                   |
 | Quick Draw                   | Payoff         | +30% on a reaction on a mark set this boss turn (+38%)                                        | marks (new)                   |
 | Potent Mark                  | Setter         | Reactions on marks it left deal +30% (+38%)                                                   | marks (G)                     |
-| Deep Ink                     | Setter         | Its first mark each fight starts at x2 (and its second too)                                   | marks (new)                   |
+| Deep Ink                     | Setter         | Its first mark each fight starts at 2 stacks (and its second too)                             | marks (new)                   |
 | Vengeful                     | any            | +50% for the rest of the fight after a creature beside it is knocked out (+62%)               | trigger (G: Rally cry)        |
 | Momentum                     | any            | After it dodges, its next hit deals +40% (+50%)                                               | trigger (G)                   |
 | Flank Guard (left) / (right) | Guard          | Its reach covers only one side, with twice the slots (and +1 slot)                            | shape (G)                     |
@@ -120,17 +120,17 @@ Notes:
 
 Crits are something a creature is built for. The rules are R7.1; the names, one per effect across talents, Knacks and gear:
 
-| Name                   | Where                                     | What it does                                                                                                         |
-| ---------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Crit chance            | gear line, talent **Crit Chance**         | +12% crit chance (talent); the line adds points.                                                                     |
-| Crit damage            | gear line, talent **Amplified Crits**     | Crits deal +100% more on top of the double (talent, Payoffs); the line adds points.                                  |
-| Crit machines          | species stat (Cindle, Pyrelynx, Coralynx) | +10 points of chance and +50 points of damage, Attack x0.86 (about the same average hit, far more swing).            |
-| Wild Swing             | Knack (family Luck)                       | Its hit deals 25% less, +20% crit chance, crits +50% more.                                                           |
-| Perfect Timing         | talent (hitters)                          | A dodge stores a Sure Crit; the next hit that lands (and is not already a crit) is a 3x crit.                        |
-| Easily Provoked        | talent (Guards)                           | Hits it takes for others worth 25% of its Max HP store a Sure Crit (3x).                                             |
-| Cool Head              | Knack (family Luck, Guards)               | Boss crits on it and on the creatures beside it deal half the extra damage.                                          |
-| Lucky Strike, Slippery | rule cards                                | A crit chance for the boss (a crit doubles its hit, before cuts and armour); a flat dodge that Mired does not lower. |
-| Breakwater             | rule card                                 | A Row Ward or beside-cut aura cuts 2.4 to 3 times as much of its area and Wind-up hits (at most 75% of a hit).       |
+| Name                    | Where                                     | What it does                                                                                                         |
+| ----------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Crit chance             | gear line, talent **Crit Chance**         | +12% crit chance (talent); the line adds points.                                                                     |
+| Crit damage             | gear line, talent **Amplified Crits**     | Crits deal +100% more on top of the double (talent, Payoffs); the line adds points.                                  |
+| Crit machines           | species stat (Cindle, Pyrelynx, Coralynx) | +10 points of chance and +50 points of damage, Attack x0.86 (about the same average hit, far more swing).            |
+| Wild Swing              | Knack (family Luck)                       | Its hit deals 25% less, +20% crit chance, crits +50% more.                                                           |
+| Perfect Timing          | talent (hitters)                          | A dodge stores a Sure Crit; the next hit that lands (and is not already a crit) is a 3x crit.                        |
+| Easily Provoked         | talent (Guards)                           | Hits it takes for others worth 25% of its Max HP store a Sure Crit (3x).                                             |
+| Cool Head               | Knack (family Luck, Guards)               | Boss crits on it and on the creatures beside it deal half the extra damage.                                          |
+| Double Strike, Slippery | rule cards                                | A crit chance for the boss (a crit doubles its hit, before cuts and armour); a flat dodge that Mired does not lower. |
+| Breakwater              | rule card                                 | A Row Ward or beside-cut aura cuts 2.4 to 3 times as much of its area and Wind-up hits (at most 75% of a hit).       |
 
 Perfect Timing first also stored a charge when a Guard took a hit aimed at the creature (like Momentum); that fires every round and was a runaway (+19% on payoffs, best on most cards), so it is dodge only. Easily Provoked first stored one per interception, the same mistake. Crit Chance and Amplified Crits are placed in the pools of the crit lines (Cindle, Coralynx, Stormray for chance; Cindle and Coralynx for damage), Perfect Timing in Stormray's and Zipmouse's, Easily Provoked in Sproutle's and Ashmole's.
 

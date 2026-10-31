@@ -1,6 +1,6 @@
 /**
  * Schemas of the combat v2 boss-side content (`cards.json`, `raid-bosses.json`, `foes.json`, `keywords.json`), in the style of
- * `schema.ts`. The shapes of a pattern, a move, a Build-up and a card operation are the engine's (`Pattern`, `BossMove`,
+ * `schema.ts`. The shapes of a pattern, a move, an escalation and a card operation are the engine's (`Pattern`, `BossMove`,
  * `Escalation`, `CardOp` in `packages/engine/src/v2/`): the game cannot import the engine, so each side has its own copy and a
  * type test in the engine (`packages/engine/test/v2-content-types.test.ts`) fails the typecheck when they drift.
  *
@@ -17,13 +17,13 @@
  * Breakwater's ward: a ward cuts (1 + the card's share of 20000 bp) times as much of the boss's sweeps, x3 at full strength and
  * less at a lower one. Wards cover a whole row whoever owns them, so a prepared player shelters the others; a party with no ward
  * gains nothing. Stone Skin: a weaker card caps higher (at half strength the cap is double) and at 0 there is none. Slippery is a
- * flat dodge that Mired does not lower, so only a hit that cannot be dodged (Clear Skies) gets past it for certain. Lucky Strike is
+ * flat dodge that Mired does not lower, so only a hit that cannot be dodged (Clear Skies) gets past it for certain. Double Strike is
  * a crit chance on every damaging hit that lands: each crit doubles the hit before cuts and armour (R7.1).
  *
  * ## Raid bosses (`raid-bosses.json`) and foes (`foes.json`)
  *
  * The part of a boss that is not the shipped content's (name, element, base Speed and rounds come from `content.bosses` and
- * `dungeonContent.foes`, so they cannot drift): an arena, an armour, a plain attack, moves, rule cards (by id), a Build-up
+ * `dungeonContent.foes`, so they cannot drift): an arena, an armour, a plain attack, moves, rule cards (by id), an escalation
  * and, for the report, what the boss asks. A raid boss's numbers are the high rank's; `ranks` gives the lower ranks' HP and
  * Attack (bp of the high rank's) and, optionally, armour. A foe's HP and Attack come from the dungeon's own numbers, scaled by
  * `scale` and the depth `curve`; `hpBp` and `atkBp` tune one foe that asks a hard question. `note` is the content intent that
@@ -94,7 +94,7 @@ export const PlainSchema = v.pipe(
 );
 export type PlainDef = v.InferOutput<typeof PlainSchema>;
 
-/** What each Build-up step adds to the boss: the engine's `EscalationGrowth`. */
+/** What each escalation step adds to the boss: the engine's `EscalationGrowth`. */
 export const GrowthSchema = v.pipe(
   v.strictObject({
     atkBp: v.exactOptional(Int),
@@ -108,7 +108,7 @@ export const GrowthSchema = v.pipe(
   v.readonly(),
 );
 
-/** The boss's Build-up, with its optional phase: the engine's `Escalation`. */
+/** The boss's escalation, with its optional phase: the engine's `Escalation`. */
 export const EscalationSchema = v.pipe(
   v.strictObject({
     name: Name,

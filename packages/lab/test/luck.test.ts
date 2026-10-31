@@ -73,7 +73,7 @@ describe('the resolver hands the engine the luck stats', () => {
 });
 
 describe('the luck rule cards', () => {
-  it('Lucky Strike gives the boss a crit chance and Slippery a flat dodge, both by strength', () => {
+  it('Double Strike gives the boss a crit chance and Slippery a flat dodge, both by strength', () => {
     const b = labBoss({ rows: 1, cols: 1 });
     expect(b.critChanceBp).toBeUndefined();
     expect(card('lucky-strike').apply(b).critChanceBp).toBe(2_000);
@@ -85,7 +85,7 @@ describe('the luck rule cards', () => {
     expect(CARDS.map((c) => c.id)).toEqual(expect.arrayContaining(['lucky-strike', 'slippery']));
   });
 
-  it('Lucky Strike makes the boss crit in a fight', () => {
+  it('Double Strike makes the boss crit in a fight', () => {
     const boss = labBoss({ rows: 1, cols: 2, rounds: 40, atk: 20, cards: ['lucky-strike'] });
     const team = [at('kilnmole', 0, 0), at('thornbuck', 0, 1)];
     const res = fight(boss, team, { rng: rng('lucky'), log: true });

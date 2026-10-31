@@ -38,7 +38,7 @@ const escalationSame: Equal<EscalationDef, Escalation> = true;
 const cardOpSame: Equal<CardOpDef, CardOp> = true;
 
 describe('combat v2 content types', () => {
-  it('the game schemas for effects, rules, patterns, moves, the plain attack, the Build-up and card operations equal the engine types (checked by the typecheck)', () => {
+  it('the game schemas for effects, rules, patterns, moves, the plain attack, the escalation and card operations equal the engine types (checked by the typecheck)', () => {
     expect(fxSame).toBe(true);
     expect(rulesSame).toBe(true);
     expect(patternSame).toBe(true);

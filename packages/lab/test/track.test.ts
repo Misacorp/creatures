@@ -173,7 +173,7 @@ describe('the young-server ramp (Misa, 2026-10-30)', () => {
     expect(trackSlot(3).rules).toEqual({ buildUp: true });
   });
 
-  it('slot 1 is a tutorial: no rule cards and no Build-up, but its plain attack and its moves stay', () => {
+  it('slot 1 is a tutorial: no rule cards and no escalation, but its plain attack and its moves stay', () => {
     const boss = slotBoss(1);
     const full = raidBossOf(trackSlot(1).bossId, { strengthBp: trackSlot(1).strengthBp });
     expect(boss.cards).toEqual([]);
@@ -185,7 +185,7 @@ describe('the young-server ramp (Misa, 2026-10-30)', () => {
     expect(boss.moves).toEqual(full.moves);
   });
 
-  it('slot 2 has one rule card, the boss’s first, at the slot’s low strength, and no Build-up', () => {
+  it('slot 2 has one rule card, the boss’s first, at the slot’s low strength, and no escalation', () => {
     const boss = slotBoss(2);
     expect(boss.cards).toEqual([spec(boss.id).cards[0]]);
     expect(boss.strengthBp).toBe(rankStrengthBp(2));
@@ -211,7 +211,7 @@ describe('the young-server ramp (Misa, 2026-10-30)', () => {
     expect(slotBoss(10, { table: {} })).toEqual(raidBossOf(trackSlot(10).bossId, { rank: 'high' }));
   });
 
-  it('raidBossOf gives the first cards asked for, and Build-up on request; by default everything', () => {
+  it('raidBossOf gives the first cards asked for, and escalation on request; by default everything', () => {
     const id = 'cinder-wyrm';
     expect(raidBossOf(id).cards).toEqual(spec(id).cards);
     expect(raidBossOf(id).escalation).toBeDefined();
@@ -227,7 +227,7 @@ describe('the luck cards, a later lap’s new card (Misa, 2026-10-31)', () => {
   const first = (card: string): number =>
     Number(Object.entries(SLOT_EXTRA_CARDS).find(([, cards]) => cards.includes(card))?.[0]);
 
-  it('puts Lucky Strike on the Storm Sovereign and Slippery on the Tidal Colossus, each from its second lap', () => {
+  it('puts Double Strike on the Storm Sovereign and Slippery on the Tidal Colossus, each from its second lap', () => {
     expect(SLOT_EXTRA_CARDS).toEqual({ 6: ['slippery', 'breakwater'], 8: ['lucky-strike'] });
     expect(trackSlot(first('lucky-strike')).bossId).toBe('storm-sovereign');
     expect(trackSlot(first('slippery')).bossId).toBe('tidal-colossus');
@@ -260,7 +260,7 @@ describe('the luck cards, a later lap’s new card (Misa, 2026-10-31)', () => {
     for (const s of TRACK) expect(s.extraCards.length).toBeLessThanOrEqual(2);
   });
 
-  it('builds the card on the boss at the slot’s strength: a crit chance for Lucky Strike, a flat dodge for Slippery', () => {
+  it('builds the card on the boss at the slot’s strength: a crit chance for Double Strike, a flat dodge for Slippery', () => {
     const storm = slotBoss(8);
     expect(storm.cards.slice(-1)).toEqual(['lucky-strike']);
     expect(storm.critChanceBp).toBe(Math.floor((2_000 * trackSlot(8).strengthBp) / 10_000));

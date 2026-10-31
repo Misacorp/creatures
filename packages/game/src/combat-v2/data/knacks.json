@@ -10,7 +10,7 @@
     },
     {
       "name": "Heavy Prime",
-      "text": "Gives up its damage for more mark counts (Setters only)."
+      "text": "Gives up its damage for more mark stacks (Setters only)."
     },
     {
       "name": "Self Prime",
@@ -26,7 +26,7 @@
     },
     {
       "name": "Detonator",
-      "text": "A Payoff that spends several counts."
+      "text": "A Payoff that spends several stacks."
     },
     {
       "name": "Chain",
@@ -122,7 +122,7 @@
       "id": "feed-the-marks",
       "name": "Feed the Marks",
       "family": "Heavy Prime",
-      "text": "Its hit deals no damage. It leaves its {Mark} and adds 1 to the count of every other mark on the boss.",
+      "text": "Its hit deals no damage. It leaves its {Mark} and adds 1 stack to every other mark on the boss.",
       "intent": "For multi-mark teams and Payoffs that spend several stacks.",
       "fx": {
         "noDamage": true,
@@ -153,7 +153,7 @@
       "id": "all-at-once",
       "name": "All In",
       "family": "Detonator",
-      "text": "Cashes only a mark at x3, and {Spend}s all of its count.",
+      "text": "Cashes only a mark at 3 stacks, and {Spend}s all of them.",
       "intent": "Misa's mark-mark-mark-big-payoff choice: a slow, huge hit that breaks armour.",
       "fx": {
         "minStacks": 3,
@@ -165,7 +165,7 @@
       "id": "leave-a-trail",
       "name": "Leave a Trail",
       "family": "Chain",
-      "text": "After its {Reaction}, it leaves x1 of its own element's mark. A reaction on that mark leaves no further trail.",
+      "text": "After its {Reaction}, it leaves 1 stack of its own element's mark. A reaction on that mark leaves no further trail.",
       "intent": "Cross-element chains: a reaction primes the next one for another Payoff.",
       "fx": {
         "trail": true
@@ -175,7 +175,7 @@
       "id": "detonate",
       "name": "Detonate",
       "family": "Detonator",
-      "text": "{Spend}s the whole count of the mark it cashes. Weak on x1, strong on x2 and x3.",
+      "text": "{Spend}s all the stacks of the mark it cashes. Weak on 1 stack, strong on 2 or 3.",
       "intent": "Pays off two Setters, or a Setter with Heavy Prime; worse than no Knack on a single stack.",
       "fx": {
         "spendAllBp": 7500,
@@ -236,8 +236,8 @@
       "id": "primed-by-pain",
       "name": "Primed by Pain",
       "family": "Guard Prime",
-      "text": "Each time it {Intercept}s, it leaves x2 of its own element's mark. Once a round.",
-      "intent": "A Guard that marks by taking hits (panel 5: once a fight, and one count, was too little to build a team on): an Ember Payoff gets its reaction while the Setter slot becomes another hitter.",
+      "text": "Each time it {Intercept}s, it leaves 2 stacks of its own element's mark. Once a round.",
+      "intent": "A Guard that marks by taking hits (panel 5: once a fight, and one stack, was too little to build a team on): an Ember Payoff gets its reaction while the Setter slot becomes another hitter.",
       "fx": {
         "primeOnIntercept": true
       }
@@ -247,7 +247,7 @@
       "name": "Night Watch",
       "family": "Intercept",
       "text": "Each boss turn it {Intercept}s the first {Wind-up} hit in its row, taking a quarter of it.",
-      "intent": "Answers telegraphed big hits (Great Wave, Judgement Bolt). One hit a boss turn, and the hit it takes is cut to a quarter (the most any cut can take), so it is no longer a liability (panel 4; 2026-10-31: the cover cut of 40% left it tied with no Knack outside Great Wave and behind Primed by Pain on it).",
+      "intent": "Answers telegraphed big hits (Wild Sweep, Judgement Bolt). One hit a boss turn, and the hit it takes is cut to a quarter (the most any cut can take), so it is no longer a liability (panel 4; 2026-10-31: the cover cut of 40% left it tied with no Knack outside Wild Sweep and behind Primed by Pain on it).",
       "fx": {
         "interceptCharged": true,
         "watchCutBp": 7500
@@ -277,7 +277,7 @@
       "id": "ready-the-mark",
       "name": "Stack Up",
       "family": "Support Prime",
-      "text": "Instead of its boost and heal: it adds 1 to its own element's {Mark}.",
+      "text": "Instead of its boost and heal: it adds 1 stack to its own element's {Mark}.",
       "intent": "Lets a team without a Setter react; needs a Payoff of the right element.",
       "fx": {
         "support": "readyMark"
@@ -359,7 +359,7 @@
       "id": "double-mark",
       "name": "Double Mark",
       "family": "Heavy Prime",
-      "text": "Its hit deals no damage. It leaves its {Mark} at x2.",
+      "text": "Its hit deals no damage. It leaves its {Mark} at 2 stacks.",
       "intent": "Feeds Detonators and two Payoffs of the trigger element.",
       "fx": {
         "noDamage": true,
@@ -371,7 +371,7 @@
       "id": "zigzag",
       "name": "Zigzag",
       "family": "Evasion",
-      "text": "{Taunt}, +12 dodge. {Store} Static: +1 per dodge; at 3, its next mark gets +1 to its count.",
+      "text": "{Taunt}, +12 dodge. {Store} Static: +1 per dodge; at 3, its next mark gets +1 stack.",
       "intent": "A dodge tank beside a Guard (dodge before intercept).",
       "fx": {
         "taunt": true,
@@ -384,7 +384,7 @@
       "name": "Take It All",
       "family": "Intercept",
       "text": "It {Intercept}s area hits too, and takes them with its cover's cut.",
-      "intent": "Answers sweeps and splashes. 2026-10-31: it used to take the whole area hit with no cut, which left it worse than no Knack on Great Wave; the cover cut makes it the pick against sweeps.",
+      "intent": "Answers sweeps and splashes. 2026-10-31: it used to take the whole area hit with no cut, which left it worse than no Knack on Wild Sweep; the cover cut makes it the pick against sweeps.",
       "fx": {
         "interceptArea": true
       }
@@ -423,10 +423,10 @@
     },
     {
       "id": "guards-shadow",
-      "name": "Guard's Shadow",
+      "name": "Reliably Covered",
       "family": "Partner",
       "text": "+10% on its hits while a living Guard stands beside it. Armour -10.",
-      "intent": "A Payoff that wants a Guard partner, ideally another player's in the raid. The same name as the gear line with the same effect.",
+      "intent": "A Payoff that wants a Guard partner, ideally another player's in the raid. Named Guard's Shadow until 2026-11-01; the gear line Guard's shadow keeps that name.",
       "fx": {
         "besideGuardBp": 1000,
         "armourBonus": -10
@@ -436,7 +436,7 @@
       "id": "crown-of-embers",
       "name": "Crown of Embers",
       "family": "Signature",
-      "text": "Each {Mark} it leaves adds 2 to the count, and its hit still deals damage.",
+      "text": "Each {Mark} it leaves adds 2 stacks, and its hit still deals damage.",
       "intent": "Solmane's signature: an epic Setter that feeds Detonators without giving up its damage.",
       "fx": {
         "markStacks": 2
@@ -550,7 +550,7 @@
       "name": "Cool Head",
       "family": "Luck",
       "text": "{Crit}s on it and on the creatures {Beside} it deal no extra damage.",
-      "intent": "The answer to a boss that crits (Lucky Strike): a Guard that keeps a crit to a plain hit for itself and its neighbours (2026-10-31: at half it was tied with no Knack on every card but Lucky Strike, and barely ahead there). Nothing against a boss that never crits.",
+      "intent": "The answer to a boss that crits (Double Strike): a Guard that keeps a crit to a plain hit for itself and its neighbours (2026-10-31: at half it was tied with no Knack on every card but Double Strike, and barely ahead there). Nothing against a boss that never crits.",
       "fx": {
         "critWardBp": 10000
       }

@@ -342,7 +342,7 @@ describe('raidBoss', () => {
     expect('rosterLevel' in b).toBe(false);
   });
 
-  it('builds the cards, the armour and the Build-up at the strength', () => {
+  it('builds the cards, the armour and the escalation at the strength', () => {
     const b = raidBoss(PACK, SHIPPED, 'titan', { ...shape, strengthBp: 4_000 });
     expect(b.strengthBp).toBe(4_000);
     // Armour is the spec's at the strength: half the hide plus 40% of the other half, then the card's 40% of 70.
@@ -366,7 +366,7 @@ describe('raidBoss', () => {
     expect(b.armour).toBe(5 + 70);
   });
 
-  it('has the first n cards, none for 0, and a Build-up only when asked for', () => {
+  it('has the first n cards, none for 0, and an escalation only when asked for', () => {
     expect(raidBoss(PACK, SHIPPED, 'titan', { ...shape, cards: 1 }).cards).toEqual(['hide']);
     const none = raidBoss(PACK, SHIPPED, 'titan', { ...shape, cards: 0, buildUp: false });
     expect(none.cards).toEqual([]);

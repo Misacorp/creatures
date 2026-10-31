@@ -4,7 +4,7 @@ The shape of every Knack, rule card and boss, so new content fits without new ru
 
 ## Limits (hard)
 
-- A mark's count is x1 to x3. One reaction per hit. A reaction on a trail mark leaves no further trail (the chain cap).
+- A mark has 1 to 3 stacks. One reaction per hit. A reaction on a trail mark leaves no further trail (the chain cap).
 - A Store holds at most 3; at most one Store per creature line; a Store fed by reactions gains at most 1 per round.
 - All hit boosts together are capped; reaction-bonus factors together are capped (x3); every debuff has its own maximum.
 - Marks and trails come only from Knacks, never from gear.

@@ -17,7 +17,7 @@
  * with Tidewing, Tempestray and Thornbuck) never wins. Each boss has one tool it really asks for (the first of its
  * `BOSS_ANSWERS`, tested by taking the tool away): Reach for the Tidal Colossus, Mired on the Cinder Wyrm, Pierce for
  * Thornmother, Taunt for the Storm Sovereign and healing for Old Bogback. Attack and the move powers are
- * the boss's threat: a weekend should cost the party creatures. The boss's Build-up (`escalation` in the data) is the
+ * the boss's threat: a weekend should cost the party creatures. The boss's escalation (`escalation` in the data) is the
  * word players read.
  *
  * Balance pass (2026-10-29, Misa: a prepared team wins about 85% to 100% and pays for it, the classic party never wins
@@ -37,7 +37,7 @@
  *
  * Panel 5, content and tuning (Misa, 2026-10-29: the primary measure is the share of the boss's HP removed in a weekend, with the
  * retreat tiers beside it; the kill is the cliff): Mired's cut is halved, the Colossus washes debuffs off (Shake It Off), Thornmother's
- * bark cracks at each Build-up step, every rule card and gate has a strength (`strengthBp`, 0% to 100%) that rises with the Boss Rank,
+ * bark cracks at each escalation step, every rule card and gate has a strength (`strengthBp`, 0% to 100%) that rises with the Boss Rank,
  * the boss's Attack grows with the players (`RAID_ATK_EXPONENT`) so the tool gap holds at ten players, and the prepared answers
  * were searched for a team with random legal talents (`bossAnswers.ts`). The numbers in the data are the high rank's; each boss's
  * `ranks` row gives the lower ranks' HP and Attack.
@@ -115,10 +115,10 @@ export const NOT_PORTED: readonly string[] = [
   'Turn orders (left to right, serpentine, right to left): the lab acts row by row, left to right, with a boss turn after each row (R8).',
   'Phase 1, Phase 2 and the twelve-round finale, with their retreat lines: a weekend is three stages of eight rounds that share the boss\u2019s HP (R14). The retreat lines are live-finale flavour.',
   'The lance\u2019s falloff (each row softer) and the Guard that stops a lance: a column hits every creature in it at the move\u2019s power, and a Guard covers by reach like any area hit.',
-  'Mired on creatures (Sinking Mud, Mud Spit, Tar Cling, Fen Tug): the lab has Mired only on the boss (-1.5% damage and dodge per stack). A creature debuff needs a debuff-resistance tool first, so it is a proposal question.',
+  'Mired on creatures (the mud bosses\u2019 Wild Sweep, Barrage, Front Slam and Quake): the lab has Mired only on the boss (-1.5% damage and dodge per stack). A creature debuff needs a debuff-resistance tool first, so it is a proposal question.',
   'Purge as a move: it is the Shake It Off card, every third round instead of every fifth.',
   'Finale abilities (Rally, Shield Wall, Purge): gone with R18\u2019s Knacks.',
-  'Slag Tyrant\u2019s backlash (half the time a reaction burns its Payoff): it is Reflective Hide, which is certain (P-04), plus a Build-up that thickens its shell.',
+  'Slag Tyrant\u2019s backlash (half the time a reaction burns its Payoff): it is Reflective Hide, which is certain (P-04), plus an escalation that thickens its shell.',
   'Room modifiers (Flooded, Thorns and the rest), rare rooms, carved doors, loot, experience and the Sealed Vault: a run here is the shipped map (fights, elites, mystery rooms, caches, the camp and the floor boss) and the Undercroft below it. Keepsakes are applied as shares off the foe, not as team stats.',
 ];
 
@@ -170,7 +170,7 @@ export function raidBossOf(
     strengthBp?: number;
     /** How many of the spec's rule cards the boss has, the first ones (default: all; the young-server ramp gives slot 1 none and slot 2 one, `track.ts`). */
     cards?: number;
-    /** Whether the boss has its Build-up (the escalation), default yes; the ramp's first two slots do not. */
+    /** Whether the boss is Escalating (the `escalation` data), default yes; the ramp's first two slots do not. */
     buildUp?: boolean;
     /** Cards the boss carries on top of its spec's, at the same strength (the track's later laps add a luck card, `SLOT_EXTRA_CARDS` in `track.ts`). */
     extraCards?: readonly string[];
@@ -418,7 +418,7 @@ export function weekendStatsOf(
 /**
  * Damage potential over `runs` seeded raid weekends (Misa, 2026-10-30): the weekend is fought as if the boss could not die
  * (`FightOptions.potential`: all rounds and stages play, nothing is wasted on overkill), and the measure is the total damage dealt
- * divided by the boss's HP, so 1.4 is 140%. Knockouts, attrition between stages and Build-up run as in a real weekend. The seeds are
+ * divided by the boss's HP, so 1.4 is 140%. Knockouts, attrition between stages and escalation run as in a real weekend. The seeds are
  * the ones `weekendStatsOf` uses, so the two measures fight the same weekend until the boss would have died.
  */
 export interface WeekendPotential {

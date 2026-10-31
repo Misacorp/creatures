@@ -154,9 +154,9 @@
     {
       "id": "opportunist",
       "name": "Opportunist",
-      "text": "Its {Reaction} bonus +100% when it cashes a {Mark} at x2 or more.",
+      "text": "Its {Reaction} bonus +100% when it cashes a {Mark} at 2 stacks or more.",
       "roles": ["payoff"],
-      "intent": "Rewards waiting for a bigger mark (x2 or x3); pairs with Setters that leave x2, and with a second Setter. Was x3 only (2026-10-28): a mark almost never reached x3 when cashed, so the talent did nothing.",
+      "intent": "Rewards waiting for a bigger mark (2 or 3 stacks); pairs with Setters that leave 2 stacks, and with a second Setter. Was 3 stacks only (2026-10-28): a mark almost never reached 3 stacks when cashed, so the talent did nothing.",
       "fx": {
         "cashHighBp": 10000
       }
@@ -185,7 +185,7 @@
     {
       "id": "deep-ink",
       "name": "Deep Ink",
-      "text": "Its first {Mark} each fight adds 2 more to the count.",
+      "text": "Its first {Mark} each fight adds 2 more stacks.",
       "roles": ["setter"],
       "intent": "Changes the opening without adding marks from nowhere: marks still come only from Setters and Knacks.",
       "fx": {
@@ -250,7 +250,7 @@
       "name": "Brace",
       "text": "It takes 40% less from a {Wind-up} hit aimed at its slot.",
       "roles": ["setter", "payoff", "guard", "support"],
-      "intent": "Answers a telegraphed hit (Great Wave, Judgement Bolt, the Wind-up signatures): it is shown at round start, so the owner knows who will be aimed at. Nothing against other moves or the plain attack. Back to this design (2026-10-28 panel 4): the version that also cut other moves and the plain attack decided a boss by itself.",
+      "intent": "Answers a telegraphed hit (Wild Sweep, Judgement Bolt, the Wind-up signatures): it is shown at round start, so the owner knows who will be aimed at. Nothing against other moves or the plain attack. Back to this design (2026-10-28 panel 4): the version that also cut other moves and the plain attack decided a boss by itself.",
       "gearLine": "brace",
       "fx": {
         "braceBp": 4000

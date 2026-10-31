@@ -17,7 +17,7 @@
       "moves": [
         {
           "id": "sea-mist",
-          "name": "Sea Mist",
+          "name": "Hush",
           "every": 1,
           "turn": 0,
           "pattern": { "anchor": "front", "shape": "rowEnds", "n": 1 },
@@ -44,7 +44,7 @@
       "moves": [
         {
           "id": "flare-up",
-          "name": "Flare Up",
+          "name": "Barrage",
           "every": 2,
           "turn": 0,
           "pattern": { "anchor": "random", "shape": "scatter", "n": 2 },
@@ -78,7 +78,7 @@
       "moves": [
         {
           "id": "thorn-snap",
-          "name": "Thorn Snap",
+          "name": "Hush",
           "every": 3,
           "turn": 0,
           "pattern": { "anchor": "front", "shape": "rowEnds", "n": 1 },
@@ -98,7 +98,7 @@
       "moves": [
         {
           "id": "root-grab",
-          "name": "Root Grab",
+          "name": "Nemesis Slam",
           "every": 2,
           "turn": 0,
           "pattern": { "anchor": "strongest", "shape": "line3" },
@@ -118,7 +118,7 @@
       "moves": [
         {
           "id": "zap-dive",
-          "name": "Zap Dive",
+          "name": "Leaping Strike",
           "every": 3,
           "turn": 0,
           "pattern": { "anchor": "strongest", "shape": "chain", "n": 2, "decayBp": 6000 },
@@ -142,7 +142,7 @@
       "moves": [
         {
           "id": "buzz-cloud",
-          "name": "Buzz Cloud",
+          "name": "Quake",
           "every": 2,
           "turn": 0,
           "pattern": { "anchor": "front", "shape": "all" },
@@ -159,7 +159,7 @@
       "moves": [
         {
           "id": "mud-spit",
-          "name": "Mud Spit",
+          "name": "Barrage",
           "every": 2,
           "turn": 0,
           "pattern": { "anchor": "random", "shape": "scatter", "n": 1 },
@@ -176,7 +176,7 @@
       "moves": [
         {
           "id": "tar-cling",
-          "name": "Tar Cling",
+          "name": "Front Slam",
           "every": 3,
           "turn": 0,
           "pattern": { "anchor": "front", "shape": "line3" },
@@ -193,7 +193,7 @@
       "moves": [
         {
           "id": "flood-gate",
-          "name": "Flood Gate",
+          "name": "Quake",
           "every": 3,
           "turn": 0,
           "pattern": { "anchor": "front", "shape": "all" },
@@ -201,7 +201,7 @@
         },
         {
           "id": "sluice-pull",
-          "name": "Sluice Pull",
+          "name": "Front Lance",
           "every": 2,
           "turn": 0,
           "pattern": { "anchor": "front", "shape": "columns", "n": 2 },
@@ -210,7 +210,7 @@
       ],
       "signature": {
         "id": "sluice-surge",
-        "name": "Sluice Surge",
+        "name": "Quake",
         "every": 4,
         "turn": 0,
         "pattern": { "anchor": "front", "shape": "all" },
@@ -219,7 +219,7 @@
       },
       "cards": [],
       "escalation": {
-        "name": "Rising Water",
+        "name": "Maelstrom",
         "feed": "knockouts",
         "per": 1,
         "cap": 2,
@@ -227,7 +227,7 @@
       },
       "asks": "The gates open on the whole line, and each creature that falls lets the water rise; at a landmark, a wave announced at round start.",
       "hpBp": 9500,
-      "note": "A dungeon run is one player’s own team, so a Build-up that feeds on knockouts blames no one: each creature that falls lets the water rise. Retuned after crits doubled (2026-10-30): the all-round team clears over half of its depth-7 runs again."
+      "note": "A dungeon run is one player’s own team, so an Escalating foe that feeds on knockouts blames no one: each creature that falls lets the water rise. Retuned after crits doubled (2026-10-30): the all-round team clears over half of its depth-7 runs again."
     },
     {
       "id": "slag-tyrant",
@@ -236,7 +236,7 @@
       "moves": [
         {
           "id": "anvil-fall",
-          "name": "Anvil Fall",
+          "name": "Front Slam",
           "every": 3,
           "turn": 0,
           "pattern": { "anchor": "front", "shape": "line3" },
@@ -245,7 +245,7 @@
       ],
       "signature": {
         "id": "slag-spill",
-        "name": "Slag Spill",
+        "name": "Nemesis Slam",
         "every": 4,
         "turn": 0,
         "pattern": { "anchor": "strongest", "shape": "line3" },
@@ -271,7 +271,7 @@
       "moves": [
         {
           "id": "tangle",
-          "name": "Tangle",
+          "name": "Hush",
           "every": 2,
           "turn": 0,
           "pattern": { "anchor": "front", "shape": "rowEnds", "n": 1 },
@@ -280,7 +280,7 @@
         },
         {
           "id": "thorn-rain",
-          "name": "Thorn Rain",
+          "name": "Barrage",
           "every": 3,
           "turn": 0,
           "pattern": { "anchor": "random", "shape": "scatter", "n": 2 },
@@ -289,7 +289,7 @@
       ],
       "signature": {
         "id": "briar-cage",
-        "name": "Briar Cage",
+        "name": "Pincer",
         "every": 4,
         "turn": 0,
         "pattern": { "anchor": "front", "shape": "rowEnds", "n": 1 },
@@ -306,7 +306,7 @@
       "moves": [
         {
           "id": "arc-lash",
-          "name": "Arc Lash",
+          "name": "Leaping Strike",
           "every": 1,
           "turn": 0,
           "pattern": { "anchor": "strongest", "shape": "chain", "n": 1, "decayBp": 6000 },
@@ -315,7 +315,7 @@
       ],
       "signature": {
         "id": "coil-burst",
-        "name": "Coil Burst",
+        "name": "Nemesis Slam",
         "every": 4,
         "turn": 0,
         "pattern": { "anchor": "strongest", "shape": "line3" },
@@ -339,7 +339,7 @@
       "moves": [
         {
           "id": "sink-down",
-          "name": "Sink Down",
+          "name": "Quake",
           "every": 3,
           "turn": 0,
           "pattern": { "anchor": "front", "shape": "all" },
@@ -348,7 +348,7 @@
       ],
       "signature": {
         "id": "fen-tug",
-        "name": "Fen Tug",
+        "name": "Quake",
         "every": 4,
         "turn": 0,
         "pattern": { "anchor": "front", "shape": "all" },

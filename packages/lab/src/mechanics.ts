@@ -190,7 +190,7 @@ const KEYWORD_CALLS: Readonly<Record<string, Mechanic['calls']>> = {
     attacksOf(b).some((a) => a.pattern.anchor === 'weakest') && 'it picks the most hurt creature',
   'Back-most': (b) =>
     attacksOf(b).some((a) => a.pattern.anchor === 'back') && 'it picks the back-most creature',
-  'Build-up': (b) => b.escalation !== undefined && 'it grows as the weekend goes on',
+  Escalating: (b) => b.escalation !== undefined && 'it grows as the weekend goes on',
   Mired: (b) =>
     (b.mods.shakeEvery !== undefined || b.escalation) && 'it washes debuffs off, or Mired holds it',
   Beside: (b) => shapes(b, 'line3', 'chain', 'cross') && 'hits that spread to the creatures beside',
@@ -280,7 +280,7 @@ const RULE_CALLS: readonly Mechanic[] = [
   },
   {
     id: 'rule:escalation',
-    name: 'Build-up',
+    name: 'Escalating',
     group: 'Rule',
     calls: (b) =>
       b.escalation !== undefined && `${b.escalation.name} grows with ${b.escalation.feed}`,

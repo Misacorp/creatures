@@ -78,7 +78,7 @@ describe('the raid bosses', () => {
     },
   );
 
-  it('three or more raid bosses carry a Build-up, on at least three feeds, none on knockouts, and Thornmother has her Second Bloom', () => {
+  it('three or more raid bosses carry an escalation, on at least three feeds, none on knockouts, and Thornmother has her Second Bloom', () => {
     const feeds = RAID_BOSS_IDS.map((id) => raidBossOf(id).escalation?.feed).filter(Boolean);
     expect(feeds.length).toBeGreaterThanOrEqual(3);
     expect(new Set(feeds).size).toBeGreaterThanOrEqual(3);
@@ -86,7 +86,7 @@ describe('the raid bosses', () => {
     expect(feeds).not.toContain('knockouts');
     const esc = raidBossOf('thornmother').escalation;
     expect(esc?.phase?.name).toBe('Second Bloom');
-    // The Second Bloom starts at half of the weekend's HP (the Build-up feeds on HP lost, in bp of the whole).
+    // The Second Bloom starts at half of the weekend's HP (the escalation feeds on HP lost, in bp of the whole).
     expect(esc?.feed).toBe('hpLost');
     expect(esc ? esc.per * (esc.phase?.atStep ?? 0) : 0).toBe(5_000);
   });
@@ -154,11 +154,11 @@ describe('the raid bosses', () => {
     }
     // Thornmother's one silence is on the row ends (the slots at the ends of every row).
     const hush = raidBossOf('thornmother').moves.find((m) => m.silenceTurns);
-    expect(hush?.name).toBe('Bramble Hush');
+    expect(hush?.name).toBe('Hush');
     expect(hush?.pattern.shape).toBe('rowEnds');
   });
 
-  it('counts scale with the width of the raid (perColumns): scatter, row ends, chains, several columns, and an event Build-up', () => {
+  it('counts scale with the width of the raid (perColumns): scatter, row ends, chains, several columns, and an event escalation', () => {
     for (const id of RAID_BOSS_IDS) {
       const b = raidBossOf(id);
       const patterns = [
