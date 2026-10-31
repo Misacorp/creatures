@@ -1,0 +1,186 @@
+[
+  {
+    "id": "splashet",
+    "armour": 7,
+    "ownKnacks": ["steady-mark", "lead-the-way"]
+  },
+  {
+    "id": "tidewing",
+    "armour": 7,
+    "ownKnacks": ["double-mark", "circle-round"]
+  },
+  {
+    "id": "geyserpup",
+    "armour": 9,
+    "ownKnacks": ["leave-a-trail", "puddle-maker", "all-at-once"],
+    "atkBp": 11700
+  },
+  {
+    "id": "stormray",
+    "armour": 5,
+    "ownKnacks": ["detonate", "leave-a-trail", "wild-swing"]
+  },
+  {
+    "id": "tempestray",
+    "armour": 5,
+    "ownKnacks": ["twin-strike"],
+    "atkBp": 8700
+  },
+  {
+    "id": "halcyray",
+    "armour": 6,
+    "ownKnacks": ["clear-skies", "clear-the-air", "gather-calm"]
+  },
+  {
+    "id": "sproutle",
+    "armour": 28,
+    "ownKnacks": ["wide-reach", "primed-by-pain"]
+  },
+  {
+    "id": "thornbuck",
+    "armour": 34,
+    "ownKnacks": ["night-watch", "cool-head"]
+  },
+  {
+    "id": "sunfawn",
+    "armour": 28,
+    "ownKnacks": ["sunbeam", "curl-up", "ready-the-mark"]
+  },
+  {
+    "id": "ashmole",
+    "armour": 8,
+    "ownKnacks": ["wide-warmth", "ready-the-mark"]
+  },
+  {
+    "id": "magmole",
+    "armour": 10,
+    "ownKnacks": ["tunnel-through"]
+  },
+  {
+    "id": "kilnmole",
+    "armour": 22,
+    "ownKnacks": ["draw-fire", "keep-the-heat-in", "baked-shell"]
+  },
+  {
+    "id": "zipmouse",
+    "armour": 5,
+    "ownKnacks": ["zoom", "double-mark"]
+  },
+  {
+    "id": "voltaro",
+    "armour": 5,
+    "ownKnacks": ["zigzag"]
+  },
+  {
+    "id": "ohmouse",
+    "armour": 14,
+    "ownKnacks": ["catch-the-bolts", "lightning-ears"]
+  },
+  {
+    "id": "cindle",
+    "armour": 6,
+    "ownKnacks": ["detonate", "leave-a-trail", "wild-swing"],
+    "atkBp": 8600,
+    "critChanceBp": 1000,
+    "critDamageBp": 5000
+  },
+  {
+    "id": "pyrelynx",
+    "armour": 6,
+    "ownKnacks": ["guards-shadow", "gnaw-through"],
+    "atkBp": 10000,
+    "critChanceBp": 1000,
+    "critDamageBp": 5000
+  },
+  {
+    "id": "wickat",
+    "armour": 6,
+    "ownKnacks": ["lead-the-way", "steady-mark", "double-mark"]
+  },
+  {
+    "id": "mistnewt",
+    "armour": 26,
+    "ownKnacks": ["wide-reach", "hide-in-mist"]
+  },
+  {
+    "id": "fogwyrm",
+    "armour": 30,
+    "ownKnacks": ["thick-fog"]
+  },
+  {
+    "id": "drizzlewt",
+    "armour": 26,
+    "ownKnacks": ["drizzle", "curl-up", "clear-the-air"]
+  },
+  {
+    "id": "mossback",
+    "armour": 14,
+    "ownKnacks": ["steady-mark", "feed-the-marks"]
+  },
+  {
+    "id": "ancientshell",
+    "armour": 30,
+    "ownKnacks": ["living-shelter"],
+    "note": "Armour 48 -> 30: the armour or the HP, not both. Below the best Guard (Hearthshell, 40), so a Setter behind a living forest is a choice with a price."
+  },
+  {
+    "id": "bloomback",
+    "armour": 14,
+    "ownKnacks": ["all-at-once", "detonate", "leave-a-trail"],
+    "atkBp": 8700
+  },
+  {
+    "id": "coralynx",
+    "armour": 7,
+    "ownKnacks": ["detonate", "leave-a-trail", "territorial", "wild-swing"],
+    "atkBp": 8600,
+    "critChanceBp": 1000,
+    "critDamageBp": 5000
+  },
+  {
+    "id": "solmane",
+    "armour": 10,
+    "ownKnacks": ["lead-the-way", "steady-mark", "crown-of-embers"]
+  },
+  {
+    "id": "gaiadrake",
+    "armour": 24,
+    "ownKnacks": ["detonate", "leave-a-trail", "carry-them"],
+    "atkBp": 10200
+  },
+  {
+    "id": "aurorix",
+    "armour": 4,
+    "ownKnacks": ["starlight", "clear-skies", "gather-calm"]
+  },
+  {
+    "id": "lanternfin",
+    "armour": 5,
+    "ownKnacks": ["lantern-glow", "clear-the-air", "sunbeam"]
+  },
+  {
+    "id": "hearthshell",
+    "armour": 40,
+    "ownKnacks": ["draw-fire", "keep-the-heat-in", "hearth"]
+  },
+  {
+    "id": "mudlump",
+    "armour": 32,
+    "ownKnacks": ["mud-wall", "wide-reach"]
+  },
+  {
+    "id": "bogwarden",
+    "armour": 38,
+    "ownKnacks": ["draw-fire"]
+  },
+  {
+    "id": "squelch",
+    "armour": 6,
+    "ownKnacks": ["squelch-song", "ready-the-mark"]
+  },
+  {
+    "id": "croakmire",
+    "armour": 8,
+    "ownKnacks": ["wide-warmth"]
+  }
+]

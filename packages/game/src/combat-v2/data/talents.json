@@ -1,0 +1,495 @@
+{
+  "talents": [
+    {
+      "id": "sharp-claws",
+      "name": "Sharp Claws",
+      "text": "Attack +10%.",
+      "roles": ["setter", "payoff"],
+      "intent": "Plain power for hitters; the small, steady number the conditional talents are judged against.",
+      "fx": {
+        "atkBp": 1000
+      }
+    },
+    {
+      "id": "hardy",
+      "name": "Hardy",
+      "text": "Max HP +22%.",
+      "roles": ["setter", "payoff", "guard", "support"],
+      "intent": "Plain staying power; carries through a raid weekend (R14).",
+      "fx": {
+        "hpBp": 2200
+      }
+    },
+    {
+      "id": "shoulder-to-shoulder",
+      "name": "Shoulder to Shoulder",
+      "text": "+23% on its hits for each creature {Beside} it of its element, at most 2.",
+      "roles": ["setter", "payoff", "guard", "support"],
+      "intent": "Mono-element pairs and trios: a reason to talk about placement in the raid.",
+      "fx": {
+        "perKindredBesideBp": 2300
+      }
+    },
+    {
+      "id": "odd-one-out",
+      "name": "Odd One Out",
+      "text": "+18% on its hits while no creature {Beside} it shares its element.",
+      "roles": ["setter", "payoff", "guard", "support"],
+      "intent": "The mixed row: the opposite of Shoulder to Shoulder. Like the shipped line it also holds when nothing stands beside it, so the number is small.",
+      "fx": {
+        "oddOneOutBp": 1800
+      }
+    },
+    {
+      "id": "edge-walker",
+      "name": "Edge-walker",
+      "text": "+16% on its hits while it stands at a {Row end}.",
+      "roles": ["setter", "payoff", "guard", "support"],
+      "intent": "A reason to stand at an end slot of the row (column 0 or the last column), whoever stands beside it: the owner controls it. Sweeps of the row ends make ends risky.",
+      "fx": {
+        "rowEndBp": 1600
+      }
+    },
+    {
+      "id": "front-liner",
+      "name": "Front-liner",
+      "text": "It takes 10% less from every hit in the {Front row}.",
+      "roles": ["setter", "payoff", "guard", "support"],
+      "intent": "The front row takes the plain attack: a creature that wants to stand there.",
+      "fx": {
+        "frontCutBp": 1000
+      }
+    },
+    {
+      "id": "slow-burn",
+      "name": "Slow Burn",
+      "text": "+2.5% on its hits per round from round 2, up to +15%.",
+      "roles": ["setter", "payoff"],
+      "intent": "Strong in long raid stages, weak in short fights: a reason to own two of a species.",
+      "fx": {
+        "slowBurnBp": 250,
+        "slowBurnCapBp": 1500
+      }
+    },
+    {
+      "id": "finisher",
+      "name": "Finisher",
+      "text": "+55% on its hits while the boss is below a third of its HP.",
+      "roles": ["setter", "payoff"],
+      "intent": "With the boss HP shared across a raid weekend (R14), the last stage rewards it most.",
+      "fx": {
+        "finisherBp": 5500
+      }
+    },
+    {
+      "id": "first-pounce",
+      "name": "First Pounce",
+      "text": "Its first hit that lands each fight deals +170%.",
+      "roles": ["setter", "payoff"],
+      "intent": "Short fights, the dungeon and each raid stage. A hit made while silenced does not use it up.",
+      "fx": {
+        "firstHitBp": 17000
+      }
+    },
+    {
+      "id": "steady-rhythm",
+      "name": "Steady Rhythm",
+      "text": "Every third hit that lands is a crit, +0.1x on crits.",
+      "roles": ["setter", "payoff"],
+      "intent": "Crits you can plan for (P-04): a rhythm instead of a chance.",
+      "fx": {
+        "steadyRhythm": true,
+        "critDamageBp": 1000
+      }
+    },
+    {
+      "id": "crit-chance",
+      "name": "Crit Chance",
+      "text": "+12 crit chance points.",
+      "roles": ["setter", "payoff"],
+      "intent": "The same effect as the gear line Crit chance, under its name. A crit doubles a hit, so it is worth about 12% x 100% = +12% damage on average, in swings; it stacks with Wild Swing, a crit species and items, and pairs with Crit Damage. A hitter that Stone Skin caps or Thick Hide Blocks gains less.",
+      "fx": {
+        "critChanceBp": 1200
+      }
+    },
+    {
+      "id": "crit-damage",
+      "name": "Crit Damage",
+      "text": "Its {Crit}s are 3x.",
+      "roles": ["payoff"],
+      "intent": "The same effect as the gear line Crit damage, under its name. Small alone (it needs crits to boost) and big with Crit Chance or a crit species: the crit build is the pair. Stacks without a cap in the lab; the measures say whether it needs one.",
+      "fx": {
+        "critDamageBp": 10000
+      }
+    },
+    {
+      "id": "perfect-timing",
+      "name": "Perfect Timing",
+      "text": "After it dodges, it stores a {Sure Crit} (up to 3): its next hit that lands is a 3x crit.",
+      "roles": ["setter", "payoff"],
+      "intent": "Crits from evasion: a fast creature, a Zigzag or Zoom Setter, a dodge aura beside it. A dodge is rare, so the reward is big (a sure crit, +100% more than the double). Not the Guard-takes-it clause of Momentum: that happens every round, and a sure crit every round is a runaway (first measure, 2026-10-30). Silence stops it storing (R12.2); what it stored stays.",
+      "fx": {
+        "dodgeCritBp": 10000
+      }
+    },
+    {
+      "id": "hold-the-line",
+      "name": "Hold the Line",
+      "text": "When hits it {Intercept}s add up to 25% of its max HP, it stores a {Sure Crit} (3x, up to 3).",
+      "roles": ["guard"],
+      "intent": "Crits from guarding: a Guard that takes enough damage for others hits back harder. Its own hit is small, so this is a little extra for a Guard that stands in a busy spot, not a reason to pick the Guard. It was a Sure Crit for every interception, which fired every round and was the best Guard talent on most cards (first measure, 2026-10-30).",
+      "fx": {
+        "guardCritBp": 10000
+      }
+    },
+    {
+      "id": "opportunist",
+      "name": "Opportunist",
+      "text": "Its {Reaction} bonus +100% when it cashes a {Mark} at x2 or more.",
+      "roles": ["payoff"],
+      "intent": "Rewards waiting for a bigger mark (x2 or x3); pairs with Setters that leave x2, and with a second Setter. Was x3 only (2026-10-28): a mark almost never reached x3 when cashed, so the talent did nothing.",
+      "fx": {
+        "cashHighBp": 10000
+      }
+    },
+    {
+      "id": "quick-draw",
+      "name": "Quick Draw",
+      "text": "+32% on a {Reaction} on a mark added since the boss's last turn.",
+      "roles": ["payoff"],
+      "intent": "The opposite timing: cash right after the Setter, before Clean Scales sheds the mark.",
+      "fx": {
+        "freshMarkBp": 3200
+      }
+    },
+    {
+      "id": "owners-mark",
+      "name": "Owner's Mark",
+      "text": "{Reaction}s on a {Mark} it left have a +12% bonus while it stands.",
+      "roles": ["setter"],
+      "intent": "A Setter that makes its own marks worth more, whoever cashes them, while it stands and is not silenced.",
+      "fx": {
+        "ownMarkBp": 1200
+      }
+    },
+    {
+      "id": "deep-ink",
+      "name": "Deep Ink",
+      "text": "Its first {Mark} each fight adds 2 more to the count.",
+      "roles": ["setter"],
+      "intent": "Changes the opening without adding marks from nowhere: marks still come only from Setters and Knacks.",
+      "fx": {
+        "firstMarkExtra": 2
+      }
+    },
+    {
+      "id": "rally-cry",
+      "name": "Rally Cry",
+      "text": "+40% on its hits for the rest of the fight after a creature {Beside} it is knocked out.",
+      "roles": ["setter", "payoff", "guard", "support"],
+      "intent": "Turns attrition into a comeback. It does not arm while the creature is silenced.",
+      "fx": {
+        "vengefulBp": 4000
+      }
+    },
+    {
+      "id": "momentum",
+      "name": "Momentum",
+      "text": "After it dodges, or a Guard takes a hit aimed at it, its next hit deals +38%.",
+      "roles": ["setter", "payoff"],
+      "intent": "Fast creatures and the creature in the front row: a hit aimed at it that is dodged, or that a Guard beside it takes, arms its next hit. Reworked (2026-10-28): a dodge alone almost never happens to a creature the boss does not aim at, so the talent did nothing.",
+      "fx": {
+        "momentumBp": 3800
+      }
+    },
+    {
+      "id": "flank-guard",
+      "name": "Flank Guard",
+      "text": "Its {Reach} covers only its longer side (more slots to the row end; both when it stands in the middle), twice the slots, and its cover is +50%.",
+      "roles": ["guard"],
+      "intent": "A Guard at one end protects the long stretch of the row: a placement puzzle the owner controls, with no Left/Right pair to roll. Twice the slots on one side covers no more creatures than one slot on each side, so the cover bonus is what makes it worth the placement (2026-10-28).",
+      "fx": {
+        "flankGuard": true,
+        "coverBonusBp": 5000
+      }
+    },
+    {
+      "id": "long-shadow",
+      "name": "Long Shadow",
+      "text": "Cover +20% per slot of distance, and the hits it takes for others are cut by 20% per slot.",
+      "roles": ["guard"],
+      "intent": "Protects the far creatures best; with Flank Guard a Guard at one end covers a long row.",
+      "fx": {
+        "distanceCoverBp": 2000
+      }
+    },
+    {
+      "id": "shoulder-charge",
+      "name": "Shoulder Charge",
+      "text": "When it {Intercept}s, it strikes back for 45% of its Attack, ignoring armour.",
+      "roles": ["guard"],
+      "intent": "A Guard that adds damage the more it is hit. The strike-back is a counter, not a hit: it can land the killing blow but triggers nothing that keys on its hits.",
+      "fx": {
+        "interceptHitBackBp": 4500
+      }
+    },
+    {
+      "id": "brace",
+      "name": "Brace",
+      "text": "It takes 40% less from a {Wind-up} hit aimed at its slot.",
+      "roles": ["setter", "payoff", "guard", "support"],
+      "intent": "Answers a telegraphed hit (Great Wave, Judgement Bolt, the Wind-up signatures): it is shown at round start, so the owner knows who will be aimed at. Nothing against other moves or the plain attack. Back to this design (2026-10-28 panel 4): the version that also cut other moves and the plain attack decided a boss by itself.",
+      "fx": {
+        "braceBp": 4000
+      }
+    },
+    {
+      "id": "stubborn",
+      "name": "Stubborn",
+      "text": "Once per fight (in a raid, once per weekend), a hit that would knock it out leaves it at two fifths of its max HP, or at the HP it had if that was lower.",
+      "roles": ["setter", "payoff", "guard", "support"],
+      "intent": "Survives one Crusher; pairs with healers. Hold On under its one name. Reworked (2026-10-28): it left the creature at 1 HP, which gained about 2% of a team's result, so it now leaves it at two fifths of its max HP.",
+      "fx": {
+        "holdOn": true
+      }
+    },
+    {
+      "id": "catch-breath",
+      "name": "Catch Breath",
+      "text": "Once per fight (in a raid, once per weekend), when a hit drops it below half its max HP, it heals 30% of max HP.",
+      "roles": ["setter", "payoff", "guard", "support"],
+      "intent": "Survives one big hit (Crusher, Payoff Hunter). Not the gear line Second Wind, which is a chance each round to heal.",
+      "fx": {
+        "secondWindBp": 3000
+      }
+    },
+    {
+      "id": "unbothered",
+      "name": "Unbothered",
+      "text": "It cannot be {Silenced}, and has +3% Attack and +6% Max HP.",
+      "roles": ["setter", "payoff", "guard", "support"],
+      "intent": "The silence answer on the creature itself, for row ends and front rows. Reworked (2026-10-28): the immunity alone did nothing on the gauntlet, where a creature can always stand in the middle (a Guard gained nothing), so it carries a little Attack and HP as well, less than Sharp Claws or Hardy. Shrunk (2026-10-28 panel 4, from +6% and +14%): it won a boss by its stats; it should win by its ward.",
+      "fx": {
+        "ignoreSilence": true,
+        "atkBp": 300,
+        "hpBp": 600
+      }
+    },
+    {
+      "id": "cull",
+      "name": "Cull",
+      "text": "A hit that leaves the boss below 5% of its full HP defeats it. The HP removed counts as the killing blow, not as damage.",
+      "roles": ["setter", "payoff"],
+      "intent": "Weak alone; it decides who lands the killing blow, which other effects can key on. In no line pool until a killing-blow talent exists.",
+      "fx": {
+        "cullBp": 500
+      }
+    },
+    {
+      "id": "heavy-hand",
+      "name": "Heavy Hand",
+      "text": "Its {Mired} has an 80% chance to add 1 extra stack.",
+      "roles": ["guard", "support"],
+      "intent": "Mire only; the shipped line is a chance of an extra stack, and luck is welcome. More stacks per application keeps the debuff up.",
+      "fx": {
+        "miredExtraBp": 8000
+      }
+    },
+    {
+      "id": "clinging",
+      "name": "Clinging",
+      "text": "While it stands, {Mired} fades only every third round, and each stack counts for half as much again.",
+      "roles": ["guard", "support"],
+      "intent": "Mire only: the v2 form of the shipped \"lasts more turns\"; one creature can hold a debuff for the team. Reworked (2026-10-28): slower fading alone gained under a point, so its stacks also count for half as much again (4.5% instead of 3%); it still fades, every third round, so one creature cannot hold the debuff for the whole fight (Misa).",
+      "fx": {
+        "clinging": true
+      }
+    },
+    {
+      "id": "bright-boost",
+      "name": "Bright Boost",
+      "text": "Every second {Boost} it gives is doubled.",
+      "roles": ["support"],
+      "intent": "A Support with a visible rhythm instead of a crit chance.",
+      "fx": {
+        "brightBoost": true
+      }
+    },
+    {
+      "id": "kindred-boost",
+      "name": "Kindred Boost",
+      "text": "Its {Boost} +26% on creatures of its own element.",
+      "roles": ["support"],
+      "intent": "Mono-element rows in the raid, across players.",
+      "fx": {
+        "kindredBoostBp": 2600
+      }
+    },
+    {
+      "id": "triage",
+      "name": "Triage",
+      "text": "Its heal on the creatures {Beside} it goes to the most hurt one, 100% bigger.",
+      "roles": ["support"],
+      "intent": "Aims the Support's own base heal on the creatures beside it, bigger; only healing Supports (Tide, Grove) have a heal to aim. Idle under a Support shape Knack (Sunbeam, Drizzle, Curl Up and the rest), which replaces that verb.",
+      "fx": {
+        "triageBp": 10000
+      }
+    },
+    {
+      "id": "overheal-spill",
+      "name": "Overheal Spill",
+      "text": "Its healing past full HP passes to the most hurt creature in the row of the one it healed.",
+      "roles": ["support"],
+      "intent": "Big heals are never wasted; only healing Supports (Tide, Grove) have a heal. Goes to the most hurt creature in the row (was: beside the one healed), because overheal is rare and a short reach almost never had a target (2026-10-28).",
+      "fx": {
+        "spillOver": true
+      }
+    }
+  ],
+  "pools": {
+    "splashet": [
+      "first-pounce",
+      "momentum",
+      "edge-walker",
+      "quick-draw",
+      "hardy",
+      "finisher",
+      "owners-mark"
+    ],
+    "cindle": [
+      "steady-rhythm",
+      "sharp-claws",
+      "rally-cry",
+      "owners-mark",
+      "first-pounce",
+      "crit-chance",
+      "crit-damage"
+    ],
+    "sproutle": [
+      "hold-the-line",
+      "shoulder-to-shoulder",
+      "brace",
+      "triage",
+      "hardy",
+      "kindred-boost",
+      "flank-guard"
+    ],
+    "zipmouse": [
+      "momentum",
+      "first-pounce",
+      "perfect-timing",
+      "flank-guard",
+      "odd-one-out",
+      "deep-ink",
+      "shoulder-to-shoulder"
+    ],
+    "mistnewt": [
+      "flank-guard",
+      "unbothered",
+      "overheal-spill",
+      "bright-boost",
+      "catch-breath",
+      "shoulder-charge",
+      "rally-cry"
+    ],
+    "ashmole": [
+      "kindred-boost",
+      "bright-boost",
+      "shoulder-charge",
+      "hold-the-line",
+      "brace",
+      "hardy",
+      "odd-one-out"
+    ],
+    "stormray": [
+      "slow-burn",
+      "quick-draw",
+      "edge-walker",
+      "bright-boost",
+      "perfect-timing",
+      "crit-chance",
+      "catch-breath"
+    ],
+    "mossback": [
+      "owners-mark",
+      "opportunist",
+      "finisher",
+      "stubborn",
+      "hardy",
+      "brace",
+      "rally-cry"
+    ],
+    "coralynx": [
+      "sharp-claws",
+      "odd-one-out",
+      "crit-damage",
+      "finisher",
+      "quick-draw",
+      "first-pounce",
+      "crit-chance"
+    ],
+    "solmane": [
+      "front-liner",
+      "deep-ink",
+      "owners-mark",
+      "shoulder-to-shoulder",
+      "rally-cry",
+      "sharp-claws",
+      "catch-breath"
+    ],
+    "gaiadrake": [
+      "opportunist",
+      "stubborn",
+      "hardy",
+      "catch-breath",
+      "front-liner",
+      "rally-cry",
+      "finisher"
+    ],
+    "aurorix": [
+      "bright-boost",
+      "unbothered",
+      "hardy",
+      "edge-walker",
+      "odd-one-out",
+      "momentum",
+      "rally-cry"
+    ],
+    "lanternfin": [
+      "triage",
+      "overheal-spill",
+      "catch-breath",
+      "hardy",
+      "rally-cry",
+      "odd-one-out",
+      "front-liner"
+    ],
+    "hearthshell": [
+      "shoulder-charge",
+      "stubborn",
+      "catch-breath",
+      "brace",
+      "hardy",
+      "odd-one-out",
+      "shoulder-to-shoulder"
+    ],
+    "mudlump": [
+      "heavy-hand",
+      "clinging",
+      "shoulder-charge",
+      "brace",
+      "hardy",
+      "long-shadow",
+      "flank-guard"
+    ],
+    "squelch": [
+      "heavy-hand",
+      "clinging",
+      "bright-boost",
+      "catch-breath",
+      "hardy",
+      "unbothered",
+      "front-liner"
+    ]
+  }
+}

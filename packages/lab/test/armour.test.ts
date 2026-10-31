@@ -1,7 +1,7 @@
 /** Armour is a species stat (R13, Misa 2026-10-28): every form has some, an evolution never lowers it. */
 import { content } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import { FORM_ARMOUR, STAT_OVERRIDES, formArmour, formStats } from '../src';
+import { FORM_ARMOUR, formArmour, formStats } from '../src';
 
 describe('armour per form', () => {
   it('every form has armour above zero, and the table lists no unknown form', () => {
@@ -13,12 +13,10 @@ describe('armour per form', () => {
     for (const id of Object.keys(FORM_ARMOUR)) expect(ids.has(id), id).toBe(true);
   });
 
-  it('formStats reads the table at every level, never a role default (the lab overrides apart)', () => {
+  it('formStats reads the table at every level, never a role default ', () => {
     for (const c of content.creatures) {
       for (const level of [1, c.levelCap, c.levelCap + 5]) {
-        expect(formStats(c.id, level).armour, `${c.id} Lv ${String(level)}`).toBe(
-          STAT_OVERRIDES[c.id]?.armour ?? formArmour(c.id),
-        );
+        expect(formStats(c.id, level).armour, `${c.id} Lv ${String(level)}`).toBe(formArmour(c.id));
       }
     }
   });
@@ -37,14 +35,16 @@ describe('armour per form', () => {
     expect(pairs).toBeGreaterThan(10);
   });
 
-  it('lines that start as Guards lean higher than the rest, and one species clearly has the most', () => {
+  it('lines that start as Guards lean higher than the rest, and the best Guard has the most', () => {
     const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
     const stage1 = content.creatures.filter((c) => c.stage === 1);
     const guards = stage1.filter((c) => c.role === 'guard').map((c) => formArmour(c.id));
     const others = stage1.filter((c) => c.role !== 'guard').map((c) => formArmour(c.id));
     expect(avg(guards)).toBeGreaterThan(avg(others) * 1.5);
     const sorted = Object.entries(FORM_ARMOUR).sort((a, b) => b[1] - a[1]);
-    expect(sorted[0]?.[0]).toBe('ancientshell');
-    expect((sorted[0]?.[1] ?? 0) - (sorted[1]?.[1] ?? 0)).toBeGreaterThanOrEqual(5);
+    // The table holds the final armour: Ancientshell's 48 was cut to 30 (stat change, `forms.json` note), below Hearthshell's.
+    expect(sorted[0]?.[0]).toBe('hearthshell');
+    expect(formArmour('ancientshell')).toBe(30);
+    expect(formArmour('ancientshell')).toBeLessThan(formArmour('hearthshell'));
   });
 });
