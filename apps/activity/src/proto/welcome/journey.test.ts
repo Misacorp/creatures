@@ -4,7 +4,7 @@ import { DAILY, WEEKLY, eventsOf, gapDays, parseEvent, replayTitle } from './jou
 
 /** The lab's files, from the package's folder (vitest runs there). */
 const LAB = '../../docs/design/valley/economy/journeys';
-const COPY = 'src/proto/walk/journeys';
+const COPY = 'src/proto/welcome/journeys';
 
 describe('the journeys the prototype plays', () => {
   it.each(['daily.json', 'weekly.json'])(

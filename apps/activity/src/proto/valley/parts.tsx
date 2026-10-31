@@ -157,14 +157,14 @@ function SlotSquare() {
 export function BubbleArt({ bubble, world }: { bubble: Bubble; world: ProtoWorld }) {
   const need = bubble.need;
   if (bubble.picture !== undefined) {
+    const { glyph, species, count } = bubble.picture;
     return (
       <>
-        {bubble.picture.species !== undefined && (
-          <CreatureIcon creature={{ species: bubble.picture.species, shiny: false }} />
-        )}
+        {species !== undefined && <CreatureIcon creature={{ species, shiny: false }} />}
         <span class="pv-bubble-pic">
-          <Glyph id={bubble.picture.glyph} scale={3} />
+          <Glyph id={glyph} scale={2} />
         </span>
+        {count !== undefined && count > 1 && <span class="pv-time pix">{count}</span>}
       </>
     );
   }

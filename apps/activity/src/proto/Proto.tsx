@@ -61,11 +61,42 @@ function TourStrip({
   const last = lastStep(proto);
   const title = proto.steps[route.step - 1]?.title ?? '';
   const visits = proto.visits?.(route.step) ?? [];
+  // A prototype with a sheet over its bottom (the welcome-back popup) keeps its controls at the top, folded
+  // away behind one small "Dev" button, so they never cover the sheet's own button.
+  const folds = visits.length > 0;
+  const [open, setOpen] = useState(!folds);
   const to = (step: number): void => {
-    go({ ...route, step: Math.min(Math.max(step, 1), last), visit: 1, replay: 0 });
+    go({ ...route, step: Math.min(Math.max(step, 1), last), replay: 0 });
   };
+  if (folds && !open) {
+    return (
+      <nav class="proto-strip proto-strip-top proto-strip-folded" aria-label="Tour">
+        <button
+          type="button"
+          aria-expanded="false"
+          onClick={() => {
+            setOpen(true);
+          }}
+        >
+          Dev
+        </button>
+      </nav>
+    );
+  }
   return (
-    <nav class="proto-strip" aria-label="Tour">
+    <nav class={`proto-strip${folds ? ' proto-strip-top' : ''}`} aria-label="Tour">
+      {folds && (
+        <button
+          type="button"
+          aria-expanded="true"
+          aria-label="Fold the dev controls"
+          onClick={() => {
+            setOpen(false);
+          }}
+        >
+          {'▲'}
+        </button>
+      )}
       <button
         type="button"
         onClick={() => {

@@ -53,7 +53,6 @@ import {
   newWalker,
   placeLabel,
   readingOrder,
-  cameraScroll,
   scrollToPlace,
   startScroll,
   stepWalker,
@@ -86,19 +85,8 @@ export interface ValleyMapProps {
   lit?: Readonly<Record<PlaceId, Verdict>> | null;
   /** The haul is open at the signpost: the explorer's sack lies on the road instead (drawn by `overlay`). */
   haulOpen?: boolean;
-  /** The bubbles to show, instead of the world's needs (the return walk shows none, then its decision). */
+  /** The bubbles to show instead of the world's needs (the welcome-back popup leaves its markers this way). */
   bubbles?: readonly Bubble[] | undefined;
-  /**
-   * A camera that follows a place (the return walk): a panning valley scrolls to it when it changes, smoothly
-   * unless `cut`. Null leaves the view where `at` put it.
-   */
-  camera?: PlaceId | null;
-  /** Jump to the camera's place instead of easing (reduced motion, screenshots). */
-  cut?: boolean;
-  /** A bigger pixel scale (a whole number above 2): the window frames a region of the valley, the camera pans both ways. */
-  zoom?: number | undefined;
-  /** Show the edge tabs of places out of view (default). The return walk hides them. */
-  edges?: boolean;
   /** More sprites in the valley (the haul), in valley pixels. */
   overlay?:
     | ((g: { s: number; X: (x: number) => number; Y: (y: number) => number }) => ComponentChildren)
@@ -115,17 +103,13 @@ export function ValleyMap({
   lit = null,
   haulOpen = false,
   bubbles: shown,
-  camera = null,
-  cut = false,
-  zoom,
-  edges = true,
   overlay,
 }: ValleyMapProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const size = useSize(wrapRef);
-  const fit = fitValley(size.width, size.height, zoom);
+  const fit = fitValley(size.width, size.height);
   const s = fit.scale;
   const reduced = usePrefersReducedMotion();
   const moving = !reduced && !isStill();
@@ -153,22 +137,9 @@ export function ValleyMap({
   useLayoutEffect(() => {
     const el = scrollerRef.current;
     if (el !== null && fit.pans) {
-      if (at === 'start') el.scrollLeft = startScroll(size.width, s);
-      else {
-        const to = cameraScroll(at, size, s, fit.top);
-        el.scrollLeft = to.left;
-        el.scrollTop = to.top;
-      }
+      el.scrollLeft = at === 'start' ? startScroll(size.width) : scrollToPlace(at, size.width);
     }
-  }, [at, fit.pans, size.width, s]);
-
-  // The walk's camera: go to the place it looks at (a cut when asked, else eased).
-  useEffect(() => {
-    const el = scrollerRef.current;
-    if (camera === null || el === null || !fit.pans) return;
-    const to = cameraScroll(camera, size, s, fit.top);
-    el.scrollTo({ ...to, behavior: cut ? 'auto' : scrollBehavior() });
-  }, [camera, cut, fit.pans, size.width, size.height, s]);
+  }, [at, fit.pans, size.width]);
 
   const [scrollLeft, setScrollLeft] = useScrollLeft(scrollerRef);
 
@@ -189,7 +160,7 @@ export function ValleyMap({
     const button = wrapRef.current?.querySelector<HTMLElement>(`[data-place="${id}"]`);
     button?.focus({ preventScroll: true });
     if (el !== null && fit.pans) {
-      el.scrollTo({ left: scrollToPlace(id, size.width, s), behavior: scrollBehavior() });
+      el.scrollTo({ left: scrollToPlace(id, size.width), behavior: scrollBehavior() });
     }
   };
 
@@ -210,8 +181,7 @@ export function ValleyMap({
   );
 
   // An edge tab for every place out of view (not only those that need you), stacked so none overlap.
-  // (None while the walk's camera leads: the walk goes where it goes.)
-  const arrows = camera === null && edges ? edgeArrows(order, scrollLeft, size.width, s) : [];
+  const arrows = edgeArrows(order, scrollLeft, size.width);
   const tabY = stackTabs(arrows, 26);
 
   const stageVars = cssVars({
@@ -299,9 +269,7 @@ export function ValleyMap({
                     }}
                   >
                     {bubble !== undefined && (
-                      <SpeechBubble
-                        class={bubbleClass(id, (bob + i) % 2 === 1, shown !== undefined)}
-                      >
+                      <SpeechBubble class={(bob + i) % 2 === 1 ? 'up' : undefined}>
                         <BubbleArt bubble={bubble} world={world} />
                       </SpeechBubble>
                     )}
@@ -344,15 +312,6 @@ export function ValleyMap({
       })}
     </div>
   );
-}
-
-/**
- * A bubble sits above its place. In the return walk (`own`: the bubbles are handed in) the Arena's, at the top
- * of the valley, sits low inside it, clear of the HUD.
- */
-function bubbleClass(id: PlaceId, up: boolean, own: boolean): string | undefined {
-  if (own && id === 'arena') return 'low';
-  return up ? 'up' : undefined;
 }
 
 /** The scroller's left edge, kept in state for the edge arrows. */

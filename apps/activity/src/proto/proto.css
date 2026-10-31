@@ -99,3 +99,15 @@
   color: var(--bone);
   font: inherit;
 }
+
+/* A strip over a prototype with a sheet at the bottom: at the top, folded to one "Dev" button in the middle. */
+.proto-strip-top {
+  top: calc(var(--discord-safe-area-inset-top, 0px) + 0.25rem);
+  bottom: auto;
+}
+
+.proto-strip-folded {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}

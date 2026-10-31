@@ -42,9 +42,9 @@ import { placeOf, type PlaceId } from './valley-art';
 import { bubblesOf, placeLabel, readingOrder } from './valley-logic';
 import { ValleyMap } from './ValleyMap';
 import { ZoomCut } from './ZoomCut';
-import { WalkStage } from '../walk/WalkStage';
-import type { CastMember, WalkPlan } from '../walk/walk-plan';
-import { decisionBubbles, purseOf } from '../walk/walk-world';
+import type { Cast, Welcome } from '../welcome/highlights';
+import { WelcomeSheet, type Look } from '../welcome/WelcomeSheet';
+import { markerBubbles, startsClosed } from '../welcome/welcome-world';
 
 /** Where the player is, and the moment a place opens on. */
 export interface View {
@@ -65,11 +65,16 @@ export interface View {
   held: string | null;
 }
 
-/** A return walk to play on opening (the "Return walk" prototype, `proto/walk/`): the world, who the lines name, the plan. */
-export interface WalkSetup {
+/**
+ * A welcome-back popup to show on opening (the "Welcome back" prototype, `proto/welcome/`): the world it
+ * plays in, who and what its stories name, what to tell, and in which look. Closing it leaves the valley
+ * with the rest as markers over their places.
+ */
+export interface WelcomeSetup {
   world: ProtoWorld;
-  cast: readonly CastMember[];
-  plan: WalkPlan;
+  cast: Cast;
+  welcome: Welcome;
+  look: Look;
 }
 
 const NO_SEND: SendPicks = { place: null, supply: null };
@@ -121,21 +126,22 @@ export function viewAtStep(step: number): View {
 export function Valley({
   step,
   setStep,
-  walk,
+  welcome,
 }: {
   step: number;
   setStep: (n: number) => void;
-  /** Open on a return walk; when it ends (or is skipped) this is the valley as usual, at the walk's last place. */
-  walk?: WalkSetup;
+  /** Open on a welcome-back popup over the valley; its markers stand in for the world's needs. */
+  welcome?: WelcomeSetup;
 }) {
   const [view, setView] = useState<View>(() =>
-    walk === undefined
-      ? viewAtStep(step)
-      : { ...base(walk.world), at: walk.plan.stops[walk.plan.stops.length - 1]?.place ?? 'start' },
+    welcome === undefined ? viewAtStep(step) : base(welcome.world),
   );
-  const [walking, setWalking] = useState(walk !== undefined);
-  // The walk's counts have dropped into the purse (skipping brings everything home too).
-  const [landed, setLanded] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(
+    () =>
+      welcome !== undefined &&
+      welcome.welcome.show &&
+      !(typeof window !== 'undefined' && startsClosed(window.location.hash)),
+  );
   const liveStep = useRef(step);
   const [zoom, setZoom] = useState<PlaceId | null>(null);
   const pending = useRef<(() => void) | null>(null);
@@ -270,53 +276,38 @@ export function Valley({
   let body;
   switch (view.scene) {
     case 'valley':
-      body =
-        walk !== undefined && walking ? (
-          <WalkStage
+      body = (
+        <>
+          <ValleyMap
+            key={`${view.at}-${String(view.focus)}`}
             world={world}
-            cast={walk.cast}
-            plan={walk.plan}
-            onDone={() => {
-              setWalking(false);
-              setLanded(true);
-            }}
-            onLand={() => {
-              setLanded(true);
-            }}
+            at={view.at}
+            focus={view.focus}
+            departing={view.departing}
+            bubbles={welcome === undefined ? undefined : markerBubbles(welcome.welcome.markers)}
+            onPlace={onPlace}
+            lit={lit}
+            haulOpen={haul !== null}
+            overlay={
+              haul === null
+                ? undefined
+                : (g) => <HaulOnGround things={haul.things} frame={haulFrame} {...g} />
+            }
           />
-        ) : (
-          <>
-            <ValleyMap
-              key={`${view.at}-${String(view.focus)}`}
+          {haul !== null && view.haul !== null && (
+            <HaulCaption world={world} tripId={view.haul} view={haul.view} onClaim={claim} />
+          )}
+          {haul === null && heldCreature !== undefined && (
+            <CreatureCard
+              creature={heldCreature}
               world={world}
-              at={view.at}
-              focus={view.focus}
-              departing={view.departing}
-              bubbles={walk === undefined ? undefined : decisionBubbles(walk.plan)}
-              edges={walk === undefined}
-              onPlace={onPlace}
-              lit={lit}
-              haulOpen={haul !== null}
-              overlay={
-                haul === null
-                  ? undefined
-                  : (g) => <HaulOnGround things={haul.things} frame={haulFrame} {...g} />
-              }
+              onClose={() => {
+                setHeld(null);
+              }}
             />
-            {haul !== null && view.haul !== null && (
-              <HaulCaption world={world} tripId={view.haul} view={haul.view} onClaim={claim} />
-            )}
-            {haul === null && heldCreature !== undefined && (
-              <CreatureCard
-                creature={heldCreature}
-                world={world}
-                onClose={() => {
-                  setHeld(null);
-                }}
-              />
-            )}
-          </>
-        );
+          )}
+        </>
+      );
       break;
     case 'forge':
       body = (
@@ -385,7 +376,7 @@ export function Valley({
       break;
   }
 
-  const bubbles = walk === undefined ? bubblesOf(world) : decisionBubbles(walk.plan);
+  const bubbles = welcome === undefined ? bubblesOf(world) : markerBubbles(welcome.welcome.markers);
   const where = view.scene === 'valley' ? null : placeOf(view.scene);
   return (
     <PopoverHost onOpenHowTo={() => undefined}>
@@ -417,11 +408,7 @@ export function Valley({
               <Glyph id="flag" scale={3} />
             </button>
             <div class="pv-hud-end">
-              <CurrencyPile
-                balances={world.balances}
-                loadLedger={() => Promise.resolve([])}
-                {...(walk === undefined ? {} : { resources: purseOf(walk.plan, landed) })}
-              />
+              <CurrencyPile balances={world.balances} loadLedger={() => Promise.resolve([])} />
               <SettingsButton onSettings={() => undefined} />
             </div>
           </div>
@@ -443,6 +430,17 @@ export function Valley({
           onPick={onTray}
           label={where === null ? 'Your creatures' : `Your creatures for the ${where.name}`}
         />
+        {welcome !== undefined && (
+          <WelcomeSheet
+            welcome={welcome.welcome}
+            cast={welcome.cast}
+            look={welcome.look}
+            open={welcomeOpen}
+            onClose={() => {
+              setWelcomeOpen(false);
+            }}
+          />
+        )}
         <Drawer
           open={hatch}
           onClose={() => {
