@@ -27,6 +27,7 @@ const BONFIRE: SpriteDef = {
     v: '#8a5240',
     u: '#e0954a',
     w: '#3a2a48',
+    E: '#8a8a40',
   },
   rows: [
     '........................................................',
@@ -48,27 +49,27 @@ const BONFIRE: SpriteDef = {
     '..............1.1.1.1.1111oyycyyo.1.1.1.................',
     '...........1.1.111111111111oycyo111111.1.1.1............',
     '........1.1.111111111111111oycyo11111111111.1.1.........',
-    '.......1.11111111111222kk22oycyo21111111111111.1........',
-    '......1.1111111122222kkstk2oycyok22kkk111111111.1.1.....',
-    '.....1.11111112222kkksssttkoycyoskktssk22211111111.1....',
-    '....1.11111122222kttkssttSooycooskSttssk22221111111.1...',
-    '...1.11111122222ksttSkttSroyycyyorSttsskk22222111111.1..',
-    '..1.11111122222kssttSSsSroyycccyyorStsStsk22222111111.1.',
-    '...1.1111122222ktsttSsssroyycccyorsstSStssk22222111111.1',
-    '..1.111112222kkstttSsssooyycccccyorssSStsskk22222111111.',
-    '...11111122kkvvuttSSssroyyycccccyyorssSttuvvkk22211111.1',
-    '..1.111112kwvvvuuuSSsroyyyycccccyyorsSSuuuvvvwk22111111.',
-    '...1.1111kwwvvvvuuuSSrorrooyyyyoorrorSuuuvvvvwwk211111.1',
-    '..1.11111kwwwvvvuuutSssSsrsowsrosrSSttuuuvvvwwwk2111111.',
+    '.......1.11111111111EEEkkEEoycyoE1111111111111.1........',
+    '......1.111111112EEEEkkstkEoycyokEEkkk111111111.1.1.....',
+    '.....1.111111122EEkkksssttkoycyoskktsskEE211111111.1....',
+    '....1.111111222EEkttkssttSooycooskSttsskEE221111111.1...',
+    '...1.111111222EEksttSkttSroyycyyorSttsskkEE222111111.1..',
+    '..1.1111112222EkssttSSsSroyycccyyorStsStskEE222111111.1.',
+    '...1.1111122EEEktsttSsssroyycccyorsstSStsskEE222111111.1',
+    '..1.111112EEEkkstttSsssooyycccccyorssSStsskkEEE22111111.',
+    '...111111EEkkvvuttSSssroyyycccccyyorssSttuvvkkEE211111.1',
+    '..1.11111EkwvvvuuuSSsroyyyycccccyyorsSSuuuvvvwkEE111111.',
+    '...1.1111kwwvvvvuuuSSrorrooyyyyoorrorSuuuvvvvwwkE11111.1',
+    '..1.11111kwwwvvvuuutSssSsrsowsrosrSSttuuuvvvwwwkE111111.',
     '...1.1111kwwwvvvvuvtSttSSSssSSSSsSSttsuvvvvvwwwk111111.1',
     '....1.1111kwwwvvvustkstttSkSStttkSttsskuvvvwwwk111111.1.',
     '...1.111111kkwvvkkkkksssttkttttssktssskkkvvwkk111111.1..',
-    '....1.1111112kkk22222kssskkkssssk3kkkk222kkk2111111.1...',
-    '.....1.111111222222222kkkkuuuuukkk2222222222111111.1....',
-    '......1.11111122222222kuuuuuuuuuuuk22222221111111.1.....',
-    '.......1.111111222222kvvvvvvvvvvvvvk222211111111.1......',
-    '........1.11111112222kvvvvvvvvvvvvvk221111111.1.1.......',
-    '.........1.1111111122kvvvvvvvvvvvvvk11111111.1..........',
+    '....1.111111EkkkEEEEEkssskkkssssk3kkkkEEEkkkE111111.1...',
+    '.....1.111111EEEE222EEkkkkuuuuukkkEEEEE2EEEE111111.1....',
+    '......1.111111222222EEkuuuuuuuuuuukEE222221111111.1.....',
+    '.......1.11111122222EkvvvvvvvvvvvvvkE22211111111.1......',
+    '........1.1111111222EkvvvvvvvvvvvvvkE21111111.1.1.......',
+    '.........1.111111112Ekvvvvvvvvvvvvvk11111111.1..........',
     '..........1.1111111111kwwwwwwwwwwwk111111.1.1...........',
     '...........1.1.11111111kkkwwwwwkkk111111.1..............',
     '..............1.1.11111111kkkkk1111.1.1.1...............',
@@ -77,9 +78,10 @@ const BONFIRE: SpriteDef = {
 };
 
 const BONFIRE_DAY = {
-  '1': '#3b6b43',
-  '2': '#3b6b43',
-  '3': '#3c6c44',
+  '1': '#467a4c',
+  '2': '#9a9050',
+  '3': '#5e4a3a',
+  E: '#7a6446',
   o: '#ee8a2a',
   r: '#c8441e',
   y: '#f6c64e',
@@ -166,9 +168,9 @@ const BONFIRE_GRAND: SpriteDef = {
 };
 
 const BONFIRE_GRAND_DAY = {
-  '1': '#3b6b43',
-  '2': '#3b6b43',
-  '3': '#3c6c44',
+  '1': '#467a4c',
+  '2': '#8e7e4c',
+  '3': '#5e4a3a',
   o: '#ee8a2a',
   u: '#c99a58',
   r: '#c8441e',
@@ -257,9 +259,9 @@ const SCHOOL: SpriteDef = {
 };
 
 const SCHOOL_DAY = {
-  '1': '#3b6b43',
-  '2': '#3b6b43',
-  '3': '#3c6c44',
+  '1': '#467a4c',
+  '2': '#a8945a',
+  '3': '#cdb078',
   R: '#a04a3a',
   q: '#c8684a',
   m: '#e6d8c0',
@@ -346,9 +348,9 @@ const VISITOR: SpriteDef = {
 };
 
 const VISITOR_DAY = {
-  '1': '#3b6b43',
-  '2': '#3b6b43',
-  '3': '#3c6c44',
+  '1': '#33583a',
+  '2': '#2c5a48',
+  '3': '#1f4a42',
   u: '#c99a58',
   w: '#6a4630',
   y: '#9ab8c8',
@@ -432,9 +434,9 @@ const VISITOR_AWAY: SpriteDef = {
 };
 
 const VISITOR_AWAY_DAY = {
-  '1': '#3b6b43',
-  '2': '#3b6b43',
-  '3': '#3c6c44',
+  '1': '#33583a',
+  '2': '#2c5a48',
+  '3': '#1f4a42',
   A: '#d8c8a8',
   a: '#7a5a50',
   u: '#c99a58',
@@ -517,9 +519,9 @@ const MARKET: SpriteDef = {
 };
 
 const MARKET_DAY = {
-  '1': '#3b6b43',
-  '2': '#3b6b43',
-  '3': '#3c6c44',
+  '1': '#467a4c',
+  '2': '#9a8650',
+  '3': '#7a5c3c',
   Z: '#e8fff8',
   z: '#28b0a0',
   A: '#f4ecd0',
@@ -557,6 +559,7 @@ export const VALLEY_GLOW_CONCEPTS: ConceptSet = {
     'The backdrop is the world map grass tile (`WORLD_MAP_SPRITE_DATA.grass`): the main tile is its night recolour, `alts.day` is the normal grass. The sheet shows night on night grass and day on day grass.',
     'No creatures are drawn: logs, benches and the counters show where they would rest and stand; the game draws the real ones there.',
     'Each light has its own colour: fire orange (bonfires), window yellow (school), violet lamp (visitor), a weak ember (visitor away), teal shard glow (market).',
+    'Day ground given its own character (Misa, 2026-10-31).',
     'The content needs the places to exist (V-BON, school, visitor, V-FORGE-11) before this art is used; the signs carry no text, only marks (a moon and a calendar on the visitor away board).',
   ],
   backdrop: {
