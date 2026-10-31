@@ -2,7 +2,7 @@ import { lateScrapAll, ledgerOf, measuresOf } from './analysis';
 import { profileLabel } from './analysis';
 import { RULES, type Rules } from './rules';
 import { playersOf, type Results, type ScenarioResult } from './scenarios';
-import { temperingVariantId } from './servers';
+import { idolOffId, temperingVariantId } from './servers';
 import type { PlayerRun } from './sim';
 import { TARGETS, boundsText, judge } from './targets';
 import { temperPrice } from './tempering';
@@ -102,14 +102,15 @@ const med = (xs: readonly number[]): number => (xs.length ? median([...xs]) : 0)
 
 export function temperOf(results: Results, rules: Rules = RULES): TemperData | null {
   const defaultOn = rules.tempering.on;
-  const base = results.mixed8;
+  // The study runs without the idol (its variants set it off), so its "without" side is the server with the idol out of the way.
+  const base = results[idolOffId('mixed8')];
   const flip = results[temperingVariantId('mixed8')];
   if (!base || !flip) return null;
   const seeds = Math.min(base.runs.length, flip.runs.length);
   const [on, off] = defaultOn ? [base, flip] : [flip, base];
   const withSide = firstRuns(on, seeds)!;
   const withoutSide = firstRuns(off, seeds)!;
-  const baseAll = results['mixed8-all'];
+  const baseAll = results[idolOffId('mixed8-all')];
   const flipAll = results[temperingVariantId('mixed8-all')];
   const [allOn, allOff] = defaultOn ? [baseAll, flipAll] : [flipAll, baseAll];
   const sideResults = (side: ScenarioResult, all: ScenarioResult | undefined): Results => ({

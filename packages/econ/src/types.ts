@@ -140,6 +140,9 @@ export interface WeekRecord {
   temperScrap: number;
   temperAcorns: number;
   temperLevels: number;
+  /** The idol (a placeholder, voluntary sink): scrap offered this week, and in how many batches. */
+  idolScrap: number;
+  idolBatches: number;
   /** Modifier lines at the end of the week: the best worn piece's pips (sum), its share of the most its level allows, the epics worn, and whether an epic has 4 or more top-pip lines. */
   bestPips: number;
   bestPipsShare: number;
@@ -297,6 +300,8 @@ export interface ServerOptions {
   visitor?: boolean;
   /** Whether tempering at the Forge exists (replaces `rules.tempering.on`). */
   tempering?: boolean;
+  /** Whether the idol (a placeholder scrap sink) is in the valley (replaces `rules.idol.on`). */
+  idol?: boolean;
 }
 
 export interface Server {
