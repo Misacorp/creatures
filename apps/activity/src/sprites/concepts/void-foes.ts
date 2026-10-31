@@ -150,6 +150,7 @@ export const VOID_FOES_CONCEPTS: ConceptSet = {
     },
     'void-floor-jelly': {
       kind: 'boss',
+      status: 'liked',
       note: 'Lantern Drifter: a floating bell with a starry window, two glinting eyes and trailing tendrils tipped with stars.',
       sprite: {
         palette: pal('kbhswtg'),

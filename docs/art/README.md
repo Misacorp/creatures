@@ -49,7 +49,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Requested:** 2026-10-31: a Void raid boss, dungeon foes and dungeon bosses.
 - **Element:** void
 - **Source:** `apps/activity/src/sprites/concepts/void-foes.ts` (draw it with `pnpm art void-foes`)
-- **Sheet of:** `fc88e5812a62`
+- **Sheet of:** `e086da4e04e7`
 - Needs before use: the Void element in the content, names, stats, gimmicks, lore and a place.
 - Working names and ideas are in docs/compendium/bosses.md and dungeon.md ("Concept, not shipped").
 - 2026-10-31 (Misa): void-crab, "More emphasis on the claws"; redrawn with big raised claws that dominate the silhouette.
@@ -63,7 +63,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `void-moth` | foe |  | draft | Dusk Moth: swept, pointed wings with a starry window each, a slender body and long curved antennae; it eats light. |
 | `void-angler` | foe |  | draft | Gloam Angler: a round deep-dark fish with a starry window on its flank, a glinting eye, a toothy mouth and a lure on a stalk that holds one warm star; it hides what its light touches. |
 | `void-crab` | foe |  | draft | Drift Crab: a crab with two huge raised claws that fill the silhouette, a starry window in its shell and glinting eyes; it tucks in and hides. |
-| `void-floor-jelly` | boss |  | draft | Lantern Drifter: a floating bell with a starry window, two glinting eyes and trailing tendrils tipped with stars. |
+| `void-floor-jelly` | boss |  | liked | Lantern Drifter: a floating bell with a starry window, two glinting eyes and trailing tendrils tipped with stars. |
 | `void-floor-sentinel` | boss |  | draft | Dim Sentinel: a living stone guardian with horns and glinting eyes, one fist raised and one hanging, mid-step, a doorway of night in its belly and two shards orbiting it. |
 
 <a id="void-gear"></a>
