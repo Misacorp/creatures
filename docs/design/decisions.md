@@ -3626,3 +3626,7 @@ Misa decided with the combat v2 session (branch `combat-v2-roster`, commit 17a34
 ## 2026-10-31: Valley: a problem arrives with its fix to build (G-8)
 
 Misa: "I like game systems where as a problem (like piling up resources without having access to a specific one) arises, a solution is unlocked at the same time. If we can time the stock market opening to a point in time when players are starting to need it, that would be pretty cool. Giving players a chance to build it with the knowledge of what it will roughly do (allow the trading of resources) will give them a goal, agency and a reward... Having players come in often to swap crafting jobs in the first weeks isn't that big of a deal if their investment pays off and longer runs are possible as upgrades land." Recorded as goal G-8 in `docs/design/valley/goals.md`. First use: the broker (V-FORGE-11) may become a communal Market project that opens when the lab shows shard waits starting; the lab is measuring when that is.
+
+## 2026-10-31: Valley: the Market is the second guided project (round 19, Q48)
+
+Misa: "48: A." The lab showed shard waits at the Forge start in week 1 and never end without a broker, while the Market as an ordinary project would arrive in weeks 12 to 16. So the Market, which opens the broker post (V-FORGE-11), is the server's second guided project after the hearth: small, paid in Acorns and scrap, finished in the first week or two, as G-8 asks ("a problem arrives with its fix to build"). Later Market levels improve the broker's rate.

@@ -29,7 +29,7 @@ The valley's places (the Forge, the Signpost, the Paddock, the School, the bonfi
 - **V-COM-10** Personal and shared progress take turns being the limit (round 1, Q1): a place's level sets each player's limit (anvils, scout seats, School seats); each player unlocks their own up to it, each seat's price rising with the place's level.
 - **V-COM-11** Each place has a max level (example: 5); each level's project is bigger than the last. After the max, projects are cosmetic (a weathervane, statues, seasonal decorations everyone sees, G-7) and still warm the fire a little. New places can open as content at any time.
 
-- **V-COM-15** A guided start for a new server (round 12, Q30). The valley opens with one place's project (example: the bonfire's hearth), small enough to finish in a few days, so the whole server pools into it and learns how building works. When it is done, a second place's project opens; when those two have levelled, every place's project is open and the server chooses together. Every first level is small (finished within the first two or three weeks); the size grows from level 2 on.
+- **V-COM-15** A guided start for a new server (round 12, Q30). The valley opens with one place's project (example: the bonfire's hearth), small enough to finish in a few days, so the whole server pools into it and learns how building works. When it is done, the second is the **Market** (round 19, Q48: A), which opens the broker post as the first anvils start waiting for shards (G-8); then a third place's project opens; when those two have levelled, every place's project is open and the server chooses together. Every first level is small (finished within the first two or three weeks); the size grows from level 2 on.
 
 ### Collections
 
