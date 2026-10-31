@@ -12,6 +12,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [Void, a raid boss, three foes and two floor bosses](#void-foes) | draft | 6 | 2026-10-31: a Void raid boss, dungeon foes and dungeon bosses. |
 | [Void gear: tint, plain pieces, a set, a shard](#void-gear) | draft | 11 | 2026-10-31: design Void gear. |
 | [Void place, the Quiet Verge (banners)](#void-place) | liked | 2 | 2026-10-31: design a Void area that can be explored (banner and place). |
+| [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 
 <a id="void"></a>
 
@@ -117,3 +118,26 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | --- | --- | --- | --- | --- |
 | `void-place-banner` | banner |  | liked | The Quiet Verge: a dusk plain of lilac dust, a still pool that holds the stars, leaning stones, a dark moon and a stone arch with one warm star at the far end. |
 | `void-place-deep` | banner |  | liked | The far side: the ground ends, stepping stones cross the open sky, and a great ring hangs ahead with one warm star at its middle. |
+
+<a id="valley-landmarks"></a>
+
+## Valley places: map landmarks
+
+![Valley places: map landmarks](valley-landmarks.png)
+
+- **Status:** draft
+- **Requested:** 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations.
+- **Source:** `apps/activity/src/sprites/concepts/valley-landmarks.ts` (draw it with `pnpm art valley-landmarks`)
+- **Sheet of:** `7de1609620d1`
+- One of several directions for the four valley places; this one draws each as a map marker. Compare it with the other sets before picking.
+- To use: the valley screen composes places from sprites; these are free sprites up to 64 px and would be shown at their drawn size on grass.
+- The visitor and visitor-away drawings share a stall; the away sign is a calendar page and a moon, not words.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `bonfire` | free |  | draft | A crackling fire in a stone ring on a patch of grass, with four straw beds around it: 'room for four resting creatures'. |
+| `bonfire-grand` | free |  | draft | The later level: a wider flagstone ring, a taller fire, log benches on three sides and two lantern posts. |
+| `school` | free |  | draft | A little blue-roofed schoolhouse with a bell cupola and a graduation rosette on the gable; a slate stands by the door. |
+| `visitor` | free |  | draft | A hooded stranger with glowing eyes behind a purple-awninged stall, a crescent moon on the awning and a lit lantern. |
+| `visitor-away` | free |  | draft | The same stall shuttered, lantern out, a sign with a calendar page and a moon: 'back Thursday'. |
+| `market` | free |  | draft | A red and cream striped tent stall where a tiny creature in a cap trades shards from two crates; sign shows shard and coin. |
