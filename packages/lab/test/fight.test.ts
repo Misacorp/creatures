@@ -7,10 +7,8 @@
 import { content, createSeededRng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import {
-  KEYWORDS,
   KNACKS,
   FORM_KNACKS,
-  keywordsIn,
   ADDITIVE_FIELDS,
   LINE_POOLS,
   OWN_KNACKS,
@@ -186,11 +184,6 @@ describe('the resolver (placement to the creature the engine takes)', () => {
 });
 
 describe('combat v2 content rules', () => {
-  it('every keyword used in Knack text exists in the keyword list', () => {
-    for (const k of Object.values(KNACKS))
-      for (const w of keywordsIn(k.text)) expect(KEYWORDS, `${k.id} uses {${w}}`).toHaveProperty(w);
-  });
-
   it('every Knack a form lists exists, and no two Knacks share a name (same effect, same name)', () => {
     for (const ks of Object.values(FORM_KNACKS))
       for (const id of ks) expect(KNACKS).toHaveProperty(id);
@@ -230,12 +223,11 @@ describe('combat v2 content rules: Knacks and talents for every species', () => 
     }
   });
 
-  it('talent names are unique, never reuse a Knack name, and their keywords exist', () => {
+  it('talent names are unique and never reuse a Knack name', () => {
     const names = [...Object.values(TALENTS), ...Object.values(KNACKS)].map((t) => t.name);
     expect(new Set(names).size).toBe(names.length);
     for (const t of Object.values(TALENTS)) {
       expect(t.intent.length, t.id).toBeGreaterThan(10);
-      for (const w of keywordsIn(t.text)) expect(KEYWORDS, `${t.id} uses {${w}}`).toHaveProperty(w);
     }
   });
 });

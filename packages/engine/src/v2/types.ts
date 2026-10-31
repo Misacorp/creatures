@@ -329,7 +329,7 @@ export interface BossDef {
    * reaction's bonus, Shake It Off clears this share of the Mired, Clean Scales and Fizzle take hold on this share of the
    * marks, Reaction Resistance halves the bonus by this share (a cut of half at full strength), Element Resistance cuts a quarter
    * at full strength and this share of that below it; cards that change a number (armour, Speed, the cap, healing, an
-   * added move's power) are built with it (`CardDef.apply`).
+   * added move's power) are built with it (`applyCard`, `cards.ts`).
    */
   readonly strengthBp?: number;
   /**

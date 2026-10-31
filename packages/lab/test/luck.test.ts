@@ -15,7 +15,6 @@ import {
   card,
   fight,
   formStats,
-  keywordsIn,
   labBoss,
   placeFighters,
   type Placement,
@@ -98,15 +97,9 @@ describe('the luck rule cards', () => {
 });
 
 describe('the luck content', () => {
-  it('Crit Chance and Crit Damage are the gear lines of the same names; the talents and Knacks use only known keywords', () => {
+  it('Crit Chance and Crit Damage are the gear lines of the same names; the keyword Crit is defined', () => {
     expect(TALENTS['crit-chance']?.name).toBe('Crit Chance');
     expect(TALENTS['crit-damage']?.name).toBe('Crit Damage');
-    for (const id of ['crit-chance', 'crit-damage', 'perfect-timing', 'hold-the-line'])
-      for (const w of keywordsIn(TALENTS[id]?.text ?? ''))
-        expect(KEYWORDS, `${id} {${w}}`).toHaveProperty(w);
-    for (const id of ['wild-swing', 'cool-head'])
-      for (const w of keywordsIn(KNACKS[id]?.text ?? ''))
-        expect(KEYWORDS, `${id} {${w}}`).toHaveProperty(w);
     expect(KEYWORDS).toHaveProperty('Crit');
     expect(KEYWORDS).toHaveProperty('Sure Crit');
   });
