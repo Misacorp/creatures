@@ -25,6 +25,8 @@ const BASE = {
   y: '#fff1b8',
 } as const;
 const SET = { ...BASE, g: '#f6d56a', w: '#fff6d8' } as const;
+/** The star accent of the Starkeeper's set: fixed (no tint changes it), a pale starlight cyan like the creatures' glint. */
+const STAR = '#9fe8ff';
 const ALTS = { void: VOID_TINT } as const;
 
 /** Void's touch over the shared `trail-charm`: its stone gets a starry window, and a star glints near it. */
@@ -67,11 +69,13 @@ export const VOID_GEAR_CONCEPTS: ConceptSet = {
   notes: [
     'Needs before use: the Void element in the content (an element tag, a Void Hat, Scarf and Charm at three tiers in gear.json, the set in gear-sets.json, a Void shard in the part kinds), the tint in TINTS and SET_TINTS (gear-sprites.ts), names and flavour confirmed, and the charm flair in item-flair.ts.',
     'Proposed tint: t #7468bc, u #463c86, h #b4aae8 (the Void creatures, a little lighter so a dark item stands out on the panels).',
+    "2026-10-31: Misa liked the other eight; for the Starkeeper's set (hat, scarf, charm) he said it read pure purple and yellow and asked for a small accent toward the stars. Added a fixed pale starlight cyan `#9fe8ff` (not tinted) on the stars and a glint on the trim; silhouettes and gold trim kept. Those three are draft again.",
     'The charm is the shared trail-charm with a Void flair (the variant); every other piece is its own look, as the shipped hats and scarves are.',
   ],
   sprites: {
     'void-cap': {
       kind: 'item',
+      status: 'liked',
       note: 'Dusk Cap: a round cap with a star on a stalk and a band of starry window.',
       sprite: {
         mirror: true,
@@ -95,6 +99,7 @@ export const VOID_GEAR_CONCEPTS: ConceptSet = {
     },
     'void-hood': {
       kind: 'item',
+      status: 'liked',
       note: 'Gloaming Hood: a pointed cloth hood; inside it shows a round window of night with one star.',
       sprite: {
         palette: BASE,
@@ -117,6 +122,7 @@ export const VOID_GEAR_CONCEPTS: ConceptSet = {
     },
     'void-crown': {
       kind: 'item',
+      status: 'liked',
       note: "Stargazer's Crown: a three-point crown with a tilted ring in orbit around its tips and a star in its window.",
       sprite: {
         palette: BASE,
@@ -139,6 +145,7 @@ export const VOID_GEAR_CONCEPTS: ConceptSet = {
     },
     'void-scarf': {
       kind: 'item',
+      status: 'liked',
       note: 'Twilight Scarf: a soft wound scarf with a star on the band and one long tail, notched at the end.',
       sprite: {
         palette: { k: BASE.k, t: BASE.t, u: BASE.u, h: BASE.h, y: BASE.y },
@@ -161,6 +168,7 @@ export const VOID_GEAR_CONCEPTS: ConceptSet = {
     },
     'void-shawl': {
       kind: 'item',
+      status: 'liked',
       note: 'Nightfall Shawl: a triangle of cloth hanging to a point, a lit window across the chest, a star at the tip.',
       sprite: {
         mirror: true,
@@ -184,6 +192,7 @@ export const VOID_GEAR_CONCEPTS: ConceptSet = {
     },
     'void-mantle': {
       kind: 'item',
+      status: 'liked',
       note: "Stargazer's Mantle: sloping shoulders, a collar, a crescent clasp, a front seam and a scalloped hem.",
       sprite: {
         palette: { k: BASE.k, t: BASE.t, u: BASE.u, h: BASE.h, y: BASE.y },
@@ -206,6 +215,7 @@ export const VOID_GEAR_CONCEPTS: ConceptSet = {
     },
     'void-charm': {
       kind: 'item',
+      status: 'liked',
       note: 'Starwell Charm: the shared trail-charm with a Void flair (a window with a star, and a glint); the variant is the plain shipped stone.',
       sprite: flaired(TRAIL_CHARM, VOID_CHARM_FLAIR),
       variants: { 'plain stone (shipped trail-charm)': TRAIL_CHARM },
@@ -213,19 +223,20 @@ export const VOID_GEAR_CONCEPTS: ConceptSet = {
     },
     'void-set-hat': {
       kind: 'item',
+      status: 'draft',
       role: 'set',
       note: "Starkeeper's Hat: a tall pointed hat with a gold star at the tip and a gold band round a starry window.",
       sprite: {
-        palette: SET,
+        palette: { k: SET.k, t: SET.t, u: SET.u, h: SET.h, n: SET.n, g: SET.g, s: STAR },
         rows: [
-          '........gw..',
+          '........gs..',
           '.......kgk..',
           '......kthk..',
           '.....kthhk..',
           '....kthhtk..',
           '...kthhttuk.',
-          '..kggnnnggk.',
-          '.kgnnnynnngk',
+          '..kggnsnggk.',
+          '.kgnnnsnnngk',
           '.kgggnnggggk',
           'kkkkkkkkkkkk',
           'khhtttttuuuk',
@@ -236,43 +247,54 @@ export const VOID_GEAR_CONCEPTS: ConceptSet = {
     },
     'void-set-scarf': {
       kind: 'item',
+      status: 'draft',
       role: 'set',
       note: "Starkeeper's Loop: a gold-striped wound scarf with a long tail, a star on it and a gold tassel.",
       sprite: {
-        palette: { k: SET.k, t: SET.t, u: SET.u, h: SET.h, y: SET.y, g: SET.g, w: SET.w },
+        palette: { k: SET.k, t: SET.t, u: SET.u, h: SET.h, g: SET.g, s: STAR },
         rows: [
           '............',
           '....kkkkkkk.',
           '...kthhhhhtk',
-          '.kktgggggggk',
+          '.kktgggsgggk',
           'khkuuutttttk',
           'ktkkkkkkkkk.',
           'kutgk.......',
           '.kutgk......',
-          '.kuytgk.....',
+          '.kustgk.....',
           '..kuhtgk....',
           '....kutgk...',
-          '....kkgwk...',
+          '....kkgsk...',
         ],
       },
       alts: ALTS,
     },
     'void-set-charm': {
       kind: 'item',
+      status: 'draft',
       role: 'set',
       note: "Starkeeper's Lens: a gold ring, like a lens held up to the sky, with a starry window inside.",
       sprite: {
         mirror: true,
-        palette: { ...SET, c: '#c9a66b' },
+        palette: {
+          k: SET.k,
+          t: SET.t,
+          u: SET.u,
+          h: SET.h,
+          n: SET.n,
+          g: SET.g,
+          s: STAR,
+          c: '#c9a66b',
+        },
         rows: [
           '....kk',
           '...kcc',
           '..kc..',
           '..kc..',
           '...kgg',
-          '..kgwh',
+          '..kgsh',
           '.kgthn',
-          '.kgtny',
+          '.kgtns',
           '.kgunn',
           '..kguu',
           '...kgg',
@@ -283,6 +305,7 @@ export const VOID_GEAR_CONCEPTS: ConceptSet = {
     },
     'void-shard': {
       kind: 'part',
+      status: 'liked',
       note: 'Void shard: a crescent-shaped crystal with a star caught in its hollow.',
       sprite: {
         palette: {
