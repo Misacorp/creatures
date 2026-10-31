@@ -12,7 +12,7 @@ Nothing waiting.
 
 In order. Each becomes a numbered question when asked; entries name what they wait on.
 
-- **scrap-uses** (lead's work first, from Q49). Propose concrete scrap uses that arrive before week 13: in the visitor's stock, at the Market (its later levels), and a large communal project; model them in the lab against T-7b. Ask Misa only where the call is a matter of feel. Note for that round: a crafting pastime that buys materials (Misa's example, exotic wood for furniture) leans toward housing, which he parked (round 16, Q42: "a ton of new systems and art"); offer it for the valley's places rather than a player's house unless he says otherwise.
+- **scrap-uses** (deferred by Misa, 2026-11-01: "tackle it later"). When it comes back: the lead's proposal is `systems/scrap-uses.md` (a great work, a scrap line at the visitor, the Market's later levels); a furniture pastime leans toward housing, parked in round 16 (Q42).
 - **targets.** What the economy lab measures and which numbers feel right (T-1 to T-5 in `goals.md`). Asked with the lab's first report, as concrete examples, not as a list to approve.
 
 ## Answered

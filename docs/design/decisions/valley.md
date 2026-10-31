@@ -4,9 +4,17 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-01: Late-season scrap is deferred; the lab pretends an idol takes the surplus **[Misa]**
+
+ID: `2026-11-01-late-season-scrap-is-deferred-the` · Status: current · Amends: `2026-11-01-no-tempering-more-places-to-spend`
+
+**Decision.** The scrap that piles up after week 13 is tackled later. Misa: "Let's just not focus on the scrap problem after week 13 now and agree to tackle it later. Just pretend there's an idol in the village that players can offer an unlimited amount of scrap to and it'll promise to do something for them one day (it may never) or something." The economy lab models a placeholder sink, the idol, that takes a player's scrap above a generous reserve (never what pieces, gifts or the visitor would use), on by default, with the run without it kept beside; the three proposed uses (`systems/scrap-uses.md`) wait.
+
+**Reasoning.** Week 13 is about three months after launch; the uses can ship as content before then, and the phase 3 prototype does not depend on them. The idol keeps T-7b from hiding other changes in the lab without pretending the problem is solved: the report says it is a placeholder and shows the run without it.
+
 ## 2026-11-01: No tempering; more places to spend scrap before the late season (round 20, Q49) **[Misa]**
 
-ID: `2026-11-01-no-tempering-more-places-to-spend` · Status: current
+ID: `2026-11-01-no-tempering-more-places-to-spend` · Status: current, amended by `2026-11-01-late-season-scrap-is-deferred-the`
 
 **Decision.** No tempering at the Forge. Misa: "Tempering would only increase the potential of rolls on the item since item levels don't automatically increase any stats. If we allowed a free reroll of the modifier tiers on a tempered item while keeping the modifier lines unchanged, it would be too powerful for good items. Therefore I'm skeptical about tempering. Can we introduce more places to use scrap? Week 13 is far away and I think we could get some more uses for it into the trader, market or new upcoming game systems by the e.g., buy exotic wood for furniture crafting, fund a massive communal project, etc." Late scrap is answered by more uses, added over the season: the visitor's stock, the Market and new systems (examples: materials bought for a crafting pastime, a large communal project). T-7b stays failing in the lab until those sinks are designed and modelled; scouts' scrap is not tapered for now (option B was not taken).
 

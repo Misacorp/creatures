@@ -20,7 +20,7 @@ Growth through the season (T-6), weekend off costs almost nothing (T-2b), weekly
 1. **Shards at the Forge** (T-4): players who don't visit daily wait for a shard of the right element a lot (every other day: 40% of anvil time; weekend off: 30%; weekly: 71%); a daily player 16%. The exchange only helps when someone uses it. _Your call: Q46._
 2. **Your T-1 as written**: the 10th creature is 10 levels below the 3rd at week 4, because a player only has about 11 creatures then and the 10th arrived days ago. A creature owned for two weeks is within 5 levels. _Your call: Q47._
 3. **Returners** take 16 days to come within 2 levels of the server's middle (target "about two weeks"). _In Q47._
-4. **Scrap piles up again from week 14** (T-7b): after the visitor, nothing late in the season takes enough scrap. You said piling is fine for the first weeks while sinks are built. The lab tried tempering at the Forge (the report's "Tempering" section); you turned it down (Q49) for more uses of scrap before week 13 (the visitor, the Market, new systems), which the lead proposes next.
+4. **Scrap piles up again from week 14** (T-7b): after the visitor, nothing late in the season takes enough scrap. You said piling is fine for the first weeks while sinks are built. The lab tried tempering at the Forge (the report's "Tempering" section); you turned it down (Q49) for more uses of scrap before week 13 (the visitor, the Market, new systems), which are deferred (Misa, 2026-11-01: "tackle it later"); the lab pretends an idol takes the surplus meanwhile.
 
 ## How far to trust it
 

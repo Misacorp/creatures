@@ -1,6 +1,6 @@
 # Scrap uses: where the late scrap goes
 
-Status: **proposed** (lead, 2026-11-01), from Misa's answer to Q49 (round 20): no tempering; "Can we introduce more places to use scrap? Week 13 is far away and I think we could get some more uses for it into the trader, market or new upcoming game systems by the e.g., buy exotic wood for furniture crafting, fund a massive communal project, etc." To be modelled in the economy lab against T-7b, then put to the panel and to Misa where it is a matter of feel.
+Status: **deferred** (Misa, 2026-11-01: "Let's just not focus on the scrap problem after week 13 now and agree to tackle it later"; the lab pretends an idol takes the surplus meanwhile). Proposed by the lead, 2026-11-01, from Misa's answer to Q49 (round 20): no tempering; "Can we introduce more places to use scrap? Week 13 is far away and I think we could get some more uses for it into the trader, market or new upcoming game systems by the e.g., buy exotic wood for furniture crafting, fund a massive communal project, etc." To be modelled in the economy lab against T-7b, then put to the panel and to Misa where it is a matter of feel.
 
 ## The problem in numbers
 
