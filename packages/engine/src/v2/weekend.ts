@@ -3,7 +3,8 @@
  * here as it was (docs/design/combat/engine-port.md, slice 1).
  */
 import type { Rng } from '@creatures/game';
-import { contextOf, playFight } from './fight';
+import { playFight } from './fight';
+import { contextOf } from './state';
 import type {
   FightOptions,
   FightResult,
@@ -56,6 +57,8 @@ export function weekendV2(input: WeekendInputV2, rng: Rng): WeekendResult {
   let replacements = 0;
   const used: Record<string, number> = {};
   const dealt: Record<string, number> = {};
+  // Adapts: the reaction used most so far. A tie for the most goes to the one used first: the sort is stable and `used` keeps
+  // the order its reactions were first cashed in (unlike Element Resistance, where a tie gives no resistance).
   const most = (m: Record<string, number>) => Object.entries(m).sort((a, b) => b[1] - a[1])[0]?.[0];
   for (let i = 0; i < (opts.stages ?? 3) && bossHp > 0; i++) {
     const resist = boss.mods.adapts && i > 0 ? most(used) : undefined;

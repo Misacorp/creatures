@@ -20,7 +20,6 @@ import { describe, expect, it } from 'vitest';
 /** The lab's starting numbers, written out: an input carries its own rules. */
 const RULES: V2Rules = {
   payoffMultBp: 20_000,
-  extraStackBp: 5_000,
   maxBonusFactorBp: 30_000,
   maxStacks: 3,
   dodgePerSpdBp: 10,

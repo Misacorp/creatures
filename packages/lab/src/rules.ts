@@ -7,8 +7,6 @@ import type { V2Rules } from '@creatures/engine/v2';
 export const LAB_RULES = {
   /** A Payoff's reaction hit deals plain x this (R7). The pair Setter + Payoff should clearly beat two plain hitters, not double them. */
   payoffMultBp: 20_000,
-  /** Each stack beyond the first that an effect spends adds this share of the bonus (R7). */
-  extraStackBp: 5_000,
   /** All reaction-bonus factors together (Knack factor, extra counts, Baked Shell) never pass this (R7). */
   maxBonusFactorBp: 30_000,
   /** A mark holds at most this many counts (R3). */

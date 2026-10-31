@@ -94,8 +94,6 @@ export interface Fighter extends FighterSpec {
 export interface V2Rules {
   /** A Payoff's reaction hit deals plain x this (R7). The pair Setter + Payoff should clearly beat two plain hitters, not double them. */
   readonly payoffMultBp: number;
-  /** Each stack beyond the first that an effect spends adds this share of the bonus (R7). */
-  readonly extraStackBp: number;
   /** All reaction-bonus factors together (Knack factor, extra counts, Baked Shell) never pass this (R7). */
   readonly maxBonusFactorBp: number;
   /** A mark holds at most this many counts (R3). */
