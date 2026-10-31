@@ -102,12 +102,14 @@ export interface Story {
   species?: string | undefined;
 }
 
-/** A marker the valley keeps for what the popup did not tell. */
+/** A marker the valley keeps for what the popup did not tell, with the stories that wait at its place. */
 export interface Marker {
   place: PlaceId;
   count: number;
   glyph: string;
   species?: string | undefined;
+  /** The untold stories of this place that stand for something (`count` > 0), the biggest first. */
+  stories: Story[];
 }
 
 export interface Welcome {
@@ -115,8 +117,11 @@ export interface Welcome {
   show: boolean;
   /** Two or three, the biggest first (the Gazette's headline story first). */
   highlights: Story[];
+  /** The stories not told (some are flourishes with no count), the biggest first. */
+  rest: Story[];
   /** The things not told, as "...and N more things". */
   more: number;
+  /** Where the counted rest waits, one per place, each with its stories (a place tells them when entered). */
   markers: Marker[];
   /** "Monday · week 2 · day 8". */
   date: string;
@@ -759,10 +764,14 @@ export function pickHighlights(stories: readonly Story[]): Story[] {
   return picked;
 }
 
-/** The markers the rest leaves in the valley: one per place, with the number of things waiting there. */
+/**
+ * The markers the rest leaves in the valley: one per place, with the number of things waiting there and the
+ * stories behind it (the biggest first, so the place tells them in that order). A story with no count is a
+ * flourish and waits nowhere.
+ */
 export function markersOf(rest: readonly Story[]): Marker[] {
   const out: Marker[] = [];
-  for (const story of rest) {
+  for (const story of [...rest].sort((a, b) => b.weight - a.weight)) {
     if (story.count <= 0) continue;
     const marker = out.find((m) => m.place === story.place);
     if (marker === undefined) {
@@ -771,10 +780,12 @@ export function markersOf(rest: readonly Story[]): Marker[] {
         count: story.count,
         glyph: placeOf(story.place).glyph,
         species: story.species,
+        stories: [story],
       });
     } else {
       marker.count += story.count;
       marker.species ??= story.species;
+      marker.stories.push(story);
     }
   }
   return out;
@@ -795,10 +806,11 @@ export function welcomeFor(visit: Visit, cast: Cast, gap: number): Welcome {
     cast.creatures[slot % Math.max(1, cast.creatures.length)]?.name ?? 'A creature';
   const stories = storiesOf({ visit, cast, crew, name });
   const highlights = pickHighlights(stories);
-  const rest = stories.filter((s) => !highlights.includes(s));
+  const rest = stories.filter((s) => !highlights.includes(s)).sort((a, b) => b.weight - a.weight);
   return {
     show: gap * 24 >= WELCOME_AFTER_HOURS,
     highlights,
+    rest,
     more: rest.reduce((sum, s) => sum + s.count, 0),
     markers: markersOf(rest),
     date: dateLine(visit),

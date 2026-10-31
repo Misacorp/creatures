@@ -19,6 +19,7 @@ import { Sprite } from '../../sprites/Sprite';
 import { ActionButton } from '../../ui/ActionButton';
 import { CountBadge } from '../../ui/CountBadge';
 import { Drawer } from '../../ui/Drawer';
+import type { Waiting } from '../welcome/PlaceStories';
 import { TOUR, evolvers, type ProtoWorld } from '../world';
 import { paint } from './paint';
 import { At, CreatureSprite, Plate, SpeechBubble, UpArrow, isStill } from './parts';
@@ -48,6 +49,7 @@ export function HouseScene({
   onLeave,
   onDone,
   onProgress,
+  waiting,
 }: {
   world: ProtoWorld;
   setWorld: (w: ProtoWorld) => void;
@@ -56,6 +58,8 @@ export function HouseScene({
   onLeave: () => void;
   onDone: () => void;
   onProgress: () => void;
+  /** Stories a welcome-back marker led here with. */
+  waiting?: Waiting | undefined;
 }) {
   const reduced = usePrefersReducedMotion();
   const still = reduced || isStill();
@@ -143,6 +147,7 @@ export function HouseScene({
         draw={DRAW}
         onLeave={onLeave}
         act={act}
+        waiting={waiting}
         ground="#9a6036"
       >
         {(g) => {

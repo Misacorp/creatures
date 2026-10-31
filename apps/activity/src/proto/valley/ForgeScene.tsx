@@ -21,6 +21,7 @@ import { CountBadge } from '../../ui/CountBadge';
 import { TimerBar } from '../../ui/TimerBar';
 import { XpGain, XpList } from '../../ui/XpGain';
 import { craftingGain } from '../../xp-gain';
+import type { Waiting } from '../welcome/PlaceStories';
 import { TOUR, claimJob, creatureOf, isFree, startJob, type ProtoWorld } from '../world';
 import { At, CreatureSprite, Pic, Plate, SpeechBubble, isStill } from './parts';
 import { SceneFrame } from './SceneFrame';
@@ -46,6 +47,7 @@ export function ForgeScene({
   setHeld,
   onLeave,
   onProgress,
+  waiting,
 }: {
   world: ProtoWorld;
   setWorld: (w: ProtoWorld) => void;
@@ -55,6 +57,8 @@ export function ForgeScene({
   setHeld: (id: string | null) => void;
   onLeave: () => void;
   onProgress: () => void;
+  /** Stories a welcome-back marker led here with. */
+  waiting?: Waiting | undefined;
 }) {
   const reduced = usePrefersReducedMotion();
   const still = reduced || isStill();
@@ -210,6 +214,7 @@ export function ForgeScene({
       draw={forgeDraw}
       onLeave={onLeave}
       act={act}
+      waiting={waiting}
       ground="#3a2a24"
     >
       {(g) => {

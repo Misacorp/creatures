@@ -61,6 +61,27 @@ export function Finds({ finds, label }: { finds: readonly Find[]; label: string 
   );
 }
 
+/**
+ * How the Gazette tells a story, picture aside: its headline, at most one short line, and what it found as
+ * itself. The headline is the paper's big one (`lead`) or a small story's (`brief`, also how a place tells its
+ * waiting stories). Every place that tells a story uses this, never a second card.
+ */
+export function StoryText({ story, size }: { story: Story; size: 'lead' | 'brief' }) {
+  const label = `Found: ${story.headline}`;
+  const Heading = size === 'lead' ? 'h3' : 'h4';
+  return (
+    <>
+      <Heading class={size === 'lead' ? 'wb-headline pix' : 'wb-brief-headline pix'}>
+        {story.headline}
+      </Heading>
+      {story.blurb !== '' && (
+        <p class={size === 'lead' ? 'wb-blurb' : 'wb-brief-blurb'}>{story.blurb}</p>
+      )}
+      <Finds finds={story.finds} label={label} />
+    </>
+  );
+}
+
 export function Gazette({
   stories,
   cast,
@@ -81,9 +102,7 @@ export function Gazette({
       {lead !== undefined && (
         <section class="wb-lead">
           <SceneCrop scene={lead.scene} cast={cast} class="wb-lead-scene" />
-          <h3 class="wb-headline pix">{lead.headline}</h3>
-          {lead.blurb !== '' && <p class="wb-blurb">{lead.blurb}</p>}
-          <Finds finds={lead.finds} label={`Found: ${lead.headline}`} />
+          <StoryText story={lead} size="lead" />
         </section>
       )}
       {briefs.length > 0 && (
@@ -91,9 +110,7 @@ export function Gazette({
           {briefs.map((story) => (
             <section key={story.id} class="wb-brief">
               <SceneCrop scene={story.scene} cast={cast} class="wb-brief-scene" />
-              <h4 class="wb-brief-headline pix">{story.headline}</h4>
-              {story.blurb !== '' && <p class="wb-brief-blurb">{story.blurb}</p>}
-              <Finds finds={story.finds} label={`Found: ${story.headline}`} />
+              <StoryText story={story} size="brief" />
             </section>
           ))}
         </div>

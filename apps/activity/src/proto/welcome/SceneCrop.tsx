@@ -55,40 +55,27 @@ function PropArt({ prop, scale }: { prop: Prop; scale: number }) {
   }
 }
 
-export function SceneCrop({
+/**
+ * The creatures and props of a scene standing round a spot (`cx`, `cy`: CSS px, the place's door) at a whole
+ * scale `s`: the Gazette's pictures draw them over the valley, a place draws them on its own floor. A creature
+ * is a `SmallCreature`: a tap opens its popover.
+ */
+export function SceneActors({
   scene,
   cast,
-  class: extra,
+  cx,
+  cy,
+  s,
 }: {
-  scene: Scene;
+  scene: Pick<Scene, 'actors' | 'props'>;
   cast: Cast;
-  class?: string;
+  cx: number;
+  cy: number;
+  s: number;
 }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const size = useSize(wrapRef);
-  // Phone-sized pictures are drawn at 2, a wide one at 3.
-  const s = size.width >= 420 ? 3 : 2;
-  const drawing = useMemo(() => valleyDrawing(NO_MARGIN), []);
-  const door = placeOf(scene.place).door;
-  const cx = Math.round(size.width / 2);
-  const cy = Math.round(size.height * DOOR_AT);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    if (!canvas || !ctx) return;
-    canvas.width = size.width;
-    canvas.height = size.height;
-    const ox = cx - (door.x + drawing.ox) * s;
-    const oy = cy - (door.y + drawing.oy) * s;
-    paint(ctx, drawing.placements, s, ox, oy);
-  }, [drawing, door.x, door.y, s, size.width, size.height, cx, cy]);
-
   const actors: Actor[] = scene.actors;
   return (
-    <div ref={wrapRef} class={`wb-scene${extra === undefined ? '' : ` ${extra}`}`}>
-      <canvas ref={canvasRef} class="wb-scene-canvas" aria-hidden="true" />
+    <>
       {scene.props.map((p, i) => (
         <At
           key={`p${String(i)}`}
@@ -126,6 +113,44 @@ export function SceneCrop({
           </At>
         );
       })}
+    </>
+  );
+}
+
+export function SceneCrop({
+  scene,
+  cast,
+  class: extra,
+}: {
+  scene: Scene;
+  cast: Cast;
+  class?: string;
+}) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const size = useSize(wrapRef);
+  // Phone-sized pictures are drawn at 2, a wide one at 3.
+  const s = size.width >= 420 ? 3 : 2;
+  const drawing = useMemo(() => valleyDrawing(NO_MARGIN), []);
+  const door = placeOf(scene.place).door;
+  const cx = Math.round(size.width / 2);
+  const cy = Math.round(size.height * DOOR_AT);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    canvas.width = size.width;
+    canvas.height = size.height;
+    const ox = cx - (door.x + drawing.ox) * s;
+    const oy = cy - (door.y + drawing.oy) * s;
+    paint(ctx, drawing.placements, s, ox, oy);
+  }, [drawing, door.x, door.y, s, size.width, size.height, cx, cy]);
+
+  return (
+    <div ref={wrapRef} class={`wb-scene${extra === undefined ? '' : ` ${extra}`}`}>
+      <canvas ref={canvasRef} class="wb-scene-canvas" aria-hidden="true" />
+      <SceneActors scene={scene} cast={cast} cx={cx} cy={cy} s={s} />
     </div>
   );
 }

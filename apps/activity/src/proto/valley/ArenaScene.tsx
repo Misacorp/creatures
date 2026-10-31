@@ -17,6 +17,7 @@ import { ElementChip } from '../../sprites/ElementChip';
 import { ActionButton } from '../../ui/ActionButton';
 import { Drawer } from '../../ui/Drawer';
 import { PipRow } from '../../ui/PipRow';
+import type { Waiting } from '../welcome/PlaceStories';
 import { RAID_TEAM_SIZE, isFree, raidTeamIds, type ProtoWorld } from '../world';
 import { At, CreatureSprite, Pic, Plate, isStill } from './parts';
 import { SceneFrame } from './SceneFrame';
@@ -38,6 +39,7 @@ export function ArenaScene({
   onLeave,
   onDone,
   onProgress,
+  waiting,
 }: {
   world: ProtoWorld;
   setWorld: (w: ProtoWorld) => void;
@@ -47,6 +49,8 @@ export function ArenaScene({
   /** All placed: back to the valley. */
   onDone: () => void;
   onProgress: () => void;
+  /** Stories a welcome-back marker led here with. */
+  waiting?: Waiting | undefined;
 }) {
   const still = isStill();
   const left = RAID_TEAM_SIZE - raidTeamIds(world).length;
@@ -105,6 +109,7 @@ export function ArenaScene({
         draw={arenaDraw}
         onLeave={onLeave}
         act={act}
+        waiting={waiting}
         ground="#e2bc72"
       >
         {(g) => {
