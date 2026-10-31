@@ -16,6 +16,7 @@ import {
   storedRuns,
   type Seeded,
 } from './raid-helpers';
+import { giveItem } from './gear-helpers';
 import { setCreature } from './kit';
 
 const SUNDAY = W02.afterFinale;
@@ -623,6 +624,28 @@ describe('GET /api/raid/replay/:week/:party/:phase', () => {
       for (const id of [me.id, ...['2', '3'].map((n) => `8${n.padStart(17, '0')}`)]) {
         expect(text).not.toContain(id);
       }
+    });
+  });
+
+  it('carries the base ids of what each creature wore when the fight was stored, and nothing after', async () => {
+    await runRaid(async (ctx) => {
+      const me = seedMember(ctx, 1, { name: 'Misa' });
+      seedMember(ctx, 2, { name: 'Bob' });
+      seedMember(ctx, 3, { name: 'Cy' });
+      const worn = me.creatureIds[0] as string;
+      const hat = giveItem(ctx.sql, me.id, 'trail-cap', { now: ctx.clock.t });
+      ctx.sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', worn, hat);
+      ctx.core.raid.currentWeek(HELSINKI);
+      ctx.clock.t = Date.parse('2027-01-15T12:00:00Z');
+      const secret = await login(ctx, me);
+      const first = await api<ReplayView>(ctx, secret, 'GET', '/api/raid/replay/2027-W02/1/phase1');
+      expect(first.status).toBe(200);
+      expect(first.body.row.find((r) => r.id === worn)?.worn).toEqual(['trail-cap']);
+      expect(first.body.row.filter((r) => r.worn !== undefined)).toHaveLength(1);
+      // Taking it off later does not change the stored fight.
+      ctx.sql.exec('UPDATE gear_items SET equipped_on = NULL WHERE id = ?', hat);
+      const again = await api<ReplayView>(ctx, secret, 'GET', '/api/raid/replay/2027-W02/1/phase1');
+      expect(again.body.row.find((r) => r.id === worn)?.worn).toEqual(['trail-cap']);
     });
   });
 

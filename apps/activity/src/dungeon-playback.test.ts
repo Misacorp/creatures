@@ -62,6 +62,13 @@ describe('a stored room, as the stage draws it', () => {
     expect(shuffled.map((r) => r.position)).toEqual([0, 1, 2]);
   });
 
+  it('carries what each creature wears to the stage row', () => {
+    const dressed = {
+      row: replay.row.map((r, i) => (i === 0 ? { ...r, worn: ['trail-cap'] } : r)),
+    };
+    expect(stageRow(dressed).map((r) => r.worn)).toEqual([['trail-cap'], undefined, undefined]);
+  });
+
   it('names the foe as the boss of the fight', () => {
     const room = replay.rooms[2];
     if (room === undefined) throw new Error('fixture has three rooms');

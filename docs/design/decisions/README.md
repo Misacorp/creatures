@@ -378,6 +378,7 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-10-31 The fight board shows worn gear
 - 2026-10-31 Creatures blink, and shiny creatures twinkle
 - 2026-10-31 Creatures wear their gear on their sprite
 - 2026-10-28 One spacing scale inside drawers and sheets

@@ -142,6 +142,7 @@ export function stageRow(replay: Pick<DungeonReplay, 'row'>): ReplayRowEntry[] {
       role: r.role,
       level: r.level,
       owner: 'p1',
+      ...(r.worn === undefined ? {} : { worn: r.worn }),
     }));
 }
 
