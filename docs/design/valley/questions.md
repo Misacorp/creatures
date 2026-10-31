@@ -6,22 +6,13 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q49. What should soak up the scrap that piles up late in the season?
-
-Status: asked, round 20 (2026-10-31). From the economy lab (T-7b, the last failing target) and your answer that piling is fine early "while sinks are built". Touches: `forge.md`, `gear.md`, `visitor.md`, `scouts` (V-SCOUT), T-7b in `goals.md`.
-
-**Why it matters.** From about week 13 scrap comes in about 500 a week faster than pieces, project gifts and the visitor take it, so by week 24 a daily player sits on about 14k scrap with nothing worth buying. The lab tried one sink, **tempering**: it soaks up about 650 a week and the pile stays flat, but only just (a slightly cheaper price fails again), it takes about a quarter of what players used to spend at the visitor, and weekly players barely use it. Research on sinks says a sink can tune a pile but cannot fix a tap that runs too fast (`docs/research/weekly-visitor.md`, "Sinks").
-
-- **A. Tempering at the Forge.** A worn rare or epic piece that has fallen behind the Forge's fire can be raised to the fire, keeping its lines and any rerolls, paid mostly in scrap. It appears just when the fire starts leaving pieces behind, the same weeks scrap starts piling up. Example: in week 15 Sanni's epic charm, rerolled twice at the visitor, is 6 levels behind; she tempers it for about 600 scrap instead of hoping for a new one as good.
-- **B. Scouts bring less scrap late.** The tap slows instead: from about week 12, the places scouts know well give fewer scrap and more of the things that are still scarce (shards, keystones, blueprint pages). Example: Mossback's trips to the Tidepools bring 30% less scrap in week 16 than in week 8, and a Tide shard more often.
-- **C. Both.** Tempering as the thing players choose, and a gentle late taper on scouts' scrap as the safety margin, so tempering's price can stay friendly.
-
-**Lead's pick: C.** Tempering is your G-8 pattern (the problem and its fix arrive together, with a goal and a reward) and it makes the visitor's rerolls last, which the research says makes a reroll feel earned. But on its own the lab's pass is too narrow to trust; a small taper on the tap makes it hold without pricing tempering high.
+Nothing waiting.
 
 ## Queue
 
 In order. Each becomes a numbered question when asked; entries name what they wait on.
 
+- **scrap-uses** (lead's work first, from Q49). Propose concrete scrap uses that arrive before week 13: in the visitor's stock, at the Market (its later levels), and a large communal project; model them in the lab against T-7b. Ask Misa only where the call is a matter of feel. Note for that round: a crafting pastime that buys materials (Misa's example, exotic wood for furniture) leans toward housing, which he parked (round 16, Q42: "a ton of new systems and art"); offer it for the valley's places rather than a player's house unless he says otherwise.
 - **targets.** What the economy lab measures and which numbers feel right (T-1 to T-5 in `goals.md`). Asked with the lab's first report, as concrete examples, not as a list to approve.
 
 ## Answered
@@ -780,6 +771,22 @@ Status: answered, round 19 (2026-10-31). From Misa's G-8 ("If we can time the st
 **Answer (2026-10-31): A.** "48: A."
 
 Became: V-FORGE-11, the Market is the server's second guided project (after the hearth, V-COM-15), small and paid in Acorns and scrap, finished in the first week or two as the first anvils start waiting; it opens the broker seat, and later Market levels improve the broker's rate.
+
+### Q49. What should soak up the scrap that piles up late in the season?
+
+Status: answered, round 20 (2026-11-01). From the economy lab (T-7b, the last failing target) and your answer that piling is fine early "while sinks are built". Touches: `forge.md`, `gear.md`, `visitor.md`, `scouts` (V-SCOUT), T-7b in `goals.md`.
+
+**Why it matters.** From about week 13 scrap comes in about 500 a week faster than pieces, project gifts and the visitor take it, so by week 24 a daily player sits on about 14k scrap with nothing worth buying. The lab tried one sink, **tempering**: it soaks up about 650 a week and the pile stays flat, but only just (a slightly cheaper price fails again), it takes about a quarter of what players used to spend at the visitor, and weekly players barely use it. Research on sinks says a sink can tune a pile but cannot fix a tap that runs too fast (`docs/research/weekly-visitor.md`, "Sinks").
+
+- **A. Tempering at the Forge.** A worn rare or epic piece that has fallen behind the Forge's fire can be raised to the fire, keeping its lines and any rerolls, paid mostly in scrap. It appears just when the fire starts leaving pieces behind, the same weeks scrap starts piling up. Example: in week 15 Sanni's epic charm, rerolled twice at the visitor, is 6 levels behind; she tempers it for about 600 scrap instead of hoping for a new one as good.
+- **B. Scouts bring less scrap late.** The tap slows instead: from about week 12, the places scouts know well give fewer scrap and more of the things that are still scarce (shards, keystones, blueprint pages). Example: Mossback's trips to the Tidepools bring 30% less scrap in week 16 than in week 8, and a Tide shard more often.
+- **C. Both.** Tempering as the thing players choose, and a gentle late taper on scouts' scrap as the safety margin, so tempering's price can stay friendly.
+
+**Lead's pick: C.** Tempering is your G-8 pattern (the problem and its fix arrive together, with a goal and a reward) and it makes the visitor's rerolls last, which the research says makes a reroll feel earned. But on its own the lab's pass is too narrow to trust; a small taper on the tap makes it hold without pricing tempering high.
+
+**Answer (2026-11-01): none of them; more places to use scrap.** "Tempering would only increase the potential of rolls on the item since item levels don't automatically increase any stats. If we allowed a free reroll of the modifier tiers on a tempered item while keeping the modifier lines unchanged, it would be too powerful for good items. Therefore I'm skeptical about tempering. Can we introduce more places to use scrap? Week 13 is far away and I think we could get some more uses for it into the trader, market or new upcoming game systems by the e.g., buy exotic wood for furniture crafting, fund a massive communal project, etc."
+
+Became: no tempering (the lab keeps the study switched off); no taper on scouts' scrap for now; late scrap gets more uses over the season (the visitor's stock, the Market, new systems), queued as **scrap-uses**. T-7b stays failing in the lab until they are modelled.
 
 ## Withdrawn
 

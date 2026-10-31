@@ -473,7 +473,7 @@ export const RULES = {
    * late in the season). `on` is the switch (a server's `tempering` setting replaces it); the report runs the other value beside it.
    */
   tempering: {
-    // Off until Misa decides (round 20): the lab runs the rules as decided; the report shows tempering on beside it ("Tempering").
+    // Off: not taken (Misa, round 20, Q49: item level adds nothing by itself, and a free tier reroll would be too strong); kept as a record, the report shows it on beside the rules.
     on: false,
     // ASSUMPTION: a set-and-forget player tempers a piece once it is this many levels behind the fire (about the Forge's own margin of 6), an optimiser sooner.
     minGap: { setAndForget: 5, optimiser: 3 },

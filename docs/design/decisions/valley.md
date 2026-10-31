@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-01: No tempering; more places to spend scrap before the late season (round 20, Q49) **[Misa]**
+
+ID: `2026-11-01-no-tempering-more-places-to-spend` · Status: current
+
+**Decision.** No tempering at the Forge. Misa: "Tempering would only increase the potential of rolls on the item since item levels don't automatically increase any stats. If we allowed a free reroll of the modifier tiers on a tempered item while keeping the modifier lines unchanged, it would be too powerful for good items. Therefore I'm skeptical about tempering. Can we introduce more places to use scrap? Week 13 is far away and I think we could get some more uses for it into the trader, market or new upcoming game systems by the e.g., buy exotic wood for furniture crafting, fund a massive communal project, etc." Late scrap is answered by more uses, added over the season: the visitor's stock, the Market and new systems (examples: materials bought for a crafting pastime, a large communal project). T-7b stays failing in the lab until those sinks are designed and modelled; scouts' scrap is not tapered for now (option B was not taken).
+
+**Reasoning.** The lab's tempering passed T-7b only narrowly and took scrap from the visitor; and as Misa points out, a piece's item level adds nothing by itself (it only raises the top tier a later roll can reach), so tempering is either worthless or, with a free tier reroll, too strong for good pieces. Week 13 is about three months after launch, time enough to ship new uses as content. The lab keeps the tempering study switched off as a record (`rules.tempering`, the report's "Tempering" section).
+
 ## 2026-10-31: The welcome-back popup is the Gazette: short prose, items that speak, tappable for a popover **[Misa]**
 
 ID: `2026-10-31-the-welcome-back-popup-is-the` · Status: current

@@ -481,7 +481,7 @@ The share of servers (runs) where some player wears an epic with 4 or more top-p
 | Mixed server of 8 | 50% / 40% | 20% / 30% | 35% / 50% | 65% / 60% |
 | Mixed server of 15 | 40% / 50% | 60% / 50% | 75% / 40% | 75% / 70% |
 
-### Tempering at the Forge (a candidate scrap sink, T-7b)
+### Tempering at the Forge (a scrap sink studied for T-7b, not taken: Q49)
 
 The problem: from about week 13 a daily player's scouts bring more scrap than pieces, project gifts and the visitor take, so the pile only grows (T-7b). The candidate: a worn **rare or epic** piece that has fallen 5 or more levels behind the fire (3 for an optimiser) can be tempered: its item level rises to the fire, its rolled lines and any visitor rerolls are kept, and it is paid for in scrap and a few Acorns (5% of the scrap price). The price is 10 scrap for each level of gap at item level 10, growing with the level the piece rises to, times 1 for a rare and 2 for an epic. A set-and-forget player tempers its best pieces (epics first, then rares; a piece rerolled at the visitor before one that was not) at a visit, up to 2, an optimiser up to 6; both keep 300 scrap, a week of what their anvils use and one reroll of their best piece (the visitor and the Forge come first), and 140 Acorns, and skip a piece whose price is over 20 crafts' scrap for a rare or 40 for an epic (then a new piece is cheaper). Tempering is done at the visit before the Forge floor comes home, so a piece worth keeping is raised before a crafted replacement can take its slot. A weekly player tempers only on its visit.
 
