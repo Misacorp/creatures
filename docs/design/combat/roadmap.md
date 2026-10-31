@@ -83,6 +83,7 @@ Big simulations come in phase 5 on purpose: week-by-week and Boss Rank numbers m
    - **Slot 8** (Storm Sovereign with Lucky Strike) misses the mixed-server kill target; look at it as Breakwater looked at the Colossus.
    - **Score the raid searches on potential** (they are saturated at 100% kill, so Knack usage on the bosses is near random; panel 6 finding 22) and re-read the dead Knacks there (Night Watch, Primed by Pain).
    - **New valley data:** when the valley sends a new `roster-profile.json` or `server-coverage.json`, copy both into `packages/lab/data/valley/`, update the commit named in `valley.ts`, and rerun `--tune --track`, the path and the report. Its `forms` lists now name held forms; nothing reads them yet.
+   - **The valley's School relies on the talent rules** (valley round 18, Q45, `docs/design/valley/systems/school.md` V-SCH-7 to 9 on the valley branch): a creature first learns a talent from its line's book at the School (paid once), swapping stays free, and visiting teachers add talents to a line's book only if that line's pool of seven holds them. If line pools or "learning costs once, swapping is free" (R20) change, tell the valley session.
    - **The raid calendar** (Misa, to the valley, "eventually"): stage 1 on Saturday, stage 2 on Sunday, the finale Sunday evening. A direction for phase 4, not a change now.
 3. **Later content:** a Mire Setter or Payoff (needs art); the Undercroft's own foes; an opt-in harder boss for the endgame.
 
