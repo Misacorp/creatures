@@ -130,7 +130,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Twin Strike
 
-- **Text:** Hits twice, each for 55%. Each hit can set off a reaction.
+- **Text:** Hits twice, each for 58%. Each hit can set off a reaction.
 - **Family:** Flurry
 - **Forms:** tempestray
 - **Intent (for contributors, never shown to players):** Weaker in a plain fight; answers bosses that cap single hits or dodge a lot. Poor against armour.
@@ -172,10 +172,10 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Night Watch
 
-- **Text:** Each boss turn it {Intercept}s the first {Wind-up} hit on a creature in its row, and takes it with its cover's cut.
+- **Text:** Each boss turn it {Intercept}s the first {Wind-up} hit in its row, taking a quarter of it.
 - **Family:** Intercept
 - **Forms:** thornbuck
-- **Intent (for contributors, never shown to players):** Answers telegraphed big hits (Great Wave, Judgement Bolt). One hit a boss turn, and the hit it takes is cut by its own cover, so it is no longer a liability (panel 4).
+- **Intent (for contributors, never shown to players):** Answers telegraphed big hits (Great Wave, Judgement Bolt). One hit a boss turn, and the hit it takes is cut to a quarter (the most any cut can take), so it is no longer a liability (panel 4; 2026-10-31: the cover cut of 40% left it tied with no Knack outside Great Wave and behind Primed by Pain on it).
 
 ### Sunbeam
 
@@ -263,10 +263,10 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Catch the Bolts
 
-- **Text:** It {Intercept}s area hits too.
+- **Text:** It {Intercept}s area hits too, and takes them with its cover's cut.
 - **Family:** Intercept
 - **Forms:** ohmouse
-- **Intent (for contributors, never shown to players):** Answers sweeps and splashes.
+- **Intent (for contributors, never shown to players):** Answers sweeps and splashes. 2026-10-31: it used to take the whole area hit with no cut, which left it worse than no Knack on Great Wave; the cover cut makes it the pick against sweeps.
 
 ### Lightning Ears
 
@@ -368,17 +368,17 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Wild Swing
 
-- **Text:** Its hit deals 25% less, but it has +20% crit chance and its {Crit}s deal +50% more.
+- **Text:** Its hit deals 25% less, but it has +20 crit chance points and its {Crit}s get +0.5x.
 - **Family:** Luck
 - **Forms:** stormray, tempestray, cindle, pyrelynx, coralynx
 - **Intent (for contributors, never shown to players):** A crit machine: a softer plain hit that crits often, so it stacks with Crit Chance, Crit Damage and a crit species. The wrong pick against a boss that caps a hit (Stone Skin) or one that Blocks small hits, and where a steady hit matters more than swing.
 
 ### Cool Head
 
-- **Text:** {Crit}s on it and on the creatures {Beside} it deal 50% less extra damage.
+- **Text:** {Crit}s on it and on the creatures {Beside} it deal no extra damage.
 - **Family:** Luck
 - **Forms:** thornbuck
-- **Intent (for contributors, never shown to players):** The answer to a boss that crits (Lucky Strike): a Guard that keeps a double hit to a hit and a half for itself and its neighbours. Nothing against a boss that never crits.
+- **Intent (for contributors, never shown to players):** The answer to a boss that crits (Lucky Strike): a Guard that keeps a crit to a plain hit for itself and its neighbours (2026-10-31: at half it was tied with no Knack on every card but Lucky Strike, and barely ahead there). Nothing against a boss that never crits.
 
 ## Combat talents
 
@@ -414,11 +414,11 @@ Generated from `packages/lab/src/talents.ts`. One shared library; each line link
 | Slow Burn | +2.5% on its hits per round from round 2, up to +15%. | setter, payoff | Strong in long raid stages, weak in short fights: a reason to own two of a species. |
 | Finisher | +55% on its hits while the boss is below a third of its HP. | setter, payoff | With the boss HP shared across a raid weekend (R14), the last stage rewards it most. |
 | First Pounce | Its first hit that lands each fight deals +170%. | setter, payoff | Short fights, the dungeon and each raid stage. A hit made while silenced does not use it up. |
-| Steady Rhythm | Every third hit it makes is a crit, and its crits deal 10% more. | setter, payoff | Crits you can plan for (P-04): a rhythm instead of a chance. |
-| Crit Chance | +12% crit chance. | setter, payoff | The same effect as the gear line Crit chance, under its name. A crit doubles a hit, so it is worth about 12% x 100% = +12% damage on average, in swings; it stacks with Wild Swing, a crit species and items, and pairs with Crit Damage. A hitter that Stone Skin caps or Thick Hide Blocks gains less. |
-| Crit Damage | Its {Crit}s deal +100% more. | payoff | The same effect as the gear line Crit damage, under its name. Small alone (it needs crits to boost) and big with Crit Chance or a crit species: the crit build is the pair. Stacks without a cap in the lab; the measures say whether it needs one. |
-| Perfect Timing | After it dodges, it stores a {Crit Charge} (up to 3). Its next hit that lands is a crit that deals +100% more. | setter, payoff | Crits from evasion: a fast creature, a Zigzag or Zoom Setter, a dodge aura beside it. A dodge is rare, so the reward is big (a sure crit, +100% more than the double). Not the Guard-takes-it clause of Momentum: that happens every round, and a sure crit every round is a runaway (first measure, 2026-10-30). Silence stops it storing (R12.2); what it stored stays. |
-| Hold the Line | Each time the hits it {Intercept}s add up to 25% of its max HP, it stores a {Crit Charge} (up to 3). Its next hit that lands is a crit that deals +100% more. | guard | Crits from guarding: a Guard that takes enough damage for others hits back harder. Its own hit is small, so this is a little extra for a Guard that stands in a busy spot, not a reason to pick the Guard. It was a charge for every interception, which fired every round and was the best Guard talent on most cards (first measure, 2026-10-30). |
+| Steady Rhythm | Every third hit that lands is a crit, +0.1x on crits. | setter, payoff | Crits you can plan for (P-04): a rhythm instead of a chance. |
+| Crit Chance | +12 crit chance points. | setter, payoff | The same effect as the gear line Crit chance, under its name. A crit doubles a hit, so it is worth about 12% x 100% = +12% damage on average, in swings; it stacks with Wild Swing, a crit species and items, and pairs with Crit Damage. A hitter that Stone Skin caps or Thick Hide Blocks gains less. |
+| Crit Damage | Its {Crit}s are 3x. | payoff | The same effect as the gear line Crit damage, under its name. Small alone (it needs crits to boost) and big with Crit Chance or a crit species: the crit build is the pair. Stacks without a cap in the lab; the measures say whether it needs one. |
+| Perfect Timing | After it dodges, it stores a {Sure Crit} (up to 3): its next hit that lands is a 3x crit. | setter, payoff | Crits from evasion: a fast creature, a Zigzag or Zoom Setter, a dodge aura beside it. A dodge is rare, so the reward is big (a sure crit, +100% more than the double). Not the Guard-takes-it clause of Momentum: that happens every round, and a sure crit every round is a runaway (first measure, 2026-10-30). Silence stops it storing (R12.2); what it stored stays. |
+| Hold the Line | When hits it {Intercept}s add up to 25% of its max HP, it stores a {Sure Crit} (3x, up to 3). | guard | Crits from guarding: a Guard that takes enough damage for others hits back harder. Its own hit is small, so this is a little extra for a Guard that stands in a busy spot, not a reason to pick the Guard. It was a Sure Crit for every interception, which fired every round and was the best Guard talent on most cards (first measure, 2026-10-30). |
 | Opportunist | Its {Reaction} bonus +120% when it cashes a {Mark} at x2 or more. | payoff | Rewards waiting for a bigger mark (x2 or x3); pairs with Setters that leave x2, and with a second Setter. Was x3 only (2026-10-28): a mark almost never reached x3 when cashed, so the talent did nothing. |
 | Quick Draw | +32% on a {Reaction} on a mark added since the boss's last turn. | payoff | The opposite timing: cash right after the Setter, before Clean Scales sheds the mark. |
 | Owner's Mark | {Reaction}s on a {Mark} it left have a +15% bonus while it stands. | setter | A Setter that makes its own marks worth more, whoever cashes them, while it stands and is not silenced. |

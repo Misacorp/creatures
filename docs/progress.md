@@ -16,7 +16,7 @@ Where the project is against the plan. Agents: read `CLAUDE.md`, then **`docs/ro
 
 ## Now
 
-- **Combat v2 (2026-10-30):** phase 1 of 8 (design in the lab) nearly done; nothing in the live game yet except the wiki's draft sections. Merged #104, #105, #107, #108, #110 and #111: raid bosses and dungeon foes, a fast lab with automatic tuners, Misa's raid targets (a failed boss returns, damage potential), the boss track with a roster seam for the valley branch, the young-server ramp, luck as a build. Next steps and open questions: `docs/design/combat/roadmap.md`, "Where we are".
+- **Combat v2 (2026-10-31):** phase 1 of 8 (design in the lab) is **done**; nothing in the live game yet except the wiki's draft sections. Merged #104 to #114: raid bosses and dungeon foes, a fast lab with automatic tuners, the boss track tuned on the valley's roster with ownability, the young-server ramp, Determination from the second lap, luck as a build, the luck cards and Breakwater, panel 6, the gear plan (draft). The phase 1 gate passed (Misa accepted the casual metric at 1.41). Next: phase 2, the engine port. Next steps and their order: `docs/design/combat/roadmap.md`, "Where we are".
 - Overnight cleanup 2026-10-18/19 (branch `ccr-8ffccd88-e59k13`): audit fixes, test speed, docs; proposals for Misa in the PR.
 - **Production (2026-10-18):** main `f034142` (PR #35). Since `3b61330` (2026-10-15) it also includes:
   - #24: the raid retune: attack patterns, Guards, phase floors and enrage, a raid difficulty curve, the Bait allowance, raid rewards, the journey simulator;

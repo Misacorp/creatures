@@ -1,6 +1,6 @@
 /**
  * Luck is a build (Misa, 2026-10-30): a crit doubles a hit, crit chance and crit damage stack from the species, the Knack and
- * the talents, Crit Charges tie crits to dodging and guarding, and bosses can crit and dodge more. One test per rule, on the
+ * the talents, Sure Crits tie crits to dodging and guarding, and bosses can crit and dodge more. One test per rule, on the
  * smallest board that proves it. "Always crits" is set up with enough Crit Chance talents to pass 100% (the roll caps there).
  */
 import { createSeededRng } from '@creatures/game';
@@ -127,7 +127,7 @@ describe('a crit doubles the hit (R7.1)', () => {
     expect(lucky).toBeLessThan(90);
   });
 
-  it('a silenced creature keeps its species crit stats but loses its talents', () => {
+  it("a silenced creature keeps its species crit stats and its talents' crit lines (R12, panel 6)", () => {
     const hush = {
       id: 's',
       name: 'Hush',
@@ -138,19 +138,19 @@ describe('a crit doubles the hit (R7.1)', () => {
       silenceTurns: 9,
     };
     const long = { ...calm({ rows: 1, cols: 1, rounds: 200 }), moves: [hush] };
-    // Round 1's hit is made before the silence; after it only the species' own 15% remains, not the talents' 12 more.
-    const res = run(
-      long,
-      [at('cindle', 0, 0, 'none', ['crit-chance', 'crit-chance', 'crit-chance'])],
-      'quiet',
-    );
-    const crits = count(res, 'crit');
-    expect(crits).toBeGreaterThan(10);
-    expect(crits).toBeLessThan(60);
+    // Round 1's hit is made before the silence. After it the species' own 15% and the talents' 12 points each stay (three of
+    // them: 51%). (fightRules.test.ts proves the stat lines and the blanked Knack with a scripted RNG.)
+    const talents = ['crit-chance', 'crit-chance', 'crit-chance'];
+    const kept = count(run(long, [at('cindle', 0, 0, 'none', talents)], 'quiet'), 'crit');
+    const bare = count(run(long, [at('cindle', 0, 0, 'none')], 'quiet'), 'crit');
+    expect(kept).toBeGreaterThan(60);
+    expect(kept).toBeLessThan(140);
+    expect(bare).toBeGreaterThan(10);
+    expect(bare).toBeLessThan(60);
   });
 });
 
-describe('Crit Charges (R7.1)', () => {
+describe('Sure Crits (R7.1)', () => {
   /** A boss whose plain attack aims at the front-left creature every round; nobody dodges unless they can. */
   const sniper = (rounds: number, atk = 1): BossDef => {
     const b = labBoss({ rows: 1, cols: 3, rounds, atk });
@@ -170,14 +170,14 @@ describe('Crit Charges (R7.1)', () => {
       plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 100, hits: 25 },
     };
     const res = run(boss, [at('voltaro', 0, 0, 'zigzag', ['perfect-timing'])]);
-    const stored = count(res, 'charge', 'Voltaro stores');
-    const spent = count(res, 'charge', 'Voltaro spends');
+    const stored = count(res, 'sure-crit', 'Voltaro stores');
+    const spent = count(res, 'sure-crit', 'Voltaro spends');
     expect(stored).toBeGreaterThan(3);
     // Every spend is on a hit that landed and was a crit; none can be spent without having been stored.
     expect(spent).toBeGreaterThan(0);
     expect(spent).toBeLessThanOrEqual(stored);
     expect(count(res, 'crit', 'Voltaro')).toBeGreaterThanOrEqual(spent);
-    expect(res.fighters[0]?.critCharges).toBe(stored - spent);
+    expect(res.fighters[0]?.sureCrits).toBe(stored - spent);
     expect(res.fighters[0]?.fires['dodgeCritBp']).toBe(stored);
   });
 
@@ -185,7 +185,7 @@ describe('Crit Charges (R7.1)', () => {
     const team = [at('tidewing', 0, 0, 'none', ['perfect-timing']), at('thornbuck', 0, 1)];
     const res = run(sniper(4), team);
     expect(count(res, 'intercept')).toBe(4);
-    expect(count(res, 'charge')).toBe(0);
+    expect(count(res, 'sure-crit')).toBe(0);
   });
 
   it('a creature stores at most three charges, and a charge is spent only by a hit that lands (R10)', () => {
@@ -199,12 +199,12 @@ describe('Crit Charges (R7.1)', () => {
     };
     const res = run(boss, [at('voltaro', 0, 0, 'zigzag', ['perfect-timing'])], 'cap');
     expect(count(res, 'boss-dodge')).toBeGreaterThan(0);
-    expect(res.fighters[0]?.critCharges).toBeLessThanOrEqual(LAB_RULES.critChargeMax);
-    for (const e of res.events.filter((x) => x.kind === 'charge'))
-      expect(Number(/\((\d)/.exec(e.text)?.[1])).toBeLessThanOrEqual(LAB_RULES.critChargeMax);
+    expect(res.fighters[0]?.sureCrits).toBeLessThanOrEqual(LAB_RULES.sureCritMax);
+    for (const e of res.events.filter((x) => x.kind === 'sure-crit'))
+      expect(Number(/\((\d)/.exec(e.text)?.[1])).toBeLessThanOrEqual(LAB_RULES.sureCritMax);
     // Every charge spent was spent on a hit the boss did not dodge: a spend is followed by a crit of that creature.
     expect(count(res, 'crit', 'Voltaro')).toBeGreaterThanOrEqual(
-      count(res, 'charge', 'Voltaro spends'),
+      count(res, 'sure-crit', 'Voltaro spends'),
     );
   });
 
@@ -221,7 +221,7 @@ describe('Crit Charges (R7.1)', () => {
       at('thornbuck', 0, 1, 'none', talents),
     ];
     const guard = formStats('thornbuck', 25);
-    const per = Math.floor((guard.hp * LAB_RULES.guardChargeShareBp) / 10_000);
+    const per = Math.floor((guard.hp * LAB_RULES.guardSureCritShareBp) / 10_000);
     const taken = (res: FightResult): number =>
       res.events
         .filter((e) => e.kind === 'hit' && e.text.startsWith('Thornbuck takes '))
@@ -232,26 +232,26 @@ describe('Crit Charges (R7.1)', () => {
       expect(count(res, 'intercept')).toBeGreaterThanOrEqual(6);
       // Charges stored are the intercepted damage over the share (the Guard is never knocked out here).
       expect(res.fighters[1]?.hp).toBeGreaterThan(0);
-      const stored = count(res, 'charge', 'Thornbuck stores');
+      const stored = count(res, 'sure-crit', 'Thornbuck stores');
       expect(stored).toBe(Math.floor(taken(res) / per));
       expect(stored).toBeGreaterThan(0);
       expect(stored).toBeLessThan(8);
       // It spends them on crits; without the talent it never stores one.
       expect(count(res, 'crit', 'Thornbuck')).toBeGreaterThanOrEqual(
-        count(res, 'charge', 'Thornbuck spends'),
+        count(res, 'sure-crit', 'Thornbuck spends'),
       );
-      expect(count(run(heavy(8), team([])), 'charge')).toBe(0);
+      expect(count(run(heavy(8), team([])), 'sure-crit')).toBe(0);
     });
 
     it('a hit it takes for itself builds nothing: only intercepted damage counts', () => {
       // The Guard is the front creature: the boss aims at it, nothing is intercepted.
       const alone = [at('thornbuck', 0, 0, 'none', ['hold-the-line'])];
-      expect(count(run(heavy(6), alone), 'charge')).toBe(0);
+      expect(count(run(heavy(6), alone), 'sure-crit')).toBe(0);
     });
 
     it('the guaranteed crit deals the double and its extra damage', () => {
       const res = run(heavy(8), team(['hold-the-line']));
-      const spent = count(res, 'charge', 'Thornbuck spends');
+      const spent = count(res, 'sure-crit', 'Thornbuck spends');
       expect(spent).toBeGreaterThan(0);
       // Its damage is above what the same Guard deals without the talent, which crits only on its base 5% chance.
       const plain = run(heavy(8), team([]));
@@ -264,7 +264,7 @@ describe('Crit Charges (R7.1)', () => {
   it('silence: charges stored before it stay, and a silenced creature neither stores nor spends one (R12.2)', () => {
     // Row 0's boss turn lets the Guard take a heavy hit and store a charge; row 1's boss turn then silences everyone for good.
     const share = Math.floor(
-      (formStats('thornbuck', 25).hp * LAB_RULES.guardChargeShareBp) / 10_000,
+      (formStats('thornbuck', 25).hp * LAB_RULES.guardSureCritShareBp) / 10_000,
     );
     // One hit is worth one and a half shares: one charge, and half a share towards the next.
     const b = labBoss({ rows: 2, cols: 3, rounds: 6, atk: Math.floor(share * 1.5) });
@@ -288,9 +288,9 @@ describe('Crit Charges (R7.1)', () => {
     const team = [at('tidewing', 0, 0), at('thornbuck', 0, 1, 'none', ['hold-the-line'])];
     const res = run(boss, team);
     // Round 1 (before the silence in round 2) stored one; afterwards the Guard is silenced: it no longer intercepts, stores or spends.
-    expect(count(res, 'charge', 'Thornbuck stores')).toBe(1);
-    expect(count(res, 'charge', 'Thornbuck spends')).toBe(0);
-    expect(res.fighters[1]?.critCharges).toBe(1);
+    expect(count(res, 'sure-crit', 'Thornbuck stores')).toBe(1);
+    expect(count(res, 'sure-crit', 'Thornbuck spends')).toBe(0);
+    expect(res.fighters[1]?.sureCrits).toBe(1);
   });
 });
 
@@ -332,9 +332,9 @@ describe('Cool Head and boss crits (R7.1)', () => {
     expect(count(a, 'boss-crit')).toBe(0);
   });
 
-  it('Cool Head: crits on it and on the creatures beside it deal half as much extra', () => {
+  it('Cool Head: crits on it and on the creatures beside it deal no extra damage (2026-10-31: was half)', () => {
     const ward = KNACKS['cool-head']?.fx.critWardBp ?? 0;
-    expect(ward).toBe(5_000);
+    expect(ward).toBe(10_000);
     // Its own crit damage taken: the creature has the Knack itself.
     expect(landed(crits(10_000), [at('kilnmole', 0, 0, 'cool-head')], 'Kilnmole')).toBe(
       critted(110, ward) - armour,
@@ -441,6 +441,83 @@ describe('the luck content', () => {
       for (const w of keywordsIn(KNACKS[id]?.text ?? ''))
         expect(KEYWORDS, `${id} {${w}}`).toHaveProperty(w);
     expect(KEYWORDS).toHaveProperty('Crit');
-    expect(KEYWORDS).toHaveProperty('Crit Charge');
+    expect(KEYWORDS).toHaveProperty('Sure Crit');
+  });
+});
+
+describe('the luck texts (panel 6)', () => {
+  const texts = (): string[] =>
+    [...Object.values(KNACKS), ...Object.values(TALENTS)].map((d) => d.text);
+
+  it('say Sure Crit, not Crit Charge, and never use "charge" for it', () => {
+    for (const text of texts()) expect(text).not.toMatch(/crit charge/i);
+    expect(Object.keys(KEYWORDS)).toContain('Sure Crit');
+    expect(Object.keys(KEYWORDS)).not.toContain('Crit Charge');
+    expect(TALENTS['perfect-timing']?.text).toContain('{Sure Crit}');
+    expect(TALENTS['hold-the-line']?.text).toContain('{Sure Crit}');
+  });
+
+  it('write crit damage as a multiplier and crit chance in points, with the numbers the effects have', () => {
+    const x = (bp: number) => `${bp / 10_000}x`;
+    const crit = (extra: number) => x(LAB_RULES.critBp + extra);
+    expect(TALENTS['crit-damage']?.text).toContain(crit(bp('crit-damage', 'critDamageBp')));
+    expect(TALENTS['steady-rhythm']?.text).toContain(
+      `+${x(bp('steady-rhythm', 'critDamageBp'))} on crits`,
+    );
+    const swing = KNACKS['wild-swing']?.fx;
+    expect(KNACKS['wild-swing']?.text).toContain(
+      `+${(swing?.critChanceBp ?? 0) / 100} crit chance points`,
+    );
+    expect(KNACKS['wild-swing']?.text).toContain(`+${x(swing?.critDamageBp ?? 0)}`);
+    expect(TALENTS['crit-chance']?.text).toContain(
+      `+${bp('crit-chance', 'critChanceBp') / 100} crit chance points`,
+    );
+    // The Sure Crit talents name the crit they give: the double and the effect's extra.
+    expect(TALENTS['perfect-timing']?.text).toContain(crit(bp('perfect-timing', 'dodgeCritBp')));
+    expect(TALENTS['hold-the-line']?.text).toContain(crit(bp('hold-the-line', 'guardCritBp')));
+    for (const text of texts())
+      expect(text).not.toMatch(/crit[^.]*\+\d+% more|crits? deal \+?\d+%/i);
+  });
+
+  it('fit the two-line budget of the lab report (95 characters)', () => {
+    for (const id of ['hold-the-line', 'perfect-timing', 'steady-rhythm', 'crit-damage'])
+      expect((TALENTS[id]?.text ?? '').replace(/[{}]/g, '').length, id).toBeLessThanOrEqual(95);
+    expect((KNACKS['wild-swing']?.text ?? '').replace(/[{}]/g, '').length).toBeLessThanOrEqual(95);
+  });
+});
+
+describe('Breakwater: a boss whose waves break on wards', () => {
+  const sweep = (wardBp?: number): BossDef => {
+    const b = labBoss({ rows: 1, cols: 3, rounds: 1 });
+    return {
+      ...b,
+      spd: 0,
+      plain: { pattern: { anchor: 'front', shape: 'row' }, powerBp: 10_000 },
+      ...(wardBp === undefined ? {} : { mods: { ...b.mods, wardBp } }),
+    };
+  };
+  /** Tidewing in front, Kilnmole behind it with `knack`: what the sweep does to the Tidewing. */
+  const taken = (wardBp: number | undefined, knack: string): number | undefined =>
+    landed(sweep(wardBp), [at('tidewing', 0, 0), at('kilnmole', 0, 2, knack)], 'Tidewing');
+
+  it('cuts more of its sweeps for a Row Ward, and nothing more for a party without one', () => {
+    const none = taken(undefined, 'none');
+    const ward = taken(undefined, 'keep-the-heat-in');
+    const triple = taken(30_000, 'keep-the-heat-in');
+    expect(none).toBeDefined();
+    expect(ward).toBeLessThan(none as number);
+    expect(triple).toBeLessThan(ward as number);
+    // No ward in the row: the multiplier changes nothing. A multiplier of 1 changes nothing either.
+    expect(taken(30_000, 'none')).toBe(none);
+    expect(taken(10_000, 'keep-the-heat-in')).toBe(ward);
+  });
+
+  it('never cuts more than 75% of a hit, however large the multiplier', () => {
+    const huge = taken(1_000_000, 'keep-the-heat-in');
+    expect(taken(100_000, 'keep-the-heat-in')).toBe(huge);
+    // Armour comes off after the cuts: a quarter of the raw hit is left, whatever the multiplier.
+    const armour = formStats('tidewing', 25).armour;
+    const raw = (taken(undefined, 'none') as number) + armour;
+    expect(huge).toBe(Math.floor(raw / 4) - armour);
   });
 });

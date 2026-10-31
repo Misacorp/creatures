@@ -126,10 +126,11 @@ Crits are something a creature is built for. The rules are R7.1; the names, one 
 | Crit damage            | gear line, talent **Crit Damage**         | Crits deal +100% more on top of the double (talent, Payoffs); the line adds points.                                  |
 | Crit machines          | species stat (Cindle, Pyrelynx, Coralynx) | +10 points of chance and +50 points of damage, Attack x0.86 (about the same average hit, far more swing).            |
 | Wild Swing             | Knack (family Luck)                       | Its hit deals 25% less, +20% crit chance, crits +50% more.                                                           |
-| Perfect Timing         | talent (hitters)                          | A dodge stores a Crit Charge; the next hit that lands is a crit, +100% more.                                         |
-| Hold the Line          | talent (Guards)                           | Hits it takes for others worth 25% of its Max HP store a Crit Charge, +100% more on the crit.                        |
+| Perfect Timing         | talent (hitters)                          | A dodge stores a Sure Crit; the next hit that lands (and is not already a crit) is a 3x crit.                        |
+| Hold the Line          | talent (Guards)                           | Hits it takes for others worth 25% of its Max HP store a Sure Crit (3x).                                             |
 | Cool Head              | Knack (family Luck, Guards)               | Boss crits on it and on the creatures beside it deal half the extra damage.                                          |
 | Lucky Strike, Slippery | rule cards                                | A crit chance for the boss (a crit doubles its hit, before cuts and armour); a flat dodge that Mired does not lower. |
+| Breakwater             | rule card                                 | A Row Ward or beside-cut aura cuts 2.4 to 3 times as much of its area and Wind-up hits (at most 75% of a hit).       |
 
 Perfect Timing first also stored a charge when a Guard took a hit aimed at the creature (like Momentum); that fires every round and was a runaway (+19% on payoffs, best on most cards), so it is dodge only. Hold the Line first stored one per interception, the same mistake. Crit Chance and Crit Damage are placed in the pools of the crit lines (Cindle, Coralynx, Stormray for chance; Cindle and Coralynx for damage), Perfect Timing in Stormray's and Zipmouse's, Hold the Line in Sproutle's and Ashmole's.
 
@@ -146,7 +147,7 @@ Misa asked (2026-10-28) whether protection needs a cap. An **intercepted** hit n
 
 ## How this shapes a roster
 
-A creature carries the talents it found (its own Talent Book, R20) and swapping the slotted one costs a little Bait. So a player who wants both an Edge-walker Cindle and a Shoulder to Shoulder Cindle keeps two Cindles: the incentive to own more than the top three that P-11 asks for. In the raid, neighbour and position talents give players a reason to talk about placement and use swap requests (R19).
+Every talent found on a line goes into that line's Talent Book (R20; Misa, 2026-10-28): a creature learns a talent from the book for Bait once, then swaps among the ones it has learned for free until the raid locks. A creature still fills only its own slots, so a player who wants an Edge-walker Cindle and a Shoulder to Shoulder Cindle in the same raid keeps two Cindles: the incentive to own more than the top three that P-11 asks for. In the raid, neighbour and position talents give players a reason to talk about placement and use swap requests (R19).
 
 ## Misa's answers (2026-10-28)
 

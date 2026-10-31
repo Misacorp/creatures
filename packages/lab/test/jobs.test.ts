@@ -7,6 +7,7 @@ import { FOE_QUESTIONS } from '../src/foeQuestions';
 import { inProcessExecutor } from '../src/jobRunners';
 import { runJobs, timingLines, validateJobs, type Executor, type JobSpec } from '../src/jobs';
 import { planReport } from '../src/report';
+import { CASUAL_CARDS, CASUAL_ROSTERS, TEAM_SHARE_ROSTERS } from '../src/teams';
 
 const job = (id: string, needs: string[] = [], section = 'S'): JobSpec => ({
   id,
@@ -160,6 +161,16 @@ describe('the report plans', () => {
     expect(
       team?.needs.every((n) => n.startsWith('report:best:') || n.startsWith('report:casual:')),
     ).toBe(true);
+  });
+
+  it('the full report draws every casual roster, and the team share reads only the first few', () => {
+    const jobs = planReport({ quick: false }).jobs;
+    const casual = jobs.filter((j) => j.kind === 'report-casual');
+    expect(casual).toHaveLength(CASUAL_ROSTERS * CASUAL_CARDS.length);
+    const team = jobs.find((j) => j.id === 'talent:team');
+    const read = (team?.needs ?? []).filter((n) => n.startsWith('report:casual:'));
+    expect(read).toHaveLength(TEAM_SHARE_ROSTERS * CASUAL_CARDS.length);
+    expect(read.every((n) => Number(n.split(':')[2]) < TEAM_SHARE_ROSTERS)).toBe(true);
   });
 
   it('a job result survives being posted to a worker (plain data only)', async () => {

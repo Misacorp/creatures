@@ -20,10 +20,10 @@ export const LAB_RULES = {
   critBp: 20_000,
   /** A heal that crits is 1.5 times: a heal is not a hit, so the doubling rule does not apply, and no crit talent raises it. */
   healCritBp: 15_000,
-  /** A creature stores at most this many Crit Charges (the Store limit, R10); each is spent on one hit. */
-  critChargeMax: 3,
-  /** Hold the Line: a Guard stores a Crit Charge each time the hits it takes for other creatures add up to this share of its Max HP. */
-  guardChargeShareBp: 2_500,
+  /** A creature stores at most this many Sure Crits (the Store limit, R10); each is spent on one hit. */
+  sureCritMax: 3,
+  /** Hold the Line: a Guard stores a Sure Crit each time the hits it takes for other creatures add up to this share of its Max HP. */
+  guardSureCritShareBp: 2_500,
   /** A Guard covers area hits on creatures in its reach (4.3, kept). Cover with every bonus is one cut among the others (`cutMaxBp`). */
   coverBp: 4_000,
   /** Every cut one hit gets (auras, cover, Long Shadow's intercept cut, Front-liner, Brace, ...) multiplies together; the total cut never passes this, and it comes off before armour (panel 3). */

@@ -4,9 +4,52 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: Breakwater joins Tidal Colossus from its second lap, beside Slippery **[Misa]**
+
+ID: `2026-10-31-breakwater-joins-tidal-colossus-from-its` · Status: current · Amends: `2026-10-31-mixed-servers-are-tuned-too-determination`
+
+**Decision (Misa, 2026-10-31; the card is the lead's, from an overnight lab experiment).** Tidal Colossus gets a second new card from its second lap (slot 6, then 11 and on), beside Slippery: **Breakwater**. Its waves break on wards: Row Ward cuts (Keep the Heat In, Living Shelter) count about 2.4 to 3 times as much against its sweeps, by the card's strength. A mixed server's prepared players field the Row Ward answer, and a ward covers its whole row whoever owns it, so they shelter the casual players beside them.
+
+**Reasoning.** Mixed servers could not beat the Colossus's later laps: at any HP where they won sometimes, the unprepared party of four won every week. The experiment measured four fixes. A Guard in a column cutting the waves failed: the unprepared party has a Guard in every column and gained more than the mixed server. Bigger single hits and taking Slippery off did not move the mixed server at all. Breakwater met every target at both slots (mixed kill 36% and 23% a weekend, the unprepared party at 80% to 84% with no kill), because the unprepared party has no ward and gains nothing. Misa: "A sounds good." "One new card per boss" was the lead's rule, not Misa's, and gives way here.
+
+## 2026-10-31: Lucky Strike goes on the Storm Sovereign and Slippery on the Tidal Colossus, from their second lap
+
+ID: `2026-10-31-lucky-strike-goes-on-the-storm` · Status: current · Amends: `2026-10-31-lucky-strike-and-slippery-both-go`
+
+**Decision.** Each luck card arrives as the **new card of a boss's second lap**, on one boss, from that boss's slot 6 to 10 and on its later laps, at the slot's card strength (`SLOT_EXTRA_CARDS` in `track.ts`, `docs/design/combat/boss-track.md`): **Slippery on the Tidal Colossus** (slots 6, 11, 16, ...; Clear Skies answers) and **Lucky Strike on the Storm Sovereign** (slots 8, 13, 18, ...; Cool Head answers). The first lap has no extra card. No new written answer: the first answers cope once the slots are retuned. The tuner's proposal for the four slots is not applied here (the lead applies the table).
+
+**Reasoning.** Measured in the lab at the committed numbers and with the track tuner (`--tune --track`, expected roster speed; the dedicated server's roster at each slot's arrival week):
+
+- **Ownable.** Cool Head is on Thornbuck (a common line): 100% at every slot. Clear Skies is on Halcyray (the Stormray line, rare): 100% on mixed servers of 5, 8 and 15 from week 3; the lines of slots 6 to 15 arrive in weeks 7 to 18. (Aurorix, epic, would be 33% to 67% on a server of 8, so it is not the answer used.)
+- **The first answer copes after the retune.** At the committed numbers the card lowers the prepared potential (Colossus slot 6: 132% to 111% with Slippery; Sovereign slot 8: 155% to 128% with Lucky Strike). The tuner then finds numbers that meet every target at both laps: slot 6 14_500 HP, 119 Attack, 27 armour (prepared 130%, tool 46 points, classic 82%); slot 8 7_800, 88, 8 (142%, 37 points, 72%); slot 11 15_600, 113, 40 (128%, 38 points, 84%); slot 13 10_200, 64, 8 (184%, 38 points, 77%). No miss. Slots 5 and 15 (Thornmother) miss their tool target by a rounding step; they were not touched.
+- **The other placements were worse.** Slippery on the Cinder Wyrm: the tuner cannot meet slot 7 (classic potential 70% at the edge) or slot 12 (tool 33 points against 35, HP and armour at their limits). Lucky Strike on the Wyrm: tool 22 points against 27 at slot 7. Slippery on the Sovereign: tool 29 against 30 at slot 8, kill 83%. Either card on Old Bogback cuts the prepared kill from 98% to 42% to 60% (slots 9 and 14). Thornmother is the wall and already sits at 195% to 260% prepared, so a card there would only be noise.
+- **The theme fits.** The Sovereign's lightning "strikes"; the Colossus is a body of slick sea water that slips away.
+- **The answers are worth points, modestly.** In a team search at the slot (tool required, two copies of a form at most) Cool Head is worth about 9 points of potential at slot 8 and 4 to 6 at slot 13, and Clear Skies 0 to 3 at slot 6 and 8 at slot 11. These are well under the first answer's tool (30 to 45 points), so the card adds a choice, not a second must. Lines built on the card's Knack did not beat the first answers at slot 8 (121% against 146%) or slot 6 (120% against 130%), and at the later laps they only edge past them (slot 13: 201% against 180%; slot 11: 140% against 129%, a line that needs a rare), so no `BOSS_ANSWERS` entry was added; reaction lines (marks are never dodged) already beat Slippery without Clear Skies. Cool Head gives Thornbuck, whose Night Watch and Primed by Pain do little on the bosses, a job.
+
+## 2026-10-31: Lucky Strike and Slippery both go on raid bosses **[Misa]**
+
+ID: `2026-10-31-lucky-strike-and-slippery-both-go` · Status: current, amended by `2026-10-31-lucky-strike-goes-on-the-storm`
+
+**Decision (Misa, 2026-10-31).** Both luck cards go on raid bosses: **Lucky Strike** (the boss's hits can crit; Cool Head answers it) and **Slippery** (the boss dodges more; Clear Skies answers it). They bring randomness on purpose. Which bosses carry them, and from which lap, is the lead's call, measured in the lab (each must keep its answer ownable and worth its tool, like every card).
+
+**Reasoning.** Misa: "Both are included to introduce randomness. If players know bosses can dodge, they'll understand that a payoff's reaction was also dodged." Panel 6 had suggested Lucky Strike only, because only one Knack gets past Slippery's dodge; Misa reads a dodge the boss card announces as fair, not as a hidden rule.
+
+## 2026-10-31: Mixed servers are tuned too; Determination on from the second lap, capped at +25%; a track strip, and no boss is called a wall **[Misa]**
+
+ID: `2026-10-31-mixed-servers-are-tuned-too-determination` · Status: current, amended by `2026-10-31-breakwater-joins-tidal-colossus-from-its` · Amends: `2026-10-30-raids-are-tuned-on-damage-potential`, `2026-10-30-thornmother-is-a-deliberate-wall-at`
+
+**Decision (Misa, answering design panel 6, `docs/design/combat/reviews/2026-10-31-panel-6.md`).**
+
+- **Mixed servers are tuned too, where possible.** A mixed server (the usual server: a few engaged players and several casual ones) should need at most 3 weekends a boss at the expected roster speed. The track tuner holds it as a target on every slot, weighted below the dedicated targets; where both cannot hold, the dedicated targets win and the miss is reported. The tutorial (slot 1) asks more: a mixed server kills it in its first weekend in 80% of weekends.
+- **Determination is on from the second lap** (slot 6 onward): +5% damage and healing per failed weekend on the same boss, at most +25% (5 stacks), kept over a Festival, cleared by a kill. Off on the first lap. The track tuner still never uses it, so the bosses' numbers do not rely on it.
+- **A track strip on the raid screen:** the lap's five boss portraits, the current one lit, the beaten ones ticked. Never on the fight screen.
+- **No boss is called a wall, anywhere a player looks.** Thornmother keeps her place at the end of the first lap and her tuning (the `SLOT_WALL` flag stays a tuning term in the lab), but no text, hint, strip or card marks her or any boss as a wall or warns of one.
+
+**Reasoning.** Panel 6 measured that 88% of mixed servers spent more than 4 weekends on one boss at the expected speed, even on the card-less tutorial, because the numbers were fitted to four dedicated players only. With Determination on, slow dedicated servers stuck over 4 weekends fell from 15% to 0% and mixed ones from 88% to 48%; at its old +50% it would make the puzzle optional, so the cap is +25%, and the first lap stays clean. Misa on the wall: "They're just bosses. If players actually hit walls by design or accident, so be it. Let's not call them that. It robs players the experience of finding out. They know the boss's rules up front and can deduce from there."
+
 ## 2026-10-30: Thornmother is a deliberate wall at the end of the first lap **[Misa]**
 
-ID: `2026-10-30-thornmother-is-a-deliberate-wall-at` · Status: current · Amends: `2026-10-30-raids-are-tuned-on-damage-potential`
+ID: `2026-10-30-thornmother-is-a-deliberate-wall-at` · Status: current, amended by `2026-10-31-mixed-servers-are-tuned-too-determination` · Amends: `2026-10-30-raids-are-tuned-on-damage-potential`
 
 **Decision (Misa; placement and targets by the lead).** Thornmother's bark (heavy armour that cracks as she loses HP) makes a team with an answer far stronger against her than one without, and that is wanted: placed right on the boss track, she is a wall that makes a server rethink its raid roster. She moves to the end of the track's first lap (slot 5, about week 5, after four other bosses), and her slot is marked as a **wall** in the track data: a prepared team with her answer still reaches 125% potential or more, while a team without it may fall well below the usual 70% to 90% (target 30% to 60%, no kill). Her later laps are tuned as normal slots, since a server that passed the wall has learned the answer.
 
@@ -14,7 +57,7 @@ ID: `2026-10-30-thornmother-is-a-deliberate-wall-at` · Status: current · Amend
 
 ## 2026-10-30: Raids are tuned on damage potential; young servers ramp in; Determination built but off **[Misa]**
 
-ID: `2026-10-30-raids-are-tuned-on-damage-potential` · Status: current, amended by `2026-10-30-thornmother-is-a-deliberate-wall-at` · Amends: `2026-10-30-a-failed-raid-boss-returns-next`, `2026-10-30-how-the-boss-track-is-tuned`
+ID: `2026-10-30-raids-are-tuned-on-damage-potential` · Status: current, amended by `2026-10-30-thornmother-is-a-deliberate-wall-at`, `2026-10-31-mixed-servers-are-tuned-too-determination` · Amends: `2026-10-30-a-failed-raid-boss-returns-next`, `2026-10-30-how-the-boss-track-is-tuned`
 
 **Decision (Misa).**
 
