@@ -30,6 +30,8 @@ Art Misa requests is kept until the content that uses it exists. **The catalogue
 - **Worn sprites.** Creatures wear their gear: each item look maps to a small worn shape class (`LOOK_CLASS` in `src/sprites/data/worn-sprites.ts`), drawn in the same neutral `t`/`u`/`h` greys plus `x`/`y`/`z` trim keys, and `wearing()` (`src/sprites/wearing.ts`) places it from the creature's own pixels without touching the face. A new item look needs a row in `LOOK_CLASS` (a test fails without one); a new species needs nothing. See it in the workbench entry `CreatureHead` (gallery switch). Decision of 2026-10-31 in `decisions/ui.md`.
 - **`pnpm art items [--slot hat|scarf|charm]`** draws every shipped gear item as the game does (its look, in its tint), labelled by name, and a card per look with each item that wears it in its own tint. Every item with its own name has its own look; element versions with the same stats share one (`itemLookId`, decision of 2026-10-30 in `decisions/gear.md`). Item sprites are in `src/sprites/data/item-*-sprites.ts`, drawn in the neutral greys the tint swaps.
 
+- **A set's `backdrop`** (a ground tile, with its own colours per alternative palette, such as a night tile for the `night` alt) is repeated behind each sprite in the set sheet and in an extra row of each card, so art that will stand on the valley's or the map's tiles is judged on them, not on the dark panels.
+
 `pnpm art <set> --only id,id` draws a few; `--out <dir>` writes somewhere else (your scratchpad).
 
 ## What was hard, and the rule it became

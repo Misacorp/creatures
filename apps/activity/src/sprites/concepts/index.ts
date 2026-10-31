@@ -49,6 +49,11 @@ export interface ConceptSet {
   /** What the content needs to use this art, Misa's feedback, open ideas. One line each. */
   notes?: readonly string[];
   sprites: Readonly<Record<string, Concept>>;
+  /**
+   * The ground the set's art stands on (a valley or map tile, repeated behind each sprite in its sheet and
+   * cards), and its colours for each alternative palette by name (a night tile for the `night` alt).
+   */
+  backdrop?: { tile: SpriteDef; alts?: Readonly<Record<string, Readonly<Record<string, string>>>> };
 }
 
 export const CONCEPT_SETS: readonly ConceptSet[] = [

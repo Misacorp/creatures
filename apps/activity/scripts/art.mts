@@ -95,6 +95,26 @@ class Canvas {
       }
     }
   }
+  /** `def` repeated as a tile over the rectangle (clipped to it), at `scale`. */
+  tiled(def: SpriteDef, x: number, y: number, w: number, h: number, scale: number): void {
+    const rows = expandRows(def);
+    const tw = (rows[0]?.length ?? 1) * scale;
+    const th = rows.length * scale;
+    for (let ty = y; ty < y + h; ty += th) {
+      for (let tx = x; tx < x + w; tx += tw) {
+        for (const [j, row] of rows.entries()) {
+          for (const [i, ch] of [...row].entries()) {
+            const colour = def.palette[ch];
+            if (ch === '.' || colour === undefined) continue;
+            const px = tx + i * scale;
+            const py = ty + j * scale;
+            if (px >= x + w || py >= y + h) continue;
+            this.rect(px, py, Math.min(scale, x + w - px), Math.min(scale, y + h - py), colour);
+          }
+        }
+      }
+    }
+  }
   /** Text in the 5x7 font at `scale`; returns the width drawn. */
   text(s: string, x: number, y: number, scale: number, colour: string): number {
     let cx = x;
@@ -133,8 +153,19 @@ function sizeOf(def: SpriteDef): { width: number; height: number } {
   return { width: rows[0]?.length ?? 0, height: rows.length };
 }
 
+type Backdrop = ConceptSet['backdrop'];
+
+/** The backdrop tile in the colours of alternative `alt` (its own, or the main ones). */
+function backdropFor(backdrop: Backdrop, alt?: string): SpriteDef | undefined {
+  if (backdrop === undefined) return undefined;
+  const overrides = alt === undefined ? undefined : backdrop.alts?.[alt];
+  return overrides === undefined
+    ? backdrop.tile
+    : { ...backdrop.tile, palette: { ...backdrop.tile.palette, ...overrides } };
+}
+
 /** The close-up card of one sprite. */
-function drawCard(id: string, concept: Concept, file: string): void {
+function drawCard(id: string, concept: Concept, file: string, backdrop?: Backdrop): void {
   const def = concept.sprite;
   const { width, height } = sizeOf(def);
   const zoom = Math.max(8, Math.floor(320 / Math.max(width, height)));
@@ -158,7 +189,7 @@ function drawCard(id: string, concept: Concept, file: string): void {
   );
   const right = Math.max(smallW, (alts.length + 1) * colW);
   const W = 24 + axis + zoomW + 32 + right + 24;
-  const panelsH = PANELS.length * (height * 4 + 16);
+  const panelsH = (PANELS.length + (backdrop === undefined ? 0 : 1)) * (height * 4 + 16);
   const H = Math.max(24 + 30 + axis + zoomH, 24 + 30 + panelsH + height * 4 + 60) + 24;
   const c = new Canvas(W, H, NIGHT);
   c.text(id, 24, 18, 3, TEXT);
@@ -210,6 +241,17 @@ function drawCard(id: string, concept: Concept, file: string): void {
     }
     y += height * 4 + 16;
   }
+  // On its ground (the set's backdrop tile), the way it will stand in the valley or on the map.
+  const ground = backdropFor(backdrop);
+  if (ground !== undefined) {
+    c.tiled(ground, rx - 8, y - 8, right + 8, height * 4 + 16, 1);
+    let x = rx;
+    for (const scale of [1, 2, 3, 4]) {
+      c.sprite(def, x, y + (height * 4 - height * scale), scale);
+      x += width * scale + 12;
+    }
+    y += height * 4 + 16;
+  }
   y += 16;
   c.text('silhouette', rx, y, 2, MUTED);
   let ax = rx;
@@ -219,6 +261,13 @@ function drawCard(id: string, concept: Concept, file: string): void {
   for (const [name, alt] of alts) {
     ax += colW;
     c.text(name, ax, y, 2, MUTED);
+    // A palette alternative stands on the backdrop in its own colours (a night tile for `night`).
+    const altGround = backdropFor(
+      backdrop,
+      Object.hasOwn(concept.alts ?? {}, name) ? name : undefined,
+    );
+    if (altGround !== undefined)
+      c.tiled(altGround, ax - 4, y + 18, width * 4 + 8, height * 4 + 8, 2);
     c.sprite(alt, ax, y + 22, 4);
   }
   c.save(file);
@@ -260,8 +309,10 @@ function drawSet(set: ConceptSet, ids: string[], file: string, library = false):
     text: string,
     ground: string,
     ink: string,
+    backdrop?: SpriteDef,
   ): void => {
     c.rect(x, y, col - 12, maxH + 40, ground);
+    if (backdrop !== undefined) c.tiled(backdrop, x + 4, y + 4, col - 20, maxH + 8, 2);
     c.sprite(def, x + 12, y + 8, scale);
     // Cut the label to the tile, so a long role or palette name never runs into the next one.
     c.text(text.slice(0, Math.floor((col - 24) / 12)), x + 12, y + maxH + 18, 2, ink);
@@ -273,7 +324,15 @@ function drawSet(set: ConceptSet, ids: string[], file: string, library = false):
       if (overrides === undefined) continue;
       const def = { ...concept.sprite, palette: { ...concept.sprite.palette, ...overrides } };
       const text = alt === undefined ? (concept.role ?? ids[n] ?? '') : alt;
-      tile(def, 24 + n * col, y, text, DUSK, alt === undefined ? TEXT : MUTED);
+      tile(
+        def,
+        24 + n * col,
+        y,
+        text,
+        DUSK,
+        alt === undefined ? TEXT : MUTED,
+        backdropFor(set.backdrop, alt),
+      );
     }
     y += rowH;
   }
@@ -593,7 +652,7 @@ for (const id of ids) {
     }
   }
   if (findings.some((f) => f.rule === 'grid')) continue;
-  drawCard(id, concept, join(out, `${id}.png`));
+  drawCard(id, concept, join(out, `${id}.png`), set.backdrop);
 }
 drawSet(set, ids, join(out, `${set.id}.png`));
 console.log(`wrote ${out}`);
