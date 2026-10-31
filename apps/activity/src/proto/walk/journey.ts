@@ -49,6 +49,8 @@ export type JourneyEvent =
   | { kind: 'visitor-arrives' }
   | { kind: 'visitor-blueprint'; isNew: boolean; acorns: number; shards: number }
   | { kind: 'visitor-reroll'; rarity: string; itemLevel: number; acorns: number; scrap: number }
+  | { kind: 'school-learning'; slot: number; acorns: number }
+  | { kind: 'school-teacher'; acorns: number }
   | { kind: 'plain'; text: string };
 
 const isStep = (text: string): text is MasteryStep =>
@@ -116,6 +118,20 @@ export function parseEvent(text: string): JourneyEvent {
       acorns: Number.parseInt(reroll[3], 10),
       scrap: Number.parseInt(reroll[4], 10),
     };
+  }
+
+  const learning = /^school: a creature began learning its talent (\d+) \((\d+) Acorns, \d+ hours\)$/.exec(text);
+  if (learning?.[1] !== undefined && learning[2] !== undefined) {
+    return {
+      kind: 'school-learning',
+      slot: Number.parseInt(learning[1], 10),
+      acorns: Number.parseInt(learning[2], 10),
+    };
+  }
+
+  const teacher = /^school: a visiting teacher's lesson for a creature \((\d+) Acorns\)$/.exec(text);
+  if (teacher?.[1] !== undefined) {
+    return { kind: 'school-teacher', acorns: Number.parseInt(teacher[1], 10) };
   }
 
   return { kind: 'plain', text };
