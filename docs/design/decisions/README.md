@@ -132,6 +132,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-10-31 Combat v2 content as data: a separate game entry, the resolver beside the engine, cards as operations
 - 2026-10-31 Talent share: three raid-heavy talents cut, the raid share measured on 40 seeds
 - 2026-10-31 Combat v2 engine port: v2 beside v1, whole inputs, parity by a result digest
 - 2026-10-31 Phase 1 passes with the casual metric at 1.41; 1.5 stays a target for the balance phase \[Misa\]

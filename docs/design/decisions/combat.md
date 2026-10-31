@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: Combat v2 content as data: a separate game entry, the resolver beside the engine, cards as operations
+
+ID: `2026-10-31-combat-v2-content-as-data-a` · Status: current
+
+**Decision.** Phase 3 follows `docs/design/combat/content-as-data.md`. The combat v2 content (rules numbers, Knacks, per-form armour, own Knacks and stat changes, talents and line pools, rule cards, raid bosses, dungeon foes, keywords, the boss track) becomes JSON files in `packages/game/src/combat-v2/data/`, checked by valibot schemas and cross-reference checks at load, behind a separate entry point `@creatures/game/combat-v2`. The code that turns content into an engine input (`formStats`, the fighter resolver, card application, the boss and foe builders) goes to `packages/engine/src/v2/resolve/`, taking the content pack as an argument. A rule card becomes a list of operations (`add`, `set`, `raise`, `flag`, `mod`, `cap`, `move`, `plain`), scaled by strength; applying any card sets the boss's strength to the card's. The engine's types stay the source of the rules' shapes, and a type test checks the game's schemas against them both ways. Ids, names and numbers move unchanged, and the lab's parity digest holds through every slice. Intent text (`intent`, `asks`) stays next to its entry in the data and is never shown to players.
+
+**Reasoning.** The roadmap put the resolver in the game, but the engine already depends on the game, and the resolver needs the engine's effect merge; next to the engine, taking the content as an argument, it stays pure and testable with tiny packs, and the worker can use it in phase 4. A separate entry keeps the v2 files out of the shipped worker until phase 4. Cards as operations make a card a data edit and let the content tests read what each card does. Keeping the engine's types as the source (instead of deriving them from the schemas) leaves the rules where phase 2 put them, and the type test catches a field added on one side only. Intent beside the entry keeps one place to edit, and the lab report prints it.
+
 ## 2026-10-31: Talent share: three raid-heavy talents cut, the raid share measured on 40 seeds
 
 ID: `2026-10-31-talent-share-four-raid-heavy-talents` · Status: current
