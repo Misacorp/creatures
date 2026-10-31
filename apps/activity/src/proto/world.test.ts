@@ -216,22 +216,45 @@ describe('the tour', () => {
 
 describe('the route', () => {
   it('reads the chooser, a prototype and its step', () => {
-    expect(parseRoute('')).toEqual({ proto: null, step: 1, bare: false });
-    expect(parseRoute('#valley')).toEqual({ proto: 'valley', step: 1, bare: false });
-    expect(parseRoute('#party?step=4&bare=1')).toEqual({ proto: 'party', step: 4, bare: true });
+    expect(parseRoute('')).toEqual({ proto: null, step: 1, bare: false, visit: 1, replay: 0 });
+    expect(parseRoute('#valley')).toEqual({
+      proto: 'valley',
+      step: 1,
+      bare: false,
+      visit: 1,
+      replay: 0,
+    });
+    expect(parseRoute('#party?step=4&bare=1')).toEqual({
+      proto: 'party',
+      step: 4,
+      bare: true,
+      visit: 1,
+      replay: 0,
+    });
     expect(parseRoute('#party?step=abc').step).toBe(1);
     expect(parseRoute('#party?step=40').step).toBe(LAST_STEP);
     expect(parseRoute('#<script>').proto).toBeNull();
   });
 
   it('writes the hash it reads', () => {
-    expect(routeHash({ proto: 'valley', step: 3, bare: false })).toBe('#valley?step=3');
-    expect(routeHash({ proto: null, step: 1, bare: false })).toBe('');
-    expect(parseRoute(routeHash({ proto: 'party', step: 5, bare: true }))).toEqual({
+    const base = { visit: 1, replay: 0 };
+    expect(routeHash({ ...base, proto: 'valley', step: 3, bare: false })).toBe('#valley?step=3');
+    expect(routeHash({ ...base, proto: null, step: 1, bare: false })).toBe('');
+    expect(parseRoute(routeHash({ ...base, proto: 'party', step: 5, bare: true }))).toEqual({
+      ...base,
       proto: 'party',
       step: 5,
       bare: true,
     });
+  });
+
+  it('reads the visit to replay and the replay count (the return walk)', () => {
+    const route = parseRoute('#walk?step=2&visit=3&n=2&bare=1');
+    expect(route).toEqual({ proto: 'walk', step: 2, bare: true, visit: 3, replay: 2 });
+    expect(parseRoute(routeHash(route))).toEqual(route);
+    expect(parseRoute('#walk?visit=0').visit).toBe(1);
+    expect(parseRoute('#walk?visit=abc').visit).toBe(1);
+    expect(parseRoute('#walk?n=-4').replay).toBe(0);
   });
 });
 

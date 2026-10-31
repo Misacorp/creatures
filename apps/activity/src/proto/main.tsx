@@ -5,6 +5,7 @@ import { Proto } from './Proto';
 // Each prototype registers itself when its module loads (`registerProto`); replace only your own folder.
 import './valley';
 import './party';
+import './walk';
 
 /** A string only the prototype page contains: the production build test searches the output for it. */
 const PROTOTYPE_MARKER = 'PROTOTYPE_MARKER_3e8a';
