@@ -37,6 +37,7 @@ import {
   type VisitorData,
 } from './visitorData';
 import { temperOf, type TemperData } from './temperData';
+import { idolOf, type IdolData } from './idolData';
 import { median, sum } from './util';
 
 /** The numbers behind the report (written as `report-data.json`, for charts). */
@@ -60,6 +61,8 @@ export interface ReportData {
   visitor: VisitorData;
   /** Tempering at the Forge, with and without (null when the run lacks the variant). */
   tempering: TemperData | null;
+  /** The idol, a placeholder scrap sink, with and without (null when the run lacks the variant). */
+  idol: IdolData | null;
   /** The School's learnings and the broker's hours (V-SCH-7, V-FORGE-11). */
   school: SchoolData;
   /** The shard stall by week with and without the broker, and the Market built as a project (V-FORGE-11). */
@@ -287,6 +290,7 @@ export function buildReportData(
     variants: time('variants', () => variantsOf(results)),
     visitor: time('visitor', () => visitorOf(results)),
     tempering: time('tempering', () => temperOf(results, rules)),
+    idol: time('idol', () => idolOf(results, rules)),
     school: time('visitor', () => schoolOf(results)),
     broker: time('visitor', () => brokerOf(results)),
     exchangeByPolicy: time('exchange', () => exchangeRowsOf(results)),
@@ -374,6 +378,7 @@ export const SIMPLIFICATIONS: readonly string[] = [
   "Catch-up applies to idle XP only (not to fights). Its multiplier is fixed at each visit and holds until the next one (Q35 B), but never above the target it was fixed for: it fades as the creature closes the gap, so a player who visits less often cannot earn more of it than one who visits daily. A player who is away is not counted in the server's middle after seven days.",
   "Project gifts are chosen by weight among the open projects; a gift never exceeds what the project still needs, the rest stays with the giver. A project's cost is an Acorn part, a scrap part and a shard part (Q33), each filled by gifts from what a player has above a reserve for their own Forge; shards go to a project only as shards of the element tied to its place; Essence never goes to projects and journal pages are never spent. A find fills only its own collection socket; a spare melts into Essence. Sources of the sockets that are not keystones (dungeon landmarks, resident tokens, pages) use made-up rates.",
   "Ribbons are dropped (Misa): levels never stop. Honours (trials.md) replace them and gate nothing. Creatures are not tracked per post, so the lab places creatures on seats itself: a new seat takes a creature not at a post yet (fewest hours of work, then highest level), a set-and-forget player never moves anyone, and an optimiser moves a Master on and puts an unworked creature in its seat. A creature's hours of work, the dungeon and raid clears it was in and the finds it brought home tick its trial boxes. Combat is not simulated: a share of dungeon runs (an assumption) count as an Undercroft clear, and the raid party is the same team that fights; an optimiser gives the team's last place to the highest-level creature that still needs a fight box, a set-and-forget player does not.",
+  'The idol (`rules.idol`) is a voluntary placeholder, not a design: a player chooses to offer scrap above a reserve at the end of a visit, in batches of 100 up to a few batches a visit, and nothing comes back (no reward is modelled), so what it shows is where the late scrap goes if players offer it and whether the dead-pile measure notices, never whether the scrap has a use. What is offered counts as spending in the T-7b measure.',
   "Tempering (a candidate sink, `rules.tempering`) keeps a piece's rolled lines exactly as they are even when the higher item level allows a higher top pip (a line that was at the top before can be below the new top, so the visitor's `goodTop` test may ask for another reroll); only worn rare and epic pieces are tempered, at a visit before the Forge floor comes home; the cheaper-than-crafting test is a price cap by rarity, not a comparison of what the replacement would cost the Forge in shards and anvil time.",
   "The cost estimate counts rows from the shape of a visit (one player row, the creature rows, seat rows, the valley's rows); it is not a measured query plan.",
   "T-5 (the best team differs across bosses) belongs to combat v2's lab.",
@@ -1165,6 +1170,99 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
         ...table(
           ['Target', 'Original wording', 'Bound', 'With', 'Without'],
           changed.map((r) => [
+            r.id,
+            r.label,
+            r.bounds,
+            `${num(r.with ?? NaN, 2)} ${yesNo(r.withMet)}`,
+            `${num(r.without ?? NaN, 2)} ${yesNo(r.withoutMet)}`,
+          ]),
+        ),
+        '',
+      );
+  }
+
+  // The idol, a placeholder scrap sink, with and without.
+  const idl = data.idol;
+  if (idl) {
+    const i = rules.idol;
+    const yesNo = (met: boolean | null): string => (met === null ? '-' : met ? 'PASS' : 'FAIL');
+    const deadText = (n: number | null, names: string[]): string =>
+      n === null ? '-' : `${n}${names.length ? ` (${names.join(', ')})` : ''}`;
+    const changedIdol = idl.targets.filter((r) => r.changed);
+    push(
+      '### The idol (a placeholder scrap sink, Misa 2026-11-01)',
+      '',
+      `The late-season scrap problem (T-7b) is **deferred**, not solved. Misa's answer: "pretend there's an idol in the village that players can offer an unlimited amount of scrap to", and it takes nothing by itself: a player chooses to offer scrap, by tapping, in batches of ${i.batch}. The idol is a voluntary sink and a placeholder: it promises something one day and nothing comes back in the lab. A player who looks at their pile at a visit offers whole batches from the scrap above a reserve of ${i.reserveWeeks} weeks of their own recent scrap spending (the mean of the last ${i.lookbackWeeks} finished weeks of pieces, gifts and the visitor, their own offerings left out; never under ${i.minReserve}), up to ${i.maxBatches.setAndForget} batches a visit for a set-and-forget player and ${i.maxBatches.optimiser} for an optimiser. The offering is the last thing a player does at a visit, after everything that has a use. ${i.reserveWeeks} weeks is T-7b's own dead line (a pile of ${THRESHOLDS.deadPileWeeks} weeks of spending) plus a margin of ${i.reserveWeeks - THRESHOLDS.deadPileWeeks}, so a player who offers the spare does not use up scrap that pieces, gifts or the visitor would have used (the margin is there because spending comes in lumps).`,
+      '',
+      `The switch (\`rules.idol.on\`) is **${idl.defaultOn ? 'on' : 'off'}** by default. This section runs the mixed server of 8 both ways (${idl.seeds} seeds each, the same random draws, so a difference is the idol and not luck). The original targets are \`targets.ts\`, unchanged. The tempering section above is run without the idol, as it was studied before it existed.`,
+      '',
+      ...table(
+        ['', 'With the idol', 'Without'],
+        [
+          [
+            'T-7b: resources of a daily player dead at some point of the 24 weeks',
+            deadText(idl.deadWith, idl.deadNamesWith),
+            deadText(idl.deadWithout, idl.deadNamesWithout),
+          ],
+          [
+            "A daily player's scrap pile at week 24, in weeks of its spending (the measure's own basis, the idol's offers counted as spending)",
+            num(idl.pileWeeks.with, 1),
+            num(idl.pileWeeks.without, 1),
+          ],
+          ...idl.stock.map((s) => [
+            `Scrap stock of a daily player, end of week ${s.week} (median)`,
+            num(s.with),
+            num(s.without),
+          ]),
+        ],
+      ),
+      '',
+      `How T-7b reads it: the measure flags a resource whose stock rises for ${THRESHOLDS.deadWeeks} weeks running to a pile of ${THRESHOLDS.deadPileWeeks} weeks of its spending (spending counted as at least ${num(THRESHOLDS.deadSpendFloor * 100)}% of income). It looks at the stock against what goes out, and what players offer the idol counts as going out, so a pile that would be dead without the idol is not flagged with it. It does not ask whether scrap is spent on something that gives anything back, so with the idol T-7b passes because players choose to send scrap away, not because scrap has found a use. A player who never offers keeps a growing pile (the weekly player's cap of batches a visit leaves a pile too: see the stock columns below).`,
+      '',
+      "A daily player's scrap in weeks 13 to 24, a week (median over seeds and players of each source and sink; the sinks that were there before should hardly move):",
+      '',
+      ...table(
+        ['Scrap', 'With the idol', 'Without'],
+        [
+          ...idl.late.in.map((r) => [`in: ${r.name}`, num(r.with), num(r.without)]),
+          ...idl.late.out.map((r) => [`out: ${r.name}`, num(r.with), num(r.without)]),
+          [
+            '**net (in minus out)**',
+            num(sum(idl.late.in.map((r) => r.with)) - sum(idl.late.out.map((r) => r.with))),
+            num(sum(idl.late.in.map((r) => r.without)) - sum(idl.late.out.map((r) => r.without))),
+          ],
+        ],
+      ),
+      '',
+      'Scrap players offer the idol a week, by profile (median over players of the mean over the weeks they played; a newcomer joins in week 6), and the scrap stock at the end of weeks 12 and 24 with / without:',
+      '',
+      ...table(
+        [
+          'Player',
+          'Offered a week, weeks 1 to 12',
+          'weeks 13 to 24',
+          'Stock, week 12',
+          'Stock, week 24',
+        ],
+        idl.profiles.map((r) => [
+          r.label,
+          num(r.early),
+          num(r.late),
+          `${num(r.stock12[0])} / ${num(r.stock12[1])}`,
+          `${num(r.stock24[0])} / ${num(r.stock24[1])}`,
+        ]),
+      ),
+      '',
+      changedIdol.length
+        ? `Targets whose status changes with the idol (the mixed server of 8, and the one that kills every boss for T-3d and T-3e; the targets that need the optimiser server are not rerun here):`
+        : `No target changes status with the idol (${idl.targets.length} targets judged on both sides: the mixed server of 8, and the one that kills every boss for T-3d and T-3e; the targets that need the optimiser server are not rerun here).`,
+      '',
+    );
+    if (changedIdol.length)
+      push(
+        ...table(
+          ['Target', 'Original wording', 'Bound', 'With', 'Without'],
+          changedIdol.map((r) => [
             r.id,
             r.label,
             r.bounds,

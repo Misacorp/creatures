@@ -9,6 +9,16 @@ import type { PlayerProfile } from './schema';
 export const temperingVariantId = (base: string): string =>
   `${base}-${RULES.tempering.on ? 'notemper' : 'temper'}`;
 
+/**
+ * The id of the variant of a server with the idol switched the other way from the rules' default (`mixed8-noidol` when the idol is on by
+ * default, `mixed8-idol` when it is off): the report sets the two side by side.
+ */
+export const idolVariantId = (base: string): string =>
+  `${base}-${RULES.idol.on ? 'noidol' : 'idol'}`;
+
+/** The id of the side of a study that has the idol out of the way (the tempering study runs on it, as it was before the idol). */
+export const idolOffId = (base: string): string => (RULES.idol.on ? idolVariantId(base) : base);
+
 /** The servers the lab runs (model.md "Servers"): who plays, and the server's dials. */
 /**
  * When the broker's seat exists (V-FORGE-11): from day one, never, once the server has built the Market (paid in Acorns and scrap, the
@@ -46,6 +56,8 @@ export interface ServerConfig {
   readonly visitor?: boolean;
   /** Whether tempering at the Forge exists (default: `rules.tempering.on`; the report runs the other value beside it). */
   readonly tempering?: boolean;
+  /** Whether the idol (a placeholder scrap sink) is in the valley (default: `rules.idol.on`; the report runs the other value beside it). */
+  readonly idol?: boolean;
   /** Whether catch-up also multiplies what the dungeon and the raid pay (a sensitivity run for T-2d). */
   readonly catchUpFights?: boolean;
 }
@@ -188,16 +200,33 @@ export const VARIANTS: readonly ServerConfig[] = [
   {
     ...MIXED_8,
     id: temperingVariantId('mixed8'),
-    label: `Mixed 8, tempering ${RULES.tempering.on ? 'off' : 'on'}`,
+    label: `Mixed 8, tempering ${RULES.tempering.on ? 'off' : 'on'}, no idol`,
     tempering: !RULES.tempering.on,
+    idol: false,
   },
   {
     ...MIXED_8,
     id: temperingVariantId('mixed8-all'),
-    label: `Mixed 8, every boss killed, tempering ${RULES.tempering.on ? 'off' : 'on'}`,
+    label: `Mixed 8, every boss killed, tempering ${RULES.tempering.on ? 'off' : 'on'}, no idol`,
     bossKills: 'all',
     seedKey: 'mixed8',
     tempering: !RULES.tempering.on,
+    idol: false,
+  },
+  // The mixed server of 8 (and the one that kills every boss) with the idol switched the other way from the rules' default, for "with and without".
+  {
+    ...MIXED_8,
+    id: idolVariantId('mixed8'),
+    label: `Mixed 8, idol ${RULES.idol.on ? 'off' : 'on'}`,
+    idol: !RULES.idol.on,
+  },
+  {
+    ...MIXED_8,
+    id: idolVariantId('mixed8-all'),
+    label: `Mixed 8, every boss killed, idol ${RULES.idol.on ? 'off' : 'on'}`,
+    bossKills: 'all',
+    seedKey: 'mixed8',
+    idol: !RULES.idol.on,
   },
   {
     ...MIXED_8,

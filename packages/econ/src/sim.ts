@@ -31,6 +31,7 @@ import {
 import { bestPiece, hasFourOfFive, wornPieces } from './lines';
 import { visitVisitor } from './visitor';
 import { temperAtVisit } from './tempering';
+import { offerToIdol } from './idol';
 import { heldForms } from './forms';
 import { openSlots, startLearning, stepSchool } from './school';
 import { MARKET_OPENS_AT, openMarket } from './commons';
@@ -211,6 +212,8 @@ export function visit(p: Player, server: Server, hour: number): void {
   buySeatsAndKit(p, server);
   startLearning(p, hour);
   visitVisitor(p, server, hour);
+  // The idol comes last: it takes only what is above the reserve once everything that has a use has had its turn.
+  offerToIdol(p, server);
   p.wk.rowsWritten += p.wk.rerolls - rerollsBefore;
   retilt(p);
   recomputeWeak(p, server.fire);
@@ -530,6 +533,7 @@ export function runServer(
       broker: config.broker ?? 'always',
       visitor: config.visitor !== false,
       tempering: config.tempering ?? rules.tempering.on,
+      idol: config.idol ?? rules.idol.on,
     },
     rules,
   );

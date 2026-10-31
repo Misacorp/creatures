@@ -497,6 +497,31 @@ export const RULES = {
     worthInCrafts: [0, 20, 40] as readonly number[],
   },
 
+  /**
+   * The idol (a PLACEHOLDER, voluntary scrap sink, Misa 2026-11-01, Q49's follow-up): "pretend there's an idol in the village that players can
+   * offer an unlimited amount of scrap to". Players choose to offer scrap by tapping, in batches of 100; nothing is ever taken automatically and
+   * nothing comes back in the lab (it promises something one day). It exists so the late-season scrap pile has somewhere to go while the real
+   * scrap uses are still to be designed (the late-season scrap problem is deferred, not solved).
+   * `on` is the switch (a server's `idol` setting replaces it); the report runs the other value beside it.
+   */
+  idol: {
+    on: true,
+    // The owner's batch: one tap offers 100 scrap.
+    batch: 100,
+    // ASSUMPTION: a player who looks at their pile keeps this many weeks of their OWN recent scrap spending (pieces, gifts, the visitor; their own
+    // offerings do not count) and offers batches from the rest: T-7b's dead line (`THRESHOLDS.deadPileWeeks`, 4 weeks) plus a margin of 2. Measured on
+    // 12 seeds: at 4 weeks a daily or active player's anvils waited for scrap twice as long over the run (36 h to 68 h of about 4000) and the visitor's
+    // rerolls fell 1%; at 6 weeks with the floor below, 41 h and 1%, and T-7b still passes.
+    reserveWeeks: 6,
+    // ASSUMPTION: the weeks of history that spending is averaged over (a newer player averages the weeks it has).
+    lookbackWeeks: 4,
+    // ASSUMPTION: a floor for the reserve, for the first weeks with little history: about two weeks of a daily player's scrap spending in weeks 2 to 8.
+    minReserve: 2500,
+    // ASSUMPTION: the most batches a player is willing to tap at one visit (a set-and-forget player a handful, an optimiser who looks at the pile
+    // properly many more): 10 batches is 1000 scrap, about two weeks of a daily player's late surplus.
+    maxBatches: { setAndForget: 10, optimiser: 30 },
+  },
+
   /** V-COM-13, V-GEAR-8, V-GEAR-10: the Forge's fire. */
   fire: {
     start: 10,

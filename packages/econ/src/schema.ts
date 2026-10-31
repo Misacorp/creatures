@@ -234,6 +234,14 @@ export const RulesSchema = v.strictObject({
     perVisit: v.strictObject({ setAndForget: int, optimiser: int }),
     worthInCrafts: v.pipe(v.array(num), v.length(3)),
   }),
+  idol: v.strictObject({
+    on: v.boolean(),
+    batch: pos,
+    reserveWeeks: num,
+    lookbackWeeks: v.pipe(v.number(), v.integer(), v.minValue(1)),
+    minReserve: num,
+    maxBatches: v.strictObject({ setAndForget: int, optimiser: int }),
+  }),
   collections: v.strictObject({
     boards: v.record(
       v.string(),

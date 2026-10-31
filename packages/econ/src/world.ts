@@ -124,6 +124,8 @@ export const blankWeek = (week: number): WeekRecord => ({
   temperScrap: 0,
   temperAcorns: 0,
   temperLevels: 0,
+  idolScrap: 0,
+  idolBatches: 0,
   bestPips: 0,
   bestPipsShare: 0,
   epicsWorn: 0,
