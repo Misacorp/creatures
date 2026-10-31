@@ -42,10 +42,11 @@
  * were searched for a team with random legal talents (`bossAnswers.ts`). The numbers in the data are the high rank's; each boss's
  * `ranks` row gives the lower ranks' HP and Attack.
  */
-import { RULES, content, createSeededRng } from '@creatures/game';
+import { RULES, createSeededRng } from '@creatures/game';
 import { combatV2 } from '@creatures/game/combat-v2';
-import { card } from './cards';
+import { raidBoss } from '@creatures/engine/v2';
 import { weekend } from './fight';
+import { SHIPPED } from './species';
 import { LEVEL, toPlacements, type Mode, type Pick, type Score } from './search';
 import type { BossDef, BossMove, Escalation, Fighter, Placement } from './types';
 
@@ -176,40 +177,24 @@ export function raidBossOf(
   } = {},
 ): BossDef {
   const spec = RAID_SPECS.find((s) => s.id === id);
-  const shipped = content.bosses.find((b) => b.id === id);
-  if (!spec || !shipped) throw new Error(`unknown raid boss ${id}`);
+  if (!spec) throw new Error(`unknown raid boss ${id}`);
   const rank = rankOf(over.rank ?? 'high');
   const st = over.strengthBp ?? rank.strengthBp;
-  const cards = [
-    ...(over.cards === undefined ? spec.cards : spec.cards.slice(0, over.cards)),
-    ...(over.extraCards ?? []),
-  ];
-  const buildUp = over.buildUp ?? true;
   const [hpBp, atkBp, armourBp] =
     rank.id === 'high' || !spec.ranks ? [rank.hpBp, rank.atkBp, undefined] : spec.ranks[rank.id];
-  let boss: BossDef = {
-    id,
-    name: shipped.name,
-    element: shipped.element,
+  return raidBoss(combatV2, SHIPPED, id, {
     hp: over.hp ?? Math.round((spec.hp * hpBp) / 10_000),
     atk: over.atk ?? Math.round((spec.atk * atkBp) / 10_000),
-    // Half of a boss's armour is its hide and always there; the other half is its card, the strength's share of it.
     armour:
       over.armour ?? Math.round((spec.armour * (armourBp ?? 5_000 + Math.floor(st / 2))) / 10_000),
-    spd: shipped.baseSpd ?? 0,
-    rounds: RAID_ROUNDS,
-    rows: spec.rows,
-    cols: RAID_COLS,
-    plain: spec.plain,
-    moves: spec.moves,
-    cards,
-    mods: {},
     strengthBp: st,
+    ...(over.cards === undefined ? {} : { cards: over.cards }),
+    ...(over.buildUp === undefined ? {} : { buildUp: over.buildUp }),
+    ...(over.extraCards === undefined ? {} : { extraCards: over.extraCards }),
+    rounds: RAID_ROUNDS,
+    cols: RAID_COLS,
     rosterLevel: over.level ?? rank.level,
-    ...(spec.escalation && buildUp ? { escalation: { ...spec.escalation, strengthBp: st } } : {}),
-  };
-  for (const c of cards) boss = card(c).apply(boss, st);
-  return boss;
+  });
 }
 
 /** The arena of a raid boss as a search mode: four players, one column each, up to four copies of a form. */

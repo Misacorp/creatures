@@ -6,4 +6,5 @@ export { applyCard, type CardFlag, type CardModNumber, type CardOp } from './car
 export { fightV2 } from './fight';
 export { resistedElement, weekendV2 } from './weekend';
 export { ADDITIVE_FIELDS, STAT_FIELDS, mergeFx, type KnackFx } from './effects';
+export * from './resolve';
 export * from './types';

@@ -11,14 +11,13 @@
  * curve grows one stat, HP, so a deeper foe is a longer fight and not a harder-hitting one. The runs on the shipped map,
  * the camp and the Undercroft are in `dungeon.ts`.
  */
-import { depthFactorBp, dungeonContent, isLandmark } from '@creatures/game';
+import { FOE_COLS, FOE_ROWS, foeAt as foeAtOf, foeStats as foeStatsOf } from '@creatures/engine/v2';
 import { combatV2 } from '@creatures/game/combat-v2';
-import { card } from './cards';
+import { SHIPPED } from './species';
 import type { BossDef, BossMove, Escalation } from './types';
 
-/** The dungeon line: one row of three. */
-export const FOE_ROWS = 1;
-export const FOE_COLS = 3;
+/** The dungeon line: one row of three (the engine's resolver builds the arena). */
+export { FOE_COLS, FOE_ROWS };
 
 /**
  * Lab scale of a foe's content numbers (basis points of them): the content's HP and Attack were made for the shipped
@@ -79,36 +78,9 @@ export const FOE_IDS: readonly string[] = FOE_SPECS.map((s) => s.id);
 /** The depths the report looks at (7 is the first landmark, where a floor boss has its signature move). */
 export const DUNGEON_DEPTHS: readonly number[] = [1, 3, 5, 7];
 
-/** A foe's HP and Attack at a depth: the content's numbers, the lab scale, then the dungeon's depth curve. */
+/** A foe's HP and Attack at a depth: the content's numbers, the lab scale, then the dungeon's depth curve (the engine's resolver, on the game's pack). */
 export function foeStats(id: string, depth: number): { hp: number; atk: number } {
-  const def = dungeonContent.foes.find((f) => f.id === id);
-  if (!def) throw new Error(`unknown dungeon foe ${id}`);
-  const spec = FOE_SPECS.find((s) => s.id === id);
-  const part = (value: number, scale: number, step: number, curve: number, own: number) =>
-    Math.max(
-      1,
-      Math.floor(
-        (Math.floor((Math.floor((value * scale) / 10_000) * own) / 10_000) *
-          depthFactorBp(depth, step, curve)) /
-          10_000,
-      ),
-    );
-  return {
-    hp: part(
-      def.baseHp,
-      FOE_BASE.hpBp,
-      FOE_CURVE.hpStepBp,
-      FOE_CURVE.hpCurveBp,
-      spec?.hpBp ?? 10_000,
-    ),
-    atk: part(
-      def.baseAtk,
-      FOE_BASE.atkBp,
-      FOE_CURVE.atkStepBp,
-      FOE_CURVE.atkCurveBp,
-      spec?.atkBp ?? 10_000,
-    ),
-  };
+  return foeStatsOf(combatV2, SHIPPED, id, depth);
 }
 
 /**
@@ -116,29 +88,5 @@ export function foeStats(id: string, depth: number): { hp: number; atk: number }
  * signature at a landmark (`signature` decides it instead: an Undercroft keeper always has it).
  */
 export function foeAt(id: string, depth: number, options: { signature?: boolean } = {}): BossDef {
-  const spec = FOE_SPECS.find((s) => s.id === id);
-  const def = dungeonContent.foes.find((f) => f.id === id);
-  if (!spec || !def) throw new Error(`unknown dungeon foe ${id}`);
-  const { hp, atk } = foeStats(id, depth);
-  const moves = [...spec.moves];
-  if (spec.signature && (options.signature ?? isLandmark(depth))) moves.push(spec.signature);
-  let boss: BossDef = {
-    id,
-    name: def.name,
-    element: def.element,
-    hp,
-    atk,
-    armour: spec.armour,
-    spd: def.baseSpd ?? 0,
-    rounds: def.rounds,
-    rows: FOE_ROWS,
-    cols: FOE_COLS,
-    plain: spec.plain,
-    moves,
-    cards: spec.cards,
-    mods: {},
-    ...(spec.escalation ? { escalation: spec.escalation } : {}),
-  };
-  for (const c of spec.cards) boss = card(c).apply(boss);
-  return boss;
+  return foeAtOf(combatV2, SHIPPED, id, depth, options);
 }
