@@ -1,0 +1,473 @@
+<title>Leet Creatures Art Review</title>
+<meta name="claude:viewport-fit-sides" content="cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Jersey+10&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
+/>
+<style>
+  /* Layout: one column of sets; each set a grid of sprite cards on the game's own night-sky panels. Single dark look on purpose: the art is judged on the panels it ships on. */
+  :root {
+    --night: #17132b; /* page ground, the game's --night */
+    --dusk: #241e42; /* card, the game's --dusk */
+    --dusk-2: #2f2857; /* raised, the game's --dusk-2 */
+    --ink: #0d0a1a;
+    --text: #f4eedc;
+    --muted: #a69fc8;
+    --gold: #ffd25a; /* liked */
+    --rose: #ff8fab; /* redo */
+    --line: #3d3570;
+    --display: 'Jersey 10', 'Courier New', monospace;
+    --body: 'Atkinson Hyperlegible', system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    background: var(--night);
+    color: var(--text);
+    font: 15px/1.5 var(--body);
+  }
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding-block: 24px 64px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    display: grid;
+    gap: 40px;
+  }
+  h1,
+  h2 {
+    font-family: var(--display);
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h1 {
+    font-size: 44px;
+    line-height: 1;
+    color: var(--gold);
+    text-shadow: 3px 3px 0 var(--ink);
+  }
+  h2 {
+    font-size: 32px;
+    line-height: 1.1;
+  }
+  p {
+    margin: 0;
+    max-width: 65ch;
+  }
+  .intro {
+    display: grid;
+    gap: 12px;
+  }
+  .tally {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    font-variant-numeric: tabular-nums;
+  }
+  .count {
+    font: 700 13px var(--body);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .count b {
+    color: var(--text);
+    font-size: 18px;
+  }
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .chip {
+    font: 700 13px var(--body);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border: 2px solid var(--line);
+    background: var(--dusk);
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .chip[aria-pressed='true'] {
+    border-color: var(--gold);
+    color: var(--text);
+  }
+  .chip:focus-visible,
+  button:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+  .set {
+    display: grid;
+    gap: 14px;
+  }
+  .set-head {
+    display: grid;
+    gap: 6px;
+  }
+  .meta {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .notes {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--muted);
+    font-size: 14px;
+    display: grid;
+    gap: 2px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+  }
+  .card {
+    background: var(--dusk);
+    border: 2px solid var(--ink);
+    padding: 12px;
+    display: grid;
+    gap: 10px;
+    align-content: start;
+    min-width: 0;
+  }
+  .card[data-verdict='liked'] {
+    border-color: var(--gold);
+  }
+  .card[data-verdict='redo'] {
+    border-color: var(--rose);
+  }
+  .stage {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  canvas {
+    image-rendering: pixelated;
+    display: block;
+    max-width: 100%;
+  }
+  .main-art {
+    background: var(--dusk-2);
+    padding: 6px;
+  }
+  .variants {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .variant {
+    display: grid;
+    gap: 2px;
+    justify-items: center;
+    font-size: 11px;
+    color: var(--muted);
+    max-width: 96px;
+    text-align: center;
+  }
+  .code {
+    font: 700 14px var(--body);
+    overflow-wrap: anywhere;
+  }
+  .kind {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .idea {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .actions {
+    display: flex;
+    gap: 8px;
+  }
+  .actions button {
+    flex: 1;
+    font: 700 14px var(--body);
+    padding: 8px;
+    border: 2px solid var(--ink);
+    background: var(--dusk-2);
+    color: var(--text);
+    cursor: pointer;
+  }
+  .actions button[data-v='liked'][aria-pressed='true'] {
+    background: var(--gold);
+    color: var(--ink);
+  }
+  .actions button[data-v='redo'][aria-pressed='true'] {
+    background: var(--rose);
+    color: var(--ink);
+  }
+  .actions button:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  textarea {
+    width: 100%;
+    min-height: 54px;
+    resize: vertical;
+    font: 13px/1.4 var(--body);
+    background: var(--night);
+    color: var(--text);
+    border: 2px solid var(--line);
+    padding: 6px 8px;
+  }
+  .status {
+    font-size: 13px;
+    color: var(--muted);
+    min-height: 1.4em;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .card {
+      transition: border-color 120ms steps(2);
+    }
+  }
+</style>
+
+<main>
+  <section class="intro">
+    <h1>Art Review</h1>
+    <p>
+      Every piece in the art library, plus the gear sprites now in the game. Tap Like or Redo on
+      each one and leave a note if you want changes. I read your answers and act on them in the next
+      session.
+    </p>
+    <div class="tally" id="tally" aria-live="polite"></div>
+    <div class="filters" role="group" aria-label="Show">
+      <button class="chip" data-filter="all" aria-pressed="true">All</button>
+      <button class="chip" data-filter="open" aria-pressed="false">Not reviewed</button>
+      <button class="chip" data-filter="liked" aria-pressed="false">Liked</button>
+      <button class="chip" data-filter="redo" aria-pressed="false">Redo</button>
+    </div>
+    <p class="status" id="status">Loading your earlier answers…</p>
+  </section>
+  <div id="sets" style="display: grid; gap: 40px"></div>
+</main>
+
+<script>
+  const SETS = /*DATA*/ null;
+  const reviews = {}; // sprite id -> { verdict, note }
+  let filter = 'all';
+  let db = null;
+
+  function draw(def, scale) {
+    const w = def.rows[0].length,
+      h = def.rows.length;
+    const cv = document.createElement('canvas');
+    cv.width = w * scale;
+    cv.height = h * scale;
+    const ctx = cv.getContext('2d');
+    def.rows.forEach((row, y) =>
+      [...row].forEach((ch, x) => {
+        const c = def.palette[ch];
+        if (ch === '.' || !c) return;
+        ctx.fillStyle = c;
+        ctx.fillRect(x * scale, y * scale, scale, scale);
+      }),
+    );
+    cv.setAttribute('aria-hidden', 'true');
+    return cv;
+  }
+  const scaleFor = (def, target) =>
+    Math.max(1, Math.floor(target / Math.max(def.rows[0].length, def.rows.length)));
+  const docId = (id) => id.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+
+  function renderTally() {
+    const all = SETS.flatMap((s) => s.items);
+    const liked = all.filter((i) => reviews[i.id]?.verdict === 'liked').length;
+    const redo = all.filter((i) => reviews[i.id]?.verdict === 'redo').length;
+    const t = document.getElementById('tally');
+    const count = (n, label) => {
+      const s = el('span', 'count');
+      s.append(el('b', '', String(n)), ` ${label}`);
+      return s;
+    };
+    t.replaceChildren(
+      count(all.length, 'pieces'),
+      count(liked, 'liked'),
+      count(redo, 'to redo'),
+      count(all.length - liked - redo, 'not reviewed'),
+    );
+  }
+
+  function applyFilter() {
+    for (const card of document.querySelectorAll('.card')) {
+      const v = card.dataset.verdict || 'open';
+      card.hidden = !(filter === 'all' || filter === v);
+    }
+    for (const set of document.querySelectorAll('.set'))
+      set.hidden = !set.querySelector('.card:not([hidden])');
+  }
+
+  async function save(id, patch) {
+    const next = {
+      verdict: reviews[id]?.verdict ?? null,
+      note: reviews[id]?.note ?? '',
+      ...patch,
+      updatedAt: new Date().toISOString(),
+      piece: id,
+    };
+    reviews[id] = next;
+    paintCard(id);
+    renderTally();
+    applyFilter();
+    if (!db) return;
+    try {
+      await db.collection('reviews').doc(docId(id)).set(next);
+    } catch (e) {
+      document.getElementById('status').textContent =
+        `Could not save that answer (${e?.code ?? 'error'}). Try again in a moment.`;
+    }
+  }
+
+  function paintCard(id) {
+    const card = document.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+    if (!card) return;
+    const r = reviews[id];
+    card.dataset.verdict = r?.verdict ?? '';
+    for (const b of card.querySelectorAll('.actions button'))
+      b.setAttribute('aria-pressed', String(r?.verdict === b.dataset.v));
+    const ta = card.querySelector('textarea');
+    if (document.activeElement !== ta) ta.value = r?.note ?? '';
+  }
+
+  function render() {
+    const root = document.getElementById('sets');
+    for (const set of SETS) {
+      const sec = el('section', 'set');
+      const head = el('div', 'set-head');
+      head.append(
+        el('h2', '', set.title),
+        el(
+          'p',
+          'meta',
+          `${set.status === 'shipped' ? 'In the game' : 'Library, ' + set.status} · ${set.requested}`,
+        ),
+      );
+      if (set.notes.length) {
+        const ul = el('ul', 'notes');
+        for (const n of set.notes) ul.append(el('li', '', n));
+        head.append(ul);
+      }
+      const grid = el('div', 'grid');
+      for (const item of set.items) {
+        const card = el('article', 'card');
+        card.dataset.id = item.id;
+        const stage = el('div', 'stage');
+        const main = el('div', 'main-art');
+        main.append(draw(item.main, scaleFor(item.main, 112)));
+        stage.append(main);
+        const vars = el('div', 'variants');
+        for (const v of item.variants) {
+          const f = el('div', 'variant');
+          f.append(draw(v.def, scaleFor(v.def, 48)), el('span', '', v.name));
+          vars.append(f);
+        }
+        if (item.variants.length) stage.append(vars);
+        const label = el('div');
+        label.append(
+          el('div', 'code', item.code),
+          el('div', 'kind', [item.kind, item.role].filter(Boolean).join(' · ')),
+        );
+        const actions = el('div', 'actions');
+        for (const [v, text] of [
+          ['liked', 'Like'],
+          ['redo', 'Redo'],
+        ]) {
+          const b = el('button', '', text);
+          b.type = 'button';
+          b.dataset.v = v;
+          b.setAttribute('aria-pressed', 'false');
+          b.setAttribute('aria-label', `${text} ${item.code}`);
+          b.addEventListener('click', () =>
+            save(item.id, { verdict: reviews[item.id]?.verdict === v ? null : v }),
+          );
+          actions.append(b);
+        }
+        const ta = el('textarea');
+        ta.id = `note-${docId(item.id)}`;
+        ta.placeholder = 'Note (what to change)';
+        ta.setAttribute('aria-label', `Note on ${item.code}`);
+        ta.addEventListener('change', () => {
+          if ((reviews[item.id]?.note ?? '') !== ta.value)
+            save(item.id, { note: ta.value.slice(0, 2000) });
+        });
+        card.append(stage, label);
+        if (item.note) card.append(el('p', 'idea', item.note));
+        card.append(actions, ta);
+        grid.append(card);
+      }
+      sec.append(head, grid);
+      root.append(sec);
+    }
+  }
+
+  document.querySelectorAll('[data-filter]').forEach((b) =>
+    b.addEventListener('click', () => {
+      filter = b.dataset.filter;
+      document
+        .querySelectorAll('[data-filter]')
+        .forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      applyFilter();
+    }),
+  );
+
+  render();
+  renderTally();
+
+  (async () => {
+    const status = document.getElementById('status');
+    db = window.claude ? await window.claude.use('db') : null;
+    if (!db) {
+      status.textContent =
+        'Answers cannot be saved in this view. Open the page on claude.ai, signed in.';
+      document.querySelectorAll('.actions button, textarea').forEach((x) => (x.disabled = true));
+      return;
+    }
+    const timer = setTimeout(() => {
+      status.textContent = 'Your earlier answers cannot be reached yet. New answers still save.';
+    }, 10000);
+    db.collection('reviews').onSnapshot(
+      (snap) => {
+        if (!snap.metadata.fromCache) {
+          clearTimeout(timer);
+          status.textContent = 'Answers save as you go.';
+        }
+        for (const d of snap.docs) {
+          const data = d.data();
+          if (data && typeof data.piece === 'string') {
+            reviews[data.piece] = {
+              verdict: data.verdict ?? null,
+              note: typeof data.note === 'string' ? data.note : '',
+            };
+            paintCard(data.piece);
+          }
+        }
+        renderTally();
+        applyFilter();
+      },
+      (e) => {
+        clearTimeout(timer);
+        status.textContent = `Answers could not load (${e?.code ?? 'error'}).`;
+      },
+    );
+  })();
+</script>

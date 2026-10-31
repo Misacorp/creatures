@@ -32,6 +32,8 @@ Art Misa requests is kept until the content that uses it exists. **The catalogue
 
 - **A set's `backdrop`** (a ground tile, with its own colours per alternative palette, such as a night tile for the `night` alt) is repeated behind each sprite in the set sheet and in an extra row of each card, so art that will stand on the valley's or the map's tiles is judged on them, not on the dark panels.
 
+- **`pnpm art review [--out file.html]`** builds the art review page: every library set and every shipped item look, each with Like, Redo and a note. Publish the file with the Artifact tool at the page's existing URL (in `docs/progress.md`), declaring the `db` and `user` capabilities. Misa's answers are in its database, collection `reviews` (one document per piece: `piece`, `verdict`, `note`); read them before changing library art, and record them on the pieces (`status`, `notes`).
+
 `pnpm art <set> --only id,id` draws a few; `--out <dir>` writes somewhere else (your scratchpad).
 
 ## What was hard, and the rule it became

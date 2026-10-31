@@ -4,6 +4,7 @@
 //   pnpm art <set> [--only id,id] [--out dir]     (out defaults to apps/activity/scratch/art/<set>)
 //   pnpm art new creature|boss|item|part|banner
 //   pnpm art library [--check]     (writes docs/art/: the catalogue README.md and a sheet per set)
+//   pnpm art review [--out file.html]   (the art review page for Misa; publish it with the Artifact tool)
 //   pnpm art items [--slot hat|scarf|charm] [--out dir]   (every shipped item, tinted, by name)
 //
 // For each sprite of the set it writes `<id>.png`: a large zoom with a coordinate grid (x across the
@@ -558,6 +559,18 @@ async function drawItems(slot: string | undefined, out: string): Promise<void> {
 }
 
 const args = process.argv.slice(2);
+if (args[0] === 'review') {
+  const { writeReviewPage } = await import('./art-review.mts');
+  const at = args.indexOf('--out');
+  const out = resolve(
+    at < 0
+      ? join(import.meta.dirname, '..', 'scratch', 'art', 'art-review.html')
+      : (args[at + 1] ?? '.'),
+  );
+  const count = await writeReviewPage(out);
+  console.log(`wrote ${out} (${String(count)} sets)`);
+  process.exit();
+}
 if (args[0] === 'items') {
   const at = args.indexOf('--slot');
   const slot = at < 0 ? undefined : args[at + 1];
