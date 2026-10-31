@@ -203,7 +203,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** liked
 - **Requested:** 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets.
 - **Source:** `apps/activity/src/sprites/concepts/valley-glow.ts` (draw it with `pnpm art valley-glow`)
-- **Sheet of:** `34f3ff73308e`
+- **Sheet of:** `6d3512adbb74`
 - Misa picked this direction for the valley places (2026-10-31); posters stay for each place's own screen.
 - Direction "valley glow": the night-glow look (the light sources are the stars, lit edges, cool shadow) redone as standalone places on transparent ground, like the map landmarks, so they stand on the valley tiles. No sky, no vignette, no stars or moon.
 - One drawing, two palettes: the main palette is night, `alts.day` recolours the same pixels. Keys `1 2 3` are the light spill on the ground (rings follow each light: a circle under a lamp or fire, a trapezoid in front of a window; only the outermost ring is a regular checker) in night colours; in the day palette they map to the grass greens, so the spill disappears. `x` is the cast shadow (cool blue at night, warm green by day).

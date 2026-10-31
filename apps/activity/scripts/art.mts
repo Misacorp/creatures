@@ -429,7 +429,17 @@ function catalogue(): string {
       ...(set.element === undefined ? [] : [`- **Element:** ${set.element}`]),
       `- **Source:** \`apps/activity/src/sprites/concepts/${set.id}.ts\` (draw it with \`pnpm art ${set.id}\`)`,
       // A fingerprint of the art, so the check sees a changed sprite without comparing PNG bytes.
-      `- **Sheet of:** \`${createHash('sha256').update(JSON.stringify(set.sprites)).digest('hex').slice(0, 12)}\``,
+      `- **Sheet of:** \`${createHash('sha256')
+        .update(
+          JSON.stringify(
+            // The backdrop is drawn in the sheet too; sets without one keep their old fingerprint.
+            set.backdrop === undefined
+              ? set.sprites
+              : { sprites: set.sprites, backdrop: set.backdrop },
+          ),
+        )
+        .digest('hex')
+        .slice(0, 12)}\``,
       ...(set.notes ?? []).map((n) => `- ${n}`),
       '',
       '| Code | Kind | Role | Status | Idea |',
