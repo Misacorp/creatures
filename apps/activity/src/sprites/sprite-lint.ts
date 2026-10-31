@@ -184,10 +184,13 @@ export function lintSprite(def: SpriteDef, options: LintOptions): Finding[] {
     if (!used.has(key)) add('palette', `Palette key "${key}" is not used by any pixel.`);
   }
   if (def.palette.k !== INK) add('ink', `The outline "k" must be the shared ink ${INK}.`);
-  if (Object.keys(def.palette).length > 11) {
+  // Scenes (banners, free art such as places and landmarks) get a larger palette than a sprite: the shipped
+  // banners and world-map landmarks use 12 to 16 colours.
+  const maxColours = options.kind === 'banner' || options.kind === 'free' ? 16 : 11;
+  if (Object.keys(def.palette).length > maxColours) {
     add(
       'palette',
-      `${String(Object.keys(def.palette).length)} colours; at most 11 (brief, shades, ink, face).`,
+      `${String(Object.keys(def.palette).length)} colours; at most ${String(maxColours)}.`,
     );
   }
 

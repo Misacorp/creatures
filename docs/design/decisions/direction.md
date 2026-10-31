@@ -4,6 +4,22 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: [Misa] Valley places: glow on the ground, day and night; posters for each place's own screen
+
+ID: `2026-10-31-valley-places-glow-on-the-ground` · Status: current · Amends: `2026-10-31-the-lead-agent-owns-art-direction`
+
+**Decision.** Of the three directions for the bonfire, the School, the weekly visitor and the Market (map landmarks, posters, night glow), Misa loved the night glow's style but asked for a version that stands on the valley's tiled ground and a daytime version of the same assets. That version (`valley-glow` in the art library) is the direction for places in the valley (2026-10-31): each place is a standalone sprite with a transparent background, its light falls on the surrounding tiles as stepped rings, and one drawing carries two palettes, night (main) and `day` (the same pixels recoloured, lights out and the spill rings mapped to grass). The poster style (`valley-posters`, 64x24 banners) heads each place's own screen, as banners head expedition destinations. The map-landmark set stays in the library for reference.
+
+**Reasoning.** Misa: "I love the style of night glow but I'm not sure if its emphasis on a night sky will work when these sprites will be essentially sitting on a tiled backdrop where the background is... ground." Standing the places on the ground keeps the glow and fits the valley's tiles; one drawing with two palettes gives the valley a day and night look for no extra art.
+
+## 2026-10-31: [Misa] The lead agent owns art direction; the valley moves toward the expedition map's art
+
+ID: `2026-10-31-the-lead-agent-owns-art-direction` · Status: current, amended by `2026-10-31-valley-places-glow-on-the-ground`
+
+**Decision.** Misa (2026-10-31): "You are now in charge of our art direction and that it looks awesome." The lead agent decides the look of new art and keeps it consistent: it briefs the drawing agents, reviews every piece in the art studio (`docs/design/art-studio.md`) before Misa sees it, sends back what does not read, and brings Misa real choices (variations side by side) rather than single drafts where the direction is open. Misa's verdicts on the art review page are final for each piece. On the valley (the prototype's map art is a placeholder): "I'd like to go more in the direction of our existing artwork in the expedition map, the expedition 'posters' and the expedition destination map markers. Don't feel the need to mimic a style: be brave and try some variations and ask me which one I like best." The first round draws the bonfire, the School, the weekly visitor and the Market in three directions (map landmarks, posters, night glow) for Misa to choose from.
+
+**Reasoning.** Misa reviews art rather than drawing it; one owner who checks every piece against the same standard keeps the game looking like one game, and choices side by side are quicker for him to answer than a single draft followed by rounds of notes.
+
 ## 2026-10-31: After the combat and valley reworks the game resets; today's players become the pioneering first settlers **[Misa]**
 
 ID: `2026-10-31-after-the-combat-and-valley-reworks` · Status: current
