@@ -28,8 +28,8 @@ Not in scope: combat (combat v2's lab owns it), the School's teaching (waits on 
 ## Order
 
 1. **Done:** the journey export from the lab, with a sync test; the welcome-back Gazette (after the walk was tried and dropped).
-2. **Next:** the valley's markers lead somewhere: tapping one opens its place with the story in place (the Forge's shelf and pieces, the scouts' finds at the Signpost, a newcomer at the Paddock gate).
-3. Posts (a scout and a smith, the store filling, a shard wait with the exchange), the bonfire, the Market as the second guided project with the broker, the visitor's stall and one reroll, and a graduation at the School, each reachable from a marker.
+2. **Done:** the valley's markers lead somewhere: tapping one opens its place with its stories as a slim strip above the action, the story's creatures standing by it and its finds in one row (panel: `reviews/2026-11-01-markers.md`).
+3. **Next:** Posts (a scout and a smith, the store filling, a shard wait with the exchange), the bonfire, the Market as the second guided project with the broker, the visitor's stall and one reroll, and a graduation at the School, each reachable from a marker.
 4. The places' art from the art-direction session (`valley-glow`, PR #116) once merged, in place of the stand-ins.
 5. The panel at both widths; fixes; Misa on staging when he asks.
 
