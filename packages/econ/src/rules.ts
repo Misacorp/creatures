@@ -473,8 +473,8 @@ export const RULES = {
    * late in the season). `on` is the switch (a server's `tempering` setting replaces it); the report runs the other value beside it.
    */
   tempering: {
-    // ASSUMPTION: the switch's default, set from the report's with-and-without result (see its "Tempering" section).
-    on: true,
+    // Off until Misa decides (round 20): the lab runs the rules as decided; the report shows tempering on beside it ("Tempering").
+    on: false,
     // ASSUMPTION: a set-and-forget player tempers a piece once it is this many levels behind the fire (about the Forge's own margin of 6), an optimiser sooner.
     minGap: { setAndForget: 5, optimiser: 3 },
     // ASSUMPTION: only rare and epic pieces are tempered (their lines are what is worth keeping; a common is cheaper to craft again): price factors [common, rare, epic], 0 meaning never.
