@@ -387,7 +387,7 @@ describe('Catch Breath is once per weekend', () => {
   it('a creature that used it in an earlier stage does not heal again in a later one', () => {
     const maxHp = formStats('kilnmole', 25).hp;
     const armour = formStats('kilnmole', 25).armour;
-    // One hit a stage of 60% of its max HP: below half, so Catch Breath fires (it heals 40%).
+    // One hit a stage of 60% of its max HP: below half, so Catch Breath fires (it heals 30%).
     const atk = Math.ceil(0.6 * maxHp) + armour;
     const boss: BossDef = {
       ...labBoss({ rows: 1, cols: 1, rounds: 1, atk, hp: 1_000_000 }),
