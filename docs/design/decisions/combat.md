@@ -4,6 +4,36 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-01: [Misa] Combat v2 rule changes from the names review: Mired fades every round, Swarm is a Scatter, Back-most is the last to act
+
+ID: `2026-11-01-combat-v2-rule-changes-from-the` · Status: current
+
+**Decision.** From Misa's notes on names batches 3 and 4 (round 2, 2026-10-31):
+
+- **Mired fades every round**: it loses 1 stack at the end of every round, every 2nd round while a living creature has Clinging (was every 2nd and every 3rd). With up to 45 creatures acting a round, Mired is put back often and need not linger.
+- **Swarm is a Scatter**: its plain attack becomes a Scatter of small hits on different creatures (was separate hits on random slots, where one creature could take several).
+- **Back-most is the last creature to act**: the back row's rightmost by default, since creatures act row by row, left to right (was the leftmost). If a boss's attack order ever differs, it is still the last to act.
+- Kept as they are: Slippery and Elusive (two cards, reworded so neither names Mired: Elusive is Speed that debuffs lower, Slippery a flat dodge that debuffs do not lower), Crusher and Grudge with Crusher's 3-round rhythm, Retaliate ignoring armour, Breakwater (reworded only).
+
+These change fight results: the lab measures them, the tuners retune, and the parity digest is rewritten in the same change.
+
+**Reasoning.** Misa's calls on game feel. Each one makes a rule simpler to read or closer to what a player expects.
+
+## 2026-11-01: [Misa] Combat v2 names, batches 3 and 4: keywords, rule cards, and moves named by shape and target
+
+ID: `2026-11-01-combat-v2-names-batches-3-and` · Status: current
+
+**Decision.** Misa went through the 27 keywords and 19 rule cards (batch 3), the 69 moves, Build-ups and phases of the raid bosses and dungeon foes (batch 4), and a round 2 on his notes (2026-10-31).
+
+- **Moves are named by what they do, and who they pick** (Misa: unify the moves that do the same thing, and show the target in the name): Slam (the target and those beside it), Lance (whole columns), Sweep (whole rows), Barrage (several random creatures), Quake (every creature), Hush (silences the row's ends), Leaping Strike (the strongest, then leaps to creatures nearby). The target word comes first: **Front** (the first to act, or the front row), **Rear** (the back row), **Payoff** (the strongest Payoff), **Nemesis** (the strongest), **Wild** (random), **Vulture** (the weakest). Misa named Front Sweep, Rear Sweep, Payoff Slam and Nemesis Slam; Wild, Vulture, Pincer and Strike follow them. Each boss hits with its own power, and Wind-up is a marker on a move, not another move. So a name stands for a shape and a target (P-06 for moves), never for one number.
+- The mapping: Front Slam (Coil Crush, Belly Flop, Tar Cling, Anvil Fall); Payoff Slam (Magma Spit, Static Field, Bog Lob, Payoff Hunter's move); Nemesis Slam (Thunderclap, Root Grab, Slag Spill, Coil Burst); Wild Lance (Riptide, Scorch Lane, Root Snare, Forked Lightning, Mud Slide); Nemesis Lance (Tidal Pull, Deepwater Spear); Front Lance (Sluice Pull); Front Sweep (Undertow, Thorn Wall); Rear Sweep (Breaker, Back Thorns, Peat Wave); Payoff Sweep (Spring Tide); Wild Sweep (Great Wave and the Great Wave card's move, Sinking Mud); Barrage (Spray, Cinder Fall, Seed Burst, Bloom Storm, Ball Lightning, Rising Bubbles, Flare Up, Mud Spit, Thorn Rain); Quake (Eruption, Storm Front, Buzz Cloud, Flood Gate, Sluice Surge, Sink Down, Fen Tug); Hush (Bramble Hush, Sea Mist, Thorn Snap, Tangle, Bramble Bind's move); Pincer (Briar Pincer, Briar Cage); Leaping Strike (Ember Leap, Thorn Lash, Zap Dive, Arc Lash); Payoff Strike (Spark Dive); Vulture Strike (Sinkhole); Nemesis Strike (Crusher's move). Kept as they are: Judgement Bolt (a one-shot), Ash Cloud, Bramble Cross. This supersedes the batch 4 renames of those moves (Volcanic Meteor, Static Strike, Lightning Strike, Tar Toss, Backflow, Rogue Wave, Deluge, Bramble Bind for Thorn Snap).
+- **Build-ups:** all approved; Rising Water is now **Maelstrom**. The keyword Build-up is now **Escalating**.
+- **Rule cards:** approved, except Lucky Strike is now **Double Strike** ("The boss's hits sometimes Crit for double damage; can you turn them away or take the sting out?"). New texts: Great Wave and Shake It Off drop "announced at round start" (every move is announced); Breakwater: "Row Wards are up to 3 times as strong against its Area hits"; Elusive and Slippery reworded so neither names Mired.
+- **Keywords:** approved, with new texts for Reaction ("A Payoff hits a Mark its element is strong against: bonus damage, and the mark loses 1 stack"), Intercept ("Takes a hit meant for a creature in its Reach"), Taunt ("The boss's plain attack, its basic hit, not its named moves, aims at this creature. With several Taunts, the first to act draws it"), Boost ("A Support's bonus damage on a creature's next hit"). A mark's size is its **stacks** everywhere (was "count").
+- **Guard's Shadow** (the Knack) is now **Reliably Covered**: the gear line Guard's shadow keeps its name.
+
+**Reasoning.** Fewer names for players to learn and for the content to keep in step: a name says what a move does and whom it picks, the same everywhere.
+
 ## 2026-10-31: [Misa] Combat v2 names, batch 2: talents
 
 ID: `2026-10-31-combat-v2-names-batch-2-talents` · Status: current

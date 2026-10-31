@@ -132,6 +132,8 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-11-01 \[Misa\] Combat v2 rule changes from the names review: Mired fades every round, Swarm is a Scatter, Back-most is the last to act
+- 2026-11-01 \[Misa\] Combat v2 names, batches 3 and 4: keywords, rule cards, and moves named by shape and target
 - 2026-10-31 \[Misa\] Combat v2 names, batch 2: talents
 - 2026-10-31 \[Misa\] Combat v2 names, batch 1: Knacks and families
 - 2026-10-31 Combat v2 content as data: a separate game entry, the resolver beside the engine, cards as operations
