@@ -1,0 +1,362 @@
+{
+  "scale": { "hpBp": 23000, "atkBp": 225000 },
+  "curve": { "hpStepBp": 1600, "hpCurveBp": 45, "atkStepBp": 0, "atkCurveBp": 0 },
+  "foes": [
+    {
+      "id": "puddle-imp",
+      "armour": 4,
+      "plain": { "pattern": { "anchor": "random", "shape": "single" }, "powerBp": 4500, "hits": 4 },
+      "moves": [],
+      "cards": [],
+      "asks": "Many small splashes on random creatures: dodge turns them away, armour only wears them down."
+    },
+    {
+      "id": "drift-wisp",
+      "armour": 2,
+      "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 8000 },
+      "moves": [
+        {
+          "id": "sea-mist",
+          "name": "Sea Mist",
+          "every": 1,
+          "turn": 0,
+          "pattern": { "anchor": "front", "shape": "rowEnds", "n": 1 },
+          "powerBp": 0,
+          "silenceTurns": 2
+        }
+      ],
+      "cards": ["elusive"],
+      "escalation": {
+        "name": "Wisp Fog",
+        "feed": "dodges",
+        "per": 2,
+        "cap": 2,
+        "grow": { "dodgeBp": 800 }
+      },
+      "asks": "Hard to hit, it keeps the ends of the line quiet, and every miss thickens the fog. Something must ward the ends.",
+      "hpBp": 22000,
+      "needs": "ward"
+    },
+    {
+      "id": "ember-mite",
+      "armour": 6,
+      "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 7000 },
+      "moves": [
+        {
+          "id": "flare-up",
+          "name": "Flare Up",
+          "every": 2,
+          "turn": 0,
+          "pattern": { "anchor": "random", "shape": "scatter", "n": 2 },
+          "powerBp": 9000
+        }
+      ],
+      "cards": ["clean-scales"],
+      "escalation": {
+        "name": "Warm Stones",
+        "feed": "shed",
+        "per": 2,
+        "cap": 2,
+        "grow": { "atkBp": 2500, "targets": 1 }
+      },
+      "asks": "Its heat sheds your marks after every turn of its own, and each mark shed warms it. A sealed mark stays, and so does one left during its own turn.",
+      "hpBp": 15000,
+      "note": "A longer fight (balance pass 2026-10-29), so keeping marks is worth a team slot: Seal does it, and so does Primed by Pain (it leaves its mark while the foe is taking its turn, after the shedding began)."
+    },
+    {
+      "id": "ash-sprite",
+      "armour": 8,
+      "plain": { "pattern": { "anchor": "front", "shape": "line3" }, "powerBp": 8000 },
+      "moves": [],
+      "cards": ["fizzle"],
+      "asks": "Ash settles on a mark made by a reaction, so it cannot be cashed at once, and the fight is long: a Guard that builds Heat doubles a reaction every few rounds."
+    },
+    {
+      "id": "bramble-hound",
+      "armour": 6,
+      "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 9000 },
+      "moves": [
+        {
+          "id": "thorn-snap",
+          "name": "Thorn Snap",
+          "every": 3,
+          "turn": 0,
+          "pattern": { "anchor": "front", "shape": "rowEnds", "n": 1 },
+          "powerBp": 0,
+          "silenceTurns": 1
+        }
+      ],
+      "cards": ["thick-hide"],
+      "asks": "Bark turns small hits away, and it silences the ends of the line. Tunnel Through or a big hit gets past.",
+      "hpBp": 12000,
+      "needs": "pierce"
+    },
+    {
+      "id": "moss-lurker",
+      "armour": 10,
+      "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 6000 },
+      "moves": [
+        {
+          "id": "root-grab",
+          "name": "Root Grab",
+          "every": 2,
+          "turn": 0,
+          "pattern": { "anchor": "strongest", "shape": "line3" },
+          "powerBp": 18000
+        }
+      ],
+      "cards": ["grudge"],
+      "asks": "It likes the loudest visitor: the one that dealt the most, and the strongest. A Guard beside it takes the hit.",
+      "hpBp": 12500,
+      "atkBp": 10000,
+      "needs": "guard"
+    },
+    {
+      "id": "static-bat",
+      "armour": 3,
+      "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 6000 },
+      "moves": [
+        {
+          "id": "zap-dive",
+          "name": "Zap Dive",
+          "every": 3,
+          "turn": 0,
+          "pattern": { "anchor": "strongest", "shape": "chain", "n": 2, "decayBp": 6000 },
+          "powerBp": 11000
+        }
+      ],
+      "cards": ["stone-skin"],
+      "escalation": {
+        "name": "Static Charge",
+        "feed": "crits",
+        "per": 1,
+        "cap": 2,
+        "grow": { "atkBp": 2500 }
+      },
+      "asks": "No hit deals more than a cap, it dives at the hardest hitter, and every crit on it charges it. Dodge keeps the team standing while it hits often."
+    },
+    {
+      "id": "flicker-swarm",
+      "armour": 2,
+      "plain": { "pattern": { "anchor": "random", "shape": "scatter", "n": 2 }, "powerBp": 5000 },
+      "moves": [
+        {
+          "id": "buzz-cloud",
+          "name": "Buzz Cloud",
+          "every": 2,
+          "turn": 0,
+          "pattern": { "anchor": "front", "shape": "all" },
+          "powerBp": 5000
+        }
+      ],
+      "cards": [],
+      "asks": "Sparks everywhere: area hits on all three, every round. A row ward cuts every one of them."
+    },
+    {
+      "id": "bog-toad",
+      "armour": 14,
+      "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 8000 },
+      "moves": [
+        {
+          "id": "mud-spit",
+          "name": "Mud Spit",
+          "every": 2,
+          "turn": 0,
+          "pattern": { "anchor": "random", "shape": "scatter", "n": 1 },
+          "powerBp": 9000
+        }
+      ],
+      "cards": ["shake-it-off"],
+      "asks": "It washes every debuff off itself every third round: a Mired that comes back every round holds it down."
+    },
+    {
+      "id": "tar-leech",
+      "armour": 24,
+      "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 7000 },
+      "moves": [
+        {
+          "id": "tar-cling",
+          "name": "Tar Cling",
+          "every": 3,
+          "turn": 0,
+          "pattern": { "anchor": "front", "shape": "line3" },
+          "powerBp": 13000
+        }
+      ],
+      "cards": ["wither"],
+      "asks": "Black, thick and draining: healing is halved and little gets through its armour, so a boost that reaches every hitter gets more through than a heal; its heavy hits are dodged, not healed."
+    },
+    {
+      "id": "drowned-warden",
+      "armour": 16,
+      "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 6000 },
+      "moves": [
+        {
+          "id": "flood-gate",
+          "name": "Flood Gate",
+          "every": 3,
+          "turn": 0,
+          "pattern": { "anchor": "front", "shape": "all" },
+          "powerBp": 6000
+        },
+        {
+          "id": "sluice-pull",
+          "name": "Sluice Pull",
+          "every": 2,
+          "turn": 0,
+          "pattern": { "anchor": "front", "shape": "columns", "n": 2 },
+          "powerBp": 7000
+        }
+      ],
+      "signature": {
+        "id": "sluice-surge",
+        "name": "Sluice Surge",
+        "every": 4,
+        "turn": 0,
+        "pattern": { "anchor": "front", "shape": "all" },
+        "powerBp": 11000,
+        "charged": true
+      },
+      "cards": [],
+      "escalation": {
+        "name": "Rising Water",
+        "feed": "knockouts",
+        "per": 1,
+        "cap": 2,
+        "grow": { "atkBp": 1200 }
+      },
+      "asks": "The gates open on the whole line, and each creature that falls lets the water rise; at a landmark, a wave announced at round start.",
+      "hpBp": 9500,
+      "note": "A dungeon run is one player’s own team, so a Build-up that feeds on knockouts blames no one: each creature that falls lets the water rise. Retuned after crits doubled (2026-10-30): the all-round team clears over half of its depth-7 runs again."
+    },
+    {
+      "id": "slag-tyrant",
+      "armour": 20,
+      "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 7000 },
+      "moves": [
+        {
+          "id": "anvil-fall",
+          "name": "Anvil Fall",
+          "every": 3,
+          "turn": 0,
+          "pattern": { "anchor": "front", "shape": "line3" },
+          "powerBp": 15000
+        }
+      ],
+      "signature": {
+        "id": "slag-spill",
+        "name": "Slag Spill",
+        "every": 4,
+        "turn": 0,
+        "pattern": { "anchor": "strongest", "shape": "line3" },
+        "powerBp": 24000,
+        "charged": true
+      },
+      "cards": ["reflective-hide"],
+      "escalation": {
+        "name": "Molten Shell",
+        "feed": "reactions",
+        "per": 2,
+        "cap": 2,
+        "grow": { "armour": 8 }
+      },
+      "asks": "The first reaction after each of its turns burns the one who plays it, and every reaction heats it. A Mired that comes back every round holds its Molten Shell down.",
+      "hpBp": 9000,
+      "note": "Eased like the Drowned Warden (at depth 8, with no signature, it still stopped too many runs)."
+    },
+    {
+      "id": "bramble-matron",
+      "armour": 18,
+      "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 6000 },
+      "moves": [
+        {
+          "id": "tangle",
+          "name": "Tangle",
+          "every": 2,
+          "turn": 0,
+          "pattern": { "anchor": "front", "shape": "rowEnds", "n": 1 },
+          "powerBp": 0,
+          "silenceTurns": 1
+        },
+        {
+          "id": "thorn-rain",
+          "name": "Thorn Rain",
+          "every": 3,
+          "turn": 0,
+          "pattern": { "anchor": "random", "shape": "scatter", "n": 2 },
+          "powerBp": 8000
+        }
+      ],
+      "signature": {
+        "id": "briar-cage",
+        "name": "Briar Cage",
+        "every": 4,
+        "turn": 0,
+        "pattern": { "anchor": "front", "shape": "rowEnds", "n": 1 },
+        "powerBp": 13000,
+        "charged": true
+      },
+      "cards": ["wither"],
+      "asks": "She silences the ends and drains healing; thorns land on two random creatures. A Guard that marks as it takes a hit does the Setter’s work."
+    },
+    {
+      "id": "coil-baron",
+      "armour": 14,
+      "plain": { "pattern": { "anchor": "strongest", "shape": "single" }, "powerBp": 6000 },
+      "moves": [
+        {
+          "id": "arc-lash",
+          "name": "Arc Lash",
+          "every": 1,
+          "turn": 0,
+          "pattern": { "anchor": "strongest", "shape": "chain", "n": 1, "decayBp": 6000 },
+          "powerBp": 6000
+        }
+      ],
+      "signature": {
+        "id": "coil-burst",
+        "name": "Coil Burst",
+        "every": 4,
+        "turn": 0,
+        "pattern": { "anchor": "strongest", "shape": "line3" },
+        "powerBp": 22000,
+        "charged": true
+      },
+      "cards": [],
+      "escalation": {
+        "name": "Tightening Coil",
+        "feed": "rounds",
+        "per": 2,
+        "cap": 3,
+        "grow": { "atkBp": 1500, "jumps": 1 }
+      },
+      "asks": "It always goes for the strongest, and the charge builds with every round: a race, where Heat doubles the reactions."
+    },
+    {
+      "id": "fen-lurker",
+      "armour": 22,
+      "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 6000 },
+      "moves": [
+        {
+          "id": "sink-down",
+          "name": "Sink Down",
+          "every": 3,
+          "turn": 0,
+          "pattern": { "anchor": "front", "shape": "all" },
+          "powerBp": 6000
+        }
+      ],
+      "signature": {
+        "id": "fen-tug",
+        "name": "Fen Tug",
+        "every": 4,
+        "turn": 0,
+        "pattern": { "anchor": "front", "shape": "all" },
+        "powerBp": 11000,
+        "charged": true
+      },
+      "cards": ["shake-it-off"],
+      "asks": "A heavy sweep of the line announced at round start, and it washes off every debuff every third round. Night Watch takes the first Wind-up hit."
+    }
+  ]
+}

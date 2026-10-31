@@ -1,0 +1,198 @@
+[
+  { "id": "plain", "name": "No card", "asks": "Baseline.", "ops": [], "answers": [] },
+  {
+    "id": "thick-hide",
+    "name": "Thick Hide",
+    "asks": "Small hits are Blocked; can you land big ones?",
+    "ops": [{ "op": "add", "stat": "armour", "value": 70 }],
+    "answers": ["Pierce", "Detonator"]
+  },
+  {
+    "id": "stone-skin",
+    "name": "Stone Skin",
+    "asks": "No hit deals more than a cap; can you hit often?",
+    "ops": [{ "op": "cap", "value": 260 }],
+    "answers": ["Flurry"]
+  },
+  {
+    "id": "clean-scales",
+    "name": "Clean Scales",
+    "asks": "Marks are shed at the end of every boss turn; are Setter and Payoff in the same row?",
+    "ops": [{ "op": "flag", "mod": "shedMarks" }],
+    "answers": ["Seal"]
+  },
+  {
+    "id": "reflective-hide",
+    "name": "Reflective Hide",
+    "asks": "The first reaction after each boss turn bounces back; can your Payoff take it?",
+    "ops": [{ "op": "flag", "mod": "reflectFirst" }],
+    "answers": ["Sustain"]
+  },
+  {
+    "id": "elusive",
+    "name": "Elusive",
+    "asks": "The boss dodges a lot; can you make hits land?",
+    "ops": [{ "op": "add", "stat": "spd", "value": 300 }],
+    "answers": ["Support shape"]
+  },
+  {
+    "id": "slippery",
+    "name": "Slippery",
+    "asks": "The boss slips away from a quarter of the hits, and a debuff does not slow it; can you make hits land?",
+    "ops": [{ "op": "set", "stat": "dodgeBp", "value": 2500 }],
+    "answers": ["Support shape", "Detonator"]
+  },
+  {
+    "id": "lucky-strike",
+    "name": "Lucky Strike",
+    "asks": "The boss now and then lands a double hit; can you turn it away or take the sting out of it?",
+    "ops": [{ "op": "set", "stat": "critChanceBp", "value": 2000 }],
+    "answers": ["Luck", "Evasion aura"]
+  },
+  {
+    "id": "bramble-bind",
+    "name": "Bramble Bind",
+    "asks": "The ends of every row are silenced; who stands at the ends?",
+    "ops": [
+      {
+        "op": "move",
+        "scale": "gate",
+        "move": {
+          "id": "bramble-bind",
+          "name": "Bramble Bind",
+          "every": 2,
+          "turn": 0,
+          "pattern": { "anchor": "front", "shape": "rowEnds", "n": 1 },
+          "powerBp": 0,
+          "silenceTurns": 2
+        }
+      }
+    ],
+    "answers": ["Ward"]
+  },
+  {
+    "id": "wither",
+    "name": "Wither",
+    "asks": "Healing is halved; can you prevent damage instead?",
+    "ops": [
+      { "op": "raise", "stat": "atk", "bp": 2000 },
+      { "op": "mod", "mod": "healBp", "base": 10000, "minus": 5000 }
+    ],
+    "answers": ["Taunt"]
+  },
+  {
+    "id": "payoff-hunter",
+    "name": "Payoff Hunter",
+    "asks": "Every 3 rounds it slams the strongest Payoff (aimed) and the slots beside it (area); is a Guard there?",
+    "ops": [
+      {
+        "op": "move",
+        "scale": "power",
+        "move": {
+          "id": "payoff-slam",
+          "name": "Payoff Slam",
+          "every": 3,
+          "pattern": { "anchor": "payoff", "shape": "line3" },
+          "powerBp": 15000
+        }
+      }
+    ],
+    "answers": ["Reach"]
+  },
+  {
+    "id": "grudge",
+    "name": "Grudge",
+    "asks": "It hits whoever dealt the most last round.",
+    "ops": [{ "op": "plain", "aim": { "anchor": "grudge", "shape": "single" }, "raiseBp": 5000 }],
+    "answers": ["Taunt"]
+  },
+  {
+    "id": "great-wave",
+    "name": "Great Wave",
+    "asks": "Every 3 rounds a Wind-up sweep of a row, announced at round start; who stands there?",
+    "ops": [
+      {
+        "op": "move",
+        "scale": "power",
+        "move": {
+          "id": "great-wave",
+          "name": "Great Wave",
+          "every": 3,
+          "pattern": { "anchor": "random", "shape": "randomRow" },
+          "powerBp": 18000,
+          "charged": true
+        }
+      }
+    ],
+    "answers": ["Intercept", "Row Ward"]
+  },
+  {
+    "id": "swarm",
+    "name": "Swarm",
+    "asks": "Many small hits on random slots; does armour or dodge hold?",
+    "ops": [
+      {
+        "op": "plain",
+        "replace": { "pattern": { "anchor": "random", "shape": "single" }, "powerBp": 4500 },
+        "hits": 4
+      }
+    ],
+    "answers": ["Evasion", "Evasion aura"]
+  },
+  {
+    "id": "crusher",
+    "name": "Crusher",
+    "asks": "One huge hit on the strongest every third round.",
+    "ops": [
+      {
+        "op": "move",
+        "scale": "power",
+        "move": {
+          "id": "crush",
+          "name": "Crush",
+          "every": 3,
+          "pattern": { "anchor": "strongest", "shape": "single" },
+          "powerBp": 40000
+        }
+      }
+    ],
+    "answers": ["Reach", "Sustain"]
+  },
+  {
+    "id": "fizzle",
+    "name": "Fizzle",
+    "asks": "A mark left by a reaction cannot be cashed until after the next boss turn; do your chains cross rows?",
+    "ops": [{ "op": "flag", "mod": "fizzle" }],
+    "answers": ["Chain"]
+  },
+  {
+    "id": "shake-it-off",
+    "name": "Shake It Off",
+    "asks": "Every 3 rounds the boss clears all its debuffs, announced at round start; can you put them back?",
+    "ops": [{ "op": "mod", "mod": "shakeEvery", "base": 3 }],
+    "answers": ["Debuff"]
+  },
+  {
+    "id": "breakwater",
+    "name": "Breakwater",
+    "asks": "Its waves break on wards: Row Ward cuts against its sweeps count x2.4 to x3 (by strength)",
+    "ops": [{ "op": "mod", "mod": "wardBp", "base": 10000, "plus": 20000 }],
+    "answers": ["Row Ward"]
+  },
+  {
+    "id": "adapts",
+    "name": "Reaction Resistance",
+    "asks": "Raid only: from stage 2 it resists your most-used reaction.",
+    "raidOnly": true,
+    "ops": [{ "op": "flag", "mod": "adapts" }],
+    "answers": []
+  },
+  {
+    "id": "adapts-element",
+    "name": "Element Resistance",
+    "asks": "Raid only: from stage 2 the element that dealt the most damage hits it a quarter softer; is your team more than one element?",
+    "raidOnly": true,
+    "ops": [{ "op": "flag", "mod": "adaptsElement" }],
+    "answers": []
+  }
+]

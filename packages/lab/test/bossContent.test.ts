@@ -203,7 +203,7 @@ describe('names and words (P-06, the compendium tone)', () => {
   const FOE_MOVES = FOE_SPECS.flatMap((f) => [...f.moves, ...(f.signature ? [f.signature] : [])]);
   const RAID_MOVES = RAID_SPECS.flatMap((r) => [...r.moves, ...(r.escalation?.phase?.moves ?? [])]);
   /** [id, name] of every move of every boss and foe. */
-  const moves = [...RAID_MOVES, ...FOE_MOVES].map((m) => [m[0], m[1]] as const);
+  const moves = [...RAID_MOVES, ...FOE_MOVES].map((m) => [m.id, m.name] as const);
   /** Everything a player reads in these files. */
   const texts = [
     ...RAID_SPECS.flatMap((r) => [

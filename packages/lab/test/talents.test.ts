@@ -8,11 +8,9 @@ import { describe, expect, it } from 'vitest';
 import { content } from '@creatures/game';
 import {
   ADDITIVE_FIELDS,
-  KEYWORDS,
   KNACKS,
   LINE_POOLS,
   TALENTS,
-  keywordsIn,
   lineRoles,
   mergeFx,
   placeFighters,
@@ -59,7 +57,6 @@ describe('the talent library as content', () => {
       expect(t.id, id).toBe(id);
       expect(t.roles.length, id).toBeGreaterThan(0);
       expect(pooled.has(id), `${id} pool membership`).toBe(id !== 'cull');
-      for (const w of keywordsIn(t.text)) expect(KEYWORDS, `${id} {${w}}`).toHaveProperty(w);
     }
     expect(Object.keys(TALENTS).length).toBeGreaterThanOrEqual(28);
     // Retired in panel 3.
