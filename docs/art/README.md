@@ -12,6 +12,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [Void, a raid boss, three foes and two floor bosses](#void-foes) | draft | 6 | 2026-10-31: a Void raid boss, dungeon foes and dungeon bosses. |
 | [Void gear: tint, plain pieces, a set, a shard](#void-gear) | draft | 11 | 2026-10-31: design Void gear. |
 | [Void place, the Quiet Verge (banners)](#void-place) | liked | 2 | 2026-10-31: design a Void area that can be explored (banner and place). |
+| [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 
 <a id="void"></a>
 
@@ -117,3 +118,27 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | --- | --- | --- | --- | --- |
 | `void-place-banner` | banner |  | liked | The Quiet Verge: a dusk plain of lilac dust, a still pool that holds the stars, leaning stones, a dark moon and a stone arch with one warm star at the far end. |
 | `void-place-deep` | banner |  | liked | The far side: the ground ends, stepping stones cross the open sky, and a great ring hangs ahead with one warm star at its middle. |
+
+<a id="valley-night"></a>
+
+## Valley places: night glow
+
+![Valley places: night glow](valley-night.png)
+
+- **Status:** draft
+- **Requested:** 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations.
+- **Source:** `apps/activity/src/sprites/concepts/valley-night.ts` (draw it with `pnpm art valley-night`)
+- **Sheet of:** `56eb7da8b49a`
+- Direction "night glow": each place at dusk or night, lit by its own light (fire orange, window yellow, violet lamp, teal shard glow), warm stepped rings on the ground and cool blue-purple shadow.
+- Each sprite is a 64x64 island vignette (kind free, 16 colours) in a 3/4 top-down view, made to sit in a valley map; the island rim keeps it readable on the dark panels.
+- The creatures in these are small stand-ins (10x7), not species; the game would draw the player's own creatures there.
+- Names on the signs, the ribbon and the shard colours follow the designs on the valley branch; the content needs the places to exist (V-BON, school, visitor, V-FORGE-11) before this art is used.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `bonfire` | free |  | draft | A fire in the middle of the valley with four resting creatures around it, each lit orange on the fire side and cool on the back: the warm heart, room for a rotating few. |
+| `bonfire-grand` | free |  | draft | The communal hearth at a later level: a taller fire in a paved stone ring, log benches with three creatures, and two lantern posts that throw their own small light. |
+| `school` | free |  | draft | A small schoolhouse with lit windows and a bell cupola; a creature outside wears the graduation ribbon, and a rosette hangs on the sign. |
+| `visitor` | free |  | draft | The weekly visitor: a hooded stranger with violet lamp-light on one edge and two teal-white eyes, beside a small stall whose wares glow. |
+| `visitor-away` | free |  | draft | The same stall shuttered: a "back Thursday" board with a moon and a calendar mark, an unlit lamp with one last spark, a pale moon above. |
+| `market` | free |  | draft | A stall where a creature trades shards: four element shards glow on the counter, a big shard is the sign, and a customer waits with one. |
