@@ -100,7 +100,7 @@ describe('marks (R3 to R5)', () => {
     ).toBe(0);
   });
 
-  it('Seal, All at Once: a Payoff that spends every count adds a share of the bonus for each extra one', () => {
+  it('Seal, All In: a Payoff that spends every count adds a share of the bonus for each extra one', () => {
     const team = [
       setter(0, 'tide', { fx: { markStacks: 3 } }),
       payoff(1, 'spark', { fx: { spendAllBp: 5_000 } }),
@@ -127,7 +127,7 @@ describe('marks (R3 to R5)', () => {
   });
 });
 
-describe('Primed by Pain and Baked Shell', () => {
+describe('Primed by Pain and Boiling Point', () => {
   const twoHits = (rounds: number) =>
     boss({
       cols: 2,
@@ -169,7 +169,7 @@ describe('Primed by Pain and Baked Shell', () => {
     expect(play(strike, crew({})).reactions).toBe(0);
   });
 
-  it('Baked Shell: Heat builds at every round start, up to three, and by damage', () => {
+  it('Boiling Point: Heat builds at every round start, up to three, and by damage', () => {
     const shell = () => spec({ name: 'K', role: 'guard', fx: { bakedShell: true } });
     const heat = (rounds: number) => by(play(boss({ rounds }), [shell()]), 'K').store;
     expect(heat(1)).toBe(1);
@@ -179,7 +179,7 @@ describe('Primed by Pain and Baked Shell', () => {
     expect(by(play(striker({ atk: 10 }), [shell()]), 'K').store).toBe(2);
   });
 
-  it('Baked Shell: at three Heat the next reaction beside it deals double bonus, and spends the Heat', () => {
+  it('Boiling Point: at three Heat the next reaction beside it deals double bonus, and spends the Heat', () => {
     const r = play(boss({ cols: 3, rounds: 4 }), [
       setter(0),
       payoff(1),

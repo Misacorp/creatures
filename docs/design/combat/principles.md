@@ -29,7 +29,7 @@ Trades against: P-10 (strong builds come from investment too).
 
 Status: proposed (Misa agreed to the direction, 2026-10-26)
 Statement: Setters prime the boss with marks, Payoffs cash them, Guards take hits, Supports shape the round; another role borrows a verb only through a named Knack, and never does it better than the owner.
-Pass: Ready the Mark lets a Support prime, at the cost of its boost and heal.
+Pass: Stack Up lets a Support prime, at the cost of its boost and heal.
 Fail: a Guard that marks for free every turn and still intercepts.
 Review question: Does this give a role's verb to another role, and if so, does it cost something?
 Check: lab tests "without a Setter nothing marks" and "only a Payoff cashes".
@@ -69,7 +69,7 @@ Trades against: P-10.
 
 Status: proposed (Misa, 2026-10-26)
 Statement: An effect keeps one name wherever it appears (another species, a gear piece, a talent); a different effect gets a different name.
-Pass: Ready the Mark on Sunfawn, Ashmole and Magmole; Leave a Trail on five Payoffs.
+Pass: Stack Up on Sunfawn, Ashmole and Magmole; Leave a Trail on five Payoffs.
 Fail: Stand Close (Knack) and Stands Close (talent) with different effects.
 Review question: Does another Knack, talent or gear line already do exactly this?
 Check: lab test "no two Knacks share a name".
@@ -99,7 +99,7 @@ Trades against: P-07, P-03.
 
 Status: proposed
 Statement: Knacks come from a small grammar of families (see `grammar.md`) plus at most one signature per species, so 100 species stay buildable and learnable.
-Pass: the Detonator family (Detonate, All at Once) shares one rule with different numbers.
+Pass: the Detonator family (Detonate, All In) shares one rule with different numbers.
 Fail: a Knack needing a new engine step that only one species will ever use.
 Review question: Which family is this in, and if none, why does it deserve a new one?
 Check: review only (systems reviewer).
@@ -139,7 +139,7 @@ Trades against: P-01.
 
 Status: proposed (first panel, 2026-10-26)
 Statement: A rule card's icon appears on a creature only when the lab shows that creature's Knack beats the usual team on that card.
-Pass: Tunnel Through beside the Payoff beats the classic line on Thick Hide (+20% in the v0.4 report).
+Pass: Sense Weakness beside the Payoff beats the classic line on Thick Hide (+20% in the v0.4 report).
 Fail: Night Watch shown as the Great Wave answer while it does 5% worse than the classic line.
 Review question: Does the report's "intended answers" table show this answer winning?
 Check: report "Do each card's intended answers work?".

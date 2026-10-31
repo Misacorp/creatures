@@ -6,73 +6,73 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 | Family | Rule | Knacks |
 | --- | --- | --- |
-| Seal | Its marks are not shed. | Steady Mark |
+| Seal | Its marks are not shed. | Brand |
 | Lead | Boosts the next creature after it marks. | Lead the Way |
 | Heavy Prime | Gives up its damage for more mark counts (Setters only). | Feed the Marks, Double Mark |
-| Self Prime | A non-Setter that marks what it can cash. | Puddle Maker |
-| Guard Prime | A Guard that marks, at a cost to its Guard role (P-02). | Primed by Pain, Lightning Ears |
-| Support Prime | A Support that marks instead of its boost and heal. | Ready the Mark |
-| Detonator | A Payoff that spends several counts. | All at Once, Detonate |
+| Self Prime | A non-Setter that marks what it can cash. | Self-Starter |
+| Guard Prime | A Guard that marks, at a cost to its Guard role (P-02). | Primed by Pain, Drop Guard |
+| Support Prime | A Support that marks instead of its boost and heal. | Stack Up |
+| Detonator | A Payoff that spends several counts. | All In, Detonate |
 | Chain | After a reaction, leaves a mark of its own element. | Leave a Trail |
 | Flurry | Several smaller hits. | Twin Strike |
 | Reach | Changes how far a Guard covers. | Wide Reach |
-| Intercept | Changes which hits it takes for others (a non-Guard only when no Guard can). | Night Watch, Catch the Bolts, Carry Them |
+| Intercept | Changes which hits it takes for others (a non-Guard only when no Guard can). | Night Watch, Take It All, Unlikely Guardian |
 | Taunt | Draws the plain attack. | Draw Fire |
 | Evasion | Its own dodge, with Retaliate or a Store. | Zoom, Zigzag |
-| Evasion aura | Dodge for the creatures beside it or in its row (the largest aura applies). | Hide in Mist, Thick Fog |
-| Row Ward | Cuts area damage for its row or the creatures beside it (the largest applies). | Keep the Heat In, Living Shelter |
-| Ward | Keeps the creatures beside it from being silenced. | Lantern Glow |
-| Pierce | Ignores some boss armour. | Tunnel Through, Gnaw Through |
+| Evasion aura | Dodge for the creatures beside it or in its row (the largest aura applies). | Mist Veil, Rolling Fog |
+| Row Ward | Cuts area damage for its row or the creatures beside it (the largest applies). | Barricade, Living Shelter |
+| Silence Guard | Keeps the creatures beside it from being silenced. | Lantern Glow |
+| Pierce | Ignores some boss armour. | Sense Weakness, Find the Gap |
 | Luck | Trades hit size for crits, or takes the sting out of a boss crit. | Wild Swing, Cool Head |
 | Partner | A bonus on its hits while a given role is, or is not, beside it. | Guard's Shadow, Territorial |
-| Support shape | Changes where a Support's boost and heal land, or replaces them. | Clear Skies, Sunbeam, Curl Up, Wide Warmth, Drizzle, Starlight |
-| Sustain | Heals, on a reaction or at round start. | Circle Round, Clear the Air, Hearth |
-| Store | Fills over the fight, spends at 3. | Gather Calm, Baked Shell |
-| Debuff | Puts a debuff on the boss. | Mud Wall, Squelch Song |
+| Support shape | Changes where a Support's boost and heal land, or replaces them. | Clear Skies, Sunbeam, Curl Up, Wide Embrace, Drizzle, Starlight |
+| Sustain | Heals, on a reaction or at round start. | Returning Tide, Clear the Air, Hearth |
+| Store | Fills over the fight, spends at 3. | Eye of the Storm, Boiling Point |
+| Debuff | Puts a debuff on the boss. | Sticky Mud, Squelch Song |
 | Signature | An epic's own twist on a family, on one species only. | Crown of Embers |
 
 ## By form
 
 | Form | Knacks |
 | --- | --- |
-| splashet | Steady Mark, Lead the Way |
-| tidewing | Steady Mark, Lead the Way, Double Mark, Circle Round |
-| geyserpup | Leave a Trail, Puddle Maker, All at Once |
+| splashet | Brand, Lead the Way |
+| tidewing | Brand, Lead the Way, Double Mark, Returning Tide |
+| geyserpup | Leave a Trail, Self-Starter, All In |
 | stormray | Detonate, Leave a Trail, Wild Swing |
 | tempestray | Detonate, Leave a Trail, Wild Swing, Twin Strike |
-| halcyray | Clear Skies, Clear the Air, Gather Calm |
+| halcyray | Clear Skies, Clear the Air, Eye of the Storm |
 | sproutle | Wide Reach, Primed by Pain |
 | thornbuck | Wide Reach, Primed by Pain, Night Watch, Cool Head |
-| sunfawn | Sunbeam, Curl Up, Ready the Mark |
-| ashmole | Wide Warmth, Ready the Mark |
-| magmole | Wide Warmth, Ready the Mark, Tunnel Through |
-| kilnmole | Draw Fire, Keep the Heat In, Baked Shell |
+| sunfawn | Sunbeam, Curl Up, Stack Up |
+| ashmole | Wide Embrace, Stack Up |
+| magmole | Wide Embrace, Stack Up, Sense Weakness |
+| kilnmole | Draw Fire, Barricade, Boiling Point |
 | zipmouse | Zoom, Double Mark |
 | voltaro | Zoom, Double Mark, Zigzag |
-| ohmouse | Catch the Bolts, Lightning Ears |
+| ohmouse | Take It All, Drop Guard |
 | cindle | Detonate, Leave a Trail, Wild Swing |
-| pyrelynx | Detonate, Leave a Trail, Wild Swing, Guard's Shadow, Gnaw Through |
-| wickat | Lead the Way, Steady Mark, Double Mark |
-| mistnewt | Wide Reach, Hide in Mist |
-| fogwyrm | Wide Reach, Hide in Mist, Thick Fog |
+| pyrelynx | Detonate, Leave a Trail, Wild Swing, Guard's Shadow, Find the Gap |
+| wickat | Lead the Way, Brand, Double Mark |
+| mistnewt | Wide Reach, Mist Veil |
+| fogwyrm | Wide Reach, Mist Veil, Rolling Fog |
 | drizzlewt | Drizzle, Curl Up, Clear the Air |
-| mossback | Steady Mark, Feed the Marks |
-| ancientshell | Steady Mark, Feed the Marks, Living Shelter |
-| bloomback | All at Once, Detonate, Leave a Trail |
+| mossback | Brand, Feed the Marks |
+| ancientshell | Brand, Feed the Marks, Living Shelter |
+| bloomback | All In, Detonate, Leave a Trail |
 | coralynx | Detonate, Leave a Trail, Territorial, Wild Swing |
-| solmane | Lead the Way, Steady Mark, Crown of Embers |
-| gaiadrake | Detonate, Leave a Trail, Carry Them |
-| aurorix | Starlight, Clear Skies, Gather Calm |
+| solmane | Lead the Way, Brand, Crown of Embers |
+| gaiadrake | Detonate, Leave a Trail, Unlikely Guardian |
+| aurorix | Starlight, Clear Skies, Eye of the Storm |
 | lanternfin | Lantern Glow, Clear the Air, Sunbeam |
-| hearthshell | Draw Fire, Keep the Heat In, Hearth |
-| mudlump | Mud Wall, Wide Reach |
-| bogwarden | Mud Wall, Wide Reach, Draw Fire |
-| squelch | Squelch Song, Ready the Mark |
-| croakmire | Squelch Song, Ready the Mark, Wide Warmth |
+| hearthshell | Draw Fire, Barricade, Hearth |
+| mudlump | Sticky Mud, Wide Reach |
+| bogwarden | Sticky Mud, Wide Reach, Draw Fire |
+| squelch | Squelch Song, Stack Up |
+| croakmire | Squelch Song, Stack Up, Wide Embrace |
 
 ## Knacks
 
-### Steady Mark
+### Brand
 
 - **Text:** {Seal}: its marks are not shed by the boss.
 - **Family:** Seal
@@ -93,21 +93,21 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 - **Forms:** mossback, ancientshell
 - **Intent (for contributors, never shown to players):** For multi-mark teams and Payoffs that spend several stacks.
 
-### Circle Round
+### Returning Tide
 
 - **Text:** Each reaction on a Tide mark heals the creature that set it off by 14% of its max HP.
 - **Family:** Sustain
 - **Forms:** tidewing
 - **Intent (for contributors, never shown to players):** Keeps Payoffs alive when reactions hurt them (Reflective Hide, Thorns).
 
-### Puddle Maker
+### Self-Starter
 
 - **Text:** When it sets off no {Reaction}, it leaves the mark it can cash, like a Setter.
 - **Family:** Self Prime
 - **Forms:** geyserpup
 - **Intent (for contributors, never shown to players):** A Payoff that works without a Setter, at half the pace.
 
-### All at Once
+### All In
 
 - **Text:** Cashes only a mark at x3, and {Spend}s all of its count.
 - **Family:** Detonator
@@ -149,7 +149,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 - **Forms:** halcyray, drizzlewt, lanternfin
 - **Intent (for contributors, never shown to players):** Answers Reflective Hide, Thorns and silence on the Payoff.
 
-### Gather Calm
+### Eye of the Storm
 
 - **Text:** {Store} Calm: +1 for each reaction anywhere. At round start with 3 Calm, the creatures beside it get +45% and it spends all.
 - **Family:** Store
@@ -191,33 +191,33 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 - **Forms:** sunfawn, drizzlewt
 - **Intent (for contributors, never shown to players):** For steady damage on a Guard.
 
-### Ready the Mark
+### Stack Up
 
 - **Text:** Instead of its boost and heal: it adds 1 to its own element's {Mark}.
 - **Family:** Support Prime
 - **Forms:** sunfawn, ashmole, magmole, squelch, croakmire
 - **Intent (for contributors, never shown to players):** Lets a team without a Setter react; needs a Payoff of the right element.
 
-### Wide Warmth
+### Wide Embrace
 
 - **Text:** Its boost also reaches one slot further on each side, at full strength.
 - **Family:** Support shape
 - **Forms:** ashmole, magmole, croakmire
 - **Intent (for contributors, never shown to players):** Wide rows with several hitters: a Support at the end of a line of three boosts both hitters, and in a raid row it reaches the far column too. Tar Leech asks for it.
 
-### Tunnel Through
+### Sense Weakness
 
 - **Text:** Hits by creatures beside it ignore half the boss's armour.
 - **Family:** Pierce
 - **Forms:** magmole
 - **Intent (for contributors, never shown to players):** Answers armoured bosses for plain hitters.
 
-### Gnaw Through
+### Find the Gap
 
 - **Text:** Its own hits ignore a third of the boss's armour.
 - **Family:** Pierce
 - **Forms:** pyrelynx
-- **Intent (for contributors, never shown to players):** Pierce for a Payoff of a common species: its own plain and reaction hits get past thick bark (Thornmother, Tar Leech), where Tunnel Through helps the creatures beside a Support. Only the Payoff's hits, so it is a choice for one creature, not a row.
+- **Intent (for contributors, never shown to players):** Pierce for a Payoff of a common species: its own plain and reaction hits get past thick bark (Thornmother, Tar Leech), where Sense Weakness helps the creatures beside a Support. Only the Payoff's hits, so it is a choice for one creature, not a row.
 
 ### Draw Fire
 
@@ -226,14 +226,14 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 - **Forms:** kilnmole, hearthshell, bogwarden
 - **Intent (for contributors, never shown to players):** Takes the plain attacks off fragile creatures wherever they stand.
 
-### Keep the Heat In
+### Barricade
 
 - **Text:** While it stands, its row takes 15% less from area and {Wind-up} hits.
 - **Family:** Row Ward
 - **Forms:** kilnmole, hearthshell
 - **Intent (for contributors, never shown to players):** Protects other players' creatures in its row in the raid.
 
-### Baked Shell
+### Boiling Point
 
 - **Text:** {Store} Heat: +1 at round start and each time it or a creature in its reach takes damage. At 3, the next {Reaction} by a creature beside it deals double bonus.
 - **Family:** Store
@@ -261,21 +261,21 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 - **Forms:** voltaro
 - **Intent (for contributors, never shown to players):** A dodge tank beside a Guard (dodge before intercept).
 
-### Catch the Bolts
+### Take It All
 
 - **Text:** It {Intercept}s area hits too, and takes them with its cover's cut.
 - **Family:** Intercept
 - **Forms:** ohmouse
 - **Intent (for contributors, never shown to players):** Answers sweeps and splashes. 2026-10-31: it used to take the whole area hit with no cut, which left it worse than no Knack on Great Wave; the cover cut makes it the pick against sweeps.
 
-### Lightning Ears
+### Drop Guard
 
 - **Text:** It leaves its own element's {Mark} like a Setter, but it does not {Intercept}, and Armour -8.
 - **Family:** Guard Prime
 - **Forms:** ohmouse
 - **Intent (for contributors, never shown to players):** A Setter that survives the front row; it pays with the Guard's verb and its armour (P-02: never a Setter and a Guard in one body).
 
-### Mud Wall
+### Sticky Mud
 
 - **Text:** Each hit it takes, even Blocked, puts {Mired} x1 on the boss.
 - **Family:** Debuff
@@ -303,14 +303,14 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 - **Forms:** solmane
 - **Intent (for contributors, never shown to players):** Solmane's signature: an epic Setter that feeds Detonators without giving up its damage.
 
-### Hide in Mist
+### Mist Veil
 
 - **Text:** Creatures beside it get +15 dodge.
 - **Family:** Evasion aura
 - **Forms:** mistnewt, fogwyrm
 - **Intent (for contributors, never shown to players):** A Guard that protects by hiding friends; strong with dodge-before-intercept (R1) when the boss hits often.
 
-### Thick Fog
+### Rolling Fog
 
 - **Text:** Every creature in its row gets +8 dodge.
 - **Family:** Evasion aura
@@ -338,7 +338,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 - **Forms:** coralynx
 - **Intent (for contributors, never shown to players):** Coralynx guards its reef alone: a placement question its owner controls (beside, not the whole row, so other players cannot switch it off).
 
-### Carry Them
+### Unlikely Guardian
 
 - **Text:** {Intercept}s aimed hits for the creatures {Beside} it when no Guard can. Reaction bonus -25%.
 - **Family:** Intercept
@@ -355,7 +355,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 ### Lantern Glow
 
 - **Text:** Creatures beside it cannot be {Silenced}.
-- **Family:** Ward
+- **Family:** Silence Guard
 - **Forms:** lanternfin
 - **Intent (for contributors, never shown to players):** Lanternfin guides friends through the dark: the silence answer that protects others.
 

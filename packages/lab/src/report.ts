@@ -64,13 +64,12 @@ export const SCENARIOS: Readonly<Record<string, string>> = {
     'voltaro/double-mark bloomback/detonate thornbuck/wide-reach',
   'Chain: Overload leaves Charged for Bloomback':
     'tidewing/steady-mark tempestray/leave-a-trail bloomback/none',
-  'No Setter: Ready the Mark feeds Geyserpup':
-    'kilnmole/draw-fire geyserpup/none magmole/ready-the-mark',
-  'No Setter: Puddle Maker': 'kilnmole/draw-fire geyserpup/puddle-maker magmole/tunnel-through',
-  'All at Once on two Setters': 'wickat/double-mark solmane/none geyserpup/all-at-once',
+  'No Setter: Stack Up feeds Geyserpup': 'kilnmole/draw-fire geyserpup/none magmole/ready-the-mark',
+  'No Setter: Self-Starter': 'kilnmole/draw-fire geyserpup/puddle-maker magmole/tunnel-through',
+  'All In on two Setters': 'wickat/double-mark solmane/none geyserpup/all-at-once',
   'Twin Strike': 'tidewing/steady-mark tempestray/twin-strike thornbuck/wide-reach',
   'Dodge tank: Zigzag beside a Guard': 'voltaro/zigzag ohmouse/catch-the-bolts tempestray/none',
-  'Mire: Mud Wall and Squelch Song': 'bogwarden/mud-wall tempestray/none croakmire/squelch-song',
+  'Mire: Sticky Mud and Squelch Song': 'bogwarden/mud-wall tempestray/none croakmire/squelch-song',
   'No reactions: plain hitters': 'tempestray/twin-strike magmole/tunnel-through kilnmole/draw-fire',
   "Guard's Shadow: Pyrelynx beside Kilnmole":
     'ancientshell/steady-mark pyrelynx/guards-shadow kilnmole/draw-fire',
@@ -78,7 +77,7 @@ export const SCENARIOS: Readonly<Record<string, string>> = {
     'solmane/crown-of-embers coralynx/territorial kilnmole/draw-fire',
   'Starlight across the row': 'tidewing/steady-mark aurorix/starlight tempestray/none',
   'Drizzle across the row': 'tidewing/steady-mark drizzlewt/drizzle tempestray/none',
-  'Carry Them: Gaiadrake guards its Setter':
+  'Unlikely Guardian: Gaiadrake guards its Setter':
     'voltaro/zoom gaiadrake/carry-them thornbuck/wide-reach',
 };
 
@@ -86,19 +85,17 @@ export const SCENARIOS: Readonly<Record<string, string>> = {
 export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string])[]>> = {
   'thick-hide': [
     [
-      'Tunnel Through beside the Payoff',
+      'Sense Weakness beside the Payoff',
       'tidewing/steady-mark tempestray/none magmole/tunnel-through',
     ],
-    ['All at Once on two Setters', 'wickat/double-mark solmane/none geyserpup/all-at-once'],
+    ['All In on two Setters', 'wickat/double-mark solmane/none geyserpup/all-at-once'],
   ],
   'stone-skin': [
     ['Twin Strike', 'tidewing/steady-mark tempestray/twin-strike thornbuck/wide-reach'],
   ],
-  'clean-scales': [
-    ['Steady Mark (Seal)', 'tidewing/steady-mark tempestray/none thornbuck/wide-reach'],
-  ],
+  'clean-scales': [['Brand (Seal)', 'tidewing/steady-mark tempestray/none thornbuck/wide-reach']],
   'reflective-hide': [
-    ['Circle Round', 'tidewing/circle-round tempestray/none thornbuck/wide-reach'],
+    ['Returning Tide', 'tidewing/circle-round tempestray/none thornbuck/wide-reach'],
     // Beside both: the heal reaches the Payoff whose reaction bounces back (a Support at the end heals one side only).
     [
       'Clear the Air in the middle',
@@ -117,19 +114,19 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
       'tidewing/steady-mark halcyray/clear-skies tempestray/none',
     ],
     [
-      'All at Once (marks are never dodged)',
+      'All In (marks are never dodged)',
       'tidewing/steady-mark tempestray/all-at-once thornbuck/wide-reach',
     ],
   ],
   breakwater: [
     [
-      'Keep the Heat In on a Kilnmole in the row',
+      'Barricade on a Kilnmole in the row',
       'tidewing/steady-mark kilnmole/keep-the-heat-in tempestray/none',
     ],
   ],
   'lucky-strike': [
     ['Cool Head in the middle', 'tidewing/steady-mark thornbuck/cool-head tempestray/none'],
-    ['Hide in Mist', 'tidewing/steady-mark fogwyrm/hide-in-mist tempestray/none'],
+    ['Mist Veil', 'tidewing/steady-mark fogwyrm/hide-in-mist tempestray/none'],
   ],
   'bramble-bind': [
     ['Setter in the middle', 'thornbuck/wide-reach tidewing/steady-mark tempestray/none'],
@@ -143,7 +140,7 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
   'great-wave': [
     ['Night Watch', 'tidewing/steady-mark tempestray/none thornbuck/night-watch'],
     [
-      'Keep the Heat In in the middle',
+      'Barricade in the middle',
       'tidewing/steady-mark hearthshell/keep-the-heat-in tempestray/none',
     ],
     ['Living Shelter', 'pyrelynx/none ancientshell/living-shelter thornbuck/wide-reach'],
@@ -151,7 +148,7 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
   swarm: [
     // A Spark Setter's mark is cashed by a Grove Payoff (Tempestray is Spark: it would cash nothing).
     ['Zoom', 'voltaro/zoom bloomback/none thornbuck/wide-reach'],
-    ['Hide in Mist', 'tidewing/steady-mark fogwyrm/hide-in-mist tempestray/none'],
+    ['Mist Veil', 'tidewing/steady-mark fogwyrm/hide-in-mist tempestray/none'],
   ],
   crusher: [
     ['Guard beside the Payoff', 'tidewing/steady-mark tempestray/none thornbuck/wide-reach'],

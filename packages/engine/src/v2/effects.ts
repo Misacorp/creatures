@@ -46,7 +46,7 @@ export interface KnackFx {
   readonly storeDodgeStacks?: number;
   /** A Guard that does not intercept (the price of marking like a Setter, P-02). */
   readonly noIntercept?: boolean;
-  /** Intercepts area hits too, after the target's failed dodge, and takes them with its own cover's cut (Catch the Bolts). */
+  /** Intercepts area hits too, after the target's failed dodge, and takes them with its own cover's cut (Take It All). */
   readonly interceptArea?: boolean;
   /** Night Watch: the hit it takes is cut by this much (bp), when that is more than its cover's cut. */
   readonly watchCutBp?: number;

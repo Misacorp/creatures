@@ -102,7 +102,7 @@ function expectWikiWithOneScript(
   expect(css).not.toMatch(/https?:|@import/);
   // The script holds no lab or game data (its cards come from the page); the lab's own chunk, in a
   // staging build, holds it on purpose.
-  const draft = ['Steady Mark', 'its marks are not shed by the boss', 'FORM_KNACKS'];
+  const draft = ['Sense Weakness', 'its marks are not shed by the boss', 'FORM_KNACKS'];
   for (const text of draft) expect(script?.text).not.toContain(text);
   if (labInScripts) return;
   const js = files.filter((f) => f.name.endsWith('.js'));

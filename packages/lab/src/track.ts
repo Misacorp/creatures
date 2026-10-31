@@ -112,7 +112,7 @@ export const SLOT_WALL: Readonly<Record<number, true>> = { 5: true };
  * player's best creature is level 11 in week 1 and 14 in week 2), so each line is the line such a server really fields, the gated
  * version of the line it had (`gatedPick` in `roster.ts`: each stage 2 form is its stage 1 form, with the Knack and the talents the
  * gate keeps; an evolved line would be fielded as these anyway, and the ownability rule asks that a slot's line be evolved at its week).
- * - Slot 1 (the tutorial boss): the old line, the boss's first answer with both Tempestrays replaced by Geyserpup with Puddle Maker
+ * - Slot 1 (the tutorial boss): the old line, the boss's first answer with both Tempestrays replaced by Geyserpup with Self-Starter
  *   (Tempestray is a rare, which a server of 8 owns with a chance of 33% in week 1), gated. All common.
  * - Slot 2: the Cinder Wyrm's first answer, gated; it keeps the tool (the first card's answer, Squelch Song, on three Squelch).
  * A team search over the common stage 1 forms found lines with more raw potential at the same numbers (slot 1: 277% against 132%;

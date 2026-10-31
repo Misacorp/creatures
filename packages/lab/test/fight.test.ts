@@ -234,7 +234,7 @@ describe('combat v2 content rules: Knacks and talents for every species', () => 
 
 describe('R11 and line talent pools (Misa, 2026-10-27)', () => {
   it('evolving adds the new form its own Knacks; a role change keeps only the new role', () => {
-    // Splashet (Setter) to Tidewing (Setter): it keeps Steady Mark and Lead the Way, and learns more.
+    // Splashet (Setter) to Tidewing (Setter): it keeps Brand and Lead the Way, and learns more.
     expect(knacksOf('tidewing')).toEqual([
       'steady-mark',
       'lead-the-way',

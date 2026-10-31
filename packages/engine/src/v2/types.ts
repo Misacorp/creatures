@@ -94,7 +94,7 @@ export interface Fighter extends FighterSpec {
 export interface V2Rules {
   /** A Payoff's reaction hit deals plain x this (R7). The pair Setter + Payoff should clearly beat two plain hitters, not double them. */
   readonly payoffMultBp: number;
-  /** All reaction-bonus factors together (Knack factor, extra counts, Baked Shell) never pass this (R7). */
+  /** All reaction-bonus factors together (Knack factor, extra counts, Boiling Point) never pass this (R7). */
   readonly maxBonusFactorBp: number;
   /** A mark holds at most this many counts (R3). */
   readonly maxStacks: number;
@@ -221,7 +221,7 @@ export interface BossMove {
    * at round start, Charged or not: its slots are rolled and shown, and it lands on those creatures on its boss turn and
    * never re-aims (a creature knocked out by then is skipped). Being Charged only changes how its hits are dodged and
    * intercepted (full-chance dodge; a Guard takes one only through an effect that says so). A Guard takes a Charged hit only through an effect that says so
-   * (Night Watch, Intercept area hits too); a Row Ward, Keep the Heat In and Brace read it.
+   * (Night Watch, Intercept area hits too); a Row Ward, Barricade and Brace read it.
    */
   readonly charged?: boolean;
 }

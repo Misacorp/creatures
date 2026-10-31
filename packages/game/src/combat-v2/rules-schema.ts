@@ -12,7 +12,7 @@ export const RulesSchema = v.pipe(
   v.strictObject({
     /** A Payoff's reaction hit deals plain x this (R7). The pair Setter + Payoff should clearly beat two plain hitters, not double them. */
     payoffMultBp: Int,
-    /** All reaction-bonus factors together (Knack factor, extra counts, Baked Shell) never pass this (R7). */
+    /** All reaction-bonus factors together (Knack factor, extra counts, Boiling Point) never pass this (R7). */
     maxBonusFactorBp: Int,
     /** A mark holds at most this many counts (R3). */
     maxStacks: Int,

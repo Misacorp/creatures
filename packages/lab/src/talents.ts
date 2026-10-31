@@ -60,7 +60,7 @@ export function talentPool(line: string): PoolEntry[] {
 
 /**
  * Whether a talent does nothing under a Knack, whatever the role: Triage aims the Support's own base verb, so a
- * Support shape Knack (Sunbeam, Drizzle, Starlight, Wide Warmth, Curl Up and the rest) leaves it idle.
+ * Support shape Knack (Sunbeam, Drizzle, Starlight, Wide Embrace, Curl Up and the rest) leaves it idle.
  */
 export function talentIdleUnder(talentId: string, knackId: string | undefined): boolean {
   return talentId === 'triage' && knackId !== undefined && SUPPORT_SHAPE_KNACKS.has(knackId);

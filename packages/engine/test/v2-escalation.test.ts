@@ -311,7 +311,7 @@ describe('Mired (R22.3, panel 3)', () => {
     expect(mired(none.res)).toEqual(['Mired x1']);
   });
 
-  it('Mud Wall: each hit it takes puts a Mired stack on the boss, Blocked or not', () => {
+  it('Sticky Mud: each hit it takes puts a Mired stack on the boss, Blocked or not', () => {
     const hit = (armour: number) =>
       mired(
         play(striker({ rounds: 2 }), [

@@ -370,7 +370,7 @@
     "ko": 1.2083333333333333
    }
   },
-  "No Setter: Ready the Mark feeds Geyserpup": {
+  "No Setter: Stack Up feeds Geyserpup": {
    "plain": {
     "damage": 3882,
     "ko": 0.8333333333333334
@@ -444,7 +444,7 @@
     "ko": 0.9166666666666666
    }
   },
-  "No Setter: Puddle Maker": {
+  "No Setter: Self-Starter": {
    "plain": {
     "damage": 3856,
     "ko": 0.8333333333333334
@@ -518,7 +518,7 @@
     "ko": 0.9166666666666666
    }
   },
-  "All at Once on two Setters": {
+  "All In on two Setters": {
    "plain": {
     "damage": 5169,
     "ko": 1.0833333333333333
@@ -740,7 +740,7 @@
     "ko": 0.8333333333333334
    }
   },
-  "Mire: Mud Wall and Squelch Song": {
+  "Mire: Sticky Mud and Squelch Song": {
    "plain": {
     "damage": 2999,
     "ko": 0.75
@@ -1184,7 +1184,7 @@
     "ko": 1
    }
   },
-  "Carry Them: Gaiadrake guards its Setter": {
+  "Unlikely Guardian: Gaiadrake guards its Setter": {
    "plain": {
     "damage": 4129,
     "ko": 0.25
@@ -4119,7 +4119,7 @@
    ],
    "survive": [],
    "det": [
-    "geyserpup (All at Once)",
+    "geyserpup (All In)",
     "coralynx (Detonate)"
    ]
   },
@@ -4140,7 +4140,7 @@
    ],
    "survive": [],
    "det": [
-    "bloomback (All at Once)",
+    "bloomback (All In)",
     "bloomback (Detonate)",
     "gaiadrake (Detonate)"
    ]
@@ -4578,7 +4578,7 @@
      "beatsClassic": true
     },
     {
-     "label": "Keep the Heat In and Living Shelter on every row blunt the waves",
+     "label": "Barricade and Living Shelter on every row blunt the waves",
      "tool": "Row Ward",
      "score": 85,
      "winRate": 0.56,
@@ -5045,7 +5045,7 @@
      "beatsClassic": true
     },
     {
-     "label": "Circle Round and Clear the Air heal the Payoffs its reflected hits land on",
+     "label": "Returning Tide and Clear the Air heal the Payoffs its reflected hits land on",
      "tool": "Sustain",
      "score": 117,
      "winRate": 0.68,
@@ -5454,7 +5454,7 @@
    ],
    "answers": [
     {
-     "label": "Tunnel Through and Gnaw Through get hits past her thick bark",
+     "label": "Sense Weakness and Find the Gap get hits past her thick bark",
      "tool": "Pierce",
      "score": 139,
      "winRate": 1,
@@ -5462,7 +5462,7 @@
      "beatsClassic": true
     },
     {
-     "label": "Big reactions (Detonate, All at Once) go through the bark that stops plain hits",
+     "label": "Big reactions (Detonate, All In) go through the bark that stops plain hits",
      "tool": "Reactions",
      "score": 131,
      "winRate": 0.98,
@@ -6241,7 +6241,7 @@
    ],
    "answers": [
     {
-     "label": "Circle Round heals the Setters and Payoffs the fen sinks first, row after row",
+     "label": "Returning Tide heals the Setters and Payoffs the fen sinks first, row after row",
      "tool": "Sustain",
      "score": 138,
      "winRate": 0.95,
@@ -6249,7 +6249,7 @@
      "beatsClassic": true
     },
     {
-     "label": "Living Shelter and Keep the Heat In shield the creatures the mud sinks",
+     "label": "Living Shelter and Barricade shield the creatures the mud sinks",
      "tool": "Row Ward",
      "score": 88,
      "winRate": 0.6,
@@ -9741,7 +9741,7 @@
     ],
     "answers": [
      "Cinder Wyrm: Squelch Song keeps Mired on the Wyrm, so Forge Heat builds slowly and each hit lands softer",
-     "Cinder Wyrm: Circle Round and Clear the Air heal the Payoffs its reflected hits land on",
+     "Cinder Wyrm: Returning Tide and Clear the Air heal the Payoffs its reflected hits land on",
      "Storm Sovereign: Draw Fire pulls the Rod onto a Guard that can take it",
      "Storm Sovereign: Night Watch takes the Judgement Bolt meant for the strongest Payoff"
     ]
@@ -9753,7 +9753,7 @@
      "Storm Sovereign"
     ],
     "answers": [
-     "Cinder Wyrm: Circle Round and Clear the Air heal the Payoffs its reflected hits land on",
+     "Cinder Wyrm: Returning Tide and Clear the Air heal the Payoffs its reflected hits land on",
      "Storm Sovereign: Draw Fire pulls the Rod onto a Guard that can take it",
      "Storm Sovereign: Night Watch takes the Judgement Bolt meant for the strongest Payoff"
     ]
@@ -9765,8 +9765,8 @@
      "Old Bogback"
     ],
     "answers": [
-     "Cinder Wyrm: Circle Round and Clear the Air heal the Payoffs its reflected hits land on",
-     "Old Bogback: Circle Round heals the Setters and Payoffs the fen sinks first, row after row"
+     "Cinder Wyrm: Returning Tide and Clear the Air heal the Payoffs its reflected hits land on",
+     "Old Bogback: Returning Tide heals the Setters and Payoffs the fen sinks first, row after row"
     ]
    },
    {
@@ -9777,7 +9777,7 @@
     ],
     "answers": [
      "Cinder Wyrm: Squelch Song keeps Mired on the Wyrm, so Forge Heat builds slowly and each hit lands softer",
-     "Cinder Wyrm: Circle Round and Clear the Air heal the Payoffs its reflected hits land on",
+     "Cinder Wyrm: Returning Tide and Clear the Air heal the Payoffs its reflected hits land on",
      "Storm Sovereign: Draw Fire pulls the Rod onto a Guard that can take it",
      "Storm Sovereign: Night Watch takes the Judgement Bolt meant for the strongest Payoff"
     ]
@@ -9788,7 +9788,7 @@
      "Thornmother"
     ],
     "answers": [
-     "Thornmother: Big reactions (Detonate, All at Once) go through the bark that stops plain hits"
+     "Thornmother: Big reactions (Detonate, All In) go through the bark that stops plain hits"
     ]
    },
    {
@@ -9797,7 +9797,7 @@
      "Cinder Wyrm"
     ],
     "answers": [
-     "Cinder Wyrm: Circle Round and Clear the Air heal the Payoffs its reflected hits land on"
+     "Cinder Wyrm: Returning Tide and Clear the Air heal the Payoffs its reflected hits land on"
     ]
    },
    {
@@ -9806,7 +9806,7 @@
      "Cinder Wyrm"
     ],
     "answers": [
-     "Cinder Wyrm: Circle Round and Clear the Air heal the Payoffs its reflected hits land on"
+     "Cinder Wyrm: Returning Tide and Clear the Air heal the Payoffs its reflected hits land on"
     ]
    },
    {
@@ -9833,7 +9833,7 @@
      "Thornmother"
     ],
     "answers": [
-     "Thornmother: Tunnel Through and Gnaw Through get hits past her thick bark"
+     "Thornmother: Sense Weakness and Find the Gap get hits past her thick bark"
     ]
    },
    {
@@ -9851,7 +9851,7 @@
      "Old Bogback"
     ],
     "answers": [
-     "Old Bogback: Living Shelter and Keep the Heat In shield the creatures the mud sinks"
+     "Old Bogback: Living Shelter and Barricade shield the creatures the mud sinks"
     ]
    }
   ],
@@ -10092,7 +10092,7 @@
   },
   {
    "foe": "drift-wisp",
-   "mechanic": "family:Ward",
+   "mechanic": "family:Silence Guard",
    "withTool": 0.855,
    "without": 0.555,
    "gap": 0.29999999999999993
@@ -10227,7 +10227,7 @@
    "measured": ""
   },
   "bramble-hound": {
-   "written": "Bark turns small hits away, and it silences the ends of the line. Tunnel Through or a big hit gets past.",
+   "written": "Bark turns small hits away, and it silences the ends of the line. Sense Weakness or a big hit gets past.",
    "measured": "Lead Knacks"
   },
   "moss-lurker": {
@@ -10349,7 +10349,7 @@
   ],
   "drift-wisp": [
    "family:Support shape",
-   "family:Ward"
+   "family:Silence Guard"
   ],
   "ember-mite": [
    "family:Guard Prime"
@@ -10601,7 +10601,7 @@
     "unit": "pts of win rate"
    }
   ],
-  "family:Ward": [
+  "family:Silence Guard": [
    {
     "name": "Drift Wisp's question",
     "drop": 30,

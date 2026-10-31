@@ -61,7 +61,7 @@
       "text": "Cuts area damage for its row or the creatures beside it (the largest applies)."
     },
     {
-      "name": "Ward",
+      "name": "Silence Guard",
       "text": "Keeps the creatures beside it from being silenced."
     },
     {
@@ -100,7 +100,7 @@
   "knacks": [
     {
       "id": "steady-mark",
-      "name": "Steady Mark",
+      "name": "Brand",
       "family": "Seal",
       "text": "{Seal}: its marks are not shed by the boss.",
       "intent": "Answers bosses that shed marks on their turns (Clean Scales), which matter now that the boss acts after every row.",
@@ -131,7 +131,7 @@
     },
     {
       "id": "circle-round",
-      "name": "Circle Round",
+      "name": "Returning Tide",
       "family": "Sustain",
       "text": "Each reaction on a Tide mark heals the creature that set it off by 14% of its max HP.",
       "intent": "Keeps Payoffs alive when reactions hurt them (Reflective Hide, Thorns).",
@@ -141,7 +141,7 @@
     },
     {
       "id": "puddle-maker",
-      "name": "Puddle Maker",
+      "name": "Self-Starter",
       "family": "Self Prime",
       "text": "When it sets off no {Reaction}, it leaves the mark it can cash, like a Setter.",
       "intent": "A Payoff that works without a Setter, at half the pace.",
@@ -151,7 +151,7 @@
     },
     {
       "id": "all-at-once",
-      "name": "All at Once",
+      "name": "All In",
       "family": "Detonator",
       "text": "Cashes only a mark at x3, and {Spend}s all of its count.",
       "intent": "Misa's mark-mark-mark-big-payoff choice: a slow, huge hit that breaks armour.",
@@ -214,7 +214,7 @@
     },
     {
       "id": "gather-calm",
-      "name": "Gather Calm",
+      "name": "Eye of the Storm",
       "family": "Store",
       "text": "{Store} Calm: +1 for each reaction anywhere. At round start with 3 Calm, the creatures beside it get +45% and it spends all.",
       "intent": "A reaction-heavy line gets a burst every few rounds.",
@@ -275,7 +275,7 @@
     },
     {
       "id": "ready-the-mark",
-      "name": "Ready the Mark",
+      "name": "Stack Up",
       "family": "Support Prime",
       "text": "Instead of its boost and heal: it adds 1 to its own element's {Mark}.",
       "intent": "Lets a team without a Setter react; needs a Payoff of the right element.",
@@ -285,7 +285,7 @@
     },
     {
       "id": "wide-warmth",
-      "name": "Wide Warmth",
+      "name": "Wide Embrace",
       "family": "Support shape",
       "text": "Its boost also reaches one slot further on each side, at full strength.",
       "intent": "Wide rows with several hitters: a Support at the end of a line of three boosts both hitters, and in a raid row it reaches the far column too. Tar Leech asks for it.",
@@ -295,7 +295,7 @@
     },
     {
       "id": "tunnel-through",
-      "name": "Tunnel Through",
+      "name": "Sense Weakness",
       "family": "Pierce",
       "text": "Hits by creatures beside it ignore half the boss's armour.",
       "intent": "Answers armoured bosses for plain hitters.",
@@ -305,10 +305,10 @@
     },
     {
       "id": "gnaw-through",
-      "name": "Gnaw Through",
+      "name": "Find the Gap",
       "family": "Pierce",
       "text": "Its own hits ignore a third of the boss's armour.",
-      "intent": "Pierce for a Payoff of a common species: its own plain and reaction hits get past thick bark (Thornmother, Tar Leech), where Tunnel Through helps the creatures beside a Support. Only the Payoff's hits, so it is a choice for one creature, not a row.",
+      "intent": "Pierce for a Payoff of a common species: its own plain and reaction hits get past thick bark (Thornmother, Tar Leech), where Sense Weakness helps the creatures beside a Support. Only the Payoff's hits, so it is a choice for one creature, not a row.",
       "fx": {
         "pierceOwnBp": 3333
       }
@@ -326,7 +326,7 @@
     },
     {
       "id": "keep-the-heat-in",
-      "name": "Keep the Heat In",
+      "name": "Barricade",
       "family": "Row Ward",
       "text": "While it stands, its row takes 15% less from area and {Wind-up} hits.",
       "intent": "Protects other players' creatures in its row in the raid.",
@@ -336,7 +336,7 @@
     },
     {
       "id": "baked-shell",
-      "name": "Baked Shell",
+      "name": "Boiling Point",
       "family": "Store",
       "text": "{Store} Heat: +1 at round start and each time it or a creature in its reach takes damage. At 3, the next {Reaction} by a creature beside it deals double bonus.",
       "intent": "A Guard beside a Payoff in a hard fight.",
@@ -381,7 +381,7 @@
     },
     {
       "id": "catch-the-bolts",
-      "name": "Catch the Bolts",
+      "name": "Take It All",
       "family": "Intercept",
       "text": "It {Intercept}s area hits too, and takes them with its cover's cut.",
       "intent": "Answers sweeps and splashes. 2026-10-31: it used to take the whole area hit with no cut, which left it worse than no Knack on Great Wave; the cover cut makes it the pick against sweeps.",
@@ -391,7 +391,7 @@
     },
     {
       "id": "lightning-ears",
-      "name": "Lightning Ears",
+      "name": "Drop Guard",
       "family": "Guard Prime",
       "text": "It leaves its own element's {Mark} like a Setter, but it does not {Intercept}, and Armour -8.",
       "intent": "A Setter that survives the front row; it pays with the Guard's verb and its armour (P-02: never a Setter and a Guard in one body).",
@@ -403,7 +403,7 @@
     },
     {
       "id": "mud-wall",
-      "name": "Mud Wall",
+      "name": "Sticky Mud",
       "family": "Debuff",
       "text": "Each hit it takes, even Blocked, puts {Mired} x1 on the boss.",
       "intent": "Keeps Mire's debuff alive after finale abilities go.",
@@ -444,7 +444,7 @@
     },
     {
       "id": "hide-in-mist",
-      "name": "Hide in Mist",
+      "name": "Mist Veil",
       "family": "Evasion aura",
       "text": "Creatures beside it get +15 dodge.",
       "intent": "A Guard that protects by hiding friends; strong with dodge-before-intercept (R1) when the boss hits often.",
@@ -454,7 +454,7 @@
     },
     {
       "id": "thick-fog",
-      "name": "Thick Fog",
+      "name": "Rolling Fog",
       "family": "Evasion aura",
       "text": "Every creature in its row gets +8 dodge.",
       "intent": "The wide version for long raid rows.",
@@ -494,7 +494,7 @@
     },
     {
       "id": "carry-them",
-      "name": "Carry Them",
+      "name": "Unlikely Guardian",
       "family": "Intercept",
       "text": "{Intercept}s aimed hits for the creatures {Beside} it when no Guard can. Reaction bonus -25%.",
       "intent": "Gaiadrake protects everything it carries: a Payoff borrowing the Guard's verb at a cost (P-02).",
@@ -516,7 +516,7 @@
     {
       "id": "lantern-glow",
       "name": "Lantern Glow",
-      "family": "Ward",
+      "family": "Silence Guard",
       "text": "Creatures beside it cannot be {Silenced}.",
       "intent": "Lanternfin guides friends through the dark: the silence answer that protects others.",
       "fx": {

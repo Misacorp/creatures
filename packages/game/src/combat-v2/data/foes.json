@@ -87,7 +87,7 @@
         }
       ],
       "cards": ["thick-hide"],
-      "asks": "Bark turns small hits away, and it silences the ends of the line. Tunnel Through or a big hit gets past.",
+      "asks": "Bark turns small hits away, and it silences the ends of the line. Sense Weakness or a big hit gets past.",
       "hpBp": 12000,
       "needs": "pierce"
     },

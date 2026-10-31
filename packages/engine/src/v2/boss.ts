@@ -164,7 +164,7 @@ function bossHits(
           by.watchTurn = s.bossTurnsDone;
           bump(by, 'interceptCharged');
         } else if (area && fx(by).interceptArea) {
-          // Catch the Bolts: the area hit it takes is cut by its own cover, like Night Watch's.
+          // Take It All: the area hit it takes is cut by its own cover, like Night Watch's.
           watched = true;
         }
         s.count.intercepts++;

@@ -1,6 +1,6 @@
 /**
  * Combat v2: the boss's turns (R1, R2, R8, R9, R13): where its moves and plain attack aim (patterns, anchors, Taunt, announce at round
- * start), who takes a hit (dodge first, then a Guard, Night Watch, Catch the Bolts), dodge and its auras, the boss's own dodge, wards and
+ * start), who takes a hit (dodge first, then a Guard, Night Watch, Take It All), dodge and its auras, the boss's own dodge, wards and
  * Breakwater, and the strength of its rule cards. Creatures and boss are built by hand with their effects named directly; the dice are
  * scripted or the fight's own invariants are checked, so no number depends on a seed. These were the lab's `fight`, `luck`, `engine`
  * and `strength` rule tests about the boss.
@@ -93,7 +93,7 @@ describe('dodge, its auras and the boss own dodge (R1)', () => {
     expect(dodges([spec({ spd: 1_000 })], 5_000)).toBe(0);
   });
 
-  it('Hide in Mist: creatures beside it dodge more (a creature two away does not get it)', () => {
+  it('Mist Veil: creatures beside it dodge more (a creature two away does not get it)', () => {
     const near = [spec({ name: 'A' }), spec({ name: 'M', col: 1, fx: { besideDodgeBp: 2_000 } })];
     expect(dodges(near, 1_999)).toBe(1);
     expect(dodges(near, 2_000)).toBe(0);
@@ -160,8 +160,8 @@ describe('dodge, its auras and the boss own dodge (R1)', () => {
   });
 });
 
-describe('Guards: reach, Carry Them, Night Watch and Catch the Bolts (R1.3)', () => {
-  it('Carry Them: a Payoff intercepts aimed hits for the creature beside it, like a Guard', () => {
+describe('Guards: reach, Unlikely Guardian, Night Watch and Take It All (R1.3)', () => {
+  it('Unlikely Guardian: a Payoff intercepts aimed hits for the creature beside it, like a Guard', () => {
     const team = (fx: object) => [
       spec({ name: 'A', role: 'setter' }),
       spec({ name: 'X', role: 'payoff', element: 'spark', col: 1, fx }),
@@ -248,7 +248,7 @@ describe('Guards: reach, Carry Them, Night Watch and Catch the Bolts (R1.3)', ()
         spec({ name: 'B', col: 2 }),
       ];
       expect(play(wave, team({})).intercepts).toBe(0);
-      // Night Watch takes the first Charged hit of the boss turn, whoever it is aimed at in its row; Catch the Bolts takes area hits.
+      // Night Watch takes the first Charged hit of the boss turn, whoever it is aimed at in its row; Take It All takes area hits.
       expect(play(wave, team({ interceptCharged: true })).intercepts).toBe(1);
       expect(play(wave, team({ interceptArea: true })).intercepts).toBe(1);
     });
@@ -297,7 +297,7 @@ describe('Guards: reach, Carry Them, Night Watch and Catch the Bolts (R1.3)', ()
     });
   });
 
-  describe('Catch the Bolts takes an area hit with its cover cut', () => {
+  describe('Take It All takes an area hit with its cover cut', () => {
     const team = (fx: object) => [
       spec({ name: 'A', maxHp: 100_000, atk: 150 }),
       spec({ name: 'G', role: 'guard', col: 1, baseArmour: 5, maxHp: 100_000, fx }),

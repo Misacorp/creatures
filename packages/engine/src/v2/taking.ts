@@ -80,7 +80,7 @@ const coverOf = (s: State, g: Fighter, who: Fighter): number =>
  * cover, Front-liner, Brace, Long Shadow's intercept cut), the total cut is capped at 75% and comes off
  * before armour; then armour, Blocked or HP (R13), then hit-taken effects. `target` is the slot the hit was
  * aimed at; when another creature took it (an intercept), the distance between them counts for Long Shadow.
- * `watch` is set when Night Watch took a Charged hit for `target`, or Catch the Bolts an area hit: it takes it with its own cover's cut
+ * `watch` is set when Night Watch took a Charged hit for `target`, or Take It All an area hit: it takes it with its own cover's cut
  * (Night Watch's `watchCutBp` is a larger cut, if it has one).
  */
 export function takeHit(
@@ -110,7 +110,7 @@ export function takeHit(
     left = cutOf(left, Math.min(7_500, Math.floor((Math.max(ward, shelter) * wardMul) / 10_000)));
     left = cutOf(left, k.areaCutBp ?? 0);
     // Cover: the Guard with the largest cover whose reach includes the taker, with every bonus. A hit a
-    // Guard intercepts is not covered again, except Night Watch's and Catch the Bolts': they take the hit with their own cover's cut.
+    // Guard intercepts is not covered again, except Night Watch's and Take It All': they take the hit with their own cover's cut.
     if (watch) {
       left = cutOf(left, Math.max(coverOf(s, taker, target), k.watchCutBp ?? 0));
     } else if (taker.role !== 'guard') {
@@ -144,7 +144,7 @@ export function takeHit(
   // One cap on every cut together: at most 75% off, before armour.
   dmg = Math.floor((dmg * Math.max(left, 10_000 - R.cutMaxBp)) / 10_000);
   dmg -= ownArmour(taker);
-  // Mud Wall counts every hit it takes, Blocked or not.
+  // Sticky Mud counts every hit it takes, Blocked or not.
   if (k.miresOnHit) addMired(s, taker);
   if (dmg <= 0) {
     s.count.blocked++;

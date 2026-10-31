@@ -336,7 +336,7 @@ describe('hover cards', () => {
 
   it('shows a Knack its name, family and text, and a talent its name and effect', () => {
     const knack = card(html, 'knack-steady-mark');
-    expect(knack).toContain('Steady Mark');
+    expect(knack).toContain('Brand');
     expect(knack).toContain('Seal family');
     expect(knack).not.toContain('{');
     const k = data.knacks.find((x) => x.id === 'steady-mark');

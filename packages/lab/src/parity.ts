@@ -217,9 +217,10 @@ export function parityCases(): ParityCase[] {
     const lines: [string, readonly Pick[]][] = [
       ['classic', CLASSIC_LINE],
       ...(ANSWERS[c.id] ?? []).map(
-        ([label, spec], i) =>
+        ([, spec], i) =>
           [
-            `answer${i}-${label}`,
+            // The index, not the answer's text: the text names Knacks, and a case's name seeds its dice, so a rename must not move it.
+            `answer${i}`,
             spec.split(' ').map((t): Pick => {
               const [formId = '', knack = 'none'] = t.split('/');
               return { formId, knack };

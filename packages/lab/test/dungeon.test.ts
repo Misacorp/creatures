@@ -132,7 +132,7 @@ describe('the dungeon foes', () => {
     }
     // The three questions about a Guard, a ward and armour are the foes' `needs`.
     expect(FOE_QUESTIONS['moss-lurker']?.mechanic).toBe('family:Reach');
-    expect(FOE_QUESTIONS['drift-wisp']?.mechanic).toBe('family:Ward');
+    expect(FOE_QUESTIONS['drift-wisp']?.mechanic).toBe('family:Silence Guard');
     expect(FOE_QUESTIONS['bramble-hound']?.mechanic).toBe('family:Pierce');
   });
 

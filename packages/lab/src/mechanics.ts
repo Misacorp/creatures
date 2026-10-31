@@ -122,7 +122,7 @@ const FAMILY_CALLS: Readonly<Record<string, Mechanic['calls']>> = {
   'Evasion aura': (b) =>
     shapes(b, 'scatter', 'all', 'row', 'rows', 'columns') && 'area hits are dodged at half chance',
   'Row Ward': (b) => shapes(b, 'row', 'rows', 'all', 'randomRow') && 'whole rows hit at once',
-  Ward: (b) => silences(b) && 'it silences creatures',
+  'Silence Guard': (b) => silences(b) && 'it silences creatures',
   Pierce: (b) => armoured(b) && 'armour that Blocks small hits',
   Luck: (b) =>
     first(

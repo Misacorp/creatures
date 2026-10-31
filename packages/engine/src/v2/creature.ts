@@ -192,7 +192,7 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
   if (cand) {
     const [el, mark] = cand;
     const spent = k.spendAllBp !== undefined ? mark.stacks : 1;
-    // The bonus factor (R7): the Knack's own factor, extra counts, Baked Shell; capped together.
+    // The bonus factor (R7): the Knack's own factor, extra counts, Boiling Point; capped together.
     let factor = ((k.bonusBp ?? 10_000) * (10_000 + (spent - 1) * (k.spendAllBp ?? 0))) / 10_000;
     const shell = s.carries.has('bakedShell')
       ? beside(s, f).find((o) => fx(o).bakedShell && o.store >= 3)
