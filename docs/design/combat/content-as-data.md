@@ -1,6 +1,6 @@
 # Phase 3 plan: combat v2 content as data
 
-Status: plan, 2026-10-31. Phase 3 of `roadmap.md`: the combat v2 content leaves the lab's TypeScript and becomes schema-validated data files in `@creatures/game`, the code that turns it into an engine input moves next to the engine, and the lab reads the game's content. Gate (roadmap): content tests for unique names (P-06), every keyword defined, every card has answers, every form has its Knacks. Misa's part: approve the new names and flavour in batches.
+Status: in progress, 2026-10-31 (section 10 has where it stands). Phase 3 of `roadmap.md`: the combat v2 content leaves the lab's TypeScript and becomes schema-validated data files in `@creatures/game`, the code that turns it into an engine input moves next to the engine, and the lab reads the game's content. Gate (roadmap): content tests for unique names (P-06), every keyword defined, every card has answers, every form has its Knacks. Misa's part: approve the new names and flavour in batches.
 
 ## 1. What moves, and where
 
@@ -89,3 +89,11 @@ One icon per keyword that names a rule a player meets on the board (Mark, Taunt,
 - Wiring any of it into the worker or the Activity (phase 4, behind `COMBAT_V2`).
 - The track after slot 15: the lab carries the high rank's numbers on; the game's later laps are a phase 5 question.
 - New content (a Mire Setter or Payoff, the Undercroft's foes): later content, after the names.
+
+## 10. Progress (2026-10-31)
+
+- **Done:** slices 1 to 5. The content is in `packages/game/src/combat-v2/data/` (`rules`, `knacks`, `forms`, `talents`, `cards`, `raid-bosses`, `foes`, `keywords`, `raid-track`), loaded and checked by `@creatures/game/combat-v2`; the engine type test checks the game's schemas against the engine's types both ways; the resolver, `applyCard` and the boss and foe builders are in `packages/engine/src/v2/resolve/` and `cards.ts`; the track tuner writes `raid-track.json` (`--tune --track --write`); the gate is `packages/game/test/combat-v2-content.test.ts`. Talents carry their shipped gear line as `gearLine` (the lab's `TALENT_IS_GEAR` reads it).
+- **Parity:** held through every slice. The digest was rewritten once, on purpose, with the first names batch: its case labels named Knacks and now use answer numbers, so a rename no longer moves it; the proof (every case replayed on the old labels' dice matched the old digest) is in the commit.
+- **Names:** batches 1 (Knacks and families) and 2 (talents) approved and applied (two `[Misa]` decisions). Batches 3 (keywords and rule cards) and 4 (the bosses' and foes' moves and Build-ups) are with Misa, with two pending clashes the gate lists in `KNOWN_CLASHES` and `KNACK_GEAR_CLASHES`: the card Great Wave against the Colossus's move Great Wave, and the Knack Guard's Shadow against the gear line Guard's shadow.
+- **A content gap the gate shows:** 11 cards have one written answer, not the two P-13 asks for (`ONE_ANSWER_CARDS`: Stone Skin, Clean Scales, Reflective Hide, Elusive, Bramble Bind, Wither, Payoff Hunter, Grudge, Fizzle, Shake It Off, Breakwater; Fizzle's and Shake It Off's answers come from their own question, the lab has none written). A lab follow-up: write and measure a second answer for each, then the list shrinks and the check rises to two.
+- **Next:** the compendium entries once batches 3 and 4 are in; then the keyword and attack-shape icons (a sheet for Misa first).
