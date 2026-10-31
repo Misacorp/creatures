@@ -58,7 +58,7 @@ Each of these cost a round while drawing the Void concepts or showed up in earli
 | `item`     | 12×12    | (gear: tinted by element)                                                    | `gear-sprites.ts`         |
 | `part`     | 8×8      |                                                                              | `gear-sprites.ts`         |
 | `banner`   | 64×24    |                                                                              | `data/banner-sprites.ts`  |
-| `free`     | up to 64 | none beyond the grid and palette                                             | glyphs, icons             |
+| `free`     | up to 64 | none beyond the grid and palette (16 colours for scenes)                     | glyphs, icons             |
 
 **Scenes are not covered yet.** Places, the world map and the living room are composed in code from several sprites and paths (`world-map-art.ts`, `room-art.ts`) and are bigger than 64 px. Shoot them in the workbench (`scripts/shoot.mjs`, with `--zoom` for a close crop). Next step when location art starts: a `scene` kind in the studio that lays out a concept scene from tiles.
 
