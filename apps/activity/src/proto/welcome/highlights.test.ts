@@ -105,6 +105,32 @@ describe('the welcome of every visit of both journeys', () => {
     }
   });
 
+  it('keeps every untold story with a count at exactly one marker, at its own place', () => {
+    for (const { welcome } of all) {
+      const told = new Set(welcome.highlights.map((s) => s.id));
+      const waiting = welcome.rest.filter((s) => s.count > 0);
+      const inMarkers = welcome.markers.flatMap((m) => m.stories);
+      // Every counted story that was not a highlight is at exactly one marker, and nothing else is.
+      expect(inMarkers.map((s) => s.id).sort()).toEqual(waiting.map((s) => s.id).sort());
+      for (const s of waiting) {
+        const at = welcome.markers.filter((m) => m.stories.includes(s));
+        expect(at).toHaveLength(1);
+        expect(at[0]?.place).toBe(s.place);
+        expect(told.has(s.id)).toBe(false);
+      }
+      // A marker's number is its stories' counts, and the markers add up to "more".
+      for (const m of welcome.markers) {
+        expect(m.count).toBe(m.stories.reduce((sum, s) => sum + s.count, 0));
+        expect(m.stories.length).toBeGreaterThan(0);
+        // Biggest first, so a place tells them in reading order.
+        for (let i = 1; i < m.stories.length; i += 1) {
+          expect(m.stories[i - 1]?.weight ?? 0).toBeGreaterThanOrEqual(m.stories[i]?.weight ?? 0);
+        }
+      }
+      expect(welcome.markers.reduce((sum, m) => sum + m.count, 0)).toBe(welcome.more);
+    }
+  });
+
   it('gives every story a picture with at most three creatures, a short headline and at most one short line', () => {
     for (const { welcome } of all) {
       for (const s of welcome.highlights) {
@@ -420,6 +446,44 @@ describe('the rest, as "...and N more things" and markers', () => {
   it('leaves no markers for flourishes with no count', () => {
     const stories = [{ place: 'paddock', count: 0, species: undefined }] as unknown as Story[];
     expect(markersOf(stories)).toEqual([]);
+  });
+
+  it('puts the stories of one place at one marker, the biggest first, whatever order they came in', () => {
+    const story = (id: string, weight: number, place: Story['place'], count: number): Story =>
+      ({ id, weight, place, count, species: undefined }) as unknown as Story;
+    const markers = markersOf([
+      story('small', 20, 'forge', 2),
+      story('elsewhere', 30, 'signpost', 1),
+      story('big', 50, 'forge', 3),
+      story('flourish', 99, 'forge', 0),
+    ]);
+    expect(markers.map((m) => m.place).sort()).toEqual(['forge', 'signpost']);
+    const forge = markers.find((m) => m.place === 'forge');
+    expect(forge?.stories.map((s) => s.id)).toEqual(['big', 'small']);
+    expect(forge?.count).toBe(5);
+  });
+
+  it('keeps the stories of a place that the popup left untold, with their finds', () => {
+    const w = welcomeFor(
+      visit({
+        events: [
+          'new line: cindle',
+          'mastery: anvil 1 reached Master',
+          'mastery: scout 1 reached Expert',
+        ],
+        came: { creatures: [], pieces: { collected: 2, worn: 2, bagged: 1 } },
+      }),
+      CAST,
+      1,
+    );
+    const forge = w.markers.find((m) => m.place === 'forge');
+    const signpost = w.markers.find((m) => m.place === 'signpost');
+    for (const m of [forge, signpost]) expect(m?.stories.length ?? 0).toBeGreaterThan(0);
+    // The pieces the smith made wait at the Forge as finds, not just a number.
+    const all = w.markers.flatMap((m) => m.stories).concat(w.highlights);
+    expect(all.some((s) => s.place === 'forge' && s.finds.some((f) => f.kind === 'item'))).toBe(
+      true,
+    );
   });
 
   it('words the button: singular, plural, and "Into the valley" when nothing waits', () => {
