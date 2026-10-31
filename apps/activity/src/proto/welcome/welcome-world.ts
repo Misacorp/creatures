@@ -1,8 +1,8 @@
 /**
  * What the welcome-back popup plays in (prototype, dev only): the shared sample world with nothing waiting (no
  * trip home, no job done), so the only markers in the valley are the popup's own; the cast, the creatures and
- * pieces the stories name; the markers as bubbles; and the two small things a screenshot holds still by (`&t=`,
- * `&closed=1` in the address).
+ * pieces the stories show (each with its inventory id, so a tap opens its card); the markers as bubbles; and the
+ * one small thing a screenshot holds still by (`&closed=1` in the address).
  */
 import { gearBase } from '@creatures/game';
 import { creatureName } from '../../game';
@@ -13,7 +13,7 @@ import type { Cast, Marker } from './highlights';
 
 /** How many creatures of the roster the stories can name (two scouts, two smiths, four that rest). */
 export const CAST_SIZE = 8;
-/** How many different pieces of the sample bag the pictures show, in turn. */
+/** How many different pieces of the sample bag the stories show, in turn (the bag has every rarity among them). */
 export const PIECE_KINDS = 6;
 
 /** The sample world as a quiet morning: everyone is home and free, nothing is waiting at a place. */
@@ -27,19 +27,32 @@ export function welcomeWorld(): ProtoWorld {
   };
 }
 
-/** The creatures and pieces the stories name, from the world's own roster and bag. */
+/** The creatures, pieces and blueprints the stories name, from the world's own roster and bag. */
 export function castOf(world: ProtoWorld): Cast {
-  const baseIds = world.items
-    .map((i) => i.baseId)
-    .filter((id, at, all) => all.indexOf(id) === at && gearBase(id) !== undefined)
-    .slice(0, PIECE_KINDS);
+  const seen = new Set<string>();
+  const pieces = world.items
+    .filter((i) => {
+      if (seen.has(i.baseId) || gearBase(i.baseId) === undefined) return false;
+      seen.add(i.baseId);
+      return true;
+    })
+    .slice(0, PIECE_KINDS)
+    .map((i) => ({
+      id: i.id,
+      baseId: i.baseId,
+      name: gearBase(i.baseId)?.name ?? i.baseId,
+      rarity: i.rarity,
+      level: i.itemLevel,
+    }));
   return {
     creatures: world.creatures.slice(0, CAST_SIZE).map((c) => ({
       name: creatureName(c),
       species: c.species,
       shiny: c.shiny,
+      level: c.level,
     })),
-    pieces: baseIds.map((baseId) => ({ baseId, name: gearBase(baseId)?.name ?? baseId })),
+    pieces,
+    blueprints: world.blueprints.filter((id) => gearBase(id) !== undefined),
   };
 }
 
@@ -55,12 +68,6 @@ export function markerBubbles(markers: readonly Marker[]): Bubble[] {
         : `${String(m.count)} things waiting at the ${placeOf(m.place).name}`,
     time: null,
   }));
-}
-
-/** `&t=<ms>` in the address: how far a screenshot holds the comic's reveal; null when absent. */
-export function frozenAt(hash: string): number | null {
-  const found = /[?&]t=(\d{1,6})(?:&|$)/.exec(hash);
-  return found?.[1] === undefined ? null : Number.parseInt(found[1], 10);
 }
 
 /** `&closed=1` in the address: the popup is already closed (a screenshot of the valley it leaves). */

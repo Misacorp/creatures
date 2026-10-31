@@ -43,7 +43,7 @@ import { bubblesOf, placeLabel, readingOrder } from './valley-logic';
 import { ValleyMap } from './ValleyMap';
 import { ZoomCut } from './ZoomCut';
 import type { Cast, Welcome } from '../welcome/highlights';
-import { WelcomeSheet, type Look } from '../welcome/WelcomeSheet';
+import { WelcomeSheet } from '../welcome/WelcomeSheet';
 import { markerBubbles, startsClosed } from '../welcome/welcome-world';
 
 /** Where the player is, and the moment a place opens on. */
@@ -67,14 +67,13 @@ export interface View {
 
 /**
  * A welcome-back popup to show on opening (the "Welcome back" prototype, `proto/welcome/`): the world it
- * plays in, who and what its stories name, what to tell, and in which look. Closing it leaves the valley
+ * plays in, who and what its stories name, and what to tell. Closing it leaves the valley
  * with the rest as markers over their places.
  */
 export interface WelcomeSetup {
   world: ProtoWorld;
   cast: Cast;
   welcome: Welcome;
-  look: Look;
 }
 
 const NO_SEND: SendPicks = { place: null, supply: null };
@@ -434,7 +433,7 @@ export function Valley({
           <WelcomeSheet
             welcome={welcome.welcome}
             cast={welcome.cast}
-            look={welcome.look}
+            items={welcome.world.items}
             open={welcomeOpen}
             onClose={() => {
               setWelcomeOpen(false);

@@ -1,16 +1,18 @@
 /**
  * One picture of the welcome-back popup: the valley redrawn round a place's door (the zoom's way: a real
  * redraw of the valley's pixels at a whole scale, never a CSS scale), the creatures and props of a story
- * standing on it, and the speaker's bubble over its head. Shared by the comic's panels and the gazette's
- * pictures; the player is never in it.
+ * standing on it. The Gazette's pictures; the player is never in it. A creature in it is a `SmallCreature`: a
+ * tap (or Enter) opens its popover, for the curious.
  */
 import { useEffect, useMemo, useRef } from 'preact/hooks';
-import { ItemSprite } from '../../GearArt';
+import { getSpecies, speciesName } from '../../game';
+import { SmallCreature } from '../../SmallCreature';
+import type { CreatureInfo } from '../../creature-info';
 import { PACK_ART } from '../../sprites/pack-art';
-import { At, CreatureSprite, Glyph, Pic, SpeechBubble, useSize } from '../valley/parts';
+import { At, CreatureSprite, Glyph, Pic, useSize } from '../valley/parts';
 import { paint } from '../valley/paint';
 import { placeOf, valleyDrawing } from '../valley/valley-art';
-import type { Actor, Cast, Prop, Scene, Story, Who } from './highlights';
+import type { Actor, Cast, Prop, Scene, Who } from './highlights';
 
 const NO_MARGIN = { left: 4, top: 4, right: 4, bottom: 4 };
 /** Where the door sits in the picture: down the middle, this far down, so the building shows above it. */
@@ -18,18 +20,34 @@ const DOOR_AT = 0.72;
 /** A creature sprite is this many pixels high. */
 const CREATURE_PX = 16;
 
-/** The species and look of who acts. */
-function whoLooks(who: Who, cast: Cast): { species: string; shiny: boolean } {
-  if (who.kind === 'species') return { species: who.species, shiny: false };
-  const member = cast.creatures[who.slot % Math.max(1, cast.creatures.length)];
-  return { species: member?.species ?? 'splashet', shiny: member?.shiny ?? false };
+/** The species, look and popover facts of who acts: a cast member as it is in the valley, a newcomer at level 1. */
+function whoIs(who: Who, cast: Cast): { shiny: boolean; info: CreatureInfo | null; id: string } {
+  const member =
+    who.kind === 'species'
+      ? undefined
+      : cast.creatures[who.slot % Math.max(1, cast.creatures.length)];
+  const species = who.kind === 'species' ? who.species : (member?.species ?? 'splashet');
+  const def = getSpecies(species);
+  return {
+    shiny: member?.shiny ?? false,
+    id: who.kind === 'species' ? `new:${species}` : `cast:${species}:${member?.name ?? ''}`,
+    info:
+      def === undefined
+        ? null
+        : {
+            name: member?.name ?? speciesName(species),
+            species,
+            level: member?.level ?? 1,
+            element: def.element,
+            role: def.role,
+            ...(member?.shiny === true ? { shiny: true } : {}),
+          },
+  };
 }
 
 /** A prop of a scene, drawn at its scale. */
 function PropArt({ prop, scale }: { prop: Prop; scale: number }) {
   switch (prop.kind) {
-    case 'item':
-      return <ItemSprite baseId={prop.baseId} scale={scale} />;
     case 'glyph':
       return <Glyph id={prop.id} scale={scale} />;
     case 'sack':
@@ -40,13 +58,10 @@ function PropArt({ prop, scale }: { prop: Prop; scale: number }) {
 export function SceneCrop({
   scene,
   cast,
-  speech,
   class: extra,
 }: {
   scene: Scene;
   cast: Cast;
-  /** What an actor says: shown as a bubble over its head. */
-  speech?: Story['speech'];
   class?: string;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -85,19 +100,28 @@ export function SceneCrop({
         </At>
       ))}
       {actors.map((a, i) => {
-        const looks = whoLooks(a.who, cast);
+        const who = whoIs(a.who, cast);
+        const sprite = (
+          <CreatureSprite
+            creature={{ species: who.info?.species ?? 'splashet', shiny: who.shiny }}
+            scale={s}
+            flip={a.flip === true}
+          />
+        );
         return (
           <At
             key={`a${String(i)}`}
             x={cx + a.dx * s - (CREATURE_PX / 2) * s}
             y={cy + (a.dy - CREATURE_PX) * s}
             class="wb-actor"
+            hidden={who.info === null}
           >
-            <CreatureSprite creature={looks} scale={s} flip={a.flip === true} />
-            {speech !== undefined && speech !== null && speech.by === i && (
-              <SpeechBubble class="wb-say">
-                <span class="wb-say-text">{speech.text}</span>
-              </SpeechBubble>
+            {who.info === null ? (
+              sprite
+            ) : (
+              <SmallCreature id={`${who.id}:${String(i)}`} info={who.info} class="wb-face">
+                {sprite}
+              </SmallCreature>
             )}
           </At>
         );

@@ -1,5 +1,5 @@
 /*
-  The welcome-back popup (staging only, `src/proto/welcome/`): the comic strip and the Valley Gazette inside the
+  The welcome-back popup (staging only, `src/proto/welcome/`): the Valley Gazette inside the
   app's sheet (`ui/Drawer`). It sits on the valley prototype's own look (`pv-` classes: the speech bubble, the
   place marker); only what is new is styled here, with `wb-`. Pixel rules as the valley's: hard edges, no blur
   (a hard outline is a shadow with no blur), motion in steps and none at all under reduced motion.
@@ -39,90 +39,16 @@
   overflow: visible;
 }
 
-/* --- The comic strip --- */
-.wb-strip {
-  display: grid;
-  gap: 14px;
-  margin: 0;
-  padding: 4px;
-  list-style: none;
-}
-
-.wb-panel {
-  animation: wb-in 360ms steps(3) both;
-}
-
-.wb-figure {
+/* A creature in a picture opens its popover: the button takes touches (the picture's layer does not), with a 44 px target. */
+.wb-actor .wb-face {
   position: relative;
-  margin: 0;
-  background: var(--ink);
-  box-shadow: 0 0 0 4px var(--ink);
+  pointer-events: auto;
 }
 
-.wb-panel-scene {
-  height: 200px;
-}
-
-/* The caption box: yellow, ink-edged, in the corner, as a comic's narration. */
-.wb-caption {
+.wb-actor .wb-face::after {
   position: absolute;
-  z-index: 4;
-  top: 0;
-  left: 0;
-  max-width: calc(100% - 4.5rem);
-  padding: 3px 8px 4px;
-  background: #f4d35e;
-  box-shadow: 0 0 0 2px var(--ink);
-  color: var(--ink);
-  font-size: 1.125rem;
-  line-height: 1.1;
-}
-
-/* The sound word: big, gold, with a hard ink outline (a text shadow with no blur). */
-.wb-sfx {
-  position: absolute;
-  z-index: 4;
-  right: 8px;
-  bottom: 8px;
-  color: #ffd23f;
-  font-size: 2.125rem;
-  line-height: 1;
-  letter-spacing: 0.04em;
-  text-shadow:
-    -2px 0 0 var(--ink),
-    2px 0 0 var(--ink),
-    0 -2px 0 var(--ink),
-    0 2px 0 var(--ink),
-    -2px -2px 0 var(--ink),
-    2px -2px 0 var(--ink),
-    -2px 2px 0 var(--ink),
-    2px 2px 0 var(--ink),
-    4px 4px 0 var(--ink);
-}
-
-/* A speech bubble in a picture: the valley's bubble as pixel art (the pixel font, a frame one art pixel thick, corners cut). */
-.wb-say {
-  z-index: 3;
-}
-
-.wb-say .pv-bubble-body {
-  width: max-content;
-  max-width: 9.5rem;
-  padding: calc(var(--art) * 2) calc(var(--art) * 3);
-  font-family: var(--display);
-  font-size: 1.25rem;
-  line-height: 1.05;
-  white-space: normal;
-  text-align: left;
-  box-shadow:
-    calc(var(--art) * -1) 0 0 0 var(--ink),
-    var(--art) 0 0 0 var(--ink),
-    0 calc(var(--art) * -1) 0 0 var(--ink),
-    0 var(--art) 0 0 var(--ink);
-}
-
-.wb-say-text {
-  display: block;
+  inset: -8px;
+  content: '';
 }
 
 /* --- The Valley Gazette --- */
@@ -216,6 +142,18 @@
   text-shadow: none;
 }
 
+/* What a story found, in the shared Find components: the list sits flush under the story's line. */
+.wb-finds {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.wb-finds .find-list,
+.wb-finds .reward-badges {
+  margin: 0;
+}
+
 /* A lone small story takes the width. */
 .wb-briefs:has(.wb-brief:only-child) {
   grid-template-columns: 1fr;
@@ -251,23 +189,4 @@
   padding: 3px;
   background: var(--ink);
   line-height: 0;
-}
-
-@keyframes wb-in {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Reduced motion: panels appear without sliding. */
-@media (prefers-reduced-motion: reduce) {
-  .wb-panel {
-    animation: none;
-  }
 }

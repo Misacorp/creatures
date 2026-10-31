@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { DAILY, WEEKLY, type Visit } from './journey';
 import {
   MAX_ACTORS,
+  MAX_BLURB,
+  MAX_HEADLINE,
   MAX_HIGHLIGHTS,
+  MAX_PIECES,
   WELCOME_AFTER_HOURS,
   assignCast,
   dateLine,
@@ -13,6 +16,7 @@ import {
   moreLabel,
   nameList,
   pickHighlights,
+  piecesFor,
   placeOfLevelUp,
   scoutsDestination,
   welcomeFor,
@@ -34,11 +38,19 @@ const SPECIES = [
 ];
 const NAMES = ['Mossback', 'Pip', 'Ember', 'Sprout', 'Nib', 'Dot', 'Fig', 'Wren'];
 const CAST: Cast = {
-  creatures: NAMES.map((name, i) => ({ name, species: SPECIES[i] ?? 'splashet', shiny: false })),
+  creatures: NAMES.map((name, i) => ({
+    name,
+    species: SPECIES[i] ?? 'splashet',
+    shiny: false,
+    level: 5 + i,
+  })),
   pieces: [
-    { baseId: 'kelp-cap', name: 'Kelp Cap' },
-    { baseId: 'scarf-basic', name: 'Scarf' },
+    { id: 'p-common', baseId: 'kelp-cap', name: 'Kelp Cap', rarity: 'common', level: 2 },
+    { id: 'p-rare', baseId: 'bark-shawl', name: 'Bark Shawl', rarity: 'rare', level: 12 },
+    { id: 'p-epic', baseId: 'emberkeepers-crown', name: 'Crown', rarity: 'epic', level: 15 },
+    { id: 'p-rare-2', baseId: 'thundercap', name: 'Thundercap', rarity: 'rare', level: 16 },
   ],
+  blueprints: ['brine-hood', 'kelp-cap'],
 };
 
 /** A visit of a quiet Tuesday with only what the test sets. */
@@ -93,25 +105,35 @@ describe('the welcome of every visit of both journeys', () => {
     }
   });
 
-  it('gives every story a picture with at most three creatures, words and a sound', () => {
+  it('gives every story a picture with at most three creatures, a short headline and at most one short line', () => {
     for (const { welcome } of all) {
       for (const s of welcome.highlights) {
         expect(s.scene.actors.length).toBeLessThanOrEqual(MAX_ACTORS + 1);
         expect(s.scene.place).toBe(s.place);
         expect(s.headline).toBe(s.headline.toUpperCase());
-        expect(s.headline.length).toBeLessThanOrEqual(48);
-        expect(s.blurb.length).toBeGreaterThan(10);
-        expect(s.sfx.length).toBeGreaterThan(0);
-        if (s.speech !== null) expect(s.scene.actors[s.speech.by]).toBeDefined();
+        expect(s.headline.length).toBeGreaterThan(0);
+        expect(s.headline.length, s.headline).toBeLessThanOrEqual(MAX_HEADLINE);
+        expect(s.blurb.length, s.blurb).toBeLessThanOrEqual(MAX_BLURB);
+        // One line: no second sentence.
+        expect(s.blurb.replace(/\.$/, ''), s.blurb).not.toMatch(/[.!?] /);
+        for (const a of s.scene.actors) expect(a.who).toBeDefined();
       }
     }
   });
 
-  it('never shows the player, never says what was missed or lost', () => {
+  it('shows what a story is about as a find, never in prose: every find is a piece of the cast’s bag, a blueprint it can sell or a species', () => {
+    const ids = CAST.pieces.map((p) => p.id);
     for (const { welcome } of all) {
       for (const s of welcome.highlights) {
-        const text = `${s.headline} ${s.blurb} ${s.speech?.text ?? ''}`;
-        expect(text).not.toMatch(/\byou\b|\byour\b|miss|lost|loss|wasted|expired/i);
+        for (const f of s.finds) {
+          if (f.kind === 'item') expect(ids).toContain(f.piece.id);
+          if (f.kind === 'blueprint') expect(CAST.blueprints).toContain(f.baseId);
+          if (f.kind === 'newcomer') expect(lineSpecies(f.species) ?? f.species).toBe(f.species);
+          if (f.kind === 'parts') {
+            expect(f.parts.length).toBeGreaterThan(0);
+            for (const p of f.parts) expect(p.amount).toBeGreaterThan(0);
+          }
+        }
       }
     }
   });
@@ -173,21 +195,111 @@ describe('the highlights of a visit', () => {
       welcomeFor(visit({ events, came: { pieces } }), CAST, 1).highlights.find(
         (s) => s.kind === 'piece',
       )?.headline ?? '';
-    expect(piece([reroll('epic', '9.0'), reroll('rare', '12.0')])).toMatch(/EPIC/);
-    expect(piece([reroll('rare', '9.0')])).toMatch(/RARE/);
-    expect(piece([])).toMatch(/FORGES/);
-    expect(piece([], { collected: 2, worn: 0, bagged: 0 })).toMatch(/FINDS/);
+    expect(piece([reroll('epic', '9.0'), reroll('rare', '12.0')])).toMatch(/REMAKES/);
+    expect(piece([])).toMatch(/AT THE FORGE/);
+    expect(piece([], { collected: 2, worn: 0, bagged: 0 })).toMatch(/FINDS GEAR/);
+    const weight = (events: string[]): number =>
+      welcomeFor(visit({ events }), CAST, 1).highlights.find((s) => s.id === 'reroll')?.weight ?? 0;
+    expect(weight([reroll('epic', '9.0'), reroll('rare', '12.0')])).toBeGreaterThan(
+      weight([reroll('rare', '9.0')]),
+    );
+    expect(weight([reroll('rare', '9.0')])).toBeGreaterThan(weight([reroll('common', '9.0')]));
+    expect(weight([reroll('common', '9.0')])).toBeGreaterThan(0);
   });
 
-  it('names the piece in the headline from the cast’s own pieces', () => {
+  it('shows a piece of the story’s own rarity as the visitor’s reroll, whatever the day', () => {
+    for (const rarity of ['common', 'rare', 'epic']) {
+      for (let day = 1; day <= 9; day += 1) {
+        const w = welcomeFor(
+          visit({
+            day,
+            events: [
+              `visitor: rerolled a ${rarity} piece (item level 9.0) for 50 Acorns and 20 scrap: lines [1] became [2] (1 at the top pip)`,
+            ],
+          }),
+          CAST,
+          1,
+        );
+        const [find] = w.highlights.find((s) => s.id === 'reroll')?.finds ?? [];
+        expect(find?.kind).toBe('item');
+        if (find?.kind === 'item') expect(find.piece.rarity).toBe(rarity);
+      }
+    }
+  });
+
+  it('shows up to three different pieces for what the smith made and says the total when there are more', () => {
+    const smith = (worn: number) =>
+      welcomeFor(
+        visit({ came: { pieces: { collected: 0, worn, bagged: 0 } } }),
+        CAST,
+        1,
+      ).highlights.find((s) => s.id === 'fitted');
+    const three = smith(3);
+    expect(three?.finds).toHaveLength(MAX_PIECES);
+    expect(three?.blurb).toBe('');
+    const ids = three?.finds.flatMap((f) => (f.kind === 'item' ? [f.piece.id] : [])) ?? [];
+    expect(new Set(ids).size).toBe(3);
+    expect(smith(1)?.finds).toHaveLength(1);
+    const many = smith(12);
+    expect(many?.finds).toHaveLength(MAX_PIECES);
+    expect(many?.blurb).toBe('12 new pieces in all.');
+    expect(many?.headline).toBe('EMBER AT THE FORGE');
+  });
+
+  it('shows a newcomer as a find, the scouts’ return as parts, and a sold blueprint as a blueprint', () => {
+    const w = welcomeFor(
+      visit({
+        events: [
+          'new line: cindle',
+          "visitor: bought the week's blueprint (a new one) for 40 Acorns and 5 shards",
+        ],
+        came: { scrap: 120, shards: { ember: 7, tide: 0 } },
+      }),
+      CAST,
+      1,
+    );
+    const [newcomer] = w.highlights;
+    expect(newcomer?.finds).toEqual([{ kind: 'newcomer', species: 'cindle' }]);
+    expect(newcomer?.headline).toBe('CINDLE MOVES IN');
+    const sold = w.highlights.find((s) => s.id === 'visitor');
+    expect(sold?.finds).toHaveLength(1);
+    expect(sold?.finds[0]).toMatchObject({ kind: 'blueprint' });
+    expect(sold?.headline).toBe('VISITOR SELLS A BLUEPRINT');
+    const scouts = welcomeFor(
+      visit({ came: { scrap: 120, shards: { ember: 7, tide: 0 } } }),
+      CAST,
+      1,
+    ).highlights.find((s) => s.id === 'scouts-home');
+    expect(scouts?.finds).toEqual([
+      {
+        kind: 'parts',
+        parts: [
+          { part: 'scrap', amount: 120 },
+          { part: 'ember-shard', amount: 7 },
+        ],
+      },
+    ]);
+  });
+
+  it('picks pieces by the day’s turn, the rarity first, and none when the bag has none', () => {
+    expect(piecesFor([], 3, 3)).toEqual([]);
+    expect(piecesFor(CAST.pieces, 1, 2).map((p) => p.id)).toEqual(['p-rare', 'p-epic']);
+    expect(piecesFor(CAST.pieces, 1, 9)).toHaveLength(CAST.pieces.length);
+    expect(piecesFor(CAST.pieces, 7, 1, 'epic').map((p) => p.id)).toEqual(['p-epic']);
+    expect(piecesFor(CAST.pieces, 0, 1, 'legendary')).toHaveLength(1);
+  });
+
+  it('shows the smith’s piece as an item of the cast’s own bag, not as words or a drawing', () => {
     const w = welcomeFor(
       visit({ came: { pieces: { collected: 0, worn: 1, bagged: 0 } } }),
       CAST,
       1,
     );
     const piece = w.highlights.find((s) => s.kind === 'piece');
-    expect(piece?.headline).toMatch(/KELP CAP|SCARF/);
-    expect(piece?.scene.props[0]?.prop).toMatchObject({ kind: 'item' });
+    expect(piece?.finds).toHaveLength(1);
+    expect(piece?.finds[0]).toMatchObject({ kind: 'item' });
+    expect(piece?.scene.props).toEqual([]);
+    expect(piece?.blurb).toBe('');
   });
 
   it('is a place level-up, then the visitor, for the valley', () => {
@@ -205,6 +317,7 @@ describe('the highlights of a visit', () => {
     expect(server?.id).toBe('place-level');
     expect(server?.place).toBe('paddock');
     expect(server?.headline).toBe('THE BONFIRE GROWS TO LEVEL 3');
+    expect(server?.blurb).toBe('');
     const visitor = welcomeFor(
       visit({ events: ['visitor: he is in the valley until the raid finale'] }),
       CAST,
@@ -256,6 +369,7 @@ describe('the highlights of a visit', () => {
     const first = w.highlights[0];
     expect(first?.id).toBe('new-lines');
     expect(first?.headline).toBe('4 NEWCOMERS ARRIVE');
+    expect(first?.blurb).toBe('Cindle, Splashet, Mistnewt and 1 more');
     expect(first?.count).toBe(4);
     expect(first?.scene.actors).toHaveLength(MAX_ACTORS);
     // Only creature news: the next best, the graduates, tops it up; the two Experts wait as things.
@@ -266,7 +380,8 @@ describe('the highlights of a visit', () => {
   it('names the creatures of a graduation and shows up to three of them', () => {
     const w = welcomeFor(visit({ events: ['graduation: 5 creatures earned Silver'] }), CAST, 1);
     const grad = w.highlights.find((s) => s.id === 'graduation');
-    expect(grad?.headline).toBe('NIB, DOT, FIG AND 2 MORE EARN SILVER');
+    expect(grad?.headline).toBe('5 GRADUATE WITH SILVER');
+    expect(grad?.blurb).toBe('Nib, Dot, Fig and 2 more');
     expect(grad?.scene.actors).toHaveLength(3);
   });
 
