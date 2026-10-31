@@ -29,7 +29,7 @@ const scaledMove = (move: BossMove, strengthBp: number): BossMove => ({
 });
 
 /** Experiment knobs (mutable so a harness can sweep them). */
-export const WARD_BOOST_BP = { v: 30_000 };
+export const WARD_BOOST_BP = { v: 20_000 };
 export const COLUMN_GUARD_CUT_BP = { v: 4_000 };
 
 export const CARDS: readonly CardDef[] = [
