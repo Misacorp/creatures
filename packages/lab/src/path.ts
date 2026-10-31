@@ -12,7 +12,7 @@
  * pool (`jobs.ts`) and `summarisePath` turns them into the report's table.
  */
 import { createSeededRng } from '@creatures/game';
-import { preparedOf } from './tuner';
+import { randomTalents } from './answerMeasure';
 import {
   columnOf,
   casualColumn,
@@ -26,7 +26,6 @@ import {
 import { raidBench, weekendStatsOf } from './bosses';
 import type { JobResults, JobSpec, Plan } from './jobs';
 import {
-  PLACEHOLDER_ROSTER,
   ROSTER_WEEKS,
   levelledColumn,
   rosterLevels,
@@ -34,11 +33,23 @@ import {
   type RosterProfile,
   type RosterSpeed,
 } from './roster';
+import { VALLEY_ROSTER } from './valley';
 import { LEVEL, type Pick } from './search';
-import { TRACK_ORDER, slotBoss, trackSlot, type SlotTable } from './track';
+import {
+  TRACK_ORDER,
+  slotBoss,
+  slotMixedOf,
+  slotPreparedOf,
+  trackSlot,
+  type SlotTable,
+} from './track';
 import type { BossDef, Placement } from './types';
 
-/** A Festival every 5th week: no raid that week, the track waits. */
+/**
+ * A Festival every 5th week: no raid that week, the track waits. The Festival clock is the server's age in weeks, counted from week 1,
+ * the server's first raid week: weeks 5, 10, 15 and 20 fight nothing, whatever slot the server is on. A server that wins slot 4 in
+ * week 4 has slot 5 as its slot in the Festival week and fights it first in week 6.
+ */
 export const FESTIVAL_EVERY = 5;
 /** The slots the track eases back after a Festival: none (Misa, 2026-10-30). `walkPath` can still be asked for more, for a comparison. */
 export const FESTIVAL_EASE = 0;
@@ -47,19 +58,22 @@ export const STUCK_WEEKS = 4;
 export const STUCK_SHARE_MAX = 0.1;
 
 /**
- * Determination (Misa, 2026-10-30; after WoW's, +5% a wipe, at most 10 stacks): a dial of the path, OFF BY DEFAULT. Each failed
- * weekend on the same boss gives the server `stackBp` more damage and healing, at most `maxStacks` stacks, and a kill resets it.
- * A Festival week (no weekend) changes nothing. The track tuner never uses it (`trackTuner.ts`); `--path --determination` shows
- * the path with it beside the path without it.
+ * Determination (Misa, 2026-10-30; after WoW's): each failed weekend on the same boss gives the server `stackBp` more damage and
+ * healing, at most `maxStacks` stacks, and a kill resets it. A Festival week (no weekend) changes nothing. **On by default from the
+ * second lap** (Misa, 2026-10-30, panel 6): `fromSlot` is the first slot it applies to, so slots 1 to 5 never get it, and the cap is
+ * +25%. The track tuner never uses it (`trackTuner.ts` asks the path for `'off'`): the table must not rely on it. `--path` shows the
+ * path with it on and, with `--determination`, beside the path without it (`--no-determination` shows only the latter).
  */
 export interface Determination {
   /** Damage and healing, in bp, for each stack. */
   readonly stackBp: number;
   readonly maxStacks: number;
+  /** The first slot it applies to (a stack counted on an earlier slot does nothing). */
+  readonly fromSlot: number;
 }
 
-/** The default: +5% damage and healing a stack, at most 10 stacks (+50%). */
-export const DETERMINATION: Determination = { stackBp: 500, maxStacks: 10 };
+/** The default: +5% damage and healing a stack, at most 5 stacks (+25%), from slot 6 (the second lap) on. */
+export const DETERMINATION: Determination = { stackBp: 500, maxStacks: 5, fromSlot: 6 };
 
 // ---------- the walk ----------
 
@@ -69,7 +83,11 @@ export interface ServerPath {
   readonly fought: readonly number[];
   /** Whether the weekend was a kill (false for a Festival week). */
   readonly won: readonly boolean[];
-  /** The week each slot first became the server's slot (index 0 is slot 1: week 1); 0 for a slot it never reached. */
+  /**
+   * The week each slot was first fought (index 0 is slot 1: week 1); 0 for a slot never fought. A slot won in the week before a
+   * Festival is first fought after it (a server that reaches slot 5 in week 5 fights it in week 6), so this is the week of the
+   * first fight, not the week the slot became the server's.
+   */
   readonly reached: readonly number[];
   /** The weekends fought against each slot (index 0 is slot 1), re-fights included (a Festival moves nobody back). */
   readonly weekends: readonly number[];
@@ -88,8 +106,13 @@ export interface ServerPath {
  */
 export interface PathRun {
   readonly table?: SlotTable;
-  /** Play the path with Determination (off by default). */
-  readonly determination?: Determination;
+  /** The Determination the path plays with: `DETERMINATION` when absent, none for `'off'` (the track tuner, and the comparison run). */
+  readonly determination?: Determination | 'off';
+  /**
+   * Which written answer the mixed server's min-maxers and builders field (an index into `slotAnswersOf`): the slot's `SLOT_MIXED_ANSWER`
+   * entry when absent. The tuner sets it to measure each answer; the dedicated and builder servers always field the slot's prepared line.
+   */
+  readonly mixedAnswer?: number;
 }
 
 export interface WalkOptions {
@@ -98,6 +121,8 @@ export interface WalkOptions {
   readonly festivalEase?: number;
   /** Determination's cap: the fight is told its stacks (failed weekends on this boss since the last kill, at most this many). Absent: always 0. */
   readonly determinationStacks?: number;
+  /** The first slot Determination applies to (default 1: every slot): on an earlier slot the fight is told 0 stacks. */
+  readonly determinationFromSlot?: number;
 }
 
 /**
@@ -111,7 +136,7 @@ export type Fight = (slot: number, week: number, stacks: number) => boolean;
  * "The longest run on one boss" is the most weekends it took to kill one boss for the first time (`attempts`): a server that lost
  * four lost weekends and won the fifth ran five.
  * With `determinationStacks` each lost weekend on the boss of the slot adds a stack for the next fight there (up to the cap), and a
- * kill clears them; a Festival week keeps them.
+ * kill clears them; a Festival week keeps them. The stacks only count from slot `determinationFromSlot` on.
  */
 export function walkPath(fight: Fight, options: WalkOptions = {}): ServerPath {
   const weeks = options.weeks ?? ROSTER_WEEKS;
@@ -119,11 +144,12 @@ export function walkPath(fight: Fight, options: WalkOptions = {}): ServerPath {
   const ease = options.festivalEase ?? FESTIVAL_EASE;
   const fought: number[] = [];
   const won: boolean[] = [];
-  const reached: number[] = [1];
+  const reached: number[] = [];
   const weekends: number[] = [0];
   const attempts: number[] = [0];
   const killed = new Set<number>();
   const cap = options.determinationStacks ?? 0;
+  const from = options.determinationFromSlot ?? 1;
   let failed = 0;
   let slot = 1;
   let furthest = 1;
@@ -134,7 +160,10 @@ export function walkPath(fight: Fight, options: WalkOptions = {}): ServerPath {
       slot = Math.max(1, slot - ease);
       continue;
     }
-    const win = fight(slot, week, Math.min(cap, failed));
+    // The arrival week of a slot is the first week it is fought: a slot won in the week before a Festival is fought after it.
+    if (!reached[slot - 1]) reached[slot - 1] = week;
+    furthest = Math.max(furthest, slot);
+    const win = fight(slot, week, slot >= from ? Math.min(cap, failed) : 0);
     fought.push(slot);
     won.push(win);
     weekends[slot - 1] = (weekends[slot - 1] ?? 0) + 1;
@@ -143,11 +172,6 @@ export function walkPath(fight: Fight, options: WalkOptions = {}): ServerPath {
     if (win) {
       killed.add(slot);
       slot++;
-      // The new slot is the server's from the next week (a kill in the last week reaches nothing within the weeks).
-      if (slot > furthest && week < weeks) {
-        furthest = slot;
-        reached[slot - 1] = week + 1;
-      }
     }
   }
   const out = Array.from({ length: furthest }, (_, i) => reached[i] ?? 0);
@@ -172,10 +196,15 @@ export interface PathPlayer {
   /** Whose roster it is (`roster.ts`). */
   readonly roster: RosterKind;
   readonly joinWeek?: number;
+  /**
+   * A prepared player's talents: the line's written ones (the solved puzzle: default), or random legal ones, drawn for the player
+   * and the slot (a player who builds the line from what they rolled).
+   */
+  readonly talents?: 'written' | 'random';
 }
 
 export interface PathServer {
-  readonly id: 'dedicated' | 'mixed';
+  readonly id: 'dedicated' | 'mixed' | 'builders';
   readonly players: readonly PathPlayer[];
 }
 
@@ -199,7 +228,27 @@ export const MIXED: PathServer = {
   }),
 };
 
-export const PATH_SERVERS: readonly PathServer[] = [DEDICATED, MIXED];
+/**
+ * A builder server (information, design panel 6): four daily players who field the slot's prepared line, each creature with a random
+ * legal talent instead of the written one. It shows whether a wall, such as Thornmother's at slot 5, stops anyone who has the line's
+ * forms and Knacks but not its talents. The path report prints it with the other servers (`--path`); the track tuner never plays it.
+ */
+export const BUILDERS: PathServer = {
+  id: 'builders',
+  players: Array.from({ length: 4 }, (): PathPlayer => ({
+    role: 'prepared',
+    roster: 'daily',
+    talents: 'random',
+  })),
+};
+
+export const PATH_SERVERS: readonly PathServer[] = [DEDICATED, MIXED, BUILDERS];
+/** The kinds of server a path plan plays unless told otherwise (the builder server is asked for: `--path` does). */
+export const DEFAULT_PATH_KINDS: readonly PathServer['id'][] = ['dedicated', 'mixed'];
+
+/** The Determination a run plays with: the default (`DETERMINATION`) unless the run says `'off'` or gives its own. */
+export const determinationOf = (run: PathRun): Determination | undefined =>
+  run.determination === 'off' ? undefined : (run.determination ?? DETERMINATION);
 
 /** The placements, bench and boss of one server's weekend: everyone's creatures at their roster's levels in that week. */
 export function serverWeekend(
@@ -208,12 +257,15 @@ export function serverWeekend(
   week: number,
   speed: RosterSpeed,
   seed: string,
-  profile: RosterProfile = PLACEHOLDER_ROSTER,
+  profile: RosterProfile = VALLEY_ROSTER,
   run: PathRun = {},
 ): { boss: BossDef; placements: Placement[]; bench: Placement[] } {
   const base = slotBoss(slot, run.table ? { table: run.table } : {});
   const rows = base.rows;
-  const { line, core } = preparedOf(base.id);
+  // The dedicated and the builder server field the slot's prepared line; the mixed server's min-maxers and builders field the written
+  // answer that suits it at this slot (`SLOT_MIXED_ANSWER`).
+  const { line, core } =
+    server.id === 'mixed' ? slotMixedOf(slot, run.mixedAnswer) : slotPreparedOf(slot);
   const boss = server.players.length === base.cols ? base : wideBoss(base, server.players.length);
   const whole = server.players.length === base.cols;
   let m = 0;
@@ -224,14 +276,16 @@ export function serverWeekend(
     // One more creature than the column holds: the bench's.
     const levels = rosterLevels(profile, p.roster, week, speed, rows + 1, p.joinWeek);
     let column: Pick[];
-    if (p.role === 'prepared')
+    if (p.role === 'prepared') {
       // A server with a player for every column fields the line as written; a wider or narrower one takes the tool's columns first.
       column = columnOf(
         line,
         base.cols,
         whole ? c : (toolColumns(line, base.cols, core)[m++ % base.cols] as number),
       );
-    else if (p.role === 'builder')
+      if (p.talents === 'random')
+        column = randomTalents(createSeededRng(`path:${seed}:talents:${slot}:${c}`), column);
+    } else if (p.role === 'builder')
       column = limitCopies(
         columnOf(line, base.cols, toolColumns(line, base.cols, core)[b++ % base.cols] as number),
         BUILDER_MAX_COPIES,
@@ -266,12 +320,13 @@ export function weekendKill(
   week: number,
   speed: RosterSpeed,
   seed: string,
-  profile: RosterProfile = PLACEHOLDER_ROSTER,
+  profile: RosterProfile = VALLEY_ROSTER,
   run: PathRun = {},
   stacks = 0,
 ): boolean {
   const { boss, placements, bench } = serverWeekend(server, slot, week, speed, seed, profile, run);
-  const determinationBp = run.determination ? stacks * run.determination.stackBp : 0;
+  const dial = determinationOf(run);
+  const determinationBp = dial && slot >= dial.fromSlot ? stacks * dial.stackBp : 0;
   return (
     weekendStatsOf(boss, placements, bench, 1, `path:${seed}:w${week}`, { determinationBp })
       .winRate === 1
@@ -283,13 +338,18 @@ export function pathOf(
   server: PathServer,
   speed: RosterSpeed,
   index: number,
-  profile: RosterProfile = PLACEHOLDER_ROSTER,
+  profile: RosterProfile = VALLEY_ROSTER,
   run: PathRun = {},
 ): ServerPath {
   const seed = `${server.id}:${index}`;
   return walkPath(
     (slot, week, stacks) => weekendKill(server, slot, week, speed, seed, profile, run, stacks),
-    run.determination ? { determinationStacks: run.determination.maxStacks } : {},
+    (() => {
+      const dial = determinationOf(run);
+      return dial
+        ? { determinationStacks: dial.maxStacks, determinationFromSlot: dial.fromSlot }
+        : {};
+    })(),
   );
 }
 
@@ -315,7 +375,7 @@ export interface SlotSummary {
   readonly bossId: string;
   /** The share of servers that reached the slot within the weeks. */
   readonly reachedShare: number;
-  /** The week the servers that reached it first had it as their slot. */
+  /** The week the servers that reached it first fought it (a Festival week is never one). */
   readonly week: Spread;
   /** The weekends fought against it, over the servers that reached it. */
   readonly weekends: Spread;
@@ -371,7 +431,7 @@ const weekCell = (s: SlotSummary): string =>
     ? '-'
     : `${s.week.median} (${s.week.p25}-${s.week.p75})${s.reachedShare < 1 ? `, ${pct(s.reachedShare)} reach` : ''}`;
 
-/** The markdown of one speed: a table of the week each slot is reached and the weekends spent on it, dedicated and mixed side by side, then the stuck share. */
+/** The markdown of one speed: a table of the week each slot is first fought and the weekends spent on it, dedicated and mixed side by side, then the stuck share. */
 export function pathMarkdown(
   speed: RosterSpeed,
   summaries: readonly PathSummary[],
@@ -381,7 +441,7 @@ export function pathMarkdown(
   const lines = [
     `### Boss track at the ${speed} roster speed${label}`,
     '',
-    `| Slot | Boss | ${summaries.map((s) => `${s.server}: week reached | ${s.server}: weekends`).join(' | ')} |`,
+    `| Slot | Boss | ${summaries.map((s) => `${s.server}: week first fought | ${s.server}: weekends`).join(' | ')} |`,
     `| --- | --- | ${summaries.map(() => '--- | ---').join(' | ')} |`,
   ];
   for (let i = 0; i < rows; i++) {
@@ -424,13 +484,13 @@ export const runPathJob = (args: unknown): ServerPath => {
   const a = args as PathJobArgs;
   const server = PATH_SERVERS.find((s) => s.id === a.server);
   if (!server) throw new Error(`unknown path server ${a.server}`);
-  return pathOf(server, a.speed, a.index, PLACEHOLDER_ROSTER, runOf(a));
+  return pathOf(server, a.speed, a.index, VALLEY_ROSTER, runOf(a));
 };
 
 export interface PathPlanOptions extends PathRun {
   readonly quick: boolean;
   readonly speeds?: readonly RosterSpeed[];
-  /** Only these kinds of server (default: both). */
+  /** Only these kinds of server (default: the dedicated and the mixed server, `DEFAULT_PATH_KINDS`). */
   readonly kinds?: readonly PathServer['id'][];
   /** Servers of each kind, instead of `pathServers(quick)` (the tests use a few). */
   readonly servers?: number;
@@ -448,7 +508,8 @@ export interface PathReport {
 export function planPath(options: PathPlanOptions): Plan<PathReport> {
   const speeds = options.speeds ?? ['expected'];
   const n = options.servers ?? pathServers(options.quick);
-  const kinds = PATH_SERVERS.filter((s) => !options.kinds || options.kinds.includes(s.id));
+  const wanted = options.kinds ?? DEFAULT_PATH_KINDS;
+  const kinds = PATH_SERVERS.filter((s) => wanted.includes(s.id));
   const cells = speeds.flatMap((speed) => kinds.map((s) => ({ speed, server: s.id })));
   const jobs: JobSpec[] = cells.flatMap((c) =>
     Array.from({ length: n }, (_, index) => {
@@ -479,9 +540,12 @@ export function planPath(options: PathPlanOptions): Plan<PathReport> {
         pathMarkdown(
           speed,
           data.filter((d) => d.speed === speed),
-          options.determination
-            ? ` with Determination (+${options.determination.stackBp / 100}% a failed week, at most ${options.determination.maxStacks} stacks)`
-            : '',
+          (() => {
+            const dial = determinationOf(options);
+            return dial
+              ? ` with Determination (+${dial.stackBp / 100}% a failed weekend from slot ${dial.fromSlot}, at most ${dial.maxStacks} stacks)`
+              : ' without Determination';
+          })(),
         ),
       );
       return { md, data };

@@ -4,6 +4,18 @@ Gear items, lines and sets, crafting, dismantling, conversions, the bag and the 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: Gear in combat v2: talents lead early, a balance mid-game, gear leads the endgame; no slot level requirements; gear alone can build crit **[Misa]**
+
+ID: `2026-10-31-gear-in-combat-v2-talents-lead` · Status: current
+
+**Decision (Misa, answering `docs/design/combat/gear-plan.md` questions 11 to 13, 2026-10-31).**
+
+- **Gear's weight grows with the game.** Early on a talent is worth more than gear (gear is rare and weak); in the mid game the two balance; in the endgame gear is the main way to grow, and chasing the highest-tier lines is rewarded. The gear plan's budget per piece rises with item level so that a typical set passes a good talent's worth in the endgame, rather than being held at "about one talent" throughout.
+- **No slot level requirements.** Hat, Scarf and Charm all open at creature level 1 (today Scarf 7 and Charm 13, `RULES.gear.slotUnlockLevel`). The change lands with combat v2's port, not in the shipped game now.
+- **Gear alone can build a crit creature** (about +20% damage from two chance lines and a damage line), and it is strongest together with the crit talents.
+
+**Reasoning.** Misa: "In the endgame the gear is the main way to go. Players will have access to the highest tier modifier lines on gear and should be rewarded for chasing those... In the beginning of the game a talent will be worth more power, as gear is less common and powerful. In the mid game there ought to be a balance of both." The valley's players level fast (a daily player's best creature is level 13 or more by week 2), so the slot levels only locked the 10th to 20th creatures out of gear. On crit: "It'll always be more meaningful when combined with the right talents though."
+
 ## 2026-10-31: [Misa] Items with no element get an oat-beige coat instead of grey
 
 ID: `2026-10-31-items-with-no-element-get-an` · Status: current · Amends: `2026-10-30-every-named-item-has-its-own`

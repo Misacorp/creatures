@@ -12,6 +12,14 @@ ID: `2026-10-31-the-lead-agent-owns-art-direction` · Status: current
 
 **Reasoning.** Misa reviews art rather than drawing it; one owner who checks every piece against the same standard keeps the game looking like one game, and choices side by side are quicker for him to answer than a single draft followed by rounds of notes.
 
+## 2026-10-31: After the combat and valley reworks the game resets; today's players become the pioneering first settlers **[Misa]**
+
+ID: `2026-10-31-after-the-combat-and-valley-reworks` · Status: current
+
+**Decision (Misa, 2026-10-31).** When the combat rework (combat v2) and the valley rework are both done, the game resets. Before the reset, each player's accomplishments and creatures are recorded and kept, and they become content later: today's players are the mystical pioneering first settlers. This answers the migration questions: no server keeps its Boss Rank (every server starts the track at slot 1), and existing gear is not converted or rerolled (it goes with the reset).
+
+**Reasoning.** Misa's plan: "I plan on recording each player's current accomplishments and creatures down somewhere, using them as fuel for content later on (they are the mystical pioneering first settlers) and resetting the game." A reset spares combat v2's phase 6 a migration of ranks and gear lines priced for the old rules, and turns the old world into lore instead of a balance problem.
+
 ## 2026-10-30: Decisions live in topic files, kept in step by pnpm decisions
 
 ID: `2026-10-30-decisions-live-in-topic-files-kept` · Status: current

@@ -15,6 +15,7 @@ import {
   combinePotential,
   weekendStats,
   weekendStatsOf,
+  type BossDef,
   type Placement,
 } from '../src';
 import { toPlacements } from '../src/search';
@@ -195,5 +196,60 @@ describe('the potential of a mixed weekend uses the same seeds as the kill measu
     const stats = weekendStatsOf(boss, placements, bench, 3, 'same');
     const p = weekendPotentialOf(boss, placements, bench, 3, 'same');
     expect(p.mean).toBeCloseTo(stats.damageShare, 9);
+  });
+});
+
+describe('potential mode reads every HP-share rule from the real (shadow) HP', () => {
+  it('the boss is held at 1 HP, its real HP goes on falling below 0, and a weekend carries it from stage to stage', () => {
+    const w = weekend(soft, team, [], { rng: rng('shadow'), potential: true, stages: 3 });
+    const dealt = w.stages.reduce((n, st) => n + st.damage, 0);
+    for (const st of w.stages) expect(st.bossHpLeft).toBe(1);
+    expect(w.stages[0]?.bossHpReal).toBeLessThan(0);
+    // Every point of damage came off the real HP, across all three stages (not reset to the 1 HP the boss is held at).
+    expect(w.stages.at(-1)?.bossHpReal).toBe(soft.hp - dealt);
+    // A normal fight has no gap between the two.
+    const normal = fight(soft, team, { rng: rng('shadow') });
+    expect(normal.bossHpReal).toBe(normal.bossHpLeft);
+  });
+
+  it('a Finisher bonus that would apply only through the clamp does not: the real HP is what is read', () => {
+    // The boss has 3 HP: a third of it is under 1 HP, so the clamp that holds it at 1 HP is not "below a third" (1 x 10000 < 3 x 3333
+    // is false), but its real HP is far below 0 after the first hit. Zipmouse's second hit gets the Finisher's bonus.
+    const tiny = labBoss({ rows: 1, cols: 1, rounds: 3, hp: 3, atk: 1 });
+    const boss: BossDef = { ...tiny, spd: 0, armour: 0, plain: { ...tiny.plain, powerBp: 0 } };
+    const play = (talents: string[]) =>
+      fight(boss, [{ ...at('zipmouse', 0, 0), talents }], {
+        rng: rng('fin'),
+        potential: true,
+        log: true,
+      });
+    const withFinisher = play(['finisher']);
+    expect(withFinisher.fighters[0]?.fires['finisherBp']).toBeGreaterThan(0);
+    expect(withFinisher.damage).toBeGreaterThan(play([]).damage);
+  });
+
+  it('Cull reads the real HP in potential mode: it fires, counts no damage, and the boss is still held at 1 HP', () => {
+    // A boss that one hit leaves at 1 HP: below the Cull's 5% of its full HP.
+    const strike = at('zipmouse', 0, 0);
+    const bossOf = (hp: number): BossDef => {
+      const b = labBoss({ rows: 1, cols: 1, rounds: 1, hp, atk: 1 });
+      return { ...b, spd: 0, armour: 0, plain: { ...b.plain, powerBp: 0 } };
+    };
+    const hit = fight(bossOf(1_000_000), [strike], { rng: rng('cull') }).damage;
+    expect(hit).toBeGreaterThan(20);
+    const boss = bossOf(hit + 1);
+    const run = (talents: string[], potential: boolean) =>
+      fight(boss, [{ ...strike, talents }], { rng: rng('cull'), potential, log: true });
+    expect(run([], false).bossHpLeft).toBeGreaterThan(0);
+    const cull = run(['cull'], true);
+    const none = run([], true);
+    expect(cull.fighters[0]?.fires['cullBp']).toBe(1);
+    expect(cull.events.some((e) => e.kind === 'cull')).toBe(true);
+    // The HP the Cull removes is not damage, and the boss does not die in potential.
+    expect(cull.damage).toBe(none.damage);
+    expect(cull.bossHpLeft).toBe(1);
+    expect(cull.killingBlow).toBeNull();
+    // A normal fight: the same Cull defeats it.
+    expect(run(['cull'], false).killingBlow?.culled).toBe(true);
   });
 });

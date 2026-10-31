@@ -2,7 +2,8 @@ import { writeFileSync } from 'node:fs';
 import { CARDS } from './cards';
 import { RAID_BOSS_IDS } from './bosses';
 import { planBosses } from './bossReport';
-import { DETERMINATION, planPath } from './path';
+import { planPath, type PathSummary } from './path';
+import { ownabilityMarkdown, ownabilityTable } from './ownability';
 import { ROSTER_SPEEDS, type RosterSpeed } from './roster';
 import { inProcessExecutor } from './jobRunners';
 import { runJobs, timingLines, type Executor, type JobRun, type JobSpec, type Plan } from './jobs';
@@ -10,8 +11,8 @@ import { planReport, buildCatalogue, buildKeywords } from './report';
 import { TARGET_RANKS, type TargetRank } from './targets';
 import { planTalents, talentTeamId } from './talentReport';
 import type { TeamShareSummary } from './teamShareReport';
-import { trackSummary, tuneTrack } from './trackTuner';
-import { TRACK_ORDER } from './track';
+import { planSlotInfo, slotInfoMarkdown, trackSummary, tuneTrack } from './trackTuner';
+import { SLOT_WEEKS, TRACK_ORDER } from './track';
 import { summaryAll, tuneBoss, type RankResult } from './tuner';
 
 /** Where the jobs run: `exec` runs one job, `slots` of them at a time (`scripts/report.mjs` sets both from `--jobs`). */
@@ -173,8 +174,9 @@ async function tune(args: readonly string[], quick: boolean, run: JobRunner): Pr
  * `--path [--speed slow|expected|fast|all] [--determination] [--quick] [--out <file.md>]`: the path simulator (`path.ts`). It plays many seeded
  * servers (40, or 8 with `--quick`) of each kind through the boss track week by week and prints, per roster speed, the week each
  * slot is reached, the weekends spent on it and the share of servers stuck for more than four weeks on one boss. Nothing is tuned.
- * `--determination` plays the same servers again with Determination on (`DETERMINATION`: +5% damage and healing for each failed week
- * on the same boss, at most 10 stacks, reset by a kill) and prints that beside the path without it; it is off otherwise.
+ * The path plays with Determination, which is on by default from the second lap (`DETERMINATION`: +5% damage and healing for each failed
+ * weekend on the same boss, at most 5 stacks, from slot 6, reset by a kill). `--determination` also plays the same servers without it and
+ * prints that beside it, as a comparison; `--no-determination` prints only the path without it.
  */
 async function path(args: readonly string[], quick: boolean, run: JobRunner): Promise<number> {
   const speedArg = flagValue(args, '--speed') ?? 'expected';
@@ -194,22 +196,75 @@ async function path(args: readonly string[], quick: boolean, run: JobRunner): Pr
     return 1;
   }
   const t0 = Date.now();
-  // `--determination`: the same servers also with Determination on (`DETERMINATION`), reported beside the path without it.
-  const withDetermination = args.includes('--determination');
-  const plain = await runPlan(planPath({ quick, speeds }), run);
+  // The path has Determination on (`DETERMINATION`). `--determination` adds the same servers without it as a comparison;
+  // `--no-determination` plays only without it.
+  const comparison = args.includes('--determination');
+  const dial = args.includes('--no-determination') ? ('off' as const) : undefined;
+  // The builder server (four daily players with random legal talents) is shown beside the dedicated and the mixed server.
+  const plain = await runPlan(
+    planPath({
+      quick,
+      speeds,
+      kinds: ['dedicated', 'mixed', 'builders'],
+      ...(dial ? { determination: dial } : {}),
+    }),
+    run,
+  );
   const mds = [plain.value.md.join('\n')];
   let timings = plain.timings;
-  if (withDetermination) {
-    const on = await runPlan(planPath({ quick, speeds, determination: DETERMINATION }), run);
-    mds.push(on.value.md.join('\n'));
-    timings += '\n' + on.timings;
+  if (comparison && !dial) {
+    const off = await runPlan(
+      planPath({
+        quick,
+        speeds,
+        kinds: ['dedicated', 'mixed', 'builders'],
+        determination: 'off',
+      }),
+      run,
+    );
+    mds.push(off.value.md.join('\n'));
+    timings += '\n' + off.timings;
   }
+  mds.push(ownabilityOfPath(plain.value.data).join('\n'));
+  // The information measures at the arrival weeks of this path (slots 1 to 15, the committed `SLOT_NUMBERS`).
+  const info = await runPlan(planSlotInfo({ quick, weeks: arrivalWeeksOf(plain.value.data) }), run);
+  mds.push(
+    [
+      '### Information measures at the arrival weeks (not targets)',
+      '',
+      ...slotInfoMarkdown(info.value),
+    ].join('\n'),
+  );
+  timings += '\n' + info.timings;
   const md = mds.join('\n');
   console.log(md);
   if (out) writeFileSync(out, md + '\n');
   console.log(`path in ${secondsSince(t0)} s`);
   console.log(timings);
   return 0;
+}
+
+/**
+ * The ownability table (`ownability.ts`) at the arrival weeks of this path: the median week a dedicated server arrives at each slot
+ * 1 to 15 at the expected speed when the run has it, else the committed `SLOT_WEEKS` (the weeks the track was tuned for).
+ */
+function arrivalWeeksOf(data: readonly PathSummary[]): number[] {
+  const dedicated = data.find((d) => d.server === 'dedicated' && d.speed === 'expected');
+  return SLOT_WEEKS.map((committed, i) => {
+    const slot = dedicated?.slots[i];
+    return slot && slot.reachedShare > 0 ? slot.week.median : committed;
+  });
+}
+
+function ownabilityOfPath(data: readonly PathSummary[]): string[] {
+  const dedicated = data.find((d) => d.server === 'dedicated' && d.speed === 'expected');
+  const weeks = arrivalWeeksOf(data);
+  return ownabilityMarkdown(
+    ownabilityTable(weeks),
+    dedicated
+      ? 'the median of a dedicated server at the expected speed, from this path'
+      : 'the committed `SLOT_WEEKS` (this run has no expected-speed path)',
+  );
 }
 
 /** `1-12` or `5` as a first and last slot; undefined when it is neither. */

@@ -171,7 +171,7 @@ const KEYWORD_CALLS: Readonly<Record<string, Mechanic['calls']>> = {
       b.mods.capPerHit !== undefined && 'a cap on one hit blunts a crit',
       (b.critChanceBp ?? 0) > 0 && 'it crits too',
     ),
-  'Crit Charge': (b) =>
+  'Sure Crit': (b) =>
     attacksOf(b).some((a) => aimed(a) && a.powerBp >= 10_000) &&
     'heavy aimed hits a dodge or a Guard can turn into a crit',
   Retaliate: (b) =>

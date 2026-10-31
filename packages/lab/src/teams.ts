@@ -54,12 +54,27 @@ export interface CasualRoster {
   readonly top3Line: readonly Pick[];
 }
 
+/**
+ * How many casual rosters the full report draws. A study over 20 roster seeds found the average "beyond the top
+ * three" of 4 rosters swung from 0.8 to 1.8 between draws (mean 1.31), which made the gate's 1.5 a coin flip. A
+ * roster's own average (its four cards) has a standard deviation of about 0.43, so n rosters read within about
+ * 1.96 x 0.43 / sqrt(n) (95%): 12 rosters give 0.24, 32 give 0.15. The rosters come one after another from one
+ * seeded generator, so the first 4 are the same ones as before. A roster costs about 0.45 s of work on a core.
+ */
+export const CASUAL_ROSTERS = 32;
+
+/** How many of the casual rosters the report lists row by row (the rest only count towards the average). */
+export const CASUAL_ROSTERS_LISTED = 4;
+
+/** The rosters whose best lines the talent section's team share reads (its draws per team are costly; unchanged by the extra rosters). */
+export const TEAM_SHARE_ROSTERS = 4;
+
 /** Twelve random forms at random levels (8 to 25, stage 1 forms at their cap): the casual rosters, the same in every run. */
 export function casualRosters(quick: boolean): CasualRoster[] {
   const forms = Object.keys(FORM_KNACKS);
   const rng = createSeededRng('casual');
   const out: CasualRoster[] = [];
-  for (let r = 0; r < (quick ? 1 : 4); r++) {
+  for (let r = 0; r < (quick ? 1 : CASUAL_ROSTERS); r++) {
     const roster = new Map<string, number>();
     while (roster.size < 12)
       roster.set(forms[int(rng, forms.length)] ?? 'tidewing', 8 + int(rng, 18));
@@ -77,11 +92,11 @@ export function casualRosters(quick: boolean): CasualRoster[] {
   return out;
 }
 
-/** The best gauntlet line of every casual roster on each casual card, by the report's own search (same seeds as the casual section). */
+/** The best gauntlet line of each of the first casual rosters (`TEAM_SHARE_ROSTERS`) on each casual card, by the report's own search (same seeds as the casual section). */
 export function casualLines(quick: boolean): { cardId: string; line: readonly Pick[] }[] {
   const sopts = searchOptions(quick).gauntlet;
   const out: { cardId: string; line: readonly Pick[] }[] = [];
-  for (const roster of casualRosters(quick))
+  for (const roster of casualRosters(quick).slice(0, TEAM_SHARE_ROSTERS))
     for (const cid of CASUAL_CARDS) {
       const best = search(bossFor(GAUNTLET, [cid]), GAUNTLET, {
         seed: `casual:${roster.index}:${cid}`,

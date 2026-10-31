@@ -2,8 +2,12 @@
 import { content } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { RAID_BOSS_IDS, RAID_RANKS, RAID_SPECS, raidBossOf } from '../src/bosses';
+import { CARDS } from '../src/cards';
 import {
   SLOT_CARDS,
+  SLOT_EXTRA_CARDS,
+  SLOT_LINE,
+  SLOT_MIXED_ANSWER,
   SLOT_NUMBERS,
   SLOT_STRENGTH,
   SLOT_WALL,
@@ -14,10 +18,15 @@ import {
   rankLevel,
   rankNumbers,
   rankStrengthBp,
+  slotAnswersOf,
   slotBoss,
+  slotExtraCards,
+  slotMixedOf,
+  slotPreparedOf,
   slotRules,
   trackSlot,
 } from '../src/track';
+import { BOSS_ANSWERS, answerLine } from '../src/bossAnswers';
 
 describe('the track order', () => {
   it('lists every shipped boss once, in the order Misa chose, all of them lab bosses', () => {
@@ -191,9 +200,10 @@ describe('the young-server ramp (Misa, 2026-10-30)', () => {
         ...rankNumbers(s.bossId, slot),
         strengthBp: s.strengthBp,
         level: rankLevel(slot),
+        extraCards: s.extraCards,
       });
       expect(boss, `slot ${slot}`).toEqual(full);
-      expect(boss.cards).toEqual(spec(s.bossId).cards);
+      expect(boss.cards).toEqual([...spec(s.bossId).cards, ...s.extraCards]);
     }
     expect(slotBoss(5, { table: {} })).toEqual(raidBossOf(trackSlot(5).bossId, { rank: 'mid' }));
     expect(slotBoss(10, { table: {} })).toEqual(raidBossOf(trackSlot(10).bossId, { rank: 'high' }));
@@ -207,5 +217,134 @@ describe('the young-server ramp (Misa, 2026-10-30)', () => {
     expect(raidBossOf(id, { cards: 1 }).escalation).toBeDefined();
     expect(raidBossOf(id, { cards: 0, buildUp: false }).escalation).toBeUndefined();
     expect(raidBossOf(id, { cards: 0 }).mods).toEqual({});
+  });
+});
+
+describe('the luck cards, a later lap’s new card (Misa, 2026-10-31)', () => {
+  const n = TRACK_ORDER.length;
+  const first = (card: string): number =>
+    Number(Object.entries(SLOT_EXTRA_CARDS).find(([, cards]) => cards.includes(card))?.[0]);
+
+  it('puts Lucky Strike on the Storm Sovereign and Slippery on the Tidal Colossus, each from its second lap', () => {
+    expect(SLOT_EXTRA_CARDS).toEqual({ 6: ['slippery', 'breakwater'], 8: ['lucky-strike'] });
+    expect(trackSlot(first('lucky-strike')).bossId).toBe('storm-sovereign');
+    expect(trackSlot(first('slippery')).bossId).toBe('tidal-colossus');
+    for (const card of ['lucky-strike', 'slippery']) {
+      // The lap after the first: slots 6 to 10, so the boss's first meeting is as it was.
+      expect(first(card)).toBeGreaterThan(n);
+      expect(first(card)).toBeLessThanOrEqual(2 * n);
+      expect(CARDS.map((c) => c.id)).toContain(card);
+    }
+  });
+
+  it('adds a card to its boss from that slot on and never earlier', () => {
+    const from = { slippery: 6, breakwater: 6, 'lucky-strike': 8 } as const;
+    for (let s = 1; s <= 4 * n; s++) {
+      const expected = (Object.keys(from) as (keyof typeof from)[]).filter(
+        (card) => s >= from[card] && (s - from[card]) % n === 0,
+      );
+      expect(slotExtraCards(s), `slot ${s}`).toEqual(expected);
+      expect(trackSlot(s).extraCards, `slot ${s}`).toEqual(expected);
+      for (const card of Object.keys(from))
+        expect(slotBoss(s).cards.includes(card), `${card} at slot ${s}`).toBe(
+          expected.includes(card as keyof typeof from),
+        );
+    }
+    // The first lap has none, and no boss has more than two (the Colossus: Slippery and Breakwater).
+    for (let s = 1; s <= n; s++) expect(trackSlot(s).extraCards).toEqual([]);
+    expect(TRACK.filter((s) => s.extraCards.length).map((s) => s.slot)).toEqual([
+      6, 8, 11, 13, 16, 18, 21, 23, 26, 28,
+    ]);
+    for (const s of TRACK) expect(s.extraCards.length).toBeLessThanOrEqual(2);
+  });
+
+  it('builds the card on the boss at the slot’s strength: a crit chance for Lucky Strike, a flat dodge for Slippery', () => {
+    const storm = slotBoss(8);
+    expect(storm.cards.slice(-1)).toEqual(['lucky-strike']);
+    expect(storm.critChanceBp).toBe(Math.floor((2_000 * trackSlot(8).strengthBp) / 10_000));
+    expect(storm.dodgeBp ?? 0).toBe(0);
+    const colossus = slotBoss(6);
+    expect(colossus.cards.slice(-2)).toEqual(['slippery', 'breakwater']);
+    expect(colossus.dodgeBp).toBe(Math.floor((2_500 * trackSlot(6).strengthBp) / 10_000));
+    expect(colossus.critChanceBp ?? 0).toBe(0);
+    // Stronger on the lap after.
+    expect(slotBoss(13).critChanceBp as number).toBeGreaterThan(storm.critChanceBp as number);
+    expect(slotBoss(11).dodgeBp as number).toBeGreaterThan(colossus.dodgeBp as number);
+    // A boss without the card is as before.
+    expect(slotBoss(7).critChanceBp ?? 0).toBe(0);
+    expect(slotBoss(7).dodgeBp ?? 0).toBe(0);
+    expect(slotBoss(3).cards).toEqual(RAID_SPECS.find((x) => x.id === 'storm-sovereign')?.cards);
+  });
+
+  it('Breakwater makes wards cut more of the Colossus’s sweeps, by the slot’s strength, and nothing else', () => {
+    const colossus = slotBoss(6);
+    expect(colossus.mods.wardBp).toBe(
+      10_000 + Math.floor((20_000 * trackSlot(6).strengthBp) / 10_000),
+    );
+    expect(slotBoss(11).mods.wardBp as number).toBeGreaterThan(colossus.mods.wardBp as number);
+    expect(slotBoss(1).mods.wardBp).toBeUndefined();
+    expect(slotBoss(7).mods.wardBp).toBeUndefined();
+  });
+
+  it('is what raidBossOf builds with the card, at every slot that has one', () => {
+    for (const slot of [6, 8, 11, 13]) {
+      const s = trackSlot(slot);
+      expect(slotBoss(slot, { table: {} })).toEqual(
+        raidBossOf(s.bossId, {
+          ...rankNumbers(s.bossId, slot),
+          strengthBp: s.strengthBp,
+          level: rankLevel(slot),
+          extraCards: s.extraCards,
+        }),
+      );
+    }
+    expect(raidBossOf('storm-sovereign', { extraCards: ['lucky-strike'] }).critChanceBp).toBe(
+      2_000,
+    );
+    expect(raidBossOf('storm-sovereign').critChanceBp ?? 0).toBe(0);
+  });
+
+  it('takes another table and order, and a card repeats on the boss’s later laps only', () => {
+    expect(slotExtraCards(3, ['a', 'b'], { 2: ['x'] })).toEqual([]);
+    expect(slotExtraCards(4, ['a', 'b'], { 2: ['x'] })).toEqual(['x']);
+    expect(slotExtraCards(6, ['a', 'b'], { 2: ['x'], 4: ['y'] })).toEqual(['x', 'y']);
+    expect(slotExtraCards(1, TRACK_ORDER, {})).toEqual([]);
+  });
+});
+
+describe('the written answers of a slot and the one the mixed server fields (design panel 6)', () => {
+  it('lists every written answer of the boss, the first being the slot’s prepared line', () => {
+    for (const slot of [1, 2, 3, 6, 11]) {
+      const written = BOSS_ANSWERS[trackSlot(slot).bossId] ?? [];
+      const answers = slotAnswersOf(slot);
+      expect(answers).toHaveLength(written.length);
+      expect(answers.length).toBeGreaterThanOrEqual(2);
+      // The first is what the dedicated server fields (`SLOT_LINE` where the slot names one); the others are as written.
+      expect(answers[0]?.line).toEqual(slotPreparedOf(slot).line);
+      expect(answers[0]?.core).toEqual(slotPreparedOf(slot).core);
+      answers.slice(1).forEach((a, i) => {
+        expect(a.line).toEqual(answerLine((written[i + 1] as { line: string }).line));
+        expect(a.core).toEqual(written[i + 1]?.core);
+        expect(a.label).toBe(written[i + 1]?.label);
+      });
+    }
+    expect(slotAnswersOf(1)[0]?.line).toEqual(answerLine(SLOT_LINE[1] as string));
+  });
+
+  it('gives the mixed server the first answer unless the slot says otherwise, and takes an index', () => {
+    expect(slotMixedOf(3)).toEqual(slotAnswersOf(3)[SLOT_MIXED_ANSWER[3] ?? 0]);
+    expect(slotMixedOf(3, 0)).toEqual(slotAnswersOf(3)[0]);
+    expect(slotMixedOf(3, 1)).toEqual(slotAnswersOf(3)[1]);
+    expect(slotMixedOf(3, 1).line).not.toEqual(slotMixedOf(3, 0).line);
+    expect(() => slotMixedOf(3, 9)).toThrow(/no written answer number 9/);
+  });
+
+  it('only names answers a boss has, on slots of the track', () => {
+    for (const [slot, index] of Object.entries(SLOT_MIXED_ANSWER)) {
+      expect(Number(slot)).toBeGreaterThanOrEqual(1);
+      expect(Number.isInteger(index)).toBe(true);
+      expect(index).toBeGreaterThanOrEqual(0);
+      expect(index).toBeLessThan(slotAnswersOf(Number(slot)).length);
+    }
   });
 });
