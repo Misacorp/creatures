@@ -2,6 +2,7 @@ import { FindRow } from './FindRow';
 import { GearTagBadge, ItemFrame, ItemSprite, SetTag, SlotTag } from '../GearArt';
 import { gearBase } from '@creatures/game';
 import { gearName, qualityText } from '../gear-view';
+import { GlossaryTag } from '../Glossary';
 import { Tag } from './Tag';
 
 /**
@@ -16,6 +17,7 @@ export function FindBlueprint({
   duplicate = false,
   marks,
   scale = 4,
+  compact = false,
 }: {
   baseId: string;
   /** The blueprint was already known. */
@@ -23,14 +25,32 @@ export function FindBlueprint({
   /** A repeat find's quality after it (marks); leave out when the repeat became scrap. */
   marks?: number | undefined;
   scale?: number;
+  /** The small form: the picture alone (`FindRow compact`). */
+  compact?: boolean;
 }) {
   const base = gearBase(baseId);
+  const frame = (
+    <ItemFrame rarity="common" class="blueprint">
+      <ItemSprite baseId={baseId} scale={compact ? 3 : scale} />
+    </ItemFrame>
+  );
   return (
     <FindRow
+      compact={compact}
       image={
-        <ItemFrame rarity="common" class="blueprint">
-          <ItemSprite baseId={baseId} scale={scale} />
-        </ItemFrame>
+        compact ? (
+          // Small, the picture is the tap target: it opens what a blueprint is (it has no card of its own).
+          <GlossaryTag
+            entry="blueprint"
+            look="chip"
+            class="find-compact-help"
+            label={`Blueprint: ${gearName(baseId)}. What is a blueprint?`}
+          >
+            {frame}
+          </GlossaryTag>
+        ) : (
+          frame
+        )
       }
       name={`Blueprint: ${gearName(baseId)}`}
       nameClass="blueprint-name"

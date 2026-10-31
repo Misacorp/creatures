@@ -268,7 +268,10 @@ describe('the highlights of a visit', () => {
     expect(smith(1)?.finds).toHaveLength(1);
     const many = smith(12);
     expect(many?.finds).toHaveLength(MAX_PIECES);
-    expect(many?.blurb).toBe('12 new pieces in all.');
+    // No line: the pictures and "+9 more" say it.
+    expect(many?.blurb).toBe('');
+    expect(many?.unshown).toBe(12 - MAX_PIECES);
+    expect(three?.unshown).toBe(0);
     expect(many?.headline).toBe('EMBER AT THE FORGE');
   });
 
@@ -395,7 +398,8 @@ describe('the highlights of a visit', () => {
     const first = w.highlights[0];
     expect(first?.id).toBe('new-lines');
     expect(first?.headline).toBe('4 NEWCOMERS ARRIVE');
-    expect(first?.blurb).toBe('Cindle, Splashet, Mistnewt and 1 more');
+    // The creatures standing there say who; no list of names.
+    expect(first?.blurb).toBe('');
     expect(first?.count).toBe(4);
     expect(first?.scene.actors).toHaveLength(MAX_ACTORS);
     // Only creature news: the next best, the graduates, tops it up; the two Experts wait as things.
@@ -407,16 +411,18 @@ describe('the highlights of a visit', () => {
     const w = welcomeFor(visit({ events: ['graduation: 5 creatures earned Silver'] }), CAST, 1);
     const grad = w.highlights.find((s) => s.id === 'graduation');
     expect(grad?.headline).toBe('5 GRADUATE WITH SILVER');
-    expect(grad?.blurb).toBe('Nib, Dot, Fig and 2 more');
+    expect(grad?.blurb).toBe('');
     expect(grad?.scene.actors).toHaveLength(3);
   });
 
   it('keeps a story for what it does not know yet, as the lab wrote it', () => {
     const w = welcomeFor(visit({ events: ['a thing the lab added'] }), CAST, 1);
     expect(w.more + w.highlights.length).toBeGreaterThan(0);
-    expect([...w.highlights].some((s) => s.blurb === 'a thing the lab added') || w.more > 0).toBe(
-      true,
-    );
+    // The headline is the text itself, so there is no second line repeating it.
+    const all = [...w.highlights, ...w.rest];
+    const plain = all.find((s) => s.id.startsWith('plain-'));
+    expect(plain?.headline).toBe('A THING THE LAB ADDED');
+    expect(plain?.blurb).toBe('');
   });
 });
 

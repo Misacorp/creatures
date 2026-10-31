@@ -15,7 +15,7 @@ import { propSprite } from '../../games/art/props';
 import { tileFrame, type TileName } from '../../games/art/tiles';
 import { RAMPS, maybeTint, type Ramp } from '../../games/art/tint';
 import type { SceneGeometry } from './SceneFrame';
-import { ANVIL, TILE, type Placement, type PlaceId } from './valley-art';
+import { ANVIL, TILE, type Placement } from './valley-art';
 
 const INK = '#0d0a1a';
 const EMBER_STONE: Ramp = ['#a07a6a', '#7a5048', '#5a3632', '#3a2024'];
@@ -314,40 +314,4 @@ export function paddockDraw(g: SceneGeometry): Placement[] {
     { sprite: WORLD_MAP_SPRITE_DATA.flowers, x: g.cx + 40, y: g.top + 90 },
     { sprite: WORLD_MAP_SPRITE_DATA.bush, x: g.cx + 50, y: g.top + 50 },
   ];
-}
-
-// --- Where a place's waiting stories stand (the welcome-back markers lead here) ---
-
-/**
- * The spot where the creatures of a place's waiting stories stand, in scene pixels (their feet are 8 below it):
- * the smith by the Forge's shelf, a newcomer at the Paddock's gate, the visitor's guests in front of the
- * podium, the scouts on the cave's landing, and in front of the House's couch. The Signpost's interior is the road map,
- * which has no floor to stand on, so it has no spot (its stories stand on their plate).
- */
-export function stageSpot(place: PlaceId, g: SceneGeometry): { x: number; y: number } | null {
-  switch (place) {
-    case 'forge': {
-      const at = forgeSpots(g);
-      return { x: at.shelf.x + 26, y: at.shelf.y + 40 };
-    }
-    case 'paddock':
-      return { x: g.cx, y: g.top + 22 };
-    case 'house': {
-      const at = houseSpots(g);
-      // On the floor in front of the couch, above the rug where the evolving creature sits.
-      return { x: g.cx, y: at.centre.y - 34 };
-    }
-    case 'fair':
-      return { x: g.cx - 40, y: g.top + 54 };
-    case 'cave': {
-      const at = caveSpots(g);
-      return { x: at.landing.x + 20, y: at.landing.y + 4 };
-    }
-    case 'arena': {
-      const at = arenaSpots(g);
-      return { x: g.cx, y: at.boss.y + 34 };
-    }
-    case 'signpost':
-      return null;
-  }
 }

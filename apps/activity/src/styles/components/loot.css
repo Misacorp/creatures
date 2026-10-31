@@ -110,6 +110,26 @@
   background: none;
 }
 
+/*
+  The small form of a find (FindRow `compact` in a `FindList` `compact`): only the picture, in one left-aligned
+  row that wraps. A place's waiting stories show their finds like this, with a "+N more" after the last.
+*/
+.find-list.compact {
+  justify-content: flex-start;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0;
+}
+
+.find-row.compact {
+  padding: 0;
+  background: none;
+}
+
+.find-row.compact .find-row-button {
+  padding: 0;
+}
+
 .find-row-button {
   display: flex;
   flex: 1 1 auto;

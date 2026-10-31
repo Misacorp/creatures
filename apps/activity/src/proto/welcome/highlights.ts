@@ -92,11 +92,13 @@ export interface Story {
   count: number;
   /** The headline, a few words in capitals. */
   headline: string;
-  /** At most one short line; empty when the finds say it all. */
+  /** At most one short line; empty whenever the finds or the creatures in the picture already say it. */
   blurb: string;
   scene: Scene;
   /** The things found, shown as themselves under the headline. */
   finds: Find[];
+  /** Things the story stands for that have no picture here (five pieces made, three shown): "+2 more". */
+  unshown?: number | undefined;
   /** The marker's picture when it stays for the valley. */
   glyph: string;
   species?: string | undefined;
@@ -353,7 +355,6 @@ function storiesOf(c: Ctx): Story[] {
       species: sp ?? undefined,
     });
   } else if (newLines.length > 1) {
-    const names = newLines.map((l) => lineName(l.line));
     out.push({
       id: 'new-lines',
       kind: 'creature',
@@ -361,7 +362,7 @@ function storiesOf(c: Ctx): Story[] {
       place: 'paddock',
       count: newLines.length,
       headline: upper(`${String(newLines.length)} newcomers arrive`),
-      blurb: clip(nameList(names, newLines.length), MAX_BLURB),
+      blurb: '',
       scene: {
         place: 'paddock',
         actors: known.slice(0, MAX_ACTORS).map((sp, i, all) => ({
@@ -394,7 +395,7 @@ function storiesOf(c: Ctx): Story[] {
       headline: single
         ? upper(`${names[0] ?? ''} graduates with ${honour}`)
         : upper(`${String(count)} graduate with ${honour}`),
-      blurb: single || names.length === 0 ? '' : clip(nameList(names, count), MAX_BLURB),
+      blurb: '',
       scene: {
         place: 'house',
         actors: slots.map((s, i, all) => ({
@@ -445,7 +446,7 @@ function storiesOf(c: Ctx): Story[] {
           ? `${names[0] ?? ''} becomes ${article(step)} ${step} ${job}`
           : `${String(slots.length)} become ${step} ${job}s`,
       ),
-      blurb: one ? '' : clip(nameList(names, slots.length), MAX_BLURB),
+      blurb: '',
       scene: {
         place,
         actors: slots.slice(0, MAX_ACTORS).map((s, i, all) => ({
@@ -474,7 +475,7 @@ function storiesOf(c: Ctx): Story[] {
       place: 'house',
       count: 1,
       headline: upper(`${c.name(learner)} learns a talent`),
-      blurb: 'Ready in a few hours.',
+      blurb: '',
       scene: {
         place: 'house',
         actors: [{ who: cast0(learner), dx: 0, dy: 8 }],
@@ -513,13 +514,6 @@ function storiesOf(c: Ctx): Story[] {
       .map((x) => lineSpecies(x.line))
       .filter((s): s is string => s !== null)
       .slice(0, MAX_ACTORS);
-    const names = others.map((x) => lineName(x.line));
-    const what =
-      others.length === 1
-        ? homeCount === 1
-          ? `${article(names[0] ?? '')} ${names[0] ?? ''}`
-          : `${String(homeCount)} ${names[0] ?? ''}s`
-        : nameList(names);
     out.push({
       id: 'creatures-home',
       kind: 'creature',
@@ -527,10 +521,7 @@ function storiesOf(c: Ctx): Story[] {
       place: 'paddock',
       count: homeCount,
       headline: upper(`${c.name(scout)} brings friends home`),
-      blurb: clip(
-        `${what.charAt(0).toUpperCase()}${what.slice(1)}, from ${scoutsDestination(visit)}.`,
-        MAX_BLURB,
-      ),
+      blurb: '',
       scene: {
         place: 'paddock',
         actors: [
@@ -631,13 +622,14 @@ function storiesOf(c: Ctx): Story[] {
       place: 'forge',
       count: made,
       headline: upper(`${c.name(smith)} at the forge`),
-      blurb: made > shown.length ? `${String(made)} new pieces in all.` : '',
+      blurb: '',
       scene: {
         place: 'forge',
         actors: [{ who: cast0(smith), dx: -6, dy: 8 }],
         props: [],
       },
       finds: itemFinds(shown),
+      unshown: Math.max(0, made - shown.length),
       glyph: 'anvil',
       species: undefined,
     });
@@ -652,13 +644,14 @@ function storiesOf(c: Ctx): Story[] {
       place: 'signpost',
       count: found,
       headline: upper(`${c.name(scout)} finds gear`),
-      blurb: found > shown.length ? `${String(found)} pieces in all.` : '',
+      blurb: '',
       scene: {
         place: 'signpost',
         actors: [{ who: cast0(scout), dx: -6, dy: 8 }],
         props: [],
       },
       finds: itemFinds(shown),
+      unshown: Math.max(0, found - shown.length),
       glyph: 'compass',
       species: undefined,
     });
@@ -730,7 +723,8 @@ function storiesOf(c: Ctx): Story[] {
       place: 'paddock',
       count: 1,
       headline: upper(clip(e.text, MAX_HEADLINE)),
-      blurb: clip(e.text, MAX_BLURB),
+      // The headline is the text itself; a line only carries what the headline had to cut.
+      blurb: e.text.length > MAX_HEADLINE ? clip(e.text, MAX_BLURB) : '',
       scene: { place: 'paddock', actors: [], props: [] },
       finds: [],
       glyph: 'paw',

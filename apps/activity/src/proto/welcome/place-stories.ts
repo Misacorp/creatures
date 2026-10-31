@@ -70,7 +70,7 @@ export function stageOf(stories: readonly Story[]): Pick<Scene, 'actors' | 'prop
       if (kinds.has(key)) continue;
       kinds.add(key);
       if (p.prop.kind === 'glyph' && p.prop.id === 'sparkle') {
-        props.push({ prop: p.prop, dx: 0, dy: -26, big: true });
+        props.push({ prop: p.prop, dx: 0, dy: -20, big: true });
       } else {
         props.push({
           prop: p.prop,

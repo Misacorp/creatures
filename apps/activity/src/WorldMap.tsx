@@ -1,3 +1,4 @@
+import type { ComponentChildren } from 'preact';
 import { useEffect, useMemo, useRef } from 'preact/hooks';
 import { CreatureIcon } from './CreatureIcon';
 import { cssVars } from './css-vars';
@@ -33,6 +34,11 @@ export interface WorldMapProps {
   width?: number;
   /** The pixel scale (2 or 3). Default: the largest whole scale that fits `width` (desktop fixes it). */
   scale?: number;
+  /**
+   * Things drawn on the map itself, in the map's pixels at the map's scale, over its canvas and under the
+   * markers' buttons (the valley prototype stands creatures on it). Decoration unless it holds a button.
+   */
+  overlay?: (scale: number) => ComponentChildren;
 }
 
 /**
@@ -42,7 +48,15 @@ export interface WorldMapProps {
  * the place's pixel-art logo over its landmark. Left and Right move along that order. A map that pans can
  * be dragged with a mouse too (a finger scrolls it anyway); a short press stays a click on a marker.
  */
-export function WorldMap({ places, selected, night, onPick, width, scale: fixed }: WorldMapProps) {
+export function WorldMap({
+  places,
+  selected,
+  night,
+  onPick,
+  width,
+  scale: fixed,
+  overlay,
+}: WorldMapProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -127,6 +141,7 @@ export function WorldMap({ places, selected, night, onPick, width, scale: fixed 
               aria-hidden="true"
             />
           )}
+          {overlay?.(scale)}
           <ul class="world-map-places pix-panel" aria-label="Places on the map">
             {ordered.map((place) => (
               <li key={place.id}>

@@ -202,17 +202,21 @@
   line-height: 0;
 }
 
-/* --- A place's waiting stories: a clipping of the Gazette's paper pinned above the place's main action --- */
+/* --- A place's waiting stories: a slim clipping of the Gazette's paper pinned above the place's main action --- */
+.wb-clip-wrap {
+  position: relative;
+  /* A clear gap between the clipping (and its ring) and the button under it. */
+  margin-bottom: 0.5rem;
+}
+
 .wb-clip {
   --scroll-hint-bg: #efe3c2;
 
-  /* About a third of the scene on a phone: the whole clipping, creatures' strip included, never more. */
+  /* About a third of the scene on a phone: the whole clipping never takes more. */
   --clip-max: max(25dvh, 9rem);
   --clip-pad: 8px;
-  --clip-strip: 68px;
 
   display: grid;
-  gap: 6px;
   max-height: var(--clip-max);
   padding: var(--clip-pad) 10px;
   background: #efe3c2;
@@ -220,14 +224,16 @@
   color: var(--ink);
 }
 
-.wb-clip-scroll {
-  /* A place with several stories shows what fits, and the rest scrolls inside the clipping. */
-  max-height: calc(var(--clip-max) - 2 * var(--clip-pad));
+/* A wide window has more scene to spare. */
+@media (min-width: 560px) {
+  .wb-clip {
+    --clip-max: max(33dvh, 12rem);
+  }
 }
 
-/* With the creatures' strip above it (and its gap), the list has that much less. */
-.wb-clip-strip + .scroll-hint .wb-clip-scroll {
-  max-height: calc(var(--clip-max) - 2 * var(--clip-pad) - var(--clip-strip) - 6px);
+.wb-clip-scroll {
+  /* A place with several stories shows what fits (a whole story first), and the rest scrolls inside. */
+  max-height: calc(var(--clip-max) - 2 * var(--clip-pad));
 }
 
 .wb-clip-list {
@@ -255,17 +261,65 @@
   border-top: 2px solid var(--ink);
 }
 
-/* A wide window has more scene to spare. */
-@media (min-width: 560px) {
-  .wb-clip {
-    --clip-max: max(33dvh, 12rem);
-  }
+/* The story's creatures stand on the clipping's top edge, in front of the scene and apart from its residents. */
+.wb-clip-stage {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 3px);
+  left: 0;
+  height: 64px;
+  pointer-events: none;
 }
 
-/* The creatures that act, when the place has no floor of its own to stand them on. */
-.wb-clip-strip {
-  position: relative;
-  height: var(--clip-strip);
-  border-bottom: 2px solid var(--ink);
-  overflow: hidden;
+/* --- The small row of finds, and its "+N more" --- */
+.wb-finds.compact {
+  display: block;
+}
+
+.wb-finds.compact .find-list {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.wb-finds.compact .part-count {
+  background: var(--ink);
+}
+
+.wb-more {
+  display: flex;
+  align-items: center;
+}
+
+.wb-more-button,
+.wb-more-note {
+  min-height: 0;
+  margin: 0;
+  padding: 2px 6px;
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.2;
+  text-shadow: none;
+}
+
+.wb-more-button {
+  background: transparent;
+  box-shadow: none;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+}
+
+.wb-more-note {
+  background: transparent;
+}
+
+/* A newcomer in a small row: its face, a tap target like the pieces' pictures. */
+.wb-newcomer {
+  display: inline-flex;
+  min-height: 0;
+  padding: 2px;
+  background: var(--night);
+  box-shadow: none;
+  line-height: 0;
 }

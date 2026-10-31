@@ -16,6 +16,24 @@ export const CAST_SIZE = 8;
 /** How many different pieces of the sample bag the stories show, in turn (the bag has every rarity among them). */
 export const PIECE_KINDS = 6;
 
+/** Names for the sample roster's placeholder nicknames ("Buddy 5"): a creature in a story has a real name. */
+export const SAMPLE_NAMES: readonly string[] = [
+  'Pip',
+  'Moss',
+  'Juniper',
+  'Pebble',
+  'Wren',
+  'Sorrel',
+  'Tansy',
+  'Bramble',
+];
+
+/** The nickname a creature of the sample roster shows: a "Buddy N" placeholder becomes a real name. */
+export function realNickname(nickname: string | null, index: number): string | null {
+  if (nickname === null || !/^Buddy \d+$/.test(nickname)) return nickname;
+  return SAMPLE_NAMES[index % SAMPLE_NAMES.length] ?? nickname;
+}
+
 /** The sample world as a quiet morning: everyone is home and free, nothing is waiting at a place. */
 export function welcomeWorld(): ProtoWorld {
   const world = initialWorld();
@@ -23,7 +41,12 @@ export function welcomeWorld(): ProtoWorld {
     ...world,
     trips: [],
     jobs: [],
-    creatures: world.creatures.map((c) => ({ ...c, away: false, busy: null })),
+    creatures: world.creatures.map((c, i) => ({
+      ...c,
+      away: false,
+      busy: null,
+      nickname: realNickname(c.nickname, i),
+    })),
   };
 }
 

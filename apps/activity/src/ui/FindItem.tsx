@@ -42,6 +42,7 @@ export function FindItem({
   level,
   motion = false,
   scale = 4,
+  compact = false,
   children,
 }: {
   /**
@@ -64,6 +65,8 @@ export function FindItem({
   /** The image pops in when motion is allowed (loot reveals). */
   motion?: boolean;
   scale?: number;
+  /** The small form: the picture alone (`FindRow compact`), tapping it opens the same card. */
+  compact?: boolean;
   children?: ComponentChildren;
 }) {
   const slot = gearBase(baseId)?.slot;
@@ -174,6 +177,7 @@ export function FindItem({
   return (
     <FindRow
       button={button}
+      compact={compact}
       image={
         <ItemThumb
           item={{ baseId, rarity, itemLevel: level }}

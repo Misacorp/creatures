@@ -1,6 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { stageSpot } from '../valley/scene-art';
-import { sceneGeometry } from '../valley/SceneFrame';
 import { PLACES, type PlaceId } from '../valley/valley-art';
 import { welcomeOf, type Marker, type Story } from './highlights';
 import { DAILY, WEEKLY } from './journey';
@@ -125,30 +123,13 @@ describe('who stands in a place while its stories are told', () => {
 });
 
 describe('every place a story can reach', () => {
-  const stories = [DAILY, WEEKLY].flatMap((journey) =>
-    journey.visits.flatMap((_, i) => {
-      const w = welcomeOf(journey, i, cast);
-      return [...w.highlights, ...w.rest];
-    }),
-  );
-
-  it('has a spot to stand on, or is the Signpost, whose road map has no floor (its stories stand on their plate)', () => {
-    for (const width of [390, 1100]) {
-      const g = sceneGeometry(width, 700);
-      for (const place of PLACES.map((p) => p.id)) {
-        const spot = stageSpot(place, g);
-        if (place === 'signpost') expect(spot).toBeNull();
-        else {
-          expect(spot).not.toBeNull();
-          expect(spot?.x ?? -1).toBeGreaterThan(0);
-          expect(spot?.y ?? -1).toBeGreaterThan(g.top);
-        }
-      }
-    }
-  });
-
   it('stays among the places the valley has', () => {
     const ids = PLACES.map((p) => p.id);
-    for (const s of stories) expect(ids).toContain(s.place);
+    for (const journey of [DAILY, WEEKLY]) {
+      for (let i = 0; i < journey.visits.length; i += 1) {
+        const w = welcomeOf(journey, i, cast);
+        for (const s of [...w.highlights, ...w.rest]) expect(ids).toContain(s.place);
+      }
+    }
   });
 });

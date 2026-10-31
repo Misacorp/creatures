@@ -10,8 +10,7 @@ import { useEffect, useMemo, useRef } from 'preact/hooks';
 import { cssVars } from '../../css-vars';
 import { paint } from './paint';
 import { useSize } from './parts';
-import { StageAt, StoryPlate, type Waiting } from '../welcome/PlaceStories';
-import { stageSpot } from './scene-art';
+import { StoryPlate, type Waiting } from '../welcome/PlaceStories';
 import type { PlaceId, Placement } from './valley-art';
 
 export interface SceneGeometry {
@@ -72,7 +71,7 @@ export function SceneFrame({
   children: (g: SceneGeometry) => ComponentChildren;
   /** The main action, pinned at the bottom of the scene. */
   act?: ComponentChildren;
-  /** The stories waiting here (a welcome-back marker led in): who acts stands in the scene, the stories sit above `act`. */
+  /** The stories waiting here (a welcome-back marker led in): a slim clipping above `act`, its creatures on its edge. */
   waiting?: Waiting | undefined;
   /** The colour behind the canvas (shows only while it loads). */
   ground?: string;
@@ -100,7 +99,6 @@ export function SceneFrame({
     };
   }, [onLeave]);
 
-  const spot = waiting === undefined ? null : stageSpot(id, g);
   const hasAct = act !== undefined && act !== null;
   const hasStories = waiting !== undefined && waiting.stories.length > 0;
   return (
@@ -115,13 +113,10 @@ export function SceneFrame({
       <div class="pv-scene" ref={cssVars({ '--w': `${String(pxW)}px`, '--h': `${String(pxH)}px` })}>
         <canvas ref={canvasRef} class="pv-canvas" width={pxW} height={pxH} aria-hidden="true" />
         {children(g)}
-        {waiting !== undefined && spot !== null && (
-          <StageAt waiting={waiting} x={g.X(spot.x)} y={g.Y(spot.y)} s={g.s} />
-        )}
       </div>
       {(hasAct || hasStories) && (
         <div class="pv-act">
-          {waiting !== undefined && <StoryPlate waiting={waiting} strip={spot === null} />}
+          {waiting !== undefined && <StoryPlate waiting={waiting} />}
           {hasAct && act}
         </div>
       )}
