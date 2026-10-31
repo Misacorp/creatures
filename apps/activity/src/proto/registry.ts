@@ -4,6 +4,8 @@ import type { ComponentChild } from 'preact';
 export interface ProtoProps {
   step: number;
   setStep(step: number): void;
+  /** The visit within the step (1 based): only a prototype with `visits` reads it. */
+  visit: number;
 }
 
 /** A prototype: a clickable concept, registered by its own folder (`valley/`, `party/`). */
@@ -13,6 +15,11 @@ export interface Prototype {
   title: string;
   /** Usually `TOUR_STEPS` mapped to `{ id, title }`. */
   steps: readonly { id: string; title: string }[];
+  /**
+   * A day picker for the tour strip: the titles of the visits of a step (the return walk replays any visit
+   * of the lab's journey). The strip then shows a picker and a Replay button.
+   */
+  visits?(step: number): readonly string[];
   render(props: ProtoProps): ComponentChild;
 }
 

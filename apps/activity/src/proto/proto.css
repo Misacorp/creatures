@@ -54,8 +54,12 @@
   position: fixed;
   z-index: 1000;
   left: 0.25rem;
+  right: 0.25rem;
   bottom: calc(var(--discord-safe-area-inset-bottom, 0px) + 0.25rem);
   display: flex;
+  flex-wrap: wrap;
+  width: max-content;
+  max-width: calc(100% - 0.5rem);
   align-items: center;
   gap: 0.25rem;
   padding: 0.25rem;
@@ -82,4 +86,16 @@
 
 .proto-strip-step {
   padding: 0 0.25rem;
+}
+
+/* The day picker of a prototype with visits (the return walk): a select among the step buttons. */
+.proto-strip-visit {
+  min-height: 2rem;
+  max-width: 11rem;
+  padding: 0 0.25rem;
+  background: var(--dusk-2);
+  border: 0;
+  border-radius: 0;
+  color: var(--bone);
+  font: inherit;
 }

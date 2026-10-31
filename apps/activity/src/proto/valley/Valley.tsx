@@ -42,6 +42,9 @@ import { placeOf, type PlaceId } from './valley-art';
 import { bubblesOf, placeLabel, readingOrder } from './valley-logic';
 import { ValleyMap } from './ValleyMap';
 import { ZoomCut } from './ZoomCut';
+import { WalkStage } from '../walk/WalkStage';
+import type { CastMember, WalkPlan } from '../walk/walk-plan';
+import { decisionBubbles } from '../walk/walk-world';
 
 /** Where the player is, and the moment a place opens on. */
 export interface View {
@@ -60,6 +63,13 @@ export interface View {
   send: SendPicks;
   /** The creature picked in the tray. */
   held: string | null;
+}
+
+/** A return walk to play on opening (the "Return walk" prototype, `proto/walk/`): the world, who the lines name, the plan. */
+export interface WalkSetup {
+  world: ProtoWorld;
+  cast: readonly CastMember[];
+  plan: WalkPlan;
 }
 
 const NO_SEND: SendPicks = { place: null, supply: null };
@@ -108,8 +118,22 @@ export function viewAtStep(step: number): View {
   }
 }
 
-export function Valley({ step, setStep }: { step: number; setStep: (n: number) => void }) {
-  const [view, setView] = useState<View>(() => viewAtStep(step));
+export function Valley({
+  step,
+  setStep,
+  walk,
+}: {
+  step: number;
+  setStep: (n: number) => void;
+  /** Open on a return walk; when it ends (or is skipped) this is the valley as usual, at the walk's last place. */
+  walk?: WalkSetup;
+}) {
+  const [view, setView] = useState<View>(() =>
+    walk === undefined
+      ? viewAtStep(step)
+      : { ...base(walk.world), at: walk.plan.stops[walk.plan.stops.length - 1]?.place ?? 'start' },
+  );
+  const [walking, setWalking] = useState(walk !== undefined);
   const liveStep = useRef(step);
   const [zoom, setZoom] = useState<PlaceId | null>(null);
   const pending = useRef<(() => void) | null>(null);
@@ -244,37 +268,48 @@ export function Valley({ step, setStep }: { step: number; setStep: (n: number) =
   let body;
   switch (view.scene) {
     case 'valley':
-      body = (
-        <>
-          <ValleyMap
-            key={`${view.at}-${String(view.focus)}`}
+      body =
+        walk !== undefined && walking ? (
+          <WalkStage
             world={world}
-            at={view.at}
-            focus={view.focus}
-            departing={view.departing}
-            onPlace={onPlace}
-            lit={lit}
-            haulOpen={haul !== null}
-            overlay={
-              haul === null
-                ? undefined
-                : (g) => <HaulOnGround things={haul.things} frame={haulFrame} {...g} />
-            }
+            cast={walk.cast}
+            plan={walk.plan}
+            onDone={() => {
+              setWalking(false);
+            }}
           />
-          {haul !== null && view.haul !== null && (
-            <HaulCaption world={world} tripId={view.haul} view={haul.view} onClaim={claim} />
-          )}
-          {haul === null && heldCreature !== undefined && (
-            <CreatureCard
-              creature={heldCreature}
+        ) : (
+          <>
+            <ValleyMap
+              key={`${view.at}-${String(view.focus)}`}
               world={world}
-              onClose={() => {
-                setHeld(null);
-              }}
+              at={view.at}
+              focus={view.focus}
+              departing={view.departing}
+              bubbles={walk === undefined ? undefined : decisionBubbles(walk.plan)}
+              onPlace={onPlace}
+              lit={lit}
+              haulOpen={haul !== null}
+              overlay={
+                haul === null
+                  ? undefined
+                  : (g) => <HaulOnGround things={haul.things} frame={haulFrame} {...g} />
+              }
             />
-          )}
-        </>
-      );
+            {haul !== null && view.haul !== null && (
+              <HaulCaption world={world} tripId={view.haul} view={haul.view} onClaim={claim} />
+            )}
+            {haul === null && heldCreature !== undefined && (
+              <CreatureCard
+                creature={heldCreature}
+                world={world}
+                onClose={() => {
+                  setHeld(null);
+                }}
+              />
+            )}
+          </>
+        );
       break;
     case 'forge':
       body = (
@@ -343,7 +378,7 @@ export function Valley({ step, setStep }: { step: number; setStep: (n: number) =
       break;
   }
 
-  const bubbles = bubblesOf(world);
+  const bubbles = walk === undefined ? bubblesOf(world) : decisionBubbles(walk.plan);
   const where = view.scene === 'valley' ? null : placeOf(view.scene);
   return (
     <PopoverHost onOpenHowTo={() => undefined}>

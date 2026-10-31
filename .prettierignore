@@ -15,3 +15,5 @@ docs/design/valley/economy/report-data.json
 docs/design/valley/economy/roster-profile.json
 docs/design/valley/economy/server-coverage.json
 docs/design/valley/economy/journeys/
+# Copies of those journeys for the valley prototype, written by `pnpm --filter @creatures/activity proto:journeys`
+apps/activity/src/proto/walk/journeys/

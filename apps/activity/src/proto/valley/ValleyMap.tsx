@@ -85,6 +85,15 @@ export interface ValleyMapProps {
   lit?: Readonly<Record<PlaceId, Verdict>> | null;
   /** The haul is open at the signpost: the explorer's sack lies on the road instead (drawn by `overlay`). */
   haulOpen?: boolean;
+  /** The bubbles to show, instead of the world's needs (the return walk shows none, then its decision). */
+  bubbles?: readonly Bubble[] | undefined;
+  /**
+   * A camera that follows a place (the return walk): a panning valley scrolls to it when it changes, smoothly
+   * unless `cut`. Null leaves the view where `at` put it.
+   */
+  camera?: PlaceId | null;
+  /** Jump to the camera's place instead of easing (reduced motion, screenshots). */
+  cut?: boolean;
   /** More sprites in the valley (the haul), in valley pixels. */
   overlay?:
     | ((g: { s: number; X: (x: number) => number; Y: (y: number) => number }) => ComponentChildren)
@@ -100,6 +109,9 @@ export function ValleyMap({
   onScroll,
   lit = null,
   haulOpen = false,
+  bubbles: shown,
+  camera = null,
+  cut = false,
   overlay,
 }: ValleyMapProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -138,9 +150,19 @@ export function ValleyMap({
     }
   }, [at, fit.pans, size.width]);
 
+  // The walk's camera: go to the place it looks at (a cut when asked, else eased).
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (camera === null || el === null || !fit.pans) return;
+    el.scrollTo({
+      left: scrollToPlace(camera, size.width),
+      behavior: cut ? 'auto' : scrollBehavior(),
+    });
+  }, [camera, cut, fit.pans, size.width]);
+
   const [scrollLeft, setScrollLeft] = useScrollLeft(scrollerRef);
 
-  const bubbles = bubblesOf(world);
+  const bubbles = shown ?? bubblesOf(world);
   const bubbleAt = (id: PlaceId): Bubble | undefined => bubbles.find((b) => b.place === id);
   const order = readingOrder();
 
@@ -178,7 +200,8 @@ export function ValleyMap({
   );
 
   // An edge tab for every place out of view (not only those that need you), stacked so none overlap.
-  const arrows = edgeArrows(order, scrollLeft, size.width);
+  // (None while the walk's camera leads: the walk goes where it goes.)
+  const arrows = camera === null ? edgeArrows(order, scrollLeft, size.width) : [];
   const tabY = stackTabs(arrows, 26);
 
   const stageVars = cssVars({

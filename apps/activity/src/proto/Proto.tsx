@@ -1,8 +1,7 @@
-import type { JSX } from 'preact';
+import { Fragment, type JSX } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
-import { getProto, listProtos } from './registry';
+import { getProto, listProtos, type Prototype } from './registry';
 import { parseRoute, routeHash, type Route } from './route';
-import { LAST_STEP, TOUR_STEPS, clampStep } from './tour';
 
 /** The route in the address now; it follows the back button and edits to the hash. */
 function useRoute(): [Route, (route: Route) => void] {
@@ -22,20 +21,21 @@ function useRoute(): [Route, (route: Route) => void] {
   return [route, go];
 }
 
+/** The chooser's own route fields: no prototype, step 1, the strip showing. */
+const START: Route = { proto: null, step: 1, bare: false, visit: 1, replay: 0 };
+
 /** Two big buttons: one per prototype. */
 function Chooser(): JSX.Element {
   return (
     <main class="proto-chooser">
       <h1>Prototypes</h1>
-      <p>
-        Two clickable concepts of the same Saturday morning, on sample data. Nothing here is saved.
-      </p>
+      <p>Clickable concepts on sample data. Nothing here is saved.</p>
       <div class="proto-chooser-buttons">
         {listProtos().map((proto) => (
           <a
             key={proto.id}
             class="proto-chooser-button"
-            href={routeHash({ proto: proto.id, step: 1, bare: false })}
+            href={routeHash({ ...START, proto: proto.id })}
           >
             {proto.title}
           </a>
@@ -51,22 +51,25 @@ function Chooser(): JSX.Element {
  */
 function TourStrip({
   route,
-  title,
+  proto,
   go,
 }: {
   route: Route;
-  title: string;
+  proto: Prototype;
   go: (route: Route) => void;
 }): JSX.Element {
+  const last = lastStep(proto);
+  const title = proto.steps[route.step - 1]?.title ?? '';
+  const visits = proto.visits?.(route.step) ?? [];
   const to = (step: number): void => {
-    go({ ...route, step: clampStep(step) });
+    go({ ...route, step: Math.min(Math.max(step, 1), last), visit: 1, replay: 0 });
   };
   return (
     <nav class="proto-strip" aria-label="Tour">
       <button
         type="button"
         onClick={() => {
-          go({ proto: null, step: 1, bare: false });
+          go(START);
         }}
       >
         Prototypes
@@ -82,11 +85,11 @@ function TourStrip({
         {'◀'}
       </button>
       <span class="proto-strip-step">
-        {String(route.step)}/{String(LAST_STEP)} {title}
+        {String(route.step)}/{String(last)} {title}
       </span>
       <button
         type="button"
-        disabled={route.step >= LAST_STEP}
+        disabled={route.step >= last}
         aria-label="Next step"
         onClick={() => {
           to(route.step + 1);
@@ -94,24 +97,62 @@ function TourStrip({
       >
         {'▶'}
       </button>
+      {visits.length > 0 && (
+        <>
+          <select
+            class="proto-strip-visit"
+            aria-label="Visit to replay"
+            value={String(route.visit)}
+            onChange={(e) => {
+              go({ ...route, visit: Number.parseInt(e.currentTarget.value, 10), replay: 0 });
+            }}
+          >
+            {visits.map((label, i) => (
+              <option key={label} value={String(i + 1)}>
+                {label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => {
+              go({ ...route, replay: route.replay + 1 });
+            }}
+          >
+            Replay
+          </button>
+        </>
+      )}
     </nav>
   );
 }
 
+/** The number of the last step of a prototype (its own list; the shared tour has seven). */
+function lastStep(proto: Prototype): number {
+  return Math.max(1, proto.steps.length);
+}
+
 export function Proto(): JSX.Element {
-  const [route, go] = useRoute();
-  const proto = route.proto === null ? undefined : getProto(route.proto);
+  const [routeRead, go] = useRoute();
+  const proto = routeRead.proto === null ? undefined : getProto(routeRead.proto);
   if (proto === undefined) return <Chooser />;
-  const title = TOUR_STEPS[route.step - 1]?.title ?? '';
+  const last = lastStep(proto);
+  const route = { ...routeRead, step: Math.min(routeRead.step, last) };
+  const visits = proto.visits?.(route.step).length ?? 0;
+  const visit = Math.min(route.visit, Math.max(1, visits));
   return (
     <>
-      {proto.render({
-        step: route.step,
-        setStep: (step) => {
-          go({ ...route, step: clampStep(step) });
-        },
-      })}
-      {route.bare ? null : <TourStrip route={route} title={title} go={go} />}
+      {/* A replay (or another visit) remounts the prototype, so it starts from its first moment. */}
+      <Fragment key={`${String(visit)}-${String(route.replay)}`}>
+        {proto.render({
+          step: route.step,
+          visit,
+          setStep: (step) => {
+            go({ ...route, step: Math.min(Math.max(step, 1), last) });
+          },
+        })}
+      </Fragment>
+      {route.bare ? null : <TourStrip route={{ ...route, visit }} proto={proto} go={go} />}
     </>
   );
 }
