@@ -12,6 +12,7 @@ import { VOID_CONCEPTS } from './void';
 import { VOID_FOES_CONCEPTS } from './void-foes';
 import { VOID_GEAR_CONCEPTS } from './void-gear';
 import { VOID_PLACE_CONCEPTS } from './void-place';
+import { VALLEY_POSTERS_CONCEPTS } from './valley-posters';
 
 export interface Concept {
   kind: ArtKind;
@@ -53,4 +54,5 @@ export const CONCEPT_SETS: readonly ConceptSet[] = [
   VOID_FOES_CONCEPTS,
   VOID_GEAR_CONCEPTS,
   VOID_PLACE_CONCEPTS,
+  VALLEY_POSTERS_CONCEPTS,
 ];
