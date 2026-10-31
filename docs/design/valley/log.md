@@ -209,3 +209,7 @@ The Gazette trimmed (f0c54f1): the comic strip is gone; finds do the talking thr
 Misa: "Let's continue. Let me know when is a good time to compact your context." Brought the front door up to date: `README.md` "Where we are", `phase3-plan.md` (the Gazette done; next, markers that lead into their places, then posts, the bonfire, the Market, the visitor and a graduation; the `valley-glow` art once PR #116 merges), a queued question about a skip hint and a "New" tag.
 
 **Pick up here:** phase 3, step 2 of `phase3-plan.md` (the valley's markers open their place with the story in place), with an implementer in a worktree; then step 3. Lead's own open item: a late-season scrap sink (T-7b). Nothing waits on Misa. The phone page is the "Valley Plan" artifact (link in the 2026-10-29 entry).
+
+## 2026-10-31 (evening): phase 3, step 2 starts
+
+The art-direction session updated `valley-glow` (PR #116, Misa approved): by day each place has its own ground (a trampled clearing at the fires, a sandy schoolyard, moss at the stall, straw at the Market), fading into the glow at night; the Market's crystal sits in a cup on its post. The interface is unchanged (six sprite ids, night as the main palette, `alts.day`), so wiring it in after the merge stays a small step. Tidied `phase3-plan.md` (the walk's leftovers). Started step 2: tapping a marker opens its place with the stories that wait there.
