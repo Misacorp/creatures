@@ -9,7 +9,7 @@ import {
   type FakeElement,
   type Page,
 } from '../../test-dom';
-import { Finds } from './Gazette';
+import { Finds, MAX_ROW, rowEntries, splitRow } from './Gazette';
 import { welcomeOf, type Find, type Story } from './highlights';
 import { StoryPlate } from './PlaceStories';
 import { DAILY, WEEKLY } from './journey';
@@ -137,7 +137,7 @@ describe('a place telling its waiting stories', () => {
     page = createPage();
     page.draw(
       <PopoverHost onOpenHowTo={() => undefined}>
-        <StoryPlate waiting={{ stories, cast, items: world.items }} />
+        <StoryPlate waiting={{ stories, cast, items: world.items }} stage={false} />
       </PopoverHost>,
     );
     return page;
@@ -177,5 +177,82 @@ describe('a place telling its waiting stories', () => {
   it('draws nothing when no story waits', () => {
     const p = drawPlate([]);
     expect(byClass(p.root, 'wb-clip')).toHaveLength(0);
+  });
+
+  it('shows a story’s finds as one small row, never as boxes one under another', () => {
+    const stories = waiting().filter((s) => s.finds.length > 0);
+    const p = drawPlate(stories);
+    const lists = byClass(p.root, 'find-list').filter((el) =>
+      (el.getAttribute('class') ?? '').split(/\s+/).includes('compact'),
+    );
+    expect(lists.length).toBe(stories.length);
+    expect(byClass(p.root, 'find-card')).toHaveLength(0);
+    // A small find has its picture only: no name or tags beside it (the name is for screen readers).
+    expect(byClass(p.root, 'find-row-tags')).toHaveLength(0);
+  });
+});
+
+describe('a small row of finds', () => {
+  const pieces = cast.pieces.map((piece) => ({ kind: 'item', piece }) as const);
+  const six: Find[] = pieces.slice(0, 6);
+
+  it('holds a few entries and counts the rest, parts one badge each', () => {
+    const entries = rowEntries([
+      {
+        kind: 'parts',
+        parts: [
+          { part: 'scrap', amount: 3 },
+          { part: 'tide-shard', amount: 2 },
+        ],
+      },
+      ...pieces.slice(0, 2),
+    ]);
+    expect(entries.map((e) => e.kind)).toEqual(['part', 'part', 'item', 'item']);
+    const four = splitRow(entries, 0, false);
+    expect(four.shown).toHaveLength(MAX_ROW);
+    expect(four.more).toBe(0);
+    const more = splitRow(rowEntries(six), 0, false);
+    expect(more.shown).toHaveLength(MAX_ROW);
+    expect(more.hidden).toBe(six.length - MAX_ROW);
+    expect(more.more).toBe(six.length - MAX_ROW);
+    // Tapped, everything shows; what has no picture stays a written count.
+    const open = splitRow(rowEntries(six), 3, true);
+    expect(open.shown).toHaveLength(six.length);
+    expect(open.hidden).toBe(0);
+    expect(open.more).toBe(3);
+  });
+
+  it('writes "+N more" as a button that shows the rest, and the row stays tappable piece by piece', () => {
+    page?.unmount();
+    page = createPage();
+    page.draw(
+      <PopoverHost onOpenHowTo={() => undefined}>
+        <GearItemsContext.Provider value={world.items}>
+          <Finds finds={six} label="Found" compact />
+        </GearItemsContext.Provider>
+      </PopoverHost>,
+    );
+    const root = page.root;
+    const shown = (): number => byClass(root, 'find-row-button').length;
+    expect(shown()).toBe(MAX_ROW);
+    const button = first(byClass(page.root, 'wb-more-button'));
+    expect(visibleText(button)).toBe(`+${String(six.length - MAX_ROW)} more`);
+    page.click(button);
+    expect(shown()).toBe(six.length);
+    expect(byClass(page.root, 'wb-more-button')).toHaveLength(0);
+  });
+
+  it('says what has no picture as plain text, not a button', () => {
+    page?.unmount();
+    page = createPage();
+    page.draw(
+      <PopoverHost onOpenHowTo={() => undefined}>
+        <GearItemsContext.Provider value={world.items}>
+          <Finds finds={six.slice(0, 2)} label="Found" compact unshown={5} />
+        </GearItemsContext.Provider>
+      </PopoverHost>,
+    );
+    expect(byClass(page.root, 'wb-more-button')).toHaveLength(0);
+    expect(visibleText(first(byClass(page.root, 'wb-more-note')))).toBe('+5 more');
   });
 });

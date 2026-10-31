@@ -1,14 +1,16 @@
 /**
  * A place's waiting stories (prototype, dev only; `systems/return.md`, V-RET-0): what the welcome-back
- * popup did not tell, told where it happened. The creatures that act stand on the place's own floor at a
- * natural spot (`StageAt`, the spot from `scene-art.ts`), and the stories are a short list on a clipping of the
- * Gazette's paper (`StoryPlate`) pinned above the place's main action: each one a headline, at most one line and
- * its finds as the shared Find components, told by the same `StoryText` as the Gazette. The Signpost's road map
- * has no floor, so its creatures stand on the clipping itself. Nothing needs a tap; leaving counts it as seen.
+ * popup did not tell, told where it happened. The stories are a slim clipping of the Gazette's paper pinned
+ * above the place's main action (`StoryPlate`): each one a headline, at most one line that the finds do not
+ * already say, and its finds as one row of small finds, told by the same `StoryText` as the Gazette. The
+ * creatures that act stand on the clipping's top edge (`Stage`), apart from the place's own residents, who keep
+ * their spots. The Signpost's road map is the exception: its scouts stand on the map itself (`MapStage`, drawn
+ * by the map's `overlay`). Nothing needs a tap; leaving counts it as seen.
  */
 import { useRef } from 'preact/hooks';
 import { GearItemsContext } from '../../gear-items-context';
 import type { GearItem } from '../../gear-types';
+import { MAP_SPOTS } from '../../sprites/world-map-art';
 import { ScrollHint } from '../../ui/ScrollHint';
 import { useSize } from '../valley/parts';
 import type { Cast, Story } from './highlights';
@@ -24,66 +26,83 @@ export interface Waiting {
   items: readonly GearItem[];
 }
 
-/** The stage's pictures are drawn at this whole scale on a clipping (the road map has no floor of its own). */
-const STRIP_SCALE = 2;
+/** The scale of the stage on a phone (3) and on a wide window (4), as a place's own sprites. */
+export const stageScale = (width: number): number => (width >= 400 ? 4 : 3);
 
-/** The creatures of the stories standing round `spot` (CSS px) on a place's floor, at its world scale. */
-export function StageAt({
-  waiting,
-  x,
-  y,
-  s,
-}: {
-  waiting: Waiting;
-  x: number;
-  y: number;
-  s: number;
-}) {
-  const stage = stageOf(waiting.stories);
-  return (
-    <SceneActors scene={stage} cast={waiting.cast} cx={Math.round(x)} cy={Math.round(y)} s={s} />
-  );
-}
-
-/** The creatures on the clipping itself, in a strip above the stories (a place with no floor to stand on). */
-function Strip({ waiting }: { waiting: Waiting }) {
+/** The creatures of the stories, standing on the top edge of the clipping, centred. */
+function Stage({ waiting }: { waiting: Waiting }) {
   const ref = useRef<HTMLDivElement>(null);
   const size = useSize(ref);
   const stage = stageOf(waiting.stories);
+  const s = stageScale(size.width);
   if (stage.actors.length === 0) return null;
   return (
-    <div ref={ref} class="wb-clip-strip">
+    <div ref={ref} class="wb-clip-stage">
       <SceneActors
         scene={stage}
         cast={waiting.cast}
         cx={Math.round(size.width / 2)}
-        cy={Math.round(size.height - 10 * STRIP_SCALE)}
-        s={STRIP_SCALE}
+        // The feet (8 valley pixels below the spot) are on the clipping's edge.
+        cy={Math.round(size.height - 8 * s)}
+        s={s}
       />
     </div>
   );
 }
 
 /**
- * The waiting stories as a clipping: a short list in the order given (the biggest first), scrolling inside
- * itself when a place has more than fit. `strip` stands the creatures on the clipping (no floor in the place).
+ * The waiting stories as a slim clipping: a short list in the order given (the biggest first), scrolling inside
+ * itself when a place has more than fit. `stage` stands the creatures on its top edge (the Signpost has none:
+ * its scouts stand on the map).
  */
-export function StoryPlate({ waiting, strip = false }: { waiting: Waiting; strip?: boolean }) {
+export function StoryPlate({ waiting, stage = true }: { waiting: Waiting; stage?: boolean }) {
   if (waiting.stories.length === 0) return null;
   return (
     <GearItemsContext.Provider value={waiting.items}>
-      <section class="wb-clip" aria-label="Waiting here">
-        {strip && <Strip waiting={waiting} />}
-        <ScrollHint contentKey={waiting.stories.map((s) => s.id).join()} class="wb-clip-scroll">
-          <ul class="wb-clip-list">
-            {waiting.stories.map((story) => (
-              <li key={story.id} class="wb-clip-story">
-                <StoryText story={story} size="brief" />
-              </li>
-            ))}
-          </ul>
-        </ScrollHint>
-      </section>
+      <div class="wb-clip-wrap">
+        {stage && <Stage waiting={waiting} />}
+        <section class="wb-clip" aria-label="Waiting here">
+          <ScrollHint contentKey={waiting.stories.map((s) => s.id).join()} class="wb-clip-scroll">
+            <ul class="wb-clip-list">
+              {waiting.stories.map((story) => (
+                <li key={story.id} class="wb-clip-story">
+                  <StoryText story={story} size="clip" />
+                </li>
+              ))}
+            </ul>
+          </ScrollHint>
+        </section>
+      </div>
     </GearItemsContext.Provider>
+  );
+}
+
+/** East of the crossroads' signpost and level with its foot, in map pixels: where the scouts stand. */
+const BESIDE_SIGN = { dx: 44, dy: -2 };
+
+/**
+ * Where the Signpost's scouts stand on the map, in its pixels (the feet row): on the road beside the Old
+ * Crossroads, the hub where the signpost is, clear of its pin and above the clipping. The scene scrolls the map
+ * so this is in view.
+ */
+export function crossroadsSpot(): { x: number; y: number } {
+  const spot = MAP_SPOTS['old-crossroads'] ?? { x: 176, y: 168 };
+  return { x: spot.x + BESIDE_SIGN.dx, y: spot.y + BESIDE_SIGN.dy };
+}
+
+/** The scouts and their sack standing on the road map (the map's `overlay`, at the map's scale). */
+export function MapStage({ waiting, scale }: { waiting: Waiting; scale: number }) {
+  const stage = stageOf(waiting.stories);
+  if (stage.actors.length === 0) return null;
+  const spot = crossroadsSpot();
+  return (
+    <SceneActors
+      scene={stage}
+      cast={waiting.cast}
+      cx={spot.x * scale}
+      // The feet (8 valley pixels below the spot) stand on the spot's row.
+      cy={spot.y * scale - 8 * scale}
+      s={scale}
+    />
   );
 }

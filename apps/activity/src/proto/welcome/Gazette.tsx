@@ -5,17 +5,174 @@
  * the game's Find components (a piece, a blueprint, a newcomer, parts), so a tap (or hover with a mouse) opens
  * the full card in a popover; the creatures in a picture open theirs too. The biggest highlight is the headline.
  */
-import { CountBadgeList, type CountItem } from '../../ui/CountBadge';
+import { useState } from 'preact/hooks';
+import type { PartKind } from '@creatures/game';
+import { getSpecies, speciesName } from '../../game';
+import { SmallCreature } from '../../SmallCreature';
+import type { CreatureInfo } from '../../creature-info';
+import { CountBadge, CountBadgeList, type CountItem } from '../../ui/CountBadge';
 import { FindBlueprint } from '../../ui/FindBlueprint';
 import { FindCreature } from '../../ui/FindCreature';
 import { FindItem } from '../../ui/FindItem';
 import { FindList } from '../../ui/FindRow';
 import { partBadge } from '../../count-items';
+import { CreatureSprite } from '../valley/parts';
 import type { Cast, Find, Story } from './highlights';
 import { SceneCrop } from './SceneCrop';
 
-/** What a story found, in the shared Find components: boxes in one `FindList`, parts as count badges. */
-export function Finds({ finds, label }: { finds: readonly Find[]; label: string }) {
+/** What a small row of finds holds before "+N more": a phone's width fits this many pictures and badges. */
+export const MAX_ROW = 4;
+
+/** One thing in a compact row of finds: a piece, a blueprint, a newcomer, or one kind of part. */
+export type RowEntry =
+  Exclude<Find, { kind: 'parts' }> | { kind: 'part'; part: PartKind; amount: number };
+
+/** The finds of a story as the entries of one row, parts one badge each. */
+export function rowEntries(finds: readonly Find[]): RowEntry[] {
+  return finds.flatMap((f): RowEntry[] =>
+    f.kind === 'parts' ? f.parts.map((p) => ({ kind: 'part', ...p })) : [f],
+  );
+}
+
+/**
+ * What a row shows and what waits behind "+N more": the first `MAX_ROW` entries, and the rest (shown once the
+ * player taps it). `unshown` counts things the story stands for that have no picture here (five pieces made,
+ * three drawn): they only add to the written count.
+ */
+export function splitRow(
+  entries: readonly RowEntry[],
+  unshown: number,
+  expanded: boolean,
+): { shown: RowEntry[]; hidden: number; more: number } {
+  const shown = expanded ? [...entries] : entries.slice(0, MAX_ROW);
+  const hidden = entries.length - shown.length;
+  return { shown, hidden, more: hidden + Math.max(0, unshown) };
+}
+
+const entryKey = (e: RowEntry): string => {
+  switch (e.kind) {
+    case 'item':
+      return `item:${e.piece.id}`;
+    case 'blueprint':
+      return `bp:${e.baseId}`;
+    case 'newcomer':
+      return `new:${e.species}`;
+    case 'part':
+      return `part:${e.part}`;
+  }
+};
+
+/** A newcomer as a small find: its picture (a tap opens its creature popover), "New" said to screen readers. */
+function NewcomerIcon({ species }: { species: string }) {
+  const def = getSpecies(species);
+  const info: CreatureInfo | null =
+    def === undefined
+      ? null
+      : { name: speciesName(species), species, level: 1, element: def.element, role: def.role };
+  const sprite = <CreatureSprite creature={{ species, shiny: false }} scale={2} />;
+  return (
+    <li class="find-row compact tappable">
+      {info === null ? (
+        sprite
+      ) : (
+        <SmallCreature
+          id={`new:${species}`}
+          info={info}
+          class="find-row-button wb-newcomer"
+          label={`New: ${info.name}`}
+        >
+          {sprite}
+        </SmallCreature>
+      )}
+    </li>
+  );
+}
+
+/**
+ * One row of small finds for a place's clipping: pieces and blueprints as their picture (a tap opens the same
+ * card as a full find), a newcomer as its face, parts as count badges, then, if more than fit, "+N more" as
+ * text (a tap shows the rest).
+ */
+function FindsRow({
+  finds,
+  unshown,
+  label,
+}: {
+  finds: readonly Find[];
+  unshown: number;
+  label: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const { shown, hidden, more } = splitRow(rowEntries(finds), unshown, expanded);
+  if (shown.length === 0 && more === 0) return null;
+  return (
+    <div class="wb-finds compact">
+      <FindList label={label} compact>
+        {shown.map((e) => {
+          switch (e.kind) {
+            case 'item':
+              return (
+                <FindItem
+                  key={entryKey(e)}
+                  id={e.piece.id}
+                  baseId={e.piece.baseId}
+                  rarity={e.piece.rarity}
+                  level={e.piece.level}
+                  scale={3}
+                  compact
+                />
+              );
+            case 'blueprint':
+              return <FindBlueprint key={entryKey(e)} baseId={e.baseId} compact />;
+            case 'newcomer':
+              return <NewcomerIcon key={entryKey(e)} species={e.species} />;
+            case 'part':
+              return (
+                <li key={entryKey(e)}>
+                  <CountBadge {...partBadge(e.part, e.amount)} />
+                </li>
+              );
+          }
+        })}
+        {more > 0 && (
+          <li class="wb-more">
+            {hidden > 0 ? (
+              <button
+                type="button"
+                class="wb-more-button pix"
+                aria-expanded={false}
+                onClick={() => {
+                  setExpanded(true);
+                }}
+              >{`+${String(more)} more`}</button>
+            ) : (
+              <span class="wb-more-note pix">{`+${String(more)} more`}</span>
+            )}
+          </li>
+        )}
+      </FindList>
+    </div>
+  );
+}
+
+/**
+ * What a story found, in the shared Find components. Full (the Gazette): boxes in one `FindList`, parts as count
+ * badges, then "+N more" as text for what has no picture. `compact` (a place's clipping): one row of small finds
+ * (`FindsRow`).
+ */
+export function Finds({
+  finds,
+  label,
+  compact = false,
+  unshown = 0,
+}: {
+  finds: readonly Find[];
+  label: string;
+  compact?: boolean;
+  /** Things the story stands for that are not drawn (five pieces made, three shown). */
+  unshown?: number;
+}) {
+  if (compact) return <FindsRow finds={finds} unshown={unshown} label={label} />;
   const rows = finds.filter((f): f is Exclude<Find, { kind: 'parts' }> => f.kind !== 'parts');
   const counts: CountItem[] = finds.flatMap((f) =>
     f.kind === 'parts' ? f.parts.map((p) => ({ key: p.part, ...partBadge(p.part, p.amount) })) : [],
@@ -57,16 +214,18 @@ export function Finds({ finds, label }: { finds: readonly Find[]; label: string 
         </FindList>
       )}
       {counts.length > 0 && <CountBadgeList items={counts} label={label} class="reward-badges" />}
+      {unshown > 0 && <p class="wb-more-note pix">{`+${String(unshown)} more`}</p>}
     </div>
   );
 }
 
 /**
  * How the Gazette tells a story, picture aside: its headline, at most one short line, and what it found as
- * itself. The headline is the paper's big one (`lead`) or a small story's (`brief`, also how a place tells its
- * waiting stories). Every place that tells a story uses this, never a second card.
+ * itself. The headline is the paper's big one (`lead`) or a small story's (`brief`); `clip` is how a place tells
+ * its waiting stories (the small headline, finds in one small row). Every place that tells a story uses this,
+ * never a second card.
  */
-export function StoryText({ story, size }: { story: Story; size: 'lead' | 'brief' }) {
+export function StoryText({ story, size }: { story: Story; size: 'lead' | 'brief' | 'clip' }) {
   const label = `Found: ${story.headline}`;
   const Heading = size === 'lead' ? 'h3' : 'h4';
   return (
@@ -77,7 +236,12 @@ export function StoryText({ story, size }: { story: Story; size: 'lead' | 'brief
       {story.blurb !== '' && (
         <p class={size === 'lead' ? 'wb-blurb' : 'wb-brief-blurb'}>{story.blurb}</p>
       )}
-      <Finds finds={story.finds} label={label} />
+      <Finds
+        finds={story.finds}
+        label={label}
+        compact={size === 'clip'}
+        unshown={story.unshown ?? 0}
+      />
     </>
   );
 }

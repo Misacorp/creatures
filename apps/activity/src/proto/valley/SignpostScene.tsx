@@ -13,7 +13,7 @@ import { destinationName, supplyKindOf, supplyName } from '../../trip-view';
 import { ActionButton } from '../../ui/ActionButton';
 import { GameIcon } from '../../ui/GameIcon';
 import { WorldMap } from '../../WorldMap';
-import { StoryPlate, type Waiting } from '../welcome/PlaceStories';
+import { MapStage, StoryPlate, crossroadsSpot, type Waiting } from '../welcome/PlaceStories';
 import { TOUR, isFree, type ProtoWorld, type SendTripChoice } from '../world';
 import { useSize } from './parts';
 import { HUD_HEIGHT } from './SceneFrame';
@@ -42,7 +42,7 @@ export function SignpostScene({
   held: string | null;
   onSend: (choice: SendTripChoice) => void;
   onLeave: () => void;
-  /** Stories a welcome-back marker led here with: the scouts stand on their clipping (the road map has no floor). */
+  /** Stories a welcome-back marker led here with: the scouts stand on the map, the stories on a slim clipping. */
   waiting?: Waiting | undefined;
 }) {
   const [place, setPlace] = useState<string | null>(picks.place);
@@ -72,6 +72,17 @@ export function SignpostScene({
       window.removeEventListener('keydown', onKey);
     };
   }, [onLeave]);
+
+  // Stories waiting: the map shows the crossroads where the scouts stand, above the clipping and the buttons.
+  const hasStories = waiting !== undefined && waiting.stories.length > 0;
+  useEffect(() => {
+    if (!hasStories) return;
+    const pan = rootRef.current?.querySelector<HTMLElement>('.world-map');
+    const down = rootRef.current?.querySelector<HTMLElement>('.pv-map');
+    const spot = crossroadsSpot();
+    if (pan != null) pan.scrollLeft = Math.max(0, spot.x * scale - pan.clientWidth / 2);
+    if (down != null) down.scrollTop = down.scrollHeight;
+  }, [hasStories, scale]);
 
   // A map taller than its space scrolls down to the chosen place.
   useEffect(() => {
@@ -109,10 +120,13 @@ export function SignpostScene({
           onPick={setPlace}
           width={size.width}
           scale={scale}
+          {...(hasStories && waiting !== undefined
+            ? { overlay: (s: number) => <MapStage waiting={waiting} scale={s} /> }
+            : {})}
         />
       </div>
       <div class="pv-act">
-        {waiting !== undefined && <StoryPlate waiting={waiting} strip />}
+        {waiting !== undefined && <StoryPlate waiting={waiting} stage={false} />}
         <div class="pv-act-row">
           {place !== null && closed.length === 0 && !full && (
             <ul class="pv-packs" aria-label="Pack a supply">

@@ -57,6 +57,14 @@
     0 calc(var(--px) * 2) 0 0 rgb(var(--ink-rgb) / 0.6);
 }
 
+/* A hint in place of a button that cannot be pressed ("Pick a place on the map"): a solid plate, never see-through. */
+.pv-act .action-btn:disabled {
+  background: var(--dusk);
+  color: var(--bone);
+  opacity: 1;
+  box-shadow: 0 0 0 var(--px) var(--ink);
+}
+
 .pv-act-xp {
   margin: 0;
   padding: 0.375rem 0.5rem;

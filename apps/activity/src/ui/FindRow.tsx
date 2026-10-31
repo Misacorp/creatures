@@ -13,6 +13,7 @@ export function FindRow({
   tags,
   children,
   button,
+  compact = false,
 }: {
   /** The picture (an `ItemFrame`). Decoration: the name says it all. */
   image: ComponentChildren;
@@ -40,7 +41,42 @@ export function FindRow({
         onPointerLeave?: (event: PointerEvent) => void;
       }
     | undefined;
+  /**
+   * The small form, for several finds in one short row (a place's waiting stories): the picture alone, as one
+   * tap target that opens the same card; the name is said to assistive technology. Put it in a compact `FindList`.
+   */
+  compact?: boolean;
 }) {
+  if (compact) {
+    const picture = (
+      <>
+        {image}
+        <span class="visually-hidden">{name}</span>
+      </>
+    );
+    if (button === undefined) return <li class="find-row compact">{picture}</li>;
+    return (
+      <li class="find-row compact tappable">
+        <button
+          type="button"
+          class="find-row-button"
+          {...(button.ref === undefined ? {} : { ref: button.ref })}
+          aria-label={button.label}
+          aria-haspopup="dialog"
+          aria-expanded={button.expanded}
+          onClick={button.onClick}
+          {...(button.onPointerEnter === undefined
+            ? {}
+            : { onPointerEnter: button.onPointerEnter })}
+          {...(button.onPointerLeave === undefined
+            ? {}
+            : { onPointerLeave: button.onPointerLeave })}
+        >
+          {picture}
+        </button>
+      </li>
+    );
+  }
   const inside = (
     <>
       {image}
@@ -80,15 +116,21 @@ export function FindRow({
 export function FindList({
   label,
   class: extra,
+  compact = false,
   children,
 }: {
   label: string;
+  /** Small finds (`FindRow compact`) in one left-aligned row that wraps, instead of boxes one under another. */
+  compact?: boolean;
   /** Where it is used (a hook for a test or a small tweak); never the look. */
   class?: string;
   children: ComponentChildren;
 }) {
   return (
-    <ul class={extra === undefined ? 'find-list' : `find-list ${extra}`} aria-label={label}>
+    <ul
+      class={['find-list', compact ? 'compact' : '', extra ?? ''].filter(Boolean).join(' ')}
+      aria-label={label}
+    >
       {children}
     </ul>
   );
