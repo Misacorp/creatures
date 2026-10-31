@@ -1,11 +1,17 @@
-import { GEAR_RARITIES, PART_KINDS, baseElement, gearContent } from '@creatures/game';
+import { GEAR_RARITIES, PART_KINDS, baseElement, gearBase, gearContent } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import {
   BUNDLED_ITEM_SPRITES,
   BUNDLED_PART_ICONS,
   BUNDLED_SET_SPRITES,
   GEAR_SLOT_IDS,
+  ITEM_LOOK_SPRITES,
+  NEUTRAL_PAINT,
   ITEM_SIZE,
+  itemLookId,
+  itemFlair,
+  withFlair,
+  type Flair,
   PART_SIZE,
   itemArt,
   partIcon,
@@ -14,9 +20,21 @@ import {
 } from './gear-sprites';
 import { glyph } from './glyphs';
 import { elementIcon } from './sprites/element-icons';
-import { expandRows, swapPalette, validateSprite } from './sprites/sprite-data';
+import { ITEM_FLAIR } from './sprites/data/item-flair';
+import { expandRows, swapPalette, validateSprite, type SpriteDef } from './sprites/sprite-data';
+import { hsl, lintSprite, silhouetteDifference } from './sprites/sprite-lint';
 
 const shape = (rows: readonly string[]): string => rows.join('/');
+
+/** How many pixels a flair paints a key that is not in the plain tint keys. */
+function changedKeys(def: SpriteDef, flair: Flair): number {
+  const rows = expandRows(def);
+  let n = 0;
+  for (const [y, row] of flair.rows.entries()) {
+    for (const [x, ch] of [...row].entries()) if (ch !== '.' && ch !== rows[y]?.[x]) n += 1;
+  }
+  return n;
+}
 
 describe('item sprites', () => {
   it('has a well-formed 12x12 sprite for each slot of the content', () => {
@@ -36,39 +54,92 @@ describe('item sprites', () => {
     expect(new Set(shapes).size).toBe(GEAR_SLOT_IDS.length);
   });
 
-  it('draws every plain base of the content, tinted by its element and grey when it has none', () => {
-    for (const base of gearContent.bases.filter((b) => b.set === undefined)) {
+  it('draws every base with its look, tinted by its element (grey when it has none) or its set tag', () => {
+    for (const base of gearContent.bases) {
       const art = itemArt(base.id);
-      expect(art.sprite, base.id).toBe(BUNDLED_ITEM_SPRITES[base.slot]);
+      const fallback = (base.set === undefined ? BUNDLED_ITEM_SPRITES : BUNDLED_SET_SPRITES)[
+        base.slot
+      ];
+      const plain = ITEM_LOOK_SPRITES[itemLookId(base.id)] ?? fallback;
+      const flair = itemFlair(base.id);
+      if (flair === undefined) expect(art.sprite, base.id).toBe(plain);
+      else expect(art.sprite, base.id).toEqual(withFlair(plain, flair));
+      if (base.set !== undefined) {
+        const set = gearContent.sets.find((x) => x.id === base.set);
+        expect(art.palette, base.id).toBe(setTintPalette(set?.tag ?? base.tag));
+        continue;
+      }
       const element = baseElement(base);
-      if (element === null) {
-        expect(art.palette, base.id).toBeUndefined();
-      } else {
-        expect(art.palette, base.id).toBe(tintPalette(element));
-        expect(art.palette, base.id).toBeDefined();
+      expect(art.palette, base.id).toBe(element === null ? NEUTRAL_PAINT : tintPalette(element));
+    }
+  });
+
+  it('shares a sprite only between element versions of one item (same slot and stats, no set)', () => {
+    expect(itemLookId('kelp-cap')).toBe('trail-cap');
+    expect(itemLookId('ember-muffler')).toBe('patch-scarf');
+    expect(itemLookId('bog-charm')).toBe('trail-charm');
+    // Own names that are not element versions: a set piece, a role charm, different stats.
+    expect(itemLookId('tidepool-cowl')).toBe('tidepool-cowl');
+    expect(itemLookId('wardens-bell')).toBe('wardens-bell');
+    expect(itemLookId('forge-hood')).toBe('forge-hood');
+    for (const base of gearContent.bases) {
+      const look = gearContent.bases.find((b) => b.id === itemLookId(base.id));
+      expect(look?.slot, base.id).toBe(base.slot);
+    }
+  });
+
+  it('has its own sprite for every look of the content', () => {
+    const looks = new Set(gearContent.bases.map((b) => itemLookId(b.id)));
+    expect(Object.keys(ITEM_LOOK_SPRITES).sort()).toEqual([...looks].sort());
+  });
+
+  it('draws only looks of the content, each well-formed and tintable', () => {
+    const looks = new Set(gearContent.bases.map((b) => itemLookId(b.id)));
+    for (const id of Object.keys(ITEM_LOOK_SPRITES)) expect(looks.has(id), id).toBe(true);
+    for (const [id, def] of Object.entries(ITEM_LOOK_SPRITES)) {
+      const errors = lintSprite(def, { kind: 'item' }).filter((f) => f.level === 'error');
+      expect(errors, id).toEqual([]);
+      // The tint swaps t, u and h, so the item's main colour must be drawn with them.
+      for (const key of ['t', 'u'])
+        expect(Object.hasOwn(def.palette, key), `${id} ${key}`).toBe(true);
+      const base = gearContent.bases.find((b) => b.id === id);
+      if (base?.set !== undefined) expect(def.palette['g'], `${id} gold trim`).toBeDefined();
+    }
+  });
+
+  it('gives every element version of a shared look its own flair, and only those', () => {
+    for (const base of gearContent.bases) {
+      const look = itemLookId(base.id);
+      const sharers = gearContent.bases.filter((b) => itemLookId(b.id) === look);
+      const element = base.set === undefined ? baseElement(base) : null;
+      const wanted = sharers.length > 1 && element !== null;
+      expect(itemFlair(base.id) !== undefined, base.id).toBe(wanted);
+    }
+    for (const [look, byElement] of Object.entries(ITEM_FLAIR)) {
+      for (const [element, flair] of Object.entries(byElement)) {
+        expect(flair.rows.length, `${look} ${element}`).toBe(12);
+        for (const row of flair.rows) expect(row.length, `${look} ${element}`).toBe(12);
+        const def = ITEM_LOOK_SPRITES[look];
+        if (def === undefined) throw new Error(look);
+        const errors = lintSprite(withFlair(def, flair), { kind: 'item' }).filter(
+          (f) => f.level === 'error',
+        );
+        expect(errors, `${look} ${element}`).toEqual([]);
+        // The flair shows: it changes pixels, not only colours the tint would change anyway.
+        expect(
+          silhouetteDifference(def, withFlair(def, flair)) + changedKeys(def, flair),
+          `${look} ${element}`,
+        ).toBeGreaterThanOrEqual(3);
       }
     }
   });
 
-  it('draws a gear set piece with its own trimmed sprite, tinted by its set tag', () => {
-    for (const slot of GEAR_SLOT_IDS) {
-      const def = BUNDLED_SET_SPRITES[slot];
-      expect(() => {
-        validateSprite(def, ITEM_SIZE);
-      }, slot).not.toThrow();
-      // A set piece is never the plain sprite of its slot, so a set is known at a glance.
-      expect(shape(expandRows(def)), slot).not.toBe(shape(expandRows(BUNDLED_ITEM_SPRITES[slot])));
-      // It has gold trim that no tint changes.
-      expect(def.palette['g'], slot).toBeDefined();
-    }
-    const shapes = GEAR_SLOT_IDS.map((slot) => shape(expandRows(BUNDLED_SET_SPRITES[slot])));
-    expect(new Set(shapes).size).toBe(GEAR_SLOT_IDS.length);
-    for (const set of gearContent.sets) {
-      for (const base of gearContent.bases.filter((b) => b.set === set.id)) {
-        const art = itemArt(base.id);
-        expect(art.sprite, base.id).toBe(BUNDLED_SET_SPRITES[base.slot]);
-        expect(art.palette, base.id).toBe(setTintPalette(set.tag));
-        expect(art.palette, base.id).toBeDefined();
+  it('keeps every look clearly different from every other of its slot', () => {
+    const entries = Object.entries(ITEM_LOOK_SPRITES);
+    for (const [i, [a, x]] of entries.entries()) {
+      for (const [b, y] of entries.slice(i + 1)) {
+        if (gearBase(a)?.slot !== gearBase(b)?.slot) continue;
+        expect(silhouetteDifference(x, y), `${a} vs ${b}`).toBeGreaterThanOrEqual(4);
       }
     }
   });
@@ -100,6 +171,25 @@ describe('item sprites', () => {
     }
     colours.add(BUNDLED_ITEM_SPRITES.hat.palette['t'] ?? '');
     expect(colours.size).toBe(5);
+  });
+
+  it('paints items with no element a beige of their own, apart from every element and set colour', () => {
+    const { hue, sat } = hsl(NEUTRAL_PAINT.t);
+    expect(sat, 'low saturation').toBeLessThan(0.3);
+    expect(hue, 'beige to brown').toBeGreaterThanOrEqual(25);
+    expect(hue, 'beige to brown').toBeLessThanOrEqual(50);
+    const others = [
+      ...['tide', 'ember', 'grove', 'spark', 'mire'].map((t) => tintPalette(t)),
+      ...gearContent.sets.map((set) => setTintPalette(set.tag)),
+    ];
+    for (const other of others) {
+      if (other === undefined) throw new Error('missing tint');
+      expect(NEUTRAL_PAINT.t).not.toBe(other['t']);
+      // Mire and the explorer set are the nearest browns: at least this far apart in saturation.
+      expect(
+        Math.abs(hsl(other['t'] ?? '').sat - sat) + Math.abs(hsl(other['t'] ?? '').hue - hue) / 360,
+      ).toBeGreaterThan(0.1);
+    }
   });
 
   it('knows a tint for every element of the content, and none for neutral or unknown', () => {

@@ -13,6 +13,7 @@ import {
   dungeonFoeSprite,
 } from './creature-sprites';
 import { expandRows, parseSprite, type SpriteDef } from './sprite-data';
+import { hsl } from './sprite-lint';
 
 const INK = '#0d0a1a';
 
@@ -39,21 +40,6 @@ function silhouette(def: SpriteDef): string {
   return expandRows(def)
     .map((row) => row.replace(/[^.]/g, '#'))
     .join('/');
-}
-
-/** Hue (0-360) and saturation (0-1) of a `#rrggbb` colour. */
-function hueSat(hex: string): { hue: number; sat: number } {
-  const [r = 0, g = 0, b = 0] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const d = max - min;
-  if (d === 0) return { hue: 0, sat: 0 };
-  let hue: number;
-  if (max === r) hue = ((g - b) / d) % 6;
-  else if (max === g) hue = (b - r) / d + 2;
-  else hue = (r - g) / d + 4;
-  hue = (hue * 60 + 360) % 360;
-  return { hue, sat: d / max };
 }
 
 /** The hue range of each element's colour (the same hues as its creatures and the stylesheet). */
@@ -134,7 +120,7 @@ describe('daily-dungeon sprites', () => {
       expect(range, `${id} element ${element}`).toBeDefined();
       if (range === undefined) continue;
       const fits = Object.values(def.palette).some((colour) => {
-        const { hue, sat } = hueSat(colour);
+        const { hue, sat } = hsl(colour);
         return sat >= 0.5 && hue >= range[0] && hue <= range[1];
       });
       expect(fits, id).toBe(true);

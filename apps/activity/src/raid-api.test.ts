@@ -553,6 +553,22 @@ describe('parseReplayView', () => {
     expect(parsed.bossHpMax).toBe(100);
   });
 
+  it('keeps what each creature wears, and refuses a worn list that is too long or not strings', () => {
+    const [first, ...rest] = replay.row;
+    const withWorn = (worn: unknown) =>
+      parseReplayView({ ...replay, row: [{ ...first, worn }, ...rest] });
+    expect(withWorn(['trail-cap', 'patch-scarf']).row[0]?.worn).toEqual([
+      'trail-cap',
+      'patch-scarf',
+    ]);
+    expect(parseReplayView(replay).row[0]?.worn).toBeUndefined();
+    expect(() => withWorn('trail-cap')).toThrow();
+    expect(() => withWorn([4])).toThrow();
+    expect(() => withWorn([''])).toThrow();
+    expect(() => withWorn(['x'.repeat(65)])).toThrow();
+    expect(() => withWorn(Array.from({ length: 7 }, () => 'trail-cap'))).toThrow();
+  });
+
   it('accepts a caller who was not in the fight (you is null)', () => {
     expect(parseReplayView({ ...replay, you: null }).you).toBeNull();
   });

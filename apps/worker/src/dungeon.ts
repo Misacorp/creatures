@@ -668,13 +668,14 @@ export class Dungeon {
       treats: row.filter((s) => treated.has(s.id)).map((s) => s.id),
       gearWorn: worn,
       gear: standing.flatMap((c) => c.gearIds),
-      start: row.map(({ id, name, speciesId, element, role, level }) => ({
+      start: row.map(({ id, name, speciesId, element, role, level, worn }) => ({
         id,
         name,
         speciesId,
         element,
         role,
         level,
+        ...(worn === undefined ? {} : { worn }),
       })),
       step: 0,
       at: null,

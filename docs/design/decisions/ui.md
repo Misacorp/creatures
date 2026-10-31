@@ -4,6 +4,30 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: [Misa] The fight board shows worn gear, item detail does not
+
+ID: `2026-10-31-the-fight-board-shows-worn-gear` · Status: current
+
+**Decision.** [Misa] Creatures on the fight stage (raid replay, live finale, dungeon) are drawn wearing their gear (`wornSprite`), a knocked-out creature too; blinking works on the worn sprite. Foes and bosses stay as they are, and the item detail stays bare. The worn base ids ride on the fight's own slot: `FightSlot.worn` (display only, the engine never reads it) is filled by `slotFor` from the gear items the team load already folded, and the raid replay view (`fightRow`) and the dungeon replay (`rowOf`, and the run's frozen `start` row) copy it into `row[].worn` (base ids, at most 6, at most 64 characters each, validated by the client parsers).
+
+**Reasoning.** The stored fight input already is the record of who fought; putting the outfit there shows what the creature wore in that fight, even after the item changes, and works for other players' creatures. Cost: no extra row reads on any path. The items are already loaded when the team is built (the fold needs them), and the replay view reads the one `raid_results` row it read before (the input JSON grows by a few short strings per creature). The dungeon rows come from the stored run state and fight inputs, also read before. Rejected: joining `GET /api/state` on the client (only the player's own creatures, and shows today's gear, not the fight's) and a gear lookup per creature in the view (extra reads). Fights stored before this change have no `worn` and draw bare.
+
+## 2026-10-31: Creatures blink, and shiny creatures twinkle
+
+ID: `2026-10-31-creatures-blink-and-shiny-creatures-twinkle` · Status: current
+
+**Decision.** Creatures drawn at 3x or larger (the creature page header, the find card, the living room, stage units) blink for 150 ms every 3 to 7 s, and shiny ones twinkle (dot, plus, dot, 150 ms a frame, every 4 to 8 s) at an empty pixel by the outline. The blink frame is derived from the shared face (`blinkSprite`: row 9 an ink line, row 8 the body colour from just outside the eye), the twinkle spots from the silhouette, so no species needs extra art. One shared timer (`sprites/life-clock.ts`, runs only while a sprite listens) drives all of them; each sprite's rhythm is a hash of a seed (the creature's id, the species for finds), never `Math.random`, so neighbours are out of step. Reduced motion: no blinking and no twinkle. Bosses, foes and items do not blink. The 2x icons (buttons, list rows) stay still.
+
+**Reasoning.** A tiny stepped blink makes the idle creatures feel alive and a shiny twinkle makes a shiny special, for no new art and no layout change (everything is drawn inside the sprite's own canvas). At 2x the eyes are 2 screen pixels and a blink would read as flicker, and a list of rows would flicker in many places at once.
+
+## 2026-10-31: Creatures wear their gear on their sprite
+
+ID: `2026-10-31-creatures-wear-their-gear-on-their` · Status: current
+
+**Decision.** A creature's sprite shows the hat, scarf and charm it wears, on the creature page header, the creature list rows (pickers) and the living room. It is drawn on the client by a pure function, `wearing(sprite, looks)` (`src/sprites/wearing.ts`), which returns a new 16x16 sprite, so no layout changes. Each of the 60 item looks maps to one of ten worn shape classes in `src/sprites/data/worn-sprites.ts` (hats: cap, hood, crown, pointed, brimmed; scarves: scarf, mantle; charms: pendant, bell, token); the class is painted in the item's own tint, with gold trim for set pieces. Anchors come from the creature's own pixels: the hat sits on the first row where x 5 to 10 are all filled (so between ears, antlers and flames), centred on x 7.5 and moved down if it would pass row 0; the scarf covers rows 11 and 12 inside the body outline; the charm's bottom row sits on the body's bottom outline. Rows 8 to 10, x 3 to 12 (the face) are never painted. Worn colours live under their own palette keys (hat `1 2 3`, scarf `4 5 6`, charm `7 8 9`, shared `K G W C`), so a shiny body palette never touches them. Small icons (`CreatureIcon`), the dungeon and the raid stage stay bare.
+
+**Reasoning.** Gear was only visible as tiles; Misa asked that creatures visibly wear what they have. Classes instead of 60 drawings keep the art work small and make a new item cheap (add one row to the table). Finding anchors from the sprite means a new species needs nothing extra, and a test checks the face and the 16x16 grid for every species with every class. The 2x icons stay bare because three pixels of hat at that size is noise.
+
 ## 2026-10-28: One spacing scale inside drawers and sheets
 
 ID: `2026-10-28-one-spacing-scale-inside-drawers-and` · Status: current

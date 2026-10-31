@@ -92,6 +92,25 @@ Status: 2026-10-20. Shipped (`docs/design/speed-and-dodge.md` section 5.5). Both
 - Shipped flavour `(content)`: "Black, shiny and slow. It clings to the nearest creature and will not take the hint."
 - Compendium detail: tar that has learned to cling. It is the dungeon's patient foe: it is slow, it is not scary, and it will not let go.
 
+### Void foes - concept, not shipped (2026-10-31)
+
+Status: concept only; no element, stats or numbers. Sprites `void-moth`, `void-angler` (replaced `void-lantern`, 2026-10-31: Misa, "you don't generally fight lanterns") and `void-crab` in `apps/activity/src/sprites/concepts/void-foes.ts`. All three are `(compendium detail, not shipped)`.
+
+**Dusk Moth** (working name; Light Eater, every third round, takes a shield or mark off one random creature until the next round)
+
+- Flavour line: "It is only after your lantern. Your lantern does not mind, much."
+- Phenomenon: a moth that drifted down from the dark between the stars toward the first light it saw. The starry windows on its wings are bits of sky it ate.
+
+**Gloam Angler** (working name; Blackout, every second round, one creature goes unseen: the foe cannot target it for a turn, and neither can your healers)
+
+- Flavour line: "Its light shows you nothing. That is the trick."
+- Phenomenon: a round fish of the dark between the stars, with a starry window on its flank and a lure on a stalk. The lure holds one warm star, and whatever stands in its glow is lost to the dark around it. Plain to read: the hidden creature is shown with a dim frame. It replaces the Hollow Lantern: a living foe that carries a lantern, not a lantern.
+
+**Drift Crab** (working name; Tuck In, every third round, pulls into its shell and takes much less damage for one round, then snaps out with a pinch on the left creature)
+
+- Flavour line: "It hides when you look at it and pinches when you look away."
+- Phenomenon: a crab that walks along the floor of the dark, with a patch of night on its shell. It is slow and shy, and only snaps because it was startled.
+
 ---
 
 ## Floor bosses
@@ -134,6 +153,22 @@ Each floor boss is a smaller echo of a raid boss `(inferred)`. The raid bosses a
 - Compendium detail: a bog-oak log, black and mossy, with reeds growing from its back. It lies half sunk in tar and watches with two gold eyes. It is the dungeon's patient floor boss, the smaller echo of Old Bogback `(inferred)`.
 - Echo: Old Bogback's Sinking Mud `(inferred)`.
 - Landmark signature, **Pull Under** (every fourth round, marked a round ahead): a sweep of the whole row that leaves Mired. `(content: dungeon-foes.json)`
+
+### Void floor bosses - concept, not shipped (2026-10-31)
+
+Status: concept only; no numbers. Sprites `void-floor-jelly` and `void-floor-sentinel` in `apps/activity/src/sprites/concepts/void-foes.ts`. Each is a smaller echo of the Hollow Crown (`bosses.md`), and both are `(compendium detail, not shipped)`.
+
+**Lantern Drifter** (working name; Dim the Row, every third round, the two ends of the row lose their glow: no reaction bonus for a turn)
+
+- Flavour line: "It floats where the lights used to be, and brings the dark along."
+- Phenomenon: a bell of night that drifts through the halls, trailing tendrils tipped with little stars. Each star it passes goes quiet; the ones on its tendrils are the ones it keeps. Two pale eyes in its bell.
+- Echo: the Hollow Crown's Lights Out `(inferred)`.
+
+**Dim Sentinel** (working name; Closed Door, every second round, it stands behind its doorway and takes less damage; every third round the door opens and the creature in front is hit hard, marked a round ahead)
+
+- Flavour line: "It keeps a door that opens onto nothing. Please do not stand in it."
+- Phenomenon: a living guardian of dusk-purple stone, horned, with two glinting eyes, one fist raised and mid-step, and a doorway of night in its belly with a warm star far inside. Two shards of dark stone orbit it (redrawn 2026-10-31: Misa, "make it more animate"). The door is the dungeon's hiding place made solid, like the Hollow Crown's Hide `(inferred)`.
+- Echo: the Hollow Crown's Hide `(inferred)`.
 
 ---
 
