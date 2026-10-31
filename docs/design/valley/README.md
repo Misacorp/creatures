@@ -42,14 +42,15 @@ Numbers live in data, never in prose. A doc may give an example number, marked a
 
 Today's game against the vision, system by system (keep, rework or scrap): [`scrap-list.md`](scrap-list.md).
 
-## Where we are (2026-10-30)
+## Where we are (2026-10-31)
 
-- **Phase 1** (the base systems on paper): every system is drafted in full, reviewed by the panel (`reviews/`) and decided by Misa in 13 rounds of questions (`questions.md`, 35 answers), except the School, which waits on combat v2's talents. Nearly every number is still an example.
-- **Phase 2 started** (Q32): the resource map (`economy/resources.md`) and the economy lab (`economy/model.md`, `packages/econ`), being built.
-- **Phase 2 passed** (round 18, Q47); **phase 3 (prototype the feel) is current** (`phase3-plan.md`).
-- **Waiting on Misa:** nothing. Round 18 decided the School teaches talents (with visiting teachers), a broker post trades shards, and the gate. Queued: **targets** (the rest of `goals.md`'s numbers, with the prototype).
+- **Phase 1** (the base systems on paper) is done apart from loose ends; **phase 2** (the economy lab, `packages/econ`, `economy/summary.md`) passed on 2026-10-31; **phase 3 (prototype the feel) is current** (`phase3-plan.md`).
+- **The prototype** (`apps/activity/src/proto/`, staging-only, `prototype.html`): the valley, and the **welcome-back popup** (the Valley Gazette, `proto/welcome/`, played from the lab's journeys). The return walk was tried and dropped (Misa: the player has no avatar; creatures act).
+- **Decisions** live in the `valley` topic of `docs/design/decisions/` (`pnpm decisions list --topic valley`); the question ledger is `questions.md` (49 answered through round 19).
+- **Waiting on Misa:** nothing. Queued in `questions.md`: a visible "tap to skip" and "New" tag (from the walk's panel, may not apply to the Gazette), **targets**.
+- **Open for the lead:** a late-season scrap sink (T-7b fails: scouts bring about 2.3k a week from week 13, sinks take about 1.9k); wiring the art-direction session's `valley-glow` places (PR #116) into the prototype once merged; phase 3's next steps (`phase3-plan.md`).
 - **How to continue:** read the last entry of `log.md`, then `questions.md`'s "Waiting on Misa"; run the `valley-round` skill to record answers and ask the next round.
-- **Seams with combat v2** (`combat-v2-track`): the roster profile the economy lab must output, the fixed boss track, gear's stats and lines (`roadmap.md`). The combat session can message this one.
+- **Seams:** combat v2 (session "Leet Combat Rework") takes `economy/roster-profile.json` and `server-coverage.json`; the art-direction session ("Leet Creatures Art") owns art direction. Both can message this one.
 
 ## The systems (one doc each)
 

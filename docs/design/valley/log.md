@@ -203,3 +203,9 @@ The art-direction session (Misa put it in charge of art direction) finished the 
 Misa picked the Gazette over the comic: condensed prose, the finds doing the talking (the shared Find components, tappable for their popovers), the visual style revisited much later. The builder is trimming it to that.
 
 The Gazette trimmed (f0c54f1): the comic strip is gone; finds do the talking through the shared Find components (a piece opens its full item card, creatures their popover, scrap and shards are count badges, a blueprint and a newcomer are their Find boxes); headlines name who and where, with at most one short line.
+
+## 2026-10-31 (afternoon): ready for a context compression
+
+Misa: "Let's continue. Let me know when is a good time to compact your context." Brought the front door up to date: `README.md` "Where we are", `phase3-plan.md` (the Gazette done; next, markers that lead into their places, then posts, the bonfire, the Market, the visitor and a graduation; the `valley-glow` art once PR #116 merges), a queued question about a skip hint and a "New" tag.
+
+**Pick up here:** phase 3, step 2 of `phase3-plan.md` (the valley's markers open their place with the story in place), with an implementer in a worktree; then step 3. Lead's own open item: a late-season scrap sink (T-7b). Nothing waits on Misa. The phone page is the "Valley Plan" artifact (link in the 2026-10-29 entry).

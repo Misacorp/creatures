@@ -1,6 +1,6 @@
 # Phase 3 plan: prototype the feel
 
-Status: **draft** (lead, 2026-10-31, written overnight while Misa slept). Starts when Misa passes the phase 2 gate ("the targets pass for every player profile; the report reads sensibly to Misa", `roadmap.md`). Nothing here ships; it extends the staging-only valley prototype (`apps/activity/src/proto/valley/`, `prototype.html#valley`).
+Status: **current** (phase 2 passed 2026-10-31). Revised 2026-10-31: the return walk was dropped for the welcome-back Gazette (see the `valley` decisions). Starts when Misa passes the phase 2 gate ("the targets pass for every player profile; the report reads sensibly to Misa", `roadmap.md`). Nothing here ships; it extends the staging-only valley prototype (`apps/activity/src/proto/valley/`, `prototype.html#valley`).
 
 ## The question it answers
 
@@ -10,7 +10,7 @@ Phase 3's gate: Misa plays it on staging and says "it feels like a story, not a 
 
 Driven by the economy lab, not hand-made numbers: the lab exports one daily player's first four weeks and one weekly player's (what came home at each visit, levels, finds, place levels, the visitor), and the prototype plays them back.
 
-1. **The return walk** (`systems/return.md` V-RET-1 to 9): the camera visits the places where something happened, creatures carry their piles home, at most three lines, at most one surprise and one decision. A day picker replays any visit from the lab's journey (day 1, day 3, a weekly player's Sunday, a month away).
+1. **The welcome-back Gazette** (`systems/return.md` V-RET-0): **done** (`proto/welcome/`). Two or three stories, the finds tappable, "...and N more things" onto the valley's markers; a visit picker replays the lab's journeys.
 2. **Two posts:** a scout at a destination and a smith at the Forge, with the store filling, the Forge's shelf and a shard wait with the exchange as its one-tap fix (V-FORGE-4, V-FORGE-10).
 3. **The bonfire:** resting creatures, a small moment, a creature warming up (catch-up).
 4. **One communal project:** scaffolding rising as gifts come in, your own share privately, the level-up told in the walk.
@@ -27,12 +27,12 @@ Not in scope: combat (combat v2's lab owns it), the School (waits on talents), c
 
 ## Order
 
-1. The journey export from the lab, with a test that the prototype's fixture matches the lab's numbers.
-2. The return walk on one daily visit; the panel; then the other visits.
-3. Posts, the bonfire, the project, the visitor and graduation, each as a beat inside the walk.
-4. The panel at both widths; fixes; Misa on staging.
+1. **Done:** the journey export from the lab, with a sync test; the welcome-back Gazette (after the walk was tried and dropped).
+2. **Next:** the valley's markers lead somewhere: tapping one opens its place with the story in place (the Forge's shelf and pieces, the scouts' finds at the Signpost, a newcomer at the Paddock gate).
+3. Posts (a scout and a smith, the store filling, a shard wait with the exchange), the bonfire, the Market as the second guided project with the broker, the visitor's stall and one reroll, and a graduation at the School, each reachable from a marker.
+4. The places' art from the art-direction session (`valley-glow`, PR #116) once merged, in place of the stand-ins.
+5. The panel at both widths; fixes; Misa on staging when he asks.
 
-## For Misa to decide (in the morning list)
+## For Misa to decide
 
-- Whether the phase 2 gate passes (the lab's summary, `economy/summary.md`).
-- Whether this scope is right before it is built.
+Nothing now; the phase 3 gate is Misa playing it on staging.

@@ -12,6 +12,7 @@ Nothing waiting.
 
 In order. Each becomes a numbered question when asked; entries name what they wait on.
 
+- **skip-and-new.** From the walk's panel (`reviews/2026-10-31-walk.md`, row 9): a visible "tap to skip" and a "New" tag on a find add chrome against "fewer boxes"; check whether they still apply to the Gazette before asking.
 - **targets.** What the economy lab measures and which numbers feel right (T-1 to T-5 in `goals.md`). Asked with the lab's first report, as concrete examples, not as a list to approve.
 
 ## Answered
