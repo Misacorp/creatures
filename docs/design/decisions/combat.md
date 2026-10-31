@@ -4,6 +4,37 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: [Misa] Combat v2 names, batch 1: Knacks and families
+
+ID: `2026-10-31-combat-v2-names-batch-1-knacks` · Status: current
+
+**Decision.** Misa went through all 44 Knacks and 24 families on the names page (two rounds). Approved as they are: 23 families and 27 Knacks. Renamed (ids stay; only the shown name changes):
+
+| Was              | Now               | Why (Misa's note, round 2)                               |
+| ---------------- | ----------------- | -------------------------------------------------------- |
+| Ward (family)    | Silence Guard     | Row Ward is damage reduction; this is different          |
+| All at Once      | All In            |                                                          |
+| Steady Mark      | Brand             |                                                          |
+| Keep the Heat In | Barricade         |                                                          |
+| Mud Wall         | Sticky Mud        |                                                          |
+| Thick Fog        | Rolling Fog       |                                                          |
+| Tunnel Through   | Sense Weakness    |                                                          |
+| Wide Warmth      | Wide Embrace      |                                                          |
+| Baked Shell      | Boiling Point     | make it about pent-up anger                              |
+| Carry Them       | Unlikely Guardian | it is a surprise; put that in the name                   |
+| Catch the Bolts  | Take It All       | bolts is too narrow                                      |
+| Circle Round     | Returning Tide    | give it Tide flavour                                     |
+| Gather Calm      | Eye of the Storm  | turning reactions into damage is mayhem, not calm        |
+| Gnaw Through     | Find the Gap      | Sharp Claws was wanted, but it is a talent's name (P-06) |
+| Hide in Mist     | Mist Veil         | a mist noun                                              |
+| Lightning Ears   | Drop Guard        | did not fit the effect                                   |
+| Puddle Maker     | Self-Starter      | a puddle makes no sense here                             |
+| Ready the Mark   | Stack Up          | adding is not readying                                   |
+
+The shipped v1 finale ability Mud Wall keeps its name until v1 goes (phase 8); only the combat v2 Knack is renamed.
+
+**Reasoning.** Phase 3's gate needs approved names before the compendium entries and the icons. Ids do not change, so a rename is a data edit and stored choices keep working.
+
 ## 2026-10-31: Combat v2 content as data: a separate game entry, the resolver beside the engine, cards as operations
 
 ID: `2026-10-31-combat-v2-content-as-data-a` · Status: current
