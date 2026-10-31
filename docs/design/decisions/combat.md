@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: Combat v2 engine port: v2 beside v1, whole inputs, parity by a result digest
+
+ID: `2026-10-31-combat-v2-engine-port-v2-beside` · Status: current
+
+**Decision.** Phase 2 follows `docs/design/combat/engine-port.md`. The combat v2 rules go into `packages/engine/src/v2/` beside the v1 engine, which stays untouched until phase 8. A v2 fight input is whole: it carries `version: 2`, its rules numbers, the element chart it uses, resolved fighters and the boss with its cards applied, with no optional "rule before this one" fields. Content lookups (form, Knack and talent ids to stats and effects) stay outside the engine: the lab resolves them now, the game in phase 3. Parity is proven by a committed digest of a fixed corpus of lab results, taken on the lab's own code before the move and reproduced exactly after every slice. The board's structured events wait for the board (phase 4).
+
+**Reasoning.** The lab's fight is already pure; only `placeFighters` looks content up, so that is the natural seam, and it lets rule tests name effects instead of catalogue entries. A whole input replays exactly whatever later changes in content or rules; v1's optional fields show what happens otherwise. A digest over many seeded fights proves "the same results" far more tightly than re-running the lab's tests, and it guards every later refactor too. Events draw no dice, so designing them with the board changes no result.
+
 ## 2026-10-31: Phase 1 passes with the casual metric at 1.41; 1.5 stays a target for the balance phase **[Misa]**
 
 ID: `2026-10-31-phase-1-passes-with-the-casual` · Status: current
