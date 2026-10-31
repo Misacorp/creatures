@@ -26,7 +26,7 @@ The way of working is `docs/design/valley/deciding.md` (accepted by Misa). Read 
 2. **Challenge check** on each answer (below).
 3. For each answer:
    - Move the entry to **Answered**: keep the context, add `Answer (date): "<his words>"` and the decision it became.
-   - Append an entry to `docs/design/decisions.md` (newest last, heading `## <date>: Valley: <decision>`), quoting him, with what it changes. Run `pnpm format:check` after: appended entries lose their blank line in merges.
+   - Record a decision in the `valley` topic: `pnpm decisions new --topic valley --title "<decision> (round N, Qn)" --misa` and write its body (**Decision.** quoting him, **Reasoning.**); `pnpm decisions check` must pass (the old `docs/design/decisions.md` is a stub since 2026-10-30), with what it changes. `pnpm decisions check` and `pnpm format:check` after.
    - Change the system docs and `goals.md` it touches: rules, statuses (`idea`, `proposed`, `accepted`), the targets.
    - Put follow-ups and challenges at the head of the **Queue**.
 4. **Publish**, log and commit (below), then reply in the same message: one or two lines on what changed, then the next round if one is ready (do **Prepare** first).

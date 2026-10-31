@@ -6,6 +6,12 @@ import { creatureAtSlot } from './stage';
 import { strikeLabel } from './telegraph';
 import live from './fixtures/live-mid.json';
 import type { ReplayRowEntry } from './raid-api';
+import { gearContent } from '@creatures/game';
+import { itemLookId } from './gear-sprites';
+import { unitSprite } from './stage/StageUnit';
+import { creatureSprite, creatureSpriteOrFallback } from './sprites/creature-sprites';
+import { LOOK_CLASS, classSlot } from './sprites/data/worn-sprites';
+import { wornSprite } from './worn-gear';
 
 let page: Page | null = null;
 
@@ -67,5 +73,22 @@ describe('the stage draws the placement board', () => {
     // The engine reports the lance's lane as the board column; the label says it from 1.
     const lance = { action: 'lance' as const, targets: ['b'], lane: 1 };
     expect(strikeLabel(lance as never, NAMES).area).toBe('lane 2');
+  });
+});
+
+describe('a unit wears its gear', () => {
+  it('draws the worn sprite (a knocked-out unit draws it too: it takes the same path)', () => {
+    const hat = gearContent.bases.find((b) => {
+      const cls = LOOK_CLASS[itemLookId(b.id)];
+      return cls !== undefined && classSlot(cls) === 'hat';
+    });
+    if (hat === undefined) throw new Error('no hat base');
+    const bare = { species: 'splashet' };
+    const dressed = { species: 'splashet', worn: [hat.id] };
+    expect(unitSprite(bare)).toBe(creatureSprite('splashet'));
+    expect(unitSprite(dressed)).toBe(wornSprite('splashet', [{ baseId: hat.id }]));
+    expect(unitSprite(dressed)).not.toBe(unitSprite(bare));
+    expect(unitSprite({ species: 'splashet', worn: ['nope'] })).toBe(creatureSprite('splashet'));
+    expect(unitSprite({ species: 'no-such' })).toBe(creatureSpriteOrFallback('no-such'));
   });
 });

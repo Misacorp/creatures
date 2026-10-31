@@ -46,18 +46,22 @@ export interface KnackFx {
   readonly storeDodgeStacks?: number;
   /** A Guard that does not intercept (the price of marking like a Setter, P-02). */
   readonly noIntercept?: boolean;
-  /** Intercepts area hits too, after the target's failed dodge. */
+  /** Intercepts area hits too, after the target's failed dodge, and takes them with its own cover's cut (Catch the Bolts). */
   readonly interceptArea?: boolean;
-  /** Intercepts every charged landing aimed at a creature in its row. */
+  /** Night Watch: the hit it takes is cut by this much (bp), when that is more than its cover's cut. */
+  readonly watchCutBp?: number;
+  /** Night Watch: takes the first Charged hit each boss turn aimed at a creature in its row, with its own cover's cut. */
   readonly interceptCharged?: boolean;
-  /** The first time it intercepts each fight, it leaves one stack of its own element's mark. */
-  readonly primeOnFirstIntercept?: boolean;
+  /** When it intercepts a hit, it leaves two stacks of its own element's mark (at most once a round). */
+  readonly primeOnIntercept?: boolean;
   /** While it stands, its row takes this much less from area hits and charged landings. */
   readonly rowAreaCutBp?: number;
   /** Store: +1 when it or a creature in its reach takes damage; at 3, the next reaction beside it deals double bonus. */
   readonly bakedShell?: boolean;
   /** Hits by creatures beside it ignore this share of the boss's armour. */
   readonly pierceBesideBp?: number;
+  /** Its own hits ignore this share of the boss's armour. */
+  readonly pierceOwnBp?: number;
   /** Support verbs replaced or reshaped at round start. */
   readonly support?:
     | 'wideWarmth'
@@ -100,11 +104,17 @@ export interface KnackFx {
   readonly hpBp?: number;
   /** A crit deals this much more on top of the base crit. */
   readonly critDamageBp?: number;
+  /** After it dodges: +1 Sure Crit. A Sure Crit is spent on its next hit that lands, a guaranteed crit that deals this much more (Perfect Timing). */
+  readonly dodgeCritBp?: number;
+  /** Each time the hits it intercepts add up to `guardSureCritShareBp` of its Max HP: +1 Sure Crit, spent like Perfect Timing's; the guaranteed crit deals this much more (Hold the Line). */
+  readonly guardCritBp?: number;
+  /** Crits on it, and on the creatures beside it, deal this much less extra damage (an aura: the largest applies). */
+  readonly critWardBp?: number;
   /** Its hits deal this much more while it is below half its max HP. */
   readonly lowHpAtkBp?: number;
   /** It takes this much less from area hits and charged landings (its own; adds to an aura). */
   readonly areaCutBp?: number;
-  /** Once per fight, a hit that would knock it out leaves it at 1 HP. */
+  /** Once per fight (a raid: per weekend), a hit that would knock it out leaves it at the lower of two fifths of its max HP and its HP before the hit. */
   readonly holdOn?: boolean;
   /** Its reaction bonus factor is this much higher (inside the cap, R7). */
   readonly reactionBonusBp?: number;
@@ -195,6 +205,7 @@ export const FAMILIES: Readonly<Record<string, string>> = {
   'Row Ward': 'Cuts area damage for its row or the creatures beside it (the largest applies).',
   Ward: 'Keeps the creatures beside it from being silenced.',
   Pierce: 'Ignores some boss armour.',
+  Luck: 'Trades hit size for crits, or takes the sting out of a boss crit.',
   Partner: 'A bonus on its hits while a given role is, or is not, beside it.',
   'Support shape': "Changes where a Support's boost and heal land, or replaces them.",
   Sustain: 'Heals, on a reaction or at round start.',
@@ -248,9 +259,9 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'circle-round',
       name: 'Circle Round',
       family: 'Sustain',
-      text: 'Each reaction on a Tide mark heals the creature that set it off by 8% of its max HP.',
+      text: 'Each reaction on a Tide mark heals the creature that set it off by 14% of its max HP.',
       intent: 'Keeps Payoffs alive when reactions hurt them (Reflective Hide, Thorns).',
-      fx: { healOnReactionBp: 800 },
+      fx: { healOnReactionBp: 1_400 },
     }),
     // Geyserpup (Tide Payoff, second branch)
     K({
@@ -291,10 +302,10 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'twin-strike',
       name: 'Twin Strike',
       family: 'Flurry',
-      text: 'Hits twice, each for 55%. Each hit can set off a reaction.',
+      text: 'Hits twice, each for 58%. Each hit can set off a reaction.',
       intent:
         'Weaker in a plain fight; answers bosses that cap single hits or dodge a lot. Poor against armour.',
-      fx: { twinStrikeBp: 5_500 },
+      fx: { twinStrikeBp: 5_800 },
     }),
     // Halcyray (Spark Support, second branch)
     K({
@@ -334,17 +345,19 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'primed-by-pain',
       name: 'Primed by Pain',
       family: 'Guard Prime',
-      text: "The first time it {Intercept}s each fight, it leaves x1 of its own element's mark.",
-      intent: 'A Guard that helps prime for an Ember Payoff when no Grove Setter is around.',
-      fx: { primeOnFirstIntercept: true },
+      text: "Each time it {Intercept}s, it leaves x2 of its own element's mark. Once a round.",
+      intent:
+        'A Guard that marks by taking hits (panel 5: once a fight, and one count, was too little to build a team on): an Ember Payoff gets its reaction while the Setter slot becomes another hitter.',
+      fx: { primeOnIntercept: true },
     }),
     K({
       id: 'night-watch',
       name: 'Night Watch',
       family: 'Intercept',
-      text: 'It {Intercept}s every {Charged} hit on a creature in its row.',
-      intent: 'Answers telegraphed big hits (Great Wave).',
-      fx: { interceptCharged: true },
+      text: 'Each boss turn it {Intercept}s the first {Wind-up} hit in its row, taking a quarter of it.',
+      intent:
+        'Answers telegraphed big hits (Great Wave, Judgement Bolt). One hit a boss turn, and the hit it takes is cut to a quarter (the most any cut can take), so it is no longer a liability (panel 4; 2026-10-31: the cover cut of 40% left it tied with no Knack outside Great Wave and behind Primed by Pain on it).',
+      fx: { interceptCharged: true, watchCutBp: 7_500 },
     }),
     // Sunfawn (Grove Support, second branch)
     K({
@@ -377,8 +390,9 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'wide-warmth',
       name: 'Wide Warmth',
       family: 'Support shape',
-      text: 'Its boost also reaches one slot further on each side, 10% weaker.',
-      intent: 'Wide raid rows with several hitters.',
+      text: 'Its boost also reaches one slot further on each side, at full strength.',
+      intent:
+        'Wide rows with several hitters: a Support at the end of a line of three boosts both hitters, and in a raid row it reaches the far column too. Tar Leech asks for it.',
       fx: { support: 'wideWarmth' },
     }),
     K({
@@ -388,6 +402,16 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       text: "Hits by creatures beside it ignore half the boss's armour.",
       intent: 'Answers armoured bosses for plain hitters.',
       fx: { pierceBesideBp: 5_000 },
+    }),
+    // Pyrelynx (Ember Payoff): the second Pierce Knack, for the Payoff's own hits (panel 5: Thornmother's bark).
+    K({
+      id: 'gnaw-through',
+      name: 'Gnaw Through',
+      family: 'Pierce',
+      text: "Its own hits ignore a third of the boss's armour.",
+      intent:
+        "Pierce for a Payoff of a common species: its own plain and reaction hits get past thick bark (Thornmother, Tar Leech), where Tunnel Through helps the creatures beside a Support. Only the Payoff's hits, so it is a choice for one creature, not a row.",
+      fx: { pierceOwnBp: 3_333 },
     }),
     // Kilnmole (Ember Guard, second branch)
     K({
@@ -402,7 +426,7 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'keep-the-heat-in',
       name: 'Keep the Heat In',
       family: 'Row Ward',
-      text: 'While it stands, its row takes 15% less from area and {Charged} hits.',
+      text: 'While it stands, its row takes 15% less from area and {Wind-up} hits.',
       intent: "Protects other players' creatures in its row in the raid.",
       fx: { rowAreaCutBp: 1_500 },
     }),
@@ -410,7 +434,7 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'baked-shell',
       name: 'Baked Shell',
       family: 'Store',
-      text: '{Store} Heat: +1 each time it or a creature in its reach takes damage. At 3, the next {Reaction} by a creature beside it deals double bonus.',
+      text: '{Store} Heat: +1 at round start and each time it or a creature in its reach takes damage. At 3, the next {Reaction} by a creature beside it deals double bonus.',
       intent: 'A Guard beside a Payoff in a hard fight.',
       fx: { bakedShell: true },
     }),
@@ -435,26 +459,27 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'zigzag',
       name: 'Zigzag',
       family: 'Evasion',
-      text: '{Taunt}, +20 dodge. {Store} Static: +1 per dodge; at 3, its next mark gets +2 to its count.',
+      text: '{Taunt}, +12 dodge. {Store} Static: +1 per dodge; at 3, its next mark gets +1 to its count.',
       intent: 'A dodge tank beside a Guard (dodge before intercept).',
-      fx: { taunt: true, dodgeBonusBp: 2_000, storeDodgeStacks: 2 },
+      fx: { taunt: true, dodgeBonusBp: 1_200, storeDodgeStacks: 1 },
     }),
     K({
       id: 'catch-the-bolts',
       name: 'Catch the Bolts',
       family: 'Intercept',
-      text: 'It {Intercept}s area hits too.',
-      intent: 'Answers sweeps and splashes.',
+      text: "It {Intercept}s area hits too, and takes them with its cover's cut.",
+      intent:
+        'Answers sweeps and splashes. 2026-10-31: it used to take the whole area hit with no cut, which left it worse than no Knack on Great Wave; the cover cut makes it the pick against sweeps.',
       fx: { interceptArea: true },
     }),
     K({
       id: 'lightning-ears',
       name: 'Lightning Ears',
       family: 'Guard Prime',
-      text: "It leaves its own element's {Mark} like a Setter, but it does not {Intercept}, and Armour -22.",
+      text: "It leaves its own element's {Mark} like a Setter, but it does not {Intercept}, and Armour -8.",
       intent:
         "A Setter that survives the front row; it pays with the Guard's verb and its armour (P-02: never a Setter and a Guard in one body).",
-      fx: { marksAs: 'own', noIntercept: true, armourBonus: -22 },
+      fx: { marksAs: 'own', noIntercept: true, armourBonus: -8 },
     }),
     // Mire lines: the finale-ability passives, ported (they are how Mire applies Mired today)
     K({
@@ -478,10 +503,10 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'guards-shadow',
       name: "Guard's Shadow",
       family: 'Partner',
-      text: '+25% on its hits while a living Guard stands beside it.',
+      text: '+10% on its hits while a living Guard stands beside it. Armour -10.',
       intent:
         "A Payoff that wants a Guard partner, ideally another player's in the raid. The same name as the gear line with the same effect.",
-      fx: { besideGuardBp: 2_500 },
+      fx: { besideGuardBp: 1_000, armourBonus: -10 },
     }),
     K({
       id: 'crown-of-embers',
@@ -570,6 +595,25 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
         'Hearthshell hosts friends around its fire: a Guard that heals the creatures it protects.',
       fx: { guardMendBp: 600 },
     }),
+    // Luck (Misa, 2026-10-30: luck is a build): a crit machine and the answer to a boss that crits.
+    K({
+      id: 'wild-swing',
+      name: 'Wild Swing',
+      family: 'Luck',
+      text: 'Its hit deals 25% less, but it has +20 crit chance points and its {Crit}s get +0.5x.',
+      intent:
+        'A crit machine: a softer plain hit that crits often, so it stacks with Crit Chance, Crit Damage and a crit species. The wrong pick against a boss that caps a hit (Stone Skin) or one that Blocks small hits, and where a steady hit matters more than swing.',
+      fx: { plainBp: 7_500, critChanceBp: 2_000, critDamageBp: 5_000 },
+    }),
+    K({
+      id: 'cool-head',
+      name: 'Cool Head',
+      family: 'Luck',
+      text: '{Crit}s on it and on the creatures {Beside} it deal no extra damage.',
+      intent:
+        'The answer to a boss that crits (Lucky Strike): a Guard that keeps a crit to a plain hit for itself and its neighbours (2026-10-31: at half it was tied with no Knack on every card but Lucky Strike, and barely ahead there). Nothing against a boss that never crits.',
+      fx: { critWardBp: 10_000 },
+    }),
   ].map((k) => [k.id, k]),
 );
 
@@ -589,11 +633,11 @@ export const OWN_KNACKS: Readonly<Record<string, readonly string[]>> = {
   splashet: ['steady-mark', 'lead-the-way'],
   tidewing: ['double-mark', 'circle-round'],
   geyserpup: ['leave-a-trail', 'puddle-maker', 'all-at-once'],
-  stormray: ['detonate', 'leave-a-trail'],
+  stormray: ['detonate', 'leave-a-trail', 'wild-swing'],
   tempestray: ['twin-strike'],
   halcyray: ['clear-skies', 'clear-the-air', 'gather-calm'],
   sproutle: ['wide-reach', 'primed-by-pain'],
-  thornbuck: ['night-watch'],
+  thornbuck: ['night-watch', 'cool-head'],
   sunfawn: ['sunbeam', 'curl-up', 'ready-the-mark'],
   ashmole: ['wide-warmth', 'ready-the-mark'],
   magmole: ['tunnel-through'],
@@ -601,8 +645,8 @@ export const OWN_KNACKS: Readonly<Record<string, readonly string[]>> = {
   zipmouse: ['zoom', 'double-mark'],
   voltaro: ['zigzag'],
   ohmouse: ['catch-the-bolts', 'lightning-ears'],
-  cindle: ['detonate', 'leave-a-trail'],
-  pyrelynx: ['guards-shadow'],
+  cindle: ['detonate', 'leave-a-trail', 'wild-swing'],
+  pyrelynx: ['guards-shadow', 'gnaw-through'],
   wickat: ['lead-the-way', 'steady-mark', 'double-mark'],
   mistnewt: ['wide-reach', 'hide-in-mist'],
   fogwyrm: ['thick-fog'],
@@ -610,7 +654,7 @@ export const OWN_KNACKS: Readonly<Record<string, readonly string[]>> = {
   mossback: ['steady-mark', 'feed-the-marks'],
   ancientshell: ['living-shelter'],
   bloomback: ['all-at-once', 'detonate', 'leave-a-trail'],
-  coralynx: ['detonate', 'leave-a-trail', 'territorial'],
+  coralynx: ['detonate', 'leave-a-trail', 'territorial', 'wild-swing'],
   solmane: ['lead-the-way', 'steady-mark', 'crown-of-embers'],
   gaiadrake: ['detonate', 'leave-a-trail', 'carry-them'],
   aurorix: ['starlight', 'clear-skies', 'gather-calm'],

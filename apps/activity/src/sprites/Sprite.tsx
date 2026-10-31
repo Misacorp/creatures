@@ -1,5 +1,14 @@
-import { useEffect, useMemo, useRef } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { blinkSprite, twinkleSpots, twinkleSprite } from './creature-life';
+import { REST, subscribeLife, type LifeState } from './life-clock';
 import { parseSprite, swapPalette, type SpriteDef } from './sprite-data';
+
+/** A creature that blinks (and, when shiny, twinkles) now and then: the seed sets its own rhythm. */
+export interface SpriteLife {
+  /** The creature's or the species' id: two seeds blink out of step. */
+  seed: string;
+  shiny?: boolean;
+}
 
 interface SpriteProps {
   sprite: SpriteDef;
@@ -11,6 +20,10 @@ interface SpriteProps {
   palette?: Readonly<Record<string, string>>;
   /** Idle bob (a CSS animation that stops when the player prefers reduced motion). */
   bob?: boolean;
+  /** Blink now and then, and twinkle when shiny. Creature sprites only (16x16, the shared face). Still under reduced motion. */
+  life?: SpriteLife;
+  /** Shows one frame of the life and no timer (the workbench's held presets). */
+  hold?: Partial<LifeState>;
   class?: string;
 }
 
@@ -21,14 +34,37 @@ export function Sprite({
   alt,
   palette,
   bob = false,
+  life,
+  hold,
   class: extra,
 }: SpriteProps) {
+  const [ticking, setTicking] = useState<LifeState>(REST);
+  const seed = life?.seed;
+  const shiny = life?.shiny === true;
+  useEffect(() => {
+    if (seed === undefined || hold !== undefined) return undefined;
+    const stop = subscribeLife(seed, shiny, setTicking);
+    return () => {
+      stop();
+      // The next listener starts at rest and only notifies on a change, so clear a blink or twinkle left over.
+      setTicking(REST);
+    };
+  }, [seed, shiny, hold]);
+  const state: LifeState =
+    life === undefined ? REST : hold !== undefined ? { ...REST, ...hold } : ticking;
   const ref = useRef<HTMLCanvasElement>(null);
   const factor = Math.max(1, Math.floor(scale));
-  const parsed = useMemo(
-    () => parseSprite(palette === undefined ? sprite : swapPalette(sprite, palette)),
-    [sprite, palette],
-  );
+  const { blink, twinkle, spotIndex } = state;
+  const parsed = useMemo(() => {
+    let def = palette === undefined ? sprite : swapPalette(sprite, palette);
+    if (blink) def = blinkSprite(def);
+    if (twinkle !== 0) {
+      const spots = twinkleSpots(sprite);
+      const spot = spots[spotIndex % Math.max(1, spots.length)];
+      if (spot !== undefined) def = twinkleSprite(def, spot, twinkle);
+    }
+    return parseSprite(def);
+  }, [sprite, palette, blink, twinkle, spotIndex]);
 
   useEffect(() => {
     const ctx = ref.current?.getContext('2d');

@@ -25,8 +25,8 @@ import {
 import { formStats } from './species';
 import { LINE_POOLS, TALENTS } from './talents';
 import { LEVEL } from './search';
-import { TEAM_BOSS_WIN_RATE } from './teamShare';
-import { buildTeamShareSection, type TeamInputs, type TeamShareSummary } from './teamShareReport';
+import type { JobResults, JobSpec, Plan } from './jobs';
+import type { TeamShareSummary } from './teamShareReport';
 import type { Role } from './types';
 
 /** The rounds in which the classic line should kill a plain boss on average, which sets the talent boss's HP. */
@@ -59,7 +59,7 @@ export const PLAIN_TALENTS: ReadonlySet<string> = new Set(['sharp-claws', 'hardy
 
 const ROLES = ['setter', 'payoff', 'guard', 'support'] as const;
 
-const lineOf = (form: string) => content.creatures.find((c) => c.id === form)?.line ?? form;
+export const lineOf = (form: string) => content.creatures.find((c) => c.id === form)?.line ?? form;
 const mean = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length);
 const signed = (x: number, d = 1) => `${x >= 0 ? '+' : ''}${x.toFixed(d)}`;
 
@@ -132,32 +132,128 @@ export interface TalentGoals {
   readonly raidRows: number;
 }
 
-export function buildTalentSection(opts: {
-  cards: readonly CardDef[];
-  quick: boolean;
-  /** The best and casual teams the report's searches found (searched again, with the same seeds, when missing). */
-  teams?: TeamInputs;
-}): {
+/** The cards and settings the talent section runs with (its jobs and its assembly read the same ones). */
+export interface TalentOptions {
+  readonly cards: readonly CardDef[];
+  readonly quick: boolean;
+  /**
+   * The jobs whose results the team share is measured on (the report's best-team searches). Without them the team
+   * share searches for its teams itself, with the same seeds.
+   */
+  readonly teamNeeds?: readonly string[];
+}
+
+export interface TalentSection {
   md: string[];
   data: Record<string, unknown>;
   goals: TalentGoals;
   teamShare: TeamShareSummary;
   /** The team share part of `md` (also inside it), for the tuning loop. */
   teamMd: string[];
-} {
+}
+
+/** One form's measurements: for every talent of its pool that fits its role, the gauntlet and (raid-shaped talents) the raid row. */
+export type FormMeasures = Record<string, { gauntlet: FormMeasure; raid?: RaidMeasure }>;
+
+/** The boss HPs the talent section calibrates at report time (both depend only on the classic line). */
+export interface TalentCalibration {
+  readonly bossHp: number;
+  readonly raidHp: number;
+}
+
+/** The talents of a form: those of its line's pool that fit its role. */
+export function talentsOfForm(form: string): string[] {
+  const role = formStats(form, LEVEL).role;
+  return Object.keys(TALENTS).filter(
+    (t) => TALENTS[t]?.roles.includes(role) && LINE_POOLS[lineOf(form)]?.includes(t),
+  );
+}
+
+export const talentCalibrationId = 'talent:calibration';
+export const talentFormId = (form: string) => `talent:form:${form}`;
+export const talentTeamId = 'talent:team';
+
+/** Calibrates the two bosses' HP: the classic line kills a plain boss in `TALENT_BOSS_ROUNDS`; the raid row loses 90% in ten rounds. */
+export function calibrateTalents(quick: boolean): TalentCalibration {
+  return {
+    bossHp: classicBossHp(TALENT_BOSS_ROUNDS, quick ? 6 : 24),
+    raidHp: raidBossHp(quick ? 2 : 6),
+  };
+}
+
+/** Measures every talent of one form (the best board without a talent is shared by the form's talents, so they run together). */
+export function measureForm(
+  form: string,
+  quick: boolean,
+  cards: readonly CardDef[],
+  calibration: TalentCalibration,
+): FormMeasures {
+  const seeds = quick ? 2 : 24;
+  const measurer = createMeasurer({
+    bossHp: calibration.bossHp,
+    cards,
+    seeds,
+    rowSeeds: quick ? 6 : 24,
+  });
+  const raidMeasurer = createRaidMeasurer({ hp: calibration.raidHp, seeds });
+  const out: FormMeasures = {};
+  for (const tid of talentsOfForm(form))
+    out[tid] = {
+      gauntlet: measurer.measure(tid, form),
+      ...(RAID_SHAPED.has(tid) ? { raid: raidMeasurer.measure(tid, form) } : {}),
+    };
+  return out;
+}
+
+/** The talent section as jobs: the calibration, one job per form, and the team share (after the teams it reads). */
+export function planTalents(opts: TalentOptions): Plan<TalentSection> {
+  const forms = ROLES.flatMap((role) =>
+    Object.keys(FORM_KNACKS).filter(
+      (f) => formStats(f, LEVEL).role === role && talentsOfForm(f).length > 0,
+    ),
+  );
+  const needs = opts.teamNeeds ?? [];
+  const jobs: JobSpec[] = [
+    {
+      id: talentCalibrationId,
+      section: 'Talents: calibration',
+      kind: 'talent-calibration',
+      args: { quick: opts.quick },
+      needs: [],
+    },
+    ...forms.map((form): JobSpec => ({
+      id: talentFormId(form),
+      section: 'Talents: per-form measurements',
+      kind: 'talent-form',
+      args: { form, quick: opts.quick },
+      needs: [talentCalibrationId],
+    })),
+    {
+      id: talentTeamId,
+      section: 'Talents: team share',
+      kind: 'talent-team',
+      args: { quick: opts.quick, fromJobs: needs.length > 0 },
+      needs,
+    },
+  ];
+  return { jobs, assemble: (results) => assembleTalents(opts, results) };
+}
+
+function assembleTalents(opts: TalentOptions, results: JobResults): TalentSection {
   const { cards, quick } = opts;
   const talentSeeds = quick ? 2 : 24;
   const raidSeeds = quick ? 2 : 24;
-  const bossHp = classicBossHp(TALENT_BOSS_ROUNDS, quick ? 6 : 24);
-  const team = buildTeamShareSection({
-    cards,
-    quick,
-    winRate: TEAM_BOSS_WIN_RATE,
-    ...(opts.teams ? { teams: opts.teams } : {}),
-  });
-  const measurer = createMeasurer({ bossHp, cards, seeds: talentSeeds, rowSeeds: quick ? 6 : 24 });
-  const raidHp = raidBossHp(quick ? 2 : 6);
-  const raidMeasurer = createRaidMeasurer({ hp: raidHp, seeds: raidSeeds });
+  const { bossHp, raidHp } = results.get(talentCalibrationId) as TalentCalibration;
+  const team = results.get(talentTeamId) as {
+    md: string[];
+    data: Record<string, unknown>;
+    summary: TeamShareSummary;
+  };
+  const measureOf = (tid: string, form: string) => {
+    const m = (results.get(talentFormId(form)) as FormMeasures | undefined)?.[tid];
+    if (!m) throw new Error(`no measurement of ${tid} on ${form}`);
+    return m;
+  };
   const md: string[] = [
     '## Talents: best board with it against best board without it (gauntlet and raid row)',
     '',
@@ -199,8 +295,8 @@ export function buildTalentSection(opts: {
         form: f,
         line: lineOf(f),
         role,
-        gauntlet: measurer.measure(tid, f),
-        raid: RAID_SHAPED.has(tid) ? raidMeasurer.measure(tid, f) : undefined,
+        gauntlet: measureOf(tid, f).gauntlet,
+        raid: measureOf(tid, f).raid,
       }));
       measured.push(...ms);
       const cell = (m: Measured, cid: string) => ({

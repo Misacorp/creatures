@@ -37,6 +37,19 @@ export interface TalentDef {
 }
 
 /**
+ * The plain stat lines of a talent or gear line (R12, amended in panel 6): Attack, Max HP, Armour, Speed (as the dodge it gives),
+ * crit chance and crit damage. They survive silence; every other effect and the whole Knack (its stat bonuses too) is blanked.
+ */
+export const STAT_FIELDS: ReadonlySet<keyof KnackFx> = new Set<keyof KnackFx>([
+  'atkBp',
+  'hpBp',
+  'armourBonus',
+  'dodgeBonusBp',
+  'critChanceBp',
+  'critDamageBp',
+]);
+
+/**
  * Effect fields whose values add when a Knack and talents combine (a talent may use only these).
  * Numbers add, flags combine (`mergeFx`); a field whose merge is neither is never listed here.
  */
@@ -44,6 +57,8 @@ export const ADDITIVE_FIELDS: ReadonlySet<keyof KnackFx> = new Set<keyof KnackFx
   'atkBp',
   'dodgeBonusBp',
   'critChanceBp',
+  'dodgeCritBp',
+  'guardCritBp',
   'reactionCritBp',
   'firstHitBp',
   'ignoreSilence',
@@ -176,10 +191,47 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'steady-rhythm',
       name: 'Steady Rhythm',
-      text: 'Every third hit it makes is a crit, and its crits deal 10% more.',
+      text: 'Every third hit that lands is a crit, +0.1x on crits.',
       roles: HITTERS,
       intent: 'Crits you can plan for (P-04): a rhythm instead of a chance.',
       fx: { steadyRhythm: true, critDamageBp: 1_000 },
+    }),
+    // Luck is a build (Misa, 2026-10-30): crit chance and crit damage stack, and Sure Crits tie crits to dodging and guarding.
+    T({
+      id: 'crit-chance',
+      name: 'Crit Chance',
+      text: '+12 crit chance points.',
+      roles: HITTERS,
+      intent:
+        'The same effect as the gear line Crit chance, under its name. A crit doubles a hit, so it is worth about 12% x 100% = +12% damage on average, in swings; it stacks with Wild Swing, a crit species and items, and pairs with Crit Damage. A hitter that Stone Skin caps or Thick Hide Blocks gains less.',
+      fx: { critChanceBp: 1_200 },
+    }),
+    T({
+      id: 'crit-damage',
+      name: 'Crit Damage',
+      text: 'Its {Crit}s are 3x.',
+      roles: ['payoff'],
+      intent:
+        'The same effect as the gear line Crit damage, under its name. Small alone (it needs crits to boost) and big with Crit Chance or a crit species: the crit build is the pair. Stacks without a cap in the lab; the measures say whether it needs one.',
+      fx: { critDamageBp: 10_000 },
+    }),
+    T({
+      id: 'perfect-timing',
+      name: 'Perfect Timing',
+      text: 'After it dodges, it stores a {Sure Crit} (up to 3): its next hit that lands is a 3x crit.',
+      roles: HITTERS,
+      intent:
+        'Crits from evasion: a fast creature, a Zigzag or Zoom Setter, a dodge aura beside it. A dodge is rare, so the reward is big (a sure crit, +100% more than the double). Not the Guard-takes-it clause of Momentum: that happens every round, and a sure crit every round is a runaway (first measure, 2026-10-30). Silence stops it storing (R12.2); what it stored stays.',
+      fx: { dodgeCritBp: 10_000 },
+    }),
+    T({
+      id: 'hold-the-line',
+      name: 'Hold the Line',
+      text: 'When hits it {Intercept}s add up to 25% of its max HP, it stores a {Sure Crit} (3x, up to 3).',
+      roles: ['guard'],
+      intent:
+        'Crits from guarding: a Guard that takes enough damage for others hits back harder. Its own hit is small, so this is a little extra for a Guard that stands in a busy spot, not a reason to pick the Guard. It was a Sure Crit for every interception, which fired every round and was the best Guard talent on most cards (first measure, 2026-10-30).',
+      fx: { guardCritBp: 10_000 },
     }),
     // Marks and reactions.
     T({
@@ -268,16 +320,16 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'brace',
       name: 'Brace',
-      text: "It takes 40% less from the boss's moves ({Charged} on its slot included) and 20% less from its plain attack.",
+      text: 'It takes 40% less from a {Wind-up} hit aimed at its slot.',
       roles: ALL,
       intent:
-        "Reads off the boss's named moves (the Charged highlights of Great Wave, Crusher, Payoff Slam): a card-shaped talent, strong where the boss has moves. Reworked (2026-10-28): it also cuts the plain attack by half of that, because a talent that did nothing on most weeks gained under a point on every role.",
+        'Answers a telegraphed hit (Great Wave, Judgement Bolt, the Wind-up signatures): it is shown at round start, so the owner knows who will be aimed at. Nothing against other moves or the plain attack. Back to this design (2026-10-28 panel 4): the version that also cut other moves and the plain attack decided a boss by itself.',
       fx: { braceBp: 4_000 },
     }),
     T({
       id: 'stubborn',
       name: 'Stubborn',
-      text: 'Once per fight, a hit that would knock it out leaves it at two fifths of its max HP.',
+      text: 'Once per fight (in a raid, once per weekend), a hit that would knock it out leaves it at two fifths of its max HP, or at the HP it had if that was lower.',
       roles: ALL,
       intent:
         "Survives one Crusher; pairs with healers. Hold On under its one name. Reworked (2026-10-28): it left the creature at 1 HP, which gained about 2% of a team's result, so it now leaves it at two fifths of its max HP.",
@@ -286,7 +338,7 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'catch-breath',
       name: 'Catch Breath',
-      text: 'Once per fight, when a hit drops it below half its max HP, it heals 40% of max HP.',
+      text: 'Once per fight (in a raid, once per weekend), when a hit drops it below half its max HP, it heals 40% of max HP.',
       roles: ALL,
       intent:
         'Survives one big hit (Crusher, Payoff Hunter). Not the gear line Second Wind, which is a chance each round to heal.',
@@ -295,11 +347,11 @@ export const TALENTS: Readonly<Record<string, TalentDef>> = Object.fromEntries(
     T({
       id: 'unbothered',
       name: 'Unbothered',
-      text: 'It cannot be {Silenced}, and has +6% Attack and +14% Max HP.',
+      text: 'It cannot be {Silenced}, and has +3% Attack and +6% Max HP.',
       roles: ALL,
       intent:
-        'The silence answer on the creature itself, for row ends and front rows. Reworked (2026-10-28): the immunity alone did nothing on the gauntlet, where a creature can always stand in the middle (a Guard gained nothing), so it carries a little Attack and HP as well, less than Sharp Claws or Hardy.',
-      fx: { ignoreSilence: true, atkBp: 600, hpBp: 1_400 },
+        'The silence answer on the creature itself, for row ends and front rows. Reworked (2026-10-28): the immunity alone did nothing on the gauntlet, where a creature can always stand in the middle (a Guard gained nothing), so it carries a little Attack and HP as well, less than Sharp Claws or Hardy. Shrunk (2026-10-28 panel 4, from +6% and +14%): it won a boss by its stats; it should win by its ward.',
+      fx: { ignoreSilence: true, atkBp: 300, hpBp: 600 },
     }),
     T({
       id: 'cull',
@@ -392,12 +444,12 @@ export const LINE_POOLS: Readonly<Record<string, readonly string[]>> = {
     'rally-cry',
     'owners-mark',
     'first-pounce',
-    'front-liner',
-    'shoulder-to-shoulder',
+    'crit-chance',
+    'crit-damage',
   ],
   // Shy, stands close to its friends and soaks up hits for them.
   sproutle: [
-    'rally-cry',
+    'hold-the-line',
     'shoulder-to-shoulder',
     'brace',
     'triage',
@@ -409,7 +461,7 @@ export const LINE_POOLS: Readonly<Record<string, readonly string[]>> = {
   zipmouse: [
     'momentum',
     'first-pounce',
-    'edge-walker',
+    'perfect-timing',
     'flank-guard',
     'odd-one-out',
     'deep-ink',
@@ -430,7 +482,7 @@ export const LINE_POOLS: Readonly<Record<string, readonly string[]>> = {
     'kindred-boost',
     'bright-boost',
     'shoulder-charge',
-    'rally-cry',
+    'hold-the-line',
     'brace',
     'hardy',
     'odd-one-out',
@@ -441,8 +493,8 @@ export const LINE_POOLS: Readonly<Record<string, readonly string[]>> = {
     'quick-draw',
     'edge-walker',
     'bright-boost',
-    'momentum',
-    'unbothered',
+    'perfect-timing',
+    'crit-chance',
     'catch-breath',
   ],
   // A patient turtle with a garden on its shell.
@@ -451,11 +503,11 @@ export const LINE_POOLS: Readonly<Record<string, readonly string[]>> = {
   coralynx: [
     'sharp-claws',
     'odd-one-out',
-    'edge-walker',
+    'crit-damage',
     'finisher',
     'quick-draw',
     'first-pounce',
-    'momentum',
+    'crit-chance',
   ],
   // A mane of sunlight that leads from the front.
   solmane: [
@@ -555,6 +607,56 @@ export function talentPool(line: string): PoolEntry[] {
  */
 export function talentIdleUnder(talentId: string, knackId: string | undefined): boolean {
   return talentId === 'triage' && knackId !== undefined && SUPPORT_SHAPE_KNACKS.has(knackId);
+}
+
+/** The line of a form (a form with no line is its own). */
+export const lineOfForm = (form: string): string =>
+  content.creatures.find((c) => c.id === form)?.line ?? form;
+
+/**
+ * The talents a creature of `form` may carry (R20): those in its line's pool that work for its role. A talent outside the
+ * pool cannot be rolled or learned, and one that does nothing for the role is idle (not a choice anyone makes).
+ */
+export function legalTalents(form: string): string[] {
+  const role = content.creatures.find((c) => c.id === form)?.role;
+  return (LINE_POOLS[lineOfForm(form)] ?? []).filter(
+    (t) => role !== undefined && TALENTS[t]?.roles.includes(role),
+  );
+}
+
+export interface IllegalTalent {
+  readonly formId: string;
+  readonly talent: string;
+  /** Why it is not legal on this form. */
+  readonly why: string;
+}
+
+/** The talents on `picks` that their creature may not carry (see `legalTalents`); an empty list means every one is legal. */
+export function illegalTalents(
+  picks: readonly { readonly formId: string; readonly talents?: readonly string[] | undefined }[],
+): IllegalTalent[] {
+  const out: IllegalTalent[] = [];
+  for (const p of picks)
+    for (const t of p.talents ?? []) {
+      if (!TALENTS[t]) out.push({ formId: p.formId, talent: t, why: 'no such talent' });
+      else if (!(LINE_POOLS[lineOfForm(p.formId)] ?? []).includes(t))
+        out.push({ formId: p.formId, talent: t, why: `not in the ${lineOfForm(p.formId)} pool` });
+      else if (!legalTalents(p.formId).includes(t))
+        out.push({ formId: p.formId, talent: t, why: 'idle for its role' });
+    }
+  return out;
+}
+
+/** Throws, naming the creature and the talent, when a line carries an illegal talent. `label` says whose line it is. */
+export function assertLegalTalents(
+  picks: readonly { readonly formId: string; readonly talents?: readonly string[] | undefined }[],
+  label: string,
+): void {
+  const bad = illegalTalents(picks);
+  if (bad.length)
+    throw new Error(
+      `${label}: illegal talents: ${bad.map((b) => `${b.formId} carries ${b.talent} (${b.why})`).join('; ')}`,
+    );
 }
 
 /** The lines with a talent pool. */

@@ -16,6 +16,7 @@ Where the project is against the plan. Agents: read `CLAUDE.md`, then **`docs/ro
 
 ## Now
 
+- **Combat v2 (2026-10-31):** phase 1 of 8 (design in the lab) is **done**; nothing in the live game yet except the wiki's draft sections. Merged #104 to #114: raid bosses and dungeon foes, a fast lab with automatic tuners, the boss track tuned on the valley's roster with ownability, the young-server ramp, Determination from the second lap, luck as a build, the luck cards and Breakwater, panel 6, the gear plan (draft). The phase 1 gate passed (Misa accepted the casual metric at 1.41). Next: phase 2, the engine port. Next steps and their order: `docs/design/combat/roadmap.md`, "Where we are".
 - Overnight cleanup 2026-10-18/19 (branch `ccr-8ffccd88-e59k13`): audit fixes, test speed, docs; proposals for Misa in the PR.
 - **Production (2026-10-18):** main `f034142` (PR #35). Since `3b61330` (2026-10-15) it also includes:
   - #24: the raid retune: attack patterns, Guards, phase floors and enrage, a raid difficulty curve, the Bait allowance, raid rewards, the journey simulator;
@@ -38,13 +39,17 @@ Where the project is against the plan. Agents: read `CLAUDE.md`, then **`docs/ro
 2. **Upkeep:** one dependency bump (vitest 5.0.3 with `@cloudflare/vitest-plugin` 1.4.0, wrangler 4.149.0, vite 8.3.4, typescript-eslint 8.71.1, prettier 3.9.10), then close Dependabot #2 and #13; faster sim tests in CI; status lines of shipped design docs.
 3. **Balance review** on live data from the revamp (raid targets, gear share, dungeon depth).
 4. **Support reach shapes:** design and sim first, `attack-patterns.md` section 7.
-5. **Content:** new species packs, later expedition areas, Festival creatures; see the roadmap, item 9.
+5. **Content:** new species packs, later expedition areas, Festival creatures; see the roadmap, item 9. Art can run ahead of content: the Void concepts (four roles, no names or stats; 2026-10-30) are the first set drawn with the art studio (`design/art-studio.md`).
 
 ## Open questions for Misa
 
 See "Open design questions" in `docs/roadmap.md`.
 
 ## Notes for future agents
+
+- Art review page for Misa: `https://claude.ai/artifact/36APiGzTDAhvx359SHVkyX` (Like / Redo / note per piece; answers in its database, collection `reviews`, one document per piece with `piece`, `verdict`, `note`). Read it with the ArtifactData tool before changing library art. Regenerate it from the library after art changes (the generator lives in the lead's scratchpad, not the repo; rebuild from `CONCEPT_SETS` and `itemArt` if it is gone).
+- Overnight 2026-10-31 (branch `claude/void-art`): Void concept sets in the library (creatures with stage 2 and shiny, the Quiet Verge place, gear, raid boss, foes, floor bosses), creatures wear their gear on their sprite, creatures blink and shiny ones twinkle.
+- Pixel art: draw it with the art studio (`pnpm art <set>`, `design/art-studio.md`). Art drawn ahead of content is kept in the art library, catalogue `docs/art/README.md`; check it before adding content.
 
 - Staging's last-week leet credits are simulated; real ones from 2026-10-11 on.
 - `redirect: 'error'` is rejected by workerd; always use `'manual'`.

@@ -485,7 +485,7 @@ describe('talent hooks: Guard shapes and defence', () => {
     );
   });
 
-  it("Brace: less from a Charged landing on its slot and from the boss's other moves, and half as much from its plain attack", () => {
+  it('Brace: less from a Charged hit aimed at its slot, and nothing from other moves or the plain attack', () => {
     const brace = bp('brace', 'braceBp');
     const quietPlain = (card: string, rounds: number): BossDef => {
       const b = labBoss({ rows: 1, cols: 1, cards: [card], rounds });
@@ -504,18 +504,18 @@ describe('talent hooks: Guard shapes and defence', () => {
       }
       return undefined;
     };
-    // Great Wave lands 110 x 1.8 = 198: minus Tempestray's armour; braced, the cut hit minus armour.
+    // Great Wave (Charged) lands 110 x 1.8 = 198: minus Tempestray's armour; braced, the cut hit minus armour.
     const wave = quietPlain('great-wave', 3);
     expect(hit(wave, [])).toBe(198 - TEMPEST_ARMOUR);
     expect(hit(wave, ['brace'])).toBe(afterCuts(198, brace) - TEMPEST_ARMOUR);
-    // Another move (Crusher: 110 x 4 on the strongest in round 3) is braced too.
+    // Another move that is not Charged (Crusher: 110 x 4 on the strongest in round 3) is not braced.
     const crush = quietPlain('crusher', 3);
     expect(hit(crush, [])).toBe(440 - TEMPEST_ARMOUR);
-    expect(hit(crush, ['brace'])).toBe(afterCuts(440, brace) - TEMPEST_ARMOUR);
-    // The plain attack is not a move: it is cut by half the number (reworked 2026-10-28: Brace was idle on most weeks).
+    expect(hit(crush, ['brace'])).toBe(440 - TEMPEST_ARMOUR);
+    // Nor is the plain attack.
     const plain = { ...labBoss({ rows: 1, cols: 1, rounds: 1 }), spd: 0 };
     expect(hit(plain, [])).toBe(110 - TEMPEST_ARMOUR);
-    expect(hit(plain, ['brace'])).toBe(afterCuts(110, Math.floor(brace / 2)) - TEMPEST_ARMOUR);
+    expect(hit(plain, ['brace'])).toBe(110 - TEMPEST_ARMOUR);
   });
 
   it('Stubborn leaves it at two fifths of its max HP once per fight', () => {

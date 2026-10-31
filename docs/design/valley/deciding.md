@@ -40,7 +40,7 @@ A challenge looks the same, with a first line saying what it challenges: "You sa
 | What                                            | Where                                                                                        |
 | ----------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Every question, asked or queued, and its answer | [`questions.md`](questions.md) (the ledger)                                                  |
-| Misa's decisions                                | `docs/design/decisions.md`, tagged "Valley", his words quoted                                |
+| Misa's decisions                                | `docs/design/decisions/valley.md` (`pnpm decisions`), his words quoted                       |
 | What a decision changes                         | the system docs in [`systems/`](systems/) and [`goals.md`](goals.md), statuses updated       |
 | What happened each session                      | [`log.md`](log.md)                                                                           |
 | The plan on Misa's phone                        | the "Valley Plan" artifact, rebuilt by `reader/build.py` after every round (link in the log) |
@@ -49,6 +49,6 @@ A challenge looks the same, with a first line saying what it challenges: "You sa
 
 1. **Prepare.** Pick the next one to three questions from the head of the queue whose dependencies are answered. Write each in full in the ledger (the template's fields), run the challenge check on the options, and mark it `asked (round N)`.
 2. **Ask.** Send the round to Misa in chat. Rebuild and republish the phone page so its "Waiting on you" tile shows the round.
-3. **Record.** When Misa answers: write each answer into its ledger entry (his words), a decision entry in `decisions.md`, and the changes in the system docs and goals. Run the challenge check on each answer; conflicts and new questions go to the head of the queue.
+3. **Record.** When Misa answers: write each answer into its ledger entry (his words), a decision entry in the `valley` topic (`pnpm decisions new --topic valley --misa`), and the changes in the system docs and goals. Run the challenge check on each answer; conflicts and new questions go to the head of the queue.
 4. **Log and publish.** A `log.md` entry, the page rebuilt and republished, the docs committed and pushed.
 5. **Next round**, in the same reply: one or two lines on what changed, then the next questions.

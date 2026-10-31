@@ -45,6 +45,7 @@ export function FindCreature({
           sprite={creatureSpriteOrFallback(creature.species)}
           scale={3}
           bob
+          life={{ seed: `${creature.species}:${creature.talent?.id ?? ''}`, shiny: creature.shiny }}
           {...(palette === undefined ? {} : { palette })}
         />
         <div class="find-name">

@@ -22,7 +22,8 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 | Evasion aura | Dodge for the creatures beside it or in its row (the largest aura applies). | Hide in Mist, Thick Fog |
 | Row Ward | Cuts area damage for its row or the creatures beside it (the largest applies). | Keep the Heat In, Living Shelter |
 | Ward | Keeps the creatures beside it from being silenced. | Lantern Glow |
-| Pierce | Ignores some boss armour. | Tunnel Through |
+| Pierce | Ignores some boss armour. | Tunnel Through, Gnaw Through |
+| Luck | Trades hit size for crits, or takes the sting out of a boss crit. | Wild Swing, Cool Head |
 | Partner | A bonus on its hits while a given role is, or is not, beside it. | Guard's Shadow, Territorial |
 | Support shape | Changes where a Support's boost and heal land, or replaces them. | Clear Skies, Sunbeam, Curl Up, Wide Warmth, Drizzle, Starlight |
 | Sustain | Heals, on a reaction or at round start. | Circle Round, Clear the Air, Hearth |
@@ -37,11 +38,11 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 | splashet | Steady Mark, Lead the Way |
 | tidewing | Steady Mark, Lead the Way, Double Mark, Circle Round |
 | geyserpup | Leave a Trail, Puddle Maker, All at Once |
-| stormray | Detonate, Leave a Trail |
-| tempestray | Detonate, Leave a Trail, Twin Strike |
+| stormray | Detonate, Leave a Trail, Wild Swing |
+| tempestray | Detonate, Leave a Trail, Wild Swing, Twin Strike |
 | halcyray | Clear Skies, Clear the Air, Gather Calm |
 | sproutle | Wide Reach, Primed by Pain |
-| thornbuck | Wide Reach, Primed by Pain, Night Watch |
+| thornbuck | Wide Reach, Primed by Pain, Night Watch, Cool Head |
 | sunfawn | Sunbeam, Curl Up, Ready the Mark |
 | ashmole | Wide Warmth, Ready the Mark |
 | magmole | Wide Warmth, Ready the Mark, Tunnel Through |
@@ -49,8 +50,8 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 | zipmouse | Zoom, Double Mark |
 | voltaro | Zoom, Double Mark, Zigzag |
 | ohmouse | Catch the Bolts, Lightning Ears |
-| cindle | Detonate, Leave a Trail |
-| pyrelynx | Detonate, Leave a Trail, Guard's Shadow |
+| cindle | Detonate, Leave a Trail, Wild Swing |
+| pyrelynx | Detonate, Leave a Trail, Wild Swing, Guard's Shadow, Gnaw Through |
 | wickat | Lead the Way, Steady Mark, Double Mark |
 | mistnewt | Wide Reach, Hide in Mist |
 | fogwyrm | Wide Reach, Hide in Mist, Thick Fog |
@@ -58,7 +59,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 | mossback | Steady Mark, Feed the Marks |
 | ancientshell | Steady Mark, Feed the Marks, Living Shelter |
 | bloomback | All at Once, Detonate, Leave a Trail |
-| coralynx | Detonate, Leave a Trail, Territorial |
+| coralynx | Detonate, Leave a Trail, Territorial, Wild Swing |
 | solmane | Lead the Way, Steady Mark, Crown of Embers |
 | gaiadrake | Detonate, Leave a Trail, Carry Them |
 | aurorix | Starlight, Clear Skies, Gather Calm |
@@ -94,7 +95,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Circle Round
 
-- **Text:** Each reaction on a Tide mark heals the creature that set it off by 8% of its max HP.
+- **Text:** Each reaction on a Tide mark heals the creature that set it off by 14% of its max HP.
 - **Family:** Sustain
 - **Forms:** tidewing
 - **Intent (for contributors, never shown to players):** Keeps Payoffs alive when reactions hurt them (Reflective Hide, Thorns).
@@ -129,7 +130,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Twin Strike
 
-- **Text:** Hits twice, each for 55%. Each hit can set off a reaction.
+- **Text:** Hits twice, each for 58%. Each hit can set off a reaction.
 - **Family:** Flurry
 - **Forms:** tempestray
 - **Intent (for contributors, never shown to players):** Weaker in a plain fight; answers bosses that cap single hits or dodge a lot. Poor against armour.
@@ -164,17 +165,17 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Primed by Pain
 
-- **Text:** The first time it {Intercept}s each fight, it leaves x1 of its own element's mark.
+- **Text:** Each time it {Intercept}s, it leaves x2 of its own element's mark. Once a round.
 - **Family:** Guard Prime
 - **Forms:** sproutle, thornbuck
-- **Intent (for contributors, never shown to players):** A Guard that helps prime for an Ember Payoff when no Grove Setter is around.
+- **Intent (for contributors, never shown to players):** A Guard that marks by taking hits (panel 5: once a fight, and one count, was too little to build a team on): an Ember Payoff gets its reaction while the Setter slot becomes another hitter.
 
 ### Night Watch
 
-- **Text:** It {Intercept}s every {Charged} hit on a creature in its row.
+- **Text:** Each boss turn it {Intercept}s the first {Wind-up} hit in its row, taking a quarter of it.
 - **Family:** Intercept
 - **Forms:** thornbuck
-- **Intent (for contributors, never shown to players):** Answers telegraphed big hits (Great Wave).
+- **Intent (for contributors, never shown to players):** Answers telegraphed big hits (Great Wave, Judgement Bolt). One hit a boss turn, and the hit it takes is cut to a quarter (the most any cut can take), so it is no longer a liability (panel 4; 2026-10-31: the cover cut of 40% left it tied with no Knack outside Great Wave and behind Primed by Pain on it).
 
 ### Sunbeam
 
@@ -199,10 +200,10 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Wide Warmth
 
-- **Text:** Its boost also reaches one slot further on each side, 10% weaker.
+- **Text:** Its boost also reaches one slot further on each side, at full strength.
 - **Family:** Support shape
 - **Forms:** ashmole, magmole, croakmire
-- **Intent (for contributors, never shown to players):** Wide raid rows with several hitters.
+- **Intent (for contributors, never shown to players):** Wide rows with several hitters: a Support at the end of a line of three boosts both hitters, and in a raid row it reaches the far column too. Tar Leech asks for it.
 
 ### Tunnel Through
 
@@ -210,6 +211,13 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 - **Family:** Pierce
 - **Forms:** magmole
 - **Intent (for contributors, never shown to players):** Answers armoured bosses for plain hitters.
+
+### Gnaw Through
+
+- **Text:** Its own hits ignore a third of the boss's armour.
+- **Family:** Pierce
+- **Forms:** pyrelynx
+- **Intent (for contributors, never shown to players):** Pierce for a Payoff of a common species: its own plain and reaction hits get past thick bark (Thornmother, Tar Leech), where Tunnel Through helps the creatures beside a Support. Only the Payoff's hits, so it is a choice for one creature, not a row.
 
 ### Draw Fire
 
@@ -220,14 +228,14 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Keep the Heat In
 
-- **Text:** While it stands, its row takes 15% less from area and {Charged} hits.
+- **Text:** While it stands, its row takes 15% less from area and {Wind-up} hits.
 - **Family:** Row Ward
 - **Forms:** kilnmole, hearthshell
 - **Intent (for contributors, never shown to players):** Protects other players' creatures in its row in the raid.
 
 ### Baked Shell
 
-- **Text:** {Store} Heat: +1 each time it or a creature in its reach takes damage. At 3, the next {Reaction} by a creature beside it deals double bonus.
+- **Text:** {Store} Heat: +1 at round start and each time it or a creature in its reach takes damage. At 3, the next {Reaction} by a creature beside it deals double bonus.
 - **Family:** Store
 - **Forms:** kilnmole
 - **Intent (for contributors, never shown to players):** A Guard beside a Payoff in a hard fight.
@@ -248,21 +256,21 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Zigzag
 
-- **Text:** {Taunt}, +20 dodge. {Store} Static: +1 per dodge; at 3, its next mark gets +2 to its count.
+- **Text:** {Taunt}, +12 dodge. {Store} Static: +1 per dodge; at 3, its next mark gets +1 to its count.
 - **Family:** Evasion
 - **Forms:** voltaro
 - **Intent (for contributors, never shown to players):** A dodge tank beside a Guard (dodge before intercept).
 
 ### Catch the Bolts
 
-- **Text:** It {Intercept}s area hits too.
+- **Text:** It {Intercept}s area hits too, and takes them with its cover's cut.
 - **Family:** Intercept
 - **Forms:** ohmouse
-- **Intent (for contributors, never shown to players):** Answers sweeps and splashes.
+- **Intent (for contributors, never shown to players):** Answers sweeps and splashes. 2026-10-31: it used to take the whole area hit with no cut, which left it worse than no Knack on Great Wave; the cover cut makes it the pick against sweeps.
 
 ### Lightning Ears
 
-- **Text:** It leaves its own element's {Mark} like a Setter, but it does not {Intercept}, and Armour -22.
+- **Text:** It leaves its own element's {Mark} like a Setter, but it does not {Intercept}, and Armour -8.
 - **Family:** Guard Prime
 - **Forms:** ohmouse
 - **Intent (for contributors, never shown to players):** A Setter that survives the front row; it pays with the Guard's verb and its armour (P-02: never a Setter and a Guard in one body).
@@ -283,7 +291,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Guard's Shadow
 
-- **Text:** +25% on its hits while a living Guard stands beside it.
+- **Text:** +10% on its hits while a living Guard stands beside it. Armour -10.
 - **Family:** Partner
 - **Forms:** pyrelynx
 - **Intent (for contributors, never shown to players):** A Payoff that wants a Guard partner, ideally another player's in the raid. The same name as the gear line with the same effect.
@@ -358,6 +366,20 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 - **Forms:** hearthshell
 - **Intent (for contributors, never shown to players):** Hearthshell hosts friends around its fire: a Guard that heals the creatures it protects.
 
+### Wild Swing
+
+- **Text:** Its hit deals 25% less, but it has +20 crit chance points and its {Crit}s get +0.5x.
+- **Family:** Luck
+- **Forms:** stormray, tempestray, cindle, pyrelynx, coralynx
+- **Intent (for contributors, never shown to players):** A crit machine: a softer plain hit that crits often, so it stacks with Crit Chance, Crit Damage and a crit species. The wrong pick against a boss that caps a hit (Stone Skin) or one that Blocks small hits, and where a steady hit matters more than swing.
+
+### Cool Head
+
+- **Text:** {Crit}s on it and on the creatures {Beside} it deal no extra damage.
+- **Family:** Luck
+- **Forms:** thornbuck
+- **Intent (for contributors, never shown to players):** The answer to a boss that crits (Lucky Strike): a Guard that keeps a crit to a plain hit for itself and its neighbours (2026-10-31: at half it was tied with no Knack on every card but Lucky Strike, and barely ahead there). Nothing against a boss that never crits.
+
 ## Combat talents
 
 Generated from `packages/lab/src/talents.ts`. One shared library; each line links to its own pool (branch forms share it). A talent that does nothing for a form's role is idle on it (in brackets). One name per effect; a talent never repeats a Knack's effect.
@@ -365,14 +387,14 @@ Generated from `packages/lab/src/talents.ts`. One shared library; each line link
 | Line | Pool |
 | --- | --- |
 | splashet | First Pounce, Momentum, Edge-walker, Quick Draw, Hardy, Finisher, Owner's Mark |
-| cindle | Steady Rhythm, Sharp Claws, Rally Cry, Owner's Mark, First Pounce, Front-liner, Shoulder to Shoulder |
-| sproutle | Rally Cry, Shoulder to Shoulder, Brace, Triage, Hardy, Kindred Boost, Flank Guard |
-| zipmouse | Momentum, First Pounce, Edge-walker, Flank Guard, Odd One Out, Deep Ink, Shoulder to Shoulder |
+| cindle | Steady Rhythm, Sharp Claws, Rally Cry, Owner's Mark, First Pounce, Crit Chance, Crit Damage |
+| sproutle | Hold the Line, Shoulder to Shoulder, Brace, Triage, Hardy, Kindred Boost, Flank Guard |
+| zipmouse | Momentum, First Pounce, Perfect Timing, Flank Guard, Odd One Out, Deep Ink, Shoulder to Shoulder |
 | mistnewt | Flank Guard, Unbothered, Overheal Spill, Bright Boost, Catch Breath, Shoulder Charge, Rally Cry |
-| ashmole | Kindred Boost, Bright Boost, Shoulder Charge, Rally Cry, Brace, Hardy, Odd One Out |
-| stormray | Slow Burn, Quick Draw, Edge-walker, Bright Boost, Momentum, Unbothered, Catch Breath |
+| ashmole | Kindred Boost, Bright Boost, Shoulder Charge, Hold the Line, Brace, Hardy, Odd One Out |
+| stormray | Slow Burn, Quick Draw, Edge-walker, Bright Boost, Perfect Timing, Crit Chance, Catch Breath |
 | mossback | Owner's Mark, Opportunist, Finisher, Stubborn, Hardy, Brace, Rally Cry |
-| coralynx | Sharp Claws, Odd One Out, Edge-walker, Finisher, Quick Draw, First Pounce, Momentum |
+| coralynx | Sharp Claws, Odd One Out, Crit Damage, Finisher, Quick Draw, First Pounce, Crit Chance |
 | solmane | Front-liner, Deep Ink, Owner's Mark, Shoulder to Shoulder, Rally Cry, Sharp Claws, Catch Breath |
 | gaiadrake | Opportunist, Stubborn, Hardy, Catch Breath, Front-liner, Rally Cry, Finisher |
 | aurorix | Bright Boost, Unbothered, Hardy, Edge-walker, Odd One Out, (Momentum), Rally Cry |
@@ -392,7 +414,11 @@ Generated from `packages/lab/src/talents.ts`. One shared library; each line link
 | Slow Burn | +2.5% on its hits per round from round 2, up to +15%. | setter, payoff | Strong in long raid stages, weak in short fights: a reason to own two of a species. |
 | Finisher | +55% on its hits while the boss is below a third of its HP. | setter, payoff | With the boss HP shared across a raid weekend (R14), the last stage rewards it most. |
 | First Pounce | Its first hit that lands each fight deals +170%. | setter, payoff | Short fights, the dungeon and each raid stage. A hit made while silenced does not use it up. |
-| Steady Rhythm | Every third hit it makes is a crit, and its crits deal 10% more. | setter, payoff | Crits you can plan for (P-04): a rhythm instead of a chance. |
+| Steady Rhythm | Every third hit that lands is a crit, +0.1x on crits. | setter, payoff | Crits you can plan for (P-04): a rhythm instead of a chance. |
+| Crit Chance | +12 crit chance points. | setter, payoff | The same effect as the gear line Crit chance, under its name. A crit doubles a hit, so it is worth about 12% x 100% = +12% damage on average, in swings; it stacks with Wild Swing, a crit species and items, and pairs with Crit Damage. A hitter that Stone Skin caps or Thick Hide Blocks gains less. |
+| Crit Damage | Its {Crit}s are 3x. | payoff | The same effect as the gear line Crit damage, under its name. Small alone (it needs crits to boost) and big with Crit Chance or a crit species: the crit build is the pair. Stacks without a cap in the lab; the measures say whether it needs one. |
+| Perfect Timing | After it dodges, it stores a {Sure Crit} (up to 3): its next hit that lands is a 3x crit. | setter, payoff | Crits from evasion: a fast creature, a Zigzag or Zoom Setter, a dodge aura beside it. A dodge is rare, so the reward is big (a sure crit, +100% more than the double). Not the Guard-takes-it clause of Momentum: that happens every round, and a sure crit every round is a runaway (first measure, 2026-10-30). Silence stops it storing (R12.2); what it stored stays. |
+| Hold the Line | When hits it {Intercept}s add up to 25% of its max HP, it stores a {Sure Crit} (3x, up to 3). | guard | Crits from guarding: a Guard that takes enough damage for others hits back harder. Its own hit is small, so this is a little extra for a Guard that stands in a busy spot, not a reason to pick the Guard. It was a Sure Crit for every interception, which fired every round and was the best Guard talent on most cards (first measure, 2026-10-30). |
 | Opportunist | Its {Reaction} bonus +120% when it cashes a {Mark} at x2 or more. | payoff | Rewards waiting for a bigger mark (x2 or x3); pairs with Setters that leave x2, and with a second Setter. Was x3 only (2026-10-28): a mark almost never reached x3 when cashed, so the talent did nothing. |
 | Quick Draw | +32% on a {Reaction} on a mark added since the boss's last turn. | payoff | The opposite timing: cash right after the Setter, before Clean Scales sheds the mark. |
 | Owner's Mark | {Reaction}s on a {Mark} it left have a +15% bonus while it stands. | setter | A Setter that makes its own marks worth more, whoever cashes them, while it stands and is not silenced. |
@@ -402,10 +428,10 @@ Generated from `packages/lab/src/talents.ts`. One shared library; each line link
 | Flank Guard | Its {Reach} covers only its longer side (more slots to the row end; both when it stands in the middle), twice the slots, and its cover is +50%. | guard | A Guard at one end protects the long stretch of the row: a placement puzzle the owner controls, with no Left/Right pair to roll. Twice the slots on one side covers no more creatures than one slot on each side, so the cover bonus is what makes it worth the placement (2026-10-28). |
 | Long Shadow | Cover +20% per slot of distance, and the hits it takes for others are cut by 20% per slot. | guard | Protects the far creatures best; with Flank Guard a Guard at one end covers a long row. |
 | Shoulder Charge | When it {Intercept}s, it strikes back for 45% of its Attack, ignoring armour. | guard | A Guard that adds damage the more it is hit. The strike-back is a counter, not a hit: it can land the killing blow but triggers nothing that keys on its hits. |
-| Brace | It takes 40% less from the boss's moves ({Charged} on its slot included) and 20% less from its plain attack. | setter, payoff, guard, support | Reads off the boss's named moves (the Charged highlights of Great Wave, Crusher, Payoff Slam): a card-shaped talent, strong where the boss has moves. Reworked (2026-10-28): it also cuts the plain attack by half of that, because a talent that did nothing on most weeks gained under a point on every role. |
-| Stubborn | Once per fight, a hit that would knock it out leaves it at two fifths of its max HP. | setter, payoff, guard, support | Survives one Crusher; pairs with healers. Hold On under its one name. Reworked (2026-10-28): it left the creature at 1 HP, which gained about 2% of a team's result, so it now leaves it at two fifths of its max HP. |
-| Catch Breath | Once per fight, when a hit drops it below half its max HP, it heals 40% of max HP. | setter, payoff, guard, support | Survives one big hit (Crusher, Payoff Hunter). Not the gear line Second Wind, which is a chance each round to heal. |
-| Unbothered | It cannot be {Silenced}, and has +6% Attack and +14% Max HP. | setter, payoff, guard, support | The silence answer on the creature itself, for row ends and front rows. Reworked (2026-10-28): the immunity alone did nothing on the gauntlet, where a creature can always stand in the middle (a Guard gained nothing), so it carries a little Attack and HP as well, less than Sharp Claws or Hardy. |
+| Brace | It takes 40% less from a {Wind-up} hit aimed at its slot. | setter, payoff, guard, support | Answers a telegraphed hit (Great Wave, Judgement Bolt, the Wind-up signatures): it is shown at round start, so the owner knows who will be aimed at. Nothing against other moves or the plain attack. Back to this design (2026-10-28 panel 4): the version that also cut other moves and the plain attack decided a boss by itself. |
+| Stubborn | Once per fight (in a raid, once per weekend), a hit that would knock it out leaves it at two fifths of its max HP, or at the HP it had if that was lower. | setter, payoff, guard, support | Survives one Crusher; pairs with healers. Hold On under its one name. Reworked (2026-10-28): it left the creature at 1 HP, which gained about 2% of a team's result, so it now leaves it at two fifths of its max HP. |
+| Catch Breath | Once per fight (in a raid, once per weekend), when a hit drops it below half its max HP, it heals 40% of max HP. | setter, payoff, guard, support | Survives one big hit (Crusher, Payoff Hunter). Not the gear line Second Wind, which is a chance each round to heal. |
+| Unbothered | It cannot be {Silenced}, and has +3% Attack and +6% Max HP. | setter, payoff, guard, support | The silence answer on the creature itself, for row ends and front rows. Reworked (2026-10-28): the immunity alone did nothing on the gauntlet, where a creature can always stand in the middle (a Guard gained nothing), so it carries a little Attack and HP as well, less than Sharp Claws or Hardy. Shrunk (2026-10-28 panel 4, from +6% and +14%): it won a boss by its stats; it should win by its ward. |
 | Cull | A hit that leaves the boss below 5% of its full HP defeats it. The HP removed counts as the killing blow, not as damage. | setter, payoff | Weak alone; it decides who lands the killing blow, which other effects can key on. In no line pool until a killing-blow talent exists. |
 | Heavy Hand | Its {Mired} has an 80% chance to add 1 extra stack. | guard, support | Mire only; the shipped line is a chance of an extra stack, and luck is welcome. More stacks per application keeps the debuff up. |
 | Clinging | While it stands, {Mired} fades only every third round, and each stack counts for half as much again. | guard, support | Mire only: the v2 form of the shipped "lasts more turns"; one creature can hold a debuff for the team. Reworked (2026-10-28): slower fading alone gained under a point, so its stacks also count for half as much again (4.5% instead of 3%); it still fades, every third round, so one creature cannot hold the debuff for the whole fight (Misa). |

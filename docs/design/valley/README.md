@@ -10,7 +10,7 @@ Opening the game is walking into your valley and seeing your creatures at work. 
 
 ## Which document wins (authority, highest first)
 
-1. **Misa's decisions**: `docs/design/decisions.md` (entries tagged "Valley") and the **accepted** goals in [`goals.md`](goals.md).
+1. **Misa's decisions**: the `valley` topic of `docs/design/decisions/` (`pnpm decisions list --topic valley`) and the **accepted** goals in [`goals.md`](goals.md).
 2. **The system docs** in [`systems/`](systems/): one per system, each with a status (idea, proposed, accepted, built).
 3. **The economy lab** (to be built, [`economy/model.md`](economy/model.md)): its data and tests. Where a system doc and the lab disagree, fix one of them in the same change.
 4. **Generated reports** in [`economy/`](economy/) (never edit by hand once the lab exists).

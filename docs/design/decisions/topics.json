@@ -1,0 +1,67 @@
+[
+  {
+    "id": "direction",
+    "title": "Direction and process",
+    "scope": "Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work."
+  },
+  {
+    "id": "platform",
+    "title": "Platform, data and tooling",
+    "scope": "Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, security, database reads, data cleanup, analytics, dev tools, the workbench, player feedback, sockets."
+  },
+  {
+    "id": "economy",
+    "title": "Economy and rewards",
+    "scope": "Leet points, Bait, the ledger and spending, economy targets, rewards that cut across features."
+  },
+  {
+    "id": "creatures",
+    "title": "Creatures and progression",
+    "scope": "Catching, pity, species, evolutions, levels and XP, training, talents and the Talent Book, fusion, ribbons, creature lore."
+  },
+  {
+    "id": "combat",
+    "title": "Combat engine and balance",
+    "scope": "The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab."
+  },
+  {
+    "id": "raids",
+    "title": "Weekly raid and live finale",
+    "scope": "Raid schedule, parties and joining, bosses and the raid curve, the live finale, raid board and summaries, raid Discord posts."
+  },
+  {
+    "id": "dungeon",
+    "title": "Daily dungeon",
+    "scope": "The daily dungeon: paths, rooms and rare rooms, the camp, the Undercroft, foes, its screens and payouts."
+  },
+  {
+    "id": "expeditions",
+    "title": "Expeditions and weather",
+    "scope": "Trips, supplies, the world map, the send flow, rank gifts, Boons and Omens weather."
+  },
+  {
+    "id": "gear",
+    "title": "Gear, crafting and the Workshop",
+    "scope": "Gear items, lines and sets, crafting, dismantling, conversions, the bag and the item picker."
+  },
+  {
+    "id": "games",
+    "title": "Valley Games",
+    "scope": "The Valley Games events, entries, awards and the Prize Stall."
+  },
+  {
+    "id": "social",
+    "title": "Living room, lounge and Discord",
+    "scope": "The living room and lounging, the lounge message, Discord DMs and other social features."
+  },
+  {
+    "id": "ui",
+    "title": "UI patterns and the app shell",
+    "scope": "Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens."
+  },
+  {
+    "id": "valley",
+    "title": "The valley rework",
+    "scope": "The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds."
+  }
+]

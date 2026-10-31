@@ -31,7 +31,12 @@ export default defineConfig(
   },
   {
     // Node scripts run by CI or agents with plain `node` (no dependencies).
-    files: ['apps/worker/scripts/**/*.mjs', '.claude/skills/**/*.mjs', '.claude/hooks/**/*.mjs'],
+    files: [
+      'apps/worker/scripts/**/*.mjs',
+      'scripts/**/*.mjs',
+      '.claude/skills/**/*.mjs',
+      '.claude/hooks/**/*.mjs',
+    ],
     languageOptions: {
       globals: {
         process: 'readonly',

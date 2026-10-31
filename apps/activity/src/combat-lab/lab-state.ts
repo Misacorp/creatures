@@ -62,7 +62,7 @@ export interface Setup {
 }
 
 /** The rule cards a player can switch on: not the "no card" baseline, and not Adapts (raid weekends only). */
-export const CARD_CHOICES = CARDS.filter((c) => c.id !== 'plain' && c.id !== 'adapts');
+export const CARD_CHOICES = CARDS.filter((c) => c.id !== 'plain' && !c.raidOnly);
 
 /** Every form the lab can place, in the lab's own order. */
 export const FORM_IDS: readonly string[] = Object.keys(FORM_KNACKS);

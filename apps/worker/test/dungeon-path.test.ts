@@ -2209,6 +2209,36 @@ describe('closing a late run and pruning', () => {
 // --- Replays of a run that is open ---
 
 describe('GET /api/dungeon/run/:id for a map run', () => {
+  it('carries the base ids of what each creature wore, frozen at the start, in the top row and each room’s row', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, FOUR);
+        const [a, b, c] = p.creatureIds as [string, string, string, string];
+        const hat = giveItem(ctx.sql, p.id, 'trail-cap', { now: ctx.clock.t });
+        const equip = await p.call('POST', `/api/gear/${hat}/equip`, { creatureId: a });
+        expect(equip.status).toBe(200);
+        const state = await begin(p, { team: [a, b, c] });
+        const route = routeThrough(mapOf(state), (n) => n.kind === 'fight') as string[];
+        const open = await walk(p, state, route, (s) => s.roomsCleared >= 1);
+        expect(open.roomsCleared).toBeGreaterThanOrEqual(1);
+        // Taking the hat off afterwards does not change what the replay shows.
+        expect((await p.call('POST', `/api/gear/${hat}/equip`, { creatureId: null })).status).toBe(
+          200,
+        );
+        const replay = await p.replay(state.id);
+        expect(replay.status).toBe(200);
+        expect(replay.body.row.map((r) => r.worn)).toEqual([['trail-cap'], undefined, undefined]);
+        expect(replay.body.rooms[0]?.row?.map((r) => r.worn)).toEqual([
+          ['trail-cap'],
+          undefined,
+          undefined,
+        ]);
+      },
+      opts(),
+    );
+  });
+
   it('replays the fights played so far while the run is open, with each room’s row, and keeps the starting row on top', async () => {
     await runCore(
       nextGuild(),

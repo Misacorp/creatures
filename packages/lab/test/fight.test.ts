@@ -53,7 +53,7 @@ describe('combat v2 lab rules', () => {
       plain: { pattern: { anchor: 'front', shape: 'single' }, powerBp: 10_000 },
     };
     const r = fight(boss, [at('zipmouse', 0, 0, 'zoom'), at('thornbuck', 0, 1)], {
-      rng: rng('r1'),
+      rng: rng('r1b'),
       log: true,
     });
     const dodges = r.events.filter((e) => e.kind === 'dodge');

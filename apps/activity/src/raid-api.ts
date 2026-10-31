@@ -234,6 +234,8 @@ export interface ReplayRowEntry {
    * absent from a server older than the bar).
    */
   hp?: { start: number; max: number } | null;
+  /** The base ids of the items it wears, to draw it in its gear; absent when none (or an older server). */
+  worn?: string[];
 }
 
 /**
@@ -584,6 +586,20 @@ export const isOptBoard = (value: unknown): boolean =>
 export const isEvent = (value: unknown): value is FightEvent =>
   isRecord(value) && isStr(value['t']) && EVENT_TYPES.has(value['t']) && isInt(value['round']);
 
+/** At most this many worn items on a creature (a hat, a scarf and a charm, with room to spare). */
+const MAX_WORN = 6;
+const MAX_WORN_ID = 64;
+
+/** The worn base ids of a row entry: absent, or a short list of short strings. */
+export function isWornIds(value: unknown): boolean {
+  return (
+    value === undefined ||
+    (Array.isArray(value) &&
+      value.length <= MAX_WORN &&
+      value.every((id) => isStr(id) && id.length > 0 && id.length <= MAX_WORN_ID))
+  );
+}
+
 export function isReplayRow(value: unknown): value is ReplayRowEntry {
   return (
     isRecord(value) &&
@@ -597,7 +613,8 @@ export function isReplayRow(value: unknown): value is ReplayRowEntry {
     isNullableStr(value['owner']) &&
     (value['hp'] === undefined ||
       value['hp'] === null ||
-      (isRecord(value['hp']) && isCount(value['hp']['start']) && isCount(value['hp']['max'])))
+      (isRecord(value['hp']) && isCount(value['hp']['start']) && isCount(value['hp']['max']))) &&
+    isWornIds(value['worn'])
   );
 }
 

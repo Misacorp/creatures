@@ -34,7 +34,7 @@ For economy and systems docs, add a sixth, **Pia, the systems designer**: has sh
 ## Keeping track
 
 - `log.md`: one dated entry per session (newest last).
-- `questions.md`: the question ledger: waiting on Misa, queued, answered (with his words), withdrawn. The answer also goes to `decisions.md`.
+- `questions.md`: the question ledger: waiting on Misa, queued, answered (with his words), withdrawn. The answer also goes to the `valley` topic of `docs/design/decisions/`.
 - `systems/*.md`: each with a status line at the top.
 - `reviews/`: one file per panel run.
 - The roadmap's "State" column and "Order inside phase 1".

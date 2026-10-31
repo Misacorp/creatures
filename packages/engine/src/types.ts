@@ -77,6 +77,12 @@ export interface FightSlot {
    * the fight; see `SlotMods`). Absent: no modifiers, so a stored fight replays exactly as it was.
    */
   mods?: SlotMods;
+  /**
+   * The base ids of the items the creature wears, for drawing it in its gear. Display only: the
+   * engine never reads it (the effect of the gear is already in `stats` and `mods`). Absent: nothing
+   * worn, or a fight stored before it was kept.
+   */
+  worn?: string[];
 }
 
 /**

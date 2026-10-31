@@ -98,8 +98,15 @@ export const GEAR_CLASS: Readonly<Record<string, GearClass>> = {
   attack: c('damage', ANY, 'stat'),
   hp: c('protection', ANY, 'stat'),
   'thick-coat': c('protection', ANY, 'stat'),
-  'crit-chance': c('damage', HIT, 'stat'),
-  'crit-damage': c('damage', HIT, 'stat'),
+  // Luck is a build (Misa, 2026-10-30): a crit doubles a hit (R7.1), and these add to it. The lab's words for the shipped lines.
+  'crit-chance': {
+    ...c('damage', HIT, 'stat'),
+    text: 'More chance to crit, in points. A crit doubles the hit; the species, Knack and talents add to it, with no cap in the lab.',
+  },
+  'crit-damage': {
+    ...c('damage', HIT, 'stat'),
+    text: 'Crits hit harder: the multiplier adds on top of the 2x (+1x makes a 3x crit). Crit chance, Knacks and talents add to it, with no cap in the lab.',
+  },
   'all-damage-taken': c('protection', ANY, 'stat'),
   'area-ward': c('protection', ANY, 'stat'),
   'aimed-ward': c('protection', ANY, 'stat'),
@@ -214,6 +221,9 @@ export const TALENT_IS_GEAR: Readonly<Record<string, string>> = {
   'light-feet': 'light-footed',
   'keen-eye': 'crit-chance',
   'mighty-blow': 'crit-damage',
+  // The talents Crit Chance and Crit Damage are the shipped lines of the same names (luck is a build, 2026-10-30).
+  'crit-chance': 'crit-chance',
+  'crit-damage': 'crit-damage',
   'first-pounce': 'first-pounce',
   unbothered: 'unbothered',
   'tough-hide': 'armor',
@@ -241,6 +251,8 @@ const LAB_CLASS: Readonly<Record<string, Class>> = {
   'big-finish': ['marks', PAYOFF, 'trigger'],
   hungry: ['marks', PAYOFF, 'stat'],
   cornered: ['damage', HIT, 'condition'],
+  'perfect-timing': ['damage', HIT, 'trigger'],
+  'hold-the-line': ['damage', GUARD, 'trigger'],
 };
 
 interface Idea {
@@ -300,12 +312,12 @@ export const IDEAS: readonly Idea[] = [
   },
   {
     name: 'Steady Rhythm',
-    text: 'Every third hit it makes is a crit, and its crits deal 20% more.',
+    text: 'Every third hit that lands is a crit, +0.1x on crits.',
     class: ['damage', HIT, 'rhythm'],
   },
   {
     name: 'Brace for impact',
-    text: "Takes 50% less from the boss's moves (a Charged landing announced on its slot included), not its plain attack.",
+    text: "Takes 50% less from the boss's moves (a Wind-up landing announced on its slot included), not its plain attack.",
     class: ['protection', ANY, 'rule'],
     isGear: 'brace',
   },

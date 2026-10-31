@@ -590,3 +590,11 @@
   position: static;
   margin: 0 0 0.75rem;
 }
+
+/* The worn-gear gallery of CreatureHead: every species in one outfit, in a wrapping row. */
+.worn-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}

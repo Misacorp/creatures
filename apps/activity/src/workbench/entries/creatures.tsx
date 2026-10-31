@@ -1,5 +1,10 @@
 import { useMemo, useState } from 'preact/hooks';
-import { content, gearBase } from '@creatures/game';
+import { content, gearBase, gearContent } from '@creatures/game';
+import { CreatureHead } from '../../CreatureHead';
+import { SAMPLE_STATE, sampleCreature } from '../../creature-card-sample';
+import { shinyPalette } from '../../art';
+import type { WornGear } from '../../gear-types';
+import { wornSprite } from '../../worn-gear';
 import stateFixture from '../../fixtures/collection-state.json';
 import { parseGameState, type Creature } from '../../api';
 import { CreatureProgress } from '../../CreatureProgress';
@@ -677,7 +682,118 @@ const treatBox: Entry = {
   render: (p) => <TreatDemo p={p} />,
 };
 
+const HAT_IDS: readonly string[] = [
+  NONE,
+  ...gearContent.bases.filter((b) => b.slot === 'hat').map((b) => b.id),
+];
+const SCARF_IDS: readonly string[] = [
+  NONE,
+  ...gearContent.bases.filter((b) => b.slot === 'scarf').map((b) => b.id),
+];
+const CHARM_IDS: readonly string[] = [
+  NONE,
+  ...gearContent.bases.filter((b) => b.slot === 'charm').map((b) => b.id),
+];
+
+/** The worn items the controls ask for, one per slot (the rarity and item level do not change the look). */
+function wornFromProps(p: Props): WornGear[] {
+  const pick = (slot: WornGear['slot']): WornGear[] => {
+    const baseId = str(p, slot);
+    return baseId === NONE
+      ? []
+      : [{ id: `wb-${slot}`, baseId, slot, rarity: 'rare', itemLevel: 10 }];
+  };
+  return [...pick('hat'), ...pick('scarf'), ...pick('charm')];
+}
+
+function WornDemo({ p }: { p: Props }) {
+  const gear = wornFromProps(p);
+  const shiny = bool(p, 'shiny');
+  if (bool(p, 'gallery')) {
+    return (
+      <p class="worn-gallery">
+        {SPECIES_IDS.map((id) => {
+          const colours = shiny ? shinyPalette(id) : undefined;
+          return (
+            <Sprite
+              key={id}
+              sprite={wornSprite(id, gear) ?? creatureSpriteOrFallback(id)}
+              scale={num(p, 'scale')}
+              alt={id}
+              {...(colours === undefined ? {} : { palette: colours })}
+            />
+          );
+        })}
+      </p>
+    );
+  }
+  const creature: Creature = {
+    ...sampleCreature('growing'),
+    species: str(p, 'species'),
+    shiny,
+    gear,
+  };
+  return (
+    <CreatureHead
+      creature={creature}
+      state={{ ...SAMPLE_STATE, loungerId: null, loungeXp: {} }}
+      nameId="wb-worn-name"
+    />
+  );
+}
+
+const WORN_BARE = { hat: NONE, scarf: NONE, charm: NONE } as const;
+const WORN_NEUTRAL = { hat: 'trail-cap', scarf: 'woolen-wrap', charm: 'trail-charm' } as const;
+const WORN_SET = {
+  hat: 'watchmans-cap',
+  scarf: 'watchmans-cloak',
+  charm: 'watchmans-whistle',
+} as const;
+const WORN_ELEMENT = {
+  hat: 'emberkeepers-crown',
+  scarf: 'stormcallers-mantle',
+  charm: 'mossy-charm',
+} as const;
+
+const creatureHead: Entry = {
+  name: 'CreatureHead',
+  file: 'apps/activity/src/CreatureHead.tsx',
+  group: 'Creatures & game pieces',
+  description:
+    "The top of a creature (the portrait, the name and the tags), with the gear it wears drawn on its sprite: a hat on the head top, a scarf or mantle under the mouth and a charm on the belly, each in the item's own tint (set pieces have gold trim). The face is never covered. The gallery switch shows every species in the same outfit.",
+  controls: {
+    species: { kind: 'select', options: SPECIES_IDS },
+    hat: { kind: 'select', options: HAT_IDS },
+    scarf: { kind: 'select', options: SCARF_IDS },
+    charm: { kind: 'select', options: CHARM_IDS },
+    shiny: { kind: 'toggle' },
+    gallery: { kind: 'toggle' },
+    scale: { kind: 'number', min: 2, max: 6 },
+  },
+  defaults: { species: 'cindle', ...WORN_NEUTRAL, shiny: false, gallery: false, scale: 4 },
+  presets: [
+    { name: 'All three slots, neutral pieces', props: {} },
+    { name: 'A set (Watchman): gold trim', props: { ...WORN_SET } },
+    { name: 'Element pieces: ember hat, spark mantle, grove charm', props: { ...WORN_ELEMENT } },
+    { name: 'Nothing worn', props: { ...WORN_BARE } },
+    {
+      name: 'Tall ears: Zipmouse, hat between the ears',
+      props: { species: 'zipmouse', hat: 'wanderers-hat' },
+    },
+    { name: 'Antlers: Thornbuck', props: { species: 'thornbuck', ...WORN_SET } },
+    { name: 'Shiny', props: { species: 'splashet', shiny: true, ...WORN_ELEMENT } },
+    { name: 'Gallery: every species, neutral pieces', props: { gallery: true } },
+    { name: 'Gallery: every species, a set', props: { gallery: true, ...WORN_SET } },
+    {
+      name: 'Gallery: pointed hat, mantle and bell',
+      props: { gallery: true, hat: 'pouncers-cap', scarf: 'bark-shawl', charm: 'hearth-bell' },
+    },
+  ],
+  render: (p) => <WornDemo p={p} />,
+};
+
 export const creatureEntries: readonly Entry[] = [
+  creatureHead,
   livingRoom,
   bossCard,
   raidTimeline,

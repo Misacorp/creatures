@@ -40,7 +40,14 @@ in the worker.
    most. Balance itself is checked by the `sim` workflow (`pnpm sim:quick` on PRs that touch rules, engine,
    content or sim; `pnpm sim` on demand), whose target misses are reported, not failed. Budget: under 15 s per
    test, under 2 min for the package.
-6. **Economy lab** (`packages/econ`, the valley's proposed rules). Tests run the model on one or two seeds with
+6. **Combat lab** (`packages/lab`). Its tests play out many seeded weekends and dungeon runs, so they are the
+   slowest in the repo. Budget: the package finishes in about 10 s wall on 4 cores, and no single test file takes
+   over about 6 s. Vitest runs files in parallel but the tests inside one file in turn, so a file over budget is
+   split by topic (shared helpers in `test/helpers/`, not a `.test.ts` file), never given a longer timeout. To find
+   the slow ones: `cd packages/lab && npx vitest run --reporter=json --outputFile=/tmp/v.json`, then read each
+   file's `endTime - startTime` and each test's `duration`. The boss tests were split from one 22 s file into
+   `boss*.test.ts` and `dungeon.test.ts` for this (2026-10-29).
+7. **Economy lab** (`packages/econ`, the valley's proposed rules). Tests run the model on one or two seeds with
    short horizons and check invariants (no negative balances, conservation, determinism), the tuner on a tiny fake
    model, and the targets and dials as data. Speed budget: the full report (`pnpm --filter @creatures/econ report`,
    15+ servers over 20 seeds, one worker thread per core) under 30 s, the package's tests under 15 s. The report

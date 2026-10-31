@@ -14,6 +14,7 @@ import { ElementChip } from '../sprites/ElementChip';
 import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import { elementIcon } from '../sprites/element-icons';
+import { wornSprite } from '../worn-gear';
 import { popupProps } from '../ui/Popover';
 import { SegmentBar } from '../ui/SegmentBar';
 import { TinyHp } from '../ui/TinyHp';
@@ -78,6 +79,16 @@ export function FoeFace({ info, children }: { info: FoeInfo; children: Component
     >
       {children}
     </button>
+  );
+}
+
+/** The sprite of a creature on the stage: its species wearing what it wears, kept when it is knocked out. */
+export function unitSprite(c: Pick<ReplayRowEntry, 'species' | 'worn'>) {
+  return (
+    wornSprite(
+      c.species,
+      (c.worn ?? []).map((baseId) => ({ baseId })),
+    ) ?? creatureSpriteOrFallback(c.species)
   );
 }
 
@@ -146,7 +157,11 @@ export function StageUnit(props: UnitProps) {
     <>
       <span class="unit-top">{mine && <span class="you-pip pix">you</span>}</span>
       <span class="unit-art">
-        <Sprite sprite={creatureSpriteOrFallback(c.species)} scale={props.scale} />
+        <Sprite
+          sprite={unitSprite(c)}
+          scale={props.scale}
+          {...(props.scale >= 3 && !ko ? { life: { seed: c.id } } : {})}
+        />
         {icon !== undefined && (
           <span class="unit-element">
             <Sprite sprite={icon} scale={2} />

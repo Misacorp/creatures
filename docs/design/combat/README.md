@@ -1,6 +1,6 @@
 # Combat v2: the rework
 
-Status: **proposal under iteration** (v0.7, 2026-10-28; third panel done: the talent library). Nothing here is shipped. The shipped rules are still `docs/design/combat-rules.md` and `packages/engine`.
+Status: **proposal under iteration** (v0.8, 2026-10-29; fourth panel done: raid bosses, dungeon foes and Build-up). Where we are and what is next: [`roadmap.md`](roadmap.md), "Where we are". Nothing here is shipped. The shipped rules are still `docs/design/combat-rules.md` and `packages/engine`.
 
 ## North Star
 
@@ -8,7 +8,7 @@ A fight you can read from the board before it plays. Each creature's species giv
 
 ## Which document wins (authority, highest first)
 
-1. **Misa's decisions** in `docs/design/decisions.md` (entries tagged combat v2) and the **accepted** entries in [`principles.md`](principles.md).
+1. **Misa's decisions** in `docs/design/decisions/combat.md` (the entries titled "Combat v2") and the **accepted** entries in [`principles.md`](principles.md).
 2. **The proposal** [`proposals/001-combat-v2.md`](proposals/001-combat-v2.md): the draft rules, numbered, step by step.
 3. **The lab's data and tests** (`packages/lab`): Knacks (`src/knacks.ts`), keywords (`src/keywords.ts`), rule cards (`src/cards.ts`), starting numbers (`src/rules.ts`). Where the proposal and the lab disagree, fix one of them in the same change; a test should catch it next time.
 4. **Generated pages**: [`knacks.md`](knacks.md), [`keywords.md`](keywords.md) and [`lab-report.md`](lab-report.md) are written by `pnpm --filter @creatures/lab report`. Never edit them by hand.

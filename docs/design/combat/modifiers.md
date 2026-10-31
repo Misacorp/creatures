@@ -116,6 +116,24 @@ Notes:
 - **Where talents beat Knacks**: a Knack decides the job (what the creature does); a talent decides the style (where it wants to stand, when it peaks, what it punishes). They may combine (Flank Guard with the Wide Reach Knack covers four slots on one side), and that is the point.
 - The current lab talents (Light Feet, Keen Eye, Big Finish, Hungry, Nimble, Mighty Blow, Hunker Down, Gentle Touch, Big Heart, Broad Back, Tough Hide, Hold On, Second Wind, Cornered) would mostly fold into this list or into the plain stat group; Hold On becomes Stubborn and Second Wind keeps its name (one name per effect).
 
+## Luck is a build (Misa, 2026-10-30)
+
+Crits are something a creature is built for. The rules are R7.1; the names, one per effect across talents, Knacks and gear:
+
+| Name                   | Where                                     | What it does                                                                                                         |
+| ---------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Crit chance            | gear line, talent **Crit Chance**         | +12% crit chance (talent); the line adds points.                                                                     |
+| Crit damage            | gear line, talent **Crit Damage**         | Crits deal +100% more on top of the double (talent, Payoffs); the line adds points.                                  |
+| Crit machines          | species stat (Cindle, Pyrelynx, Coralynx) | +10 points of chance and +50 points of damage, Attack x0.86 (about the same average hit, far more swing).            |
+| Wild Swing             | Knack (family Luck)                       | Its hit deals 25% less, +20% crit chance, crits +50% more.                                                           |
+| Perfect Timing         | talent (hitters)                          | A dodge stores a Sure Crit; the next hit that lands (and is not already a crit) is a 3x crit.                        |
+| Hold the Line          | talent (Guards)                           | Hits it takes for others worth 25% of its Max HP store a Sure Crit (3x).                                             |
+| Cool Head              | Knack (family Luck, Guards)               | Boss crits on it and on the creatures beside it deal half the extra damage.                                          |
+| Lucky Strike, Slippery | rule cards                                | A crit chance for the boss (a crit doubles its hit, before cuts and armour); a flat dodge that Mired does not lower. |
+| Breakwater             | rule card                                 | A Row Ward or beside-cut aura cuts 2.4 to 3 times as much of its area and Wind-up hits (at most 75% of a hit).       |
+
+Perfect Timing first also stored a charge when a Guard took a hit aimed at the creature (like Momentum); that fires every round and was a runaway (+19% on payoffs, best on most cards), so it is dodge only. Hold the Line first stored one per interception, the same mistake. Crit Chance and Crit Damage are placed in the pools of the crit lines (Cindle, Coralynx, Stormray for chance; Cindle and Coralynx for damage), Perfect Timing in Stormray's and Zipmouse's, Hold the Line in Sproutle's and Ashmole's.
+
 ## Caps on protection
 
 Misa asked (2026-10-28) whether protection needs a cap. An **intercepted** hit needs none: the Guard still takes it, so stacking Long Shadow only moves damage onto the Guard. **Cover** is different: it cuts an area hit on the covered creature and nobody takes the rest, so cover (with Long Shadow, Broad Back and gear) is capped, like area cuts already are (lab: 75%). The lab today caps cover at 100%, which would make a creature immune; fix it with the first batch.
@@ -129,7 +147,7 @@ Misa asked (2026-10-28) whether protection needs a cap. An **intercepted** hit n
 
 ## How this shapes a roster
 
-A creature carries the talents it found (its own Talent Book, R20) and swapping the slotted one costs a little Bait. So a player who wants both an Edge-walker Cindle and a Shoulder to Shoulder Cindle keeps two Cindles: the incentive to own more than the top three that P-11 asks for. In the raid, neighbour and position talents give players a reason to talk about placement and use swap requests (R19).
+Every talent found on a line goes into that line's Talent Book (R20; Misa, 2026-10-28): a creature learns a talent from the book for Bait once, then swaps among the ones it has learned for free until the raid locks. A creature still fills only its own slots, so a player who wants an Edge-walker Cindle and a Shoulder to Shoulder Cindle in the same raid keeps two Cindles: the incentive to own more than the top three that P-11 asks for. In the raid, neighbour and position talents give players a reason to talk about placement and use swap requests (R19).
 
 ## Misa's answers (2026-10-28)
 

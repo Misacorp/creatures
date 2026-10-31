@@ -175,7 +175,7 @@ export interface FormMeasure {
 }
 
 /** Effect fields that are plain stats (always on): no condition to count. */
-const FLAT_FIELDS: ReadonlySet<string> = new Set(['atkBp', 'hpBp']);
+const FLAT_FIELDS: ReadonlySet<string> = new Set(['atkBp', 'hpBp', 'critChanceBp', 'critDamageBp']);
 
 export const isFlat = (tid: string): boolean =>
   Object.keys(TALENTS[tid]?.fx ?? {}).every((k) => FLAT_FIELDS.has(k));
@@ -324,7 +324,7 @@ export function bestOnMostCards(
 /** Three rows of twelve: the raid's board for the raid measurement (one creature of the form among classic ones). */
 export const RAID_ROW: Mode = { id: 'raid', rows: 3, cols: 12, maxCopies: 36 };
 
-/** The cards the raid boss carries: a row sweep (Charged) and a slam on the strongest Payoff, so Guard shapes have something to cover. */
+/** The cards the raid boss carries: a row sweep (Wind-up) and a slam on the strongest Payoff, so Guard shapes have something to cover. */
 const RAID_CARDS: readonly string[] = ['great-wave', 'payoff-hunter'];
 
 /**

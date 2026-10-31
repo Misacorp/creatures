@@ -9,8 +9,20 @@ import { CARDS, labBoss } from './cards';
 import { weekend } from './fight';
 import { KEYWORDS } from './keywords';
 import { FAMILIES, FORM_KNACKS, KNACKS } from './knacks';
-import { buildTalentSection } from './talentReport';
-import { CASUAL_CARDS, casualRosters, searchOptions } from './teams';
+import { withinFormRatio } from './knackUsage';
+import { planBosses, type BossSections } from './bossReport';
+import { ownabilityMarkdown, ownabilityTable } from './ownability';
+import { SLOT_WEEKS } from './track';
+import type { JobResults, JobSpec, Plan } from './jobs';
+import { planTalents, type TalentSection } from './talentReport';
+import type { TeamInputs } from './teamShareReport';
+import {
+  CASUAL_CARDS,
+  CASUAL_ROSTERS_LISTED,
+  TEAM_SHARE_ROSTERS,
+  casualRosters,
+  searchOptions,
+} from './teams';
 import { LINE_POOLS, TALENTS, talentPool } from './talents';
 import { LAB_RULES } from './rules';
 import { ELEMENTS, formStats, triggers } from './species';
@@ -87,9 +99,38 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
   ],
   'reflective-hide': [
     ['Circle Round', 'tidewing/circle-round tempestray/none thornbuck/wide-reach'],
-    ['Clear the Air', 'tidewing/steady-mark tempestray/none halcyray/clear-the-air'],
+    // Beside both: the heal reaches the Payoff whose reaction bounces back (a Support at the end heals one side only).
+    [
+      'Clear the Air in the middle',
+      'tidewing/steady-mark halcyray/clear-the-air tempestray/detonate',
+    ],
   ],
-  elusive: [['Clear Skies', 'tidewing/steady-mark tempestray/none halcyray/clear-skies']],
+  elusive: [
+    [
+      'Clear Skies beside both hitters',
+      'tidewing/steady-mark halcyray/clear-skies tempestray/none',
+    ],
+  ],
+  slippery: [
+    [
+      'Clear Skies beside both hitters',
+      'tidewing/steady-mark halcyray/clear-skies tempestray/none',
+    ],
+    [
+      'All at Once (marks are never dodged)',
+      'tidewing/steady-mark tempestray/all-at-once thornbuck/wide-reach',
+    ],
+  ],
+  breakwater: [
+    [
+      'Keep the Heat In on a Kilnmole in the row',
+      'tidewing/steady-mark kilnmole/keep-the-heat-in tempestray/none',
+    ],
+  ],
+  'lucky-strike': [
+    ['Cool Head in the middle', 'tidewing/steady-mark thornbuck/cool-head tempestray/none'],
+    ['Hide in Mist', 'tidewing/steady-mark fogwyrm/hide-in-mist tempestray/none'],
+  ],
   'bramble-bind': [
     ['Setter in the middle', 'thornbuck/wide-reach tidewing/steady-mark tempestray/none'],
     ['Lantern Glow in the middle', 'tidewing/steady-mark lanternfin/lantern-glow tempestray/none'],
@@ -101,11 +142,15 @@ export const ANSWERS: Readonly<Record<string, readonly (readonly [string, string
   grudge: [['Draw Fire', 'tidewing/steady-mark tempestray/none kilnmole/draw-fire']],
   'great-wave': [
     ['Night Watch', 'tidewing/steady-mark tempestray/none thornbuck/night-watch'],
-    ['Keep the Heat In', 'tidewing/steady-mark tempestray/none kilnmole/keep-the-heat-in'],
+    [
+      'Keep the Heat In in the middle',
+      'tidewing/steady-mark hearthshell/keep-the-heat-in tempestray/none',
+    ],
     ['Living Shelter', 'pyrelynx/none ancientshell/living-shelter thornbuck/wide-reach'],
   ],
   swarm: [
-    ['Zoom', 'voltaro/zoom tempestray/none thornbuck/wide-reach'],
+    // A Spark Setter's mark is cashed by a Grove Payoff (Tempestray is Spark: it would cash nothing).
+    ['Zoom', 'voltaro/zoom bloomback/none thornbuck/wide-reach'],
     ['Hide in Mist', 'tidewing/steady-mark fogwyrm/hide-in-mist tempestray/none'],
   ],
   crusher: [
@@ -136,18 +181,289 @@ function usefulKnacks(l: readonly Pick[]): Set<string> {
   return out;
 }
 
-export function buildReport(opts: { quick?: boolean } = {}): Report {
-  const seeds = opts.quick ? 4 : 24;
-  const { gauntlet: sopts, raid: ropts } = searchOptions(opts.quick ?? false);
-  const bestGauntlet = new Map<string, readonly Pick[]>();
-  const bestRaid = new Map<string, readonly Pick[]>();
-  const casualBest: { cardId: string; line: readonly Pick[] }[] = [];
+/** Job ids of the report's own pieces (the talent section's team share reads the searches). */
+const scenId = (card: string) => `report:scenarios:${card}`;
+const answersId = (card: string) => `report:answers:${card}`;
+const bestId = (mode: string, card: string) => `report:best:${mode}:${card}`;
+const casualId = (roster: number, card: string) => `report:casual:${roster}:${card}`;
+const WEEKEND_ID = 'report:weekend';
+
+/** One card's column of the scenario table: a cell for each scenario, in the order of `SCENARIOS`. */
+export interface ScenarioColumn {
+  readonly cells: string[];
+  readonly row: Record<string, { damage: number; ko: number }>;
+}
+
+/** Every scenario on one card (the first one is the classic line the others are read against). */
+export function reportScenarios(cardId: string, quick: boolean): ScenarioColumn {
+  const seeds = quick ? 4 : 24;
+  const cells: string[] = [];
+  const row: Record<string, { damage: number; ko: number }> = {};
+  let base = 0;
+  for (const [label, spec] of Object.entries(SCENARIOS)) {
+    const s = evaluate(bossFor(GAUNTLET, [cardId]), line(spec), GAUNTLET, seeds, `scen:${cardId}`);
+    const classic = label.startsWith('Classic:');
+    if (classic) base = s.damage;
+    cells.push(
+      classic
+        ? `${r0(s.damage)} (KO ${s.knockouts.toFixed(1)})`
+        : `${pct(s.damage, base)} (KO ${s.knockouts.toFixed(1)})`,
+    );
+    row[label] = { damage: r0(s.damage), ko: s.knockouts };
+  }
+  return { cells, row };
+}
+
+/** One card's intended answers against the classic line: the table rows, and how many of them beat it. */
+export interface AnswerRows {
+  readonly rows: string[];
+  readonly answers: number;
+  readonly working: number;
+}
+
+export function reportAnswers(cardId: string, quick: boolean): AnswerRows {
+  const seeds = quick ? 4 : 24;
+  const card = CARDS.find((c) => c.id === cardId);
+  const rows: string[] = [];
+  let working = 0,
+    answers = 0;
+  for (const [label, spec] of ANSWERS[cardId] ?? []) {
+    const boss = bossFor(GAUNTLET, [cardId]);
+    const a = evaluate(boss, line(spec), GAUNTLET, seeds, `ans:${cardId}`);
+    const cl = evaluate(boss, CLASSIC_LINE, GAUNTLET, seeds, `ans:${cardId}`);
+    answers++;
+    if (a.score > cl.score) working++;
+    rows.push(
+      `| ${card?.name ?? cardId} | ${label} | ${pct(a.score, cl.score)} | ${a.knockouts.toFixed(1)} / ${cl.knockouts.toFixed(1)} |`,
+    );
+  }
+  return { rows, answers, working };
+}
+
+/** One search of the best-teams section: the best line and the scores the table reads. */
+export interface BestResult {
+  readonly bestLine: readonly Pick[];
+  readonly bestScore: number;
+  readonly classicScore: number;
+  /** The top 5 lines (the Knack usage table counts their picks). */
+  readonly top: (readonly Pick[])[];
+  /** The best score of the classic species with their best Knacks (gauntlet only). */
+  readonly classicSpeciesScore: number | undefined;
+}
+
+/** The best line for a card in a mode (undefined when the search finds none, or loses the classic line). */
+export function reportBest(
+  modeId: 'gauntlet' | 'raid',
+  cardId: string,
+  quick: boolean,
+): BestResult | undefined {
+  const { gauntlet: sopts, raid: ropts } = searchOptions(quick);
+  const mode = modeId === 'raid' ? RAID : GAUNTLET;
+  const boss = bossFor(mode, [cardId]);
+  const classic = classicFor(mode);
+  const ranked = search(boss, mode, {
+    seed: `${mode.id}:${cardId}`,
+    ...(mode.id === 'raid' ? ropts : sopts),
+    include: [classic],
+  });
+  const best = ranked[0];
+  const cl = ranked.find((r) => lineKey(r.line) === lineKey(classic));
+  if (!best || !cl) return undefined;
+  const cs =
+    mode.id === 'gauntlet'
+      ? search(boss, mode, {
+          seed: `cs:${cardId}`,
+          ...sopts,
+          pool: poolOf(['tidewing', 'tempestray', 'thornbuck']),
+          starts: 60,
+          include: [classic],
+        })[0]
+      : undefined;
+  return {
+    bestLine: best.line,
+    bestScore: best.score.score,
+    classicScore: cl.score.score,
+    top: ranked.slice(0, 5).map((r) => r.line),
+    classicSpeciesScore: cs?.score.score,
+  };
+}
+
+/** One casual roster on one card: its best gauntlet line, and the scores the table reads. */
+export interface CasualResult {
+  readonly bestLine: readonly Pick[] | undefined;
+  readonly bestScore: number;
+  readonly plainScore: number;
+  readonly top3Score: number;
+}
+
+export function reportCasual(roster: number, cardId: string, quick: boolean): CasualResult {
+  const { gauntlet: sopts } = searchOptions(quick);
+  const rosters = casualRosters(quick);
+  const { pool, top3Line } = rosters[roster] as (typeof rosters)[number];
+  const boss = bossFor(GAUNTLET, [cardId]);
+  const best = search(boss, GAUNTLET, {
+    seed: `casual:${roster}:${cardId}`,
+    ...sopts,
+    pool,
+    include: [top3Line],
+  })[0];
+  const t3 = evaluate(
+    boss,
+    top3Line,
+    GAUNTLET,
+    sopts.freshSeeds,
+    `fresh:casual:${roster}:${cardId}`,
+  );
+  const plainBest = search(boss, GAUNTLET, {
+    seed: `casual-plain:${roster}:${cardId}`,
+    ...sopts,
+    starts: 60,
+    pool: pool.filter((p) => p.knack === 'none'),
+    include: [top3Line],
+  })[0];
+  return {
+    bestLine: best?.line,
+    bestScore: best?.score.score ?? 0,
+    plainScore: plainBest?.score.score ?? 0,
+    top3Score: t3.score,
+  };
+}
+
+/** The rows of the raid weekend table. */
+export function reportWeekend(quick: boolean): string[] {
+  const rows: string[] = [];
+  const party = classicFor(RAID);
+  const bench = [0, 1, 2, 3].map((i) => ({
+    owner: `p${i + 1}`,
+    formId: 'kilnmole',
+    level: LEVEL,
+    knack: 'draw-fire',
+    row: 0,
+    col: 0,
+  }));
+  for (const c of ['plain', 'payoff-hunter', 'crusher', 'wither']) {
+    let wins = 0,
+      reps = 0;
+    const kos: number[][] = [];
+    const n = quick ? 3 : 10;
+    for (let i = 0; i < n; i++) {
+      const boss = labBoss({ rows: 3, cols: 4, cards: [c], hp: 30_000, atk: 120, rounds: 8 });
+      const w = weekend(boss, toPlacements(party, RAID), bench, {
+        rng: createSeededRng(`weekend:${c}:${i}`),
+      });
+      if (w.won) wins++;
+      reps += w.replacements;
+      kos.push(w.stages.map((s) => s.knockouts));
+    }
+    const avg = [0, 1, 2]
+      .map((st) => (kos.reduce((a, k) => a + (k[st] ?? 0), 0) / n).toFixed(1))
+      .join(' / ');
+    rows.push(
+      `| ${c} | four classic trios, a Kilnmole each on the bench | ${wins} / ${n} | ${(reps / n).toFixed(1)} | ${avg} |`,
+    );
+  }
+  return rows;
+}
+
+/** The best and casual teams the searches found, as the team share reads them (by the same loops the report prints). */
+export function teamInputsOf(get: (id: string) => unknown, quick: boolean): TeamInputs {
+  const cards = CARDS.filter((c) => !c.raidOnly);
+  const maps = {
+    gauntlet: new Map<string, readonly Pick[]>(),
+    raid: new Map<string, readonly Pick[]>(),
+  };
+  for (const mode of ['gauntlet', 'raid'] as const)
+    for (const c of cards) {
+      const b = get(bestId(mode, c.id)) as BestResult | undefined;
+      if (b) maps[mode].set(c.id, b.bestLine);
+    }
+  const casual: { cardId: string; line: readonly Pick[] }[] = [];
+  for (const roster of casualRosters(quick).slice(0, TEAM_SHARE_ROSTERS))
+    for (const cid of CASUAL_CARDS) {
+      const r = get(casualId(roster.index, cid)) as CasualResult | undefined;
+      if (r?.bestLine) casual.push({ cardId: cid, line: r.bestLine });
+    }
+  return { ...maps, casual };
+}
+
+/**
+ * The whole report as jobs. The talent section's team share reads the best-team searches (`teamInputsOf`); everything
+ * else is independent, so the order of the list is only a priority (the longest pieces first).
+ */
+export function planReport(opts: { quick?: boolean } = {}): Plan<Report> {
+  const quick = opts.quick ?? false;
+  const cards = CARDS.filter((c) => !c.raidOnly);
+  const bosses = planBosses({ quick });
+  const best: JobSpec[] = (['raid', 'gauntlet'] as const).flatMap((mode) =>
+    cards.map((c): JobSpec => ({
+      id: bestId(mode, c.id),
+      section: 'Best teams per card',
+      kind: 'report-best',
+      args: { mode, card: c.id, quick },
+      needs: [],
+    })),
+  );
+  const casual: JobSpec[] = casualRosters(quick).flatMap((roster) =>
+    CASUAL_CARDS.map((cid): JobSpec => ({
+      id: casualId(roster.index, cid),
+      section: 'A casual roster',
+      kind: 'report-casual',
+      args: { roster: roster.index, card: cid, quick },
+      needs: [],
+    })),
+  );
+  const talents = planTalents({
+    cards,
+    quick,
+    teamNeeds: [
+      ...best,
+      ...casual.filter((j) => (j.args as { roster: number }).roster < TEAM_SHARE_ROSTERS),
+    ].map((j) => j.id),
+  });
+  const own: JobSpec[] = [
+    ...cards.map((c): JobSpec => ({
+      id: scenId(c.id),
+      section: 'Scenarios',
+      kind: 'report-scenarios',
+      args: { card: c.id, quick },
+      needs: [],
+    })),
+    ...cards.map((c): JobSpec => ({
+      id: answersId(c.id),
+      section: 'Intended answers',
+      kind: 'report-answers',
+      args: { card: c.id, quick },
+      needs: [],
+    })),
+    ...best,
+    ...casual,
+    {
+      id: WEEKEND_ID,
+      section: 'Raid weekend with attrition',
+      kind: 'report-weekend',
+      args: { quick },
+      needs: [],
+    },
+  ];
+  return {
+    jobs: [...bosses.jobs, ...talents.jobs, ...own],
+    assemble: (results) => assembleReport(quick, results, talents.assemble, bosses.assemble),
+  };
+}
+
+function assembleReport(
+  quick: boolean,
+  results: JobResults,
+  talentsOf: (results: JobResults) => TalentSection,
+  bossesOf: (results: JobResults) => BossSections,
+): Report {
+  const seeds = quick ? 4 : 24;
   const md: string[] = [];
   const data: Record<string, unknown> = {};
-  const cards = CARDS.filter((c) => c.id !== 'adapts');
+  const cards = CARDS.filter((c) => !c.raidOnly);
   md.push('# Combat v2 lab report', '');
   md.push(
-    `Generated by \`pnpm --filter @creatures/lab report${opts.quick ? ' -- --quick' : ''}\`. A prototype of the draft rules (\`packages/lab\`), not the shipped engine. Level ${LEVEL} creatures (stage 1 forms at their cap), a neutral boss with huge HP: damage over 10 rounds, and a wipe ends the fight. Teams are ranked by damage weighted by how many creatures still stand (a wipe counts half). Top lines are re-scored on fresh seeds. Knobs: Payoff x${LAB_RULES.payoffMultBp / 10_000}, armour per species (\`src/armour.ts\`, Guards highest), boss armour 20.`,
+    `Generated by \`pnpm --filter @creatures/lab report${quick ? ' -- --quick' : ''}\`. A prototype of the draft rules (\`packages/lab\`), not the shipped engine. Level ${LEVEL} creatures (stage 1 forms at their cap), a neutral boss with huge HP: damage over 10 rounds, and a wipe ends the fight. Teams are ranked by damage weighted by how many creatures still stand (a wipe counts half). Top lines are re-scored on fresh seeds. Knobs: Payoff x${LAB_RULES.payoffMultBp / 10_000}, armour per species (\`src/armour.ts\`, Guards highest), boss armour 20.`,
     '',
   );
 
@@ -162,25 +478,14 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
     `| Line | ${cards.map((c) => c.name).join(' | ')} |`,
     `| --- | ${cards.map(() => '---:').join(' | ')} |`,
   );
-  const base: Record<string, number> = {};
+  const columns = cards.map((c) => results.get(scenId(c.id)) as ScenarioColumn);
   const scen: Record<string, Record<string, unknown>> = {};
-  for (const [label, spec] of Object.entries(SCENARIOS)) {
-    const cells: string[] = [];
+  Object.keys(SCENARIOS).forEach((label, i) => {
     const row: Record<string, unknown> = {};
-    for (const c of cards) {
-      const s = evaluate(bossFor(GAUNTLET, [c.id]), line(spec), GAUNTLET, seeds, `scen:${c.id}`);
-      const classic = label.startsWith('Classic:');
-      if (classic) base[c.id] = s.damage;
-      cells.push(
-        classic
-          ? `${r0(s.damage)} (KO ${s.knockouts.toFixed(1)})`
-          : `${pct(s.damage, base[c.id] ?? 0)} (KO ${s.knockouts.toFixed(1)})`,
-      );
-      row[c.id] = { damage: r0(s.damage), ko: s.knockouts };
-    }
+    cards.forEach((c, k) => (row[c.id] = columns[k]?.row[label]));
     scen[label] = row;
-    md.push(`| ${label} | ${cells.join(' | ')} |`);
-  }
+    md.push(`| ${label} | ${columns.map((col) => col?.cells[i]).join(' | ')} |`);
+  });
   data['scenarios'] = scen;
   md.push('');
 
@@ -196,16 +501,10 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
   let working = 0,
     answers = 0;
   for (const c of cards) {
-    for (const [label, spec] of ANSWERS[c.id] ?? []) {
-      const boss = bossFor(GAUNTLET, [c.id]);
-      const a = evaluate(boss, line(spec), GAUNTLET, seeds, `ans:${c.id}`);
-      const cl = evaluate(boss, CLASSIC_LINE, GAUNTLET, seeds, `ans:${c.id}`);
-      answers++;
-      if (a.score > cl.score) working++;
-      md.push(
-        `| ${c.name} | ${label} | ${pct(a.score, cl.score)} | ${a.knockouts.toFixed(1)} / ${cl.knockouts.toFixed(1)} |`,
-      );
-    }
+    const a = results.get(answersId(c.id)) as AnswerRows;
+    md.push(...a.rows);
+    working += a.working;
+    answers += a.answers;
   }
   md.push(
     '',
@@ -226,11 +525,11 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
     [...Object.keys(KNACKS), 'none'].map((k) => [k, 0] as [string, number]),
   );
   let picks = 0;
+  const formPicks = new Map<string, number>();
   let classicBeaten = 0,
     classicSpeciesBeaten = 0;
   const bestSpecies = new Map<string, number>();
   const perCard: Record<string, unknown> = {};
-  const classicPool = poolOf(['tidewing', 'tempestray', 'thornbuck']);
   for (const mode of [GAUNTLET, RAID] as Mode[]) {
     md.push(
       `## Best teams per card: ${mode.id === 'gauntlet' ? 'gauntlet (one row of three)' : 'raid (3 rows x 4, four players)'}`,
@@ -242,46 +541,34 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
         : '| Card | Best line | Score | Classic |\n| --- | --- | ---: | ---: |',
     );
     for (const c of cards) {
-      const boss = bossFor(mode, [c.id]);
-      const classic = classicFor(mode);
-      const ranked = search(boss, mode, {
-        seed: `${mode.id}:${c.id}`,
-        ...(mode.id === 'raid' ? ropts : sopts),
-        include: [classic],
-      });
-      const best = ranked[0];
-      const cl = ranked.find((r) => lineKey(r.line) === lineKey(classic));
-      if (!best || !cl) continue;
-      (mode.id === 'gauntlet' ? bestGauntlet : bestRaid).set(c.id, best.line);
-      for (const r of ranked.slice(0, 5)) {
-        const useful = usefulKnacks(r.line);
-        for (const p of r.line) {
+      const found = results.get(bestId(mode.id, c.id)) as BestResult | undefined;
+      if (!found) continue;
+      for (const top of found.top) {
+        const useful = usefulKnacks(top);
+        for (const p of top) {
           picks++;
+          formPicks.set(p.formId, (formPicks.get(p.formId) ?? 0) + 1);
           if (useful.has(p.knack)) appear.set(p.knack, (appear.get(p.knack) ?? 0) + 1);
         }
       }
       let extra = '';
       if (mode.id === 'gauntlet') {
-        for (const p of best.line) bestSpecies.set(p.formId, (bestSpecies.get(p.formId) ?? 0) + 1);
-        const cs = search(boss, mode, {
-          seed: `cs:${c.id}`,
-          ...sopts,
-          pool: classicPool,
-          starts: 60,
-          include: [classic],
-        })[0];
-        if (cl.score.score < best.score.score * 0.9) classicBeaten++;
-        if (cs && cs.score.score < best.score.score * 0.9) classicSpeciesBeaten++;
-        extra = ` | ${cs ? pct(cs.score.score, best.score.score) : 'n/a'}`;
+        for (const p of found.bestLine)
+          bestSpecies.set(p.formId, (bestSpecies.get(p.formId) ?? 0) + 1);
+        const cs = found.classicSpeciesScore;
+        if (found.classicScore < found.bestScore * 0.9) classicBeaten++;
+        if (cs !== undefined && cs < found.bestScore * 0.9) classicSpeciesBeaten++;
+        extra = ` | ${cs !== undefined ? pct(cs, found.bestScore) : 'n/a'}`;
       }
-      const shown = mode.id === 'gauntlet' ? best.line.map(name).join(', ') : summarise(best.line);
+      const shown =
+        mode.id === 'gauntlet' ? found.bestLine.map(name).join(', ') : summarise(found.bestLine);
       md.push(
-        `| ${c.name} | ${shown} | ${r0(best.score.score)} | ${pct(cl.score.score, best.score.score)}${extra} |`,
+        `| ${c.name} | ${shown} | ${r0(found.bestScore)} | ${pct(found.classicScore, found.bestScore)}${extra} |`,
       );
       perCard[`${mode.id}:${c.id}`] = {
-        best: best.line,
-        score: r0(best.score.score),
-        classic: r0(cl.score.score),
+        best: found.bestLine,
+        score: r0(found.bestScore),
+        classic: r0(found.classicScore),
       };
     }
     md.push('');
@@ -309,17 +596,22 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
   const pool = poolOf();
   const poolShare = (k: string) => pool.filter((p) => p.knack === k).length / pool.length;
   const rows = [...appear.entries()]
-    .map(([k, n]) => ({ k, n, ratio: n / Math.max(1, picks) / poolShare(k) }))
-    .sort((a, b) => b.ratio - a.ratio);
+    .map(([k, n]) => ({
+      k,
+      n,
+      ratio: n / Math.max(1, picks) / poolShare(k),
+      within: withinFormRatio(k, n, formPicks),
+    }))
+    .sort((a, b) => b.within - a.within);
   md.push(
     '## Knack usage in the top 5 teams of every search (per creature)',
     '',
-    `${picks} creatures in the top 5 lines of every search (${cards.length} cards, gauntlet and raid). Ratio is the Knack's share of those picks over its share of the pool of every form and Knack: 1.0 is what random picks would give, above 2 stands out, below 0.3 is rarely chosen. Leave a Trail counts only when another Payoff in the line can cash its mark. Never chosen: rework candidates. Far above the rest: needs a counter card (P-10).`,
+    `${picks} creatures in the top 5 lines of every search (${cards.length} cards, gauntlet and raid). **Within form** is the Knack's picks over what random would give among the choices of the forms that can equip it ("no Knack" counts as one of the choices): 1.0 is random within the form, **2 or more stands out, under 0.3 is rarely chosen**. Ratio, kept as context, is the Knack's share of all picks over its share of the pool of every form and Knack; it also follows how often the Knack's form is picked at all, so a Knack of a popular form reads high on it. Leave a Trail counts only when another Payoff in the line can cash its mark. Never chosen: rework candidates. Far above the rest: needs a counter card (P-10).`,
     '',
-    '| Knack | Forms | Picks | Ratio |',
-    '| --- | --- | ---: | ---: |',
+    '| Knack | Forms | Picks | Within form | Ratio |',
+    '| --- | --- | ---: | ---: | ---: |',
   );
-  for (const { k, n, ratio } of rows)
+  for (const { k, n, ratio, within } of rows)
     md.push(
       `| ${knackName(k)} | ${
         k === 'none'
@@ -328,10 +620,17 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
               .filter(([, ks]) => ks.includes(k))
               .map(([f]) => f)
               .join(', ')
-      } | ${n} | ${ratio.toFixed(1)} |`,
+      } | ${n} | ${within.toFixed(1)} | ${ratio.toFixed(1)} |`,
     );
   data['knackUsage'] = Object.fromEntries(
-    rows.map((r) => [r.k, { picks: r.n, ratio: Math.round(r.ratio * 100) / 100 }]),
+    rows.map((r) => [
+      r.k,
+      {
+        picks: r.n,
+        ratio: Math.round(r.ratio * 100) / 100,
+        withinForm: Math.round(r.within * 100) / 100,
+      },
+    ]),
   );
   md.push('');
 
@@ -339,53 +638,56 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
   md.push(
     '## A casual roster (the North Star metric)',
     '',
-    'Twelve random forms at random levels (8 to 25, stage 1 forms at their cap), with any of their Knacks. For each card: the best gauntlet line from that roster, the best line from the same roster with no Knacks (what a player who never opens Knacks could bring, P-14), and the three highest levels with no Knack. Scores are absolute. Beyond top 3 is how many of the best line are not among the three highest levels.',
+    `Twelve random forms at random levels (8 to 25, stage 1 forms at their cap), with any of their Knacks. For each card: the best gauntlet line from that roster, the best line from the same roster with no Knacks (what a player who never opens Knacks could bring, P-14), and the three highest levels with no Knack. Scores are absolute. Beyond top 3 is how many of the best line are not among the three highest levels. The table lists the first ${CASUAL_ROSTERS_LISTED} rosters; the average counts every roster drawn.`,
     '',
     '| Roster | Card | Best line | Score | Best, no Knacks | Top 3 by level | Beyond top 3 |',
     '| --- | --- | --- | ---: | ---: | ---: | ---: |',
   );
   let beyond = 0,
     trials = 0;
-  for (const roster of casualRosters(opts.quick ?? false)) {
-    const { index: r, pool, top3, top3Line } = roster;
+  /** The mean of each roster's cards, one number per roster (its spread tells how far the average can move). */
+  const perRoster: number[] = [];
+  for (const roster of casualRosters(quick)) {
+    const { index: r, top3 } = roster;
+    let rosterBeyond = 0,
+      rosterTrials = 0;
     for (const cid of CASUAL_CARDS) {
-      const boss = bossFor(GAUNTLET, [cid]);
-      const best = search(boss, GAUNTLET, {
-        seed: `casual:${r}:${cid}`,
-        ...sopts,
-        pool,
-        include: [top3Line],
-      })[0];
-      const t3 = evaluate(boss, top3Line, GAUNTLET, sopts.freshSeeds, `fresh:casual:${r}:${cid}`);
-      const plainBest = search(boss, GAUNTLET, {
-        seed: `casual-plain:${r}:${cid}`,
-        ...sopts,
-        starts: 60,
-        pool: pool.filter((p) => p.knack === 'none'),
-        include: [top3Line],
-      })[0];
-      if (!best) continue;
-      casualBest.push({ cardId: cid, line: best.line });
-      const n = best.line.filter((p) => !top3.includes(p.formId)).length;
+      const res = results.get(casualId(r, cid)) as CasualResult;
+      if (!res.bestLine) continue;
+      const n = res.bestLine.filter((p) => !top3.includes(p.formId)).length;
       beyond += n;
       trials++;
-      md.push(
-        `| ${r + 1} | ${cid} | ${best.line.map((p) => `${name(p)} L${p.level ?? LEVEL}`).join(', ')} | ${r0(best.score.score)} | ${r0(plainBest?.score.score ?? 0)} | ${r0(t3.score)} | ${n} |`,
-      );
+      rosterBeyond += n;
+      rosterTrials++;
+      if (r < CASUAL_ROSTERS_LISTED)
+        md.push(
+          `| ${r + 1} | ${cid} | ${res.bestLine.map((p) => `${name(p)} L${p.level ?? LEVEL}`).join(', ')} | ${r0(res.bestScore)} | ${r0(res.plainScore)} | ${r0(res.top3Score)} | ${n} |`,
+        );
     }
+    if (rosterTrials > 0) perRoster.push(rosterBeyond / rosterTrials);
   }
+  const casualMean = beyond / Math.max(1, trials);
+  const rosterMean = perRoster.reduce((a, b) => a + b, 0) / Math.max(1, perRoster.length);
+  const rosterSd = Math.sqrt(
+    perRoster.reduce((a, b) => a + (b - rosterMean) ** 2, 0) / Math.max(1, perRoster.length - 1),
+  );
+  const rosterSe = rosterSd / Math.sqrt(Math.max(1, perRoster.length));
   md.push(
     '',
-    `**On average ${(beyond / Math.max(1, trials)).toFixed(1)} of the 3 creatures in the best line are outside the player's top three by level.**`,
+    `**On average ${casualMean.toFixed(1)} of the 3 creatures in the best line are outside the player's top three by level.**`,
+    '',
+    `How much the figure varies: over the ${perRoster.length} rosters each roster's own average (its ${CASUAL_CARDS.length} cards) has a standard deviation of ${rosterSd.toFixed(2)}, so the ${perRoster.length}-roster average is good to about ±${(1.96 * rosterSe).toFixed(2)} (95%: ±1.96 × ${rosterSd.toFixed(2)} / √${perRoster.length}). The gate asks for at least 1.5.`,
     '',
   );
+  data['casualBeyondTop3'] = {
+    mean: Math.round(casualMean * 100) / 100,
+    rosters: perRoster.length,
+    rosterSd: Math.round(rosterSd * 100) / 100,
+    ci95: Math.round(1.96 * rosterSe * 100) / 100,
+  };
 
   // 7. Talents: best legal board with the talent against best legal board without it.
-  const talentSection = buildTalentSection({
-    cards,
-    quick: opts.quick ?? false,
-    teams: { gauntlet: bestGauntlet, raid: bestRaid, casual: casualBest },
-  });
+  const talentSection = talentsOf(results);
   md.push(...talentSection.md);
   Object.assign(data, talentSection.data);
 
@@ -440,36 +742,32 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
     '| Boss card | Party | Won | Replacements | Knockouts per stage |',
     '| --- | --- | ---: | ---: | --- |',
   );
-  const party = classicFor(RAID);
-  const bench = [0, 1, 2, 3].map((i) => ({
-    owner: `p${i + 1}`,
-    formId: 'kilnmole',
-    level: LEVEL,
-    knack: 'draw-fire',
-    row: 0,
-    col: 0,
+  md.push(...(results.get(WEEKEND_ID) as string[]));
+  // 11. The real bosses and foes (after the controlled lab-boss tests above).
+  const bossSections = bossesOf(results);
+  md.push(...bossSections.md);
+  Object.assign(data, bossSections.data);
+
+  // 12. The boss track: can a server own the creatures of each slot's tool line when the slot arrives?
+  const ownable = ownabilityTable();
+  data['ownability'] = ownable.map((r) => ({
+    slot: r.slot,
+    boss: r.bossId,
+    week: r.week,
+    toolNeeds: r.tool.needed.map((n) => n.line),
+    chance: r.tool.chance,
+    pass: r.pass,
   }));
-  for (const c of ['plain', 'payoff-hunter', 'crusher', 'wither']) {
-    let wins = 0,
-      reps = 0;
-    const kos: number[][] = [];
-    const n = opts.quick ? 3 : 10;
-    for (let i = 0; i < n; i++) {
-      const boss = labBoss({ rows: 3, cols: 4, cards: [c], hp: 30_000, atk: 120, rounds: 8 });
-      const w = weekend(boss, toPlacements(party, RAID), bench, {
-        rng: createSeededRng(`weekend:${c}:${i}`),
-      });
-      if (w.won) wins++;
-      reps += w.replacements;
-      kos.push(w.stages.map((s) => s.knockouts));
-    }
-    const avg = [0, 1, 2]
-      .map((st) => (kos.reduce((a, k) => a + (k[st] ?? 0), 0) / n).toFixed(1))
-      .join(' / ');
-    md.push(
-      `| ${c} | four classic trios, a Kilnmole each on the bench | ${wins} / ${n} | ${(reps / n).toFixed(1)} | ${avg} |`,
-    );
-  }
+  md.push(
+    '',
+    '## The boss track: ownability',
+    '',
+    ...ownabilityMarkdown(
+      ownable,
+      `the committed \`SLOT_WEEKS\` (${SLOT_WEEKS.join(' ')}), the weeks the track was tuned for`,
+    ),
+  );
+
   md.push(
     '',
     '## What this cannot tell',
@@ -477,7 +775,8 @@ export function buildReport(opts: { quick?: boolean } = {}): Report {
     '- It is a prototype: gear, heal crits on screen and the raid board UI are simplified or missing; talents are measured one at a time in the per-talent table, and as a share of the team result (one talent per creature, never searched with the Knacks).',
     '- Mire has no Setter or Payoff yet, so its reactions never happen here.',
     '- Searches are random plus local improvement; a missing team is not proof that it is weak.',
-    '- The raid search uses 3 rows of 4 (four players); real servers place up to 15 per row, first come first served.',
+    '- The raid search uses 3 rows of 4 (four players); real servers place up to 15 per row, first come first served. The real bosses have their own arenas (2 to 4 rows of 4).',
+    '- The real bosses and foes are lab data tuned to this report: the best teams and the intended answers are found by seeded searches over a weekend or a run, so a missing team is not proof that it is weak, and the answers are lines written down from those searches. Talent answers are read against the classic party with the same talent.',
     '- Fun is not in the numbers. Use this to find outliers and dead options, then test feel in the game.',
     '',
   );
