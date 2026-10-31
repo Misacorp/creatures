@@ -256,7 +256,8 @@
 </main>
 
 <script>
-  const SETS = /*DATA*/ null;
+  // `pnpm art review` puts the data in place of this string (with its quotes); Prettier leaves strings alone.
+  const SETS = '__ART_REVIEW_DATA__';
   const reviews = {}; // sprite id -> { verdict, note }
   let filter = 'all';
   let db = null;
@@ -281,6 +282,8 @@
   }
   const scaleFor = (def, target) =>
     Math.max(1, Math.floor(target / Math.max(def.rows[0].length, def.rows.length)));
+  // Kept as is: Misa's saved answers are stored under these ids. Piece ids are `set/sprite` codes, which
+  // never contain `_` next to a `/` in the same place, so two pieces never share one document.
   const docId = (id) => id.replace(/[^a-zA-Z0-9_-]/g, '_');
 
   function el(tag, cls, text) {

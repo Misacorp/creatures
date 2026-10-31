@@ -3,7 +3,7 @@
 // then publishes the file with the Artifact tool, declaring `{ db: {}, user: {} }`, at the page's existing URL
 // (docs/progress.md). Answers land in the page's database, collection `reviews`, one document per piece
 // (`piece`, `verdict`, `note`); read them with the ArtifactData tool. The page itself is `art-review.html`, with
-// the data put in place of its `/*DATA*/null` marker. Loads the game through Vite, as `art.mts items` does.
+// the data put in place of its `'__ART_REVIEW_DATA__'` marker (the quotes included). Loads the game through Vite, as `art.mts items` does.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import type { SpriteDef } from '../src/sprites/sprite-data.ts';
@@ -101,7 +101,12 @@ export async function writeReviewPage(out: string): Promise<number> {
   }
   const template = readFileSync(join(import.meta.dirname, 'art-review.html'), 'utf8');
   // `<` escaped so no piece of data can close the script element it is written into.
-  const page = template.replace('/*DATA*/null', JSON.stringify(sets).replace(/</g, '\\u003c'));
+  const marker = "'__ART_REVIEW_DATA__'";
+  if (!template.includes(marker)) throw new Error(`art-review.html has no ${marker} marker`);
+  const json = JSON.stringify(sets).replace(/</g, '\\u003c');
+  // A replacer function, so a `$` in any note is never read as a replacement pattern.
+  const page = template.replace(marker, () => json);
+  if (page.includes(marker)) throw new Error('the review data was not written into the page');
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, page);
   return sets.length;
