@@ -4,6 +4,42 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-01: [Misa] Combat v2 move library: a themed name per behaviour and element, the behaviour fixed
+
+ID: `2026-11-01-combat-v2-move-library-a-themed` · Status: current · Amends: `2026-11-01-combat-v2-names-batches-3-and`
+
+**Decision.** Boss and foe moves form one library (Misa, 2026-11-01: "the thematic name is just a coat of paint", and move animations go with the name, so raid and dungeon bosses share them when they share moves). Each move in the library has a themed name and a fixed behaviour: its shape and whom it picks (and whether it silences). A boss or foe uses a library move with its own numbers (power, rhythm, count, Wind-up, crit chance). A behaviour has one name per element, shared by every boss and foe of that element; a card has no element, so a card's move keeps the plain behaviour name. The plain behaviour names of the earlier decision (Front Slam, Nemesis Lance, Wild Sweep, ...) stay as the label the board can show under a move's own name ("Deepwater Spear · Nemesis Lance"); they are no longer the moves' names. Where one boss had two moves of one behaviour, they merge into one (the lab retunes): the Colossus's Tidal Pull and Deepwater Spear, Thornmother's Seed Burst and Bloom Storm (Second Bloom strengthens the one), and the landmark moves of the Drowned Warden and the Fen Lurker, which repeated their own Quake and get a different shape.
+
+The library (behaviour: tide, ember, grove, spark, mire, card):
+
+| Behaviour (label)              | Tide            | Ember           | Grove          | Spark            | Mire        | Card        |
+| ------------------------------ | --------------- | --------------- | -------------- | ---------------- | ----------- | ----------- |
+| Hush (silences the row's ends) | Deafening Mist  |                 | Bramble Hush   |                  |             | Hush        |
+| Pincer (the row's two ends)    |                 |                 | Briar Pincer   |                  |             |             |
+| Front Slam                     |                 | Anvil Fall      |                |                  | Belly Flop  |             |
+| Payoff Slam                    |                 | Volcanic Meteor |                | Static Strike    | Bog Lob     | Payoff Slam |
+| Nemesis Slam                   |                 | Slag Spill      | Vengeful Roots | Thunderclap      |             |             |
+| Wild Lance                     | Riptide         | Scorch Lane     | Grasping Vines | Lightning Bolt   | Mud Slide   |             |
+| Nemesis Lance                  | Deepwater Spear |                 |                |                  |             |             |
+| Front Lance                    | Sluice Pull     |                 |                |                  |             |             |
+| Front Sweep                    | Undertow        |                 | Thorn Wall     |                  |             |             |
+| Rear Sweep                     | Backflow        |                 | Spiky Spine    |                  | Peat Wave   |             |
+| Payoff Sweep                   | Rogue Wave      |                 |                |                  |             |             |
+| Wild Sweep                     | Great Wave      |                 |                |                  | Sinking Mud | Wild Sweep  |
+| Barrage                        | Spray           | Cinder Fall     | Thorn Rain     | Forked Lightning | Mud Spit    |             |
+| Quake                          | Deluge          | Eruption        |                | Storm Front      | Sink Down   |             |
+| Leaping Strike                 |                 | Ember Leap      | Thorn Lash     | Arc Lash         |             |             |
+| Payoff Strike                  |                 |                 |                | Thunderbolt      |             |             |
+| Vulture Strike                 |                 |                 |                |                  | Sinkhole    |             |
+| Nemesis Strike                 |                 |                 |                |                  |             | Crush       |
+| One-shot (Payoff, Wind-up)     |                 |                 |                | Judgement Bolt   |             |             |
+| Checker                        |                 | Ash Cloud       |                |                  |             |             |
+| Cross                          |                 |                 | Bramble Cross  |                  |             |             |
+
+Who uses what follows from each boss's and foe's element and its moves today (for example the Bramble Hound and the Bramble Matron use Bramble Hush, the Ember Mite Cinder Fall, the Flicker Swarm Storm Front, the Static Bat Arc Lash, the Tar Leech Belly Flop). In the data, the library is one file of moves (id, name, element, behaviour), and a boss or foe refers to a move by id with its own numbers, so a name cannot drift from its behaviour.
+
+**Reasoning.** One behaviour per name keeps the board readable and lets one animation serve every boss that uses a move; themed names keep each boss's flavour.
+
 ## 2026-11-01: [Misa] Combat v2 rule changes from the names review: Mired fades every round, Swarm is a Scatter, Back-most is the last to act
 
 ID: `2026-11-01-combat-v2-rule-changes-from-the` · Status: current
@@ -21,7 +57,7 @@ These change fight results: the lab measures them, the tuners retune, and the pa
 
 ## 2026-11-01: [Misa] Combat v2 names, batches 3 and 4: keywords, rule cards, and moves named by shape and target
 
-ID: `2026-11-01-combat-v2-names-batches-3-and` · Status: current
+ID: `2026-11-01-combat-v2-names-batches-3-and` · Status: current, amended by `2026-11-01-combat-v2-move-library-a-themed`
 
 **Decision.** Misa went through the 27 keywords and 19 rule cards (batch 3), the 69 moves, Build-ups and phases of the raid bosses and dungeon foes (batch 4), and a round 2 on his notes (2026-10-31).
 
