@@ -144,7 +144,7 @@ export const BOSS_ANSWERS: Readonly<Record<string, readonly BossAnswer[]>> = {
       label: 'Tunnel Through and Gnaw Through get hits past her thick bark',
       tool: 'Pierce',
       core: ['tunnel-through', 'gnaw-through'],
-      line: 'kilnmole/keep-the-heat-in+brace magmole/tunnel-through+kindred-boost magmole/tunnel-through+hardy wickat/none+first-pounce | wickat/lead-the-way+first-pounce bogwarden/draw-fire+long-shadow sunfawn/none+triage sunfawn/ready-the-mark+shoulder-to-shoulder | fogwyrm/none+flank-guard pyrelynx/gnaw-through+first-pounce ohmouse/none pyrelynx/gnaw-through+rally-cry',
+      line: 'kilnmole/keep-the-heat-in+hardy magmole/tunnel-through+kindred-boost magmole/tunnel-through+hardy wickat/none+first-pounce | wickat/lead-the-way+first-pounce bogwarden/draw-fire+long-shadow sunfawn/none+triage sunfawn/ready-the-mark+shoulder-to-shoulder | fogwyrm/none+flank-guard pyrelynx/gnaw-through+first-pounce ohmouse/none pyrelynx/gnaw-through+rally-cry',
     },
     {
       label: 'Big reactions (Detonate, All at Once) go through the bark that stops plain hits',
