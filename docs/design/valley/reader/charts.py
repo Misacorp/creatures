@@ -13,7 +13,7 @@ W, H = 340, 190
 L, R, T, B = 34, 54, 10, 24
 
 
-def _line_chart(title, note, series, ymax, yticks, yfmt=str, ref=None, short=None):
+def _line_chart(title, note, series, ymax, yticks, yfmt=str, ref=None, short=None, show_ends=True):
     """series: [(label, [value per week 1..n])]; ref: (label, [values]) drawn dashed in muted ink."""
     n = max(len(v) for _, v in series)
     x = lambda i: L + (W - L - R) * i / (n - 1)
@@ -40,6 +40,8 @@ def _line_chart(title, note, series, ymax, yticks, yfmt=str, ref=None, short=Non
             out.append(f'<circle class="hit" cx="{x(i):.1f}" cy="{y(v):.1f}" r="5">'
                        f'<title>{html.escape(label)}, week {i + 1}: {yfmt(round(v, 1))}</title></circle>')
         ends.append([y(vals[-1]), short[k] if short else label.split(' ')[0], c])
+    if not show_ends:
+        ends = []
     ends.sort()
     for i in range(1, len(ends)):  # keep end labels at least 11px apart
         ends[i][0] = max(ends[i][0], ends[i - 1][0] + 11)
@@ -126,6 +128,14 @@ def charts(root):
             ser = [(name, [100 * w[key] for w in cov]) for name, key in (('Commons', 'common'), ('Rares', 'rare'), ('Epics', 'epic'))]
             parts.append(_line_chart('What a server of 8 can pool for the raid', 'Share of each rarity\'s species in the game that at least one player owns.',
                                      ser, 100, [0, 25, 50, 75, 100], lambda v: f'{v:g}%', short=['Commons', 'Rares', 'Epics']))
+
+    # Shard waits at the Forge, week by week, with and without a broker (round 18).
+    br = d.get('broker')
+    if br:
+        ser = [(f'{name}, no broker', [100 * v for v in br['noBroker'][key]]) for name, key in (('Daily', 'daily'), ('Every other day', 'every-other-day'), ('Weekly', 'weekly')) if key in br['noBroker']]
+        ser.append(('Daily, broker', [100 * v for v in br['withBroker']['daily']]))
+        parts.append(_line_chart('When the Forge waits for a shard', 'Share of anvil time waiting for a shard of the right element, week by week. Without a broker it starts in week 1 and never goes away; with one it is gone by week 2.',
+                                 ser, 100, [0, 25, 50, 75, 100], lambda v: f'{v:g}%', short=['Daily', 'Every 2d', 'Weekly', 'Broker'], show_ends=False))
 
     # 3. Place level-ups on a server of 8 against the plan.
     s8 = next(s for s in d['servers'] if s['id'] == 'mixed8')

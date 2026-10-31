@@ -6,7 +6,17 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-Nothing waiting.
+### Q48. When should the server build its Market?
+
+Status: asked, round 19 (2026-10-31). From Misa's G-8 ("If we can time the stock market opening to a point in time when players are starting to need it... Giving players a chance to build it with the knowledge of what it will roughly do"). Touches: `forge.md` V-FORGE-11, `commons.md` V-COM-15 (the guided start), `goals.md` G-8.
+
+**Why it matters.** You asked whether the Forge runs short of a shard after some weeks or all the time. The lab says **all the time, from week 1**: without a broker a daily player's anvils wait for the right shard 12% to 27% of the time in weeks 1 to 12, every other day 30% to 55%, weekly 70% to 88%; with a broker it is gone by week 2 (chart "When the Forge waits for a shard"). Orders need one to three elements at once and scouts bring two or three, but rarely the right ones at the right time. Tried as an ordinary project, the Market opens in week 1 or 2 but is finished only in weeks 12 to 16, so the shortage lasts months; paid in shards it is never finished (the scarce shard can't pay for its own fix).
+
+- **A. The Market is the server's second guided project** (V-COM-15: the hearth first, then the Market), small, paid in Acorns and scrap, finished in the first week or two, right as the first anvils start waiting. Later Market levels improve the broker's rate, so runs get longer as upgrades land. Example: on day 3 the Forge says "waiting for Tide shards"; the valley's next project is the Market ("trade the shards you don't need for the ones you do"); it opens on day 9.
+- **B. A bigger project, finished around week 12 to 16;** early on, players swap orders and trade by hand. Example: Sanni taps the exchange most evenings for her first two months.
+- **C. A broker from day one, no project.** Example: the broker seat is there at the start, like the scouts.
+
+**Lead's pick: A.** It is your G-8 exactly: the problem shows up in the first days, the fix is something the server builds and understands, and later Market levels are the "longer runs as upgrades land".
 
 ## Queue
 
