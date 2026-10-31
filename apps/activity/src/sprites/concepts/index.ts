@@ -15,6 +15,7 @@ import { VOID_PLACE_CONCEPTS } from './void-place';
 import { VALLEY_POSTERS_CONCEPTS } from './valley-posters';
 import { VALLEY_NIGHT_CONCEPTS } from './valley-night';
 import { VALLEY_LANDMARK_CONCEPTS } from './valley-landmarks';
+import { VALLEY_GLOW_CONCEPTS } from './valley-glow';
 
 export interface Concept {
   kind: ArtKind;
@@ -64,4 +65,5 @@ export const CONCEPT_SETS: readonly ConceptSet[] = [
   VALLEY_POSTERS_CONCEPTS,
   VALLEY_NIGHT_CONCEPTS,
   VALLEY_LANDMARK_CONCEPTS,
+  VALLEY_GLOW_CONCEPTS,
 ];

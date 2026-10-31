@@ -15,6 +15,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [Valley places: posters](#valley-posters) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
+| [Valley places: glow, day and night](#valley-glow) | draft | 6 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
 
 <a id="void"></a>
 
@@ -192,3 +193,29 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `visitor` | free |  | draft | A hooded stranger with glowing eyes behind a purple-awninged stall, a crescent moon on the awning and a lit lantern. |
 | `visitor-away` | free |  | draft | The same stall shuttered, lantern out, a sign with a calendar page and a moon: 'back Thursday'. |
 | `market` | free |  | draft | A red and cream striped tent stall where a tiny creature in a cap trades shards from two crates; sign shows shard and coin. |
+
+<a id="valley-glow"></a>
+
+## Valley places: glow, day and night
+
+![Valley places: glow, day and night](valley-glow.png)
+
+- **Status:** draft
+- **Requested:** 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets.
+- **Source:** `apps/activity/src/sprites/concepts/valley-glow.ts` (draw it with `pnpm art valley-glow`)
+- **Sheet of:** `e2f05e248b12`
+- Direction "valley glow": the night-glow look (the light sources are the stars, lit edges, cool shadow) redone as standalone places on transparent ground, like the map landmarks, so they stand on the valley tiles. No sky, no vignette, no stars or moon.
+- One drawing, two palettes: the main palette is night, `alts.day` recolours the same pixels. Keys `1 2 3` are the light spill on the ground (outer ring dithered, inner solid) in night colours; in the day palette they map to the grass greens, so the spill disappears. `x` is the cast shadow (cool blue at night, warm green by day).
+- The backdrop is the world map grass tile (`WORLD_MAP_SPRITE_DATA.grass`): the main tile is its night recolour, `alts.day` is the normal grass. The sheet shows night on night grass and day on day grass.
+- No creatures are drawn: logs, benches and the counters show where they would rest and stand; the game draws the real ones there.
+- Each light has its own colour: fire orange (bonfires), window yellow (school), violet lamp (visitor), a weak ember (visitor away), teal shard glow (market).
+- The content needs the places to exist (V-BON, school, visitor, V-FORGE-11) before this art is used; the signs carry no text, only marks (a moon and a calendar on the visitor away board).
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `bonfire` | free |  | draft | A fire in a ring of stones with three log seats around it; the logs and stones are lit on the fire side, and an orange glow lies on the grass around it. By day the same fire with no glow. |
+| `bonfire-grand` | free |  | draft | The communal hearth at a later level: a tall fire with two side flames in a paved double ring, log benches, and two lantern posts that throw their own small light. |
+| `school` | free |  | draft | A small schoolhouse with a bell cupola, a sign by the path and two lit windows that spill yellow light on the grass in front. By day the windows are plain glass. |
+| `visitor` | free |  | draft | The weekly visitor: a hooded stranger with teal eyes beside a violet lamp, and a small stall whose wares glow teal. The violet light lies on the grass; by day the lamp is unlit and the stall is striped red and cream. |
+| `visitor-away` | free |  | draft | The stall shuttered: a closed front, a folded awning, a board with a moon and a calendar mark, an unlit lamp with one last ember and a faint warm glow on the grass. |
+| `market` | free |  | draft | A stall where shards are traded: four element shards glow on the counter, a big shard on a post is the sign, with a crate and a sack beside it. The teal glow lies on the grass. |
