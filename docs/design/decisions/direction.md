@@ -4,6 +4,14 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: [Misa] The lead agent owns art direction; the valley moves toward the expedition map's art
+
+ID: `2026-10-31-the-lead-agent-owns-art-direction` · Status: current
+
+**Decision.** Misa (2026-10-31): "You are now in charge of our art direction and that it looks awesome." The lead agent decides the look of new art and keeps it consistent: it briefs the drawing agents, reviews every piece in the art studio (`docs/design/art-studio.md`) before Misa sees it, sends back what does not read, and brings Misa real choices (variations side by side) rather than single drafts where the direction is open. Misa's verdicts on the art review page are final for each piece. On the valley (the prototype's map art is a placeholder): "I'd like to go more in the direction of our existing artwork in the expedition map, the expedition 'posters' and the expedition destination map markers. Don't feel the need to mimic a style: be brave and try some variations and ask me which one I like best." The first round draws the bonfire, the School, the weekly visitor and the Market in three directions (map landmarks, posters, night glow) for Misa to choose from.
+
+**Reasoning.** Misa reviews art rather than drawing it; one owner who checks every piece against the same standard keeps the game looking like one game, and choices side by side are quicker for him to answer than a single draft followed by rounds of notes.
+
 ## 2026-10-30: Decisions live in topic files, kept in step by pnpm decisions
 
 ID: `2026-10-30-decisions-live-in-topic-files-kept` · Status: current
