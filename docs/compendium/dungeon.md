@@ -94,17 +94,17 @@ Status: 2026-10-20. Shipped (`docs/design/speed-and-dodge.md` section 5.5). Both
 
 ### Void foes - concept, not shipped (2026-10-31)
 
-Status: concept only; no element, stats or numbers. Sprites `void-moth`, `void-lantern` and `void-crab` in `apps/activity/src/sprites/concepts/void-foes.ts`. All three are `(compendium detail, not shipped)`.
+Status: concept only; no element, stats or numbers. Sprites `void-moth`, `void-angler` (replaced `void-lantern`, 2026-10-31: Misa, "you don't generally fight lanterns") and `void-crab` in `apps/activity/src/sprites/concepts/void-foes.ts`. All three are `(compendium detail, not shipped)`.
 
 **Dusk Moth** (working name; Light Eater, every third round, takes a shield or mark off one random creature until the next round)
 
 - Flavour line: "It is only after your lantern. Your lantern does not mind, much."
 - Phenomenon: a moth that drifted down from the dark between the stars toward the first light it saw. The starry windows on its wings are bits of sky it ate.
 
-**Hollow Lantern** (working name; Blackout, every second round, one creature goes unseen: the foe cannot target it for a turn, and neither can your healers)
+**Gloam Angler** (working name; Blackout, every second round, one creature goes unseen: the foe cannot target it for a turn, and neither can your healers)
 
-- Flavour line: "It lights nothing. That is the trick."
-- Phenomenon: an old lantern that someone carried into the dark and never came back for. The glass holds a small night with one warm star, and it hides whatever stands beside it. Plain to read: the hidden creature is shown with a dim frame.
+- Flavour line: "Its light shows you nothing. That is the trick."
+- Phenomenon: a round fish of the dark between the stars, with a starry window on its flank and a lure on a stalk. The lure holds one warm star, and whatever stands in its glow is lost to the dark around it. Plain to read: the hidden creature is shown with a dim frame. It replaces the Hollow Lantern: a living foe that carries a lantern, not a lantern.
 
 **Drift Crab** (working name; Tuck In, every third round, pulls into its shell and takes much less damage for one round, then snaps out with a pinch on the left creature)
 
@@ -167,7 +167,7 @@ Status: concept only; no numbers. Sprites `void-floor-jelly` and `void-floor-sen
 **Dim Sentinel** (working name; Closed Door, every second round, it stands behind its doorway and takes less damage; every third round the door opens and the creature in front is hit hard, marked a round ahead)
 
 - Flavour line: "It keeps a door that opens onto nothing. Please do not stand in it."
-- Phenomenon: a tall standing stone with a doorway of night in its belly, and a warm star far inside. Two shards of dark stone orbit it. The door is the dungeon's hiding place made solid, like the Hollow Crown's Hide `(inferred)`.
+- Phenomenon: a living guardian of dusk-purple stone, horned, with two glinting eyes, one fist raised and mid-step, and a doorway of night in its belly with a warm star far inside. Two shards of dark stone orbit it (redrawn 2026-10-31: Misa, "make it more animate"). The door is the dungeon's hiding place made solid, like the Hollow Crown's Hide `(inferred)`.
 - Echo: the Hollow Crown's Hide `(inferred)`.
 
 ---

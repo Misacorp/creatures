@@ -49,18 +49,22 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Requested:** 2026-10-31: a Void raid boss, dungeon foes and dungeon bosses.
 - **Element:** void
 - **Source:** `apps/activity/src/sprites/concepts/void-foes.ts` (draw it with `pnpm art void-foes`)
-- **Sheet of:** `5cc2ffa984ae`
+- **Sheet of:** `fc88e5812a62`
 - Needs before use: the Void element in the content, names, stats, gimmicks, lore and a place.
 - Working names and ideas are in docs/compendium/bosses.md and dungeon.md ("Concept, not shipped").
+- 2026-10-31 (Misa): void-crab, "More emphasis on the claws"; redrawn with big raised claws that dominate the silhouette.
+- 2026-10-31 (Misa): void-floor-sentinel, "Make it more animate"; redrawn as a living stone guardian (horns, face, one fist raised, mid-step).
+- 2026-10-31 (Misa): void-lantern, "You don't generally fight lanterns (inanimate)"; replaced by void-angler, a living fish that carries a lantern lure.
+- 2026-10-31 (Misa): void-moth, "Make it more pointy and elegant"; redrawn with swept, pointed wings, a slender body and antennae.
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
 | `void-raid-boss` | boss |  | draft | Hollow Crown: a huge hooded giant under a crescent crown, two glinting eyes in the hood and a cloak that opens on a starfield. |
-| `void-moth` | foe |  | draft | Dusk Moth: wide wings, each with a starry window, a glowing eye pair; it eats light. |
-| `void-lantern` | foe |  | draft | Hollow Lantern: a hanging lantern (hook, cap, glass, base) whose glass holds a small night with stars; it hides what it lights. |
-| `void-crab` | foe |  | draft | Drift Crab: a crab on eye stalks with two raised claws, a starry window in its shell; it tucks in and hides. |
+| `void-moth` | foe |  | draft | Dusk Moth: swept, pointed wings with a starry window each, a slender body and long curved antennae; it eats light. |
+| `void-angler` | foe |  | draft | Gloam Angler: a round deep-dark fish with a starry window on its flank, a glinting eye, a toothy mouth and a lure on a stalk that holds one warm star; it hides what its light touches. |
+| `void-crab` | foe |  | draft | Drift Crab: a crab with two huge raised claws that fill the silhouette, a starry window in its shell and glinting eyes; it tucks in and hides. |
 | `void-floor-jelly` | boss |  | draft | Lantern Drifter: a floating bell with a starry window, two glinting eyes and trailing tendrils tipped with stars. |
-| `void-floor-sentinel` | boss |  | draft | Dim Sentinel: a tall standing stone with a doorway of night in its belly, glinting eyes and two shards orbiting it. |
+| `void-floor-sentinel` | boss |  | draft | Dim Sentinel: a living stone guardian with horns and glinting eyes, one fist raised and one hanging, mid-step, a doorway of night in its belly and two shards orbiting it. |
 
 <a id="void-gear"></a>
 
