@@ -102,7 +102,10 @@ export const FRESH_PROGRESS: ProgressRow = {
 
 /** A row of slots as the replay shows it, left to right. */
 export const rowOf = (
-  team: readonly Pick<FightSlot, 'id' | 'name' | 'speciesId' | 'element' | 'role' | 'level'>[],
+  team: readonly Pick<
+    FightSlot,
+    'id' | 'name' | 'speciesId' | 'element' | 'role' | 'level' | 'worn'
+  >[],
 ): ReplayRowEntry[] =>
   team.map((s, position) => ({
     position,
@@ -112,6 +115,7 @@ export const rowOf = (
     element: s.element,
     role: s.role,
     level: s.level,
+    ...(s.worn === undefined || s.worn.length === 0 ? {} : { worn: [...s.worn] }),
   }));
 
 export const emptyRewards = (): DungeonRewards => ({

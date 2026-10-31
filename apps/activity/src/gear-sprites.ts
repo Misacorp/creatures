@@ -5,8 +5,20 @@
  * palette approach as the creature sprites and glyphs (draw them with `<Sprite>`). Every kind has
  * its own shape and every part its own silhouette, so colour is never the only cue. Pure data.
  */
-import { baseElement, gearBase, gearSet, type GearSlot, type PartKind } from '@creatures/game';
-import type { SpriteDef } from './sprites/sprite-data';
+import {
+  baseElement,
+  gearBase,
+  gearContent,
+  gearSet,
+  type GearBase,
+  type GearSlot,
+  type PartKind,
+} from '@creatures/game';
+import { CHARM_SPRITE_DATA } from './sprites/data/item-charm-sprites';
+import { ITEM_FLAIR } from './sprites/data/item-flair';
+import { HAT_SPRITE_DATA } from './sprites/data/item-hat-sprites';
+import { SCARF_SPRITE_DATA } from './sprites/data/item-scarf-sprites';
+import { expandRows, type SpriteDef } from './sprites/sprite-data';
 
 export const ITEM_SIZE = { width: 12, height: 12 } as const;
 export const PART_SIZE = { width: 8, height: 8 } as const;
@@ -163,6 +175,13 @@ export const BUNDLED_SET_SPRITES: Readonly<Record<GearSlot, SpriteDef>> = {
 
 export const GEAR_SLOT_IDS = ['hat', 'scarf', 'charm'] as const satisfies readonly GearSlot[];
 
+/**
+ * The coat of an item with no element and no set (Misa, 2026-10-31): the neutral pieces and the role
+ * and explorer charms. A low-saturation oat beige instead of the bare grey, kept clear of Mire's
+ * saturated ochre and of the explorer set's brighter tan.
+ */
+export const NEUTRAL_PAINT = { t: '#bba88c', u: '#7f6e58', h: '#e4d8c2' } as const;
+
 /** The palette swap that gives an item its element's colours; undefined for neutral (the base palette). */
 export function tintPalette(tint: string | null): Readonly<Record<string, string>> | undefined {
   return tint !== null && Object.hasOwn(TINTS, tint) ? TINTS[tint] : undefined;
@@ -191,6 +210,63 @@ export function setTintPalette(tag: string): Readonly<Record<string, string>> | 
 /** A plain grey silhouette for an item whose base is not in the content (so a screen never breaks). */
 const FALLBACK_ITEM: SpriteDef = charm;
 
+/** Every item look's own sprite (12x12), by look id (`itemLookId`). */
+export const ITEM_LOOK_SPRITES: Readonly<Record<string, SpriteDef>> = {
+  ...HAT_SPRITE_DATA,
+  ...SCARF_SPRITE_DATA,
+  ...CHARM_SPRITE_DATA,
+};
+
+/** Whether two bases are the same item in another element: one slot, the same stats, no set. */
+function sameLook(a: GearBase, b: GearBase): boolean {
+  const plain = (x: GearBase): boolean =>
+    x.set === undefined && (x.tag === 'neutral' || baseElement(x) !== null);
+  return (
+    a.slot === b.slot &&
+    plain(a) &&
+    plain(b) &&
+    JSON.stringify(a.stats ?? null) === JSON.stringify(b.stats ?? null)
+  );
+}
+
+/**
+ * The look an item base is drawn with (Misa, 2026-10-30): every item with its own name has its own
+ * sprite, except element versions of one item (same slot, same stats, no set), which share the first
+ * one's sprite in content order and are told apart by the element tint.
+ */
+export function itemLookId(baseId: string): string {
+  const base = gearBase(baseId);
+  if (base === undefined) return baseId;
+  return gearContent.bases.find((other) => sameLook(other, base))?.id ?? base.id;
+}
+
+/** An element's touch over a shared item look: 12x12 rows where `.` keeps the shared pixel. */
+export interface Flair {
+  rows: readonly string[];
+  palette: Readonly<Record<string, string>>;
+}
+
+/** The shared sprite with a flair drawn over it (both expanded to full rows; the result is not mirrored). */
+export function withFlair(def: SpriteDef, flair: Flair): SpriteDef {
+  const rows = expandRows(def).map((row, y) => {
+    const over = flair.rows[y] ?? '';
+    return [...row]
+      .map((ch, x) => (over[x] === undefined || over[x] === '.' ? ch : over[x]))
+      .join('');
+  });
+  return { rows, palette: { ...def.palette, ...flair.palette } };
+}
+
+/** The flair of an element version of a shared look, or undefined (neutral, a set piece, none drawn). */
+export function itemFlair(baseId: string): Flair | undefined {
+  const base = gearBase(baseId);
+  const element = base === undefined || base.set !== undefined ? null : baseElement(base);
+  if (element === null) return undefined;
+  return ITEM_FLAIR[itemLookId(baseId)]?.[element];
+}
+
+const FLAIRED = new Map<string, SpriteDef>();
+
 /** The sprite of an item base and the palette that tints it. */
 export function itemArt(baseId: string): {
   sprite: SpriteDef;
@@ -198,15 +274,25 @@ export function itemArt(baseId: string): {
 } {
   const base = gearBase(baseId);
   if (base === undefined) return { sprite: FALLBACK_ITEM, palette: undefined };
-  // A gear set piece has its own trimmed sprite, tinted by its set's tag (the Festival pieces by the Festival's).
+  const own = ITEM_LOOK_SPRITES[itemLookId(baseId)];
+  // A gear set piece is tinted by its set's tag (the Festival pieces by the Festival's); the slot's
+  // shared sprites are the fallback for a base drawn before its own sprite.
   if (base.set !== undefined) {
     const set = gearSet(base.set);
     return {
-      sprite: BUNDLED_SET_SPRITES[base.slot],
+      sprite: own ?? BUNDLED_SET_SPRITES[base.slot],
       palette: setTintPalette(set?.tag ?? base.tag),
     };
   }
-  return { sprite: BUNDLED_ITEM_SPRITES[base.slot], palette: tintPalette(baseElement(base)) };
+  const plain = own ?? BUNDLED_ITEM_SPRITES[base.slot];
+  const flair = itemFlair(baseId);
+  let sprite = plain;
+  if (flair !== undefined) {
+    // One sprite object per base, so a screen redraw gets the same object back.
+    sprite = FLAIRED.get(baseId) ?? withFlair(plain, flair);
+    FLAIRED.set(baseId, sprite);
+  }
+  return { sprite, palette: tintPalette(baseElement(base)) ?? NEUTRAL_PAINT };
 }
 
 // --- Parts (8x8) ---

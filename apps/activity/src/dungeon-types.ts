@@ -569,6 +569,8 @@ export interface DungeonReplayRowEntry {
   element: Element;
   role: Role;
   level: number;
+  /** The base ids of the items it wears; absent when none. */
+  worn?: string[];
 }
 
 export interface DungeonReplayRoom {

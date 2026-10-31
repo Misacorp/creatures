@@ -480,6 +480,8 @@ export interface ReplayRowEntry {
   element: Element;
   role: Role;
   level: number;
+  /** The base ids of the items it wears; absent when none (or a run stored before they were kept). */
+  worn?: string[];
 }
 
 export interface DungeonReplayView {

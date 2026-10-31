@@ -113,6 +113,8 @@ export interface PickerOption {
    * as a small item tile at the right end of the row. Absent: the slot is empty, and nothing is drawn.
    */
   worn?: WornItem | readonly WornItem[];
+  /** Everything the creature wears: the row's sprite wears it (`worn-gear.ts`). Absent: drawn bare. */
+  outfit?: readonly { baseId: string }[];
 }
 
 /** An item a creature wears, as the list draws it (a small tile). */
@@ -127,7 +129,7 @@ export interface WornItem {
  * what it adds over it (`{ ...baseOption(c), note, disabled }`).
  */
 export function baseOption(
-  c: Pick<Creature, 'id' | 'species' | 'nickname' | 'level'>,
+  c: Pick<Creature, 'id' | 'species' | 'nickname' | 'level'> & Partial<Pick<Creature, 'gear'>>,
 ): PickerOption {
   const species = getSpecies(c.species);
   return {
@@ -141,6 +143,7 @@ export function baseOption(
     disabled: null,
     effect: null,
     recommended: false,
+    ...(c.gear === undefined || c.gear.length === 0 ? {} : { outfit: c.gear }),
   };
 }
 

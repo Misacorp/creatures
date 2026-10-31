@@ -1,6 +1,6 @@
 # Places
 
-Status: 2026-10-20. Covers the eight destinations, and the daily dungeon as a place.
+Status: 2026-10-20 (a concept place added 2026-10-31, at the end). Covers the eight destinations, and the daily dungeon as a place.
 
 Read `README.md` for the tags. Banners, moods, residents, journal pages and the destination texts are shipped data `(content: destinations.json, journal.json, glossary.json)`. Push-on flavour, sensory details and story hooks are `(compendium detail, not shipped)`.
 
@@ -721,3 +721,85 @@ Status: shipped 2026-10-14. Design: `docs/design/living-room.md` `(design)`.
 - **Who lounges.** A creature does one thing at a time ("creature permanence", Misa's term): one away on an expedition or busy at the workshop cannot lounge. Raiders can, since the raid is a weekly event, not a job `(design)`. When all of a player's creatures are busy, their spot shows a note on a cushion: "all out working" `(content: room-view.ts)`.
 - **Bubble lines.** Short, warm, lowercase, a few characters each: emotes (♪, zzz, !, ..., ?, ♥, hehe) and two-word comforts ("cozy", "warm here", "nice rug", "so snug", "snooze", "tea time", "good fire") `(content: apps/activity/src/room-bubbles.ts)`. New lines should stay as short and as gentle; no jokes at a player's expense, no game advice.
 - **Name.** "The living room" for now. A world name (a hearth, a den) is an open seed: if one is chosen, record it here and in `threads.md` `(compendium detail, not shipped)`.
+
+---
+
+## Concept places (not shipped)
+
+Places below are ideas with art, not content. They are not in `destinations.json`, so the compendium test does not check them. They carry no numbers or rules.
+
+## The Quiet Verge (working name)
+
+**Concept, not shipped (2026-10-31).** Asked by Misa: "design a Void area that can be explored". Art: `apps/activity/src/sprites/concepts/void-place.ts` (two banners, set `void-place`, catalogue in `docs/art/README.md`). Misa may rename it; other names tried: the Hush, the Dim Meadow, Night's Edge. Everything here is `(compendium detail, not shipped)`.
+
+**Element:** Void (see `world.md`, "Void"). **Residents:** void-guard and void-setter (common), void-support (rare), void-payoff (deep) `(concept codes; the creatures have no names yet)`. **Deeper area:** the Far Side.
+
+**Flavour line (draft):** "The edge of the map, where the night sky carries on underneath."
+
+### Access idea
+
+A late place, like the Moonlit Reef, but with its own door. The Old Crossroads signpost has four arrows; at dusk a fifth shadow lies across the ground where no arrow points `(see T12)`. Only explorers who have been to the Crossroads and carry a light of their own (the Moon Lantern is the natural key, see T13) can follow it. It is open in the dark hours, as the Reef is, so the two night places need a choice between them. Whether it is also a rank gate, and whether the door is every night or only some, is for Misa to decide.
+
+### Mood and climate
+
+- **Mood** (draft): hushed, spacious and a little lonely, with warmth at the edges. Not scary: the dark here is kind, like a blanket.
+- **Climate**: cool, dry and perfectly still, a night with no wind. The air tastes faintly of cold metal and rain that has not fallen yet. Sound does not echo; it simply stops.
+
+### Banner art brief
+
+- **Scene:** "A dusk plain of pale lilac dust under a sky that goes dark early: a still pool that holds the stars like a window, three leaning standing stones, a dark moon with a bright rim, and a stone arch at the far end with one warm star inside it."
+- **Palette:** Dusk sky `#262050`, Lilac dust `#6f62b8`, Window dark `#100c22`, Warm star `#fff1b8`. Accents: pale rim `#c5bdee`, cool glint `#9fe8ff`.
+- **Details:** every dark thing has a light edge, so nothing disappears into the night panel; small stone chips floating just above the ground; the pool and the arch are the two "windows"; the lower strip is calm dust for the explorer to walk on, left to right. An alternative, "window open", warms the sky to plum and the stars to gold, for a festival or a special night.
+- **Never:** true black fields; any creature drawn in the scene; anything with teeth or eyes in the dark.
+- **Drawn (concept):** `void-place-banner` (the main banner) and `void-place-deep` (the Far Side: the ground ends, flat stones cross open sky, one great ring with a warm star at its middle hangs ahead).
+
+### Residents
+
+| Creature (concept code) | Rarity | Note                                                                                              |
+| ----------------------- | ------ | ------------------------------------------------------------------------------------------------- |
+| void-guard              | Common | The eclipse hood. Shelters under the standing stones.                                             |
+| void-setter             | Common | The star-feeler wisp. Drifts over the pool and points at whatever is nearest, then marks it.      |
+| void-support            | Rare   | The little planet with two moons. Seen at the arch, lifting a smaller creature up to look inside. |
+| void-payoff             | Deep   | The night lynx. Only on the Far Side, where its ears fill with stars.                             |
+
+### Journal page drafts
+
+| Page                 | Draft text                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------ |
+| The fifth shadow     | There are four arrows on the signpost, and one shadow with no arrow. At dusk it points the way.        |
+| What the pool keeps  | The still pool does not show your face. It shows the sky you walked under last night, with you in it.  |
+| A window to hold     | Every creature here carries a small window. Look in and you will see one warm star, and it looks back. |
+| The stones that wait | The stepping stones on the Far Side never move. They only seem to, when you are not looking.           |
+
+### Push-on flavour
+
+| Goal                 | Place flavour                                                                      |
+| -------------------- | ---------------------------------------------------------------------------------- |
+| Linger a while       | One small light drifts over the pool and does not seem to be going anywhere.       |
+| Forage around        | Cold pebbles that hold a little light, and dust that sparkles when you blow on it. |
+| Take field notes     | Sketch the standing stones and note which way each one leans.                      |
+| Scout ahead          | A lantern hangs from a stone, still lit, with a pack tucked underneath.            |
+| Take the shortcut    | A line of flat stones across the dark. The gaps are wide. The stones are patient.  |
+| Open the lost cache  | A box of grey stone with a star cut into the lid, warm to the touch.               |
+| Press deeper         | Past the last standing stone the ground ends, and the stars begin below your feet. |
+| Break into the vault | The arch with the warm star in it. It is not a door until you step into it.        |
+
+### Sensory details
+
+- A silence so complete you can hear your own lantern.
+- Cold air, no wind, and the smell of metal and distant rain.
+- Dust that glitters like frost and does not melt.
+- A soft light from below, from the pool, that makes every shadow lean upward.
+
+### Story hooks
+
+- The fifth shadow at the Crossroads: where do the four roads go? Perhaps one of them is the night's, and the signpost never had room for it. See T12.
+- The half-sunk arch in the Sunken Fen and the standing arch here look like the same stonework. Is the bog's door the Verge's door seen from the other side? See T32 and T11 (the old symbol).
+- The Moon Lantern "shows the hidden places' doors" `(content: supplies.json)`. This is what it was made to find. See T13.
+- Solmane is a little afraid of the dark and walks into it to light the way for others `(T04)`. A Solmane that comes back from the Far Side, unafraid, would answer that.
+- Something sings across the water at the Reef `(T01)`. Here, at the great ring, something answers.
+- The payoff lynx and the support planet share one window each: where did the first window come from? No one here will say.
+
+### Items and content needed to ship
+
+Void element (chart, marks), four named creatures with stats and lore, a destination entry (flags for access and night), the two banners moved into `data/`, journal pages, push-on text, a glossary entry, and an entry in the weekly rotation. Listed in the set's `notes`.

@@ -13,6 +13,7 @@ import { finaleProgress } from '../../raid-progress';
 import { phaseLine } from '../../raid-text';
 import { raidMaxRounds, roomMaxRounds } from '../../stage-rounds';
 import { StageHead, type StageModifier } from '../../ui/StageHead';
+import { wornBaseIds } from '../worn-sample';
 import { bool, num, str } from '../props';
 import { PATTERN_SCENARIOS, patternFight, type PatternScenario } from '../pattern-fight';
 import { bigRaidFight } from '../raid-fight';
@@ -22,6 +23,16 @@ import type { IntroView } from '../../stage-fx';
 import type { Entry, Props } from '../types';
 
 const REPLAY = parseDungeonReplay(dungeonReplay);
+
+/** The row with every creature wearing something (a different outfit by place), when `gear` is on. */
+function dressed<T extends { worn?: string[] }>(row: readonly T[], on: boolean): T[] {
+  if (!on) return [...row];
+  const outfits = wornBaseIds();
+  return row.map((r, i) => {
+    const worn = outfits[i % outfits.length];
+    return worn === undefined ? r : { ...r, worn };
+  });
+}
 
 /** The sample raid fight: the finale of a party of nine, four rounds in (a fixture, not the API). */
 function sampleFight() {
@@ -122,6 +133,7 @@ const stage: Entry = {
     players: { kind: 'number', min: 1, max: 15 },
     yourLane: { kind: 'number', min: 1, max: 15 },
     roundIntro: { kind: 'toggle' },
+    gear: { kind: 'toggle' },
     track: { kind: 'select', options: TRACK_LOOKS },
   },
   defaults: {
@@ -133,6 +145,7 @@ const stage: Entry = {
     players: 11,
     yourLane: 5,
     roundIntro: false,
+    gear: false,
     track: 'rows',
   },
   presets: [
@@ -151,6 +164,20 @@ const stage: Entry = {
     {
       name: 'Dungeon room 1, the second creature acting',
       props: { fight: 'Dungeon room', events: 8 },
+    },
+    {
+      name: 'Dungeon room, the creatures wearing gear',
+      props: { fight: 'Dungeon room', events: 8, gear: true },
+    },
+    {
+      name: 'Raid, 11 players, the creatures wearing gear',
+      props: {
+        fight: 'Raid, big party',
+        players: 11,
+        yourLane: 5,
+        events: BIG_MID_FIGHT,
+        gear: true,
+      },
     },
     { name: 'Dungeon room 3, the end', props: { fight: 'Dungeon room', events: 200, room: 3 } },
     ...PATTERN_SCENARIOS.map((move) => ({
@@ -220,7 +247,7 @@ const stage: Entry = {
           hpMax={room.foe.hpMax}
           hpStart={room.foe.hpMax}
           rounds={roomMaxRounds(room.foe.id)}
-          row={stageRow(REPLAY)}
+          row={dressed(stageRow(REPLAY), bool(p, 'gear'))}
           mineIds={mineIds([])}
           names={room.names}
           events={room.events}
@@ -244,7 +271,7 @@ const stage: Entry = {
           hpMax={big.hpMax}
           hpStart={big.hpMax}
           rounds={raidMaxRounds('finale', big.boss.id)}
-          row={big.row}
+          row={dressed(big.row, bool(p, 'gear'))}
           mineIds={big.mineIds}
           names={big.names}
           events={big.events}
@@ -263,7 +290,7 @@ const stage: Entry = {
         hpMax={fight.boss.hpMax}
         hpStart={fight.boss.hpStart}
         rounds={raidMaxRounds('phase1', fight.boss.id)}
-        row={fight.row}
+        row={dressed(fight.row, bool(p, 'gear'))}
         mineIds={new Set(fight.row.filter((r) => r.owner === fight.you).map((r) => r.id))}
         names={fight.names}
         events={fight.events}

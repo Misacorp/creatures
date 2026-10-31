@@ -102,6 +102,8 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [creatures.md](creatures.md): Catching, pity, species, evolutions, levels and XP, training, talents and the Talent Book, fusion, ribbons, creature lore.
 
+- 2026-10-30 \[Misa\] Requested art is kept in an art library until content uses it
+- 2026-10-30 Concept art runs ahead of content, drawn with the art studio (amended)
 - 2026-10-28 Ribbons and medals on the creature card
 - 2026-10-26 A private note per creature
 - 2026-10-25 Evolution short of Essence shows on the creature page
@@ -319,6 +321,9 @@ Superseded: 1 entry (see the topic file).
 [gear.md](gear.md): Gear items, lines and sets, crafting, dismantling, conversions, the bag and the item picker.
 
 - 2026-10-31 Gear in combat v2: talents lead early, a balance mid-game, gear leads the endgame; no slot level requirements; gear alone can build crit \[Misa\]
+- 2026-10-31 \[Misa\] Items with no element get an oat-beige coat instead of grey
+- 2026-10-31 \[Misa\] Element versions of a shared item get a small element flair
+- 2026-10-30 \[Misa\] Every named item has its own sprite; element versions share one, tinted (amended)
 - 2026-10-27 Marked items, dismantled as a pile (amended)
 - 2026-10-21 the Workshop's supply jobs are one wizard in a drawer; level limits may fold in job pickers (amended)
 - 2026-10-21 A found item opens its item card (tap, or hover with a mouse)
@@ -385,6 +390,9 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-10-31 \[Misa\] The fight board shows worn gear, item detail does not
+- 2026-10-31 Creatures blink, and shiny creatures twinkle
+- 2026-10-31 Creatures wear their gear on their sprite
 - 2026-10-28 One spacing scale inside drawers and sheets
 - 2026-10-28 One spacing scale inside popovers
 - 2026-10-28 Selecting several is shared

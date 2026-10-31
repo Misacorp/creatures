@@ -199,6 +199,7 @@ export function slotFor(creature: TeamCreature, alias: string): FightSlot {
     stats: creature.stats,
     ...(creature.crit === undefined ? {} : { crit: creature.crit }),
     ...(creature.mods === undefined ? {} : { mods: creature.mods }),
+    ...(creature.kit.items.length === 0 ? {} : { worn: creature.kit.items.map((i) => i.baseId) }),
   };
 }
 
