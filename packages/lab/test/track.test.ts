@@ -142,6 +142,7 @@ describe('the boss of a slot', () => {
     const numbers = SLOT_NUMBERS as Record<number, unknown>;
     const kept = numbers[3];
     const strength = SLOT_STRENGTH as Record<number, number>;
+    const keptStrength = strength[3];
     try {
       numbers[3] = { hp: 12_345, atk: 67 };
       strength[3] = 4_321;
@@ -154,7 +155,8 @@ describe('the boss of a slot', () => {
       expect(slotBoss(4).hp).not.toBe(12_345);
     } finally {
       numbers[3] = kept;
-      delete strength[3];
+      if (keptStrength === undefined) delete strength[3];
+      else strength[3] = keptStrength;
     }
   });
 });

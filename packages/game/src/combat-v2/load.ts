@@ -17,6 +17,7 @@ import {
   type RaidBossDef,
 } from './boss-schema';
 import { ADDITIVE_FIELDS } from './fx-schema';
+import { RaidTrackSchema, type RaidTrackDef } from './track-schema';
 import { RulesSchema, type CombatRules } from './rules-schema';
 import {
   FormFileSchema,
@@ -36,6 +37,7 @@ export interface RawCombatV2 {
   readonly talents: unknown;
   readonly cards: unknown;
   readonly raidBosses: unknown;
+  readonly raidTrack: unknown;
   readonly foes: unknown;
   readonly keywords: unknown;
 }
@@ -72,6 +74,8 @@ export interface CombatV2Pack {
   readonly keywords: Readonly<Record<string, KeywordDef>>;
   /** Raid bosses by id (the high rank's numbers). */
   readonly raidBosses: Readonly<Record<string, RaidBossDef>>;
+  /** The raid boss track: the order of the bosses and, per slot, the numbers and rules of the meeting. */
+  readonly raidTrack: RaidTrackDef;
   /** The lab scale of a foe's content numbers and the depth curve of its HP and Attack. */
   readonly foeScale: FoeScale;
   readonly foeCurve: FoeCurve;
@@ -139,7 +143,9 @@ function checkBoss(
  * Knack's family exists; every form is a shipped form and every shipped form has an entry with at least one own
  * Knack; every Knack a form names exists and every Knack is on at least one form; ids are unique; every talent
  * in a pool exists, each pool holds seven talents and each pool is a shipped line's; a talent's effects use only
- * the additive fields and never Seal; every rules field is present (the schema).
+ * the additive fields and never Seal; every rules field is present (the schema). The raid track: every boss is a raid boss, slot n
+ * is `order[(n - 1) % order.length]`, slots run 1, 2, 3 ... with no gaps, a slot has no more cards than its boss, its extra cards exist
+ * and are not the boss's own, strength is 0 to 10000.
  */
 export function loadCombatV2(
   raw: RawCombatV2,
@@ -152,6 +158,7 @@ export function loadCombatV2(
   const talentFile = parse(TalentFileSchema, raw.talents, 'talents.json');
   const cardFile = parse(CardFileSchema, raw.cards, 'cards.json');
   const raidFile = parse(RaidBossFileSchema, raw.raidBosses, 'raid-bosses.json');
+  const trackFile = parse(RaidTrackSchema, raw.raidTrack, 'raid-track.json');
   const foeFile = parse(FoeFileSchema, raw.foes, 'foes.json');
   const keywordFile = parse(KeywordFileSchema, raw.keywords, 'keywords.json');
 
@@ -267,6 +274,33 @@ export function loadCombatV2(
     raidBosses[b.id] = b;
   }
 
+  for (const id of trackFile.order) {
+    if (!Object.hasOwn(raidBosses, id))
+      fail(`raid track order names "${id}", which is no raid boss`);
+  }
+  trackFile.slots.forEach((s, i) => {
+    const where = `raid track slot ${String(s.slot)}`;
+    if (s.slot !== i + 1)
+      fail(`${where} is at place ${String(i + 1)}: slots run 1, 2, 3 ... with no gaps`);
+    const boss = raidBosses[s.boss];
+    if (boss === undefined) return fail(`${where} names "${s.boss}", which is no raid boss`);
+    const want = trackFile.order[i % trackFile.order.length];
+    if (s.boss !== want)
+      fail(`${where} is "${s.boss}", but the order puts "${String(want)}" there`);
+    if (s.cards > boss.cards.length)
+      fail(
+        `${where} has ${String(s.cards)} cards, but "${s.boss}" has only ${String(boss.cards.length)}`,
+      );
+    const seen = new Set<string>();
+    for (const c of s.extraCards) {
+      if (!Object.hasOwn(cards, c)) fail(`${where} adds the unknown card "${c}"`);
+      if (boss.cards.includes(c))
+        fail(`${where} adds "${c}", which is one of "${s.boss}"'s own cards`);
+      if (seen.has(c)) fail(`${where} adds "${c}" twice`);
+      seen.add(c);
+    }
+  });
+
   const foeIds = new Set(shipped.foes.map((f) => f.id));
   const foes: Record<string, FoeDef> = {};
   for (const f of foeFile.foes) {
@@ -293,6 +327,7 @@ export function loadCombatV2(
     cards,
     keywords,
     raidBosses,
+    raidTrack: trackFile,
     foeScale: foeFile.scale,
     foeCurve: foeFile.curve,
     foes,

@@ -66,7 +66,7 @@ Big simulations come in phase 5 on purpose: week-by-week and Boss Rank numbers m
 
 **How to work in the lab** (`packages/lab`, 4 cores):
 
-- `node scripts/report.mjs` (full report, about 80 s), `--quick` (13 s), `--bosses --boss <id>` (one raid boss), `--tune [--boss <id>] [--rank all]` (fixed ranks), `--tune --track` (the track, about 3 minutes), `--path --speed all --determination` (servers week by week, seconds).
+- `node scripts/report.mjs` (full report, about 80 s), `--quick` (13 s), `--bosses --boss <id>` (one raid boss), `--tune [--boss <id>] [--rank all]` (fixed ranks), `--tune --track [--write]` (the track, about 3 minutes; `--write` writes the tuned HP, Attack and armour into `raid-track.json`, and the tuner prints `SLOT_WEEKS` and `SLOT_MIXED_ANSWER` to paste into `track.ts`), `--path --speed all --determination` (servers week by week, seconds).
 - **Agents change rules and content; the tuners set the numbers.** Targets live in `src/targets.ts`; the tests' boss rules in `src/raidRules.ts`, shared with the tuners, so a tuner cannot propose numbers a test rejects. Never loosen a test threshold to make numbers fit; a target the tuner cannot reach is a content problem.
 - **Speed budget:** full report under 2 minutes, quick under 20 s, lab tests about 10 s. After merging agents' worktrees, run `pnpm worktrees:clean --yes`.
 - **Settle the success measure with Misa before a tuning pass** (moving targets cost the 10-29 pass most of its time).
@@ -86,7 +86,7 @@ Big simulations come in phase 5 on purpose: week-by-week and Boss Rank numbers m
    - **Rewrite** Tidal Colossus's and Old Bogback's second answers with the team search (weaker since Hearthshell, a festival prize, left them).
    - **The mixed kill misses** at slots 8 (Storm Sovereign with Lucky Strike, 13%), 11 and 14 (19% and 20%, just short since the talent cuts): look at slot 8 as Breakwater looked at the Colossus; 11 and 14 may come back with the second answers' rewrite below.
    - **Score the raid searches on potential** (they are saturated at 100% kill, so Knack usage on the bosses is near random; panel 6 finding 22) and re-read the dead Knacks there (Night Watch, Primed by Pain).
-   - **New valley data:** when the valley sends a new `roster-profile.json` or `server-coverage.json`, copy both into `packages/lab/data/valley/`, update the commit named in `valley.ts`, and rerun `--tune --track`, the path and the report. Its `forms` lists now name held forms; nothing reads them yet.
+   - **New valley data:** when the valley sends a new `roster-profile.json` or `server-coverage.json`, copy both into `packages/lab/data/valley/`, update the commit named in `valley.ts`, and rerun `--tune --track --write`, the path and the report. Its `forms` lists now name held forms; nothing reads them yet.
    - **The valley's School relies on the talent rules** (valley round 18, Q45, `docs/design/valley/systems/school.md` V-SCH-7 to 9 on the valley branch): a creature first learns a talent from its line's book at the School (paid once), swapping stays free, and visiting teachers add talents to a line's book only if that line's pool of seven holds them. If line pools or "learning costs once, swapping is free" (R20) change, tell the valley session.
    - **The raid calendar** (Misa, to the valley, "eventually"): stage 1 on Saturday, stage 2 on Sunday, the finale Sunday evening. A direction for phase 4, not a change now.
 3. **Later content:** a Mire Setter or Payoff (needs art); the Undercroft's own foes; an opt-in harder boss for the endgame.

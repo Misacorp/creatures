@@ -8,6 +8,7 @@ import forms from '../src/combat-v2/data/forms.json';
 import keywords from '../src/combat-v2/data/keywords.json';
 import knacks from '../src/combat-v2/data/knacks.json';
 import raidBosses from '../src/combat-v2/data/raid-bosses.json';
+import raidTrack from '../src/combat-v2/data/raid-track.json';
 import rules from '../src/combat-v2/data/rules.json';
 import talents from '../src/combat-v2/data/talents.json';
 
@@ -33,6 +34,7 @@ interface Files {
     answers: string[];
   }[];
   raidBosses: RawBoss[];
+  raidTrack: RawTrack;
   foes: { scale: Fx; curve: Fx; foes: RawBoss[] };
   keywords: { name: string; means: string; not: string; step: string }[];
 }
@@ -44,6 +46,21 @@ interface RawMove {
   pattern: Fx;
   powerBp: number;
   silenceTurns?: number;
+}
+interface RawSlot {
+  slot: number;
+  boss: string;
+  hp: number;
+  atk: number;
+  armour: number;
+  strengthBp: number;
+  cards: number;
+  buildUp: boolean;
+  extraCards: string[];
+}
+interface RawTrack {
+  order: string[];
+  slots: RawSlot[];
 }
 interface RawBoss {
   id: string;
@@ -69,6 +86,11 @@ const byId = <T extends { id: string }>(list: readonly T[], id: string): T => {
   return x;
 };
 const raid = (r: Files, id: string): RawBoss => byId(r.raidBosses, id);
+const slotOf = (r: Files, n: number): RawSlot => {
+  const s = r.raidTrack.slots[n - 1];
+  if (s === undefined) throw new Error(`no slot ${String(n)}`);
+  return s;
+};
 const foe = (r: Files, id: string): RawBoss => byId(r.foes.foes, id);
 const card = (r: Files, id: string) => byId(r.cards, id);
 const pool = (r: Files, line: string): string[] => {
@@ -87,6 +109,7 @@ function broken(edit: (r: Files) => void): () => unknown {
       talents,
       cards,
       raidBosses,
+      raidTrack,
       foes,
       keywords,
     }) as unknown as Files;
@@ -400,6 +423,133 @@ describe('combat v2 content', () => {
     );
     expect(broken((r) => (first(r.keywords).means = 'See {Nope}.'))).toThrow(
       /keyword "Mark" uses the undefined keyword \{Nope\}/,
+    );
+  });
+});
+
+/** The track as the lab had it before it became data (`track.ts`: `SLOT_NUMBERS`, the ladder's strengths, `SLOT_CARDS`, `SLOT_EXTRA_CARDS`). */
+const LAB_TRACK = [
+  [1, 'tidal-colossus', 3_800, 83, 19, 1_833, 0, false, []],
+  [2, 'cinder-wyrm', 7_500, 80, 42, 3_000, 1, false, []],
+  [3, 'storm-sovereign', 13_500, 53, 7, 4_167, 2, true, []],
+  [4, 'old-bogback', 28_200, 82, 19, 5_333, 2, true, []],
+  [5, 'thornmother', 6_500, 155, 124, 6_500, 1, true, []],
+  [6, 'tidal-colossus', 15_600, 113, 21, 7_200, 2, true, ['slippery', 'breakwater']],
+  [7, 'cinder-wyrm', 10_200, 185, 48, 7_900, 2, true, []],
+  [8, 'storm-sovereign', 7_000, 96, 4, 8_600, 2, true, ['lucky-strike']],
+  [9, 'old-bogback', 32_800, 100, 33, 9_300, 2, true, []],
+  [10, 'thornmother', 8_000, 102, 149, 10_000, 1, true, []],
+  [11, 'tidal-colossus', 13_400, 143, 36, 10_000, 2, true, ['slippery', 'breakwater']],
+  [12, 'cinder-wyrm', 11_500, 199, 49, 10_000, 2, true, []],
+  [13, 'storm-sovereign', 14_300, 48, 10, 10_000, 2, true, ['lucky-strike']],
+  [14, 'old-bogback', 32_700, 117, 31, 10_000, 2, true, []],
+  [15, 'thornmother', 9_000, 97, 156, 10_000, 1, true, []],
+] as const;
+
+describe('combat v2 raid track', () => {
+  it('loads the shipped track: the order of the bosses and slots 1 to 15', () => {
+    expect(combatV2.raidTrack.order).toEqual([
+      'tidal-colossus',
+      'cinder-wyrm',
+      'storm-sovereign',
+      'old-bogback',
+      'thornmother',
+    ]);
+    expect(combatV2.raidTrack.slots.map((s) => s.slot)).toEqual(LAB_TRACK.map((t) => t[0]));
+  });
+
+  it('holds the numbers, strengths, ramp and extra cards the lab had for slots 1 to 15', () => {
+    const got = combatV2.raidTrack.slots.map((s) => [
+      s.slot,
+      s.boss,
+      s.hp,
+      s.atk,
+      s.armour,
+      s.strengthBp,
+      s.cards,
+      s.buildUp,
+      s.extraCards,
+    ]);
+    expect(got).toEqual(LAB_TRACK.map((t) => [...t]));
+  });
+
+  it('puts no word of "wall" in the data', () => {
+    expect(JSON.stringify(raidTrack)).not.toMatch(/wall/i);
+  });
+
+  it('rejects an order that names a boss that is not a raid boss', () => {
+    expect(broken((r) => r.raidTrack.order.push('not-a-boss'))).toThrow(
+      /raid track order names "not-a-boss", which is no raid boss/,
+    );
+  });
+
+  it('rejects a slot whose boss is not the one the order puts there', () => {
+    expect(broken((r) => (slotOf(r, 2).boss = 'thornmother'))).toThrow(
+      /raid track slot 2 is "thornmother", but the order puts "cinder-wyrm" there/,
+    );
+    expect(broken((r) => (slotOf(r, 6).boss = 'cinder-wyrm'))).toThrow(
+      /raid track slot 6 is "cinder-wyrm", but the order puts "tidal-colossus" there/,
+    );
+    expect(broken((r) => (slotOf(r, 3).boss = 'not-a-boss'))).toThrow(
+      /raid track slot 3 names "not-a-boss", which is no raid boss/,
+    );
+  });
+
+  it('follows a reordered track: slot n is order[(n - 1) % length]', () => {
+    expect(
+      broken((r) => {
+        r.raidTrack.order.reverse();
+        r.raidTrack.slots.forEach((s, i) => {
+          s.boss = r.raidTrack.order[i % r.raidTrack.order.length] as string;
+          s.cards = 0;
+          s.extraCards = [];
+        });
+      }),
+    ).not.toThrow();
+  });
+
+  it('rejects slots that are out of order or have a gap', () => {
+    expect(broken((r) => r.raidTrack.slots.splice(3, 1))).toThrow(
+      /raid track slot 5 is at place 4: slots run 1, 2, 3 ... with no gaps/,
+    );
+    expect(broken((r) => (slotOf(r, 1).slot = 2))).toThrow(/raid track slot 2 is at place 1/);
+    expect(broken((r) => (r.raidTrack.slots = []))).toThrow(
+      /Invalid combat v2 content: raid-track.json/,
+    );
+  });
+
+  it('rejects more cards than the boss has', () => {
+    // Thornmother has one card of her own, Old Bogback two.
+    expect(broken((r) => (slotOf(r, 5).cards = 2))).toThrow(
+      /raid track slot 5 has 2 cards, but "thornmother" has only 1/,
+    );
+    expect(broken((r) => (slotOf(r, 4).cards = 3))).toThrow(
+      /raid track slot 4 has 3 cards, but "old-bogback" has only 2/,
+    );
+    expect(broken((r) => (slotOf(r, 5).cards = -1))).toThrow(/raid-track.json/);
+  });
+
+  it('rejects an extra card that does not exist, is one of the boss’s own, or repeats', () => {
+    expect(broken((r) => slotOf(r, 8).extraCards.push('no-such-card'))).toThrow(
+      /raid track slot 8 adds the unknown card "no-such-card"/,
+    );
+    const own = raidBosses.find((b) => b.id === 'storm-sovereign')?.cards[0] as string;
+    expect(broken((r) => slotOf(r, 8).extraCards.push(own))).toThrow(
+      new RegExp(`raid track slot 8 adds "${own}", which is one of "storm-sovereign"'s own cards`),
+    );
+    expect(broken((r) => slotOf(r, 8).extraCards.push('lucky-strike'))).toThrow(
+      /raid track slot 8 adds "lucky-strike" twice/,
+    );
+  });
+
+  it('rejects a strength outside 0 to 10000, a missing field and an unknown field', () => {
+    expect(broken((r) => (slotOf(r, 1).strengthBp = 10_001))).toThrow(/raid-track.json/);
+    expect(broken((r) => (slotOf(r, 1).strengthBp = -1))).toThrow(/raid-track.json/);
+    expect(broken((r) => (slotOf(r, 1).strengthBp = 0))).not.toThrow();
+    expect(broken((r) => (slotOf(r, 1).strengthBp = 10_000))).not.toThrow();
+    expect(broken((r) => delete (slotOf(r, 1) as Partial<RawSlot>).hp)).toThrow(/raid-track.json/);
+    expect(broken((r) => ((slotOf(r, 1) as unknown as Fx)['wall'] = true))).toThrow(
+      /raid-track.json/,
     );
   });
 });

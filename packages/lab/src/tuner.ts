@@ -707,7 +707,7 @@ export interface RankResult {
   readonly weekends: number;
   /** Seconds of work added up over all cores. */
   readonly seconds: number;
-  /** The lines to paste into `bosses.ts`. */
+  /** The numbers to put in the boss's entry in `raid-bosses.json` (`pasteOf`). */
   readonly paste: string;
   /** Set when a lower rank's paste is expressed against a proposed high rank other than today's (`rebaseOn`). */
   readonly rebasedOn?: Numbers;
@@ -723,10 +723,14 @@ export interface TuneRunner {
 
 const grouped = (n: number): string => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '_');
 
+/**
+ * The numbers to put in the boss's entry in `raid-bosses.json` (`packages/game/src/combat-v2/data/`): the high rank's are the entry's
+ * `hp`, `atk` and `armour`, a lower rank's are its `ranks.low` or `ranks.mid` entry (`hpBp`, `atkBp`, `armourBp`, bp of the high rank's).
+ */
 function pasteOf(id: string, rank: TargetRank, n: Numbers): string {
   if (rank === 'high')
-    return `${id} (RAID_SPECS, high rank): hp: ${grouped(n.hp)}, atk: ${n.atk}, armour: ${n.armour}`;
-  return `${id} (RAID_SPECS, ranks.${rank}): [${grouped(n.hp)}, ${grouped(n.atk)}, ${grouped(n.armour)}]  // [hpBp, atkBp, armourBp]`;
+    return `${id} (raid-bosses.json, high rank): hp: ${n.hp}, atk: ${n.atk}, armour: ${n.armour}`;
+  return `${id} (raid-bosses.json, ranks.${rank}): hpBp: ${n.hp}, atkBp: ${n.atk}, armourBp: ${n.armour}`;
 }
 
 /**

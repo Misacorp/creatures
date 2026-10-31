@@ -619,9 +619,8 @@ describe('lower ranks against a new high rank', () => {
       const want = r.best?.absolute as Numbers;
       expect(back).toMatchObject({ atk: want.atk, armour: want.armour });
       expect(Math.abs(back.hp - want.hp)).toBeLessThanOrEqual(1);
-      const grouped = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '_');
       expect(r.paste).toContain(
-        `ranks.${r.rank}): [${grouped(bp.hp)}, ${grouped(bp.atk)}, ${grouped(bp.armour)}]`,
+        `raid-bosses.json, ranks.${r.rank}): hpBp: ${bp.hp}, atkBp: ${bp.atk}, armourBp: ${bp.armour}`,
       );
     }
     expect(results[0]?.rebasedOn).toBeUndefined();
@@ -693,7 +692,7 @@ describe('the orchestration', () => {
     expect(r.best?.numbers.hp ?? 0).toBeGreaterThanOrEqual(Math.ceil(16_766 / 0.95));
     expect(r.today.numbers).toEqual({ hp: 19_100, atk: 114, armour: 34 });
     expect(r.conflicts.allMet).toBeGreaterThan(0);
-    expect(r.paste).toContain('tidal-colossus');
+    expect(r.paste).toContain('tidal-colossus (raid-bosses.json, high rank)');
     expect(r.paste).toContain(`atk: ${String(r.best?.numbers.atk)}`);
     expect(r.atEdge.join(' ')).toContain('hp at its lower limit, set by the ladder');
     expect(r.weekends).toBeGreaterThanOrEqual(10 * r.candidates);
