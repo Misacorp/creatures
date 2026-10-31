@@ -46,8 +46,10 @@ export interface KnackFx {
   readonly storeDodgeStacks?: number;
   /** A Guard that does not intercept (the price of marking like a Setter, P-02). */
   readonly noIntercept?: boolean;
-  /** Intercepts area hits too, after the target's failed dodge. */
+  /** Intercepts area hits too, after the target's failed dodge, and takes them with its own cover's cut (Catch the Bolts). */
   readonly interceptArea?: boolean;
+  /** Night Watch: the hit it takes is cut by this much (bp), when that is more than its cover's cut. */
+  readonly watchCutBp?: number;
   /** Night Watch: takes the first Charged hit each boss turn aimed at a creature in its row, with its own cover's cut. */
   readonly interceptCharged?: boolean;
   /** When it intercepts a hit, it leaves two stacks of its own element's mark (at most once a round). */
@@ -300,10 +302,10 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'twin-strike',
       name: 'Twin Strike',
       family: 'Flurry',
-      text: 'Hits twice, each for 55%. Each hit can set off a reaction.',
+      text: 'Hits twice, each for 58%. Each hit can set off a reaction.',
       intent:
         'Weaker in a plain fight; answers bosses that cap single hits or dodge a lot. Poor against armour.',
-      fx: { twinStrikeBp: 5_500 },
+      fx: { twinStrikeBp: 5_800 },
     }),
     // Halcyray (Spark Support, second branch)
     K({
@@ -352,10 +354,10 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'night-watch',
       name: 'Night Watch',
       family: 'Intercept',
-      text: "Each boss turn it {Intercept}s the first {Wind-up} hit on a creature in its row, and takes it with its cover's cut.",
+      text: 'Each boss turn it {Intercept}s the first {Wind-up} hit in its row, taking a quarter of it.',
       intent:
-        'Answers telegraphed big hits (Great Wave, Judgement Bolt). One hit a boss turn, and the hit it takes is cut by its own cover, so it is no longer a liability (panel 4).',
-      fx: { interceptCharged: true },
+        'Answers telegraphed big hits (Great Wave, Judgement Bolt). One hit a boss turn, and the hit it takes is cut to a quarter (the most any cut can take), so it is no longer a liability (panel 4; 2026-10-31: the cover cut of 40% left it tied with no Knack outside Great Wave and behind Primed by Pain on it).',
+      fx: { interceptCharged: true, watchCutBp: 7_500 },
     }),
     // Sunfawn (Grove Support, second branch)
     K({
@@ -465,8 +467,9 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'catch-the-bolts',
       name: 'Catch the Bolts',
       family: 'Intercept',
-      text: 'It {Intercept}s area hits too.',
-      intent: 'Answers sweeps and splashes.',
+      text: "It {Intercept}s area hits too, and takes them with its cover's cut.",
+      intent:
+        'Answers sweeps and splashes. 2026-10-31: it used to take the whole area hit with no cut, which left it worse than no Knack on Great Wave; the cover cut makes it the pick against sweeps.',
       fx: { interceptArea: true },
     }),
     K({
@@ -606,10 +609,10 @@ export const KNACKS: Readonly<Record<string, KnackDef>> = Object.fromEntries(
       id: 'cool-head',
       name: 'Cool Head',
       family: 'Luck',
-      text: '{Crit}s on it and on the creatures {Beside} it deal 50% less extra damage.',
+      text: '{Crit}s on it and on the creatures {Beside} it deal no extra damage.',
       intent:
-        'The answer to a boss that crits (Lucky Strike): a Guard that keeps a double hit to a hit and a half for itself and its neighbours. Nothing against a boss that never crits.',
-      fx: { critWardBp: 5_000 },
+        'The answer to a boss that crits (Lucky Strike): a Guard that keeps a crit to a plain hit for itself and its neighbours (2026-10-31: at half it was tied with no Knack on every card but Lucky Strike, and barely ahead there). Nothing against a boss that never crits.',
+      fx: { critWardBp: 10_000 },
     }),
   ].map((k) => [k.id, k]),
 );

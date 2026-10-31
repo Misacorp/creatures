@@ -130,6 +130,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-10-31 Phase 1 gate: five intended answers fixed, and four Knacks given a real use (Catch the Bolts, Night Watch, Cool Head, Twin Strike)
 - 2026-10-31 Slots 1 and 2 field stage 1 lines; the mixed server fields the written answer that suits it
 - 2026-10-31 Combat v2: Knack usage is read within the form
 - 2026-10-30 Ownability reads the valley's launch coverage per line; a festival prize is never ownable
