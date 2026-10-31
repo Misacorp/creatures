@@ -130,6 +130,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-10-31 Phase 1 passes with the casual metric at 1.41; 1.5 stays a target for the balance phase \[Misa\]
 - 2026-10-31 Phase 1 gate: five intended answers fixed, and four Knacks given a real use (Catch the Bolts, Night Watch, Cool Head, Twin Strike)
 - 2026-10-31 Slots 1 and 2 field stage 1 lines; the mixed server fields the written answer that suits it
 - 2026-10-31 Combat v2: Knack usage is read within the form
@@ -183,9 +184,10 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [raids.md](raids.md): Raid schedule, parties and joining, bosses and the raid curve, the live finale, raid board and summaries, raid Discord posts.
 
+- 2026-10-31 Breakwater joins Tidal Colossus from its second lap, beside Slippery \[Misa\]
 - 2026-10-31 Lucky Strike goes on the Storm Sovereign and Slippery on the Tidal Colossus, from their second lap
 - 2026-10-31 Lucky Strike and Slippery both go on raid bosses \[Misa\] (amended)
-- 2026-10-31 Mixed servers are tuned too; Determination on from the second lap, capped at +25%; a track strip, and no boss is called a wall \[Misa\]
+- 2026-10-31 Mixed servers are tuned too; Determination on from the second lap, capped at +25%; a track strip, and no boss is called a wall \[Misa\] (amended)
 - 2026-10-30 Thornmother is a deliberate wall at the end of the first lap \[Misa\] (amended)
 - 2026-10-30 Raids are tuned on damage potential; young servers ramp in; Determination built but off \[Misa\] (amended)
 - 2026-10-30 Festival weeks pause the boss track; no rank ease \[Misa\]

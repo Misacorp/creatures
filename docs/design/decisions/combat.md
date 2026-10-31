@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: Phase 1 passes with the casual metric at 1.41; 1.5 stays a target for the balance phase **[Misa]**
+
+ID: `2026-10-31-phase-1-passes-with-the-casual` · Status: current
+
+**Decision (Misa, 2026-10-31).** Combat v2's phase 1 (design in the lab) is accepted with the casual metric at **1.41** of 3 creatures from outside a casual player's top three by level, against the gate's 1.5. Phase 2 (the engine port) can start. 1.5 stays a target for phase 5 (simulation and balance), where real rosters and the board's hints exist. The other four gate items pass (`docs/design/combat/roadmap.md`, "Where we are").
+
+**Reasoning.** The metric now reads 32 rosters with its spread (±0.14); the old 1.5 came from 4 rosters and was a lucky draw (20 redraws averaged 1.31), so the miss is the measure getting honest, not the design getting worse. The port moves rules, not numbers, so the target can still be reached in the balance phase.
+
 ## 2026-10-31: Phase 1 gate: five intended answers fixed, and four Knacks given a real use (Catch the Bolts, Night Watch, Cool Head, Twin Strike)
 
 ID: `2026-10-31-phase-1-gate-five-intended-answers` · Status: current

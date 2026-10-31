@@ -4,6 +4,14 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: Breakwater joins Tidal Colossus from its second lap, beside Slippery **[Misa]**
+
+ID: `2026-10-31-breakwater-joins-tidal-colossus-from-its` · Status: current · Amends: `2026-10-31-mixed-servers-are-tuned-too-determination`
+
+**Decision (Misa, 2026-10-31; the card is the lead's, from an overnight lab experiment).** Tidal Colossus gets a second new card from its second lap (slot 6, then 11 and on), beside Slippery: **Breakwater**. Its waves break on wards: Row Ward cuts (Keep the Heat In, Living Shelter) count about 2.4 to 3 times as much against its sweeps, by the card's strength. A mixed server's prepared players field the Row Ward answer, and a ward covers its whole row whoever owns it, so they shelter the casual players beside them.
+
+**Reasoning.** Mixed servers could not beat the Colossus's later laps: at any HP where they won sometimes, the unprepared party of four won every week. The experiment measured four fixes. A Guard in a column cutting the waves failed: the unprepared party has a Guard in every column and gained more than the mixed server. Bigger single hits and taking Slippery off did not move the mixed server at all. Breakwater met every target at both slots (mixed kill 36% and 23% a weekend, the unprepared party at 80% to 84% with no kill), because the unprepared party has no ward and gains nothing. Misa: "A sounds good." "One new card per boss" was the lead's rule, not Misa's, and gives way here.
+
 ## 2026-10-31: Lucky Strike goes on the Storm Sovereign and Slippery on the Tidal Colossus, from their second lap
 
 ID: `2026-10-31-lucky-strike-goes-on-the-storm` · Status: current · Amends: `2026-10-31-lucky-strike-and-slippery-both-go`
@@ -28,7 +36,7 @@ ID: `2026-10-31-lucky-strike-and-slippery-both-go` · Status: current, amended b
 
 ## 2026-10-31: Mixed servers are tuned too; Determination on from the second lap, capped at +25%; a track strip, and no boss is called a wall **[Misa]**
 
-ID: `2026-10-31-mixed-servers-are-tuned-too-determination` · Status: current · Amends: `2026-10-30-raids-are-tuned-on-damage-potential`, `2026-10-30-thornmother-is-a-deliberate-wall-at`
+ID: `2026-10-31-mixed-servers-are-tuned-too-determination` · Status: current, amended by `2026-10-31-breakwater-joins-tidal-colossus-from-its` · Amends: `2026-10-30-raids-are-tuned-on-damage-potential`, `2026-10-30-thornmother-is-a-deliberate-wall-at`
 
 **Decision (Misa, answering design panel 6, `docs/design/combat/reviews/2026-10-31-panel-6.md`).**
 
