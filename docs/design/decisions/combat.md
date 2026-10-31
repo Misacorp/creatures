@@ -4,6 +4,25 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: [Misa] Combat v2 names, batch 2: talents
+
+ID: `2026-10-31-combat-v2-names-batch-2-talents` · Status: current
+
+**Decision.** Misa went through all 34 combat talents on the names page. 28 keep their names. Renamed (ids stay):
+
+| Was           | Now             | Note                                                                                                                                |
+| ------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Crit Damage   | Amplified Crits |                                                                                                                                     |
+| Cull          | Culling Strike  |                                                                                                                                     |
+| Heavy Hand    | Wicked          | Its text now says "its debuffs" instead of Mired (Misa: it applies to all debuffs; Mired is the only one today, so no number moves) |
+| Hold the Line | Easily Provoked |                                                                                                                                     |
+| Owner's Mark  | Potent Mark     |                                                                                                                                     |
+| Stubborn      | Refuse to Fall  | Second Wind was wanted, but it is a shipped gear chance line with another effect (P-06)                                             |
+
+Crit Damage, Owner's Mark, Heavy Hand and Stubborn are also the names of shipped gear lines with the same effect. By the standing rule (a talent and a gear line with the same effect share one name, 2026-10-28), the combat v2 gear lines take the new names when gear moves to combat v2 (`gear-plan.md`); the shipped v1 lines keep theirs until then.
+
+**Reasoning.** Phase 3's gate needs approved names before the compendium entries. Ids do not change, so a rename is a data edit.
+
 ## 2026-10-31: [Misa] Combat v2 names, batch 1: Knacks and families
 
 ID: `2026-10-31-combat-v2-names-batch-1-knacks` · Status: current
