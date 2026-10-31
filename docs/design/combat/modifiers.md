@@ -130,6 +130,7 @@ Crits are something a creature is built for. The rules are R7.1; the names, one 
 | Hold the Line          | talent (Guards)                           | Hits it takes for others worth 25% of its Max HP store a Sure Crit (3x).                                             |
 | Cool Head              | Knack (family Luck, Guards)               | Boss crits on it and on the creatures beside it deal half the extra damage.                                          |
 | Lucky Strike, Slippery | rule cards                                | A crit chance for the boss (a crit doubles its hit, before cuts and armour); a flat dodge that Mired does not lower. |
+| Breakwater             | rule card                                 | A Row Ward or beside-cut aura cuts 2.4 to 3 times as much of its area and Wind-up hits (at most 75% of a hit).       |
 
 Perfect Timing first also stored a charge when a Guard took a hit aimed at the creature (like Momentum); that fires every round and was a runaway (+19% on payoffs, best on most cards), so it is dodge only. Hold the Line first stored one per interception, the same mistake. Crit Chance and Crit Damage are placed in the pools of the crit lines (Cindle, Coralynx, Stormray for chance; Cindle and Coralynx for damage), Perfect Timing in Stormray's and Zipmouse's, Hold the Line in Sproutle's and Ashmole's.
 
