@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: The fight board shows worn gear
+
+ID: `2026-10-31-the-fight-board-shows-worn-gear` · Status: current
+
+**Decision.** [Misa] Creatures on the fight stage (raid replay, live finale, dungeon) are drawn wearing their gear (`wornSprite`), a knocked-out creature too; blinking works on the worn sprite. Foes and bosses stay as they are, and the item detail stays bare. The worn base ids ride on the fight's own slot: `FightSlot.worn` (display only, the engine never reads it) is filled by `slotFor` from the gear items the team load already folded, and the raid replay view (`fightRow`) and the dungeon replay (`rowOf`, and the run's frozen `start` row) copy it into `row[].worn` (base ids, at most 6, at most 64 characters each, validated by the client parsers).
+
+**Reasoning.** The stored fight input already is the record of who fought; putting the outfit there shows what the creature wore in that fight, even after the item changes, and works for other players' creatures. Cost: no extra row reads on any path. The items are already loaded when the team is built (the fold needs them), and the replay view reads the one `raid_results` row it read before (the input JSON grows by a few short strings per creature). The dungeon rows come from the stored run state and fight inputs, also read before. Rejected: joining `GET /api/state` on the client (only the player's own creatures, and shows today's gear, not the fight's) and a gear lookup per creature in the view (extra reads). Fights stored before this change have no `worn` and draw bare.
+
 ## 2026-10-31: Creatures blink, and shiny creatures twinkle
 
 ID: `2026-10-31-creatures-blink-and-shiny-creatures-twinkle` · Status: current

@@ -129,6 +129,7 @@ export interface RunState {
     element: Element;
     role: Role;
     level: number;
+    worn?: string[];
   }[];
   /**
    * The ids of the gear items frozen into the row (at the start and at each swap). A creature that joins

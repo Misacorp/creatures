@@ -601,6 +601,22 @@ describe('the new fields of a summary and of a replayed room', () => {
   });
 });
 
+describe('a replay row that wears gear', () => {
+  const withWorn = (worn: unknown) =>
+    parseDungeonReplay({
+      ...replayFixture,
+      row: replayFixture.row.map((r, i) => (i === 0 ? { ...r, worn } : r)),
+    });
+
+  it('keeps the worn base ids and refuses a bad list', () => {
+    expect(withWorn(['trail-cap']).row[0]?.worn).toEqual(['trail-cap']);
+    expect(parseDungeonReplay(replayFixture).row[0]?.worn).toBeUndefined();
+    expect(() => withWorn('trail-cap')).toThrow();
+    expect(() => withWorn([1])).toThrow();
+    expect(() => withWorn(Array.from({ length: 7 }, () => 'a'))).toThrow();
+  });
+});
+
 describe('the requests of a run', () => {
   const sent = (): { path: string; init: RequestInit } => {
     const [path, init] = apiFetch.mock.calls.at(-1) as unknown as [string, RequestInit];

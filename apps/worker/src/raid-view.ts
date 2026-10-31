@@ -564,6 +564,8 @@ export interface ReplayView {
      * Null when no result is known yet (the lobby) or a stored result lacks them.
      */
     hp: { start: number; max: number } | null;
+    /** The base ids of the items it wears, for drawing it in its gear; absent when it wears none (or the fight was stored before they were kept). */
+    worn?: string[];
   }[];
   events: FightEvent[];
   /** For `describeEvent`; `players` maps the opaque owner keys to display names. */
@@ -592,6 +594,7 @@ export function fightRow(
       level: s.level,
       owner: s.ownerId,
       hp: start === undefined || max === undefined ? null : { start, max },
+      ...(s.worn === undefined || s.worn.length === 0 ? {} : { worn: [...s.worn] }),
     };
   });
 }

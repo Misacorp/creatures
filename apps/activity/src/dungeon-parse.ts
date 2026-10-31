@@ -15,7 +15,7 @@ import {
   isRarity,
   isSlot,
 } from './gear-parse';
-import { isEvent, isEventNames } from './raid-api';
+import { isEvent, isEventNames, isWornIds } from './raid-api';
 import { isArrayOf, isBool, isCount, isInt, isRecord, isStr } from './parse-core';
 import type {
   DungeonRunGear,
@@ -562,7 +562,8 @@ function isReplayRowEntry(value: unknown): value is DungeonReplayRowEntry {
     isStr(value['species']) &&
     isElement(value['element']) &&
     isRole(value['role']) &&
-    isInt(value['level'])
+    isInt(value['level']) &&
+    isWornIds(value['worn'])
   );
 }
 
