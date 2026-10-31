@@ -452,7 +452,7 @@ const LAB_TRACK = [
   [5, 'thornmother', 6_500, 155, 124, 6_500, 1, true, []],
   [6, 'tidal-colossus', 15_600, 113, 21, 7_200, 2, true, ['slippery', 'breakwater']],
   [7, 'cinder-wyrm', 10_200, 185, 48, 7_900, 2, true, []],
-  [8, 'storm-sovereign', 7_000, 96, 4, 8_600, 2, true, ['lucky-strike']],
+  [8, 'storm-sovereign', 7_000, 96, 5, 8_600, 2, true, ['lucky-strike']],
   [9, 'old-bogback', 32_800, 100, 33, 9_300, 2, true, []],
   [10, 'thornmother', 8_000, 102, 149, 10_000, 1, true, []],
   [11, 'tidal-colossus', 13_400, 143, 36, 10_000, 2, true, ['slippery', 'breakwater']],
