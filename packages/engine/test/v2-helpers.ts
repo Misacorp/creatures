@@ -27,7 +27,6 @@ import {
 /** The numbers of the rules, written out (the lab's `LAB_RULES`): an input carries its own rules, and a test may change one. */
 export const RULES: V2Rules = {
   payoffMultBp: 20_000,
-  extraStackBp: 5_000,
   maxBonusFactorBp: 30_000,
   maxStacks: 3,
   dodgePerSpdBp: 10,
