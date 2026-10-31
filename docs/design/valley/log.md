@@ -183,3 +183,7 @@ Overnight review of the lab (a second agent, no edits) found that "every target 
 **Done.** The lab models the visitor (rerolls of all lines, Acorns and scrap rising x1.5 a week; his own blueprint pool, paid in Acorns and any shards, a copy raising quality) and minimal modifier lines; a journey export for phase 3 (`economy/journeys/`). A second review made the report honest: catch-up back to x3, Misa's original target wordings judged beside any restated ones, shard stalls and week-24 piles judged. Now failing: shard waits for players who don't visit daily, scrap piling from week 14, T-1 as written, returners at 16 days. Wrote `economy/summary.md` (the lab in plain words) and `phase3-plan.md`; sent combat v2 the corrected roster file (fb0b3c3).
 
 **Morning list (round 18):** Q45 the School, Q46 the Forge trading for a waiting shard by itself, Q47 the phase 2 gate with T-1 restated.
+
+## 2026-10-31 (morning): round 18 answered; phase 3 starts
+
+Q45 B (the School teaches a line's talents and hosts visiting teachers and graduation), Q46 (a broker post trades shards; a drifting market later), Q47 A (phase 2 passes; T-1 restated; returners about 16 days). Next: the lab models the broker and School learning (an Acorn sink); phase 3's prototype starts from the lab's journeys; combat v2 is told about visiting teachers (a taught talent must be in the line's pool).

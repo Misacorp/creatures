@@ -34,8 +34,8 @@ From Misa's standing priorities (`docs/design/review-brief.md`) and the research
 
 Example numbers are placeholders until the economy lab sets them (marked as examples).
 
-- **T-1, roster spread.** By week 4 of a typical player, the 10th creature is within a few levels of the 3rd (example: within 5), and by week 8 a player can field two different strong teams.
-- **T-2, idle floor and active ceiling.** A once-a-day player gets the full idle rate (round 1, Q3); a twice-a-day player gains from choices, not from rate (example: under 10% more). A weekend off costs almost nothing (round 6, Q18). A weekly player gets most of a daily player's idle growth (example: about 75% to 80%) and brings a grown roster to the raid. A player back after a month recognises their roster.
+- **T-1, roster spread** (restated, round 18, Q47: A). A creature a typical player has owned for two weeks is within a few levels of their 3rd-best (example: within 5), and by week 8 a player can field two different strong teams. (First wording: "by week 4 the 10th creature is within a few levels of the 3rd"; the lab showed the 10th creature has only just arrived at week 4.)
+- **T-2, idle floor and active ceiling.** A once-a-day player gets the full idle rate (round 1, Q3); a twice-a-day player gains from choices, not from rate (example: under 10% more). A weekend off costs almost nothing (round 6, Q18). A weekly player gets most of a daily player's idle growth (example: about 75% to 80%) and brings a grown roster to the raid. A player back after a month recognises their roster and reaches the server's middle in about 16 days of visits (round 18).
 - **T-3, commons pacing.** A typical server of 8 players lifts its first communal place a level in the first two weeks, and the rare-find route matters without being required.
 - **T-4, no dead chains.** In no simulated week does a typical player's Forge sit idle for want of scrap for more than a small share of the time.
 - **T-6, growth lasts the arc.** A daily player's best creature is still growing in week 12 (example: level 29 of 30), not capped by week 10 with nothing left to grow (panel, 2026-10-30).

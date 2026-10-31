@@ -6,41 +6,7 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q45. Keep the School, give it a new job, or scrap it?
-
-Status: asked for the morning, round 18 (2026-10-31). From the **school** queue entry (Misa in Q32: "is the school building even necessary? Is it a dumb way to do things that I just came up with because it felt cool?"). Touches: `systems/school.md`, `systems/trials.md`, `commons.md` (the School's project and collection), the valley's art.
-
-**Why it matters.** The School was meant to teach talents between creatures and give duplicates a use. Combat v2 has since decided (with you) that each creature line has a Talent Book that fills itself from every talent found, duplicates included, and a creature learns from its line's book (paying once, then swapping freely). So the book already does the School's job. A place in the valley should earn its spot with a decision no other place gives.
-
-- **A. Scrap it.** Learning happens from the creature's card; graduation stays at the bonfire; the School's project and collection go to other places. Example: Sanni opens Pip's card, picks "Thorn Guard" from the Tidepools book, pays once. One building fewer to draw and explain.
-- **B. The School is where the books live.** Learning a talent from the book happens at the School: the first learning costs Acorns (a sink for the piles) and a short stay at a School seat (about a day), drawn as the creature at a desk; graduation is held there too. Example: Pip sits at the School for a day and comes home knowing "Thorn Guard"; swapping afterwards is free, from the card.
-- **C. Combat's later idea: a School post that teaches a random talent** from the line's book over time, free. Example: Sprout studies for three days and learns something from its line's book; you don't choose what.
-
-**Lead's pick: B.** It gives learning a place in the world (the valley is the menu), drains Acorns, and gives graduation a home, without new rules: it uses combat's book exactly as decided. A is the brave, simple answer if you'd rather have one place fewer; C takes away your choice of talent.
-
-### Q46. Should the Forge trade for the shard it waits on by itself? (a challenge)
-
-Status: asked for the morning, round 18 (2026-10-31). The follow-up held since Q34 ("if a hands-off player's Forge still stalls with the exchange, raise the smarter ordering once"). Challenges: Q34 (B, the exchange as a tap) and Q36's withdrawal. Touches: `forge.md` V-FORGE-4 and V-FORGE-10, F-1 and F-5.
-
-**Why it matters.** With the exchange, a daily player's anvils wait for a shard of the right element 16% of the time; every other day 40%, a weekend off 30%, a weekly player 71%. Shards pile up overall (the wrong elements); the trade that fixes it is one nobody would refuse, but it only happens when the player is there to tap it.
-
-- **A. Keep the tap.** Example: Juho's anvils wait most of the week; on Sunday he trades and they run again.
-- **B. The Forge trades by itself when an order waits,** at the standard rate, and the return walk mentions it (crits included). You can still trade by hand, and better rates (traders, Forge levels) stay worth having. Example: "The Forge traded 9 Ember shards for 3 Tide (a lucky trade: 4!) and kept making Kelp Caps."
-- **C. The Forge makes what it has shards for first,** and waits only when nothing can be made. Example: Juho's smiths make Ember pieces while Tide pieces wait.
-
-**Lead's pick: B.** It keeps your exchange (rates, crits, traders later) and ends a wait that only costs a player for not being there (F-1), and it drains the wrong-element pile. C keeps elements stricter but still leaves anvils idle for weekly players.
-
-### Q47. Does the lab pass phase 2, and may phase 3 start?
-
-Status: asked for the morning, round 18 (2026-10-31). The phase 2 gate (`roadmap.md`): "the targets pass for every player profile; the report reads sensibly to Misa". Touches: `economy/summary.md` (read this first), `phase3-plan.md`, T-1 and T-2d in `goals.md`.
-
-**Why it matters.** The lab now runs every decision through round 17. Most targets pass; four fail honestly (summary, "What fails"): shards at the Forge (Q46), scrap piling up late (the next sink, the lead's to propose), and two of your targets as written. T-1 says the 10th creature is within 5 levels of the 3rd at week 4; in the lab it is 10 behind, because a player has only about 11 creatures then and the 10th just arrived, while every creature owned two weeks is within 5. A returner reaches the server's middle in 16 days against "about two weeks".
-
-- **A. Pass the gate with T-1 restated** ("a creature you have owned two weeks is within 5 levels of your 3rd best") and returners at about 16 days; start phase 3 (`phase3-plan.md`: the return walk, two posts, the bonfire, one project, the visitor and a graduation, driven by the lab's journeys, on staging when you ask).
-- **B. Pass the gate, but make new catches grow faster first** (stronger catch-up, x4 or more), so your T-1 holds as written. Newcomers would rise faster too.
-- **C. Not yet.** Tell me what reads oddly in the summary or the charts, and the lab gets another pass.
-
-**Lead's pick: A.** The restated T-1 keeps your intent (the bench never left behind) without new catches rocketing; the numbers that matter for feel are now steady enough to prototype, and the prototype is what tells us whether it is fun.
+Nothing waiting.
 
 ## Queue
 
@@ -740,6 +706,54 @@ Status: answered, round 17 (2026-10-30), after the panel. From Q42 ("introduce t
 **Answer (2026-10-31): A.** "44: A"
 
 Became: V-VIS-4, the reroll is a service at his stall while he is here (Thursday to the Sunday finale); no orbs to hold and no drop-off, so round 14's three kinds of spendables stand. A standing order stays a later Forge idea.
+
+### Q45. Keep the School, give it a new job, or scrap it?
+
+Status: answered, round 18 (2026-10-31). From the **school** queue entry (Misa in Q32: "is the school building even necessary? Is it a dumb way to do things that I just came up with because it felt cool?"). Touches: `systems/school.md`, `systems/trials.md`, `commons.md` (the School's project and collection), the valley's art.
+
+**Why it matters.** The School was meant to teach talents between creatures and give duplicates a use. Combat v2 has since decided (with you) that each creature line has a Talent Book that fills itself from every talent found, duplicates included, and a creature learns from its line's book (paying once, then swapping freely). So the book already does the School's job. A place in the valley should earn its spot with a decision no other place gives.
+
+- **A. Scrap it.** Learning happens from the creature's card; graduation stays at the bonfire; the School's project and collection go to other places. Example: Sanni opens Pip's card, picks "Thorn Guard" from the Tidepools book, pays once. One building fewer to draw and explain.
+- **B. The School is where the books live.** Learning a talent from the book happens at the School: the first learning costs Acorns (a sink for the piles) and a short stay at a School seat (about a day), drawn as the creature at a desk; graduation is held there too. Example: Pip sits at the School for a day and comes home knowing "Thorn Guard"; swapping afterwards is free, from the card.
+- **C. Combat's later idea: a School post that teaches a random talent** from the line's book over time, free. Example: Sprout studies for three days and learns something from its line's book; you don't choose what.
+
+**Lead's pick: B.** It gives learning a place in the world (the valley is the menu), drains Acorns, and gives graduation a home, without new rules: it uses combat's book exactly as decided. A is the brave, simple answer if you'd rather have one place fewer; C takes away your choice of talent.
+
+**Answer (2026-10-31): B, with visiting teachers.** "45 B. Talents can be discovered but creatures still need to learn them a first time. This could be the place to do it. It could also be the place to learn undiscovered talents from visiting teachers (the creature studying there learns it if that talent is applicable for the creature's talent book, and also adds it to its talent book)"
+
+Became: `school.md` accepted in part: the School is where a creature first learns a talent from its line's book (a short stay, paid once), and where visiting teachers teach talents nobody has found yet; a student whose line's pool has that talent learns it and adds it to the line's book. Graduation moves to the School.
+
+### Q46. Should the Forge trade for the shard it waits on by itself? (a challenge)
+
+Status: answered, round 18 (2026-10-31). The follow-up held since Q34 ("if a hands-off player's Forge still stalls with the exchange, raise the smarter ordering once"). Challenges: Q34 (B, the exchange as a tap) and Q36's withdrawal. Touches: `forge.md` V-FORGE-4 and V-FORGE-10, F-1 and F-5.
+
+**Why it matters.** With the exchange, a daily player's anvils wait for a shard of the right element 16% of the time; every other day 40%, a weekend off 30%, a weekly player 71%. Shards pile up overall (the wrong elements); the trade that fixes it is one nobody would refuse, but it only happens when the player is there to tap it.
+
+- **A. Keep the tap.** Example: Juho's anvils wait most of the week; on Sunday he trades and they run again.
+- **B. The Forge trades by itself when an order waits,** at the standard rate, and the return walk mentions it (crits included). You can still trade by hand, and better rates (traders, Forge levels) stay worth having. Example: "The Forge traded 9 Ember shards for 3 Tide (a lucky trade: 4!) and kept making Kelp Caps."
+- **C. The Forge makes what it has shards for first,** and waits only when nothing can be made. Example: Juho's smiths make Ember pieces while Tide pieces wait.
+
+**Lead's pick: B.** It keeps your exchange (rates, crits, traders later) and ends a wait that only costs a player for not being there (F-1), and it drains the wrong-element pile. C keeps elements stricter but still leaves anvils idle for weekly players.
+
+**Answer (2026-10-31): a job post that trades.** "Could we have a job posting that does the trading? A stock market of sorts (I'm only half joking)"
+
+Became: V-FORGE-11, the **broker**: a post at the Forge's exchange where a creature trades the player's surplus shards for the ones orders and the School need, all the time, at the exchange's rate, crits included; broker mastery improves the rate. A "market" where rates drift with what the server has too much or too little of is a later idea (`later.md`).
+
+### Q47. Does the lab pass phase 2, and may phase 3 start?
+
+Status: answered, round 18 (2026-10-31). The phase 2 gate (`roadmap.md`): "the targets pass for every player profile; the report reads sensibly to Misa". Touches: `economy/summary.md` (read this first), `phase3-plan.md`, T-1 and T-2d in `goals.md`.
+
+**Why it matters.** The lab now runs every decision through round 17. Most targets pass; four fail honestly (summary, "What fails"): shards at the Forge (Q46), scrap piling up late (the next sink, the lead's to propose), and two of your targets as written. T-1 says the 10th creature is within 5 levels of the 3rd at week 4; in the lab it is 10 behind, because a player has only about 11 creatures then and the 10th just arrived, while every creature owned two weeks is within 5. A returner reaches the server's middle in 16 days against "about two weeks".
+
+- **A. Pass the gate with T-1 restated** ("a creature you have owned two weeks is within 5 levels of your 3rd best") and returners at about 16 days; start phase 3 (`phase3-plan.md`: the return walk, two posts, the bonfire, one project, the visitor and a graduation, driven by the lab's journeys, on staging when you ask).
+- **B. Pass the gate, but make new catches grow faster first** (stronger catch-up, x4 or more), so your T-1 holds as written. Newcomers would rise faster too.
+- **C. Not yet.** Tell me what reads oddly in the summary or the charts, and the lab gets another pass.
+
+**Lead's pick: A.** The restated T-1 keeps your intent (the bench never left behind) without new catches rocketing; the numbers that matter for feel are now steady enough to prototype, and the prototype is what tells us whether it is fun.
+
+**Answer (2026-10-31): A.** "47 A"
+
+Became: phase 2 passes. T-1 is restated ("a creature you have owned two weeks is within 5 levels of your 3rd best"), returners reach the server's middle in about 16 days (T-2), and phase 3 starts with `phase3-plan.md`.
 
 ## Withdrawn
 

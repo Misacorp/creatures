@@ -3616,3 +3616,9 @@ Misa decided with the combat v2 session (branch `combat-v2-roster`, commit 17a34
 
 - **Q43, B:** the weekly visitor arrives on Thursday and leaves at the raid's finale on Sunday evening, so weekend players meet him too.
 - **Q44, A:** a reroll (all of a piece's modifier lines, priced in Acorns and scrap, dearer with each reroll in a week) is a service at his stall while he is here: no orbs to hold, no drop-off. Round 14's three kinds of spendables stand. (`docs/design/valley/systems/visitor.md`)
+
+## 2026-10-31: Valley: the School teaches talents, a broker post trades shards, phase 2 passes (round 18, Q45 to Q47)
+
+- **Q45, B:** the School is where a creature first learns a talent from its line's Talent Book (a short stay, paid once), and where visiting teachers teach talents nobody has found: "the creature studying there learns it if that talent is applicable for the creature's talent book, and also adds it to its talent book". Graduation moves there. (`docs/design/valley/systems/school.md` V-SCH-7 to 9)
+- **Q46:** "Could we have a job posting that does the trading? A stock market of sorts (I'm only half joking)": a broker post at the Forge's exchange trades surplus shards for needed ones continuously; mastery improves the rate; a drifting market is a later idea. (`forge.md` V-FORGE-11)
+- **Q47, A:** the economy lab passes phase 2, with T-1 restated (a creature owned two weeks is within 5 levels of the 3rd best) and returners at about 16 days; phase 3 (prototype the feel) starts. (`goals.md`, `roadmap.md`, `phase3-plan.md`)

@@ -1,12 +1,19 @@
 # The School and visiting teachers
 
-Status: **idea** (Misa, 2026-10-29), to be decided in the morning list (Q45). Combat v2's talent rules are now known (branch `combat-v2-roster`; summarised below).
+Status: **accepted in part** (Misa, round 18, Q45: B, "Talents can be discovered but creatures still need to learn them a first time. This could be the place to do it"), with visiting teachers. The rules below were written before combat v2's Talent Books; "As decided" replaces them where they differ.
 
 ## The idea
 
 A creature placed at the School teaches the talents it knows to other creatures in the valley. Visiting teachers come by on a known rhythm and offer talents nobody in the valley knows. Teaching gives spare and duplicate creatures a use, which makes collecting itself rewarding (G-2).
 
-## Rules (draft)
+## As decided (round 18)
+
+- **V-SCH-7 Learning.** A creature learns a talent from its line's Talent Book (combat v2) for the first time at the School: it takes a School seat for a short stay (example: a day) and the first learning is paid once (example: Acorns). After that, swapping between learned talents is free from the creature's card, until the raid locks (combat v2).
+- **V-SCH-8 Visiting teachers** (Misa: "learn undiscovered talents from visiting teachers... if that talent is applicable for the creature's talent book, and also adds it to its talent book"). A teacher arrives on a known day with a talent nobody on the server has found; a student whose line's pool holds that talent learns it and adds it to the line's book. Teachers lean toward talents the server lacks (V-SCH-5).
+- **V-SCH-9 Graduation** (trials, V-TRIAL-4) is held at the School.
+- Teaching between creatures (V-SCH-1, V-SCH-6) is gone: combat v2's book records every talent found, duplicates included.
+
+## Rules (first draft, 2026-10-29)
 
 - **V-SCH-1** Teaching is chosen and previewed: the teacher's talents are listed; picking a student shows "learns X in N hours" before committing. No random inheritance (Palworld's breeding is the anti-example).
 - **V-SCH-2** Nothing is consumed: the teacher stays a teacher, the student keeps its level (the anti-examples: Monster Hunter Stories 2's donor, Dragon Quest Monsters' level reset).
