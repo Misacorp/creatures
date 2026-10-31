@@ -67,7 +67,7 @@
   },
   {
     "name": "Mired",
-    "means": "A debuff on the boss: per stack it deals less damage and dodges less (at most 5 stacks). It fades by 1 at the end of every second round.",
+    "means": "A debuff on the boss: per stack it deals less damage and dodges less (at most 5 stacks). It fades by 1 at the end of every round.",
     "not": "A mark",
     "step": "R15"
   },
@@ -109,7 +109,7 @@
   },
   {
     "name": "Scatter",
-    "means": "A boss move that hits a number of different creatures, drawn at random from the whole arena.",
+    "means": "A boss attack or move that hits a number of different creatures, drawn at random from the whole arena.",
     "not": "A hit on every creature of a row",
     "step": "R2"
   },
@@ -139,7 +139,7 @@
   },
   {
     "name": "Back-most",
-    "means": "The living creature in the row furthest from the boss (the leftmost, if several).",
+    "means": "The last living creature to act (by default the back row's right end).",
     "not": "The creature in the last slot",
     "step": "R2"
   },

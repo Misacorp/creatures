@@ -6,6 +6,7 @@
  * and `strength` rule tests about the boss.
  */
 import { describe, expect, it } from 'vitest';
+import { applyCard, type CardOp } from '../src/v2';
 import {
   NO,
   YES,
@@ -435,6 +436,59 @@ describe('patterns and anchors (R2)', () => {
     expect([takes(r, 'C0'), takes(r, 'C1'), takes(r, 'C2')]).toEqual([[1_000], [600], [360]]);
   });
 
+  it('the back anchor is the last creature to act: the highest row, then the rightmost; rows and columns of it follow', () => {
+    const crew = [
+      ...guards(3, 2), // rows 0 and 1, columns 0 to 2
+    ];
+    const at = (shape: 'single' | 'row' | 'column') =>
+      slotsHit(play(mover({ anchor: 'back', shape }, 2, 3), crew), 'm').sort();
+    // The creatures act row by row, left to right: the last of them is in the back row's right end.
+    expect(at('single')).toEqual(['1,2']);
+    // A row from it is the back row; a column from it is its column.
+    expect(at('row')).toEqual(['1,0', '1,1', '1,2']);
+    expect(at('column')).toEqual(['0,2', '1,2']);
+    // The next creature in line when the last one has fallen: the back row's next from the right, then the row before.
+    const some = crew.filter((c) => c.name !== 'C12');
+    expect(slotsHit(play(mover({ anchor: 'back', shape: 'single' }, 2, 3), some), 'm')).toEqual([
+      '1,1',
+    ]);
+    const front = crew.filter((c) => c.row === 0);
+    expect(slotsHit(play(mover({ anchor: 'back', shape: 'single' }, 2, 3), front), 'm')).toEqual([
+      '0,2',
+    ]);
+  });
+
+  describe('Swarm: the plain attack becomes a Scatter of small hits on different creatures', () => {
+    const swarm = (strengthBp?: number) => {
+      const ops: CardOp[] = [
+        {
+          op: 'plain',
+          replace: { pattern: { anchor: 'random', shape: 'scatter' }, powerBp: 4_500 },
+          hits: 4,
+        },
+      ];
+      return applyCard(boss({ rows: 2, cols: 4, atk: 1_000 }), ops, strengthBp);
+    };
+    const crew = () => guards(4, 2).map((c) => ({ ...c, maxHp: 1_000_000 }));
+
+    it('hits four different creatures every boss turn, never one twice', () => {
+      for (const seed of ['a', 'b', 'c', 'd', 'e']) {
+        // Two rows: the boss takes two turns a round.
+        const b = { ...swarm(), rounds: 3 };
+        const hit = slotsHit(play(b, crew(), {}, seeded(seed)), 'plain');
+        expect(hit).toHaveLength(24);
+        for (let i = 0; i < 24; i += 4) expect(new Set(hit.slice(i, i + 4)).size).toBe(4);
+      }
+    });
+
+    it('its number of hits scales with the card strength, at least 1', () => {
+      // The one round has two boss turns (two rows).
+      const hitsAt = (st: number) =>
+        slotsHit(play(swarm(st), crew(), {}, seeded('s')), 'plain').length / 2;
+      expect([10_000, 5_000, 3_000, 0].map(hitsAt)).toEqual([4, 2, 1, 1]);
+    });
+  });
+
   it('a count with perColumns grows with the arena width, at least 1', () => {
     const scatter = (cols: number) =>
       mover({ anchor: 'random', shape: 'scatter', n: 2, perColumns: 4 }, 3, cols);
@@ -648,7 +702,8 @@ describe('the strength of the boss gates and rule cards (Misa, 2026-10-29)', () 
   });
 
   it('Shake It Off clears the card strength of the Mired, all of it at full strength', () => {
-    const song = [spec({ name: 'S', fx: { miresAtStart: true } })];
+    // Clinging holds the fade back to every second round, so the song builds stacks.
+    const song = [spec({ name: 'S', fx: { miresAtStart: true, clinging: true } })];
     const left = (st: number, every: number, rounds: number) =>
       mired(play(strength(boss({ rounds, mods: { shakeEvery: every } }), st), song)).at(-1);
     expect(left(10_000, 1, 1)).toBe('Mired x0');

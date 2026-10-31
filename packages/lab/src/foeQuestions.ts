@@ -35,15 +35,16 @@ export const FOE_QUESTION_GAP = 0.25;
 export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromEntries(
   (
     [
-      // The fog thickens with every miss: dodge turns the small splashes away.
+      // A Scatter of splashes lands on every creature of a small team at once: a Guard with Wide Reach beside the others covers them all (an area hit).
       [
         'puddle-imp',
-        'family:Evasion',
-        ['zoom'],
+        'family:Reach',
+        ['wide-reach'],
         5,
-        15_000,
-        13_000,
-        'voltaro/zoom thornbuck/none tempestray/none',
+        20_000,
+        16_000,
+        'tidewing/steady-mark thornbuck/wide-reach tempestray/detonate',
+        'tidewing/steady-mark pyrelynx/none tempestray/detonate',
       ],
       // The Setter and the Payoff stand at the ends and fall quiet, unless Lantern Glow stands between them.
       [

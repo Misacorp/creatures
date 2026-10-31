@@ -291,8 +291,8 @@
   {
     "id": "storm-sovereign",
     "rows": 2,
-    "armour": 8,
-    "atk": 73,
+    "armour": 10,
+    "atk": 71,
     "hp": 14500,
     "plain": {
       "pattern": { "anchor": "payoff", "shape": "chain", "n": 2, "perColumns": 4, "decayBp": 5500 },

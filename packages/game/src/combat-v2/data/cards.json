@@ -129,11 +129,11 @@
   {
     "id": "swarm",
     "name": "Swarm",
-    "asks": "Many small hits on random slots; does armour or dodge hold?",
+    "asks": "Its plain attack becomes a Scatter of 4 small hits; does armour or dodge hold?",
     "ops": [
       {
         "op": "plain",
-        "replace": { "pattern": { "anchor": "random", "shape": "single" }, "powerBp": 4500 },
+        "replace": { "pattern": { "anchor": "random", "shape": "scatter" }, "powerBp": 4500 },
         "hits": 4
       }
     ],

@@ -131,7 +131,7 @@ export interface V2Rules {
   /** With Clinging on a living creature each stack counts for this much instead (reworked 2026-10-28). */
   readonly miredClingingStackBp: number;
   readonly miredMaxStacks: number;
-  /** Mired fades: one stack at the end of every second round; with Clinging on a living creature, never (panel 3, reworked 2026-10-28). */
+  /** Mired fades: one stack at the end of every this many rounds (1: every round, 2026-11-01); with Clinging on a living creature, every `miredClingingFadeEvery` instead. */
   readonly miredFadeEvery: number;
   /** While a living creature has Clinging, Mired fades only every this many rounds. */
   readonly miredClingingFadeEvery: number;

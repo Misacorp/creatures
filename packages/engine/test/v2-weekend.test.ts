@@ -59,7 +59,7 @@ describe('attrition and carried state (R14)', () => {
     const w = playWeekend(boss({ rounds: 2 }), team, [], { stages: 2 });
     for (const stage of w.stages) {
       expect(marks(stage)).toEqual(['tide x1', 'tide x2']);
-      expect(mired(stage)).toEqual(['Mired x1', 'Mired x2', 'Mired x1']);
+      expect(mired(stage)).toEqual(['Mired x1', 'Mired x0', 'Mired x1', 'Mired x0']);
       expect(by(stage, 'S').fires['firstHitBp']).toBe(1);
     }
     const owners = playWeekend(
