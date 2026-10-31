@@ -2979,18 +2979,18 @@
   },
   "setter/owners-mark": {
    "forms": 6,
-   "withScore": 74.9,
+   "withScore": 74.5,
    "withoutScore": 72.8,
-   "gain": 2.09,
-   "gainPercent": 2.9,
+   "gain": 1.65,
+   "gainPercent": 2.3,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.73,
+   "koWith": 0.75,
    "koWithout": 0.8,
    "holdsNatural": 1,
    "holdsRow": 0.33,
    "best": "thick-hide",
-   "bestPercent": 7.8
+   "bestPercent": 6.4
   },
   "setter/deep-ink": {
    "forms": 3,
@@ -3264,18 +3264,18 @@
   },
   "payoff/opportunist": {
    "forms": 2,
-   "withScore": 84.4,
+   "withScore": 84.3,
    "withoutScore": 82.3,
-   "gain": 2.1,
-   "gainPercent": 2.6,
+   "gain": 1.95,
+   "gainPercent": 2.4,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.26,
+   "koWith": 0.27,
    "koWithout": 0.31,
    "holdsNatural": 0.32,
    "holdsRow": 0,
    "best": "elusive",
-   "bestPercent": 19.9
+   "bestPercent": 18.7
   },
   "payoff/quick-draw": {
    "forms": 4,
@@ -3354,18 +3354,18 @@
   },
   "payoff/catch-breath": {
    "forms": 3,
-   "withScore": 72.1,
+   "withScore": 71.9,
    "withoutScore": 71.9,
-   "gain": 0.22,
-   "gainPercent": 0.3,
+   "gain": 0.06,
+   "gainPercent": 0.1,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.68,
+   "koWith": 0.7,
    "koWithout": 0.7,
    "holdsNatural": 0.2,
    "holdsRow": 0.01,
-   "best": "grudge",
-   "bestPercent": 3.9
+   "best": "reflective-hide",
+   "bestPercent": 1.8
   },
   "guard/hardy": {
    "forms": 6,
@@ -3519,18 +3519,18 @@
   },
   "guard/catch-breath": {
    "forms": 3,
-   "withScore": 78.5,
+   "withScore": 77.5,
    "withoutScore": 75.3,
-   "gain": 3.27,
-   "gainPercent": 4.4,
+   "gain": 2.22,
+   "gainPercent": 2.9,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.5,
+   "koWith": 0.6,
    "koWithout": 0.81,
    "holdsNatural": 0.92,
    "holdsRow": 0.19,
-   "best": "great-wave",
-   "bestPercent": 16
+   "best": "reflective-hide",
+   "bestPercent": 8.9
   },
   "guard/unbothered": {
    "forms": 2,
@@ -3684,18 +3684,18 @@
   },
   "support/catch-breath": {
    "forms": 5,
-   "withScore": 75,
+   "withScore": 74.6,
    "withoutScore": 70.8,
-   "gain": 4.18,
-   "gainPercent": 5.9,
+   "gain": 3.76,
+   "gainPercent": 5.3,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.83,
+   "koWith": 0.89,
    "koWithout": 1.22,
    "holdsNatural": 0.61,
    "holdsRow": 0,
    "best": "great-wave",
-   "bestPercent": 26
+   "bestPercent": 22.4
   },
   "support/unbothered": {
    "forms": 4,
@@ -3828,7 +3828,7 @@
    "Catch Breath (setter) +0.1%",
    "Brace (payoff) +0.0%",
    "Stubborn (payoff) +0.0%",
-   "Catch Breath (payoff) +0.3%",
+   "Catch Breath (payoff) +0.1%",
    "Rally Cry (guard) +0.1%",
    "Brace (guard) +0.5%",
    "Stubborn (guard) +1.5%",
@@ -3839,10 +3839,11 @@
    "Brace (support) +0.6%",
    "Unbothered (support) +0.5%"
   ],
-  "poolsOk": 13,
+  "poolsOk": 12,
   "pools": 16,
   "failingPools": [
    "cindle (payoff: Steady Rhythm +16.1, First Pounce +9.3, Crit Chance +7.1)",
+   "mistnewt (guard: Flank Guard +7.7, Shoulder Charge +3.5, Catch Breath +3.4)",
    "gaiadrake (payoff: Finisher +9.5, Rally Cry +6.4, Front-liner +3.5)",
    "mudlump (guard: Long Shadow +12.2, Flank Guard +7.7, Hardy +3.4)"
   ],
@@ -3855,9 +3856,9 @@
    {
     "card": "plain",
     "without": 62,
-    "with": 84.1,
-    "share": 26.3,
-    "talents": "tempestray: Catch Breath, wickat: Owner's Mark, geyserpup: Quick Draw"
+    "with": 81.2,
+    "share": 23.7,
+    "talents": "tempestray: Catch Breath, wickat: Steady Rhythm, geyserpup: Quick Draw"
    },
    {
     "card": "thick-hide",
@@ -3897,15 +3898,15 @@
    {
     "card": "slippery",
     "without": 70,
-    "with": 89.2,
-    "share": 21.6,
+    "with": 88.7,
+    "share": 21.1,
     "talents": "voltaro: Deep Ink, sunfawn: Kindred Boost, gaiadrake: Opportunist"
    },
    {
     "card": "lucky-strike",
     "without": 71.8,
-    "with": 87.2,
-    "share": 17.7,
+    "with": 87,
+    "share": 17.5,
     "talents": "ancientshell: Owner's Mark, sunfawn: Kindred Boost, pyrelynx: Steady Rhythm"
    },
    {
@@ -3918,9 +3919,9 @@
    {
     "card": "wither",
     "without": 63.4,
-    "with": 84.8,
-    "share": 25.3,
-    "talents": "thornbuck: Hardy, tidewing: Owner's Mark, tempestray: Quick Draw"
+    "with": 83.1,
+    "share": 23.7,
+    "talents": "thornbuck: Hardy, tidewing: Owner's Mark, tempestray: Crit Chance"
    },
    {
     "card": "payoff-hunter",
@@ -3939,9 +3940,9 @@
    {
     "card": "great-wave",
     "without": 65.5,
-    "with": 80.3,
-    "share": 18.4,
-    "talents": "tempestray: Edge-walker, thornbuck: Hardy, tidewing: Owner's Mark"
+    "with": 80.1,
+    "share": 18.2,
+    "talents": "tempestray: Edge-walker, thornbuck: Hardy, tidewing: Finisher"
    },
    {
     "card": "swarm",
@@ -3953,122 +3954,122 @@
    {
     "card": "crusher",
     "without": 65.6,
-    "with": 81.4,
-    "share": 19.3,
-    "talents": "voltaro: Perfect Timing, hearthshell: Hardy, bloomback: Opportunist"
+    "with": 85.5,
+    "share": 23.2,
+    "talents": "voltaro: Deep Ink, hearthshell: Stubborn, bloomback: Opportunist"
    },
    {
     "card": "fizzle",
     "without": 67.6,
     "with": 83.4,
     "share": 18.9,
-    "talents": "tempestray: Crit Chance, drizzlewt: Bright Boost, tidewing: Owner's Mark"
+    "talents": "tempestray: Perfect Timing, drizzlewt: Bright Boost, tidewing: Finisher"
    },
    {
     "card": "shake-it-off",
     "without": 72.3,
-    "with": 87.6,
-    "share": 17.4,
+    "with": 87.5,
+    "share": 17.3,
     "talents": "ancientshell: Owner's Mark, lanternfin: Odd One Out, pyrelynx: Steady Rhythm"
    },
    {
     "card": "breakwater",
     "without": 68.5,
-    "with": 83.3,
-    "share": 17.8,
-    "talents": "tempestray: Crit Chance, magmole: Bright Boost, tidewing: Owner's Mark"
+    "with": 83.1,
+    "share": 17.6,
+    "talents": "tempestray: Crit Chance, magmole: Bright Boost, tidewing: Finisher"
    }
   ],
   "raid": [
    {
     "card": "plain",
-    "share": 31.8,
+    "share": 30.2,
     "talents": "voltaro: Perfect Timing, thornbuck: Hardy, solmane: Catch Breath, wickat: Steady Rhythm, pyrelynx: Steady Rhythm, tidewing: Owner's Mark, tempestray: Quick Draw, mossback: Owner's Mark, gaiadrake: Opportunist, aurorix: Bright Boost, geyserpup: Edge-walker"
    },
    {
     "card": "thick-hide",
-    "share": 35.9,
-    "talents": "lanternfin: Catch Breath, ancientshell: Owner's Mark, tempestray: Catch Breath, geyserpup: Edge-walker, hearthshell: Odd One Out, bloomback: Rally Cry, pyrelynx: Steady Rhythm, voltaro: Odd One Out, tidewing: First Pounce"
+    "share": 36.3,
+    "talents": "lanternfin: Catch Breath, ancientshell: Owner's Mark, tempestray: Catch Breath, geyserpup: Edge-walker, hearthshell: Catch Breath, bloomback: Rally Cry, pyrelynx: Steady Rhythm, voltaro: Odd One Out, tidewing: First Pounce"
    },
    {
     "card": "stone-skin",
-    "share": 13.4,
-    "talents": "bloomback: Rally Cry, voltaro: Perfect Timing, ancientshell: Rally Cry, hearthshell: Catch Breath, tempestray: Crit Chance, pyrelynx: Sharp Claws, solmane: Sharp Claws, geyserpup: none"
+    "share": 12.2,
+    "talents": "bloomback: Stubborn, voltaro: Perfect Timing, ancientshell: Rally Cry, hearthshell: Catch Breath, tempestray: Slow Burn, pyrelynx: Sharp Claws, solmane: Sharp Claws, geyserpup: none"
    },
    {
     "card": "clean-scales",
-    "share": 17.7,
+    "share": 16.1,
     "talents": "coralynx: Crit Damage, bloomback: Stubborn, geyserpup: Hardy, thornbuck: Hardy, solmane: Owner's Mark, bogwarden: none, wickat: Owner's Mark, splashet: Owner's Mark, tempestray: Quick Draw"
    },
    {
     "card": "reflective-hide",
-    "share": 26.5,
-    "talents": "fogwyrm: Catch Breath, bloomback: Stubborn, thornbuck: Hold the Line, gaiadrake: Catch Breath, aurorix: Bright Boost, magmole: Bright Boost, pyrelynx: Steady Rhythm, ashmole: Kindred Boost, solmane: Shoulder to Shoulder"
+    "share": 26.8,
+    "talents": "fogwyrm: Catch Breath, bloomback: Rally Cry, thornbuck: Hardy, gaiadrake: Catch Breath, aurorix: Bright Boost, magmole: Bright Boost, pyrelynx: Steady Rhythm, ashmole: Kindred Boost, solmane: Shoulder to Shoulder"
    },
    {
     "card": "elusive",
-    "share": 26.5,
+    "share": 23.7,
     "talents": "thornbuck: Hold the Line, tidewing: First Pounce, voltaro: Deep Ink, geyserpup: First Pounce, bloomback: Opportunist, aurorix: Odd One Out, coralynx: Crit Chance, pyrelynx: Steady Rhythm, solmane: Owner's Mark"
    },
    {
     "card": "slippery",
-    "share": 28.7,
+    "share": 24,
     "talents": "voltaro: Perfect Timing, bloomback: Stubborn, bogwarden: Hardy, croakmire: Catch Breath, solmane: Owner's Mark, geyserpup: First Pounce, fogwyrm: Unbothered, pyrelynx: Steady Rhythm, squelch: Bright Boost"
    },
    {
     "card": "lucky-strike",
-    "share": 22.6,
-    "talents": "drizzlewt: Bright Boost, hearthshell: Catch Breath, croakmire: Bright Boost, lanternfin: Triage, coralynx: Crit Damage, magmole: Bright Boost, mossback: Owner's Mark, geyserpup: First Pounce, wickat: Owner's Mark, pyrelynx: Steady Rhythm"
+    "share": 24.4,
+    "talents": "drizzlewt: Catch Breath, hearthshell: Hardy, croakmire: Clinging, lanternfin: Triage, coralynx: Crit Damage, magmole: Bright Boost, mossback: Owner's Mark, geyserpup: First Pounce, wickat: Owner's Mark, pyrelynx: Steady Rhythm"
    },
    {
     "card": "bramble-bind",
-    "share": 13.5,
+    "share": 13,
     "talents": "lanternfin: Odd One Out, kilnmole: Hold the Line, solmane: Owner's Mark, sunfawn: none, geyserpup: First Pounce, drizzlewt: Bright Boost, tempestray: Quick Draw, halcyray: Edge-walker"
    },
    {
     "card": "wither",
-    "share": 22.7,
-    "talents": "hearthshell: Catch Breath, tidewing: Owner's Mark, kilnmole: Hardy, drizzlewt: Unbothered, tempestray: Crit Chance, solmane: Owner's Mark, geyserpup: Quick Draw, bloomback: Opportunist, coralynx: Crit Chance, magmole: Odd One Out, squelch: Heavy Hand"
+    "share": 23.6,
+    "talents": "hearthshell: Hardy, tidewing: First Pounce, kilnmole: Hardy, drizzlewt: Unbothered, tempestray: Crit Chance, solmane: Owner's Mark, geyserpup: Quick Draw, bloomback: Opportunist, coralynx: Crit Chance, magmole: Odd One Out, squelch: Heavy Hand"
    },
    {
     "card": "payoff-hunter",
-    "share": 27,
-    "talents": "kilnmole: Hardy, fogwyrm: Catch Breath, hearthshell: Catch Breath, wickat: Steady Rhythm, ancientshell: Owner's Mark, tempestray: Crit Chance, pyrelynx: Steady Rhythm, tidewing: Owner's Mark, geyserpup: Edge-walker"
+    "share": 21,
+    "talents": "kilnmole: Hardy, fogwyrm: Unbothered, hearthshell: Odd One Out, wickat: Steady Rhythm, ancientshell: Owner's Mark, tempestray: Crit Chance, pyrelynx: Steady Rhythm, tidewing: Owner's Mark, geyserpup: Edge-walker"
    },
    {
     "card": "grudge",
-    "share": 30.6,
-    "talents": "tempestray: Perfect Timing, thornbuck: Hold the Line, tidewing: Owner's Mark, hearthshell: Catch Breath"
+    "share": 17.8,
+    "talents": "tempestray: Edge-walker, thornbuck: Hold the Line, tidewing: First Pounce, hearthshell: Catch Breath"
    },
    {
     "card": "great-wave",
-    "share": 23.2,
-    "talents": "bogwarden: Brace, hearthshell: Catch Breath, voltaro: Deep Ink, thornbuck: none, kilnmole: Hardy, tidewing: Owner's Mark, gaiadrake: Opportunist, bloomback: Opportunist, wickat: Steady Rhythm, tempestray: Crit Chance, coralynx: Crit Chance"
+    "share": 24,
+    "talents": "bogwarden: Brace, hearthshell: Stubborn, voltaro: Deep Ink, thornbuck: Hold the Line, kilnmole: Odd One Out, tidewing: Owner's Mark, gaiadrake: Opportunist, bloomback: Opportunist, wickat: Steady Rhythm, tempestray: Catch Breath, coralynx: Crit Chance"
    },
    {
     "card": "swarm",
-    "share": 19.4,
+    "share": 18.2,
     "talents": "gaiadrake: none, pyrelynx: Steady Rhythm, hearthshell: Shoulder to Shoulder, geyserpup: Edge-walker, drizzlewt: Bright Boost, solmane: Owner's Mark, tempestray: Edge-walker, halcyray: Edge-walker, tidewing: Owner's Mark, croakmire: Unbothered"
    },
    {
     "card": "crusher",
-    "share": 33.9,
-    "talents": "hearthshell: Catch Breath, aurorix: Bright Boost, voltaro: none, croakmire: Clinging, coralynx: Odd One Out, solmane: Owner's Mark, gaiadrake: Opportunist, thornbuck: Hold the Line, bloomback: Rally Cry, tempestray: Crit Chance"
+    "share": 30.6,
+    "talents": "hearthshell: Catch Breath, aurorix: Unbothered, voltaro: none, croakmire: Clinging, coralynx: Odd One Out, solmane: Owner's Mark, gaiadrake: Opportunist, thornbuck: Hold the Line, bloomback: Rally Cry, tempestray: Crit Chance"
    },
    {
     "card": "fizzle",
-    "share": 26.1,
+    "share": 24.4,
     "talents": "halcyray: Catch Breath, bloomback: Opportunist, croakmire: Catch Breath, voltaro: Deep Ink, tidewing: Owner's Mark, tempestray: Edge-walker, mossback: Owner's Mark, pyrelynx: Steady Rhythm, kilnmole: Hardy"
    },
    {
     "card": "shake-it-off",
-    "share": 11.6,
+    "share": 9.9,
     "talents": "kilnmole: Hardy, aurorix: Bright Boost, wickat: none, thornbuck: Flank Guard, lanternfin: Odd One Out, geyserpup: First Pounce, solmane: Sharp Claws, zipmouse: none, voltaro: Shoulder to Shoulder, bloomback: none, drizzlewt: Bright Boost"
    },
    {
     "card": "breakwater",
-    "share": 28,
-    "talents": "bloomback: Opportunist, fogwyrm: Catch Breath, tempestray: Slow Burn, ancientshell: Owner's Mark, drizzlewt: Bright Boost, geyserpup: First Pounce, halcyray: Bright Boost, pyrelynx: Steady Rhythm, hearthshell: Catch Breath, tidewing: Owner's Mark"
+    "share": 25.3,
+    "talents": "bloomback: Opportunist, fogwyrm: Catch Breath, tempestray: Crit Chance, ancientshell: Owner's Mark, drizzlewt: Bright Boost, geyserpup: First Pounce, halcyray: Bright Boost, pyrelynx: Steady Rhythm, hearthshell: Catch Breath, tidewing: Owner's Mark"
    }
   ],
   "boss": {
@@ -4095,21 +4096,21 @@
    }
   },
   "average": {
-   "gauntlet": 17.7,
-   "raid": 24.4
+   "gauntlet": 17.6,
+   "raid": 22.3
   },
   "casual": {
    "gauntlet": 7.7,
-   "raid": 8.3,
-   "gauntletFitOnly": 8.1,
+   "raid": 7.9,
+   "gauntletFitOnly": 8,
    "byCard": {
-    "plain": 9.2,
-    "thick-hide": 7.8,
+    "plain": 9.1,
+    "thick-hide": 7.7,
     "payoff-hunter": 9,
     "elusive": 4.7
    }
   },
-  "pass": false
+  "pass": true
  },
  "coverage": {
   "tide": {
@@ -4169,17 +4170,17 @@
   "tidal-colossus": {
    "seededBest": [
     {
-     "formId": "ancientshell",
-     "knack": "living-shelter",
+     "formId": "hearthshell",
+     "knack": "keep-the-heat-in",
      "talents": [
-      "owners-mark"
+      "brace"
      ]
     },
     {
      "formId": "bogwarden",
      "knack": "wide-reach",
      "talents": [
-      "long-shadow"
+      "flank-guard"
      ]
     },
     {
@@ -4190,17 +4191,17 @@
      ]
     },
     {
-     "formId": "tidewing",
-     "knack": "double-mark",
+     "formId": "tempestray",
+     "knack": "none",
      "talents": [
-      "momentum"
+      "perfect-timing"
      ]
     },
     {
-     "formId": "voltaro",
+     "formId": "gaiadrake",
      "knack": "none",
      "talents": [
-      "odd-one-out"
+      "opportunist"
      ]
     },
     {
@@ -4211,17 +4212,17 @@
      ]
     },
     {
-     "formId": "kilnmole",
-     "knack": "keep-the-heat-in",
-     "talents": [
-      "brace"
-     ]
-    },
-    {
      "formId": "drizzlewt",
      "knack": "curl-up",
      "talents": [
-      "bright-boost"
+      "catch-breath"
+     ]
+    },
+    {
+     "formId": "tidewing",
+     "knack": "lead-the-way",
+     "talents": [
+      "edge-walker"
      ]
     },
     {
@@ -4232,10 +4233,10 @@
      ]
     },
     {
-     "formId": "sunfawn",
-     "knack": "curl-up",
+     "formId": "tidewing",
+     "knack": "double-mark",
      "talents": [
-      "brace"
+      "hardy"
      ]
     },
     {
@@ -4246,28 +4247,14 @@
      ]
     },
     {
-     "formId": "tempestray",
-     "knack": "none",
+     "formId": "sunfawn",
+     "knack": "sunbeam",
      "talents": [
-      "edge-walker"
+      "brace"
      ]
     }
    ],
    "scratchBest": [
-    {
-     "formId": "coralynx",
-     "knack": "detonate",
-     "talents": [
-      "crit-chance"
-     ]
-    },
-    {
-     "formId": "croakmire",
-     "knack": "squelch-song",
-     "talents": [
-      "hardy"
-     ]
-    },
     {
      "formId": "fogwyrm",
      "knack": "hide-in-mist",
@@ -4276,32 +4263,22 @@
      ]
     },
     {
-     "formId": "sunfawn",
-     "knack": "curl-up",
+     "formId": "ancientshell",
+     "knack": "living-shelter",
      "talents": [
-      "shoulder-to-shoulder"
+      "finisher"
      ]
     },
     {
-     "formId": "aurorix",
-     "knack": "clear-skies",
+     "formId": "croakmire",
+     "knack": "squelch-song",
      "talents": [
-      "edge-walker"
-     ]
-    },
-    {
-     "formId": "ohmouse",
-     "knack": "catch-the-bolts",
-     "talents": [
-      "shoulder-to-shoulder"
+      "heavy-hand"
      ]
     },
     {
      "formId": "drizzlewt",
-     "knack": "drizzle",
-     "talents": [
-      "overheal-spill"
-     ]
+     "knack": "curl-up"
     },
     {
      "formId": "solmane",
@@ -4311,24 +4288,39 @@
      ]
     },
     {
-     "formId": "ancientshell",
-     "knack": "feed-the-marks",
+     "formId": "ohmouse",
+     "knack": "catch-the-bolts",
+     "talents": [
+      "odd-one-out"
+     ]
+    },
+    {
+     "formId": "sunfawn",
+     "knack": "curl-up",
      "talents": [
       "hardy"
      ]
     },
     {
-     "formId": "pyrelynx",
-     "knack": "leave-a-trail",
+     "formId": "halcyray",
+     "knack": "clear-the-air",
      "talents": [
-      "steady-rhythm"
+      "catch-breath"
      ]
+    },
+    {
+     "formId": "lanternfin",
+     "knack": "sunbeam"
+    },
+    {
+     "formId": "coralynx",
+     "knack": "leave-a-trail"
     },
     {
      "formId": "croakmire",
      "knack": "squelch-song",
      "talents": [
-      "bright-boost"
+      "heavy-hand"
      ]
     },
     {
@@ -4339,13 +4331,13 @@
      ]
     }
    ],
-   "overall": "from scratch",
+   "overall": "seeded",
    "classicWin": 0,
    "seededWin": 1,
    "scratchWin": 1,
    "classicKnockouts": 16,
-   "seededKnockouts": 1.15,
-   "scratchKnockouts": 4.66,
+   "seededKnockouts": 1.04,
+   "scratchKnockouts": 2.9299999999999997,
    "steps": {
     "classic": 3,
     "seeded": 3,
@@ -4353,22 +4345,22 @@
    },
    "margin": {
     "base": 1,
-    "atk10": 0.99,
-    "hp10": 0.99,
+    "atk10": 0.98,
+    "hp10": 1,
     "share": {
      "base": 1,
-     "atk10": 0.999928272251309,
-     "hp10": 0.9998248453117563
+     "atk10": 0.998897382198953,
+     "hp10": 1
     }
    },
    "preparedMargin": {
-    "base": 0.98,
-    "atk10": 0.61,
-    "hp10": 0.91,
+    "base": 0.97,
+    "atk10": 0.56,
+    "hp10": 0.88,
     "share": {
-     "base": 0.9994528795811519,
-     "atk10": 0.9863539267015708,
-     "hp10": 0.9977900999524035
+     "base": 0.9995528795811519,
+     "atk10": 0.981374869109948,
+     "hp10": 0.99709662065683
     }
    },
    "health": {
@@ -4423,14 +4415,14 @@
       "kill": 0.99
      },
      "knockouts": [
-      4.07,
-      1.11,
+      4.27,
+      1.42,
       0
      ],
-     "knockoutsTotal": 5.180000000000001,
-     "replacements": 3.38,
-     "damageShare": 0.9999392670157067,
-     "damageShareSd": 0.0006042855640828406,
+     "knockoutsTotal": 5.6899999999999995,
+     "replacements": 3.48,
+     "damageShare": 0.9998267015706808,
+     "damageShareSd": 0.0017242976003405317,
      "steps": 3,
      "played": [
       1,
@@ -4438,22 +4430,22 @@
       0.01
      ],
      "hpLeft": [
-      0.3440652854231503,
-      0.516083469294929,
+      0.3434394352493975,
+      0.49000738241572184,
       0
      ],
      "standing": [
-      0.6608333333333332,
-      0.894832251082251,
+      0.6441666666666667,
+      0.8649148629148631,
       0
      ],
-     "hpLeftEnd": 0.516083469294929,
-     "standingEnd": 0.894832251082251,
+     "hpLeftEnd": 0.49000738241572184,
+     "standingEnd": 0.8649148629148631,
      "knockoutsByOwner": {
-      "p1": 1.44,
-      "p3": 0.7,
-      "p4": 1.77,
-      "p2": 1.27
+      "p1": 1.54,
+      "p3": 0.81,
+      "p4": 1.89,
+      "p2": 1.45
      }
     },
     "best": {
@@ -4465,85 +4457,85 @@
       "kill": 1
      },
      "knockouts": [
-      0.37,
-      4.29,
+      0.88,
+      0.16,
       0
      ],
-     "knockoutsTotal": 4.66,
-     "replacements": 3.05,
+     "knockoutsTotal": 1.04,
+     "replacements": 1.01,
      "damageShare": 1,
      "damageShareSd": 0,
      "steps": 3,
      "played": [
       1,
-      1,
-      0.03
+      0.7,
+      0
      ],
      "hpLeft": [
-      0.6619623681299889,
-      0.5539337969608268,
-      0.7455056460525444
+      0.5044540762298634,
+      0.5464536819956274,
+      0
      ],
      "standing": [
-      0.9691666666666667,
-      0.6415151515151516,
-      1
+      0.9266666666666672,
+      0.980952380952381,
+      0
      ],
-     "hpLeftEnd": 0.563361650148625,
-     "standingEnd": 0.662348484848485,
+     "hpLeftEnd": 0.5502081973982186,
+     "standingEnd": 0.9733333333333337,
      "knockoutsByOwner": {
-      "p4": 1.85,
-      "p3": 0.88,
-      "p2": 0.67,
-      "p1": 1.26
+      "p2": 0.48,
+      "p1": 0.3,
+      "p3": 0.15,
+      "p4": 0.11
      }
     },
     "mixed": {
      "runs": 400,
-     "winRate": 0.005,
+     "winRate": 0,
      "tiers": {
       "t1": 1,
-      "t2": 0.0275,
-      "kill": 0.005
+      "t2": 0.03,
+      "kill": 0
      },
      "knockouts": [
-      21.2875,
-      17.645,
-      1.035
+      21.35,
+      17.62,
+      1.0275
      ],
-     "knockoutsTotal": 39.9675,
+     "knockoutsTotal": 39.9975,
      "replacements": 10,
-     "damageShare": 0.6532235898991012,
-     "damageShareSd": 0.09307040422166966,
-     "steps": 2.705,
+     "damageShare": 0.6447392071456141,
+     "damageShareSd": 0.08931610163962926,
+     "steps": 2.6675,
      "played": [
       1,
       1,
-      0.9975
+      1
      ],
      "hpLeft": [
-      0.398038450188908,
-      0.01789492881158563,
-      0.0017012871160953231
+      0.3823844249886354,
+      0.016265723068868906,
+      0.001287878787878788
      ],
      "standing": [
-      0.2904166666666667,
-      0.006011003500283686,
-      0.005012531328320802
+      0.28833333333333333,
+      0.00568724651205049,
+      0.0008333333333333333
      ],
-     "hpLeftEnd": 0.0024867017949840513,
-     "standingEnd": 0.005520833333333333,
+     "hpLeftEnd": 0.001287878787878788,
+     "standingEnd": 0.0008333333333333333,
      "knockoutsByOwner": {
-      "p1": 3.9925,
       "p2": 4,
+      "p3": 4,
       "p4": 4,
-      "p5": 3.9975,
+      "p5": 4,
       "p6": 4,
       "p7": 4,
-      "p8": 3.9925,
-      "p9": 3.995,
-      "p10": 3.995,
-      "p3": 3.995
+      "p8": 3.9975,
+      "p9": 4,
+      "p10": 4,
+      "p1": 4
      }
     }
    },
@@ -4551,11 +4543,11 @@
     {
      "width": 5,
      "classicWin": 0,
-     "bestWin": 0.98,
+     "bestWin": 1,
      "classicShare": 0.7716892829952081,
-     "bestShare": 0.9999086389896548,
+     "bestShare": 1,
      "classicKnockouts": 20,
-     "bestKnockouts": 4.140000000000001
+     "bestKnockouts": 4
     },
     {
      "width": 10,
@@ -4564,7 +4556,7 @@
      "classicShare": 0.8229820256933341,
      "bestShare": 1,
      "classicKnockouts": 40,
-     "bestKnockouts": 22.93
+     "bestKnockouts": 9.89
     },
     {
      "width": 15,
@@ -4573,24 +4565,24 @@
      "classicShare": 0.8808341808671826,
      "bestShare": 1,
      "classicKnockouts": 60,
-     "bestKnockouts": 27.04
+     "bestKnockouts": 20.43
     }
    ],
    "answers": [
     {
      "label": "Wide Reach Guards in every column cover the whole sweep",
      "tool": "Reach",
-     "score": 135,
+     "score": 137,
      "winRate": 0.99,
-     "damageShare": 0.9999392670157067,
+     "damageShare": 0.9998267015706808,
      "beatsClassic": true
     },
     {
      "label": "Keep the Heat In and Living Shelter on every row blunt the waves",
      "tool": "Row Ward",
-     "score": 104,
-     "winRate": 0.57,
-     "damageShare": 0.9832832460732984,
+     "score": 85,
+     "winRate": 0.56,
+     "damageShare": 0.9818052356020942,
      "beatsClassic": true
     }
    ]
@@ -4599,7 +4591,10 @@
    "seededBest": [
     {
      "formId": "lanternfin",
-     "knack": "none"
+     "knack": "none",
+     "talents": [
+      "triage"
+     ]
     },
     {
      "formId": "fogwyrm",
@@ -4609,17 +4604,17 @@
      ]
     },
     {
-     "formId": "croakmire",
-     "knack": "squelch-song",
+     "formId": "ohmouse",
+     "knack": "none",
      "talents": [
-      "clinging"
+      "odd-one-out"
      ]
     },
     {
      "formId": "geyserpup",
      "knack": "none",
      "talents": [
-      "momentum"
+      "first-pounce"
      ]
     },
     {
@@ -4640,22 +4635,21 @@
      "formId": "fogwyrm",
      "knack": "wide-reach",
      "talents": [
-      "rally-cry"
+      "shoulder-charge"
      ]
-    },
-    {
-     "formId": "lanternfin",
-     "knack": "none"
-    },
-    {
-     "formId": "ohmouse",
-     "knack": "none"
     },
     {
      "formId": "drizzlewt",
      "knack": "none",
      "talents": [
       "bright-boost"
+     ]
+    },
+    {
+     "formId": "croakmire",
+     "knack": "squelch-song",
+     "talents": [
+      "clinging"
      ]
     },
     {
@@ -4666,39 +4660,86 @@
      ]
     },
     {
-     "formId": "croakmire",
-     "knack": "squelch-song"
-    },
-    {
-     "formId": "pyrelynx",
+     "formId": "drizzlewt",
      "knack": "none",
      "talents": [
-      "steady-rhythm"
+      "bright-boost"
      ]
     },
     {
-     "formId": "pyrelynx",
-     "knack": "gnaw-through",
+     "formId": "croakmire",
+     "knack": "wide-warmth",
      "talents": [
-      "steady-rhythm"
+      "hardy"
      ]
     },
     {
      "formId": "bogwarden",
      "knack": "draw-fire",
      "talents": [
-      "flank-guard"
+      "long-shadow"
      ]
     },
     {
-     "formId": "drizzlewt",
-     "knack": "none",
+     "formId": "pyrelynx",
+     "knack": "gnaw-through",
+     "talents": [
+      "crit-damage"
+     ]
+    },
+    {
+     "formId": "fogwyrm",
+     "knack": "hide-in-mist",
      "talents": [
       "catch-breath"
+     ]
+    },
+    {
+     "formId": "croakmire",
+     "knack": "squelch-song",
+     "talents": [
+      "heavy-hand"
      ]
     }
    ],
    "scratchBest": [
+    {
+     "formId": "drizzlewt",
+     "knack": "clear-the-air",
+     "talents": [
+      "rally-cry"
+     ]
+    },
+    {
+     "formId": "hearthshell",
+     "knack": "keep-the-heat-in",
+     "talents": [
+      "shoulder-charge"
+     ]
+    },
+    {
+     "formId": "fogwyrm",
+     "knack": "hide-in-mist"
+    },
+    {
+     "formId": "bogwarden",
+     "knack": "draw-fire",
+     "talents": [
+      "hardy"
+     ]
+    },
+    {
+     "formId": "tidewing",
+     "knack": "lead-the-way"
+    },
+    {
+     "formId": "sunfawn",
+     "knack": "curl-up"
+    },
+    {
+     "formId": "fogwyrm",
+     "knack": "wide-reach"
+    },
     {
      "formId": "coralynx",
      "knack": "territorial",
@@ -4707,102 +4748,53 @@
      ]
     },
     {
-     "formId": "hearthshell",
-     "knack": "draw-fire",
-     "talents": [
-      "catch-breath"
-     ]
-    },
-    {
-     "formId": "hearthshell",
-     "knack": "hearth",
-     "talents": [
-      "stubborn"
-     ]
-    },
-    {
-     "formId": "drizzlewt",
-     "knack": "drizzle"
-    },
-    {
-     "formId": "bloomback",
-     "knack": "none",
-     "talents": [
-      "brace"
-     ]
-    },
-    {
-     "formId": "fogwyrm",
-     "knack": "none",
-     "talents": [
-      "unbothered"
-     ]
-    },
-    {
-     "formId": "lanternfin",
-     "knack": "lantern-glow",
-     "talents": [
-      "catch-breath"
-     ]
-    },
-    {
-     "formId": "drizzlewt",
-     "knack": "none",
-     "talents": [
-      "overheal-spill"
-     ]
-    },
-    {
-     "formId": "hearthshell",
-     "knack": "draw-fire"
-    },
-    {
-     "formId": "lanternfin",
-     "knack": "sunbeam",
-     "talents": [
-      "catch-breath"
-     ]
-    },
-    {
-     "formId": "magmole",
-     "knack": "wide-warmth",
-     "talents": [
-      "bright-boost"
-     ]
-    },
-    {
-     "formId": "fogwyrm",
-     "knack": "thick-fog",
-     "talents": [
-      "flank-guard"
-     ]
-    },
-    {
      "formId": "fogwyrm",
      "knack": "wide-reach",
      "talents": [
-      "flank-guard"
-     ]
-    },
-    {
-     "formId": "lanternfin",
-     "knack": "sunbeam",
-     "talents": [
-      "catch-breath"
-     ]
-    },
-    {
-     "formId": "coralynx",
-     "knack": "leave-a-trail",
-     "talents": [
-      "finisher"
+      "shoulder-charge"
      ]
     },
     {
      "formId": "croakmire",
      "knack": "squelch-song",
      "talents": [
-      "front-liner"
+      "clinging"
+     ]
+    },
+    {
+     "formId": "drizzlewt",
+     "knack": "clear-the-air",
+     "talents": [
+      "bright-boost"
+     ]
+    },
+    {
+     "formId": "halcyray",
+     "knack": "clear-the-air"
+    },
+    {
+     "formId": "sunfawn",
+     "knack": "sunbeam"
+    },
+    {
+     "formId": "hearthshell",
+     "knack": "keep-the-heat-in",
+     "talents": [
+      "shoulder-charge"
+     ]
+    },
+    {
+     "formId": "hearthshell",
+     "knack": "draw-fire",
+     "talents": [
+      "shoulder-to-shoulder"
+     ]
+    },
+    {
+     "formId": "lanternfin",
+     "knack": "sunbeam",
+     "talents": [
+      "hardy"
      ]
     }
    ],
@@ -4811,8 +4803,8 @@
    "seededWin": 1,
    "scratchWin": 1,
    "classicKnockouts": 20,
-   "seededKnockouts": 2.69,
-   "scratchKnockouts": 0.55,
+   "seededKnockouts": 3.34,
+   "scratchKnockouts": 0.28,
    "steps": {
     "classic": 3.16,
     "seeded": 0,
@@ -4829,13 +4821,13 @@
     }
    },
    "preparedMargin": {
-    "base": 0.82,
+    "base": 0.8,
     "atk10": 0,
-    "hp10": 0.14,
+    "hp10": 0.12,
     "share": {
-     "base": 0.9937154166666669,
-     "atk10": 0.8321912499999999,
-     "hp10": 0.942449621212121
+     "base": 0.9926979166666665,
+     "atk10": 0.8280529166666668,
+     "hp10": 0.9378522727272725
     }
    },
    "health": {
@@ -4883,21 +4875,21 @@
     },
     "prepared": {
      "runs": 100,
-     "winRate": 0.84,
+     "winRate": 0.8,
      "tiers": {
       "t1": 1,
       "t2": 1,
-      "kill": 0.84
+      "kill": 0.8
      },
      "knockouts": [
       2.75,
-      6.32,
-      4.34
+      6.43,
+      4.47
      ],
-     "knockoutsTotal": 13.41,
+     "knockoutsTotal": 13.649999999999999,
      "replacements": 4,
-     "damageShare": 0.9949875,
-     "damageShareSd": 0.014791183677557183,
+     "damageShare": 0.9945341666666667,
+     "damageShareSd": 0.015445476886454649,
      "steps": 0,
      "played": [
       1,
@@ -4905,22 +4897,22 @@
       1
      ],
      "hpLeft": [
-      0.6268923905722211,
-      0.4440289343889288,
-      0.3259638377868383
+      0.6226240219986924,
+      0.44055639022309445,
+      0.30302425858462206
      ],
      "standing": [
       0.828125,
-      0.604,
-      0.588510878010878
+      0.597125,
+      0.5701604506604505
      ],
-     "hpLeftEnd": 0.3259638377868383,
-     "standingEnd": 0.588510878010878,
+     "hpLeftEnd": 0.30302425858462206,
+     "standingEnd": 0.5701604506604505,
      "knockoutsByOwner": {
-      "p3": 3.11,
-      "p4": 3.6,
-      "p1": 3.31,
-      "p2": 3.39
+      "p3": 3.17,
+      "p4": 3.65,
+      "p1": 3.42,
+      "p2": 3.41
      }
     },
     "best": {
@@ -4933,36 +4925,36 @@
      },
      "knockouts": [
       0,
-      0.55,
-      0
+      0.14,
+      0.14
      ],
-     "knockoutsTotal": 0.55,
-     "replacements": 0.48,
+     "knockoutsTotal": 0.28,
+     "replacements": 0.28,
      "damageShare": 1,
      "damageShareSd": 0,
      "steps": 0,
      "played": [
       1,
       1,
-      0.33
+      1
      ],
      "hpLeft": [
-      0.7603212802345469,
-      0.6663466872565639,
-      0.6964093285942808
+      0.7423151125401931,
+      0.5834672847898581,
+      0.6142727307273886
      ],
      "standing": [
       1,
-      0.965625,
-      1
+      0.99125,
+      0.99125
      ],
-     "hpLeftEnd": 0.6848579634169489,
-     "standingEnd": 0.985,
+     "hpLeftEnd": 0.6142727307273886,
+     "standingEnd": 0.99125,
      "knockoutsByOwner": {
-      "p1": 0.24,
-      "p4": 0.27,
-      "p3": 0.02,
-      "p2": 0.02
+      "p2": 0.12,
+      "p3": 0.1,
+      "p4": 0.05,
+      "p1": 0.01
      }
     },
     "mixed": {
@@ -4974,42 +4966,42 @@
       "kill": 0
      },
      "knockouts": [
-      20.6,
-      22.675,
-      6.6975
+      20.755,
+      22.8425,
+      6.3875
      ],
-     "knockoutsTotal": 49.9725,
+     "knockoutsTotal": 49.985,
      "replacements": 10,
-     "damageShare": 0.5551092608438098,
-     "damageShareSd": 0.06352132478634855,
-     "steps": 0.92,
+     "damageShare": 0.5518377981087781,
+     "damageShareSd": 0.06322688351696268,
+     "steps": 0.91,
      "played": [
       1,
       1,
       1
      ],
      "hpLeft": [
-      0.48571602132283004,
-      0.2857771952203397,
-      0.0024023612724657878
+      0.479437715647376,
+      0.27857014387940443,
+      0.002884672996271786
      ],
      "standing": [
-      0.4849999999999999,
-      0.20881470745924338,
-      0.0013822940503432494
+      0.48112499999999997,
+      0.199310623930141,
+      0.0008296246130030959
      ],
-     "hpLeftEnd": 0.0024023612724657878,
-     "standingEnd": 0.0013822940503432494,
+     "hpLeftEnd": 0.002884672996271786,
+     "standingEnd": 0.0008296246130030959,
      "knockoutsByOwner": {
-      "p1": 4.9975,
+      "p1": 5,
       "p2": 5,
       "p3": 5,
       "p4": 5,
       "p5": 5,
       "p6": 4.9975,
-      "p7": 4.995,
-      "p8": 4.995,
-      "p9": 4.9925,
+      "p7": 4.9975,
+      "p8": 4.9975,
+      "p9": 4.9975,
       "p10": 4.995
      }
     }
@@ -5022,7 +5014,7 @@
      "classicShare": 0.3361820579534519,
      "bestShare": 1,
      "classicKnockouts": 25,
-     "bestKnockouts": 1.3900000000000001
+     "bestKnockouts": 1.52
     },
     {
      "width": 10,
@@ -5031,7 +5023,7 @@
      "classicShare": 0.5327240615195594,
      "bestShare": 1,
      "classicKnockouts": 50,
-     "bestKnockouts": 0.8200000000000001
+     "bestKnockouts": 4.67
     },
     {
      "width": 15,
@@ -5040,24 +5032,24 @@
      "classicShare": 0.6769593154825815,
      "bestShare": 1,
      "classicKnockouts": 75,
-     "bestKnockouts": 2.9299999999999997
+     "bestKnockouts": 4.75
     }
    ],
    "answers": [
     {
      "label": "Squelch Song keeps Mired on the Wyrm, so Forge Heat builds slowly and each hit lands softer",
      "tool": "Debuff",
-     "score": 124,
-     "winRate": 0.84,
-     "damageShare": 0.9949875,
+     "score": 118,
+     "winRate": 0.8,
+     "damageShare": 0.9945341666666667,
      "beatsClassic": true
     },
     {
      "label": "Circle Round and Clear the Air heal the Payoffs its reflected hits land on",
      "tool": "Sustain",
-     "score": 111,
-     "winRate": 0.67,
-     "damageShare": 0.9866908333333333,
+     "score": 117,
+     "winRate": 0.68,
+     "damageShare": 0.9864129166666668,
      "beatsClassic": true
     }
    ]
@@ -5145,10 +5137,10 @@
    ],
    "scratchBest": [
     {
-     "formId": "hearthshell",
-     "knack": "draw-fire",
+     "formId": "drizzlewt",
+     "knack": "clear-the-air",
      "talents": [
-      "catch-breath"
+      "overheal-spill"
      ]
     },
     {
@@ -5159,17 +5151,17 @@
      ]
     },
     {
-     "formId": "zipmouse",
-     "knack": "zoom",
+     "formId": "ohmouse",
+     "knack": "lightning-ears",
      "talents": [
-      "shoulder-to-shoulder"
+      "odd-one-out"
      ]
     },
     {
-     "formId": "kilnmole",
-     "knack": "keep-the-heat-in",
+     "formId": "mossback",
+     "knack": "feed-the-marks",
      "talents": [
-      "hardy"
+      "finisher"
      ]
     },
     {
@@ -5187,6 +5179,17 @@
      ]
     },
     {
+     "formId": "lanternfin",
+     "knack": "none"
+    },
+    {
+     "formId": "gaiadrake",
+     "knack": "detonate",
+     "talents": [
+      "front-liner"
+     ]
+    },
+    {
      "formId": "voltaro",
      "knack": "zoom",
      "talents": [
@@ -5194,17 +5197,14 @@
      ]
     },
     {
-     "formId": "tempestray",
-     "knack": "twin-strike",
-     "talents": [
-      "perfect-timing"
-     ]
+     "formId": "bogwarden",
+     "knack": "mud-wall"
     },
     {
-     "formId": "gaiadrake",
-     "knack": "leave-a-trail",
+     "formId": "hearthshell",
+     "knack": "draw-fire",
      "talents": [
-      "finisher"
+      "catch-breath"
      ]
     },
     {
@@ -5212,20 +5212,6 @@
      "knack": "sunbeam",
      "talents": [
       "overheal-spill"
-     ]
-    },
-    {
-     "formId": "drizzlewt",
-     "knack": "clear-the-air",
-     "talents": [
-      "bright-boost"
-     ]
-    },
-    {
-     "formId": "lanternfin",
-     "knack": "sunbeam",
-     "talents": [
-      "odd-one-out"
      ]
     }
    ],
@@ -5235,20 +5221,20 @@
    "scratchWin": 1,
    "classicKnockouts": 14.799999999999999,
    "seededKnockouts": 1.3900000000000001,
-   "scratchKnockouts": 2.09,
+   "scratchKnockouts": 0.6,
    "steps": {
     "classic": 0,
     "seeded": 2.99,
-    "scratch": 3
+    "scratch": 2.98
    },
    "margin": {
-    "base": 0.99,
-    "atk10": 0.9,
-    "hp10": 0.98,
+    "base": 1,
+    "atk10": 0.94,
+    "hp10": 0.99,
     "share": {
-     "base": 0.9999043478260871,
-     "atk10": 0.9949630434782609,
-     "hp10": 0.999259881422925
+     "base": 1,
+     "atk10": 0.9981913043478261,
+     "hp10": 0.9999505928853755
     }
    },
    "preparedMargin": {
@@ -5355,85 +5341,85 @@
       "kill": 1
      },
      "knockouts": [
-      1,
-      1.09,
+      0.15,
+      0.45,
       0
      ],
-     "knockoutsTotal": 2.09,
-     "replacements": 1.65,
+     "knockoutsTotal": 0.6,
+     "replacements": 0.55,
      "damageShare": 1,
      "damageShareSd": 0,
-     "steps": 3,
+     "steps": 2.98,
      "played": [
       1,
-      0.96,
+      0.99,
       0
      ],
      "hpLeft": [
-      0.4695199717628417,
-      0.4852573321215175,
+      0.4915098776996428,
+      0.43986223821347353,
       0
      ],
      "standing": [
-      0.916666666666667,
-      0.9049084595959598,
+      0.9875,
+      0.9621212121212122,
       0
      ],
-     "hpLeftEnd": 0.4906902382728795,
-     "standingEnd": 0.9087121212121212,
+     "hpLeftEnd": 0.4417127495804724,
+     "standingEnd": 0.9625,
      "knockoutsByOwner": {
-      "p3": 0.71,
-      "p1": 0.63,
-      "p4": 0.66,
-      "p2": 0.09
+      "p3": 0.28,
+      "p1": 0.16,
+      "p4": 0.08,
+      "p2": 0.08
      }
     },
     "mixed": {
      "runs": 400,
-     "winRate": 0.0175,
+     "winRate": 0.015,
      "tiers": {
-      "t1": 0.99,
-      "t2": 0.0625,
-      "kill": 0.0175
+      "t1": 0.9875,
+      "t2": 0.06,
+      "kill": 0.015
      },
      "knockouts": [
-      9.175,
-      19.46,
-      9.4175
+      9.145,
+      19.4275,
+      9.495
      ],
-     "knockoutsTotal": 38.0525,
-     "replacements": 9.965,
-     "damageShare": 0.6005026614010989,
-     "damageShareSd": 0.1449961560874561,
-     "steps": 1.89,
+     "knockoutsTotal": 38.0675,
+     "replacements": 9.9625,
+     "damageShare": 0.5992718349358974,
+     "damageShareSd": 0.14332364338605935,
+     "steps": 1.8825,
      "played": [
       1,
       0.9975,
-      0.9825
+      0.985
      ],
      "hpLeft": [
-      0.5334748001989059,
-      0.24703518807663427,
-      0.08642227150460952
+      0.5328355837866158,
+      0.24845204748891578,
+      0.08689207084425642
      ],
      "standing": [
-      0.6941666666666667,
-      0.2639033330383332,
-      0.07554138863981198
+      0.6951666666666667,
+      0.2650715916355089,
+      0.07530059931126917
      ],
-     "hpLeftEnd": 0.09213264433938907,
-     "standingEnd": 0.08469149226069318,
+     "hpLeftEnd": 0.09203115384305771,
+     "standingEnd": 0.08391050831101814,
      "knockoutsByOwner": {
       "p1": 3.98,
-      "p2": 3.9325,
-      "p3": 3.89,
-      "p6": 3.675,
-      "p8": 3.885,
-      "p9": 3.8975,
+      "p2": 3.94,
+      "p3": 3.875,
+      "p6": 3.68,
+      "p8": 3.89,
+      "p9": 3.9025,
       "p10": 3.945,
-      "p4": 3.6975,
+      "p4": 3.7,
       "p5": 3.4875,
-      "p7": 3.6625
+      "p7": 3.6675
      }
     }
    },
@@ -5441,11 +5427,11 @@
     {
      "width": 5,
      "classicWin": 0,
-     "bestWin": 0.96,
+     "bestWin": 1,
      "classicShare": 0.07966620176662018,
-     "bestShare": 0.9988619246861926,
+     "bestShare": 1,
      "classicKnockouts": 17.44,
-     "bestKnockouts": 4.34
+     "bestKnockouts": 1.79
     },
     {
      "width": 10,
@@ -5454,7 +5440,7 @@
      "classicShare": 0.06580242673992673,
      "bestShare": 1,
      "classicKnockouts": 34.61,
-     "bestKnockouts": 5.11
+     "bestKnockouts": 1.54
     },
     {
      "width": 15,
@@ -5463,7 +5449,7 @@
      "classicShare": 0.07750549403197311,
      "bestShare": 1,
      "classicKnockouts": 51.870000000000005,
-     "bestKnockouts": 5.67
+     "bestKnockouts": 1.35
     }
    ],
    "answers": [
@@ -5498,14 +5484,14 @@
      "formId": "sunfawn",
      "knack": "curl-up",
      "talents": [
-      "brace"
+      "hardy"
      ]
     },
     {
      "formId": "tidewing",
      "knack": "lead-the-way",
      "talents": [
-      "owners-mark"
+      "first-pounce"
      ]
     },
     {
@@ -5546,92 +5532,92 @@
    ],
    "scratchBest": [
     {
-     "formId": "thornbuck",
-     "knack": "wide-reach",
+     "formId": "tidewing",
+     "knack": "steady-mark",
+     "talents": [
+      "finisher"
+     ]
+    },
+    {
+     "formId": "bogwarden",
+     "knack": "draw-fire",
      "talents": [
       "flank-guard"
      ]
     },
     {
-     "formId": "bogwarden",
-     "knack": "mud-wall",
+     "formId": "thornbuck",
+     "knack": "wide-reach",
      "talents": [
-      "long-shadow"
+      "hold-the-line"
      ]
     },
     {
-     "formId": "bloomback",
-     "knack": "detonate",
+     "formId": "tempestray",
+     "knack": "leave-a-trail",
      "talents": [
-      "opportunist"
+      "edge-walker"
      ]
     },
     {
-     "formId": "croakmire",
-     "knack": "ready-the-mark",
+     "formId": "squelch",
+     "knack": "squelch-song",
      "talents": [
       "clinging"
      ]
     },
     {
-     "formId": "voltaro",
-     "knack": "double-mark",
+     "formId": "bloomback",
+     "knack": "none",
      "talents": [
-      "momentum"
+      "finisher"
      ]
     },
     {
-     "formId": "gaiadrake",
-     "knack": "leave-a-trail",
+     "formId": "kilnmole",
+     "knack": "baked-shell",
      "talents": [
-      "opportunist"
+      "odd-one-out"
      ]
     },
     {
-     "formId": "voltaro",
-     "knack": "double-mark",
+     "formId": "tempestray",
+     "knack": "none",
      "talents": [
       "perfect-timing"
-     ]
-    },
-    {
-     "formId": "thornbuck",
-     "knack": "wide-reach",
-     "talents": [
-      "flank-guard"
      ]
     }
    ],
    "overall": "seeded",
    "classicWin": 0,
    "seededWin": 0.98,
-   "scratchWin": 0.92,
+   "scratchWin": 0.91,
    "classicKnockouts": 12,
-   "seededKnockouts": 1.55,
+   "seededKnockouts": 1.6600000000000001,
    "scratchKnockouts": 3.6500000000000004,
    "steps": {
     "classic": 3,
     "seeded": 3,
-    "scratch": 2.93
+    "scratch": 2.95
    },
    "margin": {
     "base": 0.98,
     "atk10": 0.45,
     "hp10": 0.81,
     "share": {
-     "base": 0.9997641379310345,
-     "atk10": 0.9545331034482758,
-     "hp10": 0.9915648902821315
+     "base": 0.9996731034482758,
+     "atk10": 0.9536937931034484,
+     "hp10": 0.9921435736677114
     }
    },
    "preparedMargin": {
-    "base": 0.95,
+    "base": 0.94,
     "atk10": 0.12,
-    "hp10": 0.6,
+    "hp10": 0.57,
     "share": {
-     "base": 0.9985868965517242,
-     "atk10": 0.8983124137931037,
-     "hp10": 0.9797159874608151
+     "base": 0.9983551724137931,
+     "atk10": 0.894174482758621,
+     "hp10": 0.9773724137931034
     }
    },
    "health": {
@@ -5679,44 +5665,44 @@
     },
     "prepared": {
      "runs": 100,
-     "winRate": 0.86,
+     "winRate": 0.87,
      "tiers": {
       "t1": 1,
       "t2": 0.99,
-      "kill": 0.86
+      "kill": 0.87
      },
      "knockouts": [
       0,
-      3.13,
-      1.05
+      3.2,
+      1
      ],
-     "knockoutsTotal": 4.18,
-     "replacements": 2.36,
-     "damageShare": 0.9948551724137932,
-     "damageShareSd": 0.01969432036042291,
+     "knockoutsTotal": 4.2,
+     "replacements": 2.39,
+     "damageShare": 0.9944958620689656,
+     "damageShareSd": 0.020436843219073183,
      "steps": 3,
      "played": [
       1,
       1,
-      0.66
+      0.67
      ],
      "hpLeft": [
-      0.6954384211841119,
-      0.4224172394346046,
-      0.4859053489997142
+      0.6938296277791656,
+      0.41674328840774144,
+      0.49627680658789797
      ],
      "standing": [
       1,
-      0.60875,
-      0.7164502164502164
+      0.6,
+      0.731769722814499
      ],
-     "hpLeftEnd": 0.4971187735283802,
-     "standingEnd": 0.7653571428571427,
+     "hpLeftEnd": 0.5017429475121389,
+     "standingEnd": 0.7740357142857143,
      "knockoutsByOwner": {
-      "p1": 1.46,
+      "p1": 1.47,
       "p3": 1.39,
-      "p4": 0.9,
-      "p2": 0.43
+      "p4": 0.92,
+      "p2": 0.42
      }
     },
     "best": {
@@ -5729,36 +5715,36 @@
      },
      "knockouts": [
       0,
-      1.23,
-      0.32
+      1.28,
+      0.38
      ],
-     "knockoutsTotal": 1.55,
-     "replacements": 1.1,
-     "damageShare": 0.999233103448276,
-     "damageShareSd": 0.005386187292986079,
+     "knockoutsTotal": 1.6600000000000001,
+     "replacements": 1.15,
+     "damageShare": 0.9993006896551725,
+     "damageShareSd": 0.005040025479793799,
      "steps": 3,
      "played": [
       1,
       1,
-      0.39
+      0.44
      ],
      "hpLeft": [
-      0.7608759299256058,
-      0.5656463607180036,
-      0.5996906779222146
+      0.7665893651909115,
+      0.5724031253839328,
+      0.6038538139193514
      ],
      "standing": [
       1,
-      0.84625,
-      0.8803418803418802
+      0.84,
+      0.8736471861471862
      ],
-     "hpLeftEnd": 0.5984512875986701,
-     "standingEnd": 0.9145833333333334,
+     "hpLeftEnd": 0.6081987956356211,
+     "standingEnd": 0.9106547619047619,
      "knockoutsByOwner": {
-      "p1": 0.64,
-      "p3": 0.68,
-      "p2": 0.07,
-      "p4": 0.16
+      "p1": 0.68,
+      "p3": 0.69,
+      "p2": 0.09,
+      "p4": 0.2
      }
     },
     "mixed": {
@@ -5766,18 +5752,18 @@
      "winRate": 0,
      "tiers": {
       "t1": 1,
-      "t2": 0.0075,
+      "t2": 0.01,
       "kill": 0
      },
      "knockouts": [
-      11.7,
-      16.1575,
-      2.1425
+      11.7275,
+      16.1475,
+      2.125
      ],
      "knockoutsTotal": 30,
      "replacements": 10,
-     "damageShare": 0.5944902498365894,
-     "damageShareSd": 0.1008900558623427,
+     "damageShare": 0.5931875045391823,
+     "damageShareSd": 0.1000323023503937,
      "steps": 3,
      "played": [
       1,
@@ -5785,13 +5771,13 @@
       1
      ],
      "hpLeft": [
-      0.5427167737087584,
-      0.012618585431703064,
+      0.5413413134680904,
+      0.013358701206766688,
       0
      ],
      "standing": [
-      0.415,
-      0.004610261867905057,
+      0.41362499999999996,
+      0.004814467234262126,
       0
      ],
      "hpLeftEnd": 0,
@@ -5818,16 +5804,16 @@
      "classicShare": 0.46235738304524815,
      "bestShare": 1,
      "classicKnockouts": 15,
-     "bestKnockouts": 2.35
+     "bestKnockouts": 2.45
     },
     {
      "width": 10,
      "classicWin": 0,
      "bestWin": 0.98,
      "classicShare": 0.6063443242065508,
-     "bestShare": 0.9994807175539253,
+     "bestShare": 0.9995889316580724,
      "classicKnockouts": 30,
-     "bestKnockouts": 15.940000000000001
+     "bestKnockouts": 16.7
     },
     {
      "width": 15,
@@ -5836,16 +5822,16 @@
      "classicShare": 0.6591464114832535,
      "bestShare": 1,
      "classicKnockouts": 45,
-     "bestKnockouts": 8.45
+     "bestKnockouts": 10.52
     }
    ],
    "answers": [
     {
      "label": "Draw Fire pulls the Rod onto a Guard that can take it",
      "tool": "Taunt",
-     "score": 130,
-     "winRate": 0.86,
-     "damageShare": 0.9948551724137932,
+     "score": 127,
+     "winRate": 0.87,
+     "damageShare": 0.9944958620689656,
      "beatsClassic": true
     },
     {
@@ -5938,84 +5924,81 @@
    ],
    "scratchBest": [
     {
-     "formId": "voltaro",
-     "knack": "zoom",
+     "formId": "ancientshell",
+     "knack": "living-shelter"
+    },
+    {
+     "formId": "hearthshell",
+     "knack": "hearth",
      "talents": [
-      "deep-ink"
+      "catch-breath"
      ]
     },
     {
-     "formId": "bogwarden",
-     "knack": "none",
+     "formId": "gaiadrake",
+     "knack": "detonate",
      "talents": [
-      "long-shadow"
-     ]
-    },
-    {
-     "formId": "bloomback",
-     "knack": "leave-a-trail",
-     "talents": [
-      "opportunist"
+      "stubborn"
      ]
     },
     {
      "formId": "bogwarden",
      "knack": "draw-fire",
      "talents": [
-      "flank-guard"
+      "clinging"
      ]
     },
     {
-     "formId": "solmane",
-     "knack": "lead-the-way",
+     "formId": "magmole",
+     "knack": "wide-warmth",
      "talents": [
-      "catch-breath"
+      "kindred-boost"
      ]
     },
     {
-     "formId": "tempestray",
-     "knack": "leave-a-trail",
+     "formId": "hearthshell",
+     "knack": "keep-the-heat-in",
      "talents": [
-      "catch-breath"
-     ]
-    },
-    {
-     "formId": "drizzlewt",
-     "knack": "clear-the-air"
-    },
-    {
-     "formId": "halcyray",
-     "knack": "clear-skies",
-     "talents": [
-      "catch-breath"
-     ]
-    },
-    {
-     "formId": "geyserpup",
-     "knack": "leave-a-trail",
-     "talents": [
-      "finisher"
+      "shoulder-to-shoulder"
      ]
     },
     {
      "formId": "pyrelynx",
      "knack": "none",
      "talents": [
-      "crit-damage"
+      "steady-rhythm"
      ]
     },
     {
-     "formId": "sunfawn",
-     "knack": "sunbeam",
+     "formId": "ancientshell",
+     "knack": "steady-mark",
      "talents": [
-      "shoulder-to-shoulder"
+      "owners-mark"
      ]
     },
     {
-     "formId": "thornbuck",
-     "knack": "wide-reach",
+     "formId": "voltaro",
+     "knack": "none",
      "talents": [
-      "flank-guard"
+      "odd-one-out"
+     ]
+    },
+    {
+     "formId": "hearthshell",
+     "knack": "draw-fire"
+    },
+    {
+     "formId": "halcyray",
+     "knack": "clear-the-air",
+     "talents": [
+      "bright-boost"
+     ]
+    },
+    {
+     "formId": "gaiadrake",
+     "knack": "none",
+     "talents": [
+      "finisher"
      ]
     }
    ],
@@ -6025,7 +6008,7 @@
    "scratchWin": 1,
    "classicKnockouts": 15.940000000000001,
    "seededKnockouts": 5.7,
-   "scratchKnockouts": 1.58,
+   "scratchKnockouts": 0.7000000000000001,
    "steps": {
     "classic": 0,
     "seeded": 0,
@@ -6145,12 +6128,12 @@
       "kill": 1
      },
      "knockouts": [
-      0.58,
-      1,
+      0.05,
+      0.65,
       0
      ],
-     "knockoutsTotal": 1.58,
-     "replacements": 1.45,
+     "knockoutsTotal": 0.7000000000000001,
+     "replacements": 0.7,
      "damageShare": 1,
      "damageShareSd": 0,
      "steps": 0,
@@ -6160,22 +6143,22 @@
       0
      ],
      "hpLeft": [
-      0.7293287920878082,
-      0.6549889335001927,
+      0.6680258729185335,
+      0.5656588738193292,
       0
      ],
      "standing": [
-      0.9516666666666673,
-      0.9166666666666672,
+      0.9958333333333335,
+      0.9458333333333334,
       0
      ],
-     "hpLeftEnd": 0.6549889335001927,
-     "standingEnd": 0.9166666666666672,
+     "hpLeftEnd": 0.5656588738193292,
+     "standingEnd": 0.9458333333333334,
      "knockoutsByOwner": {
-      "p1": 0.39,
-      "p2": 0.97,
-      "p4": 0.17,
-      "p3": 0.05
+      "p4": 0.12,
+      "p3": 0.27,
+      "p2": 0.21,
+      "p1": 0.1
      }
     },
     "mixed": {
@@ -6183,18 +6166,18 @@
      "winRate": 0,
      "tiers": {
       "t1": 1,
-      "t2": 0.045,
+      "t2": 0.04,
       "kill": 0
      },
      "knockouts": [
-      15.3575,
-      19.865,
-      4.7775
+      15.41,
+      19.8575,
+      4.7325
      ],
      "knockoutsTotal": 40,
      "replacements": 10,
-     "damageShare": 0.6743162626518714,
-     "damageShareSd": 0.09804548889936544,
+     "damageShare": 0.6715157380501979,
+     "damageShareSd": 0.09765928141200544,
      "steps": 0,
      "played": [
       1,
@@ -6202,13 +6185,13 @@
       1
      ],
      "hpLeft": [
-      0.4673259219754653,
-      0.2513559335370742,
+      0.4668419884914726,
+      0.24772415960454106,
       0
      ],
      "standing": [
-      0.4880833333333333,
-      0.15667985787293057,
+      0.4863333333333333,
+      0.15559682271891848,
       0
      ],
      "hpLeftEnd": 0,
@@ -6235,7 +6218,7 @@
      "classicShare": 0.7349215903690794,
      "bestShare": 1,
      "classicKnockouts": 20,
-     "bestKnockouts": 4.720000000000001
+     "bestKnockouts": 1.3900000000000001
     },
     {
      "width": 10,
@@ -6244,7 +6227,7 @@
      "classicShare": 0.7826337344228407,
      "bestShare": 1,
      "classicKnockouts": 40,
-     "bestKnockouts": 11.34
+     "bestKnockouts": 3.53
     },
     {
      "width": 15,
@@ -6253,7 +6236,7 @@
      "classicShare": 0.7683076380935598,
      "bestShare": 1,
      "classicKnockouts": 59.99999999999999,
-     "bestKnockouts": 18.33
+     "bestKnockouts": 6.49
     }
    ],
    "answers": [
@@ -6270,7 +6253,7 @@
      "tool": "Row Ward",
      "score": 88,
      "winRate": 0.6,
-     "damageShare": 0.9707448148148146,
+     "damageShare": 0.9706781481481479,
      "beatsClassic": true
     }
    ]
@@ -6282,59 +6265,59 @@
    "tidal-colossus": [
     {
      "width": 4,
-     "withTool": 1,
+     "withTool": 0.99,
      "without": 0,
-     "shareWith": 1,
-     "shareWithout": 0.7903073298429321,
-     "gap": 100,
-     "shareGap": 20.969267015706794
+     "shareWith": 0.9998769633507854,
+     "shareWithout": 0.7790219895287958,
+     "gap": 99,
+     "shareGap": 22.08549738219896
     },
     {
      "width": 5,
-     "withTool": 0.92,
+     "withTool": 0.85,
      "without": 0,
-     "shareWith": 0.9988029020556227,
-     "shareWithout": 0.8208544941555824,
-     "gap": 92,
-     "shareGap": 17.79484079000403
+     "shareWith": 0.9961888127547138,
+     "shareWithout": 0.8111567916162837,
+     "gap": 85,
+     "shareGap": 18.50320211384301
     },
     {
      "width": 10,
      "withTool": 1,
-     "without": 0.18,
+     "without": 0.09,
      "shareWith": 1,
-     "shareWithout": 0.9537757071180463,
-     "gap": 82,
-     "shareGap": 4.622429288195374
+     "shareWithout": 0.9304912609582621,
+     "gap": 91,
+     "shareGap": 6.950873904173793
     }
    ],
    "cinder-wyrm": [
     {
      "width": 4,
-     "withTool": 0.85,
+     "withTool": 0.83,
      "without": 0,
-     "shareWith": 0.9967900000000001,
-     "shareWithout": 0.7655249999999999,
-     "gap": 85,
-     "shareGap": 23.126500000000018
+     "shareWith": 0.9956158333333335,
+     "shareWithout": 0.7630691666666667,
+     "gap": 83,
+     "shareGap": 23.25466666666668
     },
     {
      "width": 5,
      "withTool": 0.8,
      "without": 0,
-     "shareWith": 0.9922211925722634,
-     "shareWithout": 0.7884014684392483,
+     "shareWith": 0.9922097872188758,
+     "shareWithout": 0.7881120575970344,
      "gap": 80,
-     "shareGap": 20.381972413301508
+     "shareGap": 20.409772962184135
     },
     {
      "width": 10,
      "withTool": 1,
-     "without": 0.4,
+     "without": 0.37,
      "shareWith": 1,
-     "shareWithout": 0.9789743083437547,
-     "gap": 60,
-     "shareGap": 2.102569165624535
+     "shareWithout": 0.9776554992430724,
+     "gap": 63,
+     "shareGap": 2.234450075692762
     }
    ],
    "thornmother": [
@@ -6369,30 +6352,30 @@
    "storm-sovereign": [
     {
      "width": 4,
-     "withTool": 0.88,
-     "without": 0.07,
-     "shareWith": 0.9950027586206897,
-     "shareWithout": 0.8943800000000001,
-     "gap": 81,
-     "shareGap": 10.062275862068958
+     "withTool": 0.86,
+     "without": 0.04,
+     "shareWith": 0.9947117241379311,
+     "shareWithout": 0.8877875862068969,
+     "gap": 82,
+     "shareGap": 10.692413793103416
     },
     {
      "width": 5,
-     "withTool": 0.7,
-     "without": 0.18,
-     "shareWith": 0.9854474662261815,
-     "shareWithout": 0.9208170609403576,
-     "gap": 52,
-     "shareGap": 6.463040528582386
+     "withTool": 0.68,
+     "without": 0.19,
+     "shareWith": 0.9848628399504458,
+     "shareWithout": 0.9198820128605983,
+     "gap": 49.00000000000001,
+     "shareGap": 6.498082708984743
     },
     {
      "width": 10,
      "withTool": 0.94,
      "without": 0.37,
-     "shareWith": 0.997068414554434,
-     "shareWithout": 0.960799985474617,
+     "shareWith": 0.99694567506718,
+     "shareWithout": 0.9594977848790763,
      "gap": 56.99999999999999,
-     "shareGap": 3.6268429079816977
+     "shareGap": 3.7447890188103683
     }
    ],
    "old-bogback": [
@@ -6438,29 +6421,29 @@
     0
    ],
    "drawSd": 0,
-   "knockouts": 19.9725,
+   "knockouts": 19.99,
    "knockoutsPerPlayer": {
-    "m": 3.9875,
-    "b": 3.9975,
-    "c": 3.995
+    "m": 3.995,
+    "b": 3.99875,
+    "c": 3.99875
    }
   },
   {
    "boss": "tidal-colossus",
    "casual": "random",
    "players": 10,
-   "winRate": 0.005,
+   "winRate": 0,
    "seedWins": [
     0,
-    0.014925373134328358,
+    0,
     0
    ],
-   "drawSd": 0.04974937185533099,
-   "knockouts": 39.9675,
+   "drawSd": 0,
+   "knockouts": 39.9975,
    "knockoutsPerPlayer": {
-    "m": 3.995,
-    "b": 3.996666666666666,
-    "c": 3.9975
+    "m": 4,
+    "b": 4,
+    "c": 3.9995
    }
   },
   {
@@ -6474,11 +6457,11 @@
     0
    ],
    "drawSd": 0.03526683994916478,
-   "knockouts": 59.99,
+   "knockouts": 59.945,
    "knockoutsPerPlayer": {
-    "m": 3.999166666666666,
-    "b": 3.9995,
-    "c": 3.9992857142857146
+    "m": 3.995833333333333,
+    "b": 3.9960000000000004,
+    "c": 3.9967857142857146
    }
   },
   {
@@ -6521,18 +6504,18 @@
    "boss": "tidal-colossus",
    "casual": "top3",
    "players": 15,
-   "winRate": 0.01,
+   "winRate": 0.005,
    "seedWins": [
+    0.007462686567164179,
     0,
-    0.014925373134328358,
-    0.015151515151515152
+    0.007575757575757576
    ],
-   "drawSd": 0.08602325267042622,
-   "knockouts": 59.825,
+   "drawSd": 0.04974937185533098,
+   "knockouts": 59.9,
    "knockoutsPerPlayer": {
-    "m": 3.985,
-    "b": 3.9895000000000005,
-    "c": 3.988928571428571
+    "m": 3.9925,
+    "b": 3.9945,
+    "c": 3.992857142857142
    }
   },
   {
@@ -6546,11 +6529,11 @@
     0
    ],
    "drawSd": 0,
-   "knockouts": 24.965,
+   "knockouts": 24.9625,
    "knockoutsPerPlayer": {
     "m": 5,
     "b": 4.9925,
-    "c": 4.99
+    "c": 4.98875
    }
   },
   {
@@ -6564,11 +6547,11 @@
     0
    ],
    "drawSd": 0,
-   "knockouts": 49.9725,
+   "knockouts": 49.985,
    "knockoutsPerPlayer": {
-    "m": 4.99875,
-    "b": 4.995833333333334,
-    "c": 4.9975
+    "m": 5,
+    "b": 4.998333333333334,
+    "c": 4.997999999999999
    }
   },
   {
@@ -6582,10 +6565,10 @@
     0
    ],
    "drawSd": 0,
-   "knockouts": 74.98,
+   "knockouts": 74.985,
    "knockoutsPerPlayer": {
-    "m": 4.9975,
-    "b": 4.997999999999999,
+    "m": 4.998333333333334,
+    "b": 4.9985,
     "c": 4.999642857142857
    }
   },
@@ -6600,11 +6583,11 @@
     0
    ],
    "drawSd": 0,
-   "knockouts": 24.9525,
+   "knockouts": 24.96,
    "knockoutsPerPlayer": {
     "m": 4.9975,
-    "b": 4.99,
-    "c": 4.9875
+    "b": 4.9925,
+    "c": 4.98875
    }
   },
   {
@@ -6621,26 +6604,26 @@
    "knockouts": 49.9925,
    "knockoutsPerPlayer": {
     "m": 5,
-    "b": 4.9991666666666665,
-    "c": 4.999
+    "b": 4.998333333333334,
+    "c": 4.9995
    }
   },
   {
    "boss": "cinder-wyrm",
    "casual": "top3",
    "players": 15,
-   "winRate": 0.115,
+   "winRate": 0.1125,
    "seedWins": [
-    0.14925373134328357,
+    0.1417910447761194,
     0.12686567164179105,
     0.06818181818181818
    ],
-   "drawSd": 0.28155816450602206,
-   "knockouts": 72.59,
+   "drawSd": 0.2803457686500717,
+   "knockouts": 72.845,
    "knockoutsPerPlayer": {
-    "m": 4.8566666666666665,
-    "b": 4.8305,
-    "c": 4.838214285714286
+    "m": 4.875000000000001,
+    "b": 4.8445,
+    "c": 4.856785714285714
    }
   },
   {
@@ -6654,101 +6637,101 @@
     0.12878787878787878
    ],
    "drawSd": 0.25054939632735107,
-   "knockouts": 17.4975,
+   "knockouts": 17.52,
    "knockoutsPerPlayer": {
-    "m": 3.7725,
+    "m": 3.785,
     "b": 3.4275,
-    "c": 3.435
+    "c": 3.44
    }
   },
   {
    "boss": "thornmother",
    "casual": "random",
    "players": 10,
-   "winRate": 0.0175,
+   "winRate": 0.015,
    "seedWins": [
     0.007462686567164179,
-    0.029850746268656716,
+    0.022388059701492536,
     0.015151515151515152
    ],
-   "drawSd": 0.10461237976453826,
-   "knockouts": 38.0525,
+   "drawSd": 0.0988685996664257,
+   "knockouts": 38.0675,
    "knockoutsPerPlayer": {
     "m": 3.73375,
-    "b": 3.816666666666667,
-    "c": 3.8270000000000004
+    "b": 3.815,
+    "c": 3.8310000000000004
    }
   },
   {
    "boss": "thornmother",
    "casual": "random",
    "players": 15,
-   "winRate": 0.2475,
+   "winRate": 0.245,
    "seedWins": [
-    0.20149253731343283,
-    0.29850746268656714,
+    0.208955223880597,
+    0.2835820895522388,
     0.24242424242424243
    ],
-   "drawSd": 0.3708014967607329,
-   "knockouts": 53.0525,
+   "drawSd": 0.37413232953060827,
+   "knockouts": 53.14,
    "knockoutsPerPlayer": {
-    "m": 3.5133333333333336,
-    "b": 3.4745,
-    "c": 3.591428571428571
+    "m": 3.515,
+    "b": 3.4815000000000005,
+    "c": 3.5982142857142856
    }
   },
   {
    "boss": "thornmother",
    "casual": "top3",
    "players": 5,
-   "winRate": 0.125,
+   "winRate": 0.1225,
    "seedWins": [
-    0.12686567164179105,
+    0.11940298507462686,
     0.15671641791044777,
     0.09090909090909091
    ],
-   "drawSd": 0.2817356917396161,
-   "knockouts": 17.7125,
+   "drawSd": 0.2806131679020075,
+   "knockouts": 17.7325,
    "knockoutsPerPlayer": {
     "m": 3.815,
-    "b": 3.535,
-    "c": 3.41375
+    "b": 3.53625,
+    "c": 3.4225
    }
   },
   {
    "boss": "thornmother",
    "casual": "top3",
    "players": 10,
-   "winRate": 0.0175,
+   "winRate": 0.015,
    "seedWins": [
-    0.029850746268656716,
+    0.022388059701492536,
     0,
     0.022727272727272728
    ],
-   "drawSd": 0.1046123797645382,
-   "knockouts": 38.795,
+   "drawSd": 0.09886859966642589,
+   "knockouts": 38.83,
    "knockoutsPerPlayer": {
-    "m": 3.86125,
-    "b": 3.9033333333333324,
-    "c": 3.8725
+    "m": 3.86625,
+    "b": 3.9041666666666663,
+    "c": 3.877
    }
   },
   {
    "boss": "thornmother",
    "casual": "top3",
    "players": 15,
-   "winRate": 0.34,
+   "winRate": 0.3225,
    "seedWins": [
-    0.3880597014925373,
-    0.3208955223880597,
-    0.3106060606060606
+    0.3805970149253731,
+    0.29850746268656714,
+    0.2878787878787879
    ],
-   "drawSd": 0.4054626986542664,
-   "knockouts": 49.6875,
+   "drawSd": 0.4058863757260156,
+   "knockouts": 49.9075,
    "knockoutsPerPlayer": {
-    "m": 3.339166666666667,
-    "b": 3.3114999999999997,
-    "c": 3.3017857142857143
+    "m": 3.345833333333333,
+    "b": 3.3225,
+    "c": 3.3225
    }
   },
   {
@@ -6791,36 +6774,36 @@
    "boss": "storm-sovereign",
    "casual": "random",
    "players": 15,
-   "winRate": 0.0075,
+   "winRate": 0.005,
    "seedWins": [
-    0.022388059701492536,
+    0.014925373134328358,
     0,
     0
    ],
-   "drawSd": 0.07870038119348637,
-   "knockouts": 44.865,
+   "drawSd": 0.04974937185533097,
+   "knockouts": 44.88,
    "knockoutsPerPlayer": {
     "m": 2.994166666666666,
-    "b": 2.99,
-    "c": 2.990357142857143
+    "b": 2.9915,
+    "c": 2.991428571428571
    }
   },
   {
    "boss": "storm-sovereign",
    "casual": "top3",
    "players": 5,
-   "winRate": 0.0025,
+   "winRate": 0,
    "seedWins": [
     0,
-    0.007462686567164179,
+    0,
     0
    ],
-   "drawSd": 0.03526683994916478,
-   "knockouts": 14.9925,
+   "drawSd": 0,
+   "knockouts": 14.9975,
    "knockoutsPerPlayer": {
     "m": 3,
-    "b": 2.9975,
-    "c": 2.99875
+    "b": 2.99875,
+    "c": 3
    }
   },
   {
@@ -6834,29 +6817,29 @@
     0.030303030303030304
    ],
    "drawSd": 0.1099999999999999,
-   "knockouts": 29.7425,
+   "knockouts": 29.7675,
    "knockoutsPerPlayer": {
-    "m": 2.975,
-    "b": 2.976666666666667,
-    "c": 2.9725
+    "m": 2.98,
+    "b": 2.978333333333333,
+    "c": 2.9745
    }
   },
   {
    "boss": "storm-sovereign",
    "casual": "top3",
    "players": 15,
-   "winRate": 0.095,
+   "winRate": 0.0925,
    "seedWins": [
-    0.1044776119402985,
+    0.09701492537313433,
     0.1044776119402985,
     0.07575757575757576
    ],
-   "drawSd": 0.2568559907808262,
-   "knockouts": 43.655,
+   "drawSd": 0.2553306679582378,
+   "knockouts": 43.6925,
    "knockoutsPerPlayer": {
-    "m": 2.925,
-    "b": 2.9015,
-    "c": 2.9103571428571433
+    "m": 2.9283333333333337,
+    "b": 2.9025,
+    "c": 2.9135714285714287
    }
   },
   {
@@ -6872,8 +6855,8 @@
    "drawSd": 0.06999999999999994,
    "knockouts": 19.365,
    "knockoutsPerPlayer": {
-    "m": 3.8675,
-    "b": 3.82,
+    "m": 3.87,
+    "b": 3.81875,
     "c": 3.92875
    }
   },
@@ -6917,18 +6900,18 @@
    "boss": "old-bogback",
    "casual": "top3",
    "players": 5,
-   "winRate": 0.0225,
+   "winRate": 0.025,
    "seedWins": [
     0,
-    0.014925373134328358,
+    0.022388059701492536,
     0.05303030303030303
    ],
-   "drawSd": 0.125474100913296,
+   "drawSd": 0.12990381056766573,
    "knockouts": 19.09,
    "knockoutsPerPlayer": {
     "m": 3.8875,
-    "b": 3.75,
-    "c": 3.85125
+    "b": 3.74875,
+    "c": 3.8525
    }
   },
   {
@@ -6942,11 +6925,11 @@
     0.015151515151515152
    ],
    "drawSd": 0.06999999999999997,
-   "knockouts": 39.875,
+   "knockouts": 39.88,
    "knockoutsPerPlayer": {
-    "m": 3.98875,
-    "b": 3.985,
-    "c": 3.9884999999999993
+    "m": 3.9875,
+    "b": 3.985833333333334,
+    "c": 3.989499999999999
    }
   },
   {
@@ -6986,19 +6969,19 @@
     }
    },
    "preparedRandom": {
-    "share": 0.997283264911857,
+    "share": 0.9972802463173147,
     "tiers": {
      "t1": 1,
      "t2": 1,
-     "kill": 0.8833333333333334
+     "kill": 0.9
     }
    },
    "noToolRandom": {
-    "share": 0.8790257989213556,
+    "share": 0.8736677936086291,
     "tiers": {
      "t1": 1,
-     "t2": 0.5666666666666667,
-     "kill": 0.35000000000000003
+     "t2": 0.5499999999999999,
+     "kill": 0.3666666666666667
     }
    },
    "classic": [
@@ -7031,7 +7014,7 @@
     }
    ],
    "casual": {
-    "share": 0.43224163143338534,
+    "share": 0.4283319293003146,
     "tiers": {
      "t1": 1,
      "t2": 0,
@@ -7039,15 +7022,15 @@
     }
    },
    "mixedRandom": {
-    "share": 0.6275809040912992,
+    "share": 0.6248565502113997,
     "tiers": {
      "t1": 1,
-     "t2": 0.025,
+     "t2": 0.0125,
      "kill": 0
     }
    },
    "mixedTop3": {
-    "share": 0.6396994309692595,
+    "share": 0.6300847188225196,
     "tiers": {
      "t1": 1,
      "t2": 0.0125,
@@ -7072,19 +7055,19 @@
     }
    },
    "preparedRandom": {
-    "share": 0.9915921110183307,
+    "share": 0.9912581017137858,
     "tiers": {
      "t1": 1,
      "t2": 0.9833333333333332,
-     "kill": 0.9
+     "kill": 0.8666666666666666
     }
    },
    "noToolRandom": {
-    "share": 0.8976768459978528,
+    "share": 0.8924022823969142,
     "tiers": {
      "t1": 1,
-     "t2": 0.6166666666666667,
-     "kill": 0.33333333333333337
+     "t2": 0.6000000000000001,
+     "kill": 0.2833333333333333
     }
    },
    "classic": [
@@ -7117,7 +7100,7 @@
     }
    ],
    "casual": {
-    "share": 0.5007078138249427,
+    "share": 0.4981007191985178,
     "tiers": {
      "t1": 1,
      "t2": 0,
@@ -7125,15 +7108,15 @@
     }
    },
    "mixedRandom": {
-    "share": 0.6629302628686284,
+    "share": 0.6527213341289532,
     "tiers": {
      "t1": 1,
-     "t2": 0.05,
+     "t2": 0.0375,
      "kill": 0
     }
    },
    "mixedTop3": {
-    "share": 0.712286831443736,
+    "share": 0.7016684463427658,
     "tiers": {
      "t1": 1,
      "t2": 0.0375,
@@ -7150,15 +7133,15 @@
    "atk": 114,
    "armour": 34,
    "preparedWritten": {
-    "share": 1,
+    "share": 0.9999554973821989,
     "tiers": {
      "t1": 1,
      "t2": 1,
-     "kill": 1
+     "kill": 0.9833333333333333
     }
    },
    "preparedRandom": {
-    "share": 0.9741317626527051,
+    "share": 0.973414485165794,
     "tiers": {
      "t1": 1,
      "t2": 1,
@@ -7166,11 +7149,11 @@
     }
    },
    "noToolRandom": {
-    "share": 0.7929205933682374,
+    "share": 0.7880157068062827,
     "tiers": {
      "t1": 1,
      "t2": 0.21666666666666665,
-     "kill": 0.016666666666666666
+     "kill": 0.03333333333333333
     }
    },
    "classic": [
@@ -7203,7 +7186,7 @@
     }
    ],
    "casual": {
-    "share": 0.5332621161162263,
+    "share": 0.5319092187241551,
     "tiers": {
      "t1": 1,
      "t2": 0,
@@ -7211,7 +7194,7 @@
     }
    },
    "mixedRandom": {
-    "share": 0.6449719496057784,
+    "share": 0.6357759690136184,
     "tiers": {
      "t1": 1,
      "t2": 0,
@@ -7219,7 +7202,7 @@
     }
    },
    "mixedTop3": {
-    "share": 0.7221301758835531,
+    "share": 0.7175807741081766,
     "tiers": {
      "t1": 1,
      "t2": 0.05,
@@ -7252,7 +7235,7 @@
     }
    },
    "noToolRandom": {
-    "share": 0.9316702251189273,
+    "share": 0.9291736899277071,
     "tiers": {
      "t1": 1,
      "t2": 0.8166666666666667,
@@ -7289,7 +7272,7 @@
     }
    ],
    "casual": {
-    "share": 0.5951745562130176,
+    "share": 0.5908047337278106,
     "tiers": {
      "t1": 1,
      "t2": 0,
@@ -7297,7 +7280,7 @@
     }
    },
    "mixedRandom": {
-    "share": 0.7985214497041421,
+    "share": 0.7936161242603549,
     "tiers": {
      "t1": 1,
      "t2": 0.3375,
@@ -7305,11 +7288,11 @@
     }
    },
    "mixedTop3": {
-    "share": 0.8811671597633135,
+    "share": 0.8784105029585799,
     "tiers": {
      "t1": 1,
-     "t2": 0.6,
-     "kill": 0.175
+     "t2": 0.5875,
+     "kill": 0.1625
     }
    }
   },
@@ -7330,7 +7313,7 @@
     }
    },
    "preparedRandom": {
-    "share": 0.9972962354453889,
+    "share": 0.9974224349358287,
     "tiers": {
      "t1": 1,
      "t2": 1,
@@ -7338,11 +7321,11 @@
     }
    },
    "noToolRandom": {
-    "share": 0.9019489487344334,
+    "share": 0.8978736576422126,
     "tiers": {
      "t1": 1,
-     "t2": 0.75,
-     "kill": 0.13333333333333333
+     "t2": 0.7333333333333333,
+     "kill": 0.11666666666666665
     }
    },
    "classic": [
@@ -7375,7 +7358,7 @@
     }
    ],
    "casual": {
-    "share": 0.47359653577070626,
+    "share": 0.47156680207628066,
     "tiers": {
      "t1": 0.975,
      "t2": 0,
@@ -7383,15 +7366,15 @@
     }
    },
    "mixedRandom": {
-    "share": 0.6939352478748213,
+    "share": 0.6913953772662303,
     "tiers": {
      "t1": 1,
-     "t2": 0.05,
+     "t2": 0.075,
      "kill": 0
     }
    },
    "mixedTop3": {
-    "share": 0.777747216580155,
+    "share": 0.7752327352742046,
     "tiers": {
      "t1": 1,
      "t2": 0.2,
@@ -7408,7 +7391,7 @@
    "atk": 130,
    "armour": 60,
    "preparedWritten": {
-    "share": 0.9978263888888889,
+    "share": 0.9979222222222222,
     "tiers": {
      "t1": 1,
      "t2": 1,
@@ -7416,7 +7399,7 @@
     }
    },
    "preparedRandom": {
-    "share": 0.9745444444444444,
+    "share": 0.9741743055555556,
     "tiers": {
      "t1": 1,
      "t2": 0.9666666666666666,
@@ -7424,7 +7407,7 @@
     }
    },
    "noToolRandom": {
-    "share": 0.7681493055555556,
+    "share": 0.7644277777777779,
     "tiers": {
      "t1": 1,
      "t2": 0.13333333333333333,
@@ -7461,7 +7444,7 @@
     }
    ],
    "casual": {
-    "share": 0.4074387327497312,
+    "share": 0.4056094912130586,
     "tiers": {
      "t1": 0.975,
      "t2": 0,
@@ -7469,7 +7452,7 @@
     }
    },
    "mixedRandom": {
-    "share": 0.5617825643388403,
+    "share": 0.5595959762171178,
     "tiers": {
      "t1": 1,
      "t2": 0,
@@ -7477,7 +7460,7 @@
     }
    },
    "mixedTop3": {
-    "share": 0.7020365738607691,
+    "share": 0.7012549639088177,
     "tiers": {
      "t1": 1,
      "t2": 0.0125,
@@ -7502,15 +7485,15 @@
     }
    },
    "preparedRandom": {
-    "share": 0.9994348244348246,
+    "share": 0.9996777296777296,
     "tiers": {
      "t1": 1,
      "t2": 1,
-     "kill": 0.9666666666666668
+     "kill": 0.9833333333333332
     }
    },
    "noToolRandom": {
-    "share": 0.7088167388167388,
+    "share": 0.7082323232323231,
     "tiers": {
      "t1": 1,
      "t2": 0.15,
@@ -7547,27 +7530,27 @@
     }
    ],
    "casual": {
-    "share": 0.4087930248461363,
+    "share": 0.4070359395182737,
     "tiers": {
-     "t1": 0.7,
+     "t1": 0.6875,
      "t2": 0,
      "kill": 0
     }
    },
    "mixedRandom": {
-    "share": 0.721622597067092,
+    "share": 0.7190800471088822,
     "tiers": {
      "t1": 1,
-     "t2": 0.1625,
+     "t2": 0.1375,
      "kill": 0.0125
     }
    },
    "mixedTop3": {
-    "share": 0.7591852822733833,
+    "share": 0.7581338804042245,
     "tiers": {
      "t1": 1,
-     "t2": 0.2375,
-     "kill": 0.0125
+     "t2": 0.25,
+     "kill": 0.025
     }
    }
   },
@@ -7596,7 +7579,7 @@
     }
    },
    "noToolRandom": {
-    "share": 0.649090909090909,
+    "share": 0.6506883116883116,
     "tiers": {
      "t1": 1,
      "t2": 0.03333333333333333,
@@ -7633,15 +7616,15 @@
     }
    ],
    "casual": {
-    "share": 0.32991605689666964,
+    "share": 0.333831122204746,
     "tiers": {
-     "t1": 0.5625,
+     "t1": 0.5875,
      "t2": 0,
      "kill": 0
     }
    },
    "mixedRandom": {
-    "share": 0.6884582507009505,
+    "share": 0.6863374478561171,
     "tiers": {
      "t1": 0.975,
      "t2": 0.175,
@@ -7649,11 +7632,11 @@
     }
    },
    "mixedTop3": {
-    "share": 0.7298570744717227,
+    "share": 0.7281679545920811,
     "tiers": {
      "t1": 1,
-     "t2": 0.175,
-     "kill": 0.0125
+     "t2": 0.15,
+     "kill": 0
     }
    }
   },
@@ -7674,15 +7657,15 @@
     }
    },
    "preparedRandom": {
-    "share": 0.9931684782608696,
+    "share": 0.992338768115942,
     "tiers": {
      "t1": 1,
      "t2": 1,
-     "kill": 0.85
+     "kill": 0.8333333333333333
     }
    },
    "noToolRandom": {
-    "share": 0.5553405797101449,
+    "share": 0.556143115942029,
     "tiers": {
      "t1": 0.9666666666666668,
      "t2": 0.016666666666666666,
@@ -7719,27 +7702,27 @@
     }
    ],
    "casual": {
-    "share": 0.2678664434523809,
+    "share": 0.2633091517857143,
     "tiers": {
-     "t1": 0.4,
+     "t1": 0.375,
      "t2": 0,
      "kill": 0
     }
    },
    "mixedRandom": {
-    "share": 0.5807298820970697,
+    "share": 0.5821807749542124,
     "tiers": {
      "t1": 0.95,
-     "t2": 0.0375,
-     "kill": 0
+     "t2": 0.05,
+     "kill": 0.0125
     }
    },
    "mixedTop3": {
-    "share": 0.6989175538003662,
+    "share": 0.6967905792124541,
     "tiers": {
      "t1": 1,
-     "t2": 0.1625,
-     "kill": 0.05
+     "t2": 0.15,
+     "kill": 0.0375
     }
    }
   },
@@ -7760,7 +7743,7 @@
     }
    },
    "preparedRandom": {
-    "share": 0.9999374201787994,
+    "share": 0.9994418901660282,
     "tiers": {
      "t1": 1,
      "t2": 1,
@@ -7768,11 +7751,11 @@
     }
    },
    "noToolRandom": {
-    "share": 0.797043422733078,
+    "share": 0.7948735632183908,
     "tiers": {
      "t1": 1,
-     "t2": 0.25,
-     "kill": 0.08333333333333333
+     "t2": 0.2833333333333333,
+     "kill": 0.05
     }
    },
    "classic": [
@@ -7805,7 +7788,7 @@
     }
    ],
    "casual": {
-    "share": 0.41318340461588116,
+    "share": 0.41233860555196894,
     "tiers": {
      "t1": 1,
      "t2": 0,
@@ -7813,7 +7796,7 @@
     }
    },
    "mixedRandom": {
-    "share": 0.6434100629438347,
+    "share": 0.6433021304067139,
     "tiers": {
      "t1": 1,
      "t2": 0.0375,
@@ -7821,10 +7804,10 @@
     }
    },
    "mixedTop3": {
-    "share": 0.670197506455778,
+    "share": 0.6689749435119432,
     "tiers": {
      "t1": 1,
-     "t2": 0.0125,
+     "t2": 0.025,
      "kill": 0
     }
    }
@@ -7846,15 +7829,15 @@
     }
    },
    "preparedRandom": {
-    "share": 0.949796733212341,
+    "share": 0.9483387779794313,
     "tiers": {
      "t1": 1,
      "t2": 0.8833333333333331,
-     "kill": 0.4166666666666667
+     "kill": 0.4
     }
    },
    "noToolRandom": {
-    "share": 0.7207973381730188,
+    "share": 0.720151240169389,
     "tiers": {
      "t1": 1,
      "t2": 0.1,
@@ -7891,7 +7874,7 @@
     }
    ],
    "casual": {
-    "share": 0.428245766599136,
+    "share": 0.42949189633423784,
     "tiers": {
      "t1": 1,
      "t2": 0,
@@ -7899,7 +7882,7 @@
     }
    },
    "mixedRandom": {
-    "share": 0.6318666144260543,
+    "share": 0.6290652115744814,
     "tiers": {
      "t1": 1,
      "t2": 0.0125,
@@ -7907,10 +7890,10 @@
     }
    },
    "mixedTop3": {
-    "share": 0.6886233324414205,
+    "share": 0.6866418523756738,
     "tiers": {
      "t1": 1,
-     "t2": 0.1,
+     "t2": 0.0875,
      "kill": 0
     }
    }
@@ -7924,7 +7907,7 @@
    "atk": 73,
    "armour": 8,
    "preparedWritten": {
-    "share": 0.9964609195402298,
+    "share": 0.9952609195402299,
     "tiers": {
      "t1": 1,
      "t2": 1,
@@ -7932,15 +7915,15 @@
     }
    },
    "preparedRandom": {
-    "share": 0.896164367816092,
+    "share": 0.8957586206896553,
     "tiers": {
      "t1": 1,
      "t2": 0.7,
-     "kill": 0.16666666666666666
+     "kill": 0.14999999999999997
     }
    },
    "noToolRandom": {
-    "share": 0.7431379310344828,
+    "share": 0.7426183908045977,
     "tiers": {
      "t1": 1,
      "t2": 0.1833333333333333,
@@ -7977,7 +7960,7 @@
     }
    ],
    "casual": {
-    "share": 0.43360946691843993,
+    "share": 0.431669874355436,
     "tiers": {
      "t1": 1,
      "t2": 0,
@@ -7985,18 +7968,18 @@
     }
    },
    "mixedRandom": {
-    "share": 0.594290616602513,
+    "share": 0.594046862517249,
     "tiers": {
      "t1": 1,
-     "t2": 0.0125,
+     "t2": 0,
      "kill": 0
     }
    },
    "mixedTop3": {
-    "share": 0.6962923959619436,
+    "share": 0.6945852095286514,
     "tiers": {
      "t1": 1,
-     "t2": 0.0875,
+     "t2": 0.075,
      "kill": 0
     }
    }
@@ -8026,11 +8009,11 @@
     }
    },
    "noToolRandom": {
-    "share": 0.8770133431377054,
+    "share": 0.8727721862217932,
     "tiers": {
      "t1": 1,
-     "t2": 0.65,
-     "kill": 0.06666666666666667
+     "t2": 0.6666666666666667,
+     "kill": 0.05
     }
    },
    "classic": [
@@ -8063,27 +8046,27 @@
     }
    ],
    "casual": {
-    "share": 0.7445399656365703,
+    "share": 0.7409532826755075,
     "tiers": {
      "t1": 1,
-     "t2": 0.1,
+     "t2": 0.0875,
      "kill": 0
     }
    },
    "mixedRandom": {
-    "share": 0.9321897006509692,
+    "share": 0.9287052609926676,
     "tiers": {
      "t1": 1,
-     "t2": 0.8625,
+     "t2": 0.85,
      "kill": 0.3125
     }
    },
    "mixedTop3": {
-    "share": 0.9568799457928996,
+    "share": 0.9577838007889067,
     "tiers": {
      "t1": 1,
-     "t2": 0.9125,
-     "kill": 0.45
+     "t2": 0.925,
+     "kill": 0.4375
     }
    }
   },
@@ -8112,11 +8095,11 @@
     }
    },
    "noToolRandom": {
-    "share": 0.8949552743976147,
+    "share": 0.8906667203911137,
     "tiers": {
      "t1": 1,
-     "t2": 0.6666666666666666,
-     "kill": 0.2166666666666667
+     "t2": 0.6166666666666667,
+     "kill": 0.2
     }
    },
    "classic": [
@@ -8149,7 +8132,7 @@
     }
    ],
    "casual": {
-    "share": 0.5975211104746145,
+    "share": 0.5914017249061166,
     "tiers": {
      "t1": 1,
      "t2": 0.0125,
@@ -8157,19 +8140,19 @@
     }
    },
    "mixedRandom": {
-    "share": 0.7781617974667429,
+    "share": 0.7745820338191924,
     "tiers": {
      "t1": 1,
-     "t2": 0.2625,
+     "t2": 0.2375,
      "kill": 0.0125
     }
    },
    "mixedTop3": {
-    "share": 0.8491680457428978,
+    "share": 0.8497965862559139,
     "tiers": {
      "t1": 1,
      "t2": 0.4875,
-     "kill": 0.025
+     "kill": 0.0125
     }
    }
   },
@@ -8190,7 +8173,7 @@
     }
    },
    "preparedRandom": {
-    "share": 0.9912327160493828,
+    "share": 0.9901722222222222,
     "tiers": {
      "t1": 1,
      "t2": 1,
@@ -8198,11 +8181,11 @@
     }
    },
    "noToolRandom": {
-    "share": 0.8151382716049383,
+    "share": 0.8069450617283952,
     "tiers": {
      "t1": 1,
-     "t2": 0.38333333333333336,
-     "kill": 0.1
+     "t2": 0.35,
+     "kill": 0.08333333333333333
     }
    },
    "classic": [
@@ -8235,7 +8218,7 @@
     }
    ],
    "casual": {
-    "share": 0.570044561889346,
+    "share": 0.5680010043489283,
     "tiers": {
      "t1": 1,
      "t2": 0,
@@ -8243,7 +8226,7 @@
     }
    },
    "mixedRandom": {
-    "share": 0.6744468767673615,
+    "share": 0.6736165824833745,
     "tiers": {
      "t1": 1,
      "t2": 0.0375,
@@ -8251,10 +8234,10 @@
     }
    },
    "mixedTop3": {
-    "share": 0.7838650857109425,
+    "share": 0.7872130779881819,
     "tiers": {
      "t1": 1,
-     "t2": 0.25,
+     "t2": 0.2375,
      "kill": 0.0125
     }
    }
@@ -9433,205 +9416,184 @@
  },
  "bossKnackUsage": {
   "squelch-song": {
-   "picks": 17,
-   "ratio": 1.35,
-   "withinForm": 2.19,
+   "picks": 22,
+   "ratio": 1.75,
+   "withinForm": 2.69,
+   "raidPicks": 20,
+   "raidRatio": 4.43
+  },
+  "curl-up": {
+   "picks": 36,
+   "ratio": 2.86,
+   "withinForm": 2.03,
    "raidPicks": 15,
    "raidRatio": 3.33
   },
-  "clear-skies": {
-   "picks": 22,
+  "clear-the-air": {
+   "picks": 53,
+   "ratio": 2.81,
+   "withinForm": 1.94,
+   "raidPicks": 30,
+   "raidRatio": 4.43
+  },
+  "living-shelter": {
+   "picks": 34,
+   "ratio": 5.4,
+   "withinForm": 1.81,
+   "raidPicks": 15,
+   "raidRatio": 6.65
+  },
+  "lightning-ears": {
+   "picks": 11,
    "ratio": 1.75,
-   "withinForm": 2.15,
+   "withinForm": 1.57,
+   "raidPicks": 5,
+   "raidRatio": 2.22
+  },
+  "puddle-maker": {
+   "picks": 9,
+   "ratio": 1.43,
+   "withinForm": 1.57,
+   "raidPicks": 0,
+   "raidRatio": 0
+  },
+  "lead-the-way": {
+   "picks": 24,
+   "ratio": 0.95,
+   "withinForm": 1.56,
+   "raidPicks": 5,
+   "raidRatio": 0.55
+  },
+  "hide-in-mist": {
+   "picks": 18,
+   "ratio": 1.43,
+   "withinForm": 1.53,
    "raidPicks": 10,
+   "raidRatio": 2.22
+  },
+  "keep-the-heat-in": {
+   "picks": 30,
+   "ratio": 2.38,
+   "withinForm": 1.5,
+   "raidPicks": 15,
+   "raidRatio": 3.33
+  },
+  "territorial": {
+   "picks": 7,
+   "ratio": 1.11,
+   "withinForm": 1.46,
+   "raidPicks": 5,
    "raidRatio": 2.22
   },
   "catch-the-bolts": {
    "picks": 10,
    "ratio": 1.59,
-   "withinForm": 1.88,
+   "withinForm": 1.43,
    "raidPicks": 10,
    "raidRatio": 4.43
   },
-  "zoom": {
-   "picks": 18,
-   "ratio": 1.43,
-   "withinForm": 1.8,
-   "raidPicks": 15,
-   "raidRatio": 3.33
-  },
-  "lead-the-way": {
-   "picks": 24,
-   "ratio": 0.95,
-   "withinForm": 1.62,
-   "raidPicks": 5,
-   "raidRatio": 0.55
-  },
-  "twin-strike": {
-   "picks": 18,
-   "ratio": 2.86,
-   "withinForm": 1.58,
-   "raidPicks": 5,
-   "raidRatio": 2.22
-  },
-  "curl-up": {
-   "picks": 26,
-   "ratio": 2.07,
-   "withinForm": 1.58,
-   "raidPicks": 5,
-   "raidRatio": 1.11
+  "steady-mark": {
+   "picks": 51,
+   "ratio": 1.35,
+   "withinForm": 1.43,
+   "raidPicks": 14,
+   "raidRatio": 1.03
   },
   "wide-reach": {
-   "picks": 40,
-   "ratio": 1.06,
-   "withinForm": 1.57,
-   "raidPicks": 20,
-   "raidRatio": 1.48
+   "picks": 35,
+   "ratio": 0.93,
+   "withinForm": 1.41,
+   "raidPicks": 15,
+   "raidRatio": 1.11
+  },
+  "zoom": {
+   "picks": 8,
+   "ratio": 0.64,
+   "withinForm": 1.37,
+   "raidPicks": 5,
+   "raidRatio": 1.11
   },
   "mud-wall": {
    "picks": 13,
    "ratio": 1.03,
-   "withinForm": 1.49,
+   "withinForm": 1.3,
    "raidPicks": 5,
    "raidRatio": 1.11
   },
-  "living-shelter": {
-   "picks": 24,
-   "ratio": 3.81,
-   "withinForm": 1.48,
+  "zigzag": {
+   "picks": 7,
+   "ratio": 1.11,
+   "withinForm": 1.27,
+   "raidPicks": 0,
+   "raidRatio": 0
+  },
+  "baked-shell": {
+   "picks": 7,
+   "ratio": 1.11,
+   "withinForm": 1.22,
    "raidPicks": 5,
    "raidRatio": 2.22
-  },
-  "leave-a-trail": {
-   "picks": 86,
-   "ratio": 1.71,
-   "withinForm": 1.43,
-   "raidPicks": 35,
-   "raidRatio": 1.94
-  },
-  "sunbeam": {
-   "picks": 27,
-   "ratio": 2.15,
-   "withinForm": 1.37,
-   "raidPicks": 25,
-   "raidRatio": 5.54
-  },
-  "steady-mark": {
-   "picks": 42,
-   "ratio": 1.11,
-   "withinForm": 1.35,
-   "raidPicks": 5,
-   "raidRatio": 0.37
-  },
-  "keep-the-heat-in": {
-   "picks": 20,
-   "ratio": 1.59,
-   "withinForm": 1.31,
-   "raidPicks": 5,
-   "raidRatio": 1.11
-  },
-  "puddle-maker": {
-   "picks": 9,
-   "ratio": 1.43,
-   "withinForm": 1.29,
-   "raidPicks": 0,
-   "raidRatio": 0
-  },
-  "clear-the-air": {
-   "picks": 33,
-   "ratio": 1.75,
-   "withinForm": 1.22,
-   "raidPicks": 10,
-   "raidRatio": 1.48
-  },
-  "lightning-ears": {
-   "picks": 6,
-   "ratio": 0.95,
-   "withinForm": 1.13,
-   "raidPicks": 0,
-   "raidRatio": 0
-  },
-  "hide-in-mist": {
-   "picks": 13,
-   "ratio": 1.03,
-   "withinForm": 1.11,
-   "raidPicks": 5,
-   "raidRatio": 1.11
   },
   "draw-fire": {
-   "picks": 26,
-   "ratio": 1.38,
-   "withinForm": 1.08,
-   "raidPicks": 20,
-   "raidRatio": 2.96
-  },
-  "territorial": {
-   "picks": 6,
-   "ratio": 0.95,
-   "withinForm": 1.07,
-   "raidPicks": 4,
-   "raidRatio": 1.77
-  },
-  "hearth": {
-   "picks": 11,
-   "ratio": 1.75,
-   "withinForm": 1.05,
-   "raidPicks": 5,
-   "raidRatio": 2.22
+   "picks": 36,
+   "ratio": 1.91,
+   "withinForm": 1.2,
+   "raidPicks": 30,
+   "raidRatio": 4.43
   },
   "gnaw-through": {
    "picks": 14,
    "ratio": 2.22,
-   "withinForm": 1.04,
+   "withinForm": 1.17,
    "raidPicks": 5,
    "raidRatio": 2.22
+  },
+  "twin-strike": {
+   "picks": 13,
+   "ratio": 2.07,
+   "withinForm": 1.14,
+   "raidPicks": 0,
+   "raidRatio": 0
+  },
+  "leave-a-trail": {
+   "picks": 61,
+   "ratio": 1.21,
+   "withinForm": 1.11,
+   "raidPicks": 10,
+   "raidRatio": 0.55
   },
   "wide-warmth": {
    "picks": 11,
    "ratio": 0.58,
-   "withinForm": 0.98,
+   "withinForm": 1.1,
    "raidPicks": 5,
    "raidRatio": 0.74
   },
   "guards-shadow": {
    "picks": 13,
    "ratio": 2.07,
+   "withinForm": 1.08,
+   "raidPicks": 0,
+   "raidRatio": 0
+  },
+  "clear-skies": {
+   "picks": 12,
+   "ratio": 0.95,
+   "withinForm": 1.04,
+   "raidPicks": 0,
+   "raidRatio": 0
+  },
+  "sunbeam": {
+   "picks": 18,
+   "ratio": 1.43,
    "withinForm": 0.96,
-   "raidPicks": 0,
-   "raidRatio": 0
-  },
-  "thick-fog": {
-   "picks": 11,
-   "ratio": 1.75,
-   "withinForm": 0.94,
-   "raidPicks": 5,
-   "raidRatio": 2.22
-  },
-  "zigzag": {
-   "picks": 7,
-   "ratio": 1.11,
-   "withinForm": 0.88,
-   "raidPicks": 0,
-   "raidRatio": 0
-  },
-  "double-mark": {
-   "picks": 13,
-   "ratio": 0.52,
-   "withinForm": 0.85,
-   "raidPicks": 10,
-   "raidRatio": 1.11
-  },
-  "drizzle": {
-   "picks": 8,
-   "ratio": 1.27,
-   "withinForm": 0.84,
-   "raidPicks": 6,
-   "raidRatio": 2.66
+   "raidPicks": 16,
+   "raidRatio": 3.55
   },
   "wild-swing": {
    "picks": 25,
    "ratio": 0.79,
-   "withinForm": 0.82,
+   "withinForm": 0.89,
    "raidPicks": 0,
    "raidRatio": 0
   },
@@ -9642,87 +9604,108 @@
    "raidPicks": 0,
    "raidRatio": 0
   },
-  "carry-them": {
-   "picks": 6,
-   "ratio": 0.95,
-   "withinForm": 0.8,
-   "raidPicks": 1,
+  "none": {
+   "picks": 156,
+   "ratio": 0.73,
+   "withinForm": 0.78,
+   "raidPicks": 34,
    "raidRatio": 0.44
   },
-  "ready-the-mark": {
-   "picks": 14,
-   "ratio": 0.44,
+  "hearth": {
+   "picks": 11,
+   "ratio": 1.75,
    "withinForm": 0.77,
    "raidPicks": 5,
-   "raidRatio": 0.44
-  },
-  "none": {
-   "picks": 151,
-   "ratio": 0.71,
-   "withinForm": 0.76,
-   "raidPicks": 29,
-   "raidRatio": 0.38
+   "raidRatio": 2.22
   },
   "detonate": {
    "picks": 38,
    "ratio": 0.86,
-   "withinForm": 0.71,
+   "withinForm": 0.77,
    "raidPicks": 10,
    "raidRatio": 0.63
-  },
-  "lantern-glow": {
-   "picks": 7,
-   "ratio": 1.11,
-   "withinForm": 0.55,
-   "raidPicks": 5,
-   "raidRatio": 2.22
   },
   "starlight": {
    "picks": 3,
    "ratio": 0.48,
-   "withinForm": 0.55,
+   "withinForm": 0.71,
    "raidPicks": 0,
    "raidRatio": 0
   },
-  "feed-the-marks": {
-   "picks": 8,
-   "ratio": 0.64,
-   "withinForm": 0.49,
-   "raidPicks": 5,
-   "raidRatio": 1.11
+  "carry-them": {
+   "picks": 5,
+   "ratio": 0.79,
+   "withinForm": 0.59,
+   "raidPicks": 0,
+   "raidRatio": 0
   },
-  "baked-shell": {
-   "picks": 2,
-   "ratio": 0.32,
-   "withinForm": 0.42,
+  "thick-fog": {
+   "picks": 6,
+   "ratio": 0.95,
+   "withinForm": 0.51,
+   "raidPicks": 0,
+   "raidRatio": 0
+  },
+  "ready-the-mark": {
+   "picks": 9,
+   "ratio": 0.29,
+   "withinForm": 0.45,
    "raidPicks": 0,
    "raidRatio": 0
   },
   "all-at-once": {
    "picks": 8,
    "ratio": 0.64,
-   "withinForm": 0.36,
+   "withinForm": 0.43,
    "raidPicks": 5,
    "raidRatio": 1.11
+  },
+  "feed-the-marks": {
+   "picks": 8,
+   "ratio": 0.64,
+   "withinForm": 0.39,
+   "raidPicks": 5,
+   "raidRatio": 1.11
+  },
+  "primed-by-pain": {
+   "picks": 1,
+   "ratio": 0.08,
+   "withinForm": 0.33,
+   "raidPicks": 0,
+   "raidRatio": 0
+  },
+  "drizzle": {
+   "picks": 3,
+   "ratio": 0.48,
+   "withinForm": 0.32,
+   "raidPicks": 1,
+   "raidRatio": 0.44
   },
   "gather-calm": {
    "picks": 3,
    "ratio": 0.24,
-   "withinForm": 0.29,
+   "withinForm": 0.26,
+   "raidPicks": 0,
+   "raidRatio": 0
+  },
+  "double-mark": {
+   "picks": 3,
+   "ratio": 0.12,
+   "withinForm": 0.23,
+   "raidPicks": 0,
+   "raidRatio": 0
+  },
+  "lantern-glow": {
+   "picks": 2,
+   "ratio": 0.32,
+   "withinForm": 0.19,
    "raidPicks": 0,
    "raidRatio": 0
   },
   "circle-round": {
    "picks": 1,
    "ratio": 0.16,
-   "withinForm": 0.22,
-   "raidPicks": 0,
-   "raidRatio": 0
-  },
-  "primed-by-pain": {
-   "picks": 1,
-   "ratio": 0.08,
-   "withinForm": 0.2,
+   "withinForm": 0.15,
    "raidPicks": 0,
    "raidRatio": 0
   },
@@ -9761,28 +9744,6 @@
      "Cinder Wyrm: Circle Round and Clear the Air heal the Payoffs its reflected hits land on",
      "Storm Sovereign: Draw Fire pulls the Rod onto a Guard that can take it",
      "Storm Sovereign: Night Watch takes the Judgement Bolt meant for the strongest Payoff"
-    ]
-   },
-   {
-    "family": "Pierce",
-    "bosses": [
-     "Cinder Wyrm",
-     "Thornmother"
-    ],
-    "answers": [
-     "Cinder Wyrm: Squelch Song keeps Mired on the Wyrm, so Forge Heat builds slowly and each hit lands softer",
-     "Thornmother: Tunnel Through and Gnaw Through get hits past her thick bark"
-    ]
-   },
-   {
-    "family": "Row Ward",
-    "bosses": [
-     "Tidal Colossus",
-     "Old Bogback"
-    ],
-    "answers": [
-     "Tidal Colossus: Keep the Heat In and Living Shelter on every row blunt the waves",
-     "Old Bogback: Living Shelter and Keep the Heat In shield the creatures the mud sinks"
     ]
    },
    {
@@ -9867,12 +9828,30 @@
     ]
    },
    {
+    "family": "Pierce",
+    "bosses": [
+     "Thornmother"
+    ],
+    "answers": [
+     "Thornmother: Tunnel Through and Gnaw Through get hits past her thick bark"
+    ]
+   },
+   {
     "family": "Reach",
     "bosses": [
      "Tidal Colossus"
     ],
     "answers": [
      "Tidal Colossus: Wide Reach Guards in every column cover the whole sweep"
+    ]
+   },
+   {
+    "family": "Row Ward",
+    "bosses": [
+     "Old Bogback"
+    ],
+    "answers": [
+     "Old Bogback: Living Shelter and Keep the Heat In shield the creatures the mud sinks"
     ]
    }
   ],
@@ -9881,64 +9860,64 @@
    {
     "boss": "tidal-colossus",
     "tool": "Reach",
-    "toolDrop": 97,
+    "toolDrop": 94,
     "randomTalentsWin": 0.63,
     "noTalentsWin": 0.05,
     "familyDrops": {
-     "Lead": 1,
-     "Heavy Prime": 2,
+     "Lead": -1,
+     "Heavy Prime": 6,
      "Chain": 0,
-     "Reach": 96,
-     "Row Ward": 17,
-     "Support shape": 21,
-     "Sustain": 2
+     "Reach": 92,
+     "Row Ward": 18,
+     "Support shape": 27,
+     "Sustain": 1
     }
    },
    {
     "boss": "tidal-colossus",
     "tool": "Row Ward",
-    "toolDrop": 61,
+    "toolDrop": 64,
     "randomTalentsWin": 0,
     "noTalentsWin": 0,
     "familyDrops": {
      "Guard Prime": 0,
      "Detonator": 0,
-     "Reach": 40,
-     "Intercept": 44,
-     "Row Ward": 51,
+     "Reach": 37,
+     "Intercept": 36,
+     "Row Ward": 48,
      "Sustain": 0
     }
    },
    {
     "boss": "cinder-wyrm",
     "tool": "Debuff",
-    "toolDrop": 89,
-    "randomTalentsWin": 0.35,
+    "toolDrop": 84,
+    "randomTalentsWin": 0.31,
     "noTalentsWin": 0,
     "familyDrops": {
      "Reach": 0,
-     "Taunt": 86,
-     "Evasion aura": 7,
-     "Pierce": 52,
+     "Taunt": 85,
+     "Evasion aura": 8,
+     "Pierce": 50,
      "Sustain": 0,
-     "Debuff": 86
+     "Debuff": 85
     }
    },
    {
     "boss": "cinder-wyrm",
     "tool": "Sustain",
-    "toolDrop": 71,
+    "toolDrop": 70,
     "randomTalentsWin": 0.030000000000000006,
     "noTalentsWin": 0,
     "familyDrops": {
-     "Self Prime": 37,
+     "Self Prime": 29,
      "Chain": 1,
      "Flurry": 73,
-     "Reach": 33,
-     "Taunt": 71,
-     "Evasion": 67,
-     "Evasion aura": 3,
-     "Support shape": 53,
+     "Reach": 34,
+     "Taunt": 72,
+     "Evasion": 65,
+     "Evasion aura": 2,
+     "Support shape": 54,
      "Sustain": 73,
      "Debuff": 73
     }
@@ -9961,12 +9940,12 @@
     "boss": "thornmother",
     "tool": "Reactions",
     "toolDrop": 92,
-    "randomTalentsWin": 0.8400000000000001,
+    "randomTalentsWin": 0.85,
     "noTalentsWin": 0.62,
     "familyDrops": {
      "Lead": 0,
      "Heavy Prime": -3,
-     "Guard Prime": 18,
+     "Guard Prime": 17,
      "Detonator": 93,
      "Intercept": 2,
      "Taunt": 6
@@ -9976,22 +9955,22 @@
     "boss": "storm-sovereign",
     "tool": "Taunt",
     "toolDrop": 80,
-    "randomTalentsWin": 0.13,
+    "randomTalentsWin": 0.12,
     "noTalentsWin": 0,
     "familyDrops": {
      "Lead": 2,
-     "Flurry": -5,
+     "Flurry": -6,
      "Reach": 0,
-     "Taunt": 89,
-     "Support shape": 91,
-     "Debuff": 91
+     "Taunt": 90,
+     "Support shape": 90,
+     "Debuff": 90
     }
    },
    {
     "boss": "storm-sovereign",
     "tool": "Intercept",
     "toolDrop": 62,
-    "randomTalentsWin": 0.13000000000000003,
+    "randomTalentsWin": 0.14000000000000004,
     "noTalentsWin": 0,
     "familyDrops": {
      "Guard Prime": 60,
@@ -10021,8 +10000,8 @@
    {
     "boss": "old-bogback",
     "tool": "Row Ward",
-    "toolDrop": 58,
-    "randomTalentsWin": 0.29000000000000004,
+    "toolDrop": 57,
+    "randomTalentsWin": 0.27999999999999997,
     "noTalentsWin": 0,
     "familyDrops": {
      "Self Prime": 0,
@@ -10037,9 +10016,9 @@
  },
  "knackWatch": {
   "double-mark": {
-   "picks": 13,
-   "ratio": 0.52,
-   "withinForm": 0.85
+   "picks": 3,
+   "ratio": 0.12,
+   "withinForm": 0.23
   },
   "tunnel-through": {
    "picks": 2,
@@ -10054,52 +10033,54 @@
   "primed-by-pain": {
    "picks": 1,
    "ratio": 0.08,
-   "withinForm": 0.2
+   "withinForm": 0.33
   },
   "wide-warmth": {
    "picks": 11,
    "ratio": 0.58,
-   "withinForm": 0.98
+   "withinForm": 1.1
   },
   "keep-the-heat-in": {
-   "picks": 20,
-   "ratio": 1.59,
-   "withinForm": 1.31
+   "picks": 30,
+   "ratio": 2.38,
+   "withinForm": 1.5
   },
   "guards-shadow": {
    "picks": 13,
    "ratio": 2.07,
-   "withinForm": 0.96
+   "withinForm": 1.08
   }
  },
  "bossForms": {
-  "pyrelynx": 24,
-  "ancientshell": 23,
-  "tempestray": 19,
-  "bloomback": 17,
+  "ancientshell": 24,
+  "pyrelynx": 23,
+  "tempestray": 18,
+  "bloomback": 15,
+  "lanternfin": 13,
   "fogwyrm": 12,
-  "lanternfin": 12,
-  "drizzlewt": 10,
-  "hearthshell": 10,
-  "solmane": 9,
+  "hearthshell": 11,
+  "tidewing": 11,
+  "drizzlewt": 9,
   "gaiadrake": 9,
-  "tidewing": 9,
-  "geyserpup": 8,
-  "croakmire": 7,
+  "solmane": 8,
+  "bogwarden": 8,
   "sunfawn": 7,
-  "voltaro": 7,
-  "aurorix": 6,
-  "thornbuck": 6,
-  "bogwarden": 6,
+  "halcyray": 7,
+  "geyserpup": 7,
+  "croakmire": 6,
+  "voltaro": 6,
+  "thornbuck": 5,
   "kilnmole": 5,
-  "halcyray": 5,
+  "aurorix": 5,
+  "ohmouse": 4,
   "coralynx": 4,
-  "ohmouse": 3,
   "magmole": 2,
-  "zipmouse": 2,
   "splashet": 2,
+  "mossback": 1,
+  "squelch": 1,
   "ashmole": 1,
-  "wickat": 1
+  "wickat": 1,
+  "zipmouse": 1
  },
  "foeQuestions": [
   {
@@ -10211,7 +10192,7 @@
  "cardHints": {
   "tidal-colossus": {
    "written": "The whole sea sweeps the rows. Wide Reach and row wards turn the waves; who stands where?",
-   "measured": "Cover, protection talents, Reach, Row Ward Knacks, Area hit"
+   "measured": "Cover, Reach Knacks, protection talents, Row Ward Knacks, Area hit"
   },
   "cinder-wyrm": {
    "written": "The forge turns the first reaction of every row back on you, and every reaction heats it. Keep Mired on it, or make each reaction count.",
@@ -10219,7 +10200,7 @@
   },
   "thornmother": {
    "written": "The row ends fall quiet. Keep what you cannot spare in the middle or ward it, and bring something for her thick bark.",
-   "measured": "Detonator Knacks, Marks, Armour, Pierce Knacks, damage talents"
+   "measured": "Armour, Detonator Knacks, Marks, Pierce Knacks, Taunt"
   },
   "storm-sovereign": {
    "written": "The Rod leaps from the strongest Payoff, round after round, and a Judgement Bolt, announced at round start, can fell it. Draw the Rod onto something that can take it, and have Night Watch beside the Payoff for the Bolt.",
@@ -10304,6 +10285,7 @@
   "cinder-wyrm": [
    "family:Flurry",
    "family:Taunt",
+   "family:Support shape",
    "family:Sustain",
    "family:Debuff",
    "keyword:Taunt",
@@ -10320,12 +10302,14 @@
   ],
   "thornmother": [
    "family:Detonator",
+   "family:Taunt",
    "family:Pierce",
    "keyword:Mark",
    "keyword:Spend",
+   "keyword:Taunt",
    "rule:armour",
    "rule:marks",
-   "talent:damage"
+   "rule:taunt"
   ],
   "storm-sovereign": [
    "family:Guard Prime",
@@ -10512,14 +10496,14 @@
   "family:Flurry": [
    {
     "name": "Cinder Wyrm, answer 2",
-    "drop": 31,
+    "drop": 29,
     "unit": "pts"
    }
   ],
   "family:Reach": [
    {
     "name": "Tidal Colossus, prepared line",
-    "drop": 21,
+    "drop": 22,
     "unit": "pts"
    },
    {
@@ -10553,12 +10537,17 @@
   "family:Taunt": [
    {
     "name": "Cinder Wyrm, prepared line",
-    "drop": 19,
+    "drop": 20,
     "unit": "pts"
    },
    {
     "name": "Cinder Wyrm, answer 2",
     "drop": 10,
+    "unit": "pts"
+   },
+   {
+    "name": "Thornmother",
+    "drop": 15,
     "unit": "pts"
    },
    {
@@ -10568,7 +10557,7 @@
    },
    {
     "name": "Storm Sovereign, prepared line",
-    "drop": 11,
+    "drop": 12,
     "unit": "pts"
    },
    {
@@ -10635,8 +10624,13 @@
   "family:Partner": [],
   "family:Support shape": [
    {
+    "name": "Cinder Wyrm",
+    "drop": 7,
+    "unit": "pts"
+   },
+   {
     "name": "Storm Sovereign",
-    "drop": 8,
+    "drop": 7,
     "unit": "pts"
    },
    {
@@ -10697,7 +10691,7 @@
    },
    {
     "name": "Cinder Wyrm, answer 2",
-    "drop": 27,
+    "drop": 26,
     "unit": "pts"
    },
    {
@@ -10773,12 +10767,17 @@
   "keyword:Taunt": [
    {
     "name": "Cinder Wyrm, prepared line",
-    "drop": 19,
+    "drop": 20,
     "unit": "pts"
    },
    {
     "name": "Cinder Wyrm, answer 2",
     "drop": 13,
+    "unit": "pts"
+   },
+   {
+    "name": "Thornmother",
+    "drop": 15,
     "unit": "pts"
    },
    {
@@ -10788,7 +10787,7 @@
    },
    {
     "name": "Storm Sovereign, prepared line",
-    "drop": 11,
+    "drop": 12,
     "unit": "pts"
    },
    {
@@ -10837,7 +10836,7 @@
    },
    {
     "name": "Cinder Wyrm, answer 2",
-    "drop": 27,
+    "drop": 26,
     "unit": "pts"
    },
    {
@@ -10866,11 +10865,6 @@
   "keyword:Front row": [],
   "keyword:Reach": [
    {
-    "name": "Tidal Colossus",
-    "drop": 20,
-    "unit": "pts"
-   },
-   {
     "name": "Tidal Colossus, answer 2",
     "drop": 22,
     "unit": "pts"
@@ -10882,7 +10876,7 @@
    },
    {
     "name": "Storm Sovereign",
-    "drop": 14,
+    "drop": 15,
     "unit": "pts"
    }
   ],
@@ -10917,12 +10911,17 @@
   "rule:armour": [
    {
     "name": "Cinder Wyrm, prepared line",
-    "drop": 24,
+    "drop": 25,
     "unit": "pts"
    },
    {
     "name": "Cinder Wyrm, answer 2",
     "drop": 10,
+    "unit": "pts"
+   },
+   {
+    "name": "Thornmother",
+    "drop": 17,
     "unit": "pts"
    },
    {
@@ -10937,7 +10936,7 @@
    },
    {
     "name": "Storm Sovereign, prepared line",
-    "drop": 11,
+    "drop": 12,
     "unit": "pts"
    },
    {
@@ -10967,7 +10966,7 @@
    },
    {
     "name": "Cinder Wyrm, answer 2",
-    "drop": 27,
+    "drop": 26,
     "unit": "pts"
    },
    {
@@ -11018,12 +11017,17 @@
   "rule:taunt": [
    {
     "name": "Cinder Wyrm, prepared line",
-    "drop": 19,
+    "drop": 20,
     "unit": "pts"
    },
    {
     "name": "Cinder Wyrm, answer 2",
     "drop": 13,
+    "unit": "pts"
+   },
+   {
+    "name": "Thornmother",
+    "drop": 15,
     "unit": "pts"
    },
    {
@@ -11033,7 +11037,7 @@
    },
    {
     "name": "Storm Sovereign, prepared line",
-    "drop": 11,
+    "drop": 12,
     "unit": "pts"
    },
    {
@@ -11057,7 +11061,7 @@
   "rule:cover": [
    {
     "name": "Tidal Colossus",
-    "drop": 20,
+    "drop": 24,
     "unit": "pts"
    },
    {
@@ -11067,7 +11071,7 @@
    },
    {
     "name": "Tidal Colossus, answer 2",
-    "drop": 35,
+    "drop": 36,
     "unit": "pts"
    },
    {
@@ -11082,12 +11086,12 @@
    },
    {
     "name": "Storm Sovereign",
-    "drop": 34,
+    "drop": 35,
     "unit": "pts"
    },
    {
     "name": "Storm Sovereign, prepared line",
-    "drop": 11,
+    "drop": 12,
     "unit": "pts"
    },
    {
@@ -11106,16 +11110,11 @@
   "talent:damage": [
    {
     "name": "Tidal Colossus, answer 2",
-    "drop": 7,
+    "drop": 8,
     "unit": "pts"
    },
    {
     "name": "Cinder Wyrm, answer 2",
-    "drop": 6,
-    "unit": "pts"
-   },
-   {
-    "name": "Thornmother",
     "drop": 6,
     "unit": "pts"
    },
@@ -11128,11 +11127,6 @@
   "talent:marks": [],
   "talent:protection": [
    {
-    "name": "Tidal Colossus",
-    "drop": 23,
-    "unit": "pts"
-   },
-   {
     "name": "Tidal Colossus, answer 2",
     "drop": 23,
     "unit": "pts"
@@ -11144,7 +11138,7 @@
    },
    {
     "name": "Storm Sovereign",
-    "drop": 16,
+    "drop": 17,
     "unit": "pts"
    },
    {
@@ -11156,7 +11150,7 @@
   "talent:team": [
    {
     "name": "Cinder Wyrm, prepared line",
-    "drop": 7,
+    "drop": 8,
     "unit": "pts"
    },
    {

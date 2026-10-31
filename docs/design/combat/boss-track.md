@@ -127,48 +127,49 @@ A raid answer must be built from creatures a server can own at the week the slot
 
 The valley's roster at `fb0b3c3` (catch-up x3, the second drop), the table of `SLOT_NUMBERS` and `SLOT_WEEKS` from `node scripts/report.mjs --tune --track` (arrival weeks settle after one tuning; the first data, `dbc62bb`, gave the same weeks), the path from `--path --speed all --determination` (40 servers of each kind). The tuner prints a longer per-slot table; these are its numbers.
 
-The table was retuned on 2026-10-31 for Breakwater (Misa's choice, above): slots 6 and 11 moved (HP 14,500 to 15,600 and 13,400, Attack 119 to 113 and 137, armour 27 to 21 and 36 to 40), the other slots and the arrival weeks did not, and the tuner picks the second written answer for the mixed server at both. Before it, the table had been retuned after the phase 1 gate's Knack changes (Catch the Bolts and Night Watch take hits at a cut, Cool Head removes the whole crit bonus, Twin Strike 58%, Thornmother's first answer with Hardy for Brace): two slots moved (slot 5's Attack 150 to 155, slot 13's armour 8 to 10), the arrival weeks did not.
+The table was retuned once more on 2026-10-31 after the talent cuts (Catch Breath heals 30%, Owner's Mark +12%, Opportunist +100%, which brought the talents' raid share back to 22.3%): three slots moved (slot 3's armour 6 to 7; slot 8's Attack 100 to 96 and armour 7 to 4; slot 11's Attack 137 to 143 and armour 40 to 36), the arrival weeks did not, and the mixed kill rates fell by a few points where the written answers lean on Catch Breath. Before that the table was retuned for Breakwater (Misa's choice, above): slots 6 and 11 moved (HP 14,500 to 15,600 and 13,400, Attack 119 to 113 and 137, armour 27 to 21 and 36 to 40), the other slots and the arrival weeks did not, and the tuner picks the second written answer for the mixed server at both. Before it, the table had been retuned after the phase 1 gate's Knack changes (Catch the Bolts and Night Watch take hits at a cut, Cool Head removes the whole crit bonus, Twin Strike 58%, Thornmother's first answer with Hardy for Brace): two slots moved (slot 5's Attack 150 to 155, slot 13's armour 8 to 10), the arrival weeks did not.
 
 **The track.** A dedicated server spends one weekend on each boss of the table (the path's slot 18 takes two) and first fights slots 1 to 15 in weeks 1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 16, 17 and 18 (`SLOT_WEEKS`; slot 5 in week 6 because week 5 is a Festival, and so on). Per slot (HP / Attack / armour; prepared potential with written and with random talents; classic potential; the mixed server's kill rate per weekend, and the weekends to a kill the tuner reads off it, `1 / p`):
 
 | Slot | Boss               | Week | HP / Attack / armour | Prepared (random) | Classic         | Mixed kill, weekends to a kill |
 | ---- | ------------------ | ---- | -------------------- | ----------------- | --------------- | ------------------------------ |
-| 1    | Tidal Colossus     | 1    | 3,800 / 83 / 19      | 132% (127%)       | 200% (no limit) | 100%, 1.0                      |
-| 2    | Cinder Wyrm        | 2    | 7,500 / 80 / 42      | 132% (122%)       | 80%             | 100%, 1.0                      |
-| 3    | Storm Sovereign    | 3    | 13,500 / 53 / 6      | 159% (151%)       | 76%             | 53%, 1.9                       |
-| 4    | Old Bogback        | 4    | 28,200 / 82 / 19     | 129% (129%)       | 89%             | 26%, 3.8                       |
-| 5    | Thornmother (wall) | 6    | 6,500 / 155 / 124    | 129% (118%)       | 33%             | 45%, 2.2                       |
-| 6    | Tidal Colossus     | 7    | 15,600 / 113 / 21    | 142% (130%)       | 84%             | 36%, 2.8                       |
-| 7    | Cinder Wyrm        | 8    | 10,200 / 185 / 48    | 146% (143%)       | 73%             | 100%, 1.0                      |
-| 8    | Storm Sovereign    | 9    | 7,000 / 100 / 7      | 136% (114%)       | 75%             | **6%, 16.0**                   |
-| 9    | Old Bogback        | 11   | 32,800 / 100 / 33    | 128% (128%)       | 84%             | 26%, 3.8                       |
+| 1    | Tidal Colossus     | 1    | 3,800 / 83 / 19      | 131% (126%)       | 200% (no limit) | 99%, 1.0                       |
+| 2    | Cinder Wyrm        | 2    | 7,500 / 80 / 42      | 132% (121%)       | 80%             | 100%, 1.0                      |
+| 3    | Storm Sovereign    | 3    | 13,500 / 53 / 7      | 157% (149%)       | 75%             | 45%, 2.2                       |
+| 4    | Old Bogback        | 4    | 28,200 / 82 / 19     | 129% (129%)       | 89%             | 28%, 3.6                       |
+| 5    | Thornmother (wall) | 6    | 6,500 / 155 / 124    | 129% (118%)       | 33%             | 44%, 2.3                       |
+| 6    | Tidal Colossus     | 7    | 15,600 / 113 / 21    | 140% (129%)       | 84%             | 28%, 3.6                       |
+| 7    | Cinder Wyrm        | 8    | 10,200 / 185 / 48    | 146% (142%)       | 73%             | 100%, 1.0                      |
+| 8    | Storm Sovereign    | 9    | 7,000 / 96 / 4       | 145% (121%)       | 78%             | **13%, 8.0**                   |
+| 9    | Old Bogback        | 11   | 32,800 / 100 / 33    | 128% (127%)       | 84%             | 23%, 4.4                       |
 | 10   | Thornmother        | 12   | 8,000 / 102 / 149    | 260% (234%)       | 78%             | 100%, 1.0                      |
-| 11   | Tidal Colossus     | 13   | 13,400 / 137 / 40    | 132% (123%)       | 80%             | 23%, 4.4                       |
-| 12   | Cinder Wyrm        | 14   | 11,500 / 199 / 49    | 155% (154%)       | 70%             | 100%, 1.0                      |
-| 13   | Storm Sovereign    | 16   | 14,300 / 48 / 10     | 167% (136%)       | 73%             | 23%, 4.4                       |
-| 14   | Old Bogback        | 17   | 32,700 / 117 / 31    | 129% (125%)       | 80%             | 21%, 4.7                       |
+| 11   | Tidal Colossus     | 13   | 13,400 / 143 / 36    | 130% (119%)       | 80%             | **19%, 5.3**                   |
+| 12   | Cinder Wyrm        | 14   | 11,500 / 199 / 49    | 155% (153%)       | 70%             | 100%, 1.0                      |
+| 13   | Storm Sovereign    | 16   | 14,300 / 48 / 10     | 167% (136%)       | 73%             | 21%, 4.7                       |
+| 14   | Old Bogback        | 17   | 32,700 / 117 / 31    | 129% (125%)       | 80%             | **20%, 5.0**                   |
 | 15   | Thornmother        | 18   | 9,000 / 97 / 156     | 240% (221%)       | 73%             | 100%, 1.0                      |
 
-**The targets the tuner misses** (bold above, and slot 5's tool): two, slot 8's mixed kill rate (21% or more, the weakest weight) and slot 5's tool:
+**The targets the tuner misses** (bold above, and slot 5's tool): four, three of them the mixed kill rate (21% or more, the weakest weight):
 
-- **Slot 8 (Storm Sovereign's second lap, Lucky Strike): 6%**, 16 weekends to a kill; each target is met somewhere in the search, no candidate meets all.
-- **Slot 5 (Thornmother, the wall): the tool's worth is 22% of potential against the 22.5% asked at her 65% card strength**, under a point short; each target is met somewhere in the search, no candidate meets all (a rerun of the slot alone gives the same). It appeared with the Knack changes (Thornmother's first answer swapped Brace for Hardy to pass the raid gate; Twin Strike 58%); the tuner moved her Attack from 150 to 155 and kept her HP and armour. Slots 14 and 15, which missed before (19% and a tool at 34%), now meet every target; slot 13's armour went from 8 to 10.
+- **Slot 8 (Storm Sovereign's second lap, Lucky Strike): 13%**, 8 weekends to a kill (6% before the talent cuts; the tuner now finds lower armour); armour is at the edge of the search.
+- **Slot 11 (the Colossus's third lap): 19%** and **slot 14 (Old Bogback's third lap): 20%**, both just short after the talent cuts (they were 23% and 21%).
+- **Slot 5 (Thornmother, the wall): the tool's worth is 22% of potential against the 22.5% asked at her 65% card strength**, under a point short; each target is met somewhere in the search, no candidate meets all. It appeared with the phase 1 gate's Knack changes.
 
 **The Colossus before Breakwater** (the table of the day before, for the record). Slots 6 and 11 had a mixed kill of 0% and 1% with either written answer: the mixed server removed 74% and 79% of the HP in a weekend when the boss could not die, the classic party's potential band (70% to 90%) and kill limit (5%) never held together with a mixed kill of 21%, and ten prepared players killed it every weekend, so the casual players were the cause. A sweep of the HP showed a cliff (at slot 6 the mixed server killed 3% at 11,600 HP and 79% at 8,700, the classic party 13% and then 100%). It was a content problem, not a numbers problem, and the lead chose Breakwater.
 
-**The mixed answer.** `SLOT_MIXED_ANSWER` is `{6: 1, 11: 1}`: **the mixed server fields the second answer at slots 6 and 11**, where the whole-row Row Ward line kills 36% and 23% of weekends against the first answer's 1% and 3% (Wide Reach Guards cannot cover five casual columns; a ward covers the row). At every other slot the first answer is as good or better. The second answer's kill rate beside the first's at the tuned numbers: slot 3 24% against 53%, slot 4 29% against 26% (inside the margin of 5 points), slot 5 40% against 45%, slot 7, 10, 12 and 15 100% against 100%, slot 8 11% against 6% (exactly the margin, not past it), slot 9 15% against 26%, slot 13 13% against 23%, slot 14 6% against 21%. So the premise that whole-row answers carry the casual players holds only against the boss whose card is about wards.
+**The mixed answer.** `SLOT_MIXED_ANSWER` is `{6: 1, 11: 1}`: **the mixed server fields the second answer at slots 6 and 11**, where the whole-row Row Ward line kills 28% and 19% of weekends against the first answer's 1% and 1% (Wide Reach Guards cannot cover five casual columns; a ward covers the row). At every other slot the first answer is as good or better. The second answer's kill rate beside the first's at the numbers before the talent cuts: slot 3 24% against 53%, slot 4 29% against 26% (inside the margin of 5 points), slot 5 40% against 45%, slot 7, 10, 12 and 15 100% against 100%, slot 8 11% against 6% (exactly the margin, not past it), slot 9 15% against 26%, slot 13 13% against 23%, slot 14 6% against 21%. So the premise that whole-row answers carry the casual players holds only against the boss whose card is about wards.
 
-**The mixed weekends per slot** (the mean weekends a mixed server that arrives spends on a boss, the path at the expected speed, with Determination from slot 6 and without): slot 3 1.9 and 1.9; slot 4 1.3 and 1.3; slot 5 1.3 and 1.3; slot 6 1.3 and 1.4; slot 8 2.4 and 3.5; slot 9 1.1 and 1.1; slot 11 1.9 and 2.3; slot 13 2.2 and 2.9; slot 14 1.6 and 1.5 (few reach it); every other slot 1.0. A mixed server arrives later than the dedicated one (slot 6 in week 8 against 7; slot 11 in week 17 against 13; slots 12 to 14 in weeks 19, 21 and 22, and 95%, 90% and 60% of them reach those with Determination, 73%, 63% and 30% without).
+**The mixed weekends per slot** (the mean weekends a mixed server that arrives spends on a boss, the path at the expected speed, with Determination from slot 6 and without): slot 3 2.0 and 2.0; slots 4, 5 and 6 1.3 (1.4 without at slot 6); slot 8 1.8 and 2.3; slot 9 1.4 and 1.4; slot 11 2.1 and 2.9; slot 13 2.3 and 2.8; slot 14 1.3 and 1.2 (few reach it); every other slot 1.0. A mixed server arrives later than the dedicated one (slot 6 in week 8 against 7; slot 11 in week 17 against 13; slots 12 to 14 in weeks 18, 19 and 22, and 95%, 90% and 57% of them reach those with Determination, 65%, 60% and 30% without).
 
 **The stuck servers** (share of servers whose longest run on one boss is more than 4 weekends; the shipped balance target is at most 10%):
 
 | Speed                    | Dedicated: Determination on / off | Mixed: on / off | Builders: on / off |
 | ------------------------ | --------------------------------- | --------------- | ------------------ |
-| Slow (levels 20% behind) | 3% / 18%                          | 83% / 98%       | 13% / 45%          |
-| Expected                 | 0% / 0%                           | 10% / 45%       | 0% / 0%            |
-| Fast (20% ahead)         | 0% / 0%                           | 30% / 63%       | 0% / 0%            |
+| Slow (levels 20% behind) | 3% / 20%                          | 73% / 93%       | 15% / 48%          |
+| Expected                 | 0% / 0%                           | 5% / 50%        | 0% / 0%            |
+| Fast (20% ahead)         | 0% / 0%                           | 33% / 70%       | 0% / 0%            |
 
-Dedicated servers are inside the target at every speed with Determination on; without it the slow ones fail (18%). Builders (the line's forms and Knacks with random talents) are inside it at the expected and fast speeds with Determination on or off, and stuck at the slow speed (13% on, 45% off). Mixed servers are at the edge of it at the expected speed with Determination (10%) and over it everywhere else (45% without Determination at the expected speed): the Colossus's laps no longer hold them (slots 6 and 11 take 1.3 to 2.3 weekends), and the slots that take the mixed server longest are now slot 8 (Lucky Strike, the one mixed target the tuner misses: 2.4 and 3.5 weekends) and slot 13 (2.2 and 2.9). The mixed share is higher at the fast speed than at the expected one because a faster server reaches more later bosses within the 24 weeks.
+Dedicated servers are inside the target at every speed with Determination on; without it the slow ones fail (20%). Builders (the line's forms and Knacks with random talents) are inside it at the expected and fast speeds with Determination on or off, and stuck at the slow speed (15% on, 48% off). Mixed servers are inside it at the expected speed with Determination (5%) and over it everywhere else (50% without Determination at the expected speed); the slots that take them longest are 11 (2.1 and 2.9 weekends), 13 (2.3 and 2.8) and 8 (1.8 and 2.3). The mixed share is higher at the fast speed than at the expected one because a faster server reaches more later bosses within the 24 weeks.
 
 ## What survives the meeting
 
