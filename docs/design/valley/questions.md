@@ -12,7 +12,6 @@ Nothing waiting.
 
 In order. Each becomes a numbered question when asked; entries name what they wait on.
 
-- **skip-and-new.** From the walk's panel (`reviews/2026-10-31-walk.md`, row 9): a visible "tap to skip" and a "New" tag on a find add chrome against "fewer boxes"; check whether they still apply to the Gazette before asking.
 - **targets.** What the economy lab measures and which numbers feel right (T-1 to T-5 in `goals.md`). Asked with the lab's first report, as concrete examples, not as a list to approve.
 
 ## Answered
@@ -773,6 +772,8 @@ Status: answered, round 19 (2026-10-31). From Misa's G-8 ("If we can time the st
 Became: V-FORGE-11, the Market is the server's second guided project (after the hearth, V-COM-15), small and paid in Acorns and scrap, finished in the first week or two as the first anvils start waiting; it opens the broker seat, and later Market levels improve the broker's rate.
 
 ## Withdrawn
+
+- **skip-and-new** (queued, never asked; withdrawn 2026-10-31). From the walk's panel (`reviews/2026-10-31-walk.md`, row 9): a visible "tap to skip" and a "New" tag on a find. Neither applies to the Gazette: it is a popup with one button that closes it onto the valley (nothing to skip), and a new species is already its own find (the newcomer box), so a tag would only add chrome against "fewer boxes".
 
 ### Q36. Should the shard exchange happen by itself when something waits? (a follow-up)
 
