@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { hudAmount } from './CurrencyPile';
+import { CurrencyPile, hudAmount } from './CurrencyPile';
 import { Hud } from './Hud';
 import { PopoverHost } from './PopoverHost';
 import { byClass, byName, createPage, find, visibleText, type Page } from './test-dom';
@@ -151,5 +151,27 @@ describe('the currency popover', () => {
     expect(cog.getAttribute('class')).toBe('hud-gear');
     page.click(cog);
     expect(onSettings).toHaveBeenCalledOnce();
+  });
+});
+
+describe('a purse of other resources (the valley prototype’s)', () => {
+  it('shows them instead of Bait and Essence, with their amounts and a spoken label', () => {
+    page = createPage();
+    page.draw(
+      <PopoverHost onOpenHowTo={() => undefined}>
+        <CurrencyPile
+          balances={{ bait: 7, essence: 8 }}
+          resources={[
+            { key: 'acorns', icon: { kind: 'glyph', id: 'treat' }, amount: 1240, label: 'Acorns' },
+            { key: 'scrap', icon: { kind: 'part', part: 'scrap' }, amount: 36, label: 'Scrap' },
+          ]}
+        />
+      </PopoverHost>,
+    );
+    const [pile] = byClass(page.root, 'currency-pile');
+    expect(pile?.getAttribute('aria-label')).toBe('Purse: 1240 Acorns, 36 Scrap');
+    expect(pile?.textContent).toContain('1,240');
+    expect(pile?.textContent).toContain('36');
+    expect(pile?.textContent).not.toContain('7');
   });
 });

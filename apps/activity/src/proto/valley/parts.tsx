@@ -156,6 +156,19 @@ function SlotSquare() {
  */
 export function BubbleArt({ bubble, world }: { bubble: Bubble; world: ProtoWorld }) {
   const need = bubble.need;
+  if (bubble.picture !== undefined) {
+    return (
+      <>
+        {bubble.picture.species !== undefined && (
+          <CreatureIcon creature={{ species: bubble.picture.species, shiny: false }} />
+        )}
+        <span class="pv-bubble-pic">
+          <Glyph id={bubble.picture.glyph} scale={3} />
+        </span>
+      </>
+    );
+  }
+  if (need === null) return null;
   switch (need.kind) {
     case 'trip-home': {
       const c = world.creatures.find((x) => x.id === need.creatureId);

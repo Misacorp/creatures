@@ -93,6 +93,23 @@ describe('the frames of a walk', () => {
   });
 });
 
+describe('the line that is held', () => {
+  const plan = planOf(DAILY, 4, CAST); // a quiet Friday: three lines, three places
+  const total = totalMs(plan);
+
+  it('is none before the first line, then the line told last, through the walking and the tumble', () => {
+    expect(frameAt(plan, 0).held).toBeNull();
+    let seen = null;
+    for (let t = 0; t < total; t += 25) {
+      const f = frameAt(plan, t);
+      if (f.line !== null) seen = f.line;
+      expect(f.held).toBe(seen);
+    }
+    expect(seen).not.toBeNull();
+    expect(frameAt(plan, total + 5000).held).toBe(seen);
+  });
+});
+
 describe('the walker', () => {
   it('goes from one place’s door to the next, a whole pixel at a time', () => {
     const a = walkerAt('paddock', 'signpost', 0);

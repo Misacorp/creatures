@@ -6,7 +6,10 @@ import {
   MAX_PILES,
   MAX_STOPS,
   MIN_STOPS,
+  assignCast,
   decisionOf,
+  findSpecies,
+  nameList,
   lineName,
   lineSpecies,
   pilesOf,
@@ -18,8 +21,18 @@ import {
   type WalkPlan,
 } from './walk-plan';
 
+const SPECIES = [
+  'splashet',
+  'mistnewt',
+  'cindle',
+  'sproutle',
+  'zipmouse',
+  'voltaro',
+  'mudlump',
+  'squelch',
+];
 const CAST: CastMember[] = ['Mossback', 'Pip', 'Ember', 'Sprout', 'Nib', 'Dot', 'Fig', 'Wren'].map(
-  (name) => ({ name, species: 'splashet', shiny: false }),
+  (name, i) => ({ name, species: SPECIES[i] ?? 'splashet', shiny: false }),
 );
 
 /** A visit of a quiet Tuesday with only what the test sets. */
@@ -81,11 +94,48 @@ describe('the walk of every visit of both journeys', () => {
     }
   });
 
-  it('ends at the decision’s place when there is one, and only on a Monday', () => {
+  it('ends at the decision’s place when the visit has a decision, and in the valley otherwise', () => {
     for (const { journey, i, plan } of all) {
       const v = journey.visits[i];
-      expect(plan.decision !== null).toBe(v?.weekday === 'Monday');
-      if (plan.decision !== null) expect(plan.stops[plan.stops.length - 1]?.place).toBe('arena');
+      if (v === undefined) throw new Error('no visit');
+      expect(plan.decision).toEqual(decisionOf(v));
+      if (plan.decision !== null) {
+        expect(plan.stops[plan.stops.length - 1]?.place).toBe(plan.decision.place);
+      }
+    }
+  });
+
+  it('has some visits with a decision and some without, in the real journeys', () => {
+    const withOne = all.filter(({ plan }) => plan.decision !== null).length;
+    expect(withOne).toBeGreaterThan(5);
+    expect(withOne).toBeLessThan(all.length);
+  });
+
+  it('never has the walker look like the find', () => {
+    for (const { journey, i, plan } of all) {
+      const v = journey.visits[i];
+      if (v === undefined) throw new Error('no visit');
+      const find = findSpecies(v);
+      if (find !== null) expect(CAST[plan.carrier]?.species).not.toBe(find);
+    }
+  });
+
+  it('keeps every pile on a stop of the walk, taken up at its makers’ place when it is visited', () => {
+    for (const { plan } of all) {
+      for (const pile of plan.piles) {
+        expect(pile.stop).toBeGreaterThanOrEqual(0);
+        expect(pile.stop).toBeLessThan(plan.stops.length);
+        const at = plan.stops.findIndex((s) => s.place === pile.from);
+        if (at >= 0) expect(pile.stop).toBe(at);
+      }
+    }
+  });
+
+  it('shows at most three faces on a line and a face only on a group line', () => {
+    for (const { plan } of all) {
+      for (const line of plan.stops.flatMap((s) => s.lines)) {
+        expect(line.faces?.length ?? 0).toBeLessThanOrEqual(3);
+      }
     }
   });
 
@@ -95,7 +145,8 @@ describe('the walk of every visit of both journeys', () => {
       const places = plan.stops.map((s) => s.place);
       const at = places.indexOf(plan.surprise.place);
       const after = places.slice(at + 1);
-      expect(after.length).toBe(plan.decision === null ? 0 : 1);
+      const elsewhere = plan.decision !== null && plan.decision.place !== plan.surprise.place;
+      expect(after.length).toBe(elsewhere ? 1 : 0);
     }
   });
 
@@ -137,7 +188,11 @@ describe('which places the walk visits', () => {
     const plan = planWalk(visit({ weekday: 'Monday', day: 8 }), CAST, 1);
     expect(plan.stops.length).toBe(4);
     expect(plan.stops[3]?.place).toBe('arena');
-    expect(plan.decision).toEqual({ place: 'arena', text: 'Choose your defenders' });
+    expect(plan.decision).toEqual({
+      place: 'arena',
+      text: 'Choose your defenders',
+      picture: { glyph: 'blade' },
+    });
   });
 
   it('puts the bonfire at the Paddock and a graduation at the House (the valley has neither yet)', () => {
@@ -190,7 +245,7 @@ describe('the story lines', () => {
       expect.arrayContaining([
         'A new friend: Cindle',
         'The Forge grew to level 2',
-        '2 creatures earned Bronze',
+        'Nib and Dot earned Bronze',
       ]),
     );
     expect(linesOf(plan).join('|')).not.toContain('A visitor came');
@@ -211,7 +266,9 @@ describe('the story lines', () => {
       CAST,
       7,
     );
-    expect(linesOf(plan)).toContain('3 new friends came to the valley');
+    expect(linesOf(plan)).toContain('Cindle, Splashet and Mistnewt came to the valley');
+    const group = plan.stops.flatMap((s) => s.lines).find((l) => l.surprise);
+    expect(group?.faces?.map((f) => f.species)).toEqual(['cindle', 'splashet', 'mistnewt']);
     // Seat 1 went on to Expert; seat 2 stays an Apprentice behind it, so the post's top step is one scout's.
     expect(linesOf(plan).join('|')).toContain('Mossback became an Expert Scout');
   });
@@ -229,7 +286,9 @@ describe('the story lines', () => {
       CAST,
       1,
     );
-    expect(linesOf(plan)).toContain('Mossback brought 3 creatures home');
+    expect(linesOf(plan)).toContain('Mossback brought Mistnewt and Zipmouse home');
+    const faces = plan.stops.flatMap((s) => s.lines).find((l) => l.faces !== undefined)?.faces;
+    expect(faces?.map((f) => f.species)).toEqual(['mistnewt', 'zipmouse']);
   });
 
   it('keeps a line of a kind it does not know yet, as the lab wrote it', () => {
@@ -275,7 +334,7 @@ describe('the surprise', () => {
     const order: [string, string][] = [
       ['new line: cindle', 'A new friend: Cindle'],
       ['place level-up: forge reached level 2', 'The Forge grew to level 2'],
-      ['graduation: 1 creature earned Bronze', '1 creature earned Bronze'],
+      ['graduation: 1 creature earned Bronze', 'Nib earned Bronze'],
       ['mastery: anvil 1 reached Master', 'Ember became a Master Smith'],
       ['mastery: anvil 1 reached Expert', 'Ember became an Expert Smith'],
       [
@@ -416,9 +475,97 @@ describe('the decision', () => {
     expect(decisionOf(visit({ weekday: 'Monday' }))).toEqual({
       place: 'arena',
       text: 'Choose your defenders',
+      picture: { glyph: 'blade' },
     });
-    for (const day of ['Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']) {
+    for (const day of ['Tuesday', 'Wednesday', 'Friday', 'Saturday', 'Sunday']) {
       expect(decisionOf(visit({ weekday: day }))).toBeNull();
     }
+  });
+
+  it('is where a new creature should work, at the Signpost, with its face', () => {
+    expect(decisionOf(visit({ events: ['new line: cindle'] }))).toEqual({
+      place: 'signpost',
+      text: 'Where should Cindle work?',
+      picture: { glyph: 'compass', species: 'cindle' },
+    });
+  });
+
+  it('is the visitor’s stall, a reroll, on a Thursday', () => {
+    expect(decisionOf(visit({ weekday: 'Thursday' }))).toEqual({
+      place: 'fair',
+      text: 'The visitor’s stall: a reroll',
+      picture: { glyph: 'gift' },
+    });
+  });
+
+  it('is the raid first when a Monday has more, then a new creature, then the stall', () => {
+    const both = visit({ weekday: 'Monday', events: ['new line: cindle'] });
+    expect(decisionOf(both)?.place).toBe('arena');
+    const thursday = visit({ weekday: 'Thursday', events: ['new line: cindle'] });
+    expect(decisionOf(thursday)?.place).toBe('signpost');
+  });
+
+  it('keeps the walker unlike a new find of its own species', () => {
+    const plan = planWalk(visit({ events: ['new line: splashet'] }), CAST, 1);
+    expect(CAST[plan.carrier]?.species).not.toBe('splashet');
+  });
+});
+
+describe('who plays which part', () => {
+  it('puts two scouts first, then two smiths, then the ones that rest', () => {
+    expect(assignCast(CAST, null)).toEqual({
+      scouts: [0, 1],
+      smiths: [2, 3],
+      resting: [4, 5, 6, 7],
+    });
+  });
+
+  it('keeps the species to avoid out of the scouts', () => {
+    const crew = assignCast(CAST, 'splashet');
+    expect(crew.scouts).toEqual([1, 2]);
+    expect(crew.smiths).toEqual([0, 3]);
+    expect(crew.resting).toEqual([4, 5, 6, 7]);
+  });
+
+  it('still casts a walker when every creature is of the species to avoid', () => {
+    const same = CAST.map((c) => ({ ...c, species: 'splashet' }));
+    expect(assignCast(same, 'splashet').scouts).toEqual([0, 1]);
+  });
+
+  it('copes with a cast of one', () => {
+    expect(assignCast([CAST[0] as CastMember], null)).toEqual({
+      scouts: [0, 0],
+      smiths: [0, 0],
+      resting: [],
+    });
+  });
+});
+
+describe('names in a sentence', () => {
+  it('lists up to three and then counts the rest', () => {
+    expect(nameList([])).toBe('');
+    expect(nameList(['A'])).toBe('A');
+    expect(nameList(['A', 'B'])).toBe('A and B');
+    expect(nameList(['A', 'B', 'C'])).toBe('A, B and C');
+    expect(nameList(['A', 'B', 'C', 'D', 'E'])).toBe('A, B, C and 2 more');
+    expect(nameList(['A', 'B'], 5)).toBe('A, B and 3 more');
+  });
+});
+
+describe('the School’s news', () => {
+  it('tells a creature beginning to learn a talent, and a teacher’s lesson, at the House', () => {
+    const learning = planWalk(
+      visit({ events: ['school: a creature began learning its talent 1 (30 Acorns, 12 hours)'] }),
+      CAST,
+      1,
+    );
+    expect(linesOf(learning).join('|')).toMatch(/began learning a talent/);
+    const lesson = planWalk(
+      visit({ events: ["school: a visiting teacher's lesson for a creature (60 Acorns)"] }),
+      CAST,
+      1,
+    );
+    expect(linesOf(lesson).join('|')).toMatch(/A teacher gave \w+ a lesson/);
+    expect(lesson.stops.map((s) => s.place)).toContain('house');
   });
 });

@@ -44,7 +44,7 @@ import { ValleyMap } from './ValleyMap';
 import { ZoomCut } from './ZoomCut';
 import { WalkStage } from '../walk/WalkStage';
 import type { CastMember, WalkPlan } from '../walk/walk-plan';
-import { decisionBubbles } from '../walk/walk-world';
+import { decisionBubbles, purseOf } from '../walk/walk-world';
 
 /** Where the player is, and the moment a place opens on. */
 export interface View {
@@ -134,6 +134,8 @@ export function Valley({
       : { ...base(walk.world), at: walk.plan.stops[walk.plan.stops.length - 1]?.place ?? 'start' },
   );
   const [walking, setWalking] = useState(walk !== undefined);
+  // The walk's counts have dropped into the purse (skipping brings everything home too).
+  const [landed, setLanded] = useState(false);
   const liveStep = useRef(step);
   const [zoom, setZoom] = useState<PlaceId | null>(null);
   const pending = useRef<(() => void) | null>(null);
@@ -276,6 +278,10 @@ export function Valley({
             plan={walk.plan}
             onDone={() => {
               setWalking(false);
+              setLanded(true);
+            }}
+            onLand={() => {
+              setLanded(true);
             }}
           />
         ) : (
@@ -287,6 +293,7 @@ export function Valley({
               focus={view.focus}
               departing={view.departing}
               bubbles={walk === undefined ? undefined : decisionBubbles(walk.plan)}
+              edges={walk === undefined}
               onPlace={onPlace}
               lit={lit}
               haulOpen={haul !== null}
@@ -410,7 +417,11 @@ export function Valley({
               <Glyph id="flag" scale={3} />
             </button>
             <div class="pv-hud-end">
-              <CurrencyPile balances={world.balances} loadLedger={() => Promise.resolve([])} />
+              <CurrencyPile
+                balances={world.balances}
+                loadLedger={() => Promise.resolve([])}
+                {...(walk === undefined ? {} : { resources: purseOf(walk.plan, landed) })}
+              />
               <SettingsButton onSettings={() => undefined} />
             </div>
           </div>

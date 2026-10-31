@@ -32,9 +32,17 @@ export function placeOfNeed(need: Need): PlaceId {
   }
 }
 
+/** A bubble's own picture (a place's glyph, and a creature's face): for a bubble that is not one of the world's needs. */
+export interface BubblePicture {
+  glyph: string;
+  species?: string | undefined;
+}
+
 export interface Bubble {
   place: PlaceId;
-  need: Need;
+  /** The world's need this is; null for a bubble with its own `picture` (the return walk's decision). */
+  need: Need | null;
+  picture?: BubblePicture | undefined;
   /** What the need is, in words, for the place's spoken name ("Craft Kelp Cap is ready"). */
   spoken: string;
   /** The only words a bubble may show: the time the Games close ("13:37"); else null. */
@@ -149,6 +157,25 @@ export function startScroll(width: number, scale = VALLEY_SCALE): number {
   const house = placeOf('house').rect;
   const forge = placeOf('forge').rect;
   return scrollToSpan(house.x, forge.x + forge.width, width, scale);
+}
+
+/**
+ * Where a camera that frames a place scrolls a window `view` wide and high, at `scale`: sideways always, and
+ * up and down only when the valley is zoomed past the usual scale (`top` is where the stage's top sits, as
+ * `fitValley` gives it, negative when the sky row is cut).
+ */
+export function cameraScroll(
+  id: PlaceId,
+  view: { width: number; height: number },
+  scale: number,
+  top: number,
+): { left: number; top: number } {
+  const left = scrollToPlace(id, view.width, scale);
+  if (scale <= VALLEY_SCALE) return { left, top: 0 };
+  const r = placeOf(id).rect;
+  const middle = (r.y + r.height / 2) * scale + top;
+  const room = Math.max(0, VALLEY_SIZE.height * scale + top - view.height);
+  return { left, top: Math.round(Math.min(room, Math.max(0, middle - view.height / 2))) };
 }
 
 /** The scroll that centres a place. */

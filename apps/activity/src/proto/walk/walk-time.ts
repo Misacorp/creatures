@@ -38,6 +38,8 @@ export interface Frame {
   progress: number;
   /** The line told now, if any. */
   line: WalkLine | null;
+  /** The line told last, kept while walking and at the end (reduced motion shows it until the next one). */
+  held: WalkLine | null;
   /** The decision's bubble is up (the walk is at its last stop and the lines are told). */
   decision: boolean;
   /** The place the camera looks at. */
@@ -70,6 +72,7 @@ export function frameAt(plan: WalkPlan, ms: number): Frame {
       from: START_PLACE,
       progress: 1,
       line: null,
+      held: null,
       decision: false,
       camera: START_PLACE,
       tumble: -1,
@@ -77,6 +80,7 @@ export function frameAt(plan: WalkPlan, ms: number): Frame {
   }
   let at: number = intro;
   let from = START_PLACE;
+  let told: WalkLine | null = null;
   for (const [i, stop] of plan.stops.entries()) {
     const walkEnd = at + MS.travel;
     if (ms < walkEnd) {
@@ -87,6 +91,7 @@ export function frameAt(plan: WalkPlan, ms: number): Frame {
         from,
         progress: (ms - at) / MS.travel,
         line: null,
+        held: told,
         decision: false,
         // The camera leads the walker: it sets off for the next place as the walker does.
         camera: stop.place,
@@ -104,6 +109,7 @@ export function frameAt(plan: WalkPlan, ms: number): Frame {
         from,
         progress: 1,
         line: stop.lines[Math.min(index, stop.lines.length - 1)] ?? null,
+        held: stop.lines[Math.min(index, stop.lines.length - 1)] ?? told,
         decision: last && plan.decision?.place === stop.place,
         camera: stop.place,
         tumble: -1,
@@ -111,6 +117,7 @@ export function frameAt(plan: WalkPlan, ms: number): Frame {
     }
     at = dwellEnd;
     from = stop.place;
+    told = stop.lines[stop.lines.length - 1] ?? told;
   }
   const lastStop = plan.stops.length - 1;
   const lastPlace = plan.stops[lastStop]?.place ?? START_PLACE;
@@ -123,6 +130,7 @@ export function frameAt(plan: WalkPlan, ms: number): Frame {
       from: lastPlace,
       progress: 1,
       line: null,
+      held: told,
       decision: plan.decision?.place === lastPlace,
       camera: lastPlace,
       tumble: Math.min(TUMBLE_STEPS - 1, Math.floor((into / MS.tumble) * TUMBLE_STEPS)),
@@ -135,6 +143,7 @@ export function frameAt(plan: WalkPlan, ms: number): Frame {
     from: lastPlace,
     progress: 1,
     line: null,
+    held: told,
     decision: plan.decision?.place === lastPlace,
     camera: lastPlace,
     tumble: -1,

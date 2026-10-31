@@ -4,7 +4,8 @@
  * story lines name.
  */
 import { creatureName } from '../../game';
-import { RAID_TEAM_SIZE, initialWorld, type ProtoWorld } from '../world';
+import type { PurseResource } from '../../CurrencyPile';
+import { initialWorld, type ProtoWorld } from '../world';
 import type { Bubble } from '../valley/valley-logic';
 import type { CastMember, WalkPlan } from './walk-plan';
 
@@ -37,16 +38,41 @@ export function withoutCast(world: ProtoWorld): ProtoWorld {
   return { ...world, creatures: world.creatures.filter((c) => !out.has(c.id)) };
 }
 
-/** The bubble that stays over the place where the walk's decision waits (the raid's empty slots). */
+/** The bubble that stays over the place where the walk's decision waits: a picture, never words. */
 export function decisionBubbles(plan: WalkPlan): Bubble[] {
   const d = plan.decision;
   if (d === null) return [];
+  return [{ place: d.place, need: null, picture: d.picture, spoken: d.text, time: null }];
+}
+
+/** What the valley's purse holds before the walk: Acorns, scrap and shards (the prototype's own sample). */
+export const PURSE_START = { acorns: 120, scrap: 240, shards: 36 } as const;
+
+/**
+ * The purse of the walk prototype: the valley's resources, not Bait and Essence. Once the walk's counts have
+ * dropped in (`landed`) it holds what came home too; the pieces stay in the bag, not the purse.
+ */
+export function purseOf(plan: WalkPlan, landed: boolean): PurseResource[] {
+  const sum = (match: (key: string) => boolean): number =>
+    landed ? plan.piles.filter((p) => match(p.key)).reduce((n, p) => n + p.amount, 0) : 0;
   return [
     {
-      place: d.place,
-      need: { kind: 'raid', placed: 0, needed: RAID_TEAM_SIZE },
-      spoken: d.text,
-      time: null,
+      key: 'acorns',
+      icon: { kind: 'glyph', id: 'treat' },
+      amount: PURSE_START.acorns + sum((k) => k === 'acorns'),
+      label: 'Acorns',
+    },
+    {
+      key: 'scrap',
+      icon: { kind: 'part', part: 'scrap' },
+      amount: PURSE_START.scrap + sum((k) => k === 'scrap'),
+      label: 'Scrap',
+    },
+    {
+      key: 'shards',
+      icon: { kind: 'glyph', id: 'shard-any' },
+      amount: PURSE_START.shards + sum((k) => k.startsWith('shard-')),
+      label: 'Shards',
     },
   ];
 }

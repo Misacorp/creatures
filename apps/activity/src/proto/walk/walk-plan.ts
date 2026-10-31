@@ -32,11 +32,22 @@ export interface CastMember {
 /** Who a line is about: a member of the cast (by its place in the cast), or a species (a new friend), or no one. */
 export type Who = { kind: 'cast'; slot: number } | { kind: 'species'; species: string } | null;
 
+/** A creature's face in a group line. */
+export interface Face {
+  species: string;
+  shiny: boolean;
+}
+
+/** Most faces a group line shows. */
+export const MAX_FACES = 3;
+
 export interface WalkLine {
   place: PlaceId;
   /** Who, what and where, in one short sentence ("Pip became an Expert Smith"). */
   text: string;
   who: Who;
+  /** A group line shows up to `MAX_FACES` small faces of the creatures it is about, not only a count. */
+  faces?: Face[];
   /** The one find the camera eases to and pops out (V-RET-2). */
   surprise: boolean;
 }
@@ -52,12 +63,25 @@ export interface Pile {
   amount: number;
   /** What assistive technology says ("Acorns"). */
   label: string;
+  /** The place whose creatures made it: the walker takes it up there. */
+  from: PlaceId;
+  /** The stop it is taken up at (set by the plan: where `from` is visited, else the last stop). */
+  stop: number;
 }
 
 export interface WalkDecision {
   place: PlaceId;
   /** The decision as the place's bubble says it. */
   text: string;
+  /** The bubble's picture: a place's glyph, and the creature's face when it is about one. */
+  picture: { glyph: string; species?: string | undefined };
+}
+
+/** Who plays which part: cast slots for the scouts, the smiths and the creatures that rest. */
+export interface Crew {
+  scouts: [number, number];
+  smiths: [number, number];
+  resting: number[];
 }
 
 export interface WalkPlan {
@@ -68,6 +92,8 @@ export interface WalkPlan {
   surprise: WalkLine | null;
   decision: WalkDecision | null;
   piles: Pile[];
+  /** The cast slot of the creature that walks: the first scout, never of the species of the find. */
+  carrier: number;
 }
 
 // --- Where things happened ---
@@ -116,13 +142,46 @@ const PLACE_WORDS: Record<string, string> = {
 
 // --- Who is who ---
 
-/** The cast slots: two scouts, two smiths, then the creatures that rest by the fire. */
-const SCOUT_SLOT = 0;
-const SMITH_SLOT = 2;
-const RESTING_SLOT = 4;
-
 const nameOf = (cast: readonly CastMember[], slot: number): string =>
   cast[slot % Math.max(1, cast.length)]?.name ?? 'A creature';
+
+const faceOf = (cast: readonly CastMember[], slot: number): Face => {
+  const member = cast[slot % Math.max(1, cast.length)];
+  return { species: member?.species ?? 'splashet', shiny: member?.shiny ?? false };
+};
+
+/**
+ * Who plays which part. The scouts come first and are never of the species `avoid` (the find: the walker
+ * must not look like it); then two smiths, and the rest rest by the fire. Cast order decides otherwise.
+ */
+export function assignCast(cast: readonly CastMember[], avoid: string | null): Crew {
+  const slots = cast.map((_, i) => i);
+  const fine = slots.filter((i) => cast[i]?.species !== avoid);
+  const other = slots.filter((i) => !fine.includes(i));
+  const scouts = [...fine, ...other].slice(0, 2);
+  const rest = slots.filter((i) => !scouts.includes(i));
+  return {
+    scouts: [scouts[0] ?? 0, scouts[1] ?? scouts[0] ?? 0],
+    smiths: [rest[0] ?? 0, rest[1] ?? rest[0] ?? 0],
+    resting: rest.slice(2),
+  };
+}
+
+/** Names in a sentence: "A", "A and B", "A, B and C", then "A, B and 2 more" (`total` names in all). */
+export function nameList(names: readonly string[], total = names.length): string {
+  const shown = names.slice(0, MAX_FACES);
+  const more = total - shown.length;
+  if (shown.length === 0) return '';
+  if (more > 0) return `${shown.join(', ')} and ${String(more)} more`;
+  if (shown.length === 1) return shown[0] ?? '';
+  return `${shown.slice(0, -1).join(', ')} and ${shown[shown.length - 1] ?? ''}`;
+}
+
+/** The species of a visit's find (a new line), for keeping the walker unlike it; null when there is none. */
+export function findSpecies(visit: Visit): string | null {
+  const first = eventsOf(visit).find((e) => e.kind === 'new-line');
+  return first?.kind === 'new-line' ? lineSpecies(first.line) : null;
+}
 
 /** The name of a creature line ("splashet" is Splashet); a line the content does not know is shown as it is. */
 export function lineName(line: string): string {
@@ -176,32 +235,42 @@ const MOMENTS: readonly ((name: string) => string)[] = [
 ];
 
 /** The event-based candidates of a visit. */
-function eventCandidates(visit: Visit, cast: readonly CastMember[]): Candidate[] {
+function eventCandidates(visit: Visit, cast: readonly CastMember[], crew: Crew): Candidate[] {
   const events = eventsOf(visit);
   const out: Candidate[] = [];
 
-  // New lines: one is a surprise; several are told as one line (a week away groups its finds).
+  // New lines: one is a surprise; several are told as one line, with their faces (a week away groups its finds).
   const lines = ofKind(events, 'new-line');
-  if (lines.length === 1 && lines[0] !== undefined) {
-    const line = lines[0].line;
-    const species = lineSpecies(line);
+  const species = lines.map((l) => lineSpecies(l.line));
+  const firstSpecies = species[0] ?? null;
+  const [onlyLine] = lines;
+  if (lines.length === 1 && onlyLine !== undefined) {
     out.push({
       rank: SURPRISE_RANK.newLine,
       line: {
         place: 'paddock',
-        text: `A new friend: ${lineName(line)}`,
-        who: species === null ? null : { kind: 'species', species },
+        text:
+          firstSpecies === null
+            ? 'A new friend came to the valley'
+            : `A new friend: ${lineName(onlyLine.line)}`,
+        who: firstSpecies === null ? null : { kind: 'species', species: firstSpecies },
         surprise: true,
       },
     });
-  } else if (lines.length > 1 && lines[0] !== undefined) {
-    const species = lineSpecies(lines[0].line);
+  } else if (lines.length > 1) {
     out.push({
       rank: SURPRISE_RANK.newLine,
       line: {
         place: 'paddock',
-        text: `${String(lines.length)} new friends came to the valley`,
-        who: species === null ? null : { kind: 'species', species },
+        text: `${nameList(
+          lines.map((l) => lineName(l.line)),
+          lines.length,
+        )} came to the valley`,
+        who: firstSpecies === null ? null : { kind: 'species', species: firstSpecies },
+        faces: species
+          .filter((x): x is string => x !== null)
+          .slice(0, MAX_FACES)
+          .map((x) => ({ species: x, shiny: false })),
         surprise: true,
       },
     });
@@ -221,17 +290,23 @@ function eventCandidates(visit: Visit, cast: readonly CastMember[]): Candidate[]
     });
   }
 
-  // Graduations: summed, at the highest honour.
+  // Graduations: summed, at the highest honour, naming the creatures that rest (the House stands in for the School).
   const grads = ofKind(events, 'graduation');
   if (grads.length > 0) {
     const count = grads.reduce((sum, g) => sum + g.count, 0);
     const honour = grads[grads.length - 1]?.honour ?? 'Bronze';
+    const slots = crew.resting.slice(0, Math.min(count, MAX_FACES));
+    const names = slots.map((slot) => nameOf(cast, slot));
     out.push({
       rank: SURPRISE_RANK.graduation,
       line: {
         place: 'house',
-        text: `${String(count)} ${plural(count, 'creature', 'creatures')} earned ${honour}`,
+        text:
+          names.length === 0
+            ? `${String(count)} ${plural(count, 'creature', 'creatures')} earned ${honour}`
+            : `${nameList(names, count)} earned ${honour}`,
         who: null,
+        faces: slots.map((slot) => faceOf(cast, slot)),
         surprise: true,
       },
     });
@@ -244,16 +319,18 @@ function eventCandidates(visit: Visit, cast: readonly CastMember[]): Candidate[]
       best.set(m.seat, Math.max(best.get(m.seat) ?? 0, STEP_RANK[m.step] ?? 0));
     }
     if (best.size === 0) continue;
-    const top = Math.max(...best.values());
-    const step = Object.keys(STEP_RANK).find((s) => STEP_RANK[s] === top) ?? 'Apprentice';
-    const seats = [...best.entries()].filter(([, v]) => v === top).map(([seat]) => seat);
-    const base = post === 'scout' ? SCOUT_SLOT : SMITH_SLOT;
+    const topStep = Math.max(...best.values());
+    const step = Object.keys(STEP_RANK).find((s) => STEP_RANK[s] === topStep) ?? 'Apprentice';
+    const seats = [...best.entries()].filter(([, v]) => v === topStep).map(([seat]) => seat);
+    const pair = post === 'scout' ? crew.scouts : crew.smiths;
     const job = post === 'scout' ? 'Scout' : 'Smith';
-    const first = seats[0] ?? 1;
+    const slots = seats.map((seat) => pair[(seat - 1) % 2] ?? 0);
+    const unique = slots.filter((slot, i) => slots.indexOf(slot) === i);
+    const names = unique.map((slot) => nameOf(cast, slot));
     const text =
-      seats.length === 1
-        ? `${nameOf(cast, base + ((first - 1) % 2))} became ${article(step)} ${step} ${job}`
-        : `${String(seats.length)} ${job.toLowerCase()}s became ${step}s`;
+      unique.length === 1
+        ? `${names[0] ?? ''} became ${article(step)} ${step} ${job}`
+        : `${nameList(names, unique.length)} became ${step} ${job}s`;
     const rank =
       step === 'Master'
         ? SURPRISE_RANK.master
@@ -265,8 +342,35 @@ function eventCandidates(visit: Visit, cast: readonly CastMember[]): Candidate[]
       line: {
         place: post === 'scout' ? 'signpost' : 'forge',
         text,
-        who: { kind: 'cast', slot: base + ((first - 1) % 2) },
+        who: { kind: 'cast', slot: unique[0] ?? 0 },
+        ...(unique.length > 1 ? { faces: unique.map((slot) => faceOf(cast, slot)) } : {}),
         surprise: rank < RANK.event,
+      },
+    });
+  }
+
+  // The School's news: a creature begins learning a talent, a teacher's lesson (the House stands in for it).
+  const learning = ofKind(events, 'school-learning')[0];
+  const lesson = ofKind(events, 'school-teacher')[0];
+  const learner = crew.resting[visit.day % Math.max(1, crew.resting.length)] ?? crew.scouts[1];
+  if (learning !== undefined) {
+    out.push({
+      rank: RANK.event,
+      line: {
+        place: 'house',
+        text: `${nameOf(cast, learner)} began learning a talent`,
+        who: { kind: 'cast', slot: learner },
+        surprise: false,
+      },
+    });
+  } else if (lesson !== undefined) {
+    out.push({
+      rank: RANK.event,
+      line: {
+        place: 'house',
+        text: `A teacher gave ${nameOf(cast, learner)} a lesson`,
+        who: { kind: 'cast', slot: learner },
+        surprise: false,
       },
     });
   }
@@ -308,9 +412,11 @@ function eventCandidates(visit: Visit, cast: readonly CastMember[]): Candidate[]
 }
 
 /** The plain news of the day: what the scouts brought, what the smiths made, who came home. */
-function dayCandidates(visit: Visit, cast: readonly CastMember[]): Candidate[] {
+function dayCandidates(visit: Visit, cast: readonly CastMember[], crew: Crew): Candidate[] {
   const out: Candidate[] = [];
   const home = visit.cameHome;
+  const scout = crew.scouts[0];
+  const smith = crew.smiths[0];
 
   // Creatures that are not a new line (a new line is the surprise's).
   const others = home.creatures.filter((c) => !c.newLine);
@@ -319,16 +425,23 @@ function dayCandidates(visit: Visit, cast: readonly CastMember[]): Candidate[] {
   if (first !== undefined && count > 0) {
     const species = lineSpecies(first.line);
     const named = lineName(first.line);
+    const names = others.map((c) => lineName(c.line));
     const text =
       others.length === 1
-        ? `${nameOf(cast, SCOUT_SLOT)} brought ${count === 1 ? article(named) : String(count)} ${count === 1 ? named : `${named}s`} home`
-        : `${nameOf(cast, SCOUT_SLOT)} brought ${String(count)} creatures home`;
+        ? `${nameOf(cast, scout)} brought ${count === 1 ? article(named) : String(count)} ${count === 1 ? named : `${named}s`} home`
+        : `${nameOf(cast, scout)} brought ${nameList(names)} home`;
+    const faces = others
+      .map((c) => lineSpecies(c.line))
+      .filter((x): x is string => x !== null)
+      .slice(0, MAX_FACES)
+      .map((x) => ({ species: x, shiny: false }));
     out.push({
       rank: RANK.newCreature,
       line: {
         place: 'paddock',
         text,
-        who: species === null ? { kind: 'cast', slot: SCOUT_SLOT } : { kind: 'species', species },
+        who: species === null ? { kind: 'cast', slot: scout } : { kind: 'species', species },
+        ...(others.length > 1 ? { faces } : {}),
         surprise: false,
       },
     });
@@ -340,8 +453,8 @@ function dayCandidates(visit: Visit, cast: readonly CastMember[]): Candidate[] {
       rank: RANK.scouts,
       line: {
         place: 'signpost',
-        text: `${nameOf(cast, SCOUT_SLOT)} is home from ${scoutsDestination(visit)}`,
-        who: { kind: 'cast', slot: SCOUT_SLOT },
+        text: `${nameOf(cast, scout)} is home from ${scoutsDestination(visit)}`,
+        who: { kind: 'cast', slot: scout },
         surprise: false,
       },
     });
@@ -356,8 +469,8 @@ function dayCandidates(visit: Visit, cast: readonly CastMember[]): Candidate[] {
       rank: RANK.forge,
       line: {
         place: 'forge',
-        text: `${nameOf(cast, SMITH_SLOT)} ${worn > 0 ? 'fitted' : 'sorted'} ${String(pieces)} ${plural(pieces, 'piece', 'pieces')} at the Forge`,
-        who: { kind: 'cast', slot: SMITH_SLOT },
+        text: `${nameOf(cast, smith)} ${worn > 0 ? 'fitted' : 'sorted'} ${String(pieces)} ${plural(pieces, 'piece', 'pieces')} at the Forge`,
+        who: { kind: 'cast', slot: smith },
         surprise: false,
       },
     });
@@ -365,16 +478,20 @@ function dayCandidates(visit: Visit, cast: readonly CastMember[]): Candidate[] {
   return out;
 }
 
-/** The count badges of what came home (V-RET-4): Acorns, scrap, shards by element, pieces. Zero rounds away. */
+/**
+ * The count badges of what came home (V-RET-4): Acorns, scrap, shards by element, pieces. Zero rounds away.
+ * The scouts' finds (Acorns, shards) are taken up at the Signpost, the smiths' (scrap, pieces) at the Forge;
+ * `stop` is set by the plan.
+ */
 export function pilesOf(visit: Visit): Pile[] {
   const home = visit.cameHome;
   const out: Pile[] = [];
-  const add = (key: string, icon: IconRef, value: number, label: string): void => {
+  const add = (key: string, icon: IconRef, value: number, label: string, from: PlaceId): void => {
     const amount = Math.round(value);
-    if (amount > 0) out.push({ key, icon, amount, label });
+    if (amount > 0) out.push({ key, icon, amount, label, from, stop: 0 });
   };
-  add('acorns', { kind: 'glyph', id: 'treat' }, home.acorns, 'Acorns');
-  add('scrap', { kind: 'part', part: 'scrap' }, home.scrap, 'Scrap');
+  add('acorns', { kind: 'glyph', id: 'treat' }, home.acorns, 'Acorns', 'signpost');
+  add('scrap', { kind: 'part', part: 'scrap' }, home.scrap, 'Scrap', 'forge');
   const shards = Object.entries(home.shards).sort((a, b) => b[1] - a[1]);
   for (const [element, value] of shards) {
     add(
@@ -382,15 +499,39 @@ export function pilesOf(visit: Visit): Pile[] {
       { kind: 'part', part: `${element}-shard` as PartKind },
       value,
       `${element[0]?.toUpperCase() ?? ''}${element.slice(1)} shards`,
+      'signpost',
     );
   }
-  add('pieces', { kind: 'glyph', id: 'gear-piece' }, home.pieces.collected, 'Pieces');
+  add('pieces', { kind: 'glyph', id: 'gear-piece' }, home.pieces.collected, 'Pieces', 'forge');
   return out.slice(0, MAX_PILES);
 }
 
-/** The one decision that ends a walk: raid preparation on the Monday, when the threat is sighted (V-RET-3). */
+/**
+ * The one decision that ends a walk, from the journey (V-RET-3): raid preparation on the Monday, when the
+ * threat is sighted, at the Arena; else a new line, "where should it work?", at the Signpost; else on the
+ * Thursday the visitor's stall (a reroll) at the Fairground; else none, and the walk ends in the valley.
+ */
 export function decisionOf(visit: Visit): WalkDecision | null {
-  return visit.weekday === 'Monday' ? { place: 'arena', text: 'Choose your defenders' } : null;
+  if (visit.weekday === 'Monday') {
+    return { place: 'arena', text: 'Choose your defenders', picture: { glyph: 'blade' } };
+  }
+  const found = eventsOf(visit).find((e) => e.kind === 'new-line');
+  if (found?.kind === 'new-line') {
+    const species = lineSpecies(found.line);
+    return {
+      place: 'signpost',
+      text: `Where should ${species === null ? 'the new creature' : lineName(found.line)} work?`,
+      picture: { glyph: 'compass', species: species ?? undefined },
+    };
+  }
+  if (visit.weekday === 'Thursday') {
+    return {
+      place: 'fair',
+      text: 'The visitor’s stall: a reroll',
+      picture: { glyph: 'gift' },
+    };
+  }
+  return null;
 }
 
 /** The order the walk goes: west to east, so the camera sweeps once and never doubles back. */
@@ -407,13 +548,14 @@ const FILLERS: readonly PlaceId[] = ['signpost', 'forge', 'paddock'];
  */
 export function planWalk(visit: Visit, cast: readonly CastMember[], gap: number): WalkPlan {
   const long = gap >= LONG_GAP_DAYS;
-  const all = [...eventCandidates(visit, cast), ...dayCandidates(visit, cast)];
+  const crew = assignCast(cast, findSpecies(visit));
+  const all = [...eventCandidates(visit, cast, crew), ...dayCandidates(visit, cast, crew)];
 
   // A quiet day (nothing rare) closes with a resting creature's small moment, so it is never a bare total.
   const hasSurprise = all.some((c) => c.line.surprise);
   if (!hasSurprise) {
     const moment = MOMENTS[visit.day % MOMENTS.length] ?? MOMENTS[0];
-    const slot = RESTING_SLOT + (visit.day % 4);
+    const slot = crew.resting[visit.day % Math.max(1, crew.resting.length)] ?? crew.scouts[1];
     if (moment !== undefined) {
       all.push({
         rank: RANK.moment,
@@ -462,12 +604,19 @@ export function planWalk(visit: Visit, cast: readonly CastMember[], gap: number)
     };
   });
 
+  // Each pile is taken up where its makers are; where they are not visited, at the last stop.
+  const piles = pilesOf(visit).map((pile) => {
+    const at = places.indexOf(pile.from);
+    return { ...pile, stop: at >= 0 ? at : stops.length - 1 };
+  });
+
   return {
     welcome: long ? 'The valley kept the fire going.' : null,
     stops,
     surprise,
     decision,
-    piles: pilesOf(visit),
+    piles,
+    carrier: crew.scouts[0],
   };
 }
 
