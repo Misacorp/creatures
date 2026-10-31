@@ -11006,7 +11006,7 @@
     "stormray"
    ],
    "chance": {
-    "mixed5": 1,
+    "mixed5": 0.6666666666666666,
     "mixed8": 1,
     "mixed15": 1
    },

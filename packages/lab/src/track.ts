@@ -65,15 +65,15 @@ export const SLOT_NUMBERS: SlotTable = {
   4: { hp: 28_200, atk: 82, armour: 19 }, // old-bogback
   5: { hp: 6_500, atk: 150, armour: 124 }, // thornmother
   6: { hp: 14_500, atk: 119, armour: 27 }, // tidal-colossus
-  7: { hp: 10_200, atk: 185, armour: 49 }, // cinder-wyrm
-  8: { hp: 7_000, atk: 92, armour: 8 }, // storm-sovereign
-  9: { hp: 31_300, atk: 106, armour: 35 }, // old-bogback
+  7: { hp: 10_200, atk: 185, armour: 48 }, // cinder-wyrm
+  8: { hp: 7_000, atk: 100, armour: 7 }, // storm-sovereign
+  9: { hp: 32_800, atk: 100, armour: 33 }, // old-bogback
   10: { hp: 8_000, atk: 102, armour: 149 }, // thornmother
-  11: { hp: 14_500, atk: 119, armour: 42 }, // tidal-colossus
+  11: { hp: 14_500, atk: 119, armour: 36 }, // tidal-colossus
   12: { hp: 11_500, atk: 199, armour: 49 }, // cinder-wyrm
-  13: { hp: 10_200, atk: 64, armour: 8 }, // storm-sovereign
-  14: { hp: 31_200, atk: 123, armour: 31 }, // old-bogback
-  15: { hp: 8_500, atk: 102, armour: 156 }, // thornmother
+  13: { hp: 14_300, atk: 48, armour: 8 }, // storm-sovereign
+  14: { hp: 32_700, atk: 117, armour: 31 }, // old-bogback
+  15: { hp: 9_000, atk: 97, armour: 156 }, // thornmother
 };
 
 /**

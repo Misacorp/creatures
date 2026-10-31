@@ -1026,19 +1026,19 @@ A slot's tool line (the line the tuner measures: the boss's first answer, or the
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | tidal-colossus | 1 | none (all common) | 100% / 100% / 100% | yes | pass | stormray (rare), gaiadrake (epic), mossback (rare): 0% / 0% / 0% |
 | 2 | cinder-wyrm | 2 | none (all common) | 100% / 100% / 100% | yes | pass | stormray (rare), coralynx (rare): 44% / 44% / 100% |
-| 3 | storm-sovereign | 3 | stormray (rare) | 100% / 100% / 100% | yes | pass | stormray (rare), gaiadrake (epic): 33% / 33% / 67% |
+| 3 | storm-sovereign | 3 | stormray (rare) | 67% / 100% / 100% | yes | pass | stormray (rare), gaiadrake (epic): 0% / 33% / 67% |
 | 4 | old-bogback | 4 | stormray (rare) | 100% / 100% / 100% | yes | pass | mossback (rare), stormray (rare), coralynx (rare): 100% / 100% / 100% |
-| 5 | thornmother | 6 | none (all common) | 100% / 100% / 100% | yes | pass | solmane (epic), mossback (rare): 33% / 33% / 100% |
-| 6 | tidal-colossus | 7 | stormray (rare) | 100% / 100% / 100% | yes | pass | stormray (rare), gaiadrake (epic), mossback (rare): 67% / 33% / 100% |
+| 5 | thornmother | 6 | none (all common) | 100% / 100% / 100% | yes | pass | solmane (epic), mossback (rare): 33% / 67% / 83% |
+| 6 | tidal-colossus | 7 | stormray (rare) | 100% / 100% / 100% | yes | pass | stormray (rare), gaiadrake (epic), mossback (rare): 50% / 67% / 100% |
 | 7 | cinder-wyrm | 8 | none (all common) | 100% / 100% / 100% | yes | pass | stormray (rare), coralynx (rare): 100% / 100% / 100% |
-| 8 | storm-sovereign | 9 | stormray (rare) | 100% / 100% / 100% | yes | pass | stormray (rare), gaiadrake (epic): 67% / 50% / 100% |
+| 8 | storm-sovereign | 9 | stormray (rare) | 100% / 100% / 100% | yes | pass | stormray (rare), gaiadrake (epic): 67% / 67% / 100% |
 | 9 | old-bogback | 11 | stormray (rare) | 100% / 100% / 100% | yes | pass | mossback (rare), stormray (rare), coralynx (rare): 100% / 100% / 100% |
 | 10 | thornmother | 12 | none (all common) | 100% / 100% / 100% | yes | pass | solmane (epic), mossback (rare): 67% / 67% / 100% |
 | 11 | tidal-colossus | 13 | stormray (rare) | 100% / 100% / 100% | yes | pass | stormray (rare), gaiadrake (epic), mossback (rare): 67% / 67% / 100% |
 | 12 | cinder-wyrm | 14 | none (all common) | 100% / 100% / 100% | yes | pass | stormray (rare), coralynx (rare): 100% / 100% / 100% |
-| 13 | storm-sovereign | 16 | stormray (rare) | 100% / 100% / 100% | yes | pass | stormray (rare), gaiadrake (epic): 67% / 67% / 100% |
+| 13 | storm-sovereign | 16 | stormray (rare) | 100% / 100% / 100% | yes | pass | stormray (rare), gaiadrake (epic): 67% / 100% / 100% |
 | 14 | old-bogback | 17 | stormray (rare) | 100% / 100% / 100% | yes | pass | mossback (rare), stormray (rare), coralynx (rare): 100% / 100% / 100% |
-| 15 | thornmother | 18 | none (all common) | 100% / 100% / 100% | yes | pass | solmane (epic), mossback (rare): 67% / 83% / 100% |
+| 15 | thornmother | 18 | none (all common) | 100% / 100% / 100% | yes | pass | solmane (epic), mossback (rare): 67% / 100% / 100% |
 
 All 15 slots pass.
 
