@@ -209,18 +209,18 @@ How much the figure varies: over the 32 rosters each roster's own average (its 4
 | Stone Skin | tempestray (Wild Swing), lanternfin (Clear the Air), tidewing (Returning Tide) | 71.9 | 79.3 | +9.4% | tempestray: Edge-walker, lanternfin: Overheal Spill, tidewing: Finisher | +12.2% | +2.9% |
 | Clean Scales | wickat (Brand), sunfawn (Curl Up), coralynx (Territorial) | 69.7 | 82.7 | +15.7% | wickat: Steady Rhythm, sunfawn: none, coralynx: Quick Draw | +16.1% | +14.2% |
 | Reflective Hide | bloomback (Detonate), sunfawn (Curl Up), tempestray (no Knack) | 73.0 | 86.9 | +15.9% | bloomback: Finisher, sunfawn: Kindred Boost, tempestray: Edge-walker | +26.8% | +7.7% |
-| Elusive | voltaro (Zoom), bogwarden (Sticky Mud), bloomback (All In) | 74.9 | 84.5 | +11.3% | voltaro: Perfect Timing, bogwarden: Heavy Hand, bloomback: Finisher | +23.7% | +6.5% |
+| Elusive | voltaro (Zoom), bogwarden (Sticky Mud), bloomback (All In) | 74.9 | 84.5 | +11.3% | voltaro: Perfect Timing, bogwarden: Wicked, bloomback: Finisher | +23.7% | +6.5% |
 | Slippery | voltaro (Zoom), sunfawn (Curl Up), gaiadrake (Leave a Trail) | 70.0 | 88.7 | +21.1% | voltaro: Deep Ink, sunfawn: Kindred Boost, gaiadrake: Opportunist | +24.0% | +12.6% |
-| Lucky Strike | ancientshell (Living Shelter), sunfawn (Curl Up), pyrelynx (Find the Gap) | 71.8 | 87.0 | +17.5% | ancientshell: Owner's Mark, sunfawn: Kindred Boost, pyrelynx: Steady Rhythm | +24.4% | +10.3% |
+| Lucky Strike | ancientshell (Living Shelter), sunfawn (Curl Up), pyrelynx (Find the Gap) | 71.8 | 87.0 | +17.5% | ancientshell: Potent Mark, sunfawn: Kindred Boost, pyrelynx: Steady Rhythm | +24.4% | +10.3% |
 | Bramble Bind | fogwyrm (Wide Reach), lanternfin (Lantern Glow), geyserpup (Self-Starter) | 69.3 | 83.2 | +16.7% | fogwyrm: Unbothered, lanternfin: Triage, geyserpup: Edge-walker | +13.0% | +5.9% |
-| Wither | thornbuck (no Knack), tidewing (Lead the Way), tempestray (Leave a Trail) | 63.4 | 83.1 | +23.7% | thornbuck: Hardy, tidewing: Owner's Mark, tempestray: Crit Chance | +23.6% | +11.7% |
+| Wither | thornbuck (no Knack), tidewing (Lead the Way), tempestray (Leave a Trail) | 63.4 | 83.1 | +23.7% | thornbuck: Hardy, tidewing: Potent Mark, tempestray: Crit Chance | +23.6% | +11.7% |
 | Payoff Hunter | voltaro (Zigzag), sunfawn (Curl Up), bloomback (All In) | 73.8 | 88.9 | +17.0% | voltaro: Deep Ink, sunfawn: Kindred Boost, bloomback: Finisher | +21.0% | +9.2% |
 | Grudge | tempestray (no Knack), sunfawn (Curl Up), geyserpup (Self-Starter) | 66.8 | 75.0 | +10.9% | tempestray: Perfect Timing, sunfawn: none, geyserpup: Hardy | +17.8% | +4.5% |
 | Great Wave | tempestray (Wild Swing), thornbuck (Night Watch), tidewing (no Knack) | 65.5 | 80.1 | +18.2% | tempestray: Edge-walker, thornbuck: Hardy, tidewing: Finisher | +24.0% | +13.4% |
 | Swarm | fogwyrm (Mist Veil), voltaro (Zigzag), bloomback (All In) | 75.4 | 89.7 | +15.9% | fogwyrm: Shoulder Charge, voltaro: Perfect Timing, bloomback: Finisher | +18.2% | +10.1% |
-| Crusher | voltaro (Zoom), hearthshell (no Knack), bloomback (Leave a Trail) | 65.6 | 85.5 | +23.2% | voltaro: Deep Ink, hearthshell: Stubborn, bloomback: Opportunist | +30.6% | +17.0% |
+| Crusher | voltaro (Zoom), hearthshell (no Knack), bloomback (Leave a Trail) | 65.6 | 85.5 | +23.2% | voltaro: Deep Ink, hearthshell: Refuse to Fall, bloomback: Opportunist | +30.6% | +17.0% |
 | Fizzle | tempestray (Wild Swing), drizzlewt (Curl Up), tidewing (Returning Tide) | 67.6 | 83.4 | +18.9% | tempestray: Perfect Timing, drizzlewt: Bright Boost, tidewing: Finisher | +24.4% | +12.2% |
-| Shake It Off | ancientshell (Brand), lanternfin (no Knack), pyrelynx (Guard's Shadow) | 72.3 | 87.5 | +17.3% | ancientshell: Owner's Mark, lanternfin: Odd One Out, pyrelynx: Steady Rhythm | +9.9% | +9.2% |
+| Shake It Off | ancientshell (Brand), lanternfin (no Knack), pyrelynx (Guard's Shadow) | 72.3 | 87.5 | +17.3% | ancientshell: Potent Mark, lanternfin: Odd One Out, pyrelynx: Steady Rhythm | +9.9% | +9.2% |
 | Breakwater | tempestray (Wild Swing), magmole (Sense Weakness), tidewing (Returning Tide) | 68.5 | 83.1 | +17.6% | tempestray: Crit Chance, magmole: Bright Boost, tidewing: Finisher | +25.3% | +10.2% |
 
 **Average share, best-fit talents:** gauntlet +17.6% (pass), raid +22.3% (pass); target about 20% (17% to 23%).
@@ -248,12 +248,12 @@ How much the figure varies: over the 32 rosters each roster's own average (its 4
 | setter | Steady Rhythm | 80.8 | 76.4 | +4.4 | +5.8% | - | - | 0.53 / 0.66 | 94% | 100% | Reflective Hide +19.6 (+35%) |  |
 | setter | Crit Chance | 78.1 | 76.4 | +1.7 | +2.3% | - | - | 0.62 / 0.66 | always | always | Bramble Bind +8.3 (+13%) |  |
 | setter | Perfect Timing | 73.6 | 72.2 | +1.4 | +2.0% | - | - | 0.75 / 0.78 | 47% | 2% | Clean Scales +5.6 (+11%) |  |
-| setter | Owner's Mark | 74.5 | 72.8 | +1.6 | +2.3% | - | - | 0.75 / 0.80 | 100% | 33% | Thick Hide +2.9 (+6%) |  |
+| setter | Potent Mark | 74.5 | 72.8 | +1.6 | +2.3% | - | - | 0.75 / 0.80 | 100% | 33% | Thick Hide +2.9 (+6%) |  |
 | setter | Deep Ink | 77.7 | 74.0 | +3.7 | +5.0% | - | - | 0.61 / 0.72 | 100% | 100% | Bramble Bind +16.3 (+28%) | best on most cards |
 | setter | Rally Cry | 73.8 | 73.2 | +0.7 | +0.9% | +5.7% | +1.2% | 0.75 / 0.76 | 11% | 8% | Crusher +3.2 (+7%) |  |
 | setter | Momentum | 74.5 | 72.2 | +2.4 | +3.3% | - | - | 0.77 / 0.82 | 95% | 7% | Reflective Hide +7.3 (+16%) |  |
 | setter | Brace | 69.4 | 69.3 | +0.1 | +0.1% | - | - | 0.89 / 0.90 | 5% | 0% | Great Wave +1.4 (+2%) |  |
-| setter | Stubborn | 70.0 | 69.3 | +0.6 | +0.9% | - | - | 0.84 / 0.90 | 14% | 0% | Crusher +3.1 (+8%) |  |
+| setter | Refuse to Fall | 70.0 | 69.3 | +0.6 | +0.9% | - | - | 0.84 / 0.90 | 14% | 0% | Crusher +3.1 (+8%) |  |
 | setter | Catch Breath | 77.7 | 77.6 | +0.1 | +0.1% | - | - | 0.58 / 0.59 | 12% | 0% | Crusher +0.7 (+2%) |  |
 | payoff | Sharp Claws | 71.8 | 68.7 | +3.1 | +4.5% | - | - | 0.70 / 0.78 | always | always | Thick Hide +5.5 (+12%) |  |
 | payoff | Hardy | 81.9 | 81.9 | +0.0 | +0.0% | - | - | 0.37 / 0.37 | always | always | none |  |
@@ -265,28 +265,28 @@ How much the figure varies: over the 32 rosters each roster's own average (its 4
 | payoff | First Pounce | 77.1 | 71.8 | +5.3 | +7.3% | - | - | 0.56 / 0.71 | 100% | 100% | Crusher +10.9 (+23%) |  |
 | payoff | Steady Rhythm | 76.5 | 65.9 | +10.6 | +16.1% | - | - | 0.61 / 0.80 | 100% | 100% | Thick Hide +17.8 (+42%) | best on most cards |
 | payoff | Crit Chance | 72.5 | 68.0 | +4.4 | +6.5% | - | - | 0.72 / 0.82 | always | always | Thick Hide +7.4 (+17%) |  |
-| payoff | Crit Damage | 72.4 | 68.7 | +3.7 | +5.4% | - | - | 0.67 / 0.78 | always | always | Thick Hide +8.6 (+19%) |  |
+| payoff | Amplified Crits | 72.4 | 68.7 | +3.7 | +5.4% | - | - | 0.67 / 0.78 | always | always | Thick Hide +8.6 (+19%) |  |
 | payoff | Perfect Timing | 69.0 | 67.0 | +2.0 | +2.9% | - | - | 0.85 / 0.88 | 11% | 2% | Thick Hide +8.8 (+21%) |  |
 | payoff | Opportunist | 84.3 | 82.3 | +2.0 | +2.4% | - | - | 0.27 / 0.31 | 32% | 0% | Elusive +13.0 (+19%) |  |
 | payoff | Quick Draw | 77.1 | 72.4 | +4.7 | +6.5% | - | - | 0.63 / 0.75 | 100% | 34% | Thick Hide +12.3 (+25%) |  |
 | payoff | Rally Cry | 75.2 | 74.1 | +1.1 | +1.5% | +7.3% | +3.7% | 0.54 / 0.55 | 35% | 5% | Crusher +4.8 (+8%) |  |
 | payoff | Momentum | 83.2 | 81.0 | +2.2 | +2.7% | - | - | 0.44 / 0.50 | 25% | 17% | Reflective Hide +19.6 (+37%) |  |
 | payoff | Brace | 83.1 | 83.1 | +0.0 | +0.0% | - | - | 0.29 / 0.29 | 6% | 0% | none |  |
-| payoff | Stubborn | 82.3 | 82.3 | +0.0 | +0.0% | - | - | 0.30 / 0.31 | 6% | 0% | none |  |
+| payoff | Refuse to Fall | 82.3 | 82.3 | +0.0 | +0.0% | - | - | 0.30 / 0.31 | 6% | 0% | none |  |
 | payoff | Catch Breath | 71.9 | 71.9 | +0.1 | +0.1% | - | - | 0.70 / 0.70 | 20% | 1% | Reflective Hide +0.8 (+2%) |  |
 | guard | Hardy | 76.4 | 73.8 | +2.6 | +3.5% | - | - | 0.63 / 0.89 | always | always | Crusher +7.1 (+11%) |  |
 | guard | Shoulder to Shoulder | 74.7 | 74.2 | +0.4 | +0.6% | +8.0% | +5.0% | 0.85 / 0.87 | 0% | 39% | Bramble Bind +1.7 (+3%) |  |
 | guard | Odd One Out | 78.1 | 77.1 | +1.0 | +1.3% | +6.5% | +1.7% | 0.69 / 0.72 | 100% | 82% | Bramble Bind +3.7 (+5%) |  |
-| guard | Hold the Line | 76.8 | 72.6 | +4.2 | +5.8% | - | - | 0.85 / 1.00 | 10% | 15% | Bramble Bind +11.9 (+19%) | best on most cards |
+| guard | Easily Provoked | 76.8 | 72.6 | +4.2 | +5.8% | - | - | 0.85 / 1.00 | 10% | 15% | Bramble Bind +11.9 (+19%) | best on most cards |
 | guard | Rally Cry | 73.0 | 72.9 | +0.1 | +0.1% | +0.1% | +0.0% | 1.03 / 1.01 | 0% | 4% | Reflective Hide +1.0 (+2%) |  |
 | guard | Flank Guard | 72.8 | 72.6 | +0.3 | +0.4% | +8.1% | -4.0% | 1.03 / 1.01 | 26% | 0% | Great Wave +3.5 (+6%) |  |
 | guard | Long Shadow | 75.1 | 72.5 | +2.6 | +3.6% | +12.2% | +0.0% | 0.69 / 0.97 | 24% | 13% | Great Wave +9.8 (+16%) |  |
 | guard | Shoulder Charge | 77.0 | 74.5 | +2.5 | +3.3% | - | - | 0.79 / 0.87 | 13% | 20% | Bramble Bind +7.5 (+11%) |  |
 | guard | Brace | 74.1 | 73.8 | +0.4 | +0.5% | - | - | 0.87 / 0.89 | 6% | 0% | Great Wave +6.3 (+10%) |  |
-| guard | Stubborn | 81.1 | 79.9 | +1.2 | +1.5% | - | - | 0.25 / 0.41 | 35% | 8% | Reflective Hide +3.5 (+8%) |  |
+| guard | Refuse to Fall | 81.1 | 79.9 | +1.2 | +1.5% | - | - | 0.25 / 0.41 | 35% | 8% | Reflective Hide +3.5 (+8%) |  |
 | guard | Catch Breath | 77.5 | 75.3 | +2.2 | +2.9% | - | - | 0.60 / 0.81 | 92% | 19% | Reflective Hide +3.6 (+9%) |  |
 | guard | Unbothered | 73.3 | 72.9 | +0.3 | +0.5% | - | - | 0.98 / 1.01 | 6% | 0% | Wither +3.5 (+4%) |  |
-| guard | Heavy Hand | 75.2 | 74.0 | +1.3 | +1.7% | - | - | 0.80 / 0.87 | 99% | 27% | Grudge +6.6 (+10%) |  |
+| guard | Wicked | 75.2 | 74.0 | +1.3 | +1.7% | - | - | 0.80 / 0.87 | 99% | 27% | Grudge +6.6 (+10%) |  |
 | guard | Clinging | 75.0 | 74.0 | +1.0 | +1.4% | - | - | 0.82 / 0.87 | 94% | 15% | Lucky Strike +3.6 (+5%) |  |
 | support | Hardy | 72.9 | 70.6 | +2.3 | +3.2% | - | - | 1.08 / 1.25 | always | always | Great Wave +6.7 (+13%) |  |
 | support | Shoulder to Shoulder | 76.1 | 76.1 | +0.0 | +0.0% | +8.1% | +8.1% | 0.91 / 0.91 | 0% | 58% | none |  |
@@ -297,23 +297,23 @@ How much the figure varies: over the 32 rosters each roster's own average (its 4
 | support | Brace | 71.4 | 70.9 | +0.4 | +0.6% | - | - | 1.22 / 1.24 | 6% | 0% | Great Wave +7.9 (+17%) |  |
 | support | Catch Breath | 74.6 | 70.8 | +3.8 | +5.3% | - | - | 0.89 / 1.22 | 61% | 0% | Great Wave +11.8 (+22%) |  |
 | support | Unbothered | 70.2 | 69.8 | +0.4 | +0.5% | - | - | 1.24 / 1.26 | 0% | 0% | Bramble Bind +2.0 (+3%) |  |
-| support | Heavy Hand | 68.9 | 66.5 | +2.5 | +3.7% | - | - | 1.42 / 1.47 | 100% | 100% | Grudge +15.8 (+40%) |  |
+| support | Wicked | 68.9 | 66.5 | +2.5 | +3.7% | - | - | 1.42 / 1.47 | 100% | 100% | Grudge +15.8 (+40%) |  |
 | support | Clinging | 68.4 | 66.5 | +1.9 | +2.9% | - | - | 1.41 / 1.47 | 100% | 100% | Grudge +6.4 (+16%) |  |
 | support | Bright Boost | 72.8 | 69.9 | +2.9 | +4.2% | - | - | 1.13 / 1.27 | 100% | 100% | Crusher +8.4 (+14%) |  |
 | support | Kindred Boost | 70.9 | 70.9 | +0.0 | +0.0% | +6.3% | +1.6% | 1.24 / 1.24 | 0% | 13% | none |  |
 | support | Triage | 79.1 | 76.4 | +2.8 | +3.6% | - | - | 0.63 / 0.95 | 100% | 25% | Grudge +9.2 (+14%) |  |
 | support | Overheal Spill | 78.2 | 75.6 | +2.6 | +3.5% | - | - | 0.74 / 1.01 | 96% | 100% | Elusive +7.4 (+11%) |  |
 
-**Talent gain range:** +0.0 to +10.6 points of 100. **Best on most cards of its role:** Deep Ink (setter), Steady Rhythm (payoff), Hold the Line (guard).
+**Talent gain range:** +0.0 to +10.6 points of 100. **Best on most cards of its role:** Deep Ink (setter), Steady Rhythm (payoff), Easily Provoked (guard).
 
 **Per-talent checks** (Misa, 2026-10-28; "about" is 1 point either way; a raid-shaped talent is judged on its raid gain, 23 of 66 rows). The strength target is the team share at the top of this section; these find duds, must-picks and runaways:
 
 - Pools with no must-pick (every role of the line has at least 2 talents within 3 points of its best): 12 of 16. Short: cindle (payoff: Steady Rhythm +16.1, First Pounce +9.3, Crit Chance +7.1), mistnewt (guard: Flank Guard +7.7, Shoulder Charge +3.5, Catch Breath +3.4), gaiadrake (payoff: Finisher +9.5, Rally Cry +6.4, Front-liner +3.5), mudlump (guard: Long Shadow +12.2, Flank Guard +7.7, Hardy +3.4).
-- Duds (non-plain talents judged under +2%): 16 of 60: Perfect Timing (setter) +2.0%, Brace (setter) +0.1%, Stubborn (setter) +0.9%, Catch Breath (setter) +0.1%, Brace (payoff) +0.0%, Stubborn (payoff) +0.0%, Catch Breath (payoff) +0.1%, Rally Cry (guard) +0.1%, Brace (guard) +0.5%, Stubborn (guard) +1.5%, Unbothered (guard) +0.5%, Heavy Hand (guard) +1.7%, Clinging (guard) +1.4%, Front-liner (support) +1.9%, Brace (support) +0.6%, Unbothered (support) +0.5%.
+- Duds (non-plain talents judged under +2%): 16 of 60: Perfect Timing (setter) +2.0%, Brace (setter) +0.1%, Refuse to Fall (setter) +0.9%, Catch Breath (setter) +0.1%, Brace (payoff) +0.0%, Refuse to Fall (payoff) +0.0%, Catch Breath (payoff) +0.1%, Rally Cry (guard) +0.1%, Brace (guard) +0.5%, Refuse to Fall (guard) +1.5%, Unbothered (guard) +0.5%, Wicked (guard) +1.7%, Clinging (guard) +1.4%, Front-liner (support) +1.9%, Brace (support) +0.6%, Unbothered (support) +0.5%.
 - Plain stat talents (Sharp Claws, Hardy) at +2% to +5%: 4 of 6 talent rows.
 - Soft warning, a best card over +50% (a spike on the card a talent fits is fine, a runaway is not): none.
 
-A talent may gain more than its average on the card it fits best (a talent that gains 5% overall gains two to three times that on the card where the team does worst, because the same points are a bigger share of a smaller score), as long as no pool has a single must-pick. A counter (Unbothered, Stubborn, Brace) or a discrete effect (Deep Ink adds whole counts) is judged on one number for every card.
+A talent may gain more than its average on the card it fits best (a talent that gains 5% overall gains two to three times that on the card where the team does worst, because the same points are a bigger share of a smaller score), as long as no pool has a single must-pick. A counter (Unbothered, Refuse to Fall, Brace) or a discrete effect (Deep Ink adds whole counts) is judged on one number for every card.
 
 ## Element coverage (P-12)
 
@@ -332,10 +332,10 @@ Every element should have a Heavy Prime Setter, a Setter Knack that survives the
 About 95 characters fit two lines on a 390 px card (an estimate; check in the workbench). Over it:
 
 - Boiling Point: 155
-- Stubborn: 153
+- Refuse to Fall: 153
 - Flank Guard: 141
 - Eye of the Storm: 122
-- Cull: 120
+- Culling Strike: 120
 - Catch Breath: 112
 - Leave a Trail: 108
 - Feed the Marks: 100

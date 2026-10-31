@@ -1,6 +1,6 @@
 /**
  * Combat v2: a creature's hit on the boss (damage, the crit step, Sure Crits, Steady Rhythm, counters, hit bonuses by position and
- * state, Cull and the killing blow). Creatures and boss are built by hand and effects are named directly; the dice are scripted
+ * state, Culling Strike and the killing blow). Creatures and boss are built by hand and effects are named directly; the dice are scripted
  * (`YES` passes any chance above 0, `NO` fails any chance below 100%; with none given nothing below 100% ever happens), so no seed
  * decides and every number is exact. These were the lab's `fightRules`, `luck` and `talents` rule tests.
  */
@@ -172,7 +172,7 @@ describe('Sure Crits are spent only by a hit that lands and is not already a cri
     expect(by(r, 'A').fires['dodgeCritBp']).toBe(3);
   });
 
-  describe('Hold the Line', () => {
+  describe('Easily Provoked', () => {
     /** A Guard of 1000 HP stores a Sure Crit for every 250 damage it takes for others; the boss hits the front creature for 90. */
     const wall = (fx: object) => [
       spec({ name: 'A', maxHp: 100_000 }),
@@ -436,16 +436,16 @@ describe('armour, the cap and Pierce (R13)', () => {
   });
 });
 
-describe('Cull and the killing blow', () => {
+describe('Culling Strike and the killing blow', () => {
   const golem = boss({ hp: 4_000 });
   const cull = () => [spec({ fx: { cullBp: 500 } })];
 
-  it('a hit that leaves the boss below its Cull share of its full HP defeats it; the HP left is the killing blow, not damage', () => {
+  it('a hit that leaves the boss below its Culling Strike share of its full HP defeats it; the HP left is the killing blow, not damage', () => {
     // The hit deals 100. 100 HP left is under 5% of 4000 (200): culled.
     const culled = play(golem, cull(), { bossHp: 200 });
     expect(culled.won).toBe(true);
     expect(culled.bossHpLeft).toBe(0);
-    // The 100 HP Cull removed are not damage the creature dealt.
+    // The 100 HP Culling Strike removed are not damage the creature dealt.
     expect(culled.damage).toBe(100);
     expect(by(culled, 'A').damageDealt).toBe(100);
     expect(culled.killingBlow).toMatchObject({ name: 'A', culled: true, round: 1 });
@@ -484,7 +484,7 @@ describe('counters are not hits, and the fight ends the moment the boss is down 
   const counter = 50;
   const strike = { interceptHitBackBp: 5_000 };
 
-  it('a strike-back is damage but never sets off Cull or a talent on its hits', () => {
+  it('a strike-back is damage but never sets off Culling Strike or a talent on its hits', () => {
     // One intercept leaves the boss 20 HP, under 5% of 1000: a hit would cull it, a counter does not.
     const r = play(armoured(1), pair({ ...strike, cullBp: 500, firstHitBp: 5_000 }), {
       bossHp: counter + 20,

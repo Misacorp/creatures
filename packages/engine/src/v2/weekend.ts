@@ -32,7 +32,7 @@ const inSlot = (p: WeekendFighterSpec, i: number): FighterSpec => ({
 /**
  * A raid weekend with attrition (R14): stages share the boss's HP; creatures keep their HP between
  * stages, nobody heals between them, and a knocked-out creature stays out (its owner may bring a
- * replacement from `bench`, which takes the empty slot). HP carries, and so do Catch Breath's and Stubborn's use (once per weekend) and
+ * replacement from `bench`, which takes the empty slot). HP carries, and so do Catch Breath's and Refuse to Fall's use (once per weekend) and
  * the boss's escalation (step, phase and count, R22); marks, Stores, Mired and "each fight" effects start fresh each
  * stage. From stage 2 an adapting boss resists the reaction used most so far (Adapts) or the element whose creatures'
  * hits (reactions included, counters not) dealt the most damage so far, chosen at the stage break; a tie for the most

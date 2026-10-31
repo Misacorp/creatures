@@ -76,7 +76,7 @@ export interface Mark {
   cashableAfterTurns: number;
   /** The boss turns done when a count was last added: "set this boss turn" means equal to now (Quick Draw). */
   turnSet: number;
-  /** Creatures that left a count on it (Owner's Mark). */
+  /** Creatures that left a count on it (Potent Mark). */
   owners: Set<string>;
 }
 
@@ -91,7 +91,7 @@ export interface State {
   bossHp: number;
   /**
    * The boss's real HP in potential mode (`FightOptions.potential`): it keeps falling below 1 (and below 0) while `bossHp` stays
-   * at 1, and every "boss below a share of its HP" rule (Finisher, Cull, the Build-up's HP feed) reads it. Otherwise equal to `bossHp`.
+   * at 1, and every "boss below a share of its HP" rule (Finisher, Culling Strike, the Build-up's HP feed) reads it. Otherwise equal to `bossHp`.
    */
   shadowHp: number;
   marks: Map<string, Mark>;

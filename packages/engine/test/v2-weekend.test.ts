@@ -1,6 +1,6 @@
 /**
  * Combat v2: the raid weekend (R14, R24): attrition and replacements, what carries from stage to stage and what starts fresh, Catch
- * Breath and Stubborn once per weekend, Adapts (Reaction Resistance) and Element Resistance, damage potential (the boss that cannot
+ * Breath and Refuse to Fall once per weekend, Adapts (Reaction Resistance) and Element Resistance, damage potential (the boss that cannot
  * die, with its shadow HP) and Determination. Creatures and boss are built by hand with their effects named directly. These were the
  * lab's `fight`, `engine`, `strength`, `potential` and `fightLiving` rule tests.
  */
@@ -80,7 +80,7 @@ describe('attrition and carried state (R14)', () => {
   });
 });
 
-describe('Catch Breath and Stubborn are once per weekend', () => {
+describe('Catch Breath and Refuse to Fall are once per weekend', () => {
   it('Catch Breath: a creature that used it in an earlier stage does not heal again in a later one', () => {
     // One hit a stage of 60% of its max HP: below half, so it fires the first time (it heals 40%).
     const w = playWeekend(
@@ -105,7 +105,7 @@ describe('Catch Breath and Stubborn are once per weekend', () => {
     expect(w.stages.map((s) => s.healed)).toEqual([0, 400]);
   });
 
-  it('Stubborn holds on in one stage only: a later stage knocks it out', () => {
+  it('Refuse to Fall holds on in one stage only: a later stage knocks it out', () => {
     // Each stage's hit is far more than its max HP.
     const w = playWeekend(
       striker({ rounds: 1, atk: 2_000 }),
@@ -314,8 +314,8 @@ describe('damage potential: the boss that cannot die (Misa, 2026-10-30)', () => 
     expect(play(tiny, [spec()], { potential: true }).damage).toBe(300);
   });
 
-  it('Cull reads the real HP in potential mode: it fires, counts no damage, and the boss is still held at 1 HP', () => {
-    // One hit of 100 leaves a boss of 101 HP at 1 HP: below the Cull's 5% of its full HP.
+  it('Culling Strike reads the real HP in potential mode: it fires, counts no damage, and the boss is still held at 1 HP', () => {
+    // One hit of 100 leaves a boss of 101 HP at 1 HP: below the Culling Strike's 5% of its full HP.
     const arena = boss({ hp: 101 });
     const culler = [spec({ fx: { cullBp: 500 } })];
     expect(play(arena, [spec()]).bossHpLeft).toBe(1);
@@ -323,11 +323,11 @@ describe('damage potential: the boss that cannot die (Misa, 2026-10-30)', () => 
     const none = play(arena, [spec()], { potential: true });
     expect(by(cull, 'A').fires['cullBp']).toBe(1);
     expect(count(cull, 'cull')).toBe(1);
-    // The HP the Cull removes is not damage, and the boss does not die in potential.
+    // The HP the Culling Strike removes is not damage, and the boss does not die in potential.
     expect(cull.damage).toBe(none.damage);
     expect(cull.bossHpLeft).toBe(1);
     expect(cull.killingBlow).toBeNull();
-    // A normal fight: the same Cull defeats it.
+    // A normal fight: the same Culling Strike defeats it.
     expect(play(arena, culler).killingBlow?.culled).toBe(true);
   });
 });

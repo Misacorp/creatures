@@ -107,17 +107,17 @@
       "name": "Crit Chance",
       "text": "+12 crit chance points.",
       "roles": ["setter", "payoff"],
-      "intent": "The same effect as the gear line Crit chance, under its name. A crit doubles a hit, so it is worth about 12% x 100% = +12% damage on average, in swings; it stacks with Wild Swing, a crit species and items, and pairs with Crit Damage. A hitter that Stone Skin caps or Thick Hide Blocks gains less.",
+      "intent": "The same effect as the gear line Crit chance, under its name. A crit doubles a hit, so it is worth about 12% x 100% = +12% damage on average, in swings; it stacks with Wild Swing, a crit species and items, and pairs with Amplified Crits. A hitter that Stone Skin caps or Thick Hide Blocks gains less.",
       "fx": {
         "critChanceBp": 1200
       }
     },
     {
       "id": "crit-damage",
-      "name": "Crit Damage",
+      "name": "Amplified Crits",
       "text": "Its {Crit}s are 3x.",
       "roles": ["payoff"],
-      "intent": "The same effect as the gear line Crit damage, under its name. Small alone (it needs crits to boost) and big with Crit Chance or a crit species: the crit build is the pair. Stacks without a cap in the lab; the measures say whether it needs one.",
+      "intent": "The same effect as the shipped gear line Crit damage (it takes this name when gear moves to combat v2). Small alone (it needs crits to boost) and big with Crit Chance or a crit species: the crit build is the pair. Stacks without a cap in the lab; the measures say whether it needs one.",
       "fx": {
         "critDamageBp": 10000
       }
@@ -134,7 +134,7 @@
     },
     {
       "id": "hold-the-line",
-      "name": "Hold the Line",
+      "name": "Easily Provoked",
       "text": "When hits it {Intercept}s add up to 25% of its max HP, it stores a {Sure Crit} (3x, up to 3).",
       "roles": ["guard"],
       "intent": "Crits from guarding: a Guard that takes enough damage for others hits back harder. Its own hit is small, so this is a little extra for a Guard that stands in a busy spot, not a reason to pick the Guard. It was a Sure Crit for every interception, which fired every round and was the best Guard talent on most cards (first measure, 2026-10-30).",
@@ -164,7 +164,7 @@
     },
     {
       "id": "owners-mark",
-      "name": "Owner's Mark",
+      "name": "Potent Mark",
       "text": "{Reaction}s on a {Mark} it left have a +12% bonus while it stands.",
       "roles": ["setter"],
       "intent": "A Setter that makes its own marks worth more, whoever cashes them, while it stands and is not silenced.",
@@ -245,7 +245,7 @@
     },
     {
       "id": "stubborn",
-      "name": "Stubborn",
+      "name": "Refuse to Fall",
       "text": "Once per fight (in a raid, once per weekend), a hit that would knock it out leaves it at two fifths of its max HP, or at the HP it had if that was lower.",
       "roles": ["setter", "payoff", "guard", "support"],
       "intent": "Survives one Crusher; pairs with healers. Hold On under its one name. Reworked (2026-10-28): it left the creature at 1 HP, which gained about 2% of a team's result, so it now leaves it at two fifths of its max HP.",
@@ -277,7 +277,7 @@
     },
     {
       "id": "cull",
-      "name": "Cull",
+      "name": "Culling Strike",
       "text": "A hit that leaves the boss below 5% of its full HP defeats it. The HP removed counts as the killing blow, not as damage.",
       "roles": ["setter", "payoff"],
       "intent": "Weak alone; it decides who lands the killing blow, which other effects can key on. In no line pool until a killing-blow talent exists.",
@@ -287,10 +287,10 @@
     },
     {
       "id": "heavy-hand",
-      "name": "Heavy Hand",
-      "text": "Its {Mired} has an 80% chance to add 1 extra stack.",
+      "name": "Wicked",
+      "text": "Each debuff it puts on the boss has an 80% chance to add 1 extra stack.",
       "roles": ["guard", "support"],
-      "intent": "Mire only; the shipped line is a chance of an extra stack, and luck is welcome. More stacks per application keeps the debuff up.",
+      "intent": "Meant for every debuff it puts on the boss; today that is Mired, the only debuff, so no number moves. The shipped line is a chance of an extra stack, and luck is welcome. More stacks per application keeps the debuff up.",
       "fx": {
         "miredExtraBp": 8000
       }

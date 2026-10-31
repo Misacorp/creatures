@@ -52,7 +52,7 @@ export interface Fighter extends FighterSpec {
   hitsLanded: number;
   /** Catch Breath fired this fight, or earlier in the raid weekend (once per weekend). */
   secondWindDone: boolean;
-  /** Hold On (Stubborn) fired this fight, or earlier in the raid weekend (once per weekend). */
+  /** Hold On (Refuse to Fall) fired this fight, or earlier in the raid weekend (once per weekend). */
   holdOnDone: boolean;
   silencedTurns: number;
   store: number;
@@ -69,9 +69,9 @@ export interface Fighter extends FighterSpec {
   damageLastRound: number;
   /** The boss turn on which it last gained a reaction-fed Store point (at most one per boss turn). */
   lastStoreRound: number;
-  /** Sure Crits it stores (at most `rules.sureCritMax`): each is spent on its next hit that lands, a guaranteed crit (Perfect Timing, Hold the Line). */
+  /** Sure Crits it stores (at most `rules.sureCritMax`): each is spent on its next hit that lands, a guaranteed crit (Perfect Timing, Easily Provoked). */
   sureCrits: number;
-  /** Damage it has taken from hits it intercepted since its last Sure Crit from them (Hold the Line). */
+  /** Damage it has taken from hits it intercepted since its last Sure Crit from them (Easily Provoked). */
   guardTaken: number;
   /** Hits it has landed this fight (past the dodge and the armour), for rhythms (Steady Rhythm: every third is a crit). */
   hitsMade: number;
@@ -109,7 +109,7 @@ export interface V2Rules {
   readonly healCritBp: number;
   /** A creature stores at most this many Sure Crits (the Store limit, R10); each is spent on one hit. */
   readonly sureCritMax: number;
-  /** Hold the Line: a Guard stores a Sure Crit each time the hits it takes for other creatures add up to this share of its Max HP. */
+  /** Easily Provoked: a Guard stores a Sure Crit each time the hits it takes for other creatures add up to this share of its Max HP. */
   readonly guardSureCritShareBp: number;
   /** A Guard covers area hits on creatures in its reach (4.3, kept). Cover with every bonus is one cut among the others (`cutMaxBp`). */
   readonly coverBp: number;
@@ -135,7 +135,7 @@ export interface V2Rules {
   readonly miredFadeEvery: number;
   /** While a living creature has Clinging, Mired fades only every this many rounds. */
   readonly miredClingingFadeEvery: number;
-  /** Stubborn (Hold On): once per fight (a raid: once per weekend), a hit that would knock it out leaves it at the lower of this share of its Max HP and its HP before the hit (never a heal). */
+  /** Refuse to Fall (Hold On): once per fight (a raid: once per weekend), a hit that would knock it out leaves it at the lower of this share of its Max HP and its HP before the hit (never a heal). */
   readonly holdOnLeaveBp: number;
   /** Element Resistance: the resisted element's creatures' hits start from this share of their base damage (a quarter less; counters are not cut). */
   readonly adaptElementBp: number;
@@ -371,13 +371,13 @@ export interface FightOptions {
   readonly bossHp?: number;
   /**
    * Damage potential (Misa, 2026-10-30): the boss goes below 0 HP without dying, so a raid weekend plays out all its rounds and
-   * stages and `FightResult.damage` adds up every hit in full, overkill included (a Cull does not end it). The boss's HP stays
+   * stages and `FightResult.damage` adds up every hit in full, overkill included (a Culling Strike does not end it). The boss's HP stays
    * at 1 once it is gone, so every "boss below X% HP" rule keeps applying. Divide the weekend's damage by the boss's HP.
    */
   readonly potential?: boolean;
   /**
    * With `potential`, the boss's real HP at the start (a stage of a weekend: the earlier stage's `bossHpReal`, which can be below 1);
-   * `bossHp` is where the boss is held. Default `bossHp`. Every HP-share rule (Finisher, Cull, the Build-up's HP feed) reads the real HP.
+   * `bossHp` is where the boss is held. Default `bossHp`. Every HP-share rule (Finisher, Culling Strike, the Build-up's HP feed) reads the real HP.
    */
   readonly shadowHp?: number;
   /**
@@ -390,7 +390,7 @@ export interface FightOptions {
   readonly resistElement?: string;
   /** Carried from the earlier stages of a raid weekend: Catch Breath already used (uids of this stage's fighters). */
   readonly carryWindDone?: ReadonlySet<string>;
-  /** Carried from the earlier stages of a raid weekend: Stubborn already used (once per weekend; uids of this stage's fighters). */
+  /** Carried from the earlier stages of a raid weekend: Refuse to Fall already used (once per weekend; uids of this stage's fighters). */
   readonly carryHoldOnDone?: ReadonlySet<string>;
   /** Carried from the earlier stages of a raid weekend: the boss's escalation (R22). */
   readonly carryEscalation?: {
@@ -433,14 +433,14 @@ export interface EscalationState {
   readonly phaseNext: boolean;
 }
 
-/** Who defeated the boss (R21 draft): the creature whose hit, counter or Cull took its last HP. */
+/** Who defeated the boss (R21 draft): the creature whose hit, counter or Culling Strike took its last HP. */
 export interface KillingBlow {
   readonly uid: string;
   readonly owner: string;
   readonly formId: string;
   readonly name: string;
   readonly round: number;
-  /** True when Cull, not damage, finished it. */
+  /** True when Culling Strike, not damage, finished it. */
   readonly culled: boolean;
 }
 

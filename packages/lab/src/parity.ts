@@ -301,7 +301,7 @@ export function parityCases(): ParityCase[] {
     fightCase(`sweep-talent-log:${t}`, sweepPlain, placed(line, GAUNTLET), 1, { log: true });
   }
 
-  // Cull (a kill by a share of HP, also as damage potential) and Hold On (Stubborn against a boss that hits hard).
+  // Culling Strike (a kill by a share of HP, also as damage potential) and Hold On (Refuse to Fall against a boss that hits hard).
   const cullLine: Pick[] = [
     { formId: 'tidewing', knack: 'steady-mark', talents: ['cull'] },
     { formId: 'tempestray', knack: 'detonate', talents: ['cull'] },

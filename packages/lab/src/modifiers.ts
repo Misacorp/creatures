@@ -221,7 +221,7 @@ export const TALENT_IS_GEAR: Readonly<Record<string, string>> = {
   'light-feet': 'light-footed',
   'keen-eye': 'crit-chance',
   'mighty-blow': 'crit-damage',
-  // The talents Crit Chance and Crit Damage are the shipped lines of the same names (luck is a build, 2026-10-30).
+  // The talents Crit Chance and Amplified Crits are the shipped lines Crit chance and Crit damage (luck is a build, 2026-10-30; gear takes the talent names when it moves to combat v2).
   'crit-chance': 'crit-chance',
   'crit-damage': 'crit-damage',
   'first-pounce': 'first-pounce',
@@ -352,7 +352,7 @@ export const IDEAS: readonly Idea[] = [
     class: ['protection', ANY, 'rule'],
   },
   {
-    name: 'Cull',
+    name: 'Culling Strike',
     text: 'A hit that leaves the foe below 5% of its full HP defeats it outright; the HP removed counts as the killing blow, not as damage.',
     class: ['damage', ANY, 'rule'],
   },

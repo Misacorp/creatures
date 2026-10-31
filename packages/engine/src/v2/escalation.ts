@@ -153,7 +153,7 @@ export function miredCut(s: State): number {
   return s.mired * per;
 }
 
-/** Mired stacks (capped); Heavy Hand gives a chance of 1 extra stack each time. */
+/** Mired stacks (capped); Wicked gives a chance of 1 extra stack each time. */
 export function addMired(s: State, by: Fighter): void {
   const R = s.ctx.rules;
   const extra = roll(s, fx(by).miredExtraBp ?? 0) ? 1 : 0;

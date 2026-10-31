@@ -106,7 +106,7 @@ export interface KnackFx {
   readonly critDamageBp?: number;
   /** After it dodges: +1 Sure Crit. A Sure Crit is spent on its next hit that lands, a guaranteed crit that deals this much more (Perfect Timing). */
   readonly dodgeCritBp?: number;
-  /** Each time the hits it intercepts add up to `guardSureCritShareBp` of its Max HP: +1 Sure Crit, spent like Perfect Timing's; the guaranteed crit deals this much more (Hold the Line). */
+  /** Each time the hits it intercepts add up to `guardSureCritShareBp` of its Max HP: +1 Sure Crit, spent like Perfect Timing's; the guaranteed crit deals this much more (Easily Provoked). */
   readonly guardCritBp?: number;
   /** Crits on it, and on the creatures beside it, deal this much less extra damage (an aura: the largest applies). */
   readonly critWardBp?: number;

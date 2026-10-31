@@ -538,7 +538,7 @@
       "name": "Wild Swing",
       "family": "Luck",
       "text": "Its hit deals 25% less, but it has +20 crit chance points and its {Crit}s get +0.5x.",
-      "intent": "A crit machine: a softer plain hit that crits often, so it stacks with Crit Chance, Crit Damage and a crit species. The wrong pick against a boss that caps a hit (Stone Skin) or one that Blocks small hits, and where a steady hit matters more than swing.",
+      "intent": "A crit machine: a softer plain hit that crits often, so it stacks with Crit Chance, Amplified Crits and a crit species. The wrong pick against a boss that caps a hit (Stone Skin) or one that Blocks small hits, and where a steady hit matters more than swing.",
       "fx": {
         "plainBp": 7500,
         "critChanceBp": 2000,

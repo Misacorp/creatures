@@ -1,6 +1,6 @@
 /**
  * Taking hits (R1 dodge, R1.3 and R2.3 guards and cover, R6.5 and R13 cuts, armour and Blocked, wards and Breakwater, R7.1 the boss's
- * crit ward, Stubborn, Second Wind, Hold the Line's Sure Crits).
+ * crit ward, Refuse to Fall, Second Wind, Easily Provoked's Sure Crits).
  */
 import type { KnackFx } from './effects';
 import type { Fighter } from './types';
@@ -152,7 +152,7 @@ export function takeHit(
     return;
   }
   if (dmg >= taker.hp && k.holdOn && !taker.holdOnDone) {
-    // Stubborn, once per fight and (in a raid) once per weekend (panel 5): the hit leaves it at the lower of two fifths of
+    // Refuse to Fall, once per fight and (in a raid) once per weekend (panel 5): the hit leaves it at the lower of two fifths of
     // its Max HP and its HP before the hit (at least 1 HP). It never heals.
     taker.holdOnDone = true;
     bump(taker, 'holdOn');
@@ -168,7 +168,7 @@ export function takeHit(
     s.live = null;
     s.liveBySlot = null;
   }
-  // Hold the Line: the damage it takes from hits it intercepted builds a Sure Crit each time it adds up to a share of its Max HP.
+  // Easily Provoked: the damage it takes from hits it intercepted builds a Sure Crit each time it adds up to a share of its Max HP.
   if (taker !== target && k.guardCritBp && taker.hp > 0) {
     taker.guardTaken += dmg;
     const per = Math.max(1, Math.floor((taker.maxHp * R.guardSureCritShareBp) / 10_000));

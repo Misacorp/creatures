@@ -62,8 +62,8 @@
  *
  * Each pool was chosen for the line's forms and flavour (branch forms share the line's pool). Every role in a
  * line has at least three that fit it, and two lines of one role roll different tools. Only Tide and Grove
- * Supports have a heal to aim (Triage, Overheal Spill); only Mire lines put Mired on the boss (Heavy Hand,
- * Clinging). Cull is in no pool until a killing-blow talent exists. The themes: splashet, splashes first and
+ * Supports have a heal to aim (Triage, Overheal Spill); only Mire lines put Mired on the boss (Wicked,
+ * Clinging). Culling Strike is in no pool until a killing-blow talent exists. The themes: splashet, splashes first and
  * thinks later; cindle, a pounce, a lucky crit, a steady flame; sproutle, shy, soaks up hits for its friends;
  * zipmouse, static that never sits still (the Ohmouse plants its feet); mistnewt, a calm newt in a cloud of
  * mist; ashmole, warms the burrow and cheers the team on (the Kilnmole digs in); stormray, rides the edge of

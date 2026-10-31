@@ -1,7 +1,7 @@
 /**
  * Damage potential as a measure (Misa, 2026-10-30): the weekend played as if the boss could not die, as total damage over the boss's
  * HP, over seeded weekends of the prepared lines. What the `potential` option does inside a fight (the boss held at 1 HP, its shadow HP,
- * Finisher and Cull reading the real HP) and Determination are rules, proved in the engine tests (`v2-weekend`).
+ * Finisher and Culling Strike reading the real HP) and Determination are rules, proved in the engine tests (`v2-weekend`).
  */
 import { createSeededRng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';

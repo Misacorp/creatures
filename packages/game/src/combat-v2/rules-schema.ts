@@ -27,7 +27,7 @@ export const RulesSchema = v.pipe(
     healCritBp: Int,
     /** A creature stores at most this many Sure Crits (the Store limit, R10); each is spent on one hit. */
     sureCritMax: Int,
-    /** Hold the Line: a Guard stores a Sure Crit each time the hits it takes for other creatures add up to this share of its Max HP. */
+    /** Easily Provoked: a Guard stores a Sure Crit each time the hits it takes for other creatures add up to this share of its Max HP. */
     guardSureCritShareBp: Int,
     /** A Guard covers area hits on creatures in its reach (4.3, kept). Cover with every bonus is one cut among the others (`cutMaxBp`). */
     coverBp: Int,
@@ -53,7 +53,7 @@ export const RulesSchema = v.pipe(
     miredFadeEvery: Int,
     /** While a living creature has Clinging, Mired fades only every this many rounds. */
     miredClingingFadeEvery: Int,
-    /** Stubborn (Hold On): once per fight (a raid: once per weekend), a hit that would knock it out leaves it at the lower of this share of its Max HP and its HP before the hit (never a heal). */
+    /** Refuse to Fall (Hold On): once per fight (a raid: once per weekend), a hit that would knock it out leaves it at the lower of this share of its Max HP and its HP before the hit (never a heal). */
     holdOnLeaveBp: Int,
     /** Element Resistance: the resisted element's creatures' hits start from this share of their base damage (a quarter less; counters are not cut). */
     adaptElementBp: Int,

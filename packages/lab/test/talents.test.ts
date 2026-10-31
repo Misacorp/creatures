@@ -1,7 +1,7 @@
 /**
  * The talent library as content (docs/design/combat/modifiers.md): what the talents are, which line pools and roles they fit, and what
  * the resolver does with them. What each talent's effect does in a fight (the hooks for neighbours and position, fight state, marks,
- * Guard shapes, Support, debuffs, silence, Cull and counters) is proved in the engine tests (`packages/engine/test/v2-*.test.ts`) on
+ * Guard shapes, Support, debuffs, silence, Culling Strike and counters) is proved in the engine tests (`packages/engine/test/v2-*.test.ts`) on
  * hand-built creatures that carry the effect directly.
  */
 import { describe, expect, it } from 'vitest';
@@ -51,7 +51,7 @@ describe('which Support Knacks leave Triage idle', () => {
 describe('the talent library as content', () => {
   const roles = (line: string) => lineRoles(line);
 
-  it('every talent has the keys it says, fits a role, and is in a line pool (Cull waits for a killing-blow talent)', () => {
+  it('every talent has the keys it says, fits a role, and is in a line pool (Culling Strike waits for a killing-blow talent)', () => {
     const pooled = new Set(Object.values(LINE_POOLS).flat());
     for (const [id, t] of Object.entries(TALENTS)) {
       expect(t.id, id).toBe(id);

@@ -1,6 +1,6 @@
 /**
  * Combat v2: the boss's Build-up (R22: steps, phases, feeds, strength, how Mired slows it) and Mired itself (stacks, fading, Clinging,
- * Heavy Hand, Shake It Off). Creatures and boss are built by hand with their effects named directly; the dice are scripted or a fixed
+ * Wicked, Shake It Off). Creatures and boss are built by hand with their effects named directly; the dice are scripted or a fixed
  * seed checks an invariant of the whole fight. These were the lab's `engine`, `strength` and `talents` rule tests about escalation.
  */
 import type { BossDef, BossMove, Escalation, FightResult } from '@creatures/engine/v2';
@@ -301,7 +301,7 @@ describe('Mired (R22.3, panel 3)', () => {
     expect(hit({ clinging: true })).toBe(977 - 5);
   });
 
-  it('Heavy Hand: its Mired has its number as the chance to add 1 extra stack', () => {
+  it('Wicked: its Mired has its number as the chance to add 1 extra stack', () => {
     const roll = (draw: number, fx: object = { miredExtraBp: 3_000 }) =>
       mired(playScripted(boss(), [spec({ fx: { miresAtStart: true, ...fx } })], [draw]).res);
     expect(roll(2_999)).toEqual(['Mired x2']);

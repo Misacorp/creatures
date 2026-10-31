@@ -235,7 +235,7 @@ describe('reaction bonuses (R7)', () => {
     expect(b.damage).toBe(play(rows, split({})).damage);
   });
 
-  it("Owner's Mark: reactions on a mark it left are bigger, whoever cashes them", () => {
+  it('Potent Mark: reactions on a mark it left are bigger, whoever cashes them', () => {
     const team = (setterFx: object, payoffFx: object) => [
       setter(0, 'tide', { fx: setterFx }),
       payoff(1, 'spark', { fx: payoffFx }),

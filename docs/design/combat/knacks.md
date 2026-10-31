@@ -371,7 +371,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 - **Text:** Its hit deals 25% less, but it has +20 crit chance points and its {Crit}s get +0.5x.
 - **Family:** Luck
 - **Forms:** stormray, tempestray, cindle, pyrelynx, coralynx
-- **Intent (for contributors, never shown to players):** A crit machine: a softer plain hit that crits often, so it stacks with Crit Chance, Crit Damage and a crit species. The wrong pick against a boss that caps a hit (Stone Skin) or one that Blocks small hits, and where a steady hit matters more than swing.
+- **Intent (for contributors, never shown to players):** A crit machine: a softer plain hit that crits often, so it stacks with Crit Chance, Amplified Crits and a crit species. The wrong pick against a boss that caps a hit (Stone Skin) or one that Blocks small hits, and where a steady hit matters more than swing.
 
 ### Cool Head
 
@@ -386,22 +386,22 @@ Generated from `packages/lab/src/talents.ts`. One shared library; each line link
 
 | Line | Pool |
 | --- | --- |
-| splashet | First Pounce, Momentum, Edge-walker, Quick Draw, Hardy, Finisher, Owner's Mark |
-| cindle | Steady Rhythm, Sharp Claws, Rally Cry, Owner's Mark, First Pounce, Crit Chance, Crit Damage |
-| sproutle | Hold the Line, Shoulder to Shoulder, Brace, Triage, Hardy, Kindred Boost, Flank Guard |
+| splashet | First Pounce, Momentum, Edge-walker, Quick Draw, Hardy, Finisher, Potent Mark |
+| cindle | Steady Rhythm, Sharp Claws, Rally Cry, Potent Mark, First Pounce, Crit Chance, Amplified Crits |
+| sproutle | Easily Provoked, Shoulder to Shoulder, Brace, Triage, Hardy, Kindred Boost, Flank Guard |
 | zipmouse | Momentum, First Pounce, Perfect Timing, Flank Guard, Odd One Out, Deep Ink, Shoulder to Shoulder |
 | mistnewt | Flank Guard, Unbothered, Overheal Spill, Bright Boost, Catch Breath, Shoulder Charge, Rally Cry |
-| ashmole | Kindred Boost, Bright Boost, Shoulder Charge, Hold the Line, Brace, Hardy, Odd One Out |
+| ashmole | Kindred Boost, Bright Boost, Shoulder Charge, Easily Provoked, Brace, Hardy, Odd One Out |
 | stormray | Slow Burn, Quick Draw, Edge-walker, Bright Boost, Perfect Timing, Crit Chance, Catch Breath |
-| mossback | Owner's Mark, Opportunist, Finisher, Stubborn, Hardy, Brace, Rally Cry |
-| coralynx | Sharp Claws, Odd One Out, Crit Damage, Finisher, Quick Draw, First Pounce, Crit Chance |
-| solmane | Front-liner, Deep Ink, Owner's Mark, Shoulder to Shoulder, Rally Cry, Sharp Claws, Catch Breath |
-| gaiadrake | Opportunist, Stubborn, Hardy, Catch Breath, Front-liner, Rally Cry, Finisher |
+| mossback | Potent Mark, Opportunist, Finisher, Refuse to Fall, Hardy, Brace, Rally Cry |
+| coralynx | Sharp Claws, Odd One Out, Amplified Crits, Finisher, Quick Draw, First Pounce, Crit Chance |
+| solmane | Front-liner, Deep Ink, Potent Mark, Shoulder to Shoulder, Rally Cry, Sharp Claws, Catch Breath |
+| gaiadrake | Opportunist, Refuse to Fall, Hardy, Catch Breath, Front-liner, Rally Cry, Finisher |
 | aurorix | Bright Boost, Unbothered, Hardy, Edge-walker, Odd One Out, (Momentum), Rally Cry |
 | lanternfin | Triage, Overheal Spill, Catch Breath, Hardy, Rally Cry, Odd One Out, Front-liner |
-| hearthshell | Shoulder Charge, Stubborn, Catch Breath, Brace, Hardy, Odd One Out, Shoulder to Shoulder |
-| mudlump | Heavy Hand, Clinging, Shoulder Charge, Brace, Hardy, Long Shadow, Flank Guard |
-| squelch | Heavy Hand, Clinging, Bright Boost, Catch Breath, Hardy, Unbothered, Front-liner |
+| hearthshell | Shoulder Charge, Refuse to Fall, Catch Breath, Brace, Hardy, Odd One Out, Shoulder to Shoulder |
+| mudlump | Wicked, Clinging, Shoulder Charge, Brace, Hardy, Long Shadow, Flank Guard |
+| squelch | Wicked, Clinging, Bright Boost, Catch Breath, Hardy, Unbothered, Front-liner |
 
 | Talent | Text | Roles | Intent |
 | --- | --- | --- | --- |
@@ -415,13 +415,13 @@ Generated from `packages/lab/src/talents.ts`. One shared library; each line link
 | Finisher | +55% on its hits while the boss is below a third of its HP. | setter, payoff | With the boss HP shared across a raid weekend (R14), the last stage rewards it most. |
 | First Pounce | Its first hit that lands each fight deals +170%. | setter, payoff | Short fights, the dungeon and each raid stage. A hit made while silenced does not use it up. |
 | Steady Rhythm | Every third hit that lands is a crit, +0.1x on crits. | setter, payoff | Crits you can plan for (P-04): a rhythm instead of a chance. |
-| Crit Chance | +12 crit chance points. | setter, payoff | The same effect as the gear line Crit chance, under its name. A crit doubles a hit, so it is worth about 12% x 100% = +12% damage on average, in swings; it stacks with Wild Swing, a crit species and items, and pairs with Crit Damage. A hitter that Stone Skin caps or Thick Hide Blocks gains less. |
-| Crit Damage | Its {Crit}s are 3x. | payoff | The same effect as the gear line Crit damage, under its name. Small alone (it needs crits to boost) and big with Crit Chance or a crit species: the crit build is the pair. Stacks without a cap in the lab; the measures say whether it needs one. |
+| Crit Chance | +12 crit chance points. | setter, payoff | The same effect as the gear line Crit chance, under its name. A crit doubles a hit, so it is worth about 12% x 100% = +12% damage on average, in swings; it stacks with Wild Swing, a crit species and items, and pairs with Amplified Crits. A hitter that Stone Skin caps or Thick Hide Blocks gains less. |
+| Amplified Crits | Its {Crit}s are 3x. | payoff | The same effect as the shipped gear line Crit damage (it takes this name when gear moves to combat v2). Small alone (it needs crits to boost) and big with Crit Chance or a crit species: the crit build is the pair. Stacks without a cap in the lab; the measures say whether it needs one. |
 | Perfect Timing | After it dodges, it stores a {Sure Crit} (up to 3): its next hit that lands is a 3x crit. | setter, payoff | Crits from evasion: a fast creature, a Zigzag or Zoom Setter, a dodge aura beside it. A dodge is rare, so the reward is big (a sure crit, +100% more than the double). Not the Guard-takes-it clause of Momentum: that happens every round, and a sure crit every round is a runaway (first measure, 2026-10-30). Silence stops it storing (R12.2); what it stored stays. |
-| Hold the Line | When hits it {Intercept}s add up to 25% of its max HP, it stores a {Sure Crit} (3x, up to 3). | guard | Crits from guarding: a Guard that takes enough damage for others hits back harder. Its own hit is small, so this is a little extra for a Guard that stands in a busy spot, not a reason to pick the Guard. It was a Sure Crit for every interception, which fired every round and was the best Guard talent on most cards (first measure, 2026-10-30). |
+| Easily Provoked | When hits it {Intercept}s add up to 25% of its max HP, it stores a {Sure Crit} (3x, up to 3). | guard | Crits from guarding: a Guard that takes enough damage for others hits back harder. Its own hit is small, so this is a little extra for a Guard that stands in a busy spot, not a reason to pick the Guard. It was a Sure Crit for every interception, which fired every round and was the best Guard talent on most cards (first measure, 2026-10-30). |
 | Opportunist | Its {Reaction} bonus +100% when it cashes a {Mark} at x2 or more. | payoff | Rewards waiting for a bigger mark (x2 or x3); pairs with Setters that leave x2, and with a second Setter. Was x3 only (2026-10-28): a mark almost never reached x3 when cashed, so the talent did nothing. |
 | Quick Draw | +32% on a {Reaction} on a mark added since the boss's last turn. | payoff | The opposite timing: cash right after the Setter, before Clean Scales sheds the mark. |
-| Owner's Mark | {Reaction}s on a {Mark} it left have a +12% bonus while it stands. | setter | A Setter that makes its own marks worth more, whoever cashes them, while it stands and is not silenced. |
+| Potent Mark | {Reaction}s on a {Mark} it left have a +12% bonus while it stands. | setter | A Setter that makes its own marks worth more, whoever cashes them, while it stands and is not silenced. |
 | Deep Ink | Its first {Mark} each fight adds 2 more to the count. | setter | Changes the opening without adding marks from nowhere: marks still come only from Setters and Knacks. |
 | Rally Cry | +40% on its hits for the rest of the fight after a creature {Beside} it is knocked out. | setter, payoff, guard, support | Turns attrition into a comeback. It does not arm while the creature is silenced. |
 | Momentum | After it dodges, or a Guard takes a hit aimed at it, its next hit deals +38%. | setter, payoff | Fast creatures and the creature in the front row: a hit aimed at it that is dodged, or that a Guard beside it takes, arms its next hit. Reworked (2026-10-28): a dodge alone almost never happens to a creature the boss does not aim at, so the talent did nothing. |
@@ -429,11 +429,11 @@ Generated from `packages/lab/src/talents.ts`. One shared library; each line link
 | Long Shadow | Cover +20% per slot of distance, and the hits it takes for others are cut by 20% per slot. | guard | Protects the far creatures best; with Flank Guard a Guard at one end covers a long row. |
 | Shoulder Charge | When it {Intercept}s, it strikes back for 45% of its Attack, ignoring armour. | guard | A Guard that adds damage the more it is hit. The strike-back is a counter, not a hit: it can land the killing blow but triggers nothing that keys on its hits. |
 | Brace | It takes 40% less from a {Wind-up} hit aimed at its slot. | setter, payoff, guard, support | Answers a telegraphed hit (Great Wave, Judgement Bolt, the Wind-up signatures): it is shown at round start, so the owner knows who will be aimed at. Nothing against other moves or the plain attack. Back to this design (2026-10-28 panel 4): the version that also cut other moves and the plain attack decided a boss by itself. |
-| Stubborn | Once per fight (in a raid, once per weekend), a hit that would knock it out leaves it at two fifths of its max HP, or at the HP it had if that was lower. | setter, payoff, guard, support | Survives one Crusher; pairs with healers. Hold On under its one name. Reworked (2026-10-28): it left the creature at 1 HP, which gained about 2% of a team's result, so it now leaves it at two fifths of its max HP. |
+| Refuse to Fall | Once per fight (in a raid, once per weekend), a hit that would knock it out leaves it at two fifths of its max HP, or at the HP it had if that was lower. | setter, payoff, guard, support | Survives one Crusher; pairs with healers. Hold On under its one name. Reworked (2026-10-28): it left the creature at 1 HP, which gained about 2% of a team's result, so it now leaves it at two fifths of its max HP. |
 | Catch Breath | Once per fight (in a raid, once per weekend), when a hit drops it below half its max HP, it heals 30% of max HP. | setter, payoff, guard, support | Survives one big hit (Crusher, Payoff Hunter). Not the gear line Second Wind, which is a chance each round to heal. |
 | Unbothered | It cannot be {Silenced}, and has +3% Attack and +6% Max HP. | setter, payoff, guard, support | The silence answer on the creature itself, for row ends and front rows. Reworked (2026-10-28): the immunity alone did nothing on the gauntlet, where a creature can always stand in the middle (a Guard gained nothing), so it carries a little Attack and HP as well, less than Sharp Claws or Hardy. Shrunk (2026-10-28 panel 4, from +6% and +14%): it won a boss by its stats; it should win by its ward. |
-| Cull | A hit that leaves the boss below 5% of its full HP defeats it. The HP removed counts as the killing blow, not as damage. | setter, payoff | Weak alone; it decides who lands the killing blow, which other effects can key on. In no line pool until a killing-blow talent exists. |
-| Heavy Hand | Its {Mired} has an 80% chance to add 1 extra stack. | guard, support | Mire only; the shipped line is a chance of an extra stack, and luck is welcome. More stacks per application keeps the debuff up. |
+| Culling Strike | A hit that leaves the boss below 5% of its full HP defeats it. The HP removed counts as the killing blow, not as damage. | setter, payoff | Weak alone; it decides who lands the killing blow, which other effects can key on. In no line pool until a killing-blow talent exists. |
+| Wicked | Each debuff it puts on the boss has an 80% chance to add 1 extra stack. | guard, support | Meant for every debuff it puts on the boss; today that is Mired, the only debuff, so no number moves. The shipped line is a chance of an extra stack, and luck is welcome. More stacks per application keeps the debuff up. |
 | Clinging | While it stands, {Mired} fades only every third round, and each stack counts for half as much again. | guard, support | Mire only: the v2 form of the shipped "lasts more turns"; one creature can hold a debuff for the team. Reworked (2026-10-28): slower fading alone gained under a point, so its stacks also count for half as much again (4.5% instead of 3%); it still fades, every third round, so one creature cannot hold the debuff for the whole fight (Misa). |
 | Bright Boost | Every second {Boost} it gives is doubled. | support | A Support with a visible rhythm instead of a crit chance. |
 | Kindred Boost | Its {Boost} +26% on creatures of its own element. | support | Mono-element rows in the raid, across players. |

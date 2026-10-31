@@ -3816,7 +3816,7 @@
  "talentTopPicks": [
   "Deep Ink (setter)",
   "Steady Rhythm (payoff)",
-  "Hold the Line (guard)"
+  "Easily Provoked (guard)"
  ],
  "talentGoals": {
   "rows": 66,
@@ -3824,16 +3824,16 @@
   "duds": [
    "Perfect Timing (setter) +2.0%",
    "Brace (setter) +0.1%",
-   "Stubborn (setter) +0.9%",
+   "Refuse to Fall (setter) +0.9%",
    "Catch Breath (setter) +0.1%",
    "Brace (payoff) +0.0%",
-   "Stubborn (payoff) +0.0%",
+   "Refuse to Fall (payoff) +0.0%",
    "Catch Breath (payoff) +0.1%",
    "Rally Cry (guard) +0.1%",
    "Brace (guard) +0.5%",
-   "Stubborn (guard) +1.5%",
+   "Refuse to Fall (guard) +1.5%",
    "Unbothered (guard) +0.5%",
-   "Heavy Hand (guard) +1.7%",
+   "Wicked (guard) +1.7%",
    "Clinging (guard) +1.4%",
    "Front-liner (support) +1.9%",
    "Brace (support) +0.6%",
@@ -3893,7 +3893,7 @@
     "without": 74.9,
     "with": 84.5,
     "share": 11.3,
-    "talents": "voltaro: Perfect Timing, bogwarden: Heavy Hand, bloomback: Finisher"
+    "talents": "voltaro: Perfect Timing, bogwarden: Wicked, bloomback: Finisher"
    },
    {
     "card": "slippery",
@@ -3907,7 +3907,7 @@
     "without": 71.8,
     "with": 87,
     "share": 17.5,
-    "talents": "ancientshell: Owner's Mark, sunfawn: Kindred Boost, pyrelynx: Steady Rhythm"
+    "talents": "ancientshell: Potent Mark, sunfawn: Kindred Boost, pyrelynx: Steady Rhythm"
    },
    {
     "card": "bramble-bind",
@@ -3921,7 +3921,7 @@
     "without": 63.4,
     "with": 83.1,
     "share": 23.7,
-    "talents": "thornbuck: Hardy, tidewing: Owner's Mark, tempestray: Crit Chance"
+    "talents": "thornbuck: Hardy, tidewing: Potent Mark, tempestray: Crit Chance"
    },
    {
     "card": "payoff-hunter",
@@ -3956,7 +3956,7 @@
     "without": 65.6,
     "with": 85.5,
     "share": 23.2,
-    "talents": "voltaro: Deep Ink, hearthshell: Stubborn, bloomback: Opportunist"
+    "talents": "voltaro: Deep Ink, hearthshell: Refuse to Fall, bloomback: Opportunist"
    },
    {
     "card": "fizzle",
@@ -3970,7 +3970,7 @@
     "without": 72.3,
     "with": 87.5,
     "share": 17.3,
-    "talents": "ancientshell: Owner's Mark, lanternfin: Odd One Out, pyrelynx: Steady Rhythm"
+    "talents": "ancientshell: Potent Mark, lanternfin: Odd One Out, pyrelynx: Steady Rhythm"
    },
    {
     "card": "breakwater",
@@ -3984,22 +3984,22 @@
    {
     "card": "plain",
     "share": 30.2,
-    "talents": "voltaro: Perfect Timing, thornbuck: Hardy, solmane: Catch Breath, wickat: Steady Rhythm, pyrelynx: Steady Rhythm, tidewing: Owner's Mark, tempestray: Quick Draw, mossback: Owner's Mark, gaiadrake: Opportunist, aurorix: Bright Boost, geyserpup: Edge-walker"
+    "talents": "voltaro: Perfect Timing, thornbuck: Hardy, solmane: Catch Breath, wickat: Steady Rhythm, pyrelynx: Steady Rhythm, tidewing: Potent Mark, tempestray: Quick Draw, mossback: Potent Mark, gaiadrake: Opportunist, aurorix: Bright Boost, geyserpup: Edge-walker"
    },
    {
     "card": "thick-hide",
     "share": 36.3,
-    "talents": "lanternfin: Catch Breath, ancientshell: Owner's Mark, tempestray: Catch Breath, geyserpup: Edge-walker, hearthshell: Catch Breath, bloomback: Rally Cry, pyrelynx: Steady Rhythm, voltaro: Odd One Out, tidewing: First Pounce"
+    "talents": "lanternfin: Catch Breath, ancientshell: Potent Mark, tempestray: Catch Breath, geyserpup: Edge-walker, hearthshell: Catch Breath, bloomback: Rally Cry, pyrelynx: Steady Rhythm, voltaro: Odd One Out, tidewing: First Pounce"
    },
    {
     "card": "stone-skin",
     "share": 12.2,
-    "talents": "bloomback: Stubborn, voltaro: Perfect Timing, ancientshell: Rally Cry, hearthshell: Catch Breath, tempestray: Slow Burn, pyrelynx: Sharp Claws, solmane: Sharp Claws, geyserpup: none"
+    "talents": "bloomback: Refuse to Fall, voltaro: Perfect Timing, ancientshell: Rally Cry, hearthshell: Catch Breath, tempestray: Slow Burn, pyrelynx: Sharp Claws, solmane: Sharp Claws, geyserpup: none"
    },
    {
     "card": "clean-scales",
     "share": 16.1,
-    "talents": "coralynx: Crit Damage, bloomback: Stubborn, geyserpup: Hardy, thornbuck: Hardy, solmane: Owner's Mark, bogwarden: none, wickat: Owner's Mark, splashet: Owner's Mark, tempestray: Quick Draw"
+    "talents": "coralynx: Amplified Crits, bloomback: Refuse to Fall, geyserpup: Hardy, thornbuck: Hardy, solmane: Potent Mark, bogwarden: none, wickat: Potent Mark, splashet: Potent Mark, tempestray: Quick Draw"
    },
    {
     "card": "reflective-hide",
@@ -4009,57 +4009,57 @@
    {
     "card": "elusive",
     "share": 23.7,
-    "talents": "thornbuck: Hold the Line, tidewing: First Pounce, voltaro: Deep Ink, geyserpup: First Pounce, bloomback: Opportunist, aurorix: Odd One Out, coralynx: Crit Chance, pyrelynx: Steady Rhythm, solmane: Owner's Mark"
+    "talents": "thornbuck: Easily Provoked, tidewing: First Pounce, voltaro: Deep Ink, geyserpup: First Pounce, bloomback: Opportunist, aurorix: Odd One Out, coralynx: Crit Chance, pyrelynx: Steady Rhythm, solmane: Potent Mark"
    },
    {
     "card": "slippery",
     "share": 24,
-    "talents": "voltaro: Perfect Timing, bloomback: Stubborn, bogwarden: Hardy, croakmire: Catch Breath, solmane: Owner's Mark, geyserpup: First Pounce, fogwyrm: Unbothered, pyrelynx: Steady Rhythm, squelch: Bright Boost"
+    "talents": "voltaro: Perfect Timing, bloomback: Refuse to Fall, bogwarden: Hardy, croakmire: Catch Breath, solmane: Potent Mark, geyserpup: First Pounce, fogwyrm: Unbothered, pyrelynx: Steady Rhythm, squelch: Bright Boost"
    },
    {
     "card": "lucky-strike",
     "share": 24.4,
-    "talents": "drizzlewt: Catch Breath, hearthshell: Hardy, croakmire: Clinging, lanternfin: Triage, coralynx: Crit Damage, magmole: Bright Boost, mossback: Owner's Mark, geyserpup: First Pounce, wickat: Owner's Mark, pyrelynx: Steady Rhythm"
+    "talents": "drizzlewt: Catch Breath, hearthshell: Hardy, croakmire: Clinging, lanternfin: Triage, coralynx: Amplified Crits, magmole: Bright Boost, mossback: Potent Mark, geyserpup: First Pounce, wickat: Potent Mark, pyrelynx: Steady Rhythm"
    },
    {
     "card": "bramble-bind",
     "share": 13,
-    "talents": "lanternfin: Odd One Out, kilnmole: Hold the Line, solmane: Owner's Mark, sunfawn: none, geyserpup: First Pounce, drizzlewt: Bright Boost, tempestray: Quick Draw, halcyray: Edge-walker"
+    "talents": "lanternfin: Odd One Out, kilnmole: Easily Provoked, solmane: Potent Mark, sunfawn: none, geyserpup: First Pounce, drizzlewt: Bright Boost, tempestray: Quick Draw, halcyray: Edge-walker"
    },
    {
     "card": "wither",
     "share": 23.6,
-    "talents": "hearthshell: Hardy, tidewing: First Pounce, kilnmole: Hardy, drizzlewt: Unbothered, tempestray: Crit Chance, solmane: Owner's Mark, geyserpup: Quick Draw, bloomback: Opportunist, coralynx: Crit Chance, magmole: Odd One Out, squelch: Heavy Hand"
+    "talents": "hearthshell: Hardy, tidewing: First Pounce, kilnmole: Hardy, drizzlewt: Unbothered, tempestray: Crit Chance, solmane: Potent Mark, geyserpup: Quick Draw, bloomback: Opportunist, coralynx: Crit Chance, magmole: Odd One Out, squelch: Wicked"
    },
    {
     "card": "payoff-hunter",
     "share": 21,
-    "talents": "kilnmole: Hardy, fogwyrm: Unbothered, hearthshell: Odd One Out, wickat: Steady Rhythm, ancientshell: Owner's Mark, tempestray: Crit Chance, pyrelynx: Steady Rhythm, tidewing: Owner's Mark, geyserpup: Edge-walker"
+    "talents": "kilnmole: Hardy, fogwyrm: Unbothered, hearthshell: Odd One Out, wickat: Steady Rhythm, ancientshell: Potent Mark, tempestray: Crit Chance, pyrelynx: Steady Rhythm, tidewing: Potent Mark, geyserpup: Edge-walker"
    },
    {
     "card": "grudge",
     "share": 17.8,
-    "talents": "tempestray: Edge-walker, thornbuck: Hold the Line, tidewing: First Pounce, hearthshell: Catch Breath"
+    "talents": "tempestray: Edge-walker, thornbuck: Easily Provoked, tidewing: First Pounce, hearthshell: Catch Breath"
    },
    {
     "card": "great-wave",
     "share": 24,
-    "talents": "bogwarden: Brace, hearthshell: Stubborn, voltaro: Deep Ink, thornbuck: Hold the Line, kilnmole: Odd One Out, tidewing: Owner's Mark, gaiadrake: Opportunist, bloomback: Opportunist, wickat: Steady Rhythm, tempestray: Catch Breath, coralynx: Crit Chance"
+    "talents": "bogwarden: Brace, hearthshell: Refuse to Fall, voltaro: Deep Ink, thornbuck: Easily Provoked, kilnmole: Odd One Out, tidewing: Potent Mark, gaiadrake: Opportunist, bloomback: Opportunist, wickat: Steady Rhythm, tempestray: Catch Breath, coralynx: Crit Chance"
    },
    {
     "card": "swarm",
     "share": 18.2,
-    "talents": "gaiadrake: none, pyrelynx: Steady Rhythm, hearthshell: Shoulder to Shoulder, geyserpup: Edge-walker, drizzlewt: Bright Boost, solmane: Owner's Mark, tempestray: Edge-walker, halcyray: Edge-walker, tidewing: Owner's Mark, croakmire: Unbothered"
+    "talents": "gaiadrake: none, pyrelynx: Steady Rhythm, hearthshell: Shoulder to Shoulder, geyserpup: Edge-walker, drizzlewt: Bright Boost, solmane: Potent Mark, tempestray: Edge-walker, halcyray: Edge-walker, tidewing: Potent Mark, croakmire: Unbothered"
    },
    {
     "card": "crusher",
     "share": 30.6,
-    "talents": "hearthshell: Catch Breath, aurorix: Unbothered, voltaro: none, croakmire: Clinging, coralynx: Odd One Out, solmane: Owner's Mark, gaiadrake: Opportunist, thornbuck: Hold the Line, bloomback: Rally Cry, tempestray: Crit Chance"
+    "talents": "hearthshell: Catch Breath, aurorix: Unbothered, voltaro: none, croakmire: Clinging, coralynx: Odd One Out, solmane: Potent Mark, gaiadrake: Opportunist, thornbuck: Easily Provoked, bloomback: Rally Cry, tempestray: Crit Chance"
    },
    {
     "card": "fizzle",
     "share": 24.4,
-    "talents": "halcyray: Catch Breath, bloomback: Opportunist, croakmire: Catch Breath, voltaro: Deep Ink, tidewing: Owner's Mark, tempestray: Edge-walker, mossback: Owner's Mark, pyrelynx: Steady Rhythm, kilnmole: Hardy"
+    "talents": "halcyray: Catch Breath, bloomback: Opportunist, croakmire: Catch Breath, voltaro: Deep Ink, tidewing: Potent Mark, tempestray: Edge-walker, mossback: Potent Mark, pyrelynx: Steady Rhythm, kilnmole: Hardy"
    },
    {
     "card": "shake-it-off",
@@ -4069,7 +4069,7 @@
    {
     "card": "breakwater",
     "share": 25.3,
-    "talents": "bloomback: Opportunist, fogwyrm: Catch Breath, tempestray: Crit Chance, ancientshell: Owner's Mark, drizzlewt: Bright Boost, geyserpup: First Pounce, halcyray: Bright Boost, pyrelynx: Steady Rhythm, hearthshell: Catch Breath, tidewing: Owner's Mark"
+    "talents": "bloomback: Opportunist, fogwyrm: Catch Breath, tempestray: Crit Chance, ancientshell: Potent Mark, drizzlewt: Bright Boost, geyserpup: First Pounce, halcyray: Bright Boost, pyrelynx: Steady Rhythm, hearthshell: Catch Breath, tidewing: Potent Mark"
    }
   ],
   "boss": {

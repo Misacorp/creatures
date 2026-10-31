@@ -1,6 +1,6 @@
 /**
  * A creature's turn and its hits on the boss (R6 the hit, R6.3b crits, R7 reactions, R7.1 crit damage, R15 the bonus cap, Pierce,
- * Sure Crits, Steady Rhythm, Cull and the killing blow, counters).
+ * Sure Crits, Steady Rhythm, Culling Strike and the killing blow, counters).
  */
 import type { KnackFx } from './effects';
 import type { Fighter } from './types';
@@ -19,11 +19,11 @@ const { takeHit } = takingMod;
 const { alive, best, bump, fx, log, roll, silenced, strengthOf } = stateMod;
 
 /**
- * Damage to the boss by `f`: HP, damage counts, Cull and the killing blow. A counter (Retaliate, Shoulder
+ * Damage to the boss by `f`: HP, damage counts, Culling Strike and the killing blow. A counter (Retaliate, Shoulder
  * Charge's strike-back) is damage and can land the killing blow, but it is not a hit: it never sets off
- * Cull. A hit that leaves the boss below `f`'s Cull share of its full HP (in a raid weekend, the weekend's
+ * Culling Strike. A hit that leaves the boss below `f`'s Culling Strike share of its full HP (in a raid weekend, the weekend's
  * shared HP) defeats it outright; the HP that was left counts as the killing blow, not as damage dealt.
- * The creature whose damage or Cull takes the last HP lands the killing blow (the first one only).
+ * The creature whose damage or Culling Strike takes the last HP lands the killing blow (the first one only).
  */
 function hitBoss(s: State, f: Fighter, rawDmg: number, isHit: boolean): void {
   const dmg = s.opts.determinationBp
@@ -38,7 +38,7 @@ function hitBoss(s: State, f: Fighter, rawDmg: number, isHit: boolean): void {
   let culled = false;
   const cull = isHit ? fx(f).cullBp : undefined;
   if (cull && real > 0 && s.shadowHp > 0 && s.shadowHp * 10_000 < s.boss.hp * cull) {
-    // In potential the boss lives on (it stays at 1 HP), but it counts as defeated by the Cull for every HP-share rule.
+    // In potential the boss lives on (it stays at 1 HP), but it counts as defeated by the Culling Strike for every HP-share rule.
     s.shadowHp = 0;
     s.bossHp = s.opts.potential ? 1 : 0;
     culled = true;
@@ -334,10 +334,10 @@ export function creatureTurn(s: State, f: Fighter): void {
 
 /**
  * A counter that ignores armour (Retaliate, Shoulder Charge's strike-back). It is damage and can land the
- * killing blow, but it is not one of the creature's hits: no Cull, no "its hits" talent.
+ * killing blow, but it is not one of the creature's hits: no Culling Strike, no "its hits" talent.
  */
 export function counter(s: State, f: Fighter, shareBp: number): void {
-  // A counter is not a hit: no crit roll, no Sure Crit spent, no Steady Rhythm count, no Cull (R6, R21.7).
+  // A counter is not a hit: no crit roll, no Sure Crit spent, no Steady Rhythm count, no Culling Strike (R6, R21.7).
   const dmg = Math.floor((f.atk * shareBp) / 10_000);
   if (s.opts.log) log(s, 'counter', `${f.name} strikes back for ${dmg}`);
   hitBoss(s, f, dmg, false);

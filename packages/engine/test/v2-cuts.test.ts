@@ -1,6 +1,6 @@
 /**
  * Combat v2: a boss hit landing on a creature (R13): every cut multiplies and the total is capped before armour (cover, Flank
- * Guard, Long Shadow, Front-liner, Brace), boss crits and Cool Head, the Guard's strike-back, Stubborn and Catch Breath. Creatures
+ * Guard, Long Shadow, Front-liner, Brace), boss crits and Cool Head, the Guard's strike-back, Refuse to Fall and Catch Breath. Creatures
  * and boss are built by hand with their effects named directly; the dice are scripted, so every number is exact. These were the
  * lab's `luck` and `talents` rule tests about defence.
  */
@@ -233,8 +233,8 @@ describe('cover, Flank Guard and Long Shadow: every cut multiplies, the total is
   });
 });
 
-describe('Stubborn and Catch Breath in one fight', () => {
-  it('Stubborn leaves it at two fifths of its max HP once per fight', () => {
+describe('Refuse to Fall and Catch Breath in one fight', () => {
+  it('Refuse to Fall leaves it at two fifths of its max HP once per fight', () => {
     const r = play(striker({ rounds: 3, atk: 2_000 }), [spec({ fx: { holdOn: true } })]);
     expect(count(r, 'hold-on')).toBe(1);
     expect(r.knockouts).toBe(1);

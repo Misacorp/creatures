@@ -41,7 +41,7 @@ const bp = (id: string, key: string): number =>
 
 describe('the resolver hands the engine the luck stats', () => {
   it('the species crit stats, and the Knack and the talents merged, with only the talents plain lines kept for silence', () => {
-    // Cindle is a crit machine (+10 points of chance, +50 points of damage); Wild Swing adds its own, Crit Damage a talent line.
+    // Cindle is a crit machine (+10 points of chance, +50 points of damage); Wild Swing adds its own, Amplified Crits a talent line.
     const st = formStats('cindle', 25);
     expect(st.critChanceBp).toBeGreaterThan(0);
     expect(st.critDamageBp).toBeGreaterThan(0);
@@ -61,7 +61,7 @@ describe('the resolver hands the engine the luck stats', () => {
     expect(cindle?.fxStat.plainBp).toBeUndefined();
   });
 
-  it('Cool Head wards the whole extra damage of a boss crit, and Crit Chance and Crit Damage are the gear lines of the same names', () => {
+  it('Cool Head wards the whole extra damage of a boss crit, and Crit Chance is the gear line of the same name and Amplified Crits is the effect of the gear line Crit damage', () => {
     expect(KNACKS['cool-head']?.fx.critWardBp).toBe(10_000);
     expect(bp('crit-chance', 'critChanceBp')).toBeGreaterThan(0);
     expect(bp('crit-damage', 'critDamageBp')).toBeGreaterThan(0);
@@ -97,9 +97,9 @@ describe('the luck rule cards', () => {
 });
 
 describe('the luck content', () => {
-  it('Crit Chance and Crit Damage are the gear lines of the same names; the keyword Crit is defined', () => {
+  it('Crit Chance is the gear line of the same name and Amplified Crits is the effect of the gear line Crit damage; the keyword Crit is defined', () => {
     expect(TALENTS['crit-chance']?.name).toBe('Crit Chance');
-    expect(TALENTS['crit-damage']?.name).toBe('Crit Damage');
+    expect(TALENTS['crit-damage']?.name).toBe('Amplified Crits');
     expect(KEYWORDS).toHaveProperty('Crit');
     expect(KEYWORDS).toHaveProperty('Sure Crit');
   });

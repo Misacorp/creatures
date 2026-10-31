@@ -93,7 +93,7 @@ export function playFight(
   if (opts.carryHp) for (const f of fighters) f.hp = opts.carryHp.get(f.uid) ?? f.hp;
   // Catch Breath is once per raid weekend: a creature that used it in an earlier stage does not have it again.
   for (const f of fighters) if (opts.carryWindDone?.has(f.uid)) f.secondWindDone = true;
-  // So is Stubborn (panel 5: once per weekend, not per stage).
+  // So is Refuse to Fall (panel 5: once per weekend, not per stage).
   for (const f of fighters) if (opts.carryHoldOnDone?.has(f.uid)) f.holdOnDone = true;
   const carried = opts.carryEscalation;
   const s: State = {
