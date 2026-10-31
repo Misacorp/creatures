@@ -29,6 +29,7 @@ import {
 } from './forge';
 import { bestPiece, hasFourOfFive, wornPieces } from './lines';
 import { visitVisitor } from './visitor';
+import { heldForms } from './forms';
 import { beginVisit, endVisit, homeDone, newTracer, type JourneyEntry } from './journey';
 import { accrueIdleXp, atTopLevel, fightXp, levelsDesc, setCatchUp } from './growth';
 import {
@@ -313,6 +314,7 @@ function endWeek(p: Player, server: Server): void {
   const open = owned
     .filter((c) => !(c.canEvolve && !c.evolved && c.level >= p.rules.xp.evolveLevel))
     .map((c) => Math.max(0, third - c.level));
+  wk.held = heldForms(p);
   wk.benchOpenWorst = open.length ? Math.max(...open) : 0;
   wk.benchCount = gaps.length;
   wk.benchWithin = gaps.filter((g) => g <= THRESHOLDS.benchWithin).length;
@@ -386,7 +388,11 @@ function serverCoverage(
   const formsOf = lineForms(rules);
   const available = speciesAvailable(rules, hour);
   const joined = players.filter((p) => hour >= p.joinHour);
-  const evolved = new Set(
+  // A form counts as owned only while some creature is it: an evolved creature is no longer its stage 1.
+  const heldStage1 = new Set(
+    joined.flatMap((p) => p.creatures.filter((c) => !c.evolved).map((c) => c.species)),
+  );
+  const heldEvolved = new Set(
     joined.flatMap((p) => p.creatures.filter((c) => c.evolved).map((c) => c.species)),
   );
   const haveLines = [0, 0, 0];
@@ -405,7 +411,10 @@ function serverCoverage(
     if (joined.some((p) => (p.speciesCount[line] ?? 0) > 0)) {
       if (isLaunch) haveLaunch[r] = (haveLaunch[r] ?? 0) + 1;
       haveLines[r] = (haveLines[r] ?? 0) + 1;
-      haveForms[r] = (haveForms[r] ?? 0) + 1 + (evolved.has(line) && forms > 1 ? 1 : 0);
+      haveForms[r] =
+        (haveForms[r] ?? 0) +
+        (heldStage1.has(line) ? 1 : 0) +
+        (heldEvolved.has(line) && forms > 1 ? 1 : 0);
     }
   }
   const share = (have: number[], total: number[]): number[] =>

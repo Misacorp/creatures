@@ -186,7 +186,7 @@
     9,
     9,
     9,
-    8
+    7
    ]
   },
   {
@@ -247,7 +247,7 @@
     11,
     11,
     11,
-    9
+    8
    ]
   },
   {
@@ -287,7 +287,7 @@
     12,
     12,
     12,
-    10,
+    9,
     1
    ]
   },
@@ -335,7 +335,7 @@
     12,
     12,
     10,
-    6
+    5
    ]
   },
   {
@@ -366,8 +366,8 @@
     12,
     12,
     12,
-    11,
-    8
+    10,
+    7
    ]
   },
   {
@@ -396,7 +396,7 @@
     13,
     13,
     11,
-    9
+    8
    ]
   },
   {
@@ -423,8 +423,8 @@
     13,
     13,
     13,
-    12,
-    10
+    11,
+    9
    ]
   },
   {
@@ -464,14 +464,14 @@
    },
    "events": [
     "new line: mudlump",
-    "visitor: bought the week's blueprint for 40 Acorns and 50 shards"
+    "visitor: bought the week's blueprint (a new one) for 40 Acorns and 50 shards"
    ],
    "top5": [
     14,
     14,
     14,
-    12,
-    11
+    11,
+    9
    ]
   },
   {
@@ -505,7 +505,7 @@
     15,
     15,
     12,
-    11
+    10
    ]
   },
   {
@@ -533,8 +533,8 @@
     15,
     15,
     15,
-    13,
-    12
+    12,
+    11
    ]
   },
   {
@@ -568,7 +568,7 @@
     15,
     15,
     13,
-    13
+    11
    ]
   },
   {
@@ -605,8 +605,8 @@
     15,
     15,
     15,
-    14,
-    13
+    13,
+    12
    ]
   },
   {
@@ -639,8 +639,8 @@
     16,
     15,
     15,
-    14,
-    13
+    13,
+    12
    ]
   },
   {
@@ -668,7 +668,7 @@
     15,
     15,
     14,
-    14
+    13
    ]
   },
   {
@@ -707,7 +707,7 @@
     15,
     15,
     14,
-    14
+    13
    ]
   },
   {
@@ -738,8 +738,8 @@
     17,
     16,
     16,
-    15,
-    14
+    14,
+    13
    ]
   },
   {
@@ -766,8 +766,8 @@
     17,
     16,
     16,
-    15,
-    15
+    14,
+    14
    ]
   },
   {
@@ -795,7 +795,7 @@
     16,
     16,
     15,
-    15
+    14
    ]
   },
   {
@@ -819,8 +819,8 @@
    },
    "events": [
     "visitor: he is in the valley until the raid finale",
-    "visitor: bought the week's blueprint for 40 Acorns and 50 shards",
-    "visitor: rerolled a epic piece (item level 11.5) for 69 Acorns and 460 scrap: lines [1, 1, 1, 1, 1] became [1, 1, 1, 2, 1] (1 at the top pip)",
+    "visitor: bought the week's blueprint (a new one) for 40 Acorns and 50 shards",
+    "visitor: rerolled a epic piece (item level 11.5) for 69 Acorns and 460 scrap: lines [1, 1, 1, 1, 1] became [1, 1, 1, 1, 1] (0 at the top pip)",
     "mastery: anvil 2 reached Master"
    ],
    "top5": [
@@ -828,7 +828,7 @@
     16,
     16,
     15,
-    15
+    14
    ]
   },
   {

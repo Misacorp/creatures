@@ -207,6 +207,7 @@ export const RulesSchema = v.strictObject({
     goodTop: v.pipe(v.array(int), v.length(3)),
     blueprintAcorns: num,
     blueprintShards: num,
+    blueprintPool: v.pipe(v.number(), v.integer(), v.minValue(1)),
   }),
   collections: v.strictObject({
     boards: v.record(

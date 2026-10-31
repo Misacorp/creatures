@@ -2,7 +2,7 @@ import { rollLines, topCount, wornPieces, type Worn } from './lines';
 import type { Rules } from './rules';
 import type { Player, Server } from './types';
 import { HOURS_PER_WEEK, R } from './types';
-import { sum } from './util';
+import { sum, uniform } from './util';
 import { note } from './journey';
 import { debit, debitShard } from './world';
 
@@ -95,22 +95,26 @@ export function visitVisitor(p: Player, server: Server, hour: number): void {
   const v = rules.visitor;
   if (
     !p.blueprintBought &&
-    p.blueprints < rules.scouts.blueprintPool &&
     affordable(p, v.blueprintAcorns, 0) &&
     sum(p.shards) >= v.blueprintShards
   ) {
     debit(p, R.acorns, v.blueprintAcorns, 'visitor');
     payShards(p, v.blueprintShards);
-    p.blueprints += 1;
-    p.wk.blueprints += 1;
+    // The week's pick from his own pool: a blueprint not known yet, or a copy of one that is (which raises its quality).
+    const isNew = uniform(p.lineRng) >= p.visitorKnown / v.blueprintPool;
+    if (isNew) p.visitorKnown += 1;
+    else {
+      p.blueprintCopies += 1;
+      p.wk.visitorCopies += 1;
+    }
     p.wk.visitorBlueprints += 1;
     p.blueprintBought = true;
-    note(
-      p,
-      `visitor: bought the week's blueprint for ${v.blueprintAcorns} Acorns and ${v.blueprintShards} shards`,
-    );
     p.wk.visitorAcorns += v.blueprintAcorns;
     p.wk.visitorShards += v.blueprintShards;
+    note(
+      p,
+      `visitor: bought the week's blueprint (${isNew ? 'a new one' : 'a copy of one already known: its quality rises'}) for ${v.blueprintAcorns} Acorns and ${v.blueprintShards} shards`,
+    );
   }
   if (p.policy === 'setAndForget') {
     if (p.rerollsThisWeek >= 1) return;

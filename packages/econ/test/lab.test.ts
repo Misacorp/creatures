@@ -8,6 +8,9 @@ import { playersOf, runAll } from '../src/scenarios';
 import { ALL_SERVERS } from '../src/servers';
 import { TARGETS } from '../src/targets';
 import { N_RES } from '../src/types';
+import { formName, heldForms } from '../src/forms';
+import { profileById } from '../src/profiles';
+import { addCreature, createPlayer } from '../src/world';
 import { sum } from '../src/util';
 
 const SEEDS = 1;
@@ -163,6 +166,42 @@ describe('the report', () => {
       expect(v.fourOfFive.find((r) => r.id === id)?.on).toHaveLength(24);
     expect(v.fourOfFive.find((r) => r.id === 'mixed8')?.off).toHaveLength(24);
     expect(markdown).toContain('### The weekly visitor');
+  });
+
+  it('judges the shard stall, the whole run for dead resources and goes by the original T-1 too; the weekly player is shown', () => {
+    const byId = (id: string) => data.targets.find((t) => t.id === id);
+    expect(byId('T-4')?.info).toBeUndefined();
+    expect(byId('T-4')?.target).toMatch(/shard/);
+    expect(byId('T-7b')?.info).toBeUndefined();
+    expect(byId('T-1 (original)')?.info).toBeUndefined();
+    expect(byId('T-1 (weekly player)')?.info).toBe(true);
+    expect(byId('T-4 (shards, all players)')?.info).toBe(true);
+    expect(byId('T-3 (places beyond level 2)')?.info).toBe(true);
+    expect(byId('T-6 (joiners)')?.info).toBe(true);
+    expect(TARGETS.some((x) => x.id === 'T-1o')).toBe(true);
+  });
+
+  it('says plainly which targets pass by construction or follow from the away curve, and the band used for T-2c', () => {
+    expect(markdown).toMatch(/T-2a:.*PASSES BY CONSTRUCTION/);
+    expect(markdown).toMatch(/T-2b:.*follows from the away curve/);
+    expect(markdown).toMatch(/T-2c:.*band judged is 72% to 85%/);
+  });
+
+  it('lists the forms the roster holds by name, never "all", and an evolved creature is no longer its stage 1', () => {
+    for (const kind of [data.roster.daily, data.roster.weekly, data.roster.newPlayer])
+      for (const w of kind) expect(Array.isArray(w.forms)).toBe(true);
+    expect((data.roster.daily[23]!.forms as readonly string[]).length).toBeGreaterThan(10);
+    const p = createPlayer(RULES, 'forms', 1, 0, profileById('daily'), 4);
+    const c = addCreature(p, 0);
+    expect(heldForms(p).map(formName)).toEqual([formName(0)]);
+    c.evolved = true;
+    expect(heldForms(p).map(formName)).toEqual([formName(1)]);
+    expect(formName(0)).not.toBe(formName(1));
+  });
+
+  it('keeps the tuned values list whole and mentions the shipped Essence cost that differs', () => {
+    expect(markdown).toMatch(/Evolving costs 30 Essence here/);
+    expect(markdown).toContain("Where a daily player's scrap comes from and goes");
   });
 
   it('ledgers every spendable resource for daily and weekly players', () => {

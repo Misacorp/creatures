@@ -119,7 +119,7 @@ describe('the assumptions list', () => {
 
 describe('the tuned values list', () => {
   it('lists every TUNED marker of rules.ts and says what each value was', () => {
-    const markers = (rulesSource.match(/\/\/ TUNED [0-9-]+:/g) ?? []).length;
+    const markers = (rulesSource.match(/\/\/ TUNED [0-9-]+( \([^)]*\))?:/g) ?? []).length;
     const listed = tunedFrom(rulesSource);
     expect(markers).toBeGreaterThan(5);
     expect(listed).toHaveLength(markers);

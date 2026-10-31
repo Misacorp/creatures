@@ -87,8 +87,9 @@ export const RULES = {
   bonfire: {
     // Q35 B: the multiplier is fixed at each visit and holds until the next visit (never above the target it was fixed for).
     // ASSUMPTION: catch-up multiplies idle XP only, not what fights pay (V-BON-2 says "XP only, never output"; a sensitivity run applies it to fights too).
-    // TUNED 2026-10-30: maxMultiplier was 2 (bonfire.md's example), the tuner took it to 3, then 3.75, then 4.7 (round 15; was 3.75).
-    catchUp: { maxMultiplier: 4.7, fullAtGap: 6, appliesToFights: false },
+    // Lead's decision (review of the lab): the top multiplier is x3, not the x4.7 one target had pushed it to (bonfire.md's example is x2).
+    // TUNED 2026-10-30: maxMultiplier was 2 (bonfire.md's example), the tuner took it to 3, then 3.75, then 4.7; set back to 3 by the lead.
+    catchUp: { maxMultiplier: 3, fullAtGap: 6, appliesToFights: false },
     hearth: { perLevel: 0.04 },
   },
 
@@ -164,8 +165,9 @@ export const RULES = {
       scrap: 2.11,
       // TUNED 2026-10-30 (the shard blueprint): shards were 0.12.
       shards: 0.132,
-      // ASSUMPTION: 0.75% an hour, not the docs' 2%: with 2% a daily player has all 34 forms by week 8, and posts.md's worked month
-      // ("15 creatures by week 4") needs about 0.75%. The two numbers in the docs disagree; this one follows the worked month.
+      // ASSUMPTION: not the docs' 2% an hour: with 2% a daily player has all the launch lines early, and posts.md's worked month
+      // ("15 creatures by week 4") needs far less. The two numbers in the docs disagree; the live value (1.3% an hour) is the tuner's, from the
+      // 0.75% of the first draft.
       // TUNED 2026-10-30: was 0.0075.
       creatures: 0.013,
       gear: 0.01,
@@ -208,7 +210,8 @@ export const RULES = {
     // ASSUMPTION: known blueprints of a pool this size; a known one found again is scrap (shipped: 5).
     blueprintPool: 30,
     duplicateBlueprintScrap: GAME.gear.drops.duplicateBlueprintScrap,
-    // ASSUMPTION: a duplicate creature takes the Recommended answer, which pays this much scrap (the docs name no amount).
+    // ASSUMPTION: a duplicate creature takes the Recommended answer, which pays this much scrap (the docs name no amount). Like the dungeon's
+    // 10 scrap and the welcome scrap it is NOT scaled with the x6 of a piece's price: the report lists where a daily player's scrap comes from.
     duplicateCreatureScrap: 8,
   },
 
@@ -237,11 +240,12 @@ export const RULES = {
     slotsPerCreature: 3,
     // ASSUMPTION: a slot is "weaker" (so "for my team" makes pieces for it) when its item level is this far below the fire.
     weakMargin: 6,
-    // ASSUMPTION: what dismantling a piece gives, from the shipped ranges' middles (scrap is about 40% of the craft's 6).
+    // ASSUMPTION: what dismantling a piece gives, from the shipped ranges' middles. The scrap is proportional to what a piece costs: about 40% to
+    // 60% of the craft (the shipped 2.5, 3 and 3.5 of a craft of 6), so x6 now that a piece costs 36; shards and Essence are unchanged.
     dismantle: [
-      { scrap: 2.5, shards: 0, essence: 0 },
-      { scrap: 3, shards: 1, essence: 5.5 },
-      { scrap: 3.5, shards: 1.5, essence: 17.5 },
+      { scrap: 15, shards: 0, essence: 0 },
+      { scrap: 18, shards: 1, essence: 5.5 },
+      { scrap: 21, shards: 1.5, essence: 17.5 },
     ],
     // ASSUMPTION: a set-and-forget player bulk-dismantles when the bag reaches this many; an optimiser every visit.
     tidyAt: 180,
@@ -414,6 +418,9 @@ export const RULES = {
     goodTop: [1, 2, 4] as readonly number[],
     // ASSUMPTION: the week's rotating rare blueprint costs this many Acorns and this many shards of ANY element (taken from the most-stocked
     // elements first); a player buys it when they can afford it above the Acorn reserve and know fewer than the pool.
+    // ASSUMPTION: the visitor sells from a pool of his own, never found by scouts ("found nowhere else"): this many blueprints, a week's pick at
+    // random. One already known is a copy, and a copy raises that blueprint's quality (V-FORGE-9), so buying every week stays worthwhile.
+    blueprintPool: 52,
     blueprintAcorns: 40,
     // TUNED 2026-10-30 (the shard blueprint): was 20.
     blueprintShards: 50,

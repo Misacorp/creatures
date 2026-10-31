@@ -40,11 +40,15 @@ describe('the targets as data', () => {
       return [t?.lo, t?.hi];
     };
     expect(value('T-1a')).toEqual([0.9, undefined]);
+    expect(value('T-1o')).toEqual([undefined, 5]);
+    expect(value('T-4b')).toEqual([undefined, 0.25]);
+    expect(value('T-7')).toEqual([undefined, 0]);
+    expect(value('T-7b')).toEqual([undefined, 0]);
     expect(value('T-8a')).toEqual([9, 12]);
     expect(value('T-8b')).toEqual([20, 28]);
     expect(value('T-2b')).toEqual([0.95, undefined]);
-    expect(value('T-2c')).toEqual([0.7, 0.85]);
-    expect(value('T-2d2')).toEqual([undefined, 14]);
+    expect(value('T-2c')).toEqual([0.72, 0.85]);
+    expect(value('T-2d2')).toEqual([undefined, 15]);
     expect(value('T-3a')).toEqual([undefined, 14]);
     expect(value('T-4')).toEqual([undefined, 0.1]);
     expect(THRESHOLDS.deadWeeks).toBe(4);
@@ -57,8 +61,8 @@ describe('the targets as data', () => {
     expect(metBy(t, 0.5)).toBe(false);
     expect(metBy(t, 0.9)).toBe(false);
     expect(missOf(t, 0.78)).toBe(0);
-    expect(missOf(t, 0.6)).toBeCloseTo(1, 9);
-    expect(boundsText(t)).toBe('0.7 to 0.85');
+    expect(missOf(t, 0.6)).toBeCloseTo(1.2, 9);
+    expect(boundsText(t)).toBe('0.72 to 0.85');
     const judged = judge(TARGETS, { bench4: 0.5 });
     expect(judged.find((j) => j.target.id === 'T-1a')?.met).toBe(false);
     expect(judged.find((j) => j.target.id === 'T-2c')?.met).toBeNull();
@@ -139,6 +143,15 @@ describe('the dials', () => {
   it('keep the scrap of a Forge piece under about 60', () => {
     const dial = dialById('pieceCost');
     expect(applyDial(RULES, dial, dial.max).forge.scrap).toBeLessThanOrEqual(60);
+  });
+
+  it('move what dismantling gives back together with the price of a piece', () => {
+    const dial = dialById('pieceCost');
+    const more = applyDial(RULES, dial, 1.5).forge;
+    expect(more.dismantle[0]!.scrap).toBe(Math.round(RULES.forge.dismantle[0]!.scrap * 1.5));
+    expect(more.dismantle[2]!.scrap).toBe(Math.round(RULES.forge.dismantle[2]!.scrap * 1.5));
+    // Shards and Essence stay.
+    expect(more.dismantle[1]!.essence).toBe(RULES.forge.dismantle[1]!.essence);
   });
 
   it('have sane bounds, today (1) inside them, and a known id', () => {

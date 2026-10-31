@@ -185,13 +185,22 @@ describe('a visit that meets him', () => {
     expect(p.stock[R.acorns]).toBe(acorns);
   });
 
-  it('sells the week once: one blueprint, until the pool is known', () => {
+  it('sells the week once, from his own pool, and every week after: a known one is a copy that raises its quality', () => {
     const { p, server } = setup('optimiser');
-    const known = p.blueprints;
+    const scouts = p.blueprints;
     visitVisitor(p, server, THURSDAY + 20);
     visitVisitor(p, server, THURSDAY + 44);
-    expect(p.blueprints).toBe(known + 1);
     expect(p.wk.visitorBlueprints).toBe(1);
+    expect(p.visitorKnown).toBe(1);
+    // His pool is apart from the scouts': nothing here touches what scouts found.
+    expect(p.blueprints).toBe(scouts);
+    // Weeks after weeks: it never stops being on sale, and once the pool is known every one is a copy.
+    p.visitorKnown = RULES.visitor.blueprintPool;
+    creditShard(p, 2, RULES.visitor.blueprintShards * 3, 'test');
+    visitVisitor(p, server, 168 + THURSDAY + 20);
+    expect(p.visitorKnown).toBe(RULES.visitor.blueprintPool);
+    expect(p.blueprintCopies).toBe(1);
+    expect(p.wk.visitorCopies).toBe(1);
   });
 });
 

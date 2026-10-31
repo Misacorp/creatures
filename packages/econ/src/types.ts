@@ -121,6 +121,8 @@ export interface WeekRecord {
   visitorScrap: number;
   visitorShards: number;
   visitorBlueprints: number;
+  /** Of those bought, how many were copies of one already known (each raises that blueprint's quality, V-FORGE-9). */
+  visitorCopies: number;
   /** Modifier lines at the end of the week: the best worn piece's pips (sum), its share of the most its level allows, the epics worn, and whether an epic has 4 or more top-pip lines. */
   bestPips: number;
   bestPipsShare: number;
@@ -128,6 +130,8 @@ export interface WeekRecord {
   fourOfFive: number;
   /** The largest of those gaps among creatures not held at the evolution level (waiting on Essence). */
   benchOpenWorst: number;
+  /** The forms the creatures are at the end of the week (line * 2, plus 1 for an evolved creature: see `forms.ts`). */
+  held: number[];
   /** Creatures held at their evolution level at the end of the week. */
   waitingEvolve: number;
   forge: number[];
@@ -198,6 +202,9 @@ export interface Player {
   pages: number;
   /** The visitor: the week index of the last visit that met him, the rerolls made that week, and whether the blueprint was bought. */
   visitorWeek: number;
+  /** The visitor's blueprints known (his own pool, apart from the scouts') and the copies bought on top (quality levels gained). */
+  visitorKnown: number;
+  blueprintCopies: number;
   rerollsThisWeek: number;
   blueprintBought: boolean;
   /** The journey export's recorder (null unless this player is traced; recording never changes the run). */

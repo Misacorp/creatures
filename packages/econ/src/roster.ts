@@ -1,16 +1,23 @@
 import { RULES as GAME } from '@creatures/game';
 import { playersOf, type Results } from './scenarios';
 import type { PlayerRun } from './sim';
+import type { WeekRecord } from './types';
 import { levelOf, round } from './stats';
+import { formName } from './forms';
 import { median } from './util';
 
 /**
  * The roster profile: the seam between combat v2 and the valley, in the shape of `RosterProfile` in `packages/lab/src/roster.ts`
  * on branch `combat-v2-track` (copied here as types so this package does not depend on that branch). Plain data: for each kind
  * of player and each week from 1 to 24, the levels of the player's 1st, 3rd, 10th and 20th creature, how many creatures they own,
- * which forms they can have (a level is 0 where the median player owns fewer creatures than the rank asks for: `size` says so), the open talent slots of their best creature, whether talents are picked, and a gear level.
+ * which forms they hold (the ones at least half of the players of that kind are right now: an evolved creature is its second form and no longer its stage 1) (a level is 0 where the median player owns fewer creatures than the rank asks for: `size` says so), the open talent slots of their best creature, whether talents are picked, and a gear level.
  */
 export const ROSTER_WEEKS = 24;
+
+/**
+ * Which servers are pooled: `daily` and `weekly` are the medians of every daily (or weekly) player of the mixed servers of 5, 8 and 15,
+ * all seeds together; `newPlayer` is the player who joins in week 6 of the 30-week mixed server of 8, by weeks since joining.
+ */
 
 export interface RosterWeek {
   readonly week: number;
@@ -35,6 +42,17 @@ export interface RosterProfile {
 const talentSlotsAt = (level: number): number =>
   GAME.talents.slotLevels.filter((l) => level >= l).length;
 
+/** The forms most players of a kind hold at the end of a week (at least half of them), by name. */
+function formsAt(records: readonly WeekRecord[]): string[] {
+  const counts = new Map<number, number>();
+  for (const w of records) for (const h of new Set(w.held)) counts.set(h, (counts.get(h) ?? 0) + 1);
+  return [...counts]
+    .filter(([, n]) => n * 2 >= records.length)
+    .map(([h]) => h)
+    .sort((a, b) => a - b)
+    .map(formName);
+}
+
 /** The median player of a kind, week by week (index 0 is each player's first week). */
 function weeksFor(players: readonly PlayerRun[]): RosterWeek[] {
   return Array.from({ length: ROSTER_WEEKS }, (_, i) => {
@@ -51,7 +69,7 @@ function weeksFor(players: readonly PlayerRun[]): RosterWeek[] {
       tenth: level(10),
       twentieth: level(20),
       size,
-      forms: 'all' as const,
+      forms: formsAt(records),
       talentSlots: talentSlotsAt(first),
       talentsPicked: false,
       gear: Math.round(median(records.map((w) => w.avgGear))),

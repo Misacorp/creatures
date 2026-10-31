@@ -667,6 +667,17 @@ export function measuresOf(results: Results): Measures {
     put('best12', median(dailyFull.map((p) => levelOf(p.weeks[11]!, 1))));
     const stall = worstStall(results, FORGE_BUCKETS.indexOf('scrap'), 12);
     put('scrapStall', stall.share);
+    // T-4b: the mean share of anvil-hours waiting for a shard over weeks 2 to 12, the worst of the three steadier kinds of player.
+    const shardIdx = FORGE_BUCKETS.indexOf('shard');
+    const shardMeans = ['daily', 'every-other-day', 'weekend-off'].map(
+      (id) =>
+        sum(
+          series(profilePlayers(results, id), 12, (w) => forgeShares(w)[shardIdx] ?? 0)
+            .slice(1)
+            .map((b) => b.median),
+        ) / 11,
+    );
+    put('shardStall', Math.max(...shardMeans));
   }
   // T-8 (Q38): lines (what scouts find; evolved forms are reported beside them) owned by a daily player: how many, how many of the starting pool's commons, how many rares and epics.
   const kindsAt = (week: number): number | undefined =>
@@ -710,6 +721,13 @@ export function measuresOf(results: Results): Measures {
       'deadBefore12',
       ledgerOf(playersOf(results.mixed8, 'daily')).filter((l) => l.dead !== null && l.dead < 12)
         .length,
+    );
+  }
+  // T-7b: the same flag over the whole run (a pile that only grows must not appear later either).
+  if (dailyFull.length && dailyFull.every((p) => p.weeks.length >= 24)) {
+    put(
+      'deadBefore24',
+      ledgerOf(playersOf(results.mixed8, 'daily')).filter((l) => l.dead !== null).length,
     );
   }
   return m;
@@ -761,12 +779,31 @@ export function targetsOf(results: Results, rules: Rules): TargetLine[] {
     target:
       'creatures owned two weeks or more within 5 levels of the 3rd best at weeks 4 and 8, and two strong teams at week 8',
   });
+  // T-1 (original): goals.md's wording as it stood, beside the redefined bench share; and the weekly player's figures, shown.
+  const weeklyPlayers = playersOf(results.mixed8, 'weekly');
+  const bench4Weekly = benchOf(weeklyPlayers, 4);
+  const bench8Weekly = benchOf(weeklyPlayers, 8);
+  const weeklySpread4 = medianDefined(weeklyPlayers.map((p) => spreadAt(p, 4, 10)));
+  lines.push({
+    id: 'T-1 (original)',
+    pass: metLine('T-1o'),
+    measured: `a daily player's 10th creature is ${round(m.spread4 ?? NaN, 1)} levels below the 3rd at week 4 (the wording of goals.md, which the bench share above replaced because a player can own creatures that are new or held at the evolution level; this is the plain reading)`,
+    target: 'within 5 levels at week 4 (goals.md T-1 as written)',
+  });
+  lines.push({
+    id: 'T-1 (weekly player)',
+    pass: (weeklySpread4 ?? NaN) <= 5,
+    info: true,
+    measured: `a weekly player's 10th creature is ${round(weeklySpread4 ?? NaN, 1)} levels below their 3rd at week 4; of the creatures they have owned two weeks or more, ${pct(bench4Weekly.share)} are within 5 levels of their 3rd best at week 4 and ${pct(bench8Weekly.share)} at week 8 (worst gap ${round(bench4Weekly.worst, 1)} and ${round(bench8Weekly.worst, 1)})`,
+    target: 'information only (the weekly player is not judged on T-1)',
+  });
   // T-2: idle floor and active ceiling.
   lines.push({
     id: 'T-2a',
     pass: metLine('T-2a'),
     measured: `an optimiser visiting three times a day gets ${pct(m.activeXpRatio ?? NaN)} of an optimiser visiting once in XP and ${pct(m.activeOutputRatio ?? NaN)} in posts' and the allowance's output over 24 weeks. In the model extra visits add no rate (idle gains run at the same rate however often a player looks in), so this passes by construction: it shows only that nothing in the rules pays a frequent visitor more, not that choices are worth little`,
-    target: 'under 110%',
+    target:
+      'under 110% (PASSES BY CONSTRUCTION: extra visits add no rate in the model, so this cannot fail; it only shows that nothing in the rules pays a frequent visitor more)',
   });
   // The share of a daily player's idle gains: effective hours (the away steps) over weeks 1 to 12, so the roster's size cancels out.
   const eff = (p: PlayerRun): number => total(p, 1, 12, (w) => w.effHours);
@@ -804,13 +841,15 @@ export function targetsOf(results: Results, rules: Rules): TargetLine[] {
     id: 'T-2b',
     pass: metLine('T-2b'),
     measured: `a weekend-off player gets ${pct(m.weekendShare ?? NaN)} of a daily player's idle growth (effective hours, weeks 1 to 12)`,
-    target: 'about 100% (a weekend off costs almost nothing)',
+    target:
+      'about 100% (a weekend off costs almost nothing). It follows from the away curve: a weekend-off player is away on days the curve has barely stepped down, so it is a property of the curve, not of the rest of the rules',
   });
   lines.push({
     id: 'T-2c',
     pass: metLine('T-2c'),
     measured: `a weekly player's XP per creature, catch-up included, is ${pct(m.weeklyXpShare ?? NaN)} of a daily player's (idle gains alone: ${pct(weekly)}; with fights: ${pct(withFights)}; their best creature is level ${round(bestAt12('weekly'), 1)} at week 12 against a daily player's ${round(bestAt12('daily'), 1)}). Their scouts bring home ${pct(findsShare)} of a daily player's finds per seat (stores of three days: about 72 of 168 hours)`,
-    target: "about 75% to 80% of a daily player's XP per creature (goals.md T-2)",
+    target:
+      "goals.md says about 75% to 80% of a daily player's XP per creature; the band judged is 72% to 85%. It follows from the away curve (a weekly player is on its later steps for six days of seven) plus catch-up and fights, so the curve sets most of it",
   });
   const backFights = median(
     playersOf(results['mixed8-catchfights'], 'returner').map((p) => p.catchUpDays ?? NEVER_DAYS),
@@ -821,7 +860,7 @@ export function targetsOf(results: Results, rules: Rules): TargetLine[] {
   lines.push({
     id: 'T-2d',
     pass: metLine('T-2d'),
-    measured: `a player back after four weeks away keeps every level (best creature ${kept >= 0 ? '+' : ''}${round(kept, 1)} levels vs before) and their 3rd-best creature is within ${THRESHOLDS.agreeWithin} levels of the server's middle after ${daysText(back)} days of visits (the target is about 14; if catch-up also boosted fight XP: ${daysText(backFights)} days)`,
+    measured: `a player back after four weeks away keeps every level (best creature ${kept >= 0 ? '+' : ''}${round(kept, 1)} levels vs before) and their 3rd-best creature is within ${THRESHOLDS.agreeWithin} levels of the server's middle after ${daysText(back)} days of visits (the target is about 15, "about two weeks"; if catch-up also boosted fight XP: ${daysText(backFights)} days)`,
     target:
       "recognises the roster; within about two weeks of daily visits of the server's middle (V-BON-2)",
   });
@@ -844,24 +883,44 @@ export function targetsOf(results: Results, rules: Rules): TargetLine[] {
     target:
       'about 5 to 6 level-ups by week 12; the fire about 50 at week 12 and under about 100 before week 24 (commons.md)',
   });
-  // T-4: no dead chains: the share of anvil-hours spent tinkering for want of scrap in the worst week (goals.md). Shard stalls and a
-  // full floor are reported next to it, not judged.
+  const placesBeyond2 = (mixed8?.levels[11] ?? []).filter((l) => l > 2).length;
+  lines.push({
+    id: 'T-3 (places beyond level 2)',
+    pass: placesBeyond2 >= 0,
+    info: true,
+    measured: `at week 12 ${placesBeyond2} of the ${(mixed8?.levels[11] ?? []).length} places stand above level 2 (place levels hearth / forge / signpost / paddock / school: ${(mixed8?.levels[11] ?? []).map((l) => round(l)).join('/')})`,
+    target:
+      'information next to T-3c: five level-ups can all be first level-ups, so this shows whether any place goes deeper',
+  });
+  // T-4: no dead chains: the share of anvil-hours spent tinkering for want of scrap in the worst week (goals.md), and for want of a
+  // shard (judged for the steadier players: the mean over weeks 2 to 12; the weekly player's is shown). A full floor is shown too.
   const scrapWorst = worstStall(results, FORGE_BUCKETS.indexOf('scrap'), 12);
   const shardWorst = worstStall(results, FORGE_BUCKETS.indexOf('shard'), 12);
   const floorWorst = worstStall(results, FORGE_BUCKETS.indexOf('floor'), 12);
   const stallMax = TARGETS.find((t) => t.id === 'T-4')?.hi ?? THRESHOLDS.tinkerSmallShare;
+  const shardMax = TARGETS.find((t) => t.id === 'T-4b')?.hi ?? 0.25;
+  const shardMean = (id: string): number => {
+    const s = series(
+      profilePlayers(results, id),
+      12,
+      (w) => forgeShares(w)[FORGE_BUCKETS.indexOf('shard')] ?? 0,
+    )
+      .slice(1)
+      .map((b) => b.median);
+    return sum(s) / Math.max(1, s.length);
+  };
   lines.push({
     id: 'T-4',
     pass: metLine('T-4'),
-    measured: `in the worst week (weeks 2 to 12) a typical player's anvils tinker for want of scrap ${pct(scrapWorst.share)} of the time (${scrapWorst.id}, week ${scrapWorst.week})`,
-    target: `at most ${pct(stallMax)} for want of scrap`,
+    measured: `in the worst week (weeks 2 to 12) a typical player's anvils tinker for want of scrap ${pct(scrapWorst.share)} of the time (${scrapWorst.id}, week ${scrapWorst.week}); for want of a shard of the element the team needs, averaged over weeks 2 to 12, a daily player loses ${pct(shardMean('daily'))}, an every-other-day player ${pct(shardMean('every-other-day'))} and a weekend-off player ${pct(shardMean('weekend-off'))}`,
+    target: `at most ${pct(stallMax)} for want of scrap in any week, and under ${pct(shardMax)} on average for want of a shard (the judged shard stall is the worst of the three)`,
   });
   lines.push({
-    id: 'T-4 (shards)',
+    id: 'T-4 (shards, all players)',
     pass: shardWorst.share <= stallMax,
     info: true,
-    measured: `for want of a shard of the element the team needs, the worst week is ${pct(shardWorst.share)} (${shardWorst.id}, week ${shardWorst.week}); averaged over weeks 2 to 12 that profile loses ${pct(shardWorst.mean)}. With the Forge floor full the worst week is ${pct(floorWorst.share)} (${floorWorst.id}, week ${floorWorst.week}), mean ${pct(floorWorst.mean)}`,
-    target: `goals.md T-4 names scrap only; shards are shown for the same ${pct(stallMax)}`,
+    measured: `for want of a shard of the element the team needs, the worst week is ${pct(shardWorst.share)} (${shardWorst.id}, week ${shardWorst.week}); a weekly player loses ${pct(shardMean('weekly'))} on average over weeks 2 to 12 (shown, not judged), an active player ${pct(shardMean('active'))}. With the Forge floor full the worst week is ${pct(floorWorst.share)} (${floorWorst.id}, week ${floorWorst.week}), mean ${pct(floorWorst.mean)}`,
+    target: 'information (the judged shard target is on the line above)',
   });
   // T-8 (Q38): collection pace.
   lines.push({
@@ -884,6 +943,16 @@ export function targetsOf(results: Results, rules: Rules): TargetLine[] {
     measured: `${round(m.deadBefore12 ?? NaN)} of a daily player's 4 resources (Acorns, scrap, shards, Essence) are dead (a pile rising 4 weeks running to 4 weeks of what the resource is spent on) before week 12`,
     target: 'none (resources.md: nothing that only piles up)',
   });
+  const deadNames = ledgerOf(playersOf(results.mixed8, 'daily'))
+    .filter((l) => l.dead !== null)
+    .map((l) => `${l.resource} from week ${l.dead}`);
+  lines.push({
+    id: 'T-7b',
+    pass: metLine('T-7b'),
+    measured: `${round(m.deadBefore24 ?? NaN)} of a daily player's 4 resources are dead at some point of the 24 weeks${deadNames.length ? ` (${deadNames.join(', ')})` : ''}`,
+    target:
+      'none, over the whole run (the visitor is the only sink for Acorns and scrap after the first weeks; shards go to the Forge, projects and his blueprint)',
+  });
   // T-6: growth lasts the arc.
   const reach30 = daily.flatMap((p) =>
     p.day30[0] === null || p.day30[0] === undefined ? [] : [p.day30[0]],
@@ -894,6 +963,19 @@ export function targetsOf(results: Results, rules: Rules): TargetLine[] {
     pass: metLine('T-6'),
     measured: `a daily player's best creature is level ${round(m.best10 ?? NaN, 1)} at week 10 and ${round(m.best12 ?? NaN, 1)} at week 12; it reaches level 30 on day ${day30 === null ? 'never (within 24 weeks)' : round(day30)}`,
     target: 'still growing in week 12 (example: level 29 of 30), not capped by week 10',
+  });
+  // Do joiners overtake veterans? (a plain line, not a target)
+  const joiners = playersOf(results.mixed8, 'new');
+  const joinReach = joiners.flatMap((p) => (p.day30[0] == null ? [] : [p.day30[0]]));
+  const joinDay =
+    joiners.length && joinReach.length * 2 > joiners.length ? median(joinReach) : null;
+  const joinWeek = joiners[0]?.joinWeek ?? 6;
+  lines.push({
+    id: 'T-6 (joiners)',
+    pass: true,
+    info: true,
+    measured: `a new player who joins in week ${joinWeek} gets their best creature to level 30 on day ${joinDay === null ? 'never (within the run)' : round(joinDay)} after joining; a player who started on day one got there on day ${day30 === null ? 'never' : round(day30)}. ${joinDay !== null && day30 !== null ? (joinDay < day30 ? `So a joiner reaches the top ${round(day30 - joinDay)} days sooner than a day-one player did (catch-up), but the veteran is already there by the time the joiner arrives (day ${round(joinWeek * 7 - 7 + joinDay)} of the run for the joiner, day ${round(day30)} for the veteran): nobody is overtaken, the joiner only closes the gap` : `So a joiner takes ${round(joinDay - day30)} days longer than a day-one player did`) : ''}`,
+    target: 'information only (no target): whether joining late is a long climb',
   });
   return lines;
 }

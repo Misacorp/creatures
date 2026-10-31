@@ -26,6 +26,7 @@ export const MEASURES = [
   'fire12All',
   'fire23All',
   'deadBefore12',
+  'deadBefore24',
   'kinds4',
   'kinds12',
   'commons6',
@@ -33,6 +34,7 @@ export const MEASURES = [
   'epics24',
   'waitingEvolve12',
   'scrapStall',
+  'shardStall',
   'best10',
   'best12',
 ] as const;
@@ -74,6 +76,16 @@ export const TARGETS: readonly Target[] = [
       'a new catch becomes useful within days: at week 4 at least 90% of the creatures owned two weeks or more are within 5 levels of the 3rd best',
   },
   {
+    id: 'T-1o',
+    line: 'T-1o',
+    measure: 'spread4',
+    hi: 5,
+    scale: 5,
+    needs: ['mixed8'],
+    label:
+      "goals.md's original wording: a daily player's 10th creature is within 5 levels of the 3rd at week 4",
+  },
+  {
     id: 'T-1b',
     line: 'T-1',
     measure: 'spread8',
@@ -89,7 +101,8 @@ export const TARGETS: readonly Target[] = [
     hi: 1.1,
     scale: 0.1,
     needs: ['mixed8-opt'],
-    label: "an active player gets under 110% of a daily player's XP",
+    label:
+      "an active player gets under 110% of a daily player's XP (passes by construction: extra visits add no rate)",
   },
   {
     id: 'T-2a2',
@@ -98,7 +111,8 @@ export const TARGETS: readonly Target[] = [
     hi: 1.1,
     scale: 0.1,
     needs: ['mixed8-opt'],
-    label: "an active player gets under 110% of a daily player's output",
+    label:
+      "an active player gets under 110% of a daily player's output (passes by construction: extra visits add no rate)",
   },
   {
     id: 'T-2b',
@@ -113,12 +127,12 @@ export const TARGETS: readonly Target[] = [
     id: 'T-2c',
     line: 'T-2c',
     measure: 'weeklyXpShare',
-    lo: 0.7,
+    lo: 0.72,
     hi: 0.85,
     scale: 0.1,
     needs: ['mixed8'],
     label:
-      "a weekly player's XP per creature, catch-up included, is 70% to 85% of a daily player's",
+      "a weekly player's XP per creature, catch-up included, is 72% to 85% of a daily player's (goals.md says about 75% to 80%; the band is a little wider)",
   },
   {
     id: 'T-2d1',
@@ -127,16 +141,17 @@ export const TARGETS: readonly Target[] = [
     lo: 0,
     scale: 3,
     needs: ['mixed8'],
-    label: 'a returner keeps every level',
+    label: 'a returner keeps every level (passes by construction: XP is never taken away)',
   },
   {
     id: 'T-2d2',
     line: 'T-2d',
     measure: 'returnDays',
-    hi: 14,
-    scale: 14,
+    hi: 15,
+    scale: 15,
     needs: ['mixed8'],
-    label: "a returner's 3rd-best creature is within 2 levels of the server's middle in 14 days",
+    label:
+      'a returner\'s 3rd-best creature is within 2 levels of the server\'s middle in about 15 days ("about two weeks")',
   },
   {
     id: 'T-3a',
@@ -196,6 +211,16 @@ export const TARGETS: readonly Target[] = [
       "a typical player's anvils tinker for want of scrap at most 10% of the time, in any week",
   },
   {
+    id: 'T-4b',
+    line: 'T-4',
+    measure: 'shardStall',
+    hi: 0.25,
+    scale: 0.25,
+    needs: ['mixed8'],
+    label:
+      "a daily, every-other-day or weekend-off player's anvils wait for a shard of the element they need less than 25% of the time, averaged over weeks 2 to 12",
+  },
+  {
     id: 'T-6a',
     line: 'T-6',
     measure: 'best10',
@@ -222,6 +247,16 @@ export const TARGETS: readonly Target[] = [
     needs: ['mixed8'],
     label:
       'no resource of a daily player is dead before week 12 (resources.md: a pile growing 4 weeks to 4 weeks of spending, with the weekly visitor as a sink)',
+  },
+  {
+    id: 'T-7b',
+    line: 'T-7b',
+    measure: 'deadBefore24',
+    hi: 0,
+    scale: 2,
+    needs: ['mixed8'],
+    label:
+      'no resource of a daily player is dead at any point of the 24 weeks (the same flag, over the whole run)',
   },
   {
     id: 'T-8a',

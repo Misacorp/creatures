@@ -197,8 +197,14 @@ export const DIALS: readonly Dial[] = [
   },
   {
     id: 'pieceCost',
-    label: 'scrap a Forge piece takes (kept under about 60: at most 1.6 times 36)',
-    paths: [['forge', 'scrap']],
+    label:
+      'scrap a Forge piece takes (kept under about 60: at most 1.6 times 36), with what dismantling a piece gives back',
+    paths: [
+      ['forge', 'scrap'],
+      ['forge', 'dismantle', '0', 'scrap'],
+      ['forge', 'dismantle', '1', 'scrap'],
+      ['forge', 'dismantle', '2', 'scrap'],
+    ],
     integer: true,
     min: 0.5,
     max: 1.6,

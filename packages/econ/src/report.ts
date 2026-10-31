@@ -34,6 +34,8 @@ export interface ReportData {
   seeds: number;
   targets: TargetLine[];
   ledger: Record<string, ResourceLedger[]>;
+  /** Where a daily player's scrap comes from and goes to, a week (median over seeds): the scale check for payouts not scaled with a piece's price. */
+  scrapBySource: { source: string; kind: 'in' | 'out'; perWeek: number }[];
   prices: PriceRow[];
   growth: GrowthRow[];
   forge: ForgeRow[];
@@ -193,6 +195,25 @@ export function serverCoverage(data: ReportData): Record<string, CoverageRow[]> 
   );
 }
 
+/** A daily player's scrap by source and sink, per week over the run (median over players). */
+export function scrapBySourceOf(
+  players: readonly PlayerRun[],
+): { source: string; kind: 'in' | 'out'; perWeek: number }[] {
+  const keys = new Set(players.flatMap((p) => Object.keys(p.sources)));
+  const rows: { source: string; kind: 'in' | 'out'; perWeek: number }[] = [];
+  for (const key of keys) {
+    const [kind, resource, ...rest] = key.split(':');
+    if (resource !== '1' || (kind !== 'in' && kind !== 'out')) continue;
+    const weeks = Math.max(1, ...players.map((p) => p.weeks.length));
+    rows.push({
+      source: rest.join(':'),
+      kind,
+      perWeek: median(players.map((p) => p.sources[key] ?? 0)) / weeks,
+    });
+  }
+  return rows.sort((a, b) => b.perWeek - a.perWeek);
+}
+
 export function buildReportData(
   results: Results,
   seeds: number,
@@ -228,6 +249,7 @@ export function buildReportData(
     seeds,
     targets: time('targets', () => targetsOf(results, rules)),
     ledger,
+    scrapBySource: scrapBySourceOf(profilePlayers(results, 'daily')),
     prices: time('prices', () => priceTable(profilePlayers(results, 'daily'), rules)),
     growth,
     forge,
@@ -288,11 +310,11 @@ const at = <T>(list: readonly T[], week: number): T | undefined => list[week - 1
 function markedComments(source: string, marker: RegExp): { where: string; text: string }[] {
   const lines = source.split('\n');
   const out: { where: string; text: string }[] = [];
-  const marked = /^\s*\/\/ (ASSUMPTION|TUNED [0-9-]+)(\s*\(Q[0-9]+\))?:/;
+  const marked = /^\s*\/\/ (ASSUMPTION|TUNED [0-9-]+)( \([^)]*\))?:/;
   for (let i = 0; i < lines.length; i++) {
     const m = marker.exec(lines[i] ?? '');
     if (!m) continue;
-    let text = m[1] ?? '';
+    let text = m[m.length - 1] ?? '';
     let j = i + 1;
     while (/^\s*\/\/ /.test(lines[j] ?? '') && !marked.test(lines[j] ?? '')) {
       text += ' ' + (lines[j] ?? '').replace(/^\s*\/\/ /, '');
@@ -313,9 +335,10 @@ export const assumptionsFrom = (source: string): { where: string; text: string }
 
 /** `// TUNED 2026-10-30:` comments from `rules.ts`: what the tuner moved and what it was before. */
 export const tunedFrom = (source: string): { where: string; text: string }[] =>
-  markedComments(source, /^\s*\/\/ TUNED [0-9-]+: (.*)$/);
+  markedComments(source, /^\s*\/\/ TUNED [0-9-]+( \([^)]*\))?: (.*)$/);
 
 export const SIMPLIFICATIONS: readonly string[] = [
+  "Evolving costs 30 Essence here (`xp.evolveEssence`); the shipped content has 20 Essence for a common line at level 15. The lab's 30 came from tuning (T-9), so the shipped number and the lab's differ: change one or the other on purpose.",
   "Combat is not simulated. The dungeon pays 120 XP, 10 Acorns, 10 scrap and a little Essence per run (one pass a day, up to three stacked), the raid 490 XP per fighting creature for a week with a visit between Friday and Sunday, and its Essence depends on the server's boss dial (all, half or none). The three best creatures fight.",
   "A creature's post does not change how fast it grows (V-POST-3), so creatures are not tracked per post: the lab counts scout seats, anvils and communal seats as long as the player has creatures to stand on them (the first scout and anvil need two of the three starters).",
   "Fit is an average (a set-and-forget player's creatures fit about 30% of the time, an optimiser's 90%), not a per-creature draw; kit tilts are expected values; scrap, shards, Acorns and XP are expected values and only creatures, gear, blueprints, pages, keystones and rare finds are seeded draws.",
@@ -395,6 +418,22 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
       '',
     );
   }
+  push(
+    "### Where a daily player's scrap comes from and goes",
+    '',
+    `A week, median over seeds, averaged over the run. The shipped game's payouts that are not scaled with a piece's price (the dungeon's ${RULES.fights.dungeon.scrap} scrap a run, ${RULES.scouts.duplicateCreatureScrap} for a duplicate creature, the welcome scrap) were left at their sizes while the piece's price went up to ${RULES.forge.scrap}; what a dismantled piece gives back was scaled with it. These are the shares they end up with:`,
+    '',
+  );
+  push(
+    ...table(
+      ['Where', 'Scrap a week'],
+      data.scrapBySource.map((r) => [
+        `${r.kind === 'in' ? 'in: ' : 'out: '}${r.source}`,
+        num(r.perWeek, 1),
+      ]),
+    ),
+    '',
+  );
   push('### Flags for every profile', '');
   const flagRows = Object.entries(data.ledger).flatMap(([id, ledgers]) =>
     ledgers
@@ -470,7 +509,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
     '',
   );
   push(
-    "A daily player's roster at the default arrival rate (0.75% an hour per scout) and at the docs' table (2% an hour): creatures owned, and the share of the lines available that week:",
+    `A daily player's roster at the default arrival rate (${num(RULES.scouts.perHour.creatures * 100, 2)}% an hour per scout, tuned from the 0.75% the first draft used) and at the docs' table (2% an hour): creatures owned, and the share of the lines available that week:`,
     '',
   );
   push(
