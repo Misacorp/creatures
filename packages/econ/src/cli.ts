@@ -6,7 +6,7 @@ import { buildReportData, renderReport, serverCoverage, type Timings } from './r
 import { rosterProfile } from './roster';
 import { RULES } from './rules';
 import rulesSource from './rules.ts?raw';
-import { DEFAULT_SEEDS, runScenario, type Results } from './scenarios';
+import { DEFAULT_SEEDS, runScenario, variantSeedsFor, type Results } from './scenarios';
 import { ALL_SERVERS } from './servers';
 import { runServer } from './sim';
 import { TARGETS, boundsText, judge } from './targets';
@@ -110,11 +110,17 @@ export async function main(args: readonly string[], pool?: Pool): Promise<number
   const seeds = Number(flag(args, '--seeds') ?? DEFAULT_SEEDS);
   const dir = flag(args, '--out') ?? '../../docs/design/valley/economy';
   const t0 = Date.now();
-  const { results, seconds } = await runScenarios(seeds, pool?.exec ?? inProcess, pool?.slots ?? 1);
+  const { results, seconds } = await runScenarios(
+    seeds,
+    pool?.exec ?? inProcess,
+    pool?.slots ?? 1,
+    undefined,
+    variantSeedsFor(seeds),
+  );
   const simulated = (Date.now() - t0) / 1000;
   const timings: Timings = {};
   const t1 = Date.now();
-  const data = buildReportData(results, seeds, RULES, timings);
+  const data = buildReportData(results, seeds, RULES, timings, variantSeedsFor(seeds));
   const built = (Date.now() - t1) / 1000;
   const t2 = Date.now();
   const markdown = renderReport(data, RULES, rulesSource);

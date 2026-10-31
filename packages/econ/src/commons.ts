@@ -32,8 +32,33 @@ export function refreshFire(server: Server, hour: number, rules: Rules): void {
   });
 }
 
+/**
+ * The Market (V-FORGE-11, "the broker as a project"): a communal project like the others that gives every player the broker's seat when it is
+ * built. It is added to the valley when the server's anvils first spend this much of a week waiting for a shard (ASSUMPTION: 15%), and it is
+ * sized like a level-2 place's project (the base size times the second level's factor, scaled with the server's weight).
+ */
+export const MARKET_OPENS_AT = 0.15;
+
+export function openMarket(server: Server, hour: number): void {
+  if (server.places.some((p) => p.id === 'market')) return;
+  server.places.push({
+    id: 'market',
+    level: 2,
+    open: false,
+    opensAt: hour,
+    progress: 0,
+    size: 0,
+    need: [0, 0, 0],
+    have: [0, 0, 0],
+    cosmetic: 0,
+    openedAt: hour,
+  });
+  server.marketOpenedHour = hour;
+}
+
 /** V-COM-15: the guided start. The hearth opens first, the Forge when the hearth has levelled, the rest when both have. */
 function mayOpen(server: Server, index: number): boolean {
+  if (server.places[index]?.id === 'market') return true;
   const bonfire = server.places[0]?.level ?? 1;
   const forge = server.places[1]?.level ?? 1;
   if (index === 0) return true;
@@ -75,7 +100,10 @@ export function refreshProjects(server: Server, hour: number, rules: Rules): voi
     place.progress = 0;
     place.size = projectSize(server, i, rules);
     // Q33: a project's cost has an Acorn part, a scrap part and a shard part (shards of an element tied to the place).
-    place.need = split.map((s, k) => (place.size * s) / (values[k] as number));
+    // The Market of the shard-free variant is paid in Acorns and scrap only (shards are what is short, so they cannot also build it).
+    const shares =
+      place.id === 'market' && server.config.broker === 'market' ? [0.5, 0.5, 0] : split;
+    place.need = shares.map((s, k) => (place.size * s) / (values[k] as number));
     place.have = [0, 0, 0];
     place.openedAt = hour;
   });
@@ -124,6 +152,11 @@ export function contributePart(
   place.open = false;
   place.progress = 0;
   place.opensAt = hour + rules.commons.buildHours;
+  // The Market is built once: the broker's seat exists from now on, and it never opens another project.
+  if (place.id === 'market') {
+    server.marketDoneHour = hour;
+    place.opensAt = Infinity;
+  }
   refreshFire(server, hour, rules);
   return taken;
 }

@@ -130,6 +130,8 @@ export const blankWeek = (week: number): WeekRecord => ({
   bestSlots: 0,
   bestLearned: 0,
   brokerHours: 0,
+  needElements: 0,
+  scoutElements: 0,
   held: [],
   waitingEvolve: 0,
   forge: new Array<number>(FORGE_BUCKETS.length).fill(0),
@@ -325,6 +327,7 @@ export function createPlayer(
     weeks: [],
     wk: blankWeek(1),
     sources: new Map(),
+    sourcesMark: null,
     day30: [null, null, null],
     backAt: null,
     catchUpDays: null,
@@ -377,5 +380,7 @@ export function createServer(
     projectDurations: [],
     mastersTotal: 0,
     communal: 0,
+    marketOpenedHour: null,
+    marketDoneHour: null,
   };
 }

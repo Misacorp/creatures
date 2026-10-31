@@ -1,7 +1,7 @@
 import type { Rng } from '@creatures/game';
 import type { KitName, Resource, Rules } from './rules';
 import type { PlayerProfile } from './schema';
-import type { BossDial, Policy } from './servers';
+import type { BossDial, BrokerMode, Policy } from './servers';
 import type { Tracer } from './journey';
 
 export const R = {
@@ -147,6 +147,9 @@ export interface WeekRecord {
   bestLearned: number;
   /** Effective hours a creature stood at the broker's post, and the shards it traded in (the exchange's trades are in `exchanges`). */
   brokerHours: number;
+  /** At the end of the week: how many elements the player's Forge orders need (slots below the fire) and how many different ones their scouts bring. */
+  needElements: number;
+  scoutElements: number;
   /** The forms the creatures are at the end of the week (line * 2, plus 1 for an evolved creature: see `forms.ts`). */
   held: number[];
   /** Creatures held at their evolution level at the end of the week. */
@@ -228,6 +231,7 @@ export interface Player {
   trace: Tracer | null;
   /** The School's seats (V-SCH-7) and the broker's mastery (effective hours at the exchange). */
   school: SchoolSeat[];
+  /** The index of the last visiting teacher whose lesson the player took (teachers come weekly from `school.teacherDay`). */
   schoolTeacherWeek: number;
   brokerMastery: number;
   /** A stream of its own for modifier lines, so rerolls never shift the other random draws. */
@@ -242,6 +246,8 @@ export interface Player {
   weeks: WeekRecord[];
   wk: WeekRecord;
   sources: Map<string, number>;
+  /** The sources at the end of the 12th week (for what came in and went out after it). */
+  sourcesMark: Record<string, number> | null;
   /** The first day (since joining) that 1, 3 and 10 creatures stood at the top level, and the creature levels' history. */
   day30: (number | null)[];
   /** For a returner: the day count after coming back until within `agreeWithin` of the server's middle (null: not yet). */
@@ -274,6 +280,8 @@ export interface ServerOptions {
   communalSeats: boolean;
   /** Whether the Forge's shard exchange exists (Q34: 3 shards of any element for 1 of the one needed). */
   shardExchange: boolean;
+  /** The broker's seat (V-FORGE-11): from day one (the default), never (the exchange is only a tap), or only once the server has built the Market. */
+  broker?: BrokerMode;
   /** Whether the weekly visitor comes (V-VIS). */
   visitor?: boolean;
 }
@@ -305,6 +313,9 @@ export interface Server {
   projectDurations: number[];
   mastersTotal: number;
   communal: number;
+  /** The Market project (the "market as a project" variant): the hour it was opened and the hour it was finished (null: not yet). */
+  marketOpenedHour: number | null;
+  marketDoneHour: number | null;
 }
 
 export interface ServerWeek {
@@ -327,6 +338,9 @@ export interface ServerWeek {
   formCoverage: number[];
   /** The same for the launch lines only (the lines the scouts find from the start), so content drops do not make it dip. */
   launchCoverage: number[];
+  /** The share of the server's anvil time this week spent waiting for a shard, over its players, and the Market's state (0 none, 1 open, 2 built). */
+  shardStall: number;
+  market: number;
   /** Players holding an epic with 4 or more top-pip lines at the end of the week. */
   fourOfFive: number;
   /** Rerolls bought by the server's players this week. */

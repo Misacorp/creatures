@@ -7,7 +7,7 @@ import { DIALS, applyDial, applyDials, axisOf, dialById } from '../src/dials';
 import { runScenarios, type JobOutcome } from '../src/jobs';
 import { buildReportData, type Timings } from '../src/report';
 import { RULES } from '../src/rules';
-import { runAll, runScenario } from '../src/scenarios';
+import { runAll, runScenario, variantSeedsFor } from '../src/scenarios';
 import { RulesSchema } from '../src/schema';
 import { ALL_SERVERS } from '../src/servers';
 import {
@@ -40,7 +40,6 @@ describe('the targets as data', () => {
       return [t?.lo, t?.hi];
     };
     expect(value('T-1a')).toEqual([0.9, undefined]);
-    expect(value('T-1o')).toEqual([undefined, 5]);
     expect(value('T-4b')).toEqual([undefined, 0.25]);
     expect(value('T-7')).toEqual([undefined, 0]);
     expect(value('T-7b')).toEqual([undefined, 0]);
@@ -48,7 +47,7 @@ describe('the targets as data', () => {
     expect(value('T-8b')).toEqual([20, 28]);
     expect(value('T-2b')).toEqual([0.95, undefined]);
     expect(value('T-2c')).toEqual([0.72, 0.85]);
-    expect(value('T-2d2')).toEqual([undefined, 15]);
+    expect(value('T-2d2')).toEqual([undefined, 17]);
     expect(value('T-3a')).toEqual([undefined, 14]);
     expect(value('T-4')).toEqual([undefined, 0.1]);
     expect(THRESHOLDS.deadWeeks).toBe(4);
@@ -191,6 +190,29 @@ describe('the scenario scheduler', () => {
       ALL_SERVERS.map((s) => s.id).filter((id) => only.includes(id)),
     );
     expect(Object.keys(seconds)).toEqual(Object.keys(results));
+  });
+
+  it('runs the five main servers with the seeds asked and the variants with fewer', async () => {
+    const seen = new Map<string, number>();
+    const exec = (job: { id: string; seeds: number }): Promise<JobOutcome> => {
+      seen.set(job.id, job.seeds);
+      return Promise.resolve(fake(job.id));
+    };
+    await runScenarios(
+      20,
+      exec,
+      2,
+      ['mixed8', 'mixed15', 'mixed8-opt', 'mixed8-novisitor', 'mixed8-market', 'mixed8-nobroker'],
+      10,
+    );
+    expect(seen.get('mixed8-market')).toBe(6);
+    expect(seen.get('mixed8-nobroker')).toBe(6);
+    expect(seen.get('mixed8')).toBe(20);
+    expect(seen.get('mixed15')).toBe(20);
+    expect(seen.get('mixed8-opt')).toBe(10);
+    expect(seen.get('mixed8-novisitor')).toBe(10);
+    expect(variantSeedsFor(20)).toBe(10);
+    expect(variantSeedsFor(1)).toBe(1);
   });
 
   it('gives the same results run one at a time or several at a time', async () => {

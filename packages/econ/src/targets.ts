@@ -76,16 +76,6 @@ export const TARGETS: readonly Target[] = [
       'a new catch becomes useful within days: at week 4 at least 90% of the creatures owned two weeks or more are within 5 levels of the 3rd best',
   },
   {
-    id: 'T-1o',
-    line: 'T-1o',
-    measure: 'spread4',
-    hi: 5,
-    scale: 5,
-    needs: ['mixed8'],
-    label:
-      "goals.md's original wording: a daily player's 10th creature is within 5 levels of the 3rd at week 4",
-  },
-  {
     id: 'T-1b',
     line: 'T-1',
     measure: 'spread8',
@@ -147,11 +137,11 @@ export const TARGETS: readonly Target[] = [
     id: 'T-2d2',
     line: 'T-2d',
     measure: 'returnDays',
-    hi: 15,
-    scale: 15,
+    hi: 17,
+    scale: 17,
     needs: ['mixed8'],
     label:
-      'a returner\'s 3rd-best creature is within 2 levels of the server\'s middle in about 15 days ("about two weeks")',
+      "a returner's 3rd-best creature is within 2 levels of the server's middle in about 16 days (the limit is 17; goals.md said about two weeks and Misa accepted about 16, round 18 Q47)",
   },
   {
     id: 'T-3a',

@@ -1,8 +1,9 @@
-import { ledgerOf, pileBasis } from './analysis';
+import { forgeShares, ledgerOf, pileBasis } from './analysis';
 import { playersOf, type Results, type ScenarioResult } from './scenarios';
 import type { PlayerRun } from './sim';
 import { THRESHOLDS } from './targets';
-import { median } from './util';
+import { FORGE_BUCKETS } from './types';
+import { median, sum } from './util';
 
 /**
  * The numbers for the weekly visitor (docs/design/valley/systems/visitor.md, `reviews/2026-10-30-visitor.md`): what he drains, how
@@ -55,6 +56,36 @@ export interface SchoolData {
   acornShare: Record<string, number>;
 }
 
+export interface MarketRow {
+  id: string;
+  label: string;
+  players: number;
+  runs: number;
+  /** The share of runs where the Market project opened, and where it was finished by week 24. */
+  openedShare: number;
+  doneShare: number;
+  /** The weeks (1-based, the week the hour falls in) it opened and was finished: medians over the runs that did. */
+  openedWeek: number | null;
+  doneWeek: number | null;
+  /** The server's shard stall by week (share of anvil time waiting for a shard), with the Market built as a project. */
+  stall: number[];
+  /** The mean stall in the weeks up to the one it opened in, and in the weeks after it was finished (medians over the runs that built it). */
+  stallBefore: number | null;
+  stallAfter: number | null;
+  /** The same server with the broker from day one (the main server's own runs). */
+  stallAlways: number[];
+}
+
+export interface BrokerData {
+  /** Anvil time waiting for a shard by week, per kind of player: with no broker (the exchange is a tap) and with the broker from day one. */
+  noBroker: Record<string, number[]>;
+  withBroker: Record<string, number[]>;
+  /** How many elements the player's orders need (slots below the fire) and how many different ones their scouts bring, by week (no broker). */
+  needElements: Record<string, number[]>;
+  scoutElements: Record<string, number[]>;
+  market: MarketRow[];
+}
+
 export interface VisitorData {
   /** By week, medians over seeds and players of a profile (the mixed server of 8). */
   rerolls: Record<string, number[]>;
@@ -95,6 +126,71 @@ const shareOfRuns = (result: ScenarioResult | undefined): number[] | null =>
           Math.max(1, result.runs.length),
       )
     : null;
+
+const SHARD_PROFILES = ['daily', 'every-other-day', 'weekend-off', 'weekly'] as const;
+
+export function brokerOf(results: Results): BrokerData {
+  const shard = FORGE_BUCKETS.indexOf('shard');
+  const share = (w: PlayerRun['weeks'][number]): number => forgeShares(w)[shard] ?? 0;
+  const noBroker: Record<string, number[]> = {};
+  const withBroker: Record<string, number[]> = {};
+  const needElements: Record<string, number[]> = {};
+  const scoutElements: Record<string, number[]> = {};
+  for (const id of SHARD_PROFILES) {
+    const none = playersOf(results['mixed8-nobroker'], id);
+    const always = playersOf(results.mixed8, id);
+    if (!none.length || !always.length) continue;
+    noBroker[id] = weekSeries(none, share);
+    withBroker[id] = weekSeries(always, share);
+    needElements[id] = weekSeries(none, (w) => w.needElements);
+    scoutElements[id] = weekSeries(none, (w) => w.scoutElements);
+  }
+  const market: MarketRow[] = [];
+  for (const [base, marketId] of [
+    ['mixed5', 'mixed5-market'],
+    ['mixed8', 'mixed8-market'],
+    ['mixed15', 'mixed15-market'],
+    ['mixed8', 'mixed8-market-shards'],
+  ] as const) {
+    const result = results[marketId];
+    if (!result) continue;
+    const runs = result.runs;
+    const week = (hour: number | null): number | null =>
+      hour === null ? null : Math.floor(hour / 168) + 1;
+    const opened = runs.flatMap((r) =>
+      r.marketOpenedHour === null ? [] : [week(r.marketOpenedHour)!],
+    );
+    const done = runs.flatMap((r) => (r.marketDoneHour === null ? [] : [week(r.marketDoneHour)!]));
+    const mean = (xs: number[]): number => (xs.length ? sum(xs) / xs.length : NaN);
+    const before = runs.flatMap((r) => {
+      const w = week(r.marketOpenedHour);
+      return w === null ? [] : [mean(r.log.slice(0, w).map((l) => l.shardStall))];
+    });
+    const after = runs.flatMap((r) => {
+      const w = week(r.marketDoneHour);
+      return w === null || w >= r.log.length ? [] : [mean(r.log.slice(w).map((l) => l.shardStall))];
+    });
+    const stallOf = (res: ScenarioResult | undefined): number[] =>
+      Array.from({ length: 24 }, (_, i) =>
+        median((res?.runs ?? []).map((r) => r.log[i]?.shardStall ?? 0)),
+      );
+    market.push({
+      id: result.config.id,
+      label: result.config.label,
+      players: result.config.players.length,
+      runs: runs.length,
+      openedShare: opened.length / Math.max(1, runs.length),
+      doneShare: done.length / Math.max(1, runs.length),
+      openedWeek: opened.length ? median(opened) : null,
+      doneWeek: done.length ? median(done) : null,
+      stall: stallOf(result),
+      stallBefore: before.length ? median(before) : null,
+      stallAfter: after.length ? median(after) : null,
+      stallAlways: stallOf(results[base]),
+    });
+  }
+  return { noBroker, withBroker, needElements, scoutElements, market };
+}
 
 export function schoolOf(results: Results): SchoolData {
   const out: SchoolData = {
