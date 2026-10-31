@@ -106,7 +106,7 @@ describe('concept art', () => {
           findings.filter((f) => f.rule === 'grid'),
           `${set.id}/${id}`,
         ).toEqual([]);
-        expect(KIND_SIZE[concept.kind], id).toBeDefined();
+        expect(Object.hasOwn(KIND_SIZE, concept.kind), id).toBe(true);
       }
     }
   });
