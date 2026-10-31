@@ -28,6 +28,9 @@ const scaledMove = (move: BossMove, strengthBp: number): BossMove => ({
   powerBp: Math.max(1, share(move.powerBp, strengthBp)),
 });
 
+/** Breakwater: a ward cuts (1 + this share, at the slot's strength) times as much of the boss's sweeps (bp). */
+const WARD_BOOST_BP = 20_000;
+
 export const CARDS: readonly CardDef[] = [
   { id: 'plain', name: 'No card', asks: 'Baseline.', apply: (b) => b },
   {
@@ -197,6 +200,18 @@ export const CARDS: readonly CardDef[] = [
     name: 'Shake It Off',
     asks: 'Every 3 rounds the boss clears all its debuffs, announced at round start; can you put them back?',
     apply: (b, st = 10_000) => ({ ...b, strengthBp: st, mods: { ...b.mods, shakeEvery: 3 } }),
+  },
+  {
+    id: 'breakwater',
+    name: 'Breakwater',
+    asks: 'Its waves break on wards: Row Ward cuts against its sweeps count x2.4 to x3 (by strength)',
+    // A ward cuts (1 + the boost) times as much of its sweeps: x3 at full strength, less at a lower one. Wards cover a whole
+    // row whoever owns them, so a prepared player shelters the others; a party with no ward gains nothing.
+    apply: (b, st = 10_000) => ({
+      ...b,
+      strengthBp: st,
+      mods: { ...b.mods, wardBp: 10_000 + share(WARD_BOOST_BP, st) },
+    }),
   },
   {
     id: 'adapts',

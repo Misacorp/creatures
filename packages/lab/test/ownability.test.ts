@@ -332,6 +332,7 @@ describe('the track', () => {
     const knackOf: Record<string, string> = {
       'lucky-strike': 'cool-head',
       slippery: 'clear-skies',
+      breakwater: 'keep-the-heat-in',
     };
     const cards = new Set(Object.values(SLOT_EXTRA_CARDS).flat());
     expect(cards.size).toBeGreaterThan(0);

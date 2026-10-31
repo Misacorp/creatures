@@ -268,8 +268,8 @@ describe('Determination (on by default from the second lap, at most +25%)', () =
   }, 60_000);
 
   it('labels the report and a path with it on gets further than one without', async () => {
-    const off = planPath({ quick: true, servers: 3, kinds: ['mixed'], determination: 'off' });
-    const on = planPath({ quick: true, servers: 3, kinds: ['mixed'] });
+    const off = planPath({ quick: true, servers: 12, kinds: ['mixed'], determination: 'off' });
+    const on = planPath({ quick: true, servers: 12, kinds: ['mixed'] });
     const run = async (p: typeof off) =>
       p.assemble((await runJobs(p.jobs, inProcessExecutor, 4)).results);
     const a = await run(off);
@@ -278,8 +278,12 @@ describe('Determination (on by default from the second lap, at most +25%)', () =
     expect(b.md.join('\n')).toContain(
       'with Determination (+5% a failed weekend from slot 6, at most 5 stacks)',
     );
-    const reached = (r: typeof a) => r.data[0]?.slots.length ?? 0;
-    expect(reached(b)).toBeGreaterThanOrEqual(reached(a));
+    // The mean number of slots a server reaches (a server reaches a slot only after passing the one before, so the shares of
+    // servers that reached each slot add up to it). The furthest slot any one server reached is a maximum over a few servers
+    // and moves with one lucky server (16 against 15 with 3 servers, 16 against 16 with 12), so it is not what Determination changes.
+    const reached = (r: typeof a) =>
+      (r.data[0]?.slots ?? []).reduce((n, s) => n + s.reachedShare, 0);
+    expect(reached(b)).toBeGreaterThan(reached(a));
   }, 120_000);
 });
 

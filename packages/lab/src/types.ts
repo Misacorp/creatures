@@ -274,6 +274,8 @@ export interface BossMods {
   readonly adapts?: boolean;
   /** In a raid weekend, from stage 2 the boss takes less from the element that dealt the most damage so far (Element Resistance). */
   readonly adaptsElement?: boolean;
+  /** Breakwater: a Row Ward or beside-cut aura cuts this many bp of its usual cut against the boss's area hits (10000 = as is, 30000 = three times as much), up to 75% of a hit. */
+  readonly wardBp?: number;
 }
 
 export interface Placement {

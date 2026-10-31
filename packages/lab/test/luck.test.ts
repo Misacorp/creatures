@@ -485,3 +485,39 @@ describe('the luck texts (panel 6)', () => {
     expect((KNACKS['wild-swing']?.text ?? '').replace(/[{}]/g, '').length).toBeLessThanOrEqual(95);
   });
 });
+
+describe('Breakwater: a boss whose waves break on wards', () => {
+  const sweep = (wardBp?: number): BossDef => {
+    const b = labBoss({ rows: 1, cols: 3, rounds: 1 });
+    return {
+      ...b,
+      spd: 0,
+      plain: { pattern: { anchor: 'front', shape: 'row' }, powerBp: 10_000 },
+      ...(wardBp === undefined ? {} : { mods: { ...b.mods, wardBp } }),
+    };
+  };
+  /** Tidewing in front, Kilnmole behind it with `knack`: what the sweep does to the Tidewing. */
+  const taken = (wardBp: number | undefined, knack: string): number | undefined =>
+    landed(sweep(wardBp), [at('tidewing', 0, 0), at('kilnmole', 0, 2, knack)], 'Tidewing');
+
+  it('cuts more of its sweeps for a Row Ward, and nothing more for a party without one', () => {
+    const none = taken(undefined, 'none');
+    const ward = taken(undefined, 'keep-the-heat-in');
+    const triple = taken(30_000, 'keep-the-heat-in');
+    expect(none).toBeDefined();
+    expect(ward).toBeLessThan(none as number);
+    expect(triple).toBeLessThan(ward as number);
+    // No ward in the row: the multiplier changes nothing. A multiplier of 1 changes nothing either.
+    expect(taken(30_000, 'none')).toBe(none);
+    expect(taken(10_000, 'keep-the-heat-in')).toBe(ward);
+  });
+
+  it('never cuts more than 75% of a hit, however large the multiplier', () => {
+    const huge = taken(1_000_000, 'keep-the-heat-in');
+    expect(taken(100_000, 'keep-the-heat-in')).toBe(huge);
+    // Armour comes off after the cuts: a quarter of the raw hit is left, whatever the multiplier.
+    const armour = formStats('tidewing', 25).armour;
+    const raw = (taken(undefined, 'none') as number) + armour;
+    expect(huge).toBe(Math.floor(raw / 4) - armour);
+  });
+});

@@ -1244,8 +1244,10 @@ function takeHit(
     let shelter = 0;
     if (s.carries.has('besideAreaCutBp'))
       for (const o of beside(s, taker)) shelter = Math.max(shelter, fx(o).besideAreaCutBp ?? 0);
-    // Auras of one kind: the largest applies. The creature's own cut is a cut of its own.
-    left = cutOf(left, Math.max(ward, shelter));
+    // Auras of one kind: the largest applies. The creature's own cut is a cut of its own. A boss whose waves break on
+    // wards (Breakwater) is cut more by one, up to 75% of a hit.
+    const wardMul = s.boss.mods.wardBp ?? 10_000;
+    left = cutOf(left, Math.min(7_500, Math.floor((Math.max(ward, shelter) * wardMul) / 10_000)));
     left = cutOf(left, k.areaCutBp ?? 0);
     // Cover: the Guard with the largest cover whose reach includes the taker, with every bonus. A hit a
     // Guard intercepts is not covered again, except Night Watch's and Catch the Bolts': they take the hit with their own cover's cut.

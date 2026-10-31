@@ -68,6 +68,10 @@
    "shake-it-off": {
     "damage": 4210,
     "ko": 0.9166666666666666
+   },
+   "breakwater": {
+    "damage": 4242,
+    "ko": 0.9166666666666666
    }
   },
   "Classic with no Knacks": {
@@ -137,6 +141,10 @@
    },
    "shake-it-off": {
     "damage": 3670,
+    "ko": 0.9583333333333334
+   },
+   "breakwater": {
+    "damage": 3600,
     "ko": 0.9583333333333334
    }
   },
@@ -208,6 +216,10 @@
    "shake-it-off": {
     "damage": 4014,
     "ko": 2
+   },
+   "breakwater": {
+    "damage": 3963,
+    "ko": 2
    }
   },
   "Double Mark into a Grove Detonate": {
@@ -277,6 +289,10 @@
    },
    "shake-it-off": {
     "damage": 4152,
+    "ko": 0.9166666666666666
+   },
+   "breakwater": {
+    "damage": 4002,
     "ko": 0.9166666666666666
    }
   },
@@ -348,6 +364,10 @@
    "shake-it-off": {
     "damage": 5574,
     "ko": 1.2083333333333333
+   },
+   "breakwater": {
+    "damage": 5482,
+    "ko": 1.2083333333333333
    }
   },
   "No Setter: Ready the Mark feeds Geyserpup": {
@@ -418,6 +438,10 @@
    "shake-it-off": {
     "damage": 4013,
     "ko": 0.9583333333333334
+   },
+   "breakwater": {
+    "damage": 4047,
+    "ko": 0.9166666666666666
    }
   },
   "No Setter: Puddle Maker": {
@@ -488,6 +512,10 @@
    "shake-it-off": {
     "damage": 3954,
     "ko": 0.9583333333333334
+   },
+   "breakwater": {
+    "damage": 3983,
+    "ko": 0.9166666666666666
    }
   },
   "All at Once on two Setters": {
@@ -558,6 +586,10 @@
    "shake-it-off": {
     "damage": 5309,
     "ko": 1.125
+   },
+   "breakwater": {
+    "damage": 5214,
+    "ko": 1.3333333333333333
    }
   },
   "Twin Strike": {
@@ -628,6 +660,10 @@
    "shake-it-off": {
     "damage": 3958,
     "ko": 0.9166666666666666
+   },
+   "breakwater": {
+    "damage": 3987,
+    "ko": 0.9583333333333334
    }
   },
   "Dodge tank: Zigzag beside a Guard": {
@@ -698,6 +734,10 @@
    "shake-it-off": {
     "damage": 2948,
     "ko": 0.75
+   },
+   "breakwater": {
+    "damage": 2934,
+    "ko": 0.8333333333333334
    }
   },
   "Mire: Mud Wall and Squelch Song": {
@@ -768,6 +808,10 @@
    "shake-it-off": {
     "damage": 3021,
     "ko": 0.6666666666666666
+   },
+   "breakwater": {
+    "damage": 3067,
+    "ko": 0.7083333333333334
    }
   },
   "No reactions: plain hitters": {
@@ -838,6 +882,10 @@
    "shake-it-off": {
     "damage": 3637,
     "ko": 0.9583333333333334
+   },
+   "breakwater": {
+    "damage": 3628,
+    "ko": 1
    }
   },
   "Guard's Shadow: Pyrelynx beside Kilnmole": {
@@ -908,6 +956,10 @@
    "shake-it-off": {
     "damage": 4585,
     "ko": 0.9583333333333334
+   },
+   "breakwater": {
+    "damage": 4597,
+    "ko": 0.9166666666666666
    }
   },
   "Crown of Embers into a Territorial Coralynx": {
@@ -978,6 +1030,10 @@
    "shake-it-off": {
     "damage": 4471,
     "ko": 0.9583333333333334
+   },
+   "breakwater": {
+    "damage": 4479,
+    "ko": 0.9166666666666666
    }
   },
   "Starlight across the row": {
@@ -1047,6 +1103,10 @@
    },
    "shake-it-off": {
     "damage": 4293,
+    "ko": 0.9583333333333334
+   },
+   "breakwater": {
+    "damage": 4248,
     "ko": 0.9583333333333334
    }
   },
@@ -1118,6 +1178,10 @@
    "shake-it-off": {
     "damage": 3713,
     "ko": 1
+   },
+   "breakwater": {
+    "damage": 3692,
+    "ko": 1
    }
   },
   "Carry Them: Gaiadrake guards its Setter": {
@@ -1187,6 +1251,10 @@
    },
    "shake-it-off": {
     "damage": 4226,
+    "ko": 0.2916666666666667
+   },
+   "breakwater": {
+    "damage": 4252,
     "ko": 0.2916666666666667
    }
   }
@@ -1497,6 +1565,24 @@
    ],
    "score": 5260,
    "classic": 3586
+  },
+  "gauntlet:breakwater": {
+   "best": [
+    {
+     "formId": "tempestray",
+     "knack": "wild-swing"
+    },
+    {
+     "formId": "magmole",
+     "knack": "tunnel-through"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "circle-round"
+    }
+   ],
+   "score": 5418,
+   "classic": 3551
   },
   "raid:plain": {
    "best": [
@@ -2415,15 +2501,69 @@
    ],
    "score": 16262,
    "classic": 11509
+  },
+  "raid:breakwater": {
+   "best": [
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "fogwyrm",
+     "knack": "hide-in-mist"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "ancientshell",
+     "knack": "feed-the-marks"
+    },
+    {
+     "formId": "drizzlewt",
+     "knack": "none"
+    },
+    {
+     "formId": "geyserpup",
+     "knack": "all-at-once"
+    },
+    {
+     "formId": "halcyray",
+     "knack": "none"
+    },
+    {
+     "formId": "pyrelynx",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "hearthshell",
+     "knack": "draw-fire"
+    },
+    {
+     "formId": "bloomback",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "tempestray",
+     "knack": "leave-a-trail"
+    },
+    {
+     "formId": "tidewing",
+     "knack": "lead-the-way"
+    }
+   ],
+   "score": 16890,
+   "classic": 11288
   }
  },
  "diversity": {
-  "tempestray": 7,
+  "tempestray": 8,
   "sunfawn": 6,
+  "tidewing": 5,
   "bloomback": 5,
   "voltaro": 5,
   "geyserpup": 4,
-  "tidewing": 4,
   "wickat": 3,
   "lanternfin": 3,
   "ancientshell": 2,
@@ -2435,207 +2575,203 @@
   "bogwarden": 1,
   "gaiadrake": 1,
   "hearthshell": 1,
-  "drizzlewt": 1
+  "drizzlewt": 1,
+  "magmole": 1
  },
  "knackUsage": {
   "curl-up": {
    "picks": 36,
-   "ratio": 1.88,
-   "withinForm": 3.13
+   "ratio": 1.77,
+   "withinForm": 2.82
   },
   "lightning-ears": {
    "picks": 7,
-   "ratio": 0.73,
+   "ratio": 0.69,
    "withinForm": 2.33
   },
   "draw-fire": {
-   "picks": 72,
-   "ratio": 2.5,
-   "withinForm": 2.23
+   "picks": 75,
+   "ratio": 2.46,
+   "withinForm": 2.24
+  },
+  "hide-in-mist": {
+   "picks": 17,
+   "ratio": 0.84,
+   "withinForm": 1.96
   },
   "squelch-song": {
-   "picks": 20,
-   "ratio": 1.04,
-   "withinForm": 1.75
+   "picks": 22,
+   "ratio": 1.08,
+   "withinForm": 1.85
   },
   "wide-reach": {
    "picks": 58,
-   "ratio": 1.01,
-   "withinForm": 1.73
+   "ratio": 0.95,
+   "withinForm": 1.65
   },
   "gather-calm": {
    "picks": 24,
-   "ratio": 1.25,
-   "withinForm": 1.68
-  },
-  "hide-in-mist": {
-   "picks": 12,
-   "ratio": 0.63,
-   "withinForm": 1.62
+   "ratio": 1.18,
+   "withinForm": 1.55
   },
   "zoom": {
    "picks": 26,
-   "ratio": 1.36,
+   "ratio": 1.28,
    "withinForm": 1.53
   },
   "lead-the-way": {
-   "picks": 66,
-   "ratio": 1.72,
-   "withinForm": 1.43
+   "picks": 71,
+   "ratio": 1.75,
+   "withinForm": 1.48
   },
   "territorial": {
    "picks": 11,
-   "ratio": 1.15,
+   "ratio": 1.08,
    "withinForm": 1.38
   },
-  "puddle-maker": {
-   "picks": 29,
-   "ratio": 3.03,
-   "withinForm": 1.36
+  "feed-the-marks": {
+   "picks": 24,
+   "ratio": 1.18,
+   "withinForm": 1.35
   },
   "lantern-glow": {
    "picks": 13,
-   "ratio": 1.36,
+   "ratio": 1.28,
    "withinForm": 1.33
   },
   "mud-wall": {
    "picks": 15,
-   "ratio": 0.78,
-   "withinForm": 1.32
+   "ratio": 0.74,
+   "withinForm": 1.29
+  },
+  "all-at-once": {
+   "picks": 57,
+   "ratio": 2.81,
+   "withinForm": 1.27
+  },
+  "puddle-maker": {
+   "picks": 29,
+   "ratio": 2.86,
+   "withinForm": 1.26
   },
   "steady-mark": {
    "picks": 82,
-   "ratio": 1.43,
-   "withinForm": 1.32
-  },
-  "gnaw-through": {
-   "picks": 21,
-   "ratio": 2.19,
-   "withinForm": 1.26
-  },
-  "feed-the-marks": {
-   "picks": 20,
-   "ratio": 1.04,
-   "withinForm": 1.26
-  },
-  "all-at-once": {
-   "picks": 50,
-   "ratio": 2.61,
-   "withinForm": 1.22
+   "ratio": 1.35,
+   "withinForm": 1.25
   },
   "crown-of-embers": {
    "picks": 19,
-   "ratio": 1.98,
+   "ratio": 1.87,
    "withinForm": 1.19
   },
-  "wild-swing": {
-   "picks": 60,
-   "ratio": 1.25,
-   "withinForm": 1.07
+  "gnaw-through": {
+   "picks": 21,
+   "ratio": 2.07,
+   "withinForm": 1.18
+  },
+  "leave-a-trail": {
+   "picks": 129,
+   "ratio": 1.59,
+   "withinForm": 1.13
   },
   "living-shelter": {
-   "picks": 11,
-   "ratio": 1.15,
-   "withinForm": 1.07
+   "picks": 13,
+   "ratio": 1.28,
+   "withinForm": 1.11
   },
-  "clear-the-air": {
-   "picks": 21,
-   "ratio": 0.73,
-   "withinForm": 1.04
+  "wild-swing": {
+   "picks": 63,
+   "ratio": 1.24,
+   "withinForm": 1.06
   },
   "ready-the-mark": {
-   "picks": 23,
-   "ratio": 0.48,
-   "withinForm": 1.01
+   "picks": 25,
+   "ratio": 0.49,
+   "withinForm": 1.02
+  },
+  "baked-shell": {
+   "picks": 8,
+   "ratio": 0.79,
+   "withinForm": 0.97
   },
   "detonate": {
    "picks": 86,
-   "ratio": 1.28,
-   "withinForm": 1.01
+   "ratio": 1.21,
+   "withinForm": 0.95
   },
-  "leave-a-trail": {
-   "picks": 106,
-   "ratio": 1.38,
-   "withinForm": 0.99
+  "clear-the-air": {
+   "picks": 21,
+   "ratio": 0.69,
+   "withinForm": 0.93
   },
   "zigzag": {
    "picks": 14,
-   "ratio": 1.46,
+   "ratio": 1.38,
    "withinForm": 0.93
   },
-  "thick-fog": {
-   "picks": 6,
-   "ratio": 0.63,
-   "withinForm": 0.89
-  },
-  "clear-skies": {
-   "picks": 12,
-   "ratio": 0.63,
-   "withinForm": 0.84
-  },
   "starlight": {
-   "picks": 8,
-   "ratio": 0.83,
-   "withinForm": 0.84
-  },
-  "guards-shadow": {
-   "picks": 14,
-   "ratio": 1.46,
-   "withinForm": 0.84
+   "picks": 9,
+   "ratio": 0.89,
+   "withinForm": 0.92
   },
   "primed-by-pain": {
    "picks": 12,
-   "ratio": 0.63,
+   "ratio": 0.59,
    "withinForm": 0.81
   },
-  "baked-shell": {
-   "picks": 6,
-   "ratio": 0.63,
-   "withinForm": 0.77
-  },
-  "none": {
-   "picks": 205,
-   "ratio": 0.63,
-   "withinForm": 0.69
+  "guards-shadow": {
+   "picks": 14,
+   "ratio": 1.38,
+   "withinForm": 0.79
   },
   "circle-round": {
-   "picks": 14,
-   "ratio": 1.46,
-   "withinForm": 0.65
+   "picks": 18,
+   "ratio": 1.77,
+   "withinForm": 0.78
+  },
+  "clear-skies": {
+   "picks": 12,
+   "ratio": 0.59,
+   "withinForm": 0.77
+  },
+  "thick-fog": {
+   "picks": 6,
+   "ratio": 0.59,
+   "withinForm": 0.75
+  },
+  "none": {
+   "picks": 215,
+   "ratio": 0.62,
+   "withinForm": 0.69
+  },
+  "tunnel-through": {
+   "picks": 3,
+   "ratio": 0.3,
+   "withinForm": 0.67
   },
   "double-mark": {
    "picks": 24,
-   "ratio": 0.63,
-   "withinForm": 0.52
+   "ratio": 0.59,
+   "withinForm": 0.5
   },
   "wide-warmth": {
-   "picks": 7,
-   "ratio": 0.24,
-   "withinForm": 0.49
+   "picks": 8,
+   "ratio": 0.26,
+   "withinForm": 0.5
   },
   "cool-head": {
    "picks": 7,
-   "ratio": 0.73,
-   "withinForm": 0.47
-  },
-  "tunnel-through": {
-   "picks": 2,
-   "ratio": 0.21,
+   "ratio": 0.69,
    "withinForm": 0.47
   },
   "hearth": {
    "picks": 6,
-   "ratio": 0.63,
-   "withinForm": 0.44
-  },
-  "drizzle": {
-   "picks": 2,
-   "ratio": 0.21,
-   "withinForm": 0.35
+   "ratio": 0.59,
+   "withinForm": 0.43
   },
   "night-watch": {
    "picks": 5,
-   "ratio": 0.52,
+   "ratio": 0.49,
    "withinForm": 0.34
   },
   "catch-the-bolts": {
@@ -2645,23 +2781,28 @@
   },
   "keep-the-heat-in": {
    "picks": 7,
-   "ratio": 0.37,
-   "withinForm": 0.33
+   "ratio": 0.34,
+   "withinForm": 0.31
   },
   "carry-them": {
    "picks": 3,
-   "ratio": 0.31,
+   "ratio": 0.3,
    "withinForm": 0.31
+  },
+  "drizzle": {
+   "picks": 2,
+   "ratio": 0.2,
+   "withinForm": 0.29
   },
   "sunbeam": {
    "picks": 4,
-   "ratio": 0.21,
+   "ratio": 0.2,
    "withinForm": 0.26
   },
   "twin-strike": {
    "picks": 3,
-   "ratio": 0.31,
-   "withinForm": 0.1
+   "ratio": 0.3,
+   "withinForm": 0.09
   }
  },
  "casualBeyondTop3": {
@@ -2673,14 +2814,14 @@
  "talentValue": {
   "setter/sharp-claws": {
    "forms": 2,
-   "withScore": 77.9,
-   "withoutScore": 76.3,
-   "gain": 1.61,
-   "gainPercent": 2.1,
+   "withScore": 78.5,
+   "withoutScore": 77,
+   "gain": 1.54,
+   "gainPercent": 2,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.62,
-   "koWithout": 0.66,
+   "koWith": 0.58,
+   "koWithout": 0.62,
    "holdsNatural": "always",
    "holdsRow": "always",
    "best": "reflective-hide",
@@ -2688,14 +2829,14 @@
   },
   "setter/hardy": {
    "forms": 4,
-   "withScore": 70.2,
-   "withoutScore": 69.9,
-   "gain": 0.33,
-   "gainPercent": 0.5,
+   "withScore": 71.1,
+   "withoutScore": 70.7,
+   "gain": 0.31,
+   "gainPercent": 0.4,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.9,
-   "koWithout": 0.92,
+   "koWith": 0.86,
+   "koWithout": 0.88,
    "holdsNatural": "always",
    "holdsRow": "always",
    "best": "payoff-hunter",
@@ -2703,14 +2844,14 @@
   },
   "setter/shoulder-to-shoulder": {
    "forms": 3,
-   "withScore": 73.9,
-   "withoutScore": 73.2,
-   "gain": 0.64,
-   "gainPercent": 0.9,
+   "withScore": 74.6,
+   "withoutScore": 74,
+   "gain": 0.61,
+   "gainPercent": 0.8,
    "raidGainPercent": 7.9,
    "raidRandomPercent": 2.6,
-   "koWith": 0.74,
-   "koWithout": 0.75,
+   "koWith": 0.71,
+   "koWithout": 0.72,
    "holdsNatural": 0,
    "holdsRow": 0.49,
    "best": "reflective-hide",
@@ -2718,14 +2859,14 @@
   },
   "setter/odd-one-out": {
    "forms": 2,
-   "withScore": 73.4,
-   "withoutScore": 71.3,
-   "gain": 2.07,
-   "gainPercent": 2.9,
+   "withScore": 74.2,
+   "withoutScore": 72.2,
+   "gain": 2,
+   "gainPercent": 2.8,
    "raidGainPercent": 6.8,
    "raidRandomPercent": 0.4,
-   "koWith": 0.78,
-   "koWithout": 0.81,
+   "koWith": 0.74,
+   "koWithout": 0.78,
    "holdsNatural": 1,
    "holdsRow": 0.33,
    "best": "reflective-hide",
@@ -2733,14 +2874,14 @@
   },
   "setter/edge-walker": {
    "forms": 2,
-   "withScore": 72.7,
-   "withoutScore": 71.3,
-   "gain": 1.38,
-   "gainPercent": 1.9,
+   "withScore": 73.5,
+   "withoutScore": 72.2,
+   "gain": 1.33,
+   "gainPercent": 1.8,
    "raidGainPercent": 3,
    "raidRandomPercent": 0,
-   "koWith": 0.87,
-   "koWithout": 0.91,
+   "koWith": 0.83,
+   "koWithout": 0.87,
    "holdsNatural": 1,
    "holdsRow": 0.17,
    "best": "reflective-hide",
@@ -2748,44 +2889,44 @@
   },
   "setter/front-liner": {
    "forms": 1,
-   "withScore": 77,
-   "withoutScore": 77,
+   "withScore": 77.7,
+   "withoutScore": 77.6,
    "gain": 0.03,
    "gainPercent": 0,
    "raidGainPercent": 3.2,
    "raidRandomPercent": 0,
-   "koWith": 0.62,
-   "koWithout": 0.62,
-   "holdsNatural": 0.34,
+   "koWith": 0.59,
+   "koWithout": 0.59,
+   "holdsNatural": 0.33,
    "holdsRow": 0,
    "best": "crusher",
    "bestPercent": 1.1
   },
   "setter/finisher": {
    "forms": 4,
-   "withScore": 71.8,
-   "withoutScore": 69.9,
-   "gain": 1.87,
-   "gainPercent": 2.7,
+   "withScore": 72.5,
+   "withoutScore": 70.7,
+   "gain": 1.8,
+   "gainPercent": 2.5,
    "raidGainPercent": 5.8,
    "raidRandomPercent": 2.6,
-   "koWith": 0.86,
-   "koWithout": 0.92,
-   "holdsNatural": 0.77,
+   "koWith": 0.83,
+   "koWithout": 0.88,
+   "holdsNatural": 0.79,
    "holdsRow": 1,
    "best": "reflective-hide",
    "bestPercent": 6.1
   },
   "setter/first-pounce": {
    "forms": 5,
-   "withScore": 74.6,
-   "withoutScore": 72.2,
-   "gain": 2.38,
-   "gainPercent": 3.3,
+   "withScore": 75.3,
+   "withoutScore": 73,
+   "gain": 2.28,
+   "gainPercent": 3.1,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.77,
-   "koWithout": 0.83,
+   "koWith": 0.73,
+   "koWithout": 0.79,
    "holdsNatural": 1,
    "holdsRow": 1,
    "best": "reflective-hide",
@@ -2793,14 +2934,14 @@
   },
   "setter/steady-rhythm": {
    "forms": 1,
-   "withScore": 80.3,
-   "withoutScore": 75.7,
-   "gain": 4.61,
-   "gainPercent": 6.1,
+   "withScore": 80.8,
+   "withoutScore": 76.4,
+   "gain": 4.41,
+   "gainPercent": 5.8,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.56,
-   "koWithout": 0.7,
+   "koWith": 0.53,
+   "koWithout": 0.66,
    "holdsNatural": 0.94,
    "holdsRow": 1,
    "best": "reflective-hide",
@@ -2808,14 +2949,14 @@
   },
   "setter/crit-chance": {
    "forms": 1,
-   "withScore": 77.5,
-   "withoutScore": 75.7,
-   "gain": 1.8,
-   "gainPercent": 2.4,
+   "withScore": 78.1,
+   "withoutScore": 76.4,
+   "gain": 1.72,
+   "gainPercent": 2.3,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.65,
-   "koWithout": 0.7,
+   "koWith": 0.62,
+   "koWithout": 0.66,
    "holdsNatural": "always",
    "holdsRow": "always",
    "best": "bramble-bind",
@@ -2823,29 +2964,29 @@
   },
   "setter/perfect-timing": {
    "forms": 2,
-   "withScore": 72.8,
-   "withoutScore": 71.3,
-   "gain": 1.48,
-   "gainPercent": 2.1,
+   "withScore": 73.6,
+   "withoutScore": 72.2,
+   "gain": 1.43,
+   "gainPercent": 2,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.78,
-   "koWithout": 0.81,
-   "holdsNatural": 0.46,
+   "koWith": 0.75,
+   "koWithout": 0.78,
+   "holdsNatural": 0.47,
    "holdsRow": 0.02,
    "best": "clean-scales",
    "bestPercent": 10.7
   },
   "setter/owners-mark": {
    "forms": 6,
-   "withScore": 74.2,
-   "withoutScore": 72,
-   "gain": 2.15,
-   "gainPercent": 3,
+   "withScore": 74.9,
+   "withoutScore": 72.8,
+   "gain": 2.09,
+   "gainPercent": 2.9,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.77,
-   "koWithout": 0.83,
+   "koWith": 0.73,
+   "koWithout": 0.8,
    "holdsNatural": 1,
    "holdsRow": 0.33,
    "best": "thick-hide",
@@ -2853,14 +2994,14 @@
   },
   "setter/deep-ink": {
    "forms": 3,
-   "withScore": 77.1,
-   "withoutScore": 73.2,
-   "gain": 3.86,
-   "gainPercent": 5.3,
+   "withScore": 77.7,
+   "withoutScore": 74,
+   "gain": 3.73,
+   "gainPercent": 5,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.65,
-   "koWithout": 0.75,
+   "koWith": 0.61,
+   "koWithout": 0.72,
    "holdsNatural": 1,
    "holdsRow": 1,
    "best": "bramble-bind",
@@ -2868,29 +3009,29 @@
   },
   "setter/rally-cry": {
    "forms": 4,
-   "withScore": 73.1,
-   "withoutScore": 72.4,
-   "gain": 0.7,
-   "gainPercent": 1,
+   "withScore": 73.8,
+   "withoutScore": 73.2,
+   "gain": 0.66,
+   "gainPercent": 0.9,
    "raidGainPercent": 5.7,
    "raidRandomPercent": 1.2,
-   "koWith": 0.79,
-   "koWithout": 0.8,
-   "holdsNatural": 0.12,
+   "koWith": 0.75,
+   "koWithout": 0.76,
+   "holdsNatural": 0.11,
    "holdsRow": 0.08,
    "best": "crusher",
    "bestPercent": 7.3
   },
   "setter/momentum": {
    "forms": 4,
-   "withScore": 73.8,
-   "withoutScore": 71.3,
-   "gain": 2.46,
-   "gainPercent": 3.4,
+   "withScore": 74.5,
+   "withoutScore": 72.2,
+   "gain": 2.37,
+   "gainPercent": 3.3,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.8,
-   "koWithout": 0.86,
+   "koWith": 0.77,
+   "koWithout": 0.82,
    "holdsNatural": 0.95,
    "holdsRow": 0.07,
    "best": "reflective-hide",
@@ -2898,59 +3039,59 @@
   },
   "setter/brace": {
    "forms": 2,
-   "withScore": 68.5,
-   "withoutScore": 68.4,
+   "withScore": 69.4,
+   "withoutScore": 69.3,
    "gain": 0.08,
    "gainPercent": 0.1,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.93,
-   "koWithout": 0.94,
-   "holdsNatural": 0.06,
+   "koWith": 0.89,
+   "koWithout": 0.9,
+   "holdsNatural": 0.05,
    "holdsRow": 0,
    "best": "great-wave",
    "bestPercent": 2.1
   },
   "setter/stubborn": {
    "forms": 2,
-   "withScore": 69.1,
-   "withoutScore": 68.4,
-   "gain": 0.69,
-   "gainPercent": 1,
+   "withScore": 70,
+   "withoutScore": 69.3,
+   "gain": 0.65,
+   "gainPercent": 0.9,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.87,
-   "koWithout": 0.94,
-   "holdsNatural": 0.15,
+   "koWith": 0.84,
+   "koWithout": 0.9,
+   "holdsNatural": 0.14,
    "holdsRow": 0,
    "best": "crusher",
    "bestPercent": 7.8
   },
   "setter/catch-breath": {
    "forms": 1,
-   "withScore": 77,
-   "withoutScore": 77,
+   "withScore": 77.7,
+   "withoutScore": 77.6,
    "gain": 0.06,
    "gainPercent": 0.1,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.62,
-   "koWithout": 0.62,
-   "holdsNatural": 0.13,
+   "koWith": 0.58,
+   "koWithout": 0.59,
+   "holdsNatural": 0.12,
    "holdsRow": 0,
    "best": "crusher",
    "bestPercent": 1.5
   },
   "payoff/sharp-claws": {
    "forms": 3,
-   "withScore": 71.1,
-   "withoutScore": 68,
-   "gain": 3.11,
-   "gainPercent": 4.6,
+   "withScore": 71.8,
+   "withoutScore": 68.7,
+   "gain": 3.09,
+   "gainPercent": 4.5,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.72,
-   "koWithout": 0.81,
+   "koWith": 0.7,
+   "koWithout": 0.78,
    "holdsNatural": "always",
    "holdsRow": "always",
    "best": "thick-hide",
@@ -2958,14 +3099,14 @@
   },
   "payoff/hardy": {
    "forms": 3,
-   "withScore": 81.5,
-   "withoutScore": 81.4,
+   "withScore": 81.9,
+   "withoutScore": 81.9,
    "gain": 0.01,
    "gainPercent": 0,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.39,
-   "koWithout": 0.39,
+   "koWith": 0.37,
+   "koWithout": 0.37,
    "holdsNatural": "always",
    "holdsRow": "always",
    "best": "grudge",
@@ -2973,14 +3114,14 @@
   },
   "payoff/odd-one-out": {
    "forms": 1,
-   "withScore": 77.6,
-   "withoutScore": 73.6,
-   "gain": 3.93,
-   "gainPercent": 5.3,
+   "withScore": 78.2,
+   "withoutScore": 74.4,
+   "gain": 3.8,
+   "gainPercent": 5.1,
    "raidGainPercent": 5.9,
    "raidRandomPercent": 0,
-   "koWith": 0.63,
-   "koWithout": 0.77,
+   "koWith": 0.6,
+   "koWithout": 0.74,
    "holdsNatural": 1,
    "holdsRow": 0.25,
    "best": "crusher",
@@ -2988,14 +3129,14 @@
   },
   "payoff/edge-walker": {
    "forms": 3,
-   "withScore": 75.7,
-   "withoutScore": 71,
-   "gain": 4.67,
-   "gainPercent": 6.6,
+   "withScore": 76.3,
+   "withoutScore": 71.7,
+   "gain": 4.63,
+   "gainPercent": 6.5,
    "raidGainPercent": 6.1,
    "raidRandomPercent": 2.1,
-   "koWith": 0.68,
-   "koWithout": 0.79,
+   "koWith": 0.65,
+   "koWithout": 0.76,
    "holdsNatural": 0,
    "holdsRow": 0.15,
    "best": "thick-hide",
@@ -3003,29 +3144,29 @@
   },
   "payoff/front-liner": {
    "forms": 1,
-   "withScore": 81.2,
-   "withoutScore": 81.1,
-   "gain": 0.04,
+   "withScore": 81.6,
+   "withoutScore": 81.6,
+   "gain": 0.03,
    "gainPercent": 0,
    "raidGainPercent": 3.5,
    "raidRandomPercent": 0,
-   "koWith": 0.34,
-   "koWithout": 0.34,
-   "holdsNatural": 0.25,
+   "koWith": 0.32,
+   "koWithout": 0.32,
+   "holdsNatural": 0.24,
    "holdsRow": 0,
    "best": "grudge",
    "bestPercent": 0.8
   },
   "payoff/slow-burn": {
    "forms": 2,
-   "withScore": 69.7,
-   "withoutScore": 66.3,
-   "gain": 3.4,
+   "withScore": 70.5,
+   "withoutScore": 67,
+   "gain": 3.42,
    "gainPercent": 5.1,
    "raidGainPercent": 7.1,
    "raidRandomPercent": 3.1,
-   "koWith": 0.86,
-   "koWithout": 0.91,
+   "koWith": 0.83,
+   "koWithout": 0.88,
    "holdsNatural": 1,
    "holdsRow": 1,
    "best": "thick-hide",
@@ -3033,14 +3174,14 @@
   },
   "payoff/finisher": {
    "forms": 4,
-   "withScore": 82.2,
-   "withoutScore": 79.5,
-   "gain": 2.67,
-   "gainPercent": 3.4,
+   "withScore": 82.6,
+   "withoutScore": 80,
+   "gain": 2.58,
+   "gainPercent": 3.2,
    "raidGainPercent": 8.6,
    "raidRandomPercent": 4.9,
-   "koWith": 0.42,
-   "koWithout": 0.49,
+   "koWith": 0.4,
+   "koWithout": 0.46,
    "holdsNatural": 0.92,
    "holdsRow": 1,
    "best": "thick-hide",
@@ -3048,14 +3189,14 @@
   },
   "payoff/first-pounce": {
    "forms": 4,
-   "withScore": 76.5,
-   "withoutScore": 71.1,
-   "gain": 5.38,
-   "gainPercent": 7.6,
+   "withScore": 77.1,
+   "withoutScore": 71.8,
+   "gain": 5.28,
+   "gainPercent": 7.3,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.58,
-   "koWithout": 0.74,
+   "koWith": 0.56,
+   "koWithout": 0.71,
    "holdsNatural": 1,
    "holdsRow": 1,
    "best": "crusher",
@@ -3063,14 +3204,14 @@
   },
   "payoff/steady-rhythm": {
    "forms": 2,
-   "withScore": 75.8,
-   "withoutScore": 65.1,
-   "gain": 10.68,
-   "gainPercent": 16.4,
+   "withScore": 76.5,
+   "withoutScore": 65.9,
+   "gain": 10.62,
+   "gainPercent": 16.1,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.64,
-   "koWithout": 0.83,
+   "koWith": 0.61,
+   "koWithout": 0.8,
    "holdsNatural": 1,
    "holdsRow": 1,
    "best": "thick-hide",
@@ -3078,14 +3219,14 @@
   },
   "payoff/crit-chance": {
    "forms": 5,
-   "withScore": 71.7,
-   "withoutScore": 67.3,
-   "gain": 4.45,
-   "gainPercent": 6.6,
+   "withScore": 72.5,
+   "withoutScore": 68,
+   "gain": 4.43,
+   "gainPercent": 6.5,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.75,
-   "koWithout": 0.85,
+   "koWith": 0.72,
+   "koWithout": 0.82,
    "holdsNatural": "always",
    "holdsRow": "always",
    "best": "thick-hide",
@@ -3093,14 +3234,14 @@
   },
   "payoff/crit-damage": {
    "forms": 3,
-   "withScore": 71.7,
-   "withoutScore": 68,
-   "gain": 3.74,
-   "gainPercent": 5.5,
+   "withScore": 72.4,
+   "withoutScore": 68.7,
+   "gain": 3.71,
+   "gainPercent": 5.4,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.7,
-   "koWithout": 0.81,
+   "koWith": 0.67,
+   "koWithout": 0.78,
    "holdsNatural": "always",
    "holdsRow": "always",
    "best": "thick-hide",
@@ -3108,14 +3249,14 @@
   },
   "payoff/perfect-timing": {
    "forms": 2,
-   "withScore": 68.3,
-   "withoutScore": 66.3,
-   "gain": 2.02,
-   "gainPercent": 3,
+   "withScore": 69,
+   "withoutScore": 67,
+   "gain": 1.95,
+   "gainPercent": 2.9,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.88,
-   "koWithout": 0.91,
+   "koWith": 0.85,
+   "koWithout": 0.88,
    "holdsNatural": 0.11,
    "holdsRow": 0.02,
    "best": "thick-hide",
@@ -3123,29 +3264,29 @@
   },
   "payoff/opportunist": {
    "forms": 2,
-   "withScore": 84.1,
-   "withoutScore": 81.9,
-   "gain": 2.2,
-   "gainPercent": 2.7,
+   "withScore": 84.4,
+   "withoutScore": 82.3,
+   "gain": 2.1,
+   "gainPercent": 2.6,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.28,
-   "koWithout": 0.32,
-   "holdsNatural": 0.33,
+   "koWith": 0.26,
+   "koWithout": 0.31,
+   "holdsNatural": 0.32,
    "holdsRow": 0,
    "best": "elusive",
    "bestPercent": 19.9
   },
   "payoff/quick-draw": {
    "forms": 4,
-   "withScore": 76.4,
-   "withoutScore": 71.7,
-   "gain": 4.75,
-   "gainPercent": 6.6,
+   "withScore": 77.1,
+   "withoutScore": 72.4,
+   "gain": 4.7,
+   "gainPercent": 6.5,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.66,
-   "koWithout": 0.78,
+   "koWith": 0.63,
+   "koWithout": 0.75,
    "holdsNatural": 1,
    "holdsRow": 0.34,
    "best": "thick-hide",
@@ -3153,44 +3294,44 @@
   },
   "payoff/rally-cry": {
    "forms": 4,
-   "withScore": 74.7,
-   "withoutScore": 73.5,
-   "gain": 1.16,
-   "gainPercent": 1.6,
+   "withScore": 75.2,
+   "withoutScore": 74.1,
+   "gain": 1.11,
+   "gainPercent": 1.5,
    "raidGainPercent": 7.3,
    "raidRandomPercent": 3.7,
-   "koWith": 0.57,
-   "koWithout": 0.58,
-   "holdsNatural": 0.36,
+   "koWith": 0.54,
+   "koWithout": 0.55,
+   "holdsNatural": 0.35,
    "holdsRow": 0.05,
    "best": "crusher",
    "bestPercent": 7.7
   },
   "payoff/momentum": {
    "forms": 1,
-   "withScore": 82.8,
-   "withoutScore": 80.5,
-   "gain": 2.26,
-   "gainPercent": 2.8,
+   "withScore": 83.2,
+   "withoutScore": 81,
+   "gain": 2.17,
+   "gainPercent": 2.7,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.47,
-   "koWithout": 0.53,
-   "holdsNatural": 0.27,
+   "koWith": 0.44,
+   "koWithout": 0.5,
+   "holdsNatural": 0.25,
    "holdsRow": 0.17,
    "best": "reflective-hide",
    "bestPercent": 36.7
   },
   "payoff/brace": {
    "forms": 1,
-   "withScore": 82.7,
-   "withoutScore": 82.7,
+   "withScore": 83.1,
+   "withoutScore": 83.1,
    "gain": 0,
    "gainPercent": 0,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.31,
-   "koWithout": 0.31,
+   "koWith": 0.29,
+   "koWithout": 0.29,
    "holdsNatural": 0.06,
    "holdsRow": 0,
    "best": "",
@@ -3198,14 +3339,14 @@
   },
   "payoff/stubborn": {
    "forms": 2,
-   "withScore": 81.9,
-   "withoutScore": 81.9,
+   "withScore": 82.3,
+   "withoutScore": 82.3,
    "gain": 0.03,
    "gainPercent": 0,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.32,
-   "koWithout": 0.32,
+   "koWith": 0.3,
+   "koWithout": 0.31,
    "holdsNatural": 0.06,
    "holdsRow": 0,
    "best": "grudge",
@@ -3213,29 +3354,29 @@
   },
   "payoff/catch-breath": {
    "forms": 3,
-   "withScore": 71.5,
-   "withoutScore": 71.2,
-   "gain": 0.23,
+   "withScore": 72.1,
+   "withoutScore": 71.9,
+   "gain": 0.22,
    "gainPercent": 0.3,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.71,
-   "koWithout": 0.72,
-   "holdsNatural": 0.21,
+   "koWith": 0.68,
+   "koWithout": 0.7,
+   "holdsNatural": 0.2,
    "holdsRow": 0.01,
    "best": "grudge",
    "bestPercent": 3.9
   },
   "guard/hardy": {
    "forms": 6,
-   "withScore": 75.8,
-   "withoutScore": 73.1,
-   "gain": 2.69,
-   "gainPercent": 3.7,
+   "withScore": 76.4,
+   "withoutScore": 73.8,
+   "gain": 2.56,
+   "gainPercent": 3.5,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.64,
-   "koWithout": 0.92,
+   "koWith": 0.63,
+   "koWithout": 0.89,
    "holdsNatural": "always",
    "holdsRow": "always",
    "best": "crusher",
@@ -3243,14 +3384,14 @@
   },
   "guard/shoulder-to-shoulder": {
    "forms": 4,
-   "withScore": 74,
-   "withoutScore": 73.5,
-   "gain": 0.44,
+   "withScore": 74.7,
+   "withoutScore": 74.2,
+   "gain": 0.43,
    "gainPercent": 0.6,
    "raidGainPercent": 8,
    "raidRandomPercent": 5,
-   "koWith": 0.88,
-   "koWithout": 0.91,
+   "koWith": 0.85,
+   "koWithout": 0.87,
    "holdsNatural": 0,
    "holdsRow": 0.39,
    "best": "bramble-bind",
@@ -3258,14 +3399,14 @@
   },
   "guard/odd-one-out": {
    "forms": 3,
-   "withScore": 77.5,
-   "withoutScore": 76.5,
-   "gain": 1.02,
+   "withScore": 78.1,
+   "withoutScore": 77.1,
+   "gain": 0.98,
    "gainPercent": 1.3,
    "raidGainPercent": 6.5,
    "raidRandomPercent": 1.7,
-   "koWith": 0.72,
-   "koWithout": 0.76,
+   "koWith": 0.69,
+   "koWithout": 0.72,
    "holdsNatural": 1,
    "holdsRow": 0.82,
    "best": "bramble-bind",
@@ -3273,14 +3414,14 @@
   },
   "guard/hold-the-line": {
    "forms": 3,
-   "withScore": 76.2,
-   "withoutScore": 71.9,
-   "gain": 4.34,
-   "gainPercent": 6,
+   "withScore": 76.8,
+   "withoutScore": 72.6,
+   "gain": 4.19,
+   "gainPercent": 5.8,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.88,
-   "koWithout": 1.03,
+   "koWith": 0.85,
+   "koWithout": 1,
    "holdsNatural": 0.1,
    "holdsRow": 0.15,
    "best": "bramble-bind",
@@ -3288,14 +3429,14 @@
   },
   "guard/rally-cry": {
    "forms": 2,
-   "withScore": 72.3,
-   "withoutScore": 72.2,
-   "gain": 0.06,
+   "withScore": 73,
+   "withoutScore": 72.9,
+   "gain": 0.05,
    "gainPercent": 0.1,
    "raidGainPercent": 0.1,
    "raidRandomPercent": 0,
-   "koWith": 1.06,
-   "koWithout": 1.04,
+   "koWith": 1.03,
+   "koWithout": 1.01,
    "holdsNatural": 0,
    "holdsRow": 0.04,
    "best": "reflective-hide",
@@ -3303,44 +3444,44 @@
   },
   "guard/flank-guard": {
    "forms": 7,
-   "withScore": 72.1,
-   "withoutScore": 71.8,
-   "gain": 0.31,
+   "withScore": 72.8,
+   "withoutScore": 72.6,
+   "gain": 0.29,
    "gainPercent": 0.4,
    "raidGainPercent": 8.1,
    "raidRandomPercent": -4,
-   "koWith": 1.07,
-   "koWithout": 1.04,
-   "holdsNatural": 0.28,
+   "koWith": 1.03,
+   "koWithout": 1.01,
+   "holdsNatural": 0.26,
    "holdsRow": 0,
    "best": "great-wave",
    "bestPercent": 5.5
   },
   "guard/long-shadow": {
    "forms": 2,
-   "withScore": 74.5,
-   "withoutScore": 71.7,
-   "gain": 2.77,
-   "gainPercent": 3.9,
+   "withScore": 75.1,
+   "withoutScore": 72.5,
+   "gain": 2.64,
+   "gainPercent": 3.6,
    "raidGainPercent": 12.2,
    "raidRandomPercent": 0,
-   "koWith": 0.71,
-   "koWithout": 1,
-   "holdsNatural": 0.25,
+   "koWith": 0.69,
+   "koWithout": 0.97,
+   "holdsNatural": 0.24,
    "holdsRow": 0.13,
    "best": "great-wave",
    "bestPercent": 16
   },
   "guard/shoulder-charge": {
    "forms": 6,
-   "withScore": 76.4,
-   "withoutScore": 73.8,
-   "gain": 2.57,
-   "gainPercent": 3.5,
+   "withScore": 77,
+   "withoutScore": 74.5,
+   "gain": 2.47,
+   "gainPercent": 3.3,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.82,
-   "koWithout": 0.9,
+   "koWith": 0.79,
+   "koWithout": 0.87,
    "holdsNatural": 0.13,
    "holdsRow": 0.2,
    "best": "bramble-bind",
@@ -3348,14 +3489,14 @@
   },
   "guard/brace": {
    "forms": 6,
-   "withScore": 73.5,
-   "withoutScore": 73.1,
-   "gain": 0.37,
+   "withScore": 74.1,
+   "withoutScore": 73.8,
+   "gain": 0.35,
    "gainPercent": 0.5,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.9,
-   "koWithout": 0.92,
+   "koWith": 0.87,
+   "koWithout": 0.89,
    "holdsNatural": 0.06,
    "holdsRow": 0,
    "best": "great-wave",
@@ -3363,44 +3504,44 @@
   },
   "guard/stubborn": {
    "forms": 1,
-   "withScore": 80.7,
-   "withoutScore": 79.4,
-   "gain": 1.28,
-   "gainPercent": 1.6,
+   "withScore": 81.1,
+   "withoutScore": 79.9,
+   "gain": 1.21,
+   "gainPercent": 1.5,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.26,
-   "koWithout": 0.44,
-   "holdsNatural": 0.37,
+   "koWith": 0.25,
+   "koWithout": 0.41,
+   "holdsNatural": 0.35,
    "holdsRow": 0.08,
    "best": "reflective-hide",
    "bestPercent": 8.2
   },
   "guard/catch-breath": {
    "forms": 3,
-   "withScore": 78,
-   "withoutScore": 74.6,
-   "gain": 3.44,
-   "gainPercent": 4.6,
+   "withScore": 78.5,
+   "withoutScore": 75.3,
+   "gain": 3.27,
+   "gainPercent": 4.4,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.51,
-   "koWithout": 0.84,
-   "holdsNatural": 0.91,
+   "koWith": 0.5,
+   "koWithout": 0.81,
+   "holdsNatural": 0.92,
    "holdsRow": 0.19,
    "best": "great-wave",
    "bestPercent": 16
   },
   "guard/unbothered": {
    "forms": 2,
-   "withScore": 72.6,
-   "withoutScore": 72.2,
-   "gain": 0.36,
+   "withScore": 73.3,
+   "withoutScore": 72.9,
+   "gain": 0.34,
    "gainPercent": 0.5,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 1.01,
-   "koWithout": 1.04,
+   "koWith": 0.98,
+   "koWithout": 1.01,
    "holdsNatural": 0.06,
    "holdsRow": 0,
    "best": "wither",
@@ -3408,14 +3549,14 @@
   },
   "guard/heavy-hand": {
    "forms": 2,
-   "withScore": 74.6,
-   "withoutScore": 73.3,
-   "gain": 1.36,
-   "gainPercent": 1.9,
+   "withScore": 75.2,
+   "withoutScore": 74,
+   "gain": 1.27,
+   "gainPercent": 1.7,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.82,
-   "koWithout": 0.89,
+   "koWith": 0.8,
+   "koWithout": 0.87,
    "holdsNatural": 0.99,
    "holdsRow": 0.27,
    "best": "grudge",
@@ -3423,29 +3564,29 @@
   },
   "guard/clinging": {
    "forms": 2,
-   "withScore": 74.3,
-   "withoutScore": 73.3,
-   "gain": 1.05,
+   "withScore": 75,
+   "withoutScore": 74,
+   "gain": 1.01,
    "gainPercent": 1.4,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.84,
-   "koWithout": 0.89,
-   "holdsNatural": 0.93,
+   "koWith": 0.82,
+   "koWithout": 0.87,
+   "holdsNatural": 0.94,
    "holdsRow": 0.15,
    "best": "lucky-strike",
    "bestPercent": 4.6
   },
   "support/hardy": {
    "forms": 7,
-   "withScore": 72.1,
-   "withoutScore": 69.8,
-   "gain": 2.35,
-   "gainPercent": 3.4,
+   "withScore": 72.9,
+   "withoutScore": 70.6,
+   "gain": 2.28,
+   "gainPercent": 3.2,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 1.12,
-   "koWithout": 1.29,
+   "koWith": 1.08,
+   "koWithout": 1.25,
    "holdsNatural": "always",
    "holdsRow": "always",
    "best": "great-wave",
@@ -3453,14 +3594,14 @@
   },
   "support/shoulder-to-shoulder": {
    "forms": 1,
-   "withScore": 75.4,
-   "withoutScore": 75.4,
+   "withScore": 76.1,
+   "withoutScore": 76.1,
    "gain": 0,
    "gainPercent": 0,
    "raidGainPercent": 8.1,
    "raidRandomPercent": 8.1,
-   "koWith": 0.94,
-   "koWithout": 0.94,
+   "koWith": 0.91,
+   "koWithout": 0.91,
    "holdsNatural": 0,
    "holdsRow": 0.58,
    "best": "",
@@ -3468,14 +3609,14 @@
   },
   "support/odd-one-out": {
    "forms": 4,
-   "withScore": 72.9,
-   "withoutScore": 71.3,
-   "gain": 1.59,
-   "gainPercent": 2.2,
+   "withScore": 73.7,
+   "withoutScore": 72.2,
+   "gain": 1.54,
+   "gainPercent": 2.1,
    "raidGainPercent": 6,
    "raidRandomPercent": 1.8,
-   "koWith": 1.18,
-   "koWithout": 1.23,
+   "koWith": 1.14,
+   "koWithout": 1.2,
    "holdsNatural": 0.74,
    "holdsRow": 0.64,
    "best": "grudge",
@@ -3483,14 +3624,14 @@
   },
   "support/edge-walker": {
    "forms": 2,
-   "withScore": 75.2,
-   "withoutScore": 73.6,
-   "gain": 1.53,
-   "gainPercent": 2.1,
+   "withScore": 75.9,
+   "withoutScore": 74.4,
+   "gain": 1.51,
+   "gainPercent": 2,
    "raidGainPercent": 5.1,
    "raidRandomPercent": 2.2,
-   "koWith": 0.97,
-   "koWithout": 1.03,
+   "koWith": 0.93,
+   "koWithout": 1,
    "holdsNatural": 0,
    "holdsRow": 0.1,
    "best": "crusher",
@@ -3498,44 +3639,44 @@
   },
   "support/front-liner": {
    "forms": 3,
-   "withScore": 68.5,
-   "withoutScore": 67.8,
-   "gain": 0.61,
-   "gainPercent": 0.9,
+   "withScore": 69.3,
+   "withoutScore": 68.7,
+   "gain": 0.57,
+   "gainPercent": 0.8,
    "raidGainPercent": 1.9,
    "raidRandomPercent": 0.4,
-   "koWith": 1.34,
-   "koWithout": 1.4,
-   "holdsNatural": 0.88,
+   "koWith": 1.3,
+   "koWithout": 1.36,
+   "holdsNatural": 0.86,
    "holdsRow": 0.04,
    "best": "thick-hide",
    "bestPercent": 4.4
   },
   "support/rally-cry": {
    "forms": 3,
-   "withScore": 76.2,
-   "withoutScore": 74.8,
-   "gain": 1.42,
-   "gainPercent": 1.9,
+   "withScore": 76.8,
+   "withoutScore": 75.5,
+   "gain": 1.34,
+   "gainPercent": 1.8,
    "raidGainPercent": 5.4,
    "raidRandomPercent": 0.6,
-   "koWith": 0.99,
-   "koWithout": 1.03,
-   "holdsNatural": 0.85,
+   "koWith": 0.96,
+   "koWithout": 1,
+   "holdsNatural": 0.84,
    "holdsRow": 0.01,
    "best": "grudge",
    "bestPercent": 17.4
   },
   "support/brace": {
    "forms": 3,
-   "withScore": 70.5,
-   "withoutScore": 70,
-   "gain": 0.46,
-   "gainPercent": 0.7,
+   "withScore": 71.4,
+   "withoutScore": 70.9,
+   "gain": 0.44,
+   "gainPercent": 0.6,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 1.25,
-   "koWithout": 1.27,
+   "koWith": 1.22,
+   "koWithout": 1.24,
    "holdsNatural": 0.06,
    "holdsRow": 0,
    "best": "great-wave",
@@ -3543,29 +3684,29 @@
   },
   "support/catch-breath": {
    "forms": 5,
-   "withScore": 74.3,
-   "withoutScore": 70,
-   "gain": 4.27,
-   "gainPercent": 6.1,
+   "withScore": 75,
+   "withoutScore": 70.8,
+   "gain": 4.18,
+   "gainPercent": 5.9,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.87,
-   "koWithout": 1.26,
-   "holdsNatural": 0.64,
+   "koWith": 0.83,
+   "koWithout": 1.22,
+   "holdsNatural": 0.61,
    "holdsRow": 0,
    "best": "great-wave",
    "bestPercent": 26
   },
   "support/unbothered": {
    "forms": 4,
-   "withScore": 69.4,
-   "withoutScore": 69,
-   "gain": 0.38,
-   "gainPercent": 0.6,
+   "withScore": 70.2,
+   "withoutScore": 69.8,
+   "gain": 0.37,
+   "gainPercent": 0.5,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 1.28,
-   "koWithout": 1.3,
+   "koWith": 1.24,
+   "koWithout": 1.26,
    "holdsNatural": 0,
    "holdsRow": 0,
    "best": "bramble-bind",
@@ -3573,14 +3714,14 @@
   },
   "support/heavy-hand": {
    "forms": 2,
-   "withScore": 68.2,
-   "withoutScore": 65.6,
-   "gain": 2.6,
-   "gainPercent": 4,
+   "withScore": 68.9,
+   "withoutScore": 66.5,
+   "gain": 2.45,
+   "gainPercent": 3.7,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 1.45,
-   "koWithout": 1.51,
+   "koWith": 1.42,
+   "koWithout": 1.47,
    "holdsNatural": 1,
    "holdsRow": 1,
    "best": "grudge",
@@ -3588,14 +3729,14 @@
   },
   "support/clinging": {
    "forms": 2,
-   "withScore": 67.6,
-   "withoutScore": 65.6,
-   "gain": 2.04,
-   "gainPercent": 3.1,
+   "withScore": 68.4,
+   "withoutScore": 66.5,
+   "gain": 1.94,
+   "gainPercent": 2.9,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 1.43,
-   "koWithout": 1.51,
+   "koWith": 1.41,
+   "koWithout": 1.47,
    "holdsNatural": 1,
    "holdsRow": 1,
    "best": "grudge",
@@ -3603,14 +3744,14 @@
   },
   "support/bright-boost": {
    "forms": 7,
-   "withScore": 72,
-   "withoutScore": 69,
-   "gain": 2.97,
-   "gainPercent": 4.3,
+   "withScore": 72.8,
+   "withoutScore": 69.9,
+   "gain": 2.93,
+   "gainPercent": 4.2,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 1.17,
-   "koWithout": 1.31,
+   "koWith": 1.13,
+   "koWithout": 1.27,
    "holdsNatural": 1,
    "holdsRow": 1,
    "best": "crusher",
@@ -3618,14 +3759,14 @@
   },
   "support/kindred-boost": {
    "forms": 3,
-   "withScore": 70,
-   "withoutScore": 70,
+   "withScore": 70.9,
+   "withoutScore": 70.9,
    "gain": 0,
    "gainPercent": 0,
    "raidGainPercent": 6.3,
    "raidRandomPercent": 1.6,
-   "koWith": 1.27,
-   "koWithout": 1.27,
+   "koWith": 1.24,
+   "koWithout": 1.24,
    "holdsNatural": 0,
    "holdsRow": 0.13,
    "best": "",
@@ -3633,14 +3774,14 @@
   },
   "support/triage": {
    "forms": 2,
-   "withScore": 78.5,
-   "withoutScore": 75.7,
-   "gain": 2.79,
-   "gainPercent": 3.7,
+   "withScore": 79.1,
+   "withoutScore": 76.4,
+   "gain": 2.76,
+   "gainPercent": 3.6,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.67,
-   "koWithout": 0.99,
+   "koWith": 0.63,
+   "koWithout": 0.95,
    "holdsNatural": 1,
    "holdsRow": 0.25,
    "best": "grudge",
@@ -3648,14 +3789,14 @@
   },
   "support/overheal-spill": {
    "forms": 2,
-   "withScore": 77.6,
-   "withoutScore": 74.9,
-   "gain": 2.65,
+   "withScore": 78.2,
+   "withoutScore": 75.6,
+   "gain": 2.62,
    "gainPercent": 3.5,
    "raidGainPercent": null,
    "raidRandomPercent": null,
-   "koWith": 0.78,
-   "koWithout": 1.04,
+   "koWith": 0.74,
+   "koWithout": 1.01,
    "holdsNatural": 0.96,
    "holdsRow": 1,
    "best": "elusive",
@@ -3681,28 +3822,29 @@
   "rows": 66,
   "spikes": [],
   "duds": [
+   "Perfect Timing (setter) +2.0%",
    "Brace (setter) +0.1%",
-   "Stubborn (setter) +1.0%",
+   "Stubborn (setter) +0.9%",
    "Catch Breath (setter) +0.1%",
    "Brace (payoff) +0.0%",
    "Stubborn (payoff) +0.0%",
    "Catch Breath (payoff) +0.3%",
    "Rally Cry (guard) +0.1%",
    "Brace (guard) +0.5%",
-   "Stubborn (guard) +1.6%",
+   "Stubborn (guard) +1.5%",
    "Unbothered (guard) +0.5%",
-   "Heavy Hand (guard) +1.9%",
+   "Heavy Hand (guard) +1.7%",
    "Clinging (guard) +1.4%",
    "Front-liner (support) +1.9%",
-   "Brace (support) +0.7%",
-   "Unbothered (support) +0.6%"
+   "Brace (support) +0.6%",
+   "Unbothered (support) +0.5%"
   ],
   "poolsOk": 13,
   "pools": 16,
   "failingPools": [
-   "cindle (payoff: Steady Rhythm +16.4, First Pounce +9.4, Crit Chance +7.2)",
+   "cindle (payoff: Steady Rhythm +16.1, First Pounce +9.3, Crit Chance +7.1)",
    "gaiadrake (payoff: Finisher +9.5, Rally Cry +6.4, Front-liner +3.5)",
-   "mudlump (guard: Long Shadow +12.2, Flank Guard +7.7, Hardy +3.7)"
+   "mudlump (guard: Long Shadow +12.2, Flank Guard +7.7, Hardy +3.4)"
   ],
   "plainOk": 4,
   "plainRows": 6,
@@ -3828,6 +3970,13 @@
     "with": 87.6,
     "share": 17.4,
     "talents": "ancientshell: Owner's Mark, lanternfin: Odd One Out, pyrelynx: Steady Rhythm"
+   },
+   {
+    "card": "breakwater",
+    "without": 68.5,
+    "with": 83.3,
+    "share": 17.8,
+    "talents": "tempestray: Crit Chance, magmole: Bright Boost, tidewing: Owner's Mark"
    }
   ],
   "raid": [
@@ -3915,6 +4064,11 @@
     "card": "shake-it-off",
     "share": 11.6,
     "talents": "kilnmole: Hardy, aurorix: Bright Boost, wickat: none, thornbuck: Flank Guard, lanternfin: Odd One Out, geyserpup: First Pounce, solmane: Sharp Claws, zipmouse: none, voltaro: Shoulder to Shoulder, bloomback: none, drizzlewt: Bright Boost"
+   },
+   {
+    "card": "breakwater",
+    "share": 28,
+    "talents": "bloomback: Opportunist, fogwyrm: Catch Breath, tempestray: Slow Burn, ancientshell: Owner's Mark, drizzlewt: Bright Boost, geyserpup: First Pounce, halcyray: Bright Boost, pyrelynx: Steady Rhythm, hearthshell: Catch Breath, tidewing: Owner's Mark"
    }
   ],
   "boss": {
@@ -3936,12 +4090,13 @@
     "swarm": 5261,
     "crusher": 4559,
     "fizzle": 5139,
-    "shake-it-off": 5443
+    "shake-it-off": 5443,
+    "breakwater": 5687
    }
   },
   "average": {
    "gauntlet": 17.7,
-   "raid": 24.2
+   "raid": 24.4
   },
   "casual": {
    "gauntlet": 7.7,

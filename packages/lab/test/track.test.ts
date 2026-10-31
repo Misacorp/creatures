@@ -226,7 +226,7 @@ describe('the luck cards, a later lap’s new card (Misa, 2026-10-31)', () => {
     Number(Object.entries(SLOT_EXTRA_CARDS).find(([, cards]) => cards.includes(card))?.[0]);
 
   it('puts Lucky Strike on the Storm Sovereign and Slippery on the Tidal Colossus, each from its second lap', () => {
-    expect(SLOT_EXTRA_CARDS).toEqual({ 6: ['slippery'], 8: ['lucky-strike'] });
+    expect(SLOT_EXTRA_CARDS).toEqual({ 6: ['slippery', 'breakwater'], 8: ['lucky-strike'] });
     expect(trackSlot(first('lucky-strike')).bossId).toBe('storm-sovereign');
     expect(trackSlot(first('slippery')).bossId).toBe('tidal-colossus');
     for (const card of ['lucky-strike', 'slippery']) {
@@ -238,7 +238,7 @@ describe('the luck cards, a later lap’s new card (Misa, 2026-10-31)', () => {
   });
 
   it('adds a card to its boss from that slot on and never earlier', () => {
-    const from = { slippery: 6, 'lucky-strike': 8 } as const;
+    const from = { slippery: 6, breakwater: 6, 'lucky-strike': 8 } as const;
     for (let s = 1; s <= 4 * n; s++) {
       const expected = (Object.keys(from) as (keyof typeof from)[]).filter(
         (card) => s >= from[card] && (s - from[card]) % n === 0,
@@ -250,12 +250,12 @@ describe('the luck cards, a later lap’s new card (Misa, 2026-10-31)', () => {
           expected.includes(card as keyof typeof from),
         );
     }
-    // The first lap has none, and no boss has more than one.
+    // The first lap has none, and no boss has more than two (the Colossus: Slippery and Breakwater).
     for (let s = 1; s <= n; s++) expect(trackSlot(s).extraCards).toEqual([]);
     expect(TRACK.filter((s) => s.extraCards.length).map((s) => s.slot)).toEqual([
       6, 8, 11, 13, 16, 18, 21, 23, 26, 28,
     ]);
-    for (const s of TRACK) expect(s.extraCards.length).toBeLessThanOrEqual(1);
+    for (const s of TRACK) expect(s.extraCards.length).toBeLessThanOrEqual(2);
   });
 
   it('builds the card on the boss at the slot’s strength: a crit chance for Lucky Strike, a flat dodge for Slippery', () => {
@@ -264,7 +264,7 @@ describe('the luck cards, a later lap’s new card (Misa, 2026-10-31)', () => {
     expect(storm.critChanceBp).toBe(Math.floor((2_000 * trackSlot(8).strengthBp) / 10_000));
     expect(storm.dodgeBp ?? 0).toBe(0);
     const colossus = slotBoss(6);
-    expect(colossus.cards.slice(-1)).toEqual(['slippery']);
+    expect(colossus.cards.slice(-2)).toEqual(['slippery', 'breakwater']);
     expect(colossus.dodgeBp).toBe(Math.floor((2_500 * trackSlot(6).strengthBp) / 10_000));
     expect(colossus.critChanceBp ?? 0).toBe(0);
     // Stronger on the lap after.
@@ -274,6 +274,16 @@ describe('the luck cards, a later lap’s new card (Misa, 2026-10-31)', () => {
     expect(slotBoss(7).critChanceBp ?? 0).toBe(0);
     expect(slotBoss(7).dodgeBp ?? 0).toBe(0);
     expect(slotBoss(3).cards).toEqual(RAID_SPECS.find((x) => x.id === 'storm-sovereign')?.cards);
+  });
+
+  it('Breakwater makes wards cut more of the Colossus’s sweeps, by the slot’s strength, and nothing else', () => {
+    const colossus = slotBoss(6);
+    expect(colossus.mods.wardBp).toBe(
+      10_000 + Math.floor((20_000 * trackSlot(6).strengthBp) / 10_000),
+    );
+    expect(slotBoss(11).mods.wardBp as number).toBeGreaterThan(colossus.mods.wardBp as number);
+    expect(slotBoss(1).mods.wardBp).toBeUndefined();
+    expect(slotBoss(7).mods.wardBp).toBeUndefined();
   });
 
   it('is what raidBossOf builds with the card, at every slot that has one', () => {
