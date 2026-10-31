@@ -45,6 +45,16 @@ export interface FourOfFiveRow {
   off: number[] | null;
 }
 
+export interface SchoolData {
+  /** By week, medians over seeds and players of a kind (mixed server of 8): learnings finished, Acorns paid for learning and the teacher's lessons, lessons taken, broker hours. */
+  learnings: Record<string, number[]>;
+  acorns: Record<string, number[]>;
+  lessons: Record<string, number[]>;
+  brokerHours: Record<string, number[]>;
+  /** The share of a kind's Acorn income that went to learning over the 24 weeks. */
+  acornShare: Record<string, number>;
+}
+
 export interface VisitorData {
   /** By week, medians over seeds and players of a profile (the mixed server of 8). */
   rerolls: Record<string, number[]>;
@@ -85,6 +95,35 @@ const shareOfRuns = (result: ScenarioResult | undefined): number[] | null =>
           Math.max(1, result.runs.length),
       )
     : null;
+
+export function schoolOf(results: Results): SchoolData {
+  const out: SchoolData = {
+    learnings: {},
+    acorns: {},
+    lessons: {},
+    brokerHours: {},
+    acornShare: {},
+  };
+  for (const id of VISITOR_PROFILES) {
+    const players = playersOf(results.mixed8, id);
+    if (!players.length) continue;
+    out.learnings[id] = weekSeries(players, (w) => w.learnings);
+    out.acorns[id] = weekSeries(players, (w) => w.learnAcorns);
+    out.lessons[id] = weekSeries(players, (w) => w.teacherLessons);
+    out.brokerHours[id] = weekSeries(players, (w) => w.brokerHours);
+    out.acornShare[id] = median(
+      players.map(
+        (p) =>
+          p.weeks.reduce((n, w) => n + w.learnAcorns, 0) /
+          Math.max(
+            1,
+            p.weeks.reduce((n, w) => n + (w.inn[0] ?? 0), 0),
+          ),
+      ),
+    );
+  }
+  return out;
+}
 
 export function visitorOf(results: Results): VisitorData {
   const on = results.mixed8;

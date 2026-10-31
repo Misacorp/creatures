@@ -1,4 +1,3 @@
-import { RULES as GAME } from '@creatures/game';
 import { playersOf, type Results } from './scenarios';
 import type { PlayerRun } from './sim';
 import type { WeekRecord } from './types';
@@ -10,7 +9,7 @@ import { median } from './util';
  * The roster profile: the seam between combat v2 and the valley, in the shape of `RosterProfile` in `packages/lab/src/roster.ts`
  * on branch `combat-v2-track` (copied here as types so this package does not depend on that branch). Plain data: for each kind
  * of player and each week from 1 to 24, the levels of the player's 1st, 3rd, 10th and 20th creature, how many creatures they own,
- * which forms they hold (the ones at least half of the players of that kind are right now: an evolved creature is its second form and no longer its stage 1) (a level is 0 where the median player owns fewer creatures than the rank asks for: `size` says so), the open talent slots of their best creature, whether talents are picked, and a gear level.
+ * which forms they hold (the ones at least half of the players of that kind are right now: an evolved creature is its second form and no longer its stage 1) (a level is 0 where the median player owns fewer creatures than the rank asks for: `size` says so), the open talent slots of their best creature, whether talents are picked (learned at the School: every open slot of the best creature, for at least half of the players), and a gear level.
  */
 export const ROSTER_WEEKS = 24;
 
@@ -38,9 +37,6 @@ export interface RosterProfile {
   /** A new player's roster by weeks since joining (index 0: the week they join). */
   readonly newPlayer: readonly RosterWeek[];
 }
-
-const talentSlotsAt = (level: number): number =>
-  GAME.talents.slotLevels.filter((l) => level >= l).length;
 
 /** The forms most players of a kind hold at the end of a week (at least half of them), by name. */
 function formsAt(records: readonly WeekRecord[]): string[] {
@@ -70,8 +66,12 @@ function weeksFor(players: readonly PlayerRun[]): RosterWeek[] {
       twentieth: level(20),
       size,
       forms: formsAt(records),
-      talentSlots: talentSlotsAt(first),
-      talentsPicked: false,
+      // The open slots of the best creature (level 1, 20 and 25; the third on rare and epic lines) and whether at least half of the players'
+      // best creatures have learned every one of them at the School.
+      talentSlots: Math.round(median(records.map((w) => w.bestSlots))),
+      talentsPicked:
+        records.filter((w) => w.bestSlots > 0 && w.bestLearned >= w.bestSlots).length * 2 >=
+        Math.max(1, records.length),
       gear: Math.round(median(records.map((w) => w.avgGear))),
     };
   });

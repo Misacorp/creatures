@@ -37,6 +37,8 @@ export interface Creature {
   /** V-BON-2: the multiplier fixed at the last visit, and the hour it stops. */
   catchMult: number;
   catchTarget: number;
+  /** Talent slots learned at the School (the first learning of each slot; swapping between learned talents is free). */
+  learned: number;
   /** Item level worn in each slot (0 = empty). */
   gear: number[];
   /** The rarity of the piece in each slot, and its modifier lines (a pip tier each; empty when the slot is). */
@@ -60,6 +62,13 @@ export interface Anvil {
   element: number;
   rarity: number;
   mastery: number;
+}
+
+/** A School seat: a creature learning (slot 1 to 3) or a student at a visiting teacher (slot 0), and the effective hours left. */
+export interface SchoolSeat {
+  creature: Creature;
+  slot: number;
+  left: number;
 }
 
 export interface Piece {
@@ -130,6 +139,14 @@ export interface WeekRecord {
   fourOfFive: number;
   /** The largest of those gaps among creatures not held at the evolution level (waiting on Essence). */
   benchOpenWorst: number;
+  /** The School: learnings finished, Acorns paid for the ones and the teacher's lessons begun, lessons taken, and the best creature's open and learned slots. */
+  learnings: number;
+  learnAcorns: number;
+  teacherLessons: number;
+  bestSlots: number;
+  bestLearned: number;
+  /** Effective hours a creature stood at the broker's post, and the shards it traded in (the exchange's trades are in `exchanges`). */
+  brokerHours: number;
   /** The forms the creatures are at the end of the week (line * 2, plus 1 for an evolved creature: see `forms.ts`). */
   held: number[];
   /** Creatures held at their evolution level at the end of the week. */
@@ -209,6 +226,10 @@ export interface Player {
   blueprintBought: boolean;
   /** The journey export's recorder (null unless this player is traced; recording never changes the run). */
   trace: Tracer | null;
+  /** The School's seats (V-SCH-7) and the broker's mastery (effective hours at the exchange). */
+  school: SchoolSeat[];
+  schoolTeacherWeek: number;
+  brokerMastery: number;
   /** A stream of its own for modifier lines, so rerolls never shift the other random draws. */
   lineRng: Rng;
   masters: number;

@@ -189,6 +189,18 @@ export const RulesSchema = v.strictObject({
     communalPerHour: num,
     communalCreaturesPerSeat: pos,
   }),
+  broker: v.strictObject({
+    seats: int,
+    tiers: v.pipe(v.array(v.strictObject({ rate: pos, critChance: share })), v.length(4)),
+  }),
+  school: v.strictObject({
+    seats: int,
+    hours: pos,
+    slotLevels: v.pipe(v.array(int), v.length(3)),
+    thirdSlotFromRarity: int,
+    price: num,
+    teacherDay: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(6)),
+  }),
   gear: v.strictObject({
     lines: v.pipe(v.array(int), v.length(3)),
     pipFrom: v.pipe(v.array(int), v.length(4)),

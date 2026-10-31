@@ -136,6 +136,29 @@ export const DIALS: readonly Dial[] = [
     step: 0.1,
   },
   {
+    id: 'learningPrice',
+    label:
+      "Acorns a first learning at the School costs (slot N costs N times this; 60 in the doc's example)",
+    paths: [['school', 'price']],
+    integer: true,
+    min: 0.1,
+    max: 2,
+    step: 0.1,
+  },
+  {
+    id: 'brokerRate',
+    label: "the broker's exchange rates (shards of another element per 1; lower is a better rate)",
+    paths: [
+      ['broker', 'tiers', '0', 'rate'],
+      ['broker', 'tiers', '1', 'rate'],
+      ['broker', 'tiers', '2', 'rate'],
+      ['broker', 'tiers', '3', 'rate'],
+    ],
+    min: 0.5,
+    max: 1.5,
+    step: 0.1,
+  },
+  {
     id: 'kitPrice',
     label: 'kit price',
     paths: [['kit', 'price']],

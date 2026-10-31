@@ -22,6 +22,7 @@ import {
   collectFloor,
   dismantleBag,
   exchangeAtVisit,
+  brokerHour,
   equipOrBag,
   recomputeWeak,
   rollRarity,
@@ -30,6 +31,7 @@ import {
 import { bestPiece, hasFourOfFive, wornPieces } from './lines';
 import { visitVisitor } from './visitor';
 import { heldForms } from './forms';
+import { openSlots, startLearning, stepSchool } from './school';
 import { beginVisit, endVisit, homeDone, newTracer, type JourneyEntry } from './journey';
 import { accrueIdleXp, atTopLevel, fightXp, levelsDesc, setCatchUp } from './growth';
 import {
@@ -197,6 +199,7 @@ export function visit(p: Player, server: Server, hour: number): void {
   buyEvolutions(p);
   giveGifts(p, server, hour);
   buySeatsAndKit(p, server);
+  startLearning(p, hour);
   visitVisitor(p, server, hour);
   p.wk.rowsWritten += p.wk.rerolls - rerollsBefore;
   retilt(p);
@@ -221,7 +224,7 @@ function accrue(
   hearth: number,
 ): void {
   const share = awayShare(rules, curve, hour - p.lastVisit);
-  const { scouts, anvils } = activeCounts(p);
+  const { scouts, anvils, brokers } = activeCounts(p);
   p.wk.effHours += share;
   accrueIdleXp(p, share, hearth);
   accrueSeats(p, share, scouts);
@@ -233,6 +236,8 @@ function accrue(
   if (server.config.communalSeats && p.creatures.length >= rules.commons.communalCreaturesPerSeat) {
     p.communalStore += Math.min(share, Math.max(0, cap - p.communalStore));
   }
+  if (brokers > 0) brokerHour(p, share);
+  stepSchool(p, share);
   stepAnvils(p, share, anvils, server);
 }
 
@@ -315,6 +320,9 @@ function endWeek(p: Player, server: Server): void {
     .filter((c) => !(c.canEvolve && !c.evolved && c.level >= p.rules.xp.evolveLevel))
     .map((c) => Math.max(0, third - c.level));
   wk.held = heldForms(p);
+  const top = [...p.creatures].sort((a, b) => b.level - a.level)[0];
+  wk.bestSlots = top ? openSlots(p.rules, top) : 0;
+  wk.bestLearned = top ? Math.min(top.learned, wk.bestSlots) : 0;
   wk.benchOpenWorst = open.length ? Math.max(...open) : 0;
   wk.benchCount = gaps.length;
   wk.benchWithin = gaps.filter((g) => g <= THRESHOLDS.benchWithin).length;

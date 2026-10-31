@@ -29,6 +29,8 @@
     }
    },
    "events": [
+    "school: a creature began learning its talent 1 (12 Acorns, 24 hours)",
+    "school: a creature began learning its talent 1 (12 Acorns, 24 hours)",
     "visitor: he is in the valley until the raid finale",
     "mastery: scout seat 1 reached Apprentice",
     "mastery: anvil 1 reached Apprentice"
@@ -72,6 +74,7 @@
    "events": [
     "new line: cindle",
     "new line: mistnewt",
+    "school: a creature began learning its talent 1 (12 Acorns, 24 hours)",
     "visitor: he is in the valley until the raid finale",
     "mastery: scout seat 1 reached Expert",
     "mastery: scout seat 2 reached Apprentice",
@@ -96,25 +99,32 @@
     "acorns": 132,
     "scrap": 389.29,
     "shards": {
-     "tide": 2,
      "ember": 22.48,
-     "mire": 16.48
+     "mire": 22.48
     },
     "creatures": [
      {
-      "line": "splashet",
+      "line": "sproutle",
+      "count": 1,
+      "newLine": true
+     },
+     {
+      "line": "coralynx",
       "count": 1,
       "newLine": true
      }
     ],
     "pieces": {
-     "collected": 4,
-     "worn": 4,
+     "collected": 7,
+     "worn": 8,
      "bagged": 2
     }
    },
    "events": [
-    "new line: splashet",
+    "new line: sproutle",
+    "new line: coralynx",
+    "school: a creature began learning its talent 1 (12 Acorns, 24 hours)",
+    "school: a creature began learning its talent 1 (12 Acorns, 24 hours)",
     "visitor: he is in the valley until the raid finale",
     "mastery: scout seat 2 reached Expert",
     "mastery: anvil 2 reached Apprentice",
@@ -135,40 +145,22 @@
    "hour": 20,
    "cameHome": {
     "acorns": 132,
-    "scrap": 431.83,
+    "scrap": 415.83,
     "shards": {
-     "tide": 2,
      "ember": 22.48,
-     "mire": 17.5
+     "mire": 23.5
     },
-    "creatures": [
-     {
-      "line": "coralynx",
-      "count": 1,
-      "newLine": true
-     },
-     {
-      "line": "squelch",
-      "count": 1,
-      "newLine": false
-     },
-     {
-      "line": "new line 16 (common)",
-      "count": 2,
-      "newLine": true
-     }
-    ],
+    "creatures": [],
     "pieces": {
-     "collected": 2,
-     "worn": 3,
-     "bagged": 0
+     "collected": 5,
+     "worn": 6,
+     "bagged": 2
     }
    },
    "events": [
-    "new line: coralynx",
-    "new line: new line 16 (common)",
+    "school: a creature began learning its talent 1 (12 Acorns, 24 hours)",
+    "school: a creature began learning its talent 1 (12 Acorns, 24 hours)",
     "visitor: he is in the valley until the raid finale",
-    "visitor: bought the week's blueprint (a new one) for 40 Acorns and 50 shards",
     "mastery: scout seat 1 reached Master",
     "mastery: anvil 1 reached Master",
     "mastery: anvil 2 reached Expert"

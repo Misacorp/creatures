@@ -398,6 +398,44 @@ export const RULES = {
     topPipChance: 0.3,
   },
 
+  /**
+   * V-FORGE-11, the broker: a post at the exchange. A creature standing there trades the player's surplus shards for the elements the
+   * Forge's orders are waiting on, all the time, at a rate that mastery improves (the post's mastery steps, V-POST-12).
+   */
+  broker: {
+    // ASSUMPTION: one broker seat per player at Forge level 1 (the lab does not give seats with higher Forge levels).
+    seats: 1,
+    // ASSUMPTION: the rate (shards of another element for 1) and the crit chance by mastery step (none, Skilled, Expert, Master): Misa's
+    // 3:1 for the start, 3:1 with more crits, 5:2 and 2:1 for Master (the forge.md example; the lead's numbers).
+    // TUNED 2026-10-30 (round 18): the rates were 3, 3, 2.5 and 2 (all x0.8 now); crit chances unchanged.
+    tiers: [
+      { rate: 2.4, critChance: 0.1 },
+      { rate: 2.4, critChance: 0.15 },
+      { rate: 2, critChance: 0.15 },
+      { rate: 1.6, critChance: 0.2 },
+    ] as readonly { rate: number; critChance: number }[],
+  },
+
+  /**
+   * V-SCH-7..9, the School: a creature learns a talent the first time a slot opens, in a School seat for a short stay, paying Acorns once.
+   * Visiting teachers come once a week. Graduation is held here too and has no cost in the lab.
+   */
+  school: {
+    // ASSUMPTION: two seats per player at School level 1.
+    seats: 2,
+    // ASSUMPTION: a learning takes this many effective hours in a seat (the doc's "a day").
+    hours: 24,
+    // Talent slots open at these levels (the game's: 1 at the catch, 2 at level 20, 3 at 25); the third only on rare and epic lines (combat v2).
+    slotLevels: [1, 20, 25] as readonly number[],
+    thirdSlotFromRarity: 1,
+    // ASSUMPTION: the first learning of slot N costs N times this many Acorns (the doc's example: 60).
+    // TUNED 2026-10-30 (round 18): was 60 (the doc's example), which took most of a daily player's Acorns and left the visitor none.
+    price: 12,
+    // ASSUMPTION: a visiting teacher comes on this weekday (0 = Monday) and stays the week; a player takes one lesson a week, which costs the
+    // price of a first learning and a seat for a stay, and counts toward the talents found (no other economy effect).
+    teacherDay: 2,
+  },
+
   /** V-VIS-1..5: the weekly visitor (docs/design/valley/systems/visitor.md). */
   visitor: {
     // V-VIS-1: he arrives on Thursday 00:00 (day 3 of a Monday-first week) and leaves at the raid's finale (Sunday 23:00, hour 167 of the week).

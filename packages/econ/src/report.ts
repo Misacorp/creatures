@@ -26,7 +26,13 @@ import { rosterProfile, type RosterProfile } from './roster';
 import { levelOf, medianOf, round, total } from './stats';
 import { SLOW_FLOOR } from './servers';
 import { THRESHOLDS } from './targets';
-import { VISITOR_PROFILES, visitorOf, type VisitorData } from './visitorData';
+import {
+  VISITOR_PROFILES,
+  schoolOf,
+  visitorOf,
+  type SchoolData,
+  type VisitorData,
+} from './visitorData';
 import { median, sum } from './util';
 
 /** The numbers behind the report (written as `report-data.json`, for charts). */
@@ -46,6 +52,8 @@ export interface ReportData {
   variants: VariantRow[];
   /** The weekly visitor (V-VIS): rerolls and what they drain by week, piles with and without him, the best piece's lines, 4-of-5 epics. */
   visitor: VisitorData;
+  /** The School's learnings and the broker's hours (V-SCH-7, V-FORGE-11). */
+  school: SchoolData;
   /** A daily player's Forge by policy, with and without the shard exchange (weeks 2 to 12). */
   exchangeByPolicy: ExchangeRow[];
   /** A daily player's roster by week at the default arrival rate and at the docs' 2% an hour. */
@@ -266,6 +274,7 @@ export function buildReportData(
     })),
     variants: time('variants', () => variantsOf(results)),
     visitor: time('visitor', () => visitorOf(results)),
+    school: time('visitor', () => schoolOf(results)),
     exchangeByPolicy: time('exchange', () => exchangeRowsOf(results)),
     rosterByRate: Array.from({ length: 24 }, (_, i) => {
       const at = (id: string, pick: (w: PlayerRun['weeks'][number]) => number): number =>
@@ -859,6 +868,43 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
             ),
           ]),
         ),
+    ),
+    '',
+  );
+
+  // The School and the broker.
+  const sch = data.school;
+  push(
+    '### The School and the broker (V-SCH-7, V-FORGE-11)',
+    '',
+    `A creature learns a talent the first time a slot opens (slot 1 when caught, slot 2 at level ${rules.school.slotLevels[1]}, slot 3 at ${rules.school.slotLevels[2]} on rare and epic lines): it takes one of ${rules.school.seats} School seats for ${rules.school.hours} effective hours and pays slot-number times ${rules.school.price} Acorns once; a visiting teacher comes on weekday ${rules.school.teacherDay + 1} of the week, a lesson costs the price of a first learning, and one lesson a week is taken. The broker is a post at the exchange (${rules.broker.seats} seat): a spare creature trades surplus shards for the elements the orders wait on all the time, at ${rules.broker.tiers.map((t) => `${t.rate}:1 with ${num(t.critChance * 100)}% crits`).join(', then ')} as its mastery grows. Median over seeds and players of a kind (mixed server of 8):`,
+    '',
+  );
+  const avgW = (xs: readonly number[] | undefined, a: number, b: number): number =>
+    sum((xs ?? []).slice(a, b)) / Math.max(1, b - a);
+  const schoolWeeks: [string, number, number][] = [
+    ['weeks 1 to 4', 0, 4],
+    ['weeks 5 to 12', 4, 12],
+    ['weeks 13 to 24', 12, 24],
+  ];
+  push(
+    ...table(
+      [
+        'Player',
+        ...schoolWeeks.map(([label]) => `Acorns a week on learning, ${label}`),
+        'Share of Acorn income, 24 weeks',
+        'Learnings by week 12',
+        'Teacher lessons by week 24',
+        'Broker hours a week, weeks 9 to 24',
+      ],
+      VISITOR_PROFILES.filter((id) => sch.acorns[id]).map((id) => [
+        profileLabel(id),
+        ...schoolWeeks.map(([, a, b]) => num(avgW(sch.acorns[id], a, b))),
+        `${num((sch.acornShare[id] ?? 0) * 100)}%`,
+        num(sum((sch.learnings[id] ?? []).slice(0, 12))),
+        num(sum(sch.lessons[id] ?? [])),
+        num(avgW(sch.brokerHours[id], 8, 24)),
+      ]),
     ),
     '',
   );

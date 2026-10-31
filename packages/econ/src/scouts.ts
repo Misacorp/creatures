@@ -17,10 +17,12 @@ import {
 import { poisson, uniform, weighted } from './util';
 
 /** How many seats and anvils have a creature to stand on: three starters cover the first scout and anvil. */
-export function activeCounts(p: Player): { scouts: number; anvils: number } {
+export function activeCounts(p: Player): { scouts: number; anvils: number; brokers: number } {
   const scouts = Math.min(p.seats.length, p.creatures.length);
   const anvils = Math.min(p.anvils.length, Math.max(0, p.creatures.length - scouts));
-  return { scouts, anvils };
+  // The broker (V-FORGE-11) takes a creature nobody else needs: both kinds of player post one once they have a spare.
+  const brokers = Math.min(p.rules.broker.seats, Math.max(0, p.creatures.length - scouts - anvils));
+  return { scouts, anvils, brokers };
 }
 
 /** V-POST-4: the average output multiplier from fit (an optimiser matches more posts than a set-and-forget player). */

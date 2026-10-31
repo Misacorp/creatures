@@ -55,8 +55,15 @@ function chooseElement(p: Player): number {
  * Q34 B: the Forge's shard exchange. Trades `rate` shards of another element (the biggest pile above `keep`) for 1 of `element`,
  * with a chance of a crit that gives more, until the player has `want` of it or no other pile can pay. Returns the shards gained.
  */
-export function exchangeFor(p: Player, element: number, want: number, keep: number): number {
-  const { rate, critChance, critYield } = p.rules.forge.exchange;
+export function exchangeFor(
+  p: Player,
+  element: number,
+  want: number,
+  keep: number,
+  terms: { rate: number; critChance: number } = p.rules.forge.exchange,
+): number {
+  const { rate, critChance } = terms;
+  const { critYield } = p.rules.forge.exchange;
   let gained = 0;
   while ((p.shards[element] ?? 0) < want) {
     let donor = -1;
@@ -103,6 +110,35 @@ export function exchangeAtVisit(p: Player): void {
   const order = want.map((w, e) => ({ w, e })).sort((a, b) => b.w - a.w);
   for (const { w, e } of order) if (w > 0) exchangeFor(p, e, w, keep);
   p.waitingShard = -1;
+}
+
+/** The broker's rate and crit chance for the mastery it has reached (V-FORGE-11). */
+export function brokerTerms(p: Player): { rate: number; critChance: number } {
+  const steps = p.rules.posts.mastery;
+  const tier = steps.filter((s) => p.brokerMastery >= s.hours).length;
+  const tiers = p.rules.broker.tiers;
+  return tiers[Math.min(tier, tiers.length - 1)] ?? p.rules.forge.exchange;
+}
+
+/**
+ * One hour of the broker (V-FORGE-11): a creature at the exchange trades the surplus shards (what the player keeps for the Forge stays) for
+ * the elements the orders are waiting on, at its rate. It works whenever a creature stands there, visits or not.
+ */
+export function brokerHour(p: Player, share: number): void {
+  const rules = p.rules;
+  p.brokerMastery += share;
+  p.wk.brokerHours += share;
+  const terms = brokerTerms(p);
+  const keep = rules.forge.giveReserveShards;
+  for (let e = 0; e < ELEMENTS.length; e++) {
+    const orders = Math.min(
+      (p.weakByElement[e] ?? 0) - (p.pendingByElement[e] ?? 0),
+      Math.max(1, p.anvils.length) * 3,
+    );
+    if (orders <= 0) continue;
+    const want = orders * rules.forge.shard;
+    if ((p.shards[e] ?? 0) < want) exchangeFor(p, e, want, keep, terms);
+  }
 }
 
 /** What an idle anvil does at the start of an hour: begin a piece if it has an order and the inputs, else say what is missing. */
