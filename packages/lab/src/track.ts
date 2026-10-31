@@ -132,7 +132,7 @@ export const SLOT_LINE: Readonly<Record<number, string>> = {
  * slot's week (`ownability.ts`, tested). An absent slot adds nothing.
  */
 export const SLOT_EXTRA_CARDS: Readonly<Record<number, readonly string[]>> = {
-  6: ['slippery'], // tidal-colossus
+  6: ['slippery', 'breakwater'], // tidal-colossus
   8: ['lucky-strike'], // storm-sovereign, from its second lap (slots 8 and 13)
 };
 
