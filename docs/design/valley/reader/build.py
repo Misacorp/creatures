@@ -130,7 +130,7 @@ for f, name in SYSTEMS:
     first = re.search(r'^# (.*)', s, re.M).group(1)
     sys_html.append(f'<details class="sys" id="sys-{f[:-3]}"><summary><span class="sname">{inline(first)}</span><span class="pill">{html.escape(st)}</span></summary><div class="sbody">{md(s)}</div></details>')
 sections.append(('systems','Systems', '<p class="lead">Tap a system to open it. Rules are numbered (V-POST-1…) so reviews and the simulator can point at them.</p>' + ''.join(sys_html)))
-econ = md(read('economy/resources.md')) + md(read('economy/model.md'))
+econ = (md(read('economy/summary.md')) if os.path.exists(os.path.join(ROOT,'economy/summary.md')) else '') + md(read('economy/resources.md')) + md(read('economy/model.md'))
 if os.path.exists(os.path.join(ROOT,'economy/report.md')):
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from charts import charts

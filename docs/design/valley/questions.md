@@ -18,6 +18,30 @@ Status: asked for the morning, round 18 (2026-10-31). From the **school** queue 
 
 **Lead's pick: B.** It gives learning a place in the world (the valley is the menu), drains Acorns, and gives graduation a home, without new rules: it uses combat's book exactly as decided. A is the brave, simple answer if you'd rather have one place fewer; C takes away your choice of talent.
 
+### Q46. Should the Forge trade for the shard it waits on by itself? (a challenge)
+
+Status: asked for the morning, round 18 (2026-10-31). The follow-up held since Q34 ("if a hands-off player's Forge still stalls with the exchange, raise the smarter ordering once"). Challenges: Q34 (B, the exchange as a tap) and Q36's withdrawal. Touches: `forge.md` V-FORGE-4 and V-FORGE-10, F-1 and F-5.
+
+**Why it matters.** With the exchange, a daily player's anvils wait for a shard of the right element 16% of the time; every other day 40%, a weekend off 30%, a weekly player 71%. Shards pile up overall (the wrong elements); the trade that fixes it is one nobody would refuse, but it only happens when the player is there to tap it.
+
+- **A. Keep the tap.** Example: Juho's anvils wait most of the week; on Sunday he trades and they run again.
+- **B. The Forge trades by itself when an order waits,** at the standard rate, and the return walk mentions it (crits included). You can still trade by hand, and better rates (traders, Forge levels) stay worth having. Example: "The Forge traded 9 Ember shards for 3 Tide (a lucky trade: 4!) and kept making Kelp Caps."
+- **C. The Forge makes what it has shards for first,** and waits only when nothing can be made. Example: Juho's smiths make Ember pieces while Tide pieces wait.
+
+**Lead's pick: B.** It keeps your exchange (rates, crits, traders later) and ends a wait that only costs a player for not being there (F-1), and it drains the wrong-element pile. C keeps elements stricter but still leaves anvils idle for weekly players.
+
+### Q47. Does the lab pass phase 2, and may phase 3 start?
+
+Status: asked for the morning, round 18 (2026-10-31). The phase 2 gate (`roadmap.md`): "the targets pass for every player profile; the report reads sensibly to Misa". Touches: `economy/summary.md` (read this first), `phase3-plan.md`, T-1 and T-2d in `goals.md`.
+
+**Why it matters.** The lab now runs every decision through round 17. Most targets pass; four fail honestly (summary, "What fails"): shards at the Forge (Q46), scrap piling up late (the next sink, the lead's to propose), and two of your targets as written. T-1 says the 10th creature is within 5 levels of the 3rd at week 4; in the lab it is 10 behind, because a player has only about 11 creatures then and the 10th just arrived, while every creature owned two weeks is within 5. A returner reaches the server's middle in 16 days against "about two weeks".
+
+- **A. Pass the gate with T-1 restated** ("a creature you have owned two weeks is within 5 levels of your 3rd best") and returners at about 16 days; start phase 3 (`phase3-plan.md`: the return walk, two posts, the bonfire, one project, the visitor and a graduation, driven by the lab's journeys, on staging when you ask).
+- **B. Pass the gate, but make new catches grow faster first** (stronger catch-up, x4 or more), so your T-1 holds as written. Newcomers would rise faster too.
+- **C. Not yet.** Tell me what reads oddly in the summary or the charts, and the lab gets another pass.
+
+**Lead's pick: A.** The restated T-1 keeps your intent (the bench never left behind) without new catches rocketing; the numbers that matter for feel are now steady enough to prototype, and the prototype is what tells us whether it is fun.
+
 ## Queue
 
 In order. Each becomes a numbered question when asked; entries name what they wait on.
