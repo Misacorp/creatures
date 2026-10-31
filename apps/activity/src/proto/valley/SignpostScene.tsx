@@ -111,44 +111,46 @@ export function SignpostScene({
           scale={scale}
         />
       </div>
-      <div class="pv-act pv-act-map">
+      <div class="pv-act">
         {waiting !== undefined && <StoryPlate waiting={waiting} strip />}
-        {place !== null && closed.length === 0 && !full && (
-          <ul class="pv-packs" aria-label="Pack a supply">
-            {stock.map(([id, n]) => (
-              <li key={id}>
-                <button
-                  type="button"
-                  class={`pv-pack${supply === id ? ' on' : ''}`}
-                  aria-pressed={supply === id}
-                  aria-label={`Pack ${supplyName(id)}, ${String(n)} in stock`}
-                  onClick={() => {
-                    setSupply(supply === id ? null : id);
-                  }}
-                >
-                  <GameIcon
-                    icon={{ kind: 'supply', id: supplyKindOf(id) ?? 'unknown' }}
-                    scale={3}
-                  />
-                  <span class="pv-pack-n pix" aria-hidden="true">
-                    {n}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <ActionButton
-          label={label}
-          detail={ready ? '6 h' : undefined}
-          wide
-          large
-          disabled={!ready}
-          onClick={() => {
-            if (who === undefined || place === null) return;
-            onSend({ creatureId: who.id, destination: place, length: TOUR.send.length, supply });
-          }}
-        />
+        <div class="pv-act-row">
+          {place !== null && closed.length === 0 && !full && (
+            <ul class="pv-packs" aria-label="Pack a supply">
+              {stock.map(([id, n]) => (
+                <li key={id}>
+                  <button
+                    type="button"
+                    class={`pv-pack${supply === id ? ' on' : ''}`}
+                    aria-pressed={supply === id}
+                    aria-label={`Pack ${supplyName(id)}, ${String(n)} in stock`}
+                    onClick={() => {
+                      setSupply(supply === id ? null : id);
+                    }}
+                  >
+                    <GameIcon
+                      icon={{ kind: 'supply', id: supplyKindOf(id) ?? 'unknown' }}
+                      scale={3}
+                    />
+                    <span class="pv-pack-n pix" aria-hidden="true">
+                      {n}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <ActionButton
+            label={label}
+            detail={ready ? '6 h' : undefined}
+            wide
+            large
+            disabled={!ready}
+            onClick={() => {
+              if (who === undefined || place === null) return;
+              onSend({ creatureId: who.id, destination: place, length: TOUR.send.length, supply });
+            }}
+          />
+        </div>
       </div>
     </section>
   );

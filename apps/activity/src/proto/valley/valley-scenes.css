@@ -385,9 +385,17 @@
   }
 }
 
-.pv-act-map {
-  grid-template-columns: auto 1fr;
+/* The Signpost's supplies and Go: one row under whatever stories wait above it (the stack never overlaps). */
+.pv-act-row {
+  display: flex;
   align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.pv-act-row .action-btn {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .pv-packs {

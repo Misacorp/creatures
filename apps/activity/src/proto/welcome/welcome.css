@@ -154,6 +154,17 @@
   margin: 0;
 }
 
+/* The finds of a story stand in one column at one width, left-aligned (the shared list centres boxes of different widths, which staggers them). */
+.wb-finds .find-list {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.wb-finds .find-list > .find-card {
+  flex: none;
+}
+
 /* A lone small story takes the width. */
 .wb-briefs:has(.wb-brief:only-child) {
   grid-template-columns: 1fr;
@@ -195,11 +206,15 @@
 .wb-clip {
   --scroll-hint-bg: #efe3c2;
 
-  /* In the Signpost's two-column action area it takes the whole row. */
-  grid-column: 1 / -1;
+  /* About a third of the scene on a phone: the whole clipping, creatures' strip included, never more. */
+  --clip-max: max(25dvh, 9rem);
+  --clip-pad: 8px;
+  --clip-strip: 68px;
+
   display: grid;
   gap: 6px;
-  padding: 8px 10px;
+  max-height: var(--clip-max);
+  padding: var(--clip-pad) 10px;
   background: #efe3c2;
   box-shadow: 0 0 0 3px var(--ink);
   color: var(--ink);
@@ -207,7 +222,12 @@
 
 .wb-clip-scroll {
   /* A place with several stories shows what fits, and the rest scrolls inside the clipping. */
-  max-height: min(34dvh, 15rem);
+  max-height: calc(var(--clip-max) - 2 * var(--clip-pad));
+}
+
+/* With the creatures' strip above it (and its gap), the list has that much less. */
+.wb-clip-strip + .scroll-hint .wb-clip-scroll {
+  max-height: calc(var(--clip-max) - 2 * var(--clip-pad) - var(--clip-strip) - 6px);
 }
 
 .wb-clip-list {
@@ -235,10 +255,17 @@
   border-top: 2px solid var(--ink);
 }
 
+/* A wide window has more scene to spare. */
+@media (min-width: 560px) {
+  .wb-clip {
+    --clip-max: max(33dvh, 12rem);
+  }
+}
+
 /* The creatures that act, when the place has no floor of its own to stand them on. */
 .wb-clip-strip {
   position: relative;
-  height: 68px;
+  height: var(--clip-strip);
   border-bottom: 2px solid var(--ink);
   overflow: hidden;
 }
