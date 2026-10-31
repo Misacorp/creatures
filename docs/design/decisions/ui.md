@@ -4,7 +4,7 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
-## 2026-10-31: The fight board shows worn gear
+## 2026-10-31: [Misa] The fight board shows worn gear, item detail does not
 
 ID: `2026-10-31-the-fight-board-shows-worn-gear` · Status: current
 
