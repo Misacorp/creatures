@@ -20,8 +20,12 @@
  * Exploration and crafting talents stay out of the combat rework (Misa, 2026-10-26).
  */
 import { content } from '@creatures/game';
+import { ADDITIVE_FIELDS, STAT_FIELDS, mergeFx } from '@creatures/engine/v2';
 import { SUPPORT_SHAPE_KNACKS, type KnackFx } from './knacks';
 import type { Role } from './types';
+
+// The effect merge and its field lists are the engine's (`@creatures/engine/v2`); the lab's talents are content written in them.
+export { ADDITIVE_FIELDS, STAT_FIELDS, mergeFx };
 
 const ALL: readonly Role[] = ['setter', 'payoff', 'guard', 'support'];
 
@@ -35,72 +39,6 @@ export interface TalentDef {
   readonly intent: string;
   readonly fx: KnackFx;
 }
-
-/**
- * The plain stat lines of a talent or gear line (R12, amended in panel 6): Attack, Max HP, Armour, Speed (as the dodge it gives),
- * crit chance and crit damage. They survive silence; every other effect and the whole Knack (its stat bonuses too) is blanked.
- */
-export const STAT_FIELDS: ReadonlySet<keyof KnackFx> = new Set<keyof KnackFx>([
-  'atkBp',
-  'hpBp',
-  'armourBonus',
-  'dodgeBonusBp',
-  'critChanceBp',
-  'critDamageBp',
-]);
-
-/**
- * Effect fields whose values add when a Knack and talents combine (a talent may use only these).
- * Numbers add, flags combine (`mergeFx`); a field whose merge is neither is never listed here.
- */
-export const ADDITIVE_FIELDS: ReadonlySet<keyof KnackFx> = new Set<keyof KnackFx>([
-  'atkBp',
-  'dodgeBonusBp',
-  'critChanceBp',
-  'dodgeCritBp',
-  'guardCritBp',
-  'reactionCritBp',
-  'firstHitBp',
-  'ignoreSilence',
-  'armourBonus',
-  'coverBonusBp',
-  'secondWindBp',
-  'boostBonusBp',
-  'mendBonusBp',
-  'hpBp',
-  'critDamageBp',
-  'lowHpAtkBp',
-  'areaCutBp',
-  'holdOn',
-  'reactionBonusBp',
-  'areaDodgeBp',
-  // The first batch of the talent library (docs/design/combat/modifiers.md).
-  'perKindredBesideBp',
-  'oddOneOutBp',
-  'rowEndBp',
-  'frontCutBp',
-  'slowBurnBp',
-  'slowBurnCapBp',
-  'finisherBp',
-  'steadyRhythm',
-  'cashHighBp',
-  'freshMarkBp',
-  'ownMarkBp',
-  'firstMarkExtra',
-  'vengefulBp',
-  'momentumBp',
-  'flankGuard',
-  'distanceCoverBp',
-  'interceptHitBackBp',
-  'braceBp',
-  'miredExtraBp',
-  'clinging',
-  'brightBoost',
-  'kindredBoostBp',
-  'triageBp',
-  'spillOver',
-  'cullBp',
-]);
 
 const T = (def: TalentDef): TalentDef => def;
 const HITTERS: readonly Role[] = ['setter', 'payoff'];
@@ -664,18 +602,4 @@ export const TALENT_LINES: readonly string[] = Object.keys(LINE_POOLS);
 
 export function talent(id: string): TalentDef | undefined {
   return TALENTS[id];
-}
-
-/** Knack and talent effects together: numbers add, flags combine, a Support shape comes from the Knack. */
-export function mergeFx(parts: readonly KnackFx[]): KnackFx {
-  const out: Record<string, unknown> = {};
-  for (const p of parts) {
-    for (const [key, value] of Object.entries(p)) {
-      const prev = out[key];
-      if (typeof value === 'number') out[key] = (typeof prev === 'number' ? prev : 0) + value;
-      else if (typeof value === 'boolean') out[key] = prev === true || value;
-      else if (prev === undefined) out[key] = value;
-    }
-  }
-  return out;
 }

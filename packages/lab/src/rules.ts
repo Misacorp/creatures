@@ -1,3 +1,5 @@
+import type { V2Rules } from '@creatures/engine/v2';
+
 /**
  * Starting numbers of the combat v2 draft (docs/design/combat-v2.md). Every value is a lab knob
  * for the simulator to move, not a balanced number. Basis points (bp): 10000 is 100%.
@@ -32,7 +34,7 @@ export const LAB_RULES = {
   /** Support round-start verbs (4.5, kept): boost on the next hit, and the elements that heal. */
   supportBoostBp: 1_500,
   supportBoostEmberBp: 2_500,
-  supportHealBp: { tide: 400, grove: 600 } as Record<string, number>,
+  supportHealBp: { tide: 400, grove: 600 },
   /** Buffs and debuffs: all hit bonuses from buffs together never pass this (R15). */
   maxHitBonusBp: 15_000,
   /** A Flank Guard's one side covers this many times the slots of its Reach. */
@@ -56,4 +58,4 @@ export const LAB_RULES = {
   miredSlowsEscalationBp: 2_500,
   /** "The boss is low" for Finisher: its HP is below this share of its full HP. */
   finisherBelowBp: 3_333,
-} as const;
+} as const satisfies V2Rules;
