@@ -36,6 +36,7 @@ import {
   type SchoolData,
   type VisitorData,
 } from './visitorData';
+import { temperOf, type TemperData } from './temperData';
 import { median, sum } from './util';
 
 /** The numbers behind the report (written as `report-data.json`, for charts). */
@@ -57,6 +58,8 @@ export interface ReportData {
   variants: VariantRow[];
   /** The weekly visitor (V-VIS): rerolls and what they drain by week, piles with and without him, the best piece's lines, 4-of-5 epics. */
   visitor: VisitorData;
+  /** Tempering at the Forge, with and without (null when the run lacks the variant). */
+  tempering: TemperData | null;
   /** The School's learnings and the broker's hours (V-SCH-7, V-FORGE-11). */
   school: SchoolData;
   /** The shard stall by week with and without the broker, and the Market built as a project (V-FORGE-11). */
@@ -283,6 +286,7 @@ export function buildReportData(
     })),
     variants: time('variants', () => variantsOf(results)),
     visitor: time('visitor', () => visitorOf(results)),
+    tempering: time('tempering', () => temperOf(results, rules)),
     school: time('visitor', () => schoolOf(results)),
     broker: time('visitor', () => brokerOf(results)),
     exchangeByPolicy: time('exchange', () => exchangeRowsOf(results)),
@@ -370,6 +374,7 @@ export const SIMPLIFICATIONS: readonly string[] = [
   "Catch-up applies to idle XP only (not to fights). Its multiplier is fixed at each visit and holds until the next one (Q35 B), but never above the target it was fixed for: it fades as the creature closes the gap, so a player who visits less often cannot earn more of it than one who visits daily. A player who is away is not counted in the server's middle after seven days.",
   "Project gifts are chosen by weight among the open projects; a gift never exceeds what the project still needs, the rest stays with the giver. A project's cost is an Acorn part, a scrap part and a shard part (Q33), each filled by gifts from what a player has above a reserve for their own Forge; shards go to a project only as shards of the element tied to its place; Essence never goes to projects and journal pages are never spent. A find fills only its own collection socket; a spare melts into Essence. Sources of the sockets that are not keystones (dungeon landmarks, resident tokens, pages) use made-up rates.",
   "Ribbons are dropped (Misa): levels never stop. Honours (trials.md) replace them and gate nothing. Creatures are not tracked per post, so the lab places creatures on seats itself: a new seat takes a creature not at a post yet (fewest hours of work, then highest level), a set-and-forget player never moves anyone, and an optimiser moves a Master on and puts an unworked creature in its seat. A creature's hours of work, the dungeon and raid clears it was in and the finds it brought home tick its trial boxes. Combat is not simulated: a share of dungeon runs (an assumption) count as an Undercroft clear, and the raid party is the same team that fights; an optimiser gives the team's last place to the highest-level creature that still needs a fight box, a set-and-forget player does not.",
+  "Tempering (a candidate sink, `rules.tempering`) keeps a piece's rolled lines exactly as they are even when the higher item level allows a higher top pip (a line that was at the top before can be below the new top, so the visitor's `goodTop` test may ask for another reroll); only worn rare and epic pieces are tempered, at a visit before the Forge floor comes home; the cheaper-than-crafting test is a price cap by rarity, not a comparison of what the replacement would cost the Forge in shards and anvil time.",
   "The cost estimate counts rows from the shape of a visit (one player row, the creature rows, seat rows, the valley's rows); it is not a measured query plan.",
   "T-5 (the best team differs across bosses) belongs to combat v2's lab.",
 ];
@@ -1065,6 +1070,111 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
     ),
     '',
   );
+
+  // Tempering at the Forge, with and without.
+  const tmp = data.tempering;
+  if (tmp) {
+    const t = rules.tempering;
+    const yesNo = (met: boolean | null): string => (met === null ? '-' : met ? 'PASS' : 'FAIL');
+    const deadText = (n: number | null, names: string[]): string =>
+      n === null ? '-' : `${n}${names.length ? ` (${names.join(', ')})` : ''}`;
+    push(
+      '### Tempering at the Forge (a candidate scrap sink, T-7b)',
+      '',
+      `The problem: from about week 13 a daily player's scouts bring more scrap than pieces, project gifts and the visitor take, so the pile only grows (T-7b). The candidate: a worn **rare or epic** piece that has fallen ${t.minGap.setAndForget} or more levels behind the fire (${t.minGap.optimiser} for an optimiser) can be tempered: its item level rises to the fire, its rolled lines and any visitor rerolls are kept, and it is paid for in scrap and a few Acorns (${num(t.acornShare * 100)}% of the scrap price). The price is ${t.scrapPerLevel} scrap for each level of gap at item level ${t.baseLevel}, growing with the level the piece rises to, times ${t.rarityFactor[1]} for a rare and ${t.rarityFactor[2]} for an epic. A set-and-forget player tempers its best pieces (epics first, then rares; a piece rerolled at the visitor before one that was not) at a visit, up to ${t.perVisit.setAndForget}, an optimiser up to ${t.perVisit.optimiser}; both keep ${t.reserveScrap} scrap, a week of what their anvils use and one reroll of their best piece (the visitor and the Forge come first), and ${t.reserveAcorns} Acorns, and skip a piece whose price is over ${t.worthInCrafts[1]} crafts' scrap for a rare or ${t.worthInCrafts[2]} for an epic (then a new piece is cheaper). Tempering is done at the visit before the Forge floor comes home, so a piece worth keeping is raised before a crafted replacement can take its slot. A weekly player tempers only on its visit.`,
+      '',
+      `The switch (\`rules.tempering.on\`) is **${tmp.defaultOn ? 'on' : 'off'}** by default. This section runs the mixed server of 8 both ways (${tmp.seeds} seeds each, the same random draws, so a difference is tempering and not luck). The original targets are \`targets.ts\`, unchanged.`,
+      '',
+      ...table(
+        ['', 'With tempering', 'Without'],
+        [
+          [
+            'T-7b: resources of a daily player dead at some point of the 24 weeks',
+            deadText(tmp.deadWith, tmp.deadNamesWith),
+            deadText(tmp.deadWithout, tmp.deadNamesWithout),
+          ],
+          ...tmp.stock.map((s) => [
+            `Scrap stock of a daily player, end of week ${s.week} (median)`,
+            num(s.with),
+            num(s.without),
+          ]),
+        ],
+      ),
+      '',
+      "A daily player's scrap in weeks 13 to 24, a week (median over seeds and players of each source and sink, so the net is not exactly the stock's change):",
+      '',
+      ...table(
+        ['Scrap', 'With tempering', 'Without'],
+        [
+          ...tmp.late.in.map((r) => [`in: ${r.name}`, num(r.with), num(r.without)]),
+          ...tmp.late.out.map((r) => [`out: ${r.name}`, num(r.with), num(r.without)]),
+          [
+            '**net (in minus out)**',
+            num(sum(tmp.late.in.map((r) => r.with)) - sum(tmp.late.out.map((r) => r.with))),
+            num(sum(tmp.late.in.map((r) => r.without)) - sum(tmp.late.out.map((r) => r.without))),
+          ],
+        ],
+      ),
+      '',
+      'Pieces tempered by server week 12 and 24, and what it does to the Forge (with / without; a piece made, worn or dismantled counts to week 24; "weak slots" are the slots more than 6 levels below the fire, which the Forge makes pieces for). A newcomer joins in week 6:',
+      '',
+      ...table(
+        [
+          'Player',
+          'Tempered by week 12',
+          'by week 24',
+          'Of them rerolled at the visitor',
+          'Scrap spent (24 wk)',
+          'Pieces made',
+          'Pieces worn',
+          'Dismantled',
+          'Weak slots, week 12',
+          'Weak slots, week 24',
+        ],
+        tmp.profiles.map((r) => [
+          r.label,
+          num(r.tempered12, 1),
+          num(r.tempered24, 1),
+          `${num(r.rerolledShare * 100)}%`,
+          num(r.scrap24),
+          `${num(r.made24[0])} / ${num(r.made24[1])}`,
+          `${num(r.worn24[0])} / ${num(r.worn24[1])}`,
+          `${num(r.dismantled24[0])} / ${num(r.dismantled24[1])}`,
+          `${num(r.weak12[0])} / ${num(r.weak12[1])}`,
+          `${num(r.weak24[0])} / ${num(r.weak24[1])}`,
+        ]),
+      ),
+      '',
+      'Prices (a piece of this rarity raised by `gap` levels to item level `to`):',
+      '',
+      ...table(
+        ['Piece', 'Gap', 'Raised to', 'Scrap', 'Acorns'],
+        tmp.prices.map((r) => [r.rarity, r.gap, r.to, r.scrap, r.acorns]),
+      ),
+      '',
+    );
+    const changed = tmp.targets.filter((r) => r.changed);
+    push(
+      changed.length
+        ? `Targets whose status changes with tempering (the mixed server of 8, and the one that kills every boss for T-3d and T-3e; the targets that need the optimiser server are not rerun here):`
+        : `No target changes status with tempering (${tmp.targets.length} targets judged on both sides: the mixed server of 8, and the one that kills every boss for T-3d and T-3e; the targets that need the optimiser server are not rerun here).`,
+      '',
+    );
+    if (changed.length)
+      push(
+        ...table(
+          ['Target', 'Original wording', 'Bound', 'With', 'Without'],
+          changed.map((r) => [
+            r.id,
+            r.label,
+            r.bounds,
+            `${num(r.with ?? NaN, 2)} ${yesNo(r.withMet)}`,
+            `${num(r.without ?? NaN, 2)} ${yesNo(r.withoutMet)}`,
+          ]),
+        ),
+        '',
+      );
+  }
 
   // 6. Roster.
   push(

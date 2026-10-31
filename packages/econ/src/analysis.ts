@@ -733,19 +733,18 @@ export function measuresOf(results: Results): Measures {
   return m;
 }
 
-/** A daily player's scrap over weeks 13 to 24: the top three sources and sinks, a week (median over players). */
-export function lateScrapOf(players: readonly PlayerRun[]): {
-  sources: { name: string; perWeek: number }[];
-  sinks: { name: string; perWeek: number }[];
-} {
+/** Every source (`in`) and sink (`out`) of scrap over weeks 13 on, a week (median over players), biggest first. */
+export function lateScrapAll(
+  players: readonly PlayerRun[],
+): { kind: 'in' | 'out'; name: string; perWeek: number }[] {
   const late = players.filter((p) => p.sourcesAtWeek12 && p.weeks.length > 12);
   const keys = new Set(late.flatMap((p) => Object.keys(p.sources)));
-  const rows: { kind: string; name: string; perWeek: number }[] = [];
+  const rows: { kind: 'in' | 'out'; name: string; perWeek: number }[] = [];
   for (const key of keys) {
     const [kind, resource, ...rest] = key.split(':');
-    if (resource !== '1') continue;
+    if (resource !== '1' || (kind !== 'in' && kind !== 'out')) continue;
     rows.push({
-      kind: kind ?? '',
+      kind,
       name: rest.join(':'),
       perWeek: median(
         late.map(
@@ -756,6 +755,15 @@ export function lateScrapOf(players: readonly PlayerRun[]): {
       ),
     });
   }
+  return rows.sort((a, b) => b.perWeek - a.perWeek);
+}
+
+/** A daily player's scrap over weeks 13 to 24: the top three sources and sinks, a week (median over players). */
+export function lateScrapOf(players: readonly PlayerRun[]): {
+  sources: { name: string; perWeek: number }[];
+  sinks: { name: string; perWeek: number }[];
+} {
+  const rows = lateScrapAll(players);
   const top = (kind: string): { name: string; perWeek: number }[] =>
     rows
       .filter((r) => r.kind === kind && r.perWeek > 0)

@@ -466,6 +466,37 @@ export const RULES = {
     blueprintShards: 50,
   },
 
+  /**
+   * Tempering at the Forge (a candidate scrap sink, docs/design/valley/economy/report.md "Tempering"; nothing of it is in the valley docs
+   * yet): a worn piece whose item level has fallen behind the fire is raised to the fire for scrap (and a few Acorns), its rolled lines and
+   * any visitor rerolls kept. It only exists once a piece is `minGap` behind, so it arrives with the problem it solves (a pile of scrap
+   * late in the season). `on` is the switch (a server's `tempering` setting replaces it); the report runs the other value beside it.
+   */
+  tempering: {
+    // ASSUMPTION: the switch's default, set from the report's with-and-without result (see its "Tempering" section).
+    on: true,
+    // ASSUMPTION: a set-and-forget player tempers a piece once it is this many levels behind the fire (about the Forge's own margin of 6), an optimiser sooner.
+    minGap: { setAndForget: 5, optimiser: 3 },
+    // ASSUMPTION: only rare and epic pieces are tempered (their lines are what is worth keeping; a common is cheaper to craft again): price factors [common, rare, epic], 0 meaning never.
+    rarityFactor: [0, 1, 2] as readonly number[],
+    // ASSUMPTION: the scrap price is linear in the gap and in the level the piece rises to (as the visitor's price is linear in item level): `scrapPerLevel` scrap for each level of gap at item level `baseLevel`, times the rarity factor.
+    baseLevel: 10,
+    // ASSUMPTION: a first guess of 3 (an epic 10 levels behind the fire at 50 costs 300 scrap); an epic 5 levels behind at 50 costs 500 at 10.
+    // TUNED 2026-10-31: was 3 (then 6, 8: T-7b still failed at some seed counts); at 10 a daily player spends about 700 scrap a week on it in weeks 13 to 24 (the late surplus measured in the baseline was about 765 a week) and T-7b holds at 6 to 40 seeds.
+    scrapPerLevel: 10,
+    // ASSUMPTION: "a small Acorn part": this share of the scrap price again, in Acorns (a few Acorns a week against an income of 364).
+    acornShare: 0.05,
+    // ASSUMPTION: a player keeps this much scrap (the visitor's own reserve), plus this many weeks of what their anvils use, plus one reroll of their best piece (the visitor and the Forge come first; T-4 and the visitor's rerolls must not suffer).
+    reserveScrap: 300,
+    reserveForgeWeeks: 1,
+    // ASSUMPTION: and this many Acorns (the visitor's reserve and his weekly blueprint).
+    reserveAcorns: 140,
+    // ASSUMPTION: the most pieces tempered in one visit (a set-and-forget player does a couple while looking at its best pieces; an optimiser more).
+    perVisit: { setAndForget: 2, optimiser: 6 },
+    // ASSUMPTION: "cheaper than crafting a replacement": a rare piece is worth this many crafts' scrap with its lines, an epic more; above that the player lets the piece go and crafts another.
+    worthInCrafts: [0, 20, 40] as readonly number[],
+  },
+
   /** V-COM-13, V-GEAR-8, V-GEAR-10: the Forge's fire. */
   fire: {
     start: 10,

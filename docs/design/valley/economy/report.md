@@ -6,10 +6,10 @@
 
 ## 1. The targets
 
-- **PASS** T-1: of the creatures a daily player has owned for two weeks or more, 100% are within 5 levels of their 3rd best at week 4 (worst 4 levels below the 3rd best, median 2, worst without those held at the evolution level 3) and 68% at week 8 (worst 9 levels below the 3rd best, median 4, worst without those held at the evolution level 7); the 6th creature (a second team's best) is 3.5 below the 3rd at week 8. An optimiser's share at week 4 is 100% (pass). It also depends on how fast creatures arrive: at the docs' 2% an hour (the default here is 1.3%) a set-and-forget player's share at week 4 is 100% (pass) and an optimiser's 100% (pass). Target: creatures owned two weeks or more within 5 levels of the 3rd best at weeks 4 and 8, and two strong teams at week 8.
-- **INFO** T-1 (original): a daily player's 10th creature is 8 levels below the 3rd at week 4 (the wording of goals.md, which the bench share above replaced because a player can own creatures that are new or held at the evolution level; this is the plain reading). Shown, not judged: Misa accepted the restated T-1 (round 18, Q47: A). Target: within 5 levels at week 4 (goals.md T-1 as written).
-- **INFO** T-1 (weekly player): a weekly player's 10th creature is 14 levels below their 3rd at week 4; of the creatures they have owned two weeks or more, 100% are within 5 levels of their 3rd best at week 4 and 70% at week 8 (worst gap 3 and 7.5). Target: information only (the weekly player is not judged on T-1).
-- **PASS** T-2a: an optimiser visiting three times a day gets 105% of an optimiser visiting once in XP and 102% in posts' and the allowance's output over 24 weeks. In the model extra visits add no rate (idle gains run at the same rate however often a player looks in), so this passes by construction: it shows only that nothing in the rules pays a frequent visitor more, not that choices are worth little. Target: under 110% (PASSES BY CONSTRUCTION: extra visits add no rate in the model, so this cannot fail; it only shows that nothing in the rules pays a frequent visitor more).
+- **PASS** T-1: of the creatures a daily player has owned for two weeks or more, 100% are within 5 levels of their 3rd best at week 4 (worst 4 levels below the 3rd best, median 2, worst without those held at the evolution level 3) and 64% at week 8 (worst 9.5 levels below the 3rd best, median 4, worst without those held at the evolution level 7); the 6th creature (a second team's best) is 3 below the 3rd at week 8. An optimiser's share at week 4 is 100% (pass). It also depends on how fast creatures arrive: at the docs' 2% an hour (the default here is 1.3%) a set-and-forget player's share at week 4 is 100% (pass) and an optimiser's 100% (pass). Target: creatures owned two weeks or more within 5 levels of the 3rd best at weeks 4 and 8, and two strong teams at week 8.
+- **INFO** T-1 (original): a daily player's 10th creature is 8.5 levels below the 3rd at week 4 (the wording of goals.md, which the bench share above replaced because a player can own creatures that are new or held at the evolution level; this is the plain reading). Shown, not judged: Misa accepted the restated T-1 (round 18, Q47: A). Target: within 5 levels at week 4 (goals.md T-1 as written).
+- **INFO** T-1 (weekly player): a weekly player's 10th creature is 14 levels below their 3rd at week 4; of the creatures they have owned two weeks or more, 100% are within 5 levels of their 3rd best at week 4 and 71% at week 8 (worst gap 3 and 7.5). Target: information only (the weekly player is not judged on T-1).
+- **PASS** T-2a: an optimiser visiting three times a day gets 102% of an optimiser visiting once in XP and 104% in posts' and the allowance's output over 24 weeks. In the model extra visits add no rate (idle gains run at the same rate however often a player looks in), so this passes by construction: it shows only that nothing in the rules pays a frequent visitor more, not that choices are worth little. Target: under 110% (PASSES BY CONSTRUCTION: extra visits add no rate in the model, so this cannot fail; it only shows that nothing in the rules pays a frequent visitor more).
 - **PASS** T-2b: a weekend-off player gets 98% of a daily player's idle growth (effective hours, weeks 1 to 12). Target: about 100% (a weekend off costs almost nothing). It follows from the away curve: a weekend-off player is away on days the curve has barely stepped down, so it is a property of the curve, not of the rest of the rules.
 - **PASS** T-2c: a weekly player's XP per creature, catch-up included, is 81% of a daily player's (idle gains alone: 79%; with fights: 83%; their best creature is level 26 at week 12 against a daily player's 29). Their scouts bring home 41% of a daily player's finds per seat (stores of three days: about 72 of 168 hours). Target: goals.md says about 75% to 80% of a daily player's XP per creature; the band judged is 72% to 85%. It follows from the away curve (a weekly player is on its later steps for six days of seven) plus catch-up and fights, so the curve sets most of it.
 - **PASS** T-2d: a player back after four weeks away keeps every level (best creature +3 levels vs before) and their 3rd-best creature is within 2 levels of the server's middle after 17 days of visits (the target is about 16 days, limit 17: goals.md said about two weeks and Misa accepted about 16; if catch-up also boosted fight XP: 9.5 days). Target: recognises the roster; within about two weeks of daily visits of the server's middle (V-BON-2).
@@ -17,11 +17,11 @@
 - **PASS** T-3 (pace): by week 12 a server of 8 has 5 place level-ups across the valley and a fire of 47 if it kills every boss (64 at week 23). Target: about 5 to 6 level-ups by week 12; the fire about 50 at week 12 and under about 100 before week 24 (commons.md).
 - **INFO** T-3 (places beyond level 2): at week 12 2 of the 5 places stand above level 2 (place levels hearth / forge / signpost / paddock / school: 3/3/2/2/1). Target: information next to T-3c: five level-ups can all be first level-ups, so this shows whether any place goes deeper.
 - **PASS** T-4: in the worst week (weeks 2 to 12) a typical player's anvils tinker for want of scrap 0% of the time (daily, week 2); for want of a shard of the element the team needs, averaged over weeks 2 to 12, a daily player loses 0%, an every-other-day player 0% and a weekend-off player 1%. Target: at most 10% for want of scrap in any week, and under 25% on average for want of a shard (the judged shard stall is the worst of the three).
-- **INFO** T-4 (shards, all players): for want of a shard of the element the team needs, the worst week is 63% (weekly, week 2); a weekly player loses 6% on average over weeks 2 to 12 (shown, not judged), an active player 0%. With the Forge floor full the worst week is 35% (weekly, week 9), mean 12%. Target: information (the judged shard target is on the line above).
-- **PASS** T-8: a daily player owns 11 lines at week 4 and 26 at week 12 (with the forms they evolved into: 15 and 45); 100% of the starting pool's commons are owned by week 6; at week 24 41% of the rares and 13% of the epics released are owned. Target: about 9 to 12 lines at week 4, 20 to 28 at week 12, most commons within 6 weeks, rares over months (15% to 60% by week 24), epics rarely (at most 35%).
+- **INFO** T-4 (shards, all players): for want of a shard of the element the team needs, the worst week is 63% (weekly, week 2); a weekly player loses 6% on average over weeks 2 to 12 (shown, not judged), an active player 0%. With the Forge floor full the worst week is 40% (weekly, week 10), mean 15%. Target: information (the judged shard target is on the line above).
+- **PASS** T-8: a daily player owns 11 lines at week 4 and 25 at week 12 (with the forms they evolved into: 15 and 44); 100% of the starting pool's commons are owned by week 6; at week 24 37% of the rares and 17% of the epics released are owned. Target: about 9 to 12 lines at week 4, 20 to 28 at week 12, most commons within 6 weeks, rares over months (15% to 60% by week 24), epics rarely (at most 35%).
 - **PASS** T-9: 2 creatures of a daily player wait at their evolution level for Essence at week 12. Target: at most 3: Essence must not be starved to keep the pile down.
 - **PASS** T-7: 0 of a daily player's 4 resources (Acorns, scrap, shards, Essence) are dead (a pile rising 4 weeks running to 4 weeks of what the resource is spent on) before week 12. Target: none (resources.md: nothing that only piles up).
-- **FAIL** T-7b: 1 of a daily player's 4 resources are dead at some point of the 24 weeks (scrap from week 12). A daily player's scrap in weeks 13 to 24, a week: it comes from scouts 1931, dismantling 232, dungeon 70; it goes to pieces 681, gifts 658, visitor 557. Target: none, over the whole run (the visitor is the only sink for Acorns and scrap after the first weeks; shards go to the Forge, projects and his blueprint).
+- **PASS** T-7b: 0 of a daily player's 4 resources are dead at some point of the 24 weeks. A daily player's scrap in weeks 13 to 24, a week: it comes from scouts 1883, dismantling 232, dungeon 70; it goes to tempering 700, pieces 624, gifts 607. Target: none, over the whole run (the visitor is the only sink for Acorns and scrap after the first weeks; shards go to the Forge, projects and his blueprint).
 - **PASS** T-6: a daily player's best creature is level 27 at week 10 and 29 at week 12; it reaches level 30 on day 89. Target: still growing in week 12 (example: level 29 of 30), not capped by week 10.
 - **INFO** T-6 (joiners): a new player who joins in week 6 gets their best creature to level 30 on day 65 after joining; a player who started on day one got there on day 89. So a joiner reaches the top 24 days sooner than a day-one player did (catch-up), but the veteran is already there by the time the joiner arrives (day 100 of the run for the joiner, day 89 for the veteran): nobody is overtaken, the joiner only closes the gap. Target: information only (no target): whether joining late is a long climb.
 
@@ -35,19 +35,19 @@ Per spendable resource, in the mixed server of 8 (a daily and a weekly player sh
 
 | Resource | In /wk (wk 4 / 12 / 24) | Out /wk | Stock (wk 1 / 2 / 4 / 8 / 12 / 24) | Waste | Days to next | Choices /visit | Flag |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| acorns | 364 / 364 / 364 | 221 / 329 / 281 | 84 / 205 / 330 / 302 / 236 / 231 | 0 | 10.6 | 1 | ok |
-| scrap | 1265 / 2023 / 2487 | 1218 / 2453 / 2032 | 450 / 655 / 1115 / 1807 / 3874 / 12848 | 0 | - | 0 | DEAD from week 12 (pile = 8.1 weeks of spending) |
-| shards | 96 / 135 / 167 | 87 / 128 / 148 | 25 / 21 / 35 / 45 / 98 / 424 | 0 | - | 0 | ok |
-| essence | 53 / 63 / 52 | 60 / 60 / 60 | 30 / 85 / 53 / 57 / 61 / 51 | 0 | 2.2 | 1.1 | ok |
+| acorns | 364 / 364 / 364 | 232 / 391 / 312 | 84 / 205 / 323 / 317 / 205 / 213 | 0 | 10.5 | 1 | ok |
+| scrap | 1268 / 2005 / 2285 | 1305 / 2715 / 2382 | 450 / 655 / 1000 / 1273 / 2363 / 2041 | 0 | - | 0 | ok |
+| shards | 95 / 128 / 157 | 94 / 126 / 145 | 25 / 21 / 35 / 46 / 73 / 392 | 0 | - | 0 | ok |
+| essence | 53 / 65 / 44 | 60 / 45 / 60 | 30 / 85 / 53 / 58 / 58 / 47 | 0 | 2.2 | 1.1 | ok |
 
 ### Weekly (Sundays)
 
 | Resource | In /wk (wk 4 / 12 / 24) | Out /wk | Stock (wk 1 / 2 / 4 / 8 / 12 / 24) | Waste | Days to next | Choices /visit | Flag |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| acorns | 132 / 132 / 132 | 69 / 120 / 108 | 95 / 60 / 117 / 88 / 148 / 129 | 1797 | 10.1 | 1.3 | ok |
-| scrap | 454 / 741 / 861 | 290 / 378 / 648 | 209 / 331 / 637 / 1252 / 1664 / 8244 | 12568 | - | 0.2 | DEAD from week 6 (pile = 18.1 weeks of spending) |
-| shards | 39 / 47 / 60 | 27 / 40 / 50 | 11 / 24 / 50 / 45 / 27 / 35 | 896 | - | 0 | ok |
-| essence | 43 / 55 / 45 | 90 / 45 / 60 | 21 / 76 / 69 / 79 / 81 / 66 | 0 | 0 | 3.1 | ok |
+| acorns | 132 / 132 / 132 | 69 / 113 / 120 | 95 / 60 / 109 / 88 / 150 / 156 | 1797 | 10.2 | 1.3 | ok |
+| scrap | 454 / 746 / 852 | 310 / 360 / 1079 | 209 / 331 / 637 / 1047 / 1542 / 5126 | 12583 | - | 0.2 | DEAD from week 9 (pile = 5.1 weeks of spending) |
+| shards | 39 / 50 / 59 | 27 / 79 / 49 | 11 / 24 / 50 / 49 / 34 / 38 | 878 | - | 0 | ok |
+| essence | 43 / 55 / 52 | 90 / 30 / 30 | 21 / 76 / 69 / 81 / 86 / 76 | 0 | 0 | 3.1 | ok |
 
 ### Where a daily player's scrap comes from and goes
 
@@ -55,14 +55,15 @@ A week, median over seeds, averaged over the run. The shipped game's payouts tha
 
 | Where | Scrap a week |
 | --- | --- |
-| in: scouts | 1701 |
-| out: pieces | 617.3 |
-| out: gifts | 564.8 |
-| out: visitor | 430 |
-| in: dismantling | 231.4 |
+| in: scouts | 1655.3 |
+| out: pieces | 591 |
+| out: gifts | 541.9 |
+| out: tempering | 433.4 |
+| out: visitor | 361.7 |
+| in: dismantling | 231 |
 | in: dungeon | 70.4 |
-| in: duplicates | 55.6 |
-| in: tinkering | 18.3 |
+| in: duplicates | 53.7 |
+| in: tinkering | 18.8 |
 | in: raid | 7 |
 | out: anvil seats | 4.7 |
 | in: welcome | 0.4 |
@@ -71,15 +72,10 @@ A week, median over seeds, averaged over the run. The shipped game's payouts tha
 
 | Profile | Resource | Dead | Starved |
 | --- | --- | --- | --- |
-| Daily (one evening visit) | scrap | dead from week 12, pile = 8.1 weeks of spending |  |
-| Active (3 visits a day) | scrap | dead from week 11, pile = 7.1 weeks of spending |  |
-| Every other day | scrap | dead from week 13, pile = 16.8 weeks of spending |  |
-| Weekend off | scrap | dead from week 9, pile = 17.6 weeks of spending |  |
-| Weekly (Sundays) | scrap | dead from week 6, pile = 18.1 weeks of spending |  |
-| New (joins in week 6) | scrap | dead from week 1, pile = 24.6 weeks of spending |  |
-| Returner (away weeks 5 to 8) | scrap | dead from week 10, pile = 13.7 weeks of spending |  |
-| Hoarder (saves 4 weeks, then gives all) | scrap | dead from week 1, pile = 14.7 weeks of spending |  |
-| Hoarder (saves 4 weeks, then gives all) | shards | dead from week 19, pile = 4.4 weeks of spending |  |
+| Weekly (Sundays) | scrap | dead from week 9, pile = 5.1 weeks of spending |  |
+| New (joins in week 6) | scrap | dead from week 5, pile = 5.2 weeks of spending |  |
+| Hoarder (saves 4 weeks, then gives all) | scrap | dead from week 7, pile = 3.6 weeks of spending |  |
+| Hoarder (saves 4 weeks, then gives all) | shards | dead from week 17, pile = 5.1 weeks of spending |  |
 
 ### What things cost, in hours of a daily player's idle income
 
@@ -97,14 +93,14 @@ Each price is divided by what a daily player earns of that resource an hour (wee
 | acorns | anvil 4 (place level 1) | 394 | 181.8 |
 | acorns | one kit item | 875 | 403.8 |
 | acorns | a level 2 project at 8 players (first level) | 788 | 363.5 |
-| scrap | anvil 2's scrap | 38 | 3.1 |
-| scrap | anvil 3's scrap | 75 | 6.1 |
-| scrap | anvil 4's scrap | 113 | 9.3 |
-| scrap | one Forge piece | 36 | 2.9 |
+| scrap | anvil 2's scrap | 38 | 3.2 |
+| scrap | anvil 3's scrap | 75 | 6.4 |
+| scrap | anvil 4's scrap | 113 | 9.6 |
+| scrap | one Forge piece | 36 | 3.1 |
 | shards | one Forge piece | 1 | 1.5 |
-| essence | one evolution | 30 | 82.3 |
-| essence | Reach for Rare | 25 | 68.6 |
-| essence | Reach for Epic | 70 | 192.1 |
+| essence | one evolution | 30 | 84.7 |
+| essence | Reach for Rare | 25 | 70.6 |
+| essence | Reach for Epic | 70 | 197.6 |
 
 ## 3. Growth
 
@@ -112,27 +108,27 @@ Levels of the 1st / 3rd / 10th / 20th creature (medians) at the end of the week;
 
 | Profile | Week 1 | Week 2 | Week 4 | Week 8 | Week 12 | Week 16 | Week 24 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Daily (one evening visit) | 11/11/5/5 | 14/14/7/7 | 19/19/10/5 | 25/25/19/7 | 29/29/25/16 | 30/30/28/24 | 30/30/30/30 |
-| Active (3 visits a day) | 11/11/6/6 | 14/14/9/9 | 19/18/11/7 | 25/23/19/8 | 29/26/25/15 | 30/29/28/25 | 30/30/30/30 |
-| Every other day | 11/11/7/7 | 14/14/7/7 | 19/19/9/7 | 25/25/18/7 | 29/29/25/15 | 30/30/28/22 | 30/30/30/30 |
-| Weekend off | 10/10/7/7 | 14/14/9/9 | 19/19/11/10 | 25/25/19/9 | 29/29/25/15 | 30/30/28/24 | 30/30/30/30 |
-| Weekly (Sundays) | 9/9/9/9 | 12/12/2/2 | 16/16/2/2 | 22/22/14/2 | 26/26/20/2 | 30/30/25/14 | 30/30/30/26 |
-| New (joins in week 6) | 13/13/5/5 | 18/15/7/6 | 23/21/15/7 | 28/26/21/15 | 30/29/27/18 | 30/30/29/25 | - |
-| Returner (away weeks 5 to 8) | 11/11/5/5 | 14/14/9/9 | 19/19/9/2 | 20/20/14/13 | 27/27/18/12 | 30/30/25/15 | 30/30/30/28 |
-| Hoarder (saves 4 weeks, then gives all) | 11/11/6/6 | 14/14/7/7 | 19/19/9/7 | 25/25/19/7 | 29/29/25/15 | 30/30/28/24 | 30/30/30/30 |
+| Daily (one evening visit) | 11/11/5/5 | 14/14/7/7 | 19/19/10/7 | 25/25/19/6 | 29/29/25/17 | 30/30/28/25 | 30/30/30/30 |
+| Active (3 visits a day) | 11/11/6/6 | 14/14/9/9 | 19/18/11/7 | 25/23/20/8 | 29/26/25/15 | 30/29/28/24 | 30/30/30/30 |
+| Every other day | 11/11/7/7 | 14/14/7/7 | 19/19/9/7 | 25/25/18/7 | 29/29/25/15 | 30/30/28/24 | 30/30/30/30 |
+| Weekend off | 10/10/7/7 | 14/14/9/9 | 19/19/11/10 | 25/25/18/8 | 29/29/24/15 | 30/30/28/24 | 30/30/30/30 |
+| Weekly (Sundays) | 9/9/9/9 | 12/12/2/2 | 16/16/2/2 | 22/22/14/2 | 26/26/19/2 | 30/30/25/14 | 30/30/30/25 |
+| New (joins in week 6) | 13/13/5/5 | 18/15/7/5 | 23/21/15/7 | 28/26/21/15 | 30/29/27/18 | 30/30/29/25 | - |
+| Returner (away weeks 5 to 8) | 11/11/5/5 | 14/14/9/9 | 19/19/9/4 | 20/20/14/13 | 27/27/19/14 | 30/30/26/18 | 30/30/30/29 |
+| Hoarder (saves 4 weeks, then gives all) | 11/11/6/6 | 14/14/7/7 | 19/19/9/7 | 25/25/18/7 | 29/29/25/15 | 30/30/28/23 | 30/30/30/30 |
 
 Roster size (creatures owned; in brackets the kinds owned and their share of the species available that week, as new content drops lift the pool: 34 at the start, +12 every 4 weeks from week 4):
 
 | Profile | Week 1 | Week 2 | Week 4 | Week 8 | Week 12 | Week 16 | Week 24 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Daily (one evening visit) | 5 (5 lines, 5 forms; 36% of 14 lines) | 8 (8 lines, 8 forms; 57% of 14 lines) | 11 (11 lines, 15 forms; 42% of 26 lines) | 19 (19 lines, 29 forms; 49% of 38 lines) | 26 (26 lines, 45 forms; 52% of 50 lines) | 34 (34 lines, 59 forms; 55% of 62 lines) | 49 (49 lines, 88 forms; 57% of 86 lines) |
-| Active (3 visits a day) | 6 (6 lines, 6 forms; 43% of 14 lines) | 8 (8 lines, 8 forms; 54% of 14 lines) | 12 (12 lines, 16 forms; 46% of 26 lines) | 20 (20 lines, 31 forms; 53% of 38 lines) | 27 (27 lines, 44 forms; 54% of 50 lines) | 35 (35 lines, 61 forms; 56% of 62 lines) | 53 (53 lines, 90 forms; 61% of 86 lines) |
-| Every other day | 5 (5 lines, 5 forms; 36% of 14 lines) | 7 (7 lines, 7 forms; 50% of 14 lines) | 12 (12 lines, 16 forms; 44% of 26 lines) | 19 (19 lines, 29 forms; 50% of 38 lines) | 26 (26 lines, 43 forms; 52% of 50 lines) | 33 (33 lines, 57 forms; 53% of 62 lines) | 48 (48 lines, 86 forms; 56% of 86 lines) |
-| Weekend off | 4 (4 lines, 4 forms; 29% of 14 lines) | 7 (7 lines, 7 forms; 46% of 14 lines) | 11 (11 lines, 15 forms; 40% of 26 lines) | 18 (18 lines, 28 forms; 47% of 38 lines) | 26 (26 lines, 43 forms; 52% of 50 lines) | 35 (35 lines, 57 forms; 56% of 62 lines) | 50 (50 lines, 87 forms; 58% of 86 lines) |
-| Weekly (Sundays) | 3 (3 lines, 3 forms; 21% of 14 lines) | 5 (5 lines, 5 forms; 36% of 14 lines) | 7 (7 lines, 10 forms; 27% of 26 lines) | 12 (12 lines, 20 forms; 32% of 38 lines) | 18 (18 lines, 31 forms; 36% of 50 lines) | 25 (25 lines, 43 forms; 40% of 62 lines) | 37 (37 lines, 65 forms; 42% of 86 lines) |
-| New (joins in week 6) | 6 (6 lines, 6 forms; 23% of 26 lines) | 10 (10 lines, 11 forms; 38% of 26 lines) | 18 (18 lines, 24 forms; 47% of 38 lines) | 29 (29 lines, 41 forms; 58% of 50 lines) | 37 (37 lines, 56 forms; 60% of 62 lines) | 45 (45 lines, 69 forms; 61% of 74 lines) | - |
-| Returner (away weeks 5 to 8) | 5 (5 lines, 5 forms; 36% of 14 lines) | 7 (7 lines, 7 forms; 50% of 14 lines) | 12 (12 lines, 16 forms; 46% of 26 lines) | 12 (12 lines, 16 forms; 32% of 38 lines) | 22 (22 lines, 32 forms; 44% of 50 lines) | 30 (30 lines, 49 forms; 48% of 62 lines) | 46 (46 lines, 80 forms; 53% of 86 lines) |
-| Hoarder (saves 4 weeks, then gives all) | 5 (5 lines, 5 forms; 36% of 14 lines) | 7 (7 lines, 7 forms; 50% of 14 lines) | 11 (11 lines, 15 forms; 42% of 26 lines) | 17 (17 lines, 28 forms; 45% of 38 lines) | 25 (25 lines, 43 forms; 50% of 50 lines) | 33 (33 lines, 57 forms; 53% of 62 lines) | 49 (49 lines, 86 forms; 57% of 86 lines) |
+| Daily (one evening visit) | 5 (5 lines, 5 forms; 36% of 14 lines) | 8 (8 lines, 8 forms; 57% of 14 lines) | 11 (11 lines, 15 forms; 42% of 26 lines) | 18 (18 lines, 29 forms; 47% of 38 lines) | 25 (25 lines, 44 forms; 50% of 50 lines) | 34 (34 lines, 58 forms; 54% of 62 lines) | 48 (48 lines, 87 forms; 56% of 86 lines) |
+| Active (3 visits a day) | 6 (6 lines, 6 forms; 43% of 14 lines) | 8 (8 lines, 8 forms; 54% of 14 lines) | 12 (12 lines, 17 forms; 46% of 26 lines) | 20 (20 lines, 31 forms; 53% of 38 lines) | 28 (28 lines, 45 forms; 55% of 50 lines) | 36 (36 lines, 60 forms; 58% of 62 lines) | 52 (52 lines, 88 forms; 60% of 86 lines) |
+| Every other day | 5 (5 lines, 5 forms; 36% of 14 lines) | 7 (7 lines, 7 forms; 50% of 14 lines) | 12 (12 lines, 16 forms; 44% of 26 lines) | 19 (19 lines, 29 forms; 49% of 38 lines) | 26 (26 lines, 43 forms; 52% of 50 lines) | 34 (34 lines, 56 forms; 54% of 62 lines) | 48 (48 lines, 85 forms; 56% of 86 lines) |
+| Weekend off | 4 (4 lines, 4 forms; 29% of 14 lines) | 7 (7 lines, 7 forms; 46% of 14 lines) | 11 (11 lines, 15 forms; 40% of 26 lines) | 18 (18 lines, 28 forms; 47% of 38 lines) | 25 (25 lines, 42 forms; 49% of 50 lines) | 33 (33 lines, 56 forms; 53% of 62 lines) | 48 (48 lines, 84 forms; 55% of 86 lines) |
+| Weekly (Sundays) | 3 (3 lines, 3 forms; 21% of 14 lines) | 5 (5 lines, 5 forms; 36% of 14 lines) | 7 (7 lines, 10 forms; 27% of 26 lines) | 12 (12 lines, 20 forms; 32% of 38 lines) | 17 (17 lines, 29 forms; 34% of 50 lines) | 23 (23 lines, 40 forms; 37% of 62 lines) | 35 (35 lines, 63 forms; 41% of 86 lines) |
+| New (joins in week 6) | 6 (6 lines, 6 forms; 23% of 26 lines) | 11 (11 lines, 12 forms; 40% of 26 lines) | 19 (19 lines, 23 forms; 49% of 38 lines) | 29 (29 lines, 41 forms; 58% of 50 lines) | 38 (38 lines, 56 forms; 60% of 62 lines) | 46 (46 lines, 71 forms; 62% of 74 lines) | - |
+| Returner (away weeks 5 to 8) | 5 (5 lines, 5 forms; 36% of 14 lines) | 7 (7 lines, 7 forms; 50% of 14 lines) | 12 (12 lines, 16 forms; 46% of 26 lines) | 12 (12 lines, 16 forms; 32% of 38 lines) | 23 (23 lines, 34 forms; 45% of 50 lines) | 32 (32 lines, 50 forms; 51% of 62 lines) | 47 (47 lines, 79 forms; 55% of 86 lines) |
+| Hoarder (saves 4 weeks, then gives all) | 5 (5 lines, 5 forms; 36% of 14 lines) | 7 (7 lines, 7 forms; 50% of 14 lines) | 10 (10 lines, 15 forms; 38% of 26 lines) | 17 (17 lines, 27 forms; 45% of 38 lines) | 25 (25 lines, 42 forms; 50% of 50 lines) | 32 (32 lines, 56 forms; 52% of 62 lines) | 48 (48 lines, 85 forms; 56% of 86 lines) |
 
 A daily player's roster at the default arrival rate (1.3% an hour per scout, tuned from the 0.75% the first draft used) and at the docs' table (2% an hour): creatures owned, and the share of the lines available that week:
 
@@ -141,75 +137,75 @@ A daily player's roster at the default arrival rate (1.3% an hour per scout, tun
 | 1 | 14 | 5 | 36% | 6 | 43% |
 | 2 | 14 | 8 | 57% | 8 | 57% |
 | 4 | 26 | 11 | 42% | 13 | 48% |
-| 8 | 38 | 19 | 49% | 21 | 55% |
-| 12 | 50 | 26 | 52% | 29 | 58% |
-| 16 | 62 | 34 | 55% | 38 | 61% |
-| 24 | 86 | 49 | 57% | 57 | 66% |
+| 8 | 38 | 18 | 47% | 21 | 55% |
+| 12 | 50 | 25 | 50% | 30 | 60% |
+| 16 | 62 | 34 | 54% | 39 | 63% |
+| 24 | 86 | 48 | 56% | 54 | 63% |
 
 The week a player owns 10 lines, all 14 of today's lines and 30 lines, and duplicates arriving per visit (a duplicate takes the Recommended answer and pays a little scrap):
 
 | Profile | 10 lines | 14 lines (all of today's) | 30 lines | Duplicates /visit |
 | --- | --- | --- | --- | --- |
-| Daily (one evening visit) | week 4 | week 6 | week 14 | 0.92 |
-| Active (3 visits a day) | week 4 | week 5 | week 14 | 0.39 |
-| Every other day | week 4 | week 6 | week 15 | 1.79 |
-| Weekend off | week 4 | week 6 | week 14 | 1.27 |
-| Weekly (Sundays) | week 6 | week 10 | week 20 | 2.08 |
-| New (joins in week 6) | week 2 | week 3 | week 9 | 1.08 |
-| Returner (away weeks 5 to 8) | week 4 | week 9 | week 16 | 0.92 |
-| Hoarder (saves 4 weeks, then gives all) | week 4 | week 6 | week 15 | 0.89 |
+| Daily (one evening visit) | week 4 | week 6 | week 15 | 0.91 |
+| Active (3 visits a day) | week 4 | week 5 | week 13 | 0.38 |
+| Every other day | week 4 | week 6 | week 15 | 1.74 |
+| Weekend off | week 4 | week 6 | week 15 | 1.24 |
+| Weekly (Sundays) | week 6 | week 9 | week 21 | 2.08 |
+| New (joins in week 6) | week 2 | week 3 | week 9 | 1.11 |
+| Returner (away weeks 5 to 8) | week 4 | week 9 | week 16 | 0.91 |
+| Hoarder (saves 4 weeks, then gives all) | week 4 | week 6 | week 15 | 0.86 |
 
 XP by source over weeks 1 to 12 (median per player; "lost" is XP above an evolution wait that a creature could not bank):
 
 | Profile | Idle | Catch-up bonus | Dungeon | Raid | Lost |
 | --- | --- | --- | --- | --- | --- |
-| Daily (one evening visit) | 150264 | 190456 | 30600 | 17640 | 44295 |
-| Active (3 visits a day) | 164099 | 210384 | 30600 | 17640 | 59085 |
-| Every other day | 152472 | 194322 | 30600 | 17640 | 61887 |
-| Weekend off | 148267 | 191624 | 29880 | 17640 | 50704 |
-| Weekly (Sundays) | 72381 | 95599 | 12960 | 17640 | 9022 |
-| New (joins in week 6) | 237151 | 415762 | 30600 | 17640 | 225287 |
-| Returner (away weeks 5 to 8) | 99106 | 135843 | 21240 | 11760 | 58849 |
-| Hoarder (saves 4 weeks, then gives all) | 147574 | 182125 | 30600 | 17640 | 40111 |
+| Daily (one evening visit) | 151711 | 189937 | 30600 | 17640 | 33181 |
+| Active (3 visits a day) | 162443 | 202586 | 30600 | 17640 | 64109 |
+| Every other day | 149722 | 189333 | 30600 | 17640 | 55542 |
+| Weekend off | 147028 | 187103 | 29880 | 17640 | 45312 |
+| Weekly (Sundays) | 75797 | 97801 | 12960 | 17640 | 8684 |
+| New (joins in week 6) | 234525 | 410709 | 30600 | 17640 | 224033 |
+| Returner (away weeks 5 to 8) | 98310 | 135011 | 21240 | 11760 | 60880 |
+| Hoarder (saves 4 weeks, then gives all) | 146864 | 183038 | 30600 | 17640 | 47021 |
 
 The day (counted from joining) the 1st, 3rd and 10th creature reach level 30 (median of the players that did; how many did):
 
 | Profile | 1st | 3rd | 10th |
 | --- | --- | --- | --- |
-| Daily (one evening visit) | day 89 (40/40) | day 89 (40/40) | day 128 (40/40) |
-| Active (3 visits a day) | day 89 (20/20) | day 118 (20/20) | day 130 (20/20) |
+| Daily (one evening visit) | day 89 (40/40) | day 89 (40/40) | day 129 (40/40) |
+| Active (3 visits a day) | day 89 (20/20) | day 119 (20/20) | day 128 (20/20) |
 | Every other day | day 89 (20/20) | day 89 (20/20) | day 130 (20/20) |
-| Weekend off | day 91 (20/20) | day 91 (20/20) | day 131 (20/20) |
-| Weekly (Sundays) | day 112 (20/20) | day 112 (20/20) | day 162 (12/20) |
-| New (joins in week 6) | day 65 (20/20) | day 90 (20/20) | day 115 (20/20) |
-| Returner (away weeks 5 to 8) | day 101 (20/20) | day 102 (20/20) | day 152 (20/20) |
-| Hoarder (saves 4 weeks, then gives all) | day 89 (80/80) | day 89 (80/80) | day 127 (80/80) |
+| Weekend off | day 91 (20/20) | day 91 (20/20) | day 132 (20/20) |
+| Weekly (Sundays) | day 112 (20/20) | day 112 (20/20) | day 158 (11/20) |
+| New (joins in week 6) | day 65 (20/20) | day 90 (20/20) | day 114 (20/20) |
+| Returner (away weeks 5 to 8) | day 102 (20/20) | day 102 (20/20) | day 151 (20/20) |
+| Hoarder (saves 4 weeks, then gives all) | day 89 (80/80) | day 89 (80/80) | day 128 (80/80) |
 
 Honours (trials.md; they gate nothing). The share of the roster holding Bronze / Silver / Gold at the end of the week (median):
 
 | Profile | Week 4 | Week 8 | Week 12 | Week 24 |
 | --- | --- | --- | --- | --- |
-| Daily (one evening visit) | 27% / 0% / 0% | 16% / 16% / 0% | 12% / 12% / 0% | 6% / 6% / 6% |
-| Active (3 visits a day) | 67% / 0% / 0% | 66% / 39% / 0% | 70% / 58% / 0% | 66% / 54% / 19% |
+| Daily (one evening visit) | 27% / 0% / 0% | 17% / 17% / 0% | 12% / 12% / 0% | 6% / 6% / 6% |
+| Active (3 visits a day) | 67% / 0% / 0% | 67% / 38% / 0% | 67% / 57% / 0% | 68% / 54% / 18% |
 | Every other day | 26% / 0% / 0% | 16% / 16% / 0% | 12% / 12% / 0% | 6% / 6% / 6% |
 | Weekend off | 29% / 0% / 0% | 17% / 17% / 0% | 12% / 12% / 0% | 6% / 6% / 6% |
-| Weekly (Sundays) | 43% / 0% / 0% | 25% / 25% / 0% | 17% / 17% / 0% | 8% / 8% / 8% |
-| New (joins in week 6) | 45% / 16% / 0% | 53% / 34% / 0% | 61% / 44% / 5% | - |
-| Returner (away weeks 5 to 8) | 25% / 0% / 0% | 25% / 20% / 0% | 14% / 14% / 0% | 7% / 7% / 7% |
-| Hoarder (saves 4 weeks, then gives all) | 27% / 0% / 0% | 18% / 18% / 0% | 12% / 12% / 0% | 6% / 6% / 6% |
+| Weekly (Sundays) | 43% / 0% / 0% | 25% / 25% / 0% | 18% / 18% / 0% | 9% / 9% / 9% |
+| New (joins in week 6) | 45% / 15% / 0% | 53% / 33% / 0% | 58% / 45% / 5% | - |
+| Returner (away weeks 5 to 8) | 25% / 0% / 0% | 25% / 19% / 0% | 14% / 14% / 0% | 6% / 6% / 6% |
+| Hoarder (saves 4 weeks, then gives all) | 30% / 0% / 0% | 18% / 18% / 0% | 12% / 12% / 0% | 6% / 6% / 6% |
 
 Lines owned by rarity (Q38): common / rare / epic, in brackets the lines available of each rarity that week, then the forms owned out of the forms available (a line plus the form it evolved into; median):
 
 | Profile | Week 4 | Week 12 | Week 24 |
 | --- | --- | --- | --- |
-| Daily (one evening visit) | 10 / 1 / 0 (of 14 / 7 / 5); 15 of 60 forms | 21 / 5 / 1 (of 26 / 15 / 9); 45 of 116 forms | 36 / 11 / 2 (of 44 / 27 / 15); 88 of 200 forms |
-| Active (3 visits a day) | 10 / 2 / 0 (of 14 / 7 / 5); 16 of 60 forms | 21 / 5 / 1 (of 26 / 15 / 9); 44 of 116 forms | 37 / 12 / 3 (of 44 / 27 / 15); 90 of 200 forms |
-| Every other day | 10 / 1 / 0 (of 14 / 7 / 5); 16 of 60 forms | 20 / 4 / 1 (of 26 / 15 / 9); 43 of 116 forms | 37 / 11 / 2 (of 44 / 27 / 15); 86 of 200 forms |
-| Weekend off | 9 / 1 / 0 (of 14 / 7 / 5); 15 of 60 forms | 20 / 5 / 1 (of 26 / 15 / 9); 43 of 116 forms | 36 / 11 / 3 (of 44 / 27 / 15); 87 of 200 forms |
-| Weekly (Sundays) | 7 / 0 / 0 (of 14 / 7 / 5); 10 of 60 forms | 16 / 3 / 0 (of 26 / 15 / 9); 31 of 116 forms | 30 / 6 / 1 (of 44 / 27 / 15); 65 of 200 forms |
-| New (joins in week 6) | 15 / 2 / 0 (of 20 / 11 / 7); 24 of 88 forms | 28 / 7 / 2 (of 32 / 19 / 11); 56 of 144 forms | - |
-| Returner (away weeks 5 to 8) | 10 / 1 / 0 (of 14 / 7 / 5); 16 of 60 forms | 19 / 3 / 0 (of 26 / 15 / 9); 32 of 116 forms | 37 / 9 / 1 (of 44 / 27 / 15); 80 of 200 forms |
-| Hoarder (saves 4 weeks, then gives all) | 9 / 1 / 0 (of 14 / 7 / 5); 15 of 60 forms | 19 / 4 / 1 (of 26 / 15 / 9); 43 of 116 forms | 37 / 10 / 2 (of 44 / 27 / 15); 86 of 200 forms |
+| Daily (one evening visit) | 9 / 1 / 0 (of 14 / 7 / 5); 15 of 60 forms | 20 / 5 / 1 (of 26 / 15 / 9); 44 of 116 forms | 35 / 10 / 3 (of 44 / 27 / 15); 87 of 200 forms |
+| Active (3 visits a day) | 10 / 2 / 0 (of 14 / 7 / 5); 17 of 60 forms | 22 / 6 / 1 (of 26 / 15 / 9); 45 of 116 forms | 37 / 12 / 2 (of 44 / 27 / 15); 88 of 200 forms |
+| Every other day | 10 / 1 / 0 (of 14 / 7 / 5); 16 of 60 forms | 20 / 5 / 1 (of 26 / 15 / 9); 43 of 116 forms | 36 / 10 / 2 (of 44 / 27 / 15); 85 of 200 forms |
+| Weekend off | 9 / 0 / 0 (of 14 / 7 / 5); 15 of 60 forms | 20 / 4 / 1 (of 26 / 15 / 9); 42 of 116 forms | 36 / 11 / 2 (of 44 / 27 / 15); 84 of 200 forms |
+| Weekly (Sundays) | 7 / 0 / 0 (of 14 / 7 / 5); 10 of 60 forms | 15 / 2 / 0 (of 26 / 15 / 9); 29 of 116 forms | 30 / 5 / 1 (of 44 / 27 / 15); 63 of 200 forms |
+| New (joins in week 6) | 15 / 2 / 0 (of 20 / 11 / 7); 23 of 88 forms | 28 / 8 / 1 (of 32 / 19 / 11); 56 of 144 forms | - |
+| Returner (away weeks 5 to 8) | 10 / 1 / 0 (of 14 / 7 / 5); 16 of 60 forms | 19 / 3 / 0 (of 26 / 15 / 9); 34 of 116 forms | 36 / 9 / 2 (of 44 / 27 / 15); 79 of 200 forms |
+| Hoarder (saves 4 weeks, then gives all) | 9 / 1 / 0 (of 14 / 7 / 5); 15 of 60 forms | 20 / 4 / 1 (of 26 / 15 / 9); 42 of 116 forms | 36 / 10 / 2 (of 44 / 27 / 15); 85 of 200 forms |
 
 A returner (away weeks 5 to 8) is within 2 levels of the server's middle after 17 days of visits.
 
@@ -219,14 +215,14 @@ The share of anvil-hours (weeks 2 to 12, effective hours) by what the anvil did:
 
 | Profile | Making | No scrap | No shard | Floor full | Nothing to make | Worst week: scrap / shard / floor | Pieces /wk | Worn (24 wk) | Dismantled | Bag at wk 12 / 24 | Bag would fill (never dismantling) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Daily (one evening visit) | 54% | 0% | 0% | 0% | 43% | 0% / 0% / 0% | 15.9 | 454 | 365 | 38 / 136 | week 12 |
-| Active (3 visits a day) | 61% | 0% | 0% | 0% | 39% | 0% / 0% / 0% | 17 | 487 | 556 | 3 / 5 | week 11 |
-| Every other day | 52% | 0% | 0% | 0% | 40% | 0% / 0% / 0% | 15.8 | 451 | 371 | 35 / 99 | week 12 |
-| Weekend off | 57% | 0% | 0% | 0% | 40% | 0% / 10% / 0% | 15.5 | 454 | 367 | 31 / 129 | week 12 |
-| Weekly (Sundays) | 50% | 0% | 0% | 2% | 0% | 0% / 63% / 35% | 7.5 | 251 | 182 | 82 / 40 | week 24 |
-| New (joins in week 6) | 62% | 0% | 0% | 0% | 38% | 0% / 0% / 0% | 17.4 | 401 | 426 | 3 / 0 | week 11 |
-| Returner (away weeks 5 to 8) | 28% | 0% | 0% | 0% | 50% | 0% / 0% / 0% | 10.7 | 384 | 364 | 139 / 68 | week 15 |
-| Hoarder (saves 4 weeks, then gives all) | 48% | 0% | 0% | 0% | 47% | 0% / 6% / 0% | 14 | 447 | 365 | 32 / 83 | week 12 |
+| Daily (one evening visit) | 53% | 0% | 0% | 0% | 42% | 0% / 0% / 0% | 15.4 | 433 | 364 | 43 / 124 | week 12 |
+| Active (3 visits a day) | 62% | 0% | 0% | 0% | 36% | 0% / 0% / 0% | 16.8 | 444 | 501 | 3 / 6 | week 12 |
+| Every other day | 51% | 0% | 0% | 0% | 41% | 0% / 0% / 0% | 15.9 | 429 | 368 | 40 / 101 | week 12 |
+| Weekend off | 50% | 0% | 0% | 0% | 44% | 0% / 10% / 0% | 14.9 | 426 | 367 | 36 / 97 | week 12 |
+| Weekly (Sundays) | 44% | 0% | 0% | 0% | 0% | 0% / 63% / 40% | 7.5 | 257 | 185 | 81 / 23 | week 24 |
+| New (joins in week 6) | 61% | 0% | 0% | 0% | 39% | 0% / 0% / 0% | 17.1 | 363 | 381 | 2 / 0 | week 12 |
+| Returner (away weeks 5 to 8) | 31% | 0% | 0% | 0% | 50% | 0% / 0% / 0% | 10.8 | 371 | 364 | 133 / 45 | week 15 |
+| Hoarder (saves 4 weeks, then gives all) | 50% | 0% | 0% | 0% | 49% | 0% / 6% / 0% | 13.2 | 395 | 363 | 32 / 78 | week 13 |
 
 ### Shard stalls by policy, with and without the exchange (a daily player, weeks 2 to 12)
 
@@ -234,10 +230,10 @@ The shard exchange (Q34 B) trades 3 shards of any other element for 1 of the one
 
 | Policy | Exchange | Making pieces | Waiting for a shard (mean) | ... worst week | Creatures waiting to evolve, week 12 | XP lost, weeks 1 to 12 | Exchanges a week |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| set-and-forget | no | 49% | 1% | 7% | 1.5 | 28201 | 6.4 |
-| set-and-forget | yes | 48% | 0% | 0% | 1 | 31768 | 6.3 |
-| optimiser | no | 54% | 0% | 0% | 5 | 48983 | 0.9 |
-| optimiser | yes | 55% | 0% | 3% | 3 | 43911 | 1.5 |
+| set-and-forget | no | 46% | 1% | 6% | 0 | 27236 | 6 |
+| set-and-forget | yes | 46% | 0% | 0% | 1.5 | 37519 | 6.5 |
+| optimiser | no | 49% | 0% | 3% | 6 | 56390 | 0.7 |
+| optimiser | yes | 47% | 1% | 3% | 4 | 48880 | 1.1 |
 
 ## 5. The server
 
@@ -251,15 +247,15 @@ Place levels (hearth / forge / signpost / paddock / school; median over seeds) a
 | 2 | 2/1/1/1/1 | 13 | 3 | 0 |
 | 3 | 2/1/1/1/1 | 15 | 4 | 1 |
 | 4 | 2/1/1/1/1 | 18 | 7 | 1 |
-| 6 | 2/1/1/1/1 | 23 | 11 | 2 |
-| 8 | 2/1/1/1/1 | 27 | 15 | 3 |
+| 6 | 2/1/1/1/1 | 22 | 11 | 2 |
+| 8 | 2/1/1/1/1 | 27 | 15 | 2 |
 | 12 | 3/2/2/2/1 | 35 | 22 | 3 |
 | 16 | 3/2/2/2/1 | 40 | 28 | 4 |
-| 24 | 3/3/2/2/1 | 47 | 40 | 4 |
+| 24 | 4/3/2/2/1 | 48 | 43 | 4 |
 
 - First place level-up on day 7.8; 5 level-ups by week 12. First collection in week 4; 3 done by week 12.
-- The first three projects took 7.8 days, 50.8 days, 54.3 days from opening to done.
-- Share of income given to projects: 12%; the top giver gave 33% of all gifts; communal seats made 5% of project progress.
+- The first three projects took 7.8 days, 51.3 days, 54.6 days from opening to done.
+- Share of income given to projects: 13%; the top giver gave 31% of all gifts; communal seats made 5% of project progress.
 
 ### Mixed server of 8
 
@@ -268,16 +264,16 @@ Place levels (hearth / forge / signpost / paddock / school; median over seeds) a
 | 1 | 2/1/1/1/1 | 12 | 2 | 0 |
 | 2 | 2/2/1/1/1 | 14 | 3 | 0 |
 | 3 | 2/2/1/1/1 | 15 | 4 | 0 |
-| 4 | 2/2/1/1/1 | 22 | 5 | 1 |
+| 4 | 2/2/1/1/1 | 21 | 5 | 1 |
 | 6 | 2/2/2/1/1 | 27 | 8 | 2 |
-| 8 | 2/2/2/2/1 | 32 | 12 | 3 |
+| 8 | 2/2/2/2/1 | 31 | 12 | 3 |
 | 12 | 3/3/2/2/1 | 41 | 17 | 4 |
-| 16 | 3/3/2/2/1 | 45 | 25 | 4 |
-| 24 | 3/3/3/2/2 | 55 | 39 | 4 |
+| 16 | 3/3/2/2/1 | 45 | 27 | 4 |
+| 24 | 4/3/3/2/2 | 53 | 38 | 4 |
 
 - First place level-up on day 6.8; 5 level-ups by week 12. First collection in week 4; 4 done by week 12.
 - The first three projects took 6.8 days, 13.2 days, 30.6 days from opening to done.
-- Share of income given to projects: 13%; the top giver gave 23% of all gifts; communal seats made 5% of project progress.
+- Share of income given to projects: 14%; the top giver gave 23% of all gifts; communal seats made 5% of project progress.
 
 ### Mixed server of 15
 
@@ -287,14 +283,14 @@ Place levels (hearth / forge / signpost / paddock / school; median over seeds) a
 | 2 | 2/2/1/1/1 | 16 | 3 | 1 |
 | 3 | 2/2/1/1/1 | 18 | 4 | 2 |
 | 4 | 2/2/1/1/1 | 29 | 6 | 2 |
-| 6 | 2/2/2/2/1 | 37 | 10 | 3 |
-| 8 | 2/2/2/2/1 | 43 | 14 | 4 |
-| 12 | 3/3/2/2/1 | 50 | 20 | 4 |
-| 16 | 3/3/2/2/2 | 54 | 27 | 4 |
-| 24 | 3/4/3/2/2 | 66 | 41 | 4 |
+| 6 | 2/2/2/2/1 | 38 | 10 | 3 |
+| 8 | 2/2/2/2/1 | 43 | 13 | 4 |
+| 12 | 3/3/2/2/1 | 51 | 20 | 4 |
+| 16 | 3/3/2/2/1 | 54 | 27 | 4 |
+| 24 | 3/4/3/2/2 | 65 | 42 | 4 |
 
 - First place level-up on day 6.3; 6 level-ups by week 12. First collection in week 2; 4 done by week 12.
-- The first three projects took 6.3 days, 2.8 days, 17.8 days from opening to done.
+- The first three projects took 6.3 days, 2.8 days, 18.1 days from opening to done.
 - Share of income given to projects: 12%; the top giver gave 13% of all gifts; communal seats made 6% of project progress.
 
 ### A lone keen player
@@ -307,9 +303,9 @@ Place levels (hearth / forge / signpost / paddock / school; median over seeds) a
 | 4 | 2/1/1/1/1 | 14 | 6 | 0 |
 | 6 | 2/1/1/1/1 | 17 | 9 | 1 |
 | 8 | 2/1/1/1/1 | 18 | 12 | 1 |
-| 12 | 2/1/1/1/1 | 21 | 18 | 1 |
-| 16 | 2/1/1/1/1 | 24 | 24 | 2 |
-| 24 | 2/1/1/1/1 | 28 | 36 | 2 |
+| 12 | 2/1/1/1/1 | 20 | 18 | 1 |
+| 16 | 2/1/1/1/1 | 23 | 24 | 1 |
+| 24 | 2/1/1/1/1 | 27 | 34 | 2 |
 
 - First place level-up on day 17.3; 1 level-ups by week 12. First collection in week 6; 1 done by week 12.
 - The first three projects took 17.3 days, 0 days, 0 days from opening to done.
@@ -323,25 +319,25 @@ Place levels (hearth / forge / signpost / paddock / school; median over seeds) a
 | 2 | 2/1/1/1/1 | 13 | 3 | 0 |
 | 3 | 2/1/1/1/1 | 15 | 5 | 1 |
 | 4 | 2/1/1/1/1 | 23 | 7 | 2 |
-| 6 | 3/2/1/1/1 | 29 | 10 | 3 |
-| 8 | 3/2/2/1/1 | 33 | 15 | 3 |
-| 12 | 3/2/2/2/1 | 40 | 21 | 4 |
-| 16 | 3/3/2/2/1 | 46 | 27 | 4 |
-| 24 | 4/3/3/2/2 | 54 | 41 | 4 |
+| 6 | 3/2/1/1/1 | 28 | 10 | 3 |
+| 8 | 3/2/2/1/1 | 32 | 14 | 3 |
+| 12 | 3/2/2/1/1 | 38 | 20 | 4 |
+| 16 | 4/3/2/2/1 | 45 | 26 | 4 |
+| 24 | 4/3/3/2/2 | 53 | 39 | 4 |
 
-- First place level-up on day 7.8; 5 level-ups by week 12. First collection in week 3; 4 done by week 12.
+- First place level-up on day 7.8; 4 level-ups by week 12. First collection in week 3; 4 done by week 12.
 - The first three projects took 7.8 days, 30.3 days, 33.8 days from opening to done.
-- Share of income given to projects: 13%; the top giver gave 19% of all gifts; communal seats made 5% of project progress.
+- Share of income given to projects: 14%; the top giver gave 18% of all gifts; communal seats made 5% of project progress.
 
 ### What warmed the fire by week 24 (median)
 
 | Server | Place levels | Forge levels | Collections | Boss kills | Master titles | Cosmetic |
 | --- | --- | --- | --- | --- | --- | --- |
-| Mixed server of 5 | 8 | 5 | 8 | 11 | 6 | 0 |
-| Mixed server of 8 | 9 | 5 | 8 | 13 | 9 | 0 |
-| Mixed server of 15 | 9 | 8 | 8 | 12 | 20 | 0 |
-| A lone keen player | 2 | 0 | 4 | 13 | 0 | 0 |
-| A hoarder server (4 hoarders, 4 daily) | 10 | 5 | 8 | 12 | 9 | 0 |
+| Mixed server of 5 | 8 | 5 | 8 | 13 | 6 | 0 |
+| Mixed server of 8 | 9 | 5 | 8 | 12 | 9 | 0 |
+| Mixed server of 15 | 9 | 8 | 8 | 12 | 18 | 0 |
+| A lone keen player | 2 | 0 | 4 | 11 | 0 | 0 |
+| A hoarder server (4 hoarders, 4 daily) | 9 | 5 | 8 | 11 | 9 | 0 |
 
 ### The Forge's fire by boss kills, with no time floor and with a slow one (mixed server of 8)
 
@@ -351,17 +347,17 @@ Kill chance a week: all 1, half 0.5, none 0. There is no time floor (Q40 B: only
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 13 | 12 | 12 | 13 | 12 | 12 |
 | 2 | 15 | 14 | 13 | 15 | 14 | 13 |
-| 4 | 23 | 22 | 19 | 23 | 21 | 19 |
-| 8 | 36 | 32 | 28 | 36 | 33 | 28 |
-| 12 | 47 | 41 | 35 | 47 | 41 | 36 |
+| 4 | 23 | 21 | 19 | 23 | 21 | 20 |
+| 8 | 37 | 31 | 27 | 36 | 32 | 28 |
+| 12 | 47 | 41 | 36 | 47 | 43 | 36 |
 | 16 | 54 | 45 | 38 | 54 | 46 | 38 |
-| 20 | 58 | 49 | 38 | 58 | 49 | 46 |
-| 24 | 66 | 55 | 43 | 66 | 56 | 53 |
+| 20 | 59 | 49 | 38 | 59 | 49 | 46 |
+| 24 | 67 | 53 | 42 | 67 | 56 | 53 |
 
 | Threshold | Opens in week: no floor, all | Opens in week: no floor, half | Opens in week: no floor, none | Slow floor, all | Slow floor, half | Slow floor, none |
 | --- | --- | --- | --- | --- | --- | --- |
 | 10 | 1 | 1 | 1 | 1 | 1 | 1 |
-| 25 | 5 | 6 | 6 | 5 | 6 | 7 |
+| 25 | 6 | 6 | 7 | 6 | 6 | 7 |
 | 50 | 15 | 21 | not by week 24 | 15 | 21 | 23 |
 | 80 | not by week 24 | not by week 24 | not by week 24 | not by week 24 | not by week 24 | not by week 24 |
 
@@ -371,15 +367,15 @@ Projects are built from Acorns, scrap and shards (Q33), and players give their s
 
 | Variant | First level-up (day) | Level-ups by week 12 | Place levels, week 12 (hearth/forge/signpost/paddock/school) | Fire, week 12 | Collections, week 12 | T-1 spread at week 4 | Daily player's best, week 12 | Weekend-off share of idle growth | Weekly share |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Mixed server of 8 | 6.8 | 5 | 3/3/2/2/1 | 41 | 4 | 8 | 29 | 98% | 79% |
-| Mixed 8, creatures at 2% an hour (the docs' table) | 6.7 | 5 | 3/2/2/2/1 | 41 | 4 | 7 | 29 | 98% | 79% |
-| Mixed 8, catch-up also on fight XP | 6.8 | 5 | 3/3/2/2/1 | 41 | 4 | 8 | 29 | 98% | 79% |
-| Mixed 8, away curve A | 7.3 | 5 | 3/2/2/2/1 | 42 | 4 | 9 | 29 | 96% | 73% |
+| Mixed server of 8 | 6.8 | 5 | 3/3/2/2/1 | 41 | 4 | 8.5 | 29 | 98% | 79% |
+| Mixed 8, creatures at 2% an hour (the docs' table) | 6.7 | 5 | 3/2/2/2/1 | 40 | 4 | 7 | 29 | 98% | 79% |
+| Mixed 8, catch-up also on fight XP | 6.8 | 5 | 3/3/2/2/1 | 42 | 4 | 8 | 29 | 98% | 79% |
+| Mixed 8, away curve A | 7.3 | 5 | 3/2/2/2/1 | 42 | 4 | 9.5 | 29 | 96% | 73% |
 | Mixed 8, no communal seats | 7.3 | 5 | 3/2/2/2/1 | 40 | 4 | 8.5 | 29 | 98% | 79% |
-| Mixed 8, everyone set-and-forget | 5.8 | 5 | 3/2/2/2/1 | 41 | 4 | 9.5 | 29 | 98% | 79% |
-| Mixed 8, everyone an optimiser | 9.1 | 2 | 3/2/1/1/1 | 34 | 4 | 7.5 | 29 | 98% | 79% |
-| Mixed 8, everyone gives 10% | 15.8 | 1 | 2/1/1/1/1 | 32 | 4 | 8.5 | 29 | 98% | 79% |
-| Mixed 8, everyone gives 60% | 5.8 | 7 | 3/3/2/2/2 | 41 | 4 | 9 | 29 | 98% | 79% |
+| Mixed 8, everyone set-and-forget | 5.8 | 5 | 3/2/2/2/1 | 40 | 4 | 9.5 | 29 | 98% | 79% |
+| Mixed 8, everyone an optimiser | 9.1 | 1 | 2/1/1/1/1 | 32 | 4 | 7.5 | 29 | 98% | 79% |
+| Mixed 8, everyone gives 10% | 15.8 | 1 | 2/1/1/1/1 | 31 | 4 | 8 | 29 | 98% | 79% |
+| Mixed 8, everyone gives 60% | 5.8 | 7 | 4/3/2/2/2 | 41 | 4 | 9.5 | 29 | 98% | 79% |
 
 ### Server coverage of the creatures (Q38)
 
@@ -387,15 +383,15 @@ Players pool their creatures in the raid, so a boss card may sometimes want a ra
 
 | Server | Rarity | Week 4 | Week 8 | Week 12 | Week 24 |
 | --- | --- | --- | --- | --- | --- |
-| Mixed server of 5 | common | 93% (launch lines 100%) | 93% (launch lines 100%) | 92% (launch lines 100%) | 94% (launch lines 100%) |
-| Mixed server of 5 | rare | 43% (launch lines 67%) | 64% (launch lines 100%) | 67% (launch lines 100%) | 76% (launch lines 100%) |
-| Mixed server of 5 | epic | 20% (launch lines 33%) | 36% (launch lines 67%) | 33% (launch lines 67%) | 47% (launch lines 100%) |
-| Mixed server of 8 | common | 100% (launch lines 100%) | 95% (launch lines 100%) | 96% (launch lines 100%) | 98% (launch lines 100%) |
-| Mixed server of 8 | rare | 64% (launch lines 100%) | 73% (launch lines 100%) | 73% (launch lines 100%) | 85% (launch lines 100%) |
-| Mixed server of 8 | epic | 40% (launch lines 33%) | 43% (launch lines 67%) | 56% (launch lines 83%) | 60% (launch lines 100%) |
+| Mixed server of 5 | common | 93% (launch lines 100%) | 95% (launch lines 100%) | 92% (launch lines 100%) | 93% (launch lines 100%) |
+| Mixed server of 5 | rare | 43% (launch lines 67%) | 64% (launch lines 100%) | 67% (launch lines 100%) | 74% (launch lines 100%) |
+| Mixed server of 5 | epic | 20% (launch lines 33%) | 29% (launch lines 50%) | 33% (launch lines 67%) | 43% (launch lines 67%) |
+| Mixed server of 8 | common | 100% (launch lines 100%) | 100% (launch lines 100%) | 100% (launch lines 100%) | 97% (launch lines 100%) |
+| Mixed server of 8 | rare | 57% (launch lines 100%) | 68% (launch lines 100%) | 80% (launch lines 100%) | 81% (launch lines 100%) |
+| Mixed server of 8 | epic | 40% (launch lines 33%) | 43% (launch lines 67%) | 56% (launch lines 100%) | 60% (launch lines 100%) |
 | Mixed server of 15 | common | 100% (launch lines 100%) | 100% (launch lines 100%) | 100% (launch lines 100%) | 100% (launch lines 100%) |
 | Mixed server of 15 | rare | 71% (launch lines 100%) | 82% (launch lines 100%) | 87% (launch lines 100%) | 89% (launch lines 100%) |
-| Mixed server of 15 | epic | 50% (launch lines 67%) | 64% (launch lines 100%) | 67% (launch lines 100%) | 73% (launch lines 100%) |
+| Mixed server of 15 | epic | 60% (launch lines 67%) | 64% (launch lines 100%) | 67% (launch lines 100%) | 73% (launch lines 100%) |
 
 ### Is the Forge short of a shard, and since when? (V-FORGE-11)
 
@@ -406,23 +402,23 @@ The share of anvil time a player spends waiting for a shard of the element the o
 | 1 | 12% | 5% | 20% | 3% | 35% | 25% | 1% | 0% | 1 / 2 | 2 / 2 |
 | 2 | 27% | 0% | 63% | 0% | 50% | 10% | 84% | 63% | 1 / 2 | 2 / 2 |
 | 3 | 21% | 0% | 52% | 0% | 21% | 0% | 73% | 3% | 0 / 2 | 2.5 / 2 |
-| 4 | 15% | 0% | 36% | 0% | 13% | 0% | 88% | 0% | 2.5 / 2 | 3 / 2 |
-| 6 | 19% | 0% | 56% | 0% | 30% | 0% | 81% | 2% | 2 / 2.5 | 3.5 / 2 |
-| 8 | 16% | 0% | 32% | 0% | 36% | 0% | 72% | 0% | 2 / 2.5 | 4.5 / 2 |
-| 10 | 15% | 0% | 27% | 0% | 36% | 0% | 1% | 0% | 2 / 3 | 5 / 2.5 |
-| 12 | 13% | 0% | 42% | 0% | 25% | 0% | 41% | 0% | 2.5 / 3 | 4.5 / 3 |
-| 16 | 10% | 0% | 31% | 0% | 19% | 0% | 73% | 0% | 1 / 3 | 3.5 / 3 |
-| 20 | 3% | 0% | 25% | 0% | 4% | 0% | 58% | 0% | 1 / 3 | 3 / 3 |
-| 24 | 0% | 0% | 3% | 0% | 10% | 0% | 87% | 0% | 4 / 4 | 5 / 3 |
+| 4 | 15% | 0% | 36% | 0% | 16% | 0% | 88% | 0% | 2.5 / 2 | 3 / 2 |
+| 6 | 17% | 0% | 48% | 0% | 34% | 0% | 81% | 0% | 2.5 / 2.5 | 3.5 / 2 |
+| 8 | 14% | 0% | 28% | 0% | 38% | 0% | 26% | 0% | 4 / 2.5 | 5 / 2 |
+| 10 | 13% | 0% | 31% | 0% | 34% | 0% | 1% | 0% | 0.5 / 3 | 4 / 2.5 |
+| 12 | 8% | 0% | 42% | 0% | 31% | 0% | 70% | 0% | 1.5 / 3 | 4 / 2.5 |
+| 16 | 16% | 0% | 21% | 0% | 17% | 0% | 8% | 0% | 1 / 3 | 5 / 3 |
+| 20 | 18% | 0% | 24% | 0% | 26% | 0% | 85% | 0% | 0.5 / 3 | 4.5 / 3 |
+| 24 | 3% | 0% | 19% | 0% | 5% | 0% | 29% | 0% | 2 / 3 | 5 / 3 |
 
 The Market as a project: the broker's seat does not exist until the server builds the Market, a communal project (it joins the valley the first week the server's anvils spend 15% of their time waiting for a shard, and is sized like a level-2 place's project; every player has the broker's seat once it is built). Shards are what is short, so the Market of the first three rows is paid in Acorns and scrap only; the last row pays it like the other projects (Acorns, scrap and shards), to see whether the scarce shard can also build its own fix. Each row is a server run 6 times:
 
 | Server | Opened (share of runs, week) | Built (share of runs, week) | Stall before it opened | Stall after it was built | Week 4: Market / broker from day one | Week 8: Market / broker from day one | Week 12: Market / broker from day one | Week 16: Market / broker from day one | Week 24: Market / broker from day one |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Mixed 5, the Market as a project | 100%, 2 | 100%, 15.5 | 22% | 3% | 27% / 4% | 26% / 3% | 16% / 2% | 16% / 0% | 0% / 0% |
-| Mixed 8, the Market as a project | 100%, 1 | 100%, 14.5 | 17% | 4% | 25% / 4% | 29% / 7% | 15% / 1% | 14% / 1% | 2% / 0% |
-| Mixed 15, the Market as a project | 100%, 1 | 100%, 12.5 | 18% | 5% | 25% / 5% | 23% / 2% | 11% / 2% | 2% / 1% | 5% / 1% |
-| Mixed 8, the Market paid like the other projects (with shards) | 100%, 1 | 0%, - | 17% | - | 25% / 4% | 26% / 7% | 16% / 1% | 18% / 1% | 23% / 0% |
+| Mixed 5, the Market as a project | 100%, 2 | 100%, 16 | 22% | 3% | 31% / 5% | 34% / 4% | 13% / 0% | 11% / 0% | 0% / 0% |
+| Mixed 8, the Market as a project | 100%, 1 | 100%, 15 | 17% | 3% | 25% / 4% | 29% / 2% | 13% / 1% | 12% / 0% | 6% / 0% |
+| Mixed 15, the Market as a project | 100%, 1 | 100%, 12.5 | 18% | 3% | 26% / 4% | 19% / 2% | 14% / 3% | 4% / 3% | 4% / 1% |
+| Mixed 8, the Market paid like the other projects (with shards) | 100%, 1 | 0%, - | 17% | - | 25% / 4% | 25% / 2% | 16% / 1% | 20% / 0% | 19% / 0% |
 
 ### The School and the broker (V-SCH-7, V-FORGE-11)
 
@@ -430,11 +426,11 @@ A creature learns a talent the first time a slot opens (slot 1 when caught, slot
 
 | Player | Acorns a week on learning, weeks 1 to 4 | Acorns a week on learning, weeks 5 to 12 | Acorns a week on learning, weeks 13 to 24 | Share of Acorn income, 24 weeks | Learnings by week 12 | Teacher lessons by week 24 | Broker hours a week, weeks 9 to 24 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Daily (one evening visit) | 45 | 86 | 96 | 24% | 43 | 24 | 168 |
-| Active (3 visits a day) | 51 | 92 | 94 | 24% | 45 | 24 | 168 |
-| Every other day | 45 | 84 | 98 | 26% | 38 | 24 | 168 |
-| Weekend off | 42 | 80 | 95 | 25% | 41 | 24 | 164 |
-| Weekly (Sundays) | 23 | 32 | 29 | 21% | 11 | 24 | 132 |
+| Daily (one evening visit) | 45 | 89 | 93 | 23% | 42 | 24 | 168 |
+| Active (3 visits a day) | 51 | 86 | 91 | 23% | 45 | 24 | 168 |
+| Every other day | 45 | 85 | 96 | 25% | 38 | 24 | 168 |
+| Weekend off | 42 | 81 | 93 | 25% | 40 | 24 | 164 |
+| Weekly (Sundays) | 23 | 32 | 31 | 21% | 11 | 24 | 132 |
 
 ### The weekly visitor (V-VIS)
 
@@ -444,42 +440,98 @@ Rerolls a week and what they drain, median over seeds and players of a kind (mix
 
 | Player | Met him (weeks of 24) | Rerolls a week, weeks 1 to 8 | Rerolls a week, weeks 9 to 16 | Rerolls a week, weeks 17 to 24 | Acorns a week, weeks 9 to 24 | Scrap a week, weeks 9 to 24 |
 | --- | --- | --- | --- | --- | --- | --- |
-| Daily (one evening visit) | 24 | 0.1 | 0 | 0 | 40 | 0 |
-| Active (3 visits a day) | 24 | 0.9 | 0 | 0.1 | 55 | 101 |
+| Daily (one evening visit) | 24 | 0 | 0 | 0 | 40 | 0 |
+| Active (3 visits a day) | 24 | 0.6 | 0 | 0 | 40 | 0 |
 | Every other day | 24 | 0 | 0 | 0 | 40 | 0 |
-| Weekend off | 24 | 0 | 0 | 0 | 40 | 0 |
-| Weekly (Sundays) | 24 | 0 | 0 | 0 | 13 | 0 |
+| Weekend off | 24 | 0.1 | 0 | 0 | 40 | 0 |
+| Weekly (Sundays) | 24 | 0 | 0 | 0 | 6 | 0 |
 
 Piles in weeks of spending (never counting spending below a quarter of income), with and without him (the same servers run again with no visitor):
 
 | Player | Resource | Week 4, with / without | Week 12, with / without | Week 24, with / without | Dead from week, with / without |
 | --- | --- | --- | --- | --- | --- |
-| Daily (one evening visit) | acorns | 1.1 / 2 | 0.7 / 1.1 | 0.8 / 2.7 | - / - |
-| Daily (one evening visit) | scrap | 1.4 / 2.4 | 2 / 11.2 | 8.1 / 29.6 | 12 / 3 |
-| Daily (one evening visit) | shards | 0.5 / 2.5 | 0.9 / 7.7 | 3.2 / 15.1 | - / 2 |
-| Daily (one evening visit) | essence | 1.4 / 1.1 | 1 / 0.8 | 0.8 / 1 | - / - |
-| Weekly (Sundays) | acorns | 1 / 1 | 1.4 / 0.8 | 1.2 / 4.9 | - / 12 |
-| Weekly (Sundays) | scrap | 2.4 / 3.5 | 4.3 / 6.5 | 18.1 / 25.2 | 6 / 3 |
-| Weekly (Sundays) | shards | 2.5 / 3.4 | 0.6 / 5.7 | 0.7 / 12.7 | - / 4 |
-| Weekly (Sundays) | essence | 3.1 / 3 | 2.4 / 5.4 | 1.3 / 4.6 | - / 5 |
+| Daily (one evening visit) | acorns | 1.1 / 1.9 | 0.6 / 0.6 | 0.6 / 0.5 | - / - |
+| Daily (one evening visit) | scrap | 1.2 / 1.6 | 1.1 / 2.7 | 0.8 / 3.5 | - / 13 |
+| Daily (one evening visit) | shards | 0.5 / 2.6 | 0.6 / 8.3 | 3 / 18.2 | - / 2 |
+| Daily (one evening visit) | essence | 1.4 / 1.1 | 1 / 0.9 | 0.8 / 1.3 | - / - |
+| Weekly (Sundays) | acorns | 0.9 / 0.9 | 1.3 / 0.7 | 1.3 / 1 | - / - |
+| Weekly (Sundays) | scrap | 2.4 / 3.2 | 4.1 / 2.1 | 5.1 / 5.1 | 9 / 17 |
+| Weekly (Sundays) | shards | 2.5 / 3.4 | 0.7 / 6.5 | 0.8 / 12.9 | - / 3 |
+| Weekly (Sundays) | essence | 3.1 / 3 | 2.3 / 5.6 | 2 / 3.8 | - / 5 |
 
 The best worn piece's lines (the piece with the most pips in all): pips and their share of what its level allows, with and without him, and epics worn:
 
 | Player | Week 4: best pips (share), without | Week 8: best pips (share), without | Week 12: best pips (share), without | Week 24: best pips (share), without | Epics worn, week 12 / 24 |
 | --- | --- | --- | --- | --- | --- |
-| Daily (one evening visit) | 6 (74%), 5 (80%) | 9 (88%), 10 (85%) | 10 (78%), 9 (79%) | 13 (80%), 14 (80%) | 1 / 3 |
-| Active (3 visits a day) | 6 (75%), 5 (82%) | 9 (76%), 8.5 (85%) | 10 (80%), 11 (77%) | 12.5 (78%), 13.5 (80%) | 1 / 2.5 |
-| Every other day | 7 (80%), 6 (70%) | 8.5 (80%), 8 (86%) | 9.5 (77%), 9.5 (79%) | 13 (78%), 13.5 (87%) | 1 / 3 |
-| Weekend off | 5 (83%), 5.5 (68%) | 7 (79%), 8 (81%) | 9 (87%), 11 (73%) | 14 (80%), 14.5 (75%) | 1.5 / 3 |
-| Weekly (Sundays) | 5 (70%), 5 (67%) | 6.5 (78%), 7 (78%) | 9 (76%), 9 (76%) | 11.5 (80%), 12 (83%) | 1 / 2 |
+| Daily (one evening visit) | 6 (70%), 6 (83%) | 8 (79%), 8 (78%) | 10 (78%), 11 (80%) | 13 (80%), 14 (70%) | 1.5 / 5 |
+| Active (3 visits a day) | 6 (80%), 6 (82%) | 8.5 (85%), 8 (73%) | 11 (76%), 10 (76%) | 13 (75%), 14 (73%) | 2 / 6 |
+| Every other day | 7 (80%), 6 (70%) | 9 (78%), 7.5 (78%) | 11 (80%), 11 (73%) | 13 (80%), 13 (82%) | 2 / 5.5 |
+| Weekend off | 5.5 (83%), 5.5 (70%) | 8 (76%), 8 (78%) | 11 (73%), 10 (82%) | 13.5 (80%), 13.5 (86%) | 2 / 5.5 |
+| Weekly (Sundays) | 5 (70%), 5 (67%) | 6 (72%), 6.5 (68%) | 9 (83%), 9.5 (76%) | 13.5 (75%), 11.5 (73%) | 1 / 2.5 |
 
-The share of servers (runs) where some player wears an epic with 4 or more top-pip lines (the panel guessed about 55% of ten-player servers by week 10, with about 30 rerolls over 10 weeks; here the servers of 5, 8 and 15 make 22 (5 players), 17 (8 players), 23 (15 players) in weeks 1 to 10):
+The share of servers (runs) where some player wears an epic with 4 or more top-pip lines (the panel guessed about 55% of ten-player servers by week 10, with about 30 rerolls over 10 weeks; here the servers of 5, 8 and 15 make 20 (5 players), 18 (8 players), 18 (15 players) in weeks 1 to 10):
 
 | Server | Week 8, with / without | Week 10 | Week 12 | Week 24 |
 | --- | --- | --- | --- | --- |
-| Mixed server of 5 | 45% | 50% | 45% | 45% |
-| Mixed server of 8 | 50% / 40% | 20% / 30% | 35% / 50% | 65% / 60% |
-| Mixed server of 15 | 40% / 50% | 60% / 50% | 75% / 40% | 75% / 70% |
+| Mixed server of 5 | 25% | 45% | 40% | 70% |
+| Mixed server of 8 | 55% / 10% | 40% / 20% | 35% / 40% | 55% / 40% |
+| Mixed server of 15 | 30% / 30% | 60% / 60% | 70% / 80% | 85% / 90% |
+
+### Tempering at the Forge (a candidate scrap sink, T-7b)
+
+The problem: from about week 13 a daily player's scouts bring more scrap than pieces, project gifts and the visitor take, so the pile only grows (T-7b). The candidate: a worn **rare or epic** piece that has fallen 5 or more levels behind the fire (3 for an optimiser) can be tempered: its item level rises to the fire, its rolled lines and any visitor rerolls are kept, and it is paid for in scrap and a few Acorns (5% of the scrap price). The price is 10 scrap for each level of gap at item level 10, growing with the level the piece rises to, times 1 for a rare and 2 for an epic. A set-and-forget player tempers its best pieces (epics first, then rares; a piece rerolled at the visitor before one that was not) at a visit, up to 2, an optimiser up to 6; both keep 300 scrap, a week of what their anvils use and one reroll of their best piece (the visitor and the Forge come first), and 140 Acorns, and skip a piece whose price is over 20 crafts' scrap for a rare or 40 for an epic (then a new piece is cheaper). Tempering is done at the visit before the Forge floor comes home, so a piece worth keeping is raised before a crafted replacement can take its slot. A weekly player tempers only on its visit.
+
+The switch (`rules.tempering.on`) is **on** by default. This section runs the mixed server of 8 both ways (10 seeds each, the same random draws, so a difference is tempering and not luck). The original targets are `targets.ts`, unchanged.
+
+|  | With tempering | Without |
+| --- | --- | --- |
+| T-7b: resources of a daily player dead at some point of the 24 weeks | 0 | 1 (scrap from week 14) |
+| Scrap stock of a daily player, end of week 12 (median) | 2532 | 4783 |
+| Scrap stock of a daily player, end of week 24 (median) | 1115 | 13960 |
+
+A daily player's scrap in weeks 13 to 24, a week (median over seeds and players of each source and sink, so the net is not exactly the stock's change):
+
+| Scrap | With tempering | Without |
+| --- | --- | --- |
+| in: scouts | 1850 | 1929 |
+| in: dismantling | 232 | 232 |
+| in: dungeon | 70 | 70 |
+| in: duplicates | 66 | 66 |
+| in: tinkering | 22 | 20 |
+| in: raid | 7 | 7 |
+| out: pieces | 609 | 672 |
+| out: tempering | 657 | 0 |
+| out: gifts | 602 | 592 |
+| out: visitor | 418 | 575 |
+| **net (in minus out)** | -39 | 486 |
+
+Pieces tempered by server week 12 and 24, and what it does to the Forge (with / without; a piece made, worn or dismantled counts to week 24; "weak slots" are the slots more than 6 levels below the fire, which the Forge makes pieces for). A newcomer joins in week 6:
+
+| Player | Tempered by week 12 | by week 24 | Of them rerolled at the visitor | Scrap spent (24 wk) | Pieces made | Pieces worn | Dismantled | Weak slots, week 12 | Weak slots, week 24 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Daily (one evening visit) | 12.5 | 38.5 | 8% | 10973 | 380 / 409 | 422 / 454 | 365 / 364 | 5 / 3 | 21 / 23 |
+| Active (3 visits a day) | 30 | 95.5 | 9% | 17641 | 414 / 461 | 449 / 495 | 514 / 561 | 3 / 0 | 19 / 36 |
+| Weekly (Sundays) | 1.5 | 9.5 | 0% | 3881 | 199 / 204 | 253 / 251 | 185 / 182 | 23 / 23 | 40 / 55 |
+| New (joins in week 6) | 11 | 92.5 | 3% | 20935 | 324 / 359 | 360 / 396 | 381 / 419 | 3 / 3 | 15 / 22 |
+
+Prices (a piece of this rarity raised by `gap` levels to item level `to`):
+
+| Piece | Gap | Raised to | Scrap | Acorns |
+| --- | --- | --- | --- | --- |
+| rare | 5 | 30 | 150 | 8 |
+| rare | 10 | 40 | 400 | 20 |
+| rare | 10 | 50 | 500 | 25 |
+| rare | 15 | 60 | 900 | 45 |
+| epic | 5 | 30 | 300 | 15 |
+| epic | 10 | 40 | 800 | 40 |
+| epic | 10 | 50 | 1000 | 50 |
+| epic | 15 | 60 | 1800 | 90 |
+
+Targets whose status changes with tempering (the mixed server of 8, and the one that kills every boss for T-3d and T-3e; the targets that need the optimiser server are not rerun here):
+
+| Target | Original wording | Bound | With | Without |
+| --- | --- | --- | --- | --- |
+| T-7b | no resource of a daily player is dead at any point of the 24 weeks (the same flag, over the whole run) | at most 0 | 0 PASS | 1 FAIL |
 
 ## 6. The roster profile for combat v2
 
@@ -487,9 +539,9 @@ The full table is `roster-profile.json` (the shape of `RosterProfile` in `packag
 
 | Kind | Week 1 | Week 4 | Week 8 | Week 12 | Week 24 |
 | --- | --- | --- | --- | --- | --- |
-| daily | 11/11/0/0, 5 | 19/19/9/0, 11 | 25/25/19/0, 18 | 29/29/25/15, 26 | 30/30/30/30, 49 |
-| weekly | 9/9/0/0, 3 | 16/16/0/0, 7 | 22/22/14/0, 12 | 26/26/20/0, 18 | 30/30/30/26, 36 |
-| new (weeks since joining) | 13/13/0/0, 7 | 23/21/15/0, 18 | 28/26/21/15, 29 | 30/29/27/18, 35 | 30/30/30/30, 61 |
+| daily | 11/11/0/0, 5 | 19/19/9/0, 11 | 25/25/19/0, 18 | 29/29/25/15, 25 | 30/30/30/30, 49 |
+| weekly | 9/9/0/0, 3 | 16/16/0/0, 7 | 22/22/14/0, 12 | 26/26/20/0, 19 | 30/30/30/25, 36 |
+| new (weeks since joining) | 13/13/0/0, 7 | 23/21/15/0, 17 | 28/26/21/15, 29 | 30/29/27/18, 37 | 30/30/30/30, 62 |
 
 ## 7. Journeys
 
@@ -499,19 +551,19 @@ Medians by week for a daily and a weekly player in the mixed server of 8, to che
 
 - Week 1: 5 creatures, the best at level 11 and the tenth at 5. 2 scouts, 2 anvils, 0 kit items. That week: 5 arrivals, 10 pieces made, 142 given to projects. Holding 84 Acorns, 450 scrap and 25 shards. Valley places at 2/1/1/1/1 (hearth, forge, signpost, paddock, school).
 - Week 2: 8 creatures, the best at level 14 and the tenth at 7. 2 scouts, 2 anvils, 0 kit items. That week: 6 arrivals, 9 pieces made, 484 given to projects. Holding 205 Acorns, 655 scrap and 21 shards. Valley places at 2/1.5/1/1/1 (hearth, forge, signpost, paddock, school).
-- Week 4: 11 creatures, the best at level 19 and the tenth at 10. 2 scouts, 3 anvils, 0 kit items. That week: 6 arrivals, 18 pieces made, 260 given to projects. Holding 330 Acorns, 1115 scrap and 35 shards. Valley places at 2/1.5/1/1/1 (hearth, forge, signpost, paddock, school).
-- Week 8: 19 creatures, the best at level 25 and the tenth at 19. 3 scouts, 3 anvils, 0 kit items. That week: 7 arrivals, 22 pieces made, 461 given to projects. Holding 302 Acorns, 1807 scrap and 45 shards. Valley places at 2/2/2/2/1 (hearth, forge, signpost, paddock, school).
-- Week 12: 26 creatures, the best at level 29 and the tenth at 25. 3 scouts, 3 anvils, 0 kit items. That week: 9 arrivals, 24 pieces made, 562 given to projects. Holding 236 Acorns, 3874 scrap and 98 shards. Valley places at 3/2.5/2/2/1 (hearth, forge, signpost, paddock, school).
-- Week 24: 49 creatures, the best at level 30 and the tenth at 30. 4 scouts, 3 anvils, 0 kit items. That week: 11 arrivals, 33 pieces made, 233 given to projects. Holding 231 Acorns, 12848 scrap and 424 shards. Valley places at 3/3/3/2/2 (hearth, forge, signpost, paddock, school).
+- Week 4: 11 creatures, the best at level 19 and the tenth at 10. 2 scouts, 3 anvils, 0 kit items. That week: 6 arrivals, 19 pieces made, 260 given to projects. Holding 323 Acorns, 1000 scrap and 35 shards. Valley places at 2/1.5/1/1/1 (hearth, forge, signpost, paddock, school).
+- Week 8: 18 creatures, the best at level 25 and the tenth at 19. 3 scouts, 3 anvils, 0 kit items. That week: 7 arrivals, 15 pieces made, 483 given to projects. Holding 317 Acorns, 1273 scrap and 46 shards. Valley places at 2/2/2/1.5/1 (hearth, forge, signpost, paddock, school).
+- Week 12: 25 creatures, the best at level 29 and the tenth at 25. 3 scouts, 3 anvils, 0 kit items. That week: 9 arrivals, 24 pieces made, 247 given to projects. Holding 205 Acorns, 2363 scrap and 73 shards. Valley places at 2.5/2.5/2/2/1 (hearth, forge, signpost, paddock, school).
+- Week 24: 48 creatures, the best at level 30 and the tenth at 30. 3 scouts, 3 anvils, 0 kit items. That week: 9 arrivals, 32 pieces made, 252 given to projects. Holding 213 Acorns, 2041 scrap and 392 shards. Valley places at 3.5/3/3/2/2 (hearth, forge, signpost, paddock, school).
 
 ### Weekly (Sundays)
 
 - Week 1: 3 creatures, the best at level 9 and the tenth at 9. 2 scouts, 1 anvils, 0 kit items. That week: 1 arrivals, 0 pieces made, 4 given to projects. Holding 95 Acorns, 209 scrap and 11 shards. Valley places at 2/1/1/1/1 (hearth, forge, signpost, paddock, school).
 - Week 2: 5 creatures, the best at level 12 and the tenth at 2. 2 scouts, 2 anvils, 0 kit items. That week: 3 arrivals, 3 pieces made, 216 given to projects. Holding 60 Acorns, 331 scrap and 24 shards. Valley places at 2/1.5/1/1/1 (hearth, forge, signpost, paddock, school).
-- Week 4: 7 creatures, the best at level 16 and the tenth at 2. 2 scouts, 2 anvils, 0 kit items. That week: 2 arrivals, 5 pieces made, 103 given to projects. Holding 117 Acorns, 637 scrap and 50 shards. Valley places at 2/1.5/1/1/1 (hearth, forge, signpost, paddock, school).
-- Week 8: 12 creatures, the best at level 22 and the tenth at 14. 3 scouts, 2 anvils, 0 kit items. That week: 3 arrivals, 10 pieces made, 75 given to projects. Holding 88 Acorns, 1252 scrap and 45 shards. Valley places at 2/2/2/2/1 (hearth, forge, signpost, paddock, school).
-- Week 12: 18 creatures, the best at level 26 and the tenth at 20. 3 scouts, 2 anvils, 0 kit items. That week: 3 arrivals, 10 pieces made, 76 given to projects. Holding 148 Acorns, 1664 scrap and 27 shards. Valley places at 3/2.5/2/2/1 (hearth, forge, signpost, paddock, school).
-- Week 24: 37 creatures, the best at level 30 and the tenth at 30. 3 scouts, 3 anvils, 0 kit items. That week: 4 arrivals, 17 pieces made, 81 given to projects. Holding 129 Acorns, 8244 scrap and 35 shards. Valley places at 3/3/3/2/2 (hearth, forge, signpost, paddock, school).
+- Week 4: 7 creatures, the best at level 16 and the tenth at 2. 2 scouts, 2 anvils, 0 kit items. That week: 2 arrivals, 5 pieces made, 103 given to projects. Holding 109 Acorns, 637 scrap and 50 shards. Valley places at 2/1.5/1/1/1 (hearth, forge, signpost, paddock, school).
+- Week 8: 12 creatures, the best at level 22 and the tenth at 14. 3 scouts, 2 anvils, 0 kit items. That week: 3 arrivals, 7 pieces made, 126 given to projects. Holding 88 Acorns, 1047 scrap and 49 shards. Valley places at 2/2/2/1.5/1 (hearth, forge, signpost, paddock, school).
+- Week 12: 17 creatures, the best at level 26 and the tenth at 19. 3 scouts, 2 anvils, 0 kit items. That week: 3 arrivals, 10 pieces made, 75 given to projects. Holding 150 Acorns, 1542 scrap and 34 shards. Valley places at 2.5/2.5/2/2/1 (hearth, forge, signpost, paddock, school).
+- Week 24: 35 creatures, the best at level 30 and the tenth at 30. 3 scouts, 3 anvils, 0 kit items. That week: 3 arrivals, 15 pieces made, 82 given to projects. Holding 156 Acorns, 5126 scrap and 38 shards. Valley places at 3.5/3/3/2/2 (hearth, forge, signpost, paddock, school).
 
 ## 8. Cost estimate
 
@@ -519,20 +571,20 @@ Rows touched, from the shape of a visit (the player row, one row per creature, s
 
 | Profile | Creatures | Rows read /visit | Rows written /visit |
 | --- | --- | --- | --- |
-| Daily (one evening visit) | 26 | 39 | 31 |
-| Active (3 visits a day) | 27 | 41 | 33 |
+| Daily (one evening visit) | 25 | 39 | 31 |
+| Active (3 visits a day) | 28 | 40 | 32 |
 | Every other day | 26 | 40 | 32 |
-| Weekend off | 26 | 40 | 32 |
-| Weekly (Sundays) | 18 | 33 | 25 |
+| Weekend off | 25 | 40 | 32 |
+| Weekly (Sundays) | 17 | 33 | 25 |
 | Hoarder (saves 4 weeks, then gives all) | 25 | 38 | 30 |
 
 | Server | Players | Visits /day | Rows read /day | Rows written /day | Share of the daily read budget |
 | --- | --- | --- | --- | --- | --- |
 | mixed5 | 5 | 5.7 | 230 | 175 | 0% |
-| mixed8 | 8 | 8.2 | 351 | 280 | 0.01% |
-| mixed15 | 15 | 14.7 | 630 | 508 | 0.01% |
+| mixed8 | 8 | 8.2 | 348 | 276 | 0.01% |
+| mixed15 | 15 | 14.7 | 632 | 509 | 0.01% |
 | lone | 1 | 3 | 123 | 87 | 0% |
-| hoarder | 8 | 8 | 325 | 255 | 0.01% |
+| hoarder | 8 | 8 | 321 | 251 | 0.01% |
 
 ## Appendix: assumptions and simplifications
 
@@ -601,6 +653,16 @@ Rows touched, from the shape of a visit (the player row, one row per creature, s
 - `goodTop`: an optimiser rerolls an epic until 4 of its 5 lines are the top pip, a rare until 2 of its 3 (a set-and-forget player rerolls once a week on the best epic that is not there yet).
 - `blueprintPool`: the week's rotating rare blueprint costs this many Acorns and this many shards of ANY element (taken from the most-stocked elements first); a player buys it when they can afford it above the Acorn reserve and know fewer than the pool.
 - `blueprintPool`: the visitor sells from a pool of his own, never found by scouts ("found nowhere else"): this many blueprints, a week's pick at random. One already known is a copy, and a copy raises that blueprint's quality (V-FORGE-9), so buying every week stays worthwhile.
+- `on`: the switch's default, set from the report's with-and-without result (see its "Tempering" section).
+- `minGap`: a set-and-forget player tempers a piece once it is this many levels behind the fire (about the Forge's own margin of 6), an optimiser sooner.
+- `rarityFactor`: only rare and epic pieces are tempered (their lines are what is worth keeping; a common is cheaper to craft again): price factors [common, rare, epic], 0 meaning never.
+- `baseLevel`: the scrap price is linear in the gap and in the level the piece rises to (as the visitor's price is linear in item level): `scrapPerLevel` scrap for each level of gap at item level `baseLevel`, times the rarity factor.
+- `scrapPerLevel`: a first guess of 3 (an epic 10 levels behind the fire at 50 costs 300 scrap); an epic 5 levels behind at 50 costs 500 at 10.
+- `acornShare`: "a small Acorn part": this share of the scrap price again, in Acorns (a few Acorns a week against an income of 364).
+- `reserveScrap`: a player keeps this much scrap (the visitor's own reserve), plus this many weeks of what their anvils use, plus one reroll of their best piece (the visitor and the Forge come first; T-4 and the visitor's rerolls must not suffer).
+- `reserveAcorns`: and this many Acorns (the visitor's reserve and his weekly blueprint).
+- `perVisit`: the most pieces tempered in one visit (a set-and-forget player does a couple while looking at its best pieces; an optimiser more).
+- `worthInCrafts`: "cheaper than crafting a replacement": a rare piece is worth this many crafts' scrap with its lines, an epic more; above that the player lets the piece go and crafts another.
 
 ### Simplifications
 
@@ -617,6 +679,7 @@ Rows touched, from the shape of a visit (the player row, one row per creature, s
 - Catch-up applies to idle XP only (not to fights). Its multiplier is fixed at each visit and holds until the next one (Q35 B), but never above the target it was fixed for: it fades as the creature closes the gap, so a player who visits less often cannot earn more of it than one who visits daily. A player who is away is not counted in the server's middle after seven days.
 - Project gifts are chosen by weight among the open projects; a gift never exceeds what the project still needs, the rest stays with the giver. A project's cost is an Acorn part, a scrap part and a shard part (Q33), each filled by gifts from what a player has above a reserve for their own Forge; shards go to a project only as shards of the element tied to its place; Essence never goes to projects and journal pages are never spent. A find fills only its own collection socket; a spare melts into Essence. Sources of the sockets that are not keystones (dungeon landmarks, resident tokens, pages) use made-up rates.
 - Ribbons are dropped (Misa): levels never stop. Honours (trials.md) replace them and gate nothing. Creatures are not tracked per post, so the lab places creatures on seats itself: a new seat takes a creature not at a post yet (fewest hours of work, then highest level), a set-and-forget player never moves anyone, and an optimiser moves a Master on and puts an unworked creature in its seat. A creature's hours of work, the dungeon and raid clears it was in and the finds it brought home tick its trial boxes. Combat is not simulated: a share of dungeon runs (an assumption) count as an Undercroft clear, and the raid party is the same team that fights; an optimiser gives the team's last place to the highest-level creature that still needs a fight box, a set-and-forget player does not.
+- Tempering (a candidate sink, `rules.tempering`) keeps a piece's rolled lines exactly as they are even when the higher item level allows a higher top pip (a line that was at the top before can be below the new top, so the visitor's `goodTop` test may ask for another reroll); only worn rare and epic pieces are tempered, at a visit before the Forge floor comes home; the cheaper-than-crafting test is a price cap by rarity, not a comparison of what the replacement would cost the Forge in shards and anvil time.
 - The cost estimate counts rows from the shape of a visit (one player row, the creature rows, seat rows, the valley's rows); it is not a measured query plan.
 - T-5 (the best team differs across bosses) belongs to combat v2's lab.
 
@@ -642,6 +705,7 @@ The tuner (`pnpm --filter @creatures/econ tune`) moved these from the docs' exam
 - `tiers`: the rates were 3, 3, 2.5 and 2 (all x0.8 now); crit chances unchanged.
 - `price`: was 60 (the doc's example), which took most of a daily player's Acorns and left the visitor none.
 - `blueprintShards`: was 20.
+- `scrapPerLevel`: was 3 (then 6, 8: T-7b still failed at some seed counts); at 10 a daily player spends about 700 scrap a week on it in weeks 13 to 24 (the late surplus measured in the baseline was about 765 a week) and T-7b holds at 6 to 40 seeds.
 - `placeLevel`: were 0.75, 1.25, 1, 0.5 and 0.25 after the last tuning; now half of commons.md's table.
 
 ### Policies

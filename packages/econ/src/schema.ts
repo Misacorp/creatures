@@ -221,6 +221,19 @@ export const RulesSchema = v.strictObject({
     blueprintShards: num,
     blueprintPool: v.pipe(v.number(), v.integer(), v.minValue(1)),
   }),
+  tempering: v.strictObject({
+    on: v.boolean(),
+    minGap: v.strictObject({ setAndForget: int, optimiser: int }),
+    rarityFactor: v.pipe(v.array(num), v.length(3)),
+    baseLevel: pos,
+    scrapPerLevel: num,
+    acornShare: num,
+    reserveScrap: num,
+    reserveForgeWeeks: num,
+    reserveAcorns: num,
+    perVisit: v.strictObject({ setAndForget: int, optimiser: int }),
+    worthInCrafts: v.pipe(v.array(num), v.length(3)),
+  }),
   collections: v.strictObject({
     boards: v.record(
       v.string(),

@@ -260,6 +260,7 @@ export function equipOrBag(p: Player, piece: Piece, fire: number): boolean {
       piece.rarity,
       piece.ilvl,
     );
+    target.creature.gearRerolls[target.slot] = 0;
     p.wk.piecesWorn += 1;
     if (old > 0 && bagTotal(p) < p.rules.forge.bag) {
       p.bag[0] = (p.bag[0] ?? 0) + 1;

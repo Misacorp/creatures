@@ -119,9 +119,15 @@ export const blankWeek = (week: number): WeekRecord => ({
   visitorShards: 0,
   visitorBlueprints: 0,
   visitorCopies: 0,
+  tempered: 0,
+  temperedRerolled: 0,
+  temperScrap: 0,
+  temperAcorns: 0,
+  temperLevels: 0,
   bestPips: 0,
   bestPipsShare: 0,
   epicsWorn: 0,
+  raresWorn: 0,
   fourOfFive: 0,
   benchOpenWorst: 0,
   learnings: 0,
@@ -131,6 +137,7 @@ export const blankWeek = (week: number): WeekRecord => ({
   bestLearned: 0,
   brokerHours: 0,
   needElements: 0,
+  weakSlots: 0,
   scoutElements: 0,
   held: [],
   waitingEvolve: 0,
@@ -241,6 +248,7 @@ export function addCreature(p: Player, species: number, hour = 0): Creature {
     gear: new Array<number>(rules.forge.slotsPerCreature).fill(0),
     gearRarity: new Array<number>(rules.forge.slotsPerCreature).fill(0),
     gearLines: Array.from({ length: rules.forge.slotsPerCreature }, () => [] as number[]),
+    gearRerolls: new Array<number>(rules.forge.slotsPerCreature).fill(0),
   };
   refreshCeiling(rules, c);
   p.creatures.push(c);

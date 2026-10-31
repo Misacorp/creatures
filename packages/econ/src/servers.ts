@@ -1,6 +1,13 @@
-import type { AwayCurve } from './rules';
+import { RULES, type AwayCurve } from './rules';
 import { profileById } from './profiles';
 import type { PlayerProfile } from './schema';
+
+/**
+ * The id of the variant of a server with tempering switched the other way from the rules' default (`mixed8-notemper` when tempering is
+ * on by default, `mixed8-temper` when it is off): the report sets the two side by side.
+ */
+export const temperingVariantId = (base: string): string =>
+  `${base}-${RULES.tempering.on ? 'notemper' : 'temper'}`;
 
 /** The servers the lab runs (model.md "Servers"): who plays, and the server's dials. */
 /**
@@ -37,6 +44,8 @@ export interface ServerConfig {
   readonly broker?: BrokerMode;
   /** Whether the weekly visitor comes (V-VIS; default yes). */
   readonly visitor?: boolean;
+  /** Whether tempering at the Forge exists (default: `rules.tempering.on`; the report runs the other value beside it). */
+  readonly tempering?: boolean;
   /** Whether catch-up also multiplies what the dungeon and the raid pay (a sensitivity run for T-2d). */
   readonly catchUpFights?: boolean;
 }
@@ -174,6 +183,21 @@ export const VARIANTS: readonly ServerConfig[] = [
     seedKey: 'mixed15',
     label: 'Mixed 15, no weekly visitor',
     visitor: false,
+  },
+  // The mixed server of 8 (and the one that kills every boss) with tempering switched the other way from the rules' default, for "with and without".
+  {
+    ...MIXED_8,
+    id: temperingVariantId('mixed8'),
+    label: `Mixed 8, tempering ${RULES.tempering.on ? 'off' : 'on'}`,
+    tempering: !RULES.tempering.on,
+  },
+  {
+    ...MIXED_8,
+    id: temperingVariantId('mixed8-all'),
+    label: `Mixed 8, every boss killed, tempering ${RULES.tempering.on ? 'off' : 'on'}`,
+    bossKills: 'all',
+    seedKey: 'mixed8',
+    tempering: !RULES.tempering.on,
   },
   {
     ...MIXED_8,
