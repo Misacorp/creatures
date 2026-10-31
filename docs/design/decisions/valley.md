@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: The return moment is a welcome-back popup, not a walk; the player directs, creatures act **[Misa]**
+
+ID: `2026-10-31-the-return-moment-is-a-welcome` · Status: current
+
+**Decision.** The return walk prototype (a creature carrying finds through the valley) is dropped. Coming back after a while away opens a **welcome-back popup** with two or three lively highlights (examples: the best piece crafted while you were away, the most notable creature achievement, a server moment), told as a small story, ending with "...and 13 more things" that closes onto the valley, where those things wait as tappable markers at their places. The player has no avatar: the player decides where creatures are, creatures do things, and other players are seen through their creatures.
+
+**Reasoning.** Misa, after trying the walk on staging: "I get the idea but I'm not really a fan of it. It makes it seem like I as a player am the creature going around the valley. I've been thinking what a player's identity is and currently we don't have any concept for that. I'm just a player. My creatures are what do things. I decide where they are. I see other players' creatures and can learn which player they belong to. Could we try a version of the return screen that pops up to the user as a 'welcome back' type of popup... It could show 2-3 highlights of what happened in a lively manner and then end with '...and 13 more things' type of nudge toward exploring the valley and its existing tappable markers." The lab's journeys and the walk's highlight ranking carry over; two presentations (a comic strip and a valley newspaper) are prototyped for Misa to compare. Amends `systems/return.md` V-RET-1.
+
 ## 2026-10-31: Valley: the Market is the second guided project (round 19, Q48)
 
 ID: `2026-10-31-valley-the-market-is-the-second` · Status: current

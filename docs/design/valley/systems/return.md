@@ -1,6 +1,6 @@
 # The return moment: "while you were away"
 
-Status: **proposed**, revised after the panel (`reviews/2026-10-30-return.md`). Decided by Misa after the panel: numbers live inside each place (round 8, Q20); the walk asks for raid preparation once a week (Q21). Evidence: `docs/research/idle-job-posts.md` ("The short answer: fun by doing nothing"). Builds on Misa's answers: posts with no timers (round 1, Q2), gentle away steps (round 6, Q18), resting creatures' small moments (V-BON-9), the raid as defence far away (G-5).
+Status: **reworked** (Misa, 2026-10-31: the walk is dropped for a welcome-back popup; the player has no avatar, creatures act; see the `valley` decisions). Earlier: proposed, revised after the panel (`reviews/2026-10-30-return.md`). Decided by Misa after the panel: numbers live inside each place (round 8, Q20); the walk asks for raid preparation once a week (Q21). Evidence: `docs/research/idle-job-posts.md` ("The short answer: fun by doing nothing"). Builds on Misa's answers: posts with no timers (round 1, Q2), gentle away steps (round 6, Q18), resting creatures' small moments (V-BON-9), the raid as defence far away (G-5).
 
 ## The idea
 
@@ -8,7 +8,8 @@ The reward for idling is coming back. Opening the game is a short walk through y
 
 ## Rules
 
-- **V-RET-1** A walk, not a card. The camera visits three or four places. Each story line is a bubble over the creature where it happened, told as who, what and where ("Mossback found a pearl", "Pip became a Master Smith"). At most three lines in all.
+- **V-RET-0** (2026-10-31, supersedes V-RET-1) A **welcome-back popup**, not a walk: after a while away, two or three lively highlights told as a small story, then "...and N more things", which closes onto the valley where the rest waits as tappable markers at their places. The player is never shown as a figure; creatures act.
+- **V-RET-1** (superseded by V-RET-0) A walk, not a card. The camera visits three or four places. Each story line is a bubble over the creature where it happened, told as who, what and where ("Mossback found a pearl", "Pip became a Master Smith"). At most three lines in all.
 - **V-RET-2** A surprise only when something is rare enough (a new species, a keystone, a mastery, a rare piece): the camera eases to it and the find pops out. Never more than one. On a quiet day, a resting creature's small moment closes the walk instead (V-BON-9), so every visit has a small smile and never a bare total.
 - **V-RET-3** At most one decision, the one that matters most, ending the walk at its place. Candidates: a hinted visitor a lure could draw (a kit trade-off, V-POST-11); a Master ready to learn something new (V-POST-12); a scout's way deeper, with its trade-off (V-SCOUT-6); raid preparation, once a week: the first visit after the threat is sighted ends at the Watchtower with the threat, its rule cards and "choose your defenders"; after that the beacon simply stays lit (round 8, Q21). A new species is kept and celebrated, a surprise, not a decision. Everything else (a finished Forge order, a duplicate at the Paddock gate, a full store) waits as a bubble at its place, never asked.
 - **V-RET-4** Coming home brings everything home. During the walk the creatures carry their piles home, and the count badges tumble into the purse with a small sound; a tap hurries it, but nothing ever needs a tap (F-1). Between visits, the piles grow visibly at the posts. Nothing expires, and skipping the walk loses nothing.

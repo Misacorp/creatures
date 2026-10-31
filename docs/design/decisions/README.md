@@ -454,6 +454,7 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-10-31 The return moment is a welcome-back popup, not a walk; the player directs, creatures act \[Misa\]
 - 2026-10-31 Valley: the Market is the second guided project (round 19, Q48)
 - 2026-10-31 Valley: a problem arrives with its fix to build (G-8)
 - 2026-10-31 Valley: the School teaches talents, a broker post trades shards, phase 2 passes (round 18, Q45 to Q47)
