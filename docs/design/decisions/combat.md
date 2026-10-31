@@ -4,6 +4,22 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-10-31: Talent share: three raid-heavy talents cut, the raid share measured on 40 seeds
+
+ID: `2026-10-31-talent-share-four-raid-heavy-talents` · Status: current
+
+**Decision.** Catch Breath heals 30% (was 40%), Owner's Mark gives +12% (was +15%) and Opportunist +100% (was +120%). The report's raid share of the talent check uses 40 final seeds (was 12). The best-fit talents' share of a raid result went from about 24.0% to 24.7% (60-seed readings) with the roster branch and failed the 17% to 23% band in the report (24.4%); it is now 22.3% (raid) and 17.6% (gauntlet), both in band.
+
+**Reasoning.** A bisect of the 19 lab-changing commits of the roster branch (#114) found no single cause: the share was already about 24.0% before it (the old check passed at 23.5% on 12 seeds by luck of the seeds and rounding), and the fight-rule commit (Sure Crit, crit step, silence stat lines, Steady Rhythm on landed hits) added about 0.7, Breakwater's card another 0.3. The raid share is a plain damage ratio with no compression, and 12 seeds swing a card's share by 5 points; 40 seeds make the average steady to about half a point. Catch Breath, Steady Rhythm, Owner's Mark and Opportunist carry 16 of the 25 points in the raid and under 3.5 of the 17.6 in the gauntlet, so the cuts leave the gauntlet in place. Steady Rhythm's period is a fight rule (`fight.ts`); a period of 4 would take the raid share to 21.0% and is left for the engine port. Hardy at +18% (was +22%) would lower the raid share by another 0.7 but breaks the written Storm Sovereign answer with Night Watch (its share falls under 90%) and was not taken.
+
+## 2026-10-31: Combat v2 engine port: v2 beside v1, whole inputs, parity by a result digest
+
+ID: `2026-10-31-combat-v2-engine-port-v2-beside` · Status: current
+
+**Decision.** Phase 2 follows `docs/design/combat/engine-port.md`. The combat v2 rules go into `packages/engine/src/v2/` beside the v1 engine, which stays untouched until phase 8. A v2 fight input is whole: it carries `version: 2`, its rules numbers, the element chart it uses, resolved fighters and the boss with its cards applied, with no optional "rule before this one" fields. Content lookups (form, Knack and talent ids to stats and effects) stay outside the engine: the lab resolves them now, the game in phase 3. Parity is proven by a committed digest of a fixed corpus of lab results, taken on the lab's own code before the move and reproduced exactly after every slice. The board's structured events wait for the board (phase 4).
+
+**Reasoning.** The lab's fight is already pure; only `placeFighters` looks content up, so that is the natural seam, and it lets rule tests name effects instead of catalogue entries. A whole input replays exactly whatever later changes in content or rules; v1's optional fields show what happens otherwise. A digest over many seeded fights proves "the same results" far more tightly than re-running the lab's tests, and it guards every later refactor too. Events draw no dice, so designing them with the board changes no result.
+
 ## 2026-10-31: Phase 1 passes with the casual metric at 1.41; 1.5 stays a target for the balance phase **[Misa]**
 
 ID: `2026-10-31-phase-1-passes-with-the-casual` · Status: current

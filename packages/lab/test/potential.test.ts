@@ -1,111 +1,25 @@
 /**
- * Damage potential (Misa, 2026-10-30): the weekend played as if the boss could not die, as total damage over the boss's HP. The
- * fight option keeps everything else as it is, and the normal fight does not change. Also Determination's two effects in a fight.
+ * Damage potential as a measure (Misa, 2026-10-30): the weekend played as if the boss could not die, as total damage over the boss's
+ * HP, over seeded weekends of the prepared lines. What the `potential` option does inside a fight (the boss held at 1 HP, its shadow HP,
+ * Finisher and Cull reading the real HP) and Determination are rules, proved in the engine tests (`v2-weekend`).
  */
 import { createSeededRng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import {
-  fight,
-  labBoss,
+  combinePotential,
   raidBossOf,
   raidMode,
   weekend,
   weekendPotential,
   weekendPotentialOf,
-  combinePotential,
   weekendStats,
   weekendStatsOf,
-  type BossDef,
-  type Placement,
 } from '../src';
 import { toPlacements } from '../src/search';
 import { raidBench } from '../src/bosses';
 import { preparedOf } from '../src/tuner';
 
-const at = (formId: string, row: number, col: number, knack?: string): Placement => ({
-  owner: 'p1',
-  formId,
-  level: 25,
-  row,
-  col,
-  ...(knack ? { knack } : {}),
-});
 const rng = (s: string) => createSeededRng(s);
-
-/** A boss with little HP, so that four creatures bring it down at once. */
-const soft = labBoss({ rows: 1, cols: 4, rounds: 8, hp: 400, atk: 60 });
-const team: Placement[] = [
-  at('zipmouse', 0, 0),
-  at('thornbuck', 0, 1),
-  at('zipmouse', 0, 2),
-  at('thornbuck', 0, 3),
-];
-
-describe('the potential option of a fight', () => {
-  it('lets the boss go below 0 HP without dying: the fight plays all its rounds and the damage is not cut at the HP', () => {
-    const normal = fight(soft, team, { rng: rng('pot'), log: true });
-    expect(normal.won).toBe(true);
-    expect(normal.damage).toBe(soft.hp);
-    const open = fight(soft, team, { rng: rng('pot'), log: true, potential: true });
-    expect(open.won).toBe(false);
-    expect(open.killingBlow).toBeNull();
-    // Every round was fought: the normal fight ended with the boss.
-    const rounds = (events: readonly { round: number }[]) =>
-      Math.max(...events.map((e) => e.round));
-    expect(rounds(open.events)).toBe(soft.rounds);
-    expect(rounds(normal.events)).toBeLessThan(soft.rounds);
-    // The damage dealt is more than the boss's HP (overkill counts), and the boss stays at 1 HP.
-    expect(open.damage).toBeGreaterThan(soft.hp);
-    expect(open.bossHpLeft).toBe(1);
-    // The creatures keep fighting: it adds up to more than twice the HP in eight rounds.
-    expect(open.damage).toBeGreaterThan(2 * soft.hp);
-  });
-
-  it('is the normal fight until the boss would have died', () => {
-    const normal = fight(soft, team, { rng: rng('same'), log: true });
-    const open = fight(soft, team, { rng: rng('same'), log: true, potential: true });
-    // Up to the killing blow, which is the last event but one of the normal fight.
-    const until = normal.events.findIndex((e) => e.kind === 'killing-blow');
-    expect(until).toBeGreaterThan(0);
-    expect(open.events.slice(0, until).map((e) => e.text)).toEqual(
-      normal.events.slice(0, until).map((e) => e.text),
-    );
-    expect(open.events.some((e) => e.kind === 'killing-blow')).toBe(false);
-  });
-
-  it('leaves the normal fight as it was: no option, false and a zero Determination are all the same fight', () => {
-    const base = fight(soft, team, { rng: rng('plain'), log: true });
-    const off = fight(soft, team, {
-      rng: rng('plain'),
-      log: true,
-      potential: false,
-      determinationBp: 0,
-    });
-    expect(off).toEqual(base);
-    const boss = raidBossOf('tidal-colossus');
-    const line = toPlacements(preparedOf(boss.id).line, raidMode(boss));
-    const a = weekend(boss, line, raidBench(), { rng: rng('wk') });
-    const b = weekend(boss, line, raidBench(), { rng: rng('wk'), determinationBp: 0 });
-    expect(b).toEqual(a);
-  });
-
-  it('lets the weekend play all its stages, with knockouts and attrition between them', () => {
-    const hard = labBoss({ rows: 1, cols: 4, rounds: 8, hp: 400, atk: 4_000 });
-    const normal = weekend(soft, team, [], { rng: rng('stages') });
-    expect(normal.stages).toHaveLength(1);
-    const open = weekend(soft, team, [], { rng: rng('stages'), potential: true });
-    expect(open.stages).toHaveLength(3);
-    expect(open.won).toBe(false);
-    // Knockouts run as normal: a boss that hits hard knocks creatures out and they stay out in the later stages.
-    const hit = weekend(hard, team, [], { rng: rng('ko'), potential: true });
-    const out = hit.stages.reduce((n, st) => n + st.knockouts, 0);
-    expect(out).toBeGreaterThan(0);
-    expect(hit.stages.length).toBeLessThanOrEqual(3);
-    const standing = (i: number) => hit.stages[i]?.fighters.filter((f) => f.hp > 0).length ?? 0;
-    for (let i = 1; i < hit.stages.length; i++)
-      expect(standing(i)).toBeLessThanOrEqual(standing(i - 1));
-  });
-});
 
 describe('the potential of a weekend', () => {
   const boss = raidBossOf('tidal-colossus');
@@ -163,29 +77,6 @@ describe('the potential of a weekend', () => {
   });
 });
 
-describe('Determination in a fight', () => {
-  it('adds its share to the damage dealt', () => {
-    const base = fight(soft, team, { rng: rng('det'), potential: true });
-    const plus = fight(soft, team, { rng: rng('det'), potential: true, determinationBp: 5_000 });
-    expect(plus.damage).toBeGreaterThan(base.damage * 1.25);
-    expect(plus.damage).toBeLessThan(base.damage * 1.75);
-  });
-
-  it('adds its share to the healing', () => {
-    // A weekend of the prepared line has healers: more healing with the bonus (the same fight otherwise, nothing can die in it).
-    const boss = raidBossOf('tidal-colossus', { hp: 10_000_000 });
-    const line = toPlacements(preparedOf(boss.id).line, raidMode(boss));
-    const heal = (bp: number) =>
-      weekend(boss, line, [], {
-        rng: rng('heal'),
-        stages: 1,
-        determinationBp: bp,
-      }).stages.reduce((n, st) => n + st.healed, 0);
-    expect(heal(0)).toBeGreaterThan(0);
-    expect(heal(5_000)).toBeGreaterThan(heal(0));
-  });
-});
-
 describe('the potential of a mixed weekend uses the same seeds as the kill measure', () => {
   it('fights the weekend the stats fight, until the boss would die', () => {
     const boss = raidBossOf('cinder-wyrm', { hp: 10_000_000 });
@@ -196,60 +87,5 @@ describe('the potential of a mixed weekend uses the same seeds as the kill measu
     const stats = weekendStatsOf(boss, placements, bench, 3, 'same');
     const p = weekendPotentialOf(boss, placements, bench, 3, 'same');
     expect(p.mean).toBeCloseTo(stats.damageShare, 9);
-  });
-});
-
-describe('potential mode reads every HP-share rule from the real (shadow) HP', () => {
-  it('the boss is held at 1 HP, its real HP goes on falling below 0, and a weekend carries it from stage to stage', () => {
-    const w = weekend(soft, team, [], { rng: rng('shadow'), potential: true, stages: 3 });
-    const dealt = w.stages.reduce((n, st) => n + st.damage, 0);
-    for (const st of w.stages) expect(st.bossHpLeft).toBe(1);
-    expect(w.stages[0]?.bossHpReal).toBeLessThan(0);
-    // Every point of damage came off the real HP, across all three stages (not reset to the 1 HP the boss is held at).
-    expect(w.stages.at(-1)?.bossHpReal).toBe(soft.hp - dealt);
-    // A normal fight has no gap between the two.
-    const normal = fight(soft, team, { rng: rng('shadow') });
-    expect(normal.bossHpReal).toBe(normal.bossHpLeft);
-  });
-
-  it('a Finisher bonus that would apply only through the clamp does not: the real HP is what is read', () => {
-    // The boss has 3 HP: a third of it is under 1 HP, so the clamp that holds it at 1 HP is not "below a third" (1 x 10000 < 3 x 3333
-    // is false), but its real HP is far below 0 after the first hit. Zipmouse's second hit gets the Finisher's bonus.
-    const tiny = labBoss({ rows: 1, cols: 1, rounds: 3, hp: 3, atk: 1 });
-    const boss: BossDef = { ...tiny, spd: 0, armour: 0, plain: { ...tiny.plain, powerBp: 0 } };
-    const play = (talents: string[]) =>
-      fight(boss, [{ ...at('zipmouse', 0, 0), talents }], {
-        rng: rng('fin'),
-        potential: true,
-        log: true,
-      });
-    const withFinisher = play(['finisher']);
-    expect(withFinisher.fighters[0]?.fires['finisherBp']).toBeGreaterThan(0);
-    expect(withFinisher.damage).toBeGreaterThan(play([]).damage);
-  });
-
-  it('Cull reads the real HP in potential mode: it fires, counts no damage, and the boss is still held at 1 HP', () => {
-    // A boss that one hit leaves at 1 HP: below the Cull's 5% of its full HP.
-    const strike = at('zipmouse', 0, 0);
-    const bossOf = (hp: number): BossDef => {
-      const b = labBoss({ rows: 1, cols: 1, rounds: 1, hp, atk: 1 });
-      return { ...b, spd: 0, armour: 0, plain: { ...b.plain, powerBp: 0 } };
-    };
-    const hit = fight(bossOf(1_000_000), [strike], { rng: rng('cull') }).damage;
-    expect(hit).toBeGreaterThan(20);
-    const boss = bossOf(hit + 1);
-    const run = (talents: string[], potential: boolean) =>
-      fight(boss, [{ ...strike, talents }], { rng: rng('cull'), potential, log: true });
-    expect(run([], false).bossHpLeft).toBeGreaterThan(0);
-    const cull = run(['cull'], true);
-    const none = run([], true);
-    expect(cull.fighters[0]?.fires['cullBp']).toBe(1);
-    expect(cull.events.some((e) => e.kind === 'cull')).toBe(true);
-    // The HP the Cull removes is not damage, and the boss does not die in potential.
-    expect(cull.damage).toBe(none.damage);
-    expect(cull.bossHpLeft).toBe(1);
-    expect(cull.killingBlow).toBeNull();
-    // A normal fight: the same Cull defeats it.
-    expect(run(['cull'], false).killingBlow?.culled).toBe(true);
   });
 });
