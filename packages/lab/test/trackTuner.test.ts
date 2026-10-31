@@ -871,17 +871,16 @@ describe('the answer the mixed server fields (design panel 6)', () => {
   });
 
   it('never takes an answer the mixed server cannot own at the slot’s week', () => {
-    // Slot 6 in week 7: the second Tidal Colossus answer needs three rare and epic lines a server of 8 owns with a chance under 50%.
-    expect(lineOwnable(slotAnswersOf(6)[1]?.line ?? [], 7)).toBe(false);
+    // The ownability of an answer is read at the week asked: an answer that needs rare and epic lines is out where the coverage is low.
+    const hard = slotAnswersOf(6)[1]?.line ?? [];
+    expect(lineOwnable(hard, 1)).toBe(false);
     expect(lineOwnable(slotAnswersOf(6)[0]?.line ?? [], 7)).toBe(true);
-    // A soft boss that every answer beats: the first stays (no margin to clear), and the unownable one can never be chosen.
-    const r = evalSlot({
-      ...args,
-      slot: 6,
-      week: 7,
-      numbers: { hp: 500, atk: 1, armour: 1 },
-    });
+    // A soft boss that every answer beats: the first stays (no margin to clear).
+    const r = evalSlot({ ...args, slot: 6, week: 7, numbers: { hp: 500, atk: 1, armour: 1 } });
     expect(r.mixed?.answer).toBe(0);
+    // At week 1 the unownable answer is a candidate in no measurement: even a boss only it could beat does not move the choice.
+    const early = evalSlot({ ...args, slot: 6, week: 1, numbers: { hp: 500, atk: 1, armour: 1 } });
+    expect(early.mixed?.answer).toBe(0);
   });
 
   it('prints the answers to paste: only the slots that field a later answer', () => {

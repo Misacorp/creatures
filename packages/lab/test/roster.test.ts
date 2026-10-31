@@ -39,8 +39,9 @@ describe('the valley profile', () => {
 
   it('keeps the valley numbers as they are, fractions included', () => {
     expect(daily(1).first).toBe(11);
-    expect(daily(9).tenth).toBe(22.5);
-    expect(daily(24).size).toBe(50);
+    expect(daily(9).tenth).toBe(20);
+    expect(daily(8).tenth).toBe(18.5);
+    expect(daily(24).size).toBe(49);
     expect(rosterWeek(VALLEY_ROSTER, 'weekly', 1).first).toBe(9);
   });
 
@@ -80,8 +81,11 @@ describe('the valley profile', () => {
     expect(daily(24).twentieth).toBeGreaterThan(0);
   });
 
-  it('carries the extra fields: all forms, talent slots that follow the best level, gear unused', () => {
-    expect(daily(1).forms).toBe('all');
+  it('carries the extra fields: the held forms by name, talent slots that follow the best level, gear unused', () => {
+    // The valley now names the forms a player holds; nothing in the lab reads them yet (every form is allowed).
+    const forms = daily(1).forms;
+    expect(Array.isArray(forms)).toBe(true);
+    expect(forms).toContain('splashet');
     expect(daily(1).talentSlots).toBe(1);
     expect(daily(24).talentSlots).toBe(3);
     expect(daily(1).gear).toBeGreaterThan(0);

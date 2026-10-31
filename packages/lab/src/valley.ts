@@ -1,7 +1,7 @@
 /**
  * The valley's roster data: the one input the valley (the passive-systems redesign) gives the combat lab.
  *
- * Both files come from the valley branch `ccr-93a1de17-yutb1a`, commit `dbc62bb`, `docs/design/valley/economy/`, copied verbatim
+ * Both files come from the valley branch `ccr-93a1de17-yutb1a`, commit `fb0b3c3`, `docs/design/valley/economy/`, copied verbatim
  * (whitespace aside) into `packages/lab/data/valley/`:
  * - `roster-profile.json`: the `RosterProfile` (`roster.ts`): per kind of player (`daily`, `weekly`, `newPlayer`) and week 1 to 24,
  *   the levels of the 1st, 3rd, 10th and 20th creature, the roster size, the forms, the talent slots and the average worn item level.
