@@ -26,7 +26,13 @@ import {
   type ShareSettings,
   type TeamScorer,
 } from '../src/teamShare';
-import { CASUAL_CARDS, casualRosters } from '../src/teams';
+import {
+  CASUAL_CARDS,
+  CASUAL_ROSTERS,
+  CASUAL_ROSTERS_LISTED,
+  TEAM_SHARE_ROSTERS,
+  casualRosters,
+} from '../src/teams';
 
 const team: Pick[] = [
   { formId: 'tidewing', knack: 'steady-mark' },
@@ -206,7 +212,15 @@ describe('casual rosters', () => {
     const a = casualRosters(false);
     const b = casualRosters(false);
     expect(a.map((r) => r.top3)).toEqual(b.map((r) => r.top3));
-    expect(a).toHaveLength(4);
+    // Enough rosters that the North Star average reads within about 0.15 of its mean (see `CASUAL_ROSTERS`).
+    expect(a).toHaveLength(CASUAL_ROSTERS);
+    expect(CASUAL_ROSTERS).toBeGreaterThanOrEqual(12);
+    expect(CASUAL_ROSTERS_LISTED).toBeLessThanOrEqual(TEAM_SHARE_ROSTERS);
+    expect(TEAM_SHARE_ROSTERS).toBeLessThanOrEqual(CASUAL_ROSTERS);
+    // The rosters differ from each other.
+    expect(new Set(a.map((r) => [...r.top3].sort().join('/'))).size).toBeGreaterThan(
+      CASUAL_ROSTERS / 2,
+    );
     expect(casualRosters(true)).toHaveLength(1);
     for (const r of a) {
       expect(new Set(r.pool.map((p) => p.formId)).size).toBe(12);

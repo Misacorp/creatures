@@ -130,7 +130,7 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Twin Strike
 
-- **Text:** Hits twice, each for 55%. Each hit can set off a reaction.
+- **Text:** Hits twice, each for 58%. Each hit can set off a reaction.
 - **Family:** Flurry
 - **Forms:** tempestray
 - **Intent (for contributors, never shown to players):** Weaker in a plain fight; answers bosses that cap single hits or dodge a lot. Poor against armour.
@@ -172,10 +172,10 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Night Watch
 
-- **Text:** Each boss turn it {Intercept}s the first {Wind-up} hit on a creature in its row, and takes it with its cover's cut.
+- **Text:** Each boss turn it {Intercept}s the first {Wind-up} hit in its row, taking a quarter of it.
 - **Family:** Intercept
 - **Forms:** thornbuck
-- **Intent (for contributors, never shown to players):** Answers telegraphed big hits (Great Wave, Judgement Bolt). One hit a boss turn, and the hit it takes is cut by its own cover, so it is no longer a liability (panel 4).
+- **Intent (for contributors, never shown to players):** Answers telegraphed big hits (Great Wave, Judgement Bolt). One hit a boss turn, and the hit it takes is cut to a quarter (the most any cut can take), so it is no longer a liability (panel 4; 2026-10-31: the cover cut of 40% left it tied with no Knack outside Great Wave and behind Primed by Pain on it).
 
 ### Sunbeam
 
@@ -263,10 +263,10 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Catch the Bolts
 
-- **Text:** It {Intercept}s area hits too.
+- **Text:** It {Intercept}s area hits too, and takes them with its cover's cut.
 - **Family:** Intercept
 - **Forms:** ohmouse
-- **Intent (for contributors, never shown to players):** Answers sweeps and splashes.
+- **Intent (for contributors, never shown to players):** Answers sweeps and splashes. 2026-10-31: it used to take the whole area hit with no cut, which left it worse than no Knack on Great Wave; the cover cut makes it the pick against sweeps.
 
 ### Lightning Ears
 
@@ -375,10 +375,10 @@ Generated from `packages/lab/src/knacks.ts` by `pnpm --filter @creatures/lab rep
 
 ### Cool Head
 
-- **Text:** {Crit}s on it and on the creatures {Beside} it deal 50% less extra damage.
+- **Text:** {Crit}s on it and on the creatures {Beside} it deal no extra damage.
 - **Family:** Luck
 - **Forms:** thornbuck
-- **Intent (for contributors, never shown to players):** The answer to a boss that crits (Lucky Strike): a Guard that keeps a double hit to a hit and a half for itself and its neighbours. Nothing against a boss that never crits.
+- **Intent (for contributors, never shown to players):** The answer to a boss that crits (Lucky Strike): a Guard that keeps a crit to a plain hit for itself and its neighbours (2026-10-31: at half it was tied with no Knack on every card but Lucky Strike, and barely ahead there). Nothing against a boss that never crits.
 
 ## Combat talents
 

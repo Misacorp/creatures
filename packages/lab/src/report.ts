@@ -16,7 +16,13 @@ import { SLOT_WEEKS } from './track';
 import type { JobResults, JobSpec, Plan } from './jobs';
 import { planTalents, type TalentSection } from './talentReport';
 import type { TeamInputs } from './teamShareReport';
-import { CASUAL_CARDS, casualRosters, searchOptions } from './teams';
+import {
+  CASUAL_CARDS,
+  CASUAL_ROSTERS_LISTED,
+  TEAM_SHARE_ROSTERS,
+  casualRosters,
+  searchOptions,
+} from './teams';
 import { LINE_POOLS, TALENTS, talentPool } from './talents';
 import { LAB_RULES } from './rules';
 import { ELEMENTS, formStats, triggers } from './species';
@@ -366,7 +372,7 @@ export function teamInputsOf(get: (id: string) => unknown, quick: boolean): Team
       if (b) maps[mode].set(c.id, b.bestLine);
     }
   const casual: { cardId: string; line: readonly Pick[] }[] = [];
-  for (const roster of casualRosters(quick))
+  for (const roster of casualRosters(quick).slice(0, TEAM_SHARE_ROSTERS))
     for (const cid of CASUAL_CARDS) {
       const r = get(casualId(roster.index, cid)) as CasualResult | undefined;
       if (r?.bestLine) casual.push({ cardId: cid, line: r.bestLine });
@@ -403,7 +409,10 @@ export function planReport(opts: { quick?: boolean } = {}): Plan<Report> {
   const talents = planTalents({
     cards,
     quick,
-    teamNeeds: [...best, ...casual].map((j) => j.id),
+    teamNeeds: [
+      ...best,
+      ...casual.filter((j) => (j.args as { roster: number }).roster < TEAM_SHARE_ROSTERS),
+    ].map((j) => j.id),
   });
   const own: JobSpec[] = [
     ...cards.map((c): JobSpec => ({
@@ -623,31 +632,53 @@ function assembleReport(
   md.push(
     '## A casual roster (the North Star metric)',
     '',
-    'Twelve random forms at random levels (8 to 25, stage 1 forms at their cap), with any of their Knacks. For each card: the best gauntlet line from that roster, the best line from the same roster with no Knacks (what a player who never opens Knacks could bring, P-14), and the three highest levels with no Knack. Scores are absolute. Beyond top 3 is how many of the best line are not among the three highest levels.',
+    `Twelve random forms at random levels (8 to 25, stage 1 forms at their cap), with any of their Knacks. For each card: the best gauntlet line from that roster, the best line from the same roster with no Knacks (what a player who never opens Knacks could bring, P-14), and the three highest levels with no Knack. Scores are absolute. Beyond top 3 is how many of the best line are not among the three highest levels. The table lists the first ${CASUAL_ROSTERS_LISTED} rosters; the average counts every roster drawn.`,
     '',
     '| Roster | Card | Best line | Score | Best, no Knacks | Top 3 by level | Beyond top 3 |',
     '| --- | --- | --- | ---: | ---: | ---: | ---: |',
   );
   let beyond = 0,
     trials = 0;
+  /** The mean of each roster's cards, one number per roster (its spread tells how far the average can move). */
+  const perRoster: number[] = [];
   for (const roster of casualRosters(quick)) {
     const { index: r, top3 } = roster;
+    let rosterBeyond = 0,
+      rosterTrials = 0;
     for (const cid of CASUAL_CARDS) {
       const res = results.get(casualId(r, cid)) as CasualResult;
       if (!res.bestLine) continue;
       const n = res.bestLine.filter((p) => !top3.includes(p.formId)).length;
       beyond += n;
       trials++;
-      md.push(
-        `| ${r + 1} | ${cid} | ${res.bestLine.map((p) => `${name(p)} L${p.level ?? LEVEL}`).join(', ')} | ${r0(res.bestScore)} | ${r0(res.plainScore)} | ${r0(res.top3Score)} | ${n} |`,
-      );
+      rosterBeyond += n;
+      rosterTrials++;
+      if (r < CASUAL_ROSTERS_LISTED)
+        md.push(
+          `| ${r + 1} | ${cid} | ${res.bestLine.map((p) => `${name(p)} L${p.level ?? LEVEL}`).join(', ')} | ${r0(res.bestScore)} | ${r0(res.plainScore)} | ${r0(res.top3Score)} | ${n} |`,
+        );
     }
+    if (rosterTrials > 0) perRoster.push(rosterBeyond / rosterTrials);
   }
+  const casualMean = beyond / Math.max(1, trials);
+  const rosterMean = perRoster.reduce((a, b) => a + b, 0) / Math.max(1, perRoster.length);
+  const rosterSd = Math.sqrt(
+    perRoster.reduce((a, b) => a + (b - rosterMean) ** 2, 0) / Math.max(1, perRoster.length - 1),
+  );
+  const rosterSe = rosterSd / Math.sqrt(Math.max(1, perRoster.length));
   md.push(
     '',
-    `**On average ${(beyond / Math.max(1, trials)).toFixed(1)} of the 3 creatures in the best line are outside the player's top three by level.**`,
+    `**On average ${casualMean.toFixed(1)} of the 3 creatures in the best line are outside the player's top three by level.**`,
+    '',
+    `How much the figure varies: over the ${perRoster.length} rosters each roster's own average (its ${CASUAL_CARDS.length} cards) has a standard deviation of ${rosterSd.toFixed(2)}, so the ${perRoster.length}-roster average is good to about ±${(1.96 * rosterSe).toFixed(2)} (95%: ±1.96 × ${rosterSd.toFixed(2)} / √${perRoster.length}). The gate asks for at least 1.5.`,
     '',
   );
+  data['casualBeyondTop3'] = {
+    mean: Math.round(casualMean * 100) / 100,
+    rosters: perRoster.length,
+    rosterSd: Math.round(rosterSd * 100) / 100,
+    ci95: Math.round(1.96 * rosterSe * 100) / 100,
+  };
 
   // 7. Talents: best legal board with the talent against best legal board without it.
   const talentSection = talentsOf(results);
