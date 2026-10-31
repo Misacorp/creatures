@@ -12,6 +12,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [Void, a raid boss, three foes and two floor bosses](#void-foes) | draft | 6 | 2026-10-31: a Void raid boss, dungeon foes and dungeon bosses. |
 | [Void gear: tint, plain pieces, a set, a shard](#void-gear) | draft | 11 | 2026-10-31: design Void gear. |
 | [Void place, the Quiet Verge (banners)](#void-place) | liked | 2 | 2026-10-31: design a Void area that can be explored (banner and place). |
+| [Valley places: posters](#valley-posters) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 
 <a id="void"></a>
 
@@ -117,3 +118,28 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | --- | --- | --- | --- | --- |
 | `void-place-banner` | banner |  | liked | The Quiet Verge: a dusk plain of lilac dust, a still pool that holds the stars, leaning stones, a dark moon and a stone arch with one warm star at the far end. |
 | `void-place-deep` | banner |  | liked | The far side: the ground ends, stepping stones cross the open sky, and a great ring hangs ahead with one warm star at its middle. |
+
+<a id="valley-posters"></a>
+
+## Valley places: posters
+
+![Valley places: posters](valley-posters.png)
+
+- **Status:** draft
+- **Requested:** 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations.
+- **Source:** `apps/activity/src/sprites/concepts/valley-posters.ts` (draw it with `pnpm art valley-posters`)
+- **Sheet of:** `e7a08c426a3f`
+- Direction "poster": six 64x24 banners, one per place state, each with its own time of day (dusk, night, morning, twilight, grey dawn, afternoon).
+- Places: the bonfire (and a grander later level), the School, the weekly visitor (here and away), the Market (the shard broker). Designs are on the ccr-93a1de17-yutb1a branch, docs/design/valley/systems/.
+- Needs before use: the valley places in the content, each place screen head using its banner; the visitor-away banner shows between Sunday and Thursday.
+- Each banner uses up to 16 colours (the studio cap for scenes).
+- Creatures in the banners are silhouettes or simple blobs, not species: swap in the player's own when the screen can.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `bonfire` | banner |  | draft | A warm dusk: a fire in a ring of stones in the middle of the valley, four resting creatures as silhouettes with a firelight rim, sparks rising into a plum sky. |
+| `bonfire-grand` | banner |  | draft | The grand hearth at night: a wider stone ring and a taller fire, a log bench each side with creatures on it, lantern posts with a string of lanterns, fireflies. |
+| `school` | banner |  | draft | A bright morning: the schoolhouse with a bell tower at the end of a path, bunting from the tree, and a little graduate in front wearing a pink ribbon. |
+| `visitor` | banner |  | draft | A blue-green twilight under a crescent moon: the hooded stranger with glowing eyes and a lantern staff beside his striped stall of glowing jars. |
+| `visitor-away` | banner |  | draft | The same stall on a grey-lilac morning: awning furled, lantern dark, a leaf on the counter and a sign with a moon and a calendar page, one day marked. |
+| `market` | banner |  | draft | A golden afternoon: a teal and cream stall where a round orange shopkeeper sells shards (red, yellow, cyan, violet), crates of them in front and a customer with a coin. |
