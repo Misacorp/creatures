@@ -1,6 +1,6 @@
 # Combat v2 grammar: what content may contain
 
-The shape of every Knack, rule card and boss, so new content fits without new rules. The lab's types (`packages/lab/src/knacks.ts` `KnackFx`, `src/types.ts`, `src/cards.ts`) are the authority for shape; this page explains them.
+The shape of every Knack, rule card, boss move and boss, so new content fits without new rules. The content lives in `packages/game/src/combat-v2/data/` and the engine's types (`packages/engine/src/v2/types.ts`, `effects.ts`, `cards.ts`) are the authority for shape; this page explains them.
 
 ## Limits (hard)
 
@@ -22,6 +22,40 @@ Every element should get the same kinds of tools: a Heavy Prime Setter, a Setter
 - The same effect keeps the same name everywhere (P-06): a Knack on another species or on gear uses its existing name.
 - Knacks are actions or short phrases ("Draw Fire"); talents are traits ("Sharp Claws"). A talent never repeats a Knack's effect, and talents and gear take the existing name of an effect (R20).
 - Names are checked against the compendium's tone before shipping.
+
+## Boss moves: behaviour and paint
+
+A boss or foe move has two parts (Misa, 2026-11-01; decision `2026-11-01-combat-v2-move-library-a-themed`):
+
+- **The behaviour** is what the move does on the board: its **shape** (which slots it hits) and its **target** (whom it picks), and whether it silences. The behaviour has a plain **label** made of a target word and a shape word, for example Nemesis Lance or Wild Sweep. The label is what a player learns once and then reads on every boss.
+- **The paint** is the move's **name**, its theme and its animation, for example Deepwater Spear. The name is a coat of paint over one behaviour: **a name always means the same behaviour**, wherever it appears. The board can show both ("Deepwater Spear · Nemesis Lance").
+
+Numbers are neither: **power, rhythm, count, Wind-up, crit chance and the boss turn belong to the boss that uses the move**, not to the move. Two bosses can share a move and hit with it differently.
+
+The words:
+
+| Shape word | Hits                                          | Target word | Picks                                              |
+| ---------- | --------------------------------------------- | ----------- | -------------------------------------------------- |
+| Slam       | the target and the slots beside it            | Front       | the first creature to act, or the front row        |
+| Lance      | whole columns through the target              | Rear        | the back row (Back-most: the last creature to act) |
+| Sweep      | whole rows                                    | Payoff      | the strongest Payoff                               |
+| Barrage    | several random creatures                      | Nemesis     | the strongest creature                             |
+| Quake      | every creature                                | Wild        | at random                                          |
+| Strike     | one creature                                  | Vulture     | the weakest creature (lowest share of its HP)      |
+| Hush       | silences the two ends of the row              |             |                                                    |
+| Pincer     | hits the two ends of the row                  |             |                                                    |
+| Leaping    | the strongest, then leaps to creatures nearby |             |                                                    |
+
+A move with no target (Barrage, Quake, Hush, Pincer) needs no target word. In a one-row arena (the dungeon) the row is both the front and the back row; front-row effects always apply there.
+
+**The library.** Every move lives once in the move library (`moves.json` in the game data: id, name, element, behaviour), and a boss or foe refers to it by id with its own numbers. **A behaviour has one name per element**, shared by every boss and foe of that element that uses it (the Bramble Hound and the Bramble Matron use Thornmother's Bramble Hush). A rule card has no element, so the move a card adds takes the plain label as its name (Hush, Payoff Slam, Wild Sweep, Crush). One boss never has two moves of the same behaviour: merge them into one and let its numbers (or a phase) carry the difference.
+
+**Adding a move:**
+
+1. Name the behaviour first: a shape word and a target word from the table. A new shape or target word is a new rule (an engine change and a keyword); it needs a reason, like a new Knack family.
+2. Look the behaviour up in the library for the boss's element. If it is there, use that move with the boss's own numbers. Don't paint a second name on a behaviour the element already has.
+3. If the element has no move for it, add one: a themed name in the element's voice (read `docs/compendium/` for tone), not used by any other move, Knack, talent, card or keyword (P-06). It goes to Misa with the other new names.
+4. The content test (`packages/game/test/combat-v2-content.test.ts`) fails if a name stands for two behaviours or clashes with another name.
 
 ## Template: a Knack
 
@@ -49,6 +83,16 @@ Punishes: the setup it punishes (never a whole build or element).
 Scales: how it grows at higher Boss Ranks.
 ```
 
+## Template: a move
+
+```
+### Move: Name (id)
+Behaviour: the label (target word + shape word), and whether it silences.
+Element: the element whose voice the name is in (none for a card's move: then the name is the label).
+Used by: the bosses, foes and cards that use it, each with its own numbers.
+Paint: one line on the theme and the animation it calls for.
+```
+
 ## Template: a boss
 
 ```
@@ -56,6 +100,6 @@ Scales: how it grows at higher Boss Ranks.
 Arena: rows and slots per row.
 Stats: HP, Attack, Armour, Speed (data only).
 Plain attack: anchor and shape.
-Moves: each with anchor, shape, power, schedule and boss turn.
+Moves: library moves by name, each with this boss's power, schedule, count, Wind-up and boss turn; at most one move per behaviour.
 Cards: its signature rule cards, and which rank adds which.
 ```

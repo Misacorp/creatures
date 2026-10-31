@@ -72,6 +72,7 @@ Statement: An effect keeps one name wherever it appears (another species, a gear
 Pass: Stack Up on Sunfawn, Ashmole and Magmole; Leave a Trail on five Payoffs.
 Fail: Stand Close (Knack) and Stands Close (talent) with different effects.
 Review question: Does another Knack, talent or gear line already do exactly this?
+For boss moves: a name stands for one behaviour (shape and target), while the numbers belong to each boss that uses it; see `grammar.md`, "Boss moves: behaviour and paint" (Misa, 2026-11-01).
 Check: lab test "no two Knacks share a name".
 Trades against: none.
 
