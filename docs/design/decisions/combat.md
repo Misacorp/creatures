@@ -4,6 +4,150 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-01: [Misa] Combat v2 icons: shapes, the sword, the Store box, claw Pincer, Leap as a chain
+
+ID: `2026-11-01-combat-v2-icons-shapes-the-sword` · Status: current
+
+**Decision.** Misa reviewed the combat v2 icon concepts in two rounds (2026-11-01; the set `combat-icons`, the audit `docs/design/combat/icons.md`). Approved: Quake, Cross, Checker and One-shot; Slam as a big square with a short bar each side (the target and its neighbours); Strike as a crosshair without its ring (distinct from Cross); Lance pointing down (the boss attacks from the top); Pincer as two claws (no centre dot); Barrage and Sweep as shipped; Crit; the plain attack as a sword (it differs from a Strike, since plain attacks and moves can have different effects); the three Store heads as one shared box holding Heat, Calm or Static. Leap is three squares joined by a faint zigzag, with the bottom square moved right so it reads as a chain, not a fork. **A count is text beside an icon ("x3"), never drawn into it.** The six target words (Front, Rear, Payoff, Nemesis, Wild, Vulture) have no icon: the board lights the slots a move hits. Combat v2 gets its own versions; the shipped v1 glyphs stay until v1 goes. The icons stay concepts until the phase 4 board uses them.
+
+**Reasoning.** Misa's calls on look and feel. Fewer icons to learn, each shape drawn the way a move hits the board.
+
+## 2026-11-01: [Misa] Combat v2 names: a card never shares a move's name (Full Sweep), Barrage and Leap are both keyword and shape word, the Puddle Imp asks for a Guard
+
+ID: `2026-11-01-combat-v2-names-a-card-never` · Status: current
+
+**Decision.** Misa left these to the lead (2026-11-01: "make up the rules and the names; we can change them later"):
+
+- **A rule card's name never equals a move's name.** The card Great Wave becomes **Full Sweep** (it adds a Wild Sweep); the Tidal Colossus keeps its tide move Great Wave. The content test checks the rule.
+- **A shape's keyword and its label word are the same word.** The keyword Scatter becomes **Barrage** (the label word), and the label word Leaping Strike becomes **Leap** (the keyword), so every shape is one word: Slam, Lance, Sweep, Barrage, Quake, Strike, Hush, Pincer, Leap ("Nemesis Leap").
+- **The Puddle Imp asks for a Guard** (Wide Reach) since its splashes became a Barrage of hits on different creatures (2026-11-01 retune): Misa, "dodging and a Guard both help, so that's fine".
+
+**Reasoning.** One word per idea for players; a card that shares a move's name would read as that boss's move.
+
+## 2026-11-01: [Misa] Combat v2 move library: a themed name per behaviour and element, the behaviour fixed
+
+ID: `2026-11-01-combat-v2-move-library-a-themed` · Status: current · Amends: `2026-11-01-combat-v2-names-batches-3-and`
+
+**Decision.** Boss and foe moves form one library (Misa, 2026-11-01: "the thematic name is just a coat of paint", and move animations go with the name, so raid and dungeon bosses share them when they share moves). Each move in the library has a themed name and a fixed behaviour: its shape and whom it picks (and whether it silences). A boss or foe uses a library move with its own numbers (power, rhythm, count, Wind-up, crit chance). A behaviour has one name per element, shared by every boss and foe of that element; a card has no element, so a card's move keeps the plain behaviour name. The plain behaviour names of the earlier decision (Front Slam, Nemesis Lance, Wild Sweep, ...) stay as the label the board can show under a move's own name ("Deepwater Spear · Nemesis Lance"); they are no longer the moves' names. Where one boss had two moves of one behaviour, they merge into one (the lab retunes): the Colossus's Tidal Pull and Deepwater Spear, Thornmother's Seed Burst and Bloom Storm (Second Bloom strengthens the one), and the landmark moves of the Drowned Warden and the Fen Lurker, which repeated their own Quake and get a different shape.
+
+The library (behaviour: tide, ember, grove, spark, mire, card):
+
+| Behaviour (label)              | Tide            | Ember           | Grove          | Spark            | Mire        | Card        |
+| ------------------------------ | --------------- | --------------- | -------------- | ---------------- | ----------- | ----------- |
+| Hush (silences the row's ends) | Deafening Mist  |                 | Bramble Hush   |                  |             | Hush        |
+| Pincer (the row's two ends)    |                 |                 | Briar Pincer   |                  |             |             |
+| Front Slam                     |                 | Anvil Fall      |                |                  | Belly Flop  |             |
+| Payoff Slam                    |                 | Volcanic Meteor |                | Static Strike    | Bog Lob     | Payoff Slam |
+| Nemesis Slam                   |                 | Slag Spill      | Vengeful Roots | Thunderclap      |             |             |
+| Wild Lance                     | Riptide         | Scorch Lane     | Grasping Vines | Lightning Bolt   | Mud Slide   |             |
+| Nemesis Lance                  | Deepwater Spear |                 |                |                  |             |             |
+| Front Lance                    | Sluice Pull     |                 |                |                  |             |             |
+| Front Sweep                    | Undertow        |                 | Thorn Wall     |                  |             |             |
+| Rear Sweep                     | Backflow        |                 | Spiky Spine    |                  | Peat Wave   |             |
+| Payoff Sweep                   | Rogue Wave      |                 |                |                  |             |             |
+| Wild Sweep                     | Great Wave      |                 |                |                  | Sinking Mud | Wild Sweep  |
+| Barrage                        | Spray           | Cinder Fall     | Thorn Rain     | Forked Lightning | Mud Spit    |             |
+| Quake                          | Deluge          | Eruption        |                | Storm Front      | Sink Down   |             |
+| Leaping Strike                 |                 | Ember Leap      | Thorn Lash     | Arc Lash         |             |             |
+| Payoff Strike                  |                 |                 |                | Thunderbolt      |             |             |
+| Vulture Strike                 |                 |                 |                |                  | Sinkhole    |             |
+| Nemesis Strike                 |                 |                 |                |                  |             | Crush       |
+| One-shot (Payoff, Wind-up)     |                 |                 |                | Judgement Bolt   |             |             |
+| Checker                        |                 | Ash Cloud       |                |                  |             |             |
+| Cross                          |                 |                 | Bramble Cross  |                  |             |             |
+
+Who uses what follows from each boss's and foe's element and its moves today (for example the Bramble Hound and the Bramble Matron use Bramble Hush, the Ember Mite Cinder Fall, the Flicker Swarm Storm Front, the Static Bat Arc Lash, the Tar Leech Belly Flop). In the data, the library is one file of moves (id, name, element, behaviour), and a boss or foe refers to a move by id with its own numbers, so a name cannot drift from its behaviour.
+
+**Reasoning.** One behaviour per name keeps the board readable and lets one animation serve every boss that uses a move; themed names keep each boss's flavour.
+
+## 2026-11-01: [Misa] Combat v2 rule changes from the names review: Mired fades every round, Swarm is a Scatter, Back-most is the last to act
+
+ID: `2026-11-01-combat-v2-rule-changes-from-the` · Status: current
+
+**Decision.** From Misa's notes on names batches 3 and 4 (round 2, 2026-10-31):
+
+- **Mired fades every round**: it loses 1 stack at the end of every round, every 2nd round while a living creature has Clinging (was every 2nd and every 3rd). With up to 45 creatures acting a round, Mired is put back often and need not linger.
+- **Swarm is a Scatter**: its plain attack becomes a Scatter of small hits on different creatures (was separate hits on random slots, where one creature could take several).
+- **Back-most is the last creature to act**: the back row's rightmost by default, since creatures act row by row, left to right (was the leftmost). If a boss's attack order ever differs, it is still the last to act.
+- Kept as they are: Slippery and Elusive (two cards, reworded so neither names Mired: Elusive is Speed that debuffs lower, Slippery a flat dodge that debuffs do not lower), Crusher and Grudge with Crusher's 3-round rhythm, Retaliate ignoring armour, Breakwater (reworded only).
+
+These change fight results: the lab measures them, the tuners retune, and the parity digest is rewritten in the same change.
+
+**Reasoning.** Misa's calls on game feel. Each one makes a rule simpler to read or closer to what a player expects.
+
+## 2026-11-01: [Misa] Combat v2 names, batches 3 and 4: keywords, rule cards, and moves named by shape and target
+
+ID: `2026-11-01-combat-v2-names-batches-3-and` · Status: current, amended by `2026-11-01-combat-v2-move-library-a-themed`
+
+**Decision.** Misa went through the 27 keywords and 19 rule cards (batch 3), the 69 moves, Build-ups and phases of the raid bosses and dungeon foes (batch 4), and a round 2 on his notes (2026-10-31).
+
+- **Moves are named by what they do, and who they pick** (Misa: unify the moves that do the same thing, and show the target in the name): Slam (the target and those beside it), Lance (whole columns), Sweep (whole rows), Barrage (several random creatures), Quake (every creature), Hush (silences the row's ends), Leaping Strike (the strongest, then leaps to creatures nearby). The target word comes first: **Front** (the first to act, or the front row), **Rear** (the back row), **Payoff** (the strongest Payoff), **Nemesis** (the strongest), **Wild** (random), **Vulture** (the weakest). Misa named Front Sweep, Rear Sweep, Payoff Slam and Nemesis Slam; Wild, Vulture, Pincer and Strike follow them. Each boss hits with its own power, and Wind-up is a marker on a move, not another move. So a name stands for a shape and a target (P-06 for moves), never for one number.
+- The mapping: Front Slam (Coil Crush, Belly Flop, Tar Cling, Anvil Fall); Payoff Slam (Magma Spit, Static Field, Bog Lob, Payoff Hunter's move); Nemesis Slam (Thunderclap, Root Grab, Slag Spill, Coil Burst); Wild Lance (Riptide, Scorch Lane, Root Snare, Forked Lightning, Mud Slide); Nemesis Lance (Tidal Pull, Deepwater Spear); Front Lance (Sluice Pull); Front Sweep (Undertow, Thorn Wall); Rear Sweep (Breaker, Back Thorns, Peat Wave); Payoff Sweep (Spring Tide); Wild Sweep (Great Wave and the Great Wave card's move, Sinking Mud); Barrage (Spray, Cinder Fall, Seed Burst, Bloom Storm, Ball Lightning, Rising Bubbles, Flare Up, Mud Spit, Thorn Rain); Quake (Eruption, Storm Front, Buzz Cloud, Flood Gate, Sluice Surge, Sink Down, Fen Tug); Hush (Bramble Hush, Sea Mist, Thorn Snap, Tangle, Bramble Bind's move); Pincer (Briar Pincer, Briar Cage); Leaping Strike (Ember Leap, Thorn Lash, Zap Dive, Arc Lash); Payoff Strike (Spark Dive); Vulture Strike (Sinkhole); Nemesis Strike (Crusher's move). Kept as they are: Judgement Bolt (a one-shot), Ash Cloud, Bramble Cross. This supersedes the batch 4 renames of those moves (Volcanic Meteor, Static Strike, Lightning Strike, Tar Toss, Backflow, Rogue Wave, Deluge, Bramble Bind for Thorn Snap).
+- **Build-ups:** all approved; Rising Water is now **Maelstrom**. The keyword Build-up is now **Escalating**.
+- **Rule cards:** approved, except Lucky Strike is now **Double Strike** ("The boss's hits sometimes Crit for double damage; can you turn them away or take the sting out?"). New texts: Great Wave and Shake It Off drop "announced at round start" (every move is announced); Breakwater: "Row Wards are up to 3 times as strong against its Area hits"; Elusive and Slippery reworded so neither names Mired.
+- **Keywords:** approved, with new texts for Reaction ("A Payoff hits a Mark its element is strong against: bonus damage, and the mark loses 1 stack"), Intercept ("Takes a hit meant for a creature in its Reach"), Taunt ("The boss's plain attack, its basic hit, not its named moves, aims at this creature. With several Taunts, the first to act draws it"), Boost ("A Support's bonus damage on a creature's next hit"). A mark's size is its **stacks** everywhere (was "count").
+- **Guard's Shadow** (the Knack) is now **Reliably Covered**: the gear line Guard's shadow keeps its name.
+
+**Reasoning.** Fewer names for players to learn and for the content to keep in step: a name says what a move does and whom it picks, the same everywhere.
+
+## 2026-10-31: [Misa] Combat v2 names, batch 2: talents
+
+ID: `2026-10-31-combat-v2-names-batch-2-talents` · Status: current
+
+**Decision.** Misa went through all 34 combat talents on the names page. 28 keep their names. Renamed (ids stay):
+
+| Was           | Now             | Note                                                                                                                                |
+| ------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Crit Damage   | Amplified Crits |                                                                                                                                     |
+| Cull          | Culling Strike  |                                                                                                                                     |
+| Heavy Hand    | Wicked          | Its text now says "its debuffs" instead of Mired (Misa: it applies to all debuffs; Mired is the only one today, so no number moves) |
+| Hold the Line | Easily Provoked |                                                                                                                                     |
+| Owner's Mark  | Potent Mark     |                                                                                                                                     |
+| Stubborn      | Refuse to Fall  | Second Wind was wanted, but it is a shipped gear chance line with another effect (P-06)                                             |
+
+Crit Damage, Owner's Mark, Heavy Hand and Stubborn are also the names of shipped gear lines with the same effect. By the standing rule (a talent and a gear line with the same effect share one name, 2026-10-28), the combat v2 gear lines take the new names when gear moves to combat v2 (`gear-plan.md`); the shipped v1 lines keep theirs until then.
+
+**Reasoning.** Phase 3's gate needs approved names before the compendium entries. Ids do not change, so a rename is a data edit.
+
+## 2026-10-31: [Misa] Combat v2 names, batch 1: Knacks and families
+
+ID: `2026-10-31-combat-v2-names-batch-1-knacks` · Status: current
+
+**Decision.** Misa went through all 44 Knacks and 24 families on the names page (two rounds). Approved as they are: 23 families and 27 Knacks. Renamed (ids stay; only the shown name changes):
+
+| Was              | Now               | Why (Misa's note, round 2)                               |
+| ---------------- | ----------------- | -------------------------------------------------------- |
+| Ward (family)    | Silence Guard     | Row Ward is damage reduction; this is different          |
+| All at Once      | All In            |                                                          |
+| Steady Mark      | Brand             |                                                          |
+| Keep the Heat In | Barricade         |                                                          |
+| Mud Wall         | Sticky Mud        |                                                          |
+| Thick Fog        | Rolling Fog       |                                                          |
+| Tunnel Through   | Sense Weakness    |                                                          |
+| Wide Warmth      | Wide Embrace      |                                                          |
+| Baked Shell      | Boiling Point     | make it about pent-up anger                              |
+| Carry Them       | Unlikely Guardian | it is a surprise; put that in the name                   |
+| Catch the Bolts  | Take It All       | bolts is too narrow                                      |
+| Circle Round     | Returning Tide    | give it Tide flavour                                     |
+| Gather Calm      | Eye of the Storm  | turning reactions into damage is mayhem, not calm        |
+| Gnaw Through     | Find the Gap      | Sharp Claws was wanted, but it is a talent's name (P-06) |
+| Hide in Mist     | Mist Veil         | a mist noun                                              |
+| Lightning Ears   | Drop Guard        | did not fit the effect                                   |
+| Puddle Maker     | Self-Starter      | a puddle makes no sense here                             |
+| Ready the Mark   | Stack Up          | adding is not readying                                   |
+
+The shipped v1 finale ability Mud Wall keeps its name until v1 goes (phase 8); only the combat v2 Knack is renamed.
+
+**Reasoning.** Phase 3's gate needs approved names before the compendium entries and the icons. Ids do not change, so a rename is a data edit and stored choices keep working.
+
+## 2026-10-31: Combat v2 content as data: a separate game entry, the resolver beside the engine, cards as operations
+
+ID: `2026-10-31-combat-v2-content-as-data-a` · Status: current
+
+**Decision.** Phase 3 follows `docs/design/combat/content-as-data.md`. The combat v2 content (rules numbers, Knacks, per-form armour, own Knacks and stat changes, talents and line pools, rule cards, raid bosses, dungeon foes, keywords, the boss track) becomes JSON files in `packages/game/src/combat-v2/data/`, checked by valibot schemas and cross-reference checks at load, behind a separate entry point `@creatures/game/combat-v2`. The code that turns content into an engine input (`formStats`, the fighter resolver, card application, the boss and foe builders) goes to `packages/engine/src/v2/resolve/`, taking the content pack as an argument. A rule card becomes a list of operations (`add`, `set`, `raise`, `flag`, `mod`, `cap`, `move`, `plain`), scaled by strength; applying any card sets the boss's strength to the card's. The engine's types stay the source of the rules' shapes, and a type test checks the game's schemas against them both ways. Ids, names and numbers move unchanged, and the lab's parity digest holds through every slice. Intent text (`intent`, `asks`) stays next to its entry in the data and is never shown to players.
+
+**Reasoning.** The roadmap put the resolver in the game, but the engine already depends on the game, and the resolver needs the engine's effect merge; next to the engine, taking the content as an argument, it stays pure and testable with tiny packs, and the worker can use it in phase 4. A separate entry keeps the v2 files out of the shipped worker until phase 4. Cards as operations make a card a data edit and let the content tests read what each card does. Keeping the engine's types as the source (instead of deriving them from the schemas) leaves the rules where phase 2 put them, and the type test catches a field added on one side only. Intent beside the entry keeps one place to edit, and the lab report prints it.
+
 ## 2026-10-31: Talent share: three raid-heavy talents cut, the raid share measured on 40 seeds
 
 ID: `2026-10-31-talent-share-four-raid-heavy-talents` · Status: current

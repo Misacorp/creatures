@@ -118,7 +118,7 @@ export const BOSS_ANSWERS: Readonly<Record<string, readonly BossAnswer[]>> = {
       line: 'kilnmole/keep-the-heat-in+brace bogwarden/wide-reach+long-shadow drizzlewt/clear-the-air+bright-boost tempestray/none+edge-walker | tidewing/lead-the-way+owners-mark fogwyrm/wide-reach+catch-breath voltaro/none+odd-one-out drizzlewt/curl-up+bright-boost | fogwyrm/wide-reach+unbothered sunfawn/curl-up+brace tempestray/leave-a-trail+slow-burn tidewing/double-mark+owners-mark',
     },
     {
-      label: 'Keep the Heat In and Living Shelter on every row blunt the waves',
+      label: 'Barricade and Living Shelter on every row blunt the waves',
       tool: 'Row Ward',
       core: ['living-shelter', 'keep-the-heat-in'],
       line: 'kilnmole/keep-the-heat-in+brace drizzlewt/clear-the-air+catch-breath halcyray/clear-the-air+bright-boost thornbuck/primed-by-pain+flank-guard | gaiadrake/detonate+catch-breath kilnmole/keep-the-heat-in+hardy ancientshell/living-shelter+finisher thornbuck/night-watch+flank-guard | halcyray/none+edge-walker gaiadrake/carry-them+finisher ancientshell/living-shelter+finisher bogwarden/wide-reach+flank-guard',
@@ -133,7 +133,7 @@ export const BOSS_ANSWERS: Readonly<Record<string, readonly BossAnswer[]>> = {
       line: 'magmole/none fogwyrm/thick-fog ohmouse/none geyserpup/none+finisher | tidewing/circle-round+finisher magmole/tunnel-through+bright-boost fogwyrm/wide-reach+flank-guard drizzlewt/none+catch-breath | croakmire/squelch-song+clinging bogwarden/draw-fire+brace drizzlewt/none+bright-boost croakmire/squelch-song | splashet/none+hardy pyrelynx/gnaw-through bogwarden/draw-fire squelch/squelch-song',
     },
     {
-      label: 'Circle Round and Clear the Air heal the Payoffs its reflected hits land on',
+      label: 'Returning Tide and Clear the Air heal the Payoffs its reflected hits land on',
       tool: 'Sustain',
       core: ['circle-round', 'clear-the-air'],
       line: 'bogwarden/draw-fire+hardy tempestray/twin-strike+slow-burn kilnmole/draw-fire+shoulder-charge geyserpup/none+finisher | croakmire/squelch-song+clinging coralynx/leave-a-trail+finisher fogwyrm/hide-in-mist+flank-guard tempestray/twin-strike+slow-burn | geyserpup/puddle-maker+first-pounce ohmouse/none+shoulder-to-shoulder voltaro/zigzag+shoulder-to-shoulder sunfawn/sunbeam+hardy | fogwyrm/wide-reach+flank-guard croakmire/squelch-song+heavy-hand tidewing/circle-round+owners-mark tidewing/circle-round+owners-mark',
@@ -141,13 +141,13 @@ export const BOSS_ANSWERS: Readonly<Record<string, readonly BossAnswer[]>> = {
   ],
   thornmother: [
     {
-      label: 'Tunnel Through and Gnaw Through get hits past her thick bark',
+      label: 'Sense Weakness and Find the Gap get hits past her thick bark',
       tool: 'Pierce',
       core: ['tunnel-through', 'gnaw-through'],
       line: 'kilnmole/keep-the-heat-in+hardy magmole/tunnel-through+kindred-boost magmole/tunnel-through+hardy wickat/none+first-pounce | wickat/lead-the-way+first-pounce bogwarden/draw-fire+long-shadow sunfawn/none+triage sunfawn/ready-the-mark+shoulder-to-shoulder | fogwyrm/none+flank-guard pyrelynx/gnaw-through+first-pounce ohmouse/none pyrelynx/gnaw-through+rally-cry',
     },
     {
-      label: 'Big reactions (Detonate, All at Once) go through the bark that stops plain hits',
+      label: 'Big reactions (Detonate, All In) go through the bark that stops plain hits',
       tool: 'Reactions',
       core: ['detonate', 'all-at-once'],
       line: 'thornbuck/night-watch+hardy solmane/lead-the-way+catch-breath ohmouse/lightning-ears+shoulder-to-shoulder voltaro/double-mark+deep-ink | kilnmole/draw-fire+hardy solmane/crown-of-embers bloomback/all-at-once+finisher kilnmole/draw-fire+odd-one-out | ohmouse/lightning-ears geyserpup/all-at-once+finisher voltaro/none kilnmole/none',
@@ -169,13 +169,13 @@ export const BOSS_ANSWERS: Readonly<Record<string, readonly BossAnswer[]>> = {
   ],
   'old-bogback': [
     {
-      label: 'Circle Round heals the Setters and Payoffs the fen sinks first, row after row',
+      label: 'Returning Tide heals the Setters and Payoffs the fen sinks first, row after row',
       tool: 'Sustain',
       core: ['hearth', 'circle-round', 'clear-the-air'],
       line: 'tempestray/twin-strike magmole/tunnel-through+odd-one-out sunfawn/ready-the-mark+shoulder-to-shoulder thornbuck/night-watch+flank-guard | tidewing/circle-round kilnmole/keep-the-heat-in+hardy magmole/none+bright-boost tempestray/none+slow-burn | pyrelynx/none+rally-cry drizzlewt/clear-the-air+overheal-spill tidewing/circle-round+finisher mudlump/wide-reach',
     },
     {
-      label: 'Living Shelter and Keep the Heat In shield the creatures the mud sinks',
+      label: 'Living Shelter and Barricade shield the creatures the mud sinks',
       tool: 'Row Ward',
       core: ['living-shelter', 'keep-the-heat-in'],
       line: 'ancientshell/living-shelter+finisher sunfawn/curl-up+hardy wickat/none+sharp-claws stormray/none+edge-walker | pyrelynx/leave-a-trail+steady-rhythm kilnmole/baked-shell+brace coralynx/territorial+finisher kilnmole/keep-the-heat-in+hardy | geyserpup/puddle-maker croakmire/wide-warmth+catch-breath mistnewt/none bogwarden/none+flank-guard',

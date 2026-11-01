@@ -10,15 +10,10 @@ import {
   BOSS_ANSWERS,
   CARDS,
   FOE_IDS,
-  FOE_SPECS,
-  KEYWORDS,
-  KNACKS,
   MECHANICS,
   RAID_BOSS_IDS,
   RAID_COLS,
   RAID_ROUNDS,
-  RAID_SPECS,
-  TALENTS,
   answerLine,
   attacksOf,
   coverage,
@@ -83,7 +78,7 @@ describe('the raid bosses', () => {
     },
   );
 
-  it('three or more raid bosses carry a Build-up, on at least three feeds, none on knockouts, and Thornmother has her Second Bloom', () => {
+  it('three or more raid bosses carry an escalation, on at least three feeds, none on knockouts, and Thornmother has her Second Bloom', () => {
     const feeds = RAID_BOSS_IDS.map((id) => raidBossOf(id).escalation?.feed).filter(Boolean);
     expect(feeds.length).toBeGreaterThanOrEqual(3);
     expect(new Set(feeds).size).toBeGreaterThanOrEqual(3);
@@ -91,7 +86,7 @@ describe('the raid bosses', () => {
     expect(feeds).not.toContain('knockouts');
     const esc = raidBossOf('thornmother').escalation;
     expect(esc?.phase?.name).toBe('Second Bloom');
-    // The Second Bloom starts at half of the weekend's HP (the Build-up feeds on HP lost, in bp of the whole).
+    // The Second Bloom starts at half of the weekend's HP (the escalation feeds on HP lost, in bp of the whole).
     expect(esc?.feed).toBe('hpLost');
     expect(esc ? esc.per * (esc.phase?.atStep ?? 0) : 0).toBe(5_000);
   });
@@ -163,7 +158,7 @@ describe('the raid bosses', () => {
     expect(hush?.pattern.shape).toBe('rowEnds');
   });
 
-  it('counts scale with the width of the raid (perColumns): scatter, row ends, chains, several columns, and an event Build-up', () => {
+  it('counts scale with the width of the raid (perColumns): scatter, row ends, chains, several columns, and an event escalation', () => {
     for (const id of RAID_BOSS_IDS) {
       const b = raidBossOf(id);
       const patterns = [
@@ -199,87 +194,13 @@ describe('the raid bosses', () => {
   });
 });
 
-describe('names and words (P-06, the compendium tone)', () => {
-  const FOE_MOVES = FOE_SPECS.flatMap((f) => [...f.moves, ...(f.signature ? [f.signature] : [])]);
-  const RAID_MOVES = RAID_SPECS.flatMap((r) => [...r.moves, ...(r.escalation?.phase?.moves ?? [])]);
-  /** [id, name] of every move of every boss and foe. */
-  const moves = [...RAID_MOVES, ...FOE_MOVES].map((m) => [m[0], m[1]] as const);
-  /** Everything a player reads in these files. */
-  const texts = [
-    ...RAID_SPECS.flatMap((r) => [
-      r.asks,
-      r.escalation?.name ?? '',
-      r.escalation?.phase?.name ?? '',
-    ]),
-    ...FOE_SPECS.flatMap((f) => [f.asks, f.escalation?.name ?? '']),
-    ...moves.map((m) => m[1]),
-    ...CARDS.flatMap((c) => [c.name, c.asks]),
-    ...Object.entries(KEYWORDS).flatMap(([k, v]) => [k, v.means]),
-  ];
-
-  it('the boss-move keyword is Wind-up; Charged is the Spark mark and is not a boss-move word', () => {
-    expect(KEYWORDS).toHaveProperty('Wind-up');
-    expect(KEYWORDS).not.toHaveProperty('Charged');
-    expect(content.reactions.map((r) => r.markName)).toContain('Charged');
-    for (const t of texts) expect(t, t).not.toMatch(/\bcharged\b/i);
-  });
-
+// The names and words of the content (P-06, the compendium tone) are the content gate: `packages/game/test/combat-v2-content.test.ts`.
+describe('the boss report speaks the words', () => {
   it('the report says Wind-up and Most hurt, never Charged or wounded', () => {
     const line = RAID_BOSS_IDS.map((id) => bossLine(raidBossOf(id))).join('\n');
     expect(line).toMatch(/Wind-up/);
     expect(line).not.toMatch(/charged|wounded/i);
     expect(shapeText({ anchor: 'weakest', shape: 'single' })).toBe('the most hurt, one slot');
-    for (const t of texts) expect(t, t).not.toMatch(/\bwounded\b/i);
-  });
-
-  it('new words are keywords: the shapes, the anchors and the Build-up', () => {
-    for (const k of [
-      'Scatter',
-      'Leap',
-      'Cross',
-      'Checker',
-      'Wind-up',
-      'Most hurt',
-      'Back-most',
-      'Build-up',
-    ])
-      expect(KEYWORDS, k).toHaveProperty(k);
-    expect(KEYWORDS['Build-up']?.means).toMatch(/Mired slows it/);
-    expect(KEYWORDS['Build-up']?.means).toMatch(/weekend/);
-  });
-
-  it('no word that is scary, no collision with the raid, and "Phase" is the boss’s own name for it', () => {
-    for (const t of texts) {
-      expect(t, t).not.toMatch(/\b(choking|swallow|adapts|phase)\b/i);
-      expect(t, t).not.toMatch(/\bweakest\b/i);
-    }
-  });
-
-  it('a move name is used for one move only, and never for a reaction, a Knack or a talent', () => {
-    const byName = new Map<string, Set<string>>();
-    for (const [id, name] of moves) byName.set(name, (byName.get(name) ?? new Set()).add(id));
-    for (const [name, ids] of byName)
-      expect(ids.size, `${name} is the name of ${[...ids].join(' and ')}`).toBe(1);
-    const taken = new Set<string>([
-      ...content.reactions.map((r) => r.name),
-      ...Object.values(KNACKS).map((k) => k.name),
-      ...Object.values(TALENTS).map((t) => t.name),
-    ]);
-    for (const [id, name] of moves) expect(taken.has(name), `${id}: ${name}`).toBe(false);
-    // A rule card that is a move too (Great Wave) is one thing under one name; no other card shares a move's name.
-    for (const c of CARDS)
-      if (byName.has(c.name)) expect(byName.get(c.name)?.has(c.id), c.name).toBe(true);
-    // The Bramble Bind card is the only Bramble Bind.
-    expect(byName.has('Bramble Bind')).toBe(false);
-  });
-
-  it('Molten Shell grows armour and Wisp Fog grows dodge, as their names say', () => {
-    expect(FOE_SPECS.find((f) => f.id === 'slag-tyrant')?.escalation?.grow.armour).toBeGreaterThan(
-      0,
-    );
-    expect(FOE_SPECS.find((f) => f.id === 'drift-wisp')?.escalation?.grow.dodgeBp).toBeGreaterThan(
-      0,
-    );
   });
 });
 

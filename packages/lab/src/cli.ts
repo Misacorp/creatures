@@ -1,4 +1,5 @@
 import { writeFileSync } from 'node:fs';
+import { URL, fileURLToPath } from 'node:url';
 import { CARDS } from './cards';
 import { RAID_BOSS_IDS } from './bosses';
 import { planBosses } from './bossReport';
@@ -11,6 +12,7 @@ import { planReport, buildCatalogue, buildKeywords } from './report';
 import { TARGET_RANKS, type TargetRank } from './targets';
 import { planTalents, talentTeamId } from './talentReport';
 import type { TeamShareSummary } from './teamShareReport';
+import { writeTrackNumbers } from './trackFile';
 import { planSlotInfo, slotInfoMarkdown, trackSummary, tuneTrack } from './trackTuner';
 import { SLOT_WEEKS, TRACK_ORDER } from './track';
 import { summaryAll, tuneBoss, type RankResult } from './tuner';
@@ -45,8 +47,14 @@ async function runPlan<T>(
  */
 export async function main(args: readonly string[], run: JobRunner = serial): Promise<number> {
   const quick = args.includes('--quick');
-  if (args.includes('--tune'))
-    return args.includes('--track') ? tuneTrackCli(args, quick, run) : tune(args, quick, run);
+  if (args.includes('--tune')) {
+    if (args.includes('--track')) return tuneTrackCli(args, quick, run);
+    if (args.includes('--write')) {
+      console.error('--write is for the track tuner: use --tune --track --write');
+      return 1;
+    }
+    return tune(args, quick, run);
+  }
   if (args.includes('--path')) return path(args, quick, run);
   const bossAt = args.indexOf('--boss');
   if (args.includes('--bosses') || bossAt >= 0) {
@@ -276,11 +284,17 @@ function slotRange(text: string): readonly [number, number] | undefined {
   return first >= 1 && last >= first ? [first, last] : undefined;
 }
 
+/** The track's data file, which `--tune --track --write` writes (`packages/game/src/combat-v2/data/raid-track.json`). */
+const TRACK_FILE = fileURLToPath(
+  new URL('../../game/src/combat-v2/data/raid-track.json', import.meta.url),
+);
+
 /**
- * `--tune --track [--slots 1-15] [--quick] [--out <file.md>]`: the track tuner (`trackTuner.ts`). The path (expected speed) gives each
- * slot's arrival week, each slot is tuned for the roster of that week against Misa's targets, the proposals go into the table in
- * memory and the path runs again, until no arrival week moves (at most four tunings). Prints the rounds, the numbers per slot and the
- * lines to paste into `SLOT_NUMBERS` (`track.ts`). Nothing is applied.
+ * `--tune --track [--slots 1-15] [--quick] [--write] [--out <file.md>]`: the track tuner (`trackTuner.ts`). The path (expected speed)
+ * gives each slot's arrival week, each slot is tuned for the roster of that week against Misa's targets, the proposals go into the
+ * table in memory and the path runs again, until no arrival week moves (at most four tunings). Prints the rounds, the numbers per slot
+ * and the lines to paste into `SLOT_WEEKS` and `SLOT_MIXED_ANSWER` (`track.ts`). With `--write` the tuned HP, Attack and armour of the
+ * slots in range are written into `raid-track.json` (not with `--quick`: a quick run is a sketch); without it nothing is applied.
  */
 async function tuneTrackCli(
   args: readonly string[],
@@ -298,6 +312,13 @@ async function tuneTrackCli(
     console.error('--out needs a file name');
     return 1;
   }
+  const write = args.includes('--write');
+  if (write && quick) {
+    console.error(
+      '--write needs a full run: a --quick run is a sketch and is never written to the data',
+    );
+    return 1;
+  }
   const [first, last] = range;
   const result = await tuneTrack({
     first,
@@ -305,7 +326,13 @@ async function tuneTrackCli(
     quick,
     run,
   });
-  const md = trackSummary(result, { quick, first, last }).join('\n');
+  const written = write ? writeTrackNumbers(TRACK_FILE, result.loop.table, first, last) : undefined;
+  const md = trackSummary(result, {
+    quick,
+    first,
+    last,
+    ...(written ? { write: written } : {}),
+  }).join('\n');
   console.log(md);
   if (out) {
     writeFileSync(out, md + '\n');

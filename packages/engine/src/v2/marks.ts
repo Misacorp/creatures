@@ -86,7 +86,7 @@ export function roundStart(s: State): void {
   for (const f of aliveBySlot(s)) {
     const k = fx(f);
     if (k.miresAtStart) addMired(s, f);
-    // Baked Shell's Heat also builds by itself: +1 at every round start (panel 5: it was filled by damage alone and never picked).
+    // Boiling Point's Heat also builds by itself: +1 at every round start (panel 5: it was filled by damage alone and never picked).
     if (k.bakedShell) f.store = Math.min(3, f.store + 1);
     if (k.guardMendBp)
       for (const o of alive(s).filter((o) => inReach(s, f, o))) heal(s, o, k.guardMendBp, true, f);

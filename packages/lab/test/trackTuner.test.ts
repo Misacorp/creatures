@@ -443,13 +443,9 @@ describe('a slot’s weekend', () => {
     }
   });
 
-  it('prints a table to paste', () => {
+  it('prints the numbers as the data file holds them, for a hand edit (`--write` writes them)', () => {
     const lines = pasteOf({ 1: { hp: 12_345, atk: 9, armour: 4 } }, 1, 2);
-    expect(lines).toEqual([
-      'export const SLOT_NUMBERS: SlotTable = {',
-      `  1: { hp: 12_345, atk: 9, armour: 4 }, // ${trackSlot(1).bossId}`,
-      '};',
-    ]);
+    expect(lines).toEqual([`slot 1 (${trackSlot(1).bossId}): "hp": 12345, "atk": 9, "armour": 4`]);
     expect(weeksPasteOf([1, 2, 4])).toBe('export const SLOT_WEEKS: readonly number[] = [1, 2, 4];');
   });
 });

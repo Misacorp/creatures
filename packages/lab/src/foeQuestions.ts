@@ -35,20 +35,21 @@ export const FOE_QUESTION_GAP = 0.25;
 export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromEntries(
   (
     [
-      // The fog thickens with every miss: dodge turns the small splashes away.
+      // A Barrage of splashes lands on every creature of a small team at once: a Guard with Wide Reach beside the others covers them all (an area hit).
       [
         'puddle-imp',
-        'family:Evasion',
-        ['zoom'],
+        'family:Reach',
+        ['wide-reach'],
         5,
-        15_000,
-        13_000,
-        'voltaro/zoom thornbuck/none tempestray/none',
+        20_000,
+        16_000,
+        'tidewing/steady-mark thornbuck/wide-reach tempestray/detonate',
+        'tidewing/steady-mark pyrelynx/none tempestray/detonate',
       ],
       // The Setter and the Payoff stand at the ends and fall quiet, unless Lantern Glow stands between them.
       [
         'drift-wisp',
-        'family:Ward',
+        'family:Silence Guard',
         ['lantern-glow'],
         4,
         10_000,
@@ -75,7 +76,7 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         13_000,
         'tidewing/none kilnmole/baked-shell tempestray/none',
       ],
-      // Its hide Blocks small hits: Tunnel Through gets the Payoff's plain hits past it.
+      // Its hide Blocks small hits: Sense Weakness gets the Payoff's plain hits past it.
       [
         'bramble-hound',
         'family:Pierce',
@@ -127,7 +128,7 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         'tidewing/none croakmire/squelch-song tempestray/none',
       ],
       // Black, thick and draining: healing is halved and little gets through its armour, so a boost that reaches the far hitter too
-      // (Wide Warmth, standing at the end of the line) is worth more than a heal.
+      // (Wide Embrace, standing at the end of the line) is worth more than a heal.
       [
         'tar-leech',
         'family:Support shape',
@@ -137,7 +138,7 @@ export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromE
         10_000,
         'croakmire/wide-warmth tidewing/steady-mark tempestray/detonate',
       ],
-      // The gates open on the whole line: Catch the Bolts takes the sweeps.
+      // The gates open on the whole line: Take It All takes the sweeps.
       [
         'drowned-warden',
         'family:Intercept',

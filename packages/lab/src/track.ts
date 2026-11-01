@@ -4,29 +4,32 @@
  * The track is an ordered list of slots, each a boss and the strength of its cards. A server starts at slot 1 (Boss Rank 1) and
  * a win moves it one slot on; after the last boss the track starts again with the next, stronger cards (the slot number is the
  * Boss Rank, and the strength follows the rank up to the cap). Failing a boss keeps the slot (`path.ts` plays that out).
+ *
+ * What the game will play is data in `@creatures/game/combat-v2` (`raid-track.json`: the order, and per slot 1 to 15 the numbers, the
+ * strength of the cards, the ramp column and the extra cards, all written out). This file reads it for what it holds and keeps the
+ * parts that are only measurement: the arrival weeks, the prepared lines, the mixed answers, the wall flag, and the rank ladder
+ * that gives the slots after the data (and the tuner's starting point) their numbers. The track tuner writes the file
+ * (`--tune --track --write`).
  */
+import { combatV2 } from '@creatures/game/combat-v2';
 import { BOSS_ANSWERS, answerLine } from './bossAnswers';
 import { RAID_RANKS, raidBossOf } from './bosses';
 import type { Pick } from './search';
 import { absoluteOf, nativeOf, type Numbers } from './tuner';
 import type { BossDef } from './types';
 
+const TRACK_DATA = combatV2.raidTrack;
+
 /**
- * The order of the bosses on the track. It is one line to change: Misa may reorder it, or list a boss twice (every id must be one
- * of `RAID_BOSS_IDS`; `test/track.test.ts` checks it). Thornmother is last on purpose (Misa, 2026-10-30, "Thornmother is a
+ * The order of the bosses on the track (`order` in `raid-track.json`). It is one line to change: Misa may reorder it, or list a boss
+ * twice (every id must be a raid boss; the game's loader and `test/track.test.ts` check it). Thornmother is last on purpose (Misa, 2026-10-30, "Thornmother is a
  * deliberate wall at the end of the first lap"): slots 5, 10 and 15, the first of them a wall (`SLOT_WALL`).
  */
-export const TRACK_ORDER: readonly string[] = [
-  'tidal-colossus',
-  'cinder-wyrm',
-  'storm-sovereign',
-  'old-bogback',
-  'thornmother',
-];
+export const TRACK_ORDER: readonly string[] = TRACK_DATA.order;
 
 /**
  * What of its rules a slot's boss has (the young-server ramp, Misa, 2026-10-30): `cards` is how many of its rule cards, the boss's
- * first ones in order (absent: all), and `buildUp` whether it has its Build-up (the Store that grows it as the weekend goes on).
+ * first ones in order (absent: all), and `buildUp` whether it has its escalation (the Store that grows it as the weekend goes on).
  */
 export interface SlotRules {
   readonly cards?: number;
@@ -54,27 +57,14 @@ export type SlotNumbers = Partial<Numbers>;
 export type SlotTable = Readonly<Record<number, SlotNumbers>>;
 
 /**
- * Per-slot numbers (slot number to HP, Attack and armour, absolute before cards), data. A slot without an entry interpolates the
- * three ranks' numbers (`rankNumbers`). Tuned by `node scripts/report.mjs --tune --track` (`trackTuner.ts`) for the roster the path
- * says arrives at each slot (`SLOT_WEEKS`); slots 1 to 15 (three laps), later laps follow the high rank's numbers.
+ * Per-slot numbers (slot number to HP, Attack and armour, absolute before cards), from `raid-track.json`. A slot without an entry
+ * interpolates the three ranks' numbers (`rankNumbers`). Tuned and written by `node scripts/report.mjs --tune --track --write`
+ * (`trackTuner.ts`) for the roster the path says arrives at each slot (`SLOT_WEEKS`); slots 1 to 15 (three laps), later laps follow
+ * the high rank's numbers.
  */
-export const SLOT_NUMBERS: SlotTable = {
-  1: { hp: 3_800, atk: 83, armour: 19 }, // tidal-colossus
-  2: { hp: 7_500, atk: 80, armour: 42 }, // cinder-wyrm
-  3: { hp: 13_500, atk: 53, armour: 7 }, // storm-sovereign
-  4: { hp: 28_200, atk: 82, armour: 19 }, // old-bogback
-  5: { hp: 6_500, atk: 155, armour: 124 }, // thornmother
-  6: { hp: 15_600, atk: 113, armour: 21 }, // tidal-colossus
-  7: { hp: 10_200, atk: 185, armour: 48 }, // cinder-wyrm
-  8: { hp: 7_000, atk: 96, armour: 4 }, // storm-sovereign
-  9: { hp: 32_800, atk: 100, armour: 33 }, // old-bogback
-  10: { hp: 8_000, atk: 102, armour: 149 }, // thornmother
-  11: { hp: 13_400, atk: 143, armour: 36 }, // tidal-colossus
-  12: { hp: 11_500, atk: 199, armour: 49 }, // cinder-wyrm
-  13: { hp: 14_300, atk: 48, armour: 10 }, // storm-sovereign
-  14: { hp: 32_700, atk: 117, armour: 31 }, // old-bogback
-  15: { hp: 9_000, atk: 97, armour: 156 }, // thornmother
-};
+export const SLOT_NUMBERS: SlotTable = Object.fromEntries(
+  TRACK_DATA.slots.map((s) => [s.slot, { hp: s.hp, atk: s.atk, armour: s.armour }]),
+);
 
 /**
  * The week each slot's numbers were tuned for (index 0 is slot 1): the median week a dedicated server first FIGHTS the slot at the
@@ -87,16 +77,22 @@ export const SLOT_WEEKS: readonly number[] = [1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 13
 /**
  * The young-server ramp, a column of the track's data (Misa, 2026-10-30; `docs/design/decisions/raids.md`): a new server has only
  * starters and is still finding its footing, so the first week's boss is a **tutorial** and the second asks little.
- * - Slot 1: no rule cards and no Build-up. The boss keeps its plain attack and its moves (the announced attacks, which are the
+ * - Slot 1: no rule cards and no escalation. The boss keeps its plain attack and its moves (the announced attacks, which are the
  *   boss and not rules; they are not scaled by card strength, only by the slot's HP and Attack, which the tuner sets); it has no
  *   Store to grow it and nothing to answer, so no tool is asked of the team there (`slotTargetsFor`).
- * - Slot 2: one rule card, the boss's first, at the slot's low strength (about 30%), and no Build-up (it arrives with the full set).
- * - Slot 3 onward: the full set (every card and the Build-up) at the slot's strength. A slot without an entry has it.
+ * - Slot 2: one rule card, the boss's first, at the slot's low strength (about 30%), and no escalation (it arrives with the full set).
+ * - Slot 3 onward: the full set (every card and the escalation) at the slot's strength. A slot without an entry has it.
+ * The data writes the column out for every slot (`cards`, `buildUp`); here the full set is the absence of an entry.
  */
-export const SLOT_CARDS: Readonly<Record<number, SlotRules>> = {
-  1: { cards: 0, buildUp: false },
-  2: { cards: 1, buildUp: false },
-};
+export const SLOT_CARDS: Readonly<Record<number, SlotRules>> = Object.fromEntries(
+  TRACK_DATA.slots.flatMap((s) => {
+    const own = combatV2.raidBosses[s.boss]?.cards.length ?? s.cards;
+    const rules: SlotRules =
+      s.cards < own ? { cards: s.cards, buildUp: s.buildUp } : { buildUp: s.buildUp };
+    // The full set is the default (`slotRules`), so a slot with every card and its escalation has no entry.
+    return rules.cards === undefined && rules.buildUp ? [] : [[s.slot, rules] as const];
+  }),
+);
 
 /**
  * The slots that are a deliberate wall (Misa, 2026-10-30; `docs/design/decisions/raids.md`, "Thornmother is a deliberate wall at the
@@ -112,7 +108,7 @@ export const SLOT_WALL: Readonly<Record<number, true>> = { 5: true };
  * player's best creature is level 11 in week 1 and 14 in week 2), so each line is the line such a server really fields, the gated
  * version of the line it had (`gatedPick` in `roster.ts`: each stage 2 form is its stage 1 form, with the Knack and the talents the
  * gate keeps; an evolved line would be fielded as these anyway, and the ownability rule asks that a slot's line be evolved at its week).
- * - Slot 1 (the tutorial boss): the old line, the boss's first answer with both Tempestrays replaced by Geyserpup with Puddle Maker
+ * - Slot 1 (the tutorial boss): the old line, the boss's first answer with both Tempestrays replaced by Geyserpup with Self-Starter
  *   (Tempestray is a rare, which a server of 8 owns with a chance of 33% in week 1), gated. All common.
  * - Slot 2: the Cinder Wyrm's first answer, gated; it keeps the tool (the first card's answer, Squelch Song, on three Squelch).
  * A team search over the common stage 1 forms found lines with more raw potential at the same numbers (slot 1: 277% against 132%;
@@ -131,14 +127,18 @@ export const SLOT_LINE: Readonly<Record<number, string>> = {
  * second lap is stronger by one new card. Each card must be one the lab has (`cards.ts`) and have an answer a server can own at the
  * slot's week (`ownability.ts`, tested). An absent slot adds nothing. The Tidal Colossus gets two, Slippery and Breakwater (Misa, 2026-10-31).
  */
-export const SLOT_EXTRA_CARDS: Readonly<Record<number, readonly string[]>> = {
-  6: ['slippery', 'breakwater'], // tidal-colossus
-  8: ['lucky-strike'], // storm-sovereign, from its second lap (slots 8 and 13)
-};
+export const SLOT_EXTRA_CARDS: Readonly<Record<number, readonly string[]>> = Object.fromEntries(
+  TRACK_DATA.slots.flatMap((s) => {
+    // The data lists a boss's extra cards at every one of its slots; the entry is where a card first arrives.
+    const before = TRACK_DATA.slots[s.slot - 1 - TRACK_ORDER.length]?.extraCards ?? [];
+    const added = s.extraCards.filter((c) => !before.includes(c));
+    return added.length ? [[s.slot, added] as const] : [];
+  }),
+);
 
 /**
  * The extra cards of a slot: the entries of `SLOT_EXTRA_CARDS` at this slot or at an earlier slot of the same boss (every `order.length`
- * slots), in slot order.
+ * slots), in slot order. The data (`raid-track.json`) lists them out per slot; `SLOT_EXTRA_CARDS` is where each card first arrives.
  */
 export function slotExtraCards(
   slot: number,
@@ -221,8 +221,13 @@ export function slotMixedOf(
   return answer;
 }
 
-/** The strength of a slot's cards, by slot, when set by hand (bp). Empty: the rank ladder (`rankStrengthBp`). */
-export const SLOT_STRENGTH: Readonly<Record<number, number>> = {};
+/**
+ * The strength of a slot's cards, by slot (bp), written out in `raid-track.json` for slots 1 to 15 (today the ladder's values:
+ * `rankStrengthBp`). A slot without an entry follows the rank ladder.
+ */
+export const SLOT_STRENGTH: Readonly<Record<number, number>> = Object.fromEntries(
+  TRACK_DATA.slots.map((s) => [s.slot, s.strengthBp]),
+);
 
 /** Linear interpolation of `value` over the ranks `[rank, v]`: flat outside them, unless `extend` carries the first segment below. */
 function across(

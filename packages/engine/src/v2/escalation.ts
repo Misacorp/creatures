@@ -1,5 +1,5 @@
 /**
- * The boss's escalation and Mired (R22): the Store's feed, the Build-up's steps and the phase change, what the steps add to the boss
+ * The boss's escalation and Mired (R22): the Store's feed, the escalation's steps and the phase change, what the steps add to the boss
  * (`grown`), and the Mired stacks that slow it and cut the boss's damage and dodge (R22.3). Docs: docs/design/combat/proposals/001-combat-v2.md.
  */
 import type { BossMove, Escalation, EscalationFeed, EscalationState, Fighter } from './types';
@@ -23,7 +23,7 @@ const perOf = (s: State): number => {
   return e.perColumns ? Math.max(1, Math.round((e.per * s.boss.cols) / e.perColumns)) : e.per;
 };
 
-/** What the escalation's steps add to the boss now: `grow` for each step, at the Build-up's strength (a share of it). */
+/** What the escalation's steps add to the boss now: `grow` for each step, at the escalation's strength (a share of it). */
 export const grown = (s: State): Grown => {
   const n = s.esc.step;
   // It is asked for on every hit but only changes with the step, so it is worked out once a step.
@@ -47,12 +47,28 @@ export const grown = (s: State): Grown => {
 };
 
 /**
- * The boss's moves now: its own, and its phase's once the phase change has applied, in the boss card's order. Moves due on
- * one boss turn are announced and land in this order (R8.3, panel 5), then the plain attack.
+ * A boss's moves once its phase has begun: a phase move with the id of one of the boss's own moves REPLACES it, in its place in the
+ * boss card's order (Second Bloom's stronger Thorn Rain: the boss has one move of that behaviour, never two); every other phase
+ * move is added after the own ones.
+ */
+export function withPhase(
+  own: readonly BossMove[],
+  phase: readonly BossMove[],
+): readonly BossMove[] {
+  return [
+    ...own.map((m) => phase.find((p) => p.id === m.id) ?? m),
+    ...phase.filter((p) => !own.some((m) => m.id === p.id)),
+  ];
+}
+
+/**
+ * The boss's moves now: its own, and its phase's once the phase change has applied (a phase move with the id of an own move
+ * replaces it, see `withPhase`), in the boss card's order. Moves due on one boss turn are announced and land in this order (R8.3,
+ * panel 5), then the plain attack.
  */
 export const movesOf = (s: State): readonly BossMove[] =>
   s.esc.phase && s.boss.escalation?.phase
-    ? (s.phaseMoves ??= [...s.boss.moves, ...s.boss.escalation.phase.moves])
+    ? (s.phaseMoves ??= withPhase(s.boss.moves, s.boss.escalation.phase.moves))
     : s.boss.moves;
 
 /** The feed units now: event feeds count as they happen; `rounds` and `hpLost` are read from the fight. */
@@ -119,7 +135,7 @@ export function escalate(s: State): void {
   if (!falls) s.esc.fall = s.esc.step;
 }
 
-/** The Build-up's steps that help the boss: one step if the count has reached the next bar, raised by the Mired (R22.3). */
+/** The escalation's steps that help the boss: one step if the count has reached the next bar, raised by the Mired (R22.3). */
 function stepUp(s: State, e: Escalation, per: number): void {
   const R = s.ctx.rules;
   const due = (s.esc.step + 1) * per;
@@ -153,7 +169,7 @@ export function miredCut(s: State): number {
   return s.mired * per;
 }
 
-/** Mired stacks (capped); Heavy Hand gives a chance of 1 extra stack each time. */
+/** Mired stacks (capped); Wicked gives a chance of 1 extra stack each time. */
 export function addMired(s: State, by: Fighter): void {
   const R = s.ctx.rules;
   const extra = roll(s, fx(by).miredExtraBp ?? 0) ? 1 : 0;
@@ -163,8 +179,9 @@ export function addMired(s: State, by: Fighter): void {
 }
 
 /**
- * Mired fades at the end of every second round; while a living creature has Clinging, only every third round
- * (Misa, 2026-10-28: one debuff creature must not hold it for the whole fight). Clinging also makes each stack
+ * Mired fades at the end of every round (`miredFadeEvery`); while a living creature has Clinging, only every second
+ * round (Misa, 2026-10-28: one debuff creature must not hold it for the whole fight; 2026-11-01: faster, with up to 45
+ * creatures acting a round it is put back often). Clinging also makes each stack
  * count for more (`miredCut`). Squelch Song alone builds stacks over a fight.
  */
 export function fadeMired(s: State): void {

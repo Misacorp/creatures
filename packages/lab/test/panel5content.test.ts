@@ -1,6 +1,6 @@
 /**
  * Content of the fifth design panel's fixes (2026-10-29): Mired halved, a second cleanse boss, Thornmother's cracking bark and
- * her second Pierce Knack, common-species answers, Guard's Shadow trimmed, rare Knacks with somewhere to be an answer.
+ * her second Pierce Knack, common-species answers, Reliably Covered trimmed, rare Knacks with somewhere to be an answer.
  */
 import { createSeededRng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
@@ -44,7 +44,7 @@ describe('Mired is halved and a second boss washes debuffs off', () => {
   });
 });
 
-describe('Thornmother’s bark cracks at every step of her Build-up', () => {
+describe('Thornmother’s bark cracks at every step of her escalation', () => {
   it('her armour falls with each step and stays above zero: only a Pierce line or a big reaction gets in early', () => {
     const esc = raidBossOf('thornmother').escalation;
     expect(esc?.grow.armour).toBeLessThan(0);
@@ -85,7 +85,7 @@ describe('Thornmother’s bark cracks at every step of her Build-up', () => {
 });
 
 describe('Pierce has a second Knack, on a common species', () => {
-  it('Gnaw Through is a Pierce Knack for Pyrelynx: its own hits ignore a third of the boss’s armour', () => {
+  it('Find the Gap is a Pierce Knack for Pyrelynx: its own hits ignore a third of the boss’s armour', () => {
     const k = KNACKS['gnaw-through'];
     expect(k?.family).toBe('Pierce');
     expect(KNACKS['tunnel-through']?.family).toBe('Pierce');
@@ -103,7 +103,7 @@ describe('Pierce has a second Knack, on a common species', () => {
   });
 });
 
-describe('Wide Warmth has a job: it boosts the far hitter of a line of three, and Tar Leech asks for it', () => {
+describe('Wide Embrace has a job: it boosts the far hitter of a line of three, and Tar Leech asks for it', () => {
   it('a Support at the end of the line boosts both hitters at full strength, the far one included', () => {
     expect(KNACKS['wide-warmth']?.text).toMatch(/full strength/);
     const boss: BossDef = {
@@ -127,7 +127,7 @@ describe('Wide Warmth has a job: it boosts the far hitter of a line of three, an
     );
   });
 
-  it('Tar Leech’s question is about it: the team with Wide Warmth wins clearly more often', () => {
+  it('Tar Leech’s question is about it: the team with Wide Embrace wins clearly more often', () => {
     const q = FOE_QUESTIONS['tar-leech'];
     expect(q?.tool).toEqual(['wide-warmth']);
     expect(q?.mechanic).toBe('family:Support shape');
@@ -135,8 +135,8 @@ describe('Wide Warmth has a job: it boosts the far hitter of a line of three, an
   });
 });
 
-describe('Guard’s Shadow is trimmed, and the rare Knacks have somewhere to be an answer', () => {
-  it('Guard’s Shadow gives +10%, not +25%, and costs 10 armour', () => {
+describe('Reliably Covered is trimmed, and the rare Knacks have somewhere to be an answer', () => {
+  it('Reliably Covered gives +10%, not +25%, and costs 10 armour', () => {
     expect(KNACKS['guards-shadow']?.fx.besideGuardBp).toBe(1_000);
     expect(KNACKS['guards-shadow']?.fx.armourBonus).toBe(-10);
     expect(KNACKS['guards-shadow']?.text).toMatch(/\+10%/);
@@ -147,7 +147,7 @@ describe('Guard’s Shadow is trimmed, and the rare Knacks have somewhere to be 
       .flat()
       .some((a) => answerLine(a.line).some((p) => p.knack === knack));
 
-  it('Crown of Embers and Tunnel Through are on a written answer; Primed by Pain and Baked Shell are the tool of a foe’s question', () => {
+  it('Crown of Embers and Sense Weakness are on a written answer; Primed by Pain and Boiling Point are the tool of a foe’s question', () => {
     expect(carries('crown-of-embers')).toBe(true);
     expect(carries('tunnel-through')).toBe(true);
     const tools = Object.values(FOE_QUESTIONS).flatMap((q) => [...q.tool]);

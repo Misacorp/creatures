@@ -178,7 +178,7 @@ function casualLine(boss: BossDef, key: string): Pick[] {
   );
 }
 
-/** The track's first three laps: between them Slippery, Lucky Strike, Breakwater, strength, the Build-up, Adapts and Element Resistance all appear. */
+/** The track's first three laps: between them Slippery, Double Strike, Breakwater, strength, the escalation, Adapts and Element Resistance all appear. */
 const SLOTS = Array.from({ length: 15 }, (_, i) => i + 1);
 
 export function parityCases(): ParityCase[] {
@@ -217,9 +217,10 @@ export function parityCases(): ParityCase[] {
     const lines: [string, readonly Pick[]][] = [
       ['classic', CLASSIC_LINE],
       ...(ANSWERS[c.id] ?? []).map(
-        ([label, spec], i) =>
+        ([, spec], i) =>
           [
-            `answer${i}-${label}`,
+            // The index, not the answer's text: the text names Knacks, and a case's name seeds its dice, so a rename must not move it.
+            `answer${i}`,
             spec.split(' ').map((t): Pick => {
               const [formId = '', knack = 'none'] = t.split('/');
               return { formId, knack };
@@ -230,7 +231,7 @@ export function parityCases(): ParityCase[] {
     for (const [label, line] of lines)
       fightCase(`gauntlet:${c.id}:${label}`, boss, placed(line, GAUNTLET), 3);
   }
-  // Stacked cards: Lucky Strike with Slippery and Breakwater with Stone Skin and Wither (cards are applied in order).
+  // Stacked cards: Double Strike with Slippery and Breakwater with Stone Skin and Wither (cards are applied in order).
   fightCase(
     'gauntlet:stack:luck',
     bossFor(GAUNTLET, ['slippery', 'lucky-strike', 'stone-skin']),
@@ -300,7 +301,7 @@ export function parityCases(): ParityCase[] {
     fightCase(`sweep-talent-log:${t}`, sweepPlain, placed(line, GAUNTLET), 1, { log: true });
   }
 
-  // Cull (a kill by a share of HP, also as damage potential) and Hold On (Stubborn against a boss that hits hard).
+  // Culling Strike (a kill by a share of HP, also as damage potential) and Hold On (Refuse to Fall against a boss that hits hard).
   const cullLine: Pick[] = [
     { formId: 'tidewing', knack: 'steady-mark', talents: ['cull'] },
     { formId: 'tempestray', knack: 'detonate', talents: ['cull'] },

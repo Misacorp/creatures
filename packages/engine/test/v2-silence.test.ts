@@ -200,7 +200,7 @@ describe('silence blanks talents: nothing arms, counts or is spent (panel 3)', (
     expect(by(fresh, 'A').momentum).toBe(false);
   });
 
-  it('Baked Shell: a silenced creature builds no Heat', () => {
+  it('Boiling Point: a silenced creature builds no Heat', () => {
     const team = [spec({ role: 'guard', fx: { bakedShell: true } })];
     // Round 1's start builds one, before the first silence; after that, nothing.
     expect(by(play(boss({ rounds: 4, moves: [hush()] }), team), 'A').store).toBe(1);

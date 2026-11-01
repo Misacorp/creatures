@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { content } from '@creatures/game';
 import { BUNDLED_BOSS_SPRITES, BUNDLED_CREATURE_SPRITES } from './creature-sprites';
+import { BUNDLED_GLYPHS } from '../glyphs';
 import { CONCEPT_SETS } from './concepts';
+import { BUNDLED_ELEMENT_ICONS } from './element-icons';
 import { contrast, hsl, inFamily, ELEMENT_FAMILIES, lintSprite, KIND_SIZE } from './sprite-lint';
 import type { SpriteDef } from './sprite-data';
 
@@ -107,6 +109,84 @@ describe('concept art', () => {
           `${set.id}/${id}`,
         ).toEqual([]);
         expect(Object.hasOwn(KIND_SIZE, concept.kind), id).toBe(true);
+      }
+    }
+  });
+});
+
+describe('glyph art', () => {
+  const flat = (rows: string[]): SpriteDef => ({ palette: { r: '#ff5f6d' }, rows });
+  const plus = [
+    '...rr...',
+    '...rr...',
+    '...rr...',
+    'rrrrrrrr',
+    'rrrrrrrr',
+    '...rr...',
+    '...rr...',
+    '...rr...',
+  ];
+
+  it('is 8x8 flat colour: no ink outline is needed, as in the shipped glyphs', () => {
+    expect(lintSprite(flat(plus), { kind: 'glyph' })).toEqual([]);
+    const small = lintSprite(flat(['rr', 'rr']), { kind: 'glyph' });
+    expect(small.map((f) => f.rule)).toEqual(['grid']);
+  });
+
+  it('wants more than 8 pixels, at most 5 colours and a silhouette 6 pixels from every shipped glyph', () => {
+    const thin = flat(['rrrr....', ...Array.from({ length: 7 }, () => '........')]);
+    expect(lintSprite(thin, { kind: 'glyph' }).map((f) => f.rule)).toContain('footprint');
+    const palette = {
+      a: '#111111',
+      b: '#222222',
+      c: '#333333',
+      d: '#444444',
+      e: '#555555',
+      f: '#666666',
+    };
+    const many: SpriteDef = {
+      palette,
+      rows: ['abcdef..', ...plus.slice(1).map((r) => r.replace(/r/g, 'a'))],
+    };
+    expect(
+      lintSprite(many, { kind: 'glyph' })
+        .map((f) => f.message)
+        .join(' '),
+    ).toContain('6 colours');
+    const near = lintSprite(flat(plus), { kind: 'glyph', others: { same: flat(plus) } });
+    expect(near.map((f) => f.rule)).toContain('silhouette');
+  });
+
+  it('every shipped glyph passes the glyph rules (the lint agrees with the glyph tests)', () => {
+    for (const [id, def] of Object.entries(BUNDLED_GLYPHS)) {
+      // A few shipped glyphs carry a palette key no pixel uses (the reticle's "k"); that rule is for new art.
+      const errors = lintSprite(def, { kind: 'glyph' }).filter(
+        (f) => f.level === 'error' && f.rule !== 'palette',
+      );
+      expect(errors, id).toEqual([]);
+    }
+  });
+
+  it('draws every concept glyph apart from every shipped glyph', () => {
+    for (const set of CONCEPT_SETS) {
+      for (const [id, concept] of Object.entries(set.sprites)) {
+        if (concept.kind !== 'glyph') continue;
+        const errors = lintSprite(concept.sprite, {
+          kind: 'glyph',
+          others: { ...BUNDLED_GLYPHS, ...BUNDLED_ELEMENT_ICONS },
+        }).filter((f) => f.level === 'error');
+        expect(errors, `${set.id}/${id}`).toEqual([]);
+      }
+    }
+  });
+
+  it('only reuses shipped glyphs that exist', () => {
+    for (const set of CONCEPT_SETS) {
+      for (const item of set.shipped ?? []) {
+        expect(
+          Object.hasOwn(BUNDLED_GLYPHS, item.id) || Object.hasOwn(BUNDLED_ELEMENT_ICONS, item.id),
+          `${set.id}: ${item.id}`,
+        ).toBe(true);
       }
     }
   });

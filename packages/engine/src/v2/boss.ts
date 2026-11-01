@@ -1,6 +1,6 @@
 /**
  * The boss's turn (R8 moves and the plain attack, R9 Taunt, R1 dodge and intercepts, R2.3 Night Watch, R7.1 boss crits, R12 Silence,
- * R13 cards and mods, R22 the Build-up's hits): one move landing on its targets, and the turn's moves, plain hits and Clean Scales.
+ * R13 cards and mods, R22 the escalation's hits): one move landing on its targets, and the turn's moves, plain hits and Clean Scales.
  */
 import * as creatureMod from './creature';
 import * as boardMod from './board';
@@ -164,7 +164,7 @@ function bossHits(
           by.watchTurn = s.bossTurnsDone;
           bump(by, 'interceptCharged');
         } else if (area && fx(by).interceptArea) {
-          // Catch the Bolts: the area hit it takes is cut by its own cover, like Night Watch's.
+          // Take It All: the area hit it takes is cut by its own cover, like Night Watch's.
           watched = true;
         }
         s.count.intercepts++;

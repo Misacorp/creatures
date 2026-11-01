@@ -1,0 +1,292 @@
+[
+  {
+    "id": "tidal-colossus",
+    "rows": 3,
+    "armour": 41,
+    "atk": 113,
+    "hp": 19100,
+    "plain": { "pattern": { "anchor": "front", "shape": "row" }, "powerBp": 2500 },
+    "moves": [
+      { "id": "undertow", "every": 3, "turn": 0, "powerBp": 9000 },
+      { "id": "spray", "every": 2, "turn": 0, "powerBp": 5000, "n": 4, "perColumns": 4 },
+      { "id": "deepwater-spear", "every": 3, "turn": 1, "powerBp": 12000, "n": 2, "perColumns": 4 },
+      {
+        "id": "riptide",
+        "every": 4,
+        "turn": 1,
+        "powerBp": 10800,
+        "n": 1,
+        "perColumns": 4,
+        "windUp": true
+      },
+      { "id": "rogue-wave", "every": 6, "turn": 1, "powerBp": 12300, "windUp": true },
+      { "id": "great-wave", "every": 3, "turn": 2, "powerBp": 13900, "windUp": true },
+      { "id": "backflow", "every": 7, "turn": 0, "powerBp": 8000, "n": 2 }
+    ],
+    "cards": ["adapts", "shake-it-off"],
+    "escalation": {
+      "name": "Rising Tide",
+      "feed": "hpLost",
+      "per": 2000,
+      "cap": 3,
+      "grow": { "atkBp": 1300, "area": 1 }
+    },
+    "ranks": {
+      "low": { "hpBp": 7100, "atkBp": 8200, "armourBp": 9900 },
+      "mid": { "hpBp": 7700, "atkBp": 9400, "armourBp": 10000 }
+    },
+    "asks": "The whole sea sweeps the rows. Wide Reach and row wards turn the waves; who stands where?",
+    "note": "The sea washes the mud off it (Shake It Off), so Mired is no must-have here; reactions it resists from stage 2. The tide rises as the Colossus is hurt: every fifth of its HP gone widens its columns and rows, and Mired slows it."
+  },
+  {
+    "id": "cinder-wyrm",
+    "rows": 4,
+    "armour": 60,
+    "atk": 130,
+    "hp": 24000,
+    "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 6000 },
+    "moves": [
+      { "id": "anvil-fall", "every": 3, "turn": 0, "powerBp": 15000 },
+      { "id": "scorch-lane", "every": 2, "turn": 1, "powerBp": 7000 },
+      { "id": "volcanic-meteor", "every": 4, "turn": 1, "powerBp": 16000 },
+      { "id": "cinder-fall", "every": 2, "turn": 3, "powerBp": 8000, "n": 5, "perColumns": 4 },
+      {
+        "id": "ember-leap",
+        "every": 3,
+        "turn": 2,
+        "powerBp": 14000,
+        "n": 3,
+        "perColumns": 4,
+        "decayBp": 7000
+      },
+      { "id": "ash-cloud", "every": 4, "turn": 2, "powerBp": 6000 },
+      { "id": "eruption", "every": 5, "turn": 3, "powerBp": 8000, "windUp": true }
+    ],
+    "cards": ["reflective-hide", "adapts-element"],
+    "escalation": {
+      "name": "Forge Heat",
+      "feed": "reactions",
+      "per": 5,
+      "perColumns": 4,
+      "cap": 4,
+      "grow": { "atkBp": 1000, "targets": 1 }
+    },
+    "ranks": {
+      "low": { "hpBp": 3708, "atkBp": 9000, "armourBp": 9200 },
+      "mid": { "hpBp": 5833, "atkBp": 9400, "armourBp": 10000 }
+    },
+    "asks": "The forge turns the first reaction of every row back on you, and every reaction heats it. Keep Mired on it, or make each reaction count.",
+    "note": "Every cashed reaction stokes the forge: the fire grows hotter and throws more shells. Few, big reactions or Mired hold it down."
+  },
+  {
+    "id": "thornmother",
+    "rows": 3,
+    "armour": 224,
+    "atk": 92,
+    "hp": 9200,
+    "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 7000 },
+    "moves": [
+      {
+        "id": "bramble-hush",
+        "every": 2,
+        "turn": 2,
+        "powerBp": 0,
+        "n": 1,
+        "perColumns": 4,
+        "silenceTurns": 1
+      },
+      { "id": "briar-pincer", "every": 3, "turn": 1, "powerBp": 9000, "n": 1, "perColumns": 4 },
+      { "id": "bramble-cross", "every": 2, "turn": 0, "powerBp": 9000 },
+      {
+        "id": "thorn-rain",
+        "every": 4,
+        "turn": 1,
+        "powerBp": 10000,
+        "n": 5,
+        "perColumns": 4,
+        "windUp": true
+      },
+      {
+        "id": "thorn-lash",
+        "every": 3,
+        "turn": 2,
+        "powerBp": 12000,
+        "n": 3,
+        "perColumns": 4,
+        "decayBp": 6000
+      },
+      {
+        "id": "grasping-vines",
+        "every": 5,
+        "turn": 2,
+        "powerBp": 8000,
+        "n": 2,
+        "perColumns": 4
+      },
+      { "id": "spiky-spine", "every": 4, "turn": 2, "powerBp": 8000 }
+    ],
+    "cards": ["adapts"],
+    "escalation": {
+      "name": "Awakening",
+      "feed": "hpLost",
+      "per": 2500,
+      "cap": 3,
+      "grow": { "atkBp": 800, "jumps": 1, "armour": -30 },
+      "phase": {
+        "atStep": 2,
+        "name": "Second Bloom",
+        "moves": [
+          {
+            "id": "thorn-rain",
+            "every": 2,
+            "turn": 1,
+            "powerBp": 11000,
+            "n": 6,
+            "perColumns": 4,
+            "windUp": true
+          },
+          { "id": "thorn-wall", "every": 4, "turn": 2, "powerBp": 9000, "n": 2 }
+        ]
+      }
+    },
+    "ranks": {
+      "low": { "hpBp": 7533, "atkBp": 8000, "armourBp": 5300 },
+      "mid": { "hpBp": 8370, "atkBp": 9100, "armourBp": 7600 }
+    },
+    "asks": "The row ends fall quiet. Keep what you cannot spare in the middle or ward it, and bring something for her thick bark.",
+    "note": "Hush is the one silencing move: every second round, the two ends of every row. Each fifth of her HP lost wakes her further; at half she blooms (Second Bloom) and the whole arena is in play. The bark cracks at every step: her armour drops by 30 each fifth of her HP lost (224 at the start, 134 at the cap), so only a Pierce line or a big reaction gets in early."
+  },
+  {
+    "id": "storm-sovereign",
+    "rows": 2,
+    "armour": 10,
+    "atk": 71,
+    "hp": 14500,
+    "plain": {
+      "pattern": { "anchor": "payoff", "shape": "chain", "n": 2, "perColumns": 4, "decayBp": 5500 },
+      "powerBp": 12000
+    },
+    "moves": [
+      {
+        "id": "thunderclap",
+        "every": 3,
+        "turn": 0,
+        "powerBp": 18000,
+        "perColumns": 6,
+        "anchors": 1
+      },
+      {
+        "id": "lightning-bolt",
+        "every": 2,
+        "turn": 0,
+        "powerBp": 7000,
+        "n": 2,
+        "perColumns": 4
+      },
+      {
+        "id": "static-strike",
+        "every": 3,
+        "turn": 1,
+        "powerBp": 14000,
+        "perColumns": 6,
+        "anchors": 1
+      },
+      {
+        "id": "forked-lightning",
+        "every": 4,
+        "turn": 1,
+        "powerBp": 9000,
+        "n": 3,
+        "perColumns": 4
+      },
+      {
+        "id": "judgement-bolt",
+        "every": 4,
+        "turn": 0,
+        "powerBp": 70000,
+        "perColumns": 4,
+        "anchors": 1,
+        "windUp": true,
+        "oneShotBp": 12000
+      },
+      { "id": "storm-front", "every": 5, "turn": 1, "powerBp": 7000, "windUp": true },
+      {
+        "id": "thunderbolt",
+        "every": 2,
+        "turn": 1,
+        "powerBp": 16000,
+        "perColumns": 6,
+        "anchors": 1
+      }
+    ],
+    "cards": ["elusive", "adapts-element"],
+    "escalation": {
+      "name": "Gathering Storm",
+      "feed": "rounds",
+      "per": 2,
+      "cap": 3,
+      "grow": { "atkBp": 2000, "jumps": 1 }
+    },
+    "ranks": {
+      "low": { "hpBp": 9000, "atkBp": 8900, "armourBp": 6300 },
+      "mid": { "hpBp": 9500, "atkBp": 9500, "armourBp": 8800 }
+    },
+    "asks": "The Rod leaps from the strongest Payoff, round after round, and a Judgement Bolt, announced at round start, can fell it. Draw the Rod onto something that can take it, and have Night Watch beside the Payoff for the Bolt.",
+    "note": "Lightning Rod: the plain attack leaps from the strongest Payoff, twice a round. A Taunt takes the first strike. The storm gathers as the rounds pass: a race. Mired holds it back. Judgement Bolt is a one-shot: 120% of the strongest Payoff's Max HP at full strength, a heavy hit of that share below it."
+  },
+  {
+    "id": "old-bogback",
+    "rows": 3,
+    "armour": 36,
+    "atk": 112,
+    "hp": 27000,
+    "plain": {
+      "pattern": { "anchor": "front", "shape": "line3", "anchors": 1, "perColumns": 6 },
+      "powerBp": 4500
+    },
+    "moves": [
+      { "id": "sinking-mud", "every": 3, "turn": 2, "powerBp": 11000 },
+      {
+        "id": "belly-flop",
+        "every": 4,
+        "turn": 0,
+        "powerBp": 13900,
+        "perColumns": 6,
+        "anchors": 1
+      },
+      {
+        "id": "bog-lob",
+        "every": 5,
+        "turn": 1,
+        "powerBp": 15000,
+        "perColumns": 6,
+        "anchors": 1
+      },
+      { "id": "mud-slide", "every": 2, "turn": 2, "powerBp": 6000, "n": 2, "perColumns": 4 },
+      {
+        "id": "mud-spit",
+        "every": 4,
+        "turn": 1,
+        "powerBp": 12000,
+        "n": 4,
+        "perColumns": 4,
+        "windUp": true
+      },
+      {
+        "id": "sinkhole",
+        "every": 6,
+        "turn": 0,
+        "powerBp": 20900,
+        "perColumns": 6,
+        "anchors": 1
+      },
+      { "id": "peat-wave", "every": 5, "turn": 0, "powerBp": 9000, "n": 2 }
+    ],
+    "cards": ["shake-it-off", "adapts-element"],
+    "ranks": {
+      "low": { "hpBp": 8059, "atkBp": 6200, "armourBp": 5000 },
+      "mid": { "hpBp": 9192, "atkBp": 8100, "armourBp": 5300 }
+    },
+    "asks": "The fen pulls the most hurt creature down. Keep them up, and keep the Mired on it."
+  }
+]
