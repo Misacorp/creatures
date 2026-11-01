@@ -12,6 +12,10 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [Void, a raid boss, three foes and two floor bosses](#void-foes) | draft | 6 | 2026-10-31: a Void raid boss, dungeon foes and dungeon bosses. |
 | [Void gear: tint, plain pieces, a set, a shard](#void-gear) | draft | 11 | 2026-10-31: design Void gear. |
 | [Void place, the Quiet Verge (banners)](#void-place) | liked | 2 | 2026-10-31: design a Void area that can be explored (banner and place). |
+| [Valley places: posters](#valley-posters) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
+| [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
+| [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
+| [Valley places: glow, day and night](#valley-glow) | liked | 6 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
 
 <a id="void"></a>
 
@@ -117,3 +121,104 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | --- | --- | --- | --- | --- |
 | `void-place-banner` | banner |  | liked | The Quiet Verge: a dusk plain of lilac dust, a still pool that holds the stars, leaning stones, a dark moon and a stone arch with one warm star at the far end. |
 | `void-place-deep` | banner |  | liked | The far side: the ground ends, stepping stones cross the open sky, and a great ring hangs ahead with one warm star at its middle. |
+
+<a id="valley-posters"></a>
+
+## Valley places: posters
+
+![Valley places: posters](valley-posters.png)
+
+- **Status:** draft
+- **Requested:** 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations.
+- **Source:** `apps/activity/src/sprites/concepts/valley-posters.ts` (draw it with `pnpm art valley-posters`)
+- **Sheet of:** `e7a08c426a3f`
+- Direction "poster": six 64x24 banners, one per place state, each with its own time of day (dusk, night, morning, twilight, grey dawn, afternoon).
+- Places: the bonfire (and a grander later level), the School, the weekly visitor (here and away), the Market (the shard broker). Designs are on the ccr-93a1de17-yutb1a branch, docs/design/valley/systems/.
+- Needs before use: the valley places in the content, each place screen head using its banner; the visitor-away banner shows between Sunday and Thursday.
+- Each banner uses up to 16 colours (the studio cap for scenes).
+- Creatures in the banners are silhouettes or simple blobs, not species: swap in the player's own when the screen can.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `bonfire` | banner |  | draft | A warm dusk: a fire in a ring of stones in the middle of the valley, four resting creatures as silhouettes with a firelight rim, sparks rising into a plum sky. |
+| `bonfire-grand` | banner |  | draft | The grand hearth at night: a wider stone ring and a taller fire, a log bench each side with creatures on it, lantern posts with a string of lanterns, fireflies. |
+| `school` | banner |  | draft | A bright morning: the schoolhouse with a bell tower at the end of a path, bunting from the tree, and a little graduate in front wearing a pink ribbon. |
+| `visitor` | banner |  | draft | A blue-green twilight under a crescent moon: the hooded stranger with glowing eyes and a lantern staff beside his striped stall of glowing jars. |
+| `visitor-away` | banner |  | draft | The same stall on a grey-lilac morning: awning furled, lantern dark, a leaf on the counter and a sign with a moon and a calendar page, one day marked. |
+| `market` | banner |  | draft | A golden afternoon: a teal and cream stall where a round orange shopkeeper sells shards (red, yellow, cyan, violet), crates of them in front and a customer with a coin. |
+
+<a id="valley-night"></a>
+
+## Valley places: night glow
+
+![Valley places: night glow](valley-night.png)
+
+- **Status:** draft
+- **Requested:** 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations.
+- **Source:** `apps/activity/src/sprites/concepts/valley-night.ts` (draw it with `pnpm art valley-night`)
+- **Sheet of:** `56eb7da8b49a`
+- Direction "night glow": each place at dusk or night, lit by its own light (fire orange, window yellow, violet lamp, teal shard glow), warm stepped rings on the ground and cool blue-purple shadow.
+- Each sprite is a 64x64 island vignette (kind free, 16 colours) in a 3/4 top-down view, made to sit in a valley map; the island rim keeps it readable on the dark panels.
+- The creatures in these are small stand-ins (10x7), not species; the game would draw the player's own creatures there.
+- Names on the signs, the ribbon and the shard colours follow the designs on the valley branch; the content needs the places to exist (V-BON, school, visitor, V-FORGE-11) before this art is used.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `bonfire` | free |  | draft | A fire in the middle of the valley with four resting creatures around it, each lit orange on the fire side and cool on the back: the warm heart, room for a rotating few. |
+| `bonfire-grand` | free |  | draft | The communal hearth at a later level: a taller fire in a paved stone ring, log benches with three creatures, and two lantern posts that throw their own small light. |
+| `school` | free |  | draft | A small schoolhouse with lit windows and a bell cupola; a creature outside wears the graduation ribbon, and a rosette hangs on the sign. |
+| `visitor` | free |  | draft | The weekly visitor: a hooded stranger with violet lamp-light on one edge and two teal-white eyes, beside a small stall whose wares glow. |
+| `visitor-away` | free |  | draft | The same stall shuttered: a "back Thursday" board with a moon and a calendar mark, an unlit lamp with one last spark, a pale moon above. |
+| `market` | free |  | draft | A stall where a creature trades shards: four element shards glow on the counter, a big shard is the sign, and a customer waits with one. |
+
+<a id="valley-landmarks"></a>
+
+## Valley places: map landmarks
+
+![Valley places: map landmarks](valley-landmarks.png)
+
+- **Status:** draft
+- **Requested:** 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations.
+- **Source:** `apps/activity/src/sprites/concepts/valley-landmarks.ts` (draw it with `pnpm art valley-landmarks`)
+- **Sheet of:** `7de1609620d1`
+- One of several directions for the four valley places; this one draws each as a map marker. Compare it with the other sets before picking.
+- To use: the valley screen composes places from sprites; these are free sprites up to 64 px and would be shown at their drawn size on grass.
+- The visitor and visitor-away drawings share a stall; the away sign is a calendar page and a moon, not words.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `bonfire` | free |  | draft | A crackling fire in a stone ring on a patch of grass, with four straw beds around it: 'room for four resting creatures'. |
+| `bonfire-grand` | free |  | draft | The later level: a wider flagstone ring, a taller fire, log benches on three sides and two lantern posts. |
+| `school` | free |  | draft | A little blue-roofed schoolhouse with a bell cupola and a graduation rosette on the gable; a slate stands by the door. |
+| `visitor` | free |  | draft | A hooded stranger with glowing eyes behind a purple-awninged stall, a crescent moon on the awning and a lit lantern. |
+| `visitor-away` | free |  | draft | The same stall shuttered, lantern out, a sign with a calendar page and a moon: 'back Thursday'. |
+| `market` | free |  | draft | A red and cream striped tent stall where a tiny creature in a cap trades shards from two crates; sign shows shard and coin. |
+
+<a id="valley-glow"></a>
+
+## Valley places: glow, day and night
+
+![Valley places: glow, day and night](valley-glow.png)
+
+- **Status:** liked
+- **Requested:** 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets.
+- **Source:** `apps/activity/src/sprites/concepts/valley-glow.ts` (draw it with `pnpm art valley-glow`)
+- **Sheet of:** `25864c63cb49`
+- Misa picked this direction for the valley places (2026-10-31); posters stay for each place's own screen.
+- Direction "valley glow": the night-glow look (the light sources are the stars, lit edges, cool shadow) redone as standalone places on transparent ground, like the map landmarks, so they stand on the valley tiles. No sky, no vignette, no stars or moon.
+- One drawing, two palettes: the main palette is night, `alts.day` recolours the same pixels. Keys `1 2 3` are the light spill on the ground (rings follow each light: a circle under a lamp or fire, a trapezoid in front of a window; only the outermost ring is a regular checker) in night colours; in the day palette they map to the grass greens, so the spill disappears. `x` is the cast shadow (cool blue at night, warm green by day).
+- The backdrop is the world map grass tile (`WORLD_MAP_SPRITE_DATA.grass`): the main tile is its night recolour, `alts.day` is the normal grass. The sheet shows night on night grass and day on day grass.
+- No creatures are drawn: logs, benches and the counters show where they would rest and stand; the game draws the real ones there.
+- Each light has its own colour: fire orange (bonfires), window yellow (school), violet lamp (visitor), a weak ember (visitor away), teal shard glow (market).
+- Day ground given its own character (Misa, 2026-10-31).
+- Day ground pushed further and the market crystal seated (Misa, 2026-10-31).
+- The content needs the places to exist (V-BON, school, visitor, V-FORGE-11) before this art is used; the signs carry no text, only marks (a moon and a calendar on the visitor away board).
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `bonfire` | free |  | liked | A fire in a ring of stones with three log seats around it; the logs and stones are lit on the fire side, and an orange glow lies on the grass around it. By day the same fire with no glow. |
+| `bonfire-grand` | free |  | liked | The communal hearth at a later level: a tall fire with two side flames in a paved double ring, log benches, and two lantern posts that throw their own small light. The lamp glass has its own keys (G, H), so by day it is unlit glass while the fire stays lit. |
+| `school` | free |  | liked | A small schoolhouse with a bell cupola, a sign by the path and two lit windows that spill yellow light on the grass in front. By day the windows are plain glass. |
+| `visitor` | free |  | liked | The weekly visitor: a hooded stranger with teal eyes beside a violet lamp, and a small stall whose wares glow teal. The violet light lies on the grass; by day the lamp is unlit and the stall is striped red and cream. |
+| `visitor-away` | free |  | liked | The stall shuttered: a closed front, a folded awning, a board with a moon and a calendar mark, an unlit lamp with one last ember and a faint warm glow on the grass. |
+| `market` | free |  | liked | A stall where shards are traded: four element shards glow on the counter, a big shard on a post is the sign, with a crate and a sack beside it. The teal glow lies on the grass. |

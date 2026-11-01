@@ -12,6 +12,10 @@ import { VOID_CONCEPTS } from './void';
 import { VOID_FOES_CONCEPTS } from './void-foes';
 import { VOID_GEAR_CONCEPTS } from './void-gear';
 import { VOID_PLACE_CONCEPTS } from './void-place';
+import { VALLEY_POSTERS_CONCEPTS } from './valley-posters';
+import { VALLEY_NIGHT_CONCEPTS } from './valley-night';
+import { VALLEY_LANDMARK_CONCEPTS } from './valley-landmarks';
+import { VALLEY_GLOW_CONCEPTS } from './valley-glow';
 
 export interface Concept {
   kind: ArtKind;
@@ -46,6 +50,11 @@ export interface ConceptSet {
   /** What the content needs to use this art, Misa's feedback, open ideas. One line each. */
   notes?: readonly string[];
   sprites: Readonly<Record<string, Concept>>;
+  /**
+   * The ground the set's art stands on (a valley or map tile, repeated behind each sprite in its sheet and
+   * cards), and its colours for each alternative palette by name (a night tile for the `night` alt).
+   */
+  backdrop?: { tile: SpriteDef; alts?: Readonly<Record<string, Readonly<Record<string, string>>>> };
 }
 
 export const CONCEPT_SETS: readonly ConceptSet[] = [
@@ -53,4 +62,8 @@ export const CONCEPT_SETS: readonly ConceptSet[] = [
   VOID_FOES_CONCEPTS,
   VOID_GEAR_CONCEPTS,
   VOID_PLACE_CONCEPTS,
+  VALLEY_POSTERS_CONCEPTS,
+  VALLEY_NIGHT_CONCEPTS,
+  VALLEY_LANDMARK_CONCEPTS,
+  VALLEY_GLOW_CONCEPTS,
 ];
