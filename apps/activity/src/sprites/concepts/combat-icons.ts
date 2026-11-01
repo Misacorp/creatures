@@ -54,6 +54,7 @@ export const COMBAT_ICONS_CONCEPTS: ConceptSet = {
     'The audit is docs/design/combat/icons.md: which icons are new, which shipped glyphs are used as they are, and which words stay text.',
     'Misa\'s review, 2026-11-01. Liked as drawn: Quake, Cross, Checker, One-shot ("really like"), Barrage ("three marks is enough"), Sweep, Crit. Redrawn in round 2 (each replaces the shipped glyph for combat v2, which v1 keeps using): Slam, Strike, Lance, Pincer, Leap, Plain attack, Boost, and the three Store meters.',
     'Round 2 feedback: Slam "the target, then the adjacent creatures: like the cross, but the centre square bigger, one square left and right". Strike "the right shape, but inside a circle: remove the circle". Lance "should point downwards: the boss attacks from top to bottom". Pincer "a very subtle crab-pincer; the white dot is unnecessary" (both options shown). Leap "like Barrage, but squares, with a faint line between them, a zigzag". Plain attack "should look different from a move: something like a sword". Boost "a star does not look good". Store meters "a box, chest, safe, vault or basket that contains something: one container for all, each holding its own thing; the amount as text beside it (x3), never in the icon".',
+    'Round 2 answers (Misa, 2026-11-01): liked as drawn: Slam, Strike ("different from Cross, good enough"), Lance, Pincer (claws: "looking pretty good"; the plain alternative is removed), the plain attack sword, the three Stores ("nice"). Leap: "it looks like a fork right now; move the bottom square right a pixel or two, so it reads as a chain": done in round 3, awaiting his look. Still draft (not commented on): Boost, Escalating, armour, cracked armour, silence ward, Determination.',
     'Needs before use: Misa approves the look; each icon gets a glyph id in glyphs.ts, a glossary entry and (shapes) a place in moveLabel; the dungeon modifier "extra crits" then switches from the reticle to the Crit icon.',
     'Cut order if Misa wants fewer icons: the three Store meter heads (name the resource in text), then the silence ward, then the cracked armour (a crack drawn over the armour icon), then One-shot (it shares the Strike crosshairs).',
   ],
@@ -159,10 +160,11 @@ export const COMBAT_ICONS_CONCEPTS: ConceptSet = {
       },
     },
     'shape-slam': {
+      status: 'liked',
       kind: 'glyph',
       group: SHAPES,
       role: 'Slam',
-      note: 'Slam (redrawn, round 2): the creature hit, then the ones beside it. A row: a big square for the target and a smaller one each side, darker for the share the neighbours take. At 8 pixels the sides are one pixel wide and two tall, because 2 + 1 + 4 + 1 + 2 would need ten.',
+      note: 'Slam (redrawn, round 2): the creature hit, then the ones beside it. A row: a big square for the target and a smaller one each side, darker for the share the neighbours take. At 8 pixels the sides are one pixel wide and two tall, because 2 + 1 + 4 + 1 + 2 would need ten. Misa, 2026-11-01: liked.',
       sprite: {
         palette: { r: BAD, d: BAD_DARK },
         rows: [
@@ -178,10 +180,11 @@ export const COMBAT_ICONS_CONCEPTS: ConceptSet = {
       },
     },
     'shape-strike': {
+      status: 'liked',
       kind: 'glyph',
       group: SHAPES,
       role: 'Strike',
-      note: 'Strike (redrawn, round 2): one creature. The crosshair that was inside the old circle, without the circle: four short bars round an empty centre.',
+      note: 'Strike (redrawn, round 2): one creature. The crosshair that was inside the old circle, without the circle: four short bars round an empty centre. Misa, 2026-11-01: "different from Cross, good enough".',
       sprite: {
         palette: { r: BAD },
         rows: [
@@ -197,10 +200,11 @@ export const COMBAT_ICONS_CONCEPTS: ConceptSet = {
       },
     },
     'shape-lance': {
+      status: 'liked',
       kind: 'glyph',
       group: SHAPES,
       role: 'Lance',
-      note: 'Lance (redrawn, round 2): a column, front to back. The same arrow driven through three rows, flipped so it points down: the boss attacks from the top.',
+      note: 'Lance (redrawn, round 2): a column, front to back. The same arrow driven through three rows, flipped so it points down: the boss attacks from the top. Misa, 2026-11-01: liked.',
       sprite: {
         palette: { r: BAD, w: BONE },
         rows: [
@@ -216,32 +220,22 @@ export const COMBAT_ICONS_CONCEPTS: ConceptSet = {
       },
     },
     'shape-pincer': {
+      status: 'liked',
       kind: 'glyph',
       group: SHAPES,
       role: 'Pincer',
-      note: 'Pincer (redrawn, round 2), claws: the two ends of the row. Each side a small claw: two prongs round a notch, tips facing; the white dot is gone. Compare with the next tile, which only drops the dot.',
+      note: 'Pincer (redrawn, round 2): the two ends of the row. Each side a small claw: two prongs round a notch, tips facing; no centre dot. Misa, 2026-11-01: "looking pretty good" (the plain two-arrow alternative was dropped).',
       sprite: {
         mirror: true,
         palette: { r: BAD },
         rows: ['r...', 'rr..', 'rrr.', 'rr..', 'rr..', 'rrr.', 'rr..', 'r...'],
       },
     },
-    'shape-pincer-plain': {
-      kind: 'glyph',
-      group: SHAPES,
-      role: 'Pincer (no claws)',
-      note: 'Pincer, the other option: the shipped two arrows closing on the ends, with the centre dot removed (and the arrowheads a little fuller, so it is not a copy of the shipped glyph).',
-      sprite: {
-        mirror: true,
-        palette: { r: BAD },
-        rows: ['r...', 'rr..', 'rrr.', 'rrr.', 'rrr.', 'rrr.', 'rr..', 'r...'],
-      },
-    },
     'shape-leap': {
       kind: 'glyph',
       group: SHAPES,
       role: 'Leap',
-      note: 'Leap (was Leaping Strike; redrawn, round 2): the strongest, then the next, softer. Like Barrage but three squares, joined by a faint zigzag line (a bolt, without the bolt that Spark already is).',
+      note: 'Leap (was Leaping Strike; redrawn, round 3): the strongest, then the next, softer. Like Barrage but three squares, joined by a faint zigzag line (a bolt, without the bolt that Spark already is). Misa, 2026-11-01: "it looks like a fork right now; move the bottom square right a pixel or two, so it reads as a chain". The bottom square moved 2 pixels right (1 pixel still read as a ">" arrow); the line still joins it.',
       sprite: {
         palette: { r: BAD, f: BAD_FAINT },
         rows: [
@@ -251,8 +245,8 @@ export const COMBAT_ICONS_CONCEPTS: ConceptSet = {
           '......rr',
           '......rr',
           '....ff..',
-          'rrff....',
-          'rr......',
+          '..rrf...',
+          '..rr....',
         ],
       },
     },
@@ -372,10 +366,11 @@ export const COMBAT_ICONS_CONCEPTS: ConceptSet = {
       },
     },
     attack: {
+      status: 'liked',
       kind: 'glyph',
       group: BOARD,
       role: 'Plain attack',
-      note: "A creature's plain attack (round 2): a sword, so the plain attack and the Strike shape (a boss move) no longer share one picture.",
+      note: "A creature's plain attack (round 2): a sword, so the plain attack and the Strike shape (a boss move) no longer share one picture. Misa, 2026-11-01: liked.",
       sprite: {
         palette: { w: BONE, h: STEEL_LIGHT, g: GOLD, d: STEEL_DARK },
         rows: [
@@ -410,30 +405,33 @@ export const COMBAT_ICONS_CONCEPTS: ConceptSet = {
       },
     },
     'store-heat': {
+      status: 'liked',
       kind: 'glyph',
       group: STORES,
       role: 'Heat',
-      note: 'The Heat store (Boiling Point): the shared box with heat rising from it in waves. The count is text beside it ("x3").',
+      note: 'The Heat store (Boiling Point): the shared box with heat rising from it in waves. The count is text beside it ("x3"). Misa, 2026-11-01: "nice".',
       sprite: {
         palette: { ...BOX_PALETTE, o: '#ffa83a' },
         rows: stored(['...o.o..', '..o...o.', '...o.o..', '..o...o.', '...o.o..']),
       },
     },
     'store-calm': {
+      status: 'liked',
       kind: 'glyph',
       group: STORES,
       role: 'Calm',
-      note: 'The Calm store (Eye of the Storm): the shared box with a lotus in it. The count is text beside it ("x2").',
+      note: 'The Calm store (Eye of the Storm): the shared box with a lotus in it. The count is text beside it ("x2"). Misa, 2026-11-01: "nice".',
       sprite: {
         palette: { ...BOX_PALETTE, c: '#7fc4f5' },
         rows: stored(['........', '...cc...', '.c.cc.c.', '.cccccc.', '..cccc..']),
       },
     },
     'store-static': {
+      status: 'liked',
       kind: 'glyph',
       group: STORES,
       role: 'Static',
-      note: 'The Static store (a dodge fills it): the shared box with a small crackle in it. The count is text beside it ("x1").',
+      note: 'The Static store (a dodge fills it): the shared box with a small crackle in it. The count is text beside it ("x1"). Misa, 2026-11-01: "nice".',
       sprite: {
         palette: { ...BOX_PALETTE, y: '#f2d43d' },
         rows: stored(['....yy..', '...yy...', '..yyyy..', '....yy..', '...yy...']),
