@@ -108,7 +108,7 @@
     "step": "R2"
   },
   {
-    "name": "Scatter",
+    "name": "Barrage",
     "means": "A boss attack or move that hits a number of different creatures, drawn at random from the whole arena.",
     "not": "A hit on every creature of a row",
     "step": "R2"

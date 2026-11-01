@@ -72,7 +72,7 @@ const TARGET_WORD: Readonly<Record<MoveDef['anchor'], string>> = {
 
 /**
  * The plain label of a move's behaviour: the target word and the shape word (Front Slam, Nemesis Lance, Wild Sweep, Payoff Strike,
- * Vulture Strike), or the shape word alone for a move that picks no target (Barrage, Quake, Hush, Pincer, Leaping Strike, Cross,
+ * Vulture Strike), or the shape word alone for a move that picks no target (Barrage, Quake, Hush, Pincer, Leap, Cross,
  * Checker, One-shot). A column and several columns are one Lance, and so are one row and several rows (one Sweep): how many is a number
  * that belongs to the boss. Two moves with the same label are one behaviour.
  */
@@ -102,7 +102,7 @@ export function moveLabel(
     case 'rowEnds':
       return move.silences ? 'Hush' : 'Pincer';
     case 'chain':
-      return 'Leaping Strike';
+      return 'Leap';
     case 'cross':
       return 'Cross';
     case 'checker':

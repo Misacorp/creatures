@@ -69,7 +69,7 @@ const AREA_SHAPES: readonly Pattern['shape'][] = [
   'cross',
   'checker',
 ];
-/** Many small hits on the team: a plain attack that repeats, or a plain Scatter of several (Swarm, Puddle Imp). */
+/** Many small hits on the team: a plain attack that repeats, or a plain Barrage of several (Swarm, Puddle Imp). */
 const manySmallHits = (a: Attack) =>
   a.plain && (a.hits > 1 || (a.pattern.shape === 'scatter' && (a.pattern.n ?? 1) > 1));
 const dealsDamage = (a: Attack) => a.silenceTurns === 0 && a.powerBp > 0;
@@ -183,7 +183,7 @@ const KEYWORD_CALLS: Readonly<Record<string, Mechanic['calls']>> = {
     (armoured(b) || attacksOf(b).some(manySmallHits)) && 'armour turns small hits into Blocked',
   Silenced: (b) => silences(b) && 'it silences creatures',
   'Wind-up': (b) => charged(b) && 'moves announced at round start',
-  Scatter: (b) => shapes(b, 'scatter') && 'shells on random creatures',
+  Barrage: (b) => shapes(b, 'scatter') && 'shells on random creatures',
   Leap: (b) => shapes(b, 'chain') && 'hits that jump from creature to creature',
   Cross: (b) => shapes(b, 'cross') && 'hits on a creature and the slots touching it',
   Checker: (b) => shapes(b, 'checker') && 'hits on every other slot',

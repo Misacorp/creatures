@@ -44,9 +44,9 @@ The words:
 | Strike     | one creature                                  | Vulture     | the weakest creature (lowest share of its HP)      |
 | Hush       | silences the two ends of the row              |             |                                                    |
 | Pincer     | hits the two ends of the row                  |             |                                                    |
-| Leaping    | the strongest, then leaps to creatures nearby |             |                                                    |
+| Leap       | the strongest, then leaps to creatures nearby |             |                                                    |
 
-A move with no target (Barrage, Quake, Hush, Pincer) needs no target word. In a one-row arena (the dungeon) the row is both the front and the back row; front-row effects always apply there.
+A move with no target (Barrage, Quake, Hush, Pincer, Leap) needs no target word. In a one-row arena (the dungeon) the row is both the front and the back row; front-row effects always apply there.
 
 **The library.** Every move lives once in the move library (`packages/game/src/combat-v2/data/moves.json`). An entry has an `id` (the name in kebab case, stable from the day it exists: `deepwater-spear`), a `name`, an `element` (`tide`, `ember`, `grove`, `spark` or `mire`; absent for a card's move) and the behaviour, which never changes: `shape` (which slots), `anchor` (whom it picks) and `silences` (a boolean; `oneShot` too for Judgement Bolt, the one move that deals a share of the victim's Max HP). **A behaviour has one name per element**, shared by every boss and foe of that element that uses it (the Bramble Hound and the Bramble Matron use Thornmother's Bramble Hush). A rule card has no element, so the move a card adds takes the plain label as its name (Hush, Payoff Slam, Wild Sweep, Crush).
 

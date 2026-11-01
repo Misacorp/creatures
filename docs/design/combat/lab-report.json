@@ -10178,7 +10178,7 @@
    "measured": "Sustain Knacks, Cover, Row Ward Knacks, Area hit, Support shape Knacks"
   },
   "puddle-imp": {
-   "written": "A Scatter of small splashes on four different creatures: they are area hits, so a Guard's cover turns them down (dodge only half as often); armour only wears them down.",
+   "written": "A Barrage of small splashes on four different creatures: they are area hits, so a Guard's cover turns them down (dodge only half as often); armour only wears them down.",
    "measured": ""
   },
   "drift-wisp": {
@@ -10392,7 +10392,7 @@
   "keyword:Beside",
   "keyword:Row end",
   "keyword:Front row",
-  "keyword:Scatter",
+  "keyword:Barrage",
   "keyword:Leap",
   "keyword:Cross",
   "keyword:Checker",
@@ -10886,7 +10886,7 @@
     "unit": "pts"
    }
   ],
-  "keyword:Scatter": [],
+  "keyword:Barrage": [],
   "keyword:Leap": [],
   "keyword:Cross": [],
   "keyword:Checker": [],

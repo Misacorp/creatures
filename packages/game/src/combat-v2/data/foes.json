@@ -8,7 +8,7 @@
       "plain": { "pattern": { "anchor": "random", "shape": "scatter", "n": 4 }, "powerBp": 4500 },
       "moves": [],
       "cards": [],
-      "asks": "A Scatter of small splashes on four different creatures: they are area hits, so a Guard's cover turns them down (dodge only half as often); armour only wears them down."
+      "asks": "A Barrage of small splashes on four different creatures: they are area hits, so a Guard's cover turns them down (dodge only half as often); armour only wears them down."
     },
     {
       "id": "drift-wisp",
