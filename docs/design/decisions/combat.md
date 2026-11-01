@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-01: [Misa] Combat v2 icons: shapes, the sword, the Store box, claw Pincer, Leap as a chain
+
+ID: `2026-11-01-combat-v2-icons-shapes-the-sword` · Status: current
+
+**Decision.** Misa reviewed the combat v2 icon concepts in two rounds (2026-11-01; the set `combat-icons`, the audit `docs/design/combat/icons.md`). Approved: Quake, Cross, Checker and One-shot; Slam as a big square with a short bar each side (the target and its neighbours); Strike as a crosshair without its ring (distinct from Cross); Lance pointing down (the boss attacks from the top); Pincer as two claws (no centre dot); Barrage and Sweep as shipped; Crit; the plain attack as a sword (it differs from a Strike, since plain attacks and moves can have different effects); the three Store heads as one shared box holding Heat, Calm or Static. Leap is three squares joined by a faint zigzag, with the bottom square moved right so it reads as a chain, not a fork. **A count is text beside an icon ("x3"), never drawn into it.** The six target words (Front, Rear, Payoff, Nemesis, Wild, Vulture) have no icon: the board lights the slots a move hits. Combat v2 gets its own versions; the shipped v1 glyphs stay until v1 goes. The icons stay concepts until the phase 4 board uses them.
+
+**Reasoning.** Misa's calls on look and feel. Fewer icons to learn, each shape drawn the way a move hits the board.
+
 ## 2026-11-01: [Misa] Combat v2 names: a card never shares a move's name (Full Sweep), Barrage and Leap are both keyword and shape word, the Puddle Imp asks for a Guard
 
 ID: `2026-11-01-combat-v2-names-a-card-never` · Status: current
