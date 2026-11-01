@@ -7,73 +7,29 @@
     "hp": 19100,
     "plain": { "pattern": { "anchor": "front", "shape": "row" }, "powerBp": 2500 },
     "moves": [
-      {
-        "id": "undertow",
-        "name": "Front Sweep",
-        "every": 3,
-        "turn": 0,
-        "pattern": { "anchor": "front", "shape": "row" },
-        "powerBp": 9000
-      },
-      {
-        "id": "spray",
-        "name": "Barrage",
-        "every": 2,
-        "turn": 0,
-        "pattern": { "anchor": "random", "shape": "scatter", "n": 4, "perColumns": 4 },
-        "powerBp": 5000
-      },
-      {
-        "id": "tidal-pull",
-        "name": "Nemesis Lance",
-        "every": 2,
-        "turn": 1,
-        "pattern": { "anchor": "strongest", "shape": "columns", "n": 2, "perColumns": 4 },
-        "powerBp": 6000
-      },
+      { "id": "undertow", "every": 3, "turn": 0, "powerBp": 9000 },
+      { "id": "spray", "every": 2, "turn": 0, "powerBp": 5000, "n": 4, "perColumns": 4 },
+      { "id": "tidal-pull", "every": 2, "turn": 1, "powerBp": 6000, "n": 2, "perColumns": 4 },
       {
         "id": "riptide",
-        "name": "Wild Lance",
         "every": 4,
         "turn": 1,
-        "pattern": { "anchor": "random", "shape": "columns", "n": 1, "perColumns": 4 },
         "powerBp": 10800,
-        "charged": true
+        "n": 1,
+        "perColumns": 4,
+        "windUp": true
       },
-      {
-        "id": "spring-tide",
-        "name": "Payoff Sweep",
-        "every": 6,
-        "turn": 1,
-        "pattern": { "anchor": "payoff", "shape": "row" },
-        "powerBp": 12300,
-        "charged": true
-      },
-      {
-        "id": "great-wave",
-        "name": "Wild Sweep",
-        "every": 3,
-        "turn": 2,
-        "pattern": { "anchor": "random", "shape": "randomRow" },
-        "powerBp": 13900,
-        "charged": true
-      },
+      { "id": "rogue-wave", "every": 6, "turn": 1, "powerBp": 12300, "windUp": true },
+      { "id": "great-wave", "every": 3, "turn": 2, "powerBp": 13900, "windUp": true },
       {
         "id": "deepwater-spear",
-        "name": "Nemesis Lance",
         "every": 5,
         "turn": 2,
-        "pattern": { "anchor": "strongest", "shape": "columns", "n": 1, "perColumns": 4 },
-        "powerBp": 15000
+        "powerBp": 15000,
+        "n": 1,
+        "perColumns": 4
       },
-      {
-        "id": "breaker",
-        "name": "Rear Sweep",
-        "every": 7,
-        "turn": 0,
-        "pattern": { "anchor": "back", "shape": "rows", "n": 2 },
-        "powerBp": 8000
-      }
+      { "id": "backflow", "every": 7, "turn": 0, "powerBp": 8000, "n": 2 }
     ],
     "cards": ["adapts", "shake-it-off"],
     "escalation": {
@@ -98,69 +54,21 @@
     "hp": 24000,
     "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 6000 },
     "moves": [
-      {
-        "id": "coil-crush",
-        "name": "Front Slam",
-        "every": 3,
-        "turn": 0,
-        "pattern": { "anchor": "front", "shape": "line3" },
-        "powerBp": 15000
-      },
-      {
-        "id": "scorch-lane",
-        "name": "Wild Lance",
-        "every": 2,
-        "turn": 1,
-        "pattern": { "anchor": "random", "shape": "column" },
-        "powerBp": 7000
-      },
-      {
-        "id": "magma-spit",
-        "name": "Payoff Slam",
-        "every": 4,
-        "turn": 1,
-        "pattern": { "anchor": "payoff", "shape": "line3" },
-        "powerBp": 16000
-      },
-      {
-        "id": "cinder-fall",
-        "name": "Barrage",
-        "every": 2,
-        "turn": 3,
-        "pattern": { "anchor": "random", "shape": "scatter", "n": 5, "perColumns": 4 },
-        "powerBp": 8000
-      },
+      { "id": "anvil-fall", "every": 3, "turn": 0, "powerBp": 15000 },
+      { "id": "scorch-lane", "every": 2, "turn": 1, "powerBp": 7000 },
+      { "id": "volcanic-meteor", "every": 4, "turn": 1, "powerBp": 16000 },
+      { "id": "cinder-fall", "every": 2, "turn": 3, "powerBp": 8000, "n": 5, "perColumns": 4 },
       {
         "id": "ember-leap",
-        "name": "Leaping Strike",
         "every": 3,
         "turn": 2,
-        "pattern": {
-          "anchor": "strongest",
-          "shape": "chain",
-          "n": 3,
-          "perColumns": 4,
-          "decayBp": 7000
-        },
-        "powerBp": 14000
+        "powerBp": 14000,
+        "n": 3,
+        "perColumns": 4,
+        "decayBp": 7000
       },
-      {
-        "id": "ash-cloud",
-        "name": "Ash Cloud",
-        "every": 4,
-        "turn": 2,
-        "pattern": { "anchor": "random", "shape": "checker" },
-        "powerBp": 6000
-      },
-      {
-        "id": "eruption",
-        "name": "Quake",
-        "every": 5,
-        "turn": 3,
-        "pattern": { "anchor": "front", "shape": "all" },
-        "powerBp": 8000,
-        "charged": true
-      }
+      { "id": "ash-cloud", "every": 4, "turn": 2, "powerBp": 6000 },
+      { "id": "eruption", "every": 5, "turn": 3, "powerBp": 8000, "windUp": true }
     ],
     "cards": ["reflective-hide", "adapts-element"],
     "escalation": {
@@ -188,68 +96,42 @@
     "moves": [
       {
         "id": "bramble-hush",
-        "name": "Hush",
         "every": 2,
         "turn": 2,
-        "pattern": { "anchor": "front", "shape": "rowEnds", "n": 1, "perColumns": 4 },
         "powerBp": 0,
+        "n": 1,
+        "perColumns": 4,
         "silenceTurns": 1
       },
+      { "id": "briar-pincer", "every": 3, "turn": 1, "powerBp": 9000, "n": 1, "perColumns": 4 },
+      { "id": "bramble-cross", "every": 2, "turn": 0, "powerBp": 9000 },
       {
-        "id": "briar-pincer",
-        "name": "Pincer",
-        "every": 3,
-        "turn": 1,
-        "pattern": { "anchor": "front", "shape": "rowEnds", "n": 1, "perColumns": 4 },
-        "powerBp": 9000
-      },
-      {
-        "id": "bramble-cross",
-        "name": "Bramble Cross",
-        "every": 2,
-        "turn": 0,
-        "pattern": { "anchor": "random", "shape": "cross" },
-        "powerBp": 9000
-      },
-      {
-        "id": "seed-burst",
-        "name": "Barrage",
+        "id": "thorn-rain",
         "every": 4,
         "turn": 1,
-        "pattern": { "anchor": "random", "shape": "scatter", "n": 5, "perColumns": 4 },
         "powerBp": 10000,
-        "charged": true
+        "n": 5,
+        "perColumns": 4,
+        "windUp": true
       },
       {
         "id": "thorn-lash",
-        "name": "Leaping Strike",
         "every": 3,
         "turn": 2,
-        "pattern": {
-          "anchor": "strongest",
-          "shape": "chain",
-          "n": 3,
-          "perColumns": 4,
-          "decayBp": 6000
-        },
-        "powerBp": 12000
+        "powerBp": 12000,
+        "n": 3,
+        "perColumns": 4,
+        "decayBp": 6000
       },
       {
-        "id": "root-snare",
-        "name": "Wild Lance",
+        "id": "grasping-vines",
         "every": 5,
         "turn": 2,
-        "pattern": { "anchor": "random", "shape": "columns", "n": 2, "perColumns": 4 },
-        "powerBp": 8000
+        "powerBp": 8000,
+        "n": 2,
+        "perColumns": 4
       },
-      {
-        "id": "back-thorns",
-        "name": "Rear Sweep",
-        "every": 4,
-        "turn": 2,
-        "pattern": { "anchor": "back", "shape": "row" },
-        "powerBp": 8000
-      }
+      { "id": "spiky-spine", "every": 4, "turn": 2, "powerBp": 8000 }
     ],
     "cards": ["adapts"],
     "escalation": {
@@ -264,20 +146,13 @@
         "moves": [
           {
             "id": "bloom-storm",
-            "name": "Barrage",
             "every": 2,
             "turn": 0,
-            "pattern": { "anchor": "random", "shape": "scatter", "n": 6, "perColumns": 4 },
-            "powerBp": 7000
+            "powerBp": 7000,
+            "n": 6,
+            "perColumns": 4
           },
-          {
-            "id": "thorn-wall",
-            "name": "Front Sweep",
-            "every": 4,
-            "turn": 2,
-            "pattern": { "anchor": "front", "shape": "rows", "n": 2 },
-            "powerBp": 9000
-          }
+          { "id": "thorn-wall", "every": 4, "turn": 2, "powerBp": 9000, "n": 2 }
         ]
       }
     },
@@ -301,62 +176,54 @@
     "moves": [
       {
         "id": "thunderclap",
-        "name": "Nemesis Slam",
         "every": 3,
         "turn": 0,
-        "pattern": { "anchor": "strongest", "shape": "line3", "anchors": 1, "perColumns": 6 },
-        "powerBp": 18000
+        "powerBp": 18000,
+        "perColumns": 6,
+        "anchors": 1
+      },
+      {
+        "id": "lightning-bolt",
+        "every": 2,
+        "turn": 0,
+        "powerBp": 7000,
+        "n": 2,
+        "perColumns": 4
+      },
+      {
+        "id": "static-strike",
+        "every": 3,
+        "turn": 1,
+        "powerBp": 14000,
+        "perColumns": 6,
+        "anchors": 1
       },
       {
         "id": "forked-lightning",
-        "name": "Wild Lance",
-        "every": 2,
-        "turn": 0,
-        "pattern": { "anchor": "random", "shape": "columns", "n": 2, "perColumns": 4 },
-        "powerBp": 7000
-      },
-      {
-        "id": "static-field",
-        "name": "Payoff Slam",
-        "every": 3,
-        "turn": 1,
-        "pattern": { "anchor": "payoff", "shape": "line3", "anchors": 1, "perColumns": 6 },
-        "powerBp": 14000
-      },
-      {
-        "id": "ball-lightning",
-        "name": "Barrage",
         "every": 4,
         "turn": 1,
-        "pattern": { "anchor": "random", "shape": "scatter", "n": 3, "perColumns": 4 },
-        "powerBp": 9000
+        "powerBp": 9000,
+        "n": 3,
+        "perColumns": 4
       },
       {
         "id": "judgement-bolt",
-        "name": "Judgement Bolt",
         "every": 4,
         "turn": 0,
-        "pattern": { "anchor": "payoff", "shape": "single", "anchors": 1, "perColumns": 4 },
         "powerBp": 70000,
-        "charged": true,
+        "perColumns": 4,
+        "anchors": 1,
+        "windUp": true,
         "oneShotBp": 12000
       },
+      { "id": "storm-front", "every": 5, "turn": 1, "powerBp": 7000, "windUp": true },
       {
-        "id": "storm-front",
-        "name": "Quake",
-        "every": 5,
-        "turn": 1,
-        "pattern": { "anchor": "front", "shape": "all" },
-        "powerBp": 7000,
-        "charged": true
-      },
-      {
-        "id": "spark-dive",
-        "name": "Payoff Strike",
+        "id": "thunderbolt",
         "every": 2,
         "turn": 1,
-        "pattern": { "anchor": "payoff", "shape": "single", "anchors": 1, "perColumns": 6 },
-        "powerBp": 16000
+        "powerBp": 16000,
+        "perColumns": 6,
+        "anchors": 1
       }
     ],
     "cards": ["elusive", "adapts-element"],
@@ -385,63 +252,42 @@
       "powerBp": 4500
     },
     "moves": [
-      {
-        "id": "sinking-mud",
-        "name": "Wild Sweep",
-        "every": 3,
-        "turn": 2,
-        "pattern": { "anchor": "random", "shape": "randomRow" },
-        "powerBp": 11000
-      },
+      { "id": "sinking-mud", "every": 3, "turn": 2, "powerBp": 11000 },
       {
         "id": "belly-flop",
-        "name": "Front Slam",
         "every": 4,
         "turn": 0,
-        "pattern": { "anchor": "front", "shape": "line3", "anchors": 1, "perColumns": 6 },
-        "powerBp": 13900
+        "powerBp": 13900,
+        "perColumns": 6,
+        "anchors": 1
       },
       {
         "id": "bog-lob",
-        "name": "Payoff Slam",
         "every": 5,
         "turn": 1,
-        "pattern": { "anchor": "payoff", "shape": "line3", "anchors": 1, "perColumns": 6 },
-        "powerBp": 15000
+        "powerBp": 15000,
+        "perColumns": 6,
+        "anchors": 1
       },
+      { "id": "mud-slide", "every": 2, "turn": 2, "powerBp": 6000, "n": 2, "perColumns": 4 },
       {
-        "id": "mud-slide",
-        "name": "Wild Lance",
-        "every": 2,
-        "turn": 2,
-        "pattern": { "anchor": "random", "shape": "columns", "n": 2, "perColumns": 4 },
-        "powerBp": 6000
-      },
-      {
-        "id": "rising-bubbles",
-        "name": "Barrage",
+        "id": "mud-spit",
         "every": 4,
         "turn": 1,
-        "pattern": { "anchor": "random", "shape": "scatter", "n": 4, "perColumns": 4 },
         "powerBp": 12000,
-        "charged": true
+        "n": 4,
+        "perColumns": 4,
+        "windUp": true
       },
       {
         "id": "sinkhole",
-        "name": "Vulture Strike",
         "every": 6,
         "turn": 0,
-        "pattern": { "anchor": "weakest", "shape": "single", "anchors": 1, "perColumns": 6 },
-        "powerBp": 20900
+        "powerBp": 20900,
+        "perColumns": 6,
+        "anchors": 1
       },
-      {
-        "id": "peat-wave",
-        "name": "Rear Sweep",
-        "every": 5,
-        "turn": 0,
-        "pattern": { "anchor": "back", "shape": "rows", "n": 2 },
-        "powerBp": 9000
-      }
+      { "id": "peat-wave", "every": 5, "turn": 0, "powerBp": 9000, "n": 2 }
     ],
     "cards": ["shake-it-off", "adapts-element"],
     "ranks": {

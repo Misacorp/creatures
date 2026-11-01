@@ -10,12 +10,17 @@ import {
   RaidBossFileSchema,
   type BossMoveDef,
   type CardDef,
+  type EscalationDef,
+  type EscalationUseDef,
   type FoeCurve,
   type FoeDef,
   type FoeScale,
   type KeywordDef,
+  type MoveUseDef,
+  type PatternDef,
   type RaidBossDef,
 } from './boss-schema';
+import { MoveFileSchema, type MoveDef } from './moves';
 import { ADDITIVE_FIELDS } from './fx-schema';
 import { RaidTrackSchema, type RaidTrackDef } from './track-schema';
 import { RulesSchema, type CombatRules } from './rules-schema';
@@ -32,6 +37,7 @@ import {
 /** The raw files, as read from `data/*.json`. */
 export interface RawCombatV2 {
   readonly rules: unknown;
+  readonly moves: unknown;
   readonly knacks: unknown;
   readonly forms: unknown;
   readonly talents: unknown;
@@ -42,10 +48,13 @@ export interface RawCombatV2 {
   readonly keywords: unknown;
 }
 
-/** The shipped raid bosses and dungeon foes (ids), which the boss-side files must name. */
+/**
+ * The shipped raid bosses and dungeon foes (ids and elements), which the boss-side files must name. A boss or foe uses only the
+ * library moves of its own element.
+ */
 export interface CombatShippedRefs {
-  readonly bosses: readonly { readonly id: string }[];
-  readonly foes: readonly { readonly id: string }[];
+  readonly bosses: readonly { readonly id: string; readonly element: string }[];
+  readonly foes: readonly { readonly id: string; readonly element: string }[];
   /** The shipped gear lines (ids), which a talent's `gearLine` must name. */
   readonly gearLines: readonly { readonly id: string }[];
 }
@@ -62,6 +71,8 @@ export interface CombatSpeciesRef {
  */
 export interface CombatV2Pack {
   readonly rules: CombatRules;
+  /** The move library by id, in the order of the file: each move's name and behaviour (`moves.json`). */
+  readonly moves: Readonly<Record<string, MoveDef>>;
   /** Knack family name to its rule. */
   readonly families: Readonly<Record<string, string>>;
   readonly knacks: Readonly<Record<string, KnackDef>>;
@@ -70,7 +81,7 @@ export interface CombatV2Pack {
   readonly talents: Readonly<Record<string, TalentDef>>;
   /** Line id to its pool: talent ids. */
   readonly pools: Readonly<Record<string, readonly string[]>>;
-  /** Rule cards by id, in the order of the file. */
+  /** Rule cards by id, in the order of the file (a card's move is resolved: the engine's `BossMove`). */
   readonly cards: Readonly<Record<string, CardDef>>;
   /** Keywords by name, in the order of the file. */
   readonly keywords: Readonly<Record<string, KeywordDef>>;
@@ -117,19 +128,36 @@ function damagingDue(moves: readonly BossMoveDef[], rows: number, round: number,
   ).length;
 }
 
-/** The checks both kinds of boss share: unique move ids, moves on a real boss turn, known cards. */
+/**
+ * The boss's moves once its phase has begun: a phase move with the id of one of its own moves replaces that move (in its place),
+ * any other is added at the end. The engine does the same (`withPhase`, `packages/engine/src/v2/escalation.ts`).
+ */
+function withPhase(base: readonly BossMoveDef[], phase: readonly BossMoveDef[]): BossMoveDef[] {
+  const replaced = base.map((m) => phase.find((p) => p.id === m.id) ?? m);
+  return [...replaced, ...phase.filter((p) => !base.some((m) => m.id === p.id))];
+}
+
+/**
+ * The checks both kinds of boss share: unique move ids (a phase move may repeat the id of an own move: it replaces it), moves on a
+ * real boss turn, known cards. `base` is the boss's own moves (a foe's signature with them), `phase` the escalation's phase moves.
+ */
 function checkBoss(
   kind: string,
   id: string,
   rows: number,
-  moves: readonly BossMoveDef[],
+  base: readonly BossMoveDef[],
+  phase: readonly BossMoveDef[],
   cards: readonly string[],
   known: Readonly<Record<string, CardDef>>,
 ): void {
-  const ids = new Set<string>();
-  for (const m of moves) {
-    if (ids.has(m.id)) fail(`${kind} "${id}" has two moves "${m.id}"`);
-    ids.add(m.id);
+  for (const moves of [base, phase]) {
+    const ids = new Set<string>();
+    for (const m of moves) {
+      if (ids.has(m.id)) fail(`${kind} "${id}" has two moves "${m.id}"`);
+      ids.add(m.id);
+    }
+  }
+  for (const m of [...base, ...phase]) {
     if ((m.turn ?? rows - 1) >= rows)
       fail(
         `${kind} "${id}": move "${m.id}" is on boss turn ${String(m.turn)}, past its ${String(rows)} rows`,
@@ -138,6 +166,65 @@ function checkBoss(
   for (const c of cards) {
     if (!Object.hasOwn(known, c)) fail(`${kind} "${id}" names the unknown card "${c}"`);
   }
+}
+
+/**
+ * The engine's `BossMove` of a use of a library move: the name and the pattern's shape and anchor are the library's, the numbers
+ * the user's. `element` is the user's (a boss's or foe's; `undefined` for a card): it may use only the moves of its element.
+ */
+function resolveMove(
+  use: MoveUseDef,
+  library: Readonly<Record<string, MoveDef>>,
+  owner: string,
+  element: string | undefined,
+): BossMoveDef {
+  const lib = Object.hasOwn(library, use.id) ? library[use.id] : undefined;
+  if (lib === undefined) return fail(`${owner} uses "${use.id}", which is not in the move library`);
+  if (lib.element !== element)
+    return fail(
+      element === undefined
+        ? `${owner} adds "${use.id}", a ${String(lib.element)} move: a card adds only moves with no element`
+        : `${owner} (${element}) uses "${use.id}", which is ${lib.element === undefined ? 'a card move' : `a ${lib.element} move`}: it uses only moves of its own element`,
+    );
+  if (lib.silences && use.silenceTurns === undefined)
+    return fail(`${owner}: "${use.id}" silences, so its use needs silenceTurns`);
+  if (!lib.silences && use.silenceTurns !== undefined)
+    return fail(`${owner}: "${use.id}" does not silence, so its use has no silenceTurns`);
+  if (lib.oneShot === true && use.oneShotBp === undefined)
+    return fail(`${owner}: "${use.id}" is a one-shot, so its use needs oneShotBp`);
+  if (lib.oneShot !== true && use.oneShotBp !== undefined)
+    return fail(`${owner}: "${use.id}" is not a one-shot, so its use has no oneShotBp`);
+  const pattern: PatternDef = {
+    anchor: lib.anchor,
+    shape: lib.shape,
+    ...(use.n === undefined ? {} : { n: use.n }),
+    ...(use.perColumns === undefined ? {} : { perColumns: use.perColumns }),
+    ...(use.decayBp === undefined ? {} : { decayBp: use.decayBp }),
+    ...(use.anchors === undefined ? {} : { anchors: use.anchors }),
+  };
+  return {
+    id: lib.id,
+    name: lib.name,
+    pattern,
+    powerBp: use.powerBp,
+    every: use.every,
+    ...(use.turn === undefined ? {} : { turn: use.turn }),
+    ...(use.silenceTurns === undefined ? {} : { silenceTurns: use.silenceTurns }),
+    ...(use.strengthBp === undefined ? {} : { strengthBp: use.strengthBp }),
+    ...(use.oneShotBp === undefined ? {} : { oneShotBp: use.oneShotBp }),
+    ...(use.windUp === undefined ? {} : { charged: use.windUp }),
+  };
+}
+
+/** An escalation of a file with its phase's moves resolved. */
+function resolveEscalation(
+  e: EscalationUseDef,
+  resolve: (use: MoveUseDef) => BossMoveDef,
+): EscalationDef {
+  const { phase, ...rest } = e;
+  return phase === undefined
+    ? rest
+    : { ...rest, phase: { ...phase, moves: phase.moves.map(resolve) } };
 }
 
 /**
@@ -158,6 +245,7 @@ export function loadCombatV2(
   const knackFile = parse(KnackFileSchema, raw.knacks, 'knacks.json');
   const formFile = parse(FormFileSchema, raw.forms, 'forms.json');
   const talentFile = parse(TalentFileSchema, raw.talents, 'talents.json');
+  const moveFile = parse(MoveFileSchema, raw.moves, 'moves.json');
   const cardFile = parse(CardFileSchema, raw.cards, 'cards.json');
   const raidFile = parse(RaidBossFileSchema, raw.raidBosses, 'raid-bosses.json');
   const trackFile = parse(RaidTrackSchema, raw.raidTrack, 'raid-track.json');
@@ -247,6 +335,17 @@ export function loadCombatV2(
     checkWords(`keyword "${k.name}"`, k.not);
   }
 
+  // The move library: a name and a behaviour per move.
+  const moves: Record<string, MoveDef> = {};
+  const moveNames = new Set<string>();
+  for (const m of moveFile) {
+    if (Object.hasOwn(moves, m.id)) fail(`duplicate move id "${m.id}"`);
+    const name = m.name.trim().toLowerCase();
+    if (moveNames.has(name)) fail(`duplicate move name "${m.name}"`);
+    moveNames.add(name);
+    moves[m.id] = m;
+  }
+
   const cards: Record<string, CardDef> = {};
   for (const c of cardFile) {
     if (Object.hasOwn(cards, c.id)) fail(`duplicate card id "${c.id}"`);
@@ -259,26 +358,39 @@ export function loadCombatV2(
     // The baseline has none, and a raid-only card (Reaction and Element Resistance) is answered by the team's make-up, not a tool.
     if (c.id !== 'plain' && c.raidOnly !== true && c.answers.length === 0)
       fail(`card "${c.id}" has no answer`);
-    cards[c.id] = c;
+    // A card adds only moves with no element: it belongs to no boss, so it takes the plain behaviour label's name.
+    const resolveCard = (use: MoveUseDef) => resolveMove(use, moves, `card "${c.id}"`, undefined);
+    cards[c.id] = {
+      ...c,
+      ops: c.ops.map((o) => (o.op === 'move' ? { ...o, move: resolveCard(o.move) } : o)),
+    };
   }
 
-  const bossIds = new Set(shipped.bosses.map((b) => b.id));
+  const bossElements = new Map(shipped.bosses.map((b) => [b.id, b.element]));
   const raidBosses: Record<string, RaidBossDef> = {};
   for (const b of raidFile) {
     if (Object.hasOwn(raidBosses, b.id)) fail(`duplicate raid boss "${b.id}"`);
-    if (!bossIds.has(b.id)) fail(`raid boss "${b.id}" is not a shipped boss`);
-    const all = [...b.moves, ...(b.escalation?.phase?.moves ?? [])];
-    checkBoss('raid boss', b.id, b.rows, all, b.cards, cards);
+    const element = bossElements.get(b.id);
+    if (element === undefined) fail(`raid boss "${b.id}" is not a shipped boss`);
+    const resolve = (use: MoveUseDef) => resolveMove(use, moves, `raid boss "${b.id}"`, element);
+    const { moves: ownUses, escalation: escUse, ...rest } = b;
+    const own = ownUses.map(resolve);
+    const escalation = escUse === undefined ? undefined : resolveEscalation(escUse, resolve);
+    const phase = escalation?.phase?.moves ?? [];
+    checkBoss('raid boss', b.id, b.rows, own, phase, b.cards, cards);
     checkWords(`raid boss "${b.id}"`, b.asks);
-    for (let round = 1; round <= STAGE_ROUNDS; round++) {
-      for (let turn = 0; turn < b.rows; turn++) {
-        if (damagingDue(all, b.rows, round, turn) > 2)
-          fail(
-            `raid boss "${b.id}" has more than two damaging moves on boss turn ${String(turn)} of round ${String(round)}`,
-          );
+    // At most two damaging moves share a boss turn, before the phase and after it.
+    for (const state of [own, withPhase(own, phase)]) {
+      for (let round = 1; round <= STAGE_ROUNDS; round++) {
+        for (let turn = 0; turn < b.rows; turn++) {
+          if (damagingDue(state, b.rows, round, turn) > 2)
+            fail(
+              `raid boss "${b.id}" has more than two damaging moves on boss turn ${String(turn)} of round ${String(round)}`,
+            );
+        }
       }
     }
-    raidBosses[b.id] = b;
+    raidBosses[b.id] = { ...rest, moves: own, ...(escalation ? { escalation } : {}) };
   }
 
   for (const id of trackFile.order) {
@@ -308,24 +420,39 @@ export function loadCombatV2(
     }
   });
 
-  const foeIds = new Set(shipped.foes.map((f) => f.id));
+  const foeElements = new Map(shipped.foes.map((f) => [f.id, f.element]));
   const foes: Record<string, FoeDef> = {};
   for (const f of foeFile.foes) {
     if (Object.hasOwn(foes, f.id)) fail(`duplicate foe "${f.id}"`);
-    if (!foeIds.has(f.id)) fail(`foe "${f.id}" is not a shipped dungeon foe`);
+    const element = foeElements.get(f.id);
+    if (element === undefined) fail(`foe "${f.id}" is not a shipped dungeon foe`);
+    const resolve = (use: MoveUseDef) => resolveMove(use, moves, `foe "${f.id}"`, element);
+    const { moves: ownUses, signature: signUse, escalation: escUse, ...rest } = f;
+    const own = ownUses.map(resolve);
+    const signature = signUse === undefined ? undefined : resolve(signUse);
+    const escalation = escUse === undefined ? undefined : resolveEscalation(escUse, resolve);
     // A foe is one row of three: one boss turn, the first.
-    const all = [
-      ...f.moves,
-      ...(f.signature ? [f.signature] : []),
-      ...(f.escalation?.phase?.moves ?? []),
-    ];
-    checkBoss('foe', f.id, 1, all, f.cards, cards);
+    checkBoss(
+      'foe',
+      f.id,
+      1,
+      [...own, ...(signature ? [signature] : [])],
+      escalation?.phase?.moves ?? [],
+      f.cards,
+      cards,
+    );
     checkWords(`foe "${f.id}"`, f.asks);
-    foes[f.id] = f;
+    foes[f.id] = {
+      ...rest,
+      moves: own,
+      ...(signature ? { signature } : {}),
+      ...(escalation ? { escalation } : {}),
+    };
   }
 
   return {
     rules,
+    moves,
     families,
     knacks,
     forms,

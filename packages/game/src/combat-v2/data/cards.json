@@ -57,15 +57,7 @@
       {
         "op": "move",
         "scale": "gate",
-        "move": {
-          "id": "bramble-bind",
-          "name": "Hush",
-          "every": 2,
-          "turn": 0,
-          "pattern": { "anchor": "front", "shape": "rowEnds", "n": 1 },
-          "powerBp": 0,
-          "silenceTurns": 2
-        }
+        "move": { "id": "hush", "every": 2, "turn": 0, "powerBp": 0, "n": 1, "silenceTurns": 2 }
       }
     ],
     "answers": ["Silence Guard"]
@@ -88,13 +80,7 @@
       {
         "op": "move",
         "scale": "power",
-        "move": {
-          "id": "payoff-slam",
-          "name": "Payoff Slam",
-          "every": 3,
-          "pattern": { "anchor": "payoff", "shape": "line3" },
-          "powerBp": 15000
-        }
+        "move": { "id": "payoff-slam", "every": 3, "powerBp": 15000 }
       }
     ],
     "answers": ["Reach"]
@@ -114,14 +100,7 @@
       {
         "op": "move",
         "scale": "power",
-        "move": {
-          "id": "great-wave",
-          "name": "Wild Sweep",
-          "every": 3,
-          "pattern": { "anchor": "random", "shape": "randomRow" },
-          "powerBp": 18000,
-          "charged": true
-        }
+        "move": { "id": "wild-sweep", "every": 3, "powerBp": 18000, "windUp": true }
       }
     ],
     "answers": ["Intercept", "Row Ward"]
@@ -147,13 +126,7 @@
       {
         "op": "move",
         "scale": "power",
-        "move": {
-          "id": "crush",
-          "name": "Nemesis Strike",
-          "every": 3,
-          "pattern": { "anchor": "strongest", "shape": "single" },
-          "powerBp": 40000
-        }
+        "move": { "id": "crush", "every": 3, "powerBp": 40000 }
       }
     ],
     "answers": ["Reach", "Sustain"]

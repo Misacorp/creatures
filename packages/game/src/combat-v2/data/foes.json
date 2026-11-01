@@ -16,12 +16,11 @@
       "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 8000 },
       "moves": [
         {
-          "id": "sea-mist",
-          "name": "Hush",
+          "id": "deafening-mist",
           "every": 1,
           "turn": 0,
-          "pattern": { "anchor": "front", "shape": "rowEnds", "n": 1 },
           "powerBp": 0,
+          "n": 1,
           "silenceTurns": 2
         }
       ],
@@ -41,16 +40,7 @@
       "id": "ember-mite",
       "armour": 6,
       "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 7000 },
-      "moves": [
-        {
-          "id": "flare-up",
-          "name": "Barrage",
-          "every": 2,
-          "turn": 0,
-          "pattern": { "anchor": "random", "shape": "scatter", "n": 2 },
-          "powerBp": 9000
-        }
-      ],
+      "moves": [{ "id": "cinder-fall", "every": 2, "turn": 0, "powerBp": 9000, "n": 2 }],
       "cards": ["clean-scales"],
       "escalation": {
         "name": "Warm Stones",
@@ -76,15 +66,7 @@
       "armour": 6,
       "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 9000 },
       "moves": [
-        {
-          "id": "thorn-snap",
-          "name": "Hush",
-          "every": 3,
-          "turn": 0,
-          "pattern": { "anchor": "front", "shape": "rowEnds", "n": 1 },
-          "powerBp": 0,
-          "silenceTurns": 1
-        }
+        { "id": "bramble-hush", "every": 3, "turn": 0, "powerBp": 0, "n": 1, "silenceTurns": 1 }
       ],
       "cards": ["thick-hide"],
       "asks": "Bark turns small hits away, and it silences the ends of the line. Sense Weakness or a big hit gets past.",
@@ -95,16 +77,7 @@
       "id": "moss-lurker",
       "armour": 10,
       "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 6000 },
-      "moves": [
-        {
-          "id": "root-grab",
-          "name": "Nemesis Slam",
-          "every": 2,
-          "turn": 0,
-          "pattern": { "anchor": "strongest", "shape": "line3" },
-          "powerBp": 18000
-        }
-      ],
+      "moves": [{ "id": "vengeful-roots", "every": 2, "turn": 0, "powerBp": 18000 }],
       "cards": ["grudge"],
       "asks": "It likes the loudest visitor: the one that dealt the most, and the strongest. A Guard beside it takes the hit.",
       "hpBp": 12500,
@@ -116,14 +89,7 @@
       "armour": 3,
       "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 6000 },
       "moves": [
-        {
-          "id": "zap-dive",
-          "name": "Leaping Strike",
-          "every": 3,
-          "turn": 0,
-          "pattern": { "anchor": "strongest", "shape": "chain", "n": 2, "decayBp": 6000 },
-          "powerBp": 11000
-        }
+        { "id": "arc-lash", "every": 3, "turn": 0, "powerBp": 11000, "n": 2, "decayBp": 6000 }
       ],
       "cards": ["stone-skin"],
       "escalation": {
@@ -139,16 +105,7 @@
       "id": "flicker-swarm",
       "armour": 2,
       "plain": { "pattern": { "anchor": "random", "shape": "scatter", "n": 2 }, "powerBp": 5000 },
-      "moves": [
-        {
-          "id": "buzz-cloud",
-          "name": "Quake",
-          "every": 2,
-          "turn": 0,
-          "pattern": { "anchor": "front", "shape": "all" },
-          "powerBp": 5000
-        }
-      ],
+      "moves": [{ "id": "storm-front", "every": 2, "turn": 0, "powerBp": 5000 }],
       "cards": [],
       "asks": "Sparks everywhere: area hits on all three, every round. A row ward cuts every one of them."
     },
@@ -156,16 +113,7 @@
       "id": "bog-toad",
       "armour": 14,
       "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 8000 },
-      "moves": [
-        {
-          "id": "mud-spit",
-          "name": "Barrage",
-          "every": 2,
-          "turn": 0,
-          "pattern": { "anchor": "random", "shape": "scatter", "n": 1 },
-          "powerBp": 9000
-        }
-      ],
+      "moves": [{ "id": "mud-spit", "every": 2, "turn": 0, "powerBp": 9000, "n": 1 }],
       "cards": ["shake-it-off"],
       "asks": "It washes every debuff off itself every third round: a Mired that comes back every round holds it down."
     },
@@ -173,16 +121,7 @@
       "id": "tar-leech",
       "armour": 24,
       "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 7000 },
-      "moves": [
-        {
-          "id": "tar-cling",
-          "name": "Front Slam",
-          "every": 3,
-          "turn": 0,
-          "pattern": { "anchor": "front", "shape": "line3" },
-          "powerBp": 13000
-        }
-      ],
+      "moves": [{ "id": "belly-flop", "every": 3, "turn": 0, "powerBp": 13000 }],
       "cards": ["wither"],
       "asks": "Black, thick and draining: healing is halved and little gets through its armour, so a boost that reaches every hitter gets more through than a heal; its heavy hits are dodged, not healed."
     },
@@ -191,31 +130,15 @@
       "armour": 16,
       "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 6000 },
       "moves": [
-        {
-          "id": "flood-gate",
-          "name": "Quake",
-          "every": 3,
-          "turn": 0,
-          "pattern": { "anchor": "front", "shape": "all" },
-          "powerBp": 6000
-        },
-        {
-          "id": "sluice-pull",
-          "name": "Front Lance",
-          "every": 2,
-          "turn": 0,
-          "pattern": { "anchor": "front", "shape": "columns", "n": 2 },
-          "powerBp": 7000
-        }
+        { "id": "deluge", "every": 3, "turn": 0, "powerBp": 6000 },
+        { "id": "sluice-pull", "every": 2, "turn": 0, "powerBp": 7000, "n": 2 }
       ],
       "signature": {
         "id": "sluice-surge",
-        "name": "Quake",
         "every": 4,
         "turn": 0,
-        "pattern": { "anchor": "front", "shape": "all" },
         "powerBp": 11000,
-        "charged": true
+        "windUp": true
       },
       "cards": [],
       "escalation": {
@@ -233,25 +156,8 @@
       "id": "slag-tyrant",
       "armour": 20,
       "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 7000 },
-      "moves": [
-        {
-          "id": "anvil-fall",
-          "name": "Front Slam",
-          "every": 3,
-          "turn": 0,
-          "pattern": { "anchor": "front", "shape": "line3" },
-          "powerBp": 15000
-        }
-      ],
-      "signature": {
-        "id": "slag-spill",
-        "name": "Nemesis Slam",
-        "every": 4,
-        "turn": 0,
-        "pattern": { "anchor": "strongest", "shape": "line3" },
-        "powerBp": 24000,
-        "charged": true
-      },
+      "moves": [{ "id": "anvil-fall", "every": 3, "turn": 0, "powerBp": 15000 }],
+      "signature": { "id": "slag-spill", "every": 4, "turn": 0, "powerBp": 24000, "windUp": true },
       "cards": ["reflective-hide"],
       "escalation": {
         "name": "Molten Shell",
@@ -269,32 +175,16 @@
       "armour": 18,
       "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 6000 },
       "moves": [
-        {
-          "id": "tangle",
-          "name": "Hush",
-          "every": 2,
-          "turn": 0,
-          "pattern": { "anchor": "front", "shape": "rowEnds", "n": 1 },
-          "powerBp": 0,
-          "silenceTurns": 1
-        },
-        {
-          "id": "thorn-rain",
-          "name": "Barrage",
-          "every": 3,
-          "turn": 0,
-          "pattern": { "anchor": "random", "shape": "scatter", "n": 2 },
-          "powerBp": 8000
-        }
+        { "id": "bramble-hush", "every": 2, "turn": 0, "powerBp": 0, "n": 1, "silenceTurns": 1 },
+        { "id": "thorn-rain", "every": 3, "turn": 0, "powerBp": 8000, "n": 2 }
       ],
       "signature": {
-        "id": "briar-cage",
-        "name": "Pincer",
+        "id": "briar-pincer",
         "every": 4,
         "turn": 0,
-        "pattern": { "anchor": "front", "shape": "rowEnds", "n": 1 },
         "powerBp": 13000,
-        "charged": true
+        "n": 1,
+        "windUp": true
       },
       "cards": ["wither"],
       "asks": "She silences the ends and drains healing; thorns land on two random creatures. A Guard that marks as it takes a hit does the Setter’s work."
@@ -304,24 +194,9 @@
       "armour": 14,
       "plain": { "pattern": { "anchor": "strongest", "shape": "single" }, "powerBp": 6000 },
       "moves": [
-        {
-          "id": "arc-lash",
-          "name": "Leaping Strike",
-          "every": 1,
-          "turn": 0,
-          "pattern": { "anchor": "strongest", "shape": "chain", "n": 1, "decayBp": 6000 },
-          "powerBp": 6000
-        }
+        { "id": "arc-lash", "every": 1, "turn": 0, "powerBp": 6000, "n": 1, "decayBp": 6000 }
       ],
-      "signature": {
-        "id": "coil-burst",
-        "name": "Nemesis Slam",
-        "every": 4,
-        "turn": 0,
-        "pattern": { "anchor": "strongest", "shape": "line3" },
-        "powerBp": 22000,
-        "charged": true
-      },
+      "signature": { "id": "thunderclap", "every": 4, "turn": 0, "powerBp": 22000, "windUp": true },
       "cards": [],
       "escalation": {
         "name": "Tightening Coil",
@@ -336,25 +211,8 @@
       "id": "fen-lurker",
       "armour": 22,
       "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 6000 },
-      "moves": [
-        {
-          "id": "sink-down",
-          "name": "Quake",
-          "every": 3,
-          "turn": 0,
-          "pattern": { "anchor": "front", "shape": "all" },
-          "powerBp": 6000
-        }
-      ],
-      "signature": {
-        "id": "fen-tug",
-        "name": "Quake",
-        "every": 4,
-        "turn": 0,
-        "pattern": { "anchor": "front", "shape": "all" },
-        "powerBp": 11000,
-        "charged": true
-      },
+      "moves": [{ "id": "sink-down", "every": 3, "turn": 0, "powerBp": 6000 }],
+      "signature": { "id": "fen-tug", "every": 4, "turn": 0, "powerBp": 11000, "windUp": true },
       "cards": ["shake-it-off"],
       "asks": "A heavy sweep of the line announced at round start, and it washes off every debuff every third round. Night Watch takes the first Wind-up hit."
     }

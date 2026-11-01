@@ -399,7 +399,7 @@ export function raidBoss(hp: number) {
   });
   return {
     ...boss,
-    moves: boss.moves.map((m) => (m.id === 'great-wave' ? { ...m, every: RAID_WAVE_EVERY } : m)),
+    moves: boss.moves.map((m) => (m.id === 'wild-sweep' ? { ...m, every: RAID_WAVE_EVERY } : m)),
   };
 }
 

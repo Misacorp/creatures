@@ -7,8 +7,9 @@
 import { describe, expect, it } from 'vitest';
 import { content } from '../src';
 import { talentContent } from '../src/content';
+import { dungeonContent } from '../src/content/dungeon';
 import { gearContent } from '../src/content/gear';
-import { combatV2, type BossMoveDef, type CardDef } from '../src/combat-v2';
+import { combatV2, moveLabel, type BossMoveDef, type CardDef } from '../src/combat-v2';
 import linesJson from '../src/content/data/gear-lines.json';
 
 const pack = combatV2;
@@ -24,19 +25,9 @@ interface Place {
   readonly thing: string;
 }
 
-/** A stable text of a value (object keys sorted), to tell whether two moves have the same numbers. */
-function stable(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`;
-  if (value !== null && typeof value === 'object') {
-    const entries = Object.entries(value).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-    return `{${entries.map(([k, v]) => `${k}:${stable(v)}`).join(',')}}`;
-  }
-  return JSON.stringify(value);
-}
-
 /**
- * A move name is one thing: it stands for a shape and a target, never for one number (Misa, 2026-11-01), so every boss that
- * has a Barrage has its own power for it. What the moves of one name share is the next rule (`moveShapeKey`).
+ * A move name is one thing: a library move, with one behaviour, whoever uses it (Misa, 2026-11-01), so every boss that has a
+ * Storm Front has its own power for it. The library test below states what a name stands for.
  */
 const moveThing = (m: BossMoveDef): string => `move ${m.name}`;
 
@@ -104,8 +95,8 @@ const describeClash = ([name, list]: [string, Place[]]): string =>
  * fails when an entry no longer clashes, so the list is the to-do and never stale. Key: the name, lower case.
  */
 const KNOWN_CLASHES: Readonly<Record<string, string>> = {
-  // Empty since names batches 3 and 4 (2026-11-01): the Great Wave card and the Colossus move that shared a name are now the card
-  // Great Wave and the move Wild Sweep.
+  'great wave':
+    "the rule card Great Wave and the Tidal Colossus's tide move Great Wave (the library's Wild Sweep of the tide, decision 2026-11-01); a naming question for Misa: rename the card or the move",
 };
 
 /**
@@ -121,6 +112,57 @@ const KNACK_GEAR_CLASHES: Readonly<Record<string, string>> = {};
 const V1_TALENT_CLASHES: Readonly<Record<string, string>> = {
   'crown-of-embers': 'the v1 talent Crown of Embers; goes with v1 in phase 8',
   'lantern-glow': 'the v1 talent Lantern Glow; goes with v1 in phase 8',
+};
+
+/** The plain label of each library move, as the decision's table has it (`2026-11-01-combat-v2-move-library-a-themed`), by name. */
+const DECISION_LABELS: Readonly<Record<string, string>> = {
+  'Deafening Mist': 'Hush',
+  'Bramble Hush': 'Hush',
+  Hush: 'Hush',
+  'Briar Pincer': 'Pincer',
+  'Anvil Fall': 'Front Slam',
+  'Belly Flop': 'Front Slam',
+  'Volcanic Meteor': 'Payoff Slam',
+  'Static Strike': 'Payoff Slam',
+  'Bog Lob': 'Payoff Slam',
+  'Payoff Slam': 'Payoff Slam',
+  'Slag Spill': 'Nemesis Slam',
+  'Vengeful Roots': 'Nemesis Slam',
+  Thunderclap: 'Nemesis Slam',
+  Riptide: 'Wild Lance',
+  'Scorch Lane': 'Wild Lance',
+  'Grasping Vines': 'Wild Lance',
+  'Lightning Bolt': 'Wild Lance',
+  'Mud Slide': 'Wild Lance',
+  'Deepwater Spear': 'Nemesis Lance',
+  'Sluice Pull': 'Front Lance',
+  Undertow: 'Front Sweep',
+  'Thorn Wall': 'Front Sweep',
+  Backflow: 'Rear Sweep',
+  'Spiky Spine': 'Rear Sweep',
+  'Peat Wave': 'Rear Sweep',
+  'Rogue Wave': 'Payoff Sweep',
+  'Great Wave': 'Wild Sweep',
+  'Sinking Mud': 'Wild Sweep',
+  'Wild Sweep': 'Wild Sweep',
+  Spray: 'Barrage',
+  'Cinder Fall': 'Barrage',
+  'Thorn Rain': 'Barrage',
+  'Forked Lightning': 'Barrage',
+  'Mud Spit': 'Barrage',
+  Deluge: 'Quake',
+  Eruption: 'Quake',
+  'Storm Front': 'Quake',
+  'Sink Down': 'Quake',
+  'Ember Leap': 'Leaping Strike',
+  'Thorn Lash': 'Leaping Strike',
+  'Arc Lash': 'Leaping Strike',
+  Thunderbolt: 'Payoff Strike',
+  Sinkhole: 'Vulture Strike',
+  Crush: 'Nemesis Strike',
+  'Judgement Bolt': 'One-shot',
+  'Ash Cloud': 'Checker',
+  'Bramble Cross': 'Cross',
 };
 
 describe('combat v2 content gate: unique names (P-06)', () => {
@@ -156,38 +198,73 @@ describe('combat v2 content gate: unique names (P-06)', () => {
     ...Object.values(pack.cards).flatMap(cardMoves),
   ];
 
-  /**
-   * What a move name stands for: the shape of the hit, whom it picks (the anchor) and whether it silences. One column and several
-   * columns are one shape (Lance), and so are one row and several rows (Sweep): how many is a number, not a shape. Power, cadence,
-   * how many and Wind-up may differ between the moves of one name; the silence's length too.
-   */
-  const SHAPE_FAMILY: Readonly<Record<string, string>> = { column: 'columns', row: 'rows' };
-  const moveShapeKey = (m: BossMoveDef): string =>
-    `${SHAPE_FAMILY[m.pattern.shape] ?? m.pattern.shape} / ${m.pattern.anchor} / ${
-      (m.silenceTurns ?? 0) > 0 ? 'silences' : 'no silence'
-    }`;
+  /** The boss and foe moves with the element of their owner, and the card moves with none. */
+  const movesWithOwners = (): {
+    owner: string;
+    element: string | undefined;
+    move: BossMoveDef;
+  }[] => [
+    ...Object.values(pack.raidBosses).flatMap((b) =>
+      [...b.moves, ...(b.escalation?.phase?.moves ?? [])].map((move) => ({
+        owner: `raid boss ${b.id}`,
+        element: content.bosses.find((s) => s.id === b.id)?.element,
+        move,
+      })),
+    ),
+    ...Object.values(pack.foes).flatMap((f) =>
+      [
+        ...f.moves,
+        ...(f.signature ? [f.signature] : []),
+        ...(f.escalation?.phase?.moves ?? []),
+      ].map((move) => ({
+        owner: `foe ${f.id}`,
+        element: dungeonContent.foes.find((s) => s.id === f.id)?.element,
+        move,
+      })),
+    ),
+    ...Object.values(pack.cards).flatMap((c) =>
+      cardMoves(c).map((move) => ({ owner: `card ${c.id}`, element: undefined, move })),
+    ),
+  ];
 
-  it('every move of one name has the same shape, anchor and silence (a name stands for a shape and a target, never for one number)', () => {
-    const byName = new Map<string, Set<string>>();
-    for (const m of allMoves())
-      byName.set(m.name, (byName.get(m.name) ?? new Set()).add(moveShapeKey(m)));
-    const differing = [...byName]
-      .filter(([, keys]) => keys.size > 1)
-      .map(([name, keys]) => `${name}: ${[...keys].join(' | ')}`);
-    expect(differing, 'a move name for two shapes or targets').toEqual([]);
-    // Guard the rule itself: the names that are shared are real (a Barrage, a Quake, a Hush ...), not an empty loop.
-    const names = allMoves().map((m) => m.name);
-    expect(new Set(names).size, 'move names, fewer than moves: names are shared').toBeLessThan(
-      names.length - 10,
-    );
+  it('every move of a boss, foe or card is a library move: its name, shape and anchor are the library’s (a name stands for one behaviour)', () => {
+    for (const { owner, move } of movesWithOwners()) {
+      const lib = pack.moves[move.id];
+      expect(lib, `${owner}: ${move.id} is in the library`).toBeDefined();
+      expect(move.name, `${owner}: ${move.id}`).toBe(lib?.name);
+      expect(move.pattern.shape, `${owner}: ${move.id}`).toBe(lib?.shape);
+      expect(move.pattern.anchor, `${owner}: ${move.id}`).toBe(lib?.anchor);
+      expect(move.silenceTurns !== undefined, `${owner}: ${move.id} silences`).toBe(lib?.silences);
+      expect(move.oneShotBp !== undefined, `${owner}: ${move.id} one-shot`).toBe(
+        lib?.oneShot === true,
+      );
+    }
+    // Guard the rule itself: moves are shared (a Barrage of one element on several bosses), so the loop is not empty.
+    expect(movesWithOwners().length).toBeGreaterThan(60);
   });
 
-  it('one move id reused on several bosses or foes has the same numbers every time', () => {
-    const byId = new Map<string, Set<string>>();
-    const all = bossMoves();
-    for (const m of all) byId.set(m.id, (byId.get(m.id) ?? new Set()).add(stable(m)));
-    const differing = [...byId].filter(([, forms]) => forms.size > 1).map(([id]) => id);
-    expect(differing, 'a move id with two sets of numbers').toEqual([]);
+  it('a boss or foe uses only the moves of its element, and a card only moves with no element', () => {
+    for (const { owner, element, move } of movesWithOwners())
+      expect(pack.moves[move.id]?.element, `${owner}: ${move.id}`).toBe(element);
+  });
+
+  it('every library move is used by a boss, a foe or a card', () => {
+    const used = new Set(allMoves().map((m) => m.id));
+    expect(Object.keys(pack.moves).filter((id) => !used.has(id))).toEqual([]);
+  });
+
+  it('every library move has a name nobody else has and a label that says what it does (the decision’s table)', () => {
+    const names = Object.values(pack.moves).map((m) => m.name.toLowerCase());
+    expect(new Set(names).size).toBe(names.length);
+    for (const m of Object.values(pack.moves))
+      expect(m.id, m.name).toBe(
+        m.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, ''),
+      );
+    const labels = Object.fromEntries(Object.values(pack.moves).map((m) => [m.name, moveLabel(m)]));
+    expect(labels).toMatchObject(DECISION_LABELS);
   });
 
   /** The shipped gear lines by raw id (`attunement`, not `tide-attunement`), with their names. */
@@ -526,9 +603,11 @@ describe('combat v2 content gate: names and words of the bosses (the compendium 
   it('a card is not named like a move: the card Bramble Bind adds the move Hush, and no boss move has a card’s name', () => {
     const moves = [...raidMoves, ...foeMoves].map((m) => m.name.toLowerCase());
     for (const c of Object.values(pack.cards)) {
-      expect(moves, `${c.name}: a boss move with the name of a card`).not.toContain(
-        c.name.toLowerCase(),
-      );
+      // The card Great Wave and the tide move Great Wave are a known clash (KNOWN_CLASHES): a naming question for Misa.
+      if (!Object.hasOwn(KNOWN_CLASHES, c.name.toLowerCase()))
+        expect(moves, `${c.name}: a boss move with the name of a card`).not.toContain(
+          c.name.toLowerCase(),
+        );
       for (const m of cardMoves(c))
         expect(m.name.toLowerCase(), `${c.id}: its move`).not.toBe(c.name.toLowerCase());
     }

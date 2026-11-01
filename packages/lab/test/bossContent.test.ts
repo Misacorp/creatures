@@ -154,7 +154,7 @@ describe('the raid bosses', () => {
     }
     // Thornmother's one silence is on the row ends (the slots at the ends of every row).
     const hush = raidBossOf('thornmother').moves.find((m) => m.silenceTurns);
-    expect(hush?.name).toBe('Hush');
+    expect(hush?.name).toBe('Bramble Hush');
     expect(hush?.pattern.shape).toBe('rowEnds');
   });
 

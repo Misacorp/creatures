@@ -7,6 +7,7 @@ import cards from '../src/combat-v2/data/cards.json';
 import foes from '../src/combat-v2/data/foes.json';
 import forms from '../src/combat-v2/data/forms.json';
 import keywords from '../src/combat-v2/data/keywords.json';
+import moves from '../src/combat-v2/data/moves.json';
 import knacks from '../src/combat-v2/data/knacks.json';
 import raidBosses from '../src/combat-v2/data/raid-bosses.json';
 import raidTrack from '../src/combat-v2/data/raid-track.json';
@@ -17,6 +18,7 @@ type Fx = Record<string, unknown>;
 /** The raw files, loosely typed so a test can break them. */
 interface Files {
   rules: Record<string, unknown>;
+  moves: RawLibraryMove[];
   knacks: {
     families: { name: string; text: string }[];
     knacks: { id: string; name: string; family: string; text: string; intent: string; fx: Fx }[];
@@ -47,14 +49,27 @@ interface Files {
   foes: { scale: Fx; curve: Fx; foes: RawBoss[] };
   keywords: { name: string; means: string; not: string; step: string }[];
 }
+/** A boss's use of a library move. */
 interface RawMove {
   id: string;
-  name: string;
   every: number;
   turn?: number;
-  pattern: Fx;
   powerBp: number;
+  n?: number;
   silenceTurns?: number;
+  windUp?: boolean;
+  name?: string;
+  pattern?: Fx;
+}
+/** A move of the library. */
+interface RawLibraryMove {
+  id: string;
+  name: string;
+  element?: string;
+  shape: string;
+  anchor: string;
+  silences: boolean;
+  oneShot?: boolean;
 }
 interface RawSlot {
   slot: number;
@@ -113,6 +128,7 @@ function broken(edit: (r: Files) => void): () => unknown {
   return () => {
     const r = clone({
       rules,
+      moves,
       knacks,
       forms,
       talents,
@@ -383,22 +399,21 @@ describe('combat v2 content', () => {
       /raid boss "storm-sovereign": move "thunderclap" is on boss turn 2, past its 2 rows/,
     );
     expect(broken((r) => (first(foe(r, 'flicker-swarm').moves).turn = 1))).toThrow(
-      /foe "flicker-swarm": move "buzz-cloud" is on boss turn 1, past its 1 rows/,
+      /foe "flicker-swarm": move "storm-front" is on boss turn 1, past its 1 rows/,
     );
     expect(
       broken((r) => {
         const b = raid(r, 'cinder-wyrm');
         b.moves.push(clone(first(b.moves)));
       }),
-    ).toThrow(/raid boss "cinder-wyrm" has two moves "coil-crush"/);
+    ).toThrow(/raid boss "cinder-wyrm" has two moves "anvil-fall"/);
   });
 
   it('rejects a raid boss with more than two damaging moves on one boss turn of a round', () => {
     expect(
       broken((r) => {
-        const b = raid(r, 'storm-sovereign');
-        for (const id of ['x', 'y', 'z'])
-          b.moves.push({ ...clone(first(b.moves)), id, name: id.toUpperCase(), every: 1, turn: 1 });
+        // Round 4 already has two damaging moves on boss turn 1.
+        raid(r, 'storm-sovereign').moves.push({ id: 'arc-lash', every: 1, turn: 1, powerBp: 5000 });
       }),
     ).toThrow(/raid boss "storm-sovereign" has more than two damaging moves on boss turn 1/);
   });
@@ -406,17 +421,21 @@ describe('combat v2 content', () => {
   it('a silence is not a damaging move', () => {
     expect(
       broken((r) => {
-        const b = raid(r, 'thornmother');
-        for (const id of ['x', 'y', 'z'])
-          b.moves.push({
-            id,
-            name: id.toUpperCase(),
-            every: 1,
-            turn: 1,
-            pattern: { anchor: 'front', shape: 'rowEnds', n: 1 },
-            powerBp: 0,
-            silenceTurns: 1,
-          });
+        r.moves.push({
+          id: 'static-hush',
+          name: 'Static Hush',
+          element: 'spark',
+          shape: 'rowEnds',
+          anchor: 'front',
+          silences: true,
+        });
+        raid(r, 'storm-sovereign').moves.push({
+          id: 'static-hush',
+          every: 1,
+          turn: 1,
+          powerBp: 0,
+          silenceTurns: 1,
+        });
       }),
     ).not.toThrow();
   });
@@ -567,5 +586,129 @@ describe('combat v2 raid track', () => {
     expect(broken((r) => ((slotOf(r, 1) as unknown as Fx)['wall'] = true))).toThrow(
       /raid-track.json/,
     );
+  });
+});
+
+describe('combat v2 move library', () => {
+  const aMove = (r: Files, id: string): RawLibraryMove => byId(r.moves, id);
+
+  it('the shipped pack resolves a use into the engine’s move: the name and the pattern’s shape and anchor are the library’s', () => {
+    const spear = combatV2.raidBosses['tidal-colossus']?.moves.find(
+      (m) => m.id === 'deepwater-spear',
+    );
+    expect(spear).toMatchObject({
+      id: 'deepwater-spear',
+      name: 'Deepwater Spear',
+      pattern: { anchor: 'strongest', shape: 'columns', n: 1, perColumns: 4 },
+    });
+    // Wind-up is the engine's `charged`; a silence keeps its `silenceTurns`.
+    expect(
+      combatV2.raidBosses['tidal-colossus']?.moves.find((m) => m.id === 'riptide')?.charged,
+    ).toBe(true);
+    expect(
+      combatV2.raidBosses['thornmother']?.moves.find((m) => m.id === 'bramble-hush'),
+    ).toMatchObject({
+      name: 'Bramble Hush',
+      silenceTurns: 1,
+    });
+    // A card's move is the element-less library move.
+    const op = combatV2.cards['bramble-bind']?.ops[0];
+    expect(op?.op === 'move' ? op.move.name : '').toBe('Hush');
+  });
+
+  it('rejects a duplicate move id and a duplicate move name', () => {
+    expect(broken((r) => r.moves.push(clone(first(r.moves))))).toThrow(
+      /duplicate move id "deafening-mist"/,
+    );
+    expect(broken((r) => r.moves.push({ ...clone(first(r.moves)), id: 'other-mist' }))).toThrow(
+      /duplicate move name "Deafening Mist"/,
+    );
+    expect(
+      broken((r) =>
+        r.moves.push({ ...clone(first(r.moves)), id: 'other-mist', name: 'deafening MIST' }),
+      ),
+    ).toThrow(/duplicate move name "deafening MIST"/);
+  });
+
+  it('rejects a use of a move that is not in the library', () => {
+    expect(broken((r) => (first(raid(r, 'tidal-colossus').moves).id = 'no-such-move'))).toThrow(
+      /raid boss "tidal-colossus" uses "no-such-move", which is not in the move library/,
+    );
+    expect(broken((r) => (first(foe(r, 'drift-wisp').moves).id = 'no-such-move'))).toThrow(
+      /foe "drift-wisp" uses "no-such-move", which is not in the move library/,
+    );
+  });
+
+  it('a boss or foe uses only the moves of its element, and a card only moves with no element', () => {
+    expect(broken((r) => (first(raid(r, 'tidal-colossus').moves).id = 'anvil-fall'))).toThrow(
+      /raid boss "tidal-colossus" \(tide\) uses "anvil-fall", which is a ember move: it uses only moves of its own element/,
+    );
+    expect(broken((r) => (first(foe(r, 'drift-wisp').moves).id = 'hush'))).toThrow(
+      /foe "drift-wisp" \(tide\) uses "hush", which is a card move/,
+    );
+    const op = (r: Files): { move: { id: string } } =>
+      card(r, 'bramble-bind').ops[0] as unknown as { move: { id: string } };
+    expect(broken((r) => (op(r).move.id = 'deafening-mist'))).toThrow(
+      /card "bramble-bind" adds "deafening-mist", a tide move: a card adds only moves with no element/,
+    );
+  });
+
+  it('a silence needs silenceTurns, and only a silence has them; a one-shot needs oneShotBp and only it has it', () => {
+    expect(broken((r) => delete first(foe(r, 'drift-wisp').moves).silenceTurns)).toThrow(
+      /foe "drift-wisp": "deafening-mist" silences, so its use needs silenceTurns/,
+    );
+    expect(broken((r) => (first(foe(r, 'flicker-swarm').moves).silenceTurns = 1))).toThrow(
+      /foe "flicker-swarm": "storm-front" does not silence, so its use has no silenceTurns/,
+    );
+    expect(
+      broken((r) => {
+        aMove(r, 'judgement-bolt').oneShot = false;
+      }),
+    ).toThrow(/"judgement-bolt" is not a one-shot, so its use has no oneShotBp/);
+    expect(
+      broken((r) => {
+        delete (aMove(r, 'judgement-bolt') as Partial<RawLibraryMove>).oneShot;
+      }),
+    ).toThrow(/"judgement-bolt" is not a one-shot, so its use has no oneShotBp/);
+    expect(
+      broken((r) => {
+        aMove(r, 'thunderbolt').oneShot = true;
+      }),
+    ).toThrow(/"thunderbolt" is a one-shot, so its use needs oneShotBp/);
+  });
+
+  it('a use cannot carry a name, a shape or an anchor, and a move needs a real shape and anchor', () => {
+    expect(broken((r) => (first(raid(r, 'tidal-colossus').moves).name = 'Another Name'))).toThrow(
+      /raid-bosses.json at "0.moves.0.name"/,
+    );
+    expect(
+      broken((r) => (first(raid(r, 'tidal-colossus').moves).pattern = { shape: 'all' })),
+    ).toThrow(/raid-bosses.json at "0.moves.0.pattern"/);
+    expect(broken((r) => (first(r.moves).shape = 'blob'))).toThrow(/moves.json at "0.shape"/);
+    expect(broken((r) => (first(r.moves).anchor = 'nobody'))).toThrow(/moves.json at "0.anchor"/);
+    expect(broken((r) => (first(r.moves).element = 'water'))).toThrow(/moves.json at "0.element"/);
+    expect(broken((r) => ((first(r.moves) as unknown as Fx)['power'] = 1))).toThrow(
+      /moves.json at "0.power"/,
+    );
+  });
+
+  it('a phase move with the id of an own move replaces it; two phase moves of one id are refused', () => {
+    // Thornmother's Second Bloom adds Bloom Storm and Thorn Wall; with the id of an own move it would replace that move.
+    expect(
+      broken((r) => {
+        const e = (
+          raid(r, 'thornmother') as unknown as { escalation: { phase: { moves: RawMove[] } } }
+        ).escalation;
+        e.phase.moves.push({ id: 'spiky-spine', every: 2, turn: 2, powerBp: 9000 });
+      }),
+    ).not.toThrow();
+    expect(
+      broken((r) => {
+        const e = (
+          raid(r, 'thornmother') as unknown as { escalation: { phase: { moves: RawMove[] } } }
+        ).escalation;
+        e.phase.moves.push(clone(first(e.phase.moves)));
+      }),
+    ).toThrow(/raid boss "thornmother" has two moves "bloom-storm"/);
   });
 });
