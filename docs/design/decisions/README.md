@@ -134,6 +134,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-11-01 \[Misa\] Combat v2 names: a card never shares a move's name (Full Sweep), Barrage and Leap are both keyword and shape word, the Puddle Imp asks for a Guard
 - 2026-11-01 \[Misa\] Combat v2 move library: a themed name per behaviour and element, the behaviour fixed
 - 2026-11-01 \[Misa\] Combat v2 rule changes from the names review: Mired fades every round, Swarm is a Scatter, Back-most is the last to act
 - 2026-11-01 \[Misa\] Combat v2 names, batches 3 and 4: keywords, rule cards, and moves named by shape and target (amended)
