@@ -23,6 +23,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [direction.md](direction.md): Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work.
 
+- 2026-11-01 \[Misa\] Retro 2026-11-01: group behaviours before naming, a name-blind parity digest, and agent workflow fixes
 - 2026-10-31 \[Misa\] Valley places: glow on the ground, day and night; posters for each place's own screen
 - 2026-10-31 \[Misa\] The lead agent owns art direction; the valley moves toward the expedition map's art (amended)
 - 2026-10-31 After the combat and valley reworks the game resets; today's players become the pioneering first settlers \[Misa\]

@@ -47,4 +47,4 @@ The other messages were go-aheads or answers ("Answered combat names", "Done"), 
 | 7   | Icon briefs ask, for each icon: which way it points on the board, whether it borrows an element's symbol, and what object it could be mistaken for (a fork, a die, a ring).                           | `docs/design/art-studio.md`, "What was hard"                                | the Lance, Leap (bolt, then fork) and plain-attack rounds                                            |
 | 8   | `pnpm worktrees:clean` gets `--unlock-finished`: unlock and remove agent worktrees whose commits are all in the current branch or pushed, even when a stale lock remains.                             | `scripts/worktrees-clean` (and the CLAUDE.md line about it)                 | four manual unlock rounds                                                                            |
 
-Status: proposals not applied; Misa decides.
+Status (2026-11-01): Misa accepted 2, 6 and the agent workflow fixes (4, 5, 8; decision `2026-11-01-retro-2026-11-01-group-behaviours`); 7 not taken ("just iterative"); 1 and 3 not named.
