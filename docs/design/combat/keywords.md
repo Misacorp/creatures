@@ -22,7 +22,7 @@ Generated from `packages/lab/src/keywords.ts` by `pnpm --filter @creatures/lab r
 | Reach | How many slots to each side, in its row, a Guard or Support covers. Starts at Beside; some effects widen it. | Its whole row | R1, R16 |
 | Boost | A Support's bonus damage on a creature's next hit. | A lasting buff | R16 |
 | Area hit | A hit on more than one slot; it is dodged at half chance. | A hit a Guard takes for you | R2 |
-| Scatter | A boss attack or move that hits a number of different creatures, drawn at random from the whole arena. | A hit on every creature of a row | R2 |
+| Barrage | A boss attack or move that hits a number of different creatures, drawn at random from the whole arena. | A hit on every creature of a row | R2 |
 | Leap | A boss move that hits one creature, then jumps to the strongest creature right next to it, and on, each jump softer. | The Knack family Chain | R2 |
 | Cross | A boss move that hits one creature and the creatures right beside, in front of and behind it. | A whole row or column | R2 |
 | Checker | A boss move that hits every other slot of the arena, like the dark squares of a board. | A row | R2 |

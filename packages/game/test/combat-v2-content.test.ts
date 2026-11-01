@@ -98,12 +98,10 @@ const describeClash = ([name, list]: [string, Place[]]): string =>
 
 /**
  * Names that clash today and are a pending naming question for Misa. Each entry names the decision it waits for, and the test
- * fails when an entry no longer clashes, so the list is the to-do and never stale. Key: the name, lower case.
+ * fails when an entry no longer clashes, so the list is the to-do and never stale. Key: the name, lower case. Empty since the card
+ * Great Wave became Full Sweep (2026-11-01, `2026-11-01-combat-v2-names-a-card-never`).
  */
-const KNOWN_CLASHES: Readonly<Record<string, string>> = {
-  'great wave':
-    "the rule card Great Wave and the Tidal Colossus's tide move Great Wave (the library's Wild Sweep of the tide, decision 2026-11-01); a naming question for Misa: rename the card or the move",
-};
+const KNOWN_CLASHES: Readonly<Record<string, string>> = {};
 
 /**
  * Knacks (by id) that have the name of a shipped gear line today: a pending naming question. Empty since names batches 3 and 4
@@ -160,9 +158,9 @@ const DECISION_LABELS: Readonly<Record<string, string>> = {
   Eruption: 'Quake',
   'Storm Front': 'Quake',
   'Sink Down': 'Quake',
-  'Ember Leap': 'Leaping Strike',
-  'Thorn Lash': 'Leaping Strike',
-  'Arc Lash': 'Leaping Strike',
+  'Ember Leap': 'Leap',
+  'Thorn Lash': 'Leap',
+  'Arc Lash': 'Leap',
   Thunderbolt: 'Payoff Strike',
   Sinkhole: 'Vulture Strike',
   Crush: 'Nemesis Strike',
@@ -404,7 +402,7 @@ const BOARD_KEYWORDS: ReadonlySet<string> = new Set<string>([
   // The board marks a hit that armour stopped.
   'Blocked',
   // The boss's attack shapes and anchors: the board shows them on the slots a move will hit (the lab's `shapeText`), no text names them.
-  'Scatter',
+  'Barrage',
   'Leap',
   'Cross',
   'Checker',
@@ -600,6 +598,15 @@ describe('combat v2 content gate: talents and their pools', () => {
   });
 });
 
+/** The names of the cards that a move also has (compared in lower case): the rule "a card never shares a move's name". */
+const cardsNamedLikeAMove = (
+  cards: readonly CardDef[],
+  moves: readonly BossMoveDef[],
+): string[] => {
+  const names = new Set(moves.map((m) => m.name.trim().toLowerCase()));
+  return cards.map((c) => c.name).filter((n) => names.has(n.trim().toLowerCase()));
+};
+
 describe('combat v2 content gate: names and words of the bosses (the compendium tone)', () => {
   const raidMoves = Object.values(pack.raidBosses).flatMap((r) => [
     ...r.moves,
@@ -640,7 +647,7 @@ describe('combat v2 content gate: names and words of the bosses (the compendium 
 
   it('new words are keywords: the shapes, the anchors and Escalating', () => {
     for (const k of [
-      'Scatter',
+      'Barrage',
       'Leap',
       'Cross',
       'Checker',
@@ -661,18 +668,24 @@ describe('combat v2 content gate: names and words of the bosses (the compendium 
       expect(reactions.has(name.toLowerCase()), name).toBe(false);
   });
 
-  it('a card is not named like a move: the card Bramble Bind adds the move Hush, and no boss move has a card’s name', () => {
-    const moves = [...raidMoves, ...foeMoves].map((m) => m.name.toLowerCase());
-    for (const c of Object.values(pack.cards)) {
-      // The card Great Wave and the tide move Great Wave are a known clash (KNOWN_CLASHES): a naming question for Misa.
-      if (!Object.hasOwn(KNOWN_CLASHES, c.name.toLowerCase()))
-        expect(moves, `${c.name}: a boss move with the name of a card`).not.toContain(
-          c.name.toLowerCase(),
-        );
-      for (const m of cardMoves(c))
-        expect(m.name.toLowerCase(), `${c.id}: its move`).not.toBe(c.name.toLowerCase());
-    }
+  it('a rule card’s name never equals a move’s name: any boss, foe, phase or card move (2026-11-01-combat-v2-names-a-card-never)', () => {
+    const moves = [...raidMoves, ...foeMoves, ...Object.values(pack.cards).flatMap(cardMoves)];
+    expect(cardsNamedLikeAMove(Object.values(pack.cards), moves)).toEqual([]);
+    expect(pack.cards['great-wave']?.name).toBe('Full Sweep');
     expect(cardMoves(pack.cards['bramble-bind']!).map((m) => m.name)).toEqual(['Hush']);
+  });
+
+  it('the card-name rule fails on a clash: a card named like a boss move, or like a move it adds itself', () => {
+    const bramble = pack.cards['bramble-bind'] as CardDef;
+    const tide = raidMoves.find((m) => m.name === 'Great Wave');
+    expect(tide, 'the Tidal Colossus keeps its tide move Great Wave').toBeDefined();
+    expect(cardsNamedLikeAMove([{ ...bramble, name: 'great wave' }], [tide!])).toEqual([
+      'great wave',
+    ]);
+    expect(cardsNamedLikeAMove([{ ...bramble, name: 'Hush' }], cardMoves(bramble))).toEqual([
+      'Hush',
+    ]);
+    expect(cardsNamedLikeAMove([bramble], [tide!])).toEqual([]);
   });
 
   it('Molten Shell grows armour and Wisp Fog grows dodge, as their names say', () => {

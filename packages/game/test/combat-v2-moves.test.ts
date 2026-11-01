@@ -43,7 +43,7 @@ describe('moveLabel', () => {
     for (const anchor of MOVE_ANCHORS) {
       expect(label('scatter', anchor)).toBe('Barrage');
       expect(label('all', anchor)).toBe('Quake');
-      expect(label('chain', anchor)).toBe('Leaping Strike');
+      expect(label('chain', anchor)).toBe('Leap');
       expect(label('cross', anchor)).toBe('Cross');
       expect(label('checker', anchor)).toBe('Checker');
       expect(label('rowEnds', anchor)).toBe('Pincer');

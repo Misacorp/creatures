@@ -35,7 +35,7 @@ export const FOE_QUESTION_GAP = 0.25;
 export const FOE_QUESTIONS: Readonly<Record<string, FoeQuestion>> = Object.fromEntries(
   (
     [
-      // A Scatter of splashes lands on every creature of a small team at once: a Guard with Wide Reach beside the others covers them all (an area hit).
+      // A Barrage of splashes lands on every creature of a small team at once: a Guard with Wide Reach beside the others covers them all (an area hit).
       [
         'puddle-imp',
         'family:Reach',

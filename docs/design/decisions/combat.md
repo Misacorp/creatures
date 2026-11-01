@@ -4,6 +4,18 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-01: [Misa] Combat v2 names: a card never shares a move's name (Full Sweep), Barrage and Leap are both keyword and shape word, the Puddle Imp asks for a Guard
+
+ID: `2026-11-01-combat-v2-names-a-card-never` · Status: current
+
+**Decision.** Misa left these to the lead (2026-11-01: "make up the rules and the names; we can change them later"):
+
+- **A rule card's name never equals a move's name.** The card Great Wave becomes **Full Sweep** (it adds a Wild Sweep); the Tidal Colossus keeps its tide move Great Wave. The content test checks the rule.
+- **A shape's keyword and its label word are the same word.** The keyword Scatter becomes **Barrage** (the label word), and the label word Leaping Strike becomes **Leap** (the keyword), so every shape is one word: Slam, Lance, Sweep, Barrage, Quake, Strike, Hush, Pincer, Leap ("Nemesis Leap").
+- **The Puddle Imp asks for a Guard** (Wide Reach) since its splashes became a Barrage of hits on different creatures (2026-11-01 retune): Misa, "dodging and a Guard both help, so that's fine".
+
+**Reasoning.** One word per idea for players; a card that shares a move's name would read as that boss's move.
+
 ## 2026-11-01: [Misa] Combat v2 move library: a themed name per behaviour and element, the behaviour fixed
 
 ID: `2026-11-01-combat-v2-move-library-a-themed` · Status: current · Amends: `2026-11-01-combat-v2-names-batches-3-and`

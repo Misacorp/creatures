@@ -141,7 +141,7 @@ Trades against: P-01.
 Status: proposed (first panel, 2026-10-26)
 Statement: A rule card's icon appears on a creature only when the lab shows that creature's Knack beats the usual team on that card.
 Pass: Sense Weakness beside the Payoff beats the classic line on Thick Hide (+20% in the v0.4 report).
-Fail: Night Watch shown as the Great Wave answer while it does 5% worse than the classic line.
+Fail: Night Watch shown as the Full Sweep answer while it does 5% worse than the classic line.
 Review question: Does the report's "intended answers" table show this answer winning?
 Check: report "Do each card's intended answers work?".
 Trades against: P-08 (fewer icons until answers are tuned).

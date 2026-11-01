@@ -468,7 +468,7 @@ Words for what a boss does and how it changes. The moves themselves are in the "
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- | -------- |
 | Wind-up    | A boss move announced at round start: its slots are shown, and it lands on them.                                                                                                                                         | The Spark mark Charged           |          |
 | Mired      | A debuff on the boss: per stack it deals less damage and dodges less (at most 5 stacks). It fades by 1 at the end of every round.                                                                                        | A mark                           |          |
-| Scatter    | A boss attack or move that hits a number of different creatures, drawn at random from the whole arena.                                                                                                                   | A hit on every creature of a row |          |
+| Barrage    | A boss attack or move that hits a number of different creatures, drawn at random from the whole arena.                                                                                                                   | A hit on every creature of a row | Scatter  |
 | Leap       | A boss move that hits one creature, then jumps to the strongest creature right next to it, and on, each jump softer.                                                                                                     | The Knack family Chain           |          |
 | Cross      | A boss move that hits one creature and the creatures right beside, in front of and behind it.                                                                                                                            | A whole row or column            |          |
 | Checker    | A boss move that hits every other slot of the arena, like the dark squares of a board.                                                                                                                                   | A row                            |          |
@@ -493,8 +493,8 @@ A rule card is a question a boss asks: can you land big hits, can you take a cri
 | Wither              | Healing is halved; can you prevent damage instead?                                                                           | Taunt                    |              |
 | Payoff Hunter       | Every 3 rounds it slams the strongest Payoff (aimed) and the slots beside it (area); is a Guard there?                       | Reach                    |              |
 | Grudge              | It hits whoever dealt the most last round.                                                                                   | Taunt                    |              |
-| Great Wave          | Every 3 rounds a Wind-up sweep of a row; who stands there?                                                                   | Intercept, Row Ward      |              |
-| Swarm               | Its plain attack becomes a Scatter of 4 small hits; does armour or dodge hold?                                               | Evasion, Evasion aura    |              |
+| Full Sweep          | Every 3 rounds a Wind-up sweep of a row; who stands there?                                                                   | Intercept, Row Ward      | Great Wave   |
+| Swarm               | Its plain attack becomes a Barrage of 4 small hits; does armour or dodge hold?                                               | Evasion, Evasion aura    |              |
 | Crusher             | One huge hit on the strongest every third round.                                                                             | Reach, Sustain           |              |
 | Fizzle              | A mark left by a reaction cannot be cashed until after the next boss turn; do your chains cross rows?                        | Chain                    |              |
 | Shake It Off        | Every 3 rounds the boss clears all its debuffs; can you put them back?                                                       | Debuff                   |              |
@@ -502,13 +502,13 @@ A rule card is a question a boss asks: can you land big hits, can you take a cri
 | Reaction Resistance | Raid only: from stage 2 it resists your most-used reaction.                                                                  | none written (raid only) |              |
 | Element Resistance  | Raid only: from stage 2 the element that dealt the most damage hits it a quarter softer; is your team more than one element? | none written (raid only) |              |
 
-Some cards give the boss a move (Bramble Bind, Payoff Hunter, Great Wave, Crusher). Those moves are in the move library, under "Card moves" in the "Moves" section below. The card Great Wave and the Tidal Colossus's tide move Great Wave share a name: an open naming question for Misa (the content gate lists it as a known clash).
+Some cards give the boss a move (Bramble Bind, Payoff Hunter, Full Sweep, Crusher). Those moves are in the move library, under "Card moves" in the "Moves" section below. The card Full Sweep (was Great Wave) adds the move Wild Sweep; the Tidal Colossus keeps its tide move Great Wave, because a card's name never equals a move's name (the content gate checks it). The card's id is still `great-wave`.
 
 ## Moves
 
 Every boss and foe move of combat v2 is one move of the **move library**: a themed name and a behaviour that never changes. The name is a coat of paint (and later an animation) over the behaviour; the **label** under each name is what the move does, in the words a player learns once ("Deepwater Spear · Nemesis Lance"). A behaviour has one name per element, shared by every boss and foe of that element that uses it. A rule card has no element, so the move a card adds is named by its plain label. Power, rhythm, count and Wind-up belong to the boss that uses the move, so none are here. `(design: decisions, 2026-11-01, "Combat v2 move library"; grammar.md, "Boss moves: behaviour and paint")` The names and the element tables were approved by Misa on 2026-11-01. `(content: combat-v2/moves.json)`
 
-Each entry: the name and its label, who uses it, the older names it replaces (so old docs and lab reports stay readable), and a line of canon. The labels are: Front, Rear, Payoff, Nemesis (the strongest), Wild (at random) and Vulture (the most hurt) for whom a move picks, and Slam, Lance, Sweep, Barrage, Quake, Strike, Hush, Pincer and Leaping Strike for what it hits (`grammar.md`).
+Each entry: the name and its label, who uses it, the older names it replaces (so old docs and lab reports stay readable), and a line of canon. The labels are: Front, Rear, Payoff, Nemesis (the strongest), Wild (at random) and Vulture (the most hurt) for whom a move picks, and Slam, Lance, Sweep, Barrage, Quake, Strike, Hush, Pincer and Leap for what it hits (`grammar.md`; Leap was Leaping Strike, and Barrage was Scatter as a keyword).
 
 ### Tide moves
 
@@ -535,7 +535,7 @@ Heat that lives in stone: warm, heavy and a little dangerous.
 - **Scorch Lane** (Wild Lance). Used by the Cinder Wyrm. Canon `(compendium detail, not shipped)`: A lane of heat across the cave floor, chosen on a whim.
 - **Cinder Fall** (Barrage). Used by the Cinder Wyrm and the Ember Mite. Was Flare Up (Ember Mite). Canon `(compendium detail, not shipped)`: Embers drifting down like a warm, unwelcome snow.
 - **Eruption** (Quake). Used by the Cinder Wyrm. Canon `(compendium detail, not shipped)`: The whole floor warms and heaves, and nobody is left out.
-- **Ember Leap** (Leaping Strike). Used by the Cinder Wyrm. Canon `(compendium detail, not shipped)`: A spark that jumps from the best fuel to the next best.
+- **Ember Leap** (Leap). Used by the Cinder Wyrm. Canon `(compendium detail, not shipped)`: A spark that jumps from the best fuel to the next best.
 - **Ash Cloud** (Checker). Used by the Cinder Wyrm. Canon `(compendium detail, not shipped)`: A grey cloud that settles on every other stone.
 
 ### Grove moves
@@ -549,7 +549,7 @@ Living patience: it holds, shelters and grows over time.
 - **Thorn Wall** (Front Sweep). Used by Thornmother. Canon `(compendium detail, not shipped)`: A hedge rises across the front rows.
 - **Spiky Spine** (Rear Sweep). Used by Thornmother. Was Back Thorns. Canon `(compendium detail, not shipped)`: Her back is the part everybody forgets to watch.
 - **Thorn Rain** (Barrage). Used by Thornmother and the Bramble Matron. Was Seed Burst and Bloom Storm (Thornmother), which became one move. Canon `(compendium detail, not shipped)`: Seeds fall like hail from a tree in bloom, and in the Second Bloom there are more of them.
-- **Thorn Lash** (Leaping Strike). Used by Thornmother. Canon `(compendium detail, not shipped)`: A whip of vine that finds the strongest, then the one beside.
+- **Thorn Lash** (Leap). Used by Thornmother. Canon `(compendium detail, not shipped)`: A whip of vine that finds the strongest, then the one beside.
 - **Bramble Cross** (Cross). Used by Thornmother. Canon `(compendium detail, not shipped)`: A cross of brambles pressed down on one spot.
 
 ### Spark moves
@@ -561,7 +561,7 @@ Quick, bright and short-lived: it arrives before the sound does.
 - **Lightning Bolt** (Wild Lance). Used by the Storm Sovereign. Was Forked Lightning. Canon `(compendium detail, not shipped)`: One bright line, down one column, from nowhere in particular.
 - **Forked Lightning** (Barrage). Used by the Storm Sovereign. Was Ball Lightning. Canon `(compendium detail, not shipped)`: Many small flickers, forked and fast, landing all over.
 - **Storm Front** (Quake). Used by the Storm Sovereign and the Flicker Swarm. Was Buzz Cloud (Swarm). Canon `(compendium detail, not shipped)`: The whole sky leans in at once.
-- **Arc Lash** (Leaping Strike). Used by the Static Bat and the Coil Baron. Was Zap Dive (Bat). Canon `(compendium detail, not shipped)`: A little arc that hops from one creature to the next.
+- **Arc Lash** (Leap). Used by the Static Bat and the Coil Baron. Was Zap Dive (Bat). Canon `(compendium detail, not shipped)`: A little arc that hops from one creature to the next.
 - **Thunderbolt** (Payoff Strike). Used by the Storm Sovereign. Was Spark Dive. Canon `(compendium detail, not shipped)`: One bolt, for one creature: the brightest.
 - **Judgement Bolt** (One-shot). Used by the Storm Sovereign. Canon `(compendium detail, not shipped)`: The sky takes a long breath before it speaks, and it speaks once.
 
@@ -584,7 +584,7 @@ A rule card has no element, so the move it adds has the plain label as its name.
 
 - **Hush** (Hush). Added by the card Bramble Bind. Canon `(compendium detail, not shipped)`: The plain version: the ends of the line go quiet.
 - **Payoff Slam** (Payoff Slam). Added by the card Payoff Hunter. Canon `(compendium detail, not shipped)`: The plain version: the boss goes for the one who has been shining, and the creatures beside them feel it.
-- **Wild Sweep** (Wild Sweep). Added by the card Great Wave. Canon `(compendium detail, not shipped)`: The plain version: a whole row, somewhere, announced a round ahead.
+- **Wild Sweep** (Wild Sweep). Added by the card Full Sweep. Canon `(compendium detail, not shipped)`: The plain version: a whole row, somewhere, announced a round ahead.
 - **Crush** (Nemesis Strike). Added by the card Crusher. Canon `(compendium detail, not shipped)`: The plain version: one huge hit on the biggest hitter.
 
 ## Escalating meters
