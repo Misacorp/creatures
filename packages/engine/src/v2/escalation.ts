@@ -47,12 +47,28 @@ export const grown = (s: State): Grown => {
 };
 
 /**
- * The boss's moves now: its own, and its phase's once the phase change has applied, in the boss card's order. Moves due on
- * one boss turn are announced and land in this order (R8.3, panel 5), then the plain attack.
+ * A boss's moves once its phase has begun: a phase move with the id of one of the boss's own moves REPLACES it, in its place in the
+ * boss card's order (Second Bloom's stronger Thorn Rain: the boss has one move of that behaviour, never two); every other phase
+ * move is added after the own ones.
+ */
+export function withPhase(
+  own: readonly BossMove[],
+  phase: readonly BossMove[],
+): readonly BossMove[] {
+  return [
+    ...own.map((m) => phase.find((p) => p.id === m.id) ?? m),
+    ...phase.filter((p) => !own.some((m) => m.id === p.id)),
+  ];
+}
+
+/**
+ * The boss's moves now: its own, and its phase's once the phase change has applied (a phase move with the id of an own move
+ * replaces it, see `withPhase`), in the boss card's order. Moves due on one boss turn are announced and land in this order (R8.3,
+ * panel 5), then the plain attack.
  */
 export const movesOf = (s: State): readonly BossMove[] =>
   s.esc.phase && s.boss.escalation?.phase
-    ? (s.phaseMoves ??= [...s.boss.moves, ...s.boss.escalation.phase.moves])
+    ? (s.phaseMoves ??= withPhase(s.boss.moves, s.boss.escalation.phase.moves))
     : s.boss.moves;
 
 /** The feed units now: event feeds count as they happen; `rounds` and `hpLost` are read from the fight. */

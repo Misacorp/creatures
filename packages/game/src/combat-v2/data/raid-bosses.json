@@ -2,14 +2,14 @@
   {
     "id": "tidal-colossus",
     "rows": 3,
-    "armour": 34,
-    "atk": 114,
+    "armour": 41,
+    "atk": 113,
     "hp": 19100,
     "plain": { "pattern": { "anchor": "front", "shape": "row" }, "powerBp": 2500 },
     "moves": [
       { "id": "undertow", "every": 3, "turn": 0, "powerBp": 9000 },
       { "id": "spray", "every": 2, "turn": 0, "powerBp": 5000, "n": 4, "perColumns": 4 },
-      { "id": "tidal-pull", "every": 2, "turn": 1, "powerBp": 6000, "n": 2, "perColumns": 4 },
+      { "id": "deepwater-spear", "every": 3, "turn": 1, "powerBp": 12000, "n": 2, "perColumns": 4 },
       {
         "id": "riptide",
         "every": 4,
@@ -21,14 +21,6 @@
       },
       { "id": "rogue-wave", "every": 6, "turn": 1, "powerBp": 12300, "windUp": true },
       { "id": "great-wave", "every": 3, "turn": 2, "powerBp": 13900, "windUp": true },
-      {
-        "id": "deepwater-spear",
-        "every": 5,
-        "turn": 2,
-        "powerBp": 15000,
-        "n": 1,
-        "perColumns": 4
-      },
       { "id": "backflow", "every": 7, "turn": 0, "powerBp": 8000, "n": 2 }
     ],
     "cards": ["adapts", "shake-it-off"],
@@ -40,8 +32,8 @@
       "grow": { "atkBp": 1300, "area": 1 }
     },
     "ranks": {
-      "low": { "hpBp": 8672, "atkBp": 8300, "armourBp": 6500 },
-      "mid": { "hpBp": 8778, "atkBp": 9400, "armourBp": 7400 }
+      "low": { "hpBp": 7100, "atkBp": 8200, "armourBp": 9900 },
+      "mid": { "hpBp": 7700, "atkBp": 9400, "armourBp": 10000 }
     },
     "asks": "The whole sea sweeps the rows. Wide Reach and row wards turn the waves; who stands where?",
     "note": "The sea washes the mud off it (Shake It Off), so Mired is no must-have here; reactions it resists from stage 2. The tide rises as the Colossus is hurt: every fifth of its HP gone widens its columns and rows, and Mired slows it."
@@ -145,12 +137,13 @@
         "name": "Second Bloom",
         "moves": [
           {
-            "id": "bloom-storm",
+            "id": "thorn-rain",
             "every": 2,
-            "turn": 0,
-            "powerBp": 7000,
+            "turn": 1,
+            "powerBp": 11000,
             "n": 6,
-            "perColumns": 4
+            "perColumns": 4,
+            "windUp": true
           },
           { "id": "thorn-wall", "every": 4, "turn": 2, "powerBp": 9000, "n": 2 }
         ]

@@ -134,7 +134,7 @@
         { "id": "sluice-pull", "every": 2, "turn": 0, "powerBp": 7000, "n": 2 }
       ],
       "signature": {
-        "id": "sluice-surge",
+        "id": "rogue-wave",
         "every": 4,
         "turn": 0,
         "powerBp": 11000,
@@ -212,7 +212,7 @@
       "armour": 22,
       "plain": { "pattern": { "anchor": "front", "shape": "single" }, "powerBp": 6000 },
       "moves": [{ "id": "sink-down", "every": 3, "turn": 0, "powerBp": 6000 }],
-      "signature": { "id": "fen-tug", "every": 4, "turn": 0, "powerBp": 11000, "windUp": true },
+      "signature": { "id": "sinking-mud", "every": 4, "turn": 0, "powerBp": 11000, "windUp": true },
       "cards": ["shake-it-off"],
       "asks": "A heavy sweep of the line announced at round start, and it washes off every debuff every third round. Night Watch takes the first Wind-up hit."
     }

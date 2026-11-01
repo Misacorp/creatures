@@ -164,10 +164,16 @@ export function bossLine(b: BossDef): string {
         .map(([k, v]) => `${k} ${v}`)
         .join(', ')
     : '';
+  // A phase move with the id of an own move replaces it (Second Bloom's stronger Thorn Rain): the line says so.
+  const phaseMoves = (esc?.phase?.moves ?? []).map((m) =>
+    b.moves.some((o) => o.id === m.id)
+      ? `${moveText(m)} from ${esc?.phase?.name ?? 'the phase'}, replacing the move of its name`
+      : moveText(m),
+  );
   return (
     `**${b.name}** (${b.element}): ${b.rows} rows of ${b.cols}, armour ${b.armour}, Attack ${b.atk}, HP ${b.hp}; ` +
     `plain: ${shapeText(b.plain.pattern)}${b.plain.hits && b.plain.hits > 1 ? ` x${b.plain.hits}` : ''}; ` +
-    `moves: ${[...b.moves, ...(esc?.phase?.moves ?? [])].map(moveText).join('; ')}; ` +
+    `moves: ${[...b.moves.map(moveText), ...phaseMoves].join('; ')}; ` +
     `cards: ${b.cards.join(', ') || 'none'}` +
     (esc
       ? `; escalation: ${esc.name} (feeds on ${esc.feed}, a step per ${esc.per}${esc.feed === 'hpLost' ? ' bp of HP lost' : ''}${esc.perColumns ? ` per ${esc.perColumns} columns` : ''}, up to ${esc.cap}; each step: ${grow}${esc.phase ? `; ${esc.phase.name} from step ${esc.phase.atStep}` : ''})`

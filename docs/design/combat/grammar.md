@@ -52,6 +52,8 @@ A move with no target (Barrage, Quake, Hush, Pincer) needs no target word. In a 
 
 A boss, foe or card refers to a library move by `id` and carries **only its numbers**: `every`, `turn`, `powerBp`, `n`, `perColumns`, `decayBp`, `anchors`, `windUp` (Wind-up), `silenceTurns`, `strengthBp`, `oneShotBp`. The schema has no field for a name, a shape or an anchor, so a usage cannot change what a move is. The loader builds the engine's `BossMove` from the pair (name and the pattern's shape and anchor from the library); the engine knows nothing of the library. It refuses a usage of a move that is not in the library, of another element's move (a card's move has no element), or one whose `silenceTurns` or `oneShotBp` does not fit the move.
 
+**One behaviour once.** The loader refuses a library where two moves of one element share a label, and a boss or foe with two moves of one label: its own moves, its landmark move and its phase's moves together, before the phase and after it, and the moves its cards add (a card Hush on a boss that has Bramble Hush). Merge them into one and let the numbers or the phase carry the difference. An escalation's **phase** adds moves, or **replaces** one: a phase move with the same library id as one of the boss's own moves takes that move's place when the phase begins (Thornmother's Second Bloom replaces her Thorn Rain with a stronger one and adds Thorn Wall). The engine does it in `withPhase` (`escalation.ts`); the lab's report says "replacing the move of its name".
+
 **The label** is `moveLabel(move)` (`packages/game/src/combat-v2/moves.ts`), made from the library entry: the target word from the anchor and the shape word from the shape, or the shape word alone for a move with no target. The board shows it under the move's own name. A column and several columns are one Lance, a row and several rows one Sweep, but the library keeps the shapes apart (`column` and `columns`, `row` and `rows`): an Escalating boss's area growth widens only `columns` and `rows`, so Undertow, a `row`, stays one row while Backflow, `rows`, grows. A move's `n` is its count, and it belongs to the boss.
 
 **Adding a move:**
@@ -59,7 +61,7 @@ A boss, foe or card refers to a library move by `id` and carries **only its numb
 1. Name the behaviour first: a shape word and a target word from the table. A new shape or target word is a new rule (an engine change and a keyword); it needs a reason, like a new Knack family.
 2. Look the behaviour up in the library for the boss's element. If it is there, use that move with the boss's own numbers. Don't paint a second name on a behaviour the element already has.
 3. If the element has no move for it, add one: a themed name in the element's voice (read `docs/compendium/` for tone), not used by any other move, Knack, talent, card or keyword (P-06). It goes to Misa with the other new names.
-4. The content test (`packages/game/test/combat-v2-content.test.ts`) fails if a name stands for two behaviours or clashes with another name.
+4. The loader and the content test (`packages/game/test/combat-v2-content.test.ts`) fail if a library name is used twice, if an element has two moves of one label, if a boss has two moves of one label, if a library move has no user, or if a name clashes with another name (a Knack, a talent, a card, a keyword).
 
 ## Template: a Knack
 

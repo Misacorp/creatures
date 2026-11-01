@@ -20,7 +20,7 @@ import {
   type PatternDef,
   type RaidBossDef,
 } from './boss-schema';
-import { MoveFileSchema, type MoveDef } from './moves';
+import { MoveFileSchema, moveLabel, type MoveDef } from './moves';
 import { ADDITIVE_FIELDS } from './fx-schema';
 import { RaidTrackSchema, type RaidTrackDef } from './track-schema';
 import { RulesSchema, type CombatRules } from './rules-schema';
@@ -137,9 +137,54 @@ function withPhase(base: readonly BossMoveDef[], phase: readonly BossMoveDef[]):
   return [...replaced, ...phase.filter((p) => !base.some((m) => m.id === p.id))];
 }
 
+/** The plain label of the behaviour of a resolved move (`moveLabel`). */
+const behaviourOf = (m: BossMoveDef): string =>
+  moveLabel({
+    shape: m.pattern.shape,
+    anchor: m.pattern.anchor,
+    silences: m.silenceTurns !== undefined,
+    oneShot: m.oneShotBp !== undefined,
+  });
+
+/** The moves the cards add (`move` operations), in the order of the cards. */
+const cardMovesOf = (
+  cards: readonly string[],
+  known: Readonly<Record<string, CardDef>>,
+): BossMoveDef[] =>
+  cards.flatMap((c) =>
+    (Object.hasOwn(known, c) ? (known[c]?.ops ?? []) : []).flatMap((o) =>
+      o.op === 'move' ? [o.move] : [],
+    ),
+  );
+
+/**
+ * One behaviour once: a boss or foe never has two moves with the same label, before its phase or after it (a phase move that
+ * replaces an own move leaves one), counting the moves its cards add (a Hush card on a boss that has its own Hush). Merge two such
+ * moves into one and let the numbers, or the phase, carry the difference. With one name per behaviour and element in the library
+ * (checked on load), the only way to get two is a card's element-less move beside an element's own.
+ */
+function checkOneBehaviour(
+  owner: string,
+  base: readonly BossMoveDef[],
+  phase: readonly BossMoveDef[],
+  cardMoves: readonly BossMoveDef[],
+): void {
+  for (const state of [base, withPhase(base, phase)]) {
+    const byLabel = new Map<string, string>();
+    for (const m of [...state, ...cardMoves]) {
+      const label = behaviourOf(m);
+      const other = byLabel.get(label);
+      if (other !== undefined)
+        fail(`${owner} has two ${label} moves, "${other}" and "${m.id}": merge them into one`);
+      byLabel.set(label, m.id);
+    }
+  }
+}
+
 /**
  * The checks both kinds of boss share: unique move ids (a phase move may repeat the id of an own move: it replaces it), moves on a
- * real boss turn, known cards. `base` is the boss's own moves (a foe's signature with them), `phase` the escalation's phase moves.
+ * real boss turn, known cards, one behaviour once. `base` is the boss's own moves (a foe's signature with them), `phase` the
+ * escalation's phase moves.
  */
 function checkBoss(
   kind: string,
@@ -166,6 +211,7 @@ function checkBoss(
   for (const c of cards) {
     if (!Object.hasOwn(known, c)) fail(`${kind} "${id}" names the unknown card "${c}"`);
   }
+  checkOneBehaviour(`${kind} "${id}"`, base, phase, cardMovesOf(cards, known));
 }
 
 /**
@@ -338,11 +384,20 @@ export function loadCombatV2(
   // The move library: a name and a behaviour per move.
   const moves: Record<string, MoveDef> = {};
   const moveNames = new Set<string>();
+  const behaviours = new Map<string, string>();
   for (const m of moveFile) {
     if (Object.hasOwn(moves, m.id)) fail(`duplicate move id "${m.id}"`);
     const name = m.name.trim().toLowerCase();
     if (moveNames.has(name)) fail(`duplicate move name "${m.name}"`);
     moveNames.add(name);
+    // A behaviour has one name per element (a card has no element).
+    const behaviour = `${m.element ?? 'a card'}: ${moveLabel(m)}`;
+    const named = behaviours.get(behaviour);
+    if (named !== undefined)
+      fail(
+        `moves "${named}" and "${m.id}" share the label ${moveLabel(m)} for ${m.element ?? 'cards'}: a behaviour has one name per element`,
+      );
+    behaviours.set(behaviour, m.id);
     moves[m.id] = m;
   }
 
@@ -418,6 +473,13 @@ export function loadCombatV2(
       if (seen.has(c)) fail(`${where} adds "${c}" twice`);
       seen.add(c);
     }
+    // An extra card must not give the boss a second move of a behaviour it has.
+    checkOneBehaviour(
+      `${where} (${s.boss})`,
+      boss.moves,
+      boss.escalation?.phase?.moves ?? [],
+      cardMovesOf([...boss.cards, ...s.extraCards], cards),
+    );
   });
 
   const foeElements = new Map(shipped.foes.map((f) => [f.id, f.element]));

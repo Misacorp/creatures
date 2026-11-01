@@ -9,7 +9,13 @@ import { content } from '../src';
 import { talentContent } from '../src/content';
 import { dungeonContent } from '../src/content/dungeon';
 import { gearContent } from '../src/content/gear';
-import { combatV2, moveLabel, type BossMoveDef, type CardDef } from '../src/combat-v2';
+import {
+  combatV2,
+  moveLabel,
+  type BossMoveDef,
+  type CardDef,
+  type MoveDef,
+} from '../src/combat-v2';
 import linesJson from '../src/content/data/gear-lines.json';
 
 const pack = combatV2;
@@ -246,6 +252,61 @@ describe('combat v2 content gate: unique names (P-06)', () => {
   it('a boss or foe uses only the moves of its element, and a card only moves with no element', () => {
     for (const { owner, element, move } of movesWithOwners())
       expect(pack.moves[move.id]?.element, `${owner}: ${move.id}`).toBe(element);
+  });
+
+  it('a behaviour has one name per element: no two library moves share a label and an element', () => {
+    const seen = new Map<string, string>();
+    for (const m of Object.values(pack.moves)) {
+      const key = `${m.element ?? 'card'} ${moveLabel(m)}`;
+      expect(seen.get(key), `${m.id} repeats the ${key} of ${seen.get(key) ?? ''}`).toBeUndefined();
+      seen.set(key, m.id);
+    }
+    // Guard the rule itself: the library has several elements' Barrages and Quakes, so the loop compares real neighbours.
+    expect([...seen.keys()].filter((k) => k.endsWith(' Barrage'))).toHaveLength(5);
+  });
+
+  it('no raid boss or foe has two moves of one behaviour, counting its phase, its signature and the moves its cards add', () => {
+    const labelsOf = (moves: readonly BossMoveDef[]): string[] =>
+      moves.map((m) => moveLabel({ ...(pack.moves[m.id] as MoveDef) }));
+    const repeated = (labels: readonly string[]): string[] =>
+      labels.filter((l, i) => labels.indexOf(l) !== i);
+    // A phase move with the id of an own move replaces it (the engine's `withPhase`).
+    const afterPhase = (own: readonly BossMoveDef[], phase: readonly BossMoveDef[]) => [
+      ...own.map((m) => phase.find((p) => p.id === m.id) ?? m),
+      ...phase.filter((p) => !own.some((m) => m.id === p.id)),
+    ];
+    const owners: [string, BossMoveDef[], BossMoveDef[], string[]][] = [
+      ...Object.values(pack.raidBosses).map(
+        (b) =>
+          [
+            `raid boss ${b.id}`,
+            [...b.moves],
+            [...(b.escalation?.phase?.moves ?? [])],
+            [...b.cards],
+          ] as [string, BossMoveDef[], BossMoveDef[], string[]],
+      ),
+      ...Object.values(pack.foes).map(
+        (f) =>
+          [
+            `foe ${f.id}`,
+            [...f.moves, ...(f.signature ? [f.signature] : [])],
+            [...(f.escalation?.phase?.moves ?? [])],
+            [...f.cards],
+          ] as [string, BossMoveDef[], BossMoveDef[], string[]],
+      ),
+    ];
+    for (const [owner, own, phase, cards] of owners) {
+      const fromCards = cards.flatMap((c) => cardMoves(pack.cards[c] as CardDef));
+      for (const state of [own, afterPhase(own, phase)])
+        expect(repeated(labelsOf([...state, ...fromCards])), owner).toEqual([]);
+    }
+    // The moves a phase replaces are real: Thornmother's Second Bloom makes her one Thorn Rain stronger.
+    const rain = pack.raidBosses['thornmother'];
+    const own = rain?.moves.find((m) => m.id === 'thorn-rain');
+    const later = rain?.escalation?.phase?.moves.find((m) => m.id === 'thorn-rain');
+    expect(own && later && later.powerBp * 10 > own.powerBp * 10 && later.every <= own.every).toBe(
+      true,
+    );
   });
 
   it('every library move is used by a boss, a foe or a card', () => {

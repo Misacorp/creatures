@@ -3,7 +3,13 @@
  * Wicked, Shake It Off). Creatures and boss are built by hand with their effects named directly; the dice are scripted or a fixed
  * seed checks an invariant of the whole fight. These were the lab's `engine`, `strength` and `talents` rule tests about escalation.
  */
-import type { BossDef, BossMove, Escalation, FightResult } from '@creatures/engine/v2';
+import {
+  withPhase,
+  type BossDef,
+  type BossMove,
+  type Escalation,
+  type FightResult,
+} from '@creatures/engine/v2';
 import { describe, expect, it } from 'vitest';
 import {
   boss,
@@ -105,6 +111,35 @@ describe('the escalation carries across a raid weekend like HP (R22)', () => {
     expect(w.stages[0]?.escalation?.phase).toBe(false);
     expect(w.stages[0]?.escalation?.phaseNext).toBe(true);
     expect(w.stages[1]?.events.find((e) => e.kind === 'phase')?.round).toBe(1);
+  });
+
+  it('a phase move with the id of an own move replaces it, in its place; any other phase move is added', () => {
+    const pattern = { anchor: 'front', shape: 'single' } as const;
+    const own = [
+      move(pattern, { id: 'rain', name: 'Rain', powerBp: 1, turn: 0 }),
+      move(pattern, { id: 'wall', name: 'Wall', powerBp: 1, turn: 0 }),
+    ];
+    const phase = [
+      move(pattern, { id: 'extra', name: 'Extra', powerBp: 1, turn: 0 }),
+      move(pattern, { id: 'rain', name: 'Heavy Rain', powerBp: 2, turn: 0 }),
+    ];
+    const phased = esc({ per: 2, cap: 2, phase: { atStep: 1, name: 'P2', moves: phase } });
+    const r = play(arena(phased, { rounds: 6, moves: own }), team());
+    const names = (round: number) =>
+      r.events.filter((e) => e.kind === 'move' && e.round === round).map((e) => e.text);
+    // The phase applies at round 4's start.
+    expect(r.events.find((e) => e.kind === 'phase')?.round).toBe(4);
+    expect(names(3)).toEqual(['Rain', 'Wall']);
+    // The replacement keeps the replaced move's place; the added move comes after the own ones; the replaced move is gone.
+    expect(names(4)).toEqual(['Heavy Rain', 'Wall', 'Extra']);
+    expect(names(6)).toEqual(['Heavy Rain', 'Wall', 'Extra']);
+    // The replacement's own numbers are in play.
+    expect(withPhase(own, phase).map((m) => [m.id, m.powerBp])).toEqual([
+      ['rain', 2],
+      ['wall', 1],
+      ['extra', 1],
+    ]);
+    expect(withPhase(own, [])).toEqual(own);
   });
 
   it('every feed carries across the weekend: its count never starts a stage lower than the last one ended', () => {

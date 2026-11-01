@@ -293,6 +293,7 @@ export interface Escalation {
     /** The phase starts when the feed has `atStep * per` units (announced a round ahead; Mired does not delay it). */
     readonly atStep: number;
     readonly name: string;
+    /** Added once the phase applies; a move with the id of one of the boss's own moves REPLACES it (`withPhase`). */
     readonly moves: readonly BossMove[];
   };
 }

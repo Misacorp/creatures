@@ -28,7 +28,7 @@ import {
  * - Combat v2 (in development): every Knack, Knack family, keyword, rule card (except the plain baseline) and talent,
  *   by display name, in its own section: `combat.md` for the first four (one section each), the "Combat v2 talents"
  *   section of `talents.md` for the talents. The section matters: "Seal" is both a family and a keyword, and the v1
- *   talents above the v2 section must not stand in for a v2 talent. Boss and foe moves wait for the move library.
+ *   talents above the v2 section must not stand in for a v2 talent. The boss and foe moves (the move library), the Escalating meters and the Escalating phases are required in their own sections of `combat.md` too ("Moves", "Escalating meters").
  * - Journal entries: the entry id in backticks (the journal key is keyed by id).
  *
  * To fix a failure, add the entry to the named compendium file (see its README, "How to add an entry").
@@ -159,6 +159,26 @@ describe('compendium is in sync with shipped content', () => {
     const cards = Object.values(combatV2.cards).filter((c) => c.id !== 'plain');
     expect(cards.length).toBeGreaterThanOrEqual(15);
     expect(missingInSection('combat.md', 'Rule cards', cards)).toEqual([]);
+  });
+
+  it('has every combat v2 boss and foe move (the move library) in combat.md', () => {
+    const moves = Object.values(combatV2.moves);
+    expect(moves.length).toBeGreaterThanOrEqual(45);
+    expect(missingInSection('combat.md', 'Moves', moves)).toEqual([]);
+  });
+
+  it('has every combat v2 Escalating meter and Escalating phase in combat.md', () => {
+    const escalations = [
+      ...Object.values(combatV2.raidBosses).map((b) => ({ id: b.id, e: b.escalation })),
+      ...Object.values(combatV2.foes).map((f) => ({ id: f.id, e: f.escalation })),
+    ].flatMap(({ id, e }) => (e === undefined ? [] : [{ id, e }]));
+    expect(escalations.length).toBeGreaterThanOrEqual(10);
+    const named = escalations.flatMap(({ id, e }) => [
+      { id: `${id} meter`, name: e.name },
+      ...(e.phase === undefined ? [] : [{ id: `${id} phase`, name: e.phase.name }]),
+    ]);
+    expect(named.map((n) => n.name)).toContain('Second Bloom');
+    expect(missingInSection('combat.md', 'Escalating meters', named)).toEqual([]);
   });
 
   it('has every combat v2 talent in the combat v2 section of talents.md', () => {

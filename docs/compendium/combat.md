@@ -4,11 +4,11 @@ Status: written 2026-10-31, with the names Misa approved on 2026-10-31 and 2026-
 
 ## What this file is
 
-- The names of combat v2: the **Knack families**, the **Knacks**, the **keywords**, the **rule cards**. Combat v2 talents are in `talents.md`, in their own section. The plan is `docs/design/combat/content-as-data.md` section 7, the words and the grammar are `docs/design/combat/grammar.md`.
-- **The data files are the source of the numbers and the text:** `packages/game/src/combat-v2/data/` (`knacks.json`, `forms.json`, `keywords.json`, `cards.json`, `talents.json`). Text quoted here as `(content: combat-v2/...)` is copied from them on the day this file was written, so any number inside a quote belongs to the data, not to this file. If a quote and the data disagree, the data is right and this file is out of date.
+- The names of combat v2: the **Knack families**, the **Knacks**, the **keywords**, the **rule cards**, the boss and foe **moves** and the **Escalating meters**. Combat v2 talents are in `talents.md`, in their own section. The plan is `docs/design/combat/content-as-data.md` section 7, the words and the grammar are `docs/design/combat/grammar.md`.
+- **The data files are the source of the numbers and the text:** `packages/game/src/combat-v2/data/` (`knacks.json`, `forms.json`, `keywords.json`, `cards.json`, `moves.json`, `raid-bosses.json`, `foes.json`, `talents.json`). Text quoted here as `(content: combat-v2/...)` is copied from them on the day this file was written, so any number inside a quote belongs to the data, not to this file. If a quote and the data disagree, the data is right and this file is out of date.
 - In quoted player text, a word in `{braces}` is a keyword, with an entry in the keywords section below.
 - Where Misa renamed something, the old name is given ("was Steady Mark") so old docs, panel reviews and lab reports stay readable. Ids never changed: a rename was one edit to the data.
-- **Boss and foe moves, and the Escalating meters, are not here yet.** Combat v2 moves come with the move library (the plan names them by shape and target: `docs/design/combat/grammar.md`, "Boss moves: behaviour and paint"). They get entries in `bosses.md` and `dungeon.md` when the library lands.
+- **Boss and foe moves** are the move library (the "Moves" section below): a themed name per behaviour and element, with the plain label under it (`docs/design/combat/grammar.md`, "Boss moves: behaviour and paint"). The **Escalating meters** and the Second Bloom phase are in their own section after it. Who uses a move is listed there; the bosses' own entries in `bosses.md` and `dungeon.md` are the shipped fights, which still run on the older rules.
 - Tags are the ones in `README.md`. Canon lines are `(compendium detail, not shipped)` unless marked otherwise. The "Design" line of a Knack is `(design)`: what the Knack is for, from the `intent` in `knacks.json`, with the numbers left out.
 
 ## How the pieces fit
@@ -462,7 +462,7 @@ Who stands where, who covers whom, and what a creature can and cannot do. `(comp
 
 ### The boss's moves and moods
 
-Words for what a boss does and how it changes. The moves themselves wait for the move library. `(compendium detail, not shipped)`
+Words for what a boss does and how it changes. The moves themselves are in the "Moves" section after the rule cards. `(compendium detail, not shipped)`
 
 | Keyword    | Means                                                                                                                                                                                                                    | Is not                           | Old name |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- | -------- |
@@ -502,4 +502,108 @@ A rule card is a question a boss asks: can you land big hits, can you take a cri
 | Reaction Resistance | Raid only: from stage 2 it resists your most-used reaction.                                                                  | none written (raid only) |              |
 | Element Resistance  | Raid only: from stage 2 the element that dealt the most damage hits it a quarter softer; is your team more than one element? | none written (raid only) |              |
 
-Some cards give the boss a move (Bramble Bind, Payoff Hunter, Great Wave, Crusher). Those moves are named by shape and target in the move library, not here.
+Some cards give the boss a move (Bramble Bind, Payoff Hunter, Great Wave, Crusher). Those moves are in the move library, under "Card moves" in the "Moves" section below. The card Great Wave and the Tidal Colossus's tide move Great Wave share a name: an open naming question for Misa (the content gate lists it as a known clash).
+
+## Moves
+
+Every boss and foe move of combat v2 is one move of the **move library**: a themed name and a behaviour that never changes. The name is a coat of paint (and later an animation) over the behaviour; the **label** under each name is what the move does, in the words a player learns once ("Deepwater Spear · Nemesis Lance"). A behaviour has one name per element, shared by every boss and foe of that element that uses it. A rule card has no element, so the move a card adds is named by its plain label. Power, rhythm, count and Wind-up belong to the boss that uses the move, so none are here. `(design: decisions, 2026-11-01, "Combat v2 move library"; grammar.md, "Boss moves: behaviour and paint")` The names and the element tables were approved by Misa on 2026-11-01. `(content: combat-v2/moves.json)`
+
+Each entry: the name and its label, who uses it, the older names it replaces (so old docs and lab reports stay readable), and a line of canon. The labels are: Front, Rear, Payoff, Nemesis (the strongest), Wild (at random) and Vulture (the most hurt) for whom a move picks, and Slam, Lance, Sweep, Barrage, Quake, Strike, Hush, Pincer and Leaping Strike for what it hits (`grammar.md`).
+
+### Tide moves
+
+Patient water: it pulls, rises and falls back, and is never in a hurry.
+
+- **Deafening Mist** (Hush). Used by the Drift Wisp. Was Sea Mist. Canon `(compendium detail, not shipped)`: A mist so soft and so thick that your own voice stays in your throat.
+- **Riptide** (Wild Lance). Used by the Tidal Colossus. Canon `(compendium detail, not shipped)`: One thin current, picked on a whim, that takes everything standing in its lane.
+- **Deepwater Spear** (Nemesis Lance). Used by the Tidal Colossus. Was Tidal Pull and Deepwater Spear, which became one move. Canon `(compendium detail, not shipped)`: A long cold spear of the deep, thrown at whoever stands tallest.
+- **Sluice Pull** (Front Lance). Used by the Drowned Warden. Canon `(compendium detail, not shipped)`: The gate opens, and the water takes the front of the line and whoever is behind it.
+- **Undertow** (Front Sweep). Used by the Tidal Colossus. Canon `(compendium detail, not shipped)`: The sea draws back along the first row and takes the row with it.
+- **Backflow** (Rear Sweep). Used by the Tidal Colossus. Was Breaker. Canon `(compendium detail, not shipped)`: What went out comes back the other way, along the back.
+- **Rogue Wave** (Payoff Sweep). Used by the Tidal Colossus and, at a landmark, the Drowned Warden. Was Spring Tide (Colossus) and Sluice Surge (Warden). Canon `(compendium detail, not shipped)`: A wave that picks its row by who has been making the most noise.
+- **Great Wave** (Wild Sweep). Used by the Tidal Colossus. Canon `(compendium detail, not shipped)`: A wall of water that rises somewhere, and nobody knows where until it is up.
+- **Spray** (Barrage). Used by the Tidal Colossus. Canon `(compendium detail, not shipped)`: Drops flung high, falling wherever they please.
+- **Deluge** (Quake). Used by the Drowned Warden. Was Flood Gate. Canon `(compendium detail, not shipped)`: Every gate open at once, and the water finds the whole line.
+
+### Ember moves
+
+Heat that lives in stone: warm, heavy and a little dangerous.
+
+- **Anvil Fall** (Front Slam). Used by the Cinder Wyrm and the Slag Tyrant. Was Coil Crush (Wyrm). Canon `(compendium detail, not shipped)`: A weight of hot iron set down on whoever is first in line, warm to the creatures beside them.
+- **Volcanic Meteor** (Payoff Slam). Used by the Cinder Wyrm. Was Magma Spit. Canon `(compendium detail, not shipped)`: A lump of molten stone, sent to whoever burns brightest.
+- **Slag Spill** (Nemesis Slam). Used by the Slag Tyrant at a landmark. Canon `(compendium detail, not shipped)`: A slow pour of slag, aimed at the biggest hitter in the room.
+- **Scorch Lane** (Wild Lance). Used by the Cinder Wyrm. Canon `(compendium detail, not shipped)`: A lane of heat across the cave floor, chosen on a whim.
+- **Cinder Fall** (Barrage). Used by the Cinder Wyrm and the Ember Mite. Was Flare Up (Ember Mite). Canon `(compendium detail, not shipped)`: Embers drifting down like a warm, unwelcome snow.
+- **Eruption** (Quake). Used by the Cinder Wyrm. Canon `(compendium detail, not shipped)`: The whole floor warms and heaves, and nobody is left out.
+- **Ember Leap** (Leaping Strike). Used by the Cinder Wyrm. Canon `(compendium detail, not shipped)`: A spark that jumps from the best fuel to the next best.
+- **Ash Cloud** (Checker). Used by the Cinder Wyrm. Canon `(compendium detail, not shipped)`: A grey cloud that settles on every other stone.
+
+### Grove moves
+
+Living patience: it holds, shelters and grows over time.
+
+- **Bramble Hush** (Hush). Used by Thornmother, the Bramble Hound and the Bramble Matron. Was Thorn Snap (Hound) and Tangle (Matron). Canon `(compendium detail, not shipped)`: Brambles close in around the ends of the line, and nobody says a word.
+- **Briar Pincer** (Pincer). Used by Thornmother and, at a landmark, the Bramble Matron. Was Briar Cage. Canon `(compendium detail, not shipped)`: Two briars close like a pair of hands on the ends of the row.
+- **Vengeful Roots** (Nemesis Slam). Used by the Moss Lurker. Was Root Grab. Canon `(compendium detail, not shipped)`: Roots remember whoever was loudest, and reach for them first.
+- **Grasping Vines** (Wild Lance). Used by Thornmother. Was Root Snare. Canon `(compendium detail, not shipped)`: Vines climb one column and hold on to whoever is in it.
+- **Thorn Wall** (Front Sweep). Used by Thornmother. Canon `(compendium detail, not shipped)`: A hedge rises across the front rows.
+- **Spiky Spine** (Rear Sweep). Used by Thornmother. Was Back Thorns. Canon `(compendium detail, not shipped)`: Her back is the part everybody forgets to watch.
+- **Thorn Rain** (Barrage). Used by Thornmother and the Bramble Matron. Was Seed Burst and Bloom Storm (Thornmother), which became one move. Canon `(compendium detail, not shipped)`: Seeds fall like hail from a tree in bloom, and in the Second Bloom there are more of them.
+- **Thorn Lash** (Leaping Strike). Used by Thornmother. Canon `(compendium detail, not shipped)`: A whip of vine that finds the strongest, then the one beside.
+- **Bramble Cross** (Cross). Used by Thornmother. Canon `(compendium detail, not shipped)`: A cross of brambles pressed down on one spot.
+
+### Spark moves
+
+Quick, bright and short-lived: it arrives before the sound does.
+
+- **Static Strike** (Payoff Slam). Used by the Storm Sovereign. Was Static Field. Canon `(compendium detail, not shipped)`: A crackle of charge that goes to the best conductor in the room.
+- **Thunderclap** (Nemesis Slam). Used by the Storm Sovereign and, at a landmark, the Coil Baron. Was Coil Burst (Baron). Canon `(compendium detail, not shipped)`: The sound first, then the hit.
+- **Lightning Bolt** (Wild Lance). Used by the Storm Sovereign. Was Forked Lightning. Canon `(compendium detail, not shipped)`: One bright line, down one column, from nowhere in particular.
+- **Forked Lightning** (Barrage). Used by the Storm Sovereign. Was Ball Lightning. Canon `(compendium detail, not shipped)`: Many small flickers, forked and fast, landing all over.
+- **Storm Front** (Quake). Used by the Storm Sovereign and the Flicker Swarm. Was Buzz Cloud (Swarm). Canon `(compendium detail, not shipped)`: The whole sky leans in at once.
+- **Arc Lash** (Leaping Strike). Used by the Static Bat and the Coil Baron. Was Zap Dive (Bat). Canon `(compendium detail, not shipped)`: A little arc that hops from one creature to the next.
+- **Thunderbolt** (Payoff Strike). Used by the Storm Sovereign. Was Spark Dive. Canon `(compendium detail, not shipped)`: One bolt, for one creature: the brightest.
+- **Judgement Bolt** (One-shot). Used by the Storm Sovereign. Canon `(compendium detail, not shipped)`: The sky takes a long breath before it speaks, and it speaks once.
+
+### Mire moves
+
+Slow, soft and patient: the ground is not quite where you left it.
+
+- **Belly Flop** (Front Slam). Used by Old Bogback and the Tar Leech. Was Tar Cling (Leech). Canon `(compendium detail, not shipped)`: A heavy, wet flop on whoever is at the front.
+- **Bog Lob** (Payoff Slam). Used by Old Bogback. Canon `(compendium detail, not shipped)`: A clod of peat, lobbed at whoever is shining.
+- **Mud Slide** (Wild Lance). Used by Old Bogback. Canon `(compendium detail, not shipped)`: A slick of mud slides down one column, taking its time.
+- **Peat Wave** (Rear Sweep). Used by Old Bogback. Canon `(compendium detail, not shipped)`: A slow brown wave sits down on the back rows.
+- **Sinking Mud** (Wild Sweep). Used by Old Bogback and, at a landmark, the Fen Lurker. Was Fen Tug (Lurker). Canon `(compendium detail, not shipped)`: The ground goes soft under one whole row, and nobody saw which.
+- **Mud Spit** (Barrage). Used by Old Bogback and the Bog Toad. Was Rising Bubbles (Bogback). Canon `(compendium detail, not shipped)`: Bubbles rise, plop, and spit.
+- **Sink Down** (Quake). Used by the Fen Lurker. Canon `(compendium detail, not shipped)`: The fen lowers itself an inch, under everyone at once.
+- **Sinkhole** (Vulture Strike). Used by Old Bogback. Canon `(compendium detail, not shipped)`: A soft spot opens under the one who is already tired.
+
+### Card moves
+
+A rule card has no element, so the move it adds has the plain label as its name. `(content: combat-v2/moves.json, cards.json)`
+
+- **Hush** (Hush). Added by the card Bramble Bind. Canon `(compendium detail, not shipped)`: The plain version: the ends of the line go quiet.
+- **Payoff Slam** (Payoff Slam). Added by the card Payoff Hunter. Canon `(compendium detail, not shipped)`: The plain version: the boss goes for the one who has been shining, and the creatures beside them feel it.
+- **Wild Sweep** (Wild Sweep). Added by the card Great Wave. Canon `(compendium detail, not shipped)`: The plain version: a whole row, somewhere, announced a round ahead.
+- **Crush** (Nemesis Strike). Added by the card Crusher. Canon `(compendium detail, not shipped)`: The plain version: one huge hit on the biggest hitter.
+
+## Escalating meters
+
+An **Escalating** boss or foe has a meter with a name of its own. It fills from something the fight does, grows the boss a step each time it fills, up to a cap, and Mired slows it. (The words are in the keywords section above.) The names are Misa's, approved 2026-10-31 and 2026-11-01. `(content: combat-v2/raid-bosses.json, foes.json)`
+
+| Meter           | Whose           | Fills from            | Each step                                                        | Canon `(compendium detail, not shipped)`                          |
+| --------------- | --------------- | --------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Rising Tide     | Tidal Colossus  | HP lost               | A harder hit, and its columns and rows widen                     | The more it is hurt, the higher the water stands.                 |
+| Forge Heat      | Cinder Wyrm     | Reactions cashed      | A harder hit, and one more creature in each volley               | Every reaction is a breath on the coals.                          |
+| Awakening       | Thornmother     | HP lost               | A harder hit, one more jump, thinner bark; halfway, Second Bloom | She wakes by degrees, the way a garden does.                      |
+| Gathering Storm | Storm Sovereign | Rounds passed         | A harder hit and one more jump                                   | The longer it takes, the darker it gets.                          |
+| Maelstrom       | Drowned Warden  | Creatures knocked out | A harder hit                                                     | Each creature that falls lets the water rise. (Was Rising Water.) |
+| Wisp Fog        | Drift Wisp      | Its own dodges        | It dodges more                                                   | Every miss thickens the fog.                                      |
+| Warm Stones     | Ember Mite      | Marks shed            | A harder hit, and one more creature in each volley               | Each shed mark warms the stones a little more.                    |
+| Static Charge   | Static Bat      | Crits on it           | A harder hit                                                     | Every crit leaves a little charge on its fur.                     |
+| Molten Shell    | Slag Tyrant     | Reactions cashed      | More armour                                                      | Each reaction heats the shell until it glows.                     |
+| Tightening Coil | Coil Baron      | Rounds passed         | A harder hit and one more jump                                   | The coil winds tighter with every round.                          |
+
+### Second Bloom
+
+The **phase** of Thornmother's Awakening. Halfway through the meter she blooms: it is announced a round ahead, her one Thorn Rain gets stronger, and Thorn Wall joins the fight, so the whole arena is in play. `(content: combat-v2/raid-bosses.json; design: grammar.md, "Boss moves")` Canon `(compendium detail, not shipped)`: Spring comes late to her, and all at once.

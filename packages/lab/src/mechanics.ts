@@ -6,6 +6,7 @@
  * mechanic is really called for is measured (`ablation.ts`: taking it out of the boss's best line costs the line
  * clearly). The predicates read the data, so a change to a boss changes the list: nothing is claimed by hand.
  */
+import { withPhase } from '@creatures/engine/v2';
 import { FAMILIES } from './knacks';
 import { KEYWORDS } from './keywords';
 import { MODIFIER_CATEGORIES } from './modifiers';
@@ -31,7 +32,7 @@ interface Attack {
   readonly charged: boolean;
 }
 
-/** Every attack the boss can make: its plain attack, its moves and its phase's moves. */
+/** Every attack the boss can make: its plain attack and its moves, as its phase leaves them (a phase move replaces the move of its id). */
 export function attacksOf(boss: BossDef): Attack[] {
   const fromMove = (m: BossMove): Attack => ({
     pattern: m.pattern,
@@ -50,8 +51,7 @@ export function attacksOf(boss: BossDef): Attack[] {
       silenceTurns: 0,
       charged: false,
     },
-    ...boss.moves.map(fromMove),
-    ...(boss.escalation?.phase?.moves.map(fromMove) ?? []),
+    ...withPhase(boss.moves, boss.escalation?.phase?.moves ?? []).map(fromMove),
   ];
 }
 

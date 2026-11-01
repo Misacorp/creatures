@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { content } from '../src';
 import { dungeonContent } from '../src/content/dungeon';
 import { gearContent } from '../src/content/gear';
-import { ADDITIVE_FIELDS, combatV2, loadCombatV2 } from '../src/combat-v2';
+import { ADDITIVE_FIELDS, combatV2, loadCombatV2, moveLabel, type MoveDef } from '../src/combat-v2';
 import cards from '../src/combat-v2/data/cards.json';
 import foes from '../src/combat-v2/data/foes.json';
 import forms from '../src/combat-v2/data/forms.json';
@@ -58,6 +58,7 @@ interface RawMove {
   n?: number;
   silenceTurns?: number;
   windUp?: boolean;
+  oneShotBp?: number;
   name?: string;
   pattern?: Fx;
 }
@@ -464,21 +465,21 @@ describe('combat v2 content', () => {
 
 /** The track as the lab had it before it became data (`track.ts`: `SLOT_NUMBERS`, the ladder's strengths, `SLOT_CARDS`, `SLOT_EXTRA_CARDS`). */
 const LAB_TRACK = [
-  [1, 'tidal-colossus', 3_800, 83, 19, 1_833, 0, false, []],
+  [1, 'tidal-colossus', 3_800, 70, 25, 1_833, 0, false, []],
   [2, 'cinder-wyrm', 7_500, 80, 42, 3_000, 1, false, []],
   [3, 'storm-sovereign', 13_500, 53, 7, 4_167, 2, true, []],
   [4, 'old-bogback', 28_200, 82, 19, 5_333, 2, true, []],
   [5, 'thornmother', 6_500, 155, 124, 6_500, 1, true, []],
-  [6, 'tidal-colossus', 15_600, 113, 21, 7_200, 2, true, ['slippery', 'breakwater']],
+  [6, 'tidal-colossus', 19_300, 88, 37, 7_200, 2, true, ['slippery', 'breakwater']],
   [7, 'cinder-wyrm', 10_200, 185, 48, 7_900, 2, true, []],
   [8, 'storm-sovereign', 7_000, 96, 5, 8_600, 2, true, ['lucky-strike']],
   [9, 'old-bogback', 32_800, 100, 33, 9_300, 2, true, []],
-  [10, 'thornmother', 8_000, 102, 149, 10_000, 1, true, []],
-  [11, 'tidal-colossus', 13_400, 143, 36, 10_000, 2, true, ['slippery', 'breakwater']],
+  [10, 'thornmother', 7_500, 102, 156, 10_000, 1, true, []],
+  [11, 'tidal-colossus', 13_100, 142, 42, 10_000, 2, true, ['slippery', 'breakwater']],
   [12, 'cinder-wyrm', 11_500, 199, 49, 10_000, 2, true, []],
   [13, 'storm-sovereign', 14_300, 48, 10, 10_000, 2, true, ['lucky-strike']],
   [14, 'old-bogback', 32_700, 117, 31, 10_000, 2, true, []],
-  [15, 'thornmother', 9_000, 97, 156, 10_000, 1, true, []],
+  [15, 'thornmother', 7_900, 107, 156, 10_000, 1, true, []],
 ] as const;
 
 describe('combat v2 raid track', () => {
@@ -599,7 +600,7 @@ describe('combat v2 move library', () => {
     expect(spear).toMatchObject({
       id: 'deepwater-spear',
       name: 'Deepwater Spear',
-      pattern: { anchor: 'strongest', shape: 'columns', n: 1, perColumns: 4 },
+      pattern: { anchor: 'strongest', shape: 'columns', n: 2, perColumns: 4 },
     });
     // Wind-up is the engine's `charged`; a silence keeps its `silenceTurns`.
     expect(
@@ -660,21 +661,14 @@ describe('combat v2 move library', () => {
     expect(broken((r) => (first(foe(r, 'flicker-swarm').moves).silenceTurns = 1))).toThrow(
       /foe "flicker-swarm": "storm-front" does not silence, so its use has no silenceTurns/,
     );
-    expect(
-      broken((r) => {
-        aMove(r, 'judgement-bolt').oneShot = false;
-      }),
-    ).toThrow(/"judgement-bolt" is not a one-shot, so its use has no oneShotBp/);
-    expect(
-      broken((r) => {
-        delete (aMove(r, 'judgement-bolt') as Partial<RawLibraryMove>).oneShot;
-      }),
-    ).toThrow(/"judgement-bolt" is not a one-shot, so its use has no oneShotBp/);
-    expect(
-      broken((r) => {
-        aMove(r, 'thunderbolt').oneShot = true;
-      }),
-    ).toThrow(/"thunderbolt" is a one-shot, so its use needs oneShotBp/);
+    const own = (r: Files, id: string): RawMove => byId(raid(r, 'storm-sovereign').moves, id);
+    expect(broken((r) => delete own(r, 'judgement-bolt').oneShotBp)).toThrow(
+      /raid boss "storm-sovereign": "judgement-bolt" is a one-shot, so its use needs oneShotBp/,
+    );
+    expect(broken((r) => (own(r, 'thunderbolt').oneShotBp = 1))).toThrow(
+      /raid boss "storm-sovereign": "thunderbolt" is not a one-shot, so its use has no oneShotBp/,
+    );
+    expect(aMove(clone({ moves }) as unknown as Files, 'judgement-bolt').oneShot).toBe(true);
   });
 
   it('a use cannot carry a name, a shape or an anchor, and a move needs a real shape and anchor', () => {
@@ -692,23 +686,113 @@ describe('combat v2 move library', () => {
     );
   });
 
-  it('a phase move with the id of an own move replaces it; two phase moves of one id are refused', () => {
-    // Thornmother's Second Bloom adds Bloom Storm and Thorn Wall; with the id of an own move it would replace that move.
+  const phaseOf = (r: Files, id: string): RawMove[] =>
+    (raid(r, id) as unknown as { escalation: { phase: { moves: RawMove[] } } }).escalation.phase
+      .moves;
+
+  it('a phase move with the id of an own move replaces it (Second Bloom’s Thorn Rain); two phase moves of one id are refused', () => {
+    // The shipped pack: Thornmother's Thorn Rain is replaced by a stronger one, and Thorn Wall is added.
+    const thorn = combatV2.raidBosses['thornmother'];
+    expect(thorn?.moves.filter((m) => m.id === 'thorn-rain')).toHaveLength(1);
+    expect(thorn?.escalation?.phase?.moves.map((m) => m.id)).toEqual(['thorn-rain', 'thorn-wall']);
+    expect(
+      broken((r) =>
+        phaseOf(r, 'thornmother').push({ id: 'spiky-spine', every: 2, turn: 2, powerBp: 9000 }),
+      ),
+    ).not.toThrow();
+    expect(
+      broken((r) => phaseOf(r, 'thornmother').push(clone(first(phaseOf(r, 'thornmother'))))),
+    ).toThrow(/raid boss "thornmother" has two moves "thorn-rain"/);
+  });
+
+  it('a behaviour has one name per element: two moves with the same label and element are refused', () => {
     expect(
       broken((r) => {
-        const e = (
-          raid(r, 'thornmother') as unknown as { escalation: { phase: { moves: RawMove[] } } }
-        ).escalation;
-        e.phase.moves.push({ id: 'spiky-spine', every: 2, turn: 2, powerBp: 9000 });
+        r.moves.push({
+          id: 'static-slam',
+          name: 'Static Slam',
+          element: 'spark',
+          shape: 'line3',
+          anchor: 'strongest',
+          silences: false,
+        });
+      }),
+    ).toThrow(/moves "thunderclap" and "static-slam" share the label Nemesis Slam for spark/);
+    // A row and several rows are one Sweep: the label decides, not the shape's spelling.
+    expect(
+      broken((r) => {
+        r.moves.push({
+          id: 'peat-line',
+          name: 'Peat Line',
+          element: 'mire',
+          shape: 'row',
+          anchor: 'back',
+          silences: false,
+        });
+      }),
+    ).toThrow(/moves "peat-wave" and "peat-line" share the label Rear Sweep for mire/);
+    // Another element may have the behaviour under another name, and so may a card.
+    expect(
+      broken((r) => {
+        r.moves.push({
+          id: 'static-hush',
+          name: 'Static Hush',
+          element: 'spark',
+          shape: 'rowEnds',
+          anchor: 'front',
+          silences: true,
+        });
       }),
     ).not.toThrow();
     expect(
       broken((r) => {
-        const e = (
-          raid(r, 'thornmother') as unknown as { escalation: { phase: { moves: RawMove[] } } }
-        ).escalation;
-        e.phase.moves.push(clone(first(e.phase.moves)));
+        r.moves.push({
+          id: 'card-slam',
+          name: 'Card Slam',
+          shape: 'line3',
+          anchor: 'payoff',
+          silences: false,
+        });
       }),
-    ).toThrow(/raid boss "thornmother" has two moves "bloom-storm"/);
+    ).toThrow(/moves "payoff-slam" and "card-slam" share the label Payoff Slam for cards/);
+  });
+
+  it('a boss or foe never has two moves of one behaviour, counting the moves its cards add', () => {
+    // Thornmother has Bramble Hush; the card Bramble Bind adds a Hush of its own: two Hushes.
+    expect(broken((r) => raid(r, 'thornmother').cards.push('bramble-bind'))).toThrow(
+      /raid boss "thornmother" has two Hush moves, "bramble-hush" and "hush"/,
+    );
+    expect(broken((r) => foe(r, 'bramble-hound').cards.push('bramble-bind'))).toThrow(
+      /foe "bramble-hound" has two Hush moves, "bramble-hush" and "hush"/,
+    );
+    // A boss that has no Hush may take the card.
+    expect(broken((r) => raid(r, 'storm-sovereign').cards.push('bramble-bind'))).not.toThrow();
+    // An extra card of a track slot counts too.
+    expect(broken((r) => slotOf(r, 5).extraCards.push('bramble-bind'))).toThrow(
+      /raid track slot 5 \(thornmother\) has two Hush moves/,
+    );
+    expect(broken((r) => slotOf(r, 3).extraCards.push('bramble-bind'))).not.toThrow();
+  });
+
+  it('a landmark move is a different behaviour from the foe’s own moves, with its Wind-up', () => {
+    // The Drowned Warden and the Fen Lurker used to repeat their own Quake at a landmark.
+    for (const [id, name, label] of [
+      ['drowned-warden', 'Rogue Wave', 'Payoff Sweep'],
+      ['fen-lurker', 'Sinking Mud', 'Wild Sweep'],
+    ] as const) {
+      const f = combatV2.foes[id];
+      expect(f?.signature?.name, id).toBe(name);
+      expect(f?.signature?.charged, id).toBe(true);
+      expect(
+        f && f.signature && moveLabel({ ...(combatV2.moves[f.signature.id] as MoveDef) }),
+        id,
+      ).toBe(label);
+    }
+    expect(
+      broken((r) => {
+        const f = foe(r, 'drowned-warden') as unknown as { signature: RawMove };
+        f.signature = { id: 'deluge', every: 4, turn: 0, powerBp: 100 };
+      }),
+    ).toThrow(/foe "drowned-warden" has two moves "deluge"/);
   });
 });
