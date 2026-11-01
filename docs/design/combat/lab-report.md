@@ -342,6 +342,62 @@ About 95 characters fit two lines on a 390 px card (an estimate; check in the wo
 - Clinging: 99
 - Clear Skies: 96
 
+## Similar behaviours
+
+Content grouped by what it does, only groups of two or more. A group is not a fault: it is where to look when two things are named apart but may be one behaviour at different numbers (or one name for two behaviours).
+
+### Knacks and talents
+
+Grouped by the set of effect fields they use (numbers ignored), 78 in all. A group of two or more is a candidate to look at: the same fields with other numbers can be the same effect under two names, or two effects that drift apart in power.
+
+| Fields | Members and their numbers | Shared |
+| --- | --- | --- |
+| support | Clear Skies (support clearSkies); Clear the Air (support clearAir); Eye of the Storm (support gatherCalm); Sunbeam (support sunbeam); Curl Up (support curlUp); Stack Up (support readyMark); Wide Embrace (support wideWarmth); Drizzle (support rowRain); Starlight (support rowBoost) | different names; 4 families (Support shape, Sustain, Store, Support Prime) |
+
+Pairs whose field sets differ by one field (4): the smaller one may be the larger one's idea with a part left out.
+
+| One | Other | Differ by |
+| --- | --- | --- |
+| All In (bonusBp 12500, minStacks 3, spendAllBp 10000) | Detonate (bonusBp 7500, spendAllBp 7500) | minStacks only on one side |
+| Detonate (bonusBp 7500, spendAllBp 7500) | Unlikely Guardian (bonusBp 7500, interceptLikeGuard true) | spendAllBp against interceptLikeGuard |
+| Draw Fire (armourBonus 15, taunt true) | Reliably Covered (armourBonus -10, besideGuardBp 1000) | taunt against besideGuardBp |
+| talent Steady Rhythm (critDamageBp 1000, steadyRhythm true) | talent Amplified Crits (critDamageBp 10000) | steadyRhythm only on one side |
+
+### Boss and foe moves
+
+The library's 47 moves by behaviour label (target and shape, `moveLabel`) and element. One element should have one name per label: the content gate forbids two moves of a label on one boss and the loader forbids it for an element, so this is the library-wide check.
+
+Two moves of one label on one element: none.
+
+Labels used by several elements (11; fine, the same behaviour in each element's paint):
+
+| Label | Moves by element |
+| --- | --- |
+| Hush | tide: Deafening Mist; grove: Bramble Hush; card: Hush |
+| Wild Lance | tide: Riptide; ember: Scorch Lane; grove: Grasping Vines; spark: Lightning Bolt; mire: Mud Slide |
+| Front Sweep | tide: Undertow; grove: Thorn Wall |
+| Rear Sweep | tide: Backflow; grove: Spiky Spine; mire: Peat Wave |
+| Wild Sweep | tide: Great Wave; mire: Sinking Mud; card: Wild Sweep |
+| Barrage | tide: Spray; ember: Cinder Fall; grove: Thorn Rain; spark: Forked Lightning; mire: Mud Spit |
+| Quake | tide: Deluge; ember: Eruption; spark: Storm Front; mire: Sink Down |
+| Front Slam | ember: Anvil Fall; mire: Belly Flop |
+| Payoff Slam | ember: Volcanic Meteor; spark: Static Strike; mire: Bog Lob; card: Payoff Slam |
+| Nemesis Slam | ember: Slag Spill; grove: Vengeful Roots; spark: Thunderclap |
+| Leap | ember: Ember Leap; grove: Thorn Lash; spark: Arc Lash |
+
+### Rule cards
+
+Grouped by the kind of operation (`add`, `set`, `flag`, ...) the 20 cards run. Two cards that run one operation on one stat are the same effect at other numbers; on different stats they are siblings to compare in power.
+
+| Operation | Cards and their operations |
+| --- | --- |
+| add | Thick Hide (add armour 70); Elusive (add spd 300) |
+| flag | Clean Scales (flag shedMarks); Reflective Hide (flag reflectFirst); Fizzle (flag fizzle); Reaction Resistance (flag adapts); Element Resistance (flag adaptsElement) |
+| set | Slippery (set dodgeBp 2500); Double Strike (set critChanceBp 2000) |
+| move | Bramble Bind (move Hush (gate)); Payoff Hunter (move Payoff Slam (power)); Full Sweep (move Wild Sweep (power)); Crusher (move Crush (power)) |
+| mod | Wither (mod healBp 10000 - 5000); Shake It Off (mod shakeEvery 3); Breakwater (mod wardBp 10000 + 20000) |
+| plain | Grudge (plain aim single/grudge + 5000 bp); Swarm (plain replaced by scatter/random x4) |
+
 ## Raid weekend with attrition (3 stages of 8 rounds, HP carries, knocked-out creatures stay out)
 
 | Boss card | Party | Won | Replacements | Knockouts per stage |

@@ -5,6 +5,7 @@
  * `pnpm --filter @creatures/lab report`.
  */
 import { createSeededRng } from '@creatures/game';
+import { similarBehaviours } from './behaviours';
 import { CARDS, labBoss } from './cards';
 import { weekend } from './fight';
 import { KEYWORDS } from './keywords';
@@ -731,6 +732,11 @@ function assembleReport(
     ...long.map((t) => `- ${t.name}: ${t.len}`),
     '',
   );
+
+  // 9b. Similar behaviours: content grouped by what it does, so overlaps show.
+  const similar = similarBehaviours();
+  md.push(...similar.markdown);
+  Object.assign(data, similar.data);
 
   // 10. A raid weekend with attrition.
   md.push(
