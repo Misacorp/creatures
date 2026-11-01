@@ -16,6 +16,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: glow, day and night](#valley-glow) | liked | 6 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
+| [Combat v2 icons: attack shapes, board states, store meters](#combat-icons) | draft | 13 | 2026-10-31, Misa: "icons for keywords and attack shapes" (roadmap phase 3, combat v2). |
 
 <a id="void"></a>
 
@@ -222,3 +223,33 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `visitor` | free |  | liked | The weekly visitor: a hooded stranger with teal eyes beside a violet lamp, and a small stall whose wares glow teal. The violet light lies on the grass; by day the lamp is unlit and the stall is striped red and cream. |
 | `visitor-away` | free |  | liked | The stall shuttered: a closed front, a folded awning, a board with a moon and a calendar mark, an unlit lamp with one last ember and a faint warm glow on the grass. |
 | `market` | free |  | liked | A stall where shards are traded: four element shards glow on the counter, a big shard on a post is the sign, with a crate and a sack beside it. The teal glow lies on the grass. |
+
+<a id="combat-icons"></a>
+
+## Combat v2 icons: attack shapes, board states, store meters
+
+![Combat v2 icons: attack shapes, board states, store meters](combat-icons.png)
+
+- **Status:** draft
+- **Requested:** 2026-10-31, Misa: "icons for keywords and attack shapes" (roadmap phase 3, combat v2).
+- **Source:** `apps/activity/src/sprites/concepts/combat-icons.ts` (draw it with `pnpm art combat-icons`)
+- **Sheet of:** `7b86874fffb7`
+- The audit is docs/design/combat/icons.md: which icons are new, which shipped glyphs are used as they are, and which words stay text.
+- Needs before use: Misa approves the look; each icon gets a glyph id in glyphs.ts, a glossary entry and (shapes) a place in moveLabel; the dungeon modifier "extra crits" then switches from the reticle to the Crit icon.
+- Cut order if Misa wants fewer icons: the three Store meter heads (name the resource in text), then the silence ward, then the cracked armour (a crack drawn over the armour icon), then One-shot (it shares the Strike crosshairs).
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `shape-quake` | glyph | Quake | draft | Quake: every creature. A 3x3 board of slots with every slot lit. |
+| `shape-cross` | glyph | Cross | draft | Cross: the creature hit and the ones beside, in front of and behind it. The same 3x3 board with a plus lit. |
+| `shape-checker` | glyph | Checker | draft | Checker: every other slot of the arena, like the dark squares of a board. A checkerboard. |
+| `shape-one-shot` | glyph | One-shot | draft | One-shot (Judgement Bolt): takes a share of the victim's Max HP, not Attack times power. The HP heart split by a bolt. |
+| `crit` | glyph | Crit, Sure Crit | draft | A lucky hit that deals double. A gold burst; a Sure Crit counter is this burst with its count ("x2"), never a meter of its own. |
+| `armour` | glyph | Armour, Blocked | draft | Armour on the boss card (with its number) and the shield of a Blocked hit (with 0). A steel breastplate, so it is not the Guard's shield. |
+| `armour-cracked` | glyph | Will be Blocked | draft | On a creature whose plain hit would be Blocked by the boss's armour: the breastplate with a red crack through it. |
+| `escalating` | glyph | Escalating | draft | The boss grows as the weekend goes on, a step at a time. Rising steps, the top one lit. |
+| `silence-ward` | glyph | Silence ward | draft | A warded creature cannot be silenced. The Silenced speaker with sound waves instead of a cross. |
+| `determination` | glyph | Determination | draft | More damage and healing for each failed weekend on the same boss. A gold arrow rising from a base: more each failed try, up to five. |
+| `store-heat` | glyph | Heat | draft | The Heat store (Boiling Point). Heat haze: wavy lines rising from a hot base, not the Ember flame. |
+| `store-calm` | glyph | Calm | draft | The Calm store (Eye of the Storm). A lotus floating on still water. |
+| `store-static` | glyph | Static | draft | The Static store (a dodge fills it). Three tiny crackles, not the Spark bolt. |
