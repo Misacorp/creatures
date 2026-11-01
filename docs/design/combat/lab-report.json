@@ -4163,6 +4163,205 @@
    "det": []
   }
  },
+ "effectGroups": [
+  {
+   "fields": "support",
+   "members": [
+    "Knack:clear-skies",
+    "Knack:clear-the-air",
+    "Knack:gather-calm",
+    "Knack:sunbeam",
+    "Knack:curl-up",
+    "Knack:ready-the-mark",
+    "Knack:wide-warmth",
+    "Knack:drizzle",
+    "Knack:starlight"
+   ]
+  }
+ ],
+ "effectNear": [
+  {
+   "a": [
+    "Knack:all-at-once"
+   ],
+   "b": [
+    "Knack:detonate"
+   ],
+   "why": "minStacks only on one side"
+  },
+  {
+   "a": [
+    "Knack:detonate"
+   ],
+   "b": [
+    "Knack:carry-them"
+   ],
+   "why": "spendAllBp against interceptLikeGuard"
+  },
+  {
+   "a": [
+    "Knack:draw-fire"
+   ],
+   "b": [
+    "Knack:guards-shadow"
+   ],
+   "why": "taunt against besideGuardBp"
+  },
+  {
+   "a": [
+    "Talent:steady-rhythm"
+   ],
+   "b": [
+    "Talent:crit-damage"
+   ],
+   "why": "steadyRhythm only on one side"
+  }
+ ],
+ "moveClashes": [],
+ "moveLabels": [
+  {
+   "label": "Hush",
+   "elements": [
+    "tide",
+    "grove",
+    "card"
+   ]
+  },
+  {
+   "label": "Wild Lance",
+   "elements": [
+    "tide",
+    "ember",
+    "grove",
+    "spark",
+    "mire"
+   ]
+  },
+  {
+   "label": "Front Sweep",
+   "elements": [
+    "tide",
+    "grove"
+   ]
+  },
+  {
+   "label": "Rear Sweep",
+   "elements": [
+    "tide",
+    "grove",
+    "mire"
+   ]
+  },
+  {
+   "label": "Wild Sweep",
+   "elements": [
+    "tide",
+    "mire",
+    "card"
+   ]
+  },
+  {
+   "label": "Barrage",
+   "elements": [
+    "tide",
+    "ember",
+    "grove",
+    "spark",
+    "mire"
+   ]
+  },
+  {
+   "label": "Quake",
+   "elements": [
+    "tide",
+    "ember",
+    "spark",
+    "mire"
+   ]
+  },
+  {
+   "label": "Front Slam",
+   "elements": [
+    "ember",
+    "mire"
+   ]
+  },
+  {
+   "label": "Payoff Slam",
+   "elements": [
+    "ember",
+    "spark",
+    "mire",
+    "card"
+   ]
+  },
+  {
+   "label": "Nemesis Slam",
+   "elements": [
+    "ember",
+    "grove",
+    "spark"
+   ]
+  },
+  {
+   "label": "Leap",
+   "elements": [
+    "ember",
+    "grove",
+    "spark"
+   ]
+  }
+ ],
+ "cardGroups": [
+  {
+   "op": "add",
+   "cards": [
+    "Thick Hide",
+    "Elusive"
+   ]
+  },
+  {
+   "op": "flag",
+   "cards": [
+    "Clean Scales",
+    "Reflective Hide",
+    "Fizzle",
+    "Reaction Resistance",
+    "Element Resistance"
+   ]
+  },
+  {
+   "op": "set",
+   "cards": [
+    "Slippery",
+    "Double Strike"
+   ]
+  },
+  {
+   "op": "move",
+   "cards": [
+    "Bramble Bind",
+    "Payoff Hunter",
+    "Full Sweep",
+    "Crusher"
+   ]
+  },
+  {
+   "op": "mod",
+   "cards": [
+    "Wither",
+    "Shake It Off",
+    "Breakwater"
+   ]
+  },
+  {
+   "op": "plain",
+   "cards": [
+    "Grudge",
+    "Swarm"
+   ]
+  }
+ ],
  "raidBosses": {
   "tidal-colossus": {
    "seededBest": [
