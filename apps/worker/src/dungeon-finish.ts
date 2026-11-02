@@ -28,6 +28,7 @@ import {
   type WeatherDay,
 } from '@creatures/game';
 import { type DungeonRoomResult } from '@creatures/engine';
+import { isResultV2, isStoredV2, type RoomResultV2 } from './dungeon-v2';
 import { awardExperience } from './creature-exp';
 import { grantDungeonRun, grantDungeonStreak, type GrantDeps } from './gear-grants';
 import { SUPPLIES_PER_RUN } from './dungeon-path';
@@ -45,7 +46,7 @@ import { addDays } from './time';
 import {
   type DungeonDeps,
   type RunRow,
-  type StoredFight,
+  type AnyStoredFight,
   fightRows,
   progressOf,
 } from './dungeon-rows';
@@ -396,8 +397,26 @@ export function summarise(
   const rooms: DungeonRoomSummary[] = [];
   for (const step of fightRows(deps.storage.sql, row.id)) {
     if (step.input_json === null || step.result_json === null) continue;
-    const { input } = JSON.parse(step.input_json) as StoredFight;
-    const result = JSON.parse(step.result_json) as DungeonRoomResult;
+    const stored = JSON.parse(step.input_json) as AnyStoredFight;
+    const parsed = JSON.parse(step.result_json) as DungeonRoomResult | RoomResultV2;
+    if (isStoredV2(stored) && isResultV2(parsed)) {
+      rooms.push({
+        index: parsed.index,
+        kind: stored.room.kind,
+        ...(stored.room.elite === true ? { elite: true } : {}),
+        ...(stored.room.epic === true ? { epic: true } : {}),
+        foe: { ...stored.room.foe, hpMax: parsed.foeHpStart },
+        modifier: stored.room.modifier,
+        played: true,
+        cleared: parsed.cleared,
+        rounds: parsed.rounds,
+        foeHpEnd: parsed.foeHpEnd,
+      });
+      continue;
+    }
+    if (isStoredV2(stored) || isResultV2(parsed)) continue;
+    const { input } = stored;
+    const result = parsed;
     const spec = input.rooms[0];
     if (spec === undefined) continue;
     const elite = spec.elite === true;
@@ -424,6 +443,7 @@ export function summarise(
     });
   }
   return {
+    ...(st.v === 2 ? { rules: 2 as const } : {}),
     id: row.id,
     day: row.day,
     attempt: row.attempt,

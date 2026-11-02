@@ -13,6 +13,7 @@ import type {
   Role,
 } from '@creatures/game';
 import type { EventNames, FightEvent } from '@creatures/engine';
+import type { FightEvent as FightEventV2 } from '@creatures/engine/v2';
 import type { ExperienceView } from './creature-exp';
 import type { GearItemView } from './gear-types';
 
@@ -217,6 +218,8 @@ export type DungeonStepLog =
 
 /** The state of a run, open or done. Every act answers with it. */
 export interface DungeonRunState {
+  /** 2 on a run of combat v2 (started with the `COMBAT_V2` flag on); absent on a v1 run. */
+  rules?: 2;
   id: string;
   day: string;
   attempt: number;
@@ -339,6 +342,8 @@ export interface DungeonTeamMember {
 }
 
 export interface DungeonRunSummary {
+  /** 2 on a run of combat v2; absent on a v1 run. */
+  rules?: 2;
   id: string;
   day: string;
   attempt: number;
@@ -447,7 +452,9 @@ export interface DungeonActResponse {
   today?: DungeonToday;
 }
 
-export interface DungeonReplayRoom {
+export interface DungeonReplayRoomV1 {
+  /** Absent on a room of a v1 run (the screens read it as rules 1). */
+  rules?: undefined;
   index: number;
   kind: 'foe' | 'boss';
   /** A fiercer foe (map runs only; absent otherwise). An epic fight is one too. */
@@ -472,6 +479,34 @@ export interface DungeonReplayRoom {
   names: EventNames;
 }
 
+/**
+ * A room of a run on combat v2 (docs/design/combat/integration.md, section 6). Always has `node` and `row`
+ * (only map runs are v2). `row` is the whole row that stood in the room, a knocked-out creature included (it is
+ * not in the fight). `events` are the v2 fight's log lines, each with its typed `board` event beside the text;
+ * a creature is named in them by its id. There is no `names` (the text already holds the names).
+ */
+export interface DungeonReplayRoomV2 {
+  rules: 2;
+  index: number;
+  kind: 'foe' | 'boss';
+  elite?: boolean;
+  epic?: boolean;
+  node?: string;
+  keepsakes?: DungeonKeepsakeView[];
+  row?: ReplayRowEntry[];
+  foe: { id: string; name: string; element: Element; hpMax: number };
+  modifier: { id: string; name: string; description: string };
+  cleared: boolean;
+  rounds: number;
+  /** Every creature's HP when the room started, when it ended (0: knocked out) and at most, by creature id. */
+  hpStart: Record<string, number>;
+  hpEnd: Record<string, number>;
+  hpMax: Record<string, number>;
+  events: FightEventV2[];
+}
+
+export type DungeonReplayRoom = DungeonReplayRoomV1 | DungeonReplayRoomV2;
+
 export interface ReplayRowEntry {
   position: number;
   id: string;
@@ -485,6 +520,8 @@ export interface ReplayRowEntry {
 }
 
 export interface DungeonReplayView {
+  /** 2 on a run of combat v2; absent on a v1 run. */
+  rules?: 2;
   summary: DungeonRunSummary;
   /** The fighting row, left to right (`position` 0 is the left creature). A map run: the starting row (see `DungeonReplayRoom.row`). */
   row: ReplayRowEntry[];

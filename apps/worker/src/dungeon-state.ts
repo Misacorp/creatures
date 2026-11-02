@@ -40,6 +40,7 @@ import {
   eventOptionBlock,
   type WeatherDay,
 } from '@creatures/game';
+import type { FighterSpec } from '@creatures/engine/v2';
 import {
   rowMaxHp,
   type AbilityChoice,
@@ -98,8 +99,16 @@ export interface Seat {
 }
 
 export interface RunState {
-  /** Bumped when the stored shape changes. */
-  v: 1;
+  /**
+   * The rules version the run started under, kept to its end: 1 is the v1 combat, 2 is combat v2 (the run began with the
+   * `COMBAT_V2` flag on; `fighters` is set and every room is played by `dungeon-v2.ts`).
+   */
+  v: 1 | 2;
+  /**
+   * Version 2 only: the v2 fighter of every creature that stood in the row (`seats`' twin), by creature id, frozen when it
+   * joined: its form's stats at its level, its saved Knack, its slotted v2 talents and its gear's stat lines.
+   */
+  fighters?: Record<string, FighterSpec>;
   /** The day's map as it was when the run started: a content change during the day never reaches it. */
   map: DungeonMap;
   /**
@@ -210,7 +219,8 @@ export function parseState(json: string | null): RunState | null {
   if (json === null) return null;
   try {
     const parsed = JSON.parse(json) as Partial<RunState> | null;
-    if (parsed === null || typeof parsed !== 'object' || parsed.v !== 1) return null;
+    if (parsed === null || typeof parsed !== 'object' || (parsed.v !== 1 && parsed.v !== 2))
+      return null;
     // A state stored before the gear ids were kept holds none.
     parsed.gear ??= [];
     // A state stored before the room log has no history.
@@ -474,6 +484,7 @@ export function runView(meta: RunMeta, st: RunState): DungeonRunState {
   const treated = new Set(st.treats);
   const open = meta.status === 'active' && st.pending === null;
   return {
+    ...(st.v === 2 ? { rules: 2 as const } : {}),
     id: meta.id,
     day: meta.day,
     attempt: meta.attempt,
