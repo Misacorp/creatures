@@ -62,7 +62,7 @@ export async function playV2Day(
     } else if (state.pending?.kind === 'descend') {
       act = { type: 'home' };
     } else {
-      const to = route[state.path.length] ?? (state.reachable[0] as string);
+      const to = route[state.path.length] ?? state.reachable[0];
       act = { type: 'move', node: to };
       const kind = state.map.nodes.find((m) => m.id === to)?.kind;
       if (kind === 'fight' || kind === 'elite' || kind === 'boss') {
