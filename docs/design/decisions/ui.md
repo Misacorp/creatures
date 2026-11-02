@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-02: Combat v2 client, first part: the Knack picker and the creature page follow the data
+
+ID: `2026-11-02-combat-v2-client-first-part-the` · Status: current
+
+**Decision.** Phase 4's first client slice (`combat/integration.md`, section 9) draws combat v2 on the creature page and the raid configurator from the creature's own data, not from the config flag: the server sends `knack`, `knownKnacks`, `talentsV2` and `statsV2` together and only with `COMBAT_V2` on, `creatureV2()` reads them, and a creature without them is drawn exactly as before (`/api/config`'s `combatV2` is parsed for the later parts, How to play first). With them: a **Knack** section in place of "Finale ability" (one `Slot` in a `SlotRow`, the talent slots' box; a tap opens a `Drawer` of `ChoiceList` choices, each name with its text, the saved one ringed and checked, "None" last; a pick saves right away and closes; a 409 `locked` answer stays open with "This creature has fought this weekend, so its Knack is locked."), the raid configurator's `knack` part (read-only when the board is locked), **Armour and Crit** ("Crit 15% · 2.6x") in the Stats table from `statsV2` (the worker adds it: the engine's `formStats` at the creature's level with the slotted talents' and worn gear's stat lines, no extra database reads), the line's **Talent Book** (`TalentBookV2Drawer`: this slot's talent, learned ones, ones to learn; "Learn · 10 Bait" with a client key, "Use", "Move here" and "Take out" free; golden shimmers), and gear **effect lines** under "Not in the new rules yet:" (a muted note; only fight-effect line kinds, not trip or Workshop lines). A keyword in braces in a Knack's or talent's text is a `Tag` chip (`ui/KeywordText`), with the letters that run on after it ("{Spend}s") inside the chip; the client needs no keyword list, because the content loader refuses a braced word that is not a keyword. The Creatures card's talent rows follow the v2 slots and its old "fill a talent slot" button is off under v2.
+
+**Reasoning.** Following the data keeps every v1 screen, test and fixture as it was and needs no flag plumbing through the screens; it matches "the client follows the data" in the plan. Reusing `Slot`, `ChoiceList`, `Drawer`, `TalentChip`, `Tag` and the book's classes keeps the new parts looking like the ones players know. A Knack's longest text is three lines at 390 px, so it is not cut to two: cutting would hide rules text. Importing the whole combat v2 pack into the client would run its schema checks at start for every player, production included, to learn what braces already say.
+
 ## 2026-10-31: [Misa] The fight board shows worn gear, item detail does not
 
 ID: `2026-10-31-the-fight-board-shows-worn-gear` · Status: current

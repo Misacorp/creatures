@@ -203,9 +203,7 @@ describe('the stats of the creature page under combat v2', () => {
     expect(rows.map((r) => r.label)).toEqual(['HP', 'Attack', 'Speed', 'Armour', 'Crit']);
     expect(rows.find((r) => r.label === 'HP')?.value).toBe(v2.statsV2.hp);
     expect(rows.find((r) => r.label === 'Armour')?.value).toBe(v2.statsV2.armour);
-    expect(rows.find((r) => r.label === 'Crit')?.value).toMatch(
-      /^\d+(\.\d+)?% · \d+(\.\d+)?x$/,
-    );
+    expect(rows.find((r) => r.label === 'Crit')?.value).toMatch(/^\d+(\.\d+)?% · \d+(\.\d+)?x$/);
   });
 
   it('shows them in the page', () => {
