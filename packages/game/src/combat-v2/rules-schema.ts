@@ -61,6 +61,12 @@ export const RulesSchema = v.pipe(
     miredSlowsEscalationBp: Int,
     /** "The boss is low" for Finisher: its HP is below this share of its full HP. */
     finisherBelowBp: Int,
+    /** The live finale's Rally (R18): every creature's hits deal this much more that round, counted in the hit-boost cap (`maxHitBonusBp`, R15). */
+    rallyBp: Int,
+    /** The live finale's Shield Wall (R18): the chosen row's creatures take this much less from every hit that round, one cut among the others (`cutMaxBp`, R15). */
+    shieldWallBp: Int,
+    /** The live finale's Purge (R18): the boss has no Element or Reaction Resistance for this many rounds, the round it is used and the ones after. */
+    purgeRounds: Int,
   }),
   v.readonly(),
 );

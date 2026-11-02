@@ -10,6 +10,7 @@ import {
   mergeFx,
   weekendV2,
   type BossDef,
+  type BoardEvent,
   type BossMove,
   type FightEvent,
   type FightInputV2,
@@ -55,6 +56,9 @@ export const RULES: V2Rules = {
   adaptElementBp: 7_500,
   miredSlowsEscalationBp: 2_500,
   finisherBelowBp: 3_333,
+  rallyBp: 1_000,
+  shieldWallBp: 5_000,
+  purgeRounds: 2,
 };
 
 /** The shipped elements and chart (tide cashes ember, ember grove, grove spark, spark tide, mire ember, ember mire). */
@@ -312,3 +316,11 @@ export function by(res: FightResult, name: string) {
 }
 
 export const kinds = (events: readonly FightEvent[]): string[] => events.map((e) => e.kind);
+
+/** The log's text events: the board's own events (kind `board`, no text) are left out. */
+export const textEvents = (res: FightResult): FightEvent[] =>
+  res.events.filter((e) => e.kind !== 'board');
+
+/** The board's typed parts of the events, in order (from events that carry text and from events of kind `board`). */
+export const boardEvents = (res: FightResult): BoardEvent[] =>
+  res.events.flatMap((e) => (e.board ? [e.board] : []));

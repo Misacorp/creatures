@@ -21,6 +21,7 @@ import type {
   BossDef,
   FightInputV2,
   FightOptions,
+  FinaleAction,
   FightResult,
   Fighter,
   FighterSpec,
@@ -31,12 +32,14 @@ const { bossTurn } = bossMod;
 const { creatureTurn } = creatureMod;
 const { escalationState, fadeMired } = escalationMod;
 const { roundStart } = marksMod;
-const { alive, aliveBySlot, contextOf, effectsCarried, log, strengthOf } = stateMod;
+const { alive, aliveBySlot, applyActions, contextOf, effectsCarried, emit, log, strengthOf } =
+  stateMod;
 
 /** A creature at the start of a fight: its spec, at full HP, with nothing stored. */
 function fighterOf(spec: FighterSpec): Fighter {
   return {
     uid: spec.uid,
+    key: spec.key,
     owner: spec.owner,
     formId: spec.formId,
     name: spec.name,
@@ -88,6 +91,7 @@ export function playFight(
   specs: readonly FighterSpec[],
   opts: FightOptions,
   rng: Rng,
+  actions: readonly FinaleAction[] = [],
 ): FightResult {
   const fighters = specs.map(fighterOf);
   if (opts.carryHp) for (const f of fighters) f.hp = opts.carryHp.get(f.uid) ?? f.hp;
@@ -101,6 +105,10 @@ export function playFight(
     rng,
     boss,
     opts,
+    actions,
+    rally: false,
+    shieldRows: null,
+    purged: false,
     fighters,
     bossHp: opts.bossHp ?? boss.hp,
     // A potential stage carried on from an earlier one starts at the real HP (below 1), not at the 1 the boss was held at.
@@ -136,6 +144,12 @@ export function playFight(
     phaseMoves: null,
   };
   const startAlive = alive(s).length;
+  if (opts.log && (opts.resistReaction || opts.resistElement))
+    emit(s, {
+      type: 'resistance',
+      ...(opts.resistReaction ? { reaction: opts.resistReaction } : {}),
+      ...(opts.resistElement ? { element: opts.resistElement } : {}),
+    });
   for (s.round = 1; s.round <= boss.rounds && s.bossHp > 0 && alive(s).length > 0; s.round++) {
     for (const f of fighters) {
       f.undodgeable = false;
@@ -143,6 +157,8 @@ export function playFight(
       f.damageThisRound = 0;
     }
     s.turn = 0;
+    if (opts.log) emit(s, { type: 'round', round: s.round });
+    if (actions.length > 0) applyActions(s);
     roundStart(s);
     // The boss takes a turn after every row of the arena, empty or not.
     for (let r = 0; r < boss.rows && s.bossHp > 0 && alive(s).length > 0; r++) {
@@ -160,6 +176,23 @@ export function playFight(
       if (s.opts.log) log(s, 'shake', `${boss.name} shakes off its debuffs`);
       if (s.opts.log) log(s, 'mired', `Mired x${s.mired}`);
     }
+  }
+  if (opts.log) {
+    // The loop leaves the round counter one past the last round played (the escalation still reads it below, so it is not changed).
+    const round = Math.max(0, s.round - 1);
+    s.events.push({
+      round,
+      turn: 0,
+      kind: 'board',
+      text: '',
+      board: {
+        type: 'end',
+        round,
+        won: s.bossHp <= 0,
+        wiped: alive(s).length === 0,
+        bossHp: s.bossHp,
+      },
+    });
   }
   return {
     damage: s.count.damage,
@@ -186,5 +219,5 @@ export function playFight(
 export function fightV2(input: FightInputV2, rng: Rng): FightResult {
   if (input.version !== 2)
     throw new Error(`fightV2 plays version 2 inputs, not ${String(input.version)}`);
-  return playFight(contextOf(input), input.boss, input.fighters, input.options, rng);
+  return playFight(contextOf(input), input.boss, input.fighters, input.options, rng, input.actions);
 }

@@ -12,9 +12,11 @@
  * (`--tune --track --write`).
  */
 import { combatV2 } from '@creatures/game/combat-v2';
+import { slotBossOf } from '@creatures/engine/v2';
 import { BOSS_ANSWERS, answerLine } from './bossAnswers';
-import { RAID_RANKS, raidBossOf } from './bosses';
+import { RAID_RANKS } from './bosses';
 import type { Pick } from './search';
+import { SHIPPED } from './species';
 import { absoluteOf, nativeOf, type Numbers } from './tuner';
 import type { BossDef } from './types';
 
@@ -330,7 +332,7 @@ export function slotNumbers(
 }
 
 /**
- * The boss of a slot, built with `raidBossOf`: its numbers (`slotNumbers`: the table, else interpolated from the ranks), its cards at
+ * The boss of a slot, built by the engine (`slotBossOf`, `resolve/track.ts`): its numbers (`slotNumbers`: the table, else interpolated from the ranks), its cards at
  * the slot's strength, and only the rules the ramp column gives it (`SLOT_CARDS`). `level` is the roster level the boss names for its picks (the lab's creatures at that rank by default); the
  * path gives every creature its own level and does not read it. `table` replaces `SLOT_NUMBERS` (the tuner tries numbers this way).
  */
@@ -343,12 +345,18 @@ export function slotBoss(
   } = {},
 ): BossDef {
   const s = trackSlot(slot, roster.order);
-  return raidBossOf(s.bossId, {
-    ...slotNumbers(slot, roster.table, roster.order),
-    strengthBp: s.strengthBp,
-    level: roster.level ?? rankLevel(slot),
-    ...(s.rules.cards === undefined ? {} : { cards: s.rules.cards }),
-    buildUp: s.rules.buildUp,
-    ...(s.extraCards.length ? { extraCards: s.extraCards } : {}),
-  });
+  return slotBossOf(
+    combatV2,
+    SHIPPED,
+    {
+      slot,
+      bossId: s.bossId,
+      strengthBp: s.strengthBp,
+      ...(s.rules.cards === undefined ? {} : { cards: s.rules.cards }),
+      buildUp: s.rules.buildUp,
+      extraCards: s.extraCards,
+      numbers: slotNumbers(slot, roster.table, roster.order),
+    },
+    { level: roster.level ?? rankLevel(slot) },
+  );
 }

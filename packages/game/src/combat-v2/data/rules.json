@@ -30,5 +30,8 @@
   "holdOnLeaveBp": 4000,
   "adaptElementBp": 7500,
   "miredSlowsEscalationBp": 2500,
-  "finisherBelowBp": 3333
+  "finisherBelowBp": 3333,
+  "rallyBp": 1000,
+  "shieldWallBp": 5000,
+  "purgeRounds": 2
 }

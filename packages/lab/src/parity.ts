@@ -174,7 +174,18 @@ export function resultState(r: FightResult, boss: BossDef): Record<string, unkno
     hpLeft: r.hpLeft,
     escalation: r.escalation,
     fighters: r.fighters.map(fighterState),
-    events: r.events.map((e) => ({ ...e, text: nameless(e.text, table) })),
+    // The board's typed events (`FightEvent.board`, and the events of kind `board` that carry nothing else) are left out: they only show
+    // what the log says, so the digest stays what it was.
+    events: r.events
+      .filter((e) => e.kind !== 'board')
+      .map((e) => ({
+        round: e.round,
+        turn: e.turn,
+        kind: e.kind,
+        text: nameless(e.text, table),
+        move: e.move,
+        slots: e.slots,
+      })),
   };
 }
 

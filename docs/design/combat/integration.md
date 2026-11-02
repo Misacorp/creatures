@@ -74,7 +74,9 @@ New events (`analytics-events.ts`, `analytics-props.ts`, the rollup and `docs/de
 
 **Reads** (`docs/design/database-reads.md`): `GET /api/raid` on v2 reads the track row, the party's carry and the swap requests addressed to the player (an indexed lookup), a few rows more than today; the Knack is a column on rows already read. A stage's resolve runs twice a weekend per party. The read budget, the query plan audit and the day in the life each get a v2 case (a seeded world with the flag on); none of today's budgets is raised without a reason in the PR.
 
-**CPU:** the worker runs on the Free plan, 10 ms of CPU per request. A v1 raid fight fits; a v2 stage at 15 columns and the live finale's replay on every read have not been measured in a worker. The first slice measures both. If either breaks the limit: keep the replay's last state per round (as `simCache` does today) and, if that is not enough, take Workers Paid, which Misa approved in advance "if a measured limit blocks us" (decision `2026-10-10-hosting-on-cloudflare-all-in`).
+**CPU:** the worker runs on the Free plan, 10 ms of CPU per request. A v1 raid fight fits; a v2 stage at 15 columns and the live finale's replay on every read have not been measured in a worker. The first slice measures both.
+
+**Measured (slice 1, 2026-11-02; `node packages/engine/scripts/v2-cpu.mjs`, Node 22 on a dev machine, not a Worker; creatures resolved beforehand, wall time of the engine call, 40 runs after 8 warm-up runs, the five third-lap bosses pooled):** one raid stage at 4, 10 and 15 columns (3 rows) takes a median of 0.3 to 1.7 ms and a 95th percentile of 0.6 to 3.3 ms, the log on or off, even when every creature and the boss last all eight rounds; a dungeon room 0.08 ms (p95 0.2 ms); the live finale's replay to round 6 and to its last round, at full length with three actions and the log on, a median of 0.4 to 1.8 ms at 4 to 15 columns (p95 up to 2.5 ms). Resolving 30 creatures is 0.01 ms. The first call of each case in a fresh process is slower (1 to 10 ms, the JIT is cold), so a cold isolate's first request is the one to watch on staging. Nothing is optimised yet: the margin to 10 ms is a factor of five or more warm. If either breaks the limit: keep the replay's last state per round (as `simCache` does today) and, if that is not enough, take Workers Paid, which Misa approved in advance "if a measured limit blocks us" (decision `2026-10-10-hosting-on-cloudflare-all-in`).
 
 ## 9. The client
 
@@ -117,6 +119,7 @@ The gear model and gear's effect lines (lab follow-up, then the port); weather i
 
 ## 14. Progress
 
-| Slice | State              |
-| ----- | ------------------ |
-| Plan  | Done (2026-11-02). |
+| Slice           | State                                                                                                                                                                                             |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Plan            | Done (2026-11-02).                                                                                                                                                                                |
+| Slice 1, engine | Done (2026-11-02): `stageV2` and its JSON carry, the track's boss in `resolve/`, typed board events, the live finale's actions, the CPU measure. The lab's digest was identical after every part. |

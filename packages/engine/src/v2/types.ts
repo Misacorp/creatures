@@ -14,6 +14,11 @@ export type Role = 'setter' | 'payoff' | 'guard' | 'support';
  */
 export interface FighterSpec {
   readonly uid: string;
+  /**
+   * The creature's stable identity across the stages of a raid weekend (the worker's creature id): `stageV2`'s carry (HP, who is out,
+   * once-a-weekend uses) is keyed by it. Without one the carry falls back to `uid`, which is what the lab's weekends use.
+   */
+  readonly key?: string | undefined;
   readonly owner: string;
   readonly formId: string;
   readonly name: string;
@@ -143,6 +148,12 @@ export interface V2Rules {
   readonly miredSlowsEscalationBp: number;
   /** "The boss is low" for Finisher: its HP is below this share of its full HP. */
   readonly finisherBelowBp: number;
+  /** The live finale's Rally (R18): every creature's hits deal this much more that round, counted in the hit-boost cap (`maxHitBonusBp`, R15). */
+  readonly rallyBp: number;
+  /** The live finale's Shield Wall (R18): the chosen row's creatures take this much less from every hit that round, one cut among the others (`cutMaxBp`, R15). */
+  readonly shieldWallBp: number;
+  /** The live finale's Purge (R18): the boss has no Element or Reaction Resistance for this many rounds, the round it is used and the ones after. */
+  readonly purgeRounds: number;
 }
 
 /** One pair of the element chart: an attacker of `attacker` against a defender of `defender` deals `bp` (10000 is plain; 15000 also cashes a mark). */
@@ -406,6 +417,96 @@ export interface FightOptions {
   readonly log?: boolean;
 }
 
+/**
+ * What the board shows of a fight, typed for the client to animate (an event's optional `board` field, set only when the fight's `log`
+ * option is on). A creature is named by its `key` (`FighterSpec.key`, else its `uid`); `null` is the boss. An event that had a text line
+ * before carries its board part beside the text; what had none (a creature's hit on the boss, a heal, a Store, the start of a round) is an
+ * event of kind `board` with no text. The digest of a fight leaves all of it out.
+ */
+export type BoardEvent =
+  /** A round starts (before the Support verbs and the announcements). */
+  | { readonly type: 'round'; readonly round: number }
+  /** A move is announced at round start: its id and the (row, slot) of each creature it will land on (0-based). */
+  | {
+      readonly type: 'announce';
+      readonly move: string;
+      readonly slots: readonly (readonly [number, number])[];
+    }
+  /** The boss takes its turn after row `row` (0-based). */
+  | { readonly type: 'bossTurn'; readonly row: number }
+  /**
+   * A hit. `from` and `to` are creatures or the boss (`null`); `damage` is what lands after cuts and armour (0 when dodged or Blocked);
+   * a hit on a creature that another took (an intercept) has `by`, the creature that took it. `crit` is a critical hit.
+   */
+  | {
+      readonly type: 'hit';
+      readonly from: string | null;
+      readonly to: string | null;
+      readonly damage: number;
+      readonly crit: boolean;
+      readonly blocked: boolean;
+      readonly dodged: boolean;
+      readonly by?: string;
+    }
+  /** A creature's strike-back (not a hit: no crit, ignores armour). */
+  | { readonly type: 'counter'; readonly from: string; readonly damage: number }
+  /** A mark on the boss is added to or made bigger: its element, its counts now and whether it is sealed. */
+  | {
+      readonly type: 'mark';
+      readonly element: string;
+      readonly stacks: number;
+      readonly sealed: boolean;
+    }
+  /** Marks the boss shed (Clean Scales), by element. */
+  | { readonly type: 'shed'; readonly marks: readonly string[] }
+  /** A Payoff cashes a mark: the element, the counts spent, the bonus damage and the counts left on it (0: the mark is gone). */
+  | {
+      readonly type: 'reaction';
+      readonly by: string;
+      readonly mark: string;
+      readonly spent: number;
+      readonly bonus: number;
+      readonly left: number;
+    }
+  /** `who` is healed by `amount` (what was really restored); `by` is the healer, when there is one. */
+  | { readonly type: 'heal'; readonly who: string; readonly amount: number; readonly by?: string }
+  | { readonly type: 'knockout'; readonly who: string }
+  /** A creature is silenced for `turns` of its turns. */
+  | { readonly type: 'silence'; readonly who: string; readonly turns: number }
+  /** A creature's Store (Heat, Calm, Dodge stacks) is now `value`. */
+  | { readonly type: 'store'; readonly who: string; readonly value: number }
+  /** The boss's Mired is now `stacks`. */
+  | { readonly type: 'mired'; readonly stacks: number }
+  /**
+   * The boss's escalation moved: its feed count, the steps that help it (`step`) and that help the players (`fall`), and the phase
+   * (`phaseNext`: announced, it applies at the next round start).
+   */
+  | {
+      readonly type: 'escalation';
+      readonly count: number;
+      readonly step: number;
+      readonly fall: number;
+      readonly phase: boolean;
+      readonly phaseNext: boolean;
+    }
+  /** What the boss resists this fight (Adapts: a reaction's element; Element Resistance: an element), from stage 2 of a raid weekend. */
+  | { readonly type: 'resistance'; readonly reaction?: string; readonly element?: string }
+  /** A player's live input takes effect (Rally, Shield Wall with its row, Purge), at the start of its round. */
+  | {
+      readonly type: 'action';
+      readonly kind: FinaleActionKind;
+      readonly row?: number;
+      readonly by: string;
+    }
+  /** The fight ends after `round` rounds. */
+  | {
+      readonly type: 'end';
+      readonly round: number;
+      readonly won: boolean;
+      readonly wiped: boolean;
+      readonly bossHp: number;
+    };
+
 export interface FightEvent {
   readonly round: number;
   readonly turn: number;
@@ -414,6 +515,8 @@ export interface FightEvent {
   /** On an `announce` event of a move: the move's id and the (row, slot) of each creature it will land on (0-based). */
   readonly move?: string;
   readonly slots?: readonly (readonly [number, number])[];
+  /** The board's typed part of the event (only with the fight's `log` option on; see `BoardEvent`). */
+  readonly board?: BoardEvent;
 }
 
 export interface EscalationState {
@@ -468,6 +571,24 @@ export interface FightResult {
   readonly events: readonly FightEvent[];
 }
 
+/** What a player does in the live finale (R18). */
+export const FINALE_ACTION_KINDS = ['rally', 'shieldWall', 'purge'] as const;
+export type FinaleActionKind = (typeof FINALE_ACTION_KINDS)[number];
+
+/**
+ * One live input of the finale (R18), played from the start of `round`: Rally (`rules.rallyBp`: every creature's hits that round),
+ * Shield Wall (`rules.shieldWallBp`: the creatures of `row`, 0-based, take that much less that round; without a row it does nothing) and
+ * Purge (no Element or Reaction Resistance for `rules.purgeRounds` rounds). `by` is who used it (for the board; it changes no number).
+ * The same action twice in a round is one: they do not stack. An action changes nothing before its round and draws no dice, so adding
+ * one at round r leaves every event before round r as it was.
+ */
+export interface FinaleAction {
+  readonly round: number;
+  readonly kind: FinaleActionKind;
+  readonly row?: number;
+  readonly by: string;
+}
+
 /** A whole fight: replays exactly from this and the dice. Plain data (no Maps, no functions), so it survives a JSON round trip. */
 export interface FightInputV2 {
   readonly version: 2;
@@ -479,6 +600,8 @@ export interface FightInputV2 {
   readonly boss: BossDef;
   readonly fighters: readonly FighterSpec[];
   readonly options: FightOptions;
+  /** The live finale's inputs (R18); none: the fight plays as it always did. */
+  readonly actions?: readonly FinaleAction[];
 }
 
 /**
@@ -496,6 +619,54 @@ export interface WeekendInputV2 {
   readonly bench: readonly WeekendFighterSpec[];
   /** The stage's options; `stages` is how many stages are played (default 3). */
   readonly options: FightOptions & { readonly stages?: number };
+}
+
+/**
+ * What passes from one raid stage to the next (R14, R22, R23): plain JSON (records and arrays, no Maps or Sets), so a caller stores it between
+ * Saturday and Sunday. Creatures are named by their `key` (`FighterSpec.key`, else the `uid`). `startCarry` is the carry before stage 1.
+ * What is not here starts fresh each stage: marks, Stores, Mired, silence and every "each fight" effect.
+ */
+export interface StageCarry {
+  /** Stages played so far: the index of the next stage (0 before the first). */
+  readonly stage: number;
+  /** The boss's HP (held at 1 once gone in potential mode) and its real HP, which goes on below 1 in potential mode. */
+  readonly bossHp: number;
+  readonly shadowHp: number;
+  /** The HP of each creature that has fought and is still standing, by key. A creature not here starts at full HP. */
+  readonly hp: Readonly<Record<string, number>>;
+  /** Creatures knocked out earlier this weekend, by key: they are out for the rest of it (`stageV2` leaves them out of the fight). */
+  readonly out: readonly string[];
+  /** Catch Breath and Refuse to Fall already used (once per weekend), by key. */
+  readonly windDone: readonly string[];
+  readonly holdDone: readonly string[];
+  /** The boss's escalation (R22), once a stage with one has been played. */
+  readonly escalation?: NonNullable<FightOptions['carryEscalation']>;
+  /** Reactions cashed in so far, by mark element, in the order they were first used (Adapts reads the most used, a tie going to the first). */
+  readonly used: Readonly<Record<string, number>>;
+  /** Damage dealt by hits so far, by the creatures' element (Element Resistance reads it). */
+  readonly dealt: Readonly<Record<string, number>>;
+}
+
+/**
+ * One raid stage: the boss (with its cards applied) and the creatures the caller places in it. Plain JSON like `FightInputV2`. The carry
+ * (`StageCarry`) sets the boss's HP, the creatures' HP and the rest; `options.carry*`, `bossHp`, `shadowHp` and `resist*` are replaced by it.
+ */
+export interface StageInputV2 {
+  readonly version: 2;
+  readonly rules: V2Rules;
+  readonly elements: readonly string[];
+  readonly chart: readonly ChartPair[];
+  readonly boss: BossDef;
+  /** The creatures of this stage in their slots. One whose key is in the carry's `out` is not played. */
+  readonly fighters: readonly FighterSpec[];
+  readonly options: FightOptions;
+  /** The live finale's inputs (R18) for this stage; none: no inputs. */
+  readonly actions?: readonly FinaleAction[];
+}
+
+export interface StageOutput {
+  readonly result: FightResult;
+  readonly carry: StageCarry;
 }
 
 export interface WeekendResult {

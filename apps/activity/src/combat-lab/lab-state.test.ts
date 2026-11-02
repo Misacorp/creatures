@@ -221,7 +221,11 @@ describe('running the lab', () => {
       'lab',
     );
     const rounds = groupSteps(result.events);
-    expect(rounds.flatMap((r) => r.groups.flatMap((g) => g.events))).toEqual(result.events);
+    // The text log: the board's own events (kind `board`) are not in it.
+    expect(result.events.some((e) => e.kind === 'board')).toBe(true);
+    expect(rounds.flatMap((r) => r.groups.flatMap((g) => g.events))).toEqual(
+      result.events.filter((e) => e.kind !== 'board'),
+    );
     expect(rounds.map((r) => r.round)).toEqual(
       [...new Set(rounds.map((r) => r.round))].sort((a, b) => a - b),
     );
