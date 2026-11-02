@@ -76,11 +76,11 @@ describe('stageV2', () => {
     let carry = startCarry(arena);
     const stages = [];
     for (let i = 0; i < 3 && carry.bossHp > 0; i++) {
-      // The caller names creatures by a stable key; the uids are the slots of this stage's team.
+      // The caller names creatures by a stable key (the weekend's own are `team:i`); the uids are the slots of this stage's team.
       const played = stageV2(
         stageInput(
           arena,
-          members.map((m, idx) => ({ ...m, uid: `s${i}:${idx}`, key: `creature-${m.name}` })),
+          members.map((m, idx) => ({ ...m, uid: `s${i}:${idx}`, key: `team:${idx}` })),
         ),
         carry,
         rng,

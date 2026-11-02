@@ -17,6 +17,7 @@ import {
   playScripted,
   spec,
   striker,
+  textEvents,
   texts,
 } from './v2-helpers';
 
@@ -505,7 +506,7 @@ describe('counters are not hits, and the fight ends the moment the boss is down 
     expect(r.killingBlow).toMatchObject({ name: 'Guard', culled: false });
     expect(r.intercepts).toBe(1);
     // The intercepted hit does not land either: the killing blow is the last thing that happens.
-    expect(r.events.at(-1)?.kind).toBe('killing-blow');
+    expect(textEvents(r).at(-1)?.kind).toBe('killing-blow');
     expect(count(r, 'hit')).toBe(0);
   });
 

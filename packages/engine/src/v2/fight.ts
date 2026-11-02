@@ -31,7 +31,7 @@ const { bossTurn } = bossMod;
 const { creatureTurn } = creatureMod;
 const { escalationState, fadeMired } = escalationMod;
 const { roundStart } = marksMod;
-const { alive, aliveBySlot, contextOf, effectsCarried, log, strengthOf } = stateMod;
+const { alive, aliveBySlot, contextOf, effectsCarried, emit, log, strengthOf } = stateMod;
 
 /** A creature at the start of a fight: its spec, at full HP, with nothing stored. */
 function fighterOf(spec: FighterSpec): Fighter {
@@ -137,6 +137,12 @@ export function playFight(
     phaseMoves: null,
   };
   const startAlive = alive(s).length;
+  if (opts.log && (opts.resistReaction || opts.resistElement))
+    emit(s, {
+      type: 'resistance',
+      ...(opts.resistReaction ? { reaction: opts.resistReaction } : {}),
+      ...(opts.resistElement ? { element: opts.resistElement } : {}),
+    });
   for (s.round = 1; s.round <= boss.rounds && s.bossHp > 0 && alive(s).length > 0; s.round++) {
     for (const f of fighters) {
       f.undodgeable = false;
@@ -144,6 +150,7 @@ export function playFight(
       f.damageThisRound = 0;
     }
     s.turn = 0;
+    if (opts.log) emit(s, { type: 'round', round: s.round });
     roundStart(s);
     // The boss takes a turn after every row of the arena, empty or not.
     for (let r = 0; r < boss.rows && s.bossHp > 0 && alive(s).length > 0; r++) {
@@ -161,6 +168,23 @@ export function playFight(
       if (s.opts.log) log(s, 'shake', `${boss.name} shakes off its debuffs`);
       if (s.opts.log) log(s, 'mired', `Mired x${s.mired}`);
     }
+  }
+  if (opts.log) {
+    // The loop leaves the round counter one past the last round played (the escalation still reads it below, so it is not changed).
+    const round = Math.max(0, s.round - 1);
+    s.events.push({
+      round,
+      turn: 0,
+      kind: 'board',
+      text: '',
+      board: {
+        type: 'end',
+        round,
+        won: s.bossHp <= 0,
+        wiped: alive(s).length === 0,
+        bossHp: s.bossHp,
+      },
+    });
   }
   return {
     damage: s.count.damage,

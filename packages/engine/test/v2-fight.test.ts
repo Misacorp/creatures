@@ -139,7 +139,7 @@ describe('fightV2 on a hand-built input', () => {
       blocked: r.blocked,
       dodges: r.dodges,
       hpLeft: [...r.hpLeft],
-      events: r.events.length,
+      events: r.events.filter((e) => e.kind !== 'board').length,
     }).toMatchInlineSnapshot(`
       {
         "blocked": 0,

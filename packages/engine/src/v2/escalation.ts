@@ -2,12 +2,32 @@
  * The boss's escalation and Mired (R22): the Store's feed, the escalation's steps and the phase change, what the steps add to the boss
  * (`grown`), and the Mired stacks that slow it and cut the boss's damage and dodge (R22.3). Docs: docs/design/combat/proposals/001-combat-v2.md.
  */
-import type { BossMove, Escalation, EscalationFeed, EscalationState, Fighter } from './types';
+import type {
+  BoardEvent,
+  BossMove,
+  Escalation,
+  EscalationFeed,
+  EscalationState,
+  Fighter,
+} from './types';
 import * as stateMod from './state';
 import type { Grown, State } from './state';
 
 // Bound once: a named import is read through a getter on every call under the lab's Vite loader, which costs 15% of a report.
 const { alive, bump, fx, log, roll, strengthOf } = stateMod;
+
+/** The escalation as the board shows it now (`BoardEvent`). */
+const escalationBoard = (s: State): BoardEvent => ({
+  type: 'escalation',
+  count: s.esc.count,
+  step: s.esc.step,
+  // Without a falling growth the two are one (the state catches up at the end of the round start).
+  fall: Object.values(s.boss.escalation?.grow ?? {}).some((v) => (v ?? 0) < 0)
+    ? s.esc.fall
+    : s.esc.step,
+  phase: s.esc.phase,
+  phaseNext: s.esc.phaseNext,
+});
 
 // ---------- the boss's escalation (its Store) ----------
 
@@ -114,10 +134,14 @@ export function escalate(s: State): void {
     if (s.esc.phaseNext) {
       s.esc.phase = true;
       s.esc.phaseNext = false;
-      if (s.opts.log) log(s, 'phase', `${s.boss.name}: ${e.phase.name}`);
+      if (s.opts.log)
+        log(s, 'phase', `${s.boss.name}: ${e.phase.name}`, { board: escalationBoard(s) });
     } else if (s.esc.count >= e.phase.atStep * perOf(s)) {
       s.esc.phaseNext = true;
-      if (s.opts.log) log(s, 'announce', `${s.boss.name}: ${e.phase.name} begins next round`);
+      if (s.opts.log)
+        log(s, 'announce', `${s.boss.name}: ${e.phase.name} begins next round`, {
+          board: escalationBoard(s),
+        });
     }
   }
   const per = perOf(s);
@@ -125,11 +149,13 @@ export function escalate(s: State): void {
   const falls = Object.values(e.grow).some((v) => (v ?? 0) < 0);
   if (falls && s.esc.fall < e.cap && s.esc.count >= (s.esc.fall + 1) * per) {
     s.esc.fall++;
-    log(
-      s,
-      'escalation',
-      `${e.name}: what helps the players falls to step ${s.esc.fall} of ${e.cap}; Mired does not slow it`,
-    );
+    if (s.opts.log)
+      log(
+        s,
+        'escalation',
+        `${e.name}: what helps the players falls to step ${s.esc.fall} of ${e.cap}; Mired does not slow it`,
+        { board: escalationBoard(s) },
+      );
   }
   if (s.esc.step < e.cap) stepUp(s, e, per);
   if (!falls) s.esc.fall = s.esc.step;
@@ -149,13 +175,15 @@ function stepUp(s: State, e: Escalation, per: number): void {
     return;
   }
   s.esc.step++;
-  log(
-    s,
-    'escalation',
-    `${e.name}: step ${s.esc.step} of ${e.cap} (${s.esc.count} ${e.feed}); next at ${
-      s.esc.step >= e.cap ? 'the cap' : (s.esc.step + 1) * per
-    }`,
-  );
+  if (s.opts.log)
+    log(
+      s,
+      'escalation',
+      `${e.name}: step ${s.esc.step} of ${e.cap} (${s.esc.count} ${e.feed}); next at ${
+        s.esc.step >= e.cap ? 'the cap' : (s.esc.step + 1) * per
+      }`,
+      { board: escalationBoard(s) },
+    );
 }
 
 /** What the boss's Mired takes off its damage and its dodge, in bp: per stack, more while a living creature has Clinging. */
@@ -175,7 +203,8 @@ export function addMired(s: State, by: Fighter): void {
   const extra = roll(s, fx(by).miredExtraBp ?? 0) ? 1 : 0;
   if (extra) bump(by, 'miredExtraBp');
   s.mired = Math.min(R.miredMaxStacks, s.mired + 1 + extra);
-  if (s.opts.log) log(s, 'mired', `Mired x${s.mired}`);
+  if (s.opts.log)
+    log(s, 'mired', `Mired x${s.mired}`, { board: { type: 'mired', stacks: s.mired } });
 }
 
 /**
@@ -194,5 +223,6 @@ export function fadeMired(s: State): void {
     return;
   }
   s.mired--;
-  if (s.opts.log) log(s, 'mired', `Mired x${s.mired}`);
+  if (s.opts.log)
+    log(s, 'mired', `Mired x${s.mired}`, { board: { type: 'mired', stacks: s.mired } });
 }

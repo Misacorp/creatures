@@ -7,6 +7,7 @@
 import { chance, type Rng } from '@creatures/game';
 import type { KnackFx } from './effects';
 import type {
+  BoardEvent,
   BossDef,
   BossMove,
   ChartPair,
@@ -221,6 +222,22 @@ export const bump = (f: Fighter, key: keyof KnackFx) => {
 };
 export const log = (s: State, kind: string, text: string, extra: Partial<FightEvent> = {}) => {
   if (s.opts.log) s.events.push({ round: s.round, turn: s.turn, kind, text, ...extra });
+};
+
+/** A board event with no text line of its own (see `BoardEvent`). Callers build the event only when the fight logs. */
+export const emit = (s: State, event: BoardEvent) => {
+  if (s.opts.log)
+    s.events.push({ round: s.round, turn: s.turn, kind: 'board', text: '', board: event });
+};
+
+/** The name the board uses for a creature: its stable key, else its uid. */
+export const keyOf = (f: Pick<Fighter, 'key' | 'uid'>): string => f.key ?? f.uid;
+
+/** A creature's Store set to `value`, shown on the board when it changed. */
+export const setStore = (s: State, f: Fighter, value: number) => {
+  if (f.store === value) return;
+  f.store = value;
+  if (s.opts.log) emit(s, { type: 'store', who: keyOf(f), value });
 };
 
 /** The strength of the boss's cards and gates (bp; 10000 is the full card). */

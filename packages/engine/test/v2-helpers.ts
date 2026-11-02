@@ -10,6 +10,7 @@ import {
   mergeFx,
   weekendV2,
   type BossDef,
+  type BoardEvent,
   type BossMove,
   type FightEvent,
   type FightInputV2,
@@ -312,3 +313,11 @@ export function by(res: FightResult, name: string) {
 }
 
 export const kinds = (events: readonly FightEvent[]): string[] => events.map((e) => e.kind);
+
+/** The log's text events: the board's own events (kind `board`, no text) are left out. */
+export const textEvents = (res: FightResult): FightEvent[] =>
+  res.events.filter((e) => e.kind !== 'board');
+
+/** The board's typed parts of the events, in order (from events that carry text and from events of kind `board`). */
+export const boardEvents = (res: FightResult): BoardEvent[] =>
+  res.events.flatMap((e) => (e.board ? [e.board] : []));

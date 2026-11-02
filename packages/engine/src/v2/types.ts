@@ -411,6 +411,89 @@ export interface FightOptions {
   readonly log?: boolean;
 }
 
+/**
+ * What the board shows of a fight, typed for the client to animate (an event's optional `board` field, set only when the fight's `log`
+ * option is on). A creature is named by its `key` (`FighterSpec.key`, else its `uid`); `null` is the boss. An event that had a text line
+ * before carries its board part beside the text; what had none (a creature's hit on the boss, a heal, a Store, the start of a round) is an
+ * event of kind `board` with no text. The digest of a fight leaves all of it out.
+ */
+export type BoardEvent =
+  /** A round starts (before the Support verbs and the announcements). */
+  | { readonly type: 'round'; readonly round: number }
+  /** A move is announced at round start: its id and the (row, slot) of each creature it will land on (0-based). */
+  | {
+      readonly type: 'announce';
+      readonly move: string;
+      readonly slots: readonly (readonly [number, number])[];
+    }
+  /** The boss takes its turn after row `row` (0-based). */
+  | { readonly type: 'bossTurn'; readonly row: number }
+  /**
+   * A hit. `from` and `to` are creatures or the boss (`null`); `damage` is what lands after cuts and armour (0 when dodged or Blocked);
+   * a hit on a creature that another took (an intercept) has `by`, the creature that took it. `crit` is a critical hit.
+   */
+  | {
+      readonly type: 'hit';
+      readonly from: string | null;
+      readonly to: string | null;
+      readonly damage: number;
+      readonly crit: boolean;
+      readonly blocked: boolean;
+      readonly dodged: boolean;
+      readonly by?: string;
+    }
+  /** A creature's strike-back (not a hit: no crit, ignores armour). */
+  | { readonly type: 'counter'; readonly from: string; readonly damage: number }
+  /** A mark on the boss is added to or made bigger: its element, its counts now and whether it is sealed. */
+  | {
+      readonly type: 'mark';
+      readonly element: string;
+      readonly stacks: number;
+      readonly sealed: boolean;
+    }
+  /** Marks the boss shed (Clean Scales), by element. */
+  | { readonly type: 'shed'; readonly marks: readonly string[] }
+  /** A Payoff cashes a mark: the element, the counts spent, the bonus damage and the counts left on it (0: the mark is gone). */
+  | {
+      readonly type: 'reaction';
+      readonly by: string;
+      readonly mark: string;
+      readonly spent: number;
+      readonly bonus: number;
+      readonly left: number;
+    }
+  /** `who` is healed by `amount` (what was really restored); `by` is the healer, when there is one. */
+  | { readonly type: 'heal'; readonly who: string; readonly amount: number; readonly by?: string }
+  | { readonly type: 'knockout'; readonly who: string }
+  /** A creature is silenced for `turns` of its turns. */
+  | { readonly type: 'silence'; readonly who: string; readonly turns: number }
+  /** A creature's Store (Heat, Calm, Dodge stacks) is now `value`. */
+  | { readonly type: 'store'; readonly who: string; readonly value: number }
+  /** The boss's Mired is now `stacks`. */
+  | { readonly type: 'mired'; readonly stacks: number }
+  /**
+   * The boss's escalation moved: its feed count, the steps that help it (`step`) and that help the players (`fall`), and the phase
+   * (`phaseNext`: announced, it applies at the next round start).
+   */
+  | {
+      readonly type: 'escalation';
+      readonly count: number;
+      readonly step: number;
+      readonly fall: number;
+      readonly phase: boolean;
+      readonly phaseNext: boolean;
+    }
+  /** What the boss resists this fight (Adapts: a reaction's element; Element Resistance: an element), from stage 2 of a raid weekend. */
+  | { readonly type: 'resistance'; readonly reaction?: string; readonly element?: string }
+  /** The fight ends after `round` rounds. */
+  | {
+      readonly type: 'end';
+      readonly round: number;
+      readonly won: boolean;
+      readonly wiped: boolean;
+      readonly bossHp: number;
+    };
+
 export interface FightEvent {
   readonly round: number;
   readonly turn: number;
@@ -419,6 +502,8 @@ export interface FightEvent {
   /** On an `announce` event of a move: the move's id and the (row, slot) of each creature it will land on (0-based). */
   readonly move?: string;
   readonly slots?: readonly (readonly [number, number])[];
+  /** The board's typed part of the event (only with the fight's `log` option on; see `BoardEvent`). */
+  readonly board?: BoardEvent;
 }
 
 export interface EscalationState {
