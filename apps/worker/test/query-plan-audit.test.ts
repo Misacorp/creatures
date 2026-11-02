@@ -16,6 +16,7 @@
 // stops mattering. A statement that does not scan a table or only scans a small one needs nothing.
 import { knownKnacks, v2Pool } from '@creatures/game/combat-v2';
 import { describe, expect, it } from 'vitest';
+import { playV2Day, scaleV2Foes } from './dungeon-v2-reads';
 import { MINUTE } from './raid-helpers';
 import {
   BUILD,
@@ -286,6 +287,30 @@ describe('query plan audit', () => {
 
     expect(result.seen, 'statements recorded').toBeGreaterThan(40);
     expect(result.found, scanMessage(result.found)).toEqual([]);
+  }, 60_000);
+
+  it('plans a combat v2 dungeon day (start, the rooms, the camp, the rest of the run and its replay, with the flag on) without a whole-table scan', async () => {
+    const restore = scaleV2Foes(500, 500);
+    try {
+      const result = await audit({ combatV2: true, fresh: true }, async (env, world) => {
+        env.clock.t += 6 * MINUTE;
+        await callAs(world.core, world.secrets, 1, '/api/dungeon/today');
+        const team = (world.creatures[userId(1)] ?? []).slice(0, 3);
+        const day = await playV2Day(
+          (method, path, body) => callAs(world.core, world.secrets, 1, path, { method, body }),
+          team,
+          'audit-dungeon-v2',
+        );
+        expect(day.acts, 'the run went through a room and the camp').toEqual(
+          expect.arrayContaining(['room', 'camp']),
+        );
+        await callAs(world.core, world.secrets, 1, '/api/dungeon/today');
+      });
+      expect(result.seen, 'statements recorded').toBeGreaterThan(30);
+      expect(result.found, scanMessage(result.found)).toEqual([]);
+    } finally {
+      restore();
+    }
   }, 60_000);
 
   it('sees a full scan, an indexed search and an aliased scan in this SQLite (the detector works)', async () => {

@@ -15,6 +15,7 @@ import type {
 } from '../src/dungeon-types';
 import { isStoredV2, type RoomResultV2, type StoredFightV2 } from '../src/dungeon-v2';
 import { grantFirstTalent } from '../src/talent-v2-store';
+import { scaleV2Foes } from './dungeon-v2-reads';
 import {
   dungeonPlayer,
   easyFoes,
@@ -35,18 +36,6 @@ const opts = (seed: string) => ({
   gearRng: createSeededRng(`${seed}:gear`),
 });
 const V2 = (seed: string) => ({ ...opts(seed), combatV2: true });
-
-/** How strong the v2 foes are (the pack's scale, basis points of their content numbers); returns what puts it back. */
-function scaleV2Foes(hpBp: number, atkBp: number): () => void {
-  const scale = combatV2.foeScale;
-  const before = { ...scale };
-  scale.hpBp = hpBp;
-  scale.atkBp = atkBp;
-  return () => {
-    scale.hpBp = before.hpBp;
-    scale.atkBp = before.atkBp;
-  };
-}
 
 let restore: () => void = () => undefined;
 let restoreV1: () => void = () => undefined;

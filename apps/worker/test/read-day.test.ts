@@ -29,6 +29,7 @@ import { readSourceOfPath } from '../src/read-meter';
 import { RULES, createSeededRng } from '@creatures/game';
 import { maintainedDay } from '../src/maintenance';
 import { gameDay } from '../src/time';
+import { playV2Day, scaleV2Foes } from './dungeon-v2-reads';
 import { DAY, HELSINKI, HOUR, MINUTE } from './raid-helpers';
 import type { ReadReport } from './read-meter';
 import {
@@ -57,7 +58,9 @@ const DAY_BUDGET = 190_000;
 // Today (51 migrations: the start reads one row of schema_version per migration): 126,011. With combat v2 on
 // (the second test, the same budget): 157,044 rows. The extra is the v2 creature page on every state request
 // (request:state 24,428, was 15,652) and the 50 Knack saves and talent learns, each of which answers with the
-// state (request:creatures 22,216).
+// state (request:creatures 22,216). With each of the 10 players also running a v2 dungeon day on their first opening
+// (start, the rooms, the camp, the rest of the run, a look at the replay: about 1,000 rows a run): 167,736 rows, the
+// extra 10,600 rows in request:dungeon (13,160, was 3,199 with the `/api/dungeon/today` looks).
 
 const PLAYING = 10;
 const OPENS_PER_PLAYER = 4;
@@ -192,6 +195,18 @@ async function simulateDay(options: { combatV2?: boolean; fresh?: boolean }): Pr
         );
         if (opens.has(player)) return;
         opens.add(player);
+        // Combat v2: each playing player runs the day's dungeon on their first opening (start, the rooms, the camp,
+        // the rest of the run, a look at the replay).
+        await playV2Day(
+          (method, path, body) => callAs(core, secrets, player, path, { method, body }),
+          mine.slice(0, 3),
+          `read-day-dungeon-${String(player)}`,
+          async (_label, run) => {
+            const measured = await env.metered.measure(run);
+            reads.add('request:dungeon', measured.reads);
+            return measured.result;
+          },
+        );
         const line = env.metered.sql
           .exec<{ line: string }>('SELECT line FROM creatures WHERE id = ?', first)
           .one().line;
@@ -320,8 +335,15 @@ describe('a day in the life of a 10-player server', () => {
   }, 120_000);
 
   // The same budget, not a new one: the flag on must fit in what the day was allowed.
-  it('reads few rows in a day with combat v2 on (Knack saves and talent learns included)', async () => {
-    const reads = await simulateDay({ combatV2: true, fresh: true });
+  it('reads few rows in a day with combat v2 on (Knack saves, talent learns and a dungeon run each included)', async () => {
+    // Easy v2 foes, so every run reaches its camp whatever the seeded levels (the reads of a fight do not depend on it).
+    const restore = scaleV2Foes(500, 500);
+    let reads: DayReads;
+    try {
+      reads = await simulateDay({ combatV2: true, fresh: true });
+    } finally {
+      restore();
+    }
     expect(
       reads.total,
       `${reads.describe()}\nBudget: ${String(DAY_BUDGET)} rows.`,
