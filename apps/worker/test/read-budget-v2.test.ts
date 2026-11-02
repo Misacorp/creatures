@@ -1,5 +1,6 @@
 // The read budget of the combat v2 paths (the `COMBAT_V2` flag on; docs/design/combat/integration.md, section 8):
-// the creature page load, a Knack save, a talent learn and a role-changing evolution, in the month-old guild of
+// the creature page load, a Knack save, a talent learn and a role-changing evolution, and the raid weekend's own paths (the week's view,
+// a placement, a swap request and its answer), in the month-old guild of
 // `read-world.ts` where every creature carries a v2 talent and a Knack and each player's books are full. Like
 // `read-budget.test.ts`: each budget is about 1.5x what the path read when it was set (the measured value is
 // next to it), a failure lists the top statements, and a budget is raised only with a reason in the PR. It is a
@@ -8,13 +9,17 @@ import { describe, expect, it } from 'vitest';
 import { playV2Day, scaleV2Foes } from './dungeon-v2-reads';
 import { MINUTE } from './raid-helpers';
 import { expectReadsUnder, type ReadReport } from './read-meter';
-import { callAs, inGuild, seedWorld, userId } from './read-world';
+import { boardSwap, callAs, inGuild, seedWorld, userId } from './read-world';
 
 /** Budgets, rows read per call (the measured value is in the comment). */
 const BUDGET_V2 = {
   '/api/state': 900, // measured 607: the creature page load with the flag on (465 in the v1 world; the v2 books and learned talents add 2 statements, about 140 rows)
   knack: 650, // measured 435: saving a Knack, which answers with the state (the Knack itself is 3 statements)
   learn: 680, // measured 454: learning a talent for Bait (the ledger spend, the book check, the insert), and the state
+  '/api/raid': 850, // measured 562: a v2 week with 15 players and three placed creatures each (the track's boss, the carry row, the open swap requests of the caller, a creature load by id per player; no readiness band)
+  board: 170, // measured 110: one placement (a swap of two creatures, without the view) with a teammate's board socket open on a v2 week
+  ask: 135, // measured 87: a swap request (the party's two slots, the caller's open requests, the insert) and the answer's list
+  accept: 90, // measured 57: accepting a request (the request by its indexes, both slots, the move)
   evolve: 700, // measured 461: a role-changing evolution with its replacement roll (the line's book is read once per slot), and the state
 } as const;
 
@@ -109,10 +114,46 @@ describe('read budget: combat v2', () => {
         )
       ).reads;
 
+      // The raid weekend on v2: the week is a v2 week (the seeded players joined it), 15 players with three creatures each.
+      const raidView = (await metered.measure(() => callAs(core, secrets, 1, '/api/raid'))).reads;
+      const board = await boardSwap(env, world);
+      const slotsOf = (id: string): number[] =>
+        metered.sql
+          .exec<{ slot: number }>(
+            'SELECT slot FROM raid_placements WHERE user_id = ? ORDER BY slot',
+            id,
+          )
+          .toArray()
+          .map((r) => r.slot);
+      const mineSlots = slotsOf(userId(1));
+      const theirSlots = slotsOf(userId(3));
+      const ask = (
+        await metered.measure(() =>
+          callAs(core, secrets, 1, '/api/raid/swap', {
+            method: 'POST',
+            body: { slotA: mineSlots[0], slotB: theirSlots[0] },
+          }),
+        )
+      ).reads;
+      const incoming = (await callAs(core, secrets, 3, '/api/raid/swap')) as {
+        incoming: { id: string }[];
+      };
+      const accept = (
+        await metered.measure(() =>
+          callAs(core, secrets, 3, `/api/raid/swap/${incoming.incoming[0]?.id as string}/accept`, {
+            method: 'POST',
+          }),
+        )
+      ).reads;
+
       expectReadsUnder('v2 /api/state', state, BUDGET_V2['/api/state']);
       expectReadsUnder('v2 knack save', knack, BUDGET_V2.knack);
       expectReadsUnder('v2 talent learn', learn, BUDGET_V2.learn);
       expectReadsUnder('v2 evolve', evolve, BUDGET_V2.evolve);
+      expectReadsUnder('v2 /api/raid', raidView, BUDGET_V2['/api/raid']);
+      expectReadsUnder('v2 raid placement', board, BUDGET_V2.board);
+      expectReadsUnder('v2 swap request', ask, BUDGET_V2.ask);
+      expectReadsUnder('v2 swap accept', accept, BUDGET_V2.accept);
     });
   }, 60_000);
 });

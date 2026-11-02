@@ -457,6 +457,28 @@ function tallyEvent(tally: Tally, kind: string, p: Props): void {
       tally.add('raid.party_size_sum', { phase: str(p, 'phase') }, num(p, 'partySize'));
       tally.add('raid.top_share_bp_sum', { phase: str(p, 'phase') }, num(p, 'topShareBp'));
       break;
+    case 'stage_result':
+      tally.add('raid.stage', {
+        stage: num(p, 'stage'),
+        slot: num(p, 'slot'),
+        kill: flag(p, 'kill'),
+      });
+      tally.add('raid.stage_players_sum', { stage: num(p, 'stage') }, num(p, 'players'));
+      tally.add('raid.stage_hp_removed_bp_sum', { stage: num(p, 'stage') }, num(p, 'hpRemovedBp'));
+      tally.add('raid.stage_knockouts_sum', { stage: num(p, 'stage') }, num(p, 'knockouts'));
+      tally.add('raid.stage_reactions_sum', { stage: num(p, 'stage') }, num(p, 'reactions'));
+      break;
+    case 'raid_lineup':
+      tally.add('raid.lineup', { stage: num(p, 'stage') });
+      tally.add('raid.lineup_placed_sum', { stage: num(p, 'stage') }, num(p, 'placed'));
+      tally.add('raid.lineup_with_knack_sum', { stage: num(p, 'stage') }, num(p, 'withKnack'));
+      tally.add('raid.lineup_beyond_top3_sum', { stage: num(p, 'stage') }, num(p, 'beyondTop3'));
+      break;
+    case 'track_change':
+      tally.add('raid.track_change', { slot: num(p, 'slot'), kill: flag(p, 'kill') });
+      tally.add('raid.track_best_share_bp_sum', { slot: num(p, 'slot') }, num(p, 'bestShareBp'));
+      tally.add('raid.track_determination_sum', { slot: num(p, 'slot') }, num(p, 'determination'));
+      break;
     case 'rank_change': {
       const before = num(p, 'before');
       const after = num(p, 'after');

@@ -17,7 +17,8 @@
 import { knownKnacks, v2Pool } from '@creatures/game/combat-v2';
 import { describe, expect, it } from 'vitest';
 import { playV2Day, scaleV2Foes } from './dungeon-v2-reads';
-import { MINUTE } from './raid-helpers';
+import { HELSINKI, MINUTE } from './raid-helpers';
+import { V2_WEEK } from './raid-v2-helpers';
 import {
   BUILD,
   GUILD_ID,
@@ -311,6 +312,59 @@ describe('query plan audit', () => {
     } finally {
       restore();
     }
+  }, 60_000);
+
+  it('plans a combat v2 raid weekend (the week, a placement, a swap request and its answer, both stages, the live finale and its settle) without a whole-table scan', async () => {
+    const result = await audit({ combatV2: true, fresh: true }, async (env, world) => {
+      const { metered, clock, mk } = env;
+      clock.t += 6 * MINUTE;
+      // Twice, as above: the first call pays one-off work.
+      for (let round = 0; round < 2; round++)
+        await callAs(world.core, world.secrets, 1, '/api/raid');
+      await boardSwap(env, world);
+      const slotsOf = (id: string): number[] =>
+        metered.sql
+          .exec<{ slot: number }>(
+            'SELECT slot FROM raid_placements WHERE user_id = ? ORDER BY slot',
+            id,
+          )
+          .toArray()
+          .map((r) => r.slot);
+      await callAs(world.core, world.secrets, 1, '/api/raid/swap', {
+        method: 'POST',
+        body: { slotA: slotsOf(userId(1))[0], slotB: slotsOf(userId(3))[0] },
+      });
+      const incoming = (await callAs(world.core, world.secrets, 3, '/api/raid/swap')) as {
+        incoming: { id: string }[];
+      };
+      await callAs(
+        world.core,
+        world.secrets,
+        3,
+        `/api/raid/swap/${incoming.incoming[0]?.id as string}/accept`,
+        { method: 'POST' },
+      );
+      // Stage 1 on Saturday, stage 2 and the live finale on Sunday, the reads of the fight and the one that settles it (the raid's own
+      // events: the daily alarm's cleanup is not what this case plans).
+      const core = mk(BUILD, { combatV2: true });
+      core.migrate();
+      clock.t = V2_WEEK.stage1 + 30_000;
+      core.raid.runDue(HELSINKI);
+      clock.t = V2_WEEK.stage2 + 30_000;
+      core.raid.runDue(HELSINKI);
+      core.raid.view(userId(1), HELSINKI);
+      clock.t = V2_WEEK.finale + 2000;
+      core.raid.runDue(HELSINKI);
+      for (const at of [1000, 40_000, 100_000, 300_000]) {
+        clock.t = V2_WEEK.finale + at;
+        core.raid.liveView(userId(1), HELSINKI);
+      }
+      core.raid.replay(userId(1), V2_WEEK.id, 1, 'stage1');
+      core.raid.stats(userId(1), V2_WEEK.id, 1, 'stage1');
+    });
+
+    expect(result.seen, 'statements recorded').toBeGreaterThan(60);
+    expect(result.found, scanMessage(result.found)).toEqual([]);
   }, 60_000);
 
   it('sees a full scan, an indexed search and an aliased scan in this SQLite (the detector works)', async () => {

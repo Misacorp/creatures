@@ -38,6 +38,7 @@ Misa watches production by playing. Agents also need data to understand **how pe
    - ability pick and auto fire toggles;
    - live join, Fire and hold;
    - phase results;
+   - combat v2 raid weekend (2026-11-02, `combat/integration.md`; only for weeks played under v2): `raid_lineup` (per player at each stage lock: the stage, the creatures placed, how many carry a Knack and how many are beyond the player's top three, which are the placed creatures that are not among their three highest-level creatures, ties by the species' power), `stage_result` (guild-level, beside `phase_result`: the track's slot, the stage, the party's players, the share of the weekend's HP removed so far in bp, the knockouts, the reactions and whether the boss fell) and `track_change` (guild-level, at the end of a weekend: the slot fought, whether it was a kill, the best share in bp and Determination's stacks). The rollup counts them as `raid.stage`, `raid.lineup` and `raid.track_change`, with the numbers as sums;
    - rank change;
    - Festival grant;
    - post delivery results.
