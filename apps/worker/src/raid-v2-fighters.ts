@@ -6,13 +6,14 @@
  * do the v1 talents, fusion or weather (the lab measured none of them). The creature's id is its `key`, so the stage carry follows the
  * creature when a swap moves it to another slot.
  */
-import { effectiveStats, slotsOpen, type CreatureSpecies } from '@creatures/game';
+import { effectiveStats, type CreatureSpecies } from '@creatures/game';
 import { knownKnacks } from '@creatures/game/combat-v2';
 import type { FighterSpec } from '@creatures/engine/v2';
-import { wornOnCreatures } from './gear-store';
-import { foldCreature } from './gear-worn';
+import { gearStatLines, slottedTalents, type GearStats } from './fighter-v2';
+import { wearerOf, wornItems, wornOnCreatures, type WornBySlot } from './gear-store';
 import { resolver } from './raid-v2-core';
 import { speciesOf } from './species';
+import type { LearnedTalent } from './talent-v2-store';
 
 /** The most ids one query binds (the object's SQL allows 100 bound values). */
 const CHUNK = 50;
@@ -26,42 +27,30 @@ export interface V2CreatureRow {
   knack: string | null;
 }
 
-/** A creature's stat lines from its worn gear, on top of its form's stats (v2's gear: stat lines only). */
-export interface GearLines {
-  hp: number;
-  atk: number;
-  spd: number;
-  critChanceBp: number;
-  critDamageBp: number;
-}
-
 /** A creature as a stage reads it: its row, its slotted v2 talents (in slot order) and its gear's stat lines. */
 export interface V2Creature extends V2CreatureRow {
   talents: string[];
-  gear: GearLines;
+  gear: GearStats;
 }
 
-/** The gear's stat lines of a creature: what the folded numbers have over the plain ones (the modifier sheet is not read). */
+/**
+ * The gear's stat lines of a creature: the shared v2 gear rule (`gearStatLines` of `fighter-v2.ts`, which the dungeon uses as well) over the
+ * creature's worn items. The modifier sheet and every effect line are not read.
+ */
 export function gearLinesOf(
-  species: Pick<
-    CreatureSpecies,
-    'id' | 'baseStats' | 'growth' | 'levelCap' | 'crit' | 'role' | 'element'
-  >,
+  species: CreatureSpecies,
   level: number,
-  worn: Parameters<typeof foldCreature>[1],
-): GearLines {
-  if (worn === undefined || Object.keys(worn).length === 0) {
-    return { hp: 0, atk: 0, spd: 0, critChanceBp: 0, critDamageBp: 0 };
-  }
-  const plain = effectiveStats(species, level, 0);
-  const folded = foldCreature({ species: species.id, level, fusion_count: 0 }, worn);
-  return {
-    hp: folded.stats.hp - plain.hp,
-    atk: folded.stats.atk - plain.atk,
-    spd: folded.stats.spd - plain.spd,
-    critChanceBp: (folded.crit?.chanceBp ?? 0) - (species.crit?.chanceBp ?? 0),
-    critDamageBp: (folded.crit?.damageBp ?? 0) - (species.crit?.damageBp ?? 0),
-  };
+  fusionCount: number,
+  worn: WornBySlot | undefined,
+): GearStats {
+  const items = wornItems(worn);
+  return gearStatLines({
+    stats: effectiveStats(species, level, fusionCount),
+    crit: species.crit,
+    wearer: wearerOf(species),
+    items,
+    talents: [],
+  });
 }
 
 /**
@@ -80,33 +69,36 @@ export function loadV2Creatures(sql: SqlStorage, ids: readonly string[]): Map<st
         species: string;
         level: number;
         knack: string | null;
-      }>(`SELECT id, user_id, species, level, knack FROM creatures WHERE id IN (${marks})`, ...part)
+        fusion_count: number;
+      }>(
+        `SELECT id, user_id, species, level, knack, fusion_count FROM creatures WHERE id IN (${marks})`,
+        ...part,
+      )
       .toArray();
-    const talents = new Map<string, string[]>();
+    const learned = new Map<string, LearnedTalent[]>();
     for (const t of sql
-      .exec<{ creature_id: string; talent_id: string }>(
-        `SELECT creature_id, talent_id FROM creature_talents_v2
+      .exec<{ creature_id: string; talent_id: string; slot: number | null }>(
+        `SELECT creature_id, talent_id, slot FROM creature_talents_v2
          WHERE creature_id IN (${marks}) AND slot IS NOT NULL ORDER BY creature_id, slot`,
         ...part,
       )
       .toArray()) {
-      const list = talents.get(t.creature_id) ?? [];
-      list.push(t.talent_id);
-      talents.set(t.creature_id, list);
+      const list = learned.get(t.creature_id) ?? [];
+      list.push({ talentId: t.talent_id, slot: t.slot });
+      learned.set(t.creature_id, list);
     }
     const worn = wornOnCreatures(sql, part);
     for (const r of rows) {
       const species = speciesOf(r.species);
-      // A slotted talent counts only while its slot is open at the creature's level.
-      const open = slotsOpen(species.rarity, r.level);
       out.set(r.id, {
         id: r.id,
         userId: r.user_id,
         species: r.species,
         level: r.level,
         knack: r.knack,
-        talents: (talents.get(r.id) ?? []).slice(0, open),
-        gear: gearLinesOf(species, r.level, worn.get(r.id)),
+        // A slotted talent counts only while its slot is open at the creature's level.
+        talents: slottedTalents({ species, level: r.level }, learned.get(r.id) ?? []),
+        gear: gearLinesOf(species, r.level, r.fusion_count, worn.get(r.id)),
       });
     }
   }

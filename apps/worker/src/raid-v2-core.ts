@@ -6,7 +6,8 @@
  * **The grid.** A v2 board is `rows` rows (the slot's boss's) by `cols` columns (`max(4, players)`, R14.1). A placement's `slot` is
  * column-major, `slot = col * rows + row`, so a wider board (a player joins) never renumbers a slot someone already holds.
  */
-import { content, dungeonContent } from '@creatures/game';
+import { content } from '@creatures/game';
+import { SHIPPED } from './fighter-v2';
 import { combatV2 } from '@creatures/game/combat-v2';
 import {
   RAID_COLS,
@@ -21,12 +22,8 @@ import {
 import { RULES } from '@creatures/game';
 import type { RaidRules } from './raid-schedule';
 
-/** The shipped content the resolver and the track's boss read beside the combat v2 pack. */
-export const SHIPPED_V2: Shipped = {
-  creatures: content.creatures,
-  bosses: content.bosses,
-  foes: dungeonContent.foes,
-};
+/** The shipped content the resolver and the track's boss read beside the combat v2 pack (shared with the dungeon: `fighter-v2.ts`). */
+export const SHIPPED_V2: Shipped = SHIPPED;
 
 /** One resolver for the worker: its memos (merged effects, stats by form and level) are only derived data, never state that must last. */
 export const resolver = createResolver(combatV2, SHIPPED_V2);

@@ -31,6 +31,7 @@ import { maintainedDay } from '../src/maintenance';
 import { gameDay } from '../src/time';
 import { playV2Day, scaleV2Foes } from './dungeon-v2-reads';
 import { DAY, HELSINKI, HOUR, MINUTE } from './raid-helpers';
+import { V2_WEEK } from './raid-v2-helpers';
 import type { ReadReport } from './read-meter';
 import {
   BUILD,
@@ -349,4 +350,106 @@ describe('a day in the life of a 10-player server', () => {
       `${reads.describe()}\nBudget: ${String(DAY_BUDGET)} rows.`,
     ).toBeLessThanOrEqual(DAY_BUDGET);
   }, 120_000);
+});
+
+/** Budget for a v2 raid weekend's Sunday: about 1.5x the measured total (the breakdown is in the comment below). */
+const WEEKEND_DAY_BUDGET = 56_000;
+// Measured 37,149 rows: request:raid 10,576 (344 calls: the live finale's snapshots at about 30 rows each, served from the rounds kept in the row), request:state 9,664, request:games 4,505, alarm:stage 2 3,502 (the party resolved, 15 players paid and the stage stored), request:gear 2,557.
+// A combat v2 raid Sunday (the seeded 15-player party, all in one party of 45 creatures): the day's rows come from stage 2 at 13:37 (one
+// alarm that resolves the party, pays 15 players and stores the stage), 10 players opening the game twice (a login and the usual tabs,
+// `/api/raid` among them), the finale at 20:00 (one alarm that starts the live fight), the live finale's 8 rounds (ten players take a
+// snapshot at every round start, two poll every 2 seconds all through it), the read that settles it (one transaction: the payout of 15
+// players, the jackpot rolls, the track's move) and a last look at the raid. Saturday's stage 1 is played first and is not part of the day.
+
+/** The rows of a v2 raid Sunday, by source. */
+async function simulateWeekendDay(): Promise<DayReads> {
+  const reads = new DayReads();
+  await inGuild(
+    async (env: GuildEnv) => {
+      await seedWorld(env, { combatV2: true });
+      const { metered, clock, mk } = env;
+      const flag = { combatV2: true } as const;
+      const wake = async (source: string): Promise<ReturnType<GuildEnv['mk']>> => {
+        const core = mk(BUILD, flag);
+        reads.add(source, (await metered.measure(() => core.migrate())).reads);
+        return core;
+      };
+      // Saturday, stage 1 (its own day: not counted).
+      clock.t = V2_WEEK.stage1 + 30_000;
+      await mk(BUILD, flag).alarm();
+      // Sunday, from the morning.
+      clock.t = V2_WEEK.stage2 - 3 * HOUR;
+      const open = async (player: number): Promise<void> => {
+        const core = await wake('start');
+        const user = { id: userId(player), displayName: `Player ${String(player)}` };
+        const session = await metered.measure(() => core.createSession(GUILD_ID, user));
+        reads.add('request:session', session.reads);
+        const secrets = new Map([[userId(player), session.result]]);
+        for (const path of TABS)
+          reads.add(
+            readSourceOfPath(path),
+            (await metered.measure(() => callAs(core, secrets, player, path))).reads,
+          );
+      };
+      for (let p = 1; p <= PLAYING; p++) await open(p);
+      // Stage 2 at 13:37.
+      clock.t = V2_WEEK.stage2 + 30_000;
+      {
+        const core = mk(BUILD, flag);
+        reads.add('start', (await metered.measure(() => core.migrate())).reads);
+        reads.add('alarm:stage 2', (await metered.measure(() => core.alarm())).reads);
+      }
+      for (let p = 1; p <= PLAYING; p++) await open(p);
+      // The finale: the lobby, the start at 20:00, the rounds.
+      clock.t = V2_WEEK.finale - 3 * MINUTE;
+      const look = async (core: ReturnType<GuildEnv['mk']>, player: number): Promise<void> => {
+        reads.add(
+          'request:raid',
+          (
+            await metered.measure(() =>
+              Promise.resolve(core.raid.liveView(userId(player), HELSINKI)),
+            )
+          ).reads,
+        );
+      };
+      {
+        const core = await wake('start');
+        for (let p = 1; p <= PLAYING; p++) await look(core, p);
+        clock.t = V2_WEEK.finale + 2000;
+        reads.add('alarm:finale start', (await metered.measure(() => core.alarm())).reads);
+      }
+      const live = mk(BUILD, flag);
+      live.migrate();
+      const rounds = 8;
+      for (let r = 0; r < rounds; r++) {
+        clock.t = V2_WEEK.finale + r * 30_000 + 1000;
+        // Ten players take a snapshot at the round's start (the socket's push), two poll every 2 seconds through the round.
+        for (let p = 1; p <= PLAYING; p++) await look(live, p);
+        for (let tick = 0; tick < 14; tick++) {
+          clock.t += 2000;
+          for (const p of [1, 2]) await look(live, p);
+        }
+      }
+      // The end: the first read after the last round settles the fight.
+      clock.t = V2_WEEK.finale + rounds * 30_000 + 1000;
+      reads.add(
+        'settle',
+        (await metered.measure(() => Promise.resolve(live.raid.liveView(userId(1), HELSINKI))))
+          .reads,
+      );
+      for (let p = 1; p <= PLAYING; p++) await look(live, p);
+    },
+    { fresh: true },
+  );
+  return reads;
+}
+
+describe('a v2 raid weekend day', () => {
+  it('reads few rows on the Sunday of a combat v2 weekend (stage 2, the live finale and its settle included)', async () => {
+    const reads = await simulateWeekendDay();
+    expect(
+      reads.total,
+      `${reads.describe()}\nBudget: ${String(WEEKEND_DAY_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(WEEKEND_DAY_BUDGET);
+  }, 180_000);
 });

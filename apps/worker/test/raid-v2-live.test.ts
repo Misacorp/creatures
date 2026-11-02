@@ -102,12 +102,11 @@ describe('the live finale replay', () => {
   it('keeps the rounds played in the row: a poll inside a round plays nothing, a new round or an input plays again', async () => {
     await runRaid(
       (ctx) => {
-        const [a] = toFinale(ctx) as [{ id: string }];
+        toFinale(ctx);
         const survivor = rows<{ user_id: string }>(
           ctx.sql,
           'SELECT user_id FROM raid_placements LIMIT 1',
         )[0]?.user_id as string;
-        void a;
         expect(liveRow(ctx).frames).toBeNull();
         // Round 1: the first read plays one round and stores it.
         const first = snap(ctx, survivor);

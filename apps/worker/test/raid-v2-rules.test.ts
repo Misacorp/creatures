@@ -3,20 +3,18 @@
 // pieces of the end of the week. The whole weekend is `raid-v2-weekend.test.ts`.
 import { content, gearContent, seasonOf } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import { canonicalDims } from '../src/analytics-rollup';
 import { propsOf } from '../src/analytics-props';
 import { loadV2Creatures } from '../src/raid-v2-fighters';
 import { determinationBpFor } from '../src/raid-v2-core';
 import { addWeeks, eventTimes, nextDueEvent, weekIndex } from '../src/raid-schedule';
 import { endWeekV2 } from '../src/raid-v2-track';
-import { ORIGIN, undoKnackMigration, type CoreContext } from './helpers';
+import { undoKnackMigration, type CoreContext } from './helpers';
 import { giveItem } from './gear-helpers';
 import { sessionCaller } from './kit';
-import { HELSINKI, HOUR, W02, count, joinRaid, rows, runRaid, seedPlayer } from './raid-helpers';
-import { V2_WEEK, carryOf, eventsOfKind, v2Player } from './raid-v2-helpers';
+import { HELSINKI, HOUR, count, joinRaid, rows, runRaid, seedPlayer } from './raid-helpers';
+import { V2_WEEK, eventsOfKind, v2Player } from './raid-v2-helpers';
 
 const V2 = { combatV2: true } as const;
-void ORIGIN;
 
 describe('the v2 calendar', () => {
   it('puts stage 1 on Saturday and stage 2 and the finale on Sunday, and leaves a v1 week as it was', () => {
@@ -230,15 +228,6 @@ describe('players lock at stage 1', () => {
         ) as { boss: { hp: number; cols: number } };
         expect(boss.boss.cols).toBe(4);
         expect(rows(ctx.sql, 'SELECT v2_players FROM raid_parties')).toEqual([{ v2_players: 2 }]);
-        // A member may still take a creature off the board and stays a member.
-        const mine = rows<{ creature_id: string }>(
-          ctx.sql,
-          'SELECT creature_id FROM raid_placements WHERE user_id = ?',
-          a.id,
-        );
-        const first = mine[0];
-        expect(first).toBeDefined();
-        void carryOf(ctx.sql);
         return Promise.resolve();
       },
       { start: V2_WEEK.open, core: V2 },
@@ -333,7 +322,7 @@ describe('swap requests', () => {
   it('takes only what a request can mean: a swap with another player, or asking one to move into an empty slot', async () => {
     await runRaid(
       async (ctx) => {
-        const { players, callers } = await party(ctx);
+        const { players } = await party(ctx);
         const [a, b] = players as [(typeof players)[0], (typeof players)[0]];
         const mine = slotsOf(ctx, a.id);
         const theirs = slotsOf(ctx, b.id);
@@ -372,7 +361,6 @@ describe('swap requests', () => {
         // The other request is about slots that changed hands: it is ended, and accepting it answers `changed`.
         // The swap is still good: the creatures are where they were.
         const swap = byKind(true)?.id as string;
-        void callers;
         expect(ctx.core.raid.answerSwap(b.id, HELSINKI, swap, 'accept')).toMatchObject({
           ok: true,
         });
@@ -429,13 +417,7 @@ describe('swap requests', () => {
         // At most six open requests at a time.
         for (const row of [0, 1, 2]) {
           for (const col of [theirs[0], theirs[1], theirs[2]]) {
-            const outcome = ctx.core.raid.askSwap(
-              a.id,
-              HELSINKI,
-              mine[row] as number,
-              col as number,
-            );
-            void outcome;
+            ctx.core.raid.askSwap(a.id, HELSINKI, mine[row] as number, col as number);
           }
         }
         expect(count(ctx.sql, 'raid_swap_requests', "status = 'open'")).toBe(6);
@@ -444,9 +426,7 @@ describe('swap requests', () => {
             a.id,
             HELSINKI,
             mine[0] as number,
-            (players[2] as { creatureIds: string[] })
-              ? (slotsOf(ctx, (players[2] as { id: string }).id)[0] as number)
-              : 0,
+            slotsOf(ctx, (players[2] as { id: string }).id)[0] as number,
           ),
         ).toMatchObject({
           ok: false,
@@ -497,7 +477,8 @@ describe('swap requests', () => {
         expect(slotsOf(ctx, a.id)).toContain(theirs[0]);
         expect(slotsOf(ctx, b.id)).toContain(mine[0]);
         // The week's view carries the open requests of the caller (none now).
-        expect((await ca.call('GET', '/api/raid')).body['v2']['swaps']).toEqual({
+        const raidBody = (await ca.call('GET', '/api/raid')).body as { v2: { swaps: unknown } };
+        expect(raidBody.v2.swaps).toEqual({
           incoming: [],
           outgoing: [],
         });
@@ -557,7 +538,6 @@ describe('the analytics of the weekend', () => {
             determination: 3,
           }),
         ).toEqual({ slot: 6, kill: true, bestShareBp: 10000, determination: 3 });
-        void canonicalDims;
         return Promise.resolve();
       },
       { start: V2_WEEK.open, core: V2 },
@@ -636,5 +616,3 @@ describe('a fighter', () => {
     );
   }, 60_000);
 });
-
-void W02;
