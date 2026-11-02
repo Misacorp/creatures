@@ -178,6 +178,8 @@ export interface ExpeditionsDeps {
   quirkRng: Rng;
   /** Live randomness for the first talent of a new creature (and the pending duplicates' talents). */
   talentRng: Rng;
+  /** The `COMBAT_V2` flag: a new creature also rolls its v2 talent (`talent-v2-store.ts`). */
+  combatV2?: boolean | undefined;
   /** The duplicate choice: a duplicate catch becomes a pending card here. */
   choices: CatchChoices;
   analytics?: Analytics | undefined;

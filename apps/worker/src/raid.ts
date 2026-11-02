@@ -95,6 +95,8 @@ export interface RaidDeps {
   quirkRng?: Rng;
   /** Live randomness for the talent of a Festival creature. Crypto in production. */
   talentRng?: Rng;
+  /** The `COMBAT_V2` flag: a Festival creature also rolls its v2 talent (`talent-v2-store.ts`). */
+  combatV2?: boolean;
   /** Live randomness for gear drops (a cleared phase, a won finale, a Festival piece). Crypto in production. */
   gearRng?: Rng;
   /** The analytics event log (see `analytics.ts`). Optional: without it nothing is logged. */

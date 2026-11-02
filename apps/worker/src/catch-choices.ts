@@ -46,13 +46,14 @@ import { lookupSpend, spend, type LedgerStorage } from './ledger';
 import { GameError, atomically, type Outcome } from './outcome';
 import { speciesOf } from './species';
 import { bookOf, holdTalent, insertCreature, slotTalent, type CreatureRngs } from './talent-store';
+import { recordDuplicateTalent } from './talent-v2-store';
 import { talentViewOf, type TalentView } from './talent-view';
 
 export interface CatchChoicesDeps {
   storage: LedgerStorage;
   now: () => number;
   /** Live randomness for the talent of a duplicate, and the quirk of a Kept creature. */
-  rngs: { talent: Rng; quirk: Rng };
+  rngs: { talent: Rng; quirk: Rng; combatV2?: boolean };
   analytics?: Analytics | undefined;
   /**
    * The species a line can end as (its branches). Default: the shipped content. Tests inject lines with
@@ -289,6 +290,15 @@ export class CatchChoices {
       { kind: 'talent_roll', species: species.id, talent: talent.talentId, golden: talent.golden },
       userId,
     );
+    // Combat v2 (R20): a duplicate catch records its talent in the line's Talent Book, whatever the player
+    // then does with the duplicate. Drawn after the v1 roll, so a v1 roll never changes with the flag.
+    if (this.deps.rngs.combatV2 === true) {
+      recordDuplicateTalent(this.sql, this.deps.rngs.talent, {
+        userId,
+        line: species.line,
+        now,
+      });
+    }
     let settled: ChoiceResult | null = null;
     const rows = this.pendingRows(userId);
     if (rows.length > RULES.talents.maxPending) {

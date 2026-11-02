@@ -61,6 +61,7 @@ import {
 } from './dev-schemas';
 import { devKey, type DevState } from './dev-state';
 import { clockState, clockTool } from './dev-tools-clock';
+import { combatV2Convert } from './dev-tools-combat-v2';
 import { setWeather } from './dev-tools-weather';
 import { gamesBots, gamesReset, gamesRunNow } from './dev-tools-games';
 import {
@@ -138,6 +139,8 @@ export interface DevToolsDeps {
   games: Games;
   /** The valley's weather, for the `set-weather` tool. */
   weather: Weather;
+  /** The `COMBAT_V2` flag: the `combat-v2-convert` tool needs it, and new creatures roll their v2 talent. */
+  combatV2: boolean;
   /** Crypto randomness for what the tools roll. */
   rng: Rng;
   gearRng: Rng;
@@ -227,6 +230,8 @@ const TOOLS: Record<DevActionTool, Tool> = {
       return await rollup();
     },
   },
+  // Staging with COMBAT_V2 on only (it answers 404 otherwise): every creature rolls its v2 talent, Knacks and finale choices go.
+  'combat-v2-convert': tool(NoBodySchema, combatV2Convert),
   'reset-account': tool(ResetAccountBodySchema, (ctx) => {
     purgeUser(ctx.sql, ctx.userId, true);
     ctx.state.clearUser(ctx.userId);
@@ -258,6 +263,7 @@ export class DevTools {
       raid: d.raid,
       games: d.games,
       weather: d.weather,
+      combatV2: d.combatV2,
       rng: d.rng,
       gearRng: d.gearRng,
       quirkRng: d.quirkRng,

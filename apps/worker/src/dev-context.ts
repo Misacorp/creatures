@@ -9,6 +9,15 @@ import type { LedgerStorage } from './ledger';
 import type { Raid } from './raid';
 import type { Weather } from './weather';
 
+/** What a new creature draws its talents with: the quirk and talent rngs, and the `COMBAT_V2` flag. */
+export function creatureRngsOf(ctx: Pick<ToolCtx, 'quirkRng' | 'talentRng' | 'combatV2'>) {
+  return {
+    quirk: ctx.quirkRng,
+    talent: ctx.talentRng,
+    ...(ctx.combatV2 ? { combatV2: true as const } : {}),
+  };
+}
+
 /** A tool that refuses: rolls the tool's transaction back and becomes `{ error }` with this status. */
 export class DevError extends Error {
   constructor(
@@ -37,6 +46,8 @@ export interface ToolCtx {
   games: Games;
   /** The valley's weather (the `set-weather` tool). */
   weather: Weather;
+  /** The `COMBAT_V2` flag (also on for the tools to exist: `combat-v2-convert`; new creatures roll their v2 talent). */
+  combatV2: boolean;
   /** Crypto randomness for the things the tools roll (guest teams, gear, the day's seed). */
   rng: Rng;
   gearRng: Rng;
@@ -61,6 +72,11 @@ const KEEP_TABLES: ReadonlySet<string> = new Set([
  * from the schema itself, never from a request.
  */
 export function purgeUser(sql: SqlStorage, userId: string, keepPlayer: boolean): void {
+  // The v2 talents a creature learned hang on its id, not on the player: before the creatures go.
+  sql.exec(
+    'DELETE FROM creature_talents_v2 WHERE creature_id IN (SELECT id FROM creatures WHERE user_id = ?)',
+    userId,
+  );
   const tables = sql
     .exec<{ name: string }>(
       "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'",

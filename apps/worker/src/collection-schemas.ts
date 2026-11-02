@@ -1,4 +1,5 @@
 import { EXPEDITION_LENGTHS, ROOM_SPOT_IDS, RULES, content, talentContent } from '@creatures/game';
+import { combatV2 } from '@creatures/game/combat-v2';
 import * as v from 'valibot';
 import { DESTINATION_IDS, GOAL_IDS, SPECIES_IDS, SUPPLY_IDS } from './content-ids';
 import { ROOM_MAX_USERS } from './lounger';
@@ -85,6 +86,30 @@ export const TalentSlotBodySchema = v.strictObject({
   golden: v.boolean(),
   slot: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(3)),
   idempotencyKey: IdempotencyKeySchema,
+});
+
+const KNACK_IDS = Object.keys(combatV2.knacks) as [string, ...string[]];
+const V2_TALENT_IDS = Object.keys(combatV2.talents) as [string, ...string[]];
+
+/**
+ * Saving a creature's Knack (combat v2): the creature is in the path. An id of a Knack of the content, or
+ * null for none (the server checks the creature knows it). `where` is which screen saved it, for analytics.
+ */
+export const KnackBodySchema = v.strictObject({
+  knack: v.nullable(v.picklist(KNACK_IDS)),
+  where: v.optional(v.picklist(['page', 'raid']), 'page'),
+});
+
+/** A creature learns a v2 talent from its line's Talent Book for Bait: the creature is in the path. */
+export const TalentLearnV2BodySchema = v.strictObject({
+  talentId: v.picklist(V2_TALENT_IDS),
+  idempotencyKey: IdempotencyKeySchema,
+});
+
+/** Slotting a learned v2 talent (free), or taking it out of its slot (`slot` null): the creature is in the path. */
+export const TalentSlotV2BodySchema = v.strictObject({
+  talentId: v.picklist(V2_TALENT_IDS),
+  slot: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(3))),
 });
 
 /** Earning the ribbon a creature waits for: the creature is in the path, the player is the session's. */

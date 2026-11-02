@@ -203,6 +203,23 @@ export type AnalyticsEvent =
       golden: boolean;
       slot: number;
     }
+  | {
+      /**
+       * A creature's Knack was saved (combat v2, R11): its form, the Knack now (null: none) and the one it had
+       * before (null: none). A swap is a save with a previous Knack. `where` is the creature page or the raid.
+       */
+      kind: 'knack_set';
+      form: string;
+      knack: string | null;
+      previous: string | null;
+      where: 'page' | 'raid';
+    }
+  | {
+      /** A creature learned a talent from its line's v2 Talent Book (Bait, once; R20). */
+      kind: 'talent_learn';
+      line: string;
+      talent: string;
+    }
   | { kind: 'team_set'; auto: boolean; species: readonly string[] }
   | { kind: 'placement'; action: 'place' | 'unplace'; species: string; slot: number; swap: boolean }
   | { kind: 'ability_pick'; ability: string }

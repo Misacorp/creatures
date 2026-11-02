@@ -315,8 +315,26 @@ export function undoGamesIndexMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 42');
 }
 
+/** Puts a database back to before migration 51 (the v2 Talent Book): the tables go. */
+export function undoTalentBookV2Migration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS creature_talents_v2');
+  sql.exec('DROP TABLE IF EXISTS line_talents');
+  sql.exec('DELETE FROM schema_version WHERE version = 51');
+}
+
+/** Puts a database back to before migration 50 (the saved Knack): the column goes. */
+export function undoKnackMigration(sql: SqlStorage): void {
+  undoTalentBookV2Migration(sql);
+  const present = sql
+    .exec("SELECT 1 FROM pragma_table_info('creatures') WHERE name = 'knack'")
+    .toArray();
+  if (present.length > 0) sql.exec('ALTER TABLE creatures DROP COLUMN knack');
+  sql.exec('DELETE FROM schema_version WHERE version = 50');
+}
+
 /** Puts a database back to before migration 49 (the marks dropped): the mark column is there again (all zero). */
 export function undoDismantleUnmarkMigration(sql: SqlStorage): void {
+  undoKnackMigration(sql);
   const present = sql
     .exec("SELECT 1 FROM pragma_table_info('gear_items') WHERE name = 'dismantle_mark'")
     .toArray();

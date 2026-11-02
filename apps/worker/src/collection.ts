@@ -55,6 +55,18 @@ import { settleExperience, type ExperienceView } from './creature-exp';
 import { flatDodgeBp, foldCreature } from './gear-worn';
 import { CatchChoices, type PendingView } from './catch-choices';
 import { booksByCreature, foldTalentsOf, insertCreature } from './talent-store';
+import {
+  CreatureV2,
+  knackAfterEvolution,
+  type CreatureTalentsV2View,
+  type CreatureV2View,
+  type KnackResult,
+  type KnackView,
+  type LearnResult,
+  type PlayerV2,
+  type SlotResult as TalentV2SlotResult,
+} from './creature-v2';
+import { replaceIdleTalents, type TalentReplacement } from './talent-v2-store';
 import { creatureTalentsView, type CreatureTalentsView } from './talent-view';
 import type { HeldTalent } from '@creatures/game';
 import { getBalances, lookupSpend, spend, type Currency, type LedgerStorage } from './ledger';
@@ -83,6 +95,8 @@ type CreatureRow = {
   nickname: string | null;
   /** The owner's private note (version 47), or null. */
   note: string | null;
+  /** The saved Knack (version 50; combat v2), or null for none. */
+  knack: string | null;
   away_expedition_id: string | null;
   origin: string;
   caught_at: number;
@@ -131,6 +145,14 @@ export interface CreatureView {
   lineSlot: number;
   /** The creature's talents: its slots (open at levels 1, 20 and 25), its signature (epics) and its Talent Book. */
   talents: CreatureTalentsView;
+  /**
+   * Combat v2 only (the `COMBAT_V2` flag is on; all three absent otherwise): the saved Knack (an id, null for
+   * none), the Knacks the creature knows and its v2 talents (slots and the line's Talent Book). See
+   * `creature-v2.ts`.
+   */
+  knack?: string | null;
+  knownKnacks?: KnackView[];
+  talentsV2?: CreatureTalentsV2View;
   stats: Stats;
   /**
    * The stats a fight uses: `stats` with the equipped item folded in (capped). Equal to `stats` for a
@@ -303,6 +325,11 @@ export interface CollectionDeps {
   branchesOf?: ((line: string) => readonly string[]) | undefined;
   /** The current game day (lounging's daily cap). Optional: without it, `loungeXp` is empty. */
   gameDay?: () => string;
+  /**
+   * The `COMBAT_V2` flag: creatures carry a saved Knack and v2 talents, new creatures roll a v2 talent, and
+   * the Knack and Talent Book routes exist. Off (the default): none of it.
+   */
+  combatV2?: boolean;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -323,6 +350,8 @@ export class Collection {
   readonly lounge: Lounge;
   /** The duplicate choice and the Talent Book. */
   readonly choices: CatchChoices;
+  /** The saved Knack and the v2 Talent Book: null unless the `COMBAT_V2` flag is on. */
+  readonly v2: CreatureV2 | null;
 
   constructor(private readonly deps: CollectionDeps) {
     this.lounge = new Lounge({
@@ -330,10 +359,18 @@ export class Collection {
       now: deps.now,
       gameDay: () => deps.gameDay?.() ?? '',
     });
+    this.v2 =
+      deps.combatV2 === true
+        ? new CreatureV2({ storage: deps.storage, now: deps.now, analytics: deps.analytics })
+        : null;
     this.choices = new CatchChoices({
       storage: deps.storage,
       now: deps.now,
-      rngs: { talent: deps.talentRng, quirk: deps.quirkRng },
+      rngs: {
+        talent: deps.talentRng,
+        quirk: deps.quirkRng,
+        ...(deps.combatV2 === true ? { combatV2: true } : {}),
+      },
       analytics: deps.analytics,
       branchesOf: deps.branchesOf,
     });
@@ -345,6 +382,7 @@ export class Collection {
       gearRng: deps.gearRng,
       quirkRng: deps.quirkRng,
       talentRng: deps.talentRng,
+      combatV2: deps.combatV2,
       choices: this.choices,
       analytics: deps.analytics,
       dev: deps.dev,
@@ -419,6 +457,7 @@ export class Collection {
     jobId: string | undefined,
     explorer: ExplorerView,
     book: readonly HeldTalent[] | undefined,
+    v2: CreatureV2View | undefined,
   ): CreatureView {
     const species = speciesOf(row.species);
     const away = row.away_expedition_id !== null;
@@ -449,6 +488,7 @@ export class Collection {
       quirk: row.quirk_id !== null && quirkText(row.quirk_id) !== undefined ? row.quirk_id : null,
       lineSlot: row.line_slot,
       talents: creatureTalentsView(row, book ?? []),
+      ...(v2 ?? {}),
       stats,
       statsWithGear: folded.stats,
       dodgeBp: flatDodgeBp(folded.mods),
@@ -537,6 +577,7 @@ export class Collection {
     const books = booksByCreature(this.sql, userId);
     const jobs = openJobsByCreature(this.sql, userId);
     const rows = this.creatureRows(userId);
+    const v2: PlayerV2 | null = this.v2?.load(userId) ?? null;
     const explorers = this.trips.explorerViews(
       userId,
       rows.map((row) => row.id),
@@ -557,6 +598,7 @@ export class Collection {
           jobs.get(row.id),
           explorers.get(row.id) as ExplorerView,
           books.get(row.id),
+          v2 === null || this.v2 === null ? undefined : this.v2.view(row, v2),
         ),
       ),
       pending: this.choices.pending(userId),
@@ -602,7 +644,11 @@ export class Collection {
       }
       const { id: creatureId } = insertCreature(
         this.sql,
-        { quirk: this.deps.quirkRng, talent: this.deps.talentRng },
+        {
+          quirk: this.deps.quirkRng,
+          talent: this.deps.talentRng,
+          ...(this.deps.combatV2 === true ? { combatV2: true } : {}),
+        },
         { userId, species: species.id, origin: 'starter', now: this.deps.now() },
         this.deps.analytics,
       );
@@ -699,7 +745,14 @@ export class Collection {
     creatureId: string,
     idempotencyKey: string,
     requested?: string,
-  ): Outcome<{ creatureId: string; species: string; firstOnServer: boolean; unequipped?: number }> {
+  ): Outcome<{
+    creatureId: string;
+    species: string;
+    firstOnServer: boolean;
+    unequipped?: number;
+    /** Combat v2 only: what a role change did to the slotted talents (R20.8); empty when the role stayed. */
+    talentsReplaced?: TalentReplacement[];
+  }> {
     return this.atomically(() => {
       const creature = this.ownedCreature(userId, creatureId);
       const prior = lookupSpend(this.sql, userId, idempotencyKey);
@@ -736,6 +789,23 @@ export class Collection {
             if (target === null) throw new Error('evolution without a target');
             this.sql.exec('UPDATE creatures SET species = ? WHERE id = ?', target, creature.id);
             const unequipped = this.unequipBlocked(creature.id, creature.level, target);
+            // A saved Knack the new form does not know goes to none, in this transaction (R11).
+            if (creature.knack !== null && knackAfterEvolution(creature.knack, target) === null) {
+              this.sql.exec('UPDATE creatures SET knack = NULL WHERE id = ?', creature.id);
+            }
+            // R20.8: a role change replaces each slotted talent that is idle for the new role.
+            const talentsReplaced: TalentReplacement[] | undefined =
+              this.v2 === null
+                ? undefined
+                : speciesOf(creature.species).role === speciesOf(target).role
+                  ? []
+                  : replaceIdleTalents(this.sql, this.deps.talentRng, {
+                      creatureId: creature.id,
+                      userId,
+                      line: creature.line,
+                      role: speciesOf(target).role,
+                      now,
+                    });
             // The higher level cap opens the way: what the creature banked while it waited is spent now.
             settleExperience(this.sql, this.deps.analytics, userId, creature.id, 'evolve');
             const firstOnServer = this.recordFirst(
@@ -749,7 +819,13 @@ export class Collection {
               { kind: 'evolve', from: creature.species, to: target, cost: amount },
               userId,
             );
-            return { creatureId: creature.id, species: target, firstOnServer, unequipped };
+            return {
+              creatureId: creature.id,
+              species: target,
+              firstOnServer,
+              unequipped,
+              ...(talentsReplaced === undefined ? {} : { talentsReplaced }),
+            };
           },
         },
         now,
@@ -779,6 +855,43 @@ export class Collection {
       off += 1;
     }
     return off;
+  }
+
+  // --- Combat v2: the saved Knack and the Talent Book (the routes answer 404 while the flag is off) ---
+
+  /** Saves a creature's Knack (null: none); see `CreatureV2.setKnack`. */
+  setKnack(
+    userId: string,
+    creatureId: string,
+    knack: string | null,
+    where: 'page' | 'raid',
+  ): Outcome<KnackResult> {
+    return this.requireV2().setKnack(userId, creatureId, knack, where);
+  }
+
+  /** A creature learns a talent from its line's book for Bait; see `CreatureV2.learn`. */
+  learnTalentV2(
+    userId: string,
+    creatureId: string,
+    talentId: string,
+    idempotencyKey: string,
+  ): Outcome<LearnResult> {
+    return this.requireV2().learn(userId, creatureId, talentId, idempotencyKey);
+  }
+
+  /** Slots or unslots a learned talent for free; see `CreatureV2.slot`. */
+  slotTalentV2(
+    userId: string,
+    creatureId: string,
+    talentId: string,
+    slot: number | null,
+  ): Outcome<TalentV2SlotResult> {
+    return this.requireV2().slot(userId, creatureId, talentId, slot);
+  }
+
+  private requireV2(): CreatureV2 {
+    if (this.v2 === null) throw new Error('combat v2 is off');
+    return this.v2;
   }
 
   // --- Nicknames ---
