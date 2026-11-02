@@ -510,6 +510,7 @@ export class GuildCore {
       analytics: this.analytics,
       dev: this.devState ?? undefined,
       weather: this.weather,
+      ...(options.combatV2 === true ? { combatV2: true } : {}),
     });
     this.raid = new Raid({
       storage,

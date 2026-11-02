@@ -269,6 +269,7 @@ Superseded: 1 entry (see the topic file).
 
 [dungeon.md](dungeon.md): The daily dungeon: paths, rooms and rare rooms, the camp, the Undercroft, foes, its screens and payouts.
 
+- 2026-11-02 Daily dungeon on combat v2 (phase 4, slice 4): the rules version in the run, fighters frozen at the start, what a v2 room folds in
 - 2026-10-22 Foe move lines say what a move hits; "Charged:" replaces "announced a round ahead"
 - 2026-10-22 Molten Shell is a frequent partial Backlash, not a rare full reflect (replaces the reflective shield above)
 - 2026-10-22 The dungeon's reflect is split in two: spiky armour (Thorns) and a reflective shield (Molten Shell). The raid is unchanged (amended)

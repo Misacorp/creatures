@@ -60,6 +60,11 @@ import {
 } from '@creatures/engine';
 import type { Analytics } from './analytics';
 import type { Act } from './dungeon-schemas';
+import type { FightInputV2 } from '@creatures/engine/v2';
+import { maxHpV2, playRoomV2, type RoomMetaV2, type RoomResultV2 } from './dungeon-v2';
+import { fighterV2 } from './fighter-v2';
+import { learnedOf } from './talent-v2-store';
+import { rowOf, type AnyStoredFight } from './dungeon-rows';
 import {
   PLAYER,
   abilityChoices,
@@ -113,7 +118,7 @@ export interface PathEnv {
 }
 
 /** A fight that was just played, as stored in `dungeon_steps`. */
-export interface PlayedFight {
+export interface PlayedFightV1 {
   node: string;
   /** Drawn when the player stepped in. Stored for the replay's sake, never sent to anyone. */
   seed: string;
@@ -122,6 +127,35 @@ export interface PlayedFight {
   /** The HP the row came in with (null: the run's first fight). */
   hpIn: Record<string, number> | null;
   result: DungeonRoomResult;
+}
+
+/** A fight of a v2 run (`dungeon-v2.ts`): its own input and result, and what the replay shows of the room. */
+export interface PlayedFightV2 {
+  node: string;
+  seed: string;
+  input: FightInputV2;
+  hpIn: Record<string, number> | null;
+  room: RoomMetaV2;
+  result: RoomResultV2;
+}
+
+export type PlayedFight = PlayedFightV1 | PlayedFightV2;
+
+/** What `dungeon_steps.input_json` keeps of a played fight. */
+export function storedOf(fight: PlayedFight): AnyStoredFight {
+  return 'room' in fight
+    ? { input: fight.input, hpIn: fight.hpIn, room: fight.room }
+    : { input: fight.input, hpIn: fight.hpIn };
+}
+
+/** What a played fight tells the run, whatever the rules version. */
+interface RoomFacts {
+  cleared: boolean;
+  rounds: number;
+  foeHpEnd: number;
+  foeHpMax: number;
+  hpEnd: Record<string, number>;
+  hpMax: Record<string, number>;
 }
 
 export interface ActOutcome {
@@ -153,6 +187,18 @@ export function seatsOf(creatures: readonly TeamCreature[]): Record<string, Seat
   );
 }
 
+/** A v2 run's row in this order: each seat's slot as it is (no place folding and no weather: neither is read by a v2 fight). */
+export function plainRow(
+  ids: readonly string[],
+  seats: Readonly<Record<string, Seat>>,
+): FightSlot[] {
+  return ids.map((id) => {
+    const seat = seats[id];
+    if (seat === undefined) throw new Error(`no seat for ${id}`);
+    return seat.slot;
+  });
+}
+
 /**
  * A run's row in this order, from its seats: the gear folded again with where each creature stands (the
  * position lines and gear sets of one line, `placeSlots`), then the day's weather on every sheet.
@@ -181,7 +227,8 @@ export function seatedRow(
  * new max, and the HP it carries never stays above it; everyone else keeps the max of their last fight.
  */
 function reseat(st: RunState): void {
-  if (st.seats === undefined) return;
+  // A v2 run's row is not folded with its places: the position lines are gear effect lines, which v2 leaves out.
+  if (st.seats === undefined || st.v === 2) return;
   const before = new Map(st.input.team.map((slot) => [slot.id, slot]));
   const team = seatedRow(
     st.input.team.map((slot) => slot.id),
@@ -435,25 +482,48 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
       const spec: DungeonRoomSpec = held.length === 0 ? base : { ...base, keepsakes: held };
       // The seed is drawn now: a client can neither know it before nor pick it.
       const seed = drawSeed(env.rng);
-      const input: DungeonRunInput = { ...st.input, rooms: [spec] };
-      const hpIn = st.hp === null ? null : { ...st.hp };
-      const result = simulateDungeonRoom(input, spec, hpIn, seed);
-      const fight: PlayedFight = { node: nodeId, seed, input, hpIn, result };
+      let fight: PlayedFight;
+      let facts: RoomFacts;
+      if (st.v === 2) {
+        const played = playRoomV2(st, spec, rowOf(st.input.team), depth, seed);
+        fight = { node: nodeId, seed, ...played };
+        facts = {
+          cleared: played.result.cleared,
+          rounds: played.result.rounds,
+          foeHpEnd: played.result.foeHpEnd,
+          foeHpMax: played.result.foeHpStart,
+          hpEnd: played.result.hpEnd,
+          hpMax: played.result.hpMax,
+        };
+      } else {
+        const input: DungeonRunInput = { ...st.input, rooms: [spec] };
+        const hpIn = st.hp === null ? null : { ...st.hp };
+        const result = simulateDungeonRoom(input, spec, hpIn, seed);
+        fight = { node: nodeId, seed, input, hpIn, result };
+        facts = {
+          cleared: result.cleared,
+          rounds: result.result.rounds,
+          foeHpEnd: result.result.bossHpEnd,
+          foeHpMax: result.result.bossHpStart,
+          hpEnd: result.result.hpEnd,
+          hpMax: result.hpMax,
+        };
+      }
       const standing = rowIds(st);
       st.fights += 1;
-      st.hp = { ...result.result.hpEnd };
-      st.hpMax = { ...st.hpMax, ...result.hpMax };
+      st.hp = { ...facts.hpEnd };
+      st.hpMax = { ...st.hpMax, ...facts.hpMax };
       const step = {
         node: nodeId,
         kind: node.kind,
         result: 'fight' as const,
-        cleared: result.cleared,
-        rounds: result.result.rounds,
-        foeHpEnd: result.result.bossHpEnd,
-        foeHpMax: result.result.bossHpStart,
+        cleared: facts.cleared,
+        rounds: facts.rounds,
+        foeHpEnd: facts.foeHpEnd,
+        foeHpMax: facts.foeHpMax,
         ...(sealed ? { sealed: true as const } : {}),
       };
-      if (!result.cleared) {
+      if (!facts.cleared) {
         st.history.push({ ...step, loot: { bait: 0, essence: 0, scrap: 0 } });
         return { fight, end: 'defeat' };
       }
@@ -728,8 +798,15 @@ export function applyCamp(env: PathEnv, st: RunState, act: CampAct): ActOutcome 
       if (coming === undefined) throw new GameError(404, 'not_found');
       st.gear.push(...coming.gearIds);
       const leaving = act.out;
-      const incoming = slotOf(coming, st.weather);
+      // A v2 run's creature joins as a v2 fighter (its Knack, slotted talents and gear's stat lines, frozen now), without weather.
+      const incoming = st.v === 2 ? slotFor(coming, PLAYER) : slotOf(coming, st.weather);
       if (st.seats !== undefined) st.seats = { ...st.seats, ...seatsOf([coming]) };
+      if (st.v === 2) {
+        const fighters = { ...st.fighters };
+        delete fighters[leaving];
+        fighters[coming.id] = fighterV2(coming, learnedOf(env.sql, coming.id));
+        st.fighters = fighters;
+      }
       detail = `Swapped ${row[place]?.name ?? 'a creature'} out for ${incoming.name}.`;
       const next = [...row];
       next[place] = incoming;
@@ -737,7 +814,7 @@ export function applyCamp(env: PathEnv, st: RunState, act: CampAct): ActOutcome 
       // (it starts at full HP) and carries no treat.
       const rest = { ...st.input.rest };
       delete rest[leaving];
-      if (coming.gearRules.restBp > 0) rest[coming.id] = coming.gearRules.restBp;
+      if (st.v !== 2 && coming.gearRules.restBp > 0) rest[coming.id] = coming.gearRules.restBp;
       const withoutRest = { ...st.input };
       delete withoutRest.rest;
       st.input = {
@@ -754,7 +831,8 @@ export function applyCamp(env: PathEnv, st: RunState, act: CampAct): ActOutcome 
       }
       const max = { ...st.hpMax };
       delete max[leaving];
-      max[coming.id] = maxHpOfRow(st.input, st.keepsakes)[coming.id] ?? 0;
+      max[coming.id] =
+        st.v === 2 ? maxHpV2(st, coming.id) : (maxHpOfRow(st.input, st.keepsakes)[coming.id] ?? 0);
       st.hpMax = max;
       if (!st.everyone.includes(coming.id)) st.everyone.push(coming.id);
       break;
@@ -827,6 +905,23 @@ export function applyHome(st: RunState): ActOutcome {
 // --- Descend ---
 
 /**
+ * The row's breath on the way down. A v1 run catches its breath as `catchBreath` says (a fallen
+ * creature gets back up at `reviveBp`). A v2 run heals only the standing: a knocked-out creature stays
+ * out until the camp swaps in a fresh one (R14, combat v2's dungeon).
+ */
+export function descentBreath(
+  before: Readonly<Record<string, number>>,
+  hpMax: Readonly<Record<string, number>>,
+  version: 1 | 2,
+): Record<string, number> {
+  const caught = catchBreath(before, hpMax);
+  if (version === 1) return caught;
+  return Object.fromEntries(
+    Object.entries(caught).map(([id, hp]) => [id, (before[id] ?? 0) <= 0 ? (before[id] ?? 0) : hp]),
+  );
+}
+
+/**
  * Goes down into the Undercroft level the run is offered. The level's map is drawn now with live
  * randomness (it is the player's own), stored with the run, and the row catches its breath on the way
  * (`catchBreathBp` of max HP for standing creatures; a fallen one gets back up at `reviveBp`, and the
@@ -844,7 +939,7 @@ export function applyDescend(env: PathEnv, st: RunState, depth: number): ActOutc
     marks: level === 1 ? st.marks : [],
   });
   const before = currentHp(st);
-  const after = catchBreath(before, st.hpMax);
+  const after = descentBreath(before, st.hpMax, st.v);
   const healed = Object.keys(after).reduce((n, id) => n + (after[id] ?? 0) - (before[id] ?? 0), 0);
   const revived = Object.keys(before).filter(
     (id) => (before[id] ?? 0) <= 0 && (after[id] ?? 0) > 0,

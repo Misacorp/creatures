@@ -15,6 +15,7 @@ import type {
   DungeonStepLog,
   ReplayRowEntry,
 } from './dungeon-types';
+import type { StoredFightV2 } from './dungeon-v2';
 import type { Weather } from './weather';
 import { addDays } from './time';
 
@@ -32,6 +33,11 @@ export interface DungeonDeps {
   dev?: DevFlags | undefined;
   /** The valley's weather: every run is fought under the day's Boon and Omen. Absent: none. */
   weather?: Weather | undefined;
+  /**
+   * Combat v2 (the `COMBAT_V2` var is "on"): a run that starts now is a v2 run. Read only when a run starts; a run
+   * keeps the rules it started with. Absent: runs start on v1.
+   */
+  combatV2?: boolean | undefined;
 }
 
 // --- Storage ---
@@ -68,11 +74,14 @@ export type StepRow = {
   result_json: string | null;
 };
 
-/** What a fight's step stores in `input_json`: the run's input with the room, and the HP the row came in with. */
+/** What a fight's step stores in `input_json`: the run's input with the room, and the HP the row came in with (a v1 run). */
 export interface StoredFight {
   input: DungeonRunInput;
   hpIn: Record<string, number> | null;
 }
+
+/** A stored fight of either rules version: a v2 one has `input.version` 2 (`isStoredV2`). */
+export type AnyStoredFight = StoredFight | StoredFightV2;
 
 /** What `act_json` keeps: the act (for telling a retry from another request), the state it left (without the map) and whether it ended the run. */
 export interface StoredAct {
