@@ -4,6 +4,21 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-02: Combat v2 phase 4 plan: the game plays v2 behind a staging flag, rules version stored per week, run and fight
+
+ID: `2026-11-02-combat-v2-phase-4-plan-the` · Status: current
+
+**Decision.** Phase 4 follows `docs/design/combat/integration.md`:
+
+- **A `COMBAT_V2` worker variable**, on in staging only and pinned off in production by a test. It is read only when something starts: a raid week stores `rules_version` when it is created, a dungeon run stores it in its state, and a fight input carries `version: 2`. The client picks its v1 or v2 screens from the view's `rules`, not from the flag.
+- **Storage:** the saved Knack is a column on `creatures` (the known Knacks are worked out from the line, not stored); the v2 Talent Book is per player and line (`line_talents`) with each creature's learned talents (`creature_talents_v2`); a `raid_track` row per server replaces `raid_ladder` under v2; the weekend's carry is JSON on `raid_parties`; swap requests get their own table.
+- **Engine:** `stageV2` plays one stage and returns a JSON carry (`weekendV2` loops over it); typed board events sit beside the log text and stay out of the parity digest; the live finale's Rally, Shield Wall and Purge become v2 inputs with the prefix property; `slotBoss` and `wideBoss` move from the lab to `resolve/`.
+- **Calendar (Misa's direction):** stage 1 Saturday 13:37, stage 2 Sunday 13:37, the finale Sunday 20:00, with no HP floors.
+- **Under v2 in phase 4:** gear counts only its stat lines, weather does not touch fights (question for Misa), and creature finale abilities and Re-mark are not used. A dispatcher `replayFight` runs v1 or v2 by the stored input.
+- **Production is never converted.** The game resets after both reworks, so a staging-only dev tool (`combat-v2-convert`) rolls v2 talents for a staging server.
+
+**Reasoning.** Storing the rules version at the start of each week, run and fight means a flag flip never changes a fight already under way, and old v1 rows still replay. Splitting the weekend into stages is the one engine change the live calendar needs, because stages happen a day apart. Keeping board events out of the digest lets the 1,299-fight parity check prove that adding them changed no result. Gear effects and weather were never measured in the lab, so turning them off keeps staging honest until phase 5. The CPU of a v2 stage is measured first: the Free plan allows 10 ms per request, and Misa approved Workers Paid in advance if a measured limit blocks us.
+
 ## 2026-11-01: [Misa] Combat v2 icons: shapes, the sword, the Store box, claw Pincer, Leap as a chain
 
 ID: `2026-11-01-combat-v2-icons-shapes-the-sword` · Status: current
