@@ -14,9 +14,19 @@
  * the client's idempotency key (CLAUDE.md spending rules): the balance check, the debit and the learning are
  * one transaction, and a retry returns the stored result and charges nothing.
  */
-import { RULES, slotCount, slotOpensAt, slotsOpen } from '@creatures/game';
+import { formStats, mergeFx } from '@creatures/engine/v2';
+import {
+  RULES,
+  content,
+  slotCount,
+  slotOpensAt,
+  slotsOpen,
+  wornEffects,
+  type CreatureSpecies,
+} from '@creatures/game';
 import { combatV2, knownKnacks, v2TalentWorksFor } from '@creatures/game/combat-v2';
 import type { Analytics } from './analytics';
+import { wearerOf, wornItems, type WornBySlot } from './gear-store';
 import { keyTaken, settleSpend } from './keyed-action';
 import { lookupSpend, spend, type LedgerStorage } from './ledger';
 import { GameError, atomically, type Outcome } from './outcome';
@@ -90,6 +100,20 @@ export interface CreatureTalentsV2View {
   learnBait: number;
 }
 
+/**
+ * A creature's fight numbers as combat v2 reads them (R7.1): its form's stats at its level, with the talents in its
+ * open slots and the stat lines of its worn gear. `critChanceBp` is the chance a hit crits and `critMultBp` what a
+ * crit multiplies it by (10000 is 1x), both with the base crit of the rules in. For the creature page.
+ */
+export interface StatsV2View {
+  hp: number;
+  atk: number;
+  spd: number;
+  armour: number;
+  critChanceBp: number;
+  critMultBp: number;
+}
+
 /** What `/api/state` adds to a creature while the flag is on. */
 export interface CreatureV2View {
   /** The saved Knack (an id), or null for none. */
@@ -97,6 +121,7 @@ export interface CreatureV2View {
   /** The Knacks it knows, in order. */
   knownKnacks: KnackView[];
   talentsV2: CreatureTalentsV2View;
+  statsV2: StatsV2View;
 }
 
 /** What the views of one player's creatures read, loaded once (two queries). */
@@ -149,6 +174,37 @@ export function knackAfterEvolution(saved: string | null, toSpecies: string): st
   return saved !== null && knownKnacks(toSpecies).includes(saved) ? saved : null;
 }
 
+/**
+ * The numbers the page shows for a creature of `species` at `level`: the engine's `formStats`, the effects of
+ * the talents in its open slots (`slotted`: talent ids) and the stat lines of its worn gear (Attack, HP, Speed,
+ * crit; the gear's effect lines do nothing under v2 yet). Percentages add to one share, as the fight adds them.
+ */
+export function statsV2Of(
+  species: Pick<CreatureSpecies, 'id' | 'role' | 'element'>,
+  level: number,
+  slotted: readonly string[],
+  worn: WornBySlot | undefined,
+): StatsV2View {
+  const form = formStats(combatV2, content, species.id, level);
+  const talents = mergeFx(slotted.map((id) => combatV2.talents[id]?.fx ?? {}));
+  const gear = wornEffects(wearerOf(species), wornItems(worn));
+  const scaled = (value: number, bp: number, flat: number): number =>
+    Math.floor((value * (10_000 + bp)) / 10_000) + flat;
+  return {
+    hp: scaled(form.hp, (talents.hpBp ?? 0) + gear.hpBp, gear.hpFlat + gear.hpItem),
+    atk: scaled(form.atk, (talents.atkBp ?? 0) + gear.atkBp, gear.atkFlat + gear.atkItem),
+    spd: scaled(form.spd, gear.spdBp, 0),
+    armour: form.armour + (talents.armourBonus ?? 0),
+    critChanceBp:
+      combatV2.rules.critChanceBp +
+      form.critChanceBp +
+      (talents.critChanceBp ?? 0) +
+      gear.critChanceBp,
+    critMultBp:
+      combatV2.rules.critBp + form.critDamageBp + (talents.critDamageBp ?? 0) + gear.critDamageBp,
+  };
+}
+
 export class CreatureV2 {
   constructor(private readonly deps: CreatureV2Deps) {}
 
@@ -167,6 +223,7 @@ export class CreatureV2 {
   view(
     row: { id: string; species: string; level: number; knack: string | null },
     data: PlayerV2,
+    worn?: WornBySlot,
   ): CreatureV2View {
     const species = speciesOf(row.species);
     const known = knownKnackViews(row.species);
@@ -212,6 +269,12 @@ export class CreatureV2 {
       knack: row.knack !== null && known.some((k) => k.id === row.knack) ? row.knack : null,
       knownKnacks: known,
       talentsV2: { slots, book: bookView, learnBait: RULES.talents.bookSlotBait },
+      statsV2: statsV2Of(
+        species,
+        row.level,
+        slots.flatMap((s) => (s.talent === null ? [] : [s.talent.id])),
+        worn,
+      ),
     };
   }
 

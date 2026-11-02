@@ -598,7 +598,7 @@ export class Collection {
           jobs.get(row.id),
           explorers.get(row.id) as ExplorerView,
           books.get(row.id),
-          v2 === null || this.v2 === null ? undefined : this.v2.view(row, v2),
+          v2 === null || this.v2 === null ? undefined : this.v2.view(row, v2, worn.get(row.id)),
         ),
       ),
       pending: this.choices.pending(userId),
