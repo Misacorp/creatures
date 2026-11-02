@@ -48,6 +48,9 @@ const RULES: V2Rules = {
   adaptElementBp: 7_500,
   miredSlowsEscalationBp: 2_500,
   finisherBelowBp: 3_333,
+  rallyBp: 1_000,
+  shieldWallBp: 5_000,
+  purgeRounds: 2,
 };
 
 /** Tide hits Ember hard and cashes an Ember mark; Ember hits Tide softly. */

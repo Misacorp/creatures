@@ -56,6 +56,9 @@ export const RULES: V2Rules = {
   adaptElementBp: 7_500,
   miredSlowsEscalationBp: 2_500,
   finisherBelowBp: 3_333,
+  rallyBp: 1_000,
+  shieldWallBp: 5_000,
+  purgeRounds: 2,
 };
 
 /** The shipped elements and chart (tide cashes ember, ember grove, grove spark, spark tide, mire ember, ember mire). */

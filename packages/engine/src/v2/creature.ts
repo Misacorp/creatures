@@ -121,12 +121,13 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
     conditional(f, 'vengefulBp', k.vengefulBp, f.avenged);
   // A silenced creature does not use up its stored Momentum: what was stored before the silence stays.
   if (!silenced(f)) f.momentum = false;
-  const bonusSum = Math.min(R.maxHitBonusBp, f.boostBp + situational);
+  // A Rally of the finale (R18) is one more hit boost, inside the same cap.
+  const bonusSum = Math.min(R.maxHitBonusBp, f.boostBp + situational + (s.rally ? R.rallyBp : 0));
   const atk = Math.floor((f.atk * (10_000 + (k.atkBp ?? 0))) / 10_000);
   const matched = Math.floor((atk * s.ctx.matchup(f.element, s.boss.element)) / 10_000);
   // Element Resistance (a raid weekend, from stage 2): the resisted element's creatures deal less.
   const base =
-    s.opts.resistElement === f.element
+    s.opts.resistElement === f.element && !s.purged
       ? Math.floor(
           (matched *
             (10_000 - Math.floor(((10_000 - R.adaptElementBp) * strengthOf(s)) / 10_000))) /
@@ -231,7 +232,7 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
     factor = Math.min(factor, R.maxBonusFactorBp);
     bonus = Math.floor((((plain * (R.payoffMultBp - 10_000)) / 10_000) * factor) / 10_000);
     // Reaction Resistance: half the bonus at full strength, less below it.
-    if (s.opts.resistReaction === el)
+    if (s.opts.resistReaction === el && !s.purged)
       bonus = Math.floor(
         (bonus * (10_000 - Math.floor((5_000 * strengthOf(s)) / 10_000))) / 10_000,
       );

@@ -160,6 +160,8 @@ export function takeHit(
     left = cutOf(left, k.distanceCoverBp * Math.abs(taker.col - target.col));
     bump(taker, 'distanceCoverBp');
   }
+  // Shield Wall (the live finale, R18): the chosen row takes less from every hit this round, one cut among the others.
+  if (s.shieldRows?.has(taker.row)) left = cutOf(left, s.ctx.rules.shieldWallBp);
   // One cap on every cut together: at most 75% off, before armour.
   dmg = Math.floor((dmg * Math.max(left, 10_000 - R.cutMaxBp)) / 10_000);
   dmg -= ownArmour(taker);

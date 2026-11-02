@@ -148,6 +148,12 @@ export interface V2Rules {
   readonly miredSlowsEscalationBp: number;
   /** "The boss is low" for Finisher: its HP is below this share of its full HP. */
   readonly finisherBelowBp: number;
+  /** The live finale's Rally (R18): every creature's hits deal this much more that round, counted in the hit-boost cap (`maxHitBonusBp`, R15). */
+  readonly rallyBp: number;
+  /** The live finale's Shield Wall (R18): the chosen row's creatures take this much less from every hit that round, one cut among the others (`cutMaxBp`, R15). */
+  readonly shieldWallBp: number;
+  /** The live finale's Purge (R18): the boss has no Element or Reaction Resistance for this many rounds, the round it is used and the ones after. */
+  readonly purgeRounds: number;
 }
 
 /** One pair of the element chart: an attacker of `attacker` against a defender of `defender` deals `bp` (10000 is plain; 15000 also cashes a mark). */
@@ -485,6 +491,13 @@ export type BoardEvent =
     }
   /** What the boss resists this fight (Adapts: a reaction's element; Element Resistance: an element), from stage 2 of a raid weekend. */
   | { readonly type: 'resistance'; readonly reaction?: string; readonly element?: string }
+  /** A player's live input takes effect (Rally, Shield Wall with its row, Purge), at the start of its round. */
+  | {
+      readonly type: 'action';
+      readonly kind: FinaleActionKind;
+      readonly row?: number;
+      readonly by: string;
+    }
   /** The fight ends after `round` rounds. */
   | {
       readonly type: 'end';
@@ -558,6 +571,24 @@ export interface FightResult {
   readonly events: readonly FightEvent[];
 }
 
+/** What a player does in the live finale (R18). */
+export const FINALE_ACTION_KINDS = ['rally', 'shieldWall', 'purge'] as const;
+export type FinaleActionKind = (typeof FINALE_ACTION_KINDS)[number];
+
+/**
+ * One live input of the finale (R18), played from the start of `round`: Rally (`rules.rallyBp`: every creature's hits that round),
+ * Shield Wall (`rules.shieldWallBp`: the creatures of `row`, 0-based, take that much less that round; without a row it does nothing) and
+ * Purge (no Element or Reaction Resistance for `rules.purgeRounds` rounds). `by` is who used it (for the board; it changes no number).
+ * The same action twice in a round is one: they do not stack. An action changes nothing before its round and draws no dice, so adding
+ * one at round r leaves every event before round r as it was.
+ */
+export interface FinaleAction {
+  readonly round: number;
+  readonly kind: FinaleActionKind;
+  readonly row?: number;
+  readonly by: string;
+}
+
 /** A whole fight: replays exactly from this and the dice. Plain data (no Maps, no functions), so it survives a JSON round trip. */
 export interface FightInputV2 {
   readonly version: 2;
@@ -569,6 +600,8 @@ export interface FightInputV2 {
   readonly boss: BossDef;
   readonly fighters: readonly FighterSpec[];
   readonly options: FightOptions;
+  /** The live finale's inputs (R18); none: the fight plays as it always did. */
+  readonly actions?: readonly FinaleAction[];
 }
 
 /**
@@ -627,6 +660,8 @@ export interface StageInputV2 {
   /** The creatures of this stage in their slots. One whose key is in the carry's `out` is not played. */
   readonly fighters: readonly FighterSpec[];
   readonly options: FightOptions;
+  /** The live finale's inputs (R18) for this stage; none: no inputs. */
+  readonly actions?: readonly FinaleAction[];
 }
 
 export interface StageOutput {

@@ -13,6 +13,7 @@ import type {
   ChartPair,
   FightEvent,
   FightInputV2,
+  FinaleAction,
   FightOptions,
   Fighter,
   KillingBlow,
@@ -88,6 +89,12 @@ export interface State {
   readonly rng: Rng;
   readonly boss: BossDef;
   readonly opts: FightOptions;
+  /** The live finale's inputs (R18); none in most fights. */
+  readonly actions: readonly FinaleAction[];
+  /** This round's effect of them, set at round start (`applyActions`): a Rally, the rows with a Shield Wall (or null), a Purge. */
+  rally: boolean;
+  shieldRows: ReadonlySet<number> | null;
+  purged: boolean;
   readonly fighters: Fighter[];
   bossHp: number;
   /**
@@ -232,6 +239,35 @@ export const emit = (s: State, event: BoardEvent) => {
 
 /** The name the board uses for a creature: its stable key, else its uid. */
 export const keyOf = (f: Pick<Fighter, 'key' | 'uid'>): string => f.key ?? f.uid;
+
+/**
+ * The live finale's inputs that apply to this round (R18): a Rally or a Shield Wall of this round, a Purge of this round or the
+ * `purgeRounds - 1` before it. Called at every round start; with no actions it leaves the defaults.
+ */
+export function applyActions(s: State): void {
+  const R = s.ctx.rules;
+  let rally = false;
+  let purged = false;
+  let rows: Set<number> | null = null;
+  for (const a of s.actions) {
+    if (a.kind === 'purge') {
+      if (a.round <= s.round && s.round < a.round + R.purgeRounds) purged = true;
+    } else if (a.round === s.round) {
+      if (a.kind === 'rally') rally = true;
+      else if (a.row !== undefined) (rows ??= new Set<number>()).add(a.row);
+    }
+    if (s.opts.log && a.round === s.round)
+      emit(s, {
+        type: 'action',
+        kind: a.kind,
+        ...(a.row === undefined ? {} : { row: a.row }),
+        by: a.by,
+      });
+  }
+  s.rally = rally;
+  s.shieldRows = rows;
+  s.purged = purged;
+}
 
 /** A creature's Store set to `value`, shown on the board when it changed. */
 export const setStore = (s: State, f: Fighter, value: number) => {

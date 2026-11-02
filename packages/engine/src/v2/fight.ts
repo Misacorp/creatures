@@ -21,6 +21,7 @@ import type {
   BossDef,
   FightInputV2,
   FightOptions,
+  FinaleAction,
   FightResult,
   Fighter,
   FighterSpec,
@@ -31,7 +32,8 @@ const { bossTurn } = bossMod;
 const { creatureTurn } = creatureMod;
 const { escalationState, fadeMired } = escalationMod;
 const { roundStart } = marksMod;
-const { alive, aliveBySlot, contextOf, effectsCarried, emit, log, strengthOf } = stateMod;
+const { alive, aliveBySlot, applyActions, contextOf, effectsCarried, emit, log, strengthOf } =
+  stateMod;
 
 /** A creature at the start of a fight: its spec, at full HP, with nothing stored. */
 function fighterOf(spec: FighterSpec): Fighter {
@@ -89,6 +91,7 @@ export function playFight(
   specs: readonly FighterSpec[],
   opts: FightOptions,
   rng: Rng,
+  actions: readonly FinaleAction[] = [],
 ): FightResult {
   const fighters = specs.map(fighterOf);
   if (opts.carryHp) for (const f of fighters) f.hp = opts.carryHp.get(f.uid) ?? f.hp;
@@ -102,6 +105,10 @@ export function playFight(
     rng,
     boss,
     opts,
+    actions,
+    rally: false,
+    shieldRows: null,
+    purged: false,
     fighters,
     bossHp: opts.bossHp ?? boss.hp,
     // A potential stage carried on from an earlier one starts at the real HP (below 1), not at the 1 the boss was held at.
@@ -151,6 +158,7 @@ export function playFight(
     }
     s.turn = 0;
     if (opts.log) emit(s, { type: 'round', round: s.round });
+    if (actions.length > 0) applyActions(s);
     roundStart(s);
     // The boss takes a turn after every row of the arena, empty or not.
     for (let r = 0; r < boss.rows && s.bossHp > 0 && alive(s).length > 0; r++) {
@@ -211,5 +219,5 @@ export function playFight(
 export function fightV2(input: FightInputV2, rng: Rng): FightResult {
   if (input.version !== 2)
     throw new Error(`fightV2 plays version 2 inputs, not ${String(input.version)}`);
-  return playFight(contextOf(input), input.boss, input.fighters, input.options, rng);
+  return playFight(contextOf(input), input.boss, input.fighters, input.options, rng, input.actions);
 }

@@ -87,6 +87,7 @@ export function stageV2(input: StageInputV2, carry: StageCarry, rng: Rng): Stage
       ...(resistEl ? { resistElement: resistEl } : {}),
     },
     rng,
+    input.actions,
   );
   const hpAfter: Record<string, number> = { ...carry.hp };
   const outAfter = [...carry.out];
