@@ -354,6 +354,12 @@ export interface GuildCoreOptions {
    */
   devTools?: boolean;
   /**
+   * Combat v2 (the `COMBAT_V2` var is "on", staging only for now): creatures carry a saved Knack and v2 talents,
+   * new creatures roll a v2 talent, the Knack and Talent Book routes exist and the `combat-v2-convert` dev tool
+   * can run. Off (the default): none of it exists. See `docs/design/combat/integration.md`.
+   */
+  combatV2?: boolean;
+  /**
    * The deployed build (the git commit). The start-up passes in `migrate` run once per build instead of
    * on every start. Without one (local dev, tests) they run on every start.
    */
@@ -482,6 +488,7 @@ export class GuildCore {
       talentRng,
       gearRng,
       branchesOf: options.branchesOf,
+      ...(options.combatV2 === true ? { combatV2: true } : {}),
       tripRng: options.tripRng ?? liveRng(),
       weather: this.weather,
       gameDay: () => loungeDay(this.now(), this.timezone()).day,
@@ -520,6 +527,7 @@ export class GuildCore {
       quirkRng,
       talentRng,
       gearRng,
+      ...(options.combatV2 === true ? { combatV2: true } : {}),
       ...(options.readinessRng === undefined ? {} : { readinessRng: options.readinessRng }),
     });
     this.games = new Games({
@@ -561,6 +569,7 @@ export class GuildCore {
             raid: this.raid,
             games: this.games,
             weather: this.weather,
+            combatV2: options.combatV2 === true,
             rng: options.raidRng ?? liveRng(),
             gearRng,
             quirkRng,

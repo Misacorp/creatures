@@ -51,6 +51,7 @@ export const DEV_ACTION_TOOLS = [
   'games-run-now',
   'games-reset',
   'analytics-rollup',
+  'combat-v2-convert',
   'reset-account',
 ] as const;
 export type DevActionTool = (typeof DEV_ACTION_TOOLS)[number];

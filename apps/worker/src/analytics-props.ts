@@ -30,6 +30,7 @@ import {
   type PartKind,
   type PartsBundle,
 } from '@creatures/game';
+import { combatV2 } from '@creatures/game/combat-v2';
 import { DEV_ACTION_TOOLS } from './dev-schemas';
 import type { PostFailureKind } from './discord-posts';
 import { BASE_IDS, DESTINATION_IDS, GOAL_IDS, SPECIES_IDS, SUPPLY_IDS } from './content-ids';
@@ -78,6 +79,9 @@ const ABILITY_IDS: ReadonlySet<string> = new Set(content.finaleAbilities.map((a)
 const GEAR_BASE_IDS: ReadonlySet<string> = new Set(BASE_IDS);
 const GEAR_LINE_IDS: ReadonlySet<string> = new Set(gearContent.lines.map((l) => l.id));
 const TALENT_IDS: ReadonlySet<string> = new Set(talentContent.byId.keys());
+const KNACK_IDS: ReadonlySet<string> = new Set(Object.keys(combatV2.knacks));
+const V2_TALENT_IDS: ReadonlySet<string> = new Set(Object.keys(combatV2.talents));
+const LINE_IDS: ReadonlySet<string> = new Set(content.creatures.map((c) => c.line));
 const MODIFIER_IDS: ReadonlySet<string> = new Set(dungeonContent.modifiers.map((m) => m.id));
 const KEEPSAKE_IDS: ReadonlySet<string> = new Set(dungeonKeepsakes.map((k) => k.id));
 const GAMES_EVENT_IDS: ReadonlySet<string> = new Set(gamesContent.events.map((e) => e.id));
@@ -302,6 +306,15 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         golden: bool(event.golden),
         slot: int(event.slot, 3),
       };
+    case 'knack_set':
+      return {
+        form: species(event.form),
+        knack: event.knack === null ? 'none' : fromSet(KNACK_IDS, event.knack),
+        previous: event.previous === null ? 'none' : fromSet(KNACK_IDS, event.previous),
+        where: oneOf(['page', 'raid'] as const, event.where, 'page'),
+      };
+    case 'talent_learn':
+      return { line: fromSet(LINE_IDS, event.line), talent: fromSet(V2_TALENT_IDS, event.talent) };
     case 'team_set':
       return { auto: bool(event.auto), species: event.species.slice(0, 3).map(species) };
     case 'placement':

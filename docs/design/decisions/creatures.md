@@ -4,6 +4,23 @@ Catching, pity, species, evolutions, levels and XP, training, talents and the Ta
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-02: Combat v2 storage (phase 4, slice 2): the saved Knack and the v2 Talent Book
+
+ID: `2026-11-02-combat-v2-storage-phase-4-slice` · Status: current
+
+**Decision.** Slice 2 of combat v2 phase 4 (`combat/integration.md`, sections 1 and 2) stores a creature's Knack and the v2 Talent Book, all behind the `COMBAT_V2` flag (on in staging only; a test pins the top level and production to off):
+
+- **Tables.** Migration 50 adds `creatures.knack` (null is none). Migration 51 adds `line_talents(user_id, line, talent_id, golden, found_at)`, one book per player and line, and `creature_talents_v2(creature_id, talent_id, slot, learned_at)` with a unique slot per creature. Both are `WITHOUT ROWID`, so a row read through the primary key is one row read, not two: a player's whole book (16 lines of seven) is 113 rows on every creature page load instead of 225.
+- **Known Knacks** are worked out, never stored: the own Knacks of every form on the path from the line's base form to the creature's form, cut at the last role change (`knownKnacks` in `@creatures/game/combat-v2`). An evolution that drops the saved Knack sets it to none in the same transaction, whether or not the flag is on.
+- **Rolls.** With the flag on, `insertCreature` (a starter, a catch, a Festival creature, a Kept duplicate, a dev grant) also rolls a v2 talent from the line's pool (golden at today's chance; drawn after the v1 roll, so v1 rolls never change), records it in the line's book, and the creature learns it in slot 1 for free. A duplicate catch rolls a v2 talent at the catch and records it in the book (the pending card does not carry it, so a Kept duplicate rolls its own as a new creature). A talent found twice stays once in the book, golden if either find was golden.
+- **Learning and slotting.** Learning costs `RULES.talents.bookSlotBait` (10, today's price) once per creature, with a client idempotency key, in one transaction; it learns the talent without slotting it. Slotting and unslotting among learned talents is free and needs no key (setting a state is idempotent); a slot must be open at the creature's level (today's slot levels and counts by rarity). Saving a Knack is free and needs no key for the same reason; saving what is already saved logs nothing. Two named hooks, `knackLocked` and `talentsLocked`, return false until the raid weekend (slice 3) says a creature has fought.
+- **Role change (R20.8).** Each slotted talent that is idle for the new role leaves its slot (it stays learned and in the book) and a roll from the line's pool among the talents that work for the new role and are not in the book yet takes the slot, recorded in the book and learned. When no such talent is left the slot stays empty. The evolve answer carries `talentsReplaced` (slot, old id, new id or null, golden) only with the flag on.
+- **The payload** (only with the flag on): `knack`, `knownKnacks` (id, name, family, text) and `talentsV2` (slots, the line's book in pool order with learned and slot, `learnBait`) flat on each creature of `/api/state`. A golden talent shows its normal text with the golden flag: the golden numbers wait for the engine.
+- **Analytics.** `knack_set` and `talent_learn`. The learn's Bait reaches the rollup's flows from the ledger row only (the event adds no flow of its own, which `talent_slot` does and so counts twice).
+- **`combat-v2-convert`** (staging only, both flags): gives each creature without a v2 talent a fresh-catch roll, clears that creature's Knack and its player's finale ability choice of the open week; a second run changes nothing.
+
+**Reasoning.** The lead's plan fixed the tables, the flag and the rules (R11, R20); these are the calls it left open. `WITHOUT ROWID` follows `docs/design/database-reads.md`: the creature page reads the whole book on every load, so a single read per row halves it. No key on free state-setting routes matches the nickname and note routes; the spending route has one, as every spend must. Leaving a role-change slot empty rather than re-rolling a talent from the book keeps R20.8's "not in the book yet" literal and is rare (a pool of seven has at least three talents per role). Rolling the v2 talent after the v1 one keeps every v1 roll, and so every stored fixture, exactly as it was.
+
 ## 2026-10-30: [Misa] Requested art is kept in an art library until content uses it
 
 ID: `2026-10-30-requested-art-is-kept-in-an` · Status: current · Amends: `2026-10-30-concept-art-runs-ahead-of-content`

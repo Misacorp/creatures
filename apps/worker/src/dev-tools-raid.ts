@@ -9,7 +9,7 @@
 import { RULES, content, festivalCreatureFor, int, ribbonsForLevel } from '@creatures/game';
 import type * as v from 'valibot';
 import { advanceTo, phaseTarget } from './dev-tools-clock';
-import { DevError, purgeUser, type ToolCtx } from './dev-context';
+import { DevError, creatureRngsOf, purgeUser, type ToolCtx } from './dev-context';
 import type {
   RaidBossBodySchema,
   RaidFestivalBodySchema,
@@ -194,11 +194,12 @@ export function createGuest(
     have += 1;
     lines.add(species.line);
     const spread = int(ctx.rng, 5) - 2;
-    const made = insertCreature(
-      ctx.sql,
-      { quirk: ctx.quirkRng, talent: ctx.talentRng },
-      { userId: id, species: species.id, origin: 'dev', now: ctx.now },
-    );
+    const made = insertCreature(ctx.sql, creatureRngsOf(ctx), {
+      userId: id,
+      species: species.id,
+      origin: 'dev',
+      now: ctx.now,
+    });
     const guestLevel = Math.min(species.levelCap, Math.max(1, level + spread));
     ctx.sql.exec(
       'UPDATE creatures SET level = ?, ribbons = ? WHERE id = ?',

@@ -39,6 +39,8 @@ export interface FestivalGrantView {
 export interface FestivalRngs {
   quirk: Rng;
   talent: Rng;
+  /** The `COMBAT_V2` flag (see `CreatureRngs`). */
+  combatV2?: boolean;
 }
 
 /**
@@ -98,7 +100,11 @@ export function grantFestivalCreature(
       // Drawn now from live randomness: the quirk (cosmetic) and the first talent.
       const made = insertCreature(
         sql,
-        { quirk: rngs.quirk, talent: rngs.talent },
+        {
+          quirk: rngs.quirk,
+          talent: rngs.talent,
+          ...(rngs.combatV2 === true ? { combatV2: true } : {}),
+        },
         { userId, species: species.id, origin: 'festival', now },
         analytics,
       );
@@ -115,7 +121,11 @@ export function grantFestivalCreature(
       const choices = new CatchChoices({
         storage,
         now: () => now,
-        rngs: { talent: rngs.talent, quirk: rngs.quirk },
+        rngs: {
+          talent: rngs.talent,
+          quirk: rngs.quirk,
+          ...(rngs.combatV2 === true ? { combatV2: true } : {}),
+        },
         analytics,
       });
       const pending = choices.addPending(

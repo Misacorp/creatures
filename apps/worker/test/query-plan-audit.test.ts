@@ -14,6 +14,7 @@
 // a query that uses one). Only a table that is small by design may be scanned (`SMALL_BY_DESIGN`), and only
 // with a reason; a single statement that must scan is accepted in `ACCEPTED`, with a reason and the day it
 // stops mattering. A statement that does not scan a table or only scans a small one needs nothing.
+import { knownKnacks, v2Pool } from '@creatures/game/combat-v2';
 import { describe, expect, it } from 'vitest';
 import { MINUTE } from './raid-helpers';
 import {
@@ -27,7 +28,12 @@ import {
   seedWorld,
   startLounge,
   userId,
+  type GuildEnv,
+  type World,
 } from './read-world';
+
+const speciesOfCreature = (sql: SqlStorage, id: string): string =>
+  sql.exec<{ species: string }>('SELECT species FROM creatures WHERE id = ?', id).one().species;
 
 /**
  * Tables that stay small however long the game runs, so scanning one is fine: one row per guild, per
@@ -98,100 +104,188 @@ function resolveTable(sql: string, name: string): string {
   return name;
 }
 
+/** What an audit run found: the statements it saw and planned, and the scans it did not accept. */
+interface Audited {
+  seen: number;
+  planned: number;
+  found: string[];
+}
+
+/**
+ * Seeds the month-old guild (`options`: with the combat v2 flag and its state when asked), records every
+ * statement `exercise` runs, plans each one and collects the whole-table scans of tables that grow with play.
+ */
+async function audit(
+  options: { combatV2?: boolean; fresh?: boolean },
+  exercise: (env: GuildEnv, world: World) => Promise<void>,
+): Promise<Audited> {
+  let recording = false;
+  const seen = new Map<string, Recorded>();
+  const found: string[] = [];
+  let planned = 0;
+
+  await inGuild(
+    async (env) => {
+      const { metered } = env;
+      const world = await seedWorld(env, options);
+      recording = true;
+      await exercise(env, world);
+      recording = false;
+
+      const tables = new Set(
+        metered.sql
+          .exec<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table'")
+          .toArray()
+          .map((r) => r.name),
+      );
+      for (const { sql, bindings, site } of seen.values()) {
+        if (!/^(SELECT|WITH|UPDATE|DELETE|INSERT)\b/i.test(sql)) continue;
+        let plan: { detail: string }[];
+        try {
+          plan = metered.sql
+            .exec<{ detail: string }>(`EXPLAIN QUERY PLAN ${sql}`, ...(bindings as []))
+            .toArray();
+        } catch (err) {
+          // A statement that cannot be planned here (its table is gone, a temp table) is a test gap.
+          found.push(`could not plan: ${sql}\n  ${String(err)}\n  at ${site}`);
+          continue;
+        }
+        planned++;
+        for (const step of plan) {
+          const name = scannedTable(step.detail);
+          if (name === null) continue;
+          const table = resolveTable(sql, name);
+          // A CTE, a subquery or a constant row is not a table.
+          if (!tables.has(table)) continue;
+          if (SMALL_BY_DESIGN[table] !== undefined) continue;
+          if (ACCEPTED.some((a) => sql.includes(a.sql))) continue;
+          found.push(
+            `${step.detail}\n  statement: ${sql}\n  plan: ${plan.map((p) => p.detail).join(' | ')}\n  at ${site}`,
+          );
+        }
+      }
+    },
+    {
+      fresh: options.fresh === true,
+      onExec: (query, bindings) => {
+        if (!recording) return;
+        const sql = normalise(query);
+        if (seen.has(sql)) return;
+        const site = callSite();
+        // A statement the test itself runs (a lookup for its setup) is not the Worker's.
+        if (site !== NO_SITE) seen.set(sql, { sql, bindings: [...bindings], site });
+      },
+    },
+  );
+  return { seen: seen.size, planned, found };
+}
+
+const scanMessage = (found: string[]): string =>
+  `${String(found.length)} whole-table scan(s) of a table that grows with play. Add an index (a new migration) or change the query; allowlist only with a reason (testing.md, "Database reads"):\n${found.join('\n\n')}`;
+
 describe('query plan audit', () => {
   it('plans every statement of the hot paths without a whole-table scan of a table that grows', async () => {
-    let recording = false;
-    const seen = new Map<string, Recorded>();
-    const found: string[] = [];
-    let planned = 0;
-
-    await inGuild(
-      async (env) => {
-        const { metered, clock, mk } = env;
-        const world = await seedWorld(env);
-        const lounge = fakeLounge();
-        recording = true;
-
-        // An object start after the first one of this build.
-        mk(BUILD).migrate();
-        // A login, as the Activity does when it opens.
-        await world.core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' });
-        clock.t += 6 * MINUTE;
-        const paths = [
-          '/api/me',
-          '/api/state',
-          '/api/room',
-          '/api/games',
-          '/api/raid',
-          '/api/dungeon/today',
-          '/api/notifications',
-          '/api/weather',
-          '/api/gear',
-        ];
-        // Twice: the first call of a day pays one-off work, the second is the usual one.
-        for (let round = 0; round < 2; round++)
-          for (const path of paths) await callAs(world.core, world.secrets, 1, path);
-        // An alarm with no lounge, then a lounge with company: ticks that pay, each on a fresh object.
-        clock.t += MINUTE;
-        await world.core.alarm();
-        await startLounge(env, lounge);
-        for (let i = 0; i < 4; i++) await loungeTick(env, lounge);
-        // A raid placement while a teammate has the board open.
-        await boardSwap(env, world);
-        recording = false;
-
-        const tables = new Set(
-          metered.sql
-            .exec<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table'")
-            .toArray()
-            .map((r) => r.name),
-        );
-        for (const { sql, bindings, site } of seen.values()) {
-          if (!/^(SELECT|WITH|UPDATE|DELETE|INSERT)\b/i.test(sql)) continue;
-          let plan: { detail: string }[];
-          try {
-            plan = metered.sql
-              .exec<{ detail: string }>(`EXPLAIN QUERY PLAN ${sql}`, ...(bindings as []))
-              .toArray();
-          } catch (err) {
-            // A statement that cannot be planned here (its table is gone, a temp table) is a test gap.
-            found.push(`could not plan: ${sql}\n  ${String(err)}\n  at ${site}`);
-            continue;
-          }
-          planned++;
-          for (const step of plan) {
-            const name = scannedTable(step.detail);
-            if (name === null) continue;
-            const table = resolveTable(sql, name);
-            // A CTE, a subquery or a constant row is not a table.
-            if (!tables.has(table)) continue;
-            if (SMALL_BY_DESIGN[table] !== undefined) continue;
-            if (ACCEPTED.some((a) => sql.includes(a.sql))) continue;
-            found.push(
-              `${step.detail}\n  statement: ${sql}\n  plan: ${plan.map((p) => p.detail).join(' | ')}\n  at ${site}`,
-            );
-          }
-        }
-      },
-      {
-        onExec: (query, bindings) => {
-          if (!recording) return;
-          const sql = normalise(query);
-          if (seen.has(sql)) return;
-          const site = callSite();
-          // A statement the test itself runs (a lookup for its setup) is not the Worker's.
-          if (site !== NO_SITE) seen.set(sql, { sql, bindings: [...bindings], site });
-        },
-      },
-    );
+    const result = await audit({}, async (env, world) => {
+      const { clock, mk } = env;
+      const lounge = fakeLounge();
+      // An object start after the first one of this build.
+      mk(BUILD).migrate();
+      // A login, as the Activity does when it opens.
+      await world.core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' });
+      clock.t += 6 * MINUTE;
+      const paths = [
+        '/api/me',
+        '/api/state',
+        '/api/room',
+        '/api/games',
+        '/api/raid',
+        '/api/dungeon/today',
+        '/api/notifications',
+        '/api/weather',
+        '/api/gear',
+      ];
+      // Twice: the first call of a day pays one-off work, the second is the usual one.
+      for (let round = 0; round < 2; round++)
+        for (const path of paths) await callAs(world.core, world.secrets, 1, path);
+      // An alarm with no lounge, then a lounge with company: ticks that pay, each on a fresh object.
+      clock.t += MINUTE;
+      await world.core.alarm();
+      await startLounge(env, lounge);
+      for (let i = 0; i < 4; i++) await loungeTick(env, lounge);
+      // A raid placement while a teammate has the board open.
+      await boardSwap(env, world);
+    });
 
     // The paths are not empty: a refactor that stops running them would make this test pass for nothing.
-    expect(seen.size, 'statements recorded').toBeGreaterThan(100);
-    expect(planned, 'statements planned').toBeGreaterThan(100);
-    expect(
-      found,
-      `${String(found.length)} whole-table scan(s) of a table that grows with play. Add an index (a new migration) or change the query; allowlist only with a reason (testing.md, "Database reads"):\n${found.join('\n\n')}`,
-    ).toEqual([]);
+    expect(result.seen, 'statements recorded').toBeGreaterThan(100);
+    expect(result.planned, 'statements planned').toBeGreaterThan(100);
+    expect(result.found, scanMessage(result.found)).toEqual([]);
+  }, 60_000);
+
+  it('plans the combat v2 paths (the creature page with the flag on, a Knack save, a talent learn, a role-changing evolution) without a whole-table scan', async () => {
+    const result = await audit({ combatV2: true, fresh: true }, async (env, world) => {
+      const { metered, clock } = env;
+      clock.t += 6 * MINUTE;
+      // Twice, as above.
+      for (let round = 0; round < 2; round++)
+        await callAs(world.core, world.secrets, 1, '/api/state');
+      const mine = world.creatures[userId(1)] ?? [];
+      const first = mine[0] as string;
+      await callAs(world.core, world.secrets, 1, `/api/creatures/${first}/knack`, {
+        method: 'PUT',
+        body: { knack: null },
+      });
+      await callAs(world.core, world.secrets, 1, `/api/creatures/${first}/knack`, {
+        method: 'PUT',
+        body: { knack: knownKnacks(speciesOfCreature(metered.sql, first))[0] },
+      });
+      // A talent of the line's book the creature has not learned, learned for Bait.
+      const line = metered.sql
+        .exec<{ line: string }>('SELECT line FROM creatures WHERE id = ?', first)
+        .one().line;
+      const learned = new Set(
+        metered.sql
+          .exec<{ talent_id: string }>(
+            'SELECT talent_id FROM creature_talents_v2 WHERE creature_id = ?',
+            first,
+          )
+          .toArray()
+          .map((r) => r.talent_id),
+      );
+      const other = v2Pool(line).find((id) => !learned.has(id)) as string;
+      await callAs(world.core, world.secrets, 1, `/api/creatures/${first}/talents-v2/learn`, {
+        method: 'POST',
+        body: { talentId: other, idempotencyKey: 'audit-learn-0000001' },
+      });
+      await callAs(world.core, world.secrets, 1, `/api/creatures/${first}/talents-v2/slot`, {
+        method: 'PUT',
+        body: { talentId: other, slot: 1 },
+      });
+      // A Mossback at level 15 with a Setter-only talent grows into the Payoff Bloomback.
+      const moss = metered.sql
+        .exec<{ id: string }>(
+          "SELECT id FROM creatures WHERE user_id = ? AND species = 'mossback'",
+          userId(1),
+        )
+        .one().id;
+      metered.sql.exec('UPDATE creatures SET level = 15 WHERE id = ?', moss);
+      metered.sql.exec('DELETE FROM creature_talents_v2 WHERE creature_id = ?', moss);
+      metered.sql.exec(
+        "INSERT INTO creature_talents_v2 (creature_id, talent_id, slot, learned_at) VALUES (?, 'owners-mark', 1, 1)",
+        moss,
+      );
+      metered.sql.exec(
+        "DELETE FROM line_talents WHERE user_id = ? AND line = 'mossback' AND talent_id IN ('opportunist', 'finisher')",
+        userId(1),
+      );
+      await callAs(world.core, world.secrets, 1, `/api/creatures/${moss}/evolve`, {
+        method: 'POST',
+        body: { species: 'bloomback', idempotencyKey: 'audit-evolve-0000001' },
+      });
+    });
+
+    expect(result.seen, 'statements recorded').toBeGreaterThan(40);
+    expect(result.found, scanMessage(result.found)).toEqual([]);
   }, 60_000);
 
   it('sees a full scan, an indexed search and an aliased scan in this SQLite (the detector works)', async () => {

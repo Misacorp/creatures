@@ -243,6 +243,18 @@ function tallyEvent(tally: Tally, kind: string, p: Props): void {
       flow(tally, 'bait', 'sink', 'talent_slot', RULES.talents.bookSlotBait);
       break;
 
+    case 'knack_set':
+      tally.add('collection.knack_set', {
+        where: str(p, 'where'),
+        knack: str(p, 'knack'),
+        swap: str(p, 'previous') !== 'none',
+      });
+      break;
+    case 'talent_learn':
+      tally.add('collection.talent_learn', { line: str(p, 'line') });
+      // The Bait is a ledger row (source `talent_learn`) and reaches the flows from there.
+      break;
+
     // --- Expeditions ---
     case 'expedition_send': {
       const supplies = list(p, 'supplies');

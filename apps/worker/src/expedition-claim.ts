@@ -705,7 +705,11 @@ function applyCatch(
       // the talent.
       const made = insertCreature(
         env.sql,
-        { quirk: env.deps.quirkRng, talent: env.deps.talentRng },
+        {
+          quirk: env.deps.quirkRng,
+          talent: env.deps.talentRng,
+          ...(env.deps.combatV2 === true ? { combatV2: true } : {}),
+        },
         { userId, species: species.id, origin: 'expedition', shiny: caught.shiny, now },
         env.deps.analytics,
       );

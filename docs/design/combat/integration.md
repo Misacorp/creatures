@@ -119,7 +119,8 @@ The gear model and gear's effect lines (lab follow-up, then the port); weather i
 
 ## 14. Progress
 
-| Slice           | State                                                                                                                                                                                             |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plan            | Done (2026-11-02).                                                                                                                                                                                |
-| Slice 1, engine | Done (2026-11-02): `stageV2` and its JSON carry, the track's boss in `resolve/`, typed board events, the live finale's actions, the CPU measure. The lab's digest was identical after every part. |
+| Slice                         | State                                                                                                                                                                                                                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Plan                          | Done (2026-11-02).                                                                                                                                                                                                                                                        |
+| Slice 1, engine               | Done (2026-11-02): `stageV2` and its JSON carry, the track's boss in `resolve/`, typed board events, the live finale's actions, the CPU measure. The lab's digest was identical after every part.                                                                         |
+| Slice 2, storage and the flag | Done (2026-11-02): the flag, migrations 50 and 51, known Knacks, saving a Knack, the v2 Talent Book (learn, slot, role-change replacements), `combat-v2-convert`, `knack_set` and `talent_learn`, the read checks. Decision `2026-11-02-combat-v2-storage-phase-4-slice`. |

@@ -83,6 +83,8 @@ export interface ResolveDeps {
   quirkRng?: Rng;
   /** Live randomness for the talent of a Festival creature. Defaults to crypto. */
   talentRng?: Rng;
+  /** The `COMBAT_V2` flag: a Festival creature also rolls its v2 talent (`talent-v2-store.ts`). */
+  combatV2?: boolean;
   /** Live randomness for gear drops (a cleared phase, a won finale, a Festival piece). Defaults to crypto. */
   gearRng?: Rng;
   /** The analytics event log. Optional: without it nothing is logged. */
@@ -720,7 +722,11 @@ export function settleParty(
         }
         const creature = grantFestivalCreature(
           storage,
-          { quirk: quirkRng, talent: talentRng },
+          {
+            quirk: quirkRng,
+            talent: talentRng,
+            ...(deps.combatV2 === true ? { combatV2: true } : {}),
+          },
           week.weekId,
           userId,
           progression.festivalSpecies,
