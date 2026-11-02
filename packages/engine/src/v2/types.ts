@@ -14,6 +14,11 @@ export type Role = 'setter' | 'payoff' | 'guard' | 'support';
  */
 export interface FighterSpec {
   readonly uid: string;
+  /**
+   * The creature's stable identity across the stages of a raid weekend (the worker's creature id): `stageV2`'s carry (HP, who is out,
+   * once-a-weekend uses) is keyed by it. Without one the carry falls back to `uid`, which is what the lab's weekends use.
+   */
+  readonly key?: string | undefined;
   readonly owner: string;
   readonly formId: string;
   readonly name: string;
@@ -496,6 +501,52 @@ export interface WeekendInputV2 {
   readonly bench: readonly WeekendFighterSpec[];
   /** The stage's options; `stages` is how many stages are played (default 3). */
   readonly options: FightOptions & { readonly stages?: number };
+}
+
+/**
+ * What passes from one raid stage to the next (R14, R22, R23): plain JSON (records and arrays, no Maps or Sets), so a caller stores it between
+ * Saturday and Sunday. Creatures are named by their `key` (`FighterSpec.key`, else the `uid`). `startCarry` is the carry before stage 1.
+ * What is not here starts fresh each stage: marks, Stores, Mired, silence and every "each fight" effect.
+ */
+export interface StageCarry {
+  /** Stages played so far: the index of the next stage (0 before the first). */
+  readonly stage: number;
+  /** The boss's HP (held at 1 once gone in potential mode) and its real HP, which goes on below 1 in potential mode. */
+  readonly bossHp: number;
+  readonly shadowHp: number;
+  /** The HP of each creature that has fought and is still standing, by key. A creature not here starts at full HP. */
+  readonly hp: Readonly<Record<string, number>>;
+  /** Creatures knocked out earlier this weekend, by key: they are out for the rest of it (`stageV2` leaves them out of the fight). */
+  readonly out: readonly string[];
+  /** Catch Breath and Refuse to Fall already used (once per weekend), by key. */
+  readonly windDone: readonly string[];
+  readonly holdDone: readonly string[];
+  /** The boss's escalation (R22), once a stage with one has been played. */
+  readonly escalation?: NonNullable<FightOptions['carryEscalation']>;
+  /** Reactions cashed in so far, by mark element, in the order they were first used (Adapts reads the most used, a tie going to the first). */
+  readonly used: Readonly<Record<string, number>>;
+  /** Damage dealt by hits so far, by the creatures' element (Element Resistance reads it). */
+  readonly dealt: Readonly<Record<string, number>>;
+}
+
+/**
+ * One raid stage: the boss (with its cards applied) and the creatures the caller places in it. Plain JSON like `FightInputV2`. The carry
+ * (`StageCarry`) sets the boss's HP, the creatures' HP and the rest; `options.carry*`, `bossHp`, `shadowHp` and `resist*` are replaced by it.
+ */
+export interface StageInputV2 {
+  readonly version: 2;
+  readonly rules: V2Rules;
+  readonly elements: readonly string[];
+  readonly chart: readonly ChartPair[];
+  readonly boss: BossDef;
+  /** The creatures of this stage in their slots. One whose key is in the carry's `out` is not played. */
+  readonly fighters: readonly FighterSpec[];
+  readonly options: FightOptions;
+}
+
+export interface StageOutput {
+  readonly result: FightResult;
+  readonly carry: StageCarry;
 }
 
 export interface WeekendResult {

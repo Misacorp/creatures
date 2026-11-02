@@ -37,6 +37,7 @@ const { alive, aliveBySlot, contextOf, effectsCarried, log, strengthOf } = state
 function fighterOf(spec: FighterSpec): Fighter {
   return {
     uid: spec.uid,
+    key: spec.key,
     owner: spec.owner,
     formId: spec.formId,
     name: spec.name,

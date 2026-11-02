@@ -1,27 +1,19 @@
 /**
- * A combat v2 raid weekend (R14): stages that share the boss's HP and carry what the rules say they carry. The lab's weekend, moved
- * here as it was (docs/design/combat/engine-port.md, slice 1).
+ * A combat v2 raid weekend (R14): stages that share the boss's HP and carry what the rules say they carry. A loop over `stageV2`
+ * (`stage.ts`), which holds the carry; this module keeps the lab's bench: a knocked-out creature's owner may bring a replacement.
  */
 import type { Rng } from '@creatures/game';
-import { playFight } from './fight';
-import { contextOf } from './state';
+import { resistedElement, stageV2, startCarry } from './stage';
 import type {
-  FightOptions,
   FightResult,
   FighterSpec,
+  StageInputV2,
   WeekendFighterSpec,
   WeekendInputV2,
   WeekendResult,
 } from './types';
 
-/** The element Element Resistance picks from the damage so far: the one alone on top; a tie for the most gives none. */
-export function resistedElement(
-  damageByElement: Readonly<Record<string, number>>,
-): string | undefined {
-  const sorted = Object.entries(damageByElement).sort((a, b) => b[1] - a[1]);
-  const [top, second] = sorted;
-  return top && top[1] > (second?.[1] ?? 0) ? top[0] : undefined;
-}
+export { resistedElement };
 
 /** A team member as a fight's creature: its uid is its owner, form and slot in the team (`owner:formId:index`). */
 const inSlot = (p: WeekendFighterSpec, i: number): FighterSpec => ({
@@ -30,69 +22,40 @@ const inSlot = (p: WeekendFighterSpec, i: number): FighterSpec => ({
 });
 
 /**
- * A raid weekend with attrition (R14): stages share the boss's HP; creatures keep their HP between
- * stages, nobody heals between them, and a knocked-out creature stays out (its owner may bring a
- * replacement from `bench`, which takes the empty slot). HP carries, and so do Catch Breath's and Refuse to Fall's use (once per weekend) and
- * the boss's escalation (step, phase and count, R22); marks, Stores, Mired and "each fight" effects start fresh each
- * stage. From stage 2 an adapting boss resists the reaction used most so far (Adapts) or the element whose creatures'
- * hits (reactions included, counters not) dealt the most damage so far, chosen at the stage break; a tie for the most
- * gives no resistance (Element Resistance).
+ * A raid weekend with attrition (R14): stages share the boss's HP; creatures keep their HP between stages, nobody heals between them, and
+ * a knocked-out creature stays out (its owner may bring a replacement from `bench`, which takes the empty slot). What carries, and what
+ * starts fresh, is `stageV2`'s. A creature is carried by its spec's `key`, else by its place in the weekend's team or bench (`team:i`,
+ * `bench:j`): its identity, which its slot is not once a replacement takes the slot of a knocked-out one.
  */
 export function weekendV2(input: WeekendInputV2, rng: Rng): WeekendResult {
   if (input.version !== 2)
     throw new Error(`weekendV2 plays version 2 inputs, not ${String(input.version)}`);
-  const { boss, options: opts } = input;
-  const ctx = contextOf(input);
+  const { version, rules, elements, chart, boss, options } = input;
   const stages: FightResult[] = [];
-  let current = [...input.team];
-  const benchLeft = [...input.bench];
-  // Carried state is keyed by the uids of the next stage's fighters (see below).
-  let hp = new Map<string, number>();
-  let windDone = new Set<string>();
-  let holdDone = new Set<string>();
-  let escalation: FightOptions['carryEscalation'];
-  let bossHp = boss.hp;
-  // Damage potential: the real HP (below 1) carries from stage to stage, while the boss is held at 1 HP.
-  let shadowHp = boss.hp;
+  let current: WeekendFighterSpec[] = input.team.map((p, i) => ({
+    ...p,
+    key: p.key ?? `team:${i}`,
+  }));
+  const benchLeft: WeekendFighterSpec[] = input.bench.map((p, i) => ({
+    ...p,
+    key: p.key ?? `bench:${i}`,
+  }));
+  let carry = startCarry(boss);
   let replacements = 0;
-  const used: Record<string, number> = {};
-  const dealt: Record<string, number> = {};
-  // Adapts: the reaction used most so far. A tie for the most goes to the one used first: the sort is stable and `used` keeps
-  // the order its reactions were first cashed in (unlike Element Resistance, where a tie gives no resistance).
-  const most = (m: Record<string, number>) => Object.entries(m).sort((a, b) => b[1] - a[1])[0]?.[0];
-  for (let i = 0; i < (opts.stages ?? 3) && bossHp > 0; i++) {
-    const resist = boss.mods.adapts && i > 0 ? most(used) : undefined;
-    const resistEl = boss.mods.adaptsElement && i > 0 ? resistedElement(dealt) : undefined;
-    const res = playFight(
-      ctx,
+  while (carry.stage < (options.stages ?? 3) && carry.bossHp > 0) {
+    const stageInput: StageInputV2 = {
+      version,
+      rules,
+      elements,
+      chart,
       boss,
-      current.map(inSlot),
-      {
-        ...opts,
-        carryHp: hp,
-        carryWindDone: windDone,
-        carryHoldOnDone: holdDone,
-        ...(escalation ? { carryEscalation: escalation } : {}),
-        bossHp,
-        shadowHp,
-        ...(resist ? { resistReaction: resist } : {}),
-        ...(resistEl ? { resistElement: resistEl } : {}),
-      },
-      rng,
-    );
+      fighters: current.map(inSlot),
+      options,
+    };
+    const played = stageV2(stageInput, carry, rng);
+    const res = played.result;
+    carry = played.carry;
     stages.push(res);
-    bossHp = res.bossHpLeft;
-    shadowHp = res.bossHpReal;
-    if (res.escalation)
-      escalation = {
-        step: res.escalation.step,
-        fallStep: res.escalation.fallStep,
-        phase: res.escalation.phase,
-        phaseNext: res.escalation.phaseNext,
-        count: res.escalation.count,
-      };
-    for (const [el, n] of Object.entries(res.reactionsByMark)) used[el] = (used[el] ?? 0) + n;
-    for (const f of res.fighters) dealt[f.element] = (dealt[f.element] ?? 0) + f.hitDamage;
     const next: WeekendFighterSpec[] = [];
     res.fighters.forEach((f, idx) => {
       const p = current[idx];
@@ -109,26 +72,7 @@ export function weekendV2(input: WeekendInputV2, rng: Rng): WeekendResult {
         }
       }
     });
-    const carried = new Map<string, number>();
-    const winds = new Set<string>();
-    const holds = new Set<string>();
-    next.map(inSlot).forEach((nf) => {
-      const prev = res.fighters.find(
-        (f) =>
-          f.owner === nf.owner &&
-          f.formId === nf.formId &&
-          f.row === nf.row &&
-          f.col === nf.col &&
-          f.hp > 0,
-      );
-      carried.set(nf.uid, prev ? prev.hp : nf.maxHp);
-      if (prev?.secondWindDone) winds.add(nf.uid);
-      if (prev?.holdOnDone) holds.add(nf.uid);
-    });
-    hp = carried;
-    windDone = winds;
-    holdDone = holds;
     current = next;
   }
-  return { stages, won: bossHp <= 0, replacements };
+  return { stages, won: carry.bossHp <= 0, replacements };
 }
