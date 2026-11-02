@@ -6,12 +6,13 @@
  * conversion tool and the two analytics events.
  */
 import { env } from 'cloudflare:workers';
-import { RULES, slotOpensAt, type Rng } from '@creatures/game';
+import { RULES, content, slotOpensAt, type Rng } from '@creatures/game';
 import { combatV2, knownKnacks } from '@creatures/game/combat-v2';
 import { describe, expect, it } from 'vitest';
 import { canonicalDims } from '../src/analytics-rollup';
 import { propsOf } from '../src/analytics-props';
-import { knackLocked, talentsLocked } from '../src/creature-v2';
+import { knackLocked, statsV2Of, talentsLocked } from '../src/creature-v2';
+import { formStats } from '@creatures/engine/v2';
 import { createHandler } from '../src/index';
 import { loadCreatures, loadCreaturesById } from '../src/raid-teams';
 import { grantFirstTalent, learnedOf, lineBook } from '../src/talent-v2-store';
@@ -150,6 +151,7 @@ describe('the flag off', () => {
       expect(creature).not.toHaveProperty('knack');
       expect(creature).not.toHaveProperty('knownKnacks');
       expect(creature).not.toHaveProperty('talentsV2');
+      expect(creature).not.toHaveProperty('statsV2');
     });
   });
 
@@ -303,6 +305,64 @@ describe('a creature caught or granted with the flag on', () => {
         expect(lineBook(ctx.sql, b.id, 'sproutle')).toHaveLength(1);
         expect(count(ctx.sql, 'line_talents')).toBe(2);
         return Promise.resolve();
+      },
+      V2,
+    );
+  });
+});
+
+describe('the stats a creature page shows under v2 (statsV2)', () => {
+  const species = content.creatures.find((c) => c.id === 'mossback');
+  if (species === undefined) throw new Error('mossback is not in the content');
+
+  it('is the form at its level with the base crit of the rules, when nothing is slotted or worn', () => {
+    const form = formStats(combatV2, content, 'mossback', 12);
+    expect(statsV2Of(species, 12, [], undefined)).toEqual({
+      hp: form.hp,
+      atk: form.atk,
+      spd: form.spd,
+      armour: form.armour,
+      critChanceBp: combatV2.rules.critChanceBp + form.critChanceBp,
+      critMultBp: combatV2.rules.critBp + form.critDamageBp,
+    });
+  });
+
+  it('adds the effects of the slotted talents: Hardy to HP, Sharp Claws to Attack', () => {
+    const form = formStats(combatV2, content, 'mossback', 12);
+    const stats = statsV2Of(species, 12, ['hardy', 'sharp-claws'], undefined);
+    expect(stats.hp).toBe(
+      Math.floor((form.hp * (10_000 + (combatV2.talents['hardy']?.fx.hpBp ?? 0))) / 10_000),
+    );
+    expect(stats.atk).toBe(
+      Math.floor((form.atk * (10_000 + (combatV2.talents['sharp-claws']?.fx.atkBp ?? 0))) / 10_000),
+    );
+    expect(stats.hp).toBeGreaterThan(form.hp);
+    expect(stats.atk).toBeGreaterThan(form.atk);
+    expect(stats.armour).toBe(form.armour);
+  });
+
+  it('adds a crit talent to the chance and the multiplier, and rises with the level', () => {
+    const crit = Object.values(combatV2.talents).find(
+      (t) => (t.fx.critChanceBp ?? 0) > 0 || (t.fx.critDamageBp ?? 0) > 0,
+    );
+    if (crit === undefined) throw new Error('no crit talent in the content');
+    const plain = statsV2Of(species, 12, [], undefined);
+    const withCrit = statsV2Of(species, 12, [crit.id], undefined);
+    expect(withCrit.critChanceBp).toBe(plain.critChanceBp + (crit.fx.critChanceBp ?? 0));
+    expect(withCrit.critMultBp).toBe(plain.critMultBp + (crit.fx.critDamageBp ?? 0));
+    expect(statsV2Of(species, 20, [], undefined).hp).toBeGreaterThan(plain.hp);
+  });
+
+  it('comes with the creature in the state, from its slotted talent', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await seeded(ctx, ['mossback'], 12);
+        const state = await p.call('GET', '/api/state');
+        const creature = state.body.creatures[0];
+        const slots = creature.talentsV2.slots as { talent: { id: string } | null }[];
+        const slotted = slots.flatMap((s) => (s.talent === null ? [] : [s.talent.id]));
+        expect(creature.statsV2).toEqual(statsV2Of(species, 12, slotted, undefined));
       },
       V2,
     );

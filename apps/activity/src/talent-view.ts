@@ -41,7 +41,7 @@ export function choiceResultText(
 }
 
 /** One slot of a creature in words: "Slot 1", "Slot 2 opens at level 20". */
-export function slotTitle(slot: TalentSlotView): string {
+export function slotTitle(slot: Pick<TalentSlotView, 'slot' | 'open' | 'opensAt'>): string {
   return slot.open
     ? `Slot ${String(slot.slot)}`
     : `Slot ${String(slot.slot)} opens at level ${String(slot.opensAt)}`;

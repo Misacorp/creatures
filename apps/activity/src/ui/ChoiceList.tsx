@@ -23,13 +23,20 @@ export function ChoiceButton({
   disabled,
   onClick,
   class: extra,
+  selected,
   buttonRef,
 }: {
   label: string;
-  line: string;
+  /** What it does: plain text, or text with `KeywordText` chips in it (a Knack's). */
+  line: ComponentChildren;
   disabled: boolean;
   onClick: () => void;
   class?: string;
+  /**
+   * The choice that is picked now (a picker that shows what is saved): a gold ring and a check after the name,
+   * and `aria-pressed` for assistive technology. Leave it out where the choices are actions, not a pick.
+   */
+  selected?: boolean;
   /** For the one choice a picker anchors to. */
   buttonRef?: Ref<HTMLButtonElement>;
 }) {
@@ -38,11 +45,23 @@ export function ChoiceButton({
       <button
         type="button"
         {...(buttonRef === undefined ? {} : { ref: buttonRef })}
-        class={extra === undefined ? 'choice' : `choice ${extra}`}
+        class={['choice', extra, selected === true ? 'selected' : undefined]
+          .filter((c) => c !== undefined && c !== '')
+          .join(' ')}
+        {...(selected === undefined ? {} : { 'aria-pressed': selected })}
         disabled={disabled}
         onClick={onClick}
       >
-        <strong>{label}</strong> <span class="prose">{line}</span>
+        <strong>
+          {label}
+          {selected === true && (
+            <span class="choice-check" aria-hidden="true">
+              {' '}
+              {'✓'}
+            </span>
+          )}
+        </strong>{' '}
+        <span class="prose">{line}</span>
       </button>
     </li>
   );

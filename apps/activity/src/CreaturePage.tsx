@@ -8,16 +8,20 @@ import {
   ribbonsHeldText,
   type PageFocus,
 } from './creature-card-view';
+import { creatureV2, critText, type StatsV2 } from './combat-v2-view';
+import type { KnackWhere } from './combat-v2-api';
 import { creatureNeeds, evolveShortfall } from './creature-needs';
 import { creatureDodgeText, type DodgeRules } from './dodge-view';
 import { ItemPickerDrawer } from './creature-page/ItemPicker';
 import { PageHeader } from './creature-page/PageHeader';
+import { KnackSection, type KnackSaved } from './creature-page/KnackPicker';
 import { TalentSlots } from './creature-page/PageSlots';
 import { CreatureIcon } from './CreatureIcon';
 import { GearList } from './GearList';
 import { CreatureGamesRow } from './games/CreatureGamesRow';
 import type { CreatureGames } from './games-types';
 import { TalentBookDrawer } from './creature-page/TalentBookDrawer';
+import { TalentBookV2Drawer } from './creature-page/TalentBookV2Drawer';
 import type { GearItem, GearSlot, GearState } from './gear-types';
 import { gearShare, wornItemOf } from './gear-view';
 import { RibbonLine } from './CreatureProgress';
@@ -57,6 +61,16 @@ export interface CardActions {
   onLounge: (creature: Creature) => void;
   /** Puts a talent from a creature's Talent Book into a slot (for Bait). */
   onSlotTalent: (creature: Creature, talentId: string, golden: boolean, slot: number) => void;
+  /**
+   * Combat v2 (the three below are given only where the server's `COMBAT_V2` flag can be on; a creature without
+   * v2 data never asks for them). Saves a creature's Knack (`null`: none) and says how it went: saved, locked
+   * (it has fought this weekend) or failed (the notice line has the reason). Absent: the Knack can be seen, not changed.
+   */
+  onKnack?: (creature: Creature, knack: string | null, where: KnackWhere) => Promise<KnackSaved>;
+  /** A creature learns a talent of its line's book for Bait (once). */
+  onLearnTalentV2?: (creature: Creature, talentId: string) => void;
+  /** Puts a learned talent into a slot (free), or (`null`) takes it out of its slot. */
+  onSlotTalentV2?: (creature: Creature, talentId: string, slot: number | null) => void;
 }
 
 export function RenameForm({
@@ -172,6 +186,9 @@ export function statRow(label: string, stat: 'hp' | 'atk' | 'spd', creature: Cre
  * fight uses). `dodge` is the rules to read (the game's own by default; tests pass their own).
  */
 export function statRows(creature: Creature, dodge: DodgeRules = RULES.combat.dodge): DataRow[] {
+  // Combat v2: the numbers the fight reads (gear and talents already in), with Armour and crit.
+  const v2 = creatureV2(creature);
+  if (v2 !== null) return statRowsV2(v2.statsV2);
   const dodgeText = creatureDodgeText(creature, dodge);
   return [
     statRow('HP', 'hp', creature),
@@ -183,13 +200,31 @@ export function statRows(creature: Creature, dodge: DodgeRules = RULES.combat.do
   ];
 }
 
+/** The Stats rows under combat v2: HP, Attack, Speed, Armour and crit ("Crit 17% · 3x": the chance and the multiplier, R7.1). */
+export function statRowsV2(stats: StatsV2): DataRow[] {
+  return [
+    { label: 'HP', value: stats.hp },
+    { label: 'Attack', value: stats.atk },
+    { label: 'Speed', value: stats.spd },
+    { label: 'Armour', value: stats.armour },
+    { label: 'Crit', value: critText(stats) },
+  ];
+}
+
 /** The creature's own count of expeditions, the last row of the page's Stats table ("Expeditions 7"). */
 export function expeditionRow(creature: Creature): DataRow {
   return { label: 'Expeditions', value: creature.explorer.trips };
 }
 
-/** Which drawer is up: an item picker for a gear slot, the Talent Book for a talent slot, or none. */
-export type PageOpen = { kind: 'gear'; slot: GearSlot } | { kind: 'talent'; slot: number } | null;
+/**
+ * Which drawer is up: an item picker for a gear slot, the Talent Book for a talent slot, the Knack picker
+ * (combat v2; `note` is what it opens with, for the workbench), or none.
+ */
+export type PageOpen =
+  | { kind: 'gear'; slot: GearSlot }
+  | { kind: 'talent'; slot: number }
+  | { kind: 'knack'; note?: KnackSaved }
+  | null;
 
 /**
  * The drawer a page opens with. A gear icon of the card opens that slot's picker (when the slot is open;
@@ -262,7 +297,10 @@ export function CreaturePage({
   const personality = personalityLine(creature.quirk);
   const abilityText = creatureAbilityText(creature, abilityDef);
   const abilityInfo = creature.ability === null ? undefined : abilityDef(creature.ability.id);
-  const showAbility = abilityText !== null && abilityText.unlocked && abilityInfo !== undefined;
+  // Combat v2 replaces the finale ability with the Knack (R11) and brings its own talents.
+  const v2 = creatureV2(creature);
+  const showAbility =
+    v2 === null && abilityText !== null && abilityText.unlocked && abilityInfo !== undefined;
   // The same needs, in the same words, as the card's gold button (the server decides what is ready).
   const needs = creatureNeeds(creature, state);
   const evolveNeed = needs.find((n) => n.kind === 'evolve');
@@ -402,6 +440,27 @@ export function CreaturePage({
           <DataTable tabular rows={[...statRows(creature), expeditionRow(creature)]} />
         </div>
 
+        {v2 !== null && (
+          <div class="cp-block creature-knack">
+            <h3 id={`${id}-knack`} class="cp-title">
+              Knack
+            </h3>
+            <KnackSection
+              creature={creature}
+              v2={v2}
+              busy={busy}
+              initialOpen={start?.kind === 'knack'}
+              initialNote={start?.kind === 'knack' ? (start.note ?? null) : null}
+              onPick={
+                actions.onKnack === undefined
+                  ? undefined
+                  : (knack) =>
+                      actions.onKnack?.(creature, knack, 'page') ?? Promise.resolve('failed')
+              }
+            />
+          </div>
+        )}
+
         {showAbility && (
           <div class="cp-block creature-ability">
             <h3 class="cp-title">Finale ability</h3>
@@ -420,7 +479,7 @@ export function CreaturePage({
           </h3>
           <GearList
             level={creature.level}
-            worn={creature.gear.map((g) => wornItemOf(g, gear?.items))}
+            worn={creature.gear.map((g) => wornItemOf(g, gear?.items, v2 !== null))}
             slotOpens={gear?.slotOpens}
             openSlot={gearOpen}
             onPick={(slot, button) => {
@@ -518,7 +577,29 @@ export function CreaturePage({
           returnFocusTo={opener.current ?? rootRef.current}
         />
       )}
-      {talentOpen !== null && (
+      {talentOpen !== null && v2 !== null && (
+        <TalentBookV2Drawer
+          key={talentOpen}
+          open
+          onClose={() => {
+            setTalentOpen(null);
+          }}
+          creature={creature}
+          v2={v2}
+          slot={talentOpen}
+          bait={state.balances.bait}
+          busy={busy}
+          onLearn={(c, talentId) => {
+            actions.onLearnTalentV2?.(c, talentId);
+          }}
+          onSlot={(c, talentId, slot) => {
+            actions.onSlotTalentV2?.(c, talentId, slot);
+            if (slot !== null) setTalentOpen(null);
+          }}
+          returnFocusTo={opener.current ?? rootRef.current}
+        />
+      )}
+      {talentOpen !== null && v2 === null && (
         <TalentBookDrawer
           key={talentOpen}
           open

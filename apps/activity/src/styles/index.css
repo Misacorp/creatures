@@ -44,6 +44,7 @@
 @import './components/action-button.css';
 @import './components/creature-finder.css';
 @import './components/talents.css';
+@import './components/knack.css';
 @import './views/boss-card.css';
 @import './stage/stage.css';
 @import './stage/units.css';

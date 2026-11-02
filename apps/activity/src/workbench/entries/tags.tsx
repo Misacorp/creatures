@@ -1,3 +1,4 @@
+import { combatV2 } from '@creatures/game/combat-v2';
 import type { ComponentProps } from 'preact';
 import { ChoiceMark, Stars } from '../../ExpeditionIcons';
 import { GlossaryTag } from '../../Glossary';
@@ -6,6 +7,7 @@ import { ElementChip, RoleChip } from '../../sprites/ElementChip';
 import { baitCount, essenceCount, partCountItems, supplyCounts } from '../../count-items';
 import { CountBadge, CountBadgeList } from '../../ui/CountBadge';
 import { OutcomeBadge } from '../../ui/RevealShell';
+import { KeywordText } from '../../ui/KeywordText';
 import { LandmarkChip, Tag } from '../../ui/Tag';
 import type { GearRarity } from '../../gear-types';
 import {
@@ -322,8 +324,36 @@ const choiceMark: Entry = {
   ),
 };
 
+/** The real texts the keyword chips are checked against (a Knack with several keywords, one with none, a talent, a plural). */
+const KEYWORD_SAMPLES: Readonly<Record<string, string>> = {
+  'A Knack with one keyword': combatV2.knacks['steady-mark']?.text ?? '',
+  'A Knack with several keywords': combatV2.knacks['detonate']?.text ?? '',
+  'The longest Knack text':
+    Object.values(combatV2.knacks).find((k) => k.name === 'Boiling Point')?.text ?? '',
+  'A Knack with no keyword': combatV2.knacks['lead-the-way']?.text ?? '',
+  'A talent (a keyword and a plural)': combatV2.talents['crit-damage']?.text ?? '',
+  'Plain words (v1)': 'First pounce +14%.',
+};
+
+const keywordText: Entry = {
+  name: 'KeywordText',
+  file: 'apps/activity/src/ui/KeywordText.tsx',
+  group: 'Tags & chips',
+  description:
+    "A combat v2 text (a Knack's, a talent's) with its keywords as chips: a word the content puts in braces is drawn as a Tag, the rest as plain words. It is the line under a Knack's name in the Knack picker and the Knack part, and the talent's line in the Talent Book.",
+  controls: { text: { kind: 'select', options: Object.keys(KEYWORD_SAMPLES) } },
+  defaults: { text: 'A Knack with several keywords' },
+  presets: Object.keys(KEYWORD_SAMPLES).map((name) => ({ name, props: { text: name } })),
+  render: (p) => (
+    <p class="prose">
+      <KeywordText text={KEYWORD_SAMPLES[str(p, 'text')] ?? ''} />
+    </p>
+  ),
+};
+
 export const tagEntries: readonly Entry[] = [
   tag,
+  keywordText,
   landmarkChip,
   countBadge,
   countBadgeList,

@@ -67,12 +67,20 @@ interface Props {
 }
 
 /** What a raid asks of a creature while the board can change: who it is, how it grows, what it fights with. */
-const RAID_PARTS: ConfiguratorParts = { experience: true, stats: true, gear: true, talents: true };
+const RAID_PARTS: ConfiguratorParts = {
+  experience: true,
+  stats: true,
+  knack: true,
+  gear: true,
+  talents: true,
+};
 
 /** Once the board is locked for the finale the fight is frozen: what it wears, nothing to change. */
 const LOCKED_PARTS: ConfiguratorParts = {
   experience: true,
   stats: true,
+  knack: true,
+  knackLocked: true,
   gear: true,
   gearLocked: true,
 };
