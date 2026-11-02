@@ -135,6 +135,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-11-02 Combat v2 engine slice 1: carry keyed by creature key, board events beside the log, live actions as one boost or cut each
 - 2026-11-02 Combat v2 phase 4 plan: the game plays v2 behind a staging flag, rules version stored per week, run and fight
 - 2026-11-01 \[Misa\] Combat v2 icons: shapes, the sword, the Store box, claw Pincer, Leap as a chain
 - 2026-11-01 \[Misa\] Combat v2 names: a card never shares a move's name (Full Sweep), Barrage and Leap are both keyword and shape word, the Puddle Imp asks for a Guard
