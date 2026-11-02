@@ -23,6 +23,7 @@
 //
 // When it fails: the breakdown by source (start, alarm, lounge, request:<area>) shows what grew. Fix the
 // query, or the frequency; raise the budget only with a reason in the PR.
+import { knownKnacks, v2Pool } from '@creatures/game/combat-v2';
 import { describe, expect, it } from 'vitest';
 import { readSourceOfPath } from '../src/read-meter';
 import { RULES, createSeededRng } from '@creatures/game';
@@ -53,6 +54,10 @@ const DAY_BUDGET = 190_000;
 // 8,640 (180 ticks), request:state 15,652, request:games 8,938, request:gear 4,679, alarm 3,571 (3 alarms
 // of the day, with the daily maintenance), request:dungeon 3,199, start 2,832 (59 object starts),
 // request:session 2,581, request:room 1,399, request:me 1,357, request:weather 879, request:notifications 799.
+// Today (51 migrations: the start reads one row of schema_version per migration): 126,011. With combat v2 on
+// (the second test, the same budget): 157,044 rows. The extra is the v2 creature page on every state request
+// (request:state 24,428, was 15,652) and the 50 Knack saves and talent learns, each of which answers with the
+// state (request:creatures 22,216).
 
 const PLAYING = 10;
 const OPENS_PER_PLAYER = 4;
@@ -130,21 +135,29 @@ function playerEvents(start: number, loungeStart: number): Event[] {
   return events.sort((a, b) => a.at - b.at);
 }
 
-describe('a day in the life of a 10-player server', () => {
-  it('reads few rows in a day', async () => {
-    const reads = new DayReads();
-    await inGuild(async (env: GuildEnv) => {
-      const world = await seedWorld(env);
+/**
+ * One simulated day. `combatV2` is the same day with the flag on: the guild's creatures carry v2 talents and
+ * Knacks, the creature page is the v2 one on every `/api/state`, each playing player saves a Knack on each
+ * opening and learns a talent from their line's book once.
+ */
+async function simulateDay(options: { combatV2?: boolean; fresh?: boolean }): Promise<DayReads> {
+  const reads = new DayReads();
+  const flag = options.combatV2 === true ? { combatV2: true } : {};
+  await inGuild(
+    async (env: GuildEnv) => {
+      const world = await seedWorld(env, options);
       const dayStart = env.clock.t;
       const dayEnd = dayStart + DAY;
       const lounge = fakeLounge();
       const events = playerEvents(dayStart, dayStart + 4 * HOUR);
       const loungeTicks: { start: ReadReport; alarm: ReadReport }[] = [];
       let skipped = false;
+      /** The players who have opened the game once already today (the v2 day learns on the first opening). */
+      const opens = new Set<number>();
 
       /** A new object start (the previous one was evicted): its reads are the `start` source. */
       const wake = async (source: string): Promise<ReturnType<GuildEnv['mk']>> => {
-        const core = env.mk(BUILD, loungeOptions(lounge));
+        const core = env.mk(BUILD, { ...loungeOptions(lounge), ...flag });
         reads.add(source, (await env.metered.measure(() => core.migrate())).reads);
         return core;
       };
@@ -161,6 +174,52 @@ describe('a day in the life of a 10-player server', () => {
             readSourceOfPath(path),
             (await env.metered.measure(() => callAs(core, secrets, player, path))).reads,
           );
+        if (options.combatV2 !== true || !paths.includes('/api/state')) return;
+        // Combat v2: a Knack saved on the creature page, and (the first opening of a player) a talent learned.
+        const mine = world.creatures[userId(player)] ?? [];
+        const first = mine[0] as string;
+        const knack = knownKnacks(creatureSpecies(env.metered.sql, first))[0] ?? null;
+        reads.add(
+          readSourceOfPath('/api/creatures'),
+          (
+            await env.metered.measure(() =>
+              callAs(core, secrets, player, `/api/creatures/${first}/knack`, {
+                method: 'PUT',
+                body: { knack: opens.has(player) ? null : knack },
+              }),
+            )
+          ).reads,
+        );
+        if (opens.has(player)) return;
+        opens.add(player);
+        const line = env.metered.sql
+          .exec<{ line: string }>('SELECT line FROM creatures WHERE id = ?', first)
+          .one().line;
+        const learned = new Set(
+          env.metered.sql
+            .exec<{ talent_id: string }>(
+              'SELECT talent_id FROM creature_talents_v2 WHERE creature_id = ?',
+              first,
+            )
+            .toArray()
+            .map((r) => r.talent_id),
+        );
+        const other = v2Pool(line).find((id) => !learned.has(id));
+        if (other === undefined) throw new Error('nothing to learn');
+        reads.add(
+          readSourceOfPath('/api/creatures'),
+          (
+            await env.metered.measure(() =>
+              callAs(core, secrets, player, `/api/creatures/${first}/talents-v2/learn`, {
+                method: 'POST',
+                body: {
+                  talentId: other,
+                  idempotencyKey: `read-day-learn-${String(player).padStart(4, '0')}`,
+                },
+              }),
+            )
+          ).reads,
+        );
       };
 
       const handle = async (event: Event): Promise<void> => {
@@ -194,7 +253,7 @@ describe('a day in the life of a 10-player server', () => {
       /** The alarm the object asked for: a new object starts and runs it. */
       const alarm = async (): Promise<void> => {
         const lounging = lounge.instances.size > 0;
-        const core = env.mk(BUILD, loungeOptions(lounge));
+        const core = env.mk(BUILD, { ...loungeOptions(lounge), ...flag });
         const start = (await env.metered.measure(() => core.migrate())).reads;
         const tick = (await env.metered.measure(() => core.alarm())).reads;
         reads.add(lounging ? 'lounge:start' : 'start', start);
@@ -242,8 +301,27 @@ describe('a day in the life of a 10-player server', () => {
       // The day crossed a reset and its alarm did the daily cleanup: the day was not left unmarked.
       const today = gameDay(env.clock.t, HELSINKI, RULES.daily.reset);
       expect(maintainedDay(env.metered.sql), 'the daily maintenance ran').toBe(today);
-    });
+    },
+    { fresh: options.fresh === true },
+  );
+  return reads;
+}
 
+const creatureSpecies = (sql: SqlStorage, id: string): string =>
+  sql.exec<{ species: string }>('SELECT species FROM creatures WHERE id = ?', id).one().species;
+
+describe('a day in the life of a 10-player server', () => {
+  it('reads few rows in a day', async () => {
+    const reads = await simulateDay({});
+    expect(
+      reads.total,
+      `${reads.describe()}\nBudget: ${String(DAY_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(DAY_BUDGET);
+  }, 120_000);
+
+  // The same budget, not a new one: the flag on must fit in what the day was allowed.
+  it('reads few rows in a day with combat v2 on (Knack saves and talent learns included)', async () => {
+    const reads = await simulateDay({ combatV2: true, fresh: true });
     expect(
       reads.total,
       `${reads.describe()}\nBudget: ${String(DAY_BUDGET)} rows.`,

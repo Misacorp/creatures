@@ -117,6 +117,7 @@ The gear model and gear's effect lines (lab follow-up, then the port); weather i
 
 ## 14. Progress
 
-| Slice | State              |
-| ----- | ------------------ |
-| Plan  | Done (2026-11-02). |
+| Slice                         | State                                                                                                                                                                                                                                                                                        |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Plan                          | Done (2026-11-02).                                                                                                                                                                                                                                                                           |
+| Slice 2: storage and the flag | Done (2026-11-02), on its own branch: the flag, migrations 50 and 51, known Knacks, saving a Knack, the v2 Talent Book (learn, slot, role-change replacements), `combat-v2-convert`, `knack_set` and `talent_learn`, the read checks. Decision `2026-11-02-combat-v2-storage-phase-4-slice`. |

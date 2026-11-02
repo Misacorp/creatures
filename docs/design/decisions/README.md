@@ -105,6 +105,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [creatures.md](creatures.md): Catching, pity, species, evolutions, levels and XP, training, talents and the Talent Book, fusion, ribbons, creature lore.
 
+- 2026-11-02 Combat v2 storage (phase 4, slice 2): the saved Knack and the v2 Talent Book
 - 2026-10-30 \[Misa\] Requested art is kept in an art library until content uses it
 - 2026-10-30 Concept art runs ahead of content, drawn with the art studio (amended)
 - 2026-10-28 Ribbons and medals on the creature card

@@ -32,6 +32,7 @@ Misa watches production by playing. Agents also need data to understand **how pe
    - journal finds, explorer rank-ups, familiarity stars and slot unlocks (ids and numbers only);
    - train, evolve and fuse;
    - talents (2026-10-16, Creatures A): a talent rolled (species, talent id, golden, and whether it was the one-time roll for an existing creature), a duplicate settled (Teach, Fuse, Release or Keep, whether the server chose, species, rarity, talent, golden) and a talent slotted from the book (slot);
+   - combat v2 (2026-11-02, `combat/integration.md`; only with the `COMBAT_V2` flag on): `knack_set` (the creature's form, the Knack now, the one it had before, each a content id or `none`, and where it was saved: the creature page or the raid) for every save, a swap being one with a previous Knack, and `talent_learn` (the line and the talent) for a Bait spend on the v2 Talent Book. The learn's Bait reaches the flows from the ledger (source `talent_learn`);
    - lure crafts (the Workshop job start carries the Bait it cost);
    - team and placement changes;
    - ability pick and auto fire toggles;

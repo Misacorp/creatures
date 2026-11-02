@@ -344,10 +344,15 @@ export interface GuildEnv {
  */
 export async function inGuild<T>(
   fn: (env: GuildEnv) => Promise<T>,
-  options: { onExec?: ExecHook } = {},
+  options: { onExec?: ExecHook; fresh?: boolean } = {},
 ): Promise<T> {
   const stub = env.GUILD_WORLD.get(env.GUILD_WORLD.idFromName(GUILD_ID));
   return runInDurableObject(stub, async (_instance, state) => {
+    // A second world in one test file: the guild's storage outlives a test, so start from nothing.
+    if (options.fresh === true) {
+      await state.storage.deleteAlarm();
+      await state.storage.deleteAll();
+    }
     const metered = meterStorage(state.storage, options.onExec);
     const clock = { t: NOW };
     const mk = (build?: string, extra: Partial<GuildCoreOptions> = {}) =>
