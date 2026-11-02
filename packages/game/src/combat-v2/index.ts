@@ -18,14 +18,18 @@ import raidBosses from './data/raid-bosses.json';
 import raidTrack from './data/raid-track.json';
 import rules from './data/rules.json';
 import talents from './data/talents.json';
+import { knownKnacksOf } from './known-knacks';
 import { loadCombatV2, type CombatV2Pack } from './load';
+import { rollV2Talent, talentWorksFor, v2PoolOf, type V2Roll } from './talent-book';
 
 export * from './boss-schema';
 export * from './fx-schema';
+export * from './known-knacks';
 export * from './load';
 export * from './moves';
 export * from './rules-schema';
 export * from './schema';
+export * from './talent-book';
 export * from './track-schema';
 
 /** The shipped combat v2 content, checked against the shipped species. */
@@ -34,3 +38,26 @@ export const combatV2: CombatV2Pack = loadCombatV2(
   content.creatures,
   { bosses: content.bosses, foes: dungeonContent.foes, gearLines: gearContent.lines },
 );
+
+/**
+ * The Knack ids a creature of this form knows (R11): the own Knacks of every form on its path from the line's base
+ * form, cut at the last role change. Never stored; the saved Knack is checked against it.
+ */
+export const knownKnacks = (formId: string): string[] =>
+  knownKnacksOf(combatV2.forms, content.creatures, formId);
+
+/** A line's v2 talent pool, bound to the shipped pack. */
+export const v2Pool = (line: string): readonly string[] => v2PoolOf(combatV2, line);
+
+/** Whether a v2 talent works for a role, bound to the shipped pack. */
+export const v2TalentWorksFor = (
+  talentId: string,
+  role: Parameters<typeof talentWorksFor>[2],
+): boolean => talentWorksFor(combatV2, talentId, role);
+
+/** Rolls a v2 talent from the shipped pool of a line (see `rollV2Talent`). */
+export const rollShippedV2Talent = (
+  rng: Parameters<typeof rollV2Talent>[1],
+  line: string,
+  options?: Parameters<typeof rollV2Talent>[3],
+): V2Roll | null => rollV2Talent(combatV2, rng, line, options);
