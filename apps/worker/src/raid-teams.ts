@@ -71,6 +71,25 @@ type CreatureDbRow = {
   knack: string | null;
 };
 
+/**
+ * The creature rows of a team loader: the columns a team needs, with the saved Knack (version 50). An older
+ * migration (the raid board repair, version 22) and its tests read creatures before that column exists; the
+ * rows then come with no Knack, as `booksByCreature` does for a missing table.
+ */
+function creatureRows(sql: SqlStorage, tail: string, bindings: readonly string[]): CreatureDbRow[] {
+  const columns = 'id, user_id, species, level, fusion_count, nickname, caught_at';
+  try {
+    return sql
+      .exec<CreatureDbRow>(`SELECT ${columns}, knack FROM creatures ${tail}`, ...bindings)
+      .toArray();
+  } catch (err) {
+    if (!(err instanceof Error) || !err.message.includes('no such column: knack')) throw err;
+    return sql
+      .exec<CreatureDbRow>(`SELECT ${columns}, NULL AS knack FROM creatures ${tail}`, ...bindings)
+      .toArray();
+  }
+}
+
 function toTeamCreature(
   row: CreatureDbRow,
   worn: WornBySlot | undefined,
@@ -124,13 +143,9 @@ export function loadCreatures(
     }
   }
   const books = booksByCreature(sql, userId);
-  return sql
-    .exec<CreatureDbRow>(
-      'SELECT id, user_id, species, level, fusion_count, nickname, caught_at, knack FROM creatures WHERE user_id = ? ORDER BY caught_at, rowid',
-      userId,
-    )
-    .toArray()
-    .map((row) => toTeamCreature(row, worn.get(row.id), books.get(row.id)));
+  return creatureRows(sql, 'WHERE user_id = ? ORDER BY caught_at, rowid', [userId]).map((row) =>
+    toTeamCreature(row, worn.get(row.id), books.get(row.id)),
+  );
 }
 
 /**
@@ -273,13 +288,7 @@ export function loadCreaturesById(
   const worn = wornOnCreatures(sql, ids);
   const books = booksOfCreatures(sql, ids);
   // By id (the primary key), the owner checked here: `user_id = ?` in the query walked their whole list.
-  return sql
-    .exec<CreatureDbRow>(
-      `SELECT id, user_id, species, level, fusion_count, nickname, caught_at, knack FROM creatures
-       WHERE id IN (${ids.map(() => '?').join(', ')})`,
-      ...ids,
-    )
-    .toArray()
+  return creatureRows(sql, `WHERE id IN (${ids.map(() => '?').join(', ')})`, ids)
     .filter((row) => row.user_id === userId)
     .sort((a, b) => a.caught_at - b.caught_at)
     .map((row) => toTeamCreature(row, worn.get(row.id), books.get(row.id)));
