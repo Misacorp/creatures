@@ -26,7 +26,7 @@ New migrations (numbers assigned by the lead when the work starts; today's last 
 | Swap requests        | `raid_swap_requests(week_id, party, id, from_user, to_user, slot_a, slot_b, status, created_at)`, indexed by (week, to_user) and (week, from_user). Open requests end at the next stage lock.                                                                                                                                                                                                                                                     | R19      |
 | Dungeon runs         | `RunState` version 2: the team as v2 placements with each creature's HP; `dungeon_steps.input_json` holds the room's `FightInputV2`.                                                                                                                                                                                                                                                                                                              | R14      |
 
-**Gear under v2:** only stat lines count (Attack, HP, Armour, Speed, crit), as silence already reads them (R12); effect lines do nothing until the gear model is built and measured (`gear-plan.md`, a lab follow-up). The creature page shows those lines as "not in the new rules yet". **Weather** (Boons and Omens) does not touch v2 fights in phase 4: the lab has never measured it.
+**Gear under v2:** only stat lines count (Attack, HP, Armour, Speed, crit), as silence already reads them (R12); effect lines do nothing until the gear model is built and measured (`gear-plan.md`, a lab follow-up). The creature page shows those lines as "not in the new rules yet". **Weather** (Boons and Omens) does not touch v2 fights in phase 4 (Misa, 2026-11-02): the lab has never measured it; phase 5 does.
 
 **The valley's School** builds on the same Talent Book (valley round 18, V-SCH-7 to 9): the store above is the one it reads. The valley session is told when it lands.
 
@@ -47,7 +47,7 @@ Each change keeps the lab's parity digest identical (`cd packages/lab && node sc
 - **At each stage:** the scheduler resolves every party (`stageV2` with the stored carry, a seed drawn then), stores the result row and the new carry, and pays the stage's rewards with today's settle code. **No HP floors:** the boss can fall in any stage; then the weekend is a kill and nothing more is fought.
 - **Between stages:** a knocked-out creature is out for the weekend (greyed, "Out this weekend"); a player may bring a fresh creature into an empty slot and move their own creatures; marks, Stores and Mired start fresh; from stage 2 the resistance is shown at the stage break (R23).
 - **The finale** is stage 3, played live as today (the socket or the 2 s poll), with the three actions above on the players' rounds and the auto fire they have now.
-- **Joining after stage 1:** a new player may place into empty slots; the weekend's HP was set at stage 1 and does not grow. (Today a player can join until the finale; question 1 below.)
+- **Players lock at stage 1** (Misa, 2026-11-02): joining closes when stage 1 begins, and the weekend's HP is set by the players in it. Otherwise a server could sign up one player for a small boss and pile on in stage 2. Players already in can still bring their own fresh creatures into empty slots between stages.
 - **The week's end:** a server kill (today's rule across parties: at least half of the parties that played won) moves the track one slot; otherwise the best share is kept and, from slot 6, Determination gains a stack (R24.9). A Festival week has no raid and the track waits (R24.5).
 - **Swap requests** (R19): from the board, a player asks another to swap two slots (or to move into an empty one); the other accepts or declines; an accepted swap moves both creatures in one transaction; open requests end at the next stage lock. Incoming requests show as a Home notice row.
 - **Not on v2 in phase 4:** the readiness forecast (`raid-readiness.ts`), the practice raid's v1 paths, and the Valley Games (they keep their own v1 fights).
@@ -110,10 +110,10 @@ Each slice is a few coherent commits on the phase 4 branch, reviewed by the lead
 
 The gear model and gear's effect lines (lab follow-up, then the port); weather in v2 fights; the readiness forecast; balance and the journey simulator (phase 5); the Valley Games on v2; anything for production (the flag stays off there until phase 8).
 
-## 13. Questions for Misa
+## 13. Answered by Misa (2026-11-02)
 
-1. **Joining after stage 1.** Today a player can join the raid until the finale. Under v2 the boss's weekend HP is set by the players at stage 1. Proposal: a late player may still join into empty slots, and the boss's HP does not grow. Alternative: joining closes at stage 1.
-2. **Weather in v2 fights.** Proposal: Boons and Omens do not touch v2 fights on staging until the lab has measured them (phase 5). Alternative: keep today's weather effects and measure later.
+1. **Players lock at stage 1:** no one joins a weekend after stage 1 begins (section 4).
+2. **No weather in v2 fights** on staging until phase 5 measures it.
 
 ## 14. Progress
 

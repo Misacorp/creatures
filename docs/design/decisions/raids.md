@@ -4,6 +4,17 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-02: Combat v2 raids: players lock when stage 1 begins; no weather in v2 fights until phase 5 **[Misa]**
+
+ID: `2026-11-02-combat-v2-raids-players-lock-when` · Status: current
+
+**Decision (Misa).** For combat v2 raids (`docs/design/combat/integration.md`, section 13):
+
+- **Players lock when stage 1 begins.** No one joins a weekend after that, and the boss's weekend HP is set by the players in it at stage 1. Players already in may still bring their own fresh creatures into empty slots between stages (R14). Today's v1 rule, joining until the finale, stays for v1 weeks.
+- **No weather in v2 fights.** Boons and Omens do not touch v2 fights on staging until the lab measures them in phase 5.
+
+**Reasoning.** Misa: if joining stayed open, a server could sign up one player for an easy, low-HP boss and then pile on in stage 2. The weekend's HP grows with the players (R14.1), so the player count has to be fixed when the HP is set. Weather was never part of the lab's measures, so leaving it out keeps the staging fights the ones the lab tuned.
+
 ## 2026-10-31: Breakwater joins Tidal Colossus from its second lap, beside Slippery **[Misa]**
 
 ID: `2026-10-31-breakwater-joins-tidal-colossus-from-its` · Status: current · Amends: `2026-10-31-mixed-servers-are-tuned-too-determination`

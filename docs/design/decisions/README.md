@@ -200,6 +200,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [raids.md](raids.md): Raid schedule, parties and joining, bosses and the raid curve, the live finale, raid board and summaries, raid Discord posts.
 
+- 2026-11-02 Combat v2 raids: players lock when stage 1 begins; no weather in v2 fights until phase 5 \[Misa\]
 - 2026-10-31 Breakwater joins Tidal Colossus from its second lap, beside Slippery \[Misa\]
 - 2026-10-31 Lucky Strike goes on the Storm Sovereign and Slippery on the Tidal Colossus, from their second lap
 - 2026-10-31 Lucky Strike and Slippery both go on raid bosses \[Misa\] (amended)
