@@ -6,6 +6,7 @@ import { DungeonTeam } from '../../DungeonTeam';
 import { CreatureConfigurator } from '../../CreatureConfigurator';
 import type { CardActions } from '../../CreaturePage';
 import { teamSample } from '../../creature-page/team-sample';
+import { sampleSaveKnack, withV2 } from '../../creature-page/v2-sample';
 import stateFixture from '../../fixtures/collection-state.json';
 import todayFixture from '../../fixtures/dungeon-today-map.json';
 import { parseGameState, type Creature } from '../../api';
@@ -248,14 +249,21 @@ const PART_NAMES = [
   'crafting',
   'stats',
   'ability',
+  'knack',
+  'knackLocked',
   'gear',
   'talents',
 ] as const;
 
 function ConfiguratorDemo({ p }: { p: Props }) {
   const scene = useMemo(teamSample, []);
-  const creature = scene.team[num(p, 'creature')] ?? scene.team[0];
-  if (creature === undefined) return null;
+  const plain = scene.team[num(p, 'creature')] ?? scene.team[0];
+  // Combat v2 (the server's flag on): the creature carries its Knack and v2 talents; a Knack pick is kept here.
+  const [knack, setKnack] = useState<string | null | undefined>(undefined);
+  if (plain === undefined) return null;
+  const v2 = bool(p, 'combatV2');
+  const withV2Fields = v2 ? withV2(plain, { knack: 0, learned: [0, 1], golden: [1] }) : plain;
+  const creature = v2 && knack !== undefined ? sampleSaveKnack(withV2Fields, knack) : withV2Fields;
   const parts = Object.fromEntries(PART_NAMES.map((part) => [part, bool(p, part)]));
   return (
     <CreatureConfigurator
@@ -264,7 +272,13 @@ function ConfiguratorDemo({ p }: { p: Props }) {
       gear={scene.gear}
       busy={false}
       parts={parts}
-      actions={NO_ACTIONS}
+      actions={{
+        ...NO_ACTIONS,
+        onKnack: (_creature, picked) => {
+          setKnack(picked);
+          return Promise.resolve('saved');
+        },
+      }}
       buttons={
         bool(p, 'buttons')
           ? [
@@ -284,6 +298,9 @@ const DUNGEON_DEFAULTS = {
   crafting: false,
   stats: true,
   ability: false,
+  knack: false,
+  knackLocked: false,
+  combatV2: false,
   gear: true,
   gearLocked: false,
   talents: true,
@@ -295,10 +312,11 @@ const creatureConfigurator: Entry = {
   file: 'apps/activity/src/CreatureConfigurator.tsx',
   group: 'Creatures & game pieces',
   description:
-    "A creature, small, to see what it is and get it ready for a task: the card's top, then the parts the screen asks for (experience, explorer rank, Crafting level, stats, finale ability, gear, talents), then the screen's buttons. A gear slot opens the item picker, a talent slot the Talent Book. The dungeon card shows it under the board for the tapped creature.",
+    "A creature, small, to see what it is and get it ready for a task: the card's top, then the parts the screen asks for (experience, explorer rank, Crafting level, stats, finale ability, gear, talents), then the screen's buttons. A gear slot opens the item picker, a talent slot the Talent Book. The dungeon card shows it under the board for the tapped creature. With combat v2 on (the `combatV2` switch: the creature carries the server's v2 fields) the Knack part takes the ability's place, the Stats table has Armour and crit and the talents are the line's book; the raid board's configurator asks for the Knack.",
   controls: {
     creature: { kind: 'number', min: 0, max: 2 },
     ...Object.fromEntries(PART_NAMES.map((part) => [part, { kind: 'toggle' as const }])),
+    combatV2: { kind: 'toggle' },
     buttons: { kind: 'toggle' },
   },
   defaults: DUNGEON_DEFAULTS,
@@ -315,6 +333,14 @@ const creatureConfigurator: Entry = {
     { name: 'An empty Charm slot and a set bonus (Mossback)', props: { creature: 0 } },
     { name: 'Every slot filled (Cindle)', props: { creature: 2 } },
     { name: 'Gear locked: what is worn, no taps', props: { gearLocked: true } },
+    {
+      name: 'Combat v2, the raid board: the Knack part (tap it for the picker), v2 stats and talents',
+      props: { creature: 0, combatV2: true, knack: true, ability: false },
+    },
+    {
+      name: 'Combat v2, the board locked: the Knack is shown, not tappable',
+      props: { creature: 0, combatV2: true, knack: true, knackLocked: true, gearLocked: true },
+    },
   ],
   render: (p) => <ConfiguratorDemo p={p} />,
 };

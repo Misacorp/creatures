@@ -21,7 +21,8 @@ import { Tag } from './ui/Tag';
  * the item's lines under it once the gear view has given them; no slot badge (the row is the slot). An
  * open, empty slot shows its icon and "Empty"; a slot not open yet a padlock and the level it opens at, so
  * a row that cannot be tapped says why. Tappable and locked rows look alike: the screen makes it clear. With `onPick` every open slot is one button that asks for its picker; without it the
- * list is locked (read only, and the badges explain themselves). The set bonus line closes it. An ink
+ * list is locked (read only, and the badges explain themselves). Under combat v2 an item's fight effect lines
+ * (`WornItem.effectLines`) are a muted second note, "Not in the new rules yet: ...", since only stat lines count there. The set bonus line closes it. An ink
  * panel in the pixel font (`.pix-panel`), wherever it is used.
  */
 export function GearList({
@@ -121,6 +122,11 @@ export function GearList({
             >
               {item.lines !== undefined && item.lines.length > 0 && (
                 <span class="find-row-note gear-list-lines">{item.lines.join(' · ')}</span>
+              )}
+              {item.effectLines !== undefined && item.effectLines.length > 0 && (
+                <span class="find-row-note gear-list-lines gear-list-off">
+                  Not in the new rules yet: {item.effectLines.join(' · ')}
+                </span>
               )}
             </FindRow>
           );

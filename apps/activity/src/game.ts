@@ -290,6 +290,10 @@ const ERROR_TEXT: Record<string, string> = {
   keep_not_offered: 'You cannot keep that one: there is no second branch to keep it for.',
   max_fusions: 'That creature is fully fused already.',
   not_in_book: 'That talent is not in that creature\u2019s Talent Book.',
+  // Combat v2: Knacks and the line's Talent Book (`creature-v2.ts` of the worker).
+  knack_not_known: 'That creature does not know that Knack.',
+  not_learned: 'That creature has not learned that talent yet.',
+  already_learned: 'That creature has already learned that talent.',
   already_slotted: 'That talent is already in that slot.',
   cancelled: 'That trip was called home when the slots were reset.',
   // Any request.
