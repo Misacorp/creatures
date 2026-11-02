@@ -905,6 +905,23 @@ export function applyHome(st: RunState): ActOutcome {
 // --- Descend ---
 
 /**
+ * The row's breath on the way down. A v1 run catches its breath as `catchBreath` says (a fallen
+ * creature gets back up at `reviveBp`). A v2 run heals only the standing: a knocked-out creature stays
+ * out until the camp swaps in a fresh one (R14, combat v2's dungeon).
+ */
+export function descentBreath(
+  before: Readonly<Record<string, number>>,
+  hpMax: Readonly<Record<string, number>>,
+  version: 1 | 2,
+): Record<string, number> {
+  const caught = catchBreath(before, hpMax);
+  if (version === 1) return caught;
+  return Object.fromEntries(
+    Object.entries(caught).map(([id, hp]) => [id, (before[id] ?? 0) <= 0 ? (before[id] ?? 0) : hp]),
+  );
+}
+
+/**
  * Goes down into the Undercroft level the run is offered. The level's map is drawn now with live
  * randomness (it is the player's own), stored with the run, and the row catches its breath on the way
  * (`catchBreathBp` of max HP for standing creatures; a fallen one gets back up at `reviveBp`, and the
@@ -922,7 +939,7 @@ export function applyDescend(env: PathEnv, st: RunState, depth: number): ActOutc
     marks: level === 1 ? st.marks : [],
   });
   const before = currentHp(st);
-  const after = catchBreath(before, st.hpMax);
+  const after = descentBreath(before, st.hpMax, st.v);
   const healed = Object.keys(after).reduce((n, id) => n + (after[id] ?? 0) - (before[id] ?? 0), 0);
   const revived = Object.keys(before).filter(
     (id) => (before[id] ?? 0) <= 0 && (after[id] ?? 0) > 0,
