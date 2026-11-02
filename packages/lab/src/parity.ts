@@ -178,7 +178,14 @@ export function resultState(r: FightResult, boss: BossDef): Record<string, unkno
     // what the log says, so the digest stays what it was.
     events: r.events
       .filter((e) => e.kind !== 'board')
-      .map(({ board: _board, ...e }) => ({ ...e, text: nameless(e.text, table) })),
+      .map((e) => ({
+        round: e.round,
+        turn: e.turn,
+        kind: e.kind,
+        text: nameless(e.text, table),
+        move: e.move,
+        slots: e.slots,
+      })),
   };
 }
 
