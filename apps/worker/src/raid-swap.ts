@@ -5,8 +5,9 @@
  * caller's `atomically`; the asker and the answerer are always the verified session's player.
  *
  * What may be asked (two different slots of the asker's party; the asker never names a player, the owner of the other creature is asked):
- * - the asker's creature and another player's creature: they swap places;
- * - another player's creature and an empty slot: that creature is asked to move into the empty slot (it frees the place the asker wants).
+ * - the asker's creature and another player's creature: they swap places (stored as the asker's slot, then the asked player's);
+ * - another player's creature and an empty slot: that creature is asked to move into the empty slot (it frees the place the asker wants;
+ *   stored as that creature's slot, then the empty one).
  * A creature of the asker's own and an empty slot is a plain placement (no one to ask), and two creatures of one other player or of two
  * other players are not a request either.
  */
@@ -79,13 +80,21 @@ export function askSwap(
   const b = stand.get(slotB);
   const mineA = a?.user_id === userId;
   const mineB = b?.user_id === userId;
+  // The request is stored in one shape, whichever order the asker named the slots in: a swap is (the asker's slot, the asked player's
+  // slot), a move is (the asked player's creature's slot, the empty slot it is asked to move into).
   let toUser: string | undefined;
-  if ((mineA && b !== undefined && !mineB) || (mineB && a !== undefined && !mineA)) {
-    toUser = mineA ? b?.user_id : a?.user_id;
+  let first = slotA;
+  let second = slotB;
+  if (mineA && b !== undefined && !mineB) {
+    toUser = b.user_id;
+  } else if (mineB && a !== undefined && !mineA) {
+    toUser = a.user_id;
+    [first, second] = [slotB, slotA];
   } else if (a !== undefined && !mineA && b === undefined) {
     toUser = a.user_id;
   } else if (b !== undefined && !mineB && a === undefined) {
     toUser = b.user_id;
+    [first, second] = [slotB, slotA];
   }
   if (toUser === undefined) throw new GameError(409, 'invalid_swap');
   const open = sql
@@ -96,7 +105,7 @@ export function askSwap(
     )
     .toArray();
   const same = open.find(
-    (r) => r.party === party && r.to_user === toUser && r.slot_a === slotA && r.slot_b === slotB,
+    (r) => r.party === party && r.to_user === toUser && r.slot_a === first && r.slot_b === second,
   );
   if (same !== undefined) return same;
   if (open.length >= MAX_OPEN_SWAPS) throw new GameError(409, 'too_many_requests');
@@ -106,8 +115,8 @@ export function askSwap(
     id: crypto.randomUUID(),
     from_user: userId,
     to_user: toUser,
-    slot_a: slotA,
-    slot_b: slotB,
+    slot_a: first,
+    slot_b: second,
     status: 'open',
     created_at: now,
   };
@@ -159,8 +168,8 @@ export function acceptSwap(
   const b = stand.get(row.slot_b);
   const asked = (x: { user_id: string } | undefined): boolean => x?.user_id === row.to_user;
   const askers = (x: { user_id: string } | undefined): boolean => x?.user_id === row.from_user;
-  const swap = (askers(a) && asked(b)) || (asked(a) && askers(b));
-  const move = (asked(a) && b === undefined) || (asked(b) && a === undefined);
+  const swap = askers(a) && asked(b);
+  const move = asked(a) && b === undefined;
   if (!swap && !move) {
     sql.exec(
       "UPDATE raid_swap_requests SET status = 'ended' WHERE week_id = ? AND party = ? AND id = ?",

@@ -179,7 +179,9 @@ export const raidRoutes: Routes<RaidRouteContext> = {
   '/api/raid/swap': {
     GET: (_request, { user, core }) => {
       if (!core.raid.swapsEnabled()) return errorResponse('not_found', 404);
-      return json(core.raid.swaps(user.id, core.timezone()));
+      const outcome = core.raid.listSwaps(user.id, core.timezone());
+      if (!outcome.ok) return failure(outcome);
+      return json(outcome.value);
     },
     POST: async (request, { user, core }) => {
       if (!core.raid.swapsEnabled()) return errorResponse('not_found', 404);

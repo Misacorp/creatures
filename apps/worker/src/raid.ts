@@ -1570,6 +1570,12 @@ export class Raid {
     return swapsView(this.sql, week.weekId, userId, displayNames(this.sql));
   }
 
+  /** `swaps` for the route: a week that is not a combat v2 week answers `not_v2`. */
+  listSwaps(userId: string, tz: string): Outcome<SwapsView> {
+    if (this.currentWeek(tz).rules !== 2) return { ok: false, status: 409, error: 'not_v2' };
+    return { ok: true, value: this.swaps(userId, tz) };
+  }
+
   /**
    * Asks the owner of another creature on the board to swap places (or to move into an empty slot, see `askSwap`). Open requests end at
    * the next stage lock.

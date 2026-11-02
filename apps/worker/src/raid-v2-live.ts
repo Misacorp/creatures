@@ -302,10 +302,13 @@ export function evaluateV2(sql: SqlStorage, row: LiveRowV2, now: number): LiveSt
         upToRound: clockRound,
       });
       const { result } = played.output;
+      // The fight's own `end` event closes a fight that is over (the boss fell, the party fell, the last round played); in a replay that
+      // stops at the round the clock is in it only marks where the replay stopped, so it is not shown.
+      const finished = result.won || result.wiped || clockRound >= rounds;
       frames = {
         upTo: clockRound,
         key: keyOf(actions, clockRound),
-        events: [...result.events],
+        events: result.events.filter((e) => finished || e.board?.type !== 'end'),
         over:
           result.won || result.wiped
             ? { round: roundsPlayed(result.events), won: result.won, wiped: result.wiped }
