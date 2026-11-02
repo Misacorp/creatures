@@ -36,6 +36,11 @@ export interface TeamCreature {
   fusionCount: number;
   nickname: string | null;
   caughtAt: number;
+  /**
+   * The Knack its owner saved (combat v2, R11), or null for none. Read with the creature; nothing in the
+   * shipped fights uses it yet (the raid on v2 is slice 3).
+   */
+  knack: string | null;
   /** The stats a fight uses: level, fusion and gear. */
   stats: Stats;
   /** The crit bonus a fight uses (the species' plus gear's); absent when it has neither. */
@@ -63,6 +68,7 @@ type CreatureDbRow = {
   fusion_count: number;
   nickname: string | null;
   caught_at: number;
+  knack: string | null;
 };
 
 function toTeamCreature(
@@ -81,6 +87,7 @@ function toTeamCreature(
     fusionCount: row.fusion_count,
     nickname: row.nickname,
     caughtAt: row.caught_at,
+    knack: row.knack,
     stats: folded.stats,
     ...(folded.crit === undefined ? {} : { crit: folded.crit }),
     ...(folded.mods === undefined ? {} : { mods: folded.mods }),
@@ -119,7 +126,7 @@ export function loadCreatures(
   const books = booksByCreature(sql, userId);
   return sql
     .exec<CreatureDbRow>(
-      'SELECT id, user_id, species, level, fusion_count, nickname, caught_at FROM creatures WHERE user_id = ? ORDER BY caught_at, rowid',
+      'SELECT id, user_id, species, level, fusion_count, nickname, caught_at, knack FROM creatures WHERE user_id = ? ORDER BY caught_at, rowid',
       userId,
     )
     .toArray()
@@ -268,7 +275,7 @@ export function loadCreaturesById(
   // By id (the primary key), the owner checked here: `user_id = ?` in the query walked their whole list.
   return sql
     .exec<CreatureDbRow>(
-      `SELECT id, user_id, species, level, fusion_count, nickname, caught_at FROM creatures
+      `SELECT id, user_id, species, level, fusion_count, nickname, caught_at, knack FROM creatures
        WHERE id IN (${ids.map(() => '?').join(', ')})`,
       ...ids,
     )

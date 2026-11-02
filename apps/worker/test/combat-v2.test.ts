@@ -13,6 +13,7 @@ import { canonicalDims } from '../src/analytics-rollup';
 import { propsOf } from '../src/analytics-props';
 import { knackLocked, talentsLocked } from '../src/creature-v2';
 import { createHandler } from '../src/index';
+import { loadCreatures, loadCreaturesById } from '../src/raid-teams';
 import { grantFirstTalent, learnedOf, lineBook } from '../src/talent-v2-store';
 import wranglerText from '../wrangler.jsonc?raw';
 import { ON, player as devPlayer, type Json } from './dev-helpers';
@@ -405,6 +406,22 @@ describe('Known Knacks and the saved Knack', () => {
           { form: 'mossback', knack: 'steady-mark', previous: 'none', where: 'page' },
           { form: 'mossback', knack: 'feed-the-marks', previous: 'steady-mark', where: 'raid' },
           { form: 'mossback', knack: 'none', previous: 'feed-the-marks', where: 'page' },
+        ]);
+      },
+      V2,
+    );
+  });
+
+  it('is read with the creature by the team loaders', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await seeded(ctx, ['mossback', 'sproutle']);
+        await p.call('PUT', `/api/creatures/${p.ids[0]}/knack`, { knack: 'feed-the-marks' });
+        expect(loadCreatures(ctx.sql, p.id).map((c) => c.knack)).toEqual(['feed-the-marks', null]);
+        expect(loadCreaturesById(ctx.sql, p.id, p.ids).map((c) => c.knack)).toEqual([
+          'feed-the-marks',
+          null,
         ]);
       },
       V2,
@@ -951,6 +968,24 @@ describe('the combat-v2-convert dev tool', () => {
         ).toEqual(snapshot);
         expect(knackOf(ctx, p.creatureIds[1] as string)).toBe('wide-reach');
         expect(count(ctx.sql, 'analytics_events', "kind = 'dev_action'")).toBe(2);
+      },
+      { ...ON, ...V2 },
+    );
+  });
+
+  it('is wiped with the rest of the player’s data by the reset-account tool', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await devPlayer(ctx, 1, { species: ['mossback', 'sproutle'], creatures: 2 });
+        const q = await devPlayer(ctx, 2, { species: ['splashet'], creatures: 1 });
+        await p.tool('combat-v2-convert');
+        expect(count(ctx.sql, 'creature_talents_v2')).toBe(3);
+        await p.tool('reset-account', { confirm: 'RESET' });
+        // Only the other player's rows are left.
+        expect(count(ctx.sql, 'creature_talents_v2')).toBe(1);
+        expect(count(ctx.sql, 'line_talents')).toBe(1);
+        expect(learnedOf(ctx.sql, q.creatureIds[0] as string)).toHaveLength(1);
       },
       { ...ON, ...V2 },
     );
