@@ -184,8 +184,8 @@ describe('run --unlock-finished, on a throwaway repo', () => {
     assert.equal(existsSync(wt('cherry')), true);
     // With the flag but files that changed a minute ago: nothing goes, and it says why.
     const fresh = play(['--yes', '--unlock-finished'], Date.now() + 60_000);
-    assert.ok(fresh.some((l) => /^keep    cherry: .*changed 1 minute ago/.test(l)));
-    assert.ok(fresh.some((l) => /^keep    clean: .*changed 1 minute ago/.test(l)));
+    assert.ok(fresh.some((l) => /^keep {4}cherry: .*changed 1 minute ago/.test(l)));
+    assert.ok(fresh.some((l) => /^keep {4}clean: .*changed 1 minute ago/.test(l)));
     for (const name of ['cherry', 'pushed', 'clean'])
       assert.equal(existsSync(wt(name)), true, name);
     // Without --yes it only reports.
@@ -204,11 +204,11 @@ describe('run --unlock-finished, on a throwaway repo', () => {
       assert.equal(existsSync(wt(name)), true, name);
     assert.ok(
       late.some((l) =>
-        /^keep    unpushed: 1 commit not in the current branch or on any remote branch/.test(l),
+        /^keep {4}unpushed: 1 commit not in the current branch or on any remote branch/.test(l),
       ),
     );
-    assert.ok(late.some((l) => /^keep    dirty: 1 uncommitted change/.test(l)));
-    assert.ok(late.some((l) => /^keep    untracked: 1 uncommitted change/.test(l)));
+    assert.ok(late.some((l) => /^keep {4}dirty: 1 uncommitted change/.test(l)));
+    assert.ok(late.some((l) => /^keep {4}untracked: 1 uncommitted change/.test(l)));
     // Branches stay.
     assert.match(git('branch', '--list', 'wt-pushed'), /wt-pushed/);
   });
