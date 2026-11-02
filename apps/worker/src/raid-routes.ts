@@ -21,6 +21,8 @@ import {
   RaidChannelBodySchema,
   ReplayParamsSchema,
   RevealSeenBodySchema,
+  SwapAskBodySchema,
+  SwapIdSchema,
   TeamBodySchema,
   UnplaceBodySchema,
 } from './raid-schemas';
@@ -161,13 +163,51 @@ export const raidRoutes: Routes<RaidRouteContext> = {
     },
   },
   '/api/raid/live': {
-    GET: (_request, { user, core }) => json(core.raid.liveSnapshot(user.id, core.timezone())),
+    GET: (_request, { user, core }) => json(core.raid.liveView(user.id, core.timezone())),
   },
   '/api/raid/live/action': {
     POST: async (request, { user, core }) => {
       const body = await parseBody(request, LiveActionBodySchema);
       if (body === undefined) return invalidBody();
       const outcome = core.raid.liveAction(user.id, core.timezone(), body);
+      if (!outcome.ok) return failure(outcome);
+      return json(outcome.value);
+    },
+  },
+  // Swap requests (combat v2, R19): with the `COMBAT_V2` flag off these answer 404 as unknown routes do, before the body is read; on a week
+  // that is not a combat v2 week they answer 409 `not_v2`.
+  '/api/raid/swap': {
+    GET: (_request, { user, core }) => {
+      if (!core.raid.swapsEnabled()) return errorResponse('not_found', 404);
+      return json(core.raid.swaps(user.id, core.timezone()));
+    },
+    POST: async (request, { user, core }) => {
+      if (!core.raid.swapsEnabled()) return errorResponse('not_found', 404);
+      const body = await parseBody(request, SwapAskBodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome = core.raid.askSwap(user.id, core.timezone(), body.slotA, body.slotB);
+      if (!outcome.ok) return failure(outcome);
+      return json(outcome.value);
+    },
+  },
+  '/api/raid/swap/:id/accept': {
+    POST: async (request, { params, user, core }) => {
+      if (!core.raid.swapsEnabled()) return errorResponse('not_found', 404);
+      const id = v.safeParse(SwapIdSchema, params['id']);
+      if (!id.success) return invalidId();
+      if (!(await hasNoPayload(request))) return invalidBody();
+      const outcome = core.raid.answerSwap(user.id, core.timezone(), id.output, 'accept');
+      if (!outcome.ok) return failure(outcome);
+      return json(outcome.value);
+    },
+  },
+  '/api/raid/swap/:id/decline': {
+    POST: async (request, { params, user, core }) => {
+      if (!core.raid.swapsEnabled()) return errorResponse('not_found', 404);
+      const id = v.safeParse(SwapIdSchema, params['id']);
+      if (!id.success) return invalidId();
+      if (!(await hasNoPayload(request))) return invalidBody();
+      const outcome = core.raid.answerSwap(user.id, core.timezone(), id.output, 'decline');
       if (!outcome.ok) return failure(outcome);
       return json(outcome.value);
     },

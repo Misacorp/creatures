@@ -8,6 +8,9 @@ import { damageDealt, type FightInput, type FightResult } from '@creatures/engin
 import { RULES, content } from '@creatures/game';
 import { outcomeFlags, type StoredSummary } from './raid-resolve';
 import { isWeekId, RAID_PHASES, type RaidPhase } from './raid-schedule';
+import { isV2Input, type StoredFightInput } from './fight-replay';
+import { RESULT_PHASES, type ResultPhase, type StoredStageResult } from './raid-v2-stage';
+import { buildStatsV2, type AfterActionStatsV2 } from './raid-v2-view';
 
 /** How many of the best creatures are listed (the caller's own are always listed as well). */
 const TOP_CREATURES = 5;
@@ -351,10 +354,14 @@ export function readStats(
   userId: string,
   weekId: string,
   party: number,
-  phase: RaidPhase,
+  phase: RaidPhase | ResultPhase,
   names: ReadonlyMap<string, string>,
-): AfterActionStats | null {
-  if (!isWeekId(weekId) || !RAID_PHASES.includes(phase)) return null;
+): AfterActionStats | AfterActionStatsV2 | null {
+  if (!isWeekId(weekId)) return null;
+  const known =
+    (RAID_PHASES as readonly string[]).includes(phase) ||
+    (RESULT_PHASES as readonly string[]).includes(phase);
+  if (!known) return null;
   const row = sql
     .exec<{ input: string; result: string; summary: string }>(
       'SELECT input, result, summary FROM raid_results WHERE week_id = ? AND party = ? AND phase = ?',
@@ -367,9 +374,22 @@ export function readStats(
   if (row === undefined || row.input === '') return null;
   const summary = JSON.parse(row.summary) as StoredSummary;
   if (!summary.members.some((m) => m.userId === userId)) return null;
+  // The stored input says which rules the stage was played under (`fight-replay.ts`).
+  const input = JSON.parse(row.input) as StoredFightInput;
+  if (isV2Input(input)) {
+    return buildStatsV2(
+      phase as ResultPhase,
+      input,
+      JSON.parse(row.result) as StoredStageResult,
+      summary,
+      userId,
+      names,
+    );
+  }
+  if (!(RAID_PHASES as readonly string[]).includes(phase)) return null;
   return buildStats(
-    phase,
-    JSON.parse(row.input) as FightInput,
+    phase as RaidPhase,
+    input,
     JSON.parse(row.result) as FightResult,
     summary,
     userId,

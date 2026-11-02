@@ -353,6 +353,30 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         rounds: int(event.rounds, 99),
         topShareBp: int(event.topShareBp, 10_000),
       };
+    case 'stage_result':
+      return {
+        slot: int(event.slot, 999),
+        stage: int(event.stage, 3),
+        players: int(event.players, 999),
+        hpRemovedBp: int(event.hpRemovedBp, 10_000),
+        knockouts: int(event.knockouts, 999),
+        reactions: int(event.reactions, 9_999),
+        kill: bool(event.kill),
+      };
+    case 'raid_lineup':
+      return {
+        stage: int(event.stage, 3),
+        placed: int(event.placed, 3),
+        withKnack: int(event.withKnack, 3),
+        beyondTop3: int(event.beyondTop3, 3),
+      };
+    case 'track_change':
+      return {
+        slot: int(event.slot, 999),
+        kill: bool(event.kill),
+        bestShareBp: int(event.bestShareBp, 10_000),
+        determination: int(event.determination, 99),
+      };
     case 'rank_change':
       return {
         before: int(event.before, 999),

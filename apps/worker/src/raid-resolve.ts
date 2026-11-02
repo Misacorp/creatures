@@ -116,6 +116,8 @@ export interface StoredSummary {
   jackpot: string[];
   /** The engine's player ids in the stored input, and who they were. */
   members: { alias: string; userId: string }[];
+  /** A combat v2 stage only (`raid-v2-stage.ts`): the stage, the track's slot, whether the boss fell, the knockouts and the HP removed so far (bp). */
+  v2?: { stage: number; slot: number; kill: boolean; knockouts: number; hpRemovedBp: number };
 }
 
 type PartyRow = {
@@ -586,6 +588,150 @@ export function resolveParty(
   });
 }
 
+/** What a finished stage says to the payout: the same for a v1 fight and a v2 stage. */
+export interface PayFacts {
+  /** The stage was cleared (a phase's HP threshold, or the finale's kill). */
+  cleared: boolean;
+  /** One member's contribution to the stage, by alias. */
+  contribution: (alias: string) => number;
+  /** The creatures that fought, with the alias of their owner (null for a guest). */
+  fighters: readonly { id: string; ownerAlias: string | null }[];
+  bossId: string;
+}
+
+/**
+ * Pays a finished stage: Essence for a cleared one, creature experience, the gear rolls, the finale's jackpot and Festival creature.
+ * Shared by `settleParty` (the shipped weekend) and the combat v2 stages (`raid-v2-stage.ts`). Call it inside the transaction that stores
+ * the result; every payout has a ledger idempotency key as well.
+ */
+export function payStage(
+  deps: ResolveDeps,
+  week: { weekId: string },
+  party: number,
+  phase: RaidPhase,
+  built: Pick<BuiltPhase, 'memberIds' | 'aliases'>,
+  facts: PayFacts,
+): {
+  essence: Record<string, number>;
+  jackpot: string[];
+  day: ReturnType<typeof stageWeather>;
+  userOf: Map<string, string>;
+} {
+  const { storage } = deps;
+  const sql = storage.sql;
+  const now = deps.now();
+  const { memberIds, aliases } = built;
+  // --- Essence, for cleared stages, to members only ---
+  const payout = payoutWeek(sql, week.weekId);
+  const userOf = new Map(aliases.map((alias, i) => [alias, memberIds[i] as string]));
+  const essence: Record<string, number> = {};
+  if (facts.cleared) {
+    const contribution: Record<string, number> = {};
+    for (const alias of aliases) contribution[alias] = facts.contribution(alias);
+    const paid = essenceForStage(phase, aliases, contributionWeights(contribution), payout);
+    for (const alias of aliases) {
+      const amount = paid[alias] ?? 0;
+      const userId = userOf.get(alias) as string;
+      if (amount <= 0) continue;
+      credit(
+        storage,
+        {
+          userId,
+          currency: 'essence',
+          amount,
+          source: 'raid',
+          idempotencyKey: `raid:${week.weekId}:${party}:${phase}`,
+          meta: { week: week.weekId, party, phase },
+        },
+        now,
+      );
+      recordAway(sql, userId, 'raid', { essence: amount }, now);
+      essence[userId] = amount;
+    }
+  }
+
+  // --- Creature experience: every creature that fought (guests excluded), by the stage; a cleared one pays
+  // half as much again. No treats: the raid pays everyone the same. This runs once per stage, with the
+  // result row. ---
+  const day = stageWeather(sql, week.weekId, phase);
+  const stageExperience = raidExperience(phase, facts.cleared, dayCreatureXpParts(false, day));
+  for (const slot of facts.fighters) {
+    const userId = slot.ownerAlias === null ? undefined : userOf.get(slot.ownerAlias);
+    if (userId === undefined) continue;
+    const view = awardExperience(
+      sql,
+      deps.analytics,
+      userId,
+      slot.id,
+      stageExperience,
+      'raid',
+      false,
+    );
+    if (view !== null) recordAway(sql, userId, 'raid', { xp: stageExperience }, now);
+  }
+
+  // --- Gear: scrap for a cleared phase, one gear roll for a won finale (members only) ---
+  if (facts.cleared) {
+    const gearDeps: GrantDeps = {
+      storage,
+      now: deps.now,
+      rng: deps.gearRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+      analytics: deps.analytics,
+    };
+    for (const userId of memberIds) {
+      if (phase === 'finale') {
+        const view = grantRaidFinale(gearDeps, userId, week.weekId, payout.rank, facts.bossId);
+        recordAway(sql, userId, 'raid', { items: awayItems(view) }, now);
+      } else grantRaidPhase(gearDeps, userId, week.weekId, phase);
+    }
+  }
+
+  // --- Finale loot ---
+  const jackpot =
+    phase === 'finale'
+      ? rollJackpots(deps, week.weekId, party, memberIds, facts.cleared, payout)
+      : [];
+
+  // --- The Festival creature, for every member of a party that won a Festival finale ---
+  if (phase === 'finale' && facts.cleared) {
+    const progression = readWeekProgression(sql, week.weekId);
+    if (progression?.festival === true && progression.festivalSpecies !== null) {
+      const quirkRng = deps.quirkRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
+      const talentRng = deps.talentRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
+      const festivalSpecies = content.creatures.find((c) => c.id === progression.festivalSpecies);
+      const gearDeps: GrantDeps = {
+        storage,
+        now: deps.now,
+        rng: deps.gearRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+        analytics: deps.analytics,
+      };
+      for (const userId of memberIds) {
+        // A Festival piece the player lacks (any one once they have them all), next to the creature itself.
+        if (festivalSpecies !== undefined) {
+          const gift = grantFestivalGear(gearDeps, userId, week.weekId, payout.rank, facts.bossId);
+          recordAway(sql, userId, 'raid', { items: awayItems(gift) }, now);
+        }
+        const creature = grantFestivalCreature(
+          storage,
+          {
+            quirk: quirkRng,
+            talent: talentRng,
+            ...(deps.combatV2 === true ? { combatV2: true } : {}),
+          },
+          week.weekId,
+          userId,
+          progression.festivalSpecies,
+          now,
+          deps.analytics,
+        );
+        recordAway(sql, userId, 'raid', { creatures: creature === null ? 0 : 1 }, now);
+      }
+    }
+  }
+
+  return { essence, jackpot, day, userOf };
+}
+
 /**
  * Stores a finished fight and pays it out: the boss pool (and the adaptation after phase 1), Essence
  * for cleared stages, the finale's jackpot rolls and pity, server firsts, the result row and the
@@ -632,112 +778,12 @@ export function settleParty(
     );
   }
 
-  // --- Essence, for cleared stages, to members only ---
-  const payout = payoutWeek(sql, week.weekId);
-  const userOf = new Map(aliases.map((alias, i) => [alias, memberIds[i] as string]));
-  const essence: Record<string, number> = {};
-  if (result.cleared) {
-    const contribution: Record<string, number> = {};
-    for (const alias of aliases) contribution[alias] = result.perPlayer[alias]?.contribution ?? 0;
-    const paid = essenceForStage(phase, aliases, contributionWeights(contribution), payout);
-    for (const alias of aliases) {
-      const amount = paid[alias] ?? 0;
-      const userId = userOf.get(alias) as string;
-      if (amount <= 0) continue;
-      credit(
-        storage,
-        {
-          userId,
-          currency: 'essence',
-          amount,
-          source: 'raid',
-          idempotencyKey: `raid:${week.weekId}:${party}:${phase}`,
-          meta: { week: week.weekId, party, phase },
-        },
-        now,
-      );
-      recordAway(sql, userId, 'raid', { essence: amount }, now);
-      essence[userId] = amount;
-    }
-  }
-
-  // --- Creature experience: every creature that fought (guests excluded), by the stage; a cleared one pays
-  // half as much again. No treats: the raid pays everyone the same. This runs once per stage, with the
-  // result row. ---
-  const day = stageWeather(sql, week.weekId, phase);
-  const stageExperience = raidExperience(phase, result.cleared, dayCreatureXpParts(false, day));
-  for (const slot of input.row) {
-    const userId = slot.ownerId === null ? undefined : userOf.get(slot.ownerId);
-    if (userId === undefined) continue;
-    const view = awardExperience(
-      sql,
-      deps.analytics,
-      userId,
-      slot.id,
-      stageExperience,
-      'raid',
-      false,
-    );
-    if (view !== null) recordAway(sql, userId, 'raid', { xp: stageExperience }, now);
-  }
-
-  // --- Gear: scrap for a cleared phase, one gear roll for a won finale (members only) ---
-  if (result.cleared) {
-    const gearDeps: GrantDeps = {
-      storage,
-      now: deps.now,
-      rng: deps.gearRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
-      analytics: deps.analytics,
-    };
-    for (const userId of memberIds) {
-      if (phase === 'finale') {
-        const view = grantRaidFinale(gearDeps, userId, week.weekId, payout.rank, input.boss.id);
-        recordAway(sql, userId, 'raid', { items: awayItems(view) }, now);
-      } else grantRaidPhase(gearDeps, userId, week.weekId, phase);
-    }
-  }
-
-  // --- Finale loot ---
-  const jackpot =
-    phase === 'finale' ? rollJackpots(deps, week.weekId, party, memberIds, result, payout) : [];
-
-  // --- The Festival creature, for every member of a party that won a Festival finale ---
-  if (phase === 'finale' && result.cleared) {
-    const progression = readWeekProgression(sql, week.weekId);
-    if (progression?.festival === true && progression.festivalSpecies !== null) {
-      const quirkRng = deps.quirkRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
-      const talentRng = deps.talentRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
-      const festivalSpecies = content.creatures.find((c) => c.id === progression.festivalSpecies);
-      const gearDeps: GrantDeps = {
-        storage,
-        now: deps.now,
-        rng: deps.gearRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
-        analytics: deps.analytics,
-      };
-      for (const userId of memberIds) {
-        // A Festival piece the player lacks (any one once they have them all), next to the creature itself.
-        if (festivalSpecies !== undefined) {
-          const gift = grantFestivalGear(gearDeps, userId, week.weekId, payout.rank, input.boss.id);
-          recordAway(sql, userId, 'raid', { items: awayItems(gift) }, now);
-        }
-        const creature = grantFestivalCreature(
-          storage,
-          {
-            quirk: quirkRng,
-            talent: talentRng,
-            ...(deps.combatV2 === true ? { combatV2: true } : {}),
-          },
-          week.weekId,
-          userId,
-          progression.festivalSpecies,
-          now,
-          deps.analytics,
-        );
-        recordAway(sql, userId, 'raid', { creatures: creature === null ? 0 : 1 }, now);
-      }
-    }
-  }
-
+  const { essence, jackpot, day, userOf } = payStage(deps, week, party, phase, built, {
+    cleared: result.cleared,
+    contribution: (alias) => result.perPlayer[alias]?.contribution ?? 0,
+    fighters: input.row.map((slot) => ({ id: slot.id, ownerAlias: slot.ownerId })),
+    bossId: input.boss.id,
+  });
   // --- Store ---
   const contributors = aliases
     .map((alias) => ({
@@ -845,7 +891,7 @@ function rollJackpots(
   weekId: string,
   party: number,
   memberIds: readonly string[],
-  result: FightResult,
+  cleared: boolean,
   payout: { rank: number; festival: boolean },
 ): string[] {
   const sql = deps.storage.sql;
@@ -857,7 +903,7 @@ function rollJackpots(
       .toArray()[0];
     const counter = row?.counter ?? 0;
     // Pity counts finale wins only: a lost finale rolls nothing and leaves the counter alone.
-    if (result.cleared) {
+    if (cleared) {
       const roll = rollJackpot(deps.rng, counter);
       if (roll.hit) {
         hits.push(userId);

@@ -248,6 +248,39 @@ export type AnalyticsEvent =
       topShareBp: number;
     }
   | {
+      /**
+       * A combat v2 stage was played (guild-level, beside `phase_result`): the track's slot, the stage (1 to 3), the party's players, the
+       * share of the weekend's HP removed so far (bp), the creatures knocked out and the reactions in the stage, and whether the boss fell.
+       */
+      kind: 'stage_result';
+      slot: number;
+      stage: number;
+      players: number;
+      hpRemovedBp: number;
+      knockouts: number;
+      reactions: number;
+      kill: boolean;
+    }
+  | {
+      /**
+       * What a combat v2 player brought to a stage when it locked (R14): the creatures placed, how many carry a Knack and how many are not
+       * among the player's three highest-level creatures (ties by the species' power), the phase 1 gate's casual measure on real servers.
+       */
+      kind: 'raid_lineup';
+      stage: number;
+      placed: number;
+      withKnack: number;
+      beyondTop3: number;
+    }
+  | {
+      /** The track moved or held at the end of a combat v2 weekend (guild-level): the slot fought, a kill, the best share and Determination's stacks. */
+      kind: 'track_change';
+      slot: number;
+      kill: boolean;
+      bestShareBp: number;
+      determination: number;
+    }
+  | {
       kind: 'rank_change';
       before: number;
       after: number;

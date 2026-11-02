@@ -23,6 +23,7 @@ import { LoungeCompany, loungeDay } from './lounge-company';
 import { FINALE_ACTION_PATHS, LIVE_QUIET_PATHS, type LiveHooks } from './live-socket';
 import { liveRoutes } from './live-routes';
 import type { LiveSnapshot } from './raid-live-view';
+import type { LiveSnapshotV2 } from './raid-v2-view';
 import { pruneOldData } from './old-data';
 import { pruneAway } from './while-away';
 import { maintainedDay, markMaintained, markStartupPasses, startupPassesRan } from './maintenance';
@@ -958,8 +959,12 @@ export class GuildCore {
    * The finale snapshot of one player for a push, built like `GET /api/raid/live` builds it. Null when
    * the player's party or the week is not the one asked for.
    */
-  finaleSnapshotFor(userId: string, week: string, party: number): LiveSnapshot | null {
-    const snapshot = this.raid.liveSnapshot(userId, this.timezone());
+  finaleSnapshotFor(
+    userId: string,
+    week: string,
+    party: number,
+  ): LiveSnapshot | LiveSnapshotV2 | null {
+    const snapshot = this.raid.liveView(userId, this.timezone());
     return snapshot.week === week && snapshot.party === party ? snapshot : null;
   }
 

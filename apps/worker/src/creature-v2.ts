@@ -20,6 +20,7 @@ import type { Analytics } from './analytics';
 import { keyTaken, settleSpend } from './keyed-action';
 import { lookupSpend, spend, type LedgerStorage } from './ledger';
 import { GameError, atomically, type Outcome } from './outcome';
+import { hasFoughtThisWeekend } from './raid-v2-core';
 import { speciesOf } from './species';
 import {
   booksByLine,
@@ -33,26 +34,20 @@ import {
 } from './talent-v2-store';
 
 /**
- * Whether a creature's Knack may not change now because it has fought this weekend (R11: a Knack locks for a
- * creature once it has fought this weekend). Under v2 nothing locks a creature yet: the raid weekend arrives
- * with slice 3.
- *
- * TODO(slice 3): true for a creature that has fought a stage of the open raid weekend.
+ * Whether a creature's Knack may not change now because it has fought this weekend (R11: a Knack locks for a creature once it has
+ * fought this weekend): it is in the carry of the latest v2 raid week (`hasFoughtThisWeekend`). Free before the weekend's first stage
+ * and again when the next week opens.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- the arguments are for slice 3
-export function knackLocked(_sql: SqlStorage, _creatureId: string): boolean {
-  return false;
+export function knackLocked(sql: SqlStorage, creatureId: string): boolean {
+  return hasFoughtThisWeekend(sql, creatureId);
 }
 
 /**
- * Whether a creature's talent slots may not change now ("free until the raid locks", R20). Same hook as
- * `knackLocked`: nothing locks yet.
- *
- * TODO(slice 3): true from the moment the creature's raid stage locks.
+ * Whether a creature's talent slots may not change now ("free until the raid locks", R20): the same lock as the Knack's, from the stage
+ * the creature fights in.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- the arguments are for slice 3
-export function talentsLocked(_sql: SqlStorage, _creatureId: string): boolean {
-  return false;
+export function talentsLocked(sql: SqlStorage, creatureId: string): boolean {
+  return hasFoughtThisWeekend(sql, creatureId);
 }
 
 /** A Knack as the client reads it: its name, the family and the plain text (keywords in braces). */

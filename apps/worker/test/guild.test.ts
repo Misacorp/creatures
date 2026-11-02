@@ -248,6 +248,9 @@ describe('migration 10 (the live finale)', () => {
         'round_ms',
         'rounds',
         'pacing',
+        // Version 55: the combat v2 finale's rules and replayed rounds.
+        'rules',
+        'frames',
       ]);
       expect(columns(sql, 'raid_reveal_seen')).toEqual(['user_id', 'week_id', 'seen_at']);
       // Everything from before is still there.
@@ -380,6 +383,9 @@ describe('migration 12 (Boss Rank ladder, seasons, Festival)', () => {
         'ladder_won',
         'rank_after',
         'difficulty_version',
+        // Version 52: the combat v2 rules version and the slot of the track.
+        'rules_version',
+        'track_slot',
       ]);
       // The week that was open keeps everything and has no rank or season: it behaves as before.
       expect(
