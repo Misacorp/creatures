@@ -243,7 +243,12 @@ describe('the DEV_TOOLS gate: on', () => {
           ['grant-gear', { baseId: 'nope', rarity: 'common' }],
           ['reset-account', {}],
           ['reset-account', { confirm: 'reset' }],
-          ['raid-roster', { count: 41 }],
+          ['raid-fill', { count: 15 }],
+          ['raid-fill', { count: 0 }],
+          ['raid-rank', { rank: 0 }],
+          ['raid-rank', {}],
+          ['raid-play', { stage: 'stage4' }],
+          ['raid-play', { stage: 'stage1', live: true }],
           ['finish-jobs', { extra: 1 }],
         ];
         for (const [tool, body] of bad) {
@@ -373,7 +378,7 @@ describe('the dev clock', () => {
     );
   });
 
-  it('moves the raid week through its phases, and re-arms the alarm in real time', async () => {
+  it('moves the raid week through its phases with the clock, and re-arms the alarm in real time', async () => {
     await runRaid(
       async (ctx) => {
         const p = await player(ctx);
@@ -398,22 +403,14 @@ describe('the dev clock', () => {
         const rollupAt = nextOccurrence(ctx.clock.t - 180_000, hour, minute, HELSINKI) + 180_000;
         expect(await ctx.storage.getAlarm()).toBe(Math.min(times.phase2 - offset, rollupAt));
 
-        // Straight to the finale: the live fight starts at the scheduled time.
-        await p.tool('raid-phase', { to: 'finale' });
-        expect(count(ctx.sql, 'raid_live', 'practice = 0')).toBe(1);
+        // Next phase again: Phase 2 resolves, then the finale's live fight starts at its scheduled time.
+        await p.tool('clock', { to: 'next-phase' });
         expect(count(ctx.sql, 'raid_results', "phase = 'phase2'")).toBe(1);
+        await p.tool('clock', { to: 'next-phase' });
+        expect(count(ctx.sql, 'raid_live', 'practice = 0')).toBe(1);
         expect(count(ctx.sql, 'raid_results', "phase = 'finale'")).toBe(0);
-        // And on to the end of the week: the finale resolved.
-        await p.tool('raid-phase', { to: 'done' });
-        expect(count(ctx.sql, 'raid_results', "phase = 'finale'")).toBe(1);
-        // Asking for a phase the clock is inside changes nothing; an earlier one is next week's.
-        const clockBefore = (await p.call('GET', '/api/dev/state')).body.clock.offsetMs;
-        await p.tool('raid-phase', { to: 'done' });
-        expect((await p.call('GET', '/api/dev/state')).body.clock.offsetMs).toBe(clockBefore);
-        await p.tool('raid-phase', { to: 'preparation' });
         const state = (await p.call('GET', '/api/dev/state')).body;
-        expect(state.clock.now).toBeGreaterThan(times.finale);
-        expect(state.raid.weekId).not.toBe(W02.id);
+        expect(state.clock.now).toBe(times.finale);
       },
       { start: W02.friday - 2 * HOUR, core: ON },
     );

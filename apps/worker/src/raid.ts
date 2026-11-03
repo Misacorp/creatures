@@ -184,6 +184,9 @@ export const WEEK_TABLES = [
   'raid_weeks',
 ] as const;
 
+/** How a combat v2 finale event plays: by the clock (the scheduler), to its end at once, or live from now (dev tools). */
+type FinaleMode = 'by-time' | 'instant' | 'live';
+
 /** A guard against a runaway loop; a week has four events. */
 const MAX_EVENTS_PER_RUN = 200;
 
@@ -233,12 +236,46 @@ export class Raid {
       if (existing === null || existing.rules === 2 || this.deps.combatV2 !== true) {
         return { rebuilt: false, week: existing };
       }
-      for (const table of WEEK_TABLES) {
-        this.sql.exec(`DELETE FROM ${table} WHERE week_id = ?`, weekId);
-      }
-      this.readinessCache.invalidate();
-      return { rebuilt: true, week: this.ensureWeek(weekId) };
+      return { rebuilt: true, week: this.recreateWeek(weekId) };
     });
+  }
+
+  /**
+   * Dev tools only (`raid-clear`, the test bench): everything stored for the week is deleted and the week is created again through
+   * `ensureWeek`, so it is fresh whatever it was (nothing placed, nothing fought, no done marker): a combat v2 week with the track's
+   * slot and boss when the flag is on. Call it inside the tool's transaction.
+   */
+  clearWeek(weekId: string): WeekRow {
+    return this.deps.storage.transactionSync(() => this.recreateWeek(weekId));
+  }
+
+  /** Dev tools only: forgets what the scheduler cached about the next event (after a tool changed the calendar's state directly). */
+  forgetSchedule(): void {
+    this.nextCache = null;
+  }
+
+  private recreateWeek(weekId: string): WeekRow {
+    for (const table of WEEK_TABLES) {
+      this.sql.exec(`DELETE FROM ${table} WHERE week_id = ?`, weekId);
+    }
+    this.readinessCache.invalidate();
+    this.nextCache = null;
+    return this.ensureWeek(weekId);
+  }
+
+  /**
+   * Dev tools only (`raid-play`, the test bench): plays one event of a combat v2 week now, the way the scheduler plays it at its time, and
+   * marks it done so the scheduler never plays it again. A marker left by `raid-clear` is replaced. The finale plays to its end at once
+   * (`instant`) or starts its live fight now (`live`). Call it inside the tool's transaction.
+   */
+  playEventNow(weekId: string, event: 'phase1' | 'phase2' | 'finale', finale: FinaleMode): void {
+    const week = this.week(weekId);
+    if (week === null || week.rules !== 2) throw new Error('not a combat v2 week');
+    this.deps.storage.transactionSync(() => {
+      this.sql.exec('DELETE FROM raid_events WHERE week_id = ? AND event = ?', weekId, event);
+      this.runEventV2(week, event, this.deps.now(), finale);
+    });
+    this.nextCache = null;
   }
 
   private get sql(): SqlStorage {
@@ -562,7 +599,12 @@ export class Raid {
    * stage 2 resolve every party at once; the finale starts each party's live fight (stage 3) and, when no fight is left to wait for,
    * ends the weekend.
    */
-  private runEventV2(week: WeekRow, event: RaidEvent, scheduledAt: number): void {
+  private runEventV2(
+    week: WeekRow,
+    event: RaidEvent,
+    scheduledAt: number,
+    finale: FinaleMode = 'by-time',
+  ): void {
     if (week.festival || week.trackSlot === null) {
       this.markDone(week.weekId, event, 'skipped');
       return;
@@ -575,11 +617,15 @@ export class Raid {
       .toArray();
     if (event === 'finale') {
       const now = this.deps.now();
-      if (now - scheduledAt > LATE_START_LIMIT_MS) {
+      if (
+        finale === 'instant' ||
+        (finale === 'by-time' && now - scheduledAt > LATE_START_LIMIT_MS)
+      ) {
         for (const { party } of parties) resolveFinaleInstantV2(this.deps, v2, party);
       } else {
         // A start a moment after the scheduled time still counts from it (as for a v1 finale).
-        const startedAt = now - scheduledAt <= START_GRACE_MS ? scheduledAt : now;
+        const startedAt =
+          finale === 'live' || now - scheduledAt > START_GRACE_MS ? now : scheduledAt;
         for (const { party } of parties) startFinaleV2(this.deps, v2, party, startedAt);
       }
       this.deps.storage.transactionSync(() => {

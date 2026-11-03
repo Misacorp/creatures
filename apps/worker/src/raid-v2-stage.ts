@@ -80,7 +80,7 @@ export const shareBp = (max: number, left: number): number =>
  * Moves a placement that stands beyond the board's width into the first free slot (a player left after others had placed past it); one
  * that does not fit is taken off the board. Stage 1 runs it, once the party's players are known. Returns nothing; writes placements.
  */
-function compactBoard(
+export function compactBoard(
   sql: SqlStorage,
   weekId: string,
   party: number,
