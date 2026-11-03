@@ -3,10 +3,8 @@ import { initialWorld } from '../world';
 import {
   SAMPLE_PURSE,
   canPay,
-  oddsText,
   rerollPiece,
   rerollPrice,
-  rolledLineCount,
   shortOf,
   wornPieces,
 } from './visitor-sample';
@@ -62,15 +60,5 @@ describe('the sample reroll', () => {
     expect(sig(first)).not.toBe(sig(epic!));
     const second = rerollPiece(first, 1);
     expect(sig(second)).not.toBe(sig(first));
-  });
-
-  it('states the odds in words for the piece', () => {
-    const epic = worn.find((p) => p.rarity === 'epic')!;
-    const n = rolledLineCount(epic);
-    expect(oddsText(epic)).toContain(`All ${String(n)} of its lines are rolled again`);
-    expect(oddsText(epic)).toContain('3 in 10');
-    expect(oddsText(epic)).toContain('Rarity and level stay');
-    const one = worn.find((p) => rolledLineCount(p) === 1)!;
-    expect(oddsText(one)).toContain('Its line is rolled again');
   });
 });

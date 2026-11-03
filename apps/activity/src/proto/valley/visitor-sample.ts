@@ -12,9 +12,6 @@ import { sampleGearItem } from '../../workbench/gear-sample';
 /** What a reroll costs at item level 10, and the rise for each reroll already made this week (the lab's rules). */
 export const REROLL = { acorns: 60, scrap: 400, baseLevel: 10, growth: 1.5 } as const;
 
-/** The lab's chance that a rolled line is the top pip its item level allows (about 3 in 10). */
-export const TOP_PIP_IN_TEN = 3;
-
 /** What the sample player holds when they reach his stall. */
 export const SAMPLE_PURSE = { acorns: 420, scrap: 2400, shards: 140 } as const;
 
@@ -88,16 +85,4 @@ export function rerollPiece(item: GearItem, nth: number): GearItem {
 /** How many lines are the piece's own roll (the ones a reroll draws again). */
 export function rolledLineCount(item: Pick<GearItem, 'lines'>): number {
   return item.lines.filter((l) => l.source === 'rolled').length;
-}
-
-/** The odds in plain words, for the piece about to be rerolled. */
-export function oddsText(item: Pick<GearItem, 'lines'>): string {
-  const n = rolledLineCount(item);
-  const best = Math.max(
-    0,
-    ...item.lines.map((l) => (l.source === 'rolled' ? (l.bestTier ?? 0) : 0)),
-  );
-  const top = best > 0 ? ` (tier ${String(best)} at this level)` : '';
-  const lines = n === 1 ? 'Its line is' : `All ${String(n)} of its lines are`;
-  return `${lines} rolled again from the same pool. About ${String(TOP_PIP_IN_TEN)} in 10 land on the top pip${top}, the rest lower. Rarity and level stay, and the old ${n === 1 ? 'line is' : 'lines are'} gone.`;
 }

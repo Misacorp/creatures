@@ -1,34 +1,27 @@
-/* The visitor's stall (VisitorScene.tsx): his stock on the ground before the stall, and the "Back Thursday" sign. */
-.vs-stock,
-.vs-sign {
+/* The visitor's stall (VisitorScene.tsx): his stock on the counter of the stall, and the price rows. */
+.vs-counter {
   position: absolute;
   left: var(--x);
   top: var(--y);
-  transform: translateX(-50%);
+  transform: translate(-50%, -100%);
+  display: flex;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.vs-stock {
-  display: flex;
-  gap: 1rem;
-}
-
+/* Each is a 44 px target sitting on the counter. */
 .vs-item {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 0;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 2px;
   background: none;
   border: 0;
   cursor: pointer;
   line-height: 0;
-}
-
-.vs-item .pv-plate {
-  max-width: 7rem;
 }
 
 .vs-body {
@@ -44,6 +37,12 @@
   color: var(--haze);
 }
 
+.vs-foot {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.vs-price,
 .vs-purse {
   display: flex;
   flex-wrap: wrap;
@@ -55,4 +54,10 @@
   display: inline-flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+/* Costs and counts one size up from the small text. */
+.vs-cost .part-amount,
+.vs-foot .part-amount {
+  font-size: 1rem;
 }

@@ -24,8 +24,7 @@ import { CountBadge } from '../../ui/CountBadge';
 import { Drawer } from '../../ui/Drawer';
 import { FindBlueprint } from '../../ui/FindBlueprint';
 import { FindList } from '../../ui/FindRow';
-import { glowNameOf, glowSceneDraw, glowSceneSpots, type PlaceSceneProps } from './glow-scene-art';
-import { Glyph } from './parts';
+import { glowLayout, glowNameOf, glowSceneDraw, type PlaceSceneProps } from './glow-scene-art';
 import { PinnedAct } from './PinnedAct';
 import { SceneFrame } from './SceneFrame';
 import { DEFAULT_LOOK } from './valley-places';
@@ -33,7 +32,6 @@ import {
   SAMPLE_PURSE,
   SAMPLE_STOCK,
   canPay,
-  oddsText,
   rerollPiece,
   rerollPrice,
   shortOf,
@@ -107,6 +105,11 @@ export function VisitorScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
     setResult({ before: piece, after });
   };
 
+  /** The price of the reroll in view, and of the one after it (a piece's level sets both). */
+  const level = result === null ? (piece?.itemLevel ?? 1) : result.after.itemLevel;
+  const nowPrice = rerollPrice(level, rerolls);
+  const thenPrice = rerollPrice(level, rerolls + 1);
+
   const close = (): void => {
     setMode(null);
     setResult(null);
@@ -132,10 +135,8 @@ export function VisitorScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
         ground="#2c4d34"
         act={
           here ? (
-            <ActionButton
+            <PinnedAct
               label="Reroll a piece"
-              wide
-              large
               onClick={() => {
                 setMode('reroll');
               }}
@@ -146,25 +147,18 @@ export function VisitorScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
         }
       >
         {(g) => {
-          const y = g.Y(glowSceneSpots(g, name).below + 4);
-          if (!here) {
-            return (
-              <span
-                class="vs-sign"
-                ref={cssVars({ '--x': `${String(g.X(g.cx))}px`, '--y': `${String(y)}px` })}
-              >
-                <span class="pv-sign pix">
-                  <Glyph id="moon" scale={2} />
-                  <span>Back Thursday</span>
-                </span>
-              </span>
-            );
-          }
+          // The board of the shuttered stall already says "back Thursday": nothing more is drawn when he is away.
+          if (!here) return null;
+          const counter = glowLayout(g, name).spots['counter'];
+          if (counter === undefined) return null;
           return (
             <ul
-              class="vs-stock"
-              aria-label="His stock this visit"
-              ref={cssVars({ '--x': `${String(g.X(g.cx))}px`, '--y': `${String(y)}px` })}
+              class="vs-counter"
+              aria-label="On his counter"
+              ref={cssVars({
+                '--x': `${String(g.X(counter.x))}px`,
+                '--y': `${String(g.Y(counter.y))}px`,
+              })}
             >
               <li>
                 <button
@@ -175,8 +169,7 @@ export function VisitorScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
                     setMode('reroll');
                   }}
                 >
-                  <Sprite sprite={glyphOrUnknown('orb')} scale={g.s * 2} />
-                  <span class="pv-plate pix">Reroll</span>
+                  <Sprite sprite={glyphOrUnknown('orb')} scale={g.s} />
                 </button>
               </li>
               <li>
@@ -189,9 +182,8 @@ export function VisitorScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
                   }}
                 >
                   <ItemFrame rarity="rare" class="blueprint">
-                    <ItemSprite baseId={blueprintId} scale={g.s} />
+                    <ItemSprite baseId={blueprintId} scale={g.s - 1} />
                   </ItemFrame>
-                  <span class="pv-plate pix">{gearName(blueprintId)}</span>
                 </button>
               </li>
             </ul>
@@ -203,38 +195,38 @@ export function VisitorScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
         onClose={close}
         title="Reroll a piece"
         footer={
-          result === null ? (
-            <ActionButton
-              label={piece === undefined ? 'Pick a worn piece' : 'Reroll'}
-              detail={
-                price === null
-                  ? undefined
-                  : (lacking ?? `${String(price.acorns)} Acorns, ${String(price.scrap)} scrap`)
-              }
-              wide
-              large
-              disabled={piece === undefined || lacking !== null}
-              onClick={confirm}
-            />
-          ) : (
-            <ActionButton
-              label="Reroll again"
-              detail={(() => {
-                const next = rerollPrice(result.after.itemLevel, rerolls);
-                return (
-                  shortOf(purse, next) ??
-                  `${String(next.acorns)} Acorns, ${String(next.scrap)} scrap`
-                );
-              })()}
-              wide
-              large
-              disabled={!canPay(purse, rerollPrice(result.after.itemLevel, rerolls))}
-              onClick={() => {
-                setPicked(result.after.id);
-                setResult(null);
-              }}
-            />
-          )
+          <div class="vs-foot">
+            {(piece !== undefined || result !== null) && (
+              <div class="vs-price">
+                <span class="vs-quiet">Price</span>
+                <Cost {...nowPrice} />
+                <span class="vs-quiet">then</span>
+                <Cost {...thenPrice} />
+              </div>
+            )}
+            {result === null ? (
+              <ActionButton
+                label={piece === undefined ? 'Pick a worn piece' : 'Reroll'}
+                detail={lacking ?? undefined}
+                wide
+                large
+                disabled={piece === undefined || lacking !== null}
+                onClick={confirm}
+              />
+            ) : (
+              <ActionButton
+                label="Reroll again"
+                detail={shortOf(purse, nowPrice) ?? undefined}
+                wide
+                large
+                disabled={!canPay(purse, nowPrice)}
+                onClick={() => {
+                  setPicked(result.after.id);
+                  setResult(null);
+                }}
+              />
+            )}
+          </div>
         }
       >
         {result === null ? (
@@ -252,12 +244,7 @@ export function VisitorScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
                 />
               ))}
             </ul>
-            {piece !== undefined && (
-              <>
-                <ItemCard item={piece} plainRarity />
-                <p class="vs-odds">{oddsText(piece)}</p>
-              </>
-            )}
+            {piece !== undefined && <ItemCard item={piece} plainRarity />}
             <div class="vs-purse">
               <span class="vs-quiet">You have</span>
               <Cost acorns={purse.acorns} scrap={purse.scrap} />
@@ -285,26 +272,36 @@ export function VisitorScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
         onClose={close}
         title="This week's blueprint"
         footer={
-          <ActionButton
-            label={bought ? 'Bought' : 'Buy'}
-            detail={
-              bought
-                ? undefined
-                : (blueprintLacks ??
-                  `${String(SAMPLE_STOCK.blueprintAcorns)} Acorns, ${String(SAMPLE_STOCK.blueprintShards)} shards`)
-            }
-            wide
-            large
-            disabled={bought || blueprintLacks !== null}
-            onClick={() => {
-              setBought(true);
-              setPurse({
-                ...purse,
-                acorns: purse.acorns - SAMPLE_STOCK.blueprintAcorns,
-                shards: purse.shards - SAMPLE_STOCK.blueprintShards,
-              });
-            }}
-          />
+          <div class="vs-foot">
+            {!bought && (
+              <div class="vs-price">
+                <span class="vs-quiet">Price</span>
+                <span class="vs-cost">
+                  <AcornBadge amount={SAMPLE_STOCK.blueprintAcorns} />
+                  <CountBadge
+                    icon={{ kind: 'glyph', id: 'shard-any' }}
+                    amount={SAMPLE_STOCK.blueprintShards}
+                    label="Shards"
+                  />
+                </span>
+              </div>
+            )}
+            <ActionButton
+              label={bought ? 'Bought' : 'Buy'}
+              detail={bought ? undefined : (blueprintLacks ?? undefined)}
+              wide
+              large
+              disabled={bought || blueprintLacks !== null}
+              onClick={() => {
+                setBought(true);
+                setPurse({
+                  ...purse,
+                  acorns: purse.acorns - SAMPLE_STOCK.blueprintAcorns,
+                  shards: purse.shards - SAMPLE_STOCK.blueprintShards,
+                });
+              }}
+            />
+          </div>
         }
       >
         <div class="dr-stack vs-body">
