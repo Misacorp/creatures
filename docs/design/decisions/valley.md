@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: The School's visiting teacher: weekly, Monday to Wednesday, one talent that benefits someone; found talents learned on the card (round 22, Q51-Q53) **[Misa]**
+
+ID: `2026-11-03-the-school-s-visiting-teacher-weekly` · Status: current · Amends: `2026-10-31-valley-the-school-teaches-talents-a`
+
+**Decision.** From Misa's vision for the School (2026-11-03) and his answers. Q51, B: a visiting teacher comes weekly and stays Monday to Wednesday; a creature seated at the School before the arrival or on any day of the stay learns by the next morning, then goes back to its post. Q52: "the teacher, bring a talent that benefits someone. So it's fine if it doesn't benefit many players. But we can check the creatures on the server and select one that benefits hopefully more than one. But we don't want to make it so that everyone benefits from it. It's supposed to seem random. Having a random new talent unlocked for setters ... sound[s] cool, but I would maybe want that to be like a festival special." One talent per visit, drawn among those that would benefit someone on the server, preferring more than one player but never everyone; a role-specialist teacher is a festival special. Never golden. Q53, B: "on the creature card, as it is today. Learning it at the school just adds it to the talent book." A found talent is learned on the card for the one-time price; a lesson adds the teacher's talent to the student's line's book. Amends round 18's "creatures still need to learn them a first time. This could be the place to do it": the first learning stays on the card.
+
+**Reasoning.** All six reviewers (`reviews/2026-11-03-school.md`) found a single day shut out evening, weekly and other-time-zone players; the stay keeps the planning moment as a choice of creature, not of hour, and puts lessons before the raid locks. A weekly teacher adds about 10 to 15% more talents, a secondary source as Misa wants; he accepts that most players miss most visits ("not everyone stands a chance to learn something all the time"). The Acorn sink is the card's price, so it holds.
+
 ## 2026-11-03: Phase 4 groundwork starts before the phase 3 gate (resource library, frame plan, School design) **[Misa]**
 
 ID: `2026-11-03-phase-4-groundwork-starts-before-the` · Status: current
@@ -90,7 +98,7 @@ Misa: "I like game systems where as a problem (like piling up resources without 
 
 ## 2026-10-31: Valley: the School teaches talents, a broker post trades shards, phase 2 passes (round 18, Q45 to Q47)
 
-ID: `2026-10-31-valley-the-school-teaches-talents-a` · Status: current
+ID: `2026-10-31-valley-the-school-teaches-talents-a` · Status: current, amended by `2026-11-03-the-school-s-visiting-teacher-weekly`
 
 - **Q45, B:** the School is where a creature first learns a talent from its line's Talent Book (a short stay, paid once), and where visiting teachers teach talents nobody has found: "the creature studying there learns it if that talent is applicable for the creature's talent book, and also adds it to its talent book". Graduation moves there. (`docs/design/valley/systems/school.md` V-SCH-7 to 9)
 - **Q46:** "Could we have a job posting that does the trading? A stock market of sorts (I'm only half joking)": a broker post at the Forge's exchange trades surplus shards for needed ones continuously; mastery improves the rate; a drifting market is a later idea. (`forge.md` V-FORGE-11)

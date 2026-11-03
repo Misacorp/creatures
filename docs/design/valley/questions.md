@@ -6,40 +6,7 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q51. How often does the teacher come, and for how long?
-
-Status: asked, round 22 (2026-11-03). From Misa's School vision ("I don't know how often, once a day, once a week") and the panel (`reviews/2026-11-03-school.md`, rows 1 to 3). Challenges: "the creatures in the school during that day" against F-1 and his own Q43 ("so every kind of player meets him"). Touches: `systems/school.md`.
-
-**Why it matters.** All six reviewers like the planning moment, and all six say a single day shuts out evening, weekly, ill and other-time-zone players: a Sunday player would never meet the teacher. The numbers: a weekly teacher adds about 10 to 15% more talents (a secondary source, as you want); a daily one would double the supply and become the main source.
-
-- **A. One day a week.** Creatures at the School that day learn at its end. Example: the teacher comes Tuesday; Juho, who plays Sundays, never meets them.
-- **B. A weekly visit with a stay, early in the week.** Announced a few days ahead; the teacher stays Monday to Wednesday; a creature seated before the arrival or on any day of the stay learns by the next morning, and goes back to its post by itself. Talents learned are ready before the raid locks. Example: Juho seats Pip on Sunday evening; on Monday morning Pip has learned.
-- **C. The same stay, with the visitor** (Thursday to Sunday). Example: a busy weekend: teacher, visitor and raid together; raiders are away for most of it.
-
-**Lead's pick: B.** It keeps your "I want my creature there on this day", but the plan is which creature you seat, not being online at a certain hour; and it fills the weekdays that have no event today.
-
-### Q52. What does a visiting teacher teach?
-
-Status: asked, round 22 (2026-11-03). From the panel (row 4; Joonas's idea). Touches: `systems/school.md`.
-
-**Why it matters.** A talent fits about 3 of the 16 lines, so one talent for the whole server fits none of a player's lines most weeks, and the planning moment is empty. You also asked for some agency for roles.
-
-- **A. One talent for the server.** Example: "The teacher brings Rally Cry": only players with a line whose pool has it can use the visit.
-- **B. A role specialist.** The teacher teaches one role (example: "a duelist from Storm Ridge teaches setter talents"); each student learns a random talent of that role from its own line's pool that its book lacks. Never golden. Example: Pip learns Quick Feet, Moss learns Rally Cry, both setter talents.
-- **C. A few talents (example: 3).** Example: "Rally Cry, Hardy, Quick Feet": each of your creatures learns whichever of the three fits it.
-
-**Lead's pick: B.** One shared theme the server talks about, a result for almost every line, the role agency you asked for, and still random inside the role, so finds stay the main source.
-
-### Q53. Does a found talent still need a first learning, and where? (a challenge)
-
-Status: asked, round 22 (2026-11-03). Challenges: Q45 (round 18): "Talents can be discovered but creatures still need to learn them a first time. This could be the place to do it", against the vision of 2026-11-03, where the School is the teacher's place. Touches: `systems/school.md` V-SCH-7, the Acorn sink (the lab: School learning is about a quarter of Acorn income).
-
-**Why it matters.** Today a creature learns a found talent instantly on its card for a one-time price. Your vision makes the School a planned, communal event; sending every found talent there too would make it a toll booth (a reviewer: "a chore"). The Acorn sink comes from the price, not the place.
-
-- **A. At the School, as Q45 said.** A found talent is learned with a stay at the School and a one-time price. Example: Pip found Hardy; it spends a night at the School to learn it.
-- **B. On the creature's card, as today.** Instant, the same one-time price (Acorns); the School is for teachers (and graduation). Example: Pip learns Hardy from its card at once for 10 Acorns.
-
-**Lead's pick: B.** It keeps the price (the sink) and keeps the School for the moments you described.
+Nothing waiting.
 
 ## Queue
 
@@ -836,6 +803,53 @@ Status: answered, round 21 (2026-11-03). From the panel on the places (`reviews/
 **Answer (2026-11-03): C.** "Q50: probably C. It's weird that it shows the place twice. I do like the added depth of having a "sky" in the background though, so that could be something worth using instead. We'd just need the proper sky images. Eventually the sky backdrop could vary based on location."
 
 Became: no poster on a place's screen (the prototype's default is `none`; `&poster=sky|framed` stay only to compare); a real sky backdrop takes the strip's place when the art exists, asked of the art-direction session, later varying by location. The posters stay in the art library for other uses.
+
+### Q51. How often does the teacher come, and for how long?
+
+Status: answered, round 22 (2026-11-03). From Misa's School vision ("I don't know how often, once a day, once a week") and the panel (`reviews/2026-11-03-school.md`, rows 1 to 3). Challenges: "the creatures in the school during that day" against F-1 and his own Q43 ("so every kind of player meets him"). Touches: `systems/school.md`.
+
+**Why it matters.** All six reviewers like the planning moment, and all six say a single day shuts out evening, weekly, ill and other-time-zone players: a Sunday player would never meet the teacher. The numbers: a weekly teacher adds about 10 to 15% more talents (a secondary source, as you want); a daily one would double the supply and become the main source.
+
+- **A. One day a week.** Creatures at the School that day learn at its end. Example: the teacher comes Tuesday; Juho, who plays Sundays, never meets them.
+- **B. A weekly visit with a stay, early in the week.** Announced a few days ahead; the teacher stays Monday to Wednesday; a creature seated before the arrival or on any day of the stay learns by the next morning, and goes back to its post by itself. Talents learned are ready before the raid locks. Example: Juho seats Pip on Sunday evening; on Monday morning Pip has learned.
+- **C. The same stay, with the visitor** (Thursday to Sunday). Example: a busy weekend: teacher, visitor and raid together; raiders are away for most of it.
+
+**Lead's pick: B.** It keeps your "I want my creature there on this day", but the plan is which creature you seat, not being online at a certain hour; and it fills the weekdays that have no event today.
+
+**Answer (2026-11-03): B.** "for question 51, I think B is the good approach."
+
+Became: The teacher visits weekly and stays Monday to Wednesday; a creature seated before the arrival or on any day of the stay learns by the next morning and goes back to its post by itself; announced a few days ahead.
+
+### Q52. What does a visiting teacher teach?
+
+Status: answered, round 22 (2026-11-03). From the panel (row 4; Joonas's idea). Touches: `systems/school.md`.
+
+**Why it matters.** A talent fits about 3 of the 16 lines, so one talent for the whole server fits none of a player's lines most weeks, and the planning moment is empty. You also asked for some agency for roles.
+
+- **A. One talent for the server.** Example: "The teacher brings Rally Cry": only players with a line whose pool has it can use the visit.
+- **B. A role specialist.** The teacher teaches one role (example: "a duelist from Storm Ridge teaches setter talents"); each student learns a random talent of that role from its own line's pool that its book lacks. Never golden. Example: Pip learns Quick Feet, Moss learns Rally Cry, both setter talents.
+- **C. A few talents (example: 3).** Example: "Rally Cry, Hardy, Quick Feet": each of your creatures learns whichever of the three fits it.
+
+**Lead's pick: B.** One shared theme the server talks about, a result for almost every line, the role agency you asked for, and still random inside the role, so finds stay the main source.
+
+**Answer (2026-11-03): A, with a twist; B as a festival special.** "let's have ... the teacher, bring a talent that benefits someone. So it's fine if it doesn't benefit many players. But we can check the creatures on the server and select one that benefits hopefully more than one. But we don't want to make it so that everyone benefits from it. It's supposed to seem random. Having a random new talent unlocked for setters, as you say in option B, does sound cool, but I would maybe want that to be like a festival special or something. Not every day. Like I said, it's secondary and not everyone stands a chance to learn something all the time."
+
+Became: A teacher brings one talent, chosen among those that would benefit someone on the server (a line someone owns whose book lacks it), preferring one that benefits more than one player but never everyone, so it seems random; the role specialist is a festival special.
+
+### Q53. Does a found talent still need a first learning, and where? (a challenge)
+
+Status: answered, round 22 (2026-11-03). Challenges: Q45 (round 18): "Talents can be discovered but creatures still need to learn them a first time. This could be the place to do it", against the vision of 2026-11-03, where the School is the teacher's place. Touches: `systems/school.md` V-SCH-7, the Acorn sink (the lab: School learning is about a quarter of Acorn income).
+
+**Why it matters.** Today a creature learns a found talent instantly on its card for a one-time price. Your vision makes the School a planned, communal event; sending every found talent there too would make it a toll booth (a reviewer: "a chore"). The Acorn sink comes from the price, not the place.
+
+- **A. At the School, as Q45 said.** A found talent is learned with a stay at the School and a one-time price. Example: Pip found Hardy; it spends a night at the School to learn it.
+- **B. On the creature's card, as today.** Instant, the same one-time price (Acorns); the School is for teachers (and graduation). Example: Pip learns Hardy from its card at once for 10 Acorns.
+
+**Lead's pick: B.** It keeps the price (the sink) and keeps the School for the moments you described.
+
+**Answer (2026-11-03): B.** "And for question 53, yeah, B on the creature card, as it is today. Learning it at the school just adds it to the talent book."
+
+Became: A found talent is learned on the creature's card as today (the one-time price); a lesson at the School adds the teacher's talent to that line's book (then learned on the card like any found talent).
 
 ## Withdrawn
 
