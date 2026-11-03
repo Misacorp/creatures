@@ -31,6 +31,8 @@ describe('valley-school concepts', () => {
       const rows = expandRows(worn);
       const plain = expandRows(base);
       expect(rows, name).toHaveLength(16);
+      expect(rows.join('\n'), `${name} wears no cap`).not.toBe(plain.join('\n'));
+      expect(new Set(rows.map((r) => r.length)), name).toEqual(new Set([16]));
       // The chibi face (eyes x 4-5 and 10-11 on rows 8-9, blush on row 10) stays exactly as drawn, colours
       // too; the tassel may hang beside it, outside x 3 to 12.
       const face = (r: readonly string[]): string[] =>
