@@ -30,16 +30,16 @@ const SCHOOL_YARD: SpriteDef = {
     x: '#112430',
   },
   rows: [
-    '..........................1d1d1d1d1d1e.........f................................',
-    '......................e...d1d1D1d1d1d1e222.2.2e1e.e1.....d......................',
-    '...................2.2.2.2221dpd1d1d1222222222222f.D1e.dee..fe..e...............',
-    '..........e..1..2.222.22222221D1D1d122222222222222e1e1d1deeeeddeef.e............',
-    '...........f1.122223333332222d1d1p1d2222333p3322221d1d1ddddddd.dedeee..f........',
-    '........e1e1e1222233p333332222d1d1d22223333333322221d1d1dddDdDDdeDpde.e.f.e.....',
-    '.....e.d.ded1d22223333333322221d1d12222333333332222d1d1d1dddddddedDddd.d.fd.....',
-    '..fef.dee1d1e12222333333332222d1d1d22223333333322221d1d1ddddddddddddddefeD..d...',
-    'f...eede1e1D1e22223333333322221d1d12222333333332222d1d1d1ddddDddddddddddDdeed...',
-    '.e.efdddd1d1d12222333333332222d1d1d22223333333322221d1d1dedddddddDdedddeeefpdf..',
+    '..........................1dddddddDdde.........f................................',
+    '......................e...d1ddDdddddd1e222.3.2e1e.ee.....d......................',
+    '...................2.2.2.e1d1dpddddd1D1d2222221d1f.Dde.dee..fe..e...............',
+    '..........e..e..d.e12.22d1d1ddDdDdddd1d1d22221d1d1edeedddeeeeddeef.e............',
+    '...........fd.1d1d1e122d1d1d1ddddped1d1d1d2p1d1d1d1dDddddddddd.dedeee..f........',
+    '........eeede1d1e1d1p1e1d1d1d1dDddd1D1e1d1d1d1d1d1d1dddddddDdDDdeDpde.e.f.e.....',
+    '.....e.d.deded1e1d1d1d1d1D1d1edddded1d1e1d1d1d1d1d1dddddddddddddedDddd.d.fd.....',
+    '..fef.deeddeedd1D1d1d1d1d1d1dddddddde1d1D1D1d1D1d1edddddddddddddddddddefeD..d...',
+    'f...eededeDDdedd1e1d1d1d1e1dDddddddddd1d1d1d1d1D1ddddddddddddDddddddddddDdeed...',
+    '.e.efddddddDdddddDd1d1d1d1dDdddeddddded1d1d1d1dddddddDdddedddddddDdedddeeefpdf..',
     'dfekkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkddddddddDDdddeddddddeD.f.',
     'ddkkUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUkkDdeepdedddddddddddddeded',
     'eekkuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuukkeddddddddddddddddeddDdd.',
@@ -47,8 +47,8 @@ const SCHOOL_YARD: SpriteDef = {
     'ddkkwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwkkddddDdddddddDdddddedeedf',
     'fedkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkdddpDddddddddddddddede.e.',
     '...xxkwkxxxxxxxxxxxxxxxxxxxkwkxxxxxxxxxxxxxxxxxxxxxkwkxddDdddddedddddDdded.d.d.e',
-    '..e.xkvkxdxdxdx1x1x1x1x1x1xkvkxdxdx1x1x1x1x1x1x1x1xkvkxdDddeddddddddddpdde.deee.',
-    '..f..kvkdddddDdddd1D1d1d1D1kvkdddddedd1D1d1d1D1dDddkvkddDpdDdddddddeddddeede....',
+    '..e.xkvkxdxdxdxDxDxDxdxdxdxkvkxdxdxdxdxdxexexdxdxdxkvkxdDddeddddddddddpdde.deee.',
+    '..f..kvkdddddDdddddDdddddDdkvkdddddedddDddDddDddDddkvkddDpdDdddddddeddddeede....',
     '...xxkkkxxxeeDddeddddeddexxkkkxxxdDddddDddddddddDxxkkkxxxddddddedddddedd.ee..f..',
     '.......fdfd..dddeedddddDDeddDdddddddeeDdddddppddDddDddddddddddedpdedd.f.e.e.....',
     '.........e...eeedededDddddDdDDdDDDDdpdddddDdddeddddddddddededeDdfdedf.....e.....',
@@ -150,22 +150,22 @@ const TEACHER_CAP: SpriteDef = {
     k: '#0d0a1a',
     N: '#34479a',
     M: '#6f84d8',
-    D: '#222f6e',
     T: '#f6d56a',
     Y: '#c8902a',
+    L: '#a8baf8',
+    B: '#5a6fd0',
   },
   rows: [
-    '......kkkk......',
-    '...kkkMMNNkkk...',
-    '.kkMMNNTTYYYYYY.',
-    '..kkkkkkkkkkkkY.',
+    '......LLLL......',
+    '...LLLMMNNLLL...',
+    '.LLMMNNTTYYYYYY.',
+    '..BBBBBBBBBBBBY.',
     '....kNNNNNNk..Y.',
-    '...kDDDDDDDDk.Y.',
+    '...kBBBBBBBBk.Y.',
     '.............TT.',
     '.............TY.',
   ],
 };
-/** Where the cap's last hat row (row 5) lands, relative to the head top. */
 const CAP_BAND_ROW = 5;
 
 /** The first row where x 5 to 10 are all filled (the head top), as `wearing()` finds it. */
@@ -181,10 +181,13 @@ function headTop(grid: readonly (readonly string[])[]): number {
  * row 0, never so low that its band passes row 7), so ears, antlers and the dome stay readable beside the
  * board, and the face (rows 8 to 10, x 3 to 12) is never painted. `flip` hangs the tassel on the left.
  */
-function withCap(creature: SpriteDef, flip = false): SpriteDef {
+function withCap(creature: SpriteDef, flip = false, low = false): SpriteDef {
   const grid = expandRows(creature).map((row) => [...row]);
-  const top = Math.max(0, Math.min(headTop(grid) - 2, 7 - CAP_BAND_ROW));
-  const cap = expandRows(TEACHER_CAP);
+  const top = Math.max(
+    0,
+    Math.min(headTop(grid) - (low ? 1 : 2), 7 - CAP_BAND_ROW + (low ? 1 : 0)),
+  );
+  const cap = expandRows(TEACHER_CAP).filter((_, dy) => !(low && dy === 4));
   for (const [dy, row] of cap.entries()) {
     const chars = flip ? [...row].reverse() : [...row];
     for (const [x, ch] of chars.entries()) {
@@ -262,12 +265,12 @@ export const VALLEY_SCHOOL_CONCEPTS: ConceptSet = {
     },
     'teacher-cap': {
       kind: 'free',
-      note: "The teacher's mortarboard with a gold tassel, 16x8, worn over the head top of a 16x16 creature (top row two rows above the head top). Variants: worn by Splashet, Sproutle and Zipmouse.",
+      note: "The teacher's mortarboard with a gold tassel, 16x8, worn over the head top of a 16x16 creature (top row two rows above the head top). Light blue rim on the board's top edge and a lighter underside line and band keep it readable on dark ground. Variants: worn by Splashet, Sproutle and Zipmouse (small head: the cap sits one row lower and drops the cap's first row so the ears show above the board).",
       sprite: TEACHER_CAP,
       variants: {
         'on-splashet': withCap(species('splashet')),
         'on-sproutle': withCap(species('sproutle')),
-        'on-zipmouse': withCap(species('zipmouse'), true),
+        'on-zipmouse': withCap(species('zipmouse'), true, true),
       },
     },
   },
