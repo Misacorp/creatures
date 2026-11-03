@@ -14,6 +14,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: posters](#valley-posters) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
+| [Valley sky, day and night](#valley-sky) | draft | 2 | 2026-11-03 (Q50, via the valley session): place screens drop the poster; Misa likes "the added depth of having a sky in the background ... We'd just need the proper sky images. Eventually the sky backdrop could vary based on location." |
 | [Void, a raid boss, three foes and two floor bosses](#void-foes) | draft | 6 | 2026-10-31: a Void raid boss, dungeon foes and dungeon bosses. |
 | [Void gear: tint, plain pieces, a set, a shard](#void-gear) | draft | 11 | 2026-10-31: design Void gear. |
 | [Void place, the Quiet Verge (banners)](#void-place) | liked | 2 | 2026-10-31: design a Void area that can be explored (banner and place). |
@@ -189,6 +190,26 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `visitor` | banner |  | draft | A blue-green twilight under a crescent moon: the hooded stranger with glowing eyes and a lantern staff beside his striped stall of glowing jars. |
 | `visitor-away` | banner |  | draft | The same stall on a grey-lilac morning: awning furled, lantern dark, a leaf on the counter and a sign with a moon and a calendar page, one day marked. |
 | `market` | banner |  | draft | A golden afternoon: a teal and cream stall where a round orange shopkeeper sells shards (red, yellow, cyan, violet), crates of them in front and a customer with a coin. |
+
+<a id="valley-sky"></a>
+
+## Valley sky, day and night
+
+![Valley sky, day and night](valley-sky.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-03 (Q50, via the valley session): place screens drop the poster; Misa likes "the added depth of having a sky in the background ... We'd just need the proper sky images. Eventually the sky backdrop could vary based on location."
+- **Source:** `apps/activity/src/sprites/concepts/valley-sky.ts` (draw it with `pnpm art valley-sky`)
+- **Sheet of:** `49720539962b`
+- Used by the valley prototype's place screens (`apps/activity/src/proto/valley/glow-scene-art.ts`, `skyPlacements`, poster mode `sky`, branch `ccr-93a1de17-yutb1a`).
+- One strip, 128 x 40, tiles sideways (see the `tiled` and `tiled-day` rows: the join is at x 128 and 256). Top row is one flat colour, repeat it upward behind the HUD. Bottom row is the grass colour of the world-map tile.
+- Main palette is night (4 bands, stars), `alts.day` is the same pixels: stars vanish into the band, clouds appear. Clouds sit across the seam on purpose. The optional `moon` sprite is placed once by the scene, never tiled.
+- Per-location variants (forest, coast, mountains) later: same bands, a different horizon in the bottom rows.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `valley` | free |  | draft | A sky strip with far rolling hills and a hazy treeline at the bottom that meet the grass. Night: violet bands and stars. Day: blue bands and a few clouds. |
+| `moon` | free |  | draft | An optional small moon the scene places once in the night sky (not part of the tiled strip). Hidden by day. |
 
 <a id="void-foes"></a>
 
