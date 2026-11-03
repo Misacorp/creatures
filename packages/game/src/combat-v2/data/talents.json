@@ -295,7 +295,7 @@
       "name": "Culling Strike",
       "text": "A hit that leaves the boss below 5% of its full HP defeats it. The HP removed counts as the killing blow, not as damage.",
       "roles": ["setter", "payoff"],
-      "intent": "Weak alone; it decides who lands the killing blow, which other effects can key on. In no line pool until a killing-blow talent exists.",
+      "intent": "An enabler: effects are meant to stack on it later (killing-blow triggers, R21.5), so it is not intended to be used alone. A weak result for it alone is expected and is not a reason to buff it; judge it only with the effects that build on it (Misa, 2026-11-03). In the pools of hearthshell, lanternfin, mossback, stormray and squelch.",
       "fx": {
         "cullBp": 500
       }
@@ -423,7 +423,7 @@
       "quick-draw",
       "edge-walker",
       "bright-boost",
-      "perfect-timing",
+      "cull",
       "crit-chance",
       "catch-breath"
     ],
@@ -433,7 +433,7 @@
       "finisher",
       "stubborn",
       "hardy",
-      "brace",
+      "cull",
       "rally-cry"
     ],
     "coralynx": [
@@ -479,13 +479,13 @@
       "hardy",
       "rally-cry",
       "odd-one-out",
-      "front-liner"
+      "cull"
     ],
     "hearthshell": [
       "shoulder-charge",
       "stubborn",
       "catch-breath",
-      "brace",
+      "cull",
       "hardy",
       "odd-one-out",
       "shoulder-to-shoulder"
@@ -505,7 +505,7 @@
       "bright-boost",
       "catch-breath",
       "hardy",
-      "unbothered",
+      "cull",
       "front-liner"
     ]
   }
