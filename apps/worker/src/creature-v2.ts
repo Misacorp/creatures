@@ -187,6 +187,8 @@ export function statsV2Of(c: StatsV2Source): StatsV2View {
       species: c.species.id,
       level: c.level,
       knack: c.knack,
+      // The page's numbers do not depend on the name.
+      nickname: null,
       talents: [...c.talents],
       gear: gearLinesOf(c.species, c.level, c.fusionCount, c.worn),
     },
