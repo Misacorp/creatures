@@ -9,7 +9,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | Set | Status | Pieces | Requested |
 | --- | --- | --- | --- |
 | [Combat v2 icons: attack shapes, board states, store meters](#combat-icons) | draft | 11 | 2026-10-31, Misa: "icons for keywords and attack shapes" (roadmap phase 3, combat v2). |
-| [Valley places: glow, day and night](#valley-glow) | liked | 6 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
+| [Valley places: glow, day and night](#valley-glow) | liked | 9 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
 | [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: posters](#valley-posters) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
@@ -59,7 +59,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** liked
 - **Requested:** 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets.
 - **Source:** `apps/activity/src/sprites/concepts/valley-glow.ts` (draw it with `pnpm art valley-glow`)
-- **Sheet of:** `25864c63cb49`
+- **Sheet of:** `02d75919fec4`
 - Misa picked this direction for the valley places (2026-10-31); posters stay for each place's own screen.
 - Direction "valley glow": the night-glow look (the light sources are the stars, lit edges, cool shadow) redone as standalone places on transparent ground, like the map landmarks, so they stand on the valley tiles. No sky, no vignette, no stars or moon.
 - One drawing, two palettes: the main palette is night, `alts.day` recolours the same pixels. Keys `1 2 3` are the light spill on the ground (rings follow each light: a circle under a lamp or fire, a trapezoid in front of a window; only the outermost ring is a regular checker) in night colours; in the day palette they map to the grass greens, so the spill disappears. `x` is the cast shadow (cool blue at night, warm green by day).
@@ -68,6 +68,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - Each light has its own colour: fire orange (bonfires), window yellow (school), violet lamp (visitor), a weak ember (visitor away), teal shard glow (market).
 - Day ground given its own character (Misa, 2026-10-31).
 - Day ground pushed further and the market crystal seated (Misa, 2026-10-31).
+- House, Forge and Cave added in the same style for the valley's night (valley session request, 2026-11-03).
 - The content needs the places to exist (V-BON, school, visitor, V-FORGE-11) before this art is used; the signs carry no text, only marks (a moon and a calendar on the visitor away board).
 
 | Code | Kind | Role | Status | Idea |
@@ -78,6 +79,9 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `visitor` | free |  | liked | The weekly visitor: a hooded stranger with teal eyes beside a violet lamp, and a small stall whose wares glow teal. The violet light lies on the grass; by day the lamp is unlit and the stall is striped red and cream. |
 | `visitor-away` | free |  | liked | The stall shuttered: a closed front, a folded awning, a board with a moon and a calendar mark, an unlit lamp with one last ember and a faint warm glow on the grass. |
 | `market` | free |  | liked | A stall where shards are traded: four element shards glow on the counter, a big shard on a post is the sign, with a crate and a sack beside it. The teal glow lies on the grass. |
+| `house` | free |  | draft | A cosy cottage where your creatures live: a shingled roof with a chimney, two lit windows that spill warm light on the grass, a door with a path to it. By day the windows are plain glass and the spill is flower beds. |
+| `forge` | free |  | draft | The Workshop: a stone smithy with an open fire mouth, an anvil on the ground and sparks; the ember glow spills out of the opening onto the ground. By day the fire is out and the yard is soot-dark. |
+| `cave` | free |  | draft | The way to the daily dungeon: a rocky mouth into the hill with glowing crystals inside, whose cool light spills onto the ground. By day the crystals are dull and the ground is scree and pebbles. |
 
 <a id="valley-landmarks"></a>
 
