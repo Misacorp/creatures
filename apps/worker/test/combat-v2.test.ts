@@ -6,16 +6,28 @@
  * conversion tool and the two analytics events.
  */
 import { env } from 'cloudflare:workers';
-import { RULES, content, slotOpensAt, type Rng } from '@creatures/game';
+import {
+  RULES,
+  content,
+  gearContent,
+  slotOpensAt,
+  slotsOpen,
+  type CreatureSpecies,
+  type Rng,
+} from '@creatures/game';
 import { combatV2, knownKnacks } from '@creatures/game/combat-v2';
 import { describe, expect, it } from 'vitest';
 import { canonicalDims } from '../src/analytics-rollup';
 import { propsOf } from '../src/analytics-props';
 import { knackLocked, statsV2Of, talentsLocked } from '../src/creature-v2';
+import { fightNumbers, fighterV2 } from '../src/fighter-v2';
+import { fighterOf, loadV2Creatures } from '../src/raid-v2-fighters';
+import { equippedByCreature } from '../src/gear-store';
+import { giveItem } from './gear-helpers';
 import { formStats } from '@creatures/engine/v2';
 import { createHandler } from '../src/index';
 import { loadCreatures, loadCreaturesById } from '../src/raid-teams';
-import { grantFirstTalent, learnedOf, lineBook } from '../src/talent-v2-store';
+import { grantFirstTalent, learnedOf, lineBook, recordFound } from '../src/talent-v2-store';
 import wranglerText from '../wrangler.jsonc?raw';
 import { ON, player as devPlayer, type Json } from './dev-helpers';
 import { ORIGIN, callHandler, runCore, undoKnackMigration, type CoreContext } from './helpers';
@@ -315,9 +327,13 @@ describe('the stats a creature page shows under v2 (statsV2)', () => {
   const species = content.creatures.find((c) => c.id === 'mossback');
   if (species === undefined) throw new Error('mossback is not in the content');
 
+  /** The page's numbers for a creature with no Knack, no fusion and nothing worn. */
+  const page = (s: CreatureSpecies, level: number, talents: readonly string[]) =>
+    statsV2Of({ species: s, level, fusionCount: 0, knack: null, talents, worn: undefined });
+
   it('is the form at its level with the base crit of the rules, when nothing is slotted or worn', () => {
     const form = formStats(combatV2, content, 'mossback', 12);
-    expect(statsV2Of(species, 12, [], undefined)).toEqual({
+    expect(page(species, 12, [])).toEqual({
       hp: form.hp,
       atk: form.atk,
       spd: form.spd,
@@ -329,7 +345,7 @@ describe('the stats a creature page shows under v2 (statsV2)', () => {
 
   it('adds the effects of the slotted talents: Hardy to HP, Sharp Claws to Attack', () => {
     const form = formStats(combatV2, content, 'mossback', 12);
-    const stats = statsV2Of(species, 12, ['hardy', 'sharp-claws'], undefined);
+    const stats = page(species, 12, ['hardy', 'sharp-claws']);
     expect(stats.hp).toBe(
       Math.floor((form.hp * (10_000 + (combatV2.talents['hardy']?.fx.hpBp ?? 0))) / 10_000),
     );
@@ -346,11 +362,75 @@ describe('the stats a creature page shows under v2 (statsV2)', () => {
       (t) => (t.fx.critChanceBp ?? 0) > 0 || (t.fx.critDamageBp ?? 0) > 0,
     );
     if (crit === undefined) throw new Error('no crit talent in the content');
-    const plain = statsV2Of(species, 12, [], undefined);
-    const withCrit = statsV2Of(species, 12, [crit.id], undefined);
+    const plain = page(species, 12, []);
+    const withCrit = page(species, 12, [crit.id]);
     expect(withCrit.critChanceBp).toBe(plain.critChanceBp + (crit.fx.critChanceBp ?? 0));
     expect(withCrit.critMultBp).toBe(plain.critMultBp + (crit.fx.critDamageBp ?? 0));
-    expect(statsV2Of(species, 20, [], undefined).hp).toBeGreaterThan(plain.hp);
+    expect(page(species, 20, []).hp).toBeGreaterThan(plain.hp);
+  });
+
+  it("equals the fighter's own numbers, for a creature with a Knack, talents, fusion and gear", async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        // A species with two slots open at its level cap (the common ones have one).
+        const wide = content.creatures.find(
+          (c) => c.festival !== true && slotsOpen(c.rarity, c.levelCap) >= 2,
+        );
+        if (wide === undefined) throw new Error('no species with two slots');
+        const p = await seeded(ctx, [wide.id], wide.levelCap);
+        const id = p.ids[0] as string;
+        // Fusion, the first Knack its form knows, two slotted talents and three worn items.
+        ctx.sql.exec(
+          'UPDATE creatures SET fusion_count = 2, knack = ? WHERE id = ?',
+          knownKnacks(wide.id)[0] ?? null,
+          id,
+        );
+        ctx.sql.exec('DELETE FROM creature_talents_v2 WHERE creature_id = ?', id);
+        for (const [talent, slot] of [
+          ['hardy', 1],
+          ['sharp-claws', 2],
+        ] as const) {
+          // In the line's book as well, as every real find is (the page reads the slots through the book).
+          recordFound(ctx.sql, p.id, wide.line, { talentId: talent, golden: false }, 1);
+          ctx.sql.exec(
+            'INSERT INTO creature_talents_v2 (creature_id, talent_id, slot, learned_at) VALUES (?, ?, ?, 1)',
+            id,
+            talent,
+            slot,
+          );
+        }
+        const slots = ['hat', 'scarf', 'charm'];
+        const bases = slots.flatMap((slot) => {
+          const base = gearContent.bases.find((b) => b.slot === slot);
+          return base === undefined ? [] : [base];
+        });
+        expect(bases).toHaveLength(3);
+        for (const base of bases) {
+          const item = giveItem(ctx.sql, p.id, base.id, { rarity: 'rare', level: 20 });
+          ctx.sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', id, item);
+        }
+        expect(equippedByCreature(ctx.sql, p.id).get(id)).toBeDefined();
+
+        // The page's payload...
+        const state = await p.call('GET', '/api/state');
+        const shown = state.body.creatures[0].statsV2;
+        // ...is what the dungeon's fighter and the raid's fighter are in the fight.
+        const team = loadCreaturesById(ctx.sql, p.id, [id])[0];
+        if (team === undefined) throw new Error('no creature');
+        const dungeon = fightNumbers(fighterV2(team, learnedOf(ctx.sql, id)));
+        const raid = loadV2Creatures(ctx.sql, [id]).get(id);
+        if (raid === undefined) throw new Error('no raid creature');
+        const weekend = fightNumbers(fighterOf(raid, 'm1', { row: 0, col: 0 }));
+        expect(shown).toEqual(dungeon);
+        expect(shown).toEqual(weekend);
+        // The numbers are not the bare form's: the Knack, the talents, fusion and gear are all in.
+        const bare = page(wide, wide.levelCap, []);
+        expect(shown.hp).toBeGreaterThan(bare.hp);
+        expect(shown.atk).toBeGreaterThan(bare.atk);
+      },
+      V2,
+    );
   });
 
   it('comes with the creature in the state, from its slotted talent', async () => {
@@ -362,7 +442,7 @@ describe('the stats a creature page shows under v2 (statsV2)', () => {
         const creature = state.body.creatures[0];
         const slots = creature.talentsV2.slots as { talent: { id: string } | null }[];
         const slotted = slots.flatMap((s) => (s.talent === null ? [] : [s.talent.id]));
-        expect(creature.statsV2).toEqual(statsV2Of(species, 12, slotted, undefined));
+        expect(creature.statsV2).toEqual(page(species, 12, slotted));
       },
       V2,
     );
