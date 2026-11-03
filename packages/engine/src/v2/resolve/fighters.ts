@@ -17,6 +17,27 @@ const { STAT_FIELDS, mergeFx } = effectsMod;
 /** The family whose Knacks reshape or replace a Support's base verb (and so leave Triage idle). */
 export const SUPPORT_SHAPE_FAMILY = 'Support shape';
 
+/** Marks a golden talent in a memo key (never part of a talent id). */
+const GOLDEN_MARK = '*';
+
+/** Effect numbers that are counts, not sizes: golden leaves them alone (a count of 2 has no x1.25). */
+const COUNT_FIELDS: ReadonlySet<string> = new Set(['firstMarkExtra']);
+
+/**
+ * A golden talent's effects (R20): every number x1.25, rounded half up, whole numbers only; a flag has no number and stays as it is
+ * (the proposal's small golden extras for number-less talents are not defined in the data, so golden is a no-op for them).
+ */
+export function goldenFx(fx: KnackFx): KnackFx {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(fx)) {
+    out[key] =
+      typeof value === 'number' && !COUNT_FIELDS.has(key)
+        ? Math.floor((value * 125 + 50) / 100)
+        : value;
+  }
+  return out;
+}
+
 /** What a resolver reads of the pack. */
 export type FighterPack = Pick<CombatV2Pack, 'forms' | 'knacks' | 'talents'>;
 
@@ -39,8 +60,13 @@ export interface Resolver {
 export function createResolver(pack: FighterPack, shipped: Pick<Shipped, 'creatures'>): Resolver {
   const knackFx = (id: string | undefined): KnackFx =>
     id !== undefined && Object.hasOwn(pack.knacks, id) ? (pack.knacks[id]?.fx ?? {}) : {};
-  const talentFx = (id: string): KnackFx =>
-    Object.hasOwn(pack.talents, id) ? (pack.talents[id]?.fx ?? {}) : {};
+  /** A talent's effects; a golden one (`id` + `GOLDEN_MARK`) has every number x1.25 (`goldenFx`). */
+  const talentFx = (key: string): KnackFx => {
+    const golden = key.endsWith(GOLDEN_MARK);
+    const id = golden ? key.slice(0, -GOLDEN_MARK.length) : key;
+    const fx = Object.hasOwn(pack.talents, id) ? (pack.talents[id]?.fx ?? {}) : {};
+    return golden ? goldenFx(fx) : fx;
+  };
 
   /** Every effect name a Knack or talent uses, in a fixed order (see `uniformFx`). */
   const fxKeys: readonly string[] = [
@@ -108,10 +134,19 @@ export function createResolver(pack: FighterPack, shipped: Pick<Shipped, 'creatu
     return st;
   }
 
+  /** The talents as memo and effect keys: a golden one carries `GOLDEN_MARK`. Without golden ones these are the plain ids. */
+  function talentKeys(p: Placement): readonly string[] {
+    const talents = p.talents ?? [];
+    const golden = p.goldenTalents;
+    if (golden === undefined || golden.length === 0) return talents;
+    return talents.map((id) => (golden.includes(id) ? id + GOLDEN_MARK : id));
+  }
+
   function resolve(p: Placement): WeekendFighterSpec {
     const st = statsOf(p.formId, p.level);
     const k = p.knack === 'none' ? undefined : p.knack;
-    const fxAll = fxOf(k, p.talents ?? []);
+    const keys = talentKeys(p);
+    const fxAll = fxOf(k, keys);
     const maxHp = Math.floor((st.hp * (10_000 + (fxAll.hpBp ?? 0))) / 10_000);
     return {
       owner: p.owner,
@@ -128,7 +163,7 @@ export function createResolver(pack: FighterPack, shipped: Pick<Shipped, 'creatu
       knack: k,
       talents: p.talents ?? [],
       fxAll,
-      fxStat: statFxOf(p.talents ?? []),
+      fxStat: statFxOf(keys),
       // Triage aims the Support's own base verb: a Support shape Knack leaves it idle (the fight reads only the flag).
       triageIdle: k !== undefined && supportShape.has(k),
       row: p.row,

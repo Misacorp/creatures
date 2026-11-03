@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: Golden v2 talents read from the line book, numbers x1.25, flags unchanged
+
+ID: `2026-11-03-golden-v2-talents-read-from-the` · Status: current
+
+**Decision.** A learned v2 talent is golden when the line's Talent Book (`line_talents`) holds it golden; nothing new is stored per creature (no migration). The engine's `Placement.goldenTalents` (default none) marks the golden ids, and the resolver multiplies every number of a golden talent's effects by 1.25 (rounded half up) before the merge. Flags and the count `firstMarkExtra` stay as they are, so golden is a no-op for talents with no number (the proposal's small golden extras for them are not in the data).
+
+**Reasoning.** A creature learns "the talent of its line's book", and the book already keeps golden once per line and talent (a golden find upgrades it), so reading it there needs no second copy to keep in step and the page's badge already shows the book's value. Golden off by default keeps the lab's parity digest identical. The raid, the dungeon and the creature page all build the fighter through `buildFighter`, so the page shows the fight's numbers.
+
 ## 2026-11-03: Culling Strike stays as an enabler: in one line's pool per role and per element, never buffed for its solo value **[Misa]**
 
 ID: `2026-11-03-culling-strike-stays-as-an-enabler` · Status: current

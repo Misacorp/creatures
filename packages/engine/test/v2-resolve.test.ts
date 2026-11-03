@@ -251,6 +251,44 @@ describe('createResolver', () => {
     ]);
   });
 
+  it('a golden talent has its numbers x1.25 (rounded half up); counts and flags stay; others are unchanged', () => {
+    const gr = createResolver(
+      {
+        ...PACK,
+        talents: {
+          ...PACK.talents,
+          brace: talent('brace', { clinging: true, atkBp: 300 }),
+          deep: talent('deep', { firstMarkExtra: 2 }),
+        },
+      },
+      SHIPPED,
+    );
+    const plain = gr.resolve({ ...at, formId: 'wisp', talents: ['sturdy', 'fleet', 'brace', 'deep'] });
+    const gold = gr.resolve({
+      ...at,
+      formId: 'wisp',
+      talents: ['sturdy', 'fleet', 'brace', 'deep'],
+      goldenTalents: ['sturdy', 'brace', 'deep'],
+    });
+    // sturdy 1000 -> 1250, 500 -> 625; fleet is normal (hp 500); brace 300 -> 375 and its flag stays.
+    expect(plain.fxAll).toMatchObject({ hpBp: 1_500, atkBp: 800, firstMarkExtra: 2 });
+    expect(gold.fxAll).toMatchObject({
+      hpBp: 1_250 + 500,
+      atkBp: 625 + 375,
+      dodgeBonusBp: 300,
+      clinging: true,
+      firstMarkExtra: 2,
+    });
+    expect(gold.maxHp).toBe(Math.floor((140 * 11_750) / 10_000));
+    // The silenced stat lines keep the golden numbers too, and the plain ids stay as they are.
+    expect(gold.fxStat).toMatchObject({ hpBp: 1_750, atkBp: 1_000 });
+    expect(gold.talents).toEqual(['sturdy', 'fleet', 'brace', 'deep']);
+    // A golden id that is not among the talents does nothing; none golden equals the default.
+    expect(
+      r.resolve({ ...at, formId: 'wisp', talents: ['sturdy'], goldenTalents: ['fleet'] }).fxAll,
+    ).toEqual(r.resolve({ ...at, formId: 'wisp', talents: ['sturdy'] }).fxAll);
+  });
+
   it('Triage is idle under a Support shape Knack and under no other', () => {
     const triage = ['triage'];
     expect(r.resolve({ ...at, formId: 'nurse', knack: 'widen', talents: triage }).triageIdle).toBe(

@@ -24,6 +24,12 @@ export interface BookEntry {
 export interface LearnedTalent {
   talentId: string;
   slot: number | null;
+  /**
+   * Whether the line's book holds the talent golden (R20: x1.25 in a fight). Read from the book, not stored per creature: a creature
+   * learns "the talent of its line's book", so a golden find of a talent it already knows makes it golden for every creature of the line
+   * that knows it, with no second copy to keep in step.
+   */
+  golden: boolean;
 }
 
 /** What a role change did to one slot: the talent that was idle, and the roll that replaced it (null: nothing was left to roll). */
@@ -69,16 +75,17 @@ export function lineBook(sql: SqlStorage, userId: string, line: string): BookEnt
 export function learnedByCreature(sql: SqlStorage, userId: string): Map<string, LearnedTalent[]> {
   const map = new Map<string, LearnedTalent[]>();
   const rows = sql
-    .exec<{ creature_id: string; talent_id: string; slot: number | null }>(
-      `SELECT t.creature_id, t.talent_id, t.slot FROM creature_talents_v2 t
+    .exec<{ creature_id: string; talent_id: string; slot: number | null; golden: number }>(
+      `SELECT t.creature_id, t.talent_id, t.slot, COALESCE(b.golden, 0) AS golden FROM creature_talents_v2 t
        JOIN creatures c ON c.id = t.creature_id
+       LEFT JOIN line_talents b ON b.user_id = c.user_id AND b.line = c.line AND b.talent_id = t.talent_id
        WHERE c.user_id = ? ORDER BY t.learned_at, t.talent_id`,
       userId,
     )
     .toArray();
   for (const row of rows) {
     const list = map.get(row.creature_id) ?? [];
-    list.push({ talentId: row.talent_id, slot: row.slot });
+    list.push({ talentId: row.talent_id, slot: row.slot, golden: row.golden === 1 });
     map.set(row.creature_id, list);
   }
   return map;
@@ -87,12 +94,15 @@ export function learnedByCreature(sql: SqlStorage, userId: string): Map<string, 
 /** What one creature has learned (the primary key answers it). */
 export function learnedOf(sql: SqlStorage, creatureId: string): LearnedTalent[] {
   return sql
-    .exec<{ talent_id: string; slot: number | null }>(
-      'SELECT talent_id, slot FROM creature_talents_v2 WHERE creature_id = ? ORDER BY learned_at, talent_id',
+    .exec<{ talent_id: string; slot: number | null; golden: number }>(
+      `SELECT t.talent_id, t.slot, COALESCE(b.golden, 0) AS golden FROM creature_talents_v2 t
+       JOIN creatures c ON c.id = t.creature_id
+       LEFT JOIN line_talents b ON b.user_id = c.user_id AND b.line = c.line AND b.talent_id = t.talent_id
+       WHERE t.creature_id = ? ORDER BY t.learned_at, t.talent_id`,
       creatureId,
     )
     .toArray()
-    .map((row) => ({ talentId: row.talent_id, slot: row.slot }));
+    .map((row) => ({ talentId: row.talent_id, slot: row.slot, golden: row.golden === 1 }));
 }
 
 /**

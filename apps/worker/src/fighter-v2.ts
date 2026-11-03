@@ -78,6 +78,15 @@ export function slottedTalents(
     .map((t) => t.id);
 }
 
+/** Which of the slotted talents are golden (the book holds them golden): the ids among `slottedTalents`. */
+export function slottedGolden(
+  creature: Pick<TeamCreature, 'species' | 'level'>,
+  learned: readonly LearnedTalent[],
+): string[] {
+  const golden = new Set(learned.filter((l) => l.golden).map((l) => l.talentId));
+  return slottedTalents(creature, learned).filter((id) => golden.has(id));
+}
+
 /** The creature as the engine's fighter, in no place yet (`row` 0, `col` 0). `learned` is what it has learned from its line's book. */
 export function fighterV2(creature: TeamCreature, learned: readonly LearnedTalent[]): FighterSpec {
   return buildFighter({
@@ -87,6 +96,7 @@ export function fighterV2(creature: TeamCreature, learned: readonly LearnedTalen
     level: creature.level,
     knack: creature.knack,
     talents: slottedTalents(creature, learned),
+    goldenTalents: slottedGolden(creature, learned),
     gear: gearStatLines(creature.kit),
     row: 0,
     col: 0,
@@ -109,6 +119,8 @@ export interface FighterBuild {
   knack: string | null;
   /** The slotted v2 talents that are open at the level, in slot order (`slottedTalents`). */
   talents: readonly string[];
+  /** The ids among `talents` that are golden (R20: their numbers x1.25). Default none. */
+  goldenTalents?: readonly string[];
   gear: GearStats;
   row: number;
   col: number;
@@ -127,6 +139,9 @@ export function buildFighter(b: FighterBuild): FighterSpec {
     level: b.level,
     ...(knack === undefined ? {} : { knack }),
     talents: [...b.talents],
+    ...(b.goldenTalents === undefined || b.goldenTalents.length === 0
+      ? {}
+      : { goldenTalents: [...b.goldenTalents] }),
     row: b.row,
     col: b.col,
   });

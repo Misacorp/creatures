@@ -3,7 +3,11 @@
  * Pure functions that take the content pack (`CombatV2Pack` from `@creatures/game/combat-v2`) and the shipped species, bosses and
  * foes as arguments, so a test builds a tiny pack and the lab and (in phase 4) the worker pass the game's.
  */
-export { SUPPORT_SHAPE_FAMILY, createResolver, type FighterPack, type Resolver } from './fighters';
+export {
+  SUPPORT_SHAPE_FAMILY,
+  createResolver,
+  goldenFx,
+  type FighterPack, type Resolver } from './fighters';
 export { formStats, type FormStats } from './forms';
 export {
   FOE_COLS,

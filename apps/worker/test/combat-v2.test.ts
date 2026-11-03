@@ -39,7 +39,9 @@ const V2 = { combatV2: true } as const;
 
 /** What a creature learned, by talent id (the order the store reads them in is by time, then id). */
 const learnedSorted = (sql: SqlStorage, creatureId: string) =>
-  [...learnedOf(sql, creatureId)].sort((a, b) => a.talentId.localeCompare(b.talentId));
+  learnedOf(sql, creatureId)
+    .map(({ talentId, slot }) => ({ talentId, slot }))
+    .sort((a, b) => a.talentId.localeCompare(b.talentId));
 
 function parseWrangler(): {
   vars: Record<string, string>;
@@ -428,6 +430,54 @@ describe('the stats a creature page shows under v2 (statsV2)', () => {
         const bare = page(wide, wide.levelCap, []);
         expect(shown.hp).toBeGreaterThan(bare.hp);
         expect(shown.atk).toBeGreaterThan(bare.atk);
+      },
+      V2,
+    );
+  });
+
+  it('a golden talent counts x1.25 in the fight, and the page shows the fighter’s numbers', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await seeded(ctx, ['mossback'], 12);
+        const id = p.ids[0] as string;
+        ctx.sql.exec('DELETE FROM creature_talents_v2 WHERE creature_id = ?', id);
+        ctx.sql.exec('DELETE FROM line_talents WHERE user_id = ?', p.id);
+        ctx.sql.exec(
+          'INSERT INTO creature_talents_v2 (creature_id, talent_id, slot, learned_at) VALUES (?, ?, 1, 1)',
+          id,
+          'sharp-claws',
+        );
+        const form = formStats(combatV2, content, 'mossback', 12);
+        const bp = combatV2.talents['sharp-claws']?.fx.atkBp ?? 0;
+        const atkWith = (golden: number) => {
+          ctx.sql.exec(
+            'INSERT INTO line_talents (user_id, line, talent_id, golden, found_at) VALUES (?, ?, ?, ?, 1) ON CONFLICT(user_id, line, talent_id) DO UPDATE SET golden = excluded.golden',
+            p.id,
+            species.line,
+            'sharp-claws',
+            golden,
+          );
+          return { normal: bp, golden: Math.floor((bp * 125 + 50) / 100) }[
+            golden === 1 ? 'golden' : 'normal'
+          ];
+        };
+        for (const golden of [0, 1]) {
+          const addBp = atkWith(golden);
+          const state = await p.call('GET', '/api/state');
+          const shown = state.body.creatures[0].statsV2;
+          const team = loadCreaturesById(ctx.sql, p.id, [id])[0];
+          if (team === undefined) throw new Error('no creature');
+          const dungeon = fightNumbers(fighterV2(team, learnedOf(ctx.sql, id)));
+          const raid = loadV2Creatures(ctx.sql, [id]).get(id);
+          if (raid === undefined) throw new Error('no raid creature');
+          const weekend = fightNumbers(fighterOf(raid, 'm1', { row: 0, col: 0 }));
+          expect(shown).toEqual(dungeon);
+          expect(shown).toEqual(weekend);
+          expect(shown.atk).toBe(Math.floor((form.atk * (10_000 + addBp)) / 10_000));
+          expect(raid.goldenTalents).toEqual(golden === 1 ? ['sharp-claws'] : []);
+        }
+        expect(Math.floor((bp * 125 + 50) / 100)).toBeGreaterThan(bp);
       },
       V2,
     );
