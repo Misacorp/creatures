@@ -49,9 +49,9 @@ See "Open design questions" in `docs/roadmap.md`.
 
 The lead agent owns art direction (`decisions/direction.md`, 2026-10-31). To pick up after a compaction or in a new session: read `docs/design/art-studio.md` (workflow, brief template, review checklist), then the art library catalogue `docs/art/README.md`, then Misa's verdicts on the art review page (`https://claude.ai/artifact/36APiGzTDAhvx359SHVkyX`, collection `reviews`, read with the ArtifactData tool). Rebuild and republish the page with `pnpm art review` after any art change.
 
-- **Open PR:** #120 (branch `claude/art-review-command`): `pnpm art review`, the art retro's proposals 1 to 4, the shard shapes now in the game (`gear-sprites.ts`), and the House, Forge and Cave added to `valley-glow` (fire and crystals lit by day too, more forge sparks).
-- **Waiting on Misa:** the newer drafts on the review page (the Void evolved forms and shinies, the redone Void foes, the House, Forge and Cave).
-- **The valley prototype** (another session, branch `ccr-93a1de17-yutb1a`) draws the `valley-glow` places; it asks for art by cross-session message. Next likely asks: the valley's other buildings (paddock, arena, signpost, fairground) in the same glow style.
+- **Open PR:** branch `claude/valley-glow-camp`: the camp's other places in the glow style (`valley-glow-camp`: arena, fairground, road, chest, lectern, paddock, day and night) and the valley sky strip (`valley-sky`, 128 x 40, tiles sideways, with a moon), plus sprites up to 128 wide and outline-free backdrop art (`decisions/direction.md`, 2026-11-03).
+- **Waiting on Misa:** the newer drafts on the review page (the Void evolved forms and shinies, the redone Void foes, the House, Forge and Cave, the camp places and the sky).
+- **The valley prototype** (another session, branch `ccr-93a1de17-yutb1a`) draws the `valley-glow` places; it asks for art by cross-session message. Next likely asks: skies per location (forest, coast, mountains: same bands, a new horizon).
 - **Not applied from the retro:** proposals 5 (no commit after a pipe; `git diff --check` before committing a merge) and 6 (publish an artifact only after its review).
 
 ## Notes for future agents

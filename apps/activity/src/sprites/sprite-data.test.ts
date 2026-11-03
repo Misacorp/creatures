@@ -89,12 +89,16 @@ describe('validateSprite', () => {
     expect(() => validateSprite({ palette: {}, rows: ['c'] })).toThrow(/not in the palette/);
   });
 
+  it('accepts a sprite 128 wide', () => {
+    expect(() => validateSprite({ palette: {}, rows: ['.'.repeat(128)] })).not.toThrow();
+  });
+
   it('rejects very large sprites', () => {
-    expect(() => validateSprite({ palette: {}, rows: ['.'.repeat(65)] })).toThrow(/wider/);
+    expect(() => validateSprite({ palette: {}, rows: ['.'.repeat(129)] })).toThrow(/wider/);
     expect(() =>
       validateSprite({ palette: {}, rows: Array.from({ length: 65 }, () => '.') }),
     ).toThrow(/taller/);
-    expect(() => validateSprite({ palette: {}, rows: ['.'.repeat(33)], mirror: true })).toThrow(
+    expect(() => validateSprite({ palette: {}, rows: ['.'.repeat(65)], mirror: true })).toThrow(
       /wider/,
     );
   });
