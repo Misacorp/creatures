@@ -1,0 +1,69 @@
+{
+  "sections": [
+    {
+      "id": "v2-marks",
+      "title": "Marks and reactions",
+      "lines": [
+        "A Setter's hit leaves its element's {Mark} on the boss. The mark strip under the boss shows them all.",
+        "Hit the same element again and the mark gains a stack. A boss can carry several marks at once.",
+        "A Payoff that hits a mark its element is strong against sets off a {Reaction}: bonus damage.",
+        "Each Reaction takes a stack off the mark. When its stacks run out, the mark is gone.",
+        "A row acts from the front, left to right. Put the Setter before the Payoff, so the mark is there to cash."
+      ]
+    },
+    {
+      "id": "v2-knacks",
+      "title": "Roles and Knacks",
+      "lines": [
+        "A Setter marks, a Payoff cashes marks, a Guard takes hits for those beside it, and a Support boosts and heals them.",
+        "Each creature can carry one Knack: a trick picked from the ones its form knows. Evolving can add more.",
+        "Choose it on the creature's page. A creature can also go without one.",
+        "Once a creature has fought this weekend, its Knack is locked. Choose before stage 1.",
+        "Words like {Spend} and {Store} in a Knack's text are keywords. Tap one here to read what it means."
+      ]
+    },
+    {
+      "id": "v2-board",
+      "title": "The board",
+      "lines": [
+        "Your team stands in rows and columns. Row 1 is the one nearest the boss.",
+        "Each row acts from left to right, and the boss takes a turn after every row.",
+        "The boss has a plain attack and named moves. A move's tile shows its shape and whom it picks.",
+        "The shape says which slots it hits: Slam, Lance, Sweep, Barrage, Quake, Strike, Hush, Pincer or Leap.",
+        "The target says whom it picks: Front, Rear, Payoff, Nemesis (the strongest), Vulture (the most hurt) or Wild."
+      ]
+    },
+    {
+      "id": "v2-armour",
+      "title": "Armour and crits",
+      "lines": [
+        "Every creature and every boss has armour, a flat amount taken off each hit.",
+        "A hit that does not get past the armour is {Blocked} and deals nothing. Big hits get through where small ones do not.",
+        "A {Crit} is a lucky hit that deals a multiple of its damage. A creature's page shows its chance and its multiplier.",
+        "Its Knack, talents and gear can raise both.",
+        "A Reaction hit can crit too, and its bonus grows with it."
+      ]
+    },
+    {
+      "id": "v2-weekend",
+      "title": "The raid weekend",
+      "lines": [
+        "Stage 1 plays on Saturday, stage 2 on Sunday, and the live finale on Sunday evening.",
+        "The three stages share one boss. Only HP carries over: marks and the rest start fresh each stage.",
+        "A creature that is knocked out is out for the weekend. A spare can take its empty slot before the next stage.",
+        "Players lock in when stage 1 begins: whoever is on the board fights, and nobody joins after.",
+        "To pair up differently, tap a teammate's creature and Ask to swap. They answer from Home."
+      ]
+    },
+    {
+      "id": "v2-rank",
+      "title": "The Boss Rank",
+      "lines": [
+        "The server meets the bosses in a fixed order, and the Boss Rank counts how far along it is.",
+        "Beat the boss and the server moves on to the next one, a Rank higher.",
+        "The next boss is known a week ahead, so you can prepare.",
+        "A boss you did not beat comes back next week at full HP, with the most you took off it shown as a pale fill."
+      ]
+    }
+  ]
+}

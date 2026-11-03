@@ -137,10 +137,15 @@ export function savedKnack(v2: CreatureV2): KnackView | null {
   return v2.knownKnacks.find((k) => k.id === v2.knack) ?? null;
 }
 
-/** A piece of a text with keywords: plain words, or a keyword (a word in braces in the source). */
+/**
+ * A piece of a text with keywords: plain words, or a keyword (a word in braces in the source). A keyword part also
+ * carries `name`, the braced word itself ("Spend" for the chip "Spends"), which is what its glossary entry is
+ * found by.
+ */
 export interface TextPart {
   keyword: boolean;
   text: string;
+  name?: string;
 }
 
 /**
@@ -156,7 +161,8 @@ export function textParts(text: string): TextPart[] {
     const close = open === -1 ? -1 : rest.indexOf('}', open);
     if (open === -1 || close === -1) break;
     if (open > 0) parts.push({ keyword: false, text: rest.slice(0, open) });
-    parts.push({ keyword: true, text: rest.slice(open + 1, close) });
+    const word = rest.slice(open + 1, close);
+    parts.push({ keyword: true, text: word, name: word });
     rest = rest.slice(close + 1);
   }
   if (rest !== '') parts.push({ keyword: false, text: rest });
@@ -175,7 +181,7 @@ export function chipParts(text: string): TextPart[] {
     if (!part.keyword && last?.keyword === true) {
       const tail = /^[a-z]+/.exec(part.text)?.[0] ?? '';
       if (tail !== '') {
-        out[out.length - 1] = { keyword: true, text: last.text + tail };
+        out[out.length - 1] = { ...last, text: last.text + tail };
         if (part.text.length > tail.length)
           out.push({ keyword: false, text: part.text.slice(tail.length) });
         continue;

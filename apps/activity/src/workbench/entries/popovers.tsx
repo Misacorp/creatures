@@ -1,4 +1,4 @@
-import { GLOSSARY_SECTIONS } from '@creatures/game';
+import { GLOSSARY_SECTIONS, GLOSSARY_SECTIONS_V2 } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { HowToPlay } from '../../HowToPlay';
 import { glyphOrUnknown } from '../../glyphs';
@@ -167,17 +167,31 @@ const howToPlay: Entry = {
   file: 'apps/activity/src/HowToPlay.tsx',
   group: 'Popovers',
   description:
-    'The How to play page, the last resort for how things work: its sections in order, each with a small picture built from the game\'s own pieces. "More in How to play" in a popover opens it at that section. Close does nothing here.',
-  controls: { section: { kind: 'select', options: [ALL_SECTIONS, ...GLOSSARY_SECTIONS] } },
-  defaults: { section: ALL_SECTIONS },
+    'The How to play page, the last resort for how things work: its sections in order, each with a small picture built from the game\'s own pieces. "More in How to play" in a popover opens it at that section. Close does nothing here. With "combat v2" on (the server\'s `combatV2`) the six combat v2 sections come first and the shipped combat ones are gone; a keyword chip in a line opens that keyword\'s help.',
+  controls: {
+    section: {
+      kind: 'select',
+      options: [ALL_SECTIONS, ...GLOSSARY_SECTIONS, ...GLOSSARY_SECTIONS_V2],
+    },
+    v2: { kind: 'toggle' },
+  },
+  defaults: { section: ALL_SECTIONS, v2: false },
   presets: [
     { name: 'From the top', props: {} },
     { name: 'Gear', props: { section: 'gear' } },
     { name: 'Creatures', props: { section: 'creatures' } },
+    { name: 'Combat v2, from the top', props: { v2: true } },
+    { name: 'Combat v2: marks', props: { v2: true, section: 'v2-marks' } },
+    { name: 'Combat v2: Knacks', props: { v2: true, section: 'v2-knacks' } },
+    { name: 'Combat v2: the board', props: { v2: true, section: 'v2-board' } },
+    { name: 'Combat v2: armour and crits', props: { v2: true, section: 'v2-armour' } },
+    { name: 'Combat v2: the weekend', props: { v2: true, section: 'v2-weekend' } },
+    { name: 'Combat v2: the Boss Rank', props: { v2: true, section: 'v2-rank' } },
   ],
   render: (p) => {
-    const section = GLOSSARY_SECTIONS.find((s) => s === str(p, 'section')) ?? null;
-    return <HowToPlay section={section} nonce={0} onClose={() => undefined} />;
+    const section =
+      [...GLOSSARY_SECTIONS, ...GLOSSARY_SECTIONS_V2].find((s) => s === str(p, 'section')) ?? null;
+    return <HowToPlay section={section} nonce={0} onClose={() => undefined} v2={bool(p, 'v2')} />;
   },
 };
 
