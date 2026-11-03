@@ -4,6 +4,14 @@ Gear items, lines and sets, crafting, dismantling, conversions, the bag and the 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: [Misa] Element shards differ by shape (Tide drop, Ember flame, Grove leaf, Spark bolt, Mire drip)
+
+ID: `2026-11-03-element-shards-differ-by-shape-tide` · Status: current
+
+**Decision.** Misa picked the shipped element shard shapes on 2026-11-03: Tide a water drop (pointed top, round bottom), Ember a tall flame with a side tongue, Grove a tilted leaf with a stem, Spark a fat bolt, Mire a blob with two drips. Colours are unchanged. They are in `gear-sprites.ts` (`BUNDLED_PART_ICONS` keeps its ids); the other variants stay as drafts in `concepts/shards.ts`. A test requires every pair of element shards to differ in silhouette by at least 8 pixels (the new set's closest pair, Tide and Ember, differs by 10).
+
+**Reasoning.** Ember (#ef6a3a) and Grove (#5cbf5a) are a classic deuteranope confusion pair, and the old shards differed only in their top rows. The Forge and Market loop is about which shard you need, so colour must never be the only cue. The studio's deuteranope alt row shows five distinct outlines.
+
 ## 2026-10-31: Gear in combat v2: talents lead early, a balance mid-game, gear leads the endgame; no slot level requirements; gear alone can build crit **[Misa]**
 
 ID: `2026-10-31-gear-in-combat-v2-talents-lead` · Status: current
