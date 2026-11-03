@@ -4,6 +4,7 @@
 //   pnpm art <set> [--only id,id] [--out dir]     (out defaults to apps/activity/scratch/art/<set>)
 //   pnpm art new creature|boss|item|part|glyph|banner
 //   pnpm art library [--check]     (writes docs/art/: the catalogue README.md and a sheet per set)
+//   pnpm art review [--out file.html]   (the art review page for Misa; publish it with the Artifact tool)
 //   pnpm art items [--slot hat|scarf|charm] [--out dir]   (every shipped item, tinted, by name)
 //
 // For each sprite of the set it writes `<id>.png`: a large zoom with a coordinate grid (x across the
@@ -32,7 +33,21 @@ register(
 const { expandRows } = await import('../src/sprites/sprite-data.ts');
 const { lintSprite, nearestSilhouette, PANELS, KIND_SIZE } =
   await import('../src/sprites/sprite-lint.ts');
-const { CONCEPT_SETS } = await import('../src/sprites/concepts/index.ts');
+const { collectSets } = await import('../src/sprites/concepts/index.ts');
+// Every set file of the concepts folder registers itself by being there (`collectSets`).
+const CONCEPTS_DIR = join(import.meta.dirname, '..', 'src', 'sprites', 'concepts');
+const conceptModules: Record<string, Record<string, unknown>> = {};
+for (const file of readdirSync(CONCEPTS_DIR)) {
+  if (
+    !file.endsWith('.ts') ||
+    file === 'index.ts' ||
+    file === 'sets.ts' ||
+    file.endsWith('.test.ts')
+  )
+    continue;
+  conceptModules[`./${file}`] = (await import(join(CONCEPTS_DIR, file))) as Record<string, unknown>;
+}
+const CONCEPT_SETS = collectSets(conceptModules);
 const {
   BUNDLED_CREATURE_SPRITES,
   BUNDLED_BOSS_SPRITES,
@@ -70,6 +85,9 @@ function hex(colour: string): RGB {
   const full = colour.length === 4 ? `#${[...colour.slice(1)].map((c) => c + c).join('')}` : colour;
   return [1, 3, 5].map((i) => parseInt(full.slice(i, i + 2), 16)) as RGB;
 }
+
+/** Set by `library --check`: every sheet and card is drawn, so a studio bug fails CI, but no file is written. */
+let DRY_RUN = false;
 
 /** An RGB canvas with the few drawing calls the studio needs. */
 class Canvas {
@@ -137,6 +155,8 @@ class Canvas {
     return cx - x;
   }
   save(file: string): void {
+    // A dry run (the library check) draws everything but writes nothing: drawing is cheap, encoding is not.
+    if (DRY_RUN) return;
     writeFileSync(file, png(this.pixels, this.width, this.height));
   }
 }
@@ -643,6 +663,18 @@ async function drawItems(slot: string | undefined, out: string): Promise<void> {
 }
 
 const args = process.argv.slice(2);
+if (args[0] === 'review') {
+  const { writeReviewPage } = await import('./art-review.mts');
+  const at = args.indexOf('--out');
+  const out = resolve(
+    at < 0
+      ? join(import.meta.dirname, '..', 'scratch', 'art', 'art-review.html')
+      : (args[at + 1] ?? '.'),
+  );
+  const count = await writeReviewPage(out);
+  console.log(`wrote ${out} (${String(count)} sets)`);
+  process.exit();
+}
 if (args[0] === 'items') {
   const at = args.indexOf('--slot');
   const slot = at < 0 ? undefined : args[at + 1];
@@ -668,8 +700,16 @@ if (args[0] === 'library') {
     console.log(`wrote ${docs}`);
     process.exit(0);
   }
+  // Draw every set's sheet and every sprite's card in memory, so a studio change that breaks a kind fails
+  // here (no files are written).
+  DRY_RUN = true;
+  for (const set of CONCEPT_SETS) {
+    drawSet(set, Object.keys(set.sprites), 'dry.png', true);
+    for (const [id, concept] of Object.entries(set.sprites))
+      drawCard(id, concept, 'dry.png', set.backdrop);
+  }
   // The README carries each set's fingerprint, so comparing it (and that the sheets are exactly one
-  // per set) is enough; PNG bytes can differ between zlib versions, so nothing is drawn here.
+  // per set) is enough; PNG bytes can differ between zlib versions, so they are not compared.
   let have = '';
   let sheets: string[] = [];
   try {

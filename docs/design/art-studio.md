@@ -6,12 +6,32 @@ Status: 2026-10-30. Written while drawing the first Void concepts, from what was
 
 1. **Brief.** Write what the art must say in one line (the silhouette) and where it goes. For new content, read the compendium first (`docs/compendium/`). Concept art needs no name or stats.
 2. **Start from the template.** `pnpm art new creature` prints a 16×16 grid with the shared chibi face already in place (eyes, blush, mouth at the coordinates the tests check). Other kinds: `boss`, `item`, `part`, `glyph`, `banner` print an empty grid of the right size.
-3. **Draw in a concept set.** Concept sprites live in `apps/activity/src/sprites/concepts/<set>.ts` under working codes (`void-guard`), with a kind, a role and a one-line note. Nothing in the game imports this folder. Register a new set in `concepts/index.ts`.
+3. **Draw in a concept set.** Concept sprites live in `apps/activity/src/sprites/concepts/<set>.ts` under working codes (`void-guard`), with a kind, a role and a one-line note. Nothing in the game imports this folder. A new file there that exports a `ConceptSet` is found by itself (no list to edit, so parallel agents never collide); after merging two branches that both changed `docs/art/`, run `pnpm art library` instead of resolving the catalogue by hand.
 4. **Render and lint.** `pnpm art <set>` (about 0.2 s, no browser). It prints every rule the art breaks, with coordinates, and writes PNGs to `apps/activity/scratch/art/<set>/` (git ignores it).
 5. **Look at the PNGs**, not only the lint: the close-up card of each sprite and the set sheet (below). Fix, render again. Most sprites take three to five rounds.
 6. **Show Misa the set sheet** (`<set>.png`) and, for a detail, the sprite's card. Alternative palettes appear as their own labelled rows, so a colour choice is a choice he can see.
 7. **Keep it in the library** (below): `pnpm art library` updates the catalogue.
 8. **Promote** when the content lands: move the sprite into `src/sprites/data/` under the content id, add its shiny palette in `art.ts`, delete the concept. The sprite tests then apply to it.
+
+## Briefing a drawing agent
+
+Paste this into every brief for art, filled in. Most second rounds this far came from a missing line here.
+
+- **What it is and where it is shown:** the place in the game (a creature list at 3x, a 12x12 bag tile, the valley's grass at 2x, a banner over a screen), and the backdrop it stands on. If it stands on tiles, give the set a `backdrop`.
+- **What it must say at 1x:** the silhouette in one line ("a crab: claws held high").
+- **What it must not read as:** the near misses (a dark rectangle reads as a visor or a mouth; a stem under a wide top reads as a mushroom; an object reads as an object, so a foe is a living thing).
+- **Palettes:** the main one and every alternative (day and night, a shiny, a tint), each judged as closely as the main.
+- **References:** the shipped sprites or sets to look at, and the decisions that set the style (`decisions/direction.md`).
+- **Tools and finish:** `pnpm art <set>` after every round, `pnpm art library`, the checks, and the report (one line per sprite and what still reads badly).
+
+## Reviewing a set (the lead, before Misa sees it)
+
+1. **On its real ground:** look at the set on its backdrop, not only on the dark panels.
+2. **Every palette:** each alternative row (day, night, shiny, tint) on its own, not "the same with lights off".
+3. **Joints at zoom:** parts that should touch do touch (a crystal on its post, a hat on a head); no gaps or stray pixels.
+4. **Reads as itself at 1x and 3x:** the silhouette alone, and among shipped neighbours (the sheet's nearest-sprite and list rows).
+5. **The near misses:** no dark slot that reads as a visor or mouth, no object where a creature is meant.
+6. **Then send it back or show it:** a piece that fails one of these goes back to the agent with the reason; only what passes reaches the review page.
 
 ## The library
 
@@ -31,6 +51,8 @@ Art Misa requests is kept until the content that uses it exists. **The catalogue
 - **`pnpm art items [--slot hat|scarf|charm]`** draws every shipped gear item as the game does (its look, in its tint), labelled by name, and a card per look with each item that wears it in its own tint. Every item with its own name has its own look; element versions with the same stats share one (`itemLookId`, decision of 2026-10-30 in `decisions/gear.md`). Item sprites are in `src/sprites/data/item-*-sprites.ts`, drawn in the neutral greys the tint swaps.
 
 - **A set's `backdrop`** (a ground tile, with its own colours per alternative palette, such as a night tile for the `night` alt) is repeated behind each sprite in the set sheet and in an extra row of each card, so art that will stand on the valley's or the map's tiles is judged on them, not on the dark panels.
+
+- **`pnpm art review [--out file.html]`** builds the art review page: every library set and every shipped item look, each with Like, Redo and a note. Publish the file with the Artifact tool at the page's existing URL (in `docs/progress.md`), declaring the `db` and `user` capabilities. Misa's answers are in its database, collection `reviews` (one document per piece: `piece`, `verdict`, `note`); read them before changing library art, and record them on the pieces (`status`, `notes`).
 
 `pnpm art <set> --only id,id` draws a few; `--out <dir>` writes somewhere else (your scratchpad).
 

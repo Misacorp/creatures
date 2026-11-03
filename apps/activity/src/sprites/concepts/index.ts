@@ -1,22 +1,14 @@
 /**
  * The art library: sprites drawn ahead of their content. A concept has a working code (`void-guard`), a
  * kind (which sets its size and rules) and a note, but no name, stats or lore; nothing in the game
- * imports this folder. `scripts/art.mts` draws and lints a set; when the content lands, the sprite
+ * imports this folder. A set is a file here that exports a `ConceptSet` (it is found by its place in the
+ * folder; `sets.ts` lists them). `scripts/art.mts` draws and lints a set; when the content lands, the sprite
  * moves into `data/` under the species id and the concept is deleted (`docs/design/art-studio.md`).
  * `pnpm art library` writes the catalogue, `docs/art/README.md`, and a sheet per set; `pnpm check`
  * fails when the catalogue is out of date.
  */
 import type { SpriteDef } from '../sprite-data';
 import type { ArtKind } from '../sprite-lint';
-import { VOID_CONCEPTS } from './void';
-import { VOID_FOES_CONCEPTS } from './void-foes';
-import { VOID_GEAR_CONCEPTS } from './void-gear';
-import { VOID_PLACE_CONCEPTS } from './void-place';
-import { VALLEY_POSTERS_CONCEPTS } from './valley-posters';
-import { VALLEY_NIGHT_CONCEPTS } from './valley-night';
-import { VALLEY_LANDMARK_CONCEPTS } from './valley-landmarks';
-import { VALLEY_GLOW_CONCEPTS } from './valley-glow';
-import { COMBAT_ICONS_CONCEPTS } from './combat-icons';
 
 export interface Concept {
   kind: ArtKind;
@@ -66,14 +58,22 @@ export interface ConceptSet {
   backdrop?: { tile: SpriteDef; alts?: Readonly<Record<string, Readonly<Record<string, string>>>> };
 }
 
-export const CONCEPT_SETS: readonly ConceptSet[] = [
-  VOID_CONCEPTS,
-  VOID_FOES_CONCEPTS,
-  VOID_GEAR_CONCEPTS,
-  VOID_PLACE_CONCEPTS,
-  VALLEY_POSTERS_CONCEPTS,
-  VALLEY_NIGHT_CONCEPTS,
-  VALLEY_LANDMARK_CONCEPTS,
-  VALLEY_GLOW_CONCEPTS,
-  COMBAT_ICONS_CONCEPTS,
-];
+/** Whether a module export is a concept set (an object with an id, a title and sprites). */
+export function isConceptSet(value: unknown): value is ConceptSet {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as Partial<ConceptSet>;
+  return typeof v.id === 'string' && typeof v.title === 'string' && typeof v.sprites === 'object';
+}
+
+/**
+ * The concept sets of a folder's modules, in file-name order: every exported set of every file. Each set
+ * file registers itself by being in the folder (no list to edit, so parallel art work never collides on
+ * one). `sets.ts` feeds it from Vite's glob, the studio (`scripts/art.mts`) from a directory listing.
+ */
+export function collectSets(
+  modules: Readonly<Record<string, Readonly<Record<string, unknown>>>>,
+): ConceptSet[] {
+  return Object.keys(modules)
+    .sort()
+    .flatMap((file) => Object.values(modules[file] ?? {}).filter(isConceptSet));
+}
