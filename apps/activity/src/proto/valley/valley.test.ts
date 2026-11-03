@@ -370,14 +370,16 @@ describe('the four newer places', () => {
 describe('the week and the visitor', () => {
   const clock = (weekday: number, hour = 12, minute = 0) => ({ weekday, hour, minute });
 
-  it('is here from Thursday 00:00 to the finale on Sunday evening, away the rest of the week', () => {
+  it('is here from Thursday 00:00 until Sunday ends, away from Monday 00:00 to Wednesday night', () => {
+    expect(visitorHere(clock(1, 0, 0))).toBe(false);
     expect([1, 2, 3].map((d) => visitorHere(clock(d, 23, 59)))).toEqual([false, false, false]);
     expect(visitorHere(clock(4, 0, 0))).toBe(true);
     expect(visitorHere(clock(5))).toBe(true);
     expect(visitorHere(clock(6, 23, 59))).toBe(true);
-    expect(visitorHere(clock(7, 19, 59))).toBe(true);
-    expect(visitorHere(clock(7, 20, 0))).toBe(false);
-    expect(visitorHere(clock(7, 23, 0))).toBe(false);
+    // The finale (Sunday 20:00) does not send him off: he stays to the end of the day.
+    expect(visitorHere(clock(7, 20, 0))).toBe(true);
+    expect(visitorHere(clock(7, 23, 59))).toBe(true);
+    expect([1, 2, 3].map((d) => visitorHere(clock(d, 0, 0)))).toEqual([false, false, false]);
   });
 
   it('reads the weekday from a name and from a moment in a timezone', () => {
