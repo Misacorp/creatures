@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: Phase 4 groundwork starts before the phase 3 gate (resource library, frame plan, School design) **[Misa]**
+
+ID: `2026-11-03-phase-4-groundwork-starts-before-the` · Status: current
+
+**Decision.** While Misa travels and cannot try staging, the lead starts phase 4's groundwork: the resource library (round 5, Q13), the plan for the valley frame in the game, and the School's design with combat v2's talents. Building the frame itself waits for the phase 3 gate (Misa plays the prototype on staging). Misa: "Go ahead and continue as far as you can."
+
+**Reasoning.** These parts hold whatever the feel review says: the library is a source of truth for names Misa asked for, the plan maps today's screens to places, and the School waited only on combat v2's talents, which are now in the game. Building the frame first could build on a feel he has not confirmed.
+
 ## 2026-11-03: No poster on a place's screen; a sky backdrop instead, when the art exists (round 21, Q50) **[Misa]**
 
 ID: `2026-11-03-no-poster-on-a-place-s` · Status: current
