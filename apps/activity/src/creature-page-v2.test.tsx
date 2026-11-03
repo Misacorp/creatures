@@ -254,6 +254,8 @@ describe('the Talent Book under combat v2', () => {
       'In use, ✓ Slot 2',
     );
     expect(byClass(dialog, 'golden').length).toBeGreaterThan(0);
+    // A golden entry also says it in words and a star, not only in colour.
+    expect(byClass(dialog, 'golden-mark').length).toBeGreaterThan(0);
     expect(visibleText(dialog)).not.toContain('{');
   });
 

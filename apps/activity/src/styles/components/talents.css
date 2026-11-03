@@ -63,6 +63,18 @@
   }
 }
 
+/* The star and the word "Golden" beside a golden talent's name: plain gold, never shimmering, so it reads without colour. */
+.golden-mark {
+  display: inline-flex;
+  flex: none;
+  gap: 0.125rem;
+  align-items: center;
+  color: var(--gold);
+  font-family: var(--display);
+  font-size: var(--fs-small);
+  line-height: 1;
+}
+
 @keyframes gold-shimmer {
   from {
     background-position: 100% 0;

@@ -41,111 +41,38 @@ import { Tag } from './ui/Tag';
 import { TurnStrip } from './ui/TurnStrip';
 
 /**
- * How a reaction's callout is drawn on the boss (Misa picks one; the first is the shipped look):
- * - `plate`: the name on an ink plate with the bonus under it, rising beside the hit's own number;
- * - `unit`: one float, the hit's number and the reaction together on one plate (the name, the total and its bonus), rising as one;
- * - `burst`: the hit's number rises, then the reaction's name bursts out under it with the bonus as a second line, on the same anchor;
- * - `morph`: the number in the hitter's element colour turns into the reaction's two colours as the name appears beside it.
- * The last three take the hit's number into the callout (and leave the number's own float out); a reaction whose hit was dodged or
- * Blocked has no number to take, so it falls back to the plate's content.
+ * A word with its two element colours put into its letters, as two parts (the first half in the mark's colour, the second in the
+ * hitter's; never markup built from the word: each part is text). A reaction's name is drawn with it.
  */
-export type ReactionStyle = 'plate' | 'unit' | 'burst' | 'morph';
-
-/**
- * How the callout's two element colours (the mark's, then the hitter's) are put into the text itself, with no gradient:
- * - `bar`: the shipped look, the text plain and a two-colour bar under it;
- * - `split`: the word in two halves, the first in the mark's colour and the second in the hitter's;
- * - `outline`: filled in the mark's colour with a hard 1 px outline in the hitter's;
- * - `shadow`: filled in the mark's colour with a hard drop shadow in the hitter's, down and to the right;
- * - `alternate`: the letters taking turns, the mark's colour first.
- */
-export type ReactionInk = 'bar' | 'split' | 'outline' | 'shadow' | 'alternate';
-
-/**
- * How a crit's number is told from a plain hit: `mult` is the shipped look (bigger, with "x2.6!" over it); `split` drops the multiplier,
- * adds "!" to the number and draws the number in two hard halves, the upper in a lighter shade of the hitter's colour.
- */
-export type CritStyle = 'mult' | 'split';
-export const CRIT_STYLES: readonly CritStyle[] = ['mult', 'split'];
-
-export const REACTION_STYLES: readonly ReactionStyle[] = ['plate', 'unit', 'burst', 'morph'];
-export const REACTION_INKS: readonly ReactionInk[] = [
-  'bar',
-  'split',
-  'outline',
-  'shadow',
-  'alternate',
-];
-
-/** Where a creature a Support boosted keeps its mark while the Boost lasts: a yellow inner glow, or a small up-arrow in a corner. */
-export type BoostMark = 'glow' | 'pip';
-export const BOOST_MARKS: readonly BoostMark[] = ['glow', 'pip'];
-
-/** A word with the two element colours of a reaction put into its letters (never markup built from the word: each part is text). */
-function InkText({
+function SplitName({
   text,
   elements,
-  ink,
 }: {
   text: string;
   elements: readonly [string | null, string | null];
-  ink: ReactionInk;
 }) {
-  const [markCls, hitCls] = [elementClass(elements[0]), elementClass(elements[1])];
-  if (ink === 'split') {
-    const letters = Array.from(text);
-    const half = Math.ceil(letters.length / 2);
-    return (
-      <>
-        <span class={markCls}>{letters.slice(0, half).join('')}</span>
-        <span class={hitCls}>{letters.slice(half).join('')}</span>
-      </>
-    );
-  }
-  if (ink === 'alternate')
-    return (
-      <>
-        {Array.from(text).map((letter, k) => (
-          <span key={k} class={k % 2 === 0 ? markCls : hitCls}>
-            {letter}
-          </span>
-        ))}
-      </>
-    );
-  if (ink === 'outline' || ink === 'shadow')
-    return (
-      <span class={`ink-${ink} ${hitCls}`}>
-        <span class={markCls}>{text}</span>
-      </span>
-    );
-  return <>{text}</>;
+  const letters = Array.from(text);
+  const half = Math.ceil(letters.length / 2);
+  return (
+    <>
+      <span class={elementClass(elements[0])}>{letters.slice(0, half).join('')}</span>
+      <span class={elementClass(elements[1])}>{letters.slice(half).join('')}</span>
+    </>
+  );
 }
 
 /**
  * The numbers and words that float over a creature or the boss. A creature's hit on the boss is a number in its element's colour, a
- * crit bigger with its multiplier ("x2.6!"); a Blocked hit is the shield and 0; a reaction is its name with the bonus under it and its
- * two element colours (`ReactionStyle`, `ReactionInk`); a Guard's save is a shield (with what it kept off, when known); a boost is
- * rising arrows; a Knack's name is a small word. All of it is text and drawings, never markup built from a name.
+ * crit the same number ending with "!" in two hard halves (`crit-split`); a Blocked hit is the shield and 0; a reaction is one float:
+ * its name in its two element colours with, under it on one line, the hit's total and the bonus ("452 +307"); a Guard's save is a
+ * large shield (with what it kept off, when known); a boost is rising arrows; a Knack's name is a small word. All of it is text and drawings, never markup built from a name.
  */
-function FloatsV2({
-  fx,
-  target,
-  reaction = 'plate',
-  ink = 'bar',
-  crit = 'mult',
-}: {
-  fx: readonly FxItem[];
-  target: string | null;
-  reaction?: ReactionStyle;
-  ink?: ReactionInk;
-  crit?: CritStyle;
-}) {
+function FloatsV2({ fx, target }: { fx: readonly FxItem[]; target: string | null }) {
   // The hits whose number rides in a reaction's callout, so they are not drawn twice.
   const taken = new Set<number>();
-  if (reaction !== 'plate')
-    for (const { cue } of fx)
-      if (cue.kind === 'float' && cue.tone === 'reaction' && cue.hit !== undefined)
-        taken.add(cue.hit.i);
+  for (const { cue } of fx)
+    if (cue.kind === 'float' && cue.tone === 'reaction' && cue.hit !== undefined)
+      taken.add(cue.hit.i);
   return (
     <>
       {fx.map((item) => {
@@ -153,34 +80,42 @@ function FloatsV2({
         if (cue.kind !== 'float' || cue.target !== target) return null;
         if (cue.tone === 'hit' && taken.has(cue.i)) return null;
         const [markEl, hitEl] = cue.elements ?? [null, null];
-        const merged = cue.tone === 'reaction' && reaction !== 'plate' ? cue.hit : undefined;
+        const merged = cue.tone === 'reaction' ? cue.hit : undefined;
         const colour =
           cue.tone === 'hit'
             ? elementClass(cue.element ?? null)
             : merged === undefined
               ? ''
               : elementClass(hitEl);
-        const name = <InkText text={cue.text} elements={[markEl, hitEl]} ink={ink} />;
-        const colours = ink === 'bar' && cue.tone === 'reaction' && (
-          <span class="float-colours">
-            <i class={elementClass(markEl)} />
-            <i class={elementClass(hitEl)} />
-          </span>
-        );
         return (
           <span
             key={`float-${cue.tone}-${String(cue.i)}`}
             class={`float float-${cue.tone}${cue.crit ? ' crit' : ''}${colour === '' ? '' : ` ${colour}`}${
-              merged === undefined ? '' : ` rx rx-${reaction}`
+              cue.tone === 'reaction' ? ' rx' : ''
             } lane-${String(item.lane)}`}
             ref={fxRef(item, { '--drift': cue.drift, '--lane': item.lane })}
           >
             <span class="float-body">
-              {merged === undefined ? (
+              {cue.tone === 'reaction' ? (
                 <>
-                  {cue.mult !== undefined && crit === 'mult' && (
-                    <span class="crit-pop">{cue.mult}</span>
-                  )}
+                  <span class="float-text rx-name">
+                    <SplitName text={cue.text} elements={[markEl, hitEl]} />
+                  </span>
+                  <span class="rx-numbers">
+                    {merged !== undefined && (
+                      <span class="rx-num">
+                        {merged.crit ? (
+                          <span class="crit-split">{`${merged.text}!`}</span>
+                        ) : (
+                          merged.text
+                        )}
+                      </span>
+                    )}
+                    {cue.sub !== undefined && <span class="rx-bonus">{cue.sub}</span>}
+                  </span>
+                </>
+              ) : (
+                <>
                   {cue.tone === 'boost' && (
                     <span class="float-arrows">
                       <i />
@@ -191,36 +126,15 @@ function FloatsV2({
                     {(cue.tone === 'blocked' || cue.tone === 'save') && (
                       <Sprite sprite={glyphOrUnknown('shield')} scale={1} class="float-shield" />
                     )}
-                    {cue.tone === 'reaction' ? (
-                      name
-                    ) : cue.tone === 'hit' && cue.crit && crit === 'split' ? (
+                    {cue.tone === 'hit' && cue.crit ? (
                       <span class="crit-split">{`${cue.text}!`}</span>
+                    ) : cue.tone === 'save' ? (
+                      <span class="save-num">{cue.text}</span>
                     ) : (
                       cue.text
                     )}
                   </span>
                   {cue.sub !== undefined && <span class="float-sub">{cue.sub}</span>}
-                  {colours}
-                </>
-              ) : (
-                <>
-                  {merged.mult !== undefined && crit === 'mult' && (
-                    <span class="crit-pop">{merged.mult}</span>
-                  )}
-                  <span class="float-text rx-line">
-                    <span class="rx-num">
-                      {reaction === 'morph' ? (
-                        <InkText text={merged.text} elements={[markEl, hitEl]} ink={ink} />
-                      ) : merged.crit && crit === 'split' ? (
-                        <span class="crit-split">{`${merged.text}!`}</span>
-                      ) : (
-                        merged.text
-                      )}
-                    </span>
-                    <span class="rx-name">{name}</span>
-                  </span>
-                  {cue.sub !== undefined && <span class="float-sub rx-bonus">{cue.sub}</span>}
-                  {colours}
                 </>
               )}
             </span>
@@ -272,14 +186,6 @@ interface StageV2Props {
   children?: ComponentChildren;
   /** Drawn over the stage inside its padding, like the effects' layer (the dungeon's room banner); it lets taps through. */
   overlay?: ComponentChildren;
-  /** How a reaction's callout is drawn (the default is the shipped look, `plate`). */
-  reactionStyle?: ReactionStyle;
-  /** How a reaction's two element colours are put into its text (the default is the shipped two-colour bar). */
-  reactionInk?: ReactionInk;
-  /** How a creature carrying a Support's Boost is marked on the board for as long as the Boost lasts. */
-  boostMark?: BoostMark;
-  /** How a crit's number is shown (the default is the shipped "x2.6!" over a bigger number). */
-  critStyle?: CritStyle;
 }
 
 /** The slot of a creature of the fight on the boss's grid (a slot is `col * rows + row`). */
@@ -306,10 +212,6 @@ export function StageV2({
   ticks,
   children,
   overlay,
-  reactionStyle = 'plate',
-  reactionInk = 'bar',
-  boostMark = 'glow',
-  critStyle = 'mult',
 }: StageV2Props) {
   const popovers = usePopoverHost();
   const reduced = usePrefersReducedMotion();
@@ -405,12 +307,12 @@ export function StageV2({
           out: now?.out === true,
           store: now?.store ?? 0,
           hit: hit.has(f.key),
-          ...((now?.boost ?? 0) > 0 && now?.out !== true ? { boosted: boostMark } : {}),
+          ...((now?.boost ?? 0) > 0 && now?.out !== true ? { boosted: true as const } : {}),
           acting: landed?.kind === 'creature' && landed.actor === f.key,
           ...(leg === undefined ? {} : { link: leg }),
           overlay: (
             <>
-              <FloatsV2 fx={fx} target={f.key} crit={critStyle} />
+              <FloatsV2 fx={fx} target={f.key} />
               <KoTags fx={fx} creature={f.key} />
             </>
           ),
@@ -558,13 +460,7 @@ export function StageV2({
             class={`stage-boss-art${hit.has(null) ? ' hit' : ''}${landed?.kind === 'boss' ? ' windup' : ''}`}
           >
             <Sprite sprite={art.sprite} scale={art.scale} alt={boss.name} />
-            <FloatsV2
-              fx={fx}
-              target={null}
-              reaction={reactionStyle}
-              ink={reactionInk}
-              crit={critStyle}
-            />
+            <FloatsV2 fx={fx} target={null} />
           </div>
         </div>
         <div class="stage-foe-line">

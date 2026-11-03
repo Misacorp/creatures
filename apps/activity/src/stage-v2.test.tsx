@@ -210,63 +210,39 @@ describe('what a fight shows besides the numbers', () => {
   const reacts = (m: ReturnType<typeof stageModelOf>, k: number) =>
     (m.beats[k]?.reacts ?? false) && m.beats[k]?.kind === 'creature';
 
-  it("a reaction option carries the hit's number in the callout (one float, not two); the colours are in the letters", () => {
-    for (const style of ['unit', 'burst', 'morph'] as const) {
-      const { p } = draw(mixed(), reacts, false, { reactionStyle: style, reactionInk: 'split' });
-      const callout = byClass(p.root, 'float-reaction')[0] as never;
-      expect(byClass(callout, 'float-colours').length).toBe(0);
-      expect(byClass(callout, 'rx-num').length).toBe(1);
-      expect(visibleText(byClass(callout, 'rx-num')[0] as never)).toMatch(/^\d+$/);
-      expect(byClass(p.root, 'float-hit').length).toBe(0);
-      page?.unmount();
-      page = null;
-    }
+  it("a reaction's callout is one float: the name in two parts over the hit's total and the bonus on one line", () => {
+    const { p } = draw(mixed(), reacts);
+    const callout = byClass(p.root, 'float-reaction')[0] as never;
+    expect(byClass(callout, 'float-colours').length).toBe(0);
+    expect(byClass(callout, 'rx-name')[0]?.childNodes.length).toBe(2);
+    const numbers = byClass(callout, 'rx-numbers')[0] as never;
+    expect(byClass(numbers, 'rx-num').length).toBe(1);
+    expect(byClass(numbers, 'rx-bonus').length).toBe(1);
+    expect(visibleText(byClass(numbers, 'rx-num')[0] as never)).toMatch(/^\d+!?$/);
+    expect(visibleText(byClass(numbers, 'rx-bonus')[0] as never)).toMatch(/^\+\d+$/);
+    // The hit's own number is not drawn a second time.
+    expect(byClass(p.root, 'float-hit').length).toBe(0);
   });
 
-  it('the colour treatments are text: a split word has two parts, alternating a part per letter, outline and shadow wrap it', () => {
-    const parts = (ink: 'split' | 'alternate' | 'outline' | 'shadow') => {
-      const { p } = draw(mixed(), reacts, false, { reactionInk: ink });
-      const callout = byClass(p.root, 'float-reaction')[0] as never;
-      const holder =
-        ink === 'outline' || ink === 'shadow'
-          ? byClass(callout, `ink-${ink}`)[0]
-          : byClass(callout, 'float-text')[0];
-      const n = holder?.childNodes.length;
-      page?.unmount();
-      page = null;
-      return n;
-    };
-    expect(parts('split')).toBe(2);
-    expect(parts('alternate')).toBeGreaterThan(4);
-    expect(parts('outline')).toBe(1);
-    expect(parts('shadow')).toBe(1);
-  });
-
-  it('a split crit is the number with "!" and no multiplier', () => {
+  it('every crit number ends with "!" in two hard halves and has no multiplier', () => {
     const replay = mixed();
-    const { p } = draw(
-      replay,
-      (m, k) => showOf(replay.events, m.beats[k] as never).floats.some((f) => f.mult !== undefined),
-      false,
-      { critStyle: 'split' },
+    const { p } = draw(replay, (m, k) =>
+      showOf(replay.events, m.beats[k] as never).floats.some((f) => f.crit && f.tone === 'hit'),
     );
     expect(byClass(p.root, 'crit-split').length).toBeGreaterThan(0);
-    expect(visibleText(byClass(p.root, 'crit-split')[0] as never)).toMatch(/^\d+!$/);
+    for (const el of byClass(p.root, 'crit-split')) expect(visibleText(el)).toMatch(/^\d+!$/);
     expect(byClass(p.root, 'crit-pop').length).toBe(0);
+    expect(visibleText(p.root)).not.toMatch(/x\d(\.\d)?!/);
   });
 
-  it('a boosted creature keeps its mark (glow, or the pip) until its next hit', () => {
+  it('a boosted creature keeps its yellow glow until its next hit', () => {
     const replay = mixed();
     const boosted = (m: ReturnType<typeof stageModelOf>, k: number) =>
       Object.values(m.states[k + 1]?.creatures ?? {}).some((c) => c.boost > 0);
     const { p, model, beat } = draw(replay, boosted);
     const n = Object.values(model.states[beat]?.creatures ?? {}).filter((c) => c.boost > 0).length;
     expect(byClass(p.root, 'slot-boost').length).toBe(n);
-    expect(byClass(p.root, 'glow').length).toBe(n);
-    page?.unmount();
-    page = null;
-    const pip = draw(replay, boosted, false, { boostMark: 'pip' });
-    expect(byClass(pip.p.root, 'pip').length).toBe(n);
+    expect(byClass(p.root, 'pip').length).toBe(0);
   });
 
   it("a reaction's callout is its name in the content's words over the boss, with the bonus and its two colours", () => {
@@ -278,11 +254,13 @@ describe('what a fight shows besides the numbers', () => {
     const callouts = byClass(p.root, 'float-reaction');
     expect(callouts.length).toBeGreaterThan(0);
     const text = visibleText(callouts[0] as never);
-    expect(text).toMatch(/^(Overload|Grounding|Wildfire|Steam|Smother|[A-Z][a-z]+)!\s*\+\d+$/);
-    expect(byClass(callouts[0] as never, 'float-colours').length).toBe(1);
+    expect(text).toMatch(
+      /^(Overload|Grounding|Wildfire|Steam|Smother|[A-Z][a-z]+)!\s*(\d+!?)?\+\d+$/,
+    );
+    expect(byClass(callouts[0] as never, 'rx-name')[0]?.childNodes.length).toBe(2);
   });
 
-  it("a creature's hit is a number in its element's colour; a crit is bigger with its multiplier", () => {
+  it('a creature\'s hit is a number in its element\'s colour; a crit ends with "!"', () => {
     const replay = mixed();
     const { p } = draw(replay, (m, k) =>
       showOf(replay.events, m.beats[k] as never).floats.some((f) => f.mult !== undefined),
@@ -292,7 +270,7 @@ describe('what a fight shows besides the numbers', () => {
     );
     expect(crit).toBeDefined();
     expect(crit?.getAttribute('class')).toMatch(/el-(tide|ember|grove|spark|mire)/);
-    expect(visibleText(crit as never)).toMatch(/x\d(\.\d)?!\s*\d+/);
+    expect(visibleText(crit as never)).toMatch(/^\d+!$/);
   });
 
   it("a Guard's save puts a shield on the covered creature and a bracket leg on both tiles; the Guard's tile flashes", () => {
