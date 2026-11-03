@@ -129,15 +129,15 @@ const BELL_DAY = { m: '#e6d8c0', a: '#bfae9e', u: '#c99a58' };
 
 const SCHOOL_BELL: SpriteDef = {
   palette: BELL_PALETTE,
-  rows: ['mmmmaa', 'maaaaa', 'mauuaa', 'mauuaa', 'maaaaa', 'mmmmaa'],
+  rows: ['mmmmmm', 'maaaam', 'mauuam', 'mauuam', 'maaaam', 'mmmmmm'],
 };
 const SCHOOL_BELL_LEFT: SpriteDef = {
   palette: BELL_PALETTE,
-  rows: ['mmmmaa', 'maaaaa', 'mauuaa', 'muuaaa', 'maaaaa', 'mmmmaa'],
+  rows: ['mmmmmm', 'maaaam', 'mauuam', 'muuaam', 'maaaam', 'mmmmmm'],
 };
 const SCHOOL_BELL_RIGHT: SpriteDef = {
   palette: BELL_PALETTE,
-  rows: ['mmmmaa', 'maaaaa', 'mauuaa', 'maauua', 'maaaaa', 'mmmmaa'],
+  rows: ['mmmmmm', 'maaaam', 'mauuam', 'maauum', 'maaaam', 'mmmmmm'],
 };
 
 /**
