@@ -702,7 +702,7 @@ function storiesOf(c: Ctx): Story[] {
       place: 'visitor',
       count: (blueprint === undefined ? 0 : 1) + (arrives === undefined ? 0 : 1),
       headline: sold ? 'VISITOR SELLS A BLUEPRINT' : 'A VISITOR ARRIVES',
-      blurb: sold ? '' : 'He stays until the raid.',
+      blurb: sold ? '' : 'He stays until Sunday ends.',
       scene: {
         place: 'visitor',
         actors: [{ who: cast0(c.crew.resting[0] ?? c.crew.scouts[1]), dx: -14, dy: 8 }],
