@@ -1,8 +1,12 @@
 /** The boss track: the order and its repeat, the strength ladder, and the boss of a slot against `raidBossOf`. */
 import { content } from '@creatures/game';
+import { combatV2 } from '@creatures/game/combat-v2';
+import { trackBoss } from '@creatures/engine/v2';
 import { describe, expect, it } from 'vitest';
 import { RAID_BOSS_IDS, RAID_RANKS, RAID_SPECS, raidBossOf } from '../src/bosses';
 import { CARDS } from '../src/cards';
+import { SHIPPED } from '../src/species';
+import { wideBoss } from '../src/raidMeasure';
 import {
   SLOT_CARDS,
   SLOT_EXTRA_CARDS,
@@ -142,6 +146,7 @@ describe('the boss of a slot', () => {
     const numbers = SLOT_NUMBERS as Record<number, unknown>;
     const kept = numbers[3];
     const strength = SLOT_STRENGTH as Record<number, number>;
+    const keptStrength = strength[3];
     try {
       numbers[3] = { hp: 12_345, atk: 67 };
       strength[3] = 4_321;
@@ -154,7 +159,8 @@ describe('the boss of a slot', () => {
       expect(slotBoss(4).hp).not.toBe(12_345);
     } finally {
       numbers[3] = kept;
-      delete strength[3];
+      if (keptStrength === undefined) delete strength[3];
+      else strength[3] = keptStrength;
     }
   });
 });
@@ -171,7 +177,7 @@ describe('the young-server ramp (Misa, 2026-10-30)', () => {
     expect(trackSlot(3).rules).toEqual({ buildUp: true });
   });
 
-  it('slot 1 is a tutorial: no rule cards and no Build-up, but its plain attack and its moves stay', () => {
+  it('slot 1 is a tutorial: no rule cards and no escalation, but its plain attack and its moves stay', () => {
     const boss = slotBoss(1);
     const full = raidBossOf(trackSlot(1).bossId, { strengthBp: trackSlot(1).strengthBp });
     expect(boss.cards).toEqual([]);
@@ -183,7 +189,7 @@ describe('the young-server ramp (Misa, 2026-10-30)', () => {
     expect(boss.moves).toEqual(full.moves);
   });
 
-  it('slot 2 has one rule card, the boss’s first, at the slot’s low strength, and no Build-up', () => {
+  it('slot 2 has one rule card, the boss’s first, at the slot’s low strength, and no escalation', () => {
     const boss = slotBoss(2);
     expect(boss.cards).toEqual([spec(boss.id).cards[0]]);
     expect(boss.strengthBp).toBe(rankStrengthBp(2));
@@ -209,7 +215,7 @@ describe('the young-server ramp (Misa, 2026-10-30)', () => {
     expect(slotBoss(10, { table: {} })).toEqual(raidBossOf(trackSlot(10).bossId, { rank: 'high' }));
   });
 
-  it('raidBossOf gives the first cards asked for, and Build-up on request; by default everything', () => {
+  it('raidBossOf gives the first cards asked for, and escalation on request; by default everything', () => {
     const id = 'cinder-wyrm';
     expect(raidBossOf(id).cards).toEqual(spec(id).cards);
     expect(raidBossOf(id).escalation).toBeDefined();
@@ -225,7 +231,7 @@ describe('the luck cards, a later lap’s new card (Misa, 2026-10-31)', () => {
   const first = (card: string): number =>
     Number(Object.entries(SLOT_EXTRA_CARDS).find(([, cards]) => cards.includes(card))?.[0]);
 
-  it('puts Lucky Strike on the Storm Sovereign and Slippery on the Tidal Colossus, each from its second lap', () => {
+  it('puts Double Strike on the Storm Sovereign and Slippery on the Tidal Colossus, each from its second lap', () => {
     expect(SLOT_EXTRA_CARDS).toEqual({ 6: ['slippery', 'breakwater'], 8: ['lucky-strike'] });
     expect(trackSlot(first('lucky-strike')).bossId).toBe('storm-sovereign');
     expect(trackSlot(first('slippery')).bossId).toBe('tidal-colossus');
@@ -258,7 +264,7 @@ describe('the luck cards, a later lap’s new card (Misa, 2026-10-31)', () => {
     for (const s of TRACK) expect(s.extraCards.length).toBeLessThanOrEqual(2);
   });
 
-  it('builds the card on the boss at the slot’s strength: a crit chance for Lucky Strike, a flat dodge for Slippery', () => {
+  it('builds the card on the boss at the slot’s strength: a crit chance for Double Strike, a flat dodge for Slippery', () => {
     const storm = slotBoss(8);
     expect(storm.cards.slice(-1)).toEqual(['lucky-strike']);
     expect(storm.critChanceBp).toBe(Math.floor((2_000 * trackSlot(8).strengthBp) / 10_000));
@@ -345,6 +351,28 @@ describe('the written answers of a slot and the one the mixed server fields (des
       expect(Number.isInteger(index)).toBe(true);
       expect(index).toBeGreaterThanOrEqual(0);
       expect(index).toBeLessThan(slotAnswersOf(Number(slot)).length);
+    }
+  });
+});
+
+describe('the engine reads the same track', () => {
+  it('trackBoss is the lab’s slotBoss at four players and its wideBoss at more, for every slot of the data and the laps after', () => {
+    for (let slot = 1; slot <= 40; slot++) {
+      const lab = slotBoss(slot);
+      expect(
+        trackBoss(combatV2, SHIPPED, slot, { level: rankLevel(slot) }),
+        `slot ${slot}`,
+      ).toEqual(lab);
+      for (const players of [1, 3, 4]) {
+        expect(trackBoss(combatV2, SHIPPED, slot, { players, level: rankLevel(slot) })).toEqual(
+          lab,
+        );
+      }
+      for (const players of [5, 10, 15]) {
+        expect(trackBoss(combatV2, SHIPPED, slot, { players, level: rankLevel(slot) })).toEqual(
+          wideBoss(lab, players),
+        );
+      }
     }
   });
 });

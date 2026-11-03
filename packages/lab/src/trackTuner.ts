@@ -28,6 +28,8 @@
  * tuning is a sweep up the track: a slot's arrival week depends only on the slots before it, so after slot k is tuned the path is run
  * again for the arrival of slot k + 1, and one sweep leaves the table tuned for the weeks its own path reports. The path and the
  * candidates run on the job pool (`jobs.ts`); a worker thread does not share memory, so the table travels in the job's arguments.
+ * The tuned HP, Attack and armour live in `raid-track.json` (`packages/game/src/combat-v2/data/`): `--tune --track --write` writes them
+ * there (`trackFile.ts`); the arrival weeks and the mixed answers stay lab code (`SLOT_WEEKS`, `SLOT_MIXED_ANSWER`) and are printed to paste.
  */
 import { createSeededRng } from '@creatures/game';
 import { randomTalents } from './answerMeasure';
@@ -90,6 +92,7 @@ import {
   type SearchPlan,
   type TuneRunner,
 } from './tuner';
+import type { TrackWrite } from './trackFile';
 import {
   SLOT_NUMBERS,
   TRACK_ORDER,
@@ -964,17 +967,19 @@ export function lapKillViolations(
   return out.sort((a, b) => a.slot - b.slot);
 }
 
-/** The `SLOT_NUMBERS` table as TypeScript, ready to paste into `track.ts`. */
+/**
+ * The tuned numbers of slots `first` to `last`, one line a slot, as they stand in `raid-track.json` (`--write` writes them there;
+ * without it they are printed for a hand edit).
+ */
 export function pasteOf(table: SlotTable, first: number, last: number): string[] {
-  const lines = ['export const SLOT_NUMBERS: SlotTable = {'];
+  const lines: string[] = [];
   for (let s = first; s <= last; s++) {
     const n = table[s];
     if (!n) continue;
     lines.push(
-      `  ${s}: { hp: ${grouped(n.hp ?? 0)}, atk: ${n.atk}, armour: ${n.armour} }, // ${trackSlot(s).bossId}`,
+      `slot ${s} (${trackSlot(s).bossId}): "hp": ${n.hp ?? 0}, "atk": ${n.atk}, "armour": ${n.armour}`,
     );
   }
-  lines.push('};');
   return lines;
 }
 
@@ -1005,7 +1010,7 @@ export function mixedAnswerPasteOf(
 /** The markdown of a run: the rounds, one table of the slots (numbers, targets, misses) and the paste. */
 export function trackSummary(
   r: TrackTuneResult,
-  o: { quick: boolean; first: number; last: number },
+  o: { quick: boolean; first: number; last: number; write?: TrackWrite },
 ): string[] {
   const out = [`## Track tuner${o.quick ? ' (quick)' : ''}`, ''];
   out.push(
@@ -1103,12 +1108,32 @@ export function trackSummary(
     }
     out.push('');
   }
+  if (o.write) {
+    const w = o.write;
+    out.push(
+      '### Written to `raid-track.json`',
+      '',
+      `Slots ${w.written.length ? w.written.join(', ') : 'none'}: ${w.changed.length ? `numbers moved on slots ${w.changed.join(', ')}` : 'no number moved'}.`,
+    );
+    if (w.missing.length)
+      out.push(
+        '',
+        `Slots ${w.missing.join(', ')} have no entry in the file, so nothing was written for them: add a slot to the file by hand (its boss, strength and rules are not numbers the tuner sets).`,
+      );
+    out.push('');
+  } else
+    out.push(
+      '### Numbers for `raid-track.json` (`--write` writes them there)',
+      '',
+      '```',
+      ...pasteOf(r.loop.table, o.first, o.last),
+      '```',
+      '',
+    );
   out.push(
-    '### Paste into `SLOT_NUMBERS`, `SLOT_WEEKS` and `SLOT_MIXED_ANSWER` (`track.ts`)',
+    '### Paste into `SLOT_WEEKS` and `SLOT_MIXED_ANSWER` (`track.ts`)',
     '',
     '```ts',
-    ...pasteOf(r.loop.table, o.first, o.last),
-    '',
     weeksPasteOf(r.loop.weeks),
     '',
     ...mixedAnswerPasteOf(r.slots),

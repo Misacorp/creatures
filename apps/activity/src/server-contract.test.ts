@@ -113,7 +113,12 @@ import { sampleState } from './dungeon-path-samples';
 import { buildRunRequest, type Slots } from './dungeon-team';
 import { keepsakeAct, restAct, swapAct } from './dungeon-run';
 import { DUNGEON_ERROR_TEXT, dungeonErrorText, isStaleDungeonError } from './dungeon-text';
-import { DUNGEON_ERRORS, type DungeonActRequest, type DungeonStartRequest } from './dungeon-types';
+import {
+  DUNGEON_ERRORS,
+  type DungeonActRequest,
+  type DungeonReplayV1,
+  type DungeonStartRequest,
+} from './dungeon-types';
 import {
   claimJob,
   dismantlePile,
@@ -951,7 +956,7 @@ describe('the dungeon responses the server sends', () => {
 
   it('parses the replay of a run: rooms with events, hpStart, hpMax and names', async () => {
     apiFetch.mockResolvedValue(dungeonReplay);
-    const replay = await fetchDungeonReplay('x');
+    const replay = (await fetchDungeonReplay('x')) as unknown as DungeonReplayV1;
     expect(replay.rooms).toHaveLength(3);
     for (const room of replay.rooms) {
       expect(room.events.length).toBeGreaterThan(0);

@@ -255,6 +255,17 @@ button.run-keepsake::before {
   line-height: 1.3;
 }
 
+.choice.selected {
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 0 0 var(--px) var(--gold);
+}
+
+/* A keyword chip inside a choice's line (a Knack's text) keeps the chip's own small size. */
+.choice .tag {
+  font-size: var(--fs-small);
+}
+
 .choice.camp-out.ko strong {
   color: var(--bad);
 }

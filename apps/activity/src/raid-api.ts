@@ -16,6 +16,7 @@ import {
   isRecord,
   isStr,
 } from './parse-core';
+import { isRaidV2View, type RaidV2View } from './raid-v2-api';
 import { isTalentView } from './talent-parse';
 import type { TalentView } from './talent-types';
 
@@ -156,6 +157,10 @@ export interface AbilityPreview {
 }
 
 export interface RaidView {
+  /** Combat v2: this week plays by the v2 rules and carries `v2`. Absent on a v1 week (the key is not there at all). */
+  rules?: 2;
+  /** The v2 part: the grid, the boss card, the track, the move preview, the carried HP and the swap requests. */
+  v2?: RaidV2View;
   weekId: string;
   status: RaidStatus;
   timezone: string;
@@ -285,6 +290,20 @@ const isEventId = (value: unknown): value is RaidEventId =>
   RAID_EVENT_IDS.some((id) => id === value);
 const isPhaseId = (value: unknown): value is RaidPhaseId =>
   RAID_PHASE_IDS.some((id) => id === value);
+
+/** A v2 week stores its first two stages as `stage1` and `stage2`; the screen reads them as the events they happen at. */
+const V2_STAGE_PHASE: Readonly<Record<string, RaidPhaseId>> = {
+  stage1: 'phase1',
+  stage2: 'phase2',
+};
+
+/** The phase of a stored result, with a v2 stage named as its calendar event (`phase1`, `phase2`; the finale is the finale). */
+const resultPhase = (value: unknown): RaidPhaseId | null =>
+  isPhaseId(value)
+    ? value
+    : isStr(value) && Object.hasOwn(V2_STAGE_PHASE, value)
+      ? (V2_STAGE_PHASE[value] ?? null)
+      : null;
 const isZone = (value: unknown): value is Zone =>
   value === 'front' || value === 'middle' || value === 'back';
 
@@ -322,10 +341,11 @@ function isTeamCreature(value: unknown): value is TeamCreatureView {
   );
 }
 
+/** Whether a result reads right: its phase may be a v2 stage name (`parseRaidView` renames it). */
 function isResult(value: unknown): value is PhaseResultView {
   return (
     isRecord(value) &&
-    isPhaseId(value['phase']) &&
+    resultPhase(value['phase']) !== null &&
     isInt(value['at']) &&
     isBool(value['cleared']) &&
     isOptBool(value['retreated']) &&
@@ -518,7 +538,23 @@ export function parseRaidView(data: unknown): RaidView {
   ) {
     throw new Error('the server returned an unexpected raid state');
   }
-  return data as unknown as RaidView;
+  const view = data as unknown as RaidView;
+  // A v1 view has no `rules` key and keeps its shape; a v2 view says `rules: 2` and must carry a v2 part that reads right.
+  if (data['rules'] === undefined && data['v2'] === undefined) return view;
+  if (data['rules'] !== 2 || !isRaidV2View(data['v2'])) {
+    throw new Error('the server returned an unexpected raid state');
+  }
+  if (view.party === null) return view;
+  return {
+    ...view,
+    party: {
+      ...view.party,
+      results: view.party.results.map((r) => ({
+        ...r,
+        phase: resultPhase(r.phase) ?? r.phase,
+      })),
+    },
+  };
 }
 
 /** Every event type the engine can emit; anything else is refused rather than half-displayed. */

@@ -186,7 +186,8 @@ describe('the combat lab setup', () => {
     const setup: Setup = { ...defaultSetup(), rounds: 4, atk: 200, cards: ['swarm'] };
     const boss = bossOf(setup);
     expect(boss).toMatchObject({ rounds: 4, atk: 200, rows: 1, cols: 3, hp: DAMAGE_TEST_HP });
-    expect(boss.plain.hits).toBe(4);
+    // Swarm: the plain attack is a Scatter of four different creatures.
+    expect(boss.plain.pattern).toMatchObject({ shape: 'scatter', n: 4 });
     expect(bossOf({ ...setup, damageTest: false, hp: 900 }).hp).toBe(900);
   });
 });
@@ -220,7 +221,11 @@ describe('running the lab', () => {
       'lab',
     );
     const rounds = groupSteps(result.events);
-    expect(rounds.flatMap((r) => r.groups.flatMap((g) => g.events))).toEqual(result.events);
+    // The text log: the board's own events (kind `board`) are not in it.
+    expect(result.events.some((e) => e.kind === 'board')).toBe(true);
+    expect(rounds.flatMap((r) => r.groups.flatMap((g) => g.events))).toEqual(
+      result.events.filter((e) => e.kind !== 'board'),
+    );
     expect(rounds.map((r) => r.round)).toEqual(
       [...new Set(rounds.map((r) => r.round))].sort((a, b) => a - b),
     );

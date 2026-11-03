@@ -4,9 +4,11 @@ import { DepthProgress } from '../../DepthProgress';
 import { SAMPLE_MAP, SAMPLE_STAGES, sampleState } from '../../dungeon-map-sample';
 import { UNDERCROFT_STAGES, undercroftState } from '../../dungeon-undercroft-sample';
 import { bool, num, str } from '../props';
+import { mapV2 } from '../dungeon-v2-sample';
 import type { Entry, Props } from '../types';
 
 const NONE = 'none';
+const RULES = ['combat v1', 'combat v2'] as const;
 /** The Undercroft's stages are named `uc-<stage>` (they are made from the captured runs). */
 const UC_PREFIX = 'uc-';
 const STAGE_LABELS = [
@@ -66,15 +68,21 @@ function Demo({ p }: { p: Props }) {
         };
   const map = swapBoss(run?.map ?? state?.map ?? SAMPLE_MAP);
   const open = str(p, 'open');
+  // A run of combat v2 sends each foe with its card (the move tiles); a modifier that only gave the foe a v1 move is not named.
+  const v2 = str(p, 'rules') === 'combat v2';
+  const depth = num(p, 'depth');
+  const shownMap = v2 ? mapV2(map, depth) : map;
+  const shownUnder = v2 ? run?.undercroft?.maps.map((m) => mapV2(m, depth)) : run?.undercroft?.maps;
+  const shownState = !v2 || state === null ? state : { ...state, rules: 2 as const, map: shownMap };
   return (
     <div class="dungeon-card raid-section">
       <DungeonMap
         // A new map when the stage or the open room changes, so its drawer starts as the page says.
-        key={`${picked}-${open}-${String(slag)}`}
-        map={map}
-        undercroft={run?.undercroft?.maps}
-        depth={num(p, 'depth')}
-        state={state}
+        key={`${picked}-${open}-${String(slag)}-${String(v2)}`}
+        map={shownMap}
+        undercroft={shownUnder}
+        depth={depth}
+        state={shownState}
         landmark={bool(p, 'landmark')}
         busy={bool(p, 'busy')}
         {...(open === NONE ? {} : { initialOpen: open })}
@@ -126,9 +134,11 @@ const dungeonMap: Entry = {
     busy: { kind: 'toggle' },
     landmark: { kind: 'toggle' },
     slagBoss: { kind: 'toggle' },
+    rules: { kind: 'select', options: RULES },
     depth: { kind: 'number', min: 1, max: 60 },
   },
   defaults: {
+    rules: 'combat v1',
     stage: 'midway',
     open: NONE,
     withGo: true,
@@ -171,6 +181,37 @@ const dungeonMap: Entry = {
     {
       name: 'Drawer: the marked fight the run fought (epic, double loot)',
       props: { stage: 'vault-fought', open: 'f2l1', withGo: false },
+    },
+    {
+      name: 'Combat v2: the map of a run (each foe carries its card)',
+      props: { rules: 'combat v2', stage: 'midway' },
+    },
+    {
+      name: 'Combat v2, before the run: the preview map',
+      props: { rules: 'combat v2', stage: 'preview', withGo: false },
+    },
+    {
+      name: 'Combat v2 drawer: a fight with move tiles and its armour (Flooded is named)',
+      props: { rules: 'combat v2', stage: 'midway', open: 'f0l0' },
+    },
+    {
+      name: 'Combat v2 drawer: an elite whose Thorns room does nothing (no modifier named)',
+      props: { rules: 'combat v2', stage: 'after-elite', open: 'f2l0' },
+    },
+    {
+      name: 'Combat v2 drawer: the Slag Tyrant at a landmark (its move tiles, the signature last)',
+      props: {
+        rules: 'combat v2',
+        stage: 'past-camp',
+        open: 'f6l1',
+        landmark: true,
+        slagBoss: true,
+        depth: 14,
+      },
+    },
+    {
+      name: 'Combat v2 drawer: a foe with no moves (the Puddle Imp)',
+      props: { rules: 'combat v2', stage: 'midway', open: 'f5l1' },
     },
     { name: 'Drawer: a reachable fight', props: { stage: 'midway', open: 'f2l1' } },
     { name: 'Drawer: an elite', props: { stage: 'after-elite', open: 'f2l0' } },

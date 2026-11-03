@@ -83,6 +83,7 @@ export function DungeonRun({
             camp={state.pending}
             creatures={creatures}
             busy={busy}
+            rules={state.rules}
             onAct={onAct}
           />
         )}

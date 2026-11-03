@@ -12,6 +12,11 @@ import { VOID_CONCEPTS } from './void';
 import { VOID_FOES_CONCEPTS } from './void-foes';
 import { VOID_GEAR_CONCEPTS } from './void-gear';
 import { VOID_PLACE_CONCEPTS } from './void-place';
+import { VALLEY_POSTERS_CONCEPTS } from './valley-posters';
+import { VALLEY_NIGHT_CONCEPTS } from './valley-night';
+import { VALLEY_LANDMARK_CONCEPTS } from './valley-landmarks';
+import { VALLEY_GLOW_CONCEPTS } from './valley-glow';
+import { COMBAT_ICONS_CONCEPTS } from './combat-icons';
 
 export interface Concept {
   kind: ArtKind;
@@ -19,6 +24,8 @@ export interface Concept {
   role?: string;
   /** One line: the idea, what the silhouette should say. */
   note: string;
+  /** For a `glyph` set sheet: the heading of the row it stands in (rows keep the order they first appear in). */
+  group?: string;
   sprite: SpriteDef;
   /** Other palettes to compare (a colour direction, a shiny), as palette overrides by name. */
   alts?: Readonly<Record<string, Readonly<Record<string, string>>>>;
@@ -46,6 +53,17 @@ export interface ConceptSet {
   /** What the content needs to use this art, Misa's feedback, open ideas. One line each. */
   notes?: readonly string[];
   sprites: Readonly<Record<string, Concept>>;
+  /**
+   * For a `glyph` set: shipped glyphs (ids of `src/glyphs.ts`) the set reuses as they are, drawn dim beside the
+   * new ones in the set's dev sheet so the whole set is seen together. `marks` is what the glyph stands for here.
+   * They are not part of the catalogue's sheet, so a redrawn shipped glyph never makes the library stale.
+   */
+  shipped?: readonly { id: string; marks: string; group: string }[];
+  /**
+   * The ground the set's art stands on (a valley or map tile, repeated behind each sprite in its sheet and
+   * cards), and its colours for each alternative palette by name (a night tile for the `night` alt).
+   */
+  backdrop?: { tile: SpriteDef; alts?: Readonly<Record<string, Readonly<Record<string, string>>>> };
 }
 
 export const CONCEPT_SETS: readonly ConceptSet[] = [
@@ -53,4 +71,9 @@ export const CONCEPT_SETS: readonly ConceptSet[] = [
   VOID_FOES_CONCEPTS,
   VOID_GEAR_CONCEPTS,
   VOID_PLACE_CONCEPTS,
+  VALLEY_POSTERS_CONCEPTS,
+  VALLEY_NIGHT_CONCEPTS,
+  VALLEY_LANDMARK_CONCEPTS,
+  VALLEY_GLOW_CONCEPTS,
+  COMBAT_ICONS_CONCEPTS,
 ];

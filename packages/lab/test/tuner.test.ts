@@ -610,7 +610,7 @@ describe('lower ranks against a new high rank', () => {
     const results = await tuneBoss('tidal-colossus', TARGET_RANKS, true, { exec: fake, slots: 4 });
     const high = results[0]?.best?.absolute;
     expect(high).toBeDefined();
-    expect(high?.hp).not.toBe(19_100);
+    expect(high?.hp).not.toBe(TODAY.high.hp);
     for (const r of results.slice(1)) {
       expect(r.rebasedOn).toEqual(high);
       const bp = rebaseOn(r.best?.absolute as Numbers, high as Numbers);
@@ -619,9 +619,8 @@ describe('lower ranks against a new high rank', () => {
       const want = r.best?.absolute as Numbers;
       expect(back).toMatchObject({ atk: want.atk, armour: want.armour });
       expect(Math.abs(back.hp - want.hp)).toBeLessThanOrEqual(1);
-      const grouped = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '_');
       expect(r.paste).toContain(
-        `ranks.${r.rank}): [${grouped(bp.hp)}, ${grouped(bp.atk)}, ${grouped(bp.armour)}]`,
+        `raid-bosses.json, ranks.${r.rank}): hpBp: ${bp.hp}, atkBp: ${bp.atk}, armourBp: ${bp.armour}`,
       );
     }
     expect(results[0]?.rebasedOn).toBeUndefined();
@@ -666,11 +665,13 @@ describe('the measure', () => {
 
 /**
  * A fake executor: a boss that gets easier as its HP falls. Every target is met at an HP of about 97.5% of today's high rank's or
- * less (today's just misses), and the ladder holds the high rank above 18,405 (its low rank), so the tuner's orchestration runs without a fight.
+ * less (today's just misses), and the ladder keeps the high rank above its lower ranks (their HP over 0.95), so the tuner's orchestration
+ * runs without a fight. The Colossus's numbers are read from the data, so a retune of the boss does not need an edit here.
  */
+const TODAY = todayAbsolute('tidal-colossus');
 const fake: Executor = (job) => {
   const a = job.args as TuneEvalArgs;
-  const r = a.numbers.hp / 19_100;
+  const r = a.numbers.hp / TODAY.high.hp;
   const measures: RaidMeasures = {
     ...GOOD,
     'prepared.share': 1.1 - 0.3077 * r,
@@ -689,11 +690,11 @@ describe('the orchestration', () => {
     });
     expect(r.best).toBeDefined();
     expect(r.best?.loss).toBe(0);
-    // The ladder: the mid rank's HP of 16,766 must stay at most 0.95 of the high rank's.
-    expect(r.best?.numbers.hp ?? 0).toBeGreaterThanOrEqual(Math.ceil(16_766 / 0.95));
-    expect(r.today.numbers).toEqual({ hp: 19_100, atk: 114, armour: 34 });
+    // The ladder: the mid rank's HP must stay at most 0.95 of the high rank's.
+    expect(r.best?.numbers.hp ?? 0).toBeGreaterThanOrEqual(Math.ceil(TODAY.mid.hp / 0.95));
+    expect(r.today.numbers).toEqual(TODAY.high);
     expect(r.conflicts.allMet).toBeGreaterThan(0);
-    expect(r.paste).toContain('tidal-colossus');
+    expect(r.paste).toContain('tidal-colossus (raid-bosses.json, high rank)');
     expect(r.paste).toContain(`atk: ${String(r.best?.numbers.atk)}`);
     expect(r.atEdge.join(' ')).toContain('hp at its lower limit, set by the ladder');
     expect(r.weekends).toBeGreaterThanOrEqual(10 * r.candidates);
@@ -739,7 +740,7 @@ describe('the orchestration', () => {
   it('reports a clash of targets as a content problem, not a numbers problem', async () => {
     // Every candidate: the prepared team does well exactly when the classic party kills.
     const clash: Executor = (job) => {
-      const r = (job.args as TuneEvalArgs).numbers.hp / 19_100;
+      const r = (job.args as TuneEvalArgs).numbers.hp / TODAY.high.hp;
       return Promise.resolve({
         result: {
           measures: {

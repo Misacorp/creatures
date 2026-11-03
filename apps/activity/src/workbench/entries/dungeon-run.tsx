@@ -58,6 +58,8 @@ import type { Entry, Props } from '../types';
 import { experienceBoostOf } from './xp-boosts';
 
 const EVENT_IDS = dungeonEvents.map((e) => e.id);
+const RULES = ['combat v1', 'combat v2'] as const;
+const V2_RULES = 'combat v2';
 const TREASURE_OPTIONS = [
   'an Epic gear piece',
   'a blueprint',
@@ -112,6 +114,7 @@ function stripState(p: Props): DungeonRunState {
   const at = str(p, 'at');
   return {
     ...sampleStateCamp(),
+    ...(str(p, 'rules') === V2_RULES ? { rules: 2 as const } : {}),
     at: at === 'entrance' ? null : at === 'camp' ? 'f3l1' : 'f1l2',
     pending: null,
     team,
@@ -140,6 +143,7 @@ const dungeonRunStrip: Entry = {
       kind: 'select',
       options: ['all full', 'one hurt', 'one knocked out', 'two knocked out'],
     },
+    rules: { kind: 'select', options: RULES },
     keepsakes: { kind: 'number', min: 0, max: 3 },
     bait: { kind: 'number', min: 0, max: 20 },
     essence: { kind: 'number', min: 0, max: 20 },
@@ -149,6 +153,7 @@ const dungeonRunStrip: Entry = {
     curse: { kind: 'toggle' },
   },
   defaults: {
+    rules: 'combat v1',
     at: 'mid-run',
     hp: 'one hurt',
     keepsakes: 1,
@@ -184,6 +189,10 @@ const dungeonRunStrip: Entry = {
       props: { at: 'camp', hp: 'two knocked out', lastEvent: false },
     },
     { name: 'A landmark depth', props: { landmark: true } },
+    {
+      name: 'Combat v2, one creature out: "Out" under the skull, not "Knocked out"',
+      props: { rules: 'combat v2', hp: 'one knocked out' },
+    },
     {
       name: 'A curse carried (the Cursed Idol): a chip in the keepsakes, tap for its effect',
       props: { curse: true, keepsakes: 2 },
@@ -288,12 +297,13 @@ function CampDemo({ p }: { p: Props }) {
   return (
     <DungeonCamp
       // A fresh card when the step changes, so it opens where the page says.
-      key={`${step}-${String(num(p, 'owned'))}`}
+      key={`${step}-${String(num(p, 'owned'))}-${str(p, 'rules')}`}
       team={base.team}
       pack={{ bait: num(p, 'bait'), essence: 0, scrap: num(p, 'scrap') }}
       camp={{ offers, restBp: 4000 }}
       creatures={owned}
       busy={bool(p, 'busy')}
+      {...(str(p, 'rules') === V2_RULES ? { rules: 2 as const } : {})}
       onAct={() => undefined}
       initialStep={initialStep}
       {...((initialStep === 'out' || initialStep === 'arrange') && owned[0] !== undefined
@@ -317,14 +327,23 @@ const dungeonCamp: Entry = {
       kind: 'select',
       options: ['choices', 'keepsakes', 'who goes home', 'arrange after a swap'],
     },
+    rules: { kind: 'select', options: RULES },
     owned: { kind: 'number', min: 3, max: 8 },
     bait: { kind: 'number', min: 0, max: 20 },
     scrap: { kind: 'number', min: 0, max: 20 },
     busy: { kind: 'toggle' },
   },
-  defaults: { step: 'choices', owned: 6, bait: 2, scrap: 1, busy: false },
+  defaults: { rules: 'combat v1', step: 'choices', owned: 6, bait: 2, scrap: 1, busy: false },
   presets: [
     { name: 'The choices', props: {} },
+    {
+      name: 'Combat v2: the knocked-out creature is greyed and "Out", with the line under the row',
+      props: { rules: 'combat v2' },
+    },
+    {
+      name: 'Combat v2: who goes home (the one that is out reads "Out")',
+      props: { rules: 'combat v2', step: 'who goes home' },
+    },
     { name: 'The two keepsakes', props: { step: 'keepsakes' } },
     { name: 'Who goes home (a swap)', props: { step: 'who goes home' } },
     {
@@ -348,10 +367,12 @@ function DescendDemo({ p }: { p: Props }) {
       : variant === 'nothing banked'
         ? { ...base.pending, banked: { gear: [], supplies: [], parts: {} } }
         : base.pending;
+  // Combat v2 sends no revive (only the standing heal on the way down).
+  const shown = str(p, 'rules') === V2_RULES ? { ...descent, reviveBp: 0 } : descent;
   return (
     <DungeonDescend
-      key={variant}
-      descent={descent}
+      key={`${variant}-${str(p, 'rules')}`}
+      descent={shown}
       pack={bool(p, 'emptyPack') ? { bait: 0, essence: 0, scrap: 0 } : base.pack}
       depth={base.depth}
       busy={bool(p, 'busy')}
@@ -375,12 +396,22 @@ const dungeonDescend: Entry = {
         'nothing banked',
       ],
     },
+    rules: { kind: 'select', options: RULES },
     emptyPack: { kind: 'toggle' },
     busy: { kind: 'toggle' },
   },
-  defaults: { card: 'the floor boss fell (Undercroft 1)', emptyPack: false, busy: false },
+  defaults: {
+    rules: 'combat v1',
+    card: 'the floor boss fell (Undercroft 1)',
+    emptyPack: false,
+    busy: false,
+  },
   presets: [
     { name: 'The floor boss fell', props: {} },
+    {
+      name: 'Combat v2: only the standing heal on the way down (no revive line)',
+      props: { rules: 'combat v2' },
+    },
     {
       name: 'A cracked floor: another floor below',
       props: { card: 'a cracked floor (Undercroft 2)' },

@@ -296,6 +296,13 @@ describe('the Raid', () => {
       guests: 6,
     });
     expect(body('raid-simulate', 'Run a full simulated week')).toEqual({});
+    expect(body('raid-weekend', 'Play a combat v2 weekend')).toEqual({});
+    expect(
+      body('raid-weekend', 'Play a combat v2 weekend', { step: 'finale-start', guests: '8' }),
+    ).toEqual({ step: 'finale-start', guests: 8 });
+    expect(problem('raid-weekend', 'Play a combat v2 weekend', { step: 'stage3' })).toMatch(
+      /pick one/,
+    );
   });
 });
 

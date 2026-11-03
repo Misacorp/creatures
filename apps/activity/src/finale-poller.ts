@@ -11,16 +11,22 @@
  * - A pushed snapshot goes through `accept` like a polled one, so the screen's "newer snapshot wins" rule
  *   (`pickNewer`) covers both; the next poll is then planned from the newest snapshot.
  */
-import { errorRetryDelayMs, isRetryableStatus, nextLiveDelay, nextPollDelay } from './live';
+import {
+  errorRetryDelayMs,
+  isRetryableStatus,
+  nextLiveDelay,
+  nextPollDelay,
+  type PollSnapshot,
+} from './live';
 import type { LiveSnapshot } from './live-api';
 import { ApiError } from './api';
 
-export interface FinalePollerDeps {
-  fetchSnapshot: () => Promise<LiveSnapshot>;
+export interface FinalePollerDeps<S extends PollSnapshot = LiveSnapshot> {
+  fetchSnapshot: () => Promise<S>;
   /** Gives the screen a snapshot (polled or pushed); it keeps the newer of this and what it has. */
-  accept: (snapshot: LiveSnapshot) => void;
+  accept: (snapshot: S) => void;
   /** The newest snapshot the screen has, or null. */
-  latest: () => LiveSnapshot | null;
+  latest: () => S | null;
   /** The estimated server time now (UTC ms). */
   serverNow: () => number;
   /** A poll failed. `retrying` is false for an answer a retry cannot fix (the poll stops). */
@@ -31,18 +37,20 @@ export interface FinalePollerDeps {
   clearTimer?: (handle: unknown) => void;
 }
 
-export interface FinalePoller {
+export interface FinalePoller<S extends PollSnapshot = LiveSnapshot> {
   /** Starts with a snapshot the screen already has, or (null) with a first poll at once. */
-  start(initial: LiveSnapshot | null): void;
+  start(initial: S | null): void;
   /** The live socket started or stopped delivering. Dropping polls at once and goes back to the fast pace. */
   setLive(live: boolean): void;
   /** A snapshot the socket pushed. */
-  push(snapshot: LiveSnapshot): void;
+  push(snapshot: S): void;
   /** Stops everything: no timer, and an answer on its way is dropped. */
   stop(): void;
 }
 
-export function createFinalePoller(deps: FinalePollerDeps): FinalePoller {
+export function createFinalePoller<S extends PollSnapshot = LiveSnapshot>(
+  deps: FinalePollerDeps<S>,
+): FinalePoller<S> {
   const setTimer = deps.setTimer ?? ((cb, ms) => setTimeout(cb, ms));
   const clearTimer = deps.clearTimer ?? ((h) => clearTimeout(h as ReturnType<typeof setTimeout>));
 
@@ -59,7 +67,7 @@ export function createFinalePoller(deps: FinalePollerDeps): FinalePoller {
     timer = null;
   };
 
-  function delayFor(snapshot: LiveSnapshot): number | null {
+  function delayFor(snapshot: S): number | null {
     const now = deps.serverNow();
     return live ? nextLiveDelay(snapshot, now) : nextPollDelay(snapshot, now);
   }

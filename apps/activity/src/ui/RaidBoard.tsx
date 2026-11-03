@@ -41,6 +41,11 @@ interface RaidBoardProps extends SlotStripProps {
   rail?: CueRailProps;
   /** The row that gets the "no reaction" mark on its name, when the creature in focus sets off nothing. */
   noneRow?: Zone | null;
+  /**
+   * Combat v2's board: the tiles are a little taller, to hold the role, the Knack and the carried HP (raid-board.css). With `single` it is
+   * the dungeon's row of v2 tiles (the stage of a dungeon room).
+   */
+  v2?: boolean;
 }
 
 /** The sprite scale of a tile: small, so about four lanes fit on a 360 px phone. The raid's, and the default. */
@@ -133,6 +138,7 @@ export function RaidBoard(props: RaidBoardProps) {
     // Tiles that carry an HP line (the camp's row) are wider and taller, so the words fit.
     const withHp = (rows[0]?.slots ?? []).some((s) => s.occupant?.hp !== undefined);
     const classes = ['raid-board', 'single'];
+    if (props.v2 === true) classes.push('v2');
     if (large) classes.push('large');
     if (large && withHp) classes.push('with-hp');
     return (
@@ -163,15 +169,19 @@ export function RaidBoard(props: RaidBoardProps) {
     (desktop && edges.left ? ' more-left' : '') +
     (desktop && edges.right ? ' more-right' : '');
   return (
-    <div class={desktop ? 'raid-board large' : 'raid-board'}>
+    <div
+      class={['raid-board', desktop ? 'large' : '', props.v2 === true ? 'v2' : '']
+        .filter(Boolean)
+        .join(' ')}
+    >
       <div class="board-grid">
         <div class="board-labels">
           <p class="board-lane-head" aria-hidden="true">
             Lane
           </p>
-          {rows.map((row) => (
+          {rows.map((row, at) => (
             <p
-              key={row.zone}
+              key={at}
               class={
                 props.noneRow === row.zone
                   ? 'zone-label board-label no-reaction'
@@ -198,8 +208,8 @@ export function RaidBoard(props: RaidBoardProps) {
               </span>
             ))}
           </div>
-          {rows.map((row) => (
-            <div key={row.zone} class="board-row" role="group" aria-label={row.name}>
+          {rows.map((row, at) => (
+            <div key={at} class="board-row" role="group" aria-label={row.name}>
               {row.slots.map((slot) => (
                 <SlotButton
                   key={slot.index}

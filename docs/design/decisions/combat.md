@@ -4,6 +4,194 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-02: Combat v2 engine slice 1: carry keyed by creature key, board events beside the log, live actions as one boost or cut each
+
+ID: `2026-11-02-combat-v2-engine-slice-1-the` · Status: current
+
+**Decision.** Slice 1 of phase 4 (`integration.md`, section 3) is in `@creatures/engine/v2`, and the lab's parity digest was identical after every part.
+
+- **The stage carry** (`StageCarry`) is plain JSON and names creatures by `FighterSpec.key` (the worker's creature id), falling back to the `uid`. `weekendV2` loops over `stageV2` and gives its own creatures the keys `team:i` and `bench:j` (their identity, which a slot is not once a replacement takes it). A creature knocked out is in the carry's `out` and is left out of later stages by `stageV2`.
+- **Board events** are the optional `FightEvent.board`, only with `log` on. An event that had a text line carries its board part beside it; the rest (a creature's hit on the boss, a heal, a Store, round start, boss turn, shed marks, resistance, the end) are events of kind `board` with empty text. The digest leaves out both, so it did not change. Mired and the live actions also get board events.
+- **The live finale's actions** (`{round, kind, row?, by}`) act from their round on and draw no dice, so adding one at round r changes no event before r. Rally is one more hit boost inside the +150% cap, Shield Wall one more cut inside the 75% cap and before armour, Purge lifts both resistances for `purgeRounds` rounds. Two of the same in a round do not stack. The numbers (`rallyBp` 1000, `shieldWallBp` 5000, `purgeRounds` 2) are in `rules.json`.
+- **The track's boss** is read from `raid-track.json` through the pack by `trackBoss`/`slotSpec` in `resolve/track.ts`; after the data's last slot the track goes on at full strength with the boss's own numbers and its last lap's extra cards. A party under four fights at four columns. The lab keeps its own slot derivation (orders, tuner tables, the rank ladder) and a test checks the two agree for slots 1 to 40.
+
+**Reasoning.** Keys by creature id are what the worker has between Saturday and Sunday, and a key that is not a slot survives swaps. Putting board events beside the text keeps one ordered list for the client to fold and costs nothing when the fight does not log. Keeping the actions to one boost or cut each, inside the caps the rules already have, means none can be stacked into something the lab did not measure. The CPU numbers are in `integration.md` section 8: warm medians of 0.3 to 1.8 ms per stage or finale replay, far under the Free plan's 10 ms.
+
+## 2026-11-02: Combat v2 phase 4 plan: the game plays v2 behind a staging flag, rules version stored per week, run and fight
+
+ID: `2026-11-02-combat-v2-phase-4-plan-the` · Status: current
+
+**Decision.** Phase 4 follows `docs/design/combat/integration.md`:
+
+- **A `COMBAT_V2` worker variable**, on in staging only and pinned off in production by a test. It is read only when something starts: a raid week stores `rules_version` when it is created, a dungeon run stores it in its state, and a fight input carries `version: 2`. The client picks its v1 or v2 screens from the view's `rules`, not from the flag.
+- **Storage:** the saved Knack is a column on `creatures` (the known Knacks are worked out from the line, not stored); the v2 Talent Book is per player and line (`line_talents`) with each creature's learned talents (`creature_talents_v2`); a `raid_track` row per server replaces `raid_ladder` under v2; the weekend's carry is JSON on `raid_parties`; swap requests get their own table.
+- **Engine:** `stageV2` plays one stage and returns a JSON carry (`weekendV2` loops over it); typed board events sit beside the log text and stay out of the parity digest; the live finale's Rally, Shield Wall and Purge become v2 inputs with the prefix property; `slotBoss` and `wideBoss` move from the lab to `resolve/`.
+- **Calendar (Misa's direction):** stage 1 Saturday 13:37, stage 2 Sunday 13:37, the finale Sunday 20:00, with no HP floors.
+- **Under v2 in phase 4:** gear counts only its stat lines, weather does not touch fights (question for Misa), and creature finale abilities and Re-mark are not used. A dispatcher `replayFight` runs v1 or v2 by the stored input.
+- **Production is never converted.** The game resets after both reworks, so a staging-only dev tool (`combat-v2-convert`) rolls v2 talents for a staging server.
+
+**Reasoning.** Storing the rules version at the start of each week, run and fight means a flag flip never changes a fight already under way, and old v1 rows still replay. Splitting the weekend into stages is the one engine change the live calendar needs, because stages happen a day apart. Keeping board events out of the digest lets the 1,299-fight parity check prove that adding them changed no result. Gear effects and weather were never measured in the lab, so turning them off keeps staging honest until phase 5. The CPU of a v2 stage is measured first: the Free plan allows 10 ms per request, and Misa approved Workers Paid in advance if a measured limit blocks us.
+
+## 2026-11-01: [Misa] Combat v2 icons: shapes, the sword, the Store box, claw Pincer, Leap as a chain
+
+ID: `2026-11-01-combat-v2-icons-shapes-the-sword` · Status: current
+
+**Decision.** Misa reviewed the combat v2 icon concepts in two rounds (2026-11-01; the set `combat-icons`, the audit `docs/design/combat/icons.md`). Approved: Quake, Cross, Checker and One-shot; Slam as a big square with a short bar each side (the target and its neighbours); Strike as a crosshair without its ring (distinct from Cross); Lance pointing down (the boss attacks from the top); Pincer as two claws (no centre dot); Barrage and Sweep as shipped; Crit; the plain attack as a sword (it differs from a Strike, since plain attacks and moves can have different effects); the three Store heads as one shared box holding Heat, Calm or Static. Leap is three squares joined by a faint zigzag, with the bottom square moved right so it reads as a chain, not a fork. **A count is text beside an icon ("x3"), never drawn into it.** The six target words (Front, Rear, Payoff, Nemesis, Wild, Vulture) have no icon: the board lights the slots a move hits. Combat v2 gets its own versions; the shipped v1 glyphs stay until v1 goes. The icons stay concepts until the phase 4 board uses them.
+
+**Reasoning.** Misa's calls on look and feel. Fewer icons to learn, each shape drawn the way a move hits the board.
+
+## 2026-11-01: [Misa] Combat v2 names: a card never shares a move's name (Full Sweep), Barrage and Leap are both keyword and shape word, the Puddle Imp asks for a Guard
+
+ID: `2026-11-01-combat-v2-names-a-card-never` · Status: current
+
+**Decision.** Misa left these to the lead (2026-11-01: "make up the rules and the names; we can change them later"):
+
+- **A rule card's name never equals a move's name.** The card Great Wave becomes **Full Sweep** (it adds a Wild Sweep); the Tidal Colossus keeps its tide move Great Wave. The content test checks the rule.
+- **A shape's keyword and its label word are the same word.** The keyword Scatter becomes **Barrage** (the label word), and the label word Leaping Strike becomes **Leap** (the keyword), so every shape is one word: Slam, Lance, Sweep, Barrage, Quake, Strike, Hush, Pincer, Leap ("Nemesis Leap").
+- **The Puddle Imp asks for a Guard** (Wide Reach) since its splashes became a Barrage of hits on different creatures (2026-11-01 retune): Misa, "dodging and a Guard both help, so that's fine".
+
+**Reasoning.** One word per idea for players; a card that shares a move's name would read as that boss's move.
+
+## 2026-11-01: [Misa] Combat v2 move library: a themed name per behaviour and element, the behaviour fixed
+
+ID: `2026-11-01-combat-v2-move-library-a-themed` · Status: current · Amends: `2026-11-01-combat-v2-names-batches-3-and`
+
+**Decision.** Boss and foe moves form one library (Misa, 2026-11-01: "the thematic name is just a coat of paint", and move animations go with the name, so raid and dungeon bosses share them when they share moves). Each move in the library has a themed name and a fixed behaviour: its shape and whom it picks (and whether it silences). A boss or foe uses a library move with its own numbers (power, rhythm, count, Wind-up, crit chance). A behaviour has one name per element, shared by every boss and foe of that element; a card has no element, so a card's move keeps the plain behaviour name. The plain behaviour names of the earlier decision (Front Slam, Nemesis Lance, Wild Sweep, ...) stay as the label the board can show under a move's own name ("Deepwater Spear · Nemesis Lance"); they are no longer the moves' names. Where one boss had two moves of one behaviour, they merge into one (the lab retunes): the Colossus's Tidal Pull and Deepwater Spear, Thornmother's Seed Burst and Bloom Storm (Second Bloom strengthens the one), and the landmark moves of the Drowned Warden and the Fen Lurker, which repeated their own Quake and get a different shape.
+
+The library (behaviour: tide, ember, grove, spark, mire, card):
+
+| Behaviour (label)              | Tide            | Ember           | Grove          | Spark            | Mire        | Card        |
+| ------------------------------ | --------------- | --------------- | -------------- | ---------------- | ----------- | ----------- |
+| Hush (silences the row's ends) | Deafening Mist  |                 | Bramble Hush   |                  |             | Hush        |
+| Pincer (the row's two ends)    |                 |                 | Briar Pincer   |                  |             |             |
+| Front Slam                     |                 | Anvil Fall      |                |                  | Belly Flop  |             |
+| Payoff Slam                    |                 | Volcanic Meteor |                | Static Strike    | Bog Lob     | Payoff Slam |
+| Nemesis Slam                   |                 | Slag Spill      | Vengeful Roots | Thunderclap      |             |             |
+| Wild Lance                     | Riptide         | Scorch Lane     | Grasping Vines | Lightning Bolt   | Mud Slide   |             |
+| Nemesis Lance                  | Deepwater Spear |                 |                |                  |             |             |
+| Front Lance                    | Sluice Pull     |                 |                |                  |             |             |
+| Front Sweep                    | Undertow        |                 | Thorn Wall     |                  |             |             |
+| Rear Sweep                     | Backflow        |                 | Spiky Spine    |                  | Peat Wave   |             |
+| Payoff Sweep                   | Rogue Wave      |                 |                |                  |             |             |
+| Wild Sweep                     | Great Wave      |                 |                |                  | Sinking Mud | Wild Sweep  |
+| Barrage                        | Spray           | Cinder Fall     | Thorn Rain     | Forked Lightning | Mud Spit    |             |
+| Quake                          | Deluge          | Eruption        |                | Storm Front      | Sink Down   |             |
+| Leaping Strike                 |                 | Ember Leap      | Thorn Lash     | Arc Lash         |             |             |
+| Payoff Strike                  |                 |                 |                | Thunderbolt      |             |             |
+| Vulture Strike                 |                 |                 |                |                  | Sinkhole    |             |
+| Nemesis Strike                 |                 |                 |                |                  |             | Crush       |
+| One-shot (Payoff, Wind-up)     |                 |                 |                | Judgement Bolt   |             |             |
+| Checker                        |                 | Ash Cloud       |                |                  |             |             |
+| Cross                          |                 |                 | Bramble Cross  |                  |             |             |
+
+Who uses what follows from each boss's and foe's element and its moves today (for example the Bramble Hound and the Bramble Matron use Bramble Hush, the Ember Mite Cinder Fall, the Flicker Swarm Storm Front, the Static Bat Arc Lash, the Tar Leech Belly Flop). In the data, the library is one file of moves (id, name, element, behaviour), and a boss or foe refers to a move by id with its own numbers, so a name cannot drift from its behaviour.
+
+**Reasoning.** One behaviour per name keeps the board readable and lets one animation serve every boss that uses a move; themed names keep each boss's flavour.
+
+## 2026-11-01: [Misa] Combat v2 rule changes from the names review: Mired fades every round, Swarm is a Scatter, Back-most is the last to act
+
+ID: `2026-11-01-combat-v2-rule-changes-from-the` · Status: current
+
+**Decision.** From Misa's notes on names batches 3 and 4 (round 2, 2026-10-31):
+
+- **Mired fades every round**: it loses 1 stack at the end of every round, every 2nd round while a living creature has Clinging (was every 2nd and every 3rd). With up to 45 creatures acting a round, Mired is put back often and need not linger.
+- **Swarm is a Scatter**: its plain attack becomes a Scatter of small hits on different creatures (was separate hits on random slots, where one creature could take several).
+- **Back-most is the last creature to act**: the back row's rightmost by default, since creatures act row by row, left to right (was the leftmost). If a boss's attack order ever differs, it is still the last to act.
+- Kept as they are: Slippery and Elusive (two cards, reworded so neither names Mired: Elusive is Speed that debuffs lower, Slippery a flat dodge that debuffs do not lower), Crusher and Grudge with Crusher's 3-round rhythm, Retaliate ignoring armour, Breakwater (reworded only).
+
+These change fight results: the lab measures them, the tuners retune, and the parity digest is rewritten in the same change.
+
+**Reasoning.** Misa's calls on game feel. Each one makes a rule simpler to read or closer to what a player expects.
+
+## 2026-11-01: [Misa] Combat v2 names, batches 3 and 4: keywords, rule cards, and moves named by shape and target
+
+ID: `2026-11-01-combat-v2-names-batches-3-and` · Status: current, amended by `2026-11-01-combat-v2-move-library-a-themed`
+
+**Decision.** Misa went through the 27 keywords and 19 rule cards (batch 3), the 69 moves, Build-ups and phases of the raid bosses and dungeon foes (batch 4), and a round 2 on his notes (2026-10-31).
+
+- **Moves are named by what they do, and who they pick** (Misa: unify the moves that do the same thing, and show the target in the name): Slam (the target and those beside it), Lance (whole columns), Sweep (whole rows), Barrage (several random creatures), Quake (every creature), Hush (silences the row's ends), Leaping Strike (the strongest, then leaps to creatures nearby). The target word comes first: **Front** (the first to act, or the front row), **Rear** (the back row), **Payoff** (the strongest Payoff), **Nemesis** (the strongest), **Wild** (random), **Vulture** (the weakest). Misa named Front Sweep, Rear Sweep, Payoff Slam and Nemesis Slam; Wild, Vulture, Pincer and Strike follow them. Each boss hits with its own power, and Wind-up is a marker on a move, not another move. So a name stands for a shape and a target (P-06 for moves), never for one number.
+- The mapping: Front Slam (Coil Crush, Belly Flop, Tar Cling, Anvil Fall); Payoff Slam (Magma Spit, Static Field, Bog Lob, Payoff Hunter's move); Nemesis Slam (Thunderclap, Root Grab, Slag Spill, Coil Burst); Wild Lance (Riptide, Scorch Lane, Root Snare, Forked Lightning, Mud Slide); Nemesis Lance (Tidal Pull, Deepwater Spear); Front Lance (Sluice Pull); Front Sweep (Undertow, Thorn Wall); Rear Sweep (Breaker, Back Thorns, Peat Wave); Payoff Sweep (Spring Tide); Wild Sweep (Great Wave and the Great Wave card's move, Sinking Mud); Barrage (Spray, Cinder Fall, Seed Burst, Bloom Storm, Ball Lightning, Rising Bubbles, Flare Up, Mud Spit, Thorn Rain); Quake (Eruption, Storm Front, Buzz Cloud, Flood Gate, Sluice Surge, Sink Down, Fen Tug); Hush (Bramble Hush, Sea Mist, Thorn Snap, Tangle, Bramble Bind's move); Pincer (Briar Pincer, Briar Cage); Leaping Strike (Ember Leap, Thorn Lash, Zap Dive, Arc Lash); Payoff Strike (Spark Dive); Vulture Strike (Sinkhole); Nemesis Strike (Crusher's move). Kept as they are: Judgement Bolt (a one-shot), Ash Cloud, Bramble Cross. This supersedes the batch 4 renames of those moves (Volcanic Meteor, Static Strike, Lightning Strike, Tar Toss, Backflow, Rogue Wave, Deluge, Bramble Bind for Thorn Snap).
+- **Build-ups:** all approved; Rising Water is now **Maelstrom**. The keyword Build-up is now **Escalating**.
+- **Rule cards:** approved, except Lucky Strike is now **Double Strike** ("The boss's hits sometimes Crit for double damage; can you turn them away or take the sting out?"). New texts: Great Wave and Shake It Off drop "announced at round start" (every move is announced); Breakwater: "Row Wards are up to 3 times as strong against its Area hits"; Elusive and Slippery reworded so neither names Mired.
+- **Keywords:** approved, with new texts for Reaction ("A Payoff hits a Mark its element is strong against: bonus damage, and the mark loses 1 stack"), Intercept ("Takes a hit meant for a creature in its Reach"), Taunt ("The boss's plain attack, its basic hit, not its named moves, aims at this creature. With several Taunts, the first to act draws it"), Boost ("A Support's bonus damage on a creature's next hit"). A mark's size is its **stacks** everywhere (was "count").
+- **Guard's Shadow** (the Knack) is now **Reliably Covered**: the gear line Guard's shadow keeps its name.
+
+**Reasoning.** Fewer names for players to learn and for the content to keep in step: a name says what a move does and whom it picks, the same everywhere.
+
+## 2026-10-31: [Misa] Combat v2 names, batch 2: talents
+
+ID: `2026-10-31-combat-v2-names-batch-2-talents` · Status: current
+
+**Decision.** Misa went through all 34 combat talents on the names page. 28 keep their names. Renamed (ids stay):
+
+| Was           | Now             | Note                                                                                                                                |
+| ------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Crit Damage   | Amplified Crits |                                                                                                                                     |
+| Cull          | Culling Strike  |                                                                                                                                     |
+| Heavy Hand    | Wicked          | Its text now says "its debuffs" instead of Mired (Misa: it applies to all debuffs; Mired is the only one today, so no number moves) |
+| Hold the Line | Easily Provoked |                                                                                                                                     |
+| Owner's Mark  | Potent Mark     |                                                                                                                                     |
+| Stubborn      | Refuse to Fall  | Second Wind was wanted, but it is a shipped gear chance line with another effect (P-06)                                             |
+
+Crit Damage, Owner's Mark, Heavy Hand and Stubborn are also the names of shipped gear lines with the same effect. By the standing rule (a talent and a gear line with the same effect share one name, 2026-10-28), the combat v2 gear lines take the new names when gear moves to combat v2 (`gear-plan.md`); the shipped v1 lines keep theirs until then.
+
+**Reasoning.** Phase 3's gate needs approved names before the compendium entries. Ids do not change, so a rename is a data edit.
+
+## 2026-10-31: [Misa] Combat v2 names, batch 1: Knacks and families
+
+ID: `2026-10-31-combat-v2-names-batch-1-knacks` · Status: current
+
+**Decision.** Misa went through all 44 Knacks and 24 families on the names page (two rounds). Approved as they are: 23 families and 27 Knacks. Renamed (ids stay; only the shown name changes):
+
+| Was              | Now               | Why (Misa's note, round 2)                               |
+| ---------------- | ----------------- | -------------------------------------------------------- |
+| Ward (family)    | Silence Guard     | Row Ward is damage reduction; this is different          |
+| All at Once      | All In            |                                                          |
+| Steady Mark      | Brand             |                                                          |
+| Keep the Heat In | Barricade         |                                                          |
+| Mud Wall         | Sticky Mud        |                                                          |
+| Thick Fog        | Rolling Fog       |                                                          |
+| Tunnel Through   | Sense Weakness    |                                                          |
+| Wide Warmth      | Wide Embrace      |                                                          |
+| Baked Shell      | Boiling Point     | make it about pent-up anger                              |
+| Carry Them       | Unlikely Guardian | it is a surprise; put that in the name                   |
+| Catch the Bolts  | Take It All       | bolts is too narrow                                      |
+| Circle Round     | Returning Tide    | give it Tide flavour                                     |
+| Gather Calm      | Eye of the Storm  | turning reactions into damage is mayhem, not calm        |
+| Gnaw Through     | Find the Gap      | Sharp Claws was wanted, but it is a talent's name (P-06) |
+| Hide in Mist     | Mist Veil         | a mist noun                                              |
+| Lightning Ears   | Drop Guard        | did not fit the effect                                   |
+| Puddle Maker     | Self-Starter      | a puddle makes no sense here                             |
+| Ready the Mark   | Stack Up          | adding is not readying                                   |
+
+The shipped v1 finale ability Mud Wall keeps its name until v1 goes (phase 8); only the combat v2 Knack is renamed.
+
+**Reasoning.** Phase 3's gate needs approved names before the compendium entries and the icons. Ids do not change, so a rename is a data edit and stored choices keep working.
+
+## 2026-10-31: Combat v2 content as data: a separate game entry, the resolver beside the engine, cards as operations
+
+ID: `2026-10-31-combat-v2-content-as-data-a` · Status: current
+
+**Decision.** Phase 3 follows `docs/design/combat/content-as-data.md`. The combat v2 content (rules numbers, Knacks, per-form armour, own Knacks and stat changes, talents and line pools, rule cards, raid bosses, dungeon foes, keywords, the boss track) becomes JSON files in `packages/game/src/combat-v2/data/`, checked by valibot schemas and cross-reference checks at load, behind a separate entry point `@creatures/game/combat-v2`. The code that turns content into an engine input (`formStats`, the fighter resolver, card application, the boss and foe builders) goes to `packages/engine/src/v2/resolve/`, taking the content pack as an argument. A rule card becomes a list of operations (`add`, `set`, `raise`, `flag`, `mod`, `cap`, `move`, `plain`), scaled by strength; applying any card sets the boss's strength to the card's. The engine's types stay the source of the rules' shapes, and a type test checks the game's schemas against them both ways. Ids, names and numbers move unchanged, and the lab's parity digest holds through every slice. Intent text (`intent`, `asks`) stays next to its entry in the data and is never shown to players.
+
+**Reasoning.** The roadmap put the resolver in the game, but the engine already depends on the game, and the resolver needs the engine's effect merge; next to the engine, taking the content as an argument, it stays pure and testable with tiny packs, and the worker can use it in phase 4. A separate entry keeps the v2 files out of the shipped worker until phase 4. Cards as operations make a card a data edit and let the content tests read what each card does. Keeping the engine's types as the source (instead of deriving them from the schemas) leaves the rules where phase 2 put them, and the type test catches a field added on one side only. Intent beside the entry keeps one place to edit, and the lab report prints it.
+
+## 2026-10-31: Talent share: three raid-heavy talents cut, the raid share measured on 40 seeds
+
+ID: `2026-10-31-talent-share-four-raid-heavy-talents` · Status: current
+
+**Decision.** Catch Breath heals 30% (was 40%), Owner's Mark gives +12% (was +15%) and Opportunist +100% (was +120%). The report's raid share of the talent check uses 40 final seeds (was 12). The best-fit talents' share of a raid result went from about 24.0% to 24.7% (60-seed readings) with the roster branch and failed the 17% to 23% band in the report (24.4%); it is now 22.3% (raid) and 17.6% (gauntlet), both in band.
+
+**Reasoning.** A bisect of the 19 lab-changing commits of the roster branch (#114) found no single cause: the share was already about 24.0% before it (the old check passed at 23.5% on 12 seeds by luck of the seeds and rounding), and the fight-rule commit (Sure Crit, crit step, silence stat lines, Steady Rhythm on landed hits) added about 0.7, Breakwater's card another 0.3. The raid share is a plain damage ratio with no compression, and 12 seeds swing a card's share by 5 points; 40 seeds make the average steady to about half a point. Catch Breath, Steady Rhythm, Owner's Mark and Opportunist carry 16 of the 25 points in the raid and under 3.5 of the 17.6 in the gauntlet, so the cuts leave the gauntlet in place. Steady Rhythm's period is a fight rule (`fight.ts`); a period of 4 would take the raid share to 21.0% and is left for the engine port. Hardy at +18% (was +22%) would lower the raid share by another 0.7 but breaks the written Storm Sovereign answer with Night Watch (its share falls under 90%) and was not taken.
+
+## 2026-10-31: Combat v2 engine port: v2 beside v1, whole inputs, parity by a result digest
+
+ID: `2026-10-31-combat-v2-engine-port-v2-beside` · Status: current
+
+**Decision.** Phase 2 follows `docs/design/combat/engine-port.md`. The combat v2 rules go into `packages/engine/src/v2/` beside the v1 engine, which stays untouched until phase 8. A v2 fight input is whole: it carries `version: 2`, its rules numbers, the element chart it uses, resolved fighters and the boss with its cards applied, with no optional "rule before this one" fields. Content lookups (form, Knack and talent ids to stats and effects) stay outside the engine: the lab resolves them now, the game in phase 3. Parity is proven by a committed digest of a fixed corpus of lab results, taken on the lab's own code before the move and reproduced exactly after every slice. The board's structured events wait for the board (phase 4).
+
+**Reasoning.** The lab's fight is already pure; only `placeFighters` looks content up, so that is the natural seam, and it lets rule tests name effects instead of catalogue entries. A whole input replays exactly whatever later changes in content or rules; v1's optional fields show what happens otherwise. A digest over many seeded fights proves "the same results" far more tightly than re-running the lab's tests, and it guards every later refactor too. Events draw no dice, so designing them with the board changes no result.
+
 ## 2026-10-31: Phase 1 passes with the casual metric at 1.41; 1.5 stays a target for the balance phase **[Misa]**
 
 ID: `2026-10-31-phase-1-passes-with-the-casual` · Status: current

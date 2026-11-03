@@ -18,6 +18,7 @@ import type { LoungePaid } from './lounge-company';
 import type { Resident } from './lounger';
 import type { BoardPush } from './raid-board-change';
 import type { LiveSnapshot } from './raid-live-view';
+import type { LiveSnapshotV2 } from './raid-v2-view';
 import { TicketBook, parseTicket } from './live-ticket';
 import { parseTopicTag, topicTag, userTag, type Topic, type TopicKind } from './live-topic';
 import { errorResponse } from './http';
@@ -89,7 +90,7 @@ export type LiveMessage =
   | { v: 1; type: 'hello'; serverNow: number }
   | { v: 1; type: 'resident'; resident: Resident }
   | ({ v: 1; type: 'lounge-xp' } & LoungePaid)
-  | { v: 1; type: 'finale'; snapshot: LiveSnapshot }
+  | { v: 1; type: 'finale'; snapshot: LiveSnapshot | LiveSnapshotV2 }
   | ({ v: 1; type: 'raid' } & BoardPush);
 
 interface Attachment {

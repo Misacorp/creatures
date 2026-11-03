@@ -11,14 +11,21 @@
  * `GET /api/dungeon/run/:id`. Amounts are integers. The seed of a run is never sent.
  */
 import type { FightEvent } from '@creatures/engine';
+import type { FightEvent as FightEventV2 } from '@creatures/engine/v2';
 import type { ExperienceView } from './experience';
 import type { GearItem, GearRarity, LootPiece, PartsBundle } from './gear-types';
 import type { GearSlot } from '@creatures/game';
+import type { BossCardV2 } from './raid-v2-api';
 
 export type Element = 'tide' | 'ember' | 'grove' | 'spark' | 'mire';
 export type Role = 'setter' | 'payoff' | 'support' | 'guard';
 /** `GET /api/dungeon/today`. */
 export interface DungeonToday {
+  /**
+   * 2 when a run started now plays combat v2 (the server's flag is on), or when the run in `active` is one. Absent: combat v1.
+   * The screens follow this, not the flag.
+   */
+  rules?: 2;
   serverNow: number;
   /** The guild-local calendar day, 'YYYY-MM-DD'. */
   day: string;
@@ -102,6 +109,11 @@ export interface DungeonMapNode {
     kind: 'foe' | 'boss';
     hpMax: number;
     elite: boolean;
+    /**
+     * Combat v2 only: the foe's card (its armour, plain attack and move tiles, as the raid's boss card draws them). Absent on a v1
+     * run's map, where the foe's tricks come from the content.
+     */
+    card?: BossCardV2;
   };
   /** Fights, elites and the boss: the room's modifier. */
   modifier?: { id: string; name: string; description: string };
@@ -231,6 +243,8 @@ export type DungeonPending =
 
 /** The state of a run, open or done. Every act answers with it. */
 export interface DungeonRunState {
+  /** 2 on a run of combat v2 (kept to its end); absent on a v1 run. */
+  rules?: 2;
   id: string;
   day: string;
   attempt: number;
@@ -493,6 +507,8 @@ export interface DungeonTeamMember {
 }
 
 export interface DungeonRunSummary {
+  /** 2 on a run of combat v2; absent on a v1 run. */
+  rules?: 2;
   id: string;
   day: string;
   /** 1, or 2 for the retry of a first day. */
@@ -573,7 +589,9 @@ export interface DungeonReplayRowEntry {
   worn?: string[];
 }
 
-export interface DungeonReplayRoom {
+export interface DungeonReplayRoomV1 {
+  /** Absent on a room of a v1 run. */
+  rules?: undefined;
   index: number;
   kind: 'foe' | 'boss';
   /** A fiercer foe (path runs only; absent otherwise). An epic fight is one too. */
@@ -601,8 +619,43 @@ export interface DungeonReplayRoom {
   names: DungeonEventNames;
 }
 
+/**
+ * A room of a run on combat v2: the same fight the engine played, its events with the typed board event beside the text (a creature is
+ * named by its id in them, so there are no `names`), every creature's HP at the end, the foe's card, the arena (one row of three) and
+ * the Knack name of each creature that fought. Always has `node` and `row` (only map runs are v2).
+ */
+export interface DungeonReplayRoomV2 {
+  rules: 2;
+  index: number;
+  kind: 'foe' | 'boss';
+  elite?: boolean;
+  epic?: boolean;
+  node?: string;
+  keepsakes?: DungeonKeepsakeView[];
+  row?: DungeonReplayRowEntry[];
+  foe: { id: string; name: string; element: Element; hpMax: number };
+  modifier: { id: string; name: string; description: string };
+  cleared: boolean;
+  rounds: number;
+  hpStart: Record<string, number>;
+  /** Every creature's HP when the room ended (0: knocked out). */
+  hpEnd: Record<string, number>;
+  hpMax: Record<string, number>;
+  events: FightEventV2[];
+  card: BossCardV2;
+  arena: { rows: number; cols: number; rounds: number };
+  knacks: Record<string, string>;
+}
+
+export type DungeonReplayRoom = DungeonReplayRoomV1 | DungeonReplayRoomV2;
+
+/** The replay of a v1 run: every room is a v1 room (the shipped fixtures and the v1 workbench pages read these). */
+export type DungeonReplayV1 = Omit<DungeonReplay, 'rooms'> & { rooms: DungeonReplayRoomV1[] };
+
 /** `GET /api/dungeon/run/:id`: the caller's own run only (404 for anyone else's). Only the rooms that were played. */
 export interface DungeonReplay {
+  /** 2 on a run of combat v2; absent on a v1 run. */
+  rules?: 2;
   summary: DungeonRunSummary;
   /** The fighting row, left to right: `position` 0 is the left creature. */
   row: DungeonReplayRowEntry[];

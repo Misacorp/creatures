@@ -74,11 +74,10 @@ export function tileState(creature: Pick<DungeonRunCreature, 'hp' | 'hpMax'>): '
 }
 
 /** The spoken name of a tile: "Sproutle, level 12: 240 / 281 HP." or "..., knocked out." */
-export function tileLabel(creature: DungeonRunCreature): string {
+export function tileLabel(creature: DungeonRunCreature, rules?: 1 | 2): string {
   const base = `${creature.name}, level ${String(creature.level)}`;
-  return creature.hp <= 0
-    ? `${base}: knocked out.`
-    : `${base}: ${String(creature.hp)} / ${String(creature.hpMax)} HP.`;
+  if (creature.hp > 0) return `${base}: ${String(creature.hp)} / ${String(creature.hpMax)} HP.`;
+  return rules === 2 ? `${base}: out until the camp swaps it.` : `${base}: knocked out.`;
 }
 
 // --- The camp: the row's order ---
@@ -111,24 +110,28 @@ export function campCreatureOf(creature: DungeonRunCreature): CampRowCreature {
 }
 
 /** The HP line of a tile: "140 / 203 HP", red under a third and when down ("0 / 215 HP"); "Full HP" for a new arrival. */
-export function campHp(hp: CampRowCreature['hp']): SlotHp {
+export function campHp(hp: CampRowCreature['hp'], rules?: 1 | 2): SlotHp {
   if (hp === null) return { ratio: 1, state: 'ok', text: 'Full HP' };
   const state = tileState({ hp: hp.now, hpMax: hp.max });
   return {
     ratio: hp.max > 0 ? Math.min(1, Math.max(0, hp.now / hp.max)) : 0,
     state,
-    text: `${String(Math.max(0, hp.now))} / ${String(hp.max)} HP`,
+    // On combat v2 a creature at 0 HP is out for the run (greyed, "Out"), not a number.
+    text:
+      rules === 2 && hp.now <= 0 ? 'Out' : `${String(Math.max(0, hp.now))} / ${String(hp.max)} HP`,
   };
 }
 
 /** What a screen reader says for a tile of the camp's row: "Left: Sproutle, level 12, 240 / 281 HP. Shows …" */
-export function campSlotLabel(creature: CampRowCreature, index: number): string {
+export function campSlotLabel(creature: CampRowCreature, index: number, rules?: 1 | 2): string {
   const place = ['Left', 'Middle', 'Right'][index] ?? `Place ${String(index + 1)}`;
   const health =
     creature.hp === null
       ? 'full HP'
       : creature.hp.now <= 0
-        ? `knocked out, 0 / ${String(creature.hp.max)} HP`
+        ? rules === 2
+          ? 'out until the camp swaps it'
+          : `knocked out, 0 / ${String(creature.hp.max)} HP`
         : `${String(creature.hp.now)} / ${String(creature.hp.max)} HP`;
   const shows = creature.gear.length === 0 ? 'its role and element' : 'its role, element and gear';
   return `${place}: ${creature.name}, level ${String(creature.level)}, ${health}. Shows ${shows}.`;

@@ -1,7 +1,13 @@
 import { describeEvent } from '@creatures/engine';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { bossArt, elementClass } from './art';
+import { combatGlyph } from './combat-glyphs';
 import { cssVars } from './css-vars';
+import { DUNGEON_OWNER, roomFightV2 } from './dungeon-room-v2';
+import { foldSetupOf, stageModelOf } from './fight-v2';
+import { INTRO_REPLAY_MS as INTRO_V2_MS } from './playback-v2';
+import { StageV2 } from './StageV2';
+import { usePlaybackV2 } from './use-playback-v2';
 import { elementName } from './game';
 import { glyphOrUnknown } from './glyphs';
 import {
@@ -22,7 +28,7 @@ import {
 } from './dungeon-playback';
 import { roomPlaceLine } from './dungeon-text';
 import { usePrefersReducedMotion } from './hooks';
-import type { DungeonReplayRoom } from './dungeon-types';
+import type { DungeonReplayRoom, DungeonReplayRoomV1, DungeonReplayRoomV2 } from './dungeon-types';
 import { INTRO_REPLAY_MS } from './stage-fx';
 import { roomMaxRounds } from './stage-rounds';
 import type { Speed } from './replay';
@@ -107,16 +113,29 @@ export function DungeonPlayback({ input, onDone, showControls = false }: Props) 
           skipLabel="Skip"
         />
       )}
-      <RoomFight
-        key={room}
-        room={current}
-        total={placeTotal(input, current)}
-        landmark={input.landmark}
-        row={row}
-        speed={speed}
-        paused={paused}
-        onFinished={finishRoom}
-      />
+      {current.rules === 2 ? (
+        <RoomFightV2
+          key={room}
+          room={current}
+          total={placeTotal(input, current)}
+          landmark={input.landmark}
+          row={row}
+          speed={speed}
+          paused={paused}
+          onFinished={finishRoom}
+        />
+      ) : (
+        <RoomFight
+          key={room}
+          room={current}
+          total={placeTotal(input, current)}
+          landmark={input.landmark}
+          row={row}
+          speed={speed}
+          paused={paused}
+          onFinished={finishRoom}
+        />
+      )}
     </section>
   );
 }
@@ -184,55 +203,49 @@ function RoomBanner({
       </p>
       {view.trick !== null && (
         <p class="rb-trick">
-          <Sprite sprite={glyphOrUnknown(view.trick.glyph)} scale={2} />
+          <Sprite sprite={combatGlyph(view.trick.glyph) ?? glyphOrUnknown('unknown')} scale={2} />
           <strong class="pix">{view.trick.name}</strong>
           <span>{view.trick.line}</span>
         </p>
       )}
-      <p class="rb-twist">
-        <strong class="pix">{view.modifierName}</strong>
-        <span>{view.modifierDescription}</span>
-      </p>
+      {view.modifierShown && (
+        <p class="rb-twist">
+          <strong class="pix">{view.modifierName}</strong>
+          <span>{view.modifierDescription}</span>
+        </p>
+      )}
     </div>
   );
 }
 
-function RoomFight({
+/**
+ * What a room of either rules does around its fight: the banner stands over the stage for a moment (the wait and the outline that drains
+ * share one time), then the fight starts; the arena is brought into view when the room opens and again when its fight begins; pausing
+ * stops the beats; and once the last beat has played the final state rests a moment and the run moves on.
+ */
+function useRoomRhythm({
   room,
   total,
   landmark,
-  row,
   speed,
   paused,
+  finished,
+  setPlaying,
   onFinished,
 }: {
   room: DungeonReplayRoom;
   total: number;
   landmark: boolean;
-  row: ReturnType<typeof roomStageRow>;
   speed: Speed;
   paused: boolean;
+  finished: boolean;
+  setPlaying: (playing: boolean) => void;
   onFinished: () => void;
 }) {
-  const rowIds = row.map((r) => r.id);
-  // The room's limit from the content, not how long this stored fight lasted (that would spoil it).
-  const maxRounds = roomMaxRounds(room.foe.id);
-  const none = useMemo(() => mineIds([]), []);
-  // The banner shows for a moment with the room standing behind it, then the fight starts. While
-  // paused it waits.
+  // The banner shows for a moment with the room standing behind it, then the fight starts. While paused it waits.
   const [banner, setBanner] = useState(true);
   const arena = useRef<HTMLDivElement>(null);
   const reduced = usePrefersReducedMotion();
-  const pb = usePlayback({
-    events: room.events,
-    rowIds,
-    bossId: room.foe.id,
-    rounds: maxRounds,
-    introMs: INTRO_REPLAY_MS,
-    speed,
-    autoplay: false,
-  });
-  const { setPlaying, finished } = pb;
 
   useEffect(() => {
     if (!banner || paused) return undefined;
@@ -283,6 +296,62 @@ function RoomFight({
     };
   }, [finished, paused, speed]);
 
+  const overlay = banner ? (
+    <RoomBanner
+      // A new banner when playback resumes, so the outline starts again together with the wait.
+      key={paused ? 'paused' : 'playing'}
+      room={room}
+      total={total}
+      landmark={landmark}
+      ms={atSpeed(ROOM_CARD_MS, speed)}
+      paused={paused}
+    />
+  ) : null;
+  return { arena, overlay, banner };
+}
+
+function RoomFight({
+  room,
+  total,
+  landmark,
+  row,
+  speed,
+  paused,
+  onFinished,
+}: {
+  room: DungeonReplayRoomV1;
+  total: number;
+  landmark: boolean;
+  row: ReturnType<typeof roomStageRow>;
+  speed: Speed;
+  paused: boolean;
+  onFinished: () => void;
+}) {
+  const rowIds = row.map((r) => r.id);
+  // The room's limit from the content, not how long this stored fight lasted (that would spoil it).
+  const maxRounds = roomMaxRounds(room.foe.id);
+  const none = useMemo(() => mineIds([]), []);
+  const pb = usePlayback({
+    events: room.events,
+    rowIds,
+    bossId: room.foe.id,
+    rounds: maxRounds,
+    introMs: INTRO_REPLAY_MS,
+    speed,
+    autoplay: false,
+  });
+  const { finished } = pb;
+  const { arena, overlay, banner } = useRoomRhythm({
+    room,
+    total,
+    landmark,
+    speed,
+    paused,
+    finished,
+    setPlaying: pb.setPlaying,
+    onFinished,
+  });
+
   const logRef = useRef<HTMLOListElement>(null);
   useEffect(() => {
     const el = logRef.current;
@@ -311,19 +380,7 @@ function RoomFight({
           place={roomPlaceLine(room, total)}
           modifiers={[room.modifier]}
           addedGimmicks={modifierGimmicks(room, landmark)}
-          overlay={
-            banner ? (
-              <RoomBanner
-                // A new banner when playback resumes, so the outline starts again together with the wait.
-                key={paused ? 'paused' : 'playing'}
-                room={room}
-                total={total}
-                landmark={landmark}
-                ms={atSpeed(ROOM_CARD_MS, speed)}
-                paused={paused}
-              />
-            ) : null
-          }
+          overlay={overlay}
         />
       </div>
       <LiveRegion>{banner ? view.spoken : ''}</LiveRegion>
@@ -337,6 +394,101 @@ function RoomFight({
             const line = describeEvent(event, room.names);
             return line === '' ? null : <li key={i}>{line}</li>;
           })}
+        </ol>
+      </LogToggle>
+    </>
+  );
+}
+
+/**
+ * A room of a run on combat v2: the stored board events played beat by beat on `StageV2` in its single-row mode (the line acts, then the
+ * foe takes one turn, R8.7), under the same banner and with the same rests as a v1 room. The room's foe card names its moves; the fold
+ * (`fight-v2.ts`) and the playback (`use-playback-v2.ts`) are the raid replay's. The fight is already decided and stored.
+ */
+function RoomFightV2({
+  room,
+  total,
+  landmark,
+  row,
+  speed,
+  paused,
+  onFinished,
+}: {
+  room: DungeonReplayRoomV2;
+  total: number;
+  landmark: boolean;
+  row: ReturnType<typeof roomStageRow>;
+  speed: Speed;
+  paused: boolean;
+  onFinished: () => void;
+}) {
+  const fight = useMemo(() => roomFightV2(room, row), [room, row]);
+  const model = useMemo(
+    () =>
+      stageModelOf(
+        foldSetupOf({ fighters: fight.fighters, card: fight.card, bossHpStart: fight.hpMax }),
+        room.events,
+      ),
+    [fight, room.events],
+  );
+  const playback = usePlaybackV2({
+    model,
+    events: room.events,
+    rounds: fight.rounds,
+    speed,
+    introMs: INTRO_V2_MS,
+    budgetMs: Number.POSITIVE_INFINITY,
+    mode: 'replay',
+    autoplay: false,
+  });
+  const { finished } = playback;
+  const { arena, overlay, banner } = useRoomRhythm({
+    room,
+    total,
+    landmark,
+    speed,
+    paused,
+    finished,
+    setPlaying: playback.setPlaying,
+    onFinished,
+  });
+
+  const logRef = useRef<HTMLOListElement>(null);
+  useEffect(() => {
+    const el = logRef.current;
+    if (el !== null) el.scrollTop = el.scrollHeight;
+  }, [playback.beat]);
+
+  const view = roomIntroView(room, total, landmark);
+  const shown = playback.beat === 0 ? 0 : (model.beats[playback.beat - 1]?.to ?? 0);
+  return (
+    <>
+      <div ref={arena} class="dungeon-arena">
+        <StageV2
+          boss={fight.boss}
+          card={fight.card}
+          fighters={fight.fighters}
+          names={fight.names}
+          you={DUNGEON_OWNER}
+          model={model}
+          playback={playback}
+          place={roomPlaceLine(room, total)}
+          hpMax={fight.hpMax}
+          rounds={fight.rounds}
+          single
+          ticks={[]}
+          overlay={overlay}
+        />
+      </div>
+      <LiveRegion>{banner ? view.spoken : ''}</LiveRegion>
+      <p class="muted dungeon-room-result" role="status">
+        {finished ? roomResultLine(room) : ''}
+      </p>
+      <LogToggle id={`dungeon-log-${String(room.index)}`}>
+        <ol class="replay-log" ref={logRef} tabIndex={0} aria-label="Fight log">
+          {room.events
+            .slice(0, shown)
+            .map((event, i) => (event.text === '' ? null : <li key={i}>{event.text}</li>))}
         </ol>
       </LogToggle>
     </>

@@ -45,8 +45,41 @@ import { queueBossReveal } from './raid-posts';
 import { ReadinessCache } from './raid-readiness';
 import { redeclareWeek, staleOpenWeeks } from './raid-redeclare';
 import { buildPhaseInput, resolveParty } from './raid-resolve';
+import {
+  applyActionV2,
+  evaluateV2,
+  finaleResolvedV2,
+  loadLiveV2,
+  resolveFinaleInstantV2,
+  settleLiveV2,
+  startFinaleV2,
+  unresolvedRealV2,
+} from './raid-v2-live';
+import { askSwap, acceptSwap, declineSwap } from './raid-swap';
+import { endWeekV2 } from './raid-v2-track';
+import { resolveStageV2, type ResultPhase } from './raid-v2-stage';
+import {
+  colsFor,
+  ensureTrack,
+  outOf,
+  readPartyCarry,
+  slotBossInfo,
+  weekRules,
+} from './raid-v2-core';
+import {
+  buildRaidViewV2,
+  buildReplayViewV2,
+  emptySnapshotV2,
+  liveSnapshotV2,
+  swapsView,
+  type LiveContextV2,
+  type LiveSnapshotV2,
+  type ReplayViewV2,
+  type SwapsView,
+} from './raid-v2-view';
 import { markRevealSeen } from './raid-reveal';
 import { readStats, type AfterActionStats } from './raid-stats';
+import type { AfterActionStatsV2 } from './raid-v2-view';
 import {
   buildRaidView,
   buildReplayView,
@@ -73,6 +106,7 @@ import {
   weekIdFor,
   weekIndex,
   type RaidEvent,
+  type RaidRules,
   type RaidPhase,
   type ScheduledEvent,
 } from './raid-schedule';
@@ -95,6 +129,8 @@ export interface RaidDeps {
   quirkRng?: Rng;
   /** Live randomness for the talent of a Festival creature. Crypto in production. */
   talentRng?: Rng;
+  /** The `COMBAT_V2` flag: a Festival creature also rolls its v2 talent (`talent-v2-store.ts`). */
+  combatV2?: boolean;
   /** Live randomness for gear drops (a cleared phase, a won finale, a Festival piece). Crypto in production. */
   gearRng?: Rng;
   /** The analytics event log (see `analytics.ts`). Optional: without it nothing is logged. */
@@ -120,6 +156,12 @@ export interface WeekRow {
   bossId: string;
   status: RaidStatus;
   createdAt: number;
+  /** The rules the week plays under: 1 is the shipped weekend, 2 is combat v2 (stored when the week is created). */
+  rules: RaidRules;
+  /** A v2 week: the track's slot it fights (the Boss Rank); null for a v1 week. */
+  trackSlot: number | null;
+  /** A Festival week (a v2 Festival week has no raid and the track waits). */
+  festival: boolean;
 }
 
 /** A guard against a runaway loop; a week has four events. */
@@ -177,11 +219,25 @@ export class Raid {
         boss_id: string;
         status: RaidStatus;
         created_at: number;
-      }>('SELECT week_id, boss_id, status, created_at FROM raid_weeks WHERE week_id = ?', weekId)
+        rules_version: number;
+        track_slot: number | null;
+        festival: number | null;
+      }>(
+        'SELECT week_id, boss_id, status, created_at, rules_version, track_slot, festival FROM raid_weeks WHERE week_id = ?',
+        weekId,
+      )
       .toArray()[0];
     return row === undefined
       ? null
-      : { weekId: row.week_id, bossId: row.boss_id, status: row.status, createdAt: row.created_at };
+      : {
+          weekId: row.week_id,
+          bossId: row.boss_id,
+          status: row.status,
+          createdAt: row.created_at,
+          rules: row.rules_version === 2 ? 2 : 1,
+          trackSlot: row.track_slot,
+          festival: row.festival === 1,
+        };
   }
 
   /**
@@ -195,6 +251,8 @@ export class Raid {
     return this.deps.storage.transactionSync(() => {
       const again = this.week(weekId);
       if (again !== null) return again;
+      // The flag is read only now: a week keeps the rules it started under, whatever the flag does later.
+      if (this.deps.combatV2 === true) return this.createWeekV2(weekId);
       const bosses = content.bosses;
       const boss = bosses[weekIndex(weekId) % bosses.length];
       if (boss === undefined) throw new Error('content has no bosses');
@@ -213,8 +271,51 @@ export class Raid {
       );
       // The week gets its rank now: the server's, or Rank 1 for a server that has none yet (`ensureWeekRank`).
       ensureWeekRank(this.sql, weekId);
-      return { weekId, bossId: boss.id, status: 'open' as const, createdAt: now };
+      return {
+        weekId,
+        bossId: boss.id,
+        status: 'open' as const,
+        createdAt: now,
+        rules: 1 as const,
+        trackSlot: null,
+        festival: season.festival === 1,
+      };
     });
+  }
+
+  /**
+   * Creates a combat v2 week: its slot is the server's track (slot 1 for a new server) and its boss is that slot's. The track replaces
+   * the ladder, so the week's rank is the slot (rewards follow it) and the week needs no Festival creature: a v2 Festival week has no
+   * raid and the track waits. Call it inside a transaction.
+   */
+  private createWeekV2(weekId: string): WeekRow {
+    const { slot } = ensureTrack(this.sql);
+    const { bossId } = slotBossInfo(slot);
+    const now = this.deps.now();
+    const season = seasonColumns(weekId);
+    this.sql.exec(
+      `INSERT INTO raid_weeks (week_id, boss_id, status, created_at, season_index, festival, festival_species, difficulty_version,
+         rank, effective_rank, rules_version, track_slot)
+       VALUES (?, ?, 'open', ?, ?, ?, NULL, ?, ?, ?, 2, ?)`,
+      weekId,
+      bossId,
+      now,
+      season.seasonIndex,
+      season.festival,
+      RAID_DIFFICULTY_VERSION,
+      slot,
+      slot,
+      slot,
+    );
+    return {
+      weekId,
+      bossId,
+      status: 'open',
+      createdAt: now,
+      rules: 2,
+      trackSlot: slot,
+      festival: season.festival === 1,
+    };
   }
 
   /**
@@ -267,7 +368,16 @@ export class Raid {
     const lowest = from !== undefined && from < weekIdFor(now, tz) ? from : undefined;
     // Done markers older than the week before the current one cannot matter.
     const floor = lowest ?? weekIdFor(now - 8 * 86_400_000, tz);
-    return nextDueEvent(now, tz, this.doneSet(floor), lowest);
+    // A combat v2 week has its own calendar (stage 1 and 2 later in the week); a week that does not exist yet has only its start.
+    const v2Weeks = new Set(
+      this.sql
+        .exec<{
+          week_id: string;
+        }>('SELECT week_id FROM raid_weeks WHERE week_id >= ? AND rules_version = 2', floor)
+        .toArray()
+        .map((r) => r.week_id),
+    );
+    return nextDueEvent(now, tz, this.doneSet(floor), lowest, (id) => (v2Weeks.has(id) ? 2 : 1));
   }
 
   /** When the next raid event is due (it may be in the past if one keeps failing), or null. */
@@ -383,7 +493,8 @@ export class Raid {
         // The week, its boss reveal post and the done marker commit together.
         this.deps.storage.transactionSync(() => {
           const week = this.ensureWeek(weekId);
-          queueBossReveal(this.sql, week, tz, this.deps.now());
+          // The reveal post describes the shipped boss's moves: a v2 week's (the track's) waits for its own post.
+          if (week.rules === 1) queueBossReveal(this.sql, week, tz, this.deps.now());
           this.markDone(weekId, event, 'ran');
         });
       } else {
@@ -396,11 +507,56 @@ export class Raid {
       this.markDone(weekId, event, 'skipped');
       return;
     }
+    if (week.rules === 2) {
+      this.runEventV2(week, event, scheduled.at);
+      return;
+    }
     if (event === 'finale') {
       this.startFinale(week, scheduled.at);
       return;
     }
     this.resolvePhase(week, event);
+  }
+
+  /**
+   * One event of a combat v2 week. A Festival week has no raid (the track waits), so its stages and finale are skipped. Stage 1 and
+   * stage 2 resolve every party at once; the finale starts each party's live fight (stage 3) and, when no fight is left to wait for,
+   * ends the weekend.
+   */
+  private runEventV2(week: WeekRow, event: RaidEvent, scheduledAt: number): void {
+    if (week.festival || week.trackSlot === null) {
+      this.markDone(week.weekId, event, 'skipped');
+      return;
+    }
+    const v2 = { weekId: week.weekId, trackSlot: week.trackSlot };
+    const parties = this.sql
+      .exec<{
+        party: number;
+      }>('SELECT party FROM raid_parties WHERE week_id = ? ORDER BY party', week.weekId)
+      .toArray();
+    if (event === 'finale') {
+      const now = this.deps.now();
+      if (now - scheduledAt > LATE_START_LIMIT_MS) {
+        for (const { party } of parties) resolveFinaleInstantV2(this.deps, v2, party);
+      } else {
+        // A start a moment after the scheduled time still counts from it (as for a v1 finale).
+        const startedAt = now - scheduledAt <= START_GRACE_MS ? scheduledAt : now;
+        for (const { party } of parties) startFinaleV2(this.deps, v2, party, startedAt);
+      }
+      this.deps.storage.transactionSync(() => {
+        this.sql.exec('UPDATE raid_weeks SET status = ? WHERE week_id = ?', 'finale', week.weekId);
+        this.markDone(week.weekId, 'finale', 'ran');
+        // Parties whose boss fell earlier (or that had nobody to fight) have nothing to wait for.
+        endWeekV2(this.sql, week.weekId, this.deps.now(), this.deps.analytics);
+      });
+      return;
+    }
+    const stage = event === 'phase1' ? 1 : 2;
+    for (const { party } of parties) resolveStageV2(this.deps, v2, party, stage);
+    this.deps.storage.transactionSync(() => {
+      this.sql.exec('UPDATE raid_weeks SET status = ? WHERE week_id = ?', event, week.weekId);
+      this.markDone(week.weekId, event, 'ran');
+    });
   }
 
   /**
@@ -472,6 +628,17 @@ export class Raid {
   /** Placement edits are allowed until the finale starts. */
   private requireEditable(week: WeekRow): void {
     if (week.status === 'finale') throw new GameError(409, 'locked');
+    // A combat v2 Festival week has no raid.
+    if (week.rules === 2 && week.festival) throw new GameError(409, 'festival');
+  }
+
+  /** The slots of a combat v2 party's board: the slot's boss's rows by the columns its players make (`max(4, players)`). */
+  private v2Length(week: WeekRow, party: number): number {
+    const rows = slotBossInfo(week.trackSlot ?? 1).rows;
+    const players =
+      readPartyCarry(this.sql, week.weekId, party)?.players ??
+      partyMembers(this.sql, week.weekId, party).length;
+    return rows * colsFor(players);
   }
 
   /**
@@ -492,15 +659,26 @@ export class Raid {
       const species = this.requireOwnedCreature(userId, creatureId);
       let party = partyOf(this.sql, week.weekId, userId);
       const joining = party === null;
+      // Players lock when stage 1 begins (Misa, 2026-11-02): no one joins a combat v2 weekend after that.
+      if (party === null && week.rules === 2 && week.status !== 'open') {
+        throw new GameError(409, 'locked');
+      }
       if (party === null) {
         party = joinSmallestParty(this.sql, week.weekId, userId, this.deps.now());
         // A week opened before servers started at Rank 1 gets its rank at the first join at the latest.
         ensureWeekRank(this.sql, week.weekId);
       }
       this.readinessCache.invalidate();
-      const length = partyRowLength(this.sql, week.weekId, party);
+      const length =
+        week.rules === 2
+          ? this.v2Length(week, party)
+          : partyRowLength(this.sql, week.weekId, party);
       if (!Number.isInteger(slot) || slot < 0 || slot >= length) {
         throw new GameError(400, 'invalid_slot');
+      }
+      // A creature knocked out this weekend cannot be placed again (R14).
+      if (week.rules === 2 && outOf(this.sql, week.weekId, party).has(creatureId)) {
+        throw new GameError(409, 'knocked_out');
       }
       // A player never has more than three creatures on the board. Stale rows beyond that (from
       // before this rule) are dropped first, by the one rule in `capPlacements`.
@@ -520,6 +698,15 @@ export class Raid {
         )
         .toArray()[0];
       if (occupant !== undefined && occupant.user_id !== userId) {
+        throw new GameError(409, 'slot_taken');
+      }
+      // After stage 1 a fresh creature only takes an empty slot (a replacement, R14): it never pushes a creature off the board.
+      if (
+        week.rules === 2 &&
+        week.status !== 'open' &&
+        mine === undefined &&
+        occupant !== undefined
+      ) {
         throw new GameError(409, 'slot_taken');
       }
       // Delete first, insert after: the unique constraints never see two creatures in one slot.
@@ -582,8 +769,7 @@ export class Raid {
       if (!board.listening(change.week, change.party, change.userId)) return;
       // A player who left may shrink the row (it follows the joined players): the one read the push does.
       const rowLength =
-        change.rowLength ??
-        (change.joined === false ? partyRowLength(this.sql, change.week, change.party) : undefined);
+        change.rowLength ?? (change.joined === false ? this.rowLengthOf(change) : undefined);
       board.send(
         change.userId,
         boardPush(this.sql, { ...change, ...(rowLength === undefined ? {} : { rowLength }) }),
@@ -591,6 +777,14 @@ export class Raid {
     } catch (err) {
       console.error('raid board push failed', err instanceof Error ? err.name : 'unknown');
     }
+  }
+
+  /** A party's board length after a leave: v1's row, or a combat v2 week's grid. */
+  private rowLengthOf(change: Pick<BoardChange, 'week' | 'party'>): number {
+    const week = this.week(change.week);
+    return week?.rules === 2
+      ? this.v2Length(week, change.party)
+      : partyRowLength(this.sql, change.week, change.party);
   }
 
   /**
@@ -835,6 +1029,16 @@ export class Raid {
     return real === null ? null : { row: real };
   }
 
+  /** Resolves a real combat v2 fight that is over. Never throws: a failure is retried on the next read. */
+  private trySettleV2(weekId: string, party: number, now: number): boolean {
+    try {
+      return settleLiveV2(this.deps, weekId, party, now);
+    } catch (err) {
+      console.error('live finale resolve failed', err instanceof Error ? err.name : 'unknown');
+      return false;
+    }
+  }
+
   /** Resolves a real fight that is over. Never throws: a failure is retried on the next read. */
   private trySettle(weekId: string, party: number, now: number): boolean {
     try {
@@ -856,12 +1060,17 @@ export class Raid {
     for (const fight of unresolvedReal(this.sql)) {
       if (this.trySettle(fight.weekId, fight.party, now)) settled++;
     }
+    for (const fight of unresolvedRealV2(this.sql)) {
+      if (this.trySettleV2(fight.weekId, fight.party, now)) settled++;
+    }
     return settled;
   }
 
   /** When the last round of the earliest unresolved real fight ends (the alarm wakes for it), or null. */
   nextLiveEndAt(): number | null {
-    return unresolvedReal(this.sql)[0]?.endsAt ?? null;
+    const v1 = unresolvedReal(this.sql)[0]?.endsAt ?? null;
+    const v2 = unresolvedRealV2(this.sql)[0]?.endsAt ?? null;
+    return v1 === null ? v2 : v2 === null ? v1 : Math.min(v1, v2);
   }
 
   /** True when `userId` is in `party` of the week (a finale socket's ticket needs it). */
@@ -877,7 +1086,7 @@ export class Raid {
   canWatchBoard(userId: string, week: WeekRow, party: number): boolean {
     const mine = partyOf(this.sql, week.weekId, userId);
     if (mine !== null) return mine === party;
-    if (!joiningOpen(week.status)) return false;
+    if (!joiningOpen(week.status, week.rules) || week.festival) return false;
     const hasCreature =
       this.sql.exec('SELECT 1 FROM creatures WHERE user_id = ? LIMIT 1', userId).toArray().length >
       0;
@@ -891,6 +1100,7 @@ export class Raid {
    */
   nextPushAt(weekId: string, party: number, tz: string): number | null {
     const now = this.deps.now();
+    if (weekRules(this.sql, weekId) === 2) return this.nextPushAtV2(weekId, party, tz, now);
     const selected = this.selectLive({ weekId }, party, tz, now);
     let at: number | null = null;
     if (selected === null) {
@@ -904,6 +1114,21 @@ export class Raid {
       at = selected.row.startedAt;
     } else {
       at = evaluate(selected.row, now).nextRoundAt;
+    }
+    return at !== null && at > now ? at : null;
+  }
+
+  /** `nextPushAt` for a combat v2 week: the lobby opening and ending, then each round's start and the end of the fight. */
+  private nextPushAtV2(weekId: string, party: number, tz: string, now: number): number | null {
+    const row = loadLiveV2(this.sql, weekId, party);
+    let at: number | null = null;
+    if (row === null) {
+      if (!this.isDone(weekId, 'finale')) {
+        const finaleAt = eventTimes(weekId, tz, 2).finale;
+        at = now >= finaleAt - LOBBY_MS ? finaleAt : finaleAt - LOBBY_MS;
+      }
+    } else if (!finaleResolvedV2(this.sql, weekId, party)) {
+      at = evaluateV2(this.sql, row, now).nextRoundAt;
     }
     return at !== null && at > now ? at : null;
   }
@@ -932,7 +1157,58 @@ export class Raid {
    * contains the seed.
    */
   liveSnapshot(userId: string, tz: string): LiveSnapshot {
+    return this.liveSnapshotFor(userId, tz, this.currentWeek(tz));
+  }
+
+  /**
+   * The live finale as the caller sees it, whichever rules the week plays under: the shipped snapshot, or a combat v2 week's
+   * (`rules: 2`). The routes and the finale socket read this.
+   */
+  liveView(userId: string, tz: string): LiveSnapshot | LiveSnapshotV2 {
     const week = this.currentWeek(tz);
+    return week.rules === 2
+      ? this.liveSnapshotV2(userId, tz, week)
+      : this.liveSnapshotFor(userId, tz, week);
+  }
+
+  /** The v2 live finale: nothing soon, the lobby, the fight (rounds replayed so far) or the finished fight with the caller's loot. */
+  private liveSnapshotV2(userId: string, tz: string, week: WeekRow): LiveSnapshotV2 {
+    const now = this.deps.now();
+    const party = partyOf(this.sql, week.weekId, userId);
+    const names = displayNames(this.sql);
+    const base: LiveContextV2 = {
+      sql: this.sql,
+      now,
+      weekId: week.weekId,
+      party,
+      userId,
+      names,
+      watching: [],
+    };
+    if (party === null) return emptySnapshotV2(base, 'none', null);
+    const row = loadLiveV2(this.sql, week.weekId, party);
+    const finaleAt = eventTimes(week.weekId, tz, 2).finale;
+    if (row === null) {
+      const alive = (readPartyCarry(this.sql, week.weekId, party)?.carry.bossHp ?? 0) > 0;
+      if (alive && !this.isDone(week.weekId, 'finale') && now >= finaleAt - LOBBY_MS) {
+        const watching = this.touchWatching(userId, week.weekId, party, now, names);
+        this.logJoin(userId, `join:${week.weekId}:real`, 'lobby', false);
+        return emptySnapshotV2({ ...base, watching }, 'lobby', finaleAt);
+      }
+      return emptySnapshotV2(base, 'none', null);
+    }
+    const watching = this.touchWatching(userId, week.weekId, party, now, names);
+    let resolved = finaleResolvedV2(this.sql, week.weekId, party);
+    const label = `join:${week.weekId}:real`;
+    if (!resolved) {
+      const state = evaluateV2(this.sql, row, now);
+      if (!state.ended) this.logJoin(userId, label, 'fight', false);
+      else resolved = this.trySettleV2(week.weekId, party, now);
+    }
+    return liveSnapshotV2({ ...base, watching }, row, resolved);
+  }
+
+  private liveSnapshotFor(userId: string, tz: string, week: WeekRow): LiveSnapshot {
     const now = this.deps.now();
     const party = partyOf(this.sql, week.weekId, userId);
     const names = displayNames(this.sql);
@@ -1037,6 +1313,7 @@ export class Raid {
    */
   liveAction(userId: string, tz: string, body: ActionInput): Outcome<LiveSnapshot> {
     const week = this.currentWeek(tz);
+    if (week.rules === 2) return this.liveActionV2(userId, tz, week, body) as Outcome<LiveSnapshot>;
     const now = this.deps.now();
     const party = partyOf(this.sql, week.weekId, userId);
     const selected = party === null ? null : this.selectLive(week, party, tz, now);
@@ -1069,6 +1346,50 @@ export class Raid {
     return { ok: true, value: this.liveSnapshot(userId, tz) };
   }
 
+  /** The caller's Fire, Hold or Unhold in a combat v2 finale; answers with the new snapshot (`rules: 2`). */
+  private liveActionV2(
+    userId: string,
+    tz: string,
+    week: WeekRow,
+    body: ActionInput,
+  ): Outcome<LiveSnapshotV2> {
+    const now = this.deps.now();
+    const party = partyOf(this.sql, week.weekId, userId);
+    if (party === null || loadLiveV2(this.sql, week.weekId, party) === null) {
+      return { ok: false, status: 409, error: 'not_in_fight' };
+    }
+    // A fight that is over is resolved first, so the action is judged against the final state.
+    this.trySettleV2(week.weekId, party, now);
+    const outcome = this.atomically(() => {
+      const row = loadLiveV2(this.sql, week.weekId, party);
+      if (row === null) throw new GameError(409, 'not_in_fight');
+      if (finaleResolvedV2(this.sql, week.weekId, party)) throw new GameError(409, 'too_late');
+      const done = applyActionV2(
+        this.sql,
+        row,
+        userId,
+        { key: body.key, action: body.action, row: body.row },
+        now,
+      );
+      if (done !== null) {
+        this.deps.analytics?.record(
+          {
+            kind: 'live_action',
+            action: done.action,
+            ability: done.abilityId,
+            round: done.round,
+            defaultRound: done.defaultRound,
+            practice: false,
+          },
+          userId,
+        );
+      }
+      return null;
+    });
+    if (!outcome.ok) return outcome;
+    return { ok: true, value: this.liveSnapshotV2(userId, tz, week) };
+  }
+
   /** True when the staging-only practice finale is available. */
   practiceEnabled(): boolean {
     return this.deps.practice === true;
@@ -1097,6 +1418,8 @@ export class Raid {
     this.runDue(tz);
     const started = this.atomically(() => {
       const { week, party } = this.memberContext(userId, tz);
+      // A practice fight is the shipped finale's: it does not exist on a combat v2 week.
+      if (week.rules === 2) throw new GameError(409, 'not_available');
       const now = this.deps.now();
       const finaleAt = eventTimes(week.weekId, tz).finale;
       if (
@@ -1133,7 +1456,11 @@ export class Raid {
   /** The current week as the caller sees it (creates the week if needed). */
   view(userId: string, tz: string): RaidView {
     this.settleDueLive();
-    return buildRaidView(this, this.sql, userId, tz, this.deps.now());
+    const week = this.currentWeek(tz);
+    if (week.rules === 2) {
+      return buildRaidViewV2(this, this.sql, userId, tz, this.deps.now(), week);
+    }
+    return buildRaidView(this, this.sql, userId, tz, this.deps.now(), week);
   }
 
   /**
@@ -1150,11 +1477,14 @@ export class Raid {
     const nextEvent = nextPendingEvent(week.status);
     const nextAt = nextEvent === undefined ? null : schedule[nextEvent];
     if (week.status === 'finale') return { needed: false, nextAt };
+    if (week.rules === 2 && week.festival) return { needed: false, nextAt };
     const party = partyOf(this.sql, week.weekId, userId);
     if (party === null) {
       // Not joined: nudged while joining is open, if they are on the active roster (a creature and recent activity).
       const needed =
-        joiningOpen(week.status) && eligiblePlayerIds(this.sql, this.deps.now()).includes(userId);
+        joiningOpen(week.status, week.rules) &&
+        !week.festival &&
+        eligiblePlayerIds(this.sql, this.deps.now()).includes(userId);
       return { needed, nextAt };
     }
     const placed = partyPlacements(this.sql, week.weekId, party).filter(
@@ -1174,18 +1504,114 @@ export class Raid {
   }
 
   /** A resolved phase's stored events, or null if it has not resolved. */
-  replay(userId: string, weekId: string, party: number, phase: RaidPhase): ReplayView | null {
+  replay(
+    userId: string,
+    weekId: string,
+    party: number,
+    phase: 'phase1' | 'phase2',
+  ): ReplayView | null;
+  replay(
+    userId: string,
+    weekId: string,
+    party: number,
+    phase: RaidPhase | ResultPhase,
+  ): ReplayView | ReplayViewV2 | null;
+  replay(
+    userId: string,
+    weekId: string,
+    party: number,
+    phase: RaidPhase | ResultPhase,
+  ): ReplayView | ReplayViewV2 | null {
+    // A stage is a combat v2 stage; the finale is whichever rules its week was played under.
+    if (phase === 'stage1' || phase === 'stage2') {
+      return buildReplayViewV2(this.sql, userId, weekId, party, phase);
+    }
+    if (phase === 'finale' && weekRules(this.sql, weekId) === 2) {
+      return buildReplayViewV2(this.sql, userId, weekId, party, phase);
+    }
     return buildReplayView(this.sql, userId, weekId, party, phase);
   }
 
   /** The after-action stats of a resolved stage, for a member of that fight; null otherwise. */
-  stats(userId: string, weekId: string, party: number, phase: RaidPhase): AfterActionStats | null {
+  stats(
+    userId: string,
+    weekId: string,
+    party: number,
+    phase: RaidPhase | ResultPhase,
+  ): AfterActionStats | AfterActionStatsV2 | null {
     return readStats(this.sql, userId, weekId, party, phase, displayNames(this.sql));
   }
 
   /** Event times of a week in the guild's timezone. */
   schedule(weekId: string, tz: string): Record<RaidEvent, number> {
-    return eventTimes(weekId, tz);
+    return eventTimes(weekId, tz, weekRules(this.sql, weekId));
+  }
+
+  // --- Swap requests (combat v2, R19) ---
+
+  /** True when swap requests exist: the `COMBAT_V2` flag is on. */
+  swapsEnabled(): boolean {
+    return this.deps.combatV2 === true;
+  }
+
+  /** The current week for a swap route: a v2 week that is not locked, and the caller's party in it. */
+  private swapContext(userId: string, tz: string): { week: WeekRow; party: number } {
+    const week = this.ensureWeek(weekIdFor(this.deps.now(), tz));
+    if (week.rules !== 2) throw new GameError(409, 'not_v2');
+    if (week.status === 'finale' || week.festival) throw new GameError(409, 'locked');
+    const party = partyOf(this.sql, week.weekId, userId);
+    if (party === null) throw new GameError(409, 'not_in_roster');
+    return { week, party };
+  }
+
+  /** The caller's open swap requests this week (incoming and outgoing). Two indexed lookups. */
+  swaps(userId: string, tz: string): SwapsView {
+    const week = this.currentWeek(tz);
+    return swapsView(this.sql, week.weekId, userId, displayNames(this.sql));
+  }
+
+  /** `swaps` for the route: a week that is not a combat v2 week answers `not_v2`. */
+  listSwaps(userId: string, tz: string): Outcome<SwapsView> {
+    if (this.currentWeek(tz).rules !== 2) return { ok: false, status: 409, error: 'not_v2' };
+    return { ok: true, value: this.swaps(userId, tz) };
+  }
+
+  /**
+   * Asks the owner of another creature on the board to swap places (or to move into an empty slot, see `askSwap`). Open requests end at
+   * the next stage lock.
+   */
+  askSwap(userId: string, tz: string, slotA: number, slotB: number): Outcome<SwapsView> {
+    this.runDue(tz);
+    const outcome = this.atomically(() => {
+      const { week, party } = this.swapContext(userId, tz);
+      askSwap(this.sql, week, userId, slotA, slotB, this.v2Length(week, party), this.deps.now());
+      return null;
+    });
+    if (!outcome.ok) return outcome;
+    return { ok: true, value: this.swaps(userId, tz) };
+  }
+
+  /** Accepts a request addressed to the caller: both creatures move in one transaction. */
+  answerSwap(
+    userId: string,
+    tz: string,
+    id: string,
+    answer: 'accept' | 'decline',
+  ): Outcome<SwapsView> {
+    this.runDue(tz);
+    const outcome = this.atomically(() => {
+      const { week } = this.swapContext(userId, tz);
+      this.readinessCache.invalidate();
+      if (answer === 'decline') {
+        declineSwap(this.sql, week, userId, id);
+        return true;
+      }
+      return acceptSwap(this.sql, week, userId, id) !== null;
+    });
+    if (!outcome.ok) return outcome;
+    // A request about creatures that are no longer where they were was ended (and stays ended).
+    if (!outcome.value) return { ok: false, status: 409, error: 'changed' };
+    return { ok: true, value: this.swaps(userId, tz) };
   }
 }
 

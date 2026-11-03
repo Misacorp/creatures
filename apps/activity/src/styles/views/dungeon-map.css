@@ -528,6 +528,12 @@ button.dmap-node.s-reachable {
   min-width: 0;
 }
 
+/* The foe's move tiles in a room's drawer (combat v2): wider than the boss card's, so a move's name reads; the stack spaces them. */
+.dnd .boss-moves {
+  grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+  margin: 0;
+}
+
 .dnd-mod {
   display: flex;
   flex-wrap: wrap;

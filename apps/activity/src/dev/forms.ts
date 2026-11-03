@@ -40,6 +40,7 @@ export const DEV_TOOL_IDS = [
   'raid-roster',
   'raid-live',
   'raid-simulate',
+  'raid-weekend',
   'games-bots',
   'games-run-now',
   'games-reset',

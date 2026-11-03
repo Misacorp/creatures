@@ -13,6 +13,7 @@
     "report": "node scripts/report.mjs"
   },
   "dependencies": {
+    "@creatures/engine": "workspace:*",
     "@creatures/game": "workspace:*"
   },
   "devDependencies": {

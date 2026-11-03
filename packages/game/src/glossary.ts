@@ -9,10 +9,13 @@ import { gearContent } from './content/gear';
 import { GOAL_RISKS, SUPPLY_KINDS } from './content/expedition-schema';
 import { GEAR_RARITIES, GEAR_SLOTS } from './content/gear-schema';
 import glossaryJson from './content/data/glossary.json';
+import glossaryV2Json from './content/data/glossary-v2.json';
 import howToPlayJson from './content/data/how-to-play.json';
+import howToPlayV2Json from './content/data/how-to-play-v2.json';
 import {
   loadGlossary,
   loadHowToPlay,
+  loadHowToPlayV2,
   type Glossary,
   type GlossaryEntry,
   type GlossarySection,
@@ -72,10 +75,18 @@ function gearSetEntries(): unknown[] {
 }
 
 export const glossary: Glossary = loadGlossary(
-  [...(glossaryJson as unknown[]), ...gearLineEntries(), ...gearSetEntries()],
+  [
+    ...(glossaryJson as unknown[]),
+    // The combat v2 keywords (one entry each, checked against `combatV2.keywords` by a test).
+    ...(glossaryV2Json as unknown[]),
+    ...gearLineEntries(),
+    ...gearSetEntries(),
+  ],
   content,
 );
 export const howToPlay = loadHowToPlay(howToPlayJson, content);
+/** The combat v2 How to play page, shown instead of the combat sections of `howToPlay` while the server plays v2. */
+export const howToPlayV2 = loadHowToPlayV2(howToPlayV2Json);
 
 const BY_ID = new Map<string, GlossaryEntry>(glossary.map((e) => [e.id, e]));
 
@@ -137,6 +148,8 @@ export const GLOSSARY_IDS = {
   supply: (kind: string): string => `supply-${kind}`,
   /** A push-on goal's risk, `safe` or `risky`. */
   goal: (risk: string): string => `goal-${risk}`,
+  /** A combat v2 keyword by its name as the content writes it ("Wind-up", "Sure Crit"). */
+  keyword: (name: string): string => `kw-${name.toLowerCase().replaceAll(' ', '-')}`,
 } as const;
 
 /** Entries that are not tied to one piece of content: the game's own words. */

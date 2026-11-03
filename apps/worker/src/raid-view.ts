@@ -25,7 +25,7 @@ import {
   readWeekProgression,
   type RankChangeView,
 } from './raid-ladder';
-import type { Raid } from './raid';
+import type { Raid, WeekRow } from './raid';
 import {
   abilityFor,
   aliasFor,
@@ -49,6 +49,8 @@ import {
   type RaidPhase,
 } from './raid-schedule';
 import type { RaidStatus, TeamCreature } from './raid-teams';
+import type { RaidV2Part } from './raid-v2-view';
+import type { ResultPhase } from './raid-v2-stage';
 
 export interface RosterEntry {
   displayName: string;
@@ -158,7 +160,8 @@ function reachField(
 }
 
 export interface PhaseResultView {
-  phase: RaidPhase;
+  /** A combat v2 stage is `stage1` or `stage2`; the finale is `finale` under either rules. */
+  phase: RaidPhase | ResultPhase;
   at: number;
   cleared: boolean;
   /** The boss reached the phase floor and retreated (a cleared Phase 1 or 2). False for older results. */
@@ -184,6 +187,9 @@ export interface PhaseResultView {
 }
 
 export interface RaidView {
+  /** Present (`2`) only for a week played under combat v2, with `v2` beside it; a shipped week has neither key. */
+  rules?: 2;
+  v2?: RaidV2Part;
   weekId: string;
   status: RaidStatus;
   timezone: string;
@@ -305,8 +311,9 @@ export function buildRaidView(
   userId: string,
   tz: string,
   now: number,
+  known?: WeekRow,
 ): RaidView {
-  const week = raid.currentWeek(tz);
+  const week = known ?? raid.currentWeek(tz);
   const names = displayNames(sql);
   const boss = bossFor(week.bossId, fightRank(sql, week.weekId));
   const schedule = raid.schedule(week.weekId, tz);

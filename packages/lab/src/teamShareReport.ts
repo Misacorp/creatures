@@ -60,9 +60,11 @@ export function buildTeamShareSection(opts: {
   const gSet: ShareSettings = quick
     ? { selectSeeds: 4, finalSeeds: 8, draws: 3, passes: 2 }
     : { selectSeeds: 12, finalSeeds: 40, draws: 8, passes: 2 };
+  // The raid's final seeds are many: a raid share is a mean of 18 cards whose single shares swing by 5 points or more on 12 seeds, which
+  // moved the average by about a point and made a check at the edge of its band pass or fail on luck (2026-10-31 bisect).
   const rSet: ShareSettings = quick
     ? { selectSeeds: 2, finalSeeds: 4, draws: 3, passes: 1 }
-    : { selectSeeds: 4, finalSeeds: 12, draws: 6, passes: 2 };
+    : { selectSeeds: 4, finalSeeds: 40, draws: 6, passes: 2 };
   const bossHp = new Map<string, number>();
   for (const c of cards) {
     const g = teams.gauntlet.get(c.id);

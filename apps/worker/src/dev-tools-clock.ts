@@ -12,7 +12,7 @@ import type * as v from 'valibot';
 import { DevError, type ToolCtx } from './dev-context';
 import { MAX_CLOCK_OFFSET_MS } from './dev-state';
 import type { ClockBodySchema, RaidPhaseBodySchema } from './dev-schemas';
-import { addWeeks, eventTimes, weekIdFor } from './raid-schedule';
+import { addWeeks, eventTimes, weekIdFor, type RaidRules } from './raid-schedule';
 import { gameDay, nextOccurrence } from './time';
 
 /** The finale's live fight is over by this long after it starts (12 rounds of at most 22 s, plus playback). */
@@ -36,15 +36,46 @@ function setOffset(ctx: ToolCtx, ms: number): void {
   ctx.offset.set(ms);
 }
 
-/** Moves the game clock forward to `target` (game time). A target that is not ahead changes nothing. */
-export function advanceTo(ctx: ToolCtx, target: number): void {
-  if (target > ctx.now) setOffset(ctx, ctx.offset.get() + (target - ctx.now));
+/** The game time right now: the real time plus the offset as it stands (`ctx.now` is read once, when the tool started). */
+export function gameNow(ctx: ToolCtx): number {
+  return ctx.realNow + ctx.offset.get();
 }
 
+/**
+ * Moves the game clock forward to `target` (game time). A target that is not ahead changes nothing. It reads the clock as it stands, so
+ * a tool that moves it several times (`raid-weekend`) lands on each target.
+ */
+export function advanceTo(ctx: ToolCtx, target: number): void {
+  const now = gameNow(ctx);
+  if (target > now) setOffset(ctx, ctx.offset.get() + (target - now));
+}
+
+/** The rules version of a raid week, for the calendar (`eventTimes`). */
+type RulesOf = (weekId: string) => RaidRules;
+
+/**
+ * The rules each week plays under, as the scheduler reads them: a stored week's own version, and for a week that is not stored yet the
+ * one `ensureWeek` will give it (v2 with the `COMBAT_V2` flag on). The v2 calendar is Saturday 13:37, Sunday 13:37 and Sunday 20:00.
+ */
+export const weekRulesOf =
+  (ctx: Pick<ToolCtx, 'sql' | 'combatV2'>): RulesOf =>
+  (weekId) => {
+    const stored = ctx.sql
+      .exec<{ rules_version: number }>(
+        'SELECT rules_version FROM raid_weeks WHERE week_id = ?',
+        weekId,
+      )
+      .toArray()[0];
+    if (stored === undefined) return ctx.combatV2 ? 2 : 1;
+    return stored.rules_version === 2 ? 2 : 1;
+  };
+
 /** The next time after `now` that a raid week event happens: this week's remaining ones, then next week's. */
-function nextPhaseTarget(now: number, tz: string): number {
+function nextPhaseTarget(now: number, tz: string, rulesOf: RulesOf): number {
   const week = weekIdFor(now, tz);
-  const times = [week, addWeeks(week, 1)].flatMap((id) => Object.values(eventTimes(id, tz)));
+  const times = [week, addWeeks(week, 1)].flatMap((id) =>
+    Object.values(eventTimes(id, tz, rulesOf(id))),
+  );
   const next = times.filter((t) => t > now).sort((a, b) => a - b)[0];
   if (next === undefined) throw new DevError(409, 'no_next_phase');
   return next;
@@ -59,7 +90,7 @@ export function clockTool(ctx: ToolCtx, body: v.InferOutput<typeof ClockBodySche
     const { hour, minute } = RULES.daily.reset;
     advanceTo(ctx, nextOccurrence(ctx.now, hour, minute, ctx.tz));
   } else {
-    advanceTo(ctx, nextPhaseTarget(ctx.now, ctx.tz));
+    advanceTo(ctx, nextPhaseTarget(gameNow(ctx), ctx.tz, weekRulesOf(ctx)));
   }
   return clockState(ctx);
 }
@@ -77,11 +108,12 @@ export function phaseTarget(
   to: v.InferOutput<typeof RaidPhaseBodySchema>['to'],
   now: number,
   tz: string,
+  rulesOf: RulesOf,
 ): number {
   const week = weekIdFor(now, tz);
   for (const id of [week, addWeeks(week, 1)]) {
-    const t = eventTimes(id, tz);
-    const nextStart = eventTimes(addWeeks(id, 1), tz).weekStart;
+    const t = eventTimes(id, tz, rulesOf(id));
+    const nextStart = eventTimes(addWeeks(id, 1), tz, rulesOf(addWeeks(id, 1))).weekStart;
     const range: Record<typeof to, readonly [number, number]> = {
       preparation: [t.weekStart, t.phase1],
       phase1: [t.phase1, t.phase2],

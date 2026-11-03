@@ -315,8 +315,73 @@ export function undoGamesIndexMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 42');
 }
 
+/** Puts a database back to before migration 55 (the v2 live finale's columns). */
+export function undoRaidLiveV2Migration(sql: SqlStorage): void {
+  for (const column of ['rules', 'frames']) {
+    const present = sql
+      .exec("SELECT 1 FROM pragma_table_info('raid_live') WHERE name = ?", column)
+      .toArray();
+    if (present.length > 0) sql.exec(`ALTER TABLE raid_live DROP COLUMN ${column}`);
+  }
+  sql.exec('DELETE FROM schema_version WHERE version = 55');
+}
+
+/** Puts a database back to before migration 54 (swap requests): the table goes. */
+export function undoRaidSwapMigration(sql: SqlStorage): void {
+  undoRaidLiveV2Migration(sql);
+  sql.exec('DROP TABLE IF EXISTS raid_swap_requests');
+  sql.exec('DELETE FROM schema_version WHERE version = 54');
+}
+
+/** Puts a database back to before migration 53 (the stage carry): the two columns go. */
+export function undoRaidPartyCarryMigration(sql: SqlStorage): void {
+  undoRaidSwapMigration(sql);
+  for (const column of ['carry_json', 'v2_players']) {
+    const present = sql
+      .exec("SELECT 1 FROM pragma_table_info('raid_parties') WHERE name = ?", column)
+      .toArray();
+    if (present.length > 0) sql.exec(`ALTER TABLE raid_parties DROP COLUMN ${column}`);
+  }
+  sql.exec('DELETE FROM schema_version WHERE version = 53');
+}
+
+/**
+ * Puts a database back to before migration 52 (rules version and the track): the columns and the track go. `raid_results` keeps
+ * the wider CHECK (the migration makes it again with the rows copied, which works as often as it runs).
+ */
+export function undoRaidTrackMigration(sql: SqlStorage): void {
+  undoRaidPartyCarryMigration(sql);
+  sql.exec('DROP TABLE IF EXISTS raid_track');
+  for (const column of ['rules_version', 'track_slot']) {
+    const present = sql
+      .exec("SELECT 1 FROM pragma_table_info('raid_weeks') WHERE name = ?", column)
+      .toArray();
+    if (present.length > 0) sql.exec(`ALTER TABLE raid_weeks DROP COLUMN ${column}`);
+  }
+  sql.exec('DELETE FROM schema_version WHERE version = 52');
+}
+
+/** Puts a database back to before migration 51 (the v2 Talent Book): the tables go. */
+export function undoTalentBookV2Migration(sql: SqlStorage): void {
+  undoRaidTrackMigration(sql);
+  sql.exec('DROP TABLE IF EXISTS creature_talents_v2');
+  sql.exec('DROP TABLE IF EXISTS line_talents');
+  sql.exec('DELETE FROM schema_version WHERE version = 51');
+}
+
+/** Puts a database back to before migration 50 (the saved Knack): the column goes. */
+export function undoKnackMigration(sql: SqlStorage): void {
+  undoTalentBookV2Migration(sql);
+  const present = sql
+    .exec("SELECT 1 FROM pragma_table_info('creatures') WHERE name = 'knack'")
+    .toArray();
+  if (present.length > 0) sql.exec('ALTER TABLE creatures DROP COLUMN knack');
+  sql.exec('DELETE FROM schema_version WHERE version = 50');
+}
+
 /** Puts a database back to before migration 49 (the marks dropped): the mark column is there again (all zero). */
 export function undoDismantleUnmarkMigration(sql: SqlStorage): void {
+  undoKnackMigration(sql);
   const present = sql
     .exec("SELECT 1 FROM pragma_table_info('gear_items') WHERE name = 'dismantle_mark'")
     .toArray();

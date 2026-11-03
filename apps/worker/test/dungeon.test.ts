@@ -22,6 +22,7 @@ import { grantDungeonRun } from '../src/gear-grants';
 import { giveItem, dismantlePile } from './gear-helpers';
 import { drawSeed } from '../src/raid-resolve';
 import type { RunState } from '../src/dungeon-state';
+import type { DungeonReplayRoomV1 } from '../src/dungeon-types';
 import {
   deadlyFoes,
   defaultEvent,
@@ -1734,8 +1735,9 @@ describe('GET /api/dungeon/run/:id', () => {
         expect(replay.body.rooms.every((r) => r.row?.length === 3)).toBe(true);
         expect(JSON.stringify(replay.body)).not.toContain('formation');
         // Names for describeEvent come with it.
-        expect(replay.body.rooms[0]?.names.boss).toBe(replay.body.rooms[0]?.foe.name);
-        expect(replay.body.rooms[0]?.names.players).toEqual({ p1: p.name });
+        const first = replay.body.rooms[0] as DungeonReplayRoomV1 | undefined;
+        expect(first?.names.boss).toBe(first?.foe.name);
+        expect(first?.names.players).toEqual({ p1: p.name });
         // Two reads are the same.
         expect((await p.replay(run.id)).body).toEqual(replay.body);
       },
@@ -1966,7 +1968,9 @@ describe('abilities', () => {
         expect(input.abilities.every((x) => x.fireAtRound === undefined)).toBe(true);
         expect(input.abilities.some((x) => x.key === 'p1:basic')).toBe(false);
         const move = await p.act(started, { type: 'move', node: started.reachable[0] as string });
-        const fired = (move.body.room?.events ?? []).filter((e) => e.t === 'ability');
+        const fired = ((move.body.room as DungeonReplayRoomV1 | undefined)?.events ?? []).filter(
+          (e) => e.t === 'ability',
+        );
         expect(fired.length).toBeGreaterThan(0);
       },
       opts(),

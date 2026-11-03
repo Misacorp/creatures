@@ -83,7 +83,7 @@ describe('pools', () => {
     expect(fit.length).toBeGreaterThan(0);
     expect(fit.length).toBeLessThanOrEqual(poolTalents('tempestray').length);
     for (const t of fit) expect(TALENTS[t]?.roles).toContain('payoff');
-    // Quick Draw is a Payoff talent in Stormray's pool; Owner's Mark is not in it and would be idle.
+    // Quick Draw is a Payoff talent in Stormray's pool; Potent Mark is not in it and would be idle.
     expect(fit).toContain('quick-draw');
     expect(fitTalents('tidewing')).not.toContain('quick-draw');
   });

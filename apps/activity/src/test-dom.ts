@@ -262,6 +262,11 @@ export class FakeElement extends FakeNode {
     this.scrolled += 1;
   }
 
+  /** A scroll box scrolled sideways (a lane grid following the creature that acts): there is no layout, so nothing moves. */
+  scrollTo(): void {
+    this.scrolled += 1;
+  }
+
   /** True when `node` is this element or sits inside it. */
   contains(node: FakeNode | null): boolean {
     for (let current: FakeNode | null = node; current !== null; current = current.parentNode) {

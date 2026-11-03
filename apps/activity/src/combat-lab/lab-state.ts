@@ -339,6 +339,8 @@ export interface RoundSteps {
 export function groupSteps(events: readonly FightEvent[]): RoundSteps[] {
   const rounds: RoundSteps[] = [];
   for (const event of events) {
+    // The board's own events (kind `board`, no text) are for the Activity's board, not for this text log.
+    if (event.kind === 'board') continue;
     let round = rounds[rounds.length - 1];
     if (round === undefined || round.round !== event.round) {
       round = { round: event.round, groups: [] };

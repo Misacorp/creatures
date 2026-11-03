@@ -88,6 +88,17 @@
   );
 }
 
+/*
+  --- Combat v2: the boss's targets ---
+  The slots the boss move tapped on the boss card would hit, in the boss-target look: a red ring and a red tint, with the move's
+  picture in the corner (slot-mark in raid-board.css), so colour is never the only cue. A tile can carry the plain attack's sword
+  as well. The ring is an inset shadow like the reaction ring, so a drag's valid and refused outlines still show.
+*/
+.party-slot.cue-hit {
+  background-color: rgb(255 95 109 / 22%);
+  box-shadow: inset 0 0 0 var(--px) var(--bad);
+}
+
 /* --- The rail under the row, and the "no reaction" mark --- */
 
 .cue-rail {

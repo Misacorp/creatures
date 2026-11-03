@@ -25,7 +25,7 @@ import {
   type PartsBundle,
 } from '@creatures/game';
 import type * as v from 'valibot';
-import { DevError, ownCreature, type ToolCtx } from './dev-context';
+import { DevError, creatureRngsOf, ownCreature, type ToolCtx } from './dev-context';
 import type {
   GrantBlueprintsBodySchema,
   GrantCreatureBodySchema,
@@ -127,17 +127,13 @@ export function grantCreature(ctx: ToolCtx, body: Body<typeof GrantCreatureBodyS
     .toArray()[0];
   let creatureId: string;
   if (existing === undefined) {
-    creatureId = insertCreature(
-      ctx.sql,
-      { quirk: ctx.quirkRng, talent: ctx.talentRng },
-      {
-        userId: ctx.userId,
-        species: species.id,
-        origin: 'dev',
-        shiny: body.shiny === true,
-        now: ctx.now,
-      },
-    ).id;
+    creatureId = insertCreature(ctx.sql, creatureRngsOf(ctx), {
+      userId: ctx.userId,
+      species: species.id,
+      origin: 'dev',
+      shiny: body.shiny === true,
+      now: ctx.now,
+    }).id;
     ctx.sql.exec(
       'UPDATE creatures SET level = ?, fusion_count = ?, fusion_points = ?, exp = 0, ribbons = ? WHERE id = ?',
       body.level ?? 1,

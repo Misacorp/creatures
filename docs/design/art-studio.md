@@ -5,7 +5,7 @@ Status: 2026-10-30. Written while drawing the first Void concepts, from what was
 ## The short version
 
 1. **Brief.** Write what the art must say in one line (the silhouette) and where it goes. For new content, read the compendium first (`docs/compendium/`). Concept art needs no name or stats.
-2. **Start from the template.** `pnpm art new creature` prints a 16×16 grid with the shared chibi face already in place (eyes, blush, mouth at the coordinates the tests check). Other kinds: `boss`, `item`, `part`, `banner` print an empty grid of the right size.
+2. **Start from the template.** `pnpm art new creature` prints a 16×16 grid with the shared chibi face already in place (eyes, blush, mouth at the coordinates the tests check). Other kinds: `boss`, `item`, `part`, `glyph`, `banner` print an empty grid of the right size.
 3. **Draw in a concept set.** Concept sprites live in `apps/activity/src/sprites/concepts/<set>.ts` under working codes (`void-guard`), with a kind, a role and a one-line note. Nothing in the game imports this folder. Register a new set in `concepts/index.ts`.
 4. **Render and lint.** `pnpm art <set>` (about 0.2 s, no browser). It prints every rule the art breaks, with coordinates, and writes PNGs to `apps/activity/scratch/art/<set>/` (git ignores it).
 5. **Look at the PNGs**, not only the lint: the close-up card of each sprite and the set sheet (below). Fix, render again. Most sprites take three to five rounds.
@@ -30,6 +30,8 @@ Art Misa requests is kept until the content that uses it exists. **The catalogue
 - **Worn sprites.** Creatures wear their gear: each item look maps to a small worn shape class (`LOOK_CLASS` in `src/sprites/data/worn-sprites.ts`), drawn in the same neutral `t`/`u`/`h` greys plus `x`/`y`/`z` trim keys, and `wearing()` (`src/sprites/wearing.ts`) places it from the creature's own pixels without touching the face. A new item look needs a row in `LOOK_CLASS` (a test fails without one); a new species needs nothing. See it in the workbench entry `CreatureHead` (gallery switch). Decision of 2026-10-31 in `decisions/ui.md`.
 - **`pnpm art items [--slot hat|scarf|charm]`** draws every shipped gear item as the game does (its look, in its tint), labelled by name, and a card per look with each item that wears it in its own tint. Every item with its own name has its own look; element versions with the same stats share one (`itemLookId`, decision of 2026-10-30 in `decisions/gear.md`). Item sprites are in `src/sprites/data/item-*-sprites.ts`, drawn in the neutral greys the tint swaps.
 
+- **A set's `backdrop`** (a ground tile, with its own colours per alternative palette, such as a night tile for the `night` alt) is repeated behind each sprite in the set sheet and in an extra row of each card, so art that will stand on the valley's or the map's tiles is judged on them, not on the dark panels.
+
 `pnpm art <set> --only id,id` draws a few; `--out <dir>` writes somewhere else (your scratchpad).
 
 ## What was hard, and the rule it became
@@ -50,15 +52,16 @@ Each of these cost a round while drawing the Void concepts or showed up in earli
 
 ## Kinds and sizes
 
-| Kind       | Size     | Rules beyond the common ones                                                 | Shipped examples          |
-| ---------- | -------- | ---------------------------------------------------------------------------- | ------------------------- |
-| `creature` | 16×16    | the chibi face, no body pixel on the edge, footprint, silhouette 12 px apart | `data/species-sprites.ts` |
-| `foe`      | 16×16    | like a creature without the chibi face (dungeon foes)                        | `data/dungeon-sprites.ts` |
-| `boss`     | 24×24    | only ink on the edge, footprint 16×16 or more                                | `data/boss-sprites.ts`    |
-| `item`     | 12×12    | (gear: tinted by element)                                                    | `gear-sprites.ts`         |
-| `part`     | 8×8      |                                                                              | `gear-sprites.ts`         |
-| `banner`   | 64×24    |                                                                              | `data/banner-sprites.ts`  |
-| `free`     | up to 64 | none beyond the grid and palette                                             | glyphs, icons             |
+| Kind       | Size     | Rules beyond the common ones                                                                                                                                                                                                            | Shipped examples          |
+| ---------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| `creature` | 16×16    | the chibi face, no body pixel on the edge, footprint, silhouette 12 px apart                                                                                                                                                            | `data/species-sprites.ts` |
+| `foe`      | 16×16    | like a creature without the chibi face (dungeon foes)                                                                                                                                                                                   | `data/dungeon-sprites.ts` |
+| `boss`     | 24×24    | only ink on the edge, footprint 16×16 or more                                                                                                                                                                                           | `data/boss-sprites.ts`    |
+| `item`     | 12×12    | (gear: tinted by element)                                                                                                                                                                                                               | `gear-sprites.ts`         |
+| `part`     | 8×8      |                                                                                                                                                                                                                                         | `gear-sprites.ts`         |
+| `glyph`    | 8×8      | flat colour, no outline needed, at most 5 colours, 9 pixels or more, a silhouette 6 px from every shipped glyph and element icon; a set sheet shows 6×, 3× and 1× tiles by group (and a set's `shipped` glyphs dim beside the new ones) | `glyphs.ts`               |
+| `banner`   | 64×24    |                                                                                                                                                                                                                                         | `data/banner-sprites.ts`  |
+| `free`     | up to 64 | none beyond the grid and palette (16 colours for scenes)                                                                                                                                                                                | glyphs, icons             |
 
 **Scenes are not covered yet.** Places, the world map and the living room are composed in code from several sprites and paths (`world-map-art.ts`, `room-art.ts`) and are bigger than 64 px. Shoot them in the workbench (`scripts/shoot.mjs`, with `--zoom` for a close crop). Next step when location art starts: a `scene` kind in the studio that lays out a concept scene from tiles.
 

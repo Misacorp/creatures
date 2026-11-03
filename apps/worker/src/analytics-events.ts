@@ -203,6 +203,23 @@ export type AnalyticsEvent =
       golden: boolean;
       slot: number;
     }
+  | {
+      /**
+       * A creature's Knack was saved (combat v2, R11): its form, the Knack now (null: none) and the one it had
+       * before (null: none). A swap is a save with a previous Knack. `where` is the creature page or the raid.
+       */
+      kind: 'knack_set';
+      form: string;
+      knack: string | null;
+      previous: string | null;
+      where: 'page' | 'raid';
+    }
+  | {
+      /** A creature learned a talent from its line's v2 Talent Book (Bait, once; R20). */
+      kind: 'talent_learn';
+      line: string;
+      talent: string;
+    }
   | { kind: 'team_set'; auto: boolean; species: readonly string[] }
   | { kind: 'placement'; action: 'place' | 'unplace'; species: string; slot: number; swap: boolean }
   | { kind: 'ability_pick'; ability: string }
@@ -229,6 +246,39 @@ export type AnalyticsEvent =
       rounds: number;
       /** The top contributor's share of the party's damage, in basis points. No user is named. */
       topShareBp: number;
+    }
+  | {
+      /**
+       * A combat v2 stage was played (guild-level, beside `phase_result`): the track's slot, the stage (1 to 3), the party's players, the
+       * share of the weekend's HP removed so far (bp), the creatures knocked out and the reactions in the stage, and whether the boss fell.
+       */
+      kind: 'stage_result';
+      slot: number;
+      stage: number;
+      players: number;
+      hpRemovedBp: number;
+      knockouts: number;
+      reactions: number;
+      kill: boolean;
+    }
+  | {
+      /**
+       * What a combat v2 player brought to a stage when it locked (R14): the creatures placed, how many carry a Knack and how many are not
+       * among the player's three highest-level creatures (ties by the species' power), the phase 1 gate's casual measure on real servers.
+       */
+      kind: 'raid_lineup';
+      stage: number;
+      placed: number;
+      withKnack: number;
+      beyondTop3: number;
+    }
+  | {
+      /** The track moved or held at the end of a combat v2 weekend (guild-level): the slot fought, a kill, the best share and Determination's stacks. */
+      kind: 'track_change';
+      slot: number;
+      kill: boolean;
+      bestShareBp: number;
+      determination: number;
     }
   | {
       kind: 'rank_change';

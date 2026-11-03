@@ -37,6 +37,9 @@ export const RECOMMENDED_TAG = 'Recommended';
 /** How many creatures are recommended: the strongest few, as many as a team holds. */
 export const RECOMMENDED_COUNT: number = RULES.raid.teamSize;
 
+/** Why a creature knocked out earlier this weekend cannot be placed (combat v2). */
+export const OUT_REASON = 'Out this weekend';
+
 /** Why a new creature cannot be picked when the board holds the most already. */
 export const BOARD_FULL_REASON = `${String(MAX_ON_BOARD)} / ${String(MAX_ON_BOARD)} placed, remove one first`;
 
@@ -249,6 +252,8 @@ export function pickerOptions(args: {
   slot: number;
   turnOrder: string;
   showEffects: boolean;
+  /** Combat v2: the ids of the player's creatures knocked out this weekend. They are listed last, greyed, "Out this weekend". */
+  out?: ReadonlySet<string>;
 }): PickerOption[] {
   const { row, length } = args;
   const onBoard = new Set(
@@ -272,6 +277,7 @@ export function pickerOptions(args: {
     slot: args.slot,
     mode: { row: 'raid', turnOrder: parseTurnOrder(args.turnOrder) },
     showEffects: args.showEffects,
+    ...(args.out === undefined ? {} : { out: args.out }),
   });
 }
 
@@ -305,6 +311,7 @@ function optionsFor(args: {
   slot: number;
   mode: AffectMode;
   showEffects: boolean;
+  out?: ReadonlySet<string>;
 }): PickerOption[] {
   const { creatures, baseKeys, known, onBoard, slot } = args;
   const full = onBoard.size >= MAX_ON_BOARD;
@@ -314,6 +321,7 @@ function optionsFor(args: {
   const options = creatures.map((c): PickerOption => {
     const species = getSpecies(c.species);
     const placed = onBoard.has(c.id);
+    const knockedOut = args.out?.has(c.id) === true;
     let effect: string | null = null;
     if (args.showEffects) {
       // The creature in this slot; if it was on the board, its old slot is free.
@@ -329,9 +337,9 @@ function optionsFor(args: {
       element: species?.element ?? 'unknown',
       role: species?.role ?? '',
       onBoard: placed,
-      disabled: full && !placed ? BOARD_FULL_REASON : null,
+      disabled: knockedOut ? OUT_REASON : full && !placed ? BOARD_FULL_REASON : null,
       effect,
-      recommended: recommended.has(c.id),
+      recommended: recommended.has(c.id) && !knockedOut,
     };
   });
   const rank = (o: PickerOption): number => (o.disabled !== null ? 2 : o.onBoard ? 1 : 0);

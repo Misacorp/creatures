@@ -152,6 +152,11 @@
   color: var(--haze);
 }
 
+/* Combat v2: the fight effect lines, which do nothing under the new rules yet, one step quieter than the lines that count. */
+.gear-list-off {
+  opacity: 0.75;
+}
+
 /* A tappable row looks like a locked one (the screen makes it clear which is which): no raised edge. */
 .gear-list .find-row-button,
 .gear-list .find-row-button:active:not(:disabled) {

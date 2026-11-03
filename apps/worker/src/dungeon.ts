@@ -54,6 +54,7 @@ import {
 } from '@creatures/engine';
 import * as v from 'valibot';
 import { devKey } from './dev-state';
+import { mapViewV2 } from './dungeon-v2-view';
 import { keyTaken, settleSpend } from './keyed-action';
 import { GameError, atomically, type Outcome } from './outcome';
 import { grantDungeonChest } from './gear-grants';
@@ -75,8 +76,10 @@ import {
   applyHome,
   applyMove,
   homeOutcome,
+  plainRow,
   seatedRow,
   seatsOf,
+  storedOf,
   type ActOutcome,
   type PathEnv,
   type PlayedFight,
@@ -86,7 +89,7 @@ import {
   abilityChoices,
   maxHpOfRow,
   parseState,
-  runMarks,
+  mapOf,
   runView,
   type RunMeta,
   type RunState,
@@ -102,6 +105,9 @@ import type {
   DungeonActResponse,
 } from './dungeon-types';
 import { gearDepsOf, finishRun, lockDepth } from './dungeon-finish';
+import { rowMaxHpV2, type RoomResultV2 } from './dungeon-v2';
+import { fighterV2 } from './fighter-v2';
+import { learnedOf } from './talent-v2-store';
 import { replayRoom, playerName, replayRun } from './dungeon-replay';
 import {
   liveStreak,
@@ -111,7 +117,7 @@ import {
   type RunRow,
   type StepRow,
   type StoredAct,
-  type StoredFight,
+  type AnyStoredFight,
 } from './dungeon-rows';
 import { gameDay, gameDayEnd } from './time';
 
@@ -456,7 +462,11 @@ export class Dungeon {
     // While a run is open, the depth shown is the run's own: a boss cleared at depth 8 or more has locked
     // depth + 1 into the progress already, but the run (its map, its landmark boss) is still at depth d.
     const depth = open?.depth ?? progress.depth;
+    const active = open === undefined ? null : this.stateOf(open);
+    // A run started now plays the rules of the flag; a run that is open keeps its own (so the map shows what its rooms will do).
+    const v2 = active === null ? this.deps.combatV2 === true : active.rules === 2;
     return {
+      ...(v2 ? { rules: 2 as const } : {}),
       serverNow: now,
       day,
       timezone: tz,
@@ -472,8 +482,8 @@ export class Dungeon {
       last: last === undefined ? null : (JSON.parse(last.summary_json) as DungeonRunSummary),
       lastTeam: this.lastTeam(userId),
       draftTeam: this.draftTeam(userId),
-      map: mapView(map, depth),
-      active: open === undefined ? null : this.stateOf(open),
+      map: v2 ? mapViewV2(map, depth) : mapView(map, depth),
+      active,
     };
   }
 
@@ -580,12 +590,12 @@ export class Dungeon {
     // One row, left to right: the position lines of the gear see the neighbours and the ends of that
     // line, then the day's weather goes on every sheet. The seats keep what it takes to place the row
     // again after a camp swap or reorder.
+    // The rules version is decided now and kept to the run's end (a flag change later never moves it).
+    const v2 = this.deps.combatV2 === true;
     const seats = seatsOf(standing);
-    const row: FightSlot[] = seatedRow(
-      standing.map((c) => c.id),
-      seats,
-      wday,
-    );
+    const ids = standing.map((c) => c.id);
+    // A v2 row is not folded with places or weather: a v2 fight reads neither (`dungeon-v2.ts`).
+    const row: FightSlot[] = v2 ? plainRow(ids, seats) : seatedRow(ids, seats, wday);
 
     // --- The treats cost Bait, paid when the run starts and with it: short Bait takes nothing ---
     const id = crypto.randomUUID();
@@ -630,17 +640,19 @@ export class Dungeon {
     const enrage = dungeonBossEnrage();
     // Between-fight rest (a Scarf line): the share of max HP a standing creature recovers before each fight.
     const rest: Record<string, number> = {};
-    for (const c of standing) if (c.gearRules.restBp > 0) rest[c.id] = c.gearRules.restBp;
+    if (!v2) for (const c of standing) if (c.gearRules.restBp > 0) rest[c.id] = c.gearRules.restBp;
     const input: DungeonRunInput = {
       team: row,
       player: PLAYER,
       rooms: [],
       abilities: abilityChoices(row),
-      luck: { ...weatherLuck(wday, RULES.combat.luck) },
+      luck: { ...weatherLuck(v2 ? null : wday, RULES.combat.luck) },
       ...(Object.keys(rest).length === 0 ? {} : { rest }),
-      ...(weatherBossAttacks(wday, 1) > 1 ? { bossAttacks: weatherBossAttacks(wday, 1) } : {}),
-      // Kind Rain, Morning Haze and Bramble Season (stored in the run input).
-      ...skyRunFields(weatherSky(wday)),
+      ...(!v2 && weatherBossAttacks(wday, 1) > 1
+        ? { bossAttacks: weatherBossAttacks(wday, 1) }
+        : {}),
+      // Kind Rain, Morning Haze and Bramble Season (stored in the run input; a v2 fight reads no weather).
+      ...(v2 ? {} : skyRunFields(weatherSky(wday))),
       // The combat rules, the boss room's enrage and the depth (a landmark gives the floor boss its
       // signature), stored with the input so a replay is exact.
       rules: liveFightRules(),
@@ -659,7 +671,14 @@ export class Dungeon {
       )
       .one().n;
     const st: RunState = {
-      v: 1,
+      v: v2 ? 2 : 1,
+      ...(v2
+        ? {
+            fighters: Object.fromEntries(
+              standing.map((c) => [c.id, fighterV2(c, learnedOf(this.sql, c.id))]),
+            ),
+          }
+        : {}),
       map,
       input,
       weather: wday,
@@ -682,7 +701,7 @@ export class Dungeon {
       path: [],
       pending: null,
       hp: null,
-      hpMax: maxHpOfRow(input, []),
+      hpMax: v2 ? {} : maxHpOfRow(input, []),
       keepsakes: [],
       pack: emptyPack(),
       roomsCleared: 0,
@@ -706,6 +725,8 @@ export class Dungeon {
       sealedWins: 0,
       curses: [],
     };
+    // A v2 run's max HP is its fighters' (the v1 engine's answer would be the v1 creature's).
+    if (v2) st.hpMax = rowMaxHpV2(st);
     // A map run has no run-level seed (every fight draws its own when the player steps in, stored in
     // `dungeon_steps`): the NOT NULL column holds an empty string.
     this.sql.exec(
@@ -845,9 +866,7 @@ export class Dungeon {
       body.idempotencyKey,
       fight?.node ?? null,
       fight?.seed ?? null,
-      fight === undefined
-        ? null
-        : JSON.stringify({ input: fight.input, hpIn: fight.hpIn } satisfies StoredFight),
+      fight === undefined ? null : JSON.stringify(storedOf(fight)),
       fight === undefined ? null : JSON.stringify(fight.result),
       now,
     );
@@ -891,12 +910,7 @@ export class Dungeon {
   }
 
   private playedRoom(userId: string, fight: PlayedFight): DungeonReplayRoom {
-    return replayRoom(
-      playerName(this.sql, userId),
-      fight.node,
-      { input: fight.input, hpIn: fight.hpIn },
-      fight.result,
-    );
+    return replayRoom(playerName(this.sql, userId), fight.node, storedOf(fight), fight.result);
   }
 
   /** What a stored act answered, rebuilt: the state it left, the fight it played and, if it ended the run, the summary and today. */
@@ -915,15 +929,15 @@ export class Dungeon {
     const state: DungeonRunState = {
       ...first.state,
       history: first.state.history ?? [],
-      map: mapView(st.map, row.depth, runMarks(st)),
+      map: mapOf(st, st.map, row.depth),
     };
     const room =
       step.node !== null && step.input_json !== null && step.result_json !== null
         ? replayRoom(
             playerName(this.sql, userId),
             step.node,
-            JSON.parse(step.input_json) as StoredFight,
-            JSON.parse(step.result_json) as DungeonRoomResult,
+            JSON.parse(step.input_json) as AnyStoredFight,
+            JSON.parse(step.result_json) as DungeonRoomResult | RoomResultV2,
           )
         : undefined;
     return {

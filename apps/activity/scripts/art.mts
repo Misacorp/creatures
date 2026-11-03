@@ -2,7 +2,7 @@
 // sets (`src/sprites/concepts/`) and for shipped sprites. See docs/design/art-studio.md.
 //
 //   pnpm art <set> [--only id,id] [--out dir]     (out defaults to apps/activity/scratch/art/<set>)
-//   pnpm art new creature|boss|item|part|banner
+//   pnpm art new creature|boss|item|part|glyph|banner
 //   pnpm art library [--check]     (writes docs/art/: the catalogue README.md and a sheet per set)
 //   pnpm art items [--slot hat|scarf|charm] [--out dir]   (every shipped item, tinted, by name)
 //
@@ -40,6 +40,8 @@ const {
   BUNDLED_DUNGEON_BOSS_SPRITES,
 } = await import('../src/sprites/creature-sprites.ts');
 const { glyph } = await import('../src/sprites/world-map-font.ts');
+const { BUNDLED_GLYPHS, glyph: shippedGlyph } = await import('../src/glyphs.ts');
+const { BUNDLED_ELEMENT_ICONS } = await import('../src/sprites/element-icons.ts');
 
 /** Digits and a few marks in the 5x7 shape of the world map's letters. */
 const EXTRA: Readonly<Record<string, readonly string[]>> = {
@@ -55,6 +57,11 @@ const EXTRA: Readonly<Record<string, readonly string[]>> = {
   '9': ['.###.', '#...#', '#...#', '.####', '....#', '....#', '.###.'],
   '-': ['.....', '.....', '.....', '#####', '.....', '.....', '.....'],
   "'": ['..#..', '..#..', '.....', '.....', '.....', '.....', '.....'],
+  _: ['.....', '.....', '.....', '.....', '.....', '.....', '#####'],
+  '.': ['.....', '.....', '.....', '.....', '.....', '.##..', '.##..'],
+  ',': ['.....', '.....', '.....', '.....', '.##..', '.##..', '.#...'],
+  '/': ['....#', '....#', '...#.', '..#..', '.#...', '#....', '#....'],
+  '+': ['.....', '..#..', '..#..', '#####', '..#..', '..#..', '.....'],
 };
 
 type RGB = [number, number, number];
@@ -95,6 +102,26 @@ class Canvas {
       }
     }
   }
+  /** `def` repeated as a tile over the rectangle (clipped to it), at `scale`. */
+  tiled(def: SpriteDef, x: number, y: number, w: number, h: number, scale: number): void {
+    const rows = expandRows(def);
+    const tw = (rows[0]?.length ?? 1) * scale;
+    const th = rows.length * scale;
+    for (let ty = y; ty < y + h; ty += th) {
+      for (let tx = x; tx < x + w; tx += tw) {
+        for (const [j, row] of rows.entries()) {
+          for (const [i, ch] of [...row].entries()) {
+            const colour = def.palette[ch];
+            if (ch === '.' || colour === undefined) continue;
+            const px = tx + i * scale;
+            const py = ty + j * scale;
+            if (px >= x + w || py >= y + h) continue;
+            this.rect(px, py, Math.min(scale, x + w - px), Math.min(scale, y + h - py), colour);
+          }
+        }
+      }
+    }
+  }
   /** Text in the 5x7 font at `scale`; returns the width drawn. */
   text(s: string, x: number, y: number, scale: number, colour: string): number {
     let cx = x;
@@ -119,6 +146,7 @@ function poolFor(kind: string): Readonly<Record<string, SpriteDef>> | undefined 
   if (kind === 'creature') return BUNDLED_CREATURE_SPRITES;
   if (kind === 'foe') return { ...BUNDLED_DUNGEON_FOE_SPRITES, ...BUNDLED_CREATURE_SPRITES };
   if (kind === 'boss') return { ...BUNDLED_BOSS_SPRITES, ...BUNDLED_DUNGEON_BOSS_SPRITES };
+  if (kind === 'glyph') return { ...BUNDLED_GLYPHS, ...BUNDLED_ELEMENT_ICONS };
   return undefined;
 }
 
@@ -133,8 +161,19 @@ function sizeOf(def: SpriteDef): { width: number; height: number } {
   return { width: rows[0]?.length ?? 0, height: rows.length };
 }
 
+type Backdrop = ConceptSet['backdrop'];
+
+/** The backdrop tile in the colours of alternative `alt` (its own, or the main ones). */
+function backdropFor(backdrop: Backdrop, alt?: string): SpriteDef | undefined {
+  if (backdrop === undefined) return undefined;
+  const overrides = alt === undefined ? undefined : backdrop.alts?.[alt];
+  return overrides === undefined
+    ? backdrop.tile
+    : { ...backdrop.tile, palette: { ...backdrop.tile.palette, ...overrides } };
+}
+
 /** The close-up card of one sprite. */
-function drawCard(id: string, concept: Concept, file: string): void {
+function drawCard(id: string, concept: Concept, file: string, backdrop?: Backdrop): void {
   const def = concept.sprite;
   const { width, height } = sizeOf(def);
   const zoom = Math.max(8, Math.floor(320 / Math.max(width, height)));
@@ -158,7 +197,7 @@ function drawCard(id: string, concept: Concept, file: string): void {
   );
   const right = Math.max(smallW, (alts.length + 1) * colW);
   const W = 24 + axis + zoomW + 32 + right + 24;
-  const panelsH = PANELS.length * (height * 4 + 16);
+  const panelsH = (PANELS.length + (backdrop === undefined ? 0 : 1)) * (height * 4 + 16);
   const H = Math.max(24 + 30 + axis + zoomH, 24 + 30 + panelsH + height * 4 + 60) + 24;
   const c = new Canvas(W, H, NIGHT);
   c.text(id, 24, 18, 3, TEXT);
@@ -210,6 +249,17 @@ function drawCard(id: string, concept: Concept, file: string): void {
     }
     y += height * 4 + 16;
   }
+  // On its ground (the set's backdrop tile), the way it will stand in the valley or on the map.
+  const ground = backdropFor(backdrop);
+  if (ground !== undefined) {
+    c.tiled(ground, rx - 8, y - 8, right + 8, height * 4 + 16, 1);
+    let x = rx;
+    for (const scale of [1, 2, 3, 4]) {
+      c.sprite(def, x, y + (height * 4 - height * scale), scale);
+      x += width * scale + 12;
+    }
+    y += height * 4 + 16;
+  }
   y += 16;
   c.text('silhouette', rx, y, 2, MUTED);
   let ax = rx;
@@ -219,6 +269,13 @@ function drawCard(id: string, concept: Concept, file: string): void {
   for (const [name, alt] of alts) {
     ax += colW;
     c.text(name, ax, y, 2, MUTED);
+    // A palette alternative stands on the backdrop in its own colours (a night tile for `night`).
+    const altGround = backdropFor(
+      backdrop,
+      Object.hasOwn(concept.alts ?? {}, name) ? name : undefined,
+    );
+    if (altGround !== undefined)
+      c.tiled(altGround, ax - 4, y + 18, width * 4 + 8, height * 4 + 8, 2);
     c.sprite(alt, ax, y + 22, 4);
   }
   c.save(file);
@@ -229,6 +286,11 @@ function drawCard(id: string, concept: Concept, file: string): void {
  * the nearest shipped sprite under each one, and a row at 3x among shipped creatures.
  */
 function drawSet(set: ConceptSet, ids: string[], file: string, library = false): void {
+  // A set of glyphs has its own sheet: tiles at 6x, 3x and 1x under a heading per group.
+  if (ids.every((id) => set.sprites[id]?.kind === 'glyph')) {
+    drawGlyphSheet(set, ids, file, library);
+    return;
+  }
   const scale = 6;
   const big = ids.map((id) => set.sprites[id]).filter((c) => c !== undefined);
   const maxW = Math.max(...big.map((c) => sizeOf(c.sprite).width)) * scale + 24;
@@ -260,8 +322,10 @@ function drawSet(set: ConceptSet, ids: string[], file: string, library = false):
     text: string,
     ground: string,
     ink: string,
+    backdrop?: SpriteDef,
   ): void => {
     c.rect(x, y, col - 12, maxH + 40, ground);
+    if (backdrop !== undefined) c.tiled(backdrop, x + 4, y + 4, col - 20, maxH + 8, 2);
     c.sprite(def, x + 12, y + 8, scale);
     // Cut the label to the tile, so a long role or palette name never runs into the next one.
     c.text(text.slice(0, Math.floor((col - 24) / 12)), x + 12, y + maxH + 18, 2, ink);
@@ -273,7 +337,15 @@ function drawSet(set: ConceptSet, ids: string[], file: string, library = false):
       if (overrides === undefined) continue;
       const def = { ...concept.sprite, palette: { ...concept.sprite.palette, ...overrides } };
       const text = alt === undefined ? (concept.role ?? ids[n] ?? '') : alt;
-      tile(def, 24 + n * col, y, text, DUSK, alt === undefined ? TEXT : MUTED);
+      tile(
+        def,
+        24 + n * col,
+        y,
+        text,
+        DUSK,
+        alt === undefined ? TEXT : MUTED,
+        backdropFor(set.backdrop, alt),
+      );
     }
     y += rowH;
   }
@@ -312,6 +384,78 @@ function drawSet(set: ConceptSet, ids: string[], file: string, library = false):
   for (const concept of big.slice(Math.ceil(lineup.length / 3))) mixed.push(concept.sprite);
   c.rect(16, y - 8, W - 32, 16 * 3 + 16, DUSK);
   for (const [n, def] of mixed.entries()) c.sprite(def, 24 + n * (16 * 3 + 12), y, 3);
+  c.save(file);
+}
+
+/**
+ * The sheet of a `glyph` set: icons are small, so each tile shows one at 6x, 3x and 1x (how it reads in the game),
+ * under a heading per group. New icons sit on the bright ground with a gold edge; with `shipped` (not in the
+ * library's sheet) the shipped glyphs the set reuses stand beside them on a dim ground, so the whole set is seen together.
+ */
+function drawGlyphSheet(set: ConceptSet, ids: string[], file: string, library = false): void {
+  interface Tile {
+    def: SpriteDef;
+    name: string;
+    sub: string;
+    isNew: boolean;
+  }
+  const groups = new Map<string, Tile[]>();
+  const add = (group: string, tile: Tile): void => {
+    groups.set(group, [...(groups.get(group) ?? []), tile]);
+  };
+  for (const id of ids) {
+    const concept = set.sprites[id];
+    if (concept !== undefined)
+      add(concept.group ?? 'icons', {
+        def: concept.sprite,
+        name: concept.role ?? id,
+        sub: id,
+        isNew: true,
+      });
+  }
+  if (!library) {
+    for (const item of set.shipped ?? []) {
+      const def = shippedGlyph(item.id) ?? BUNDLED_ELEMENT_ICONS[item.id];
+      if (def === undefined) throw new Error(`No shipped glyph "${item.id}" for the sheet.`);
+      add(item.group, { def, name: item.marks, sub: item.id, isNew: false });
+    }
+  }
+  const scale = 6;
+  const tileW = 208;
+  const tileH = 8 * scale + 16 + 2 * 16 + 4;
+  const perRow = 5;
+  const W = 24 + perRow * (tileW + 8) + 16;
+  let H = 64 + (library ? 0 : 30);
+  for (const tiles of groups.values()) {
+    H += 30 + Math.ceil(tiles.length / perRow) * (tileH + 8) + 16;
+  }
+  const c = new Canvas(W, H, NIGHT);
+  c.text(set.title, 24, 18, 3, TEXT);
+  let y = 64;
+  if (!library) {
+    c.rect(24, y - 2, 6, 14, '#ffd25a');
+    c.text('drawn here', 36, y, 2, TEXT);
+    c.rect(24 + 14 * 12 + 24, y - 2, 6, 14, '#3a3360');
+    c.text('shipped, used as is', 36 + 14 * 12 + 24, y, 2, MUTED);
+    y += 30;
+  }
+  for (const [group, tiles] of groups) {
+    c.text(group, 24, y, 2, MUTED);
+    y += 30;
+    for (const [n, tile] of tiles.entries()) {
+      const tx = 24 + (n % perRow) * (tileW + 8);
+      const ty = y + Math.floor(n / perRow) * (tileH + 8);
+      c.rect(tx, ty, tileW, tileH, tile.isNew ? DUSK : '#1d1836');
+      c.rect(tx, ty, 4, tileH, tile.isNew ? '#ffd25a' : '#3a3360');
+      c.sprite(tile.def, tx + 14, ty + 8, scale);
+      c.sprite(tile.def, tx + 14 + 8 * scale + 14, ty + 8 + 8 * scale - 24, 3);
+      c.sprite(tile.def, tx + 14 + 8 * scale + 14 + 24 + 14, ty + 8 + 8 * scale - 8, 1);
+      const max = Math.floor((tileW - 24) / 12);
+      c.text(tile.name.slice(0, max), tx + 14, ty + 8 * scale + 18, 2, TEXT);
+      c.text(tile.sub.slice(0, max), tx + 14, ty + 8 * scale + 34, 2, MUTED);
+    }
+    y += Math.ceil(tiles.length / perRow) * (tileH + 8) + 16;
+  }
   c.save(file);
 }
 
@@ -370,7 +514,17 @@ function catalogue(): string {
       ...(set.element === undefined ? [] : [`- **Element:** ${set.element}`]),
       `- **Source:** \`apps/activity/src/sprites/concepts/${set.id}.ts\` (draw it with \`pnpm art ${set.id}\`)`,
       // A fingerprint of the art, so the check sees a changed sprite without comparing PNG bytes.
-      `- **Sheet of:** \`${createHash('sha256').update(JSON.stringify(set.sprites)).digest('hex').slice(0, 12)}\``,
+      `- **Sheet of:** \`${createHash('sha256')
+        .update(
+          JSON.stringify(
+            // The backdrop is drawn in the sheet too; sets without one keep their old fingerprint.
+            set.backdrop === undefined
+              ? set.sprites
+              : { sprites: set.sprites, backdrop: set.backdrop },
+          ),
+        )
+        .digest('hex')
+        .slice(0, 12)}\``,
       ...(set.notes ?? []).map((n) => `- ${n}`),
       '',
       '| Code | Kind | Role | Status | Idea |',
@@ -537,7 +691,7 @@ if (args[0] === 'new') {
   const kind = (args[1] ?? 'creature') as keyof typeof KIND_SIZE;
   const size = Object.hasOwn(KIND_SIZE, kind) ? KIND_SIZE[kind] : undefined;
   if (size === undefined) {
-    console.error(`usage: art.mts new creature|boss|item|part|banner`);
+    console.error(`usage: art.mts new creature|boss|item|part|glyph|banner`);
     process.exit(2);
   }
   const rows = STARTER[kind] ?? Array.from({ length: size.height }, () => '.'.repeat(size.width));
@@ -593,7 +747,7 @@ for (const id of ids) {
     }
   }
   if (findings.some((f) => f.rule === 'grid')) continue;
-  drawCard(id, concept, join(out, `${id}.png`));
+  drawCard(id, concept, join(out, `${id}.png`), set.backdrop);
 }
 drawSet(set, ids, join(out, `${set.id}.png`));
 console.log(`wrote ${out}`);

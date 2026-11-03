@@ -478,6 +478,6 @@ export function goalLines(g: TalentGoals): string[] {
     `- Plain stat talents (Sharp Claws, Hardy) at +${G.plainMin}% to +${G.plainMax}%: ${g.plainOk} of ${g.plainRows} talent rows.`,
     `- Soft warning, a best card over +${G.spikeWarn}% (a spike on the card a talent fits is fine, a runaway is not): ${g.spikes.length ? g.spikes.join(', ') : 'none'}.`,
     '',
-    'A talent may gain more than its average on the card it fits best (a talent that gains 5% overall gains two to three times that on the card where the team does worst, because the same points are a bigger share of a smaller score), as long as no pool has a single must-pick. A counter (Unbothered, Stubborn, Brace) or a discrete effect (Deep Ink adds whole counts) is judged on one number for every card.',
+    'A talent may gain more than its average on the card it fits best (a talent that gains 5% overall gains two to three times that on the card where the team does worst, because the same points are a bigger share of a smaller score), as long as no pool has a single must-pick. A counter (Unbothered, Refuse to Fall, Brace) or a discrete effect (Deep Ink adds whole counts) is judged on one number for every card.',
   ];
 }

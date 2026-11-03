@@ -598,3 +598,10 @@
   gap: 8px;
   margin: 0;
 }
+
+/* A fight held still at one moment (StageV2 held view): the numbers stand where they spawned instead of floating away. */
+.wb-held .float,
+.wb-held .float-body,
+.wb-held .ko-tag {
+  animation: none !important;
+}

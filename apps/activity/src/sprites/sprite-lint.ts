@@ -11,8 +11,11 @@
  */
 import { expandRows, parseSprite, SpriteError, type SpriteDef } from './sprite-data';
 
-/** `foe`: a 16x16 dungeon foe, drawn like a creature but without the shared chibi face. */
-export type ArtKind = 'creature' | 'foe' | 'boss' | 'item' | 'part' | 'banner' | 'free';
+/**
+ * `foe`: a 16x16 dungeon foe, drawn like a creature but without the shared chibi face. `glyph`: an 8x8 UI
+ * glyph (`src/glyphs.ts`): it is flat colour with no required ink outline, and has its own rules.
+ */
+export type ArtKind = 'creature' | 'foe' | 'boss' | 'item' | 'part' | 'glyph' | 'banner' | 'free';
 
 export const KIND_SIZE: Readonly<Record<ArtKind, { width: number; height: number } | undefined>> = {
   creature: { width: 16, height: 16 },
@@ -20,6 +23,7 @@ export const KIND_SIZE: Readonly<Record<ArtKind, { width: number; height: number
   boss: { width: 24, height: 24 },
   item: { width: 12, height: 12 },
   part: { width: 8, height: 8 },
+  glyph: { width: 8, height: 8 },
   banner: { width: 64, height: 24 },
   free: undefined,
 };
@@ -183,11 +187,18 @@ export function lintSprite(def: SpriteDef, options: LintOptions): Finding[] {
   for (const key of Object.keys(def.palette)) {
     if (!used.has(key)) add('palette', `Palette key "${key}" is not used by any pixel.`);
   }
-  if (def.palette.k !== INK) add('ink', `The outline "k" must be the shared ink ${INK}.`);
-  if (Object.keys(def.palette).length > 11) {
+  // A glyph is drawn in flat colour, without the shared outline (the shipped ones use any key, "k" included, for a colour).
+  if (def.palette.k !== INK && options.kind !== 'glyph') {
+    add('ink', `The outline "k" must be the shared ink ${INK}.`);
+  }
+  // Scenes (banners, free art such as places and landmarks) get a larger palette than a sprite: the shipped
+  // banners and world-map landmarks use 12 to 16 colours.
+  const maxColours =
+    options.kind === 'banner' || options.kind === 'free' ? 16 : options.kind === 'glyph' ? 5 : 11;
+  if (Object.keys(def.palette).length > maxColours) {
     add(
       'palette',
-      `${String(Object.keys(def.palette).length)} colours; at most 11 (brief, shades, ink, face).`,
+      `${String(Object.keys(def.palette).length)} colours; at most ${String(maxColours)}.`,
     );
   }
 
@@ -248,11 +259,44 @@ export function lintSprite(def: SpriteDef, options: LintOptions): Finding[] {
     }
   }
 
+  if (options.kind === 'glyph') {
+    // The glyph tests ask for more than 8 pixels; and a glyph is meant to read at 1x, so a thin one is a warning.
+    const filled = rows.join('').replaceAll('.', '').length;
+    if (filled <= 8) add('footprint', `${String(filled)} pixels drawn; more than 8.`);
+    else if (filled > 48)
+      add(
+        'footprint',
+        `${String(filled)} pixels drawn; at most 48 (it will look like a block).`,
+        'warn',
+      );
+    // A flat-colour glyph has no outline to protect it, so a colour that is most of the picture must show on the dusk panel.
+    const shares = new Map<string, number>();
+    for (const ch of rows.join(''))
+      if (ch !== '.' && ch !== 'k') shares.set(ch, (shares.get(ch) ?? 0) + 1);
+    const total = [...shares.values()].reduce((a, b) => a + b, 0);
+    let dim = 0;
+    for (const [key, n] of shares) {
+      const colour = def.palette[key];
+      if (colour !== undefined && contrast(colour, PANELS[1]) < 1.8) dim += n;
+    }
+    if (total > 0 && dim / total > 0.35) {
+      add(
+        'contrast',
+        `${String(Math.round((100 * dim) / total))}% of the pixels are too dark for the dusk panel (contrast under 1.8).`,
+        'warn',
+      );
+    }
+  }
+
   if (options.others !== undefined) {
     const near = nearestSilhouette(def, options.others, options.id);
     const need =
       options.minDifferentPixels ??
-      (options.kind === 'creature' || options.kind === 'foe' ? 12 : 1);
+      (options.kind === 'creature' || options.kind === 'foe'
+        ? 12
+        : options.kind === 'glyph'
+          ? 6
+          : 1);
     if (near !== undefined && near.different < need) {
       add(
         'silhouette',

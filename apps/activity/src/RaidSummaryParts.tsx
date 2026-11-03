@@ -408,15 +408,18 @@ export function SummaryActions({
   onReplay,
   onDismiss,
   busy = false,
+  watchLabel = 'Watch replay',
 }: {
   onReplay?: (() => void) | undefined;
   onDismiss?: (() => void) | undefined;
   busy?: boolean;
+  /** The gold button's words ("Watch" on a combat v2 week). */
+  watchLabel?: string;
 }) {
   if (onReplay === undefined && onDismiss === undefined) return null;
   return (
     <div class="rs-actions">
-      {onReplay !== undefined && <ActionButton label="Watch replay" large onClick={onReplay} />}
+      {onReplay !== undefined && <ActionButton label={watchLabel} large onClick={onReplay} />}
       {onDismiss !== undefined && (
         <button type="button" disabled={busy} onClick={onDismiss}>
           Got it

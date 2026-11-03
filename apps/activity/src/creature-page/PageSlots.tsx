@@ -1,7 +1,9 @@
 import type { Creature } from '../api';
+import { creatureV2, plainText, talentViewOf } from '../combat-v2-view';
 import { usePopoverTrigger } from '../PopoverHost';
 import { PopoverCard } from '../ui/Popover';
 import type { TalentView } from '../talent-types';
+import type { TalentSlotView } from '../talent-types';
 import { talentTextParts } from '../talent-view';
 import { Slot, SlotRow } from '../ui/Slot';
 
@@ -17,22 +19,42 @@ function SignatureCard({ talent }: { talent: TalentView }) {
   );
 }
 
-/** A talent in a slot: its name, and under it the number ("+14%"). A golden one shimmers like a golden TalentChip. */
-export function TalentInSlot({ talent }: { talent: TalentView }) {
+/**
+ * A talent in a slot: its name, and under it the number ("+14%"). A golden one shimmers like a golden TalentChip.
+ * `numberOnly` (combat v2, whose texts are whole sentences): only a percentage stands under the name; a talent without one shows its name alone.
+ */
+export function TalentInSlot({
+  talent,
+  numberOnly = false,
+}: {
+  talent: TalentView;
+  numberOnly?: boolean;
+}) {
   const parts = talentTextParts(talent.text);
   // A phrase without a number (a rule talent) shows its words instead.
-  const value = parts.value ?? talent.text;
+  // (A number that is no share, like "+0.1" of "+0.1x on crits", would mislead on its own: only a percentage stands in a slot.)
+  const value = numberOnly
+    ? parts.value !== null && parts.value.endsWith('%')
+      ? parts.value
+      : ''
+    : (parts.value ?? talent.text);
   return (
     <span
-      class={`talent-chip slot-talent${talent.golden ? ' golden' : ''}${talent.idle ? ' idle' : ''}`}
+      class={`talent-chip slot-talent${numberOnly ? ' compact' : ''}${talent.golden ? ' golden' : ''}${talent.idle ? ' idle' : ''}`}
     >
       <strong class="talent-name pix">
         {talent.name}
         {talent.golden && <span class="visually-hidden"> (golden)</span>}
       </strong>
-      <span class="slot-talent-value pix">
-        {talent.golden && parts.value !== null ? <span class="gold-shimmer">{value}</span> : value}
-      </span>
+      {value !== '' && (
+        <span class="slot-talent-value pix">
+          {talent.golden && parts.value !== null ? (
+            <span class="gold-shimmer">{value}</span>
+          ) : (
+            value
+          )}
+        </span>
+      )}
     </span>
   );
 }
@@ -53,7 +75,17 @@ export function TalentSlots({
   openSlot: number | null;
   onOpen: (slot: number, button: HTMLButtonElement) => void;
 }) {
-  const { slots, signature } = creature.talents;
+  // Combat v2 (the server's flag): the slots are the v2 ones, whole-sentence talents show name and number only, and
+  // there is no signature talent.
+  const v2 = creatureV2(creature);
+  const slots: readonly TalentSlotView[] =
+    v2 === null
+      ? creature.talents.slots
+      : v2.talentsV2.slots.map((s) => ({
+          ...s,
+          talent: s.talent === null ? null : talentViewOf(s.talent),
+        }));
+  const signature = v2 === null ? creature.talents.signature : null;
   const { host, ref, open } = usePopoverTrigger<HTMLButtonElement>();
   return (
     <SlotRow
@@ -116,11 +148,11 @@ export function TalentSlots({
               key={slot.slot}
               kind="talent"
               state="filled"
-              label={`Talent slot ${String(slot.slot)}: ${slot.talent.name}, ${slot.talent.text}${slot.talent.golden ? ', golden' : ''}. Change`}
+              label={`Talent slot ${String(slot.slot)}: ${slot.talent.name}, ${plainText(slot.talent.text)}${slot.talent.golden ? ', golden' : ''}. Change`}
               expanded={openSlot === slot.slot}
               onClick={open}
             >
-              <TalentInSlot talent={slot.talent} />
+              <TalentInSlot talent={slot.talent} numberOnly={v2 !== null} />
             </Slot>
           );
         }),
