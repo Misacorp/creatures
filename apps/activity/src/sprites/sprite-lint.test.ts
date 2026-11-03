@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { content } from '@creatures/game';
 import { BUNDLED_BOSS_SPRITES, BUNDLED_CREATURE_SPRITES } from './creature-sprites';
 import { BUNDLED_GLYPHS } from '../glyphs';
-import { CONCEPT_SETS } from './concepts';
+import { CONCEPT_SETS } from './concepts/sets';
 import { BUNDLED_ELEMENT_ICONS } from './element-icons';
 import { contrast, hsl, inFamily, ELEMENT_FAMILIES, lintSprite, KIND_SIZE } from './sprite-lint';
 import type { SpriteDef } from './sprite-data';
@@ -99,6 +99,15 @@ describe('lintSprite', () => {
 });
 
 describe('concept art', () => {
+  it('finds every set file of the folder, each set with its own id', () => {
+    const files = Object.keys(
+      import.meta.glob(['./concepts/*.ts', '!./concepts/index.ts', '!./concepts/sets.ts']),
+    );
+    expect(CONCEPT_SETS.length).toBeGreaterThanOrEqual(files.length);
+    const ids = CONCEPT_SETS.map((set) => set.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it('parses at its kind size, so the studio can always draw it', () => {
     for (const set of CONCEPT_SETS) {
       expect(Object.keys(set.sprites).length, `${set.id} has no sprites`).toBeGreaterThan(0);
