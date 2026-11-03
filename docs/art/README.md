@@ -95,19 +95,19 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-03: the valley prototype's remaining places (arena, fairground, road, chest, lectern, paddock) in the liked glow style, day and night.
 - **Source:** `apps/activity/src/sprites/concepts/valley-glow-camp.ts` (draw it with `pnpm art valley-glow-camp`)
-- **Sheet of:** `b2c6c28c293f`
+- **Sheet of:** `3916280a5c8f`
 - Extends the liked `valley-glow` set (same palette keys, ink, light rings and cast shadow) with the places the valley prototype draws in the camp clearing: `apps/activity/src/proto/party/` and `proto/valley/` on branch `origin/ccr-93a1de17-yutb1a`.
 - The backdrop is the same as `valley-glow`: the world map grass tile in its night recolour, `alts.day` is the normal grass.
 - By day the light rings become ground: worn dirt, trodden grass, pebbles and flowers. Fire (arena braziers) stays lit by day; lanterns and candles are unlit glass or plain wax. No text on any sign or page, only marks.
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
-| `arena` | free |  | draft | A small sparring ring: a sand oval edged with grey stones, two posts at the back with a bunting between them and a brazier on each, whose warm light lies on the sand and the grass. The middle is left empty for the boss or creatures. By day the braziers stay lit and the sand is raked. |
+| `arena` | free |  | draft | A small sparring ring: a sand oval edged with grey stones, two posts at the back with a bunting between them and a brazier on each, whose warm light lies on the sand (brighter near the posts) and in stepped rings on the grass. The middle is left empty. By day the braziers stay lit, the sand is pale and the ground by the posts is worn dirt. |
 | `fairground` | free |  | draft | A festive striped tent with a pennant on its pole, two strings of pennants running to side posts, four lanterns and a lit doorway with tied-back flaps. The lantern light lies on the grass in front. By day the lanterns are unlit glass and the ground in front is trodden straw and flowers. |
-| `road` | free |  | draft | Where the road leaves the camp: a worn dirt path running off the top edge and a wooden signpost with three plank arrows (marks, no words) and a lantern on a hook. The lantern light warms the path and the grass. By day the lantern is unlit, the path is dry dirt with ruts and pebbles. |
-| `chest` | free |  | draft | The shared camp chest: a banded wooden chest, lid closed, with a gold lock plate and a small glint, and a candle on the ground beside it whose light lies on the grass. By day the candle is unlit. |
-| `lectern` | free |  | draft | A reading stand: a slanted desk with an open journal (marks, no words) and a lit candle, on a tapered wooden body with a carved star and a stone plinth. The candle lights the pages and the grass. By day the candle is unlit. |
-| `paddock` | free |  | draft | A fenced pen: posts and two rails round three sides, an open gap at the front, a hay pile and a water trough at the back and a lantern on a front post. The inside is open grass for creatures. By day the lantern is unlit and the ground by the gate is trodden dirt. |
+| `road` | free |  | draft | Where the road leaves the camp: a worn dirt path running off the top edge and fraying into the grass at its foot, a wooden signpost with three plank arrows (marks, no words) and a lantern on a hook. The lantern light lies on the path and grass in stepped rings. By day the lantern is unlit and the ground is a dirt patch with pebbles. |
+| `chest` | free |  | draft | The shared camp chest: a banded wooden chest, lid closed (a lighter lid top and a dark seam), with a gold lock plate and a small glint, and a candle on the ground beside it. The candle light lies on the grass in stepped rings. By day the candle is unlit and the ground is trodden dirt. |
+| `lectern` | free |  | draft | A reading stand: a slanted desk with an open journal (marks, no words) and a lit candle, on a single carved wooden post with a flared foot and two brackets under the desk. The candle lights the right-hand page and lays stepped rings on the grass. By day the candle is unlit and the ground is worn dirt. |
+| `paddock` | free |  | draft | A fenced pen seen from the front-top: a straight back rail, short side rails, front rails with an open gate gap, a hay pile and a water trough at the back and a lantern on a front post. The inside is open grass for creatures. The lantern and the gate lie in stepped rings; by day the lantern is unlit and the gate ground is trodden dirt. |
 
 <a id="valley-glow"></a>
 
