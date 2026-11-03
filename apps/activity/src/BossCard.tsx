@@ -1,3 +1,4 @@
+import type { ComponentChildren } from 'preact';
 import { Tag } from './ui/Tag';
 import { GLOSSARY_IDS } from '@creatures/game';
 import { bossArt, elementSlug } from './art';
@@ -55,6 +56,42 @@ function nextStage(view: RaidView): { at: number; name: string } | null {
 }
 
 /**
+ * The head of a boss card, the same for both rules versions: the art at its full size in an element-coloured frame and, beside it
+ * (below it on a phone), the name, a row of tags (`status`) and whatever else the card puts under them (`children`).
+ */
+export function BossHead({
+  boss,
+  status,
+  children,
+}: {
+  boss: { id: string; name: string };
+  status: ComponentChildren;
+  children?: ComponentChildren;
+}) {
+  const art = bossArt(boss.id);
+  return (
+    <div class="boss">
+      <div class="portrait boss-portrait">
+        <Sprite sprite={art.sprite} scale={art.scale} alt={boss.name} bob />
+      </div>
+      <div class="boss-meta">
+        <PixelHeading
+          as="h3"
+          outline="element-drop"
+          size="m"
+          id="raid-boss-name"
+          class="boss-name"
+        >
+          {boss.name}
+        </PixelHeading>
+        <div class="boss-status">{status}</div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/**
  * The boss card: the art at its full size, and beside it (below it on a phone) the name, Rank and
  * readiness, element, this week's HP (a bar with the numbers on it), and icons for the turn order
  * and tricks. Details live in the popovers. What is not about the boss lives elsewhere: the season
@@ -76,7 +113,6 @@ export function BossCard({
   const teaser = festivalTeaser(view);
   const readiness = view.party?.readiness ?? null;
   const best = bestRankText(view.bestRank);
-  const art = bossArt(boss.id);
   const element = elementSlug(boss.element);
   const dodge = foeDodge(boss.id);
   return (
@@ -84,21 +120,10 @@ export function BossCard({
       class={`raid-section boss-card el-${element}${view.festival ? ' festival' : ''}`}
       aria-labelledby="raid-boss-name"
     >
-      <div class="boss">
-        <div class="portrait boss-portrait">
-          <Sprite sprite={art.sprite} scale={art.scale} alt={boss.name} bob />
-        </div>
-        <div class="boss-meta">
-          <PixelHeading
-            as="h3"
-            outline="element-drop"
-            size="m"
-            id="raid-boss-name"
-            class="boss-name"
-          >
-            {boss.name}
-          </PixelHeading>
-          <div class="boss-status">
+      <BossHead
+        boss={boss}
+        status={
+          <>
             {rank !== null && (
               <Tag tone="rank" entry="boss-rank">
                 {rank}
@@ -116,20 +141,21 @@ export function BossCard({
                 Festival week
               </Tag>
             )}
+          </>
+        }
+      >
+        {hp !== null && (
+          <div class="boss-hp">
+            <SegmentBar
+              size="boss"
+              current={hp.current}
+              max={hp.max}
+              {...bossHpWords(hp.current, hp.max)}
+            />
           </div>
-          {hp !== null && (
-            <div class="boss-hp">
-              <SegmentBar
-                size="boss"
-                current={hp.current}
-                max={hp.max}
-                {...bossHpWords(hp.current, hp.max)}
-              />
-            </div>
-          )}
-          <BossIconList boss={boss} effectiveRank={view.effectiveRank} />
-        </div>
-      </div>
+        )}
+        <BossIconList boss={boss} effectiveRank={view.effectiveRank} />
+      </BossHead>
       {banner !== null && <p class="festival-banner">{banner}</p>}
       {teaser !== null && <p class="muted">{teaser}</p>}
       <p class="boss-pays">{winPaysText(view)}</p>

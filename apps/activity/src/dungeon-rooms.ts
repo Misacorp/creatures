@@ -14,7 +14,7 @@ import type { TrackStep, TrackUnlock } from './progress-track';
 import type { IconRef } from './icon-ref';
 
 /** The picture of a role on a modifier that boosts it: the glyph the role's job looks like. */
-const ROLE_GLYPH: Readonly<Record<Role, string>> = {
+export const ROLE_GLYPH: Readonly<Record<Role, string>> = {
   setter: 'mark',
   payoff: 'sparkle',
   guard: 'shield',

@@ -15,6 +15,11 @@ import { Replay } from './Replay';
 import { RevealCard } from './Reveal';
 import { RaidSummary } from './RaidSummary';
 import { summaryBoss } from './raid-summary-view';
+import { SwapRequests } from './SwapRequests';
+import { BossCardV2 } from './BossCardV2';
+import { litMove } from './raid-board-v2';
+import { answerSwap, askSwap } from './raid-v2-api';
+import { TrackStrip } from './ui/TrackStrip';
 import {
   fetchRaid,
   markRevealSeen,
@@ -80,6 +85,8 @@ export function Raid({
     party: number;
     phase: RaidPhaseId;
   } | null>(null);
+  /** Combat v2: the id of the boss move tapped on the card; its slots light on the board. */
+  const [litId, setLitId] = useState<string | null>(null);
   const [liveOpen, setLiveOpen] = useState(false);
   const [liveInitial, setLiveInitial] = useState<LiveSnapshot | null>(null);
   const [practiceGone, setPracticeGone] = useState(false);
@@ -241,6 +248,24 @@ export function Raid({
     );
   }
 
+  /** Combat v2: asks the owner of another creature on the board to swap it for one of yours. */
+  function askToSwap(mySlot: number, theirSlot: number): void {
+    void mutate(async () => {
+      const swaps = await askSwap(mySlot, theirSlot);
+      const current = loadedRef.current?.view;
+      if (current?.v2 === undefined) return fetchRaid();
+      return { ...current, v2: { ...current.v2, swaps } };
+    });
+  }
+
+  /** Combat v2: accepts or declines a request someone asked of you. An accept moves creatures, so the raid is loaded again. */
+  function answerToSwap(id: string, answer: 'accept' | 'decline'): void {
+    void mutate(async () => {
+      await answerSwap(id, answer);
+      return fetchRaid();
+    });
+  }
+
   function runIntent(intent: Intent): void {
     void mutate(() =>
       intent.type === 'place'
@@ -255,6 +280,8 @@ export function Raid({
   if (loaded === null) return <p class="muted">Loading the raid...</p>;
 
   const { view } = loaded;
+  const v2 = view.rules === 2 ? view.v2 : undefined;
+  const tappedMove = v2?.card.moves.find((m) => m.id === litId);
   const party = view.party;
   const rosterNames = view.roster.map((r) => r.displayName);
   const { reveal } = view.you;
@@ -365,6 +392,14 @@ export function Raid({
           }}
         />
       )}
+      {v2 !== undefined && (
+        <SwapRequests
+          requests={v2.swaps.incoming}
+          grid={{ rows: v2.rows, cols: v2.cols }}
+          busy={busy}
+          onAnswer={answerToSwap}
+        />
+      )}
       <RaidTimeline
         view={view}
         serverNow={serverNow}
@@ -383,7 +418,20 @@ export function Raid({
           </button>
         </Accordion>
       )}
-      <BossCard view={view} forecast={forecast} />
+      {v2 === undefined ? (
+        <BossCard view={view} forecast={forecast} />
+      ) : (
+        <>
+          <section class="raid-section track-section" aria-label="The track">
+            <TrackStrip
+              order={v2.track.order}
+              index={v2.track.index}
+              rank={view.rank ?? v2.slot}
+            />
+          </section>
+          <BossCardV2 view={view} lit={litId} onLit={setLitId} />
+        </>
+      )}
       {party !== null && (
         <Placement
           party={party}
@@ -396,6 +444,15 @@ export function Raid({
           configure={configure}
           owned={creatures}
           onOpenPage={setPage}
+          v2={
+            v2 === undefined
+              ? undefined
+              : {
+                  view: v2,
+                  lit: tappedMove === undefined ? null : litMove(v2.preview, tappedMove),
+                  onAskSwap: askToSwap,
+                }
+          }
         />
       )}
       {party !== null && view.you.canEdit && (
@@ -405,7 +462,8 @@ export function Raid({
         />
       )}
 
-      {view.you.ability !== null && (
+      {/* The v2 finale's one input per player is a later part (the live finale). */}
+      {v2 === undefined && view.you.ability !== null && (
         <AbilityChip
           you={view.you}
           current={view.you.ability}
@@ -421,7 +479,8 @@ export function Raid({
           }}
         />
       )}
-      {party !== null && showFullResults(party.results) && (
+      {/* A combat v2 stage has no result card or replay yet (the stage playback is a later part). */}
+      {party !== null && v2 === undefined && showFullResults(party.results) && (
         <section class="raid-section" aria-labelledby="raid-results-heading">
           <h3 id="raid-results-heading">Results</h3>
           <ul class="cards">

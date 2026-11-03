@@ -36,7 +36,8 @@
 }
 
 /* One line, cut with an ellipsis rather than broken mid-word; the popover and the aria label have the full name. */
-.board-row .party-slot .slot-species {
+.board-row .party-slot .slot-species,
+.board-row .party-slot .slot-knack {
   display: block;
   font-size: 0.625rem;
   line-height: 1.15;
@@ -170,4 +171,78 @@
   outline: var(--px) solid var(--gold);
   outline-offset: calc(var(--px) * -2);
   background-color: var(--dusk-2);
+}
+
+/*
+  Combat v2's board (the week's `rules: 2`): the tile gains the creature's role icon (top left), its Knack as a small chip under
+  the level and the HP it carries between stages (a tiny bar at the foot). The tile is a little taller to hold them.
+*/
+.raid-board.v2 {
+  --tile-h: 6.75rem;
+}
+
+.party-slot .slot-role {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  display: block;
+  line-height: 0;
+  pointer-events: none;
+}
+
+.board-row .party-slot .slot-role canvas.sprite {
+  margin: 0;
+}
+
+.party-slot .slot-knack {
+  display: block;
+  box-sizing: border-box;
+  max-width: 100%;
+  margin-top: 1px;
+  padding: 0 2px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--night);
+  color: var(--haze);
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.party-slot .slot-carried {
+  width: 100%;
+  margin-top: auto;
+  padding-bottom: 1px;
+}
+
+/* A state the tile is in ("Asked"): a gold strip along the foot, like the reaction badge but never a ring. */
+.party-slot .slot-state {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: var(--gold);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: var(--fs-small);
+  line-height: 1rem;
+  pointer-events: none;
+  text-align: center;
+}
+
+/* The picture of a boss move that would hit the tile, and the plain attack's sword, in the lower right corner. */
+.party-slot .slot-mark {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  display: flex;
+  gap: 1px;
+  padding: 1px;
+  background: var(--ink);
+  line-height: 0;
+  pointer-events: none;
+}
+
+.board-row .party-slot .slot-mark canvas.sprite {
+  margin: 0;
 }

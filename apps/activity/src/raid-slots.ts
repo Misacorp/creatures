@@ -13,6 +13,8 @@ export interface TapContext {
   /** True when edits are closed (finale resolved, or the player is not in the raid). */
   locked: boolean;
   row: readonly RowSlotView[];
+  /** A slot's place in words ("Row 2, lane 3"); absent: the v1 board's ("Middle, lane 1"). */
+  place?: (slot: number) => string;
 }
 
 /** The slot holding one of the player's creatures, or null if it is not placed. */

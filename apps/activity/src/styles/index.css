@@ -46,6 +46,10 @@
 @import './components/talents.css';
 @import './components/knack.css';
 @import './views/boss-card.css';
+@import './components/boss-card-v2.css';
+@import './components/move-tile.css';
+@import './components/track-strip.css';
+@import './components/swap-requests.css';
 @import './stage/stage.css';
 @import './stage/units.css';
 @import './stage/stage-grid.css';

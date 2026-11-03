@@ -35,3 +35,29 @@
 .turn-chip.ko .turn-name {
   text-decoration: line-through;
 }
+
+/*
+  On a combat v2 board the strip reads one round (row 1, boss, row 2, boss, row 3, boss): a boss step is a darker chip, with the
+  pictures of the moves due on it, each with its rhythm in rounds beside it. It stays one line and scrolls sideways if it must.
+*/
+.turn-chip.boss-step {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+  border-color: var(--bad);
+  background: var(--night);
+}
+
+.turn-move {
+  display: inline-flex;
+  gap: 1px;
+  align-items: center;
+  line-height: 0;
+}
+
+.turn-every {
+  color: var(--haze);
+  font-family: var(--display);
+  font-size: var(--fs-small);
+  line-height: 1;
+}

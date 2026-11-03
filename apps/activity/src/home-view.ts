@@ -28,6 +28,13 @@ import type { Forecast } from './weather-types';
 /** The part of the Raid view the Home page uses: the week's times (UTC epoch ms). */
 export interface RaidGlance {
   schedule: Readonly<Record<RaidEventId, number>>;
+  /** Combat v2: the week plays by the v2 rules (its stages are named "Stage 1" and "Stage 2"). Absent on a v1 week. */
+  rules?: 2;
+  /**
+   * Combat v2: what the swap requests asked of the player say as one notice ("Mira asks to swap Lanternfin for Emberkit", or how
+   * many there are). Absent or null: none.
+   */
+  swapText?: string | null;
 }
 
 export interface HomeInput {
@@ -162,7 +169,12 @@ export function needsYou(input: HomeInput): NeedRow[] {
       );
     }
   }
-  if (alerts.raid !== null) add('raid', 'Creatures to place');
+  // The Raid notice: creatures to place, and swap requests other players asked of you (combat v2).
+  const raidReasons = [
+    alerts.raid !== null ? 'Creatures to place' : null,
+    input.raid?.swapText ?? null,
+  ].filter((r): r is string => r !== null);
+  if (raidReasons.length > 0) add('raid', raidReasons.join('; '));
   if (alerts.expeditions !== null) {
     const { home, choice } = tripCounts(input.trips, now);
     const waiting = [...choice, ...home];
@@ -264,7 +276,8 @@ export function comingUp(input: HomeInput, limit = 5): ComingRow[] {
   if (raid !== null) {
     // The next phase still to come (the schedule alone says which, so a stale load never shows a past one), then the finale.
     const phase = (['phase1', 'phase2'] as const).find((event) => raid.schedule[event] > now);
-    if (phase !== undefined) add(raid.schedule[phase], 'raid', `Raid: ${eventTitle(phase)}`);
+    if (phase !== undefined)
+      add(raid.schedule[phase], 'raid', `Raid: ${eventTitle(phase, raid.rules)}`);
     add(raid.schedule.finale, 'raid', 'Raid finale');
   }
   return rows.sort((a, b) => a.at - b.at).slice(0, limit);
