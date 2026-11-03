@@ -283,6 +283,43 @@ describe('the raid-weekend dev tool', () => {
     );
   });
 
+  it("raid-phase and the clock's next phase follow the week's own calendar on a v2 week", async () => {
+    await runRaid(
+      async (ctx) => {
+        const me = await caller(ctx);
+        expect(await me.call('POST', '/api/dev/raid-roster', { count: 3 })).toMatchObject({
+          status: 200,
+        });
+        const now = async (): Promise<number> =>
+          (await me.call('GET', '/api/dev/state')).body.clock.now;
+        const phase = (to: string) => me.call('POST', '/api/dev/raid-phase', { to });
+        // Stage 1 is Saturday 13:37, stage 2 Sunday 13:37 and the finale Sunday 20:00 (Europe/Helsinki), not the v1 Friday and Saturday.
+        expect(await phase('phase1')).toMatchObject({ status: 200 });
+        expect(await now()).toBe(V2_WEEK.stage1);
+        expect(count(ctx.sql, 'raid_events', "week_id = '2027-W02' AND event = 'phase1'")).toBe(1);
+        expect(count(ctx.sql, 'raid_results', "phase = 'stage1'")).toBeGreaterThan(0);
+        expect(await phase('phase2')).toMatchObject({ status: 200 });
+        expect(await now()).toBe(V2_WEEK.stage2);
+        expect(count(ctx.sql, 'raid_events', "week_id = '2027-W02' AND event = 'phase2'")).toBe(1);
+        expect(await phase('finale')).toMatchObject({ status: 200 });
+        expect(await now()).toBe(V2_WEEK.finale);
+        expect(count(ctx.sql, 'raid_events', "week_id = '2027-W02' AND event = 'finale'")).toBe(1);
+      },
+      { start: V2_WEEK.open, core: CORE },
+    );
+    await runRaid(
+      async (ctx) => {
+        const me = await caller(ctx);
+        ctx.core.raid.currentWeek(HELSINKI);
+        const next = await me.call('POST', '/api/dev/clock', { to: 'next-phase' });
+        expect(next).toMatchObject({ status: 200 });
+        // The next event of a v2 week is stage 1 on Saturday, not a v1 Friday.
+        expect(next.body.result.now).toBe(V2_WEEK.stage1);
+      },
+      { start: V2_WEEK.open, core: CORE },
+    );
+  });
+
   it('answers 404 without the flag and 409 on a week that is not a v2 week', async () => {
     await runRaid(
       async (ctx) => {

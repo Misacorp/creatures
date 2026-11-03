@@ -27,7 +27,7 @@ import { giveItem } from './gear-helpers';
 import { formStats } from '@creatures/engine/v2';
 import { createHandler } from '../src/index';
 import { loadCreatures, loadCreaturesById } from '../src/raid-teams';
-import { grantFirstTalent, learnedOf, lineBook, recordFound } from '../src/talent-v2-store';
+import { grantFirstTalent, learnedOf, lineBook } from '../src/talent-v2-store';
 import wranglerText from '../wrangler.jsonc?raw';
 import { ON, player as devPlayer, type Json } from './dev-helpers';
 import { ORIGIN, callHandler, runCore, undoKnackMigration, type CoreContext } from './helpers';
@@ -391,8 +391,7 @@ describe('the stats a creature page shows under v2 (statsV2)', () => {
           ['hardy', 1],
           ['sharp-claws', 2],
         ] as const) {
-          // In the line's book as well, as every real find is (the page reads the slots through the book).
-          recordFound(ctx.sql, p.id, wide.line, { talentId: talent, golden: false }, 1);
+          // Deliberately NOT in the line's book: the page must read slots where the fight does (`creature_talents_v2`).
           ctx.sql.exec(
             'INSERT INTO creature_talents_v2 (creature_id, talent_id, slot, learned_at) VALUES (?, ?, ?, 1)',
             id,
@@ -400,6 +399,7 @@ describe('the stats a creature page shows under v2 (statsV2)', () => {
             slot,
           );
         }
+        expect(lineBook(ctx.sql, p.id, wide.line)).toHaveLength(0);
         const slots = ['hat', 'scarf', 'charm'];
         const bases = slots.flatMap((slot) => {
           const base = gearContent.bases.find((b) => b.slot === slot);

@@ -8,7 +8,7 @@
  */
 import { RULES, content, festivalCreatureFor, int, ribbonsForLevel } from '@creatures/game';
 import type * as v from 'valibot';
-import { advanceTo, phaseTarget } from './dev-tools-clock';
+import { advanceTo, gameNow, phaseTarget, weekRulesOf } from './dev-tools-clock';
 import { DevError, creatureRngsOf, purgeUser, type ToolCtx } from './dev-context';
 import type {
   RaidBossBodySchema,
@@ -39,7 +39,9 @@ const eventDone = (ctx: ToolCtx, weekId: string, event: string): boolean =>
 
 /** Moves the clock to a phase of the week (the scheduler runs whatever that makes due). */
 export function raidPhase(ctx: ToolCtx, body: Body<typeof RaidPhaseBodySchema>) {
-  advanceTo(ctx, phaseTarget(body.to, ctx.now, ctx.tz));
+  // The week exists (with its rules version) before its calendar is read: a v2 week's stages are on Saturday and Sunday.
+  ctx.raid.currentWeek(ctx.tz);
+  advanceTo(ctx, phaseTarget(body.to, gameNow(ctx), ctx.tz, weekRulesOf(ctx)));
   const week = ctx.raid.currentWeek(ctx.tz);
   ctx.raid.settleDueLive();
   return { weekId: week.weekId, status: ctx.raid.week(week.weekId)?.status ?? week.status };

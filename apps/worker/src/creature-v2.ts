@@ -17,7 +17,7 @@
 import { RULES, slotCount, slotOpensAt, slotsOpen, type CreatureSpecies } from '@creatures/game';
 import { combatV2, knownKnacks, v2TalentWorksFor } from '@creatures/game/combat-v2';
 import type { Analytics } from './analytics';
-import { fightNumbers } from './fighter-v2';
+import { fightNumbers, slottedTalents } from './fighter-v2';
 import type { WornBySlot } from './gear-store';
 import { keyTaken, settleSpend } from './keyed-action';
 import { lookupSpend, spend, type LedgerStorage } from './ledger';
@@ -271,7 +271,8 @@ export class CreatureV2 {
         level: row.level,
         fusionCount: row.fusion_count,
         knack: row.knack,
-        talents: slots.flatMap((s) => (s.talent === null ? [] : [s.talent.id])),
+        // The fight's own helper over what the creature learned (`creature_talents_v2`), never the line's book.
+        talents: slottedTalents({ species, level: row.level }, learned),
         worn,
       }),
     };
