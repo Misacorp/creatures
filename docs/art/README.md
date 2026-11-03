@@ -10,10 +10,12 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | --- | --- | --- | --- |
 | [Combat v2 icons: attack shapes, board states, store meters](#combat-icons) | draft | 11 | 2026-10-31, Misa: "icons for keywords and attack shapes" (roadmap phase 3, combat v2). |
 | [Element shards, told apart by shape](#shards) | liked | 15 | 2026-11-03: the element shard icons must differ by shape, not only colour (accessibility review from the valley session; Misa asked to provide what the valley needs). |
+| [The camp's other places, glow style](#valley-glow-camp) | draft | 6 | 2026-11-03: the valley prototype's remaining places (arena, fairground, road, chest, lectern, paddock) in the liked glow style, day and night. |
 | [Valley places: glow, day and night](#valley-glow) | liked | 9 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
 | [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: posters](#valley-posters) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
+| [Valley sky, day and night](#valley-sky) | draft | 2 | 2026-11-03 (Q50, via the valley session): place screens drop the poster; Misa likes "the added depth of having a sky in the background ... We'd just need the proper sky images. Eventually the sky backdrop could vary based on location." |
 | [Void, a raid boss, three foes and two floor bosses](#void-foes) | draft | 6 | 2026-10-31: a Void raid boss, dungeon foes and dungeon bosses. |
 | [Void gear: tint, plain pieces, a set, a shard](#void-gear) | draft | 11 | 2026-10-31: design Void gear. |
 | [Void place, the Quiet Verge (banners)](#void-place) | liked | 2 | 2026-10-31: design a Void area that can be explored (banner and place). |
@@ -84,6 +86,29 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `mire-now` | part |  | draft | The shipped mire shard, unchanged, for comparison. |
 | `mire-a` | part |  | draft | A lump with a single drip hanging from its belly. |
 | `mire-b` | part |  | liked | A slumped blob with two drips, one longer. |
+
+<a id="valley-glow-camp"></a>
+
+## The camp's other places, glow style
+
+![The camp's other places, glow style](valley-glow-camp.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-03: the valley prototype's remaining places (arena, fairground, road, chest, lectern, paddock) in the liked glow style, day and night.
+- **Source:** `apps/activity/src/sprites/concepts/valley-glow-camp.ts` (draw it with `pnpm art valley-glow-camp`)
+- **Sheet of:** `3097f5418a22`
+- Extends the liked `valley-glow` set (same palette keys, ink, light rings and cast shadow) with the places the valley prototype draws in the camp clearing: `apps/activity/src/proto/party/` and `proto/valley/` on branch `origin/ccr-93a1de17-yutb1a`.
+- The backdrop is the same as `valley-glow`: the world map grass tile in its night recolour, `alts.day` is the normal grass.
+- By day the light rings become ground: worn dirt, trodden grass, pebbles and flowers. Fire (arena braziers) stays lit by day; lanterns and candles are unlit glass or plain wax. No text on any sign or page, only marks.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `arena` | free |  | draft | A small sparring ring: a sand oval edged with grey stones, two posts at the back with a bunting between them and a brazier on each, whose warm light lies on the sand (brighter near the posts) and in stepped rings on the grass. The middle is left empty. By day the braziers stay lit, the sand is pale and the ground by the posts is worn dirt. |
+| `fairground` | free |  | draft | A festive striped tent with a pennant on its pole, two strings of pennants running to side posts, four lanterns and a lit doorway with tied-back flaps. The lantern light lies on the grass in front. By day the lanterns are unlit glass and the ground in front is trodden straw and flowers. |
+| `road` | free |  | draft | Where the road leaves the camp: a worn dirt path running off the top edge and fraying into the grass at its foot, a wooden signpost with three plank arrows (marks, no words) and a lantern on a hook. The lantern light lies on the path and grass in stepped rings. By day the lantern is unlit and the ground is a dirt patch with pebbles. |
+| `chest` | free |  | draft | The shared camp chest: a banded wooden chest, lid closed (a lighter lid top and a dark seam), with a gold lock plate and a small glint, and a candle on the ground beside it. The candle light lies on the grass in stepped rings. By day the candle is unlit and the ground is trodden dirt. |
+| `lectern` | free |  | draft | A reading stand: a slanted desk with an open journal (marks, no words) and a lit candle, on a single carved wooden post with a flared foot and two brackets under the desk. The candle lights the right-hand page and lays stepped rings on the grass. By day the candle is unlit and the ground is worn dirt. |
+| `paddock` | free |  | draft | A fenced pen seen from the front-top: a straight back rail, short side rails, front rails with an open gate gap, a hay pile and a water trough at the back and a lantern on a front post. The inside is open grass for creatures. The lantern on the gate post lays stepped rings on the gate ground; by day it is unlit and the ground is trodden dirt. |
 
 <a id="valley-glow"></a>
 
@@ -189,6 +214,26 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `visitor` | banner |  | draft | A blue-green twilight under a crescent moon: the hooded stranger with glowing eyes and a lantern staff beside his striped stall of glowing jars. |
 | `visitor-away` | banner |  | draft | The same stall on a grey-lilac morning: awning furled, lantern dark, a leaf on the counter and a sign with a moon and a calendar page, one day marked. |
 | `market` | banner |  | draft | A golden afternoon: a teal and cream stall where a round orange shopkeeper sells shards (red, yellow, cyan, violet), crates of them in front and a customer with a coin. |
+
+<a id="valley-sky"></a>
+
+## Valley sky, day and night
+
+![Valley sky, day and night](valley-sky.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-03 (Q50, via the valley session): place screens drop the poster; Misa likes "the added depth of having a sky in the background ... We'd just need the proper sky images. Eventually the sky backdrop could vary based on location."
+- **Source:** `apps/activity/src/sprites/concepts/valley-sky.ts` (draw it with `pnpm art valley-sky`)
+- **Sheet of:** `ba9100228e45`
+- Used by the valley prototype's place screens (`apps/activity/src/proto/valley/glow-scene-art.ts`, `skyPlacements`, poster mode `sky`, branch `ccr-93a1de17-yutb1a`).
+- One strip, 128 x 40, tiles sideways (see the `seam` and `seam-day` rows: the join is in the middle). Top row is one flat colour, repeat it upward behind the HUD. Bottom row is the grass colour of the world-map tile.
+- Main palette is night (4 bands, stars), `alts.day` is the same pixels: stars vanish into the band, clouds appear. Clouds sit across the seam on purpose. The optional `moon` sprite is placed once by the scene, never tiled.
+- Per-location variants (forest, coast, mountains) later: same bands, a different horizon in the bottom rows.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `valley` | free |  | draft | A sky strip with far rolling hills and a hazy treeline at the bottom that meet the grass. Night: violet bands and stars. Day: blue bands and a few clouds. |
+| `moon` | free |  | draft | An optional small moon the scene places once in the night sky (not part of the tiled strip). Hidden by day. |
 
 <a id="void-foes"></a>
 
