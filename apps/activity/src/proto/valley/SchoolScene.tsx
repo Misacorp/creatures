@@ -108,7 +108,7 @@ export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: Pl
                     <button
                       type="button"
                       class="sc-pupil"
-                      aria-label={`${title}, ${stateWord(state)}, ${String(tickedCount(trial))} of ${String(BRONZE_BOXES.length)} boxes ticked`}
+                      aria-label={`${title}, ${stateWord(state)}, ${String(tickedCount(trial))} / ${String(BRONZE_BOXES.length)} boxes ticked`}
                       onClick={() => {
                         setOpen(creature.id);
                       }}
