@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { content } from '@creatures/game';
 import { BUNDLED_BOSS_SPRITES, BUNDLED_CREATURE_SPRITES } from './creature-sprites';
 import { BUNDLED_GLYPHS } from '../glyphs';
-import { CONCEPT_SETS } from './concepts';
+import { CONCEPT_SETS } from './concepts/sets';
 import { BUNDLED_ELEMENT_ICONS } from './element-icons';
 import { contrast, hsl, inFamily, ELEMENT_FAMILIES, lintSprite, KIND_SIZE } from './sprite-lint';
 import type { SpriteDef } from './sprite-data';
@@ -84,6 +84,20 @@ describe('lintSprite', () => {
     expect(lintSprite(foe, { kind: 'creature' }).map((f) => f.rule)).toContain('face');
   });
 
+  it('lets free art without a "k" key skip the outline (a sky), but not a creature', () => {
+    const sky: SpriteDef = { palette: { a: '#15122f', b: '#201b47' }, rows: ['aaaa', 'bbbb'] };
+    expect(lintSprite(sky, { kind: 'free' }).map((f) => f.rule)).not.toContain('ink');
+    const wrongInk: SpriteDef = { palette: { k: '#ff0000' }, rows: ['kkkk', 'kkkk'] };
+    expect(lintSprite(wrongInk, { kind: 'free' }).map((f) => f.rule)).toContain('ink');
+    const base = face('#c9c3e6');
+    const noInk: SpriteDef = {
+      ...base,
+      palette: { o: '#0d0a1a', e: '#fbf8ec', q: '#ff8fab', b: '#c9c3e6' },
+      rows: base.rows.map((r) => r.replace(/k/g, 'o')),
+    };
+    expect(lintSprite(noInk, { kind: 'creature' }).map((f) => f.rule)).toContain('ink');
+  });
+
   it('stops at a grid that does not parse', () => {
     const bad: SpriteDef = { palette: { k: '#0d0a1a' }, rows: ['kk', 'k'] };
     expect(lintSprite(bad, { kind: 'free' }).map((f) => f.rule)).toEqual(['grid']);
@@ -99,6 +113,15 @@ describe('lintSprite', () => {
 });
 
 describe('concept art', () => {
+  it('finds every set file of the folder, each set with its own id', () => {
+    const files = Object.keys(
+      import.meta.glob(['./concepts/*.ts', '!./concepts/index.ts', '!./concepts/sets.ts']),
+    );
+    expect(CONCEPT_SETS.length).toBeGreaterThanOrEqual(files.length);
+    const ids = CONCEPT_SETS.map((set) => set.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it('parses at its kind size, so the studio can always draw it', () => {
     for (const set of CONCEPT_SETS) {
       expect(Object.keys(set.sprites).length, `${set.id} has no sprites`).toBeGreaterThan(0);

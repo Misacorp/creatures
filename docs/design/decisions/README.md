@@ -23,6 +23,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [direction.md](direction.md): Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work.
 
+- 2026-11-03 Sprites up to 128 wide; free backdrop art may have no outline
 - 2026-11-01 \[Misa\] Retro 2026-11-01: group behaviours before naming, a name-blind parity digest, and agent workflow fixes
 - 2026-10-31 \[Misa\] Valley places: glow on the ground, day and night; posters for each place's own screen
 - 2026-10-31 \[Misa\] The lead agent owns art direction; the valley moves toward the expedition map's art (amended)
@@ -341,6 +342,7 @@ Superseded: 1 entry (see the topic file).
 
 [gear.md](gear.md): Gear items, lines and sets, crafting, dismantling, conversions, the bag and the item picker.
 
+- 2026-11-03 \[Misa\] Element shards differ by shape (Tide drop, Ember flame, Grove leaf, Spark bolt, Mire drip)
 - 2026-10-31 Gear in combat v2: talents lead early, a balance mid-game, gear leads the endgame; no slot level requirements; gear alone can build crit \[Misa\]
 - 2026-10-31 \[Misa\] Items with no element get an oat-beige coat instead of grey
 - 2026-10-31 \[Misa\] Element versions of a shared item get a small element flair

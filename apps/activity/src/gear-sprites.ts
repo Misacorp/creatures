@@ -314,47 +314,71 @@ const scrap: SpriteDef = {
   ],
 };
 
-/** A tall diamond crystal. */
+/** A water drop: a pointed top and a round bottom. */
 const tideShard: SpriteDef = {
   mirror: true,
   palette: { k: INK, b: '#4f8fe6', h: '#a6d0ff', w: '#e6f6ff' },
-  rows: ['...k', '..kb', '.kbh', 'kbwh', 'kbbh', '.kbb', '..kb', '...k'],
+  rows: ['...k', '..kb', '..kb', '.kbh', 'kbhw', 'kbbh', '.kbb', '..kk'],
 };
 
-/** A crystal with two peaks. */
+/** A tall flame: a main tongue with a smaller one at its side. */
 const emberShard: SpriteDef = {
-  mirror: true,
   palette: { k: INK, b: '#ef6a3a', h: '#ffc08a', y: '#ffe680' },
-  rows: ['.k.k', '.kbk', 'kbhb', 'kbhh', 'kbyh', '.kbb', '..kb', '...k'],
-};
-
-/** A wide, flat-topped crystal. */
-const groveShard: SpriteDef = {
-  mirror: true,
-  palette: { k: INK, b: '#5cbf5a', h: '#b8f08a', m: '#2f7a3a' },
-  rows: ['....', 'kkkk', 'kbhh', 'kbhh', 'kbbh', 'kmbb', '.kmb', '..kk'],
-};
-
-/** A crystal bent like a bolt. */
-const sparkShard: SpriteDef = {
-  palette: { k: INK, b: '#f2d43d', h: '#fff6b0' },
   rows: [
-    '....kkk.',
-    '...kbhk.',
-    '..kbhk..',
-    '.kbhhbk.',
-    '.kkkbhk.',
-    '...kbk..',
-    '..kbk...',
-    '..kk....',
+    '...k....',
+    '..kbk.k.',
+    '..kbbkbk',
+    '.kbhbbbk',
+    '.kbhybbk',
+    '.kbhyybk',
+    '..kbbbk.',
+    '...kkk..',
   ],
 };
 
-/** A rounded, lumpy crystal with an oily sheen. */
+/** A tilted leaf with a vein and a stem at its foot. */
+const groveShard: SpriteDef = {
+  palette: { k: INK, b: '#5cbf5a', h: '#b8f08a', m: '#2f7a3a' },
+  rows: [
+    '.....kkk',
+    '...kkbhk',
+    '..kbhhbk',
+    '.kbhmbbk',
+    '.kbmbbk.',
+    'kbmbbk..',
+    'kkbbk...',
+    'k.kk....',
+  ],
+};
+
+/** A fat bolt: a broad head stepping down to a thin tail. */
+const sparkShard: SpriteDef = {
+  palette: { k: INK, b: '#f2d43d', h: '#fff6b0' },
+  rows: [
+    '....kkkk',
+    '...kbhhk',
+    '..kbhbk.',
+    '.kbhbkkk',
+    '.kkkhbbk',
+    '...kbhk.',
+    '..kbbk..',
+    '..kkk...',
+  ],
+};
+
+/** A slumped oily blob with two drips, one longer. */
 const mireShard: SpriteDef = {
-  mirror: true,
   palette: { k: INK, b: '#b8864a', h: '#e8c068', m: '#6b4a2a' },
-  rows: ['.kkk', 'kbhh', 'kbhb', 'kbbb', 'kmbb', 'kmmb', '.kmm', '..kk'],
+  rows: [
+    '........',
+    '.kkkk...',
+    'kbhhbkk.',
+    'kbhbbbbk',
+    'kbbbbmbk',
+    '.kbbkbbk',
+    '.kbk.kbk',
+    '..k...k.',
+  ],
 };
 
 /** A rare twinkle: a bright gem with points of light around it. */
