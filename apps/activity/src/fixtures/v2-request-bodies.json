@@ -1,0 +1,27 @@
+{
+  "v2-dungeon-start": {
+    "path": "/api/dungeon/start",
+    "method": "POST",
+    "body": {
+      "team": [
+        "00000000-0000-4000-8700-000000000016",
+        "00000000-0000-4000-8700-000000000017",
+        "00000000-0000-4000-8700-000000000018"
+      ],
+      "idempotencyKey": "dungeon-00000001-test"
+    }
+  },
+  "v2-dungeon-act-fight": {
+    "path": "/api/dungeon/act",
+    "method": "POST",
+    "body": {
+      "runId": "00000000-0000-4000-8700-000000000015",
+      "step": 0,
+      "idempotencyKey": "fixture-v2-act-00000000-0000-4000-8700-000000000015",
+      "act": {
+        "type": "move",
+        "node": "f0l0"
+      }
+    }
+  }
+}

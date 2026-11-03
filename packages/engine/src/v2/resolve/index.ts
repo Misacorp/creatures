@@ -7,7 +7,9 @@ export {
   SUPPORT_SHAPE_FAMILY,
   createResolver,
   goldenFx,
-  type FighterPack, type Resolver } from './fighters';
+  type FighterPack,
+  type Resolver,
+} from './fighters';
 export { formStats, type FormStats } from './forms';
 export {
   FOE_COLS,

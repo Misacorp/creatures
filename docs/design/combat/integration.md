@@ -142,9 +142,7 @@ Found while building; each is staging-only today.
 - **Discord posts** (the Monday reveal, the stage posts) are not queued for v2 weeks: they describe the shipped boss's moves.
 - **The practice finale** is refused on v2 weeks.
 - **Knack text** runs to three lines at 390 px on a few Knacks (Leave a Trail), over the two-line rule ("On the board", Text): shorten the content, never clip it.
-- **A captured fixture of the v2 creature payload** (the client's parser is tested against samples in the server's shape).
 - **The dungeon's map** no longer shows a room modifier's foe gimmick on a v2 run (done 2026-11-03, slice 5d); the foe's rule cards and their icons are still not shown on the map or in its drawer.
-- **No captured fixture of the v2 replay, live and stats payloads** (`pnpm fixtures:capture`): a worker test plays a whole weekend and the client's parsers were run on its payloads by hand once; a scenario for the capture would keep them in step.
 - **Keywords are tap-for-help** on the How to play page, in the Talent Book and in a read-only Knack (2026-11-03, decision `2026-11-03-combat-v2-how-to-play-six`). Inside a button they are still plain chips: the Knack picker's choices and the slot that opens it. Making them tappable there means giving `ChoiceButton` rows their own help (it is shared with the dungeon).
 - **v1 help entries in v2 mode:** v1 glossary chips still open v1 text (`crit`, `boss-rank`, the roles with their numbers, "uses up the mark"). Swap them for v2 wording or stop v1 chips linking there when the flag is on.
 - **Determination** has no keyword or glossary entry yet, and its chip on the board needs one (and Misa's look at its icon).

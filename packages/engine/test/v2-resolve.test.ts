@@ -263,7 +263,11 @@ describe('createResolver', () => {
       },
       SHIPPED,
     );
-    const plain = gr.resolve({ ...at, formId: 'wisp', talents: ['sturdy', 'fleet', 'brace', 'deep'] });
+    const plain = gr.resolve({
+      ...at,
+      formId: 'wisp',
+      talents: ['sturdy', 'fleet', 'brace', 'deep'],
+    });
     const gold = gr.resolve({
       ...at,
       formId: 'wisp',

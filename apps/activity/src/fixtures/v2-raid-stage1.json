@@ -1,0 +1,754 @@
+{
+  "rules": 2,
+  "weekId": "2027-W02",
+  "status": "phase1",
+  "timezone": "Europe/Helsinki",
+  "boss": {
+    "id": "tidal-colossus",
+    "name": "Tidal Colossus",
+    "element": "tide",
+    "turnOrder": "",
+    "gimmicks": [],
+    "finaleRounds": 8,
+    "retreat": null
+  },
+  "rank": 6,
+  "effectiveRank": 6,
+  "festival": false,
+  "festivalCreature": null,
+  "season": {
+    "index": 595,
+    "week": 1
+  },
+  "bestRank": 5,
+  "schedule": {
+    "weekStart": 1799667420000,
+    "phase1": 1800099420000,
+    "phase2": 1800185820000,
+    "finale": 1800208800000
+  },
+  "next": {
+    "event": "phase2",
+    "at": 1800185820000
+  },
+  "serverNow": 1800099450000,
+  "roster": [
+    {
+      "displayName": "Player 1",
+      "you": true,
+      "party": 1
+    },
+    {
+      "displayName": "Player 2",
+      "you": false,
+      "party": 1
+    },
+    {
+      "displayName": "Player 3",
+      "you": false,
+      "party": 1
+    },
+    {
+      "displayName": "Player 4",
+      "you": false,
+      "party": 1
+    }
+  ],
+  "parties": [
+    {
+      "party": 1,
+      "size": 4
+    }
+  ],
+  "you": {
+    "inRoster": true,
+    "party": 1,
+    "canEdit": true,
+    "ability": {
+      "abilityId": "rally",
+      "chosen": false
+    },
+    "abilities": [
+      {
+        "abilityId": "rally",
+        "creatureId": null,
+        "species": null,
+        "unlocked": true,
+        "unlockLevel": 1,
+        "autoFire": true
+      }
+    ],
+    "reveal": null,
+    "team": {
+      "creatures": [
+        {
+          "creatureId": "00000000-0000-4000-8700-000000000001",
+          "species": "voltaro",
+          "name": "Voltaro",
+          "level": 22,
+          "slot": 0
+        },
+        {
+          "creatureId": "00000000-0000-4000-8700-000000000002",
+          "species": "fogwyrm",
+          "name": "Fogwyrm",
+          "level": 22,
+          "slot": 1
+        },
+        {
+          "creatureId": "00000000-0000-4000-8700-000000000003",
+          "species": "magmole",
+          "name": "Magmole",
+          "level": 22,
+          "slot": 2
+        }
+      ]
+    }
+  },
+  "party": {
+    "party": 1,
+    "rowLength": 12,
+    "row": [
+      {
+        "slot": 0,
+        "zone": "front",
+        "creature": {
+          "ownerName": "Player 1",
+          "species": "voltaro",
+          "name": "Voltaro",
+          "level": 22,
+          "mine": true,
+          "creatureId": "00000000-0000-4000-8700-000000000001"
+        }
+      },
+      {
+        "slot": 1,
+        "zone": "middle",
+        "creature": {
+          "ownerName": "Player 1",
+          "species": "fogwyrm",
+          "name": "Fogwyrm",
+          "level": 22,
+          "mine": true,
+          "creatureId": "00000000-0000-4000-8700-000000000002"
+        }
+      },
+      {
+        "slot": 2,
+        "zone": "back",
+        "creature": {
+          "ownerName": "Player 1",
+          "species": "magmole",
+          "name": "Magmole",
+          "level": 22,
+          "mine": true,
+          "creatureId": "00000000-0000-4000-8700-000000000003"
+        }
+      },
+      {
+        "slot": 3,
+        "zone": "front",
+        "creature": {
+          "ownerName": "Player 2",
+          "species": "tempestray",
+          "name": "Tempestray",
+          "level": 22,
+          "mine": false
+        }
+      },
+      {
+        "slot": 4,
+        "zone": "middle",
+        "creature": {
+          "ownerName": "Player 2",
+          "species": "ancientshell",
+          "name": "Ancientshell",
+          "level": 22,
+          "mine": false
+        }
+      },
+      {
+        "slot": 5,
+        "zone": "back",
+        "creature": {
+          "ownerName": "Player 2",
+          "species": "sunfawn",
+          "name": "Sunfawn",
+          "level": 22,
+          "mine": false
+        }
+      },
+      {
+        "slot": 6,
+        "zone": "front",
+        "creature": {
+          "ownerName": "Player 3",
+          "species": "ohmouse",
+          "name": "Ohmouse",
+          "level": 22,
+          "mine": false
+        }
+      },
+      {
+        "slot": 7,
+        "zone": "middle",
+        "creature": null
+      },
+      {
+        "slot": 8,
+        "zone": "back",
+        "creature": null
+      },
+      {
+        "slot": 9,
+        "zone": "front",
+        "creature": {
+          "ownerName": "Player 4",
+          "species": "drizzlewt",
+          "name": "Drizzlewt",
+          "level": 22,
+          "mine": false
+        }
+      },
+      {
+        "slot": 10,
+        "zone": "middle",
+        "creature": {
+          "ownerName": "Player 4",
+          "species": "kilnmole",
+          "name": "Kilnmole",
+          "level": 22,
+          "mine": false
+        }
+      },
+      {
+        "slot": 11,
+        "zone": "back",
+        "creature": {
+          "ownerName": "Player 4",
+          "species": "halcyray",
+          "name": "Halcyray",
+          "level": 22,
+          "mine": false
+        }
+      }
+    ],
+    "guests": false,
+    "bossHp": {
+      "max": 19300,
+      "current": 9869
+    },
+    "adaptation": null,
+    "results": [
+      {
+        "phase": "stage1",
+        "at": 1800099450000,
+        "cleared": true,
+        "retreated": false,
+        "enraged": false,
+        "rounds": 8,
+        "bossHpMax": 19300,
+        "bossHpStart": 19300,
+        "bossHpEnd": 9869,
+        "damage": 9431,
+        "reactions": 5,
+        "top": [
+          {
+            "displayName": "Player 2",
+            "damage": 3973,
+            "contribution": 3973,
+            "you": false
+          },
+          {
+            "displayName": "Player 3",
+            "damage": 2097,
+            "contribution": 2097,
+            "you": false
+          },
+          {
+            "displayName": "Player 1",
+            "damage": 1817,
+            "contribution": 1817,
+            "you": true
+          }
+        ],
+        "essence": 17,
+        "rankChange": null,
+        "festivalGrant": null
+      }
+    ],
+    "readiness": null
+  },
+  "v2": {
+    "slot": 6,
+    "bestShareBp": 2500,
+    "failedWeekends": 2,
+    "determinationBp": 1000,
+    "stagesPlayed": 1,
+    "nextStage": 2,
+    "joiningOpen": false,
+    "rows": 3,
+    "cols": 4,
+    "seats": 3,
+    "spare": false,
+    "players": 4,
+    "boss": {
+      "id": "tidal-colossus",
+      "name": "Tidal Colossus",
+      "element": "tide",
+      "hp": 19300,
+      "atk": 88,
+      "armour": 37,
+      "spd": 30,
+      "rounds": 8,
+      "rows": 3,
+      "cols": 4,
+      "plain": {
+        "pattern": {
+          "anchor": "front",
+          "shape": "row"
+        },
+        "powerBp": 2500
+      },
+      "moves": [
+        {
+          "id": "undertow",
+          "name": "Undertow",
+          "pattern": {
+            "anchor": "front",
+            "shape": "row"
+          },
+          "powerBp": 9000,
+          "every": 3,
+          "turn": 0
+        },
+        {
+          "id": "spray",
+          "name": "Spray",
+          "pattern": {
+            "anchor": "random",
+            "shape": "scatter",
+            "n": 4,
+            "perColumns": 4
+          },
+          "powerBp": 5000,
+          "every": 2,
+          "turn": 0
+        },
+        {
+          "id": "deepwater-spear",
+          "name": "Deepwater Spear",
+          "pattern": {
+            "anchor": "strongest",
+            "shape": "columns",
+            "n": 2,
+            "perColumns": 4
+          },
+          "powerBp": 12000,
+          "every": 3,
+          "turn": 1
+        },
+        {
+          "id": "riptide",
+          "name": "Riptide",
+          "pattern": {
+            "anchor": "random",
+            "shape": "columns",
+            "n": 1,
+            "perColumns": 4
+          },
+          "powerBp": 10800,
+          "every": 4,
+          "turn": 1,
+          "charged": true
+        },
+        {
+          "id": "rogue-wave",
+          "name": "Rogue Wave",
+          "pattern": {
+            "anchor": "payoff",
+            "shape": "row"
+          },
+          "powerBp": 12300,
+          "every": 6,
+          "turn": 1,
+          "charged": true
+        },
+        {
+          "id": "great-wave",
+          "name": "Great Wave",
+          "pattern": {
+            "anchor": "random",
+            "shape": "randomRow"
+          },
+          "powerBp": 13900,
+          "every": 3,
+          "turn": 2,
+          "charged": true
+        },
+        {
+          "id": "backflow",
+          "name": "Backflow",
+          "pattern": {
+            "anchor": "back",
+            "shape": "rows",
+            "n": 2
+          },
+          "powerBp": 8000,
+          "every": 7,
+          "turn": 0
+        }
+      ],
+      "cards": ["adapts", "shake-it-off", "slippery", "breakwater"],
+      "mods": {
+        "adapts": true,
+        "shakeEvery": 3,
+        "wardBp": 24400
+      },
+      "strengthBp": 7200,
+      "escalation": {
+        "name": "Rising Tide",
+        "feed": "hpLost",
+        "per": 2000,
+        "cap": 3,
+        "grow": {
+          "atkBp": 1300,
+          "area": 1
+        },
+        "strengthBp": 7200
+      },
+      "dodgeBp": 1800
+    },
+    "moveNames": {
+      "undertow": "Undertow",
+      "spray": "Spray",
+      "deepwater-spear": "Deepwater Spear",
+      "riptide": "Riptide",
+      "rogue-wave": "Rogue Wave",
+      "great-wave": "Great Wave",
+      "backflow": "Backflow"
+    },
+    "card": {
+      "armour": 37,
+      "cards": [
+        {
+          "id": "adapts",
+          "name": "Reaction Resistance",
+          "asks": "Raid only: from stage 2 it resists your most-used reaction."
+        },
+        {
+          "id": "shake-it-off",
+          "name": "Shake It Off",
+          "asks": "Every 3 rounds the boss clears all its debuffs; can you put them back?"
+        },
+        {
+          "id": "slippery",
+          "name": "Slippery",
+          "asks": "The boss slips away from a quarter of all hits, whatever debuffs it has; can you make hits land?"
+        },
+        {
+          "id": "breakwater",
+          "name": "Breakwater",
+          "asks": "Row Wards are up to 3 times as strong against its Area hits"
+        }
+      ],
+      "strengthBp": 7200,
+      "escalation": {
+        "name": "Rising Tide",
+        "cap": 3,
+        "step": 2
+      },
+      "plain": {
+        "label": "Front Sweep",
+        "shape": "row",
+        "hits": 1
+      },
+      "moves": [
+        {
+          "id": "undertow",
+          "name": "Undertow",
+          "label": "Front Sweep",
+          "shape": "row",
+          "silences": false,
+          "oneShot": false,
+          "every": 3,
+          "turn": 0,
+          "windUp": false,
+          "later": false
+        },
+        {
+          "id": "spray",
+          "name": "Spray",
+          "label": "Barrage",
+          "shape": "scatter",
+          "silences": false,
+          "oneShot": false,
+          "every": 2,
+          "turn": 0,
+          "windUp": false,
+          "later": false
+        },
+        {
+          "id": "deepwater-spear",
+          "name": "Deepwater Spear",
+          "label": "Nemesis Lance",
+          "shape": "columns",
+          "silences": false,
+          "oneShot": false,
+          "every": 3,
+          "turn": 1,
+          "windUp": false,
+          "later": false
+        },
+        {
+          "id": "riptide",
+          "name": "Riptide",
+          "label": "Wild Lance",
+          "shape": "columns",
+          "silences": false,
+          "oneShot": false,
+          "every": 4,
+          "turn": 1,
+          "windUp": true,
+          "later": false
+        },
+        {
+          "id": "rogue-wave",
+          "name": "Rogue Wave",
+          "label": "Payoff Sweep",
+          "shape": "row",
+          "silences": false,
+          "oneShot": false,
+          "every": 6,
+          "turn": 1,
+          "windUp": true,
+          "later": false
+        },
+        {
+          "id": "great-wave",
+          "name": "Great Wave",
+          "label": "Wild Sweep",
+          "shape": "randomRow",
+          "silences": false,
+          "oneShot": false,
+          "every": 3,
+          "turn": 2,
+          "windUp": true,
+          "later": false
+        },
+        {
+          "id": "backflow",
+          "name": "Backflow",
+          "label": "Rear Sweep",
+          "shape": "rows",
+          "silences": false,
+          "oneShot": false,
+          "every": 7,
+          "turn": 0,
+          "windUp": false,
+          "later": false
+        }
+      ]
+    },
+    "track": {
+      "order": [
+        {
+          "id": "tidal-colossus",
+          "name": "Tidal Colossus"
+        },
+        {
+          "id": "cinder-wyrm",
+          "name": "Cinder Wyrm"
+        },
+        {
+          "id": "storm-sovereign",
+          "name": "Storm Sovereign"
+        },
+        {
+          "id": "old-bogback",
+          "name": "Old Bogback"
+        },
+        {
+          "id": "thornmother",
+          "name": "Thornmother"
+        }
+      ],
+      "index": 0
+    },
+    "preview": {
+      "plain": 10,
+      "moves": {
+        "undertow": [0, 3, 6, 9],
+        "spray": null,
+        "deepwater-spear": [3, 4, 5, 6, 9, 10, 11],
+        "riptide": null,
+        "rogue-wave": null,
+        "great-wave": null,
+        "backflow": [0, 1, 2, 3, 4, 5, 6, 9, 10, 11]
+      }
+    },
+    "carry": {
+      "stage": 1,
+      "bossHp": 9869,
+      "shadowHp": 9869,
+      "hp": {
+        "00000000-0000-4000-8700-000000000001": 92,
+        "00000000-0000-4000-8700-000000000002": 453,
+        "00000000-0000-4000-8700-000000000003": 302,
+        "00000000-0000-4000-8700-000000000006": 420,
+        "00000000-0000-4000-8700-000000000007": 596,
+        "00000000-0000-4000-8700-000000000008": 42,
+        "00000000-0000-4000-8700-000000000009": 229,
+        "00000000-0000-4000-8700-000000000012": 341,
+        "00000000-0000-4000-8700-000000000013": 517,
+        "00000000-0000-4000-8700-000000000014": 201
+      },
+      "out": ["00000000-0000-4000-8700-000000000010", "00000000-0000-4000-8700-000000000011"],
+      "windDone": [],
+      "holdDone": [],
+      "escalation": {
+        "step": 2,
+        "fallStep": 2,
+        "phase": false,
+        "phaseNext": false,
+        "count": 4886
+      },
+      "used": {
+        "ember": 3,
+        "tide": 2
+      },
+      "dealt": {
+        "spark": 5303,
+        "tide": 1813,
+        "ember": 950,
+        "grove": 1365
+      }
+    },
+    "out": [
+      {
+        "creatureId": "00000000-0000-4000-8700-000000000010",
+        "species": "geyserpup",
+        "name": "Geyserpup",
+        "owner": "Player 3",
+        "mine": false
+      },
+      {
+        "creatureId": "00000000-0000-4000-8700-000000000011",
+        "species": "wickat",
+        "name": "Wickat",
+        "owner": "Player 3",
+        "mine": false
+      }
+    ],
+    "creatures": [
+      {
+        "creatureId": "00000000-0000-4000-8700-000000000001",
+        "slot": 0,
+        "row": 0,
+        "col": 0,
+        "hp": 92,
+        "hpMax": 388,
+        "knack": "zoom",
+        "knackName": "Zoom"
+      },
+      {
+        "creatureId": "00000000-0000-4000-8700-000000000002",
+        "slot": 1,
+        "row": 1,
+        "col": 0,
+        "hp": 453,
+        "hpMax": 539,
+        "knack": "wide-reach",
+        "knackName": "Wide Reach"
+      },
+      {
+        "creatureId": "00000000-0000-4000-8700-000000000003",
+        "slot": 2,
+        "row": 2,
+        "col": 0,
+        "hp": 302,
+        "hpMax": 431,
+        "knack": "wide-warmth",
+        "knackName": "Wide Embrace"
+      },
+      {
+        "creatureId": "00000000-0000-4000-8700-000000000006",
+        "slot": 3,
+        "row": 0,
+        "col": 1,
+        "hp": 420,
+        "hpMax": 420,
+        "knack": "detonate",
+        "knackName": "Detonate"
+      },
+      {
+        "creatureId": "00000000-0000-4000-8700-000000000007",
+        "slot": 4,
+        "row": 1,
+        "col": 1,
+        "hp": 596,
+        "hpMax": 597,
+        "knack": "steady-mark",
+        "knackName": "Brand"
+      },
+      {
+        "creatureId": "00000000-0000-4000-8700-000000000008",
+        "slot": 5,
+        "row": 2,
+        "col": 1,
+        "hp": 42,
+        "hpMax": 431,
+        "knack": "sunbeam",
+        "knackName": "Sunbeam"
+      },
+      {
+        "creatureId": "00000000-0000-4000-8700-000000000009",
+        "slot": 6,
+        "row": 0,
+        "col": 2,
+        "hp": 229,
+        "hpMax": 539,
+        "knack": "catch-the-bolts",
+        "knackName": "Take It All"
+      },
+      {
+        "creatureId": "00000000-0000-4000-8700-000000000012",
+        "slot": 9,
+        "row": 0,
+        "col": 3,
+        "hp": 341,
+        "hpMax": 456,
+        "knack": "drizzle",
+        "knackName": "Drizzle"
+      },
+      {
+        "creatureId": "00000000-0000-4000-8700-000000000013",
+        "slot": 10,
+        "row": 1,
+        "col": 3,
+        "hp": 517,
+        "hpMax": 657,
+        "knack": "draw-fire",
+        "knackName": "Draw Fire"
+      },
+      {
+        "creatureId": "00000000-0000-4000-8700-000000000014",
+        "slot": 11,
+        "row": 2,
+        "col": 3,
+        "hp": 201,
+        "hpMax": 539,
+        "knack": "clear-skies",
+        "knackName": "Clear Skies"
+      }
+    ],
+    "swaps": {
+      "incoming": [],
+      "outgoing": []
+    }
+  },
+  "channel": {
+    "pinned": false,
+    "canManage": null
+  }
+}
