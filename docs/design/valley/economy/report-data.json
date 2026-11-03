@@ -35489,6 +35489,14 @@
   "seeds": 10,
   "deadWith": 0,
   "deadWithout": 1,
+  "pilingWith": {
+   "players": 14,
+   "of": 20
+  },
+  "pilingWithout": {
+   "players": 17,
+   "of": 20
+  },
   "deadNamesWith": [],
   "deadNamesWithout": [
    "scrap from week 14"

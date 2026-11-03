@@ -566,6 +566,7 @@ The switch (`rules.idol.on`) is **on** by default. This section runs the mixed s
 |  | With the idol | Without |
 | --- | --- | --- |
 | T-7b: resources of a daily player dead at some point of the 24 weeks | 0 | 1 (scrap from week 14) |
+| Daily players whose own scrap is dead at some point (the per-player view; T-7b judges the median daily player, so a few piling players do not fail it) | 14 of 20 | 17 of 20 |
 | A daily player's scrap pile at week 24, in weeks of its spending (the measure's own basis, the idol's offers counted as spending) | 1.6 | 7.4 |
 | Scrap stock of a daily player, end of week 12 (median) | 3358 | 3703 |
 | Scrap stock of a daily player, end of week 24 (median) | 4505 | 12569 |

@@ -97,8 +97,10 @@ describe('the rules', () => {
 
 describe('the whole run', () => {
   const config = ALL_SERVERS.find((s) => s.id === 'mixed8')!;
-  const on = runScenario({ ...config, idol: true }, 3);
-  const off = runScenario({ ...config, idol: false }, 3);
+  // T-7b's measure is the median daily player over the seeds, so it needs enough seeds to be a median: at 3 seeds (6 daily players) one
+  // pile decides it (it flagged scrap at week 13 with the idol on). 10 seeds are the idol variant's own number in the report.
+  const on = runScenario({ ...config, idol: true }, 10);
+  const off = runScenario({ ...config, idol: false }, 10);
 
   it('has no offerings with the idol off, and keeps a daily player clear of the dead pile with it on', () => {
     const offered = (r: typeof on): number =>

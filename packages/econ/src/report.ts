@@ -1289,6 +1289,11 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
             deadText(idl.deadWithout, idl.deadNamesWithout),
           ],
           [
+            'Daily players whose own scrap is dead at some point (the per-player view; T-7b judges the median daily player, so a few piling players do not fail it)',
+            `${idl.pilingWith.players} of ${idl.pilingWith.of}`,
+            `${idl.pilingWithout.players} of ${idl.pilingWithout.of}`,
+          ],
+          [
             "A daily player's scrap pile at week 24, in weeks of its spending (the measure's own basis, the idol's offers counted as spending)",
             num(idl.pileWeeks.with, 1),
             num(idl.pileWeeks.without, 1),

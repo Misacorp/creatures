@@ -48,6 +48,9 @@ export interface IdolData {
   deadWithout: number | null;
   deadNamesWith: string[];
   deadNamesWithout: string[];
+  /** The per-player view (T-7b judges the median daily player, not each one): daily players whose own scrap is dead at some point, of all daily players, with / without. */
+  pilingWith: { players: number; of: number };
+  pilingWithout: { players: number; of: number };
   /** A daily player's scrap in weeks 13 to 24, a week: every source and sink with and without. */
   late: { in: IdolRowPair[]; out: IdolRowPair[] };
   /** A daily player's scrap stock at the end of these weeks (median), with / without. */
@@ -105,6 +108,12 @@ export function idolOf(results: Results, rules: Rules = RULES): IdolData | null 
   const dailyWithout = playersOf(withoutSide, 'daily');
   const measuresWith = measuresOf(resWith);
   const measuresWithout = measuresOf(resWithout);
+  const piling = (players: PlayerRun[]): { players: number; of: number } => ({
+    players: players.filter((p) =>
+      ledgerOf([p]).some((l) => l.resource === 'scrap' && l.dead !== null),
+    ).length,
+    of: players.length,
+  });
   const deadNames = (players: PlayerRun[]): string[] =>
     ledgerOf(players)
       .filter((l) => l.dead !== null)
@@ -172,6 +181,8 @@ export function idolOf(results: Results, rules: Rules = RULES): IdolData | null 
     seeds,
     deadWith: measuresWith.deadBefore24 ?? null,
     deadWithout: measuresWithout.deadBefore24 ?? null,
+    pilingWith: piling(dailyWith),
+    pilingWithout: piling(dailyWithout),
     deadNamesWith: deadNames(dailyWith),
     deadNamesWithout: deadNames(dailyWithout),
     late: { in: pair('in'), out: pair('out') },
