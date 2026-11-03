@@ -442,21 +442,11 @@
   gap: 0.125rem;
 }
 
-.float-reaction.rx-unit .rx-num {
-  font-size: 1.5rem;
-}
-
 /* burst: the number on top (where the hit's own number would stand), the name and its bonus bursting out under it. */
 .float-reaction.rx-burst .rx-line {
   flex-direction: column;
   align-items: center;
   gap: 0.125rem;
-}
-
-.float-reaction.rx-burst .rx-num,
-.float-reaction.rx-burst .rx-name,
-.float-reaction.rx-morph .rx-num {
-  font-size: 1.5rem;
 }
 
 @media (prefers-reduced-motion: no-preference) {
