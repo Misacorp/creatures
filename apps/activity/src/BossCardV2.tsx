@@ -38,6 +38,31 @@ export function stageTicks(): number[] {
     .map((phase) => (10_000 - phase.clearAtLossBp) / 10_000);
 }
 
+/** The boss's armour as a shield with its number (the boss card's head and the fight stage's boss line). */
+export function ArmourChip({ armour }: { armour: number }) {
+  return (
+    <span class="boss-armour" role="img" aria-label={`Armour ${String(armour)}`}>
+      <Sprite sprite={combatGlyph('armour') ?? glyphOrUnknown('shield')} scale={2} />
+      <span class="boss-armour-num">{armour}</span>
+    </span>
+  );
+}
+
+/** The Escalating meter: the boss's escalation by name with a pip for each step it has (the card's and the stage's). */
+export function EscalatingMeter({ name, cap, step }: { name: string; cap: number; step: number }) {
+  return (
+    <span
+      class="escalating"
+      role="img"
+      aria-label={`Escalating: ${name}, step ${String(step)} / ${String(cap)}`}
+    >
+      <Sprite sprite={combatGlyph('escalating') ?? glyphOrUnknown('unknown')} scale={2} />
+      <span class="escalating-name">{name}</span>
+      <PipRow count={cap} lit={step} />
+    </span>
+  );
+}
+
 /**
  * The steps of one round for the turn strip: row 1, boss, row 2, boss, row 3, boss (the boss takes a turn after every row of its
  * arena). A boss step carries the pictures of the moves that land on it, each with how often it is due. Nothing here is playing yet,
@@ -111,10 +136,7 @@ export function BossCardV2({
               </Tag>
             )}
             <ElementChip element={boss.element} context="boss" />
-            <span class="boss-armour" role="img" aria-label={`Armour ${String(card.armour)}`}>
-              <Sprite sprite={combatGlyph('armour') ?? glyphOrUnknown('shield')} scale={2} />
-              <span class="boss-armour-num">{card.armour}</span>
-            </span>
+            <ArmourChip armour={card.armour} />
             {v2.bestShareBp > 0 && <Tag kind="badge">Back again</Tag>}
           </>
         }
@@ -161,17 +183,7 @@ export function BossCardV2({
               <PipRow count={CARD_PIPS} lit={strengthPips(card.strengthBp)} />
             </button>
           ))}
-          {card.escalation !== null && (
-            <span
-              class="escalating"
-              role="img"
-              aria-label={`Escalating: ${card.escalation.name}, step ${String(card.escalation.step)} / ${String(card.escalation.cap)}`}
-            >
-              <Sprite sprite={combatGlyph('escalating') ?? glyphOrUnknown('unknown')} scale={2} />
-              <span class="escalating-name">{card.escalation.name}</span>
-              <PipRow count={card.escalation.cap} lit={card.escalation.step} />
-            </span>
-          )}
+          {card.escalation !== null && <EscalatingMeter {...card.escalation} />}
         </div>
       )}
       <p class="boss-plain">

@@ -1,7 +1,9 @@
 import { describeEvent } from '@creatures/engine';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { errorText } from './game';
-import { fetchReplay, type RaidPhaseId, type ReplayView } from './raid-api';
+import { fetchReplayEither, stagePhaseOf } from './fight-v2-api';
+import type { RaidPhaseId, ReplayView } from './raid-api';
+import { ReplayV2 } from './ReplayV2';
 import { phaseLine, phaseName, retreatLine, stageOutcomeNote, stageOutcomeText } from './raid-text';
 import { raidMaxRounds } from './stage-rounds';
 import { keyMoments, mineInRow, personalRecap, type Speed } from './replay';
@@ -16,12 +18,15 @@ export function Replay({
   weekId,
   party,
   phase,
+  rules,
   onClose,
   showControls = false,
 }: {
   weekId: string;
   party: number;
   phase: RaidPhaseId;
+  /** Combat v2: the week plays by the v2 rules, so `phase1` and `phase2` are its stages 1 and 2 (the finale is the finale). */
+  rules?: 2 | undefined;
   onClose: () => void;
   /**
    * Show Play or Pause, 2x and Skip above the stage. Off by default (Misa, 2026-10-14: the replay
@@ -30,8 +35,13 @@ export function Replay({
    */
   showControls?: boolean;
 }) {
-  const loaded = useLoaded(() => fetchReplay(weekId, party, phase), [weekId, party, phase]);
-  const data = loaded.value;
+  // The server answers in the shape the stage was played under, so a week of either rules is read here.
+  const loaded = useLoaded(
+    () => fetchReplayEither(weekId, party, rules === 2 ? stagePhaseOf(phase) : phase),
+    [weekId, party, phase, rules],
+  );
+  if (loaded.value?.rules === 2) return <ReplayV2 data={loaded.value.data} onClose={onClose} />;
+  const data = loaded.value?.data ?? null;
   const error = loaded.failed ? errorText(loaded.error) : null;
 
   return (

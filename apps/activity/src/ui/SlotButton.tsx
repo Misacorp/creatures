@@ -1,3 +1,4 @@
+import type { ComponentChildren } from 'preact';
 import { elementClass } from '../art';
 import { combatGlyph, roleGlyphId } from '../combat-glyphs';
 import { glyphOrUnknown } from '../glyphs';
@@ -24,7 +25,8 @@ export interface SlotModel {
     species: string;
     /** The name printed in the slot: the creature's own name (its nickname, else its species). */
     name: string;
-    level: number;
+    /** Absent from a stored fight (the level is not kept with it): the tile then shows no level. */
+    level: number | null;
     /** The id of one of the player's own creatures: only those can be picked up and dragged. */
     ownId: string | null;
     mine: boolean;
@@ -41,13 +43,37 @@ export interface SlotModel {
      * Combat v2 only: the creature's role (its icon sits in the top left corner), its saved Knack's name (a small chip under the
      * level) and the HP it carries between stages (a tiny bar at the foot of the tile). Absent: none of them, as in v1 and the dungeon.
      */
-    v2?: { role: string; knack: string | null; carried: { hp: number; max: number } | null };
+    v2?: {
+      role: string;
+      knack: string | null;
+      carried: { hp: number; max: number } | null;
+      /** A fight being played (the stage view): what the tile shows of the fight as it stands. Absent on the planning board. */
+      fight?: FightTile;
+    };
   };
   /**
    * A short word on the tile, for a state the tile is in ("Asked": you have asked this creature's owner to swap). Text only;
    * `aria-label` says it too.
    */
   badge?: string;
+}
+
+/**
+ * What a tile of a fight in progress shows (combat v2's stage view, `StageV2`): a silenced creature's Knack chip is crossed out with the
+ * turns left, a knocked-out one is greyed, a Store is a three-step meter, a hit makes it flash and the numbers float from it.
+ */
+export interface FightTile {
+  /** Turns of silence left (0: none). */
+  silenced: number;
+  out: boolean;
+  /** Its Store, 0 to 3 (0: none). */
+  store: number;
+  /** A hit lands on it in the beat on show. */
+  hit: boolean;
+  /** It is the creature acting in the beat on show. */
+  acting: boolean;
+  /** The numbers and tags that float over it, drawn by the screen. */
+  overlay?: ComponentChildren;
 }
 
 /** The HP line of a tile: `ratio` (0 to 1) fills the bar, `state` colours it, `text` is the words. */
@@ -112,6 +138,10 @@ export function SlotButton(props: SlotButtonProps) {
     if (element !== '') classes.push(element);
     if (c.mine) classes.push('mine');
     if (c.hp?.state === 'ko') classes.push('hp-ko');
+    const fight = c.v2?.fight;
+    if (fight?.out === true) classes.push('fight-out');
+    if (fight?.hit === true) classes.push('fight-hit');
+    if (fight?.acting === true) classes.push('fight-acting');
   }
   if (own !== null) classes.push('draggable');
   if (status === 'valid') classes.push('drop-valid');
@@ -181,7 +211,7 @@ export function SlotButton(props: SlotButtonProps) {
         <>
           <Sprite sprite={creatureSpriteOrFallback(c.species)} scale={scale} />
           <span class="slot-species">{c.name}</span>
-          <span class="slot-meta">Lv {c.level}</span>
+          {c.level !== null && <span class="slot-meta">Lv {c.level}</span>}
           {c.hp !== undefined && (
             <span class={`slot-hp ${c.hp.state}`}>
               <span class="slot-hp-bar" aria-hidden="true">
@@ -190,9 +220,22 @@ export function SlotButton(props: SlotButtonProps) {
               <span class="slot-hp-text">{c.hp.text}</span>
             </span>
           )}
-          {c.v2 !== undefined && c.v2.knack !== null && (
-            <span class="slot-knack" aria-hidden="true">
-              {c.v2.knack}
+          {c.v2 !== undefined && (c.v2.knack !== null || (c.v2.fight?.silenced ?? 0) > 0) && (
+            <span
+              class={(c.v2.fight?.silenced ?? 0) > 0 ? 'slot-knack silenced' : 'slot-knack'}
+              aria-hidden="true"
+            >
+              <span class="slot-knack-name">{c.v2.knack ?? 'Silenced'}</span>
+              {(c.v2.fight?.silenced ?? 0) > 0 && (
+                <span class="slot-knack-turns">{c.v2.fight?.silenced}</span>
+              )}
+            </span>
+          )}
+          {c.v2?.fight !== undefined && c.v2.fight.store > 0 && (
+            <span class="slot-store" aria-hidden="true">
+              {[1, 2, 3].map((n) => (
+                <i key={n} class={n <= (c.v2?.fight?.store ?? 0) ? 'on' : undefined} />
+              ))}
             </span>
           )}
           {c.v2?.carried != null && (
@@ -216,6 +259,11 @@ export function SlotButton(props: SlotButtonProps) {
         <span class="slot-mark" aria-hidden="true">
           {plainGlyph !== undefined && <Sprite sprite={plainGlyph} scale={1} />}
           {hitGlyph !== undefined && <Sprite sprite={hitGlyph} scale={1} />}
+        </span>
+      )}
+      {c?.v2?.fight?.overlay !== undefined && (
+        <span class="slot-fx" aria-hidden="true">
+          {c.v2.fight.overlay}
         </span>
       )}
       {slot.badge !== undefined && (

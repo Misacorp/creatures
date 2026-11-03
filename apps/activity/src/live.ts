@@ -6,7 +6,13 @@
  */
 import { content, RULES, type FinaleAbilityDef } from '@creatures/game';
 import { SLOW_PACE, describeEvent, type EventNames, type FightEvent } from '@creatures/engine';
-import type { LiveAbility, LiveActionRequest, LiveFight, LiveSnapshot } from './live-api';
+import type {
+  LiveAbility,
+  LiveActionRequest,
+  LiveFight,
+  LiveSnapshot,
+  LiveStatus,
+} from './live-api';
 import type { AbilityPreview, RaidReveal, TeamCreatureView } from './raid-api';
 import { formatCountdown } from './time-format';
 import { festivalGrantText, rankChangeText } from './raid-progress';
@@ -52,15 +58,28 @@ export const GIVE_UP_MS = 60_000;
 const MAX_RETRY_MS = 15_000;
 
 /**
+ * What the polling reads of a finale snapshot, so the shipped finale's and combat v2's (`fight-v2-api.ts`) share it: their status, the
+ * server's clock and the schedule (`startsAt` and `nextRoundAt` are null when nothing is scheduled).
+ */
+export interface PollSnapshot {
+  status: LiveStatus;
+  serverNow: number;
+  startsAt?: number | null;
+  rounds?: number;
+  nextRoundAt?: number | null;
+}
+
+/**
  * The next moment the fight's state changes, from the server's schedule: the start, then each
  * round's start (and finally the end of the fight). Null when there is nothing to wait for.
  */
 export function nextBoundaryAt(
-  snapshot: Pick<LiveFight, 'startsAt' | 'nextRoundAt'>,
+  snapshot: Pick<PollSnapshot, 'startsAt' | 'nextRoundAt'>,
   serverNow: number,
 ): number | null {
-  if (serverNow < snapshot.startsAt) return snapshot.startsAt;
-  return snapshot.nextRoundAt;
+  const startsAt = snapshot.startsAt ?? null;
+  if (startsAt !== null && serverNow < startsAt) return startsAt;
+  return snapshot.nextRoundAt ?? null;
 }
 
 /**
@@ -68,10 +87,12 @@ export function nextBoundaryAt(
  * the server's next round start (`nextRoundAt`), using the server's clock (`serverNow` here is the
  * estimated server time).
  */
-export function nextPollDelay(snapshot: LiveSnapshot, serverNow: number): number | null {
+export function nextPollDelay(snapshot: PollSnapshot, serverNow: number): number | null {
   if (snapshot.status === 'none' || snapshot.status === 'done') return null;
   const { startsAt, rounds } = snapshot;
-  if (serverNow > startsAt + rounds * LONGEST_ROUND_MS + GIVE_UP_MS) return null;
+  if (startsAt != null && rounds !== undefined && serverNow > startsAt + rounds * LONGEST_ROUND_MS + GIVE_UP_MS) {
+    return null;
+  }
   let delay = POLL_MS;
   const boundary = nextBoundaryAt(snapshot, serverNow);
   if (boundary !== null) {
@@ -91,10 +112,11 @@ export function nextPollDelay(snapshot: LiveSnapshot, serverNow: number): number
  */
 export function finaleSocketTarget(
   offered: boolean,
-  snapshot: LiveSnapshot | null,
+  snapshot: LiveSnapshot | { status: LiveStatus; week: string; party: number | null } | null,
 ): { week: string; party: number } | null {
   if (!offered || snapshot === null) return null;
   if (snapshot.status !== 'lobby' && snapshot.status !== 'live') return null;
+  if (!('week' in snapshot) || snapshot.party === null) return null;
   return { week: snapshot.week, party: snapshot.party };
 }
 
@@ -109,7 +131,7 @@ export const PUSH_GRACE_MS = 2500;
  * earlier look `PUSH_GRACE_MS` after the next boundary: a missed alarm or push then costs a few seconds,
  * never a frozen fight. Stops where `nextPollDelay` stops.
  */
-export function nextLiveDelay(snapshot: LiveSnapshot, serverNow: number): number | null {
+export function nextLiveDelay(snapshot: PollSnapshot, serverNow: number): number | null {
   if (nextPollDelay(snapshot, serverNow) === null) return null;
   let delay = SAFETY_POLL_MS;
   if (snapshot.status !== 'none' && snapshot.status !== 'done') {
@@ -139,7 +161,9 @@ export function isRetryableStatus(status: number | null): boolean {
 }
 
 /** Keeps the newer of two snapshots, so a slow poll never overwrites a fresher action result. */
-export function pickNewer(current: LiveSnapshot | null, next: LiveSnapshot): LiveSnapshot {
+export function pickNewer(current: LiveSnapshot | null, next: LiveSnapshot): LiveSnapshot;
+export function pickNewer<S extends { serverNow: number }>(current: S | null, next: S): S;
+export function pickNewer<S extends { serverNow: number }>(current: S | null, next: S): S {
   if (current === null) return next;
   return next.serverNow >= current.serverNow ? next : current;
 }

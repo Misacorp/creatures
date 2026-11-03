@@ -134,7 +134,7 @@ const isMove = (value: unknown): value is BossMoveV2 =>
   isBool(value['windUp']) &&
   isBool(value['later']);
 
-const isCard = (value: unknown): value is BossCardV2 => {
+export const isCard = (value: unknown): value is BossCardV2 => {
   if (!isRecord(value)) return false;
   const escalation = value['escalation'];
   const plain = value['plain'];

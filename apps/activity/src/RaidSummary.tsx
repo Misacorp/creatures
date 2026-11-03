@@ -1,7 +1,9 @@
 import { fetchGear } from './gear-api';
 import { grantsForWeek, lootIsEmpty } from './gear-view';
 import type { GrantLoot } from './gear-types';
-import { fetchStats, type FestivalGrant, type RaidPhaseId, type RankChange } from './raid-api';
+import { fetchStatsEither, stagePhaseOf } from './fight-v2-api';
+import type { FestivalGrant, RaidPhaseId, RankChange } from './raid-api';
+import { RaidSummaryCardV2 } from './RaidSummaryV2';
 import { phaseName } from './raid-text';
 import { RaidSummaryCard, SummaryFrame, type SummaryMode } from './RaidSummaryCard';
 import { Rewards, SectionHead, SummaryActions } from './RaidSummaryParts';
@@ -36,6 +38,7 @@ export function RaidSummary({
   mode,
   boss,
   paid,
+  rules,
   onReplay,
   onDismiss,
   busy = false,
@@ -49,6 +52,11 @@ export function RaidSummary({
   /** The boss of the raid view when it is of this week (see `summaryBoss`); null when not known. */
   boss: SummaryBoss | null;
   paid: SummaryPaid;
+  /**
+   * Combat v2: the week plays by the v2 rules, so a stage `phase1` or `phase2` is stage 1 or 2 for the server. Absent: the shipped rules
+   * (a finale's reveal does not know: the numbers say which rules they were played under).
+   */
+  rules?: 2 | undefined;
   /** Shows "Watch replay" when given. */
   onReplay?: (() => void) | undefined;
   /** Shows "Got it" when given. */
@@ -57,7 +65,7 @@ export function RaidSummary({
 }) {
   // A new stage starts empty: another stage's numbers never show while this one loads.
   const stats = useLoaded(
-    () => fetchStats(week, party, phase),
+    () => fetchStatsEither(week, party, rules === 2 ? stagePhaseOf(phase) : phase),
     [week, party, phase],
     undefined,
     true,
@@ -73,10 +81,23 @@ export function RaidSummary({
     finaleLoot: lootOrNull(gear.value?.finale ?? null),
     festivalLoot: lootOrNull(gear.value?.festival ?? null),
   };
+  if (stats.value !== null && stats.value.rules === 2) {
+    return (
+      <RaidSummaryCardV2
+        stats={stats.value.stats}
+        rewards={rewards}
+        mode={mode}
+        id={id}
+        onReplay={onReplay}
+        onDismiss={onDismiss}
+        busy={busy}
+      />
+    );
+  }
   if (stats.value !== null) {
     return (
       <RaidSummaryCard
-        input={{ boss, stats: stats.value, rewards }}
+        input={{ boss, stats: stats.value.stats, rewards }}
         mode={mode}
         id={id}
         onReplay={onReplay}
@@ -89,7 +110,7 @@ export function RaidSummary({
     <SummaryFrame
       mode={mode}
       id={id}
-      title={`${phaseName(phase)} result`}
+      title={`${phaseName(phase, rules)} result`}
       badge={<OutcomeBadge cleared={cleared} />}
       footer={<SummaryActions onReplay={onReplay} onDismiss={onDismiss} busy={busy} />}
     >

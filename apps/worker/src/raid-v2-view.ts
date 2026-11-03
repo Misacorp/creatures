@@ -596,6 +596,8 @@ export interface FighterView {
   row: number;
   col: number;
   knack: string | null;
+  /** The Knack's name (null: none, or one the pack no longer has). */
+  knackName: string | null;
   talents: string[];
   maxHp: number;
   /** Its HP when the stage began (a creature that fought before carries its HP). */
@@ -612,6 +614,8 @@ export interface ReplayViewV2 {
   at: number;
   boss: BossDef;
   moveNames: Record<string, string>;
+  /** The boss card as the stage began (move labels, rule cards, the Escalating step), as the week's view draws it. */
+  card: BossCardV2View;
   rounds: number;
   cleared: boolean;
   /** The boss fell in this stage. */
@@ -648,6 +652,7 @@ export function fighterViews(
       row: f.row,
       col: f.col,
       knack: f.knack ?? null,
+      knackName: knackNameOf(f.knack ?? null),
       talents: [...f.talents],
       maxHp: f.maxHp,
       startHp: before?.hp[key] ?? f.maxHp,
@@ -714,7 +719,8 @@ export function buildReplayViewV2(
   const players = displayNames(sql);
   const playerNames: Record<string, string> = {};
   for (const m of summary.members) playerNames[m.alias] = players.get(m.userId) ?? 'Unknown';
-  const fighters = fighterViews(input, carryBefore(sql, weekId, party, phase));
+  const before = carryBefore(sql, weekId, party, phase);
+  const fighters = fighterViews(input, before);
   return {
     rules: 2,
     weekId,
@@ -725,6 +731,7 @@ export function buildReplayViewV2(
     at: row.created_at,
     boss: input.boss,
     moveNames: moveNamesOf(input.boss),
+    card: bossCardView(input.boss, before),
     rounds: result.rounds,
     cleared: summary.cleared,
     kill: result.won,
@@ -878,6 +885,8 @@ export interface LiveSnapshotV2 {
     hpStart: number | null;
   } | null;
   bossDef: BossDef | null;
+  /** The boss card as the finale began (null with no fight). */
+  card: BossCardV2View | null;
   moveNames: Record<string, string>;
   fighters: FighterView[];
   names: { players: Record<string, string>; creatures: Record<string, string> } | null;
@@ -928,6 +937,7 @@ export function emptySnapshotV2(
     serverNow: ctx.now,
     boss: null,
     bossDef: null,
+    card: null,
     moveNames: {},
     fighters: [],
     names: null,
@@ -1023,6 +1033,7 @@ export function liveSnapshotV2(
       hpStart: before?.bossHp ?? row.input.boss.hp,
     },
     bossDef: row.input.boss,
+    card: bossCardView(row.input.boss, before),
     moveNames: moveNamesOf(row.input.boss),
     fighters,
     names: {
