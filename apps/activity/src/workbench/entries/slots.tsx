@@ -450,19 +450,19 @@ const slotButton: Entry = {
     { name: 'Empty', props: { species: 'none' } },
     {
       name: 'Combat v2 tile: role, Knack and carried HP',
-      props: { v2: true, compact: true, owner: true, element: 'tide', carriedHp: 55 },
+      props: { v2: true, compact: true, element: 'tide', carriedHp: 55 },
     },
     {
       name: 'Combat v2: a boss move would hit it',
-      props: { v2: true, compact: true, owner: true, element: 'ember', hitBy: 'shape-lance' },
+      props: { v2: true, compact: true, element: 'ember', hitBy: 'shape-lance' },
     },
     {
       name: "Combat v2: the plain attack's target",
-      props: { v2: true, compact: true, owner: true, element: 'grove', plainTarget: true },
+      props: { v2: true, compact: true, element: 'grove', plainTarget: true },
     },
     {
       name: 'Combat v2: you asked its owner to swap',
-      props: { v2: true, compact: true, owner: true, ownerColour: 3, badge: 'Asked' },
+      props: { v2: true, compact: true, badge: 'Asked' },
     },
     {
       name: 'Raid tile (owner and element)',
@@ -542,9 +542,9 @@ const slotButton: Entry = {
         onTap={() => undefined}
       />
     );
-    // A compact tile sits in the raid board's row, which sizes it (and the combat v2 board is a little taller).
-    return bool(p, 'compact') ? (
-      <div class={bool(p, 'v2') ? 'raid-board v2' : 'raid-board'}>
+    // A combat v2 tile sits in the board's row, which sizes it (the v2 board's tiles are a little taller).
+    return bool(p, 'v2') && bool(p, 'compact') ? (
+      <div class="raid-board v2">
         <div class="board-row">{tile}</div>
       </div>
     ) : (
