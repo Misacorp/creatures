@@ -23,6 +23,7 @@ import {
   RESOLVE_OPTIONS,
   SPECIES_OPTIONS,
   SUPPLY_OPTIONS,
+  WEEKEND_STEP_OPTIONS,
 } from './options';
 
 const HOUR = 3_600_000;
@@ -277,6 +278,15 @@ const RAID_SPECS: readonly ToolSpec[] = [
     tool: 'raid-simulate',
     label: 'Run a full simulated week',
     fields: [int('guests', 'Simulated players', 0, 40, true)],
+  },
+  {
+    tool: 'raid-weekend',
+    label: 'Play a combat v2 weekend',
+    fields: [
+      pick('step', 'Up to', WEEKEND_STEP_OPTIONS, true),
+      int('guests', 'Simulated players', 0, 40, true),
+    ],
+    hint: 'Combat v2 weeks only: moves the clock stage by stage, the guests replace their fallen, one asks you for a swap, and the live finale starts. Pick a step to go one event at a time.',
   },
 ];
 

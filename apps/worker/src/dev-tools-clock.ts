@@ -36,9 +36,18 @@ function setOffset(ctx: ToolCtx, ms: number): void {
   ctx.offset.set(ms);
 }
 
-/** Moves the game clock forward to `target` (game time). A target that is not ahead changes nothing. */
+/** The game time right now: the real time plus the offset as it stands (`ctx.now` is read once, when the tool started). */
+export function gameNow(ctx: ToolCtx): number {
+  return ctx.realNow + ctx.offset.get();
+}
+
+/**
+ * Moves the game clock forward to `target` (game time). A target that is not ahead changes nothing. It reads the clock as it stands, so
+ * a tool that moves it several times (`raid-weekend`) lands on each target.
+ */
 export function advanceTo(ctx: ToolCtx, target: number): void {
-  if (target > ctx.now) setOffset(ctx, ctx.offset.get() + (target - ctx.now));
+  const now = gameNow(ctx);
+  if (target > now) setOffset(ctx, ctx.offset.get() + (target - now));
 }
 
 /** The next time after `now` that a raid week event happens: this week's remaining ones, then next week's. */

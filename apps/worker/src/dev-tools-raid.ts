@@ -21,6 +21,7 @@ import type {
 } from './dev-schemas';
 import { readWeekProgression } from './raid-ladder';
 import { ensureWeekRank } from './raid-ladder';
+import { GUEST_CREATURES_V2, ensureV2Talents, placeCreaturesV2 } from './dev-tools-raid-v2';
 import { joinSmallestParty, leaveParty, partyOf, partyRowLength } from './raid-roster';
 import { RAID_PHASES, weekIndex } from './raid-schedule';
 import { autoTeam, loadCreatures } from './raid-teams';
@@ -235,6 +236,23 @@ export function placeGuest(
   /** The creatures to place (at most three); default the first three the player made. */
   creatureIds?: readonly string[],
 ): void {
+  // A combat v2 week has a grid and its own placing rules: the placement code itself puts them on it (a guest also saves its Knack).
+  if (ctx.raid.week(weekId)?.rules === 2) {
+    const ids =
+      creatureIds ??
+      ctx.sql
+        .exec<{ id: string }>(
+          'SELECT id FROM creatures WHERE user_id = ? ORDER BY caught_at, rowid LIMIT ?',
+          userId,
+          RULES.raid.teamSize,
+        )
+        .toArray()
+        .map((r) => r.id);
+    placeCreaturesV2(ctx, weekId, userId, ids.slice(0, RULES.raid.teamSize), {
+      knack: userId.startsWith(GUEST_PREFIX),
+    });
+    return;
+  }
   const party =
     partyOf(ctx.sql, weekId, userId) ?? joinSmallestParty(ctx.sql, weekId, userId, ctx.now);
   const creatures = (
@@ -335,12 +353,14 @@ export function ensureGuests(ctx: ToolCtx, count: number): { guests: number } {
     purgeUser(ctx.sql, guestId(n), false);
   }
   const level = referenceLevel(ctx);
+  const v2 = week.rules === 2;
   for (let n = 1; n <= count; n++) {
     if (have.includes(n)) {
       ctx.sql.exec('UPDATE players SET last_seen_at = ? WHERE user_id = ?', ctx.now, guestId(n));
-    } else {
-      createGuest(ctx, n, level);
     }
+    // On a v2 week a guest also owns spares, and every creature has a v2 talent (a guest from before gets them now).
+    if (!have.includes(n) || v2) createGuest(ctx, n, level, v2 ? GUEST_CREATURES_V2 : undefined);
+    if (v2) ensureV2Talents(ctx, guestId(n));
     placeGuest(ctx, week.weekId, guestId(n));
   }
   joinCaller(ctx, week.weekId);
