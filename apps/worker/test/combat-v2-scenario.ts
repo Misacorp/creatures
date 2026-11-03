@@ -90,7 +90,12 @@ export async function runV2DungeonScenario(ctx: CoreContext): Promise<Captured> 
     giveV2(ctx, p.id);
     ctx.clock.t = DUNGEON_START;
     const { record, captured } = createRecorder(p.call);
-    const start = await record('v2-dungeon-start', 'POST', '/api/dungeon/start', p.body());
+    const start = await record(
+      'v2-dungeon-start',
+      'POST',
+      '/api/dungeon/start',
+      p.body({ idempotencyKey: 'fixture-v2-dungeon-start' }),
+    );
     const state = (start.body as { state: { id: string; step: number; reachable: string[] } })
       .state;
     await record('v2-dungeon-today', 'GET', '/api/dungeon/today');

@@ -418,7 +418,9 @@ export function buildRaidViewV2(
               `SELECT id, user_id, species, nickname FROM creatures WHERE id IN (${out.map(() => '?').join(', ')})`,
               ...out,
             )
-            .toArray();
+            .toArray()
+            // In the order the carry lists them (the order the fight knocked them out), not the order of their random ids.
+            .sort((a, b) => out.indexOf(a.id) - out.indexOf(b.id));
     const stagesPlayed = stored?.carry.stage ?? 0;
     const pool = sql
       .exec<{ hp_max: number | null; hp_current: number | null }>(

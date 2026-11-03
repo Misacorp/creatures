@@ -8,7 +8,7 @@
         "00000000-0000-4000-8700-000000000017",
         "00000000-0000-4000-8700-000000000018"
       ],
-      "idempotencyKey": "dungeon-00000001-test"
+      "idempotencyKey": "fixture-v2-dungeon-start"
     }
   },
   "v2-dungeon-act-fight": {
