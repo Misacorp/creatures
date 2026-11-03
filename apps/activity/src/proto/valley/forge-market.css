@@ -1,0 +1,89 @@
+/* The Forge's post and the Market (step 3b, prototype). */
+
+/* The smith's anvil is a button over the art; it is still when there is nothing to trade. */
+.pv-post:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.pv-post .pv-bubble {
+  bottom: calc(100% - 4px);
+}
+
+/* The smith hammers: a two-step dip, off when motion is reduced or the shot is still. */
+.pv-hammer {
+  animation: pv-hammer 700ms steps(1) infinite;
+}
+
+@keyframes pv-hammer {
+  50% {
+    transform: translateY(2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-hammer {
+    animation: none;
+  }
+}
+
+/* What the exchange gave: the shard pictures in a row. */
+.pv-got {
+  display: inline-flex;
+  gap: 2px;
+}
+
+/* The broker beside the chimney, its bubble above it. */
+.pv-broker-mark {
+  position: relative;
+  display: inline-block;
+}
+
+.pv-broker-mark .pv-bubble {
+  bottom: calc(100% + 6px);
+}
+
+.pv-seat-empty {
+  width: 3rem;
+  height: 3rem;
+}
+
+/* --- The Market --- */
+.pv-market-plot {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  line-height: 0;
+}
+
+.pv-market-plate {
+  max-width: 14rem;
+  font-size: 0.875rem;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.pv-market-plate.wide {
+  max-width: 17rem;
+}
+
+/* The plot, the scaffolding and the seat are buttons that sit on their art. */
+.pv-market-hit .pv-bubble {
+  bottom: calc(100% - 4px);
+  width: 15rem;
+}
+
+.pv-market-hit .pv-bubble-body {
+  max-width: 15rem;
+  white-space: normal;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.pv-market-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}

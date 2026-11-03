@@ -432,7 +432,15 @@ export function Valley({
       break;
     case 'market':
       body = (
-        <MarketScene world={world} onLeave={leave} waiting={waitingAt('market')} look={look} />
+        <MarketScene
+          world={world}
+          setWorld={setWorld}
+          held={view.held}
+          setHeld={setHeld}
+          onLeave={leave}
+          waiting={waitingAt('market')}
+          look={look}
+        />
       );
       break;
   }
