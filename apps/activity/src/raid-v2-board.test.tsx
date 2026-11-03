@@ -12,6 +12,7 @@ import {
   boardCuesV2,
   boardSlotV2,
   creaturesBySlot,
+  everyShort,
   gridRowsV2,
   incomingText,
   litMove,
@@ -318,6 +319,13 @@ describe('the boss card', () => {
     const bossMoves = steps.flatMap((s) => s.boss?.moves ?? []);
     expect(bossMoves).toHaveLength(v2.card.moves.filter((m) => !m.later).length);
     expect(steps[0]?.boss).toBeUndefined();
+  });
+});
+
+describe('how often a move comes', () => {
+  it('is said in words, short enough for a tile', () => {
+    expect(everyShort(1)).toBe('Every round');
+    expect(everyShort(3)).toBe('Every 3');
   });
 });
 

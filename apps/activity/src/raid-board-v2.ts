@@ -177,6 +177,10 @@ export function boardCuesV2(
   return cues;
 }
 
+/** How often a move comes, short enough for a tile and a strip step: "Every round", "Every 3". */
+export const everyShort = (every: number): string =>
+  every === 1 ? 'Every round' : `Every ${String(every)}`;
+
 /** The line under the board for a tapped move that has no slots yet. */
 export const AIMED_WHEN_IT_COMES = 'Aimed when it comes';
 

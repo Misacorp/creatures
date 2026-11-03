@@ -1,6 +1,7 @@
 import { combatGlyph, moveGlyphId } from '../combat-glyphs';
 import { cssVars } from '../css-vars';
 import { glyphOrUnknown } from '../glyphs';
+import { everyShort } from '../raid-board-v2';
 import type { BossMoveV2 } from '../raid-v2-api';
 import { Sprite } from '../sprites/Sprite';
 
@@ -64,7 +65,7 @@ export function MoveTile({ move, arena, lit, selected, onToggle }: MoveTileProps
         )}
       </span>
       <span class="move-badges" aria-hidden="true">
-        <span class="move-every">{move.every === 1 ? 'each' : `/${String(move.every)}`}</span>
+        <span class="move-every">{everyShort(move.every)}</span>
         {move.windUp && (
           <span class="move-windup">
             <Sprite sprite={glyphOrUnknown('charge')} scale={1} />

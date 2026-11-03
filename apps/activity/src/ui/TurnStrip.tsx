@@ -1,5 +1,6 @@
 import { combatGlyph } from '../combat-glyphs';
 import { glyphOrUnknown } from '../glyphs';
+import { everyShort } from '../raid-board-v2';
 import type { TurnChip } from '../replay';
 import { Sprite } from '../sprites/Sprite';
 
@@ -27,7 +28,7 @@ interface TurnStripProps {
  * The strip of who acts in what order: one chip per step, the one acting now outlined in gold, those that
  * already acted dimmed and a knocked-out creature struck through. On a combat v2 raid board it reads one round:
  * row 1, boss, row 2, boss, row 3, boss (the boss takes a turn after every row), and a boss step carries the
- * pictures of the moves due on it, each with its rhythm ("3": every third round). Names are drawn as text only.
+ * pictures of the moves due on it, each with how often it comes ("Every 3"). Names are drawn as text only.
  */
 export function TurnStrip({ chips, label }: TurnStripProps) {
   return (
@@ -52,7 +53,7 @@ export function TurnStrip({ chips, label }: TurnStripProps) {
               <span key={move.label} class="turn-move" title={move.label}>
                 <Sprite sprite={combatGlyph(move.glyph) ?? glyphOrUnknown('unknown')} scale={1} />
                 <span class="turn-every" aria-hidden="true">
-                  {move.every}
+                  {everyShort(move.every)}
                 </span>
                 <span class="visually-hidden">
                   {`, ${move.label}, every ${String(move.every)} rounds`}
