@@ -158,7 +158,13 @@ export interface LiveSnapshotV2 {
   roundStarts: number[];
   nextRoundAt: number | null;
   serverNow: number;
-  boss: { id: string; name: string; element: string; hpMax: number | null; hpStart: number | null } | null;
+  boss: {
+    id: string;
+    name: string;
+    element: string;
+    hpMax: number | null;
+    hpStart: number | null;
+  } | null;
   /** The boss card at the finale's start (null in the lobby and when there is no fight). */
   card: BossCardV2 | null;
   /** The boss's rows, columns and rounds (null as `boss`). */

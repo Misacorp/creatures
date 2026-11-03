@@ -126,7 +126,13 @@ export function startState(setup: FoldSetup): BoardState {
     escalation:
       setup.escalationStep === null
         ? null
-        : { count: null, step: setup.escalationStep, fall: setup.escalationStep, phase: false, phaseNext: false },
+        : {
+            count: null,
+            step: setup.escalationStep,
+            fall: setup.escalationStep,
+            phase: false,
+            phaseNext: false,
+          },
     resistance: null,
     announced: [],
     actions: [],
@@ -227,7 +233,8 @@ function play(
     case 'heal': {
       const target = s.creatures[b.who];
       const max = setup.creatures.find((c) => c.key === b.who)?.maxHp;
-      if (target !== undefined && max !== undefined) target.hp = Math.min(max, target.hp + b.amount);
+      if (target !== undefined && max !== undefined)
+        target.hp = Math.min(max, target.hp + b.amount);
       break;
     }
     case 'knockout': {
@@ -297,7 +304,11 @@ function rowsOf(setup: FoldSetup): ReadonlyMap<string, number> {
 }
 
 /** The state after the first `upTo` events, folded from the start. */
-export function stateAfter(setup: FoldSetup, events: readonly FightEvent[], upTo: number): BoardState {
+export function stateAfter(
+  setup: FoldSetup,
+  events: readonly FightEvent[],
+  upTo: number,
+): BoardState {
   const rows = rowsOf(setup);
   const s = cloneOf(startState(setup));
   const limit = Math.min(upTo, events.length);
@@ -323,14 +334,19 @@ export interface BeatV2 {
 
 /** Events that come just before a creature's own hit: its reaction, its crit and the Sure Crit it spends. */
 const isLead = (e: FightEvent): boolean =>
-  e.kind === 'reaction' || e.kind === 'crit' || (e.kind === 'sure-crit' && e.text.includes('spends'));
+  e.kind === 'reaction' ||
+  e.kind === 'crit' ||
+  (e.kind === 'sure-crit' && e.text.includes('spends'));
 
 /**
  * Cuts the events into beats. A round starts one; so does each boss turn; a creature's turn starts at its hit on the boss (and at the
  * reaction, crit or spent Sure Crit that comes right before it), so its mark, Store and knock-out follow it in the same beat; the end
  * is the last. Events before the first round (the resistance shown at the stage break) go with the first beat.
  */
-export function buildBeats(events: readonly FightEvent[], setup: Pick<FoldSetup, 'creatures'>): BeatV2[] {
+export function buildBeats(
+  events: readonly FightEvent[],
+  setup: Pick<FoldSetup, 'creatures'>,
+): BeatV2[] {
   const rows = new Map(setup.creatures.map((c) => [c.key, c.row]));
   type Start = Omit<BeatV2, 'to'>;
   const starts: Start[] = [];
@@ -348,11 +364,15 @@ export function buildBeats(events: readonly FightEvent[], setup: Pick<FoldSetup,
       starts.push({ from: i, kind: 'end', round, row: 0, actor: null });
     } else if (b.type === 'hit' && b.from !== null && b.to === null && rows.has(b.from)) {
       let from = i;
-      while (from > 0 && from - 1 > (last?.from ?? -1) && isLead(events[from - 1] as FightEvent)) from--;
+      while (from > 0 && from - 1 > (last?.from ?? -1) && isLead(events[from - 1] as FightEvent))
+        from--;
       starts.push({ from, kind: 'creature', round, row: rows.get(b.from) ?? 0, actor: b.from });
     }
   });
-  if (starts.length === 0) return events.length === 0 ? [] : [{ from: 0, to: events.length, kind: 'round', round: 0, row: 0, actor: null }];
+  if (starts.length === 0)
+    return events.length === 0
+      ? []
+      : [{ from: 0, to: events.length, kind: 'round', round: 0, row: 0, actor: null }];
   const first = starts[0] as Start;
   const out = starts.map((st, k): BeatV2 => ({
     ...st,
@@ -450,7 +470,14 @@ export function showOf(events: readonly FightEvent[], beat: BeatV2): BeatShow {
               ? { i, target: null, text: 'Dodged', tone: 'dodge', crit: false, drift: drift(i) }
               : b.blocked
                 ? { i, target: null, text: '0', tone: 'blocked', crit: b.crit, drift: drift(i) }
-                : { i, target: null, text: String(b.damage), tone: 'hit', crit: b.crit, drift: drift(i) },
+                : {
+                    i,
+                    target: null,
+                    text: String(b.damage),
+                    tone: 'hit',
+                    crit: b.crit,
+                    drift: drift(i),
+                  },
           );
         } else if (b.to !== null) {
           bossHit = true;
@@ -461,17 +488,38 @@ export function showOf(events: readonly FightEvent[], beat: BeatV2): BeatShow {
               ? { i, target: b.to, text: 'Dodged', tone: 'dodge', crit: false, drift: drift(i) }
               : b.blocked
                 ? { i, target, text: '0', tone: 'blocked', crit: b.crit, drift: drift(i) }
-                : { i, target, text: String(b.damage), tone: 'hurt', crit: b.crit, drift: drift(i) },
+                : {
+                    i,
+                    target,
+                    text: String(b.damage),
+                    tone: 'hurt',
+                    crit: b.crit,
+                    drift: drift(i),
+                  },
           );
         }
         break;
       }
       case 'counter':
         flash.add(null);
-        floats.push({ i, target: null, text: String(b.damage), tone: 'hit', crit: false, drift: drift(i) });
+        floats.push({
+          i,
+          target: null,
+          text: String(b.damage),
+          tone: 'hit',
+          crit: false,
+          drift: drift(i),
+        });
         break;
       case 'heal':
-        floats.push({ i, target: b.who, text: `+${String(b.amount)}`, tone: 'heal', crit: false, drift: drift(i) });
+        floats.push({
+          i,
+          target: b.who,
+          text: `+${String(b.amount)}`,
+          tone: 'heal',
+          crit: false,
+          drift: drift(i),
+        });
         break;
       case 'knockout':
         knockedOut.push({ i, who: b.who });

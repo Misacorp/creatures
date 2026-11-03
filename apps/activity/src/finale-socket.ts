@@ -15,8 +15,9 @@ import {
 } from './live-socket';
 import type { FinalePoller } from './finale-poller';
 
-export interface FinaleSocketDeps<S extends PollSnapshot = LiveSnapshot>
-  extends Partial<Omit<LiveSocketDeps, 'onLive' | 'onMessage'>> {
+export interface FinaleSocketDeps<S extends PollSnapshot = LiveSnapshot> extends Partial<
+  Omit<LiveSocketDeps, 'onLive' | 'onMessage'>
+> {
   /** The party whose finale to listen to (the server checks that the player is in it). */
   week: string;
   party: number;

@@ -72,7 +72,8 @@ describe('the fold reads real fights', () => {
     // A beat of the round's start has the round event; a creature's beat ends with that creature's hit; a boss turn starts with its event.
     for (const [k, b] of beats.entries()) {
       // The resistance of the stage break comes before round 1 and goes with its beat.
-      const first = s.events[k === 0 ? s.events.findIndex((e) => e.board?.type === 'round') : b.from]?.board;
+      const first =
+        s.events[k === 0 ? s.events.findIndex((e) => e.board?.type === 'round') : b.from]?.board;
       if (b.kind === 'round') expect(first?.type).toBe('round');
       if (b.kind === 'boss') expect(first?.type).toBe('bossTurn');
       if (b.kind === 'creature') {
@@ -109,13 +110,17 @@ describe('the fold reads real fights', () => {
     const marks = states[row1 + 1]?.marks.map((m) => m.element) ?? [];
     expect(marks.length).toBeGreaterThanOrEqual(2);
     const firstMark = s.events.find((e) => e.board?.type === 'mark')?.board;
-    expect(firstMark?.type === 'mark' && marks[0]).toBe(firstMark?.type === 'mark' ? firstMark.element : '');
+    expect(firstMark?.type === 'mark' && marks[0]).toBe(
+      firstMark?.type === 'mark' ? firstMark.element : '',
+    );
     expect(stepId(states[row1 + 1]?.step ?? null)).toBe('boss-1');
     // A reaction takes its mark's count down; the whole mark goes at 0.
     const cashedAt = beats.findIndex((b) =>
       s.events.slice(b.from, b.to).some((e) => e.board?.type === 'reaction' && e.board.left === 0),
     );
-    const cashed = s.events.slice(beats[cashedAt]?.from, beats[cashedAt]?.to).find((e) => e.board?.type === 'reaction')?.board;
+    const cashed = s.events
+      .slice(beats[cashedAt]?.from, beats[cashedAt]?.to)
+      .find((e) => e.board?.type === 'reaction')?.board;
     if (cashed?.type !== 'reaction') throw new Error('no reaction');
     expect(states[cashedAt]?.marks.some((m) => m.element === cashed.mark)).toBe(true);
     expect(states[cashedAt + 1]?.marks.some((m) => m.element === cashed.mark)).toBe(false);
@@ -138,7 +143,9 @@ describe('the fold reads real fights', () => {
     const after = states[silencedAt + 1]?.creatures[silenceEvent.who];
     expect(after?.silenced).toBe(silenceEvent.turns);
     // Later the countdown is lower or gone.
-    const later = states.slice(silencedAt + 2).find((st) => (st.creatures[silenceEvent.who]?.silenced ?? 0) < silenceEvent.turns);
+    const later = states
+      .slice(silencedAt + 2)
+      .find((st) => (st.creatures[silenceEvent.who]?.silenced ?? 0) < silenceEvent.turns);
     expect(later).toBeDefined();
     const ko = s.events.find((e) => e.board?.type === 'knockout')?.board;
     if (ko?.type === 'knockout') {
@@ -161,7 +168,9 @@ describe('the fold reads real fights', () => {
     const move = states[announceAt + 1]?.announced[0];
     const turn = move?.turn ?? 0;
     // Still announced during its boss turn's beat, gone one beat after.
-    const landing = beats.findIndex((b, k) => k > announceAt && b.kind === 'boss' && b.row === turn);
+    const landing = beats.findIndex(
+      (b, k) => k > announceAt && b.kind === 'boss' && b.row === turn,
+    );
     expect(states[landing + 1]?.announced.length).toBeGreaterThan(0);
     expect(states[landing + 2]?.announced.length).toBe(0);
     // A new round starts clear.
@@ -174,7 +183,9 @@ describe('the fold reads real fights', () => {
     const setup = { ...setupOf(base), shedsMarks: true };
     const beats = buildBeats(base.events, setup);
     const states = foldBeats(setup, base.events, beats);
-    const turnAt = beats.findIndex((b, k) => b.kind === 'boss' && (states[k]?.marks.length ?? 0) > 0);
+    const turnAt = beats.findIndex(
+      (b, k) => b.kind === 'boss' && (states[k]?.marks.length ?? 0) > 0,
+    );
     expect(turnAt).toBeGreaterThan(0);
     // The creature beat before the boss turn already names the marks that will be shed (the sealed ones stay).
     const before = states[turnAt];
@@ -196,7 +207,9 @@ describe('what a beat shows', () => {
     expect(all.some((f) => f.target !== null && f.tone === 'hurt')).toBe(true);
     expect(all.some((f) => f.crit)).toBe(true);
     const blocked = playSample({ slot: 1, players: 4, stage: 1, seed: 'fold' });
-    const bl = buildBeats(blocked.events, setupOf(blocked)).flatMap((b) => showOf(blocked.events, b).floats);
+    const bl = buildBeats(blocked.events, setupOf(blocked)).flatMap(
+      (b) => showOf(blocked.events, b).floats,
+    );
     expect(bl.some((f) => f.tone === 'blocked' && f.text === '0')).toBe(true);
     expect(all.some((f) => f.tone === 'dodge' && f.text === 'Dodged')).toBe(true);
   });

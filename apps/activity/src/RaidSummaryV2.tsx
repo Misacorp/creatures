@@ -93,12 +93,7 @@ export function RaidSummaryCardV2({
       title={stageTitle(stats)}
       badge={<OutcomeBadge cleared={stats.cleared} />}
       footer={
-        <SummaryActions
-          onReplay={onReplay}
-          onDismiss={onDismiss}
-          busy={busy}
-          watchLabel="Watch"
-        />
+        <SummaryActions onReplay={onReplay} onDismiss={onDismiss} busy={busy} watchLabel="Watch" />
       }
     >
       <div class="rs">

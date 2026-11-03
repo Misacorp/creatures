@@ -38,7 +38,13 @@ const phase1Of = (phase: FightPhaseV2): 'phase1' | 'phase2' | 'finale' =>
   phase === 'stage1' ? 'phase1' : phase === 'stage2' ? 'phase2' : 'finale';
 
 /** The stage of a replay, played from the start, with its controls and its log. */
-export function PlayerV2({ data, showControls = true }: { data: ReplayViewV2; showControls?: boolean }) {
+export function PlayerV2({
+  data,
+  showControls = true,
+}: {
+  data: ReplayViewV2;
+  showControls?: boolean;
+}) {
   const setup = useMemo(
     () => foldSetupOf({ fighters: data.fighters, card: data.card, bossHpStart: data.bossHpStart }),
     [data],
@@ -103,9 +109,9 @@ export function PlayerV2({ data, showControls = true }: { data: ReplayViewV2; sh
       />
       <LogToggle id="replay-log">
         <ol class="replay-log" ref={logRef} tabIndex={0} aria-label="Fight log">
-          {data.events.slice(0, shown).map((event, i) =>
-            event.text === '' ? null : <li key={i}>{event.text}</li>,
-          )}
+          {data.events
+            .slice(0, shown)
+            .map((event, i) => (event.text === '' ? null : <li key={i}>{event.text}</li>))}
         </ol>
       </LogToggle>
     </>

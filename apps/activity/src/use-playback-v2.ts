@@ -43,19 +43,17 @@ interface PlaybackArgs {
 }
 
 /** The numbers and tags of a beat as the effect trail takes them (the shapes of the shipped stage's cues, which it already draws). */
-function cuesOf(show: BeatShow): Cue[] {
+export function cuesOf(show: BeatShow): Cue[] {
   return [
-    ...show.floats.map(
-      (f): Cue => ({
-        kind: 'float',
-        i: f.i,
-        target: f.target,
-        text: f.text,
-        tone: f.tone,
-        crit: f.crit,
-        drift: f.drift,
-      }),
-    ),
+    ...show.floats.map((f): Cue => ({
+      kind: 'float',
+      i: f.i,
+      target: f.target,
+      text: f.text,
+      tone: f.tone,
+      crit: f.crit,
+      drift: f.drift,
+    })),
     ...show.knockedOut.map((k): Cue => ({ kind: 'ko', i: k.i, creature: k.who })),
   ];
 }

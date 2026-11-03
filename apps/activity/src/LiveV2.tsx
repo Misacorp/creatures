@@ -115,11 +115,7 @@ export function LiveV2({
   }, [hasLoot]);
 
   /** Fire, Hold or Unhold the caller's input. One request at a time. */
-  async function act(
-    key: string,
-    action: 'fire' | 'hold' | 'unhold',
-    row?: number,
-  ): Promise<void> {
+  async function act(key: string, action: 'fire' | 'hold' | 'unhold', row?: number): Promise<void> {
     if (!locks.current.acquire(key)) return;
     setBusy(true);
     setActionError(null);
@@ -167,26 +163,29 @@ export function LiveV2({
     <section class="raid-section" aria-label="Finale" onKeyDown={onDrillKey(onClose)}>
       {back}
       {errors}
-      {snapshot.status !== 'lobby' && snapshot.loot !== null && !dismissed && snapshot.party !== null && (
-        <RevealCard
-          reveal={snapshot.loot}
-          busy={false}
-          season={season}
-          boss={summaryBoss(view, snapshot.week, snapshot.boss)}
-          afterAction={{
-            week: snapshot.week,
-            party: snapshot.party,
-            onReplay: () => {
-              onReplay(snapshot.week, snapshot.party ?? 0);
-            },
-          }}
-          onDismiss={() => {
-            setDismissed(true);
-            onRevealSeen(snapshot.week);
-            onBalanceChange();
-          }}
-        />
-      )}
+      {snapshot.status !== 'lobby' &&
+        snapshot.loot !== null &&
+        !dismissed &&
+        snapshot.party !== null && (
+          <RevealCard
+            reveal={snapshot.loot}
+            busy={false}
+            season={season}
+            boss={summaryBoss(view, snapshot.week, snapshot.boss)}
+            afterAction={{
+              week: snapshot.week,
+              party: snapshot.party,
+              onReplay: () => {
+                onReplay(snapshot.week, snapshot.party ?? 0);
+              },
+            }}
+            onDismiss={() => {
+              setDismissed(true);
+              onRevealSeen(snapshot.week);
+              onBalanceChange();
+            }}
+          />
+        )}
       <FightV2
         snapshot={snapshot}
         serverNow={serverNow}
@@ -212,7 +211,10 @@ export function LiveV2({
 }
 
 /** The round counter and the time to the next one. */
-function progressV2(snapshot: LiveSnapshotV2, serverNow: number): { headline: string; countdown: string } {
+function progressV2(
+  snapshot: LiveSnapshotV2,
+  serverNow: number,
+): { headline: string; countdown: string } {
   if (snapshot.status === 'done') return { headline: DONE_LINE, countdown: '' };
   if (snapshot.status === 'lobby' || snapshot.round < 1) {
     const wait = (snapshot.startsAt ?? serverNow) - serverNow;
@@ -228,7 +230,7 @@ function progressV2(snapshot: LiveSnapshotV2, serverNow: number): { headline: st
 }
 
 /** The lobby, or the stage of a fight in progress (or over) with the caller's input under it. */
-function FightV2({
+export function FightV2({
   snapshot,
   serverNow,
   busy,
@@ -343,9 +345,9 @@ function LiveStageV2({
       </StageV2>
       <LogToggle id="live-log">
         <ol class="replay-log" tabIndex={0} aria-label="Fight log">
-          {snapshot.events.slice(0, model.beats[playback.beat - 1]?.to ?? 0).map((event, i) =>
-            event.text === '' ? null : <li key={i}>{event.text}</li>,
-          )}
+          {snapshot.events
+            .slice(0, model.beats[playback.beat - 1]?.to ?? 0)
+            .map((event, i) => (event.text === '' ? null : <li key={i}>{event.text}</li>))}
         </ol>
       </LogToggle>
     </>

@@ -18,7 +18,7 @@ import {
   type StageCarry,
   type StageInputV2,
 } from '@creatures/engine/v2';
-import type { FightCreatureV2, LiveSnapshotV2, ReplayViewV2 } from '../fight-v2-api';
+import type { FightCreatureV2, LiveSnapshotV2, ReplayViewV2, StatsV2 } from '../fight-v2-api';
 import type { BossCardV2 as BossCardV2View } from '../raid-v2-api';
 import { speciesLabel } from './data';
 
@@ -30,7 +30,16 @@ const SHIPPED: Shipped = {
 const resolver = createResolver(combatV2, SHIPPED);
 
 /** The players of a sample party; the first is you. */
-export const FIGHT_NAMES: readonly string[] = ['You', 'Mira', 'Jun', 'Ann', 'Bo', 'Cy', 'Dee', 'Eli'];
+export const FIGHT_NAMES: readonly string[] = [
+  'You',
+  'Mira',
+  'Jun',
+  'Ann',
+  'Bo',
+  'Cy',
+  'Dee',
+  'Eli',
+];
 
 /** Species by the row a creature stands in: a Guard in front, a Setter or a Payoff in the middle, a Payoff or a Support behind. */
 const BY_ROW: readonly (readonly string[])[] = [
@@ -136,7 +145,9 @@ export function cardOfBoss(boss: BossDef, carry: StageCarry | null): BossCardV2V
     },
     moves: [
       ...boss.moves.map((m) => view(m, false)),
-      ...(boss.escalation?.phase?.moves ?? []).filter((m) => !own.has(m.id)).map((m) => view(m, true)),
+      ...(boss.escalation?.phase?.moves ?? [])
+        .filter((m) => !own.has(m.id))
+        .map((m) => view(m, true)),
     ],
   };
 }
@@ -266,7 +277,13 @@ export function replaySample(o: FightSampleOptions): ReplayViewV2 {
  */
 export function liveSample(
   o: FightSampleOptions,
-  state: { round: number; you?: string; mode?: 'default' | 'held' | 'fired'; ability?: string; row?: number },
+  state: {
+    round: number;
+    you?: string;
+    mode?: 'default' | 'held' | 'fired';
+    ability?: string;
+    row?: number;
+  },
 ): LiveSnapshotV2 {
   const s = playSample({ ...o, stage: 3 });
   const round = Math.min(state.round, 8);
@@ -275,7 +292,9 @@ export function liveSample(
   const defaultRound = ability === 'purge' ? 2 : ability === 'shield-wall' ? 3 : 6;
   const mode = state.mode ?? 'default';
   const acted = mode !== 'held' && defaultRound <= round;
-  const events = s.events.filter((e) => e.round <= round && !(e.board?.type === 'end' && round < s.rounds));
+  const events = s.events.filter(
+    (e) => e.round <= round && !(e.board?.type === 'end' && round < s.rounds),
+  );
   const startedAt = 1_800_000_000_000;
   const roundMs = 30_000;
   const alias = state.you ?? 'm1';
@@ -325,5 +344,82 @@ export function liveSample(
     carry: s.before,
     watching: ['Mira', 'Jun'],
     loot: null,
+  };
+}
+
+/** The after-action numbers of a stage, counted from its own events (the lean shape of the worker's `buildStatsV2`). */
+export function statsSample(o: FightSampleOptions): StatsV2 {
+  const s = playSample(o);
+  const ownerOf = new Map(s.fighters.map((f) => [f.key, f.owner]));
+  const damage = new Map<string, number>();
+  const down = new Map<string, number>();
+  const byCreature = new Map<string, number>();
+  let reactions = 0;
+  let blocked = 0;
+  let dodges = 0;
+  let intercepts = 0;
+  let healed = 0;
+  const byMark: Record<string, number> = {};
+  for (const e of s.events) {
+    const b = e.board;
+    if (b === undefined) continue;
+    if (b.type === 'hit') {
+      if (b.from !== null && b.to === null) {
+        const owner = ownerOf.get(b.from) ?? '';
+        damage.set(owner, (damage.get(owner) ?? 0) + b.damage);
+        byCreature.set(b.from, (byCreature.get(b.from) ?? 0) + b.damage);
+        if (b.blocked) blocked++;
+      } else {
+        if (b.blocked) blocked++;
+        if (b.dodged) dodges++;
+        if (b.by !== undefined) intercepts++;
+      }
+    } else if (b.type === 'knockout') {
+      const owner = ownerOf.get(b.who) ?? '';
+      down.set(owner, (down.get(owner) ?? 0) + 1);
+    } else if (b.type === 'reaction') {
+      reactions++;
+      byMark[b.mark] = (byMark[b.mark] ?? 0) + 1;
+    } else if (b.type === 'heal') healed += b.amount;
+  }
+  const you = 'm1';
+  const outNow = new Set(s.after.out);
+  return {
+    rules: 2,
+    phase: o.stage === 3 ? 'finale' : o.stage === 2 ? 'stage2' : 'stage1',
+    stage: o.stage - 1,
+    slot: o.slot,
+    cleared: s.won || s.after.bossHp < s.boss.hp * (o.stage === 1 ? 0.7 : 0.15),
+    kill: s.won,
+    rounds: s.rounds,
+    boss: {
+      id: s.boss.id,
+      name: s.boss.name,
+      hpMax: s.boss.hp,
+      hpStart: s.before.bossHp,
+      hpEnd: s.after.bossHp,
+    },
+    players: Object.keys(s.names.players).map((alias) => ({
+      displayName: s.names.players[alias] ?? 'Someone',
+      you: alias === you,
+      damage: damage.get(alias) ?? 0,
+      knockouts: down.get(alias) ?? 0,
+    })),
+    creatures: s.fighters.map((f) => ({
+      name: f.name,
+      species: f.species,
+      owner: s.names.players[f.owner] ?? null,
+      you: f.owner === you,
+      damage: byCreature.get(f.key) ?? 0,
+      hp: s.after.hp[f.key] ?? (outNow.has(f.key) ? 0 : f.maxHp),
+      maxHp: f.maxHp,
+      out: outNow.has(f.key),
+    })),
+    reactions: { total: reactions, byMark },
+    knockouts: [...down.values()].reduce((a, b) => a + b, 0),
+    blocked,
+    dodges,
+    intercepts,
+    healed,
   };
 }

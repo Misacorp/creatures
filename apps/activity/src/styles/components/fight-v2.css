@@ -72,8 +72,10 @@
 }
 
 .party-slot .slot-fx .float {
-  top: 40%;
+  top: 22%;
   font-size: var(--fs-small);
+  /* No sideways drift inside a tile: a word like "Dodged" would be cut by its edge. */
+  --drift: 0 !important;
   --rise: 2rem;
 }
 
@@ -82,7 +84,7 @@
 }
 
 .party-slot .slot-fx .ko-tag {
-  top: 40%;
+  top: 30%;
   font-size: var(--fs-row);
 }
 
@@ -142,4 +144,32 @@
 
 .stage-v2 .raid-board {
   margin-top: 0.25rem;
+}
+
+/* The strip is only the order here (row, boss, row, boss, ...): small chips, so the six of a three-row boss fit one line at 390 px. */
+.stage-v2 .turn-strip {
+  gap: 0.25rem;
+}
+
+.stage-v2 .turn-chip {
+  padding: 0.125rem 0.375rem;
+}
+
+/* The live finale's input under the board: the effect line, the Shield Wall's row picker, the button and Auto fire. */
+.finale-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem 0.25rem 0.25rem;
+}
+
+.finale-input p {
+  margin: 0;
+}
+
+.finale-input-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  align-items: center;
 }

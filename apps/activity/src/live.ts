@@ -90,7 +90,11 @@ export function nextBoundaryAt(
 export function nextPollDelay(snapshot: PollSnapshot, serverNow: number): number | null {
   if (snapshot.status === 'none' || snapshot.status === 'done') return null;
   const { startsAt, rounds } = snapshot;
-  if (startsAt != null && rounds !== undefined && serverNow > startsAt + rounds * LONGEST_ROUND_MS + GIVE_UP_MS) {
+  if (
+    startsAt != null &&
+    rounds !== undefined &&
+    serverNow > startsAt + rounds * LONGEST_ROUND_MS + GIVE_UP_MS
+  ) {
     return null;
   }
   let delay = POLL_MS;

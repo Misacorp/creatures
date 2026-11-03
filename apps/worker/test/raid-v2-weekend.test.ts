@@ -286,6 +286,12 @@ describe('a combat v2 raid weekend', () => {
         const stage1 = ctx.core.raid.replay(survivor, V2_WEEK.id, 1, 'stage1') as ReplayViewV2;
         expect(stage1.events.length).toBeGreaterThan(0);
         expect(stage1.fighters).toHaveLength(12);
+        // What the playback draws from: the boss card (move labels, the Escalating step) and each creature's Knack by name.
+        expect(stage1.card.moves.length).toBeGreaterThan(0);
+        expect(stage1.card.moves.every((m) => m.label !== '')).toBe(true);
+        expect(stage1.fighters.every((f) => f.knack === null || f.knackName !== null)).toBe(true);
+        expect(started.card?.moves.length).toBe(stage1.card.moves.length);
+        expect(started.fighters.some((f) => f.knackName !== null)).toBe(true);
         expect(ctx.core.raid.stats(survivor, V2_WEEK.id, 1, 'stage1')).toMatchObject({
           rules: 2,
           stage: 1,

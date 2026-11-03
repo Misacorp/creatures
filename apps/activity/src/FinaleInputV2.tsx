@@ -54,7 +54,10 @@ export function FinaleInputV2({
       {walls && !ability.fired && ability.mode !== 'fired' && (
         <Segmented
           label="Row to protect"
-          options={Array.from({ length: rows }, (_, r) => ({ id: String(r), label: wallRowName(r) }))}
+          options={Array.from({ length: rows }, (_, r) => ({
+            id: String(r),
+            label: wallRowName(r),
+          }))}
           value={String(row)}
           onChange={(value) => {
             setPicked(Number(value));

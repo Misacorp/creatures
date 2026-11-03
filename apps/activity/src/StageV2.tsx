@@ -9,12 +9,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from 'preact/hooks';
 import { bossArt } from './art';
 import { ArmourChip, EscalatingMeter, boardTurnSteps, stageTicks } from './BossCardV2';
 import { combatGlyph, moveGlyphId } from './combat-glyphs';
-import {
-  actionActive,
-  stepId,
-  type BoardState,
-  type StageModel,
-} from './fight-v2';
+import { actionActive, stepId, type BoardState, type StageModel } from './fight-v2';
 import type { FightBossV2, FightCreatureV2, FightNamesV2 } from './fight-v2-api';
 import { glyphOrUnknown } from './glyphs';
 import { cssVars } from './css-vars';
@@ -28,7 +23,7 @@ import { initialOf } from './raid-roster';
 import { ownerColour } from './raid-slots';
 import type { BossCardV2 } from './raid-v2-api';
 import { roundLabel } from './stage-rounds';
-import type { FxItem, IntroView } from './stage-fx';
+import type { FxItem } from './stage-fx';
 import type { BossStrike } from './stage';
 import { BossFx } from './stage/BossFx';
 import { KoTags, RoundIntro, fxRef } from './stage/StageFx';
@@ -141,13 +136,21 @@ export function StageV2({
   const grid = { rows, cols };
   const playerNames = Object.values(names.players);
 
-  const bySlot = useMemo(() => new Map(fighters.map((f) => [slotOf(f, rows), f])), [fighters, rows]);
-  const bySlotKey = useMemo(() => new Map(fighters.map((f) => [f.key, slotOf(f, rows)])), [fighters, rows]);
+  const bySlot = useMemo(
+    () => new Map(fighters.map((f) => [slotOf(f, rows), f])),
+    [fighters, rows],
+  );
+  const bySlotKey = useMemo(
+    () => new Map(fighters.map((f) => [f.key, slotOf(f, rows)])),
+    [fighters, rows],
+  );
   const hit = show?.flash ?? new Set<string | null>();
 
   // The live inputs in play: Rally lights everyone, a Shield Wall its row.
   const actions = state.actions.filter((a) => actionActive(a, state.round) && state.end === null);
-  const wallRows = new Set(actions.flatMap((a) => (a.kind === 'shieldWall' && a.row !== null ? [a.row] : [])));
+  const wallRows = new Set(
+    actions.flatMap((a) => (a.kind === 'shieldWall' && a.row !== null ? [a.row] : [])),
+  );
   const rallying = actions.some((a) => a.kind === 'rally');
 
   // The cues on the board: a move announced at round start shows its picture on each creature it will land on.
@@ -207,7 +210,8 @@ export function StageV2({
       const f = bySlot.get(slot);
       const now = f === undefined ? undefined : state.creatures[f.key];
       const where = `${rowNameV2(at)}, lane ${String((f?.col ?? Math.floor(slot / rows)) + 1)}`;
-      if (f === undefined) return { index: slot, hideNumber: true, ariaLabel: `${where}, empty`, occupant: null };
+      if (f === undefined)
+        return { index: slot, hideNumber: true, ariaLabel: `${where}, empty`, occupant: null };
       const parts = [
         `${where}, ${f.name}`,
         `${String(now?.hp ?? 0)} / ${String(f.maxHp)} HP`,
@@ -220,7 +224,10 @@ export function StageV2({
 
   // The turn strip lights the step on: the rows and the boss's turns of one round, those before it dimmed.
   const here = stepId(state.step);
-  const steps = boardTurnSteps(card, rows);
+  // The boss's moves are named on its line when it makes them, so the strip here is only the order: row, boss, row, boss.
+  const steps = boardTurnSteps(card, rows).map((s) =>
+    s.boss === undefined ? s : { ...s, boss: { moves: [] } },
+  );
   const hereAt = steps.findIndex((s) => s.id === here);
   const strip = steps.map((s, k) => ({
     ...s,
@@ -233,7 +240,8 @@ export function StageV2({
     if (landed?.kind !== 'creature' || landed.actor === null) return;
     if (Date.now() - handScrolledAt.current < 4000) return;
     const f = fighters.find((c) => c.key === landed.actor);
-    if (f !== undefined) scrollToLanes(stripRef.current, f.col, f.col, { smooth: !reduced, follow: true });
+    if (f !== undefined)
+      scrollToLanes(stripRef.current, f.col, f.col, { smooth: !reduced, follow: true });
   }, [landed]);
 
   // A hand-scroll holds the board where the player put it for a few seconds.
@@ -308,11 +316,7 @@ export function StageV2({
       : null;
 
   return (
-    <section
-      class="stage stage-v2"
-      aria-label="Fight stage"
-      ref={cssVars({ '--beat': '600ms' })}
-    >
+    <section class="stage stage-v2" aria-label="Fight stage" ref={cssVars({ '--beat': '600ms' })}>
       <StageHead
         place={place}
         round={
@@ -355,7 +359,11 @@ export function StageV2({
           <div class="stage-status">
             {escalation !== null && <EscalatingMeter {...escalation} />}
             {state.mired > 0 && (
-              <Tag kind="chip" icon={{ kind: 'glyph', id: 'mired' }} label={`Mired, ${String(state.mired)}`}>
+              <Tag
+                kind="chip"
+                icon={{ kind: 'glyph', id: 'mired' }}
+                label={`Mired, ${String(state.mired)}`}
+              >
                 {`x${String(state.mired)}`}
               </Tag>
             )}
@@ -364,7 +372,10 @@ export function StageV2({
               <Tag
                 key={`${a.kind}-${String(k)}`}
                 kind="chip"
-                icon={{ kind: 'glyph', id: a.kind === 'shieldWall' ? 'shield' : a.kind === 'purge' ? 'purge' : 'ability' }}
+                icon={{
+                  kind: 'glyph',
+                  id: a.kind === 'shieldWall' ? 'shield' : a.kind === 'purge' ? 'purge' : 'ability',
+                }}
               >
                 {`${names.players[a.by] ?? 'Someone'}: ${ACTION_NAMES[a.kind]}`}
               </Tag>
@@ -402,13 +413,14 @@ export function StageV2({
               const slot = bySlotKey.get(id);
               return slot === undefined
                 ? null
-                : (stripRef.current?.querySelector<HTMLElement>(`[data-slot="${String(slot)}"]`) ?? null);
+                : (stripRef.current?.querySelector<HTMLElement>(`[data-slot="${String(slot)}"]`) ??
+                    null);
             }}
             zone={() => null}
           />
         )}
       </div>
-      {intro !== null && <RoundIntro intro={intro as IntroView} />}
+      {intro !== null && <RoundIntro intro={intro} />}
     </section>
   );
 }

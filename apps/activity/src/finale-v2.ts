@@ -31,7 +31,8 @@ export const ACTION_LINE: Readonly<Record<ActionId, string>> = {
   purge: 'The boss resists no element or reaction for 2 rounds.',
 };
 
-export const isActionId = (id: string): id is ActionId => (ACTION_IDS as readonly string[]).includes(id);
+export const isActionId = (id: string): id is ActionId =>
+  (ACTION_IDS as readonly string[]).includes(id);
 
 /** Where the caller's input stands. */
 export type InputPhase = 'auto' | 'held' | 'queued' | 'acted';
@@ -47,19 +48,38 @@ export interface InputStatus {
 /** The status of the caller's input, from the snapshot's own numbers. */
 export function inputStatus(ability: LiveAbilityV2, rounds: number): InputStatus {
   if (ability.fired && ability.firedAtRound !== null) {
-    return { phase: 'acted', round: ability.firedAtRound, text: `Acted in round ${String(ability.firedAtRound)}` };
+    return {
+      phase: 'acted',
+      round: ability.firedAtRound,
+      text: `Acted in round ${String(ability.firedAtRound)}`,
+    };
   }
   if (ability.mode === 'fired' && ability.fireAtRound !== null) {
-    return { phase: 'queued', round: ability.fireAtRound, text: `Acts in round ${String(ability.fireAtRound)}` };
+    return {
+      phase: 'queued',
+      round: ability.fireAtRound,
+      text: `Acts in round ${String(ability.fireAtRound)}`,
+    };
   }
   if (ability.mode === 'held') {
-    return { phase: 'held', round: null, text: `Waits for you, acts in round ${String(rounds)} at the latest` };
+    return {
+      phase: 'held',
+      round: null,
+      text: `Waits for you, acts in round ${String(rounds)} at the latest`,
+    };
   }
-  return { phase: 'auto', round: ability.defaultRound, text: `Acts by itself in round ${String(ability.defaultRound)}` };
+  return {
+    phase: 'auto',
+    round: ability.defaultRound,
+    text: `Acts by itself in round ${String(ability.defaultRound)}`,
+  };
 }
 
 /** Whether the Fire button works: the fight is on, the input has not acted or been pressed, and a round is left for it to take effect in. */
-export function canFire(snapshot: Pick<LiveSnapshotV2, 'status' | 'round' | 'rounds'>, ability: LiveAbilityV2): boolean {
+export function canFire(
+  snapshot: Pick<LiveSnapshotV2, 'status' | 'round' | 'rounds'>,
+  ability: LiveAbilityV2,
+): boolean {
   return (
     snapshot.status === 'live' &&
     snapshot.round >= 1 &&
@@ -70,13 +90,20 @@ export function canFire(snapshot: Pick<LiveSnapshotV2, 'status' | 'round' | 'rou
 }
 
 /** Whether Auto fire can be switched: until the input acts or is pressed. */
-export function canToggleAuto(snapshot: Pick<LiveSnapshotV2, 'status'>, ability: LiveAbilityV2): boolean {
+export function canToggleAuto(
+  snapshot: Pick<LiveSnapshotV2, 'status'>,
+  ability: LiveAbilityV2,
+): boolean {
   return snapshot.status === 'live' && !ability.fired && ability.mode !== 'fired';
 }
 
 /** The caller's own input in a snapshot, or null (not in the fight, or no input dealt). */
-export function ownInput(snapshot: Pick<LiveSnapshotV2, 'abilities' | 'you'>): LiveAbilityV2 | null {
-  return snapshot.you === null ? null : (snapshot.abilities.find((a) => a.alias === snapshot.you) ?? null);
+export function ownInput(
+  snapshot: Pick<LiveSnapshotV2, 'abilities' | 'you'>,
+): LiveAbilityV2 | null {
+  return snapshot.you === null
+    ? null
+    : (snapshot.abilities.find((a) => a.alias === snapshot.you) ?? null);
 }
 
 /** A row's name for the Shield Wall picker. */
