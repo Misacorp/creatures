@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: The visitor leaves when Sunday ends, after the finale
+
+ID: `2026-11-03-the-visitor-leaves-when-sunday-ends` · Status: current
+
+**Decision.** The weekly visitor is in the valley from Thursday 00:00 until Sunday ends (Monday 00:00, the guild's time zone), not until the moment the raid's finale starts. Amends V-VIS-1's "leaves at the raid's finale on Sunday evening" (round 17, Q43: B).
+
+**Reasoning.** Combat v2 moved the finale to Sunday 20:00, the time a Sunday-evening player looks in for the raid; leaving at that minute meant the lab's weekly player (and anyone who comes for the finale) found his stall shuttered every week, the opposite of Q43's reason ("so every kind of player meets him"). Staying to the end of Sunday keeps that intent; the economy lab already lets him stay to Sunday 23:00.
+
 ## 2026-11-01: Late-season scrap is deferred; the lab pretends an idol takes the surplus **[Misa]**
 
 ID: `2026-11-01-late-season-scrap-is-deferred-the` · Status: current · Amends: `2026-11-01-no-tempering-more-places-to-spend`

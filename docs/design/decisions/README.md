@@ -479,6 +479,7 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-03 The visitor leaves when Sunday ends, after the finale
 - 2026-11-01 Late-season scrap is deferred; the lab pretends an idol takes the surplus \[Misa\]
 - 2026-11-01 No tempering; more places to spend scrap before the late season (round 20, Q49) \[Misa\] (amended)
 - 2026-10-31 The welcome-back popup is the Gazette: short prose, items that speak, tappable for a popover \[Misa\]
