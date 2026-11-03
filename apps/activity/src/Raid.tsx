@@ -423,11 +423,7 @@ export function Raid({
       ) : (
         <>
           <section class="raid-section track-section" aria-label="The track">
-            <TrackStrip
-              order={v2.track.order}
-              index={v2.track.index}
-              rank={view.rank ?? v2.slot}
-            />
+            <TrackStrip order={v2.track.order} index={v2.track.index} rank={view.rank ?? v2.slot} />
           </section>
           <BossCardV2 view={view} lit={litId} onLit={setLitId} />
         </>

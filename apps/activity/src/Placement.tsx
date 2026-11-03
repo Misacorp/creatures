@@ -515,8 +515,7 @@ export function Placement(props: Props) {
           showEffects={false}
           placedNote=""
           anchor={() =>
-            stripRef.current?.querySelector<HTMLElement>(`[data-slot="${String(swapFor)}"]`) ??
-            null
+            stripRef.current?.querySelector<HTMLElement>(`[data-slot="${String(swapFor)}"]`) ?? null
           }
           onPick={pickSwap}
           onClose={() => {

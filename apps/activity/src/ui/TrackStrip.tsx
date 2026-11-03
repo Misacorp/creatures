@@ -31,10 +31,10 @@ export function TrackStrip({ order, index, rank }: TrackStripProps) {
               aria-current={state === 'now' ? 'step' : undefined}
             >
               <span class="track-portrait" aria-hidden="true">
-                <Sprite sprite={art.sprite} scale={1} />
+                <Sprite sprite={art.sprite} scale={2} />
                 {state === 'beaten' && (
                   <span class="track-tick">
-                    <Sprite sprite={glyphOrUnknown('tick')} scale={1} />
+                    <Sprite sprite={glyphOrUnknown('tick')} scale={2} />
                   </span>
                 )}
               </span>

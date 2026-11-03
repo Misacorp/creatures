@@ -292,7 +292,10 @@ const isPhaseId = (value: unknown): value is RaidPhaseId =>
   RAID_PHASE_IDS.some((id) => id === value);
 
 /** A v2 week stores its first two stages as `stage1` and `stage2`; the screen reads them as the events they happen at. */
-const V2_STAGE_PHASE: Readonly<Record<string, RaidPhaseId>> = { stage1: 'phase1', stage2: 'phase2' };
+const V2_STAGE_PHASE: Readonly<Record<string, RaidPhaseId>> = {
+  stage1: 'phase1',
+  stage2: 'phase2',
+};
 
 /** The phase of a stored result, with a v2 stage named as its calendar event (`phase1`, `phase2`; the finale is the finale). */
 const resultPhase = (value: unknown): RaidPhaseId | null =>

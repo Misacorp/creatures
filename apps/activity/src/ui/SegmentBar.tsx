@@ -52,9 +52,7 @@ export function SegmentBar({
   const segments = Array.from({ length: total }, (_, k) => (
     <i
       key={k}
-      class={
-        k < lit ? undefined : k < was ? 'gone drain' : k < ghostLit ? 'gone ghost' : 'gone'
-      }
+      class={k < lit ? undefined : k < was ? 'gone drain' : k < ghostLit ? 'gone ghost' : 'gone'}
     />
   ));
   if (size === 'unit') {

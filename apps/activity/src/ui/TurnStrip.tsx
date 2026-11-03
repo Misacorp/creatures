@@ -31,7 +31,10 @@ interface TurnStripProps {
  */
 export function TurnStrip({ chips, label }: TurnStripProps) {
   return (
-    <ol class="turn-strip" aria-label={label}>
+    <ol
+      class={chips.some((chip) => chip.boss !== undefined) ? 'turn-strip wrap' : 'turn-strip'}
+      aria-label={label}
+    >
       {chips.map((chip) => {
         const classes = ['turn-chip'];
         if (chip.current) classes.push('current');

@@ -136,9 +136,9 @@ export function RaidBoard(props: RaidBoardProps) {
           <p class="board-lane-head" aria-hidden="true">
             Lane
           </p>
-          {rows.map((row) => (
+          {rows.map((row, at) => (
             <p
-              key={row.zone}
+              key={at}
               class={
                 props.noneRow === row.zone
                   ? 'zone-label board-label no-reaction'
@@ -165,8 +165,8 @@ export function RaidBoard(props: RaidBoardProps) {
               </span>
             ))}
           </div>
-          {rows.map((row) => (
-            <div key={row.zone} class="board-row" role="group" aria-label={row.name}>
+          {rows.map((row, at) => (
+            <div key={at} class="board-row" role="group" aria-label={row.name}>
               {row.slots.map((slot) => (
                 <SlotButton
                   key={slot.index}

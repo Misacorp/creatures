@@ -61,3 +61,9 @@
   font-size: var(--fs-small);
   line-height: 1;
 }
+
+/* The v2 board's strip wraps rather than scrolls: it is short, and a cut-off step would hide a move. */
+.turn-strip.wrap {
+  flex-wrap: wrap;
+  overflow-x: visible;
+}

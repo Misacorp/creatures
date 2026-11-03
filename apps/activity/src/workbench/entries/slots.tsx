@@ -386,7 +386,7 @@ const slotButton: Entry = {
   file: 'apps/activity/src/ui/SlotButton.tsx',
   group: 'Slots',
   description:
-    'One slot of a board: its number, the creature standing in it (picture, name, level; in the raid the owner initial and the element ring) or the empty label, and what dropping a creature here would do.',
+    "One slot of a board: its number, the creature standing in it (picture, name, level; in the raid the owner initial and the element ring) or the empty label, and what dropping a creature here would do. On a combat v2 board the tile also has the creature's role icon, its Knack as a small chip, the HP it carries between stages as a tiny bar, an Asked strip when you asked its owner to swap, the red target look with the move's picture when a boss move would hit it, and the plain attack's sword when the boss's plain attack is aimed at it.",
   controls: {
     species: { kind: 'select', options: ['none', ...SPECIES_IDS] },
     level: { kind: 'number', min: 1, max: 30 },
@@ -400,8 +400,25 @@ const slotButton: Entry = {
     compact: { kind: 'toggle' },
     disabled: { kind: 'toggle' },
     emptyLabel: { kind: 'text', maxLength: 12 },
+    v2: { kind: 'toggle' },
+    role: { kind: 'select', options: ['setter', 'payoff', 'guard', 'support'] },
+    knack: { kind: 'text', maxLength: 24 },
+    carriedHp: { kind: 'number', min: -1, max: 100 },
+    hitBy: {
+      kind: 'select',
+      options: ['none', 'shape-slam', 'shape-lance', 'sweep', 'shape-quake'],
+    },
+    plainTarget: { kind: 'toggle' },
+    badge: { kind: 'text', maxLength: 8 },
   },
   defaults: {
+    v2: false,
+    role: 'guard',
+    knack: 'Shield Wall',
+    carriedHp: -1,
+    hitBy: 'none',
+    plainTarget: false,
+    badge: '',
     species: 'cindle',
     level: 5,
     owner: false,
@@ -432,6 +449,22 @@ const slotButton: Entry = {
     },
     { name: 'Empty', props: { species: 'none' } },
     {
+      name: 'Combat v2 tile: role, Knack and carried HP',
+      props: { v2: true, compact: true, owner: true, element: 'tide', carriedHp: 55 },
+    },
+    {
+      name: 'Combat v2: a boss move would hit it',
+      props: { v2: true, compact: true, owner: true, element: 'ember', hitBy: 'shape-lance' },
+    },
+    {
+      name: "Combat v2: the plain attack's target",
+      props: { v2: true, compact: true, owner: true, element: 'grove', plainTarget: true },
+    },
+    {
+      name: 'Combat v2: you asked its owner to swap',
+      props: { v2: true, compact: true, owner: true, ownerColour: 3, badge: 'Asked' },
+    },
+    {
       name: 'Raid tile (owner and element)',
       props: { owner: true, ownerColour: 2, element: 'tide', compact: true },
     },
@@ -445,10 +478,13 @@ const slotButton: Entry = {
     const def = content.reactions.find((r) => r.id === str(p, 'reaction'));
     const marker = str(p, 'reactionRole') === 'marker';
     const influence = str(p, 'influence');
+    const hitBy = str(p, 'hitBy');
     const cue: SlotCue | undefined =
-      def === undefined && influence === 'none'
+      def === undefined && influence === 'none' && hitBy === 'none' && !bool(p, 'plainTarget')
         ? undefined
         : {
+            ...(hitBy === 'none' ? {} : { hit: { glyph: hitBy } }),
+            ...(bool(p, 'plainTarget') ? { plain: true as const } : {}),
             ...(influence === 'buff' ? { buff: true as const } : {}),
             ...(influence === 'cover' ? { cover: true as const } : {}),
             ...(def === undefined
@@ -462,11 +498,12 @@ const slotButton: Entry = {
                   },
                 }),
           };
-    return (
+    const tile = (
       <SlotButton
         slot={{
           index: 0,
           ariaLabel: 'Slot 1',
+          ...(str(p, 'badge') === '' ? {} : { badge: str(p, 'badge') }),
           occupant:
             species === 'none'
               ? null
@@ -480,6 +517,16 @@ const slotButton: Entry = {
                     ? { owner: { colour: num(p, 'ownerColour'), initial: 'Y' } }
                     : {}),
                   ...(str(p, 'element') === 'none' ? {} : { element: str(p, 'element') }),
+                  ...(bool(p, 'v2')
+                    ? {
+                        v2: {
+                          role: str(p, 'role'),
+                          knack: str(p, 'knack') === '' ? null : str(p, 'knack'),
+                          carried:
+                            num(p, 'carriedHp') < 0 ? null : { hp: num(p, 'carriedHp'), max: 100 },
+                        },
+                      }
+                    : {}),
                 },
         }}
         scale={bool(p, 'compact') ? 2 : 3}
@@ -494,6 +541,14 @@ const slotButton: Entry = {
         onPointerDown={() => undefined}
         onTap={() => undefined}
       />
+    );
+    // A compact tile sits in the raid board's row, which sizes it (and the combat v2 board is a little taller).
+    return bool(p, 'compact') ? (
+      <div class={bool(p, 'v2') ? 'raid-board v2' : 'raid-board'}>
+        <div class="board-row">{tile}</div>
+      </div>
+    ) : (
+      tile
     );
   },
 };

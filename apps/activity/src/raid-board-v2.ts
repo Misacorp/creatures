@@ -12,13 +12,7 @@ import { moveGlyphId } from './combat-glyphs';
 import type { RowSlotView } from './raid-api';
 import { initialOf } from './raid-roster';
 import { ownerColour } from './raid-slots';
-import type {
-  BoardCreatureV2,
-  BossMoveV2,
-  MovePreviewV2,
-  SwapV2,
-  SwapsV2,
-} from './raid-v2-api';
+import type { BoardCreatureV2, BossMoveV2, MovePreviewV2, SwapV2, SwapsV2 } from './raid-v2-api';
 import type { BoardRow } from './raid-board';
 import type { SlotModel } from './ui/SlotButton';
 import type { SlotCue } from './ui/slot-cue';

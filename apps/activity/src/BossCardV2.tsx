@@ -130,7 +130,9 @@ export function BossCardV2({
               {...bossHpWords(hp.current, hp.max)}
             />
             <p class="boss-stage muted small">
-              {v2.nextStage > STAGES ? 'Weekend over' : `Stage ${String(stage)} of ${String(STAGES)}`}
+              {v2.nextStage > STAGES
+                ? 'Weekend over'
+                : `Stage ${String(stage)} of ${String(STAGES)}`}
             </p>
           </div>
         )}

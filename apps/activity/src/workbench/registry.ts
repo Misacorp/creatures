@@ -27,6 +27,7 @@ import { popoverEntries } from './entries/popovers';
 import { recipeCardEntries } from './entries/recipe-card';
 import { supplyCraftingEntries } from './entries/supply-crafting';
 import { raidBoardEntries } from './entries/raid-board';
+import { raidV2Entries } from './entries/raid-v2';
 import { raidSummaryEntries } from './entries/raid-summary';
 import { sendFormEntries } from './entries/send-form';
 import { sidePanelEntries } from './entries/side-panel';
@@ -55,6 +56,7 @@ export const ENTRIES: readonly Entry[] = [
   ...slotEntries,
   ...slotDrawerEntries,
   ...raidBoardEntries,
+  ...raidV2Entries,
   ...raidSummaryEntries,
   ...lootEntries,
   ...findEntries,

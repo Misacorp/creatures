@@ -409,6 +409,7 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-03 Combat v2 client, second part: the raid tab before and between stages
 - 2026-11-02 Combat v2 client, first part: the Knack picker and the creature page follow the data
 - 2026-10-31 \[Misa\] The fight board shows worn gear, item detail does not
 - 2026-10-31 Creatures blink, and shiny creatures twinkle
