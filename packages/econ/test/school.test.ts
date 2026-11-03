@@ -100,8 +100,9 @@ describe('the visiting teacher (V-SCH-11 to V-SCH-13)', () => {
     // Alike books: whatever is missing is missing for all of them, so there is nothing to draw.
     books([7, 7, 7, 7]);
     expect(drawTalent(server, players)).toBeNull();
+    // Alike books that all lack a talent: every talent benefits everyone, so the fewest there are (all of them) is taught.
     books([4, 4, 4, 4]);
-    expect(drawTalent(server, players)).toBeNull();
+    expect(pool.slice(4)).toContain(drawTalent(server, players));
     // Two players lack the last two talents of the pool, two hold all: two beneficiaries each.
     books([7, 7, 5, 5]);
     const talent = drawTalent(server, players);
@@ -117,12 +118,36 @@ describe('the visiting teacher (V-SCH-11 to V-SCH-13)', () => {
     expect(drawTalent(server, players)).toBe(pool[6]);
   });
 
+  it('prefers a few beneficiaries (2 to a quarter of the server, at least 2) over many', () => {
+    const { server, players } = serverOf(8, [0]);
+    const pool = [...poolOf(0)];
+    const sizes = [7, 7, 7, 6, 5, 5, 4, 4];
+    sizes.forEach((n, i) => (players[i]!.book[0] = new Set(pool.slice(0, n))));
+    // pool[6] is lacked by 5 players, pool[5] by 4, pool[4] by 2: the band is 2 players, so only pool[4] is taught.
+    for (let i = 0; i < 20; i++) {
+      expect(drawTalent(createServer('teacher', i, options, RULES), players)).toBe(pool[4]);
+    }
+    // The first draft takes any of several.
+    const old = createServer('teacher', 1, { ...options, teacherRule: 'several' }, RULES);
+    const seen = new Set(Array.from({ length: 60 }, () => drawTalent(old, players)));
+    expect(seen.size).toBeGreaterThan(2);
+    expect(drawTalent(server, players)).not.toBeNull();
+  });
+
   it('seats a student before the arrival, and the lesson enters the book by the next morning', () => {
     const { server, players } = serverOf(2, [0]);
     const p = players[0]!;
     const talent = poolOf(0).find((t) => !p.book[0]!.has(t))!;
     server.teacherTalent[1] = talent;
-    server.teacherVisits.push({ week: 1, talent, players: 2, eligible: 1, learners: 0 });
+    server.teacherVisits.push({
+      week: 1,
+      talent,
+      players: 2,
+      eligible: 1,
+      learners: 0,
+      profiles: [],
+      eligibleProfiles: [],
+    });
     // Sunday of the week before the arrival: announced since Friday.
     startLearning(p, 6 * 24 + 20, server);
     expect(p.school).toHaveLength(1);

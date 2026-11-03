@@ -58,6 +58,8 @@ export interface ServerConfig {
   readonly tempering?: boolean;
   /** Whether the idol (a placeholder scrap sink) is in the valley (default: `rules.idol.on`; the report runs the other value beside it). */
   readonly idol?: boolean;
+  /** How the School's teacher picks its talent (default `few`; `several` is the first draft, kept as a variant for the comparison). */
+  readonly teacherRule?: 'few' | 'several';
   /** Whether catch-up also multiplies what the dungeon and the raid pay (a sensitivity run for T-2d). */
   readonly catchUpFights?: boolean;
 }
@@ -227,6 +229,13 @@ export const VARIANTS: readonly ServerConfig[] = [
     bossKills: 'all',
     seedKey: 'mixed8',
     idol: !RULES.idol.on,
+  },
+  // The School's teacher with the first draft of the pick rule (any number of players from 2 to all but one), for the comparison.
+  {
+    ...MIXED_8,
+    id: 'mixed8-teacherold',
+    label: 'Mixed 8, the teacher picks any talent that benefits several',
+    teacherRule: 'several',
   },
   {
     ...MIXED_8,

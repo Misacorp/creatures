@@ -539,6 +539,7 @@ export function runServer(
       visitor: config.visitor !== false,
       tempering: config.tempering ?? rules.tempering.on,
       idol: config.idol ?? rules.idol.on,
+      teacherRule: config.teacherRule ?? 'few',
     },
     rules,
   );

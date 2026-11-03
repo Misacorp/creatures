@@ -60,19 +60,39 @@ export function teacherDay(
       players: joined.length,
       eligible: talent === null ? 0 : joined.filter((p) => benefits(p, talent)).length,
       learners: 0,
+      profiles: joined.map((p) => p.profile.id),
+      eligibleProfiles:
+        talent === null ? [] : joined.filter((p) => benefits(p, talent)).map((p) => p.profile.id),
     });
   }
 }
 
 /**
- * V-SCH-12: a talent that benefits at least one player and not all, preferring one that benefits more than one; null when there is none.
- * `cull` is in no pool, so no player is ever benefited by it.
+ * V-SCH-12 (the owner's words: "it's fine if it doesn't benefit many players ... select one that benefits hopefully more than one. But we
+ * don't want ... everyone"). Of the talents that benefit at least one player: first those that benefit a few players, from 2 up to
+ * max(2, 25% of the server's players) and never all; else those that benefit exactly one; else the fewest there are. (The first draft,
+ * rule `several`: any number from 2 to all but one, else exactly one.) Null when no talent benefits anyone. `cull` is in no pool.
  */
 export function drawTalent(server: Server, joined: readonly Player[]): number | null {
+  const n = joined.length;
   const counts = TALENT_IDS.map((_, t) => joined.filter((p) => benefits(p, t)).length);
-  const some = counts.flatMap((n, t) => (n >= 1 && n < joined.length ? [t] : []));
-  const several = some.filter((t) => (counts[t] ?? 0) >= 2);
-  const from = several.length > 0 ? several : some;
+  const some = counts.flatMap((c, t) => (c >= 1 ? [t] : []));
+  if (some.length === 0) return null;
+  const old = server.config.teacherRule === 'several';
+  const cap = old ? n - 1 : Math.max(2, Math.floor(n * 0.25));
+  const band = some.filter(
+    (t) => (counts[t] ?? 0) >= 2 && (counts[t] ?? 0) <= cap && (counts[t] ?? 0) < n,
+  );
+  const one = some.filter((t) => counts[t] === 1 && n > 1);
+  const fewest = Math.min(...some.map((t) => counts[t] ?? 0));
+  const from =
+    band.length > 0
+      ? band
+      : one.length > 0
+        ? one
+        : old
+          ? []
+          : some.filter((t) => counts[t] === fewest);
   if (from.length === 0) return null;
   return from[Math.floor(uniform(server.teacherRng) * from.length)] ?? null;
 }

@@ -76,6 +76,18 @@ describe("the week's talent (V-SCH-12)", () => {
     }
   });
 
+  it('prefers a few players (2 up to a quarter of the server, at least 2) over many', () => {
+    // Eight players: line c has t5 only for c (benefits 2 players) while t3 is in every pool (benefits all but those who hold it).
+    const players = [
+      ...['p1', 'p2'].map((id) => player(id, ['c'])),
+      ...['p3', 'p4', 'p5', 'p6', 'p7', 'p8'].map((id) => player(id, ['a', 'b'])),
+    ];
+    // t5: 2 players (the band); t1: 6 (a); t4: 6 (b); t3: 8 (everyone); t2: 6. Only t5 is in the band.
+    for (let week = 0; week < 30; week += 1) {
+      expect(weeksTalent(players, pools, week)).toBe('t5');
+    }
+  });
+
   it('takes a talent for one player over one for everyone', () => {
     // Both own line a only: t1, t2, t3 all benefit both (everyone); with p2 holding t1, t1 benefits one.
     const players = [player('p1', ['a']), player('p2', ['a'], { a: ['t1'] })];

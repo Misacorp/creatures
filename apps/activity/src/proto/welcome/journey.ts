@@ -51,6 +51,8 @@ export type JourneyEvent =
   | { kind: 'visitor-reroll'; rarity: string; itemLevel: number; acorns: number; scrap: number }
   | { kind: 'school-learning'; slot: number; acorns: number }
   | { kind: 'school-teacher'; acorns: number }
+  | { kind: 'school-seated'; talent: string }
+  | { kind: 'school-lesson'; talent: string }
   | { kind: 'plain'; text: string };
 
 const isStep = (text: string): text is MasteryStep =>
@@ -121,7 +123,7 @@ export function parseEvent(text: string): JourneyEvent {
   }
 
   const learning =
-    /^school: a creature began learning its talent (\d+) \((\d+) Acorns, \d+ hours\)$/.exec(text);
+    /^school: a creature learned its talent (\d+) on its card \((\d+) Acorns\)$/.exec(text);
   if (learning?.[1] !== undefined && learning[2] !== undefined) {
     return {
       kind: 'school-learning',
@@ -130,12 +132,17 @@ export function parseEvent(text: string): JourneyEvent {
     };
   }
 
-  const teacher = /^school: a visiting teacher's lesson for a creature \((\d+) Acorns\)$/.exec(
-    text,
-  );
+  const teacher =
+    /^school: a creature learned the teacher's talent on its card \((\d+) Acorns\)$/.exec(text);
   if (teacher?.[1] !== undefined) {
     return { kind: 'school-teacher', acorns: Number.parseInt(teacher[1], 10) };
   }
+
+  const seated = /^school: a student seated for ([\w-]+)$/.exec(text);
+  if (seated?.[1] !== undefined) return { kind: 'school-seated', talent: seated[1] };
+
+  const lesson = /^school: a creature learned ([\w-]+) from the visiting teacher$/.exec(text);
+  if (lesson?.[1] !== undefined) return { kind: 'school-lesson', talent: lesson[1] };
 
   return { kind: 'plain', text };
 }

@@ -465,8 +465,9 @@ function storiesOf(c: Ctx): Story[] {
   // -- Creatures: the School's news
   const learner =
     c.crew.resting[visit.day % Math.max(1, c.crew.resting.length)] ?? c.crew.scouts[1];
-  const learning = ofKind(events, 'school-learning')[0];
-  const lesson = ofKind(events, 'school-teacher')[0];
+  const learning = ofKind(events, 'school-learning')[0] ?? ofKind(events, 'school-teacher')[0];
+  const lesson = ofKind(events, 'school-lesson')[0];
+  const seated = ofKind(events, 'school-seated')[0];
   if (learning !== undefined) {
     out.push({
       id: 'learning',
@@ -485,14 +486,19 @@ function storiesOf(c: Ctx): Story[] {
       glyph: 'journal',
       species: undefined,
     });
-  } else if (lesson !== undefined) {
+  } else if (lesson !== undefined || seated !== undefined) {
+    const talent = (lesson ?? seated)?.talent.replace(/-/g, ' ') ?? '';
     out.push({
       id: 'lesson',
       kind: 'creature',
       weight: WEIGHT.lesson,
       place: 'school',
       count: 1,
-      headline: upper(`A teacher visits ${c.name(learner)}`),
+      headline: upper(
+        lesson !== undefined
+          ? `${c.name(learner)} learns ${talent} from the teacher`
+          : `${c.name(learner)} sits at the School for ${talent}`,
+      ),
       blurb: '',
       scene: {
         place: 'school',

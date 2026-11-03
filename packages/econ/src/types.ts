@@ -85,6 +85,9 @@ export interface TeacherVisit {
   players: number;
   eligible: number;
   learners: number;
+  /** The kinds of the players at the arrival and of those who would benefit (a profile id each), for the per-kind shares. */
+  profiles: string[];
+  eligibleProfiles: string[];
 }
 
 export interface Piece {
@@ -327,6 +330,8 @@ export interface ServerOptions {
   tempering?: boolean;
   /** Whether the idol (a placeholder scrap sink) is in the valley (replaces `rules.idol.on`). */
   idol?: boolean;
+  /** How the teacher picks (V-SCH-12): `few` (the default: a few players benefit) or `several` (any number from 2 to all but one; the first round-22 draft). */
+  teacherRule?: 'few' | 'several';
 }
 
 export interface Server {

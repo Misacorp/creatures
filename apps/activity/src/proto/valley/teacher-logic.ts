@@ -82,12 +82,12 @@ function hash(text: string): number {
 }
 
 /**
- * The week's talent (V-SCH-12), or null when nobody benefits from any talent (no teacher that week). Of the
- * talents that benefit at least one player: first those that benefit more than one player but not everyone, then
- * those that benefit exactly one (when there are other players), and only when every candidate benefits everyone
- * (or the server has one player) any of them: with `b` benefiting out of `n`, that is the fewest benefiting
- * that exist. Inside the chosen group the week's hash decides, so the same week and players always give the same
- * talent. Talents are plain ids: a teacher never teaches a golden one.
+ * The week's talent (V-SCH-12), or null when nobody benefits from any talent (no teacher that week). The owner's
+ * words: "it's fine if it doesn't benefit many players ... select one that benefits hopefully more than one. But we
+ * don't want ... everyone". Of the talents that benefit at least one player: first those that benefit a few players,
+ * from 2 up to max(2, 25% of the players) and never all; else those that benefit exactly one (when there are other
+ * players); else the fewest benefiting that exist. Inside the chosen group the week's hash decides, so the same
+ * week and players always give the same talent. Talents are plain ids: a teacher never teaches a golden one.
  */
 export function weeksTalent(players: readonly Player[], pools: Pools, week: number): string | null {
   const all = [...new Set(Object.values(pools).flat())].sort();
@@ -96,11 +96,11 @@ export function weeksTalent(players: readonly Player[], pools: Pools, week: numb
     .map((id) => ({ id, b: players.filter((p) => benefits(p, id, pools)).length }))
     .filter((t) => t.b > 0);
   if (counted.length === 0) return null;
-  const several = counted.filter((t) => t.b > 1 && t.b < n);
+  const cap = Math.max(2, Math.floor(n * 0.25));
+  const few = counted.filter((t) => t.b >= 2 && t.b <= cap && t.b < n);
   const one = counted.filter((t) => t.b === 1 && n > 1);
   const fewest = Math.min(...counted.map((t) => t.b));
-  const group =
-    several.length > 0 ? several : one.length > 0 ? one : counted.filter((t) => t.b === fewest);
+  const group = few.length > 0 ? few : one.length > 0 ? one : counted.filter((t) => t.b === fewest);
   const ranked = group
     .map((t) => ({ id: t.id, h: hash(`${String(week)}:${t.id}`) }))
     .sort((a, b) => a.h - b.h || (a.id < b.id ? -1 : 1));

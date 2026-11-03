@@ -118,6 +118,25 @@ describe('parseEvent', () => {
     });
   });
 
+  it('reads the School: a student seated, a lesson learned, and learning on the card', () => {
+    expect(parseEvent('school: a student seated for crit-damage')).toEqual({
+      kind: 'school-seated',
+      talent: 'crit-damage',
+    });
+    expect(parseEvent('school: a creature learned hardy from the visiting teacher')).toEqual({
+      kind: 'school-lesson',
+      talent: 'hardy',
+    });
+    expect(parseEvent('school: a creature learned its talent 2 on its card (24 Acorns)')).toEqual({
+      kind: 'school-learning',
+      slot: 2,
+      acorns: 24,
+    });
+    expect(
+      parseEvent("school: a creature learned the teacher's talent on its card (12 Acorns)"),
+    ).toEqual({ kind: 'school-teacher', acorns: 12 });
+  });
+
   it('keeps a string it does not understand as a plain line, as it was', () => {
     const text = 'something new the lab says: 12';
     expect(parseEvent(text)).toEqual({ kind: 'plain', text });

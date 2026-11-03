@@ -1014,6 +1014,29 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
       ]),
     ),
     '',
+    `The pick rule against the first draft (the same ${teach.ruleSeeds} seeds of the mixed server of 8). The rule: among talents that benefit at least one player, a few (2 up to a quarter of the server's players, at least 2, never all), else exactly one, else the fewest. The first draft: any number from 2 to all but one. For each kind of player: the share of book entries from the teacher, and the share of visits at which a player of that kind would benefit (week 12 / week 24). Median visit, share of the server's players who benefit: ${num((teach.ruleBenefit.few ?? 0) * 100)}% with the rule, ${num((teach.ruleBenefit.several ?? 0) * 100)}% with the first draft.`,
+    '',
+    ...table(
+      [
+        'Player',
+        'Teacher share of entries, rule, week 12 / 24',
+        'Teacher share of entries, first draft, week 12 / 24',
+        'Visits that benefit this kind, rule, week 12 / 24',
+        'Visits that benefit this kind, first draft, week 12 / 24',
+      ],
+      teacherKinds.map((id) => {
+        const cell = (rule: string, key: 'share' | 'benefit'): string =>
+          (teach.rules[rule]?.[id]?.[key] ?? []).map((x) => `${num(x * 100)}%`).join(' / ');
+        return [
+          profileLabel(id),
+          cell('few', 'share'),
+          cell('several', 'share'),
+          cell('few', 'benefit'),
+          cell('several', 'benefit'),
+        ];
+      }),
+    ),
+    '',
     "Visits by how many players would benefit at the arrival (all seeds), and the median share of a server's players who would benefit, and who learn it:",
     '',
     ...table(

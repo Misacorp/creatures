@@ -62,6 +62,14 @@ export interface SchoolData {
     string,
     { lessons: number[]; entries: number[]; share: number[]; lines: number[] }
   >;
+  /**
+   * The pick rule compared (mixed server of 8, the same seeds): `few` (the rule) and `several` (the first draft), by kind of player at week 12 and 24:
+   * the median share of book entries from the teacher, and the share of visits (up to that week) at which a player of that kind would benefit.
+   */
+  rules: Record<string, Record<string, { share: number[]; benefit: number[] }>>;
+  /** The seeds the comparison uses, and the median share of a server's players who benefit from a visit under each rule, up to week 24. */
+  ruleSeeds: number;
+  ruleBenefit: Record<string, number>;
   /** The teacher's visits by server (mixed server of 8 and of 15), up to week 12 and week 24. */
   visits: Record<string, VisitStats[]>;
 }
@@ -226,7 +234,54 @@ export function schoolOf(results: Results): SchoolData {
     acornShare: {},
     teacher: {},
     visits: {},
+    rules: {},
+    ruleSeeds: 0,
+    ruleBenefit: {},
   };
+  const old = results['mixed8-teacherold'];
+  if (old && results.mixed8) {
+    const seeds = old.runs.length;
+    out.ruleSeeds = seeds;
+    for (const [rule, scenario] of [
+      ['few', results.mixed8],
+      ['several', old],
+    ] as const) {
+      const runs = scenario.runs.slice(0, seeds);
+      out.rules[rule] = {};
+      for (const id of TEACHER_PROFILES) {
+        const players = runs.flatMap((r) => r.players).filter((p) => p.profile === id);
+        if (!players.length) continue;
+        const at = (p: PlayerRun, w: number) => p.weeks[Math.min(w, p.weeks.length) - 1];
+        out.rules[rule][id] = {
+          share: TEACHER_WEEKS.map((w) =>
+            median(
+              players.map((p) => {
+                const f = at(p, w)?.bookFinds ?? 0;
+                const t = at(p, w)?.bookTeacher ?? 0;
+                return f + t > 0 ? t / (f + t) : 0;
+              }),
+            ),
+          ),
+          benefit: TEACHER_WEEKS.map((w) => {
+            const visits = runs.flatMap((r) => r.teacherVisits.filter((v) => v.week < w));
+            const present = visits.reduce(
+              (n, v) => n + v.profiles.filter((x) => x === id).length,
+              0,
+            );
+            const hit = visits.reduce(
+              (n, v) => n + v.eligibleProfiles.filter((x) => x === id).length,
+              0,
+            );
+            return present > 0 ? hit / present : 0;
+          }),
+        };
+      }
+      const visits = runs.flatMap((r) => r.teacherVisits);
+      out.ruleBenefit[rule] = median(
+        visits.map((v) => (v.players > 0 ? v.eligible / v.players : 0)),
+      );
+    }
+  }
   for (const id of TEACHER_PROFILES) {
     const players = playersOf(results.mixed8, id);
     if (!players.length) continue;

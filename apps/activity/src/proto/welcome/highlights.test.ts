@@ -202,7 +202,7 @@ describe('the highlights of a visit', () => {
       ['mastery: anvil 1 reached Master', 'mastery-anvil'],
       ['graduation: 2 creatures earned Bronze', 'graduation'],
       ['mastery: scout seat 1 reached Expert', 'mastery-scout'],
-      ['school: a creature began learning its talent 1 (30 Acorns, 12 hours)', 'learning'],
+      ['school: a creature learned its talent 1 on its card (30 Acorns)', 'learning'],
       ['mastery: anvil 1 reached Apprentice', 'mastery-anvil'],
     ];
     for (let i = 0; i < order.length; i += 1) {
@@ -578,7 +578,7 @@ describe('who is who and how it reads', () => {
     const w = welcomeFor(
       visit({
         events: [
-          'school: a creature began learning its talent 1 (5 Acorns, 24 hours)',
+          'school: a creature learned its talent 1 on its card (5 Acorns)',
           'graduation: 2 creatures earned Bronze',
           'visitor: rerolled a rare piece (item level 5.2) for 10 Acorns and 40 scrap',
           'visitor: he is in the valley until the raid finale',
@@ -597,7 +597,7 @@ describe('who is who and how it reads', () => {
     expect(placeOf('moment')).toBe('bonfire');
     expect(placeOf('new-line')).toBe('paddock');
     const teacher = welcomeFor(
-      visit({ events: ["school: a visiting teacher's lesson for a creature (3 Acorns)"] }),
+      visit({ events: ['school: a creature learned crit-damage from the visiting teacher'] }),
       CAST,
       1,
     );

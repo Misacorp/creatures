@@ -163,7 +163,7 @@
    },
    "events": [
     "new line: mudlump",
-    "school: a student seated for quick-draw",
+    "school: a student seated for crit-damage",
     "school: a creature learned its talent 1 on its card (12 Acorns)"
    ],
    "top5": [
@@ -390,6 +390,7 @@
     }
    },
    "events": [
+    "school: a student seated for crit-chance",
     "visitor: bought the week's blueprint (a new one) for 40 Acorns and 50 shards",
     "mastery: anvil 2 reached Expert"
    ],
@@ -495,6 +496,7 @@
    },
    "events": [
     "new line: stormray",
+    "school: a student seated for crit-chance",
     "school: a creature learned its talent 1 on its card (12 Acorns)"
    ],
    "top5": [
@@ -524,7 +526,10 @@
      "bagged": 1
     }
    },
-   "events": [],
+   "events": [
+    "school: a creature learned the teacher's talent on its card (12 Acorns)",
+    "school: a creature learned the teacher's talent on its card (12 Acorns)"
+   ],
    "top5": [
     15,
     15,
@@ -618,7 +623,6 @@
     }
    },
    "events": [
-    "school: a student seated for quick-draw",
     "visitor: bought the week's blueprint (a new one) for 40 Acorns and 50 shards"
    ],
    "top5": [
@@ -749,9 +753,7 @@
      "bagged": 1
     }
    },
-   "events": [
-    "school: a creature learned the teacher's talent on its card (12 Acorns)"
-   ],
+   "events": [],
    "top5": [
     17,
     17,
@@ -847,7 +849,7 @@
     }
    },
    "events": [
-    "school: a student seated for front-liner",
+    "school: a student seated for slow-burn",
     "mastery: anvil 2 reached Master"
    ],
    "top5": [
