@@ -4,7 +4,7 @@
  * needs are off screen (the edge arrows), and the wandering of idle creatures. No DOM, no clock, no
  * randomness but a seeded generator handed in.
  */
-import { RULES, content, int, type Rng } from '@creatures/game';
+import { content, int, type Rng } from '@creatures/game';
 import { creatureName } from '../../game';
 import { jobTitle } from '../../gear-view';
 import { destinationName } from '../../trip-view';
@@ -130,14 +130,12 @@ export function weekClock(at: number, timezone: string): WeekClock {
 }
 
 /**
- * Whether the visitor is in the valley (V-VIS-1): from Thursday 00:00 to the raid's finale on Sunday evening
- * (the week's own calendar, `RULES.raid.scheduleV2.finale`); the rest of the week his stall is shuttered.
+ * Whether the visitor is in the valley (V-VIS-1, as amended 2026-11-03): from Thursday 00:00 until Sunday ends
+ * (Monday 00:00 guild time), after the raid's finale; Monday to Wednesday his stall is shuttered. The hour and
+ * minute do not matter: the weekday alone decides.
  */
 export function visitorHere(clock: WeekClock): boolean {
-  const finale = RULES.raid.scheduleV2.finale;
-  if (clock.weekday < 4) return false;
-  if (clock.weekday < finale.weekday) return true;
-  return clock.hour * 60 + clock.minute < finale.hour * 60 + finale.minute;
+  return clock.weekday >= 4;
 }
 
 /** What the address can set for the look (dev only): `&night=1`, `&weekday=mon`, `&bonfire=2`. */

@@ -1,0 +1,58 @@
+/* The visitor's stall (VisitorScene.tsx): his stock on the ground before the stall, and the "Back Thursday" sign. */
+.vs-stock,
+.vs-sign {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vs-stock {
+  display: flex;
+  gap: 1rem;
+}
+
+.vs-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.vs-item .pv-plate {
+  max-width: 7rem;
+}
+
+.vs-body {
+  padding-bottom: 0.5rem;
+}
+
+.vs-odds {
+  margin: 0;
+}
+
+.vs-quiet {
+  margin: 0;
+  color: var(--haze);
+}
+
+.vs-purse {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vs-cost {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
