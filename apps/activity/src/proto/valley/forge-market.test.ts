@@ -35,9 +35,9 @@ import {
   stageOf,
   stillNeeds,
 } from './market-sample';
-import { planks } from './market-art';
+import { glowSprite } from './valley-places';
+import { builtPart, outlineToCome } from './market-art';
 
-const PLANK_FIRST_ROW = 38; // the bottom row of planks starts 10 rows above the plot's foot
 const order = (over: Partial<ForgeOrder> = {}): ForgeOrder => ({
   baseId: 'kelp-cap',
   made: 3,
@@ -172,18 +172,36 @@ describe('the Market project', () => {
     expect(brokerOnDuty(built)).toBe(true);
     expect(brokerOnDuty({ ...built, broker: null })).toBe(false);
     expect(isBuilt(marketFromHash('#valley?market=almost').given)).toBe(false);
+    expect(stageOf(marketFromHash('#valley?market=empty').given)).toBe(0);
+    expect(stageOf(marketFromHash('#valley?market=five').given)).toBe(5);
+    expect(stageOf(marketFromHash('#valley?market=almost').given)).toBe(11);
     expect(brokerOnDuty({ ...start, broker: 'x' })).toBe(false);
   });
 
-  it('lays one more solid plank at each step; planks to come are hollow', () => {
-    const solid = (laid: number): number => planks(laid).rows().join('').replaceAll('.', '').length;
-    for (let laid = 1; laid <= STAGES; laid++) {
-      expect(solid(laid)).toBeGreaterThan(solid(laid - 1));
+  it('draws the Market from the ground up, the rest as a hollow outline of the same sprite', () => {
+    const sprite = glowSprite('market', 'day');
+    const count = (rows: readonly string[]): number => rows.join('').replaceAll('.', '').length;
+    let before = -1;
+    for (let laid = 0; laid <= STAGES; laid++) {
+      const now = count(builtPart(sprite, laid).rows);
+      expect(now).toBeGreaterThanOrEqual(before);
+      before = now;
     }
-    // A plank to come keeps its ink outline and nothing inside.
-    const rows = planks(0).rows();
-    expect(rows[PLANK_FIRST_ROW]?.slice(2, 20)).toBe('k'.repeat(18));
-    expect(rows[PLANK_FIRST_ROW + 2]?.slice(3, 19)).toBe('.'.repeat(16));
+    expect(count(builtPart(sprite, 0).rows)).toBe(0);
+    expect(builtPart(sprite, STAGES).rows).toEqual(sprite.rows);
+    // The outline is ink only, thin, and stops where the built part starts.
+    const out = outlineToCome(sprite, 5);
+    expect(Object.keys(out.palette)).toEqual(['k']);
+    expect(count(out.rows)).toBeLessThan(count(sprite.rows) / 4);
+    const height = sprite.rows.length;
+    const laidRows = Math.ceil((height * 5) / STAGES);
+    expect(
+      out.rows
+        .slice(height - laidRows)
+        .join('')
+        .replaceAll('.', ''),
+    ).toBe('');
+    expect(count(outlineToCome(sprite, STAGES).rows)).toBe(0);
   });
 
   it("says the broker's rate, and what mastery changes", () => {

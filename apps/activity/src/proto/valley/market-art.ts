@@ -1,13 +1,13 @@
 /**
- * The Market's plot (prototype): before it is built, the stall goes up plank by plank as the server's gifts
- * come in, the same pattern as the hearth's stones (V-COM-6): planks laid are solid wood, planks still to come
- * are hollow ink outlines (a shape, not only a colour). Built, the `valley-glow` market stands there instead.
+ * The Market's plot (prototype): before it is built, the Market's own `valley-glow` sprite is being built where
+ * it will stand (V-COM-6). What is paid for is drawn in full, from the ground up (12 steps, a step is a twelfth of
+ * the sprite's height); the rest is only a faint ink outline of the same sprite (hollow, a shape and not a
+ * colour), the same pattern as the hearth's stones to come. Built, the whole sprite stands there.
  */
-import { PixelGrid, gridPlacements } from '../../games/art/pixel';
+import type { SpriteDef } from '../../sprites/sprite-data';
 import { dimmed, glowSprite, type Time } from './valley-places';
 import { glowSceneDraw, glowLayout } from './glow-scene-art';
 import type { SceneGeometry } from './SceneFrame';
-import type { SpriteDef } from '../../sprites/sprite-data';
 import type { Placement } from './valley-art';
 
 const INK = '#0d0a1a';
@@ -23,35 +23,47 @@ export const PLANK_TO_COME: SpriteDef = {
   palette: PALETTE,
 };
 
-const PLOT_W = 60;
-const PLOT_H = 48;
-const COLUMNS = 3;
-const ROWS = 4;
+/** The steps the stall goes up in (the same as `STAGES` in `market-sample.ts`). */
+const STEPS = 12;
 
-/** Where plank `i` goes (bottom row first, left to right): its top-left in the plot's pixels. */
-export function plankSpot(i: number): { x: number; y: number } {
-  const row = Math.floor(i / COLUMNS);
-  return { x: 2 + (i % COLUMNS) * 19, y: PLOT_H - 10 - row * 10 };
+const filled = (row: string, x: number): boolean => row[x] !== undefined && row[x] !== '.';
+
+/** The sprite's rows from the ground up to step `laid` (the rest blank), at full colour. */
+export function builtPart(sprite: SpriteDef, laid: number): SpriteDef {
+  const height = sprite.rows.length;
+  const rows = Math.min(height, Math.ceil((height * laid) / STEPS));
+  const blank = '.'.repeat(sprite.rows[0]?.length ?? 0);
+  return {
+    ...sprite,
+    rows: sprite.rows.map((row, y) => (y >= height - rows ? row : blank)),
+  };
 }
 
-/** The plot with `laid` planks solid and the rest hollow, 60 x 48 pixels like the place's sprite. */
-export function planks(laid: number): PixelGrid {
-  const g = new PixelGrid(PLOT_W, PLOT_H);
-  for (let i = 0; i < COLUMNS * ROWS; i++) {
-    const { x, y } = plankSpot(i);
-    g.rect(x, y, 18, 9, 'k');
-    if (i < laid) {
-      g.rect(x + 1, y + 1, 16, 7, 'w');
-      g.rect(x + 1, y + 1, 16, 1, 'p');
-      g.rect(x + 1, y + 7, 16, 1, 'q');
-    } else {
-      g.rect(x + 1, y + 1, 16, 7, '.');
-    }
-  }
-  return g;
+/** The silhouette's edge of the rows still to come, one ink pixel thick: hollow, nothing inside. */
+export function outlineToCome(sprite: SpriteDef, laid: number): SpriteDef {
+  const height = sprite.rows.length;
+  const rows = Math.min(height, Math.ceil((height * laid) / STEPS));
+  const edge = (x: number, y: number): boolean => {
+    const row = sprite.rows[y] ?? '';
+    if (!filled(row, x)) return false;
+    return [
+      [x - 1, y],
+      [x + 1, y],
+      [x, y - 1],
+      [x, y + 1],
+    ].some(([nx = 0, ny = 0]) => !filled(sprite.rows[ny] ?? '', nx));
+  };
+  return {
+    palette: { k: INK },
+    rows: sprite.rows.map((row, y) =>
+      y >= height - rows
+        ? '.'.repeat(row.length)
+        : [...row].map((_, x) => (edge(x, y) ? 'k' : '.')).join(''),
+    ),
+  };
 }
 
-/** The scene: the grass and sky of the other new places, the planks laid so far, or the built Market. */
+/** The scene: the grass and sky of the other new places, the Market going up at the art's place, or built. */
 export function marketDraw(spec: { time: Time; built: boolean; stage: number }) {
   const { time, built, stage } = spec;
   const base = glowSceneDraw({ name: 'market', time });
@@ -60,10 +72,10 @@ export function marketDraw(spec: { time: Time; built: boolean; stage: number }) 
     const all = base(g);
     if (built) return all;
     const art = glowLayout(g, 'market').art;
-    const frame = gridPlacements(planks(stage), PALETTE, art.x, art.y);
-    const shaded =
-      time === 'night' ? frame.map((p) => ({ ...p, sprite: dimmed(p.sprite) })) : frame;
-    // The built Market's own sprite is left out until it is paid for.
-    return [...all.filter((p) => p.sprite !== market), ...shaded];
+    const out = all.filter((p) => p.sprite !== market);
+    const outline = outlineToCome(market, stage);
+    out.push({ sprite: time === 'night' ? dimmed(outline) : outline, x: art.x, y: art.y });
+    if (stage > 0) out.push({ sprite: builtPart(market, stage), x: art.x, y: art.y });
+    return out;
   };
 }
