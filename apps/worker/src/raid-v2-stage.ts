@@ -30,6 +30,7 @@ import {
   gridPlace,
   readPartyCarry,
   readTrack,
+  seatsFor,
   slotBossInfo,
   weekendBoss,
 } from './raid-v2-core';
@@ -151,7 +152,8 @@ export function buildStageV2(
   if (stage > 1 && prior === null) return null;
   if (prior !== null && prior.carry.bossHp <= 0) return null;
   const out = new Set(prior?.carry.out ?? []);
-  const placements: PlacementRow[] = partyPlacements(sql, week.weekId, party)
+  const { rows, seats } = slotBossInfo(week.trackSlot);
+  const placements: PlacementRow[] = partyPlacements(sql, week.weekId, party, seats)
     .filter((p) => !out.has(p.creature_id))
     .sort((a, b) => a.slot - b.slot);
   const fightingIds = partyMembers(sql, week.weekId, party).filter((id) =>
@@ -159,7 +161,6 @@ export function buildStageV2(
   );
   if (fightingIds.length === 0) return null;
   const players = prior?.players ?? fightingIds.length;
-  const { rows } = slotBossInfo(week.trackSlot);
   const cols = colsFor(players);
   const boss = weekendBoss(week.trackSlot, players);
   const aliases = fightingIds.map((_, i) => aliasFor(i));
@@ -458,7 +459,7 @@ export function resolveStageV2(
     if (stage === 1) {
       const members = partyMembers(sql, week.weekId, party);
       const owners = new Set(
-        partyPlacements(sql, week.weekId, party)
+        partyPlacements(sql, week.weekId, party, seatsFor(week.trackSlot))
           .map((p) => p.user_id)
           .filter((id) => members.includes(id)),
       );

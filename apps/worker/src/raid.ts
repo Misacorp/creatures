@@ -717,13 +717,21 @@ export class Raid {
     if (week.rules === 2 && week.festival) throw new GameError(409, 'festival');
   }
 
-  /** The slots of a combat v2 party's board: the slot's boss's rows by the columns its players make (`max(4, players)`). */
+  /**
+   * The slots of a combat v2 party's board: the slot's boss's rows by the columns its players make (`max(4, players)`), plus the
+   * spare piece (one more column) until stage 1 locks the players (Misa, 2026-11-03), so a newcomer can always place.
+   */
   private v2Length(week: WeekRow, party: number): number {
     const rows = slotBossInfo(week.trackSlot ?? 1).rows;
-    const players =
-      readPartyCarry(this.sql, week.weekId, party)?.players ??
-      partyMembers(this.sql, week.weekId, party).length;
-    return rows * colsFor(players);
+    const locked = readPartyCarry(this.sql, week.weekId, party)?.players;
+    if (locked !== undefined) return rows * colsFor(locked);
+    const players = partyMembers(this.sql, week.weekId, party).length;
+    return rows * colsFor(players, week.status === 'open');
+  }
+
+  /** The creatures a player may place this week: a combat v2 boss's piece seats, three on a v1 week. */
+  private seats(week: WeekRow): number {
+    return week.rules === 2 ? slotBossInfo(week.trackSlot ?? 1).seats : RULES.raid.teamSize;
   }
 
   /**
@@ -767,11 +775,15 @@ export class Raid {
       }
       // A player never has more than three creatures on the board. Stale rows beyond that (from
       // before this rule) are dropped first, by the one rule in `capPlacements`.
-      const { kept: onBoard, droppedSlots } = this.enforcePlacementCap(week.weekId, userId);
+      const { kept: onBoard, droppedSlots } = this.enforcePlacementCap(
+        week.weekId,
+        userId,
+        this.seats(week),
+      );
       const mine = onBoard.find((p) => p.creature_id === creatureId);
       if (mine?.slot === slot) return null;
       // A creature that is not on the board yet needs a free place among the three.
-      if (mine === undefined && onBoard.length >= RULES.raid.teamSize) {
+      if (mine === undefined && onBoard.length >= this.seats(week)) {
         throw new GameError(409, 'board_full');
       }
       const occupant = this.sql
@@ -880,6 +892,7 @@ export class Raid {
   private enforcePlacementCap(
     weekId: string,
     userId: string,
+    limit: number,
   ): { kept: PlacementRow[]; droppedSlots: number[] } {
     const all = this.sql
       .exec<PlacementRow>(
@@ -888,7 +901,7 @@ export class Raid {
         userId,
       )
       .toArray();
-    const kept = capPlacements(all);
+    const kept = capPlacements(all, new Set(), limit);
     const keptIds = new Set(kept.map((p) => p.creature_id));
     const droppedSlots: number[] = [];
     for (const row of all) {
@@ -1572,17 +1585,18 @@ export class Raid {
         eligiblePlayerIds(this.sql, this.deps.now()).includes(userId);
       return { needed, nextAt };
     }
-    const placed = partyPlacements(this.sql, week.weekId, party).filter(
+    const seats = this.seats(week);
+    const placed = partyPlacements(this.sql, week.weekId, party, seats).filter(
       (p) => p.user_id === userId,
     ).length;
-    // Up to three; a player who owns fewer cannot place more.
+    // Up to the seats of the piece (three on a v1 week); a player who owns fewer cannot place more.
     const could = this.sql
       .exec<{
         n: number;
       }>(
         'SELECT COUNT(*) AS n FROM (SELECT 1 FROM creatures WHERE user_id = ? LIMIT ?)',
         userId,
-        RULES.raid.teamSize,
+        seats,
       )
       .one().n;
     return { needed: placed < could, nextAt };

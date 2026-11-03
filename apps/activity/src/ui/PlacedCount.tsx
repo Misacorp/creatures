@@ -9,24 +9,26 @@ export const CHECK_PALETTE = { h: '#6fdc8c' } as const;
 interface PlacedCountProps {
   /** How many of the player's creatures are placed. */
   placed: number;
+  /** The most the player may place: a combat v2 boss's piece seats. Three by default. */
+  max?: number;
   /** More on the same line, quieter than the count (the raid's board total). */
   children?: ComponentChildren;
 }
 
 /**
  * The count line of the Raid Roster and the dungeon team: "1 / 3 placed", with a green check (and the
- * spoken "Done:") at 3 / 3. Anything after the count rides on the same line.
+ * spoken "Done:") when all are placed (3 / 3, or the seats of a combat v2 boss's piece). Anything after the count rides on the same line.
  */
 export function PlacedCount(props: PlacedCountProps) {
   return (
     <p class="roster-count">
-      {allPlaced(props.placed) && (
+      {allPlaced(props.placed, props.max) && (
         <span class="count-check">
           <Sprite sprite={glyphOrUnknown('check')} palette={CHECK_PALETTE} scale={2} />
           <span class="visually-hidden">Done: </span>
         </span>
       )}
-      {placedLine(props.placed)}
+      {placedLine(props.placed, props.max)}
       {props.children}
     </p>
   );

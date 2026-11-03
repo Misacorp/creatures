@@ -205,6 +205,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [raids.md](raids.md): Raid schedule, parties and joining, bosses and the raid curve, the live finale, raid board and summaries, raid Discord posts.
 
+- 2026-11-03 Combat v2 arenas: how the piece, the seats and the spare are built
 - 2026-11-03 Combat v2 arenas: each boss defines one player's piece; the board repeats it per player with one spare until stage 1 \[Misa\]
 - 2026-11-03 Combat v2 replays keep no Pause or 2x \[Misa\]
 - 2026-11-03 Combat v2 bots and the gate run (phase 4, slice 6): v2 guests, the raid-weekend dev tool and one stat calculation (amended)

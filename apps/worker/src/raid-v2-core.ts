@@ -5,6 +5,11 @@
  *
  * **The grid.** A v2 board is `rows` rows (the slot's boss's) by `cols` columns (`max(4, players)`, R14.1). A placement's `slot` is
  * column-major, `slot = col * rows + row`, so a wider board (a player joins) never renumbers a slot someone already holds.
+ *
+ * **The piece (Misa, 2026-11-03).** The boss's arena piece (`piece` in raid-bosses.json) is what one player adds: today one column of the
+ * boss's rows. A player brings as many creatures as the piece has seats (`seatsFor`), and until stage 1 locks the board is the piece per
+ * player plus one spare piece (`colsFor(players, true)`), so a newcomer can always place a first creature. Stage 1 drops the spare and
+ * moves what stood in it (`compactBoard`).
  */
 import { content } from '@creatures/game';
 import { SHIPPED } from './fighter-v2';
@@ -93,16 +98,34 @@ export function determinationBpFor(slot: number, failedWeekends: number): number
 
 // --- The grid ---
 
-/** The boss of a slot: its id and the rows of its arena. */
-export function slotBossInfo(slot: number): { bossId: string; rows: number } {
+/** The boss of a slot: its id, the rows of its arena and the seats of one player's piece (the creatures a player brings). */
+export function slotBossInfo(slot: number): { bossId: string; rows: number; seats: number } {
   const { bossId } = slotSpec(combatV2, slot);
   const own = Object.hasOwn(combatV2.raidBosses, bossId) ? combatV2.raidBosses[bossId] : undefined;
   if (own === undefined) throw new Error(`unknown raid boss ${bossId}`);
-  return { bossId, rows: own.rows };
+  return { bossId, rows: own.rows, seats: own.piece.rows };
 }
 
-/** The columns of a board for `players` players: four at least (a smaller party fights at four, R14.1). */
-export const colsFor = (players: number): number => Math.max(RAID_COLS, players);
+/**
+ * The columns of a board for `players` players: one piece each, four at least (a smaller party fights at four, R14.1). `spare` adds the
+ * spare piece that stays free until stage 1, so a newcomer can always join.
+ */
+export const colsFor = (players: number, spare = false): number =>
+  Math.max(RAID_COLS, players + (spare ? 1 : 0));
+
+/** The creatures a player brings to a slot's boss: the seats of its arena piece. */
+export const seatsFor = (slot: number): number => slotBossInfo(slot).seats;
+
+/** The creatures a player may place on a week: the piece's seats on a v2 week, `RULES.raid.teamSize` on a v1 week (or none stored). */
+export function seatsOfWeek(sql: SqlStorage, weekId: string): number {
+  const row = sql
+    .exec<{ rules_version: number; track_slot: number | null }>(
+      'SELECT rules_version, track_slot FROM raid_weeks WHERE week_id = ?',
+      weekId,
+    )
+    .toArray()[0];
+  return row?.rules_version === 2 ? seatsFor(row.track_slot ?? 1) : RULES.raid.teamSize;
+}
 
 /** A slot's place on the grid. */
 export const gridPlace = (slot: number, rows: number): { row: number; col: number } => ({

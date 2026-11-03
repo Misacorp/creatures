@@ -10,6 +10,7 @@
  */
 import { GameError } from './outcome';
 import { raidTeam } from './raid-teams';
+import { seatsOfWeek } from './raid-v2-core';
 
 /** The target of a player's basic ability. */
 export const BASIC_TARGET = 'basic';
@@ -52,7 +53,7 @@ export function storeAutofire(
   on: boolean,
 ): void {
   if (target !== BASIC_TARGET) {
-    const team = raidTeam(sql, weekId, userId);
+    const team = raidTeam(sql, weekId, userId, seatsOfWeek(sql, weekId));
     if (!team.some((c) => c.id === target)) throw new GameError(409, 'not_your_creature');
   }
   sql.exec(

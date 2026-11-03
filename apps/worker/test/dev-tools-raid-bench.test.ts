@@ -14,7 +14,7 @@ import { V2_WEEK, v2Player } from './raid-v2-helpers';
 
 const CORE = { ...ON, combatV2: true } as const;
 const LEVEL = 22;
-/** A Boss Rank a full board of level 22 plays through all three stages at (rank 8's boss falls in stage 1 to a full board, and wipes a small one). */
+/** A Boss Rank a full board of level 22 plays through all three stages at (rank 7's Cinder Wyrm falls in stage 1 to a full board, and wipes a small one; rank 8's Storm Sovereign has two seats a player, so a full board is smaller and it does not fall). */
 const RANK = 6;
 
 /** The caller: a seeded v2 player with a session, and the bench's routes. */
@@ -209,6 +209,35 @@ describe('the raid test bench', () => {
     );
   }, 240_000);
 
+  it("fills each guest with the boss piece's seats, and a rank change trims a player to the new boss's seats", async () => {
+    await runRaid(
+      async (ctx) => {
+        const me = await caller(ctx);
+        await me.ok('raid-clear');
+        // Rank 3 is the Storm Sovereign: two seats a player.
+        await me.ok('raid-rank', { rank: 3 });
+        expect((await me.place(me.creatureIds[0] as string, 0)).status).toBe(200);
+        await me.ok('raid-fill', { count: 3 });
+        for (const g of guests(ctx)) {
+          expect(count(ctx.sql, 'raid_placements', `user_id = '${g}'`)).toBe(2);
+        }
+        // Rank 7 is the Cinder Wyrm: four seats, so a guest brings four.
+        await me.ok('raid-clear');
+        await me.ok('raid-rank', { rank: 7 });
+        await me.ok('raid-fill', { count: 2 });
+        for (const g of guests(ctx)) {
+          expect(count(ctx.sql, 'raid_placements', `user_id = '${g}'`)).toBe(4);
+        }
+        // Back to two seats: the earliest placed two stay.
+        await me.ok('raid-rank', { rank: 3 });
+        for (const g of guests(ctx)) {
+          expect(count(ctx.sql, 'raid_placements', `user_id = '${g}'`)).toBe(2);
+        }
+      },
+      { start: V2_WEEK.open, core: CORE },
+    );
+  }, 120_000);
+
   it('opens the replay of every stage the same way the Raid tab asks for it', async () => {
     await runRaid(
       async (ctx) => {
@@ -245,8 +274,8 @@ describe('the raid test bench', () => {
         const me = await caller(ctx);
         await me.ok('raid-clear');
         await me.refused('raid-play', { stage: 'stage1' }, 'nobody_placed');
-        // Rank 8's boss falls in stage 1 to a full board: stage 2 and the finale say so.
-        await me.ok('raid-rank', { rank: 8 });
+        // Rank 7's boss falls in stage 1 to a full board: stage 2 and the finale say so.
+        await me.ok('raid-rank', { rank: 7 });
         await me.place(me.creatureIds[0] as string, 0);
         await me.ok('raid-fill');
         const one = await me.ok('raid-play', { stage: 'stage1' });
@@ -259,9 +288,9 @@ describe('the raid test bench', () => {
     await runRaid(
       async (ctx) => {
         const me = await caller(ctx);
-        // A small board is wiped by rank 8's boss in stage 1: creatures knocked out stay out, so nobody is left for stage 2.
+        // A small board is wiped by rank 7's boss in stage 1: creatures knocked out stay out, so nobody is left for stage 2.
         await me.ok('raid-clear');
-        await me.ok('raid-rank', { rank: 8 });
+        await me.ok('raid-rank', { rank: 7 });
         await me.place(me.creatureIds[0] as string, 0);
         await me.ok('raid-fill', { count: 3 });
         const one = await me.ok('raid-play', { stage: 'stage1' });

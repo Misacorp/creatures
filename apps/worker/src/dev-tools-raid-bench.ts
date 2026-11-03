@@ -11,7 +11,6 @@
  * - `raid-play`: plays stage 1, stage 2 or the finale now, by the scheduler's own code, and marks the event done so the calendar never
  *   plays it again. The finale plays to its end at once, or (`live`) starts its live fight now. The answer says which fight to open.
  */
-import { RULES } from '@creatures/game';
 import type * as v from 'valibot';
 import { DevError, type ToolCtx } from './dev-context';
 import type { RaidFillBodySchema, RaidPlayBodySchema, RaidRankBodySchema } from './dev-schemas';
@@ -22,8 +21,9 @@ import { MAX_BENCH_PLAYERS } from './dev-schemas';
 import type { WeekRow } from './raid';
 import { partyMembers, partyOf } from './raid-roster';
 import { eventTimes, weekIdFor } from './raid-schedule';
-import { colsFor, readTrack, slotBossInfo, weekCarries } from './raid-v2-core';
+import { colsFor, readTrack, seatsFor, slotBossInfo, weekCarries } from './raid-v2-core';
 import { compactBoard } from './raid-v2-stage';
+import { capPlacements, type PlacementRow } from './raid-teams';
 
 type Body<S extends v.GenericSchema> = v.InferOutput<S>;
 
@@ -224,8 +224,8 @@ function guestsOnBoard(ctx: ToolCtx, weekId: string): Set<string> {
 }
 
 /**
- * `count` more simulated players (default as many as fit, at most `MAX_BENCH_PLAYERS`) place their first three creatures in the board's
- * empty slots through the placement code. A guest takes whatever room is left, even fewer than three. The caller's creatures never
+ * `count` more simulated players (default as many as fit, at most `MAX_BENCH_PLAYERS`) place the first creatures of the boss's piece (its seats: two to four) in the board's
+ * empty slots through the placement code. A guest takes whatever room is left. The caller's creatures never
  * move: the guests only ever take empty slots. Stops when no guest can place a creature.
  */
 export function raidFill(ctx: ToolCtx, body: Body<typeof RaidFillBodySchema>) {
@@ -245,7 +245,7 @@ export function raidFill(ctx: ToolCtx, body: Body<typeof RaidFillBodySchema>) {
       .exec<{ id: string }>(
         'SELECT id FROM creatures WHERE user_id = ? ORDER BY caught_at, rowid LIMIT ?',
         id,
-        RULES.raid.teamSize,
+        seatsFor(week.trackSlot ?? 1),
       )
       .toArray()
       .map((r) => r.id);
@@ -276,7 +276,7 @@ export function raidRank(ctx: ToolCtx, body: Body<typeof RaidRankBodySchema>) {
   requireQuiet(ctx, week);
   setWeekRank(ctx, week.weekId, body.rank);
   setTrackSlot(ctx, body.rank, true);
-  const rows = slotBossInfo(body.rank).rows;
+  const { rows, seats } = slotBossInfo(body.rank);
   const parties = ctx.sql
     .exec<{ party: number }>(
       'SELECT party FROM raid_parties WHERE week_id = ? ORDER BY party',
@@ -284,12 +284,30 @@ export function raidRank(ctx: ToolCtx, body: Body<typeof RaidRankBodySchema>) {
     )
     .toArray();
   for (const { party } of parties) {
+    // The new boss's piece may have fewer seats than a player placed: the earliest placed stay (`capPlacements`).
+    const all = ctx.sql
+      .exec<PlacementRow>(
+        'SELECT rowid, slot, user_id, creature_id FROM raid_placements WHERE week_id = ? AND party = ? ORDER BY rowid',
+        week.weekId,
+        party,
+      )
+      .toArray();
+    const kept = new Set(capPlacements(all, new Set(), seats).map((p) => p.creature_id));
+    for (const p of all) {
+      if (kept.has(p.creature_id)) continue;
+      ctx.sql.exec(
+        'DELETE FROM raid_placements WHERE week_id = ? AND creature_id = ?',
+        week.weekId,
+        p.creature_id,
+      );
+    }
+    // The board is still open, so it keeps its spare piece.
     compactBoard(
       ctx.sql,
       week.weekId,
       party,
       rows,
-      colsFor(partyMembers(ctx.sql, week.weekId, party).length),
+      colsFor(partyMembers(ctx.sql, week.weekId, party).length, true),
     );
   }
   ctx.raid.invalidateReadiness();
