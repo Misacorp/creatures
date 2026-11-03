@@ -1,23 +1,25 @@
 /**
- * The School, full screen (prototype): the schoolhouse under its poster, and in its yard the creatures on a
- * Bronze trial (the honour: a ribbon and a title, never a gate). Each stands with its pips (one per box:
- * a dungeon clear, a day at a post, a find or smithing, a moment at the bonfire), ticked as they are done; a tap
- * opens its checklist. Graduation is the day's ceremony and happens whether or not you are there: before it, a
- * creature with every box ticked sparkles ("ready"); during it (`&ceremony=live`) the ribbon is pinned on; after
- * it (the default at the sample's clock) the graduate stands wearing its ribbon, titled "Pip, Bronze". Learning
- * a talent is a stub drawer: it needs combat v2's talents. Stories that wait here (a graduation, a teacher's
- * visit) show as the place's slim strip above it.
+ * The School, full screen (prototype): the schoolhouse, and in its yard the creatures on a Bronze trial (the
+ * honour: a ribbon and a title, never a gate). Each stands with its pips (one per box: a dungeon clear, a day at
+ * a post, a find or smithing, a moment at the bonfire), ticked as they are done; a tap opens its checklist.
+ * Graduation is the day's ceremony and happens whether or not you are there, and each time of day looks
+ * different: before it, a creature with every box ticked sparkles in the yard; during it (`&ceremony=live`) the
+ * bell rings and those creatures stand gathered at the door while the ribbon is pinned on; after it (the
+ * default at the sample's clock) the graduates are back in the yard wearing their ribbons. The pinned button
+ * follows the state: "See the graduation" at the ceremony, a calm line otherwise, "Learn a talent" (a stub: it
+ * needs combat v2's talents) only when nothing else is going on. Stories that wait here show as the place's strip.
  */
 import { useMemo, useState } from 'preact/hooks';
 import { usePrefersReducedMotion } from '../../hooks';
-import { ActionButton } from '../../ui/ActionButton';
+import { baseOption } from '../../roster-picker';
+import { CreatureList } from '../../ui/CreatureList';
 import { Drawer } from '../../ui/Drawer';
 import { PipRow } from '../../ui/PipRow';
 import { weekClock } from './valley-logic';
 import { sampleName } from './bonfire-sample';
-import './school.css';
-import { glowNameOf, glowSceneDraw, glowSceneSpots, type PlaceSceneProps } from './glow-scene-art';
+import { glowLayout, glowNameOf, glowSceneDraw, type PlaceSceneProps } from './glow-scene-art';
 import { At, CreatureSprite, Glyph, Pic, Plate, isStill } from './parts';
+import { PinnedAct } from './PinnedAct';
 import { Stub } from './PeekScenes';
 import { SceneFrame } from './SceneFrame';
 import {
@@ -26,14 +28,19 @@ import {
   ceremonyPhase,
   honourTitle,
   pupilState,
+  readyCount,
+  schoolNote,
   tickedCount,
   type PupilState,
 } from './school-logic';
-import { BRONZE_RIBBON, pupilsOf } from './school-sample';
+import { BELL_RING, BRONZE_RIBBON, pupilsOf } from './school-sample';
 import { DEFAULT_LOOK } from './valley-places';
+import './school.css';
 
-/** Scene pixels between two pupils standing in a row. */
+/** Scene pixels between two pupils standing in a row, and between two gathered at the door. */
 const PUPIL_GAP = 30;
+const DOOR_GAP = 28;
+const SPRITE = 16;
 
 const stateWord = (state: PupilState): string =>
   state === 'graduated'
@@ -49,6 +56,7 @@ export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: Pl
   const still = isStill() || reduced;
   const [stub, setStub] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
+  const [gradOpen, setGradOpen] = useState(false);
   const name = glowNameOf('school');
   const draw = useMemo(() => glowSceneDraw({ name, time: look.time }), [name, look.time]);
 
@@ -64,6 +72,56 @@ export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: Pl
   };
   const opened = pupils.find((p) => p.creature.id === open);
   const openedState = opened === undefined ? null : pupilState(opened.trial, phase);
+  const stateOf = (i: number): PupilState => {
+    const p = pupils[i];
+    return p === undefined ? 'working' : pupilState(p.trial, phase);
+  };
+  const live = phase === 'live';
+  // At the ceremony the creatures graduating stand gathered at the door; everyone else stays in the yard.
+  const gathered = pupils.filter((_, i) => live && stateOf(i) === 'pinning');
+  const yard = pupils.filter((_, i) => !(live && stateOf(i) === 'pinning'));
+  const graduates = pupils.filter((_, i) => stateOf(i) === 'pinning' || stateOf(i) === 'graduated');
+  const note = schoolNote(phase, readyCount(pupils.map((p) => p.trial)), pupils.length);
+
+  const pupilButton = (
+    p: (typeof pupils)[number],
+    x: number,
+    y: number,
+    scale: number,
+    flip: boolean,
+  ) => {
+    const state = pupilState(p.trial, phase);
+    const wears = state === 'graduated' || state === 'pinning';
+    const title = wears ? honourTitle(nameOf(p.creature.id)) : nameOf(p.creature.id);
+    return (
+      <At key={p.creature.id} x={x} y={y} class="sc-pupil-at" hidden={false}>
+        <button
+          type="button"
+          class="sc-pupil"
+          aria-label={`${title}, ${stateWord(state)}, ${String(tickedCount(p.trial))} / ${String(BRONZE_BOXES.length)} boxes ticked`}
+          onClick={() => {
+            setOpen(p.creature.id);
+          }}
+        >
+          <span class="sc-figure">
+            {(state === 'ready' || state === 'pinning') && (
+              <span class={still ? 'sc-spark' : 'sc-spark pv-bounce'}>
+                <Glyph id="sparkle" scale={2} />
+              </span>
+            )}
+            <CreatureSprite creature={p.creature} scale={scale} flip={flip} />
+            {wears && (
+              <span class={state === 'pinning' && !still ? 'sc-ribbon pin' : 'sc-ribbon'}>
+                <Pic sprite={BRONZE_RIBBON} scale={scale} />
+              </span>
+            )}
+          </span>
+          {!wears && <PipRow count={BRONZE_BOXES.length} lit={tickedCount(p.trial)} size="md" />}
+          <Plate>{nameOf(p.creature.id)}</Plate>
+        </button>
+      </At>
+    );
+  };
 
   return (
     <>
@@ -75,74 +133,56 @@ export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: Pl
         waiting={waiting}
         ground="#2c4d34"
         act={
-          <ActionButton
-            label="Learn a talent"
-            wide
-            large
-            onClick={() => {
-              setStub(
-                "the School: a creature's talent lessons. It waits for combat v2's talents and Talent Books",
-              );
-            }}
-          />
+          note.action === null ? (
+            <PinnedAct calm={note.line} />
+          ) : (
+            <PinnedAct
+              label={note.action}
+              onClick={() => {
+                if (live) setGradOpen(true);
+                else
+                  setStub(
+                    "the School: a creature's talent lessons. It waits for combat v2's talents and Talent Books",
+                  );
+              }}
+            />
+          )
         }
       >
         {(g) => {
-          const spot = glowSceneSpots(g, name);
-          const n = pupils.length;
+          const layout = glowLayout(g, name);
+          const door = layout.spots['door'] ?? { x: g.cx, y: layout.below - 8 };
+          const bell = layout.at(30, 6);
           return (
             <>
-              {pupils.map(({ creature, trial }, i) => {
-                const state = pupilState(trial, phase);
-                const x = g.cx + (i - (n - 1) / 2) * PUPIL_GAP - 8;
-                const wears = state === 'graduated' || state === 'pinning';
-                const title = wears ? honourTitle(nameOf(creature.id)) : nameOf(creature.id);
-                return (
-                  <At
-                    key={creature.id}
-                    x={g.X(x)}
-                    y={g.Y(spot.below + 3)}
-                    class="sc-pupil-at"
-                    hidden={false}
-                  >
-                    <button
-                      type="button"
-                      class="sc-pupil"
-                      aria-label={`${title}, ${stateWord(state)}, ${String(tickedCount(trial))} / ${String(BRONZE_BOXES.length)} boxes ticked`}
-                      onClick={() => {
-                        setOpen(creature.id);
-                      }}
-                    >
-                      <span class="sc-figure">
-                        {(state === 'ready' || state === 'pinning') && (
-                          <span class={still ? 'sc-spark' : 'sc-spark pv-bounce'}>
-                            <Glyph id="sparkle" scale={2} />
-                          </span>
-                        )}
-                        <CreatureSprite creature={creature} scale={g.s} flip={i % 2 === 1} />
-                        {wears && (
-                          <span
-                            class={state === 'pinning' && !still ? 'sc-ribbon pin' : 'sc-ribbon'}
-                          >
-                            <Pic sprite={BRONZE_RIBBON} scale={g.s} />
-                          </span>
-                        )}
-                      </span>
-                      {wears ? (
-                        <Plate>
-                          <span>{nameOf(creature.id)}</span>
-                          <span class="sc-honour">Bronze</span>
-                        </Plate>
-                      ) : (
-                        <>
-                          <PipRow count={BRONZE_BOXES.length} lit={tickedCount(trial)} size="md" />
-                          <Plate>{nameOf(creature.id)}</Plate>
-                        </>
-                      )}
-                    </button>
+              {live && (
+                <>
+                  <At x={g.X(bell.x - 8)} y={g.Y(bell.y)} class={still ? undefined : 'sc-ring'}>
+                    <Pic sprite={BELL_RING} scale={g.s} class="pv-flip" />
                   </At>
-                );
-              })}
+                  <At x={g.X(bell.x + 6)} y={g.Y(bell.y)} class={still ? undefined : 'sc-ring'}>
+                    <Pic sprite={BELL_RING} scale={g.s} />
+                  </At>
+                </>
+              )}
+              {gathered.map((p, k) =>
+                pupilButton(
+                  p,
+                  g.X(door.x + (k - (gathered.length - 1) / 2) * DOOR_GAP - SPRITE / 2),
+                  g.Y(layout.below - SPRITE + 2),
+                  g.s,
+                  k % 2 === 1,
+                ),
+              )}
+              {yard.map((p, k) =>
+                pupilButton(
+                  p,
+                  g.X(g.cx + (k - (yard.length - 1) / 2) * PUPIL_GAP - SPRITE / 2),
+                  g.Y(layout.below + (gathered.length > 0 ? 8 : 3)),
+                  g.s,
+                  k % 2 === 1,
+                ),
+              )}
             </>
           );
         }}
@@ -173,17 +213,34 @@ export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: Pl
                 <li key={box.id} class={done ? 'sc-box done' : 'sc-box'}>
                   <Glyph id={box.glyph} scale={3} />
                   <span class="sc-box-label">{box.label}</span>
-                  <PipRow
-                    count={1}
-                    lit={done ? 1 : 0}
-                    size="md"
-                    label={done ? 'Ticked' : 'Not yet'}
-                  />
+                  <span
+                    class={done ? 'sc-tick done' : 'sc-tick'}
+                    role="img"
+                    aria-label={done ? 'Ticked' : 'Not yet'}
+                  >
+                    {done && <Glyph id="check" scale={2} />}
+                  </span>
                 </li>
               );
             })}
           </ul>
         )}
+      </Drawer>
+      <Drawer
+        open={gradOpen}
+        onClose={() => {
+          setGradOpen(false);
+        }}
+        title="Graduating today"
+      >
+        <CreatureList
+          options={graduates.map((p) => ({
+            ...baseOption(p.creature),
+            name: honourTitle(nameOf(p.creature.id)),
+          }))}
+          selection={{ mode: 'show', label: 'Graduates' }}
+          class="flat"
+        />
       </Drawer>
       <Stub
         what={stub}

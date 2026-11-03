@@ -82,3 +82,29 @@ export function honourTitle(name: string, honour: Honour = 'bronze'): string {
 
 /** How many creatures are ready to graduate (V-TRIAL-3: the valley's "2 ready to graduate"). */
 export const readyCount = (trials: readonly Trial[]): number => trials.filter(isComplete).length;
+
+/**
+ * What the School says now, in a few words, and its one button when there is a next step: "See the graduation"
+ * at the ceremony, a calm line the rest of the time ("2 ready to graduate today", "2 graduated this morning",
+ * "3 on a Bronze trial"), and "Learn a talent" only when nothing else is going on. The Places list reads `line`.
+ */
+export function schoolNote(
+  phase: CeremonyPhase,
+  ready: number,
+  onTrial: number,
+): { line: string; action: string | null } {
+  if (ready > 0 && phase === 'live') {
+    return { line: `${String(ready)} graduating now`, action: 'See the graduation' };
+  }
+  if (ready > 0) {
+    return {
+      line:
+        phase === 'before'
+          ? `${String(ready)} ready to graduate today`
+          : `${String(ready)} graduated this morning`,
+      action: null,
+    };
+  }
+  if (onTrial > 0) return { line: `${String(onTrial)} on a Bronze trial`, action: null };
+  return { line: 'no one on a trial yet', action: 'Learn a talent' };
+}

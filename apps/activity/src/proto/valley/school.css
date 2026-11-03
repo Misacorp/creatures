@@ -25,15 +25,31 @@
   box-shadow: none;
 }
 
-/* The title of a graduate: the name, and its honour under it in the ribbon's bronze. */
-.sc-pupil .pv-plate span {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* The bell rings: its two marks blink in turn, in two steps. */
+.sc-ring {
+  animation: sc-ring 500ms steps(1) infinite;
 }
 
-.sc-honour {
-  color: #d08a4a;
+@keyframes sc-ring {
+  50% {
+    visibility: hidden;
+  }
+}
+
+/* A box of the checklist: an empty square, or the same square with a check mark in it (shape, not only colour). */
+.sc-tick {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--haze);
+  line-height: 0;
+}
+
+.sc-tick.done {
+  box-shadow: inset 0 0 0 2px var(--gold);
 }
 
 .sc-figure {
@@ -99,7 +115,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sc-ribbon.pin {
+  .sc-ribbon.pin,
+  .sc-ring {
     animation: none;
   }
 }

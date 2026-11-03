@@ -1,11 +1,12 @@
 /**
- * The bonfire, full screen (prototype): the communal fire in its ring under its poster, grown into the grand
- * hearth from place level 2. Round it sit the player's resting creatures (a rotating few, "+N" for the rest on a
- * tap), a pair of them sharing a small moment in a bubble, one creature warming up (a small flame over it: it is
- * catching up, there is no meter), and the creatures of friends who are online (their names under them, in
- * alphabetical order, never ranked). While the hearth is not built, its stones lie in a row under the fire and
- * go up as gifts come in; the one button opens the invitation (what it still needs, your own share, privately).
- * Stories that wait here show as the place's slim strip above it.
+ * The bonfire, full screen (prototype): the communal fire in its ring. Creatures sit where the art has places
+ * for them (three on the logs, two on the grass; `glowLayout` spots): the player's resting creatures, a pair of
+ * them sharing a small moment in a bubble between them, one warming up (a small flame over it: it is catching
+ * up, there is no meter), and friends who are online (named under them, never ranked). The rest of the
+ * resting creatures are behind "+N" (a tap lists them). While the hearth is not built its stones lie in a row
+ * under the fire (hollow outlines for those to come) and go up as gifts come in; the one button opens the
+ * hearth sheet (the stones with yours marked, what it still needs, one give button). Stories that wait here
+ * show as the place's slim strip above it.
  */
 import { useMemo, useState } from 'preact/hooks';
 import { cssVars } from '../../css-vars';
@@ -25,39 +26,60 @@ import {
   SERVER_MIDDLE_LEVEL,
   STONE_TO_COME,
   STONE_UP,
+  STONE_YOURS,
   WARMING_FLAME,
   sampleName,
 } from './bonfire-sample';
 import {
-  arcSeats,
   catchUpTarget,
+  crowd,
+  facesLeft,
   giveToHearth,
   hearthBuilt,
   hearthNeeds,
   isWarmingUp,
   momentPair,
   seatedFew,
-  yourSharePercent,
   type Hearth,
 } from './bonfire-logic';
 import './bonfire.css';
-import { glowNameOf, glowSceneDraw, glowSceneSpots, type PlaceSceneProps } from './glow-scene-art';
+import { glowLayout, glowNameOf, glowSceneDraw, type PlaceSceneProps } from './glow-scene-art';
 import { At, CreatureSprite, Glyph, Pic, Plate, SpeechBubble, isStill } from './parts';
 import { PinnedAct } from './PinnedAct';
 import { SceneFrame } from './SceneFrame';
 import { DEFAULT_LOOK, GRAND_LEVEL } from './valley-places';
 
 const DAY = 86_400_000;
-/** Seats round the fire: the fewest that look like a gathering on a phone. */
-const SEATS = 5;
+/** A creature's feet stand this far below its top (scene pixels): a seated one sinks a little into its log. */
+const SPRITE = 16;
+const SINK = 2;
 
-/** The hearth's stones as one row (laid ones solid, the rest hollow), as a picture in CSS px. */
-export function StoneRow({ hearth, scale }: { hearth: Hearth; scale: number }) {
+/**
+ * The hearth's stones as one row: laid ones solid, those to come hollow ink outlines. With `mark`, the stones
+ * you laid (the latest ones) are gold, your share shown the way the others are.
+ */
+export function StoneRow({
+  hearth,
+  scale,
+  mark = false,
+}: {
+  hearth: Hearth;
+  scale: number;
+  mark?: boolean;
+}) {
   return (
     <span class="bf-stones" aria-hidden="true">
-      {Array.from({ length: hearth.total }, (_, i) => (
-        <Pic key={i} sprite={i < hearth.placed ? STONE_UP : STONE_TO_COME} scale={scale} />
-      ))}
+      {Array.from({ length: hearth.total }, (_, i) => {
+        const laid = i < hearth.placed;
+        const yours = mark && laid && i >= hearth.placed - hearth.yours;
+        return (
+          <Pic
+            key={i}
+            sprite={yours ? STONE_YOURS : laid ? STONE_UP : STONE_TO_COME}
+            scale={scale}
+          />
+        );
+      })}
     </span>
   );
 }
@@ -78,21 +100,22 @@ export function BonfireScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
     world.creatures.map((c) => c.level),
     SERVER_MIDDLE_LEVEL,
   );
-  const { seated, more } = seatedFew(resting, day, SEATS);
-  const seats = arcSeats(seated.length);
-  const pair = momentPair(seated.length, day);
+  const friends = [...SAMPLE_FRIENDS].sort((a, b) => a.owner.localeCompare(b.owner));
+  const places = crowd(Math.min(resting.length, 3), friends.length);
+  const { seated } = seatedFew(resting, day, places.own.length);
+  const more = Math.max(0, resting.length - seated.length);
+  const pair = momentPair(seated.length);
   const moment = SAMPLE_MOMENTS[day % SAMPLE_MOMENTS.length] ?? SAMPLE_MOMENTS[0];
   const nameOf = (id: string): string => {
     const at = world.creatures.findIndex((c) => c.id === id);
     const c = world.creatures[at];
     return c === undefined ? '' : sampleName(c, at);
   };
-  const friends = [...SAMPLE_FRIENDS].sort((a, b) => a.owner.localeCompare(b.owner));
   // The hearth is the first guided project until the bonfire reaches the grand hearth's level.
   const projectOpen = look.bonfireLevel < GRAND_LEVEL && !hearthBuilt(hearth);
   const needs = hearthNeeds(hearth);
+  const cost = GIFT_STONES * hearth.stoneCost;
   const gift = (): void => {
-    const cost = GIFT_STONES * hearth.stoneCost;
     if (acorns < cost) return;
     setAcorns(acorns - cost);
     setHearth(giveToHearth(hearth, GIFT_STONES));
@@ -108,25 +131,36 @@ export function BonfireScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
         waiting={waiting}
         ground="#2c4d34"
         act={
-          look.bonfireLevel < GRAND_LEVEL ? (
-            <ActionButton
-              label={hearthBuilt(hearth) ? 'The hearth is built' : 'Add to the hearth'}
-              wide
-              large
+          projectOpen ? (
+            <PinnedAct
+              label="Add to the hearth"
               onClick={() => {
                 setHearthOpen(true);
               }}
             />
           ) : (
-            <PinnedAct calm="The grand hearth is lit" />
+            <PinnedAct
+              calm={
+                look.bonfireLevel >= GRAND_LEVEL ? 'The grand hearth is lit' : 'The hearth is built'
+              }
+            />
           )
         }
       >
         {(g) => {
-          const spot = glowSceneSpots(g, name);
+          const layout = glowLayout(g, name);
           const px = (n: number): number => g.X(n);
           const py = (n: number): number => g.Y(n);
-          const rowTop = spot.place.y;
+          const spot = (slot: string): { x: number; y: number } =>
+            layout.spots[slot] ?? { x: layout.art.x, y: layout.art.y };
+          // A creature's top-left from its feet spot.
+          const topLeft = (slot: string): { x: number; y: number } => {
+            const p = spot(slot);
+            return { x: p.x - SPRITE / 2, y: p.y - SPRITE + SINK };
+          };
+          const first = pair === null ? null : topLeft(places.own[pair[0]] ?? 'seatLeft');
+          const second = pair === null ? null : topLeft(places.own[pair[1]] ?? 'seatFront');
+          const more44 = spot('groundRight');
           return (
             <>
               <ul class="visually-hidden" aria-label="Resting by the fire">
@@ -149,12 +183,13 @@ export function BonfireScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
                 )}
               </ul>
               {seated.map((c, i) => {
-                const seat = seats[i];
-                if (seat === undefined) return null;
+                const slot = places.own[i];
+                if (slot === undefined) return null;
+                const at = topLeft(slot);
                 const warm = isWarmingUp(c.level, target);
                 return (
-                  <At key={c.id} x={px(g.cx + seat.dx)} y={py(rowTop + seat.dy)}>
-                    <CreatureSprite creature={c} scale={g.s} flip={seat.flip} />
+                  <At key={c.id} x={px(at.x)} y={py(at.y)}>
+                    <CreatureSprite creature={c} scale={g.s} flip={facesLeft(slot)} />
                     {warm && (
                       <span class={still ? 'bf-flame' : 'bf-flame flicker'}>
                         <Pic sprite={WARMING_FLAME} scale={g.s} />
@@ -163,16 +198,28 @@ export function BonfireScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
                   </At>
                 );
               })}
-              {pair !== null && moment !== undefined && (
-                <At
-                  x={px(g.cx + (seats[pair[0]]?.dx ?? 0))}
-                  y={py(rowTop + Math.min(seats[pair[0]]?.dy ?? 30, seats[pair[1]]?.dy ?? 30) - 2)}
-                >
+              {friends.map((f, i) => {
+                const slot = places.friends[i];
+                if (slot === undefined) return null;
+                const at = topLeft(slot);
+                return (
+                  <At key={f.owner} x={px(at.x)} y={py(at.y)} class="bf-friend">
+                    <CreatureSprite
+                      creature={{ species: f.species, shiny: false }}
+                      scale={g.s}
+                      flip={facesLeft(slot)}
+                    />
+                    <Plate>{f.owner}</Plate>
+                  </At>
+                );
+              })}
+              {first !== null && second !== null && moment !== undefined && (
+                <At x={px(first.x)} y={py(Math.min(first.y, second.y) - 1)}>
                   {/* As wide as the two creatures, so the bubble stands between them. */}
                   <span
                     class="bf-pair"
                     ref={cssVars({
-                      '--pw': `${String(px((seats[pair[1]]?.dx ?? 0) - (seats[pair[0]]?.dx ?? 0) + 16))}px`,
+                      '--pw': `${String(px(second.x - first.x + SPRITE))}px`,
                     })}
                   />
                   <SpeechBubble>
@@ -181,7 +228,7 @@ export function BonfireScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
                 </At>
               )}
               {more > 0 && (
-                <At x={px(g.cx + 44)} y={py(rowTop + 46)} class="bf-more" hidden={false}>
+                <At x={px(more44.x + 10)} y={py(more44.y - SPRITE)} class="bf-more" hidden={false}>
                   <button
                     type="button"
                     class="bf-more-btn pix"
@@ -194,21 +241,8 @@ export function BonfireScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
                   </button>
                 </At>
               )}
-              {friends.map((f, i) => {
-                const x = g.cx + (i - (friends.length - 1) / 2) * 30 - 8;
-                return (
-                  <At key={f.owner} x={px(x)} y={py(rowTop + 61)} class="bf-friend">
-                    <CreatureSprite
-                      creature={{ species: f.species, shiny: false }}
-                      scale={g.s}
-                      flip={i === friends.length - 1}
-                    />
-                    <Plate>{f.owner}</Plate>
-                  </At>
-                );
-              })}
               {projectOpen && (
-                <At x={px(g.cx)} y={py(rowTop + 87)} class="pv-centred bf-hearth">
+                <At x={px(g.cx)} y={py(layout.below + 10)} class="pv-centred bf-hearth">
                   <StoneRow hearth={hearth} scale={g.s} />
                 </At>
               )}
@@ -222,35 +256,36 @@ export function BonfireScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
           setHearthOpen(false);
         }}
         title="The hearth"
-        meta={`${String(hearth.placed)} / ${String(hearth.total)} stones`}
       >
         <div class="dr-stack bf-hearth-panel">
-          <StoneRow hearth={hearth} scale={3} />
-          {hearthBuilt(hearth) ? (
-            <p>The hearth is built. Every creature by the fire grows a little faster.</p>
-          ) : (
-            <>
-              <p>The hearth is the valley's first building. Anyone can add Acorns.</p>
-              <p class="bf-needs">
-                <span>Still needs</span>
-                <CountBadge
-                  icon={{ kind: 'glyph', id: 'gift' }}
-                  amount={needs.acorns}
-                  label="Acorns"
-                  name="Acorns"
-                />
-              </p>
-            </>
-          )}
-          {hearth.yours > 0 && (
-            <p class="muted">You laid {yourSharePercent(hearth)}% of it. Only you see this.</p>
-          )}
+          <StoneRow hearth={hearth} scale={3} mark />
+          <p class="bf-needs">
+            {hearthBuilt(hearth) ? (
+              <>
+                <Glyph id="check" scale={2} />
+                <span>Built</span>
+              </>
+            ) : (
+              <CountBadge
+                icon={{ kind: 'glyph', id: 'gift' }}
+                amount={needs.acorns}
+                label="Acorns still needed"
+                name="Acorns"
+              />
+            )}
+            {hearth.yours > 0 && (
+              <span class="bf-yours" role="img" aria-label={`Your stones: ${String(hearth.yours)}`}>
+                <Pic sprite={STONE_YOURS} scale={3} />
+                <span class="pix">{hearth.yours}</span>
+              </span>
+            )}
+          </p>
           {!hearthBuilt(hearth) && (
             <ActionButton
-              label="Give Acorns"
-              detail={`${String(GIFT_STONES * hearth.stoneCost)} Acorns`}
+              label="Give"
+              detail={`${String(cost)} Acorns`}
               wide
-              disabled={acorns < GIFT_STONES * hearth.stoneCost}
+              disabled={acorns < cost}
               onClick={gift}
             />
           )}

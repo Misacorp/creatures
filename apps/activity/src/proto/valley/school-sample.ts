@@ -35,6 +35,12 @@ export function pupilsOf(creatures: readonly Creature[]): { creature: Creature; 
 
 const INK = '#0d0a1a';
 
+/** A ring mark beside the bell (3 x 5 pixels), mirrored for the other side. */
+export const BELL_RING: SpriteDef = {
+  rows: ['g..', '.g.', '.g.', '.g.', 'g..'],
+  palette: { g: '#ffd25a' },
+};
+
 /** The bronze ribbon a graduate wears: a rosette with two tails (7 x 8 pixels). */
 export const BRONZE_RIBBON: SpriteDef = {
   rows: ['..kkk..', '.kbbbk.', 'kbbcbbk', '.kbbbk.', '..kbk..', '.kbkbk.', '.kb.bk.', '.kk.kk.'],

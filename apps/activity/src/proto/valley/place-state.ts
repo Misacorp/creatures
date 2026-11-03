@@ -11,7 +11,8 @@ import { hearthBuilt } from './bonfire-logic';
 import { SAMPLE_HEARTH } from './bonfire-sample';
 import { ORDER_OF, getMade, getNeed, postStatus, shardWord, type ForgeOrder } from './forge-post';
 import { STAGES, brokerOnDuty, getMarket, isBuilt, stageOf } from './market-sample';
-import { readyCount } from './school-logic';
+import { ceremonyParam, ceremonyPhase, readyCount, schoolNote } from './school-logic';
+import { weekClock } from './valley-logic';
 import { pupilsOf } from './school-sample';
 import type { PlaceId } from './valley-art';
 import { GRAND_LEVEL, type ValleyLook } from './valley-places';
@@ -50,11 +51,11 @@ function marketLine(): string {
 /** The School's line: how many have ticked every box of the Bronze trial. */
 function schoolLine(world: ProtoWorld): string {
   const pupils = pupilsOf(world.creatures);
-  const ready = readyCount(pupils.map((p) => p.trial));
-  if (ready > 0) return `${String(ready)} ready to graduate`;
-  return pupils.length === 0
-    ? 'no one on a trial yet'
-    : `${String(pupils.length)} on a Bronze trial`;
+  const phase = ceremonyPhase(
+    weekClock(world.now, world.timezone),
+    typeof window === 'undefined' ? null : ceremonyParam(window.location.hash),
+  );
+  return schoolNote(phase, readyCount(pupils.map((p) => p.trial)), pupils.length).line;
 }
 
 /** The bonfire's line: the hearth's stones while it is the project, then who is resting. */
