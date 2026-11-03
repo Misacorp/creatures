@@ -140,6 +140,8 @@ export function marketFromHash(hash: string): MarketState {
   if (ask === 'seat') {
     return { ...START, given: { ...MARKET_NEED }, mine: { acorns: 120, scrap: 30 } };
   }
+  if (ask === 'empty') return { ...START, given: { acorns: 0, scrap: 0 } };
+  if (ask === 'five') return { ...START, given: { acorns: 250, scrap: 90 } };
   if (ask === 'almost') return { ...START, given: { acorns: 560, scrap: 180 } };
   return START;
 }
