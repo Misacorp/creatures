@@ -906,7 +906,7 @@ describe('the glossary covers the daily dungeon', () => {
   });
 
   it('sends the dungeon entries to the Daily dungeon section of the page', () => {
-    const ids = new Set(howToPlay.sections.map((s) => s.id));
+    const ids = new Set<string>(howToPlay.sections.map((s) => s.id));
     const entries = glossary.filter(
       (g) =>
         g.id.startsWith('modifier-') ||
