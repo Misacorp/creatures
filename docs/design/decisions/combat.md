@@ -4,6 +4,19 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: Culling Strike stays as an enabler: in one line's pool per role and per element, never buffed for its solo value **[Misa]**
+
+ID: `2026-11-03-culling-strike-stays-as-an-enabler` · Status: current
+
+**Decision (Misa).** Culling Strike (`cull`) stays in the talent library and goes into the pools of a few lines, as a trial:
+
+- **Where:** at least one line of each role (Setter, Payoff, Guard, Support) and at least one line of each element (Tide, Ember, Grove, Spark, Mire) has it in its pool. A few lines can cover both splits; the lead picks them with the lab.
+- **What it is:** a utility talent with no payoff of its own today (a hit that leaves the foe below a small share of its HP defeats it). It is an **enabler**: effects are meant to stack on it later (killing-blow triggers, R21.5).
+- **For balance passes:** Culling Strike is **not intended to be used alone**. A weak result for it on its own is expected and is **not a reason to buff it**. Judge it only with the effects that build on it, once they exist. Its `intent` in `talents.json` says the same, so the lab report shows it.
+- It may be dropped later if nothing comes to build on it.
+
+**Reasoning.** It was in the library but in no line's pool, so no creature could find or learn it (found by the valley session, 2026-11-03). Misa wants it in play somewhere so later effects have something to stack on, and wants the note so a balance pass does not misread its solo numbers.
+
 ## 2026-11-02: Combat v2 engine slice 1: carry keyed by creature key, board events beside the log, live actions as one boost or cut each
 
 ID: `2026-11-02-combat-v2-engine-slice-1-the` · Status: current
