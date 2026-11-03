@@ -11,17 +11,7 @@ import { PlayerV2 } from '../../ReplayV2';
 import { StageResultRow } from '../../StageResultRow';
 import type { PhaseResultView } from '../../raid-api';
 import { raidV2Sample } from '../raid-v2-sample';
-import {
-  BOOST_MARKS,
-  CRIT_STYLES,
-  REACTION_INKS,
-  REACTION_STYLES,
-  StageV2,
-  type BoostMark,
-  type CritStyle,
-  type ReactionInk,
-  type ReactionStyle,
-} from '../../StageV2';
+import { StageV2 } from '../../StageV2';
 import { staticFx } from '../../stage-fx';
 import { MarkStrip } from '../../ui/MarkStrip';
 import type { PlaybackV2 } from '../../use-playback-v2';
@@ -163,21 +153,6 @@ function optionsOf(p: Props): FightSampleOptions {
   };
 }
 
-/** The options for the stage's reaction callout and boost mark, read from the page's controls (an unknown value falls back to the default). */
-function styleOf(p: Props): {
-  reactionStyle: ReactionStyle;
-  reactionInk: ReactionInk;
-  boostMark: BoostMark;
-  critStyle: CritStyle;
-} {
-  return {
-    reactionStyle: REACTION_STYLES.find((v) => v === str(p, 'reactionStyle')) ?? 'plate',
-    reactionInk: REACTION_INKS.find((v) => v === str(p, 'reactionInk')) ?? 'bar',
-    boostMark: BOOST_MARKS.find((v) => v === str(p, 'boostMark')) ?? 'glow',
-    critStyle: CRIT_STYLES.find((v) => v === str(p, 'critStyle')) ?? 'mult',
-  };
-}
-
 /** The stage held still at a moment of a real fight, with the effects of the beat that just landed. */
 function StageHeld({ p }: { p: Props }) {
   const opts = optionsOf(p);
@@ -222,7 +197,6 @@ function StageHeld({ p }: { p: Props }) {
         place={opts.stage === 3 ? 'Finale' : `Stage ${String(opts.stage)} / 3`}
         hpMax={replay.bossHpMax}
         rounds={replay.boss.rounds}
-        {...styleOf(p)}
       />
     </div>
   );
@@ -443,10 +417,6 @@ const CONTROLS = {
   seed: { kind: 'text', maxLength: 12 },
   party: { kind: 'select', options: ['rows', 'mixed'] },
   knackNames: { kind: 'toggle' },
-  reactionStyle: { kind: 'select', options: REACTION_STYLES },
-  reactionInk: { kind: 'select', options: REACTION_INKS },
-  boostMark: { kind: 'select', options: BOOST_MARKS },
-  critStyle: { kind: 'select', options: CRIT_STYLES },
   moment: { kind: 'select', options: MOMENTS },
   beat: { kind: 'number', min: 0, max: 400 },
   round: { kind: 'number', min: 0, max: 8 },
@@ -468,10 +438,6 @@ const DEFAULTS = {
   seed: 'fold',
   party: 'rows',
   knackNames: false,
-  reactionStyle: 'plate',
-  reactionInk: 'bar',
-  boostMark: 'glow',
-  critStyle: 'mult',
   moment: 'marks and an announced move',
   beat: 0,
   round: 3,
@@ -490,7 +456,7 @@ const stageV2: Entry = {
   file: 'apps/activity/src/StageV2.tsx',
   group: 'Creatures & game pieces',
   description:
-    "The combat v2 fight stage, played from a real fight (every event is the engine's own, from the shipped bosses and creatures): the boss above its HP bar with a tick per stage, the move it just made, the marks on it oldest first, Mired, what it resists and the Escalating meter, the turn strip lighting the step on, and the v2 board with each creature's HP, a silenced creature's Knack crossed out with the turns left, knocked-out ones greyed and the move announced at round start on each creature it will land on. What a fight shows: a reaction's name in its two colours with the bonus over the boss (the beat is held a moment longer), a number on the boss for every hit in the hitter's element colour (a crit bigger with \"x2.6!\"), a Guard's save (a shield on the covered creature with what the cover kept off, the Guard's tile flashing and a bracket between the two tiles), \"Dodged!\", heals as green numbers, boosts as rising arrows, and, only when the Knack names option is on (Settings, off by default), the Knack's name popping on the creature that acts. The `party` control swaps the sample for a mixed party (Guards and Supports among the Setters and Payoffs) so every one of these happens. Views: held still at a moment of the fight (a crit, a Blocked hit, a silenced creature, a knock-out, a cashed mark, a Guard save, a dodge, a heal, a boost, a Knack acting), playing by itself like the replay, the live finale with the player's action button (Rally, Shield Wall with its row picker, Purge) and Auto fire, a stage's result card, and the Raid tab's pick of the finale action.",
+    "The combat v2 fight stage, played from a real fight (every event is the engine's own, from the shipped bosses and creatures): the boss above its HP bar with a tick per stage, the move it just made, the marks on it oldest first, Mired, what it resists and the Escalating meter, the turn strip lighting the step on, and the v2 board with each creature's HP, a silenced creature's Knack crossed out with the turns left, knocked-out ones greyed and the move announced at round start on each creature it will land on. What a fight shows: a reaction's name in its two colours over the boss with the hit's total and the bonus under it on one line (the beat is held a moment longer), a number on the boss for every hit in the hitter's element colour (a crit ending with \"!\" in two hard halves), a Guard's save (a shield on the covered creature with what the cover kept off, the Guard's tile flashing and a bracket between the two tiles), \"Dodged!\", heals as green numbers, boosts as rising arrows, and, only when the Knack names option is on (Settings, off by default), the Knack's name popping on the creature that acts. The `party` control swaps the sample for a mixed party (Guards and Supports among the Setters and Payoffs) so every one of these happens. Views: held still at a moment of the fight (a crit, a Blocked hit, a silenced creature, a knock-out, a cashed mark, a Guard save, a dodge, a heal, a boost, a Knack acting), playing by itself like the replay, the live finale with the player's action button (Rally, Shield Wall with its row picker, Purge) and Auto fire, a stage's result card, and the Raid tab's pick of the finale action.",
   controls: CONTROLS,
   defaults: DEFAULTS,
   presets: [
@@ -505,80 +471,19 @@ const stageV2: Entry = {
     { name: 'A reaction is cashed', props: { moment: 'a reaction is cashed' } },
     { name: 'The end of stage 1', props: { moment: 'the end' } },
     {
-      name: 'Reaction callout: its name in its two colours with the bonus, over the boss (Old Bogback)',
+      name: 'Reaction callout: the name in its two colours over the numbers on one line (total and bonus), over the boss (Old Bogback)',
       props: { slot: 4, players: 5, party: 'mixed', moment: 'a reaction is cashed' },
     },
     {
-      name: 'Reaction option A, one float: the name over the hit’s total and its bonus (colours: split word)',
-      props: {
-        slot: 4,
-        players: 5,
-        party: 'mixed',
-        moment: 'a reaction is cashed',
-        reactionStyle: 'unit',
-        reactionInk: 'split',
-      },
-    },
-    {
-      name: 'Reaction option B, the number rises and the name bursts out of it (colours: outline)',
-      props: {
-        slot: 4,
-        players: 5,
-        party: 'mixed',
-        moment: 'a reaction is cashed',
-        reactionStyle: 'burst',
-        reactionInk: 'outline',
-      },
-    },
-    {
-      name: 'Reaction option C, the number turns into the two colours as the name appears (colours: alternate letters)',
-      props: {
-        slot: 4,
-        players: 5,
-        party: 'mixed',
-        moment: 'a reaction is cashed',
-        reactionStyle: 'morph',
-        reactionInk: 'alternate',
-      },
-    },
-    {
-      name: 'Reaction colours: fill with a hard drop shadow in the other colour',
-      props: {
-        slot: 4,
-        players: 5,
-        party: 'mixed',
-        moment: 'a reaction is cashed',
-        reactionInk: 'shadow',
-      },
-    },
-    {
-      name: 'Crit option: "452!" with the number in two hard halves, no multiplier',
-      props: { slot: 4, players: 5, party: 'mixed', moment: 'a crit', critStyle: 'split' },
-    },
-    {
-      name: 'Reaction option: the shipped plate with split-word colours',
-      props: {
-        slot: 4,
-        players: 5,
-        party: 'mixed',
-        moment: 'a reaction is cashed',
-        reactionInk: 'split',
-      },
+      name: 'A crit: "452!" in two hard halves (the special text), no multiplier',
+      props: { slot: 4, players: 5, party: 'mixed', moment: 'a crit' },
     },
     {
       name: 'Boosted creatures keep a yellow inner glow until their next hit (a Support’s Boost)',
       props: { slot: 4, players: 5, party: 'mixed', moment: 'a boost' },
     },
     {
-      name: 'Boosted creatures with the up-arrow pip instead of the glow',
-      props: { slot: 4, players: 5, party: 'mixed', moment: 'a boost', boostMark: 'pip' },
-    },
-    {
-      name: 'A crit with its multiplier (x2.6!) in the hitter’s colour',
-      props: { slot: 4, players: 5, party: 'mixed', moment: 'a crit' },
-    },
-    {
-      name: 'A Guard save: the shield on the covered creature, the bracket and the Guard’s flash',
+      name: 'A Guard save: a large shield on the covered creature with what it kept off, the bracket and the Guard’s flash',
       props: { slot: 4, players: 5, party: 'mixed', moment: 'a Guard save' },
     },
     {

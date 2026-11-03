@@ -4,9 +4,17 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: Combat v2 fight visuals: Misa's picks **[Misa]**
+
+ID: `2026-11-03-combat-v2-fight-visuals-misa-s` · Status: current · Amends: `2026-11-03-combat-v2-fight-options-for-misa`
+
+**Decision.** Misa: "Overloads 3 is best. Put the numbers on a single line though. The split two tone crit is amazing and we should note this style down for later use in making text feel special. The crit exclamation point is good and let's standardise it. The shield icon should be really large, like the size of the creature itself or even larger. We need to go flashy here. The yellow glow is good but it could be less opaque and also start from the existing border without a gap." Applied: the reaction callout is the `unit` layout with the `split` colours (one float: the name in the two element colours on top, under it on one line the hit's total and the bonus, "452 +307", the bonus in gold); the other layouts, inks and their `reactionStyle` / `reactionInk` props are removed. A crit is the number with "!" in two hard halves (`crit-split`, the upper half a lighter shade of the hitter's colour), no multiplier; every crit number in v2 playback ends with "!". The style is a shared "special text" (`.special-text`, `ux-patterns.md`). The Guard's save is a large shield (the width of the creature's tile, with a pop, a bright flash and the prevented number on it; still when motion is reduced). The boosted mark is only the yellow inner glow, lighter, inset flush to the tile's border; the pip and `boostMark` are removed. Also: a golden talent shows a star and the word "Golden" beside its gold look everywhere a talent shows (`GoldenMark`), and the stage result rows' Watch button sits clear of the row's border.
+
+**Reasoning.** Misa picked these by screenshot, so the options are gone rather than kept as dead code. The two-tone text feels special and is worth reusing. Colour must not be the only cue for a golden talent (accessibility finding of the valley session's review). Engine untouched.
+
 ## 2026-11-03: Combat v2 fight options for Misa: reaction callouts with the hit, colours in the text, crit styles and a buffed mark
 
-ID: `2026-11-03-combat-v2-fight-options-for-misa` · Status: current · Amends: `2026-11-03-combat-v2-fights-made-readable-reaction`
+ID: `2026-11-03-combat-v2-fight-options-for-misa` · Status: current, amended by `2026-11-03-combat-v2-fight-visuals-misa-s` · Amends: `2026-11-03-combat-v2-fights-made-readable-reaction`
 
 **Decision.** `StageV2` takes options so Misa can pick by screenshot; the shipped look stays the default until he does. `reactionStyle`: `plate` (today), `unit` (one float: name, the hit's total, the bonus), `burst` (the number, the name bursting out under it), `morph` (the number turns into the two colours as the name appears). `reactionInk` puts the two element colours into the letters, no gradient: `bar` (today), `split` word, `outline`, `shadow` (hard drop shadow) or `alternate` letters. `critStyle`: `mult` (today's "x2.6!") or `split` (the number with "!" in two hard halves, the upper a lighter shade). `boostMark`: a creature a Support boosted keeps a yellow inner glow (default) or an up-arrow pip until its next hit; the fold keeps `CreatureState.boost` (added by a `boost` event, spent by the creature's next hit, cleared by a knock-out). A reaction's cue carries its own hit (`FloatCue.hit`) so the callout can hold the number.
 

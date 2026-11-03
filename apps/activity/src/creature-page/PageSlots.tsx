@@ -4,6 +4,7 @@ import { usePopoverTrigger } from '../PopoverHost';
 import { PopoverCard } from '../ui/Popover';
 import type { TalentView } from '../talent-types';
 import type { TalentSlotView } from '../talent-types';
+import { GoldenMark } from '../TalentChip';
 import { talentTextParts } from '../talent-view';
 import { Slot, SlotRow } from '../ui/Slot';
 
@@ -42,10 +43,8 @@ export function TalentInSlot({
     <span
       class={`talent-chip slot-talent${numberOnly ? ' compact' : ''}${talent.golden ? ' golden' : ''}${talent.idle ? ' idle' : ''}`}
     >
-      <strong class="talent-name pix">
-        {talent.name}
-        {talent.golden && <span class="visually-hidden"> (golden)</span>}
-      </strong>
+      <strong class="talent-name pix">{talent.name}</strong>
+      {talent.golden && <GoldenMark />}
       {value !== '' && (
         <span class="slot-talent-value pix">
           {talent.golden && parts.value !== null ? (

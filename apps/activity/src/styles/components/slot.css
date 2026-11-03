@@ -179,6 +179,11 @@ button.slot[aria-expanded='true'] {
   line-height: 1;
 }
 
+/* A golden talent has one more line (the star and "Golden"): the slot grows to hold it, and its row's other slots with it. */
+button.slot.talent.filled:has(.golden-mark) {
+  min-height: 5.75rem;
+}
+
 /* A corner mark ("Signature") gets a line of its own so it never sits on the words. */
 .slot.talent.filled:has(.slot-corner) .slot-content {
   padding-bottom: 0.875rem;
