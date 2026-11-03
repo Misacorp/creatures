@@ -9,6 +9,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | Set | Status | Pieces | Requested |
 | --- | --- | --- | --- |
 | [Combat v2 icons: attack shapes, board states, store meters](#combat-icons) | draft | 11 | 2026-10-31, Misa: "icons for keywords and attack shapes" (roadmap phase 3, combat v2). |
+| [Element shards, told apart by shape](#shards) | draft | 15 | 2026-11-03: the element shard icons must differ by shape, not only colour (accessibility review from the valley session; Misa asked to provide what the valley needs). |
 | [Valley places: glow, day and night](#valley-glow) | liked | 6 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
 | [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
@@ -49,6 +50,39 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `store-heat` | glyph | Heat | liked | The Heat store (Boiling Point): the shared box with heat rising from it in waves. The count is text beside it ("x3"). Misa, 2026-11-01: "nice". |
 | `store-calm` | glyph | Calm | liked | The Calm store (Eye of the Storm): the shared box with a lotus in it. The count is text beside it ("x2"). Misa, 2026-11-01: "nice". |
 | `store-static` | glyph | Static | liked | The Static store (a dodge fills it): the shared box with a small crackle in it. The count is text beside it ("x1"). Misa, 2026-11-01: "nice". |
+
+<a id="shards"></a>
+
+## Element shards, told apart by shape
+
+![Element shards, told apart by shape](shards.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-03: the element shard icons must differ by shape, not only colour (accessibility review from the valley session; Misa asked to provide what the valley needs).
+- **Source:** `apps/activity/src/sprites/concepts/shards.ts` (draw it with `pnpm art shards`)
+- **Sheet of:** `be07fcbb7f6a`
+- Why: Ember (#ef6a3a) and Grove (#5cbf5a) are a classic deuteranope confusion pair and the shipped shards differ only in the top two rows. The Forge and Market loop is about which shard you need, so each element is a different outline. Colours are unchanged.
+- Every sprite has a `deuteranope` alt (Machado 2009, severity 1.0). Its row in the set sheet is the test: five different shapes per variant column.
+- Silhouettes: Tide a drop (a) or a curling wave (b); Ember a tall flame with a side tongue (a) or a crown of three flames (b); Grove a leaf on a stem (a) or a two-leaf sprout (b); Spark a bolt (a) or a zigzag (b); Mire a blob with one drip (a) or two drips (b).
+- Needs before use: Misa picks a or b per element; the pick replaces its sprite in `gear-sprites.ts` (BUNDLED_PART_ICONS keeps its ids) and this concept is deleted. scrap and glimmer are untouched.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `tide-now` | part |  | draft | The shipped tide shard, unchanged, for comparison. |
+| `tide-a` | part |  | draft | A drop: pointed top, round flat base. |
+| `tide-b` | part |  | draft | A wave crystal: a crest curling over to the right. |
+| `ember-now` | part |  | draft | The shipped ember shard, unchanged, for comparison. |
+| `ember-a` | part |  | draft | A tall flame: a main tongue with a smaller one at its side. |
+| `ember-b` | part |  | draft | A crown of three flames on a short crystal. |
+| `grove-now` | part |  | draft | The shipped grove shard, unchanged, for comparison. |
+| `grove-a` | part |  | draft | A leaf, tilted, with a vein and a stem at its foot. |
+| `grove-b` | part |  | draft | A sprout: two leaves on a stem, in a crystal base. |
+| `spark-now` | part |  | draft | The shipped spark shard, unchanged, for comparison. |
+| `spark-a` | part |  | draft | A fat bolt: a broad head stepping down to a thin tail. |
+| `spark-b` | part |  | draft | A thin zigzag bolt, two sharp turns. |
+| `mire-now` | part |  | draft | The shipped mire shard, unchanged, for comparison. |
+| `mire-a` | part |  | draft | A lump with a single drip hanging from its belly. |
+| `mire-b` | part |  | draft | A slumped blob with two drips, one longer. |
 
 <a id="valley-glow"></a>
 
