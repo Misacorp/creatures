@@ -34,12 +34,13 @@ import {
 } from './parts';
 import {
   ARENA_BOSS,
-  CHIMNEY_TOP,
-  FORGE_FLAME,
+  ARENA_FANS,
+  ARENA_TEAM,
+  FORGE_WORKERS,
+  HOUSE_DOOR_SPOT,
   PADDOCK_ROAM,
-  SMOKE_FRAMES,
+  SIGNPOST_HOME,
   TILE,
-  flameSprite,
   placeOf,
   valleyDrawing,
   type PlaceId,
@@ -203,8 +204,6 @@ export function ValleyMap({
     '--top': `${String(fit.top)}px`,
   });
 
-  const smokeFrame = moving ? Math.floor(tick / 5) % 4 : 1;
-  const flameFrame = moving ? Math.floor(tick / 2) % 3 : 0;
   const bob = moving ? Math.floor(tick / 5) % 2 : 0;
   const boss = bossArt(world.raid.boss.id);
 
@@ -229,15 +228,7 @@ export function ValleyMap({
             height={drawing.height * s}
             aria-hidden="true"
           />
-          {/* The live bits drawn over the canvas: smoke, the forge fire, the boss in the arena. */}
-          {smokeFrame < 3 && (
-            <At x={X(CHIMNEY_TOP.x)} y={Y(CHIMNEY_TOP.y - smokeFrame * 3)}>
-              <Pic sprite={SMOKE_FRAMES[smokeFrame] ?? SMOKE_FRAMES[0]!} scale={s} />
-            </At>
-          )}
-          <At x={X(FORGE_FLAME.x)} y={Y(FORGE_FLAME.y)}>
-            <Pic sprite={flameSprite(flameFrame)} scale={s} />
-          </At>
+          {/* The live bit drawn over the canvas: the boss in the arena. */}
           <At x={X(ARENA_BOSS.x)} y={Y(ARENA_BOSS.y)} class="pv-boss">
             <Sprite sprite={boss.sprite} scale={s} />
           </At>
@@ -347,7 +338,7 @@ interface Person {
 /**
  * Who stands where in the valley: the explorer home under the signpost with its sack, the workers at the
  * forge, the creature that can evolve at the house's door, the raid team in the arena facing the boss, the
- * other players' creatures on the bleachers, the one setting off on the east road, and every other free
+ * other players' creatures on the grass before the arena, the one setting off on the east road, and every other free
  * creature wandering the paddock (seeded waypoints, 1 px a tick).
  */
 function useResidents(
@@ -369,8 +360,8 @@ function useResidents(
       out.push({
         key: c.id,
         creature: c,
-        x: 28 * TILE + 2,
-        y: 16 * TILE + 2,
+        x: SIGNPOST_HOME.x,
+        y: SIGNPOST_HOME.y,
         flip: false,
         sack: true,
       });
@@ -383,8 +374,8 @@ function useResidents(
       out.push({
         key: c.id,
         creature: c,
-        x: i === 0 ? 20 * TILE - 2 : 22 * TILE + 2,
-        y: 12 * TILE + 12,
+        x: FORGE_WORKERS[i === 0 ? 0 : 1].x,
+        y: FORGE_WORKERS[i === 0 ? 0 : 1].y,
         flip: i === 1,
         sack: false,
       });
@@ -395,18 +386,14 @@ function useResidents(
     out.push({
       key: evolving.id,
       creature: evolving,
-      x: 16 * TILE + 2,
-      y: 7 * TILE,
+      x: HOUSE_DOOR_SPOT.x,
+      y: HOUSE_DOOR_SPOT.y,
       flip: true,
       sack: false,
     });
   }
   // The raid's board: front nearest the boss. Three lines of three, facing east.
-  const zoneX: Record<string, number> = {
-    front: 25 * TILE + 8 + 32,
-    middle: 25 * TILE + 8 + 16,
-    back: 25 * TILE + 8,
-  };
+  const zoneX: Record<string, number> = ARENA_TEAM.zoneX;
   const row = world.raid.party?.row ?? [];
   row.forEach((slot) => {
     if (slot.creature === null) return;
@@ -414,20 +401,20 @@ function useResidents(
     out.push({
       key: `raid-${String(slot.slot)}`,
       creature: { species: slot.creature.species, shiny: false },
-      x: zoneX[slot.zone] ?? 400,
-      y: 4 * TILE + 2 + inZone * 20,
+      x: zoneX[slot.zone] ?? ARENA_TEAM.zoneX.back,
+      y: ARENA_TEAM.y + inZone * ARENA_TEAM.rowStep,
       flip: false,
       sack: false,
     });
   });
-  // Other players' creatures cheer on the north bleachers.
+  // Other players' creatures cheer in front of the arena.
   world.residents.slice(1, 5).forEach((r, i) => {
     if (r.creature === null) return;
     out.push({
       key: `fan-${r.userId}`,
       creature: { species: r.creature.species, shiny: r.creature.shiny },
-      x: 24 * TILE + 12 + i * 34,
-      y: 3 * TILE - 6,
+      x: (ARENA_FANS[i] ?? ARENA_FANS[0]).x,
+      y: (ARENA_FANS[i] ?? ARENA_FANS[0]).y,
       flip: i % 2 === 1,
       sack: false,
     });

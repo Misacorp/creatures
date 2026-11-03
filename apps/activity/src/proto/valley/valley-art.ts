@@ -1,24 +1,23 @@
 /**
  * The valley as data (prototype, dev only): one 36 x 24 tile world of 16 px tiles (576 x 384 valley
  * pixels), built from the Valley Games tileset, the world-map landmarks and the living room's props, plus
- * the four small new sprites of the concept (a roof, an anvil, a chest and a smoke puff). Pure: it returns
+ * two small sprites of the concept's own (an anvil and a chest). Pure: it returns
  * placements for a canvas (`paint.ts`) and the places' rectangles for the buttons laid over it.
  *
  * The valley reads west to east: the cave (the Dungeon) and the fairground (the Valley Games) with its
  * lake; the house (the living room), the paddock (your creatures) and the forge (the Workshop) in the
  * middle; the arena (the Raid) and the signpost (Expeditions, the road out) in the east.
- * The School (between the cave and the house), the Market (north of the forge), the bonfire (south of it, east
- * of the paddock) and the visitor's roadside stall (below the arena) are drawn with the art library's
- * `valley-glow` sprites (`valley-places.ts`), by day or by night.
+ * Every place is one of the art library's glow sprites (`valley-places.ts`), by day or by night. The School (between the cave and the house), the Market (north of the forge), the bonfire (south of it, east
+ * of the paddock) and the visitor's roadside stall (below the arena) stand among them; the tiles carry only
+ * the sky, the hills, the roads, the lake and the garden.
  */
 import { WORLD_MAP_SPRITE_DATA } from '../../sprites/data/world-map-sprites';
 import { PACK_ART } from '../../sprites/pack-art';
-import { swapPalette, type SpriteDef } from '../../sprites/sprite-data';
-import { DOOR, WINDOW } from '../../games/art/drawn';
-import { PixelGrid, gridPlacements, type Placement } from '../../games/art/pixel';
+import type { SpriteDef } from '../../sprites/sprite-data';
+import { PixelGrid, type Placement } from '../../games/art/pixel';
 import { propSprite } from '../../games/art/props';
 import { TILE, tileFrame, type TileName } from '../../games/art/tiles';
-import { DEFAULT_LOOK, dimmed, placePlacements, type ValleyLook } from './valley-places';
+import { DEFAULT_LOOK, artBox, dimmed, placePlacements, type ValleyLook } from './valley-places';
 import { RAMPS, maybeTint, type Ramp, type RampName } from '../../games/art/tint';
 
 export { TILE };
@@ -79,56 +78,56 @@ export const PLACES: readonly ValleyPlace[] = [
     id: 'cave',
     name: 'Cave',
     what: 'Dungeon',
-    rect: tiles(1, 3, 5, 4),
-    door: { x: 56, y: 96 },
+    rect: artBox('cave'),
+    door: { x: 48, y: 104 },
     glyph: 'lantern',
   },
   {
     id: 'fair',
     name: 'Fairground',
     what: 'Valley Games',
-    rect: tiles(1, 12, 8, 5),
-    door: { x: 72, y: 264 },
+    rect: artBox('fairground'),
+    door: { x: 92, y: 248 },
     glyph: 'trophy',
   },
   {
     id: 'house',
     name: 'House',
     what: 'living room',
-    rect: tiles(12, 3, 7, 5),
-    door: { x: 15 * TILE + 8, y: 8 * TILE },
+    rect: artBox('house'),
+    door: { x: 240, y: 122 },
     glyph: 'home',
   },
   {
     id: 'paddock',
     name: 'Paddock',
     what: 'your creatures',
-    rect: tiles(12, 13, 6, 4),
-    door: { x: 15 * TILE, y: 17 * TILE },
+    rect: artBox('paddock'),
+    door: { x: 252, y: 266 },
     glyph: 'paw',
   },
   {
     id: 'forge',
     name: 'Forge',
     what: 'Workshop',
-    rect: tiles(19, 10, 5, 4),
-    door: { x: 21 * TILE + 8, y: 13 * TILE },
+    rect: artBox('forge'),
+    door: { x: 336, y: 196 },
     glyph: 'anvil',
   },
   {
     id: 'arena',
     name: 'Arena',
     what: 'Raid',
-    rect: tiles(24, 3, 10, 6),
-    door: { x: 29 * TILE, y: 9 * TILE },
+    rect: artBox('arena'),
+    door: { x: 456, y: 112 },
     glyph: 'blade',
   },
   {
     id: 'signpost',
     name: 'Signpost',
     what: 'Expeditions',
-    rect: tiles(28, 14, 6, 4),
-    door: { x: 31 * TILE, y: 18 * TILE },
+    rect: artBox('road'),
+    door: { x: 492, y: 272 },
     glyph: 'compass',
   },
   // The four newer places (art: the library's `valley-glow`, see `valley-places.ts`).
@@ -173,34 +172,7 @@ export function placeOf(id: PlaceId): ValleyPlace {
   return found;
 }
 
-// --- New sprites (the concept's own art: a roof, an anvil, a chest, a smoke puff) ---
-
-/** A gabled roof of `w` x `h` pixels: shingle rows, lit along the top, inked round. Cut into pieces. */
-export function roofPlacements(
-  w: number,
-  h: number,
-  ramp: Ramp,
-  x: number,
-  y: number,
-): Placement[] {
-  const g = new PixelGrid(w, h);
-  const slope = Math.floor(h / 2);
-  for (let yy = 0; yy < h; yy++) {
-    const inset = Math.max(0, slope - Math.floor(yy / 2));
-    const from = inset;
-    const to = w - inset - 1;
-    for (let xx = from; xx <= to; xx++) {
-      let key = 'c';
-      if (yy === 0 || xx === from || xx === to || yy === h - 1) key = 'k';
-      else if (yy === 1) key = 'a';
-      else if (yy % 4 === 0) key = 'd';
-      else if (yy % 4 === 1) key = 'b';
-      else if ((xx + Math.floor(yy / 4) * 3) % 6 === 0) key = 'd';
-      g.set(xx, yy, key);
-    }
-  }
-  return gridPlacements(g, { a: ramp[0], b: ramp[1], c: ramp[2], d: ramp[3], k: INK }, x, y);
-}
+// --- Sprites of the concept's own: an anvil, a chest, an upscale ---
 
 /** The anvil (16 x 16): a dark iron horn and face on a stout foot. */
 export const ANVIL: SpriteDef = (() => {
@@ -256,13 +228,6 @@ export const CHEST_FRAMES: readonly SpriteDef[] = [0, 1, 2].map((frame) => {
   });
 });
 
-/** A smoke puff (4 x 4) in three frames: small, full, thin. */
-export const SMOKE_FRAMES: readonly SpriteDef[] = [
-  { rows: ['....', '.ab.', '.bb.', '....'], palette: { a: '#f4f0ff', b: '#cfc5ea' } },
-  { rows: ['.ab.', 'abbb', 'bbbc', '.bc.'], palette: { a: '#f4f0ff', b: '#cfc5ea', c: '#9488c6' } },
-  { rows: ['.c..', 'c..c', '..c.', 'c...'], palette: { c: '#cfc5ea' } },
-];
-
 /** A sprite drawn `n` times as big (pixel for pixel), for the boss seen from the valley. At most 64 px. */
 export function upscale(def: SpriteDef, n: number): SpriteDef {
   const rows = def.mirror === true ? def.rows.map((r) => r + [...r].reverse().join('')) : def.rows;
@@ -274,19 +239,9 @@ export function upscale(def: SpriteDef, n: number): SpriteDef {
   return { rows: out, palette: def.palette };
 }
 
-/** The ember caves landmark re-tinted for the Dungeon: slate rock, the fire turned into lantern gold. */
-export const CAVE_MOUTH: SpriteDef = swapPalette(WORLD_MAP_SPRITE_DATA.emberCaves, {
-  n: '#2b2d3a',
-  m: '#4a4c63',
-  o: '#f2b84b',
-});
-
 // --- The tile grid ---
 
 type Cell = { tile: TileName; tint?: RampName | Ramp; tint2?: RampName | Ramp } | null;
-
-const SLATE: Ramp = ['#7a7c96', '#585a73', '#3d3f52', '#2b2d3a'];
-const EMBER_STONE: Ramp = ['#a07a6a', '#7a5048', '#5a3632', '#3a2024'];
 
 /** The base layer: sky, the hills' sky, then grass. Any cell, also outside the valley (desktop margins). */
 function baseCell(row: number): TileName {
@@ -322,21 +277,7 @@ export function featureGrid(): Cell[][] {
   fill(26, 10, 1, 8, dirt);
   fill(18, 13, 4, 1, dirt);
   fill(18, 14, 1, 4, dirt);
-  // The cliff the cave is cut into.
-  fill(0, 3, 6, 4, { tile: 'stoneWall', tint: SLATE });
-  // The house's walls and the forge's.
-  fill(12, 5, 7, 3, { tile: 'woodWall' });
-  fill(19, 11, 5, 2, { tile: 'stoneWall', tint: EMBER_STONE });
-  // The paddock: a fence along the top and bottom.
-  fill(12, 12, 6, 1, { tile: 'fence' });
-  fill(12, 16, 6, 1, { tile: 'fence' });
-  // The arena: bleachers north and south, sand between.
-  fill(24, 3, 10, 1, { tile: 'bleacher' });
-  fill(24, 4, 10, 4, { tile: 'sand' });
-  fill(24, 8, 10, 1, { tile: 'bleacher' });
-  // The fairground's fence and the lake south of it.
-  fill(1, 17, 4, 1, { tile: 'fence' });
-  fill(6, 17, 3, 1, { tile: 'fence' });
+  // (The places themselves are glow sprites drawn over the grass, see `valley-places.ts`.)
   // The south: a road out of the valley's bottom edge, and a garden of beds beside it.
   fill(26, 19, 1, 5, dirt);
   fill(14, 20, 9, 1, dirt);
@@ -384,8 +325,8 @@ const DECOR: readonly [keyof typeof WORLD_MAP_SPRITE_DATA, number, number][] = [
   ['smallTree', 180, 168],
   ['flowers', 148, 194],
   ['smallPine', 132, 222],
-  ['bush', 300, 172],
-  ['flowers', 328, 196],
+  ['bush', 290, 178],
+  ['flowers', 376, 202],
   ['smallTree', 400, 150],
   ['smallPine', 396, 182],
   ['smallTree', 420, 164],
@@ -471,31 +412,6 @@ export function buildingPlacements(): Placement[] {
   const out: Placement[] = [];
   const wm = WORLD_MAP_SPRITE_DATA;
   for (const [name, x, y] of DECOR) out.push({ sprite: wm[name], x, y });
-  // Cave: the mouth in the cliff.
-  out.push({ sprite: CAVE_MOUTH, x: 26, y: 50 });
-  // House: a red roof, a chimney, two windows and the door.
-  out.push({ sprite: chimney(), x: 16 * TILE + 6, y: 3 * TILE - 2 });
-  out.push(...roofPlacements(7 * TILE + 6, 34, RAMPS.red, 12 * TILE - 3, 3 * TILE - 2));
-  out.push({ sprite: WINDOW, x: 12 * TILE + 8, y: 5 * TILE + 10 });
-  out.push({ sprite: WINDOW, x: 17 * TILE - 6, y: 5 * TILE + 10 });
-  out.push({ sprite: DOOR, x: 15 * TILE, y: 8 * TILE - 44 });
-  // Forge: a slate roof, the fire in its opening, the anvil out front.
-  out.push(...roofPlacements(5 * TILE + 6, 18, RAMPS.iron, 19 * TILE - 3, 10 * TILE - 2));
-  out.push({ sprite: forgeOpening(), x: 21 * TILE - 4, y: 11 * TILE + 4 });
-  out.push({ sprite: ANVIL, x: 21 * TILE, y: 13 * TILE - 2 });
-  // Arena: bunting over the north bleachers.
-  for (let c = 24; c < 34; c++)
-    out.push({ sprite: tileFrame('bunting'), x: c * TILE, y: 2 * TILE });
-  // Fairground: the festival tents, the podium and pennants.
-  out.push({ sprite: wm.festivalGrounds, x: 1 * TILE + 6, y: 12 * TILE + 10 });
-  out.push({ sprite: propSprite('podium2', 0, 'silver'), x: 82, y: 262 - 18 });
-  out.push({ sprite: propSprite('podium1', 0, 'gold'), x: 102, y: 262 - 24 });
-  out.push({ sprite: propSprite('podium3', 0, 'bronze'), x: 122, y: 262 - 14 });
-  out.push({ sprite: propSprite('pennant', 0, 'red'), x: 84, y: 212 });
-  out.push({ sprite: propSprite('pennant', 1, 'blue'), x: 106, y: 204 });
-  out.push({ sprite: propSprite('pennant', 0, 'yellow'), x: 126, y: 214 });
-  // Signpost: the old crossroads' post.
-  out.push({ sprite: wm.oldCrossroads, x: 28 * TILE + 12, y: 14 * TILE + 6 });
   // The garden's beds: rows of flowers on the dug earth.
   for (let x = 14 * TILE + 4; x < 23 * TILE - 4; x += 12) {
     out.push({ sprite: wm.flowers, x, y: 20 * TILE + 6 });
@@ -507,48 +423,43 @@ export function buildingPlacements(): Placement[] {
   return out;
 }
 
-/** The house's chimney (8 x 12): stone with an ink rim. */
-function chimney(): SpriteDef {
-  const g = new PixelGrid(8, 12);
-  g.rect(0, 0, 8, 12, 'k');
-  g.rect(1, 2, 6, 10, 'c');
-  g.rect(1, 2, 6, 1, 'a');
-  g.rect(1, 6, 6, 1, 'd');
-  g.rect(0, 0, 8, 2, 'k');
-  return g.toSprite({ a: RAMPS.stone[0], c: RAMPS.stone[2], d: RAMPS.stone[3], k: INK });
-}
-
-/** The forge's opening (24 x 24): a dark arch with a bed of coals; the flame is drawn over it, animated. */
-function forgeOpening(): SpriteDef {
-  const g = new PixelGrid(24, 24);
-  g.rect(2, 2, 20, 22, 'k');
-  g.rect(4, 4, 16, 20, 'n');
-  g.rect(6, 2, 12, 1, '.');
-  g.rect(3, 3, 1, 1, 'k');
-  g.rect(4, 19, 16, 3, 'r');
-  g.rect(5, 20, 3, 1, 'y');
-  g.rect(12, 20, 4, 1, 'y');
-  return g.toSprite({ k: INK, n: '#1a1216', r: '#a83a24', y: '#ffd25a' });
-}
-
-/** Where the forge's flame (an animated prop) and the chimney's smoke are drawn, in valley pixels. */
-export const FORGE_FLAME = { x: 21 * TILE + 4, y: 11 * TILE + 12 } as const;
-export const CHIMNEY_TOP = { x: 16 * TILE + 8, y: 3 * TILE - 8 } as const;
 /** The lake's tiles, in valley pixels: redrawn when the water drifts. */
 export const LAKE = tiles(0, 19, 10, 5);
-/** The boss in the arena, from the valley (its 24 px sprite at 2x). */
-export const ARENA_BOSS = { x: 29 * TILE - 24, y: 4 * TILE + 4 } as const;
-/** Where your idle creatures roam: inside the paddock's fence. */
-export const PADDOCK_ROAM = {
-  x: 12 * TILE + 4,
-  y: 13 * TILE,
-  width: 6 * TILE - 24,
-  height: 3 * TILE - 16,
+const ARENA_AT = artBox('arena');
+/** The boss in the arena, from the valley (its 24 px sprite): in the right of the sand oval. */
+export const ARENA_BOSS = { x: ARENA_AT.x + 38, y: ARENA_AT.y + 24 } as const;
+/** The raid's board in the sand, west of the boss: a column x for each zone, and the row of the first line. */
+export const ARENA_TEAM = {
+  zoneX: { back: ARENA_AT.x + 6, middle: ARENA_AT.x + 16, front: ARENA_AT.x + 26 },
+  y: ARENA_AT.y + 12,
+  rowStep: 8,
 } as const;
-
-export function flameSprite(frame: number): SpriteDef {
-  return propSprite('flame', frame);
-}
+/** Where the other players' creatures cheer: on the grass at either side of the arena. */
+export const ARENA_FANS = [
+  { x: ARENA_AT.x - 36, y: ARENA_AT.y + 28 },
+  { x: ARENA_AT.x - 20, y: ARENA_AT.y + 36 },
+  { x: ARENA_AT.x + ARENA_AT.width + 4, y: ARENA_AT.y + 28 },
+  { x: ARENA_AT.x + ARENA_AT.width + 18, y: ARENA_AT.y + 36 },
+] as const;
+const PADDOCK_AT = artBox('paddock');
+/** Where your idle creatures roam: the open grass inside the paddock's rails. */
+export const PADDOCK_ROAM = {
+  x: PADDOCK_AT.x + 10,
+  y: PADDOCK_AT.y + 20,
+  width: 30,
+  height: 14,
+} as const;
+/** Where the creatures stand around the other places (top-left of a creature, valley pixels). */
+const FORGE_AT = artBox('forge');
+export const FORGE_WORKERS = [
+  { x: FORGE_AT.x - 14, y: FORGE_AT.y + 32 },
+  { x: FORGE_AT.x + FORGE_AT.width - 2, y: FORGE_AT.y + 32 },
+] as const;
+const HOUSE_AT = artBox('house');
+export const HOUSE_DOOR_SPOT = { x: HOUSE_AT.x + 40, y: HOUSE_AT.y + 40 } as const;
+const ROAD_AT = artBox('road');
+/** The explorer home with its sack, beside the signpost; and where a departing one starts, on the road east. */
+export const SIGNPOST_HOME = { x: ROAD_AT.x - 14, y: ROAD_AT.y + 30 } as const;
 
 /**
  * The explorer's sack opening (the game's `PACK_ART`, with its flap redrawn): ajar with gold peeking, then

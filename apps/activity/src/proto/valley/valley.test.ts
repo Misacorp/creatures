@@ -10,7 +10,6 @@ import {
   CHEST_FRAMES,
   PLACES,
   SACK_FRAMES,
-  SMOKE_FRAMES,
   VALLEY_SIZE,
   buildingPlacements,
   valleyDrawing,
@@ -39,7 +38,14 @@ import {
   weekClock,
   weekdayNumber,
 } from './valley-logic';
-import { bonfireName, dimmed, glowSprite, nightColour, placePlacements } from './valley-places';
+import {
+  artBox,
+  bonfireName,
+  dimmed,
+  glowSprite,
+  nightColour,
+  placePlacements,
+} from './valley-places';
 import {
   ART_SPOTS,
   artTop,
@@ -49,7 +55,14 @@ import {
   glowSceneDraw,
   posterModeOf,
   posterSprite,
+  moonSprite,
+  skyBackdrop,
+  skyColumns,
   skyPlacements,
+  skySprite,
+  skyTopRow,
+  SKY_ROWS,
+  SKY_WIDTH,
 } from './glow-scene-art';
 import { tileFrame } from '../../games/art/tiles';
 import { MASTERY_MAX, masteryOf, workOf } from './mastery';
@@ -65,7 +78,7 @@ describe('the valley art', () => {
       expect(drawing.width).toBe(VALLEY_SIZE.width + (margin.left + margin.right) * 16);
       for (const p of drawing.placements) expect(() => parseSprite(p.sprite)).not.toThrow();
     }
-    for (const s of [...CHEST_FRAMES, ...SACK_FRAMES, ...SMOKE_FRAMES]) {
+    for (const s of [...CHEST_FRAMES, ...SACK_FRAMES]) {
       expect(() => parseSprite(s)).not.toThrow();
     }
   });
@@ -301,7 +314,7 @@ describe('actions of the scenes', () => {
   });
 });
 
-describe('the four newer places', () => {
+describe('the places as glow sprites', () => {
   it('stand clear of each other and of the older places', () => {
     const overlap = (a: (typeof PLACES)[number], b: (typeof PLACES)[number]): boolean =>
       a.rect.x < b.rect.x + b.rect.width &&
@@ -320,10 +333,20 @@ describe('the four newer places', () => {
         for (const bonfireLevel of [1, 2]) {
           const look = { time, visitorHere, bonfireLevel };
           const placed = placePlacements(look);
-          expect(placed).toHaveLength(4);
-          const rects = ['school', 'market', 'bonfire', 'visitor'].map(
-            (id) => PLACES.find((p) => p.id === id)!.rect,
-          );
+          expect(placed).toHaveLength(11);
+          const rects = [
+            'cave',
+            'school',
+            'house',
+            'market',
+            'arena',
+            'fair',
+            'paddock',
+            'forge',
+            'bonfire',
+            'visitor',
+            'signpost',
+          ].map((id) => PLACES.find((p) => p.id === id)!.rect);
           for (const [i, p] of placed.entries()) {
             const sprite = parseSprite(p.sprite);
             const r = rects[i]!;
@@ -444,7 +467,7 @@ describe('the place scenes: one scale, the poster in three modes, the layout for
         const layout = glowLayout(g, name, 'sky');
         expect(layout.s).toBe(g.s);
         expect(layout.art.y).toBe(g.top + artTop('sky'));
-        expect(glowLayout(g, name, 'none').art.y).toBe(layout.art.y);
+        expect(glowLayout(g, name, 'none').art.y).toBe(g.top + artTop('none'));
         expect(Math.abs(layout.art.x + layout.art.width / 2 - g.cx)).toBeLessThanOrEqual(1);
         for (const [id, spot] of Object.entries(layout.spots)) {
           const own = ART_SPOTS[name][id]!;
@@ -482,6 +505,85 @@ describe('the place scenes: one scale, the poster in three modes, the layout for
         const rows = p.sprite.rows.slice(-poster.rows.length);
         rows.forEach((row) => expect(new Set(row).size).toBe(1));
         expect(rows[3]?.[0]).toBe(poster.rows[3]?.[0]);
+      }
+    }
+  });
+
+  it('tiles the sky sideways edge to edge from one centred copy, for any scene width', () => {
+    for (const width of [110, 130, 390, 700, 1100]) {
+      const g = sceneGeometry(width, 700, 4);
+      const xs = skyColumns(g.W, g.cx);
+      expect(xs[0]!).toBeLessThanOrEqual(0);
+      expect(xs[0]!).toBeGreaterThan(-SKY_WIDTH);
+      expect(xs[xs.length - 1]! + SKY_WIDTH).toBeGreaterThanOrEqual(g.W);
+      xs.slice(1).forEach((x, i) => expect(x - xs[i]!).toBe(SKY_WIDTH));
+      expect(xs).toContain(g.cx - SKY_WIDTH / 2);
+    }
+  });
+
+  it('has a sky whose edges join, whose top row is one colour and whose last row is the grass', () => {
+    for (const time of ['day', 'night'] as const) {
+      const sky = skySprite(time);
+      expect(sky.rows).toHaveLength(SKY_ROWS);
+      for (const row of sky.rows) expect(row).toHaveLength(SKY_WIDTH);
+      expect(new Set(sky.rows[0]).size).toBe(1);
+      // Both ends of these rows are the same pixel, so a copy joins the next without a seam.
+      const cells = parseSprite(sky).cells;
+      const at = (x: number, y: number): string | undefined =>
+        cells.find((c) => c.x === x && c.y === y)?.colour;
+      const rows = [0, 9, SKY_ROWS - 1];
+      for (const y of rows) expect([y, at(0, y)]).toEqual([y, at(SKY_WIDTH - 1, y)]);
+    }
+    expect(skySprite('day')).not.toBe(skySprite('night'));
+    expect(skySprite('day').rows).toEqual(skySprite('night').rows);
+  });
+
+  it('draws the sky behind every scene: carried up behind the HUD, meeting the grass, the moon once at night', () => {
+    for (const width of [390, 1100]) {
+      const g = sceneGeometry(width, 700, width < 700 ? 4 : 5);
+      const y = skyTopRow(g, 'none');
+      expect(y).toBeLessThan(g.top);
+      expect(y + SKY_ROWS).toBe(g.top + artTop('none') + 14);
+      for (const time of ['day', 'night'] as const) {
+        const placed = skyBackdrop(g, time, 'none');
+        const strips = placed.filter((p) => p.sprite === skySprite(time));
+        expect(strips.length).toBe(skyColumns(g.W, g.cx).length);
+        // Above the strips: the top row only, from the top edge to the strip.
+        const above = placed.filter((p) => p.y === 0 && p.sprite !== skySprite(time));
+        for (const p of above) expect(new Set(p.sprite.rows).size).toBe(1);
+        const moons = placed.filter((p) => p.sprite === moonSprite());
+        expect(moons).toHaveLength(time === 'night' ? 1 : 0);
+        for (const m of moons) {
+          expect(m.x).toBeGreaterThanOrEqual(0);
+          expect(m.x + 10).toBeLessThanOrEqual(g.W);
+          expect(m.y).toBeGreaterThanOrEqual(g.top);
+        }
+        // Part of every scene.
+        const scene = glowSceneDraw({ name: 'market', time })(g);
+        for (const p of strips) expect(scene).toContainEqual(p);
+      }
+    }
+  });
+
+  it('puts every glow sprite inside the valley, clear of the trees and of each other', () => {
+    const names = ['cave', 'house', 'arena', 'fairground', 'paddock', 'forge', 'road'] as const;
+    for (const name of names) {
+      const box = artBox(name);
+      expect(box.width).toBeGreaterThan(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(VALLEY_SIZE.width);
+      expect(box.y + box.height).toBeLessThanOrEqual(VALLEY_SIZE.height);
+      for (const t of buildingPlacements()) {
+        const tree =
+          t.sprite === WORLD_MAP_SPRITE_DATA.smallTree ||
+          t.sprite === WORLD_MAP_SPRITE_DATA.smallPine;
+        if (!tree) continue;
+        const sprite = parseSprite(t.sprite);
+        const apart =
+          t.x + sprite.width <= box.x ||
+          t.x >= box.x + box.width ||
+          t.y + sprite.height <= box.y ||
+          t.y >= box.y + box.height;
+        expect([name, t.x, t.y, apart]).toEqual([name, t.x, t.y, true]);
       }
     }
   });

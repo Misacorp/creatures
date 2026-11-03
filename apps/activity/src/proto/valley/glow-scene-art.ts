@@ -1,7 +1,8 @@
 /**
  * The ground of the four newer places' scenes (the bonfire, the School, the visitor's stall, the Market), as
- * placements for `SceneFrame`: grass to every edge, the place's poster (`valley-posters`) at the head of the
- * screen, and the place itself (its `valley-glow` sprite) standing beneath it in the light of the valley.
+ * placements for `SceneFrame`: grass to every edge, the sky (`valley-sky`, tiled sideways, its top row carried
+ * up behind the HUD, the moon once at night) above it, and the place itself (its `valley-glow` sprite) standing
+ * in the light of the valley. The posters (`valley-posters`, `&poster=sky|framed`) stay only for comparison.
  *
  * One pixel scale for the whole screen (`sceneScale`, `g.s`): the poster, the place, the grass, the scene's
  * creatures, the story clipping's and the tray's are all drawn at it. The place's art cannot be drawn bigger
@@ -14,8 +15,9 @@
  */
 import { VALLEY_GLOW_CONCEPTS } from '../../sprites/concepts/valley-glow';
 import { VALLEY_POSTERS_CONCEPTS } from '../../sprites/concepts/valley-posters';
+import { VALLEY_SKY_CONCEPTS } from '../../sprites/concepts/valley-sky';
 import { WORLD_MAP_SPRITE_DATA } from '../../sprites/data/world-map-sprites';
-import type { SpriteDef } from '../../sprites/sprite-data';
+import { swapPalette, type SpriteDef } from '../../sprites/sprite-data';
 import { tileFrame } from '../../games/art/tiles';
 import { PixelGrid, gridPlacements } from '../../games/art/pixel';
 import type { SceneGeometry } from './SceneFrame';
@@ -220,7 +222,86 @@ export interface GlowLayout {
  * grass in front of the strip's lower edge; with the framed poster it stands below the frame.
  */
 export function artTop(mode: PosterMode): number {
-  return mode === 'framed' ? 34 : 14;
+  if (mode === 'framed') return 34;
+  return mode === 'sky' ? 14 : 20;
+}
+
+// --- The sky backdrop (Q50: a sky behind every place's screen instead of the poster) ---
+
+/** The `valley-sky` strip's size in its own pixels: it tiles sideways every `SKY_WIDTH`. */
+export const SKY_WIDTH = 128;
+export const SKY_ROWS = 40;
+/** Scene pixels the strip's bottom (the grass) lies below the top of the art: the hills end behind the place. */
+const SKY_BELOW_ART_TOP = 14;
+
+/** The sky in the light asked for: night is the set's main palette, day its `alts.day` recolour. Cached. */
+const skyCache = new Map<string, SpriteDef>();
+export function skySprite(time: Time): SpriteDef {
+  let hit = skyCache.get(time);
+  if (hit === undefined) {
+    const concept = VALLEY_SKY_CONCEPTS.sprites['valley'];
+    if (concept === undefined) throw new Error('valley-sky has no valley sprite');
+    const day = concept.alts?.['day'];
+    hit = time === 'day' && day !== undefined ? swapPalette(concept.sprite, day) : concept.sprite;
+    skyCache.set(time, hit);
+  }
+  return hit;
+}
+
+/** The moon (10 x 10), placed once in the night sky. */
+export function moonSprite(): SpriteDef {
+  const concept = VALLEY_SKY_CONCEPTS.sprites['moon'];
+  if (concept === undefined) throw new Error('valley-sky has no moon sprite');
+  return concept.sprite;
+}
+
+const topCache = new Map<string, SpriteDef>();
+
+/** The strip's top row repeated `rows` times, `SKY_WIDTH` wide: the sky carried upward behind the HUD. */
+function skyTop(sky: SpriteDef, rows: number): SpriteDef {
+  const key = `${String(rows)}|${sky.rows[0] ?? ''}`;
+  let hit = topCache.get(key);
+  if (hit === undefined) {
+    hit = { palette: sky.palette, rows: Array.from({ length: rows }, () => sky.rows[0] ?? '') };
+    topCache.set(key, hit);
+  }
+  return hit;
+}
+
+/** The left edges of the strip's copies across a scene `width` wide: one copy centred, the rest beside it. */
+export function skyColumns(width: number, cx: number): number[] {
+  const first = cx - SKY_WIDTH / 2;
+  let x = first - Math.ceil(first / SKY_WIDTH) * SKY_WIDTH;
+  const out: number[] = [];
+  for (; x < width; x += SKY_WIDTH) out.push(x);
+  return out;
+}
+
+/** Where the strip's top-left row stands: its last row (the grass) is `SKY_BELOW_ART_TOP` under the art's top. */
+export function skyTopRow(g: SceneGeometry, mode: PosterMode): number {
+  return g.top + artTop(mode) + SKY_BELOW_ART_TOP - SKY_ROWS;
+}
+
+/**
+ * The sky: the strip tiled sideways edge to edge at the scene's scale, its top row's colour carried up to the
+ * top edge (behind the HUD), its last row meeting the grass. At night the moon stands once in it, to the
+ * right of the place; by day there is none.
+ */
+export function skyBackdrop(g: SceneGeometry, time: Time, mode: PosterMode): Placement[] {
+  const sky = skySprite(time);
+  const y = skyTopRow(g, mode);
+  const above = skyTop(sky, Math.max(1, y));
+  const out: Placement[] = [];
+  for (const x of skyColumns(g.W, g.cx)) {
+    if (y > 0) out.push({ sprite: above, x, y: 0 });
+    out.push({ sprite: sky, x, y });
+  }
+  if (time === 'night') {
+    const moon = moonSprite();
+    const x = Math.min(g.W - 14, g.cx + 30);
+    out.push({ sprite: moon, x: Math.max(4, x), y: y + 12 });
+  }
+  return out;
 }
 
 /** Where the place's art stands in a scene, centred across it. */
@@ -302,6 +383,7 @@ export function glowSceneDraw(spec: { name: GlowName; time: Time; poster?: Poste
     for (let y = 0; y < g.H; y += TILE) {
       for (let x = 0; x < g.W; x += TILE) out.push({ sprite: grass, x, y });
     }
+    out.push(...skyBackdrop(g, time, mode));
     const wm = WORLD_MAP_SPRITE_DATA;
     const { art } = layout;
     out.push(

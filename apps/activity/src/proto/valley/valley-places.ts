@@ -4,6 +4,7 @@
  * the look of the valley's light: day by default, night when asked. Night is the sprites' own main palette; the
  * rest of the valley is dimmed and cooled (`dimmed`) so the glow sits on it. Pure: no clock, no randomness.
  */
+import { VALLEY_GLOW_CAMP_CONCEPTS } from '../../sprites/concepts/valley-glow-camp';
 import { VALLEY_GLOW_CONCEPTS } from '../../sprites/concepts/valley-glow';
 import { swapPalette, type SpriteDef } from '../../sprites/sprite-data';
 import type { Placement } from '../../games/art/pixel';
@@ -27,15 +28,21 @@ export const GRAND_LEVEL = 2;
 export type GlowName =
   'bonfire' | 'bonfire-grand' | 'school' | 'visitor' | 'visitor-away' | 'market';
 
-const daySprites = new Map<GlowName, SpriteDef>();
-const nightSprites = new Map<GlowName, SpriteDef>();
+/** The other places' sprites: the house, Forge and cave (`valley-glow`), the rest of the camp (`valley-glow-camp`). */
+export type CampName = 'house' | 'forge' | 'cave' | 'arena' | 'fairground' | 'road' | 'paddock';
 
-/** A `valley-glow` sprite in the light asked for (night is its main palette, day its `alts.day` recolour). */
-export function glowSprite(name: GlowName, time: Time): SpriteDef {
+/** Every glow sprite the valley map draws. */
+export type MapName = GlowName | CampName;
+
+const daySprites = new Map<MapName, SpriteDef>();
+const nightSprites = new Map<MapName, SpriteDef>();
+
+/** A glow sprite in the light asked for (night is its main palette, day its `alts.day` recolour). */
+export function glowSprite(name: MapName, time: Time): SpriteDef {
   const cache = time === 'day' ? daySprites : nightSprites;
   const hit = cache.get(name);
   if (hit !== undefined) return hit;
-  const concept = VALLEY_GLOW_CONCEPTS.sprites[name];
+  const concept = VALLEY_GLOW_CONCEPTS.sprites[name] ?? VALLEY_GLOW_CAMP_CONCEPTS.sprites[name];
   if (concept === undefined) throw new Error(`no valley-glow sprite ${name}`);
   const day = concept.alts?.['day'];
   const sprite =
@@ -59,21 +66,41 @@ export function visitorName(here: boolean): GlowName {
  * past their button's rectangle; each sprite is kept clear of the roads and of the next place.
  */
 const SPOTS = {
+  cave: { x: 24, y: 64 },
   school: { x: 122, y: 66 },
+  house: { x: 208, y: 72 },
   market: { x: 322, y: 68 },
+  arena: { x: 424, y: 64 },
+  fairground: { x: 60, y: 200 },
+  paddock: { x: 208, y: 222 },
+  forge: { x: 312, y: 160 },
   bonfire: { x: 332, y: 232 },
   'bonfire-grand': { x: 328, y: 228 },
   visitor: { x: 456, y: 148 },
   'visitor-away': { x: 456, y: 148 },
-} as const satisfies Record<GlowName, { x: number; y: number }>;
+  road: { x: 470, y: 226 },
+} as const satisfies Record<MapName, { x: number; y: number }>;
 
-/** The four places drawn into the valley, in valley pixels. */
+/** A sprite's rectangle in the valley (its top-left from `SPOTS`, its size from its art). */
+export function artBox(name: MapName): { x: number; y: number; width: number; height: number } {
+  const sprite = glowSprite(name, 'day');
+  return { ...SPOTS[name], width: sprite.rows[0]?.length ?? 0, height: sprite.rows.length };
+}
+
+/** The places drawn into the valley, in valley pixels. */
 export function placePlacements(look: ValleyLook): Placement[] {
-  const names: GlowName[] = [
+  const names: MapName[] = [
+    'cave',
     'school',
+    'house',
     'market',
+    'arena',
+    'fairground',
+    'paddock',
+    'forge',
     bonfireName(look.bonfireLevel),
     visitorName(look.visitorHere),
+    'road',
   ];
   return names.map((name) => ({ sprite: glowSprite(name, look.time), ...SPOTS[name] }));
 }
