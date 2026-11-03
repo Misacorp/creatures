@@ -81,8 +81,9 @@ describe('the parser reads a v2 room and a v2 run', () => {
     const parsed = parseDungeonReplay(replay);
     expect(parsed.rules).toBe(2);
     expect(parsed.rooms[0]?.rules).toBe(2);
-    const { card: _card, ...noCard } = room;
-    expect(() => parseDungeonReplay({ ...replay, rooms: [noCard] })).toThrow('dungeon replay');
+    expect(() => parseDungeonReplay({ ...replay, rooms: [{ ...room, card: undefined }] })).toThrow(
+      'dungeon replay',
+    );
     expect(() => parseDungeonReplay({ ...replay, rooms: [{ ...room, rules: 3 }] })).toThrow();
   });
 

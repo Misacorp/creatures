@@ -318,10 +318,7 @@ export function lastEventText(event: { name: string; option: string; outcome: st
  * A creature's HP in the run strip and the camp: "340 / 391 HP", or "Knocked out". On combat v2 a creature at 0 HP is "Out": it stays out
  * until the camp swaps it (`OUT_UNTIL_CAMP`, R14), so it is not a state that passes.
  */
-export function runHpText(
-  creature: { hp: number; hpMax: number },
-  rules?: 1 | 2 | undefined,
-): string {
+export function runHpText(creature: { hp: number; hpMax: number }, rules?: 1 | 2): string {
   if (creature.hp <= 0) return rules === 2 ? 'Out' : 'Knocked out';
   return `${String(creature.hp)} / ${String(creature.hpMax)} HP`;
 }

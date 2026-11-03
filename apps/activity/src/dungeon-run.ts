@@ -74,7 +74,7 @@ export function tileState(creature: Pick<DungeonRunCreature, 'hp' | 'hpMax'>): '
 }
 
 /** The spoken name of a tile: "Sproutle, level 12: 240 / 281 HP." or "..., knocked out." */
-export function tileLabel(creature: DungeonRunCreature, rules?: 1 | 2 | undefined): string {
+export function tileLabel(creature: DungeonRunCreature, rules?: 1 | 2): string {
   const base = `${creature.name}, level ${String(creature.level)}`;
   if (creature.hp > 0) return `${base}: ${String(creature.hp)} / ${String(creature.hpMax)} HP.`;
   return rules === 2 ? `${base}: out until the camp swaps it.` : `${base}: knocked out.`;
@@ -110,7 +110,7 @@ export function campCreatureOf(creature: DungeonRunCreature): CampRowCreature {
 }
 
 /** The HP line of a tile: "140 / 203 HP", red under a third and when down ("0 / 215 HP"); "Full HP" for a new arrival. */
-export function campHp(hp: CampRowCreature['hp'], rules?: 1 | 2 | undefined): SlotHp {
+export function campHp(hp: CampRowCreature['hp'], rules?: 1 | 2): SlotHp {
   if (hp === null) return { ratio: 1, state: 'ok', text: 'Full HP' };
   const state = tileState({ hp: hp.now, hpMax: hp.max });
   return {
@@ -123,11 +123,7 @@ export function campHp(hp: CampRowCreature['hp'], rules?: 1 | 2 | undefined): Sl
 }
 
 /** What a screen reader says for a tile of the camp's row: "Left: Sproutle, level 12, 240 / 281 HP. Shows …" */
-export function campSlotLabel(
-  creature: CampRowCreature,
-  index: number,
-  rules?: 1 | 2 | undefined,
-): string {
+export function campSlotLabel(creature: CampRowCreature, index: number, rules?: 1 | 2): string {
   const place = ['Left', 'Middle', 'Right'][index] ?? `Place ${String(index + 1)}`;
   const health =
     creature.hp === null
