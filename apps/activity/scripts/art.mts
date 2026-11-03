@@ -33,7 +33,21 @@ register(
 const { expandRows } = await import('../src/sprites/sprite-data.ts');
 const { lintSprite, nearestSilhouette, PANELS, KIND_SIZE } =
   await import('../src/sprites/sprite-lint.ts');
-const { CONCEPT_SETS } = await import('../src/sprites/concepts/index.ts');
+const { collectSets } = await import('../src/sprites/concepts/index.ts');
+// Every set file of the concepts folder registers itself by being there (`collectSets`).
+const CONCEPTS_DIR = join(import.meta.dirname, '..', 'src', 'sprites', 'concepts');
+const conceptModules: Record<string, Record<string, unknown>> = {};
+for (const file of readdirSync(CONCEPTS_DIR)) {
+  if (
+    !file.endsWith('.ts') ||
+    file === 'index.ts' ||
+    file === 'sets.ts' ||
+    file.endsWith('.test.ts')
+  )
+    continue;
+  conceptModules[`./${file}`] = (await import(join(CONCEPTS_DIR, file))) as Record<string, unknown>;
+}
+const CONCEPT_SETS = collectSets(conceptModules);
 const {
   BUNDLED_CREATURE_SPRITES,
   BUNDLED_BOSS_SPRITES,
@@ -71,6 +85,9 @@ function hex(colour: string): RGB {
   const full = colour.length === 4 ? `#${[...colour.slice(1)].map((c) => c + c).join('')}` : colour;
   return [1, 3, 5].map((i) => parseInt(full.slice(i, i + 2), 16)) as RGB;
 }
+
+/** Set by `library --check`: every sheet and card is drawn, so a studio bug fails CI, but no file is written. */
+let DRY_RUN = false;
 
 /** An RGB canvas with the few drawing calls the studio needs. */
 class Canvas {
@@ -138,6 +155,8 @@ class Canvas {
     return cx - x;
   }
   save(file: string): void {
+    // A dry run (the library check) draws everything but writes nothing: drawing is cheap, encoding is not.
+    if (DRY_RUN) return;
     writeFileSync(file, png(this.pixels, this.width, this.height));
   }
 }
@@ -681,8 +700,16 @@ if (args[0] === 'library') {
     console.log(`wrote ${docs}`);
     process.exit(0);
   }
+  // Draw every set's sheet and every sprite's card in memory, so a studio change that breaks a kind fails
+  // here (no files are written).
+  DRY_RUN = true;
+  for (const set of CONCEPT_SETS) {
+    drawSet(set, Object.keys(set.sprites), 'dry.png', true);
+    for (const [id, concept] of Object.entries(set.sprites))
+      drawCard(id, concept, 'dry.png', set.backdrop);
+  }
   // The README carries each set's fingerprint, so comparing it (and that the sheets are exactly one
-  // per set) is enough; PNG bytes can differ between zlib versions, so nothing is drawn here.
+  // per set) is enough; PNG bytes can differ between zlib versions, so they are not compared.
   let have = '';
   let sheets: string[] = [];
   try {

@@ -27,7 +27,7 @@ export async function writeReviewPage(out: string): Promise<number> {
   const sets: unknown[] = [];
   try {
     const { expandRows } = await server.ssrLoadModule('/src/sprites/sprite-data.ts');
-    const { CONCEPT_SETS } = (await server.ssrLoadModule('/src/sprites/concepts/index.ts')) as {
+    const { CONCEPT_SETS } = (await server.ssrLoadModule('/src/sprites/concepts/sets.ts')) as {
       CONCEPT_SETS: readonly ConceptSet[];
     };
     const gear = await server.ssrLoadModule('/src/gear-sprites.ts');

@@ -8,41 +8,148 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 
 | Set | Status | Pieces | Requested |
 | --- | --- | --- | --- |
-| [Void creatures, two stages](#void) | liked | 8 | 2026-10-30: imagine the Void element on creatures; four creatures, one per role, no names or stats. |
+| [Combat v2 icons: attack shapes, board states, store meters](#combat-icons) | draft | 11 | 2026-10-31, Misa: "icons for keywords and attack shapes" (roadmap phase 3, combat v2). |
+| [Valley places: glow, day and night](#valley-glow) | liked | 6 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
+| [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
+| [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
+| [Valley places: posters](#valley-posters) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Void, a raid boss, three foes and two floor bosses](#void-foes) | draft | 6 | 2026-10-31: a Void raid boss, dungeon foes and dungeon bosses. |
 | [Void gear: tint, plain pieces, a set, a shard](#void-gear) | draft | 11 | 2026-10-31: design Void gear. |
 | [Void place, the Quiet Verge (banners)](#void-place) | liked | 2 | 2026-10-31: design a Void area that can be explored (banner and place). |
-| [Valley places: posters](#valley-posters) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
-| [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
-| [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
-| [Valley places: glow, day and night](#valley-glow) | liked | 6 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
-| [Combat v2 icons: attack shapes, board states, store meters](#combat-icons) | draft | 11 | 2026-10-31, Misa: "icons for keywords and attack shapes" (roadmap phase 3, combat v2). |
+| [Void creatures, two stages](#void) | liked | 8 | 2026-10-30: imagine the Void element on creatures; four creatures, one per role, no names or stats. |
 
-<a id="void"></a>
+<a id="combat-icons"></a>
 
-## Void creatures, two stages
+## Combat v2 icons: attack shapes, board states, store meters
 
-![Void creatures, two stages](void.png)
+![Combat v2 icons: attack shapes, board states, store meters](combat-icons.png)
 
-- **Status:** liked
-- **Requested:** 2026-10-30: imagine the Void element on creatures; four creatures, one per role, no names or stats.
-- **Element:** void
-- **Source:** `apps/activity/src/sprites/concepts/void.ts` (draw it with `pnpm art void`)
-- **Sheet of:** `bf4737245b93`
-- Misa chose the dark purple body over the pale first draft and said they look pretty good (2026-10-30).
-- Needs before use: the Void element in the content (element chart, marks, a place), names, stats, lore, shiny palettes.
-- The payoff's ear windows are the faintest detail; look again when it is promoted.
+- **Status:** draft
+- **Requested:** 2026-10-31, Misa: "icons for keywords and attack shapes" (roadmap phase 3, combat v2).
+- **Source:** `apps/activity/src/sprites/concepts/combat-icons.ts` (draw it with `pnpm art combat-icons`)
+- **Sheet of:** `4312f4866bc3`
+- The audit is docs/design/combat/icons.md: which icons are new, which shipped glyphs are used as they are, and which words stay text.
+- Misa's review, 2026-11-01. Liked as drawn: Quake, Cross, Checker, One-shot ("really like"), Barrage ("three marks is enough"), Sweep, Crit. Redrawn in round 2 (each replaces the shipped glyph for combat v2, which v1 keeps using): Slam, Strike, Lance, Pincer, Leap, Plain attack, Boost, and the three Store meters.
+- Round 2 feedback: Slam "the target, then the adjacent creatures: like the cross, but the centre square bigger, one square left and right". Strike "the right shape, but inside a circle: remove the circle". Lance "should point downwards: the boss attacks from top to bottom". Pincer "a very subtle crab-pincer; the white dot is unnecessary" (both options shown). Leap "like Barrage, but squares, with a faint line between them, a zigzag". Plain attack "should look different from a move: something like a sword". Boost "a star does not look good". Store meters "a box, chest, safe, vault or basket that contains something: one container for all, each holding its own thing; the amount as text beside it (x3), never in the icon".
+- Round 2 answers (Misa, 2026-11-01): liked as drawn: Slam, Strike ("different from Cross, good enough"), Lance, Pincer (claws: "looking pretty good"; the plain alternative is removed), the plain attack sword, the three Stores ("nice"). Leap: "it looks like a fork right now; move the bottom square right a pixel or two, so it reads as a chain": done in round 3, awaiting his look. Still draft (not commented on): Boost, Escalating, armour, cracked armour, silence ward, Determination.
+- Moved into `glyphs.ts` (2026-11-03, the v2 raid tab used them first): Quake, Cross, Checker, One-shot, Slam, Strike, Lance, Pincer and the plain attack, under the ids they had here. They stand in the sheet as shipped glyphs now. Leap and the six unreviewed ones stay here: a screen draws their drafts (`combat-glyphs.ts`) until Misa answers, then they move too.
+- Needs before use: Misa approves the look; each icon gets a glyph id in glyphs.ts, a glossary entry and (shapes) a place in moveLabel; the dungeon modifier "extra crits" then switches from the reticle to the Crit icon.
+- Cut order if Misa wants fewer icons: the three Store meter heads (name the resource in text), then the silence ward, then the cracked armour (a crack drawn over the armour icon), then One-shot (it shares the Strike crosshairs).
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
-| `void-guard` | creature | guard | liked | An eclipse hood: a wide dark crescent of night sky over a sturdy body, like a shield. |
-| `void-setter` | creature | setter | liked | A floating wisp with a feeler that ends in a star: it points at the boss and marks it. |
-| `void-support` | creature | support | liked | A small planet with a ring for a halo and two moons in orbit: it lifts its neighbours. |
-| `void-payoff` | creature | payoff | liked | A lynx of the night: tall ears that are windows full of stars, a star-tipped crest. |
-| `void-guard-2` | creature | guard | draft | The Eclipse Hood grown: horned corners, a second star and a cyan corona in the window, raised shoulder plates with a glint. |
-| `void-setter-2` | creature | setter | draft | The star-feeler wisp grown: a second small feeler, a wider third-eye window with two stars, side wisps and a trailing tail. |
-| `void-support-2` | creature | support | draft | The ringed planet grown: a double halo, bigger moons, a third moon and the ring wrapped round its belly. |
-| `void-payoff-2` | creature | payoff | draft | The night lynx grown: wider ear windows with two stars, a star-shaped crest and a cheek ruff. |
+| `shape-leap` | glyph | Leap | draft | Leap (was Leaping Strike; redrawn, round 3): the strongest, then the next, softer. Like Barrage but three squares, joined by a faint zigzag line (a bolt, without the bolt that Spark already is). Misa, 2026-11-01: "it looks like a fork right now; move the bottom square right a pixel or two, so it reads as a chain". The bottom square moved 2 pixels right (1 pixel still read as a ">" arrow); the line still joins it. |
+| `crit` | glyph | Crit, Sure Crit | liked | A lucky hit that deals double. A gold burst; a Sure Crit counter is this burst with its count ("x2"), never a meter of its own. |
+| `armour` | glyph | Armour, Blocked | draft | Armour on the boss card (with its number) and the shield of a Blocked hit (with 0). A steel breastplate, so it is not the Guard's shield. |
+| `armour-cracked` | glyph | Will be Blocked | draft | On a creature whose plain hit would be Blocked by the boss's armour: the breastplate with a red crack through it. |
+| `escalating` | glyph | Escalating | draft | The boss grows as the weekend goes on, a step at a time. Rising steps, the top one lit. |
+| `silence-ward` | glyph | Silence ward | draft | A warded creature cannot be silenced. The Silenced speaker with sound waves instead of a cross. |
+| `determination` | glyph | Determination | draft | More damage and healing for each failed weekend on the same boss. A gold arrow rising from a base: more each failed try, up to five. |
+| `boost` | glyph | Boost | draft | A Support's bonus on a creature's next hit (round 2): two upward chevrons, a rank going up. No star, and no filled arrow with a base, so it is not Determination's rising arrow. |
+| `store-heat` | glyph | Heat | liked | The Heat store (Boiling Point): the shared box with heat rising from it in waves. The count is text beside it ("x3"). Misa, 2026-11-01: "nice". |
+| `store-calm` | glyph | Calm | liked | The Calm store (Eye of the Storm): the shared box with a lotus in it. The count is text beside it ("x2"). Misa, 2026-11-01: "nice". |
+| `store-static` | glyph | Static | liked | The Static store (a dodge fills it): the shared box with a small crackle in it. The count is text beside it ("x1"). Misa, 2026-11-01: "nice". |
+
+<a id="valley-glow"></a>
+
+## Valley places: glow, day and night
+
+![Valley places: glow, day and night](valley-glow.png)
+
+- **Status:** liked
+- **Requested:** 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets.
+- **Source:** `apps/activity/src/sprites/concepts/valley-glow.ts` (draw it with `pnpm art valley-glow`)
+- **Sheet of:** `25864c63cb49`
+- Misa picked this direction for the valley places (2026-10-31); posters stay for each place's own screen.
+- Direction "valley glow": the night-glow look (the light sources are the stars, lit edges, cool shadow) redone as standalone places on transparent ground, like the map landmarks, so they stand on the valley tiles. No sky, no vignette, no stars or moon.
+- One drawing, two palettes: the main palette is night, `alts.day` recolours the same pixels. Keys `1 2 3` are the light spill on the ground (rings follow each light: a circle under a lamp or fire, a trapezoid in front of a window; only the outermost ring is a regular checker) in night colours; in the day palette they map to the grass greens, so the spill disappears. `x` is the cast shadow (cool blue at night, warm green by day).
+- The backdrop is the world map grass tile (`WORLD_MAP_SPRITE_DATA.grass`): the main tile is its night recolour, `alts.day` is the normal grass. The sheet shows night on night grass and day on day grass.
+- No creatures are drawn: logs, benches and the counters show where they would rest and stand; the game draws the real ones there.
+- Each light has its own colour: fire orange (bonfires), window yellow (school), violet lamp (visitor), a weak ember (visitor away), teal shard glow (market).
+- Day ground given its own character (Misa, 2026-10-31).
+- Day ground pushed further and the market crystal seated (Misa, 2026-10-31).
+- The content needs the places to exist (V-BON, school, visitor, V-FORGE-11) before this art is used; the signs carry no text, only marks (a moon and a calendar on the visitor away board).
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `bonfire` | free |  | liked | A fire in a ring of stones with three log seats around it; the logs and stones are lit on the fire side, and an orange glow lies on the grass around it. By day the same fire with no glow. |
+| `bonfire-grand` | free |  | liked | The communal hearth at a later level: a tall fire with two side flames in a paved double ring, log benches, and two lantern posts that throw their own small light. The lamp glass has its own keys (G, H), so by day it is unlit glass while the fire stays lit. |
+| `school` | free |  | liked | A small schoolhouse with a bell cupola, a sign by the path and two lit windows that spill yellow light on the grass in front. By day the windows are plain glass. |
+| `visitor` | free |  | liked | The weekly visitor: a hooded stranger with teal eyes beside a violet lamp, and a small stall whose wares glow teal. The violet light lies on the grass; by day the lamp is unlit and the stall is striped red and cream. |
+| `visitor-away` | free |  | liked | The stall shuttered: a closed front, a folded awning, a board with a moon and a calendar mark, an unlit lamp with one last ember and a faint warm glow on the grass. |
+| `market` | free |  | liked | A stall where shards are traded: four element shards glow on the counter, a big shard on a post is the sign, with a crate and a sack beside it. The teal glow lies on the grass. |
+
+<a id="valley-landmarks"></a>
+
+## Valley places: map landmarks
+
+![Valley places: map landmarks](valley-landmarks.png)
+
+- **Status:** draft
+- **Requested:** 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations.
+- **Source:** `apps/activity/src/sprites/concepts/valley-landmarks.ts` (draw it with `pnpm art valley-landmarks`)
+- **Sheet of:** `7de1609620d1`
+- One of several directions for the four valley places; this one draws each as a map marker. Compare it with the other sets before picking.
+- To use: the valley screen composes places from sprites; these are free sprites up to 64 px and would be shown at their drawn size on grass.
+- The visitor and visitor-away drawings share a stall; the away sign is a calendar page and a moon, not words.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `bonfire` | free |  | draft | A crackling fire in a stone ring on a patch of grass, with four straw beds around it: 'room for four resting creatures'. |
+| `bonfire-grand` | free |  | draft | The later level: a wider flagstone ring, a taller fire, log benches on three sides and two lantern posts. |
+| `school` | free |  | draft | A little blue-roofed schoolhouse with a bell cupola and a graduation rosette on the gable; a slate stands by the door. |
+| `visitor` | free |  | draft | A hooded stranger with glowing eyes behind a purple-awninged stall, a crescent moon on the awning and a lit lantern. |
+| `visitor-away` | free |  | draft | The same stall shuttered, lantern out, a sign with a calendar page and a moon: 'back Thursday'. |
+| `market` | free |  | draft | A red and cream striped tent stall where a tiny creature in a cap trades shards from two crates; sign shows shard and coin. |
+
+<a id="valley-night"></a>
+
+## Valley places: night glow
+
+![Valley places: night glow](valley-night.png)
+
+- **Status:** draft
+- **Requested:** 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations.
+- **Source:** `apps/activity/src/sprites/concepts/valley-night.ts` (draw it with `pnpm art valley-night`)
+- **Sheet of:** `56eb7da8b49a`
+- Direction "night glow": each place at dusk or night, lit by its own light (fire orange, window yellow, violet lamp, teal shard glow), warm stepped rings on the ground and cool blue-purple shadow.
+- Each sprite is a 64x64 island vignette (kind free, 16 colours) in a 3/4 top-down view, made to sit in a valley map; the island rim keeps it readable on the dark panels.
+- The creatures in these are small stand-ins (10x7), not species; the game would draw the player's own creatures there.
+- Names on the signs, the ribbon and the shard colours follow the designs on the valley branch; the content needs the places to exist (V-BON, school, visitor, V-FORGE-11) before this art is used.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `bonfire` | free |  | draft | A fire in the middle of the valley with four resting creatures around it, each lit orange on the fire side and cool on the back: the warm heart, room for a rotating few. |
+| `bonfire-grand` | free |  | draft | The communal hearth at a later level: a taller fire in a paved stone ring, log benches with three creatures, and two lantern posts that throw their own small light. |
+| `school` | free |  | draft | A small schoolhouse with lit windows and a bell cupola; a creature outside wears the graduation ribbon, and a rosette hangs on the sign. |
+| `visitor` | free |  | draft | The weekly visitor: a hooded stranger with violet lamp-light on one edge and two teal-white eyes, beside a small stall whose wares glow. |
+| `visitor-away` | free |  | draft | The same stall shuttered: a "back Thursday" board with a moon and a calendar mark, an unlit lamp with one last spark, a pale moon above. |
+| `market` | free |  | draft | A stall where a creature trades shards: four element shards glow on the counter, a big shard is the sign, and a customer waits with one. |
+
+<a id="valley-posters"></a>
+
+## Valley places: posters
+
+![Valley places: posters](valley-posters.png)
+
+- **Status:** draft
+- **Requested:** 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations.
+- **Source:** `apps/activity/src/sprites/concepts/valley-posters.ts` (draw it with `pnpm art valley-posters`)
+- **Sheet of:** `e7a08c426a3f`
+- Direction "poster": six 64x24 banners, one per place state, each with its own time of day (dusk, night, morning, twilight, grey dawn, afternoon).
+- Places: the bonfire (and a grander later level), the School, the weekly visitor (here and away), the Market (the shard broker). Designs are on the ccr-93a1de17-yutb1a branch, docs/design/valley/systems/.
+- Needs before use: the valley places in the content, each place screen head using its banner; the visitor-away banner shows between Sunday and Thursday.
+- Each banner uses up to 16 colours (the studio cap for scenes).
+- Creatures in the banners are silhouettes or simple blobs, not species: swap in the player's own when the screen can.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `bonfire` | banner |  | draft | A warm dusk: a fire in a ring of stones in the middle of the valley, four resting creatures as silhouettes with a firelight rim, sparks rising into a plum sky. |
+| `bonfire-grand` | banner |  | draft | The grand hearth at night: a wider stone ring and a taller fire, a log bench each side with creatures on it, lantern posts with a string of lanterns, fireflies. |
+| `school` | banner |  | draft | A bright morning: the schoolhouse with a bell tower at the end of a path, bunting from the tree, and a little graduate in front wearing a pink ribbon. |
+| `visitor` | banner |  | draft | A blue-green twilight under a crescent moon: the hooded stranger with glowing eyes and a lantern staff beside his striped stall of glowing jars. |
+| `visitor-away` | banner |  | draft | The same stall on a grey-lilac morning: awning furled, lantern dark, a leaf on the counter and a sign with a moon and a calendar page, one day marked. |
+| `market` | banner |  | draft | A golden afternoon: a teal and cream stall where a round orange shopkeeper sells shards (red, yellow, cyan, violet), crates of them in front and a customer with a coin. |
 
 <a id="void-foes"></a>
 
@@ -123,135 +230,28 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `void-place-banner` | banner |  | liked | The Quiet Verge: a dusk plain of lilac dust, a still pool that holds the stars, leaning stones, a dark moon and a stone arch with one warm star at the far end. |
 | `void-place-deep` | banner |  | liked | The far side: the ground ends, stepping stones cross the open sky, and a great ring hangs ahead with one warm star at its middle. |
 
-<a id="valley-posters"></a>
+<a id="void"></a>
 
-## Valley places: posters
+## Void creatures, two stages
 
-![Valley places: posters](valley-posters.png)
-
-- **Status:** draft
-- **Requested:** 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations.
-- **Source:** `apps/activity/src/sprites/concepts/valley-posters.ts` (draw it with `pnpm art valley-posters`)
-- **Sheet of:** `e7a08c426a3f`
-- Direction "poster": six 64x24 banners, one per place state, each with its own time of day (dusk, night, morning, twilight, grey dawn, afternoon).
-- Places: the bonfire (and a grander later level), the School, the weekly visitor (here and away), the Market (the shard broker). Designs are on the ccr-93a1de17-yutb1a branch, docs/design/valley/systems/.
-- Needs before use: the valley places in the content, each place screen head using its banner; the visitor-away banner shows between Sunday and Thursday.
-- Each banner uses up to 16 colours (the studio cap for scenes).
-- Creatures in the banners are silhouettes or simple blobs, not species: swap in the player's own when the screen can.
-
-| Code | Kind | Role | Status | Idea |
-| --- | --- | --- | --- | --- |
-| `bonfire` | banner |  | draft | A warm dusk: a fire in a ring of stones in the middle of the valley, four resting creatures as silhouettes with a firelight rim, sparks rising into a plum sky. |
-| `bonfire-grand` | banner |  | draft | The grand hearth at night: a wider stone ring and a taller fire, a log bench each side with creatures on it, lantern posts with a string of lanterns, fireflies. |
-| `school` | banner |  | draft | A bright morning: the schoolhouse with a bell tower at the end of a path, bunting from the tree, and a little graduate in front wearing a pink ribbon. |
-| `visitor` | banner |  | draft | A blue-green twilight under a crescent moon: the hooded stranger with glowing eyes and a lantern staff beside his striped stall of glowing jars. |
-| `visitor-away` | banner |  | draft | The same stall on a grey-lilac morning: awning furled, lantern dark, a leaf on the counter and a sign with a moon and a calendar page, one day marked. |
-| `market` | banner |  | draft | A golden afternoon: a teal and cream stall where a round orange shopkeeper sells shards (red, yellow, cyan, violet), crates of them in front and a customer with a coin. |
-
-<a id="valley-night"></a>
-
-## Valley places: night glow
-
-![Valley places: night glow](valley-night.png)
-
-- **Status:** draft
-- **Requested:** 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations.
-- **Source:** `apps/activity/src/sprites/concepts/valley-night.ts` (draw it with `pnpm art valley-night`)
-- **Sheet of:** `56eb7da8b49a`
-- Direction "night glow": each place at dusk or night, lit by its own light (fire orange, window yellow, violet lamp, teal shard glow), warm stepped rings on the ground and cool blue-purple shadow.
-- Each sprite is a 64x64 island vignette (kind free, 16 colours) in a 3/4 top-down view, made to sit in a valley map; the island rim keeps it readable on the dark panels.
-- The creatures in these are small stand-ins (10x7), not species; the game would draw the player's own creatures there.
-- Names on the signs, the ribbon and the shard colours follow the designs on the valley branch; the content needs the places to exist (V-BON, school, visitor, V-FORGE-11) before this art is used.
-
-| Code | Kind | Role | Status | Idea |
-| --- | --- | --- | --- | --- |
-| `bonfire` | free |  | draft | A fire in the middle of the valley with four resting creatures around it, each lit orange on the fire side and cool on the back: the warm heart, room for a rotating few. |
-| `bonfire-grand` | free |  | draft | The communal hearth at a later level: a taller fire in a paved stone ring, log benches with three creatures, and two lantern posts that throw their own small light. |
-| `school` | free |  | draft | A small schoolhouse with lit windows and a bell cupola; a creature outside wears the graduation ribbon, and a rosette hangs on the sign. |
-| `visitor` | free |  | draft | The weekly visitor: a hooded stranger with violet lamp-light on one edge and two teal-white eyes, beside a small stall whose wares glow. |
-| `visitor-away` | free |  | draft | The same stall shuttered: a "back Thursday" board with a moon and a calendar mark, an unlit lamp with one last spark, a pale moon above. |
-| `market` | free |  | draft | A stall where a creature trades shards: four element shards glow on the counter, a big shard is the sign, and a customer waits with one. |
-
-<a id="valley-landmarks"></a>
-
-## Valley places: map landmarks
-
-![Valley places: map landmarks](valley-landmarks.png)
-
-- **Status:** draft
-- **Requested:** 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations.
-- **Source:** `apps/activity/src/sprites/concepts/valley-landmarks.ts` (draw it with `pnpm art valley-landmarks`)
-- **Sheet of:** `7de1609620d1`
-- One of several directions for the four valley places; this one draws each as a map marker. Compare it with the other sets before picking.
-- To use: the valley screen composes places from sprites; these are free sprites up to 64 px and would be shown at their drawn size on grass.
-- The visitor and visitor-away drawings share a stall; the away sign is a calendar page and a moon, not words.
-
-| Code | Kind | Role | Status | Idea |
-| --- | --- | --- | --- | --- |
-| `bonfire` | free |  | draft | A crackling fire in a stone ring on a patch of grass, with four straw beds around it: 'room for four resting creatures'. |
-| `bonfire-grand` | free |  | draft | The later level: a wider flagstone ring, a taller fire, log benches on three sides and two lantern posts. |
-| `school` | free |  | draft | A little blue-roofed schoolhouse with a bell cupola and a graduation rosette on the gable; a slate stands by the door. |
-| `visitor` | free |  | draft | A hooded stranger with glowing eyes behind a purple-awninged stall, a crescent moon on the awning and a lit lantern. |
-| `visitor-away` | free |  | draft | The same stall shuttered, lantern out, a sign with a calendar page and a moon: 'back Thursday'. |
-| `market` | free |  | draft | A red and cream striped tent stall where a tiny creature in a cap trades shards from two crates; sign shows shard and coin. |
-
-<a id="valley-glow"></a>
-
-## Valley places: glow, day and night
-
-![Valley places: glow, day and night](valley-glow.png)
+![Void creatures, two stages](void.png)
 
 - **Status:** liked
-- **Requested:** 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets.
-- **Source:** `apps/activity/src/sprites/concepts/valley-glow.ts` (draw it with `pnpm art valley-glow`)
-- **Sheet of:** `25864c63cb49`
-- Misa picked this direction for the valley places (2026-10-31); posters stay for each place's own screen.
-- Direction "valley glow": the night-glow look (the light sources are the stars, lit edges, cool shadow) redone as standalone places on transparent ground, like the map landmarks, so they stand on the valley tiles. No sky, no vignette, no stars or moon.
-- One drawing, two palettes: the main palette is night, `alts.day` recolours the same pixels. Keys `1 2 3` are the light spill on the ground (rings follow each light: a circle under a lamp or fire, a trapezoid in front of a window; only the outermost ring is a regular checker) in night colours; in the day palette they map to the grass greens, so the spill disappears. `x` is the cast shadow (cool blue at night, warm green by day).
-- The backdrop is the world map grass tile (`WORLD_MAP_SPRITE_DATA.grass`): the main tile is its night recolour, `alts.day` is the normal grass. The sheet shows night on night grass and day on day grass.
-- No creatures are drawn: logs, benches and the counters show where they would rest and stand; the game draws the real ones there.
-- Each light has its own colour: fire orange (bonfires), window yellow (school), violet lamp (visitor), a weak ember (visitor away), teal shard glow (market).
-- Day ground given its own character (Misa, 2026-10-31).
-- Day ground pushed further and the market crystal seated (Misa, 2026-10-31).
-- The content needs the places to exist (V-BON, school, visitor, V-FORGE-11) before this art is used; the signs carry no text, only marks (a moon and a calendar on the visitor away board).
+- **Requested:** 2026-10-30: imagine the Void element on creatures; four creatures, one per role, no names or stats.
+- **Element:** void
+- **Source:** `apps/activity/src/sprites/concepts/void.ts` (draw it with `pnpm art void`)
+- **Sheet of:** `bf4737245b93`
+- Misa chose the dark purple body over the pale first draft and said they look pretty good (2026-10-30).
+- Needs before use: the Void element in the content (element chart, marks, a place), names, stats, lore, shiny palettes.
+- The payoff's ear windows are the faintest detail; look again when it is promoted.
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
-| `bonfire` | free |  | liked | A fire in a ring of stones with three log seats around it; the logs and stones are lit on the fire side, and an orange glow lies on the grass around it. By day the same fire with no glow. |
-| `bonfire-grand` | free |  | liked | The communal hearth at a later level: a tall fire with two side flames in a paved double ring, log benches, and two lantern posts that throw their own small light. The lamp glass has its own keys (G, H), so by day it is unlit glass while the fire stays lit. |
-| `school` | free |  | liked | A small schoolhouse with a bell cupola, a sign by the path and two lit windows that spill yellow light on the grass in front. By day the windows are plain glass. |
-| `visitor` | free |  | liked | The weekly visitor: a hooded stranger with teal eyes beside a violet lamp, and a small stall whose wares glow teal. The violet light lies on the grass; by day the lamp is unlit and the stall is striped red and cream. |
-| `visitor-away` | free |  | liked | The stall shuttered: a closed front, a folded awning, a board with a moon and a calendar mark, an unlit lamp with one last ember and a faint warm glow on the grass. |
-| `market` | free |  | liked | A stall where shards are traded: four element shards glow on the counter, a big shard on a post is the sign, with a crate and a sack beside it. The teal glow lies on the grass. |
-
-<a id="combat-icons"></a>
-
-## Combat v2 icons: attack shapes, board states, store meters
-
-![Combat v2 icons: attack shapes, board states, store meters](combat-icons.png)
-
-- **Status:** draft
-- **Requested:** 2026-10-31, Misa: "icons for keywords and attack shapes" (roadmap phase 3, combat v2).
-- **Source:** `apps/activity/src/sprites/concepts/combat-icons.ts` (draw it with `pnpm art combat-icons`)
-- **Sheet of:** `4312f4866bc3`
-- The audit is docs/design/combat/icons.md: which icons are new, which shipped glyphs are used as they are, and which words stay text.
-- Misa's review, 2026-11-01. Liked as drawn: Quake, Cross, Checker, One-shot ("really like"), Barrage ("three marks is enough"), Sweep, Crit. Redrawn in round 2 (each replaces the shipped glyph for combat v2, which v1 keeps using): Slam, Strike, Lance, Pincer, Leap, Plain attack, Boost, and the three Store meters.
-- Round 2 feedback: Slam "the target, then the adjacent creatures: like the cross, but the centre square bigger, one square left and right". Strike "the right shape, but inside a circle: remove the circle". Lance "should point downwards: the boss attacks from top to bottom". Pincer "a very subtle crab-pincer; the white dot is unnecessary" (both options shown). Leap "like Barrage, but squares, with a faint line between them, a zigzag". Plain attack "should look different from a move: something like a sword". Boost "a star does not look good". Store meters "a box, chest, safe, vault or basket that contains something: one container for all, each holding its own thing; the amount as text beside it (x3), never in the icon".
-- Round 2 answers (Misa, 2026-11-01): liked as drawn: Slam, Strike ("different from Cross, good enough"), Lance, Pincer (claws: "looking pretty good"; the plain alternative is removed), the plain attack sword, the three Stores ("nice"). Leap: "it looks like a fork right now; move the bottom square right a pixel or two, so it reads as a chain": done in round 3, awaiting his look. Still draft (not commented on): Boost, Escalating, armour, cracked armour, silence ward, Determination.
-- Moved into `glyphs.ts` (2026-11-03, the v2 raid tab used them first): Quake, Cross, Checker, One-shot, Slam, Strike, Lance, Pincer and the plain attack, under the ids they had here. They stand in the sheet as shipped glyphs now. Leap and the six unreviewed ones stay here: a screen draws their drafts (`combat-glyphs.ts`) until Misa answers, then they move too.
-- Needs before use: Misa approves the look; each icon gets a glyph id in glyphs.ts, a glossary entry and (shapes) a place in moveLabel; the dungeon modifier "extra crits" then switches from the reticle to the Crit icon.
-- Cut order if Misa wants fewer icons: the three Store meter heads (name the resource in text), then the silence ward, then the cracked armour (a crack drawn over the armour icon), then One-shot (it shares the Strike crosshairs).
-
-| Code | Kind | Role | Status | Idea |
-| --- | --- | --- | --- | --- |
-| `shape-leap` | glyph | Leap | draft | Leap (was Leaping Strike; redrawn, round 3): the strongest, then the next, softer. Like Barrage but three squares, joined by a faint zigzag line (a bolt, without the bolt that Spark already is). Misa, 2026-11-01: "it looks like a fork right now; move the bottom square right a pixel or two, so it reads as a chain". The bottom square moved 2 pixels right (1 pixel still read as a ">" arrow); the line still joins it. |
-| `crit` | glyph | Crit, Sure Crit | liked | A lucky hit that deals double. A gold burst; a Sure Crit counter is this burst with its count ("x2"), never a meter of its own. |
-| `armour` | glyph | Armour, Blocked | draft | Armour on the boss card (with its number) and the shield of a Blocked hit (with 0). A steel breastplate, so it is not the Guard's shield. |
-| `armour-cracked` | glyph | Will be Blocked | draft | On a creature whose plain hit would be Blocked by the boss's armour: the breastplate with a red crack through it. |
-| `escalating` | glyph | Escalating | draft | The boss grows as the weekend goes on, a step at a time. Rising steps, the top one lit. |
-| `silence-ward` | glyph | Silence ward | draft | A warded creature cannot be silenced. The Silenced speaker with sound waves instead of a cross. |
-| `determination` | glyph | Determination | draft | More damage and healing for each failed weekend on the same boss. A gold arrow rising from a base: more each failed try, up to five. |
-| `boost` | glyph | Boost | draft | A Support's bonus on a creature's next hit (round 2): two upward chevrons, a rank going up. No star, and no filled arrow with a base, so it is not Determination's rising arrow. |
-| `store-heat` | glyph | Heat | liked | The Heat store (Boiling Point): the shared box with heat rising from it in waves. The count is text beside it ("x3"). Misa, 2026-11-01: "nice". |
-| `store-calm` | glyph | Calm | liked | The Calm store (Eye of the Storm): the shared box with a lotus in it. The count is text beside it ("x2"). Misa, 2026-11-01: "nice". |
-| `store-static` | glyph | Static | liked | The Static store (a dodge fills it): the shared box with a small crackle in it. The count is text beside it ("x1"). Misa, 2026-11-01: "nice". |
+| `void-guard` | creature | guard | liked | An eclipse hood: a wide dark crescent of night sky over a sturdy body, like a shield. |
+| `void-setter` | creature | setter | liked | A floating wisp with a feeler that ends in a star: it points at the boss and marks it. |
+| `void-support` | creature | support | liked | A small planet with a ring for a halo and two moons in orbit: it lifts its neighbours. |
+| `void-payoff` | creature | payoff | liked | A lynx of the night: tall ears that are windows full of stars, a star-tipped crest. |
+| `void-guard-2` | creature | guard | draft | The Eclipse Hood grown: horned corners, a second star and a cyan corona in the window, raised shoulder plates with a glint. |
+| `void-setter-2` | creature | setter | draft | The star-feeler wisp grown: a second small feeler, a wider third-eye window with two stars, side wisps and a trailing tail. |
+| `void-support-2` | creature | support | draft | The ringed planet grown: a double halo, bigger moons, a third moon and the ring wrapped round its belly. |
+| `void-payoff-2` | creature | payoff | draft | The night lynx grown: wider ear windows with two stars, a star-shaped crest and a cheek ruff. |
