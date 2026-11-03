@@ -4,6 +4,14 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: Combat v2 replays keep no Pause or 2x **[Misa]**
+
+ID: `2026-11-03-combat-v2-replays-keep-no-pause` · Status: current
+
+**Decision (Misa).** Combat v2 replays (a stage's replay, the after-action's Watch, the dungeon's room replay on a v2 run) have no Pause and no 2x, the same as v1 replays since 2026-10-14. `PlayerV2` keeps `showControls={false}` by default.
+
+**Reasoning.** Asked when v2 playback was built (v2 fights are longer than v1's); Misa: "No pause or 2x."
+
 ## 2026-11-03: Combat v2 bots and the gate run (phase 4, slice 6): v2 guests, the raid-weekend dev tool and one stat calculation
 
 ID: `2026-11-03-combat-v2-bots-and-the-gate` · Status: current
