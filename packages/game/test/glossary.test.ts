@@ -21,6 +21,7 @@ import {
   gearContent,
   glossaryGaps,
   howToPlay,
+  howToPlayV2,
   loadGlossary,
   loadHowToPlay,
   keptOnDefeat,
@@ -489,8 +490,11 @@ describe('the How to play text', () => {
     expect(howToPlay.sections.slice(-2).map((s) => s.id)).toEqual(['gear', 'workshop']);
   });
 
-  it('gives every glossary entry a section the page has', () => {
-    const ids = new Set(howToPlay.sections.map((s) => s.id));
+  it('gives every glossary entry a section a page has (the shipped one or the combat v2 one)', () => {
+    const ids = new Set<string>([
+      ...howToPlay.sections.map((s) => s.id),
+      ...howToPlayV2.sections.map((s) => s.id),
+    ]);
     for (const e of glossary) expect(ids.has(e.section), e.id).toBe(true);
   });
 

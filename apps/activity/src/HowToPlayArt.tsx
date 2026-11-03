@@ -32,12 +32,16 @@ import { MedalSprite, PinSprite } from './games/GamesParts';
 import { streakPips } from './dungeon-text';
 import {
   dungeonRooms,
+  BOARD_EXAMPLE_MOVE,
   evolutionExample,
   exampleSeason,
   exampleSpecies,
   expeditionTrips,
+  markExample,
+  rankTrack,
   starterSpecies,
   weekStrip,
+  weekendStrip,
 } from './howto';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
@@ -131,9 +135,28 @@ function StartersArt() {
   );
 }
 
+/** One example creature for each role, with the role's chip. */
+function RolesRow() {
+  const roles = ['setter', 'payoff', 'guard', 'support'] as const;
+  return (
+    <ul class="art-row" aria-label="Roles">
+      {roles.map((role) => {
+        const species = exampleSpecies(role);
+        return (
+          <li key={role}>
+            {species !== undefined && (
+              <Sprite sprite={creatureSpriteOrFallback(species.id)} scale={4} />
+            )}
+            <RoleChip role={role} />
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 /** Creatures: the four elements, and one example creature for each role. */
 function CreaturesArt() {
-  const roles = ['setter', 'payoff', 'guard', 'support'] as const;
   return (
     <>
       <p class="tags art-tags" aria-label="Elements">
@@ -141,19 +164,7 @@ function CreaturesArt() {
           <ElementChip key={e.id} element={e.id} />
         ))}
       </p>
-      <ul class="art-row" aria-label="Roles">
-        {roles.map((role) => {
-          const species = exampleSpecies(role);
-          return (
-            <li key={role}>
-              {species !== undefined && (
-                <Sprite sprite={creatureSpriteOrFallback(species.id)} scale={4} />
-              )}
-              <RoleChip role={role} />
-            </li>
-          );
-        })}
-      </ul>
+      <RolesRow />
       <ol class="growth-art" aria-label="What the levels bring">
         {growthSteps().map((step) => (
           <li key={step.level}>
@@ -484,6 +495,165 @@ function GamesArt() {
   );
 }
 
+/** Marks and reactions (combat v2): a Setter leaves marks, the mark strip shows them with their counts, a Payoff cashes. */
+function V2MarksArt() {
+  const example = markExample();
+  if (example === undefined) return null;
+  return (
+    <div class="v2-marks-art">
+      <div class="example-step">
+        <Figure species={example.setter} />
+        <Arrow />
+        <ol class="v2-mark-strip" aria-label="The mark strip">
+          {example.marks.map((mark) => {
+            const palette = markPalette(mark.element);
+            const icon = elementIcon(mark.element);
+            return (
+              <li key={mark.element} class={`example-mark el-${mark.element}`}>
+                <Sprite
+                  sprite={glyphOrUnknown('mark')}
+                  scale={3}
+                  {...(palette === undefined ? {} : { palette })}
+                />
+                {icon !== undefined && <Sprite sprite={icon} scale={2} />}
+                <span class="pix">x{mark.count}</span>
+              </li>
+            );
+          })}
+        </ol>
+        <Arrow />
+        <Figure species={example.payoff} />
+      </div>
+      <p class="tags art-tags">
+        <Tag entry={GLOSSARY_IDS.keyword('Mark')}>Mark</Tag>
+        <Tag entry={GLOSSARY_IDS.keyword('Reaction')}>Reaction</Tag>
+      </p>
+    </div>
+  );
+}
+
+/** Roles and Knacks (combat v2): the four roles, and a few of the keywords a Knack's text uses, each tappable. */
+function V2KnacksArt() {
+  const keywords = ['Spend', 'Store', 'Taunt', 'Intercept', 'Silenced'];
+  return (
+    <>
+      <RolesRow />
+      <p class="tags art-tags" aria-label="Keywords in a Knack's text">
+        {keywords.map((name) => (
+          <Tag key={name} entry={GLOSSARY_IDS.keyword(name)}>
+            {name}
+          </Tag>
+        ))}
+      </p>
+    </>
+  );
+}
+
+const BOARD_ROWS = 3;
+const BOARD_COLUMNS = 4;
+/** The column the example move's shape lights. */
+const BOARD_LIT_COLUMN = 2;
+
+/**
+ * The board (combat v2): a small grid of rows and columns, the boss's turn after each row, and one move's shape lit
+ * with its label ("Nemesis Lance": whom it picks, then which slots it hits). A decoration; the words say the rest.
+ */
+function V2BoardArt() {
+  const roles = ['setter', 'payoff', 'guard', 'support'] as const;
+  return (
+    <div class="v2-board-art">
+      <ol class="v2-board" aria-label="Three rows of four slots, the boss's turn after each row">
+        {Array.from({ length: BOARD_ROWS }, (_, row) => (
+          <li key={row} class="v2-board-step">
+            <ol class="v2-board-row" aria-label={`Row ${String(row + 1)}`}>
+              {Array.from({ length: BOARD_COLUMNS }, (_, column) => {
+                const species = row === 0 ? exampleSpecies(roles[column] ?? 'setter') : undefined;
+                return (
+                  <li
+                    key={column}
+                    class={`v2-slot${column === BOARD_LIT_COLUMN ? ' lit' : ''}`}
+                    aria-hidden="true"
+                  >
+                    {species !== undefined && (
+                      <Sprite sprite={creatureSpriteOrFallback(species.id)} scale={1} />
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+            <p class="v2-boss-turn pix">Boss</p>
+          </li>
+        ))}
+      </ol>
+      <p class="tags art-tags">
+        <span class="tag pix">
+          {BOARD_EXAMPLE_MOVE.target} {BOARD_EXAMPLE_MOVE.shape}
+        </span>
+      </p>
+    </div>
+  );
+}
+
+/** Armour and crits (combat v2): a hit stopped by armour (Blocked, 0), and a lucky hit (Crit). */
+function V2ArmourArt() {
+  return (
+    <ul class="art-row v2-armour-art" aria-label="Armour and crits">
+      <li>
+        <Sprite sprite={glyphOrUnknown('shield')} scale={4} />
+        <Tag entry={GLOSSARY_IDS.keyword('Blocked')}>Blocked</Tag>
+        <span class="pix v2-hit">0</span>
+      </li>
+      <li>
+        <Sprite sprite={glyphOrUnknown('sparkle')} scale={4} />
+        <Tag entry={GLOSSARY_IDS.keyword('Crit')}>Crit</Tag>
+        <span class="pix v2-hit crit">!</span>
+      </li>
+    </ul>
+  );
+}
+
+/** The raid weekend (combat v2): stage 1, stage 2 and the live finale with their days, from the schedule. */
+function V2WeekendArt() {
+  const glyphs: Record<string, string> = { phase1: 'mark', phase2: 'warning', finale: 'ability' };
+  return (
+    <ol class="art-row week-art" aria-label="The weekend">
+      {weekendStrip().map((step) => (
+        <li key={step.event}>
+          <Sprite sprite={glyphOrUnknown(glyphs[step.event] ?? 'unknown')} scale={4} />
+          <span class="pix week-day">{step.day}</span>
+          <span class="muted">{step.title}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** The Boss Rank (combat v2): bosses in a row, the beaten ones ticked, the current one lit. */
+function V2RankArt() {
+  const bosses = content.bosses.slice(0, 5);
+  const states = rankTrack(bosses.length);
+  return (
+    <ol class="art-row v2-rank-art" aria-label="The bosses in order">
+      {bosses.map((boss, i) => {
+        const state = states[i]?.state ?? 'later';
+        const art = bossArt(boss.id);
+        return (
+          <li key={boss.id} class={`v2-rank-boss ${state}`}>
+            <Sprite sprite={art.sprite} scale={2} />
+            {state === 'beaten' && (
+              <>
+                <Sprite sprite={glyphOrUnknown('tick')} scale={2} class="v2-rank-tick" />
+                <span class="visually-hidden">Beaten</span>
+              </>
+            )}
+            {state === 'current' && <span class="visually-hidden">This week</span>}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 /** The picture of one section. */
 export function SectionArt({ id }: { id: GlossarySection }) {
   switch (id) {
@@ -507,6 +677,18 @@ export function SectionArt({ id }: { id: GlossarySection }) {
       return <RewardsArt />;
     case 'gear':
       return <GearSectionArt />;
+    case 'v2-marks':
+      return <V2MarksArt />;
+    case 'v2-knacks':
+      return <V2KnacksArt />;
+    case 'v2-board':
+      return <V2BoardArt />;
+    case 'v2-armour':
+      return <V2ArmourArt />;
+    case 'v2-weekend':
+      return <V2WeekendArt />;
+    case 'v2-rank':
+      return <V2RankArt />;
     case 'workshop':
       return <WorkshopArt />;
     case 'games':

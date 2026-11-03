@@ -20,9 +20,9 @@ describe('the keywords in a text', () => {
   it('splits a Knack text at its braces, and the parts joined are the text again', () => {
     const parts = textParts('{Store} Heat: +1 at round start. The next {Reaction} deals double.');
     expect(parts).toEqual([
-      { keyword: true, text: 'Store' },
+      { keyword: true, text: 'Store', name: 'Store' },
       { keyword: false, text: ' Heat: +1 at round start. The next ' },
-      { keyword: true, text: 'Reaction' },
+      { keyword: true, text: 'Reaction', name: 'Reaction' },
       { keyword: false, text: ' deals double.' },
     ]);
     const joined = parts.map((p) => (p.keyword ? `{${p.text}}` : p.text)).join('');
@@ -43,15 +43,15 @@ describe('the keywords in a text', () => {
 
   it('takes the letters that run on after a keyword into its chip', () => {
     expect(chipParts('{Spend}s all of them. Its {Crit}s are 3x, {Mark} at 2.')).toEqual([
-      { keyword: true, text: 'Spends' },
+      { keyword: true, text: 'Spends', name: 'Spend' },
       { keyword: false, text: ' all of them. Its ' },
-      { keyword: true, text: 'Crits' },
+      { keyword: true, text: 'Crits', name: 'Crit' },
       { keyword: false, text: ' are 3x, ' },
-      { keyword: true, text: 'Mark' },
+      { keyword: true, text: 'Mark', name: 'Mark' },
       { keyword: false, text: ' at 2.' },
     ]);
     expect(chipParts('{Intercept}.')).toEqual([
-      { keyword: true, text: 'Intercept' },
+      { keyword: true, text: 'Intercept', name: 'Intercept' },
       { keyword: false, text: '.' },
     ]);
   });
