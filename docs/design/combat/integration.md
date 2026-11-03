@@ -150,7 +150,6 @@ Found while building; each is staging-only today.
 - **v1 help entries in v2 mode:** v1 glossary chips still open v1 text (`crit`, `boss-rank`, the roles with their numbers, "uses up the mark"). Swap them for v2 wording or stop v1 chips linking there when the flag is on.
 - **Determination** has no keyword or glossary entry yet, and its chip on the board needs one (and Misa's look at its icon).
 - **Results rows:** the Watch button overlaps the row's right border at 390 px (polish), and after a kill in stage 1 or 2 the week's timeline still lists the finale's time.
-- **Duplicates under v2** still offer Teach (`apps/worker/src/catch-choices.ts`), although a duplicate's talent now goes into its line's book by itself (R20): under v2 the choice is Fuse, Release or Keep. (Found by the valley session, 2026-11-03.)
 - **Golden talents do nothing in v2 fights yet:** they are rolled and kept in `line_talents`, but `creature_talents_v2` has no golden flag and the fighter gets talent ids only (`fighter-v2.ts`), so R20's x1.25 is not applied. The engine's resolver needs a golden input first. (Found by the valley session, 2026-11-03.)
 - **The valley's School** will move a talent's first learning from the creature card to the School in the valley's phase 5 (same one-time price); until then learning stays on the card.
 - **Culling Strike (`cull`)** is in the talent library but in no line's pool, so no creature can find or learn it. Either give it to the pools it suits (a lab rerun of the talents' share) or drop it. (Found by the valley session, 2026-11-03.)
