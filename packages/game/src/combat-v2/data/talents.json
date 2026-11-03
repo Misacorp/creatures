@@ -294,7 +294,7 @@
       "id": "cull",
       "name": "Culling Strike",
       "text": "A hit that leaves the boss below 5% of its full HP defeats it. The HP removed counts as the killing blow, not as damage.",
-      "roles": ["setter", "payoff"],
+      "roles": ["setter", "payoff", "guard", "support"],
       "intent": "An enabler: effects are meant to stack on it later (killing-blow triggers, R21.5), so it is not intended to be used alone. A weak result for it alone is expected and is not a reason to buff it; judge it only with the effects that build on it (Misa, 2026-11-03). In the pools of hearthshell, lanternfin, mossback, stormray and squelch.",
       "fx": {
         "cullBp": 500

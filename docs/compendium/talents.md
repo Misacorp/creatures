@@ -486,7 +486,7 @@ Status: written 2026-10-31. **Combat v2 is in development and these talents are 
 ### Culling Strike
 
 - Was **Cull**.
-- Roles: setter, payoff.
+- Roles: setter, payoff, guard, support (any hit can land it).
 - Line pools: Mossback, Stormray, Hearthshell, Lanternfin, Squelch (one line for each role and each element; Misa, 2026-11-03).
 - Text `(content: combat-v2/talents.json)`: "A hit that leaves the boss below 5% of its full HP defeats it. The HP removed counts as the killing blow, not as damage."
 - Gear line: none.

@@ -557,6 +557,7 @@ describe('combat v2 content gate: talents and their pools', () => {
     expect(new Set(lines.map(([line]) => base(line).element))).toEqual(
       new Set(['tide', 'ember', 'grove', 'spark', 'mire']),
     );
+    expect(pack.talents['cull']?.roles).toEqual(['setter', 'payoff', 'guard', 'support']);
     expect(pack.talents['cull']?.intent).toMatch(/not intended to be used alone/);
   });
 
