@@ -1,0 +1,105 @@
+/* The School scene (prototype, dev only): its yard and the checklist of a Bronze trial. */
+
+/* A pupil is one button (the creature, its pips or its title), opening its checklist. */
+.sc-pupil-at {
+  line-height: 1;
+  pointer-events: auto;
+}
+
+.sc-pupil {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  min-width: 3rem;
+  min-height: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.sc-pupil:hover:not(:disabled),
+.sc-pupil:active:not(:disabled) {
+  box-shadow: none;
+}
+
+/* The title of a graduate: the name, and its honour under it in the ribbon's bronze. */
+.sc-pupil .pv-plate span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sc-honour {
+  color: #d08a4a;
+}
+
+.sc-figure {
+  position: relative;
+  display: block;
+  line-height: 0;
+}
+
+.sc-pupil .pv-plate {
+  max-width: 5rem;
+}
+
+/* The sparkle over a creature that is ready, and the ribbon on the chest of one that graduated. */
+.sc-spark {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 2px);
+  transform: translateX(-50%);
+  line-height: 0;
+}
+
+.sc-ribbon {
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  transform: translateX(-50%);
+  line-height: 0;
+}
+
+/* Pinned on at the ceremony: it drops in with three steps. */
+.sc-ribbon.pin {
+  animation: sc-pin 900ms steps(3) 1 both;
+}
+
+@keyframes sc-pin {
+  from {
+    transform: translateX(-50%) translateY(-18px);
+  }
+}
+
+/* The checklist: a picture, the box, its pip. */
+.sc-boxes {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sc-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0.65;
+}
+
+.sc-box.done {
+  opacity: 1;
+}
+
+.sc-box-label {
+  flex: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-ribbon.pin {
+    animation: none;
+  }
+}
