@@ -269,7 +269,6 @@ const stageV2: Entry = {
   group: 'Creatures & game pieces',
   description:
     "The combat v2 fight stage, played from a real fight (every event is the engine's own, from the shipped bosses and creatures): the boss above its HP bar with a tick per stage, the move it just made, the marks on it oldest first, Mired, what it resists and the Escalating meter, the turn strip lighting the step on, and the v2 board with each creature's HP, a silenced creature's Knack crossed out with the turns left, knocked-out ones greyed and the move announced at round start on each creature it will land on. Views: held still at a moment of the fight (a crit, a Blocked hit, a silenced creature, a knock-out, a cashed mark), playing by itself like the replay, the live finale with the player's action button (Rally, Shield Wall with its row picker, Purge) and Auto fire, a stage's result card, and the Raid tab's pick of the finale action.",
-  covers: ['PlayerV2', 'FightV2', 'AbilityChipV2', 'RaidSummaryCardV2', 'FinaleInputV2'],
   controls: CONTROLS,
   defaults: DEFAULTS,
   presets: [
