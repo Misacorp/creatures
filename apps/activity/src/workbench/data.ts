@@ -57,6 +57,7 @@ export const GLOSSARY_SAMPLE: readonly string[] = [
   'push-on',
   'gear',
   'crit',
+  'kw-determination',
 ];
 
 /** The icons a count badge or a game icon can show, by the name the page offers. */
