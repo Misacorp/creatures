@@ -241,3 +241,5 @@ Art update (PR #120, Misa approved): the element shards in the game are now told
 ## 2026-11-03: round 21 answered
 
 Q50 (the posters): C, no poster on a place's screen ("It's weird that it shows the place twice"), but Misa likes the depth of a sky behind the scene: a proper sky backdrop instead, later varying by location. The prototype's default is now no poster; the sky and framed modes stay behind `&poster=` to compare. Asked the art-direction session for sky backdrops (day and night).
+
+Art ready for Misa's review in PR #122 (`claude/valley-glow-camp`): `valley-sky` (a 128x40 valley sky that tiles sideways, day and night, an optional moon) and `valley-glow-camp` (the arena, fairground, road, chest, lectern and paddock in the glow style). After #120 and #122 merge, one implementer round wires them in: the sky behind every place's screen (Q50) and the valley's older places in the glow style.
