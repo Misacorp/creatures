@@ -588,7 +588,7 @@ describe('the place scenes: one scale, the poster in three modes, the layout for
     }
   });
 
-  it('picks the place’s own scale: its art fills 60 to 80 percent of a phone, within 3 to 6, and still fits', () => {
+  it('picks the place’s own scale: its art fills 60 to 85 percent of a phone, within 3 to 6, and still fits', () => {
     for (const name of ALL) {
       for (const [width, height] of [
         [390, 610],
@@ -599,7 +599,7 @@ describe('the place scenes: one scale, the poster in three modes, the layout for
         expect(s).toBeGreaterThanOrEqual(3);
         expect(s).toBeLessThanOrEqual(6);
         const art = glowLayout(sceneGeometry(width, height, s), name, 'sky').art;
-        expect(art.width * s).toBeLessThanOrEqual(0.8 * width);
+        expect(art.width * s).toBeLessThanOrEqual(0.85 * width);
         if (width < 700) expect(art.width * s).toBeGreaterThanOrEqual(0.6 * width);
         expect((art.y + art.height) * s + 190).toBeLessThanOrEqual(height + 1);
       }

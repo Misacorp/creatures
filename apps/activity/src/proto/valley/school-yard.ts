@@ -38,7 +38,7 @@ export const SEAT_ORDER: readonly number[] = [3, 1, 2, 0];
 
 /** The lectern's foot (its own pixels) and where it stands, and the teacher's feet, in the yard's pixels. */
 export const LECTERN_FOOT: Point = { x: 10, y: 15 };
-export const LECTERN_AT: Point = { x: 73, y: 14 };
+export const LECTERN_AT: Point = { x: 68, y: 14 };
 export const TEACHER_FEET: Point = { x: 62, y: 14 };
 
 /** A point of the yard in the art rect. */

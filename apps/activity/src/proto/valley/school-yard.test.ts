@@ -33,16 +33,15 @@ describe("the School's yard placements", () => {
     }
   });
 
-  it('puts the lectern foot at yard (73, 14) and the teacher at top-left (54, -1)', () => {
-    expect(lecternTopLeft()).toEqual({ x: YARD_AT.x + 63, y: YARD_AT.y - 1 });
+  it('puts the lectern foot at yard (68, 14) and the teacher at top-left (54, -1)', () => {
+    expect(lecternTopLeft()).toEqual({ x: YARD_AT.x + 58, y: YARD_AT.y - 1 });
     expect(teacherTopLeft()).toEqual({ x: YARD_AT.x + 54, y: YARD_AT.y - 1 });
   });
 
-  it('keeps the teacher and every seat inside the yard, and the lectern within 5 px of its edge', () => {
+  it('keeps the teacher and every seat inside the yard and the lectern', () => {
     const inside = (p: { x: number; y: number } | null, w: number): boolean =>
       p !== null && p.x >= YARD_AT.x && p.x + w <= YARD_AT.x + YARD_SIZE.width;
-    // The lectern (22 wide, foot 10) stands at yard x 63 to 84: its last columns hang 5 px past the yard's edge.
-    expect(inside(lecternTopLeft(), 22 - 5)).toBe(true);
+    expect(inside(lecternTopLeft(), 22)).toBe(true);
     expect(inside(teacherTopLeft(), 16)).toBe(true);
     for (let i = 0; i < SEAT_FEET.length; i += 1) expect(inside(seatTopLeft(i), 16)).toBe(true);
   });

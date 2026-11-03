@@ -322,7 +322,7 @@ export function glowLayout(
 }
 
 /** The most the art fills of a scene's width, and the pixel scales a place's scene may use. */
-const FILL = 0.8;
+const FILL = 0.85;
 const SCALE_MIN = 3;
 const SCALE_MAX = 6;
 /** CSS px a scene keeps under the art for what stands below it (a row of creatures, stones, plates) and its button. */
@@ -330,7 +330,7 @@ const BELOW_ART_CSS = 190;
 
 /**
  * The one pixel scale of a place's scene: the largest whole number (3 to 6) at which the place's art fills
- * about three quarters of the scene's width (never over four fifths) and the art, the row under it and the
+ * about three quarters of the scene's width (never over 85 percent) and the art, the row under it and the
  * pinned button still fit the scene's height. The poster, the art, the grass and every creature in the scene
  * are drawn at it; the tray is UI and keeps its own.
  */
