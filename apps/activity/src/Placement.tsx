@@ -397,8 +397,8 @@ export function Placement(props: Props) {
       <section class="raid-section placement pix-panel" aria-labelledby="raid-place-heading">
         <h3 id="raid-place-heading">Raid Roster</h3>
         <p class="muted small roster-help prose">
-          Place up to {seatsWord(seats)} creatures on the board beside everyone else's. Placing your first one
-          joins you to this week's raid, and you bring only what you place.
+          Place up to {seatsWord(seats)} creatures on the board beside everyone else's. Placing your
+          first one joins you to this week's raid, and you bring only what you place.
           {props.turnOrder === 'serpentine' &&
             ' The board shows the order of round 1; the rows flip direction each round.'}
         </p>

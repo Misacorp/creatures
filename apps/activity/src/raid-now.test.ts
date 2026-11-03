@@ -160,7 +160,7 @@ describe('needsPlacement', () => {
     expect(needsPlacement(view({ you: { team: one } }))).toBe(true);
   });
 
-  it('counts the seats of a combat v2 boss\'s piece, not three', () => {
+  it("counts the seats of a combat v2 boss's piece, not three", () => {
     const two = { v2: { seats: 2 }, you: { team: { creatures: [placed, placed] } } };
     expect(needsPlacement(view(two))).toBe(false);
     expect(needsPlacement(view({ ...two, v2: { seats: 4 } }))).toBe(true);

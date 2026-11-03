@@ -209,7 +209,7 @@ describe('the raid test bench', () => {
     );
   }, 240_000);
 
-  it('fills each guest with the boss piece\'s seats, and a rank change trims a player to the new boss\'s seats', async () => {
+  it("fills each guest with the boss piece's seats, and a rank change trims a player to the new boss's seats", async () => {
     await runRaid(
       async (ctx) => {
         const me = await caller(ctx);

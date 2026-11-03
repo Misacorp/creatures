@@ -4,6 +4,20 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: Combat v2 arenas: how the piece, the seats and the spare are built
+
+ID: `2026-11-03-combat-v2-arenas-how-the-piece` · Status: current
+
+**Decision.** The calls the arena decision (`2026-11-03-combat-v2-arenas-each-boss-defines`) left open:
+
+- **The piece is `piece: { rows: n }` on each raid boss** in `raid-bosses.json`, beside the boss's `rows`. The loader fails (naming the boss) unless `piece.rows` equals the boss's `rows`: a full column is the only shape the engine plays. Another shape (a seat mask) is a new key of `piece` with engine support first. The engine and the lab read only `rows`, so the lab's parity digest is unchanged.
+- **Seats per player = `piece.rows`**, from `slotBossInfo(slot).seats`. It replaces the flat `RULES.raid.teamSize` for placing, the cap (`capPlacements`, `partyPlacements`, `raidTeam` take a limit), the picker and the Raid tab's texts on a v2 week only; a v1 week keeps three.
+- **The spare is one more column while the party has no stored carry and the week is `open`**: `colsFor(members, true)`. A newcomer's join counts them first, so the board they join on already has their own spare. The view says `seats` and `spare`. Once stage 1 stores the carry, the width is `colsFor(v2_players)`, and `compactBoard` (run just before stage 1) moves what stood beyond it into the lowest free slots.
+- **The dev bench's Fill** gives each guest the seats of the week's boss, and a Boss Rank change first trims each player to the new boss's seats (the earliest placed stay), then compacts onto a board that keeps its spare. Fill's default (up to 14 guests) is unchanged: with a spare there is always room, so it adds guests until the player cap.
+- **Not changed:** the boss's numbers (HP and Attack per player, area widening per four columns) use the player count, never the spare. The preview and the boss card draw the board as it stands, spare included.
+
+**Reasoning.** The piece in the data is Misa's first step to varied arenas without a sign-up; keeping `rows` as the engine's arena height and `piece` as the player's share means nothing in the engine or the lab changes. Deriving the spare from the stored carry and the week's status needs no new column or migration. Seats come from one function so the server, the picker and the texts cannot disagree.
+
 ## 2026-11-03: Combat v2 arenas: each boss defines one player's piece; the board repeats it per player with one spare until stage 1 **[Misa]**
 
 ID: `2026-11-03-combat-v2-arenas-each-boss-defines` · Status: current

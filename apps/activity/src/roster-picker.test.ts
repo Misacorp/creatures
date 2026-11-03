@@ -154,7 +154,7 @@ describe('the options of the picker', () => {
     expect(BOARD_FULL_REASON).toBe('3 / 3 placed, remove one first');
   });
 
-  it('takes the seats of a combat v2 boss\'s piece as the most a player brings', () => {
+  it("takes the seats of a combat v2 boss's piece as the most a player brings", () => {
     // Storm Sovereign: two seats a player.
     const row = rowOf({ 0: mine('a', 'splashet', 4), 1: mine('b', 'cindle', 9) });
     const options = pickerOptions({ ...base, creatures: owned, row, max: 2 });

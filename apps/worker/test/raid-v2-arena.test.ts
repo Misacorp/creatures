@@ -7,8 +7,7 @@ import { HELSINKI, rows, runRaid } from './raid-helpers';
 import { V2_WEEK, carryOf, v2Player } from './raid-v2-helpers';
 
 const V2 = { combatV2: true } as const;
-const run = (fn: (ctx: CoreContext) => void) =>
-  runRaid(fn, { start: V2_WEEK.open, core: V2 });
+const run = (fn: (ctx: CoreContext) => void) => runRaid(fn, { start: V2_WEEK.open, core: V2 });
 
 const setSlot = (ctx: CoreContext, slot: number): void => {
   ctx.sql.exec(
