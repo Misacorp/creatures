@@ -181,3 +181,20 @@
   z-index: 6;
   pointer-events: none;
 }
+
+/* A stage in the Raid tab's Results (StageResultRow.tsx): the compact row is the accordion's header, with Watch beside it. */
+.stage-result {
+  position: relative;
+}
+
+.stage-result .acc-head {
+  padding-right: 5.25rem;
+}
+
+.stage-result .stage-watch {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  min-height: 2rem;
+  padding: 0 0.625rem;
+}

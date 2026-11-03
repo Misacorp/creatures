@@ -7,7 +7,8 @@ import { CoachMark } from './CoachMark';
 import { clockOffset, errorText } from './game';
 import { useActionRunner } from './use-action-runner';
 import { useServerNow } from './hooks';
-import { finaleWindow } from './live';
+import { finaleWindow, type FinaleWindow } from './live';
+import { bossFellBeforeFinale } from './finale-v2';
 import { startPractice, type LiveSnapshot } from './live-api';
 import { Live } from './Live';
 import { LiveV2 } from './LiveV2';
@@ -16,6 +17,7 @@ import { useRaidBoardLive } from './use-raid-board-live';
 import { Replay } from './Replay';
 import { RevealCard } from './Reveal';
 import { RaidSummary } from './RaidSummary';
+import { StageResultRow } from './StageResultRow';
 import { summaryBoss } from './raid-summary-view';
 import { SwapRequests } from './SwapRequests';
 import { BossCardV2 } from './BossCardV2';
@@ -189,8 +191,14 @@ export function Raid({
   const finaleAt = loaded?.view.schedule.finale ?? null;
   const finaleRounds = loaded?.view.boss.finaleRounds ?? 1;
   const inParty = loaded?.view.you.party != null;
-  const finaleState =
-    finaleAt === null ? 'before' : finaleWindow(finaleAt, finaleRounds, serverNow);
+  // A combat v2 party whose boss fell in stage 1 or 2 has no finale: the tab shows the week's result instead.
+  const noFinale = loaded?.view.v2 !== undefined && bossFellBeforeFinale(loaded.view.v2);
+  const finaleState: FinaleWindow =
+    finaleAt === null
+      ? 'before'
+      : noFinale
+        ? 'after'
+        : finaleWindow(finaleAt, finaleRounds, serverNow);
   useEffect(() => {
     if (finaleState === 'live' && inParty && !autoOpened.current) {
       autoOpened.current = true;
@@ -544,6 +552,12 @@ function ResultCard({
   view: RaidView;
   onReplay: () => void;
 }) {
+  // A combat v2 stage is one compact row that opens its card (and has Watch beside it); a v1 stage is its card.
+  if (view.rules === 2) {
+    return (
+      <StageResultRow result={result} week={week} party={party} view={view} onReplay={onReplay} />
+    );
+  }
   return (
     <li class="card-item rs-item">
       <RaidSummary

@@ -6,6 +6,9 @@ import { FightV2 } from '../../LiveV2';
 import type { RaidView } from '../../raid-api';
 import { RaidSummaryCardV2 } from '../../RaidSummaryV2';
 import { PlayerV2 } from '../../ReplayV2';
+import { StageResultRow } from '../../StageResultRow';
+import type { PhaseResultView } from '../../raid-api';
+import { raidV2Sample } from '../raid-v2-sample';
 import { StageV2 } from '../../StageV2';
 import { staticFx } from '../../stage-fx';
 import { MarkStrip } from '../../ui/MarkStrip';
@@ -182,9 +185,22 @@ function LiveDemo({ p }: { p: Props }) {
   );
 }
 
-/** The Raid tab's Results list on a v2 week: a card for each stage played so far, from the numbers of their own events. */
+/** The Raid tab's Results list on a v2 week: a compact row for each stage played so far; `open` opens one row's card (from the fight's own numbers). */
 function ResultsDemo({ p }: { p: Props }) {
   const opts = optionsOf(p);
+  const view = useMemo(
+    () =>
+      raidV2Sample({
+        slot: opts.slot,
+        players: opts.players,
+        stagesPlayed: 1,
+        mine: 3,
+        bestShareBp: 0,
+        knockedOut: false,
+        swaps: 'none',
+      }).view,
+    [opts.slot, opts.players],
+  );
   const stages = useMemo(
     () =>
       Array.from({ length: opts.stage }, (_, k) =>
@@ -192,28 +208,55 @@ function ResultsDemo({ p }: { p: Props }) {
       ),
     [opts.slot, opts.players, opts.stage, opts.seed],
   );
+  const openStage = num(p, 'open');
   return (
     <section class="raid-section" aria-label="Results">
       <h3>Results</h3>
       <ul class="cards">
-        {stages.map((stats) => (
-          <li key={stats.phase} class="card-item rs-item">
-            <RaidSummaryCardV2
-              stats={stats}
-              rewards={{
-                essence: 120,
-                finaleLoot: null,
-                festivalLoot: null,
-                festivalGrant: null,
-                rankChange: null,
-                progress: null,
-              }}
-              mode="result"
-              id={`workbench-result-${stats.phase}`}
+        {stages.map((stats, k) => {
+          const result: PhaseResultView = {
+            phase:
+              stats.phase === 'stage1' ? 'phase1' : stats.phase === 'stage2' ? 'phase2' : 'finale',
+            at: 1,
+            cleared: stats.cleared,
+            rounds: stats.rounds,
+            bossHpMax: stats.boss.hpMax,
+            bossHpStart: stats.boss.hpStart,
+            bossHpEnd: stats.boss.hpEnd,
+            damage: stats.boss.hpStart - stats.boss.hpEnd,
+            reactions: stats.reactions.total,
+            top: [],
+            essence: 120,
+            rankChange: null,
+            festivalGrant: null,
+          };
+          return (
+            <StageResultRow
+              key={stats.phase}
+              result={result}
+              week="26w45"
+              party={1}
+              view={view}
               onReplay={() => undefined}
+              defaultOpen={openStage === k + 1}
+              body={
+                <RaidSummaryCardV2
+                  stats={stats}
+                  rewards={{
+                    essence: 120,
+                    finaleLoot: null,
+                    festivalLoot: null,
+                    festivalGrant: null,
+                    rankChange: null,
+                    progress: null,
+                  }}
+                  mode="result"
+                  id={`workbench-result-${stats.phase}`}
+                />
+              }
             />
-          </li>
-        ))}
+          );
+        })}
       </ul>
     </section>
   );
@@ -248,6 +291,7 @@ const CONTROLS = {
   moment: { kind: 'select', options: MOMENTS },
   beat: { kind: 'number', min: 0, max: 400 },
   round: { kind: 'number', min: 0, max: 8 },
+  open: { kind: 'number', min: 0, max: 3 },
   ability: { kind: 'select', options: ['rally', 'shield-wall', 'purge'] },
 } as const;
 
@@ -260,6 +304,7 @@ const DEFAULTS = {
   moment: 'marks and an announced move',
   beat: 0,
   round: 3,
+  open: 0,
   ability: 'rally',
 };
 

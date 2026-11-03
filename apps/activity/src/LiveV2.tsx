@@ -259,7 +259,12 @@ export function FightV2({
   return (
     <>
       <p class="live-round" role="status" aria-live="off">
-        <strong>{progress.headline}</strong>
+        {/* With the stage on screen its head already says the round, so the page's line keeps only the countdown (and says the round to a screen reader). */}
+        {showStage ? (
+          <span class="visually-hidden">{progress.headline}</span>
+        ) : (
+          <strong>{progress.headline}</strong>
+        )}
         {progress.countdown !== '' && <span class="live-countdown"> {progress.countdown}</span>}
       </p>
       {showStage && boss !== null && bossDef !== null && card !== null && names !== null && (

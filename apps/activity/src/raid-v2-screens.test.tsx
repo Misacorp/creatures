@@ -5,7 +5,7 @@
  */
 import { act } from 'preact/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { RaidView } from './raid-api';
+import type { PhaseResultView, RaidView } from './raid-api';
 import { Raid } from './Raid';
 import { byClass, byName, createPage, visibleText, type Page } from './test-dom';
 import { liveSample, statsSample } from './workbench/fight-v2-sample';
@@ -133,45 +133,76 @@ describe('a combat v2 week', () => {
     expect(byClass(p.root, 'ability-chip')).toHaveLength(0);
   });
 
-  it('lists a stage in Results as soon as it is played, with Watch', async () => {
+  it('lists a stage in Results as a compact row with Watch, and a tap opens its card', async () => {
     fetchStatsEither.mockResolvedValue({
       rules: 2,
       stats: statsSample({ slot: 4, players: 4, stage: 1, seed: 'screen' }),
     });
-    const week = weekAt();
-    const later = Date.now() + 3_600_000;
-    const party = week.party;
-    if (party === null) throw new Error('no party');
-    const view: RaidView = {
-      ...week,
-      schedule: { ...week.schedule, finale: later },
-      party: {
-        ...party,
-        results: [
-          {
-            phase: 'phase1',
-            at: 1,
-            cleared: true,
-            rounds: 8,
-            bossHpMax: 100,
-            bossHpStart: 100,
-            bossHpEnd: 60,
-            damage: 40,
-            reactions: 2,
-            top: [],
-            essence: 5,
-            rankChange: null,
-            festivalGrant: null,
-          },
-        ],
-      },
-    };
+    const early = weekAt();
+    const view = withResults(
+      { ...early, schedule: { ...early.schedule, finale: Date.now() + 3_600_000 } },
+      [result('phase1', 100, 62, true)],
+    );
     const p = await draw(view);
-    await flush();
     const text = visibleText(p.root);
     expect(text).toContain('Results');
-    expect(text).toContain('Stage 1 result');
-    expect(byName(p.root, 'button', 'Watch').length).toBe(1);
-    expect(text.toLowerCase()).not.toMatch(/\bwall\b|harder/);
+    expect(text).toContain('Stage 1 · 38% of its HP · Cleared');
+    expect(byName(p.root, 'button', /Watch/).length).toBe(1);
+    // The card asks the server for its numbers only when the row is opened.
+    expect(fetchStatsEither).not.toHaveBeenCalled();
+    p.click(
+      byClass(p.root, 'acc-head').find((el) => visibleText(el).startsWith('Stage 1')) as never,
+    );
+    await flush();
+    expect(fetchStatsEither).toHaveBeenCalled();
+    expect(visibleText(p.root)).toContain('Scoreboard');
+    expect(visibleText(p.root).toLowerCase()).not.toMatch(/\bwall\b|harder/);
+  });
+
+  it("opens no finale when the boss fell in stage 2: the week's result is shown instead", async () => {
+    const week = weekAt();
+    if (week.v2 === undefined) throw new Error('no v2 part');
+    const view = withResults({ ...week, v2: { ...week.v2, stagesPlayed: 2, nextStage: 4 } }, [
+      result('phase1', 100, 55, true),
+      result('phase2', 55, 0, true),
+    ]);
+    const p = await draw(view);
+    await flush();
+    expect(fetchLiveV2).not.toHaveBeenCalled();
+    expect(byClass(p.root, 'drill-head')).toHaveLength(0);
+    const text = visibleText(p.root);
+    expect(text).toContain('Stage 2 · Boss fell · Cleared');
+    expect(text).not.toContain('The finale is on now');
   });
 });
+
+/** A stored stage as the week's view lists it (HP of the weekend before and after). */
+function result(
+  phase: 'phase1' | 'phase2',
+  start: number,
+  end: number,
+  cleared: boolean,
+): PhaseResultView {
+  return {
+    phase,
+    at: 1,
+    cleared,
+    rounds: 8,
+    bossHpMax: 100,
+    bossHpStart: start,
+    bossHpEnd: end,
+    damage: start - end,
+    reactions: 2,
+    top: [],
+    essence: 5,
+    rankChange: null,
+    festivalGrant: null,
+  };
+}
+
+/** The week with these stage results, and the finale's time as it is (now). */
+function withResults(week: RaidView, results: NonNullable<RaidView['party']>['results']): RaidView {
+  const party = week.party;
+  if (party === null) throw new Error('no party');
+  return { ...week, party: { ...party, results } };
+}

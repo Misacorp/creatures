@@ -10,7 +10,8 @@ import { staticFx } from './stage-fx';
 import { byClass, visibleText, createPage, type Page } from './test-dom';
 import { MarkStrip } from './ui/MarkStrip';
 import { cuesOf, type PlaybackV2 } from './use-playback-v2';
-import { replaySample } from './workbench/fight-v2-sample';
+import { FightV2 } from './LiveV2';
+import { liveSample, replaySample } from './workbench/fight-v2-sample';
 import { fightV2Entries } from './workbench/entries/fight-v2';
 
 let page: Page | null = null;
@@ -173,5 +174,29 @@ describe('the workbench page', () => {
     ]) {
       expect(names.toLowerCase()).toContain(word.toLowerCase());
     }
+  });
+});
+
+describe('the live finale page', () => {
+  it('says the round once (the stage head) and keeps the countdown', () => {
+    const snapshot = liveSample({ slot: 4, players: 4, stage: 3, seed: 'screen' }, { round: 2 });
+    page = createPage();
+    page.draw(
+      <FightV2
+        snapshot={snapshot}
+        serverNow={snapshot.serverNow}
+        busy={false}
+        actionError={null}
+        onFire={() => undefined}
+        onAuto={() => undefined}
+      />,
+    );
+    const visible = byClass(page.root, 'live-round').map((el) => visibleText(el));
+    expect(visible.join(' ')).toContain('Next round in');
+    expect(visibleText(page.root).match(/Round 2 \/ 8/g)?.length).toBe(2);
+    // The page's line says it only to a screen reader.
+    expect(
+      byClass(page.root, 'visually-hidden').some((el) => visibleText(el) === 'Round 2 / 8'),
+    ).toBe(true);
   });
 });

@@ -40,7 +40,7 @@ const phase1Of = (phase: FightPhaseV2): 'phase1' | 'phase2' | 'finale' =>
 /** The stage of a replay, played from the start, with its controls and its log. */
 export function PlayerV2({
   data,
-  showControls = true,
+  showControls = false,
 }: {
   data: ReplayViewV2;
   showControls?: boolean;

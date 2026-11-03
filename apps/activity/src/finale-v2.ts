@@ -114,3 +114,10 @@ export const LOBBY_LINE = 'Waiting for the finale to start';
 
 /** The words over a finished finale. */
 export const DONE_LINE = 'The fight is over';
+
+/**
+ * Whether the caller's party has no finale to play because its boss fell in an earlier stage (the server plays no later stage then: the
+ * next stage is "none" while fewer than three were played). The Raid tab then shows the week's result and never opens the finale.
+ */
+export const bossFellBeforeFinale = (v2: { nextStage: number; stagesPlayed: number }): boolean =>
+  v2.nextStage > 3 && v2.stagesPlayed < 3;
