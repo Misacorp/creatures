@@ -49,6 +49,7 @@ const homePage: Entry = {
       settings={{
         tilt: TILT_MODES.find((m) => m === str(p, 'tilt')) ?? DEFAULT_BOARD_SETTINGS.tilt,
         idle: IDLE_MODES.find((m) => m === str(p, 'idle')) ?? DEFAULT_BOARD_SETTINGS.idle,
+        knackNames: DEFAULT_BOARD_SETTINGS.knackNames,
       }}
       layout={str(p, 'layout')}
     />

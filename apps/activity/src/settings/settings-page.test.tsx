@@ -52,8 +52,9 @@ describe('the Settings page', () => {
     expect(byName(p.root, 'button', /^‹ Back/)).toHaveLength(1);
     expect(find(p.root, (el) => el.localName === 'h4').map((h) => visibleText(h))).toEqual([
       'The notice board',
+      'Fights',
     ]);
-    expect(byClass(p.root, 'setting-row')).toHaveLength(2);
+    expect(byClass(p.root, 'setting-row')).toHaveLength(3);
     expect(visibleText(p.root)).toContain('Notices');
     expect(visibleText(p.root)).toContain('Quiet places');
   });
@@ -65,7 +66,7 @@ describe('the Settings page', () => {
     expect(byName(p.root, 'button', 'Swaying')).toHaveLength(0);
     expect(pressed(p.root, 'Hide')).toBe(true);
     expect(pressed(p.root, 'Show')).toBe(false);
-    const leaning = draw({ tilt: 'still', idle: 'show' });
+    const leaning = draw({ ...DEFAULT_BOARD_SETTINGS, tilt: 'still', idle: 'show' });
     expect(pressed(leaning.root, 'Leaning')).toBe(true);
     expect(pressed(leaning.root, 'Show')).toBe(true);
   });
@@ -74,9 +75,18 @@ describe('the Settings page', () => {
     const onChange = vi.fn();
     const p = draw(DEFAULT_BOARD_SETTINGS, { onChange });
     p.click(first(byName(p.root, 'button', 'Leaning')));
-    expect(onChange).toHaveBeenLastCalledWith({ tilt: 'still', idle: 'hide' });
+    expect(onChange).toHaveBeenLastCalledWith({ tilt: 'still', idle: 'hide', knackNames: false });
     p.click(first(byName(p.root, 'button', 'Show')));
-    expect(onChange).toHaveBeenLastCalledWith({ tilt: 'none', idle: 'show' });
+    expect(onChange).toHaveBeenLastCalledWith({ tilt: 'none', idle: 'show', knackNames: false });
+  });
+
+  it('has the Knack names option for fights, off until the player turns it on', () => {
+    const onChange = vi.fn();
+    const p = draw(DEFAULT_BOARD_SETTINGS, { onChange });
+    expect(visibleText(p.root)).toContain('Show Knack names in fights');
+    expect(pressed(p.root, 'Off')).toBe(true);
+    p.click(first(byName(p.root, 'button', 'On')));
+    expect(onChange).toHaveBeenLastCalledWith({ ...DEFAULT_BOARD_SETTINGS, knackNames: true });
   });
 
   it('does nothing when the chosen choice is tapped again', () => {
@@ -89,7 +99,11 @@ describe('the Settings page', () => {
   it('names each group of choices for screen readers', () => {
     const p = draw();
     const groups = find(p.root, (el) => el.getAttribute('role') === 'group');
-    expect(groups.map((g) => g.getAttribute('aria-label'))).toEqual(['Notices', 'Quiet places']);
+    expect(groups.map((g) => g.getAttribute('aria-label'))).toEqual([
+      'Notices',
+      'Quiet places',
+      'Show Knack names in fights',
+    ]);
   });
 
   it('opens How to play from a Help section when it is given, and has no Help section otherwise', () => {
@@ -110,6 +124,7 @@ describe('the Settings page', () => {
     expect(find(drawn.root, (el) => el.localName === 'h4').map((h) => visibleText(h))).toEqual([
       'Help',
       'The notice board',
+      'Fights',
     ]);
     drawn.click(first(byName(drawn.root, 'button', 'Open How to play')));
     expect(onHowTo).toHaveBeenCalledOnce();
@@ -127,8 +142,8 @@ describe('the Settings page', () => {
 
   it('draws one segmented row per setting with the chosen choice on', () => {
     const p = draw();
-    expect(byClass(p.root, 'segmented')).toHaveLength(2);
-    expect(find(p.root, (el) => el.getAttribute('class') === 'toggle on')).toHaveLength(2);
+    expect(byClass(p.root, 'segmented')).toHaveLength(3);
+    expect(find(p.root, (el) => el.getAttribute('class') === 'toggle on')).toHaveLength(3);
   });
 });
 
@@ -192,6 +207,7 @@ describe('the Discord DMs section', () => {
     const p = await drawWithDms(fakeApi({ ...OFF, kinds: { ...OFF.kinds, finale: true } }));
     expect(find(p.root, (el) => el.localName === 'h4').map((h) => visibleText(h))).toEqual([
       'The notice board',
+      'Fights',
       'Discord DMs',
     ]);
     const text = visibleText(p.root);

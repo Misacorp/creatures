@@ -31,6 +31,7 @@ type Replay = ReturnType<typeof replaySample>;
 function draw(
   replay: Replay,
   found: (model: ReturnType<typeof stageModelOf>, k: number) => boolean,
+  knackNames = false,
 ) {
   const setup = foldSetupOf({
     fighters: replay.fighters,
@@ -41,7 +42,7 @@ function draw(
   const k = model.beats.findIndex((_, i) => found(model, i));
   expect(k).toBeGreaterThanOrEqual(0);
   const beat = k + 1;
-  const show = showOf(replay.events, model.beats[k] as never);
+  const show = showOf(replay.events, model.beats[k] as never, { creatures: setup.creatures });
   const playback: PlaybackV2 = {
     beat,
     total: model.beats.length,
@@ -50,7 +51,7 @@ function draw(
     setPlaying: () => undefined,
     move: () => undefined,
     show,
-    fx: staticFx(cuesOf(show)),
+    fx: staticFx(cuesOf(show, knackNames)),
     intro: null,
   };
   page = createPage();
@@ -198,5 +199,75 @@ describe('the live finale page', () => {
     expect(
       byClass(page.root, 'visually-hidden').some((el) => visibleText(el) === 'Round 2 / 8'),
     ).toBe(true);
+  });
+});
+
+describe('what a fight shows besides the numbers', () => {
+  const mixed = () => replaySample({ slot: 4, players: 5, stage: 1, seed: 'fold', party: 'mixed' });
+
+  it("a reaction's callout is its name in the content's words over the boss, with the bonus and its two colours", () => {
+    const replay = mixed();
+    const { p } = draw(
+      replay,
+      (m, k) => (m.beats[k]?.reacts ?? false) && m.beats[k]?.kind === 'creature',
+    );
+    const callouts = byClass(p.root, 'float-reaction');
+    expect(callouts.length).toBeGreaterThan(0);
+    const text = visibleText(callouts[0] as never);
+    expect(text).toMatch(/^(Overload|Grounding|Wildfire|Steam|Smother|[A-Z][a-z]+)!\s*\+\d+$/);
+    expect(byClass(callouts[0] as never, 'float-colours').length).toBe(1);
+  });
+
+  it("a creature's hit is a number in its element's colour; a crit is bigger with its multiplier", () => {
+    const replay = mixed();
+    const { p } = draw(replay, (m, k) =>
+      showOf(replay.events, m.beats[k] as never).floats.some((f) => f.mult !== undefined),
+    );
+    const crit = byClass(p.root, 'float-hit').find((el) =>
+      el.getAttribute('class')?.includes('crit'),
+    );
+    expect(crit).toBeDefined();
+    expect(crit?.getAttribute('class')).toMatch(/el-(tide|ember|grove|spark|mire)/);
+    expect(visibleText(crit as never)).toMatch(/x\d(\.\d)?!\s*\d+/);
+  });
+
+  it("a Guard's save puts a shield on the covered creature and a bracket leg on both tiles; the Guard's tile flashes", () => {
+    const replay = mixed();
+    const { p } = draw(
+      replay,
+      (m, k) => showOf(replay.events, m.beats[k] as never).saves.length > 0,
+    );
+    expect(byClass(p.root, 'float-save').length).toBeGreaterThan(0);
+    expect(
+      byClass(p.root, 'slot-link').filter((el) => el.getAttribute('class')?.includes('guard'))
+        .length,
+    ).toBeGreaterThan(0);
+    expect(
+      byClass(p.root, 'slot-link').filter((el) => el.getAttribute('class')?.includes('saved'))
+        .length,
+    ).toBeGreaterThan(0);
+    expect(byClass(p.root, 'fight-guarding').length).toBeGreaterThan(0);
+  });
+
+  it('boosts are arrows and heals green numbers, always; a Knack name pops only when the option is on', () => {
+    const replay = mixed();
+    const found = (m: ReturnType<typeof stageModelOf>, k: number) =>
+      showOf(replay.events, m.beats[k] as never).floats.some((f) => f.tone === 'boost') &&
+      showOf(replay.events, m.beats[k] as never, { creatures: m.setup.creatures }).knacks.length >
+        0;
+    const off = draw(replay, found, false);
+    expect(byClass(off.p.root, 'float-boost').length).toBeGreaterThan(0);
+    expect(byClass(off.p.root, 'float-arrows').length).toBeGreaterThan(0);
+    expect(byClass(off.p.root, 'float-knack')).toHaveLength(0);
+    page?.unmount();
+    const on = draw(replay, found, true);
+    const pops = byClass(on.p.root, 'float-knack');
+    expect(pops.length).toBeGreaterThan(0);
+    expect(visibleText(pops[0] as never).length).toBeGreaterThan(0);
+    page?.unmount();
+    const heals = draw(replay, (m, k) =>
+      showOf(replay.events, m.beats[k] as never).floats.some((f) => f.tone === 'heal'),
+    );
+    expect(byClass(heals.p.root, 'float-heal').length).toBeGreaterThan(0);
   });
 });

@@ -31,7 +31,7 @@ const IDS = [
 
 describe('the board settings', () => {
   it('default to flush notices and no notices for quiet places', () => {
-    expect(DEFAULT_BOARD_SETTINGS).toEqual({ tilt: 'none', idle: 'hide' });
+    expect(DEFAULT_BOARD_SETTINGS).toEqual({ tilt: 'none', idle: 'hide', knackNames: false });
   });
 });
 
@@ -125,7 +125,7 @@ describe('the tilt option', () => {
   });
 
   it('none is the default', () => {
-    expect(DEFAULT_BOARD_SETTINGS).toEqual({ tilt: 'none', idle: 'hide' });
+    expect(DEFAULT_BOARD_SETTINGS).toEqual({ tilt: 'none', idle: 'hide', knackNames: false });
   });
 
   it('still: every notice has its own lean, the same on every build', () => {

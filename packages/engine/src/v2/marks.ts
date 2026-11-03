@@ -142,6 +142,11 @@ export function roundStart(s: State): void {
 
 function supportVerb(s: State, f: Fighter, k: KnackFx): void {
   const R = s.ctx.rules;
+  /** `o`'s next hit gets `bp` more (and the board is told). */
+  const give = (o: Fighter, bp: number): void => {
+    o.boostBp += bp;
+    if (s.opts.log && bp > 0) emit(s, { type: 'boost', who: keyOf(o), by: keyOf(f), bp });
+  };
   f.verbsUsed++;
   let boost =
     (f.element === 'ember' ? R.supportBoostEmberBp : R.supportBoostBp) + (k.boostBonusBp ?? 0);
@@ -166,7 +171,7 @@ function supportVerb(s: State, f: Fighter, k: KnackFx): void {
       return;
     case 'rowBoost':
       for (const o of alive(s).filter((o) => o.row === f.row && o !== f))
-        o.boostBp += boost - 500 + kindred(o);
+        give(o, boost - 500 + kindred(o));
       return;
     case 'readyMark':
       addMark(s, f.element, 1, { by: f });
@@ -176,13 +181,13 @@ function supportVerb(s: State, f: Fighter, k: KnackFx): void {
       return;
     case 'sunbeam':
       for (const o of alive(s).filter((o) => o.col === f.col && o.row < f.row)) {
-        o.boostBp += boost + kindred(o);
+        give(o, boost + kindred(o));
         heal(s, o, Math.max(healBp, 600), true, f);
       }
       return;
     default: {
       const near = beside(s, f);
-      for (const o of near) o.boostBp += boost + kindred(o);
+      for (const o of near) give(o, boost + kindred(o));
       if (healBp) {
         // Triage: only the most hurt creature beside it, at a bigger size.
         const patients = triage ? [mostHurt(near)].filter((o): o is Fighter => !!o) : near;
@@ -195,9 +200,9 @@ function supportVerb(s: State, f: Fighter, k: KnackFx): void {
       }
       if (k.support === 'wideWarmth')
         for (const o of beside(s, f, 2).filter((o) => Math.abs(o.col - f.col) === 2))
-          o.boostBp += boost + kindred(o);
+          give(o, boost + kindred(o));
       if (k.support === 'gatherCalm' && f.store >= 3) {
-        for (const o of beside(s, f)) o.boostBp += 4_500;
+        for (const o of beside(s, f)) give(o, 4_500);
         setStore(s, f, 0);
       }
     }

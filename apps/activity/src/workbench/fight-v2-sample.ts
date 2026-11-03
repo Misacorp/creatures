@@ -49,6 +49,16 @@ const BY_ROW: readonly (readonly string[])[] = [
   ['ashmole', 'lanternfin', 'aurorix', 'sunfawn'],
 ];
 
+/**
+ * A party that mixes the roles in each row, so a fight has everything the stage draws: a Guard beside a Setter that its cover and
+ * intercepts can save, and a Support beside a Payoff to boost and heal it.
+ */
+const MIXED_BY_ROW: readonly (readonly string[])[] = [
+  ['thornbuck', 'wickat', 'hearthshell', 'splashet'],
+  ['tidewing', 'voltaro', 'mistnewt', 'splashet'],
+  ['lanternfin', 'tempestray', 'sunfawn', 'cindle'],
+];
+
 /** The knack a sample creature takes: the first its form knows, except a Payoff that takes the one that cashes marks. */
 const knackOf = (species: string, row: number): string | undefined =>
   knownKnacks(species)[row === 2 ? 0 : 0];
@@ -64,6 +74,8 @@ export interface FightSampleOptions {
   seed: string;
   /** Level of every creature. */
   level?: number;
+  /** `mixed`: Guards and Supports stand among the Setters and Payoffs (default: a role to a row). */
+  party?: 'rows' | 'mixed';
   /** The finale's live inputs (stage 3). */
   actions?: readonly FinaleAction[];
 }
@@ -72,11 +84,16 @@ const idOf = (p: number, r: number): string => `c-${String(p)}-${String(r)}`;
 const aliasOf = (p: number): string => `m${String(p + 1)}`;
 
 /** The party's creatures as the fight takes them, with the id the board events call them by. */
-export function sampleFighters(boss: BossDef, players: number, level: number): FighterSpec[] {
+export function sampleFighters(
+  boss: BossDef,
+  players: number,
+  level: number,
+  party: 'rows' | 'mixed' = 'rows',
+): FighterSpec[] {
   const out: FighterSpec[] = [];
   for (let p = 0; p < players; p++) {
     for (let r = 0; r < Math.min(3, boss.rows); r++) {
-      const options = BY_ROW[r] ?? BY_ROW[0] ?? [];
+      const options = (party === 'mixed' ? MIXED_BY_ROW : BY_ROW)[r] ?? BY_ROW[0] ?? [];
       const species = options[p % options.length] ?? 'splashet';
       const knack = knackOf(species, r);
       out.push({
@@ -202,7 +219,7 @@ export interface FightSample {
 export function playSample(o: FightSampleOptions): FightSample {
   const players = Math.max(1, o.players);
   const boss = trackBoss(combatV2, SHIPPED, o.slot, { players });
-  const fighters = sampleFighters(boss, players, o.level ?? 20);
+  const fighters = sampleFighters(boss, players, o.level ?? 20, o.party ?? 'rows');
   let carry = startCarry(boss);
   let shown: FightSample | null = null;
   for (let stage = 1; stage <= o.stage; stage++) {

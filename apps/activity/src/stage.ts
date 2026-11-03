@@ -34,7 +34,20 @@ import type { FightGuardRules, ReplayRowEntry } from './raid-api';
 import { stateAt, turnOrderOfRound, type StepState } from './replay';
 
 type FloatTone =
-  'hit' | 'hurt' | 'blocked' | 'buff' | 'heal' | 'cleanse' | 'immune' | 'dodge' | 'purge';
+  | 'hit'
+  | 'hurt'
+  | 'blocked'
+  | 'buff'
+  | 'heal'
+  | 'cleanse'
+  | 'immune'
+  | 'dodge'
+  | 'purge'
+  // Combat v2's stage only (`FloatsV2`): a reaction's callout, a Guard's save, a Support's boost, a Knack's name.
+  | 'reaction'
+  | 'save'
+  | 'boost'
+  | 'knack';
 type ZoneEffect = 'shield' | 'rally' | 'hit';
 
 /**
@@ -53,6 +66,11 @@ export type Cue =
       crit: boolean;
       /** Sideways drift in steps (-3 to 3), from the event index. */
       drift: number;
+      /** Combat v2 only: the hitter's element (the number's colour), a reaction's two elements, a second line and a crit's "x2.6!". */
+      element?: string;
+      elements?: readonly [string, string];
+      sub?: string;
+      mult?: string;
     }
   | {
       kind: 'burst';

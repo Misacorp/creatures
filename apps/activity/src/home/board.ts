@@ -29,13 +29,19 @@ export type IdleMode = 'hide' | 'show';
 export interface BoardSettings {
   tilt: TiltMode;
   idle: IdleMode;
+  /** Combat v2 fights: the Knack's name pops on a creature when it acts (off: the screen stays calm). */
+  knackNames: boolean;
 }
 
 export const TILT_MODES: readonly TiltMode[] = ['none', 'still'];
 export const IDLE_MODES: readonly IdleMode[] = ['hide', 'show'];
 
 /** What a player gets until there is a setting for it: the notices hang flush and quiet places stay off the board. */
-export const DEFAULT_BOARD_SETTINGS: BoardSettings = { tilt: 'none', idle: 'hide' };
+export const DEFAULT_BOARD_SETTINGS: BoardSettings = {
+  tilt: 'none',
+  idle: 'hide',
+  knackNames: false,
+};
 
 /** The largest lean of a notice, in degrees. A notice never sits nearer to flush than `MIN_TILT` in `still`. */
 export const MAX_TILT = 1.5;

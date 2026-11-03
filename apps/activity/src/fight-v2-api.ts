@@ -208,8 +208,15 @@ export function isBoardEvent(value: unknown): value is BoardEvent {
         isBool(value['crit']) &&
         isBool(value['blocked']) &&
         isBool(value['dodged']) &&
-        (value['by'] === undefined || isStr(value['by']))
+        (value['by'] === undefined || isStr(value['by'])) &&
+        (value['critBp'] === undefined || isCount(value['critBp']))
       );
+    case 'intercept':
+      return isStr(value['guard']) && isStr(value['who']);
+    case 'cover':
+      return isStr(value['guard']) && isStr(value['who']) && isCount(value['prevented']);
+    case 'boost':
+      return isStr(value['who']) && isStr(value['by']) && isCount(value['bp']);
     case 'counter':
       return isStr(value['from']) && isCount(value['damage']);
     case 'mark':

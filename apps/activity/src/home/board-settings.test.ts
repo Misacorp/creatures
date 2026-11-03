@@ -4,6 +4,7 @@ import {
   BOARD_SETTINGS_KEY,
   browserSettingsStorage,
   loadBoardSettings,
+  onKnackNamesSaved,
   saveBoardSettings,
   type SettingsStorage,
 } from './board-settings';
@@ -37,19 +38,36 @@ describe('the board settings on the device', () => {
 
   it('keeps what was saved, and reads it back', () => {
     const storage = memory();
-    expect(saveBoardSettings(storage, { tilt: 'still', idle: 'show' })).toBe(true);
-    expect(loadBoardSettings(storage)).toEqual({ tilt: 'still', idle: 'show' });
+    const saved = { tilt: 'still', idle: 'show', knackNames: true } as const;
+    expect(saveBoardSettings(storage, saved)).toBe(true);
+    expect(loadBoardSettings(storage)).toEqual(saved);
+  });
+
+  it('shows Knack names in fights only when the player asked for it, and tells the open fight stage', () => {
+    expect(DEFAULT_BOARD_SETTINGS.knackNames).toBe(false);
+    const heard: boolean[] = [];
+    const stop = onKnackNamesSaved((on) => heard.push(on));
+    saveBoardSettings(memory(), { ...DEFAULT_BOARD_SETTINGS, knackNames: true });
+    stop();
+    saveBoardSettings(memory(), DEFAULT_BOARD_SETTINGS);
+    expect(heard).toEqual([true]);
+    const odd = memory({ [BOARD_SETTINGS_KEY]: JSON.stringify({ knackNames: 'yes' }) });
+    expect(loadBoardSettings(odd).knackNames).toBe(false);
   });
 
   it('reads an old saved sway as still (the player liked a lean)', () => {
     const old = memory({ [BOARD_SETTINGS_KEY]: JSON.stringify({ tilt: 'sway', idle: 'show' }) });
-    expect(loadBoardSettings(old)).toEqual({ tilt: 'still', idle: 'show' });
+    expect(loadBoardSettings(old)).toEqual({
+      ...DEFAULT_BOARD_SETTINGS,
+      tilt: 'still',
+      idle: 'show',
+    });
   });
 
   it('falls back to the defaults field by field for anything unknown', () => {
     const odd = (value: unknown) => memory({ [BOARD_SETTINGS_KEY]: JSON.stringify(value) });
     expect(loadBoardSettings(odd({ tilt: 'spin', idle: 'show' }))).toEqual({
-      tilt: DEFAULT_BOARD_SETTINGS.tilt,
+      ...DEFAULT_BOARD_SETTINGS,
       idle: 'show',
     });
     expect(loadBoardSettings(odd({ tilt: 7 }))).toEqual(DEFAULT_BOARD_SETTINGS);
@@ -62,17 +80,18 @@ describe('the board settings on the device', () => {
 
   it('survives storage that throws or is missing, on both read and write', () => {
     expect(loadBoardSettings(broken)).toEqual(DEFAULT_BOARD_SETTINGS);
-    expect(saveBoardSettings(broken, { tilt: 'none', idle: 'show' })).toBe(false);
+    expect(saveBoardSettings(broken, { ...DEFAULT_BOARD_SETTINGS, idle: 'show' })).toBe(false);
     expect(loadBoardSettings(null)).toEqual(DEFAULT_BOARD_SETTINGS);
     expect(saveBoardSettings(null, DEFAULT_BOARD_SETTINGS)).toBe(false);
   });
 
-  it('stores only the two known fields', () => {
+  it('stores only the three known fields', () => {
     const storage = memory();
-    saveBoardSettings(storage, { tilt: 'still', idle: 'hide' });
+    saveBoardSettings(storage, { ...DEFAULT_BOARD_SETTINGS, tilt: 'still', idle: 'hide' });
     expect(JSON.parse(storage.data[BOARD_SETTINGS_KEY] ?? '')).toEqual({
       tilt: 'still',
       idle: 'hide',
+      knackNames: false,
     });
   });
 

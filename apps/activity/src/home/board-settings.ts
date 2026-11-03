@@ -19,6 +19,17 @@ export interface SettingsStorage {
   setItem(key: string, value: string): void;
 }
 
+/** The fight stage's subscribers to the Knack names option (`useKnackNames`). */
+const listeners = new Set<(on: boolean) => void>();
+
+/** Calls `listener` whenever the settings are saved, with the Knack names option; returns the way to stop. */
+export function onKnackNamesSaved(listener: (on: boolean) => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
 export const BOARD_SETTINGS_KEY = 'creatures:board-settings';
 
 /** The browser's storage, or null where it is missing or blocked. */
@@ -48,6 +59,10 @@ export function loadBoardSettings(storage: SettingsStorage | null): BoardSetting
     return {
       tilt: pick<TiltMode>(savedTilt, TILT_MODES, DEFAULT_BOARD_SETTINGS.tilt),
       idle: pick<IdleMode>(record['idle'], IDLE_MODES, DEFAULT_BOARD_SETTINGS.idle),
+      knackNames:
+        typeof record['knackNames'] === 'boolean'
+          ? record['knackNames']
+          : DEFAULT_BOARD_SETTINGS.knackNames,
     };
   } catch {
     return DEFAULT_BOARD_SETTINGS;
@@ -59,11 +74,17 @@ export function saveBoardSettings(
   storage: SettingsStorage | null,
   settings: BoardSettings,
 ): boolean {
+  // The fight stage reads this option without being handed it: tell it, whether or not the storage took the choice.
+  for (const listener of listeners) listener(settings.knackNames);
   if (storage === null) return false;
   try {
     storage.setItem(
       BOARD_SETTINGS_KEY,
-      JSON.stringify({ tilt: settings.tilt, idle: settings.idle }),
+      JSON.stringify({
+        tilt: settings.tilt,
+        idle: settings.idle,
+        knackNames: settings.knackNames,
+      }),
     );
     return true;
   } catch {

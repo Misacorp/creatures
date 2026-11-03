@@ -124,7 +124,16 @@ describe('hits', () => {
     // Draws: the boss's dodge roll (1%), then the creature's crit roll.
     const crit = playScripted(golem, [spec()], [NO, YES]).res;
     expect(of(crit, 'hit')).toEqual([
-      { type: 'hit', from: 'A', to: null, damage: 200, crit: true, blocked: false, dodged: false },
+      {
+        type: 'hit',
+        from: 'A',
+        to: null,
+        damage: 200,
+        crit: true,
+        critBp: 20_000,
+        blocked: false,
+        dodged: false,
+      },
     ]);
     const dodged = playScripted(golem, [spec()], [YES]).res;
     expect(of(dodged, 'hit')).toEqual([
@@ -182,6 +191,48 @@ describe('hits', () => {
       },
     ]);
     expect(r.fighters.find((f) => f.name === 'G')?.hp).toBe(920);
+  });
+
+  it('a Guard that intercepts has an intercept event naming the Guard and the creature saved, before the hit', () => {
+    const r = play(striker({ cols: 2, rounds: 1, atk: 80 }), [
+      spec({ name: 'A', maxHp: 1_000 }),
+      spec({ name: 'G', role: 'guard', col: 1, maxHp: 1_000 }),
+    ]);
+    expect(of(r, 'intercept')).toEqual([{ type: 'intercept', guard: 'G', who: 'A' }]);
+    const at = r.events.findIndex((e) => e.board?.type === 'intercept');
+    expect(r.events.some((e, k) => k > at && e.board?.type === 'hit' && e.board.by === 'G')).toBe(
+      true,
+    );
+  });
+
+  it('a Guard’s cover on an area hit says what it saved: the hit as it landed plus the cover’s share is the hit without it', () => {
+    const open = play(
+      striker({ cols: 2, rounds: 1, atk: 100 }, { anchor: 'front', shape: 'all' }),
+      [spec({ name: 'A', maxHp: 1_000 }), spec({ name: 'B', col: 1, maxHp: 1_000 })],
+    );
+    expect(of(open, 'cover')).toEqual([]);
+    const r = play(striker({ cols: 3, rounds: 1, atk: 100 }, { anchor: 'front', shape: 'all' }), [
+      spec({ name: 'A', maxHp: 1_000 }),
+      spec({ name: 'G', role: 'guard', col: 1, maxHp: 1_000 }),
+    ]);
+    const covers = of(r, 'cover');
+    expect(covers).toHaveLength(1);
+    const cover = covers[0];
+    const landed = of(r, 'hit').find((h) => h.to === 'A');
+    expect(cover).toMatchObject({ guard: 'G', who: 'A' });
+    expect((landed?.damage ?? 0) + (cover?.prevented ?? 0)).toBe(100);
+    expect(cover?.prevented).toBeGreaterThan(0);
+  });
+
+  it('a Support’s boost is on the board for each creature it boosts', () => {
+    const r = play(boss({ cols: 3, rounds: 1 }), [
+      spec({ name: 'A' }),
+      spec({ name: 'S', role: 'support', col: 1 }),
+      spec({ name: 'C', col: 2 }),
+    ]);
+    const boosts = of(r, 'boost');
+    expect(boosts.map((b) => `${b.by}>${b.who}`).sort()).toEqual(['S>A', 'S>C']);
+    for (const b of boosts) expect(b.bp).toBeGreaterThan(0);
   });
 
   it('a knocked-out creature has a knockout event right after its hit', () => {

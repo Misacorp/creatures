@@ -8,7 +8,7 @@ import {
 import type { Notifications, NotificationsApi } from '../../notifications-api';
 import { SettingsPage } from '../../settings/SettingsPage';
 import { Segmented } from '../../ui/Segmented';
-import { str } from '../props';
+import { bool, str } from '../props';
 import type { Entry, Props } from '../types';
 
 const NOTHING = () => undefined;
@@ -41,6 +41,7 @@ function SettingsDemo({ p }: { p: Props }) {
   const [settings, setSettings] = useState<BoardSettings>({
     tilt: TILT_MODES.find((m) => m === str(p, 'tilt')) ?? DEFAULT_BOARD_SETTINGS.tilt,
     idle: IDLE_MODES.find((m) => m === str(p, 'idle')) ?? DEFAULT_BOARD_SETTINGS.idle,
+    knackNames: bool(p, 'knackNames'),
   });
   const [notifications] = useState(() => sampleNotifications(str(p, 'dms')));
   return (
@@ -59,16 +60,18 @@ const settingsPage: Entry = {
   file: 'apps/activity/src/settings/SettingsPage.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The Settings page, opened from the cog in the HUD: a drill-in ("‹ Back" at the top left, Escape) with sections, one row per setting (its name, a line about it and its control). Two sections besides Help. "The notice board": "Notices" (Flat, Leaning) and "Quiet places" (Hide, Show), the Home board’s two display options, kept on this device (the browser’s storage, with the defaults as the fallback). "Discord DMs": Trips home, Workshop jobs, Raid finale and Prize Stall, each Off or On; these are the server’s settings (loaded when the page opens, saved on each change, put back if the save fails), and the section shows a warning when Discord refused the bot’s DM and is hidden where the server cannot send DMs. The choices work in the preview, against a sample server. A new setting is one more row; a new group of settings is one more section.',
+    'The Settings page, opened from the cog in the HUD: a drill-in ("‹ Back" at the top left, Escape) with sections, one row per setting (its name, a line about it and its control). Three sections besides Help. "The notice board": "Notices" (Flat, Leaning) and "Quiet places" (Hide, Show), the Home board’s two display options, kept on this device (the browser’s storage, with the defaults as the fallback). "Fights": "Show Knack names in fights" (Off, On; off by default): whether a creature’s Knack name pops up on it in a combat v2 fight when it acts, kept on this device. "Discord DMs": Trips home, Workshop jobs, Raid finale and Prize Stall, each Off or On; these are the server’s settings (loaded when the page opens, saved on each change, put back if the save fails), and the section shows a warning when Discord refused the bot’s DM and is hidden where the server cannot send DMs. The choices work in the preview, against a sample server. A new setting is one more row; a new group of settings is one more section.',
   controls: {
     tilt: { kind: 'select', options: TILT_MODES },
     idle: { kind: 'select', options: IDLE_MODES },
+    knackNames: { kind: 'toggle' },
     dms: { kind: 'select', options: DM_STATES },
   },
-  defaults: { tilt: 'none', idle: 'hide', dms: 'off' },
+  defaults: { tilt: 'none', idle: 'hide', knackNames: false, dms: 'off' },
   presets: [
     { name: 'Defaults (Flat, quiet places hidden)', props: {} },
     { name: 'Leaning, quiet places shown', props: { tilt: 'still', idle: 'show' } },
+    { name: 'Knack names in fights shown', props: { knackNames: true } },
     { name: 'Discord DMs on', props: { dms: 'on' } },
     { name: 'Discord DMs blocked by the player’s privacy settings', props: { dms: 'blocked' } },
     { name: 'Discord DMs unavailable (section hidden)', props: { dms: 'unavailable' } },
