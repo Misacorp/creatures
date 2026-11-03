@@ -49,8 +49,8 @@ See "Open design questions" in `docs/roadmap.md`.
 
 The lead agent owns art direction (`decisions/direction.md`, 2026-10-31). To pick up after a compaction or in a new session: read `docs/design/art-studio.md` (workflow, brief template, review checklist), then the art library catalogue `docs/art/README.md`, then Misa's verdicts on the art review page (`https://claude.ai/artifact/36APiGzTDAhvx359SHVkyX`, collection `reviews`, read with the ArtifactData tool). Rebuild and republish the page with `pnpm art review` after any art change.
 
-- **Merged:** #122, the camp's other places in the glow style (`valley-glow-camp`) and the valley sky strip (`valley-sky`), with sprites up to 128 wide and outline-free backdrop art (`decisions/direction.md`, 2026-11-03).
-- **Open PR:** branch `claude/school-visit-art`: the School's visiting teacher (`valley-school`: yard bench, small lectern, bell frames, teacher cap).
+- **Merged to main:** #120, #122 and #123 (the camp places, the sky strip, the School's visiting teacher, sprites up to 128 wide).
+- **Valley art from now on:** goes on branch `claude/valley-art`, cut from the valley branch, and the valley session merges it; no PR to `main` (Misa, `decisions/direction.md` 2026-11-03). First on it: the School cupola centred (roof on the tower, an even frame round the bell opening, bell frames to match).
 - **Waiting on Misa:** the newer drafts on the review page (the Void evolved forms and shinies, the redone Void foes, the House, Forge and Cave, the camp places, the sky and the School visit).
 - **The valley prototype** (another session, branch `ccr-93a1de17-yutb1a`) draws the `valley-glow` places; it asks for art by cross-session message. Next likely asks: skies per location (forest, coast, mountains: same bands, a new horizon).
 - **Not applied from the retro:** proposals 5 (no commit after a pipe; `git diff --check` before committing a merge) and 6 (publish an artifact only after its review).
