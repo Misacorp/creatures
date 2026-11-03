@@ -10,6 +10,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | --- | --- | --- | --- |
 | [Combat v2 icons: attack shapes, board states, store meters](#combat-icons) | draft | 11 | 2026-10-31, Misa: "icons for keywords and attack shapes" (roadmap phase 3, combat v2). |
 | [Element shards, told apart by shape](#shards) | liked | 15 | 2026-11-03: the element shard icons must differ by shape, not only colour (accessibility review from the valley session; Misa asked to provide what the valley needs). |
+| [The camp's other places, glow style](#valley-glow-camp) | draft | 6 | 2026-11-03: the valley prototype's remaining places (arena, fairground, road, chest, lectern, paddock) in the liked glow style, day and night. |
 | [Valley places: glow, day and night](#valley-glow) | liked | 9 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
 | [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
@@ -84,6 +85,29 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `mire-now` | part |  | draft | The shipped mire shard, unchanged, for comparison. |
 | `mire-a` | part |  | draft | A lump with a single drip hanging from its belly. |
 | `mire-b` | part |  | liked | A slumped blob with two drips, one longer. |
+
+<a id="valley-glow-camp"></a>
+
+## The camp's other places, glow style
+
+![The camp's other places, glow style](valley-glow-camp.png)
+
+- **Status:** draft
+- **Requested:** 2026-11-03: the valley prototype's remaining places (arena, fairground, road, chest, lectern, paddock) in the liked glow style, day and night.
+- **Source:** `apps/activity/src/sprites/concepts/valley-glow-camp.ts` (draw it with `pnpm art valley-glow-camp`)
+- **Sheet of:** `b2c6c28c293f`
+- Extends the liked `valley-glow` set (same palette keys, ink, light rings and cast shadow) with the places the valley prototype draws in the camp clearing: `apps/activity/src/proto/party/` and `proto/valley/` on branch `origin/ccr-93a1de17-yutb1a`.
+- The backdrop is the same as `valley-glow`: the world map grass tile in its night recolour, `alts.day` is the normal grass.
+- By day the light rings become ground: worn dirt, trodden grass, pebbles and flowers. Fire (arena braziers) stays lit by day; lanterns and candles are unlit glass or plain wax. No text on any sign or page, only marks.
+
+| Code | Kind | Role | Status | Idea |
+| --- | --- | --- | --- | --- |
+| `arena` | free |  | draft | A small sparring ring: a sand oval edged with grey stones, two posts at the back with a bunting between them and a brazier on each, whose warm light lies on the sand and the grass. The middle is left empty for the boss or creatures. By day the braziers stay lit and the sand is raked. |
+| `fairground` | free |  | draft | A festive striped tent with a pennant on its pole, two strings of pennants running to side posts, four lanterns and a lit doorway with tied-back flaps. The lantern light lies on the grass in front. By day the lanterns are unlit glass and the ground in front is trodden straw and flowers. |
+| `road` | free |  | draft | Where the road leaves the camp: a worn dirt path running off the top edge and a wooden signpost with three plank arrows (marks, no words) and a lantern on a hook. The lantern light warms the path and the grass. By day the lantern is unlit, the path is dry dirt with ruts and pebbles. |
+| `chest` | free |  | draft | The shared camp chest: a banded wooden chest, lid closed, with a gold lock plate and a small glint, and a candle on the ground beside it whose light lies on the grass. By day the candle is unlit. |
+| `lectern` | free |  | draft | A reading stand: a slanted desk with an open journal (marks, no words) and a lit candle, on a tapered wooden body with a carved star and a stone plinth. The candle lights the pages and the grass. By day the candle is unlit. |
+| `paddock` | free |  | draft | A fenced pen: posts and two rails round three sides, an open gap at the front, a hay pile and a water trough at the back and a lantern on a front post. The inside is open grass for creatures. By day the lantern is unlit and the ground by the gate is trodden dirt. |
 
 <a id="valley-glow"></a>
 
