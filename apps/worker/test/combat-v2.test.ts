@@ -739,7 +739,7 @@ describe('learning a talent from the line book', () => {
         const path = learnPath(p.ids[0] as string);
         // In the pool but not found yet; and a talent that is in no pool of this line.
         expect(
-          await p.call('POST', path, { talentId: 'brace', idempotencyKey: newKey() }),
+          await p.call('POST', path, { talentId: 'cull', idempotencyKey: newKey() }),
         ).toMatchObject({ status: 404, body: { error: 'not_in_book' } });
         expect(
           await p.call('POST', path, { talentId: 'first-pounce', idempotencyKey: newKey() }),
@@ -747,13 +747,13 @@ describe('learning a talent from the line book', () => {
         expect(
           (await p.call('POST', path, { talentId: 'no-such', idempotencyKey: newKey() })).status,
         ).toBe(400);
-        expect((await p.call('POST', path, { talentId: 'brace' })).status).toBe(400);
+        expect((await p.call('POST', path, { talentId: 'cull' })).status).toBe(400);
         // Another player's creature is not found, and their book is not this one's.
         const other = seedPlayer(ctx, 2, { species: ['mossback'], creatures: 1 });
-        find(ctx, other.id, 'brace');
+        find(ctx, other.id, 'cull');
         expect(
           await p.call('POST', learnPath(other.creatureIds[0] as string), {
-            talentId: 'brace',
+            talentId: 'cull',
             idempotencyKey: newKey(),
           }),
         ).toMatchObject({ status: 404, body: { error: 'not_found' } });
@@ -769,7 +769,7 @@ describe('learning a talent from the line book', () => {
       async (ctx) => {
         const p = await withTalent(ctx, ['mossback'], 0);
         find(ctx, p.id, 'hardy');
-        find(ctx, p.id, 'brace');
+        find(ctx, p.id, 'cull');
         give(ctx, p.id, { bait: 50 });
         const key = newKey();
         await p.call('POST', learnPath(p.ids[0] as string), {
@@ -777,7 +777,7 @@ describe('learning a talent from the line book', () => {
           idempotencyKey: key,
         });
         const res = await p.call('POST', learnPath(p.ids[0] as string), {
-          talentId: 'brace',
+          talentId: 'cull',
           idempotencyKey: key,
         });
         expect(res).toMatchObject({ status: 409, body: { error: 'key_conflict' } });
@@ -943,21 +943,21 @@ describe('a role-changing evolution (R20.8)', () => {
         expect(combatV2.pools['mossback']).toContain(to);
         expect(idleFor(to, 'payoff')).toBe(false);
         expect(['owners-mark', 'opportunist']).not.toContain(to);
-        // Candidates in pool order: finisher, stubborn, hardy, brace, rally-cry; index 3 is brace.
-        expect(to).toBe('brace');
+        // Candidates in pool order: finisher, stubborn, hardy, cull, rally-cry; index 3 is cull.
+        expect(to).toBe('cull');
         // The old talent stays learned and in the book; the new one is in the book and the slot.
         expect(learnedSorted(ctx.sql, p.ids[0] as string)).toEqual([
-          { talentId: 'brace', slot: 1 },
+          { talentId: 'cull', slot: 1 },
           { talentId: 'owners-mark', slot: null },
         ]);
         expect(
           lineBook(ctx.sql, p.id, 'mossback')
             .map((e) => e.talentId)
             .sort(),
-        ).toEqual(['brace', 'opportunist', 'owners-mark']);
+        ).toEqual(['cull', 'opportunist', 'owners-mark']);
         // The payload shows the new slot and the idle talent in the book.
         const creature = res.body.state.creatures[0];
-        expect(creature.talentsV2.slots[0].talent).toMatchObject({ id: 'brace', idle: false });
+        expect(creature.talentsV2.slots[0].talent).toMatchObject({ id: 'cull', idle: false });
         expect(
           (creature.talentsV2.book as { id: string }[]).find((e) => e.id === 'owners-mark'),
         ).toMatchObject({ idle: true, learned: true, slot: null });

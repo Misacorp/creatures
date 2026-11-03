@@ -306,7 +306,7 @@ Status: written 2026-10-31. **Combat v2 is in development and these talents are 
 ### Front-liner
 
 - Roles: setter, payoff, guard, support.
-- Line pools: Solmane, Gaiadrake, Lanternfin, Squelch.
+- Line pools: Solmane, Gaiadrake, Squelch.
 - Text `(content: combat-v2/talents.json)`: "It takes 10% less from every hit in the {Front row}."
 - Gear line `(content: gear-lines.json)`: **Front-liner** (same name as the shipped gear line).
 - Canon `(compendium detail, not shipped)`: It belongs at the front, and the front row's knocks roll off it.
@@ -363,7 +363,7 @@ Status: written 2026-10-31. **Combat v2 is in development and these talents are 
 ### Perfect Timing
 
 - Roles: setter, payoff.
-- Line pools: Zipmouse, Stormray.
+- Line pools: Zipmouse.
 - Text `(content: combat-v2/talents.json)`: "After it dodges, it stores a {Sure Crit} (up to 3): its next hit that lands is a 3x crit."
 - Gear line: none.
 - Canon `(compendium detail, not shipped)`: It slips a hit, and answers at exactly the right moment. Cousin of the v1 talent Pounces When Perfect.
@@ -453,7 +453,7 @@ Status: written 2026-10-31. **Combat v2 is in development and these talents are 
 ### Brace
 
 - Roles: setter, payoff, guard, support.
-- Line pools: Sproutle, Ashmole, Mossback, Hearthshell, Mudlump.
+- Line pools: Sproutle, Ashmole, Mudlump.
 - Text `(content: combat-v2/talents.json)`: "It takes 40% less from a {Wind-up} hit aimed at its slot."
 - Gear line `(content: gear-lines.json)`: **Brace** (same name as the shipped gear line).
 - Canon `(compendium detail, not shipped)`: It sees the big hit coming and sets its feet.
@@ -478,7 +478,7 @@ Status: written 2026-10-31. **Combat v2 is in development and these talents are 
 ### Unbothered
 
 - Roles: setter, payoff, guard, support.
-- Line pools: Mistnewt, Aurorix, Squelch.
+- Line pools: Mistnewt, Aurorix.
 - Text `(content: combat-v2/talents.json)`: "It cannot be {Silenced}, and has +3% Attack and +6% Max HP."
 - Gear line `(content: gear-lines.json)`: **Unbothered** (same name as the shipped gear line).
 - Canon `(compendium detail, not shipped)`: Nothing hushes it, and being calm makes it a little stronger and sturdier.
@@ -486,11 +486,11 @@ Status: written 2026-10-31. **Combat v2 is in development and these talents are 
 ### Culling Strike
 
 - Was **Cull**.
-- Roles: setter, payoff.
-- Line pools: none yet.
+- Roles: setter, payoff, guard, support (any hit can land it).
+- Line pools: Mossback, Stormray, Hearthshell, Lanternfin, Squelch (one line for each role and each element; Misa, 2026-11-03).
 - Text `(content: combat-v2/talents.json)`: "A hit that leaves the boss below 5% of its full HP defeats it. The HP removed counts as the killing blow, not as damage."
 - Gear line: none.
-- Canon `(compendium detail, not shipped)`: A last, light touch that ends a fight already won. It is in no pool yet, and waits for a killing-blow talent to pair with.
+- Canon `(compendium detail, not shipped)`: A last, light touch that ends a fight already won. It is an enabler: effects are meant to stack on it later (killing-blow triggers), so it is not meant to be used alone, and a weak result for it alone is not a reason to buff it. (decision `2026-11-03-culling-strike-stays-as-an-enabler`)
 
 ### Wicked
 
