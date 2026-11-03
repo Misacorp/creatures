@@ -195,11 +195,11 @@ export const RulesSchema = v.strictObject({
   }),
   school: v.strictObject({
     seats: int,
-    hours: pos,
     slotLevels: v.pipe(v.array(int), v.length(3)),
     thirdSlotFromRarity: int,
     price: num,
-    teacherDay: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(6)),
+    teacherStayDays: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(7)),
+    teacherAnnounceDays: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(6)),
   }),
   gear: v.strictObject({
     lines: v.pipe(v.array(int), v.length(3)),

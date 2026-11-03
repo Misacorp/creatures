@@ -54,7 +54,32 @@ export interface SchoolData {
   brokerHours: Record<string, number[]>;
   /** The share of a kind's Acorn income that went to learning over the 24 weeks. */
   acornShare: Record<string, number>;
+  /**
+   * The teacher (V-SCH-11..13), mixed server of 8, by kind of player (daily, weekly, new) at week 12 and 24: median over players and seeds of lessons
+   * learned, of the talent book's entries, and of the share of them that came from the teacher (the rest are finds).
+   */
+  teacher: Record<
+    string,
+    { lessons: number[]; entries: number[]; share: number[]; lines: number[] }
+  >;
+  /** The teacher's visits by server (mixed server of 8 and of 15), up to week 12 and week 24. */
+  visits: Record<string, VisitStats[]>;
 }
+
+export interface VisitStats {
+  /** Visits in the runs, and those that benefit nobody, one player, several players (players who would benefit at the arrival). */
+  visits: number;
+  nobody: number;
+  one: number;
+  several: number;
+  /** The median share of a server's players who would benefit from a visit (all visits, those with nobody included), and the share who learn. */
+  eligibleShare: number;
+  learnedShare: number;
+}
+
+/** The weeks the teacher's numbers are read at. */
+export const TEACHER_WEEKS = [12, 24] as const;
+export const TEACHER_PROFILES = ['daily', 'weekly', 'new'] as const;
 
 export interface MarketRow {
   id: string;
@@ -199,7 +224,51 @@ export function schoolOf(results: Results): SchoolData {
     lessons: {},
     brokerHours: {},
     acornShare: {},
+    teacher: {},
+    visits: {},
   };
+  for (const id of TEACHER_PROFILES) {
+    const players = playersOf(results.mixed8, id);
+    if (!players.length) continue;
+    const upTo = (p: PlayerRun, w: number) => p.weeks.slice(0, w);
+    const at = (p: PlayerRun, w: number) => p.weeks[Math.min(w, p.weeks.length) - 1];
+    out.teacher[id] = {
+      lessons: TEACHER_WEEKS.map((w) =>
+        median(players.map((p) => sum(upTo(p, w).map((x) => x.teacherLessons)))),
+      ),
+      entries: TEACHER_WEEKS.map((w) =>
+        median(players.map((p) => (at(p, w)?.bookFinds ?? 0) + (at(p, w)?.bookTeacher ?? 0))),
+      ),
+      lines: TEACHER_WEEKS.map((w) => median(players.map((p) => at(p, w)?.species ?? 0))),
+      share: TEACHER_WEEKS.map((w) =>
+        median(
+          players.map((p) => {
+            const f = at(p, w)?.bookFinds ?? 0;
+            const t = at(p, w)?.bookTeacher ?? 0;
+            return f + t > 0 ? t / (f + t) : 0;
+          }),
+        ),
+      ),
+    };
+  }
+  for (const id of ['mixed8', 'mixed15']) {
+    const runs = results[id]?.runs ?? [];
+    if (!runs.length) continue;
+    out.visits[id] = TEACHER_WEEKS.map((w) => {
+      // A visit on Monday of week index v starts week v + 1: it is among the first `w` weeks when v < w.
+      const visits = runs.flatMap((r) => r.teacherVisits.filter((v) => v.week < w));
+      const share = (pick: (v: (typeof visits)[number]) => number): number =>
+        median(visits.map((v) => (v.players > 0 ? pick(v) / v.players : 0)));
+      return {
+        visits: visits.length,
+        nobody: visits.filter((v) => v.eligible === 0).length,
+        one: visits.filter((v) => v.eligible === 1).length,
+        several: visits.filter((v) => v.eligible >= 2).length,
+        eligibleShare: share((v) => v.eligible),
+        learnedShare: share((v) => v.learners),
+      };
+    });
+  }
   for (const id of VISITOR_PROFILES) {
     const players = playersOf(results.mixed8, id);
     if (!players.length) continue;

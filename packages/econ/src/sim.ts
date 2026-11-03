@@ -33,7 +33,7 @@ import { visitVisitor } from './visitor';
 import { temperAtVisit } from './tempering';
 import { offerToIdol } from './idol';
 import { heldForms } from './forms';
-import { openSlots, startLearning, stepSchool } from './school';
+import { openSlots, startLearning, stepSchool, teacherDay } from './school';
 import { MARKET_OPENS_AT, openMarket } from './commons';
 import { beginVisit, endVisit, homeDone, newTracer, type JourneyEntry } from './journey';
 import { accrueIdleXp, atTopLevel, fightXp, levelsDesc, setCatchUp } from './growth';
@@ -57,6 +57,7 @@ import {
   type Player,
   type Server,
   type ServerWeek,
+  type TeacherVisit,
   type WeekRecord,
 } from './types';
 import { poisson, sum, uniform } from './util';
@@ -98,6 +99,8 @@ export interface ServerRun {
   /** The hours the Market project opened and was finished (the market variant; null: not yet). */
   marketOpenedHour: number | null;
   marketDoneHour: number | null;
+  /** The teacher's weekly visits (V-SCH-11, V-SCH-12). */
+  teacherVisits: TeacherVisit[];
   levelUps: Server['levelUps'];
   projectDurations: number[];
   thresholds: (number | null)[];
@@ -210,7 +213,7 @@ export function visit(p: Player, server: Server, hour: number): void {
   buyEvolutions(p);
   giveGifts(p, server, hour);
   buySeatsAndKit(p, server);
-  startLearning(p, hour);
+  startLearning(p, hour, server);
   visitVisitor(p, server, hour);
   // The idol comes last: it takes only what is above the reserve once everything that has a use has had its turn.
   offerToIdol(p, server);
@@ -259,7 +262,7 @@ function accrue(
     p.communalStore += Math.min(share, Math.max(0, cap - p.communalStore));
   }
   if (brokers > 0) brokerHour(p, share);
-  stepSchool(p, share);
+  stepSchool(p, hour, server);
   stepAnvils(p, share, anvils, server);
 }
 
@@ -351,6 +354,8 @@ function endWeek(p: Player, server: Server): void {
       .filter((e) => e),
   ).size;
   const top = [...p.creatures].sort((a, b) => b.level - a.level)[0];
+  wk.bookFinds = p.bookFinds;
+  wk.bookTeacher = p.bookTeacher;
   wk.bestSlots = top ? openSlots(p.rules, top) : 0;
   wk.bestLearned = top ? Math.min(top.learned, wk.bestSlots) : 0;
   wk.benchOpenWorst = open.length ? Math.max(...open) : 0;
@@ -544,6 +549,7 @@ export function runServer(
     const day = Math.floor(h / 24);
     if (hourOfDay === 0) {
       dailyServer(server, players, h, rules);
+      teacherDay(server, players, day, rules);
       for (const p of players) if (h >= p.joinHour) dayStart(p, day);
     }
     checkKeystones(server, players, h, rules);
@@ -623,6 +629,7 @@ export function runServer(
       : {}),
     marketOpenedHour: server.marketOpenedHour,
     marketDoneHour: server.marketDoneHour,
+    teacherVisits: server.teacherVisits,
     log: server.log,
     levelUps: server.levelUps,
     projectDurations: server.projectDurations,

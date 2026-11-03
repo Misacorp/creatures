@@ -1,16 +1,25 @@
 import { fightTeam } from './honours';
 import { note } from './journey';
 import type { Rules } from './rules';
-import type { Creature, Player } from './types';
-import { HOURS_PER_WEEK, R } from './types';
+import { TALENT_IDS, benefits, poolOf } from './talents';
+import type { Creature, Player, Server } from './types';
+import { R } from './types';
+import { uniform } from './util';
 import { debit, speciesRarities } from './world';
 
 /**
- * The School (docs/design/valley/systems/school.md, V-SCH-7..9). A creature learns a talent the first time a slot opens: slot 1 when it
- * is caught, slot 2 at level 20, slot 3 at level 25 on rare and epic lines. The first learning of a slot takes a School seat for
- * `school.hours` effective hours and pays Acorns once (the slot's number times `school.price`); swapping between learned talents is free
- * and is not modelled. A visiting teacher comes once a week and stays until the next one: a lesson costs the price of a first learning and a seat for a stay and counts
- * toward the talents found. Graduation is held at the School and has no cost here.
+ * The School (docs/design/valley/systems/school.md, "As decided (round 22)", V-SCH-10..15).
+ *
+ * First learning (V-SCH-10): a creature learns a talent the first time a slot opens, ON ITS CARD (not at the School): slot 1 when it is caught,
+ * slot 2 at level 20, slot 3 at level 25 on rare and epic lines. It is instant at the player's visit and pays Acorns once (the slot's number
+ * times `school.price`); swapping between learned talents is free and is not modelled. (Before round 22 the lab seated the creature at the
+ * School for 24 hours for the same price.)
+ *
+ * The visiting teacher (V-SCH-11..13): every week, Monday to Wednesday, announced `teacherAnnounceDays` days ahead. One talent for the server,
+ * drawn among the talents that would benefit at least one player, preferring ones that benefit more than one and never all of them. A player
+ * seats a student (up to `school.seats`, one per line) at a visit once the announcement shows one of their lines benefits; a creature seated
+ * before the arrival or on any day of the stay learns by the next morning: the talent enters that player's book for the line. A lesson is
+ * free at the School; the talent is then learned on a creature's card for the price of a first learning (the lab's old lesson price) and adds no slot. Graduation is held at the School and has no cost here.
  */
 
 /** How many talent slots a creature has open at its level (the third only on rare and epic lines). */
@@ -26,61 +35,129 @@ export function openSlots(rules: Rules, c: Creature): number {
 export const learningPrice = (rules: Rules, slot: number): number =>
   rules.school.price * Math.max(1, slot);
 
-/** One hour of the seats: the stay runs down, and a creature that finishes has learned its slot. */
-export function stepSchool(p: Player, share: number): void {
+/**
+ * The server's day (at 00:00): announces the next teacher's talent `teacherAnnounceDays` ahead and, on the Monday of the arrival, records the
+ * visit. The talent is drawn from the books as they stand at the announcement (deterministic from the seed).
+ */
+export function teacherDay(
+  server: Server,
+  players: readonly Player[],
+  day: number,
+  rules: Rules,
+): void {
+  const { teacherAnnounceDays } = rules.school;
+  const joined = players.filter((p) => day * 24 >= p.joinHour && p.creatures.length > 0);
+  if ((day + teacherAnnounceDays) % 7 === 0 && day + teacherAnnounceDays >= 7) {
+    const week = (day + teacherAnnounceDays) / 7;
+    server.teacherTalent[week] = drawTalent(server, joined);
+  }
+  if (day % 7 === 0 && day >= 7) {
+    const week = day / 7;
+    const talent = server.teacherTalent[week] ?? null;
+    server.teacherVisits.push({
+      week,
+      talent,
+      players: joined.length,
+      eligible: talent === null ? 0 : joined.filter((p) => benefits(p, talent)).length,
+      learners: 0,
+    });
+  }
+}
+
+/**
+ * V-SCH-12: a talent that benefits at least one player and not all, preferring one that benefits more than one; null when there is none.
+ * `cull` is in no pool, so no player is ever benefited by it.
+ */
+export function drawTalent(server: Server, joined: readonly Player[]): number | null {
+  const counts = TALENT_IDS.map((_, t) => joined.filter((p) => benefits(p, t)).length);
+  const some = counts.flatMap((n, t) => (n >= 1 && n < joined.length ? [t] : []));
+  const several = some.filter((t) => (counts[t] ?? 0) >= 2);
+  const from = several.length > 0 ? several : some;
+  if (from.length === 0) return null;
+  return from[Math.floor(uniform(server.teacherRng) * from.length)] ?? null;
+}
+
+/** A student whose seat time has come learns the talent: it enters the player's book for the line if the line can take it and the book lacks it. */
+export function stepSchool(p: Player, hour: number, server?: Server): void {
   if (p.school.length === 0) return;
-  for (const seat of p.school) seat.left -= share;
   p.school = p.school.filter((seat) => {
-    if (seat.left > 1e-9) return true;
-    if (seat.slot > 0) seat.creature.learned = Math.max(seat.creature.learned, seat.slot);
-    p.wk.learnings += seat.slot > 0 ? 1 : 0;
+    if (seat.until > hour) return true;
+    const line = seat.creature.species;
+    const book = (p.book[line] ??= new Set<number>());
+    if (poolOf(line).includes(seat.talent) && !book.has(seat.talent)) {
+      book.add(seat.talent);
+      p.bookTeacher += 1;
+      p.lessonsToPay += 1;
+      p.wk.teacherLessons += 1;
+      const visit = server?.teacherVisits.find((v) => v.week === seat.teacher);
+      if (visit && p.lessonWeek !== seat.teacher) visit.learners += 1;
+      p.lessonWeek = seat.teacher;
+      note(
+        p,
+        `school: a creature learned ${TALENT_IDS[seat.talent] ?? 'a talent'} from the visiting teacher`,
+      );
+    }
     return false;
   });
 }
 
 /**
- * At a visit the player sends creatures with an open, unlearned slot to the School while seats are free, the creatures that fight first, then
- * the highest level, paying the price from the Acorns in hand (one that cannot be paid waits). A visiting teacher's lesson (his offer waits only until the next teacher
- * comes) is taken first when a seat is free, because a learning can wait and the offer cannot.
+ * At a visit: pay for the first learnings on the cards (the creatures that fight first, then the highest level), and seat students for the
+ * teacher whose talent is announced or at the School (the teacher of the coming Monday from the day of the announcement, the current
+ * one Monday to Wednesday). Without a server there is no teacher.
  */
-export function startLearning(p: Player, hour: number): void {
+export function startLearning(p: Player, hour: number, server?: Server): void {
   const rules = p.rules;
-  // The visiting teacher (V-SCH-8, V-SCH-4): a teacher arrives each week on `teacherDay` and his offer stays until it is claimed or the next
-  // teacher replaces him, so a player who visits any day of that stretch can take the lesson (a Sunday-only player takes it on Sunday).
-  const teacher = Math.floor((hour - rules.school.teacherDay * 24) / HOURS_PER_WEEK);
-  if (teacher >= 0 && p.schoolTeacherWeek !== teacher) {
-    const price = learningPrice(rules, 1);
-    const student = [...p.creatures]
-      .filter((c) => !p.school.some((s) => s.creature === c))
-      .sort((a, b) => b.level - a.level)[0];
-    if (student && p.school.length < rules.school.seats && (p.stock[R.acorns] ?? 0) >= price) {
-      debit(p, R.acorns, price, 'school');
-      p.wk.learnAcorns += price;
-      p.wk.teacherLessons += 1;
-      p.school.push({ creature: student, slot: 0, left: rules.school.hours });
-      p.schoolTeacherWeek = teacher;
-      note(p, `school: a visiting teacher's lesson for a creature (${price} Acorns)`);
+  const day = Math.floor(hour / 24);
+  const dow = day % 7;
+  const week = Math.floor(day / 7);
+  // The teacher this visit can send a student to, and the morning the lesson is learned.
+  let teacher = -1;
+  let until = 0;
+  if (dow < rules.school.teacherStayDays) {
+    teacher = week;
+    until = (day + 1) * 24;
+  } else if (dow >= 7 - rules.school.teacherAnnounceDays) {
+    teacher = week + 1;
+    until = ((week + 1) * 7 + 1) * 24;
+  }
+  const talent = server && teacher >= 1 ? (server.teacherTalent[teacher] ?? null) : null;
+  if (talent !== null) {
+    const seated = new Set(p.school.map((s) => s.creature.species));
+    const students = [...p.creatures]
+      .filter((c) => !seated.has(c.species) && poolOf(c.species).includes(talent))
+      .filter((c) => !p.book[c.species]?.has(talent))
+      .sort((a, b) => b.level - a.level);
+    for (const c of students) {
+      if (p.school.length >= rules.school.seats) break;
+      if (p.school.some((s) => s.creature.species === c.species)) continue;
+      p.school.push({ creature: c, teacher, talent, until });
+      note(p, `school: a student seated for ${TALENT_IDS[talent] ?? 'the teacher'}`);
     }
   }
-  const learning = new Set(p.school.map((s) => s.creature));
+  // A talent that entered the book is learned on a creature's card for the price of a first learning (the Acorn sink the lab had for a lesson).
+  while (p.lessonsToPay > 0 && (p.stock[R.acorns] ?? 0) >= learningPrice(rules, 1)) {
+    const price = learningPrice(rules, 1);
+    debit(p, R.acorns, price, 'school');
+    p.wk.learnAcorns += price;
+    p.lessonsToPay -= 1;
+    note(p, `school: a creature learned the teacher's talent on its card (${price} Acorns)`);
+  }
   const team = new Set(p.profile.fights ? fightTeam(p) : []);
   const due = p.creatures
-    .filter((c) => !learning.has(c) && c.learned < openSlots(rules, c))
+    .filter((c) => c.learned < openSlots(rules, c))
     .sort(
       (a, b) =>
         Number(team.has(b)) - Number(team.has(a)) || b.level - a.level || a.learned - b.learned,
     );
   for (const c of due) {
-    if (p.school.length >= rules.school.seats) break;
     const slot = c.learned + 1;
     const price = learningPrice(rules, slot);
     if ((p.stock[R.acorns] ?? 0) < price) break;
     debit(p, R.acorns, price, 'school');
     p.wk.learnAcorns += price;
-    p.school.push({ creature: c, slot, left: rules.school.hours });
-    note(
-      p,
-      `school: a creature began learning its talent ${slot} (${price} Acorns, ${rules.school.hours} hours)`,
-    );
+    p.wk.learnings += 1;
+    c.learned = slot;
+    note(p, `school: a creature learned its talent ${slot} on its card (${price} Acorns)`);
   }
 }

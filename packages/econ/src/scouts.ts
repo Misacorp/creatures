@@ -14,6 +14,7 @@ import {
   speciesRarities,
   wasteOf,
 } from './world';
+import { foundTalent } from './talents';
 import { poisson, uniform, weighted } from './util';
 
 /** How many seats and anvils have a creature to stand on: three starters cover the first scout and anvil. */
@@ -146,6 +147,7 @@ export function collectSeat(p: Player, index: number, server: Server, hour: numb
     } else {
       p.speciesCount[species] = (p.speciesCount[species] ?? 0) + 1;
       p.wk.duplicates += 1;
+      foundTalent(p, species);
       credit(p, R.scrap, rules.scouts.duplicateCreatureScrap, 'duplicates');
     }
   }

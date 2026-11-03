@@ -29,8 +29,9 @@
     }
    },
    "events": [
-    "school: a visiting teacher's lesson for a creature (12 Acorns)",
-    "school: a creature began learning its talent 1 (12 Acorns, 24 hours)",
+    "school: a creature learned its talent 1 on its card (12 Acorns)",
+    "school: a creature learned its talent 1 on its card (12 Acorns)",
+    "school: a creature learned its talent 1 on its card (12 Acorns)",
     "visitor: he is in the valley until the raid finale",
     "mastery: scout seat 1 reached Apprentice",
     "mastery: anvil 1 reached Apprentice"
@@ -74,7 +75,7 @@
    "events": [
     "new line: cindle",
     "new line: mistnewt",
-    "school: a visiting teacher's lesson for a creature (12 Acorns)",
+    "school: a student seated for front-liner",
     "visitor: he is in the valley until the raid finale",
     "mastery: scout seat 1 reached Expert",
     "mastery: scout seat 2 reached Apprentice",
@@ -123,8 +124,12 @@
    "events": [
     "new line: sproutle",
     "new line: coralynx",
-    "school: a visiting teacher's lesson for a creature (12 Acorns)",
-    "school: a creature began learning its talent 1 (12 Acorns, 24 hours)",
+    "school: a student seated for quick-draw",
+    "school: a creature learned the teacher's talent on its card (12 Acorns)",
+    "school: a creature learned its talent 1 on its card (12 Acorns)",
+    "school: a creature learned its talent 1 on its card (12 Acorns)",
+    "school: a creature learned its talent 1 on its card (12 Acorns)",
+    "school: a creature learned its talent 1 on its card (12 Acorns)",
     "visitor: he is in the valley until the raid finale",
     "mastery: scout seat 2 reached Expert",
     "mastery: anvil 2 reached Apprentice",
@@ -145,21 +150,38 @@
    "hour": 20,
    "cameHome": {
     "acorns": 132,
-    "scrap": 415.83,
+    "scrap": 431.83,
     "shards": {
      "ember": 22.48,
      "mire": 23.5
     },
-    "creatures": [],
+    "creatures": [
+     {
+      "line": "mudlump",
+      "count": 1,
+      "newLine": false
+     },
+     {
+      "line": "squelch",
+      "count": 1,
+      "newLine": false
+     },
+     {
+      "line": "new line 18 (common)",
+      "count": 1,
+      "newLine": true
+     }
+    ],
     "pieces": {
      "collected": 5,
      "worn": 6,
-     "bagged": 2
+     "bagged": 3
     }
    },
    "events": [
-    "school: a visiting teacher's lesson for a creature (12 Acorns)",
-    "school: a creature began learning its talent 1 (12 Acorns, 24 hours)",
+    "new line: new line 18 (common)",
+    "school: a creature learned the teacher's talent on its card (12 Acorns)",
+    "school: a creature learned its talent 1 on its card (12 Acorns)",
     "visitor: he is in the valley until the raid finale",
     "mastery: scout seat 1 reached Master",
     "mastery: anvil 1 reached Master",
@@ -168,7 +190,7 @@
    "top5": [
     16,
     16,
-    16,
+    15,
     13,
     13
    ]

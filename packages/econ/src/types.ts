@@ -66,11 +66,25 @@ export interface Anvil {
   mastery: number;
 }
 
-/** A School seat: a creature learning (slot 1 to 3) or a student at a visiting teacher (slot 0), and the effective hours left. */
+/** A School seat (V-SCH-13): a student waiting for the visiting teacher's talent; it learns it at the hour `until` (the next morning). */
 export interface SchoolSeat {
   creature: Creature;
-  slot: number;
-  left: number;
+  /** The week index of the teacher and the talent (an index into the real talent list). */
+  teacher: number;
+  talent: number;
+  until: number;
+}
+
+/** One weekly visit of the teacher (V-SCH-11, V-SCH-12), as the server saw it. */
+export interface TeacherVisit {
+  /** The week index of the visit (0 = the first Monday of the run). */
+  week: number;
+  /** The talent taught (an index into the real talent list), null when nobody could benefit. */
+  talent: number | null;
+  /** Players on the server at the arrival, how many of them would benefit (a line they own has the talent in its pool and their book lacks it), and how many learned it. */
+  players: number;
+  eligible: number;
+  learners: number;
 }
 
 export interface Piece {
@@ -154,7 +168,10 @@ export interface WeekRecord {
   /** The School: learnings finished, Acorns paid for the ones and the teacher's lessons begun, lessons taken, and the best creature's open and learned slots. */
   learnings: number;
   learnAcorns: number;
+  /** Lessons learned from the teacher (a talent entered a book), and the book at the end of the week: entries that came from finds, from the teacher. */
   teacherLessons: number;
+  bookFinds: number;
+  bookTeacher: number;
   bestSlots: number;
   bestLearned: number;
   /** Effective hours a creature stood at the broker's post, and the shards it traded in (the exchange's trades are in `exchanges`). */
@@ -245,8 +262,16 @@ export interface Player {
   trace: Tracer | null;
   /** The School's seats (V-SCH-7) and the broker's mastery (effective hours at the exchange). */
   school: SchoolSeat[];
-  /** The index of the last visiting teacher whose lesson the player took (teachers come weekly from `school.teacherDay`). */
-  schoolTeacherWeek: number;
+  /** The talent books (V-SCH-12, simplified): per line, the talents it holds (indexes into the real talent list), from finds and from the teacher. */
+  book: Set<number>[];
+  bookFinds: number;
+  bookTeacher: number;
+  /** The week index of the last teacher this player learned from (a visit counts a player once, however many lines learn). */
+  lessonWeek: number;
+  /** Lessons learned from the teacher that the player has not yet paid for on a card (the price of a first learning, paid at a visit). */
+  lessonsToPay: number;
+  /** A stream of its own for the talents finds roll, so books never shift the other random draws. */
+  talentRng: Rng;
   brokerMastery: number;
   /** A stream of its own for modifier lines, so rerolls never shift the other random draws. */
   lineRng: Rng;
@@ -334,6 +359,10 @@ export interface Server {
   /** The Market project (the "market as a project" variant): the hour it was opened and the hour it was finished (null: not yet). */
   marketOpenedHour: number | null;
   marketDoneHour: number | null;
+  /** The teacher: the talent announced for each week index (null: nobody would benefit), the visits so far, and a stream of its own. */
+  teacherTalent: (number | null)[];
+  teacherVisits: TeacherVisit[];
+  teacherRng: Rng;
 }
 
 export interface ServerWeek {

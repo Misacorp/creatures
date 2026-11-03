@@ -9,7 +9,7 @@ import { median } from './util';
  * The roster profile: the seam between combat v2 and the valley, in the shape of `RosterProfile` in `packages/lab/src/roster.ts`
  * on branch `combat-v2-track` (copied here as types so this package does not depend on that branch). Plain data: for each kind
  * of player and each week from 1 to 24, the levels of the player's 1st, 3rd, 10th and 20th creature, how many creatures they own,
- * which forms they hold (the ones at least half of the players of that kind are right now: an evolved creature is its second form and no longer its stage 1) (a level is 0 where the median player owns fewer creatures than the rank asks for: `size` says so), the open talent slots of their best creature, whether talents are picked (learned at the School: every open slot of the best creature, for at least half of the players), and a gear level.
+ * which forms they hold (the ones at least half of the players of that kind are right now: an evolved creature is its second form and no longer its stage 1) (a level is 0 where the median player owns fewer creatures than the rank asks for: `size` says so), the open talent slots of their best creature, whether talents are picked (learned on the card: every open slot of the best creature, for at least half of the players), and a gear level.
  */
 export const ROSTER_WEEKS = 24;
 
@@ -67,7 +67,7 @@ function weeksFor(players: readonly PlayerRun[]): RosterWeek[] {
       size,
       forms: formsAt(records),
       // The open slots of the best creature (level 1, 20 and 25; the third on rare and epic lines) and whether at least half of the players'
-      // best creatures have learned every one of them at the School.
+      // best creatures have learned every one of them on the card.
       talentSlots: Math.round(median(records.map((w) => w.bestSlots))),
       talentsPicked:
         records.filter((w) => w.bestSlots > 0 && w.bestLearned >= w.bestSlots).length * 2 >=

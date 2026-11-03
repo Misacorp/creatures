@@ -1,15 +1,17 @@
-/** The School (V-SCH-7, V-SCH-8) and the broker (V-FORGE-11). */
+/** The School (V-SCH-10 to V-SCH-13) and the broker (V-FORGE-11). */
 import { describe, expect, it } from 'vitest';
 import { brokerHour, brokerTerms } from '../src/forge';
 import { profileById } from '../src/profiles';
 import { RULES } from '../src/rules';
 import { activeCounts } from '../src/scouts';
-import { learningPrice, openSlots, startLearning, stepSchool } from '../src/school';
+import { drawTalent, learningPrice, openSlots, startLearning, stepSchool } from '../src/school';
+import { ALL_SERVERS } from '../src/servers';
+import { runServer } from '../src/sim';
+import { TALENT_IDS, poolOf } from '../src/talents';
 import { R } from '../src/types';
-import { addCreature, createPlayer, creditShard } from '../src/world';
+import { addCreature, createPlayer, createServer, creditShard } from '../src/world';
 
 const MONDAY = 0;
-const WEDNESDAY = 2 * 24 + 20;
 
 const setup = (creatures = 4) => {
   const p = createPlayer(RULES, 'school', 1, 0, { ...profileById('daily'), fights: false }, 4);
@@ -42,67 +44,149 @@ describe('talent slots', () => {
   });
 });
 
-describe('learning at the School', () => {
-  it('takes a seat for the stay and the Acorns once, then the creature has learned the slot', () => {
+describe('first learning, on the card (V-SCH-10)', () => {
+  it('is instant at the visit, pays the Acorns once and takes no School seat', () => {
     const p = setup(1);
     const before = p.stock[R.acorns]!;
     startLearning(p, MONDAY);
-    expect(p.school).toHaveLength(1);
+    expect(p.school).toHaveLength(0);
+    expect(p.creatures[0]!.learned).toBe(1);
     expect(before - p.stock[R.acorns]!).toBe(RULES.school.price);
     expect(p.wk.learnAcorns).toBe(RULES.school.price);
-    for (let h = 0; h < RULES.school.hours - 1; h++) stepSchool(p, 1);
-    expect(p.creatures[0]!.learned).toBe(0);
-    stepSchool(p, 1);
-    expect(p.creatures[0]!.learned).toBe(1);
-    expect(p.school).toHaveLength(0);
     expect(p.wk.learnings).toBe(1);
-    // Learned: it is not sent again, and nothing more is paid.
     const acorns = p.stock[R.acorns]!;
     startLearning(p, MONDAY + 24);
     expect(p.stock[R.acorns]).toBe(acorns);
   });
 
-  it('is limited by the seats, and a creature that cannot be paid for waits', () => {
-    const p = setup(5);
-    startLearning(p, MONDAY);
-    expect(p.school).toHaveLength(RULES.school.seats);
+  it('waits for Acorns it does not have', () => {
     const poor = setup(2);
     poor.stock[R.acorns] = RULES.school.price - 1;
     startLearning(poor, MONDAY);
-    expect(poor.school).toHaveLength(0);
+    expect(poor.creatures.every((c) => c.learned === 0)).toBe(true);
     expect(poor.stock[R.acorns]).toBe(RULES.school.price - 1);
   });
+});
 
-  it('has a visiting teacher whose offer stays until claimed or the next teacher comes: once a week, from his day', () => {
-    const p = setup(3);
-    for (const c of p.creatures) c.learned = 1;
-    startLearning(p, MONDAY);
-    expect(p.wk.teacherLessons).toBe(0);
-    startLearning(p, WEDNESDAY);
-    expect(p.wk.teacherLessons).toBe(1);
-    expect(p.wk.learnAcorns).toBe(RULES.school.price);
-    // Not twice for the same teacher, whatever the seats and the day (up to the Tuesday after).
-    startLearning(p, WEDNESDAY + 24);
-    startLearning(p, 168 + 20);
-    expect(p.wk.teacherLessons).toBe(1);
-    // A lesson teaches no slot: the creature has the slots it had.
-    for (let h = 0; h < RULES.school.hours; h++) stepSchool(p, 1);
-    expect(p.creatures.every((c) => c.learned === 1)).toBe(true);
-    // The next teacher (the next Wednesday) has a new lesson.
-    startLearning(p, 168 + WEDNESDAY);
-    expect(p.wk.teacherLessons).toBe(2);
+const options = { bossKills: 'half', communalSeats: true, shardExchange: true } as const;
+
+/** A server and `n` players that each own the lines `lines`. */
+const serverOf = (n: number, lines: number[]) => {
+  const server = createServer('teacher', 1, options, RULES);
+  const players = Array.from({ length: n }, (_, i) => {
+    const p = createPlayer(RULES, 'teacher', 1, i, { ...profileById('daily'), fights: false }, 8);
+    for (const l of lines) addCreature(p, l);
+    p.stock[R.acorns] = 10_000;
+    return p;
+  });
+  return { server, players };
+};
+const talentOutside = (line: number) => TALENT_IDS.findIndex((_, t) => !poolOf(line).includes(t));
+
+describe('the visiting teacher (V-SCH-11 to V-SCH-13)', () => {
+  it('has real pools of 7 and never teaches cull', () => {
+    expect(TALENT_IDS).toHaveLength(34);
+    for (let l = 0; l < RULES.scouts.species.start; l++) expect(poolOf(l)).toHaveLength(7);
+    const cull = TALENT_IDS.indexOf('cull');
+    expect(cull).toBeGreaterThanOrEqual(0);
+    for (let l = 0; l < 40; l++) expect(poolOf(l)).not.toContain(cull);
   });
 
-  it('lets a Sunday-only player take the lesson of the teacher who came on Wednesday', () => {
-    const p = setup(3);
-    for (const c of p.creatures) c.learned = 1;
-    startLearning(p, 6 * 24 + 20);
+  it('draws a talent that benefits someone, never everyone, preferring several; deterministically', () => {
+    const { server, players } = serverOf(4, [0]);
+    const pool = [...poolOf(0)];
+    const books = (sizes: number[]) =>
+      sizes.forEach((n, i) => (players[i]!.book[0] = new Set(pool.slice(0, n))));
+    // Alike books: whatever is missing is missing for all of them, so there is nothing to draw.
+    books([7, 7, 7, 7]);
+    expect(drawTalent(server, players)).toBeNull();
+    books([4, 4, 4, 4]);
+    expect(drawTalent(server, players)).toBeNull();
+    // Two players lack the last two talents of the pool, two hold all: two beneficiaries each.
+    books([7, 7, 5, 5]);
+    const talent = drawTalent(server, players);
+    expect(talent === pool[5] || talent === pool[6]).toBe(true);
+    const again = serverOf(4, [0]);
+    again.players.forEach((p, i) => (p.book[0] = new Set(pool.slice(0, i < 2 ? 7 : 5))));
+    expect(drawTalent(again.server, again.players)).toBe(talent);
+    // With one player lacking pool[6] and another lacking pool[5] and pool[6]: pool[5] and pool[6] benefit several or one, several wins.
+    books([7, 7, 6, 5]);
+    expect(drawTalent(server, players)).toBe(pool[6]);
+    // Only one beneficiary exists: that talent is drawn.
+    books([7, 7, 7, 6]);
+    expect(drawTalent(server, players)).toBe(pool[6]);
+  });
+
+  it('seats a student before the arrival, and the lesson enters the book by the next morning', () => {
+    const { server, players } = serverOf(2, [0]);
+    const p = players[0]!;
+    const talent = poolOf(0).find((t) => !p.book[0]!.has(t))!;
+    server.teacherTalent[1] = talent;
+    server.teacherVisits.push({ week: 1, talent, players: 2, eligible: 1, learners: 0 });
+    // Sunday of the week before the arrival: announced since Friday.
+    startLearning(p, 6 * 24 + 20, server);
+    expect(p.school).toHaveLength(1);
+    expect(p.bookTeacher).toBe(0);
+    // Monday evening: still waiting; Tuesday 00:00: learned.
+    stepSchool(p, 7 * 24 + 20, server);
+    expect(p.school).toHaveLength(1);
+    stepSchool(p, 8 * 24, server);
+    expect(p.school).toHaveLength(0);
+    expect(p.book[0]!.has(talent)).toBe(true);
+    expect(p.bookTeacher).toBe(1);
     expect(p.wk.teacherLessons).toBe(1);
-    // The Sunday before his first Wednesday had no teacher yet.
-    const early = setup(3);
-    for (const c of early.creatures) c.learned = 1;
-    startLearning(early, 24 + 20);
-    expect(early.wk.teacherLessons).toBe(0);
+    expect(server.teacherVisits[0]!.learners).toBe(1);
+    // The talent is no longer taught to this player, and learning it on a card costs the price of a first learning, once.
+    const acorns = p.stock[R.acorns]!;
+    startLearning(p, 8 * 24 + 20, server);
+    expect(p.school).toHaveLength(0);
+    expect(p.lessonsToPay).toBe(0);
+    expect(acorns - p.stock[R.acorns]!).toBeGreaterThanOrEqual(RULES.school.price);
+  });
+
+  it('seats on a day of the stay, one per line and up to the seats; none before the announcement or after the stay', () => {
+    const { server, players } = serverOf(1, [0, 1, 2]);
+    const p = players[0]!;
+    const talent = poolOf(0).find((t) => poolOf(1).includes(t) && poolOf(2).includes(t));
+    const shared = talent ?? poolOf(0).find((t) => poolOf(1).includes(t))!;
+    for (const l of [0, 1, 2]) p.book[l]?.delete(shared);
+    server.teacherTalent[1] = shared;
+    // Thursday before the announcement (Friday): nobody is seated.
+    startLearning(p, 3 * 24 + 20, server);
+    expect(p.school).toHaveLength(0);
+    // Monday of the stay.
+    startLearning(p, 7 * 24 + 8, server);
+    expect(p.school.length).toBeGreaterThan(0);
+    expect(p.school.length).toBeLessThanOrEqual(RULES.school.seats);
+    expect(new Set(p.school.map((s) => s.creature.species)).size).toBe(p.school.length);
+    expect(p.school.every((s) => s.until === 8 * 24)).toBe(true);
+    // Thursday after the stay: too late.
+    const late = serverOf(1, [0]);
+    late.players[0]!.book[0]?.delete(shared);
+    late.server.teacherTalent[1] = shared;
+    startLearning(late.players[0]!, 10 * 24 + 20, late.server);
+    expect(late.players[0]!.school).toHaveLength(0);
+  });
+
+  it('teaches nothing to a line whose pool lacks it', () => {
+    const { server, players } = serverOf(1, [0]);
+    server.teacherTalent[1] = talentOutside(0);
+    startLearning(players[0]!, 7 * 24 + 8, server);
+    expect(players[0]!.school).toHaveLength(0);
+  });
+
+  it('visits every week of a run from the second Monday; books fill from finds first', () => {
+    const run = runServer({ ...ALL_SERVERS.find((s) => s.id === 'mixed8')!, weeks: 12 }, 5);
+    expect(run.teacherVisits.map((v) => v.week)).toEqual(
+      Array.from({ length: 11 }, (_, i) => i + 1),
+    );
+    for (const v of run.teacherVisits) expect(v.eligible).toBeLessThanOrEqual(v.players);
+    expect(run.teacherVisits.some((v) => v.learners > 0)).toBe(true);
+    const last = (p: (typeof run.players)[number]) => p.weeks[p.weeks.length - 1];
+    const finds = run.players.reduce((n, p) => n + (last(p)?.bookFinds ?? 0), 0);
+    const taught = run.players.reduce((n, p) => n + (last(p)?.bookTeacher ?? 0), 0);
+    expect(taught).toBeGreaterThan(0);
+    expect(finds).toBeGreaterThan(taught);
   });
 });
 

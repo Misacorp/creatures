@@ -28,6 +28,8 @@ import { SLOW_FLOOR } from './servers';
 import { THRESHOLDS } from './targets';
 import { MARKET_OPENS_AT } from './commons';
 import {
+  TEACHER_PROFILES,
+  TEACHER_WEEKS,
   VISITOR_PROFILES,
   brokerOf,
   schoolOf,
@@ -950,7 +952,7 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
   push(
     '### The School and the broker (V-SCH-7, V-FORGE-11)',
     '',
-    `A creature learns a talent the first time a slot opens (slot 1 when caught, slot 2 at level ${rules.school.slotLevels[1]}, slot 3 at ${rules.school.slotLevels[2]} on rare and epic lines): it takes one of ${rules.school.seats} School seats for ${rules.school.hours} effective hours and pays slot-number times ${rules.school.price} Acorns once; a visiting teacher comes on weekday ${rules.school.teacherDay + 1} of the week, a lesson costs the price of a first learning, and one lesson a week is taken. The broker is a post at the exchange (${rules.broker.seats} seat): a spare creature trades surplus shards for the elements the orders wait on all the time, at ${rules.broker.tiers.map((t) => `${t.rate}:1 with ${num(t.critChance * 100)}% crits`).join(', then ')} as its mastery grows. Median over seeds and players of a kind (mixed server of 8):`,
+    `A creature learns a talent the first time a slot opens (slot 1 when caught, slot 2 at level ${rules.school.slotLevels[1]}, slot 3 at ${rules.school.slotLevels[2]} on rare and epic lines) on its card, at the player's visit, and pays slot-number times ${rules.school.price} Acorns once (V-SCH-10; before round 22 the lab seated the creature at the School for a day for the same price). The visiting teacher (V-SCH-11 to V-SCH-13, next table) puts a talent in the book for free; learning it on a card costs the price of a first learning (the lab's old lesson price), paid at the next visit. The broker is a post at the exchange (${rules.broker.seats} seat): a spare creature trades surplus shards for the elements the orders wait on all the time, at ${rules.broker.tiers.map((t) => `${t.rate}:1 with ${num(t.critChance * 100)}% crits`).join(', then ')} as its mastery grows. Median over seeds and players of a kind (mixed server of 8):`,
     '',
   );
   const avgW = (xs: readonly number[] | undefined, a: number, b: number): number =>
@@ -966,8 +968,8 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
         'Player',
         ...schoolWeeks.map(([label]) => `Acorns a week on learning, ${label}`),
         'Share of Acorn income, 24 weeks',
-        'Learnings by week 12',
-        'Teacher lessons by week 24',
+        'Learnings on the card by week 12',
+        'Teacher lessons learned by week 24',
         'Broker hours a week, weeks 9 to 24',
       ],
       VISITOR_PROFILES.filter((id) => sch.acorns[id]).map((id) => [
@@ -978,6 +980,65 @@ export function renderReport(data: ReportData, rules: Rules, rulesSource: string
         num(sum(sch.lessons[id] ?? [])),
         num(avgW(sch.brokerHours[id], 8, 24)),
       ]),
+    ),
+    '',
+  );
+
+  const teach = data.school;
+  push(
+    '#### The visiting teacher (V-SCH-11 to V-SCH-13)',
+    '',
+    `The teacher comes every week and stays Monday to Wednesday (${rules.school.teacherStayDays} days), announced ${rules.school.teacherAnnounceDays} days ahead (Friday). One talent for the server, drawn among the talents that would benefit at least one player (a line they own has it in its pool and their book for that line lacks it), preferring ones that benefit more than one player and never all; never golden; \`cull\` is in no pool. A player seats up to ${rules.school.seats} students (one per line) at a visit once the announcement shows a line of theirs benefits; a student seated before the arrival or on a day of the stay learns by the next morning and the talent enters the book for the line. The first Monday has no teacher (nobody has joined), so the 24 weeks hold 23 visits. **A simplified talent model:** the real pools of combat v2 (34 talents, 7 a line, 16 lines; lines of later content drops take those pools in turn); every find (a new creature or a duplicate) enters one talent drawn uniformly from its line's pool into the book (the real game rolls by role); slots, roles and golden talents are not modelled, so a lesson changes nothing but the book. Median over seeds and players of a kind (mixed server of 8). The target (review 2026-11-03): the teacher is secondary, about 10 to 15% of book entries.`,
+    '',
+  );
+  const teacherKinds = TEACHER_PROFILES.filter((id) => teach.teacher[id]);
+  push(
+    ...table(
+      [
+        'Player',
+        ...TEACHER_WEEKS.flatMap((w) => [
+          `Lessons learned, week ${w}`,
+          `Lines owned, week ${w}`,
+          `Book entries, week ${w}`,
+          `Share from the teacher, week ${w}`,
+        ]),
+      ],
+      teacherKinds.map((id) => [
+        profileLabel(id),
+        ...TEACHER_WEEKS.flatMap((_, k) => [
+          num(teach.teacher[id]?.lessons[k] ?? 0),
+          num(teach.teacher[id]?.lines[k] ?? 0),
+          num(teach.teacher[id]?.entries[k] ?? 0),
+          `${num((teach.teacher[id]?.share[k] ?? 0) * 100)}%`,
+        ]),
+      ]),
+    ),
+    '',
+    "Visits by how many players would benefit at the arrival (all seeds), and the median share of a server's players who would benefit, and who learn it:",
+    '',
+    ...table(
+      [
+        'Server',
+        'Up to week',
+        'Visits',
+        'Benefit nobody',
+        'Benefit one',
+        'Benefit several',
+        'Players who benefit (median visit)',
+        'Players who learn (median visit)',
+      ],
+      Object.entries(teach.visits).flatMap(([id, rows]) =>
+        rows.map((r, k) => [
+          id === 'mixed8' ? 'Mixed server of 8' : 'Mixed server of 15',
+          String(TEACHER_WEEKS[k]),
+          String(r.visits),
+          String(r.nobody),
+          String(r.one),
+          String(r.several),
+          `${num(r.eligibleShare * 100)}%`,
+          `${num(r.learnedShare * 100)}%`,
+        ]),
+      ),
     ),
     '',
   );

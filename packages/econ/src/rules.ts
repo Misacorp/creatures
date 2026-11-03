@@ -419,23 +419,23 @@ export const RULES = {
   },
 
   /**
-   * V-SCH-7..9, the School: a creature learns a talent the first time a slot opens, in a School seat for a short stay, paying Acorns once.
-   * Visiting teachers come once a week. Graduation is held here too and has no cost in the lab.
+   * V-SCH-10..15 (round 22), the School: a creature learns a talent the first time a slot opens ON ITS CARD, paying Acorns once (V-SCH-10).
+   * The weekly visiting teacher (Monday to Wednesday) teaches one talent into the books of the players it benefits, through a School seat
+   * until the next morning (free there; learning it on a card then costs the price of a first learning). Graduation is held here too and has no cost in the lab.
    */
   school: {
     // ASSUMPTION: two seats per player at School level 1.
     seats: 2,
-    // ASSUMPTION: a learning takes this many effective hours in a seat (the doc's "a day").
-    hours: 24,
     // Talent slots open at these levels (the game's: 1 at the catch, 2 at level 20, 3 at 25); the third only on rare and epic lines (combat v2).
     slotLevels: [1, 20, 25] as readonly number[],
     thirdSlotFromRarity: 1,
     // ASSUMPTION: the first learning of slot N costs N times this many Acorns (the doc's example: 60).
     // TUNED 2026-10-30 (round 18): was 60 (the doc's example), which took most of a daily player's Acorns and left the visitor none.
     price: 12,
-    // ASSUMPTION: a visiting teacher comes on this weekday (0 = Monday) and his offer stays until it is claimed or the next teacher replaces him (V-SCH-4); a player takes one lesson a week, which costs the
-    // price of a first learning and a seat for a stay, and counts toward the talents found (no other economy effect).
-    teacherDay: 2,
+    // V-SCH-11 (round 22): the visiting teacher comes every week, Monday to Wednesday (`teacherStayDays` days from Monday 00:00), and is announced
+    // `teacherAnnounceDays` days ahead (Friday), so a Sunday-only player has seen the announcement. V-SCH-12: one talent for the server.
+    teacherStayDays: 3,
+    teacherAnnounceDays: 3,
   },
 
   /** V-VIS-1..5: the weekly visitor (docs/design/valley/systems/visitor.md). */

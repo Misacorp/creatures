@@ -13,6 +13,7 @@ import {
   type ServerOptions,
   type WeekRecord,
 } from './types';
+import { foundTalent } from './talents';
 import { uniform } from './util';
 
 /** The most species the pool ever holds in a run of up to 104 weeks (the size of the counters). */
@@ -135,6 +136,8 @@ export const blankWeek = (week: number): WeekRecord => ({
   learnings: 0,
   learnAcorns: 0,
   teacherLessons: 0,
+  bookFinds: 0,
+  bookTeacher: 0,
   bestSlots: 0,
   bestLearned: 0,
   brokerHours: 0,
@@ -255,6 +258,7 @@ export function addCreature(p: Player, species: number, hour = 0): Creature {
   refreshCeiling(rules, c);
   p.creatures.push(c);
   p.speciesCount[species] = (p.speciesCount[species] ?? 0) + 1;
+  foundTalent(p, species);
   return c;
 }
 
@@ -321,7 +325,12 @@ export function createPlayer(
     pages: 0,
     trace: null,
     school: [],
-    schoolTeacherWeek: -1,
+    book: [],
+    bookFinds: 0,
+    bookTeacher: 0,
+    lessonWeek: -1,
+    lessonsToPay: 0,
+    talentRng: createSeededRng(`${serverId}|${seed}|talents|${id}`),
     brokerMastery: 0,
     visitorKnown: 0,
     blueprintCopies: 0,
@@ -392,5 +401,8 @@ export function createServer(
     communal: 0,
     marketOpenedHour: null,
     marketDoneHour: null,
+    teacherTalent: [],
+    teacherVisits: [],
+    teacherRng: createSeededRng(`${serverId}|${seed}|teacher`),
   };
 }
