@@ -120,7 +120,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** liked
 - **Requested:** 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets.
 - **Source:** `apps/activity/src/sprites/concepts/valley-glow.ts` (draw it with `pnpm art valley-glow`)
-- **Sheet of:** `ebdd70f4db71`
+- **Sheet of:** `1729e227b84b`
 - Misa picked this direction for the valley places (2026-10-31); posters stay for each place's own screen.
 - Direction "valley glow": the night-glow look (the light sources are the stars, lit edges, cool shadow) redone as standalone places on transparent ground, like the map landmarks, so they stand on the valley tiles. No sky, no vignette, no stars or moon.
 - One drawing, two palettes: the main palette is night, `alts.day` recolours the same pixels. Keys `1 2 3` are the light spill on the ground (rings follow each light: a circle under a lamp or fire, a trapezoid in front of a window; only the outermost ring is a regular checker) in night colours; in the day palette they map to the grass greens, so the spill disappears. `x` is the cast shadow (cool blue at night, warm green by day).
@@ -225,7 +225,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-03 (via the valley session, Misa's round 22 decision): show the visiting teacher with no banner: the bell swings, a lectern at the door, a bench of students, a teacher prop.
 - **Source:** `apps/activity/src/sprites/concepts/valley-school.ts` (draw it with `pnpm art valley-school`)
-- **Sheet of:** `d88e301f9008`
+- **Sheet of:** `764ab7d8ac30`
 - Lead's review (2026-11-03): the yard's window light is kept faint on purpose, because the School sprite throws its own spill and students on the bench cover most of it. Push it brighter if it should read on its own. Talent icons need no new art: the four combat v2 role glyphs already ship (Setter `mark`, Payoff `sparkle`, Guard `shield`, Support `ability`).
 - Spec: valley/systems/school.md, "As decided (round 22)": no banner; the bell swings and a lectern appears at the door before the teacher comes, the teacher stands at the lectern Monday to Wednesday, students sit on a bench in front (empty seats show there is room to join), at dusk the windows light.
 - Lectern: the camp's `lectern` (48x50) is as big as the School itself, so beside a 16x16 teacher it is too big for the yard; `school-lectern` (22x17) is a small stand for the yard. Its foot is (10, 15) in its own pixels; the game puts that point at yard (73, 14). The teacher stands left of it, feet (62, 14): the sprite's top-left is (54, -1). Draw order: yard, lectern, teacher, then the students.
