@@ -200,9 +200,9 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-03 (Q50, via the valley session): place screens drop the poster; Misa likes "the added depth of having a sky in the background ... We'd just need the proper sky images. Eventually the sky backdrop could vary based on location."
 - **Source:** `apps/activity/src/sprites/concepts/valley-sky.ts` (draw it with `pnpm art valley-sky`)
-- **Sheet of:** `49720539962b`
+- **Sheet of:** `f680bd626266`
 - Used by the valley prototype's place screens (`apps/activity/src/proto/valley/glow-scene-art.ts`, `skyPlacements`, poster mode `sky`, branch `ccr-93a1de17-yutb1a`).
-- One strip, 128 x 40, tiles sideways (see the `tiled` and `tiled-day` rows: the join is at x 128 and 256). Top row is one flat colour, repeat it upward behind the HUD. Bottom row is the grass colour of the world-map tile.
+- One strip, 128 x 40, tiles sideways (see the `seam` and `seam-day` rows: the join is in the middle). Top row is one flat colour, repeat it upward behind the HUD. Bottom row is the grass colour of the world-map tile.
 - Main palette is night (4 bands, stars), `alts.day` is the same pixels: stars vanish into the band, clouds appear. Clouds sit across the seam on purpose. The optional `moon` sprite is placed once by the scene, never tiled.
 - Per-location variants (forest, coast, mountains) later: same bands, a different horizon in the bottom rows.
 
