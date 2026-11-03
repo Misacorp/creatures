@@ -1,6 +1,6 @@
 # The School and visiting teachers
 
-Status: **accepted in part** (Misa, round 18, Q45: B, "Talents can be discovered but creatures still need to learn them a first time. This could be the place to do it"), with visiting teachers. The rules below were written before combat v2's Talent Books; "As decided" replaces them where they differ.
+Status: **accepted in part** (Misa, round 18, Q45: B, "Talents can be discovered but creatures still need to learn them a first time. This could be the place to do it"), with visiting teachers; reconciled with combat v2's talents as built (2026-11-03, below). The first-draft rules are kept for history; "As decided" and "Against combat v2 as built" replace them where they differ.
 
 ## The idea
 
@@ -13,6 +13,22 @@ A creature placed at the School teaches the talents it knows to other creatures 
 - **V-SCH-9 Graduation** (trials, V-TRIAL-4) is held at the School.
 - Teaching between creatures (V-SCH-1, V-SCH-6) is gone: combat v2's book records every talent found, duplicates included.
 
+## Against combat v2 as built (2026-11-03)
+
+Combat v2 is in the game behind a staging flag (`COMBAT_V2`). What it does today, from the code, and what the School takes over:
+
+- **The book is per player and per line**: `line_talents(user_id, line, talent_id, golden)`; each line's pool has 7 of 34 talents (`packages/game/src/combat-v2/data/talents.json`); a talent found on one line never enters another line's book.
+- **How a talent is found:** a new creature rolls one (role-filtered) and learns it free into its first slot; a duplicate's talent is added to the book automatically.
+- **How a talent is learned today:** instantly on the creature's card, for 10 Bait, once per creature and talent; slotting is free until the creature has fought that weekend. Slots open at levels 1, 20 and 25 (two for common lines, three for rare and epic).
+- So the open questions are answered: a creature learns only its own line's talents (an off-role talent sits idle), and learning costs Bait (Acorns in the valley), not Essence or a page.
+
+The valley's rules, read against that:
+
+- **V-SCH-7, as built:** learning moves from the creature's card to the School in phase 5: a creature takes a School seat until the next morning (no countdown: "learns it by morning") and pays the same one-time price (today's 10 Bait, Acorns in the valley). Swapping among learned talents stays free from the card, until the creature has fought that weekend. Until phase 5 the card keeps today's instant learning.
+- **V-SCH-8, as built:** books are per player, so a visiting teacher's offer is per player too, like the visitor's stock: for each player, a talent from the pool of a line they own that their book for that line lacks (V-SCH-5: leaning toward what you lack). A student of that line learns it and it enters that player's book. "Nobody on the server has found" no longer applies.
+- **V-SCH-9:** graduation is held at the School (prototyped in phase 3).
+- **For combat v2 (told to that session, not the valley's to fix):** the duplicate choice still offers Teach alongside the automatic book entry; golden talents are stored but have no effect in v2 fights yet.
+
 ## Rules (first draft, 2026-10-29)
 
 - **V-SCH-1** Teaching is chosen and previewed: the teacher's talents are listed; picking a student shows "learns X in N hours" before committing. No random inheritance (Palworld's breeding is the anti-example).
@@ -24,8 +40,7 @@ A creature placed at the School teaches the talents it knows to other creatures 
 
 ## Open questions
 
-- Can a creature learn any talent, or only ones that suit its role or element (combat v2 decides)?
-- Is learning free, or does it cost something (Essence, a page)?
+Answered by combat v2 as built (above): only the line's own talents; learning costs Bait (Acorns).
 
 ## What combat v2 decided about talents (2026-10-31, from `combat-v2-roster`)
 
@@ -47,4 +62,4 @@ Not dumb: the need behind it is real. Spare and duplicate creatures need a use (
 - If talents are **few and fixed per species**, there is nothing to teach: scrap the School, and give duplicates their use elsewhere (fusion at the Paddock, or a gift to a project).
 - A middle way: fold teaching into the **bonfire**, where resting creatures learn from each other in the small moments, with no seats to manage.
 
-Decided with Misa once combat v2 says what a talent is (the **school** entry in `questions.md`).
+Decided with Misa in round 18 (Q45: B, the School teaches a line's talents, hosts visiting teachers and graduation).
