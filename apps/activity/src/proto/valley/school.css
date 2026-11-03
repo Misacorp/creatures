@@ -114,6 +114,38 @@
   flex: 1;
 }
 
+/* The visiting teacher: a prop in its hand, the lesson's talent with its role icons, one Send per face. */
+.sc-prop {
+  position: absolute;
+  right: -6px;
+  bottom: 0;
+  line-height: 0;
+}
+
+.sc-talent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.sc-roles {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  line-height: 0;
+  padding-top: 2px;
+}
+
+.sc-result {
+  margin: 12px 0 0;
+}
+
+.sc-send {
+  min-width: 44px;
+  min-height: 44px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sc-ribbon.pin,
   .sc-ring {
