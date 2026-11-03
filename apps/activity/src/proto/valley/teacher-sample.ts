@@ -115,6 +115,8 @@ export interface Lesson {
   seated: { creature: Creature; name: string }[];
   /** The book after the night when it has passed: the line that gained the talent is in it. */
   done: boolean;
+  /** The creature that learned it overnight (the morning after), else null. */
+  learnerId: string | null;
 }
 
 /** The ISO weekday the School shows: the address's `&weekday=`, else the lesson's own day, else the world's clock. */
@@ -160,6 +162,7 @@ export function lessonOf(world: ProtoWorld, hash: string, seats: Seats | null): 
     eligible: [],
     seated: [],
     done: false,
+    learnerId: null,
   } satisfies Lesson;
   if (id === null || def === undefined) return empty;
 
@@ -203,5 +206,6 @@ export function lessonOf(world: ProtoWorld, hash: string, seats: Seats | null): 
     eligible: names(eligible),
     seated: names(seatedCreatures),
     done: now.done,
+    learnerId: gainer?.id ?? null,
   };
 }

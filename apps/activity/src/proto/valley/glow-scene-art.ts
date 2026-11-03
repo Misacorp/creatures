@@ -23,6 +23,7 @@ import { PixelGrid, gridPlacements } from '../../games/art/pixel';
 import type { SceneGeometry } from './SceneFrame';
 import type { Waiting } from '../welcome/PlaceStories';
 import type { ProtoWorld } from '../world';
+import { SCHOOL_AT, YARD_AT, yardSprite } from './school-yard';
 import { TILE, type Placement } from './valley-art';
 import {
   bonfireName,
@@ -147,7 +148,8 @@ export function skyPlacements(poster: SpriteDef, g: SceneGeometry): Placement[] 
 const ART_SIZE: Readonly<Record<GlowName, { width: number; height: number }>> = {
   bonfire: { width: 56, height: 44 },
   'bonfire-grand': { width: 64, height: 50 },
-  school: { width: 60, height: 50 },
+  // The School's own art is 60x50; its yard (80x24, 38 rows down) makes the composition 80x62.
+  school: { width: 80, height: 62 },
   visitor: { width: 60, height: 48 },
   'visitor-away': { width: 60, height: 48 },
   market: { width: 60, height: 48 },
@@ -177,11 +179,11 @@ export const ART_SPOTS: Readonly<Record<GlowName, Spots>> = {
     groundRight: { x: 56, y: 46 },
   },
   school: {
-    door: { x: 30, y: 38 },
-    sign: { x: 6, y: 35 },
-    groundLeft: { x: 18, y: 45 },
-    groundMiddle: { x: 30, y: 46 },
-    groundRight: { x: 42, y: 45 },
+    door: { x: 32, y: 38 },
+    sign: { x: 8, y: 35 },
+    groundLeft: { x: 20, y: 45 },
+    groundMiddle: { x: 32, y: 46 },
+    groundRight: { x: 44, y: 45 },
   },
   visitor: {
     stranger: { x: 11, y: 40 },
@@ -403,6 +405,12 @@ export function glowSceneDraw(spec: { name: GlowName; time: Time; poster?: Poste
       frame.rect(0, 0, 68, 28, 'k');
       out.push(...gridPlacements(frame, { k: INK }, at.x - 2, at.y - 2));
       out.push({ sprite: poster, ...at });
+    }
+    if (name === 'school') {
+      // The yard under the School (the School covers its top rows); the lectern, teacher and students are the scene's.
+      out.push({ sprite: yardSprite(time), ...layout.at(YARD_AT.x, YARD_AT.y) });
+      out.push({ sprite: glowSprite(name, time), ...layout.at(SCHOOL_AT.x, SCHOOL_AT.y) });
+      return out;
     }
     out.push({ sprite: glowSprite(name, time), x: art.x, y: art.y });
     return out;

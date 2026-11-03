@@ -11,7 +11,11 @@
  *
  * The visiting teacher (`teacher-logic.ts`, V-SCH-11 to 13): announced over the weekend, at the door Monday to
  * Wednesday, gone after. Its lesson opens in a drawer: the talent, then the faces of your creatures that would
- * learn it, each with one Send; two student seats, a seated student stands at the School and leaves its post.
+ * learn it, each with one Send; two student seats, a seated student sits on the yard's bench and leaves its post.
+ * No banner (round 22): the yard is always there (a bench of four seats, empty seats are room to join); the
+ * bell swings the weekend before and the day the teacher arrives; the lectern stands from the weekend to
+ * Wednesday, the teacher (in the mortarboard) at it Monday to Wednesday; a student who sits or learned wears
+ * the talent's role icon.
  */
 import { useMemo, useState } from 'preact/hooks';
 import { usePrefersReducedMotion } from '../../hooks';
@@ -29,7 +33,7 @@ import {
   glowSceneDraw,
   type PlaceSceneProps,
 } from './glow-scene-art';
-import { At, CreatureSprite, Glyph, Pic, Plate, isStill } from './parts';
+import { At, CreatureSprite, Glyph, Pic, Plate, isStill, useTick } from './parts';
 import { PinnedAct } from './PinnedAct';
 import { SceneFrame } from './SceneFrame';
 import {
@@ -44,7 +48,20 @@ import {
   type PupilState,
 } from './school-logic';
 import { BELL_RING, BRONZE_RIBBON, pupilsOf } from './school-sample';
-import { getSeats, lessonOf, setSeats, type Seats } from './teacher-sample';
+import {
+  bellFrame,
+  bellRings,
+  bellSprite,
+  bellTopLeft,
+  lecternSprite,
+  lecternStands,
+  lecternTopLeft,
+  seatOfStudent,
+  seatTopLeft,
+  teacherSprite,
+  teacherTopLeft,
+} from './school-yard';
+import { getSeats, lessonOf, setSeats, teacherWeekday, type Seats } from './teacher-sample';
 import { ROLE_GLYPH, SEATS, TEACHER_DAYS, teacherNote } from './teacher-logic';
 import { DEFAULT_LOOK } from './valley-places';
 import './school.css';
@@ -109,6 +126,14 @@ export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: Pl
   };
   const talent = lesson.talent;
   const roleGlyph = (role: string): string => ROLE_GLYPH[role] ?? 'unknown';
+  const weekday = teacherWeekday(world, hash);
+  const visit = talent !== null && lecternStands(weekday);
+  const ringing = visit && bellRings(weekday);
+  const tick = useTick(220, ringing && !still);
+  // Held still (reduced motion, screenshots) the ringing bell stands tilted, so the shot shows it rings.
+  const frame = ringing && still ? 'left' : bellFrame(tick, ringing);
+  const teacherLook = teacherSprite(lesson.teacher.species);
+  const teacherRole = talent === null ? null : roleGlyph(talent.roles[0] ?? '');
 
   const pupilButton = (
     p: (typeof pupils)[number],
@@ -120,21 +145,28 @@ export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: Pl
     const state = pupilState(p.trial, phase);
     const wears = state === 'graduated' || state === 'pinning';
     const title = wears ? honourTitle(nameOf(p.creature.id)) : nameOf(p.creature.id);
+    const learner = lesson.learnerId === p.creature.id && teacherRole !== null;
     return (
       <At key={p.creature.id} x={x} y={y} class="sc-pupil-at" hidden={false}>
         <button
           type="button"
           class="sc-pupil"
-          aria-label={`${title}, ${stateWord(state)}, ${String(tickedCount(p.trial))} / ${String(BRONZE_BOXES.length)} boxes ticked`}
+          aria-label={`${title}, ${stateWord(state)}, ${String(tickedCount(p.trial))} / ${String(BRONZE_BOXES.length)} boxes ticked${learner ? `, learned ${talent?.name ?? 'a talent'}` : ''}`}
           onClick={() => {
             setOpen(p.creature.id);
           }}
         >
           <span class="sc-figure">
-            {(state === 'ready' || state === 'pinning') && (
-              <span class={still ? 'sc-spark' : 'sc-spark pv-bounce'}>
-                <Glyph id="sparkle" scale={2} />
+            {learner ? (
+              <span class="sc-spark">
+                <Glyph id={teacherRole ?? 'sparkle'} scale={2} />
               </span>
+            ) : (
+              (state === 'ready' || state === 'pinning') && (
+                <span class={still ? 'sc-spark' : 'sc-spark pv-bounce'}>
+                  <Glyph id="sparkle" scale={2} />
+                </span>
+              )
             )}
             <CreatureSprite creature={p.creature} scale={scale} flip={flip} />
             {wears && (
@@ -182,9 +214,18 @@ export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: Pl
             Math.floor((g.W - SPRITE - 4) / Math.max(1, yard.length - 1)),
           );
           const door = layout.spots['door'] ?? { x: g.cx, y: layout.below - 8 };
-          const bell = layout.at(30, 6);
+          const bell = layout.at(32, 6);
+          const schoolBottom = layout.at(0, 50).y;
+          const bellAt = layout.at(bellTopLeft().x, bellTopLeft().y);
+          const lecternAt = layout.at(lecternTopLeft().x, lecternTopLeft().y);
+          const teacherAt = layout.at(teacherTopLeft().x, teacherTopLeft().y);
           return (
             <>
+              {ringing && (
+                <At x={g.X(bellAt.x)} y={g.Y(bellAt.y)}>
+                  <Pic sprite={bellSprite(frame, look.time)} scale={g.s} />
+                </At>
+              )}
               {live && (
                 <>
                   <At x={g.X(bell.x - 8)} y={g.Y(bell.y)} class={still ? undefined : 'sc-ring'}>
@@ -199,7 +240,7 @@ export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: Pl
                 pupilButton(
                   p,
                   g.X(door.x + (k - (gathered.length - 1) / 2) * DOOR_GAP - SPRITE / 2),
-                  g.Y(layout.below - SPRITE + 2),
+                  g.Y(schoolBottom - SPRITE + 2),
                   g.s,
                   k % 2 === 1,
                 ),
@@ -213,35 +254,29 @@ export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: Pl
                   k % 2 === 1,
                 ),
               )}
-              {talent !== null && lesson.state.phase === 'coming' && (
-                <At
-                  x={g.X(door.x + 30 - SPRITE / 2)}
-                  y={g.Y(layout.below - SPRITE + 2)}
-                  class="sc-pupil-at"
-                  hidden={false}
-                >
+              {talent !== null && visit && (
+                <At x={g.X(lecternAt.x)} y={g.Y(lecternAt.y)} class="sc-pupil-at" hidden={false}>
                   <button
                     type="button"
                     class="sc-pupil"
-                    aria-label={`A teacher is coming Monday with ${talent.name}`}
+                    aria-label={
+                      lesson.state.phase === 'coming'
+                        ? `A teacher is coming Monday with ${talent.name}`
+                        : `The lectern: the visiting teacher is here with ${talent.name}`
+                    }
                     onClick={() => {
                       setLessonOpen(true);
                     }}
                   >
                     <span class="sc-figure">
-                      <Glyph id="flag" scale={3} />
+                      <Pic sprite={lecternSprite(look.time)} scale={g.s} />
                     </span>
-                    <Plate>Monday</Plate>
+                    {lesson.state.phase === 'coming' && <Plate>Monday</Plate>}
                   </button>
                 </At>
               )}
               {talent !== null && lesson.state.phase === 'here' && (
-                <At
-                  x={g.X(door.x + 30 - SPRITE / 2)}
-                  y={g.Y(layout.below - SPRITE + 2)}
-                  class="sc-pupil-at"
-                  hidden={false}
-                >
+                <At x={g.X(teacherAt.x)} y={g.Y(teacherAt.y)} class="sc-pupil-at" hidden={false}>
                   <button
                     type="button"
                     class="sc-pupil"
@@ -251,47 +286,51 @@ export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: Pl
                     }}
                   >
                     <span class="sc-figure">
-                      <CreatureSprite
-                        creature={{ species: lesson.teacher.species, shiny: false }}
-                        scale={g.s}
-                        flip
-                      />
-                      <span class="sc-prop">
-                        <Glyph id="satchel" scale={Math.max(1, Math.floor(g.s / 2))} />
-                      </span>
+                      {teacherLook === null ? (
+                        <CreatureSprite
+                          creature={{ species: lesson.teacher.species, shiny: false }}
+                          scale={g.s}
+                          flip
+                        />
+                      ) : (
+                        <Pic sprite={teacherLook} scale={g.s} class="pv-creature pv-flip" />
+                      )}
                     </span>
-                    <Plate>Teacher</Plate>
                   </button>
                 </At>
               )}
-              {lesson.seated.map((s, k) => (
-                <At
-                  key={s.creature.id}
-                  x={g.X(door.x - 30 - k * 30 - SPRITE / 2)}
-                  y={g.Y(layout.below - SPRITE + 2)}
-                  class="sc-pupil-at"
-                  hidden={false}
-                >
-                  <button
-                    type="button"
-                    class="sc-pupil"
-                    aria-label={`${s.name}, seated at the School, learns ${talent?.name ?? 'a talent'} by morning`}
-                    onClick={() => {
-                      setLessonOpen(true);
-                    }}
+              {lesson.seated.map((s, k) => {
+                const top = seatTopLeft(seatOfStudent(k) ?? 0);
+                if (top === null) return null;
+                const at = layout.at(top.x, top.y);
+                return (
+                  <At
+                    key={s.creature.id}
+                    x={g.X(at.x)}
+                    y={g.Y(at.y)}
+                    class="sc-pupil-at"
+                    hidden={false}
                   >
-                    <span class="sc-figure">
-                      {talent !== null && (
-                        <span class={still ? 'sc-spark' : 'sc-spark pv-bounce'}>
-                          <Glyph id={roleGlyph(talent.roles[0] ?? '')} scale={2} />
-                        </span>
-                      )}
-                      <CreatureSprite creature={s.creature} scale={g.s} />
-                    </span>
-                    <Plate>{s.name}</Plate>
-                  </button>
-                </At>
-              ))}
+                    <button
+                      type="button"
+                      class="sc-pupil"
+                      aria-label={`${s.name}, seated on the School bench, learns ${talent?.name ?? 'a talent'} by morning`}
+                      onClick={() => {
+                        setLessonOpen(true);
+                      }}
+                    >
+                      <span class="sc-figure">
+                        {teacherRole !== null && (
+                          <span class="sc-spark">
+                            <Glyph id={teacherRole} scale={2} />
+                          </span>
+                        )}
+                        <CreatureSprite creature={s.creature} scale={g.s} />
+                      </span>
+                    </button>
+                  </At>
+                );
+              })}
             </>
           );
         }}

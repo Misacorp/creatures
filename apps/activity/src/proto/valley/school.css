@@ -114,14 +114,7 @@
   flex: 1;
 }
 
-/* The visiting teacher: a prop in its hand, the lesson's talent with its role icons, one Send per face. */
-.sc-prop {
-  position: absolute;
-  right: -6px;
-  bottom: 0;
-  line-height: 0;
-}
-
+/* The visiting teacher's lesson: the talent with its role icons, one Send per face. */
 .sc-talent {
   display: flex;
   align-items: flex-start;

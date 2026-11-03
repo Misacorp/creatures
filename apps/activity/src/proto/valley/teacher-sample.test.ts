@@ -54,6 +54,8 @@ describe('the sample lesson', () => {
     expect(done.done).toBe(true);
     expect(done.seated).toEqual([]);
     expect(done.state.learnedBy).not.toBeNull();
+    expect(world.creatures.map((c) => c.id)).toContain(done.learnerId);
+    expect(lessonOf(world, '?lesson=seated', null).learnerId).toBeNull();
     expect(teacherNote(done.state).line).toMatch(/ is in .*'s book$/);
   });
 
