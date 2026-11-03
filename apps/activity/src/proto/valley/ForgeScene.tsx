@@ -5,6 +5,12 @@
  * bouncing, with a "!"; an empty anvil shows a "+" bubble. Collect: the item hops into the chest and lands on
  * the floor before it, the worker's Crafting XP under it. A new job: tap the empty anvil, the blueprints lie on
  * the workbench as item sprites, the worker comes from the tray, and Start is pinned at the bottom.
+ *
+ * The post (step 3b, sample rules in `forge-post.ts`): a smith between the two anvils works an order and the
+ * finished pieces stand on two planks beside the chimney (the shelf shows what is there, no clock). When the
+ * order waits for a shard the bag lacks, the smith's anvil shows that shard's own picture and the main button
+ * is the exchange: one tap trades the spare shards for it. With a broker on duty at the Market the wait never
+ * happens: the broker is seen trading beside the chimney.
  */
 import { useEffect, useState } from 'preact/hooks';
 import { cssVars } from '../../css-vars';
@@ -25,8 +31,28 @@ import type { Waiting } from '../welcome/PlaceStories';
 import { TOUR, claimJob, creatureOf, isFree, startJob, type ProtoWorld } from '../world';
 import { At, CreatureSprite, Pic, Plate, SpeechBubble, isStill } from './parts';
 import { SceneFrame } from './SceneFrame';
-import { forgeDraw, forgeSpots } from './scene-art';
+import { forgeSpots } from './scene-art';
+import { forgePostDraw, postSpots, PIECES_PER_PLANK, PLANKS } from './forge-post-art';
+import type { Creature } from '../../api';
+import {
+  ORDER_OF,
+  applyTrades,
+  brokerKeepsStocked,
+  finishPieces,
+  getMade,
+  planTrades,
+  summarize,
+  postStatus,
+  setMade,
+  shardWord,
+  getNeed,
+  surplusOf,
+  type ForgeOrder,
+} from './forge-post';
+import { brokerOnDuty, getMarket, setMarket } from './market-sample';
+import { GameIcon } from '../../ui/GameIcon';
 import { CHEST_FRAMES } from './valley-art';
+import './forge-market.css';
 
 export type ForgeMoment = 'reveal' | null;
 
@@ -37,6 +63,23 @@ export function anvilJobs(jobs: readonly Job[], slots: number): (string | null)[
     .sort((a, b) => a.startedAt - b.startedAt)
     .map((j) => j.id);
   return Array.from({ length: slots }, (_, i) => open[i] ?? null);
+}
+
+/**
+ * Who stands at the post (sample): the smith is the highest-level free creature; the broker is the creature
+ * seated at the Market, else the next one (a stand-in when the sample opens with a broker already seated).
+ */
+export function postRoles(world: ProtoWorld): { smith?: Creature; broker?: Creature } {
+  const free = world.creatures
+    .filter((c) => isFree(world, c))
+    .sort((a, b) => b.level - a.level || a.id.localeCompare(b.id));
+  const seated = world.creatures.find((c) => c.id === getMarket().broker);
+  const smith = free[0];
+  const broker = seated ?? free.find((c) => c.id !== smith?.id);
+  return {
+    ...(smith === undefined ? {} : { smith }),
+    ...(broker === undefined ? {} : { broker }),
+  };
 }
 
 export function ForgeScene({
@@ -74,11 +117,53 @@ export function ForgeScene({
   const [chest, setChest] = useState(moment === 'reveal' ? 2 : 0);
   const [strike, setStrike] = useState<{ anvil: number; frame: number } | null>(null);
 
+  // The post: the order on the smith's anvil, the exchange's result, and a piece being finished.
+  const [postMade, setPostMade] = useState(getMade);
+  const [traded, setTraded] = useState<ReturnType<typeof summarize>>(null);
+  const [resume, setResume] = useState(false);
+  const need = getNeed(world.parts);
+  const order: ForgeOrder = {
+    baseId: world.blueprints[0] ?? 'kelp-cap',
+    made: postMade,
+    of: ORDER_OF,
+    need,
+  };
+  const status = postStatus(order, world.parts);
+  const { smith, broker } = postRoles(world);
+
   const finishClaim = (anvil: number, jobId: string): void => {
     setWorld(claimJob(world, jobId));
     setAnvils((list) => list.map((a, i) => (i === anvil ? null : a)));
     setRevealed(jobId);
   };
+
+  // A broker on duty has traded for the shard before the smith needs it.
+  useEffect(() => {
+    const market = getMarket();
+    if (!brokerOnDuty(market) || status !== 'waiting') return;
+    const stocked = brokerKeepsStocked(world.parts, order, market.trades);
+    if (stocked.trades.length === 0) return;
+    setMarket({ ...market, trades: market.trades + stocked.trades.length });
+    setWorld({ ...world, parts: stocked.parts as ProtoWorld['parts'] });
+  }, []);
+
+  // The smith picks the shard up and finishes a piece a beat after the exchange.
+  useEffect(() => {
+    if (!resume) return undefined;
+    const id = window.setTimeout(
+      () => {
+        const done = finishPieces(order, world.parts);
+        setMade(done.order.made);
+        setPostMade(done.order.made);
+        setWorld({ ...world, parts: done.parts as ProtoWorld['parts'] });
+        setResume(false);
+      },
+      still ? 0 : 700,
+    );
+    return () => {
+      window.clearTimeout(id);
+    };
+  }, [resume]);
 
   useEffect(() => {
     if (strike === null) return undefined;
@@ -139,6 +224,19 @@ export function ForgeScene({
     onProgress();
   };
 
+  const market = getMarket();
+  const brokerHere = brokerOnDuty(market);
+  const plan =
+    status === 'waiting' ? planTrades(world.parts, need, market.trades, order.of - order.made) : [];
+  const trade = summarize(plan);
+  const exchange = (): void => {
+    if (trade === null) return;
+    setMarket({ ...market, trades: market.trades + plan.length });
+    setWorld({ ...world, parts: applyTrades(world.parts, plan) as ProtoWorld['parts'] });
+    setTraded(trade);
+    setResume(true);
+  };
+
   const readyAt = anvils.findIndex((_, i) => jobOn(i)?.status === 'ready');
   const claimed = revealed === null ? undefined : world.jobs.find((j) => j.id === revealed);
   const result = claimed?.result?.kind === 'craft' ? claimed.result : null;
@@ -169,6 +267,25 @@ export function ForgeScene({
         onClick={() => {
           tapAnvil(readyAt);
         }}
+      />
+    );
+  } else if (status === 'waiting' && !brokerHere) {
+    act = (
+      <ActionButton
+        label={
+          trade === null
+            ? `Waiting for ${shardWord(need)} shards`
+            : `Trade for a ${shardWord(need)} shard`
+        }
+        detail={
+          trade === null
+            ? 'your scouts will bring them'
+            : `${String(trade.spent)} ${shardWord(trade.from)} for ${String(trade.base)}`
+        }
+        wide
+        large
+        disabled={trade === null}
+        onClick={exchange}
       />
     );
   } else if (result !== null && claimed !== undefined) {
@@ -211,7 +328,7 @@ export function ForgeScene({
     <SceneFrame
       id="forge"
       label="Forge, Workshop"
-      draw={forgeDraw}
+      draw={forgePostDraw}
       onLeave={onLeave}
       act={act}
       waiting={waiting}
@@ -231,6 +348,114 @@ export function ForgeScene({
                   ))}
               </span>
             </At>
+            {(() => {
+              const pa = postSpots(g);
+              const waiting = status === 'waiting';
+              const shelfLabel = `${String(postMade)} of ${String(ORDER_OF)} pieces on the shelf`;
+              const shardIcon = { kind: 'part', part: need } as const;
+              const postLabel = waiting
+                ? `The smith waits for a ${shardWord(need)} shard${trade === null ? '' : '. Trade for one'}`
+                : status === 'done'
+                  ? 'The smith has finished the order'
+                  : 'The smith is working an order';
+              return (
+                <>
+                  <span class="visually-hidden">{shelfLabel}</span>
+                  {Array.from({ length: Math.min(postMade, PLANKS * PIECES_PER_PLANK) }, (_, i) => {
+                    const p = pa.planks[Math.floor(i / PIECES_PER_PLANK)];
+                    if (p === undefined) return null;
+                    return (
+                      <At
+                        key={i}
+                        x={X(p.x + (i % PIECES_PER_PLANK) * 17)}
+                        y={Y(p.y - 16)}
+                        class="pv-piece"
+                      >
+                        <ItemSprite baseId={order.baseId} scale={s} />
+                      </At>
+                    );
+                  })}
+                  {smith !== undefined && (
+                    <At x={X(pa.smith.x)} y={Y(pa.smith.y)}>
+                      <CreatureSprite
+                        creature={smith}
+                        scale={s}
+                        class={status === 'working' && !still ? 'pv-hammer' : ''}
+                      />
+                    </At>
+                  )}
+                  {status === 'working' && (
+                    <At
+                      x={X(pa.anvil.x)}
+                      y={Y(pa.anvil.y - 9)}
+                      class={still ? undefined : 'pv-bounce'}
+                    >
+                      <ItemSprite baseId={order.baseId} scale={s} />
+                    </At>
+                  )}
+                  {traded !== null && !waiting && (
+                    <At
+                      x={X(pa.anvil.x - 4)}
+                      y={Y(pa.anvil.y + 18)}
+                      class="pv-found"
+                      hidden={false}
+                    >
+                      <span
+                        class="pv-got"
+                        role="img"
+                        aria-label={`Got ${String(traded.got)} ${shardWord(traded.to)} shards${traded.lucky ? ', a lucky extra' : ''}`}
+                      >
+                        {Array.from({ length: traded.got }, (_, i) => (
+                          <GameIcon key={i} icon={{ kind: 'part', part: traded.to }} scale={s} />
+                        ))}
+                      </span>
+                      {traded.lucky && <Plate>Lucky!</Plate>}
+                    </At>
+                  )}
+                  <button
+                    type="button"
+                    class="pv-anvil pv-post"
+                    aria-label={postLabel}
+                    disabled={!(waiting && trade !== null && !brokerHere)}
+                    ref={cssVars({
+                      '--x': `${String(X(pa.anvil.x - 8))}px`,
+                      '--y': `${String(Y(pa.anvil.y - 12))}px`,
+                      '--pw': `${String(32 * s)}px`,
+                      '--ph': `${String(28 * s)}px`,
+                    })}
+                    onClick={exchange}
+                  >
+                    {waiting && !brokerHere && (
+                      <SpeechBubble>
+                        <GameIcon icon={shardIcon} scale={3} />
+                      </SpeechBubble>
+                    )}
+                  </button>
+                  {brokerHere && broker !== undefined && (
+                    <At x={X(pa.broker.x)} y={Y(pa.broker.y)} class="pv-broker" hidden={false}>
+                      <span
+                        class="pv-broker-mark"
+                        role="img"
+                        aria-label={`${creatureName(broker)} is at the broker's seat, trading shards`}
+                      >
+                        <SpeechBubble>
+                          <GameIcon
+                            icon={{
+                              kind: 'part',
+                              part: surplusOf(world.parts, need)[0]?.kind ?? 'tide-shard',
+                            }}
+                            scale={2}
+                          />
+                          <span class="pix">→</span>
+                          <GameIcon icon={shardIcon} scale={2} />
+                        </SpeechBubble>
+                        <CreatureSprite creature={broker} scale={s} />
+                      </span>
+                    </At>
+                  )}
+                </>
+              );
+            })()}
             {at.anvils.map((a, i) => {
               const job = jobOn(i);
               const who = job === undefined ? undefined : creatureOf(world, job.creatureId);

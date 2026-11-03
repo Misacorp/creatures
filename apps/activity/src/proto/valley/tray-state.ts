@@ -8,6 +8,7 @@ import type { Creature } from '../../api';
 import { creatureName } from '../../game';
 import { destinationName } from '../../trip-view';
 import { RAID_TEAM_SIZE, isFree, raidTeamIds, tripsHome, type ProtoWorld } from '../world';
+import { getMarket, isBuilt } from './market-sample';
 import type { PlaceId } from './valley-art';
 
 /** One state per creature, the most pressing first. `free` has no mark. */
@@ -95,7 +96,8 @@ export function placesFor(world: ProtoWorld, c: Creature): Record<PlaceId, Verdi
     // The newer places: creatures rest and learn; the Market takes shards and the visitor pieces, not creatures.
     school: ifFree(),
     bonfire: ifFree(),
-    market: no('Shards'),
+    // Once it is built the Market has a broker's seat for a free creature.
+    market: isBuilt(getMarket().given) ? ifFree() : no('Shards'),
     visitor: no('Pieces'),
   };
 }
