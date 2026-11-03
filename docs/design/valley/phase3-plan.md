@@ -29,13 +29,13 @@ Not in scope: combat (combat v2's lab owns it), the School's teaching (waits on 
 
 1. **Done:** the journey export from the lab, with a sync test; the welcome-back Gazette (after the walk was tried and dropped).
 2. **Done:** the valley's markers lead somewhere: tapping one opens its place with its stories as a slim strip above the action, the story's creatures standing by it and its finds in one row (panel: `reviews/2026-11-01-markers.md`).
-3. **Next (2026-11-03), with step 4:** the valley gains its four new places, drawn with the art-direction session's `valley-glow` set (merged in PR #116): the bonfire, the School, the visitor's stall (and his shuttered stall when away) and the Market. Then, in parallel, each place's own scene, reachable from a marker:
+3. **Done (2026-11-03), with step 4** (panel: `reviews/2026-11-03-places.md`; its fixes merged): the valley gains its four new places, drawn with the art-direction session's `valley-glow` set (merged in PR #116): the bonfire, the School, the visitor's stall (and his shuttered stall when away) and the Market. Then, in parallel, each place's own scene, reachable from a marker:
    - 3a. **The valley:** the four places on the map (day and night palettes), each with a scene that shows its waiting stories as the other places do; the Gazette's stories move to their real places (talents and graduations to the School, resting moments to the bonfire, the visitor to his stall).
    - 3b. **The Forge and the Market:** a smith's post with the shelf filling, a shard wait with the exchange as its one-tap fix; the Market as the second guided project (scaffolding rising with gifts, your own share privately) and its broker post once built.
    - 3c. **The visitor:** "back Thursday" when away; his stall with the week's stock; one reroll with the odds, a before-and-after and one confirm.
    - 3d. **The bonfire and the School:** resting creatures, a small moment, a creature warming up (catch-up); the hearth as the first guided project; a Bronze graduation at the School.
 4. **Done with 3a:** the places' art (`valley-glow`) in place of the stand-ins.
-5. The panel at both widths; fixes; Misa on staging when he asks.
+5. **Next:** Misa on staging when he asks (with Q50, the posters, to compare there: `&poster=framed|none`); then his feedback.
 
 ## For Misa to decide
 
