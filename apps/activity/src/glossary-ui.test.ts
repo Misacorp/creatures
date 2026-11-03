@@ -11,10 +11,34 @@ import {
   visualPlan,
 } from './glossary-ui';
 import { glyph } from './glyphs';
+import { setCombatV2 } from './live-flags';
 import { BUNDLED_CREATURE_SPRITES } from './sprites/creature-sprites';
 import { elementIcon } from './sprites/element-icons';
 
 const reaction = (id: string) => content.reactions.find((r) => r.id === id);
+
+describe('what a tag opens under combat v2', () => {
+  it('opens the v2 words for a shipped entry that is wrong under v2, and the shipped ones in v1 mode', () => {
+    expect(resolveTag({ entry: 'crit' }, false)?.lines.join(' ')).toContain('50% more');
+    const v2 = resolveTag({ entry: 'crit' }, true);
+    expect(v2?.title).toBe('Crit');
+    expect(v2?.lines.join(' ')).not.toContain('50% more');
+    expect(resolveTag({ entry: 'boss-rank' }, true)?.lines.join(' ')).not.toContain('finale');
+    expect(resolveTag({ entry: 'mark-soaked' }, true)?.lines.join(' ')).not.toContain('uses up');
+    // An entry the rules do not change reads the same.
+    expect(resolveTag({ entry: 'gear-slot-hat' }, true)).toEqual(
+      resolveTag({ entry: 'gear-slot-hat' }, false),
+    );
+  });
+
+  it('follows the flag the app set at boot', () => {
+    setCombatV2(true);
+    expect(resolveTag({ entry: 'crit' })?.title).toBe('Crit');
+    expect(resolveTag({ entry: 'crit' })?.lines.join(' ')).not.toContain('50% more');
+    setCombatV2(false);
+    expect(resolveTag({ entry: 'crit' })?.lines.join(' ')).toContain('50% more');
+  });
+});
 
 describe('what a tag opens', () => {
   it('resolves a glossary entry by id and an ability by its content id', () => {

@@ -285,5 +285,384 @@
       "It is not a stage of the raid."
     ],
     "section": "v2-weekend"
+  },
+  {
+    "id": "kw-determination",
+    "title": "Determination",
+    "short": "A little stronger each time the server fails this boss.",
+    "lines": [
+      "From the second lap of the boss order, each failed weekend on a boss adds a little damage and healing.",
+      "It stacks up to five times, is kept over a Festival and is gone once the boss is beaten.",
+      "The chip by the boss shows how many stacks you have."
+    ],
+    "section": "v2-rank"
+  },
+  {
+    "id": "v2-role-setter",
+    "title": "Setter",
+    "short": "Marks the boss for a Payoff.",
+    "lines": [
+      "Its hit leaves its element’s mark on the boss, or adds a stack to it.",
+      "Other roles mark only through a Knack that says so.",
+      "Act before the Payoff that cashes the mark."
+    ],
+    "visual": {
+      "kind": "species",
+      "id": "splashet"
+    },
+    "section": "v2-knacks"
+  },
+  {
+    "id": "v2-role-payoff",
+    "title": "Payoff",
+    "short": "Cashes marks for bonus damage.",
+    "lines": [
+      "Its hit on a mark its element is strong against sets off a Reaction.",
+      "Only a Payoff does it, or a Knack that says so.",
+      "Put it after a Setter that leaves the right mark."
+    ],
+    "visual": {
+      "kind": "species",
+      "id": "cindle"
+    },
+    "section": "v2-knacks"
+  },
+  {
+    "id": "v2-role-guard",
+    "title": "Guard",
+    "short": "Armoured. Takes hits for those beside it.",
+    "lines": [
+      "A flat amount of armour comes off every hit it takes.",
+      "If the dodge fails, a hit aimed at a creature in its Reach lands on the Guard instead.",
+      "Area hits and Wind-ups pass it by, unless a Knack says otherwise."
+    ],
+    "visual": {
+      "kind": "species",
+      "id": "sproutle"
+    },
+    "section": "v2-knacks"
+  },
+  {
+    "id": "v2-role-support",
+    "title": "Support",
+    "short": "Boosts and heals those beside it.",
+    "lines": [
+      "At the start of each round it boosts or heals the creatures in its Reach.",
+      "Its Reach stays inside its row.",
+      "A knocked-out or silenced Support gives nothing."
+    ],
+    "visual": {
+      "kind": "species",
+      "id": "ashmole"
+    },
+    "section": "v2-knacks"
+  },
+  {
+    "id": "v2-mark-soaked",
+    "title": "Soaked",
+    "short": "Tide’s mark. Spark cashes it in.",
+    "lines": [
+      "Left on the boss by a Setter’s Tide hit.",
+      "Hit again, it gains a stack, up to three.",
+      "A Spark Payoff’s hit sets off Overload and takes a stack off it.",
+      "Some bosses shed their marks at the end of a turn."
+    ],
+    "visual": {
+      "kind": "mark",
+      "id": "tide"
+    },
+    "section": "v2-marks"
+  },
+  {
+    "id": "v2-mark-charged",
+    "title": "Charged",
+    "short": "Spark’s mark. Grove cashes it in.",
+    "lines": [
+      "Left on the boss by a Setter’s Spark hit.",
+      "Hit again, it gains a stack, up to three.",
+      "A Grove Payoff’s hit sets off Grounding and takes a stack off it.",
+      "Some bosses shed their marks at the end of a turn."
+    ],
+    "visual": {
+      "kind": "mark",
+      "id": "spark"
+    },
+    "section": "v2-marks"
+  },
+  {
+    "id": "v2-mark-overgrown",
+    "title": "Overgrown",
+    "short": "Grove’s mark. Ember cashes it in.",
+    "lines": [
+      "Left on the boss by a Setter’s Grove hit.",
+      "Hit again, it gains a stack, up to three.",
+      "A Ember Payoff’s hit sets off Wildfire and takes a stack off it.",
+      "Some bosses shed their marks at the end of a turn."
+    ],
+    "visual": {
+      "kind": "mark",
+      "id": "grove"
+    },
+    "section": "v2-marks"
+  },
+  {
+    "id": "v2-mark-muddied",
+    "title": "Muddied",
+    "short": "Mire’s mark. Ember cashes it in.",
+    "lines": [
+      "Left on the boss by a Setter’s Mire hit.",
+      "Hit again, it gains a stack, up to three.",
+      "A Ember Payoff’s hit sets off Flare and takes a stack off it.",
+      "Some bosses shed their marks at the end of a turn."
+    ],
+    "visual": {
+      "kind": "mark",
+      "id": "mire"
+    },
+    "section": "v2-marks"
+  },
+  {
+    "id": "v2-mark-scorched",
+    "title": "Scorched",
+    "short": "Ember’s mark. Tide or Mire cashes it in.",
+    "lines": [
+      "Left on the boss by a Setter’s Ember hit.",
+      "Hit again, it gains a stack, up to three.",
+      "A Tide Payoff’s hit sets off Steam, a Mire Payoff’s Smother. Each takes a stack off it.",
+      "Some bosses shed their marks at the end of a turn."
+    ],
+    "visual": {
+      "kind": "mark",
+      "id": "ember"
+    },
+    "section": "v2-marks"
+  },
+  {
+    "id": "v2-reaction-overload",
+    "title": "Overload",
+    "short": "Spark on Soaked: bonus damage.",
+    "lines": [
+      "A Payoff’s Spark hit on a Soaked boss sets it off.",
+      "It deals bonus damage, and a crit makes the bonus bigger.",
+      "It takes a stack off the mark.",
+      "Only a Payoff does it, or a Knack that says so."
+    ],
+    "visual": {
+      "kind": "reaction",
+      "id": "overload"
+    },
+    "section": "v2-marks"
+  },
+  {
+    "id": "v2-reaction-grounding",
+    "title": "Grounding",
+    "short": "Grove on Charged: bonus damage.",
+    "lines": [
+      "A Payoff’s Grove hit on a Charged boss sets it off.",
+      "It deals bonus damage, and a crit makes the bonus bigger.",
+      "It takes a stack off the mark.",
+      "Only a Payoff does it, or a Knack that says so."
+    ],
+    "visual": {
+      "kind": "reaction",
+      "id": "grounding"
+    },
+    "section": "v2-marks"
+  },
+  {
+    "id": "v2-reaction-wildfire",
+    "title": "Wildfire",
+    "short": "Ember on Overgrown: bonus damage.",
+    "lines": [
+      "A Payoff’s Ember hit on a Overgrown boss sets it off.",
+      "It deals bonus damage, and a crit makes the bonus bigger.",
+      "It takes a stack off the mark.",
+      "Only a Payoff does it, or a Knack that says so."
+    ],
+    "visual": {
+      "kind": "reaction",
+      "id": "wildfire"
+    },
+    "section": "v2-marks"
+  },
+  {
+    "id": "v2-reaction-steam",
+    "title": "Steam",
+    "short": "Tide on Scorched: bonus damage.",
+    "lines": [
+      "A Payoff’s Tide hit on a Scorched boss sets it off.",
+      "It deals bonus damage, and a crit makes the bonus bigger.",
+      "It takes a stack off the mark.",
+      "Only a Payoff does it, or a Knack that says so."
+    ],
+    "visual": {
+      "kind": "reaction",
+      "id": "steam"
+    },
+    "section": "v2-marks"
+  },
+  {
+    "id": "v2-reaction-smother",
+    "title": "Smother",
+    "short": "Mire on Scorched: bonus damage.",
+    "lines": [
+      "A Payoff’s Mire hit on a Scorched boss sets it off.",
+      "It deals bonus damage, and a crit makes the bonus bigger.",
+      "It takes a stack off the mark.",
+      "Only a Payoff does it, or a Knack that says so."
+    ],
+    "visual": {
+      "kind": "reaction",
+      "id": "smother"
+    },
+    "section": "v2-marks"
+  },
+  {
+    "id": "v2-reaction-flare",
+    "title": "Flare",
+    "short": "Ember on Muddied: bonus damage.",
+    "lines": [
+      "A Payoff’s Ember hit on a Muddied boss sets it off.",
+      "It deals bonus damage, and a crit makes the bonus bigger.",
+      "It takes a stack off the mark.",
+      "Only a Payoff does it, or a Knack that says so."
+    ],
+    "visual": {
+      "kind": "reaction",
+      "id": "flare"
+    },
+    "section": "v2-marks"
+  },
+  {
+    "id": "v2-element-tide",
+    "title": "Tide",
+    "short": "Water. Strong against Ember.",
+    "lines": [
+      "Hits Ember bosses for 50% more damage.",
+      "Hits Spark bosses for 25% less damage.",
+      "Hits Mire bosses for 25% less damage.",
+      "Tide Setter hits leave Soaked on the boss. Spark cashes it in."
+    ],
+    "visual": {
+      "kind": "element",
+      "id": "tide"
+    },
+    "section": "v2-marks"
+  },
+  {
+    "id": "v2-element-ember",
+    "title": "Ember",
+    "short": "Fire. Strong against Grove and Mire.",
+    "lines": [
+      "Hits Grove bosses for 50% more damage.",
+      "Hits Mire bosses for 50% more damage.",
+      "Hits Tide bosses for 25% less damage. Mire hits it for 50% more.",
+      "Ember Setter hits leave Scorched on the boss. Tide or Mire cashes it in."
+    ],
+    "visual": {
+      "kind": "element",
+      "id": "ember"
+    },
+    "section": "v2-marks"
+  },
+  {
+    "id": "v2-element-grove",
+    "title": "Grove",
+    "short": "Plants. Strong against Spark.",
+    "lines": [
+      "Hits Spark bosses for 50% more damage.",
+      "Hits Ember bosses for 25% less damage.",
+      "Grove Setter hits leave Overgrown on the boss. Ember cashes it in."
+    ],
+    "visual": {
+      "kind": "element",
+      "id": "grove"
+    },
+    "section": "v2-marks"
+  },
+  {
+    "id": "v2-element-spark",
+    "title": "Spark",
+    "short": "Lightning. Strong against Tide.",
+    "lines": [
+      "Hits Tide bosses for 50% more damage.",
+      "Hits Grove bosses for 25% less damage.",
+      "Spark Setter hits leave Charged on the boss. Grove cashes it in."
+    ],
+    "visual": {
+      "kind": "element",
+      "id": "spark"
+    },
+    "section": "v2-marks"
+  },
+  {
+    "id": "v2-element-mire",
+    "title": "Mire",
+    "short": "Mud and bog. Strong against Ember.",
+    "lines": [
+      "Hits Ember bosses for 50% more damage.",
+      "Ember hits Mire bosses for 50% more. Tide hits them for 25% less.",
+      "Mire Setter hits leave Muddied on the boss. Ember cashes it in."
+    ],
+    "visual": {
+      "kind": "element",
+      "id": "mire"
+    },
+    "section": "v2-marks"
+  },
+  {
+    "id": "v2-boss-rank",
+    "title": "Boss Rank",
+    "short": "How far along the boss order the server is.",
+    "lines": [
+      "The bosses come in a fixed order, and the Rank counts how far along it is.",
+      "Beat the boss and the server moves on to the next one, a Rank higher.",
+      "A boss you did not beat comes back next week at full HP."
+    ],
+    "section": "v2-rank"
+  },
+  {
+    "id": "v2-festival",
+    "title": "Festival",
+    "short": "Every 5th week: a week without a raid.",
+    "lines": [
+      "Every 5th raid week is a Festival.",
+      "The boss order waits, and nothing is lost or eased.",
+      "A boss you had not beaten comes back at full HP afterwards."
+    ],
+    "section": "v2-rank"
+  },
+  {
+    "id": "v2-knack",
+    "title": "Knack",
+    "short": "A trick a creature carries into the raid.",
+    "lines": [
+      "Each creature carries one Knack, picked on its page from the ones its form knows.",
+      "It is locked once the creature has fought this weekend.",
+      "Knacks take the place of the old finale abilities."
+    ],
+    "section": "v2-knacks"
+  },
+  {
+    "id": "v2-level",
+    "title": "Level",
+    "short": "Higher level, stronger creature.",
+    "lines": [
+      "A creature levels up from experience: trips, the dungeon, raids and Workshop jobs.",
+      "Each level adds HP, Attack and Speed.",
+      "A creature waits at level 10 and 20 for a ribbon, and at 15 until it evolves. The top is 30."
+    ],
+    "section": "creatures"
+  },
+  {
+    "id": "v2-resistance",
+    "title": "Resisted",
+    "short": "From stage 2 the boss resists what did most damage.",
+    "lines": [
+      "The element, or the Reaction, with the most damage so far is resisted.",
+      "Its creatures hit for less. It is shown at the stage break.",
+      "It starts fresh each week. A tie gives no resistance."
+    ],
+    "section": "v2-weekend"
   }
 ]

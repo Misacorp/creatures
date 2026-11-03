@@ -62,7 +62,8 @@
         "The server meets the bosses in a fixed order, and the Boss Rank counts how far along it is.",
         "Beat the boss and the server moves on to the next one, a Rank higher.",
         "The next boss is known a week ahead, so you can prepare.",
-        "A boss you did not beat comes back next week at full HP, with the most you took off it shown as a pale fill."
+        "A boss you did not beat comes back next week at full HP, with the most you took off it shown as a pale fill.",
+        "After the first lap, each failed weekend gives {Determination}: a little more damage and healing."
       ]
     }
   ]

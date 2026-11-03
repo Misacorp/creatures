@@ -410,6 +410,8 @@ const BOARD_KEYWORDS: ReadonlySet<string> = new Set<string>([
   'Back-most',
   // The boss's Escalating meter; an Escalating boss shows its own name in the text, and no text says the word itself.
   'Escalating',
+  // The chip by the boss card when the server has failed this boss before; no Knack or talent text names it.
+  'Determination',
 ]);
 
 describe('combat v2 content gate: keywords', () => {

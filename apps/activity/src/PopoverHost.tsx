@@ -1,4 +1,4 @@
-import { content, entryView } from '@creatures/game';
+import { content } from '@creatures/game';
 import type { GlossarySection, GlossaryView } from '@creatures/game';
 import { createContext, type ComponentChildren, type RefObject } from 'preact';
 import { useContext, useMemo, useRef, useState } from 'preact/hooks';
@@ -9,7 +9,14 @@ import type { FoeInfo } from './foe-info';
 import { capitalize, getSpecies, speciesName } from './game';
 import { glyphOrUnknown } from './glyphs';
 import { compactCount } from './number-format';
-import { MORE_LABEL, resolveTag, tagKey, visualPlan, type TagRef } from './glossary-ui';
+import {
+  MORE_LABEL,
+  resolveEntry,
+  resolveTag,
+  tagKey,
+  visualPlan,
+  type TagRef,
+} from './glossary-ui';
 import { GearList } from './GearList';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
@@ -179,7 +186,7 @@ function CreaturePopover({
   const rarity = getSpecies(info.species)?.rarity;
   const worn = shownWornItems(info);
   const nav = usePopoverNav<string | null>(null, open);
-  const entry = nav.view === null ? undefined : entryView(nav.view);
+  const entry = nav.view === null ? undefined : resolveEntry(nav.view);
   // An entry the content does not know shows the creature instead.
   const face = entry === undefined ? 'creature' : 'tag';
   return (
@@ -312,7 +319,7 @@ function FoePopover({
 }) {
   const { info } = open;
   const nav = usePopoverNav<string | null>(null, open);
-  const entry = nav.view === null ? undefined : entryView(nav.view);
+  const entry = nav.view === null ? undefined : resolveEntry(nav.view);
   const face = entry === undefined ? 'foe' : 'tag';
   const art = bossArt(info.id);
   return (

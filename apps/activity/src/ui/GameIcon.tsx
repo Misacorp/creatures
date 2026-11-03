@@ -1,3 +1,4 @@
+import { combatGlyph } from '../combat-glyphs';
 import { ItemSprite } from '../GearArt';
 import { partIcon } from '../gear-sprites';
 import { glyphOrUnknown } from '../glyphs';
@@ -9,6 +10,7 @@ import { elementIcon } from '../sprites/element-icons';
 export function GameIcon({ icon, scale = 3 }: { icon: IconRef; scale?: number }) {
   switch (icon.kind) {
     case 'glyph':
+      return <Sprite sprite={combatGlyph(icon.id) ?? glyphOrUnknown(icon.id)} scale={scale} />;
     case 'supply':
       return <Sprite sprite={glyphOrUnknown(icon.id)} scale={scale} />;
     case 'part':

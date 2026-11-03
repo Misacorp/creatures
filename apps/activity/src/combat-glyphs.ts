@@ -9,8 +9,8 @@ import { glyph } from './glyphs';
 import { COMBAT_ICONS_CONCEPTS } from './sprites/concepts/combat-icons';
 import type { SpriteDef } from './sprites/sprite-data';
 
-/** The drafts a screen draws before Misa has approved them: Leap's redraw, Armour and Escalating. */
-export const DRAFT_GLYPH_IDS = ['shape-leap', 'armour', 'escalating'] as const;
+/** The drafts a screen draws before Misa has approved them: Leap's redraw, Armour, Escalating and Determination. */
+export const DRAFT_GLYPH_IDS = ['shape-leap', 'armour', 'escalating', 'determination'] as const;
 type DraftId = (typeof DRAFT_GLYPH_IDS)[number];
 
 const isDraft = (id: string): id is DraftId => (DRAFT_GLYPH_IDS as readonly string[]).includes(id);

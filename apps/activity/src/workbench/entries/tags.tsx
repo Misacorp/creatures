@@ -10,6 +10,7 @@ import { CountBadge, CountBadgeList } from '../../ui/CountBadge';
 import { OutcomeBadge } from '../../ui/RevealShell';
 import { KeywordText } from '../../ui/KeywordText';
 import { LandmarkChip, Tag } from '../../ui/Tag';
+import { setCombatV2 } from '../../live-flags';
 import type { GearRarity } from '../../gear-types';
 import {
   ELEMENT_IDS,
@@ -66,8 +67,16 @@ const tag: Entry = {
     entry: { kind: 'select', options: GLOSSARY_SAMPLE },
     icon: { kind: 'select', options: [NONE, ...ICON_NAMES] },
     text: { kind: 'text', maxLength: 30 },
+    rules: { kind: 'select', options: ['shipped', 'combat v2'] },
   },
-  defaults: { kind: 'tag', tone: 'rank', entry: 'boss-rank', icon: NONE, text: 'Rank 7' },
+  defaults: {
+    kind: 'tag',
+    tone: 'rank',
+    entry: 'boss-rank',
+    icon: NONE,
+    text: 'Rank 7',
+    rules: 'shipped',
+  },
   presets: [
     { name: 'Plain tag', props: { tone: NONE, entry: NONE, text: 'Tag' } },
     { name: 'Rank (opens glossary)', props: { tone: 'rank', entry: 'boss-rank', text: 'Rank 7' } },
@@ -76,9 +85,19 @@ const tag: Entry = {
       name: 'Chip with icon',
       props: { kind: 'chip', tone: 't-tide', entry: NONE, icon: 'element: tide', text: 'Tide' },
     },
+    {
+      name: 'Crit under combat v2 (the v2 words)',
+      props: { entry: 'crit', text: 'Crit', rules: 'combat v2' },
+    },
+    {
+      name: 'Boss Rank under combat v2',
+      props: { entry: 'boss-rank', text: 'Rank 7', rules: 'combat v2' },
+    },
     { name: 'Good badge', props: { kind: 'badge', tone: 'good', entry: NONE, text: 'Cleared' } },
   ],
   render: (p) => {
+    // The popover reads the server's rules: the page says which ones (the app sets this once at boot).
+    setCombatV2(str(p, 'rules') === 'combat v2');
     const entry = str(p, 'entry');
     const icon = str(p, 'icon');
     const tone = tagTone(str(p, 'tone'));

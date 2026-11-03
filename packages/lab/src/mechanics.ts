@@ -192,6 +192,8 @@ const KEYWORD_CALLS: Readonly<Record<string, Mechanic['calls']>> = {
   'Back-most': (b) =>
     attacksOf(b).some((a) => a.pattern.anchor === 'back') && 'it picks the back-most creature',
   Escalating: (b) => b.escalation !== undefined && 'it grows as the weekend goes on',
+  // A track rule, not a boss's: every boss can be failed, so from the second lap every boss can give it.
+  Determination: () => 'every boss can be failed, and from the second lap each failure helps',
   Mired: (b) =>
     (b.mods.shakeEvery !== undefined || b.escalation) && 'it washes debuffs off, or Mired holds it',
   Beside: (b) => shapes(b, 'line3', 'chain', 'cross') && 'hits that spread to the creatures beside',
