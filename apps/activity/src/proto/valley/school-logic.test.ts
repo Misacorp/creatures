@@ -13,6 +13,7 @@ import {
   tickedCount,
   type Trial,
 } from './school-logic';
+import type { TeacherNote } from './teacher-logic';
 import { MAX_PUPILS, pupilsOf } from './school-sample';
 
 const all = BRONZE_BOXES.map((b) => b.id);
@@ -74,9 +75,35 @@ describe('what the School says (schoolNote)', () => {
     expect(schoolNote('after', 0, 3)).toEqual({ line: '3 on a Bronze trial', action: null });
   });
 
-  it('offers Learn a talent only when nothing else is going on', () => {
-    expect(schoolNote('after', 0, 0).action).toBe('Learn a talent');
+  it('has no button of its own without the teacher', () => {
+    expect(schoolNote('after', 0, 0)).toEqual({ line: 'no one on a trial yet', action: null });
     expect(schoolNote('live', 0, 2).action).toBeNull();
+  });
+
+  const here: TeacherNote = {
+    line: 'A teacher from Storm Ridge brings Rally Cry',
+    short: 'teacher Monday to Wednesday: Rally Cry',
+    action: 'Send to the teacher',
+    news: true,
+  };
+  const gone: TeacherNote = {
+    line: 'Next teacher Monday',
+    short: 'next teacher Monday',
+    action: null,
+    news: false,
+  };
+
+  it('lets the teacher take the button and the line while it is news, the ceremony while it is live', () => {
+    expect(schoolNote('after', 2, 4, here)).toEqual({
+      line: 'teacher Monday to Wednesday: Rally Cry',
+      action: 'Send to the teacher',
+    });
+    expect(schoolNote('live', 2, 4, here).action).toBe('See the graduation');
+  });
+
+  it('brings the graduation back and then names the next teacher once the teacher is gone', () => {
+    expect(schoolNote('after', 2, 4, gone).line).toBe('2 graduated this morning');
+    expect(schoolNote('after', 0, 4, gone)).toEqual({ line: 'next teacher Monday', action: null });
   });
 });
 

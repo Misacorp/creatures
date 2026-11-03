@@ -12,6 +12,8 @@ import { SAMPLE_HEARTH } from './bonfire-sample';
 import { ORDER_OF, getMade, getNeed, postStatus, shardWord, type ForgeOrder } from './forge-post';
 import { STAGES, brokerOnDuty, getMarket, isBuilt, stageOf } from './market-sample';
 import { ceremonyParam, ceremonyPhase, readyCount, schoolNote } from './school-logic';
+import { getSeats, lessonOf } from './teacher-sample';
+import { teacherNote } from './teacher-logic';
 import { weekClock } from './valley-logic';
 import { pupilsOf } from './school-sample';
 import type { PlaceId } from './valley-art';
@@ -48,14 +50,16 @@ function marketLine(): string {
   return brokerOnDuty(market) ? 'broker on duty' : 'built, no broker yet';
 }
 
-/** The School's line: how many have ticked every box of the Bronze trial. */
+/** The School's line: the visiting teacher's state, else how many have ticked every box of the Bronze trial. */
 function schoolLine(world: ProtoWorld): string {
   const pupils = pupilsOf(world.creatures);
   const phase = ceremonyPhase(
     weekClock(world.now, world.timezone),
     typeof window === 'undefined' ? null : ceremonyParam(window.location.hash),
   );
-  return schoolNote(phase, readyCount(pupils.map((p) => p.trial)), pupils.length).line;
+  const hash = typeof window === 'undefined' ? '' : window.location.hash;
+  const teacher = teacherNote(lessonOf(world, hash, getSeats()).state);
+  return schoolNote(phase, readyCount(pupils.map((p) => p.trial)), pupils.length, teacher).line;
 }
 
 /** The bonfire's line: the hearth's stones while it is the project, then who is resting. */

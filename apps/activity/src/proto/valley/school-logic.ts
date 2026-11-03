@@ -5,6 +5,7 @@
  * whether or not its player is there. No DOM, no clock: the phase of the ceremony is a pure function of the
  * local time (or of a dev override).
  */
+import type { TeacherNote } from './teacher-logic';
 
 /** The honours, lowest first (V-TRIAL-2: Bronze from level 10, Silver from 20, Gold from 30). */
 export type Honour = 'bronze' | 'silver' | 'gold';
@@ -86,16 +87,21 @@ export const readyCount = (trials: readonly Trial[]): number => trials.filter(is
 /**
  * What the School says now, in a few words, and its one button when there is a next step: "See the graduation"
  * at the ceremony, a calm line the rest of the time ("2 ready to graduate today", "2 graduated this morning",
- * "3 on a Bronze trial"), and "Learn a talent" only when nothing else is going on. The Places list reads `line`.
+ * "3 on a Bronze trial"). The Places list reads `line`. The visiting teacher (`teacher-logic.ts`) takes the button
+ * ("Send to the teacher": something of yours can learn and a seat is free) and the line while it is news
+ * (announced, here, a student seated, a talent in the book); the ceremony leads while it is live; once the
+ * teacher is gone the graduation and trial lines come back.
  */
 export function schoolNote(
   phase: CeremonyPhase,
   ready: number,
   onTrial: number,
+  teacher?: TeacherNote,
 ): { line: string; action: string | null } {
   if (ready > 0 && phase === 'live') {
     return { line: `${String(ready)} graduating now`, action: 'See the graduation' };
   }
+  if (teacher?.news === true) return { line: teacher.short, action: teacher.action };
   if (ready > 0) {
     return {
       line:
@@ -105,6 +111,8 @@ export function schoolNote(
       action: null,
     };
   }
+  // The teacher is gone: its next visit is the state, the trials show as pips in the yard.
+  if (teacher !== undefined) return { line: teacher.short, action: null };
   if (onTrial > 0) return { line: `${String(onTrial)} on a Bronze trial`, action: null };
-  return { line: 'no one on a trial yet', action: 'Learn a talent' };
+  return { line: 'no one on a trial yet', action: null };
 }

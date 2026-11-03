@@ -6,12 +6,17 @@
  * different: before it, a creature with every box ticked sparkles in the yard; during it (`&ceremony=live`) the
  * bell rings and those creatures stand gathered at the door while the ribbon is pinned on; after it (the
  * default at the sample's clock) the graduates are back in the yard wearing their ribbons. The pinned button
- * follows the state: "See the graduation" at the ceremony, a calm line otherwise, "Learn a talent" (a stub: it
- * needs combat v2's talents) only when nothing else is going on. Stories that wait here show as the place's strip.
+ * follows the state: "See the graduation" at the ceremony, "Send to the teacher" when the week's teacher has a
+ * lesson one of yours can take and a seat is free, a calm line otherwise. Stories that wait here show as the place's strip.
+ *
+ * The visiting teacher (`teacher-logic.ts`, V-SCH-11 to 13): announced over the weekend, at the door Monday to
+ * Wednesday, gone after. Its lesson opens in a drawer: the talent, then the faces of your creatures that would
+ * learn it, each with one Send; two student seats, a seated student stands at the School and leaves its post.
  */
 import { useMemo, useState } from 'preact/hooks';
 import { usePrefersReducedMotion } from '../../hooks';
 import { baseOption } from '../../roster-picker';
+import { TalentChip } from '../../TalentChip';
 import { CreatureList } from '../../ui/CreatureList';
 import { Drawer } from '../../ui/Drawer';
 import { PipRow } from '../../ui/PipRow';
@@ -26,7 +31,6 @@ import {
 } from './glow-scene-art';
 import { At, CreatureSprite, Glyph, Pic, Plate, isStill } from './parts';
 import { PinnedAct } from './PinnedAct';
-import { Stub } from './PeekScenes';
 import { SceneFrame } from './SceneFrame';
 import {
   BRONZE_BOXES,
@@ -40,6 +44,8 @@ import {
   type PupilState,
 } from './school-logic';
 import { BELL_RING, BRONZE_RIBBON, pupilsOf } from './school-sample';
+import { getSeats, lessonOf, setSeats, type Seats } from './teacher-sample';
+import { ROLE_GLYPH, SEATS, TEACHER_DAYS, teacherNote } from './teacher-logic';
 import { DEFAULT_LOOK } from './valley-places';
 import './school.css';
 
@@ -60,7 +66,8 @@ const stateWord = (state: PupilState): string =>
 export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: PlaceSceneProps) {
   const reduced = usePrefersReducedMotion();
   const still = isStill() || reduced;
-  const [stub, setStub] = useState<string | null>(null);
+  const [lessonOpen, setLessonOpen] = useState(false);
+  const [seats, setSeatsState] = useState<Seats | null>(getSeats());
   const [open, setOpen] = useState<string | null>(null);
   const [gradOpen, setGradOpen] = useState(false);
   const name = glowNameOf('school');
@@ -84,10 +91,24 @@ export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: Pl
   };
   const live = phase === 'live';
   // At the ceremony the creatures graduating stand gathered at the door; everyone else stays in the yard.
+  const hash = typeof window === 'undefined' ? '' : window.location.hash;
+  const lesson = lessonOf(world, hash, seats);
+  const seatedIds = lesson.seated.map((s) => s.creature.id);
+  // A seated student has left its place in the yard: it stands at the School's door with the teacher.
   const gathered = pupils.filter((_, i) => live && stateOf(i) === 'pinning');
-  const yard = pupils.filter((_, i) => !(live && stateOf(i) === 'pinning'));
+  const yard = pupils.filter(
+    (p, i) => !(live && stateOf(i) === 'pinning') && !seatedIds.includes(p.creature.id),
+  );
   const graduates = pupils.filter((_, i) => stateOf(i) === 'pinning' || stateOf(i) === 'graduated');
-  const note = schoolNote(phase, readyCount(pupils.map((p) => p.trial)), pupils.length);
+  const teach = teacherNote(lesson.state);
+  const note = schoolNote(phase, readyCount(pupils.map((p) => p.trial)), pupils.length, teach);
+  const changeSeats = (ids: readonly string[]): void => {
+    const next: Seats = { seated: ids, done: false };
+    setSeats(next);
+    setSeatsState(next);
+  };
+  const talent = lesson.talent;
+  const roleGlyph = (role: string): string => ROLE_GLYPH[role] ?? 'unknown';
 
   const pupilButton = (
     p: (typeof pupils)[number],
@@ -146,11 +167,8 @@ export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: Pl
             <PinnedAct
               label={note.action}
               onClick={() => {
-                if (live) setGradOpen(true);
-                else
-                  setStub(
-                    "the School: a creature's talent lessons. It waits for combat v2's talents and Talent Books",
-                  );
+                if (live && note.action === 'See the graduation') setGradOpen(true);
+                else setLessonOpen(true);
               }}
             />
           )
@@ -195,6 +213,85 @@ export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: Pl
                   k % 2 === 1,
                 ),
               )}
+              {talent !== null && lesson.state.phase === 'coming' && (
+                <At
+                  x={g.X(door.x + 30 - SPRITE / 2)}
+                  y={g.Y(layout.below - SPRITE + 2)}
+                  class="sc-pupil-at"
+                  hidden={false}
+                >
+                  <button
+                    type="button"
+                    class="sc-pupil"
+                    aria-label={`A teacher is coming Monday with ${talent.name}`}
+                    onClick={() => {
+                      setLessonOpen(true);
+                    }}
+                  >
+                    <span class="sc-figure">
+                      <Glyph id="flag" scale={3} />
+                    </span>
+                    <Plate>Monday</Plate>
+                  </button>
+                </At>
+              )}
+              {talent !== null && lesson.state.phase === 'here' && (
+                <At
+                  x={g.X(door.x + 30 - SPRITE / 2)}
+                  y={g.Y(layout.below - SPRITE + 2)}
+                  class="sc-pupil-at"
+                  hidden={false}
+                >
+                  <button
+                    type="button"
+                    class="sc-pupil"
+                    aria-label={`The visiting teacher, here with ${talent.name}`}
+                    onClick={() => {
+                      setLessonOpen(true);
+                    }}
+                  >
+                    <span class="sc-figure">
+                      <CreatureSprite
+                        creature={{ species: lesson.teacher.species, shiny: false }}
+                        scale={g.s}
+                        flip
+                      />
+                      <span class="sc-prop">
+                        <Glyph id="satchel" scale={Math.max(1, Math.floor(g.s / 2))} />
+                      </span>
+                    </span>
+                    <Plate>Teacher</Plate>
+                  </button>
+                </At>
+              )}
+              {lesson.seated.map((s, k) => (
+                <At
+                  key={s.creature.id}
+                  x={g.X(door.x - 30 - k * 30 - SPRITE / 2)}
+                  y={g.Y(layout.below - SPRITE + 2)}
+                  class="sc-pupil-at"
+                  hidden={false}
+                >
+                  <button
+                    type="button"
+                    class="sc-pupil"
+                    aria-label={`${s.name}, seated at the School, learns ${talent?.name ?? 'a talent'} by morning`}
+                    onClick={() => {
+                      setLessonOpen(true);
+                    }}
+                  >
+                    <span class="sc-figure">
+                      {talent !== null && (
+                        <span class={still ? 'sc-spark' : 'sc-spark pv-bounce'}>
+                          <Glyph id={roleGlyph(talent.roles[0] ?? '')} scale={2} />
+                        </span>
+                      )}
+                      <CreatureSprite creature={s.creature} scale={g.s} />
+                    </span>
+                    <Plate>{s.name}</Plate>
+                  </button>
+                </At>
+              ))}
             </>
           );
         }}
@@ -254,12 +351,94 @@ export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: Pl
           class="flat"
         />
       </Drawer>
-      <Stub
-        what={stub}
+      <Drawer
+        open={lessonOpen}
         onClose={() => {
-          setStub(null);
+          setLessonOpen(false);
         }}
-      />
+        title="Visiting teacher"
+        meta={TEACHER_DAYS}
+      >
+        {talent === null ? (
+          <p class="muted">No teacher this week: nothing on the server needs one.</p>
+        ) : (
+          <>
+            <div class="sc-talent">
+              <span class="sc-roles" aria-hidden="true">
+                {talent.roles.map((role) => (
+                  <Glyph key={role} id={roleGlyph(role)} scale={2} />
+                ))}
+              </span>
+              <TalentChip
+                talent={{
+                  id: talent.id,
+                  name: talent.name,
+                  golden: false,
+                  text: talent.text,
+                  about: '',
+                  idle: false,
+                }}
+              />
+            </div>
+            <p class="muted small">
+              {lesson.state.phase === 'gone'
+                ? `The teacher from ${lesson.teacher.from} has gone. The next one comes Monday.`
+                : lesson.done
+                  ? `From ${lesson.teacher.from}, ${TEACHER_DAYS}.`
+                  : `From ${lesson.teacher.from}, ${TEACHER_DAYS}. A creature seated before or during the visit learns by morning.`}
+            </p>
+            {lesson.done ? (
+              <p class="sc-result">
+                {`${talent.name} is in ${lesson.state.learnedBy ?? 'your'}'s book. Teach it to a creature on its card.`}
+              </p>
+            ) : lesson.eligible.length === 0 && lesson.seated.length === 0 ? (
+              <p class="sc-result">None of yours can learn this one.</p>
+            ) : (
+              <>
+                <CreatureList
+                  options={[...lesson.seated, ...lesson.eligible].map((s) => ({
+                    ...baseOption(s.creature),
+                    name: s.name,
+                    ...(seatedIds.includes(s.creature.id) ? { note: 'Learns by morning' } : {}),
+                  }))}
+                  selection={{ mode: 'show', label: 'Your creatures that would learn' }}
+                  chips={false}
+                  class="flat"
+                  side={(o) =>
+                    seatedIds.includes(o.id) ? (
+                      <button
+                        type="button"
+                        class="sc-send"
+                        aria-label={`Call ${o.name} back`}
+                        onClick={() => {
+                          changeSeats(seatedIds.filter((id) => id !== o.id));
+                        }}
+                      >
+                        Call back
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        class="sc-send primary"
+                        disabled={!lesson.state.seatFree}
+                        aria-label={`Send ${o.name} to the teacher`}
+                        onClick={() => {
+                          changeSeats([...seatedIds, o.id].slice(0, SEATS));
+                        }}
+                      >
+                        Send
+                      </button>
+                    )
+                  }
+                />
+                {!lesson.state.seatFree && (
+                  <p class="muted small">Both seats are taken. Call one back to send another.</p>
+                )}
+              </>
+            )}
+          </>
+        )}
+      </Drawer>
     </>
   );
 }
