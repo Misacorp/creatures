@@ -1,10 +1,25 @@
 # The School and visiting teachers
 
-Status: **accepted in part** (Misa, round 18, Q45: B, "Talents can be discovered but creatures still need to learn them a first time. This could be the place to do it"), with visiting teachers; reconciled with combat v2's talents as built (2026-11-03, below). The first-draft rules are kept for history; "As decided" and "Against combat v2 as built" replace them where they differ.
+Status: **accepted in part** (Misa, round 18, Q45: B, "Talents can be discovered but creatures still need to learn them a first time. This could be the place to do it"), with visiting teachers; reconciled with combat v2's talents as built (2026-11-03, below). **Misa's vision (2026-11-03, below) leads; it is under review by research and the panel**, and the rules change with it. The first-draft rules are kept for history; "As decided" and "Against combat v2 as built" replace them where they differ.
 
 ## The idea
 
 A creature placed at the School teaches the talents it knows to other creatures in the valley. Visiting teachers come by on a known rhythm and offer talents nobody in the valley knows. Teaching gives spare and duplicate creatures a use, which makes collecting itself rewarding (G-2).
+
+## Misa's vision (2026-11-03, under review)
+
+Misa: "As players explore and find new creatures, it would still be pretty cool if they could learn the talents from the creatures they find. So this is a source of random talents, and it's also the source for golden talents, like primarily. But then to patch those gaps and give players some sort of agency in what their creatures can learn and maybe accommodate for that roles, or just give some determinism into the system, the school would be where this would be made available. So I don't intend it to be a like surefire guaranteed way to make up for talents that are missing, more like a communal random talent acquisition place. Its main focus as a building can span more than just talents and learning them. But I would like to see this kind of a teacher show up. I don't know how often, once a day, once a week, how often it would be there. Remains to be seen. But that teacher would kind of like announce when they're arriving, and then the creatures in the school during that day would be able to sit there and learn the talent at the end of the day. And then it would be added to that creature's talent book. I'm assuming it's eligible for the talent book, because we can't have creatures learning talents that they aren't supposed to know. So this would be a random talent that comes in kind of like from the outside. But what my vision here also entails is that because we are building a community co-op game, it would be cool to somehow eventually give players the option to have their own creatures teach a talent to other creatures. And this could be done by opening up a teacher slot at the school, and then one player's creature could occupy it, and then it would then teach that talent to others. So this would allow some sharing, and we could even expand it to futures that allow improving talents over time if we need that. I don't want to put it in now, and this whole teaching mechanic probably could unlock like at some point in the game, but not at the start. Let's let players find their talents for quite a while. ... It would be like a secondary source for learning talents that players can plan for. So I want to bring in these moments of, oh, I really want to have my creature available on this day so they can go to school and learn. That's the whole point here."
+
+In short:
+
+1. **Finding creatures stays the main source** of talents (random) and the main source of golden ones.
+2. **The School is a secondary, communal source you can plan for**: not a guaranteed way to fill a missing talent, but some agency and determinism (for roles, for gaps).
+3. **A visiting teacher** announces its arrival (how often is open: daily, weekly); creatures sitting at the School that day learn its talent at the end of the day, if the talent belongs in their line's book, and it is added to the book.
+4. **Later, not at the start:** a teacher seat that a player's own creature can take, teaching its talent to other players' creatures (sharing in a co-op game); perhaps later still, improving talents over time.
+5. **The point:** planning moments: "I really want my creature available on this day so it can go to school and learn."
+6. The building can do more than talents (graduation is already there).
+
+What it changes against the rules below, pending the review: V-SCH-7's "learn a found talent for the first time at the School" is not in the vision (open: does a found talent still need a first learning, and where?); V-SCH-8's teacher teaches every eligible creature present that day, not one chosen pupil; the teacher seat (V-SCH-6, lending) comes back as a later unlock.
 
 ## As decided (round 18)
 
