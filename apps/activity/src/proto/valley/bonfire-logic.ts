@@ -52,16 +52,41 @@ export function seatedFew<T>(
   return { seated: turn.slice(0, seats), more: Math.max(0, resting.length - seats) };
 }
 
-/** The art's own places to be (`ART_SPOTS` of `bonfire` and `bonfire-grand`): three on the logs, two on the grass. */
-export type Slot = 'seatLeft' | 'seatFront' | 'seatRight' | 'groundLeft' | 'groundRight';
+/**
+ * Where a creature can be, clear of the flames: on the left and right logs (the art's `seatLeft`, `seatRight`),
+ * on the grass in front of the fire, and out at the sides of the art for friends.
+ */
+export type Slot = 'seatLeft' | 'grassFront' | 'seatRight' | 'sideLeft' | 'sideRight';
 
 /** Where the player's own creatures sit, in order: the first two (neighbours) share the small moment. */
-export const OWN_SLOTS: readonly Slot[] = ['seatLeft', 'seatFront', 'seatRight'];
-/** Where friends who are online sit, in order. */
-export const FRIEND_SLOTS: readonly Slot[] = ['groundLeft', 'groundRight'];
+export const OWN_SLOTS: readonly Slot[] = ['seatLeft', 'grassFront', 'seatRight'];
+/** Where friends who are online stand, in order: on the grass, one each side. */
+export const FRIEND_SLOTS: readonly Slot[] = ['sideLeft', 'sideRight'];
 
-/** Slots whose creature turns back to face the fire (the sprites face right). */
-const FACES_LEFT: readonly Slot[] = ['seatFront', 'seatRight', 'groundRight'];
+/**
+ * The slots the art does not name (`ART_SPOTS`), as feet points in the art's own pixels, per art: the grass in
+ * front of the fire, and the grass at its sides (partly outside the art, still inside a 360 px screen).
+ */
+export const EXTRA_SPOTS: Readonly<
+  Record<
+    'bonfire' | 'bonfire-grand',
+    Readonly<Record<'grassFront' | 'sideLeft' | 'sideRight', { x: number; y: number }>>
+  >
+> = {
+  bonfire: {
+    grassFront: { x: 22, y: 52 },
+    sideLeft: { x: 1, y: 46 },
+    sideRight: { x: 55, y: 46 },
+  },
+  'bonfire-grand': {
+    grassFront: { x: 26, y: 58 },
+    sideLeft: { x: 2, y: 52 },
+    sideRight: { x: 62, y: 52 },
+  },
+};
+
+/** Slots whose creature turns to face left (the sprites face right): back toward the fire or the neighbour. */
+const FACES_LEFT: readonly Slot[] = ['grassFront', 'seatRight', 'sideRight'];
 export const facesLeft = (slot: Slot): boolean => FACES_LEFT.includes(slot);
 
 /**

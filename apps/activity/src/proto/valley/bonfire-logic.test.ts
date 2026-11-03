@@ -61,10 +61,10 @@ describe('the seats', () => {
     expect(seatedFew(['a', 'b'], 3, 5)).toEqual({ seated: ['a', 'b'], more: 0 });
   });
 
-  it("fills the art's three seats, then two grass spots, and counts the rest behind +N", () => {
+  it('seats three on the logs and the grass in front, friends at the sides, the rest behind +N', () => {
     expect(crowd(5, 2)).toEqual({
-      own: ['seatLeft', 'seatFront', 'seatRight'],
-      friends: ['groundLeft', 'groundRight'],
+      own: ['seatLeft', 'grassFront', 'seatRight'],
+      friends: ['sideLeft', 'sideRight'],
       more: 2,
     });
     expect(crowd(1, 0)).toEqual({ own: ['seatLeft'], friends: [], more: 0 });

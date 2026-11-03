@@ -31,6 +31,7 @@ import {
   sampleName,
 } from './bonfire-sample';
 import {
+  EXTRA_SPOTS,
   catchUpTarget,
   crowd,
   facesLeft,
@@ -158,16 +159,24 @@ export function BonfireScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
           const layout = glowLayout(g, name);
           const px = (n: number): number => g.X(n);
           const py = (n: number): number => g.Y(n);
-          const spot = (slot: string): { x: number; y: number } =>
-            layout.spots[slot] ?? { x: layout.art.x, y: layout.art.y };
+          const extra = EXTRA_SPOTS[name === 'bonfire-grand' ? 'bonfire-grand' : 'bonfire'];
+          const spot = (slot: string): { x: number; y: number } => {
+            const e = extra[slot as keyof typeof extra];
+            if (e !== undefined) return layout.at(e.x, e.y);
+            return layout.spots[slot] ?? { x: layout.art.x, y: layout.art.y };
+          };
           // A creature's top-left from its feet spot.
           const topLeft = (slot: string): { x: number; y: number } => {
             const p = spot(slot);
             return { x: p.x - SPRITE / 2, y: p.y - SPRITE + SINK };
           };
           const first = pair === null ? null : topLeft(places.own[pair[0]] ?? 'seatLeft');
-          const second = pair === null ? null : topLeft(places.own[pair[1]] ?? 'seatFront');
-          const more44 = spot('groundRight');
+          const second = pair === null ? null : topLeft(places.own[pair[1]] ?? 'grassFront');
+          // The "+N" stands on the grass right of the front creature: clear of the seats and of the friends.
+          const moreAt = layout.at(
+            name === 'bonfire-grand' ? 42 : 37,
+            name === 'bonfire-grand' ? 52 : 44,
+          );
           return (
             <>
               <ul class="visually-hidden" aria-label="Resting by the fire">
@@ -230,17 +239,12 @@ export function BonfireScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
                     })}
                   />
                   <SpeechBubble>
-                    <Glyph id={moment.glyph} scale={3} />
+                    <Glyph id={moment.glyph} scale={2} />
                   </SpeechBubble>
                 </At>
               )}
               {more > 0 && (
-                <At
-                  x={px(Math.min(more44.x + 10, g.W - Math.ceil(52 / g.s)))}
-                  y={py(more44.y - SPRITE)}
-                  class="bf-more"
-                  hidden={false}
-                >
+                <At x={px(moreAt.x)} y={py(moreAt.y)} class="bf-more" hidden={false}>
                   <button
                     type="button"
                     class="bf-more-btn pix"
@@ -254,7 +258,7 @@ export function BonfireScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
                 </At>
               )}
               {projectOpen && (
-                <At x={px(g.cx)} y={py(layout.below + 10)} class="pv-centred bf-hearth">
+                <At x={px(g.cx)} y={py(layout.below + 14)} class="pv-centred bf-hearth">
                   <StoneRow
                     hearth={hearth}
                     // The row is a meter: the scene's scale, or smaller when its stones would not fit the screen.
