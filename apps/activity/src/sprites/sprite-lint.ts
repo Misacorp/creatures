@@ -188,7 +188,9 @@ export function lintSprite(def: SpriteDef, options: LintOptions): Finding[] {
     if (!used.has(key)) add('palette', `Palette key "${key}" is not used by any pixel.`);
   }
   // A glyph is drawn in flat colour, without the shared outline (the shipped ones use any key, "k" included, for a colour).
-  if (def.palette.k !== INK && options.kind !== 'glyph') {
+  // Free art with no "k" at all is a backdrop (a sky strip), drawn without an outline; any "k" it has is the ink.
+  const outlineless = options.kind === 'free' && def.palette.k === undefined;
+  if (def.palette.k !== INK && options.kind !== 'glyph' && !outlineless) {
     add('ink', `The outline "k" must be the shared ink ${INK}.`);
   }
   // Scenes (banners, free art such as places and landmarks) get a larger palette than a sprite: the shipped

@@ -4,6 +4,14 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: Sprites up to 128 wide; free backdrop art may have no outline
+
+ID: `2026-11-03-sprites-up-to-128-wide-free` · Status: current
+
+**Decision.** Sprite data may be up to 128 pixels wide (still at most 64 tall; `MAX_WIDTH` and `MAX_HEIGHT` in `sprite-data.ts`). Free art with no `k` key in its palette skips the lint's outline rule, so a sky or other backdrop needs no ink pixels; any sprite that has `k` must use the shared ink, and every other kind still needs it. The valley sky strip (`valley-sky`) is 128 x 40 and tiles sideways; its `seam` variants show the join inside 64 pixels.
+
+**Reasoning.** The valley session asked for a sky strip that runs edge to edge without a visible repeat (Q50). 64 pixels repeats twice across a phone at 3x and shows the same hills; 128 does not. The 64 cap was only a sanity guard on data size, and one 128 x 40 strip costs nothing to draw. The outline rule forced 7 stray black dots into the first sky; a backdrop has no outline to draw.
+
 ## 2026-11-01: [Misa] Retro 2026-11-01: group behaviours before naming, a name-blind parity digest, and agent workflow fixes
 
 ID: `2026-11-01-retro-2026-11-01-group-behaviours` · Status: current

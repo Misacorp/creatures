@@ -52,7 +52,7 @@ const VALLEY_ROWS: readonly string[] = [
   'iiiiiijjiiiniiinnnjhiiiiiiiniiiiiiinjinnniiinjnjiiiiniiijiiiiiiijniiniihhjnjnniiiniijniiiiiiiiiiiiniiiniijjnhhhhinnininiiiiiiiii',
   'niniinjjnnnjnnnjjjjniiiniiijniiiiinjjijjjiinjjjjniinjiinjniiiiinjjnnjniinjjjjjnnninijjiiiiiiinnnnninnnjnnjjjnnhnnjjninjiiiiniiin',
   'jnjnnjjjjjjjjjjjjjjjninjninjjniiiijjjnjjjnnjjjjjjnnjjinjjjiiiiijjjjjjjiijjjjjjjjjnjnjjniiniiijjjjjnijjjjjjjjjjnjjjjjnjjiiinjnnnj',
-  'jjjjjjkjjjjjjjjjjjjjjijjjnjjjknnnnjjjjjjjjjjjjjjjjjjjnjjjkninnnjjjjjjjnnjjjjjjjjjjjkkjjnnjnnnjjjjjjnjjjjjjjjjjkjjjjjjjjnnnjjjjjj',
+  'jjjjjjjjjjjjjjjjjjjjjijjjnjjjjnnnnjjjjjjjjjjjjjjjjjjjnjjjjninnnjjjjjjjnnjjjjjjjjjjjjjjjnnjnnnjjjjjjnjjjjjjjjjjjjjjjjjjjnnnjjjjjj',
   'ggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjgggjg',
   'gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg',
 ];
@@ -73,7 +73,6 @@ const VALLEY_PALETTE: Readonly<Record<string, string>> = {
   i: '#223f52',
   j: '#19343d',
   g: '#1f3a3e',
-  k: '#0d0a1a',
 };
 
 const VALLEY_DAY: Readonly<Record<string, string>> = {
@@ -92,7 +91,6 @@ const VALLEY_DAY: Readonly<Record<string, string>> = {
   i: '#80b494',
   j: '#5c9a74',
   g: '#3b6b43',
-  k: '#4a8560',
 };
 
 const MOON_ROWS: readonly string[] = [

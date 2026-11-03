@@ -84,6 +84,20 @@ describe('lintSprite', () => {
     expect(lintSprite(foe, { kind: 'creature' }).map((f) => f.rule)).toContain('face');
   });
 
+  it('lets free art without a "k" key skip the outline (a sky), but not a creature', () => {
+    const sky: SpriteDef = { palette: { a: '#15122f', b: '#201b47' }, rows: ['aaaa', 'bbbb'] };
+    expect(lintSprite(sky, { kind: 'free' }).map((f) => f.rule)).not.toContain('ink');
+    const wrongInk: SpriteDef = { palette: { k: '#ff0000' }, rows: ['kkkk', 'kkkk'] };
+    expect(lintSprite(wrongInk, { kind: 'free' }).map((f) => f.rule)).toContain('ink');
+    const base = face('#c9c3e6');
+    const noInk: SpriteDef = {
+      ...base,
+      palette: { o: '#0d0a1a', e: '#fbf8ec', q: '#ff8fab', b: '#c9c3e6' },
+      rows: base.rows.map((r) => r.replace(/k/g, 'o')),
+    };
+    expect(lintSprite(noInk, { kind: 'creature' }).map((f) => f.rule)).toContain('ink');
+  });
+
   it('stops at a grid that does not parse', () => {
     const bad: SpriteDef = { palette: { k: '#0d0a1a' }, rows: ['kk', 'k'] };
     expect(lintSprite(bad, { kind: 'free' }).map((f) => f.rule)).toEqual(['grid']);
