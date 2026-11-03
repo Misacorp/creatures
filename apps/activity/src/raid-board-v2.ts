@@ -113,7 +113,7 @@ export function boardSlotV2(
     `${where}, ${c.name} level ${String(c.level)}, ${owner}`,
     ...(species === undefined ? [] : [species.role]),
     ...(knack === null ? [] : [knack]),
-    ...(carried === null ? [] : [`${String(carried.hp)} of ${String(carried.max)} HP`]),
+    ...(carried === null ? [] : [`${String(carried.hp)} / ${String(carried.max)} HP`]),
     ...(asked ? ['you asked to swap'] : []),
   ].join(', ');
   return {

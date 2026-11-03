@@ -265,10 +265,10 @@ describe('the boss card', () => {
     expect(byClass(p.root, 'escalating')).toHaveLength(1);
   });
 
-  it('says "Stage 2 of 3" and "Back again" for a returning boss between stages, and never calls a boss harder', () => {
+  it('says "Stage 2 / 3" and "Back again" for a returning boss between stages, and never calls a boss harder', () => {
     const p = draw(sample({ slot: 2, stagesPlayed: 1, bestShareBp: 4000 }));
     const text = visibleText(p.root);
-    expect(text).toContain('Stage 2 of 3');
+    expect(text).toContain('Stage 2 / 3');
     expect(text).toContain('Back again');
     expect(text.toLowerCase()).not.toMatch(/wall|harder|hardest/);
   });

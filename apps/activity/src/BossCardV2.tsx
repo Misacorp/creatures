@@ -132,7 +132,7 @@ export function BossCardV2({
             <p class="boss-stage muted small">
               {v2.nextStage > STAGES
                 ? 'Weekend over'
-                : `Stage ${String(stage)} of ${String(STAGES)}`}
+                : `Stage ${String(stage)} / ${String(STAGES)}`}
             </p>
           </div>
         )}
@@ -144,7 +144,7 @@ export function BossCardV2({
               key={rule.id}
               type="button"
               class="rule-card"
-              aria-label={`${rule.name}, strength ${String(strengthPips(card.strengthBp))} of ${String(CARD_PIPS)}`}
+              aria-label={`${rule.name}, strength ${String(strengthPips(card.strengthBp))} / ${String(CARD_PIPS)}`}
               onClick={(event) => {
                 popovers?.openCustom(`rule-card:${rule.id}`, event.currentTarget, {
                   label: rule.name,
@@ -165,7 +165,7 @@ export function BossCardV2({
             <span
               class="escalating"
               role="img"
-              aria-label={`Escalating: ${card.escalation.name}, step ${String(card.escalation.step)} of ${String(card.escalation.cap)}`}
+              aria-label={`Escalating: ${card.escalation.name}, step ${String(card.escalation.step)} / ${String(card.escalation.cap)}`}
             >
               <Sprite sprite={combatGlyph('escalating') ?? glyphOrUnknown('unknown')} scale={2} />
               <span class="escalating-name">{card.escalation.name}</span>
