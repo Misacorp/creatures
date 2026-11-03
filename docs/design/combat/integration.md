@@ -140,7 +140,6 @@ Found while building; each is staging-only today.
 
 - **Parties under four players** fight the boss tuned for four with their own creatures only (the plan's guests are not built). The board is the piece per player plus the spare, never under four columns (decision `2026-11-03-combat-v2-arenas-each-boss-defines`: still an open item for phase 5). The lab never measured smaller parties: phase 5 decides between guests and HP below four (R14.1's curve).
 - **Discord posts** (the Monday reveal, the stage posts) are not queued for v2 weeks: they describe the shipped boss's moves.
-- **The loot reveal** reads the finale's rows, so a boss that falls in stage 1 or 2 shows no reveal.
 - **The practice finale** is refused on v2 weeks.
 - **Knack text** runs to three lines at 390 px on a few Knacks (Leave a Trail), over the two-line rule ("On the board", Text): shorten the content, never clip it.
 - **A captured fixture of the v2 creature payload** (the client's parser is tested against samples in the server's shape).

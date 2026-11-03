@@ -367,6 +367,19 @@ describe('a combat v2 raid weekend', () => {
         expect(next.boss.id).toBe('cinder-wyrm');
         expect(next.rank).toBe(7);
         expect(next.v2).toMatchObject({ slot: 7, bestShareBp: 0, failedWeekends: 0 });
+        // The week's reveal reads the stage that killed the boss (there is no finale row), and shows what that stage paid.
+        const stage2 = rows<{ summary: string }>(
+          ctx.sql,
+          "SELECT summary FROM raid_results WHERE phase = 'stage2'",
+        )[0];
+        const paid = (JSON.parse(stage2?.summary ?? '{}') as { essence: Record<string, number> })
+          .essence[a.id];
+        expect(paid).toBeGreaterThan(0);
+        expect(next.you.reveal).toMatchObject({ week: V2_WEEK.id, party: 1, cleared: true });
+        expect(next.you.reveal?.essence).toBeGreaterThanOrEqual(paid ?? 0);
+        // Marking it seen works for that week and clears it.
+        expect(ctx.core.raid.markRevealSeen(a.id, V2_WEEK.id).ok).toBe(true);
+        expect(ctx.core.raid.view(a.id, HELSINKI).you.reveal).toBeNull();
       },
       { start: V2_WEEK.open, core: V2 },
     );
