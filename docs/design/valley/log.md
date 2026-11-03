@@ -237,3 +237,7 @@ Step 3 fixes merged after the panel: shared (one whole-pixel scale per scene, th
 The art-direction session answered (branch `claude/art-review-command`, its PR being opened): the house, the Forge and the cave in the glow style (`valley-glow` ids `house`, `forge`, `cave`; night main, `alts.day`), and element shards told apart by shape (set `shards`, two variants per element with deuteranope previews; its pick: Tide A, Ember A, Grove A, Spark A, Mire B). Both wait for Misa's review there; the shards replace shipped sprites only after his pick. The valley wires in the three glow places once that PR merges. Concept sets are now found automatically (`concepts/sets.ts`).
 
 Art update (PR #120, Misa approved): the element shards in the game are now told apart by shape (Tide a drop, Ember a flame, Grove a leaf, Spark a bolt, Mire a blob with drips; colours unchanged; a test keeps every pair at least 8 pixels apart in silhouette), closing the panel's row 12; the glow Forge's fire and the cave's crystals stay lit by day. Once #120 merges, the valley takes the glow house, Forge and cave in place of its older art.
+
+## 2026-11-03: round 21 answered
+
+Q50 (the posters): C, no poster on a place's screen ("It's weird that it shows the place twice"), but Misa likes the depth of a sky behind the scene: a proper sky backdrop instead, later varying by location. The prototype's default is now no poster; the sky and framed modes stay behind `&poster=` to compare. Asked the art-direction session for sky backdrops (day and night).

@@ -6,17 +6,7 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-### Q50. Should each place's screen keep its poster at the top?
-
-Status: asked, round 21 (2026-11-03). From the panel on the places (`reviews/2026-11-03-places.md`, row 3). Challenges: the art direction from the art-direction session (2026-10-31, "the `valley-posters` banners head each place's own screen"). Touches: every place's scene.
-
-**Why it matters.** Today each place's screen has its poster in a black frame at the top, and the place's own art below it. Two reviewers say the poster is a box of decoration showing the same place twice, and its fixed time of day clashes with the screen (a night poster over the visitor's sunny field). The art director says drop the frame and let it run edge to edge like a sky.
-
-- **A. Keep it, framed** (as now). Example: the visitor's screen opens with his moonlit poster in a frame, his stall in daylight below.
-- **B. Keep it as the sky strip.** No frame; the poster runs edge to edge at the top as the screen's backdrop, keeping its own time of day. Example: the bonfire's sunset poster is the sky above the fire.
-- **C. Drop it from the place screens.** The place's art fills the screen with the creatures at work; the posters live elsewhere (for example in the Places list or the Gazette). Example: the School's screen is the schoolhouse and its yard, nothing above it.
-
-**Lead's pick: B.** It keeps your art direction and removes the box the reviewers object to; the time-of-day clash is softer as a backdrop than as a framed picture. If it still feels doubled after you see it, C is a small change.
+Nothing waiting.
 
 ## Queue
 
@@ -797,6 +787,22 @@ Status: answered, round 20 (2026-11-01). From the economy lab (T-7b, the last fa
 **Answer (2026-11-01): none of them; more places to use scrap.** "Tempering would only increase the potential of rolls on the item since item levels don't automatically increase any stats. If we allowed a free reroll of the modifier tiers on a tempered item while keeping the modifier lines unchanged, it would be too powerful for good items. Therefore I'm skeptical about tempering. Can we introduce more places to use scrap? Week 13 is far away and I think we could get some more uses for it into the trader, market or new upcoming game systems by the e.g., buy exotic wood for furniture crafting, fund a massive communal project, etc."
 
 Became: no tempering (the lab keeps the study switched off); no taper on scouts' scrap for now; late scrap gets more uses over the season (the visitor's stock, the Market, new systems), queued as **scrap-uses**. T-7b stays failing in the lab until they are modelled.
+
+### Q50. Should each place's screen keep its poster at the top?
+
+Status: answered, round 21 (2026-11-03). From the panel on the places (`reviews/2026-11-03-places.md`, row 3). Challenges: the art direction from the art-direction session (2026-10-31, "the `valley-posters` banners head each place's own screen"). Touches: every place's scene.
+
+**Why it matters.** Today each place's screen has its poster in a black frame at the top, and the place's own art below it. Two reviewers say the poster is a box of decoration showing the same place twice, and its fixed time of day clashes with the screen (a night poster over the visitor's sunny field). The art director says drop the frame and let it run edge to edge like a sky.
+
+- **A. Keep it, framed** (as now). Example: the visitor's screen opens with his moonlit poster in a frame, his stall in daylight below.
+- **B. Keep it as the sky strip.** No frame; the poster runs edge to edge at the top as the screen's backdrop, keeping its own time of day. Example: the bonfire's sunset poster is the sky above the fire.
+- **C. Drop it from the place screens.** The place's art fills the screen with the creatures at work; the posters live elsewhere (for example in the Places list or the Gazette). Example: the School's screen is the schoolhouse and its yard, nothing above it.
+
+**Lead's pick: B.** It keeps your art direction and removes the box the reviewers object to; the time-of-day clash is softer as a backdrop than as a framed picture. If it still feels doubled after you see it, C is a small change.
+
+**Answer (2026-11-03): C.** "Q50: probably C. It's weird that it shows the place twice. I do like the added depth of having a "sky" in the background though, so that could be something worth using instead. We'd just need the proper sky images. Eventually the sky backdrop could vary based on location."
+
+Became: no poster on a place's screen (the prototype's default is `none`; `&poster=sky|framed` stay only to compare); a real sky backdrop takes the strip's place when the art exists, asked of the art-direction session, later varying by location. The posters stay in the art library for other uses.
 
 ## Withdrawn
 

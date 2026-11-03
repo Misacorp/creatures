@@ -66,13 +66,13 @@ export function glowNameOf(
   }
 }
 
-// --- The poster's three modes (Q50: Misa chooses; all three are kept to compare on staging) ---
+// --- The poster's three modes (Q50, Misa: C, no poster on a place's screen; the other two stay for comparison until a real sky backdrop replaces them) ---
 
 /** How the place's poster is shown: a sky strip edge to edge, a framed picture, or not at all. */
 export type PosterMode = 'sky' | 'framed' | 'none';
 
-/** The mode used unless the address says otherwise (`&poster=framed` or `&poster=none`). */
-export const POSTER_MODE: PosterMode = 'sky';
+/** The mode used unless the address says otherwise (`&poster=sky` or `&poster=framed`): none (Q50). */
+export const POSTER_MODE: PosterMode = 'none';
 
 /** The mode an address asks for (`#bonfire?step=1&poster=none`), else `POSTER_MODE`. */
 export function posterModeOf(hash: string): PosterMode {

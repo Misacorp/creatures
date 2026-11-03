@@ -459,10 +459,10 @@ describe('the place scenes: one scale, the poster in three modes, the layout for
   });
 
   it('reads the poster mode from the address, sky by default', () => {
-    expect(posterModeOf('#bonfire?step=1')).toBe('sky');
+    expect(posterModeOf('#bonfire?step=1')).toBe('none');
     expect(posterModeOf('#valley?poster=framed')).toBe('framed');
     expect(posterModeOf('#valley?step=1&poster=none&bare=1')).toBe('none');
-    expect(posterModeOf('#valley?poster=huge')).toBe('sky');
+    expect(posterModeOf('#valley?poster=huge')).toBe('none');
   });
 
   it('draws the sky strip as one centred copy, the sides carrying its own edge columns to the edges', () => {

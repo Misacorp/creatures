@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: No poster on a place's screen; a sky backdrop instead, when the art exists (round 21, Q50) **[Misa]**
+
+ID: `2026-11-03-no-poster-on-a-place-s` · Status: current
+
+**Decision.** A place's screen has no poster at the top. Misa: "Q50: probably C. It's weird that it shows the place twice. I do like the added depth of having a "sky" in the background though, so that could be something worth using instead. We'd just need the proper sky images. Eventually the sky backdrop could vary based on location." The valley prototype's default poster mode is `none`; a real sky backdrop (art to come from the art-direction session, later one per kind of location) takes the strip's place. The `sky` and `framed` modes stay behind `&poster=` only for comparison.
+
+**Reasoning.** As a sky strip, a place's own poster shows the place a second time right above it (the panel, `reviews/2026-11-03-places.md`, row 3); a sky with no place in it keeps the depth Misa liked without the double.
+
 ## 2026-11-03: Place scenes: the one-scale rule is per scene; the tray is UI and keeps its own scale
 
 ID: `2026-11-03-place-scenes-the-one-scale-rule` · Status: current

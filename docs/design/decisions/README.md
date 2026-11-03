@@ -479,6 +479,7 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-03 No poster on a place's screen; a sky backdrop instead, when the art exists (round 21, Q50) \[Misa\]
 - 2026-11-03 Place scenes: the one-scale rule is per scene; the tray is UI and keeps its own scale
 - 2026-11-03 Place scenes: one pixel scale per screen, the poster as a switchable sky strip
 - 2026-11-03 The visitor leaves when Sunday ends, after the finale
