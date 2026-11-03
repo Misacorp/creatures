@@ -397,7 +397,7 @@ describe('the raid-weekend dev tool', () => {
         'INSERT INTO raid_placements (week_id, party, slot, user_id, creature_id) VALUES (?, 1, 0, ?, ?)',
         '2027-W03',
         userId,
-        creatureIds[0] as string,
+        creatureIds[0],
       );
     };
     const perWeek = (ctx: CoreContext, weekId: string) => ({

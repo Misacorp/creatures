@@ -28,10 +28,7 @@ export function raidDungeonTables(sql: SqlStorage): string[] {
     .sort();
 }
 
-export function resetRaidsDungeons(
-  ctx: ToolCtx,
-  _body: { confirm: 'reset' },
-): { deleted: Record<string, number> } {
+export function resetRaidsDungeons(ctx: ToolCtx): { deleted: Record<string, number> } {
   const sql = ctx.sql;
   const deleted: Record<string, number> = {};
   for (const table of raidDungeonTables(sql)) {
