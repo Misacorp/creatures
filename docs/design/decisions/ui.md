@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: Combat v2 How to play: six sections beside the shipped set, keyword help from one glossary id
+
+ID: `2026-11-03-combat-v2-how-to-play-six` · Status: current
+
+**Decision.** Combat v2's How to play is a second set of six sections (`how-to-play-v2.json`, ids `v2-marks`, `v2-knacks`, `v2-board`, `v2-armour`, `v2-weekend`, `v2-rank`, fixed order, its own loader `loadHowToPlayV2`), shown by `HowToPlay` when `/api/config` says `combatV2`; the shipped twelve and their loader are unchanged. The v2 page is the six, then the shipped sections combat v2 does not touch (trips, dungeon, Valley Games, gear, Workshop: `V2_KEPT_SECTIONS` in `how-to-pages.ts`), so no popover link or help text is lost on staging; the shipped first week, creatures, combos, raid week, finale, ranks and rewards describe the shipped fights and are left out. A "More in How to play" link whose section the v2 page lacks goes to the v2 section that took over its subject (`sectionOnPage`), else the top. The text has no rule numbers and calls no boss hard; a line may carry a keyword in braces (`{Mark}`), drawn as a chip. Every combat v2 keyword (`combatV2.keywords`) has one glossary entry, `kw-` plus its name in kebab case (`GLOSSARY_IDS.keyword`, `glossary-v2.json`), pointing at a v2 section; a test fails when a keyword has none. `ui/KeywordText` draws its chips as `Tag`s with that entry, so they are tap-for-help like every other tag, except where the text sits inside a button (a choice in the Knack picker, the slot that opens it): there it takes `help={false}`, because a button must not hold a button.
+
+**Reasoning.** A second set beside the first keeps every v1 screen, test and fixture as it was and costs nothing for players on production, where the flag is off. Keeping the unaffected shipped sections avoids a staging page that has lost its Expeditions, Gear and Workshop help while the game still has them. A glossary id derived from the keyword's name means the content's own braces find their help with no list in the client, and the loader's check of braced words against the keywords stays in the content tests (the client does not import the combat v2 pack). Nested buttons break clicks and assistive technology, so the picker's chips stay plain for now; making the picker's rows hold their own help is a later change to `ChoiceButton`, shared with the dungeon.
+
 ## 2026-11-02: Combat v2 client, first part: the Knack picker and the creature page follow the data
 
 ID: `2026-11-02-combat-v2-client-first-part-the` · Status: current

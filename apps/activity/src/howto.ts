@@ -81,13 +81,17 @@ export function markExample(
   };
 }
 
-/** The Boss Rank picture: how many bosses of the track to show, which are beaten and which one is next. */
-export function rankTrack(count: number): { state: 'beaten' | 'current' | 'later' }[] {
-  const current = Math.min(2, count - 1);
-  return Array.from({ length: count }, (_, i) => ({
-    state:
-      i < current ? ('beaten' as const) : i === current ? ('current' as const) : ('later' as const),
-  }));
+/**
+ * The Boss Rank picture: the first two bosses of the track (the first beaten, the second this week's) and two still
+ * hidden ones, which the server announces a week ahead. It names no later boss, so it cannot disagree with the track.
+ */
+export function rankPicture(): { boss: string | null; state: 'beaten' | 'current' | 'later' }[] {
+  return [
+    { boss: 'tidal-colossus', state: 'beaten' },
+    { boss: 'cinder-wyrm', state: 'current' },
+    { boss: null, state: 'later' },
+    { boss: null, state: 'later' },
+  ];
 }
 
 interface WeekStep {

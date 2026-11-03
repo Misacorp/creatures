@@ -38,7 +38,7 @@ import {
   exampleSpecies,
   expeditionTrips,
   markExample,
-  rankTrack,
+  rankPicture,
   starterSpecies,
   weekStrip,
   weekendStrip,
@@ -575,7 +575,7 @@ function V2BoardArt() {
                     aria-hidden="true"
                   >
                     {species !== undefined && (
-                      <Sprite sprite={creatureSpriteOrFallback(species.id)} scale={1} />
+                      <Sprite sprite={creatureSpriteOrFallback(species.id)} scale={2} />
                     )}
                   </li>
                 );
@@ -628,28 +628,23 @@ function V2WeekendArt() {
   );
 }
 
-/** The Boss Rank (combat v2): bosses in a row, the beaten ones ticked, the current one lit. */
+/** The Boss Rank (combat v2): the first boss beaten and ticked, this week's lit, the next ones still hidden. */
 function V2RankArt() {
-  const bosses = content.bosses.slice(0, 5);
-  const states = rankTrack(bosses.length);
   return (
     <ol class="art-row v2-rank-art" aria-label="The bosses in order">
-      {bosses.map((boss, i) => {
-        const state = states[i]?.state ?? 'later';
-        const art = bossArt(boss.id);
-        return (
-          <li key={boss.id} class={`v2-rank-boss ${state}`}>
-            <Sprite sprite={art.sprite} scale={2} />
-            {state === 'beaten' && (
-              <>
-                <Sprite sprite={glyphOrUnknown('tick')} scale={2} class="v2-rank-tick" />
-                <span class="visually-hidden">Beaten</span>
-              </>
-            )}
-            {state === 'current' && <span class="visually-hidden">This week</span>}
-          </li>
-        );
-      })}
+      {rankPicture().map(({ boss, state }, i) => (
+        <li key={i} class={`v2-rank-boss ${state}`}>
+          <Sprite sprite={bossArt(boss ?? '').sprite} scale={2} />
+          {state === 'beaten' && (
+            <>
+              <Sprite sprite={glyphOrUnknown('tick')} scale={2} class="v2-rank-tick" />
+              <span class="visually-hidden">Beaten</span>
+            </>
+          )}
+          {state === 'current' && <span class="visually-hidden">This week</span>}
+          {boss === null && <span class="visually-hidden">Not known yet</span>}
+        </li>
+      ))}
     </ol>
   );
 }

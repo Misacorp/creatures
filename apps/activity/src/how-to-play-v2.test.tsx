@@ -3,7 +3,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { HowToPlay } from './HowToPlay';
 import { SectionArt } from './HowToPlayArt';
 import { V2_KEPT_SECTIONS, pageSections, sectionOnPage } from './how-to-pages';
-import { BOARD_EXAMPLE_MOVE, markExample, rankTrack, weekendStrip, exampleSpecies } from './howto';
+import {
+  BOARD_EXAMPLE_MOVE,
+  markExample,
+  rankPicture,
+  weekendStrip,
+  exampleSpecies,
+} from './howto';
 import { PopoverHost } from './PopoverHost';
 import { KeywordText } from './ui/KeywordText';
 import { FakeElement, byClass, byName, createPage, find, visibleText, type Page } from './test-dom';
@@ -108,16 +114,17 @@ describe('the pictures of the combat v2 page', () => {
     expect(board).toContain(BOARD_EXAMPLE_MOVE.shape);
   });
 
-  it('ticks the beaten bosses of the track, lights this week’s and leaves the rest', () => {
-    expect(rankTrack(5).map((s) => s.state)).toEqual([
-      'beaten',
-      'beaten',
-      'current',
-      'later',
-      'later',
-    ]);
-    expect(rankTrack(1).map((s) => s.state)).toEqual(['current']);
-    expect(rankTrack(0)).toEqual([]);
+  it('ticks the first boss of the track, lights the second and hides the rest', () => {
+    const picture = rankPicture();
+    expect(picture.map((p) => p.state)).toEqual(['beaten', 'current', 'later', 'later']);
+    expect(picture.map((p) => p.boss)).toEqual(['tidal-colossus', 'cinder-wyrm', null, null]);
+    for (const { boss } of picture) {
+      if (boss !== null)
+        expect(
+          content.bosses.some((b) => b.id === boss),
+          boss,
+        ).toBe(true);
+    }
   });
 });
 

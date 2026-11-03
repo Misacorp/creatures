@@ -352,8 +352,8 @@
   display: grid;
   flex: none;
   place-items: center;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.5rem;
+  height: 2.5rem;
   background: var(--ink);
   box-shadow: inset 0 0 0 var(--px) var(--line);
 }
