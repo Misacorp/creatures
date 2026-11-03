@@ -5,9 +5,9 @@
       "title": "Marks and reactions",
       "lines": [
         "A Setter's hit leaves its element's {Mark} on the boss. The mark strip under the boss shows them all.",
-        "Hit the same element again and the mark's count grows. A boss can carry several marks at once.",
+        "Hit the same element again and the mark gains a stack. A boss can carry several marks at once.",
         "A Payoff that hits a mark its element is strong against sets off a {Reaction}: bonus damage.",
-        "Each Reaction takes a count off the mark. When the count runs out, the mark is gone.",
+        "Each Reaction takes a stack off the mark. When its stacks run out, the mark is gone.",
         "A row acts from the front, left to right. Put the Setter before the Payoff, so the mark is there to cash."
       ]
     },

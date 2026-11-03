@@ -4,7 +4,7 @@
     "title": "Mark",
     "short": "The boss carries an element, with up to three stacks.",
     "lines": [
-      "A Setter's hit leaves one. The mark strip under the boss shows each mark and its count.",
+      "A Setter's hit leaves one. The mark strip under the boss shows each mark and its stacks.",
       "It is the setup a Payoff cashes, not a debuff."
     ],
     "visual": {
@@ -19,7 +19,7 @@
     "short": "A Payoff cashes a mark: bonus damage.",
     "lines": [
       "The Payoff's element has to be strong against the mark's.",
-      "The mark loses a count each time.",
+      "The mark loses a stack each time.",
       "Only a Payoff's hit does it, or a Knack that says so."
     ],
     "visual": {
@@ -58,7 +58,7 @@
     "title": "Spend",
     "short": "Pay a cost to do something.",
     "lines": [
-      "The cost is part of a mark's count, a Store, or some HP.",
+      "The cost is part of a mark's stacks, a Store, or some HP.",
       "The Knack's text says what and how much.",
       "If the cost can't be paid, nothing happens."
     ],
