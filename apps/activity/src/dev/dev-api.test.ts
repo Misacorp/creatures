@@ -8,8 +8,11 @@ import {
   eventLine,
   formatGameTime,
   formatOffset,
+  describeBench,
   parseDevEvents,
   parseDevState,
+  parseWatch,
+  replayPhaseOf,
   runTool,
 } from './dev-api';
 
@@ -36,18 +39,28 @@ describe('errorCode', () => {
 });
 
 describe('errorSentence', () => {
-  it('says what a locked roster means and what to do, in plain words', () => {
-    const text = errorSentence('roster_locked');
-    expect(text).toContain('The roster is locked: Phase 1 has been fought this week.');
-    expect(text).toContain('Week done');
-    expect(text).toContain('Preparation');
-    expect(text).not.toContain('roster_locked');
-  });
-
   it('tells what to do about a raid week on the old rules, keeping the code out of the text', () => {
     const text = errorSentence('not_v2');
-    expect(text).toContain('Run Combat v2, Convert first');
+    expect(text).toContain('Press Clear the board');
     expect(text).not.toContain('not_v2');
+  });
+
+  it('says in plain words why a bench step refused', () => {
+    expect(errorSentence('play_stage1_first')).toBe('Play stage 1 first.');
+    expect(errorSentence('play_stage2_first')).toBe('Play stage 2 first.');
+    expect(errorSentence('boss_fell')).toBe('The boss already fell.');
+    expect(errorSentence('fought')).toBe('This week has been fought. Clear the board first.');
+    for (const code of [
+      'already_played',
+      'nobody_placed',
+      'nobody_left',
+      'clear_first',
+      'festival',
+    ]) {
+      const text = errorSentence(code);
+      expect(text, code).not.toBe(code);
+      expect(text, code).toMatch(/\.$/);
+    }
   });
 
   it('shows any other code as it is, even one named like an object property', () => {
@@ -145,5 +158,49 @@ describe('clockRows', () => {
   it('shows a dash for a raid without a boss yet', () => {
     const rows = clockRows({ ...view, raid: { weekId: '2026-W43', status: 'prep', bossId: null } });
     expect(rows.find((r) => r.label === 'Raid boss')?.value).toBe('-');
+  });
+});
+
+describe('the raid bench answers', () => {
+  it('reads the fight to open from a play answer, and nothing from anything else', () => {
+    expect(
+      parseWatch({ stage: 1, watch: { week: '2027-W02', party: 2, phase: 'stage1' } }),
+    ).toEqual({ week: '2027-W02', party: 2, phase: 'stage1' });
+    expect(parseWatch({ stage: 3, watch: null })).toBeNull();
+    expect(parseWatch({ watch: { week: '2027-W02', party: 2, phase: 'stage9' } })).toBeNull();
+    expect(parseWatch({ watch: { week: 5, party: 2, phase: 'stage1' } })).toBeNull();
+    expect(parseWatch({ watch: { week: 'w', party: 1.5, phase: 'stage1' } })).toBeNull();
+    expect(parseWatch('nope')).toBeNull();
+  });
+
+  it('names a stage the way the replay screen does', () => {
+    expect(replayPhaseOf('stage1')).toBe('phase1');
+    expect(replayPhaseOf('stage2')).toBe('phase2');
+    expect(replayPhaseOf('finale')).toBe('finale');
+  });
+
+  it('says what each step did in one sentence', () => {
+    expect(describeBench('raid-clear', { rank: 8, clockMovedBack: true })).toBe(
+      'The board is clear, Boss Rank 8. The clock went back into the preparation.',
+    );
+    expect(describeBench('raid-clear', { rank: 1, clockMovedBack: false })).toBe(
+      'The board is clear, Boss Rank 1.',
+    );
+    expect(describeBench('raid-fill', { added: 1, boardFull: false })).toBe(
+      '1 simulated player added.',
+    );
+    expect(describeBench('raid-fill', { added: 4, boardFull: true })).toBe(
+      '4 simulated players added. The board is full.',
+    );
+    expect(describeBench('raid-rank', { rank: 8 })).toBe('Boss Rank 8 set.');
+    expect(describeBench('raid-play', { stage: 1, live: false, bossFell: false })).toBe(
+      'Stage 1 played.',
+    );
+    expect(describeBench('raid-play', { stage: 3, live: false, bossFell: true })).toBe(
+      'The finale played. The boss fell.',
+    );
+    expect(describeBench('raid-play', { stage: 3, live: true })).toBe('The finale started live.');
+    expect(describeBench('raid-play', {})).toBeNull();
+    expect(describeBench('finish-jobs', { rank: 1 })).toBeNull();
   });
 });

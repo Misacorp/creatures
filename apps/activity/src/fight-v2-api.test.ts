@@ -88,5 +88,8 @@ describe('the v2 payloads the engine and the server make', () => {
     expect(stagePhaseOf('phase1')).toBe('stage1');
     expect(stagePhaseOf('phase2')).toBe('stage2');
     expect(stagePhaseOf('finale')).toBe('finale');
+    // A name the server already uses is kept (it once turned into the finale, whose replay does not exist yet).
+    expect(stagePhaseOf('stage1')).toBe('stage1');
+    expect(stagePhaseOf('stage2')).toBe('stage2');
   });
 });

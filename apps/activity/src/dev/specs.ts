@@ -8,22 +8,20 @@ import type { Field, Option, ToolSpec } from './forms';
 import {
   BASE_OPTIONS,
   BOON_OPTIONS,
-  BOSS_OPTIONS,
   DESTINATION_OPTIONS,
   GATE_OPTIONS,
   GOAL_OPTIONS,
   JOURNAL_OPTIONS,
   LIMITS,
+  MAX_FILL_PLAYERS,
   MODIFIER_OPTIONS,
   OMEN_OPTIONS,
   OUTCOME_OPTIONS,
   PART_FIELDS,
-  PHASE_OPTIONS,
+  RANK_OPTIONS,
   RARITY_OPTIONS,
-  RESOLVE_OPTIONS,
   SPECIES_OPTIONS,
   SUPPLY_OPTIONS,
-  WEEKEND_STEP_OPTIONS,
 } from './options';
 
 const HOUR = 3_600_000;
@@ -251,48 +249,57 @@ const WEATHER_SPECS: readonly ToolSpec[] = (['today', 'tomorrow'] as const).map(
   }),
 );
 
+/**
+ * The raid test bench, in the order it is used: clear the board, fill it, pick the Boss Rank, play the stages (each opens its replay)
+ * and start again. The panel shows these in this order (`ordered`), not the buttons first and the forms after.
+ */
 const RAID_SPECS: readonly ToolSpec[] = [
-  { tool: 'raid-phase', label: 'Jump the week to', fields: [pick('to', 'Phase', PHASE_OPTIONS)] },
-  { tool: 'raid-resolve', label: 'Resolve now', fields: [pick('phase', 'Phase', RESOLVE_OPTIONS)] },
   {
-    tool: 'raid-boss',
-    label: 'Set boss and Boss Rank',
+    tool: 'raid-clear',
+    label: 'Clear the board',
+    fields: [],
+    hint: 'This week starts again: nothing placed, nothing fought, the same Boss Rank. Your creatures stay.',
+  },
+  {
+    tool: 'raid-fill',
+    label: 'Fill the empty spots',
+    button: 'Fill',
     fields: [
-      pick('bossId', 'Boss', BOSS_OPTIONS, true),
-      int('rank', 'Boss Rank', 1, LIMITS.maxBossRank, true),
+      {
+        kind: 'int',
+        key: 'count',
+        label: 'Simulated players',
+        min: 1,
+        max: MAX_FILL_PLAYERS,
+        optional: true,
+        placeholder: 'fill the board',
+      },
     ],
-    needOne: true,
-  },
-  { tool: 'raid-festival', label: 'Festival week', fields: [flag('on', 'On')] },
-  {
-    tool: 'raid-roster',
-    label: 'Fill the roster with simulated players',
-    fields: [int('count', 'Players', 0, 40)],
+    hint: 'Simulated players take the empty spots after what you placed, three creatures each. Yours never move.',
   },
   {
-    tool: 'raid-live',
-    label: 'Start a live finale now',
-    fields: [int('countdownSeconds', 'Countdown (s)', 1, 60, true)],
+    tool: 'raid-rank',
+    label: 'Boss and Boss Rank',
+    button: 'Set',
+    fields: [pick('rank', 'Rank', RANK_OPTIONS)],
+    build: (values) => ({ rank: Number(values['rank']) }),
+    hint: 'A rank comes with its own boss. Only before anything is fought: clear the board first otherwise.',
   },
+  { tool: 'raid-play', label: 'Play stage 1', fields: [], fixed: { stage: 'stage1' } },
+  { tool: 'raid-play', label: 'Play stage 2', fields: [], fixed: { stage: 'stage2' } },
+  { tool: 'raid-play', label: 'Play the finale', fields: [], fixed: { stage: 'finale' } },
   {
-    tool: 'raid-simulate',
-    label: 'Run a full simulated week',
-    fields: [int('guests', 'Simulated players', 0, 40, true)],
-  },
-  {
-    tool: 'raid-weekend',
-    label: 'Play a combat v2 weekend',
-    fields: [
-      pick('step', 'Up to', WEEKEND_STEP_OPTIONS, true),
-      int('guests', 'Simulated players', 0, 40, true),
-    ],
-    hint: 'Combat v2 weeks only: moves the clock stage by stage, the guests replace their fallen, one asks you for a swap, and the live finale starts. Pick a step to go one event at a time.',
+    tool: 'raid-play',
+    label: 'Watch the finale live',
+    fields: [],
+    fixed: { stage: 'finale', live: true },
+    hint: 'Starts the finale live now, for the live screen.',
   },
   {
     tool: 'combat-v2-convert',
     label: 'Combat v2, Convert',
     fields: [],
-    hint: 'Combat v2 (staging) only: every creature rolls its v2 talent, Knacks and finale choices go, and this raid week is rebuilt on the new rules if it is on the old ones.',
+    hint: 'Combat v2 (staging) only: every creature rolls its v2 talent, Knacks and finale choices go. Clear the board makes the week new.',
   },
   {
     tool: 'reset-raids-dungeons',
@@ -323,6 +330,8 @@ interface SectionDef {
   /** The tab whose view this section is about; null for Analytics. */
   tab: Tab | null;
   specs: readonly ToolSpec[];
+  /** Show the controls one after the other, as listed (a sequence of steps), not the buttons first and the forms after. */
+  ordered?: true;
 }
 
 /** The per-view sections, in the order of the navigation's places. The panel moves the current place's one to the top. */
@@ -332,7 +341,7 @@ export const SECTIONS: readonly SectionDef[] = [
   { id: 'expeditions', title: 'Expeditions', tab: 'expeditions', specs: EXPEDITIONS_SPECS },
   { id: 'games', title: 'Games', tab: 'games', specs: GAMES_SPECS },
   { id: 'dungeon', title: 'Dungeon', tab: 'dungeon', specs: DUNGEON_SPECS },
-  { id: 'raid', title: 'Raid', tab: 'raid', specs: RAID_SPECS },
+  { id: 'raid', title: 'Raid', tab: 'raid', specs: RAID_SPECS, ordered: true },
   { id: 'weather', title: 'Weather', tab: null, specs: WEATHER_SPECS },
   { id: 'analytics', title: 'Analytics', tab: null, specs: ANALYTICS_SPECS },
 ];

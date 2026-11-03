@@ -33,18 +33,14 @@ export const DEV_TOOL_IDS = [
   'dungeon-modifiers',
   'dungeon-seed',
   'set-weather',
-  'raid-phase',
-  'raid-resolve',
-  'raid-boss',
-  'raid-festival',
-  'raid-roster',
-  'raid-live',
-  'raid-simulate',
-  'raid-weekend',
   'games-bots',
   'games-run-now',
   'games-reset',
   'analytics-rollup',
+  'raid-clear',
+  'raid-fill',
+  'raid-rank',
+  'raid-play',
   'combat-v2-convert',
   'reset-raids-dungeons',
   'reset-account',
@@ -65,7 +61,14 @@ interface FieldBase {
 }
 
 export type Field =
-  | (FieldBase & { kind: 'int'; min: number; max: number; initial?: number })
+  | (FieldBase & {
+      kind: 'int';
+      min: number;
+      max: number;
+      initial?: number;
+      /** What an empty optional field says (default "unchanged"). */
+      placeholder?: string;
+    })
   | (FieldBase & { kind: 'select'; options: readonly Option[] })
   /** Yes or no; as an optional field it also has "unchanged". */
   | (FieldBase & { kind: 'bool' })
@@ -78,8 +81,10 @@ export type Values = Readonly<Record<string, string>>;
 
 export interface ToolSpec {
   tool: DevToolId;
-  /** The button's text. */
+  /** The button's text (and, for a form with fields, its title). */
   label: string;
+  /** The text of a form's button (default "Apply"). */
+  button?: string;
   fields: readonly Field[];
   /** Body keys that are always sent (the variant of a tool that takes one of several shapes). */
   fixed?: Readonly<Record<string, unknown>>;

@@ -538,9 +538,16 @@ export function parseStatsV2(data: unknown): StatsV2 {
 
 // --- Requests ---
 
-/** The server's name of a stage for the replay and stats routes (`phase1` and `phase2` of a v2 week are stages 1 and 2). */
-export const stagePhaseOf = (phase: 'phase1' | 'phase2' | 'finale'): FightPhaseV2 =>
-  phase === 'phase1' ? 'stage1' : phase === 'phase2' ? 'stage2' : 'finale';
+/**
+ * The server's name of a stage for the replay and stats routes (`phase1` and `phase2` of a v2 week are stages 1 and 2). A name the server
+ * already uses (`stage1`, `stage2`) stays as it is: it is never turned into the finale.
+ */
+export const stagePhaseOf = (phase: 'phase1' | 'phase2' | 'finale' | FightPhaseV2): FightPhaseV2 =>
+  phase === 'phase1' || phase === 'stage1'
+    ? 'stage1'
+    : phase === 'phase2' || phase === 'stage2'
+      ? 'stage2'
+      : 'finale';
 
 export async function fetchReplayV2(
   weekId: string,

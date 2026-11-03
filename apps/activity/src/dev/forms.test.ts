@@ -1,11 +1,12 @@
+import { combatV2 } from '@creatures/game/combat-v2';
 import { describe, expect, it } from 'vitest';
 import { DEV_TOOL_IDS, buildBody, initialValues, specId, type ToolSpec } from './forms';
 import {
   BASE_OPTIONS,
   BOON_OPTIONS,
-  BOSS_OPTIONS,
   LIMITS,
   OMEN_OPTIONS,
+  RANK_OPTIONS,
   SPECIES_OPTIONS,
 } from './options';
 import { ALL_SPECS, CLOCK_SPECS, GOODS_SPECS, SECTIONS, orderedSections } from './specs';
@@ -39,7 +40,6 @@ function problem(tool: string, label: string, values: Record<string, string> = {
 
 const firstSpecies = SPECIES_OPTIONS[0]?.value ?? '';
 const firstBase = BASE_OPTIONS[0]?.value ?? '';
-const firstBoss = BOSS_OPTIONS[0]?.value ?? '';
 
 describe('every tool has a control', () => {
   it('covers each action tool of the server, and nothing else', () => {
@@ -269,40 +269,76 @@ describe('the Dungeon', () => {
   });
 });
 
-describe('the Raid', () => {
-  it('sends the phase, the resolve, the boss and the Festival', () => {
-    expect(body('raid-phase', 'Jump the week to', { to: 'phase2' })).toEqual({ to: 'phase2' });
-    expect(body('raid-resolve', 'Resolve now', { phase: 'phase1' })).toEqual({ phase: 'phase1' });
-    expect(body('raid-boss', 'Set boss and Boss Rank', { bossId: firstBoss })).toEqual({
-      bossId: firstBoss,
-    });
-    expect(body('raid-boss', 'Set boss and Boss Rank', { rank: '4' })).toEqual({ rank: 4 });
-    expect(problem('raid-boss', 'Set boss and Boss Rank')).toMatch(/at least one/);
-    expect(body('raid-festival', 'Festival week', { on: 'false' })).toEqual({ on: false });
+describe('the Raid test bench', () => {
+  it('lists the steps in the order they are used', () => {
+    const raid = SECTIONS.find((s) => s.id === 'raid');
+    expect(raid?.ordered).toBe(true);
+    expect(raid?.specs.map((s) => s.label)).toEqual([
+      'Clear the board',
+      'Fill the empty spots',
+      'Boss and Boss Rank',
+      'Play stage 1',
+      'Play stage 2',
+      'Play the finale',
+      'Watch the finale live',
+      'Combat v2, Convert',
+      'Reset raids and dungeons',
+    ]);
   });
 
-  it('fills the roster, starts a live finale and simulates a week', () => {
-    expect(body('raid-roster', 'Fill the roster with simulated players', { count: '8' })).toEqual({
-      count: 8,
-    });
-    expect(
-      problem('raid-roster', 'Fill the roster with simulated players', { count: '41' }),
-    ).toMatch(/Players/);
-    expect(body('raid-live', 'Start a live finale now')).toEqual({});
-    expect(body('raid-live', 'Start a live finale now', { countdownSeconds: '10' })).toEqual({
-      countdownSeconds: 10,
-    });
-    expect(body('raid-simulate', 'Run a full simulated week', { guests: '6' })).toEqual({
-      guests: 6,
-    });
-    expect(body('raid-simulate', 'Run a full simulated week')).toEqual({});
-    expect(body('raid-weekend', 'Play a combat v2 weekend')).toEqual({});
-    expect(
-      body('raid-weekend', 'Play a combat v2 weekend', { step: 'finale-start', guests: '8' }),
-    ).toEqual({ step: 'finale-start', guests: 8 });
-    expect(problem('raid-weekend', 'Play a combat v2 weekend', { step: 'stage3' })).toMatch(
-      /pick one/,
+  it('clears the board with an empty body', () => {
+    expect(body('raid-clear', 'Clear the board')).toEqual({});
+  });
+
+  it('fills the empty spots: the whole board by default, or 1 to 14 players', () => {
+    expect(body('raid-fill', 'Fill the empty spots')).toEqual({});
+    expect(body('raid-fill', 'Fill the empty spots', { count: '6' })).toEqual({ count: 6 });
+    expect(body('raid-fill', 'Fill the empty spots', { count: '14' })).toEqual({ count: 14 });
+    for (const bad of ['0', '15', '2.5', 'x']) {
+      expect(problem('raid-fill', 'Fill the empty spots', { count: bad })).toMatch(
+        /Simulated players: a whole number from 1 to 14/,
+      );
+    }
+    const field = spec('raid-fill', 'Fill the empty spots').fields[0];
+    expect(field).toMatchObject({ placeholder: 'fill the board' });
+  });
+
+  it('picks a Boss Rank from a list that names each rank with its boss', () => {
+    // The track's ranks, one option each, "Rank 8 · Storm Sovereign" (the boss of slot 8 is the third of the order).
+    expect(RANK_OPTIONS).toHaveLength(combatV2.raidTrack.slots.length);
+    expect(RANK_OPTIONS.slice(0, 3).map((o) => o.label)).toEqual([
+      'Rank 1 \u00b7 Tidal Colossus',
+      'Rank 2 \u00b7 Cinder Wyrm',
+      'Rank 3 \u00b7 Storm Sovereign',
+    ]);
+    expect(RANK_OPTIONS.find((o) => o.value === '8')?.label).toBe('Rank 8 \u00b7 Storm Sovereign');
+    expect(RANK_OPTIONS.map((o) => o.value)).toEqual(
+      combatV2.raidTrack.slots.map((s) => String(s.slot)),
     );
+    expect(body('raid-rank', 'Boss and Boss Rank', { rank: '8' })).toEqual({ rank: 8 });
+    expect(problem('raid-rank', 'Boss and Boss Rank', { rank: '99' })).toMatch(/pick one/);
+  });
+
+  it('plays a stage by name, the finale at once or live', () => {
+    expect(body('raid-play', 'Play stage 1')).toEqual({ stage: 'stage1' });
+    expect(body('raid-play', 'Play stage 2')).toEqual({ stage: 'stage2' });
+    expect(body('raid-play', 'Play the finale')).toEqual({ stage: 'finale' });
+    expect(body('raid-play', 'Watch the finale live')).toEqual({ stage: 'finale', live: true });
+  });
+
+  it('keeps no control of the old raid tools', () => {
+    for (const gone of [
+      'raid-phase',
+      'raid-resolve',
+      'raid-boss',
+      'raid-festival',
+      'raid-roster',
+      'raid-live',
+      'raid-simulate',
+      'raid-weekend',
+    ]) {
+      expect(DEV_TOOL_IDS as readonly string[]).not.toContain(gone);
+    }
   });
 });
 
