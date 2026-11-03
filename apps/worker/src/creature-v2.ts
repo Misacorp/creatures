@@ -14,23 +14,16 @@
  * the client's idempotency key (CLAUDE.md spending rules): the balance check, the debit and the learning are
  * one transaction, and a retry returns the stored result and charges nothing.
  */
-import { formStats, mergeFx } from '@creatures/engine/v2';
-import {
-  RULES,
-  content,
-  slotCount,
-  slotOpensAt,
-  slotsOpen,
-  wornEffects,
-  type CreatureSpecies,
-} from '@creatures/game';
+import { RULES, slotCount, slotOpensAt, slotsOpen, type CreatureSpecies } from '@creatures/game';
 import { combatV2, knownKnacks, v2TalentWorksFor } from '@creatures/game/combat-v2';
 import type { Analytics } from './analytics';
-import { wearerOf, wornItems, type WornBySlot } from './gear-store';
+import { fightNumbers, slottedTalents } from './fighter-v2';
+import type { WornBySlot } from './gear-store';
 import { keyTaken, settleSpend } from './keyed-action';
 import { lookupSpend, spend, type LedgerStorage } from './ledger';
 import { GameError, atomically, type Outcome } from './outcome';
 import { hasFoughtThisWeekend } from './raid-v2-core';
+import { fighterOf, gearLinesOf } from './raid-v2-fighters';
 import { speciesOf } from './species';
 import {
   booksByLine,
@@ -96,8 +89,8 @@ export interface CreatureTalentsV2View {
 }
 
 /**
- * A creature's fight numbers as combat v2 reads them (R7.1): its form's stats at its level, with the talents in its
- * open slots and the stat lines of its worn gear. `critChanceBp` is the chance a hit crits and `critMultBp` what a
+ * A creature's fight numbers as combat v2 reads them (R7.1): its form's stats at its level, with its saved Knack, the
+ * talents in its open slots and the stat lines of its worn gear (`fightNumbers` of its fighter). `critChanceBp` is the chance a hit crits and `critMultBp` what a
  * crit multiplies it by (10000 is 1x), both with the base crit of the rules in. For the creature page.
  */
 export interface StatsV2View {
@@ -169,35 +162,38 @@ export function knackAfterEvolution(saved: string | null, toSpecies: string): st
   return saved !== null && knownKnacks(toSpecies).includes(saved) ? saved : null;
 }
 
+/** What the page's numbers are worked out from: the creature as the fight would take it. */
+export interface StatsV2Source {
+  species: CreatureSpecies;
+  level: number;
+  fusionCount: number;
+  /** The saved Knack as stored (one the form no longer knows counts as none). */
+  knack: string | null;
+  /** The talents in its open slots, in slot order (ids). */
+  talents: readonly string[];
+  worn: WornBySlot | undefined;
+}
+
 /**
- * The numbers the page shows for a creature of `species` at `level`: the engine's `formStats`, the effects of
- * the talents in its open slots (`slotted`: talent ids) and the stat lines of its worn gear (Attack, HP, Speed,
- * crit; the gear's effect lines do nothing under v2 yet). Percentages add to one share, as the fight adds them.
+ * The numbers the page shows for a creature: the fighter's own, from the same function the raid and the dungeon build their fighters
+ * with (`buildFighter` in `fighter-v2.ts`, over the raid's `gearLinesOf`), read as the fight reads them (`fightNumbers`). The page
+ * can never disagree with the fight.
  */
-export function statsV2Of(
-  species: Pick<CreatureSpecies, 'id' | 'role' | 'element'>,
-  level: number,
-  slotted: readonly string[],
-  worn: WornBySlot | undefined,
-): StatsV2View {
-  const form = formStats(combatV2, content, species.id, level);
-  const talents = mergeFx(slotted.map((id) => combatV2.talents[id]?.fx ?? {}));
-  const gear = wornEffects(wearerOf(species), wornItems(worn));
-  const scaled = (value: number, bp: number, flat: number): number =>
-    Math.floor((value * (10_000 + bp)) / 10_000) + flat;
-  return {
-    hp: scaled(form.hp, (talents.hpBp ?? 0) + gear.hpBp, gear.hpFlat + gear.hpItem),
-    atk: scaled(form.atk, (talents.atkBp ?? 0) + gear.atkBp, gear.atkFlat + gear.atkItem),
-    spd: scaled(form.spd, gear.spdBp, 0),
-    armour: form.armour + (talents.armourBonus ?? 0),
-    critChanceBp:
-      combatV2.rules.critChanceBp +
-      form.critChanceBp +
-      (talents.critChanceBp ?? 0) +
-      gear.critChanceBp,
-    critMultBp:
-      combatV2.rules.critBp + form.critDamageBp + (talents.critDamageBp ?? 0) + gear.critDamageBp,
-  };
+export function statsV2Of(c: StatsV2Source): StatsV2View {
+  const fighter = fighterOf(
+    {
+      id: 'page',
+      userId: '',
+      species: c.species.id,
+      level: c.level,
+      knack: c.knack,
+      talents: [...c.talents],
+      gear: gearLinesOf(c.species, c.level, c.fusionCount, c.worn),
+    },
+    'page',
+    { row: 0, col: 0 },
+  );
+  return fightNumbers(fighter);
 }
 
 export class CreatureV2 {
@@ -216,7 +212,13 @@ export class CreatureV2 {
 
   /** The v2 part of a creature's view. */
   view(
-    row: { id: string; species: string; level: number; knack: string | null },
+    row: {
+      id: string;
+      species: string;
+      level: number;
+      fusion_count: number;
+      knack: string | null;
+    },
     data: PlayerV2,
     worn?: WornBySlot,
   ): CreatureV2View {
@@ -264,12 +266,15 @@ export class CreatureV2 {
       knack: row.knack !== null && known.some((k) => k.id === row.knack) ? row.knack : null,
       knownKnacks: known,
       talentsV2: { slots, book: bookView, learnBait: RULES.talents.bookSlotBait },
-      statsV2: statsV2Of(
+      statsV2: statsV2Of({
         species,
-        row.level,
-        slots.flatMap((s) => (s.talent === null ? [] : [s.talent.id])),
+        level: row.level,
+        fusionCount: row.fusion_count,
+        knack: row.knack,
+        // The fight's own helper over what the creature learned (`creature_talents_v2`), never the line's book.
+        talents: slottedTalents({ species, level: row.level }, learned),
         worn,
-      ),
+      }),
     };
   }
 

@@ -7,11 +7,16 @@
  * creature when a swap moves it to another slot.
  */
 import { effectiveStats, type CreatureSpecies } from '@creatures/game';
-import { knownKnacks } from '@creatures/game/combat-v2';
 import type { FighterSpec } from '@creatures/engine/v2';
-import { gearStatLines, slottedTalents, type GearStats } from './fighter-v2';
+import {
+  NO_GEAR,
+  buildFighter,
+  gearStatLines,
+  savedKnackOf,
+  slottedTalents,
+  type GearStats,
+} from './fighter-v2';
 import { wearerOf, wornItems, wornOnCreatures, type WornBySlot } from './gear-store';
-import { resolver } from './raid-v2-core';
 import { speciesOf } from './species';
 import type { LearnedTalent } from './talent-v2-store';
 
@@ -44,6 +49,8 @@ export function gearLinesOf(
   worn: WornBySlot | undefined,
 ): GearStats {
   const items = wornItems(worn);
+  // Nothing worn adds nothing (and the creature's stats need not be worked out: a level above its cap is the page's to show).
+  if (items.length === 0) return { ...NO_GEAR };
   return gearStatLines({
     stats: effectiveStats(species, level, fusionCount),
     crit: species.crit,
@@ -107,7 +114,7 @@ export function loadV2Creatures(sql: SqlStorage, ids: readonly string[]): Map<st
 
 /** The saved Knack the form still knows, or undefined for none (a Knack the form no longer knows counts as none). */
 export const knackOf = (c: Pick<V2CreatureRow, 'species' | 'knack'>): string | undefined =>
-  c.knack !== null && knownKnacks(c.species).includes(c.knack) ? c.knack : undefined;
+  savedKnackOf(c.species, c.knack);
 
 /** The engine's fighter for a placed creature: `alias` is its owner's key in the fight, `row` and `col` its place on the grid. */
 export function fighterOf(
@@ -115,25 +122,15 @@ export function fighterOf(
   alias: string,
   place: { row: number; col: number },
 ): FighterSpec {
-  const knack = knackOf(c);
-  const base = resolver.resolve({
+  return buildFighter({
+    id: c.id,
     owner: alias,
     formId: c.species,
     level: c.level,
-    ...(knack === undefined ? {} : { knack }),
+    knack: c.knack,
     talents: c.talents,
+    gear: c.gear,
     row: place.row,
     col: place.col,
   });
-  const { gear } = c;
-  return {
-    ...base,
-    uid: c.id,
-    key: c.id,
-    maxHp: base.maxHp + gear.hp,
-    atk: base.atk + gear.atk,
-    spd: base.spd + gear.spd,
-    critChanceBp: base.critChanceBp + gear.critChanceBp,
-    critDamageBp: base.critDamageBp + gear.critDamageBp,
-  };
 }

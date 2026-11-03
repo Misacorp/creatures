@@ -49,6 +49,7 @@ import {
   RaidResolveBodySchema,
   RaidRosterBodySchema,
   RaidSimulateBodySchema,
+  RaidWeekendBodySchema,
   ResetAccountBodySchema,
   SetWeatherBodySchema,
   SetBalancesBodySchema,
@@ -101,6 +102,7 @@ import {
   raidRoster,
   raidSimulate,
 } from './dev-tools-raid';
+import { raidWeekend } from './dev-tools-raid-weekend';
 import {
   errorResponse,
   json,
@@ -217,6 +219,8 @@ const TOOLS: Record<DevActionTool, Tool> = {
   'raid-roster': tool(RaidRosterBodySchema, raidRoster),
   'raid-live': tool(RaidLiveBodySchema, raidLive),
   'raid-simulate': tool(RaidSimulateBodySchema, raidSimulate),
+  // Staging with COMBAT_V2 on, on a v2 week (404 otherwise, 409 `not_v2`): moves the dev clock through the weekend, so it re-arms the alarm.
+  'raid-weekend': tool(RaidWeekendBodySchema, raidWeekend, { movesClock: true }),
   // The Games' tools re-arm the alarm afterwards (as a clock move does): a new bot, a show that starts in
   // 15 s or a forgotten day changes what the alarm waits for.
   'games-bots': tool(GamesBotsBodySchema, gamesBots, { movesClock: true }),

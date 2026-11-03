@@ -25,8 +25,11 @@ export const SHIPPED: Shipped = {
   foes: dungeonContent.foes,
 };
 
-/** One resolver for the worker, so the stats of a form at a level are worked out once per isolate. */
-const resolver = createResolver(combatV2, SHIPPED);
+/**
+ * One resolver for the worker (the raid's and the dungeon's), so the stats of a form at a level are worked out once per isolate. Its
+ * memos are only derived data, never state that must last.
+ */
+export const resolver = createResolver(combatV2, SHIPPED);
 
 /** The owner key of a solo fight's team (the engine never shows it). */
 const OWNER = 'p1';
@@ -40,9 +43,18 @@ export interface GearStats {
   critDamageBp: number;
 }
 
+/** What no gear adds. */
+export const NO_GEAR: Readonly<GearStats> = {
+  hp: 0,
+  atk: 0,
+  spd: 0,
+  critChanceBp: 0,
+  critDamageBp: 0,
+};
+
 /** The stat lines of a creature's worn gear (see the file comment). All zeros without gear. */
 export function gearStatLines(kit: TeamCreature['kit']): GearStats {
-  if (kit.items.length === 0) return { hp: 0, atk: 0, spd: 0, critChanceBp: 0, critDamageBp: 0 };
+  if (kit.items.length === 0) return { ...NO_GEAR };
   const folded = applyGear(kit.stats, kit.crit, kit.wearer, kit.items, []);
   return {
     hp: folded.stats.hp - kit.stats.hp,
@@ -68,27 +80,90 @@ export function slottedTalents(
 
 /** The creature as the engine's fighter, in no place yet (`row` 0, `col` 0). `learned` is what it has learned from its line's book. */
 export function fighterV2(creature: TeamCreature, learned: readonly LearnedTalent[]): FighterSpec {
-  const saved = creature.knack;
-  const knack =
-    saved !== null && knownKnacks(creature.species.id).includes(saved) ? saved : undefined;
-  const base = resolver.resolve({
+  return buildFighter({
+    id: creature.id,
     owner: OWNER,
     formId: creature.species.id,
     level: creature.level,
-    ...(knack === undefined ? {} : { knack }),
+    knack: creature.knack,
     talents: slottedTalents(creature, learned),
+    gear: gearStatLines(creature.kit),
     row: 0,
     col: 0,
   });
-  const gear = gearStatLines(creature.kit);
+}
+
+/** The saved Knack the form still knows, or undefined for none (a Knack the form no longer knows counts as none). */
+export const savedKnackOf = (formId: string, saved: string | null): string | undefined =>
+  saved !== null && knownKnacks(formId).includes(saved) ? saved : undefined;
+
+/** What makes a creature a fighter: who and where it is, what it knows and what it wears (the stat lines already worked out). */
+export interface FighterBuild {
+  /** The creature's id: the fighter's `uid` and `key`. */
+  id: string;
+  /** The owner's key in the fight. */
+  owner: string;
+  formId: string;
+  level: number;
+  /** The saved Knack as stored (a Knack the form does not know counts as none). */
+  knack: string | null;
+  /** The slotted v2 talents that are open at the level, in slot order (`slottedTalents`). */
+  talents: readonly string[];
+  gear: GearStats;
+  row: number;
+  col: number;
+}
+
+/**
+ * The one place a creature becomes the engine's fighter: the resolver's numbers for its form, level, Knack and talents, with the gear's
+ * stat lines added to HP, Attack, Speed and crit. The dungeon (`fighterV2`), the raid (`fighterOf` of `raid-v2-fighters.ts`) and the
+ * creature page (`fightNumbers` of the result) all go through it, so the page can never show what the fight does not use.
+ */
+export function buildFighter(b: FighterBuild): FighterSpec {
+  const knack = savedKnackOf(b.formId, b.knack);
+  const base = resolver.resolve({
+    owner: b.owner,
+    formId: b.formId,
+    level: b.level,
+    ...(knack === undefined ? {} : { knack }),
+    talents: [...b.talents],
+    row: b.row,
+    col: b.col,
+  });
   return {
     ...base,
-    uid: creature.id,
-    key: creature.id,
-    maxHp: base.maxHp + gear.hp,
-    atk: base.atk + gear.atk,
-    spd: base.spd + gear.spd,
-    critChanceBp: base.critChanceBp + gear.critChanceBp,
-    critDamageBp: base.critDamageBp + gear.critDamageBp,
+    uid: b.id,
+    key: b.id,
+    maxHp: base.maxHp + b.gear.hp,
+    atk: base.atk + b.gear.atk,
+    spd: base.spd + b.gear.spd,
+    critChanceBp: base.critChanceBp + b.gear.critChanceBp,
+    critDamageBp: base.critDamageBp + b.gear.critDamageBp,
+  };
+}
+
+/**
+ * A fighter's numbers as the fight reads them (the creature page shows these): Max HP, Attack (with the talents' and the Knack's
+ * share on top, as the engine's `creature.ts` works it out), Speed, Armour (the engine's `ownArmour`), the chance a hit crits and what
+ * a crit multiplies it by (10000 is 1x), both with the base crit of the rules in.
+ */
+export interface FightNumbers {
+  hp: number;
+  atk: number;
+  spd: number;
+  armour: number;
+  critChanceBp: number;
+  critMultBp: number;
+}
+
+export function fightNumbers(f: FighterSpec): FightNumbers {
+  const fx = f.fxAll;
+  return {
+    hp: f.maxHp,
+    atk: Math.floor((f.atk * (10_000 + (fx.atkBp ?? 0))) / 10_000),
+    spd: f.spd,
+    armour: f.baseArmour + (fx.armourBonus ?? 0),
+    critChanceBp: combatV2.rules.critChanceBp + f.critChanceBp + (fx.critChanceBp ?? 0),
+    critMultBp: combatV2.rules.critBp + f.critDamageBp + (fx.critDamageBp ?? 0),
   };
 }

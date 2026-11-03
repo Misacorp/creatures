@@ -11,7 +11,6 @@ import { SHIPPED } from './fighter-v2';
 import { combatV2 } from '@creatures/game/combat-v2';
 import {
   RAID_COLS,
-  createResolver,
   slotSpec,
   trackBoss,
   type BossDef,
@@ -24,9 +23,6 @@ import type { RaidRules } from './raid-schedule';
 
 /** The shipped content the resolver and the track's boss read beside the combat v2 pack (shared with the dungeon: `fighter-v2.ts`). */
 export const SHIPPED_V2: Shipped = SHIPPED;
-
-/** One resolver for the worker: its memos (merged effects, stats by form and level) are only derived data, never state that must last. */
-export const resolver = createResolver(combatV2, SHIPPED_V2);
 
 /** The elements, the element chart and the rules numbers every v2 input carries (an input is whole). */
 export const V2_WORLD = {
