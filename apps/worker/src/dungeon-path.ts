@@ -924,8 +924,9 @@ export function descentBreath(
 /**
  * Goes down into the Undercroft level the run is offered. The level's map is drawn now with live
  * randomness (it is the player's own), stored with the run, and the row catches its breath on the way
- * (`catchBreathBp` of max HP for standing creatures; a fallen one gets back up at `reviveBp`, and the
- * entry says how many). The run then stands before the new map's floor 0.
+ * (`catchBreathBp` of max HP for standing creatures; on a v1 run a fallen one gets back up at `reviveBp`
+ * and the entry says how many, on a v2 run `revived` is 0 and a fallen creature stays at 0 HP until a camp
+ * swaps it, R14). The run then stands before the new map's floor 0.
  */
 export function applyDescend(env: PathEnv, st: RunState, depth: number): ActOutcome {
   if (st.pending?.kind !== 'descend') throw invalidAct('there is no way down waiting');

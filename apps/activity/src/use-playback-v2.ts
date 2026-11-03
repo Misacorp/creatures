@@ -40,6 +40,8 @@ interface PlaybackArgs {
    * rounds that went by unseen.
    */
   mode: 'replay' | 'live';
+  /** Start playing at once (the default), or wait until `setPlaying(true)` (the dungeon's room waits behind its banner). */
+  autoplay?: boolean;
 }
 
 /** The numbers and tags of a beat as the effect trail takes them (the shapes of the shipped stage's cues, which it already draws). */
@@ -68,7 +70,7 @@ export function usePlaybackV2(args: PlaybackArgs): PlaybackV2 {
   const total = model.beats.length;
   const live = mode === 'live';
   const [pos, setPos] = useState({ beat: live ? total : 0, prev: live ? total : 0, seq: 0 });
-  const [playing, setPlaying] = useState(true);
+  const [playing, setPlaying] = useState(args.autoplay !== false);
   const [intro, setIntro] = useState<IntroView | null>(null);
   const reduced = usePrefersReducedMotion();
   const trail = useFxTrail();

@@ -5,7 +5,8 @@
  * still sends what the captured fixtures have. Types only. No seed is ever part of any of them.
  */
 import type {
-  DungeonMapView,
+  DungeonMapNode as GameMapNode,
+  DungeonMapView as GameMapView,
   Element,
   GearRarity,
   GearSlot,
@@ -16,8 +17,19 @@ import type { EventNames, FightEvent } from '@creatures/engine';
 import type { FightEvent as FightEventV2 } from '@creatures/engine/v2';
 import type { ExperienceView } from './creature-exp';
 import type { GearItemView } from './gear-types';
+import type { BossCardV2View } from './raid-v2-card';
 
-export type { DungeonMapView };
+/**
+ * A room of the map as the client sees it. On a run of combat v2 each foe also carries its card (armour, plain attack and move tiles,
+ * `dungeon-v2-view.ts`); a v1 run's map has no `card`, so its payload is what it was.
+ */
+export interface DungeonMapNode extends Omit<GameMapNode, 'foe'> {
+  foe?: NonNullable<GameMapNode['foe']> & { card?: BossCardV2View };
+}
+
+export interface DungeonMapView extends Omit<GameMapView, 'nodes'> {
+  nodes: DungeonMapNode[];
+}
 
 export type DungeonOutcome = 'cleared' | 'home' | 'defeat';
 
@@ -111,14 +123,14 @@ export type DungeonPendingView =
        * The floor boss (or an Undercroft keeper with a cracked floor) is down: head home with the pack, or
        * descend. What is known of the level below: its number, its floors (the keeper's included), that
        * its foes are fiercer (`depthBonus` more depth per level), the breath the team catches on the way
-       * (`catchBreathBp` of max HP, and `reviveBp` for a fallen one that gets back up) and what the chest banked. The pack stays at risk all the way down.
+       * (`catchBreathBp` of max HP, and, on a v1 run only, `reviveBp` for a fallen one that gets back up: 0 on a v2 run) and what the chest banked. The pack stays at risk all the way down.
        */
       kind: 'descend';
       level: number;
       floors: number;
       depthBonus: number;
       catchBreathBp: number;
-      /** The share of max HP a fallen creature gets back up with. */
+      /** The share of max HP a fallen creature gets back up with. v1 runs only: 0 on a run of combat v2, where a fallen creature stays out until a camp swaps it. */
       reviveBp: number;
       /** The depth the player is at now (locked in when the main boss fell). */
       newDepth: number;
@@ -211,7 +223,7 @@ export type DungeonStepLog =
       level: number;
       /** HP the row recovered on the way down, all creatures together. */
       healed: number;
-      /** How many fallen creatures got back up on the way down (absent on a run stored before they could). */
+      /** How many fallen creatures got back up on the way down (v1 runs; always 0 on combat v2; absent on a run stored before they could). */
       revived?: number;
     }
   | { node: string; kind: 'descend'; result: 'home'; level: number };
@@ -386,6 +398,8 @@ export interface DungeonRunSummary {
 }
 
 export interface DungeonToday {
+  /** 2 when a run started now plays combat v2 (the `COMBAT_V2` flag is on); absent otherwise. The run in `active` says its own. */
+  rules?: 2;
   serverNow: number;
   /** The guild-local calendar day ('YYYY-MM-DD'). */
   day: string;
@@ -503,6 +517,12 @@ export interface DungeonReplayRoomV2 {
   hpEnd: Record<string, number>;
   hpMax: Record<string, number>;
   events: FightEventV2[];
+  /** The foe's card as the room began: armour, plain attack, move tiles (the move labels the stage names its turns by). */
+  card: BossCardV2View;
+  /** The arena the room was fought in: the foe's rows (one in the dungeon) by columns, and its round limit. */
+  arena: { rows: number; cols: number; rounds: number };
+  /** The Knack's name of each creature that fought (by creature id); a creature with none is not listed. */
+  knacks: Record<string, string>;
 }
 
 export type DungeonReplayRoom = DungeonReplayRoomV1 | DungeonReplayRoomV2;

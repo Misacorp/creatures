@@ -5,7 +5,7 @@
  * and a v1 run that began before the flag turned on finishes on v1.
  */
 import { combatV2, knownKnacks } from '@creatures/game/combat-v2';
-import { createSeededRng, dungeonContent } from '@creatures/game';
+import { RULES, createSeededRng, dungeonContent } from '@creatures/game';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { RunState } from '../src/dungeon-state';
 import type {
@@ -253,6 +253,85 @@ describe('a v2 run', () => {
   });
 });
 
+describe('what the v2 screens read: the map’s foe cards, the room’s card, arena and Knacks, today’s rules', () => {
+  it('gives each foe on a v2 run’s map its card (its move tiles), on the open run and on the day before it starts', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        giveV2(ctx, p.id);
+        ctx.clock.t = AFTER_RESET;
+        // Before a run starts with the flag on, today says which rules it will play, and its map has the cards.
+        const before = await p.today();
+        expect(before.rules).toBe(2);
+        const foes = (before.map?.nodes ?? []).flatMap((n) => (n.foe === undefined ? [] : [n.foe]));
+        expect(foes.length).toBeGreaterThan(3);
+        for (const foe of foes) {
+          expect(foe.card, foe.id).toBeDefined();
+          expect(foe.card?.plain.label).not.toBe('');
+          expect(foe.card?.moves.every((m) => m.name !== '' && m.label !== '')).toBe(true);
+        }
+        const state = await begin(p);
+        expect(state.rules).toBe(2);
+        const own = state.map.nodes.flatMap((n) => (n.foe === undefined ? [] : [n.foe]));
+        expect(own.every((f) => f.card !== undefined)).toBe(true);
+        // The run's own map is the same one, and today with the run open keeps the run's rules.
+        expect((await p.today()).active?.map).toEqual(state.map);
+        expect((await p.today()).rules).toBe(2);
+      },
+      V2('v2-map-cards'),
+    );
+  });
+
+  it('keeps a v1 run’s map and today as they were: no card on a foe, no rules key', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        ctx.clock.t = AFTER_RESET;
+        const before = await p.today();
+        expect(Object.hasOwn(before, 'rules')).toBe(false);
+        const state = await begin(p);
+        const foes = state.map.nodes.flatMap((n) => (n.foe === undefined ? [] : [n.foe]));
+        expect(foes.length).toBeGreaterThan(3);
+        expect(foes.some((f) => Object.hasOwn(f, 'card'))).toBe(false);
+      },
+      opts('v1-map-no-cards'),
+    );
+  });
+
+  it('sends a room with the foe’s card, one row of three columns, the foe’s round limit and the row’s Knack names', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        giveV2(ctx, p.id);
+        ctx.clock.t = AFTER_RESET;
+        const state = await begin(p);
+        const res = await p.act(state, { type: 'move', node: state.reachable[0] as string });
+        const room = res.body.room as DungeonReplayRoomV2;
+        const [step] = steps(ctx, state.id);
+        const input = (JSON.parse(step?.input_json ?? '{}') as StoredFightV2).input;
+        expect(room.arena).toEqual({ rows: 1, cols: input.boss.cols, rounds: input.boss.rounds });
+        expect(room.arena.rows).toBe(1);
+        // The card is the foe's as the map shows it for the same node (the same builder).
+        const node = state.map.nodes.find((n) => n.id === room.node);
+        expect(room.card.moves.map((m) => m.id)).toEqual(
+          (node?.foe?.card?.moves ?? []).map((m) => m.id),
+        );
+        expect(room.card.armour).toBe(node?.foe?.card?.armour);
+        // The Knack of each creature, by id and by name, as the pack names it.
+        expect(Object.keys(room.knacks).sort()).toEqual([...p.creatureIds].sort());
+        for (const id of p.creatureIds) {
+          const f = input.fighters.find((x) => x.key === id);
+          expect(room.knacks[id]).toBe(combatV2.knacks[f?.knack ?? '']?.name);
+        }
+      },
+      V2('v2-room-card'),
+    );
+  });
+});
+
 describe('a v2 day: rooms, a knock-out, the camp swap, the floor boss', () => {
   it('carries only HP between rooms, and a knocked-out creature stays out of the next fight and of the camp’s rest', async () => {
     await runCore(
@@ -388,6 +467,59 @@ function setFlag(ctx: CoreContext, on: boolean): void {
   const dungeon = (ctx.core as unknown as { dungeon: { deps: { combatV2?: boolean } } }).dungeon;
   dungeon.deps.combatV2 = on;
 }
+
+describe('the descent card and the descent on v2', () => {
+  /** Puts a run at the descent card with the first creature down, and answers the run as the server now shows it. */
+  async function atDescentWithFallen(ctx: CoreContext, p: DungeonPlayer) {
+    ctx.clock.t = AFTER_RESET;
+    const state = await begin(p);
+    const [down, hurt] = p.creatureIds as [string, string, string];
+    patchState(ctx, state.id, (st) => {
+      st.pending = { kind: 'descend', level: 1 };
+      st.hp = { [down]: 0, [hurt]: 5 };
+    });
+    const shown = (await p.today()).active as DungeonRunState;
+    return { shown, down, hurt };
+  }
+
+  it('promises no revive on a v2 run, and the descent keeps a knocked-out creature at 0 HP with revived 0', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        giveV2(ctx, p.id);
+        const { shown, down, hurt } = await atDescentWithFallen(ctx, p);
+        expect(shown.rules).toBe(2);
+        expect(shown.pending).toMatchObject({ kind: 'descend', reviveBp: 0 });
+        const res = await p.act(shown, { type: 'descend' });
+        expect(res.status, JSON.stringify(res.body)).toBe(200);
+        const team = res.body.state.team;
+        expect(team.find((m) => m.id === down)?.hp).toBe(0);
+        // The standing creature still catches its breath.
+        expect(team.find((m) => m.id === hurt)?.hp).toBeGreaterThan(5);
+        expect(res.body.state.history.at(-1)).toMatchObject({ result: 'descend', revived: 0 });
+      },
+      V2('v2-descent-no-revive'),
+    );
+  });
+
+  it('keeps the v1 promise on a v1 run: the card says the revive share and the descent gets the fallen up', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const { shown, down } = await atDescentWithFallen(ctx, p);
+        expect(shown.rules).toBeUndefined();
+        expect(shown.pending).toMatchObject({ kind: 'descend', reviveBp: RULES.dungeon.undercroft.reviveBp });
+        const res = await p.act(shown, { type: 'descend' });
+        expect(res.status, JSON.stringify(res.body)).toBe(200);
+        expect(res.body.state.team.find((m) => m.id === down)?.hp).toBeGreaterThan(0);
+        expect(res.body.state.history.at(-1)).toMatchObject({ result: 'descend', revived: 1 });
+      },
+      opts('v1-descent-revive'),
+    );
+  });
+});
 
 describe('the rules version is kept to the end of a run', () => {
   it('lets a v1 run that began before the flag turned on finish on v1, and the next day start on v2', async () => {

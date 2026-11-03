@@ -41,6 +41,7 @@ import {
   type WeatherDay,
 } from '@creatures/game';
 import type { FighterSpec } from '@creatures/engine/v2';
+import { mapViewV2 } from './dungeon-v2-view';
 import {
   rowMaxHp,
   type AbilityChoice,
@@ -49,6 +50,7 @@ import {
   type FightSlot,
 } from '@creatures/engine';
 import type {
+  DungeonMapView,
   DungeonBankedView,
   DungeonEventView,
   DungeonKeepsakeView,
@@ -448,7 +450,8 @@ function pendingView(st: RunState, depth: number): DungeonPendingView {
       floors: descentFloors(st, depth, pending.level),
       depthBonus: RULES.dungeon.undercroft.depthBonus,
       catchBreathBp: RULES.dungeon.undercroft.catchBreathBp,
-      reviveBp: RULES.dungeon.undercroft.reviveBp,
+      // A v1 descent gets a fallen creature back up; a v2 one heals only the standing (`descentBreath`), so it promises no revive.
+      reviveBp: st.v === 2 ? 0 : RULES.dungeon.undercroft.reviveBp,
       newDepth: depth + 1,
       banked: bankedView(st.banked),
     };
@@ -475,6 +478,14 @@ export interface RunMeta {
 }
 
 /**
+ * A map of the run as the client sees it: with its marked rooms, and on a run of combat v2 each foe with its card (move tiles). A v1
+ * run's map is `mapView` alone.
+ */
+export function mapOf(st: RunState, map: DungeonMap, depth: number): DungeonMapView {
+  return st.v === 2 ? mapViewV2(map, depth, runMarks(st)) : mapView(map, depth, runMarks(st));
+}
+
+/**
  * What the client is shown of a run: the map at the run's depth, where it stands, what it may do next,
  * the row with its HP, the keepsakes and the pack. `reachable` is empty while something is pending or
  * once the run is done.
@@ -493,13 +504,13 @@ export function runView(meta: RunMeta, st: RunState): DungeonRunState {
     status: meta.status,
     outcome: meta.outcome,
     step: st.step,
-    map: mapView(st.map, meta.depth, runMarks(st)),
+    map: mapOf(st, st.map, meta.depth),
     level: st.level,
     undercroft:
       st.under.length === 0 && st.marks.length === 0
         ? null
         : {
-            maps: st.under.map((m) => mapView(m, meta.depth, runMarks(st))),
+            maps: st.under.map((m) => mapOf(st, m, meta.depth)),
             marks: st.marks.length,
           },
     at: st.at,

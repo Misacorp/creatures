@@ -38,7 +38,10 @@ interface RaidBoardProps extends SlotStripProps {
   rail?: CueRailProps;
   /** The row that gets the "no reaction" mark on its name, when the creature in focus sets off nothing. */
   noneRow?: Zone | null;
-  /** Combat v2's board: the tiles are a little taller, to hold the role, the Knack and the carried HP (raid-board.css). */
+  /**
+   * Combat v2's board: the tiles are a little taller, to hold the role, the Knack and the carried HP (raid-board.css). With `single` it is
+   * the dungeon's row of v2 tiles (the stage of a dungeon room).
+   */
   v2?: boolean;
 }
 
@@ -102,6 +105,7 @@ export function RaidBoard(props: RaidBoardProps) {
     // Tiles that carry an HP line (the camp's row) are wider and taller, so the words fit.
     const withHp = (rows[0]?.slots ?? []).some((s) => s.occupant?.hp !== undefined);
     const classes = ['raid-board', 'single'];
+    if (props.v2 === true) classes.push('v2');
     if (large) classes.push('large');
     if (large && withHp) classes.push('with-hp');
     return (

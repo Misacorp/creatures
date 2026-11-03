@@ -181,6 +181,12 @@
   --tile-h: 6.75rem;
 }
 
+/* The dungeon room's row of v2 tiles: the single row's large tile, a little taller for the role, the Knack and the carried HP. */
+.raid-board.single.large.v2 {
+  --tile-w: 5.5rem;
+  --tile-h: 8rem;
+}
+
 .party-slot .slot-role {
   position: absolute;
   top: 2px;

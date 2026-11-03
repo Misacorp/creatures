@@ -20,9 +20,10 @@ import { bigRaidFight } from '../raid-fight';
 import { staticFx } from '../../stage-fx';
 import { cuesForEvents, windupCuesForEvents } from '../../stage';
 import type { IntroView } from '../../stage-fx';
+import type { DungeonReplayV1 } from '../../dungeon-types';
 import type { Entry, Props } from '../types';
 
-const REPLAY = parseDungeonReplay(dungeonReplay);
+const REPLAY = parseDungeonReplay(dungeonReplay) as DungeonReplayV1;
 
 /** The row with every creature wearing something (a different outfit by place), when `gear` is on. */
 function dressed<T extends { worn?: string[] }>(row: readonly T[], on: boolean): T[] {

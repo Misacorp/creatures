@@ -34,7 +34,7 @@ import {
   teamBreakdown,
   streakBonus,
 } from './dungeon-playback';
-import type { DungeonRunResponse, DungeonRunSummary } from './dungeon-types';
+import type { DungeonReplayV1, DungeonRunResponse, DungeonRunSummary } from './dungeon-types';
 import { turnOrderOfRound } from './replay';
 import { buildBeats, creatureHpAt, ordinal, stageStateAt } from './stage';
 import { forecastNextRound } from './telegraph';
@@ -46,7 +46,7 @@ import {
   sampleSummary,
 } from './dungeon-path-samples';
 
-const replay = parseDungeonReplay(replayFixture);
+const replay = parseDungeonReplay(replayFixture) as DungeonReplayV1;
 const cleared = (clearedFixture as unknown as DungeonRunResponse).run;
 const lost = (lostFixture as unknown as DungeonRunResponse).run;
 const landmark = (landmarkFixture as unknown as DungeonRunResponse).run;

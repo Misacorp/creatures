@@ -94,8 +94,21 @@ interface StageV2Props {
   rounds: number | null;
   /** The lobby's preview: no round yet, so the head says to get ready. */
   lobby?: boolean;
+  /**
+   * The dungeon's one row (R8.7: the line acts, then the foe takes one turn): the board is `ui/RaidBoard`'s single row, centred with no
+   * lane header or scroller, the tiles carry no owner (the run is one player's), and the turn strip reads "Team, Foe". Absent: the
+   * raid's rows by lanes.
+   */
+  single?: boolean;
+  /**
+   * Where each stage of the weekend ends on the boss's HP bar, as shares of the bar. Absent: the raid's two stage goals. A dungeon
+   * room has no stages: `[]`.
+   */
+  ticks?: readonly number[];
   /** Under the board: the live finale's input. */
   children?: ComponentChildren;
+  /** Drawn over the whole stage inside its own box (the dungeon's room banner); it lets taps through. */
+  overlay?: ComponentChildren;
 }
 
 /** The slot of a creature of the fight on the boss's grid (a slot is `col * rows + row`). */
@@ -118,7 +131,10 @@ export function StageV2({
   hpMax,
   rounds,
   lobby,
+  single = false,
+  ticks,
   children,
+  overlay,
 }: StageV2Props) {
   const popovers = usePopoverHost();
   const reduced = usePrefersReducedMotion();
@@ -182,7 +198,7 @@ export function StageV2({
       ownId: null,
       mine: you !== null && f.owner === you,
       element: f.element,
-      owner: { colour: ownerColour(owner, playerNames), initial: initialOf(owner) },
+      ...(single ? {} : { owner: { colour: ownerColour(owner, playerNames), initial: initialOf(owner) } }),
       v2: {
         role: f.role,
         knack: f.knackName,
@@ -212,7 +228,8 @@ export function StageV2({
     slots: row.slots.map((slot): SlotModel => {
       const f = bySlot.get(slot);
       const now = f === undefined ? undefined : state.creatures[f.key];
-      const where = `${rowNameV2(at)}, lane ${String((f?.col ?? Math.floor(slot / rows)) + 1)}`;
+      const lane = (f?.col ?? Math.floor(slot / rows)) + 1;
+      const where = single ? `Place ${String(lane)}` : `${rowNameV2(at)}, lane ${String(lane)}`;
       if (f === undefined)
         return { index: slot, hideNumber: true, ariaLabel: `${where}, empty`, occupant: null };
       const parts = [
@@ -228,9 +245,10 @@ export function StageV2({
   // The turn strip lights the step on: the rows and the boss's turns of one round, those before it dimmed.
   const here = stepId(state.step);
   // The boss's moves are named on its line when it makes them, so the strip here is only the order: row, boss, row, boss.
-  const steps = boardTurnSteps(card, rows).map((s) =>
-    s.boss === undefined ? s : { ...s, boss: { moves: [] } },
-  );
+  const steps = boardTurnSteps(card, rows).map((s) => {
+    const named = single ? { ...s, label: s.boss === undefined ? 'Team' : 'Foe' } : s;
+    return s.boss === undefined ? named : { ...named, boss: { moves: [] } };
+  });
   const hereAt = steps.findIndex((s) => s.id === here);
   const strip = steps.map((s, k) => ({
     ...s,
@@ -353,7 +371,7 @@ export function StageV2({
           current={state.bossHp}
           max={hpMax}
           previous={before.bossHp}
-          ticks={stageTicks()}
+          ticks={ticks ?? stageTicks()}
           label={`${boss.name} HP: ${String(state.bossHp)} / ${String(hpMax)}`}
           text={compactPair(state.bossHp, hpMax)}
         />
@@ -393,6 +411,7 @@ export function StageV2({
         stripRef={stripRef}
         rows={boardRows}
         v2
+        {...(single ? { single: { label: 'Your team, left to right' }, size: 'large' as const } : {})}
         emptyLabel=""
         disabled={false}
         drag={NO_DRAG}
@@ -428,6 +447,7 @@ export function StageV2({
         </div>
         {intro !== null && <RoundIntro intro={intro} />}
       </div>
+      {overlay}
     </section>
   );
 }

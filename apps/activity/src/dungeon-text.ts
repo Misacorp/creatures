@@ -413,6 +413,17 @@ export function reviveText(reviveBp: number): string {
 }
 
 /**
+ * The line about the breath on the way down. A v1 descent gets a downed creature back up (`reviveBp`); on combat v2 the server sends
+ * `reviveBp` 0 (only the standing heal), and a downed creature stays out until a camp swaps it.
+ */
+function breathLine(descent: Pick<Descent, 'catchBreathBp' | 'reviveBp'>): string {
+  const breath = `catch their breath and heal ${catchBreathText(descent.catchBreathBp)}.`;
+  return descent.reviveBp > 0
+    ? `Your creatures ${breath} Downed creatures revive to ${reviveText(descent.reviveBp)}.`
+    : `Your standing creatures ${breath} Downed creatures stay out until a camp swaps them.`;
+}
+
+/**
  * What the Undercroft below holds, one plain line each, from the descent the server sent and the rules:
  * its rooms (one per row of its map, the floor boss's last) and the depth its foes fight at (the run's `depth` plus
  * `depthBonus` for each Undercroft floor, as `undercroftDepth` scales them), the breath the row catches, the loot
@@ -428,7 +439,7 @@ export function descendLines(
   const loot = lootMultiplier === 2 ? 'double' : `${String(lootMultiplier)}×`;
   return [
     `${rooms} with a floor boss at the end. Foes are from depth ${String(foeDepth)}.`,
-    `Your creatures catch their breath and heal ${catchBreathText(descent.catchBreathBp)}. Downed creatures revive to ${reviveText(descent.reviveBp)}.`,
+    breathLine(descent),
     `Fights in the Undercroft reward ${loot} loot.`,
     "Once you go down, you fight to the end. If you're lucky, finding a camp may give you a chance to return safely.",
   ];

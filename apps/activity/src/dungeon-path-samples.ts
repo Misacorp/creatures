@@ -21,7 +21,7 @@ import type {
   DungeonNodeKind,
   DungeonMapView,
   DungeonPack,
-  DungeonReplayRoom,
+  DungeonReplayRoomV1,
   DungeonRunCreature,
   DungeonRunState,
   DungeonRunSummary,
@@ -287,8 +287,8 @@ export function sampleStateCamp(): DungeonRunState {
 }
 
 /** The fight a move just played: the first room of the replay fixture, as a path room. */
-export function sampleRoom(over: Partial<DungeonReplayRoom> = {}): DungeonReplayRoom {
-  const room = replayFixture.rooms[0] as unknown as DungeonReplayRoom;
+export function sampleRoom(over: Partial<DungeonReplayRoomV1> = {}): DungeonReplayRoomV1 {
+  const room = replayFixture.rooms[0] as unknown as DungeonReplayRoomV1;
   return { ...room, index: 0, node: 'f0l2', keepsakes: [], ...over };
 }
 

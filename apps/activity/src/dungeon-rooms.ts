@@ -48,6 +48,18 @@ export function modifierIcon(id: string): IconRef {
   return { kind: 'glyph', id: 'unknown' };
 }
 
+/**
+ * Whether a room's modifier does anything on the rules the run plays. On combat v2 a modifier that only gives the foe a v1 move (Thorns'
+ * spikes) does nothing, because a v1 foe move has no v2 meaning (the worker's `foldFighter` and `roomFoeV2` read the plain number effects
+ * only, `dungeon-v2.ts`), so no screen of a v2 run shows it. A modifier the content does not know (an old run's) is shown, and so is
+ * every modifier on v1.
+ */
+export function modifierActs(modifier: { id: string }, rules: 1 | 2 | undefined): boolean {
+  if (rules !== 2) return true;
+  const effects = roomModifier(modifier.id)?.effects ?? [];
+  return effects.length === 0 || effects.some((e) => e.op !== 'foe_gimmick');
+}
+
 /** What a landmark gives. Words, not numbers (the amounts are the server's). */
 export const LANDMARK_UNLOCKS: readonly TrackUnlock[] = [
   { icon: 'anvil', text: 'Gear drop' },

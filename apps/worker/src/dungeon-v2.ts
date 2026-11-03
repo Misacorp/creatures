@@ -40,6 +40,8 @@ import type { DungeonRoomSpec } from '@creatures/engine';
 import { SHIPPED } from './fighter-v2';
 import { heldFolds, keepsakeViewOf, type RunState } from './dungeon-state';
 import type { DungeonKeepsakeView, DungeonReplayRoomV2, ReplayRowEntry } from './dungeon-types';
+import { arenaOf, knackNamesOf } from './dungeon-v2-view';
+import { bossCardView } from './raid-v2-card';
 
 /** What a stored room shows besides its fight: the row that stood in it, the foe and the modifier as they were. */
 export interface RoomMetaV2 {
@@ -295,5 +297,8 @@ export function replayRoomV2(
     hpEnd: result.hpEnd,
     hpMax: result.hpMax,
     events: result.events,
+    card: bossCardView(stored.input.boss, null),
+    arena: arenaOf(stored.input),
+    knacks: knackNamesOf(stored.input),
   };
 }

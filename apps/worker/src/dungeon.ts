@@ -54,6 +54,7 @@ import {
 } from '@creatures/engine';
 import * as v from 'valibot';
 import { devKey } from './dev-state';
+import { mapViewV2 } from './dungeon-v2-view';
 import { keyTaken, settleSpend } from './keyed-action';
 import { GameError, atomically, type Outcome } from './outcome';
 import { grantDungeonChest } from './gear-grants';
@@ -88,7 +89,7 @@ import {
   abilityChoices,
   maxHpOfRow,
   parseState,
-  runMarks,
+  mapOf,
   runView,
   type RunMeta,
   type RunState,
@@ -461,7 +462,11 @@ export class Dungeon {
     // While a run is open, the depth shown is the run's own: a boss cleared at depth 8 or more has locked
     // depth + 1 into the progress already, but the run (its map, its landmark boss) is still at depth d.
     const depth = open?.depth ?? progress.depth;
+    const active = open === undefined ? null : this.stateOf(open);
+    // A run started now plays the rules of the flag; a run that is open keeps its own (so the map shows what its rooms will do).
+    const v2 = active === null ? this.deps.combatV2 === true : active.rules === 2;
     return {
+      ...(v2 ? { rules: 2 as const } : {}),
       serverNow: now,
       day,
       timezone: tz,
@@ -477,8 +482,8 @@ export class Dungeon {
       last: last === undefined ? null : (JSON.parse(last.summary_json) as DungeonRunSummary),
       lastTeam: this.lastTeam(userId),
       draftTeam: this.draftTeam(userId),
-      map: mapView(map, depth),
-      active: open === undefined ? null : this.stateOf(open),
+      map: v2 ? mapViewV2(map, depth) : mapView(map, depth),
+      active,
     };
   }
 
@@ -924,7 +929,7 @@ export class Dungeon {
     const state: DungeonRunState = {
       ...first.state,
       history: first.state.history ?? [],
-      map: mapView(st.map, row.depth, runMarks(st)),
+      map: mapOf(st, st.map, row.depth),
     };
     const room =
       step.node !== null && step.input_json !== null && step.result_json !== null
