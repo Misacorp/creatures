@@ -49,6 +49,13 @@ export interface SlotCue {
   /** A Guard would take this tile's hits. */
   cover?: true;
   reaction?: ReactionCue;
+  /**
+   * Combat v2: the boss move that was tapped on the boss card would hit this tile (the boss-target look: a red ring and the
+   * move's picture in the corner, so colour is never the only cue). `glyph` is the move's shape icon.
+   */
+  hit?: { glyph: string };
+  /** Combat v2: the boss's plain attack is aimed at this tile (one small sword in the corner). */
+  plain?: true;
 }
 
 /** The cues of a whole row. */
@@ -179,6 +186,8 @@ export function cueClasses(cue: SlotCue | undefined): string[] {
   }
   if (cue.buff === true) out.push('cue-buff');
   if (cue.cover === true) out.push('cue-cover');
+  if (cue.hit !== undefined) out.push('cue-hit');
+  if (cue.plain === true) out.push('cue-plain');
   return out.filter((c) => c !== '');
 }
 

@@ -24,7 +24,8 @@ import { latestReveal, totalEssenceOf } from './raid-reveal';
 import { partyMembers, partyOf, partyToJoin } from './raid-roster';
 import { addWeeks, weekIndex, isWeekId } from './raid-schedule';
 import { openSwaps, type SwapRequestRow } from './raid-swap';
-import { loadCreaturesById, partyPlacements } from './raid-teams';
+import { partyPlacements } from './raid-teams';
+import { speciesOf } from './species';
 import {
   colsFor,
   determinationBpFor,
@@ -44,6 +45,15 @@ import {
 } from './raid-v2-live';
 import { RESULT_PHASES, type ResultPhase, type StoredStageResult } from './raid-v2-stage';
 import { loadAutofire, BASIC_TARGET } from './raid-autofire';
+import {
+  bossCardView,
+  movePreviewView,
+  trackView,
+  type BossCardV2View,
+  type MovePreviewView,
+  type TrackView,
+} from './raid-v2-card';
+import { fighterOf, knackOf, loadV2Creatures, type V2Creature } from './raid-v2-fighters';
 import {
   displayNames,
   nextPendingEvent,
@@ -95,6 +105,15 @@ export interface RaidV2Part {
   boss: BossDef | null;
   /** The names of the boss's moves by library id. */
   moveNames: Record<string, string>;
+  /** The boss card as the screen draws it: armour, rule cards, the Escalating meter, the plain attack and the moves with their labels. */
+  card: BossCardV2View;
+  /** The lap's five bosses and the one this week fights. */
+  track: TrackView;
+  /**
+   * The slots each fixed-rule move hits and the plain attack's target with the board as it stands (the engine's own targeting; a move aimed
+   * by a roll or a Wind-up is null: it is aimed when it comes). Null when no creature stands on the board.
+   */
+  preview: MovePreviewView | null;
   /** What the party carries: the boss's HP, each creature's HP and who is out for the weekend; null before stage 1. */
   carry: StageCarry | null;
   /** The party's creatures that are out for the weekend. */
@@ -106,10 +125,47 @@ export interface RaidV2Part {
     row: number;
     col: number;
     hp: number | null;
+    /** Its Max HP, for the carried HP bar (null: not known). */
+    hpMax: number | null;
     knack: string | null;
+    /** The saved Knack's name (null: none). */
+    knackName: string | null;
   }[];
   swaps: SwapsView;
 }
+
+/**
+ * The move preview of a party's board: the creatures standing (not out for the weekend, inside the board's width) as the stage would build
+ * them, with the engine's own targeting over them; and the Max HP of each of them, for the carried HP bars.
+ */
+function previewOf(
+  boss: BossDef,
+  carry: StageCarry | null,
+  placements: readonly { slot: number; user_id: string; creature_id: string }[],
+  creatures: ReadonlyMap<string, V2Creature>,
+  rows: number,
+  cols: number,
+): { preview: MovePreviewView | null; maxHp: ReadonlyMap<string, number> } {
+  const out = new Set(carry?.out ?? []);
+  const standing = placements.filter((p) => !out.has(p.creature_id));
+  const owners = [...new Set(standing.map((p) => p.user_id))];
+  const slotOf = new Map<string, number>();
+  const maxHp = new Map<string, number>();
+  const fighters = standing.flatMap((p) => {
+    const c = creatures.get(p.creature_id);
+    const place = gridPlace(p.slot, rows);
+    if (c === undefined || c.userId !== p.user_id || place.col >= cols) return [];
+    slotOf.set(c.id, p.slot);
+    const fighter = fighterOf(c, `p${String(owners.indexOf(p.user_id))}`, place);
+    maxHp.set(c.id, fighter.maxHp);
+    return [fighter];
+  });
+  return { preview: movePreviewView(boss, fighters, carry, slotOf), maxHp };
+}
+
+/** A saved Knack's name, or null for none (or one the pack no longer has). */
+const knackNameOf = (id: string | null): string | null =>
+  id !== null && Object.hasOwn(combatV2.knacks, id) ? (combatV2.knacks[id]?.name ?? null) : null;
 
 const zoneOfRow = (row: number, rows: number): RowSlotView['zone'] =>
   row === 0 ? 'front' : row === rows - 1 ? 'back' : 'middle';
@@ -269,6 +325,7 @@ export function buildRaidViewV2(
     | 'carry'
     | 'out'
     | 'creatures'
+    | 'preview'
   > = {
     stagesPlayed: 0,
     nextStage: 1,
@@ -279,6 +336,7 @@ export function buildRaidViewV2(
     carry: null,
     out: [],
     creatures: [],
+    preview: null,
   };
   let ability: { abilityId: string; chosen: boolean } | null = null;
   if (shownParty !== null) {
@@ -288,13 +346,10 @@ export function buildRaidViewV2(
     const cols = colsFor(players);
     const length = rows * cols;
     const placements = partyPlacements(sql, week.weekId, shownParty);
-    const byOwner = new Map<string, string[]>();
-    for (const p of placements)
-      byOwner.set(p.user_id, [...(byOwner.get(p.user_id) ?? []), p.creature_id]);
-    const creatureOf = new Map(
-      [...byOwner].flatMap(([owner, ids]) =>
-        loadCreaturesById(sql, owner, ids).map((c) => [c.id, c] as const),
-      ),
+    // One load for the board and its move preview: the creatures with their slotted talents and gear lines, a few statements however many.
+    const creatureOf = loadV2Creatures(
+      sql,
+      placements.map((p) => p.creature_id),
     );
     const cells: RowSlotView[] = Array.from({ length }, (_, slotIndex) => ({
       slot: slotIndex,
@@ -306,12 +361,14 @@ export function buildRaidViewV2(
     for (const p of placements) {
       const c = creatureOf.get(p.creature_id);
       const cell = cells[p.slot];
-      if (c === undefined || cell === undefined) continue;
+      if (c === undefined || c.userId !== p.user_id || cell === undefined) continue;
+      const species = speciesOf(c.species);
+      const knack = knackOf(c);
       const isMine = p.user_id === userId;
       cell.creature = {
         ownerName: names.get(p.user_id) ?? 'Unknown',
-        species: c.species.id,
-        name: c.nickname ?? c.species.name,
+        species: c.species,
+        name: c.nickname ?? species.name,
         level: c.level,
         mine: isMine,
         ...(isMine ? { creatureId: c.id } : {}),
@@ -323,13 +380,15 @@ export function buildRaidViewV2(
         row: place.row,
         col: place.col,
         hp: stored?.carry.hp[c.id] ?? null,
-        knack: c.knack,
+        hpMax: null,
+        knack: knack ?? null,
+        knackName: knackNameOf(knack ?? null),
       });
       if (isMine) {
         mine.push({
           creatureId: c.id,
-          species: c.species.id,
-          name: c.nickname ?? c.species.name,
+          species: c.species,
+          name: c.nickname ?? species.name,
           level: c.level,
           slot: p.slot,
         });
@@ -411,7 +470,11 @@ export function buildRaidViewV2(
         mine: c.user_id === userId,
       })),
       creatures: board,
+      preview: null,
     };
+    const shown = previewOf(boss, stored?.carry ?? null, placements, creatureOf, rows, cols);
+    v2Party.preview = shown.preview;
+    for (const entry of v2Party.creatures) entry.hpMax = shown.maxHp.get(entry.creatureId) ?? null;
     if (myParty !== null) {
       const index = members
         .filter((id) => placements.some((p) => p.user_id === id))
@@ -506,6 +569,9 @@ export function buildRaidViewV2(
       players: v2Party.players,
       boss: v2Party.boss,
       moveNames: v2Party.moveNames,
+      card: bossCardView(defaultBoss, v2Party.carry),
+      track: trackView(slot),
+      preview: v2Party.preview,
       carry: v2Party.carry,
       out: v2Party.out,
       creatures: v2Party.creatures,

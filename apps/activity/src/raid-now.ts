@@ -31,7 +31,7 @@ interface NowAction {
   target: NowTarget | null;
 }
 
-type NowView = Pick<RaidView, 'next' | 'schedule' | 'timezone' | 'party'> & {
+type NowView = Pick<RaidView, 'next' | 'schedule' | 'timezone' | 'party' | 'rules'> & {
   you: Pick<RaidView['you'], 'inRoster' | 'canEdit' | 'team'>;
 };
 
@@ -61,7 +61,10 @@ export function nowAction(
     return {
       kind: 'not-in',
       label: "You are not in this week's raid",
-      detail: 'You join a raid by placing a creature on its board, any time before the finale.',
+      detail:
+        view.rules === 2
+          ? 'You join a raid by placing a creature on its board, any time before stage 1.'
+          : 'You join a raid by placing a creature on its board, any time before the finale.',
       target: null,
     };
   }
@@ -81,7 +84,7 @@ export function nowAction(
       target: null,
     };
   }
-  const title = eventTitle(next.event);
+  const title = eventTitle(next.event, view.rules);
   const when = formatZoned(next.at, view.timezone, 'short');
   if (needsPlacement(view, owned)) {
     return you.inRoster
@@ -94,7 +97,10 @@ export function nowAction(
       : {
           kind: 'set-team',
           label: "Join this week's raid",
-          detail: `Place a creature on the board before the finale. You fight from the next phase on.`,
+          detail:
+            view.rules === 2
+              ? 'Place a creature on the board before stage 1. The players in at stage 1 set the weekend.'
+              : `Place a creature on the board before the finale. You fight from the next phase on.`,
           target: 'placement',
         };
   }

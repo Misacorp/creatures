@@ -10,6 +10,19 @@ import { usePopoverHost } from './PopoverHost';
 import { resolveDrop, slotStatuses } from './raid-dnd';
 import type { RaidView } from './raid-api';
 import {
+  askedSlots,
+  boardCreatureInfoV2,
+  boardCuesV2,
+  boardSlotV2,
+  creaturesBySlot,
+  gridRowsV2,
+  outgoingText,
+  placeTextV2,
+  rowNameV2,
+  type LitMove,
+} from './raid-board-v2';
+import type { RaidV2View } from './raid-v2-api';
+import {
   ROW_NAMES,
   boardCreatureInfo,
   boardCues,
@@ -22,6 +35,7 @@ import type { Intent } from './raid-slots';
 import {
   SHOW_PICKER_EFFECTS,
   MAX_ON_BOARD,
+  baseOption,
   boardTotalLine,
   pickerOptions,
   pickerTitle,
@@ -29,6 +43,7 @@ import {
   rosterNote,
   ON_BOARD_NOTE,
   type PickerCreature,
+  type PickerOption,
 } from './roster-picker';
 import { DragGhost } from './ui/DragGhost';
 import { LiveRegion } from './ui/LiveRegion';
@@ -40,6 +55,15 @@ import { useDragDrop } from './use-drag-drop';
 import type { TeamConfigure } from './TeamCreaturePage';
 
 type Party = NonNullable<RaidView['party']>;
+
+/** What a combat v2 week adds to the board (`rules: 2`): the grid and its extras, the boss move tapped on the card, and asking to swap. */
+export interface PlacementV2 {
+  view: RaidV2View;
+  /** The boss move tapped on the card: its slots light in the boss-target look (null: none tapped). */
+  lit: LitMove | null;
+  /** Asks the owner of the creature in `theirSlot` to swap it for your creature in `mySlot`. */
+  onAskSwap: (mySlot: number, theirSlot: number) => void;
+}
 
 interface Props {
   party: Party;
@@ -64,6 +88,8 @@ interface Props {
   owned?: readonly Creature[];
   /** Opens one of your board's creatures' own page in the tab's place. */
   onOpenPage?: (creatureId: string) => void;
+  /** A combat v2 week: its grid, preview and swap requests. Absent on a v1 week, which looks and behaves as it always did. */
+  v2?: PlacementV2 | undefined;
 }
 
 /** What a raid asks of a creature while the board can change: who it is, how it grows, what it fights with. */
@@ -107,10 +133,20 @@ export function Placement(props: Props) {
   const [selected, setSelected] = useState<string | null>(null);
   /** The slot to focus again once the request that follows a pick or a remove is answered. */
   const refocus = useRef<number | null>(null);
+  /** Combat v2: the other player's slot whose creature you are choosing one of yours to swap for. */
+  const [swapFor, setSwapFor] = useState<number | null>(null);
 
-  const rows = boardRows(party.rowLength);
+  const v2 = props.v2;
+  const grid = v2 === undefined ? null : { rows: v2.view.rows, cols: v2.view.cols };
+  const placeAt = (slot: number): string =>
+    grid === null ? placeText(slot, party.rowLength) : placeTextV2(slot, grid);
+  const rows = grid === null ? boardRows(party.rowLength) : gridRowsV2(grid);
   const bySlot = new Map(party.row.map((slot) => [slot.slot, slot]));
-  const ctx = { locked: !canEdit, row: party.row };
+  const ctx = {
+    locked: !canEdit,
+    row: party.row,
+    ...(grid === null ? {} : { place: placeAt }),
+  };
   const placed = placedCount(party.row);
   const note = rosterNote(placed, canEdit);
 
@@ -179,21 +215,46 @@ export function Placement(props: Props) {
     tray: [],
     turnOrder: props.turnOrder,
   };
-  const { cues, noneRow, effect } = boardCues({
-    ...cueArgs,
-    carried: dragging,
-    pointer: drag?.over?.slot ?? hovered,
-    inspected: inspectedSlot === undefined ? null : Number(inspectedSlot),
-  });
+  // A v1 board lights reaction pairs and influence; a v2 board lights the boss move tapped on the card and marks the plain attack's target.
+  const { cues, noneRow, effect } =
+    v2 === undefined
+      ? boardCues({
+          ...cueArgs,
+          carried: dragging,
+          pointer: drag?.over?.slot ?? hovered,
+          inspected: inspectedSlot === undefined ? null : Number(inspectedSlot),
+        })
+      : {
+          cues: { slots: boardCuesV2(v2.view.preview, v2.lit), none: false },
+          noneRow: null,
+          effect: null,
+        };
+  const v2Context =
+    v2 === undefined || grid === null
+      ? null
+      : {
+          grid,
+          creatures: creaturesBySlot(v2.view.creatures),
+          asked: askedSlots(v2.view.swaps.outgoing, party.row),
+        };
 
-  const boardModels: BoardRowModel[] = rows.map((row) => ({
+  const boardModels: BoardRowModel[] = rows.map((row, rowIndex) => ({
     zone: row.zone,
-    name: ROW_NAMES[row.zone],
-    label: <GlossaryTag entry={GLOSSARY_IDS.zone(row.zone)}>{ROW_NAMES[row.zone]}</GlossaryTag>,
+    name: v2Context === null ? ROW_NAMES[row.zone] : rowNameV2(rowIndex),
+    // A v1 row is a zone with a glossary entry; a v2 row is a numbered row, the boss takes a turn after each.
+    label:
+      v2Context === null ? (
+        <GlossaryTag entry={GLOSSARY_IDS.zone(row.zone)}>{ROW_NAMES[row.zone]}</GlossaryTag>
+      ) : (
+        rowNameV2(rowIndex)
+      ),
     slots: row.slots.flatMap((n) => {
       const slot = bySlot.get(n);
       if (slot === undefined) return [];
-      const model = boardSlot(slot, party.rowLength, rosterNames, canEdit);
+      const model =
+        v2Context === null
+          ? boardSlot(slot, party.rowLength, rosterNames, canEdit)
+          : boardSlotV2(slot, v2Context, rosterNames, canEdit);
       return [
         selected !== null && slot.creature?.creatureId === selected
           ? { ...model, selected: true }
@@ -225,9 +286,12 @@ export function Placement(props: Props) {
       setSelected(selected === id ? null : id);
       return;
     }
-    const info = boardCreatureInfo(occupant);
+    const info = v2 === undefined ? boardCreatureInfo(occupant) : boardCreatureInfoV2(occupant);
     if (info === null || popovers === null) return;
-    const line = boardCues({ ...cueArgs, carried: null, pointer: null, inspected: slot }).effect;
+    const line =
+      v2 === undefined
+        ? boardCues({ ...cueArgs, carried: null, pointer: null, inspected: slot }).effect
+        : null;
     const shown = line === null ? info : { ...info, effect: line };
     const key = `raid-slot:${String(slot)}`;
     if (occupant.mine && id !== undefined) {
@@ -254,7 +318,22 @@ export function Placement(props: Props) {
       );
       return;
     }
-    popovers.openCreature(key, shown, button);
+    // Another player's creature on a v2 board: ask its owner to swap it for one of yours.
+    const mine = party.row.filter((s) => s.creature?.mine === true).length;
+    popovers.openCreature(
+      key,
+      shown,
+      button,
+      v2 !== undefined && canEdit && !occupant.mine && mine > 0
+        ? {
+            label: 'Ask to swap',
+            onAct: () => {
+              setHint(null);
+              setSwapFor(slot);
+            },
+          }
+        : undefined,
+    );
   }
 
   function pick(creatureId: string): void {
@@ -265,9 +344,44 @@ export function Placement(props: Props) {
     setPicking(null);
     setHint(null);
     announce(
-      `${chosen === undefined ? 'Creature' : creatureName(chosen)} placed in ${placeText(slot, party.rowLength)}.`,
+      `${chosen === undefined ? 'Creature' : creatureName(chosen)} placed in ${placeAt(slot)}.`,
     );
     props.onIntent({ type: 'place', creatureId, slot });
+  }
+
+  /** The sheet's title when asking to swap: "Swap with Mira's Lanternfin". */
+  function swapTitle(theirSlot: number): string {
+    const theirs = bySlot.get(theirSlot)?.creature ?? null;
+    return theirs === null ? 'Ask to swap' : `Swap with ${theirs.ownerName}'s ${theirs.name}`;
+  }
+
+  /** The creatures of yours on the board: the ones that can be offered in a swap. */
+  function swapOptions(): PickerOption[] {
+    return party.row.flatMap((s) =>
+      s.creature?.mine === true && s.creature.creatureId !== undefined
+        ? [
+            {
+              ...baseOption({
+                id: s.creature.creatureId,
+                species: s.creature.species,
+                nickname: s.creature.name,
+                level: s.creature.level,
+              }),
+              note: placeAt(s.slot),
+            },
+          ]
+        : [],
+    );
+  }
+
+  /** One of your creatures was chosen to offer: the request goes to the server, which finds the player to ask. */
+  function pickSwap(creatureId: string): void {
+    const theirs = swapFor;
+    const mine = party.row.find((s) => s.creature?.creatureId === creatureId)?.slot;
+    setSwapFor(null);
+    if (theirs === null || mine === undefined || v2 === undefined) return;
+    announce('Swap asked.');
+    v2.onAskSwap(mine, theirs);
   }
 
   // The selected creature, while it is still one of yours on the board.
@@ -303,10 +417,18 @@ export function Placement(props: Props) {
           statuses={statuses}
           cues={cues.slots}
           onHoverSlot={setHovered}
-          rail={{ none: cues.none, effect }}
+          {...(v2 === undefined ? { rail: { none: cues.none, effect } } : {})}
           noneRow={noneRow}
           onTap={tapSlot}
+          v2={v2 !== undefined}
         />
+        {v2 !== undefined && grid !== null && v2.view.swaps.outgoing.length > 0 && (
+          <ul class="swap-waiting muted small">
+            {v2.view.swaps.outgoing.map((request) => (
+              <li key={request.id}>{outgoingText(request, grid)}</li>
+            ))}
+          </ul>
+        )}
         {props.configure !== undefined && shown !== undefined && (
           <CreatureConfigurator
             key={shown.id}
@@ -361,7 +483,7 @@ export function Placement(props: Props) {
       <DragGhost ghostRef={dragDrop.ghostRef} creature={dragged ?? undefined} />
       {picking !== null && (
         <RosterPicker
-          title={pickerTitle(placeText(picking, party.rowLength))}
+          title={pickerTitle(placeAt(picking))}
           status={`${String(placed)} / ${String(MAX_ON_BOARD)} placed`}
           options={pickerOptions({
             creatures: props.creatures,
@@ -369,9 +491,13 @@ export function Placement(props: Props) {
             length: party.rowLength,
             slot: picking,
             turnOrder: props.turnOrder,
-            showEffects: SHOW_PICKER_EFFECTS,
+            // A v2 board has no reaction pairs or influence to preview; its picker greys the creatures knocked out this weekend.
+            showEffects: v2 === undefined && SHOW_PICKER_EFFECTS,
+            ...(v2 === undefined
+              ? {}
+              : { out: new Set(v2.view.out.filter((o) => o.mine).map((o) => o.creatureId)) }),
           })}
-          showEffects={SHOW_PICKER_EFFECTS}
+          showEffects={v2 === undefined && SHOW_PICKER_EFFECTS}
           placedNote={ON_BOARD_NOTE}
           anchor={() =>
             stripRef.current?.querySelector<HTMLElement>(`[data-slot="${String(picking)}"]`) ?? null
@@ -379,6 +505,21 @@ export function Placement(props: Props) {
           onPick={pick}
           onClose={() => {
             setPicking(null);
+          }}
+        />
+      )}
+      {swapFor !== null && v2 !== undefined && (
+        <RosterPicker
+          title={swapTitle(swapFor)}
+          options={swapOptions()}
+          showEffects={false}
+          placedNote=""
+          anchor={() =>
+            stripRef.current?.querySelector<HTMLElement>(`[data-slot="${String(swapFor)}"]`) ?? null
+          }
+          onPick={pickSwap}
+          onClose={() => {
+            setSwapFor(null);
           }}
         />
       )}

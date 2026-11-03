@@ -4,6 +4,7 @@ import type { TrackStep } from '../../progress-track';
 import { XpBar, type XpKind } from '../../XpBar';
 import { Bar } from '../../ui/Bar';
 import { PipRow } from '../../ui/PipRow';
+import { stageTicks } from '../../BossCardV2';
 import { StreakTrack } from '../../ui/StreakTrack';
 import { streakLabel, streakPips } from '../../dungeon-text';
 import { BossHp, SegmentBar } from '../../ui/SegmentBar';
@@ -94,7 +95,7 @@ const segmentBar: Entry = {
   file: 'apps/activity/src/ui/SegmentBar.tsx',
   group: 'Bars',
   description:
-    'A stepped HP bar: twenty red segments for a boss (optionally with its numbers written over the bar, as on the boss card of the Raid tab and in the fight), five green ones under a creature in the fight; the segments that were just lost blink.',
+    "A stepped HP bar: twenty red segments for a boss (optionally with its numbers written over the bar, as on the boss card of the Raid tab and in the fight), five green ones under a creature in the fight; the segments that were just lost blink. On a combat v2 weekend the boss bar has a tick at each stage's goal and, for a returning boss, last week's best as a dim ghost fill.",
   controls: {
     size: { kind: 'select', options: ['boss', 'unit'] },
     current: { kind: 'number', min: 0, max: 100000 },
@@ -102,14 +103,33 @@ const segmentBar: Entry = {
     previous: { kind: 'number', min: -1, max: 100000 },
     label: { kind: 'text' },
     text: { kind: 'text' },
+    stageTicks: { kind: 'toggle' },
+    ghost: { kind: 'number', min: -1, max: 100000 },
   },
-  defaults: { size: 'boss', current: 600, max: 1000, previous: -1, label: 'Boss HP', text: '' },
+  defaults: {
+    size: 'boss',
+    current: 600,
+    max: 1000,
+    previous: -1,
+    label: 'Boss HP',
+    text: '',
+    stageTicks: false,
+    ghost: -1,
+  },
   presets: [
     { name: 'Full', props: { current: 1000 } },
     { name: 'Half', props: { current: 500 } },
     { name: 'Last sliver', props: { current: 1 } },
     { name: 'Just hit', props: { current: 500, previous: 800 } },
     { name: 'Creature (unit)', props: { size: 'unit', current: 60, max: 100 } },
+    {
+      name: 'A combat v2 weekend: a tick per stage',
+      props: { current: 900, stageTicks: true },
+    },
+    {
+      name: "A returning boss: last week's best as a ghost",
+      props: { current: 300, stageTicks: true, ghost: 450, text: '300 / 1000' },
+    },
     { name: 'With the numbers on the bar', props: { current: 620, text: '620 / 1000' } },
     {
       name: 'Big numbers, written short (the raid boss card)',
@@ -131,6 +151,8 @@ const segmentBar: Entry = {
         {...(previous < 0 ? {} : { previous })}
         label={str(p, 'label')}
         {...(str(p, 'text') === '' ? {} : { text: str(p, 'text') })}
+        {...(bool(p, 'stageTicks') ? { ticks: stageTicks() } : {})}
+        {...(num(p, 'ghost') < 0 ? {} : { ghost: num(p, 'ghost') / num(p, 'max') })}
       />
     );
   },

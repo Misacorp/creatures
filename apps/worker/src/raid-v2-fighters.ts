@@ -30,6 +30,8 @@ export interface V2CreatureRow {
   species: string;
   level: number;
   knack: string | null;
+  /** The creature's own name for it (null: the species' name). */
+  nickname: string | null;
 }
 
 /** A creature as a stage reads it: its row, its slotted v2 talents (in slot order) and its gear's stat lines. */
@@ -77,8 +79,9 @@ export function loadV2Creatures(sql: SqlStorage, ids: readonly string[]): Map<st
         level: number;
         knack: string | null;
         fusion_count: number;
+        nickname: string | null;
       }>(
-        `SELECT id, user_id, species, level, knack, fusion_count FROM creatures WHERE id IN (${marks})`,
+        `SELECT id, user_id, species, level, knack, fusion_count, nickname FROM creatures WHERE id IN (${marks})`,
         ...part,
       )
       .toArray();
@@ -103,6 +106,7 @@ export function loadV2Creatures(sql: SqlStorage, ids: readonly string[]): Map<st
         species: r.species,
         level: r.level,
         knack: r.knack,
+        nickname: r.nickname,
         // A slotted talent counts only while its slot is open at the creature's level.
         talents: slottedTalents({ species, level: r.level }, learned.get(r.id) ?? []),
         gear: gearLinesOf(species, r.level, r.fusion_count, worn.get(r.id)),

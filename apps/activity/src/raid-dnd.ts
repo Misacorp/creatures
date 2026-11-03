@@ -53,7 +53,7 @@ export function resolveDrop(
   const intent: Intent = { type: 'place', creatureId, slot: target.slot };
   const text =
     occupant === null
-      ? `Moved ${name} to ${placeText(target.slot, ctx.row.length)}.`
+      ? `Moved ${name} to ${(ctx.place ?? ((slot: number) => placeText(slot, ctx.row.length)))(target.slot)}.`
       : `Swapped ${name} with ${occupant.name}.`;
   return outcome('valid', intent, null, text);
 }

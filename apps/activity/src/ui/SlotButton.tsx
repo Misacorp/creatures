@@ -1,4 +1,6 @@
 import { elementClass } from '../art';
+import { combatGlyph, roleGlyphId } from '../combat-glyphs';
+import { glyphOrUnknown } from '../glyphs';
 import { cssVars } from '../css-vars';
 import { percent } from '../progress-math';
 import { Sprite } from '../sprites/Sprite';
@@ -6,6 +8,7 @@ import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import type { DropStatus } from '../slot-outcome';
 import type { DragDrop } from '../use-drag-drop';
 import { cueClasses, type SlotCue } from './slot-cue';
+import { TinyHp } from './TinyHp';
 
 /** One slot of the row, ready to draw. */
 export interface SlotModel {
@@ -34,7 +37,17 @@ export interface SlotModel {
      * creature with HP to show (the dungeon camp's row). Absent: nothing, as in the raid and the entry.
      */
     hp?: SlotHp;
+    /**
+     * Combat v2 only: the creature's role (its icon sits in the top left corner), its saved Knack's name (a small chip under the
+     * level) and the HP it carries between stages (a tiny bar at the foot of the tile). Absent: none of them, as in v1 and the dungeon.
+     */
+    v2?: { role: string; knack: string | null; carried: { hp: number; max: number } | null };
   };
+  /**
+   * A short word on the tile, for a state the tile is in ("Asked": you have asked this creature's owner to swap). Text only;
+   * `aria-label` says it too.
+   */
+  badge?: string;
 }
 
 /** The HP line of a tile: `ratio` (0 to 1) fills the bar, `state` colours it, `text` is the words. */
@@ -110,6 +123,9 @@ export function SlotButton(props: SlotButtonProps) {
   classes.push(...cueClasses(props.cue));
   const badge = props.cue?.reaction;
   const hover = props.onHover;
+  const roleIcon = c?.v2 === undefined ? null : roleGlyphId(c.v2.role);
+  const hitGlyph = props.cue?.hit === undefined ? undefined : combatGlyph(props.cue.hit.glyph);
+  const plainGlyph = props.cue?.plain === true ? combatGlyph('attack') : undefined;
   return (
     <button
       type="button"
@@ -174,12 +190,38 @@ export function SlotButton(props: SlotButtonProps) {
               <span class="slot-hp-text">{c.hp.text}</span>
             </span>
           )}
+          {c.v2 !== undefined && c.v2.knack !== null && (
+            <span class="slot-knack" aria-hidden="true">
+              {c.v2.knack}
+            </span>
+          )}
+          {c.v2?.carried != null && (
+            <span class="slot-carried" aria-hidden="true">
+              <TinyHp current={c.v2.carried.hp} max={c.v2.carried.max} />
+            </span>
+          )}
+          {roleIcon !== null && (
+            <span class="slot-role" aria-hidden="true">
+              <Sprite sprite={glyphOrUnknown(roleIcon)} scale={1} />
+            </span>
+          )}
           {c.owner !== undefined && (
             <span class="slot-owner" aria-hidden="true">
               {c.owner.initial}
             </span>
           )}
         </>
+      )}
+      {(hitGlyph !== undefined || plainGlyph !== undefined) && (
+        <span class="slot-mark" aria-hidden="true">
+          {plainGlyph !== undefined && <Sprite sprite={plainGlyph} scale={1} />}
+          {hitGlyph !== undefined && <Sprite sprite={hitGlyph} scale={1} />}
+        </span>
+      )}
+      {slot.badge !== undefined && (
+        <span class="slot-state" aria-hidden="true">
+          {slot.badge}
+        </span>
       )}
       {badge !== undefined && (
         <span class="slot-cue-badge" aria-hidden="true">

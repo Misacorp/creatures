@@ -16,7 +16,7 @@ const BUDGET_V2 = {
   '/api/state': 900, // measured 607: the creature page load with the flag on (465 in the v1 world; the v2 books and learned talents add 2 statements, about 140 rows)
   knack: 650, // measured 435: saving a Knack, which answers with the state (the Knack itself is 3 statements)
   learn: 680, // measured 454: learning a talent for Bait (the ledger spend, the book check, the insert), and the state
-  '/api/raid': 850, // measured 562: a v2 week with 15 players and three placed creatures each (the track's boss, the carry row, the open swap requests of the caller, a creature load by id per player; no readiness band)
+  '/api/raid': 780, // measured 517: a v2 week with 15 players and three placed creatures each (the track's boss, the carry row, the open swap requests of the caller, one load of the board's creatures with their talents and gear lines for the board and the move preview; no readiness band)
   board: 170, // measured 110: one placement (a swap of two creatures, without the view) with a teammate's board socket open on a v2 week
   ask: 135, // measured 87: a swap request (the party's two slots, the caller's open requests, the insert) and the answer's list
   accept: 90, // measured 57: accepting a request (the request by its indexes, both slots, the move)

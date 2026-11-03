@@ -31,6 +31,7 @@ export const HOME_STATES = [
   'nothing going on',
   'crowded',
   'away',
+  'swap request',
 ] as const;
 export type HomeState = (typeof HOME_STATES)[number];
 
@@ -141,6 +142,16 @@ export function homeInput(state: string, raid: boolean): HomeInput {
     forecast: sampleForecast('boon and omen'),
   };
   if (state === 'away') return { ...homeInput('busy', raid), away: AWAY_SAMPLE };
+  if (state === 'swap request') {
+    // A combat v2 week: another player asked to swap creatures (the Raid place's row says so beside its other reasons).
+    const busy = homeInput('busy', raid);
+    return busy.raid === null
+      ? busy
+      : {
+          ...busy,
+          raid: { ...busy.raid, rules: 2, swapText: 'Mira asks to swap Cindle for Pyrelynx' },
+        };
+  }
   if (state === 'nothing waiting') {
     return {
       ...common,

@@ -84,15 +84,18 @@ function fighterOf(spec: FighterSpec): Fighter {
   };
 }
 
-/** One fight: the boss, the creatures, and the rounds of R8. `ctx` is the input's rules and chart (`contextOf`). */
-export function playFight(
+/**
+ * The state a fight starts from: the creatures at the HP they carry in, nothing stored, the boss at the HP and the escalation it carries in
+ * (`opts`). `playFight` plays its rounds from it; `previewMoves` (`preview.ts`) reads the board's targets from it.
+ */
+export function startState(
   ctx: Context,
   boss: BossDef,
   specs: readonly FighterSpec[],
   opts: FightOptions,
   rng: Rng,
   actions: readonly FinaleAction[] = [],
-): FightResult {
+): State {
   const fighters = specs.map(fighterOf);
   if (opts.carryHp) for (const f of fighters) f.hp = opts.carryHp.get(f.uid) ?? f.hp;
   // Catch Breath is once per raid weekend: a creature that used it in an earlier stage does not have it again.
@@ -143,6 +146,20 @@ export function playFight(
     grownNow: null,
     phaseMoves: null,
   };
+  return s;
+}
+
+/** One fight: the boss, the creatures, and the rounds of R8. `ctx` is the input's rules and chart (`contextOf`). */
+export function playFight(
+  ctx: Context,
+  boss: BossDef,
+  specs: readonly FighterSpec[],
+  opts: FightOptions,
+  rng: Rng,
+  actions: readonly FinaleAction[] = [],
+): FightResult {
+  const s = startState(ctx, boss, specs, opts, rng, actions);
+  const { fighters } = s;
   const startAlive = alive(s).length;
   if (opts.log && (opts.resistReaction || opts.resistElement))
     emit(s, {

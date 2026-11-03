@@ -63,6 +63,22 @@
   background: var(--hp-gone);
 }
 
+/* Last week's best on a returning boss: the segments it still had that this week has lost, a dim red (the bar's ghost). */
+.hpbar > i.gone.ghost {
+  background: rgb(255 95 109 / 32%);
+}
+
+/* A tick per stage of a combat v2 weekend: a bone line across the bar where the stage's goal is met. */
+.hpbar-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--at);
+  width: var(--px);
+  background: var(--bone);
+  pointer-events: none;
+}
+
 /* A row of square pips (`PipRow`): steps of something, the lit ones gold. */
 .pips {
   display: inline-flex;

@@ -29,6 +29,8 @@ import type { RoomPhase, RoomScene } from '../../sprites/room-art';
 import type { Resident } from '../../room-data';
 import { creatureSpriteOrFallback } from '../../sprites/creature-sprites';
 import { TurnStrip } from '../../ui/TurnStrip';
+import { boardTurnSteps } from '../../BossCardV2';
+import { raidV2Sample } from '../raid-v2-sample';
 import {
   BOSS_IDS,
   GEAR_BASE_IDS,
@@ -287,24 +289,49 @@ function turnStripDemo(p: Props) {
   return <TurnStrip chips={chips} label="Turn order" />;
 }
 
+/** The v2 raid board's strip: one round as row 1, boss, row 2, boss, row 3, boss, with the move icons on the boss's steps. */
+function boardRoundDemo(p: Props) {
+  const { view } = raidV2Sample({
+    slot: num(p, 'slot'),
+    players: 4,
+    stagesPlayed: 0,
+    mine: 0,
+    bestShareBp: 0,
+    knockedOut: false,
+    swaps: 'none',
+  });
+  const v2 = view.v2;
+  if (v2 === undefined) return null;
+  return (
+    <TurnStrip chips={boardTurnSteps(v2.card, v2.rows)} label="One round: the rows and the boss" />
+  );
+}
+
 const turnStrip: Entry = {
   name: 'TurnStrip',
   file: 'apps/activity/src/ui/TurnStrip.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The strip of who acts in what order: a chip for each creature, the one acting now outlined, the ones that acted dimmed and a knocked-out one struck through. No screen shows it now (the stage writes the order under the creatures instead); it is kept for later.',
+    "The strip of who acts in what order: a chip for each creature, the one acting now outlined, the ones that acted dimmed and a knocked-out one struck through (the fight stage writes the order under the creatures instead, so only the v2 raid board shows the strip). On the v2 raid board's boss card it reads one round: row 1, boss, row 2, boss, row 3, boss, and a boss step carries the pictures of the moves due on it with how often each is due; the Round control switches to it.",
   controls: {
+    round: { kind: 'select', options: ['creatures', 'the boss round (v2 board)'] },
+    slot: { kind: 'number', min: 1, max: 15 },
     acting: { kind: 'select', options: PLACES },
     out: { kind: 'select', options: PLACES },
   },
-  defaults: { acting: '2', out: NONE },
+  defaults: { round: 'creatures', slot: 1, acting: '2', out: NONE },
   presets: [
+    { name: 'The boss round, slot 1 (three rows)', props: { round: 'the boss round (v2 board)' } },
+    {
+      name: 'The boss round, slot 3 (two rows)',
+      props: { round: 'the boss round (v2 board)', slot: 3 },
+    },
     { name: 'Second acting', props: {} },
     { name: 'Last acting', props: { acting: '4' } },
     { name: 'One knocked out', props: { acting: '3', out: '2' } },
     { name: 'Before the first turn', props: { acting: NONE } },
   ],
-  render: (p) => turnStripDemo(p),
+  render: (p) => (str(p, 'round') === 'creatures' ? turnStripDemo(p) : boardRoundDemo(p)),
 };
 
 const gearList: Entry = {

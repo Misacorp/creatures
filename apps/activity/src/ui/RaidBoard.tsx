@@ -38,6 +38,8 @@ interface RaidBoardProps extends SlotStripProps {
   rail?: CueRailProps;
   /** The row that gets the "no reaction" mark on its name, when the creature in focus sets off nothing. */
   noneRow?: Zone | null;
+  /** Combat v2's board: the tiles are a little taller, to hold the role, the Knack and the carried HP (raid-board.css). */
+  v2?: boolean;
 }
 
 /** The sprite scale of a tile: small, so about four lanes fit on a 360 px phone. The raid's, and the default. */
@@ -128,15 +130,15 @@ export function RaidBoard(props: RaidBoardProps) {
   const classes =
     dragging === null ? 'party-strip board-scroller' : 'party-strip board-scroller dragging';
   return (
-    <div class="raid-board">
+    <div class={props.v2 === true ? 'raid-board v2' : 'raid-board'}>
       <div class="board-grid">
         <div class="board-labels">
           <p class="board-lane-head" aria-hidden="true">
             Lane
           </p>
-          {rows.map((row) => (
+          {rows.map((row, at) => (
             <p
-              key={row.zone}
+              key={at}
               class={
                 props.noneRow === row.zone
                   ? 'zone-label board-label no-reaction'
@@ -163,8 +165,8 @@ export function RaidBoard(props: RaidBoardProps) {
               </span>
             ))}
           </div>
-          {rows.map((row) => (
-            <div key={row.zone} class="board-row" role="group" aria-label={row.name}>
+          {rows.map((row, at) => (
+            <div key={at} class="board-row" role="group" aria-label={row.name}>
               {row.slots.map((slot) => (
                 <SlotButton
                   key={slot.index}

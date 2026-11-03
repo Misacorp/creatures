@@ -1,0 +1,64 @@
+/*
+  The track strip (ui/TrackStrip.tsx): the lap's five boss portraits in a row with "Boss Rank N" over them. The current boss is
+  lit in a gold frame, the beaten ones are dimmed and ticked (the tick is a shape, so colour is never the only cue) and the ones
+  ahead are dimmed. Nothing marks a boss harder than another.
+*/
+.track-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.track-rank {
+  margin: 0;
+  color: var(--haze);
+  font-family: var(--display);
+  font-size: var(--fs-row);
+}
+
+.track-bosses {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.375rem;
+  max-width: 26rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.track-boss {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 3.5rem;
+  border: var(--px) solid var(--line);
+  background: var(--night);
+}
+
+.track-boss.beaten .track-portrait > canvas,
+.track-boss.ahead .track-portrait > canvas {
+  opacity: 0.55;
+}
+
+.track-boss.now {
+  border-color: var(--gold);
+  background: var(--dusk);
+  box-shadow: var(--ring);
+}
+
+.track-portrait {
+  position: relative;
+  display: grid;
+  place-items: center;
+  line-height: 0;
+}
+
+.track-tick {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  padding: 2px;
+  background: var(--ink);
+  line-height: 0;
+}
