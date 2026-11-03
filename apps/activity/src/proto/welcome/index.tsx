@@ -5,11 +5,12 @@
  * are the daily player and the weekly player; its picker replays any visit, and Replay starts the popup again.
  */
 import { registerProto } from '../registry';
+import { weekdayNumber } from '../valley/valley-logic';
 import { Valley } from '../valley/Valley';
 import '../valley/valley.css';
 import '../valley/valley-scenes.css';
 import './welcome.css';
-import { DAILY, WEEKLY, replayTitle, type Journey } from './journey';
+import { DAILY, WEEKLY, placeLevelAt, replayTitle, type Journey } from './journey';
 import { welcomeOf } from './highlights';
 import { castOf, welcomeWorld } from './welcome-world';
 
@@ -32,6 +33,7 @@ registerProto({
     const index = Math.min(visit, chosen.journey.visits.length) - 1;
     const world = welcomeWorld();
     const cast = castOf(world);
+    const visitAt = chosen.journey.visits[index];
     return (
       <Valley
         key={`${chosen.journey.id}-${String(index)}`}
@@ -41,6 +43,17 @@ registerProto({
           world,
           cast,
           welcome: welcomeOf(chosen.journey, index, cast),
+          // The visit's own weekday decides whether the visitor is in the valley; the bonfire has the level it had.
+          ...(visitAt === undefined
+            ? {}
+            : {
+                clock: {
+                  weekday: weekdayNumber(visitAt.weekday) ?? 1,
+                  hour: visitAt.hour,
+                  minute: 0,
+                },
+              }),
+          bonfireLevel: placeLevelAt(chosen.journey, index, 'bonfire'),
         }}
       />
     );

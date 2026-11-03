@@ -186,3 +186,18 @@ export function replayTitle(journey: Journey, index: number): string {
   const who = journey.id === 'daily' ? 'Daily' : 'Weekly';
   return `${who} · week ${String(v.week)}, ${v.weekday.slice(0, 3)} (day ${String(v.day)})`;
 }
+
+/**
+ * A place's level after visit `index`: the highest level any place level-up of `place` reached up to and
+ * including that visit; 1 before the first (the lab's places all start at level 1).
+ */
+export function placeLevelAt(journey: Journey, index: number, place: string): number {
+  let level = 1;
+  for (const visit of journey.visits.slice(0, index + 1)) {
+    for (const event of eventsOf(visit)) {
+      if (event.kind === 'place-level' && event.place === place)
+        level = Math.max(level, event.level);
+    }
+  }
+  return level;
+}

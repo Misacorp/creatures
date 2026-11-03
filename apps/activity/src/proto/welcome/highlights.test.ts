@@ -344,7 +344,7 @@ describe('the highlights of a visit', () => {
     );
     const server = level.highlights.find((s) => s.kind === 'server');
     expect(server?.id).toBe('place-level');
-    expect(server?.place).toBe('paddock');
+    expect(server?.place).toBe('bonfire');
     expect(server?.headline).toBe('THE BONFIRE GROWS TO LEVEL 3');
     expect(server?.blurb).toBe('');
     const visitor = welcomeFor(
@@ -566,9 +566,57 @@ describe('who is who and how it reads', () => {
     expect(scoutsDestination(visit({ came: { shards: {} } }))).toBe('the Tidepools');
   });
 
-  it('stages the bonfire at the Paddock (the valley has none yet) and any real place where it is', () => {
-    expect(placeOfLevelUp('bonfire')).toBe('paddock');
+  it('tells a place level-up at the place itself, and one the valley lacks at the Paddock', () => {
+    expect(placeOfLevelUp('bonfire')).toBe('bonfire');
+    expect(placeOfLevelUp('school')).toBe('school');
+    expect(placeOfLevelUp('market')).toBe('market');
     expect(placeOfLevelUp('forge')).toBe('forge');
+    expect(placeOfLevelUp('watchtower')).toBe('paddock');
+  });
+
+  it('tells each story at the place it belongs to', () => {
+    const w = welcomeFor(
+      visit({
+        events: [
+          'school: a creature began learning its talent 1 (5 Acorns, 24 hours)',
+          'graduation: 2 creatures earned Bronze',
+          'visitor: rerolled a rare piece (item level 5.2) for 10 Acorns and 40 scrap',
+          'visitor: he is in the valley until the raid finale',
+          'new line: splashet',
+        ],
+      }),
+      CAST,
+      1,
+    );
+    const placeOf = (id: string): string | undefined =>
+      [...w.highlights, ...w.rest].find((s) => s.id === id)?.place;
+    expect(placeOf('learning')).toBe('school');
+    expect(placeOf('graduation')).toBe('school');
+    expect(placeOf('reroll')).toBe('visitor');
+    expect(placeOf('visitor')).toBe('visitor');
+    expect(placeOf('moment')).toBe('bonfire');
+    expect(placeOf('new-line')).toBe('paddock');
+    const teacher = welcomeFor(
+      visit({ events: ["school: a visiting teacher's lesson for a creature (3 Acorns)"] }),
+      CAST,
+      1,
+    );
+    expect([...teacher.highlights, ...teacher.rest].find((s) => s.id === 'lesson')?.place).toBe(
+      'school',
+    );
+  });
+
+  it('keeps every story of both journeys at a place that exists, with its own scene there', () => {
+    const ids = new Set(PLACES.map((p) => p.id));
+    for (const journey of [DAILY, WEEKLY]) {
+      for (let i = 0; i < journey.visits.length; i += 1) {
+        const w = welcomeOf(journey, i, CAST);
+        for (const story of [...w.highlights, ...w.rest]) {
+          expect(ids.has(story.place)).toBe(true);
+          expect(story.scene.place).toBe(story.place);
+        }
+      }
+    }
   });
 
   it('dates a visit and picks the best of each kind by weight', () => {

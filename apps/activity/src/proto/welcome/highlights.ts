@@ -197,8 +197,8 @@ export function scoutsDestination(visit: Visit): string {
 }
 
 /**
- * The place a lab place's level-up happens at. The valley has no bonfire or School yet, so the bonfire is
- * staged at the Paddock (where the resting creatures are) and the School's news at the House.
+ * The place a lab place's level-up happens at: the valley's own place of that name (the bonfire, the School,
+ * the Market, the visitor's stall and the older places); a place the valley does not have is told at the Paddock.
  */
 export function placeOfLevelUp(place: string): PlaceId {
   if ((PLACES as readonly { id: string }[]).some((p) => p.id === place)) return place as PlaceId;
@@ -378,7 +378,7 @@ function storiesOf(c: Ctx): Story[] {
     });
   }
 
-  // -- Creatures: graduations, naming the creatures that rest (the House stands in for the School)
+  // -- Creatures: graduations, naming the creatures that rest
   const grads = ofKind(events, 'graduation');
   if (grads.length > 0) {
     const count = grads.reduce((sum, g) => sum + g.count, 0);
@@ -390,14 +390,14 @@ function storiesOf(c: Ctx): Story[] {
       id: 'graduation',
       kind: 'creature',
       weight: WEIGHT.graduation,
-      place: 'house',
+      place: 'school',
       count,
       headline: single
         ? upper(`${names[0] ?? ''} graduates with ${honour}`)
         : upper(`${String(count)} graduate with ${honour}`),
       blurb: '',
       scene: {
-        place: 'house',
+        place: 'school',
         actors: slots.map((s, i, all) => ({
           who: cast0(s),
           dx: (i - (all.length - 1) / 2) * 24,
@@ -410,7 +410,7 @@ function storiesOf(c: Ctx): Story[] {
         })),
       },
       finds: [],
-      glyph: 'home',
+      glyph: 'journal',
       species: undefined,
     });
   }
@@ -462,7 +462,7 @@ function storiesOf(c: Ctx): Story[] {
     });
   }
 
-  // -- Creatures: the School's news (the House stands in for it)
+  // -- Creatures: the School's news
   const learner =
     c.crew.resting[visit.day % Math.max(1, c.crew.resting.length)] ?? c.crew.scouts[1];
   const learning = ofKind(events, 'school-learning')[0];
@@ -472,17 +472,17 @@ function storiesOf(c: Ctx): Story[] {
       id: 'learning',
       kind: 'creature',
       weight: WEIGHT.learning,
-      place: 'house',
+      place: 'school',
       count: 1,
       headline: upper(`${c.name(learner)} learns a talent`),
       blurb: '',
       scene: {
-        place: 'house',
+        place: 'school',
         actors: [{ who: cast0(learner), dx: 0, dy: 8 }],
         props: [{ prop: { kind: 'glyph', id: 'sparkle' }, dx: 14, dy: -26, big: true }],
       },
       finds: [],
-      glyph: 'home',
+      glyph: 'journal',
       species: undefined,
     });
   } else if (lesson !== undefined) {
@@ -490,17 +490,17 @@ function storiesOf(c: Ctx): Story[] {
       id: 'lesson',
       kind: 'creature',
       weight: WEIGHT.lesson,
-      place: 'house',
+      place: 'school',
       count: 1,
       headline: upper(`A teacher visits ${c.name(learner)}`),
       blurb: '',
       scene: {
-        place: 'house',
+        place: 'school',
         actors: [{ who: cast0(learner), dx: 0, dy: 8 }],
         props: [],
       },
       finds: [],
-      glyph: 'home',
+      glyph: 'journal',
       species: undefined,
     });
   }
@@ -574,13 +574,13 @@ function storiesOf(c: Ctx): Story[] {
       id: 'moment',
       kind: 'creature',
       weight: WEIGHT.moment,
-      place: 'paddock',
+      place: 'bonfire',
       count: 0,
       headline: upper(moment(c.name(rester))),
       blurb: '',
-      scene: { place: 'paddock', actors: [{ who: cast0(rester), dx: 0, dy: 8 }], props: [] },
+      scene: { place: 'bonfire', actors: [{ who: cast0(rester), dx: 0, dy: 8 }], props: [] },
       finds: [],
-      glyph: 'paw',
+      glyph: 'map-camp',
       species: undefined,
     });
   }
@@ -598,17 +598,17 @@ function storiesOf(c: Ctx): Story[] {
       id: 'reroll',
       kind: 'piece',
       weight,
-      place: 'fair',
+      place: 'visitor',
       count: 1,
       headline: 'VISITOR REMAKES A PIECE',
       blurb: '',
       scene: {
-        place: 'fair',
+        place: 'visitor',
         actors: [{ who: cast0(smith), dx: -6, dy: 8 }],
         props: [],
       },
       finds: itemFinds(piecesFor(c.cast.pieces, visit.day, 1, rarity)),
-      glyph: 'trophy',
+      glyph: 'moon',
       species: undefined,
     });
   }
@@ -699,17 +699,17 @@ function storiesOf(c: Ctx): Story[] {
       id: 'visitor',
       kind: 'server',
       weight: sold ? WEIGHT.blueprint : WEIGHT.visitor,
-      place: 'fair',
+      place: 'visitor',
       count: (blueprint === undefined ? 0 : 1) + (arrives === undefined ? 0 : 1),
       headline: sold ? 'VISITOR SELLS A BLUEPRINT' : 'A VISITOR ARRIVES',
       blurb: sold ? '' : 'He stays until the raid.',
       scene: {
-        place: 'fair',
+        place: 'visitor',
         actors: [{ who: cast0(c.crew.resting[0] ?? c.crew.scouts[1]), dx: -14, dy: 8 }],
         props: [{ prop: { kind: 'glyph', id: 'gift' }, dx: 22, dy: -2, big: true }],
       },
       finds: sold && sample !== undefined ? [{ kind: 'blueprint', baseId: sample }] : [],
-      glyph: 'trophy',
+      glyph: 'moon',
       species: undefined,
     });
   }

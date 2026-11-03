@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { DAILY, WEEKLY, eventsOf, gapDays, parseEvent, replayTitle } from './journey';
+import { DAILY, WEEKLY, eventsOf, gapDays, parseEvent, placeLevelAt, replayTitle } from './journey';
 
 /** The lab's files, from the package's folder (vitest runs there). */
 const LAB = '../../docs/design/valley/economy/journeys';
@@ -122,5 +122,19 @@ describe('parseEvent', () => {
     const text = 'something new the lab says: 12';
     expect(parseEvent(text)).toEqual({ kind: 'plain', text });
     expect(parseEvent('')).toEqual({ kind: 'plain', text: '' });
+  });
+});
+
+describe('a place’s level through a journey', () => {
+  it('starts at 1 and holds the highest level reached up to that visit', () => {
+    const at = DAILY.visits.findIndex((v) =>
+      eventsOf(v).some((e) => e.kind === 'place-level' && e.place === 'bonfire'),
+    );
+    expect(at).toBeGreaterThan(0);
+    expect(placeLevelAt(DAILY, 0, 'bonfire')).toBe(1);
+    expect(placeLevelAt(DAILY, at - 1, 'bonfire')).toBe(1);
+    expect(placeLevelAt(DAILY, at, 'bonfire')).toBe(2);
+    expect(placeLevelAt(DAILY, DAILY.visits.length - 1, 'bonfire')).toBeGreaterThanOrEqual(2);
+    expect(placeLevelAt(DAILY, at, 'market')).toBe(1);
   });
 });
