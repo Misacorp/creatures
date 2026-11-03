@@ -351,7 +351,7 @@ export function ForgeScene({
             {(() => {
               const pa = postSpots(g);
               const waiting = status === 'waiting';
-              const shelfLabel = `${String(postMade)} of ${String(ORDER_OF)} pieces on the shelf`;
+              const shelfLabel = `${String(postMade)} / ${String(ORDER_OF)} pieces on the shelf`;
               const shardIcon = { kind: 'part', part: need } as const;
               const postLabel = waiting
                 ? `The smith waits for a ${shardWord(need)} shard${trade === null ? '' : '. Trade for one'}`

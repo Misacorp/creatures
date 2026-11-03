@@ -140,7 +140,7 @@ export function MarketScene({
                 type="button"
                 class="pv-thing pv-market-hit"
                 aria-expanded={asking}
-                aria-label={`The Market's plot, ${String(stage)} of 4 stages up. What it still needs`}
+                aria-label={`The Market's plot, stage ${String(stage)} / 4. What it still needs`}
                 ref={cssVars({
                   '--x': `${String(X(at.place.x))}px`,
                   '--y': `${String(Y(at.place.y))}px`,
