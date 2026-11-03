@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: The School's teacher prefers a talent that benefits a few players (2 to a quarter of the server)
+
+ID: `2026-11-03-the-school-s-teacher-prefers-a` · Status: current
+
+**Decision.** The weekly teacher's talent (V-SCH-12) is drawn first among talents that benefit from 2 up to a quarter of the server's players (at least 2), never all; else one that benefits exactly one player; else the one that benefits fewest. The same rule runs in the economy lab and the prototype.
+
+**Reasoning.** Misa (round 22, Q52): "it's fine if it doesn't benefit many players ... select one that benefits hopefully more than one. But we don't want ... everyone ... not everyone stands a chance to learn something all the time." The lab showed the first rule ("more than one, never all") benefiting 57 to 78% of players per visit and giving 21 to 27% of talents, because players own 25 to 50 lines by midseason and a talent fits about 3 of the 16 real pools. With the band, a kind of player benefits at 22 to 39% of visits and the teacher gives 7 to 9% of talents: most players miss most visits, and it is secondary (a little under the review's 10 to 15%; the band's cap is the lever if it should give more). The first rule stays in the report as a variant.
+
 ## 2026-11-03: The School's visiting teacher: weekly, Monday to Wednesday, one talent that benefits someone; found talents learned on the card (round 22, Q51-Q53) **[Misa]**
 
 ID: `2026-11-03-the-school-s-visiting-teacher-weekly` · Status: current · Amends: `2026-10-31-valley-the-school-teaches-talents-a`

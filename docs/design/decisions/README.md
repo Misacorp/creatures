@@ -482,6 +482,7 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-03 The School's teacher prefers a talent that benefits a few players (2 to a quarter of the server)
 - 2026-11-03 The School's visiting teacher: weekly, Monday to Wednesday, one talent that benefits someone; found talents learned on the card (round 22, Q51-Q53) \[Misa\]
 - 2026-11-03 Phase 4 groundwork starts before the phase 3 gate (resource library, frame plan, School design) \[Misa\]
 - 2026-11-03 No poster on a place's screen; a sky backdrop instead, when the art exists (round 21, Q50) \[Misa\]
