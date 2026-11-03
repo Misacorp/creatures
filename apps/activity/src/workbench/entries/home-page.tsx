@@ -34,6 +34,10 @@ const homePage: Entry = {
     { name: 'Tilt still', props: { tilt: 'still' } },
     { name: 'Crowded (catches and 3 creatures need you)', props: { state: 'crowded' } },
     { name: 'While you were away (a paper above "Needs you")', props: { state: 'away' } },
+    {
+      name: 'A swap request (combat v2: a row of the Raid place)',
+      props: { state: 'swap request' },
+    },
     { name: 'Crowded, idle shown', props: { state: 'crowded', idle: 'show' } },
     { name: 'No raid schedule', props: { raid: false } },
   ],

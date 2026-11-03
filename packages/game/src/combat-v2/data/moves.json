@@ -1,0 +1,369 @@
+[
+  {
+    "id": "deafening-mist",
+    "name": "Deafening Mist",
+    "element": "tide",
+    "shape": "rowEnds",
+    "anchor": "front",
+    "silences": true
+  },
+  {
+    "id": "riptide",
+    "name": "Riptide",
+    "element": "tide",
+    "shape": "columns",
+    "anchor": "random",
+    "silences": false
+  },
+  {
+    "id": "deepwater-spear",
+    "name": "Deepwater Spear",
+    "element": "tide",
+    "shape": "columns",
+    "anchor": "strongest",
+    "silences": false
+  },
+  {
+    "id": "sluice-pull",
+    "name": "Sluice Pull",
+    "element": "tide",
+    "shape": "columns",
+    "anchor": "front",
+    "silences": false
+  },
+  {
+    "id": "undertow",
+    "name": "Undertow",
+    "element": "tide",
+    "shape": "row",
+    "anchor": "front",
+    "silences": false
+  },
+  {
+    "id": "backflow",
+    "name": "Backflow",
+    "element": "tide",
+    "shape": "rows",
+    "anchor": "back",
+    "silences": false
+  },
+  {
+    "id": "rogue-wave",
+    "name": "Rogue Wave",
+    "element": "tide",
+    "shape": "row",
+    "anchor": "payoff",
+    "silences": false
+  },
+  {
+    "id": "great-wave",
+    "name": "Great Wave",
+    "element": "tide",
+    "shape": "randomRow",
+    "anchor": "random",
+    "silences": false
+  },
+  {
+    "id": "spray",
+    "name": "Spray",
+    "element": "tide",
+    "shape": "scatter",
+    "anchor": "random",
+    "silences": false
+  },
+  {
+    "id": "deluge",
+    "name": "Deluge",
+    "element": "tide",
+    "shape": "all",
+    "anchor": "front",
+    "silences": false
+  },
+  {
+    "id": "anvil-fall",
+    "name": "Anvil Fall",
+    "element": "ember",
+    "shape": "line3",
+    "anchor": "front",
+    "silences": false
+  },
+  {
+    "id": "volcanic-meteor",
+    "name": "Volcanic Meteor",
+    "element": "ember",
+    "shape": "line3",
+    "anchor": "payoff",
+    "silences": false
+  },
+  {
+    "id": "slag-spill",
+    "name": "Slag Spill",
+    "element": "ember",
+    "shape": "line3",
+    "anchor": "strongest",
+    "silences": false
+  },
+  {
+    "id": "scorch-lane",
+    "name": "Scorch Lane",
+    "element": "ember",
+    "shape": "column",
+    "anchor": "random",
+    "silences": false
+  },
+  {
+    "id": "cinder-fall",
+    "name": "Cinder Fall",
+    "element": "ember",
+    "shape": "scatter",
+    "anchor": "random",
+    "silences": false
+  },
+  {
+    "id": "eruption",
+    "name": "Eruption",
+    "element": "ember",
+    "shape": "all",
+    "anchor": "front",
+    "silences": false
+  },
+  {
+    "id": "ember-leap",
+    "name": "Ember Leap",
+    "element": "ember",
+    "shape": "chain",
+    "anchor": "strongest",
+    "silences": false
+  },
+  {
+    "id": "ash-cloud",
+    "name": "Ash Cloud",
+    "element": "ember",
+    "shape": "checker",
+    "anchor": "random",
+    "silences": false
+  },
+  {
+    "id": "bramble-hush",
+    "name": "Bramble Hush",
+    "element": "grove",
+    "shape": "rowEnds",
+    "anchor": "front",
+    "silences": true
+  },
+  {
+    "id": "briar-pincer",
+    "name": "Briar Pincer",
+    "element": "grove",
+    "shape": "rowEnds",
+    "anchor": "front",
+    "silences": false
+  },
+  {
+    "id": "vengeful-roots",
+    "name": "Vengeful Roots",
+    "element": "grove",
+    "shape": "line3",
+    "anchor": "strongest",
+    "silences": false
+  },
+  {
+    "id": "grasping-vines",
+    "name": "Grasping Vines",
+    "element": "grove",
+    "shape": "columns",
+    "anchor": "random",
+    "silences": false
+  },
+  {
+    "id": "thorn-wall",
+    "name": "Thorn Wall",
+    "element": "grove",
+    "shape": "rows",
+    "anchor": "front",
+    "silences": false
+  },
+  {
+    "id": "spiky-spine",
+    "name": "Spiky Spine",
+    "element": "grove",
+    "shape": "row",
+    "anchor": "back",
+    "silences": false
+  },
+  {
+    "id": "thorn-rain",
+    "name": "Thorn Rain",
+    "element": "grove",
+    "shape": "scatter",
+    "anchor": "random",
+    "silences": false
+  },
+  {
+    "id": "thorn-lash",
+    "name": "Thorn Lash",
+    "element": "grove",
+    "shape": "chain",
+    "anchor": "strongest",
+    "silences": false
+  },
+  {
+    "id": "bramble-cross",
+    "name": "Bramble Cross",
+    "element": "grove",
+    "shape": "cross",
+    "anchor": "random",
+    "silences": false
+  },
+  {
+    "id": "static-strike",
+    "name": "Static Strike",
+    "element": "spark",
+    "shape": "line3",
+    "anchor": "payoff",
+    "silences": false
+  },
+  {
+    "id": "thunderclap",
+    "name": "Thunderclap",
+    "element": "spark",
+    "shape": "line3",
+    "anchor": "strongest",
+    "silences": false
+  },
+  {
+    "id": "lightning-bolt",
+    "name": "Lightning Bolt",
+    "element": "spark",
+    "shape": "columns",
+    "anchor": "random",
+    "silences": false
+  },
+  {
+    "id": "forked-lightning",
+    "name": "Forked Lightning",
+    "element": "spark",
+    "shape": "scatter",
+    "anchor": "random",
+    "silences": false
+  },
+  {
+    "id": "storm-front",
+    "name": "Storm Front",
+    "element": "spark",
+    "shape": "all",
+    "anchor": "front",
+    "silences": false
+  },
+  {
+    "id": "arc-lash",
+    "name": "Arc Lash",
+    "element": "spark",
+    "shape": "chain",
+    "anchor": "strongest",
+    "silences": false
+  },
+  {
+    "id": "thunderbolt",
+    "name": "Thunderbolt",
+    "element": "spark",
+    "shape": "single",
+    "anchor": "payoff",
+    "silences": false
+  },
+  {
+    "id": "judgement-bolt",
+    "name": "Judgement Bolt",
+    "element": "spark",
+    "shape": "single",
+    "anchor": "payoff",
+    "silences": false,
+    "oneShot": true
+  },
+  {
+    "id": "belly-flop",
+    "name": "Belly Flop",
+    "element": "mire",
+    "shape": "line3",
+    "anchor": "front",
+    "silences": false
+  },
+  {
+    "id": "bog-lob",
+    "name": "Bog Lob",
+    "element": "mire",
+    "shape": "line3",
+    "anchor": "payoff",
+    "silences": false
+  },
+  {
+    "id": "mud-slide",
+    "name": "Mud Slide",
+    "element": "mire",
+    "shape": "columns",
+    "anchor": "random",
+    "silences": false
+  },
+  {
+    "id": "peat-wave",
+    "name": "Peat Wave",
+    "element": "mire",
+    "shape": "rows",
+    "anchor": "back",
+    "silences": false
+  },
+  {
+    "id": "sinking-mud",
+    "name": "Sinking Mud",
+    "element": "mire",
+    "shape": "randomRow",
+    "anchor": "random",
+    "silences": false
+  },
+  {
+    "id": "mud-spit",
+    "name": "Mud Spit",
+    "element": "mire",
+    "shape": "scatter",
+    "anchor": "random",
+    "silences": false
+  },
+  {
+    "id": "sink-down",
+    "name": "Sink Down",
+    "element": "mire",
+    "shape": "all",
+    "anchor": "front",
+    "silences": false
+  },
+  {
+    "id": "sinkhole",
+    "name": "Sinkhole",
+    "element": "mire",
+    "shape": "single",
+    "anchor": "weakest",
+    "silences": false
+  },
+  { "id": "hush", "name": "Hush", "shape": "rowEnds", "anchor": "front", "silences": true },
+  {
+    "id": "payoff-slam",
+    "name": "Payoff Slam",
+    "shape": "line3",
+    "anchor": "payoff",
+    "silences": false
+  },
+  {
+    "id": "wild-sweep",
+    "name": "Wild Sweep",
+    "shape": "randomRow",
+    "anchor": "random",
+    "silences": false
+  },
+  {
+    "id": "crush",
+    "name": "Crush",
+    "shape": "single",
+    "anchor": "strongest",
+    "silences": false
+  }
+]

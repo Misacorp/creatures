@@ -197,7 +197,7 @@ export function loadLive(
 ): LiveRow | null {
   const row = sql
     .exec<LiveDbRow>(
-      `SELECT ${COLUMNS} FROM raid_live WHERE week_id = ? AND party = ? AND practice = ?`,
+      `SELECT ${COLUMNS} FROM raid_live WHERE week_id = ? AND party = ? AND practice = ? AND rules = 1`,
       weekId,
       party,
       practice ? 1 : 0,
@@ -500,7 +500,7 @@ export function unresolvedReal(
   return sql
     .exec<LiveDbRow>(
       `SELECT ${COLUMNS} FROM raid_live l
-       WHERE l.practice = 0
+       WHERE l.practice = 0 AND l.rules = 1
          AND NOT EXISTS (SELECT 1 FROM raid_results r
                          WHERE r.week_id = l.week_id AND r.party = l.party AND r.phase = 'finale')
        ORDER BY l.started_at, l.week_id, l.party`,
@@ -523,6 +523,8 @@ export interface ActionInput {
   action: 'fire' | 'hold' | 'unhold';
   zone?: Zone | undefined;
   element?: Element | undefined;
+  /** Combat v2 only: the row (0-based) a Shield Wall covers, with Fire. */
+  row?: number | undefined;
 }
 
 /** What an applied action did, for the analytics log. */

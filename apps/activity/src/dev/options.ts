@@ -58,6 +58,14 @@ export const RESOLVE_OPTIONS: readonly Option[] = [
   { value: 'phase2', label: 'Phase 2' },
 ];
 
+/** The steps of a combat v2 weekend, in order (`raid-weekend`). */
+export const WEEKEND_STEP_OPTIONS: readonly Option[] = [
+  { value: 'stage1', label: 'Stage 1' },
+  { value: 'stage2', label: 'Stage 2' },
+  { value: 'finale-start', label: 'Finale starts' },
+  { value: 'finale-end', label: 'Finale ends' },
+];
+
 export const OUTCOME_OPTIONS: readonly Option[] = ['success', 'fail', 'random'].map((o) => ({
   value: o,
   label: o,

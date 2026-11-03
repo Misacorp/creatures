@@ -56,8 +56,8 @@ function anchorOf(s: State, p: Pattern, exclude: readonly Fighter[] = []): Fight
     case 'random':
       return live[int(s.rng, live.length)];
     case 'back':
-      // The back-most living creature (the highest row, then the leftmost).
-      return best(live, (a, b) => b.row - a.row || a.col - b.col);
+      // The back-most living creature is the last to act: the turn order (`bySlot`, row by row, left to right) reversed.
+      return best(live, (a, b) => bySlot(b, a));
     case 'weakest':
       // The lowest share of its max HP; ties to the front, then the left.
       return best(live, (a, b) => a.hp * b.maxHp - b.hp * a.maxHp || bySlot(a, b));
@@ -82,6 +82,15 @@ const ANCHORLESS: ReadonlySet<Pattern['shape']> = new Set([
   'all',
   'rowEnds',
 ]);
+
+/**
+ * The creature a pattern is aimed at first, now: the anchor's pick (a Taunt moves a plain attack's, R9), or none for a shape with no
+ * anchor or an empty board. A roll is drawn for a random anchor, so a preview never asks for one (see `usesRoll`).
+ */
+export function aimedAt(s: State, p: Pattern, plain: boolean): Fighter | undefined {
+  if (ANCHORLESS.has(p.shape)) return undefined;
+  return (plain ? best(alive(s), bySlot, (f) => !!fx(f).taunt) : undefined) ?? anchorOf(s, p);
+}
 
 /** The creatures a multi-anchor pattern aims at (its anchors), by the array `targetsOf` returned. */
 export const AIMED = new WeakMap<readonly Fighter[], ReadonlySet<Fighter>>();

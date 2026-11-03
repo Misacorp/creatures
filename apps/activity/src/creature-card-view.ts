@@ -5,6 +5,7 @@
  */
 import { RULES, isRested } from '@creatures/game';
 import type { Creature, GameState } from './api';
+import { creatureV2 } from './combat-v2-view';
 import { ribbonName } from './experience';
 import { speciesName } from './game';
 import type { GearSlot } from './gear-types';
@@ -66,7 +67,10 @@ export interface TalentKit {
 
 /** The talents of a card: the signature, each filled slot, "Empty" for open slots, and the closed slots' levels. */
 export function talentKit(creature: Creature): TalentKit {
-  const { signature, slots } = creature.talents;
+  // Combat v2 (the server's flag): the slots are the v2 ones and there is no signature talent.
+  const v2 = creatureV2(creature);
+  const signature = v2 === null ? creature.talents.signature : null;
+  const slots = v2 === null ? creature.talents.slots : v2.talentsV2.slots;
   const chips: KitChip[] = [];
   if (signature !== null) {
     chips.push({

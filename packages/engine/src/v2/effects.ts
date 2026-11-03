@@ -46,7 +46,7 @@ export interface KnackFx {
   readonly storeDodgeStacks?: number;
   /** A Guard that does not intercept (the price of marking like a Setter, P-02). */
   readonly noIntercept?: boolean;
-  /** Intercepts area hits too, after the target's failed dodge, and takes them with its own cover's cut (Catch the Bolts). */
+  /** Intercepts area hits too, after the target's failed dodge, and takes them with its own cover's cut (Take It All). */
   readonly interceptArea?: boolean;
   /** Night Watch: the hit it takes is cut by this much (bp), when that is more than its cover's cut. */
   readonly watchCutBp?: number;
@@ -106,7 +106,7 @@ export interface KnackFx {
   readonly critDamageBp?: number;
   /** After it dodges: +1 Sure Crit. A Sure Crit is spent on its next hit that lands, a guaranteed crit that deals this much more (Perfect Timing). */
   readonly dodgeCritBp?: number;
-  /** Each time the hits it intercepts add up to `guardSureCritShareBp` of its Max HP: +1 Sure Crit, spent like Perfect Timing's; the guaranteed crit deals this much more (Hold the Line). */
+  /** Each time the hits it intercepts add up to `guardSureCritShareBp` of its Max HP: +1 Sure Crit, spent like Perfect Timing's; the guaranteed crit deals this much more (Easily Provoked). */
   readonly guardCritBp?: number;
   /** Crits on it, and on the creatures beside it, deal this much less extra damage (an aura: the largest applies). */
   readonly critWardBp?: number;
@@ -172,7 +172,7 @@ export interface KnackFx {
   readonly braceBp?: number;
   /** Its Mired has this chance (bp) to add 1 extra stack each time. */
   readonly miredExtraBp?: number;
-  /** While it stands, the boss's Mired does not fade and each stack counts for half as much again. */
+  /** While it stands, the boss's Mired fades only every `miredClingingFadeEvery` rounds and each stack counts for half as much again. */
   readonly clinging?: boolean;
   /** Every second time its Support verb runs, its boost is doubled. */
   readonly brightBoost?: boolean;

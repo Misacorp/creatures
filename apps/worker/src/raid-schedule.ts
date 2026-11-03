@@ -118,9 +118,20 @@ export function compareWeekIds(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-/** Epoch milliseconds of every event of a week, in the guild's timezone. DST-safe. */
-export function eventTimes(weekId: string, tz: string): Record<RaidEvent, number> {
-  const schedule = RULES.raid.schedule;
+/** The rules a raid week plays under (stored as `raid_weeks.rules_version`): 1 is the shipped weekend, 2 is combat v2. */
+export type RaidRules = 1 | 2;
+
+/**
+ * Epoch milliseconds of every event of a week, in the guild's timezone. DST-safe. A combat v2 week (`rules` 2) follows the v2
+ * calendar (`RULES.raid.scheduleV2`: stage 1 Saturday, stage 2 Sunday, the finale Sunday evening); its `phase1` and `phase2`
+ * events are stages 1 and 2.
+ */
+export function eventTimes(
+  weekId: string,
+  tz: string,
+  rules: RaidRules = 1,
+): Record<RaidEvent, number> {
+  const schedule = rules === 2 ? RULES.raid.scheduleV2 : RULES.raid.schedule;
   const startDate = startDateOf(weekId);
   const start = localEpoch(startDate, schedule.weekStart, tz);
   const at = (event: Exclude<RaidEvent, 'weekStart'>): number => {
@@ -153,6 +164,8 @@ export function nextDueEvent(
   tz: string,
   done: DoneCheck,
   fromWeekId?: string,
+  /** The rules of the weeks that exist (a week that does not exist yet has none: only its start matters). Default 1. */
+  rulesOf: (weekId: string) => RaidRules = () => 1,
 ): ScheduledEvent | null {
   const isDone =
     typeof done === 'function'
@@ -163,7 +176,7 @@ export function nextDueEvent(
   let week = fromWeekId !== undefined && fromWeekId < current ? fromWeekId : addWeeks(current, -1);
   let best: ScheduledEvent | null = null;
   for (let guard = 0; guard < 64 && compareWeekIds(week, last) <= 0; guard++) {
-    const times = eventTimes(week, tz);
+    const times = eventTimes(week, tz, rulesOf(week));
     for (const event of RAID_EVENTS) {
       if (isDone(week, event)) continue;
       const at = times[event];

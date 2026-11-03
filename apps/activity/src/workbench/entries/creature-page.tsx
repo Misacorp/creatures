@@ -10,6 +10,7 @@ import { PageHeader } from '../../creature-page/PageHeader';
 import { TalentSlots } from '../../creature-page/PageSlots';
 import { GearList } from '../../GearList';
 import { sampleItem, wornFromBag } from '../../creature-page/bag-sample';
+import { sampleLearn, sampleSaveKnack, sampleSlot } from '../../creature-page/v2-sample';
 import {
   PAGE_SAMPLE_ID,
   SCENE_KINDS,
@@ -235,6 +236,55 @@ const SCENE_LIST: readonly SceneDef[] = [
     open: { kind: 'talent', slot: 2 },
     bait: 4,
   },
+  {
+    id: 'V1',
+    label:
+      'V1 · Combat v2: the page with a Knack saved (Knack, Armour and crit, gear effect lines noted)',
+    kind: 'v2: Knack saved',
+    show: 'page',
+  },
+  {
+    id: 'V2',
+    label: 'V2 · Combat v2: the page with no Knack (None)',
+    kind: 'v2: no Knack',
+    show: 'page',
+  },
+  {
+    id: 'V3',
+    label: 'V3 · Combat v2: the Knack picker (the saved one ringed and checked, None last)',
+    kind: 'v2: Knack saved',
+    show: 'drawer',
+    open: { kind: 'knack' },
+  },
+  {
+    id: 'V3l',
+    label: 'V3l · Combat v2: the Knack picker after a locked answer (it has fought this weekend)',
+    kind: 'v2: Knack saved',
+    show: 'drawer',
+    open: { kind: 'knack', note: 'locked' },
+  },
+  {
+    id: 'V4',
+    label:
+      'V4 · Combat v2: the Talent Book for slot 2 (the line book: in use, learned, to learn; golden)',
+    kind: 'v2: the book',
+    show: 'drawer',
+    open: { kind: 'talent', slot: 2 },
+  },
+  {
+    id: 'V4b',
+    label: 'V4b · Combat v2: the Talent Book with the Bait short of a learning',
+    kind: 'v2: Knack saved',
+    show: 'drawer',
+    open: { kind: 'talent', slot: 2 },
+    bait: 4,
+  },
+  {
+    id: 'V5',
+    label: 'V5 · Combat v2: talent slots (name and number; golden shimmers)',
+    kind: 'v2: Knack saved',
+    show: 'talents',
+  },
   { id: 'F1', label: 'F1 · Page top', kind: 'level 15', show: 'page' },
   { id: 'F2', label: 'F2 · Page, nicknamed (species tag)', kind: 'nickname', show: 'page' },
   { id: 'F7', label: 'F7 · Page, with a note (open under Rename)', kind: 'note', show: 'page' },
@@ -422,13 +472,25 @@ function Banner({ label }: { label: string }) {
   );
 }
 
-const NO_ACTIONS: Omit<CardActions, 'onEquip' | 'onSlotTalent'> = {
+const NO_ACTIONS: Omit<
+  CardActions,
+  'onEquip' | 'onSlotTalent' | 'onKnack' | 'onLearnTalentV2' | 'onSlotTalentV2'
+> = {
   onRibbon: () => undefined,
   onEvolve: () => undefined,
   onRename: () => undefined,
   onNote: () => undefined,
   onLounge: () => undefined,
 };
+
+/** The scene with `creature` in place of the page's own (the other creatures of the state stay). */
+function replaceCreature(current: PageScene, creature: Creature): PageScene {
+  return {
+    ...current,
+    creature,
+    state: { ...current.state, creatures: [creature, ...current.state.creatures.slice(1)] },
+  };
+}
 
 /** The page with local state: wearing and taking off change the bag, using a book talent fills the slot. */
 function LivePage({ def, kind, bait }: { def: SceneDef; kind: SceneKind; bait: number }) {
@@ -457,6 +519,30 @@ function LivePage({ def, kind, bait }: { def: SceneDef; kind: SceneKind; bait: n
         };
       });
       return Promise.resolve(true);
+    },
+    // Combat v2: the pickers work on the sample (a Knack is saved, a talent learned for Bait, a slot filled).
+    onKnack: (_creature, knack) => {
+      setScene((current) => replaceCreature(current, sampleSaveKnack(current.creature, knack)));
+      return Promise.resolve('saved');
+    },
+    onLearnTalentV2: (_creature, talentId) => {
+      setScene((current) => {
+        const next = replaceCreature(current, sampleLearn(current.creature, talentId));
+        const cost = current.creature.talentsV2?.learnBait ?? 0;
+        return {
+          ...next,
+          state: {
+            ...next.state,
+            balances: {
+              ...next.state.balances,
+              bait: Math.max(0, next.state.balances.bait - cost),
+            },
+          },
+        };
+      });
+    },
+    onSlotTalentV2: (_creature, talentId, slot) => {
+      setScene((current) => replaceCreature(current, sampleSlot(current.creature, talentId, slot)));
     },
     onSlotTalent: (_creature, talentId, golden, slot) => {
       setScene((current) => {
@@ -1098,7 +1184,7 @@ const creaturePage: Entry = {
   file: 'apps/activity/src/CreaturePage.tsx',
   group: 'Creatures & game pieces',
   description:
-    "A creature's page, opened from its card in the list's place: back at the top left and Lounge at the top right, one head row (portrait, the name in its rarity colour, element, level, the experience bar), tags (the species name of a nicknamed creature, element and role), the ribbon, evolve and waiting-catch buttons when ready, stats (HP, Attack, Speed and the creature’s own expedition count), the finale ability, gear and talents as slots (a tap opens a bottom drawer: the item picker grid with its detail panel, or the Talent Book), About, Rename and the private Note. Pick a scene: H = header, G = gear slots, P = item picker, T = talent slots and Talent Book, F = the full page, C = cards, R = rarity colours, W = the Workshop's item detail, L = a compact loot list, B = the Workshop bag, K = the picker's compare (inline changes on the card, the Compare switch, what the swap does to the creature). The scenes are live: equip, take off and use a talent.",
+    "A creature's page, opened from its card in the list's place: back at the top left and Lounge at the top right, one head row (portrait, the name in its rarity colour, element, level, the experience bar), tags (the species name of a nicknamed creature, element and role), the ribbon, evolve and waiting-catch buttons when ready, stats (HP, Attack, Speed and the creature’s own expedition count), the finale ability, gear and talents as slots (a tap opens a bottom drawer: the item picker grid with its detail panel, or the Talent Book), About, Rename and the private Note. Pick a scene: H = header, G = gear slots, P = item picker, T = talent slots and Talent Book, F = the full page, C = cards, R = rarity colours, W = the Workshop's item detail, L = a compact loot list, B = the Workshop bag, K = the picker's compare (inline changes on the card, the Compare switch, what the swap does to the creature), V = combat v2 (the creature carries the server's v2 fields: the Knack section and its picker, Armour and crit in the stats, gear effect lines noted, the line's Talent Book with Learn, Use, Move here and Take out). The scenes are live: equip, take off and use a talent.",
   controls: {
     scene: { kind: 'select', options: SCENE_IDS },
     banner: { kind: 'toggle' },

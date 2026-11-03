@@ -1,24 +1,32 @@
-import { howToPlay, type GlossarySection } from '@creatures/game';
+import type { GlossarySection } from '@creatures/game';
 import { useEffect, useRef } from 'preact/hooks';
 import { sectionDomId } from './glossary-ui';
+import { pageSections, sectionOnPage } from './how-to-pages';
 import { SectionArt } from './HowToPlayArt';
+import { KeywordText } from './ui/KeywordText';
 
 /**
  * The How to play page: a full-screen overlay (opened by the "?" in the header, or by a popover's
- * "More in How to play" link) with the twelve sections in order, each with a small picture and a
- * few short lines. All text comes from the content (`howToPlay`). Escape or the Close button
- * closes it. `section` scrolls to that section when the page opens or the link is used again
+ * "More in How to play" link) with its sections in order, each with a small picture and a
+ * few short lines. All text comes from the content (`howToPlay`, or while the server plays combat v2
+ * `howToPlayV2` and the shipped sections it keeps, see `how-to-pages.ts`). A `{Keyword}` in a line is a chip
+ * that opens the keyword's help. Escape or the Close button closes it. `section` scrolls to that section when the page opens or the link is used again
  * (`nonce` changes each time, so the same section can be asked for twice).
  */
 export function HowToPlay({
   section,
   nonce,
   onClose,
+  v2 = false,
 }: {
   section: GlossarySection | null;
   nonce: number;
   onClose: () => void;
+  /** The server plays combat v2 (`/api/config`'s `combatV2`): the combat v2 sections instead of the shipped combat ones. */
+  v2?: boolean;
 }) {
+  const sections = pageSections(v2);
+  const target = sectionOnPage(section, v2, sections);
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -31,15 +39,15 @@ export function HowToPlay({
   }, []);
 
   useEffect(() => {
-    if (section === null) {
+    if (target === null) {
       panelRef.current?.scrollTo(0, 0);
       closeRef.current?.focus();
       return;
     }
-    const target = document.getElementById(sectionDomId(section));
-    target?.scrollIntoView({ block: 'start' });
-    target?.focus({ preventScroll: true });
-  }, [section, nonce]);
+    const element = document.getElementById(sectionDomId(target));
+    element?.scrollIntoView({ block: 'start' });
+    element?.focus({ preventScroll: true });
+  }, [target, nonce]);
 
   return (
     <div
@@ -64,7 +72,7 @@ export function HowToPlay({
         </button>
       </header>
       <div class="howto-body">
-        {howToPlay.sections.map((s, i) => (
+        {sections.map((s, i) => (
           <section
             key={s.id}
             id={sectionDomId(s.id)}
@@ -83,7 +91,9 @@ export function HowToPlay({
             </div>
             <ul class="howto-lines">
               {s.lines.map((line, j) => (
-                <li key={j}>{line}</li>
+                <li key={j}>
+                  <KeywordText text={line} />
+                </li>
               ))}
             </ul>
           </section>

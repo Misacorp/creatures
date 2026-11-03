@@ -4,13 +4,16 @@
  *
  *   cd apps/activity && node scripts/shoot.mjs <Entry> [--props '{"fight":"Raid"}'] [--widths 390,1100]
  *     [--sel 'section.stage'] [--wait 1500] [--out <dir>] [--name <file name>]
- *     [--shell 40,24] [--scroll 600]
+ *     [--shell 40,24] [--scroll 600] [--click 'css one;css two']
  *
  * It opens the entry (with `--props` over its defaults) in a real window per width, like
  * `ui-audit.mjs`, at twice the pixel density, waits `--wait` ms (animations, fonts), and saves
  * `<name>-<width>.png` for each width plus `<name>.png` with them side by side, labelled. `--sel`
  * shoots one element of the page (default: the whole workbench stage). The output folder defaults to
  * `screenshots/` here (gitignored); point `--out` at a scratch folder to keep the repo clean.
+ *
+ * `--click` presses elements before the shot, one selector after the other separated by `;` (the first match of each, in
+ * order), for a view that opens by a tap: a creature on the dungeon team, then its Knack.
  *
  * `--shell <top,bottom>` shoots the game's frame as a phone in Discord sees it, for any change to the HUD, the
  * dock or the top of a page (retro 2026-10-25: a gap under the dock, a page showing above the HUD and a field cut
@@ -34,7 +37,7 @@ import { createServer } from 'vite';
 import { drawSheet } from './sheet.mjs';
 
 const USAGE =
-  "usage: node scripts/shoot.mjs <Entry> [--props '<json>'] [--widths 390,1100] [--sel <css>] [--wait <ms>] [--out <dir>] [--name <name>] [--shell <top,bottom>] [--scroll <px>]";
+  "usage: node scripts/shoot.mjs <Entry> [--props '<json>'] [--widths 390,1100] [--sel <css>] [--wait <ms>] [--out <dir>] [--name <name>] [--shell <top,bottom>] [--scroll <px>] [--click <css;css>]";
 
 function readArgs(argv) {
   const [entry, ...rest] = argv;
@@ -44,6 +47,7 @@ function readArgs(argv) {
   }
   const opts = { entry, props: {}, widths: null, sel: '.wb-frame-stage', wait: 1500 };
   opts.shell = null;
+  opts.click = [];
   opts.scroll = 600;
   opts.out = 'screenshots';
   opts.name = entry.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -58,6 +62,7 @@ function readArgs(argv) {
     else if (key === '--sel') opts.sel = value;
     else if (key === '--wait') opts.wait = Number.parseInt(value, 10);
     else if (key === '--out') opts.out = value;
+    else if (key === '--click') opts.click = value.split(';').filter((c) => c.trim() !== '');
     else if (key === '--name') opts.name = value.replace(/[^A-Za-z0-9._-]+/g, '-');
     else if (key === '--shell') {
       const [top, bottom] = value.split(',').map((n) => Number.parseInt(n, 10));
@@ -156,6 +161,10 @@ try {
       await shootShell(page, width);
       await ctx.close();
       continue;
+    }
+    for (const css of opts.click) {
+      await page.locator(css).first().click();
+      await page.waitForTimeout(300);
     }
     const file = join(outDir, `${opts.name}-${String(width)}.png`);
     await page.locator(opts.sel).first().screenshot({ path: file });

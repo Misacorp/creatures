@@ -9,6 +9,7 @@ import today from './fixtures/dungeon-today.json';
 import {
   DUNGEON_ERRORS,
   type DungeonReplay,
+  type DungeonReplayV1,
   type DungeonStartRequest,
   type DungeonRunResponse,
   type DungeonToday,
@@ -35,7 +36,7 @@ describe('the dungeon types', () => {
     expect(cleared.today.last?.id).toBe(cleared.run.id);
     const lost = runLost as unknown as DungeonRunResponse;
     expect(lost.run.rooms.filter((r) => !r.played).length).toBeGreaterThan(0);
-    const r = replay as unknown as DungeonReplay;
+    const r = replay as unknown as DungeonReplayV1;
     expect(r.rooms.length).toBe(r.summary.rooms.filter((x) => x.played).length);
     expect(r.rooms[0]?.events[0]?.t).toBe('round_start');
   });

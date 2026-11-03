@@ -43,8 +43,9 @@ export function partyCountFor(players: number): number {
  * the finale starts (the week's status becomes 'finale' in the same step that starts the live fights).
  * Parties made after Phase 1 fight from the next phase they are in; the boss pools already fixed stay.
  */
-export function joiningOpen(status: string): boolean {
-  return status !== 'finale';
+export function joiningOpen(status: string, rules: 1 | 2 = 1): boolean {
+  // Under combat v2 players lock when stage 1 begins (Misa, 2026-11-02): joining closes with the week's first stage.
+  return rules === 2 ? status === 'open' : status !== 'finale';
 }
 
 /** The members of a party, in join order. */

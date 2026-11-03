@@ -22,17 +22,21 @@ import {
   undercroftOpen,
   xpBoost,
   xpWeather,
+  type DungeonMap,
   type GearItem,
   type PartsBundle,
   type Treasure,
   type WeatherDay,
 } from '@creatures/game';
 import { type DungeonRoomResult } from '@creatures/engine';
+import { isResultV2, isStoredV2, type RoomResultV2 } from './dungeon-v2';
+import { mapViewV2 } from './dungeon-v2-view';
 import { awardExperience } from './creature-exp';
 import { grantDungeonRun, grantDungeonStreak, type GrantDeps } from './gear-grants';
 import { SUPPLIES_PER_RUN } from './dungeon-path';
 import { currentHp, heldViews, runNode, treasureView, type RunState } from './dungeon-state';
 import type {
+  DungeonMapView,
   DungeonOutcome,
   DungeonPack,
   DungeonRewards,
@@ -45,7 +49,7 @@ import { addDays } from './time';
 import {
   type DungeonDeps,
   type RunRow,
-  type StoredFight,
+  type AnyStoredFight,
   fightRows,
   progressOf,
 } from './dungeon-rows';
@@ -377,6 +381,11 @@ export function lockDepth(deps: DungeonDeps, userId: string, depth: number): voi
   );
 }
 
+/** A map of a finished run's route: as `mapView` shows it, with each foe's card on a run of combat v2 (no room marks, as before). */
+function routeMapOf(st: RunState, map: DungeonMap, depth: number): DungeonMapView {
+  return st.v === 2 ? mapViewV2(map, depth) : mapView(map, depth);
+}
+
 /** The summary of a run: the fights it played, the row at the end, what it paid and how it ended (null while it is open). */
 export function summarise(
   deps: DungeonDeps,
@@ -396,8 +405,26 @@ export function summarise(
   const rooms: DungeonRoomSummary[] = [];
   for (const step of fightRows(deps.storage.sql, row.id)) {
     if (step.input_json === null || step.result_json === null) continue;
-    const { input } = JSON.parse(step.input_json) as StoredFight;
-    const result = JSON.parse(step.result_json) as DungeonRoomResult;
+    const stored = JSON.parse(step.input_json) as AnyStoredFight;
+    const parsed = JSON.parse(step.result_json) as DungeonRoomResult | RoomResultV2;
+    if (isStoredV2(stored) && isResultV2(parsed)) {
+      rooms.push({
+        index: parsed.index,
+        kind: stored.room.kind,
+        ...(stored.room.elite === true ? { elite: true } : {}),
+        ...(stored.room.epic === true ? { epic: true } : {}),
+        foe: { ...stored.room.foe, hpMax: parsed.foeHpStart },
+        modifier: stored.room.modifier,
+        played: true,
+        cleared: parsed.cleared,
+        rounds: parsed.rounds,
+        foeHpEnd: parsed.foeHpEnd,
+      });
+      continue;
+    }
+    if (isStoredV2(stored) || isResultV2(parsed)) continue;
+    const { input } = stored;
+    const result = parsed;
     const spec = input.rooms[0];
     if (spec === undefined) continue;
     const elite = spec.elite === true;
@@ -424,6 +451,7 @@ export function summarise(
     });
   }
   return {
+    ...(st.v === 2 ? { rules: 2 as const } : {}),
     id: row.id,
     day: row.day,
     attempt: row.attempt,
@@ -460,12 +488,12 @@ export function summarise(
       ? {}
       : {
           route: {
-            map: mapView(st.map, row.depth),
+            map: routeMapOf(st, st.map, row.depth),
             path: [...st.path],
             history: structuredClone(st.history),
             ...(st.under.length === 0
               ? {}
-              : { undercroft: st.under.map((m) => mapView(m, row.depth)) }),
+              : { undercroft: st.under.map((m) => routeMapOf(st, m, row.depth)) }),
           },
         }),
   };

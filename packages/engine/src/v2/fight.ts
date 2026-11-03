@@ -21,6 +21,7 @@ import type {
   BossDef,
   FightInputV2,
   FightOptions,
+  FinaleAction,
   FightResult,
   Fighter,
   FighterSpec,
@@ -31,12 +32,14 @@ const { bossTurn } = bossMod;
 const { creatureTurn } = creatureMod;
 const { escalationState, fadeMired } = escalationMod;
 const { roundStart } = marksMod;
-const { alive, aliveBySlot, contextOf, effectsCarried, log, strengthOf } = stateMod;
+const { alive, aliveBySlot, applyActions, contextOf, effectsCarried, emit, log, strengthOf } =
+  stateMod;
 
 /** A creature at the start of a fight: its spec, at full HP, with nothing stored. */
 function fighterOf(spec: FighterSpec): Fighter {
   return {
     uid: spec.uid,
+    key: spec.key,
     owner: spec.owner,
     formId: spec.formId,
     name: spec.name,
@@ -81,19 +84,23 @@ function fighterOf(spec: FighterSpec): Fighter {
   };
 }
 
-/** One fight: the boss, the creatures, and the rounds of R8. `ctx` is the input's rules and chart (`contextOf`). */
-export function playFight(
+/**
+ * The state a fight starts from: the creatures at the HP they carry in, nothing stored, the boss at the HP and the escalation it carries in
+ * (`opts`). `playFight` plays its rounds from it; `previewMoves` (`preview.ts`) reads the board's targets from it.
+ */
+export function startState(
   ctx: Context,
   boss: BossDef,
   specs: readonly FighterSpec[],
   opts: FightOptions,
   rng: Rng,
-): FightResult {
+  actions: readonly FinaleAction[] = [],
+): State {
   const fighters = specs.map(fighterOf);
   if (opts.carryHp) for (const f of fighters) f.hp = opts.carryHp.get(f.uid) ?? f.hp;
   // Catch Breath is once per raid weekend: a creature that used it in an earlier stage does not have it again.
   for (const f of fighters) if (opts.carryWindDone?.has(f.uid)) f.secondWindDone = true;
-  // So is Stubborn (panel 5: once per weekend, not per stage).
+  // So is Refuse to Fall (panel 5: once per weekend, not per stage).
   for (const f of fighters) if (opts.carryHoldOnDone?.has(f.uid)) f.holdOnDone = true;
   const carried = opts.carryEscalation;
   const s: State = {
@@ -101,6 +108,10 @@ export function playFight(
     rng,
     boss,
     opts,
+    actions,
+    rally: false,
+    shieldRows: null,
+    purged: false,
     fighters,
     bossHp: opts.bossHp ?? boss.hp,
     // A potential stage carried on from an earlier one starts at the real HP (below 1), not at the 1 the boss was held at.
@@ -135,7 +146,27 @@ export function playFight(
     grownNow: null,
     phaseMoves: null,
   };
+  return s;
+}
+
+/** One fight: the boss, the creatures, and the rounds of R8. `ctx` is the input's rules and chart (`contextOf`). */
+export function playFight(
+  ctx: Context,
+  boss: BossDef,
+  specs: readonly FighterSpec[],
+  opts: FightOptions,
+  rng: Rng,
+  actions: readonly FinaleAction[] = [],
+): FightResult {
+  const s = startState(ctx, boss, specs, opts, rng, actions);
+  const { fighters } = s;
   const startAlive = alive(s).length;
+  if (opts.log && (opts.resistReaction || opts.resistElement))
+    emit(s, {
+      type: 'resistance',
+      ...(opts.resistReaction ? { reaction: opts.resistReaction } : {}),
+      ...(opts.resistElement ? { element: opts.resistElement } : {}),
+    });
   for (s.round = 1; s.round <= boss.rounds && s.bossHp > 0 && alive(s).length > 0; s.round++) {
     for (const f of fighters) {
       f.undodgeable = false;
@@ -143,6 +174,8 @@ export function playFight(
       f.damageThisRound = 0;
     }
     s.turn = 0;
+    if (opts.log) emit(s, { type: 'round', round: s.round });
+    if (actions.length > 0) applyActions(s);
     roundStart(s);
     // The boss takes a turn after every row of the arena, empty or not.
     for (let r = 0; r < boss.rows && s.bossHp > 0 && alive(s).length > 0; r++) {
@@ -160,6 +193,23 @@ export function playFight(
       if (s.opts.log) log(s, 'shake', `${boss.name} shakes off its debuffs`);
       if (s.opts.log) log(s, 'mired', `Mired x${s.mired}`);
     }
+  }
+  if (opts.log) {
+    // The loop leaves the round counter one past the last round played (the escalation still reads it below, so it is not changed).
+    const round = Math.max(0, s.round - 1);
+    s.events.push({
+      round,
+      turn: 0,
+      kind: 'board',
+      text: '',
+      board: {
+        type: 'end',
+        round,
+        won: s.bossHp <= 0,
+        wiped: alive(s).length === 0,
+        bossHp: s.bossHp,
+      },
+    });
   }
   return {
     damage: s.count.damage,
@@ -186,5 +236,5 @@ export function playFight(
 export function fightV2(input: FightInputV2, rng: Rng): FightResult {
   if (input.version !== 2)
     throw new Error(`fightV2 plays version 2 inputs, not ${String(input.version)}`);
-  return playFight(contextOf(input), input.boss, input.fighters, input.options, rng);
+  return playFight(contextOf(input), input.boss, input.fighters, input.options, rng, input.actions);
 }

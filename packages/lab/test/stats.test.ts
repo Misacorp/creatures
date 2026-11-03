@@ -16,11 +16,10 @@ describe('lab stat overrides', () => {
         expect(o.atkBp, id).toBeGreaterThanOrEqual(5_000);
         expect(o.atkBp, id).toBeLessThanOrEqual(15_000);
       }
-      if (o.armour !== undefined) expect(o.armour, id).toBeGreaterThan(0);
     }
   });
 
-  it('formStats applies them: Attack is the shipped Attack scaled at every level, armour replaces the table’s', () => {
+  it('formStats applies them: Attack is the shipped Attack scaled at every level, armour is the form’s own', () => {
     for (const [id, o] of Object.entries(STAT_OVERRIDES)) {
       const c = shipped(id);
       if (!c) continue;
@@ -31,7 +30,7 @@ describe('lab stat overrides', () => {
         expect(s.atk, `${id} Lv ${String(level)}`).toBe(
           o.atkBp === undefined ? base : Math.floor((base * o.atkBp) / 10_000),
         );
-        expect(s.armour, id).toBe(o.armour ?? FORM_ARMOUR[id]);
+        expect(s.armour, id).toBe(FORM_ARMOUR[id]);
         // HP and Speed are never touched.
         expect(s.hp).toBe(c.baseStats.hp + c.growth.hp * (L - 1));
         expect(s.spd).toBe(c.baseStats.spd + c.growth.spd * (L - 1));

@@ -27,7 +27,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { giveItem } from './gear-helpers';
 import { ACT_ANSWER_RETENTION_MS, RUN_RETENTION_MS } from '../src/dungeon';
 import { parseState, type RunState } from '../src/dungeon-state';
-import type { DungeonRunState, DungeonStepLog } from '../src/dungeon-types';
+import type { DungeonReplayRoomV1, DungeonRunState, DungeonStepLog } from '../src/dungeon-types';
 import { drawSeed, slotFor } from '../src/raid-resolve';
 import { loadCreatures } from '../src/raid-teams';
 import {
@@ -722,7 +722,7 @@ describe('moving into a fight', () => {
         expect(room?.events.length).toBeGreaterThan(0);
         expect(room?.row?.map((r) => r.id)).toEqual(p.creatureIds);
         expect(room?.keepsakes).toBeUndefined();
-        expect(room?.names.players).toEqual({ p1: p.name });
+        expect((room as DungeonReplayRoomV1 | undefined)?.names.players).toEqual({ p1: p.name });
         // The pack holds the fight's loot (and no seed or stored detail is sent).
         // (and perhaps a shard of the foe's element: its chance is rolled per room kind.)
         expect(next.pack).toMatchObject(nodeLoot('fight'));

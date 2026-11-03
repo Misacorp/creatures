@@ -14,8 +14,17 @@ const EVENT_TITLES: Record<RaidEventId, string> = {
   finale: 'Finale',
 };
 
-export function eventTitle(event: RaidEventId): string {
-  return EVENT_TITLES[event];
+/** A combat v2 week has stages (the same three events, at the v2 calendar's times). */
+const EVENT_TITLES_V2: Record<RaidEventId, string> = {
+  weekStart: 'Preparation',
+  phase1: 'Stage 1',
+  phase2: 'Stage 2',
+  finale: 'Finale',
+};
+
+/** The name of a calendar event; `rules` 2 names the weekend's stages. */
+export function eventTitle(event: RaidEventId, rules?: 2): string {
+  return (rules === 2 ? EVENT_TITLES_V2 : EVENT_TITLES)[event];
 }
 
 interface ScheduleStep {
@@ -42,6 +51,7 @@ export function scheduleSteps(
   schedule: Readonly<Record<RaidEventId, number>>,
   next: { event: RaidEventId } | null,
   timeZone: string,
+  rules?: 2,
 ): ScheduleStep[] {
   const nextIndex = next === null ? RAID_EVENT_IDS.length : RAID_EVENT_IDS.indexOf(next.event);
   const stateOf = (index: number): ScheduleStep['state'] => {
@@ -51,7 +61,7 @@ export function scheduleSteps(
   };
   return RAID_EVENT_IDS.map((event, index) => ({
     event,
-    title: EVENT_TITLES[event],
+    title: eventTitle(event, rules),
     when: formatZoned(schedule[event], timeZone, 'short'),
     until: event === 'weekStart' ? formatZoned(schedule.phase1, timeZone, 'short') : null,
     state: stateOf(index),

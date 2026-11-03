@@ -6,7 +6,7 @@ import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, describe, test } from 'node:test';
-import { keepReason, parseWorktrees, run } from './worktrees.mjs';
+import { IDLE_MINUTES, keepReason, parseWorktrees, run } from './worktrees.mjs';
 
 describe('parseWorktrees', () => {
   test('reads path, branch and lock from the porcelain output', () => {
@@ -115,5 +115,101 @@ describe('run, on a throwaway repo', () => {
     assert.ok(log.some((l) => l.includes('locked')));
     // The branches are kept.
     assert.match(git('branch', '--list', 'wt-merged'), /wt-merged/);
+  });
+});
+
+describe('keepReason with --unlock-finished', () => {
+  test('a locked worktree stays without the flag, and goes with it once clean, merged and still', () => {
+    assert.match(keepReason({ locked: true, dirty: 0, unmerged: 0, idleMinutes: 999 }), /locked/);
+    const on = { locked: true, unlockFinished: true };
+    assert.equal(keepReason({ ...on, dirty: 0, unmerged: 0, idleMinutes: IDLE_MINUTES }), null);
+    assert.match(
+      keepReason({ ...on, dirty: 1, unmerged: 0, idleMinutes: 999 }),
+      /1 uncommitted change/,
+    );
+    assert.match(
+      keepReason({ ...on, dirty: 0, unmerged: 2, idleMinutes: 999 }),
+      /2 commits not in .* remote/,
+    );
+    assert.match(
+      keepReason({ ...on, dirty: 0, unmerged: 0, idleMinutes: 5 }),
+      /changed 5 minutes ago/,
+    );
+  });
+});
+
+describe('run --unlock-finished, on a throwaway repo', () => {
+  const root = mkdtempSync(join(tmpdir(), 'worktrees-unlock-test-'));
+  after(() => rmSync(root, { recursive: true, force: true }));
+  const ident = ['-c', 'user.name=t', '-c', 'user.email=t@t'];
+  const git = (...args) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' });
+  const commit = (dir, file, text) => {
+    writeFileSync(join(dir, file), text);
+    execFileSync('git', ['-C', dir, 'add', file]);
+    execFileSync('git', ['-C', dir, ...ident, 'commit', '-qm', file]);
+  };
+  const wt = (name) => join(root, '.claude', 'worktrees', name);
+  const play = (argv, now) => {
+    const log = [];
+    const original = console.log;
+    console.log = (line) => log.push(line);
+    try {
+      run(argv, root, root, now);
+    } finally {
+      console.log = original;
+    }
+    return log;
+  };
+  const hour = 3_600_000;
+
+  test('unlocks and removes only a finished, idle, fully merged or pushed worktree', () => {
+    git('init', '-q', '-b', 'main');
+    commit(root, 'a.txt', 'a');
+    const names = ['cherry', 'pushed', 'unpushed', 'dirty', 'untracked', 'clean'];
+    for (const name of names) git('worktree', 'add', '-q', '-b', `wt-${name}`, wt(name));
+    // Merged by cherry-pick (a patch-equivalent commit), and on a remote branch only.
+    commit(wt('cherry'), 'c.txt', 'c');
+    git(...ident, 'cherry-pick', 'wt-cherry');
+    commit(wt('pushed'), 'p.txt', 'p');
+    git('update-ref', 'refs/remotes/origin/pushed', 'wt-pushed');
+    // Work that is nowhere else, edits that are not committed, a file nobody tracks.
+    commit(wt('unpushed'), 'u.txt', 'u');
+    writeFileSync(join(wt('dirty'), 'a.txt'), 'changed');
+    writeFileSync(join(wt('untracked'), 'new.txt'), 'new');
+    for (const name of names) git('worktree', 'lock', wt(name));
+
+    // Without the flag nothing locked goes.
+    const plain = play(['--yes'], Date.now() + hour);
+    assert.ok(plain.some((l) => l.startsWith('keep    cherry: locked')));
+    assert.equal(existsSync(wt('cherry')), true);
+    // With the flag but files that changed a minute ago: nothing goes, and it says why.
+    const fresh = play(['--yes', '--unlock-finished'], Date.now() + 60_000);
+    assert.ok(fresh.some((l) => /^keep {4}cherry: .*changed 1 minute ago/.test(l)));
+    assert.ok(fresh.some((l) => /^keep {4}clean: .*changed 1 minute ago/.test(l)));
+    for (const name of ['cherry', 'pushed', 'clean'])
+      assert.equal(existsSync(wt(name)), true, name);
+    // Without --yes it only reports.
+    const dry = play(['--unlock-finished'], Date.now() + hour);
+    assert.ok(
+      dry.some((l) => l.startsWith('done    cherry (run with --yes to unlock and remove)')),
+    );
+    assert.equal(existsSync(wt('cherry')), true);
+    // An hour later, with the flag.
+    const late = play(['--yes', '--unlock-finished'], Date.now() + hour);
+    for (const name of ['cherry', 'pushed', 'clean']) {
+      assert.equal(existsSync(wt(name)), false, name);
+      assert.ok(late.some((l) => l.startsWith(`removed ${name} (was locked`)));
+    }
+    for (const name of ['unpushed', 'dirty', 'untracked'])
+      assert.equal(existsSync(wt(name)), true, name);
+    assert.ok(
+      late.some((l) =>
+        /^keep {4}unpushed: 1 commit not in the current branch or on any remote branch/.test(l),
+      ),
+    );
+    assert.ok(late.some((l) => /^keep {4}dirty: 1 uncommitted change/.test(l)));
+    assert.ok(late.some((l) => /^keep {4}untracked: 1 uncommitted change/.test(l)));
+    // Branches stay.
+    assert.match(git('branch', '--list', 'wt-pushed'), /wt-pushed/);
   });
 });

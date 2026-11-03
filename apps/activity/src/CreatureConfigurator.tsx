@@ -1,15 +1,18 @@
 import { useRef, useState } from 'preact/hooks';
 import type { Creature, GameState } from './api';
+import { creatureV2 } from './combat-v2-view';
 import { CreatureHead } from './CreatureHead';
 import { CreatureIcon } from './CreatureIcon';
 import { statRows, type CardActions } from './CreaturePage';
 import { cardDomId, xpWords } from './creature-card-view';
 import { experienceLabel } from './CreatureProgress';
 import { ItemPickerDrawer } from './creature-page/ItemPicker';
+import { KnackSection } from './creature-page/KnackPicker';
 import { TalentSlots } from './creature-page/PageSlots';
 import { GearList } from './GearList';
 import { wornItemOf } from './gear-view';
 import { TalentBookDrawer } from './creature-page/TalentBookDrawer';
+import { TalentBookV2Drawer } from './creature-page/TalentBookV2Drawer';
 import type { GearItem, GearSlot, GearState } from './gear-types';
 import { GlossaryTag } from './Glossary';
 import { abilityDef } from './live';
@@ -32,6 +35,13 @@ export interface ConfiguratorParts {
   stats?: boolean;
   /** The finale ability, once unlocked (the page's). */
   ability?: boolean;
+  /**
+   * The Knack, in place of the ability (combat v2: finale abilities are gone, R11): drawn only for a creature with v2
+   * data, so a game without the flag shows what it always did. A tap opens the Knack picker.
+   */
+  knack?: boolean;
+  /** The Knack is locked: it shows what is saved, a tap does nothing. */
+  knackLocked?: boolean;
   /** The gear list (`GearList`); a tap on a slot opens the item picker. */
   gear?: boolean;
   /** The gear list is locked: it shows what is worn, a tap does nothing. */
@@ -78,13 +88,17 @@ export function CreatureConfigurator({
   gear: GearState | null;
   busy: boolean;
   parts: ConfiguratorParts;
-  actions: Pick<CardActions, 'onEquip' | 'onSlotTalent'>;
+  actions: Pick<
+    CardActions,
+    'onEquip' | 'onSlotTalent' | 'onKnack' | 'onLearnTalentV2' | 'onSlotTalentV2'
+  >;
   buttons?: readonly ConfiguratorButton[];
 }) {
   const [open, setOpen] = useState<Open>(null);
   // The slot that was tapped gets the focus back when its drawer closes.
   const opener = useRef<HTMLElement | null>(null);
   const id = `${cardDomId(creature.id)}-configure`;
+  const v2 = creatureV2(creature);
   const ability =
     creature.ability !== null && creature.ability.unlocked
       ? abilityDef(creature.ability.id)
@@ -135,7 +149,23 @@ export function CreatureConfigurator({
         </div>
       )}
 
-      {parts.ability === true && ability !== undefined && (
+      {parts.knack === true && v2 !== null && (
+        <div class="cp-block creature-knack">
+          <h3 class="cp-title">Knack</h3>
+          <KnackSection
+            creature={creature}
+            v2={v2}
+            busy={busy}
+            onPick={
+              parts.knackLocked === true || actions.onKnack === undefined
+                ? undefined
+                : (knack) => actions.onKnack?.(creature, knack, 'raid') ?? Promise.resolve('failed')
+            }
+          />
+        </div>
+      )}
+
+      {parts.ability === true && v2 === null && ability !== undefined && (
         <div class="cp-block creature-ability">
           <h3 class="cp-title">Finale ability</h3>
           <p class="prose">
@@ -153,7 +183,7 @@ export function CreatureConfigurator({
           </h3>
           <GearList
             level={creature.level}
-            worn={creature.gear.map((g) => wornItemOf(g, gear?.items))}
+            worn={creature.gear.map((g) => wornItemOf(g, gear?.items, v2 !== null))}
             slotOpens={gear?.slotOpens}
             openSlot={open?.kind === 'gear' ? open.slot : null}
             onPick={
@@ -224,7 +254,29 @@ export function CreatureConfigurator({
           returnFocusTo={opener.current}
         />
       )}
-      {open?.kind === 'talent' && (
+      {open?.kind === 'talent' && v2 !== null && (
+        <TalentBookV2Drawer
+          key={open.slot}
+          open
+          onClose={() => {
+            setOpen(null);
+          }}
+          creature={creature}
+          v2={v2}
+          slot={open.slot}
+          bait={state.balances.bait}
+          busy={busy}
+          onLearn={(c, talentId) => {
+            actions.onLearnTalentV2?.(c, talentId);
+          }}
+          onSlot={(c, talentId, slot) => {
+            actions.onSlotTalentV2?.(c, talentId, slot);
+            if (slot !== null) setOpen(null);
+          }}
+          returnFocusTo={opener.current}
+        />
+      )}
+      {open?.kind === 'talent' && v2 === null && (
         <TalentBookDrawer
           key={open.slot}
           open

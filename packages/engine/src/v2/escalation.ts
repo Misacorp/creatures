@@ -1,13 +1,33 @@
 /**
- * The boss's escalation and Mired (R22): the Store's feed, the Build-up's steps and the phase change, what the steps add to the boss
+ * The boss's escalation and Mired (R22): the Store's feed, the escalation's steps and the phase change, what the steps add to the boss
  * (`grown`), and the Mired stacks that slow it and cut the boss's damage and dodge (R22.3). Docs: docs/design/combat/proposals/001-combat-v2.md.
  */
-import type { BossMove, Escalation, EscalationFeed, EscalationState, Fighter } from './types';
+import type {
+  BoardEvent,
+  BossMove,
+  Escalation,
+  EscalationFeed,
+  EscalationState,
+  Fighter,
+} from './types';
 import * as stateMod from './state';
 import type { Grown, State } from './state';
 
 // Bound once: a named import is read through a getter on every call under the lab's Vite loader, which costs 15% of a report.
 const { alive, bump, fx, log, roll, strengthOf } = stateMod;
+
+/** The escalation as the board shows it now (`BoardEvent`). */
+const escalationBoard = (s: State): BoardEvent => ({
+  type: 'escalation',
+  count: s.esc.count,
+  step: s.esc.step,
+  // Without a falling growth the two are one (the state catches up at the end of the round start).
+  fall: Object.values(s.boss.escalation?.grow ?? {}).some((v) => (v ?? 0) < 0)
+    ? s.esc.fall
+    : s.esc.step,
+  phase: s.esc.phase,
+  phaseNext: s.esc.phaseNext,
+});
 
 // ---------- the boss's escalation (its Store) ----------
 
@@ -23,7 +43,7 @@ const perOf = (s: State): number => {
   return e.perColumns ? Math.max(1, Math.round((e.per * s.boss.cols) / e.perColumns)) : e.per;
 };
 
-/** What the escalation's steps add to the boss now: `grow` for each step, at the Build-up's strength (a share of it). */
+/** What the escalation's steps add to the boss now: `grow` for each step, at the escalation's strength (a share of it). */
 export const grown = (s: State): Grown => {
   const n = s.esc.step;
   // It is asked for on every hit but only changes with the step, so it is worked out once a step.
@@ -47,12 +67,28 @@ export const grown = (s: State): Grown => {
 };
 
 /**
- * The boss's moves now: its own, and its phase's once the phase change has applied, in the boss card's order. Moves due on
- * one boss turn are announced and land in this order (R8.3, panel 5), then the plain attack.
+ * A boss's moves once its phase has begun: a phase move with the id of one of the boss's own moves REPLACES it, in its place in the
+ * boss card's order (Second Bloom's stronger Thorn Rain: the boss has one move of that behaviour, never two); every other phase
+ * move is added after the own ones.
+ */
+export function withPhase(
+  own: readonly BossMove[],
+  phase: readonly BossMove[],
+): readonly BossMove[] {
+  return [
+    ...own.map((m) => phase.find((p) => p.id === m.id) ?? m),
+    ...phase.filter((p) => !own.some((m) => m.id === p.id)),
+  ];
+}
+
+/**
+ * The boss's moves now: its own, and its phase's once the phase change has applied (a phase move with the id of an own move
+ * replaces it, see `withPhase`), in the boss card's order. Moves due on one boss turn are announced and land in this order (R8.3,
+ * panel 5), then the plain attack.
  */
 export const movesOf = (s: State): readonly BossMove[] =>
   s.esc.phase && s.boss.escalation?.phase
-    ? (s.phaseMoves ??= [...s.boss.moves, ...s.boss.escalation.phase.moves])
+    ? (s.phaseMoves ??= withPhase(s.boss.moves, s.boss.escalation.phase.moves))
     : s.boss.moves;
 
 /** The feed units now: event feeds count as they happen; `rounds` and `hpLost` are read from the fight. */
@@ -98,10 +134,14 @@ export function escalate(s: State): void {
     if (s.esc.phaseNext) {
       s.esc.phase = true;
       s.esc.phaseNext = false;
-      if (s.opts.log) log(s, 'phase', `${s.boss.name}: ${e.phase.name}`);
+      if (s.opts.log)
+        log(s, 'phase', `${s.boss.name}: ${e.phase.name}`, { board: escalationBoard(s) });
     } else if (s.esc.count >= e.phase.atStep * perOf(s)) {
       s.esc.phaseNext = true;
-      if (s.opts.log) log(s, 'announce', `${s.boss.name}: ${e.phase.name} begins next round`);
+      if (s.opts.log)
+        log(s, 'announce', `${s.boss.name}: ${e.phase.name} begins next round`, {
+          board: escalationBoard(s),
+        });
     }
   }
   const per = perOf(s);
@@ -109,17 +149,19 @@ export function escalate(s: State): void {
   const falls = Object.values(e.grow).some((v) => (v ?? 0) < 0);
   if (falls && s.esc.fall < e.cap && s.esc.count >= (s.esc.fall + 1) * per) {
     s.esc.fall++;
-    log(
-      s,
-      'escalation',
-      `${e.name}: what helps the players falls to step ${s.esc.fall} of ${e.cap}; Mired does not slow it`,
-    );
+    if (s.opts.log)
+      log(
+        s,
+        'escalation',
+        `${e.name}: what helps the players falls to step ${s.esc.fall} of ${e.cap}; Mired does not slow it`,
+        { board: escalationBoard(s) },
+      );
   }
   if (s.esc.step < e.cap) stepUp(s, e, per);
   if (!falls) s.esc.fall = s.esc.step;
 }
 
-/** The Build-up's steps that help the boss: one step if the count has reached the next bar, raised by the Mired (R22.3). */
+/** The escalation's steps that help the boss: one step if the count has reached the next bar, raised by the Mired (R22.3). */
 function stepUp(s: State, e: Escalation, per: number): void {
   const R = s.ctx.rules;
   const due = (s.esc.step + 1) * per;
@@ -133,13 +175,15 @@ function stepUp(s: State, e: Escalation, per: number): void {
     return;
   }
   s.esc.step++;
-  log(
-    s,
-    'escalation',
-    `${e.name}: step ${s.esc.step} of ${e.cap} (${s.esc.count} ${e.feed}); next at ${
-      s.esc.step >= e.cap ? 'the cap' : (s.esc.step + 1) * per
-    }`,
-  );
+  if (s.opts.log)
+    log(
+      s,
+      'escalation',
+      `${e.name}: step ${s.esc.step} of ${e.cap} (${s.esc.count} ${e.feed}); next at ${
+        s.esc.step >= e.cap ? 'the cap' : (s.esc.step + 1) * per
+      }`,
+      { board: escalationBoard(s) },
+    );
 }
 
 /** What the boss's Mired takes off its damage and its dodge, in bp: per stack, more while a living creature has Clinging. */
@@ -153,18 +197,20 @@ export function miredCut(s: State): number {
   return s.mired * per;
 }
 
-/** Mired stacks (capped); Heavy Hand gives a chance of 1 extra stack each time. */
+/** Mired stacks (capped); Wicked gives a chance of 1 extra stack each time. */
 export function addMired(s: State, by: Fighter): void {
   const R = s.ctx.rules;
   const extra = roll(s, fx(by).miredExtraBp ?? 0) ? 1 : 0;
   if (extra) bump(by, 'miredExtraBp');
   s.mired = Math.min(R.miredMaxStacks, s.mired + 1 + extra);
-  if (s.opts.log) log(s, 'mired', `Mired x${s.mired}`);
+  if (s.opts.log)
+    log(s, 'mired', `Mired x${s.mired}`, { board: { type: 'mired', stacks: s.mired } });
 }
 
 /**
- * Mired fades at the end of every second round; while a living creature has Clinging, only every third round
- * (Misa, 2026-10-28: one debuff creature must not hold it for the whole fight). Clinging also makes each stack
+ * Mired fades at the end of every round (`miredFadeEvery`); while a living creature has Clinging, only every second
+ * round (Misa, 2026-10-28: one debuff creature must not hold it for the whole fight; 2026-11-01: faster, with up to 45
+ * creatures acting a round it is put back often). Clinging also makes each stack
  * count for more (`miredCut`). Squelch Song alone builds stacks over a fight.
  */
 export function fadeMired(s: State): void {
@@ -177,5 +223,6 @@ export function fadeMired(s: State): void {
     return;
   }
   s.mired--;
-  if (s.opts.log) log(s, 'mired', `Mired x${s.mired}`);
+  if (s.opts.log)
+    log(s, 'mired', `Mired x${s.mired}`, { board: { type: 'mired', stacks: s.mired } });
 }

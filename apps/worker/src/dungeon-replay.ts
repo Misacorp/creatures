@@ -12,15 +12,16 @@ import {
 import { PLAYER, keepsakeViewOf, parseState } from './dungeon-state';
 import type { DungeonReplayRoom, DungeonReplayView, DungeonRunSummary } from './dungeon-types';
 import {
+  type AnyStoredFight,
   type DungeonDeps,
   type RunRow,
-  type StoredFight,
   fightRows,
   rowOf,
   emptyRewards,
   progressOf,
 } from './dungeon-rows';
 import { summarise } from './dungeon-finish';
+import { isResultV2, isStoredV2, replayRoomV2, type RoomResultV2 } from './dungeon-v2';
 
 export function playerName(sql: SqlStorage, userId: string): string {
   return (
@@ -39,9 +40,15 @@ export function playerName(sql: SqlStorage, userId: string): string {
 export function replayRoom(
   name: string,
   node: string | null,
-  stored: StoredFight,
-  result: DungeonRoomResult,
+  stored: AnyStoredFight,
+  result: DungeonRoomResult | RoomResultV2,
 ): DungeonReplayRoom {
+  // A room of a v2 run is stored with its own input and result (`dungeon-v2.ts`).
+  if (isStoredV2(stored)) {
+    if (!isResultV2(result)) throw new Error('a v2 fight has a v1 result');
+    return replayRoomV2(node, stored, result);
+  }
+  if (isResultV2(result)) throw new Error('a v1 fight has a v2 result');
   const { input, hpIn } = stored;
   const spec = input.rooms[0];
   if (spec === undefined) throw new Error('a stored fight has no room');
@@ -88,8 +95,8 @@ export function pathReplay(deps: DungeonDeps, row: RunRow, name: string): Dungeo
       replayRoom(
         name,
         step.node,
-        JSON.parse(step.input_json) as StoredFight,
-        JSON.parse(step.result_json) as DungeonRoomResult,
+        JSON.parse(step.input_json) as AnyStoredFight,
+        JSON.parse(step.result_json) as DungeonRoomResult | RoomResultV2,
       ),
     );
   }
@@ -109,6 +116,7 @@ export function pathReplay(deps: DungeonDeps, row: RunRow, name: string): Dungeo
           kept: st.pack,
         });
   return {
+    ...(st.v === 2 ? { rules: 2 as const } : {}),
     summary,
     row: rowOf(st.start),
     rooms,

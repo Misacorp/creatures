@@ -6,11 +6,18 @@
  */
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { RaidGlance } from './home-view';
+import { swapNoticeText } from './raid-board-v2';
 import { fetchRaid, type RaidView } from './raid-api';
 
 /** What the Home page keeps of a raid view. */
-export function glanceOf(view: Pick<RaidView, 'schedule'>): RaidGlance {
-  return { schedule: view.schedule };
+export function glanceOf(view: Pick<RaidView, 'schedule' | 'rules' | 'v2'>): RaidGlance {
+  const v2 = view.rules === 2 ? view.v2 : undefined;
+  if (v2 === undefined) return { schedule: view.schedule };
+  return {
+    schedule: view.schedule,
+    rules: 2,
+    swapText: swapNoticeText(v2.swaps.incoming, { rows: v2.rows, cols: v2.cols }),
+  };
 }
 
 /** The longest a timer may wait (a bigger delay fires at once). */

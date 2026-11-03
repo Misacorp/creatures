@@ -1,6 +1,6 @@
 /**
  * Knack usage read within the form. A Knack on one popular form shows a high share of all picks just because its form is
- * picked often (Living Shelter and Thick Fog, 2026-10-31), so the usage tables also give the within-form ratio: the Knack's
+ * picked often (Living Shelter and Rolling Fog, 2026-10-31), so the usage tables also give the within-form ratio: the Knack's
  * picks over what random would give among the choices its forms can equip, where "no Knack" is one of the choices.
  * 1.0 is random within the form; 2 or more stands out, under 0.3 is rarely chosen.
  */

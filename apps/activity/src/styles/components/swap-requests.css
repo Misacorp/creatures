@@ -1,0 +1,26 @@
+/*
+  Swap requests (SwapRequests.tsx, and the "waiting" lines Placement.tsx draws under the board): an info note per incoming request
+  with its two buttons on a line of their own, and one quiet line per request you asked.
+*/
+.swap-requests {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.swap-text {
+  display: block;
+}
+
+.swap-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.swap-waiting {
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}

@@ -7,11 +7,13 @@
 import { chance, type Rng } from '@creatures/game';
 import type { KnackFx } from './effects';
 import type {
+  BoardEvent,
   BossDef,
   BossMove,
   ChartPair,
   FightEvent,
   FightInputV2,
+  FinaleAction,
   FightOptions,
   Fighter,
   KillingBlow,
@@ -76,7 +78,7 @@ export interface Mark {
   cashableAfterTurns: number;
   /** The boss turns done when a count was last added: "set this boss turn" means equal to now (Quick Draw). */
   turnSet: number;
-  /** Creatures that left a count on it (Owner's Mark). */
+  /** Creatures that left a count on it (Potent Mark). */
   owners: Set<string>;
 }
 
@@ -87,11 +89,17 @@ export interface State {
   readonly rng: Rng;
   readonly boss: BossDef;
   readonly opts: FightOptions;
+  /** The live finale's inputs (R18); none in most fights. */
+  readonly actions: readonly FinaleAction[];
+  /** This round's effect of them, set at round start (`applyActions`): a Rally, the rows with a Shield Wall (or null), a Purge. */
+  rally: boolean;
+  shieldRows: ReadonlySet<number> | null;
+  purged: boolean;
   readonly fighters: Fighter[];
   bossHp: number;
   /**
    * The boss's real HP in potential mode (`FightOptions.potential`): it keeps falling below 1 (and below 0) while `bossHp` stays
-   * at 1, and every "boss below a share of its HP" rule (Finisher, Cull, the Build-up's HP feed) reads it. Otherwise equal to `bossHp`.
+   * at 1, and every "boss below a share of its HP" rule (Finisher, Culling Strike, the escalation's HP feed) reads it. Otherwise equal to `bossHp`.
    */
   shadowHp: number;
   marks: Map<string, Mark>;
@@ -108,7 +116,7 @@ export interface State {
   esc: {
     fed: number;
     base: number;
-    /** Steps applied: the Build-up's growth that helps the boss, which Mired slows (R22.3). */
+    /** Steps applied: the escalation's growth that helps the boss, which Mired slows (R22.3). */
     step: number;
     /** Steps applied to the growth that helps the players (a falling armour): the same rule without Mired's slowing (R22.3). */
     fall: number;
@@ -221,6 +229,51 @@ export const bump = (f: Fighter, key: keyof KnackFx) => {
 };
 export const log = (s: State, kind: string, text: string, extra: Partial<FightEvent> = {}) => {
   if (s.opts.log) s.events.push({ round: s.round, turn: s.turn, kind, text, ...extra });
+};
+
+/** A board event with no text line of its own (see `BoardEvent`). Callers build the event only when the fight logs. */
+export const emit = (s: State, event: BoardEvent) => {
+  if (s.opts.log)
+    s.events.push({ round: s.round, turn: s.turn, kind: 'board', text: '', board: event });
+};
+
+/** The name the board uses for a creature: its stable key, else its uid. */
+export const keyOf = (f: Pick<Fighter, 'key' | 'uid'>): string => f.key ?? f.uid;
+
+/**
+ * The live finale's inputs that apply to this round (R18): a Rally or a Shield Wall of this round, a Purge of this round or the
+ * `purgeRounds - 1` before it. Called at every round start; with no actions it leaves the defaults.
+ */
+export function applyActions(s: State): void {
+  const R = s.ctx.rules;
+  let rally = false;
+  let purged = false;
+  let rows: Set<number> | null = null;
+  for (const a of s.actions) {
+    if (a.kind === 'purge') {
+      if (a.round <= s.round && s.round < a.round + R.purgeRounds) purged = true;
+    } else if (a.round === s.round) {
+      if (a.kind === 'rally') rally = true;
+      else if (a.row !== undefined) (rows ??= new Set<number>()).add(a.row);
+    }
+    if (s.opts.log && a.round === s.round)
+      emit(s, {
+        type: 'action',
+        kind: a.kind,
+        ...(a.row === undefined ? {} : { row: a.row }),
+        by: a.by,
+      });
+  }
+  s.rally = rally;
+  s.shieldRows = rows;
+  s.purged = purged;
+}
+
+/** A creature's Store set to `value`, shown on the board when it changed. */
+export const setStore = (s: State, f: Fighter, value: number) => {
+  if (f.store === value) return;
+  f.store = value;
+  if (s.opts.log) emit(s, { type: 'store', who: keyOf(f), value });
 };
 
 /** The strength of the boss's cards and gates (bp; 10000 is the full card). */

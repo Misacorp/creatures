@@ -6,6 +6,8 @@ import { DungeonTeam } from '../../DungeonTeam';
 import { CreatureConfigurator } from '../../CreatureConfigurator';
 import type { CardActions } from '../../CreaturePage';
 import { teamSample } from '../../creature-page/team-sample';
+import { sampleSaveKnack, withV2 } from '../../creature-page/v2-sample';
+import { mapV2 } from '../dungeon-v2-sample';
 import stateFixture from '../../fixtures/collection-state.json';
 import todayFixture from '../../fixtures/dungeon-today-map.json';
 import { parseGameState, type Creature } from '../../api';
@@ -190,8 +192,10 @@ const dungeonSetup: Entry = {
     busy: { kind: 'toggle' },
     map: { kind: 'toggle' },
     configure: { kind: 'toggle' },
+    rules: { kind: 'select', options: ['combat v1', 'combat v2'] },
   },
   defaults: {
+    rules: 'combat v1',
     owned: 6,
     placed: 3,
     streak: 3,
@@ -216,10 +220,14 @@ const dungeonSetup: Entry = {
       name: 'Getting the team ready (tap a creature for its configurator)',
       props: { configure: true },
     },
+    {
+      name: 'Combat v2: getting the team ready, with the Knack part (tap a creature, then its Knack)',
+      props: { configure: true, rules: 'combat v2' },
+    },
   ],
   render: (p) =>
     bool(p, 'configure') ? (
-      <ConfigureSetupDemo />
+      <ConfigureSetupDemo key={str(p, 'rules')} v2={str(p, 'rules') === 'combat v2'} />
     ) : (
       <SetupDemo
         key={`${String(num(p, 'owned'))}-${String(num(p, 'placed'))}-${String(num(p, 'streak'))}-${String(num(p, 'depth'))}-${String(bool(p, 'map'))}`}
@@ -248,14 +256,21 @@ const PART_NAMES = [
   'crafting',
   'stats',
   'ability',
+  'knack',
+  'knackLocked',
   'gear',
   'talents',
 ] as const;
 
 function ConfiguratorDemo({ p }: { p: Props }) {
   const scene = useMemo(teamSample, []);
-  const creature = scene.team[num(p, 'creature')] ?? scene.team[0];
-  if (creature === undefined) return null;
+  const plain = scene.team[num(p, 'creature')] ?? scene.team[0];
+  // Combat v2 (the server's flag on): the creature carries its Knack and v2 talents; a Knack pick is kept here.
+  const [knack, setKnack] = useState<string | null | undefined>(undefined);
+  if (plain === undefined) return null;
+  const v2 = bool(p, 'combatV2');
+  const withV2Fields = v2 ? withV2(plain, { knack: 0, learned: [0, 1], golden: [1] }) : plain;
+  const creature = v2 && knack !== undefined ? sampleSaveKnack(withV2Fields, knack) : withV2Fields;
   const parts = Object.fromEntries(PART_NAMES.map((part) => [part, bool(p, part)]));
   return (
     <CreatureConfigurator
@@ -264,7 +279,13 @@ function ConfiguratorDemo({ p }: { p: Props }) {
       gear={scene.gear}
       busy={false}
       parts={parts}
-      actions={NO_ACTIONS}
+      actions={{
+        ...NO_ACTIONS,
+        onKnack: (_creature, picked) => {
+          setKnack(picked);
+          return Promise.resolve('saved');
+        },
+      }}
       buttons={
         bool(p, 'buttons')
           ? [
@@ -284,6 +305,9 @@ const DUNGEON_DEFAULTS = {
   crafting: false,
   stats: true,
   ability: false,
+  knack: false,
+  knackLocked: false,
+  combatV2: false,
   gear: true,
   gearLocked: false,
   talents: true,
@@ -295,10 +319,11 @@ const creatureConfigurator: Entry = {
   file: 'apps/activity/src/CreatureConfigurator.tsx',
   group: 'Creatures & game pieces',
   description:
-    "A creature, small, to see what it is and get it ready for a task: the card's top, then the parts the screen asks for (experience, explorer rank, Crafting level, stats, finale ability, gear, talents), then the screen's buttons. A gear slot opens the item picker, a talent slot the Talent Book. The dungeon card shows it under the board for the tapped creature.",
+    "A creature, small, to see what it is and get it ready for a task: the card's top, then the parts the screen asks for (experience, explorer rank, Crafting level, stats, finale ability, gear, talents), then the screen's buttons. A gear slot opens the item picker, a talent slot the Talent Book. The dungeon card shows it under the board for the tapped creature. With combat v2 on (the `combatV2` switch: the creature carries the server's v2 fields) the Knack part takes the ability's place, the Stats table has Armour and crit and the talents are the line's book; the raid board's configurator asks for the Knack.",
   controls: {
     creature: { kind: 'number', min: 0, max: 2 },
     ...Object.fromEntries(PART_NAMES.map((part) => [part, { kind: 'toggle' as const }])),
+    combatV2: { kind: 'toggle' },
     buttons: { kind: 'toggle' },
   },
   defaults: DUNGEON_DEFAULTS,
@@ -315,23 +340,47 @@ const creatureConfigurator: Entry = {
     { name: 'An empty Charm slot and a set bonus (Mossback)', props: { creature: 0 } },
     { name: 'Every slot filled (Cindle)', props: { creature: 2 } },
     { name: 'Gear locked: what is worn, no taps', props: { gearLocked: true } },
+    {
+      name: 'Combat v2, the raid board: the Knack part (tap it for the picker), v2 stats and talents',
+      props: { creature: 0, combatV2: true, knack: true, ability: false },
+    },
+    {
+      name: 'Combat v2, the board locked: the Knack is shown, not tappable',
+      props: { creature: 0, combatV2: true, knack: true, knackLocked: true, gearLocked: true },
+    },
   ],
   render: (p) => <ConfiguratorDemo p={p} />,
 };
 
 /** The pre-run card with the team's configurator: tap a creature of the board. */
-function ConfigureSetupDemo() {
+function ConfigureSetupDemo({ v2 }: { v2: boolean }) {
   const scene = useMemo(teamSample, []);
-  const today = parseDungeonToday({
+  // On a run of combat v2 the server also sends each creature's Knack, talents and stats (the flag is on), and the card shows the Knack part.
+  const [knacks, setKnacks] = useState<Readonly<Record<string, string | null>>>({});
+  const creatures = useMemo(
+    () =>
+      v2
+        ? scene.creatures.map((c) => {
+            const dressed = withV2(c, { knack: 0, learned: [0, 1], golden: [1] });
+            const saved = knacks[c.id];
+            return saved === undefined ? dressed : sampleSaveKnack(dressed, saved);
+          })
+        : scene.creatures,
+    [scene, v2, knacks],
+  );
+  const parsed = parseDungeonToday({
     ...todayFixture,
+    ...(v2 ? { rules: 2 } : {}),
     streak: 3,
     depth: 6,
     lastTeam: scene.team.map((c) => c.id),
   });
+  // The map of a v2 run carries each foe's card.
+  const today = v2 && parsed.map != null ? { ...parsed, map: mapV2(parsed.map, 6) } : parsed;
   return (
     <DungeonSetup
       today={today}
-      creatures={scene.creatures}
+      creatures={creatures}
       bait={40}
       busy={false}
       error={null}
@@ -343,7 +392,13 @@ function ConfigureSetupDemo() {
         state: scene.state,
         gear: scene.gear,
         busy: false,
-        actions: NO_ACTIONS,
+        actions: {
+          ...NO_ACTIONS,
+          onKnack: (picked, knack) => {
+            setKnacks((now) => ({ ...now, [picked.id]: knack }));
+            return Promise.resolve('saved');
+          },
+        },
         onAnswerCatch: noop,
       }}
     />
@@ -360,7 +415,7 @@ const slotButton: Entry = {
   file: 'apps/activity/src/ui/SlotButton.tsx',
   group: 'Slots',
   description:
-    'One slot of a board: its number, the creature standing in it (picture, name, level; in the raid the owner initial and the element ring) or the empty label, and what dropping a creature here would do.',
+    "One slot of a board: its number, the creature standing in it (picture, name, level; in the raid the owner initial and the element ring) or the empty label, and what dropping a creature here would do. On a combat v2 board the tile also has the creature's role icon, its Knack as a small chip, the HP it carries between stages as a tiny bar, an Asked strip when you asked its owner to swap, the red target look with the move's picture when a boss move would hit it, and the plain attack's sword when the boss's plain attack is aimed at it.",
   controls: {
     species: { kind: 'select', options: ['none', ...SPECIES_IDS] },
     level: { kind: 'number', min: 1, max: 30 },
@@ -374,8 +429,25 @@ const slotButton: Entry = {
     compact: { kind: 'toggle' },
     disabled: { kind: 'toggle' },
     emptyLabel: { kind: 'text', maxLength: 12 },
+    v2: { kind: 'toggle' },
+    role: { kind: 'select', options: ['setter', 'payoff', 'guard', 'support'] },
+    knack: { kind: 'text', maxLength: 24 },
+    carriedHp: { kind: 'number', min: -1, max: 100 },
+    hitBy: {
+      kind: 'select',
+      options: ['none', 'shape-slam', 'shape-lance', 'sweep', 'shape-quake'],
+    },
+    plainTarget: { kind: 'toggle' },
+    badge: { kind: 'text', maxLength: 8 },
   },
   defaults: {
+    v2: false,
+    role: 'guard',
+    knack: 'Shield Wall',
+    carriedHp: -1,
+    hitBy: 'none',
+    plainTarget: false,
+    badge: '',
     species: 'cindle',
     level: 5,
     owner: false,
@@ -406,6 +478,22 @@ const slotButton: Entry = {
     },
     { name: 'Empty', props: { species: 'none' } },
     {
+      name: 'Combat v2 tile: role, Knack and carried HP',
+      props: { v2: true, compact: true, element: 'tide', carriedHp: 55 },
+    },
+    {
+      name: 'Combat v2: a boss move would hit it',
+      props: { v2: true, compact: true, element: 'ember', hitBy: 'shape-lance' },
+    },
+    {
+      name: "Combat v2: the plain attack's target",
+      props: { v2: true, compact: true, element: 'grove', plainTarget: true },
+    },
+    {
+      name: 'Combat v2: you asked its owner to swap',
+      props: { v2: true, compact: true, badge: 'Asked' },
+    },
+    {
       name: 'Raid tile (owner and element)',
       props: { owner: true, ownerColour: 2, element: 'tide', compact: true },
     },
@@ -419,10 +507,13 @@ const slotButton: Entry = {
     const def = content.reactions.find((r) => r.id === str(p, 'reaction'));
     const marker = str(p, 'reactionRole') === 'marker';
     const influence = str(p, 'influence');
+    const hitBy = str(p, 'hitBy');
     const cue: SlotCue | undefined =
-      def === undefined && influence === 'none'
+      def === undefined && influence === 'none' && hitBy === 'none' && !bool(p, 'plainTarget')
         ? undefined
         : {
+            ...(hitBy === 'none' ? {} : { hit: { glyph: hitBy } }),
+            ...(bool(p, 'plainTarget') ? { plain: true as const } : {}),
             ...(influence === 'buff' ? { buff: true as const } : {}),
             ...(influence === 'cover' ? { cover: true as const } : {}),
             ...(def === undefined
@@ -436,11 +527,12 @@ const slotButton: Entry = {
                   },
                 }),
           };
-    return (
+    const tile = (
       <SlotButton
         slot={{
           index: 0,
           ariaLabel: 'Slot 1',
+          ...(str(p, 'badge') === '' ? {} : { badge: str(p, 'badge') }),
           occupant:
             species === 'none'
               ? null
@@ -454,6 +546,16 @@ const slotButton: Entry = {
                     ? { owner: { colour: num(p, 'ownerColour'), initial: 'Y' } }
                     : {}),
                   ...(str(p, 'element') === 'none' ? {} : { element: str(p, 'element') }),
+                  ...(bool(p, 'v2')
+                    ? {
+                        v2: {
+                          role: str(p, 'role'),
+                          knack: str(p, 'knack') === '' ? null : str(p, 'knack'),
+                          carried:
+                            num(p, 'carriedHp') < 0 ? null : { hp: num(p, 'carriedHp'), max: 100 },
+                        },
+                      }
+                    : {}),
                 },
         }}
         scale={bool(p, 'compact') ? 2 : 3}
@@ -468,6 +570,14 @@ const slotButton: Entry = {
         onPointerDown={() => undefined}
         onTap={() => undefined}
       />
+    );
+    // A combat v2 tile sits in the board's row, which sizes it (the v2 board's tiles are a little taller).
+    return bool(p, 'v2') && bool(p, 'compact') ? (
+      <div class="raid-board v2">
+        <div class="board-row">{tile}</div>
+      </div>
+    ) : (
+      tile
     );
   },
 };

@@ -16,6 +16,7 @@
  * sleep between rounds.
  */
 import type { LiveSnapshot } from './raid-live-view';
+import type { LiveSnapshotV2 } from './raid-v2-view';
 import { LiveSockets, socketIdentity, type LiveMessage } from './live-socket';
 import { topicTag, type Topic } from './live-topic';
 
@@ -27,13 +28,17 @@ export interface FinalePushDeps {
    * The finale snapshot of one player of this party and week, built like the poll route builds it, or
    * null when the player is not in that party or the week is not the current one.
    */
-  snapshotFor: (userId: string, week: string, party: number) => LiveSnapshot | null;
+  snapshotFor: (
+    userId: string,
+    week: string,
+    party: number,
+  ) => LiveSnapshot | LiveSnapshotV2 | null;
   /** The next moment the party's snapshot changes shape (a round start, the start, the end), or null. */
   nextChangeAt: (week: string, party: number) => number | null;
 }
 
 /** What makes two snapshots of one party the same stage: nothing to push between them. */
-const stageKey = (s: LiveSnapshot): string =>
+const stageKey = (s: LiveSnapshot | LiveSnapshotV2): string =>
   `${s.status}|${String(s.practice)}|${String(s.round)}|${String(s.startsAt)}`;
 
 const LAST_KEY_MAX = 50;
@@ -141,7 +146,7 @@ export class FinalePush {
     const tag = topicTag(topic);
     let keyed = false;
     for (const [userId, list] of byUser) {
-      let snapshot: LiveSnapshot | null;
+      let snapshot: LiveSnapshot | LiveSnapshotV2 | null;
       try {
         snapshot = this.deps.snapshotFor(userId, topic.week, topic.party);
       } catch (err) {

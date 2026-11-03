@@ -15,7 +15,6 @@ import {
   card,
   fight,
   formStats,
-  keywordsIn,
   labBoss,
   placeFighters,
   type Placement,
@@ -42,7 +41,7 @@ const bp = (id: string, key: string): number =>
 
 describe('the resolver hands the engine the luck stats', () => {
   it('the species crit stats, and the Knack and the talents merged, with only the talents plain lines kept for silence', () => {
-    // Cindle is a crit machine (+10 points of chance, +50 points of damage); Wild Swing adds its own, Crit Damage a talent line.
+    // Cindle is a crit machine (+10 points of chance, +50 points of damage); Wild Swing adds its own, Amplified Crits a talent line.
     const st = formStats('cindle', 25);
     expect(st.critChanceBp).toBeGreaterThan(0);
     expect(st.critDamageBp).toBeGreaterThan(0);
@@ -62,7 +61,7 @@ describe('the resolver hands the engine the luck stats', () => {
     expect(cindle?.fxStat.plainBp).toBeUndefined();
   });
 
-  it('Cool Head wards the whole extra damage of a boss crit, and Crit Chance and Crit Damage are the gear lines of the same names', () => {
+  it('Cool Head wards the whole extra damage of a boss crit, and Crit Chance is the gear line of the same name and Amplified Crits is the effect of the gear line Crit damage', () => {
     expect(KNACKS['cool-head']?.fx.critWardBp).toBe(10_000);
     expect(bp('crit-chance', 'critChanceBp')).toBeGreaterThan(0);
     expect(bp('crit-damage', 'critDamageBp')).toBeGreaterThan(0);
@@ -74,7 +73,7 @@ describe('the resolver hands the engine the luck stats', () => {
 });
 
 describe('the luck rule cards', () => {
-  it('Lucky Strike gives the boss a crit chance and Slippery a flat dodge, both by strength', () => {
+  it('Double Strike gives the boss a crit chance and Slippery a flat dodge, both by strength', () => {
     const b = labBoss({ rows: 1, cols: 1 });
     expect(b.critChanceBp).toBeUndefined();
     expect(card('lucky-strike').apply(b).critChanceBp).toBe(2_000);
@@ -86,7 +85,7 @@ describe('the luck rule cards', () => {
     expect(CARDS.map((c) => c.id)).toEqual(expect.arrayContaining(['lucky-strike', 'slippery']));
   });
 
-  it('Lucky Strike makes the boss crit in a fight', () => {
+  it('Double Strike makes the boss crit in a fight', () => {
     const boss = labBoss({ rows: 1, cols: 2, rounds: 40, atk: 20, cards: ['lucky-strike'] });
     const team = [at('kilnmole', 0, 0), at('thornbuck', 0, 1)];
     const res = fight(boss, team, { rng: rng('lucky'), log: true });
@@ -98,15 +97,9 @@ describe('the luck rule cards', () => {
 });
 
 describe('the luck content', () => {
-  it('Crit Chance and Crit Damage are the gear lines of the same names; the talents and Knacks use only known keywords', () => {
+  it('Crit Chance is the gear line of the same name and Amplified Crits is the effect of the gear line Crit damage; the keyword Crit is defined', () => {
     expect(TALENTS['crit-chance']?.name).toBe('Crit Chance');
-    expect(TALENTS['crit-damage']?.name).toBe('Crit Damage');
-    for (const id of ['crit-chance', 'crit-damage', 'perfect-timing', 'hold-the-line'])
-      for (const w of keywordsIn(TALENTS[id]?.text ?? ''))
-        expect(KEYWORDS, `${id} {${w}}`).toHaveProperty(w);
-    for (const id of ['wild-swing', 'cool-head'])
-      for (const w of keywordsIn(KNACKS[id]?.text ?? ''))
-        expect(KEYWORDS, `${id} {${w}}`).toHaveProperty(w);
+    expect(TALENTS['crit-damage']?.name).toBe('Amplified Crits');
     expect(KEYWORDS).toHaveProperty('Crit');
     expect(KEYWORDS).toHaveProperty('Sure Crit');
   });

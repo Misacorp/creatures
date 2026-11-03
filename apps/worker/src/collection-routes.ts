@@ -7,6 +7,7 @@ import {
   DismissAwayBodySchema,
   DismissLevelResetBodySchema,
   EvolveBodySchema,
+  KnackBodySchema,
   LoungerBodySchema,
   LoungeSpotBodySchema,
   NicknameBodySchema,
@@ -15,7 +16,9 @@ import {
   RoomBodySchema,
   StartExpeditionBodySchema,
   StarterBodySchema,
+  TalentLearnV2BodySchema,
   TalentSlotBodySchema,
+  TalentSlotV2BodySchema,
 } from './collection-schemas';
 import type { LeetSyncStatus } from './guild-core';
 import {
@@ -24,6 +27,7 @@ import {
   invalidBody,
   invalidId,
   json,
+  notFound,
   parseBody,
   pathId,
   type Routes,
@@ -173,6 +177,49 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
       return json({ result: outcome.value, state: ctx.core.collection.state(ctx.user.id) });
     },
   },
+  // Combat v2 (the `COMBAT_V2` flag): the saved Knack and the v2 Talent Book. With the flag off these answer
+  // 404 as unknown routes do, before the body is read.
+  '/api/creatures/:id/knack': {
+    PUT: async (request, ctx) => {
+      if (ctx.core.collection.v2 === null) return notFound();
+      const id = pathId(ctx);
+      if (id === undefined) return invalidId();
+      const body = await parseBody(request, KnackBodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome = ctx.core.collection.setKnack(ctx.user.id, id, body.knack, body.where);
+      if (!outcome.ok) return failure(outcome);
+      return json({ knack: outcome.value.knack, state: ctx.core.collection.state(ctx.user.id) });
+    },
+  },
+  '/api/creatures/:id/talents-v2/learn': {
+    POST: async (request, ctx) => {
+      if (ctx.core.collection.v2 === null) return notFound();
+      const id = pathId(ctx);
+      if (id === undefined) return invalidId();
+      const body = await parseBody(request, TalentLearnV2BodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome = ctx.core.collection.learnTalentV2(
+        ctx.user.id,
+        id,
+        body.talentId,
+        body.idempotencyKey,
+      );
+      if (!outcome.ok) return failure(outcome);
+      return json({ result: outcome.value, state: ctx.core.collection.state(ctx.user.id) });
+    },
+  },
+  '/api/creatures/:id/talents-v2/slot': {
+    PUT: async (request, ctx) => {
+      if (ctx.core.collection.v2 === null) return notFound();
+      const id = pathId(ctx);
+      if (id === undefined) return invalidId();
+      const body = await parseBody(request, TalentSlotV2BodySchema);
+      if (body === undefined) return invalidBody();
+      const outcome = ctx.core.collection.slotTalentV2(ctx.user.id, id, body.talentId, body.slot);
+      if (!outcome.ok) return failure(outcome);
+      return json({ result: outcome.value, state: ctx.core.collection.state(ctx.user.id) });
+    },
+  },
   // Training is by activity now (Creatures B): an old client gets a clear answer, and nothing is charged.
   '/api/creatures/:id/train': {
     POST: () => errorResponse('training_is_by_activity', 410),
@@ -205,6 +252,9 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
         species: outcome.value.species,
         firstOnServer: outcome.value.firstOnServer,
         unequipped: outcome.value.unequipped ?? 0,
+        ...(outcome.value.talentsReplaced === undefined
+          ? {}
+          : { talentsReplaced: outcome.value.talentsReplaced }),
         state: ctx.core.collection.state(ctx.user.id),
       });
     },

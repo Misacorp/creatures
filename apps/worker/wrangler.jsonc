@@ -48,6 +48,10 @@
   // socket and teammates' placements appear as they are made. The board ticket and socket routes exist and
   // /api/config tells the client. Any other value makes both answer 404 and the tab behaves as before. On
   // everywhere (the push is a few small messages and costs almost no database reads); a test pins it.
+  // COMBAT_V2: "on" plays combat v2 (docs/design/combat/integration.md): /api/config tells the client
+  // (combatV2), a creature can save a Knack and use the v2 Talent Book, and the combat-v2-convert dev
+  // tool exists. A raid week or dungeon run keeps the rules it started under. Any other value turns all
+  // of it off. On in staging only; a test pins the top level and production to "off".
   // DISCORD_PUBLIC_KEY: the Discord app's public key (hex, not a secret). The deploy job fills it from
   // Discord's verify_key; empty (or not 64 hex characters) turns POST /api/discord/interactions off (404),
   // which also turns off /feedback (docs/design/feedback.md).
@@ -63,7 +67,8 @@
     "DEV_TOOLS": "off",
     "LOUNGE_LIVE": "on",
     "FINALE_LIVE": "on",
-    "RAID_LIVE": "on"
+    "RAID_LIVE": "on",
+    "COMBAT_V2": "off"
   },
   "env": {
     "staging": {
@@ -89,7 +94,8 @@
         "DEV_TOOLS": "on",
         "LOUNGE_LIVE": "on",
         "FINALE_LIVE": "on",
-        "RAID_LIVE": "on"
+        "RAID_LIVE": "on",
+        "COMBAT_V2": "on"
       }
     },
     "production": {
@@ -115,7 +121,8 @@
         "DEV_TOOLS": "off",
         "LOUNGE_LIVE": "on",
         "FINALE_LIVE": "off",
-        "RAID_LIVE": "on"
+        "RAID_LIVE": "on",
+        "COMBAT_V2": "off"
       }
     }
   }

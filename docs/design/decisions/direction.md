@@ -4,6 +4,20 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-01: [Misa] Retro 2026-11-01: group behaviours before naming, a name-blind parity digest, and agent workflow fixes
+
+ID: `2026-11-01-retro-2026-11-01-group-behaviours` · Status: current
+
+**Decision.** From the retro of combat v2 phase 3 (`docs/retros/2026-11-01-combat-v2-phase3.md`), Misa accepted:
+
+- **Proposal 2, group by behaviour, always** (Misa: "we should constantly keep identifying similar behaviours and grouping them together; two or more effects can be pretty different in power if we tweak a few parameters"): `grammar.md` "Naming" makes it the rule before any naming and for every new piece of content, and the lab report gains a "Similar behaviours" section that lists the groups each run.
+- **Proposal 6:** the lab's parity digest ignores display names, so a rename never moves it.
+- **Agent workflow fixes** ("anything that was a problem with working with agents should also be fixed"): briefs and `.claude/agents/implementer.md` say to run `pnpm check:changed` as a background job and wait on its log, to work only inside the worktree, never to use a bare `git stash`, to commit only on the worktree branch, and to stop rather than loosen a threshold (the agent file said "never commit", against every brief); `CLAUDE.md` says to run `pnpm decisions fix` after editing a topic file outside the Edit tool (proposal 5); `pnpm worktrees:clean` gets an option to unlock and remove finished agents' worktrees (proposal 8).
+
+Not taken: proposal 7 (icon briefs; Misa: "just iterative"). Proposals 1 and 3 were not named.
+
+**Reasoning.** Each change removes a cause of rework seen in that session.
+
 ## 2026-10-31: [Misa] Valley places: glow on the ground, day and night; posters for each place's own screen
 
 ID: `2026-10-31-valley-places-glow-on-the-ground` · Status: current · Amends: `2026-10-31-the-lead-agent-owns-art-direction`

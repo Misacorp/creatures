@@ -4,8 +4,13 @@ import { ZONES, type Zone } from '@creatures/engine';
 import { IdSchema } from './collection-schemas';
 import { isWeekId, RAID_PHASES } from './raid-schedule';
 
-/** Slots are small: a party row has at most 3 x 15 slots. */
-const MAX_SLOT = RULES.raid.maxPartySize * RULES.raid.teamSize - 1;
+/** The phases a combat v2 stage is stored under (besides `finale`). */
+const RESULT_PHASES_V2 = ['stage1', 'stage2'] as const;
+
+/** Slots are small: a party row has at most 3 x 15 slots, a combat v2 board at most 4 rows of 15 columns. */
+const MAX_SLOT = RULES.raid.maxPartySize * Math.max(RULES.raid.teamSize, 4) - 1;
+/** Most rows a boss's arena has is 4 (a bound for the schema; the server checks the boss's own). */
+const MAX_ROW = 3;
 
 /** `creatureIds`: exactly three creature ids, or null for the automatic team. */
 export const TeamBodySchema = v.strictObject({
@@ -30,7 +35,7 @@ export const ReplayParamsSchema = v.strictObject({
     v.check((value) => isWeekId(value), 'not a raid week id'),
   ),
   party: v.pipe(v.string(), v.regex(/^[1-9]\d{0,2}$/), v.transform(Number)),
-  phase: v.picklist(RAID_PHASES),
+  phase: v.picklist([...RAID_PHASES, ...RESULT_PHASES_V2]),
 });
 
 /** The basic finale ability ids (the ones a player picks). */
@@ -50,6 +55,8 @@ export const LiveActionBodySchema = v.strictObject({
   action: v.picklist(['fire', 'hold', 'unhold']),
   zone: v.optional(v.picklist(ZONES as [Zone, ...Zone[]])),
   element: v.optional(v.picklist(ELEMENTS as [Element, ...Element[]])),
+  /** Combat v2: the row a Shield Wall covers (the server checks it against the boss's rows). */
+  row: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(MAX_ROW))),
 });
 
 /** `POST /api/finale/ticket`: the party whose finale the socket will listen to. The server checks membership. */
@@ -80,3 +87,12 @@ export const AutofireBodySchema = v.strictObject({
   target: v.union([v.literal('basic'), IdSchema]),
   on: v.boolean(),
 });
+
+/** `POST /api/raid/swap`: two different slots of the caller's party board (combat v2, R19). The server finds the player to ask. */
+export const SwapAskBodySchema = v.strictObject({
+  slotA: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(MAX_SLOT)),
+  slotB: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(MAX_SLOT)),
+});
+
+/** `:id` of `POST /api/raid/swap/:id/accept` and `/decline`: a request id (a UUID). */
+export const SwapIdSchema = v.pipe(v.string(), v.uuid());

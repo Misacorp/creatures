@@ -1,0 +1,170 @@
+{
+  "order": ["tidal-colossus", "cinder-wyrm", "storm-sovereign", "old-bogback", "thornmother"],
+  "slots": [
+    {
+      "slot": 1,
+      "boss": "tidal-colossus",
+      "hp": 3800,
+      "atk": 70,
+      "armour": 25,
+      "strengthBp": 1833,
+      "cards": 0,
+      "buildUp": false,
+      "extraCards": []
+    },
+    {
+      "slot": 2,
+      "boss": "cinder-wyrm",
+      "hp": 7500,
+      "atk": 80,
+      "armour": 42,
+      "strengthBp": 3000,
+      "cards": 1,
+      "buildUp": false,
+      "extraCards": []
+    },
+    {
+      "slot": 3,
+      "boss": "storm-sovereign",
+      "hp": 13500,
+      "atk": 53,
+      "armour": 7,
+      "strengthBp": 4167,
+      "cards": 2,
+      "buildUp": true,
+      "extraCards": []
+    },
+    {
+      "slot": 4,
+      "boss": "old-bogback",
+      "hp": 28200,
+      "atk": 82,
+      "armour": 19,
+      "strengthBp": 5333,
+      "cards": 2,
+      "buildUp": true,
+      "extraCards": []
+    },
+    {
+      "slot": 5,
+      "boss": "thornmother",
+      "hp": 6500,
+      "atk": 155,
+      "armour": 124,
+      "strengthBp": 6500,
+      "cards": 1,
+      "buildUp": true,
+      "extraCards": []
+    },
+    {
+      "slot": 6,
+      "boss": "tidal-colossus",
+      "hp": 19300,
+      "atk": 88,
+      "armour": 37,
+      "strengthBp": 7200,
+      "cards": 2,
+      "buildUp": true,
+      "extraCards": ["slippery", "breakwater"]
+    },
+    {
+      "slot": 7,
+      "boss": "cinder-wyrm",
+      "hp": 10200,
+      "atk": 185,
+      "armour": 48,
+      "strengthBp": 7900,
+      "cards": 2,
+      "buildUp": true,
+      "extraCards": []
+    },
+    {
+      "slot": 8,
+      "boss": "storm-sovereign",
+      "hp": 7000,
+      "atk": 96,
+      "armour": 5,
+      "strengthBp": 8600,
+      "cards": 2,
+      "buildUp": true,
+      "extraCards": ["lucky-strike"]
+    },
+    {
+      "slot": 9,
+      "boss": "old-bogback",
+      "hp": 32800,
+      "atk": 100,
+      "armour": 33,
+      "strengthBp": 9300,
+      "cards": 2,
+      "buildUp": true,
+      "extraCards": []
+    },
+    {
+      "slot": 10,
+      "boss": "thornmother",
+      "hp": 7500,
+      "atk": 102,
+      "armour": 156,
+      "strengthBp": 10000,
+      "cards": 1,
+      "buildUp": true,
+      "extraCards": []
+    },
+    {
+      "slot": 11,
+      "boss": "tidal-colossus",
+      "hp": 13100,
+      "atk": 142,
+      "armour": 42,
+      "strengthBp": 10000,
+      "cards": 2,
+      "buildUp": true,
+      "extraCards": ["slippery", "breakwater"]
+    },
+    {
+      "slot": 12,
+      "boss": "cinder-wyrm",
+      "hp": 11500,
+      "atk": 199,
+      "armour": 49,
+      "strengthBp": 10000,
+      "cards": 2,
+      "buildUp": true,
+      "extraCards": []
+    },
+    {
+      "slot": 13,
+      "boss": "storm-sovereign",
+      "hp": 14300,
+      "atk": 48,
+      "armour": 10,
+      "strengthBp": 10000,
+      "cards": 2,
+      "buildUp": true,
+      "extraCards": ["lucky-strike"]
+    },
+    {
+      "slot": 14,
+      "boss": "old-bogback",
+      "hp": 32700,
+      "atk": 117,
+      "armour": 31,
+      "strengthBp": 10000,
+      "cards": 2,
+      "buildUp": true,
+      "extraCards": []
+    },
+    {
+      "slot": 15,
+      "boss": "thornmother",
+      "hp": 7900,
+      "atk": 107,
+      "armour": 156,
+      "strengthBp": 10000,
+      "cards": 1,
+      "buildUp": true,
+      "extraCards": []
+    }
+  ]
+}

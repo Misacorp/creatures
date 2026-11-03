@@ -47,10 +47,12 @@ export const DEV_ACTION_TOOLS = [
   'raid-roster',
   'raid-live',
   'raid-simulate',
+  'raid-weekend',
   'games-bots',
   'games-run-now',
   'games-reset',
   'analytics-rollup',
+  'combat-v2-convert',
   'reset-account',
 ] as const;
 export type DevActionTool = (typeof DEV_ACTION_TOOLS)[number];
@@ -272,6 +274,16 @@ export const RaidLiveBodySchema = v.strictObject({
 });
 
 export const RaidSimulateBodySchema = v.strictObject({
+  guests: v.optional(int(0, MAX_GUESTS)),
+});
+
+/**
+ * Plays a combat v2 weekend on the real scheduler (staging with `COMBAT_V2` only): up to `step` (default the finale's start), each
+ * step after any earlier one that has not run. `guests` sets the simulated roster first (as `raid-roster`, before stage 1).
+ */
+export const RAID_WEEKEND_STEPS = ['stage1', 'stage2', 'finale-start', 'finale-end'] as const;
+export const RaidWeekendBodySchema = v.strictObject({
+  step: v.optional(v.picklist(RAID_WEEKEND_STEPS)),
   guests: v.optional(int(0, MAX_GUESTS)),
 });
 

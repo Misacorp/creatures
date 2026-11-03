@@ -1,9 +1,9 @@
 /**
  * Taking hits (R1 dodge, R1.3 and R2.3 guards and cover, R6.5 and R13 cuts, armour and Blocked, wards and Breakwater, R7.1 the boss's
- * crit ward, Stubborn, Second Wind, Hold the Line's Sure Crits).
+ * crit ward, Refuse to Fall, Second Wind, Easily Provoked's Sure Crits).
  */
 import type { KnackFx } from './effects';
-import type { Fighter } from './types';
+import type { BoardEvent, Fighter } from './types';
 import * as escalationMod from './escalation';
 import * as boardMod from './board';
 import * as marksMod from './marks';
@@ -14,7 +14,7 @@ import type { State } from './state';
 const { addMired, feed } = escalationMod;
 const { beside, inReach } = boardMod;
 const { heal } = marksMod;
-const { alive, best, bump, fx, log, ownArmour, silenced } = stateMod;
+const { alive, best, bump, emit, fx, keyOf, log, ownArmour, setStore, silenced } = stateMod;
 
 export function dodgeOf(s: State, f: Fighter, area: boolean): number {
   const R = s.ctx.rules;
@@ -65,6 +65,24 @@ export function critWardOf(s: State, taker: Fighter): number {
   return ward;
 }
 
+/** The board's part of a boss hit on `target` that `taker` took (the same creature unless a Guard intercepted it). */
+const bossHitBoard = (
+  taker: Fighter,
+  target: Fighter,
+  damage: number,
+  crit: boolean,
+  blocked: boolean,
+): BoardEvent => ({
+  type: 'hit',
+  from: null,
+  to: keyOf(target),
+  damage,
+  crit,
+  blocked,
+  dodged: false,
+  ...(taker !== target ? { by: keyOf(taker) } : {}),
+});
+
 /** What is left of a hit (bp) after one more cut of `bp`. */
 const cutOf = (left: number, bp: number): number =>
   Math.floor((left * (10_000 - Math.min(10_000, bp))) / 10_000);
@@ -80,8 +98,8 @@ const coverOf = (s: State, g: Fighter, who: Fighter): number =>
  * cover, Front-liner, Brace, Long Shadow's intercept cut), the total cut is capped at 75% and comes off
  * before armour; then armour, Blocked or HP (R13), then hit-taken effects. `target` is the slot the hit was
  * aimed at; when another creature took it (an intercept), the distance between them counts for Long Shadow.
- * `watch` is set when Night Watch took a Charged hit for `target`, or Catch the Bolts an area hit: it takes it with its own cover's cut
- * (Night Watch's `watchCutBp` is a larger cut, if it has one).
+ * `watch` is set when Night Watch took a Charged hit for `target`, or Take It All an area hit: it takes it with its own cover's cut
+ * (Night Watch's `watchCutBp` is a larger cut, if it has one). `crit` is a boss crit (shown on the board).
  */
 export function takeHit(
   s: State,
@@ -90,6 +108,7 @@ export function takeHit(
   how: 'aimed' | 'area' | 'charged' | 'reflected',
   target: Fighter = taker,
   watch = false,
+  crit = false,
 ): void {
   const R = s.ctx.rules;
   let dmg = proposed;
@@ -110,7 +129,7 @@ export function takeHit(
     left = cutOf(left, Math.min(7_500, Math.floor((Math.max(ward, shelter) * wardMul) / 10_000)));
     left = cutOf(left, k.areaCutBp ?? 0);
     // Cover: the Guard with the largest cover whose reach includes the taker, with every bonus. A hit a
-    // Guard intercepts is not covered again, except Night Watch's and Catch the Bolts': they take the hit with their own cover's cut.
+    // Guard intercepts is not covered again, except Night Watch's and Take It All': they take the hit with their own cover's cut.
     if (watch) {
       left = cutOf(left, Math.max(coverOf(s, taker, target), k.watchCutBp ?? 0));
     } else if (taker.role !== 'guard') {
@@ -141,18 +160,23 @@ export function takeHit(
     left = cutOf(left, k.distanceCoverBp * Math.abs(taker.col - target.col));
     bump(taker, 'distanceCoverBp');
   }
+  // Shield Wall (the live finale, R18): the chosen row takes less from every hit this round, one cut among the others.
+  if (s.shieldRows?.has(taker.row)) left = cutOf(left, s.ctx.rules.shieldWallBp);
   // One cap on every cut together: at most 75% off, before armour.
   dmg = Math.floor((dmg * Math.max(left, 10_000 - R.cutMaxBp)) / 10_000);
   dmg -= ownArmour(taker);
-  // Mud Wall counts every hit it takes, Blocked or not.
+  // Sticky Mud counts every hit it takes, Blocked or not.
   if (k.miresOnHit) addMired(s, taker);
   if (dmg <= 0) {
     s.count.blocked++;
-    if (s.opts.log) log(s, 'blocked', `${taker.name} blocks the hit`);
+    if (s.opts.log)
+      log(s, 'blocked', `${taker.name} blocks the hit`, {
+        board: bossHitBoard(taker, target, 0, crit, true),
+      });
     return;
   }
   if (dmg >= taker.hp && k.holdOn && !taker.holdOnDone) {
-    // Stubborn, once per fight and (in a raid) once per weekend (panel 5): the hit leaves it at the lower of two fifths of
+    // Refuse to Fall, once per fight and (in a raid) once per weekend (panel 5): the hit leaves it at the lower of two fifths of
     // its Max HP and its HP before the hit (at least 1 HP). It never heals.
     taker.holdOnDone = true;
     bump(taker, 'holdOn');
@@ -168,7 +192,7 @@ export function takeHit(
     s.live = null;
     s.liveBySlot = null;
   }
-  // Hold the Line: the damage it takes from hits it intercepted builds a Sure Crit each time it adds up to a share of its Max HP.
+  // Easily Provoked: the damage it takes from hits it intercepted builds a Sure Crit each time it adds up to a share of its Max HP.
   if (taker !== target && k.guardCritBp && taker.hp > 0) {
     taker.guardTaken += dmg;
     const per = Math.max(1, Math.floor((taker.maxHp * R.guardSureCritShareBp) / 10_000));
@@ -184,13 +208,17 @@ export function takeHit(
     heal(s, taker, wind, false);
   }
   if (taker.hp === 0) feed(s, 'knockouts');
-  if (s.opts.log)
-    log(s, 'hit', `${taker.name} takes ${dmg}${taker.hp === 0 ? ' and is knocked out' : ''}`);
+  if (s.opts.log) {
+    log(s, 'hit', `${taker.name} takes ${dmg}${taker.hp === 0 ? ' and is knocked out' : ''}`, {
+      board: bossHitBoard(taker, target, dmg, crit, false),
+    });
+    if (taker.hp === 0) emit(s, { type: 'knockout', who: keyOf(taker) });
+  }
   // Rally Cry: a creature beside it was knocked out (a silenced creature does not arm it).
   if (taker.hp === 0) for (const g of beside(s, taker)) if (fx(g).vengefulBp) g.avenged = true;
   if (s.carries.has('bakedShell'))
     for (const g of alive(s)) {
       if (fx(g).bakedShell && (g === taker || inReach(s, g, taker)))
-        g.store = Math.min(3, g.store + 1);
+        setStore(s, g, Math.min(3, g.store + 1));
     }
 }

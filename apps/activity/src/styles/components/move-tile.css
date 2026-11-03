@@ -1,0 +1,97 @@
+/*
+  A boss move as a tile (ui/MoveTile.tsx): a tiny arena (the boss's rows by the party's columns, one small square per slot) with
+  the slots the move would hit lit in the boss-target red, "/3" for every third round, the hourglass for a Wind-up, and the move's
+  name over its plain label. A move aimed when it comes shows its picture over a dim arena. The tapped tile has a gold ring.
+*/
+.move-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: stretch;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 0.25rem;
+  border: var(--px) solid var(--line);
+  background: var(--night);
+  color: var(--bone);
+  font: inherit;
+  text-align: left;
+}
+
+.move-tile.selected {
+  border-color: var(--gold);
+  box-shadow: var(--ring);
+}
+
+/* A move added by the boss's change of pattern: dashed, it is not in play yet. */
+.move-tile.later {
+  border-style: dashed;
+}
+
+.move-arena {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 4), 1fr);
+  gap: 1px;
+  padding: 2px;
+  background: var(--ink);
+}
+
+.move-arena > i {
+  aspect-ratio: 1;
+  background: var(--dusk-2);
+}
+
+.move-arena > i.on {
+  background: var(--bad);
+}
+
+.move-arena.unaimed > i {
+  opacity: 0.6;
+}
+
+/* The shape's picture over a dim arena: the slots are rolled when the move is announced. */
+.move-arena-icon {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  line-height: 0;
+}
+
+.move-arena-icon canvas.sprite {
+  background: var(--ink);
+}
+
+.move-badges {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 0.75rem;
+  color: var(--haze);
+  font-family: var(--display);
+  font-size: var(--fs-small);
+  line-height: 1;
+}
+
+.move-windup {
+  display: inline-flex;
+  line-height: 0;
+}
+
+/* The name over the label, each cut with an ellipsis on one line; the spoken label says it all. */
+.move-name,
+.move-label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--display);
+  font-size: var(--fs-small);
+  line-height: 1.1;
+}
+
+.move-label {
+  color: var(--haze);
+}

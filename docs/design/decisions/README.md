@@ -23,6 +23,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [direction.md](direction.md): Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work.
 
+- 2026-11-01 \[Misa\] Retro 2026-11-01: group behaviours before naming, a name-blind parity digest, and agent workflow fixes
 - 2026-10-31 \[Misa\] Valley places: glow on the ground, day and night; posters for each place's own screen
 - 2026-10-31 \[Misa\] The lead agent owns art direction; the valley moves toward the expedition map's art (amended)
 - 2026-10-31 After the combat and valley reworks the game resets; today's players become the pioneering first settlers \[Misa\]
@@ -104,6 +105,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [creatures.md](creatures.md): Catching, pity, species, evolutions, levels and XP, training, talents and the Talent Book, fusion, ribbons, creature lore.
 
+- 2026-11-02 Combat v2 storage (phase 4, slice 2): the saved Knack and the v2 Talent Book
 - 2026-10-30 \[Misa\] Requested art is kept in an art library until content uses it
 - 2026-10-30 Concept art runs ahead of content, drawn with the art studio (amended)
 - 2026-10-28 Ribbons and medals on the creature card
@@ -134,6 +136,16 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-11-02 Combat v2 engine slice 1: carry keyed by creature key, board events beside the log, live actions as one boost or cut each
+- 2026-11-02 Combat v2 phase 4 plan: the game plays v2 behind a staging flag, rules version stored per week, run and fight
+- 2026-11-01 \[Misa\] Combat v2 icons: shapes, the sword, the Store box, claw Pincer, Leap as a chain
+- 2026-11-01 \[Misa\] Combat v2 names: a card never shares a move's name (Full Sweep), Barrage and Leap are both keyword and shape word, the Puddle Imp asks for a Guard
+- 2026-11-01 \[Misa\] Combat v2 move library: a themed name per behaviour and element, the behaviour fixed
+- 2026-11-01 \[Misa\] Combat v2 rule changes from the names review: Mired fades every round, Swarm is a Scatter, Back-most is the last to act
+- 2026-11-01 \[Misa\] Combat v2 names, batches 3 and 4: keywords, rule cards, and moves named by shape and target (amended)
+- 2026-10-31 \[Misa\] Combat v2 names, batch 2: talents
+- 2026-10-31 \[Misa\] Combat v2 names, batch 1: Knacks and families
+- 2026-10-31 Combat v2 content as data: a separate game entry, the resolver beside the engine, cards as operations
 - 2026-10-31 Talent share: three raid-heavy talents cut, the raid share measured on 40 seeds
 - 2026-10-31 Combat v2 engine port: v2 beside v1, whole inputs, parity by a result digest
 - 2026-10-31 Phase 1 passes with the casual metric at 1.41; 1.5 stays a target for the balance phase \[Misa\]
@@ -190,6 +202,9 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [raids.md](raids.md): Raid schedule, parties and joining, bosses and the raid curve, the live finale, raid board and summaries, raid Discord posts.
 
+- 2026-11-03 Combat v2 bots and the gate run (phase 4, slice 6): v2 guests, the raid-weekend dev tool and one stat calculation
+- 2026-11-03 Combat v2 raid weekend (phase 4, slice 3): the grid, the stored shapes, the live finale's replay and the open calls
+- 2026-11-02 Combat v2 raids: players lock when stage 1 begins; no weather in v2 fights until phase 5 \[Misa\]
 - 2026-10-31 Breakwater joins Tidal Colossus from its second lap, beside Slippery \[Misa\]
 - 2026-10-31 Lucky Strike goes on the Storm Sovereign and Slippery on the Tidal Colossus, from their second lap
 - 2026-10-31 Lucky Strike and Slippery both go on raid bosses \[Misa\] (amended)
@@ -256,6 +271,7 @@ Superseded: 1 entry (see the topic file).
 
 [dungeon.md](dungeon.md): The daily dungeon: paths, rooms and rare rooms, the camp, the Undercroft, foes, its screens and payouts.
 
+- 2026-11-02 Daily dungeon on combat v2 (phase 4, slice 4): the rules version in the run, fighters frozen at the start, what a v2 room folds in
 - 2026-10-22 Foe move lines say what a move hits; "Charged:" replaces "announced a round ahead"
 - 2026-10-22 Molten Shell is a frequent partial Backlash, not a rare full reflect (replaces the reflective shield above)
 - 2026-10-22 The dungeon's reflect is split in two: spiky armour (Thorns) and a reflective shield (Molten Shell). The raid is unchanged (amended)
@@ -394,6 +410,11 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-03 Combat v2 client, the dungeon's screens: a v2 room on StageV2's single row, foe cards on the map, Out until the camp swaps it, the Knack on the team setup
+- 2026-11-03 Combat v2 client, third part: fight playback, the replay, the live finale and the results
+- 2026-11-03 Combat v2 client, second part: the raid tab before and between stages
+- 2026-11-03 Combat v2 How to play: six sections beside the shipped set, keyword help from one glossary id
+- 2026-11-02 Combat v2 client, first part: the Knack picker and the creature page follow the data
 - 2026-10-31 \[Misa\] The fight board shows worn gear, item detail does not
 - 2026-10-31 Creatures blink, and shiny creatures twinkle
 - 2026-10-31 Creatures wear their gear on their sprite

@@ -30,6 +30,13 @@ import { maintenanceMigration } from './maintenance';
 import { dbReadsMigration } from './read-meter';
 import { raidAutofireMigration } from './raid-autofire-migration';
 import { raidDifficultyMigration } from './raid-difficulty-migration';
+import { knackMigration, talentBookV2Migration } from './combat-v2-migration';
+import {
+  raidLiveV2Migration,
+  raidPartyCarryMigration,
+  raidSwapMigration,
+  raidTrackMigration,
+} from './raid-v2-migration';
 import { raidLiveMigration } from './raid-live-migration';
 import { raidLivePacingMigration } from './raid-live-pacing-migration';
 import { raidMigration } from './raid-migration';
@@ -324,6 +331,17 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   dismantleMarkMigration,
   // Version 49: the persisted marks go, selection is client-only (see dismantle-unmark-migration.ts).
   dismantleUnmarkMigration,
+  // Version 50: the saved Knack of a creature (combat v2, see combat-v2-migration.ts).
+  knackMigration,
+  // Version 51: the v2 Talent Book, a book per player and line and the talents a creature learned (see
+  // combat-v2-migration.ts).
+  talentBookV2Migration,
+  // Versions 52 to 55: the combat v2 raid weekend: rules version and the track, the stage carry, swap requests and the v2 live
+  // finale's columns (see raid-v2-migration.ts).
+  raidTrackMigration,
+  raidPartyCarryMigration,
+  raidSwapMigration,
+  raidLiveV2Migration,
 ];
 
 /** The schema version of a fresh database. */

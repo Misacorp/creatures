@@ -5,7 +5,8 @@
  * still sends what the captured fixtures have. Types only. No seed is ever part of any of them.
  */
 import type {
-  DungeonMapView,
+  DungeonMapNode as GameMapNode,
+  DungeonMapView as GameMapView,
   Element,
   GearRarity,
   GearSlot,
@@ -13,10 +14,22 @@ import type {
   Role,
 } from '@creatures/game';
 import type { EventNames, FightEvent } from '@creatures/engine';
+import type { FightEvent as FightEventV2 } from '@creatures/engine/v2';
 import type { ExperienceView } from './creature-exp';
 import type { GearItemView } from './gear-types';
+import type { BossCardV2View } from './raid-v2-card';
 
-export type { DungeonMapView };
+/**
+ * A room of the map as the client sees it. On a run of combat v2 each foe also carries its card (armour, plain attack and move tiles,
+ * `dungeon-v2-view.ts`); a v1 run's map has no `card`, so its payload is what it was.
+ */
+export interface DungeonMapNode extends Omit<GameMapNode, 'foe'> {
+  foe?: NonNullable<GameMapNode['foe']> & { card?: BossCardV2View };
+}
+
+export interface DungeonMapView extends Omit<GameMapView, 'nodes'> {
+  nodes: DungeonMapNode[];
+}
 
 export type DungeonOutcome = 'cleared' | 'home' | 'defeat';
 
@@ -110,14 +123,14 @@ export type DungeonPendingView =
        * The floor boss (or an Undercroft keeper with a cracked floor) is down: head home with the pack, or
        * descend. What is known of the level below: its number, its floors (the keeper's included), that
        * its foes are fiercer (`depthBonus` more depth per level), the breath the team catches on the way
-       * (`catchBreathBp` of max HP, and `reviveBp` for a fallen one that gets back up) and what the chest banked. The pack stays at risk all the way down.
+       * (`catchBreathBp` of max HP, and, on a v1 run only, `reviveBp` for a fallen one that gets back up: 0 on a v2 run) and what the chest banked. The pack stays at risk all the way down.
        */
       kind: 'descend';
       level: number;
       floors: number;
       depthBonus: number;
       catchBreathBp: number;
-      /** The share of max HP a fallen creature gets back up with. */
+      /** The share of max HP a fallen creature gets back up with. v1 runs only: 0 on a run of combat v2, where a fallen creature stays out until a camp swaps it. */
       reviveBp: number;
       /** The depth the player is at now (locked in when the main boss fell). */
       newDepth: number;
@@ -210,13 +223,15 @@ export type DungeonStepLog =
       level: number;
       /** HP the row recovered on the way down, all creatures together. */
       healed: number;
-      /** How many fallen creatures got back up on the way down (absent on a run stored before they could). */
+      /** How many fallen creatures got back up on the way down (v1 runs; always 0 on combat v2; absent on a run stored before they could). */
       revived?: number;
     }
   | { node: string; kind: 'descend'; result: 'home'; level: number };
 
 /** The state of a run, open or done. Every act answers with it. */
 export interface DungeonRunState {
+  /** 2 on a run of combat v2 (started with the `COMBAT_V2` flag on); absent on a v1 run. */
+  rules?: 2;
   id: string;
   day: string;
   attempt: number;
@@ -339,6 +354,8 @@ export interface DungeonTeamMember {
 }
 
 export interface DungeonRunSummary {
+  /** 2 on a run of combat v2; absent on a v1 run. */
+  rules?: 2;
   id: string;
   day: string;
   attempt: number;
@@ -381,6 +398,8 @@ export interface DungeonRunSummary {
 }
 
 export interface DungeonToday {
+  /** 2 when a run started now plays combat v2 (the `COMBAT_V2` flag is on); absent otherwise. The run in `active` says its own. */
+  rules?: 2;
   serverNow: number;
   /** The guild-local calendar day ('YYYY-MM-DD'). */
   day: string;
@@ -447,7 +466,9 @@ export interface DungeonActResponse {
   today?: DungeonToday;
 }
 
-export interface DungeonReplayRoom {
+export interface DungeonReplayRoomV1 {
+  /** Absent on a room of a v1 run (the screens read it as rules 1). */
+  rules?: undefined;
   index: number;
   kind: 'foe' | 'boss';
   /** A fiercer foe (map runs only; absent otherwise). An epic fight is one too. */
@@ -472,6 +493,40 @@ export interface DungeonReplayRoom {
   names: EventNames;
 }
 
+/**
+ * A room of a run on combat v2 (docs/design/combat/integration.md, section 6). Always has `node` and `row`
+ * (only map runs are v2). `row` is the whole row that stood in the room, a knocked-out creature included (it is
+ * not in the fight). `events` are the v2 fight's log lines, each with its typed `board` event beside the text;
+ * a creature is named in them by its id. There is no `names` (the text already holds the names).
+ */
+export interface DungeonReplayRoomV2 {
+  rules: 2;
+  index: number;
+  kind: 'foe' | 'boss';
+  elite?: boolean;
+  epic?: boolean;
+  node?: string;
+  keepsakes?: DungeonKeepsakeView[];
+  row?: ReplayRowEntry[];
+  foe: { id: string; name: string; element: Element; hpMax: number };
+  modifier: { id: string; name: string; description: string };
+  cleared: boolean;
+  rounds: number;
+  /** Every creature's HP when the room started, when it ended (0: knocked out) and at most, by creature id. */
+  hpStart: Record<string, number>;
+  hpEnd: Record<string, number>;
+  hpMax: Record<string, number>;
+  events: FightEventV2[];
+  /** The foe's card as the room began: armour, plain attack, move tiles (the move labels the stage names its turns by). */
+  card: BossCardV2View;
+  /** The arena the room was fought in: the foe's rows (one in the dungeon) by columns, and its round limit. */
+  arena: { rows: number; cols: number; rounds: number };
+  /** The Knack's name of each creature that fought (by creature id); a creature with none is not listed. */
+  knacks: Record<string, string>;
+}
+
+export type DungeonReplayRoom = DungeonReplayRoomV1 | DungeonReplayRoomV2;
+
 export interface ReplayRowEntry {
   position: number;
   id: string;
@@ -485,6 +540,8 @@ export interface ReplayRowEntry {
 }
 
 export interface DungeonReplayView {
+  /** 2 on a run of combat v2; absent on a v1 run. */
+  rules?: 2;
   summary: DungeonRunSummary;
   /** The fighting row, left to right (`position` 0 is the left creature). A map run: the starting row (see `DungeonReplayRoom.row`). */
   row: ReplayRowEntry[];

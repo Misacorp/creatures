@@ -1,12 +1,13 @@
 import type { TalentView } from './talent-types';
 import { talentTextParts } from './talent-view';
+import { KeywordText } from './ui/KeywordText';
 
 /**
  * One talent: its name, its effect in one phrase ("First pounce +14%") and, when asked, one plain sentence
  * about it. A golden talent has no frame: its title shimmers gold and so does the number golden
  * raised; screen readers hear "golden" after the title, so colour never carries it alone.
  * A talent that does nothing for the creature that holds it says so. Every word comes from the server's
- * view of the content and is drawn as text.
+ * view of the content and is drawn as text; a combat v2 talent's keywords (`{Mark}`) are chips (`KeywordText`).
  */
 export function TalentChip({
   talent,
@@ -31,12 +32,12 @@ export function TalentChip({
         </strong>
         <span class="talent-text">
           {parts === null ? (
-            talent.text
+            <KeywordText text={talent.text} />
           ) : (
             <>
-              {parts.before}
+              <KeywordText text={parts.before} />
               {parts.value !== null && <span class="gold-shimmer">{parts.value}</span>}
-              {parts.after}
+              <KeywordText text={parts.after} />
             </>
           )}
         </span>

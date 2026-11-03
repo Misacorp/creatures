@@ -1,9 +1,15 @@
 /**
- * Combat v2: the boss's Build-up (R22: steps, phases, feeds, strength, how Mired slows it) and Mired itself (stacks, fading, Clinging,
- * Heavy Hand, Shake It Off). Creatures and boss are built by hand with their effects named directly; the dice are scripted or a fixed
+ * Combat v2: the boss's escalation (R22: steps, phases, feeds, strength, how Mired slows it) and Mired itself (stacks, fading, Clinging,
+ * Wicked, Shake It Off). Creatures and boss are built by hand with their effects named directly; the dice are scripted or a fixed
  * seed checks an invariant of the whole fight. These were the lab's `engine`, `strength` and `talents` rule tests about escalation.
  */
-import type { BossDef, BossMove, Escalation, FightResult } from '@creatures/engine/v2';
+import {
+  withPhase,
+  type BossDef,
+  type BossMove,
+  type Escalation,
+  type FightResult,
+} from '@creatures/engine/v2';
 import { describe, expect, it } from 'vitest';
 import {
   boss,
@@ -46,7 +52,7 @@ const phaseMove: BossMove = move(
   { id: 'p2', name: 'Second Wind', powerBp: 1 },
 );
 
-describe('the Build-up carries across a raid weekend like HP (R22)', () => {
+describe('the escalation carries across a raid weekend like HP (R22)', () => {
   const weekend = (b: BossDef, stages: number) =>
     playWeekend(
       b,
@@ -105,6 +111,35 @@ describe('the Build-up carries across a raid weekend like HP (R22)', () => {
     expect(w.stages[0]?.escalation?.phase).toBe(false);
     expect(w.stages[0]?.escalation?.phaseNext).toBe(true);
     expect(w.stages[1]?.events.find((e) => e.kind === 'phase')?.round).toBe(1);
+  });
+
+  it('a phase move with the id of an own move replaces it, in its place; any other phase move is added', () => {
+    const pattern = { anchor: 'front', shape: 'single' } as const;
+    const own = [
+      move(pattern, { id: 'rain', name: 'Rain', powerBp: 1, turn: 0 }),
+      move(pattern, { id: 'wall', name: 'Wall', powerBp: 1, turn: 0 }),
+    ];
+    const phase = [
+      move(pattern, { id: 'extra', name: 'Extra', powerBp: 1, turn: 0 }),
+      move(pattern, { id: 'rain', name: 'Heavy Rain', powerBp: 2, turn: 0 }),
+    ];
+    const phased = esc({ per: 2, cap: 2, phase: { atStep: 1, name: 'P2', moves: phase } });
+    const r = play(arena(phased, { rounds: 6, moves: own }), team());
+    const names = (round: number) =>
+      r.events.filter((e) => e.kind === 'move' && e.round === round).map((e) => e.text);
+    // The phase applies at round 4's start.
+    expect(r.events.find((e) => e.kind === 'phase')?.round).toBe(4);
+    expect(names(3)).toEqual(['Rain', 'Wall']);
+    // The replacement keeps the replaced move's place; the added move comes after the own ones; the replaced move is gone.
+    expect(names(4)).toEqual(['Heavy Rain', 'Wall', 'Extra']);
+    expect(names(6)).toEqual(['Heavy Rain', 'Wall', 'Extra']);
+    // The replacement's own numbers are in play.
+    expect(withPhase(own, phase).map((m) => [m.id, m.powerBp])).toEqual([
+      ['rain', 2],
+      ['wall', 1],
+      ['extra', 1],
+    ]);
+    expect(withPhase(own, [])).toEqual(own);
   });
 
   it('every feed carries across the weekend: its count never starts a stage lower than the last one ended', () => {
@@ -253,36 +288,36 @@ describe('Mired (R22.3, panel 3)', () => {
   const sing = (talent: object, rounds: number, over: Partial<BossDef> = {}) =>
     play(boss({ rounds, ...over }), [spec({ name: 'S', fx: { miresAtStart: true, ...talent } })]);
 
-  it('Mired fades by 1 at the end of every second round, so Squelch Song alone builds stacks', () => {
-    // The song adds a stack at each round start; the fade comes at the end of rounds 2, 4 and 6.
-    expect(mired(sing({}, 6))).toEqual([
+  it('Mired fades by 1 at the end of every round, so Squelch Song alone holds one stack', () => {
+    // The song adds a stack at each round start; the fade takes it again at the end of every round.
+    expect(mired(sing({}, 4))).toEqual([
       'Mired x1',
-      'Mired x2',
+      'Mired x0',
       'Mired x1',
-      'Mired x2',
-      'Mired x3',
-      'Mired x2',
-      'Mired x3',
-      'Mired x4',
-      'Mired x3',
+      'Mired x0',
+      'Mired x1',
+      'Mired x0',
+      'Mired x1',
+      'Mired x0',
     ]);
   });
 
-  it('Clinging: Mired fades only every third round while it stands', () => {
+  it('Clinging: Mired fades only at the end of every second round while it stands', () => {
     const r = sing({ clinging: true }, 6);
-    // With Clinging the fade comes at the end of rounds 3 and 6 only.
+    // With Clinging the fade comes at the end of rounds 2, 4 and 6 only, so the song builds stacks.
     expect(mired(r)).toEqual([
+      'Mired x1',
+      'Mired x2',
       'Mired x1',
       'Mired x2',
       'Mired x3',
       'Mired x2',
       'Mired x3',
       'Mired x4',
-      'Mired x5',
-      'Mired x4',
+      'Mired x3',
     ]);
-    // It held back the base fade at the end of rounds 2 and 4.
-    expect(by(r, 'S').fires['clinging']).toBe(2);
+    // It held back the base fade at the end of rounds 1, 3 and 5.
+    expect(by(r, 'S').fires['clinging']).toBe(3);
   });
 
   it('a Mired stack takes more off the boss damage while Clinging stands', () => {
@@ -301,25 +336,27 @@ describe('Mired (R22.3, panel 3)', () => {
     expect(hit({ clinging: true })).toBe(977 - 5);
   });
 
-  it('Heavy Hand: its Mired has its number as the chance to add 1 extra stack', () => {
+  it('Wicked: its Mired has its number as the chance to add 1 extra stack', () => {
     const roll = (draw: number, fx: object = { miredExtraBp: 3_000 }) =>
       mired(playScripted(boss(), [spec({ fx: { miresAtStart: true, ...fx } })], [draw]).res);
-    expect(roll(2_999)).toEqual(['Mired x2']);
-    expect(roll(3_000)).toEqual(['Mired x1']);
+    // One round: the stacks are put on at its start, one fades at its end.
+    expect(roll(2_999)).toEqual(['Mired x2', 'Mired x1']);
+    expect(roll(3_000)).toEqual(['Mired x1', 'Mired x0']);
     // Without it, never, and no die is drawn for it.
     const none = playScripted(boss(), [spec({ fx: { miresAtStart: true } })], [0]);
-    expect(mired(none.res)).toEqual(['Mired x1']);
+    expect(mired(none.res)).toEqual(['Mired x1', 'Mired x0']);
   });
 
-  it('Mud Wall: each hit it takes puts a Mired stack on the boss, Blocked or not', () => {
+  it('Sticky Mud: each hit it takes puts a Mired stack on the boss, Blocked or not', () => {
     const hit = (armour: number) =>
       mired(
         play(striker({ rounds: 2 }), [
           spec({ role: 'guard', baseArmour: armour, fx: { miresOnHit: true } }),
         ]),
       );
-    expect(hit(0)).toEqual(['Mired x1', 'Mired x2', 'Mired x1']);
-    expect(hit(50)).toEqual(['Mired x1', 'Mired x2', 'Mired x1']);
+    // One stack a round, faded at the end of each.
+    expect(hit(0)).toEqual(['Mired x1', 'Mired x0', 'Mired x1', 'Mired x0']);
+    expect(hit(50)).toEqual(['Mired x1', 'Mired x0', 'Mired x1', 'Mired x0']);
   });
 
   it('Mired takes off the boss damage and its dodge, per stack, and stops at the most stacks', () => {
@@ -332,12 +369,13 @@ describe('Mired (R22.3, panel 3)', () => {
 
   it('Shake It Off: announced at round start, the boss clears every debuff when that round ends', () => {
     const r = play(boss({ rounds: 4, mods: { shakeEvery: 3 } }), [
-      spec({ name: 'S', fx: { miresAtStart: true } }),
+      spec({ name: 'S', fx: { miresAtStart: true, clinging: true } }),
     ]);
     expect(r.events.filter((e) => e.kind === 'announce')).toHaveLength(1);
     expect(r.events.find((e) => e.kind === 'announce')?.round).toBe(3);
     expect(texts(r, 'shake')).toHaveLength(1);
-    // x1, x2 (faded to x1 at the end of round 2), x2 in round 3, shaken to x0, round 4 starts from nothing.
+    // With Clinging: x1, x2 (faded to x1 at the end of round 2), x2 in round 3, shaken to x0, round 4 starts from nothing
+    // (x1, faded at its end).
     expect(mired(r)).toEqual([
       'Mired x1',
       'Mired x2',

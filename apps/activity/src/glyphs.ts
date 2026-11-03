@@ -849,6 +849,139 @@ const mud: SpriteDef = {
   ],
 };
 
+// --- Combat v2: the attack shapes and the plain attack (approved concepts of docs/design/combat/icons.md, moved here when a screen first used them) ---
+
+const BAD_DARK = '#a8434f';
+const STEEL_LIGHT = '#c9c7d8';
+const STEEL_DARK = '#6b6396';
+
+/** Quake: every creature. A 3x3 board of slots with every slot lit. */
+const shapeQuake: SpriteDef = {
+  palette: { r: BAD },
+  rows: [
+    'rr.rr.rr',
+    'rr.rr.rr',
+    '........',
+    'rr.rr.rr',
+    'rr.rr.rr',
+    '........',
+    'rr.rr.rr',
+    'rr.rr.rr',
+  ],
+};
+
+/** Cross: the creature hit and the ones beside, in front of and behind it. The same 3x3 board with a plus lit. */
+const shapeCross: SpriteDef = {
+  palette: { r: BAD },
+  rows: [
+    '...rr...',
+    '...rr...',
+    '........',
+    'rr.rr.rr',
+    'rr.rr.rr',
+    '........',
+    '...rr...',
+    '...rr...',
+  ],
+};
+
+/** Checker: every other slot of the arena, like the dark squares of a board. */
+const shapeChecker: SpriteDef = {
+  palette: { r: BAD },
+  rows: [
+    'rr..rr..',
+    'rr..rr..',
+    '..rr..rr',
+    '..rr..rr',
+    'rr..rr..',
+    'rr..rr..',
+    '..rr..rr',
+    '..rr..rr',
+  ],
+};
+
+/** One-shot (Judgement Bolt): a share of the victim's Max HP, not Attack times power. The HP heart split by a bolt. */
+const shapeOneShot: SpriteDef = {
+  palette: { r: BAD, g: GOLD },
+  rows: [
+    '.....gg.',
+    '.rr.ggr.',
+    'rrrgggrr',
+    'rrrrggrr',
+    'rrrggrrr',
+    '.rggrrr.',
+    '..grrr..',
+    '...rr...',
+  ],
+};
+
+/** Slam: the creature hit, then the ones beside it. A big square with a smaller, darker one each side. */
+const shapeSlam: SpriteDef = {
+  palette: { r: BAD, d: BAD_DARK },
+  rows: [
+    '........',
+    '........',
+    '..rrrr..',
+    'd.rrrr.d',
+    'd.rrrr.d',
+    '..rrrr..',
+    '........',
+    '........',
+  ],
+};
+
+/** Strike: one creature. Four short bars round an empty centre. */
+const shapeStrike: SpriteDef = {
+  palette: { r: BAD },
+  rows: [
+    '...rr...',
+    '...rr...',
+    '...rr...',
+    'rrr..rrr',
+    'rrr..rrr',
+    '...rr...',
+    '...rr...',
+    '...rr...',
+  ],
+};
+
+/** Lance: a column, front to back. An arrow driven through three rows, pointing down. */
+const shapeLance: SpriteDef = {
+  palette: { r: BAD, w: BONE },
+  rows: [
+    'wwwrrwww',
+    '...rr...',
+    'wwwrrwww',
+    '...rr...',
+    'wwwrrwww',
+    '...rr...',
+    '..rrrr..',
+    '...rr...',
+  ],
+};
+
+/** Pincer: the two ends of the row. Each side a small claw, tips facing. */
+const shapePincer: SpriteDef = {
+  mirror: true,
+  palette: { r: BAD },
+  rows: ['r...', 'rr..', 'rrr.', 'rr..', 'rr..', 'rrr.', 'rr..', 'r...'],
+};
+
+/** A creature's plain attack: a sword, so it never shares a picture with a boss move's shape. */
+const attack: SpriteDef = {
+  palette: { w: BONE, h: STEEL_LIGHT, g: GOLD, d: STEEL_DARK },
+  rows: [
+    '......ww',
+    '.....whw',
+    '....whh.',
+    '.g.whh..',
+    '..ghh...',
+    '.dggg...',
+    'dd.g....',
+    'd.......',
+  ],
+};
+
 export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   hit_zone: hitZone,
   silence_ends: silenceEnds,
@@ -904,6 +1037,15 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   'slot-hat': slotHat,
   'slot-scarf': slotScarf,
   'slot-charm': slotCharm,
+  'shape-quake': shapeQuake,
+  'shape-cross': shapeCross,
+  'shape-checker': shapeChecker,
+  'shape-one-shot': shapeOneShot,
+  'shape-slam': shapeSlam,
+  'shape-strike': shapeStrike,
+  'shape-lance': shapeLance,
+  'shape-pincer': shapePincer,
+  attack,
   ...EXPEDITION_GLYPHS,
   ...DUNGEON_MAP_GLYPHS,
   ...GAMES_GLYPHS,
