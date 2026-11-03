@@ -44,6 +44,12 @@ describe('errorSentence', () => {
     expect(text).not.toContain('roster_locked');
   });
 
+  it('tells what to do about a raid week on the old rules, keeping the code out of the text', () => {
+    const text = errorSentence('not_v2');
+    expect(text).toContain('Run Combat v2, Convert first');
+    expect(text).not.toContain('not_v2');
+  });
+
   it('shows any other code as it is, even one named like an object property', () => {
     expect(errorSentence('invalid_body')).toBe('invalid_body');
     expect(errorSentence('http_404')).toBe('http_404');

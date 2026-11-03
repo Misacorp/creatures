@@ -288,6 +288,19 @@ const RAID_SPECS: readonly ToolSpec[] = [
     ],
     hint: 'Combat v2 weeks only: moves the clock stage by stage, the guests replace their fallen, one asks you for a swap, and the live finale starts. Pick a step to go one event at a time.',
   },
+  {
+    tool: 'combat-v2-convert',
+    label: 'Combat v2, Convert',
+    fields: [],
+    hint: 'Combat v2 (staging) only: every creature rolls its v2 talent, Knacks and finale choices go, and this raid week is rebuilt on the new rules if it is on the old ones.',
+  },
+  {
+    tool: 'reset-raids-dungeons',
+    label: 'Reset raids and dungeons',
+    fields: [{ kind: 'text', key: 'confirm', label: 'Type reset', must: 'reset' }],
+    danger: true,
+    hint: 'Wipes every raid and dungeon of this server (all weeks, results, the track and ladder, dungeon runs and progress). Creatures, gear, balances and the clock stay. The next request starts a fresh week.',
+  },
 ];
 
 const GAMES_SPECS: readonly ToolSpec[] = [

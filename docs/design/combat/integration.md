@@ -95,6 +95,7 @@ Everything v2 sits beside the v1 screens and is picked by the view's `rules`. Re
 
 - **The guests** (`raid-roster`, the dev tool that adds simulated players) get v2 talents and a Knack by a fixed rule (the lab's casual player: the first Knack its form knows), and between stages replace their knocked-out creatures from their spares.
 - **`raid-weekend`**, a new dev tool, runs a whole v2 weekend on the real scheduler: it moves the dev clock to stage 1, stage 2 and the finale in turn, the guests swap between stages and one guest sends a swap request. The finale plays live, so Misa can watch it.
+- **Staging test steps** (no week jumps are needed): 1. Run Combat v2, Convert (Raid section of the dev panel): it gives every creature its v2 talent and rebuilds the week the clock is in on the new rules if it was made before the flag was on. 2. Play a combat v2 weekend (_raid-weekend_), up to a step or all the way. If the week is tangled beyond that, Reset raids and dungeons wipes every raid and dungeon, and the next request starts a fresh v2 week at slot 1; run Convert again afterwards.
 - **A worker test** plays the same weekend in vitest (seeded world, flag on): the automatic half of the gate.
 
 ## 11. Order of the work

@@ -5,6 +5,10 @@
  * in slot 1), its Knack is none, and its player's finale ability choice for the open week goes (creature finale
  * abilities do not exist under v2).
  *
+ * It also rebuilds the raid week the clock is in when that is a v1 week (a week takes its rules once, when it is created, so a
+ * staging clock that moved before the flag was on leaves v1 weeks): everything stored for that one week is deleted and the week is
+ * created again as a v2 week. A v2 week is left alone.
+ *
  * It exists only when both the dev tools and the `COMBAT_V2` flag are on (anything else answers 404). It is
  * idempotent: a creature that has a v2 talent is left alone, so a second run changes nothing, and it never
  * touches a Knack a player has saved since. Production never runs it: the game resets after the combat and
@@ -21,6 +25,11 @@ export interface ConvertResult {
   knacksCleared: number;
   /** Finale ability choices of the open week that were cleared (players with a converted creature). */
   abilitiesCleared: number;
+  /** True when the raid week the clock is in was a v1 week and was rebuilt as a combat v2 week. */
+  weekRebuilt: boolean;
+  /** The week the clock is in, and (when it exists and is a v2 week) its track slot. */
+  weekId: string;
+  slot: number | null;
 }
 
 export function combatV2Convert(ctx: ToolCtx): ConvertResult {
@@ -59,5 +68,14 @@ export function combatV2Convert(ctx: ToolCtx): ConvertResult {
       )
       .toArray().length;
   }
-  return { creatures: waiting.length, knacksCleared, abilitiesCleared };
+  // The raid week the clock is in: a v1 week (made before the flag was on) is rebuilt as a v2 week; a v2 week is left alone.
+  const rebuilt = ctx.raid.rebuildWeekAsV2(week);
+  return {
+    creatures: waiting.length,
+    knacksCleared,
+    abilitiesCleared,
+    weekRebuilt: rebuilt.rebuilt,
+    weekId: week,
+    slot: rebuilt.week?.trackSlot ?? null,
+  };
 }

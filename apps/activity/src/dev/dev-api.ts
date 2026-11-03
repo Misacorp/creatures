@@ -20,6 +20,8 @@ export function errorCode(err: unknown): string {
  * code. Any other code is shown as it is.
  */
 const ERROR_SENTENCES: Readonly<Record<string, string>> = {
+  not_v2:
+    'This raid week is on the old rules. Run Combat v2, Convert first: it rebuilds this week on the new rules.',
   roster_locked:
     'The roster is locked: Phase 1 has been fought this week. Jump the week to Week done, then to Preparation to start next week, then fill it.',
 };

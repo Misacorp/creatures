@@ -53,6 +53,7 @@ export const DEV_ACTION_TOOLS = [
   'games-reset',
   'analytics-rollup',
   'combat-v2-convert',
+  'reset-raids-dungeons',
   'reset-account',
 ] as const;
 export type DevActionTool = (typeof DEV_ACTION_TOOLS)[number];
@@ -301,5 +302,8 @@ export const GamesRunNowBodySchema = v.strictObject({
 // --- The account ---
 
 export const ResetAccountBodySchema = v.strictObject({ confirm: v.literal('RESET') });
+
+/** Wipes every raid and dungeon of the guild: the word must be typed. */
+export const ResetRaidsDungeonsBodySchema = v.strictObject({ confirm: v.literal('reset') });
 
 export const NoBodySchema = Empty;

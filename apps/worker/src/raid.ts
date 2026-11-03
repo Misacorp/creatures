@@ -164,6 +164,26 @@ export interface WeekRow {
   festival: boolean;
 }
 
+/** Every table keyed by a raid week's id, the week's own row last (`rebuildWeekAsV2` clears them for one week). */
+export const WEEK_TABLES = [
+  'raid_party_members',
+  'raid_parties',
+  'raid_opt_outs',
+  'raid_teams',
+  'raid_placements',
+  'raid_results',
+  'raid_events',
+  'raid_swap_requests',
+  'raid_abilities',
+  'raid_autofire',
+  'raid_live',
+  'raid_reveal_seen',
+  'raid_readiness',
+  'raid_team_cache',
+  'raid_festival_grants',
+  'raid_weeks',
+] as const;
+
 /** A guard against a runaway loop; a week has four events. */
 const MAX_EVENTS_PER_RUN = 200;
 
@@ -200,6 +220,25 @@ export class Raid {
   /** Dev tools only: forgets the cached readiness bands after a tool changed the roster or the week directly. */
   invalidateReadiness(): void {
     this.readinessCache.invalidate();
+  }
+
+  /**
+   * Dev tools only (`combat-v2-convert`): a week that was created under the old rules is deleted from every table keyed by it and
+   * created again through `ensureWeek`, so it is a combat v2 week (the track's slot and boss). A v2 week, or a week that does not exist
+   * yet, is left alone. Other weeks, the track and the players' creatures and balances are not touched.
+   */
+  rebuildWeekAsV2(weekId: string): { rebuilt: boolean; week: WeekRow | null } {
+    return this.deps.storage.transactionSync(() => {
+      const existing = this.week(weekId);
+      if (existing === null || existing.rules === 2 || this.deps.combatV2 !== true) {
+        return { rebuilt: false, week: existing };
+      }
+      for (const table of WEEK_TABLES) {
+        this.sql.exec(`DELETE FROM ${table} WHERE week_id = ?`, weekId);
+      }
+      this.readinessCache.invalidate();
+      return { rebuilt: true, week: this.ensureWeek(weekId) };
+    });
   }
 
   private get sql(): SqlStorage {

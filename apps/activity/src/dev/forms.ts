@@ -45,6 +45,8 @@ export const DEV_TOOL_IDS = [
   'games-run-now',
   'games-reset',
   'analytics-rollup',
+  'combat-v2-convert',
+  'reset-raids-dungeons',
   'reset-account',
 ] as const;
 export type DevToolId = (typeof DEV_TOOL_IDS)[number];

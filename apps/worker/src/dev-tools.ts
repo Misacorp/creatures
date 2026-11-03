@@ -51,6 +51,7 @@ import {
   RaidSimulateBodySchema,
   RaidWeekendBodySchema,
   ResetAccountBodySchema,
+  ResetRaidsDungeonsBodySchema,
   SetWeatherBodySchema,
   SetBalancesBodySchema,
   SetCraftingXpBodySchema,
@@ -103,6 +104,7 @@ import {
   raidSimulate,
 } from './dev-tools-raid';
 import { raidWeekend } from './dev-tools-raid-weekend';
+import { resetRaidsDungeons } from './dev-tools-reset-raids';
 import {
   errorResponse,
   json,
@@ -236,6 +238,10 @@ const TOOLS: Record<DevActionTool, Tool> = {
   },
   // Staging with COMBAT_V2 on only (it answers 404 otherwise): every creature rolls its v2 talent, Knacks and finale choices go.
   'combat-v2-convert': tool(NoBodySchema, combatV2Convert),
+  // Wipes every raid and dungeon table of the guild (creatures, gear, balances and the clock stay); the alarm is re-armed.
+  'reset-raids-dungeons': tool(ResetRaidsDungeonsBodySchema, resetRaidsDungeons, {
+    movesClock: true,
+  }),
   'reset-account': tool(ResetAccountBodySchema, (ctx) => {
     purgeUser(ctx.sql, ctx.userId, true);
     ctx.state.clearUser(ctx.userId);

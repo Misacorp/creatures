@@ -1102,7 +1102,7 @@ describe('the combat-v2-convert dev tool', () => {
           'SELECT creature_id, talent_id, slot FROM creature_talents_v2',
         );
         const again = (await p.tool('combat-v2-convert')) as { creatures: number };
-        expect(again).toEqual({ creatures: 0, knacksCleared: 0, abilitiesCleared: 0 });
+        expect(again).toMatchObject({ creatures: 0, knacksCleared: 0, abilitiesCleared: 0 });
         expect(
           rows(ctx.sql, 'SELECT creature_id, talent_id, slot FROM creature_talents_v2'),
         ).toEqual(snapshot);
