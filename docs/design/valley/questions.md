@@ -6,7 +6,40 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-Nothing waiting.
+### Q51. How often does the teacher come, and for how long?
+
+Status: asked, round 22 (2026-11-03). From Misa's School vision ("I don't know how often, once a day, once a week") and the panel (`reviews/2026-11-03-school.md`, rows 1 to 3). Challenges: "the creatures in the school during that day" against F-1 and his own Q43 ("so every kind of player meets him"). Touches: `systems/school.md`.
+
+**Why it matters.** All six reviewers like the planning moment, and all six say a single day shuts out evening, weekly, ill and other-time-zone players: a Sunday player would never meet the teacher. The numbers: a weekly teacher adds about 10 to 15% more talents (a secondary source, as you want); a daily one would double the supply and become the main source.
+
+- **A. One day a week.** Creatures at the School that day learn at its end. Example: the teacher comes Tuesday; Juho, who plays Sundays, never meets them.
+- **B. A weekly visit with a stay, early in the week.** Announced a few days ahead; the teacher stays Monday to Wednesday; a creature seated before the arrival or on any day of the stay learns by the next morning, and goes back to its post by itself. Talents learned are ready before the raid locks. Example: Juho seats Pip on Sunday evening; on Monday morning Pip has learned.
+- **C. The same stay, with the visitor** (Thursday to Sunday). Example: a busy weekend: teacher, visitor and raid together; raiders are away for most of it.
+
+**Lead's pick: B.** It keeps your "I want my creature there on this day", but the plan is which creature you seat, not being online at a certain hour; and it fills the weekdays that have no event today.
+
+### Q52. What does a visiting teacher teach?
+
+Status: asked, round 22 (2026-11-03). From the panel (row 4; Joonas's idea). Touches: `systems/school.md`.
+
+**Why it matters.** A talent fits about 3 of the 16 lines, so one talent for the whole server fits none of a player's lines most weeks, and the planning moment is empty. You also asked for some agency for roles.
+
+- **A. One talent for the server.** Example: "The teacher brings Rally Cry": only players with a line whose pool has it can use the visit.
+- **B. A role specialist.** The teacher teaches one role (example: "a duelist from Storm Ridge teaches setter talents"); each student learns a random talent of that role from its own line's pool that its book lacks. Never golden. Example: Pip learns Quick Feet, Moss learns Rally Cry, both setter talents.
+- **C. A few talents (example: 3).** Example: "Rally Cry, Hardy, Quick Feet": each of your creatures learns whichever of the three fits it.
+
+**Lead's pick: B.** One shared theme the server talks about, a result for almost every line, the role agency you asked for, and still random inside the role, so finds stay the main source.
+
+### Q53. Does a found talent still need a first learning, and where? (a challenge)
+
+Status: asked, round 22 (2026-11-03). Challenges: Q45 (round 18): "Talents can be discovered but creatures still need to learn them a first time. This could be the place to do it", against the vision of 2026-11-03, where the School is the teacher's place. Touches: `systems/school.md` V-SCH-7, the Acorn sink (the lab: School learning is about a quarter of Acorn income).
+
+**Why it matters.** Today a creature learns a found talent instantly on its card for a one-time price. Your vision makes the School a planned, communal event; sending every found talent there too would make it a toll booth (a reviewer: "a chore"). The Acorn sink comes from the price, not the place.
+
+- **A. At the School, as Q45 said.** A found talent is learned with a stay at the School and a one-time price. Example: Pip found Hardy; it spends a night at the School to learn it.
+- **B. On the creature's card, as today.** Instant, the same one-time price (Acorns); the School is for teachers (and graduation). Example: Pip learns Hardy from its card at once for 10 Acorns.
+
+**Lead's pick: B.** It keeps the price (the sink) and keeps the School for the moments you described.
 
 ## Queue
 
