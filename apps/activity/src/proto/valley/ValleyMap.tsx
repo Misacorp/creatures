@@ -44,6 +44,7 @@ import {
   valleyDrawing,
   type PlaceId,
 } from './valley-art';
+import { DEFAULT_LOOK, type ValleyLook } from './valley-places';
 import {
   bubblesOf,
   edgeArrows,
@@ -87,6 +88,8 @@ export interface ValleyMapProps {
   haulOpen?: boolean;
   /** The bubbles to show instead of the world's needs (the welcome-back popup leaves its markers this way). */
   bubbles?: readonly Bubble[] | undefined;
+  /** The light, the visitor's stall and the bonfire's level (day, stall open, level 1 when not given). */
+  look?: ValleyLook;
   /** More sprites in the valley (the haul), in valley pixels. */
   overlay?:
     | ((g: { s: number; X: (x: number) => number; Y: (y: number) => number }) => ComponentChildren)
@@ -103,6 +106,7 @@ export function ValleyMap({
   lit = null,
   haulOpen = false,
   bubbles: shown,
+  look = DEFAULT_LOOK,
   overlay,
 }: ValleyMapProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -116,7 +120,11 @@ export function ValleyMap({
   const tick = useTick(TICK_MS, moving);
   useDragScroll(scrollerRef);
 
-  const drawing = useMemo(() => valleyDrawing(fit.margin), [fit.margin.left, fit.margin.top]);
+  const { time, visitorHere, bonfireLevel } = look;
+  const drawing = useMemo(
+    () => valleyDrawing(fit.margin, 0, { time, visitorHere, bonfireLevel }),
+    [fit.margin.left, fit.margin.top, time, visitorHere, bonfireLevel],
+  );
   const lakeFrame = moving ? Math.floor(tick / 8) % 2 : 0;
   useEffect(() => {
     const ctx = canvasRef.current?.getContext('2d');
@@ -127,7 +135,7 @@ export function ValleyMap({
     const ctx = canvasRef.current?.getContext('2d');
     if (!ctx) return;
     // Redraw only the lake, in the water's next frame.
-    const lake = valleyDrawing(fit.margin, lakeFrame).placements.filter(
+    const lake = valleyDrawing(fit.margin, lakeFrame, look).placements.filter(
       (p) => p.y >= 19 * TILE + drawing.oy && p.x < 10 * TILE + drawing.ox && p.x >= drawing.ox,
     );
     paint(ctx, lake, s, 0, 0, false);

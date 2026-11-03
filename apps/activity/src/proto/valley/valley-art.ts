@@ -7,6 +7,9 @@
  * The valley reads west to east: the cave (the Dungeon) and the fairground (the Valley Games) with its
  * lake; the house (the living room), the paddock (your creatures) and the forge (the Workshop) in the
  * middle; the arena (the Raid) and the signpost (Expeditions, the road out) in the east.
+ * The School (between the cave and the house), the Market (north of the forge), the bonfire (south of it, east
+ * of the paddock) and the visitor's roadside stall (below the arena) are drawn with the art library's
+ * `valley-glow` sprites (`valley-places.ts`), by day or by night.
  */
 import { WORLD_MAP_SPRITE_DATA } from '../../sprites/data/world-map-sprites';
 import { PACK_ART } from '../../sprites/pack-art';
@@ -15,6 +18,7 @@ import { DOOR, WINDOW } from '../../games/art/drawn';
 import { PixelGrid, gridPlacements, type Placement } from '../../games/art/pixel';
 import { propSprite } from '../../games/art/props';
 import { TILE, tileFrame, type TileName } from '../../games/art/tiles';
+import { DEFAULT_LOOK, dimmed, placePlacements, type ValleyLook } from './valley-places';
 import { RAMPS, maybeTint, type Ramp, type RampName } from '../../games/art/tint';
 
 export { TILE };
@@ -30,10 +34,14 @@ const INK = '#0d0a1a';
 export const PLACE_IDS = [
   'cave',
   'fair',
+  'school',
   'house',
   'paddock',
+  'market',
   'forge',
+  'bonfire',
   'arena',
+  'visitor',
   'signpost',
 ] as const;
 export type PlaceId = (typeof PLACE_IDS)[number];
@@ -122,6 +130,40 @@ export const PLACES: readonly ValleyPlace[] = [
     rect: tiles(28, 14, 6, 4),
     door: { x: 31 * TILE, y: 18 * TILE },
     glyph: 'compass',
+  },
+  // The four newer places (art: the library's `valley-glow`, see `valley-places.ts`).
+  {
+    id: 'school',
+    name: 'School',
+    what: 'talents',
+    rect: tiles(7, 4, 5, 4),
+    door: { x: 152, y: 7 * TILE + 4 },
+    glyph: 'journal',
+  },
+  {
+    id: 'market',
+    name: 'Market',
+    what: 'shards',
+    rect: tiles(20, 4, 4, 4),
+    door: { x: 352, y: 7 * TILE + 4 },
+    glyph: 'gem',
+  },
+  {
+    id: 'bonfire',
+    name: 'Bonfire',
+    what: 'resting creatures',
+    rect: tiles(20, 14, 5, 4),
+    door: { x: 360, y: 17 * TILE },
+    glyph: 'map-camp',
+  },
+  {
+    id: 'visitor',
+    name: 'Visitor',
+    what: 'weekly stall',
+    // A roadside stall: its rectangle starts on the road and stops short of the Signpost's marker below.
+    rect: { x: 28 * TILE, y: 146, width: 5 * TILE, height: 50 },
+    door: { x: 486, y: 190 },
+    glyph: 'moon',
   },
 ];
 
@@ -281,7 +323,7 @@ export function featureGrid(): Cell[][] {
   fill(18, 13, 4, 1, dirt);
   fill(18, 14, 1, 4, dirt);
   // The cliff the cave is cut into.
-  fill(0, 3, 8, 4, { tile: 'stoneWall', tint: SLATE });
+  fill(0, 3, 6, 4, { tile: 'stoneWall', tint: SLATE });
   // The house's walls and the forge's.
   fill(12, 5, 7, 3, { tile: 'woodWall' });
   fill(19, 11, 5, 2, { tile: 'stoneWall', tint: EMBER_STONE });
@@ -330,11 +372,7 @@ function marginDecor(col: number, row: number): Placement | null {
 
 /** Trees, bushes, rocks and flowers inside the valley: a fixed list, clear of every place. */
 const DECOR: readonly [keyof typeof WORLD_MAP_SPRITE_DATA, number, number][] = [
-  ['smallPine', 132, 46],
-  ['smallTree', 154, 50],
-  ['smallPine', 312, 44],
-  ['smallTree', 334, 52],
-  ['smallPine', 360, 40],
+  ['smallPine', 104, 56],
   ['smallTree', 552, 50],
   ['smallPine', 556, 92],
   ['bush', 182, 104],
@@ -351,11 +389,8 @@ const DECOR: readonly [keyof typeof WORLD_MAP_SPRITE_DATA, number, number][] = [
   ['smallTree', 400, 150],
   ['smallPine', 396, 182],
   ['smallTree', 420, 164],
-  ['rock', 448, 196],
   ['smallPine', 540, 168],
   ['smallTree', 560, 214],
-  ['bush', 386, 232],
-  ['flowers', 360, 252],
   ['smallTree', 168, 316],
   ['smallPine', 196, 330],
   ['rock', 380, 318],
@@ -385,6 +420,7 @@ export interface ValleyDrawing {
 export function valleyDrawing(
   margin: { left: number; top: number; right: number; bottom: number },
   frame = 0,
+  look: ValleyLook = DEFAULT_LOOK,
 ): ValleyDrawing {
   const ox = margin.left * TILE;
   const oy = margin.top * TILE;
@@ -424,7 +460,10 @@ export function valleyDrawing(
   }
   const at = (p: Placement): Placement => ({ ...p, x: p.x + ox, y: p.y + oy });
   for (const p of buildingPlacements()) out.push(at(p));
-  return { placements: out, width: cols * TILE, height: rows * TILE, ox, oy };
+  // Night: everything so far is dimmed and cooled; the four places' glow is drawn over it, as it is.
+  const world = look.time === 'night' ? out.map((p) => ({ ...p, sprite: dimmed(p.sprite) })) : out;
+  for (const p of placePlacements(look)) world.push(at(p));
+  return { placements: world, width: cols * TILE, height: rows * TILE, ox, oy };
 }
 
 /** The buildings, landmarks and decor drawn over the tiles, in valley pixels. */

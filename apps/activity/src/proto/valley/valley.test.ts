@@ -27,11 +27,18 @@ import {
   placeOfNeed,
   placeRaidAt,
   readingOrder,
+  lookOf,
+  lookParams,
   scrollToPlace,
   stackTabs,
   startScroll,
   stepWalker,
+  visitorHere,
+  weekClock,
+  weekdayNumber,
 } from './valley-logic';
+import { bonfireName, dimmed, glowSprite, nightColour, placePlacements } from './valley-places';
+import { glowNameOf, glowSceneDraw, posterSprite } from './glow-scene-art';
 
 describe('the valley art', () => {
   it('draws only valid sprites, with or without margins', () => {
@@ -175,10 +182,14 @@ describe('fitting the window', () => {
     expect(readingOrder()).toEqual([
       'cave',
       'fair',
+      'school',
       'house',
       'paddock',
       'forge',
+      'market',
+      'bonfire',
       'arena',
+      'visitor',
       'signpost',
     ]);
   });
@@ -272,5 +283,136 @@ describe('actions of the scenes', () => {
       expect.stringMatching(/^proto-job-new/),
       null,
     ]);
+  });
+});
+
+describe('the four newer places', () => {
+  it('stand clear of each other and of the older places', () => {
+    const overlap = (a: (typeof PLACES)[number], b: (typeof PLACES)[number]): boolean =>
+      a.rect.x < b.rect.x + b.rect.width &&
+      b.rect.x < a.rect.x + a.rect.width &&
+      a.rect.y < b.rect.y + b.rect.height &&
+      b.rect.y < a.rect.y + a.rect.height;
+    for (const [i, a] of PLACES.entries()) {
+      for (const b of PLACES.slice(i + 1))
+        expect([a.id, b.id, overlap(a, b)]).toEqual([a.id, b.id, false]);
+    }
+  });
+
+  it('draws the sprites inside their own button, day and night, every state', () => {
+    for (const time of ['day', 'night'] as const) {
+      for (const visitorHere of [true, false]) {
+        for (const bonfireLevel of [1, 2]) {
+          const look = { time, visitorHere, bonfireLevel };
+          const placed = placePlacements(look);
+          expect(placed).toHaveLength(4);
+          const rects = ['school', 'market', 'bonfire', 'visitor'].map(
+            (id) => PLACES.find((p) => p.id === id)!.rect,
+          );
+          for (const [i, p] of placed.entries()) {
+            const sprite = parseSprite(p.sprite);
+            const r = rects[i]!;
+            expect(p.x).toBeGreaterThanOrEqual(r.x);
+            expect(p.y).toBeGreaterThanOrEqual(r.y);
+            expect(p.x + sprite.width).toBeLessThanOrEqual(r.x + r.width);
+            expect(p.y + sprite.height).toBeLessThanOrEqual(r.y + r.height);
+          }
+          const drawing = valleyDrawing({ left: 0, top: 0, right: 0, bottom: 0 }, 0, look);
+          for (const p of drawing.placements) expect(() => parseSprite(p.sprite)).not.toThrow();
+        }
+      }
+    }
+  });
+
+  it('picks the sprite by state: grand hearth from level 2, shuttered stall when he is away', () => {
+    expect(bonfireName(1)).toBe('bonfire');
+    expect(bonfireName(2)).toBe('bonfire-grand');
+    expect(glowNameOf('visitor', { visitorHere: false })).toBe('visitor-away');
+    expect(glowNameOf('visitor')).toBe('visitor');
+    expect(glowSprite('market', 'day')).not.toBe(glowSprite('market', 'night'));
+    expect(glowSprite('market', 'day').rows).toEqual(glowSprite('market', 'night').rows);
+  });
+
+  it('dims everything but the glow at night, and caches the dimmed sprite', () => {
+    const day = valleyDrawing({ left: 0, top: 0, right: 0, bottom: 0 }, 0);
+    const night = valleyDrawing({ left: 0, top: 0, right: 0, bottom: 0 }, 0, {
+      time: 'night',
+      visitorHere: true,
+      bonfireLevel: 1,
+    });
+    expect(night.placements).toHaveLength(day.placements.length);
+    expect(night.placements[0]?.sprite).toBe(dimmed(day.placements[0]!.sprite));
+    expect(dimmed(day.placements[0]!.sprite)).toBe(dimmed(day.placements[0]!.sprite));
+    const [r, g, b] = [0, 2, 4].map((i) =>
+      Number.parseInt(nightColour('#ffffff').slice(1 + i, 3 + i), 16),
+    );
+    expect(b!).toBeGreaterThan(r!);
+    expect(g!).toBeLessThan(255);
+  });
+
+  it('has a poster for every state and a scene that fills the window', () => {
+    for (const name of [
+      'bonfire',
+      'bonfire-grand',
+      'school',
+      'visitor',
+      'visitor-away',
+      'market',
+    ] as const) {
+      expect(() => parseSprite(posterSprite(name))).not.toThrow();
+      const g = sceneGeometry(390, 640);
+      const placed = glowSceneDraw({ name, time: 'day' })(g);
+      expect(placed.length).toBeGreaterThan(Math.ceil(g.W / 16) * Math.floor(g.H / 16));
+    }
+  });
+});
+
+describe('the week and the visitor', () => {
+  const clock = (weekday: number, hour = 12, minute = 0) => ({ weekday, hour, minute });
+
+  it('is here from Thursday 00:00 to the finale on Sunday evening, away the rest of the week', () => {
+    expect([1, 2, 3].map((d) => visitorHere(clock(d, 23, 59)))).toEqual([false, false, false]);
+    expect(visitorHere(clock(4, 0, 0))).toBe(true);
+    expect(visitorHere(clock(5))).toBe(true);
+    expect(visitorHere(clock(6, 23, 59))).toBe(true);
+    expect(visitorHere(clock(7, 19, 59))).toBe(true);
+    expect(visitorHere(clock(7, 20, 0))).toBe(false);
+    expect(visitorHere(clock(7, 23, 0))).toBe(false);
+  });
+
+  it('reads the weekday from a name and from a moment in a timezone', () => {
+    expect(weekdayNumber('Thursday')).toBe(4);
+    expect(weekdayNumber('sun')).toBe(7);
+    expect(weekdayNumber('someday')).toBeNull();
+    // The sample world: Saturday 13 February 2027, 10:00 in Helsinki.
+    const world = initialWorld();
+    expect(weekClock(world.now, world.timezone)).toEqual({ weekday: 6, hour: 10, minute: 0 });
+    // The same instant a day-boundary away in another zone.
+    const late = Date.UTC(2027, 1, 13, 23, 30);
+    expect(weekClock(late, 'Europe/Helsinki')).toEqual({ weekday: 7, hour: 1, minute: 30 });
+    expect(weekClock(late, 'America/New_York')).toEqual({ weekday: 6, hour: 18, minute: 30 });
+  });
+
+  it('reads the look from the address, and the address overrides the clock', () => {
+    expect(lookParams('#valley?step=1&night=1&weekday=Mon&bonfire=2')).toEqual({
+      night: true,
+      weekday: 1,
+      bonfire: 2,
+    });
+    expect(lookParams('#valley?step=1')).toEqual({});
+    expect(lookParams('#valley?night=0&weekday=zzz')).toEqual({ night: false });
+    expect(lookOf({ clock: clock(6) })).toEqual({
+      time: 'day',
+      visitorHere: true,
+      bonfireLevel: 1,
+    });
+    expect(lookOf({ clock: clock(1), bonfireLevel: 3 })).toEqual({
+      time: 'day',
+      visitorHere: false,
+      bonfireLevel: 3,
+    });
+    expect(
+      lookOf({ clock: clock(1), bonfireLevel: 3, params: { night: true, weekday: 5, bonfire: 1 } }),
+    ).toEqual({ time: 'night', visitorHere: true, bonfireLevel: 1 });
   });
 });

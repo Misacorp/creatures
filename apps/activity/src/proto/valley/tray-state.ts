@@ -92,6 +92,11 @@ export function placesFor(world: ProtoWorld, c: Creature): Record<PlaceId, Verdi
         : ifFree(raidTeamIds(world).length < RAID_TEAM_SIZE ? OK : no('Full')),
     signpost:
       badge.state === 'loot' ? OK : ifFree(world.slots.used < world.slots.total ? OK : no('Full')),
+    // The newer places: creatures rest and learn; the Market takes shards and the visitor pieces, not creatures.
+    school: ifFree(),
+    bonfire: ifFree(),
+    market: no('Shards'),
+    visitor: no('Pieces'),
   };
 }
 
@@ -116,6 +121,11 @@ export function trayFor(world: ProtoWorld, scene: 'valley' | PlaceId): Creature[
     forge: ['ready', 'job', 'free', 'evolve'],
     arena: ['raid', 'free', 'evolve'],
     signpost: ['loot', 'free', 'evolve', 'trip'],
+    school: ['free'],
+    bonfire: ['free', 'evolve'],
+    // Neither place is about a creature yet (3b and 3c decide); the tray keeps the free ones in view meanwhile.
+    market: ['free'],
+    visitor: ['free'],
   };
   return sorted.filter((c) => keep[scene].includes(trayBadge(world, c).state));
 }

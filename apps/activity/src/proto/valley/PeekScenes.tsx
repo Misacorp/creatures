@@ -21,7 +21,8 @@ import { At, CreatureSprite, Glyph, Pic, Plate } from './parts';
 import { SceneFrame } from './SceneFrame';
 import { caveDraw, caveSpots, fairDraw, paddockDraw } from './scene-art';
 
-function Stub({ what, onClose }: { what: string | null; onClose: () => void }) {
+/** The "Not in this prototype" drawer a stubbed action opens (shared by the places that have no inside yet). */
+export function Stub({ what, onClose }: { what: string | null; onClose: () => void }) {
   return (
     <Drawer open={what !== null} onClose={onClose} title="Not in this prototype">
       <p class="pv-stub">In the game this opens {what}.</p>

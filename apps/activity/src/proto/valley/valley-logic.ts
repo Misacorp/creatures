@@ -4,12 +4,14 @@
  * needs are off screen (the edge arrows), and the wandering of idle creatures. No DOM, no clock, no
  * randomness but a seeded generator handed in.
  */
-import { content, int, type Rng } from '@creatures/game';
+import { RULES, content, int, type Rng } from '@creatures/game';
 import { creatureName } from '../../game';
 import { jobTitle } from '../../gear-view';
 import { destinationName } from '../../trip-view';
 import { whenText } from '../../home-view';
+import { formatZoned } from '../../time-format';
 import { creatureOf, evolve, needs, placeRaid, type Need, type ProtoWorld } from '../world';
+import { DEFAULT_LOOK, type ValleyLook } from './valley-places';
 import { PLACES, TILE, VALLEY_SIZE, placeOf, type PlaceId, type Rect } from './valley-art';
 
 // --- Needs on buildings ---
@@ -97,6 +99,84 @@ export function placeLabel(id: PlaceId, bubble: Bubble | undefined): string {
   const place = placeOf(id);
   const base = `${place.name}, ${place.what}`;
   return bubble === undefined ? base : `${base}. ${bubble.spoken}`;
+}
+
+// --- The week's clock (who is at the visitor's stall) ---
+
+/** A moment of the guild's week: the ISO weekday (1 Monday to 7 Sunday) and the local time. */
+export interface WeekClock {
+  weekday: number;
+  hour: number;
+  minute: number;
+}
+
+const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
+
+/** The ISO weekday (1 to 7) of a name or its first three letters ("Thursday", "thu"); null when unknown. */
+export function weekdayNumber(name: string): number | null {
+  const at = WEEKDAYS.indexOf(name.slice(0, 3).toLowerCase() as (typeof WEEKDAYS)[number]);
+  return at < 0 ? null : at + 1;
+}
+
+/** The weekday and local time of `at` in `timezone` (always passed: the guild's, never a default). */
+export function weekClock(at: number, timezone: string): WeekClock {
+  const [day = '', time = '0:0'] = formatZoned(at, timezone, 'short').split(' ');
+  const [hour = '0', minute = '0'] = time.split(':');
+  return {
+    weekday: weekdayNumber(day) ?? 1,
+    hour: Number.parseInt(hour, 10),
+    minute: Number.parseInt(minute, 10),
+  };
+}
+
+/**
+ * Whether the visitor is in the valley (V-VIS-1): from Thursday 00:00 to the raid's finale on Sunday evening
+ * (the week's own calendar, `RULES.raid.scheduleV2.finale`); the rest of the week his stall is shuttered.
+ */
+export function visitorHere(clock: WeekClock): boolean {
+  const finale = RULES.raid.scheduleV2.finale;
+  if (clock.weekday < 4) return false;
+  if (clock.weekday < finale.weekday) return true;
+  return clock.hour * 60 + clock.minute < finale.hour * 60 + finale.minute;
+}
+
+/** What the address can set for the look (dev only): `&night=1`, `&weekday=mon`, `&bonfire=2`. */
+export interface LookParams {
+  night?: boolean;
+  weekday?: number;
+  bonfire?: number;
+}
+
+/** Reads the look's dev parameters from a hash such as `#valley?night=1&weekday=mon`. */
+export function lookParams(hash: string): LookParams {
+  const out: LookParams = {};
+  const night = /[?&]night=([01])(?:&|$)/.exec(hash);
+  if (night?.[1] !== undefined) out.night = night[1] === '1';
+  const weekday = /[?&]weekday=([a-z]+)(?:&|$)/i.exec(hash);
+  const day = weekday?.[1] === undefined ? null : weekdayNumber(weekday[1]);
+  if (day !== null) out.weekday = day;
+  const bonfire = /[?&]bonfire=(\d)(?:&|$)/.exec(hash);
+  if (bonfire?.[1] !== undefined) out.bonfire = Number.parseInt(bonfire[1], 10);
+  return out;
+}
+
+/**
+ * The valley's look: day (unless the address says night); the visitor's stall by the week's clock (the visit's
+ * own weekday in the welcome prototype, else the world's clock in its timezone; the address may override the
+ * weekday); the bonfire's level (the world's, else the address's, else 1).
+ */
+export function lookOf(input: {
+  clock: WeekClock;
+  bonfireLevel?: number | undefined;
+  params?: LookParams;
+}): ValleyLook {
+  const { clock, params = {} } = input;
+  const day = params.weekday === undefined ? clock : { ...clock, weekday: params.weekday };
+  return {
+    time: params.night === true ? 'night' : DEFAULT_LOOK.time,
+    visitorHere: visitorHere(day),
+    bonfireLevel: params.bonfire ?? input.bonfireLevel ?? DEFAULT_LOOK.bonfireLevel,
+  };
 }
 
 // --- Fitting the window ---

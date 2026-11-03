@@ -30,16 +30,28 @@ import {
   type SendTripChoice,
 } from '../world';
 import { ArenaScene } from './ArenaScene';
+import { BonfireScene } from './BonfireScene';
 import { ForgeScene, type ForgeMoment } from './ForgeScene';
 import { HAUL_FRAMES, HaulCaption, HaulOnGround, haulOf } from './Haul';
 import { HouseScene } from './HouseScene';
+import { MarketScene } from './MarketScene';
 import { CreatureSprite, Glyph, isStill } from './parts';
 import { CaveScene, FairScene, PaddockScene } from './PeekScenes';
+import { SchoolScene } from './SchoolScene';
 import { SignpostScene, type SendPicks } from './SignpostScene';
 import { Tray } from './Tray';
+import { VisitorScene } from './VisitorScene';
 import { placesFor, trayBadge, trayFor } from './tray-state';
 import { placeOf, type PlaceId } from './valley-art';
-import { bubblesOf, placeLabel, readingOrder } from './valley-logic';
+import {
+  bubblesOf,
+  lookOf,
+  lookParams,
+  placeLabel,
+  readingOrder,
+  weekClock,
+  type WeekClock,
+} from './valley-logic';
 import { ValleyMap } from './ValleyMap';
 import { ZoomCut } from './ZoomCut';
 import type { Cast, Welcome } from '../welcome/highlights';
@@ -76,6 +88,10 @@ export interface WelcomeSetup {
   world: ProtoWorld;
   cast: Cast;
   welcome: Welcome;
+  /** The visit's own weekday and time (the visitor's stall is open or shuttered by it); else the world's clock. */
+  clock?: WeekClock;
+  /** The bonfire's place level at this visit (the grand hearth from 2); else 1. */
+  bonfireLevel?: number;
 }
 
 const NO_SEND: SendPicks = { place: null, supply: null };
@@ -184,6 +200,13 @@ export function Valley({
   }, [view.haul, still]);
 
   const world = view.world;
+  // The valley's light and who is at the stall: day by default (`&night=1` shows night), the visitor by the
+  // visit's weekday (else the world's clock in its timezone), the bonfire by its place level (`&bonfire=2`).
+  const look = lookOf({
+    clock: welcome?.clock ?? weekClock(world.now, world.timezone),
+    bonfireLevel: welcome?.bonfireLevel,
+    params: typeof window === 'undefined' ? {} : lookParams(window.location.hash),
+  });
   const setWorld = (w: ProtoWorld): void => {
     setView((v) => ({ ...v, world: w }));
   };
@@ -298,6 +321,7 @@ export function Valley({
             focus={view.focus}
             departing={view.departing}
             bubbles={welcome === undefined ? undefined : markerBubbles(markers)}
+            look={look}
             onPlace={onPlace}
             lit={lit}
             haulOpen={haul !== null}
@@ -391,6 +415,26 @@ export function Valley({
     case 'paddock':
       body = <PaddockScene world={world} onLeave={leave} waiting={waitingAt('paddock')} />;
       break;
+    case 'bonfire':
+      body = (
+        <BonfireScene world={world} onLeave={leave} waiting={waitingAt('bonfire')} look={look} />
+      );
+      break;
+    case 'school':
+      body = (
+        <SchoolScene world={world} onLeave={leave} waiting={waitingAt('school')} look={look} />
+      );
+      break;
+    case 'visitor':
+      body = (
+        <VisitorScene world={world} onLeave={leave} waiting={waitingAt('visitor')} look={look} />
+      );
+      break;
+    case 'market':
+      body = (
+        <MarketScene world={world} onLeave={leave} waiting={waitingAt('market')} look={look} />
+      );
+      break;
   }
 
   const bubbles = welcome === undefined ? bubblesOf(world) : markerBubbles(markers);
@@ -432,6 +476,7 @@ export function Valley({
           {zoom !== null && (
             <ZoomCut
               place={zoom}
+              look={look}
               onDone={() => {
                 setZoom(null);
                 pending.current?.();
