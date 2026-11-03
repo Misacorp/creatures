@@ -236,6 +236,19 @@ describe('part icons', () => {
     expect(new Set(silhouettes).size).toBe(PART_KINDS.length);
   });
 
+  it('keeps every pair of element shards at least 8 pixels apart in silhouette', () => {
+    const shards = PART_KINDS.filter((kind) => kind.endsWith('-shard'));
+    expect(shards).toHaveLength(5);
+    for (const [i, a] of shards.entries()) {
+      for (const b of shards.slice(i + 1)) {
+        expect(
+          silhouetteDifference(BUNDLED_PART_ICONS[a], BUNDLED_PART_ICONS[b]),
+          `${a} vs ${b}`,
+        ).toBeGreaterThanOrEqual(8);
+      }
+    }
+  });
+
   it('falls back to the scrap icon for an unknown kind', () => {
     expect(partIcon('moon-dust')).toBe(BUNDLED_PART_ICONS.scrap);
   });

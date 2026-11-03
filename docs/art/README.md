@@ -9,7 +9,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | Set | Status | Pieces | Requested |
 | --- | --- | --- | --- |
 | [Combat v2 icons: attack shapes, board states, store meters](#combat-icons) | draft | 11 | 2026-10-31, Misa: "icons for keywords and attack shapes" (roadmap phase 3, combat v2). |
-| [Element shards, told apart by shape](#shards) | draft | 15 | 2026-11-03: the element shard icons must differ by shape, not only colour (accessibility review from the valley session; Misa asked to provide what the valley needs). |
+| [Element shards, told apart by shape](#shards) | liked | 15 | 2026-11-03: the element shard icons must differ by shape, not only colour (accessibility review from the valley session; Misa asked to provide what the valley needs). |
 | [Valley places: glow, day and night](#valley-glow) | liked | 9 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
 | [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
@@ -57,32 +57,33 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 
 ![Element shards, told apart by shape](shards.png)
 
-- **Status:** draft
+- **Status:** liked
 - **Requested:** 2026-11-03: the element shard icons must differ by shape, not only colour (accessibility review from the valley session; Misa asked to provide what the valley needs).
 - **Source:** `apps/activity/src/sprites/concepts/shards.ts` (draw it with `pnpm art shards`)
-- **Sheet of:** `be07fcbb7f6a`
+- **Sheet of:** `29260c21c2ac`
+- Misa picked Tide A (rounded), Ember A, Grove A, Spark A, Mire B on 2026-11-03; now in gear-sprites.ts.
 - Why: Ember (#ef6a3a) and Grove (#5cbf5a) are a classic deuteranope confusion pair and the shipped shards differ only in the top two rows. The Forge and Market loop is about which shard you need, so each element is a different outline. Colours are unchanged.
 - Every sprite has a `deuteranope` alt (Machado 2009, severity 1.0). Its row in the set sheet is the test: five different shapes per variant column.
 - Silhouettes: Tide a drop (a) or a curling wave (b); Ember a tall flame with a side tongue (a) or a crown of three flames (b); Grove a leaf on a stem (a) or a two-leaf sprout (b); Spark a bolt (a) or a zigzag (b); Mire a blob with one drip (a) or two drips (b).
-- Needs before use: Misa picks a or b per element; the pick replaces its sprite in `gear-sprites.ts` (BUNDLED_PART_ICONS keeps its ids) and this concept is deleted. scrap and glimmer are untouched.
+- The picks replaced the sprites in `gear-sprites.ts` (BUNDLED_PART_ICONS keeps its ids); scrap and glimmer are untouched. The drafts stay here for reference.
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
 | `tide-now` | part |  | draft | The shipped tide shard, unchanged, for comparison. |
-| `tide-a` | part |  | draft | A drop: pointed top, round flat base. |
+| `tide-a` | part |  | liked | A drop: pointed top, round bottom with no square corners. |
 | `tide-b` | part |  | draft | A wave crystal: a crest curling over to the right. |
 | `ember-now` | part |  | draft | The shipped ember shard, unchanged, for comparison. |
-| `ember-a` | part |  | draft | A tall flame: a main tongue with a smaller one at its side. |
+| `ember-a` | part |  | liked | A tall flame: a main tongue with a smaller one at its side. |
 | `ember-b` | part |  | draft | A crown of three flames on a short crystal. |
 | `grove-now` | part |  | draft | The shipped grove shard, unchanged, for comparison. |
-| `grove-a` | part |  | draft | A leaf, tilted, with a vein and a stem at its foot. |
+| `grove-a` | part |  | liked | A leaf, tilted, with a vein and a stem at its foot. |
 | `grove-b` | part |  | draft | A sprout: two leaves on a stem, in a crystal base. |
 | `spark-now` | part |  | draft | The shipped spark shard, unchanged, for comparison. |
-| `spark-a` | part |  | draft | A fat bolt: a broad head stepping down to a thin tail. |
+| `spark-a` | part |  | liked | A fat bolt: a broad head stepping down to a thin tail. |
 | `spark-b` | part |  | draft | A thin zigzag bolt, two sharp turns. |
 | `mire-now` | part |  | draft | The shipped mire shard, unchanged, for comparison. |
 | `mire-a` | part |  | draft | A lump with a single drip hanging from its belly. |
-| `mire-b` | part |  | draft | A slumped blob with two drips, one longer. |
+| `mire-b` | part |  | liked | A slumped blob with two drips, one longer. |
 
 <a id="valley-glow"></a>
 
@@ -93,7 +94,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** liked
 - **Requested:** 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets.
 - **Source:** `apps/activity/src/sprites/concepts/valley-glow.ts` (draw it with `pnpm art valley-glow`)
-- **Sheet of:** `02d75919fec4`
+- **Sheet of:** `ebdd70f4db71`
 - Misa picked this direction for the valley places (2026-10-31); posters stay for each place's own screen.
 - Direction "valley glow": the night-glow look (the light sources are the stars, lit edges, cool shadow) redone as standalone places on transparent ground, like the map landmarks, so they stand on the valley tiles. No sky, no vignette, no stars or moon.
 - One drawing, two palettes: the main palette is night, `alts.day` recolours the same pixels. Keys `1 2 3` are the light spill on the ground (rings follow each light: a circle under a lamp or fire, a trapezoid in front of a window; only the outermost ring is a regular checker) in night colours; in the day palette they map to the grass greens, so the spill disappears. `x` is the cast shadow (cool blue at night, warm green by day).
@@ -114,8 +115,8 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `visitor-away` | free |  | liked | The stall shuttered: a closed front, a folded awning, a board with a moon and a calendar mark, an unlit lamp with one last ember and a faint warm glow on the grass. |
 | `market` | free |  | liked | A stall where shards are traded: four element shards glow on the counter, a big shard on a post is the sign, with a crate and a sack beside it. The teal glow lies on the grass. |
 | `house` | free |  | draft | A cosy cottage where your creatures live: a shingled roof with a chimney, two lit windows that spill warm light on the grass, a door with a path to it. By day the windows are plain glass and the spill is flower beds. |
-| `forge` | free |  | draft | The Workshop: a stone smithy with an open fire mouth, an anvil on the ground and sparks; the ember glow spills out of the opening onto the ground. By day the fire is out and the yard is soot-dark. |
-| `cave` | free |  | draft | The way to the daily dungeon: a rocky mouth into the hill with glowing crystals inside, whose cool light spills onto the ground. By day the crystals are dull and the ground is scree and pebbles. |
+| `forge` | free |  | draft | The Workshop: a stone smithy with an open fire mouth, an anvil on the ground and sparks; the ember glow spills out of the opening onto the ground. By day the fire stays alight, with sparks above the chimney and around the mouth; the yard is soot-dark. |
+| `cave` | free |  | draft | The way to the daily dungeon: a rocky mouth into the hill with glowing crystals inside, whose cool light spills onto the ground. By day the crystals keep glowing and the ground is scree and pebbles. |
 
 <a id="valley-landmarks"></a>
 

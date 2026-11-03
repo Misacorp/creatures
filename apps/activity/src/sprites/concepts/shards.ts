@@ -29,6 +29,16 @@ const draw = (
   deuteranope: Readonly<Record<string, string>>,
 ): Concept => ({ kind: 'part', note, sprite, alts: { deuteranope } });
 
+/** Misa's picks of 2026-11-03 are `liked`; every other variant is a `draft`. */
+const LIKED: ReadonlySet<string> = new Set(['tide-a', 'ember-a', 'grove-a', 'spark-a', 'mire-b']);
+const withStatus = (sprites: Readonly<Record<string, Concept>>): Record<string, Concept> =>
+  Object.fromEntries(
+    Object.entries(sprites).map(([id, c]) => [
+      id,
+      { ...c, status: LIKED.has(id) ? 'liked' : 'draft' },
+    ]),
+  );
+
 /** The shipped icons, copied unchanged from `gear-sprites.ts`. */
 const SHIPPED: Readonly<Record<'tide' | 'ember' | 'grove' | 'spark' | 'mire', SpriteDef>> = {
   tide: {
@@ -74,21 +84,22 @@ export const SHARDS_CONCEPTS: ConceptSet = {
   title: 'Element shards, told apart by shape',
   requested:
     '2026-11-03: the element shard icons must differ by shape, not only colour (accessibility review from the valley session; Misa asked to provide what the valley needs).',
-  status: 'draft',
+  status: 'liked',
   notes: [
+    'Misa picked Tide A (rounded), Ember A, Grove A, Spark A, Mire B on 2026-11-03; now in gear-sprites.ts.',
     'Why: Ember (#ef6a3a) and Grove (#5cbf5a) are a classic deuteranope confusion pair and the shipped shards differ only in the top two rows. The Forge and Market loop is about which shard you need, so each element is a different outline. Colours are unchanged.',
     'Every sprite has a `deuteranope` alt (Machado 2009, severity 1.0). Its row in the set sheet is the test: five different shapes per variant column.',
     'Silhouettes: Tide a drop (a) or a curling wave (b); Ember a tall flame with a side tongue (a) or a crown of three flames (b); Grove a leaf on a stem (a) or a two-leaf sprout (b); Spark a bolt (a) or a zigzag (b); Mire a blob with one drip (a) or two drips (b).',
-    'Needs before use: Misa picks a or b per element; the pick replaces its sprite in `gear-sprites.ts` (BUNDLED_PART_ICONS keeps its ids) and this concept is deleted. scrap and glimmer are untouched.',
+    'The picks replaced the sprites in `gear-sprites.ts` (BUNDLED_PART_ICONS keeps its ids); scrap and glimmer are untouched. The drafts stay here for reference.',
   ],
-  sprites: {
+  sprites: withStatus({
     'tide-now': now('tide', D_TIDE),
     'tide-a': draw(
-      'A drop: pointed top, round flat base.',
+      'A drop: pointed top, round bottom with no square corners.',
       {
         mirror: true,
         palette: TIDE,
-        rows: ['...k', '..kb', '..kb', '.kbh', 'kbhw', 'kbbh', 'kbbb', '.kkk'],
+        rows: ['...k', '..kb', '..kb', '.kbh', 'kbhw', 'kbbh', '.kbb', '..kk'],
       },
       D_TIDE,
     ),
@@ -233,5 +244,5 @@ export const SHARDS_CONCEPTS: ConceptSet = {
       },
       D_MIRE,
     ),
-  },
+  }),
 };
