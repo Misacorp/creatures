@@ -72,6 +72,11 @@ export interface FightTile {
   hit: boolean;
   /** It is the creature acting in the beat on show. */
   acting: boolean;
+  /**
+   * A Guard's save in this beat: the Guard (`guard`) or the creature it covered (`saved`) carries a short leg of the bracket that links
+   * the two, going towards the other one's side (`side`). The Guard's tile also flashes.
+   */
+  link?: { role: 'guard' | 'saved'; side: 'left' | 'right' };
   /** The numbers and tags that float over it, drawn by the screen. */
   overlay?: ComponentChildren;
 }
@@ -142,6 +147,7 @@ export function SlotButton(props: SlotButtonProps) {
     if (fight?.out === true) classes.push('fight-out');
     if (fight?.hit === true) classes.push('fight-hit');
     if (fight?.acting === true) classes.push('fight-acting');
+    if (fight?.link?.role === 'guard') classes.push('fight-guarding');
   }
   if (own !== null) classes.push('draggable');
   if (status === 'valid') classes.push('drop-valid');
@@ -260,6 +266,12 @@ export function SlotButton(props: SlotButtonProps) {
           {plainGlyph !== undefined && <Sprite sprite={plainGlyph} scale={1} />}
           {hitGlyph !== undefined && <Sprite sprite={hitGlyph} scale={1} />}
         </span>
+      )}
+      {c?.v2?.fight?.link !== undefined && (
+        <span
+          class={`slot-link ${c.v2.fight.link.role} to-${c.v2.fight.link.side}`}
+          aria-hidden="true"
+        />
       )}
       {c?.v2?.fight?.overlay !== undefined && (
         <span class="slot-fx" aria-hidden="true">

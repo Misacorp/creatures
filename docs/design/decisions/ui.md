@@ -4,6 +4,20 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: Combat v2 fights made readable: reaction callouts, element-coloured hits, Guard saves, boosts and an optional Knack name
+
+ID: `2026-11-03-combat-v2-fights-made-readable-reaction` · Status: current · Amends: `2026-11-03-combat-v2-client-third-part-fight`
+
+**Decision.** Misa watched v2 fights on staging and found the creatures' effects mild or invisible. `StageV2` now draws, with the shipped floating-text machinery (`useFxTrail`, `fxRef`, `KoTags`, `FloatsV2`; no second one):
+
+- **Reaction callouts.** The reaction's name from the content (`reactions.json`, found by the mark's element and the hitter's) with its bonus under it and its two element colours as a bar, rising over the boss. A beat that cashes one is held 450 ms longer (`REACTION_HOLD_MS`, inside the round's budget).
+- **A number on the boss for every creature hit,** in the hitter's element colour; a crit bigger with its multiplier ("x2.6!"); a Blocked hit as the shield and 0; "Dodged!" for a dodge.
+- **Guard saves.** A shield rises from each creature a Guard took a hit for or whose cover cut one (with what the cover kept off, "-16"); the Guard's tile flashes and each of the two tiles carries a leg of a bracket towards the other (`FightTile.link`, drawn by `SlotButton`; no measuring, so scrolling cannot misplace it).
+- **Boosts and heals are always on:** two rising arrows with "+15%" on a boosted creature (one float for all its boosts in a beat), heals as green numbers. **Knack names are an option, off by default** (Misa: "I'm afraid the screen might get too cluttered"): Settings, "Fights", "Show Knack names in fights" (`BoardSettings.knackNames`, kept on the device with the board's options; `useKnackNames` lets the stage read it without every screen passing it). The name pops, in gold, where the Knack's chip sits on the tile, for the creature that acts, and for a Support or Guard whose verb boosts or heals at round start; a silenced or knocked-out creature has none.
+- **Engine, board events only** (the fight's digest leaves them out; the lab's parity digest is unchanged): `hit` carries `critBp` on a creature's crit, and three new events: `intercept` (guard, who), `cover` (guard, who, prevented) and `boost` (who, by, bp). The client's parser accepts them. `prevented` is the hit's damage without the Guard's cover less what landed, worked out only when the fight logs.
+
+**Reasoning.** The engine already knew everything the screen was missing except what a Guard saved, a crit's size and who was boosted, so those became board events instead of guesses on the client. Floats are the shipped way a number shows, so each new word is a float tone with its own CSS, not a new layer; a tile carries at most a few at once because each tone has its own height on the tile (hit 22%, boost 36%, save 50%, Knack 62%). The Knack names stay behind an option because a fight has up to a hundred acting beats and Misa feared clutter; everything else is what the fight is, not decoration.
+
 ## 2026-11-03: Combat v2 client, the dungeon's screens: a v2 room on StageV2's single row, foe cards on the map, Out until the camp swaps it, the Knack on the team setup
 
 ID: `2026-11-03-combat-v2-client-the-dungeon-s` · Status: current
@@ -22,7 +36,7 @@ Not built: rule-card icons on the map's foe, the foe's rule cards in the drawer,
 
 ## 2026-11-03: Combat v2 client, third part: fight playback, the replay, the live finale and the results
 
-ID: `2026-11-03-combat-v2-client-third-part-fight` · Status: current
+ID: `2026-11-03-combat-v2-client-third-part-fight` · Status: current, amended by `2026-11-03-combat-v2-fights-made-readable-reaction`
 
 **Decision.** Phase 4's third client slice (`combat/integration.md`, section 9, "Playback") plays a combat v2 fight on the Raid tab, picked by `rules: 2` (a v1 week behaves as it did). What it is:
 

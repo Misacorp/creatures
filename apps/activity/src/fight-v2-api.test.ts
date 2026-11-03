@@ -31,6 +31,34 @@ describe('the v2 payloads the engine and the server make', () => {
     }
   });
 
+  it('the events of a mixed party (intercepts, covers, boosts, a crit multiplier) pass the check, and a bad field does not', () => {
+    const types = new Set<string>();
+    for (const seed of ['api', 'fold', 'juice']) {
+      const sample = replaySample({ slot: 4, players: 5, stage: 1, seed, party: 'mixed' });
+      for (const event of sample.events) {
+        if (event.board === undefined) continue;
+        types.add(event.board.type);
+        expect(isBoardEvent(wire(event.board))).toBe(true);
+      }
+    }
+    for (const type of ['cover', 'boost', 'reaction', 'hit']) expect(types.has(type)).toBe(true);
+    expect(isBoardEvent({ type: 'intercept', guard: 'a', who: 'b' })).toBe(true);
+    expect(isBoardEvent({ type: 'intercept', guard: 'a' })).toBe(false);
+    expect(isBoardEvent({ type: 'cover', guard: 'a', who: 'b', prevented: -1 })).toBe(false);
+    expect(isBoardEvent({ type: 'boost', who: 'a', by: 'b', bp: 1500 })).toBe(true);
+    const hit = {
+      type: 'hit',
+      from: 'a',
+      to: null,
+      damage: 1,
+      crit: true,
+      blocked: false,
+      dodged: false,
+    };
+    expect(isBoardEvent({ ...hit, critBp: 26_000 })).toBe(true);
+    expect(isBoardEvent({ ...hit, critBp: 'x' })).toBe(false);
+  });
+
   it('a payload with an event it cannot read is refused whole', () => {
     const sample = wire(replaySample({ slot: 1, players: 4, stage: 1, seed: 'api' })) as {
       events: unknown[];

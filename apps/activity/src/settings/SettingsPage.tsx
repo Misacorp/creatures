@@ -17,6 +17,11 @@ const IDLE_OPTIONS: readonly { id: IdleMode; label: string }[] = [
   { id: 'show', label: 'Show' },
 ];
 
+const KNACK_OPTIONS: readonly { id: 'off' | 'on'; label: string }[] = [
+  { id: 'off', label: 'Off' },
+  { id: 'on', label: 'On' },
+];
+
 /**
  * The Settings page, opened from the cog in the HUD: a drill-in ("‹ Back", Escape) of sections, one row per
  * setting, each a name, a line about it and a control. How to play opens from here too (the HUD keeps one
@@ -94,6 +99,26 @@ export function SettingsPage({
               value={settings.idle}
               onChange={(idle) => {
                 onChange({ ...settings, idle });
+              }}
+            />
+          </SettingRow>
+        </ul>
+      </section>
+      <section class="settings-section" aria-labelledby="settings-fights">
+        <h4 id="settings-fights" class="stat-group-title pix">
+          Fights
+        </h4>
+        <ul class="settings-list">
+          <SettingRow
+            name="Show Knack names in fights"
+            hint="A creature's Knack name pops up when it acts. Off keeps the screen calm."
+          >
+            <Segmented
+              label="Show Knack names in fights"
+              options={KNACK_OPTIONS}
+              value={settings.knackNames ? 'on' : 'off'}
+              onChange={(mode) => {
+                onChange({ ...settings, knackNames: mode === 'on' });
               }}
             />
           </SettingRow>

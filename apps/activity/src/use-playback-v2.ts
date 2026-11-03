@@ -1,6 +1,7 @@
 import type { FightEvent } from '@creatures/engine/v2';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { showOf, type BeatShow, type StageModel } from './fight-v2';
+import { useKnackNames } from './home/use-knack-names';
 import { usePrefersReducedMotion } from './hooks';
 import { beatDurations, resumeAt, type SpeedV2 } from './playback-v2';
 import type { Cue } from './stage';
@@ -40,12 +41,24 @@ interface PlaybackArgs {
    * rounds that went by unseen.
    */
   mode: 'replay' | 'live';
+  /** Show each Knack's name when its creature acts (the player's option; absent: read from the device's Settings). */
+  knackNames?: boolean;
   /** Start playing at once (the default), or wait until `setPlaying(true)` (the dungeon's room waits behind its banner). */
   autoplay?: boolean;
 }
 
+/** The creatures whose Knack does not act when beat `at` begins: silenced or knocked out in the state before it. */
+function quietBefore(model: StageModel, at: number): ReadonlySet<string> {
+  const state = model.states[Math.max(0, at)];
+  return new Set(
+    Object.entries(state?.creatures ?? {}).flatMap(([key, c]) =>
+      c.out || c.silenced > 0 ? [key] : [],
+    ),
+  );
+}
+
 /** The numbers and tags of a beat as the effect trail takes them (the shapes of the shipped stage's cues, which it already draws). */
-export function cuesOf(show: BeatShow): Cue[] {
+export function cuesOf(show: BeatShow, knackNames = false): Cue[] {
   return [
     ...show.floats.map((f): Cue => ({
       kind: 'float',
@@ -55,7 +68,24 @@ export function cuesOf(show: BeatShow): Cue[] {
       tone: f.tone,
       crit: f.crit,
       drift: f.drift,
+      ...(f.element === undefined ? {} : { element: f.element }),
+      ...(f.elements === undefined ? {} : { elements: f.elements }),
+      ...(f.sub === undefined ? {} : { sub: f.sub }),
+      ...(f.mult === undefined ? {} : { mult: f.mult }),
     })),
+    // The Knack's name pops on its creature only when the player asked for it (Settings, "Show Knack names in fights").
+    ...(knackNames
+      ? show.knacks.map((k): Cue => ({
+          kind: 'float',
+          i: k.i,
+          target: k.who,
+          text: k.name,
+          tone: 'knack',
+          crit: false,
+          drift: 0,
+        }))
+      : []),
+    ...show.saves.map((s): Cue => ({ kind: 'cover', i: s.i, creature: s.who, guard: s.guard })),
     ...show.knockedOut.map((k): Cue => ({ kind: 'ko', i: k.i, creature: k.who })),
   ];
 }
@@ -67,6 +97,8 @@ export function cuesOf(show: BeatShow): Cue[] {
  */
 export function usePlaybackV2(args: PlaybackArgs): PlaybackV2 {
   const { model, events, rounds, speed, introMs, budgetMs, mode } = args;
+  const knackOption = useKnackNames();
+  const knackNames = args.knackNames ?? knackOption;
   const total = model.beats.length;
   const live = mode === 'live';
   const [pos, setPos] = useState({ beat: live ? total : 0, prev: live ? total : 0, seq: 0 });
@@ -132,7 +164,13 @@ export function usePlaybackV2(args: PlaybackArgs): PlaybackV2 {
   // A single step forward is animated; a skip or a restart only shows the new state.
   const landed = beat >= 1 && beat === pos.prev + 1 ? model.beats[beat - 1] : undefined;
   const show = useMemo(
-    () => (landed === undefined ? null : showOf(events, landed)),
+    () =>
+      landed === undefined
+        ? null
+        : showOf(events, landed, {
+            creatures: model.setup.creatures,
+            quiet: quietBefore(model, beat - 1),
+          }),
     [landed, events],
   );
 
@@ -141,9 +179,9 @@ export function usePlaybackV2(args: PlaybackArgs): PlaybackV2 {
       trail.clear();
       return;
     }
-    if (!reduced) trail.push(cuesOf(show), speed);
+    if (!reduced) trail.push(cuesOf(show, knackNames), speed);
   }, [pos.seq]);
-  const fx = reduced ? (show === null ? [] : staticFx(cuesOf(show))) : trail.items;
+  const fx = reduced ? (show === null ? [] : staticFx(cuesOf(show, knackNames))) : trail.items;
 
   return {
     beat,

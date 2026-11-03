@@ -10,7 +10,7 @@ import {
   ownInput,
 } from './finale-v2';
 import type { LiveAbilityV2 } from './fight-v2-api';
-import { beatDurations, resumeAt, BEAT_MS } from './playback-v2';
+import { beatDurations, resumeAt, BEAT_MS, REACTION_HOLD_MS } from './playback-v2';
 import { buildBeats } from './fight-v2';
 import { liveSample, playSample } from './workbench/fight-v2-sample';
 
@@ -84,11 +84,13 @@ describe('the pace of a playback', () => {
       beats.reduce((sum, b, k) => (b.round === round ? sum + (ms[k] ?? 0) : sum), 0);
     const budget = 20_000;
     const wideMs = beatDurations(wideBeats, { speed: 1, budgetMs: budget });
-    const baseWide = wideBeats.reduce((s, b) => (b.round === 1 ? s + BEAT_MS[b.kind] : s), 0);
+    const base = (b: (typeof smallBeats)[number]): number =>
+      BEAT_MS[b.kind] + (b.reacts ? REACTION_HOLD_MS : 0);
+    const baseWide = wideBeats.reduce((s, b) => (b.round === 1 ? s + base(b) : s), 0);
     expect(baseWide).toBeGreaterThan(budget);
     expect(roundOf(wideBeats, wideMs, 1)).toBeLessThanOrEqual(budget + wideBeats.length);
     const smallMs = beatDurations(smallBeats, { speed: 1, budgetMs: budget });
-    smallBeats.forEach((b, k) => expect(smallMs[k]).toBe(BEAT_MS[b.kind]));
+    smallBeats.forEach((b, k) => expect(smallMs[k]).toBe(base(b)));
     const fast = beatDurations(smallBeats, { speed: 2, budgetMs: budget });
     expect(fast[0]).toBeLessThan(smallMs[0] ?? 0);
   });
@@ -102,5 +104,17 @@ describe('the pace of a playback', () => {
     expect(beats[at]?.round).toBe(Math.max(...beats.map((b) => b.round)));
     // Close behind: nothing is skipped.
     expect(resumeAt(beats, beats.length - 2, 5)).toBe(beats.length - 2);
+  });
+});
+
+describe('the hold on a reaction', () => {
+  it('a beat that cashes a reaction stays longer than the same kind of beat without one', () => {
+    const s = playSample({ slot: 4, players: 5, stage: 1, seed: 'fold', party: 'mixed' });
+    const beats = buildBeats(s.events, { creatures: s.fighters });
+    const ms = beatDurations(beats, { speed: 1, budgetMs: Number.POSITIVE_INFINITY });
+    const at = (reacts: boolean): number =>
+      beats.findIndex((b) => b.kind === 'creature' && b.reacts === reacts);
+    expect(ms[at(true)]).toBe(BEAT_MS.creature + REACTION_HOLD_MS);
+    expect(ms[at(false)]).toBe(BEAT_MS.creature);
   });
 });

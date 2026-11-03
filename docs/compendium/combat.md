@@ -628,6 +628,10 @@ The plain words the combat v2 screens use on purpose, so later text says the sam
 | Boss Rank                                                      | The raid screen, How to play                           | The server's place in the order of bosses. A kill moves it on.                                      |
 | This creature has fought this weekend, so its Knack is locked. | The Knack picker                                       | A Knack can be changed until its creature has fought.                                               |
 | Not in the new rules yet                                       | A gear piece's effect lines                            | The line does nothing in combat v2 for now.                                                         |
+| Overload!, Wildfire!, ... with "+N"                            | Over the boss when a Payoff cashes a mark              | The reaction's own name (`reactions.json`) and the bonus damage it added.                           |
+| x2.6!                                                          | Over a creature's hit on the boss when it crits        | How many times the hit's damage the crit made it.                                                   |
+| Dodged!                                                        | Over a creature or the boss that dodged                | The hit missed.                                                                                     |
+| Show Knack names in fights                                     | Settings, Fights                                       | Off by default: a creature's Knack name pops on it when it acts.                                    |
 | Shape word, target word                                        | A move tile and its label ("Nemesis Lance")            | The shape says which slots it hits, the target says whom it picks (`grammar.md`).                   |
 | Roles and Knacks, The board, Armour and crits                  | How to play, combat v2 sections                        | The page's sections, after "Marks and reactions" and before "The raid weekend" and "The Boss Rank". |
 

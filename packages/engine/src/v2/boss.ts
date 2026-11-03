@@ -183,7 +183,10 @@ function bossHits(
           watched = true;
         }
         s.count.intercepts++;
-        if (s.opts.log) log(s, 'intercept', `${by.name} intercepts for ${t.name}`);
+        if (s.opts.log) {
+          log(s, 'intercept', `${by.name} intercepts for ${t.name}`);
+          emit(s, { type: 'intercept', guard: keyOf(by), who: keyOf(t) });
+        }
         // Momentum: a hit aimed at it that another creature took counts like a dodge.
         if (fx(t).momentumBp) t.momentum = true;
         if (fx(by).flankGuard) bump(by, 'flankGuard');

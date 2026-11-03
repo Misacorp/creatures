@@ -4,7 +4,9 @@ import {
   PURGE_ROUNDS,
   actionActive,
   buildBeats,
+  critWords,
   foldBeats,
+  reactionName,
   foldSetupOf,
   removedPercent,
   showOf,
@@ -211,7 +213,7 @@ describe('what a beat shows', () => {
       (b) => showOf(blocked.events, b).floats,
     );
     expect(bl.some((f) => f.tone === 'blocked' && f.text === '0')).toBe(true);
-    expect(all.some((f) => f.tone === 'dodge' && f.text === 'Dodged')).toBe(true);
+    expect(all.some((f) => f.tone === 'dodge' && f.text === 'Dodged!')).toBe(true);
   });
 
   it('a boss beat names its move; the plain attack has none', () => {
@@ -241,5 +243,83 @@ describe('small helpers', () => {
     expect(removedPercent(1000, 300, 0)).toBe(30);
     expect(removedPercent(0, 0, 0)).toBe(0);
     expect(removedPercent(1000, 1000, 1200)).toBe(0);
+  });
+});
+
+describe('what a beat shows of the new events (reactions, crits, saves, boosts, Knacks)', () => {
+  const mixed = playSample({ slot: 4, players: 5, stage: 1, seed: 'fold', party: 'mixed' });
+  const setup = setupOf(mixed);
+  const beats = buildBeats(mixed.events, setup);
+  const shows = beats.map((b) => showOf(mixed.events, b, { creatures: setup.creatures }));
+
+  it("a reaction is named by the content (the mark and the hitter's element), with the bonus the engine gave", () => {
+    expect(reactionName('tide', 'spark')).toBe('Overload');
+    expect(reactionName('grove', 'ember')).toBe('Wildfire');
+    expect(reactionName('tide', 'tide')).toBeNull();
+    const named = shows.flatMap((s) => s.floats).filter((f) => f.tone === 'reaction');
+    expect(named.length).toBeGreaterThan(0);
+    const engine = mixed.events.flatMap((e) => (e.board?.type === 'reaction' ? [e.board] : []));
+    expect(named.map((f) => f.sub)).toEqual(engine.map((r) => `+${String(r.bonus)}`));
+    for (const f of named) {
+      expect(f.target).toBeNull();
+      expect(f.text).toMatch(/^[A-Z][a-z]+!$/);
+      expect(f.elements).toHaveLength(2);
+    }
+  });
+
+  it('a beat that cashes a reaction is held longer', () => {
+    const reacting = beats.filter((b) => b.reacts);
+    expect(reacting.length).toBeGreaterThan(0);
+    for (const b of reacting)
+      expect(mixed.events.slice(b.from, b.to).some((e) => e.board?.type === 'reaction')).toBe(true);
+    for (const b of beats.filter((x) => !x.reacts))
+      expect(mixed.events.slice(b.from, b.to).some((e) => e.board?.type === 'reaction')).toBe(
+        false,
+      );
+  });
+
+  it("every creature's hit on the boss is a number in its own element's colour; a crit says its multiplier", () => {
+    const hits = shows
+      .flatMap((s) => s.floats)
+      .filter((f) => f.target === null && f.tone === 'hit');
+    expect(hits.length).toBeGreaterThan(0);
+    for (const h of hits) expect(h.element).toBeDefined();
+    const crits = hits.filter((h) => h.crit);
+    expect(crits.length).toBeGreaterThan(0);
+    for (const c of crits) expect(c.mult).toMatch(/^x\d(\.\d)?!$/);
+    expect(critWords(26_000)).toBe('x2.6!');
+    expect(critWords(20_000)).toBe('x2!');
+  });
+
+  it('a Guard that took a hit, or whose cover cut one, is a save on the creature it covered; a cover says what it kept off', () => {
+    const saves = shows.flatMap((s) => s.saves);
+    const covers = saves.filter((s) => s.prevented !== null);
+    expect(covers.length).toBeGreaterThan(0);
+    for (const c of covers) expect(c.prevented).toBeGreaterThan(0);
+    const floats = shows.flatMap((s) => s.floats).filter((f) => f.tone === 'save');
+    expect(floats.length).toBe(saves.length);
+  });
+
+  it('a boost is one float for each boosted creature in a beat, with the sum of its boosts', () => {
+    const round = shows.find((s) => s.floats.some((f) => f.tone === 'boost'));
+    const boosts = round?.floats.filter((f) => f.tone === 'boost') ?? [];
+    expect(boosts.length).toBeGreaterThan(0);
+    expect(new Set(boosts.map((f) => f.target)).size).toBe(boosts.length);
+    for (const b of boosts) expect(b.sub).toMatch(/^\+\d+%$/);
+  });
+
+  it('a Knack acts for its creature in its beat and for a Support at the round start; a silenced or out creature has none', () => {
+    const creature = beats.findIndex((b) => b.kind === 'creature');
+    const knack = shows[creature]?.knacks ?? [];
+    const actor = beats[creature]?.actor ?? '';
+    const named = setup.creatures.find((c) => c.key === actor)?.knackName ?? null;
+    expect(knack.map((k) => k.who)).toEqual(named === null ? [] : [actor]);
+    const round = shows.find((s) => s.floats.some((f) => f.tone === 'boost'));
+    expect(round?.knacks.length).toBeGreaterThan(0);
+    const quiet = showOf(mixed.events, beats[creature] as never, {
+      creatures: setup.creatures,
+      quiet: new Set([actor]),
+    });
+    expect(quiet.knacks.map((k) => k.who)).not.toContain(actor);
   });
 });

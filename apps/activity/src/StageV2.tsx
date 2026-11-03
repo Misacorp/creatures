@@ -6,7 +6,7 @@
  */
 import type { ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'preact/hooks';
-import { bossArt } from './art';
+import { bossArt, elementClass } from './art';
 import { ArmourChip, EscalatingMeter, boardTurnSteps, stageTicks } from './BossCardV2';
 import { combatGlyph, moveGlyphId } from './combat-glyphs';
 import { actionActive, stepId, type BoardState, type StageModel } from './fight-v2';
@@ -40,26 +40,47 @@ import { StageHead } from './ui/StageHead';
 import { Tag } from './ui/Tag';
 import { TurnStrip } from './ui/TurnStrip';
 
-/** The numbers that float over a creature or the boss: a Blocked hit is the shield and 0, a crit is bigger, in the hit's own colour. */
+/**
+ * The numbers and words that float over a creature or the boss. A creature's hit on the boss is a number in its element's colour, a
+ * crit bigger with its multiplier ("x2.6!"); a Blocked hit is the shield and 0; a reaction is its name in the two colours of its elements
+ * with the bonus under it; a Guard's save is a shield (with what it kept off, when known); a boost is rising arrows; a Knack's name is a
+ * small word. All of it is text and drawings, never markup built from a name.
+ */
 function FloatsV2({ fx, target }: { fx: readonly FxItem[]; target: string | null }) {
   return (
     <>
       {fx.map((item) => {
         const { cue } = item;
         if (cue.kind !== 'float' || cue.target !== target) return null;
+        const colour = cue.tone === 'hit' ? elementClass(cue.element ?? null) : '';
+        const [markEl, hitEl] = cue.elements ?? [null, null];
         return (
           <span
-            key={`float-${String(cue.i)}`}
-            class={`float float-${cue.tone}${cue.crit ? ' crit' : ''} lane-${String(item.lane)}`}
+            key={`float-${cue.tone}-${String(cue.i)}`}
+            class={`float float-${cue.tone}${cue.crit ? ' crit' : ''}${colour === '' ? '' : ` ${colour}`} lane-${String(item.lane)}`}
             ref={fxRef(item, { '--drift': cue.drift, '--lane': item.lane })}
           >
             <span class="float-body">
+              {cue.mult !== undefined && <span class="crit-pop">{cue.mult}</span>}
+              {cue.tone === 'boost' && (
+                <span class="float-arrows">
+                  <i />
+                  <i />
+                </span>
+              )}
               <span class="float-text">
-                {cue.tone === 'blocked' && (
+                {(cue.tone === 'blocked' || cue.tone === 'save') && (
                   <Sprite sprite={glyphOrUnknown('shield')} scale={1} class="float-shield" />
                 )}
                 {cue.text}
               </span>
+              {cue.sub !== undefined && <span class="float-sub">{cue.sub}</span>}
+              {cue.tone === 'reaction' && (
+                <span class="float-colours">
+                  <i class={elementClass(markEl)} />
+                  <i class={elementClass(hitEl)} />
+                </span>
+              )}
             </span>
           </span>
         );
@@ -164,6 +185,24 @@ export function StageV2({
   );
   const hit = show?.flash ?? new Set<string | null>();
 
+  // A Guard's save (it took a hit for a creature, or its cover cut one): a short bracket links the two tiles, each carrying a leg
+  // towards the other for as long as the cue stays on screen.
+  const links = useMemo(() => {
+    const legs = new Map<string, { role: 'guard' | 'saved'; side: 'left' | 'right' }>();
+    const at = new Map(fighters.map((f) => [f.key, f]));
+    for (const item of fx) {
+      if (item.cue.kind !== 'cover') continue;
+      const guard = at.get(item.cue.guard);
+      const saved = at.get(item.cue.creature);
+      if (guard === undefined || saved === undefined || guard.col === saved.col) continue;
+      const towards = guard.col < saved.col ? 'right' : 'left';
+      if (!legs.has(guard.key)) legs.set(guard.key, { role: 'guard', side: towards });
+      if (!legs.has(saved.key))
+        legs.set(saved.key, { role: 'saved', side: towards === 'right' ? 'left' : 'right' });
+    }
+    return legs;
+  }, [fx, fighters]);
+
   // The live inputs in play: Rally lights everyone, a Shield Wall its row.
   const actions = state.actions.filter((a) => actionActive(a, state.round) && state.end === null);
   const wallRows = new Set(
@@ -191,6 +230,7 @@ export function StageV2({
   const tileOf = (f: FightCreatureV2): SlotModel['occupant'] => {
     const now = state.creatures[f.key];
     const owner = names.players[f.owner] ?? 'Someone';
+    const leg = links.get(f.key);
     return {
       species: f.species,
       name: f.name,
@@ -212,6 +252,7 @@ export function StageV2({
           store: now?.store ?? 0,
           hit: hit.has(f.key),
           acting: landed?.kind === 'creature' && landed.actor === f.key,
+          ...(leg === undefined ? {} : { link: leg }),
           overlay: (
             <>
               <FloatsV2 fx={fx} target={f.key} />

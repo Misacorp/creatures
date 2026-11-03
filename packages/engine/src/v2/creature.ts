@@ -181,6 +181,8 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
   // 3b. Crit (R6.3b): after the dodge and the choice of the reaction (so an effect may read both), before the reaction's bonus,
   // the cap and the armour. Chance and damage stack from the base, the species, the Knack and the talents (R7.1).
   let crit = false;
+  // The crit's multiplier (bp), for the board.
+  let critMult = 0;
   // Steady Rhythm: every third hit that lands is a crit, no luck (a dodged or Blocked hit is not counted).
   let rhythmCrit = false;
   // A Sure Crit makes a hit that is not already a crit one, with more extra damage; it is spent below, only if the hit lands.
@@ -195,9 +197,8 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
     if (spendsSureCrit) crit = true;
     if (crit) {
       const extra = spendsSureCrit ? (k.dodgeCritBp ?? 0) + (k.guardCritBp ?? 0) : 0;
-      plain = Math.floor(
-        (plain * (R.critBp + f.critDamageBp + (k.critDamageBp ?? 0) + extra)) / 10_000,
-      );
+      critMult = R.critBp + f.critDamageBp + (k.critDamageBp ?? 0) + extra;
+      plain = Math.floor((plain * critMult) / 10_000);
       if (s.opts.log) log(s, 'crit', `${f.name} crits`);
     }
   }
@@ -304,6 +305,7 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
             crit,
             blocked: true,
             dodged: false,
+            ...(crit ? { critBp: critMult } : {}),
           },
         });
       dmg = 0;
@@ -329,6 +331,7 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
         crit,
         blocked: false,
         dodged: false,
+        ...(crit ? { critBp: critMult } : {}),
       });
     hitBoss(s, f, dmg, true);
   }
