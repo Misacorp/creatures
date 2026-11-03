@@ -142,3 +142,5 @@ Found while building; each is staging-only today.
 - **A captured fixture of the v2 creature payload** (the client's parser is tested against samples in the server's shape).
 - **The dungeon's map** must not show a room modifier's foe gimmick on a v2 run (it does nothing there).
 - **Keywords are tap-for-help** on the How to play page, in the Talent Book and in a read-only Knack (2026-11-03, decision `2026-11-03-combat-v2-how-to-play-six`). Inside a button they are still plain chips: the Knack picker's choices and the slot that opens it. Making them tappable there means giving `ChoiceButton` rows their own help (it is shared with the dungeon).
+- **v1 help entries in v2 mode:** v1 glossary chips still open v1 text (`crit`, `boss-rank`, the roles with their numbers, "uses up the mark"). Swap them for v2 wording or stop v1 chips linking there when the flag is on.
+- **Determination** has no keyword or glossary entry yet, and its chip on the board needs one (and Misa's look at its icon).
