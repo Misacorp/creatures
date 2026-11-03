@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { initialWorld } from '../world';
+import { placesFor, trayBadge } from './tray-state';
 import {
   EXCHANGE,
   applyTrades,
@@ -17,6 +19,10 @@ import {
 } from './forge-post';
 import {
   MARKET_NEED,
+  brokerRate,
+  rateWords,
+  setMarket,
+  resetMarket,
   STAGES,
   brokerOnDuty,
   fractionPaid,
@@ -29,8 +35,9 @@ import {
   stageOf,
   stillNeeds,
 } from './market-sample';
-import { scaffold } from './market-art';
+import { planks } from './market-art';
 
+const PLANK_FIRST_ROW = 38; // the bottom row of planks starts 10 rows above the plot's foot
 const order = (over: Partial<ForgeOrder> = {}): ForgeOrder => ({
   baseId: 'kelp-cap',
   made: 3,
@@ -168,11 +175,33 @@ describe('the Market project', () => {
     expect(brokerOnDuty({ ...start, broker: 'x' })).toBe(false);
   });
 
-  it('draws more scaffolding at each stage', () => {
-    const filled = (stage: number): number =>
-      scaffold(stage).rows().join('').replaceAll('.', '').length;
-    for (let stage = 1; stage < STAGES; stage++) {
-      expect(filled(stage)).toBeGreaterThan(filled(stage - 1));
+  it('lays one more solid plank at each step; planks to come are hollow', () => {
+    const solid = (laid: number): number => planks(laid).rows().join('').replaceAll('.', '').length;
+    for (let laid = 1; laid <= STAGES; laid++) {
+      expect(solid(laid)).toBeGreaterThan(solid(laid - 1));
     }
+    // A plank to come keeps its ink outline and nothing inside.
+    const rows = planks(0).rows();
+    expect(rows[PLANK_FIRST_ROW]?.slice(2, 20)).toBe('k'.repeat(18));
+    expect(rows[PLANK_FIRST_ROW + 2]?.slice(3, 19)).toBe('.'.repeat(16));
+  });
+
+  it("says the broker's rate, and what mastery changes", () => {
+    expect(rateWords(brokerRate(0))).toBe('3 for 1, sometimes lucky');
+    expect(rateWords(brokerRate(1))).toBe('3 for 1, lucky more often');
+    expect(rateWords(brokerRate(3))).toBe('5 for 2, sometimes lucky');
+  });
+
+  it('shows the broker as busy in the tray, and the Market takes a free creature once built', () => {
+    resetMarket();
+    const world = initialWorld();
+    const c = world.creatures[7];
+    if (c === undefined) throw new Error('no creature');
+    expect(trayBadge(world, c).state).toBe('free');
+    setMarket({ ...marketFromHash('#valley?market=built'), broker: c.id });
+    expect(trayBadge(world, c).state).toBe('job');
+    expect(trayBadge(world, c).label).toContain("Market's broker post");
+    expect(placesFor(world, world.creatures[8] ?? c).market.ok).toBe(true);
+    resetMarket();
   });
 });

@@ -29,7 +29,7 @@ import { XpGain, XpList } from '../../ui/XpGain';
 import { craftingGain } from '../../xp-gain';
 import type { Waiting } from '../welcome/PlaceStories';
 import { TOUR, claimJob, creatureOf, isFree, startJob, type ProtoWorld } from '../world';
-import { At, CreatureSprite, Pic, Plate, SpeechBubble, isStill } from './parts';
+import { At, CreatureSprite, Glyph, Pic, Plate, SpeechBubble, isStill } from './parts';
 import { SceneFrame } from './SceneFrame';
 import { forgeSpots } from './scene-art';
 import { forgePostDraw, postSpots, PIECES_PER_PLANK, PLANKS } from './forge-post-art';
@@ -46,11 +46,13 @@ import {
   setMade,
   shardWord,
   getNeed,
-  surplusOf,
   type ForgeOrder,
 } from './forge-post';
 import { brokerOnDuty, getMarket, setMarket } from './market-sample';
 import { GameIcon } from '../../ui/GameIcon';
+import { PinnedAct } from './PinnedAct';
+import { partName } from '../../gear-view';
+import type { PartKind } from '../../gear-types';
 import { CHEST_FRAMES } from './valley-art';
 import './forge-market.css';
 
@@ -69,12 +71,17 @@ export function anvilJobs(jobs: readonly Job[], slots: number): (string | null)[
  * Who stands at the post (sample): the smith is the highest-level free creature; the broker is the creature
  * seated at the Market, else the next one (a stand-in when the sample opens with a broker already seated).
  */
-export function postRoles(world: ProtoWorld): { smith?: Creature; broker?: Creature } {
+export function postRoles(
+  world: ProtoWorld,
+  /** A welcome-back marker led here: the story's hero stands in the strip, so the smith is another creature. */
+  skipTop = false,
+): { smith?: Creature; broker?: Creature } {
   const free = world.creatures
     .filter((c) => isFree(world, c))
     .sort((a, b) => b.level - a.level || a.id.localeCompare(b.id));
   const seated = world.creatures.find((c) => c.id === getMarket().broker);
-  const smith = free[0];
+  const smiths = free.filter((c) => c.id !== seated?.id);
+  const smith = smiths[skipTop && smiths.length > 1 ? 1 : 0];
   const broker = seated ?? free.find((c) => c.id !== smith?.id);
   return {
     ...(smith === undefined ? {} : { smith }),
@@ -129,7 +136,7 @@ export function ForgeScene({
     need,
   };
   const status = postStatus(order, world.parts);
-  const { smith, broker } = postRoles(world);
+  const { smith } = postRoles(world, waiting !== undefined && waiting.stories.length > 0);
 
   const finishClaim = (anvil: number, jobId: string): void => {
     setWorld(claimJob(world, jobId));
@@ -145,6 +152,8 @@ export function ForgeScene({
     if (stocked.trades.length === 0) return;
     setMarket({ ...market, trades: market.trades + stocked.trades.length });
     setWorld({ ...world, parts: stocked.parts as ProtoWorld['parts'] });
+    // Only the arrival shows here: the broker works at the Market.
+    setTraded(summarize(stocked.trades));
   }, []);
 
   // The smith picks the shard up and finishes a piece a beat after the exchange.
@@ -225,7 +234,6 @@ export function ForgeScene({
   };
 
   const market = getMarket();
-  const brokerHere = brokerOnDuty(market);
   const plan =
     status === 'waiting' ? planTrades(world.parts, need, market.trades, order.of - order.made) : [];
   const trade = summarize(plan);
@@ -269,48 +277,31 @@ export function ForgeScene({
         }}
       />
     );
-  } else if (status === 'waiting' && !brokerHere) {
-    act = (
-      <ActionButton
-        label={
-          trade === null
-            ? `Waiting for ${shardWord(need)} shards`
-            : `Trade for a ${shardWord(need)} shard`
-        }
-        detail={
-          trade === null
-            ? 'your scouts will bring them'
-            : `${String(trade.spent)} ${shardWord(trade.from)} for ${String(trade.base)}`
-        }
-        wide
-        large
-        disabled={trade === null}
-        onClick={exchange}
-      />
-    );
+  } else if (status === 'waiting') {
+    act =
+      trade === null ? (
+        <PinnedAct calm={`Waiting for ${shardWord(need)} shards: your scouts will bring them`} />
+      ) : (
+        <PinnedAct
+          label={`Trade for a ${shardWord(need)} shard`}
+          detail={`${String(trade.spent)} ${shardWord(trade.from)} for ${String(trade.base)}`}
+          onClick={exchange}
+        />
+      );
   } else if (result !== null && claimed !== undefined) {
-    act = (
-      <>
-        <XpList label="Crafting" class="pv-act-xp">
-          <XpGain
-            change={craftingGain(result, creatureName(creatureOf(world, claimed.creatureId)))}
-            what="Crafting XP"
-            label={<GlossaryTag entry="crafting">Crafting</GlossaryTag>}
-            who={creatureOf(world, claimed.creatureId)}
-          />
-        </XpList>
-        {emptyAnvil >= 0 && (
-          <ActionButton
-            label="New job"
-            wide
-            large
-            onClick={() => {
-              tapAnvil(emptyAnvil);
-            }}
-          />
-        )}
-      </>
-    );
+    act =
+      emptyAnvil >= 0 ? (
+        <ActionButton
+          label="New job"
+          wide
+          large
+          onClick={() => {
+            tapAnvil(emptyAnvil);
+          }}
+        />
+      ) : (
+        <PinnedAct calm="The anvils are busy" />
+      );
   } else if (emptyAnvil >= 0) {
     act = (
       <ActionButton
@@ -321,6 +312,10 @@ export function ForgeScene({
           tapAnvil(emptyAnvil);
         }}
       />
+    );
+  } else {
+    act = (
+      <PinnedAct calm={status === 'done' ? 'The order is on the shelf' : 'The smith is at work'} />
     );
   }
 
@@ -344,7 +339,7 @@ export function ForgeScene({
                 {partCountItems(world.parts)
                   .slice(0, 3)
                   .map(({ key, ...b }) => (
-                    <CountBadge key={key} {...b} />
+                    <CountBadge key={key} {...b} name={partName(key as PartKind)} />
                   ))}
               </span>
             </At>
@@ -393,9 +388,18 @@ export function ForgeScene({
                       <ItemSprite baseId={order.baseId} scale={s} />
                     </At>
                   )}
-                  {traded !== null && !waiting && (
+                  {traded !== null && resume && (
+                    <At x={X(pa.anvil.x)} y={Y(pa.anvil.y - 12)}>
+                      <span class="pv-land">
+                        {Array.from({ length: traded.got }, (_, i) => (
+                          <GameIcon key={i} icon={{ kind: 'part', part: traded.to }} scale={s} />
+                        ))}
+                      </span>
+                    </At>
+                  )}
+                  {traded !== null && !resume && (
                     <At
-                      x={X(pa.anvil.x - 4)}
+                      x={X(pa.anvil.x - 12)}
                       y={Y(pa.anvil.y + 18)}
                       class="pv-found"
                       hidden={false}
@@ -405,9 +409,11 @@ export function ForgeScene({
                         role="img"
                         aria-label={`Got ${String(traded.got)} ${shardWord(traded.to)} shards${traded.lucky ? ', a lucky extra' : ''}`}
                       >
+                        {traded.lucky && <Glyph id="sparkle" scale={s} />}
                         {Array.from({ length: traded.got }, (_, i) => (
                           <GameIcon key={i} icon={{ kind: 'part', part: traded.to }} scale={s} />
                         ))}
+                        {traded.lucky && <Glyph id="sparkle" scale={s} />}
                       </span>
                       {traded.lucky && <Plate>Lucky!</Plate>}
                     </At>
@@ -416,7 +422,7 @@ export function ForgeScene({
                     type="button"
                     class="pv-anvil pv-post"
                     aria-label={postLabel}
-                    disabled={!(waiting && trade !== null && !brokerHere)}
+                    disabled={!(waiting && trade !== null)}
                     ref={cssVars({
                       '--x': `${String(X(pa.anvil.x - 8))}px`,
                       '--y': `${String(Y(pa.anvil.y - 12))}px`,
@@ -425,34 +431,12 @@ export function ForgeScene({
                     })}
                     onClick={exchange}
                   >
-                    {waiting && !brokerHere && (
+                    {waiting && trade !== null && (
                       <SpeechBubble>
                         <GameIcon icon={shardIcon} scale={3} />
                       </SpeechBubble>
                     )}
                   </button>
-                  {brokerHere && broker !== undefined && (
-                    <At x={X(pa.broker.x)} y={Y(pa.broker.y)} class="pv-broker" hidden={false}>
-                      <span
-                        class="pv-broker-mark"
-                        role="img"
-                        aria-label={`${creatureName(broker)} is at the broker's seat, trading shards`}
-                      >
-                        <SpeechBubble>
-                          <GameIcon
-                            icon={{
-                              kind: 'part',
-                              part: surplusOf(world.parts, need)[0]?.kind ?? 'tide-shard',
-                            }}
-                            scale={2}
-                          />
-                          <span class="pix">→</span>
-                          <GameIcon icon={shardIcon} scale={2} />
-                        </SpeechBubble>
-                        <CreatureSprite creature={broker} scale={s} />
-                      </span>
-                    </At>
-                  )}
                 </>
               );
             })()}
@@ -553,22 +537,35 @@ export function ForgeScene({
               </ul>
             )}
             {result !== null && (
-              <At x={X(at.chest.x - 4)} y={Y(at.chest.y + 40)} class="pv-found" hidden={false}>
+              <At
+                x={X(at.chest.x - 4)}
+                y={Y(at.chest.y + 40)}
+                class="pv-found pv-found-end"
+                hidden={false}
+              >
                 <ItemSprite baseId={result.baseId} scale={s} alt={gearName(result.baseId)} />
                 <Plate>{gearName(result.baseId)}</Plate>
               </At>
             )}
-            <button
-              type="button"
-              class="pv-chest"
-              aria-label={`Chest: your bag, ${String(world.items.length)} items (not in this prototype)`}
-              ref={cssVars({
-                '--x': `${String(X(at.chest.x))}px`,
-                '--y': `${String(Y(at.chest.y))}px`,
-              })}
-            >
+            {result !== null && claimed !== undefined && (
+              <At x={X(g.cx)} y={Y(at.bench.y + 30)} class="pv-centred" hidden={false}>
+                <XpList label="Crafting" class="pv-act-xp">
+                  <XpGain
+                    change={craftingGain(
+                      result,
+                      creatureName(creatureOf(world, claimed.creatureId)),
+                    )}
+                    what="Crafting XP"
+                    label={<GlossaryTag entry="crafting">Crafting</GlossaryTag>}
+                    who={creatureOf(world, claimed.creatureId)}
+                  />
+                </XpList>
+              </At>
+            )}
+            {/* The chest is the bag's picture; the bag is not in this prototype, so it is not a button. */}
+            <At x={X(at.chest.x)} y={Y(at.chest.y)}>
               <Pic sprite={CHEST_FRAMES[chest] ?? CHEST_FRAMES[0]!} scale={s} />
-            </button>
+            </At>
           </>
         );
       }}

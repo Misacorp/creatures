@@ -546,6 +546,7 @@ describe('the Places list and the tray’s mastery', () => {
     expect(workOf('school')).toBe('teaching');
     expect(workOf('signpost')).toBe('scouting');
     expect(workOf('bonfire')).toBe('keeping');
+    expect(workOf('market')).toBe('trading');
     expect(workOf('valley')).toBeNull();
     expect(workOf('arena')).toBeNull();
   });
