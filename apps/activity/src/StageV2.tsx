@@ -127,8 +127,10 @@ export function StageV2({
   const bossRef = useRef<HTMLDivElement>(null);
   const handScrolledAt = useRef(0);
 
-  const { beat, show, fx, intro } = playback;
-  const state: BoardState = model.states[Math.min(beat, model.states.length - 1)] as BoardState;
+  const { show, fx, intro } = playback;
+  // The step is kept inside the fight (the live finale's list of beats can be shorter than a step played before it was replaced).
+  const beat = Math.min(playback.beat, model.states.length - 1);
+  const state: BoardState = model.states[beat] as BoardState;
   const before: BoardState = model.states[Math.max(0, beat - 1)] as BoardState;
   const landed = show === null ? undefined : model.beats[beat - 1];
   const rows = boss.rows;
@@ -184,7 +186,8 @@ export function StageV2({
       v2: {
         role: f.role,
         knack: f.knackName,
-        carried: { hp: now?.hp ?? 0, max: f.maxHp },
+        // A knocked-out creature has no HP to show: it is greyed and struck through.
+        carried: now?.out === true ? null : { hp: now?.hp ?? 0, max: f.maxHp },
         fight: {
           silenced: now?.silenced ?? 0,
           out: now?.out === true,
@@ -398,29 +401,33 @@ export function StageV2({
         onTap={tap}
       />
       {children}
-      <div class="stage-strikes" ref={layerRef} aria-hidden="true">
-        {strike !== null && (
-          <BossFx
-            key={`strike-${String(beat)}`}
-            phase="impact"
-            strike={strike}
-            seed={beat}
-            ms={0}
-            element={boss.element}
-            layer={layerRef}
-            boss={() => bossRef.current}
-            unit={(id) => {
-              const slot = bySlotKey.get(id);
-              return slot === undefined
-                ? null
-                : (stripRef.current?.querySelector<HTMLElement>(`[data-slot="${String(slot)}"]`) ??
-                    null);
-            }}
-            zone={() => null}
-          />
-        )}
+      {/* The effects' layer sits inside the stage's padding, so nothing of it is drawn past the stage's content. */}
+      <div class="stage-overlay">
+        <div class="stage-strikes" ref={layerRef} aria-hidden="true">
+          {strike !== null && (
+            <BossFx
+              key={`strike-${String(beat)}`}
+              phase="impact"
+              strike={strike}
+              seed={beat}
+              ms={0}
+              element={boss.element}
+              layer={layerRef}
+              boss={() => bossRef.current}
+              unit={(id) => {
+                const slot = bySlotKey.get(id);
+                return slot === undefined
+                  ? null
+                  : (stripRef.current?.querySelector<HTMLElement>(
+                      `[data-slot="${String(slot)}"]`,
+                    ) ?? null);
+              }}
+              zone={() => null}
+            />
+          )}
+        </div>
+        {intro !== null && <RoundIntro intro={intro} />}
       </div>
-      {intro !== null && <RoundIntro intro={intro} />}
     </section>
   );
 }

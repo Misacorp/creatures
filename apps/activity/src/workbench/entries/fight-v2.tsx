@@ -106,7 +106,7 @@ function StageHeld({ p }: { p: Props }) {
     [replay],
   );
   const model = useMemo(() => stageModelOf(setup, replay.events), [setup, replay]);
-  const moment = (MOMENTS.find((m) => m === str(p, 'moment')) ?? 'start');
+  const moment = MOMENTS.find((m) => m === str(p, 'moment')) ?? 'start';
   const beat = momentBeat(model, replay.events, moment, num(p, 'beat'));
   const landed = beat > 0 ? model.beats[beat - 1] : undefined;
   const show = landed === undefined ? null : showOf(replay.events, landed);

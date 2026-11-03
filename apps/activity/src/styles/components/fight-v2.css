@@ -67,7 +67,7 @@
 /* The numbers and the "KO!" that float over a tile: they start in its middle and stay small enough to fit in it. */
 .party-slot .slot-fx {
   position: absolute;
-  inset: 0;
+  inset: 0.125rem;
   pointer-events: none;
 }
 
@@ -84,7 +84,7 @@
 }
 
 .party-slot .slot-fx .ko-tag {
-  top: 30%;
+  top: 48%;
   font-size: var(--fs-row);
 }
 
@@ -172,4 +172,12 @@
   flex-wrap: wrap;
   gap: 0.5rem 0.75rem;
   align-items: center;
+}
+
+/* The strikes' layer and the round's intro sit inside the stage's padding (the stage keeps its own box). */
+.stage-v2 .stage-overlay {
+  position: absolute;
+  inset: 0.5rem;
+  z-index: 6;
+  pointer-events: none;
 }

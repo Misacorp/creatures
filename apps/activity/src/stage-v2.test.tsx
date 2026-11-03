@@ -108,8 +108,7 @@ describe('the v2 stage', () => {
     const replay = replaySample({ slot: 1, players: 4, stage: 1, seed: 'fold' });
     const { p } = draw(
       replay,
-      (m, k) =>
-        m.beats[k]?.kind === 'boss' && showOf(replay.events, m.beats[k]).move === 'Spray',
+      (m, k) => m.beats[k]?.kind === 'boss' && showOf(replay.events, m.beats[k]).move === 'Spray',
     );
     expect(
       byClass(p.root, 'stage-move')[0] === undefined

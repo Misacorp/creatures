@@ -49,8 +49,8 @@
 /* The owner's initial: in the corner, in the owner's colour. */
 .party-slot .slot-owner {
   position: absolute;
-  top: 0;
-  right: 0;
+  top: 0.125rem;
+  right: 0.125rem;
   display: grid;
   place-items: center;
   min-width: 1rem;
