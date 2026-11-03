@@ -370,3 +370,220 @@
   min-height: 2rem;
   padding: 0 0.625rem;
 }
+
+/*
+  --- Reaction callouts, the options (StageV2's `reactionStyle` and `reactionInk`) ---
+  The two element colours go into the letters themselves, in hard pixel steps (no gradient): the word in two halves, a fill with a
+  1 px outline in the other colour, or letters taking turns. Each part of the word is a span with the element's class, which sets --el.
+*/
+.float-reaction .float-text > span:not(.rx-num, .rx-name),
+.float-reaction .rx-name > span,
+.float-reaction .rx-num > span,
+.float-reaction .ink-outline > span,
+.float-reaction .ink-shadow > span {
+  color: var(--el, var(--bone));
+}
+
+.float-reaction .ink-outline,
+.float-reaction .ink-shadow {
+  --out: var(--el, var(--bone));
+}
+
+.float-reaction .ink-shadow > span {
+  text-shadow:
+    2px 2px 0 var(--out),
+    3px 3px 0 var(--ink);
+}
+
+.float-reaction .ink-outline > span {
+  text-shadow:
+    1px 0 var(--out),
+    -1px 0 var(--out),
+    0 1px var(--out),
+    0 -1px var(--out),
+    2px 0 var(--ink),
+    -2px 0 var(--ink),
+    0 2px var(--ink),
+    0 -2px var(--ink);
+}
+
+/* The hit's number rides in the callout: it keeps the hitter's colour (the float carries the hitter's element class). */
+.float-reaction.rx {
+  --rx-hit: var(--el, var(--bone));
+}
+
+.float-reaction.rx .rx-num {
+  color: var(--el, var(--bone));
+  font-size: var(--fs-title);
+}
+
+.float-reaction.rx .rx-name {
+  font-size: var(--fs-title);
+}
+
+.float-reaction.rx .rx-line {
+  gap: 0.375rem;
+  align-items: baseline;
+}
+
+.float-reaction.rx .float-sub {
+  margin-top: 0.125rem;
+}
+
+.float-reaction.rx .crit-pop {
+  color: var(--el, var(--bone));
+  font-size: var(--fs-row);
+}
+
+/* unit: the name over the total, the bonus under it in gold: one plate, one rise. */
+.float-reaction.rx-unit .rx-line {
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.float-reaction.rx-unit .rx-num {
+  font-size: 1.5rem;
+}
+
+/* burst: the number on top (where the hit's own number would stand), the name and its bonus bursting out under it. */
+.float-reaction.rx-burst .rx-line {
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.float-reaction.rx-burst .rx-num,
+.float-reaction.rx-burst .rx-name,
+.float-reaction.rx-morph .rx-num {
+  font-size: 1.5rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .float-reaction.rx-burst .rx-name,
+  .float-reaction.rx-burst .float-sub,
+  .float-reaction.rx-morph .rx-name,
+  .float-reaction.rx-morph .float-sub {
+    animation: rx-appear var(--fx-ms) steps(1) both;
+  }
+
+  .float-reaction.rx-burst .rx-name {
+    animation-name: rx-burst;
+  }
+
+  .float-reaction.rx-morph .rx-num > span {
+    animation: rx-turn var(--fx-ms) steps(1) both;
+  }
+
+  /* The held view of the workbench shows the end of it. */
+  .wb-held .float-reaction.rx-burst .rx-name,
+  .wb-held .float-reaction.rx-burst .float-sub,
+  .wb-held .float-reaction.rx-morph .rx-name,
+  .wb-held .float-reaction.rx-morph .float-sub,
+  .wb-held .float-reaction.rx-morph .rx-num > span {
+    animation: none;
+  }
+
+  @keyframes rx-appear {
+    0%,
+    14% {
+      opacity: 0;
+    }
+
+    15%,
+    100% {
+      opacity: 1;
+    }
+  }
+
+  /* The name bursts out of the number: big for a moment, then its own size, in whole steps. */
+  @keyframes rx-burst {
+    0%,
+    14% {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+
+    16% {
+      opacity: 1;
+      transform: scale(1.6);
+    }
+
+    20%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* The number stays in the hitter's colour until the name appears, then takes the reaction's colours. */
+  @keyframes rx-turn {
+    0%,
+    14% {
+      color: var(--rx-hit, var(--bone));
+    }
+
+    15%,
+    100% {
+      color: var(--el, var(--bone));
+    }
+  }
+}
+
+/*
+  --- A creature carrying a Support's Boost (StageV2's `boostMark`) ---
+  The mark stays for as long as the Boost lasts (until the creature's next hit), so the board can be read at a glance. It is a child of
+  the tile, not the tile's own box-shadow, so it never replaces the element ring, the Guard's flash or a hit's red. A static drawing: it
+  has no motion to reduce.
+*/
+.party-slot .slot-boost {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* The glow: three hard steps of gold going inwards from the tile's edge (no blur), kept inside the element ring. */
+.party-slot .slot-boost.glow {
+  inset: var(--px);
+  background: rgb(var(--gold-rgb) / 14%);
+  box-shadow:
+    inset 0 0 0 var(--px) rgb(var(--gold-rgb) / 85%),
+    inset 0 0 0 calc(var(--px) * 2) rgb(var(--gold-rgb) / 45%),
+    inset 0 0 0 calc(var(--px) * 3) rgb(var(--gold-rgb) / 20%);
+}
+
+/* The pip: a gold up-arrow on a dark square in the tile's bottom left corner. */
+.party-slot .slot-boost.pip {
+  bottom: 0.125rem;
+  left: 0.125rem;
+  width: 0.875rem;
+  height: 0.875rem;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--gold);
+}
+
+.party-slot .slot-boost.pip::after {
+  position: absolute;
+  inset: 0.1875rem 0.125rem;
+  background: var(--gold);
+  clip-path: polygon(50% 0, 100% 55%, 70% 55%, 70% 100%, 30% 100%, 30% 55%, 0 55%);
+  content: '';
+}
+
+/*
+  A crit's number as two hard halves (StageV2's `critStyle` "split"): the upper half a lighter shade of the hitter's colour, the lower
+  half its base colour, split in one step (no blend). The ink outline is a filter, since the text itself is clipped from the fill.
+*/
+.crit-split {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--el, var(--bone)) 55%, white) 50%,
+    var(--el, var(--bone)) 50%
+  );
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(2px 0 var(--ink)) drop-shadow(-2px 0 var(--ink)) drop-shadow(0 2px var(--ink))
+    drop-shadow(0 -2px var(--ink));
+  -webkit-text-fill-color: transparent;
+}

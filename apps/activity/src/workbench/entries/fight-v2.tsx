@@ -11,7 +11,17 @@ import { PlayerV2 } from '../../ReplayV2';
 import { StageResultRow } from '../../StageResultRow';
 import type { PhaseResultView } from '../../raid-api';
 import { raidV2Sample } from '../raid-v2-sample';
-import { StageV2 } from '../../StageV2';
+import {
+  BOOST_MARKS,
+  CRIT_STYLES,
+  REACTION_INKS,
+  REACTION_STYLES,
+  StageV2,
+  type BoostMark,
+  type CritStyle,
+  type ReactionInk,
+  type ReactionStyle,
+} from '../../StageV2';
 import { staticFx } from '../../stage-fx';
 import { MarkStrip } from '../../ui/MarkStrip';
 import type { PlaybackV2 } from '../../use-playback-v2';
@@ -153,6 +163,21 @@ function optionsOf(p: Props): FightSampleOptions {
   };
 }
 
+/** The options for the stage's reaction callout and boost mark, read from the page's controls (an unknown value falls back to the default). */
+function styleOf(p: Props): {
+  reactionStyle: ReactionStyle;
+  reactionInk: ReactionInk;
+  boostMark: BoostMark;
+  critStyle: CritStyle;
+} {
+  return {
+    reactionStyle: REACTION_STYLES.find((v) => v === str(p, 'reactionStyle')) ?? 'plate',
+    reactionInk: REACTION_INKS.find((v) => v === str(p, 'reactionInk')) ?? 'bar',
+    boostMark: BOOST_MARKS.find((v) => v === str(p, 'boostMark')) ?? 'glow',
+    critStyle: CRIT_STYLES.find((v) => v === str(p, 'critStyle')) ?? 'mult',
+  };
+}
+
 /** The stage held still at a moment of a real fight, with the effects of the beat that just landed. */
 function StageHeld({ p }: { p: Props }) {
   const opts = optionsOf(p);
@@ -197,6 +222,7 @@ function StageHeld({ p }: { p: Props }) {
         place={opts.stage === 3 ? 'Finale' : `Stage ${String(opts.stage)} / 3`}
         hpMax={replay.bossHpMax}
         rounds={replay.boss.rounds}
+        {...styleOf(p)}
       />
     </div>
   );
@@ -417,6 +443,10 @@ const CONTROLS = {
   seed: { kind: 'text', maxLength: 12 },
   party: { kind: 'select', options: ['rows', 'mixed'] },
   knackNames: { kind: 'toggle' },
+  reactionStyle: { kind: 'select', options: REACTION_STYLES },
+  reactionInk: { kind: 'select', options: REACTION_INKS },
+  boostMark: { kind: 'select', options: BOOST_MARKS },
+  critStyle: { kind: 'select', options: CRIT_STYLES },
   moment: { kind: 'select', options: MOMENTS },
   beat: { kind: 'number', min: 0, max: 400 },
   round: { kind: 'number', min: 0, max: 8 },
@@ -438,6 +468,10 @@ const DEFAULTS = {
   seed: 'fold',
   party: 'rows',
   knackNames: false,
+  reactionStyle: 'plate',
+  reactionInk: 'bar',
+  boostMark: 'glow',
+  critStyle: 'mult',
   moment: 'marks and an announced move',
   beat: 0,
   round: 3,
@@ -473,6 +507,71 @@ const stageV2: Entry = {
     {
       name: 'Reaction callout: its name in its two colours with the bonus, over the boss (Old Bogback)',
       props: { slot: 4, players: 5, party: 'mixed', moment: 'a reaction is cashed' },
+    },
+    {
+      name: 'Reaction option A, one float: the name over the hit’s total and its bonus (colours: split word)',
+      props: {
+        slot: 4,
+        players: 5,
+        party: 'mixed',
+        moment: 'a reaction is cashed',
+        reactionStyle: 'unit',
+        reactionInk: 'split',
+      },
+    },
+    {
+      name: 'Reaction option B, the number rises and the name bursts out of it (colours: outline)',
+      props: {
+        slot: 4,
+        players: 5,
+        party: 'mixed',
+        moment: 'a reaction is cashed',
+        reactionStyle: 'burst',
+        reactionInk: 'outline',
+      },
+    },
+    {
+      name: 'Reaction option C, the number turns into the two colours as the name appears (colours: alternate letters)',
+      props: {
+        slot: 4,
+        players: 5,
+        party: 'mixed',
+        moment: 'a reaction is cashed',
+        reactionStyle: 'morph',
+        reactionInk: 'alternate',
+      },
+    },
+    {
+      name: 'Reaction colours: fill with a hard drop shadow in the other colour',
+      props: {
+        slot: 4,
+        players: 5,
+        party: 'mixed',
+        moment: 'a reaction is cashed',
+        reactionInk: 'shadow',
+      },
+    },
+    {
+      name: 'Crit option: "452!" with the number in two hard halves, no multiplier',
+      props: { slot: 4, players: 5, party: 'mixed', moment: 'a crit', critStyle: 'split' },
+    },
+    {
+      name: 'Reaction option: the shipped plate with split-word colours',
+      props: {
+        slot: 4,
+        players: 5,
+        party: 'mixed',
+        moment: 'a reaction is cashed',
+        reactionInk: 'split',
+      },
+    },
+    {
+      name: 'Boosted creatures keep a yellow inner glow until their next hit (a Support’s Boost)',
+      props: { slot: 4, players: 5, party: 'mixed', moment: 'a boost' },
+    },
+    {
+      name: 'Boosted creatures with the up-arrow pip instead of the glow',
+      props: { slot: 4, players: 5, party: 'mixed', moment: 'a boost', boostMark: 'pip' },
     },
     {
       name: 'A crit with its multiplier (x2.6!) in the hitter’s colour',

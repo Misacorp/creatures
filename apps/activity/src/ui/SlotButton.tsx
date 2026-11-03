@@ -77,6 +77,11 @@ export interface FightTile {
    * the two, going towards the other one's side (`side`). The Guard's tile also flashes.
    */
   link?: { role: 'guard' | 'saved'; side: 'left' | 'right' };
+  /**
+   * It carries a Support's Boost (until its next hit): a mark that stays while the Boost lasts, as a yellow inner glow or a small
+   * up-arrow in a corner. Neither is the element ring, the Guard's flash or the hit's red.
+   */
+  boosted?: 'glow' | 'pip';
   /** The numbers and tags that float over it, drawn by the screen. */
   overlay?: ComponentChildren;
 }
@@ -148,6 +153,7 @@ export function SlotButton(props: SlotButtonProps) {
     if (fight?.hit === true) classes.push('fight-hit');
     if (fight?.acting === true) classes.push('fight-acting');
     if (fight?.link?.role === 'guard') classes.push('fight-guarding');
+    if (fight?.boosted !== undefined) classes.push('fight-boosted');
   }
   if (own !== null) classes.push('draggable');
   if (status === 'valid') classes.push('drop-valid');
@@ -266,6 +272,9 @@ export function SlotButton(props: SlotButtonProps) {
           {plainGlyph !== undefined && <Sprite sprite={plainGlyph} scale={1} />}
           {hitGlyph !== undefined && <Sprite sprite={hitGlyph} scale={1} />}
         </span>
+      )}
+      {c?.v2?.fight?.boosted !== undefined && (
+        <span class={`slot-boost ${c.v2.fight.boosted}`} aria-hidden="true" />
       )}
       {c?.v2?.fight?.link !== undefined && (
         <span

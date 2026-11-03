@@ -4,9 +4,17 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: Combat v2 fight options for Misa: reaction callouts with the hit, colours in the text, crit styles and a buffed mark
+
+ID: `2026-11-03-combat-v2-fight-options-for-misa` · Status: current · Amends: `2026-11-03-combat-v2-fights-made-readable-reaction`
+
+**Decision.** `StageV2` takes options so Misa can pick by screenshot; the shipped look stays the default until he does. `reactionStyle`: `plate` (today), `unit` (one float: name, the hit's total, the bonus), `burst` (the number, the name bursting out under it), `morph` (the number turns into the two colours as the name appears). `reactionInk` puts the two element colours into the letters, no gradient: `bar` (today), `split` word, `outline`, `shadow` (hard drop shadow) or `alternate` letters. `critStyle`: `mult` (today's "x2.6!") or `split` (the number with "!" in two hard halves, the upper a lighter shade). `boostMark`: a creature a Support boosted keeps a yellow inner glow (default) or an up-arrow pip until its next hit; the fold keeps `CreatureState.boost` (added by a `boost` event, spent by the creature's next hit, cleared by a knock-out). A reaction's cue carries its own hit (`FloatCue.hit`) so the callout can hold the number.
+
+**Reasoning.** Misa found the Overload pop-up disconnected from the hit that set it off and asked for the element colours inside the text. The options are props with workbench controls, so no choice is made for him; the board needed a lasting mark for a Boost so players can read it. Engine untouched (parity digest unchanged).
+
 ## 2026-11-03: Combat v2 fights made readable: reaction callouts, element-coloured hits, Guard saves, boosts and an optional Knack name
 
-ID: `2026-11-03-combat-v2-fights-made-readable-reaction` · Status: current · Amends: `2026-11-03-combat-v2-client-third-part-fight`
+ID: `2026-11-03-combat-v2-fights-made-readable-reaction` · Status: current, amended by `2026-11-03-combat-v2-fight-options-for-misa` · Amends: `2026-11-03-combat-v2-client-third-part-fight`
 
 **Decision.** Misa watched v2 fights on staging and found the creatures' effects mild or invisible. `StageV2` now draws, with the shipped floating-text machinery (`useFxTrail`, `fxRef`, `KoTags`, `FloatsV2`; no second one):
 

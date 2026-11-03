@@ -72,6 +72,7 @@ export function cuesOf(show: BeatShow, knackNames = false): Cue[] {
       ...(f.elements === undefined ? {} : { elements: f.elements }),
       ...(f.sub === undefined ? {} : { sub: f.sub }),
       ...(f.mult === undefined ? {} : { mult: f.mult }),
+      ...(f.hit === undefined ? {} : { hit: f.hit }),
     })),
     // The Knack's name pops on its creature only when the player asked for it (Settings, "Show Knack names in fights").
     ...(knackNames

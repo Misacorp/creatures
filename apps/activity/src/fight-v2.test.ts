@@ -267,6 +267,33 @@ describe('what a beat shows of the new events (reactions, crits, saves, boosts, 
     }
   });
 
+  it("a reaction's callout knows the hit that cashed it: the same creature's number in its beat, bonus included", () => {
+    const named = shows.flatMap((s) => s.floats).filter((f) => f.tone === 'reaction');
+    const taken = named.filter((f) => f.hit !== undefined);
+    expect(taken.length).toBeGreaterThan(0);
+    for (const f of taken) {
+      const hit = f.hit as NonNullable<typeof f.hit>;
+      expect(Number(hit.text)).toBeGreaterThan(Number((f.sub ?? '').slice(1)));
+      expect(hit.i).toBeGreaterThan(f.i);
+    }
+  });
+
+  it('a Boost stays on the creature from the round start until its next hit on the boss', () => {
+    const states = beats.map((b) => stateAfter(setup, mixed.events, b.to));
+    const keys = setup.creatures.map((c) => c.key);
+    const carried = (k: number): string[] =>
+      keys.filter((key) => (states[k]?.creatures[key]?.boost ?? 0) > 0);
+    const first = states.findIndex((_, k) => carried(k).length > 0);
+    expect(first).toBeGreaterThanOrEqual(0);
+    const who = carried(first)[0] as string;
+    const spent = states.findIndex((_, k) => k > first && !carried(k).includes(who));
+    expect(spent).toBeGreaterThan(first);
+    const hitBy = (b: (typeof beats)[number]) =>
+      mixed.events.slice(b.from, b.to).some((e) => e.board?.type === 'hit' && e.board.from === who);
+    for (let k = first + 1; k < spent; k++) expect(hitBy(beats[k] as never)).toBe(false);
+    expect(hitBy(beats[spent] as never)).toBe(true);
+  });
+
   it('a beat that cashes a reaction is held longer', () => {
     const reacting = beats.filter((b) => b.reacts);
     expect(reacting.length).toBeGreaterThan(0);

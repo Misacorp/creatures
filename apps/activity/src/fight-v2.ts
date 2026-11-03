@@ -52,6 +52,11 @@ export interface CreatureState {
   silenced: number;
   /** Its Store (Heat, Calm, Dodge stacks): 0 when it has none. */
   store: number;
+  /**
+   * A Support's Boost it still carries, in basis points (0: none). A Boost lasts until the creature's next hit on the boss (R16, the
+   * keyword "Boost"), so a hit from it spends it, and a knock-out takes it away.
+   */
+  boost: number;
 }
 
 /** A mark on the boss: its element, its count and whether it is Sealed. */
@@ -121,7 +126,7 @@ export function startState(setup: FoldSetup): BoardState {
     creatures: Object.fromEntries(
       setup.creatures.map((c) => [
         c.key,
-        { hp: c.startHp, out: c.startHp <= 0, silenced: 0, store: 0 },
+        { hp: c.startHp, out: c.startHp <= 0, silenced: 0, store: 0, boost: 0 },
       ]),
     ),
     bossHp: setup.bossHpStart,
@@ -206,6 +211,8 @@ function play(
         s.bossHp = Math.max(0, s.bossHp - b.damage);
         const row = rowOf.get(b.from);
         if (row !== undefined) s.step = { kind: 'row', row };
+        const hitter = s.creatures[b.from];
+        if (hitter !== undefined) hitter.boost = 0;
       } else if (b.to !== null) {
         const taker = s.creatures[b.by ?? b.to];
         if (taker !== undefined) taker.hp = Math.max(0, taker.hp - b.damage);
@@ -249,7 +256,13 @@ function play(
         c.hp = 0;
         c.silenced = 0;
         c.store = 0;
+        c.boost = 0;
       }
+      break;
+    }
+    case 'boost': {
+      const c = s.creatures[b.who];
+      if (c !== undefined && !c.out) c.boost += b.bp;
       break;
     }
     case 'silence': {
@@ -451,6 +464,16 @@ export interface FloatCue {
   sub?: string;
   /** A crit's multiplier, as the words "x2.6!". */
   mult?: string;
+  /** A reaction: the hit of the same creature that cashed it, in the same beat (the callout can carry its number). */
+  hit?: HitOfReaction;
+}
+
+/** The hit a reaction was cashed on: its event index (so the stage can leave its own number out), the damage, and a crit's size. */
+export interface HitOfReaction {
+  i: number;
+  text: string;
+  crit: boolean;
+  mult?: string;
 }
 
 /** What the screen draws for one beat, read from its events. */
@@ -511,6 +534,9 @@ export function showOf(
   const saves: { i: number; guard: string; who: string; prevented: number | null }[] = [];
   const knackOwners = new Map<string, number>();
   const boosts = new Map<string, { i: number; bp: number }>();
+  // The creature behind each number on the boss, and who cashed each reaction: a reaction's callout takes the number of its own hit.
+  const hitters = new Map<number, string>();
+  const reactors: { cue: FloatCue; by: string }[] = [];
   const byKey = new Map((context.creatures ?? []).map((c) => [c.key, c]));
   const quiet = context.quiet ?? new Set<string>();
   const elementOf = (key: string | null): string | undefined =>
@@ -531,6 +557,7 @@ export function showOf(
       case 'hit': {
         if (b.from !== null && b.to === null) {
           flash.add(null);
+          if (!b.dodged && !b.blocked) hitters.set(i, b.from);
           floats.push(
             b.dodged
               ? { i, target: null, text: 'Dodged!', tone: 'dodge', crit: false, drift: drift(i) }
@@ -613,7 +640,7 @@ export function showOf(
         cashed.push(b.mark);
         const trigger = elementOf(b.by);
         const name = trigger === undefined ? null : reactionName(b.mark, trigger);
-        floats.push({
+        const cue: FloatCue = {
           i,
           target: null,
           text: `${name ?? 'Reaction'}!`,
@@ -622,7 +649,9 @@ export function showOf(
           drift: drift(i),
           sub: `+${String(b.bonus)}`,
           ...(trigger === undefined ? {} : { elements: [b.mark, trigger] as const }),
-        });
+        };
+        floats.push(cue);
+        reactors.push({ cue, by: b.by });
         break;
       }
       case 'shed':
@@ -634,6 +663,16 @@ export function showOf(
       default:
         break;
     }
+  }
+  for (const { cue, by } of reactors) {
+    const hit = floats.find((f) => f.tone === 'hit' && f.i > cue.i && hitters.get(f.i) === by);
+    if (hit !== undefined)
+      cue.hit = {
+        i: hit.i,
+        text: hit.text,
+        crit: hit.crit,
+        ...(hit.mult === undefined ? {} : { mult: hit.mult }),
+      };
   }
   for (const s of saves) {
     floats.push({

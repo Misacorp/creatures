@@ -603,3 +603,9 @@
 .wb-held .ko-tag {
   animation: none !important;
 }
+
+/* The Guard's tile flash is held on too (a screenshot would otherwise catch it after it faded). */
+.wb-held .party-slot.fight-guarding {
+  background-color: rgb(var(--gold-rgb) / 40%);
+  animation: none !important;
+}

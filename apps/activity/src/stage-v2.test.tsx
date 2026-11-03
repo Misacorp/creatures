@@ -3,6 +3,7 @@
  * knocked-out one, the announced move on its targets, the numbers over the hit, the turn strip, the boss's move line, and the words (counts
  * with a slash, no boss called a wall or harder, no damage potential).
  */
+import type { ComponentProps } from 'preact';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { foldSetupOf, showOf, stageModelOf } from './fight-v2';
 import { StageV2 } from './StageV2';
@@ -32,6 +33,7 @@ function draw(
   replay: Replay,
   found: (model: ReturnType<typeof stageModelOf>, k: number) => boolean,
   knackNames = false,
+  options: Partial<ComponentProps<typeof StageV2>> = {},
 ) {
   const setup = foldSetupOf({
     fighters: replay.fighters,
@@ -67,6 +69,7 @@ function draw(
       place="Stage 1 / 3"
       hpMax={replay.bossHpMax}
       rounds={replay.boss.rounds}
+      {...options}
     />,
   );
   return { p: page, model, beat };
@@ -204,6 +207,67 @@ describe('the live finale page', () => {
 
 describe('what a fight shows besides the numbers', () => {
   const mixed = () => replaySample({ slot: 4, players: 5, stage: 1, seed: 'fold', party: 'mixed' });
+  const reacts = (m: ReturnType<typeof stageModelOf>, k: number) =>
+    (m.beats[k]?.reacts ?? false) && m.beats[k]?.kind === 'creature';
+
+  it("a reaction option carries the hit's number in the callout (one float, not two); the colours are in the letters", () => {
+    for (const style of ['unit', 'burst', 'morph'] as const) {
+      const { p } = draw(mixed(), reacts, false, { reactionStyle: style, reactionInk: 'split' });
+      const callout = byClass(p.root, 'float-reaction')[0] as never;
+      expect(byClass(callout, 'float-colours').length).toBe(0);
+      expect(byClass(callout, 'rx-num').length).toBe(1);
+      expect(visibleText(byClass(callout, 'rx-num')[0] as never)).toMatch(/^\d+$/);
+      expect(byClass(p.root, 'float-hit').length).toBe(0);
+      page?.unmount();
+      page = null;
+    }
+  });
+
+  it('the colour treatments are text: a split word has two parts, alternating a part per letter, outline and shadow wrap it', () => {
+    const parts = (ink: 'split' | 'alternate' | 'outline' | 'shadow') => {
+      const { p } = draw(mixed(), reacts, false, { reactionInk: ink });
+      const callout = byClass(p.root, 'float-reaction')[0] as never;
+      const holder =
+        ink === 'outline' || ink === 'shadow'
+          ? byClass(callout, `ink-${ink}`)[0]
+          : byClass(callout, 'float-text')[0];
+      const n = holder?.childNodes.length;
+      page?.unmount();
+      page = null;
+      return n;
+    };
+    expect(parts('split')).toBe(2);
+    expect(parts('alternate')).toBeGreaterThan(4);
+    expect(parts('outline')).toBe(1);
+    expect(parts('shadow')).toBe(1);
+  });
+
+  it('a split crit is the number with "!" and no multiplier', () => {
+    const replay = mixed();
+    const { p } = draw(
+      replay,
+      (m, k) => showOf(replay.events, m.beats[k] as never).floats.some((f) => f.mult !== undefined),
+      false,
+      { critStyle: 'split' },
+    );
+    expect(byClass(p.root, 'crit-split').length).toBeGreaterThan(0);
+    expect(visibleText(byClass(p.root, 'crit-split')[0] as never)).toMatch(/^\d+!$/);
+    expect(byClass(p.root, 'crit-pop').length).toBe(0);
+  });
+
+  it('a boosted creature keeps its mark (glow, or the pip) until its next hit', () => {
+    const replay = mixed();
+    const boosted = (m: ReturnType<typeof stageModelOf>, k: number) =>
+      Object.values(m.states[k + 1]?.creatures ?? {}).some((c) => c.boost > 0);
+    const { p, model, beat } = draw(replay, boosted);
+    const n = Object.values(model.states[beat]?.creatures ?? {}).filter((c) => c.boost > 0).length;
+    expect(byClass(p.root, 'slot-boost').length).toBe(n);
+    expect(byClass(p.root, 'glow').length).toBe(n);
+    page?.unmount();
+    page = null;
+    const pip = draw(replay, boosted, false, { boostMark: 'pip' });
+    expect(byClass(pip.p.root, 'pip').length).toBe(n);
+  });
 
   it("a reaction's callout is its name in the content's words over the boss, with the bonus and its two colours", () => {
     const replay = mixed();

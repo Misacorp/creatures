@@ -71,6 +71,8 @@ export type Cue =
       elements?: readonly [string, string];
       sub?: string;
       mult?: string;
+      /** A reaction's callout: the hit that cashed it (its number can ride in the callout). */
+      hit?: { i: number; text: string; crit: boolean; mult?: string };
     }
   | {
       kind: 'burst';
