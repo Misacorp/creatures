@@ -42,13 +42,16 @@ import {
 import { bonfireName, dimmed, glowSprite, nightColour, placePlacements } from './valley-places';
 import {
   ART_SPOTS,
+  artTop,
   glowLayout,
+  glowScale,
   glowNameOf,
   glowSceneDraw,
   posterModeOf,
   posterSprite,
   skyPlacements,
 } from './glow-scene-art';
+import { tileFrame } from '../../games/art/tiles';
 import { MASTERY_MAX, masteryOf, workOf } from './mastery';
 import { placeStates, visitorLine } from './place-state';
 
@@ -436,11 +439,12 @@ describe('the place scenes: one scale, the poster in three modes, the layout for
 
   it('keeps every spot inside the art, centred across the scene, the same height in every mode', () => {
     for (const width of [390, 1100]) {
-      const g = sceneGeometry(width, 700);
       for (const name of ALL) {
-        const layout = glowLayout(g, name);
-        expect(layout.s).toBe(sceneScale(width));
-        expect(layout.art.y).toBe(g.top + 44);
+        const g = sceneGeometry(width, 700, glowScale(width, 700, name, 'sky'));
+        const layout = glowLayout(g, name, 'sky');
+        expect(layout.s).toBe(g.s);
+        expect(layout.art.y).toBe(g.top + artTop('sky'));
+        expect(glowLayout(g, name, 'none').art.y).toBe(layout.art.y);
         expect(Math.abs(layout.art.x + layout.art.width / 2 - g.cx)).toBeLessThanOrEqual(1);
         for (const [id, spot] of Object.entries(layout.spots)) {
           const own = ART_SPOTS[name][id]!;
@@ -461,20 +465,46 @@ describe('the place scenes: one scale, the poster in three modes, the layout for
     expect(posterModeOf('#valley?poster=huge')).toBe('sky');
   });
 
-  it('runs the sky strip edge to edge, mirrored copies meeting at every seam', () => {
-    const g = sceneGeometry(390, 700);
-    const copies = skyPlacements(posterSprite('school'), g).filter((p) => p.y === g.top);
-    const xs = copies.map((p) => p.x).sort((a, b) => a - b);
+  it('draws the sky strip as one centred copy, the sides carrying its own edge columns to the edges', () => {
+    const g = sceneGeometry(390, 700, 5);
+    const poster = posterSprite('school');
+    const placed = skyPlacements(poster, g);
+    expect(placed.filter((p) => p.sprite === poster)).toHaveLength(1);
+    const copy = placed.find((p) => p.sprite === poster)!;
+    expect(copy.x).toBe(g.cx - 32);
+    const sides = placed.filter((p) => p.sprite !== poster && p.y === 0);
+    const xs = sides.map((p) => p.x).sort((a, b) => a - b);
     expect(xs[0]!).toBeLessThanOrEqual(0);
     expect(xs[xs.length - 1]! + 64).toBeGreaterThanOrEqual(g.W);
-    for (let i = 1; i < xs.length; i += 1) expect(xs[i]! - xs[i - 1]!).toBe(64);
-    const sorted = [...copies].sort((a, b) => a.x - b.x);
-    for (let i = 1; i < sorted.length; i += 1) {
-      expect(sorted[i]!.sprite).not.toBe(sorted[i - 1]!.sprite);
+    // Every side row is its edge pixel repeated, never a piece of the picture's inside.
+    for (const p of sides) {
+      if (p.x < copy.x) {
+        const rows = p.sprite.rows.slice(-poster.rows.length);
+        rows.forEach((row) => expect(new Set(row).size).toBe(1));
+        expect(rows[3]?.[0]).toBe(poster.rows[3]?.[0]);
+      }
     }
   });
 
-  it('draws the three modes differently and the day ground in the art’s own day grass', () => {
+  it('picks the place’s own scale: its art fills 60 to 80 percent of a phone, within 3 to 6, and still fits', () => {
+    for (const name of ALL) {
+      for (const [width, height] of [
+        [390, 610],
+        [360, 570],
+        [1100, 630],
+      ] as const) {
+        const s = glowScale(width, height, name, 'sky');
+        expect(s).toBeGreaterThanOrEqual(3);
+        expect(s).toBeLessThanOrEqual(6);
+        const art = glowLayout(sceneGeometry(width, height, s), name, 'sky').art;
+        expect(art.width * s).toBeLessThanOrEqual(0.8 * width);
+        if (width < 700) expect(art.width * s).toBeGreaterThanOrEqual(0.6 * width);
+        expect((art.y + art.height) * s + 190).toBeLessThanOrEqual(height + 1);
+      }
+    }
+  });
+
+  it('draws the three modes differently and the day ground in the valley’s own grass', () => {
     const g = sceneGeometry(390, 700);
     const count = (poster: 'sky' | 'framed' | 'none') =>
       glowSceneDraw({ name: 'school', time: 'day', poster })(g).length;
@@ -482,8 +512,8 @@ describe('the place scenes: one scale, the poster in three modes, the layout for
     expect(count('framed')).toBeLessThan(count('sky'));
     const day = glowSceneDraw({ name: 'school', time: 'day', poster: 'none' })(g);
     const night = glowSceneDraw({ name: 'school', time: 'night', poster: 'none' })(g);
-    expect(day[0]!.sprite.palette['c']).toBe('#467a4c');
-    expect(night[0]!.sprite.palette['c']).not.toBe('#467a4c');
+    expect(day[0]!.sprite).toBe(tileFrame('grass'));
+    expect(night[0]!.sprite).not.toBe(tileFrame('grass'));
     for (const p of day) expect(() => parseSprite(p.sprite)).not.toThrow();
   });
 

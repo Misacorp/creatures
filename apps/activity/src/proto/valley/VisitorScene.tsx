@@ -24,7 +24,13 @@ import { CountBadge } from '../../ui/CountBadge';
 import { Drawer } from '../../ui/Drawer';
 import { FindBlueprint } from '../../ui/FindBlueprint';
 import { FindList } from '../../ui/FindRow';
-import { glowLayout, glowNameOf, glowSceneDraw, type PlaceSceneProps } from './glow-scene-art';
+import {
+  glowLayout,
+  glowScale,
+  glowNameOf,
+  glowSceneDraw,
+  type PlaceSceneProps,
+} from './glow-scene-art';
 import { PinnedAct } from './PinnedAct';
 import { SceneFrame } from './SceneFrame';
 import { DEFAULT_LOOK } from './valley-places';
@@ -133,6 +139,7 @@ export function VisitorScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
         onLeave={onLeave}
         waiting={waiting}
         ground="#2c4d34"
+        scaleFor={(w, h) => glowScale(w, h, name)}
         act={
           here ? (
             <PinnedAct

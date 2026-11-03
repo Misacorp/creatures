@@ -502,7 +502,6 @@ export function Valley({
           held={view.held}
           onPick={onTray}
           label={where === null ? 'Your creatures' : `Your creatures for the ${where.name}`}
-          inPlace={where !== null}
           mastery={(c) => {
             const kind = workOf(view.scene);
             return kind === null ? null : { step: masteryOf(c, kind), kind };

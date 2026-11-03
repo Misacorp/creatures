@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: Place scenes: the one-scale rule is per scene; the tray is UI and keeps its own scale
+
+ID: `2026-11-03-place-scenes-the-one-scale-rule` · Status: current
+
+**Decision.** The one-pixel-scale rule is per scene: the poster, the place's art, the grass, the scene's creatures and the story strip's creatures are drawn at one scale, chosen per screen so the place's art fills about three quarters of the scene's width (3 to 6, `glowScale`; never over 80%, and the art, the row under it and the pinned button must still fit the height). The creature tray is UI, not the scene, and keeps its own scale of 3 in every place. This amends the earlier "one scale per screen" entry. The sky strip is one centred copy of the poster with its own edge columns carried to the screen's edges; the scene's day grass is the valley map's own.
+
+**Reasoning.** At the old scale (3 or 4) the place's art was about 180 px wide on a 390 px phone with half the screen empty. A bigger pixel is the only way to fill the scene without breaking the one-size rule inside it, and a 64 px tray creature would crowd the tray. Mirrored poster copies repeated the moon and the fire, so the sides extend the picture's own edge instead.
+
 ## 2026-11-03: Place scenes: one pixel scale per screen, the poster as a switchable sky strip
 
 ID: `2026-11-03-place-scenes-one-pixel-scale-per` · Status: current

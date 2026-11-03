@@ -19,8 +19,7 @@ import { PACK_ART } from '../../sprites/pack-art';
 import { GameIcon } from '../../ui/GameIcon';
 import type { ProtoWorld } from '../world';
 import { MASTERY_MAX, masteryWords, type WorkKind } from './mastery';
-import { UpArrow, useSize } from './parts';
-import { sceneScale } from './scale';
+import { UpArrow } from './parts';
 import { trayBadge, type TrayBadge } from './tray-state';
 
 /** The mark on a creature: one shape per state; nothing for a free one. */
@@ -158,7 +157,6 @@ export function Tray({
   dim,
   onPick,
   label,
-  inPlace = false,
   mastery,
 }: {
   world: ProtoWorld;
@@ -168,15 +166,12 @@ export function Tray({
   dim?: ((c: Creature) => string | null) | undefined;
   onPick: (id: string) => void;
   label: string;
-  /** Inside a place: the creatures are drawn at the place's pixel scale, one size on the whole screen. */
-  inPlace?: boolean;
   /** Each creature's mastery of the place's work (inside a place that has work); null for none. */
   mastery?: ((c: Creature) => TrayMastery | null) | undefined;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const sectionRef = useRef<HTMLElement | null>(null);
-  const size = useSize(sectionRef);
-  const scale = inPlace ? sceneScale(size.width) : 3;
+  // The tray is UI, not the scene: it keeps its own pixel scale in every place.
+  const scale = 3;
   const [more, setMore] = useState(false);
   useEffect(() => {
     const el = ref.current;
@@ -194,11 +189,7 @@ export function Tray({
     };
   }, [creatures.length]);
   return (
-    <section
-      ref={sectionRef}
-      class={`pv-tray${more ? ' has-more' : ''}${scale > 3 ? ' pv-tray-big' : ''}`}
-      aria-label={label}
-    >
+    <section class={`pv-tray${more ? ' has-more' : ''}`} aria-label={label}>
       <div class="pv-tray-scroll" ref={ref}>
         <div class="pv-tray-grid">
           {creatures.map((c, i) => (

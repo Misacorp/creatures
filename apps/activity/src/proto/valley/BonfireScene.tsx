@@ -43,7 +43,13 @@ import {
   type Hearth,
 } from './bonfire-logic';
 import './bonfire.css';
-import { glowLayout, glowNameOf, glowSceneDraw, type PlaceSceneProps } from './glow-scene-art';
+import {
+  glowLayout,
+  glowScale,
+  glowNameOf,
+  glowSceneDraw,
+  type PlaceSceneProps,
+} from './glow-scene-art';
 import { At, CreatureSprite, Glyph, Pic, Plate, SpeechBubble, isStill } from './parts';
 import { PinnedAct } from './PinnedAct';
 import { SceneFrame } from './SceneFrame';
@@ -130,6 +136,7 @@ export function BonfireScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
         onLeave={onLeave}
         waiting={waiting}
         ground="#2c4d34"
+        scaleFor={(w, h) => glowScale(w, h, name)}
         act={
           projectOpen ? (
             <PinnedAct
@@ -228,7 +235,12 @@ export function BonfireScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
                 </At>
               )}
               {more > 0 && (
-                <At x={px(more44.x + 10)} y={py(more44.y - SPRITE)} class="bf-more" hidden={false}>
+                <At
+                  x={px(Math.min(more44.x + 10, g.W - Math.ceil(52 / g.s)))}
+                  y={py(more44.y - SPRITE)}
+                  class="bf-more"
+                  hidden={false}
+                >
                   <button
                     type="button"
                     class="bf-more-btn pix"
@@ -243,7 +255,14 @@ export function BonfireScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
               )}
               {projectOpen && (
                 <At x={px(g.cx)} y={py(layout.below + 10)} class="pv-centred bf-hearth">
-                  <StoneRow hearth={hearth} scale={g.s} />
+                  <StoneRow
+                    hearth={hearth}
+                    // The row is a meter: the scene's scale, or smaller when its stones would not fit the screen.
+                    scale={Math.max(
+                      2,
+                      Math.min(g.s, Math.floor(((g.W * g.s - 16) / hearth.total - 3) / 7)),
+                    )}
+                  />
                 </At>
               )}
             </>

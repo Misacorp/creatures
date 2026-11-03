@@ -22,7 +22,7 @@ import { GameIcon } from '../../ui/GameIcon';
 import type { ProtoWorld } from '../world';
 import { postRoles } from './ForgeScene';
 import { getNeed, surplusOf } from './forge-post';
-import { glowLayout, type PlaceSceneProps } from './glow-scene-art';
+import { glowLayout, glowScale, type PlaceSceneProps } from './glow-scene-art';
 import { PLANK_TO_COME, PLANK_UP, marketDraw } from './market-art';
 import {
   STAGES,
@@ -139,6 +139,7 @@ export function MarketScene({
         onLeave={onLeave}
         waiting={waiting}
         ground="#2c4d34"
+        scaleFor={(w, h) => glowScale(w, h, 'market')}
         act={act}
       >
         {(g) => {

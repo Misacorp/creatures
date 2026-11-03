@@ -588,23 +588,6 @@
   box-shadow: 0 0 0 1px var(--ink);
 }
 
-/* The tray at the place's bigger pixel (4 on a wide window): creatures are 64 px, so the cells grow with them. */
-.pv-tray-big .pv-tray-grid {
-  grid-auto-columns: 88px;
-  grid-template-rows: repeat(2, 100px);
-}
-
-.pv-tray-big .pv-mon {
-  grid-template-rows: 18px 64px 16px;
-}
-
-@media (min-width: 900px) {
-  .pv-tray-big .pv-tray-grid {
-    grid-template-rows: 100px;
-    grid-auto-columns: 88px;
-  }
-}
-
 .pv-mark {
   display: inline-flex;
   align-items: center;

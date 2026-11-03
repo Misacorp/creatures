@@ -17,7 +17,13 @@ import { Drawer } from '../../ui/Drawer';
 import { PipRow } from '../../ui/PipRow';
 import { weekClock } from './valley-logic';
 import { sampleName } from './bonfire-sample';
-import { glowLayout, glowNameOf, glowSceneDraw, type PlaceSceneProps } from './glow-scene-art';
+import {
+  glowLayout,
+  glowScale,
+  glowNameOf,
+  glowSceneDraw,
+  type PlaceSceneProps,
+} from './glow-scene-art';
 import { At, CreatureSprite, Glyph, Pic, Plate, isStill } from './parts';
 import { PinnedAct } from './PinnedAct';
 import { Stub } from './PeekScenes';
@@ -132,6 +138,7 @@ export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: Pl
         onLeave={onLeave}
         waiting={waiting}
         ground="#2c4d34"
+        scaleFor={(w, h) => glowScale(w, h, name)}
         act={
           note.action === null ? (
             <PinnedAct calm={note.line} />
@@ -151,6 +158,11 @@ export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: Pl
       >
         {(g) => {
           const layout = glowLayout(g, name);
+          // The pupils stand as wide apart as the screen lets them (at the biggest pixel a phone is only 72 wide).
+          const gap = Math.min(
+            PUPIL_GAP,
+            Math.floor((g.W - SPRITE - 4) / Math.max(1, yard.length - 1)),
+          );
           const door = layout.spots['door'] ?? { x: g.cx, y: layout.below - 8 };
           const bell = layout.at(30, 6);
           return (
@@ -177,7 +189,7 @@ export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: Pl
               {yard.map((p, k) =>
                 pupilButton(
                   p,
-                  g.X(g.cx + (k - (yard.length - 1) / 2) * PUPIL_GAP - SPRITE / 2),
+                  g.X(g.cx + (k - (yard.length - 1) / 2) * gap - SPRITE / 2),
                   g.Y(layout.below + (gathered.length > 0 ? 8 : 3)),
                   g.s,
                   k % 2 === 1,

@@ -35,8 +35,8 @@ export { sceneScale };
 export const HUD_HEIGHT = 56;
 
 /** The geometry of a scene filling `width` x `height` CSS px. */
-export function sceneGeometry(width: number, height: number): SceneGeometry {
-  const s = sceneScale(width);
+export function sceneGeometry(width: number, height: number, scale?: number): SceneGeometry {
+  const s = scale ?? sceneScale(width);
   const W = Math.ceil(width / s);
   const H = Math.ceil(height / s);
   return {
@@ -59,6 +59,7 @@ export function SceneFrame({
   act,
   waiting,
   ground = 'var(--night)',
+  scaleFor,
 }: {
   id: PlaceId;
   /** The place's spoken name ("Forge, Workshop"). */
@@ -73,11 +74,13 @@ export function SceneFrame({
   waiting?: Waiting | undefined;
   /** The colour behind the canvas (shows only while it loads). */
   ground?: string;
+  /** The scene's own pixel scale for a window of this size (a place that fills the screen picks it); else `sceneScale`. */
+  scaleFor?: (width: number, height: number) => number;
 }) {
   const rootRef = useRef<HTMLElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const size = useSize(rootRef);
-  const g = sceneGeometry(size.width, size.height);
+  const g = sceneGeometry(size.width, size.height, scaleFor?.(size.width, size.height));
   const placements = useMemo(() => draw(g), [draw, g.W, g.H, g.s]);
   const pxW = g.W * g.s;
   const pxH = g.H * g.s;

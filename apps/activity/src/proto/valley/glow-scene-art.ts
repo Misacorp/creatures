@@ -15,7 +15,8 @@
 import { VALLEY_GLOW_CONCEPTS } from '../../sprites/concepts/valley-glow';
 import { VALLEY_POSTERS_CONCEPTS } from '../../sprites/concepts/valley-posters';
 import { WORLD_MAP_SPRITE_DATA } from '../../sprites/data/world-map-sprites';
-import { swapPalette, type SpriteDef } from '../../sprites/sprite-data';
+import type { SpriteDef } from '../../sprites/sprite-data';
+import { tileFrame } from '../../games/art/tiles';
 import { PixelGrid, gridPlacements } from '../../games/art/pixel';
 import type { SceneGeometry } from './SceneFrame';
 import type { Waiting } from '../welcome/PlaceStories';
@@ -86,47 +87,56 @@ export function posterMode(): PosterMode {
 
 const POSTER = { width: 64, height: 24 } as const;
 
-const flipCache = new WeakMap<SpriteDef, SpriteDef>();
+const edgeCache = new Map<string, SpriteDef>();
 
-/** A sprite mirrored left to right (so a sky strip of copies meets itself at every seam). */
-export function flippedX(sprite: SpriteDef): SpriteDef {
-  let hit = flipCache.get(sprite);
+/**
+ * One edge of the poster carried sideways: a sprite as wide as the poster whose every row is that row's pixel at
+ * the poster's left or right edge, with the poster's top row carried up `above` rows (behind the HUD). Tiled to
+ * the scene's edge it extends the picture's own sky and ground, never a second copy of the picture.
+ */
+function edgeFill(poster: SpriteDef, side: 'left' | 'right', above: number): SpriteDef {
+  const key = `${side}|${String(above)}|${poster.rows.join('')}`;
+  let hit = edgeCache.get(key);
   if (hit === undefined) {
-    hit = { ...sprite, rows: sprite.rows.map((r) => [...r].reverse().join('')) };
-    flipCache.set(sprite, hit);
+    const at = (row: string): string => (side === 'left' ? row[0] : row[row.length - 1]) ?? '.';
+    const edge = poster.rows.map((r) => at(r).repeat(POSTER.width));
+    const top = edge[0] ?? '.'.repeat(POSTER.width);
+    hit = { palette: poster.palette, rows: [...Array.from({ length: above }, () => top), ...edge] };
+    edgeCache.set(key, hit);
   }
   return hit;
 }
 
-const skyCache = new Map<string, SpriteDef>();
+const aboveCache = new Map<string, SpriteDef>();
 
-/** The poster's top row repeated `rows` times: the sky carries on behind the HUD above the strip. */
+/** The poster's top row repeated `rows` times: the sky carries on behind the HUD above the picture. */
 function skyAbove(poster: SpriteDef, rows: number): SpriteDef {
-  const key = `${poster.rows[0] ?? ''}|${String(rows)}`;
-  let hit = skyCache.get(key);
+  const key = `${String(rows)}|${poster.rows.join('')}`;
+  let hit = aboveCache.get(key);
   if (hit === undefined) {
     const first = poster.rows[0] ?? '';
     hit = { palette: poster.palette, rows: Array.from({ length: Math.max(1, rows) }, () => first) };
-    skyCache.set(key, hit);
+    aboveCache.set(key, hit);
   }
   return hit;
 }
 
 /**
- * The poster as a sky strip: the picture in the middle and mirrored copies either side to both edges of the
- * scene, starting at the HUD's bottom (`g.top`); the sky above it is the picture's top row carried on.
+ * The poster as a sky strip: one copy of the picture, centred, starting at the HUD's bottom (`g.top`); either
+ * side of it the picture's own edge columns carry on to the scene's edges, and its top row carries up behind
+ * the HUD. Never a second copy of the picture.
  */
 export function skyPlacements(poster: SpriteDef, g: SceneGeometry): Placement[] {
-  const out: Placement[] = [];
   const x0 = g.cx - POSTER.width / 2;
-  const from = Math.floor(-x0 / POSTER.width) - 1;
-  const to = Math.ceil((g.W - x0) / POSTER.width);
-  for (let k = from; k <= to; k++) {
-    const copy = Math.abs(k) % 2 === 0 ? poster : flippedX(poster);
-    const x = x0 + k * POSTER.width;
-    out.push({ sprite: copy, x, y: g.top });
-    out.push({ sprite: skyAbove(copy, g.top), x, y: 0 });
-  }
+  const out: Placement[] = [
+    { sprite: skyAbove(poster, g.top), x: x0, y: 0 },
+    { sprite: poster, x: x0, y: g.top },
+  ];
+  const left = edgeFill(poster, 'left', g.top);
+  const right = edgeFill(poster, 'right', g.top);
+  for (let x = x0 - POSTER.width; x > -POSTER.width; x -= POSTER.width)
+    out.push({ sprite: left, x, y: 0 });
+  for (let x = x0 + POSTER.width; x < g.W; x += POSTER.width) out.push({ sprite: right, x, y: 0 });
   return out;
 }
 
@@ -205,18 +215,55 @@ export interface GlowLayout {
   below: number;
 }
 
-/** Scene pixels from the HUD's bottom to the art's top (the same in every poster mode, so a scene's layout holds). */
-export const ART_TOP = 44;
+/**
+ * Scene pixels from the HUD's bottom to the art's top. With the sky strip (or no poster) the art stands on the
+ * grass in front of the strip's lower edge; with the framed poster it stands below the frame.
+ */
+export function artTop(mode: PosterMode): number {
+  return mode === 'framed' ? 34 : 14;
+}
 
 /** Where the place's art stands in a scene, centred across it. */
-export function glowLayout(g: SceneGeometry, name: GlowName = 'market'): GlowLayout {
+export function glowLayout(
+  g: SceneGeometry,
+  name: GlowName = 'market',
+  mode: PosterMode = posterMode(),
+): GlowLayout {
   const { width, height } = ART_SIZE[name];
   const x = g.cx - Math.floor(width / 2);
-  const y = g.top + ART_TOP;
+  const y = g.top + artTop(mode);
   const at = (ax: number, ay: number): { x: number; y: number } => ({ x: x + ax, y: y + ay });
   const spots: Record<string, { x: number; y: number }> = {};
   for (const [id, p] of Object.entries(ART_SPOTS[name])) spots[id] = at(p.x, p.y);
   return { s: g.s, art: { x, y, width, height }, at, spots, below: y + height };
+}
+
+/** The most the art fills of a scene's width, and the pixel scales a place's scene may use. */
+const FILL = 0.8;
+const SCALE_MIN = 3;
+const SCALE_MAX = 6;
+/** CSS px a scene keeps under the art for what stands below it (a row of creatures, stones, plates) and its button. */
+const BELOW_ART_CSS = 190;
+
+/**
+ * The one pixel scale of a place's scene: the largest whole number (3 to 6) at which the place's art fills
+ * about three quarters of the scene's width (never over four fifths) and the art, the row under it and the
+ * pinned button still fit the scene's height. The poster, the art, the grass and every creature in the scene
+ * are drawn at it; the tray is UI and keeps its own.
+ */
+export function glowScale(
+  width: number,
+  height: number,
+  name: GlowName,
+  mode: PosterMode = posterMode(),
+): number {
+  const art = ART_SIZE[name];
+  let s = Math.min(SCALE_MAX, Math.max(SCALE_MIN, Math.round((0.75 * width) / art.width)));
+  while (s > SCALE_MIN && art.width * s > FILL * width) s -= 1;
+  const fits = (n: number): boolean =>
+    (Math.ceil(56 / n) + artTop(mode) + art.height) * n + BELOW_ART_CSS <= height;
+  while (s > SCALE_MIN && !fits(s)) s -= 1;
+  return s;
 }
 
 /** Where things stand in these scenes (scene pixels): the framed poster's and the place's top-left, the row beneath. */
@@ -232,16 +279,16 @@ export function glowSceneSpots(g: SceneGeometry, name: GlowName = 'market') {
 
 // --- The ground ---
 
-/** The grass the art was drawn on: the world map's by day, its night recolour at night (the library's backdrop). */
+/** The valley map's own day grass (a tile of the Valley Games set), and at night the art's night grass. */
 function groundTile(time: Time): SpriteDef {
+  if (time === 'day') return tileFrame('grass');
   const backdrop = VALLEY_GLOW_CONCEPTS.backdrop;
   if (backdrop === undefined) throw new Error('valley-glow has no backdrop tile');
-  const day = backdrop.alts?.['day'];
-  return time === 'day' && day !== undefined ? swapPalette(backdrop.tile, day) : backdrop.tile;
+  return backdrop.tile;
 }
 
 /**
- * The scene: grass everywhere (the art's own ground, so by day its light spill is the grass itself), the poster
+ * The scene: grass everywhere (the valley map's day grass, the art's night grass at night), the poster
  * in its mode, the place beneath, a few trees and flowers.
  */
 export function glowSceneDraw(spec: { name: GlowName; time: Time; poster?: PosterMode }) {
@@ -249,7 +296,7 @@ export function glowSceneDraw(spec: { name: GlowName; time: Time; poster?: Poste
   const shade = (sprite: SpriteDef): SpriteDef => (time === 'night' ? dimmed(sprite) : sprite);
   return (g: SceneGeometry): Placement[] => {
     const mode = spec.poster ?? posterMode();
-    const layout = glowLayout(g, name);
+    const layout = glowLayout(g, name, mode);
     const grass = groundTile(time);
     const out: Placement[] = [];
     for (let y = 0; y < g.H; y += TILE) {
