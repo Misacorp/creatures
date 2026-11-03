@@ -6,7 +6,17 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-Nothing waiting.
+### Q50. Should each place's screen keep its poster at the top?
+
+Status: asked, round 21 (2026-11-03). From the panel on the places (`reviews/2026-11-03-places.md`, row 3). Challenges: the art direction from the art-direction session (2026-10-31, "the `valley-posters` banners head each place's own screen"). Touches: every place's scene.
+
+**Why it matters.** Today each place's screen has its poster in a black frame at the top, and the place's own art below it. Two reviewers say the poster is a box of decoration showing the same place twice, and its fixed time of day clashes with the screen (a night poster over the visitor's sunny field). The art director says drop the frame and let it run edge to edge like a sky.
+
+- **A. Keep it, framed** (as now). Example: the visitor's screen opens with his moonlit poster in a frame, his stall in daylight below.
+- **B. Keep it as the sky strip.** No frame; the poster runs edge to edge at the top as the screen's backdrop, keeping its own time of day. Example: the bonfire's sunset poster is the sky above the fire.
+- **C. Drop it from the place screens.** The place's art fills the screen with the creatures at work; the posters live elsewhere (for example in the Places list or the Gazette). Example: the School's screen is the schoolhouse and its yard, nothing above it.
+
+**Lead's pick: B.** It keeps your art direction and removes the box the reviewers object to; the time-of-day clash is softer as a backdrop than as a framed picture. If it still feels doubled after you see it, C is a small change.
 
 ## Queue
 
