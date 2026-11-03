@@ -46,6 +46,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [platform.md](platform.md): Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, security, database reads, data cleanup, analytics, dev tools, the workbench, player feedback, sockets.
 
+- 2026-11-03 Raid test bench: the staging raid dev tools become four steps \[Misa\]
 - 2026-10-30 Prettier's cache, and a cleanup script for agent worktrees
 - 2026-10-29 CI skips the build and tests for documentation-only PRs
 - 2026-10-27 A generated wiki page of the game's configuration
@@ -203,7 +204,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 [raids.md](raids.md): Raid schedule, parties and joining, bosses and the raid curve, the live finale, raid board and summaries, raid Discord posts.
 
 - 2026-11-03 Combat v2 replays keep no Pause or 2x \[Misa\]
-- 2026-11-03 Combat v2 bots and the gate run (phase 4, slice 6): v2 guests, the raid-weekend dev tool and one stat calculation
+- 2026-11-03 Combat v2 bots and the gate run (phase 4, slice 6): v2 guests, the raid-weekend dev tool and one stat calculation (amended)
 - 2026-11-03 Combat v2 raid weekend (phase 4, slice 3): the grid, the stored shapes, the live finale's replay and the open calls
 - 2026-11-02 Combat v2 raids: players lock when stage 1 begins; no weather in v2 fights until phase 5 \[Misa\]
 - 2026-10-31 Breakwater joins Tidal Colossus from its second lap, beside Slippery \[Misa\]

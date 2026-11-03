@@ -14,7 +14,7 @@ ID: `2026-11-03-combat-v2-replays-keep-no-pause` · Status: current
 
 ## 2026-11-03: Combat v2 bots and the gate run (phase 4, slice 6): v2 guests, the raid-weekend dev tool and one stat calculation
 
-ID: `2026-11-03-combat-v2-bots-and-the-gate` · Status: current
+ID: `2026-11-03-combat-v2-bots-and-the-gate` · Status: current, amended by `2026-11-03-raid-test-bench-the-staging-raid`
 
 **Decision.** Slice 6 of combat v2 phase 4 (`combat/integration.md`, section 10) builds the bots for the gate, all staging only, and merges the two ways a creature's v2 numbers were worked out. The calls the brief left open:
 
