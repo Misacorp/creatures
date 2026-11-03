@@ -9,11 +9,13 @@ import {
   pickQuirk,
   ribbonsForLevel,
 } from '@creatures/game';
+import { knownKnacks, v2Pool } from '@creatures/game/combat-v2';
 import { env } from 'cloudflare:workers';
 import { runInDurableObject } from 'cloudflare:test';
 import { GuildCore, type GuildCoreOptions } from '../src/guild-core';
 import type { LiveHooks } from '../src/live-socket';
 import { rollMissingTalents } from '../src/talent-store';
+import { grantFirstTalent, recordFound } from '../src/talent-v2-store';
 import { addDays, gameDay, zonedTimeToEpoch } from '../src/time';
 import type { LoungeClient } from '../src/lounge-discord';
 import type { ActivityInstance } from '../src/schemas';
@@ -91,6 +93,45 @@ export function seedPlayers(
     NOW - 50 * DAY,
   );
   return ids;
+}
+
+/**
+ * The combat v2 state of a guild that has played under the flag: every creature has learned a v2 talent from
+ * its line's pool (recorded in its player's book, in slot 1) and saved the first Knack its form knows, and each
+ * player's book holds the whole pool of every line they own (what a month of duplicate catches leaves).
+ */
+export function seedV2(
+  sql: SqlStorage,
+  storage: DurableObjectStorage,
+  creatures: Record<string, string[]>,
+): void {
+  const rng = createSeededRng('read-world-v2');
+  storage.transactionSync(() => {
+    for (const [owner, ids] of Object.entries(creatures)) {
+      for (const creatureId of ids) {
+        const row = sql
+          .exec<{
+            line: string;
+            species: string;
+          }>('SELECT line, species FROM creatures WHERE id = ?', creatureId)
+          .one();
+        grantFirstTalent(sql, rng, {
+          creatureId,
+          userId: owner,
+          line: row.line,
+          now: NOW - 40 * DAY,
+        });
+        sql.exec(
+          'UPDATE creatures SET knack = ? WHERE id = ?',
+          knownKnacks(row.species)[0] ?? null,
+          creatureId,
+        );
+        for (const talentId of v2Pool(row.line)) {
+          recordFound(sql, owner, row.line, { talentId, golden: false }, NOW - 30 * DAY);
+        }
+      }
+    }
+  });
 }
 
 /**
@@ -303,10 +344,15 @@ export interface GuildEnv {
  */
 export async function inGuild<T>(
   fn: (env: GuildEnv) => Promise<T>,
-  options: { onExec?: ExecHook } = {},
+  options: { onExec?: ExecHook; fresh?: boolean } = {},
 ): Promise<T> {
   const stub = env.GUILD_WORLD.get(env.GUILD_WORLD.idFromName(GUILD_ID));
   return runInDurableObject(stub, async (_instance, state) => {
+    // A second world in one test file: the guild's storage outlives a test, so start from nothing.
+    if (options.fresh === true) {
+      await state.storage.deleteAlarm();
+      await state.storage.deleteAll();
+    }
     const metered = meterStorage(state.storage, options.onExec);
     const clock = { t: NOW };
     const mk = (build?: string, extra: Partial<GuildCoreOptions> = {}) =>
@@ -328,11 +374,15 @@ export interface World {
  * everyone in, have everyone join this week's raid by placing three creatures, and run the first alarm of
  * the day (its daily work is not what the tests measure). The clock ends a minute after `NOW`.
  */
-export async function seedWorld({ metered, clock, mk }: GuildEnv): Promise<World> {
+export async function seedWorld(
+  { metered, clock, mk }: GuildEnv,
+  options: { combatV2?: boolean } = {},
+): Promise<World> {
   // The Worker's own start: the schema and the one-off passes of this build.
-  const core = mk(BUILD);
+  const core = mk(BUILD, options.combatV2 === true ? { combatV2: true } : {});
   core.migrate();
   const creatures = seedPlayers(metered.sql, metered.storage);
+  if (options.combatV2 === true) seedV2(metered.sql, metered.storage, creatures);
   seedHistory(metered.sql, metered.storage, TODAY, HISTORY_DAYS, creatures);
   const secrets = new Map<string, string>();
   for (let n = 1; n <= PLAYERS; n++) {

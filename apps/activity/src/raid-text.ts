@@ -40,8 +40,15 @@ const PHASE_NAMES: Record<RaidPhaseId, string> = {
   finale: 'Finale',
 };
 
-export function phaseName(phase: RaidPhaseId): string {
-  return PHASE_NAMES[phase];
+const STAGE_NAMES: Record<RaidPhaseId, string> = {
+  phase1: 'Stage 1',
+  phase2: 'Stage 2',
+  finale: 'Finale',
+};
+
+/** The name of a phase; a combat v2 week (`rules` 2) has stages. */
+export function phaseName(phase: RaidPhaseId, rules?: 2): string {
+  return (rules === 2 ? STAGE_NAMES : PHASE_NAMES)[phase];
 }
 
 /**

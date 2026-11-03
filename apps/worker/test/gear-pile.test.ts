@@ -1043,7 +1043,7 @@ describe('the timed dismantle job is gone', () => {
 
 describe('migration 49', () => {
   it('drops the mark column, keeps the day count table, and can be redone', async () => {
-    expect(SCHEMA_VERSION).toBe(49);
+    expect(SCHEMA_VERSION).toBeGreaterThanOrEqual(49);
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -1067,7 +1067,7 @@ describe('migration 49', () => {
         expect(count(ctx.sql, 'sqlite_master', "name = 'dismantle_days'")).toBe(1);
         expect(
           rows<{ v: number }>(ctx.sql, 'SELECT MAX(version) AS v FROM schema_version')[0]?.v,
-        ).toBe(49);
+        ).toBe(SCHEMA_VERSION);
         expect((await dismantlePile(p, p.creatureIds[0] as string, [a])).status).toBe(200);
       },
       {},

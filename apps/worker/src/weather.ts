@@ -27,6 +27,7 @@ import {
 } from '@creatures/game';
 import type { Analytics } from './analytics';
 import { readLadder } from './raid-ladder';
+import { weekRules } from './raid-v2-core';
 import { eventTimes, weekIdFor, weekIndex, type RaidPhase } from './raid-schedule';
 import {
   DEFAULT_GUILD_TIMEZONE,
@@ -83,7 +84,7 @@ export function storedTimezone(sql: SqlStorage): string {
  */
 export function stageWeather(sql: SqlStorage, weekId: string, phase: RaidPhase): WeatherDay | null {
   const tz = storedTimezone(sql);
-  const at = eventTimes(weekId, tz)[phase];
+  const at = eventTimes(weekId, tz, weekRules(sql, weekId))[phase];
   return readWeatherDay(sql, gameDay(at, tz, RULES.daily.reset));
 }
 

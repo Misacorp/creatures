@@ -1,0 +1,210 @@
+/*
+  The v2 fight stage (StageV2.tsx): the Raid tab's v2 tiles with a fight in progress on them, and the boss's lines above the board. A
+  knocked-out creature is greyed, a silenced one has its Knack chip crossed out with the turns left, a Store is a three-step meter, a hit
+  makes the tile flash and the numbers float from it. Colour is never the only cue: the strike-through, the turns and the pips say it too.
+*/
+.party-slot.fight-out canvas.sprite {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+
+.party-slot.fight-out .slot-species {
+  color: var(--haze);
+  text-decoration: line-through;
+}
+
+.party-slot.fight-acting {
+  outline: var(--px) solid var(--gold);
+  outline-offset: calc(var(--px) * -2);
+}
+
+.party-slot.fight-hit {
+  background-color: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--bad);
+}
+
+/* A silenced creature's Knack chip: the name struck through, the turns left after it. */
+.party-slot .slot-knack.silenced {
+  display: flex;
+  gap: 2px;
+  align-items: baseline;
+  color: var(--haze);
+}
+
+.party-slot .slot-knack.silenced .slot-knack-name {
+  min-width: 0;
+  overflow: hidden;
+  text-decoration: line-through;
+  text-overflow: ellipsis;
+}
+
+.party-slot .slot-knack-turns {
+  flex: none;
+  color: var(--bad);
+  font-family: var(--display);
+  text-decoration: none;
+}
+
+/* A Store: three small steps over the HP, the ones it has lit. */
+.party-slot .slot-store {
+  display: flex;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.party-slot .slot-store i {
+  width: 0.375rem;
+  height: 0.375rem;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--haze);
+}
+
+.party-slot .slot-store i.on {
+  background: var(--gold);
+  box-shadow: none;
+}
+
+/* The numbers and the "KO!" that float over a tile: they start in its middle and stay small enough to fit in it. */
+.party-slot .slot-fx {
+  position: absolute;
+  inset: 0.125rem;
+  pointer-events: none;
+}
+
+.party-slot .slot-fx .float {
+  top: 22%;
+  font-size: var(--fs-small);
+  /* No sideways drift inside a tile: a word like "Dodged" would be cut by its edge. */
+  --drift: 0 !important;
+  --rise: 2rem;
+}
+
+.party-slot .slot-fx .float.crit {
+  font-size: var(--fs-row);
+}
+
+.party-slot .slot-fx .ko-tag {
+  top: 48%;
+  font-size: var(--fs-row);
+}
+
+/* A crit on a creature keeps the hit's own colour (the doubled number is the cue), bigger. */
+.stage-v2 .float-hurt.crit {
+  color: var(--bad);
+}
+
+.float-shield {
+  display: inline-block;
+  margin-right: 1px;
+  vertical-align: baseline;
+}
+
+.float-text {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* --- Above the board --- */
+
+.stage-v2 .stage-foe-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+/* What the boss just did: one line, kept even when it is empty, so the HP bar under it does not jump. */
+.stage-v2 .stage-move {
+  min-height: 1.25rem;
+  margin: 0;
+  color: var(--bone);
+  font-family: var(--display);
+  font-size: var(--fs-row);
+  text-align: center;
+}
+
+.stage-v2 .stage-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+/* What the boss resists: the shield and the element's icon. */
+.boss-resist {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+  padding: 0 0.375rem 0 0.25rem;
+  background: var(--ink);
+  line-height: 1.5rem;
+}
+
+.stage-v2 .raid-board {
+  margin-top: 0.25rem;
+}
+
+/* The strip is only the order here (row, boss, row, boss, ...): small chips, so the six of a three-row boss fit one line at 390 px. */
+.stage-v2 .turn-strip {
+  gap: 0.25rem;
+}
+
+.stage-v2 .turn-chip {
+  padding: 0.125rem 0.375rem;
+}
+
+/* The three large tiles of the dungeon's row fill a 320 px phone's stage: the row's own side padding is not needed inside it. */
+.stage-v2.stage-single .raid-board.single .party-strip {
+  padding-inline: 0;
+}
+
+/* The dungeon's single row is centred under the foe, so is the order of its turns (the team, then the foe). */
+.stage-v2.stage-single .turn-strip {
+  justify-content: center;
+}
+
+/* The live finale's input under the board: the effect line, the Shield Wall's row picker, the button and Auto fire. */
+.finale-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem 0.25rem 0.25rem;
+}
+
+.finale-input p {
+  margin: 0;
+}
+
+.finale-input-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+}
+
+/* The strikes' layer and the round's intro sit inside the stage's padding (the stage keeps its own box). */
+.stage-v2 .stage-overlay {
+  position: absolute;
+  inset: 0.5rem;
+  z-index: 6;
+  pointer-events: none;
+}
+
+/* A stage in the Raid tab's Results (StageResultRow.tsx): the compact row is the accordion's header, with Watch beside it. */
+.stage-result {
+  position: relative;
+}
+
+.stage-result .acc-head {
+  padding-right: 5.25rem;
+}
+
+.stage-result .stage-watch {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  min-height: 2rem;
+  padding: 0 0.625rem;
+}

@@ -161,7 +161,8 @@ function plainRoom(
  * cleared; only the fight the team lost is "Defeated".
  */
 export function roomLog(
-  run: Pick<DungeonRunSummary, 'rooms'> & Partial<Pick<DungeonRunSummary, 'outcome' | 'route'>>,
+  run: Pick<DungeonRunSummary, 'rooms'> &
+    Partial<Pick<DungeonRunSummary, 'outcome' | 'route' | 'rules'>>,
 ): RoomLogRow[] | null {
   const route = run.route;
   if (route === undefined || route.history.length === 0) return null;
@@ -210,7 +211,7 @@ export function roomLog(
         glyph: null,
         name: fight.foeName,
         note: null,
-        spoken: `${title}: ${fight.foeName}, ${fight.modifierName}. ${state === 'defeat' ? 'Defeated' : 'Cleared'}.`,
+        spoken: `${title}: ${fight.foeName}${fight.modifierName === '' ? '' : `, ${fight.modifierName}`}. ${state === 'defeat' ? 'Defeated' : 'Cleared'}.`,
       });
       continue;
     }

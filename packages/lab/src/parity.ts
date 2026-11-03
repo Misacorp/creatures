@@ -6,7 +6,8 @@
  * rule re-writes it on purpose (`scripts/parity.mjs --write`) with a sentence in the PR on what moved and why.
  *
  * The corpus is the rules, not the content: it plays whatever the lab's catalogue says today, so a change to a Knack, a card or a
- * boss number moves the digest too (re-write it in the same commit and say so).
+ * boss number moves the digest too (re-write it in the same commit and say so). A **name** never moves it: the canonical form of a
+ * fight holds ids, not display names (see `nameless`), so renaming a creature, a boss, a move or a phase changes nothing.
  */
 import { createHash } from 'node:crypto';
 import { createSeededRng, int } from '@creatures/game';
@@ -39,8 +40,8 @@ export interface ParityCase {
 }
 
 export interface ParityDigest {
-  /** The digest's own format; bump it only when `canonical` changes, never to hide a rule change. */
-  readonly format: 1;
+  /** The digest's own format; bump it only when `canonical` changes, never to hide a rule change. 2: names in the log are ids. */
+  readonly format: 2;
   /** sha256 over every case's name and hash, in name order. */
   readonly overall: string;
   /** sha256 of each case's canonical form, by case name. */
@@ -114,14 +115,54 @@ function fighterState(f: Fighter): Record<string, unknown> {
   };
 }
 
-/** Every field of a fight result, the creatures as their final state. */
-export function resultState(r: FightResult): Record<string, unknown> {
+/**
+ * The display names a fight's log can print, each as a stand-in made of ids: the creatures (by form), the boss, its moves (by move id,
+ * the ones of its Store's phase too) and the phase. The log's `text` holds these names beside the numbers (damage, counts) the digest
+ * must keep, and an event has no structured field for the numbers, so the text stays and the names in it become ids.
+ */
+function nameTable(boss: BossDef, fighters: readonly Fighter[]): Map<string, string> {
+  const table = new Map<string, string>();
+  const put = (name: string, id: string) => {
+    if (!table.has(name)) table.set(name, id);
+  };
+  for (const f of fighters) put(f.name, `{form:${f.formId}}`);
+  put(boss.name, `{boss:${boss.id}}`);
+  for (const m of [...boss.moves, ...(boss.escalation?.phase?.moves ?? [])])
+    put(m.name, `{move:${m.id}}`);
+  if (boss.escalation?.phase) put(boss.escalation.phase.name, `{phase:${boss.id}}`);
+  return table;
+}
+
+const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** `text` with every name of `table` replaced by its stand-in, in one pass, the longest name first (so "Guard's Shadow" is not a "Guard"). */
+export function nameless(text: string, table: ReadonlyMap<string, string>): string {
+  const names = [...table.keys()].filter((n) => n.length > 0).sort((a, b) => b.length - a.length);
+  if (names.length === 0) return text;
+  return text.replace(new RegExp(names.map(escapeRegExp).join('|'), 'g'), (n) => table.get(n) ?? n);
+}
+
+/**
+ * Every field of a fight result, the creatures as their final state. No name is in it: the log's texts have theirs replaced by ids
+ * (`nameless`, from `boss` and the result's creatures) and the killing blow keeps its ids, not the creature's name.
+ */
+export function resultState(r: FightResult, boss: BossDef): Record<string, unknown> {
+  const table = nameTable(boss, r.fighters);
+  const killingBlow = r.killingBlow
+    ? {
+        uid: r.killingBlow.uid,
+        owner: r.killingBlow.owner,
+        formId: r.killingBlow.formId,
+        round: r.killingBlow.round,
+        culled: r.killingBlow.culled,
+      }
+    : null;
   return {
     damage: r.damage,
     bossHpLeft: r.bossHpLeft,
     bossHpReal: r.bossHpReal,
     won: r.won,
-    killingBlow: r.killingBlow,
+    killingBlow,
     wiped: r.wiped,
     knockouts: r.knockouts,
     reactions: r.reactions,
@@ -133,7 +174,18 @@ export function resultState(r: FightResult): Record<string, unknown> {
     hpLeft: r.hpLeft,
     escalation: r.escalation,
     fighters: r.fighters.map(fighterState),
-    events: r.events,
+    // The board's typed events (`FightEvent.board`, and the events of kind `board` that carry nothing else) are left out: they only show
+    // what the log says, so the digest stays what it was.
+    events: r.events
+      .filter((e) => e.kind !== 'board')
+      .map((e) => ({
+        round: e.round,
+        turn: e.turn,
+        kind: e.kind,
+        text: nameless(e.text, table),
+        move: e.move,
+        slots: e.slots,
+      })),
   };
 }
 
@@ -193,7 +245,7 @@ export function parityCases(): ParityCase[] {
   ) => {
     for (const seed of seedsOf(seeds))
       add(`${name}#${seed}`, () =>
-        resultState(fight(boss, placements, { ...extra, rng: rngOf(name, seed) })),
+        resultState(fight(boss, placements, { ...extra, rng: rngOf(name, seed) }), boss),
       );
   };
   const weekendCase = (
@@ -207,7 +259,11 @@ export function parityCases(): ParityCase[] {
     for (const seed of seedsOf(seeds))
       add(`${name}#${seed}`, () => {
         const w = weekend(boss, placements, bench, { ...extra, rng: rngOf(name, seed) });
-        return { won: w.won, replacements: w.replacements, stages: w.stages.map(resultState) };
+        return {
+          won: w.won,
+          replacements: w.replacements,
+          stages: w.stages.map((st) => resultState(st, boss)),
+        };
       });
   };
 
@@ -391,7 +447,7 @@ export function computeDigest(cases: readonly ParityCase[] = parityCases()): Par
   const sorted: Record<string, string> = {};
   for (const n of names) sorted[n] = hashes[n] as string;
   return {
-    format: 1,
+    format: 2,
     overall: sha(names.map((n) => `${n}\n${sorted[n]}`).join('\n')),
     cases: sorted,
   };

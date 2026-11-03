@@ -4,6 +4,7 @@
  * waiting duplicates and what a Talent Book slotting costs), nothing is computed here beyond "is it ready".
  */
 import type { Creature, GameState } from './api';
+import { creatureV2 } from './combat-v2-view';
 import { ribbonCostText, ribbonName } from './experience';
 import { creatureName, speciesName } from './game';
 import { busyReason } from './gear-view';
@@ -82,7 +83,11 @@ export function creatureNeeds(creature: Creature, state: NeedsState): Need[] {
         waiting.length === 1 ? speciesName(first.species) : `${String(waiting.length)} waiting`,
     });
   }
-  const emptySlot = creature.talents.slots.find((s) => s.open && s.talent === null);
+  // Combat v2 has its own talents (learn, then slot for free): the old book's gold button does not apply.
+  const emptySlot =
+    creatureV2(creature) === null
+      ? creature.talents.slots.find((s) => s.open && s.talent === null)
+      : undefined;
   if (
     emptySlot !== undefined &&
     state.balances.bait >= state.bookSlotBait &&

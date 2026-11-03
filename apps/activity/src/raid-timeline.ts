@@ -20,8 +20,8 @@ interface StepMark {
 export const CLEARED_GLYPH = '✓';
 export const MISSED_GLYPH = '✗';
 
-export function stepMark(result: PhaseResultView): StepMark {
-  const name = phaseName(result.phase);
+export function stepMark(result: PhaseResultView, rules?: 2): StepMark {
+  const name = phaseName(result.phase, rules);
   const word = result.cleared ? 'cleared' : 'not cleared';
   return {
     phase: result.phase,
@@ -39,9 +39,10 @@ export function stepMark(result: PhaseResultView): StepMark {
 /** The marks of the resolved phases, keyed by the timeline step they belong to. */
 export function stepMarks(
   results: readonly PhaseResultView[],
+  rules?: 2,
 ): Partial<Record<RaidEventId, StepMark>> {
   const marks: Partial<Record<RaidEventId, StepMark>> = {};
-  for (const result of results) marks[result.phase] = stepMark(result);
+  for (const result of results) marks[result.phase] = stepMark(result, rules);
   return marks;
 }
 

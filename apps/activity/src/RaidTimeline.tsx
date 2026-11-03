@@ -7,7 +7,7 @@ import { stepMarks, toggleMark } from './raid-timeline';
 import { SeasonPips } from './SeasonPips';
 
 /**
- * The top of the Raid tab: the week as four steps (Preparation, Phase 1, Phase 2, Finale), the one
+ * The top of the Raid tab: the week as four steps (Preparation, Phase 1, Phase 2, Finale; Stage 1 and Stage 2 on a combat v2 week), the one
  * thing to do now, ticks on the phases that have been fought, and where the week sits in the
  * season (the pips). A tap on a tick opens that
  * phase's short result; the full after-action card waits until the finale is over.
@@ -30,10 +30,10 @@ export function RaidTimeline({
   onReplay: (phase: RaidPhaseId) => void;
 }) {
   const [open, setOpen] = useState<RaidPhaseId | null>(null);
-  const steps = scheduleSteps(view.schedule, view.next, view.timezone);
+  const steps = scheduleSteps(view.schedule, view.next, view.timezone, view.rules);
   const action = nowAction(view, finale, serverNow, owned);
   const results = view.party?.results ?? [];
-  const marks = stepMarks(results);
+  const marks = stepMarks(results, view.rules);
   const opened: PhaseResultView | undefined = results.find((r) => r.phase === open);
   const openedMark = opened === undefined ? undefined : marks[opened.phase];
   return (
@@ -90,16 +90,22 @@ export function RaidTimeline({
       <SeasonPips season={view.season} />
       {openedMark !== undefined && opened !== undefined && (
         <p class="schedule-result" role="status">
-          <span>{openedMark.summary}</span>{' '}
-          <button
-            type="button"
-            class="link-button"
-            onClick={() => {
-              onReplay(opened.phase);
-            }}
-          >
-            Watch replay
-          </button>
+          <span>{openedMark.summary}</span>
+          {/* A combat v2 stage has no replay screen yet (the stage playback is a later part). */}
+          {view.rules !== 2 && (
+            <>
+              {' '}
+              <button
+                type="button"
+                class="link-button"
+                onClick={() => {
+                  onReplay(opened.phase);
+                }}
+              >
+                Watch replay
+              </button>
+            </>
+          )}
         </p>
       )}
     </section>

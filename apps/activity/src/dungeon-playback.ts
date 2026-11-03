@@ -22,7 +22,11 @@ import type {
   DungeonStepLog,
   DungeonTeamMember,
 } from './dungeon-types';
+import { moveGlyphId } from './combat-glyphs';
 import { nodeLevel } from './dungeon-map';
+import { modifierActs } from './dungeon-rooms';
+import { everyText } from './ui/MoveTile';
+import type { BossCardV2 } from './raid-v2-api';
 import { fierceName, floorLine, nodeFloor, undercroftName } from './dungeon-text';
 import type { ReplayRowEntry } from './raid-api';
 import { gimmickGlyphKey, gimmickShort } from './raid-text';
@@ -286,7 +290,8 @@ export interface StripRoom {
  * left out); an old three-room run shows all three, the unreached ones locked.
  */
 export function roomStrip(
-  run: Pick<DungeonRunSummary, 'rooms'> & Partial<Pick<DungeonRunSummary, 'outcome' | 'route'>>,
+  run: Pick<DungeonRunSummary, 'rooms'> &
+    Partial<Pick<DungeonRunSummary, 'outcome' | 'route' | 'rules'>>,
 ): StripRoom[] {
   const sorted = [...run.rooms].sort((a, b) => a.index - b.index);
   const rooms = run.outcome === undefined ? sorted : sorted.filter((r) => r.played);
@@ -310,6 +315,8 @@ export function roomStrip(
               ? `Room ${String(room.index + 1)}`
               : `Fight ${String(place + 1)}`;
     const name = fierceName(room.foe.name, elite);
+    // A modifier that does nothing on this run's rules (Thorns on combat v2) is not named.
+    const modifierName = modifierActs(room.modifier, run.rules) ? room.modifier.name : '';
     const foeHp =
       state === 'defeat' ? `${String(room.foeHpEnd)} / ${String(room.foe.hpMax)} HP left` : null;
     const result = state === 'cleared' ? 'cleared' : state === 'defeat' ? 'defeat' : 'not reached';
@@ -324,9 +331,9 @@ export function roomStrip(
       banner: ROOM_BANNER[state],
       title,
       elite,
-      modifierName: room.modifier.name,
+      modifierName,
       foeHp,
-      spoken: `${title}: ${name}, ${room.modifier.name}. ${result}.`,
+      spoken: `${title}: ${name}${modifierName === '' ? '' : `, ${modifierName}`}. ${result}.`,
     };
   });
 }
@@ -444,6 +451,8 @@ interface RoomIntroView {
   element: string;
   modifierName: string;
   modifierDescription: string;
+  /** The room's modifier does something on this run's rules; when not (Thorns on combat v2), the banner leaves it out. */
+  modifierShown: boolean;
   /**
    * The foe's trick: the key of its glyph, its name and one line in the dungeon's row wording ("Hits
    * one random creature, every 2 rounds"); null when the foe has none.
@@ -453,9 +462,27 @@ interface RoomIntroView {
   spoken: string;
 }
 
+/**
+ * The foe's trick on a room of combat v2, from its card: the last move it has (the signature at a landmark, else its last one), the
+ * move's picture, its name and its plain label with how often it comes. Null for a foe with no moves.
+ */
+export function cardTrick(
+  card: Pick<BossCardV2, 'moves'>,
+): { glyph: string; name: string; line: string } | null {
+  const move = card.moves.filter((m) => !m.later).at(-1);
+  if (move === undefined) return null;
+  return {
+    glyph: moveGlyphId(move),
+    name: move.name,
+    line: `${move.label}, ${everyText(move.every)}`,
+  };
+}
+
 export function roomIntroView(
   room: Pick<DungeonReplayRoom, 'index' | 'kind' | 'foe' | 'modifier'> &
-    Partial<Pick<DungeonReplayRoom, 'elite' | 'epic' | 'node'>>,
+    Partial<Pick<DungeonReplayRoom, 'elite' | 'epic' | 'node' | 'rules'>> & {
+      card?: Pick<BossCardV2, 'moves'>;
+    },
   total: number,
   landmark = false,
 ): RoomIntroView {
@@ -463,15 +490,20 @@ export function roomIntroView(
   const epic = room.epic === true;
   const elite = room.elite === true && !epic;
   const level = room.node === undefined ? 0 : nodeLevel(room.node);
-  const gimmick = roomTrick(room, landmark);
+  const gimmick = room.rules === 2 ? null : roomTrick(room, landmark);
   const trick =
-    gimmick === null
-      ? null
-      : {
-          glyph: gimmickGlyphKey(gimmick),
-          name: gimmick.name,
-          line: gimmickShort(gimmick, 'row'),
-        };
+    room.rules === 2
+      ? room.card === undefined
+        ? null
+        : cardTrick(room.card)
+      : gimmick === null
+        ? null
+        : {
+            glyph: gimmickGlyphKey(gimmick),
+            name: gimmick.name,
+            line: gimmickShort(gimmick, 'row'),
+          };
+  const modifierShown = modifierActs(room.modifier, room.rules === 2 ? 2 : undefined);
   const floor = room.node === undefined ? null : nodeFloor(room.node);
   const place =
     floor === null
@@ -500,8 +532,10 @@ export function roomIntroView(
     element: room.foe.element,
     modifierName: room.modifier.name,
     modifierDescription: room.modifier.description,
+    modifierShown,
     trick,
-    spoken: `${where}${boss ? ', floor boss' : ''}${elite ? ', elite' : ''}${epic ? ', epic fight' : ''}: ${foeName}. ${trick === null ? '' : `${trick.name}: ${trick.line}. `}${room.modifier.name}: ${room.modifier.description}`,
+    spoken:
+      `${where}${boss ? ', floor boss' : ''}${elite ? ', elite' : ''}${epic ? ', epic fight' : ''}: ${foeName}. ${trick === null ? '' : `${trick.name}: ${trick.line}. `}${modifierShown ? `${room.modifier.name}: ${room.modifier.description}` : ''}`.trim(),
   };
 }
 

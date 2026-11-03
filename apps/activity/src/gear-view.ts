@@ -18,6 +18,7 @@ import {
   entryView,
   expeditionContent,
   gearBase,
+  gearLine,
   gearSet,
   jobDuration,
   jobHours,
@@ -95,17 +96,51 @@ export interface WornItem {
   itemLevel: number;
   /** The text of the item's lines ("Attack +6%"); absent while the owner's gear view has not loaded. */
   lines?: readonly string[];
+  /**
+   * Combat v2 only: the lines that are fight effects, which do nothing under the new rules yet (they are left out of
+   * `lines`). Absent under v1 and while the gear view has not loaded; empty when the item has none.
+   */
+  effectLines?: readonly string[];
 }
 
-/** An item a creature wears (`Creature.gear`), with its lines taken from the gear view's items. */
-export function wornItemOf(worn: WornGear, items: readonly GearItem[] | undefined): WornItem {
-  const lines = items?.find((i) => i.id === worn.id)?.lines.map((l) => l.text);
+/**
+ * Whether a line is a fight effect that combat v2 does not read yet: only a line's stat (Attack, HP, Speed, crit,
+ * an Attunement, the item's own stats) counts (R12, `integration.md` section 2). A line that is no fight effect at all
+ * (a trip or Workshop rule, a rest line) is not "not in the new rules": it works as it did.
+ */
+export function isEffectLine(lineId: string): boolean {
+  const kind = gearLine(lineId)?.effect.kind;
+  return (
+    kind === 'hunter' ||
+    kind === 'ward' ||
+    kind === 'reaction' ||
+    kind === 'reach' ||
+    kind === 'besideRole' ||
+    kind === 'position' ||
+    kind === 'sheet'
+  );
+}
+
+/**
+ * An item a creature wears (`Creature.gear`), with its lines taken from the gear view's items. With `v2` (combat v2 is
+ * on) the lines that are fight effects go to `effectLines`, for the list to mark them "not in the new rules yet".
+ */
+export function wornItemOf(
+  worn: WornGear,
+  items: readonly GearItem[] | undefined,
+  v2 = false,
+): WornItem {
+  const all = items?.find((i) => i.id === worn.id)?.lines;
+  const counted = v2 ? all?.filter((l) => !isEffectLine(l.id)) : all;
+  const lines = counted?.map((l) => l.text);
+  const effectLines = v2 ? all?.filter((l) => isEffectLine(l.id)).map((l) => l.text) : undefined;
   return {
     baseId: worn.baseId,
     slot: worn.slot,
     rarity: worn.rarity,
     itemLevel: worn.itemLevel,
     ...(lines === undefined ? {} : { lines }),
+    ...(effectLines === undefined ? {} : { effectLines }),
   };
 }
 

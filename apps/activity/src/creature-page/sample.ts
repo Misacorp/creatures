@@ -8,6 +8,7 @@ import { SAMPLE_GEAR, SAMPLE_STATE, sampleCreature, talentView } from '../creatu
 import type { GearState } from '../gear-types';
 import type { CreatureTalents, TalentSlotView } from '../talent-types';
 import { OTHER_WEARER, allBagItems, wornFromBag, type WornRows } from './bag-sample';
+import { withV2, type V2Shape } from './v2-sample';
 
 /** The creature of every v3 scene. */
 export const PAGE_SAMPLE_ID = 'v3-cindle';
@@ -40,7 +41,10 @@ export type SceneKind =
   | 'set: two pieces'
   | 'set: three pieces'
   | 'set: two pieces and a charm'
-  | 'compare: plain gear';
+  | 'compare: plain gear'
+  | 'v2: Knack saved'
+  | 'v2: no Knack'
+  | 'v2: the book';
 
 export const SCENE_KINDS: readonly SceneKind[] = [
   'level 2',
@@ -62,6 +66,9 @@ export const SCENE_KINDS: readonly SceneKind[] = [
   'set: three pieces',
   'set: two pieces and a charm',
   'compare: plain gear',
+  'v2: Knack saved',
+  'v2: no Knack',
+  'v2: the book',
 ];
 
 export function sceneKindOf(value: string): SceneKind {
@@ -262,6 +269,17 @@ function shapeOf(kind: SceneKind): Shape {
         exp: 310,
         expNeeded: 825,
       };
+    case 'v2: Knack saved':
+    case 'v2: no Knack':
+    case 'v2: the book':
+      // Combat v2 (the flag on): a level 20 creature that wears three pieces; its v2 fields are added by `pageScene`.
+      return {
+        level: 20,
+        worn: { hat: 0, scarf: 0, charm: 0 },
+        talents: talentsOf(twoSlots(GOLDEN, true)),
+        exp: 100,
+        expNeeded: 1000,
+      };
     case 'level 15':
       return {
         level: 15,
@@ -272,6 +290,13 @@ function shapeOf(kind: SceneKind): Shape {
       };
   }
 }
+
+/** What the combat v2 scenes show of a creature: which Knack is saved, which book talents it has learned, which are golden. */
+const V2_SHAPES: Readonly<Partial<Record<SceneKind, V2Shape>>> = {
+  'v2: Knack saved': { knack: 0, learned: [0, 1], golden: [1] },
+  'v2: no Knack': { knack: null, learned: [0] },
+  'v2: the book': { knack: 1, learned: [0, 1, 2], golden: [1] },
+};
 
 export interface PageScene {
   creature: Creature;
@@ -292,7 +317,7 @@ export function pageScene(kind: SceneKind, options: { bait?: number } = {}): Pag
           ? 'evolve ready'
           : 'growing',
   );
-  const creature: Creature = {
+  const plain: Creature = {
     ...base,
     id: PAGE_SAMPLE_ID,
     level: shape.level,
@@ -317,6 +342,8 @@ export function pageScene(kind: SceneKind, options: { bait?: number } = {}): Pag
             unlocked: shape.level >= base.ability.unlockLevel,
           },
   };
+  const v2Shape = V2_SHAPES[kind];
+  const creature = v2Shape === undefined ? plain : withV2(plain, v2Shape);
   const state: GameState = {
     ...SAMPLE_STATE,
     creatures: [creature, OTHER],

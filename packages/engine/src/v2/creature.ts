@@ -16,7 +16,11 @@ const { addMark, heal } = marksMod;
 const { beside } = boardMod;
 const { feed, grown, miredCut } = escalationMod;
 const { takeHit } = takingMod;
-const { alive, best, bump, fx, log, roll, silenced, strengthOf } = stateMod;
+const { alive, best, bump, emit, fx, keyOf, log, roll, setStore, silenced, strengthOf } = stateMod;
+
+/** Damage with Determination's share on top (the server's creatures deal more for each failed week on the boss). */
+const determined = (s: State, raw: number): number =>
+  s.opts.determinationBp ? Math.floor((raw * (10_000 + s.opts.determinationBp)) / 10_000) : raw;
 
 /**
  * Damage to the boss by `f`: HP, damage counts, Culling Strike and the killing blow. A counter (Retaliate, Shoulder
@@ -26,9 +30,7 @@ const { alive, best, bump, fx, log, roll, silenced, strengthOf } = stateMod;
  * The creature whose damage or Culling Strike takes the last HP lands the killing blow (the first one only).
  */
 function hitBoss(s: State, f: Fighter, rawDmg: number, isHit: boolean): void {
-  const dmg = s.opts.determinationBp
-    ? Math.floor((rawDmg * (10_000 + s.opts.determinationBp)) / 10_000)
-    : rawDmg;
+  const dmg = determined(s, rawDmg);
   // Damage potential: every point of damage counts and the boss stays at 1 HP instead of dying (`FightOptions.potential`).
   // The boss's real HP (the shadow) keeps falling; the HP the fight reads for life and death stays at 1.
   const real = s.opts.potential ? dmg : Math.min(dmg, s.bossHp);
@@ -119,12 +121,13 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
     conditional(f, 'vengefulBp', k.vengefulBp, f.avenged);
   // A silenced creature does not use up its stored Momentum: what was stored before the silence stays.
   if (!silenced(f)) f.momentum = false;
-  const bonusSum = Math.min(R.maxHitBonusBp, f.boostBp + situational);
+  // A Rally of the finale (R18) is one more hit boost, inside the same cap.
+  const bonusSum = Math.min(R.maxHitBonusBp, f.boostBp + situational + (s.rally ? R.rallyBp : 0));
   const atk = Math.floor((f.atk * (10_000 + (k.atkBp ?? 0))) / 10_000);
   const matched = Math.floor((atk * s.ctx.matchup(f.element, s.boss.element)) / 10_000);
   // Element Resistance (a raid weekend, from stage 2): the resisted element's creatures deal less.
   const base =
-    s.opts.resistElement === f.element
+    s.opts.resistElement === f.element && !s.purged
       ? Math.floor(
           (matched *
             (10_000 - Math.floor(((10_000 - R.adaptElementBp) * strengthOf(s)) / 10_000))) /
@@ -148,7 +151,18 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
   if (dodged) {
     feed(s, 'dodges');
     s.count.dodges++;
-    if (s.opts.log) log(s, 'boss-dodge', `${s.boss.name} dodges ${f.name}`);
+    if (s.opts.log)
+      log(s, 'boss-dodge', `${s.boss.name} dodges ${f.name}`, {
+        board: {
+          type: 'hit',
+          from: keyOf(f),
+          to: null,
+          damage: 0,
+          crit: false,
+          blocked: false,
+          dodged: true,
+        },
+      });
   }
   // 3. Reaction (R5): only a Payoff cashes; of the marks this hit may cash, the oldest. Chosen here, worked out after the crit.
   let cand: [string, Mark] | undefined;
@@ -199,7 +213,7 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       : undefined;
     if (shell) {
       factor *= 2;
-      shell.store = 0;
+      setStore(s, shell, 0);
     }
     // Talents raise the factor, inside the cap (R7): a crit talent on a crit, Hungry always.
     if (crit && k.reactionCritBp) factor = (factor * (10_000 + k.reactionCritBp)) / 10_000;
@@ -218,7 +232,7 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
     factor = Math.min(factor, R.maxBonusFactorBp);
     bonus = Math.floor((((plain * (R.payoffMultBp - 10_000)) / 10_000) * factor) / 10_000);
     // Reaction Resistance: half the bonus at full strength, less below it.
-    if (s.opts.resistReaction === el)
+    if (s.opts.resistReaction === el && !s.purged)
       bonus = Math.floor(
         (bonus * (10_000 - Math.floor((5_000 * strengthOf(s)) / 10_000))) / 10_000,
       );
@@ -228,11 +242,21 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
     feed(s, 'reactions');
     s.count.reactions++;
     s.byMark[el] = (s.byMark[el] ?? 0) + 1;
-    if (s.opts.log) log(s, 'reaction', `${f.name} cashes ${el} x${spent} for +${bonus}`);
+    if (s.opts.log)
+      log(s, 'reaction', `${f.name} cashes ${el} x${spent} for +${bonus}`, {
+        board: {
+          type: 'reaction',
+          by: keyOf(f),
+          mark: el,
+          spent,
+          bonus,
+          left: Math.max(0, mark.stacks),
+        },
+      });
     for (const o of alive(s)) {
       const ok = fx(o);
       if (ok.support === 'gatherCalm' && o.lastStoreRound !== s.round) {
-        o.store = Math.min(3, o.store + 1);
+        setStore(s, o, Math.min(3, o.store + 1));
         o.lastStoreRound = s.round;
       }
       if (ok.healOnReactionBp && o.element === el) heal(s, f, ok.healOnReactionBp, false, o);
@@ -270,7 +294,18 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
     dmg -= armour;
     if (dmg <= 0) {
       s.count.blocked++;
-      if (s.opts.log) log(s, 'blocked', `${f.name}'s hit is Blocked`);
+      if (s.opts.log)
+        log(s, 'blocked', `${f.name}'s hit is Blocked`, {
+          board: {
+            type: 'hit',
+            from: keyOf(f),
+            to: null,
+            damage: 0,
+            crit,
+            blocked: true,
+            dodged: false,
+          },
+        });
       dmg = 0;
     }
     // A hit made while silenced does not use up a first-hit effect (panel 3).
@@ -285,6 +320,16 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       f.sureCrits--;
       if (s.opts.log) log(s, 'sure-crit', `${f.name} spends a Sure Crit (${f.sureCrits} left)`);
     }
+    if (s.opts.log && dmg > 0)
+      emit(s, {
+        type: 'hit',
+        from: keyOf(f),
+        to: null,
+        damage: determined(s, dmg),
+        crit,
+        blocked: false,
+        dodged: false,
+      });
     hitBoss(s, f, dmg, true);
   }
   // 5. Mark (R4): a hit that set off a reaction leaves no mark by the base rules.
@@ -304,11 +349,15 @@ function creatureHit(s: State, f: Fighter, shareBp: number): void {
       f.marksLeft++;
       if (k.storeDodgeStacks && f.store >= 3) {
         stacks += k.storeDodgeStacks;
-        f.store = 0;
+        setStore(s, f, 0);
       }
       if (k.markOthers)
         for (const [other, m] of s.marks)
-          if (other !== el) m.stacks = Math.min(R.maxStacks, m.stacks + 1);
+          if (other !== el) {
+            m.stacks = Math.min(R.maxStacks, m.stacks + 1);
+            if (s.opts.log)
+              emit(s, { type: 'mark', element: other, stacks: m.stacks, sealed: m.sealed });
+          }
       addMark(s, el, stacks, { sealed: k.seal ?? false, by: f });
       if (k.leadBoostBp) {
         const next = best(
@@ -339,6 +388,9 @@ export function creatureTurn(s: State, f: Fighter): void {
 export function counter(s: State, f: Fighter, shareBp: number): void {
   // A counter is not a hit: no crit roll, no Sure Crit spent, no Steady Rhythm count, no Culling Strike (R6, R21.7).
   const dmg = Math.floor((f.atk * shareBp) / 10_000);
-  if (s.opts.log) log(s, 'counter', `${f.name} strikes back for ${dmg}`);
+  if (s.opts.log)
+    log(s, 'counter', `${f.name} strikes back for ${dmg}`, {
+      board: { type: 'counter', from: keyOf(f), damage: dmg },
+    });
   hitBoss(s, f, dmg, false);
 }

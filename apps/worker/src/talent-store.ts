@@ -20,6 +20,7 @@ import {
 } from '@creatures/game';
 import type { Analytics } from './analytics';
 import { speciesOf } from './species';
+import { grantFirstTalent } from './talent-v2-store';
 
 type TalentRow = {
   creature_id: string;
@@ -207,6 +208,11 @@ export interface CreatureRngs {
   quirk: Rng;
   /** The first talent. */
   talent: Rng;
+  /**
+   * The `COMBAT_V2` flag: a new creature also rolls a v2 talent from its line's pool, records it in the
+   * line's book and learns it in slot 1 (`talent-v2-store.ts`). Absent or false: today's talent only.
+   */
+  combatV2?: boolean;
 }
 
 /**
@@ -237,6 +243,15 @@ export function insertCreature(
   );
   const talent = input.talent ?? rollTalent(rngs.talent, species.line);
   holdTalent(sql, id, talent, 1, input.now);
+  // Drawn after the v1 talent, so a v1 roll never changes with the flag.
+  if (rngs.combatV2 === true) {
+    grantFirstTalent(sql, rngs.talent, {
+      creatureId: id,
+      userId: input.userId,
+      line: species.line,
+      now: input.now,
+    });
+  }
   if (input.talent === undefined) {
     analytics?.record(
       { kind: 'talent_roll', species: species.id, talent: talent.talentId, golden: talent.golden },

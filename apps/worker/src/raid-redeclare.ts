@@ -119,7 +119,7 @@ export function staleOpenWeeks(sql: SqlStorage): string[] {
     .exec<{
       week_id: string;
     }>(
-      "SELECT week_id FROM raid_weeks WHERE status = 'open' AND difficulty_version < ? ORDER BY week_id",
+      "SELECT week_id FROM raid_weeks WHERE status = 'open' AND difficulty_version < ? AND rules_version = 1 ORDER BY week_id",
       RAID_DIFFICULTY_VERSION,
     )
     .toArray()

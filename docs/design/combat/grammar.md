@@ -22,6 +22,7 @@ Every element should get the same kinds of tools: a Heavy Prime Setter, a Setter
 - The same effect keeps the same name everywhere (P-06): a Knack on another species or on gear uses its existing name.
 - Knacks are actions or short phrases ("Draw Fire"); talents are traits ("Sharp Claws"). A talent never repeats a Knack's effect, and talents and gear take the existing name of an effect (R20).
 - Names are checked against the compendium's tone before shipping.
+- **Group by behaviour before naming, and keep grouping** (Misa, 2026-11-01). Two effects that do the same thing with different numbers are one behaviour: tweaking a few parameters can make them very different in power, but they should not look like different rules to a player. So before asking Misa to name a set of Knacks, talents, moves or cards, group them by behaviour (the effect fields they use, a move's shape and target, a card's operations) and name the groups; a new piece of content first looks for its group. The lab report's "Similar behaviours" section lists the groups every time it runs: read it when adding or changing content, and merge or rename where two entries are one behaviour (retro 2026-11-01, proposal 2: batch 4 sent ten groups of identical moves to Misa as separate names).
 
 ## Boss moves: behaviour and paint
 

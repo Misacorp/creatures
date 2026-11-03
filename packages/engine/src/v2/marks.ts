@@ -12,8 +12,21 @@ import type { State } from './state';
 // Bound once: a named import is read through a getter on every call under the lab's Vite loader, which costs 15% of a report.
 const { addMired, escalate, movesOf } = escalationMod;
 const { beside, inReach, targetsOf, usesRoll } = boardMod;
-const { alive, aliveBySlot, bump, fx, log, mostHurt, roll, silenced, strengthOf, strong } =
-  stateMod;
+const {
+  alive,
+  aliveBySlot,
+  bump,
+  emit,
+  fx,
+  keyOf,
+  log,
+  mostHurt,
+  roll,
+  setStore,
+  silenced,
+  strengthOf,
+  strong,
+} = stateMod;
 
 export function addMark(
   s: State,
@@ -43,7 +56,12 @@ export function addMark(
       owners: new Set(opts.by ? [opts.by.uid] : []),
     });
   }
-  if (s.opts.log) log(s, 'mark', `${element} x${s.marks.get(element)?.stacks ?? 0}`);
+  if (s.opts.log) {
+    const now = s.marks.get(element);
+    log(s, 'mark', `${element} x${now?.stacks ?? 0}`, {
+      board: { type: 'mark', element, stacks: now?.stacks ?? 0, sealed: now?.sealed ?? false },
+    });
+  }
 }
 
 /** A heal by `src` (if any): healing past full HP passes on to the most hurt creature in the row of the one healed (Overheal Spill). */
@@ -64,6 +82,13 @@ export function heal(
   const real = Math.min(amt, target.maxHp - target.hp);
   target.hp += real;
   s.count.healed += real;
+  if (s.opts.log && real > 0)
+    emit(s, {
+      type: 'heal',
+      who: keyOf(target),
+      amount: real,
+      ...(src ? { by: keyOf(src) } : {}),
+    });
   const over = amt - real;
   if (over > 0 && src && fx(src).spillOver) {
     const next = mostHurt(alive(s).filter((o) => o !== target && o.row === target.row));
@@ -71,6 +96,8 @@ export function heal(
       const moved = Math.min(over, next.maxHp - next.hp);
       next.hp += moved;
       s.count.healed += moved;
+      if (s.opts.log && moved > 0)
+        emit(s, { type: 'heal', who: keyOf(next), amount: moved, by: keyOf(src) });
       bump(src, 'spillOver');
     }
   }
@@ -87,7 +114,7 @@ export function roundStart(s: State): void {
     const k = fx(f);
     if (k.miresAtStart) addMired(s, f);
     // Boiling Point's Heat also builds by itself: +1 at every round start (panel 5: it was filled by damage alone and never picked).
-    if (k.bakedShell) f.store = Math.min(3, f.store + 1);
+    if (k.bakedShell) setStore(s, f, Math.min(3, f.store + 1));
     if (k.guardMendBp)
       for (const o of alive(s).filter((o) => inReach(s, f, o))) heal(s, o, k.guardMendBp, true, f);
   }
@@ -101,12 +128,15 @@ export function roundStart(s: State): void {
     if (s.round % m.every !== 0 || !(m.charged || usesRoll(m.pattern))) continue;
     const aimed = targetsOf(s, m.pattern, false);
     s.announced.set(m.id, aimed);
-    log(
-      s,
-      'announce',
-      `${m.name} (${m.id}${m.charged ? ', Wind-up' : ''}) will land on ${aimed.map((t) => `${t.name} (row ${t.row + 1}, slot ${t.col + 1})`).join(', ') || 'nobody'}`,
-      { move: m.id, slots: aimed.map((t) => [t.row, t.col] as const) },
-    );
+    if (s.opts.log) {
+      const slots = aimed.map((t) => [t.row, t.col] as const);
+      log(
+        s,
+        'announce',
+        `${m.name} (${m.id}${m.charged ? ', Wind-up' : ''}) will land on ${aimed.map((t) => `${t.name} (row ${t.row + 1}, slot ${t.col + 1})`).join(', ') || 'nobody'}`,
+        { move: m.id, slots, board: { type: 'announce', move: m.id, slots } },
+      );
+    }
   }
 }
 
@@ -168,7 +198,7 @@ function supportVerb(s: State, f: Fighter, k: KnackFx): void {
           o.boostBp += boost + kindred(o);
       if (k.support === 'gatherCalm' && f.store >= 3) {
         for (const o of beside(s, f)) o.boostBp += 4_500;
-        f.store = 0;
+        setStore(s, f, 0);
       }
     }
   }

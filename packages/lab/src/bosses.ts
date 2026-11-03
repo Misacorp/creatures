@@ -44,16 +44,15 @@
  */
 import { RULES, createSeededRng } from '@creatures/game';
 import { combatV2 } from '@creatures/game/combat-v2';
-import { raidBoss } from '@creatures/engine/v2';
+import { RAID_COLS, RAID_ROUNDS, raidBoss } from '@creatures/engine/v2';
 import { weekend } from './fight';
 import { SHIPPED } from './species';
 import { LEVEL, toPlacements, type Mode, type Pick, type Score } from './search';
 import type { BossDef, BossMove, Escalation, Fighter, Placement } from './types';
 
-/** The raid stage: rounds per stage (R14: the round count restarts each stage). */
-export const RAID_ROUNDS = 8;
-/** The raid arena is four slots wide: one column per player in the lab's raid search. */
-export const RAID_COLS = 4;
+// The raid stage's rounds (R14: the round count restarts each stage) and the arena's four columns, one per player, are the engine's
+// (`resolve/track.ts`).
+export { RAID_COLS, RAID_ROUNDS };
 
 export interface RaidBossSpec {
   readonly id: string;

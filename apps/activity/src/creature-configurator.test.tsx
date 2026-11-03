@@ -3,6 +3,7 @@ import type { Creature } from './api';
 import { CreatureConfigurator, type ConfiguratorParts } from './CreatureConfigurator';
 import type { CardActions } from './CreaturePage';
 import { teamSample } from './creature-page/team-sample';
+import { withV2 } from './creature-page/v2-sample';
 import { parseDungeonToday } from './dungeon-parse';
 import { DungeonSetup } from './DungeonSetup';
 import todayFixture from './fixtures/dungeon-today-map.json';
@@ -143,18 +144,24 @@ describe('the creature configurator', () => {
 });
 
 /** The dungeon's pre-run card with the team of the sample, ready to configure. */
-function drawSetup(): { root: FakeElement; onDraftChange: ReturnType<typeof vi.fn> } {
+function drawSetup(rules?: 2): { root: FakeElement; onDraftChange: ReturnType<typeof vi.fn> } {
   page = createPage();
   const scene = teamSample();
   const onDraftChange = vi.fn();
   const today = parseDungeonToday({
     ...todayFixture,
+    ...(rules === 2 ? { rules: 2 } : {}),
     lastTeam: scene.team.map((c) => c.id),
   });
+  // On a run of combat v2 the server sends each creature's v2 data (the Knack part draws only for it).
+  const creatures =
+    rules === 2
+      ? scene.creatures.map((c) => withV2(c, { knack: 0, learned: [0, 1], golden: [1] }))
+      : scene.creatures;
   page.draw(
     <DungeonSetup
       today={today}
-      creatures={scene.creatures}
+      creatures={creatures}
       bait={40}
       busy={false}
       error={null}
@@ -194,6 +201,18 @@ describe('the dungeon card: getting the team ready', () => {
     expect(tile(root, 1).getAttribute('class')).toContain('selected');
     p.click(tile(root, 1));
     expect(byClass(root, 'configurator')).toHaveLength(0);
+  });
+
+  it('adds the Knack part on a run of combat v2 (and only then), before the gear', () => {
+    const v2 = drawSetup(2);
+    (page as Page).click(tile(v2.root, 1));
+    const shown = first(byClass(v2.root, 'configurator'));
+    expect(titles(shown)).toEqual(['Stats', 'Knack', 'Gear', 'Talents']);
+    expect(byClass(shown, 'creature-knack')).toHaveLength(1);
+    page?.unmount();
+    const v1 = drawSetup();
+    (page as Page).click(tile(v1.root, 1));
+    expect(titles(first(byClass(v1.root, 'configurator')))).toEqual(['Stats', 'Gear', 'Talents']);
   });
 
   it('takes the creature out of the team with Remove from team', () => {

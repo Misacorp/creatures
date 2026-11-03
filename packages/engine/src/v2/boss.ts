@@ -18,7 +18,8 @@ const { AIMED, beside, inReach, targetsOf } = boardMod;
 const { addMark } = marksMod;
 const { feed, grown, miredCut, movesOf } = escalationMod;
 const { critWardOf, dodgeOf, gainSureCrit, takeHit } = takingMod;
-const { alive, best, bump, fx, log, roll, silenced, strengthOf, strong } = stateMod;
+const { alive, best, bump, emit, fx, keyOf, log, roll, setStore, silenced, strengthOf, strong } =
+  stateMod;
 
 /**
  * One move or plain attack lands. A Charged move lands on the creatures shown at round start and never re-aims (a
@@ -102,17 +103,31 @@ function bossHits(
           ? move.silenceTurns
           : Math.max(1, Math.round((move.silenceTurns * gate) / 10_000));
       t.silencedTurns = Math.max(t.silencedTurns, turns);
-      if (s.opts.log) log(s, 'silence', `${t.name} is silenced`);
+      if (s.opts.log)
+        log(s, 'silence', `${t.name} is silenced`, {
+          board: { type: 'silence', who: keyOf(t), turns: t.silencedTurns },
+        });
       continue;
     }
     // R1: the target rolls dodge first; a charged landing rolls at full chance.
     if (roll(s, dodgeOf(s, t, area && !move.charged))) {
       s.count.dodges++;
-      if (s.opts.log) log(s, 'dodge', `${t.name} dodges`);
+      if (s.opts.log)
+        log(s, 'dodge', `${t.name} dodges`, {
+          board: {
+            type: 'hit',
+            from: null,
+            to: keyOf(t),
+            damage: 0,
+            crit: false,
+            blocked: false,
+            dodged: true,
+          },
+        });
       const k = fx(t);
       // Retaliate ignores armour: the hit back is a counter, not a hit (keywords).
       if (k.retaliateBp) counter(s, t, k.retaliateBp);
-      if (k.storeDodgeStacks) t.store = Math.min(3, t.store + 1);
+      if (k.storeDodgeStacks) setStore(s, t, Math.min(3, t.store + 1));
       // Momentum: its next hit deals more. Perfect Timing: it stores a Sure Crit.
       if (k.momentumBp) t.momentum = true;
       if (k.dodgeCritBp) gainSureCrit(s, t, 'dodgeCritBp');
@@ -187,12 +202,22 @@ function bossHits(
     took.add(taker);
     // A boss crit (R7.1): rolled for each hit that lands on a creature, after the dodge and the intercept and before the cuts
     // and the armour, so Cool Head, the cover, Brace and armour all work on the doubled hit. A one-shot never crits.
+    let crit = false;
     if (!move.oneShotBp && proposed > 0 && roll(s, s.boss.critChanceBp ?? 0)) {
+      crit = true;
       const ward = critWardOf(s, taker);
       proposed += Math.floor((proposed * (R.critBp - 10_000) * (10_000 - ward)) / 1e8);
       if (s.opts.log) log(s, 'boss-crit', `${s.boss.name} crits ${taker.name}`);
     }
-    takeHit(s, taker, proposed, move.charged ? 'charged' : area ? 'area' : 'aimed', t, watched);
+    takeHit(
+      s,
+      taker,
+      proposed,
+      move.charged ? 'charged' : area ? 'area' : 'aimed',
+      t,
+      watched,
+      crit,
+    );
   }
 }
 
@@ -201,6 +226,7 @@ export function bossTurn(s: State, turn: number): void {
   s.turn = turn;
   const ageAtStart = s.markAge;
   const last = s.boss.rows - 1;
+  if (s.opts.log) emit(s, { type: 'bossTurn', row: turn });
   for (const m of movesOf(s)) {
     if (s.bossHp <= 0) return;
     if (s.round % m.every === 0 && (m.turn ?? last) === turn) {
@@ -218,12 +244,16 @@ export function bossTurn(s: State, turn: number): void {
   }
   if (s.bossHp <= 0) return;
   // Clean Scales sheds the marks that were on the boss when this turn began, unless sealed (R8).
-  if (s.boss.mods.shedMarks)
+  if (s.boss.mods.shedMarks) {
+    const shed: string[] = [];
     for (const [el, m] of s.marks)
       if (!m.sealed && m.age < ageAtStart && strong(s, strengthOf(s))) {
         s.marks.delete(el);
         feed(s, 'shed');
+        shed.push(el);
       }
+    if (s.opts.log && shed.length > 0) emit(s, { type: 'shed', marks: shed });
+  }
   s.bossTurnsDone++;
   s.reflectArmed = true;
 }

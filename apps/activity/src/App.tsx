@@ -149,7 +149,14 @@ export function App() {
           </>
         )}
       </main>
-      {howTo !== null && <HowToPlay section={howTo.section} nonce={howTo.nonce} onClose={close} />}
+      {howTo !== null && (
+        <HowToPlay
+          section={howTo.section}
+          nonce={howTo.nonce}
+          onClose={close}
+          v2={loadedBoot?.config.combatV2 === true}
+        />
+      )}
     </PopoverHost>
   );
 }

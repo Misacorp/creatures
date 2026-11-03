@@ -8,8 +8,8 @@
  */
 import { RULES, content, festivalCreatureFor, int, ribbonsForLevel } from '@creatures/game';
 import type * as v from 'valibot';
-import { advanceTo, phaseTarget } from './dev-tools-clock';
-import { DevError, purgeUser, type ToolCtx } from './dev-context';
+import { advanceTo, gameNow, phaseTarget, weekRulesOf } from './dev-tools-clock';
+import { DevError, creatureRngsOf, purgeUser, type ToolCtx } from './dev-context';
 import type {
   RaidBossBodySchema,
   RaidFestivalBodySchema,
@@ -21,6 +21,7 @@ import type {
 } from './dev-schemas';
 import { readWeekProgression } from './raid-ladder';
 import { ensureWeekRank } from './raid-ladder';
+import { GUEST_CREATURES_V2, ensureV2Talents, placeCreaturesV2 } from './dev-tools-raid-v2';
 import { joinSmallestParty, leaveParty, partyOf, partyRowLength } from './raid-roster';
 import { RAID_PHASES, weekIndex } from './raid-schedule';
 import { autoTeam, loadCreatures } from './raid-teams';
@@ -38,7 +39,9 @@ const eventDone = (ctx: ToolCtx, weekId: string, event: string): boolean =>
 
 /** Moves the clock to a phase of the week (the scheduler runs whatever that makes due). */
 export function raidPhase(ctx: ToolCtx, body: Body<typeof RaidPhaseBodySchema>) {
-  advanceTo(ctx, phaseTarget(body.to, ctx.now, ctx.tz));
+  // The week exists (with its rules version) before its calendar is read: a v2 week's stages are on Saturday and Sunday.
+  ctx.raid.currentWeek(ctx.tz);
+  advanceTo(ctx, phaseTarget(body.to, gameNow(ctx), ctx.tz, weekRulesOf(ctx)));
   const week = ctx.raid.currentWeek(ctx.tz);
   ctx.raid.settleDueLive();
   return { weekId: week.weekId, status: ctx.raid.week(week.weekId)?.status ?? week.status };
@@ -194,11 +197,12 @@ export function createGuest(
     have += 1;
     lines.add(species.line);
     const spread = int(ctx.rng, 5) - 2;
-    const made = insertCreature(
-      ctx.sql,
-      { quirk: ctx.quirkRng, talent: ctx.talentRng },
-      { userId: id, species: species.id, origin: 'dev', now: ctx.now },
-    );
+    const made = insertCreature(ctx.sql, creatureRngsOf(ctx), {
+      userId: id,
+      species: species.id,
+      origin: 'dev',
+      now: ctx.now,
+    });
     const guestLevel = Math.min(species.levelCap, Math.max(1, level + spread));
     ctx.sql.exec(
       'UPDATE creatures SET level = ?, ribbons = ? WHERE id = ?',
@@ -234,6 +238,23 @@ export function placeGuest(
   /** The creatures to place (at most three); default the first three the player made. */
   creatureIds?: readonly string[],
 ): void {
+  // A combat v2 week has a grid and its own placing rules: the placement code itself puts them on it (a guest also saves its Knack).
+  if (ctx.raid.week(weekId)?.rules === 2) {
+    const ids =
+      creatureIds ??
+      ctx.sql
+        .exec<{ id: string }>(
+          'SELECT id FROM creatures WHERE user_id = ? ORDER BY caught_at, rowid LIMIT ?',
+          userId,
+          RULES.raid.teamSize,
+        )
+        .toArray()
+        .map((r) => r.id);
+    placeCreaturesV2(ctx, weekId, userId, ids.slice(0, RULES.raid.teamSize), {
+      knack: userId.startsWith(GUEST_PREFIX),
+    });
+    return;
+  }
   const party =
     partyOf(ctx.sql, weekId, userId) ?? joinSmallestParty(ctx.sql, weekId, userId, ctx.now);
   const creatures = (
@@ -334,12 +355,14 @@ export function ensureGuests(ctx: ToolCtx, count: number): { guests: number } {
     purgeUser(ctx.sql, guestId(n), false);
   }
   const level = referenceLevel(ctx);
+  const v2 = week.rules === 2;
   for (let n = 1; n <= count; n++) {
     if (have.includes(n)) {
       ctx.sql.exec('UPDATE players SET last_seen_at = ? WHERE user_id = ?', ctx.now, guestId(n));
-    } else {
-      createGuest(ctx, n, level);
     }
+    // On a v2 week a guest also owns spares, and every creature has a v2 talent (a guest from before gets them now).
+    if (!have.includes(n) || v2) createGuest(ctx, n, level, v2 ? GUEST_CREATURES_V2 : undefined);
+    if (v2) ensureV2Talents(ctx, guestId(n));
     placeGuest(ctx, week.weekId, guestId(n));
   }
   joinCaller(ctx, week.weekId);

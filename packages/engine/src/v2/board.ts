@@ -83,6 +83,15 @@ const ANCHORLESS: ReadonlySet<Pattern['shape']> = new Set([
   'rowEnds',
 ]);
 
+/**
+ * The creature a pattern is aimed at first, now: the anchor's pick (a Taunt moves a plain attack's, R9), or none for a shape with no
+ * anchor or an empty board. A roll is drawn for a random anchor, so a preview never asks for one (see `usesRoll`).
+ */
+export function aimedAt(s: State, p: Pattern, plain: boolean): Fighter | undefined {
+  if (ANCHORLESS.has(p.shape)) return undefined;
+  return (plain ? best(alive(s), bySlot, (f) => !!fx(f).taunt) : undefined) ?? anchorOf(s, p);
+}
+
 /** The creatures a multi-anchor pattern aims at (its anchors), by the array `targetsOf` returned. */
 export const AIMED = new WeakMap<readonly Fighter[], ReadonlySet<Fighter>>();
 

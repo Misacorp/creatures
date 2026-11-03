@@ -87,6 +87,9 @@ export const ActionIds = {
   /** The same talent into the same slot of the same creature is the same slotting. */
   talentSlot: (creatureId: string, talentId: string, golden: boolean, slot: number): ActionId =>
     `talent-slot:${creatureId}:${talentId}:${golden ? 'g' : 'n'}:${String(slot)}`,
+  /** A creature learns one talent of its line's book (combat v2): one creature, one talent, once. */
+  talentLearnV2: (creatureId: string, talentId: string): ActionId =>
+    `talent-learn-v2:${creatureId}:${talentId}`,
   claimJob: (jobId: string): ActionId => `claim-job:${jobId}`,
   /** The same creature dismantling the same items is the same pile (other items are another action). */
   dismantlePile: (creatureId: string, itemIds: readonly string[]): ActionId =>

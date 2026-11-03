@@ -4,6 +4,34 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-02: Combat v2 engine slice 1: carry keyed by creature key, board events beside the log, live actions as one boost or cut each
+
+ID: `2026-11-02-combat-v2-engine-slice-1-the` · Status: current
+
+**Decision.** Slice 1 of phase 4 (`integration.md`, section 3) is in `@creatures/engine/v2`, and the lab's parity digest was identical after every part.
+
+- **The stage carry** (`StageCarry`) is plain JSON and names creatures by `FighterSpec.key` (the worker's creature id), falling back to the `uid`. `weekendV2` loops over `stageV2` and gives its own creatures the keys `team:i` and `bench:j` (their identity, which a slot is not once a replacement takes it). A creature knocked out is in the carry's `out` and is left out of later stages by `stageV2`.
+- **Board events** are the optional `FightEvent.board`, only with `log` on. An event that had a text line carries its board part beside it; the rest (a creature's hit on the boss, a heal, a Store, round start, boss turn, shed marks, resistance, the end) are events of kind `board` with empty text. The digest leaves out both, so it did not change. Mired and the live actions also get board events.
+- **The live finale's actions** (`{round, kind, row?, by}`) act from their round on and draw no dice, so adding one at round r changes no event before r. Rally is one more hit boost inside the +150% cap, Shield Wall one more cut inside the 75% cap and before armour, Purge lifts both resistances for `purgeRounds` rounds. Two of the same in a round do not stack. The numbers (`rallyBp` 1000, `shieldWallBp` 5000, `purgeRounds` 2) are in `rules.json`.
+- **The track's boss** is read from `raid-track.json` through the pack by `trackBoss`/`slotSpec` in `resolve/track.ts`; after the data's last slot the track goes on at full strength with the boss's own numbers and its last lap's extra cards. A party under four fights at four columns. The lab keeps its own slot derivation (orders, tuner tables, the rank ladder) and a test checks the two agree for slots 1 to 40.
+
+**Reasoning.** Keys by creature id are what the worker has between Saturday and Sunday, and a key that is not a slot survives swaps. Putting board events beside the text keeps one ordered list for the client to fold and costs nothing when the fight does not log. Keeping the actions to one boost or cut each, inside the caps the rules already have, means none can be stacked into something the lab did not measure. The CPU numbers are in `integration.md` section 8: warm medians of 0.3 to 1.8 ms per stage or finale replay, far under the Free plan's 10 ms.
+
+## 2026-11-02: Combat v2 phase 4 plan: the game plays v2 behind a staging flag, rules version stored per week, run and fight
+
+ID: `2026-11-02-combat-v2-phase-4-plan-the` · Status: current
+
+**Decision.** Phase 4 follows `docs/design/combat/integration.md`:
+
+- **A `COMBAT_V2` worker variable**, on in staging only and pinned off in production by a test. It is read only when something starts: a raid week stores `rules_version` when it is created, a dungeon run stores it in its state, and a fight input carries `version: 2`. The client picks its v1 or v2 screens from the view's `rules`, not from the flag.
+- **Storage:** the saved Knack is a column on `creatures` (the known Knacks are worked out from the line, not stored); the v2 Talent Book is per player and line (`line_talents`) with each creature's learned talents (`creature_talents_v2`); a `raid_track` row per server replaces `raid_ladder` under v2; the weekend's carry is JSON on `raid_parties`; swap requests get their own table.
+- **Engine:** `stageV2` plays one stage and returns a JSON carry (`weekendV2` loops over it); typed board events sit beside the log text and stay out of the parity digest; the live finale's Rally, Shield Wall and Purge become v2 inputs with the prefix property; `slotBoss` and `wideBoss` move from the lab to `resolve/`.
+- **Calendar (Misa's direction):** stage 1 Saturday 13:37, stage 2 Sunday 13:37, the finale Sunday 20:00, with no HP floors.
+- **Under v2 in phase 4:** gear counts only its stat lines, weather does not touch fights (question for Misa), and creature finale abilities and Re-mark are not used. A dispatcher `replayFight` runs v1 or v2 by the stored input.
+- **Production is never converted.** The game resets after both reworks, so a staging-only dev tool (`combat-v2-convert`) rolls v2 talents for a staging server.
+
+**Reasoning.** Storing the rules version at the start of each week, run and fight means a flag flip never changes a fight already under way, and old v1 rows still replay. Splitting the weekend into stages is the one engine change the live calendar needs, because stages happen a day apart. Keeping board events out of the digest lets the 1,299-fight parity check prove that adding them changed no result. Gear effects and weather were never measured in the lab, so turning them off keeps staging honest until phase 5. The CPU of a v2 stage is measured first: the Free plan allows 10 ms per request, and Misa approved Workers Paid in advance if a measured limit blocks us.
+
 ## 2026-11-01: [Misa] Combat v2 icons: shapes, the sword, the Store box, claw Pincer, Leap as a chain
 
 ID: `2026-11-01-combat-v2-icons-shapes-the-sword` · Status: current

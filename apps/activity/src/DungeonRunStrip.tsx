@@ -71,9 +71,12 @@ export function TeamFace({
  */
 export function RunTile({
   creature,
+  rules,
   children,
 }: {
   creature: DungeonRunCreature;
+  /** 2 on a run of combat v2: a creature at 0 HP is "Out" (until the camp swaps it). */
+  rules?: 2 | undefined;
   children?: ComponentChildren;
 }) {
   const state = tileState(creature);
@@ -95,7 +98,7 @@ export function RunTile({
         speciesId={creature.speciesId}
         name={creature.name}
         ko={state === 'ko'}
-        label={`${tileLabel(creature)} Shows its role and element${creature.gear.length === 0 ? '' : ' and its gear'}.`}
+        label={`${tileLabel(creature, rules)} Shows its role and element${creature.gear.length === 0 ? '' : ' and its gear'}.`}
       />
       <Bar
         value={creature.hp}
@@ -103,7 +106,7 @@ export function RunTile({
         label={`${creature.name}: HP`}
         class="run-hp"
       />
-      <span class="tm-hp pix">{runHpText(creature)}</span>
+      <span class="tm-hp pix">{runHpText(creature, rules)}</span>
       {children}
     </li>
   );
@@ -112,15 +115,17 @@ export function RunTile({
 /** The row of the run, left to right. */
 export function RunRow({
   team,
+  rules,
   children,
 }: {
   team: readonly DungeonRunCreature[];
+  rules?: 2 | undefined;
   children?: ComponentChildren;
 }) {
   return (
     <ul class="team-row run-row" aria-label="Your team, left to right">
       {team.map((creature) => (
-        <RunTile key={creature.id} creature={creature} />
+        <RunTile key={creature.id} creature={creature} rules={rules} />
       ))}
       {children}
     </ul>
@@ -233,7 +238,7 @@ export function DungeonRunStrip({ state }: { state: DungeonRunState }) {
         )}
       </p>
       {/* At the camp the card has the row itself (to rearrange, with the same HP under each). */}
-      {state.pending?.kind !== 'camp' && <RunRow team={state.team} />}
+      {state.pending?.kind !== 'camp' && <RunRow team={state.team} rules={state.rules} />}
       {/* What the run carries: the pack and the keepsakes, side by side when there is room. */}
       <div class="run-ledger">
         <RunPack pack={state.pack} />

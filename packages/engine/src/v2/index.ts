@@ -5,7 +5,9 @@
 export { applyCard, type CardFlag, type CardModNumber, type CardOp } from './cards';
 export { withPhase } from './escalation';
 export { fightV2 } from './fight';
+export { carryKey, stageV2, startCarry } from './stage';
 export { resistedElement, weekendV2 } from './weekend';
 export { ADDITIVE_FIELDS, STAT_FIELDS, mergeFx, type KnackFx } from './effects';
 export * from './resolve';
+export { previewMoves, type MovePreview } from './preview';
 export * from './types';

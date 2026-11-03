@@ -1,8 +1,12 @@
 /** The boss track: the order and its repeat, the strength ladder, and the boss of a slot against `raidBossOf`. */
 import { content } from '@creatures/game';
+import { combatV2 } from '@creatures/game/combat-v2';
+import { trackBoss } from '@creatures/engine/v2';
 import { describe, expect, it } from 'vitest';
 import { RAID_BOSS_IDS, RAID_RANKS, RAID_SPECS, raidBossOf } from '../src/bosses';
 import { CARDS } from '../src/cards';
+import { SHIPPED } from '../src/species';
+import { wideBoss } from '../src/raidMeasure';
 import {
   SLOT_CARDS,
   SLOT_EXTRA_CARDS,
@@ -347,6 +351,28 @@ describe('the written answers of a slot and the one the mixed server fields (des
       expect(Number.isInteger(index)).toBe(true);
       expect(index).toBeGreaterThanOrEqual(0);
       expect(index).toBeLessThan(slotAnswersOf(Number(slot)).length);
+    }
+  });
+});
+
+describe('the engine reads the same track', () => {
+  it('trackBoss is the lab’s slotBoss at four players and its wideBoss at more, for every slot of the data and the laps after', () => {
+    for (let slot = 1; slot <= 40; slot++) {
+      const lab = slotBoss(slot);
+      expect(
+        trackBoss(combatV2, SHIPPED, slot, { level: rankLevel(slot) }),
+        `slot ${slot}`,
+      ).toEqual(lab);
+      for (const players of [1, 3, 4]) {
+        expect(trackBoss(combatV2, SHIPPED, slot, { players, level: rankLevel(slot) })).toEqual(
+          lab,
+        );
+      }
+      for (const players of [5, 10, 15]) {
+        expect(trackBoss(combatV2, SHIPPED, slot, { players, level: rankLevel(slot) })).toEqual(
+          wideBoss(lab, players),
+        );
+      }
     }
   });
 });

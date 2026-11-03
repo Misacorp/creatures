@@ -222,6 +222,12 @@ const ERROR_TEXT: Record<string, string> = {
   not_in_roster: "You are not in this week's raid. Place a creature on its board to join.",
   duplicate_creatures: 'Pick three different creatures.',
   invalid_slot: 'That slot does not exist.',
+  // Combat v2: knocked out creatures and swap requests.
+  knocked_out: 'That creature is out for the rest of this weekend.',
+  changed: 'That swap is out of date: the creatures moved. The board was refreshed.',
+  too_many_requests: 'You have too many swap requests open. Wait for some answers first.',
+  invalid_swap: 'That swap cannot be asked. Pick one of your creatures and another player\u2019s.',
+  not_v2: 'This week\u2019s raid does not have swap requests.',
   // The live finale.
   already_fired: 'Your ability has already been used.',
   not_your_ability: 'That ability is not yours. The screen was out of date.',
@@ -290,6 +296,10 @@ const ERROR_TEXT: Record<string, string> = {
   keep_not_offered: 'You cannot keep that one: there is no second branch to keep it for.',
   max_fusions: 'That creature is fully fused already.',
   not_in_book: 'That talent is not in that creature\u2019s Talent Book.',
+  // Combat v2: Knacks and the line's Talent Book (`creature-v2.ts` of the worker).
+  knack_not_known: 'That creature does not know that Knack.',
+  not_learned: 'That creature has not learned that talent yet.',
+  already_learned: 'That creature has already learned that talent.',
   already_slotted: 'That talent is already in that slot.',
   cancelled: 'That trip was called home when the slots were reset.',
   // Any request.

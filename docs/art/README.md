@@ -16,7 +16,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | [Valley places: night glow](#valley-night) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: map landmarks](#valley-landmarks) | draft | 6 | 2026-10-31: the bonfire, the School, the weekly visitor and the Market, in the direction of the expedition map art; try variations. |
 | [Valley places: glow, day and night](#valley-glow) | liked | 6 | 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets. |
-| [Combat v2 icons: attack shapes, board states, store meters](#combat-icons) | draft | 20 | 2026-10-31, Misa: "icons for keywords and attack shapes" (roadmap phase 3, combat v2). |
+| [Combat v2 icons: attack shapes, board states, store meters](#combat-icons) | draft | 11 | 2026-10-31, Misa: "icons for keywords and attack shapes" (roadmap phase 3, combat v2). |
 
 <a id="void"></a>
 
@@ -233,24 +233,17 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-10-31, Misa: "icons for keywords and attack shapes" (roadmap phase 3, combat v2).
 - **Source:** `apps/activity/src/sprites/concepts/combat-icons.ts` (draw it with `pnpm art combat-icons`)
-- **Sheet of:** `3054c6ee5736`
+- **Sheet of:** `4312f4866bc3`
 - The audit is docs/design/combat/icons.md: which icons are new, which shipped glyphs are used as they are, and which words stay text.
 - Misa's review, 2026-11-01. Liked as drawn: Quake, Cross, Checker, One-shot ("really like"), Barrage ("three marks is enough"), Sweep, Crit. Redrawn in round 2 (each replaces the shipped glyph for combat v2, which v1 keeps using): Slam, Strike, Lance, Pincer, Leap, Plain attack, Boost, and the three Store meters.
 - Round 2 feedback: Slam "the target, then the adjacent creatures: like the cross, but the centre square bigger, one square left and right". Strike "the right shape, but inside a circle: remove the circle". Lance "should point downwards: the boss attacks from top to bottom". Pincer "a very subtle crab-pincer; the white dot is unnecessary" (both options shown). Leap "like Barrage, but squares, with a faint line between them, a zigzag". Plain attack "should look different from a move: something like a sword". Boost "a star does not look good". Store meters "a box, chest, safe, vault or basket that contains something: one container for all, each holding its own thing; the amount as text beside it (x3), never in the icon".
 - Round 2 answers (Misa, 2026-11-01): liked as drawn: Slam, Strike ("different from Cross, good enough"), Lance, Pincer (claws: "looking pretty good"; the plain alternative is removed), the plain attack sword, the three Stores ("nice"). Leap: "it looks like a fork right now; move the bottom square right a pixel or two, so it reads as a chain": done in round 3, awaiting his look. Still draft (not commented on): Boost, Escalating, armour, cracked armour, silence ward, Determination.
+- Moved into `glyphs.ts` (2026-11-03, the v2 raid tab used them first): Quake, Cross, Checker, One-shot, Slam, Strike, Lance, Pincer and the plain attack, under the ids they had here. They stand in the sheet as shipped glyphs now. Leap and the six unreviewed ones stay here: a screen draws their drafts (`combat-glyphs.ts`) until Misa answers, then they move too.
 - Needs before use: Misa approves the look; each icon gets a glyph id in glyphs.ts, a glossary entry and (shapes) a place in moveLabel; the dungeon modifier "extra crits" then switches from the reticle to the Crit icon.
 - Cut order if Misa wants fewer icons: the three Store meter heads (name the resource in text), then the silence ward, then the cracked armour (a crack drawn over the armour icon), then One-shot (it shares the Strike crosshairs).
 
 | Code | Kind | Role | Status | Idea |
 | --- | --- | --- | --- | --- |
-| `shape-quake` | glyph | Quake | liked | Quake: every creature. A 3x3 board of slots with every slot lit. |
-| `shape-cross` | glyph | Cross | liked | Cross: the creature hit and the ones beside, in front of and behind it. The same 3x3 board with a plus lit. |
-| `shape-checker` | glyph | Checker | liked | Checker: every other slot of the arena, like the dark squares of a board. A checkerboard. |
-| `shape-one-shot` | glyph | One-shot | liked | One-shot (Judgement Bolt): takes a share of the victim's Max HP, not Attack times power. The HP heart split by a bolt. |
-| `shape-slam` | glyph | Slam | liked | Slam (redrawn, round 2): the creature hit, then the ones beside it. A row: a big square for the target and a smaller one each side, darker for the share the neighbours take. At 8 pixels the sides are one pixel wide and two tall, because 2 + 1 + 4 + 1 + 2 would need ten. Misa, 2026-11-01: liked. |
-| `shape-strike` | glyph | Strike | liked | Strike (redrawn, round 2): one creature. The crosshair that was inside the old circle, without the circle: four short bars round an empty centre. Misa, 2026-11-01: "different from Cross, good enough". |
-| `shape-lance` | glyph | Lance | liked | Lance (redrawn, round 2): a column, front to back. The same arrow driven through three rows, flipped so it points down: the boss attacks from the top. Misa, 2026-11-01: liked. |
-| `shape-pincer` | glyph | Pincer | liked | Pincer (redrawn, round 2): the two ends of the row. Each side a small claw: two prongs round a notch, tips facing; no centre dot. Misa, 2026-11-01: "looking pretty good" (the plain two-arrow alternative was dropped). |
 | `shape-leap` | glyph | Leap | draft | Leap (was Leaping Strike; redrawn, round 3): the strongest, then the next, softer. Like Barrage but three squares, joined by a faint zigzag line (a bolt, without the bolt that Spark already is). Misa, 2026-11-01: "it looks like a fork right now; move the bottom square right a pixel or two, so it reads as a chain". The bottom square moved 2 pixels right (1 pixel still read as a ">" arrow); the line still joins it. |
 | `crit` | glyph | Crit, Sure Crit | liked | A lucky hit that deals double. A gold burst; a Sure Crit counter is this burst with its count ("x2"), never a meter of its own. |
 | `armour` | glyph | Armour, Blocked | draft | Armour on the boss card (with its number) and the shield of a Blocked hit (with 0). A steel breastplate, so it is not the Guard's shield. |
@@ -258,7 +251,6 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | `escalating` | glyph | Escalating | draft | The boss grows as the weekend goes on, a step at a time. Rising steps, the top one lit. |
 | `silence-ward` | glyph | Silence ward | draft | A warded creature cannot be silenced. The Silenced speaker with sound waves instead of a cross. |
 | `determination` | glyph | Determination | draft | More damage and healing for each failed weekend on the same boss. A gold arrow rising from a base: more each failed try, up to five. |
-| `attack` | glyph | Plain attack | liked | A creature's plain attack (round 2): a sword, so the plain attack and the Strike shape (a boss move) no longer share one picture. Misa, 2026-11-01: liked. |
 | `boost` | glyph | Boost | draft | A Support's bonus on a creature's next hit (round 2): two upward chevrons, a rank going up. No star, and no filled arrow with a base, so it is not Determination's rising arrow. |
 | `store-heat` | glyph | Heat | liked | The Heat store (Boiling Point): the shared box with heat rising from it in waves. The count is text beside it ("x3"). Misa, 2026-11-01: "nice". |
 | `store-calm` | glyph | Calm | liked | The Calm store (Eye of the Storm): the shared box with a lotus in it. The count is text beside it ("x2"). Misa, 2026-11-01: "nice". |

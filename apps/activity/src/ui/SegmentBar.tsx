@@ -1,3 +1,4 @@
+import { cssVars } from '../css-vars';
 import { HP_SEGMENTS, hpSegments } from '../stage';
 
 const UNIT_SEGMENTS = 5;
@@ -20,15 +21,39 @@ interface SegmentBarProps {
    * already says the numbers.
    */
   text?: string;
+  /**
+   * A boss bar only (a combat v2 weekend): a tick at each of these shares of the bar (0 to 1 from the left, where the HP
+   * stands when a stage's goal is met), so the bar shows the weekend's stages. Decoration: the card says "Stage 2 of 3".
+   */
+  ticks?: readonly number[];
+  /**
+   * A boss bar only: last week's best, as the HP that was left then (0 to 1 of the bar). The segments between where the HP stands now
+   * and that level show as a dim ghost fill, so a returning boss shows how far the last try got. Absent: none.
+   */
+  ghost?: number;
 }
 
 /** A stepped HP bar. Any HP keeps a segment lit and only full HP lights them all (`hpSegments`). */
-export function SegmentBar({ current, max, size, previous, label, text }: SegmentBarProps) {
+export function SegmentBar({
+  current,
+  max,
+  size,
+  previous,
+  label,
+  text,
+  ticks,
+  ghost,
+}: SegmentBarProps) {
   const total = size === 'boss' ? HP_SEGMENTS : UNIT_SEGMENTS;
   const lit = hpSegments(current, max, total);
   const was = previous === undefined ? lit : hpSegments(previous, max, total);
+  // The ghost: the segments last week's best still had (up to its HP level) that this week's HP has already lost.
+  const ghostLit = ghost === undefined ? 0 : hpSegments(Math.round(ghost * max), max, total);
   const segments = Array.from({ length: total }, (_, k) => (
-    <i key={k} class={k < lit ? undefined : k < was ? 'gone drain' : 'gone'} />
+    <i
+      key={k}
+      class={k < lit ? undefined : k < was ? 'gone drain' : k < ghostLit ? 'gone ghost' : 'gone'}
+    />
   ));
   if (size === 'unit') {
     return (
@@ -40,6 +65,14 @@ export function SegmentBar({ current, max, size, previous, label, text }: Segmen
   return (
     <div class="hpbar" role="img" aria-label={label}>
       {segments}
+      {ticks?.map((at) => (
+        <b
+          key={at}
+          class="hpbar-tick"
+          ref={cssVars({ '--at': `${(at * 100).toFixed(2)}%` })}
+          aria-hidden="true"
+        />
+      ))}
       {text !== undefined && (
         <span class="xpbar-text hpbar-text pix" aria-hidden="true">
           {text}

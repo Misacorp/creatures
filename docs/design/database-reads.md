@@ -21,7 +21,8 @@ Cloudflare's free tier allows **5,000,000 Durable Object rows read a day** for t
 - **The checks** (all in `apps/worker/test`, all in CI):
   - `read-budget.test.ts`: rows per object start, alarm tick (with and without the lounge), main page loads, a raid placement with a live board; plus a growth check (another month of history must not add reads).
   - `query-plan-audit.test.ts`: every statement the hot paths run is checked with `EXPLAIN QUERY PLAN`; a full scan of a table that grows fails, unless allowlisted with a reason.
-  - `read-day.test.ts`: a realistic day of a 10-player server (lounge ticks with the object restarting, page loads, raid views, the daily jobs) must stay under its total.
+  - `read-day.test.ts`: a realistic day of a 10-player server (lounge ticks with the object restarting, page loads, raid views, the daily jobs) must stay under its total. It runs twice, the second time with the combat v2 flag on (and Knack saves and talent learns), against the same total.
+  - `read-budget-v2.test.ts` and the second case of `query-plan-audit.test.ts`: the combat v2 paths (the creature page load with the flag on, a Knack save, a talent learn, a role-changing evolution) in a guild whose creatures carry v2 talents and Knacks.
 - **In production**: the daily ops report (the `report` workflow, also printed as JSON for agents; the `balance-review` skill shows how to fetch it) has a "Database reads" section: rows read per game day and source (`start`, `alarm`, `socket`, `request:<area>`), as a share of the free 5M. Cloudflare's dashboard (Workers & Pages, Durable Objects, Rows read) has the account total.
 
 ## Checklist for a new feature

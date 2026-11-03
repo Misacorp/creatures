@@ -15,7 +15,9 @@ import {
   isRarity,
   isSlot,
 } from './gear-parse';
+import { isFightEventV2 } from './fight-v2-api';
 import { isEvent, isEventNames, isWornIds } from './raid-api';
+import { isCard } from './raid-v2-api';
 import { isArrayOf, isBool, isCount, isInt, isRecord, isStr } from './parse-core';
 import type {
   DungeonRunGear,
@@ -143,6 +145,9 @@ function isRewards(value: unknown): value is DungeonRewards {
         isPartsBundle(streak['parts'])))
   );
 }
+
+/** The rules marker of a run, a summary, a replay or a room: absent (combat v1) or 2 (combat v2). */
+const isRulesMark = (value: unknown): boolean => value === undefined || value === 2;
 
 const isOutcome = (value: unknown): boolean =>
   value === 'cleared' || value === 'home' || value === 'defeat';
@@ -348,7 +353,8 @@ function isMapNode(value: unknown): value is DungeonMapNode {
         isElement(foe['element']) &&
         (foe['kind'] === 'foe' || foe['kind'] === 'boss') &&
         isCount(foe['hpMax']) &&
-        isBool(foe['elite']))) &&
+        isBool(foe['elite']) &&
+        (foe['card'] === undefined || isCard(foe['card'])))) &&
     (value['modifier'] === undefined || isModifierText(value['modifier'])) &&
     (event === undefined || (isRecord(event) && isStr(event['id']) && isStr(event['name']))) &&
     (value['marks'] === undefined || isArrayOf(value['marks'], isRoomMark))
@@ -407,6 +413,7 @@ function isRunState(value: unknown): value is DungeonRunState {
   if (!isRecord(value)) return false;
   const last = value['lastEvent'];
   return (
+    isRulesMark(value['rules']) &&
     isStr(value['id']) &&
     isStr(value['day']) &&
     isInt(value['attempt']) &&
@@ -454,6 +461,7 @@ function isRoute(value: unknown): boolean {
 function isRunSummary(value: unknown): value is DungeonRunSummary {
   return (
     isRecord(value) &&
+    isRulesMark(value['rules']) &&
     isStr(value['id']) &&
     isStr(value['day']) &&
     isInt(value['attempt']) &&
@@ -497,6 +505,7 @@ function isToday(value: unknown): boolean {
   if (!isRecord(value)) return false;
   const blocked = value['blocked'];
   return (
+    isRulesMark(value['rules']) &&
     isInt(value['serverNow']) &&
     isStr(value['day']) &&
     isStr(value['timezone']) &&
@@ -532,9 +541,9 @@ function readToday(value: unknown): DungeonToday | null {
   };
 }
 
-function isReplayRoom(value: unknown): boolean {
+/** What a room of either rules has: where it was, who fought, the foe, how it ended and every creature's HP at the start. */
+function isRoomBase(value: Record<string, unknown>): boolean {
   return (
-    isRecord(value) &&
     isCount(value['index']) &&
     (value['kind'] === 'foe' || value['kind'] === 'boss') &&
     (value['elite'] === undefined || isBool(value['elite'])) &&
@@ -547,7 +556,35 @@ function isReplayRoom(value: unknown): boolean {
     isBool(value['cleared']) &&
     isCount(value['rounds']) &&
     isHpMap(value['hpStart']) &&
-    isHpMap(value['hpMax']) &&
+    isHpMap(value['hpMax'])
+  );
+}
+
+const isStrRecord = (value: unknown): boolean =>
+  isRecord(value) && Object.values(value).every(isStr);
+
+/** A room of a v2 run: its events carry the typed board events, and it names the foe's card, the arena and the Knacks. */
+function isReplayRoomV2(value: Record<string, unknown>): boolean {
+  const arena = value['arena'];
+  return (
+    isRoomBase(value) &&
+    isHpMap(value['hpEnd']) &&
+    isArrayOf(value['events'], isFightEventV2) &&
+    isCard(value['card']) &&
+    isRecord(arena) &&
+    isCount(arena['rows']) &&
+    isCount(arena['cols']) &&
+    isCount(arena['rounds']) &&
+    isStrRecord(value['knacks'])
+  );
+}
+
+function isReplayRoom(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  if (value['rules'] === 2) return isReplayRoomV2(value);
+  return (
+    value['rules'] === undefined &&
+    isRoomBase(value) &&
     isArrayOf(value['events'], isEvent) &&
     isEventNames(value['names'])
   );
@@ -621,6 +658,7 @@ export function parseDungeonTeamSaved(data: unknown): DungeonTeamResponse {
 export function parseDungeonReplay(data: unknown): DungeonReplay {
   if (
     !isRecord(data) ||
+    !isRulesMark(data['rules']) ||
     !isRunSummary(data['summary']) ||
     !isArrayOf(data['row'], isReplayRowEntry) ||
     !isArrayOf(data['rooms'], (r): r is DungeonReplay['rooms'][number] => isReplayRoom(r))

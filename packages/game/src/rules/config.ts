@@ -465,6 +465,27 @@ export const RULES = {
       finale: { weekday: 7, hour: 20, minute: 0 },
     },
     /**
+     * The calendar of a combat v2 week (Misa, 2026-11-02; `docs/design/combat/integration.md`, section 4): the week
+     * opens at `weekStart` as above, stage 1 is Saturday 13:37, stage 2 Sunday 13:37 and the live finale (stage 3)
+     * Sunday 20:00. A week follows the calendar of the rules version it was created under. The events keep the names
+     * `phase1`, `phase2` and `finale` (the done markers and the week's status); on a v2 week `phase1` is stage 1.
+     */
+    scheduleV2: {
+      weekStart: { weekday: 1, hour: 13, minute: 37 },
+      phase1: { weekday: 6, hour: 13, minute: 37 },
+      phase2: { weekday: 7, hour: 13, minute: 37 },
+      finale: { weekday: 7, hour: 20, minute: 0 },
+    },
+    /**
+     * The combat v2 weekend's own numbers: how long one round of the live finale lasts (the round count is the boss's,
+     * eight), and Determination (R24.9): +`stackBp` damage and healing for each failed weekend on the same slot, at
+     * most `maxStacks`, from slot `fromSlot` on (the second lap).
+     */
+    v2: {
+      liveRoundMs: 30_000,
+      determination: { stackBp: 500, maxStacks: 5, fromSlot: 6 },
+    },
+    /**
      * The "Close one!" rule of the after-action card, both in basis points of the stage's target:
      * - `missBp`: a stage that was not cleared is close when it fell short of its target by at most
      *   this much. A phase's target is the HP it had to take off the pool (its clear threshold,

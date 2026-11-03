@@ -1,3 +1,5 @@
+import { combatV2 } from '@creatures/game/combat-v2';
+import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { SAMPLE_GEAR } from '../../creature-card-sample';
 import { CurrencyPile } from '../../CurrencyPile';
@@ -5,6 +7,7 @@ import { ItemTile } from '../../ItemTile';
 import { ActionButton } from '../../ui/ActionButton';
 import { BulkBar } from '../../ui/BulkBar';
 import { ChoiceButton, ChoiceList } from '../../ui/ChoiceList';
+import { KeywordText } from '../../ui/KeywordText';
 import { FoldRow } from '../../ui/FoldRow';
 import { DrillHead } from '../../ui/DrillHead';
 import { LiveRegion } from '../../ui/LiveRegion';
@@ -336,7 +339,10 @@ const choiceList: Entry = {
   description:
     "A short list of big choice buttons that each say what they do: the two options of a mystery room, the dungeon camp's moves and keepsakes, and the creatures to send home. Each has its name in the pixel font and one line under it.",
   controls: {
-    choices: { kind: 'select', options: ['A mystery room', 'The camp', 'Who goes home'] },
+    choices: {
+      kind: 'select',
+      options: ['A mystery room', 'The camp', 'Who goes home', 'The Knack picker'],
+    },
     disabled: { kind: 'toggle' },
   },
   defaults: { choices: 'A mystery room', disabled: false },
@@ -345,26 +351,49 @@ const choiceList: Entry = {
     { name: 'The camp', props: { choices: 'The camp' } },
     { name: 'Who goes home (one knocked out)', props: { choices: 'Who goes home' } },
     { name: 'While an act is running', props: { disabled: true } },
+    {
+      name: 'The Knack picker (one picked, keyword chips in the lines)',
+      props: { choices: 'The Knack picker' },
+    },
   ],
   covers: ['ChoiceButton'],
   render: (p) => {
     const disabled = bool(p, 'disabled');
-    const rows: readonly { label: string; line: string; class?: string }[] =
-      str(p, 'choices') === 'The camp'
+    const rows: readonly {
+      label: string;
+      line: ComponentChildren;
+      class?: string;
+      selected?: boolean;
+    }[] =
+      str(p, 'choices') === 'The Knack picker'
         ? [
-            { label: 'Rest', line: 'Everyone heals a little, then the run goes on.' },
-            { label: 'Take a keepsake', line: 'Pick one for this run only.' },
-            { label: 'Swap a creature', line: 'Someone fresh comes in at full HP.' },
+            {
+              label: 'Brand',
+              line: <KeywordText text={combatV2.knacks['steady-mark']?.text ?? ''} />,
+              selected: true,
+            },
+            {
+              label: 'Lead the Way',
+              line: <KeywordText text={combatV2.knacks['lead-the-way']?.text ?? ''} />,
+              selected: false,
+            },
+            { label: 'None', line: 'It fights without a Knack.', selected: false },
           ]
-        : str(p, 'choices') === 'Who goes home'
+        : str(p, 'choices') === 'The camp'
           ? [
-              { label: 'Sproutle', line: 'Level 12 · 240 / 281 HP', class: 'camp-out' },
-              { label: 'Cindle', line: 'Level 11 · 0 / 190 HP', class: 'camp-out ko' },
+              { label: 'Rest', line: 'Everyone heals a little, then the run goes on.' },
+              { label: 'Take a keepsake', line: 'Pick one for this run only.' },
+              { label: 'Swap a creature', line: 'Someone fresh comes in at full HP.' },
             ]
-          : [
-              { label: 'Drink from the spring', line: 'Heal everyone by 30%.' },
-              { label: 'Leave it alone', line: 'Nothing happens.' },
-            ];
+          : str(p, 'choices') === 'Who goes home'
+            ? [
+                { label: 'Sproutle', line: 'Level 12 · 240 / 281 HP', class: 'camp-out' },
+                { label: 'Cindle', line: 'Level 11 · 0 / 190 HP', class: 'camp-out ko' },
+              ]
+            : [
+                { label: 'Drink from the spring', line: 'Heal everyone by 30%.' },
+                { label: 'Leave it alone', line: 'Nothing happens.' },
+              ];
     // The real lists sit in a pixel panel (the camp, the mystery room), which gives the names their font.
     return (
       <div class="pix-panel">
@@ -377,6 +406,7 @@ const choiceList: Entry = {
               disabled={disabled}
               onClick={() => undefined}
               {...(row.class === undefined ? {} : { class: row.class })}
+              {...(row.selected === undefined ? {} : { selected: row.selected })}
             />
           ))}
         </ChoiceList>

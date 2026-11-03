@@ -7,7 +7,8 @@
 import { ActionIds } from './actions';
 import type { ActionRunner } from './action-runner';
 import * as api from './api';
-import type { Creature, GameState } from './api';
+import { ApiError, type Creature, type GameState } from './api';
+import * as v2Api from './combat-v2-api';
 import type { CardActions } from './CreaturePage';
 import { ribbonName } from './experience';
 import { creatureName, speciesName } from './game';
@@ -33,6 +34,12 @@ export interface CreatureDeps {
     setLounger: typeof api.setLounger;
     slotTalent: typeof talentApi.slotTalent;
   };
+  /** The combat v2 server calls (the Knack and the line's Talent Book), replaceable in tests. */
+  v2Server?: {
+    saveKnack: typeof v2Api.saveKnack;
+    learnTalentV2: typeof v2Api.learnTalentV2;
+    slotTalentV2: typeof v2Api.slotTalentV2;
+  };
 }
 
 /** The creature card's actions, except wearing gear (that is `createGearActions`). */
@@ -46,6 +53,12 @@ export function createCreatureActions(deps: CreatureDeps): CreatureActions {
     saveCreatureNote: api.saveCreatureNote,
     setLounger: api.setLounger,
     slotTalent: talentApi.slotTalent,
+  };
+
+  const v2Server = deps.v2Server ?? {
+    saveKnack: v2Api.saveKnack,
+    learnTalentV2: v2Api.learnTalentV2,
+    slotTalentV2: v2Api.slotTalentV2,
   };
 
   /** Shows the collection of an action's answer, if it had one. */
@@ -105,6 +118,46 @@ export function createCreatureActions(deps: CreatureDeps): CreatureActions {
           if (done === undefined) return;
           deps.setCurrent(loaded(done.state));
           deps.setNotice(`Put the talent in slot ${String(done.result.slot)}.`);
+        });
+    },
+    // Combat v2 (the routes answer 404 unless the server's flag is on, and no screen asks without v2 data).
+    onKnack: async (creature, knack, where) => {
+      // A locked answer (it has fought this weekend) is not an error line: the picker says it where the player is looking.
+      const done = await deps.run(async () => {
+        try {
+          return await v2Server.saveKnack(creature.id, knack, where);
+        } catch (err) {
+          if (err instanceof ApiError && err.status === 409 && err.code === 'locked')
+            return 'locked';
+          throw err;
+        }
+      });
+      if (done === undefined) return 'failed';
+      if (done === 'locked') return 'locked';
+      showState(done.state);
+      return 'saved';
+    },
+    onLearnTalentV2: (creature, talentId) => {
+      void deps
+        .runKeyed(
+          ActionIds.talentLearnV2(creature.id, talentId),
+          (key) => v2Server.learnTalentV2(creature.id, talentId, key),
+          { currency: 'Bait' },
+        )
+        .then((done) => {
+          if (done === undefined) return;
+          deps.setCurrent(loaded(done.state));
+          const name = done.state.creatures
+            .find((c) => c.id === creature.id)
+            ?.talentsV2?.book.find((t) => t.id === talentId)?.name;
+          deps.setNotice(`${creatureName(creature)} learned ${name ?? 'a talent'}.`);
+        });
+    },
+    onSlotTalentV2: (creature, talentId, slot) => {
+      void deps
+        .run(() => v2Server.slotTalentV2(creature.id, talentId, slot))
+        .then((done) => {
+          if (done !== undefined) showState(done.state);
         });
     },
     onLounge: (creature) => {

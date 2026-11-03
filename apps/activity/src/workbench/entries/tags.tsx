@@ -1,4 +1,6 @@
+import { combatV2 } from '@creatures/game/combat-v2';
 import type { ComponentProps } from 'preact';
+import { useEffect, useRef } from 'preact/hooks';
 import { ChoiceMark, Stars } from '../../ExpeditionIcons';
 import { GlossaryTag } from '../../Glossary';
 import { RarityTag } from '../../GearArt';
@@ -6,6 +8,7 @@ import { ElementChip, RoleChip } from '../../sprites/ElementChip';
 import { baitCount, essenceCount, partCountItems, supplyCounts } from '../../count-items';
 import { CountBadge, CountBadgeList } from '../../ui/CountBadge';
 import { OutcomeBadge } from '../../ui/RevealShell';
+import { KeywordText } from '../../ui/KeywordText';
 import { LandmarkChip, Tag } from '../../ui/Tag';
 import type { GearRarity } from '../../gear-types';
 import {
@@ -322,8 +325,64 @@ const choiceMark: Entry = {
   ),
 };
 
+/** The real texts the keyword chips are checked against (a Knack with several keywords, one with none, a talent, a plural). */
+const KEYWORD_SAMPLES: Readonly<Record<string, string>> = {
+  'A Knack with one keyword': combatV2.knacks['steady-mark']?.text ?? '',
+  'A Knack with several keywords': combatV2.knacks['detonate']?.text ?? '',
+  'The longest Knack text':
+    Object.values(combatV2.knacks).find((k) => k.name === 'Boiling Point')?.text ?? '',
+  'A Knack with no keyword': combatV2.knacks['lead-the-way']?.text ?? '',
+  'A talent (a keyword and a plural)': combatV2.talents['crit-damage']?.text ?? '',
+  'Plain words (v1)': 'First pounce +14%.',
+};
+
+/** The keyword text, and (when `tap` is on) the first chip tapped once drawn, so a screenshot shows its popover open. */
+function KeywordDemo({ text, help, tap }: { text: string; help: boolean; tap: boolean }) {
+  const box = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (!tap) return;
+    box.current?.querySelector('button')?.click();
+  }, [tap, text, help]);
+  return (
+    <div>
+      <p class="prose" ref={box}>
+        <KeywordText text={text} help={help} />
+      </p>
+      {/* Room under the chip for its popover, which opens below it. */}
+      {tap && <div class="wb-pop-stage" />}
+    </div>
+  );
+}
+
+const keywordText: Entry = {
+  name: 'KeywordText',
+  file: 'apps/activity/src/ui/KeywordText.tsx',
+  group: 'Tags & chips',
+  description:
+    "A combat v2 text (a Knack's, a talent's) with its keywords as chips: a word the content puts in braces is drawn as a Tag, the rest as plain words. A chip is tap-for-help (the keyword's entry opens in a popover); inside a button (a choice in the Knack picker, the slot that opens it) pass help off for plain chips, since a button must not hold a button. It is the line under a Knack's name in the Knack picker and the Knack part, and the talent's line in the Talent Book.",
+  controls: {
+    text: { kind: 'select', options: Object.keys(KEYWORD_SAMPLES) },
+    help: { kind: 'toggle' },
+    tap: { kind: 'toggle' },
+  },
+  defaults: { text: 'A Knack with several keywords', help: true, tap: false },
+  presets: [
+    ...Object.keys(KEYWORD_SAMPLES).map((name) => ({ name, props: { text: name } })),
+    { name: 'Inside a button (no help)', props: { help: false } },
+    { name: 'First chip tapped (its help open)', props: { tap: true } },
+  ],
+  render: (p) => (
+    <KeywordDemo
+      text={KEYWORD_SAMPLES[str(p, 'text')] ?? ''}
+      help={bool(p, 'help')}
+      tap={bool(p, 'tap')}
+    />
+  ),
+};
+
 export const tagEntries: readonly Entry[] = [
   tag,
+  keywordText,
   landmarkChip,
   countBadge,
   countBadgeList,

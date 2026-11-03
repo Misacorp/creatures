@@ -15,6 +15,12 @@ import type {
 } from './expedition-types';
 import { isExperienceView, isRibbonView, type ExperienceView, type RibbonView } from './experience';
 import { isWornGear } from './gear-parse';
+import {
+  isCreatureV2Part,
+  type CreatureTalentsV2,
+  type KnackView,
+  type StatsV2,
+} from './combat-v2-view';
 import { isCreatureTalents, isPendingCatch } from './talent-parse';
 import type { CreatureTalents, PendingCatch } from './talent-types';
 import type { CreatureGearFields, WornGear } from './gear-types';
@@ -47,6 +53,8 @@ export interface AppConfig {
   finaleLive: boolean;
   /** True when the server offers the raid board's live socket (`RAID_LIVE`): teammates' placements appear as they are made. */
   raidLive: boolean;
+  /** True when the server plays combat v2 (`COMBAT_V2`, staging only for now): the creature page offers Knacks and the v2 talents. */
+  combatV2: boolean;
 }
 
 export interface SessionUser {
@@ -208,6 +216,7 @@ export async function fetchConfig(): Promise<AppConfig> {
     loungeLive: data['loungeLive'] === true,
     finaleLive: data['finaleLive'] === true,
     raidLive: data['raidLive'] === true,
+    combatV2: data['combatV2'] === true,
   };
 }
 
@@ -359,6 +368,14 @@ export interface Creature extends CreatureGearFields {
   lineSlot: number;
   /** Its talent slots, signature (epic species) and Talent Book. */
   talents: CreatureTalents;
+  /**
+   * Combat v2 only (the four are sent together, and only while the server's `COMBAT_V2` flag is on): the saved
+   * Knack (an id, null for none), the Knacks it knows, its v2 talents and its v2 numbers. `creatureV2()` reads them.
+   */
+  knack?: string | null;
+  knownKnacks?: KnackView[];
+  talentsV2?: CreatureTalentsV2;
+  statsV2?: StatsV2;
 }
 
 /** A creature's finale ability. `nextId` is the stronger one of its evolved form. */
@@ -647,6 +664,7 @@ function isCreature(value: unknown): value is Creature {
     isExplorerView(value['explorer']) &&
     isInt(value['lineSlot']) &&
     isCreatureTalents(value['talents']) &&
+    isCreatureV2Part(value) &&
     (evolution === undefined ||
       (isRecord(evolution) &&
         isStr(evolution['toSpecies']) &&

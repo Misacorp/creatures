@@ -3,6 +3,7 @@
  * widths, and a mixed server weekend (min-maxers, builders and casual players side by side).
  */
 import { createSeededRng, int, type Rng } from '@creatures/game';
+import { RAID_ATK_EXPONENT, RAID_HP_EXPONENT, raidHpFactor, wideBoss } from '@creatures/engine/v2';
 import {
   combineWeekends,
   raidBench,
@@ -46,43 +47,8 @@ export function marginOf(boss: BossDef, line: readonly Pick[], runs: number, sal
 /** The widths (columns, one player each) the raid is measured at, besides the usual four. */
 export const RAID_WIDTHS: readonly number[] = [5, 10, 15];
 
-/**
- * How a raid boss's weekend HP grows with the number of players (panel 5): `(players / 4) ^ RAID_HP_EXPONENT`, one
- * exponent for every boss and one smooth curve, with no kink at any width. The boss's Attack does not grow; its area
- * counts do (`perColumns`).
- */
-export const RAID_HP_EXPONENT = 0.7;
-
-/**
- * How a raid boss's Attack grows with the number of players (panel 5 fix, tool gap at 10 players): `(players / 4) ^ RAID_ATK_EXPONENT`.
- * A wider raid spreads each hit over more creatures, so with the HP alone a wide line of the same creatures won without its tool;
- * the boss hits harder in a wide raid, and its area counts and anchors grow (`perColumns`) as before.
- */
-export const RAID_ATK_EXPONENT = 0.3;
-
-/** The weekend HP of a raid boss for `cols` players, as a multiple of its HP for the usual four. */
-export function raidHpFactor(
-  boss: BossDef,
-  cols: number,
-  exponent: number = RAID_HP_EXPONENT,
-): number {
-  return (cols / boss.cols) ** exponent;
-}
-
-/** The boss in an arena of `cols` columns, one player each: the arena is wider and the weekend HP has grown with the players. */
-export function wideBoss(
-  boss: BossDef,
-  cols: number,
-  exponent: number = RAID_HP_EXPONENT,
-  atkExponent: number = RAID_ATK_EXPONENT,
-): BossDef {
-  return {
-    ...boss,
-    cols,
-    hp: Math.round(boss.hp * raidHpFactor(boss, cols, exponent)),
-    atk: Math.round(boss.atk * (cols / boss.cols) ** atkExponent),
-  };
-}
+// The width rules (R14.1) live in the engine (`resolve/track.ts`) with the track's boss; the lab reads them back.
+export { RAID_ATK_EXPONENT, RAID_HP_EXPONENT, raidHpFactor, wideBoss };
 
 /** A raid line (rows of `from` columns) repeated to fill rows of `to` columns: column c of each row is column c % from of it. */
 export function tileLine(line: readonly Pick[], from: number, to: number): Pick[] {

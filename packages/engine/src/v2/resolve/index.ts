@@ -14,4 +14,19 @@ export {
   raidBoss,
   type RaidBossOptions,
 } from './bosses';
+export {
+  RAID_ATK_EXPONENT,
+  RAID_COLS,
+  RAID_HP_EXPONENT,
+  RAID_ROUNDS,
+  raidHpFactor,
+  slotBossOf,
+  slotSpec,
+  trackBoss,
+  wideBoss,
+  type BossNumbers,
+  type SlotBossOptions,
+  type SlotSpec,
+  type TrackBossOptions,
+} from './track';
 export type { Placement, Shipped, ShippedBoss, ShippedFoe, ShippedSpecies } from './types';

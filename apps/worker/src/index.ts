@@ -92,6 +92,8 @@ export function createHandler(overrides: Partial<HandlerDeps> = {}): ExportedHan
           ...(env.LOUNGE_LIVE === 'on' ? { loungeLive: true } : {}),
           ...(env.FINALE_LIVE === 'on' ? { finaleLive: true } : {}),
           ...(env.RAID_LIVE === 'on' ? { raidLive: true } : {}),
+          // Combat v2 (staging only for now): the creature page offers the Knack and the v2 talents. Absent, not false.
+          ...(env.COMBAT_V2 === 'on' ? { combatV2: true } : {}),
         });
       },
     },

@@ -27,6 +27,11 @@ const GAME_MESSAGES: Readonly<Record<string, string>> = {
   not_in_roster: "You are not in this week's raid. Place a creature on its board to join.",
   duplicate_creatures: 'Pick three different creatures.',
   invalid_slot: 'That slot does not exist.',
+  knocked_out: 'That creature is out for the rest of this weekend.',
+  changed: 'That swap is out of date: the creatures moved. The board was refreshed.',
+  too_many_requests: 'You have too many swap requests open. Wait for some answers first.',
+  invalid_swap: 'That swap cannot be asked. Pick one of your creatures and another player\u2019s.',
+  not_v2: 'This week\u2019s raid does not have swap requests.',
   already_fired: 'Your ability has already been used.',
   not_your_ability: 'That ability is not yours. The screen was out of date.',
   too_late: 'Too late: the fight is in its last round or already over.',
@@ -112,7 +117,7 @@ describe('error messages', () => {
   });
 
   it('pins every code of the table', () => {
-    expect(Object.keys(GAME_MESSAGES)).toHaveLength(72);
+    expect(Object.keys(GAME_MESSAGES)).toHaveLength(77);
   });
 
   it('says the same words for every dungeon code', () => {
