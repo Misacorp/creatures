@@ -4,6 +4,21 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: Combat v2 arenas: each boss defines one player's piece; the board repeats it per player with one spare until stage 1 **[Misa]**
+
+ID: `2026-11-03-combat-v2-arenas-each-boss-defines` · Status: current
+
+**Decision (Misa).** A combat v2 raid arena is data per boss, built from **one player's piece**:
+
+- Each boss defines the piece one player adds to the arena. Today a piece is one column of the boss's rows (Storm Sovereign 2, Tidal Colossus 3, Cinder Wyrm 4). The data allows other shapes later; each new shape needs engine support first.
+- **The board is the piece repeated once per player, plus one spare piece** kept free until stage 1, so a newcomer can always join by placing. At stage 1 the spare piece goes, and any creature in it moves to a free seat (there is always room).
+- **Each player brings as many creatures as one piece has seats** (2 on Storm Sovereign, 3 on most bosses, 4 on the Cinder Wyrm), and may sit anywhere on the board. A row has one seat per player, so nobody can pile a whole party into one row.
+- **Scaling stays per player:** the weekend's HP and Attack, and the area moves' widening per 4 columns.
+- No sign-up step: players still join by placing (decision `2026-10-26-raids-you-join-by-placing-no`), and players lock at stage 1.
+- Small parties (under four players still fight at four columns) stay an open item for phase 5.
+
+**Reasoning.** Storm Sovereign's board filled at 8 seats because each player could bring 3 creatures on a 2-row arena, and the board only widened when a new player joined, which needed a free seat. One piece per player matches how the lab tuned the bosses (one column per player). The spare piece keeps joining frictionless, and fixed seats per row stop a party stacking one row. Misa wants varying arena layouts that players organise into, kept flexible for the future. A piece in the data is the first form of that, and needs no sign-up. A locked sign-up, then drawing any shape for the player count, was the alternative; it can come later if a boss needs a shape a repeated piece cannot make.
+
 ## 2026-11-03: Combat v2 replays keep no Pause or 2x **[Misa]**
 
 ID: `2026-11-03-combat-v2-replays-keep-no-pause` · Status: current
