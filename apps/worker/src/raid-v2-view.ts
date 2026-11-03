@@ -45,6 +45,15 @@ import {
 import { RESULT_PHASES, type ResultPhase, type StoredStageResult } from './raid-v2-stage';
 import { loadAutofire, BASIC_TARGET } from './raid-autofire';
 import {
+  bossCardView,
+  movePreviewView,
+  trackView,
+  type BossCardV2View,
+  type MovePreviewView,
+  type TrackView,
+} from './raid-v2-card';
+import { fighterOf, loadV2Creatures } from './raid-v2-fighters';
+import {
   displayNames,
   nextPendingEvent,
   type PhaseResultView,
@@ -95,6 +104,15 @@ export interface RaidV2Part {
   boss: BossDef | null;
   /** The names of the boss's moves by library id. */
   moveNames: Record<string, string>;
+  /** The boss card as the screen draws it: armour, rule cards, the Escalating meter, the plain attack and the moves with their labels. */
+  card: BossCardV2View;
+  /** The lap's five bosses and the one this week fights. */
+  track: TrackView;
+  /**
+   * The slots each fixed-rule move hits and the plain attack's target with the board as it stands (the engine's own targeting; a move aimed
+   * by a roll or a Wind-up is null: it is aimed when it comes). Null when no creature stands on the board.
+   */
+  preview: MovePreviewView | null;
   /** What the party carries: the boss's HP, each creature's HP and who is out for the weekend; null before stage 1. */
   carry: StageCarry | null;
   /** The party's creatures that are out for the weekend. */
@@ -107,9 +125,46 @@ export interface RaidV2Part {
     col: number;
     hp: number | null;
     knack: string | null;
+    /** The saved Knack's name (null: none). */
+    knackName: string | null;
   }[];
   swaps: SwapsView;
 }
+
+/**
+ * The move preview of a party's board: the creatures standing (not out for the weekend, inside the board's width) as the stage would build
+ * them, with the engine's own targeting over them.
+ */
+function previewOf(
+  sql: SqlStorage,
+  boss: BossDef,
+  carry: StageCarry | null,
+  placements: readonly { slot: number; user_id: string; creature_id: string }[],
+  rows: number,
+  cols: number,
+): MovePreviewView | null {
+  const out = new Set(carry?.out ?? []);
+  const standing = placements.filter((p) => !out.has(p.creature_id));
+  if (standing.length === 0) return null;
+  const creatures = loadV2Creatures(
+    sql,
+    standing.map((p) => p.creature_id),
+  );
+  const owners = [...new Set(standing.map((p) => p.user_id))];
+  const slotOf = new Map<string, number>();
+  const fighters = standing.flatMap((p) => {
+    const c = creatures.get(p.creature_id);
+    const place = gridPlace(p.slot, rows);
+    if (c === undefined || c.userId !== p.user_id || place.col >= cols) return [];
+    slotOf.set(c.id, p.slot);
+    return [fighterOf(c, `p${String(owners.indexOf(p.user_id))}`, place)];
+  });
+  return movePreviewView(boss, fighters, carry, slotOf);
+}
+
+/** A saved Knack's name, or null for none (or one the pack no longer has). */
+const knackNameOf = (id: string | null): string | null =>
+  id !== null && Object.hasOwn(combatV2.knacks, id) ? (combatV2.knacks[id]?.name ?? null) : null;
 
 const zoneOfRow = (row: number, rows: number): RowSlotView['zone'] =>
   row === 0 ? 'front' : row === rows - 1 ? 'back' : 'middle';
@@ -269,6 +324,7 @@ export function buildRaidViewV2(
     | 'carry'
     | 'out'
     | 'creatures'
+    | 'preview'
   > = {
     stagesPlayed: 0,
     nextStage: 1,
@@ -279,6 +335,7 @@ export function buildRaidViewV2(
     carry: null,
     out: [],
     creatures: [],
+    preview: null,
   };
   let ability: { abilityId: string; chosen: boolean } | null = null;
   if (shownParty !== null) {
@@ -324,6 +381,7 @@ export function buildRaidViewV2(
         col: place.col,
         hp: stored?.carry.hp[c.id] ?? null,
         knack: c.knack,
+        knackName: knackNameOf(c.knack),
       });
       if (isMine) {
         mine.push({
@@ -411,6 +469,7 @@ export function buildRaidViewV2(
         mine: c.user_id === userId,
       })),
       creatures: board,
+      preview: previewOf(sql, boss, stored?.carry ?? null, placements, rows, cols),
     };
     if (myParty !== null) {
       const index = members
@@ -506,6 +565,9 @@ export function buildRaidViewV2(
       players: v2Party.players,
       boss: v2Party.boss,
       moveNames: v2Party.moveNames,
+      card: bossCardView(defaultBoss, v2Party.carry),
+      track: trackView(slot),
+      preview: v2Party.preview,
       carry: v2Party.carry,
       out: v2Party.out,
       creatures: v2Party.creatures,
