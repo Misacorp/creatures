@@ -30,8 +30,8 @@
    },
    "events": [
     "new line: splashet",
-    "school: a creature began learning its talent 1 (12 Acorns, 24 hours)",
-    "school: a creature began learning its talent 1 (12 Acorns, 24 hours)"
+    "school: a creature learned its talent 1 on its card (12 Acorns)",
+    "school: a creature learned its talent 1 on its card (12 Acorns)"
    ],
    "top5": [
     5,
@@ -60,8 +60,8 @@
     }
    },
    "events": [
-    "school: a creature began learning its talent 1 (12 Acorns, 24 hours)",
-    "school: a creature began learning its talent 1 (12 Acorns, 24 hours)"
+    "school: a creature learned its talent 1 on its card (12 Acorns)",
+    "school: a creature learned its talent 1 on its card (12 Acorns)"
    ],
    "top5": [
     6,
@@ -90,7 +90,6 @@
     }
    },
    "events": [
-    "school: a visiting teacher's lesson for a creature (12 Acorns)",
     "mastery: scout seat 1 reached Apprentice",
     "mastery: scout seat 2 reached Apprentice",
     "mastery: anvil 1 reached Apprentice"
@@ -164,7 +163,8 @@
    },
    "events": [
     "new line: mudlump",
-    "school: a creature began learning its talent 1 (12 Acorns, 24 hours)"
+    "school: a student seated for quick-draw",
+    "school: a creature learned its talent 1 on its card (12 Acorns)"
    ],
    "top5": [
     8,
@@ -202,7 +202,7 @@
    },
    "events": [
     "new line: ashmole",
-    "school: a creature began learning its talent 1 (12 Acorns, 24 hours)"
+    "school: a creature learned its talent 1 on its card (12 Acorns)"
    ],
    "top5": [
     9,
@@ -295,7 +295,9 @@
      "bagged": 1
     }
    },
-   "events": [],
+   "events": [
+    "school: a creature learned the teacher's talent on its card (12 Acorns)"
+   ],
    "top5": [
     12,
     12,
@@ -323,9 +325,7 @@
      "bagged": 1
     }
    },
-   "events": [
-    "school: a visiting teacher's lesson for a creature (12 Acorns)"
-   ],
+   "events": [],
    "top5": [
     12,
     12,
@@ -495,7 +495,7 @@
    },
    "events": [
     "new line: stormray",
-    "school: a creature began learning its talent 1 (12 Acorns, 24 hours)"
+    "school: a creature learned its talent 1 on its card (12 Acorns)"
    ],
    "top5": [
     15,
@@ -552,9 +552,7 @@
      "bagged": 2
     }
    },
-   "events": [
-    "school: a visiting teacher's lesson for a creature (12 Acorns)"
-   ],
+   "events": [],
    "top5": [
     15,
     15,
@@ -620,6 +618,7 @@
     }
    },
    "events": [
+    "school: a student seated for quick-draw",
     "visitor: bought the week's blueprint (a new one) for 40 Acorns and 50 shards"
    ],
    "top5": [
@@ -693,19 +692,19 @@
    "hour": 20,
    "cameHome": {
     "acorns": 52,
-    "scrap": 141.47,
+    "scrap": 154.47,
     "shards": {
      "ember": 7.83,
      "spark": 3.92
     },
     "creatures": [
      {
-      "line": "sproutle",
+      "line": "mudlump",
       "count": 1,
-      "newLine": true
+      "newLine": false
      },
      {
-      "line": "new line 16 (common)",
+      "line": "squelch",
       "count": 1,
       "newLine": true
      }
@@ -717,10 +716,8 @@
     }
    },
    "events": [
-    "new line: sproutle",
-    "new line: new line 16 (common)",
-    "school: a creature began learning its talent 1 (12 Acorns, 24 hours)",
-    "school: a creature began learning its talent 1 (12 Acorns, 24 hours)",
+    "new line: squelch",
+    "school: a creature learned its talent 1 on its card (12 Acorns)",
     "mastery: scout seat 1 reached Master",
     "mastery: scout seat 2 reached Master",
     "mastery: anvil 1 reached Master"
@@ -748,11 +745,13 @@
     "creatures": [],
     "pieces": {
      "collected": 2,
-     "worn": 3,
+     "worn": 2,
      "bagged": 1
     }
    },
-   "events": [],
+   "events": [
+    "school: a creature learned the teacher's talent on its card (12 Acorns)"
+   ],
    "top5": [
     17,
     17,
@@ -768,21 +767,19 @@
    "hour": 20,
    "cameHome": {
     "acorns": 52,
-    "scrap": 141.47,
+    "scrap": 146.47,
     "shards": {
      "ember": 7.83,
      "spark": 3.92
     },
     "creatures": [],
     "pieces": {
-     "collected": 4,
-     "worn": 4,
+     "collected": 2,
+     "worn": 2,
      "bagged": 1
     }
    },
-   "events": [
-    "school: a visiting teacher's lesson for a creature (12 Acorns)"
-   ],
+   "events": [],
    "top5": [
     18,
     18,
@@ -803,14 +800,22 @@
      "ember": 7.83,
      "spark": 3.92
     },
-    "creatures": [],
+    "creatures": [
+     {
+      "line": "new line 15 (common)",
+      "count": 1,
+      "newLine": true
+     }
+    ],
     "pieces": {
-     "collected": 1,
-     "worn": 1,
-     "bagged": 3
+     "collected": 0,
+     "worn": 0,
+     "bagged": 0
     }
    },
    "events": [
+    "new line: new line 15 (common)",
+    "school: a creature learned its talent 1 on its card (12 Acorns)",
     "visitor: he is in the valley until the raid finale",
     "visitor: rerolled a epic piece (item level 10) for 60 Acorns and 400 scrap: lines [1, 2, 1, 1, 1] became [1, 1, 1, 2, 1] (1 at the top pip)"
    ],
@@ -836,12 +841,13 @@
     },
     "creatures": [],
     "pieces": {
-     "collected": 0,
-     "worn": 0,
-     "bagged": 0
+     "collected": 2,
+     "worn": 2,
+     "bagged": 1
     }
    },
    "events": [
+    "school: a student seated for front-liner",
     "mastery: anvil 2 reached Master"
    ],
    "top5": [
@@ -864,22 +870,14 @@
      "ember": 7.83,
      "spark": 3.92
     },
-    "creatures": [
-     {
-      "line": "new line 17 (common)",
-      "count": 1,
-      "newLine": true
-     }
-    ],
+    "creatures": [],
     "pieces": {
-     "collected": 0,
-     "worn": 0,
+     "collected": 1,
+     "worn": 1,
      "bagged": 0
     }
    },
    "events": [
-    "new line: new line 17 (common)",
-    "school: a creature began learning its talent 1 (12 Acorns, 24 hours)",
     "visitor: bought the week's blueprint (a new one) for 40 Acorns and 50 shards"
    ],
    "top5": [
@@ -904,9 +902,9 @@
     },
     "creatures": [],
     "pieces": {
-     "collected": 2,
-     "worn": 3,
-     "bagged": 1
+     "collected": 0,
+     "worn": 0,
+     "bagged": 0
     }
    },
    "events": [],
@@ -914,7 +912,7 @@
     18,
     18,
     17,
-    16,
+    15,
     15
    ]
   }
