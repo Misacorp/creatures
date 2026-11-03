@@ -263,12 +263,22 @@ const RankSchema = v.pipe(
   v.readonly(),
 );
 
+/** The arena piece of one player: `rows` seats in one column (the only shape the engine plays yet). */
+export const PieceSchema = v.pipe(v.strictObject({ rows: Count }), v.readonly());
+export type PieceDef = v.InferOutput<typeof PieceSchema>;
+
 const raidBossOf = <M extends v.GenericSchema>(move: M) =>
   v.pipe(
     v.strictObject({
       /** A shipped raid boss (`content.bosses`). */
       id: IdSchema,
       rows: Count,
+      /**
+       * The arena piece one player adds: the shape the board repeats once per player (and one spare) until stage 1 (Misa, 2026-11-03).
+       * Today a piece is one full column of the boss's rows, `{ rows }` with `rows` equal to the boss's; the loader refuses any other
+       * shape until the engine can play it. A later shape (a seat mask) is another key here, with engine support first.
+       */
+      piece: PieceSchema,
       armour: v.pipe(Int, v.minValue(0)),
       atk: Count,
       /** The weekend's shared HP, at the high rank. */

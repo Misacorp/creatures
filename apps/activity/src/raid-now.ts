@@ -32,6 +32,8 @@ interface NowAction {
 }
 
 type NowView = Pick<RaidView, 'next' | 'schedule' | 'timezone' | 'party' | 'rules'> & {
+  /** A combat v2 week's part: only its seats a player brings are read here. */
+  v2?: { seats: number } | undefined;
   you: Pick<RaidView['you'], 'inRoster' | 'canEdit' | 'team'>;
 };
 
@@ -41,13 +43,13 @@ type NowView = Pick<RaidView, 'next' | 'schedule' | 'timezone' | 'party' | 'rule
  * many creatures they have; one who owns fewer than three cannot place three.
  */
 export function needsPlacement(
-  view: Pick<NowView, 'party' | 'you'>,
+  view: Pick<NowView, 'party' | 'you' | 'v2'>,
   owned: number = RULES.raid.teamSize,
 ): boolean {
   const { team, canEdit, inRoster } = view.you;
   if (view.party === null || !canEdit) return false;
   if (!inRoster) return true;
-  return (team?.creatures.length ?? 0) < Math.min(RULES.raid.teamSize, owned);
+  return (team?.creatures.length ?? 0) < Math.min(view.v2?.seats ?? RULES.raid.teamSize, owned);
 }
 
 export function nowAction(

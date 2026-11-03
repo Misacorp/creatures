@@ -112,6 +112,10 @@ export interface RaidV2View {
   /** The arena: rows of the boss, columns of the party; a slot is `col * rows + row`. */
   rows: number;
   cols: number;
+  /** The creatures one player brings: the seats of the boss's arena piece. */
+  seats: number;
+  /** The board includes the spare piece (one free column) until stage 1 locks the players. */
+  spare: boolean;
   players: number;
   card: BossCardV2;
   track: TrackV2;
@@ -227,6 +231,9 @@ export function isRaidV2View(value: unknown): value is RaidV2View {
     isCount(value['rows']) &&
     value['rows'] >= 1 &&
     isCount(value['cols']) &&
+    isCount(value['seats']) &&
+    value['seats'] >= 1 &&
+    isBool(value['spare']) &&
     isCount(value['players']) &&
     isCard(value['card']) &&
     isTrack(value['track']) &&

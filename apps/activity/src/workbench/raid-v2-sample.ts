@@ -167,7 +167,9 @@ interface Standing {
 /** The sample week: the view the screens read, with the board's creatures in their slots. */
 export function raidV2Sample(o: V2SampleOptions): { view: RaidView; ownedIds: string[] } {
   const players = Math.max(1, o.players);
-  const cols = Math.max(4, players);
+  // Before stage 1 the board keeps a spare piece (one more column) free for a newcomer; stage 1 drops it.
+  const spare = o.stagesPlayed === 0;
+  const cols = Math.max(4, players + (spare ? 1 : 0));
   const boss = trackBoss(combatV2, SHIPPED, o.slot, { players });
   const rows = boss.rows;
   const standing: Standing[] = [];
@@ -313,6 +315,9 @@ export function raidV2Sample(o: V2SampleOptions): { view: RaidView; ownedIds: st
     joiningOpen: o.stagesPlayed === 0,
     rows,
     cols,
+    // One player's piece is one column of the boss's rows.
+    seats: rows,
+    spare,
     players,
     card: cardOf(boss, carry),
     track: trackOf(o.slot),

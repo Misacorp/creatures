@@ -89,6 +89,8 @@ interface RawTrack {
 }
 interface RawBoss {
   id: string;
+  rows?: number;
+  piece?: { rows: number };
   moves: RawMove[];
   cards: string[];
   asks: string;
@@ -375,6 +377,16 @@ describe('combat v2 content', () => {
     expect(broken((r) => r.raidBosses.push(clone(first(r.raidBosses))))).toThrow(
       /duplicate raid boss "tidal-colossus"/,
     );
+  });
+
+  it('gives every raid boss a piece of one full column and refuses any other shape, naming the boss', () => {
+    for (const b of Object.values(combatV2.raidBosses)) expect(b.piece.rows).toBe(b.rows);
+    expect(combatV2.raidBosses['storm-sovereign']?.piece.rows).toBe(2);
+    expect(combatV2.raidBosses['cinder-wyrm']?.piece.rows).toBe(4);
+    expect(broken((r) => (raid(r, 'storm-sovereign').piece = { rows: 1 }))).toThrow(
+      /raid boss "storm-sovereign": its piece has 1 rows but the arena has 2/,
+    );
+    expect(broken((r) => delete raid(r, 'cinder-wyrm').piece)).toThrow(/piece/);
   });
 
   it('rejects a boss or foe that names a card that does not exist', () => {

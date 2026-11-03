@@ -241,9 +241,9 @@ describe('players lock at stage 1', () => {
         ctx.core.raid.currentWeek(HELSINKI);
         joinRaid(ctx, players);
         const view = ctx.core.raid.view(players[0]?.id as string, HELSINKI);
-        // Slot 1 is the Tidal Colossus: 3 rows; six players are six columns, and a slot is column * 3 + row.
-        expect(view.v2).toMatchObject({ rows: 3, cols: 6, players: 6 });
-        expect(view.party?.rowLength).toBe(18);
+        // Slot 1 is the Tidal Colossus: 3 rows; six players are six columns plus the spare one, and a slot is column * 3 + row.
+        expect(view.v2).toMatchObject({ rows: 3, cols: 7, players: 6, seats: 3, spare: true });
+        expect(view.party?.rowLength).toBe(21);
         const slots = rows<{ slot: number; user_id: string }>(
           ctx.sql,
           'SELECT slot, user_id FROM raid_placements ORDER BY slot',
@@ -251,9 +251,9 @@ describe('players lock at stage 1', () => {
         // The first player holds column 0 (slots 0 to 2), the second column 1 (3 to 5), and so on.
         expect(slots.slice(0, 3).every((s) => s.user_id === players[0]?.id)).toBe(true);
         expect(slots.slice(3, 6).every((s) => s.user_id === players[1]?.id)).toBe(true);
-        // A slot beyond the board is refused; the one just inside is not.
+        // A slot beyond the board is refused; the one just inside (the spare column) is not.
         const spare = players[0]?.creatureIds[3] as string;
-        expect(ctx.core.raid.place(players[0]?.id as string, HELSINKI, spare, 18)).toEqual({
+        expect(ctx.core.raid.place(players[0]?.id as string, HELSINKI, spare, 21)).toEqual({
           ok: false,
           status: 400,
           error: 'invalid_slot',

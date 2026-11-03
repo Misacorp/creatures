@@ -25,6 +25,10 @@ export const EFFECT_PREFIX = 'In this slot:';
 /** The most creatures one player has on the board. */
 export const MAX_ON_BOARD: number = RULES.raid.teamSize;
 
+/** A seat count in words for the Raid tab's line ("Place up to two creatures"). */
+export const seatsWord = (n: number): string =>
+  ['no', 'one', 'two', 'three', 'four', 'five', 'six'][n] ?? String(n);
+
 /** What an option says for a creature that is on the board already (picking it moves it). */
 export const ON_BOARD_NOTE = 'On the board · moves here';
 
@@ -40,8 +44,10 @@ export const RECOMMENDED_COUNT: number = RULES.raid.teamSize;
 /** Why a creature knocked out earlier this weekend cannot be placed (combat v2). */
 export const OUT_REASON = 'Out this weekend';
 
-/** Why a new creature cannot be picked when the board holds the most already. */
-export const BOARD_FULL_REASON = `${String(MAX_ON_BOARD)} / ${String(MAX_ON_BOARD)} placed, remove one first`;
+/** Why a new creature cannot be picked when the board holds the most already (`max`: a combat v2 boss's piece seats; three otherwise). */
+export const boardFullReason = (max: number = MAX_ON_BOARD): string =>
+  `${String(max)} / ${String(max)} placed, remove one first`;
+export const BOARD_FULL_REASON = boardFullReason();
 
 /** The creature fields the picker needs (a `Creature` of the collection has them). */
 export interface PickerCreature {
@@ -75,8 +81,11 @@ export function toPickerCreature(c: Creature): PickerCreature {
  * picker tags "Recommended". It ignores slot rules: it is the same three whatever slot is being filled.
  * Nothing is placed for the player: it is only a hint.
  */
-export function recommendedIds(creatures: readonly PickerCreature[]): ReadonlySet<string> {
-  return new Set(strongest(creatures, RECOMMENDED_COUNT).map((c) => c.id));
+export function recommendedIds(
+  creatures: readonly PickerCreature[],
+  count: number = RECOMMENDED_COUNT,
+): ReadonlySet<string> {
+  return new Set(strongest(creatures, count).map((c) => c.id));
 }
 
 /** One line of the picker. */
@@ -165,13 +174,13 @@ export function boardTotalLine(row: readonly RowSlotView[], length: number): str
 }
 
 /** True when the player has all of their creatures on the board (the line shows a check mark). */
-export function allPlaced(placed: number): boolean {
-  return placed >= MAX_ON_BOARD;
+export function allPlaced(placed: number, max: number = MAX_ON_BOARD): boolean {
+  return placed >= max;
 }
 
 /** The count at the start of the Raid Roster's count line: "1 / 3 placed". */
-export function placedLine(placed: number): string {
-  return `${String(placed)} / ${String(MAX_ON_BOARD)} placed`;
+export function placedLine(placed: number, max: number = MAX_ON_BOARD): string {
+  return `${String(placed)} / ${String(max)} placed`;
 }
 
 /**
@@ -179,10 +188,14 @@ export function placedLine(placed: number): string {
  * week's raid." while none is placed (placing the first one joins the player), "You bring only what you
  * place." while one or two are, "The board is locked." once edits are closed, nothing when all three are placed.
  */
-export function rosterNote(placed: number, canEdit: boolean): string | null {
+export function rosterNote(
+  placed: number,
+  canEdit: boolean,
+  max: number = MAX_ON_BOARD,
+): string | null {
   if (!canEdit) return 'The board is locked.';
   if (placed === 0) return "Place a creature to join this week's raid.";
-  if (allPlaced(placed)) return null;
+  if (allPlaced(placed, max)) return null;
   return 'You bring only what you place.';
 }
 
@@ -254,6 +267,8 @@ export function pickerOptions(args: {
   showEffects: boolean;
   /** Combat v2: the ids of the player's creatures knocked out this weekend. They are listed last, greyed, "Out this weekend". */
   out?: ReadonlySet<string>;
+  /** The most creatures a player has on this board: a combat v2 boss's piece seats (default three). */
+  max?: number;
 }): PickerOption[] {
   const { row, length } = args;
   const onBoard = new Set(
@@ -278,6 +293,7 @@ export function pickerOptions(args: {
     mode: { row: 'raid', turnOrder: parseTurnOrder(args.turnOrder) },
     showEffects: args.showEffects,
     ...(args.out === undefined ? {} : { out: args.out }),
+    ...(args.max === undefined ? {} : { max: args.max }),
   });
 }
 
@@ -312,10 +328,12 @@ function optionsFor(args: {
   mode: AffectMode;
   showEffects: boolean;
   out?: ReadonlySet<string>;
+  max?: number;
 }): PickerOption[] {
   const { creatures, baseKeys, known, onBoard, slot } = args;
-  const full = onBoard.size >= MAX_ON_BOARD;
-  const recommended = recommendedIds(creatures);
+  const max = args.max ?? MAX_ON_BOARD;
+  const full = onBoard.size >= max;
+  const recommended = recommendedIds(creatures, max);
   for (const c of creatures) known.set(c.id, c);
 
   const options = creatures.map((c): PickerOption => {
@@ -337,7 +355,7 @@ function optionsFor(args: {
       element: species?.element ?? 'unknown',
       role: species?.role ?? '',
       onBoard: placed,
-      disabled: knockedOut ? OUT_REASON : full && !placed ? BOARD_FULL_REASON : null,
+      disabled: knockedOut ? OUT_REASON : full && !placed ? boardFullReason(max) : null,
       effect,
       recommended: recommended.has(c.id) && !knockedOut,
     };

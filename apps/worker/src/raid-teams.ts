@@ -154,8 +154,11 @@ export function loadCreatures(
  * so the order never depends on where or when a creature was placed. Nobody's creatures are picked
  * for them: this only orders the creatures a player placed.
  */
-export function autoTeam(creatures: readonly TeamCreature[]): TeamCreature[] {
-  return strongest(creatures, RULES.raid.teamSize);
+export function autoTeam(
+  creatures: readonly TeamCreature[],
+  limit: number = RULES.raid.teamSize,
+): TeamCreature[] {
+  return strongest(creatures, limit);
 }
 
 /** One placed creature as stored: `rowid` is the order they were placed in (a move places again). */
@@ -170,11 +173,13 @@ export type PlacementRow = {
  * At most `teamSize` placements per player, chosen deterministically: creatures in `preferred`
  * first, then the earliest placed (`rowid`), then the lowest slot. Pure. No player has more than
  * three creatures on the board (a stale row used to make a fourth); this is the one rule that
- * decides which survive, used by the data repair and by every read and write of placements.
+ * decides which survive, used by the data repair and by every read and write of placements. A combat v2
+ * week passes `limit`: the seats of its boss's arena piece (2 to 4, `seatsFor` in raid-v2-core.ts).
  */
 export function capPlacements<T extends PlacementRow>(
   rows: readonly T[],
   preferred: ReadonlySet<string> = new Set(),
+  limit: number = RULES.raid.teamSize,
 ): T[] {
   const byUser = new Map<string, T[]>();
   for (const row of rows) {
@@ -191,7 +196,7 @@ export function capPlacements<T extends PlacementRow>(
           a.rowid - b.rowid ||
           a.slot - b.slot,
       )
-      .slice(0, RULES.raid.teamSize)
+      .slice(0, limit)
       .forEach((row) => kept.add(row));
   }
   return rows.filter((row) => kept.has(row));
@@ -201,7 +206,12 @@ export function capPlacements<T extends PlacementRow>(
  * The placements of one party this week, at most three per player (see `capPlacements`). Only
  * creatures their placing player still owns count.
  */
-export function partyPlacements(sql: SqlStorage, weekId: string, party: number): PlacementRow[] {
+export function partyPlacements(
+  sql: SqlStorage,
+  weekId: string,
+  party: number,
+  limit: number = RULES.raid.teamSize,
+): PlacementRow[] {
   return capPlacements(
     sql
       .exec<PlacementRow>(
@@ -212,6 +222,8 @@ export function partyPlacements(sql: SqlStorage, weekId: string, party: number):
         party,
       )
       .toArray(),
+    new Set(),
+    limit,
   );
 }
 
@@ -227,7 +239,12 @@ export function teamPower(team: readonly TeamCreature[]): number {
  * raid. Loaded by id, with gear and talents folded in (never the whole collection). Sorted strongest
  * first, so the order never depends on where or when a creature was placed.
  */
-export function raidTeam(sql: SqlStorage, weekId: string, userId: string): TeamCreature[] {
+export function raidTeam(
+  sql: SqlStorage,
+  weekId: string,
+  userId: string,
+  limit: number = RULES.raid.teamSize,
+): TeamCreature[] {
   return teamOfPlacements(
     sql,
     userId,
@@ -240,6 +257,7 @@ export function raidTeam(sql: SqlStorage, weekId: string, userId: string): TeamC
         userId,
       )
       .toArray(),
+    limit,
   );
 }
 
@@ -251,14 +269,20 @@ export function teamOfPlacements(
   sql: SqlStorage,
   userId: string,
   placements: readonly PlacementRow[],
+  limit: number = RULES.raid.teamSize,
 ): TeamCreature[] {
-  const mine = capPlacements(placements.filter((p) => p.user_id === userId));
+  const mine = capPlacements(
+    placements.filter((p) => p.user_id === userId),
+    new Set(),
+    limit,
+  );
   return autoTeam(
     loadCreaturesById(
       sql,
       userId,
       mine.map((r) => r.creature_id),
     ),
+    limit,
   );
 }
 
