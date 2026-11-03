@@ -10,10 +10,11 @@ import { ON_A_TRIP_REASON, partName } from './gear-view';
 import { packShardEntries } from './dungeon-text';
 import type { DungeonAct, DungeonPack, DungeonRunCreature, DungeonRunGear } from './dungeon-types';
 import { creatureName, getSpecies } from './game';
-import type { IconRef } from './icon-ref';
+import { resourceIconRef, type IconRef } from './icon-ref';
 import type { CountItem } from './ui/CountBadge';
 import type { PickerOption } from './roster-picker';
 import type { SlotHp } from './ui/SlotButton';
+import { resourceName } from '@creatures/game';
 
 /** The pack as count badges (icon, number, name), without the empty kinds. */
 export function packItems(pack: DungeonPack): CountItem[] {
@@ -47,9 +48,9 @@ export interface PackKind {
 
 const PACK_ICON: Readonly<Record<'bait' | 'essence' | 'scrap', { icon: IconRef; label: string }>> =
   {
-    bait: { icon: BAIT_ICON, label: 'Bait' },
-    essence: { icon: ESSENCE_ICON, label: 'Essence' },
-    scrap: { icon: { kind: 'part', part: 'scrap' }, label: 'Scrap' },
+    bait: { icon: BAIT_ICON, label: resourceName('bait') },
+    essence: { icon: ESSENCE_ICON, label: resourceName('essence') },
+    scrap: { icon: resourceIconRef('scrap'), label: resourceName('scrap') },
   };
 
 /** The kinds the pack held (what was found), with what of each was kept. Empty when nothing was found. */

@@ -51,6 +51,7 @@ export * from './games-schema';
 export * from './games';
 export * from './games-size';
 export * from './games-stall-schema';
+export * from './resources';
 
 /** The shipped content pack, validated at module load. */
 export const content = loadContent({

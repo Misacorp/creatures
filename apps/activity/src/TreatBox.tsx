@@ -7,6 +7,7 @@ import { Sprite } from './sprites/Sprite';
 import { CountBadge } from './ui/CountBadge';
 import { Switch } from './ui/Switch';
 import { Tag } from './ui/Tag';
+import { resourceName } from '@creatures/game';
 
 /**
  * Today's treat multiplier from the forecast (`WeatherDay.treatTimes`; the server freezes the day's weather
@@ -88,7 +89,7 @@ export function TreatBox({
       <Switch
         on={checked}
         label={nameOnly ? who : 'Pack a treat'}
-        spoken={`${label} (${String(times)}x experience, ${String(cost)} Bait${short ? ', not enough Bait' : ''})`}
+        spoken={`${label} (${String(times)}x experience, ${String(cost)} ${resourceName('bait')}${short ? `, not enough ${resourceName('bait')}` : ''})`}
         disabled={disabled}
         class={solo ? 'treat-switch solo' : 'treat-switch'}
         onChange={(on) => {
@@ -102,7 +103,7 @@ export function TreatBox({
         <Sprite sprite={glyphOrUnknown('treat')} scale={2} class="treat-icon" />
         {noting ? (
           <span key={refused} class="treat-who treat-note">
-            Not enough Bait
+            Not enough {resourceName('bait')}
           </span>
         ) : (
           forWho !== '' && !nameOnly && <span class="treat-who">{forWho}</span>
@@ -114,7 +115,7 @@ export function TreatBox({
       </Switch>
       {help && <GlossaryTag entry="treat" look="help" class="treat-help" />}
       <span class="visually-hidden" role="status">
-        {noting ? 'Not enough Bait' : ''}
+        {noting ? `Not enough ${resourceName('bait')}` : ''}
       </span>
     </div>
   );

@@ -29,6 +29,7 @@ import { useDungeonDraft } from './use-dungeon-draft';
 import { BagFullNote } from './ui/BagFullNote';
 import type { Forecast } from './weather-types';
 import { Alert } from './ui/Alert';
+import { resourceName } from '@creatures/game';
 
 interface Props {
   today: DungeonToday;
@@ -255,7 +256,7 @@ export function DungeonSetup({
                 <span class="treats-title">Treats</span>
                 <GlossaryTag entry="treat" look="help" />
                 <span class="treats-left">
-                  <CountBadge {...baitCount(baitLeft)} label="Bait left" />
+                  <CountBadge {...baitCount(baitLeft)} label={`${resourceName('bait')} left`} />
                   <span>left</span>
                 </span>
               </p>

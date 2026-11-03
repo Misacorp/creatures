@@ -9,7 +9,7 @@
  * bottom (the player delves downward, and the Undercroft's floors come below it), three lanes across. At 320 px (the narrowest phone) one unit is one pixel, so every room
  * button of `MIN_NODE` units is at least 44 px there, and bigger on wider screens.
  */
-import { SEALED_MARK, undercroftOpen } from '@creatures/game';
+import { SEALED_MARK, undercroftOpen, resourceName } from '@creatures/game';
 import { elementName } from './game';
 import type {
   DungeonMapNode,
@@ -555,7 +555,7 @@ export function nodeTitle(node: Pick<DungeonMapNode, 'id' | 'kind' | 'marks'>): 
 }
 
 export const MYSTERY_LINE = "Something stirs. You'll see when you step in.";
-export const CACHE_LINE = 'Free loot: Bait and scrap for your pack.';
+export const CACHE_LINE = `Free loot: ${resourceName('bait')} and ${resourceName('scrap').toLowerCase()} for your pack.`;
 export const CAMP_LINE =
   'Rest, swap a creature or take a keepsake, then push on or head home with your pack.';
 /** A carved door: what stepping through could add (the six kinds), never which. */
