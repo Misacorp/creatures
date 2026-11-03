@@ -241,7 +241,7 @@ describe('what a fight shows besides the numbers', () => {
       Object.values(m.states[k + 1]?.creatures ?? {}).some((c) => c.boost > 0);
     const { p, model, beat } = draw(replay, boosted);
     const n = Object.values(model.states[beat]?.creatures ?? {}).filter((c) => c.boost > 0).length;
-    expect(byClass(p.root, 'slot-boost').length).toBe(n);
+    expect(byClass(p.root, 'fight-boosted').length).toBe(n);
     expect(byClass(p.root, 'pip').length).toBe(0);
   });
 

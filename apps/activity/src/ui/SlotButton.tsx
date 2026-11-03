@@ -273,7 +273,6 @@ export function SlotButton(props: SlotButtonProps) {
           {hitGlyph !== undefined && <Sprite sprite={hitGlyph} scale={1} />}
         </span>
       )}
-      {c?.v2?.fight?.boosted === true && <span class="slot-boost" aria-hidden="true" />}
       {c?.v2?.fight?.link !== undefined && (
         <span
           class={`slot-link ${c.v2.fight.link.role} to-${c.v2.fight.link.side}`}

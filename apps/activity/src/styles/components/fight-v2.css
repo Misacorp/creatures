@@ -379,14 +379,15 @@
 
 /*
   --- A creature carrying a Support's Boost ---
-  The mark stays for as long as the Boost lasts (until the creature's next hit), so the board can be read at a glance. It is a child of
-  the tile, not the tile's own box-shadow, so it never replaces the element ring, the Guard's flash or a hit's red. It is a yellow inner
+  The mark stays for as long as the Boost lasts (until the creature's next hit), so the board can be read at a glance. It is the tile's
+  ::after, not its own box-shadow, so it never replaces the element ring, the Guard's flash or a hit's red. It is a yellow inner
   glow that starts flush at the tile's border (inset 0 inside the border, no gap), in three hard steps of gold going inwards (no
   blur), light enough to leave the creature clear. A static drawing: it has no motion to reduce.
 */
-.party-slot .slot-boost {
+.party-slot.fight-boosted::after {
   position: absolute;
   inset: 0;
+  content: '';
   z-index: 1;
   background: rgb(var(--gold-rgb) / 6%);
   box-shadow:
@@ -418,13 +419,14 @@
 }
 
 /*
-  A Guard's save: a large shield on the covered creature, as big as its tile (the tile is the creature's box), with what it kept off
+  A Guard's save: a large shield on the covered creature, as wide as the creature's sprite (2.5 rem, the most the tile's content box holds), with what it kept off
   on it. It pops in big, settles, flashes bright and is gone before the creature's HP line is needed again. Reduced motion: the same
   shield, still.
 */
 .party-slot .slot-fx .float-save {
-  top: 12%;
-  --rise: 0.5rem;
+  top: 10%;
+  --ly: 0px;
+  --rise: 0.25rem;
   z-index: 5;
 }
 
@@ -438,8 +440,8 @@
 }
 
 .float-save canvas.float-shield {
-  width: 3rem;
-  height: 3rem;
+  width: 2.5rem;
+  height: 2.5rem;
   margin: 0;
   /* Brighter than the plain glyph, ringed in the save's green with a gold edge outside it: it must read as a flash. */
   --shield-glow: brightness(1.1) drop-shadow(2px 0 var(--good)) drop-shadow(-2px 0 var(--good))
