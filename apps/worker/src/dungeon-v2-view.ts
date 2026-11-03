@@ -61,7 +61,8 @@ export function knackNamesOf(input: FightInputV2): Record<string, string> {
   const out: Record<string, string> = {};
   for (const f of input.fighters) {
     const id = f.knack;
-    const knack = id === undefined || !Object.hasOwn(combatV2.knacks, id) ? undefined : combatV2.knacks[id];
+    const knack =
+      id === undefined || !Object.hasOwn(combatV2.knacks, id) ? undefined : combatV2.knacks[id];
     if (knack !== undefined) out[f.key ?? f.uid] = knack.name;
   }
   return out;

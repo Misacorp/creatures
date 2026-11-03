@@ -21,6 +21,8 @@ import { staticFx } from '../../stage-fx';
 import { cuesForEvents, windupCuesForEvents } from '../../stage';
 import type { IntroView } from '../../stage-fx';
 import type { DungeonReplayV1 } from '../../dungeon-types';
+import type { PlaybackInput } from '../../dungeon-playback';
+import { sampleRoomV2 } from '../dungeon-v2-sample';
 import type { Entry, Props } from '../types';
 
 const REPLAY = parseDungeonReplay(dungeonReplay) as DungeonReplayV1;
@@ -304,22 +306,58 @@ const stage: Entry = {
   },
 };
 
+/**
+ * Two rooms of a run on combat v2 played by the engine, the second coming in with the HP the first left (a creature that fell stays out,
+ * greyed in its place): what `DungeonPlayback` plays when the server says `rules: 2`.
+ */
+function v2Input(foes: readonly [string, string]): PlaybackInput {
+  const first = sampleRoomV2({ foe: foes[0], depth: 3, level: 16, seed: 'play-a', node: 'f0l1' });
+  const carried = ['c1', 'c2', 'c3'].map(
+    (id) => (first.room.hpEnd[id] ?? 0) / Math.max(1, first.room.hpMax[id] ?? 1),
+  );
+  const second = sampleRoomV2({
+    foe: foes[1],
+    depth: 3,
+    level: 16,
+    seed: 'play-b',
+    node: 'f1l1',
+    carried,
+  });
+  return {
+    row: first.room.row ?? [],
+    rooms: [first.room, { ...second.room, index: 1 }],
+    landmark: false,
+    total: 7,
+  };
+}
+
 const dungeonPlayback: Entry = {
   name: 'DungeonPlayback',
   file: 'apps/activity/src/DungeonPlayback.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The dungeon fight as it plays after a run, room by room on the stage with the room banner first (about five seconds, with a yellow outline round the stage that drains toward the bottom until the fight starts); Pause, 2x and Skip are hidden unless switched on here. It plays a fixture run, so reload the page to see it again.',
-  controls: { showControls: { kind: 'toggle' } },
-  defaults: { showControls: false },
+    "The dungeon fight as it plays after a run, room by room on the stage with the room banner first (about five seconds, with a yellow outline round the stage that drains toward the bottom until the fight starts); Pause, 2x and Skip are hidden unless switched on here. It plays a fixture run, so reload the page to see it again. Combat v2 plays two rooms of a real engine fight on StageV2 in its single-row mode (the three creatures in one row, the foe taking its one turn after them, the foe's move named on its line); the banner names the foe's last move from its card, and a room modifier that does nothing on v2 (Thorns) is left out.",
+  controls: {
+    rules: { kind: 'select', options: ['combat v1', 'combat v2'] },
+    showControls: { kind: 'toggle' },
+  },
+  defaults: { rules: 'combat v1', showControls: false },
   presets: [
     { name: 'Plays by itself', props: {} },
     { name: 'With the controls', props: { showControls: true } },
+    {
+      name: "Combat v2: two rooms played by the engine (the banner names the foe's last move, then the fight on the one-row stage)",
+      props: { rules: 'combat v2' },
+    },
   ],
   render: (p) => (
     <DungeonPlayback
-      key={String(bool(p, 'showControls'))}
-      input={replayInput(REPLAY)}
+      key={`${String(bool(p, 'showControls'))}-${str(p, 'rules')}`}
+      input={
+        str(p, 'rules') === 'combat v2'
+          ? v2Input(['ember-mite', 'bramble-hound'])
+          : replayInput(REPLAY)
+      }
       onDone={() => undefined}
       showControls={bool(p, 'showControls')}
     />

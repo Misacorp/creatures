@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { AbilityChipV2 } from '../../AbilityChipV2';
+import { roomFightV2 } from '../../dungeon-room-v2';
+import { sampleRoomV2 } from '../dungeon-v2-sample';
 import { foldSetupOf, showOf, stageModelOf, type StageModel } from '../../fight-v2';
 import type { LiveAbilityV2 } from '../../fight-v2-api';
 import { FightV2 } from '../../LiveV2';
@@ -25,7 +27,18 @@ import {
   type FightSampleOptions,
 } from '../fight-v2-sample';
 
-const VIEWS = ['held', 'replay', 'live', 'results', 'action'] as const;
+const VIEWS = ['held', 'replay', 'live', 'results', 'action', 'dungeon room'] as const;
+
+/** The foes of the dungeon's rooms the page can show (a plain foe, one with a rule card, two moves, a floor boss). */
+const DUNGEON_FOES = [
+  'bramble-hound',
+  'drift-wisp',
+  'ember-mite',
+  'static-bat',
+  'puddle-imp',
+  'drowned-warden',
+  'slag-tyrant',
+] as const;
 
 const MOMENTS = [
   'start',
@@ -137,6 +150,74 @@ function StageHeld({ p }: { p: Props }) {
         place={opts.stage === 3 ? 'Finale' : `Stage ${String(opts.stage)} / 3`}
         hpMax={replay.bossHpMax}
         rounds={replay.boss.rounds}
+      />
+    </div>
+  );
+}
+
+/**
+ * A room of the daily dungeon on combat v2 held still at a moment of a real fight (the engine's `fightV2` against `foeAt`): the stage in
+ * its single-row mode, the foe taking its one turn after the line, the carried HP and an out creature in its place.
+ */
+function DungeonRoomHeld({ p }: { p: Props }) {
+  const foe = str(p, 'foe');
+  const depth = num(p, 'depth');
+  const level = num(p, 'level');
+  const seed = str(p, 'seed');
+  const carried = [num(p, 'hp1') / 100, num(p, 'hp2') / 100, num(p, 'hp3') / 100];
+  const { room, row } = useMemo(
+    () =>
+      sampleRoomV2({
+        foe,
+        depth,
+        level,
+        seed,
+        carried,
+        ...(foe === 'drowned-warden' || foe === 'slag-tyrant'
+          ? { signature: depth % 7 === 0 }
+          : {}),
+      }),
+    [foe, depth, level, seed, carried.join(',')],
+  );
+  const fight = useMemo(() => roomFightV2(room, row), [room, row]);
+  const model = useMemo(
+    () =>
+      stageModelOf(
+        foldSetupOf({ fighters: fight.fighters, card: fight.card, bossHpStart: fight.hpMax }),
+        room.events,
+      ),
+    [fight, room],
+  );
+  const moment = MOMENTS.find((m) => m === str(p, 'moment')) ?? 'start';
+  const beat = momentBeat(model, room.events, moment, num(p, 'beat'));
+  const landed = beat > 0 ? model.beats[beat - 1] : undefined;
+  const show = landed === undefined ? null : showOf(room.events, landed);
+  const playback: PlaybackV2 = {
+    beat,
+    total: model.beats.length,
+    finished: beat >= model.beats.length,
+    playing: false,
+    setPlaying: () => undefined,
+    move: () => undefined,
+    show,
+    fx: show === null ? [] : staticFx(cuesOf(show)),
+    intro: null,
+  };
+  return (
+    <div class="wb-held">
+      <StageV2
+        boss={fight.boss}
+        card={fight.card}
+        fighters={fight.fighters}
+        names={fight.names}
+        you="p1"
+        model={model}
+        playback={playback}
+        place="Room 2 / 7"
+        hpMax={fight.hpMax}
+        rounds={fight.rounds}
+        single
+        ticks={[]}
       />
     </div>
   );
@@ -293,6 +374,12 @@ const CONTROLS = {
   round: { kind: 'number', min: 0, max: 8 },
   open: { kind: 'number', min: 0, max: 3 },
   ability: { kind: 'select', options: ['rally', 'shield-wall', 'purge'] },
+  foe: { kind: 'select', options: DUNGEON_FOES },
+  depth: { kind: 'number', min: 1, max: 40 },
+  level: { kind: 'number', min: 1, max: 40 },
+  hp1: { kind: 'number', min: 0, max: 100 },
+  hp2: { kind: 'number', min: 0, max: 100 },
+  hp3: { kind: 'number', min: 0, max: 100 },
 } as const;
 
 const DEFAULTS = {
@@ -306,6 +393,12 @@ const DEFAULTS = {
   round: 3,
   open: 0,
   ability: 'rally',
+  foe: 'bramble-hound',
+  depth: 3,
+  level: 22,
+  hp1: 100,
+  hp2: 100,
+  hp3: 100,
 };
 
 const stageV2: Entry = {
@@ -357,6 +450,40 @@ const stageV2: Entry = {
       props: { view: 'results', slot: 4, stage: 3 },
     },
     { name: 'The Raid tab: the finale action picker', props: { view: 'action' } },
+    {
+      name: "Dungeon room (combat v2): the line, then the foe's one turn (Bramble Hound, mid-fight)",
+      props: { view: 'dungeon room', moment: 'beat number', beat: 6 },
+    },
+    {
+      name: 'Dungeon room: a hit and its numbers (Static Bat, the second creature out since an earlier room)',
+      props: {
+        view: 'dungeon room',
+        foe: 'static-bat',
+        hp1: 70,
+        hp2: 0,
+        hp3: 45,
+        moment: 'beat number',
+        beat: 8,
+      },
+    },
+    {
+      name: 'Dungeon room: a knock-out in the line',
+      props: { view: 'dungeon room', foe: 'static-bat', level: 14, moment: 'a knock-out' },
+    },
+    {
+      name: 'Dungeon room: the floor boss at a landmark (its moves announced)',
+      props: {
+        view: 'dungeon room',
+        foe: 'drowned-warden',
+        depth: 7,
+        level: 26,
+        moment: 'marks and an announced move',
+      },
+    },
+    {
+      name: 'Dungeon room: the end of a cleared fight',
+      props: { view: 'dungeon room', moment: 'the end' },
+    },
   ],
   render: (p) => {
     switch (str(p, 'view')) {
@@ -368,6 +495,8 @@ const stageV2: Entry = {
         return <ResultsDemo p={p} />;
       case 'action':
         return <ActionDemo p={p} />;
+      case 'dungeon room':
+        return <DungeonRoomHeld p={p} />;
       default:
         return <StageHeld p={p} />;
     }

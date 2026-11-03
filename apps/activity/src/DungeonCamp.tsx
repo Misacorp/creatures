@@ -19,6 +19,7 @@ import {
   CAMP_INTRO,
   CAMP_TITLE,
   NO_SWAP_LINE,
+  OUT_UNTIL_CAMP,
   campChoiceLines,
   isPackEmpty,
   runHpText,
@@ -62,6 +63,8 @@ interface Props {
   /** Everything the player owns: Swap brings one of those that are not in the row. */
   creatures: readonly Creature[];
   busy: boolean;
+  /** 2 on a run of combat v2: a creature at 0 HP is out (greyed, "Out") until the camp swaps it. */
+  rules?: 2 | undefined;
   /** The player chose: the act to send (a camp choice with the row's order, or heading home). */
   onAct: (act: DungeonAct) => void;
   /**
@@ -91,6 +94,7 @@ export function DungeonCamp({
   camp,
   creatures,
   busy,
+  rules,
   onAct,
   initialStep,
   initialIncoming,
@@ -145,7 +149,17 @@ export function DungeonCamp({
     ids: readonly string[],
     onChange: (order: string[]) => void,
   ): ReturnType<typeof CampRow> => (
-    <CampRow creatures={ids.flatMap(rowCreature)} disabled={busy} onChange={onChange} />
+    <>
+      <CampRow
+        creatures={ids.flatMap(rowCreature)}
+        disabled={busy}
+        onChange={onChange}
+        rules={rules}
+      />
+      {rules === 2 && ids.some((id) => (team.find((c) => c.id === id)?.hp ?? 1) <= 0) && (
+        <p class="muted prose camp-out-line">{OUT_UNTIL_CAMP}</p>
+      )}
+    </>
   );
 
   return (
@@ -273,7 +287,7 @@ export function DungeonCamp({
                     key={creature.id}
                     class={`camp-out${creature.hp <= 0 ? ' ko' : ''}`}
                     label={creature.name}
-                    line={`Level ${String(creature.level)} · ${runHpText(creature)}`}
+                    line={`Level ${String(creature.level)} · ${runHpText(creature, rules)}`}
                     disabled={busy || incoming === null}
                     onClick={() => {
                       if (incoming === null) return;

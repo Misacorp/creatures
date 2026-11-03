@@ -107,7 +107,7 @@ interface StageV2Props {
   ticks?: readonly number[];
   /** Under the board: the live finale's input. */
   children?: ComponentChildren;
-  /** Drawn over the whole stage inside its own box (the dungeon's room banner); it lets taps through. */
+  /** Drawn over the stage inside its padding, like the effects' layer (the dungeon's room banner); it lets taps through. */
   overlay?: ComponentChildren;
 }
 
@@ -198,7 +198,9 @@ export function StageV2({
       ownId: null,
       mine: you !== null && f.owner === you,
       element: f.element,
-      ...(single ? {} : { owner: { colour: ownerColour(owner, playerNames), initial: initialOf(owner) } }),
+      ...(single
+        ? {}
+        : { owner: { colour: ownerColour(owner, playerNames), initial: initialOf(owner) } }),
       v2: {
         role: f.role,
         knack: f.knackName,
@@ -337,7 +339,11 @@ export function StageV2({
       : null;
 
   return (
-    <section class="stage stage-v2" aria-label="Fight stage" ref={cssVars({ '--beat': '600ms' })}>
+    <section
+      class={single ? 'stage stage-v2 stage-single' : 'stage stage-v2'}
+      aria-label="Fight stage"
+      ref={cssVars({ '--beat': '600ms' })}
+    >
       <StageHead
         place={place}
         round={
@@ -411,7 +417,9 @@ export function StageV2({
         stripRef={stripRef}
         rows={boardRows}
         v2
-        {...(single ? { single: { label: 'Your team, left to right' }, size: 'large' as const } : {})}
+        {...(single
+          ? { single: { label: 'Your team, left to right' }, size: 'large' as const }
+          : {})}
         emptyLabel=""
         disabled={false}
         drag={NO_DRAG}
@@ -446,8 +454,8 @@ export function StageV2({
           )}
         </div>
         {intro !== null && <RoundIntro intro={intro} />}
+        {overlay}
       </div>
-      {overlay}
     </section>
   );
 }

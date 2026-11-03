@@ -218,42 +218,34 @@ function RoomBanner({
   );
 }
 
-function RoomFight({
+/**
+ * What a room of either rules does around its fight: the banner stands over the stage for a moment (the wait and the outline that drains
+ * share one time), then the fight starts; the arena is brought into view when the room opens and again when its fight begins; pausing
+ * stops the beats; and once the last beat has played the final state rests a moment and the run moves on.
+ */
+function useRoomRhythm({
   room,
   total,
   landmark,
-  row,
   speed,
   paused,
+  finished,
+  setPlaying,
   onFinished,
 }: {
-  room: DungeonReplayRoomV1;
+  room: DungeonReplayRoom;
   total: number;
   landmark: boolean;
-  row: ReturnType<typeof roomStageRow>;
   speed: Speed;
   paused: boolean;
+  finished: boolean;
+  setPlaying: (playing: boolean) => void;
   onFinished: () => void;
 }) {
-  const rowIds = row.map((r) => r.id);
-  // The room's limit from the content, not how long this stored fight lasted (that would spoil it).
-  const maxRounds = roomMaxRounds(room.foe.id);
-  const none = useMemo(() => mineIds([]), []);
-  // The banner shows for a moment with the room standing behind it, then the fight starts. While
-  // paused it waits.
+  // The banner shows for a moment with the room standing behind it, then the fight starts. While paused it waits.
   const [banner, setBanner] = useState(true);
   const arena = useRef<HTMLDivElement>(null);
   const reduced = usePrefersReducedMotion();
-  const pb = usePlayback({
-    events: room.events,
-    rowIds,
-    bossId: room.foe.id,
-    rounds: maxRounds,
-    introMs: INTRO_REPLAY_MS,
-    speed,
-    autoplay: false,
-  });
-  const { setPlaying, finished } = pb;
 
   useEffect(() => {
     if (!banner || paused) return undefined;
@@ -304,6 +296,62 @@ function RoomFight({
     };
   }, [finished, paused, speed]);
 
+  const overlay = banner ? (
+    <RoomBanner
+      // A new banner when playback resumes, so the outline starts again together with the wait.
+      key={paused ? 'paused' : 'playing'}
+      room={room}
+      total={total}
+      landmark={landmark}
+      ms={atSpeed(ROOM_CARD_MS, speed)}
+      paused={paused}
+    />
+  ) : null;
+  return { arena, overlay, banner };
+}
+
+function RoomFight({
+  room,
+  total,
+  landmark,
+  row,
+  speed,
+  paused,
+  onFinished,
+}: {
+  room: DungeonReplayRoomV1;
+  total: number;
+  landmark: boolean;
+  row: ReturnType<typeof roomStageRow>;
+  speed: Speed;
+  paused: boolean;
+  onFinished: () => void;
+}) {
+  const rowIds = row.map((r) => r.id);
+  // The room's limit from the content, not how long this stored fight lasted (that would spoil it).
+  const maxRounds = roomMaxRounds(room.foe.id);
+  const none = useMemo(() => mineIds([]), []);
+  const pb = usePlayback({
+    events: room.events,
+    rowIds,
+    bossId: room.foe.id,
+    rounds: maxRounds,
+    introMs: INTRO_REPLAY_MS,
+    speed,
+    autoplay: false,
+  });
+  const { finished } = pb;
+  const { arena, overlay, banner } = useRoomRhythm({
+    room,
+    total,
+    landmark,
+    speed,
+    paused,
+    finished,
+    setPlaying: pb.setPlaying,
+    onFinished,
+  });
+
   const logRef = useRef<HTMLOListElement>(null);
   useEffect(() => {
     const el = logRef.current;
@@ -332,19 +380,7 @@ function RoomFight({
           place={roomPlaceLine(room, total)}
           modifiers={[room.modifier]}
           addedGimmicks={modifierGimmicks(room, landmark)}
-          overlay={
-            banner ? (
-              <RoomBanner
-                // A new banner when playback resumes, so the outline starts again together with the wait.
-                key={paused ? 'paused' : 'playing'}
-                room={room}
-                total={total}
-                landmark={landmark}
-                ms={atSpeed(ROOM_CARD_MS, speed)}
-                paused={paused}
-              />
-            ) : null
-          }
+          overlay={overlay}
         />
       </div>
       <LiveRegion>{banner ? view.spoken : ''}</LiveRegion>
@@ -395,9 +431,6 @@ function RoomFightV2({
       ),
     [fight, room.events],
   );
-  const [banner, setBanner] = useState(true);
-  const arena = useRef<HTMLDivElement>(null);
-  const reduced = usePrefersReducedMotion();
   const playback = usePlaybackV2({
     model,
     events: room.events,
@@ -408,54 +441,17 @@ function RoomFightV2({
     mode: 'replay',
     autoplay: false,
   });
-  const { setPlaying, finished } = playback;
-
-  useEffect(() => {
-    if (!banner || paused) return undefined;
-    const timer = setTimeout(
-      () => {
-        setBanner(false);
-      },
-      atSpeed(ROOM_CARD_MS, speed),
-    );
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [banner, speed, paused]);
-
-  // The run's own screen is taller than the screen and was scrolled: when a room opens, bring its arena to the top.
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      arena.current?.scrollIntoView(fightScroll(reduced));
-    });
-    return () => {
-      cancelAnimationFrame(frame);
-    };
-  }, []);
-
-  // When the banner goes and the fight starts, the arena must be in view.
-  useEffect(() => {
-    if (banner) return;
-    const el = arena.current;
-    if (el !== null && arenaOutOfView(el.getBoundingClientRect(), window.innerHeight)) {
-      el.scrollIntoView(fightScroll(reduced));
-    }
-  }, [banner]);
-
-  // Pausing stops the beats where they are; playing again continues from the same step.
-  useEffect(() => {
-    if (finished) return;
-    setPlaying(!paused && !banner);
-  }, [paused, banner, finished]);
-
-  // Once the last beat has played, the final state rests for a moment and the run moves on.
-  useEffect(() => {
-    if (!finished || paused) return undefined;
-    const timer = setTimeout(onFinished, atSpeed(ROOM_END_MS, speed));
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [finished, paused, speed]);
+  const { finished } = playback;
+  const { arena, overlay, banner } = useRoomRhythm({
+    room,
+    total,
+    landmark,
+    speed,
+    paused,
+    finished,
+    setPlaying: playback.setPlaying,
+    onFinished,
+  });
 
   const logRef = useRef<HTMLOListElement>(null);
   useEffect(() => {
@@ -481,19 +477,7 @@ function RoomFightV2({
           rounds={fight.rounds}
           single
           ticks={[]}
-          overlay={
-            banner ? (
-              <RoomBanner
-                // A new banner when playback resumes, so the outline starts again together with the wait.
-                key={paused ? 'paused' : 'playing'}
-                room={room}
-                total={total}
-                landmark={landmark}
-                ms={atSpeed(ROOM_CARD_MS, speed)}
-                paused={paused}
-              />
-            ) : null
-          }
+          overlay={overlay}
         />
       </div>
       <LiveRegion>{banner ? view.spoken : ''}</LiveRegion>

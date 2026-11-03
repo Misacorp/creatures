@@ -268,7 +268,7 @@ function RoomLog({ rows }: { rows: readonly RoomLogRow[] }) {
           <span class="rp-name" aria-hidden="true">
             {row.name}
           </span>
-          {row.foe !== null && (
+          {row.foe !== null && row.foe.modifierName !== '' && (
             <span class="rp-mod muted" aria-hidden="true">
               {row.foe.modifierName}
             </span>
@@ -318,9 +318,11 @@ function RoomStrip({ rooms, path }: { rooms: readonly StripRoom[]; path: boolean
               <span class="rp-name" aria-hidden="true">
                 {room.foeName}
               </span>
-              <span class="rp-mod muted" aria-hidden="true">
-                {room.modifierName}
-              </span>
+              {room.modifierName !== '' && (
+                <span class="rp-mod muted" aria-hidden="true">
+                  {room.modifierName}
+                </span>
+              )}
               {room.foeHp !== null && (
                 <span class="rp-hp muted" aria-hidden="true">
                   {room.foeHp}

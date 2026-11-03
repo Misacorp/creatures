@@ -4,6 +4,22 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: Combat v2 client, the dungeon's screens: a v2 room on StageV2's single row, foe cards on the map, Out until the camp swaps it, the Knack on the team setup
+
+ID: `2026-11-03-combat-v2-client-the-dungeon-s` · Status: current
+
+**Decision.** Phase 4's dungeon screens (`combat/integration.md`, sections 6 and 9; the server side is `2026-11-03-daily-dungeon-on-combat-v2-phase`) follow the run's `rules: 2` (a v1 run draws what it always did). What they are:
+
+- **A room plays on `StageV2` in its single-row mode** (`single`: `ui/RaidBoard`'s single row, large tiles with the role, Knack and carried HP, no lane header, no owner badge, no ticks on the foe's bar, the turn strip "Team, Foe", R8.7) through the raid's fold (`fight-v2.ts`) and `usePlaybackV2`, under the same room banner, rests and Pause/2x/Skip as a v1 room (`DungeonPlayback`: `useRoomRhythm` is the one wait-and-rest for both rules). The room view (`DungeonReplayRoomV2`) carries what the fold needs beside the engine's events: `card` (the foe's card from `raid-v2-card.ts`'s `bossCardView`, the one builder the raid uses), `arena` (one row of three, the foe's round limit) and `knacks` (names by creature id); the row of the room includes a creature that came in out, in its place (greyed, `startHp` 0). The banner's one trick is the last move of the card (the signature at a landmark), named with its plain label and how often it comes. The replay of a run uses the same screen.
+- **The map shows the foe's moves where it showed its tricks:** a v2 run's map (`today.map`, the run's map and a finished run's route) sends each foe with its `card` (`dungeon-v2-view.ts`, `mapViewV2`), and the room's drawer draws `ui/MoveTile` for each move (a plain group, no press: `onToggle` is now optional) with the armour chip, in place of the v1 tricks. `DungeonToday.rules` says which rules a run started now will play (the flag, or the open run's own), so the preview map and the team setup know before the run exists.
+- **A room modifier that only gave the foe a v1 move (Thorns) does nothing on v2 and is not named anywhere:** not in the drawer, the banner, the results strip or its spoken lines (`modifierActs`, from the content's effects; a modifier the content does not know stays).
+- **A creature at 0 HP is "Out", not "Knocked out", on a v2 run:** greyed in the camp's row and the run strip with "Out" under the skull, and one line under the camp's row, "Out until the camp swaps them." The camp's Rest line already says it heals the standing. The descent card promises no revive on v2: the server sends `reviveBp: 0` and `descendLines` says "Your standing creatures catch their breath and heal 20% HP. Downed creatures stay out until a camp swaps them." (v1 keeps its revive line).
+- **The team setup gets the Knack part on a v2 run** (`DUNGEON_PARTS_V2`: the configurator's `knack`, drawn for a creature with v2 data), set before the run starts; a pick is saved as `where: 'raid'` (the server's analytics knows only `page` and `raid`).
+
+Not built: rule-card icons on the map's foe, the foe's rule cards in the drawer, escalation notches on the foe's bar, a captured fixture of the v2 dungeon payloads.
+
+**Reasoning.** The fold and the single row already existed, so the dungeon needed a mode and a view of the room, not a second stage. The card comes from the builder the raid's boss card uses, so a foe's move reads the same on the map, the banner and the stage. A modifier that does nothing must not be shown (a player cannot reason about a rule that is not there), and the content's own effect list says which those are, so no id is hard-coded. "Out" is the plain word for a state that no longer passes within the run. Sending `reviveBp: 0` keeps the descent's words true without a second field.
+
 ## 2026-11-03: Combat v2 client, third part: fight playback, the replay, the live finale and the results
 
 ID: `2026-11-03-combat-v2-client-third-part-fight` · Status: current

@@ -510,7 +510,10 @@ describe('the descent card and the descent on v2', () => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
         const { shown, down } = await atDescentWithFallen(ctx, p);
         expect(shown.rules).toBeUndefined();
-        expect(shown.pending).toMatchObject({ kind: 'descend', reviveBp: RULES.dungeon.undercroft.reviveBp });
+        expect(shown.pending).toMatchObject({
+          kind: 'descend',
+          reviveBp: RULES.dungeon.undercroft.reviveBp,
+        });
         const res = await p.act(shown, { type: 'descend' });
         expect(res.status, JSON.stringify(res.body)).toBe(200);
         expect(res.body.state.team.find((m) => m.id === down)?.hp).toBeGreaterThan(0);

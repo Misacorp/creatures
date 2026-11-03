@@ -67,6 +67,12 @@ const DUNGEON_PARTS: ConfiguratorParts = {
 };
 
 /**
+ * On a run of combat v2 the Knack is part of what a creature fights with (finale abilities are gone): the picker is on the card, set
+ * before the run starts. The part draws only for a creature that has v2 data, so nothing else changes.
+ */
+const DUNGEON_PARTS_V2: ConfiguratorParts = { ...DUNGEON_PARTS, knack: true };
+
+/**
  * The pre-run screen: one card (`DungeonPrerun`) with the title and streak, the three rooms and the
  * day's modifiers, the depth track, then the team on the Raid Roster's board and the Enter button
  * (or, instead of the card's team, the reason a run is not possible). The
@@ -221,7 +227,7 @@ export function DungeonSetup({
               state={configure.state}
               gear={configure.gear}
               busy={configure.busy}
-              parts={DUNGEON_PARTS}
+              parts={today.rules === 2 ? DUNGEON_PARTS_V2 : DUNGEON_PARTS}
               actions={configure.actions}
               buttons={[
                 {

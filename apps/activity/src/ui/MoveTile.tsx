@@ -21,7 +21,8 @@ interface MoveTileProps {
   lit: readonly number[] | null;
   /** The move is the one tapped: its slots light on the board too. */
   selected: boolean;
-  onToggle: () => void;
+  /** Absent: a plain tile nothing can be pressed on (the dungeon map's drawer: there is no board to light). */
+  onToggle?: () => void;
 }
 
 /** "every 3 rounds" in few words, for the tile and for a screen reader. */
@@ -39,14 +40,9 @@ export function MoveTile({ move, arena, lit, selected, onToggle }: MoveTileProps
   const hits = new Set(lit ?? []);
   const glyphId = moveGlyphId(move);
   const name = `${move.name}, ${move.label}, ${everyText(move.every)}${move.windUp ? ', Wind-up' : ''}`;
-  return (
-    <button
-      type="button"
-      class={`move-tile${selected ? ' selected' : ''}${move.later ? ' later' : ''}`}
-      aria-pressed={selected}
-      aria-label={name}
-      onClick={onToggle}
-    >
+  const classes = `move-tile${selected ? ' selected' : ''}${move.later ? ' later' : ''}`;
+  const inside = (
+    <>
       <span
         class={`move-arena${lit === null ? ' unaimed' : ''}`}
         ref={cssVars({ '--cols': String(arena.cols), '--rows': String(arena.rows) })}
@@ -78,6 +74,21 @@ export function MoveTile({ move, arena, lit, selected, onToggle }: MoveTileProps
       <span class="move-label" aria-hidden="true">
         {move.label}
       </span>
+    </>
+  );
+  return onToggle === undefined ? (
+    <div class={classes} role="group" aria-label={name}>
+      {inside}
+    </div>
+  ) : (
+    <button
+      type="button"
+      class={classes}
+      aria-pressed={selected}
+      aria-label={name}
+      onClick={onToggle}
+    >
+      {inside}
     </button>
   );
 }

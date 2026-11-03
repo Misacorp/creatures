@@ -43,7 +43,9 @@ import { packBadges } from './dungeon-run';
 import { keepsakeGlyph } from './dungeon-text';
 import { FindItems } from './ui/FindItem';
 import { essenceCount, partBadge } from './count-items';
-import { modifierIcon } from './dungeon-rooms';
+import { modifierActs, modifierIcon } from './dungeon-rooms';
+import { ArmourChip } from './BossCardV2';
+import { MoveTile } from './ui/MoveTile';
 import { roomMoves } from './dungeon-playback';
 import type {
   DungeonKeepsakeView,
@@ -391,8 +393,13 @@ function FoeBody({
   const foe = node.foe;
   if (foe === undefined) return null;
   const art = bossArt(foe.id);
-  const moves = roomMoves({ kind: foe.kind, foe }, landmark);
-  const modifier = node.modifier;
+  // A run of combat v2 sends the foe's card: its move tiles stand where the v1 tricks do, and a modifier that does nothing there is not named.
+  const card = foe.card;
+  const moves = card === undefined ? roomMoves({ kind: foe.kind, foe }, landmark) : [];
+  const modifier =
+    node.modifier !== undefined && modifierActs(node.modifier, card === undefined ? undefined : 2)
+      ? node.modifier
+      : undefined;
   // A room a broken Sealed Vault marked fights as an epic fight; once fought, its log entry says so (the mark is gone).
   const marks: readonly RoomMark[] = node.marks ?? (entry?.sealed === true ? [SEALED_MARK] : []);
   const sealed = marks.some((m) => m.kind === SEALED_MARK.kind);
@@ -427,6 +434,7 @@ function FoeBody({
               </Tag>
             )}
             <ElementChip element={foe.element} context="boss" />
+            {card !== undefined && card.armour > 0 && <ArmourChip armour={card.armour} />}
             {entry !== undefined && (
               <Tag kind="badge" tone={entry.cleared ? 'good' : 'bad'}>
                 {fightResultWord(entry)}
@@ -488,7 +496,21 @@ function FoeBody({
         <p class="dnd-line dnd-descend">{DESCEND_LINE}</p>
       )}
       {children}
-      {moves.length === 0 ? (
+      {card !== undefined &&
+        (card.moves.length === 0 ? (
+          <p class="dnd-trick">
+            <span class="muted">{NO_TRICK_LINE}</span>
+          </p>
+        ) : (
+          <ul class="boss-moves" aria-label="Moves">
+            {card.moves.map((move) => (
+              <li key={move.id}>
+                <MoveTile move={move} arena={{ rows: 1, cols: 3 }} lit={null} selected={false} />
+              </li>
+            ))}
+          </ul>
+        ))}
+      {card !== undefined ? null : moves.length === 0 ? (
         <p class="dnd-trick">
           <span class="muted">{NO_TRICK_LINE}</span>
         </p>

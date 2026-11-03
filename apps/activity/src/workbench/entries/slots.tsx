@@ -7,6 +7,7 @@ import { CreatureConfigurator } from '../../CreatureConfigurator';
 import type { CardActions } from '../../CreaturePage';
 import { teamSample } from '../../creature-page/team-sample';
 import { sampleSaveKnack, withV2 } from '../../creature-page/v2-sample';
+import { mapV2 } from '../dungeon-v2-sample';
 import stateFixture from '../../fixtures/collection-state.json';
 import todayFixture from '../../fixtures/dungeon-today-map.json';
 import { parseGameState, type Creature } from '../../api';
@@ -191,8 +192,10 @@ const dungeonSetup: Entry = {
     busy: { kind: 'toggle' },
     map: { kind: 'toggle' },
     configure: { kind: 'toggle' },
+    rules: { kind: 'select', options: ['combat v1', 'combat v2'] },
   },
   defaults: {
+    rules: 'combat v1',
     owned: 6,
     placed: 3,
     streak: 3,
@@ -217,10 +220,14 @@ const dungeonSetup: Entry = {
       name: 'Getting the team ready (tap a creature for its configurator)',
       props: { configure: true },
     },
+    {
+      name: 'Combat v2: getting the team ready, with the Knack part (tap a creature, then its Knack)',
+      props: { configure: true, rules: 'combat v2' },
+    },
   ],
   render: (p) =>
     bool(p, 'configure') ? (
-      <ConfigureSetupDemo />
+      <ConfigureSetupDemo key={str(p, 'rules')} v2={str(p, 'rules') === 'combat v2'} />
     ) : (
       <SetupDemo
         key={`${String(num(p, 'owned'))}-${String(num(p, 'placed'))}-${String(num(p, 'streak'))}-${String(num(p, 'depth'))}-${String(bool(p, 'map'))}`}
@@ -346,18 +353,34 @@ const creatureConfigurator: Entry = {
 };
 
 /** The pre-run card with the team's configurator: tap a creature of the board. */
-function ConfigureSetupDemo() {
+function ConfigureSetupDemo({ v2 }: { v2: boolean }) {
   const scene = useMemo(teamSample, []);
-  const today = parseDungeonToday({
+  // On a run of combat v2 the server also sends each creature's Knack, talents and stats (the flag is on), and the card shows the Knack part.
+  const [knacks, setKnacks] = useState<Readonly<Record<string, string | null>>>({});
+  const creatures = useMemo(
+    () =>
+      v2
+        ? scene.creatures.map((c) => {
+            const dressed = withV2(c, { knack: 0, learned: [0, 1], golden: [1] });
+            const saved = knacks[c.id];
+            return saved === undefined ? dressed : sampleSaveKnack(dressed, saved);
+          })
+        : scene.creatures,
+    [scene, v2, knacks],
+  );
+  const parsed = parseDungeonToday({
     ...todayFixture,
+    ...(v2 ? { rules: 2 } : {}),
     streak: 3,
     depth: 6,
     lastTeam: scene.team.map((c) => c.id),
   });
+  // The map of a v2 run carries each foe's card.
+  const today = v2 && parsed.map != null ? { ...parsed, map: mapV2(parsed.map, 6) } : parsed;
   return (
     <DungeonSetup
       today={today}
-      creatures={scene.creatures}
+      creatures={creatures}
       bait={40}
       busy={false}
       error={null}
@@ -369,7 +392,13 @@ function ConfigureSetupDemo() {
         state: scene.state,
         gear: scene.gear,
         busy: false,
-        actions: NO_ACTIONS,
+        actions: {
+          ...NO_ACTIONS,
+          onKnack: (picked, knack) => {
+            setKnacks((now) => ({ ...now, [picked.id]: knack }));
+            return Promise.resolve('saved');
+          },
+        },
         onAnswerCatch: noop,
       }}
     />

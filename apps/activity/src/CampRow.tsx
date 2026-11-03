@@ -13,6 +13,8 @@ interface Props {
   disabled: boolean;
   /** The row in its new order (the ids, left to right). */
   onChange: (order: string[]) => void;
+  /** 2 on a run of combat v2: a creature at 0 HP reads "Out" (it stays out until the camp swaps it). */
+  rules?: 2 | undefined;
 }
 
 /**
@@ -23,7 +25,7 @@ interface Props {
  * (role, element, what it does in this order and its gear, locked). The server checks the order again
  * when the choice is sent; this only builds it.
  */
-export function CampRow({ creatures, disabled, onChange }: Props) {
+export function CampRow({ creatures, disabled, onChange, rules }: Props) {
   const popovers = usePopoverHost();
   const ids = creatures.map((c) => c.id);
   const slots = [ids[0] ?? null, ids[1] ?? null, ids[2] ?? null] as const satisfies Slots;
@@ -56,7 +58,7 @@ export function CampRow({ creatures, disabled, onChange }: Props) {
     }
     return {
       index,
-      ariaLabel: campSlotLabel(creature, index),
+      ariaLabel: campSlotLabel(creature, index, rules),
       occupant: {
         species: creature.species,
         name: creature.name,
@@ -64,7 +66,7 @@ export function CampRow({ creatures, disabled, onChange }: Props) {
         ownId: creature.id,
         mine: true,
         element: creature.element,
-        hp: campHp(creature.hp),
+        hp: campHp(creature.hp, rules),
       },
     };
   };

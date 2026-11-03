@@ -28,7 +28,10 @@ export interface RoomFightV2 {
  * The room as the stage takes it. `row` is the whole row that stood in the room, a knocked-out creature included (it is in its place
  * with 0 HP, greyed, and its place does not close up); the events name a creature by its id.
  */
-export function roomFightV2(room: DungeonReplayRoomV2, row: readonly ReplayRowEntry[]): RoomFightV2 {
+export function roomFightV2(
+  room: DungeonReplayRoomV2,
+  row: readonly ReplayRowEntry[],
+): RoomFightV2 {
   const foe = roomBoss(room);
   const fighters = [...row]
     .sort((a, b) => a.position - b.position)

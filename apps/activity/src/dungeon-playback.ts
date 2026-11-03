@@ -534,7 +534,8 @@ export function roomIntroView(
     modifierDescription: room.modifier.description,
     modifierShown,
     trick,
-    spoken: `${where}${boss ? ', floor boss' : ''}${elite ? ', elite' : ''}${epic ? ', epic fight' : ''}: ${foeName}. ${trick === null ? '' : `${trick.name}: ${trick.line}. `}${modifierShown ? `${room.modifier.name}: ${room.modifier.description}` : ''}`.trim(),
+    spoken:
+      `${where}${boss ? ', floor boss' : ''}${elite ? ', elite' : ''}${epic ? ', epic fight' : ''}: ${foeName}. ${trick === null ? '' : `${trick.name}: ${trick.line}. `}${modifierShown ? `${room.modifier.name}: ${room.modifier.description}` : ''}`.trim(),
   };
 }
 

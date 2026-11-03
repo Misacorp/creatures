@@ -410,6 +410,7 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-03 Combat v2 client, the dungeon's screens: a v2 room on StageV2's single row, foe cards on the map, Out until the camp swaps it, the Knack on the team setup
 - 2026-11-03 Combat v2 client, third part: fight playback, the replay, the live finale and the results
 - 2026-11-03 Combat v2 client, second part: the raid tab before and between stages
 - 2026-11-03 Combat v2 How to play: six sections beside the shipped set, keyword help from one glossary id
