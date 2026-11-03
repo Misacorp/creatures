@@ -13,6 +13,7 @@ import type { GearItem } from '../../gear-types';
 import { MAP_SPOTS } from '../../sprites/world-map-art';
 import { ScrollHint } from '../../ui/ScrollHint';
 import { useSize } from '../valley/parts';
+import { sceneScale } from '../valley/scale';
 import type { Cast, Story } from './highlights';
 import { StoryText } from './Gazette';
 import { stageOf } from './place-stories';
@@ -26,15 +27,15 @@ export interface Waiting {
   items: readonly GearItem[];
 }
 
-/** The scale of the stage on a phone (3) and on a wide window (4), as a place's own sprites. */
-export const stageScale = (width: number): number => (width >= 400 ? 4 : 3);
+/** The scale of the stage: the place's own (`sceneScale`, one pixel size on the whole screen). */
+export const stageScale = sceneScale;
 
 /** The creatures of the stories, standing on the top edge of the clipping, centred. */
-function Stage({ waiting }: { waiting: Waiting }) {
+function Stage({ waiting, scale }: { waiting: Waiting; scale?: number | undefined }) {
   const ref = useRef<HTMLDivElement>(null);
   const size = useSize(ref);
   const stage = stageOf(waiting.stories);
-  const s = stageScale(size.width);
+  const s = scale ?? stageScale(size.width);
   if (stage.actors.length === 0) return null;
   return (
     <div ref={ref} class="wb-clip-stage">
@@ -55,12 +56,21 @@ function Stage({ waiting }: { waiting: Waiting }) {
  * itself when a place has more than fit. `stage` stands the creatures on its top edge (the Signpost has none:
  * its scouts stand on the map).
  */
-export function StoryPlate({ waiting, stage = true }: { waiting: Waiting; stage?: boolean }) {
+export function StoryPlate({
+  waiting,
+  stage = true,
+  scale,
+}: {
+  waiting: Waiting;
+  stage?: boolean;
+  /** The screen's pixel scale (`sceneScale`); the creatures on the clipping stand at it. */
+  scale?: number;
+}) {
   if (waiting.stories.length === 0) return null;
   return (
     <GearItemsContext.Provider value={waiting.items}>
       <div class="wb-clip-wrap">
-        {stage && <Stage waiting={waiting} />}
+        {stage && <Stage waiting={waiting} scale={scale} />}
         <section class="wb-clip" aria-label="Waiting here">
           <ScrollHint contentKey={waiting.stories.map((s) => s.id).join()} class="wb-clip-scroll">
             <ul class="wb-clip-list">

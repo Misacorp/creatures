@@ -57,6 +57,23 @@
     0 calc(var(--px) * 2) 0 0 rgb(var(--ink-rgb) / 0.6);
 }
 
+/* The calm line of a place where nothing needs you (`PinnedAct`): paper with a check mark, news and not a button. */
+.pv-calm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3.5rem;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--paper, #f4ead0);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.2;
+  text-align: center;
+}
+
 /* A hint in place of a button that cannot be pressed ("Pick a place on the map"): a solid plate, never see-through. */
 .pv-act .action-btn:disabled {
   background: var(--dusk);

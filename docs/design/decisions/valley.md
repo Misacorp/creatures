@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: Place scenes: one pixel scale per screen, the poster as a switchable sky strip
+
+ID: `2026-11-03-place-scenes-one-pixel-scale-per` · Status: current
+
+**Decision.** Inside a place every sprite is drawn at one whole-pixel scale (`sceneScale`: 3 under 700 px wide, 4 from 700): the poster, the place's art, the grass, the scene's creatures, the story clipping's and the tray's. The poster is a sky strip edge to edge by default (mirrored copies to both edges, its own time of day); `&poster=framed` and `&poster=none` show the other two, pending Misa's answer to Q50. The Places list says each place's state; a place's pinned line is its next step or, when nothing needs you, a calm line (`PinnedAct`); the tray shows the player's mastery of the place's work (SAMPLE data until posts exist); edge chips never sit on a place.
+
+**Reasoning.** The panel (2026-11-03) found three pixel sizes on one screen and a framed poster that clashed with the scene. A place's art cannot be drawn larger than the creatures' pixel without breaking the one-size rule, so it fills the screen by its size times the scale and a yard around it, not by upscaling. Sky is the lead's pick until Misa decides.
+
 ## 2026-11-03: The visitor leaves when Sunday ends, after the finale
 
 ID: `2026-11-03-the-visitor-leaves-when-sunday-ends` · Status: current

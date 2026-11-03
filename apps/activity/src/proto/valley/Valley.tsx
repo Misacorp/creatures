@@ -39,8 +39,10 @@ import { CreatureSprite, Glyph, isStill } from './parts';
 import { CaveScene, FairScene, PaddockScene } from './PeekScenes';
 import { SchoolScene } from './SchoolScene';
 import { SignpostScene, type SendPicks } from './SignpostScene';
+import { masteryOf, workOf } from './mastery';
 import { Tray } from './Tray';
 import { VisitorScene } from './VisitorScene';
+import { placeStates } from './place-state';
 import { placesFor, trayBadge, trayFor } from './tray-state';
 import { placeOf, type PlaceId } from './valley-art';
 import {
@@ -446,6 +448,7 @@ export function Valley({
   }
 
   const bubbles = welcome === undefined ? bubblesOf(world) : markerBubbles(markers);
+  const states = placeStates(world, look);
   const where = view.scene === 'valley' ? null : placeOf(view.scene);
   return (
     <PopoverHost onOpenHowTo={() => undefined}>
@@ -499,6 +502,11 @@ export function Valley({
           held={view.held}
           onPick={onTray}
           label={where === null ? 'Your creatures' : `Your creatures for the ${where.name}`}
+          inPlace={where !== null}
+          mastery={(c) => {
+            const kind = workOf(view.scene);
+            return kind === null ? null : { step: masteryOf(c, kind), kind };
+          }}
         />
         {welcome !== undefined && (
           <WelcomeSheet
@@ -538,7 +546,7 @@ export function Valley({
                   >
                     <Glyph id={place.glyph} scale={3} />
                     <span class="pv-hatch-name pix">{place.name}</span>
-                    <span class="pv-hatch-what">{bubble?.spoken ?? place.what}</span>
+                    <span class="pv-hatch-what">{bubble?.spoken ?? states[id]}</span>
                   </button>
                 </li>
               );

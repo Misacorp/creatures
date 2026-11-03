@@ -88,7 +88,7 @@ export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: Pl
         }
       >
         {(g) => {
-          const spot = glowSceneSpots(g);
+          const spot = glowSceneSpots(g, name);
           const n = pupils.length;
           return (
             <>

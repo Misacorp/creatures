@@ -48,7 +48,7 @@ import { DEFAULT_LOOK, type ValleyLook } from './valley-places';
 import {
   bubblesOf,
   edgeArrows,
-  stackTabs,
+  freeTabs,
   fitValley,
   hopOf,
   newWalker,
@@ -190,7 +190,11 @@ export function ValleyMap({
 
   // An edge tab for every place out of view (not only those that need you), stacked so none overlap.
   const arrows = edgeArrows(order, scrollLeft, size.width);
-  const tabY = stackTabs(arrows, 26);
+  const needy = new Set(bubbles.map((b) => b.place));
+  const tabY = freeTabs(arrows, scrollLeft, size.width, undefined, undefined, needy, {
+    from: -fit.top / s,
+    to: (size.height - fit.top) / s,
+  });
 
   const stageVars = cssVars({
     '--w': `${String(drawing.width * s)}px`,
@@ -291,33 +295,32 @@ export function ValleyMap({
           </ul>
         </div>
       </div>
-      {arrows.map((a) => {
-        const bubble = bubbleAt(a.place);
-        const place = placeOf(a.place);
-        return (
-          <button
-            key={a.place}
-            type="button"
-            class={`pv-edge pv-edge-${a.side}${bubble === undefined ? '' : ' needs'}`}
-            aria-label={`${placeLabel(a.place, bubble)}. Off screen, to the ${a.side === 'left' ? 'west' : 'east'}`}
-            ref={cssVars({ '--ey': `${String(Y(tabY.get(a.place) ?? a.y) + fit.top)}px` })}
-            onClick={() => {
-              goTo(a.place);
-            }}
-          >
-            <span class="pv-edge-head" aria-hidden="true" />
-            <Glyph id={place.glyph} scale={2} />
-            <span class="pv-edge-name pix" aria-hidden="true">
-              {place.name}
-            </span>
-            {bubble !== undefined && (
-              <span class="pv-edge-bang pix" aria-hidden="true">
-                !
-              </span>
-            )}
-          </button>
-        );
-      })}
+      {arrows
+        .filter((a) => tabY.has(a.place))
+        .map((a) => {
+          const bubble = bubbleAt(a.place);
+          const place = placeOf(a.place);
+          return (
+            <button
+              key={a.place}
+              type="button"
+              class={`pv-edge pv-edge-${a.side}${bubble === undefined ? '' : ' needs'}`}
+              aria-label={`${placeLabel(a.place, bubble)}. Off screen, to the ${a.side === 'left' ? 'west' : 'east'}`}
+              ref={cssVars({ '--ey': `${String(Y(tabY.get(a.place) ?? a.y) + fit.top)}px` })}
+              onClick={() => {
+                goTo(a.place);
+              }}
+            >
+              <span class="pv-edge-head" aria-hidden="true" />
+              <Glyph id={place.glyph} scale={2} />
+              {bubble !== undefined && (
+                <span class="pv-edge-bang pix" aria-hidden="true">
+                  !
+                </span>
+              )}
+            </button>
+          );
+        })}
     </div>
   );
 }

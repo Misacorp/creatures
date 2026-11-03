@@ -18,7 +18,9 @@ import { creatureSpriteOrFallback } from '../../sprites/creature-sprites';
 import { PACK_ART } from '../../sprites/pack-art';
 import { GameIcon } from '../../ui/GameIcon';
 import type { ProtoWorld } from '../world';
-import { UpArrow } from './parts';
+import { MASTERY_MAX, masteryWords, type WorkKind } from './mastery';
+import { UpArrow, useSize } from './parts';
+import { sceneScale } from './scale';
 import { trayBadge, type TrayBadge } from './tray-state';
 
 /** The mark on a creature: one shape per state; nothing for a free one. */
@@ -69,6 +71,23 @@ function Mark({ badge }: { badge: TrayBadge }) {
   }
 }
 
+/** A creature's mastery of the place's work: its step (0 to 3) in that kind of work. */
+export interface TrayMastery {
+  step: number;
+  kind: WorkKind;
+}
+
+/** Three pips under the level: a filled one for each step reached (hollow ones are the steps to come). */
+function Pips({ step }: { step: number }) {
+  return (
+    <span class="pv-mastery" aria-hidden="true">
+      {Array.from({ length: MASTERY_MAX }, (_, i) => (
+        <span key={i} class={i < step ? 'pv-mastery-pip is-on' : 'pv-mastery-pip'} />
+      ))}
+    </span>
+  );
+}
+
 export function TrayCreature({
   creature,
   world,
@@ -76,6 +95,8 @@ export function TrayCreature({
   dimWord,
   index,
   onPick,
+  scale = 3,
+  mastery = null,
 }: {
   creature: Creature;
   world: ProtoWorld;
@@ -84,6 +105,10 @@ export function TrayCreature({
   dimWord: string | null;
   index: number;
   onPick: () => void;
+  /** The screen's pixel scale (the place's own when inside one). */
+  scale?: number;
+  /** Its mastery of the place's work, when the place has work. */
+  mastery?: TrayMastery | null;
 }) {
   const badge = trayBadge(world, creature);
   const sprite = creatureSpriteOrFallback(creature.species);
@@ -97,7 +122,7 @@ export function TrayCreature({
       class={classes.join(' ')}
       data-creature={creature.id}
       aria-pressed={held}
-      aria-label={dimWord === null ? badge.label : `${badge.label} Not here: ${dimWord}.`}
+      aria-label={`${badge.label}${mastery === null ? '' : ` ${masteryWords(mastery.step, mastery.kind)}.`}${dimWord === null ? '' : ` Not here: ${dimWord}.`}`}
       onClick={onPick}
       ref={cssVars({ '--i': index })}
     >
@@ -107,7 +132,7 @@ export function TrayCreature({
       <span class="pv-mon-body">
         <Sprite
           sprite={sprite}
-          scale={3}
+          scale={scale}
           class="pv-mon-sprite"
           {...(away ? { palette: silhouettePalette(sprite) } : {})}
         />
@@ -117,7 +142,10 @@ export function TrayCreature({
           </span>
         )}
       </span>
-      <span class="pv-mon-lv pix">Lv {creature.level}</span>
+      <span class="pv-mon-lv pix">
+        Lv {creature.level}
+        {mastery !== null && <Pips step={mastery.step} />}
+      </span>
       {dimWord !== null && <span class="pv-mon-word pix">{dimWord}</span>}
     </button>
   );
@@ -130,6 +158,8 @@ export function Tray({
   dim,
   onPick,
   label,
+  inPlace = false,
+  mastery,
 }: {
   world: ProtoWorld;
   creatures: readonly Creature[];
@@ -138,8 +168,15 @@ export function Tray({
   dim?: ((c: Creature) => string | null) | undefined;
   onPick: (id: string) => void;
   label: string;
+  /** Inside a place: the creatures are drawn at the place's pixel scale, one size on the whole screen. */
+  inPlace?: boolean;
+  /** Each creature's mastery of the place's work (inside a place that has work); null for none. */
+  mastery?: ((c: Creature) => TrayMastery | null) | undefined;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const size = useSize(sectionRef);
+  const scale = inPlace ? sceneScale(size.width) : 3;
   const [more, setMore] = useState(false);
   useEffect(() => {
     const el = ref.current;
@@ -157,7 +194,11 @@ export function Tray({
     };
   }, [creatures.length]);
   return (
-    <section class={`pv-tray${more ? ' has-more' : ''}`} aria-label={label}>
+    <section
+      ref={sectionRef}
+      class={`pv-tray${more ? ' has-more' : ''}${scale > 3 ? ' pv-tray-big' : ''}`}
+      aria-label={label}
+    >
       <div class="pv-tray-scroll" ref={ref}>
         <div class="pv-tray-grid">
           {creatures.map((c, i) => (
@@ -168,6 +209,8 @@ export function Tray({
               held={held === c.id}
               dimWord={dim?.(c) ?? null}
               index={i}
+              scale={scale}
+              mastery={mastery?.(c) ?? null}
               onPick={() => {
                 onPick(c.id);
               }}

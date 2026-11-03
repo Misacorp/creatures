@@ -26,6 +26,7 @@ import { FindBlueprint } from '../../ui/FindBlueprint';
 import { FindList } from '../../ui/FindRow';
 import { glowNameOf, glowSceneDraw, glowSceneSpots, type PlaceSceneProps } from './glow-scene-art';
 import { Glyph } from './parts';
+import { PinnedAct } from './PinnedAct';
 import { SceneFrame } from './SceneFrame';
 import { DEFAULT_LOOK } from './valley-places';
 import {
@@ -139,11 +140,13 @@ export function VisitorScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
                 setMode('reroll');
               }}
             />
-          ) : undefined
+          ) : (
+            <PinnedAct calm="Nothing to do here until Thursday" />
+          )
         }
       >
         {(g) => {
-          const y = g.Y(glowSceneSpots(g).below + 4);
+          const y = g.Y(glowSceneSpots(g, name).below + 4);
           if (!here) {
             return (
               <span

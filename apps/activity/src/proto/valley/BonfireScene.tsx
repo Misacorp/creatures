@@ -43,6 +43,7 @@ import {
 import './bonfire.css';
 import { glowNameOf, glowSceneDraw, glowSceneSpots, type PlaceSceneProps } from './glow-scene-art';
 import { At, CreatureSprite, Glyph, Pic, Plate, SpeechBubble, isStill } from './parts';
+import { PinnedAct } from './PinnedAct';
 import { SceneFrame } from './SceneFrame';
 import { DEFAULT_LOOK, GRAND_LEVEL } from './valley-places';
 
@@ -116,11 +117,13 @@ export function BonfireScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: P
                 setHearthOpen(true);
               }}
             />
-          ) : undefined
+          ) : (
+            <PinnedAct calm="The grand hearth is lit" />
+          )
         }
       >
         {(g) => {
-          const spot = glowSceneSpots(g);
+          const spot = glowSceneSpots(g, name);
           const px = (n: number): number => g.X(n);
           const py = (n: number): number => g.Y(n);
           const rowTop = spot.place.y;

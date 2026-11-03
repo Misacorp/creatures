@@ -18,8 +18,10 @@ import {
 import {
   bubblesOf,
   edgeArrows,
+  EDGE_CHIP,
   evolveInto,
   fitValley,
+  freeTabs,
   hopOf,
   maxScroll,
   newWalker,
@@ -38,7 +40,17 @@ import {
   weekdayNumber,
 } from './valley-logic';
 import { bonfireName, dimmed, glowSprite, nightColour, placePlacements } from './valley-places';
-import { glowNameOf, glowSceneDraw, posterSprite } from './glow-scene-art';
+import {
+  ART_SPOTS,
+  glowLayout,
+  glowNameOf,
+  glowSceneDraw,
+  posterModeOf,
+  posterSprite,
+  skyPlacements,
+} from './glow-scene-art';
+import { MASTERY_MAX, masteryOf, workOf } from './mastery';
+import { placeStates, visitorLine } from './place-state';
 
 describe('the valley art', () => {
   it('draws only valid sprites, with or without margins', () => {
@@ -416,5 +428,125 @@ describe('the week and the visitor', () => {
     expect(
       lookOf({ clock: clock(1), bonfireLevel: 3, params: { night: true, weekday: 5, bonfire: 1 } }),
     ).toEqual({ time: 'night', visitorHere: true, bonfireLevel: 1 });
+  });
+});
+
+describe('the place scenes: one scale, the poster in three modes, the layout for scene owners', () => {
+  const ALL = ['bonfire', 'bonfire-grand', 'school', 'visitor', 'visitor-away', 'market'] as const;
+
+  it('keeps every spot inside the art, centred across the scene, the same height in every mode', () => {
+    for (const width of [390, 1100]) {
+      const g = sceneGeometry(width, 700);
+      for (const name of ALL) {
+        const layout = glowLayout(g, name);
+        expect(layout.s).toBe(sceneScale(width));
+        expect(layout.art.y).toBe(g.top + 44);
+        expect(Math.abs(layout.art.x + layout.art.width / 2 - g.cx)).toBeLessThanOrEqual(1);
+        for (const [id, spot] of Object.entries(layout.spots)) {
+          const own = ART_SPOTS[name][id]!;
+          expect(own.x).toBeGreaterThanOrEqual(0);
+          expect(own.x).toBeLessThanOrEqual(layout.art.width);
+          expect(own.y).toBeGreaterThanOrEqual(0);
+          expect(own.y).toBeLessThanOrEqual(layout.art.height);
+          expect(spot).toEqual(layout.at(own.x, own.y));
+        }
+      }
+    }
+  });
+
+  it('reads the poster mode from the address, sky by default', () => {
+    expect(posterModeOf('#bonfire?step=1')).toBe('sky');
+    expect(posterModeOf('#valley?poster=framed')).toBe('framed');
+    expect(posterModeOf('#valley?step=1&poster=none&bare=1')).toBe('none');
+    expect(posterModeOf('#valley?poster=huge')).toBe('sky');
+  });
+
+  it('runs the sky strip edge to edge, mirrored copies meeting at every seam', () => {
+    const g = sceneGeometry(390, 700);
+    const copies = skyPlacements(posterSprite('school'), g).filter((p) => p.y === g.top);
+    const xs = copies.map((p) => p.x).sort((a, b) => a - b);
+    expect(xs[0]!).toBeLessThanOrEqual(0);
+    expect(xs[xs.length - 1]! + 64).toBeGreaterThanOrEqual(g.W);
+    for (let i = 1; i < xs.length; i += 1) expect(xs[i]! - xs[i - 1]!).toBe(64);
+    const sorted = [...copies].sort((a, b) => a.x - b.x);
+    for (let i = 1; i < sorted.length; i += 1) {
+      expect(sorted[i]!.sprite).not.toBe(sorted[i - 1]!.sprite);
+    }
+  });
+
+  it('draws the three modes differently and the day ground in the art’s own day grass', () => {
+    const g = sceneGeometry(390, 700);
+    const count = (poster: 'sky' | 'framed' | 'none') =>
+      glowSceneDraw({ name: 'school', time: 'day', poster })(g).length;
+    expect(count('none')).toBeLessThan(count('framed'));
+    expect(count('framed')).toBeLessThan(count('sky'));
+    const day = glowSceneDraw({ name: 'school', time: 'day', poster: 'none' })(g);
+    const night = glowSceneDraw({ name: 'school', time: 'night', poster: 'none' })(g);
+    expect(day[0]!.sprite.palette['c']).toBe('#467a4c');
+    expect(night[0]!.sprite.palette['c']).not.toBe('#467a4c');
+    for (const p of day) expect(() => parseSprite(p.sprite)).not.toThrow();
+  });
+
+  it('keeps edge chips off every place on a phone, at every scroll', () => {
+    const width = 390;
+    for (let scroll = 0; scroll <= maxScroll(width); scroll += 20) {
+      const arrows = edgeArrows(readingOrder(), scroll, width);
+      const ys = freeTabs(arrows, scroll, width);
+      for (const a of arrows) {
+        const placed = ys.get(a.place);
+        if (placed === undefined) continue;
+        const y = placed * 2;
+        const x0 = a.side === 'left' ? 0 : width - EDGE_CHIP.width;
+        for (const p of PLACES) {
+          const px = p.rect.x * 2 - scroll;
+          const overlapX = px + p.rect.width * 2 > x0 && px < x0 + EDGE_CHIP.width;
+          const overlapY = p.rect.y * 2 < y + 14 && (p.rect.y + p.rect.height) * 2 > y - 14;
+          if (overlapX && overlapY) expect([scroll, a.place, p.id, 'covered']).toEqual([]);
+        }
+      }
+    }
+  });
+});
+
+describe('the edge chips', () => {
+  it('give a place that needs you the free height before one that does not, and drop one with none', () => {
+    const arrows = edgeArrows(readingOrder(), 720, 390);
+    const all = freeTabs(arrows, 720, 390);
+    const needy = new Set([...all.keys()].slice(-1));
+    const first = freeTabs(arrows, 720, 390, undefined, undefined, needy);
+    for (const id of needy) expect(first.has(id)).toBe(true);
+  });
+});
+
+describe('the Places list and the tray’s mastery', () => {
+  it('says a state for every place, and the visitor’s as the week has it', () => {
+    const world = initialWorld();
+    const states = placeStates(world, { time: 'day', visitorHere: true, bonfireLevel: 1 });
+    for (const place of PLACES) expect(states[place.id].length).toBeGreaterThan(0);
+    expect(states.visitor).toBe('here until Sunday');
+    expect(visitorLine(false)).toBe('back Thursday');
+    expect(states.bonfire).toMatch(/^hearth: \d+ \/ \d+ stones$/);
+    const grown = placeStates(world, { time: 'day', visitorHere: false, bonfireLevel: 2 });
+    expect(grown.visitor).toBe('back Thursday');
+    expect(grown.bonfire).toMatch(/resting by the fire$/);
+  });
+
+  it('gives the same mastery step every time, 0 to 3, and only where a place has work', () => {
+    const c = { id: 'c-7', level: 14 };
+    expect(masteryOf(c, 'smithing')).toBe(masteryOf(c, 'smithing'));
+    for (const level of [1, 6, 12, 30]) {
+      const step = masteryOf({ id: 'x', level }, 'teaching');
+      expect(step).toBeGreaterThanOrEqual(0);
+      expect(step).toBeLessThanOrEqual(MASTERY_MAX);
+    }
+    expect(masteryOf({ id: 'x', level: 60 }, 'scouting')).toBeGreaterThanOrEqual(
+      masteryOf({ id: 'x', level: 1 }, 'scouting'),
+    );
+    expect(workOf('forge')).toBe('smithing');
+    expect(workOf('school')).toBe('teaching');
+    expect(workOf('signpost')).toBe('scouting');
+    expect(workOf('bonfire')).toBe('keeping');
+    expect(workOf('valley')).toBeNull();
+    expect(workOf('arena')).toBeNull();
   });
 });

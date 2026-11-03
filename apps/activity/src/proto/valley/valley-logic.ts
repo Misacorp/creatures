@@ -290,6 +290,65 @@ export function stackTabs(arrows: readonly EdgeArrow[], gap: number): Map<PlaceI
   return out;
 }
 
+/** An edge chip's size in CSS px: a flag with the place's glyph and, when it needs you, a "!" (no name; its label says it). */
+export const EDGE_CHIP = { width: 58, height: 28 } as const;
+
+/** Valley pixels above a place's rectangle its speech bubble takes, and below it its name plate. */
+const BUBBLE_ABOVE = 26;
+const PLATE_BELOW = 8;
+
+/**
+ * Where the edge chips sit (the middle of each, in valley pixels): the nearest height to its place's own that
+ * clears every place showing under the chip's column of the screen (its rectangle, its bubble and its plate)
+ * and the chips already set on that side. A chip never covers a place: a place already showing in the column
+ * (a corner of it in view) has no chip, since it can be tapped itself, and when no height is free the chip
+ * is left out (the Places list has every place). Places that need you are placed first.
+ */
+export function freeTabs(
+  arrows: readonly EdgeArrow[],
+  scrollLeft: number,
+  width: number,
+  scale = VALLEY_SCALE,
+  chip: { width: number; height: number } = EDGE_CHIP,
+  needy: ReadonlySet<PlaceId> = new Set(),
+  /** The valley pixel rows in view (a phone's tray hides the bottom ones); a chip stays inside them. */
+  seen: { from: number; to: number } = { from: 0, to: VALLEY_SIZE.height },
+): Map<PlaceId, number> {
+  const out = new Map<PlaceId, number>();
+  const half = chip.height / scale / 2;
+  for (const side of ['left', 'right'] as const) {
+    const column = side === 'left' ? [0, chip.width] : [width - chip.width, width];
+    const inColumn = (p: (typeof PLACES)[number]): boolean => {
+      const from = p.rect.x * scale - scrollLeft;
+      const to = (p.rect.x + p.rect.width) * scale - scrollLeft;
+      return to > (column[0] ?? 0) && from < (column[1] ?? 0);
+    };
+    const blocked = PLACES.filter(inColumn).map(
+      (p) => [p.rect.y - BUBBLE_ABOVE, p.rect.y + p.rect.height + PLATE_BELOW] as const,
+    );
+    const taken: number[] = [];
+    const mine = [...arrows]
+      .filter((x) => x.side === side && !inColumn(placeOf(x.place)))
+      .sort((p, q) => Number(needy.has(q.place)) - Number(needy.has(p.place)) || p.y - q.y);
+    for (const a of mine) {
+      let best: number | null = null;
+      for (
+        let y = Math.ceil(Math.max(half, seen.from + half));
+        y <= Math.min(VALLEY_SIZE.height, seen.to) - half;
+        y += 1
+      ) {
+        if (blocked.some(([top, bottom]) => y + half > top && y - half < bottom)) continue;
+        if (taken.some((t) => Math.abs(t - y) < half * 2)) continue;
+        if (best === null || Math.abs(y - a.y) < Math.abs(best - a.y)) best = y;
+      }
+      if (best === null) continue;
+      taken.push(best);
+      out.set(a.place, best);
+    }
+  }
+  return out;
+}
+
 /** The places in reading order (west to east, north to south): the list of buttons and the arrow keys. */
 export function readingOrder(): PlaceId[] {
   return [...PLACES].sort((a, b) => a.rect.x - b.rect.x || a.rect.y - b.rect.y).map((p) => p.id);

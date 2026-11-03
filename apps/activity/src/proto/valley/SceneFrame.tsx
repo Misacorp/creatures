@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef } from 'preact/hooks';
 import { cssVars } from '../../css-vars';
 import { paint } from './paint';
 import { useSize } from './parts';
+import { sceneScale } from './scale';
 import { StoryPlate, type Waiting } from '../welcome/PlaceStories';
 import type { PlaceId, Placement } from './valley-art';
 
@@ -28,10 +29,7 @@ export interface SceneGeometry {
   Y: (y: number) => number;
 }
 
-/** The world scale inside a place: 3 on a phone, 4 on a wide window. */
-export function sceneScale(width: number): number {
-  return width >= 700 ? 4 : 3;
-}
+export { sceneScale };
 
 /** The HUD's height (CSS px): scenes keep their buttons below it. */
 export const HUD_HEIGHT = 56;
@@ -116,7 +114,7 @@ export function SceneFrame({
       </div>
       {(hasAct || hasStories) && (
         <div class="pv-act">
-          {waiting !== undefined && <StoryPlate waiting={waiting} />}
+          {waiting !== undefined && <StoryPlate waiting={waiting} scale={g.s} />}
           {hasAct && act}
         </div>
       )}
