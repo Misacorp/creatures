@@ -412,6 +412,7 @@ Superseded: 1 entry (see the topic file).
 
 - 2026-11-03 Combat v2 client, third part: fight playback, the replay, the live finale and the results
 - 2026-11-03 Combat v2 client, second part: the raid tab before and between stages
+- 2026-11-03 Combat v2 How to play: six sections beside the shipped set, keyword help from one glossary id
 - 2026-11-02 Combat v2 client, first part: the Knack picker and the creature page follow the data
 - 2026-10-31 \[Misa\] The fight board shows worn gear, item detail does not
 - 2026-10-31 Creatures blink, and shiny creatures twinkle

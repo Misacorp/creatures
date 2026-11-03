@@ -7,6 +7,7 @@ import {
   RULES,
   content,
   dungeonContent,
+  howToPlay,
   type CreatureSpecies,
   type DungeonFoeDef,
   type Role,
@@ -30,6 +31,68 @@ export function starterSpecies(
 }
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
+
+/** One step of the combat v2 weekend: its schedule event, its name and the short weekday. */
+export interface WeekendStep {
+  event: 'phase1' | 'phase2' | 'finale';
+  title: string;
+  day: string;
+}
+
+/**
+ * The three parts of a combat v2 weekend with their weekdays, from `RULES.raid.scheduleV2`: stage 1, stage 2 and the
+ * live finale (the schedule's events keep their old names, `phase1` is stage 1).
+ */
+export function weekendStrip(
+  schedule: Readonly<Record<'phase1' | 'phase2' | 'finale', { readonly weekday: number }>> = RULES
+    .raid.scheduleV2,
+): WeekendStep[] {
+  const steps: readonly { event: WeekendStep['event']; title: string }[] = [
+    { event: 'phase1', title: 'Stage 1' },
+    { event: 'phase2', title: 'Stage 2' },
+    { event: 'finale', title: 'Live finale' },
+  ];
+  return steps.map((step) => ({ ...step, day: DAYS[schedule[step.event].weekday - 1] ?? '' }));
+}
+
+/** The move the board picture lights, as its label says it: a target word and a shape word (`grammar.md`). */
+export const BOARD_EXAMPLE_MOVE = { target: 'Nemesis', shape: 'Lance' } as const;
+
+/**
+ * The Marks picture: the worked example's Setter, the mark it leaves (twice, so the count shows) and the creature of
+ * the element that cashes it, plus a second, older mark of another element. From the content, so the elements
+ * are the game's. Undefined when the content has no such reaction.
+ */
+export function markExample(
+  creatures: readonly CreatureSpecies[] = content.creatures,
+): { setter: string; payoff: string; marks: { element: string; count: number }[] } | undefined {
+  const { setter, payoff } = howToPlay.example;
+  const setterSpecies = creatures.find((c) => c.id === setter);
+  const reaction = content.reactions.find((r) => r.markElement === setterSpecies?.element);
+  if (setterSpecies === undefined || reaction === undefined) return undefined;
+  const other = content.reactions.find((r) => r.markElement !== setterSpecies.element);
+  return {
+    setter,
+    payoff,
+    marks: [
+      { element: reaction.markElement, count: 2 },
+      ...(other === undefined ? [] : [{ element: other.markElement, count: 1 }]),
+    ],
+  };
+}
+
+/**
+ * The Boss Rank picture: the first two bosses of the track (the first beaten, the second this week's) and two still
+ * hidden ones, which the server announces a week ahead. It names no later boss, so it cannot disagree with the track.
+ */
+export function rankPicture(): { boss: string | null; state: 'beaten' | 'current' | 'later' }[] {
+  return [
+    { boss: 'tidal-colossus', state: 'beaten' },
+    { boss: 'cinder-wyrm', state: 'current' },
+    { boss: null, state: 'later' },
+    { boss: null, state: 'later' },
+  ];
+}
 
 interface WeekStep {
   event: RaidEventId;

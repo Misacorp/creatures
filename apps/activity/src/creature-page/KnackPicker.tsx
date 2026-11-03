@@ -69,7 +69,7 @@ export function KnackPicker({
             <ChoiceButton
               key={knack.id}
               label={knack.name}
-              line={<KeywordText text={knack.text} />}
+              line={<KeywordText text={knack.text} help={false} />}
               selected={v2.knack === knack.id}
               disabled={off}
               onClick={() => {
@@ -146,7 +146,7 @@ export function KnackSection({
               <span class="knack-slot">
                 <strong class="knack-name pix">{saved.name}</strong>
                 <span class="knack-text prose">
-                  <KeywordText text={saved.text} />
+                  <KeywordText text={saved.text} help={!canPick} />
                 </span>
               </span>
             </Slot>

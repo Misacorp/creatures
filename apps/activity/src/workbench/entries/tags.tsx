@@ -1,5 +1,6 @@
 import { combatV2 } from '@creatures/game/combat-v2';
 import type { ComponentProps } from 'preact';
+import { useEffect, useRef } from 'preact/hooks';
 import { ChoiceMark, Stars } from '../../ExpeditionIcons';
 import { GlossaryTag } from '../../Glossary';
 import { RarityTag } from '../../GearArt';
@@ -335,19 +336,47 @@ const KEYWORD_SAMPLES: Readonly<Record<string, string>> = {
   'Plain words (v1)': 'First pounce +14%.',
 };
 
+/** The keyword text, and (when `tap` is on) the first chip tapped once drawn, so a screenshot shows its popover open. */
+function KeywordDemo({ text, help, tap }: { text: string; help: boolean; tap: boolean }) {
+  const box = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (!tap) return;
+    box.current?.querySelector('button')?.click();
+  }, [tap, text, help]);
+  return (
+    <div>
+      <p class="prose" ref={box}>
+        <KeywordText text={text} help={help} />
+      </p>
+      {/* Room under the chip for its popover, which opens below it. */}
+      {tap && <div class="wb-pop-stage" />}
+    </div>
+  );
+}
+
 const keywordText: Entry = {
   name: 'KeywordText',
   file: 'apps/activity/src/ui/KeywordText.tsx',
   group: 'Tags & chips',
   description:
-    "A combat v2 text (a Knack's, a talent's) with its keywords as chips: a word the content puts in braces is drawn as a Tag, the rest as plain words. It is the line under a Knack's name in the Knack picker and the Knack part, and the talent's line in the Talent Book.",
-  controls: { text: { kind: 'select', options: Object.keys(KEYWORD_SAMPLES) } },
-  defaults: { text: 'A Knack with several keywords' },
-  presets: Object.keys(KEYWORD_SAMPLES).map((name) => ({ name, props: { text: name } })),
+    "A combat v2 text (a Knack's, a talent's) with its keywords as chips: a word the content puts in braces is drawn as a Tag, the rest as plain words. A chip is tap-for-help (the keyword's entry opens in a popover); inside a button (a choice in the Knack picker, the slot that opens it) pass help off for plain chips, since a button must not hold a button. It is the line under a Knack's name in the Knack picker and the Knack part, and the talent's line in the Talent Book.",
+  controls: {
+    text: { kind: 'select', options: Object.keys(KEYWORD_SAMPLES) },
+    help: { kind: 'toggle' },
+    tap: { kind: 'toggle' },
+  },
+  defaults: { text: 'A Knack with several keywords', help: true, tap: false },
+  presets: [
+    ...Object.keys(KEYWORD_SAMPLES).map((name) => ({ name, props: { text: name } })),
+    { name: 'Inside a button (no help)', props: { help: false } },
+    { name: 'First chip tapped (its help open)', props: { tap: true } },
+  ],
   render: (p) => (
-    <p class="prose">
-      <KeywordText text={KEYWORD_SAMPLES[str(p, 'text')] ?? ''} />
-    </p>
+    <KeywordDemo
+      text={KEYWORD_SAMPLES[str(p, 'text')] ?? ''}
+      help={bool(p, 'help')}
+      tap={bool(p, 'tap')}
+    />
   ),
 };
 

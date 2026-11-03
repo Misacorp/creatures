@@ -607,3 +607,27 @@ An **Escalating** boss or foe has a meter with a name of its own. It fills from 
 ### Second Bloom
 
 The **phase** of Thornmother's Awakening. Halfway through the meter she blooms: it is announced a round ahead, her one Thorn Rain gets stronger, and Thorn Wall joins the fight, so the whole arena is in play. `(content: combat-v2/raid-bosses.json; design: grammar.md, "Boss moves")` Canon `(compendium detail, not shipped)`: Spring comes late to her, and all at once.
+
+## Words on screen
+
+The plain words the combat v2 screens use on purpose, so later text says the same thing the same way. They are interface words, not names from the world, and they carry no numbers. `(design: combat/proposals/001-combat-v2.md, "On the board"; integration.md, section 9)` The keywords have their own help (the glossary entry `kw-` and the keyword's name, for example `kw-wind-up`), written from the keywords section above. `(compendium detail, not shipped)`
+
+| Word or phrase                                                 | Where it is used                                 | It says                                                                                             |
+| -------------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| Mark strip                                                     | Under the boss                                   | The marks the boss carries, oldest first, each with its count.                                      |
+| Boss turn                                                      | The strip of turns, and the board                | The boss acts after every row.                                                                      |
+| Stage 1, Stage 2, Live finale                                  | The weekend, the raid screen, How to play        | The three parts of a raid weekend: Saturday, Sunday, and Sunday evening, live.                      |
+| Stage 2 of 3                                                   | The boss's HP bar                                | Which stage the weekend is in.                                                                      |
+| Out this weekend                                               | A knocked-out creature on the board and in lists | It does not come back before the weekend ends. A spare takes its empty slot.                        |
+| Players lock in                                                | How to play, the raid screen                     | Whoever is on the board when stage 1 begins fights; no one joins after.                             |
+| Ask to swap                                                    | Another player's creature on the raid board      | Asks its owner to trade slots. The answer comes as a notice row on Home.                            |
+| Aimed when it comes                                            | A boss move that picks its slots at round start  | The slots are shown before the creatures act, and the move lands on them.                           |
+| Back again                                                     | A small tag on a boss that returns               | The server did not beat it last time. Its bar shows the most taken off so far.                      |
+| Best so far                                                    | The pale fill on that bar                        | The most of its HP the server has taken off it.                                                     |
+| Boss Rank                                                      | The raid screen, How to play                     | The server's place in the order of bosses. A kill moves it on.                                      |
+| This creature has fought this weekend, so its Knack is locked. | The Knack picker                                 | A Knack can be changed until its creature has fought.                                               |
+| Not in the new rules yet                                       | A gear piece's effect lines                      | The line does nothing in combat v2 for now.                                                         |
+| Shape word, target word                                        | A move tile and its label ("Nemesis Lance")      | The shape says which slots it hits, the target says whom it picks (`grammar.md`).                   |
+| Roles and Knacks, The board, Armour and crits                  | How to play, combat v2 sections                  | The page's sections, after "Marks and reactions" and before "The raid weekend" and "The Boss Rank". |
+
+Never call a boss a wall, hard or harder anywhere on screen (Misa, 2026-10-31: players find out for themselves; no boss gets a warning line, `001-combat-v2.md` R24.8). The words above say what a boss does, never how it ranks.

@@ -1,0 +1,289 @@
+[
+  {
+    "id": "kw-mark",
+    "title": "Mark",
+    "short": "The boss carries an element, with up to three stacks.",
+    "lines": [
+      "A Setter's hit leaves one. The mark strip under the boss shows each mark and its stacks.",
+      "It is the setup a Payoff cashes, not a debuff."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "mark"
+    },
+    "section": "v2-marks"
+  },
+  {
+    "id": "kw-reaction",
+    "title": "Reaction",
+    "short": "A Payoff cashes a mark: bonus damage.",
+    "lines": [
+      "The Payoff's element has to be strong against the mark's.",
+      "The mark loses a stack each time.",
+      "Only a Payoff's hit does it, or a Knack that says so."
+    ],
+    "visual": {
+      "kind": "reaction",
+      "id": "overload"
+    },
+    "section": "v2-marks"
+  },
+  {
+    "id": "kw-seal",
+    "title": "Seal",
+    "short": "This mark is not shed by the boss.",
+    "lines": [
+      "Some bosses shake their marks off at the end of a turn.",
+      "A Sealed mark stays, and it can still be cashed."
+    ],
+    "section": "v2-marks"
+  },
+  {
+    "id": "kw-mired",
+    "title": "Mired",
+    "short": "A debuff on the boss: it hits softer and dodges less.",
+    "lines": [
+      "It stacks up to a limit, and fades a little every round.",
+      "It is not a mark, so it sits apart from the mark strip.",
+      "It slows an Escalating boss."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "mired"
+    },
+    "section": "v2-marks"
+  },
+  {
+    "id": "kw-spend",
+    "title": "Spend",
+    "short": "Pay a cost to do something.",
+    "lines": [
+      "The cost is part of a mark's stacks, a Store, or some HP.",
+      "The Knack's text says what and how much.",
+      "If the cost can't be paid, nothing happens."
+    ],
+    "section": "v2-knacks"
+  },
+  {
+    "id": "kw-store",
+    "title": "Store",
+    "short": "A small supply of a named resource on the creature.",
+    "lines": [
+      "It holds up to three. What is gained past that is lost.",
+      "It starts empty each fight, and empties if the creature is knocked out.",
+      "A Knack's text says how it is gained and spent."
+    ],
+    "section": "v2-knacks"
+  },
+  {
+    "id": "kw-taunt",
+    "title": "Taunt",
+    "short": "The boss's plain attack aims at this creature.",
+    "lines": [
+      "Only the plain attack, not the boss's named moves.",
+      "With several Taunts, the first to act draws it."
+    ],
+    "section": "v2-knacks"
+  },
+  {
+    "id": "kw-intercept",
+    "title": "Intercept",
+    "short": "Takes a hit meant for a creature near it.",
+    "lines": [
+      "Only a creature within its Reach.",
+      "The hit is dodged first. Only a hit that lands can be intercepted.",
+      "The creature that steps in does not roll a dodge of its own."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "shield"
+    },
+    "section": "v2-knacks"
+  },
+  {
+    "id": "kw-retaliate",
+    "title": "Retaliate",
+    "short": "Hits back when it dodges.",
+    "lines": ["The hit back ignores armour.", "It does not hit back when it is hit."],
+    "section": "v2-knacks"
+  },
+  {
+    "id": "kw-silenced",
+    "title": "Silenced",
+    "short": "Its Knack, talents and role trick do nothing.",
+    "lines": [
+      "A silenced Setter does not mark, a Payoff does not cash, a Guard does not cover, a Support does not boost.",
+      "Gear effects stop too. It still hits with its stats, and it does not skip its turn."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "silence_ends"
+    },
+    "section": "v2-knacks"
+  },
+  {
+    "id": "kw-boost",
+    "title": "Boost",
+    "short": "A Support's extra damage on a creature's next hit.",
+    "lines": ["It lasts for that one hit. It is not a lasting buff."],
+    "section": "v2-knacks"
+  },
+  {
+    "id": "kw-beside",
+    "title": "Beside",
+    "short": "The living creatures in the slots on each side of it.",
+    "lines": ["In its own row only.", "It is never widened: Reach is the part that grows."],
+    "section": "v2-board"
+  },
+  {
+    "id": "kw-reach",
+    "title": "Reach",
+    "short": "How many slots to each side a Guard or Support covers.",
+    "lines": [
+      "It starts at Beside, and some effects widen it.",
+      "It stays inside the creature’s row."
+    ],
+    "section": "v2-board"
+  },
+  {
+    "id": "kw-row-end",
+    "title": "Row end",
+    "short": "The first or last slot of its row.",
+    "lines": [
+      "The slot itself, not the last creature standing in the row.",
+      "Some boss moves, like Pincer and Hush, aim at the ends."
+    ],
+    "section": "v2-board"
+  },
+  {
+    "id": "kw-front-row",
+    "title": "Front row",
+    "short": "The row nearest the boss.",
+    "lines": ["Not the first row that has a creature in it."],
+    "section": "v2-board"
+  },
+  {
+    "id": "kw-area-hit",
+    "title": "Area hit",
+    "short": "A hit on more than one slot.",
+    "lines": ["It is dodged half as often.", "A hit a Guard takes for you is a different thing."],
+    "section": "v2-board"
+  },
+  {
+    "id": "kw-barrage",
+    "title": "Barrage",
+    "short": "Hits several different creatures, picked at random.",
+    "lines": ["Drawn from the whole board.", "It is not a hit on every creature of a row."],
+    "visual": {
+      "kind": "glyph",
+      "id": "barrage"
+    },
+    "section": "v2-board"
+  },
+  {
+    "id": "kw-leap",
+    "title": "Leap",
+    "short": "Hits one creature, then jumps to the strongest one beside it.",
+    "lines": ["It jumps on again and again, a little softer each time."],
+    "section": "v2-board"
+  },
+  {
+    "id": "kw-cross",
+    "title": "Cross",
+    "short": "Hits one creature and those beside, in front of and behind it.",
+    "lines": ["It is not a whole row or a whole column."],
+    "section": "v2-board"
+  },
+  {
+    "id": "kw-checker",
+    "title": "Checker",
+    "short": "Hits every other slot, like the dark squares of a board.",
+    "lines": ["It is not a row."],
+    "section": "v2-board"
+  },
+  {
+    "id": "kw-most-hurt",
+    "title": "Most hurt",
+    "short": "The creature with the lowest share of its HP left.",
+    "lines": [
+      "A share, not points: a big creature at half HP is more hurt than a small one at three quarters."
+    ],
+    "section": "v2-board"
+  },
+  {
+    "id": "kw-back-most",
+    "title": "Back-most",
+    "short": "The last living creature to act.",
+    "lines": [
+      "By default the right end of the back row.",
+      "It moves on as creatures are knocked out."
+    ],
+    "section": "v2-board"
+  },
+  {
+    "id": "kw-wind-up",
+    "title": "Wind-up",
+    "short": "A boss move announced at the start of a round.",
+    "lines": [
+      "The slots it will hit are shown, and it lands on them.",
+      "A creature knocked out before it lands is skipped."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "warning"
+    },
+    "section": "v2-board"
+  },
+  {
+    "id": "kw-blocked",
+    "title": "Blocked",
+    "short": "A hit that does not get past armour deals nothing.",
+    "lines": [
+      "Armour is taken off every hit. A hit at or below it is Blocked.",
+      "It is not a dodge: the hit landed and the armour held."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "shield"
+    },
+    "section": "v2-armour"
+  },
+  {
+    "id": "kw-crit",
+    "title": "Crit",
+    "short": "A lucky hit that deals double damage to begin with.",
+    "lines": [
+      "A creature's page shows its crit chance and how big its crits are.",
+      "Its Knack, talents and gear can raise both.",
+      "A boss with Double Strike crits too. A Reaction hit can crit as well."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "sparkle"
+    },
+    "section": "v2-armour"
+  },
+  {
+    "id": "kw-sure-crit",
+    "title": "Sure Crit",
+    "short": "A stored crit: the next hit that lands is a sure one.",
+    "lines": [
+      "A counter on the creature, built up by something that happened to it, like a dodge.",
+      "Its next hit that lands and is not already a crit spends one and is a crit.",
+      "It is not a Store, and not a lasting buff."
+    ],
+    "section": "v2-armour"
+  },
+  {
+    "id": "kw-escalating",
+    "title": "Escalating",
+    "short": "A boss that grows as the weekend goes on.",
+    "lines": [
+      "It fills from something its card names: rounds, HP lost or Reactions.",
+      "Each time it fills, the boss grows a step, up to a limit.",
+      "It carries across the weekend, and Mired slows it.",
+      "It is not a stage of the raid."
+    ],
+    "section": "v2-weekend"
+  }
+]

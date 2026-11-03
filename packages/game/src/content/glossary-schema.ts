@@ -22,7 +22,24 @@ export const GLOSSARY_SECTIONS = [
   'gear',
   'workshop',
 ] as const;
-export const GlossarySectionSchema = v.picklist(GLOSSARY_SECTIONS);
+const V1SectionSchema = v.picklist(GLOSSARY_SECTIONS);
+
+/**
+ * The sections of the combat v2 How to play page, in order (shown instead of the combat ones above when the
+ * server plays combat v2). Marks and reactions, roles and Knacks, the board, armour and crits, the raid weekend
+ * and the Boss Rank.
+ */
+export const GLOSSARY_SECTIONS_V2 = [
+  'v2-marks',
+  'v2-knacks',
+  'v2-board',
+  'v2-armour',
+  'v2-weekend',
+  'v2-rank',
+] as const;
+
+/** Every section a glossary entry's "More" link can lead to: the shipped set and the combat v2 set. */
+export const GlossarySectionSchema = v.picklist([...GLOSSARY_SECTIONS, ...GLOSSARY_SECTIONS_V2]);
 export type GlossarySection = v.InferOutput<typeof GlossarySectionSchema>;
 
 export const MAX_GLOSSARY_TITLE = 32;
@@ -67,12 +84,15 @@ export type GlossaryEntry = v.InferOutput<typeof GlossaryEntrySchema>;
 export const GlossarySchema = v.pipe(v.array(GlossaryEntrySchema), v.maxLength(400));
 export type Glossary = v.InferOutput<typeof GlossarySchema>;
 
-export const HowToPlaySectionSchema = v.strictObject({
-  id: GlossarySectionSchema,
-  title: Text(MAX_GLOSSARY_TITLE),
-  /** Three to five short lines. */
-  lines: v.pipe(v.array(Text(MAX_GLOSSARY_LINE)), v.minLength(3), v.maxLength(5)),
-});
+const sectionOf = <T extends v.GenericSchema<string>>(id: T) =>
+  v.strictObject({
+    id,
+    title: Text(MAX_GLOSSARY_TITLE),
+    /** Three to five short lines. */
+    lines: v.pipe(v.array(Text(MAX_GLOSSARY_LINE)), v.minLength(3), v.maxLength(5)),
+  });
+
+export const HowToPlaySectionSchema = sectionOf(V1SectionSchema);
 export type HowToPlaySection = v.InferOutput<typeof HowToPlaySectionSchema>;
 
 /**
@@ -92,6 +112,20 @@ export const HowToPlaySchema = v.strictObject({
   example: HowToPlayExampleSchema,
 });
 export type HowToPlay = v.InferOutput<typeof HowToPlaySchema>;
+
+/**
+ * The combat v2 page: its own sections in their fixed order, from `how-to-play-v2.json`. A line may carry
+ * keywords in braces (`{Mark}`), drawn as chips that open the keyword's help; that every braced word is a real
+ * keyword with a glossary entry is checked against the combat v2 content by a test (this loader does not import
+ * the combat v2 pack, so players' clients do not load it).
+ */
+export const HowToPlayV2Schema = v.strictObject({
+  sections: v.pipe(
+    v.array(sectionOf(v.picklist(GLOSSARY_SECTIONS_V2))),
+    v.length(GLOSSARY_SECTIONS_V2.length),
+  ),
+});
+export type HowToPlayV2 = v.InferOutput<typeof HowToPlayV2Schema>;
 
 function fail(message: string): never {
   throw new Error(`Invalid glossary: ${message}`);
@@ -158,5 +192,18 @@ export function loadHowToPlay(raw: unknown, pack: ContentPack): HowToPlay {
       `the example's "${payoff}" must be of the element that cashes in ${setterSpecies.element}`,
     );
   }
+  return page;
+}
+
+/** Validates the combat v2 How to play text: the sections come in the page's order. */
+export function loadHowToPlayV2(raw: unknown): HowToPlayV2 {
+  const page = parse(HowToPlayV2Schema, raw, 'how-to-play-v2');
+  page.sections.forEach((section, i) => {
+    if (section.id !== GLOSSARY_SECTIONS_V2[i]) {
+      fail(
+        `v2 section ${String(i + 1)} must be "${GLOSSARY_SECTIONS_V2[i] ?? ''}", got "${section.id}"`,
+      );
+    }
+  });
   return page;
 }
