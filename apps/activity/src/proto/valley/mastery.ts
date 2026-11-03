@@ -7,7 +7,7 @@
 import type { Creature } from '../../api';
 import type { PlaceId } from './valley-art';
 
-export type WorkKind = 'smithing' | 'scouting' | 'teaching' | 'keeping';
+export type WorkKind = 'smithing' | 'scouting' | 'teaching' | 'keeping' | 'trading';
 
 /** The steps in order; 0 is "not started". */
 export const MASTERY_WORDS = ['Novice', 'Skilled', 'Expert', 'Master'] as const;
@@ -24,6 +24,8 @@ export function workOf(place: 'valley' | PlaceId): WorkKind | null {
       return 'teaching';
     case 'bonfire':
       return 'keeping';
+    case 'market':
+      return 'trading';
     default:
       return null;
   }

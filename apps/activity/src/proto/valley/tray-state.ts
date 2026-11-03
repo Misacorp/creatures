@@ -42,6 +42,10 @@ export function trayBadge(world: ProtoWorld, c: Creature): TrayBadge {
       label: say(where === null ? 'Away on a trip.' : `Away at ${destinationName(where)}.`),
     };
   }
+  // The creature on the Market's broker post is at work there (busy like a post at the Forge).
+  if (getMarket().broker === c.id) {
+    return { state: 'job', destination: null, label: say("At work at the Market's broker post.") };
+  }
   if (busy?.kind === 'job') {
     const job = world.jobs.find((j) => j.id === busy.id);
     return job?.status === 'ready'
@@ -126,7 +130,7 @@ export function trayFor(world: ProtoWorld, scene: 'valley' | PlaceId): Creature[
     school: ['free'],
     bonfire: ['free', 'evolve'],
     // Neither place is about a creature yet (3b and 3c decide); the tray keeps the free ones in view meanwhile.
-    market: ['free'],
+    market: ['free', 'job'],
     visitor: ['free'],
   };
   return sorted.filter((c) => keep[scene].includes(trayBadge(world, c).state));

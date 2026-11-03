@@ -12,8 +12,8 @@ export interface Gifts {
 /** What the project takes, fixed when it opens (sample: a small first level). */
 export const MARKET_NEED: Gifts = { acorns: 600, scrap: 200 };
 
-/** The scaffolding's stages: 0 is the bare plot, 4 the last one before the stalls stand. */
-export const STAGES = 5;
+/** The stall's planks (like the hearth's stones): laid ones are solid, the rest hollow outlines. */
+export const STAGES = 12;
 
 /** The broker's seat holds this id when the sample opens with a broker already seated (a stand-in is picked). */
 export const SAMPLE_BROKER = 'sample';
@@ -44,7 +44,7 @@ export function isBuilt(given: Gifts): boolean {
   return given.acorns >= MARKET_NEED.acorns && given.scrap >= MARKET_NEED.scrap;
 }
 
-/** The scaffolding stage for what is paid: 0 to 4 (a built Market has no scaffolding). */
+/** The planks laid for what is paid: 0 to STAGES - 1 (a built Market has no planks to come). */
 export function stageOf(given: Gifts): number {
   return Math.min(STAGES - 1, Math.floor(fractionPaid(given) * STAGES));
 }
@@ -94,6 +94,18 @@ export function give(state: MarketState, gift: Gifts): MarketState {
     mine: { acorns: state.mine.acorns + gift.acorns, scrap: state.mine.scrap + gift.scrap },
     pocket: state.pocket - gift.acorns,
   };
+}
+
+/** What the broker trades at, by its mastery step (V-FORGE-11; sample rates): shards given, shards got, how lucky. */
+export function brokerRate(step: number): { give: number; get: number; luck: string } {
+  if (step >= 3) return { give: 5, get: 2, luck: 'sometimes lucky' };
+  if (step >= 1) return { give: 3, get: 1, luck: 'lucky more often' };
+  return { give: 3, get: 1, luck: 'sometimes lucky' };
+}
+
+/** A rate in words ("3 for 1, sometimes lucky"). */
+export function rateWords(rate: { give: number; get: number; luck: string }): string {
+  return `${String(rate.give)} for ${String(rate.get)}, ${rate.luck}`;
 }
 
 /** The plaque of a finished level: how many hands built it (no amounts, no order; V-COM-2). */

@@ -1,13 +1,22 @@
 /* The Forge's post and the Market (step 3b, prototype). */
 
+/* A bubble that looks tappable is: its taps reach the button it hangs on, and its hit area is 44 px or more. */
+.pv-anvil .pv-bubble,
+.pv-market-hit .pv-bubble {
+  pointer-events: auto;
+}
+
+.pv-anvil .pv-bubble::before,
+.pv-market-hit .pv-bubble::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+}
+
 /* The smith's anvil is a button over the art; it is still when there is nothing to trade. */
 .pv-post:disabled {
   opacity: 1;
   cursor: default;
-}
-
-.pv-post .pv-bubble {
-  bottom: calc(100% - 4px);
 }
 
 /* The smith hammers: a two-step dip, off when motion is reduced or the shot is still. */
@@ -21,64 +30,70 @@
   }
 }
 
+/* The traded shards drop onto the anvil in two steps. */
+.pv-land {
+  display: inline-flex;
+  gap: 2px;
+  animation: pv-land 600ms steps(3) 1 backwards;
+}
+
+@keyframes pv-land {
+  from {
+    transform: translateY(-24px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .pv-hammer {
+  .pv-hammer,
+  .pv-land {
     animation: none;
   }
 }
 
-/* What the exchange gave: the shard pictures in a row. */
+/* What the exchange gave, and the lucky marks either side of it. */
 .pv-got {
   display: inline-flex;
+  align-items: center;
   gap: 2px;
-}
-
-/* The broker beside the chimney, its bubble above it. */
-.pv-broker-mark {
-  position: relative;
-  display: inline-block;
-}
-
-.pv-broker-mark .pv-bubble {
-  bottom: calc(100% + 6px);
-}
-
-.pv-seat-empty {
-  width: 3rem;
-  height: 3rem;
-}
-
-/* --- The Market --- */
-.pv-market-plot {
-  display: grid;
-  justify-items: center;
-  gap: 4px;
   line-height: 0;
 }
 
-.pv-market-plate {
-  max-width: 14rem;
-  font-size: 0.875rem;
-  white-space: normal;
-  text-align: center;
-  line-height: 1.25;
+/* A plate that must stay on the screen at 360 px sits against the scene's right edge. */
+.pv-at.pv-found-end {
+  left: auto;
+  right: 4px;
 }
 
-.pv-market-plate.wide {
-  max-width: 17rem;
+/* The parts on the wall are named (one size up from the small text). */
+.pv-shelf-parts {
+  flex-direction: column;
+  align-items: flex-start;
 }
 
-/* The plot, the scaffolding and the seat are buttons that sit on their art. */
-.pv-market-hit .pv-bubble {
-  bottom: calc(100% - 4px);
-  width: 15rem;
+.pv-shelf-parts .part-count {
+  font-size: var(--fs-body, 1rem);
 }
 
+/* --- The Market --- */
 .pv-market-hit .pv-bubble-body {
-  max-width: 15rem;
   white-space: normal;
-  line-height: 1.25;
-  text-align: center;
+}
+
+/* The stall's planks, a row like the hearth's stones. */
+.pv-planks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3px;
+  line-height: 0;
+}
+
+.pv-market-needs,
+.pv-market-does {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
 .pv-market-row {
@@ -86,4 +101,13 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
+  padding: 2px 6px;
+  background: var(--ink);
+  line-height: 0;
+}
+
+.pv-rate {
+  font-size: 1.125rem;
+  line-height: 1;
+  color: var(--bone);
 }
