@@ -2,6 +2,7 @@ import type { Creature } from '../api';
 import { TalentChip } from '../TalentChip';
 import { bookRows } from '../talent-view';
 import { Drawer } from '../ui/Drawer';
+import { resourceName } from '@creatures/game';
 
 export interface TalentBookDrawerProps {
   open: boolean;
@@ -92,13 +93,13 @@ export function TalentBookDrawer({
                     type="button"
                     class="book-use"
                     disabled={busy || !afford}
-                    aria-label={`Put ${entry.name} in slot ${String(slot)} for ${String(bookSlotBait)} Bait`}
+                    aria-label={`Put ${entry.name} in slot ${String(slot)} for ${String(bookSlotBait)} ${resourceName('bait')}`}
                     onClick={() => {
                       onSlot(creature, entry.id, entry.golden, slot);
                     }}
                   >
                     Use{' · '}
-                    {bookSlotBait} Bait
+                    {bookSlotBait} {resourceName('bait')}
                   </button>
                 )}
               </li>
@@ -106,7 +107,9 @@ export function TalentBookDrawer({
           })}
         </ul>
       )}
-      {!afford && anyFree && <p class="muted small book-short">Not enough Bait.</p>}
+      {!afford && anyFree && (
+        <p class="muted small book-short">Not enough {resourceName('bait')}.</p>
+      )}
     </Drawer>
   );
 }

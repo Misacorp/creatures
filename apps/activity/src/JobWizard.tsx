@@ -1,4 +1,4 @@
-import { GLOSSARY_IDS } from '@creatures/game';
+import { GLOSSARY_IDS, resourceName } from '@creatures/game';
 import { useState } from 'preact/hooks';
 import type { Creature } from './api';
 import type { ReachId } from './gear-types';
@@ -108,7 +108,10 @@ export function JobDrawer(props: JobDrawerProps) {
             wizard.last &&
             job.treat &&
             job.picked !== undefined && (
-              <CountBadge {...baitCount(job.picked.creature.treatCost)} label="Bait" />
+              <CountBadge
+                {...baitCount(job.picked.creature.treatCost)}
+                label={resourceName('bait')}
+              />
             )
           }
         />

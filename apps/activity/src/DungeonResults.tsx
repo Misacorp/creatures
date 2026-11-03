@@ -35,6 +35,7 @@ import { Sprite } from './sprites/Sprite';
 import { ExperienceGainRow } from './ExperienceGainRow';
 import { XpList } from './ui/XpGain';
 import { Alert } from './ui/Alert';
+import { resourceName } from '@creatures/game';
 
 /** A room panel's picture is 64 px (a foe) or 72 px (a floor boss), so three fit a 390 px phone. */
 const PANEL_SCALE = { foe: 4, boss: 3 } as const;
@@ -129,7 +130,7 @@ export function DungeonResults({
         <RewardSummary
           source={rewards}
           prefix="Rewards"
-          countsLabel="Bait, Essence, parts and supplies"
+          countsLabel={`${resourceName('bait')}, ${resourceName('essence')}, parts and supplies`}
           counts={counts}
           pile={false}
         >

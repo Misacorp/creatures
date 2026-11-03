@@ -25,9 +25,10 @@ import {
   type Element,
   type ExpeditionLength,
   type SupplyDef,
+  resourceName,
 } from '@creatures/game';
 import type { PartKind } from './gear-types';
-import type { IconRef } from './icon-ref';
+import { resourceIconRef, type IconRef } from './icon-ref';
 import { lengthLabel, supplyDefs } from './trip-view';
 
 const BP = 10_000;
@@ -225,9 +226,9 @@ export function expectedHaul(
     },
     {
       key: 'scrap',
-      icon: { kind: 'part', part: 'scrap' },
-      label: 'Scrap',
-      detail: chance('scrap', 'Scrap'),
+      icon: resourceIconRef('scrap'),
+      label: resourceName('scrap'),
+      detail: chance('scrap', resourceName('scrap')),
       level: pips('scrap', here.scrap),
       baseLevel: pips('scrap', plain.scrap),
       boosted: boosted('scrap'),
@@ -253,9 +254,9 @@ export function expectedHaul(
     },
     {
       key: 'glimmer',
-      icon: { kind: 'part', part: 'glimmer' },
-      label: 'Glimmer',
-      detail: chance('glimmer', 'Glimmer'),
+      icon: resourceIconRef('glimmer'),
+      label: resourceName('glimmer'),
+      detail: chance('glimmer', resourceName('glimmer')),
       level: pips('glimmer', here.glimmer),
       baseLevel: pips('glimmer', plain.glimmer),
       boosted: boosted('glimmer'),

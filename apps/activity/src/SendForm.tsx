@@ -16,6 +16,7 @@ import { WizardFooter } from './ui/Wizard';
 import type { GearState } from './gear-types';
 import type { SendForm as SendFormState } from './use-send-form';
 import type { Forecast } from './weather-types';
+import { resourceName } from '@creatures/game';
 
 const TIME_GLYPH = { night: 'moon', festival: 'flag' } as const;
 
@@ -85,7 +86,10 @@ export function SendFooter({
       }
       extra={sending && <BagFullNote inventory={bag} onOpenWorkshop={onOpenWorkshop} />}
       /* A packed treat's Bait, on the button that spends it (the trip itself is free). */
-      badge={sending && form.treat && <CountBadge {...baitCount(form.treatCost)} label="Bait" />}
+      badge={
+        sending &&
+        form.treat && <CountBadge {...baitCount(form.treatCost)} label={resourceName('bait')} />
+      }
     />
   );
 }

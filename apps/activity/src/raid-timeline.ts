@@ -3,6 +3,7 @@
  * its step, and a tap opens a one-line result. The full after-action card waits until the finale
  * is over. Pure.
  */
+import { resourceName } from '@creatures/game';
 import type { PhaseResultView, RaidEventId, RaidPhaseId } from './raid-api';
 import { phaseName, stageOutcomeNote, stageOutcomeText } from './raid-text';
 
@@ -31,8 +32,8 @@ export function stepMark(result: PhaseResultView, rules?: 2): StepMark {
     // A retreat or an enrage says so ("Phase 1 cleared: the boss retreated."); the plain case is as it was.
     summary:
       stageOutcomeNote(result) === null
-        ? `${name}: ${word}. You got ${String(result.essence)} Essence.`
-        : `${stageOutcomeText(result)} You got ${String(result.essence)} Essence.`,
+        ? `${name}: ${word}. You got ${String(result.essence)} ${resourceName('essence')}.`
+        : `${stageOutcomeText(result)} You got ${String(result.essence)} ${resourceName('essence')}.`,
   };
 }
 
