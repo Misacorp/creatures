@@ -25,10 +25,10 @@ export const GIFT_STONES = 1;
 /** SAMPLE: players online now with one creature each by the fire (alphabetical, never ranked). */
 export const SAMPLE_FRIENDS: readonly { owner: string; species: string }[] = (() => {
   const species = content.creatures.filter((c) => !c.festival);
-  const owners = ['Aino', 'Kalle', 'Sade'];
+  const owners = ['Aino', 'Sade'];
   return owners.map((owner, i) => ({
     owner,
-    species: species[(i * 5 + 2) % species.length]?.id ?? 'splashet',
+    species: species[(i * 7 + 2) % species.length]?.id ?? 'splashet',
   }));
 })();
 
@@ -54,10 +54,16 @@ export const STONE_UP: SpriteDef = {
   palette: { k: INK, a: '#b4b0c4', d: '#7c7894' },
 };
 
-/** A stone still to come: the same shape, hollow and quiet on the grass. */
+/** A stone still to come: only its outline, in ink (a state shown by shape, not by colour alone). */
 export const STONE_TO_COME: SpriteDef = {
-  rows: STONE_UP.rows,
-  palette: { k: '#244030', a: '#33563e', d: '#2e4f39' },
+  rows: ['..kkk..', '.k...k.', 'k.....k', 'k.....k', '.kkkkk.'],
+  palette: { k: INK },
+};
+
+/** A stone you laid: gold with a bright centre, so it differs in colour and shape from the others'. */
+export const STONE_YOURS: SpriteDef = {
+  rows: ['..kkk..', '.kggdk.', 'kgggcdk', 'kgddddk', '.kkkkk.'],
+  palette: { k: INK, g: '#ffd25a', d: '#c8952b', c: '#fff6cf' },
 };
 
 /** The small flame over a creature that is warming up (5 x 7 pixels). */

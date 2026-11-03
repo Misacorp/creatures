@@ -44,8 +44,8 @@
 }
 
 .bf-more-btn {
-  min-width: 2rem;
-  min-height: 2rem;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0 6px;
   background: var(--ink);
   color: var(--bone);
@@ -74,8 +74,18 @@
 .bf-needs {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   margin: 0;
+}
+
+/* Your stones in the hearth sheet: one gold stone and how many, at the right of what it still needs. */
+.bf-yours {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 0;
+  font-size: 1.125rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

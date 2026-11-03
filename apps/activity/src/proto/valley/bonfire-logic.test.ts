@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
-  arcSeats,
   catchUpFactor,
   catchUpTarget,
+  crowd,
+  facesLeft,
   giveToHearth,
   hearthBuilt,
   hearthNeeds,
@@ -60,19 +61,20 @@ describe('the seats', () => {
     expect(seatedFew(['a', 'b'], 3, 5)).toEqual({ seated: ['a', 'b'], more: 0 });
   });
 
-  it('draws an arc left to right that curves up at its ends and turns the right side back', () => {
-    const seats = arcSeats(5);
-    expect(seats.map((s) => s.dx)).toEqual([-48, -28, -8, 12, 32]);
-    expect(seats[2]?.dy).toBeGreaterThan(seats[0]?.dy ?? 0);
-    expect(seats.map((s) => s.flip)).toEqual([false, false, false, true, true]);
-    expect(arcSeats(0)).toEqual([]);
+  it("fills the art's three seats, then two grass spots, and counts the rest behind +N", () => {
+    expect(crowd(5, 2)).toEqual({
+      own: ['seatLeft', 'seatFront', 'seatRight'],
+      friends: ['groundLeft', 'groundRight'],
+      more: 2,
+    });
+    expect(crowd(1, 0)).toEqual({ own: ['seatLeft'], friends: [], more: 0 });
+    expect(facesLeft('seatRight')).toBe(true);
+    expect(facesLeft('seatLeft')).toBe(false);
   });
 
-  it('picks two neighbours for the moment, a different pair as the days go by', () => {
-    expect(momentPair(1, 0)).toBeNull();
-    expect(momentPair(5, 0)).toEqual([0, 1]);
-    expect(momentPair(5, 3)).toEqual([3, 4]);
-    expect(momentPair(5, 4)).toEqual([0, 1]);
+  it('shares the moment between the first two seats, when two sit', () => {
+    expect(momentPair(1)).toBeNull();
+    expect(momentPair(3)).toEqual([0, 1]);
   });
 });
 

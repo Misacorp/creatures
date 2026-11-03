@@ -9,6 +9,7 @@ import {
   isComplete,
   pupilState,
   readyCount,
+  schoolNote,
   tickedCount,
   type Trial,
 } from './school-logic';
@@ -59,6 +60,23 @@ describe('the ceremony (V-TRIAL-4)', () => {
   it('titles a graduate "Pip, Bronze"', () => {
     expect(honourTitle('Pip')).toBe('Pip, Bronze');
     expect(honourTitle('Pip', 'gold')).toBe('Pip, Gold');
+  });
+});
+
+describe('what the School says (schoolNote)', () => {
+  it('offers the graduation at the ceremony and a calm line otherwise', () => {
+    expect(schoolNote('live', 2, 4)).toEqual({
+      line: '2 graduating now',
+      action: 'See the graduation',
+    });
+    expect(schoolNote('before', 2, 4)).toEqual({ line: '2 ready to graduate today', action: null });
+    expect(schoolNote('after', 2, 4)).toEqual({ line: '2 graduated this morning', action: null });
+    expect(schoolNote('after', 0, 3)).toEqual({ line: '3 on a Bronze trial', action: null });
+  });
+
+  it('offers Learn a talent only when nothing else is going on', () => {
+    expect(schoolNote('after', 0, 0).action).toBe('Learn a talent');
+    expect(schoolNote('live', 0, 2).action).toBeNull();
   });
 });
 
