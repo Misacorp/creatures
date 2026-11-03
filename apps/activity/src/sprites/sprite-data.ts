@@ -29,7 +29,8 @@ interface ParsedSprite {
 
 const TRANSPARENT = '.';
 const COLOUR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
-const MAX_SIZE = 64;
+const MAX_WIDTH = 128;
+const MAX_HEIGHT = 64;
 
 export class SpriteError extends Error {}
 
@@ -42,8 +43,8 @@ export function spriteSize(def: SpriteDef): { width: number; height: number } {
 /** Throws a `SpriteError` when the data is not a well-formed sprite (of `size`, when given). */
 export function validateSprite(def: SpriteDef, size?: { width: number; height: number }): void {
   if (def.rows.length === 0) throw new SpriteError('Sprite has no rows.');
-  if (def.rows.length > MAX_SIZE)
-    throw new SpriteError(`Sprite is taller than ${String(MAX_SIZE)}.`);
+  if (def.rows.length > MAX_HEIGHT)
+    throw new SpriteError(`Sprite is taller than ${String(MAX_HEIGHT)}.`);
   const rowWidth = def.rows[0]?.length ?? 0;
   if (rowWidth === 0) throw new SpriteError('Sprite rows are empty.');
   for (const [y, row] of def.rows.entries()) {
@@ -68,7 +69,7 @@ export function validateSprite(def: SpriteDef, size?: { width: number; height: n
     }
   }
   const actual = spriteSize(def);
-  if (actual.width > MAX_SIZE) throw new SpriteError(`Sprite is wider than ${String(MAX_SIZE)}.`);
+  if (actual.width > MAX_WIDTH) throw new SpriteError(`Sprite is wider than ${String(MAX_WIDTH)}.`);
   if (size !== undefined && (actual.width !== size.width || actual.height !== size.height)) {
     throw new SpriteError(
       `Sprite is ${String(actual.width)}x${String(actual.height)}, expected ${String(size.width)}x${String(size.height)}.`,
