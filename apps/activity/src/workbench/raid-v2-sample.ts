@@ -71,6 +71,8 @@ export interface V2SampleOptions {
   knockedOut: boolean;
   /** The swap requests: none, one you asked, one you were asked, or both. */
   swaps: 'none' | 'asked' | 'incoming' | 'both';
+  /** Failed weekends on this boss from the second lap: the bonus they give, in basis points (default 0: none). */
+  determinationBp?: number;
 }
 
 const BOARD_SPECIES = [
@@ -309,7 +311,7 @@ export function raidV2Sample(o: V2SampleOptions): { view: RaidView; ownedIds: st
     slot: o.slot,
     bestShareBp: o.bestShareBp,
     failedWeekends: 0,
-    determinationBp: 0,
+    determinationBp: o.determinationBp ?? 0,
     stagesPlayed: o.stagesPlayed,
     nextStage: o.stagesPlayed + 1,
     joiningOpen: o.stagesPlayed === 0,

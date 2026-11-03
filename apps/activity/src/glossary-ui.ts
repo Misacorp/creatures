@@ -11,6 +11,7 @@ import {
   type GlossaryVisual,
 } from '@creatures/game';
 import { markPalette } from './art';
+import { combatV2On } from './live-flags';
 import { glyphOrUnknown } from './glyphs';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { elementIcon } from './sprites/element-icons';
@@ -20,8 +21,13 @@ import type { SpriteDef } from './sprites/sprite-data';
 export type TagRef = { readonly entry: string } | { readonly ability: string };
 
 /** The popover content of a tag, or undefined when the entry or ability is not in the content. */
-export function resolveTag(ref: TagRef): GlossaryView | undefined {
-  return 'ability' in ref ? abilityView(ref.ability) : entryView(ref.entry);
+export function resolveTag(ref: TagRef, v2: boolean = combatV2On()): GlossaryView | undefined {
+  return 'ability' in ref ? abilityView(ref.ability) : entryView(ref.entry, v2);
+}
+
+/** One glossary entry by id for a popover that navigates by id, read as the server's rules (combat v2 or shipped) say. */
+export function resolveEntry(id: string, v2: boolean = combatV2On()): GlossaryView | undefined {
+  return entryView(id, v2);
 }
 
 /** A stable key for a tag target, so two tags with the same meaning share a popover title. */

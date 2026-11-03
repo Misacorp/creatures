@@ -1,4 +1,4 @@
-import { RULES } from '@creatures/game';
+import { GLOSSARY_IDS, RULES } from '@creatures/game';
 import { BossHead } from './BossCard';
 import { combatGlyph, moveGlyphId } from './combat-glyphs';
 import { elementSlug } from './art';
@@ -45,6 +45,21 @@ export function ArmourChip({ armour }: { armour: number }) {
       <Sprite sprite={combatGlyph('armour') ?? glyphOrUnknown('shield')} scale={2} />
       <span class="boss-armour-num">{armour}</span>
     </span>
+  );
+}
+
+/** Determination as a chip with its bonus (the boss card's status row); tapping it opens the keyword's help. */
+export function DeterminationChip({ bp }: { bp: number }) {
+  const percent = `+${String(bp / 100)}%`;
+  return (
+    <Tag
+      kind="chip"
+      entry={GLOSSARY_IDS.keyword('Determination')}
+      icon={{ kind: 'glyph', id: 'determination' }}
+      label={`Determination, ${percent} damage and healing`}
+    >
+      {percent}
+    </Tag>
   );
 }
 
@@ -138,6 +153,7 @@ export function BossCardV2({
             <ElementChip element={boss.element} context="boss" />
             <ArmourChip armour={card.armour} />
             {v2.bestShareBp > 0 && <Tag kind="badge">Back again</Tag>}
+            {v2.determinationBp > 0 && <DeterminationChip bp={v2.determinationBp} />}
           </>
         }
       >

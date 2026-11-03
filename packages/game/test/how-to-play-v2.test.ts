@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { combatV2 } from '../src/combat-v2';
 import {
   GLOSSARY_IDS,
+  V2_COUNTERPARTS,
+  entryView,
   GLOSSARY_SECTIONS_V2,
   RULES,
   glossary,
@@ -129,7 +131,7 @@ describe('the combat v2 keyword glossary', () => {
   const keywordNames = Object.keys(combatV2.keywords);
 
   it('has an entry for every keyword the content defines, titled with its name', () => {
-    expect(keywordNames.length).toBe(27);
+    expect(keywordNames.length).toBe(28);
     for (const name of keywordNames) {
       const entry = glossaryEntry(GLOSSARY_IDS.keyword(name));
       expect(entry, name).toBeDefined();
@@ -168,5 +170,51 @@ describe('the combat v2 keyword glossary', () => {
     expect(text('Area hit')).toContain('half as often');
     expect(combatV2.rules.critBp).toBe(20_000);
     expect(text('Crit')).toContain('double');
+  });
+});
+
+describe('the help a v2 player reads instead of the shipped entries', () => {
+  it('names an existing, different entry for every shipped entry that is wrong under v2', () => {
+    for (const [v1, v2] of Object.entries(V2_COUNTERPARTS)) {
+      expect(glossaryEntry(v1), v1).toBeDefined();
+      expect(glossaryEntry(v2), v2).toBeDefined();
+      expect(v2, v1).not.toBe(v1);
+    }
+  });
+
+  it('gives crit, the Boss Rank, the roles and the marks their v2 words, and v1 mode its old ones', () => {
+    const lines = (id: string, v2: boolean): string => {
+      const e = entryView(id, v2);
+      return `${e?.short ?? ''} ${(e?.lines ?? []).join(' ')}`;
+    };
+    expect(lines('crit', false)).toContain('50% more');
+    expect(lines('crit', true)).toContain('double');
+    expect(lines('crit', true)).not.toMatch(/\d/);
+    expect(lines('boss-rank', false)).toContain('the Rank goes up by 1');
+    expect(lines('boss-rank', true)).not.toMatch(/finale|\d/);
+    expect(lines('reaction-overload', false)).toContain('uses up the mark');
+    expect(lines('reaction-overload', true)).toContain('takes a stack');
+    expect(lines('reaction-overload', true)).not.toContain('uses up');
+    expect(lines('role-guard', false)).toContain('25% less');
+    expect(lines('role-guard', true)).not.toMatch(/\d/);
+  });
+
+  it('says no v2 entry with a finale, a Rank step or the old ability words', () => {
+    const v2Ids = new Set(Object.values(V2_COUNTERPARTS));
+    for (const id of v2Ids) {
+      const e = glossaryEntry(id);
+      const text = [e?.title, e?.short, ...(e?.lines ?? [])].join(' ');
+      expect(text, id).not.toMatch(/uses up the mark/);
+      expect(text, id).not.toMatch(/Win a normal week|Rank goes up|finale ability/);
+    }
+  });
+
+  it('has a Determination entry that How to play and the board both reach', () => {
+    const e = glossaryEntry(GLOSSARY_IDS.keyword('Determination'));
+    expect(e?.section).toBe('v2-rank');
+    expect(e?.lines.join(' ')).toMatch(/Festival/);
+    const rank = howToPlayV2.sections.find((s) => s.id === 'v2-rank')?.lines.join(' ') ?? '';
+    expect(rank).toContain('{Determination}');
+    expect(combatV2.keywords['Determination']).toBeDefined();
   });
 });

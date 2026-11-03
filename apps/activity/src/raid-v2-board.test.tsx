@@ -4,6 +4,7 @@
  * answers. Built on the workbench's sample week (the shipped content and the engine's own targeting).
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { PopoverHost } from './PopoverHost';
 import { BossCardV2, boardTurnSteps, stageTicks, strengthPips } from './BossCardV2';
 import { moveGlyphId } from './combat-glyphs';
 import { parseRaidView } from './raid-api';
@@ -34,6 +35,7 @@ let page: Page | null = null;
 afterEach(() => {
   page?.unmount();
   page = null;
+  vi.unstubAllGlobals();
 });
 
 const WEEK: V2SampleOptions = {
@@ -276,6 +278,32 @@ describe('the boss card', () => {
 
   it('has no "Back again" tag for a boss that has not been here before', () => {
     expect(visibleText(draw(sample()).root)).not.toContain('Back again');
+  });
+
+  it('shows Determination as a tappable chip with its bonus, and none before there is any', () => {
+    expect(visibleText(draw(sample()).root)).not.toContain('Determination');
+    vi.stubGlobal('window', {
+      innerHeight: 800,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    });
+    page = createPage();
+    page.draw(
+      <PopoverHost onOpenHowTo={() => undefined}>
+        <BossCardV2
+          view={sample({ slot: 6, determinationBp: 1500 })}
+          lit={null}
+          onLit={() => undefined}
+        />
+      </PopoverHost>,
+    );
+    const chip = byName(page.root, 'button', /^Determination/)[0];
+    expect(chip).toBeDefined();
+    expect(visibleText(chip!)).toContain('+15%');
+    page.click(chip!);
+    expect(visibleText(page.root)).toContain(
+      'little stronger each time the server fails this boss',
+    );
   });
 
   it('says a tapped Wind-up move is aimed when it comes', () => {
