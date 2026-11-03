@@ -8,8 +8,7 @@ import { HELSINKI, joinRaid, rows, runRaid } from './raid-helpers';
 import { V2_WEEK, v2Player } from './raid-v2-helpers';
 
 const V2 = { combatV2: true } as const;
-const run = (fn: (ctx: CoreContext) => void) =>
-  runRaid(fn, { start: V2_WEEK.open, core: V2 });
+const run = (fn: (ctx: CoreContext) => void) => runRaid(fn, { start: V2_WEEK.open, core: V2 });
 
 const v2Of = (ctx: CoreContext, id: string): RaidV2Part => {
   const v = ctx.core.raid.view(id, HELSINKI).v2;

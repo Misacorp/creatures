@@ -102,12 +102,7 @@ describe('previewMoves', () => {
       moves: [move({ anchor: 'front', shape: 'columns', n: 1 }, { id: 'lances' })],
       escalation: { name: 'Rising', feed: 'rounds', per: 1, cap: 3, grow: { area: 1 } },
     });
-    const input = stage(
-      b,
-      { name: 'A', col: 0 },
-      { name: 'B', col: 1 },
-      { name: 'C', col: 2 },
-    );
+    const input = stage(b, { name: 'A', col: 0 }, { name: 'B', col: 1 }, { name: 'C', col: 2 });
     expect(previewMoves(input, startCarry(b)).moves['lances']).toEqual(['k-A']);
     const grown = {
       ...startCarry(b),
