@@ -297,7 +297,7 @@ export function storedResultOf(stage: StageNo, output: StageOutput): StoredStage
   };
 }
 
-/** The share of the weekend's HP that clears a stage (cumulative, today's numbers): stage 1 and 2 by HP removed, the finale by the kill. */
+/** The share of the weekend's HP that clears a stage for experience (cumulative, today's numbers): stage 1 and 2 by HP removed. */
 function clearAtLossBp(stage: StageNo): number {
   const cfg = RULES.raid.phases.find((p) => p.id === STAGE_EVENT[stage]);
   if (cfg === undefined) throw new Error('unknown stage');
@@ -305,9 +305,37 @@ function clearAtLossBp(stage: StageNo): number {
 }
 
 /**
+ * The HP thresholds a stage crosses for the first time (Misa, 2026-11-04): those the weekend's HP removed (`afterBp`, 10,000 for a kill)
+ * has reached and no earlier stage of the party has paid (`paid`, the ids the earlier stages stored). A kill crosses them all.
+ */
+export function crossedThresholds(
+  afterBp: number,
+  paid: ReadonlySet<string>,
+): { id: string; pays: 'phase1' | 'phase2' }[] {
+  return RULES.raid.v2.rewards.thresholds
+    .filter((t) => afterBp >= t.removedBp && !paid.has(t.id))
+    .map((t) => ({ id: t.id, pays: t.pays }));
+}
+
+/** The threshold ids the party's earlier stages paid, from the summaries they stored (at most two rows). */
+function thresholdsPaid(sql: SqlStorage, weekId: string, party: number): Set<string> {
+  const paid = new Set<string>();
+  for (const row of sql
+    .exec<{ summary: string }>(
+      'SELECT summary FROM raid_results WHERE week_id = ? AND party = ?',
+      weekId,
+      party,
+    )
+    .toArray()) {
+    const ids = (JSON.parse(row.summary) as StoredSummary).v2?.paid?.thresholds ?? [];
+    for (const id of ids) paid.add(id);
+  }
+  return paid;
+}
+
+/**
  * Stores a played stage and pays it: the party's pool and carry, Essence, experience, gear and the finale's loot through `payStage`
- * (today's numbers; a stage is cleared when the weekend's HP removed so far reaches the phase's threshold, the finale when the boss
- * falls), the result row, the analytics events and the knocked-out creatures' places. `input` is the exact input that was fought (the
+ * (the HP thresholds first crossed in this stage, the kill bonus, the finale's own payout when the boss falls; experience per stage as before), the result row, the analytics events and the knocked-out creatures' places. `input` is the exact input that was fought (the
  * live finale's carries its actions). Call it inside a transaction, once: the result row is the done marker.
  */
 export function settleStageV2(
@@ -326,6 +354,11 @@ export function settleStageV2(
   const { result, carry } = output;
   const hpMax = input.boss.hp;
   const removedBp = shareBp(hpMax, result.bossHpLeft);
+  // The thresholds this stage crossed first: each is paid once in the weekend, by the stage whose result stores it.
+  const crossed = crossedThresholds(
+    result.won ? 10_000 : removedBp,
+    thresholdsPaid(sql, week.weekId, party),
+  );
   const cleared = stage === 3 ? result.won : result.won || removedBp >= clearAtLossBp(stage);
   const contributionOf = new Map<string, number>();
   for (const f of result.fighters) {
@@ -337,6 +370,7 @@ export function settleStageV2(
     contribution: (alias) => contributionOf.get(alias) ?? 0,
     fighters: result.fighters.map((f) => ({ id: f.key ?? f.uid, ownerAlias: f.owner })),
     bossId: input.boss.id,
+    v2: { crossed: crossed.map((t) => t.pays), kill: result.won },
   });
   const contributors = aliases
     .map((alias) => ({
@@ -364,6 +398,8 @@ export function settleStageV2(
       kill: result.won,
       knockouts: result.knockouts,
       hpRemovedBp: removedBp,
+      // The thresholds this stage paid (each is paid once in the weekend, by the stage that first crosses it) and the kill bonus.
+      paid: { thresholds: crossed.map((t) => t.id), killBonus: result.won },
     },
   };
   sql.exec(

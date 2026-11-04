@@ -484,6 +484,19 @@ export const RULES = {
     v2: {
       liveRoundMs: 30_000,
       determination: { stackBp: 500, maxStacks: 5, fromSlot: 6 },
+      /**
+       * What a v2 weekend pays and when (Misa, 2026-11-04). Each threshold is a share (bp) of the weekend's HP removed; it is paid once,
+       * when first crossed, by whichever stage crosses it (a stage 1 that removes 90% pays both). `pays` names the stage payout it gives
+       * (the Essence of that phase and its scrap); the finale's own payout still goes with the kill. Experience stays per stage.
+       * `killBonus` is the gear a kill gives each member on top: that many items of each rarity, rolled like a finale piece.
+       */
+      rewards: {
+        thresholds: [
+          { id: 'hp30', removedBp: 3_000, pays: 'phase1' },
+          { id: 'hp85', removedBp: 8_500, pays: 'phase2' },
+        ],
+        killBonus: { epic: 1, rare: 2 },
+      },
     },
     /**
      * The "Close one!" rule of the after-action card, both in basis points of the stage's target:
