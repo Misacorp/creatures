@@ -83,6 +83,36 @@ describe('the COMBAT_V2 flag: configuration', () => {
   });
 });
 
+describe('the VALLEY flag: configuration', () => {
+  it('is off at the top level and in production, and on only in staging', () => {
+    const config = parseWrangler();
+    expect(config.vars['VALLEY']).toBe('off');
+    expect(config.env['production']?.vars['VALLEY']).toBe('off');
+    expect(config.env['staging']?.vars['VALLEY']).toBe('on');
+    const on = Object.entries(config.env)
+      .filter(([, e]) => e.vars['VALLEY'] === 'on')
+      .map(([name]) => name);
+    expect(on).toEqual(['staging']);
+  });
+
+  it('is off in the environment the tests run in (the top level)', () => {
+    expect(env.VALLEY).toBe('off');
+  });
+
+  it('tells the client through /api/config only when on (absent, never false)', async () => {
+    const handler = createHandler();
+    const ctx = { waitUntil: () => undefined, passThroughOnException: () => undefined } as never;
+    const off = await callHandler(handler, new Request(`${ORIGIN}/api/config`));
+    expect(Object.hasOwn(await off.json<Record<string, unknown>>(), 'valley')).toBe(false);
+    const onEnv = { ...env, VALLEY: 'on' } as Env;
+    const on = await handler.fetch?.(new Request(`${ORIGIN}/api/config`), onEnv, ctx);
+    expect(((await on?.json()) as Record<string, unknown>)['valley']).toBe(true);
+    const other = { ...env, VALLEY: 'true' } as Env;
+    const odd = await handler.fetch?.(new Request(`${ORIGIN}/api/config`), other, ctx);
+    expect(Object.hasOwn((await odd?.json()) as Record<string, unknown>, 'valley')).toBe(false);
+  });
+});
+
 describe('migrations 50 and 51', () => {
   it('add the Knack column and the Talent Book tables, and can be redone', async () => {
     await runCore(nextGuild(), (ctx) => {

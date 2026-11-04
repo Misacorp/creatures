@@ -88,3 +88,16 @@ describe('the combat v2 flag of /api/config', () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe('the valley flag of /api/config', () => {
+  it('is on only for an explicit true', async () => {
+    const base = { discordClientId: '1', environment: 'local', version: 'dev', leetSource: 'mock' };
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ ...base, valley: true })));
+    expect((await fetchConfig()).valley).toBe(true);
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json(base)));
+    expect((await fetchConfig()).valley).toBe(false);
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ ...base, valley: 'on' })));
+    expect((await fetchConfig()).valley).toBe(false);
+    vi.unstubAllGlobals();
+  });
+});
