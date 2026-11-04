@@ -29,7 +29,7 @@ import { combatV2 } from '@creatures/game/combat-v2';
 import {
   stageV2,
   startCarry,
-  wideBoss,
+  partyBossOf,
   type FinaleAction,
   type FighterSpec,
   type FightResult,
@@ -124,6 +124,20 @@ export const smallParty = (players: 1 | 2 | 3): JourneyServer => ({
   players: Array.from({ length: players }, () => ({ role: 'prepared', roster: 'daily' }) as const),
 });
 
+/**
+ * Misa's live server (2026-11-04: "3 try hard players, 3 daily players and 4 semi weekly players"): ten players, three on the prepared
+ * line every day, three builders every day, four casual weekly players. Nobody joins late (unlike the coverage servers, which add a new
+ * player in week 4): the numbers are Misa's own count of who plays now.
+ */
+export const LIVE10: JourneyServer = {
+  id: 'live10',
+  players: [
+    ...Array.from({ length: 3 }, (): PathPlayer => ({ role: 'prepared', roster: 'daily' })),
+    ...Array.from({ length: 3 }, (): PathPlayer => ({ role: 'builder', roster: 'daily' })),
+    ...Array.from({ length: 4 }, (): PathPlayer => ({ role: 'casual', roster: 'weekly' })),
+  ],
+};
+
 export const JOURNEY_SERVERS: readonly JourneyServer[] = [
   DEDICATED,
   MIXED,
@@ -134,6 +148,7 @@ export const JOURNEY_SERVERS: readonly JourneyServer[] = [
   smallParty(1),
   smallParty(2),
   smallParty(3),
+  LIVE10,
 ];
 
 /** The players who are there in `week` (a new player is not before their join week). */
@@ -154,12 +169,11 @@ export function seatsOf(slot: number): number {
 
 /**
  * The boss a party of `players` fights, the weekend HP set at stage 1 (R14.1): the slot's four-player boss, widened with the players over
- * four (the engine's `wideBoss`, what `trackBoss` does), and a party under four fights a smaller boss: one column per player, the HP and
- * Attack on the same curves below four (Misa, 2026-11-04; `trackBoss` with `followSmallParty`, the worker's `colsFor`). Applied to the
+ * four (the engine's `partyBossOf`, what `trackBoss` does), and a party under four fights a smaller boss: one column per player, the HP and
+ * Attack linear in the players below four (`SMALL_PARTY_HP_EXPONENT`, `SMALL_PARTY_ATK_EXPONENT`; Misa, 2026-11-04; `trackBoss` with `followSmallParty`, the worker's `colsFor`). Applied to the
  * lab's own slot boss (`slotBoss`, the tuner's tables).
  */
-export const partyBoss = (base: BossDef, players: number): BossDef =>
-  players === base.cols ? base : wideBoss(base, players);
+export const partyBoss = (base: BossDef, players: number): BossDef => partyBossOf(base, players);
 
 /** One player's creatures in a weekend. */
 export interface JourneyPlayer {
@@ -465,7 +479,15 @@ const weekendKillLab = (
 /** The kinds of server compared on both rules, at the three speeds. */
 export const COMPARED_SERVERS = ['dedicated', 'mixed', 'builders'] as const;
 /** The party sizes (game rules only, expected speed). */
-export const SIZE_SERVERS = ['mixed5', 'mixed8', 'mixed15', 'small1', 'small2', 'small3'] as const;
+export const SIZE_SERVERS = [
+  'mixed5',
+  'mixed8',
+  'mixed15',
+  'small1',
+  'small2',
+  'small3',
+  'live10',
+] as const;
 /** The slots of the mixed server's one-weekend kill (the track's three misses). */
 export const MIXED_KILL_SLOTS = [8, 11, 14] as const;
 
@@ -522,6 +544,7 @@ export interface JourneyReport {
     readonly cells: readonly JourneyCellData[];
     readonly mixedKill: readonly {
       rules: JourneyRules;
+      server: string;
       habits: string;
       slot: number;
       week: number;
@@ -587,19 +610,33 @@ export function planJourney(options: JourneyPlanOptions): Plan<JourneyReport> {
     ),
   ];
   const killSets = [EVERYONE_REPLACES, REPLACE_ONLY, HABITS, HABITS_FIRST_KNACK].map((h) => h.id);
-  const kills: JourneyJobArgs[] = rulesBoth.flatMap((rules) =>
-    (rules === 'lab' ? [EVERYONE_REPLACES.id] : killSets).flatMap((habits) =>
-      slots.map((slot) => ({
-        rules,
-        server: 'mixed',
-        speed: 'expected' as const,
-        determination: 'off' as const,
-        habits,
-        index: 0,
-        slot,
-      })),
-    ),
-  );
+  const killsOf = (
+    server: string,
+    sets: readonly [JourneyRules, readonly string[]][],
+  ): JourneyJobArgs[] =>
+    sets.flatMap(([rules, habitIds]) =>
+      habitIds.flatMap((habits) =>
+        slots.map((slot) => ({
+          rules,
+          server,
+          speed: 'expected' as const,
+          determination: 'off' as const,
+          habits,
+          index: 0,
+          slot,
+        })),
+      ),
+    );
+  const kills: JourneyJobArgs[] = [
+    ...killsOf('mixed', [
+      ['lab', [EVERYONE_REPLACES.id]],
+      ['game', killSets],
+    ]),
+    // Misa's live server: the game's rules only (the lab has no twin of it), step 1's players and the habits.
+    ...(sizes.includes('live10')
+      ? killsOf('live10', [['game', [EVERYONE_REPLACES.id, HABITS.id]]])
+      : []),
+  ];
   const each = (a: JourneyJobArgs): JourneyJobArgs[] =>
     Array.from({ length: n }, (_, index) => ({ ...a, index }));
   const jobs: JobSpec[] = [...full, ...kills].flatMap(each).map((args) => ({
@@ -632,6 +669,7 @@ export function planJourney(options: JourneyPlanOptions): Plan<JourneyReport> {
         );
         return {
           rules: a.rules,
+          server: a.server,
           habits: a.habits ?? EVERYONE_REPLACES.id,
           slot: a.slot as number,
           week: SLOT_WEEKS[(a.slot as number) - 1] ?? 1,
@@ -729,7 +767,7 @@ function journeyMarkdown(
   md.push(
     "### The mixed server: one weekend at the slot's week (the track's three misses)",
     '',
-    `The share of mixed servers that kill the boss in one weekend at the week the slot is tuned for (\`SLOT_WEEKS\`), expected speed, no Determination. The target is at least ${pct(MIXED_KILL_MIN)} (slot 1 asks 80%). The game's rules, by who plays: everyone replaces (step 1); only the replacement habit (daily players always, weekly players ${pct(REPLACE_CHANCE.weekly)}: an assumption to confirm with Misa); all the habits (also talents from the line's pool, golden at 1 in ${RULES.talents.golden.denominator}, casual players in random rows and no Knack, every finale ability fired at its default round); the habits with casual players equipping their first known Knack.`,
+    `The share of mixed servers that kill the boss in one weekend at the week the slot is tuned for (\`SLOT_WEEKS\`), expected speed, no Determination. The target is at least ${pct(MIXED_KILL_MIN)} (slot 1 asks 80%). The game's rules, by who plays: everyone replaces (step 1); only the replacement habit (daily players always, weekly players ${pct(REPLACE_CHANCE.weekly)}: confirmed by Misa, 2026-11-04); all the habits (also talents from the line's pool, golden at 1 in ${RULES.talents.golden.denominator}, casual players in random rows and no Knack, every finale ability fired at its default round); the habits with casual players equipping their first known Knack.`,
     '',
     '| Slot | Boss | Week | Lab | Game: everyone replaces | Game: replacement habit only | Game: habits | Game: habits, first-known Knack |',
     '| ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |',
@@ -737,7 +775,9 @@ function journeyMarkdown(
   for (const s of slots) {
     const lab = mixedKill.find((m) => m.rules === 'lab' && m.slot === s);
     const game = (id: string) =>
-      mixedKill.find((m) => m.rules === 'game' && m.habits === id && m.slot === s);
+      mixedKill.find(
+        (m) => m.rules === 'game' && m.server === 'mixed' && m.habits === id && m.slot === s,
+      );
     const g = (id: string) => {
       const x = game(id);
       return x ? pct(x.kill) : '-';
@@ -747,6 +787,26 @@ function journeyMarkdown(
     );
   }
   md.push('');
+  if (mixedKill.some((m) => m.server === 'live10')) {
+    md.push(
+      "### Misa's server: one weekend at the slot's week",
+      '',
+      "The live server as Misa counted it (2026-11-04): 3 try-hard players (prepared line, daily), 3 daily players (builders), 4 semi-weekly players (casual, weekly), ten players from the first week. The share that kill the boss in one weekend at the slot's week, expected speed, no Determination, the game's rules.",
+      '',
+      '| Slot | Boss | Week | Game: everyone replaces | Game: habits |',
+      '| ---: | --- | ---: | ---: | ---: |',
+    );
+    for (const s of slots) {
+      const g = (id: string) => {
+        const x = mixedKill.find((m) => m.server === 'live10' && m.habits === id && m.slot === s);
+        return x ? pct(x.kill) : '-';
+      };
+      md.push(
+        `| ${s} | ${trackSlot(s).bossId} | ${SLOT_WEEKS[s - 1] ?? 1} | ${g(EVERYONE_REPLACES.id)} | ${g(HABITS.id)} |`,
+      );
+    }
+    md.push('');
+  }
   const sizeKinds = [
     ...new Set(cells.filter((c) => c.rules === 'game').map((c) => c.summary.server)),
   ].filter((k) => !kinds.includes(k));
@@ -754,7 +814,7 @@ function journeyMarkdown(
     md.push(
       '### Real party sizes (game rules, expected speed)',
       '',
-      `Servers of 5, 8 and 15 players are the valley's coverage servers; the last casual player is a new player who joins in week ${NEW_PLAYER_JOIN_WEEK}, so the first weeks are one player short. Small parties are one to three daily players on the prepared line; they fight the smaller boss (one column per player, the HP and Attack curves continued below four). The Festival is every ${FESTIVAL_EVERY}th week as on the path. Habits: everyone replaces (step 1), or the habits.`,
+      `Servers of 5, 8 and 15 players are the valley's coverage servers; the last casual player is a new player who joins in week ${NEW_PLAYER_JOIN_WEEK}, so the first weeks are one player short. Small parties are one to three daily players on the prepared line; they fight the smaller boss (one column per player, the HP and Attack linear in the players below four). Live10 is Misa's server (3 try-hard, 3 daily, 4 semi-weekly, all there from week 1). The Festival is every ${FESTIVAL_EVERY}th week as on the path. Habits: everyone replaces (step 1), or the habits.`,
       '',
       '| Server | Players | Determination | Stuck share | Longest run (median / worst) | Slots reached | Weekends: slots 1-5 / 6-10 / 11-15 (median per slot) |',
       '| --- | --- | --- | ---: | --- | ---: | --- |',

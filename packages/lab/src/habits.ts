@@ -27,8 +27,9 @@ import { legalTalents } from './talents';
  * The chance that a player brings a spare after a knock-out between stages, by roster kind (the stage break, one draw per player and
  * stage: a player who logs in fills every empty seat from their spares).
  *
- * **An assumption, not a target** (the lead, 2026-11-04): to confirm with Misa. A daily player logs in between stages; a weekly player
- * mostly does not (3 in 10 do); a new player is new and keen (as a daily player).
+ * **The weekly rate of 0.3 is confirmed by Misa (2026-11-04: "3 times in 10 seems legit"), no longer an assumption.** A daily player
+ * logs in between stages; a weekly player mostly does not (3 in 10 do). The new-player rate stays the lead's assumption (a new player is
+ * new and keen, as a daily player).
  */
 export const REPLACE_CHANCE: Readonly<Record<RosterKind, number>> = {
   daily: 1,

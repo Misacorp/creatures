@@ -1,7 +1,7 @@
 /** The journey on the game's raid rules: seats follow the piece, the lock sets the HP, replacements come from the player's own spares. */
 import { describe, expect, it } from 'vitest';
 import { RULES } from '@creatures/game';
-import { wideBoss, type Placement } from '@creatures/engine/v2';
+import { partyBossOf, wideBoss, type Placement } from '@creatures/engine/v2';
 import {
   HABITS,
   HABITS_FIRST_KNACK,
@@ -15,6 +15,7 @@ import { talentSlotsAt } from '../src/roster';
 import { LINE_POOLS, lineOfForm } from '../src/talents';
 import {
   JOURNEY_SERVERS,
+  LIVE10,
   NEW_PLAYER_JOIN_WEEK,
   coverageServer,
   journeyOf,
@@ -152,6 +153,7 @@ describe('the servers', () => {
       'small1',
       'small2',
       'small3',
+      'live10',
     ]);
     expect(
       [coverageServer(5), coverageServer(8), coverageServer(15)].map((x) => x.players.length),
@@ -303,6 +305,18 @@ describe('player habits', () => {
   });
 });
 
+describe("Misa's live server", () => {
+  it('is ten players: 3 try-hard (prepared, daily), 3 daily (builders), 4 semi-weekly (casual, weekly)', () => {
+    const count = (role: string, roster: string) =>
+      LIVE10.players.filter((p) => p.role === role && p.roster === roster).length;
+    expect(LIVE10.players).toHaveLength(10);
+    expect(count('prepared', 'daily')).toBe(3);
+    expect(count('builder', 'daily')).toBe(3);
+    expect(count('casual', 'weekly')).toBe(4);
+    expect(LIVE10.players.every((p) => p.joinWeek === undefined)).toBe(true);
+  });
+});
+
 describe('small parties', () => {
   it('a party of one to three fights a smaller boss than four players do', () => {
     const slot = slotOf('tidal-colossus');
@@ -317,6 +331,7 @@ describe('small parties', () => {
     expect(hps[0]).toBeLessThan(hps[1] as number);
     expect(hps[1]).toBeLessThan(hps[2] as number);
     expect(hps[2]).toBeLessThan(four.hp);
-    expect(hps[0]).toBe(wideBoss(slotBoss(slot), 1).hp);
+    expect(hps[0]).toBe(partyBossOf(slotBoss(slot), 1).hp);
+    expect(hps[0]).toBe(Math.round(slotBoss(slot).hp / 4));
   });
 });
