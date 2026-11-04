@@ -289,6 +289,7 @@ Superseded: 1 entry (see the topic file).
 [dungeon.md](dungeon.md): The daily dungeon: paths, rooms and rare rooms, the camp, the Undercroft, foes, its screens and payouts.
 
 - 2026-11-04 \[Misa\] A depth choice before a run, with reward scalars
+- 2026-11-04 Combat v2 dungeon measures in the lab: safe gain, the descent choice, a four-slot team
 - 2026-11-04 \[Misa\] Dungeon direction: an easy base dungeon, a hard Undercroft, the descent is the choice
 - 2026-11-04 \[Misa\] Combat v2 Undercroft descent revives knocked-out creatures
 - 2026-11-02 Daily dungeon on combat v2 (phase 4, slice 4): the rules version in the run, fighters frozen at the start, what a v2 room folds in

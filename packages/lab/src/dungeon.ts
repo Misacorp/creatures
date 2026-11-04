@@ -33,22 +33,25 @@ import {
   generateDungeonMap,
   generateUndercroftMap,
   isLandmark,
+  keptOnDefeat,
   landmarkBossId,
+  nodeLoot,
   mapNode,
   reachableNodes,
   resolveEvent,
   undercroftBaseFloors,
-  undercroftDepth,
   undercroftOpen,
   type DungeonEventDef,
   type DungeonMap,
+  type DungeonRunPack,
   type MapNode,
   type Rng,
 } from '@creatures/game';
 import { fight } from './fight';
 import { LAB_RULES } from './rules';
 import { foeAt } from './foes';
-import { GAUNTLET, toPlacements, type Pick, type Score } from './search';
+import { packOf, type FoeKnobs } from './dungeonKnobs';
+import { GAUNTLET, toPlacements, type Mode, type Pick, type Score } from './search';
 import { formStats } from './species';
 import type { BossDef } from './types';
 
@@ -88,6 +91,41 @@ export interface RunOptions {
   readonly descendAbove?: number;
   /** Follow the game: a next Undercroft level opens only when the keeper's floor was cracked (`map.crack`); the default plays `levels` levels. */
   readonly followCrack?: boolean;
+  /**
+   * Go down only while the team's share of HP at the end of the floor (all of the team's creatures, a knocked-out one counts 0, before the
+   * breath on the way down) is above this: a player who looks at the team's bars. 2 never goes down. Alongside `descendAbove`, both must hold.
+   */
+  readonly descendShare?: number;
+  /**
+   * Measure the choice: after the floor boss falls, play the Undercroft levels (up to `levels`, a next one whether or not the floor was cracked)
+   * whatever the player's rule says, and record each in `levelLog`. What the rule would have done is still what `entered` and `undercroft` count.
+   */
+  readonly probe?: boolean;
+  /** The arena: rows and columns of the team and the foe (the dungeon's row of three by default; a four-slot team is `1 x 4`). */
+  readonly mode?: Mode;
+  /** Foe numbers moved for a report (`dungeonKnobs.ts`): the game's own when absent. */
+  readonly foes?: FoeKnobs;
+}
+
+/** The pack the run's rooms paid, in units (Bait, Essence and scrap), as the worker counts it. */
+const unitsOf = (p: DungeonRunPack): number => p.bait + p.essence + p.scrap;
+
+/** One Undercroft level a run entered (or, with `probe`, was made to enter). */
+export interface LevelLog {
+  readonly level: number;
+  /** The team's share of HP and the creatures knocked out when the level was offered (before the breath on the way down). */
+  readonly share: number;
+  readonly knocked: number;
+  /** The player's rule would have gone down (false: only the probe went). */
+  readonly chosen: boolean;
+  /** The keeper was beaten. */
+  readonly won: boolean;
+  /** The level's floor was cracked (a next level was open). */
+  readonly cracked: boolean;
+  /** Units in the pack on the way down; what the level paid into it if it was won; what a defeat there would take from the pack (half, rounded up) if it was lost. */
+  readonly packIn: number;
+  readonly gain: number;
+  readonly lost: number;
 }
 
 export interface RunResult {
@@ -107,6 +145,14 @@ export interface RunResult {
   readonly keepsakes: number;
   /** What happened at the camp: 'rest', 'swap', 'keepsake', or none (a run that did not reach it). */
   readonly camp: string | null;
+  /** The state of the team when the floor boss fell (null: not cleared), and the units in the pack then. */
+  readonly floorEnd: {
+    readonly share: number;
+    readonly knocked: number;
+    readonly pack: number;
+  } | null;
+  /** The Undercroft levels entered (with `probe`, every level it played). */
+  readonly levelLog: readonly LevelLog[];
 }
 
 // ---------- keepsakes in the lab ----------
@@ -184,6 +230,12 @@ export function descentBreathOf(
 
 const share = (hp: number, max: number): number => (max > 0 ? hp / max : 0);
 
+const addUnits = (a: DungeonRunPack, b: DungeonRunPack): DungeonRunPack => ({
+  bait: a.bait + b.bait,
+  essence: a.essence + b.essence,
+  scrap: a.scrap + b.scrap,
+});
+
 /**
  * One run of `team` (the row, three creatures) at `depth`: the day's map from `rng`, then the floor boss and, if
  * asked, Undercroft levels. All dice come from `rng` (the path policy's look-ahead uses its own seeded streams).
@@ -196,9 +248,10 @@ export function runMap(
 ): RunResult {
   const smart = options.policy === 'smart';
   const restOn = options.rest ?? true;
+  const mode = options.mode ?? GAUNTLET;
   let row: Pick[] = [...team];
   const bench: Pick[] = [...(options.bench ?? [])];
-  let placements = toPlacements(row, GAUNTLET);
+  let placements = toPlacements(row, mode);
   let hp = new Map<string, number>();
   const maxHp = new Map<string, number>();
   const held: string[] = [];
@@ -218,9 +271,16 @@ export function runMap(
     return alive.reduce((a, u) => a + share(hpOf(u), maxHp.get(u) ?? hpOf(u)), 0) / alive.length;
   };
 
+  const basePack = packOf(options.foes?.base);
+  const underPack = packOf(options.foes?.undercroft ?? options.foes?.base);
+  /** The Undercroft level a walk is in (0: the base floors). */
+  let level = 0;
+  let pack: DungeonRunPack = { bait: 0, essence: 0, scrap: 0 };
+
   const foeFor = (id: string, d: number, kind: MapNode['kind'], signature: boolean): BossDef => {
     const fold = foeFold(held, curses, row);
-    const base = foeAt(id, d, { signature });
+    const arena = foeAt(id, d, { signature }, level > 0 ? underPack : basePack);
+    const base: BossDef = { ...arena, rows: mode.rows, cols: mode.cols };
     const elite = kind === 'elite' ? RULES.dungeon.elite : { hpBp: 10_000, atkBp: 10_000 };
     return scaled(
       base,
@@ -321,7 +381,7 @@ export function runMap(
       const next = bench.shift();
       if (next !== undefined && slot >= 0) {
         row = row.map((p, i) => (i === slot ? next : p));
-        placements = toPlacements(row, GAUNTLET);
+        placements = toPlacements(row, mode);
         hp = new Map([...hp].filter(([u]) => uids().includes(u)));
         campChoice = 'swap';
         return;
@@ -384,7 +444,7 @@ export function runMap(
       if (node === undefined) return false;
       at = node.id;
       if (node.kind === 'cache') {
-        /* free loot, nothing for the fight */
+        pack = addUnits(pack, nodeLoot('cache', level));
       } else if (node.kind === 'mystery') meetEvent(node);
       else if (node.kind === 'camp') atCamp();
       else {
@@ -393,33 +453,79 @@ export function runMap(
         if (foeId === undefined) return false;
         if (!play(foeFor(foeId, d, node.kind, node.kind === 'boss' && (keeper || isLandmark(d)))))
           return false;
-        if (node.kind === 'boss') return true;
+        pack = addUnits(pack, nodeLoot(node.kind, level));
+        if (node.kind === 'boss') {
+          // The main boss's chest also puts the clear's Essence and a landmark's Essence and scrap in the pack (`openMainChest`).
+          if (level === 0)
+            pack = addUnits(pack, {
+              bait: 0,
+              essence:
+                RULES.dungeon.fullClear.essence +
+                (isLandmark(d) ? RULES.dungeon.landmark.essence : 0),
+              scrap: isLandmark(d) ? RULES.dungeon.landmark.scrap : 0,
+            });
+          return true;
+        }
       }
     }
   };
 
   const map = generateDungeonMap(rng);
   const cleared = walk(map, depth, false);
+  /** The mean share of max HP of the whole team, a knocked-out creature counting 0. */
+  const teamShare = (): number => {
+    const ids = uids();
+    return ids.length === 0
+      ? 0
+      : ids.reduce((a, u) => a + share(hpOf(u), maxHp.get(u) ?? hpOf(u)), 0) / ids.length;
+  };
+  const knocked = (): number => uids().filter((u) => hpOf(u) <= 0).length;
   let undercroft = 0;
   let entered = 0;
+  const levelLog: LevelLog[] = [];
+  const floorEnd = cleared ? { share: teamShare(), knocked: knocked(), pack: unitsOf(pack) } : null;
   if (cleared && undercroftOpen(depth)) {
     const threshold = options.descendAbove ?? (smart ? 0.5 : undefined);
-    for (let level = 1; level <= (options.levels ?? 0); level++) {
+    const bonus = options.foes?.undercroftBonus ?? RULES.dungeon.undercroft.depthBonus;
+    // What the player's rule says: it stops at the first level it would not go down (or whose floor was not cracked).
+    let going = true;
+    for (let lv = 1; lv <= (options.levels ?? 0); lv++) {
       const before = Object.fromEntries(uids().map((u) => [u, hpOf(u)]));
+      const shareBefore = teamShare();
+      const knockedBefore = knocked();
       hp = new Map(
         Object.entries(descentBreathOf(before, maxRecord(), options.standingOnlyDescent === true)),
       );
       if (standing().length === 0) break;
-      if (threshold !== undefined && health() <= threshold) break;
+      if (threshold !== undefined && health() <= threshold) going = false;
+      if (options.descendShare !== undefined && shareBefore <= options.descendShare) going = false;
+      if (!going && options.probe !== true) break;
       const under = generateUndercroftMap(rng, {
-        level,
-        floors: undercroftBaseFloors(depth, level),
+        level: lv,
+        floors: undercroftBaseFloors(depth, lv),
         marks: [],
       });
-      entered++;
-      if (!walk(under, undercroftDepth(depth, level), true)) break;
-      undercroft++;
-      if (options.followCrack && under.crack !== true) break;
+      if (going) entered++;
+      level = lv;
+      const packIn = unitsOf(pack);
+      const won = walk(under, depth + bonus * lv, true);
+      const gain = won ? unitsOf(pack) - packIn : 0;
+      const lost = won ? 0 : unitsOf(pack) - unitsOf(keptOnDefeat(pack));
+      levelLog.push({
+        level: lv,
+        share: shareBefore,
+        knocked: knockedBefore,
+        chosen: going,
+        won,
+        cracked: under.crack === true,
+        packIn,
+        gain,
+        lost,
+      });
+      if (!won) break;
+      if (going) undercroft++;
+      if (options.followCrack && under.crack !== true) going = false;
+      if (!going && options.probe !== true) break;
     }
   }
   return {
@@ -428,9 +534,11 @@ export function runMap(
     fights,
     played,
     entered,
-    knockouts: uids().filter((u) => hpOf(u) <= 0).length,
+    knockouts: knocked(),
     keepsakes: held.length,
     camp: campChoice,
+    floorEnd,
+    levelLog,
   };
 }
 
