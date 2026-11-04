@@ -3,7 +3,7 @@ import type { Entry } from '../types';
 import { VALLEY_STARTS, ValleyDemo } from '../valley-demo/ValleyDemo';
 
 const valleyShell: Entry = {
-  name: 'ValleyShell',
+  name: 'ValleyFrame',
   file: 'apps/activity/src/valley/ValleyFrame.tsx',
   group: 'Controls',
   description:

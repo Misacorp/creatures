@@ -136,7 +136,7 @@ main.card:has(.vy-frame) > .hud {
   overflow: hidden;
   background: var(--ink);
   color: var(--bone);
-  font-size: 1rem;
+  font-size: var(--fs-heading);
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -276,7 +276,7 @@ main.card:has(.vy-frame) > .hud {
 }
 
 .vy-bang {
-  font-size: 1.5rem;
+  font-size: var(--fs-title);
   line-height: 1;
   color: var(--ink);
 }
@@ -449,7 +449,7 @@ main.card:has(.vy-frame) > .hud {
 }
 
 .vy-mon-lv {
-  font-size: 0.875rem;
+  font-size: var(--fs-row);
   line-height: 14px;
   color: #fbf3df;
 }
@@ -470,7 +470,7 @@ main.card:has(.vy-frame) > .hud {
 }
 
 .vy-mark-say .vy-bang {
-  font-size: 1.125rem;
+  font-size: var(--fs-heading);
 }
 
 /* A free creature idles: a one-pixel bob in two steps. */
@@ -534,7 +534,7 @@ main.card:has(.vy-frame) > .hud {
   background: var(--paper, #f4ead0);
   box-shadow: 0 0 0 var(--px) var(--ink);
   color: var(--ink);
-  font-size: 0.875rem;
+  font-size: var(--fs-row);
   line-height: 1.2;
   text-align: center;
 }
@@ -564,7 +564,7 @@ main.card:has(.vy-frame) > .hud {
 }
 
 .vy-row-name {
-  font-size: 1.125rem;
+  font-size: var(--fs-heading);
 }
 
 .vy-row-line {
