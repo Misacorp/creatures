@@ -3,7 +3,8 @@ import { URL, fileURLToPath } from 'node:url';
 import { CARDS } from './cards';
 import { RAID_BOSS_IDS } from './bosses';
 import { planBosses } from './bossReport';
-import { planDungeonDays } from './dungeonDays';
+import { planDungeonDays } from './dungeonMeasure';
+import { planFourSlot } from './fourSlot';
 import { planJourney } from './journey';
 import { planPath, type PathSummary } from './path';
 import { ownabilityMarkdown, ownabilityTable } from './ownability';
@@ -59,7 +60,8 @@ export async function main(args: readonly string[], run: JobRunner = serial): Pr
   }
   if (args.includes('--path')) return path(args, quick, run);
   if (args.includes('--journey')) return journey(quick, run);
-  if (args.includes('--dungeon-days')) return dungeonDays(quick, run);
+  if (args.includes('--dungeon-days')) return dungeonDays(args, quick, run);
+  if (args.includes('--four-slot')) return fourSlot(quick, run);
   const bossAt = args.indexOf('--boss');
   if (args.includes('--bosses') || bossAt >= 0) {
     // Only the real raid bosses and dungeon foes, to the console (nothing is written).
@@ -192,10 +194,35 @@ async function journey(quick: boolean, run: JobRunner): Promise<number> {
   return 0;
 }
 
-/** `--dungeon-days [--quick]`: each player's daily dungeon runs over 24 weeks (`dungeonDays.ts`), to the console (nothing is written). */
-async function dungeonDays(quick: boolean, run: JobRunner): Promise<number> {
+/** `--four-slot [--quick]`: the team search on a row of four, to the console (`fourSlot.ts`; nothing is written). */
+async function fourSlot(quick: boolean, run: JobRunner): Promise<number> {
   const t0 = Date.now();
-  const { value, timings } = await runPlan(planDungeonDays({ quick }), run);
+  const { value, timings } = await runPlan(planFourSlot({ quick }), run);
+  console.log(value.md.join('\n'));
+  console.log(`four-slot in ${secondsSince(t0)} s`);
+  console.log(timings);
+  return 0;
+}
+
+/** `--dungeon-days [--quick] [--scenarios a,b] [--step-back n] [--servers n]`: each player's daily dungeon runs over 24 weeks (`dungeonDays.ts`), to the console (nothing is written). */
+async function dungeonDays(
+  args: readonly string[],
+  quick: boolean,
+  run: JobRunner,
+): Promise<number> {
+  const t0 = Date.now();
+  const scenarios = flagValue(args, '--scenarios')?.split(',');
+  const stepBack = Number(flagValue(args, '--step-back') ?? 0);
+  const servers = flagValue(args, '--servers');
+  const { value, timings } = await runPlan(
+    planDungeonDays({
+      quick,
+      ...(scenarios ? { scenarios } : {}),
+      ...(stepBack > 0 ? { stepBack } : {}),
+      ...(servers ? { servers: Number(servers) } : {}),
+    }),
+    run,
+  );
   console.log(value.md.join('\n'));
   console.log(`dungeon days in ${secondsSince(t0)} s`);
   console.log(timings);
