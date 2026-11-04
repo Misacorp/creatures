@@ -85,4 +85,22 @@ describe('an alert', () => {
     expect(byClass(p.root, 'alert')).toHaveLength(0);
     expect(onDismiss).toHaveBeenCalledOnce();
   });
+
+  it('shows what it is given in the icon’s place, or no icon at all with null', () => {
+    const p = draw(
+      <Alert level="info" icon={<b class="face">x</b>}>
+        Story
+      </Alert>,
+    );
+    expect(byClass(p.root, 'face')).toHaveLength(1);
+    expect(byClass(p.root, 'alert-icon')).toHaveLength(1);
+    p.unmount();
+    page = null;
+    const q = draw(
+      <Alert level="info" icon={null}>
+        Story
+      </Alert>,
+    );
+    expect(byClass(q.root, 'alert-icon')).toHaveLength(0);
+  });
 });

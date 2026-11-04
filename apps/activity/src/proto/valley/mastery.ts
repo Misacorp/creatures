@@ -52,3 +52,14 @@ export function masteryOf(creature: Pick<Creature, 'id' | 'level'>, kind: WorkKi
 export function masteryWords(step: number, kind: WorkKind): string {
   return `${MASTERY_WORDS[Math.min(MASTERY_MAX, Math.max(0, step))] ?? 'Novice'} ${kind}`;
 }
+
+/** The mastery as a popover fact: "Smithing" and "Expert, 2 / 3" (or "Novice, not started" at step 0). */
+export function masteryFact(step: number, kind: WorkKind): { label: string; value: string } {
+  const at = Math.min(MASTERY_MAX, Math.max(0, step));
+  const label = `${kind.charAt(0).toUpperCase()}${kind.slice(1)}`;
+  const word = MASTERY_WORDS[at] ?? 'Novice';
+  return {
+    label,
+    value: at === 0 ? `${word}, not started` : `${word}, ${String(at)} / ${String(MASTERY_MAX)}`,
+  };
+}

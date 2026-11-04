@@ -37,6 +37,11 @@ export interface AlertProps {
    * called. Absent: no X, the alert stays.
    */
   onDismiss?: (() => void) | undefined;
+  /**
+   * What stands in the icon's place at the left: a picture of what the note is about (a place's story
+   * shows its creatures' faces). Absent: the level's icon. `null`: nothing.
+   */
+  icon?: ComponentChildren | null;
   /** What the X says to assistive technology. */
   dismissLabel?: string;
   class?: string;
@@ -57,6 +62,7 @@ export function Alert({
   layout = 'inline',
   children,
   onDismiss,
+  icon,
   dismissLabel = 'Dismiss',
   class: extra,
 }: AlertProps) {
@@ -95,9 +101,11 @@ export function Alert({
   return (
     <div class={classes.join(' ')} role={level === 'alert' ? 'alert' : 'status'}>
       <div class="alert-body">
-        <span class="alert-icon" aria-hidden="true">
-          <Sprite sprite={glyphOrUnknown(ALERT_ICONS[level])} scale={2} />
-        </span>
+        {icon !== null && (
+          <span class="alert-icon" aria-hidden="true">
+            {icon ?? <Sprite sprite={glyphOrUnknown(ALERT_ICONS[level])} scale={2} />}
+          </span>
+        )}
         <div class={`alert-text prose ${layout}`}>
           {title !== undefined && <strong class="alert-title">{title}</strong>}
           {title !== undefined && layout === 'inline' && ' '}
