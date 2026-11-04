@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AwaySummary } from '../../api';
 import { PopoverHost } from '../../PopoverHost';
+import { SAMPLE_STATE } from '../../creature-card-sample';
+import { sampleGearItem } from '../../workbench/gear-sample';
+import type { AwayWorld } from './stories';
 import { byClass, byName, createPage, type FakeElement, type Page } from '../../test-dom';
 import { WelcomeBack } from './WelcomeBack';
 
@@ -34,6 +37,18 @@ const MEDALS_ONLY: AwaySummary = {
   sources: [{ kind: 'games', bait: 0, essence: 0, items: 0, creatures: 0, medals: 2, xp: 0 }],
 };
 
+// A bag with the raid's one piece, and the roster with the raid's one newcomer (caught inside the away window).
+const WORLD: AwayWorld = {
+  creatures: SAMPLE_STATE.creatures
+    .slice(0, 3)
+    .map((c, i) => ({ ...c, caughtAt: i === 0 ? 50 : 0 })),
+  items: [{ ...sampleGearItem({ id: 'p1', baseId: 'kelp-cap', rarity: 'rare' }), createdAt: 60 }],
+  blueprints: [],
+  tray: { trips: [], jobs: [], now: 100 },
+  games: null,
+  raid: null,
+};
+
 function drawBack(away: AwaySummary | null, extra: { reduced?: boolean } = {}) {
   vi.stubGlobal(
     'ResizeObserver',
@@ -53,7 +68,7 @@ function drawBack(away: AwaySummary | null, extra: { reduced?: boolean } = {}) {
     <PopoverHost onOpenHowTo={() => undefined}>
       <WelcomeBack
         away={a}
-        creatures={[]}
+        world={WORLD}
         now={Date.UTC(2026, 10, 4, 12)}
         timezone="Europe/Helsinki"
         balances={{ bait: 500, essence: 40 }}
@@ -75,7 +90,10 @@ describe('the welcome-back Gazette in the game', () => {
     expect(byClass(p.root, 'gz-home-note')[0]?.textContent).toBe(
       'Everything your creatures found is already home.',
     );
-    expect(byClass(p.root, 'gz-headline')[0]?.textContent).toBe('A NEWCOMER CAME FROM THE RAID');
+    expect(byClass(p.root, 'gz-headline')[0]?.textContent).not.toContain('A NEWCOMER');
+    expect(byClass(p.root, 'gz-headline')[0]?.textContent).toMatch(/^[A-Z ]+ CAME FROM THE RAID$/);
+    // The raid's real piece and newcomer are small finds under its story, named in its headline.
+    expect(byClass(p.root, 'find-row').length).toBeGreaterThanOrEqual(2);
     expect(byClass(p.root, 'gz-brief')).toHaveLength(2);
     expect(byName(p.root, 'button', /\.\.\.and 2 more things/)).toHaveLength(1);
   });

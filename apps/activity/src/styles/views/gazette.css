@@ -141,6 +141,13 @@
   min-width: 0;
 }
 
+.gz-finds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
 .gz-finds ul {
   display: flex;
   flex-wrap: wrap;
@@ -182,4 +189,34 @@
     border-top: 0;
     border-left: 2px solid var(--ink);
   }
+}
+
+/* The "+N more" of a row of finds. */
+.gz-more {
+  display: flex;
+  align-items: center;
+}
+
+.gz-more-button {
+  min-height: 0;
+  margin: 0;
+  padding: 2px 6px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  font-size: var(--fs-heading);
+  line-height: 1.2;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  text-shadow: none;
+}
+
+/* A newcomer in a small row: its face, a tap target like the pieces' pictures. */
+.gz-newcomer {
+  display: inline-flex;
+  min-height: 0;
+  padding: 2px;
+  background: var(--night);
+  box-shadow: none;
+  line-height: 0;
 }

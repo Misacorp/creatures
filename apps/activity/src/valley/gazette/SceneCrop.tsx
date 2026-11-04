@@ -53,22 +53,19 @@ function infoOf(member: CastMember): CreatureInfo | null {
 /** The creatures of a scene standing round a spot (`cx`, `cy`: CSS px, the place's door) at a whole scale `s`. */
 export function SceneActors({
   scene,
-  cast,
   cx,
   cy,
   s,
 }: {
   scene: Scene;
-  cast: readonly CastMember[];
   cx: number;
   cy: number;
   s: number;
 }) {
   return (
     <>
-      {scene.actors.map((a) => {
-        const member = cast[a.slot];
-        if (member === undefined) return null;
+      {scene.actors.map((a, slot) => {
+        const member = a.member;
         const info = infoOf(member);
         const sprite = (
           <CreatureSprite
@@ -79,7 +76,7 @@ export function SceneActors({
         );
         return (
           <At
-            key={`a${String(a.slot)}`}
+            key={`a${String(slot)}`}
             x={cx + a.dx * s - (CREATURE_PX / 2) * s}
             y={cy + (a.dy - CREATURE_PX) * s}
             z={a.dy}
@@ -90,7 +87,7 @@ export function SceneActors({
               sprite
             ) : (
               <SmallCreature
-                id={`gazette:${member.species}:${String(a.slot)}`}
+                id={`gazette:${member.species}:${String(slot)}`}
                 info={info}
                 class="gz-face"
               >
@@ -104,15 +101,7 @@ export function SceneActors({
   );
 }
 
-export function SceneCrop({
-  scene,
-  cast,
-  class: extra,
-}: {
-  scene: Scene;
-  cast: readonly CastMember[];
-  class?: string;
-}) {
+export function SceneCrop({ scene, class: extra }: { scene: Scene; class?: string }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const size = useSize(wrapRef);
@@ -137,7 +126,7 @@ export function SceneCrop({
   return (
     <div ref={wrapRef} class={`gz-scene${extra === undefined ? '' : ` ${extra}`}`}>
       <canvas ref={canvasRef} class="gz-scene-canvas" aria-hidden="true" />
-      <SceneActors scene={scene} cast={cast} cx={cx} cy={cy} s={s} />
+      <SceneActors scene={scene} cx={cx} cy={cy} s={s} />
     </div>
   );
 }

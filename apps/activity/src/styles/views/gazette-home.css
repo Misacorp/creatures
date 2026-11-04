@@ -19,12 +19,7 @@
   animation: gz-fly var(--flight) steps(14, end) both;
 }
 
-/* A hard outline (four offset shadows, no blur) keeps the number readable over the valley and the paper. */
-.gz-fly-gain .part-count {
-  filter: drop-shadow(3px 0 0 var(--ink)) drop-shadow(-3px 0 0 var(--ink))
-    drop-shadow(0 3px 0 var(--ink)) drop-shadow(0 -3px 0 var(--ink));
-}
-
+/* The number is the shared count badge on its own dark chip: no outline of its own. */
 .gz-fly-gain .part-amount {
   font-size: 3rem;
   line-height: 1;

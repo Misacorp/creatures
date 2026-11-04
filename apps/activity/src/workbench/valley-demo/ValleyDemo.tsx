@@ -12,6 +12,7 @@ import type { CastExtra } from '../../valley/place-cast';
 import { isAtHome } from '../../valley/tray-state';
 import { isOpenPlace, PLACE_TAB, viewOf, type HomeAt } from '../../valley/valley-nav';
 import { placeOf, type PlaceId } from '../../valley/valley-art';
+import { sampleGearItem } from '../gear-sample';
 import { ROOM_SELF_ID, sampleResidents } from '../data';
 import { creatureCardEntries } from '../entries/creature-card';
 import { AWAY_SAMPLE, HOME_NOW, HOME_TZ, homeInput } from '../home-sample';
@@ -149,7 +150,24 @@ export function ValleyDemo({ start, away, day }: { start: string; away: boolean;
           {away && (
             <WelcomeBack
               away={gone ? null : AWAY_SAMPLE}
-              creatures={input.creatures}
+              world={{
+                // The raid's one creature and one piece, obtained inside the notice's window.
+                creatures: input.creatures.map((c, i) =>
+                  i === input.creatures.length - 1
+                    ? { ...c, caughtAt: AWAY_SAMPLE.until - 3_600_000 }
+                    : c,
+                ),
+                items: [
+                  {
+                    ...sampleGearItem({ id: 'away-1', baseId: 'kelp-cap', rarity: 'rare' }),
+                    createdAt: AWAY_SAMPLE.until - 1_800_000,
+                  },
+                ],
+                blueprints: [],
+                tray: { trips: input.trips, jobs: input.jobs, now: HOME_NOW },
+                games: input.games,
+                raid: input.raid,
+              }}
               now={HOME_NOW}
               timezone={HOME_TZ}
               balances={PURSE}

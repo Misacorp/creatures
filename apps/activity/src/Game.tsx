@@ -850,7 +850,18 @@ export function Game({
       </ValleyFrame>
       <WelcomeBack
         away={game.awayRewards}
-        creatures={game.creatures}
+        world={{
+          creatures: game.creatures,
+          items: gear === null ? null : gear.items,
+          blueprints: gear === null ? null : gear.blueprints,
+          tray: {
+            trips: game.expeditions,
+            jobs: gear === null ? null : gear.jobs,
+            now: Date.now() + offset,
+          },
+          games: games.view,
+          raid: raidGlance,
+        }}
         now={Date.now() + offset}
         timezone={timezone.current}
         balances={game.balances}

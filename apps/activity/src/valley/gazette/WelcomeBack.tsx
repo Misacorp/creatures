@@ -8,7 +8,7 @@
  * server's totals were in already). It keeps its own copy of the notice, because dismissing clears the game's.
  */
 import { useMemo, useRef, useState } from 'preact/hooks';
-import type { AwaySummary, Balances, Creature } from '../../api';
+import type { AwaySummary, Balances } from '../../api';
 import { usePrefersReducedMotion } from '../../hooks';
 import { hasAwayNotice } from '../../home/away-notice';
 import { ActionButton } from '../../ui/ActionButton';
@@ -19,12 +19,10 @@ import { Gazette } from './Gazette';
 import { flyMode, originOf, purseDisplay, type Point } from './coming-home';
 import {
   awayGains,
-  castOf,
   gazetteDate,
   gazetteOf,
   moreLabel,
-  type CastMember,
-  type GazettePlan,
+  type AwayWorld,
   type HomeGain,
 } from './stories';
 
@@ -33,15 +31,13 @@ const FALLBACK_FROM: Point = { x: 195, y: 520 };
 
 interface Paper {
   away: AwaySummary;
-  plan: GazettePlan;
-  cast: CastMember[];
   date: string;
   gains: HomeGain[];
 }
 
 export function WelcomeBack({
   away,
-  creatures,
+  world,
   now,
   timezone,
   balances,
@@ -50,7 +46,8 @@ export function WelcomeBack({
 }: {
   /** Today's notice (`GameState.awayRewards`): null once dismissed. */
   away: AwaySummary | null;
-  creatures: readonly Creature[];
+  /** What the client holds about the real finds and who was there (the stories read it; it may fill in after the sheet opens). */
+  world: AwayWorld;
   /** The server's clock (ms). */
   now: number;
   /** The guild's timezone; null before the first full state has come. */
@@ -77,11 +74,8 @@ export function WelcomeBack({
   if (hasAwayNotice(away) && shownFor.current !== away.until) {
     shownFor.current = away.until;
     closed.current = false;
-    const cast = castOf(creatures);
     setPaper({
       away,
-      plan: gazetteOf(away, cast),
-      cast,
       date: gazetteDate(now, timezone),
       gains: awayGains(away),
     });
@@ -100,6 +94,8 @@ export function WelcomeBack({
   const mode = useMemo(() => flyMode({ reduced, still: isStill() }), [reduced]);
 
   if (paper === null) return null;
+  // Made on every draw from the latest state: the bag may load after the sheet is up.
+  const plan = gazetteOf(paper.away, world);
 
   const close = (): void => {
     if (closed.current) return;
@@ -120,9 +116,9 @@ export function WelcomeBack({
         title="Welcome back"
         titleHidden
         class="gz-sheet"
-        footer={<ActionButton label={moreLabel(paper.plan.more)} wide large onClick={close} />}
+        footer={<ActionButton label={moreLabel(plan.more)} wide large onClick={close} />}
       >
-        <Gazette stories={paper.plan.stories} cast={paper.cast} date={paper.date} />
+        <Gazette stories={plan.stories} date={paper.date} />
       </Drawer>
       {homing !== null && (
         <ComingHome
