@@ -495,7 +495,7 @@ export const RULES = {
           { id: 'hp30', removedBp: 3_000, pays: 'phase1' },
           { id: 'hp85', removedBp: 8_500, pays: 'phase2' },
         ],
-        killBonus: { epic: 1, rare: 2 },
+        killBonus: { epic: 2, rare: 4 },
       },
     },
     /**

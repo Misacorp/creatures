@@ -95,7 +95,7 @@ Folded into the pass, from the lab's follow-ups and phase 4's open items:
 ## 7. Answered by Misa (2026-11-04)
 
 1. **Small parties** fight a smaller boss: its HP and arena follow the players, with no guests. In the game since 2026-11-04 (one column per player, R14.1's curves below four); phase 5 measures and tunes it.
-2. **Raid rewards** are paid at HP thresholds, whichever stage crosses them, and the kill bonus is big and exciting (lots of rare and epic gear). In the game since 2026-11-04: thresholds 30% and 85% of the weekend in `RULES.raid.v2.rewards`, each paid once; the kill bonus is one epic and two rare pieces per member.
+2. **Raid rewards** are paid at HP thresholds, whichever stage crosses them, and the kill bonus is big and exciting (lots of rare and epic gear). In the game since 2026-11-04: thresholds 30% and 85% of the weekend in `RULES.raid.v2.rewards`, each paid once; the kill bonus is two epic and four rare pieces per member (doubled by Misa, 2026-11-04).
 3. **No weather in fights:** dropped from v2 fights for good. Done in the game since 2026-11-04.
 
 Decision `2026-11-04-combat-v2-phase-5-answers-small`.

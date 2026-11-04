@@ -4,9 +4,17 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-04: Combat v2 kill bonus doubled to two epic and four rare pieces [Misa]
+
+ID: `2026-11-04-combat-v2-kill-bonus-doubled-to` · Status: current · Amends: `2026-11-04-combat-v2-phase-5-answers-in`
+
+**Decision.** `RULES.raid.v2.rewards.killBonus` is two epic and four rare pieces per member of the party that kills the boss (was one epic and two rare). Nothing else about the bonus changes.
+
+**Reasoning.** Misa: "Double the loot."
+
 ## 2026-11-04: Combat v2 phase 5 answers in the game: the small boss, threshold payouts, the kill bonus and no fight weather
 
-ID: `2026-11-04-combat-v2-phase-5-answers-in` · Status: current
+ID: `2026-11-04-combat-v2-phase-5-answers-in` · Status: current, amended by `2026-11-04-combat-v2-kill-bonus-doubled-to`
 
 **Decision.** The calls decision `2026-11-04-combat-v2-phase-5-answers-small` left open, for v2 weeks (v1 weeks are unchanged):
 
