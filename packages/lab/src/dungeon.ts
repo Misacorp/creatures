@@ -83,8 +83,8 @@ export interface RunOptions {
   /** Undercroft levels to try after the floor boss (0 for none; level 2 is played as if the first keeper's floor were cracked). */
   readonly levels?: number;
   /**
-   * The worker's descent on a v2 run (`descentBreath`): the standing recover on the way down and a knocked-out creature stays out
-   * (the game's `catchBreath` alone, the default here, also gets it back up: v1's rule).
+   * The old v2 descent, kept for comparison: the standing recover on the way down and a knocked-out creature stays out. The game no
+   * longer plays it: since 2026-11-04 both rules versions revive on the way down (the game's `catchBreath`, the default here).
    */
   readonly standingOnlyDescent?: boolean;
   /** Go down only while the team's mean share of HP (the standing's) is above this (the policy's choice; `smart` defaults to 0.5, `first` always goes). */
@@ -213,8 +213,8 @@ function scaled(foe: BossDef, hpBp: number, atkBp: number): BossDef {
 
 /**
  * The HP of a row after the way down: the game's `catchBreath` (the standing recover `catchBreathBp`, a knocked-out creature gets back up at
- * `reviveBp`: v1), and with `standingOnly` the worker's v2 rule (`descentBreath` in `apps/worker/src/dungeon-path.ts`, not exported from the
- * game package): a knocked-out creature stays at 0 until a camp swaps it.
+ * `reviveBp`; what the game plays on both rules versions since 2026-11-04), and with `standingOnly` the old v2 rule, kept for comparison: a
+ * knocked-out creature stays at 0 until a camp swaps it.
  */
 export function descentBreathOf(
   before: Readonly<Record<string, number>>,
