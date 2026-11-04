@@ -9,6 +9,7 @@
 import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
 import type { Creature } from '../api';
+import type { TabAlerts } from '../tab-alerts';
 import { DrillHead } from '../ui/DrillHead';
 import { PinnedAct } from './PinnedAct';
 import { PlaceRow, PlacesList } from './PlacesList';
@@ -16,6 +17,7 @@ import { SceneFrame } from './SceneFrame';
 import { Tray } from './Tray';
 import { ValleyMap } from './ValleyMap';
 import { Glyph } from './parts';
+import { placeBubbles, placeStates, type PlaceInput } from './place-state';
 import { placeScale, placeSceneDraw } from './place-scene';
 import type { TrayInput } from './tray-state';
 import { trayFor, isAtHome } from './tray-state';
@@ -42,6 +44,8 @@ export function ValleyFrame({
   view,
   creatures,
   trayInput,
+  alerts,
+  placeInput,
   focus,
   onOpen,
   onLeave,
@@ -55,6 +59,10 @@ export function ValleyFrame({
   view: ValleyView;
   creatures: readonly Creature[];
   trayInput: TrayInput;
+  /** Today's pips (`useTabPips`): the places' bubbles are made from them. */
+  alerts: TabAlerts;
+  /** What the places' bubbles and state lines read: the game screen's own state, no request of its own. */
+  placeInput: PlaceInput;
   /** The place whose button takes the focus when the map comes back. */
   focus: PlaceId | null;
   /** Opens a place (from the map, the Places list or the tray). */
@@ -76,6 +84,7 @@ export function ValleyFrame({
 }) {
   const [places, setPlaces] = useState(false);
   const place = view.kind === 'valley' ? null : placeOf(view.place);
+  const bubbles = placeBubbles(alerts, placeInput);
   const settingsOpen = settings !== null && settings !== false;
   return (
     <div class="vy-frame" data-view={view.kind} data-place={place?.id ?? 'valley'}>
@@ -89,6 +98,7 @@ export function ValleyFrame({
                 creatures={creatures.filter(isAtHome)}
                 at="start"
                 focus={focus}
+                bubbles={bubbles}
                 onPlace={onOpen}
               />
               <button
@@ -174,6 +184,8 @@ export function ValleyFrame({
       </div>
       <PlacesList
         open={places}
+        lines={placeStates(placeInput)}
+        bubbles={bubbles}
         onClose={() => {
           setPlaces(false);
         }}

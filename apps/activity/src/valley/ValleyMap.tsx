@@ -14,7 +14,8 @@ import { nextMarker } from '../map-view';
 import { scrollBehavior } from '../scroll-to';
 import { useDragScroll } from '../ui/use-drag-scroll';
 import { paint } from './paint';
-import { At, CreatureSprite, Glyph, Plate, isStill, useSize, useTick } from './parts';
+import { At, CreatureSprite, Glyph, Plate, SpeechBubble, isStill, useSize, useTick } from './parts';
+import { bubbleAt, placeSpoken, type PlaceBubble } from './place-state';
 import { PADDOCK_ROAM, TILE, placeOf, valleyDrawing, type PlaceId } from './valley-art';
 import { DEFAULT_LOOK, type ValleyLook } from './valley-places';
 import {
@@ -23,7 +24,6 @@ import {
   freeTabs,
   hopOf,
   newWalker,
-  placeLabel,
   readingOrder,
   scrollToPlace,
   startScroll,
@@ -46,11 +46,20 @@ export interface ValleyMapProps {
   onPlace: (id: PlaceId) => void;
   /** The place whose button takes the focus on mount (back from its page). */
   focus: PlaceId | null;
+  /** What waits at the places (from today's pips): a bubble over each, and a mark on its edge chip. */
+  bubbles?: readonly PlaceBubble[];
   /** The visitor's stall and the bonfire's level (the stall open, level 1 when not given). */
   look?: ValleyLook;
 }
 
-export function ValleyMap({ creatures, at, onPlace, focus, look = DEFAULT_LOOK }: ValleyMapProps) {
+export function ValleyMap({
+  creatures,
+  at,
+  onPlace,
+  focus,
+  bubbles = [],
+  look = DEFAULT_LOOK,
+}: ValleyMapProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -127,11 +136,13 @@ export function ValleyMap({ creatures, at, onPlace, focus, look = DEFAULT_LOOK }
 
   // An edge chip for every place out of view, stacked so none overlap (the Places list has every place).
   const arrows = edgeArrows(order, scrollLeft, size.width);
-  const tabY = freeTabs(arrows, scrollLeft, size.width, undefined, undefined, undefined, {
+  const needy = new Set<PlaceId>(bubbles.map((b) => b.place));
+  const tabY = freeTabs(arrows, scrollLeft, size.width, undefined, undefined, needy, {
     from: -fit.top / s,
     to: (size.height - fit.top) / s,
   });
 
+  const bob = moving ? Math.floor(tick / 5) % 2 : 0;
   const stageVars = cssVars({
     '--w': `${String(drawing.width * s)}px`,
     '--h': `${String(drawing.height * s)}px`,
@@ -164,8 +175,9 @@ export function ValleyMap({ creatures, at, onPlace, focus, look = DEFAULT_LOOK }
             </At>
           ))}
           <ul class="vy-places" aria-label="The valley">
-            {order.map((id) => {
+            {order.map((id, i) => {
               const place = placeOf(id);
+              const bubble = bubbleAt(bubbles, id);
               const r = place.rect;
               return (
                 <li key={id}>
@@ -173,7 +185,7 @@ export function ValleyMap({ creatures, at, onPlace, focus, look = DEFAULT_LOOK }
                     type="button"
                     class={`vy-place vy-place-${id}`}
                     data-place={id}
-                    aria-label={placeLabel(id)}
+                    aria-label={placeSpoken(id, bubble)}
                     ref={cssVars({
                       '--x': `${String(X(r.x))}px`,
                       '--y': `${String(Y(r.y))}px`,
@@ -187,6 +199,13 @@ export function ValleyMap({ creatures, at, onPlace, focus, look = DEFAULT_LOOK }
                       onArrow(id, e);
                     }}
                   >
+                    {bubble !== undefined && (
+                      <SpeechBubble
+                        glyph={bubble.glyph}
+                        count={bubble.count}
+                        class={(bob + i) % 2 === 1 ? 'up' : undefined}
+                      />
+                    )}
                     <span class="vy-place-plate" aria-hidden="true">
                       <Plate>{place.name}</Plate>
                     </span>
@@ -201,12 +220,13 @@ export function ValleyMap({ creatures, at, onPlace, focus, look = DEFAULT_LOOK }
         .filter((a) => tabY.has(a.place))
         .map((a) => {
           const place = placeOf(a.place);
+          const bubble = bubbleAt(bubbles, a.place);
           return (
             <button
               key={a.place}
               type="button"
-              class={`vy-edge vy-edge-${a.side}`}
-              aria-label={`${placeLabel(a.place)}. Off screen, to the ${a.side === 'left' ? 'west' : 'east'}`}
+              class={`vy-edge vy-edge-${a.side}${bubble === undefined ? '' : ' needs'}`}
+              aria-label={`${placeSpoken(a.place, bubble)}. Off screen, to the ${a.side === 'left' ? 'west' : 'east'}`}
               ref={cssVars({ '--ey': `${String(Y(tabY.get(a.place) ?? a.y) + fit.top)}px` })}
               onClick={() => {
                 goTo(a.place);
@@ -214,6 +234,11 @@ export function ValleyMap({ creatures, at, onPlace, focus, look = DEFAULT_LOOK }
             >
               <span class="vy-edge-head" aria-hidden="true" />
               <Glyph id={place.glyph} scale={2} />
+              {bubble !== undefined && (
+                <span class="vy-edge-bang pix" aria-hidden="true">
+                  {bubble.count ?? '!'}
+                </span>
+              )}
             </button>
           );
         })}

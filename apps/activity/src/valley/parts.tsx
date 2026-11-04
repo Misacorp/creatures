@@ -141,6 +141,29 @@ export function UpArrow() {
   );
 }
 
+/** What waits at a place: the glyph on an ink chip and a count when more than one, in a speech bubble above it. */
+export function SpeechBubble({
+  glyph,
+  count,
+  class: extra,
+}: {
+  glyph: string;
+  count: number | null;
+  class?: string | undefined;
+}) {
+  return (
+    <span class={`vy-bubble${extra === undefined ? '' : ` ${extra}`}`} aria-hidden="true">
+      <span class="vy-bubble-body">
+        <span class="vy-bubble-pic">
+          <Glyph id={glyph} scale={2} />
+        </span>
+        {count !== null && <span class="vy-time pix">{count}</span>}
+      </span>
+      <span class="vy-bubble-tail" />
+    </span>
+  );
+}
+
 /** A name plate: bone words in the pixel font on a solid ink plate (buildings, owners, forms). */
 export function Plate({ children }: { children: ComponentChildren }) {
   return <span class="vy-plate pix">{children}</span>;

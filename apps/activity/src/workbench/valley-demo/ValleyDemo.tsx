@@ -4,6 +4,7 @@ import { Hud } from '../../Hud';
 import { LivingRoom, sceneOf } from '../../LivingRoom';
 import { PopoverHost } from '../../PopoverHost';
 import { AwayPaper } from '../../home/AwayPaper';
+import { homeAlerts } from '../../home-view';
 import type { Place } from '../../tabs';
 import { ValleyFrame } from '../../valley/ValleyFrame';
 import { isOpenPlace, PLACE_TAB, viewOf, type HomeAt } from '../../valley/valley-nav';
@@ -34,7 +35,10 @@ function titleOf(at: PlaceId | null): string {
   return at === null ? 'Valley' : placeOf(at).name;
 }
 
-export function ValleyDemo({ start, away }: { start: string; away: boolean }) {
+/** The days the demo can show: what the places say on a busy day, with nothing waiting, and with nothing going on. */
+export const VALLEY_DAYS = ['busy', 'nothing waiting', 'nothing going on'] as const;
+
+export function ValleyDemo({ start, away, day }: { start: string; away: boolean; day: string }) {
   const first = VALLEY_STARTS.includes(start as (typeof VALLEY_STARTS)[number])
     ? (start as PlaceId | 'valley')
     : 'valley';
@@ -46,7 +50,7 @@ export function ValleyDemo({ start, away }: { start: string; away: boolean }) {
   );
   const [focus, setFocus] = useState<PlaceId | null>(null);
   const [gone, setGone] = useState(false);
-  const input = homeInput('busy', false);
+  const input = homeInput(day, true);
   const view = viewOf(tab, homeAt);
   const at = view.kind === 'valley' ? null : view.place;
   const open = (id: PlaceId): void => {
@@ -81,6 +85,8 @@ export function ValleyDemo({ start, away }: { start: string; away: boolean }) {
             view={view}
             creatures={input.creatures}
             trayInput={{ trips: input.trips, jobs: input.jobs, now: HOME_NOW }}
+            alerts={homeAlerts(input)}
+            placeInput={input}
             focus={focus}
             onOpen={open}
             onLeave={() => {

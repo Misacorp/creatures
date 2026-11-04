@@ -149,11 +149,13 @@ export function Game({
   const [tab, setTab] = useState<Place>(DEFAULT_PLACE);
   // The raid's week times for Home, loaded when the game opens and whenever Home is shown (a failed load
   // leaves the raid rows out).
-  // The valley shell has no Today board, so it does not load the raid's week times for it.
   const valleyOn = valley && game.starterChosen;
+  // The valley shell: Home's tab is drawn as the map, the House's living room, or a place that is not open yet.
+  const [homeAt, setHomeAt] = useState<HomeAt>('valley');
   const { raid: raidGlance } = useRaidGlance(
     game.starterChosen,
-    tab === 'home' && !valleyOn,
+    // The valley's map shows the raid's next time in the Arena's line, as Home shows it in "Coming up".
+    tab === 'home' && (!valleyOn || homeAt === 'valley'),
     offset,
   );
   // The Settings page (from the cog in the HUD) is drawn in place of the screen; the screen stays mounted under it,
@@ -177,8 +179,6 @@ export function Game({
   };
   // Every change of place (dock, tray, rail, a Home notice) starts at the top of the new page.
   useScrollTopOnChange(tab);
-  // The valley shell: Home's tab is drawn as the map, the House's living room, or a place that is not open yet.
-  const [homeAt, setHomeAt] = useState<HomeAt>('valley');
   // The place whose button takes the focus when the map comes back from its page.
   const [focusPlace, setFocusPlace] = useState<PlaceId | null>(null);
   const view: ValleyView = viewOf(tab, homeAt);
@@ -809,6 +809,18 @@ export function Game({
           trips: game.expeditions,
           jobs: gear === null ? null : gear.jobs,
           now: Date.now() + offset,
+        }}
+        alerts={alerts}
+        placeInput={{
+          now: Date.now() + offset,
+          timezone: timezone.current,
+          trips: game.expeditions,
+          jobs: gear === null ? null : gear.jobs,
+          creatures: game.creatures,
+          games: games.view,
+          pending: game.pending.length,
+          attention,
+          raid: raidGlance,
         }}
         focus={focusPlace}
         onOpen={openPlace}

@@ -2,13 +2,13 @@
  * The Places list: every place of the valley as a row (its glyph, its name, a short line), in the order of the
  * map (west to east). It is the way to a place that is out of view on a phone, and the keyboard's and screen
  * reader's way round the valley. `PlaceRow` is the one row: the House uses it for its two entries (Journal and
- * Stats) too. The line is a few words; step 2 of the valley fills it with what each place is doing now.
+ * Stats) too. The line is a few words: what happens next at the place (`place-state.ts`).
  */
 import { Drawer } from '../ui/Drawer';
 import { Glyph } from './parts';
 import { placeOf, type PlaceId } from './valley-art';
-import { isOpenPlace, PAGE_TITLES } from './valley-nav';
-import { placeLabel, readingOrder } from './valley-logic';
+import { bubbleAt, placeFallback, placeSpoken, type PlaceBubble } from './place-state';
+import { readingOrder } from './valley-logic';
 
 export function PlaceRow({
   glyph,
@@ -40,17 +40,18 @@ export function PlaceRow({
   );
 }
 
-/** What a place's row says for now: the page it holds, or that it is not open yet. */
-export function placeLine(id: PlaceId): string {
-  return isOpenPlace(id) ? PAGE_TITLES[id] : 'not open yet';
-}
-
 export function PlacesList({
   open,
+  lines,
+  bubbles,
   onClose,
   onPlace,
 }: {
   open: boolean;
+  /** What each place is doing next (`placeStates`); a place missing from it says its page's name. */
+  lines: Partial<Readonly<Record<PlaceId, string>>>;
+  /** What waits at the places, for their spoken names. */
+  bubbles: readonly PlaceBubble[];
   onClose: () => void;
   onPlace: (id: PlaceId) => void;
 }) {
@@ -59,13 +60,14 @@ export function PlacesList({
       <ul class="vy-rows" aria-label="Places">
         {readingOrder().map((id) => {
           const place = placeOf(id);
+          const line = lines[id] ?? placeFallback(id);
           return (
             <PlaceRow
               key={id}
               glyph={place.glyph}
               name={place.name}
-              line={placeLine(id)}
-              label={placeLabel(id)}
+              line={line}
+              label={`${placeSpoken(id, bubbleAt(bubbles, id))}. ${line}`}
               onClick={() => {
                 onPlace(id);
               }}

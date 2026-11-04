@@ -231,6 +231,78 @@ main.card:has(.vy-frame) > .hud {
   pointer-events: none;
 }
 
+/* --- The speech bubble over a place: ink outline, cream fill, a stepped tail; part of the place's button --- */
+.vy-bubble {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%);
+  display: block;
+  line-height: 0;
+}
+
+.vy-bubble.up {
+  bottom: calc(100% + 12px);
+}
+
+.vy-bubble-body {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  background: #fbf3df;
+  box-shadow:
+    0 0 0 2px var(--ink),
+    0 4px 0 0 #c4ac84;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* The place's glyph is light, so it sits on an ink chip. */
+.vy-bubble-pic {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--ink);
+  line-height: 0;
+}
+
+.vy-time {
+  font-size: var(--fs-title);
+  line-height: 1;
+  color: var(--ink);
+}
+
+.vy-bubble-tail {
+  position: absolute;
+  left: calc(50% - 4px);
+  bottom: -8px;
+  width: 8px;
+  height: 6px;
+  background:
+    linear-gradient(var(--ink), var(--ink)) 0 0 / 2px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 6px 0 / 2px 2px no-repeat;
+}
+
+.vy-bubble-tail::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: -2px;
+  width: 4px;
+  height: 4px;
+  background: #fbf3df;
+}
+
+.vy-bubble-tail::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 4px;
+  height: 2px;
+  background: var(--ink);
+}
+
 /* The Places button: a flag in the map's top-left corner. */
 .vy-hatch {
   position: absolute;
@@ -318,6 +390,17 @@ main.card:has(.vy-frame) > .hud {
 .vy-edge:focus-visible {
   outline: 3px solid var(--gold);
   outline-offset: -3px;
+}
+
+/* What waits at an off-screen place: its count, or a "!", on a cream tag. */
+.vy-edge-bang {
+  display: inline-block;
+  min-width: 14px;
+  background: #fbf3df;
+  color: var(--ink);
+  font-size: var(--fs-small);
+  line-height: 1.1;
+  text-align: center;
 }
 
 /* The arrowhead: a stepped triangle pointing out of the screen. */
