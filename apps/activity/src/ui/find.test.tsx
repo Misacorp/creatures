@@ -231,3 +231,12 @@ describe('tags that explain themselves', () => {
     expect(css).not.toMatch(/content\s*:\s*['"]\?['"]/);
   });
 });
+
+describe('chips on a light card', () => {
+  it('give chips, tags and badges their own light text (the Gazette paper sets dark ink, which hid them on their ink pills)', () => {
+    const css = Object.values(sheets)
+      .map((sheet) => sheet.replace(/\/\*[\s\S]*?\*\//g, ''))
+      .join('\n');
+    expect(css).toMatch(/(^|\n)\.chip,\s*\.tag,\s*\.badge\s*\{\s*color:\s*var\(--bone\)/);
+  });
+});

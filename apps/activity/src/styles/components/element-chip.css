@@ -1,4 +1,12 @@
 /* Element chip: the icon always comes with the colour and the name. */
+
+/* A chip, tag or badge sits on its own ink pill, so its text is light whatever it stands in (a card on the light Gazette paper set dark ink, and the chips came out unreadable). A tone that sets its own colour with two classes (`.badge.shiny`) wins; `.gtag` is `all: unset`, so a plain `:where` rule would lose to it. */
+.chip,
+.tag,
+.badge {
+  color: var(--bone);
+}
+
 .chip {
   display: inline-flex;
   align-items: center;
