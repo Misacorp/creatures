@@ -19,6 +19,7 @@ import {
 } from './dungeonDays';
 import { OLD_FOES, type FoeKnobs } from './dungeonKnobs';
 import type { JobResults, JobSpec, Plan } from './jobs';
+import { rewardsMeasureMarkdown } from './dungeonRewards';
 import { JOURNEY_SERVERS } from './journey';
 import { ROSTER_SPEEDS, type RosterSpeed } from './roster';
 import {
@@ -370,6 +371,8 @@ export interface DungeonDaysOptions {
   readonly speeds?: readonly RosterSpeed[];
   readonly kinds?: readonly (typeof DUNGEON_DAYS_SERVERS)[number][];
   readonly scenarios?: readonly string[];
+  /** Add the rewards section (`dungeonRewards.ts`: gear, resources and XP by depth). */
+  readonly rewards?: boolean;
   /** Also play a safe player who steps back this many depths after a wipe (a reward-only replay). */
   readonly stepBack?: number;
 }
@@ -432,6 +435,7 @@ export function planDungeonDays(options: DungeonDaysOptions): Plan<DungeonDaysRe
           ),
         );
         md.push(...scenarioMarkdown(scenario, players));
+        if (options.rewards === true) md.push(...rewardsMeasureMarkdown(players));
       }
       md.push(...rewardsMarkdown());
       return { md, data: { scenarios } };

@@ -17,7 +17,14 @@
  * What it leaves out: the loot, experience and gear (the valley's loop), and what `dungeon.ts` leaves out (room modifiers, doors, marks).
  */
 import { createSeededRng, int } from '@creatures/game';
-import { ALL_ROUND_BENCH, ALL_ROUND_TEAM, runMap, type LevelLog, type RunOptions } from './dungeon';
+import {
+  ALL_ROUND_BENCH,
+  ALL_ROUND_TEAM,
+  runMap,
+  type LevelLog,
+  type RunOptions,
+  type RunResult,
+} from './dungeon';
 import type { FoeKnobs } from './dungeonKnobs';
 import {
   HABITS,
@@ -73,6 +80,8 @@ export interface DayRun {
   } | null;
   /** The Undercroft levels played (with `probe`, all of them: see `LevelLog`). */
   readonly levels: readonly LevelLog[];
+  /** What the run pays by the player's own rule (`RunResult.reward`: base experience, deepest level played, the pack as paid). */
+  readonly reward: RunResult['reward'];
   /** Milliseconds the run took (a side note: the clock, so the one number that is not repeatable). */
   readonly ms: number;
 }
@@ -241,6 +250,7 @@ export function dungeonDaysOf(
             day,
             floor: r.floorEnd,
             levels: r.levelLog,
+            reward: r.reward,
             ms,
           });
           replayNext = !replay && !r.cleared && (config.stepBack ?? 0) > 0;

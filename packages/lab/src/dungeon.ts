@@ -24,6 +24,7 @@ import {
   RULES,
   campOffers,
   campRest,
+  roomXpSource,
   catchBreath,
   createSeededRng,
   dungeonEvents,
@@ -153,6 +154,11 @@ export interface RunResult {
   } | null;
   /** The Undercroft levels entered (with `probe`, every level it played). */
   readonly levelLog: readonly LevelLog[];
+  /**
+   * What the run would pay (the rewards report, `dungeonRewards.ts`; no fight reads it): the base experience one creature that stood in the
+   * row for every room earns (before the depth scale), the deepest Undercroft level played (0: none), and the pack as it is paid (half after a defeat).
+   */
+  readonly reward: { readonly xp: number; readonly deepest: number; readonly kept: DungeonRunPack };
 }
 
 // ---------- keepsakes in the lab ----------
@@ -276,6 +282,16 @@ export function runMap(
   /** The Undercroft level a walk is in (0: the base floors). */
   let level = 0;
   let pack: DungeonRunPack = { bait: 0, essence: 0, scrap: 0 };
+  /** The base experience of the cleared rooms, for one creature that stood in the row for all of them. */
+  let xp = 0;
+  let deepestLevel = 0;
+  /** What the player's own rule pays (a probe's unchosen levels are played but not paid): the pack, and whether the walk counts now. */
+  let paid: DungeonRunPack = { bait: 0, essence: 0, scrap: 0 };
+  let counting = true;
+  const bank = (loot: DungeonRunPack): void => {
+    pack = addUnits(pack, loot);
+    if (counting) paid = addUnits(paid, loot);
+  };
 
   const foeFor = (id: string, d: number, kind: MapNode['kind'], signature: boolean): BossDef => {
     const fold = foeFold(held, curses, row);
@@ -444,7 +460,8 @@ export function runMap(
       if (node === undefined) return false;
       at = node.id;
       if (node.kind === 'cache') {
-        pack = addUnits(pack, nodeLoot('cache', level));
+        if (counting) xp += RULES.experience.dungeon.cache;
+        bank(nodeLoot('cache', level));
       } else if (node.kind === 'mystery') meetEvent(node);
       else if (node.kind === 'camp') atCamp();
       else {
@@ -453,11 +470,13 @@ export function runMap(
         if (foeId === undefined) return false;
         if (!play(foeFor(foeId, d, node.kind, node.kind === 'boss' && (keeper || isLandmark(d)))))
           return false;
-        pack = addUnits(pack, nodeLoot(node.kind, level));
+        bank(nodeLoot(node.kind, level));
+        const source = roomXpSource(node.kind, level);
+        if (counting && source !== null) xp += RULES.experience.dungeon[source];
         if (node.kind === 'boss') {
           // The main boss's chest also puts the clear's Essence and a landmark's Essence and scrap in the pack (`openMainChest`).
           if (level === 0)
-            pack = addUnits(pack, {
+            bank({
               bait: 0,
               essence:
                 RULES.dungeon.fullClear.essence +
@@ -507,6 +526,8 @@ export function runMap(
       });
       if (going) entered++;
       level = lv;
+      counting = going;
+      if (going) deepestLevel = lv;
       const packIn = unitsOf(pack);
       const won = walk(under, depth + bonus * lv, true);
       const gain = won ? unitsOf(pack) - packIn : 0;
@@ -539,6 +560,11 @@ export function runMap(
     camp: campChoice,
     floorEnd,
     levelLog,
+    reward: {
+      xp,
+      deepest: deepestLevel,
+      kept: !cleared || levelLog.some((l) => l.chosen && !l.won) ? keptOnDefeat(paid) : paid,
+    },
   };
 }
 

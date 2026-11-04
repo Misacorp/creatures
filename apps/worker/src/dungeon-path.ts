@@ -39,6 +39,9 @@ import {
   rollRareEvent,
   rollTreasure,
   rollUndercroftChest,
+  rewardDepth,
+  dungeonGearSpec,
+  SINGLE_ROLL,
   RULES,
   roomSpecForNode,
   roomXpSource,
@@ -363,6 +366,7 @@ function openMainChest(env: PathEnv, st: RunState, node: MapNodeLike, depth: num
         supplies: st.supply ? SUPPLIES_PER_RUN : 0,
       },
       element,
+      st.v === 2 ? dungeonGearSpec(depth) : SINGLE_ROLL,
     );
     return {
       parts: addParts({ glimmer: landmark ? RULES.dungeon.landmark.glimmer : 0 }, loot.parts),
@@ -404,7 +408,16 @@ function openKeeperChest(env: PathEnv, st: RunState, node: MapNodeLike, depth: n
   const element = nodeFoe(node, depth, level)?.element ?? 'tide';
   const view = env.bank(`u${String(level)}`, (rng) => ({
     parts: {},
-    gear: rollUndercroftChest(rng, depth, element).map((item) => ({
+    // Combat v2: the keeper pays by the Undercroft's depth (gear level, odds and best-of spec).
+    gear: (st.v === 2
+      ? rollUndercroftChest(
+          rng,
+          rewardDepth(depth, level),
+          element,
+          dungeonGearSpec(rewardDepth(depth, level), level),
+        )
+      : rollUndercroftChest(rng, depth, element)
+    ).map((item) => ({
       item,
       origin: { kind: 'dungeon' as const, depth },
     })),

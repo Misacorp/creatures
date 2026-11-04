@@ -9,6 +9,7 @@ import { content } from '../content';
 import type { Element, ReactionDef, Role } from '../content/schema';
 import { chance, int, pickWeighted, type Rng } from '../rng';
 import { RULES } from './config';
+import { SINGLE_ROLL, rollBestOf, type BestOfSpec } from './best-of';
 import { rollDungeonItem, type GearItem, type PartsBundle } from './gear';
 import { SUPPLY_KINDS, type SupplyTier } from '../content/expedition-schema';
 
@@ -280,6 +281,23 @@ export function rollDungeonSupply(rng: Rng, depth: number): string {
   return `${kind}-${tier}`;
 }
 
+/** One dungeon gear roll: the rarity by the odds, then the piece (the dice `rollBestOf` rolls over). */
+function dungeonPiece(
+  rng: Rng,
+  odds: { common: number; rare: number; epic: number },
+  depth: number,
+  landmark: boolean,
+  element: Element,
+  itemLevelBonus = 0,
+): GearItem {
+  const rarity = pickWeighted<{ rarity: 'common' | 'rare' | 'epic'; weight: number }>(rng, [
+    { rarity: 'common', weight: odds.common },
+    { rarity: 'rare', weight: odds.rare },
+    { rarity: 'epic', weight: odds.epic },
+  ]).rarity;
+  return rollDungeonItem(rng, rarity, depth, landmark, element, itemLevelBonus);
+}
+
 /** What a run's dice gave: parts, gear and supplies (the grant adds the scrap and glimmer of the payout). */
 export interface DungeonLoot {
   parts: PartsBundle;
@@ -300,6 +318,7 @@ export function rollDungeonLoot(
   depth: number,
   payout: Pick<DungeonPayout, 'landmark' | 'fullClear' | 'bossCleared' | 'supplies'>,
   bossElement: Element,
+  spec: BestOfSpec = SINGLE_ROLL,
 ): DungeonLoot {
   const parts: PartsBundle = {};
   const gear: DungeonLoot['gear'] = [];
@@ -308,12 +327,9 @@ export function rollDungeonLoot(
     const lucky = chance(rng, RULES.dungeon.fullClear.gearBp, 10_000);
     if (lucky || payout.landmark) {
       const odds = dungeonGearOddsBp(depth, payout.landmark);
-      const rarity = pickWeighted<{ rarity: 'common' | 'rare' | 'epic'; weight: number }>(rng, [
-        { rarity: 'common', weight: odds.common },
-        { rarity: 'rare', weight: odds.rare },
-        { rarity: 'epic', weight: odds.epic },
-      ]).rarity;
-      gear.push(rollDungeonItem(rng, rarity, depth, payout.landmark, bossElement));
+      gear.push(
+        ...rollBestOf(rng, spec, (r) => dungeonPiece(r, odds, depth, payout.landmark, bossElement)),
+      );
     }
   }
   for (let i = 0; i < payout.supplies; i++) supplies.push(rollDungeonSupply(rng, depth));
@@ -332,6 +348,7 @@ export function rollSealedBonus(
   depth: number,
   fights: number,
   element: Element,
+  spec: BestOfSpec = SINGLE_ROLL,
 ): Pick<DungeonLoot, 'gear' | 'supplies'> {
   const gear: GearItem[] = [];
   const supplies: string[] = [];
@@ -339,12 +356,7 @@ export function rollSealedBonus(
   for (let i = 0; i < Math.max(0, Math.floor(fights)) * extra; i++) {
     if (chance(rng, RULES.dungeon.fullClear.gearBp, 10_000)) {
       const odds = dungeonGearOddsBp(depth, false);
-      const rarity = pickWeighted<{ rarity: 'common' | 'rare' | 'epic'; weight: number }>(rng, [
-        { rarity: 'common', weight: odds.common },
-        { rarity: 'rare', weight: odds.rare },
-        { rarity: 'epic', weight: odds.epic },
-      ]).rarity;
-      gear.push(rollDungeonItem(rng, rarity, depth, false, element));
+      gear.push(...rollBestOf(rng, spec, (r) => dungeonPiece(r, odds, depth, false, element)));
     }
     supplies.push(rollDungeonSupply(rng, depth));
   }
@@ -393,14 +405,16 @@ export function undercroftGearOddsBp(depth: number): {
  * item level `itemLevelBonus` above the dungeon's), the keeper's element as its tag. Drawn in a fixed
  * order from `rng` (the worker's live gear source).
  */
-export function rollUndercroftChest(rng: Rng, depth: number, element: Element): GearItem[] {
+export function rollUndercroftChest(
+  rng: Rng,
+  depth: number,
+  element: Element,
+  spec: BestOfSpec = SINGLE_ROLL,
+): GearItem[] {
   const c = RULES.dungeon.undercroft.chest;
   if (!chance(rng, c.gearBp, 10_000)) return [];
   const odds = undercroftGearOddsBp(depth);
-  const rarity = pickWeighted<{ rarity: 'common' | 'rare' | 'epic'; weight: number }>(rng, [
-    { rarity: 'common', weight: odds.common },
-    { rarity: 'rare', weight: odds.rare },
-    { rarity: 'epic', weight: odds.epic },
-  ]).rarity;
-  return [rollDungeonItem(rng, rarity, depth, false, element, c.itemLevelBonus)];
+  return rollBestOf(rng, spec, (r) =>
+    dungeonPiece(r, odds, depth, false, element, c.itemLevelBonus),
+  );
 }
