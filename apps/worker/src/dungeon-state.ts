@@ -450,8 +450,8 @@ function pendingView(st: RunState, depth: number): DungeonPendingView {
       floors: descentFloors(st, depth, pending.level),
       depthBonus: RULES.dungeon.undercroft.depthBonus,
       catchBreathBp: RULES.dungeon.undercroft.catchBreathBp,
-      // A v1 descent gets a fallen creature back up; a v2 one heals only the standing (`descentBreath`), so it promises no revive.
-      reviveBp: st.v === 2 ? 0 : RULES.dungeon.undercroft.reviveBp,
+      // The descent gets a fallen creature back up on both versions (`catchBreath`).
+      reviveBp: RULES.dungeon.undercroft.reviveBp,
       newDepth: depth + 1,
       banked: bankedView(st.banked),
     };

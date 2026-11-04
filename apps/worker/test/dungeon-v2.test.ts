@@ -1,7 +1,7 @@
 /**
  * The daily dungeon on combat v2 (docs/design/combat/integration.md, sections 5 and 6): a run that starts with the
  * flag on is version 2 to its end, its rooms are v2 fights against `foeAt`, only HP carries, a knocked-out creature
- * stays out until the camp swaps in a fresh one, the replay and the views say `rules: 2` and carry the board events,
+ * stays out between rooms until the camp swaps in a fresh one (the way down into the Undercroft gets it back up), the replay and the views say `rules: 2` and carry the board events,
  * and a v1 run that began before the flag turned on finishes on v1.
  */
 import { combatV2, knownKnacks } from '@creatures/game/combat-v2';
@@ -539,7 +539,7 @@ describe('the descent card and the descent on v2', () => {
     return { shown, down, hurt };
   }
 
-  it('promises no revive on a v2 run, and the descent keeps a knocked-out creature at 0 HP with revived 0', async () => {
+  it('promises the revive on a v2 run, and the descent gets a knocked-out creature back up (decision 2026-11-04)', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -547,16 +547,19 @@ describe('the descent card and the descent on v2', () => {
         giveV2(ctx, p.id);
         const { shown, down, hurt } = await atDescentWithFallen(ctx, p);
         expect(shown.rules).toBe(2);
-        expect(shown.pending).toMatchObject({ kind: 'descend', reviveBp: 0 });
+        expect(shown.pending).toMatchObject({
+          kind: 'descend',
+          reviveBp: RULES.dungeon.undercroft.reviveBp,
+        });
         const res = await p.act(shown, { type: 'descend' });
         expect(res.status, JSON.stringify(res.body)).toBe(200);
         const team = res.body.state.team;
-        expect(team.find((m) => m.id === down)?.hp).toBe(0);
-        // The standing creature still catches its breath.
+        expect(team.find((m) => m.id === down)?.hp).toBeGreaterThan(0);
+        // The standing creature still heals its own share.
         expect(team.find((m) => m.id === hurt)?.hp).toBeGreaterThan(5);
-        expect(res.body.state.history.at(-1)).toMatchObject({ result: 'descend', revived: 0 });
+        expect(res.body.state.history.at(-1)).toMatchObject({ result: 'descend', revived: 1 });
       },
-      V2('v2-descent-no-revive'),
+      V2('v2-descent-revive'),
     );
   });
 

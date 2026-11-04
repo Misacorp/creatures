@@ -420,14 +420,14 @@ export function reviveText(reviveBp: number): string {
 }
 
 /**
- * The line about the breath on the way down. A v1 descent gets a downed creature back up (`reviveBp`); on combat v2 the server sends
- * `reviveBp` 0 (only the standing heal), and a downed creature stays out until a camp swaps it.
+ * The line about the breath on the way down. The descent gets a downed creature back up (`reviveBp`) on both rules versions
+ * (decision 2026-11-04, "Combat v2 Undercroft descent revives knocked-out creatures"). A `reviveBp` of 0 promises no revive.
  */
 function breathLine(descent: Pick<Descent, 'catchBreathBp' | 'reviveBp'>): string {
   const breath = `catch their breath and heal ${catchBreathText(descent.catchBreathBp)}.`;
   return descent.reviveBp > 0
     ? `Your creatures ${breath} Downed creatures revive to ${reviveText(descent.reviveBp)}.`
-    : `Your standing creatures ${breath} Downed creatures stay out until a camp swaps them.`;
+    : `Your standing creatures ${breath}`;
 }
 
 /**
