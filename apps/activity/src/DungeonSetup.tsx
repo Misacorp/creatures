@@ -277,6 +277,7 @@ export function DungeonSetup({
                     disabled={busy}
                     who={creatureName(creature)}
                     help={false}
+                    {...(today.rules === 2 ? { times: 2 } : {})}
                     listed
                     onChange={(on) => {
                       setTreats((now) => {

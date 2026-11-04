@@ -4,6 +4,14 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-04: Combat v2 dungeon runs read no weather at all [Misa]
+
+ID: `2026-11-04-combat-v2-dungeon-runs-read-no` · Status: current · Amends: `2026-11-04-combat-v2-phase-5-answers-in`
+
+**Decision.** A v2 dungeon run (`RunState.v === 2`) stores no weather at its start, so its experience, treats, scrap and summary read none, and no `weather_use` event is recorded. This replaces the last sentence of the third bullet of `2026-11-04-combat-v2-phase-5-answers-in` (a v2 run no longer keeps the day's weather for rewards). The client shows no sky line on the pre-run card of a v2 run and the treat box says 2x. v1 runs keep their weather.
+
+**Reasoning.** Misa: "let's get rid of dungeon weather too."
+
 ## 2026-11-04: Combat v2 kill bonus doubled to two epic and four rare pieces [Misa]
 
 ID: `2026-11-04-combat-v2-kill-bonus-doubled-to` · Status: current · Amends: `2026-11-04-combat-v2-phase-5-answers-in`
@@ -14,7 +22,7 @@ ID: `2026-11-04-combat-v2-kill-bonus-doubled-to` · Status: current · Amends: `
 
 ## 2026-11-04: Combat v2 phase 5 answers in the game: the small boss, threshold payouts, the kill bonus and no fight weather
 
-ID: `2026-11-04-combat-v2-phase-5-answers-in` · Status: current, amended by `2026-11-04-combat-v2-kill-bonus-doubled-to`
+ID: `2026-11-04-combat-v2-phase-5-answers-in` · Status: current, amended by `2026-11-04-combat-v2-dungeon-runs-read-no`, `2026-11-04-combat-v2-kill-bonus-doubled-to`
 
 **Decision.** The calls decision `2026-11-04-combat-v2-phase-5-answers-small` left open, for v2 weeks (v1 weeks are unchanged):
 

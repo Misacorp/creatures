@@ -50,7 +50,8 @@ export function DungeonPrerun({
           <StreakTrack pips={streakPips(today.streak)} label={streakLabel(today.streak)} />
         </GlossaryTag>
       </div>
-      <SkyLine forecast={forecast} />
+      {/* A combat v2 run reads no weather (Misa, 2026-11-04): no sky line before it either. */}
+      <SkyLine forecast={today.rules === 2 ? null : forecast} />
       {today.map != null && (
         <div class="dungeon-preview">
           <DungeonMap map={today.map} state={null} landmark={today.landmark} depth={today.depth} />

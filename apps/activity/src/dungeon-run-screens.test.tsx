@@ -48,6 +48,7 @@ import {
   type Page,
 } from './test-dom';
 import { installDrag } from './test-drag';
+import { sampleForecast } from './workbench/data';
 
 const api = vi.hoisted(() => ({
   dungeonAct: vi.fn(),
@@ -1536,6 +1537,15 @@ describe('the pre-run card', () => {
     page.draw(<DungeonPrerun today={today} />);
     return page.root;
   }
+
+  it('shows the sky line on a v1 run and none on a combat v2 run (Misa, 2026-11-04)', () => {
+    page ??= createPage();
+    const forecast = sampleForecast('boon and omen');
+    page.draw(<DungeonPrerun today={sampleToday()} forecast={forecast} />);
+    expect(byClass(page.root, 'sky-line')).toHaveLength(1);
+    page.draw(<DungeonPrerun today={{ ...sampleToday(), rules: 2 }} forecast={forecast} />);
+    expect(byClass(page.root, 'sky-line')).toHaveLength(0);
+  });
 
   it('shows the map with start markers and no caption or supply line under it', () => {
     const root = prerun(sampleToday());

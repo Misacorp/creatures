@@ -24,6 +24,7 @@ import {
   type DungeonPlayer,
 } from './dungeon-helpers';
 import { runCore, type CoreContext } from './helpers';
+import { gameDay } from '../src/time';
 import { nextGuild, rows } from './raid-helpers';
 
 /** 14:00 in Helsinki on 2027-01-15, after the daily reset: the game day is the 15th. */
@@ -128,8 +129,8 @@ describe('a v2 run', () => {
         ctx.clock.t = AFTER_RESET;
         const state = await begin(p);
         const st = stored(ctx, state.id);
-        // The valley has a day's weather, but the run's fight input carries none of it.
-        expect(st.weather).not.toBeNull();
+        // The valley has a day's weather, but the run stores none of it and its fight input carries none.
+        expect(st.weather).toBeNull();
         expect(st.input.luck).toEqual(RULES.combat.luck);
         expect(st.input).not.toHaveProperty('bossAttacks');
         for (const key of ['rainHealBp', 'sky', 'fog', 'bramble']) {
@@ -455,6 +456,41 @@ describe('a v2 day: rooms, a knock-out, the camp swap, the floor boss', () => {
       },
       V2('v2-day-swap'),
     );
+  });
+
+  it('stores no weather and records no weather use, so its summary and experience never read the day', async () => {
+    const hard = scaleV2Foes(3_000_000, 3_000_000);
+    try {
+      await runCore(
+        nextGuild(),
+        async (ctx) => {
+          const p = await dungeonPlayer(ctx, 1, STRONG);
+          giveV2(ctx, p.id);
+          ctx.clock.t = AFTER_RESET;
+          // A day with a Boon and an Omen that a v1 run would store, name in its summary and log.
+          ctx.core.weather.force(
+            gameDay(ctx.clock.t, 'Europe/Helsinki', RULES.daily.reset),
+            'fair-winds',
+            'heatwave',
+          );
+          const state = await begin(p);
+          expect(stored(ctx, state.id).weather).toBeNull();
+          const res = await p.act(state, { type: 'move', node: state.reachable[0] as string });
+          expect(res.status, JSON.stringify(res.body)).toBe(200);
+          expect(res.body.summary?.rules).toBe(2);
+          expect(res.body.summary).not.toHaveProperty('weather');
+          expect(JSON.parse(runRow(ctx, state.id)?.summary_json ?? '{}')).not.toHaveProperty(
+            'weather',
+          );
+          expect(
+            rows(ctx.sql, "SELECT 1 FROM analytics_events WHERE kind = 'weather_use'"),
+          ).toHaveLength(0);
+        },
+        { ...V2('v2-no-weather'), weather: true },
+      );
+    } finally {
+      hard();
+    }
   });
 
   it('ends the run lost when the whole team falls in a room', async () => {

@@ -682,7 +682,8 @@ export class Dungeon {
         : {}),
       map,
       input,
-      weather: wday,
+      // A v2 run stores no weather (Misa, 2026-11-04): its experience, treats, scrap and summary never read the day's Boon or Omen.
+      weather: v2 ? null : wday,
       seats,
       everyone: row.map((s) => s.id),
       treats: row.filter((s) => treated.has(s.id)).map((s) => s.id),
