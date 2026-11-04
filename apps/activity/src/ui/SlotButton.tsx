@@ -265,7 +265,7 @@ export function SlotButton(props: SlotButtonProps) {
             {Array.from({ length: PATTERN_ROWS }, (_, row) => (
               <b key={row} class={row % 2 === 1 ? 'odd' : undefined}>
                 <i />
-                <i />
+                {row % 2 === 0 && <i />}
               </b>
             ))}
           </span>
