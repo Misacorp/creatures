@@ -8,9 +8,8 @@ import { usePopoverTrigger } from '../PopoverHost';
 import { Sprite } from '../sprites/Sprite';
 import { SKY_GLYPHS } from '../sprites/data/weather-sprites';
 import type { Tab } from '../tabs';
-import { CountBadgeList } from '../ui/CountBadge';
 import { PixelHeading } from '../ui/PixelHeading';
-import { AWAY_TITLE, awayRows, awayWaitingLine } from './away-notice';
+import { AwayPaper } from './AwayPaper';
 import { buildBoard, type BoardSettings } from './board';
 import { HowToPin } from './HowToPin';
 import { starterLook } from './starter-creature';
@@ -102,40 +101,12 @@ export function NoticeBoard({
           <HowToPin onOpen={onHowTo} {...(howToRef === undefined ? {} : { pinRef: howToRef })} />
         )}
         {board.away !== null && (
-          <>
-            <PixelHeading as="h3" tone="gold" outline="ink" class="hb-title">
-              {AWAY_TITLE}
-            </PixelHeading>
-            <div class="hb-paper hb-away" ref={lean('away')}>
-              <ul class="hb-away-rows" aria-label={AWAY_TITLE}>
-                {awayRows(board.away).map((row) => (
-                  <li key={row.kind} class="hb-away-row" data-kind={row.kind}>
-                    <b class="hb-away-source">{row.name}</b>
-                    <CountBadgeList
-                      items={row.badges}
-                      label={`${row.name}, while you were away`}
-                      class="hb-away-badges"
-                    />
-                  </li>
-                ))}
-              </ul>
-              {awayWaitingLine(board.away) !== null && (
-                <p class="hb-away-waiting">{awayWaitingLine(board.away)}</p>
-              )}
-              {onDismissAway !== undefined && (
-                <button
-                  type="button"
-                  class="primary hb-away-ok"
-                  disabled={awayBusy}
-                  onClick={() => {
-                    if (board.away !== null) onDismissAway(board.away.until);
-                  }}
-                >
-                  Got it
-                </button>
-              )}
-            </div>
-          </>
+          <AwayPaper
+            away={board.away}
+            busy={awayBusy}
+            onDismiss={onDismissAway}
+            lean={lean('away')}
+          />
         )}
         <PixelHeading as="h3" tone="gold" outline="ink" class="hb-title">
           Needs you

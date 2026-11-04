@@ -94,6 +94,8 @@ export function createHandler(overrides: Partial<HandlerDeps> = {}): ExportedHan
           ...(env.RAID_LIVE === 'on' ? { raidLive: true } : {}),
           // Combat v2 (staging only for now): the creature page offers the Knack and the v2 talents. Absent, not false.
           ...(env.COMBAT_V2 === 'on' ? { combatV2: true } : {}),
+          // The valley shell (staging only until phase 6): the map of places instead of the dock. Absent, not false.
+          ...(env.VALLEY === 'on' ? { valley: true } : {}),
         });
       },
     },

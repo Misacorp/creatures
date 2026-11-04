@@ -52,6 +52,10 @@
   // (combatV2), a creature can save a Knack and use the v2 Talent Book, and the combat-v2-convert dev
   // tool exists. A raid week or dungeon run keeps the rules it started under. Any other value turns all
   // of it off. On in staging only; a test pins the top level and production to "off".
+  // VALLEY: "on" shows the valley shell (docs/design/valley/phase4-plan.md): /api/config tells the client
+  // (valley), and the game opens on a map of places (each opens today's page) instead of the dock and tabs.
+  // Nothing else changes on the server. Any other value turns it off. On in staging only until phase 6; a
+  // test pins the top level and production to "off".
   // DISCORD_PUBLIC_KEY: the Discord app's public key (hex, not a secret). The deploy job fills it from
   // Discord's verify_key; empty (or not 64 hex characters) turns POST /api/discord/interactions off (404),
   // which also turns off /feedback (docs/design/feedback.md).
@@ -68,7 +72,8 @@
     "LOUNGE_LIVE": "on",
     "FINALE_LIVE": "on",
     "RAID_LIVE": "on",
-    "COMBAT_V2": "off"
+    "COMBAT_V2": "off",
+    "VALLEY": "off"
   },
   "env": {
     "staging": {
@@ -95,7 +100,8 @@
         "LOUNGE_LIVE": "on",
         "FINALE_LIVE": "on",
         "RAID_LIVE": "on",
-        "COMBAT_V2": "on"
+        "COMBAT_V2": "on",
+        "VALLEY": "on"
       }
     },
     "production": {
@@ -122,7 +128,8 @@
         "LOUNGE_LIVE": "on",
         "FINALE_LIVE": "off",
         "RAID_LIVE": "on",
-        "COMBAT_V2": "off"
+        "COMBAT_V2": "off",
+        "VALLEY": "off"
       }
     }
   }

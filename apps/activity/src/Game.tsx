@@ -82,6 +82,18 @@ import { WipeNotice } from './WipeNotice';
 import { Workshop } from './Workshop';
 import type { TeamConfigure } from './TeamCreaturePage';
 import { Alert } from './ui/Alert';
+import { AwayPaper } from './home/AwayPaper';
+import { hasAwayNotice } from './home/away-notice';
+import { ValleyFrame } from './valley/ValleyFrame';
+import { placeOf, type PlaceId } from './valley/valley-art';
+import {
+  PLACE_TAB,
+  isOpenPlace,
+  placeOfView,
+  viewOf,
+  type HomeAt,
+  type ValleyView,
+} from './valley/valley-nav';
 
 /** Before the gear view has loaded. */
 const NO_ITEMS: readonly GearItem[] = [];
@@ -97,6 +109,7 @@ export function Game({
   showPractice,
   devTools,
   loungeLive = false,
+  valley = false,
 }: {
   initial: GameState;
   /** The signed-in player (their id and display name put their own creature in the living room). */
@@ -110,6 +123,8 @@ export function Game({
   devTools: boolean;
   /** The server offers the lounge's live socket (`loungeLive` of `/api/config`); the room polls without it. */
   loungeLive?: boolean;
+  /** The server shows the valley shell (`valley` of `/api/config`): a map of places instead of the dock and tabs. */
+  valley?: boolean;
   /** True on staging and local runs, where the server can start a practice finale. */
   showPractice: boolean;
   /** The daily Bait allowance the server paid when the Activity opened; null when there is none to tell. */
@@ -134,7 +149,13 @@ export function Game({
   const [tab, setTab] = useState<Place>(DEFAULT_PLACE);
   // The raid's week times for Home, loaded when the game opens and whenever Home is shown (a failed load
   // leaves the raid rows out).
-  const { raid: raidGlance } = useRaidGlance(game.starterChosen, tab === 'home', offset);
+  // The valley shell has no Today board, so it does not load the raid's week times for it.
+  const valleyOn = valley && game.starterChosen;
+  const { raid: raidGlance } = useRaidGlance(
+    game.starterChosen,
+    tab === 'home' && !valleyOn,
+    offset,
+  );
   // The Settings page (from the cog in the HUD) is drawn in place of the screen; the screen stays mounted under it,
   // so Back finds it as it was. Choosing a place closes it.
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -156,6 +177,11 @@ export function Game({
   };
   // Every change of place (dock, tray, rail, a Home notice) starts at the top of the new page.
   useScrollTopOnChange(tab);
+  // The valley shell: Home's tab is drawn as the map, the House's living room, or a place that is not open yet.
+  const [homeAt, setHomeAt] = useState<HomeAt>('valley');
+  // The place whose button takes the focus when the map comes back from its page.
+  const [focusPlace, setFocusPlace] = useState<PlaceId | null>(null);
+  const view: ValleyView = viewOf(tab, homeAt);
   const [reveal, setReveal] = useState<{ result: ClaimResult; trip: Trip | undefined } | null>(
     null,
   );
@@ -402,8 +428,39 @@ export function Game({
   // Between the phone and the wide window: one bottom bar with every place (no sub-menus).
   const bar = useBar();
   const places = navPlaces(alerts);
-  const placeLabelBeforeSettings =
-    tab === NAV_HOME.id ? NAV_HOME.label : (places.find((p) => p.id === tab)?.label ?? '');
+  /** Goes to a place the way the navigation does (the dock, the rail and the valley's places all come through here). */
+  const select = (id: Place): void => {
+    goTo(id);
+    setError(null);
+    setNotice(null);
+    refreshState();
+    room.refreshIfStale();
+    loadForecast();
+    if (id === 'games' || id === 'home') games.load();
+    if (id !== 'games') loadGear();
+  };
+  /** The valley: opens a place (its page, the House's living room, or the line of one not open yet). */
+  const openPlace = (id: PlaceId): void => {
+    if (isOpenPlace(id)) {
+      setHomeAt(id === 'house' ? 'house' : 'valley');
+      select(PLACE_TAB[id]);
+    } else {
+      setHomeAt(id);
+      select('home');
+    }
+  };
+  /** The valley: back to the map from a place, the focus on that place's button. */
+  const leavePlace = (): void => {
+    setFocusPlace(placeOfView(view));
+    setHomeAt('valley');
+    // Only the view changes: the map draws creatures the state already holds, so it loads nothing.
+    goTo('home');
+  };
+  const placeLabelBeforeSettings = valleyOn
+    ? valleyTitle(view)
+    : tab === NAV_HOME.id
+      ? NAV_HOME.label
+      : (places.find((p) => p.id === tab)?.label ?? '');
   const placeLabel = settingsOpen ? 'Settings' : placeLabelBeforeSettings;
 
   // The living room's props: the same room in the desktop's band and at the top of the phone's Home page.
@@ -443,7 +500,7 @@ export function Game({
           setSettingsOpen(true);
         }}
       />
-      {wide && (roomMode === 'every' || tab === NAV_HOME.id) && (
+      {!valleyOn && wide && (roomMode === 'every' || tab === NAV_HOME.id) && (
         <RoomBand room={roomProps} hero={roomMode === 'home'} />
       )}
     </>
@@ -470,56 +527,8 @@ export function Game({
     },
   };
 
-  const content = !game.starterChosen ? (
+  const notices = (
     <>
-      {error !== null && (
-        <Alert
-          key={error}
-          level="alert"
-          onDismiss={() => {
-            setError(null);
-          }}
-        >
-          {error}
-        </Alert>
-      )}
-      <StarterPicker
-        options={game.starterOptions}
-        busy={busy}
-        onChoose={(species) => {
-          void runKeyed(ActionIds.starter(species), (key) => chooseStarter(species, key)).then(
-            showState,
-          );
-        }}
-      />
-    </>
-  ) : (
-    <AppFrame
-      place={tab}
-      head={head}
-      nav={
-        <MainNav
-          places={places}
-          current={tab}
-          wide={wide}
-          bar={bar}
-          home
-          onSelect={(id) => {
-            if (!isPlace(id)) return;
-            // Tapping the place you are in also goes back to its top.
-            if (id === tab) scrollToTop();
-            goTo(id);
-            setError(null);
-            setNotice(null);
-            refreshState();
-            room.refreshIfStale();
-            loadForecast();
-            if (id === 'games' || id === 'home') games.load();
-            if (id !== 'games') loadGear();
-          }}
-        />
-      }
-    >
       <WipeNotice key={devNonce} cancelled={game.cancelled} creatures={game.creatures} />
       {game.levelReset !== null && (
         <LevelResetCard
@@ -552,204 +561,300 @@ export function Game({
           {notice}
         </Alert>
       )}
-      {settingsOpen && (
-        <SettingsPage
+    </>
+  );
+
+  const settingsPage = settingsOpen ? (
+    <SettingsPage
+      settings={boardSettings}
+      onChange={(next) => {
+        setBoardSettings(next);
+        saveBoardSettings(browserSettingsStorage(), next);
+      }}
+      onBack={() => {
+        setSettingsOpen(false);
+      }}
+      backLabel={`to ${placeLabelBeforeSettings}`}
+      onHowTo={onHelp}
+      howToRef={helpRef}
+      notifications={serverNotifications}
+    />
+  ) : null;
+
+  const pages = (
+    <div key={devNonce} hidden={settingsOpen}>
+      {tab === 'home' && !valleyOn && (
+        <HomeScreen
+          offset={offset}
+          timezone={timezone.current}
+          trips={game.expeditions}
+          jobs={gear === null ? null : gear.jobs}
+          creatures={game.creatures}
+          games={games.view}
+          pending={game.pending.length}
+          attention={attention}
+          raid={raidGlance}
+          forecast={forecast}
           settings={boardSettings}
-          onChange={(next) => {
-            setBoardSettings(next);
-            saveBoardSettings(browserSettingsStorage(), next);
+          creatureState={game}
+          onHowTo={() => {
+            // A click may not focus the button (Safari): make it the opener the focus returns to.
+            boardHelpRef.current?.focus();
+            onHelp();
           }}
-          onBack={() => {
-            setSettingsOpen(false);
+          howToRef={boardHelpRef}
+          away={game.awayRewards}
+          awayBusy={busy}
+          onDismissAway={(until) => {
+            void run(() => dismissAway(until)).then(showState);
           }}
-          backLabel={`to ${placeLabelBeforeSettings}`}
-          onHowTo={onHelp}
-          howToRef={helpRef}
-          notifications={serverNotifications}
+          onGo={(place, needsFilter) => {
+            goTo(place, needsFilter === true ? { needsFilter } : {});
+            refreshState();
+            loadForecast();
+            if (place === 'games') games.load();
+            else loadGear();
+          }}
+          room={wide ? undefined : <RoomBand room={roomProps} />}
         />
       )}
-      <div key={devNonce} hidden={settingsOpen}>
-        {tab === 'home' && (
-          <HomeScreen
-            offset={offset}
-            timezone={timezone.current}
-            trips={game.expeditions}
-            jobs={gear === null ? null : gear.jobs}
-            creatures={game.creatures}
-            games={games.view}
-            pending={game.pending.length}
-            attention={attention}
-            raid={raidGlance}
-            forecast={forecast}
-            settings={boardSettings}
-            creatureState={game}
-            onHowTo={() => {
-              // A click may not focus the button (Safari): make it the opener the focus returns to.
-              boardHelpRef.current?.focus();
-              onHelp();
-            }}
-            howToRef={boardHelpRef}
-            away={game.awayRewards}
-            awayBusy={busy}
-            onDismissAway={(until) => {
-              void run(() => dismissAway(until)).then(showState);
-            }}
-            onGo={(place, needsFilter) => {
-              goTo(place, needsFilter === true ? { needsFilter } : {});
-              refreshState();
-              loadForecast();
-              if (place === 'games') games.load();
-              else loadGear();
-            }}
-            room={wide ? undefined : <RoomBand room={roomProps} />}
-          />
-        )}
-        {(tab === 'journal' || tab === 'stats') && (
-          <HomeBook
-            page={tab}
-            creatures={game.creatures}
-            tripsFinished={game.slots.tripsFinished}
-          />
-        )}
-        {tab === 'collection' && (
-          <Collection
-            initialNeeds={creaturesNeeds}
-            state={game}
-            gear={gear}
-            busy={busy}
-            viewerId={user.id}
-            loadGames={fetchCreatureGames}
-            onEquip={equipOn}
-            catchActions={catchActions}
-            {...creatureActions}
-          />
-        )}
-        {tab === 'expeditions' && (
-          <Expeditions
-            state={game}
-            forecast={forecast}
-            offset={offset}
-            busy={busy}
-            reveal={reveal}
-            catchActions={catchActions}
-            settled={settled}
-            timezone={timezone.current}
-            onSend={async (request: SendRequest) => {
-              const answer = await runKeyed(ActionIds.send(request), (key) =>
-                sendExpedition(request, key),
-              );
-              if (answer === undefined) return false;
-              setCurrent(loaded(answer.state));
-              return true;
-            }}
-            onPushOn={(trip, goalId) => {
-              void run(() => pushOn(trip.id, goalId)).then((answer) => {
-                if (answer !== undefined) setCurrent(loaded(answer.state));
+      {(tab === 'journal' || tab === 'stats') && (
+        <HomeBook
+          page={tab}
+          creatures={game.creatures}
+          tripsFinished={game.slots.tripsFinished}
+          {...(valleyOn
+            ? {
+                // In the valley the books are the House's two entries: Back returns to the House.
+                onBack: () => {
+                  setHomeAt('house');
+                  goTo('home');
+                },
+                backLabel: 'to the House',
+              }
+            : {})}
+        />
+      )}
+      {tab === 'collection' && (
+        <Collection
+          initialNeeds={creaturesNeeds}
+          state={game}
+          gear={gear}
+          busy={busy}
+          viewerId={user.id}
+          loadGames={fetchCreatureGames}
+          onEquip={equipOn}
+          catchActions={catchActions}
+          {...creatureActions}
+        />
+      )}
+      {tab === 'expeditions' && (
+        <Expeditions
+          state={game}
+          forecast={forecast}
+          offset={offset}
+          busy={busy}
+          reveal={reveal}
+          catchActions={catchActions}
+          settled={settled}
+          timezone={timezone.current}
+          onSend={async (request: SendRequest) => {
+            const answer = await runKeyed(ActionIds.send(request), (key) =>
+              sendExpedition(request, key),
+            );
+            if (answer === undefined) return false;
+            setCurrent(loaded(answer.state));
+            return true;
+          }}
+          onPushOn={(trip, goalId) => {
+            void run(() => pushOn(trip.id, goalId)).then((answer) => {
+              if (answer !== undefined) setCurrent(loaded(answer.state));
+            });
+          }}
+          onClaim={(trip) => {
+            void run(() => claimExpedition(trip.id)).then((done) => {
+              if (done === undefined) return;
+              setCurrent(loaded(done.state));
+              setReveal({
+                result: done.result,
+                trip: done.state.expeditions.find((e) => e.id === trip.id),
               });
-            }}
-            onClaim={(trip) => {
-              void run(() => claimExpedition(trip.id)).then((done) => {
-                if (done === undefined) return;
-                setCurrent(loaded(done.state));
-                setReveal({
-                  result: done.result,
-                  trip: done.state.expeditions.find((e) => e.id === trip.id),
-                });
-                // The trip's parts, blueprints and gear are in the Workshop now.
-                loadGear();
-              });
-            }}
-            onRefresh={refreshState}
-            onDismissReveal={() => {
-              setReveal(null);
-            }}
-            onOpenWorkshop={() => {
-              goTo('workshop');
+              // The trip's parts, blueprints and gear are in the Workshop now.
               loadGear();
-            }}
-            bag={gear?.inventory ?? null}
-          />
-        )}
-        {tab === 'workshop' && (
-          <Workshop
-            state={game}
-            gear={gear}
-            failed={gearFailed}
-            offset={offset}
-            busy={busy}
-            error={error}
-            reveal={jobReveal}
-            actions={gearActions}
-            onRetry={loadGear}
-            onClaimed={setJobReveal}
-            onDismissReveal={() => {
-              setJobReveal(null);
-            }}
-          />
-        )}
-        {tab === 'games' && (
-          <GamesTab
-            view={games.view}
-            failed={games.failed}
-            creatures={game.creatures}
-            selfId={user.id}
-            offset={offset}
-            onView={games.replace}
-            onReload={games.load}
-            onPurchased={() => {
-              // A prize pays Bait, parts, a supply or a gear piece: the balances and the bag.
-              refreshState();
-              loadGear();
-            }}
-          />
-        )}
-        {tab === 'raid' && (
-          <Raid
-            creatures={game.creatures}
-            forecast={forecast}
-            showPractice={showPractice}
-            onBalanceChange={refreshState}
-            onNeedsPlacementChange={(needed) => {
-              setAttention((now) => ({
-                dungeon: false,
-                recheckAt: null,
-                ...now,
-                raid: needed,
-              }));
-            }}
-            configure={teamConfigure}
-          />
-        )}
-        {tab === 'dungeon' && (
-          <Dungeon
-            creatures={game.creatures}
-            forecast={forecast}
-            bait={game.balances.bait}
-            draft={dungeonDraft.current}
-            onDraftChange={(slots) => {
-              dungeonDraft.current = slots;
-            }}
-            onRunStarted={() => {
-              // The server deleted the saved draft: the next setup starts from this run's team.
-              dungeonDraft.current = null;
-            }}
-            onCanRunChange={(canRun) => {
-              setAttention((now) => ({
-                raid: false,
-                recheckAt: null,
-                ...now,
-                dungeon: canRun,
-              }));
-            }}
-            onRunFinished={() => {
-              // A run pays Bait, Essence, parts and maybe gear: reload the balances and the bag.
-              refreshState();
-              loadGear();
-            }}
-            configure={teamConfigure}
-          />
-        )}
-      </div>
+            });
+          }}
+          onRefresh={refreshState}
+          onDismissReveal={() => {
+            setReveal(null);
+          }}
+          onOpenWorkshop={() => {
+            goTo('workshop');
+            loadGear();
+          }}
+          bag={gear?.inventory ?? null}
+        />
+      )}
+      {tab === 'workshop' && (
+        <Workshop
+          state={game}
+          gear={gear}
+          failed={gearFailed}
+          offset={offset}
+          busy={busy}
+          error={error}
+          reveal={jobReveal}
+          actions={gearActions}
+          onRetry={loadGear}
+          onClaimed={setJobReveal}
+          onDismissReveal={() => {
+            setJobReveal(null);
+          }}
+        />
+      )}
+      {tab === 'games' && (
+        <GamesTab
+          view={games.view}
+          failed={games.failed}
+          creatures={game.creatures}
+          selfId={user.id}
+          offset={offset}
+          onView={games.replace}
+          onReload={games.load}
+          onPurchased={() => {
+            // A prize pays Bait, parts, a supply or a gear piece: the balances and the bag.
+            refreshState();
+            loadGear();
+          }}
+        />
+      )}
+      {tab === 'raid' && (
+        <Raid
+          creatures={game.creatures}
+          forecast={forecast}
+          showPractice={showPractice}
+          onBalanceChange={refreshState}
+          onNeedsPlacementChange={(needed) => {
+            setAttention((now) => ({
+              dungeon: false,
+              recheckAt: null,
+              ...now,
+              raid: needed,
+            }));
+          }}
+          configure={teamConfigure}
+        />
+      )}
+      {tab === 'dungeon' && (
+        <Dungeon
+          creatures={game.creatures}
+          forecast={forecast}
+          bait={game.balances.bait}
+          draft={dungeonDraft.current}
+          onDraftChange={(slots) => {
+            dungeonDraft.current = slots;
+          }}
+          onRunStarted={() => {
+            // The server deleted the saved draft: the next setup starts from this run's team.
+            dungeonDraft.current = null;
+          }}
+          onCanRunChange={(canRun) => {
+            setAttention((now) => ({
+              raid: false,
+              recheckAt: null,
+              ...now,
+              dungeon: canRun,
+            }));
+          }}
+          onRunFinished={() => {
+            // A run pays Bait, Essence, parts and maybe gear: reload the balances and the bag.
+            refreshState();
+            loadGear();
+          }}
+          configure={teamConfigure}
+        />
+      )}
+    </div>
+  );
+
+  const content = !game.starterChosen ? (
+    <>
+      {error !== null && (
+        <Alert
+          key={error}
+          level="alert"
+          onDismiss={() => {
+            setError(null);
+          }}
+        >
+          {error}
+        </Alert>
+      )}
+      <StarterPicker
+        options={game.starterOptions}
+        busy={busy}
+        onChoose={(species) => {
+          void runKeyed(ActionIds.starter(species), (key) => chooseStarter(species, key)).then(
+            showState,
+          );
+        }}
+      />
+    </>
+  ) : valleyOn ? (
+    <>
+      {head}
+      <ValleyFrame
+        view={view}
+        creatures={game.creatures}
+        trayInput={{
+          trips: game.expeditions,
+          jobs: gear === null ? null : gear.jobs,
+          now: Date.now() + offset,
+        }}
+        focus={focusPlace}
+        onOpen={openPlace}
+        onLeave={leavePlace}
+        onBook={select}
+        notices={notices}
+        away={
+          hasAwayNotice(game.awayRewards) ? (
+            <AwayPaper
+              away={game.awayRewards}
+              busy={busy}
+              onDismiss={(until) => {
+                void run(() => dismissAway(until)).then(showState);
+              }}
+            />
+          ) : null
+        }
+        settings={settingsPage}
+        room={<RoomBand room={roomProps} />}
+      >
+        {pages}
+      </ValleyFrame>
+    </>
+  ) : (
+    <AppFrame
+      place={tab}
+      head={head}
+      nav={
+        <MainNav
+          places={places}
+          current={tab}
+          wide={wide}
+          bar={bar}
+          home
+          onSelect={(id) => {
+            if (!isPlace(id)) return;
+            // Tapping the place you are in also goes back to its top.
+            if (id === tab) scrollToTop();
+            select(id);
+          }}
+        />
+      }
+    >
+      {notices}
+      {settingsPage}
+      {pages}
     </AppFrame>
   );
 
@@ -779,4 +884,13 @@ export function Game({
       </GearItemsContext.Provider>
     </TreatTimesContext.Provider>
   );
+}
+
+/** The HUD's title in the valley: "Valley" on the map, else the place's name (the book's name inside the House). */
+function valleyTitle(view: ValleyView): string {
+  if (view.kind === 'valley') return 'Valley';
+  if (view.kind === 'place' && view.book !== null) {
+    return view.book === 'journal' ? 'Journal' : 'Stats';
+  }
+  return placeOf(view.place).name;
 }

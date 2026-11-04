@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-04: Phase 4 step 1: the valley shell is Game's second frame, one tab state, back control is DrillHead
+
+ID: `2026-11-04-phase-4-step-1-the-valley` · Status: current
+
+**Decision.** With `VALLEY` on, `Game` draws `valley/ValleyFrame` instead of `AppFrame` and `MainNav`. `Game` keeps its one `tab` state; the valley only maps a tab to a place (`viewOf`), so both shells draw the same page components and every refresh-on-enter step is shared (`select`). A place's page opens under `ui/DrillHead` with the word "Valley" (the shared "page opened from another page" row); the four new places show their scene and one line. The House holds the living room and two entries (Journal, Stats). The tray shows on the map only and a tap opens the Paddock. The away paper (`home/AwayPaper`, taken out of `NoticeBoard`) shows over the map until the Gazette replaces it (step 4). Night, bubbles, state lines and scenes of today's work are left for later steps.
+
+**Reasoning.** One tab state keeps the server-facing behaviour and the read budget exactly as today (same loads on the same entries, no new endpoints) and avoids a second copy of any page. Reusing `DrillHead` keeps one way back; a `word` option gives it the "Valley" wording the plan asks for.
+
 ## 2026-11-04: Phase 4 builds nothing phase 5 throws away; new places on the map not yet open (round 25, Q57, Q58) **[Misa]**
 
 ID: `2026-11-04-phase-4-builds-nothing-phase-5` · Status: current
