@@ -33,7 +33,7 @@ _Example._ 9 slots are 3 / 3 / 3. 10 slots are 3 / 4 / 3. In the dungeon the lin
 
 **1.6 Lane.** A slot position inside a row, read across all three rows: the creature at position 2 of Front, of Middle and of Back are in the same lane. With a line of 3N slots, a lane has three creatures. The position is the board's: an empty board slot keeps its column, so creatures after a gap do not shift left (`laneOfIndex`). In the dungeon there is one lane.
 
-**1.7 Living, knocked out.** A creature is living while its HP is above 0. At 0 it is knocked out (the game never says "dead"). A knocked-out creature stays out for the rest of the fight. It does not act, is not a target of any boss rule, gives no buff and receives no buff or healing. Nothing revives it. (In the dungeon the run carries HP from room to room, so it stays out for the run.)
+**1.7 Living, knocked out.** A creature is living while its HP is above 0. At 0 it is knocked out (the game never says "dead"). A knocked-out creature stays out for the rest of the fight. It does not act, is not a target of any boss rule, gives no buff and receives no buff or healing. Nothing revives it. (In the dungeon the run carries HP from room to room, so it stays out until a camp swaps it; the way down into the Undercroft is the exception, it gets a knocked-out creature back up at `reviveBp`, decision `2026-11-04-combat-v2-undercroft-descent-revives-knocked`.)
 
 **1.8 Boss and foe.** The boss is the creature-side's opponent. A raid boss is a boss. A dungeon enemy is a foe; a foe of kind `boss` is a room boss. Foes and bosses follow the same rules.
 

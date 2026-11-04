@@ -1,7 +1,7 @@
 /**
  * The dungeon's screens on a run of combat v2, from real engine fights (`workbench/dungeon-v2-sample.ts`): a room plays on the stage's
  * single row, the map's drawer shows the foe's move tiles and leaves out a modifier that does nothing there, the camp and the strip say
- * "Out" for a creature at 0 HP, and the descent promises no revive. A v1 run draws what it always did.
+ * "Out" for a creature at 0 HP, and the descent gets a downed creature back up, as on v1. A v1 run draws what it always did.
  */
 import { act } from 'preact/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -270,11 +270,11 @@ describe('the descent card on a v2 run', () => {
   const base = undercroftState('descent');
   const pending = base.pending?.kind === 'descend' ? base.pending : null;
 
-  it('promises no revive, and says a downed creature stays out until a camp swaps it', () => {
+  it('promises the revive, as on v1: the standing recover and a downed creature gets back up', () => {
     if (pending === null) throw new Error('the capture has a descent');
     const { root } = draw(
       <DungeonDescend
-        descent={{ ...pending, reviveBp: 0 }}
+        descent={pending}
         pack={base.pack}
         depth={base.depth}
         busy={false}
@@ -282,12 +282,12 @@ describe('the descent card on a v2 run', () => {
       />,
     );
     const text = visibleText(root);
-    expect(text).toContain('Your standing creatures catch their breath');
-    expect(text).toContain('Downed creatures stay out until a camp swaps them.');
-    expect(text).not.toContain('revive');
+    expect(text).toContain('Your creatures catch their breath');
+    expect(text).toContain('Downed creatures revive to');
+    expect(text).not.toContain('stay out');
   });
 
-  it('keeps the v1 promise on a v1 descent', () => {
+  it('says the same on a v1 descent', () => {
     if (pending === null) throw new Error('the capture has a descent');
     const { root } = draw(
       <DungeonDescend

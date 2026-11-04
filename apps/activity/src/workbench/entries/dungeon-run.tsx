@@ -367,12 +367,10 @@ function DescendDemo({ p }: { p: Props }) {
       : variant === 'nothing banked'
         ? { ...base.pending, banked: { gear: [], supplies: [], parts: {} } }
         : base.pending;
-  // Combat v2 sends no revive (only the standing heal on the way down).
-  const shown = str(p, 'rules') === V2_RULES ? { ...descent, reviveBp: 0 } : descent;
   return (
     <DungeonDescend
       key={`${variant}-${str(p, 'rules')}`}
-      descent={shown}
+      descent={descent}
       pack={bool(p, 'emptyPack') ? { bait: 0, essence: 0, scrap: 0 } : base.pack}
       depth={base.depth}
       busy={bool(p, 'busy')}
@@ -396,22 +394,16 @@ const dungeonDescend: Entry = {
         'nothing banked',
       ],
     },
-    rules: { kind: 'select', options: RULES },
     emptyPack: { kind: 'toggle' },
     busy: { kind: 'toggle' },
   },
   defaults: {
-    rules: 'combat v1',
     card: 'the floor boss fell (Undercroft 1)',
     emptyPack: false,
     busy: false,
   },
   presets: [
     { name: 'The floor boss fell', props: {} },
-    {
-      name: 'Combat v2: only the standing heal on the way down (no revive line)',
-      props: { rules: 'combat v2' },
-    },
     {
       name: 'A cracked floor: another floor below',
       props: { card: 'a cracked floor (Undercroft 2)' },
