@@ -10,7 +10,7 @@ import { loadModule } from './load.mjs';
 import { createPool } from './pool.mjs';
 
 const args = process.argv.slice(2);
-const quick = args.includes('--scenario');
+const quick = args.includes('--scenario') || args.includes('--dungeon-xp-study');
 let jobs = availableParallelism();
 const at = args.indexOf('--jobs');
 if (at >= 0) {

@@ -32,6 +32,7 @@ import { bestPiece, hasFourOfFive, wornPieces } from './lines';
 import { visitVisitor } from './visitor';
 import { temperAtVisit } from './tempering';
 import { offerToIdol } from './idol';
+import { runXp } from './dungeonXp';
 import { heldForms } from './forms';
 import { openSlots, startLearning, stepSchool, teacherDay } from './school';
 import { MARKET_OPENS_AT, openMarket } from './commons';
@@ -120,7 +121,7 @@ function runDungeon(p: Player, server: Server, hour: number): void {
     p.passes -= 1;
     const team = fightTeam(p);
     tickDungeon(team, uniform(p.rng) < p.rules.honours.undercroftShare);
-    fightXp(p, d.xp, 'xpDungeon', team);
+    fightXp(p, runXp(server.config.dungeonXp, p, hour, d.xp), 'xpDungeon', team);
     credit(p, R.acorns, d.acorns, 'dungeon');
     credit(p, R.scrap, d.scrap, 'dungeon');
     credit(p, R.essence, d.essence, 'dungeon');
@@ -539,6 +540,7 @@ export function runServer(
       visitor: config.visitor !== false,
       tempering: config.tempering ?? rules.tempering.on,
       idol: config.idol ?? rules.idol.on,
+      ...(config.dungeonXp !== undefined ? { dungeonXp: config.dungeonXp } : {}),
       teacherRule: config.teacherRule ?? 'few',
     },
     rules,
