@@ -35,6 +35,11 @@ export interface RaidGlance {
    * many there are). Absent or null: none.
    */
   swapText?: string | null;
+  /**
+   * What the valley's Arena scene draws: this week's boss and the creatures the player placed (their ids). Absent
+   * where the view did not carry them; the party is empty before the player has placed anyone.
+   */
+  scene?: { boss: { id: string; name: string }; party: readonly string[] };
 }
 
 export interface HomeInput {

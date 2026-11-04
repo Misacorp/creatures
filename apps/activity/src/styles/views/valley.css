@@ -665,3 +665,72 @@ main.card:has(.vy-frame) > .hud {
     animation: none;
   }
 }
+
+/* --- A place's scene as a band above today's page (the five places whose work stays) --- */
+.vy-scene-box {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.vy-interior.vy-band {
+  flex: none;
+  display: grid;
+  gap: 0.5rem;
+  overflow: visible;
+  background: transparent;
+}
+
+.vy-band .vy-scene-box {
+  position: relative;
+  inset: auto;
+  height: var(--band-h, 15rem);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+}
+
+/* The action sits under the band in the flow, the same gold button or calm line as a full-screen scene's. */
+.vy-band .vy-act {
+  position: static;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+/* Today's page of a place with a scene: the scroll target of the scene's action. */
+.vy-inside {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.vy-inside:focus {
+  outline: none;
+}
+
+/* A creature standing in a scene: the art is the button, like the map's places and the tray. */
+.vy-stand {
+  pointer-events: auto;
+}
+
+.vy-frame .vy-stand-btn,
+.vy-frame .vy-stand-btn:is(:hover, :active) {
+  display: block;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  filter: none;
+  transform: none;
+  line-height: 0;
+  cursor: pointer;
+}
+
+.vy-frame .vy-stand-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}

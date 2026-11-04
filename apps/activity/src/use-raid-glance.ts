@@ -2,7 +2,9 @@
  * The raid's week times for the Home page: the game loads the raid view (the same call the Raid tab makes,
  * `GET /api/raid`) when it opens and again each time Home is shown, so Home's "Coming up" shows the real
  * phase times and the finale. It keeps only the schedule. A failed load is silent: the board just leaves the
- * raid rows out, and the next call tries again. Only the newest load may land.
+ * raid rows out, and the next call tries again. Only the newest load may land. The valley's Arena scene reads the
+ * boss and the player's placed creatures from the same view (no second request); the Raid page hands its own
+ * view up as it changes (`adopt`), so a placement shows in the scene at once.
  */
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { RaidGlance } from './home-view';
@@ -10,13 +12,25 @@ import { swapNoticeText } from './raid-board-v2';
 import { fetchRaid, type RaidView } from './raid-api';
 
 /** What the Home page keeps of a raid view. */
-export function glanceOf(view: Pick<RaidView, 'schedule' | 'rules' | 'v2'>): RaidGlance {
+export function glanceOf(
+  view: Pick<RaidView, 'schedule' | 'rules' | 'v2'> & Partial<Pick<RaidView, 'boss' | 'you'>>,
+): RaidGlance {
   const v2 = view.rules === 2 ? view.v2 : undefined;
-  if (v2 === undefined) return { schedule: view.schedule };
+  const scene =
+    view.boss === undefined
+      ? {}
+      : {
+          scene: {
+            boss: { id: view.boss.id, name: view.boss.name },
+            party: (view.you?.team?.creatures ?? []).map((c) => c.creatureId),
+          },
+        };
+  if (v2 === undefined) return { schedule: view.schedule, ...scene };
   return {
     schedule: view.schedule,
     rules: 2,
     swapText: swapNoticeText(v2.swaps.incoming, { rows: v2.rows, cols: v2.cols }),
+    ...scene,
   };
 }
 
@@ -52,6 +66,12 @@ export function useRaidGlance(enabled: boolean, onHome: boolean, offset: number)
     );
   }
 
+  /** Takes a raid view the Raid page loaded: it is newer than any load in flight. */
+  function adopt(view: Parameters<typeof glanceOf>[0]): void {
+    seq.current += 1;
+    setRaid(glanceOf(view));
+  }
+
   useEffect(() => {
     if (enabled && (onHome || seq.current === 0)) load();
   }, [enabled, onHome]);
@@ -68,5 +88,5 @@ export function useRaidGlance(enabled: boolean, onHome: boolean, offset: number)
     };
   }, [enabled, onHome, raid]);
 
-  return { raid, load };
+  return { raid, load, adopt };
 }

@@ -66,6 +66,7 @@ export function Raid({
   showPractice,
   onBalanceChange,
   onNeedsPlacementChange,
+  onViewChange,
   configure,
 }: {
   creatures: Creature[];
@@ -77,6 +78,8 @@ export function Raid({
   onBalanceChange: () => void;
   /** Whether team creatures are still to be placed, whenever the raid view loads or changes (the tab's pip). */
   onNeedsPlacementChange: (needed: boolean) => void;
+  /** The raid view on screen, whenever it loads or changes (the valley's Arena scene draws the party and boss from it). */
+  onViewChange?: ((view: RaidView) => void) | undefined;
   /** Getting your board's creatures ready (their configurator and page); absent: their popovers only. */
   configure?: TeamConfigure | undefined;
 }) {
@@ -167,7 +170,9 @@ export function Raid({
 
   // The tab's pip follows the raid view on screen.
   useEffect(() => {
-    if (loaded !== null) onNeedsPlacementChange(needsPlacement(loaded.view, creatures.length));
+    if (loaded === null) return;
+    onNeedsPlacementChange(needsPlacement(loaded.view, creatures.length));
+    onViewChange?.(loaded.view);
   }, [loaded?.view]);
 
   // When the next phase is due, ask again shortly after, so the results appear by themselves.

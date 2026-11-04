@@ -199,3 +199,93 @@ describe('the valley flag in the game', () => {
     for (const url of fetched) expect(asked.has(url)).toBe(true);
   });
 });
+
+// The five places with a scene (phase 4, step 3): [door, flag-off dock name, scene class].
+const SCENE_PLACES = [
+  ['Cave', /^Dungeon/],
+  ['Fairground', /^Games/],
+  ['House', /^Home/],
+  ['Paddock', /^Creatures/],
+  ['Arena', /^Raid/],
+] as const;
+
+describe('the places’ scenes above today’s page', () => {
+  const open = (p: Page, place: string): void => {
+    const door = byName(p.root, 'button', new RegExp(`^${place},`))[0];
+    if (door === undefined) throw new Error(`no ${place}`);
+    p.click(door);
+  };
+  const firstId = SAMPLE_STATE.creatures[0]?.id ?? null;
+
+  it.each(SCENE_PLACES)('%s: a band with its scene above the page', (place) => {
+    const p = draw(true, { loungerId: firstId });
+    open(p, place);
+    const bands = byClass(p.root, 'vy-band');
+    expect(bands).toHaveLength(1);
+    expect(byClass(bands[0] ?? p.root, 'vy-canvas')).toHaveLength(1);
+    expect(byClass(p.root, 'vy-inside')).toHaveLength(1);
+    // One pinned action or calm line under the scene.
+    expect(byClass(p.root, 'vy-act')).toHaveLength(1);
+  });
+
+  it('the Forge and the Signpost have no scene (phase 5 posts): today’s page only', () => {
+    for (const place of ['Forge', 'Signpost']) {
+      const p = draw(true);
+      open(p, place);
+      expect(byClass(p.root, 'vy-band')).toHaveLength(0);
+      p.unmount();
+      page = null;
+    }
+  });
+
+  it('House: the lounger stands by the house, as a button that opens its popover', () => {
+    const p = draw(true, { loungerId: firstId });
+    open(p, 'House');
+    expect(byClass(p.root, 'vy-stand')).toHaveLength(1);
+    expect(byClass(p.root, 'vy-stand-btn')).toHaveLength(1);
+  });
+
+  it('Cave: a run waits, so the action says Start the run and goes to the page', () => {
+    const p = draw(true, { attention: { dungeon: true, raid: false, recheckAt: null } });
+    open(p, 'Cave');
+    const act = byName(p.root, 'button', /^Start the run/)[0];
+    if (act === undefined) throw new Error('no pinned action');
+    p.click(act);
+    expect(byClass(p.root, 'vy-inside')).toHaveLength(1);
+  });
+
+  it('Cave: nothing waiting is a calm line, never a disabled button', () => {
+    const p = draw(true, { attention: { dungeon: false, raid: false, recheckAt: null } });
+    open(p, 'Cave');
+    expect(visibleText(p.root)).toContain('The cave is quiet');
+    expect(byName(p.root, 'button', /^Start the run/)).toHaveLength(0);
+  });
+
+  it('Paddock: the creatures at home wander in the scene and waiting catches stand at the gate', () => {
+    const p = draw(true);
+    open(p, 'Paddock');
+    const home = SAMPLE_STATE.creatures.filter((c) => !c.away && c.busy === null).length;
+    const gate = Math.min(2, SAMPLE_STATE.pending.length);
+    expect(byClass(p.root, 'vy-stand').length).toBe(Math.min(8, home) + gate);
+  });
+
+  it.each(SCENE_PLACES)(
+    '%s: opening it asks for nothing the flag-off page does not',
+    async (place, dock) => {
+      const off = draw(false);
+      await settle();
+      const dockButton = byName(off.root, 'button', dock)[0];
+      if (dockButton !== undefined) off.click(dockButton);
+      await settle();
+      const asked = new Set(fetched);
+      off.unmount();
+      page = null;
+      fetched.length = 0;
+      const on = draw(true);
+      await settle();
+      open(on, place);
+      await settle();
+      for (const url of fetched) expect(asked.has(url)).toBe(true);
+    },
+  );
+});

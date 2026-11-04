@@ -9,8 +9,9 @@ import { WORLD_MAP_SPRITE_DATA } from '../sprites/data/world-map-sprites';
 import { swapPalette, type SpriteDef } from '../sprites/sprite-data';
 import { tileFrame } from '../games/art/tiles';
 import { TOP_CLEAR, type SceneGeometry } from './SceneFrame';
+import { sceneScale } from './scale';
 import { TILE, type Placement } from './valley-art';
-import { glowSprite, type GlowName } from './valley-places';
+import { glowSprite, type MapName } from './valley-places';
 
 /** The `valley-sky` strip's size in its own pixels: it tiles sideways every `SKY_WIDTH`. */
 export const SKY_WIDTH = 128;
@@ -62,14 +63,14 @@ export function skyColumns(width: number, cx: number): number[] {
 }
 
 /** Where the strip's top-left row stands: its last row (the grass) is `SKY_BELOW_ART_TOP` under the art's top. */
-export function skyTopRow(g: SceneGeometry): number {
-  return g.top + ART_TOP + SKY_BELOW_ART_TOP - SKY_ROWS;
+export function skyTopRow(g: SceneGeometry, artTop: number = ART_TOP): number {
+  return g.top + artTop + SKY_BELOW_ART_TOP - SKY_ROWS;
 }
 
 /** The sky: the strip tiled sideways edge to edge at the scene's scale, its top row carried up to the top edge. */
-export function skyBackdrop(g: SceneGeometry): Placement[] {
+export function skyBackdrop(g: SceneGeometry, artTop: number = ART_TOP): Placement[] {
   const strip = skySprite();
-  const y = skyTopRow(g);
+  const y = skyTopRow(g, artTop);
   const above = skyTop(strip, Math.max(1, y));
   const out: Placement[] = [];
   for (const x of skyColumns(g.W, g.cx)) {
@@ -80,7 +81,7 @@ export function skyBackdrop(g: SceneGeometry): Placement[] {
 }
 
 /** A place's art size in its own pixels. */
-export function artSize(name: GlowName): { width: number; height: number } {
+export function artSize(name: MapName): { width: number; height: number } {
   const sprite = glowSprite(name);
   return { width: sprite.rows[0]?.length ?? 0, height: sprite.rows.length };
 }
@@ -89,7 +90,7 @@ export function artSize(name: GlowName): { width: number; height: number } {
  * The one pixel scale of a place's scene: the largest whole number (3 to 6) at which the art fills about three
  * quarters of the scene's width (never over 85 percent) and the art and the pinned line still fit its height.
  */
-export function placeScale(width: number, height: number, name: GlowName): number {
+export function placeScale(width: number, height: number, name: MapName): number {
   const art = artSize(name);
   let s = Math.min(SCALE_MAX, Math.max(SCALE_MIN, Math.round((0.75 * width) / art.width)));
   while (s > SCALE_MIN && art.width * s > FILL * width) s -= 1;
@@ -99,29 +100,80 @@ export function placeScale(width: number, height: number, name: GlowName): numbe
   return s;
 }
 
+/** The grass of a scene (the valley map's day grass) to every edge. */
+function grassTo(g: SceneGeometry): Placement[] {
+  const grass = tileFrame('grass');
+  const out: Placement[] = [];
+  for (let row = 0; row < g.H; row += TILE) {
+    for (let col = 0; col < g.W; col += TILE) out.push({ sprite: grass, x: col, y: row });
+  }
+  return out;
+}
+
+/** The trees, a bush and flowers round a place's art at (`x`, `y`) in scene pixels. */
+function treesAround(x: number, y: number, art: { width: number; height: number }): Placement[] {
+  const wm = WORLD_MAP_SPRITE_DATA;
+  const below = y + art.height;
+  return [
+    { sprite: wm.smallPine, x: x - 30, y: y - 6 },
+    { sprite: wm.bush, x: x - 18, y: below - 14 },
+    { sprite: wm.smallTree, x: x + art.width + 14, y: y - 2 },
+    { sprite: wm.flowers, x: x + art.width + 4, y: below - 10 },
+    { sprite: wm.smallTree, x: x - 70, y: y + 20 },
+    { sprite: wm.smallPine, x: x + art.width + 52, y: y + 26 },
+  ];
+}
+
 /** The scene: grass everywhere (the valley map's day grass), the sky, the place in the middle, a few trees. */
-export function placeSceneDraw(name: GlowName) {
+export function placeSceneDraw(name: MapName) {
   return (g: SceneGeometry): Placement[] => {
     const art = artSize(name);
     const x = g.cx - Math.floor(art.width / 2);
     const y = g.top + ART_TOP;
-    const below = y + art.height;
-    const grass = tileFrame('grass');
-    const out: Placement[] = [];
-    for (let row = 0; row < g.H; row += TILE) {
-      for (let col = 0; col < g.W; col += TILE) out.push({ sprite: grass, x: col, y: row });
-    }
-    out.push(...skyBackdrop(g));
-    const wm = WORLD_MAP_SPRITE_DATA;
-    out.push(
-      { sprite: wm.smallPine, x: x - 30, y: y - 6 },
-      { sprite: wm.bush, x: x - 18, y: below - 14 },
-      { sprite: wm.smallTree, x: x + art.width + 14, y: y - 2 },
-      { sprite: wm.flowers, x: x + art.width + 4, y: below - 10 },
-      { sprite: wm.smallTree, x: x - 70, y: y + 20 },
-      { sprite: wm.smallPine, x: x + art.width + 52, y: y + 26 },
+    return [
+      ...grassTo(g),
+      ...skyBackdrop(g),
+      ...treesAround(x, y, art),
       { sprite: glowSprite(name), x, y },
-    );
-    return out;
+    ];
+  };
+}
+
+// --- The band: a place's scene above today's page ---
+
+/** The scene's height in scene pixels: the sky, the place's art and the row of creatures in front of it. */
+export const BAND_ROWS = 88;
+/** Scene pixels from the clear zone's bottom to the top of the place's art in a band. */
+const BAND_ART_TOP = 8;
+
+/** A band's one pixel scale: 3 on a phone, 4 from 700 px wide (the same as every scene). */
+export function bandScale(width: number): number {
+  return sceneScale(width);
+}
+
+export interface ArtBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Where a place's art stands in a band (scene pixels). */
+export function bandArtBox(g: SceneGeometry, name: MapName): ArtBox {
+  const art = artSize(name);
+  return { x: g.cx - Math.floor(art.width / 2), y: g.top + BAND_ART_TOP, ...art };
+}
+
+/** The band's scene: as `placeSceneDraw`, the art higher up to leave the creatures room in front, plus `extra` over it. */
+export function bandSceneDraw(name: MapName, extra?: (box: ArtBox) => Placement[]) {
+  return (g: SceneGeometry): Placement[] => {
+    const box = bandArtBox(g, name);
+    return [
+      ...grassTo(g),
+      ...skyBackdrop(g, BAND_ART_TOP),
+      ...treesAround(box.x, box.y, box),
+      { sprite: glowSprite(name), x: box.x, y: box.y },
+      ...(extra?.(box) ?? []),
+    ];
   };
 }

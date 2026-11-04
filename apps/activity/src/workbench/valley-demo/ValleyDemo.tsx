@@ -7,6 +7,8 @@ import { AwayPaper } from '../../home/AwayPaper';
 import { homeAlerts } from '../../home-view';
 import type { Place } from '../../tabs';
 import { ValleyFrame } from '../../valley/ValleyFrame';
+import type { CastExtra } from '../../valley/place-cast';
+import { isAtHome } from '../../valley/tray-state';
 import { isOpenPlace, PLACE_TAB, viewOf, type HomeAt } from '../../valley/valley-nav';
 import { placeOf, type PlaceId } from '../../valley/valley-art';
 import { ROOM_SELF_ID, sampleResidents } from '../data';
@@ -19,11 +21,26 @@ import type { Entry } from '../types';
  * rules (`viewOf`), on fixture data. `start` is where it opens: the map, a place (a page of the game), or a place
  * that is not open yet; tapping around works as in the game, minus the loading.
  */
-export const VALLEY_STARTS = ['valley', 'forge', 'paddock', 'house', 'school', 'bonfire'] as const;
+export const VALLEY_STARTS = [
+  'valley',
+  'forge',
+  'paddock',
+  'house',
+  'cave',
+  'arena',
+  'fair',
+  'school',
+  'bonfire',
+] as const;
 
 const NOTHING = () => undefined;
 const NO_REF = { current: null };
 const RESIDENTS = sampleResidents(6, false);
+const WAITING = [
+  { id: 'w1', species: 'cindle', shiny: false },
+  { id: 'w2', species: 'lanternfin', shiny: false },
+  { id: 'w3', species: 'pyrelynx', shiny: false },
+];
 
 function pageOf(entries: readonly Entry[], name: string) {
   const entry = entries.find((e) => e.name === name);
@@ -35,8 +52,8 @@ function titleOf(at: PlaceId | null): string {
   return at === null ? 'Valley' : placeOf(at).name;
 }
 
-/** The days the demo can show: what the places say on a busy day, with nothing waiting, and with nothing going on. */
-export const VALLEY_DAYS = ['busy', 'nothing waiting', 'nothing going on'] as const;
+/** The days the demo can show: what the places say on a busy day, a crowded one, with nothing waiting, and with nothing going on. */
+export const VALLEY_DAYS = ['busy', 'crowded', 'nothing waiting', 'nothing going on'] as const;
 
 export function ValleyDemo({ start, away, day }: { start: string; away: boolean; day: string }) {
   const first = VALLEY_STARTS.includes(start as (typeof VALLEY_STARTS)[number])
@@ -50,7 +67,29 @@ export function ValleyDemo({ start, away, day }: { start: string; away: boolean;
   );
   const [focus, setFocus] = useState<PlaceId | null>(null);
   const [gone, setGone] = useState(false);
-  const input = homeInput(day, true);
+  const base = homeInput(day, true);
+  // What the scenes draw: the fixture creatures, standing where today's state puts them (the lounger, a dungeon row, a raid party).
+  const home = base.creatures.filter(isAtHome);
+  const party = base.creatures.slice(0, 3).map((c) => c.id);
+  const input = {
+    ...base,
+    raid:
+      base.raid === null
+        ? null
+        : {
+            ...base.raid,
+            scene: {
+              boss: { id: 'old-bogback', name: 'Old Bogback' },
+              party: day === 'nothing going on' ? [] : party,
+            },
+          },
+  };
+  const castExtra: CastExtra = {
+    loungerId: home[0]?.id ?? null,
+    loungeSpotId: 'fire-pouf',
+    dungeonTeam: day === 'nothing going on' ? null : base.creatures.slice(3, 6).map((c) => c.id),
+    waiting: WAITING.slice(0, base.pending),
+  };
   const view = viewOf(tab, homeAt);
   const at = view.kind === 'valley' ? null : view.place;
   const open = (id: PlaceId): void => {
@@ -87,6 +126,7 @@ export function ValleyDemo({ start, away, day }: { start: string; away: boolean;
             trayInput={{ trips: input.trips, jobs: input.jobs, now: HOME_NOW }}
             alerts={homeAlerts(input)}
             placeInput={input}
+            castExtra={castExtra}
             focus={focus}
             onOpen={open}
             onLeave={() => {

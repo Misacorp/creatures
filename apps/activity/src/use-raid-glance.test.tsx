@@ -42,6 +42,20 @@ describe('glanceOf', () => {
   it('keeps only the week’s times of the raid view', () => {
     expect(glanceOf({ schedule: SCHEDULE })).toEqual({ schedule: SCHEDULE });
   });
+
+  it('keeps the boss and the placed creatures for the Arena scene when the view has them', () => {
+    const view = {
+      schedule: SCHEDULE,
+      boss: { id: 'old-bogback', name: 'Old Bogback' },
+      you: { team: { creatures: [{ creatureId: 'a' }, { creatureId: 'b' }] } },
+    } as unknown as RaidView;
+    expect(glanceOf(view).scene).toEqual({
+      boss: { id: 'old-bogback', name: 'Old Bogback' },
+      party: ['a', 'b'],
+    });
+    const none = { ...view, you: { team: null } } as unknown as RaidView;
+    expect(glanceOf(none).scene?.party).toEqual([]);
+  });
 });
 
 describe('useRaidGlance', () => {

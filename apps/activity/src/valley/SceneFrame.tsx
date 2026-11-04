@@ -59,6 +59,8 @@ export function SceneFrame({
   children,
   act,
   scaleFor,
+  band = false,
+  rows,
 }: {
   /** The place's id, for its look (`vy-in-<id>`). */
   id: string;
@@ -72,10 +74,17 @@ export function SceneFrame({
   act?: ComponentChildren;
   /** The scene's own pixel scale for a window of this size (a place that fills the screen picks it); else `sceneScale`. */
   scaleFor?: (width: number, height: number) => number;
+  /**
+   * A band above today's page instead of the whole screen: `rows` scene pixels high (the scale makes the CSS height),
+   * the action under the scene in the flow, not over it. Escape is left to the page's own way back.
+   */
+  band?: boolean;
+  rows?: number;
 }) {
   const rootRef = useRef<HTMLElement | null>(null);
+  const boxRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const size = useSize(rootRef);
+  const size = useSize(boxRef);
   const g = sceneGeometry(size.width, size.height, scaleFor?.(size.width, size.height));
   const placements = useMemo(() => draw(g), [draw, g.W, g.H, g.s]);
   const pxW = g.W * g.s;
@@ -87,6 +96,7 @@ export function SceneFrame({
   }, [placements, g.s]);
 
   useEffect(() => {
+    if (band) return undefined;
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape' && document.querySelector('[role="dialog"]') === null) onLeave();
     };
@@ -94,14 +104,26 @@ export function SceneFrame({
     return () => {
       document.removeEventListener('keydown', onKey);
     };
-  }, [onLeave]);
+  }, [onLeave, band]);
 
   const hasAct = act !== undefined && act !== null;
   return (
-    <section ref={rootRef} class={`vy-interior vy-in-${id}`} aria-label={label}>
-      <div class="vy-scene" ref={cssVars({ '--w': `${String(pxW)}px`, '--h': `${String(pxH)}px` })}>
-        <canvas ref={canvasRef} class="vy-canvas" width={pxW} height={pxH} aria-hidden="true" />
-        {children?.(g)}
+    <section
+      ref={(el) => {
+        rootRef.current = el;
+        if (band && rows !== undefined) cssVars({ '--band-h': `${String(rows * g.s)}px` })(el);
+      }}
+      class={`vy-interior vy-in-${id}${band ? ' vy-band' : ''}`}
+      aria-label={label}
+    >
+      <div class="vy-scene-box" ref={boxRef}>
+        <div
+          class="vy-scene"
+          ref={cssVars({ '--w': `${String(pxW)}px`, '--h': `${String(pxH)}px` })}
+        >
+          <canvas ref={canvasRef} class="vy-canvas" width={pxW} height={pxH} aria-hidden="true" />
+          {children?.(g)}
+        </div>
       </div>
       {hasAct && <div class="vy-act">{act}</div>}
     </section>

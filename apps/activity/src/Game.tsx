@@ -152,7 +152,7 @@ export function Game({
   const valleyOn = valley && game.starterChosen;
   // The valley shell: Home's tab is drawn as the map, the House's living room, or a place that is not open yet.
   const [homeAt, setHomeAt] = useState<HomeAt>('valley');
-  const { raid: raidGlance } = useRaidGlance(
+  const { raid: raidGlance, adopt: adoptRaid } = useRaidGlance(
     game.starterChosen,
     // The valley keeps it "on Home" throughout: one load when it opens and the schedule's own timer, never one per
     // return to the map (the Arena's line reads it).
@@ -225,6 +225,9 @@ export function Game({
   }, [game.attention]);
   // The setup row of the Dungeon tab, kept while the player is on other tabs (lost on a reload).
   const dungeonDraft = useRef<Slots | null>(null);
+  // The same row as state, so the valley's Cave scene can draw the team standing at the cave mouth (null until the
+  // Dungeon page has reported one this session).
+  const [dungeonTeam, setDungeonTeam] = useState<Slots | null>(null);
 
   // The daily allowance lands once (the server tells the player on one request only): say so on the
   // notice line, which the next action clears.
@@ -734,6 +737,7 @@ export function Game({
           forecast={forecast}
           showPractice={showPractice}
           onBalanceChange={refreshState}
+          onViewChange={valleyOn ? adoptRaid : undefined}
           onNeedsPlacementChange={(needed) => {
             setAttention((now) => ({
               dungeon: false,
@@ -753,10 +757,12 @@ export function Game({
           draft={dungeonDraft.current}
           onDraftChange={(slots) => {
             dungeonDraft.current = slots;
+            if (valleyOn) setDungeonTeam(slots);
           }}
           onRunStarted={() => {
             // The server deleted the saved draft: the next setup starts from this run's team.
             dungeonDraft.current = null;
+            if (valleyOn) setDungeonTeam(null);
           }}
           onCanRunChange={(canRun) => {
             setAttention((now) => ({
@@ -822,6 +828,12 @@ export function Game({
           pending: game.pending.length,
           attention,
           raid: raidGlance,
+        }}
+        castExtra={{
+          loungerId: game.loungerId,
+          loungeSpotId: game.loungeSpot?.id ?? null,
+          dungeonTeam,
+          waiting: game.pending.map((p) => ({ id: p.id, species: p.species, shiny: p.shiny })),
         }}
         focus={focusPlace}
         onOpen={openPlace}

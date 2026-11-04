@@ -5,7 +5,6 @@
  * a decorative canvas and a `<ul>` of positioned buttons; a mouse drags it sideways (`useDragScroll`), a
  * finger swipes, Left and Right walk the places.
  */
-import { createSeededRng, type Rng } from '@creatures/game';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { Creature } from '../api';
 import { cssVars } from '../css-vars';
@@ -18,17 +17,14 @@ import { At, CreatureSprite, Glyph, Plate, SpeechBubble, isStill, useSize, useTi
 import { bubbleAt, placeSpoken, type PlaceBubble } from './place-state';
 import { PADDOCK_ROAM, TILE, placeOf, valleyDrawing, type PlaceId } from './valley-art';
 import { DEFAULT_LOOK, type ValleyLook } from './valley-places';
+import { useRoamers } from './use-roamers';
 import {
   edgeArrows,
   fitValley,
   freeTabs,
-  hopOf,
-  newWalker,
   readingOrder,
   scrollToPlace,
   startScroll,
-  stepWalker,
-  type Walker,
 } from './valley-logic';
 
 /** Walkers step 8 times a second. */
@@ -132,7 +128,7 @@ export function ValleyMap({
   const X = (x: number): number => (x + drawing.ox) * s;
   const Y = (y: number): number => (y + drawing.oy) * s;
 
-  const people = useWanderers(creatures, tick, moving);
+  const people = useRoamers(creatures.slice(0, MAX_WANDERERS), tick, moving, PADDOCK_ROAM);
 
   // An edge chip for every place out of view, stacked so none overlap (the Places list has every place).
   const arrows = edgeArrows(order, scrollLeft, size.width);
@@ -254,39 +250,4 @@ function useScrollLeft(ref: { current: HTMLElement | null }): [number, (n: numbe
     if (el !== null) setLeft(el.scrollLeft);
   });
   return [left, setLeft];
-}
-
-interface Person {
-  key: string;
-  creature: Pick<Creature, 'species' | 'shiny'>;
-  x: number;
-  y: number;
-  flip: boolean;
-}
-
-/** The creatures at home wander the paddock (seeded waypoints, 1 px a tick). */
-function useWanderers(creatures: readonly Creature[], tick: number, moving: boolean): Person[] {
-  const walkers = useRef(new Map<string, { w: Walker; rng: Rng }>());
-  const lastTick = useRef(0);
-  const out: Person[] = [];
-  const steps = moving ? tick - lastTick.current : 0;
-  lastTick.current = tick;
-  const shown = creatures.slice(0, MAX_WANDERERS);
-  for (const [i, c] of shown.entries()) {
-    let entry = walkers.current.get(c.id);
-    if (entry === undefined) {
-      const rng = createSeededRng(`valley-${c.id}`);
-      entry = { w: newWalker(rng, PADDOCK_ROAM, { index: i, of: shown.length }), rng };
-      walkers.current.set(c.id, entry);
-    }
-    for (let n = 0; n < steps; n++) entry.w = stepWalker(entry.w, entry.rng, PADDOCK_ROAM);
-    out.push({
-      key: c.id,
-      creature: c,
-      x: entry.w.x,
-      y: entry.w.y - hopOf(entry.w),
-      flip: entry.w.flip,
-    });
-  }
-  return out;
 }

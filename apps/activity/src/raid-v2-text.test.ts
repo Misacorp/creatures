@@ -87,7 +87,8 @@ describe('the Home notice for swap requests', () => {
     const { rules, v2, ...v1 } = sample('none');
     void rules;
     void v2;
-    expect(glanceOf(v1)).toEqual({ schedule: v1.schedule });
+    expect(glanceOf(v1)).toMatchObject({ schedule: v1.schedule });
+    expect(glanceOf(v1)).not.toHaveProperty('rules');
   });
 });
 

@@ -7,18 +7,21 @@
  * game owns the state (`view`) and every page component, so both shells share them.
  */
 import type { ComponentChildren } from 'preact';
-import { useState } from 'preact/hooks';
+import { useRef, useState } from 'preact/hooks';
 import type { Creature } from '../api';
 import type { TabAlerts } from '../tab-alerts';
+import { scrollAndFocus } from '../scroll-to';
 import { DrillHead } from '../ui/DrillHead';
 import { PinnedAct } from './PinnedAct';
+import { PlaceScene, SCENE_ART } from './PlaceScene';
 import { PlaceRow, PlacesList } from './PlacesList';
 import { SceneFrame } from './SceneFrame';
 import { Tray } from './Tray';
 import { ValleyMap } from './ValleyMap';
 import { Glyph } from './parts';
 import { placeBubbles, placeStates, type PlaceInput } from './place-state';
-import { placeScale, placeSceneDraw } from './place-scene';
+import { castFor, hasScene, type CastExtra } from './place-cast';
+import { artSize, placeScale, placeSceneDraw } from './place-scene';
 import type { TrayInput } from './tray-state';
 import { trayFor, isAtHome } from './tray-state';
 import { placeOf, type PlaceId } from './valley-art';
@@ -46,6 +49,7 @@ export function ValleyFrame({
   trayInput,
   alerts,
   placeInput,
+  castExtra,
   focus,
   onOpen,
   onLeave,
@@ -63,6 +67,8 @@ export function ValleyFrame({
   alerts: TabAlerts;
   /** What the places' bubbles and state lines read: the game screen's own state, no request of its own. */
   placeInput: PlaceInput;
+  /** What the scenes read besides that: the lounger, this session's dungeon row, the waiting catches. */
+  castExtra: CastExtra;
   /** The place whose button takes the focus when the map comes back. */
   focus: PlaceId | null;
   /** Opens a place (from the map, the Places list or the tray). */
@@ -85,6 +91,46 @@ export function ValleyFrame({
   const [places, setPlaces] = useState(false);
   const place = view.kind === 'valley' ? null : placeOf(view.place);
   const bubbles = placeBubbles(alerts, placeInput);
+  const insideRef = useRef<HTMLDivElement>(null);
+  // The five places with a scene (not while a book of the House is open): the scene above, today's page under it.
+  const cast =
+    view.kind === 'place' && view.book === null && hasScene(view.place)
+      ? castFor(
+          view.place,
+          { ...placeInput, ...castExtra },
+          artSize(SCENE_ART[view.place]),
+          bubbles,
+        )
+      : null;
+  // Today's page of the place: the House's living room and its two books, then the page the game drew.
+  const inside = (
+    <>
+      {view.kind === 'place' && view.place === 'house' && view.book === null && (
+        <div class="vy-house">
+          {room}
+          <ul class="vy-rows" aria-label="In the house">
+            <PlaceRow
+              glyph="journal"
+              name="Journal"
+              line="your finds and firsts"
+              onClick={() => {
+                onBook('journal');
+              }}
+            />
+            <PlaceRow
+              glyph="stats"
+              name="Stats"
+              line="your numbers"
+              onClick={() => {
+                onBook('stats');
+              }}
+            />
+          </ul>
+        </div>
+      )}
+      {children}
+    </>
+  );
   const settingsOpen = settings !== null && settings !== false;
   return (
     <div class="vy-frame" data-view={view.kind} data-place={place?.id ?? 'valley'}>
@@ -155,30 +201,21 @@ export function ValleyFrame({
                 focus
               />
             )}
-            {view.place === 'house' && view.book === null && (
-              <div class="vy-house">
-                {room}
-                <ul class="vy-rows" aria-label="In the house">
-                  <PlaceRow
-                    glyph="journal"
-                    name="Journal"
-                    line="your finds and firsts"
-                    onClick={() => {
-                      onBook('journal');
-                    }}
-                  />
-                  <PlaceRow
-                    glyph="stats"
-                    name="Stats"
-                    line="your numbers"
-                    onClick={() => {
-                      onBook('stats');
-                    }}
-                  />
-                </ul>
+            {cast !== null && (
+              <PlaceScene
+                cast={cast}
+                onAct={() => {
+                  scrollAndFocus(insideRef.current);
+                }}
+              />
+            )}
+            {cast === null ? (
+              inside
+            ) : (
+              <div class="vy-inside" ref={insideRef} tabIndex={-1}>
+                {inside}
               </div>
             )}
-            {children}
           </div>
         )}
       </div>
