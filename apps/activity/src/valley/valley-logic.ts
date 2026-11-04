@@ -258,8 +258,8 @@ export function hopOf(w: Walker): number {
 
 // --- Depth and the gap between creatures ---
 
-/** The closest two creatures may stand (Chebyshev, in pixels): about 70 percent of a 16 px sprite apart. */
-export const MIN_GAP = 10;
+/** The closest two creatures may stand (Chebyshev, in pixels): a whole 16 px sprite, so none overlaps another. */
+export const MIN_GAP = 16;
 
 /** A creature's sprite is 16 px: its feet are at its top plus this. */
 const SPRITE_PX = 16;

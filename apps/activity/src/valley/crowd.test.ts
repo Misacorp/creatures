@@ -2,7 +2,7 @@ import { createSeededRng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { HOME_NOW, homeInput } from '../workbench/home-sample';
 import { CAST_PLACES, MAX_ROAMERS, PADDOCK_ROAM_AREA, castFor, type CastInput } from './place-cast';
-import { PADDOCK_ROAM } from './valley-art';
+import { MAX_WANDERERS, PADDOCK_ROAM, placeOf, plateBox } from './valley-art';
 import { MIN_GAP, crowdSlots, depthOf, newWalker, stepApart, type Walker } from './valley-logic';
 
 const near = (a: { x: number; y: number }, b: { x: number; y: number }): number =>
@@ -18,46 +18,70 @@ describe('depth: the lower the feet, the more in front', () => {
 });
 
 describe('the gap between creatures', () => {
-  it('the paddock has room for eight a gap apart', () => {
-    const slots = crowdSlots(PADDOCK_ROAM);
-    expect(slots.length).toBeGreaterThanOrEqual(MAX_ROAMERS);
-    for (const [i, a] of slots.entries()) {
-      for (const b of slots.slice(i + 1)) expect(near(a, b)).toBeGreaterThanOrEqual(MIN_GAP);
-    }
-    expect(PADDOCK_ROAM_AREA.width).toBe(PADDOCK_ROAM.width);
+  it('the gap is a whole sprite, so none overlaps another', () => {
+    expect(MIN_GAP).toBe(16);
   });
 
-  it('wandering eight never brings two closer than the gap, and is the same every time', () => {
-    const run = (): Walker[] => {
-      const slots = crowdSlots(PADDOCK_ROAM);
-      const rngs = Array.from({ length: 8 }, (_, i) => createSeededRng(`valley-c${String(i)}`));
-      const ws: Walker[] = rngs.map((rng, i) => {
-        const w = newWalker(rng, PADDOCK_ROAM);
-        const slot = slots[i] ?? { x: w.x, y: w.y };
-        return { ...w, x: slot.x, y: slot.y };
-      });
-      for (let tick = 0; tick < 1500; tick++) {
-        for (const [i, rng] of rngs.entries()) {
-          const w = ws[i];
-          if (w === undefined) continue;
-          const next = stepApart(
-            w,
-            rng,
-            PADDOCK_ROAM,
-            ws.filter((_, j) => j !== i),
-          );
-          ws[i] = next;
-          for (const [j, other] of ws.entries()) {
-            if (j !== i) expect(near(next, other)).toBeGreaterThanOrEqual(MIN_GAP);
+  it('the map draws four, the scene eight, each with room a gap apart', () => {
+    expect(MAX_WANDERERS).toBe(4);
+    for (const [area, n] of [
+      [PADDOCK_ROAM, MAX_WANDERERS],
+      [PADDOCK_ROAM_AREA, MAX_ROAMERS],
+    ] as const) {
+      const slots = crowdSlots(area);
+      expect(slots.length).toBeGreaterThanOrEqual(n);
+      for (const [i, a] of slots.entries()) {
+        for (const b of slots.slice(i + 1)) expect(near(a, b)).toBeGreaterThanOrEqual(MIN_GAP);
+      }
+    }
+  });
+
+  it('on the map no wanderer can stand over the Paddock label', () => {
+    const plate = plateBox(placeOf('paddock').rect);
+    // Everywhere a creature's top-left can be, its 16 x 16 body stays above the plate.
+    const feet = PADDOCK_ROAM.y + PADDOCK_ROAM.height - 1 + 16;
+    expect(feet).toBeLessThanOrEqual(plate.y);
+  });
+
+  it.each([
+    ['the map', PADDOCK_ROAM, MAX_WANDERERS],
+    ['the scene', PADDOCK_ROAM_AREA, MAX_ROAMERS],
+  ] as const)(
+    'wandering on %s never brings two closer than the gap, and is the same every time',
+    (_, area, count) => {
+      const run = (): Walker[] => {
+        const slots = crowdSlots(area);
+        const rngs = Array.from({ length: count }, (_, i) =>
+          createSeededRng(`valley-c${String(i)}`),
+        );
+        const ws: Walker[] = rngs.map((rng, i) => {
+          const w = newWalker(rng, area);
+          const slot = slots[i] ?? { x: w.x, y: w.y };
+          return { ...w, x: slot.x, y: slot.y };
+        });
+        for (let tick = 0; tick < 1500; tick++) {
+          for (const [i, rng] of rngs.entries()) {
+            const w = ws[i];
+            if (w === undefined) continue;
+            const next = stepApart(
+              w,
+              rng,
+              area,
+              ws.filter((_, j) => j !== i),
+            );
+            ws[i] = next;
+            for (const [j, other] of ws.entries()) {
+              if (j !== i) expect(near(next, other)).toBeGreaterThanOrEqual(MIN_GAP);
+            }
           }
         }
-      }
-      return ws;
-    };
-    const first = run();
-    expect(first.some((w) => w.steps > 50)).toBe(true);
-    expect(run()).toEqual(first);
-  });
+        return ws;
+      };
+      const first = run();
+      expect(first.some((w) => w.steps > 20)).toBe(true);
+      expect(run()).toEqual(first);
+    },
+  );
 });
 
 describe('every scene keeps its standing creatures a gap apart', () => {

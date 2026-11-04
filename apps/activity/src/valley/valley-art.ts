@@ -337,12 +337,29 @@ export function buildingPlacements(): Placement[] {
 }
 
 const PADDOCK_AT = artBox('paddock');
-/** The open grass inside the paddock's rails, from the art's top-left: room for eight creatures a gap apart. */
-export const PADDOCK_ROAM_OFFSET = { x: 8, y: 16, width: 36, height: 24 } as const;
-/** Where your idle creatures roam, in valley pixels. */
+/** The most creatures drawn wandering the paddock on the map (the tray lists them all). */
+export const MAX_WANDERERS = 4;
+/** Valley pixels a place's name plate covers up from the foot of its art: creatures keep their feet above it. */
+export const PLATE_ROWS = 10;
+/**
+ * The open grass inside the paddock's rails, from the art's top-left: room for four creatures a whole sprite apart,
+ * with their feet above the name plate (the map's label stays readable).
+ */
+export const PADDOCK_ROAM_OFFSET = { x: 8, y: 9, width: 33, height: 17 } as const;
+/** Where your idle creatures roam on the map, in valley pixels. */
 export const PADDOCK_ROAM = {
   x: PADDOCK_AT.x + PADDOCK_ROAM_OFFSET.x,
   y: PADDOCK_AT.y + PADDOCK_ROAM_OFFSET.y,
   width: PADDOCK_ROAM_OFFSET.width,
   height: PADDOCK_ROAM_OFFSET.height,
 } as const;
+
+/** The name plate of a place (valley pixels): about 60 wide, centred, over the last `PLATE_ROWS` of its art and a little below. */
+export function plateBox(rect: Rect): Rect {
+  return {
+    x: rect.x + Math.floor(rect.width / 2) - 30,
+    y: rect.y + rect.height - PLATE_ROWS,
+    width: 60,
+    height: PLATE_ROWS + 2,
+  };
+}

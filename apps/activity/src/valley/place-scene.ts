@@ -142,7 +142,7 @@ export function placeSceneDraw(name: MapName) {
 // --- The band: a place's scene above today's page ---
 
 /** The scene's height in scene pixels: the sky, the place's art and the row of creatures in front of it. */
-export const BAND_ROWS = 88;
+export const BAND_ROWS = 96;
 /** Scene pixels from the clear zone's bottom to the top of the place's art in a band. */
 const BAND_ART_TOP = 8;
 

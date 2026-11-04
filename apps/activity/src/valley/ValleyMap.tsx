@@ -15,7 +15,14 @@ import { useDragScroll } from '../ui/use-drag-scroll';
 import { paint } from './paint';
 import { At, CreatureSprite, Glyph, Plate, SpeechBubble, isStill, useSize, useTick } from './parts';
 import { bubbleAt, placeSpoken, type PlaceBubble } from './place-state';
-import { PADDOCK_ROAM, TILE, placeOf, valleyDrawing, type PlaceId } from './valley-art';
+import {
+  MAX_WANDERERS,
+  PADDOCK_ROAM,
+  TILE,
+  placeOf,
+  valleyDrawing,
+  type PlaceId,
+} from './valley-art';
 import { DEFAULT_LOOK, type ValleyLook } from './valley-places';
 import { useRoamers } from './use-roamers';
 import {
@@ -29,9 +36,6 @@ import {
 
 /** Walkers step 8 times a second. */
 const TICK_MS = 125;
-
-/** The most creatures drawn wandering the paddock (the tray lists them all). */
-const MAX_WANDERERS = 8;
 
 export interface ValleyMapProps {
   /** The creatures at home: they wander the paddock. */

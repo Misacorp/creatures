@@ -20,7 +20,7 @@ import { ROOM_SPOTS } from '../sprites/room-art';
 import { isAtHome } from './tray-state';
 import type { PlaceBubble } from './place-state';
 import { bubbleAt } from './place-state';
-import { PADDOCK_ROAM_OFFSET, type PlaceId } from './valley-art';
+import type { PlaceId } from './valley-art';
 import type { Rect } from './valley-art';
 
 /** The five places that have a scene of their own over today's page (not the Signpost or the Forge: phase 5's posts). */
@@ -33,7 +33,7 @@ export function hasScene(id: PlaceId): id is CastPlace {
 
 /** A creature's sprite is 16 x 16 scene pixels. */
 export const CREATURE_PX = 16;
-/** The most creatures drawn wandering the paddock (the map shows the same eight). */
+/** The most creatures drawn wandering the paddock's meadow in its scene (the map draws four). */
 export const MAX_ROAMERS = 8;
 /** The most creatures drawn standing at the Fairground. */
 export const MAX_AT_FAIR = 9;
@@ -179,7 +179,7 @@ function caveCast(
   const team = input.dungeonTeam === null ? [] : pick(input.creatures, input.dungeonTeam);
   // The team stands at the mouth while a run waits or the row is set up; otherwise the cave is quiet.
   const shown = waits || team.length > 0 ? team : [];
-  const spots = row(shown.length, Math.floor(art.width / 2), art.height - 10, 15);
+  const spots = row(shown.length, Math.floor(art.width / 2), art.height - 10, 16);
   const stands = shown.flatMap((creature, i) => {
     const spot = spots[i];
     return spot === undefined
@@ -204,7 +204,7 @@ function caveCast(
 function arenaCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act' | 'boss'> {
   const scene = input.raid?.scene ?? null;
   const party = scene === null ? [] : pick(input.creatures, scene.party);
-  const spots = row(party.length, Math.floor(art.width / 2) - 6, art.height - 10, 15);
+  const spots = row(party.length, Math.floor(art.width / 2) - 6, art.height - 10, 16);
   const stands = party.flatMap((creature, i) => {
     const spot = spots[i];
     return spot === undefined
@@ -241,8 +241,8 @@ export function fairEntries(
 }
 
 /** The fair's creatures stand this far apart sideways in a row, and the second row this far below the first. */
-const FAIR_STEP = 12;
-const FAIR_ROW = 11;
+const FAIR_STEP = 16;
+const FAIR_ROW = 16;
 
 function fairCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act'> {
   const groups = fairEntries(input.games, input.creatures);
@@ -256,8 +256,8 @@ function fairCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act'> {
     Math.floor(art.width / 2) - Math.floor(((cols - 1) * FAIR_STEP) / 2) - CREATURE_PX / 2;
   const stands: Stand[] = shown.map(({ creature, event }, i) => ({
     creature,
-    x: left + Math.floor(i / 2) * FAIR_STEP + (i % 2) * (FAIR_STEP / 2),
-    y: art.height - 12 + (i % 2) * FAIR_ROW,
+    x: left + Math.floor(i / 2) * FAIR_STEP + (i % 2) * 8,
+    y: art.height - 14 + (i % 2) * FAIR_ROW,
     flip: false,
     where: `in ${event}`,
   }));
@@ -288,19 +288,22 @@ function fairCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act'> {
 
 // --- Paddock ---
 
-/** Where the creatures at home roam: the open grass inside the paddock's rails (the map's own area, from the art's top-left). */
-export const PADDOCK_ROAM_AREA: Rect = PADDOCK_ROAM_OFFSET;
+/**
+ * Where the creatures at home roam in the scene, from the art's top-left: the meadow in front of and beside the
+ * fence as well as inside it, clear of the gate newcomers to its right.
+ */
+export const PADDOCK_ROAM_AREA: Rect = { x: -24, y: 8, width: 68, height: 46 };
 
 function paddockCast(
   input: CastInput,
   art: Size,
 ): Pick<Cast, 'roamers' | 'roam' | 'gate' | 'waiting' | 'act'> {
   const roamers = input.creatures.filter(isAtHome).slice(0, MAX_ROAMERS);
-  // The waiting catches queue at the gate (the open side, bottom right of the rails), at most two drawn.
+  // The waiting catches queue at the gate (the open side, bottom right of the rails), one below the other, at most two drawn.
   const gate = input.waiting.slice(0, 2).map((w, i) => ({
     ...w,
-    x: art.width - 2 + i * 13,
-    y: art.height - 22 - (i % 2) * 3,
+    x: art.width - 2,
+    y: art.height - 22 + i * 16,
   }));
   const n = input.pending;
   const act: CastAct =
