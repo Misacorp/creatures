@@ -166,7 +166,7 @@ export function ValleyMap({
             aria-hidden="true"
           />
           {people.map((p) => (
-            <At key={p.key} x={X(p.x)} y={Y(p.y)} class="vy-person">
+            <At key={p.key} x={X(p.x)} y={Y(p.y)} class="vy-person" z={p.z}>
               <CreatureSprite creature={p.creature} scale={s} flip={p.flip} />
             </At>
           ))}

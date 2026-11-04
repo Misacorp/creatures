@@ -19,6 +19,7 @@ import { At, CreatureSprite, SpeechBubble, isStill, useTick } from './parts';
 import type { Cast, CastPlace } from './place-cast';
 import { BAND_ROWS, bandArtBox, bandScale, bandSceneDraw } from './place-scene';
 import { useRoamers } from './use-roamers';
+import { depthOf } from './valley-logic';
 import { placeOf } from './valley-art';
 import type { MapName } from './valley-places';
 
@@ -65,7 +66,7 @@ function Stander({
 }) {
   const info = infoOf(creature);
   return (
-    <At x={g.X(x)} y={g.Y(y)} class="vy-stand">
+    <At x={g.X(x)} y={g.Y(y)} class="vy-stand" z={depthOf(x, y)}>
       <SmallCreature
         info={info}
         id={`scene-${creature.id}`}
@@ -173,24 +174,36 @@ export function PlaceScene({ cast, onAct }: { cast: Cast; onAct: () => void }) {
                 g={g}
               />
             )}
-            {cast.gate.map((n, i) => (
-              <At key={n.id} x={g.X(box.x + n.x)} y={g.Y(box.y + n.y)} class="vy-stand">
+            {cast.gate.map((n) => (
+              <At
+                key={n.id}
+                x={g.X(box.x + n.x)}
+                y={g.Y(box.y + n.y)}
+                class="vy-stand"
+                z={depthOf(box.x + n.x, box.y + n.y)}
+              >
                 <button
                   type="button"
-                  class="vy-stand-btn vy-gate"
+                  class="vy-stand-btn"
                   aria-label={`${speciesName(n.species)} waits at the gate. Choose what to do`}
                   onClick={onAct}
                 >
-                  {i === 0 && (
-                    <SpeechBubble
-                      glyph="paw"
-                      count={cast.gate.length < cast.waiting ? cast.waiting : null}
-                    />
-                  )}
                   <CreatureSprite creature={n} scale={g.s} />
                 </button>
               </At>
             ))}
+            {cast.gate[0] !== undefined && (
+              <At x={g.X(box.x + cast.gate[0].x)} y={g.Y(box.y + cast.gate[0].y)} class="vy-over">
+                <span
+                  class="vy-region-box"
+                  ref={cssVars({ '--pw': `${String(16 * g.s)}px`, '--ph': '0px' })}
+                />
+                <SpeechBubble
+                  glyph="paw"
+                  count={cast.gate.length < cast.waiting ? cast.waiting : null}
+                />
+              </At>
+            )}
             {cast.boss !== null && (
               <At
                 x={g.X(box.x + box.width - 6)}

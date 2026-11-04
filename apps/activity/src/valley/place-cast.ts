@@ -20,7 +20,7 @@ import { ROOM_SPOTS } from '../sprites/room-art';
 import { isAtHome } from './tray-state';
 import type { PlaceBubble } from './place-state';
 import { bubbleAt } from './place-state';
-import type { PlaceId } from './valley-art';
+import { PADDOCK_ROAM_OFFSET, type PlaceId } from './valley-art';
 import type { Rect } from './valley-art';
 
 /** The five places that have a scene of their own over today's page (not the Signpost or the Forge: phase 5's posts). */
@@ -240,28 +240,27 @@ export function fairEntries(
   return out;
 }
 
+/** The fair's creatures stand this far apart sideways in a row, and the second row this far below the first. */
+const FAIR_STEP = 12;
+const FAIR_ROW = 11;
+
 function fairCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act'> {
   const groups = fairEntries(input.games, input.creatures);
-  const stands: Stand[] = [];
-  let left = MAX_AT_FAIR;
-  for (const [g, group] of groups.entries()) {
-    const centre = Math.floor((art.width * (2 * g + 1)) / (2 * groups.length));
-    const shown = group.creatures.slice(0, left);
-    left -= shown.length;
-    const spots = row(shown.length, centre, art.height - 10 + (g % 2 === 0 ? 0 : 6), 9);
-    for (const [i, creature] of shown.entries()) {
-      const spot = spots[i];
-      if (spot !== undefined) {
-        stands.push({
-          creature,
-          x: spot.x,
-          y: spot.y,
-          flip: false,
-          where: `in ${group.eventName}`,
-        });
-      }
-    }
-  }
+  // The entered creatures in the lineup's order, two staggered rows a gap apart (events side by side, never a heap).
+  const flat = groups.flatMap((g) =>
+    g.creatures.map((creature) => ({ creature, event: g.eventName })),
+  );
+  const shown = flat.slice(0, MAX_AT_FAIR);
+  const cols = Math.ceil(shown.length / 2);
+  const left =
+    Math.floor(art.width / 2) - Math.floor(((cols - 1) * FAIR_STEP) / 2) - CREATURE_PX / 2;
+  const stands: Stand[] = shown.map(({ creature, event }, i) => ({
+    creature,
+    x: left + Math.floor(i / 2) * FAIR_STEP + (i % 2) * (FAIR_STEP / 2),
+    y: art.height - 12 + (i % 2) * FAIR_ROW,
+    flip: false,
+    where: `in ${event}`,
+  }));
   const games = input.games;
   if (games === null) return { stands, act: { kind: 'calm', line: 'The fair is quiet' } };
   if (showLive(games, input.now)) return { stands, act: { kind: 'step', label: 'Watch the show' } };
@@ -290,7 +289,7 @@ function fairCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act'> {
 // --- Paddock ---
 
 /** Where the creatures at home roam: the open grass inside the paddock's rails (the map's own area, from the art's top-left). */
-export const PADDOCK_ROAM_AREA: Rect = { x: 10, y: 20, width: 30, height: 14 };
+export const PADDOCK_ROAM_AREA: Rect = PADDOCK_ROAM_OFFSET;
 
 function paddockCast(
   input: CastInput,
@@ -300,7 +299,7 @@ function paddockCast(
   // The waiting catches queue at the gate (the open side, bottom right of the rails), at most two drawn.
   const gate = input.waiting.slice(0, 2).map((w, i) => ({
     ...w,
-    x: art.width - 14 + i * 13,
+    x: art.width - 2 + i * 13,
     y: art.height - 22 - (i % 2) * 3,
   }));
   const n = input.pending;

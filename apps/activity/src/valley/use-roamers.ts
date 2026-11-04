@@ -8,7 +8,7 @@ import { createSeededRng, type Rng } from '@creatures/game';
 import { useRef } from 'preact/hooks';
 import type { Creature } from '../api';
 import type { Rect } from './valley-art';
-import { hopOf, newWalker, stepWalker, type Walker } from './valley-logic';
+import { crowdSlots, depthOf, hopOf, newWalker, stepApart, type Walker } from './valley-logic';
 
 export interface Person<C extends Pick<Creature, 'id' | 'species' | 'shiny'> = Creature> {
   key: string;
@@ -16,6 +16,8 @@ export interface Person<C extends Pick<Creature, 'id' | 'species' | 'shiny'> = C
   x: number;
   y: number;
   flip: boolean;
+  /** The draw order (`depthOf`): lower feet in front. */
+  z: number;
 }
 
 /** The creatures (already capped by the caller) wander inside `area`; positions are in the area's own coordinates. */
@@ -30,20 +32,35 @@ export function useRoamers<C extends Pick<Creature, 'id' | 'species' | 'shiny'>>
   const out: Person<C>[] = [];
   const steps = moving ? tick - lastTick.current : 0;
   lastTick.current = tick;
+  const slots = crowdSlots(area);
   for (const [i, c] of creatures.entries()) {
-    let entry = walkers.current.get(c.id);
-    if (entry === undefined) {
-      const rng = createSeededRng(`valley-${c.id}`);
-      entry = { w: newWalker(rng, area, { index: i, of: creatures.length }), rng };
-      walkers.current.set(c.id, entry);
+    if (walkers.current.has(c.id)) continue;
+    const rng = createSeededRng(`valley-${c.id}`);
+    const w = newWalker(rng, area, { index: i, of: creatures.length });
+    // Everyone starts on a spot a gap from the others (spread over the spots), not in a heap.
+    const slot = slots[Math.floor((i * slots.length) / Math.max(1, creatures.length))];
+    walkers.current.set(c.id, { w: slot === undefined ? w : { ...w, x: slot.x, y: slot.y }, rng });
+  }
+  for (let n = 0; n < steps; n++) {
+    for (const c of creatures) {
+      const entry = walkers.current.get(c.id);
+      if (entry === undefined) continue;
+      const others = creatures
+        .filter((o) => o.id !== c.id)
+        .flatMap((o) => walkers.current.get(o.id)?.w ?? []);
+      entry.w = stepApart(entry.w, entry.rng, area, others);
     }
-    for (let n = 0; n < steps; n++) entry.w = stepWalker(entry.w, entry.rng, area);
+  }
+  for (const c of creatures) {
+    const w = walkers.current.get(c.id)?.w;
+    if (w === undefined) continue;
     out.push({
       key: c.id,
       creature: c,
-      x: entry.w.x,
-      y: entry.w.y - hopOf(entry.w),
-      flip: entry.w.flip,
+      x: w.x,
+      y: w.y - hopOf(w),
+      flip: w.flip,
+      z: depthOf(w.x, w.y),
     });
   }
   return out;

@@ -195,6 +195,7 @@ main.card:has(.vy-frame) > .hud {
 
 .vy-at {
   position: absolute;
+  z-index: var(--z, auto);
   left: var(--x);
   top: var(--y);
   width: max-content;
@@ -238,6 +239,8 @@ main.card:has(.vy-frame) > .hud {
   bottom: calc(100% + 10px);
   transform: translateX(-50%);
   display: block;
+  /* Its own width, not the room left in a narrow button (a creature at the gate): else the picture is squeezed to a dot. */
+  width: max-content;
   line-height: 0;
 }
 
@@ -735,9 +738,9 @@ main.card:has(.vy-frame) > .hud {
   box-shadow: var(--ring);
 }
 
-/* A newcomer at the paddock's gate: the button holds the sprite and the Paddock's bubble above it. */
-.vy-frame .vy-gate {
-  position: relative;
+/* What waits over a creature (the gate's bubble): above every creature of the scene, whatever their depth. */
+.vy-over {
+  z-index: 1000000;
 }
 
 /* A named region of the canvas (the arena's boss): no look, only a name for assistive technology. */

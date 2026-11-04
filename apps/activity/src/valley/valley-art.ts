@@ -337,10 +337,12 @@ export function buildingPlacements(): Placement[] {
 }
 
 const PADDOCK_AT = artBox('paddock');
-/** Where your idle creatures roam: the open grass inside the paddock's rails. */
+/** The open grass inside the paddock's rails, from the art's top-left: room for eight creatures a gap apart. */
+export const PADDOCK_ROAM_OFFSET = { x: 8, y: 16, width: 36, height: 24 } as const;
+/** Where your idle creatures roam, in valley pixels. */
 export const PADDOCK_ROAM = {
-  x: PADDOCK_AT.x + 10,
-  y: PADDOCK_AT.y + 20,
-  width: 30,
-  height: 14,
+  x: PADDOCK_AT.x + PADDOCK_ROAM_OFFSET.x,
+  y: PADDOCK_AT.y + PADDOCK_ROAM_OFFSET.y,
+  width: PADDOCK_ROAM_OFFSET.width,
+  height: PADDOCK_ROAM_OFFSET.height,
 } as const;

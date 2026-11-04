@@ -255,3 +255,56 @@ export function hopOf(w: Walker): number {
   const walking = w.rest === 0 && (w.x !== w.tx || w.y !== w.ty);
   return walking && w.steps % 2 === 1 ? 1 : 0;
 }
+
+// --- Depth and the gap between creatures ---
+
+/** The closest two creatures may stand (Chebyshev, in pixels): about 70 percent of a 16 px sprite apart. */
+export const MIN_GAP = 10;
+
+/** A creature's sprite is 16 px: its feet are at its top plus this. */
+const SPRITE_PX = 16;
+
+/**
+ * The draw order of a creature standing with its top-left at (`x`, `y`): the lower its feet, the more in front
+ * (a whole number to use as a z-index), ties by x. A creature never draws over one that stands in front of it.
+ */
+export function depthOf(x: number, y: number): number {
+  return Math.round(y + SPRITE_PX) * 256 + Math.min(255, Math.max(0, Math.round(x)));
+}
+
+function apart(a: { x: number; y: number }, b: { x: number; y: number }): number {
+  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+}
+
+/** Places in `area` a whole gap apart from each other, row by row (the spots a crowd starts from). */
+export function crowdSlots(area: Rect, gap: number = MIN_GAP): { x: number; y: number }[] {
+  const out: { x: number; y: number }[] = [];
+  for (let y = 0; y < area.height; y += gap) {
+    for (let x = 0; x < area.width; x += gap) out.push({ x: area.x + x, y: area.y + y });
+  }
+  return out;
+}
+
+/**
+ * One tick of a walker among others: as `stepWalker`, but a step that would bring it nearer than the gap to
+ * another creature (nearer than it already was) is not taken: it waits a moment and picks another waypoint, so
+ * two creatures facing each other do not stand blocked for ever. Deterministic from the walker's own generator.
+ */
+export function stepApart(
+  w: Walker,
+  rng: Rng,
+  area: Rect,
+  others: readonly { x: number; y: number }[],
+  gap: number = MIN_GAP,
+): Walker {
+  const next = stepWalker(w, rng, area);
+  if (next.x === w.x && next.y === w.y) return next;
+  for (const o of others) {
+    const after = apart(next, o);
+    if (after < gap && after < apart(w, o)) {
+      const to = waypoint(rng, area);
+      return { ...w, tx: to.x, ty: to.y, rest: 2 + int(rng, 4) };
+    }
+  }
+  return next;
+}

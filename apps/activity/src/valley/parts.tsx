@@ -61,9 +61,12 @@ export function At({
   class: extra,
   children,
   hidden = true,
+  z,
 }: {
   x: number;
   y: number;
+  /** Draw order among the things in the scene (`depthOf`: lower feet in front); else the document order. */
+  z?: number;
   class?: string | undefined;
   children: ComponentChildren;
   hidden?: boolean;
@@ -71,7 +74,11 @@ export function At({
   return (
     <span
       class={`vy-at${extra === undefined ? '' : ` ${extra}`}`}
-      ref={cssVars({ '--x': `${String(Math.round(x))}px`, '--y': `${String(Math.round(y))}px` })}
+      ref={cssVars({
+        '--x': `${String(Math.round(x))}px`,
+        '--y': `${String(Math.round(y))}px`,
+        ...(z === undefined ? {} : { '--z': z }),
+      })}
       aria-hidden={hidden ? 'true' : undefined}
     >
       {children}

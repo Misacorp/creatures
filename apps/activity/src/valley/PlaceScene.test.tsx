@@ -55,7 +55,7 @@ describe('PlaceScene', () => {
     const gate = byName(p.root, 'button', /waits at the gate/)[0];
     if (gate === undefined) throw new Error('no newcomer');
     expect(gate.getAttribute('aria-label')).toMatch(/^Cindle waits at the gate/);
-    expect(byClass(gate, 'vy-bubble')).toHaveLength(1);
+    expect(byClass(p.root, 'vy-bubble')).toHaveLength(1);
     expect(byClass(gate, 'vy-creature')).toHaveLength(1);
     p.click(gate);
     expect(acted).toBe(1);
