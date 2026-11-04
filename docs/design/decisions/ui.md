@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-04: Two voices for notes: the Gazette's paper for the valley's stories, the ink Alert for the game (round 23, Q54) **[Misa]**
+
+ID: `2026-11-04-two-voices-for-notes-the-gazette` · Status: current
+
+**Decision.** Notes speak in two voices, on purpose (Misa, round 23, Q54: "Let's go with A"). The Gazette's cream paper is the valley telling a story: the welcome-back popup, a place's waiting stories, in-world notes. The ink `ui/Alert` is the game needing the player's attention: errors, warnings, a spend that failed, the full bag. Both close with the same X (`ui/Alert`'s dismiss). The final look of both is settled in the visual revisit Misa set for later (round 19).
+
+**Reasoning.** At a glance the player can tell whether the world is telling them something or the game needs them, and nothing has to be redrawn now; one dismiss behaviour keeps them predictable.
+
 ## 2026-11-03: Combat v2 client, the dungeon's screens: a v2 room on StageV2's single row, foe cards on the map, Out until the camp swaps it, the Knack on the team setup
 
 ID: `2026-11-03-combat-v2-client-the-dungeon-s` · Status: current
