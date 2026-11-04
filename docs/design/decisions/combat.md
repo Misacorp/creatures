@@ -4,6 +4,24 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-04: Combat v2 phase 5 plan: extend the lab's path into the v2 journey simulator; the valley keeps the roster and economy
+
+ID: `2026-11-04-combat-v2-phase-5-plan-extend` · Status: current
+
+**Decision.** Phase 5 follows `docs/design/combat/balance.md`:
+
+- **The v2 journey simulator is the lab's path, extended,** not the v1 journey sim ported. It adds:
+  - the worker's raid rules, shared where possible: seats per piece, locks at stage 1, the spare, replacements from each player's spares;
+  - real party sizes from the valley's coverage;
+  - players' choices as policies: Knacks, talents from pools, placement, the finale's action;
+  - the dungeon over days;
+  - rewards recorded against the valley's assumptions.
+- **The valley keeps the roster and the economy:** levels per week come from its roster profile, and phase 5 hands it reward numbers instead of feeding XP back into levels.
+- **The v1 journey sim stays for the live game** until v2 ships (phase 8); its combat targets retire then.
+- **The gate's measures** (raid by rank, the classic trio, diversity, no dead Knack) become report sections and lab tests. One balance pass follows, run by the tuners, with Misa choosing where numbers trade against feel.
+
+**Reasoning.** The journey sim's strength comes from the v1 economy and v1 combat, which the valley is redesigning. Porting it would rebuild what the valley replaces. The lab's path already plays v2 on the valley's roster with the track, attrition and Determination, so it is the shortest way to a v2 journey. Sharing the worker's rules keeps the simulator from drifting from the game.
+
 ## 2026-11-03: Golden v2 talents read from the line book, numbers x1.25, flags unchanged
 
 ID: `2026-11-03-golden-v2-talents-read-from-the` · Status: current

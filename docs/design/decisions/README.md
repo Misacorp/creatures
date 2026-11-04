@@ -138,6 +138,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-11-04 Combat v2 phase 5 plan: extend the lab's path into the v2 journey simulator; the valley keeps the roster and economy
 - 2026-11-03 Golden v2 talents read from the line book, numbers x1.25, flags unchanged
 - 2026-11-03 Culling Strike stays as an enabler: in one line's pool per role and per element, never buffed for its solo value \[Misa\]
 - 2026-11-02 Combat v2 engine slice 1: carry keyed by creature key, board events beside the log, live actions as one boost or cut each
