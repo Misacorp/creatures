@@ -138,6 +138,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-11-04 Combat v2 phase 5 step 2: player habits in the journey simulator
 - 2026-11-04 Combat v2 phase 5, slice 1: the path's weekend plays the game's raid rules (journey.ts)
 - 2026-11-04 Combat v2 phase 5 plan: extend the lab's path into the v2 journey simulator; the valley keeps the roster and economy
 - 2026-11-03 Golden v2 talents read from the line book, numbers x1.25, flags unchanged

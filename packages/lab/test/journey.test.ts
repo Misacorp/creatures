@@ -1,6 +1,18 @@
 /** The journey on the game's raid rules: seats follow the piece, the lock sets the HP, replacements come from the player's own spares. */
 import { describe, expect, it } from 'vitest';
-import { wideBoss } from '@creatures/engine/v2';
+import { RULES } from '@creatures/game';
+import { wideBoss, type Placement } from '@creatures/engine/v2';
+import {
+  HABITS,
+  HABITS_FIRST_KNACK,
+  REPLACE_CHANCE,
+  finaleActions,
+  withTalentPolicy,
+  type Habits,
+} from '../src/habits';
+import { FORM_KNACKS } from '../src/knacks';
+import { talentSlotsAt } from '../src/roster';
+import { LINE_POOLS, lineOfForm } from '../src/talents';
 import {
   JOURNEY_SERVERS,
   NEW_PLAYER_JOIN_WEEK,
@@ -153,5 +165,158 @@ describe('the servers', () => {
     expect(a).toEqual(b);
     expect(a.fought).toHaveLength(24);
     expect(a.reached[0]).toBe(1);
+  });
+});
+
+describe('player habits', () => {
+  const hard = () => journeyWeekend(DEDICATED, slotOf('thornmother'), 4, 'slow', 'replace');
+  const withChance = (w: ReturnType<typeof hard>, replaceChance: number) => ({
+    ...w,
+    players: w.players.map((p) => ({ ...p, replaceChance })),
+  });
+
+  it('weekly players replace less than daily players, by roster kind', () => {
+    const server = coverageServer(8);
+    const slot = slotOf('thornmother');
+    const w = journeyWeekend(server, slot, 8, 'expected', 'kinds', undefined, {}, HABITS);
+    const chance = (kind: string) =>
+      w.players.filter((p) => p.roster === kind).map((p) => p.replaceChance);
+    expect(new Set(chance('daily'))).toEqual(new Set([REPLACE_CHANCE.daily]));
+    expect(new Set(chance('weekly'))).toEqual(new Set([REPLACE_CHANCE.weekly]));
+    expect(REPLACE_CHANCE.weekly).toBeLessThan(REPLACE_CHANCE.daily);
+    // Step 1's players all replace.
+    const one = journeyWeekend(server, slot, 8, 'expected', 'kinds');
+    expect(one.players.every((p) => p.replaceChance === 1)).toBe(true);
+  });
+
+  it('a chance of 0 never replaces, 1 always when there is a spare, and a chance in between is seeded', () => {
+    const w = hard();
+    const never = playJourneyWeekend(withChance(w, 0), 'replace');
+    const always = playJourneyWeekend(withChance(w, 1), 'replace');
+    expect(never.replacements).toBe(0);
+    expect(always.replacements).toBeGreaterThan(0);
+    expect(playJourneyWeekend(withChance(w, 1), 'replace')).toEqual(always);
+    const salts = [0, 1, 2, 3, 4, 5];
+    const total = (c: number) =>
+      salts
+        .map((i) => playJourneyWeekend(withChance(w, c), `replace${i}`).replacements)
+        .reduce((a, b) => a + b, 0);
+    expect(total(0.3)).toBe(total(0.3));
+    expect(total(0.3)).toBeLessThan(total(1));
+    expect(total(0.3)).toBeGreaterThanOrEqual(total(0));
+  });
+
+  it('talents are drawn from the creature’s line pool, within its slots, golden among them', () => {
+    const slot = slotOf('tidal-colossus');
+    const w = journeyWeekend(MIXED, slot, 20, 'expected', 'pools', undefined, {}, HABITS);
+    let rolled = 0;
+    for (const p of w.players)
+      for (const c of [...p.team, ...p.spares]) {
+        const talents = c.talents ?? [];
+        rolled += talents.length;
+        expect(talents.length).toBeLessThanOrEqual(talentSlotsAt(c.level));
+        for (const t of talents) expect(LINE_POOLS[lineOfForm(c.formId)]).toContain(t);
+        expect(new Set(talents).size).toBe(talents.length);
+        for (const g of c.goldenTalents ?? []) expect(talents).toContain(g);
+      }
+    expect(rolled).toBeGreaterThan(0);
+  });
+
+  it('golden talents are marked at the given chance and never at none', () => {
+    const base: Placement = {
+      owner: 'p1',
+      formId: 'cindle',
+      level: 25,
+      knack: 'none',
+      row: 0,
+      col: 0,
+    };
+    const goldenCount = (golden: Habits['golden']) =>
+      Array.from({ length: 600 }, (_, i) =>
+        withTalentPolicy(base, 'pools', 1, golden, `g${i}`),
+      ).filter((p) => (p.goldenTalents ?? []).length > 0).length;
+    expect(goldenCount(null)).toBe(0);
+    expect(goldenCount({ numerator: 0, denominator: 20 })).toBe(0);
+    expect(goldenCount({ numerator: 20, denominator: 20 })).toBe(600);
+    const share = goldenCount(RULES.talents.golden) / 600;
+    expect(share).toBeGreaterThan(0.02);
+    expect(share).toBeLessThan(0.09);
+    // A creature keeps the talents it rolled as slots open.
+    const one = withTalentPolicy(base, 'pools', 1, null, 'keep').talents ?? [];
+    const three = withTalentPolicy(base, 'pools', 3, null, 'keep').talents ?? [];
+    expect(three.slice(0, 1)).toEqual(one);
+  });
+
+  it('casual players stand in random rows and the Knack policy is explicit per role', () => {
+    const server = coverageServer(8);
+    const slot = slotOf('tidal-colossus');
+    const plain = journeyWeekend(server, slot, 10, 'expected', 'rows');
+    const habit = journeyWeekend(server, slot, 10, 'expected', 'rows', undefined, {}, HABITS);
+    const forms = (w: typeof plain, i: number) => (w.players[i]?.team ?? []).map((c) => c.formId);
+    let moved = 0;
+    server.players.forEach((p, i) => {
+      if (p.role !== 'casual') expect(forms(habit, i)).toEqual(forms(plain, i));
+      else if (forms(habit, i).join() !== forms(plain, i).join()) moved++;
+      expect([...forms(habit, i)].sort()).toEqual([...forms(plain, i)].sort());
+    });
+    expect(moved).toBeGreaterThan(0);
+    const first = journeyWeekend(
+      server,
+      slot,
+      10,
+      'expected',
+      'rows',
+      undefined,
+      {},
+      HABITS_FIRST_KNACK,
+    );
+    server.players.forEach((p, i) => {
+      for (const c of habit.players[i]?.team ?? [])
+        if (p.role === 'casual') expect(c.knack).toBe('none');
+      for (const c of first.players[i]?.team ?? [])
+        if (p.role === 'casual') expect(c.knack).toBe(FORM_KNACKS[c.formId]?.[0] ?? 'none');
+    });
+  });
+
+  it('the finale plays each player’s ability at its default round, dealt rally, shield wall, purge in turn', () => {
+    const acts = finaleActions(
+      Array.from({ length: 4 }, () => ({ kind: 'auto' }) as const),
+      8,
+      (i) => `p${i + 1}`,
+    );
+    expect(acts.map((a) => a.kind)).toEqual(['rally', 'shieldWall', 'purge', 'rally']);
+    expect(acts.every((a) => a.round >= 1 && a.round <= 8)).toBe(true);
+    expect(acts.find((a) => a.kind === 'shieldWall')?.row).toBe(0);
+    expect(finaleActions([{ kind: 'none' }], 8, () => 'p1')).toEqual([]);
+    expect(finaleActions([{ kind: 'fixed', ability: 'purge' }], 8, () => 'p1')[0]?.kind).toBe(
+      'purge',
+    );
+    // In a weekend that reaches stage 3 the actions are the stage's inputs; with no policy there are none.
+    const w = hard();
+    const auto = playJourneyWeekend(
+      { ...w, players: w.players.map((p) => ({ ...p, finale: { kind: 'auto' } as const })) },
+      'finale',
+    );
+    expect(auto.stages).toHaveLength(3);
+    expect(auto.finale.map((a) => a.by)).toEqual(w.players.map((p) => p.owner));
+    expect(playJourneyWeekend(w, 'finale').finale).toEqual([]);
+  });
+});
+
+describe('small parties', () => {
+  it('a party of one to three fights a smaller boss than four players do', () => {
+    const slot = slotOf('tidal-colossus');
+    const four = journeyWeekend(DEDICATED, slot, 12, 'expected', 'small').boss;
+    const hps = [1, 2, 3].map((n) => {
+      const w = journeyWeekend(smallParty(n as 1 | 2 | 3), slot, 12, 'expected', 'small');
+      expect(w.party).toBe(n);
+      expect(w.boss.cols).toBe(n);
+      expect(w.boss.atk).toBeLessThan(four.atk);
+      return w.boss.hp;
+    });
+    expect(hps[0]).toBeLessThan(hps[1] as number);
+    expect(hps[1]).toBeLessThan(hps[2] as number);
+    expect(hps[2]).toBeLessThan(four.hp);
+    expect(hps[0]).toBe(wideBoss(slotBoss(slot), 1).hp);
   });
 });

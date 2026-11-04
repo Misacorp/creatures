@@ -4,6 +4,21 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-04: Combat v2 phase 5 step 2: player habits in the journey simulator
+
+ID: `2026-11-04-combat-v2-phase-5-step-2` · Status: current
+
+**Decision.** The journey simulator (`packages/lab/src/journey.ts`, new `habits.ts`) models what each kind of player does, as data (`Habits`), and plays the same seeded servers with step 1's "everyone replaces" and with the habits:
+
+- **Replacements** by roster kind (`REPLACE_CHANCE`): daily 1.0, weekly 0.3, new player 1.0. **An assumption to confirm with Misa.** One seeded draw per player and stage break; a player who logs in fills every empty seat from their own spares.
+- **Knacks** per role: best for the board (prepared, builder), none (casual); "first known" is available and has a report row.
+- **Talents** per role: prepared players keep their line as written; builders and casual players roll from the creature's line pool at the valley's rate (the roster profile's open talent slots that week, capped by the level's and the species' slots; the valley's data says random rolls throughout). Golden at the game's chance (`RULES.talents.golden`, 1 in 20), played at the engine's x1.25 (the game's `goldenBp` says 1.5x: the two disagree and are left for the lead to settle).
+- **Placement**: prepared and builder follow the board; casual players stand in random rows of their column.
+- **The finale**: every player's basic ability fires at its default round, dealt rally, shield wall, purge by place in the party as the worker does (Auto fire on, nobody touching it). "Best for the board" for daily players is not modelled (it needs a search per party).
+- **Small parties** fight `wideBoss` for the party size (what `trackBoss` builds with `followSmallParty`), below four as above.
+
+**Reasoning.** Step 1 assumed every player replaces; weekly players probably do not, and no retune may happen before the habits are modelled. Measured (40 servers, mixed server's one-weekend kill at slots 8 / 11 / 14): everyone replaces 68% / 53% / 93%; only the replacement habit 25% / 48% / 48%; all habits 45% / 75% / 83%; casual players on their first known Knack 85% / 98% / 100%. Replacement alone is the big drop; the pool talents (more of them than step 1's one), golden talents and the finale's actions give some back, and a casual player's Knack is worth far more than the rest, so the policy matters. The model is not a target: the rates are assumptions, and the balance pass uses it only once Misa has confirmed them.
+
 ## 2026-11-04: Combat v2 phase 5, slice 1: the path's weekend plays the game's raid rules (journey.ts)
 
 ID: `2026-11-04-combat-v2-phase-5-slice-1` · Status: current
