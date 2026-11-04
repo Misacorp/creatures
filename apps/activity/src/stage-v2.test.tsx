@@ -317,21 +317,18 @@ describe('what a fight shows besides the numbers', () => {
     expect(visibleText(crit as never)).toMatch(/^\d+!$/);
   });
 
-  it("a Guard's save puts a shield on the covered creature and a bracket leg on both tiles; the Guard's tile flashes", () => {
+  it("a Guard's save puts a shield on the covered creature and a pulse through the tiles from the Guard to it; the Guard's tile flashes", () => {
     const replay = mixed();
     const { p } = draw(
       replay,
       (m, k) => showOf(replay.events, m.beats[k] as never).saves.length > 0,
     );
     expect(byClass(p.root, 'float-save').length).toBeGreaterThan(0);
-    expect(
-      byClass(p.root, 'slot-link').filter((el) => el.getAttribute('class')?.includes('guard'))
-        .length,
-    ).toBeGreaterThan(0);
-    expect(
-      byClass(p.root, 'slot-link').filter((el) => el.getAttribute('class')?.includes('saved'))
-        .length,
-    ).toBeGreaterThan(0);
+    const pulses = byClass(p.root, 'slot-pulse');
+    expect(byClass(p.root, 'slot-link').length).toBe(0);
+    const cls = (el: (typeof pulses)[number]) => el.getAttribute('class') ?? '';
+    expect(pulses.filter((el) => cls(el).includes('guard')).length).toBeGreaterThan(0);
+    expect(pulses.filter((el) => cls(el).includes('end')).length).toBeGreaterThan(0);
     expect(byClass(p.root, 'fight-guarding').length).toBeGreaterThan(0);
   });
 

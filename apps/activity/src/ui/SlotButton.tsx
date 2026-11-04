@@ -52,6 +52,12 @@ export interface SlotModel {
     };
   };
   /**
+   * A Guard's pulse of protection passes through this tile's background in this beat (empty tiles between the two too): it travels from
+   * the Guard towards the creature it covered (`dir`), reaching this tile `step` tiles after leaving the Guard's; `end` is the covered
+   * creature's tile, which flashes as it lands; `guard` is the Guard's own tile. Motion reduced: a faint tint on the `guard` and `end` tiles.
+   */
+  pulse?: TilePulse;
+  /**
    * A short word on the tile, for a state the tile is in ("Asked": you have asked this creature's owner to swap). Text only;
    * `aria-label` says it too.
    */
@@ -72,11 +78,8 @@ export interface FightTile {
   hit: boolean;
   /** It is the creature acting in the beat on show. */
   acting: boolean;
-  /**
-   * A Guard's save in this beat: the Guard (`guard`) or the creature it covered (`saved`) carries a short leg of the bracket that links
-   * the two, going towards the other one's side (`side`). The Guard's tile also flashes.
-   */
-  link?: { role: 'guard' | 'saved'; side: 'left' | 'right' };
+  /** It is the Guard of a save in this beat: its tile flashes (the pulse of protection starts from it, see `SlotModel.pulse`). */
+  guarding?: boolean;
   /**
    * It carries a Support's Boost (until its next hit), for as long as the Boost lasts. `boostLook` is how it shows: `pattern`
    * (the default) is small yellow arrows drifting upwards in the tile's background; `glow` is a yellow inner glow flush to the tile's
@@ -91,6 +94,14 @@ export interface FightTile {
   debuffed?: boolean;
   /** The numbers and tags that float over it, drawn by the screen. */
   overlay?: ComponentChildren;
+}
+
+/** One tile's part of a Guard's pulse of protection. */
+export interface TilePulse {
+  dir: 'left' | 'right';
+  step: number;
+  guard: boolean;
+  end: boolean;
 }
 
 /** How a boosted creature's tile shows it (a Misa comparison): arrows in the background, or the inner glow. */
@@ -165,11 +176,12 @@ export function SlotButton(props: SlotButtonProps) {
     if (fight?.out === true) classes.push('fight-out');
     if (fight?.hit === true) classes.push('fight-hit');
     if (fight?.acting === true) classes.push('fight-acting');
-    if (fight?.link?.role === 'guard') classes.push('fight-guarding');
+    if (fight?.guarding === true) classes.push('fight-guarding');
     if (fight?.boosted === true)
       classes.push('fight-boosted', `boost-${fight.boostLook ?? 'pattern'}`);
     if (fight?.debuffed === true) classes.push('fight-debuffed');
   }
+  if (slot.pulse !== undefined) classes.push('pulsing');
   if (own !== null) classes.push('draggable');
   if (status === 'valid') classes.push('drop-valid');
   if (status === 'invalid') classes.push('drop-invalid');
@@ -239,6 +251,14 @@ export function SlotButton(props: SlotButtonProps) {
             }
       }
     >
+      {slot.pulse !== undefined && (
+        <span
+          class={`slot-pulse ${slot.pulse.dir}${slot.pulse.guard ? ' guard' : ''}${slot.pulse.end ? ' end' : ''}`}
+          aria-hidden="true"
+          data-audit-clip
+          ref={cssVars({ '--pulse-step': slot.pulse.step })}
+        />
+      )}
       {pattern !== null && (
         <span class={`slot-pattern ${pattern}`} aria-hidden="true" data-audit-clip>
           <span class="slot-pattern-field">
@@ -307,12 +327,6 @@ export function SlotButton(props: SlotButtonProps) {
           {plainGlyph !== undefined && <Sprite sprite={plainGlyph} scale={1} />}
           {hitGlyph !== undefined && <Sprite sprite={hitGlyph} scale={1} />}
         </span>
-      )}
-      {c?.v2?.fight?.link !== undefined && (
-        <span
-          class={`slot-link ${c.v2.fight.link.role} to-${c.v2.fight.link.side}`}
-          aria-hidden="true"
-        />
       )}
       {c?.v2?.fight?.overlay !== undefined && (
         <span class="slot-fx" aria-hidden="true">

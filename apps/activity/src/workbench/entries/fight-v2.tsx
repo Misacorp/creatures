@@ -49,6 +49,7 @@ const MOMENTS = [
   'a knock-out',
   'a reaction is cashed',
   'a Guard save',
+  'a Guard save two slots away',
   'a dodge',
   'a heal',
   'a boost',
@@ -94,6 +95,14 @@ function momentBeat(
           (shows[k]?.saves.length ?? 0) > 0 &&
           shows[k]?.saves.some((s) => s.prevented !== null) === true,
       );
+    case 'a Guard save two slots away': {
+      const col = new Map(model.setup.creatures.map((c) => [c.key, c.col]));
+      return at((k) =>
+        (shows[k]?.saves ?? []).some(
+          (s) => Math.abs((col.get(s.guard) ?? 0) - (col.get(s.who) ?? 0)) >= 2,
+        ),
+      );
+    }
     case 'a dodge':
       return at((k) => shows[k]?.floats.some((f) => f.tone === 'dodge') === true);
     case 'a heal':
@@ -470,7 +479,7 @@ const stageV2: Entry = {
   file: 'apps/activity/src/StageV2.tsx',
   group: 'Creatures & game pieces',
   description:
-    "The combat v2 fight stage, played from a real fight (every event is the engine's own, from the shipped bosses and creatures): the boss above its HP bar with a tick per stage, the move it just made, the marks on it oldest first, Mired, what it resists and the Escalating meter, the turn strip lighting the step on, and the v2 board with each creature's HP, a silenced creature's Knack crossed out with the turns left, knocked-out ones greyed and the move announced at round start on each creature it will land on. What a fight shows: a reaction's name in its two colours over the boss with the hit's total and the bonus under it on one line (the beat is held a moment longer), a number on the boss for every hit in the hitter's element colour (a crit ending with \"!\" in two hard halves), a Guard's save (a shield on the covered creature with what the cover kept off, the Guard's own shield bursting out of its tile to 2.5 times the size while it fades, the Guard's tile flashing and a bracket between the two tiles), \"Dodged!\", heals as green numbers, boosts as rising arrows (a boosted creature also has small yellow arrows drifting up in its tile's background, `boostLook` `pattern` by default, or the inner `glow`; a silenced creature has the same pattern flipped, red arrows drifting down), and, only when the Knack names option is on (Settings, off by default), the Knack's name popping on the creature that acts. The `party` control swaps the sample for a mixed party (Guards and Supports among the Setters and Payoffs) so every one of these happens. Views: held still at a moment of the fight (a crit, a Blocked hit, a silenced creature, a knock-out, a cashed mark, a Guard save, a dodge, a heal, a boost, a Knack acting), playing by itself like the replay, the live finale with the player's action button (Rally, Shield Wall with its row picker, Purge) and Auto fire, a stage's result card, and the Raid tab's pick of the finale action.",
+    "The combat v2 fight stage, played from a real fight (every event is the engine's own, from the shipped bosses and creatures): the boss above its HP bar with a tick per stage, the move it just made, the marks on it oldest first, Mired, what it resists and the Escalating meter, the turn strip lighting the step on, and the v2 board with each creature's HP, a silenced creature's Knack crossed out with the turns left, knocked-out ones greyed and the move announced at round start on each creature it will land on. What a fight shows: a reaction's name in its two colours over the boss with the hit's total and the bonus under it on one line (the beat is held a moment longer), a number on the boss for every hit in the hitter's element colour (a crit ending with \"!\" in two hard halves), a Guard's save (a shield on the covered creature with what the cover kept off, the Guard's own shield bursting out of its tile to 2.5 times the size while it fades, the Guard's tile flashing and a pulse of protection running through the tiles' backgrounds, across every tile of the row between them, to the covered creature), \"Dodged!\", heals as green numbers, boosts as rising arrows (a boosted creature also has small yellow arrows drifting up in its tile's background, `boostLook` `pattern` by default, or the inner `glow`; a silenced creature has the same pattern flipped, red arrows drifting down), and, only when the Knack names option is on (Settings, off by default), the Knack's name popping on the creature that acts. The `party` control swaps the sample for a mixed party (Guards and Supports among the Setters and Payoffs) so every one of these happens. Views: held still at a moment of the fight (a crit, a Blocked hit, a silenced creature, a knock-out, a cashed mark, a Guard save, a dodge, a heal, a boost, a Knack acting), playing by itself like the replay, the live finale with the player's action button (Rally, Shield Wall with its row picker, Purge) and Auto fire, a stage's result card, and the Raid tab's pick of the finale action.",
   controls: CONTROLS,
   defaults: DEFAULTS,
   presets: [
@@ -509,8 +518,12 @@ const stageV2: Entry = {
       props: { slot: 5, players: 4, party: 'mixed', moment: 'a boosted and a silenced creature' },
     },
     {
-      name: 'A Guard save: a large shield on the covered creature with what it kept off (no ring), the Guard’s own shield bursting out to 2.5x, the bracket and the flash',
+      name: 'A Guard save: a large shield on the covered creature with what it kept off (no ring), the Guard’s own shield bursting out to 2.5x, the flash and the pulse through the tiles to the covered creature',
       props: { slot: 4, players: 5, party: 'mixed', moment: 'a Guard save' },
+    },
+    {
+      name: 'A Guard save from two slots away (Wide Reach): the pulse runs through the tile between to the covered creature',
+      props: { slot: 3, players: 5, party: 'mixed', moment: 'a Guard save two slots away' },
     },
     {
       name: 'A dodge ("Dodged!")',

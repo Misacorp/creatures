@@ -223,31 +223,9 @@
   top: 36%;
 }
 
-/* A Guard's save: the Guard's tile flashes and each of the two tiles carries a leg of the bracket towards the other. */
+/* A Guard's save: the Guard's tile flashes, and a pulse of protection runs through the tiles' backgrounds to the covered creature (below). */
 .party-slot.fight-guarding {
   box-shadow: inset 0 0 0 var(--px) var(--bone);
-}
-
-.party-slot .slot-link {
-  position: absolute;
-  bottom: 1rem;
-  z-index: 2;
-  height: 0.625rem;
-  border: var(--px) solid var(--good);
-  border-top: 0;
-  pointer-events: none;
-}
-
-.party-slot .slot-link.to-right {
-  right: 0.125rem;
-  left: 50%;
-  border-right: 0;
-}
-
-.party-slot .slot-link.to-left {
-  right: 50%;
-  left: 0.125rem;
-  border-left: 0;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -692,6 +670,113 @@
 
     to {
       transform: translateY(0);
+    }
+  }
+}
+
+/*
+  --- A Guard's pulse of protection ---
+  On a save, a light band runs through the backgrounds of the tiles of the row, from the Guard's tile to the covered creature's, behind the
+  creature, name and chip (the tile is its own stacking context and the pulse sits at z-index -1, like the arrow patterns). Each tile
+  starts its band `--pulse-step` steps (320 ms each) after the Guard's, so the band runs on from tile to tile; it is three hard bars
+  of light (no blur), and the covered tile flashes as it lands. A tile to the left of the Guard is the same thing mirrored. It is
+  clipped to the tile, so nothing shifts. Reduced motion (and the workbench's held frames): no band, a faint still tint on the Guard's
+  tile and the covered one.
+*/
+.party-slot.pulsing {
+  isolation: isolate;
+}
+
+.party-slot .slot-pulse {
+  position: absolute;
+  inset: 0.2rem;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.party-slot .slot-pulse.left {
+  transform: scaleX(-1);
+}
+
+.party-slot .slot-pulse::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -60%;
+  width: 60%;
+  content: '';
+  background: linear-gradient(
+    to right,
+    rgb(255 244 190 / 10%) 33.3%,
+    rgb(255 244 190 / 24%) 33.3% 66.6%,
+    rgb(255 244 190 / 46%) 66.6%
+  );
+  display: none;
+}
+
+.party-slot .slot-pulse::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background: rgb(255 244 190 / 26%);
+  opacity: 0;
+}
+
+.party-slot .slot-pulse.guard::after,
+.party-slot .slot-pulse.end::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .party-slot .slot-pulse::before {
+    display: block;
+    animation: pulse-band 520ms linear calc(var(--pulse-step, 0) * 320ms) both;
+  }
+
+  .party-slot .slot-pulse.guard::after,
+  .party-slot .slot-pulse.end::after {
+    opacity: 0;
+    animation: pulse-flash 700ms ease-out calc(var(--pulse-step, 0) * 320ms + 260ms) both;
+    background: rgb(255 244 190 / 50%);
+  }
+
+  .party-slot .slot-pulse.guard:not(.end)::after {
+    animation-delay: 0ms;
+  }
+
+  .wb-held .party-slot .slot-pulse::before {
+    display: none;
+  }
+
+  .wb-held .party-slot .slot-pulse.guard::after,
+  .wb-held .party-slot .slot-pulse.end::after {
+    opacity: 1;
+    background: rgb(255 244 190 / 26%);
+    animation: none;
+  }
+
+  @keyframes pulse-band {
+    from {
+      transform: translateX(0);
+    }
+
+    to {
+      transform: translateX(267%);
+    }
+  }
+
+  @keyframes pulse-flash {
+    0% {
+      opacity: 0;
+    }
+
+    15% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
     }
   }
 }

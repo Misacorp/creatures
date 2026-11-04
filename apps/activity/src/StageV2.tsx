@@ -33,7 +33,7 @@ import { elementIcon } from './sprites/element-icons';
 import type { PlaybackV2 } from './use-playback-v2';
 import { MarkStrip, type MarkChipModel } from './ui/MarkStrip';
 import { RaidBoard, type BoardRowModel } from './ui/RaidBoard';
-import type { BoostLook, SlotModel } from './ui/SlotButton';
+import type { BoostLook, SlotModel, TilePulse } from './ui/SlotButton';
 import type { SlotCue } from './ui/slot-cue';
 import { SegmentBar } from './ui/SegmentBar';
 import { StageHead } from './ui/StageHead';
@@ -326,23 +326,36 @@ export function StageV2({
   );
   const hit = show?.flash ?? new Set<string | null>();
 
-  // A Guard's save (it took a hit for a creature, or its cover cut one): a short bracket links the two tiles, each carrying a leg
-  // towards the other for as long as the cue stays on screen.
-  const links = useMemo(() => {
-    const legs = new Map<string, { role: 'guard' | 'saved'; side: 'left' | 'right' }>();
+  // A Guard's save (it took a hit for a creature, or its cover cut one): a pulse of protection passes through the tiles of the row from the
+  // Guard to each creature it covered (the cover's reach can be wider than "beside"), the covered tile flashing as it lands. The tiles
+  // between are lit by their slot, empty ones too; several covered creatures share the tiles near the Guard.
+  const { pulses, guards } = useMemo(() => {
+    const pulses = new Map<number, TilePulse>();
+    const guards = new Set<string>();
     const at = new Map(fighters.map((f) => [f.key, f]));
     for (const item of fx) {
       if (item.cue.kind !== 'cover') continue;
       const guard = at.get(item.cue.guard);
       const saved = at.get(item.cue.creature);
-      if (guard === undefined || saved === undefined || guard.col === saved.col) continue;
-      const towards = guard.col < saved.col ? 'right' : 'left';
-      if (!legs.has(guard.key)) legs.set(guard.key, { role: 'guard', side: towards });
-      if (!legs.has(saved.key))
-        legs.set(saved.key, { role: 'saved', side: towards === 'right' ? 'left' : 'right' });
+      if (guard === undefined || saved === undefined) continue;
+      guards.add(guard.key);
+      if (guard.col === saved.col || guard.row !== saved.row) continue;
+      const dir = saved.col > guard.col ? 'right' : 'left';
+      const [from, to] = [Math.min(guard.col, saved.col), Math.max(guard.col, saved.col)];
+      for (let col = from; col <= to; col++) {
+        const slot = col * rows + guard.row;
+        const step = Math.abs(col - guard.col);
+        const was = pulses.get(slot);
+        pulses.set(slot, {
+          dir,
+          step: was === undefined ? step : Math.min(was.step, step),
+          guard: (was?.guard ?? false) || col === guard.col,
+          end: (was?.end ?? false) || col === saved.col,
+        });
+      }
     }
-    return legs;
-  }, [fx, fighters]);
+    return { pulses, guards };
+  }, [fx, fighters, rows]);
 
   // The live inputs in play: Rally lights everyone, a Shield Wall its row.
   const actions = state.actions.filter((a) => actionActive(a, state.round) && state.end === null);
@@ -371,7 +384,6 @@ export function StageV2({
   const tileOf = (f: FightCreatureV2): SlotModel['occupant'] => {
     const now = state.creatures[f.key];
     const owner = names.players[f.owner] ?? 'Someone';
-    const leg = links.get(f.key);
     return {
       species: f.species,
       name: f.name,
@@ -398,7 +410,7 @@ export function StageV2({
           // Silence is the one lowering a creature carries in the events today.
           ...((now?.silenced ?? 0) > 0 && now?.out !== true ? { debuffed: true as const } : {}),
           acting: landed?.kind === 'creature' && landed.actor === f.key,
-          ...(leg === undefined ? {} : { link: leg }),
+          ...(guards.has(f.key) ? { guarding: true as const } : {}),
           overlay: (
             <>
               <FloatsV2 fx={fx} target={f.key} />
@@ -419,8 +431,15 @@ export function StageV2({
       const now = f === undefined ? undefined : state.creatures[f.key];
       const lane = (f?.col ?? Math.floor(slot / rows)) + 1;
       const where = single ? `Place ${String(lane)}` : `${rowNameV2(at)}, lane ${String(lane)}`;
+      const pulse = pulses.get(slot);
       if (f === undefined)
-        return { index: slot, hideNumber: true, ariaLabel: `${where}, empty`, occupant: null };
+        return {
+          index: slot,
+          hideNumber: true,
+          ariaLabel: `${where}, empty`,
+          occupant: null,
+          ...(pulse === undefined ? {} : { pulse }),
+        };
       const parts = [
         `${where}, ${f.name}`,
         `${String(now?.hp ?? 0)} / ${String(f.maxHp)} HP`,
@@ -428,7 +447,13 @@ export function StageV2({
         ...((now?.boost ?? 0) > 0 && now?.out !== true ? ['boosted'] : []),
         ...((now?.silenced ?? 0) > 0 ? [`silenced, ${String(now?.silenced)} turns left`] : []),
       ];
-      return { index: slot, hideNumber: true, ariaLabel: parts.join(', '), occupant: tileOf(f) };
+      return {
+        index: slot,
+        hideNumber: true,
+        ariaLabel: parts.join(', '),
+        occupant: tileOf(f),
+        ...(pulse === undefined ? {} : { pulse }),
+      };
     }),
   }));
 
