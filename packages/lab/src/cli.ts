@@ -3,6 +3,7 @@ import { URL, fileURLToPath } from 'node:url';
 import { CARDS } from './cards';
 import { RAID_BOSS_IDS } from './bosses';
 import { planBosses } from './bossReport';
+import { planJourney } from './journey';
 import { planPath, type PathSummary } from './path';
 import { ownabilityMarkdown, ownabilityTable } from './ownability';
 import { ROSTER_SPEEDS, type RosterSpeed } from './roster';
@@ -56,6 +57,7 @@ export async function main(args: readonly string[], run: JobRunner = serial): Pr
     return tune(args, quick, run);
   }
   if (args.includes('--path')) return path(args, quick, run);
+  if (args.includes('--journey')) return journey(quick, run);
   const bossAt = args.indexOf('--boss');
   if (args.includes('--bosses') || bossAt >= 0) {
     // Only the real raid bosses and dungeon foes, to the console (nothing is written).
@@ -175,6 +177,16 @@ async function tune(args: readonly string[], quick: boolean, run: JobRunner): Pr
     writeFileSync(out, summary.join('\n') + '\n');
     writeFileSync(out.replace(/(\.md)?$/, '.json'), JSON.stringify(results, null, 1) + '\n');
   }
+  return 0;
+}
+
+/** `--journey [--quick]`: the journey on the game's rules (`journey.ts`), beside the lab's, to the console (nothing is written). */
+async function journey(quick: boolean, run: JobRunner): Promise<number> {
+  const t0 = Date.now();
+  const { value, timings } = await runPlan(planJourney({ quick }), run);
+  console.log(value.md.join('\n'));
+  console.log(`journey in ${secondsSince(t0)} s`);
+  console.log(timings);
   return 0;
 }
 

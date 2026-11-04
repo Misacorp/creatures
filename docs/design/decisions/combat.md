@@ -4,6 +4,14 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-04: Combat v2 phase 5, slice 1: the path's weekend plays the game's raid rules (journey.ts)
+
+ID: `2026-11-04-combat-v2-phase-5-slice-1` · Status: current
+
+**Decision.** The lab's path gets a second weekend, `packages/lab/src/journey.ts`, that plays the worker's raid rules with the engine's `stageV2` and its carry: a player brings the seats of the boss's arena piece (`piece.rows`), the party is locked at stage 1 and sets the weekend HP, and between stages each player replaces their own knocked-out creatures from their own spares (the next ranks of their roster, each used once), with Knacks and talents as they fought. The lab's older weekend stays (the tuner and the tuned numbers still use it); the report's "Journey on the game's rules" section plays both on the same seeds. Real party sizes are the valley's coverage servers of 5, 8 and 15 (with one new player who joins in week 4) and parties of one to three. Under four players the engine's `trackBoss` still fights at four columns; `partyBoss` in `journey.ts` is the one place to switch when the smaller boss lands.
+
+**Reasoning.** The simulator must play the code the game plays, or it drifts. Measured: the game's spares (up to a seat's worth each, instead of one shared-bench creature) lift the mixed server's one-weekend kill at slots 8, 11 and 14 from 8%, 23% and 25% to 68%, 53% and 93% (40 servers; limiting the spares to one gives the lab's numbers back), so the track's three misses were partly the lab's bench, not the bosses. No tuned number changed: the balance pass comes after the policies and the dungeon steps.
+
 ## 2026-11-04: Combat v2 phase 5 plan: extend the lab's path into the v2 journey simulator; the valley keeps the roster and economy
 
 ID: `2026-11-04-combat-v2-phase-5-plan-extend` · Status: current

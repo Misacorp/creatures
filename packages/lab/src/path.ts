@@ -250,31 +250,39 @@ export const DEFAULT_PATH_KINDS: readonly PathServer['id'][] = ['dedicated', 'mi
 export const determinationOf = (run: PathRun): Determination | undefined =>
   run.determination === 'off' ? undefined : (run.determination ?? DETERMINATION);
 
-/** The placements, bench and boss of one server's weekend: everyone's creatures at their roster's levels in that week. */
-export function serverWeekend(
-  server: PathServer,
+/** One player's creatures at a weekend: their column as the rules field it, and their roster's levels (best first, the column's rows then the spares). */
+export interface PlayerColumn {
+  readonly column: Pick[];
+  readonly levels: number[];
+}
+
+/**
+ * Each player's column of a weekend: the line they field (the slot's prepared line as written, a builder's two-copy column, or a casual
+ * player's best creatures) and the levels of their roster that week, `rows + spares` of them (the first `rows` for the column, the rest are
+ * the player's next-strongest creatures). Shared by the lab's weekend (`serverWeekend`, one spare) and the game's (`journey.ts`).
+ */
+export function playerColumns(
+  server: { readonly id: string; readonly players: readonly PathPlayer[] },
+  base: BossDef,
   slot: number,
   week: number,
   speed: RosterSpeed,
   seed: string,
-  profile: RosterProfile = VALLEY_ROSTER,
-  run: PathRun = {},
-): { boss: BossDef; placements: Placement[]; bench: Placement[] } {
-  const base = slotBoss(slot, run.table ? { table: run.table } : {});
+  profile: RosterProfile,
+  run: PathRun,
+  spares: number,
+): PlayerColumn[] {
   const rows = base.rows;
   // The dedicated and the builder server field the slot's prepared line; the mixed server's min-maxers and builders field the written
   // answer that suits it at this slot (`SLOT_MIXED_ANSWER`).
-  const { line, core } =
-    server.id === 'mixed' ? slotMixedOf(slot, run.mixedAnswer) : slotPreparedOf(slot);
-  const boss = server.players.length === base.cols ? base : wideBoss(base, server.players.length);
+  const { line, core } = server.id.startsWith('mixed')
+    ? slotMixedOf(slot, run.mixedAnswer)
+    : slotPreparedOf(slot);
   const whole = server.players.length === base.cols;
   let m = 0;
   let b = 0;
-  const placements: Placement[] = [];
-  const bench: Placement[] = [];
-  server.players.forEach((p, c) => {
-    // One more creature than the column holds: the bench's.
-    const levels = rosterLevels(profile, p.roster, week, speed, rows + 1, p.joinWeek);
+  return server.players.map((p, c) => {
+    const levels = rosterLevels(profile, p.roster, week, speed, rows + spares, p.joinWeek);
     let column: Pick[];
     if (p.role === 'prepared') {
       // A server with a player for every column fields the line as written; a wider or narrower one takes the tool's columns first.
@@ -292,24 +300,47 @@ export function serverWeekend(
         line,
       );
     else column = casualColumn(createSeededRng(`path:${seed}:casual:${c}`), rows, 'top3', LEVEL);
-    levelledColumn(column, levels).forEach((pick, r) =>
-      placements.push({
-        owner: `p${c + 1}`,
-        formId: pick.formId,
-        level: pick.level ?? 1,
-        knack: pick.knack,
-        ...(pick.talents ? { talents: pick.talents } : {}),
-        row: r,
-        col: c,
-      }),
-    );
-    bench.push(
-      ...raidBench(1, levels[rows] ?? levels[levels.length - 1] ?? 1).map((x) => ({
-        ...x,
-        owner: `p${c + 1}`,
-      })),
-    );
+    return { column: levelledColumn(column, levels), levels };
   });
+}
+
+/** The placements, bench and boss of one server's weekend: everyone's creatures at their roster's levels in that week. */
+export function serverWeekend(
+  server: PathServer,
+  slot: number,
+  week: number,
+  speed: RosterSpeed,
+  seed: string,
+  profile: RosterProfile = VALLEY_ROSTER,
+  run: PathRun = {},
+): { boss: BossDef; placements: Placement[]; bench: Placement[] } {
+  const base = slotBoss(slot, run.table ? { table: run.table } : {});
+  const rows = base.rows;
+  const boss = server.players.length === base.cols ? base : wideBoss(base, server.players.length);
+  const placements: Placement[] = [];
+  const bench: Placement[] = [];
+  // One more creature than the column holds: the bench's.
+  playerColumns(server, base, slot, week, speed, seed, profile, run, 1).forEach(
+    ({ column, levels }, c) => {
+      column.forEach((pick, r) =>
+        placements.push({
+          owner: `p${c + 1}`,
+          formId: pick.formId,
+          level: pick.level ?? 1,
+          knack: pick.knack,
+          ...(pick.talents ? { talents: pick.talents } : {}),
+          row: r,
+          col: c,
+        }),
+      );
+      bench.push(
+        ...raidBench(1, levels[rows] ?? levels[levels.length - 1] ?? 1).map((x) => ({
+          ...x,
+          owner: `p${c + 1}`,
+        })),
+      );
+    },
+  );
   return { boss, placements, bench };
 }
 
