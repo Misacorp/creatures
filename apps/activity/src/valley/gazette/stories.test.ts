@@ -176,8 +176,8 @@ describe('stories from the away notice', () => {
       summary({ tripsWaiting: 1, jobsWaiting: 3 }),
       world({
         creatures: [
-          { ...a, busy: { kind: 'expedition', id: 't1' } } as Creature,
-          { ...b, busy: { kind: 'job', id: 'j1' } } as Creature,
+          { ...a, busy: { kind: 'expedition', id: 't1' } },
+          { ...b, busy: { kind: 'job', id: 'j1' } },
         ],
         tray: {
           trips: [{ id: 't1', status: 'active', endsAt: UNTIL - 1, destination: 'tide' } as never],
