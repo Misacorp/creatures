@@ -27,8 +27,6 @@ export const PLANK_TO_COME: SpriteDef = {
 /** The steps the stall goes up in (the same as `STAGES` in `market-sample.ts`). */
 const STEPS = 12;
 
-const filled = (row: string, x: number): boolean => row[x] !== undefined && row[x] !== '.';
-
 /** The sprite's rows from the ground up to step `laid` (the rest blank), at full colour. */
 export function builtPart(sprite: SpriteDef, laid: number): SpriteDef {
   const height = sprite.rows.length;
