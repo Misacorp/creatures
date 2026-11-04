@@ -84,11 +84,7 @@ export function adjustSpec(
 /** The spec of a combat v2 dungeon reward at a context (`RULES.dungeon.depthRewards`). */
 export function dungeonRewardSpec(ctx: BestOfContext): BestOfSpec {
   const d = RULES.dungeon.depthRewards;
-  return adjustSpec(
-    { rolls: { ...d.base.rolls }, keep: { ...d.base.keep } },
-    d.steps as readonly BestOfStep[],
-    ctx,
-  );
+  return adjustSpec({ rolls: { ...d.base.rolls }, keep: { ...d.base.keep } }, d.steps, ctx);
 }
 
 /** The sum of the tiers of an item's rolled lines (the last tie-break of "best"). */

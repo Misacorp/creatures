@@ -232,7 +232,7 @@ export function descentMarkdown(players: readonly PlayerDays[]): string[] {
     const bp = dungeonResourceBp(undercroftDepth(mid, 1)) / 10_000;
     const g1 = keeperPieces(mid, false);
     const g2 = keeperPieces(mid, true);
-    for (const [state, c] of Object.entries(t.byShare) as [string, DescentCell][]) {
+    for (const [state, c] of Object.entries<DescentCell>(t.byShare)) {
       if (c.n < 5) continue;
       const win = c.won ?? 0;
       out.push(
