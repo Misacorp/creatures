@@ -734,3 +734,15 @@ main.card:has(.vy-frame) > .hud {
   outline: none;
   box-shadow: var(--ring);
 }
+
+/* A newcomer at the paddock's gate: the button holds the sprite and the Paddock's bubble above it. */
+.vy-frame .vy-gate {
+  position: relative;
+}
+
+/* A named region of the canvas (the arena's boss): no look, only a name for assistive technology. */
+.vy-region-box {
+  display: block;
+  width: var(--pw);
+  height: var(--ph);
+}

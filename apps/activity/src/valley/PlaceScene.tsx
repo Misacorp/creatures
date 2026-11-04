@@ -6,17 +6,16 @@
  * popover, as everywhere (`SmallCreature`). The paddock's creatures wander (not with reduced motion).
  */
 import { useMemo } from 'preact/hooks';
-import { bossArt, silhouettePalette } from '../art';
+import { bossArt } from '../art';
 import type { Creature } from '../api';
 import type { CreatureInfo } from '../creature-info';
-import { creatureName, getSpecies } from '../game';
+import { creatureName, getSpecies, speciesName } from '../game';
+import { cssVars } from '../css-vars';
 import { usePrefersReducedMotion } from '../hooks';
 import { SmallCreature } from '../SmallCreature';
-import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
-import { Sprite } from '../sprites/Sprite';
 import { PinnedAct } from './PinnedAct';
 import { SceneFrame, type SceneGeometry } from './SceneFrame';
-import { At, CreatureSprite, isStill, useTick } from './parts';
+import { At, CreatureSprite, SpeechBubble, isStill, useTick } from './parts';
 import type { Cast, CastPlace } from './place-cast';
 import { BAND_ROWS, bandArtBox, bandScale, bandSceneDraw } from './place-scene';
 import { useRoamers } from './use-roamers';
@@ -174,23 +173,42 @@ export function PlaceScene({ cast, onAct }: { cast: Cast; onAct: () => void }) {
                 g={g}
               />
             )}
-            {cast.gate.map((n) => (
+            {cast.gate.map((n, i) => (
               <At key={n.id} x={g.X(box.x + n.x)} y={g.Y(box.y + n.y)} class="vy-stand">
                 <button
                   type="button"
-                  class="vy-stand-btn"
-                  aria-label="A newcomer waits at the gate. Choose what to do"
+                  class="vy-stand-btn vy-gate"
+                  aria-label={`${speciesName(n.species)} waits at the gate. Choose what to do`}
                   onClick={onAct}
                 >
-                  <Sprite
-                    sprite={creatureSpriteOrFallback(n.species)}
-                    scale={g.s}
-                    class="vy-creature"
-                    palette={silhouettePalette(creatureSpriteOrFallback(n.species))}
-                  />
+                  {i === 0 && (
+                    <SpeechBubble
+                      glyph="paw"
+                      count={cast.gate.length < cast.waiting ? cast.waiting : null}
+                    />
+                  )}
+                  <CreatureSprite creature={n} scale={g.s} />
                 </button>
               </At>
             ))}
+            {cast.boss !== null && (
+              <At
+                x={g.X(box.x + box.width - 6)}
+                y={g.Y(box.y + box.height - 30)}
+                class="vy-region"
+                hidden={false}
+              >
+                <span
+                  class="vy-region-box"
+                  role="img"
+                  aria-label={`This week: ${cast.boss.name}`}
+                  ref={cssVars({
+                    '--pw': `${String(24 * g.s)}px`,
+                    '--ph': `${String(24 * g.s)}px`,
+                  })}
+                />
+              </At>
+            )}
           </>
         );
       }}

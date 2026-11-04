@@ -93,6 +93,8 @@ export interface Cast {
   /** The week's boss while the raid view is loaded (the arena only). */
   boss: { id: string; name: string } | null;
   gate: Newcomer[];
+  /** How many catches wait in all (the gate draws at most two). */
+  waiting: number;
   act: CastAct;
 }
 
@@ -290,12 +292,15 @@ function fairCast(input: CastInput, art: Size): Pick<Cast, 'stands' | 'act'> {
 /** Where the creatures at home roam: the open grass inside the paddock's rails (the map's own area, from the art's top-left). */
 export const PADDOCK_ROAM_AREA: Rect = { x: 10, y: 20, width: 30, height: 14 };
 
-function paddockCast(input: CastInput, art: Size): Pick<Cast, 'roamers' | 'roam' | 'gate' | 'act'> {
+function paddockCast(
+  input: CastInput,
+  art: Size,
+): Pick<Cast, 'roamers' | 'roam' | 'gate' | 'waiting' | 'act'> {
   const roamers = input.creatures.filter(isAtHome).slice(0, MAX_ROAMERS);
   // The waiting catches queue at the gate (the open side, bottom right of the rails), at most two drawn.
   const gate = input.waiting.slice(0, 2).map((w, i) => ({
     ...w,
-    x: art.width - 6 + i * 14,
+    x: art.width - 14 + i * 13,
     y: art.height - 22 - (i % 2) * 3,
   }));
   const n = input.pending;
@@ -310,7 +315,7 @@ function paddockCast(input: CastInput, art: Size): Pick<Cast, 'roamers' | 'roam'
           kind: 'calm',
           line: roamers.length === 0 ? 'Nobody is home' : `${String(roamers.length)} at home`,
         };
-  return { roamers, roam: PADDOCK_ROAM_AREA, gate, act };
+  return { roamers, roam: PADDOCK_ROAM_AREA, gate, waiting: n, act };
 }
 
 interface Size {
@@ -332,6 +337,7 @@ export function castFor(
     roam: null,
     boss: null,
     gate: [],
+    waiting: 0,
     act: { kind: 'calm', line: '' },
   };
   switch (place) {
