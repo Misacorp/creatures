@@ -36,7 +36,7 @@ import {
   stillNeeds,
 } from './market-sample';
 import { glowSprite } from './valley-places';
-import { builtPart, outlineToCome } from './market-art';
+import { builtPart, builtTop, scaffoldToCome } from './market-art';
 
 const order = (over: Partial<ForgeOrder> = {}): ForgeOrder => ({
   baseId: 'kelp-cap',
@@ -178,7 +178,7 @@ describe('the Market project', () => {
     expect(brokerOnDuty({ ...start, broker: 'x' })).toBe(false);
   });
 
-  it('draws the Market from the ground up, the rest as a hollow outline of the same sprite', () => {
+  it('draws the Market from the ground up, wooden scaffolding above it, no outline of the sprite', () => {
     const sprite = glowSprite('market', 'day');
     const count = (rows: readonly string[]): number => rows.join('').replaceAll('.', '').length;
     let before = -1;
@@ -189,19 +189,21 @@ describe('the Market project', () => {
     }
     expect(count(builtPart(sprite, 0).rows)).toBe(0);
     expect(builtPart(sprite, STAGES).rows).toEqual(sprite.rows);
-    // The outline is ink only, thin, and stops where the built part starts.
-    const out = outlineToCome(sprite, 5);
-    expect(Object.keys(out.palette)).toEqual(['k']);
-    expect(count(out.rows)).toBeLessThan(count(sprite.rows) / 4);
+    // The scaffolding is wood, never the finished sprite's colours, and stands only above the built part.
     const height = sprite.rows.length;
-    const laidRows = Math.ceil((height * 5) / STAGES);
-    expect(
-      out.rows
-        .slice(height - laidRows)
-        .join('')
-        .replaceAll('.', ''),
-    ).toBe('');
-    expect(count(outlineToCome(sprite, STAGES).rows)).toBe(0);
+    for (const laid of [0, 3, 5]) {
+      const scaffold = scaffoldToCome(sprite, laid);
+      expect(scaffold.rows.length).toBe(height);
+      const palette = Object.values(scaffold.palette);
+      expect(palette.length).toBeGreaterThan(0);
+      expect(scaffold.rows.slice(builtTop(sprite, laid)).join('').replaceAll('.', '')).toBe('');
+    }
+    // Poles and boards from the ground at the start, a shorter frame later, and none once it is built.
+    expect(count(scaffoldToCome(sprite, 0).rows)).toBeGreaterThan(100);
+    expect(count(scaffoldToCome(sprite, 5).rows)).toBeLessThan(
+      count(scaffoldToCome(sprite, 0).rows),
+    );
+    expect(count(scaffoldToCome(sprite, STAGES).rows)).toBe(0);
   });
 
   it("says the broker's rate, and what mastery changes", () => {
