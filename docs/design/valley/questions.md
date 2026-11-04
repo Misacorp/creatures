@@ -6,7 +6,17 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-Nothing waiting.
+### Q59. Combat v2's deeper dungeon: how much more XP should depth give? (a challenge)
+
+Status: asked, round 26 (2026-11-04). Challenges the combat v2 decision of 2026-11-04 ("on combat v2 dungeon runs, resources and creature XP grow somewhat with depth", with an easier base dungeon) against T-1 (the bench never left behind) and T-6 (a top creature's pace) in `goals.md`. Evidence: `economy/dungeon-depth-xp.md` (the lab, 20 seeds, a server of 8), with the combat session's numbers (a daily player goes about 6.5 depth a week; a top creature's dungeon XP a day 157 / 373 / 449 / 503 / 594 at weeks 1 / 4 / 8 / 12 / 24, against the lab's 120).
+
+**Why it matters.** With the easier dungeon players go much deeper, and a deeper run pays far more XP to the three creatures that fight. In the lab a daily player's best three reach the level cap of 30 by week 8 instead of about week 13, while the rest of the roster stays around level 17; a creature you have owned two weeks falls 8 levels behind your 3rd best instead of 4. Even with no per-depth bonus, deeper runs alone do most of it, so turning the bonus down is not enough.
+
+- **A. Keep it as decided.** Deeper means much more XP. Example: by week 8 your three dungeon creatures are level 30 and the rest about 17; the targets for the bench and for the top creature's pace are restated to fit.
+- **B. Deeper pays loot; XP grows only a little.** A run pays about today's XP at any depth, plus a quarter percent a depth (about +10% at depth 45, +37% at 150); the gear, resources and the Undercroft still grow with depth as decided. Example: your best creature reaches level 30 around week 13, as today, and every target holds.
+- **C. Share it with the bench.** The full extra XP, but half of what is above today's goes to the creatures at home. Example: the best reaches 30 around week 10; the bench gains about 30 XP a day, which barely shows (level 18 instead of 17 at week 8).
+
+**Lead's pick: B.** It keeps your "XP grows somewhat with depth" and makes depth worth chasing through what you find, while the bench stays near its fighters (T-1) and a top creature still takes a season's first three months to max out (T-6). In the lab it is the only option that keeps every target. C spreads the XP too thin to matter.
 
 ## Queue
 
