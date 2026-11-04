@@ -16,7 +16,7 @@ const valleyShell: Entry = {
   defaults: { start: 'valley', away: false, day: 'busy' },
   presets: [
     { name: 'The valley', props: {} },
-    { name: 'The valley, with the away paper', props: { away: true } },
+    { name: 'The valley, with the welcome-back Gazette', props: { away: true } },
     { name: 'The valley, a quiet day', props: { day: 'nothing going on' } },
     { name: 'The valley, nothing waiting', props: { day: 'nothing waiting' } },
     { name: 'Forge, the Workshop inside', props: { start: 'forge' } },

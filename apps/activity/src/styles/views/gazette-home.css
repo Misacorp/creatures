@@ -1,0 +1,131 @@
+/**
+ * Coming home (V-RET-4a): what the visit brought in, large, from the paper's place to the purse in steps,
+ * over everything and never taking a tap. The start and the landing are CSS variables set from the measured
+ * places (`--x0 --y0`, `--x1 --y1`); `--row` stacks a second currency below the first.
+ */
+.gz-fly {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+
+.gz-fly-gain {
+  position: absolute;
+  left: var(--x0);
+  top: calc(var(--y0) + var(--row, 0) * 3.5rem);
+  translate: -50% -50%;
+  display: block;
+  animation: gz-fly var(--flight) steps(14, end) both;
+}
+
+/* The number is the shared count badge on its own dark chip: no outline of its own. */
+.gz-fly-gain .part-amount {
+  font-size: 3rem;
+  line-height: 1;
+  color: var(--gold);
+}
+
+/* The big icon: the badge's own picture, doubled. */
+.gz-fly-gain .part-count > :first-child {
+  scale: 2;
+  margin-inline: 0.5rem;
+}
+
+@keyframes gz-fly {
+  0% {
+    transform: translate(0, 0) scale(0.5);
+  }
+  15% {
+    transform: translate(0, -2.5rem) scale(1.1);
+  }
+  30% {
+    transform: translate(0, -2.5rem) scale(1);
+  }
+  100% {
+    transform: translate(
+        calc(var(--x1) - var(--x0)),
+        calc(var(--y1) - var(--y0) - var(--row, 0) * 3.5rem)
+      )
+      scale(0.45);
+  }
+}
+
+/* Reduced motion and screenshots: no flight; "+N" stands beside the purse. */
+.gz-fly.still .gz-fly-gain {
+  left: var(--x1);
+  top: calc(var(--y1) + var(--row, 0) * 2.25rem);
+  translate: calc(-100% - 3.25rem) -50%;
+  animation: none;
+}
+
+.gz-fly.still .gz-fly-gain .part-amount {
+  font-size: var(--fs-title);
+}
+
+.gz-fly.still .gz-fly-gain .part-count > :first-child {
+  scale: 1;
+  margin-inline: 0;
+}
+
+/* The purse lifts and settles when the numbers land. */
+body:has(.gz-fly[data-landed]) .currency-pile {
+  animation: gz-bump 400ms steps(4, end);
+}
+
+@keyframes gz-bump {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gz-fly-gain {
+    animation: none;
+  }
+
+  body:has(.gz-fly[data-landed]) .currency-pile {
+    animation: none;
+  }
+}
+
+/* The Gazette's reassurance, under the date. */
+.gz-home-note {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--fs-row);
+  line-height: 1.25;
+}
+
+/* The swarm: coins burst out of the paper on a fixed spiral (`--cx --cy`), then arc into the purse. */
+.gz-coin {
+  position: absolute;
+  left: var(--x0);
+  top: var(--y0);
+  translate: -50% -50%;
+  animation: gz-coin calc(var(--flight) * 0.6) steps(12, end) var(--delay) both;
+}
+
+@keyframes gz-coin {
+  0% {
+    transform: translate(0, 0) scale(0.5);
+  }
+  35% {
+    transform: translate(var(--cx), var(--cy)) scale(1);
+  }
+  100% {
+    transform: translate(calc(var(--x1) - var(--x0)), calc(var(--y1) - var(--y0))) scale(0.5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gz-coin {
+    display: none;
+  }
+}

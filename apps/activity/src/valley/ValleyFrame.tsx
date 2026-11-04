@@ -2,8 +2,8 @@
  * The valley shell (`VALLEY` flag on): the game's frame in place of the dock and the tab pages. Under the HUD
  * (the game draws it) it shows one of three things: the map of the valley with the creature tray, a place's
  * page (one of today's pages, drawn by the game as before, under a "‹ Valley" way back), or a place that is not
- * open yet (its scene and one line of what it will be). Notices, the Settings page and the away paper show over
- * it as they do over the tab pages. It draws no navigation of its own beyond the map and the Places list; the
+ * open yet (its scene and one line of what it will be). Notices and the Settings page show over
+ * it as they do over the tab pages; the welcome-back Gazette is a sheet the game draws beside it. It draws no navigation of its own beyond the map and the Places list; the
  * game owns the state (`view`) and every page component, so both shells share them.
  */
 import type { ComponentChildren } from 'preact';
@@ -79,7 +79,7 @@ export function ValleyFrame({
   onBook: (book: 'journal' | 'stats') => void;
   /** Errors, notes, the wipe notice and the level-reset card, over the valley as over the tab pages. */
   notices: ComponentChildren;
-  /** The "While you were away" paper, over the map (the Gazette replaces it in a later step); null when none. */
+  /** The "While you were away" paper, over the map: the game passes null (the welcome-back Gazette, `gazette/WelcomeBack`, is a sheet of its own); the workbench demo still shows the paper here. */
   away: ComponentChildren;
   /** The Settings page when it is open (it takes the screen; the rest stays mounted under it); else null. */
   settings: ComponentChildren;

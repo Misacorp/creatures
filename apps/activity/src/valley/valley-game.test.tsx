@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { GameState } from '../api';
+import type { AwaySummary, GameState } from '../api';
 import { SAMPLE_STATE } from '../creature-card-sample';
 import { Game } from '../Game';
 import { aloneParticipants } from '../participants';
@@ -16,8 +16,14 @@ vi.mock('../use-bleed', async (importOriginal) => ({
 // Every request the game makes goes through `apiFetch`: record its path and fail it (the session is not signed in
 // here, so nothing reaches `fetch` itself).
 const fetched = vi.hoisted((): string[] => []);
+// Today's dismissal of the away notice (`POST /api/away/dismiss`): the `until` of each call.
+const dismissed = vi.hoisted((): number[] => []);
 vi.mock('../api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../api')>()),
+  dismissAway: (until: number) => {
+    dismissed.push(until);
+    return Promise.reject(new Error('offline'));
+  },
   apiFetch: (path: string) => {
     fetched.push(path);
     return Promise.reject(new Error('offline'));
@@ -27,6 +33,7 @@ vi.mock('../api', async (importOriginal) => ({
 // The server is a stand-in: every request fails, which the screens answer with their retry states.
 beforeEach(() => {
   fetched.length = 0;
+  dismissed.length = 0;
   vi.stubGlobal('fetch', (url: unknown) => {
     fetched.push(String(url));
     return Promise.reject(new Error('offline'));
@@ -288,4 +295,47 @@ describe('the places’ scenes above today’s page', () => {
       for (const url of fetched) expect(asked.has(url)).toBe(true);
     },
   );
+});
+
+describe('the welcome-back Gazette in the game', () => {
+  const away: AwaySummary = {
+    sources: [
+      { kind: 'leet', bait: 47, essence: 0, items: 0, creatures: 0, medals: 0, xp: 0 },
+      { kind: 'raid', bait: 0, essence: 96, items: 1, creatures: 0, medals: 0, xp: 240 },
+    ],
+    since: 1,
+    until: 2,
+    tripsWaiting: 1,
+    jobsWaiting: 0,
+  };
+
+  it('on: opens over the valley when today’s notice would show, and the Home paper is not drawn', () => {
+    const p = draw(true, { awayRewards: away });
+    expect(byClass(p.root, 'gz-paper')).toHaveLength(1);
+    expect(byClass(p.root, 'hb-away')).toHaveLength(0);
+    expect(byClass(p.root, 'vy-frame')).toHaveLength(1);
+  });
+
+  it('on: no notice, no Gazette', () => {
+    expect(byClass(draw(true).root, 'gz-paper')).toHaveLength(0);
+  });
+
+  it('on: closing it calls today’s dismiss once, and asks for nothing else', async () => {
+    const p = draw(true, { awayRewards: away });
+    await settle();
+    fetched.length = 0;
+    const close = byName(p.root, 'button', /more thing|Into the valley/)[0];
+    if (close === undefined) throw new Error('no close button');
+    p.click(close);
+    await settle();
+    expect(dismissed).toEqual([2]);
+    expect(fetched).toEqual([]);
+  });
+
+  it('off: today’s away paper on Home, unchanged, and no Gazette', () => {
+    const p = draw(false, { awayRewards: away });
+    expect(byClass(p.root, 'gz-paper')).toHaveLength(0);
+    expect(byClass(p.root, 'hb-away')).toHaveLength(1);
+    expect(byName(p.root, 'button', 'Got it')).toHaveLength(1);
+  });
 });
