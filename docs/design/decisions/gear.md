@@ -4,6 +4,14 @@ Gear items, lines and sets, crafting, dismantling, conversions, the bag and the 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-04: [Misa] A hidden best-of gear roller: roll X to Y, keep the best N to M
+
+ID: `2026-11-04-a-hidden-best-of-gear-roller` · Status: current
+
+**Decision.** Misa (2026-11-04): "For increasing rewards in general across the game I'd like to build a system that basically rolls X to Y pieces of gear and selects N to M of the best ones to reward to the player. All values are variables that dungeon depth, raid boss rank or any other modifier can later modify. For now let's keep them hidden from players." Built as `rollBestOf(rng, spec, rollOne)` in `packages/game/src/rules/best-of.ts`: R is drawn in `spec.rolls` (min to max), the pieces are rolled with `rollOne`, ranked best first (rarity, then item level, then the sum of the rolled lines' tiers; ties keep roll order) and K in `spec.keep` (K at most R) are kept. A spec is data, `{ rolls: {min,max}, keep: {min,max} }`; `adjustSpec` moves it by a context (`depth`, `undercroftLevel`, `bossRank`) with data steps (`field`, `by`, `from`, `every`, `add`, `cap`). Nothing is shown to players: no text, no UI, no API field carries a spec. Combat v1 always uses `SINGLE_ROLL` (rolls 1, keep 1): a range of one number draws nothing, so `rollDungeonLoot`, `rollSealedBonus` and `rollUndercroftChest` consume the rng exactly as before (v1 tests and fixtures unchanged). Wired into the dungeon's chests (main, keeper, sealed bonus) on combat v2 only. The raid's kill bonus is not changed; the roller can serve it later with `bossRank`.
+
+**Reasoning.** One knob serves both amount (keep) and quality (rolls: the best of more rolls) and can be turned by any context later, so each reward source does not need its own odds table. Ranking by rarity first matches how players read a piece; item level and line tiers break ties so a deeper roll is never worse. A degenerate spec equal to today's single roll keeps the shipped game byte-identical, which is the safety line while production plays v1. Tests: counts inside the ranges, keeps the best, deterministic with a seed, rolls 1 keep 1 equals a plain `rollItem` with the same rng and leaves the stream in the same place.
+
 ## 2026-11-03: [Misa] Element shards differ by shape (Tide drop, Ember flame, Grove leaf, Spark bolt, Mire drip)
 
 ID: `2026-11-03-element-shards-differ-by-shape-tide` · Status: current

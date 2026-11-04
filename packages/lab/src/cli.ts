@@ -204,7 +204,7 @@ async function fourSlot(quick: boolean, run: JobRunner): Promise<number> {
   return 0;
 }
 
-/** `--dungeon-days [--quick] [--scenarios a,b] [--step-back n] [--servers n]`: each player's daily dungeon runs over 24 weeks (`dungeonDays.ts`), to the console (nothing is written). */
+/** `--dungeon-days [--quick] [--rewards] [--scenarios a,b] [--step-back n] [--servers n]`: each player's daily dungeon runs over 24 weeks (`dungeonDays.ts`), to the console (nothing is written). */
 async function dungeonDays(
   args: readonly string[],
   quick: boolean,
@@ -219,6 +219,7 @@ async function dungeonDays(
       quick,
       ...(scenarios ? { scenarios } : {}),
       ...(stepBack > 0 ? { stepBack } : {}),
+      ...(args.includes('--rewards') ? { rewards: true } : {}),
       ...(servers ? { servers: Number(servers) } : {}),
     }),
     run,

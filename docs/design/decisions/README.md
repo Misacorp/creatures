@@ -288,6 +288,7 @@ Superseded: 1 entry (see the topic file).
 
 [dungeon.md](dungeon.md): The daily dungeon: paths, rooms and rare rooms, the camp, the Undercroft, foes, its screens and payouts.
 
+- 2026-11-04 \[Misa\] Combat v2 dungeon rewards and XP grow with depth, the Undercroft alike
 - 2026-11-04 \[Misa\] A depth choice before a run, with reward scalars
 - 2026-11-04 Combat v2 dungeon measures in the lab: safe gain, the descent choice, a four-slot team
 - 2026-11-04 \[Misa\] Dungeon direction: an easy base dungeon, a hard Undercroft, the descent is the choice
@@ -361,6 +362,7 @@ Superseded: 1 entry (see the topic file).
 
 [gear.md](gear.md): Gear items, lines and sets, crafting, dismantling, conversions, the bag and the item picker.
 
+- 2026-11-04 \[Misa\] A hidden best-of gear roller: roll X to Y, keep the best N to M
 - 2026-11-03 \[Misa\] Element shards differ by shape (Tide drop, Ember flame, Grove leaf, Spark bolt, Mire drip)
 - 2026-10-31 Gear in combat v2: talents lead early, a balance mid-game, gear leads the endgame; no slot level requirements; gear alone can build crit \[Misa\]
 - 2026-10-31 \[Misa\] Items with no element get an oat-beige coat instead of grey
