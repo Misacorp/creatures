@@ -14,7 +14,11 @@ vi.mock('../use-bleed', async (importOriginal) => ({
 
 // The server is a stand-in: every request fails, which the screens answer with their retry states.
 beforeEach(() => {
-  vi.stubGlobal('fetch', () => Promise.reject(new Error('offline')));
+  fetched.length = 0;
+  vi.stubGlobal('fetch', (url: unknown) => {
+    fetched.push(String(url));
+    return Promise.reject(new Error('offline'));
+  });
   vi.stubGlobal(
     'ResizeObserver',
     class {
@@ -24,6 +28,7 @@ beforeEach(() => {
   );
 });
 
+const fetched: string[] = [];
 let page: Page | null = null;
 afterEach(() => {
   page?.unmount();
@@ -105,5 +110,18 @@ describe('the valley flag in the game', () => {
     if (back === undefined) throw new Error('no way back');
     p.click(back);
     expect(byClass(p.root, 'vy-valley')).toHaveLength(1);
+  });
+
+  it('on: "‹ Valley" only changes the view; the map loads nothing', () => {
+    const p = draw(true);
+    const door = byName(p.root, 'button', /^Forge,/)[0];
+    if (door === undefined) throw new Error('no Forge');
+    p.click(door);
+    fetched.length = 0;
+    const back = byClass(p.root, 'drill-back')[0];
+    if (back === undefined) throw new Error('no way back');
+    p.click(back);
+    expect(byClass(p.root, 'vy-valley')).toHaveLength(1);
+    expect(fetched).toEqual([]);
   });
 });

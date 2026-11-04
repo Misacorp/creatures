@@ -13,6 +13,7 @@ export function PinnedAct({
   detail,
   onClick,
   calm,
+  mark = true,
 }: {
   /** The next step, in the button's words. */
   label?: string;
@@ -20,11 +21,13 @@ export function PinnedAct({
   onClick?: () => void;
   /** Nothing needs you: the calm line instead of a button. */
   calm?: string;
+  /** The check mark before a calm line (default). Off where a check would read as "done" (a place not open yet). */
+  mark?: boolean;
 }) {
   if (calm !== undefined) {
     return (
       <p class="vy-calm" role="status">
-        <Glyph id="check" scale={2} />
+        {mark && <Glyph id="check" scale={2} />}
         <span>{calm}</span>
       </p>
     );

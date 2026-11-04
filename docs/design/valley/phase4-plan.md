@@ -50,7 +50,7 @@ The prototype (`apps/activity/src/proto/valley/`, `proto/welcome/`, dev only) is
 2. **Bubbles and state lines** from today's alerts and timers.
 3. **The scenes** for the places whose work stays in phase 5 (the lounger at the house, the dungeon team at the cave, the raid party at the arena, the Games' entries at the fairground, the roster in the paddock). Not the Signpost's trips or the Forge's jobs: phase 5 replaces both with posts (Q2), so their scenes wait for posts and the places open today's pages (Q57).
 4. **The Gazette** from today's away notice, closing with the currencies flying into the purse (V-RET-4a, Q56).
-5. **Desktop and accessibility**, the panel at both widths, the gate's end-to-end checklist, then Misa on staging.
+5. **Desktop and accessibility** (at 1100 px the map still pans sideways, because the valley is 1152 px wide and the card has padding; decide whether a desktop fits or keeps panning), the panel at both widths, the gate's end-to-end checklist, then Misa on staging.
 
 ## Decided with Misa (round 25)
 

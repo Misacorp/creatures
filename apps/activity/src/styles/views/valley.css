@@ -77,6 +77,7 @@ main.card:has(.vy-frame) > .hud {
 .vy-page {
   flex: 1;
   min-height: 0;
+  min-width: 0;
   padding: 0.75rem 1rem 1rem;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -88,6 +89,7 @@ main.card:has(.vy-frame) > .hud {
 
 .vy-house {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
 }
 
@@ -508,7 +510,7 @@ main.card:has(.vy-frame) > .hud {
   z-index: 20;
   left: 0.5rem;
   right: 0.5rem;
-  bottom: 0.5rem;
+  bottom: max(1rem, var(--discord-safe-area-inset-bottom, 0px));
   display: grid;
   gap: 0.375rem;
   max-width: 30rem;

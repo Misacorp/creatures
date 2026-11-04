@@ -453,7 +453,8 @@ export function Game({
   const leavePlace = (): void => {
     setFocusPlace(placeOfView(view));
     setHomeAt('valley');
-    select('home');
+    // Only the view changes: the map draws creatures the state already holds, so it loads nothing.
+    goTo('home');
   };
   const placeLabelBeforeSettings = valleyOn
     ? valleyTitle(view)
@@ -627,7 +628,7 @@ export function Game({
                 // In the valley the books are the House's two entries: Back returns to the House.
                 onBack: () => {
                   setHomeAt('house');
-                  select('home');
+                  goTo('home');
                 },
                 backLabel: 'to the House',
               }

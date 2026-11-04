@@ -118,7 +118,7 @@ export function ValleyFrame({
         {view.kind === 'soon' && (
           <section class="vy-soon" aria-label={placeLabel(view.place)}>
             <DrillHead
-              title={placeOf(view.place).name}
+              title="Not open yet"
               backLabel={`(leave the ${placeOf(view.place).name})`}
               word="Valley"
               onBack={onLeave}
@@ -130,7 +130,7 @@ export function ValleyFrame({
               draw={placeSceneDraw(SOON_ART[view.place])}
               scaleFor={(width, height) => placeScale(width, height, SOON_ART[view.place])}
               onLeave={onLeave}
-              act={<PinnedAct calm={soonLine(view.place)} />}
+              act={<PinnedAct calm={soonLine(view.place)} mark={false} />}
             />
           </section>
         )}
@@ -142,7 +142,6 @@ export function ValleyFrame({
                 backLabel={`(leave the ${placeOf(view.place).name})`}
                 word="Valley"
                 onBack={onLeave}
-                scroll
                 focus
               />
             )}
