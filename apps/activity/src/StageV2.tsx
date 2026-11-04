@@ -178,6 +178,16 @@ function GuardBursts({
   );
 }
 
+/**
+ * The shield glyph without its ink outline (the `k` cells): the outline is near black, so scaled up and faded it draws a dark box on the
+ * tile. Only the shield's own light pixels are drawn.
+ */
+function burstShield() {
+  const glyph = glyphOrUnknown('shield');
+  return { ...glyph, rows: glyph.rows.map((row) => row.replaceAll('k', '.')) };
+}
+const BURST_SHIELD = burstShield();
+
 function GuardBurst({
   guard,
   ms,
@@ -212,7 +222,7 @@ function GuardBurst({
   }, [guard, ms]);
   return (
     <span class="guard-burst" ref={ref}>
-      <Sprite sprite={glyphOrUnknown('shield')} scale={1} class="burst-shield" />
+      <Sprite sprite={BURST_SHIELD} scale={1} class="burst-shield" />
     </span>
   );
 }

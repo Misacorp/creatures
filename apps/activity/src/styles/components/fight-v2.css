@@ -515,7 +515,7 @@
   A Guard's save from the Guard itself: the shield glyph on the stage's overlay layer (above the board, clipped to the stage so it never
   scrolls the page), its centre on the Guard tile's centre (--bx, --by, set from the tile's box). It starts as large as the shields on
   the covered creatures (2.5 rem) and scales up to 2.5 times that while fading out, over the same time as they last. Reduced motion
-  (and the workbench's held frames): one still, large, half-clear shield.
+  (and the workbench's held frames): one still, large shield.
 */
 .stage-v2 .stage-bursts {
   position: absolute;
@@ -532,13 +532,15 @@
   height: 2.5rem;
   margin: -1.25rem 0 0 -1.25rem;
   transform: scale(2);
-  opacity: 0.55;
+  opacity: 0.75;
 }
 
 .guard-burst canvas.burst-shield {
   display: block;
   width: 100%;
   height: 100%;
+  /* Brighter, nearly opaque until the end, so it reads as a shield. (Its dark ink outline is left out of the drawing: see `GuardBurst`.) */
+  filter: brightness(1.3);
   image-rendering: pixelated;
 }
 
@@ -557,8 +559,8 @@
       transform: scale(1);
     }
 
-    55% {
-      opacity: 0.7;
+    60% {
+      opacity: 0.9;
     }
 
     100% {
@@ -639,11 +641,12 @@
 }
 
 .party-slot .slot-pattern.up {
-  --pattern-ink: rgb(var(--gold-rgb) / 38%);
+  /* A saturated gold, a solid mid-bright colour rather than a see-through one: a low-alpha yellow over the dusk tile goes olive and brown. Quiet because it sits behind everything and is dimmer than the text. */
+  --pattern-ink: #a98f14;
 }
 
 .party-slot .slot-pattern.down {
-  --pattern-ink: rgb(var(--bad-rgb) / 38%);
+  --pattern-ink: #b02f40;
 }
 
 .party-slot .slot-pattern.down i {
