@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { homeAlerts } from '../home-view';
+import { homeAlerts, type HomeInput } from '../home-view';
 import { NO_ALERTS } from '../tab-alerts';
 import { HOME_NOW, homeInput } from '../workbench/home-sample';
 import {
@@ -15,7 +15,7 @@ import { OPEN_PLACES } from './valley-nav';
 const busy = homeInput('busy', true);
 const waiting = homeInput('nothing waiting', true);
 const quiet = homeInput('nothing going on', true);
-const bubblesOf = (i: PlaceInput) => placeBubbles(homeAlerts(i), i);
+const bubblesOf = (i: HomeInput) => placeBubbles(homeAlerts(i), i);
 
 describe("placeBubbles: today's pips on the places", () => {
   it('a quiet day has no bubble', () => {
@@ -45,13 +45,13 @@ describe("placeBubbles: today's pips on the places", () => {
       count: 2,
       spoken: '2 events to enter',
     });
-    const catches: PlaceInput = { ...quiet, pending: 3 };
+    const catches: HomeInput = { ...quiet, pending: 3 };
     expect(bubbleAt(bubblesOf(catches), 'paddock')).toMatchObject({
       glyph: 'paw',
       count: 3,
       spoken: '3 catches await your choice',
     });
-    const one: PlaceInput = { ...quiet, pending: 1 };
+    const one: HomeInput = { ...quiet, pending: 1 };
     expect(bubbleAt(bubblesOf(one), 'paddock')).toMatchObject({ count: null });
   });
 
