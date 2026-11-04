@@ -200,7 +200,11 @@ export function teacherNote(s: LessonState): TeacherNote {
   }
   const send = s.eligible > 0 && s.seatFree;
   if (s.seatedNames.length > 0) {
-    const line = `${s.seatedNames.join(' and ')} learns ${name} by morning`;
+    // One student "learns"; two or more are listed without a verb, so the line is short and never says "Cindle and Mistnewt learns".
+    const line =
+      s.seatedNames.length === 1
+        ? `${s.seatedNames[0] ?? ''} learns ${name} by morning`
+        : `${s.seatedNames.join(', ')}: ${name} by morning`;
     return { line, short: line, action: send ? SEND : null, news: true };
   }
   if (s.phase === 'gone') {

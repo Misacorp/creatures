@@ -126,7 +126,7 @@ export function SignpostScene({
         />
       </div>
       <div class="pv-act">
-        {waiting !== undefined && <StoryPlate waiting={waiting} stage={false} />}
+        {waiting !== undefined && <StoryPlate waiting={waiting} stage={false} place="signpost" />}
         <div class="pv-act-row">
           {place !== null && closed.length === 0 && !full && (
             <ul class="pv-packs" aria-label="Pack a supply">

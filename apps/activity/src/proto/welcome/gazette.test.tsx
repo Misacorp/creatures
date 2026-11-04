@@ -11,7 +11,7 @@ import {
 } from '../../test-dom';
 import { Finds, MAX_ROW, rowEntries, splitRow } from './Gazette';
 import { welcomeOf, type Find, type Story } from './highlights';
-import { StoryPlate } from './PlaceStories';
+import { StoryPlate, resetFolds, storyChipText } from './PlaceStories';
 import { DAILY, WEEKLY } from './journey';
 import { castOf, markerBubbles, welcomeWorld } from './welcome-world';
 
@@ -25,6 +25,7 @@ let page: Page | null = null;
 afterEach(() => {
   page?.unmount();
   page = null;
+  resetFolds();
   vi.unstubAllGlobals();
 });
 
@@ -126,7 +127,7 @@ describe('what a story found', () => {
 
 describe('a place telling its waiting stories', () => {
   /** A phone: no hover. The plate is drawn on its own (the creatures' strip is only for a place with no floor). */
-  function drawPlate(stories: readonly Story[]): Page {
+  function drawPlate(stories: readonly Story[], place = 'school'): Page {
     if (!('window' in globalThis)) {
       vi.stubGlobal('window', {
         matchMedia: () => ({ matches: false }),
@@ -137,7 +138,7 @@ describe('a place telling its waiting stories', () => {
     page = createPage();
     page.draw(
       <PopoverHost onOpenHowTo={() => undefined}>
-        <StoryPlate waiting={{ stories, cast, items: world.items }} stage={false} />
+        <StoryPlate waiting={{ stories, cast, items: world.items }} stage={false} place={place} />
       </PopoverHost>,
     );
     return page;
@@ -189,6 +190,62 @@ describe('a place telling its waiting stories', () => {
     expect(byClass(p.root, 'find-card')).toHaveLength(0);
     // A small find has its picture only: no name or tags beside it (the name is for screen readers).
     expect(byClass(p.root, 'find-row-tags')).toHaveLength(0);
+  });
+});
+
+describe('folding a place’s stories', () => {
+  const stories = (): Story[] =>
+    welcomeOf(WEEKLY, WEEKLY.visits.length - 1, cast).markers.flatMap((m) => m.stories);
+
+  function drawPlate(place: string): Page {
+    if (!('window' in globalThis)) {
+      vi.stubGlobal('window', {
+        matchMedia: () => ({ matches: false }),
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      });
+    }
+    page = createPage();
+    page.draw(
+      <PopoverHost onOpenHowTo={() => undefined}>
+        <StoryPlate
+          waiting={{ stories: stories(), cast, items: world.items }}
+          stage={false}
+          place={place}
+        />
+      </PopoverHost>,
+    );
+    return page;
+  }
+
+  it('says how many stories wait on the chip it folds to', () => {
+    expect(storyChipText(1)).toBe('1 story');
+    expect(storyChipText(3)).toBe('3 stories');
+  });
+
+  it('folds to a small chip on a tap and unfolds on another', () => {
+    const p = drawPlate('school');
+    expect(byClass(p.root, 'wb-clip')).toHaveLength(1);
+    p.click(first(byClass(p.root, 'wb-clip-fold')));
+    expect(byClass(p.root, 'wb-clip')).toHaveLength(0);
+    const chip = first(byClass(p.root, 'wb-clip-chip'));
+    expect(visibleText(chip)).toBe(storyChipText(stories().length));
+    p.click(chip);
+    expect(byClass(p.root, 'wb-clip')).toHaveLength(1);
+  });
+
+  it('keeps a fold for that place only, and a place visited again starts folded', () => {
+    let p = drawPlate('school');
+    p.click(first(byClass(p.root, 'wb-clip-fold')));
+    p.unmount();
+    page = null;
+    p = drawPlate('school');
+    expect(byClass(p.root, 'wb-clip')).toHaveLength(0);
+    expect(byClass(p.root, 'wb-clip-chip')).toHaveLength(1);
+    p.unmount();
+    page = null;
+    p = drawPlate('forge');
+    expect(byClass(p.root, 'wb-clip')).toHaveLength(1);
   });
 });
 

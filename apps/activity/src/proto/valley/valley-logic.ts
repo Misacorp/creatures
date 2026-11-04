@@ -470,6 +470,19 @@ export function stepWalker(w: Walker, rng: Rng, area: Rect): Walker {
   };
 }
 
+// --- The creature held in the tray ---
+
+/** The places that use the creature held in the tray (it is the one they work with). Every other place ignores it. */
+const USES_HELD: readonly PlaceId[] = ['signpost', 'forge', 'arena', 'market'];
+
+/**
+ * The creature that stays held (gold frame in the tray) on entering a place: only a place that uses it. The School,
+ * the Bonfire and the rest do nothing with it, so a frame left on one creature there would point at nothing.
+ */
+export function heldOnEntering(place: PlaceId, held: string | null): string | null {
+  return USES_HELD.includes(place) ? held : null;
+}
+
 /** The hop: 1 px up on every other step while walking. */
 export function hopOf(w: Walker): number {
   const walking = w.rest === 0 && (w.x !== w.tx || w.y !== w.ty);

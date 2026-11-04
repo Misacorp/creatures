@@ -53,6 +53,7 @@ import {
   readingOrder,
   weekClock,
   type WeekClock,
+  heldOnEntering,
 } from './valley-logic';
 import { ValleyMap } from './ValleyMap';
 import { ZoomCut } from './ZoomCut';
@@ -237,7 +238,7 @@ export function Valley({
         forge: null,
         houseChoosing: id === 'house' && withCreature !== null,
         send: NO_SEND,
-        held: id === 'house' ? null : withCreature,
+        held: heldOnEntering(id, withCreature),
       }));
     };
     if (still) go();

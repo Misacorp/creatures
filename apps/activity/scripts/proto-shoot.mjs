@@ -9,7 +9,7 @@
  *
  * With `--shots` it takes named shots of any address instead of the tour: each `<hash>` is what follows `#` in
  * `prototype.html#...` (the return walk: `walk?step=1&visit=3&bare=1&t=4500`; `&t=<ms>` holds the walk at that
- * moment, a large one is its end), saved as `<out>/shots/<name>-<size>.png`. No flow sheets.
+ * moment, a large one is its end; `<hash>>Market` also taps the button named Market, `>Hide` the next, and so on), saved as `<out>/shots/<name>-<size>.png`. No flow sheets.
  *
  * Sizes: phone 390x844 (with Discord's phone safe areas, 40 px top and 24 px bottom, as `screens.mjs`) and
  * desktop 1440x900. Each shot opens `prototype.html#<proto>?step=<n>&bare=1` (`bare` hides the tour strip),
@@ -126,7 +126,13 @@ try {
       const { width, height } = SIZES[sizeName];
       const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 });
       for (const [name, hash] of opts.shots) {
-        const { page, errors } = await openShot(ctx, sizeName, hash);
+        // `<hash>><label>>...`: after loading, tap the button whose name starts with each label in turn (a place's marker, "Hide").
+        const [address, ...taps] = hash.split('>');
+        const { page, errors } = await openShot(ctx, sizeName, address ?? hash);
+        for (const label of taps) {
+          await page.getByRole('button', { name: label }).last().click();
+          await page.waitForTimeout(opts.wait);
+        }
         const file = join(opts.out, 'shots', `${name}-${sizeName}.png`);
         await page.screenshot({ path: file });
         for (const message of errors) console.error(`${name}: ${message}`);

@@ -211,7 +211,7 @@ export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: Pl
           // The pupils stand as wide apart as the screen lets them (at the biggest pixel a phone is only 72 wide).
           const gap = Math.min(
             PUPIL_GAP,
-            Math.floor((g.W - SPRITE - 4) / Math.max(1, yard.length - 1)),
+            Math.floor((g.W - SPRITE - 14) / Math.max(1, yard.length - 1)),
           );
           const door = layout.spots['door'] ?? { x: g.cx, y: layout.below - 8 };
           const bell = layout.at(32, 6);
@@ -249,7 +249,7 @@ export function SchoolScene({ world, onLeave, waiting, look = DEFAULT_LOOK }: Pl
                 pupilButton(
                   p,
                   g.X(g.cx + (k - (yard.length - 1) / 2) * gap - SPRITE / 2),
-                  g.Y(layout.below + (gathered.length > 0 ? 8 : 3)),
+                  g.Y(layout.below + (gathered.length > 0 ? 6 : 0)),
                   g.s,
                   k % 2 === 1,
                 ),

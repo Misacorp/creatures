@@ -200,6 +200,13 @@ describe('what the School says about the teacher', () => {
     expect(teacherNote({ ...base, seatedNames: ['Moss'] }).line).toBe(
       'Moss learns Rally Cry by morning',
     );
+    // Two or more: no verb to get wrong, and short enough for one line.
+    expect(teacherNote({ ...base, seatedNames: ['Cindle', 'Mistnewt'] }).line).toBe(
+      'Cindle, Mistnewt: Rally Cry by morning',
+    );
+    expect(teacherNote({ ...base, seatedNames: ['Cindle', 'Mistnewt'] }).line).not.toMatch(
+      /learns/,
+    );
     expect(teacherNote({ ...base, learnedBy: 'Moss' }).line).toBe("Rally Cry is in Moss's book");
   });
 

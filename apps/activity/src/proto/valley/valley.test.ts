@@ -21,6 +21,7 @@ import {
   evolveInto,
   fitValley,
   freeTabs,
+  heldOnEntering,
   hopOf,
   maxScroll,
   newWalker,
@@ -681,5 +682,25 @@ describe('the Places list and the tray’s mastery', () => {
     expect(workOf('market')).toBe('trading');
     expect(workOf('valley')).toBeNull();
     expect(workOf('arena')).toBeNull();
+  });
+});
+
+describe('the creature held in the tray', () => {
+  it('stays held only in a place that uses it, so the School shows no frame that points at nothing', () => {
+    for (const place of ['signpost', 'forge', 'arena', 'market'] as const) {
+      expect(heldOnEntering(place, 'c1')).toBe('c1');
+    }
+    for (const place of [
+      'school',
+      'bonfire',
+      'visitor',
+      'house',
+      'cave',
+      'fair',
+      'paddock',
+    ] as const) {
+      expect(heldOnEntering(place, 'c1')).toBeNull();
+    }
+    expect(heldOnEntering('market', null)).toBeNull();
   });
 });

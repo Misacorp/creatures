@@ -117,7 +117,7 @@ export function SceneFrame({
       </div>
       {(hasAct || hasStories) && (
         <div class="pv-act">
-          {waiting !== undefined && <StoryPlate waiting={waiting} scale={g.s} />}
+          {waiting !== undefined && <StoryPlate waiting={waiting} place={id} />}
           {hasAct && act}
         </div>
       )}

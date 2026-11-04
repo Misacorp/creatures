@@ -45,6 +45,12 @@ function whoIs(who: Who, cast: Cast): { shiny: boolean; info: CreatureInfo | nul
   };
 }
 
+/** The species and shininess of who acts (for a small face that needs no popover). */
+export function whoLooks(who: Who, cast: Cast): { species: string; shiny: boolean } {
+  const looks = whoIs(who, cast);
+  return { species: looks.info?.species ?? 'splashet', shiny: looks.shiny };
+}
+
 /** A prop of a scene, drawn at its scale. */
 function PropArt({ prop, scale }: { prop: Prop; scale: number }) {
   switch (prop.kind) {
