@@ -10,8 +10,10 @@ import { Valley } from '../valley/Valley';
 import '../valley/valley.css';
 import '../valley/valley-scenes.css';
 import './welcome.css';
+import './coming-home.css';
 import { DAILY, WEEKLY, placeLevelAt, replayTitle, type Journey } from './journey';
 import { welcomeOf } from './highlights';
+import { homeGains } from './coming-home';
 import { castOf, welcomeWorld } from './welcome-world';
 
 const STEPS: readonly { id: string; title: string; journey: Journey }[] = [
@@ -54,6 +56,7 @@ registerProto({
                 },
               }),
           bonfireLevel: placeLevelAt(chosen.journey, index, 'bonfire'),
+          home: visitAt === undefined ? [] : homeGains(visitAt),
         }}
       />
     );

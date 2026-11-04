@@ -61,6 +61,8 @@ import type { Cast, Welcome } from '../welcome/highlights';
 import type { Waiting } from '../welcome/PlaceStories';
 import { storiesAt, unseenMarkers } from '../welcome/place-stories';
 import { WelcomeSheet } from '../welcome/WelcomeSheet';
+import { ComingHome } from '../welcome/ComingHome';
+import { flyMode, flyParam, type HomeGain, type Point } from '../welcome/coming-home';
 import { markerBubbles, startsClosed } from '../welcome/welcome-world';
 
 /** Where the player is, and the moment a place opens on. */
@@ -95,6 +97,8 @@ export interface WelcomeSetup {
   clock?: WeekClock;
   /** The bonfire's place level at this visit (the grand hearth from 2); else 1. */
   bonfireLevel?: number;
+  /** What the visit brought into the purse: it flies in when the popup closes (V-RET-4a). */
+  home?: readonly HomeGain[];
 }
 
 const NO_SEND: SendPicks = { place: null, supply: null };
@@ -162,6 +166,10 @@ export function Valley({
       welcome.welcome.show &&
       !(typeof window !== 'undefined' && startsClosed(window.location.hash)),
   );
+  /** The coming-home moment: where the paper was when the popup closed; null when none plays. */
+  const [homing, setHoming] = useState<Point | null>(null);
+  /** The purse bumps while this is true (the numbers just landed). */
+  const [bump, setBump] = useState(false);
   const liveStep = useRef(step);
   const [zoom, setZoom] = useState<PlaceId | null>(null);
   const pending = useRef<(() => void) | null>(null);
@@ -480,7 +488,7 @@ export function Valley({
             >
               <Glyph id="flag" scale={3} />
             </button>
-            <div class="pv-hud-end">
+            <div class={`pv-hud-end${bump ? ' pv-bump' : ''}`}>
               <CurrencyPile balances={world.balances} loadLedger={() => Promise.resolve([])} />
               <SettingsButton onSettings={() => undefined} />
             </div>
@@ -514,8 +522,27 @@ export function Valley({
             cast={welcome.cast}
             items={welcome.world.items}
             open={welcomeOpen}
-            onClose={() => {
+            onClose={(paperAt) => {
               setWelcomeOpen(false);
+              if ((welcome.home?.length ?? 0) > 0) setHoming(paperAt);
+            }}
+          />
+        )}
+        {welcome !== undefined && homing !== null && (
+          <ComingHome
+            gains={welcome.home ?? []}
+            from={homing}
+            mode={flyMode({
+              reduced,
+              still: isStill(),
+              param: flyParam(typeof window === 'undefined' ? '' : window.location.hash),
+            })}
+            onLand={() => {
+              if (!reduced) setBump(true);
+            }}
+            onDone={() => {
+              setHoming(null);
+              setBump(false);
             }}
           />
         )}

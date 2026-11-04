@@ -209,6 +209,7 @@ export function Gazette({
       <header class="wb-masthead">
         <h2 class="wb-paper-title pix">The Valley Gazette</h2>
         <p class="wb-dateline pix">{date}</p>
+        <p class="wb-home-note">Everything your creatures found is already home.</p>
       </header>
       {lead !== undefined && (
         <section class="wb-lead">
