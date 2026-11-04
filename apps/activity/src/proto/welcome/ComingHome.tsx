@@ -12,8 +12,13 @@ import { cssVars } from '../../css-vars';
 import { BAIT_ICON, ESSENCE_ICON } from '../../count-items';
 import { resourceIconRef } from '../../icon-ref';
 import { CountBadge } from '../../ui/CountBadge';
+import { GameIcon } from '../../ui/GameIcon';
 import {
   BUMP_MS,
+  coinCount,
+  coinDelay,
+  coinOffset,
+  countSteps,
   COUNT_STEPS,
   FLIGHT_MS,
   NOTE_MS,
@@ -41,6 +46,7 @@ export function ComingHome({
   gains,
   from,
   mode,
+  onCount,
   onLand,
   onDone,
 }: {
@@ -48,6 +54,8 @@ export function ComingHome({
   /** Where the paper was when it closed. */
   from: Point;
   mode: FlyMode;
+  /** How much of a currency has landed so far, for the purse's own count-up (display only). */
+  onCount: (resource: string, counted: number) => void;
   /** The numbers landed: the purse bumps. */
   onLand: () => void;
   /** The moment is over (it ran out, or a tap finished it). */
@@ -55,6 +63,13 @@ export function ComingHome({
 }) {
   const to = useMemo(purseTarget, []);
   const [step, setStep] = useState(mode === 'mid' ? Math.floor(COUNT_STEPS / 2) - 1 : 0);
+
+  // The purse counts with the numbers.
+  useEffect(() => {
+    for (const g of gains) {
+      onCount(g.resource, mode === 'still' ? g.amount : (countSteps(g.amount)[step] ?? g.amount));
+    }
+  }, [step, mode]);
 
   // The count-up: one step per tick over the flight; the purse bumps on the last, the moment ends after the bump.
   useEffect(() => {
@@ -107,6 +122,26 @@ export function ComingHome({
         '--flight': `${String(FLIGHT_MS)}ms`,
       })}
     >
+      {mode !== 'still' &&
+        gains.flatMap((g) => {
+          const n = coinCount(g.amount);
+          return Array.from({ length: n }, (_, i) => {
+            const at = coinOffset(i, n);
+            return (
+              <span
+                key={`${g.resource}-${String(i)}`}
+                class="wb-coin"
+                ref={cssVars({
+                  '--cx': `${String(at.x)}px`,
+                  '--cy': `${String(at.y)}px`,
+                  '--delay': `${String(coinDelay(i, n))}ms`,
+                })}
+              >
+                <GameIcon icon={iconOf(g.resource)} scale={3} />
+              </span>
+            );
+          });
+        })}
       {gains.map((g, i) => (
         <span
           key={g.resource}

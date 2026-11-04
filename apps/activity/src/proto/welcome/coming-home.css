@@ -113,3 +113,35 @@
   font-size: 0.9375rem;
   line-height: 1.25;
 }
+
+/* The swarm: coins burst out of the paper on a fixed spiral (`--cx --cy`), then arc into the purse. */
+.wb-coin {
+  position: absolute;
+  left: var(--x0);
+  top: var(--y0);
+  translate: -50% -50%;
+  animation: wb-coin calc(var(--flight) * 0.6) steps(12, end) var(--delay) both;
+}
+
+@keyframes wb-coin {
+  0% {
+    transform: translate(0, 0) scale(0.5);
+  }
+  35% {
+    transform: translate(var(--cx), var(--cy)) scale(1);
+  }
+  100% {
+    transform: translate(calc(var(--x1) - var(--x0)), calc(var(--y1) - var(--y0))) scale(0.5);
+  }
+}
+
+.wb-fly.mid .wb-coin {
+  animation-play-state: paused;
+  animation-delay: calc(var(--delay) - var(--flight) * 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-coin {
+    display: none;
+  }
+}

@@ -62,7 +62,7 @@ import type { Waiting } from '../welcome/PlaceStories';
 import { storiesAt, unseenMarkers } from '../welcome/place-stories';
 import { WelcomeSheet } from '../welcome/WelcomeSheet';
 import { ComingHome } from '../welcome/ComingHome';
-import { flyMode, flyParam, type HomeGain, type Point } from '../welcome/coming-home';
+import { flyMode, flyParam, purseDisplay, type HomeGain, type Point } from '../welcome/coming-home';
 import { markerBubbles, startsClosed } from '../welcome/welcome-world';
 
 /** Where the player is, and the moment a place opens on. */
@@ -170,6 +170,8 @@ export function Valley({
   const [homing, setHoming] = useState<Point | null>(null);
   /** The purse bumps while this is true (the numbers just landed). */
   const [bump, setBump] = useState(false);
+  /** How much Bait of the visit's gain has landed in the purse so far (its count-up; display only). */
+  const [landed, setLanded] = useState(0);
   const liveStep = useRef(step);
   const [zoom, setZoom] = useState<PlaceId | null>(null);
   const pending = useRef<(() => void) | null>(null);
@@ -456,6 +458,19 @@ export function Valley({
       break;
   }
 
+  // While the coming-home numbers fly the purse counts up to the total (the total was in already).
+  const bait = welcome?.home?.find((g) => g.resource === 'bait')?.amount ?? 0;
+  const counting =
+    homing !== null &&
+    bait > 0 &&
+    flyMode({
+      reduced,
+      still: isStill(),
+      param: flyParam(typeof window === 'undefined' ? '' : window.location.hash),
+    }) !== 'still';
+  const purseBalances = counting
+    ? { ...world.balances, bait: purseDisplay(world.balances.bait, bait, landed) }
+    : world.balances;
   const bubbles = welcome === undefined ? bubblesOf(world) : markerBubbles(markers);
   const states = placeStates(world, look);
   const where = view.scene === 'valley' ? null : placeOf(view.scene);
@@ -489,7 +504,7 @@ export function Valley({
               <Glyph id="flag" scale={3} />
             </button>
             <div class={`pv-hud-end${bump ? ' pv-bump' : ''}`}>
-              <CurrencyPile balances={world.balances} loadLedger={() => Promise.resolve([])} />
+              <CurrencyPile balances={purseBalances} loadLedger={() => Promise.resolve([])} />
               <SettingsButton onSettings={() => undefined} />
             </div>
           </div>
@@ -524,7 +539,10 @@ export function Valley({
             open={welcomeOpen}
             onClose={(paperAt) => {
               setWelcomeOpen(false);
-              if ((welcome.home?.length ?? 0) > 0) setHoming(paperAt);
+              if ((welcome.home?.length ?? 0) > 0) {
+                setLanded(0);
+                setHoming(paperAt);
+              }
             }}
           />
         )}
@@ -537,6 +555,9 @@ export function Valley({
               still: isStill(),
               param: flyParam(typeof window === 'undefined' ? '' : window.location.hash),
             })}
+            onCount={(resource, counted) => {
+              if (resource === 'bait') setLanded(counted);
+            }}
             onLand={() => {
               if (!reduced) setBump(true);
             }}

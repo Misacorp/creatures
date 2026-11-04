@@ -11,6 +11,10 @@ import {
   homeGains,
   originOf,
   stepText,
+  coinCount,
+  coinDelay,
+  coinOffset,
+  purseDisplay,
   targetOf,
 } from './coming-home';
 import { welcomeOf } from './highlights';
@@ -78,6 +82,36 @@ describe('the count-up', () => {
   });
 });
 
+describe('the coin swarm', () => {
+  it('scales the coin count with the amount: 6 for small, capped at 16, none for nothing', () => {
+    expect(coinCount(0)).toBe(0);
+    expect(coinCount(1)).toBe(6);
+    expect(coinCount(52)).toBe(9);
+    expect(coinCount(180)).toBe(16);
+    expect(coinCount(100000)).toBe(16);
+  });
+
+  it('bursts the same way every time, every coin to its own place, and staggers them', () => {
+    const a = Array.from({ length: 12 }, (_, i) => coinOffset(i, 12));
+    const b = Array.from({ length: 12 }, (_, i) => coinOffset(i, 12));
+    expect(a).toEqual(b);
+    expect(new Set(a.map((o) => `${String(o.x)},${String(o.y)}`)).size).toBe(12);
+    const delays = Array.from({ length: 12 }, (_, i) => coinDelay(i, 12));
+    expect(delays[0]).toBe(0);
+    expect([...delays].sort((x, y) => x - y)).toEqual(delays);
+    expect(delays.at(-1)).toBeLessThan(1100 * 0.4);
+  });
+});
+
+describe('the purse’s count-up', () => {
+  it('starts at the total less the gain and ends on the total', () => {
+    expect(purseDisplay(100, 52, 0)).toBe(48);
+    expect(purseDisplay(100, 52, 13)).toBe(61);
+    expect(purseDisplay(100, 52, 52)).toBe(100);
+    expect(purseDisplay(100, 52, 999)).toBe(100);
+  });
+});
+
 describe('where and how it plays', () => {
   it('starts in the paper and lands in the middle of the purse', () => {
     expect(originOf({ left: 10, top: 100, width: 370, height: 500 })).toEqual({ x: 195, y: 300 });
@@ -139,13 +173,17 @@ describe('closing the Gazette', () => {
   });
 });
 
-function drawMoment(mode: 'play' | 'still', handlers: { onLand: () => void; onDone: () => void }) {
+function drawMoment(
+  mode: 'play' | 'still',
+  handlers: { onLand: () => void; onDone: () => void; onCount?: (r: string, n: number) => void },
+) {
   page = createPage();
   page.draw(
     <ComingHome
       gains={[{ resource: 'bait', amount: 180 }]}
       from={{ x: 195, y: 300 }}
       mode={mode}
+      onCount={() => undefined}
       {...handlers}
     />,
   );
@@ -153,6 +191,40 @@ function drawMoment(mode: 'play' | 'still', handlers: { onLand: () => void; onDo
 }
 
 describe('the moment', () => {
+  it('draws the swarm while flying, none under reduced motion', () => {
+    vi.useFakeTimers();
+    const noop = { onLand: () => undefined, onDone: () => undefined };
+    const flying = drawMoment('play', noop);
+    expect(byClass(flying.root, 'wb-coin')).toHaveLength(coinCount(180));
+    flying.unmount();
+    const still = drawMoment('still', noop);
+    expect(byClass(still.root, 'wb-coin')).toHaveLength(0);
+  });
+
+  it('tells the purse how much has landed: rising to the full gain, at once under reduced motion', () => {
+    vi.useFakeTimers();
+    const seen: number[] = [];
+    const p = drawMoment('play', {
+      onLand: () => undefined,
+      onDone: () => undefined,
+      onCount: (_r, n) => seen.push(n),
+    });
+    p.update(() => {
+      vi.advanceTimersByTime(1100);
+    });
+    expect(seen[0]).toBeGreaterThan(0);
+    expect(seen[0]).toBeLessThan(180);
+    expect(seen.at(-1)).toBe(180);
+    p.unmount();
+    const atOnce: number[] = [];
+    drawMoment('still', {
+      onLand: () => undefined,
+      onDone: () => undefined,
+      onCount: (_r, n) => atOnce.push(n),
+    });
+    expect(atOnce).toEqual([180]);
+  });
+
   it('flies: counts up, lands, then ends, and a tap anywhere finishes it at once', () => {
     vi.useFakeTimers();
     const onLand = vi.fn();

@@ -90,3 +90,40 @@ export function originOf(rect: Box): Point {
 export function targetOf(rect: Box): Point {
   return { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) };
 }
+
+/** The most coins that fly, and the fewest for any gain. */
+export const MIN_COINS = 6;
+export const MAX_COINS = 16;
+
+/** How many coins fly for a gain: 6 for a small one, one more for every 15, at most 16; none for no gain. */
+export function coinCount(amount: number): number {
+  const total = Math.max(0, Math.floor(amount));
+  if (total === 0) return 0;
+  return Math.min(MAX_COINS, MIN_COINS + Math.floor(total / 15));
+}
+
+/**
+ * Where coin `i` of `n` bursts to, in px from the paper's point: a fixed golden-angle spiral (a sunflower),
+ * so the same gain always bursts the same way and the coins never overlap. Mostly up and sideways.
+ */
+export function coinOffset(i: number, n: number): Point {
+  const angle = i * 2.399963229728653 - Math.PI / 2;
+  const radius = 28 + 76 * Math.sqrt((i + 0.5) / Math.max(1, n));
+  return {
+    x: Math.round(Math.cos(angle) * radius),
+    y: Math.round(Math.sin(angle) * radius * 0.7 - 24),
+  };
+}
+
+/** The delay of coin `i` of `n` (ms): they leave one after another over the first 40% of the flight. */
+export function coinDelay(i: number, n: number): number {
+  return Math.round((i * FLIGHT_MS * 0.4) / Math.max(1, n));
+}
+
+/**
+ * What the purse shows while the moment plays: the total less what has not landed yet, so it counts up to the
+ * total by the end (display only: the server's total was in already). `counted` is how much has landed.
+ */
+export function purseDisplay(total: number, gain: number, counted: number): number {
+  return total - gain + Math.min(Math.max(0, counted), gain);
+}
