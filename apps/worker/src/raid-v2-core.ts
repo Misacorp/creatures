@@ -3,7 +3,7 @@
  * the server's track, the board's grid, the carry between stages and the locks a weekend puts on a creature. Plain synchronous SQL on the
  * guild's database; every writer runs inside the transaction of its caller. Nothing here runs for a v1 week.
  *
- * **The grid.** A v2 board is `rows` rows (the slot's boss's) by `cols` columns (`max(4, players)`, R14.1). A placement's `slot` is
+ * **The grid.** A v2 board is `rows` rows (the slot's boss's) by `cols` columns (one per player, R14.1; no floor of four since 2026-11-04). A placement's `slot` is
  * column-major, `slot = col * rows + row`, so a wider board (a player joins) never renumbers a slot someone already holds.
  *
  * **The piece (Misa, 2026-11-03).** The boss's arena piece (`piece` in raid-bosses.json) is what one player adds: today one column of the
@@ -15,7 +15,6 @@ import { content } from '@creatures/game';
 import { SHIPPED } from './fighter-v2';
 import { combatV2 } from '@creatures/game/combat-v2';
 import {
-  RAID_COLS,
   slotSpec,
   trackBoss,
   type BossDef,
@@ -107,11 +106,11 @@ export function slotBossInfo(slot: number): { bossId: string; rows: number; seat
 }
 
 /**
- * The columns of a board for `players` players: one piece each, four at least (a smaller party fights at four, R14.1). `spare` adds the
- * spare piece that stays free until stage 1, so a newcomer can always join.
+ * The columns of a board for `players` players: one piece each, with no floor of four (a party under four fights a smaller boss, Misa
+ * 2026-11-04). `spare` adds the spare piece that stays free until stage 1, so a newcomer can always join. Never under one column.
  */
 export const colsFor = (players: number, spare = false): number =>
-  Math.max(RAID_COLS, players + (spare ? 1 : 0));
+  Math.max(1, players + (spare ? 1 : 0));
 
 /** The creatures a player brings to a slot's boss: the seats of its arena piece. */
 export const seatsFor = (slot: number): number => slotBossInfo(slot).seats;
@@ -136,9 +135,9 @@ export const gridPlace = (slot: number, rows: number): { row: number; col: numbe
 /** The slot number of a place on the grid. */
 export const slotAt = (row: number, col: number, rows: number): number => col * rows + row;
 
-/** The slot's boss for `players` players, as it fights. */
+/** The slot's boss for `players` players, as it fights: one column per player, also under four (the HP and Attack curves continue). */
 export function weekendBoss(slot: number, players: number): BossDef {
-  return trackBoss(combatV2, SHIPPED_V2, slot, { players });
+  return trackBoss(combatV2, SHIPPED_V2, slot, { players, followSmallParty: true });
 }
 
 // --- The carry ---

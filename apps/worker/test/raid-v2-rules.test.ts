@@ -5,7 +5,7 @@ import { content, gearContent, seasonOf } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { propsOf } from '../src/analytics-props';
 import { loadV2Creatures } from '../src/raid-v2-fighters';
-import { determinationBpFor } from '../src/raid-v2-core';
+import { determinationBpFor, weekendBoss } from '../src/raid-v2-core';
 import { addWeeks, eventTimes, nextDueEvent, weekIndex } from '../src/raid-schedule';
 import { endWeekV2 } from '../src/raid-v2-track';
 import { undoKnackMigration, type CoreContext } from './helpers';
@@ -219,15 +219,54 @@ describe('players lock at stage 1', () => {
         expect(ctx.core.raid.canWatchBoard(early.id, ctx.core.raid.currentWeek(HELSINKI), 1)).toBe(
           false,
         );
-        // Two players fight a boss with the HP of four (a party under four fights at four columns).
+        // Two players fight a boss of two columns, its HP and Attack on the curves below four (Misa, 2026-11-04).
         const boss = JSON.parse(
           rows<{ input: string }>(
             ctx.sql,
             "SELECT input FROM raid_results WHERE phase = 'stage1'",
           )[0]?.input ?? '{}',
-        ) as { boss: { hp: number; cols: number } };
-        expect(boss.boss.cols).toBe(4);
+        ) as { boss: { hp: number; atk: number; cols: number } };
+        const four = weekendBoss(1, 4);
+        expect(boss.boss.cols).toBe(2);
+        expect(boss.boss.hp).toBe(Math.round(four.hp * (2 / 4) ** 0.7));
+        expect(boss.boss.atk).toBe(Math.round(four.atk * (2 / 4) ** 0.3));
         expect(rows(ctx.sql, 'SELECT v2_players FROM raid_parties')).toEqual([{ v2_players: 2 }]);
+        return Promise.resolve();
+      },
+      { start: V2_WEEK.open, core: V2 },
+    );
+  }, 60_000);
+
+  it('a solo player fights a one-column boss on the same curves, and four players are unchanged', async () => {
+    await runRaid(
+      (ctx) => {
+        const a = v2Player(ctx, 1, { level: 22 });
+        ctx.core.raid.currentWeek(HELSINKI);
+        joinRaid(ctx, a);
+        // Before stage 1 the board is the player's column and the spare one.
+        expect(ctx.core.raid.view(a.id, HELSINKI).v2).toMatchObject({
+          cols: 2,
+          players: 1,
+          spare: true,
+        });
+        ctx.clock.t = V2_WEEK.stage1 + 5000;
+        ctx.core.raid.runDue(HELSINKI);
+        const boss = JSON.parse(
+          rows<{ input: string }>(
+            ctx.sql,
+            "SELECT input FROM raid_results WHERE phase = 'stage1'",
+          )[0]?.input ?? '{}',
+        ) as { boss: { hp: number; atk: number; cols: number } };
+        const four = weekendBoss(1, 4);
+        expect(boss.boss.cols).toBe(1);
+        expect(boss.boss.hp).toBe(Math.round(four.hp * (1 / 4) ** 0.7));
+        expect(boss.boss.atk).toBe(Math.round(four.atk * (1 / 4) ** 0.3));
+        expect(ctx.core.raid.view(a.id, HELSINKI).v2).toMatchObject({
+          cols: 1,
+          players: 1,
+          spare: false,
+        });
+        expect(weekendBoss(1, 4).cols).toBe(4);
         return Promise.resolve();
       },
       { start: V2_WEEK.open, core: V2 },

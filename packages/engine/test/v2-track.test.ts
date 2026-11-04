@@ -145,6 +145,24 @@ describe('trackBoss', () => {
     for (const players of [1, 2, 3]) expect(trackBoss(PACK, SHIPPED, 3, { players })).toEqual(four);
   });
 
+  it('a boss that follows a small party has one column per player and the same curves below four (Misa, 2026-11-04)', () => {
+    const four = trackBoss(PACK, SHIPPED, 3, { players: 4 });
+    for (const players of [1, 2, 3]) {
+      const small = trackBoss(PACK, SHIPPED, 3, { players, followSmallParty: true });
+      expect(small.cols).toBe(players);
+      expect(small.rows).toBe(four.rows);
+      expect(small.hp).toBe(Math.round(four.hp * (players / 4) ** RAID_HP_EXPONENT));
+      expect(small.atk).toBe(Math.round(four.atk * (players / 4) ** RAID_ATK_EXPONENT));
+      expect(small.hp).toBeLessThan(four.hp);
+    }
+    // At four and above the option changes nothing.
+    for (const players of [4, 5, 10]) {
+      expect(trackBoss(PACK, SHIPPED, 3, { players, followSmallParty: true })).toEqual(
+        trackBoss(PACK, SHIPPED, 3, { players }),
+      );
+    }
+  });
+
   it('a bigger party fights a wider arena with HP x (players / 4)^0.7 and Attack x (players / 4)^0.3', () => {
     const four = trackBoss(PACK, SHIPPED, 3);
     for (const players of [5, 10, 15]) {
