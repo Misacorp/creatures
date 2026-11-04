@@ -1,6 +1,6 @@
 # Phase 4 plan: the valley frame in the game
 
-Status: **current** (phase 3 passed 2026-11-04, Q55). The resource library (step 0) is done; step 1 starts once Misa answers Q57 and Q58, the open points below.
+Status: **current** (phase 3 passed 2026-11-04, Q55). The resource library (step 0) is done; step 1 is under way. The valley ships all at once (phase 6, with combat v2), so phase 4 builds nothing that phase 5 throws away (Misa, Q57: "no pointless intermediate steps").
 
 ## The gate
 
@@ -46,13 +46,13 @@ The prototype (`apps/activity/src/proto/valley/`, `proto/welcome/`, dev only) is
 ## Order
 
 0. **The resource library** (round 5, Q13: "some kind of resource library acting as a source of truth so we can easily change it later. It needs to be pretty generic"): one data file naming every resource, with its kind, name, plural and icon; every screen reads names and icons from it. It changes nothing visible today (Bait stays Bait until the reset renames it Acorns with one data edit). Can start now.
-1. **The flag and the shell:** `VALLEY=on`, the map with today's seven places (cave, fairground, house, paddock, forge, arena, signpost), the HUD, the tray, the Places list; each place opens today's page inside it.
+1. **The flag and the shell:** `VALLEY=on`, the map with today's seven places (cave, fairground, house, paddock, forge, arena, signpost) and the four new ones not yet open (Q58: the bonfire, the School, the visitor's stall, the Market; a tap says in a line what each will be), the HUD, the tray, the Places list; each of the seven opens today's page inside it.
 2. **Bubbles and state lines** from today's alerts and timers.
-3. **The scenes** for the seven places, showing today's work (trips on the road, jobs at the anvils, the lounger at the house, the dungeon team at the cave, the raid party at the arena, the Games' entries at the fairground, the roster in the paddock).
-4. **The Gazette** from today's away notice.
+3. **The scenes** for the places whose work stays in phase 5 (the lounger at the house, the dungeon team at the cave, the raid party at the arena, the Games' entries at the fairground, the roster in the paddock). Not the Signpost's trips or the Forge's jobs: phase 5 replaces both with posts (Q2), so their scenes wait for posts and the places open today's pages (Q57).
+4. **The Gazette** from today's away notice, closing with the currencies flying into the purse (V-RET-4a, Q56).
 5. **Desktop and accessibility**, the panel at both widths, the gate's end-to-end checklist, then Misa on staging.
 
-## Open for Misa (asked in round 25 as Q57 and Q58)
+## Decided with Misa (round 25)
 
-- Whether a place's inside is today's page (as above) or whether some pages should be rebuilt as scenes before phase 5.
-- Whether the four new places (bonfire, School, visitor, Market) appear in phase 4 as quiet, not-yet-open places, or only in phase 5.
+- **Q57: A.** A place's inside is today's page; nothing is rebuilt as a scene before phase 5 ("We'll ship this all at once so no pointless intermediate steps").
+- **Q58: A.** The four new places are on the map from phase 4, not yet open, so the map has one layout.

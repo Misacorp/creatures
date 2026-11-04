@@ -4,6 +4,22 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-04: Phase 4 builds nothing phase 5 throws away; new places on the map not yet open (round 25, Q57, Q58) **[Misa]**
+
+ID: `2026-11-04-phase-4-builds-nothing-phase-5` · Status: current
+
+**Decision.** In phase 4 each place's inside is today's page (Q57: A), and nothing is built that phase 5 replaces: the Signpost and the Forge get no scenes of today's trips and Workshop jobs, they open today's pages until posts arrive. The four new places (bonfire, School, visitor's stall, Market) stand on the map from phase 4, not yet open; a tap says in a line what each will be (Q58: A, the lead's pick, as Misa asked). Misa: "Q57 A. We'll ship this all at once so no pointless intermediate steps. This hopefully also answers Q58 but let's follow your recommendation if not."
+
+**Reasoning.** The valley and combat v2 ship together at phase 6, so players never see phase 4 on its own; work that only serves phase 4 is waste. Today's pages keep the gate checkable (every screen one tap inside its place), and one map layout from phase 4 on avoids drawing the map twice.
+
+## 2026-11-04: Closing the Gazette flies the currencies into the purse (round 25, Q56) **[Misa]**
+
+ID: `2026-11-04-closing-the-gazette-flies-the-currencies` · Status: current
+
+**Decision.** However the welcome-back Gazette is closed (its button, the X, a swipe), what came home flies into the HUD's purse: each currency as a large number counting up as it lands, with a small sound, then the purse's new total (`systems/return.md`, V-RET-4a). The paper says once, under its date, "Everything your creatures found is already home." Misa (Q56): "B definitely. Let's have the currency fly there in large numbers somehow so it's satisfying."
+
+**Reasoning.** Misa asked whether gains must be claimed and suggested a claim-all button. The valley has no collect button (V-POST-5), and a claim you must come back for is what Q2 removed (`docs/research/idle-job-posts.md`). Playing the claim moment on any way of closing gives the satisfaction without a duty (F-1): everything is already in the purse before it plays. With reduced motion the numbers appear in the purse without flying.
+
 ## 2026-11-04: Phase 3 passes; phase 4 starts (round 24, Q55) **[Misa]**
 
 ID: `2026-11-04-phase-3-passes-phase-4-starts` · Status: current

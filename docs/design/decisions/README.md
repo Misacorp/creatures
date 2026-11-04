@@ -484,6 +484,8 @@ Superseded: 1 entry (see the topic file).
 
 [valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
 
+- 2026-11-04 Phase 4 builds nothing phase 5 throws away; new places on the map not yet open (round 25, Q57, Q58) \[Misa\]
+- 2026-11-04 Closing the Gazette flies the currencies into the purse (round 25, Q56) \[Misa\]
 - 2026-11-04 Phase 3 passes; phase 4 starts (round 24, Q55) \[Misa\]
 - 2026-11-03 The School's teacher prefers a talent that benefits a few players (2 to a quarter of the server)
 - 2026-11-03 The School's visiting teacher: weekly, Monday to Wednesday, one talent that benefits someone; found talents learned on the card (round 22, Q51-Q53) \[Misa\]
