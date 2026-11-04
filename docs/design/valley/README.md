@@ -44,11 +44,11 @@ Today's game against the vision, system by system (keep, rework or scrap): [`scr
 
 ## Where we are (2026-10-31)
 
-- **Phase 1** (the base systems on paper) is done apart from loose ends; **phase 2** (the economy lab, `packages/econ`, `economy/summary.md`) passed on 2026-10-31; **phase 3 (prototype the feel) is current** (`phase3-plan.md`).
+- **Phase 1** (the base systems on paper) is done apart from loose ends; **phase 2** (the economy lab, `packages/econ`, `economy/summary.md`) passed on 2026-10-31; **phase 3** (prototype the feel, `phase3-plan.md`) passed on 2026-11-04; **phase 4 (the valley frame in the game) is current** (`phase4-plan.md`).
 - **The prototype** (`apps/activity/src/proto/`, staging-only, `prototype.html`): the valley, and the **welcome-back popup** (the Valley Gazette, `proto/welcome/`, played from the lab's journeys). The return walk was tried and dropped (Misa: the player has no avatar; creatures act).
-- **Decisions** live in the `valley` topic of `docs/design/decisions/` (`pnpm decisions list --topic valley`); the question ledger is `questions.md` (49 answered through round 19).
-- **Waiting on Misa:** nothing. Queued in `questions.md`: a visible "tap to skip" and "New" tag (from the walk's panel, may not apply to the Gazette), **targets**.
-- **Open for the lead:** a late-season scrap sink (T-7b fails: scouts bring about 2.3k a week from week 13, sinks take about 1.9k); wiring the art-direction session's `valley-glow` places (PR #116) into the prototype once merged; phase 3's next steps (`phase3-plan.md`).
+- **Decisions** live in the `valley` topic of `docs/design/decisions/` (`pnpm decisions list --topic valley`); the question ledger is `questions.md` (55 answered through round 24).
+- **Waiting on Misa:** Q56 to Q58 (round 25: whether coming home should feel like collecting; phase 4's two open points). Queued in `questions.md`: scrap uses (deferred), **targets**.
+- **Open for the lead:** phase 4 step 1 once Q57 and Q58 are answered (`phase4-plan.md`); explain the tray's mastery pips in the valley's creature card. The late-season scrap sink is deferred (Misa, Q49), with a voluntary idol as its placeholder.
 - **How to continue:** read the last entry of `log.md`, then `questions.md`'s "Waiting on Misa"; run the `valley-round` skill to record answers and ask the next round.
 - **Seams:** combat v2 (session "Leet Combat Rework") takes `economy/roster-profile.json` and `server-coverage.json`; the art-direction session ("Leet Creatures Art") owns art direction. Both can message this one.
 

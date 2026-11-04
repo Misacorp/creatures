@@ -4,6 +4,14 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-04: Phase 3 passes; phase 4 starts (round 24, Q55) **[Misa]**
+
+ID: `2026-11-04-phase-3-passes-phase-4-starts` · Status: current
+
+**Decision.** Phase 3's gate passes: coming back to the valley feels like a story. Misa (round 24, Q55): "I think the experience is nice. The introductory gazzette is good though the items it displays could use the same smaller icons that are used in the ... expedition gazzette". Phase 4 (`valley/phase4-plan.md`) starts with step 1 (the `VALLEY=on` flag and the shell over today's pages) once Q57 and Q58 settle its two open points. The Gazette now shows a story's finds as the same small row a place's clipping uses (the large boxes are gone from the prototype).
+
+**Reasoning.** The gate was Misa's own feel on staging (`phase3-plan.md`, step 5). His two rounds of feedback were fixed and redeployed, and his verdict has no open "to-do list" complaint. One small look for finds wherever a story is told keeps the paper short on a phone and is the reuse rule (`ux-patterns.md`). His question about claiming (is anything left to collect?) is answered by the design, which has no collect button (V-POST-5). Whether coming home should still feel like collecting is Q56.
+
 ## 2026-11-03: The School's teacher prefers a talent that benefits a few players (2 to a quarter of the server)
 
 ID: `2026-11-03-the-school-s-teacher-prefers-a` · Status: current

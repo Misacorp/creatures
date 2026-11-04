@@ -102,19 +102,23 @@ describe('what a story found', () => {
     expect(byClass(p.root, 'idc')).toHaveLength(1);
   });
 
-  it('shows a blueprint and a newcomer as the shared find boxes', () => {
+  it('shows a blueprint and a newcomer as their small pictures, named for screen readers', () => {
     const baseId = cast.blueprints[0];
     if (baseId === undefined) throw new Error('the sample world has no blueprint');
     const p = draw([
       { kind: 'blueprint', baseId },
       { kind: 'newcomer', species: 'cindle' },
     ]);
-    expect(visibleText(p.root)).toContain('Blueprint:');
-    expect(byClass(p.root, 'find-card')).toHaveLength(1);
-    expect(visibleText(p.root)).toContain('New!');
+    const labels = byClass(p.root, 'find-row-button')
+      .concat(byClass(p.root, 'find-compact-help'))
+      .map((el) => el.getAttribute('aria-label') ?? '');
+    expect(labels.some((l) => l.startsWith('Blueprint:'))).toBe(true);
+    expect(labels.some((l) => l.startsWith('New:'))).toBe(true);
+    // Never the big boxes, in the Gazette too (Misa, 2026-11-04).
+    expect(byClass(p.root, 'find-card')).toHaveLength(0);
   });
 
-  it('shows parts as count badges that open their help', () => {
+  it('shows parts as count badges in the same row', () => {
     const p = draw([{ kind: 'parts', parts: [{ part: 'scrap', amount: 120 }] }]);
     expect(byClass(p.root, 'part-count')).toHaveLength(1);
     expect(visibleText(p.root)).toContain('120');
@@ -281,7 +285,7 @@ describe('a small row of finds', () => {
     page.draw(
       <PopoverHost onOpenHowTo={() => undefined}>
         <GearItemsContext.Provider value={world.items}>
-          <Finds finds={six} label="Found" compact />
+          <Finds finds={six} label="Found" />
         </GearItemsContext.Provider>
       </PopoverHost>,
     );
@@ -301,7 +305,7 @@ describe('a small row of finds', () => {
     page.draw(
       <PopoverHost onOpenHowTo={() => undefined}>
         <GearItemsContext.Provider value={world.items}>
-          <Finds finds={six.slice(0, 2)} label="Found" compact unshown={5} />
+          <Finds finds={six.slice(0, 2)} label="Found" unshown={5} />
         </GearItemsContext.Provider>
       </PopoverHost>,
     );

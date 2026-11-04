@@ -1,6 +1,6 @@
 # Phase 3 plan: prototype the feel
 
-Status: **current** (phase 2 passed 2026-10-31). Revised 2026-10-31: the return walk was dropped for the welcome-back Gazette (see the `valley` decisions). Starts when Misa passes the phase 2 gate ("the targets pass for every player profile; the report reads sensibly to Misa", `roadmap.md`). Nothing here ships; it extends the staging-only valley prototype (`apps/activity/src/proto/valley/`, `prototype.html#valley`).
+Status: **done** (passed 2026-11-04, Q55; phase 2 passed 2026-10-31). Revised 2026-10-31: the return walk was dropped for the welcome-back Gazette (see the `valley` decisions). Starts when Misa passes the phase 2 gate ("the targets pass for every player profile; the report reads sensibly to Misa", `roadmap.md`). Nothing here ships; it extends the staging-only valley prototype (`apps/activity/src/proto/valley/`, `prototype.html#valley`).
 
 ## The question it answers
 
@@ -35,7 +35,7 @@ Not in scope: combat (combat v2's lab owns it), the School's teaching (waits on 
    - 3c. **The visitor:** "back Thursday" when away; his stall with the week's stock; one reroll with the odds, a before-and-after and one confirm.
    - 3d. **The bonfire and the School:** resting creatures, a small moment, a creature warming up (catch-up); the hearth as the first guided project; a Bronze graduation at the School.
 4. **Done with 3a:** the places' art (`valley-glow`) in place of the stand-ins.
-5. **Next:** Misa on staging when he asks (with Q50, the posters, to compare there: `&poster=framed|none`); then his feedback.
+5. **Done (2026-11-04):** Misa on staging, two rounds of feedback fixed; **the gate passes** (Q55: "I think the experience is nice"). Phase 4 is next (`phase4-plan.md`).
 
 ## For Misa to decide
 

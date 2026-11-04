@@ -6,7 +6,39 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-Nothing waiting.
+### Q56. Everything comes home by itself: should it feel like collecting?
+
+Status: asked, round 25 (2026-11-04). From Misa: "Are all gains collected as the user logs in or do they need to go to individual places and claim stuff? I'm thinking if a claim all button would be cool." Touches: `systems/return.md` (V-RET-0, V-RET-4), `systems/posts.md` (V-POST-5: "There is no collect button"), F-1; Q2's answer (posts replace timed tasks you come back to claim).
+
+**Why it matters.** In the valley nothing waits to be claimed: everything your creatures found is already in your purse and bag when the Gazette opens. The markers on the map are stories to read, not things to pick up; skipping them loses nothing. The question did come up, though, so the prototype does not say this clearly, and a claim moment can feel good.
+
+- **A. Say it, no button.** The paper says it in one line under the date. Example: "Everything your creatures found is already home."
+- **B. Closing the paper is the collect moment.** However you close the Gazette (its button, the X, a swipe), the counts tumble into your purse with a small sound: +180 Acorns, +14 scrap, 2 Kelp Caps. It feels like "claim all", but nobody can miss it, because any way of closing plays it.
+- **C. A real Claim all button.** Gains wait until you tap it. Example: "Claim all (9)" on the valley.
+
+**Lead's pick: B, with A's line.** It gives the claim feeling you're after without making a tap a duty: "no must-check timers, absence never takes away" (F-1), and in Q2 you dropped timers you come back to claim because research names them as what turns idling into a chore (`docs/research/idle-job-posts.md`). C brings that chore back. The tumble was already the plan's (V-RET-4) before the Gazette replaced the walk.
+
+### Q57. Inside each place: today's page, or rebuilt now?
+
+Status: asked, round 25 (2026-11-04). Touches: `phase4-plan.md` ("Today's pages inside a place", open point 1), the phase 4 gate ("nothing is lost from today's game").
+
+**Why it matters.** Phase 4 puts today's whole game behind the valley on staging. Each place needs an inside: what opens when you tap its main action. This decides how much is rebuilt before the new systems arrive in phase 5.
+
+- **A. Today's page inside each place.** The Forge's main action opens today's Workshop page, the Signpost opens today's world map, the Arena today's raid screens, with "◀ Valley" to go back. Everything works from day one; the scenes show today's work around it (trips on the road, jobs at the anvils).
+- **B. Rebuild some pages as scenes now.** For example, the Workshop's job slots become anvils in the Forge scene. Closer to the end result, more work before staging.
+
+**Lead's pick: A.** Phase 5 replaces the Workshop and Expeditions with posts anyway (Q2: A), so a scene rebuilt now around today's jobs and trips would be thrown away a phase later. A keeps the gate easy to check: every one of today's screens is still one tap inside its place.
+
+### Q58. The four new places in phase 4: on the map, or not yet?
+
+Status: asked, round 25 (2026-11-04). Touches: `phase4-plan.md` (open point 2), the map's art (`valley-places.ts`).
+
+**Why it matters.** The bonfire, the School, the visitor's spot and the Market get their systems in phase 5. In phase 4 the map can show them as places that are not open yet, or leave them out.
+
+- **A. On the map, not open yet.** Drawn where they will stand; tapping one says what it will be. Example: the School with a closed door and "A teacher will visit here."
+- **B. Not yet.** The map shows today's seven places only, and the new four appear in phase 5.
+
+**Lead's pick: A.** The map keeps its final shape, so what you test on staging is the valley players will get; the art already exists, and the Market's scaffolding shows how "not yet" looks. B would need a second layout of the map just for one phase.
 
 ## Queue
 
@@ -866,6 +898,21 @@ Status: answered, round 23 (2026-11-04). From Misa: "what is our relationship wi
 **Answer (2026-11-04): A.** "Let's go with A on Q54"
 
 Became: two voices on purpose: the Gazette's paper for the valley telling a story (the welcome-back popup, a place's waiting stories, in-world notes), the ink `Alert` for the game needing attention (errors, warnings, a failed spend); both close with the same X; the final look of both is settled in the visual revisit. Written into `docs/design/ux-patterns.md`.
+
+### Q55. Does coming back to the valley feel like a story, not a to-do list?
+
+Status: answered, round 24 (2026-11-04), asked in chat. Phase 3's gate (`phase3-plan.md`, step 5: Misa plays the prototype on staging).
+
+**Why it matters.** Phase 3 built the welcome-back Gazette, the markers that open their places, the new places and the School's teacher, to test whether coming back tells a story. Passing starts phase 4: the valley in the real game behind a staging switch.
+
+- **A. Yes:** phase 3 passes and phase 4 starts.
+- **B. Not yet:** say what still feels like a to-do list, and the prototype gets another round.
+
+**Lead's pick: A** if it felt like a story on staging.
+
+**Answer (2026-11-04): A.** "I think the experience is nice. The introductory gazzette is good though the items it displays could use the same smaller icons that are used in the... was it expedition gazzette when I click on it in the weekly player thing."
+
+Became: phase 3 passes; phase 4 starts with step 1 of `phase4-plan.md` once Q57 and Q58 are answered. The Gazette's finds now use the small row a place's clipping uses (done the same day). His question about claiming became Q56.
 
 ## Withdrawn
 

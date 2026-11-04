@@ -10,9 +10,8 @@ import type { PartKind } from '@creatures/game';
 import { getSpecies, speciesName } from '../../game';
 import { SmallCreature } from '../../SmallCreature';
 import type { CreatureInfo } from '../../creature-info';
-import { CountBadge, CountBadgeList, type CountItem } from '../../ui/CountBadge';
+import { CountBadge } from '../../ui/CountBadge';
 import { FindBlueprint } from '../../ui/FindBlueprint';
-import { FindCreature } from '../../ui/FindCreature';
 import { FindItem } from '../../ui/FindItem';
 import { FindList } from '../../ui/FindRow';
 import { partBadge } from '../../count-items';
@@ -23,7 +22,7 @@ import { SceneCrop } from './SceneCrop';
 /** What a small row of finds holds before "+N more": a phone's width fits this many pictures and badges. */
 export const MAX_ROW = 4;
 
-/** One thing in a compact row of finds: a piece, a blueprint, a newcomer, or one kind of part. */
+/** One thing in a small row of finds: a piece, a blueprint, a newcomer, or one kind of part. */
 export type RowEntry =
   Exclude<Find, { kind: 'parts' }> | { kind: 'part'; part: PartKind; amount: number };
 
@@ -89,7 +88,7 @@ function NewcomerIcon({ species }: { species: string }) {
 }
 
 /**
- * One row of small finds for a place's clipping: pieces and blueprints as their picture (a tap opens the same
+ * One row of small finds: pieces and blueprints as their picture (a tap opens the same
  * card as a full find), a newcomer as its face, parts as count badges, then, if more than fit, "+N more" as
  * text (a tap shows the rest).
  */
@@ -106,7 +105,7 @@ function FindsRow({
   const { shown, hidden, more } = splitRow(rowEntries(finds), unshown, expanded);
   if (shown.length === 0 && more === 0) return null;
   return (
-    <div class="wb-finds compact">
+    <div class="wb-finds">
       <FindList label={label} compact>
         {shown.map((e) => {
           switch (e.kind) {
@@ -156,74 +155,27 @@ function FindsRow({
 }
 
 /**
- * What a story found, in the shared Find components. Full (the Gazette): boxes in one `FindList`, parts as count
- * badges, then "+N more" as text for what has no picture. `compact` (a place's clipping): one row of small finds
- * (`FindsRow`).
+ * What a story found, in the shared Find components, as one row of small finds wherever a story is told (the
+ * Gazette and a place's clipping; Misa 2026-11-04: "the same smaller icons").
  */
 export function Finds({
   finds,
   label,
-  compact = false,
   unshown = 0,
 }: {
   finds: readonly Find[];
   label: string;
-  compact?: boolean;
   /** Things the story stands for that are not drawn (five pieces made, three shown). */
   unshown?: number;
 }) {
-  if (compact) return <FindsRow finds={finds} unshown={unshown} label={label} />;
-  const rows = finds.filter((f): f is Exclude<Find, { kind: 'parts' }> => f.kind !== 'parts');
-  const counts: CountItem[] = finds.flatMap((f) =>
-    f.kind === 'parts' ? f.parts.map((p) => ({ key: p.part, ...partBadge(p.part, p.amount) })) : [],
-  );
-  if (rows.length === 0 && counts.length === 0) return null;
-  return (
-    <div class="wb-finds">
-      {rows.length > 0 && (
-        <FindList label={label}>
-          {rows.map((f) => {
-            switch (f.kind) {
-              case 'item':
-                return (
-                  <FindItem
-                    key={f.piece.id}
-                    id={f.piece.id}
-                    baseId={f.piece.baseId}
-                    rarity={f.piece.rarity}
-                    level={f.piece.level}
-                  />
-                );
-              case 'blueprint':
-                return <FindBlueprint key={f.baseId} baseId={f.baseId} />;
-              case 'newcomer':
-                return (
-                  <FindCreature
-                    key={f.species}
-                    creature={{
-                      species: f.species,
-                      shiny: false,
-                      talent: null,
-                      talentNew: false,
-                      badges: [{ text: 'New!', entry: null }],
-                    }}
-                  />
-                );
-            }
-          })}
-        </FindList>
-      )}
-      {counts.length > 0 && <CountBadgeList items={counts} label={label} class="reward-badges" />}
-      {unshown > 0 && <p class="wb-more-note pix">{`+${String(unshown)} more`}</p>}
-    </div>
-  );
+  return <FindsRow finds={finds} unshown={unshown} label={label} />;
 }
 
 /**
  * How the Gazette tells a story, picture aside: its headline, at most one short line, and what it found as
  * itself. The headline is the paper's big one (`lead`) or a small story's (`brief`); `clip` is how a place tells
- * its waiting stories (the small headline, finds in one small row). Every place that tells a story uses this,
- * never a second card.
+ * its waiting stories (the small headline). The finds are one small row in all three. Every place that tells a
+ * story uses this, never a second card.
  */
 export function StoryText({ story, size }: { story: Story; size: 'lead' | 'brief' | 'clip' }) {
   const label = `Found: ${story.headline}`;
@@ -236,12 +188,7 @@ export function StoryText({ story, size }: { story: Story; size: 'lead' | 'brief
       {story.blurb !== '' && (
         <p class={size === 'lead' ? 'wb-blurb' : 'wb-brief-blurb'}>{story.blurb}</p>
       )}
-      <Finds
-        finds={story.finds}
-        label={label}
-        compact={size === 'clip'}
-        unshown={story.unshown ?? 0}
-      />
+      <Finds finds={story.finds} label={label} unshown={story.unshown ?? 0} />
     </>
   );
 }

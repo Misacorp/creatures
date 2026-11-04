@@ -142,27 +142,20 @@
   text-shadow: none;
 }
 
-/* What a story found, in the shared Find components: the list sits flush under the story's line. */
+/* What a story found: one row of small finds flush under the story's line, in the Gazette and a place's clipping. */
 .wb-finds {
-  display: grid;
-  gap: 6px;
   min-width: 0;
 }
 
-.wb-finds .find-list,
-.wb-finds .reward-badges {
+.wb-finds .find-list {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
   margin: 0;
 }
 
-/* The finds of a story stand in one column at one width, left-aligned (the shared list centres boxes of different widths, which staggers them). */
-.wb-finds .find-list {
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-start;
-}
-
-.wb-finds .find-list > .find-card {
-  flex: none;
+.wb-finds .part-count {
+  background: var(--ink);
 }
 
 /* A lone small story takes the width. */
@@ -299,21 +292,7 @@
   line-height: 0;
 }
 
-/* --- The small row of finds, and its "+N more" --- */
-.wb-finds.compact {
-  display: block;
-}
-
-.wb-finds.compact .find-list {
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-start;
-}
-
-.wb-finds.compact .part-count {
-  background: var(--ink);
-}
-
+/* --- The "+N more" of a row of finds --- */
 .wb-more {
   display: flex;
   align-items: center;
