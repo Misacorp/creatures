@@ -219,7 +219,7 @@ describe('players lock at stage 1', () => {
         expect(ctx.core.raid.canWatchBoard(early.id, ctx.core.raid.currentWeek(HELSINKI), 1)).toBe(
           false,
         );
-        // Two players fight a boss of two columns, its HP and Attack on the curves below four (Misa, 2026-11-04).
+        // Two players fight a boss of two columns, its HP and Attack linear in the players below four (Misa, 2026-11-04).
         const boss = JSON.parse(
           rows<{ input: string }>(
             ctx.sql,
@@ -228,8 +228,8 @@ describe('players lock at stage 1', () => {
         ) as { boss: { hp: number; atk: number; cols: number } };
         const four = weekendBoss(1, 4);
         expect(boss.boss.cols).toBe(2);
-        expect(boss.boss.hp).toBe(Math.round(four.hp * (2 / 4) ** 0.7));
-        expect(boss.boss.atk).toBe(Math.round(four.atk * (2 / 4) ** 0.3));
+        expect(boss.boss.hp).toBe(Math.round(four.hp * (2 / 4)));
+        expect(boss.boss.atk).toBe(Math.round(four.atk * (2 / 4)));
         expect(rows(ctx.sql, 'SELECT v2_players FROM raid_parties')).toEqual([{ v2_players: 2 }]);
         return Promise.resolve();
       },
@@ -237,7 +237,7 @@ describe('players lock at stage 1', () => {
     );
   }, 60_000);
 
-  it('a solo player fights a one-column boss on the same curves, and four players are unchanged', async () => {
+  it('a solo player fights a one-column boss, HP and Attack linear in the players, and four players are unchanged', async () => {
     await runRaid(
       (ctx) => {
         const a = v2Player(ctx, 1, { level: 22 });
@@ -259,8 +259,8 @@ describe('players lock at stage 1', () => {
         ) as { boss: { hp: number; atk: number; cols: number } };
         const four = weekendBoss(1, 4);
         expect(boss.boss.cols).toBe(1);
-        expect(boss.boss.hp).toBe(Math.round(four.hp * (1 / 4) ** 0.7));
-        expect(boss.boss.atk).toBe(Math.round(four.atk * (1 / 4) ** 0.3));
+        expect(boss.boss.hp).toBe(Math.round(four.hp * (1 / 4)));
+        expect(boss.boss.atk).toBe(Math.round(four.atk * (1 / 4)));
         expect(ctx.core.raid.view(a.id, HELSINKI).v2).toMatchObject({
           cols: 1,
           players: 1,

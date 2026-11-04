@@ -6,7 +6,9 @@
  * boss from its own derivation with `slotBossOf`.
  *
  * R14.1: the boss's numbers are tuned for four players. A bigger party fights a wider arena with the HP times `(players / 4) ^ 0.7` and the
- * Attack times `(players / 4) ^ 0.3`; a party under four fights at four columns unless `followSmallParty` is set (then the same curves run below four, one column per player).
+ * Attack times `(players / 4) ^ 0.3`; a party under four fights at four columns unless `followSmallParty` is set (then the boss has one column
+ * per player and its HP and Attack scale linearly with the players, `players / 4` for both: `SMALL_PARTY_HP_EXPONENT`, `SMALL_PARTY_ATK_EXPONENT`;
+ * Misa, 2026-11-04). Nothing mechanical follows the players below four, only these two numbers.
  */
 import type { CombatV2Pack } from '@creatures/game/combat-v2';
 import type { BossDef } from '../types';
@@ -30,6 +32,15 @@ export const RAID_HP_EXPONENT = 0.7;
  */
 export const RAID_ATK_EXPONENT = 0.3;
 
+/**
+ * The HP exponent below four players (Misa, 2026-11-04): small parties are not a priority, so no mechanics change for them, only the
+ * numbers: the boss's HP scales linearly with the players (`players / 4`). Four and above keep `RAID_HP_EXPONENT`.
+ */
+export const SMALL_PARTY_HP_EXPONENT = 1;
+
+/** The Attack exponent below four players (Misa, 2026-11-04): linear, `players / 4`, like the HP. Four and above keep `RAID_ATK_EXPONENT`. */
+export const SMALL_PARTY_ATK_EXPONENT = 1;
+
 /** The weekend HP of a raid boss for `cols` players, as a multiple of its HP for the usual four. */
 export function raidHpFactor(
   boss: Pick<BossDef, 'cols'>,
@@ -52,6 +63,17 @@ export function wideBoss(
     hp: Math.round(boss.hp * raidHpFactor(boss, cols, exponent)),
     atk: Math.round(boss.atk * (cols / boss.cols) ** atkExponent),
   };
+}
+
+/**
+ * The slot's four-player boss for a party of `players` columns (R14.1): widened on the curves over four, on the linear small-party curves
+ * below four (Misa, 2026-11-04). The one place the lab and the worker both get a party's boss from.
+ */
+export function partyBossOf(boss: BossDef, players: number): BossDef {
+  if (players === boss.cols) return boss;
+  return players < boss.cols
+    ? wideBoss(boss, players, SMALL_PARTY_HP_EXPONENT, SMALL_PARTY_ATK_EXPONENT)
+    : wideBoss(boss, players);
 }
 
 /** A boss's HP, Attack and armour before its rule cards (absolute). */
@@ -147,12 +169,12 @@ export interface TrackBossOptions extends SlotBossOptions {
   readonly players?: number;
   /**
    * What a party under four fights (Misa, 2026-11-04). Unset (the lab's calls): at four columns, the numbers being tuned for four.
-   * `true`: a boss that follows its players, one piece per player, the HP and Attack on the same curves continued below four.
+   * `true`: a boss that follows its players, one piece per player, the HP and Attack linear in the players below four.
    */
   readonly followSmallParty?: boolean;
 }
 
-/** The slot's boss for a party of `players` columns (R14.1): the slot's boss at four, widened with the players over four (`wideBoss`). */
+/** The slot's boss for a party of `players` columns (R14.1): the slot's boss at four, widened with the players (`partyBossOf`). */
 export function trackBoss(
   pack: Pick<CombatV2Pack, 'raidBosses' | 'cards' | 'raidTrack'>,
   shipped: Pick<Shipped, 'bosses'>,
@@ -164,5 +186,7 @@ export function trackBoss(
   if (!Number.isInteger(players) || players < 1)
     throw new Error(`a party is a whole number of players from 1, not ${players}`);
   if (players === RAID_COLS) return base;
-  return players < RAID_COLS && options.followSmallParty !== true ? base : wideBoss(base, players);
+  return players < RAID_COLS && options.followSmallParty !== true
+    ? base
+    : partyBossOf(base, players);
 }
