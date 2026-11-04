@@ -103,8 +103,8 @@ export interface SlotHp {
   text: string;
 }
 
-/** The rows of arrows in a tile's background pattern: two identical halves, so the drift loops without a seam. */
-const PATTERN_ROWS = 8;
+/** The rows of arrows in a tile's background pattern, a checkerboard of square cells (every other cell has an arrow): two identical halves of an even number of rows, so the drift loops without a seam. */
+const PATTERN_ROWS = 16;
 
 /** The state of a strip of slots, shared by every tile in it (`RaidBoard` draws the tiles). */
 export interface SlotStripProps {
@@ -244,7 +244,6 @@ export function SlotButton(props: SlotButtonProps) {
           <span class="slot-pattern-field">
             {Array.from({ length: PATTERN_ROWS }, (_, row) => (
               <b key={row} class={row % 2 === 1 ? 'odd' : undefined}>
-                <i />
                 <i />
                 <i />
               </b>
