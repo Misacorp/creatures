@@ -26,7 +26,7 @@ New migrations (numbers assigned by the lead when the work starts; today's last 
 | Swap requests        | `raid_swap_requests(week_id, party, id, from_user, to_user, slot_a, slot_b, status, created_at)`, indexed by (week, to_user) and (week, from_user). Open requests end at the next stage lock.                                                                                                                                                                                                                                                     | R19      |
 | Dungeon runs         | `RunState` version 2: the team as v2 placements with each creature's HP; `dungeon_steps.input_json` holds the room's `FightInputV2`.                                                                                                                                                                                                                                                                                                              | R14      |
 
-**Gear under v2:** only stat lines count (Attack, HP, Armour, Speed, crit), as silence already reads them (R12); effect lines do nothing until the gear model is built and measured (`gear-plan.md`, a lab follow-up). The creature page shows those lines as "not in the new rules yet". **Weather** (Boons and Omens) does not touch v2 fights in phase 4 (Misa, 2026-11-02): the lab has never measured it; phase 5 does.
+**Gear under v2:** only stat lines count (Attack, HP, Armour, Speed, crit), as silence already reads them (R12); effect lines do nothing until the gear model is built and measured (`gear-plan.md`, a lab follow-up). The creature page shows those lines as "not in the new rules yet". **Weather** (Boons and Omens) never touches a v2 fight: dropped for good (Misa, 2026-11-04). A v2 raid stage's experience reads none, and a v2 dungeon run's fight input carries no weather luck, foe attacks or sky; v1 fights keep theirs until v2 ships.
 
 **The valley's School** builds on the same Talent Book (valley round 18, V-SCH-7 to 9): the store above is the one it reads. The valley session is told when it lands.
 
@@ -37,7 +37,7 @@ Each change keeps the lab's parity digest identical (`cd packages/lab && node sc
 1. **A stage at a time.** `stageV2(input, carry, rng)` plays one stage and returns its result and the carry for the next one, as plain JSON (no Maps), so the worker stores it between Saturday and Sunday. `weekendV2` becomes a loop over it. Swaps between stages are the caller's (the worker's placements; the lab's bench).
 2. **Board events.** Today's events are text for the log. The board needs typed ones: round start, announce (move, slots), hit (who, whom, damage, crit, Blocked, dodged, intercepted by), mark (element, stacks), reaction, heal, knock-out, silence, Store, escalation step, resistance, boss turn. They go in a new field on each event, beside the text; the digest's canonical form leaves that field out, so every digest stays identical and proves the fights did not change. Engine tests check the board events themselves.
 3. **The live finale's inputs** (R18): Rally (every creature +10% damage this round, inside the hit-boost cap), Shield Wall (one row takes 50% less this round, inside the 75% cut cap) and Purge (no Element or Reaction Resistance for 2 rounds), as a list of `{round, kind, row?, by}` in the input. A fight without actions plays as before. Rounds already played never change when an action is added later (the prefix property the v1 finale relies on), so the worker can replay the live finale from its seed and actions on each read. Re-mark and the creature finale abilities go (R11, R18). The lab report measures the three once, so none is worth more than its intent.
-4. **The track's boss in the engine.** `slotBoss` (the lab's `track.ts`) and `wideBoss` (`raidMeasure.ts`) move to `resolve/`: the slot's boss from `raid-track.json`, at a party's width, with HP x (players / 4)^0.7 and Attack x (players / 4)^0.3 (R14.1). The lab reads them back. A party under four players fights at four columns with guests filling the rest, as today's guest rule does; the slot's numbers are tuned for four.
+4. **The track's boss in the engine.** `slotBoss` (the lab's `track.ts`) and `wideBoss` (`raidMeasure.ts`) move to `resolve/`: the slot's boss from `raid-track.json`, at a party's width, with HP x (players / 4)^0.7 and Attack x (players / 4)^0.3 (R14.1). The lab reads them back. A party under four players fights a boss that follows its players (Misa, 2026-11-04): one column per player, no guests, the same curves continued below four (`followSmallParty`; the lab's calls keep four columns). Its numbers are tuned for four, so phase 5 measures and tunes the small end.
 
 ## 4. The raid weekend on v2
 
@@ -47,7 +47,7 @@ Each change keeps the lab's parity digest identical (`cd packages/lab && node sc
 - **At each stage:** the scheduler resolves every party (`stageV2` with the stored carry, a seed drawn then), stores the result row and the new carry, and pays the stage's rewards with today's settle code. **No HP floors:** the boss can fall in any stage; then the weekend is a kill and nothing more is fought.
 - **Between stages:** a knocked-out creature is out for the weekend (greyed, "Out this weekend"); a player may bring a fresh creature into an empty slot and move their own creatures; marks, Stores and Mired start fresh; from stage 2 the resistance is shown at the stage break (R23).
 - **The finale** is stage 3, played live as today (the socket or the 2 s poll), with the three actions above on the players' rounds and the auto fire they have now.
-- **The arena** (Misa, 2026-11-03, decision `2026-11-03-combat-v2-arenas-each-boss-defines`): each raid boss has a `piece` in `raid-bosses.json`, the shape one player adds (today one full column of the boss's rows, `{ "rows": n }`; the loader refuses any other shape, naming the boss, until the engine can play it). A player brings as many creatures as the piece has seats (Storm Sovereign 2, most bosses 3, Cinder Wyrm 4). Until stage 1 the board is one piece per player plus a spare piece (at least four columns), so a newcomer can always place; stage 1 drops the spare and moves what stood in it to free seats (`compactBoard`). The view says `seats` and `spare`. A v1 week keeps three a player.
+- **The arena** (Misa, 2026-11-03, decision `2026-11-03-combat-v2-arenas-each-boss-defines`): each raid boss has a `piece` in `raid-bosses.json`, the shape one player adds (today one full column of the boss's rows, `{ "rows": n }`; the loader refuses any other shape, naming the boss, until the engine can play it). A player brings as many creatures as the piece has seats (Storm Sovereign 2, most bosses 3, Cinder Wyrm 4). Until stage 1 the board is one piece per player plus a spare piece (no floor of four since 2026-11-04), so a newcomer can always place; stage 1 drops the spare and moves what stood in it to free seats (`compactBoard`). The view says `seats` and `spare`. A v1 week keeps three a player.
 - **Players lock at stage 1** (Misa, 2026-11-02): joining closes when stage 1 begins, and the weekend's HP is set by the players in it. Otherwise a server could sign up one player for a small boss and pile on in stage 2. Players already in can still bring their own fresh creatures into empty slots between stages.
 - **The week's end:** a server kill (today's rule across parties: at least half of the parties that played won) moves the track one slot; otherwise the best share is kept and, from slot 6, Determination gains a stack (R24.9). A Festival week has no raid and the track waits (R24.5).
 - **Swap requests** (R19): from the board, a player asks another to swap two slots (or to move into an empty one); the other accepts or declines; an accepted swap moves both creatures in one transaction; open requests end at the next stage lock. Incoming requests show as a Home notice row.
@@ -112,12 +112,12 @@ Each slice is a few coherent commits on the phase 4 branch, reviewed by the lead
 
 ## 12. Not in phase 4
 
-The gear model and gear's effect lines (lab follow-up, then the port); weather in v2 fights; the readiness forecast; balance and the journey simulator (phase 5); the Valley Games on v2; anything for production (the flag stays off there until phase 8).
+The gear model and gear's effect lines (lab follow-up, then the port); the readiness forecast; balance and the journey simulator (phase 5); the Valley Games on v2; anything for production (the flag stays off there until phase 8).
 
 ## 13. Answered by Misa (2026-11-02)
 
 1. **Players lock at stage 1:** no one joins a weekend after stage 1 begins (section 4).
-2. **No weather in v2 fights** on staging until phase 5 measures it.
+2. **No weather in v2 fights**, on staging and for good (Misa, 2026-11-04).
 
 ## 14. Progress
 
@@ -138,7 +138,8 @@ The gear model and gear's effect lines (lab follow-up, then the port); weather i
 
 Found while building; each is staging-only today.
 
-- **Parties under four players** fight the boss tuned for four with their own creatures only (the plan's guests are not built). The board is the piece per player plus the spare, never under four columns (decision `2026-11-03-combat-v2-arenas-each-boss-defines`: still an open item for phase 5). The lab never measured smaller parties: phase 5 decides between guests and HP below four (R14.1's curve).
+- **Parties under four players** fight a boss with one column per player and its HP and Attack on R14.1's curves continued below four (Misa, 2026-11-04; no guests). The lab never measured smaller parties: phase 5 tunes the small end.
+- **Raid rewards** are paid at HP thresholds of the weekend (`RULES.raid.v2.rewards`: 30% and 85% to start), each once, by the stage that first crosses it; a kill adds a big bonus of epic and rare gear (Misa, 2026-11-04). Experience stays per stage.
 - **Discord posts** (the Monday reveal, the stage posts) are not queued for v2 weeks: they describe the shipped boss's moves.
 - **The practice finale** is refused on v2 weeks.
 - **Knack text** runs to three lines at 390 px on a few Knacks (Leave a Trail), over the two-line rule ("On the board", Text): shorten the content, never clip it.

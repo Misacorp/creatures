@@ -119,6 +119,27 @@ const toCamp = async (p: DungeonPlayer, state: DungeonRunState) => {
 };
 
 describe('a v2 run', () => {
+  it('reads no weather in its fights, even on a day with a Boon and an Omen (Misa, 2026-11-04)', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        giveV2(ctx, p.id);
+        ctx.clock.t = AFTER_RESET;
+        const state = await begin(p);
+        const st = stored(ctx, state.id);
+        // The valley has a day's weather, but the run's fight input carries none of it.
+        expect(st.weather).not.toBeNull();
+        expect(st.input.luck).toEqual(RULES.combat.luck);
+        expect(st.input).not.toHaveProperty('bossAttacks');
+        for (const key of ['rainHealBp', 'sky', 'fog', 'bramble']) {
+          expect(JSON.stringify(st.input)).not.toContain(key);
+        }
+      },
+      { ...V2('v2-weather'), weather: true },
+    );
+  });
+
   it('starts as version 2: its fighters frozen, its max HP the fighters’, the views saying rules 2', async () => {
     await runCore(
       nextGuild(),

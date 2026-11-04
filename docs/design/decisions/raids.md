@@ -4,6 +4,19 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-04: Combat v2 phase 5 answers in the game: the small boss, threshold payouts, the kill bonus and no fight weather
+
+ID: `2026-11-04-combat-v2-phase-5-answers-in` · Status: current
+
+**Decision.** The calls decision `2026-11-04-combat-v2-phase-5-answers-small` left open, for v2 weeks (v1 weeks are unchanged):
+
+- **The small boss.** `trackBoss` takes `followSmallParty`; the worker's weekend boss sets it, the lab's calls do not (they keep four columns, so the parity digest holds). The worker's board has one column per player (plus the spare until stage 1), at least one, with no floor of four. HP is x (players / 4)^0.7 and Attack x (players / 4)^0.3 below four as above it.
+- **Thresholds are data** in `RULES.raid.v2.rewards.thresholds`: `hp30` (3,000 bp) and `hp85` (8,500 bp), each naming the stage payout it gives (`pays`: the Essence of that phase and its scrap), so the amounts are today's. A stage pays every threshold its HP removed has reached that no earlier stage of the party stored as paid; a kill crosses all of them. What a stage paid is in its result summary (`v2.paid`: threshold ids and whether the kill bonus was paid), so there is no new column and no migration, and a stage's payout stays idempotent through the result row, the ledger keys (`raid:<week>:<party>:<phase>`) and the gear grant keys. Experience stays per stage with today's "cleared" rule. The finale's own payout (its Essence, gear roll, jackpot, Festival) still goes with a kill in the finale; a boss that falls in stage 1 or 2 pays the thresholds and the bonus, not the finale's payout (as before).
+- **The kill bonus** is `RULES.raid.v2.rewards.killBonus`: one epic and two rare pieces per member of the party that kills the boss, at the finale's item level (3 + Boss Rank) and the boss's element, rolled with the existing gear code (`rollKillBonusItem`, `grantRaidKillBonus`, key `raid:<week>:kill`, source `raid_finale`). A full bag turns pieces into scrap through the grant code as for any grant. Phase 5 tunes the amount.
+- **No weather in v2 fights.** A v2 raid stage's experience reads no weather and records no weather event; a v2 dungeon run's fight input has no weather luck, foe attacks or sky. A v2 dungeon run still stores the day's weather for its scrap and experience rewards (the valley's other systems), not for the fight.
+
+**Reasoning.** Storing the paid thresholds in the result keeps the rule readable and the payout exact without a table, and does not depend on the boss's carried HP (which a test or a tool may set). The kill bonus reuses the finale's roll so its item level follows the Boss Rank like every other raid piece.
+
 ## 2026-11-04: Combat v2 phase 5 answers: small parties fight a smaller boss, rewards at HP thresholds with a big kill bonus, no weather in fights **[Misa]**
 
 ID: `2026-11-04-combat-v2-phase-5-answers-small` · Status: current

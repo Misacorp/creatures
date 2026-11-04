@@ -71,7 +71,7 @@ Folded into the pass, from the lab's follow-ups and phase 4's open items:
 - second answers for the 11 cards with one answer (P-13);
 - the Tidal Colossus's and Old Bogback's second answers;
 - the gear model and gear's effect lines (`gear-plan.md`: stat lines count today, effect lines do not);
-- weather is out of v2 fights for good (Misa): remove its remaining hooks from the v2 fight path;
+- weather is out of v2 fights for good (Misa): its hooks are removed from the v2 fight path (done 2026-11-04: the raid stage's experience and the dungeon run's fight input read none);
 - Culling Strike stays an enabler: not buffed for its solo value (decision `2026-11-03-culling-strike-stays-as-an-enabler`).
 
 ## 5. Order of the work
@@ -94,9 +94,9 @@ Folded into the pass, from the lab's follow-ups and phase 4's open items:
 
 ## 7. Answered by Misa (2026-11-04)
 
-1. **Small parties** fight a smaller boss: its HP and arena follow the players, with no guests.
-2. **Raid rewards** are paid at HP thresholds, whichever stage crosses them, and the kill bonus is big and exciting (lots of rare and epic gear).
-3. **No weather in fights:** dropped from v2 fights for good.
+1. **Small parties** fight a smaller boss: its HP and arena follow the players, with no guests. In the game since 2026-11-04 (one column per player, R14.1's curves below four); phase 5 measures and tunes it.
+2. **Raid rewards** are paid at HP thresholds, whichever stage crosses them, and the kill bonus is big and exciting (lots of rare and epic gear). In the game since 2026-11-04: thresholds 30% and 85% of the weekend in `RULES.raid.v2.rewards`, each paid once; the kill bonus is one epic and two rare pieces per member.
+3. **No weather in fights:** dropped from v2 fights for good. Done in the game since 2026-11-04.
 
 Decision `2026-11-04-combat-v2-phase-5-answers-small`.
 

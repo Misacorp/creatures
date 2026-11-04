@@ -6,7 +6,7 @@
  * boss from its own derivation with `slotBossOf`.
  *
  * R14.1: the boss's numbers are tuned for four players. A bigger party fights a wider arena with the HP times `(players / 4) ^ 0.7` and the
- * Attack times `(players / 4) ^ 0.3`; a party under four fights at four columns (guests fill the rest).
+ * Attack times `(players / 4) ^ 0.3`; a party under four fights at four columns unless `followSmallParty` is set (then the same curves run below four, one column per player).
  */
 import type { CombatV2Pack } from '@creatures/game/combat-v2';
 import type { BossDef } from '../types';
@@ -143,8 +143,13 @@ export function slotBossOf(
 }
 
 export interface TrackBossOptions extends SlotBossOptions {
-  /** The players in the party, one column each (default 4). Under 4 the party fights at four columns: the numbers are tuned for four. */
+  /** The players in the party, one column each (default 4). */
   readonly players?: number;
+  /**
+   * What a party under four fights (Misa, 2026-11-04). Unset (the lab's calls): at four columns, the numbers being tuned for four.
+   * `true`: a boss that follows its players, one piece per player, the HP and Attack on the same curves continued below four.
+   */
+  readonly followSmallParty?: boolean;
 }
 
 /** The slot's boss for a party of `players` columns (R14.1): the slot's boss at four, widened with the players over four (`wideBoss`). */
@@ -158,5 +163,6 @@ export function trackBoss(
   const players = options.players ?? RAID_COLS;
   if (!Number.isInteger(players) || players < 1)
     throw new Error(`a party is a whole number of players from 1, not ${players}`);
-  return players <= RAID_COLS ? base : wideBoss(base, players);
+  if (players === RAID_COLS) return base;
+  return players < RAID_COLS && options.followSmallParty !== true ? base : wideBoss(base, players);
 }

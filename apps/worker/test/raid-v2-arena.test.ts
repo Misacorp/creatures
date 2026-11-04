@@ -47,8 +47,8 @@ describe('the seats of a piece', () => {
       expect(ctx.core.raid.needsPlacement(a.id, HELSINKI).needed).toBe(false);
       expect(place(ctx, b, 0, 2)).toMatchObject({ ok: true });
       expect(place(ctx, b, 1, 3)).toMatchObject({ ok: true });
-      expect(v2Of(ctx, a.id)).toMatchObject({ rows: 2, seats: 2, cols: 4, spare: true });
-      // Four columns are eight seats; the third player joins into the free ones.
+      expect(v2Of(ctx, a.id)).toMatchObject({ rows: 2, seats: 2, cols: 3, spare: true });
+      // Two players and the spare piece are three columns (six seats); the third player joins into the free ones.
       expect(place(ctx, c, 0, 4)).toMatchObject({ ok: true });
       expect(place(ctx, c, 1, 5)).toMatchObject({ ok: true });
       expect(ctx.core.raid.needsPlacement(c.id, HELSINKI).needed).toBe(false);
@@ -110,7 +110,7 @@ describe('the seats of a piece', () => {
       const a = v2Player(ctx, 1, { level: 22 });
       for (const k of [0, 1, 2, 3]) expect(place(ctx, a, k, k)).toMatchObject({ ok: true });
       expect(place(ctx, a, 4, 4)).toEqual(FULL);
-      expect(v2Of(ctx, a.id)).toMatchObject({ rows: 4, seats: 4, cols: 4, spare: true });
+      expect(v2Of(ctx, a.id)).toMatchObject({ rows: 4, seats: 4, cols: 2, spare: true });
       expect(ctx.core.raid.needsPlacement(a.id, HELSINKI).needed).toBe(false);
     });
   }, 60_000);

@@ -646,12 +646,13 @@ export class Dungeon {
       player: PLAYER,
       rooms: [],
       abilities: abilityChoices(row),
-      luck: { ...weatherLuck(v2 ? null : wday, RULES.combat.luck) },
+      // A v2 fight has no weather (Misa, 2026-11-04): no Boon or Omen reaches its luck, attacks or sky.
+      luck: { ...(v2 ? RULES.combat.luck : weatherLuck(wday, RULES.combat.luck)) },
       ...(Object.keys(rest).length === 0 ? {} : { rest }),
       ...(!v2 && weatherBossAttacks(wday, 1) > 1
         ? { bossAttacks: weatherBossAttacks(wday, 1) }
         : {}),
-      // Kind Rain, Morning Haze and Bramble Season (stored in the run input; a v2 fight reads no weather).
+      // Kind Rain, Morning Haze and Bramble Season (stored in the run input; v1 only).
       ...(v2 ? {} : skyRunFields(weatherSky(wday))),
       // The combat rules, the boss room's enrage and the depth (a landmark gives the floor boss its
       // signature), stored with the input so a replay is exact.

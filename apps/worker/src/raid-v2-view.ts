@@ -96,7 +96,7 @@ export interface RaidV2Part {
   nextStage: number;
   /** Joining is open: stage 1 has not begun and the week is not a Festival. */
   joiningOpen: boolean;
-  /** The arena: rows of the slot's boss and the columns (`max(4, players)`); a slot is `col * rows + row`. */
+  /** The arena: rows of the slot's boss and the columns (one per player); a slot is `col * rows + row`. */
   rows: number;
   cols: number;
   /** The creatures one player brings: the seats of the boss's arena piece (a column of `rows`, today). */

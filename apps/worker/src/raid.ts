@@ -718,7 +718,7 @@ export class Raid {
   }
 
   /**
-   * The slots of a combat v2 party's board: the slot's boss's rows by the columns its players make (`max(4, players)`), plus the
+   * The slots of a combat v2 party's board: the slot's boss's rows by the columns its players make (one per player), plus the
    * spare piece (one more column) until stage 1 locks the players (Misa, 2026-11-03), so a newcomer can always place.
    */
   private v2Length(week: WeekRow, party: number): number {

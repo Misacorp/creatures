@@ -66,7 +66,7 @@ const knackOf = (species: string, row: number): string | undefined =>
 export interface FightSampleOptions {
   /** The track's slot (the Boss Rank). */
   slot: number;
-  /** The party's players: the board has `max(4, players)` columns. */
+  /** The party's players: the board has one column per player. */
   players: number;
   /** The stage to show: 1, 2 or 3 (the finale). The earlier stages are played first and hand their carry on. */
   stage: 1 | 2 | 3;
@@ -218,7 +218,7 @@ export interface FightSample {
 /** Plays the stages up to `o.stage` and returns the last one. */
 export function playSample(o: FightSampleOptions): FightSample {
   const players = Math.max(1, o.players);
-  const boss = trackBoss(combatV2, SHIPPED, o.slot, { players });
+  const boss = trackBoss(combatV2, SHIPPED, o.slot, { players, followSmallParty: true });
   const fighters = sampleFighters(boss, players, o.level ?? 20, o.party ?? 'rows');
   let carry = startCarry(boss);
   let shown: FightSample | null = null;
