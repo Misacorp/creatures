@@ -778,6 +778,14 @@ const SCENES = {
           : null,
     };
   },
+  'combat v2: on the way down a knocked-out creature got back up (tap the boss room)': () => {
+    const base = undercroftState('entrance');
+    return {
+      ...base,
+      rules: 2 as const,
+      history: (base.history ?? []).map((h) => (h.result === 'descend' ? { ...h, revived: 1 } : h)),
+    };
+  },
   'before the boss (the down-arrow badge on the floor boss)': () => undercroftState('locked'),
   'a carved door ahead': () => undercroftState('door-ahead'),
   'in the Undercroft: the entrance': () => undercroftState('entrance'),
