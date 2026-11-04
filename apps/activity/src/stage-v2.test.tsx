@@ -245,6 +245,50 @@ describe('what a fight shows besides the numbers', () => {
     expect(byClass(p.root, 'pip').length).toBe(0);
   });
 
+  it('a boosted creature has arrows drifting up in its background by default; the glow look has none', () => {
+    const replay = mixed();
+    const boosted = (m: ReturnType<typeof stageModelOf>, k: number) =>
+      Object.values(m.states[k + 1]?.creatures ?? {}).some((c) => c.boost > 0 && !c.out);
+    const { p } = draw(replay, boosted);
+    const up = byClass(p.root, 'slot-pattern').filter((el) =>
+      el.getAttribute('class')?.includes('up'),
+    );
+    expect(up.length).toBe(byClass(p.root, 'boost-pattern').length);
+    expect(up.length).toBeGreaterThan(0);
+    page?.unmount();
+    const glow = draw(replay, boosted, false, { boostLook: 'glow' });
+    expect(byClass(glow.p.root, 'slot-pattern').length).toBe(0);
+    expect(byClass(glow.p.root, 'boost-glow').length).toBeGreaterThan(0);
+  });
+
+  it('a silenced creature has the flipped pattern (red arrows drifting down) in its background', () => {
+    const replay = replaySample({ slot: 5, players: 4, stage: 1, seed: 'fold' });
+    const { p, model, beat } = draw(replay, (m, k) =>
+      Object.values(m.states[k + 1]?.creatures ?? {}).some((c) => c.silenced > 0 && !c.out),
+    );
+    const n = Object.values(model.states[beat]?.creatures ?? {}).filter(
+      (c) => c.silenced > 0 && !c.out,
+    ).length;
+    expect(byClass(p.root, 'fight-debuffed').length).toBe(n);
+    const down = byClass(p.root, 'slot-pattern').filter((el) =>
+      el.getAttribute('class')?.includes('down'),
+    );
+    expect(down.length).toBe(n);
+  });
+
+  it("a Guard's save also bursts a shield out of the Guard, on the stage's overlay layer", () => {
+    const replay = mixed();
+    const { p } = draw(
+      replay,
+      (m, k) => showOf(replay.events, m.beats[k] as never).saves.length > 0,
+    );
+    const layer = byClass(p.root, 'stage-bursts')[0];
+    expect(layer).toBeDefined();
+    const bursts = byClass(layer as never, 'guard-burst');
+    expect(bursts.length).toBeGreaterThan(0);
+    for (const b of bursts) expect(byClass(b, 'burst-shield').length).toBe(1);
+  });
+
   it("a reaction's callout is its name in the content's words over the boss, with the bonus and its two colours", () => {
     const replay = mixed();
     const { p } = draw(

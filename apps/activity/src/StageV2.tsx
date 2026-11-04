@@ -33,7 +33,7 @@ import { elementIcon } from './sprites/element-icons';
 import type { PlaybackV2 } from './use-playback-v2';
 import { MarkStrip, type MarkChipModel } from './ui/MarkStrip';
 import { RaidBoard, type BoardRowModel } from './ui/RaidBoard';
-import type { SlotModel } from './ui/SlotButton';
+import type { BoostLook, SlotModel } from './ui/SlotButton';
 import type { SlotCue } from './ui/slot-cue';
 import { SegmentBar } from './ui/SegmentBar';
 import { StageHead } from './ui/StageHead';
@@ -65,7 +65,7 @@ function SplitName({
  * The numbers and words that float over a creature or the boss. A creature's hit on the boss is a number in its element's colour, a
  * crit the same number ending with "!" in two hard halves (`crit-split`); a Blocked hit is the shield and 0; a reaction is one float:
  * its name in its two element colours with, under it on one line, the hit's total and the bonus ("452 +307"); a Guard's save is a
- * large shield (with what it kept off, when known); a boost is rising arrows; a Knack's name is a small word. All of it is text and drawings, never markup built from a name.
+ * large shield (with what it kept off, when known; the Guard itself bursts a shield out, `GuardBursts`); a boost is rising arrows; a Knack's name is a small word. All of it is text and drawings, never markup built from a name.
  */
 function FloatsV2({ fx, target }: { fx: readonly FxItem[]; target: string | null }) {
   // The hits whose number rides in a reaction's callout, so they are not drawn twice.
@@ -145,6 +145,78 @@ function FloatsV2({ fx, target }: { fx: readonly FxItem[]; target: string | null
   );
 }
 
+/**
+ * A Guard's save, from the Guard itself: the same shield as the one on the covered creature, starting on the Guard's tile and growing
+ * to 2.5 times its size while it fades, as long as the shields on the tiles last. It outgrows the tile, so it is drawn on the stage's
+ * overlay layer (clipped to the stage, never scrolling it), placed from the Guard tile's box and kept there when the board scrolls.
+ * Motion reduced: one still large shield on the Guard for the beat.
+ */
+function GuardBursts({
+  fx,
+  tile,
+  strip,
+}: {
+  fx: readonly FxItem[];
+  tile: (key: string) => HTMLElement | null;
+  strip: () => HTMLElement | null;
+}) {
+  const bursts = fx.flatMap((item) => {
+    const { cue } = item;
+    if (cue.kind !== 'cover') return [];
+    // Timed with the save's shield on the covered creature (the same beat's float).
+    const saved = fx.find(
+      (f) => f.cue.kind === 'float' && f.cue.tone === 'save' && f.cue.i === cue.i,
+    );
+    return [{ key: `guard-burst-${String(cue.i)}`, guard: cue.guard, ms: (saved ?? item).ms }];
+  });
+  return (
+    <>
+      {bursts.map((b) => (
+        <GuardBurst key={b.key} guard={b.guard} ms={b.ms} tile={tile} strip={strip} />
+      ))}
+    </>
+  );
+}
+
+function GuardBurst({
+  guard,
+  ms,
+  tile,
+  strip,
+}: {
+  guard: string;
+  ms: number;
+  tile: (key: string) => HTMLElement | null;
+  strip: () => HTMLElement | null;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  // Place the shield's centre on the Guard tile's centre, in the overlay layer's own coordinates; follow a sideways scroll of the board.
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const layer = el?.parentElement;
+    const scroller = strip();
+    if (el === null || layer === null || layer === undefined) return undefined;
+    const place = (): void => {
+      const box = tile(guard)?.getBoundingClientRect();
+      const at = layer.getBoundingClientRect();
+      if (box === undefined) return;
+      el.style.setProperty('--bx', `${String(box.left + box.width / 2 - at.left)}px`);
+      el.style.setProperty('--by', `${String(box.top + box.height / 2 - at.top)}px`);
+    };
+    el.style.setProperty('--fx-ms', `${String(ms)}ms`);
+    place();
+    scroller?.addEventListener('scroll', place, { passive: true });
+    return () => {
+      scroller?.removeEventListener('scroll', place);
+    };
+  }, [guard, ms]);
+  return (
+    <span class="guard-burst" ref={ref}>
+      <Sprite sprite={glyphOrUnknown('shield')} scale={1} class="burst-shield" />
+    </span>
+  );
+}
+
 /** A plain pass-through of a DragDrop for a board nobody drags on. */
 const NO_DRAG = {
   drag: null,
@@ -184,6 +256,8 @@ interface StageV2Props {
   ticks?: readonly number[];
   /** Under the board: the live finale's input. */
   children?: ComponentChildren;
+  /** How a boosted creature shows (default `pattern`: arrows drifting up in the tile's background; `glow`: the inner glow). */
+  boostLook?: BoostLook;
   /** Drawn over the stage inside its padding, like the effects' layer (the dungeon's room banner); it lets taps through. */
   overlay?: ComponentChildren;
 }
@@ -211,6 +285,7 @@ export function StageV2({
   single = false,
   ticks,
   children,
+  boostLook = 'pattern',
   overlay,
 }: StageV2Props) {
   const popovers = usePopoverHost();
@@ -307,7 +382,11 @@ export function StageV2({
           out: now?.out === true,
           store: now?.store ?? 0,
           hit: hit.has(f.key),
-          ...((now?.boost ?? 0) > 0 && now?.out !== true ? { boosted: true as const } : {}),
+          ...((now?.boost ?? 0) > 0 && now?.out !== true
+            ? { boosted: true as const, boostLook }
+            : {}),
+          // Silence is the one lowering a creature carries in the events today.
+          ...((now?.silenced ?? 0) > 0 && now?.out !== true ? { debuffed: true as const } : {}),
           acting: landed?.kind === 'creature' && landed.actor === f.key,
           ...(leg === undefined ? {} : { link: leg }),
           overlay: (
@@ -529,6 +608,19 @@ export function StageV2({
       {children}
       {/* The effects' layer sits inside the stage's padding, so nothing of it is drawn past the stage's content. */}
       <div class="stage-overlay">
+        <div class="stage-bursts" aria-hidden="true">
+          <GuardBursts
+            fx={fx}
+            tile={(key) => {
+              const slot = bySlotKey.get(key);
+              return slot === undefined
+                ? null
+                : (stripRef.current?.querySelector<HTMLElement>(`[data-slot="${String(slot)}"]`) ??
+                    null);
+            }}
+            strip={() => stripRef.current}
+          />
+        </div>
         <div class="stage-strikes" ref={layerRef} aria-hidden="true">
           {strike !== null && (
             <BossFx

@@ -381,10 +381,10 @@
   --- A creature carrying a Support's Boost ---
   The mark stays for as long as the Boost lasts (until the creature's next hit), so the board can be read at a glance. It is the tile's
   ::after, not its own box-shadow, so it never replaces the element ring, the Guard's flash or a hit's red. It is a yellow inner
-  glow that starts flush at the tile's border (inset 0 inside the border, no gap), in three hard steps of gold going inwards (no
+  glow (`boostLook: glow`, the pattern is the default) that starts flush at the tile's border (inset 0 inside the border, no gap), in three hard steps of gold going inwards (no
   blur), light enough to leave the creature clear. A static drawing: it has no motion to reduce.
 */
-.party-slot.fight-boosted::after {
+.party-slot.fight-boosted.boost-glow::after {
   position: absolute;
   inset: 0;
   content: '';
@@ -443,9 +443,8 @@
   width: 2.5rem;
   height: 2.5rem;
   margin: 0;
-  /* Brighter than the plain glyph, ringed in the save's green with a gold edge outside it: it must read as a flash. */
-  --shield-glow: brightness(1.1) drop-shadow(2px 0 var(--good)) drop-shadow(-2px 0 var(--good))
-    drop-shadow(0 2px var(--good)) drop-shadow(0 -2px var(--good)) drop-shadow(0 0 0 var(--gold));
+  /* Brighter than the plain glyph, no ring: it must read as a flash. */
+  --shield-glow: brightness(1.1);
   filter: var(--shield-glow);
   image-rendering: pixelated;
 }
@@ -502,12 +501,177 @@
   @keyframes save-flash {
     0%,
     10% {
-      filter: brightness(3) saturate(0.3) drop-shadow(0 0 0 var(--gold));
+      filter: brightness(3) saturate(0.3);
     }
 
     30%,
     100% {
       filter: var(--shield-glow);
+    }
+  }
+}
+
+/*
+  A Guard's save from the Guard itself: the shield glyph on the stage's overlay layer (above the board, clipped to the stage so it never
+  scrolls the page), its centre on the Guard tile's centre (--bx, --by, set from the tile's box). It starts as large as the shields on
+  the covered creatures (2.5 rem) and scales up to 2.5 times that while fading out, over the same time as they last. Reduced motion
+  (and the workbench's held frames): one still, large, half-clear shield.
+*/
+.stage-v2 .stage-bursts {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  pointer-events: none;
+}
+
+.guard-burst {
+  position: absolute;
+  top: var(--by, 0);
+  left: var(--bx, 0);
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: -1.25rem 0 0 -1.25rem;
+  transform: scale(2);
+  opacity: 0.55;
+}
+
+.guard-burst canvas.burst-shield {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .guard-burst {
+    animation: guard-burst var(--fx-ms, 2000ms) ease-out both;
+  }
+
+  .wb-held .guard-burst {
+    animation: none;
+  }
+
+  @keyframes guard-burst {
+    0% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    55% {
+      opacity: 0.7;
+    }
+
+    100% {
+      opacity: 0;
+      transform: scale(2.5);
+    }
+  }
+}
+
+/*
+  --- Boosted and debuffed: a pattern in the tile's background ---
+  Small hard-edged arrows (a stepped pixel arrow, no blur) in rows, behind the creature, name and Knack chip: the tile is its own
+  stacking context and the pattern sits at z-index -1 above its colour, low in contrast so the foreground reads as without it. A
+  boost's are yellow and point up, drifting slowly up; a debuff's are the same flipped, red, drifting slowly down. The field is twice
+  the tile's height in two identical halves, so the loop has no seam. Reduced motion: the arrows stand still.
+*/
+.party-slot.fight-boosted.boost-pattern,
+.party-slot.fight-debuffed {
+  isolation: isolate;
+}
+
+.party-slot .slot-pattern {
+  position: absolute;
+  inset: 0.2rem;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.party-slot .slot-pattern-field {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  height: 200%;
+}
+
+.party-slot .slot-pattern b {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-around;
+  padding-inline: 0.25rem;
+}
+
+.party-slot .slot-pattern b.odd {
+  padding-inline: 0.875rem;
+}
+
+.party-slot .slot-pattern i {
+  --u: 14.2857%;
+  display: block;
+  width: 0.875rem;
+  height: 0.875rem;
+  background: var(--pattern-ink);
+  /* A seven-step pixel arrow: a stepped head over a three-wide stem. */
+  clip-path: polygon(
+    calc(var(--u) * 3) 0,
+    calc(var(--u) * 4) 0,
+    calc(var(--u) * 4) var(--u),
+    calc(var(--u) * 5) var(--u),
+    calc(var(--u) * 5) calc(var(--u) * 2),
+    calc(var(--u) * 6) calc(var(--u) * 2),
+    calc(var(--u) * 6) calc(var(--u) * 3),
+    100% calc(var(--u) * 3),
+    100% calc(var(--u) * 4),
+    calc(var(--u) * 5) calc(var(--u) * 4),
+    calc(var(--u) * 5) 100%,
+    calc(var(--u) * 2) 100%,
+    calc(var(--u) * 2) calc(var(--u) * 4),
+    0 calc(var(--u) * 4),
+    0 calc(var(--u) * 3),
+    var(--u) calc(var(--u) * 3),
+    var(--u) calc(var(--u) * 2),
+    calc(var(--u) * 2) calc(var(--u) * 2),
+    calc(var(--u) * 2) var(--u),
+    calc(var(--u) * 3) var(--u)
+  );
+}
+
+.party-slot .slot-pattern.up {
+  --pattern-ink: rgb(var(--gold-rgb) / 38%);
+}
+
+.party-slot .slot-pattern.down {
+  --pattern-ink: rgb(var(--bad-rgb) / 38%);
+}
+
+.party-slot .slot-pattern.down i {
+  transform: scaleY(-1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .party-slot .slot-pattern.up .slot-pattern-field {
+    animation: pattern-up 7s linear infinite;
+  }
+
+  .party-slot .slot-pattern.down .slot-pattern-field {
+    animation: pattern-down 7s linear infinite;
+  }
+
+  @keyframes pattern-up {
+    to {
+      transform: translateY(-50%);
+    }
+  }
+
+  @keyframes pattern-down {
+    from {
+      transform: translateY(-50%);
+    }
+
+    to {
+      transform: translateY(0);
     }
   }
 }

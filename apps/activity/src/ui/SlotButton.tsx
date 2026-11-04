@@ -78,13 +78,23 @@ export interface FightTile {
    */
   link?: { role: 'guard' | 'saved'; side: 'left' | 'right' };
   /**
-   * It carries a Support's Boost (until its next hit): a yellow inner glow, flush to the tile's border, that stays while the Boost
-   * lasts. It is not the element ring, the Guard's flash or the hit's red.
+   * It carries a Support's Boost (until its next hit), for as long as the Boost lasts. `boostLook` is how it shows: `pattern`
+   * (the default) is small yellow arrows drifting upwards in the tile's background; `glow` is a yellow inner glow flush to the tile's
+   * border. Neither is the element ring, the Guard's flash or the hit's red.
    */
   boosted?: boolean;
+  boostLook?: BoostLook;
+  /**
+   * A debuff lowers it (silence, today; the fold has no other creature debuff): the same pattern as a boost, flipped: red arrows drifting
+   * downwards in the background. When it is also boosted, this one is drawn.
+   */
+  debuffed?: boolean;
   /** The numbers and tags that float over it, drawn by the screen. */
   overlay?: ComponentChildren;
 }
+
+/** How a boosted creature's tile shows it (a Misa comparison): arrows in the background, or the inner glow. */
+export type BoostLook = 'pattern' | 'glow';
 
 /** The HP line of a tile: `ratio` (0 to 1) fills the bar, `state` colours it, `text` is the words. */
 export interface SlotHp {
@@ -92,6 +102,9 @@ export interface SlotHp {
   state: 'ok' | 'low' | 'ko';
   text: string;
 }
+
+/** The rows of arrows in a tile's background pattern: two identical halves, so the drift loops without a seam. */
+const PATTERN_ROWS = 8;
 
 /** The state of a strip of slots, shared by every tile in it (`RaidBoard` draws the tiles). */
 export interface SlotStripProps {
@@ -153,7 +166,9 @@ export function SlotButton(props: SlotButtonProps) {
     if (fight?.hit === true) classes.push('fight-hit');
     if (fight?.acting === true) classes.push('fight-acting');
     if (fight?.link?.role === 'guard') classes.push('fight-guarding');
-    if (fight?.boosted === true) classes.push('fight-boosted');
+    if (fight?.boosted === true)
+      classes.push('fight-boosted', `boost-${fight.boostLook ?? 'pattern'}`);
+    if (fight?.debuffed === true) classes.push('fight-debuffed');
   }
   if (own !== null) classes.push('draggable');
   if (status === 'valid') classes.push('drop-valid');
@@ -165,6 +180,14 @@ export function SlotButton(props: SlotButtonProps) {
   classes.push(...cueClasses(props.cue));
   const badge = props.cue?.reaction;
   const hover = props.onHover;
+  const fightLook = c?.v2?.fight;
+  // The background pattern: a debuff's red downward arrows win over a boost's yellow upward ones.
+  const pattern =
+    fightLook?.debuffed === true
+      ? 'down'
+      : fightLook?.boosted === true && (fightLook.boostLook ?? 'pattern') === 'pattern'
+        ? 'up'
+        : null;
   const roleIcon = c?.v2 === undefined ? null : roleGlyphId(c.v2.role);
   const hitGlyph = props.cue?.hit === undefined ? undefined : combatGlyph(props.cue.hit.glyph);
   const plainGlyph = props.cue?.plain === true ? combatGlyph('attack') : undefined;
@@ -216,6 +239,19 @@ export function SlotButton(props: SlotButtonProps) {
             }
       }
     >
+      {pattern !== null && (
+        <span class={`slot-pattern ${pattern}`} aria-hidden="true" data-audit-clip>
+          <span class="slot-pattern-field">
+            {Array.from({ length: PATTERN_ROWS }, (_, row) => (
+              <b key={row} class={row % 2 === 1 ? 'odd' : undefined}>
+                <i />
+                <i />
+                <i />
+              </b>
+            ))}
+          </span>
+        </span>
+      )}
       {slot.hideNumber !== true && <span class="slot-num">{slot.index + 1}</span>}
       {c === null ? (
         <span class="slot-empty">{props.emptyLabel}</span>
