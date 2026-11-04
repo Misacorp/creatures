@@ -32,12 +32,12 @@ import { bestPiece, hasFourOfFive, wornPieces } from './lines';
 import { visitVisitor } from './visitor';
 import { temperAtVisit } from './tempering';
 import { offerToIdol } from './idol';
-import { runXp } from './dungeonXp';
+import { playerWeek, runXp, shareSplit } from './dungeonXp';
 import { heldForms } from './forms';
 import { openSlots, startLearning, stepSchool, teacherDay } from './school';
 import { MARKET_OPENS_AT, openMarket } from './commons';
 import { beginVisit, endVisit, homeDone, newTracer, type JourneyEntry } from './journey';
-import { accrueIdleXp, atTopLevel, fightXp, levelsDesc, setCatchUp } from './growth';
+import { accrueIdleXp, addXp, atTopLevel, fightXp, levelsDesc, setCatchUp } from './growth';
 import {
   buyEvolutions,
   buySeatsAndKit,
@@ -121,7 +121,14 @@ function runDungeon(p: Player, server: Server, hour: number): void {
     p.passes -= 1;
     const team = fightTeam(p);
     tickDungeon(team, uniform(p.rng) < p.rules.honours.undercroftShare);
-    fightXp(p, runXp(server.config.dungeonXp, p, hour, d.xp), 'xpDungeon', team);
+    fightXp(p, runXp(server.config.dungeonXp, p, hour, d.xp, team.length), 'xpDungeon', team);
+    if (server.config.dungeonXp === 'share') {
+      // Variant C: the rest of the depth XP goes to the creatures at home, evenly, as XP brought home (no catch-up).
+      const bench = p.creatures.filter((c) => !team.includes(c));
+      const pool = shareSplit(playerWeek(p, hour), d.xp, team.length).benchPool;
+      for (const c of bench) addXp(p, c, pool / bench.length);
+      if (bench.length) p.wk.xpDungeon += pool;
+    }
     credit(p, R.acorns, d.acorns, 'dungeon');
     credit(p, R.scrap, d.scrap, 'dungeon');
     credit(p, R.essence, d.essence, 'dungeon');

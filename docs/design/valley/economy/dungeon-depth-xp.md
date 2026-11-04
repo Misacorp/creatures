@@ -25,6 +25,27 @@ Run it: `pnpm --filter @creatures/econ report -- --dungeon-xp-study --seeds 20 -
    - The daily player's median gap at weeks 8 and 12 never gets to 5 in any row (7.0 and 5.3 to 6.0 at best), because that needs the base XP to come down, not only the bonus.
 7. **What would help instead** (not run): giving a creature the dungeon's depth XP only up to a cap near the level the team is at, or sharing a part of the run's XP with the bench (a post that lets the bench ride along), or lowering the base XP per run toward 120 as the bonus grows so the total stays near today's. These are design choices for Misa and combat v2, not implemented.
 
+## Two more variants (asked for after the first draft)
+
+- **B, deeper pays loot, XP grows only a little.** A run's XP is 120 x (1 + perDepthBp x depth), no cap: the flat base at any depth plus a small per-depth growth. Depth is the one inferred from the two columns (2, 19, 45, 72, 156 at weeks 1, 4, 8, 12, 24). Tried at 25 bp (+0.25% a depth: 121, 126, 134, 141 and 167 XP a run at weeks 1, 4, 8, 12, 24) and 50 bp (121, 131, 147, 163 and 214). In the code it is `{ perDepthBp, maxBp: Infinity, flatBase: true }`.
+- **C, share with the bench.** The full depth curve, but of each run's amount above the flat 120, half stays with each fighter and the other half of the team's total (3 x the part above 120, halved) is spread evenly over every creature that is not on the team, as XP brought home (no catch-up, XP above a creature's bank is lost as always). In the code it is `dungeonXp: 'share'`. "At home" is read as every creature not in the team, whether it is at a post or not.
+
+Per profile at weeks 4, 8 and 12 the rows are in the data below. In short (daily player; top / 3rd / median gap / bench median level):
+
+|                 | Week 4                 | Week 8                 | Week 12              | Best reaches 30    |
+| --------------- | ---------------------- | ---------------------- | -------------------- | ------------------ |
+| flat 120 (base) | 19 / 19 / 2.3 / 15.0   | 25 / 25 / 4.0 / 17.5   | 29 / 29 / 5.0 / 21.5 | day 89 (week 13.7) |
+| depth curve     | 22 / 21.5 / 3.3 / 15.0 | 30 / 30 / 8.0 / 17.3   | 30 / 30 / 5.5 / 21.0 | day 52 (week 8.4)  |
+| v1 curve        | 21 / 20.5 / 3.8 / 15.0 | 29 / 28.5 / 6.5 / 17.0 | 30 / 30 / 6.0 / 22.0 | day 60 (week 9.6)  |
+| B, 25 bp        | 19 / 19 / 2.8 / 15.0   | 25 / 25 / 4.0 / 17.0   | 29 / 29 / 5.0 / 21.5 | day 85 (week 13.1) |
+| B, 50 bp        | 19 / 19 / 2.8 / 15.0   | 25 / 25 / 4.0 / 17.0   | 30 / 30 / 5.5 / 21.0 | day 84 (week 13.0) |
+| C, share        | 20 / 20 / 3.0 / 15.0   | 28 / 27.5 / 5.5 / 18.0 | 30 / 30 / 5.0 / 22.0 | day 64 (week 10.1) |
+
+- **B** is close to the base on every profile. T-1a and T-1b keep passing; the new player is at 65% (25 bp) and 62% (50 bp) at week 4, as in the base (65%). At 25 bp no target changes status. At 50 bp T-2d2 (a returner is within 2 levels of the middle in about 16 days, limit 17) and T-6b (the best creature is still growing at week 12) change to fail: the daily player's best is at the cap at week 12 (30.0), a week earlier than at 25 bp. The best reaches 30 at about week 13 in both, against week 13.7 in the base.
+- **C** keeps T-1a for every profile but the new player (63%), and softens the depth curve's harm at weeks 4 and 8 (daily gap 3.0 and 5.5 against 3.3 and 8.0), but not enough: T-1b still fails, and the daily player's best reaches 30 at week 10.1, so T-6a (not capped at week 10) and T-6b fail, and T-2d2 fails as well. The bench barely benefits (bench median 18.0 against 17.3 at week 8): the extra XP is split across the whole roster, about 30 XP a creature a day at week 8.
+- Targets that change against the base: B25 none; B50 T-2d2 and T-6b; C T-2d2, T-6a and T-6b.
+- So the choice is between a slow top creature (B, near today) and a fast one that leaves the roster behind (the curves, even with sharing). T-6 needs the top creature to reach 30 no sooner than about week 12 or 13, which only B at 25 bp meets with margin.
+
 ## Caveats
 
 - The curves are per top creature per day as combat v2 gave them; the lab applies them per run per player-week, and a player who is away gets nothing (as today). Depth is not tracked per player: the week of life stands in for it.
@@ -61,6 +82,8 @@ The output of `report -- --dungeon-xp-study --seeds 20 --levers`:
 | returner        | 8    | 20.0 | 20.0 | 4.0 / 6.0                                | 88%      | 15.0               |
 | returner        | 12   | 27.0 | 27.0 | 6.5 / 12.0                               | 46%      | 15.0               |
 
+A daily player's best creature reaches level 30: day 89 (week 13.7), 40 of 40 daily players get there.
+
 T-1 per profile (share of two-week-old creatures within 5 levels at week 4, the bar is 90%): daily 100% pass, active 100% pass, every-other-day 100% pass, weekend-off 100% pass, weekly 100% pass, new 65% FAIL, returner 100% pass
 
 ## depth curve
@@ -88,6 +111,8 @@ T-1 per profile (share of two-week-old creatures within 5 levels at week 4, the 
 | returner        | 4    | 22.0 | 21.0 | 4.0 / 5.5                                | 92%      | 14.8               |
 | returner        | 8    | 23.0 | 21.5 | 4.3 / 7.0                                | 66%      | 15.0               |
 | returner        | 12   | 30.0 | 30.0 | 10.0 / 15.0                              | 27%      | 15.0               |
+
+A daily player's best creature reaches level 30: day 52 (week 8.4), 40 of 40 daily players get there.
 
 T-1 per profile (share of two-week-old creatures within 5 levels at week 4, the bar is 90%): daily 85% FAIL, active 100% pass, every-other-day 86% FAIL, weekend-off 100% pass, weekly 100% pass, new 50% FAIL, returner 92% pass
 
@@ -117,12 +142,107 @@ T-1 per profile (share of two-week-old creatures within 5 levels at week 4, the 
 | returner        | 8    | 22.0 | 21.0 | 4.3 / 7.0                                | 66%      | 15.0               |
 | returner        | 12   | 30.0 | 30.0 | 10.0 / 15.0                              | 26%      | 15.0               |
 
+A daily player's best creature reaches level 30: day 60 (week 9.6), 40 of 40 daily players get there.
+
 T-1 per profile (share of two-week-old creatures within 5 levels at week 4, the bar is 90%): daily 100% pass, active 100% pass, every-other-day 100% pass, weekend-off 100% pass, weekly 100% pass, new 50% FAIL, returner 100% pass
+
+## B25: flat 120 x (1 + 0.25% a depth)
+
+| Profile         | Week | Top  | 3rd  | Two-week-old gap to 3rd (median / worst) | Within 5 | Bench median level |
+| --------------- | ---- | ---- | ---- | ---------------------------------------- | -------- | ------------------ |
+| daily           | 4    | 19.0 | 19.0 | 2.8 / 4.0                                | 100%     | 15.0               |
+| daily           | 8    | 25.0 | 25.0 | 4.0 / 10.0                               | 66%      | 17.0               |
+| daily           | 12   | 29.0 | 29.0 | 5.0 / 14.0                               | 55%      | 21.5               |
+| active          | 4    | 19.0 | 18.0 | 2.0 / 3.0                                | 100%     | 15.0               |
+| active          | 8    | 25.0 | 23.0 | 2.0 / 8.0                                | 72%      | 17.0               |
+| active          | 12   | 29.0 | 26.0 | 2.0 / 11.0                               | 67%      | 22.0               |
+| every-other-day | 4    | 19.0 | 19.0 | 3.0 / 4.0                                | 100%     | 14.3               |
+| every-other-day | 8    | 25.0 | 25.0 | 4.5 / 10.0                               | 61%      | 15.0               |
+| every-other-day | 12   | 29.0 | 29.0 | 6.0 / 14.0                               | 48%      | 19.8               |
+| weekend-off     | 4    | 19.0 | 19.0 | 1.3 / 4.0                                | 100%     | 14.0               |
+| weekend-off     | 8    | 25.0 | 25.0 | 4.0 / 10.0                               | 67%      | 15.8               |
+| weekend-off     | 12   | 29.0 | 29.0 | 5.0 / 14.0                               | 55%      | 21.0               |
+| weekly          | 4    | 16.0 | 16.0 | 0.0 / 3.0                                | 100%     | 10.0               |
+| weekly          | 8    | 22.0 | 22.0 | 3.0 / 8.0                                | 70%      | 15.0               |
+| weekly          | 12   | 27.0 | 27.0 | 5.0 / 12.0                               | 51%      | 18.0               |
+| new             | 4    | 23.0 | 21.0 | 4.0 / 6.0                                | 65%      | 15.0               |
+| new             | 8    | 29.0 | 26.0 | 8.0 / 11.0                               | 43%      | 15.0               |
+| new             | 12   | 30.0 | 29.0 | 7.0 / 14.0                               | 45%      | 18.0               |
+| returner        | 4    | 19.0 | 19.0 | 2.3 / 3.5                                | 100%     | 14.3               |
+| returner        | 8    | 20.0 | 20.0 | 4.0 / 6.0                                | 88%      | 15.0               |
+| returner        | 12   | 27.0 | 27.0 | 8.0 / 12.0                               | 44%      | 15.0               |
+
+A daily player's best creature reaches level 30: day 85 (week 13.1), 40 of 40 daily players get there.
+
+T-1 per profile (share of two-week-old creatures within 5 levels at week 4, the bar is 90%): daily 100% pass, active 100% pass, every-other-day 100% pass, weekend-off 100% pass, weekly 100% pass, new 65% FAIL, returner 100% pass
+
+## B50: flat 120 x (1 + 0.5% a depth)
+
+| Profile         | Week | Top  | 3rd  | Two-week-old gap to 3rd (median / worst) | Within 5 | Bench median level |
+| --------------- | ---- | ---- | ---- | ---------------------------------------- | -------- | ------------------ |
+| daily           | 4    | 19.0 | 19.0 | 2.8 / 4.0                                | 100%     | 15.0               |
+| daily           | 8    | 25.0 | 25.0 | 4.0 / 10.0                               | 60%      | 17.0               |
+| daily           | 12   | 30.0 | 30.0 | 5.5 / 14.0                               | 50%      | 21.0               |
+| active          | 4    | 19.0 | 18.0 | 2.0 / 3.0                                | 100%     | 15.0               |
+| active          | 8    | 25.0 | 23.0 | 2.0 / 8.0                                | 71%      | 17.3               |
+| active          | 12   | 30.0 | 27.0 | 2.5 / 12.0                               | 68%      | 22.0               |
+| every-other-day | 4    | 19.0 | 19.0 | 3.0 / 4.0                                | 100%     | 14.3               |
+| every-other-day | 8    | 25.0 | 25.0 | 4.3 / 10.0                               | 61%      | 15.0               |
+| every-other-day | 12   | 30.0 | 30.0 | 6.0 / 15.0                               | 47%      | 20.0               |
+| weekend-off     | 4    | 19.0 | 19.0 | 1.3 / 4.0                                | 100%     | 14.0               |
+| weekend-off     | 8    | 25.0 | 25.0 | 4.0 / 10.0                               | 67%      | 15.0               |
+| weekend-off     | 12   | 29.5 | 29.0 | 5.0 / 14.0                               | 52%      | 21.5               |
+| weekly          | 4    | 16.0 | 16.0 | 0.0 / 3.0                                | 100%     | 10.0               |
+| weekly          | 8    | 22.0 | 22.0 | 3.0 / 8.0                                | 70%      | 15.3               |
+| weekly          | 12   | 27.0 | 27.0 | 5.0 / 13.0                               | 51%      | 18.0               |
+| new             | 4    | 23.0 | 21.0 | 3.8 / 6.0                                | 62%      | 15.0               |
+| new             | 8    | 29.0 | 26.0 | 7.8 / 11.0                               | 43%      | 15.0               |
+| new             | 12   | 30.0 | 29.5 | 8.0 / 14.5                               | 43%      | 16.0               |
+| returner        | 4    | 19.0 | 19.0 | 2.3 / 3.5                                | 100%     | 14.8               |
+| returner        | 8    | 20.0 | 20.0 | 4.0 / 6.0                                | 92%      | 15.0               |
+| returner        | 12   | 27.0 | 27.0 | 7.0 / 12.0                               | 44%      | 15.0               |
+
+A daily player's best creature reaches level 30: day 84 (week 13.0), 40 of 40 daily players get there.
+
+T-1 per profile (share of two-week-old creatures within 5 levels at week 4, the bar is 90%): daily 100% pass, active 100% pass, every-other-day 100% pass, weekend-off 100% pass, weekly 100% pass, new 62% FAIL, returner 100% pass
+
+## C: depth curve, half of the part above 120 to the bench
+
+| Profile         | Week | Top  | 3rd  | Two-week-old gap to 3rd (median / worst) | Within 5 | Bench median level |
+| --------------- | ---- | ---- | ---- | ---------------------------------------- | -------- | ------------------ |
+| daily           | 4    | 20.0 | 20.0 | 3.0 / 4.5                                | 100%     | 15.0               |
+| daily           | 8    | 28.0 | 27.5 | 5.5 / 12.0                               | 50%      | 18.0               |
+| daily           | 12   | 30.0 | 30.0 | 5.0 / 15.0                               | 52%      | 22.0               |
+| active          | 4    | 20.0 | 19.0 | 2.0 / 3.5                                | 100%     | 15.0               |
+| active          | 8    | 28.0 | 25.0 | 2.5 / 10.0                               | 62%      | 17.5               |
+| active          | 12   | 30.0 | 29.0 | 3.5 / 13.5                               | 59%      | 21.3               |
+| every-other-day | 4    | 20.0 | 20.0 | 3.0 / 5.0                                | 100%     | 15.0               |
+| every-other-day | 8    | 28.0 | 27.0 | 6.5 / 12.0                               | 44%      | 16.0               |
+| every-other-day | 12   | 30.0 | 30.0 | 5.3 / 15.0                               | 51%      | 21.3               |
+| weekend-off     | 4    | 20.0 | 20.0 | 1.5 / 3.0                                | 100%     | 14.3               |
+| weekend-off     | 8    | 28.0 | 28.0 | 5.5 / 12.0                               | 50%      | 18.0               |
+| weekend-off     | 12   | 30.0 | 30.0 | 5.0 / 15.0                               | 51%      | 21.5               |
+| weekly          | 4    | 17.0 | 16.0 | 0.0 / 2.0                                | 100%     | 12.0               |
+| weekly          | 8    | 24.0 | 24.0 | 4.0 / 9.0                                | 57%      | 15.5               |
+| weekly          | 12   | 29.0 | 29.0 | 6.3 / 14.0                               | 45%      | 18.0               |
+| new             | 4    | 25.0 | 21.0 | 4.0 / 6.0                                | 63%      | 15.0               |
+| new             | 8    | 30.0 | 27.0 | 9.5 / 12.0                               | 35%      | 15.0               |
+| new             | 12   | 30.0 | 30.0 | 8.0 / 15.0                               | 42%      | 16.0               |
+| returner        | 4    | 20.0 | 20.0 | 3.0 / 4.0                                | 100%     | 15.0               |
+| returner        | 8    | 21.0 | 21.0 | 4.0 / 6.0                                | 68%      | 15.0               |
+| returner        | 12   | 30.0 | 30.0 | 10.0 / 15.0                              | 28%      | 15.0               |
+
+A daily player's best creature reaches level 30: day 64 (week 10.1), 40 of 40 daily players get there.
+
+T-1 per profile (share of two-week-old creatures within 5 levels at week 4, the bar is 90%): daily 100% pass, active 100% pass, every-other-day 100% pass, weekend-off 100% pass, weekly 100% pass, new 63% FAIL, returner 100% pass
 
 ## Targets that change status against the base
 
 depth curve: T-1a PASS -> FAIL, T-1b PASS -> FAIL, T-6a PASS -> FAIL, T-6b PASS -> FAIL
 v1 curve: T-1b PASS -> FAIL, T-6a PASS -> FAIL, T-6b PASS -> FAIL
+B25: flat 120 x (1 + 0.25% a depth): none
+B50: flat 120 x (1 + 0.5% a depth): T-2d2 PASS -> FAIL, T-6b PASS -> FAIL
+C: depth curve, half of the part above 120 to the bench: T-2d2 PASS -> FAIL, T-6a PASS -> FAIL, T-6b PASS -> FAIL
 
 Base: T-1a PASS, T-1b PASS, T-2a1 PASS, T-2a2 PASS, T-2b PASS, T-2c PASS, T-2d1 PASS, T-2d2 PASS, T-3a PASS, T-3b PASS, T-3c PASS, T-3d PASS, T-3e PASS, T-4 PASS, T-4b PASS, T-6a PASS, T-6b PASS, T-7 PASS, T-7b PASS, T-8a PASS, T-8b PASS, T-8c PASS, T-8d PASS, T-8e PASS, T-9 PASS
 

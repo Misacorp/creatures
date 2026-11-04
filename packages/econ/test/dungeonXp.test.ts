@@ -1,6 +1,12 @@
 /** The dungeon-depth XP variants (`dungeonXp.ts`): the curves, the switch (off by default) and a whole run. */
 import { describe, expect, it } from 'vitest';
-import { DEPTH_XP_CURVE, V1_XP_CURVE, dungeonRunXp, interpolate } from '../src/dungeonXp';
+import {
+  DEPTH_XP_CURVE,
+  V1_XP_CURVE,
+  dungeonRunXp,
+  interpolate,
+  shareSplit,
+} from '../src/dungeonXp';
 import { profileWeek } from '../src/dungeonXpStudy';
 import { RULES } from '../src/rules';
 import { playersOf, runScenario } from '../src/scenarios';
@@ -75,5 +81,40 @@ describe('the switch', () => {
       profileWeek(playersOf(runScenario(dungeonXp ? { ...base, dungeonXp } : base, 2), 'daily'), 8)
         ?.top ?? null;
     expect(top('depth')!).toBeGreaterThan(top()!);
+  });
+});
+
+describe('variant B (the flat base with a little growth) and variant C (share with the bench)', () => {
+  const base = ALL_SERVERS.find((s) => s.id === 'mixed8')!;
+
+  it('B grows from 120 by the per-depth rate, uncapped, and 0 bp is the flat rule', () => {
+    const b = (bp: number, week: number): number =>
+      dungeonRunXp({ perDepthBp: bp, maxBp: Infinity, flatBase: true }, week, 120);
+    expect(b(0, 12)).toBe(120);
+    expect(b(25, 12)).toBeCloseTo(120 * (1 + (25 * 72) / 10000), 9);
+    expect(b(50, 12)).toBeGreaterThan(b(25, 12));
+    expect(b(50, 24)).toBeGreaterThan(b(50, 12));
+  });
+
+  it('C keeps the flat XP for a fighter plus half of the part above it, and gives the bench the rest of the team total', () => {
+    for (const week of [1, 4, 12, 24]) {
+      const s = shareSplit(week, 120, 3);
+      const excess = dungeonRunXp('depth', week) - 120;
+      expect(s.fighter).toBeCloseTo(120 + excess / 2, 9);
+      expect(s.benchPool).toBeCloseTo((excess * 3) / 2, 9);
+      expect(s.fighter * 3 + s.benchPool).toBeCloseTo(dungeonRunXp('depth', week) * 3, 9);
+    }
+  });
+
+  it('C pays a daily player more dungeon XP than the flat rule, and the same run twice is the same', () => {
+    const xp = (mode?: 'share'): number => {
+      const result = runScenario(mode ? { ...base, dungeonXp: mode } : base, 2);
+      const players = playersOf(result, 'daily');
+      return players.reduce((n, p) => n + (p.weeks[7]?.xpDungeon ?? 0), 0) / players.length;
+    };
+    expect(xp('share')).toBeGreaterThan(xp());
+    const run = (): string =>
+      JSON.stringify(runServer({ ...base, dungeonXp: 'share' }, 4).players.map((p) => p.sources));
+    expect(run()).toBe(run());
   });
 });

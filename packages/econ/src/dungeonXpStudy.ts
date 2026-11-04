@@ -124,7 +124,20 @@ const MODES: [string, DungeonXp | undefined][] = [
   ['flat 120 (base)', undefined],
   ['depth curve', 'depth'],
   ['v1 curve', 'v1'],
+  ['B25: flat 120 x (1 + 0.25% a depth)', { perDepthBp: 25, maxBp: Infinity, flatBase: true }],
+  ['B50: flat 120 x (1 + 0.5% a depth)', { perDepthBp: 50, maxBp: Infinity, flatBase: true }],
+  ['C: depth curve, half of the part above 120 to the bench', 'share'],
 ];
+
+/** The day (since joining) a daily player's best creature first reaches the level cap: the median over the daily players that did, and how many did. */
+export function dayAtCap(results: Results): string {
+  const players = playersOf(results['mixed8'], 'daily');
+  const days = players
+    .map((p) => p.day30[0])
+    .filter((d): d is number => d !== null && d !== undefined);
+  if (days.length === 0) return 'never in the run';
+  return `day ${median(days)} (week ${(median(days) / 7 + 1).toFixed(1)}), ${days.length} of ${players.length} daily players get there`;
+}
 
 /** The lever grid: what flat caps (maxBp) and per-depth rates (perDepthBp) T-1 still passes at, on the mixed server of 8 alone. */
 export const LEVER_GRID: DungeonXp[] = [
@@ -147,7 +160,14 @@ export function studyReport(seeds: number, levers: boolean): string {
   const all: Record<string, Results> = {};
   for (const [name, mode] of MODES) {
     all[name] = runStudy(mode, seeds);
-    out.push(`## ${name}`, '', profileTable(all[name]), '');
+    out.push(
+      `## ${name}`,
+      '',
+      profileTable(all[name]),
+      '',
+      `A daily player's best creature reaches level 30: ${dayAtCap(all[name])}.`,
+      '',
+    );
     out.push(
       `T-1 per profile (share of two-week-old creatures within ${THRESHOLDS.benchWithin} levels at week 4, the bar is 90%): ` +
         t1Passes(all[name])

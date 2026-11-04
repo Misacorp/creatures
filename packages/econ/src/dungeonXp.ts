@@ -36,6 +36,8 @@ export const V1_XP_CURVE: CurvePoints = [
 export interface DepthLevers {
   perDepthBp: number;
   maxBp: number;
+  /** Variant B: the base is the lab's flat dungeon XP at any depth (deeper pays loot) instead of the v1 column. */
+  flatBase?: boolean;
 }
 
 /** What `DEPTH_XP_CURVE / V1_XP_CURVE` implies as depth at each of the given weeks (at 100 bp a depth). */
@@ -48,7 +50,8 @@ export const IMPLIED_DEPTH: CurvePoints = [
 ];
 
 /** `'depth'` and `'v1'` are the two curves; an object is the lever study; absent is the lab's flat `rules.fights.dungeon.xp`. */
-export type DungeonXp = 'depth' | 'v1' | DepthLevers;
+/** `'share'` (variant C) is the depth curve with the part above the flat XP split between the fighters and the bench. */
+export type DungeonXp = 'depth' | 'v1' | 'share' | DepthLevers;
 
 export function interpolate(points: CurvePoints, week: number): number {
   const first = points[0];
@@ -65,21 +68,38 @@ export function interpolate(points: CurvePoints, week: number): number {
 }
 
 /** The XP of one dungeon run in the player's `week` (1 = the first week since they joined). */
-export function dungeonRunXp(mode: DungeonXp, week: number): number {
-  if (mode === 'depth') return interpolate(DEPTH_XP_CURVE, week);
+export function dungeonRunXp(mode: DungeonXp, week: number, flat = 120): number {
+  if (mode === 'depth' || mode === 'share') return interpolate(DEPTH_XP_CURVE, week);
   if (mode === 'v1') return interpolate(V1_XP_CURVE, week);
   const bp = Math.min(mode.maxBp, mode.perDepthBp * interpolate(IMPLIED_DEPTH, week));
-  return interpolate(V1_XP_CURVE, week) * (1 + bp / 10000);
+  const base = mode.flatBase ? flat : interpolate(V1_XP_CURVE, week);
+  return base * (1 + bp / 10000);
+}
+
+/** Variant C: what each fighter gets, and the pool the bench shares evenly (half of the team's part above the flat XP). */
+export function shareSplit(
+  week: number,
+  flat: number,
+  team: number,
+): { fighter: number; benchPool: number } {
+  const excess = Math.max(0, dungeonRunXp('depth', week) - flat);
+  return { fighter: flat + excess / 2, benchPool: (excess * team) / 2 };
 }
 
 /** The player's week of life at this hour (the first week since joining is 1). */
 export const playerWeek = (p: Player, hour: number): number =>
   Math.max(1, Math.floor((hour - p.joinHour) / HOURS_PER_WEEK) + 1);
 
-/** The XP a run pays now: the variant's curve when the server has one, else the rules' flat amount. */
+/** The XP a run pays each fighter now: the variant's curve when the server has one, else the rules' flat amount. */
 export const runXp = (
   mode: DungeonXp | undefined,
   p: Player,
   hour: number,
   flat: number,
-): number => (mode === undefined ? flat : dungeonRunXp(mode, playerWeek(p, hour)));
+  team = 3,
+): number =>
+  mode === undefined
+    ? flat
+    : mode === 'share'
+      ? shareSplit(playerWeek(p, hour), flat, team).fighter
+      : dungeonRunXp(mode, playerWeek(p, hour), flat);
