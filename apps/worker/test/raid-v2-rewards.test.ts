@@ -104,7 +104,14 @@ describe('the payout of a combat v2 weekend', () => {
         expect(kill.map((g) => g.user_id).sort()).toEqual(players.map((p) => p.id).sort());
         for (const g of kill) {
           const view = JSON.parse(g.result_json) as { gear: { rarity: string }[] };
-          expect(view.gear.map((i) => i.rarity)).toEqual(["epic", "epic", "rare", "rare", "rare", "rare"]);
+          expect(view.gear.map((i) => i.rarity)).toEqual([
+            'epic',
+            'epic',
+            'rare',
+            'rare',
+            'rare',
+            'rare',
+          ]);
         }
         // A re-run pays nothing twice: the stages are done, and the ledger and grants stay as they are.
         const before = {
@@ -141,7 +148,14 @@ describe('the payout of a combat v2 weekend', () => {
         expect(kill).toHaveLength(4);
         for (const g of kill) {
           const view = JSON.parse(g.result_json) as { gear: { rarity: string }[] };
-          expect(view.gear.map((i) => i.rarity)).toEqual(["epic", "epic", "rare", "rare", "rare", "rare"]);
+          expect(view.gear.map((i) => i.rarity)).toEqual([
+            'epic',
+            'epic',
+            'rare',
+            'rare',
+            'rare',
+            'rare',
+          ]);
         }
         const total = { ledger: count(ctx.sql, 'ledger'), grants: count(ctx.sql, 'gear_grants') };
         ctx.clock.t = V2_WEEK.stage2 + 30_000;
