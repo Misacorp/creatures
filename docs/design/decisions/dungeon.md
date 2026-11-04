@@ -4,6 +4,14 @@ The daily dungeon: paths, rooms and rare rooms, the camp, the Undercroft, foes, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-04: [Misa] A depth choice before a run, with reward scalars
+
+ID: `2026-11-04-a-depth-choice-before-a-run` · Status: current · Amends: `2026-10-16-misa-s-direction-after-the-raid`
+
+**Decision.** Before a run a player may pick any depth they have already unlocked. The picker shows how the pick changes the rewards as simple scalars, for example "2.4x XP, 3.7x loot". It is the tool for a player stuck on a depth: step back, still earn, come back stronger. This amends the 2026-10-16 depth picker (which asked for a likelihood-of-success hint like the raid's): scalars are enough. Not built yet; it comes with the dungeon work after phase 5's measures.
+
+**Reasoning.** Misa (2026-11-04): "a dungeon depth choice before a run (out of already unlocked depths) is a good tool if players get stuck on dungeon depths. We just need to show how it affects rewards. Simple scalars like '2.4x exp and 3.7x loot' are good enough." It fits the dungeon direction (decision `2026-11-04-dungeon-direction-an-easy-base-dungeon`): players shape their own experience, so the baseline need not hit a strict target.
+
 ## 2026-11-04: [Misa] Dungeon direction: an easy base dungeon, a hard Undercroft, the descent is the choice
 
 ID: `2026-11-04-dungeon-direction-an-easy-base-dungeon` · Status: current

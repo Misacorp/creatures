@@ -137,7 +137,7 @@ Also asked: whether using a supply is loosely net positive (not every time; rand
 
 ## 2026-10-16: Misa's direction after the raid retune: supplies now, a systems review, then gear and creature revamps
 
-ID: `2026-10-16-misa-s-direction-after-the-raid` · Status: current
+ID: `2026-10-16-misa-s-direction-after-the-raid` · Status: current, amended by `2026-11-04-a-depth-choice-before-a-run`
 
 Misa's answers on the progression overview (the forecast page for PR #24), recorded as decisions:
 

@@ -35,7 +35,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 - 2026-10-16 roll out fast, balance at the end; slot ladder, golden talents, the weather calendar
 - 2026-10-16 Misa's second round on the revamps: weighted slot pools, training by activity, Boons and Omens (amended)
 - 2026-10-16 Misa's answers to the systems review (they replace parts of its proposals) (amended)
-- 2026-10-16 Misa's direction after the raid retune: supplies now, a systems review, then gear and creature revamps
+- 2026-10-16 Misa's direction after the raid retune: supplies now, a systems review, then gear and creature revamps (amended)
 - 2026-10-13 Compendium contradictions resolved
 - 2026-10-13 Expeditions v2 merged into the daily dungeon branch
 - 2026-10-13 Roadmap reorder, crafting direction, production may change freely (Misa)
@@ -288,6 +288,7 @@ Superseded: 1 entry (see the topic file).
 
 [dungeon.md](dungeon.md): The daily dungeon: paths, rooms and rare rooms, the camp, the Undercroft, foes, its screens and payouts.
 
+- 2026-11-04 \[Misa\] A depth choice before a run, with reward scalars
 - 2026-11-04 \[Misa\] Dungeon direction: an easy base dungeon, a hard Undercroft, the descent is the choice
 - 2026-11-04 \[Misa\] Combat v2 Undercroft descent revives knocked-out creatures
 - 2026-11-02 Daily dungeon on combat v2 (phase 4, slice 4): the rules version in the run, fighters frozen at the start, what a v2 room folds in
