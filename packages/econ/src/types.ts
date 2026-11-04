@@ -3,6 +3,7 @@ import type { KitName, Resource, Rules } from './rules';
 import type { PlayerProfile } from './schema';
 import type { BossDial, BrokerMode, Policy } from './servers';
 import type { Tracer } from './journey';
+import type { DungeonXp } from './dungeonXp';
 
 export const R = {
   acorns: 0,
@@ -330,6 +331,8 @@ export interface ServerOptions {
   tempering?: boolean;
   /** Whether the idol (a placeholder scrap sink) is in the valley (replaces `rules.idol.on`). */
   idol?: boolean;
+  /** Dungeon XP by the player's week instead of the flat `rules.fights.dungeon.xp` (a lab variant: `dungeonXp.ts`). */
+  dungeonXp?: DungeonXp;
   /** How the teacher picks (V-SCH-12): `few` (the default: a few players benefit) or `several` (any number from 2 to all but one; the first round-22 draft). */
   teacherRule?: 'few' | 'several';
 }

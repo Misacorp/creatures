@@ -1,5 +1,6 @@
 import { RULES, type AwayCurve } from './rules';
 import { profileById } from './profiles';
+import type { DungeonXp } from './dungeonXp';
 import type { PlayerProfile } from './schema';
 
 /**
@@ -58,6 +59,8 @@ export interface ServerConfig {
   readonly tempering?: boolean;
   /** Whether the idol (a placeholder scrap sink) is in the valley (default: `rules.idol.on`; the report runs the other value beside it). */
   readonly idol?: boolean;
+  /** Dungeon XP by the player's week (a study variant, off by default; see `dungeonXp.ts`). */
+  readonly dungeonXp?: DungeonXp;
   /** How the School's teacher picks its talent (default `few`; `several` is the first draft, kept as a variant for the comparison). */
   readonly teacherRule?: 'few' | 'several';
   /** Whether catch-up also multiplies what the dungeon and the raid pay (a sensitivity run for T-2d). */

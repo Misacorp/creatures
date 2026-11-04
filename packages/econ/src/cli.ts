@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { lateScrapAll, ledgerOf, measuresOf, serverOf } from './analysis';
 import { BUDGET, budgetLine } from './budget';
+import { studyReport } from './dungeonXpStudy';
 import { inProcess, runScenarios, type Executor } from './jobs';
 import { buildReportData, renderReport, serverCoverage, type Timings } from './report';
 import { rosterProfile } from './roster';
@@ -149,6 +150,10 @@ export function quickRun(args: readonly string[]): number {
  */
 export async function main(args: readonly string[], pool?: Pool): Promise<number> {
   if (args.includes('--scenario')) return quickRun(args);
+  if (args.includes('--dungeon-xp-study')) {
+    console.log(studyReport(Number(flag(args, '--seeds') ?? 10), args.includes('--levers')));
+    return 0;
+  }
   const seeds = Number(flag(args, '--seeds') ?? DEFAULT_SEEDS);
   const dir = flag(args, '--out') ?? '../../docs/design/valley/economy';
   const t0 = Date.now();
