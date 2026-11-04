@@ -6,7 +6,17 @@ Sections: **Waiting on Misa** (asked, not answered), **Queue** (to ask, in order
 
 ## Waiting on Misa
 
-Nothing waiting.
+### Q54. The game's notes: the old alert style, the Gazette's paper, or both?
+
+Status: asked, round 23 (2026-11-04). From Misa: "what is our relationship with the alert components now? The look and feel of the game is changing. Does the old style still earn its keep or should we swap everything to this new gazette style?" Touches: `docs/design/ux-patterns.md` (`ui/Alert`), the visual style revisit Misa set for later (round 19).
+
+**Why it matters.** Today two looks show notes: the game's `Alert` (dark ink panels with a coloured edge: errors, warnings, results, the full-bag warning) and the Gazette's cream paper (the welcome-back stories and, since phase 3, a place's waiting stories). They now share one behaviour (the X closes both); the question is the look.
+
+- **A. Two voices, on purpose.** The paper is the valley talking (stories, what your creatures did, in-world notes); the ink alert is the game talking (errors, warnings, a spend that failed). Each keeps its look; the rule says which is which. Example: "Pip found a Kelp Cap" on paper at the Signpost; "Not enough Acorns" as an ink alert.
+- **B. Everything paper.** Every note, error included, becomes Gazette paper, one look for the whole game. Example: "Not enough Acorns" on a cream slip.
+- **C. Everything ink.** The Gazette stays as the welcome-back popup only; every other note, the places' stories included, is an ink alert.
+
+**Lead's pick: A, and settle the final look in the visual revisit you planned.** The two voices tell the player at a glance whether the world is telling a story or the game needs attention, and nothing has to be redrawn now; the visual pass can still restyle both.
 
 ## Queue
 
