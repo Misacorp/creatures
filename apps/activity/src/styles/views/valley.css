@@ -145,8 +145,10 @@ main.card:has(.vy-frame) > .hud {
 }
 
 /* --- The valley --- */
+/* Its own stacking context: the creatures' depth order (`--z`) never rises above a sheet drawn over the valley. */
 .vy-map-view {
   position: relative;
+  isolation: isolate;
   flex: 1;
   min-height: 0;
   display: flex;

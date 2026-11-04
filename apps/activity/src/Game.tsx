@@ -8,6 +8,7 @@ import {
   setLoungeSpot,
   type Allowance,
   type Attention,
+  type Balances,
   type ClaimResult,
   type Creature,
   type GameState,
@@ -82,8 +83,7 @@ import { WipeNotice } from './WipeNotice';
 import { Workshop } from './Workshop';
 import type { TeamConfigure } from './TeamCreaturePage';
 import { Alert } from './ui/Alert';
-import { AwayPaper } from './home/AwayPaper';
-import { hasAwayNotice } from './home/away-notice';
+import { WelcomeBack } from './valley/gazette/WelcomeBack';
 import { ValleyFrame } from './valley/ValleyFrame';
 import { placeOf, type PlaceId } from './valley/valley-art';
 import {
@@ -162,6 +162,8 @@ export function Game({
   // The Settings page (from the cog in the HUD) is drawn in place of the screen; the screen stays mounted under it,
   // so Back finds it as it was. Choosing a place closes it.
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // The purse while the welcome-back numbers fly in: it counts up to the total the server already holds (display only).
+  const [purse, setPurse] = useState<Balances | null>(null);
   // The Home board's "?" pin: where the focus returns when How to play, opened from it, closes.
   const boardHelpRef = useRef<HTMLButtonElement>(null);
   // The Home board's display options, kept on this device (read once, written on every change).
@@ -496,7 +498,7 @@ export function Game({
     <>
       <Hud
         title={placeLabel}
-        balances={game.balances}
+        balances={purse ?? game.balances}
         leetSync={game.leetSync}
         helpRef={helpRef}
         onHelp={onHelp}
@@ -840,22 +842,23 @@ export function Game({
         onLeave={leavePlace}
         onBook={select}
         notices={notices}
-        away={
-          hasAwayNotice(game.awayRewards) ? (
-            <AwayPaper
-              away={game.awayRewards}
-              busy={busy}
-              onDismiss={(until) => {
-                void run(() => dismissAway(until)).then(showState);
-              }}
-            />
-          ) : null
-        }
+        away={null}
         settings={settingsPage}
         room={<RoomBand room={roomProps} />}
       >
         {pages}
       </ValleyFrame>
+      <WelcomeBack
+        away={game.awayRewards}
+        creatures={game.creatures}
+        now={Date.now() + offset}
+        timezone={timezone.current}
+        balances={game.balances}
+        onDismiss={(until) => {
+          void run(() => dismissAway(until)).then(showState);
+        }}
+        onPurse={setPurse}
+      />
     </>
   ) : (
     <AppFrame

@@ -3,7 +3,8 @@ import { RoomBand } from '../../AppHead';
 import { Hud } from '../../Hud';
 import { LivingRoom, sceneOf } from '../../LivingRoom';
 import { PopoverHost } from '../../PopoverHost';
-import { AwayPaper } from '../../home/AwayPaper';
+import { WelcomeBack } from '../../valley/gazette/WelcomeBack';
+import type { Balances } from '../../api';
 import { homeAlerts } from '../../home-view';
 import type { Place } from '../../tabs';
 import { ValleyFrame } from '../../valley/ValleyFrame';
@@ -13,7 +14,7 @@ import { isOpenPlace, PLACE_TAB, viewOf, type HomeAt } from '../../valley/valley
 import { placeOf, type PlaceId } from '../../valley/valley-art';
 import { ROOM_SELF_ID, sampleResidents } from '../data';
 import { creatureCardEntries } from '../entries/creature-card';
-import { AWAY_SAMPLE, HOME_NOW, homeInput } from '../home-sample';
+import { AWAY_SAMPLE, HOME_NOW, HOME_TZ, homeInput } from '../home-sample';
 import type { Entry } from '../types';
 
 /**
@@ -34,6 +35,7 @@ export const VALLEY_STARTS = [
 ] as const;
 
 const NOTHING = () => undefined;
+const PURSE: Balances = { bait: 1240, essence: 36 };
 const NO_REF = { current: null };
 const RESIDENTS = sampleResidents(6, false);
 const WAITING = [
@@ -67,6 +69,8 @@ export function ValleyDemo({ start, away, day }: { start: string; away: boolean;
   );
   const [focus, setFocus] = useState<PlaceId | null>(null);
   const [gone, setGone] = useState(false);
+  // The purse while the welcome-back numbers count up.
+  const [purse, setPurse] = useState<Balances | null>(null);
   const base = homeInput(day, true);
   // What the scenes draw: the fixture creatures, standing where today's state puts them (the lounger, a dungeon row, a raid party).
   const home = base.creatures.filter(isAtHome);
@@ -115,7 +119,7 @@ export function ValleyDemo({ start, away, day }: { start: string; away: boolean;
         <main class="card">
           <Hud
             title={titleOf(at)}
-            balances={{ bait: 1240, essence: 36 }}
+            balances={purse ?? PURSE}
             helpRef={NO_REF}
             onHelp={NOTHING}
             onSettings={NOTHING}
@@ -136,21 +140,25 @@ export function ValleyDemo({ start, away, day }: { start: string; away: boolean;
             }}
             onBook={setTab}
             notices={null}
-            away={
-              away && !gone ? (
-                <AwayPaper
-                  away={AWAY_SAMPLE}
-                  onDismiss={() => {
-                    setGone(true);
-                  }}
-                />
-              ) : null
-            }
+            away={null}
             settings={null}
             room={<RoomBand room={room} />}
           >
             {tab === 'workshop' ? pageOf(creatureCardEntries, 'Workshop') : null}
           </ValleyFrame>
+          {away && (
+            <WelcomeBack
+              away={gone ? null : AWAY_SAMPLE}
+              creatures={input.creatures}
+              now={HOME_NOW}
+              timezone={HOME_TZ}
+              balances={PURSE}
+              onDismiss={() => {
+                setGone(true);
+              }}
+              onPurse={setPurse}
+            />
+          )}
         </main>
       </div>
     </PopoverHost>

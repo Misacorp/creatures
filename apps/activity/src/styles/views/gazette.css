@@ -1,0 +1,185 @@
+/*
+  The welcome-back popup (`src/valley/gazette/`): the Valley Gazette inside the app's sheet
+  (`ui/Drawer`), a cream paper with an ink ring. Styled with `gz-`. Pixel rules as the valley's: hard edges, no blur
+  (a hard outline is a shadow with no blur), motion in steps and none at all under reduced motion.
+*/
+
+/* One art pixel of a bubble or an outline, as the picture is drawn: 2 px on a phone, 3 px on a wide sheet. */
+.gz-scene {
+  --art: 2px;
+}
+
+@media (min-width: 560px) {
+  .gz-scene {
+    --art: 3px;
+  }
+}
+
+/* --- A picture: the valley round a place, with creatures on it --- */
+.gz-scene {
+  position: relative;
+  overflow: hidden;
+  background: #9cd8fb;
+}
+
+.gz-scene-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.gz-actor {
+  /* Room for the bubble above the speaker, which sits over the picture, not outside it. */
+  overflow: visible;
+}
+
+/* A creature in a picture opens its popover: the button takes touches (the picture's layer does not), with a 44 px target. */
+.gz-actor .gz-face {
+  position: relative;
+  pointer-events: auto;
+}
+
+.gz-actor .gz-face::after {
+  position: absolute;
+  inset: -8px;
+  content: '';
+}
+
+/* --- The Valley Gazette --- */
+.gz-paper {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  background: #efe3c2;
+  box-shadow: 0 0 0 3px var(--ink);
+  color: var(--ink);
+}
+
+.gz-masthead {
+  display: grid;
+  gap: 2px;
+  border-bottom: 4px double var(--ink);
+  padding-bottom: 6px;
+  text-align: center;
+}
+
+.gz-paper-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: 2.25rem;
+  line-height: 1;
+  text-shadow: none;
+}
+
+.gz-dateline {
+  margin: 0;
+  padding-top: 2px;
+  border-top: 2px solid var(--ink);
+  color: var(--ink);
+  font-size: 1.125rem;
+  line-height: 1.2;
+}
+
+.gz-lead {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+.gz-lead-scene {
+  height: 170px;
+  box-shadow: 0 0 0 3px var(--ink);
+  margin: 3px;
+}
+
+.gz-headline {
+  margin: 0;
+  color: var(--ink);
+  font-size: 2rem;
+  line-height: 1;
+  text-shadow: none;
+}
+
+.gz-blurb,
+.gz-brief-blurb {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.gz-briefs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 2px solid var(--ink);
+}
+
+.gz-brief {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+}
+
+.gz-brief-scene {
+  height: 110px;
+  box-shadow: 0 0 0 2px var(--ink);
+  margin: 2px;
+}
+
+.gz-brief-headline {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.25rem;
+  line-height: 1.05;
+  text-shadow: none;
+}
+
+/* What a story found: one row of small finds flush under the story's line, in the Gazette and a place's clipping. */
+.gz-finds {
+  min-width: 0;
+}
+
+.gz-finds ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gz-finds .part-count {
+  background: var(--ink);
+}
+
+/* A lone small story takes the width. */
+.gz-briefs:has(.gz-brief:only-child) {
+  grid-template-columns: 1fr;
+}
+
+/* On a wide sheet the small stories stand beside the headline story. */
+@media (min-width: 560px) {
+  .gz-paper {
+    grid-template-columns: 3fr 2fr;
+    column-gap: 14px;
+  }
+
+  .gz-masthead {
+    grid-column: 1 / -1;
+  }
+
+  .gz-lead-scene {
+    height: 210px;
+  }
+
+  .gz-briefs {
+    grid-template-columns: 1fr;
+    padding-top: 0;
+    padding-left: 12px;
+    border-top: 0;
+    border-left: 2px solid var(--ink);
+  }
+}
