@@ -35,7 +35,7 @@ ID: `2026-11-04-combat-v2-phase-5-answers-in` · Status: current, amended by `20
 
 ## 2026-11-04: Combat v2 phase 5 answers: small parties fight a smaller boss, rewards at HP thresholds with a big kill bonus, no weather in fights **[Misa]**
 
-ID: `2026-11-04-combat-v2-phase-5-answers-small` · Status: current
+ID: `2026-11-04-combat-v2-phase-5-answers-small` · Status: current, amended by `2026-11-04-combat-v2-small-raid-parties-curve`
 
 **Decision (Misa).** For combat v2 (`docs/design/combat/balance.md`, section 7):
 

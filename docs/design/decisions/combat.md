@@ -4,6 +4,22 @@ The shared combat engine, abilities, statuses, elements, the balance simulator, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-04: [Misa] Combat v2 phase 5: weekly players replace 3 in 10, and Misa's server mix
+
+ID: `2026-11-04-combat-v2-phase-5-weekly-players` · Status: current
+
+**Decision.** The weekly players' replacement rate of 0.3 (three times in ten a weekly player brings a spare between stages) is confirmed by Misa and no longer an assumption (`REPLACE_CHANCE`, `habits.ts`); the new-player rate stays the lead's assumption. Misa's live server is the one to measure against: 10 players, 3 try-hard (prepared line, daily), 3 daily (builders), 4 semi-weekly (casual, weekly roster), all there from week 1. It is the journey server `live10`, in the `--journey` report under both habit sets.
+
+**Reasoning.** Misa, 2026-11-04: "3 times in 10 seems legit" and "my player base right now is 3 try hard players, 3 daily players and 4 semi weekly players". A server that matches the real one tells more than the coverage mixes, which stay as they are.
+
+## 2026-11-04: [Misa] Combat v2 small raid parties: curve only, no mechanics
+
+ID: `2026-11-04-combat-v2-small-raid-parties-curve` · Status: current · Amends: `2026-11-04-combat-v2-phase-5-answers-small`
+
+**Decision.** Small raid parties are not a priority. Below four players the boss's HP and Attack scale linearly with the players (`players / 4` for both: `SMALL_PARTY_HP_EXPONENT` and `SMALL_PARTY_ATK_EXPONENT`, both 1, in `resolve/track.ts`; `partyBossOf` is used by `trackBoss` with `followSmallParty` and by the lab's `partyBoss`). Four and above keep HP `(p / 4)^0.7` and Attack `(p / 4)^0.3`. No mechanical changes for small parties, such as column-hit counts, seats or cards.
+
+**Reasoning.** Misa, 2026-11-04: "Small groups don't matter as the raid is something that by definition works better with lots of people ... you can accommodate the boss difficulty curve for those if it's trivial. No mechanical changes." Measured: on the old curve a solo player met 38% of the HP and 66% of the Attack with a quarter of the creatures, and small1 and small2 were 100% stuck; on the linear curve small3 matched the four-player server and small1 and small2 improved but stay mostly stuck, which Misa accepts.
+
 ## 2026-11-04: Combat v2 phase 5 step 2: player habits in the journey simulator
 
 ID: `2026-11-04-combat-v2-phase-5-step-2` · Status: current
@@ -15,7 +31,7 @@ ID: `2026-11-04-combat-v2-phase-5-step-2` · Status: current
 - **Talents** per role: prepared players keep their line as written; builders and casual players roll from the creature's line pool at the valley's rate (the roster profile's open talent slots that week, capped by the level's and the species' slots; the valley's data says random rolls throughout). Golden at the game's chance (`RULES.talents.golden`, 1 in 20), played at the engine's x1.25 (the game's `goldenBp` says 1.5x: the two disagree and are left for the lead to settle).
 - **Placement**: prepared and builder follow the board; casual players stand in random rows of their column.
 - **The finale**: every player's basic ability fires at its default round, dealt rally, shield wall, purge by place in the party as the worker does (Auto fire on, nobody touching it). "Best for the board" for daily players is not modelled (it needs a search per party).
-- **Small parties** fight `wideBoss` for the party size (what `trackBoss` builds with `followSmallParty`), below four as above.
+- **Small parties** fight `partyBossOf` for the party size (what `trackBoss` builds with `followSmallParty`): `wideBoss` on the 0.7 and 0.3 curves from four up, HP and Attack linear in the players (`SMALL_PARTY_HP_EXPONENT`, `SMALL_PARTY_ATK_EXPONENT`, both 1) below four.
 
 **Reasoning.** Step 1 assumed every player replaces; weekly players probably do not, and no retune may happen before the habits are modelled. Measured (40 servers, mixed server's one-weekend kill at slots 8 / 11 / 14): everyone replaces 68% / 53% / 93%; only the replacement habit 25% / 48% / 48%; all habits 45% / 75% / 83%; casual players on their first known Knack 85% / 98% / 100%. Replacement alone is the big drop; the pool talents (more of them than step 1's one), golden talents and the finale's actions give some back, and a casual player's Knack is worth far more than the rest, so the policy matters. The model is not a target: the rates are assumptions, and the balance pass uses it only once Misa has confirmed them.
 

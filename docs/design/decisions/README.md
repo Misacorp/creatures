@@ -138,6 +138,8 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [combat.md](combat.md): The shared combat engine, abilities, statuses, elements, the balance simulator, balance passes, and combat v2 in the lab.
 
+- 2026-11-04 \[Misa\] Combat v2 phase 5: weekly players replace 3 in 10, and Misa's server mix
+- 2026-11-04 \[Misa\] Combat v2 small raid parties: curve only, no mechanics
 - 2026-11-04 Combat v2 phase 5 step 2: player habits in the journey simulator
 - 2026-11-04 Combat v2 phase 5, slice 1: the path's weekend plays the game's raid rules (journey.ts)
 - 2026-11-04 Combat v2 phase 5 plan: extend the lab's path into the v2 journey simulator; the valley keeps the roster and economy
@@ -212,7 +214,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 - 2026-11-04 Combat v2 dungeon runs read no weather at all \[Misa\]
 - 2026-11-04 Combat v2 kill bonus doubled to two epic and four rare pieces \[Misa\]
 - 2026-11-04 Combat v2 phase 5 answers in the game: the small boss, threshold payouts, the kill bonus and no fight weather (amended)
-- 2026-11-04 Combat v2 phase 5 answers: small parties fight a smaller boss, rewards at HP thresholds with a big kill bonus, no weather in fights \[Misa\]
+- 2026-11-04 Combat v2 phase 5 answers: small parties fight a smaller boss, rewards at HP thresholds with a big kill bonus, no weather in fights \[Misa\] (amended)
 - 2026-11-03 Combat v2 arenas: how the piece, the seats and the spare are built
 - 2026-11-03 Combat v2 arenas: each boss defines one player's piece; the board repeats it per player with one spare until stage 1 \[Misa\]
 - 2026-11-03 Combat v2 replays keep no Pause or 2x \[Misa\]
