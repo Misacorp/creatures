@@ -343,6 +343,8 @@ const FoeCurveSchema = v.strictObject({
 export const FoeFileSchema = v.strictObject({
   scale: FoeScaleSchema,
   curve: FoeCurveSchema,
+  /** The Undercroft's own scale and depth curve (its foes are built with these instead of the base floors'). */
+  undercroft: v.strictObject({ scale: FoeScaleSchema, curve: FoeCurveSchema }),
   foes: v.array(foeOf(MoveUseSchema)),
 });
 export type FoeUseDef = v.InferOutput<typeof FoeFileSchema>['foes'][number];

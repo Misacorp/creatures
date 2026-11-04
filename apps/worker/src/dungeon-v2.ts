@@ -139,13 +139,10 @@ export function roomFoeV2(
   spec: DungeonRoomSpec,
   depth: number,
 ): BossDef {
-  const foe = foeAt(
-    combatV2,
-    SHIPPED,
-    spec.foe.id,
-    undercroftDepth(depth, st.level),
-    spec.signature === true ? { signature: true } : {},
-  );
+  const foe = foeAt(combatV2, SHIPPED, spec.foe.id, undercroftDepth(depth, st.level), {
+    ...(spec.signature === true ? { signature: true } : {}),
+    ...(st.level > 0 ? { undercroft: true } : {}),
+  });
   const boost =
     spec.epic === true
       ? RULES.dungeon.undercroft.epic

@@ -453,6 +453,22 @@ describe('foeAt', () => {
     });
   });
 
+  it('builds an Undercroft foe with the pack’s Undercroft scale and curve, not the base floors’', () => {
+    const under = {
+      ...PACK,
+      foeUndercroft: {
+        scale: { hpBp: 30_000, atkBp: 15_000 },
+        curve: { hpStepBp: 500, hpCurveBp: 0, atkStepBp: 0, atkCurveBp: 0 },
+      },
+    };
+    // Depth 3: 10000 + 500 x 2 = 11000 on a scale of 30000 (grub: 200 content HP).
+    expect(foeStats(under, SHIPPED, 'grub', 3, true).hp).toBe(Math.floor((600 * 11_000) / 10_000));
+    expect(foeAt(under, SHIPPED, 'grub', 3, { undercroft: true }).hp).toBe(660);
+    expect(foeStats(under, SHIPPED, 'grub', 3).hp).toBe(Math.floor((400 * 12_400) / 10_000));
+    // A pack without Undercroft numbers refuses an Undercroft foe.
+    expect(() => foeStats(PACK, SHIPPED, 'grub', 3, true)).toThrow(/Undercroft/);
+  });
+
   it('applies the foe’s own HP and Attack shares, and never goes below 1', () => {
     expect(foeStats(PACK, SHIPPED, 'warden', 1)).toEqual({ hp: 400, atk: 120 });
     const tiny = { ...PACK, foeScale: { hpBp: 1, atkBp: 1 } };

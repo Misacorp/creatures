@@ -38,48 +38,56 @@ export interface Scenario {
   readonly foes?: FoeKnobs;
 }
 
-/** The base floors of the options: a share of today's foe HP and a nearly flat depth curve (+2% of the depth-1 HP for each depth). */
-const flat = (hpMult: number) => ({ hpMult, curve: { hpStepBp: 200, hpCurveBp: 0 } }) as const;
-/** The Undercroft of the options: its own scale and its own, steeper depth curve (HP: +3% a depth, +0.02% a depth squared). */
-const U1 = { hpMult: 9_000, curve: { hpStepBp: 300, hpCurveBp: 2 } } as const;
+/** The options' base floors: the content's HP at a share of the shipped engine's (a basis-point scale of 23000) and a nearly flat curve (+2% of the depth-1 HP for each depth, the game's). */
+const flat = (hpBp: number) => ({ hpBp, curve: { hpStepBp: 200, hpCurveBp: 0 } }) as const;
+/** The Undercroft of the options as numbers of their own: a scale and a steeper depth curve (HP: `step` bp a depth, `bend` bp a depth squared). */
+const under = (hpBp: number, step: number, bend: number) =>
+  ({ hpBp, curve: { hpStepBp: step, hpCurveBp: bend } }) as const;
+/** The Undercroft of the game and of `base55-u1`: 90% HP, +3% a depth and +0.02% a depth squared. */
+const U1 = under(20_700, 300, 2);
 
 export const SCENARIOS: readonly Scenario[] = [
-  { id: 'shipped', note: "today's foe numbers" },
+  {
+    id: 'shipped',
+    note: "the game's v2 foe numbers: base 55% HP, nearly flat (+2% a depth); Undercroft U1: 90% HP, +3% a depth and +0.02% a depth squared (what `base55-u1` was before it went into the data)",
+  },
+  {
+    id: 'old-shipped',
+    note: 'the numbers before 2026-11-04: HP 23000 bp, +16% a depth and +0.45% a depth squared; the Undercroft takes the same curve (a level adds one depth)',
+    foes: {
+      base: { hpBp: 23_000, curve: { hpStepBp: 1_600, hpCurveBp: 45 } },
+      undercroft: { hpBp: 23_000, curve: { hpStepBp: 1_600, hpCurveBp: 45 } },
+    },
+  },
   {
     id: 'flat-only',
     note: 'base 55% HP, nearly flat (+2% a depth); the Undercroft takes the base numbers (a level adds one depth)',
-    foes: { base: flat(5_500) },
+    foes: { undercroft: flat(12_650) },
   },
   {
     id: 'base45-u1',
     note: 'base 45% HP, nearly flat (+2% a depth); Undercroft U1: 90% HP, +3% a depth and +0.02% a depth squared',
-    foes: { base: flat(4_500), undercroft: U1 },
+    foes: { base: flat(10_350), undercroft: U1 },
   },
   {
     id: 'base55-u1',
-    note: 'base 55% HP, nearly flat (+2% a depth); Undercroft U1: 90% HP, +3% a depth and +0.02% a depth squared',
-    foes: { base: flat(5_500), undercroft: U1 },
+    note: 'alias of shipped: base 55% HP, nearly flat (+2% a depth); Undercroft U1: 90% HP, +3% a depth and +0.02% a depth squared',
+    foes: { base: flat(12_650), undercroft: U1 },
   },
   {
     id: 'base65-u1',
     note: 'base 65% HP, nearly flat (+2% a depth); Undercroft U1: 90% HP, +3% a depth and +0.02% a depth squared',
-    foes: { base: flat(6_500), undercroft: U1 },
+    foes: { base: flat(14_950), undercroft: U1 },
   },
   {
     id: 'base55-u2',
     note: 'base 55% HP, nearly flat; Undercroft U2: 110% HP, +4% a depth and +0.03% a depth squared',
-    foes: {
-      base: flat(5_500),
-      undercroft: { hpMult: 11_000, curve: { hpStepBp: 400, hpCurveBp: 3 } },
-    },
+    foes: { base: flat(12_650), undercroft: under(25_300, 400, 3) },
   },
   {
     id: 'base55-u3',
     note: 'base 55% HP, nearly flat; Undercroft U3: 90% HP, +5% a depth, no square',
-    foes: {
-      base: flat(5_500),
-      undercroft: { hpMult: 9_000, curve: { hpStepBp: 500, hpCurveBp: 0 } },
-    },
+    foes: { base: flat(12_650), undercroft: under(20_700, 500, 0) },
   },
 ];
 

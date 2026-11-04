@@ -3,6 +3,7 @@
  * the board of four. Short and seeded: the numbers are the report's (`--dungeon-days`, `--four-slot`).
  */
 import { createSeededRng } from '@creatures/game';
+import { combatV2 } from '@creatures/game/combat-v2';
 import { describe, expect, it } from 'vitest';
 import { ALL_ROUND_TEAM, runMap, type RunResult } from '../src';
 import {
@@ -130,7 +131,13 @@ describe('the foe knobs', () => {
   it('the proposed scenarios exist and give the Undercroft its own numbers', () => {
     const s = scenarioOf('base55-u1');
     expect(s.foes?.undercroft).toBeDefined();
-    expect(s.foes?.base?.hpMult).toBeLessThan(10_000);
+    // base55-u1 is an alias of the game's own numbers: the same foes, so the same runs.
+    expect(s.foes?.base?.hpBp).toBe(combatV2.foeScale.hpBp);
+    expect(s.foes?.undercroft?.hpBp).toBe(combatV2.foeUndercroft.scale.hpBp);
+    expect(s.foes?.undercroft?.curve).toEqual({
+      hpStepBp: combatV2.foeUndercroft.curve.hpStepBp,
+      hpCurveBp: combatV2.foeUndercroft.curve.hpCurveBp,
+    });
     expect(() => scenarioOf('nope')).toThrow();
   });
 });

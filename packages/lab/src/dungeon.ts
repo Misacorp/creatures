@@ -271,8 +271,8 @@ export function runMap(
     return alive.reduce((a, u) => a + share(hpOf(u), maxHp.get(u) ?? hpOf(u)), 0) / alive.length;
   };
 
-  const basePack = packOf(options.foes?.base);
-  const underPack = packOf(options.foes?.undercroft ?? options.foes?.base);
+  const basePack = packOf(options.foes?.base, 'base');
+  const underPack = packOf(options.foes?.undercroft, 'undercroft');
   /** The Undercroft level a walk is in (0: the base floors). */
   let level = 0;
   let pack: DungeonRunPack = { bait: 0, essence: 0, scrap: 0 };

@@ -72,8 +72,9 @@ describe('the dungeon foes', () => {
     for (const id of FOE_IDS) {
       expect(foeStats(id, 8).atk, id).toBe(foeStats(id, 1).atk);
       const growth = foeStats(id, 8).hp / foeStats(id, 1).hp;
-      expect(growth, id).toBeGreaterThan(2);
-      expect(growth, id).toBeLessThan(3);
+      // The base floors are nearly flat: +2% of the depth-1 HP for each depth (the game's data, decision 2026-11-04).
+      expect(growth, id).toBeGreaterThan(1.1);
+      expect(growth, id).toBeLessThan(1.2);
     }
   });
 

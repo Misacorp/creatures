@@ -1,6 +1,10 @@
 {
-  "scale": { "hpBp": 23000, "atkBp": 225000 },
-  "curve": { "hpStepBp": 1600, "hpCurveBp": 45, "atkStepBp": 0, "atkCurveBp": 0 },
+  "scale": { "hpBp": 12650, "atkBp": 225000 },
+  "curve": { "hpStepBp": 200, "hpCurveBp": 0, "atkStepBp": 0, "atkCurveBp": 0 },
+  "undercroft": {
+    "scale": { "hpBp": 20700, "atkBp": 225000 },
+    "curve": { "hpStepBp": 300, "hpCurveBp": 2, "atkStepBp": 0, "atkCurveBp": 0 }
+  },
   "foes": [
     {
       "id": "puddle-imp",

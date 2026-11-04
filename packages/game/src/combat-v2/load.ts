@@ -92,6 +92,8 @@ export interface CombatV2Pack {
   /** The lab scale of a foe's content numbers and the depth curve of its HP and Attack. */
   readonly foeScale: FoeScale;
   readonly foeCurve: FoeCurve;
+  /** The same two for the Undercroft's foes: their own scale and their own depth curve. */
+  readonly foeUndercroft: { readonly scale: FoeScale; readonly curve: FoeCurve };
   /** Dungeon foes by id. */
   readonly foes: Readonly<Record<string, FoeDef>>;
 }
@@ -531,6 +533,7 @@ export function loadCombatV2(
     raidTrack: trackFile,
     foeScale: foeFile.scale,
     foeCurve: foeFile.curve,
+    foeUndercroft: foeFile.undercroft,
     foes,
   };
 }

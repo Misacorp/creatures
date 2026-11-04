@@ -4,6 +4,14 @@ The daily dungeon: paths, rooms and rare rooms, the camp, the Undercroft, foes, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-04: [Misa] Combat v2 dungeon baseline: easier base floors, a steeper Undercroft
+
+ID: `2026-11-04-combat-v2-dungeon-baseline-easier-base` · Status: current
+
+**Decision.** The lab's option `base55-u1` is the game's combat v2 dungeon foe data (`packages/game/src/combat-v2/data/foes.json`; v1, the production dungeon, is untouched). Base floors: HP scale 12650 bp of the content's numbers (55% of the old 23000), depth curve +200 bp a depth above 1 and no square (was +1600 and +45), Attack flat at 225000 bp as before. The Undercroft has its own `undercroft` entry (a scale and a curve, the schema stays strict): HP scale 20700 bp (90% of the old scale), +300 bp a depth and +2 bp a depth squared, Attack the same. An Undercroft foe is built by `foeAt(..., { undercroft: true })`, at the run's depth plus `RULES.dungeon.undercroft.depthBonus` (1) for each level as before; the worker's room fight and card views and the lab build foes through the same engine function. In the lab, `shipped` is now these numbers, `base55-u1` an alias of it, `old-shipped` the numbers before this entry, and the other options are written against the new data (knobs are relative to the game's data, or an absolute `hpBp`).
+
+**Reasoning.** Misa, 2026-11-04: "Baseline numbers sound good. They're in a ballpark that seems logical but I have no firm attachment to them." The numbers are the ones the lab measured (decision `2026-11-04-combat-v2-dungeon-measures-in-the`). Checked after the change with `report -- --dungeon-days --scenarios shipped`: a safe daily player gains 4.4 / 6.3 / 6.6 / 6.6 / 6.6 a week by week band, is stuck in 6% of weeks 1-2, the base floor clears 49% / 71% / 86% / 95% from depths 1-4 to 13-20, and the level 1 keeper falls 3% / 11% / 26% / 61% of the time by team state (under 40% to over 80% HP) at depths 8 to 12: identical to the option's numbers. The old numbers gave 1.0 / 2.2 / 1.2 / 0.5 / 0.2 a week. Easy base floors with a steeper Undercroft is Misa's direction (`2026-11-04-dungeon-direction-an-easy-base-dungeon`), and the numbers are easy to move later, so no attachment is needed.
+
 ## 2026-11-04: [Misa] A depth choice before a run, with reward scalars
 
 ID: `2026-11-04-a-depth-choice-before-a-run` · Status: current · Amends: `2026-10-16-misa-s-direction-after-the-raid`

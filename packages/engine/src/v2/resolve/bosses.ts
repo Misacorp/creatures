@@ -101,17 +101,31 @@ export function raidBoss(
   return applyCards(pack, boss, cards, st);
 }
 
-/** A foe's HP and Attack at a depth: the content's numbers, the pack's scale, then the pack's depth curve. Throws for an unknown foe. */
+/** The parts of the pack a dungeon foe's numbers come from (`foeUndercroft` is read only for an Undercroft foe). */
+type FoeNumbers = Pick<CombatV2Pack, 'foes' | 'foeScale' | 'foeCurve'> &
+  Partial<Pick<CombatV2Pack, 'foeUndercroft'>>;
+
+/**
+ * A foe's HP and Attack at a depth: the content's numbers, the pack's scale, then the pack's depth curve. An Undercroft foe
+ * (`undercroft`) takes the pack's Undercroft scale and curve instead. Throws for an unknown foe.
+ */
 export function foeStats(
-  pack: Pick<CombatV2Pack, 'foes' | 'foeScale' | 'foeCurve'>,
+  pack: FoeNumbers,
   shipped: Pick<Shipped, 'foes'>,
   id: string,
   depth: number,
+  undercroft = false,
 ): { hp: number; atk: number } {
   const def = shipped.foes.find((f) => f.id === id);
   if (!def) throw new Error(`unknown dungeon foe ${id}`);
   const spec = Object.hasOwn(pack.foes, id) ? pack.foes[id] : undefined;
-  const { foeScale: scale, foeCurve: curve } = pack;
+  if (undercroft && pack.foeUndercroft === undefined) {
+    throw new Error('the pack has no Undercroft foe numbers');
+  }
+  const { scale, curve } =
+    undercroft && pack.foeUndercroft !== undefined
+      ? pack.foeUndercroft
+      : { scale: pack.foeScale, curve: pack.foeCurve };
   const part = (value: number, scaleBp: number, step: number, bend: number, own: number) =>
     Math.max(
       1,
@@ -132,16 +146,16 @@ export function foeStats(
  * landmark (`signature` decides it instead: an Undercroft keeper always has it). Throws for an unknown foe.
  */
 export function foeAt(
-  pack: Pick<CombatV2Pack, 'foes' | 'foeScale' | 'foeCurve' | 'cards'>,
+  pack: FoeNumbers & Pick<CombatV2Pack, 'cards'>,
   shipped: Pick<Shipped, 'foes'>,
   id: string,
   depth: number,
-  options: { readonly signature?: boolean } = {},
+  options: { readonly signature?: boolean; readonly undercroft?: boolean } = {},
 ): BossDef {
   const spec = Object.hasOwn(pack.foes, id) ? pack.foes[id] : undefined;
   const def = shipped.foes.find((f) => f.id === id);
   if (!spec || !def) throw new Error(`unknown dungeon foe ${id}`);
-  const { hp, atk } = foeStats(pack, shipped, id, depth);
+  const { hp, atk } = foeStats(pack, shipped, id, depth, options.undercroft === true);
   const moves: BossMove[] = [...spec.moves];
   if (spec.signature && (options.signature ?? isLandmark(depth))) moves.push(spec.signature);
   const boss: BossDef = {

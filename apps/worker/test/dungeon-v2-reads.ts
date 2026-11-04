@@ -9,13 +9,17 @@ import { routeThrough } from './dungeon-helpers';
 
 /** How strong the v2 foes are (the pack's scale, basis points of their content numbers); returns what puts it back. */
 export function scaleV2Foes(hpBp: number, atkBp: number): () => void {
-  const scale = combatV2.foeScale;
-  const before = { ...scale };
-  scale.hpBp = hpBp;
-  scale.atkBp = atkBp;
+  const scales = [combatV2.foeScale, combatV2.foeUndercroft.scale];
+  const before = scales.map((s) => ({ ...s }));
+  for (const s of scales) {
+    s.hpBp = hpBp;
+    s.atkBp = atkBp;
+  }
   return () => {
-    scale.hpBp = before.hpBp;
-    scale.atkBp = before.atkBp;
+    scales.forEach((s, i) => {
+      s.hpBp = before[i]?.hpBp ?? s.hpBp;
+      s.atkBp = before[i]?.atkBp ?? s.atkBp;
+    });
   };
 }
 
