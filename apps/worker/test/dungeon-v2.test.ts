@@ -5,7 +5,15 @@
  * and a v1 run that began before the flag turned on finishes on v1.
  */
 import { combatV2, knownKnacks } from '@creatures/game/combat-v2';
-import { RULES, createSeededRng, dungeonContent } from '@creatures/game';
+import {
+  RULES,
+  createSeededRng,
+  dungeonContent,
+  dungeonResourceBp,
+  dungeonXpBp,
+  scaleBp,
+  undercroftDepth,
+} from '@creatures/game';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { RunState } from '../src/dungeon-state';
 import type {
@@ -651,5 +659,97 @@ describe('the rules version is kept to the end of a run', () => {
       },
       V2('v2-before-off'),
     );
+  });
+});
+
+describe('v2 rewards grow with depth, the Undercroft by its own depth (Misa, 2026-11-04)', () => {
+  const DEEP = 40;
+  const setDepth = (ctx: CoreContext, userId: string, depth: number): void => {
+    ctx.sql.exec(
+      `INSERT INTO dungeon_progress (user_id, depth, first_day) VALUES (?, ?, '2027-01-01')
+       ON CONFLICT(user_id) DO UPDATE SET depth = excluded.depth`,
+      userId,
+      depth,
+    );
+  };
+  const atDescent = (s: DungeonRunState): boolean => s.pending?.kind === 'descend';
+  const summaryOf = (ctx: CoreContext, runId: string) =>
+    JSON.parse(runRow(ctx, runId)?.summary_json ?? '{}') as {
+      pack: {
+        found: { bait: number; essence: number; scrap: number };
+        kept: { bait: number; essence: number; scrap: number };
+      };
+      rewards: { experience: { creatureId: string; gained: number }[] };
+    };
+
+  it('pays the pack and the experience scaled by depth, and says nothing of it to the player', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        giveV2(ctx, p.id);
+        ctx.clock.t = AFTER_RESET;
+        setDepth(ctx, p.id, DEEP);
+        const state = await begin(p);
+        const waiting = (await p.play(state, { stopWhen: atDescent })).body
+          .state as DungeonRunState;
+        expect(waiting.pending?.kind).toBe('descend');
+        const raw = stored(ctx, state.id);
+        const res = await p.act(waiting, { type: 'home' });
+        expect(res.status, JSON.stringify(res.body)).toBe(200);
+        const summary = summaryOf(ctx, state.id);
+        const bp = dungeonResourceBp(DEEP);
+        expect(bp).toBeGreaterThan(10_000);
+        expect(summary.pack.found).toMatchObject({
+          bait: scaleBp(raw.pack.bait, bp),
+          essence: scaleBp(raw.pack.essence, bp),
+          scrap: scaleBp(raw.pack.scrap, bp),
+        });
+        expect(summary.pack.found.scrap).toBeGreaterThan(raw.pack.scrap);
+        expect(summary.pack.kept).toMatchObject(summary.pack.found);
+        for (const e of summary.rewards.experience) {
+          const earned = raw.earned[e.creatureId];
+          expect(e.gained).toBe(scaleBp(earned?.base ?? 0, dungeonXpBp(DEEP)));
+        }
+        expect(summary.rewards.experience.length).toBeGreaterThan(0);
+        // Nothing in the payload names the rule.
+        expect(JSON.stringify(res.body)).not.toMatch(/rollsMax|bestOf|best-of|depthRewards/i);
+      },
+      V2('v2-depth-pack'),
+    );
+  });
+
+  it('pays a run that went down by the Undercroft depth', async () => {
+    const u = RULES.dungeon.undercroft as { depthBonus: number };
+    const before = u.depthBonus;
+    u.depthBonus = 20;
+    try {
+      await runCore(
+        nextGuild(),
+        async (ctx) => {
+          const p = await dungeonPlayer(ctx, 1, STRONG);
+          giveV2(ctx, p.id);
+          ctx.clock.t = AFTER_RESET;
+          setDepth(ctx, p.id, DEEP);
+          const state = await begin(p);
+          const waiting = (await p.play(state, { stopWhen: atDescent })).body
+            .state as DungeonRunState;
+          const down = await p.act(waiting, { type: 'descend' });
+          expect(down.status, JSON.stringify(down.body)).toBe(200);
+          const raw = stored(ctx, state.id);
+          expect(raw.level).toBe(1);
+          ctx.clock.t = AFTER_RESET + 24 * 60 * 60 * 1000;
+          ctx.core.dungeon.closeStale();
+          const summary = summaryOf(ctx, state.id);
+          const deepBp = dungeonResourceBp(undercroftDepth(DEEP, 1));
+          expect(deepBp).toBeGreaterThan(dungeonResourceBp(DEEP));
+          expect(summary.pack.found.scrap).toBe(scaleBp(raw.pack.scrap, deepBp));
+          expect(summary.pack.found.essence).toBe(scaleBp(raw.pack.essence, deepBp));
+        },
+        V2('v2-depth-under'),
+      );
+    } finally {
+      u.depthBonus = before;
+    }
   });
 });

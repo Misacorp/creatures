@@ -891,6 +891,36 @@ export const RULES = {
       maxBp: { rare: 4_500, epic: 1_800 },
       landmarkBonusBp: { rare: 2_000, epic: 600 },
     },
+    /**
+     * Combat v2 dungeon rewards grow with depth (Misa, 2026-11-04; first numbers, to tune). Combat v1
+     * runs never read this: they stay rolls 1, keep 1, resources and XP at 1.0x.
+     *
+     * Gear: the hidden best-of roller (`rules/best-of.ts`) rolls `rolls.min` to `rolls.max` pieces and
+     * keeps the best `keep.min` to `keep.max`. `base` is the spec at depth 1; each step of `steps` adds
+     * `add` to one end of the spec for every `every` of the context value past `from`, never above `cap`.
+     * A value other than the context's (`depth`, `undercroftLevel`, `bossRank`) is a lever for later.
+     * The Undercroft pays by its own depth (`undercroftDepth`): the gear is rolled at it, the pack and
+     * the experience are scaled by the deepest level the run reached.
+     */
+    depthRewards: {
+      base: { rolls: { min: 1, max: 2 }, keep: { min: 1, max: 1 } },
+      steps: [
+        // Rolls max grows by 1 every 8 depths, to 6: more pieces to choose the best from.
+        { field: 'rolls.max', by: 'depth', from: 1, every: 8, add: 1, cap: 6 },
+        // Rolls min by 1 every 16 depths, to 3: a floor under the quality.
+        { field: 'rolls.min', by: 'depth', from: 1, every: 16, add: 1, cap: 3 },
+        // Keep max by 1 every 20 depths, to 3: more pieces kept.
+        { field: 'keep.max', by: 'depth', from: 1, every: 20, add: 1, cap: 3 },
+        // Keep min by 1 every 40 depths, to 2.
+        { field: 'keep.min', by: 'depth', from: 1, every: 40, add: 1, cap: 2 },
+      ],
+      /** Pack resources (Bait, Essence, scrap): +`perDepthBp` a depth past 1, at most +`maxBp`. */
+      resources: { perDepthBp: 150, maxBp: 10_000 },
+      /** Creature experience from a run: +`perDepthBp` a depth past 1, at most +`maxBp`. */
+      xp: { perDepthBp: 100, maxBp: 10_000 },
+      /** What a kept piece of each rarity counts for in `dungeonRewardScalars` (its loot number). */
+      rarityWeight: { common: 1, rare: 2, epic: 4 },
+    },
     /** A fully cleared landmark depth pays this on top, and its gear drop is guaranteed. */
     landmark: { essence: 2, scrap: 2, glimmer: 1 },
     /**

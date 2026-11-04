@@ -21,6 +21,8 @@ export * from './income';
 export * from './weather';
 export * from './dungeon-map';
 export * from './dungeon-run';
+export * from './best-of';
+export * from './dungeon-rewards';
 export * from './dungeon-seal';
 export * from './dungeon-treasure';
 export * from './economy';

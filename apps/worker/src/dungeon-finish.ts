@@ -7,16 +7,22 @@
  */
 import {
   RULES,
+  SINGLE_ROLL,
   addParts,
   dayParts,
   dayXpEffects,
   dungeonExperience,
+  dungeonGearSpec,
+  dungeonResourceBp,
+  dungeonXpBp,
   isLandmark,
   keptOnDefeat,
   mapView,
   nodeFoe,
   rollDungeonLoot,
+  rewardDepth,
   rollSealedBonus,
+  scaleBp,
   streakBonus,
   creatureXpParts,
   undercroftOpen,
@@ -113,6 +119,29 @@ function treasureLoot(
 }
 
 /**
+ * The depth a run's pack and experience are paid at: its own, or the Undercroft's (`undercroftDepth`) at the deepest
+ * level it reached (`RULES.dungeon.depthRewards`).
+ */
+function rewardDepthOf(st: RunState, depth: number): number {
+  return rewardDepth(depth, Math.max(st.deepest, st.level));
+}
+
+/**
+ * The pack as the run found it. A combat v2 run's Bait, Essence and scrap are scaled by depth
+ * (Misa, 2026-11-04; v1 is paid as it was); shards are not.
+ */
+function scaledPack(st: RunState, depth: number): DungeonPack {
+  if (st.v !== 2) return { ...st.pack };
+  const bp = dungeonResourceBp(rewardDepthOf(st, depth));
+  return {
+    ...st.pack,
+    bait: scaleBp(st.pack.bait, bp),
+    essence: scaleBp(st.pack.essence, bp),
+    scrap: scaleBp(st.pack.scrap, bp),
+  };
+}
+
+/**
  * Ends a run, paying everything in the caller's transaction: the progress (depth only after a clear),
  * the kept pack with the boss chest and the supply, the streak bonus of the day's first finished run,
  * creature experience, the summary and rewards, and the analytics. Idempotent per (player, day,
@@ -159,7 +188,7 @@ export function finishRun(
   );
 
   // --- Pay: the kept pack, the chest and the supply, and the streak bonus on the first run of a day ---
-  const found = { ...st.pack };
+  const found = scaledPack(st, depth);
   const kept = outcome === 'defeat' ? keptOnDefeat(found) : { ...found };
   const rewards = payRun(
     deps,
@@ -186,7 +215,12 @@ export function finishRun(
     // home before any room, is not). A creature sent home at a camp keeps what it had earned.
     const earned = st.earned[id];
     if (earned === undefined || earned.base <= 0) continue;
-    const gained = dungeonExperience(earned, parts);
+    const gained = dungeonExperience(
+      st.v === 2
+        ? { ...earned, base: scaleBp(earned.base, dungeonXpBp(rewardDepthOf(st, depth))) }
+        : earned,
+      parts,
+    );
     const view = awardExperience(
       deps.storage.sql,
       deps.analytics,
@@ -275,6 +309,8 @@ function payRun(
   // A rare room's treasure is won unless the run ended in a defeat; it is paid by the same grant (so once).
   const prize = treasureLoot(outcome === 'defeat' ? [] : st.treasures, depth);
   const gearDeps = gearDepsOf(deps);
+  // Combat v2 rolls its gear best-of by depth (hidden); v1 is one plain roll.
+  const spec = st.v === 2 ? dungeonGearSpec(depth) : SINGLE_ROLL;
   const grant = grantDungeonRun(
     gearDeps,
     userId,
@@ -283,7 +319,7 @@ function payRun(
     (rng) => {
       // The run's own dice come first; the marked fights' extra rolls are drawn after them (none: nothing drawn).
       const sealed = () => {
-        const extra = rollSealedBonus(rng, depth, st.sealedWins, bossElement);
+        const extra = rollSealedBonus(rng, depth, st.sealedWins, bossElement, spec);
         return {
           gear: extra.gear.map((item) => ({ item, origin: { kind: 'dungeon' as const, depth } })),
           supplies: extra.supplies,
@@ -308,6 +344,7 @@ function payRun(
           supplies: st.supply ? SUPPLIES_PER_RUN : 0,
         },
         bossElement,
+        spec,
       );
       const extra = sealed();
       return {
