@@ -67,3 +67,15 @@ export function packOf(knob: FoeKnob | undefined, side: FoeSide): FoePack {
   memo.set(key, pack);
   return pack;
 }
+
+/**
+ * The foe numbers before 2026-11-04 (HP scale 23000 bp, +1600 bp a depth and +45 bp a depth squared, the Undercroft on the same curve at one
+ * depth more a level). The lab's mechanic tests and foe questions were tuned on them (a foe that asks for a tool must be hard enough that
+ * a team without it loses), so they keep them: they test what a foe asks, not how hard the game's dungeon is.
+ */
+export const OLD_FOES: FoeKnobs = {
+  base: { hpBp: 23_000, curve: { hpStepBp: 1_600, hpCurveBp: 45 } },
+  undercroft: { hpBp: 23_000, curve: { hpStepBp: 1_600, hpCurveBp: 45 } },
+};
+/** The pack of the old base numbers, for a foe built outside a run (a gauntlet, a foe question). */
+export const OLD_PACK: FoePack = packOf(OLD_FOES.base, 'base');

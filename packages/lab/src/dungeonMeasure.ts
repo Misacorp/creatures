@@ -17,7 +17,7 @@ import {
   type DaysConfig,
   type PlayerDays,
 } from './dungeonDays';
-import type { FoeKnobs } from './dungeonKnobs';
+import { OLD_FOES, type FoeKnobs } from './dungeonKnobs';
 import type { JobResults, JobSpec, Plan } from './jobs';
 import { JOURNEY_SERVERS } from './journey';
 import { ROSTER_SPEEDS, type RosterSpeed } from './roster';
@@ -54,10 +54,7 @@ export const SCENARIOS: readonly Scenario[] = [
   {
     id: 'old-shipped',
     note: 'the numbers before 2026-11-04: HP 23000 bp, +16% a depth and +0.45% a depth squared; the Undercroft takes the same curve (a level adds one depth)',
-    foes: {
-      base: { hpBp: 23_000, curve: { hpStepBp: 1_600, hpCurveBp: 45 } },
-      undercroft: { hpBp: 23_000, curve: { hpStepBp: 1_600, hpCurveBp: 45 } },
-    },
+    foes: OLD_FOES,
   },
   {
     id: 'flat-only',

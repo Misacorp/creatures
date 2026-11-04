@@ -123,7 +123,11 @@ describe('the foe knobs', () => {
           cleared++;
       return cleared;
     };
-    expect(run({ base: { hpMult: 3_000 } })).toBeGreaterThan(run());
+    // At a harder scale than the game's (the old numbers, 23000 bp) the same team clears less.
+    expect(run({ base: { hpMult: 3_000 } })).toBeGreaterThanOrEqual(run());
+    expect(run({ base: { hpBp: 23_000, curve: { hpStepBp: 1_600, hpCurveBp: 45 } } })).toBeLessThan(
+      run(),
+    );
     // An empty knob is the game's own numbers.
     expect(run({})).toBe(run());
   });

@@ -28,6 +28,7 @@ import {
   CLASSIC_LINE,
   GAUNTLET,
 } from '../src';
+import { OLD_FOES, OLD_PACK } from '../src/dungeonKnobs';
 import { cardIds } from './helpers/bossHelpers';
 
 describe('the dungeon foes', () => {
@@ -100,7 +101,7 @@ describe('the dungeon foes', () => {
       let w = 0;
       for (let i = 0; i < 20; i++)
         if (
-          fight(foeAt(id, depth), toPlacements(CLASSIC_LINE, GAUNTLET), {
+          fight(foeAt(id, depth, {}, OLD_PACK), toPlacements(CLASSIC_LINE, GAUNTLET), {
             rng: createSeededRng(`d:${id}:${i}`),
           }).won
         )
@@ -154,7 +155,12 @@ describe('the dungeon foes', () => {
       ['drift-wisp', 4],
       ['bramble-hound', 4],
     ] as const) {
-      const g = gauntletStats(foeAt(foe, depth), [...CLASSIC_LINE], 100, `classic:${foe}`);
+      const g = gauntletStats(
+        foeAt(foe, depth, {}, OLD_PACK),
+        [...CLASSIC_LINE],
+        100,
+        `classic:${foe}`,
+      );
       expect(g.winRate, foe).toBeLessThanOrEqual(0.5);
     }
   });
@@ -167,7 +173,7 @@ describe('dungeon runs on the shipped map', () => {
     policy: 'first' | 'smart',
     runs = 100,
     over: { bench?: readonly (typeof ALL_ROUND_TEAM)[number][]; levels?: number } = {},
-  ) => runStats(team, depth, true, runs, 'map', { policy, ...over });
+  ) => runStats(team, depth, true, runs, 'map', { policy, foes: OLD_FOES, ...over });
 
   it('the all-round team and its bench are legal rosters', () => {
     expect(answerProblems([...ALL_ROUND_TEAM, ...ALL_ROUND_BENCH])).toEqual([]);
@@ -179,10 +185,14 @@ describe('dungeon runs on the shipped map', () => {
     const run = (seed: string, depth: number) =>
       runMap(ALL_ROUND_TEAM, depth, createSeededRng(seed), {
         policy: 'smart',
+        foes: OLD_FOES,
         bench: ALL_ROUND_BENCH,
       });
     expect(run('x', 3)).toEqual(run('x', 3));
-    const hopeless = runMap([...CLASSIC_LINE], 60, createSeededRng('x'), { policy: 'smart' });
+    const hopeless = runMap([...CLASSIC_LINE], 60, createSeededRng('x'), {
+      policy: 'smart',
+      foes: OLD_FOES,
+    });
     expect(hopeless.cleared).toBe(false);
     expect(hopeless.fights).toBeLessThan(5);
     // A cleared run won at least the entrance floor's fight and the floor boss's.
@@ -197,22 +207,28 @@ describe('dungeon runs on the shipped map', () => {
     for (let i = 0; i < 300; i++) {
       const r = runMap(ALL_ROUND_TEAM, 8, createSeededRng(`camp${i}`), {
         policy: 'smart',
+        foes: OLD_FOES,
         bench: ALL_ROUND_BENCH,
       });
       if (r.camp) seen.add(r.camp);
-      const plain = runMap(ALL_ROUND_TEAM, 8, createSeededRng(`camp${i}`), { policy: 'smart' });
+      const plain = runMap(ALL_ROUND_TEAM, 8, createSeededRng(`camp${i}`), {
+        policy: 'smart',
+        foes: OLD_FOES,
+      });
       expect(plain.camp).not.toBe('swap');
     }
     expect([...seen].sort()).toEqual(['keepsake', 'rest', 'swap']);
   });
 
   it('the camp helps: a run with its Rest clears more than one without', () => {
-    const withCamp = runStats([...CLASSIC_LINE], 2, true, 150, 'camp');
-    const without = runStats([...CLASSIC_LINE], 2, false, 150, 'camp');
+    const withCamp = runStats([...CLASSIC_LINE], 2, true, 150, 'camp', { foes: OLD_FOES });
+    const without = runStats([...CLASSIC_LINE], 2, false, 150, 'camp', { foes: OLD_FOES });
     expect(withCamp.cleared).toBeGreaterThan(without.cleared);
     expect(withCamp.winRate).toBeGreaterThan(without.winRate);
   });
 
+  // These run on the foe numbers before 2026-11-04 (`OLD_FOES`): they test the plan, the camp and the Undercroft's order, which the game's
+  // easier base floors (decision "Combat v2 dungeon baseline") no longer separate.
   it('a good all-round team with a plan clears over half of its runs at every depth from 1 to 8', () => {
     for (let depth = 1; depth <= 8; depth++)
       expect(
