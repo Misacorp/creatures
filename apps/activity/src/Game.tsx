@@ -154,8 +154,9 @@ export function Game({
   const [homeAt, setHomeAt] = useState<HomeAt>('valley');
   const { raid: raidGlance } = useRaidGlance(
     game.starterChosen,
-    // The valley's map shows the raid's next time in the Arena's line, as Home shows it in "Coming up".
-    tab === 'home' && (!valleyOn || homeAt === 'valley'),
+    // The valley keeps it "on Home" throughout: one load when it opens and the schedule's own timer, never one per
+    // return to the map (the Arena's line reads it).
+    valleyOn || tab === 'home',
     offset,
   );
   // The Settings page (from the cog in the HUD) is drawn in place of the screen; the screen stays mounted under it,

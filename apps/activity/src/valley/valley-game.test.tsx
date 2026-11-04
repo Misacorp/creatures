@@ -131,7 +131,7 @@ describe('the valley flag in the game', () => {
     expect(byClass(p.root, 'vy-valley')).toHaveLength(1);
   });
 
-  it('on: "‹ Valley" only changes the view; the map loads what Home loads (the raid week, for the Arena\'s line)', () => {
+  it('on: "‹ Valley" only changes the view; the map loads nothing again (the raid week loads once, when the valley opens)', () => {
     const p = draw(true);
     const door = byName(p.root, 'button', /^Forge,/)[0];
     if (door === undefined) throw new Error('no Forge');
@@ -141,7 +141,7 @@ describe('the valley flag in the game', () => {
     if (back === undefined) throw new Error('no way back');
     p.click(back);
     expect(byClass(p.root, 'vy-valley')).toHaveLength(1);
-    expect(fetched).toEqual(['/api/raid']);
+    expect(fetched).toEqual([]);
   });
 
   it('on: a place with something waiting wears a bubble, and tapping the bubble opens the place', () => {
