@@ -1,0 +1,582 @@
+/*
+  The valley shell (`valley/ValleyFrame.tsx`, the `VALLEY` flag): the map of the valley, the creature tray, a
+  place's page under its way back, the scene of a place that is not open yet, and the Places list. Every class
+  starts `vy-`. Pixel rules: hard edges, no radius, no blur or glow, motion in steps (and none under reduced
+  motion). Ported from the prototype's `valley.css` and `valley-scenes.css` (`proto/valley/`, `pv-` classes).
+
+  Layout: with the shell on, `main.card` is the whole window (as with the desktop rail): the HUD is its top
+  row and `.vy-frame` fills the rest. A place's page scrolls inside `.vy-page`; the map and a place's scene fill
+  `.vy-body` and the tray sits under the map.
+*/
+main.card:has(.vy-frame) {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: calc(
+    100vh - var(--discord-safe-area-inset-top, 0px) - var(--discord-safe-area-inset-bottom, 0px)
+  );
+  height: calc(
+    100dvh - var(--discord-safe-area-inset-top, 0px) - var(--discord-safe-area-inset-bottom, 0px)
+  );
+  margin: 0;
+  padding: 0;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+main.card:has(.vy-frame) > .hud {
+  flex: none;
+  margin: 0;
+  padding-inline: max(0.75rem, var(--discord-safe-area-inset-left, 0px))
+    max(0.75rem, var(--discord-safe-area-inset-right, 0px));
+}
+
+.vy-frame {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--night);
+}
+
+.vy-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.vy-body[hidden] {
+  display: none;
+}
+
+/* Errors, notes, the wipe notice and the level-reset card: over the valley, never pushing the map down. */
+.vy-notices {
+  position: absolute;
+  z-index: 30;
+  top: 0.5rem;
+  left: 0.5rem;
+  right: 0.5rem;
+  display: grid;
+  gap: 0.5rem;
+  max-height: 60%;
+  overflow-y: auto;
+  pointer-events: none;
+}
+
+.vy-notices:empty {
+  display: none;
+}
+
+.vy-notices > * {
+  pointer-events: auto;
+}
+
+/* A place's page (today's page unchanged) and the Settings page: they scroll inside the frame. */
+.vy-page {
+  flex: 1;
+  min-height: 0;
+  padding: 0.75rem 1rem 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.vy-page > * + * {
+  margin-top: 0.75rem;
+}
+
+.vy-house {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.vy-soon {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.vy-soon > .drill-head {
+  flex: none;
+  padding: 0.5rem 0.75rem;
+  background: var(--dusk);
+}
+
+/* The game's buttons are raised panels; things in the world are not (the art is the button). */
+.vy-frame :is(.vy-place, .vy-mon),
+.vy-frame :is(.vy-place, .vy-mon):is(:hover, :active) {
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  filter: none;
+  transform: none;
+  color: var(--bone);
+}
+
+.vy-frame :is(.vy-place, .vy-mon):focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.vy-frame canvas,
+.vy-frame .sprite {
+  image-rendering: pixelated;
+}
+
+/* A name plate: bone on solid ink, the pixel font. */
+.vy-plate {
+  display: inline-block;
+  max-width: 9rem;
+  padding: 0 5px;
+  overflow: hidden;
+  background: var(--ink);
+  color: var(--bone);
+  font-size: 1rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- The valley --- */
+.vy-map-view {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #9cd8fb;
+}
+
+.vy-valley {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.vy-scroller {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  scrollbar-width: none;
+}
+
+.vy-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.vy-valley.pans .vy-scroller {
+  overflow-x: auto;
+  overflow-y: hidden;
+  cursor: grab;
+}
+
+.vy-valley.pans .vy-scroller.dragging {
+  cursor: grabbing;
+}
+
+.vy-stage {
+  position: relative;
+  left: var(--left);
+  top: var(--top);
+  width: var(--w);
+  height: var(--h);
+}
+
+.vy-canvas {
+  display: block;
+}
+
+.vy-at {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: max-content;
+  line-height: 0;
+  pointer-events: none;
+}
+
+.vy-flip {
+  transform: scaleX(-1);
+}
+
+.vy-places {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.vy-place {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--pw);
+  height: var(--ph);
+  cursor: pointer;
+}
+
+/* The building's name plate, at its foot. */
+.vy-place-plate {
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  transform: translateX(-50%);
+  line-height: 0;
+  pointer-events: none;
+}
+
+/* The Places button: a flag in the map's top-left corner. */
+.vy-hatch {
+  position: absolute;
+  z-index: 25;
+  top: 0.375rem;
+  left: 0.375rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+  background: var(--dusk);
+  border: 0;
+  border-radius: 0;
+  box-shadow:
+    inset 0 var(--px) 0 var(--bevel-hi),
+    inset 0 calc(var(--px) * -1) 0 var(--bevel-lo),
+    0 0 0 var(--px) var(--ink);
+  color: var(--bone);
+}
+
+.vy-hatch:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* The "While you were away" paper over the map (the welcome-back Gazette replaces it in a later step). */
+.vy-away {
+  position: absolute;
+  z-index: 28;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  max-width: 26rem;
+  max-height: 70%;
+  margin: 0 auto;
+  overflow-y: auto;
+}
+
+.vy-up {
+  fill: var(--ink);
+  width: 10px;
+  height: 12px;
+}
+
+.vy-bang {
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--ink);
+}
+
+/* --- Edge chips: a ribbon on the valley's edge for every place out of view --- */
+.vy-edge {
+  position: absolute;
+  z-index: 20;
+  top: calc(var(--ey) - 0.875rem);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 1.75rem;
+  max-width: 9rem;
+  padding: 0 5px;
+  background: var(--ink);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--bone);
+}
+
+/* A chip is a flag on a pole, not a raised button: no bevel, a notch on its inner end. */
+.vy-edge-left {
+  left: 0;
+  padding-right: 10px;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 50%, 100% 100%, 0 100%);
+}
+
+.vy-edge-right {
+  right: 0;
+  flex-direction: row-reverse;
+  padding-left: 10px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 6px 50%);
+}
+
+.vy-edge:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: -3px;
+}
+
+/* The arrowhead: a stepped triangle pointing out of the screen. */
+.vy-edge-head {
+  flex: none;
+  width: 6px;
+  height: 12px;
+  background: var(--gold);
+  clip-path: polygon(
+    0 0,
+    33% 0,
+    33% 17%,
+    67% 17%,
+    67% 33%,
+    100% 33%,
+    100% 67%,
+    67% 67%,
+    67% 83%,
+    33% 83%,
+    33% 100%,
+    0 100%
+  );
+}
+
+.vy-edge-left .vy-edge-head {
+  transform: scaleX(-1);
+}
+
+/* --- The creature tray --- */
+.vy-tray {
+  position: relative;
+  flex: none;
+  background: #5e3620;
+  box-shadow:
+    inset 0 3px 0 #9a6036,
+    inset 0 6px 0 var(--ink);
+}
+
+.vy-tray-scroll {
+  overflow-x: auto;
+  padding: 8px 6px 4px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.vy-tray-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.vy-tray-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 72px;
+  grid-template-rows: repeat(2, 80px);
+  gap: 2px 4px;
+  justify-content: center;
+  min-width: min-content;
+}
+
+@media (min-width: 900px) {
+  .vy-tray-grid {
+    grid-template-rows: 80px;
+    grid-auto-columns: 80px;
+  }
+}
+
+/* More creatures than fit: a gold arrow at the right edge. */
+.vy-tray-more {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 18px;
+  background: var(--ink);
+  pointer-events: none;
+}
+
+.vy-tray-more::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: calc(50% - 6px);
+  width: 6px;
+  height: 12px;
+  background: var(--gold);
+  clip-path: polygon(
+    0 0,
+    33% 0,
+    33% 17%,
+    67% 17%,
+    67% 33%,
+    100% 33%,
+    100% 67%,
+    67% 67%,
+    67% 83%,
+    33% 83%,
+    33% 100%,
+    0 100%
+  );
+}
+
+.vy-mon {
+  position: relative;
+  display: grid;
+  grid-template-rows: 18px 48px 14px;
+  justify-items: center;
+  align-items: end;
+  width: 100%;
+  height: 100%;
+  scroll-snap-align: start;
+  cursor: pointer;
+}
+
+.vy-mon-head {
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  height: 18px;
+  line-height: 0;
+}
+
+.vy-mon-body {
+  position: relative;
+  line-height: 0;
+}
+
+.vy-mon-pack {
+  position: absolute;
+  right: -12px;
+  bottom: -2px;
+}
+
+.vy-mon-lv {
+  font-size: 0.875rem;
+  line-height: 14px;
+  color: #fbf3df;
+}
+
+.vy-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.vy-mark-say {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 2px;
+  background: #fbf3df;
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.vy-mark-say .vy-bang {
+  font-size: 1.125rem;
+}
+
+/* A free creature idles: a one-pixel bob in two steps. */
+.vy-mon-free .vy-mon-body {
+  animation: vy-idle 1200ms steps(1) infinite;
+  animation-delay: calc(var(--i, 0) * -170ms);
+}
+
+@keyframes vy-idle {
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* --- A place seen from inside, full screen --- */
+.vy-interior {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--ground, var(--night));
+}
+
+.vy-scene {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--w);
+  height: var(--h);
+}
+
+/* The one main action: pinned at the bottom of the scene, always in view. */
+.vy-act {
+  position: absolute;
+  z-index: 20;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  display: grid;
+  gap: 0.375rem;
+  max-width: 30rem;
+  margin: 0 auto;
+}
+
+.vy-act .action-btn {
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 var(--gold-shade),
+    0 calc(var(--px) * 2) 0 0 rgb(var(--ink-rgb) / 0.6);
+}
+
+/* The calm line of a place where nothing needs you (`PinnedAct`): paper with a check mark, news and not a button. */
+.vy-calm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 2.25rem;
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+  background: var(--paper, #f4ead0);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+  color: var(--ink);
+  font-size: 0.875rem;
+  line-height: 1.2;
+  text-align: center;
+}
+
+/* --- The Places list, and the House's entries --- */
+.vy-rows {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vy-row {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: var(--bone);
+  text-align: left;
+}
+
+.vy-row-name {
+  font-size: 1.125rem;
+}
+
+.vy-row-line {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--haze);
+  font-size: var(--fs-row);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vy-mon-free .vy-mon-body {
+    animation: none;
+  }
+}

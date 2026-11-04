@@ -8,6 +8,7 @@ import { evolveEntries } from './entries/evolve';
 import { expeditionWorldEntries } from './entries/expedition-world';
 import { flipperEntries } from './entries/flipper';
 import { gameScreensEntries } from './entries/game-screens';
+import { valleyShellEntries } from './entries/valley-shell';
 import { gamesArtEntries } from './entries/games-art';
 import { gamesShowEntries } from './entries/games-show';
 import { gamesTabEntries } from './entries/games-tab';
@@ -98,6 +99,7 @@ export const ENTRIES: readonly Entry[] = [
   ...homePagesEntries,
   ...settingsEntries,
   ...gameScreensEntries,
+  ...valleyShellEntries,
 ];
 
 export function findEntry(name: string | null): Entry | null {
