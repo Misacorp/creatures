@@ -570,24 +570,6 @@
   gap: 4px;
 }
 
-/* Mastery of the place's work: three pips under the level, filled for the steps reached. */
-.pv-mastery {
-  display: inline-flex;
-  gap: 3px;
-}
-
-.pv-mastery-pip {
-  display: block;
-  width: 6px;
-  height: 6px;
-  box-shadow: inset 0 0 0 1px #fbf3df;
-}
-
-.pv-mastery-pip.is-on {
-  background: var(--gold);
-  box-shadow: 0 0 0 1px var(--ink);
-}
-
 .pv-mark {
   display: inline-flex;
   align-items: center;

@@ -3,6 +3,7 @@ import { GearItemsContext } from '../../gear-items-context';
 import { PopoverHost } from '../../PopoverHost';
 import {
   byClass,
+  byName,
   byRole,
   createPage,
   visibleText,
@@ -11,7 +12,7 @@ import {
 } from '../../test-dom';
 import { Finds, MAX_ROW, rowEntries, splitRow } from './Gazette';
 import { welcomeOf, type Find, type Story } from './highlights';
-import { StoryPlate, resetFolds, storyChipText } from './PlaceStories';
+import { StoryPlate, resetClosed } from './PlaceStories';
 import { DAILY, WEEKLY } from './journey';
 import { castOf, markerBubbles, welcomeWorld } from './welcome-world';
 
@@ -25,7 +26,7 @@ let page: Page | null = null;
 afterEach(() => {
   page?.unmount();
   page = null;
-  resetFolds();
+  resetClosed();
   vi.unstubAllGlobals();
 });
 
@@ -193,18 +194,19 @@ describe('a place telling its waiting stories', () => {
   });
 });
 
-describe('folding a place’s stories', () => {
+describe('closing a place’s stories', () => {
   const stories = (): Story[] =>
     welcomeOf(WEEKLY, WEEKLY.visits.length - 1, cast).markers.flatMap((m) => m.stories);
 
   function drawPlate(place: string): Page {
     if (!('window' in globalThis)) {
       vi.stubGlobal('window', {
-        matchMedia: () => ({ matches: false }),
+        matchMedia: () => ({ matches: true }),
         addEventListener: () => undefined,
         removeEventListener: () => undefined,
       });
     }
+    vi.stubGlobal('matchMedia', () => ({ matches: true }));
     page = createPage();
     page.draw(
       <PopoverHost onOpenHowTo={() => undefined}>
@@ -218,30 +220,24 @@ describe('folding a place’s stories', () => {
     return page;
   }
 
-  it('says how many stories wait on the chip it folds to', () => {
-    expect(storyChipText(1)).toBe('1 story');
-    expect(storyChipText(3)).toBe('3 stories');
-  });
-
-  it('folds to a small chip on a tap and unfolds on another', () => {
+  it('is the shared Alert with its X, and has no Hide word or "N stories" chip', () => {
     const p = drawPlate('school');
+    expect(byClass(p.root, 'alert')).toHaveLength(1);
     expect(byClass(p.root, 'wb-clip')).toHaveLength(1);
-    p.click(first(byClass(p.root, 'wb-clip-fold')));
-    expect(byClass(p.root, 'wb-clip')).toHaveLength(0);
-    const chip = first(byClass(p.root, 'wb-clip-chip'));
-    expect(visibleText(chip)).toBe(storyChipText(stories().length));
-    p.click(chip);
-    expect(byClass(p.root, 'wb-clip')).toHaveLength(1);
+    expect(byName(p.root, 'button', 'Close the stories')).toHaveLength(1);
+    expect(visibleText(p.root)).not.toMatch(/\bHide\b/);
+    expect(byClass(p.root, 'wb-clip-chip')).toHaveLength(0);
   });
 
-  it('keeps a fold for that place only, and a place visited again starts folded', () => {
+  it('closes on the X and stays closed for that place only when it is visited again', () => {
     let p = drawPlate('school');
-    p.click(first(byClass(p.root, 'wb-clip-fold')));
+    p.click(first(byName(p.root, 'button', 'Close the stories')));
+    expect(byClass(p.root, 'wb-clip')).toHaveLength(0);
     p.unmount();
     page = null;
     p = drawPlate('school');
     expect(byClass(p.root, 'wb-clip')).toHaveLength(0);
-    expect(byClass(p.root, 'wb-clip-chip')).toHaveLength(1);
+    expect(byClass(p.root, 'wb-clip-chip')).toHaveLength(0);
     p.unmount();
     page = null;
     p = drawPlate('forge');

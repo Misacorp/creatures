@@ -17,8 +17,9 @@ import { Sprite } from '../../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../../sprites/creature-sprites';
 import { PACK_ART } from '../../sprites/pack-art';
 import { GameIcon } from '../../ui/GameIcon';
+import { PipRow } from '../../ui/PipRow';
 import type { ProtoWorld } from '../world';
-import { MASTERY_MAX, masteryWords, type WorkKind } from './mastery';
+import { MASTERY_MAX, masteryFact, masteryWords, type WorkKind } from './mastery';
 import { UpArrow } from './parts';
 import { trayBadge, type TrayBadge } from './tray-state';
 
@@ -76,15 +77,15 @@ export interface TrayMastery {
   kind: WorkKind;
 }
 
-/** Three pips under the level: a filled one for each step reached (hollow ones are the steps to come). */
-function Pips({ step }: { step: number }) {
-  return (
-    <span class="pv-mastery" aria-hidden="true">
-      {Array.from({ length: MASTERY_MAX }, (_, i) => (
-        <span key={i} class={i < step ? 'pv-mastery-pip is-on' : 'pv-mastery-pip'} />
-      ))}
-    </span>
-  );
+/**
+ * Three pips under the level, the shared `ui/PipRow`: a gold one for each step reached. A creature that has not
+ * started this work shows no pips at all (empty pips beside "Lv N" read as missing glyphs); its popover says
+ * "Novice, not started".
+ */
+function Pips({ mastery }: { mastery: TrayMastery }) {
+  if (mastery.step === 0) return null;
+  const fact = masteryFact(mastery.step, mastery.kind);
+  return <PipRow count={MASTERY_MAX} lit={mastery.step} label={`${fact.label}: ${fact.value}`} />;
 }
 
 export function TrayCreature({
@@ -143,7 +144,7 @@ export function TrayCreature({
       </span>
       <span class="pv-mon-lv pix">
         Lv {creature.level}
-        {mastery !== null && <Pips step={mastery.step} />}
+        {mastery !== null && <Pips mastery={mastery} />}
       </span>
       {dimWord !== null && <span class="pv-mon-word pix">{dimWord}</span>}
     </button>
