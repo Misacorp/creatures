@@ -3,6 +3,7 @@ import { URL, fileURLToPath } from 'node:url';
 import { CARDS } from './cards';
 import { RAID_BOSS_IDS } from './bosses';
 import { planBosses } from './bossReport';
+import { planDungeonDays } from './dungeonDays';
 import { planJourney } from './journey';
 import { planPath, type PathSummary } from './path';
 import { ownabilityMarkdown, ownabilityTable } from './ownability';
@@ -58,6 +59,7 @@ export async function main(args: readonly string[], run: JobRunner = serial): Pr
   }
   if (args.includes('--path')) return path(args, quick, run);
   if (args.includes('--journey')) return journey(quick, run);
+  if (args.includes('--dungeon-days')) return dungeonDays(quick, run);
   const bossAt = args.indexOf('--boss');
   if (args.includes('--bosses') || bossAt >= 0) {
     // Only the real raid bosses and dungeon foes, to the console (nothing is written).
@@ -186,6 +188,16 @@ async function journey(quick: boolean, run: JobRunner): Promise<number> {
   const { value, timings } = await runPlan(planJourney({ quick }), run);
   console.log(value.md.join('\n'));
   console.log(`journey in ${secondsSince(t0)} s`);
+  console.log(timings);
+  return 0;
+}
+
+/** `--dungeon-days [--quick]`: each player's daily dungeon runs over 24 weeks (`dungeonDays.ts`), to the console (nothing is written). */
+async function dungeonDays(quick: boolean, run: JobRunner): Promise<number> {
+  const t0 = Date.now();
+  const { value, timings } = await runPlan(planDungeonDays({ quick }), run);
+  console.log(value.md.join('\n'));
+  console.log(`dungeon days in ${secondsSince(t0)} s`);
   console.log(timings);
   return 0;
 }

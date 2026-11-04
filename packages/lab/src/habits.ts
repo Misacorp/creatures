@@ -37,6 +37,35 @@ export const REPLACE_CHANCE: Readonly<Record<RosterKind, number>> = {
   new: 1,
 };
 
+/**
+ * How often a player runs the daily dungeon, by roster kind: a run on each of `min` to `max` days of the week (a seeded draw per
+ * player and week, every count in the range equally likely, on seeded days). A daily player runs every day. **Weekly (semi-weekly)
+ * players run 2 or 3 times a week: confirmed by Misa (2026-11-04), not an assumption.** A new player is keen and runs daily (the lead's
+ * assumption, as for replacements).
+ */
+export interface RunsPerWeek {
+  readonly min: number;
+  readonly max: number;
+}
+export const DUNGEON_RUNS: Readonly<Record<RosterKind, RunsPerWeek>> = {
+  daily: { min: 7, max: 7 },
+  weekly: { min: 2, max: 3 },
+  new: { min: 7, max: 7 },
+};
+
+/**
+ * Whether a player of a role plans their dungeon runs (`smart`: picks rooms, brings a bench, swaps at the camp) or takes the first exit
+ * (`first`). Assumption (the lead's): prepared players and builders plan, casual players do not.
+ */
+export type DungeonPolicy = 'first' | 'smart';
+
+/**
+ * How far down a player goes is their choice once the floor boss falls at depth 8 or more: they descend into the Undercroft while the
+ * team's mean share of HP (of the standing creatures, after catching its breath) is above this. Assumption (the lead's; the design's
+ * simulator used the same 50%, `docs/design/dungeon-paths.md`). Data, so a report can move it.
+ */
+export const DESCEND_ABOVE = 0.5;
+
 export type KnackPolicy = 'board' | 'first' | 'none';
 export type TalentPolicy = 'column' | 'pools';
 export type PlacementPolicy = 'board' | 'random';
@@ -57,6 +86,12 @@ export interface Habits {
   readonly golden: { readonly numerator: number; readonly denominator: number } | null;
   readonly placement: Readonly<Record<PlayerRole, PlacementPolicy>>;
   readonly finale: Readonly<Record<PlayerRole, FinalePolicy>>;
+  /** Dungeon runs a week by roster kind (`DUNGEON_RUNS`). */
+  readonly dungeonRuns: Readonly<Record<RosterKind, RunsPerWeek>>;
+  /** Whether a role plans its dungeon runs (`DungeonPolicy`). */
+  readonly dungeonPolicy: Readonly<Record<PlayerRole, DungeonPolicy>>;
+  /** The team's share of HP above which a player descends (`DESCEND_ABOVE`). */
+  readonly descendAbove: number;
 }
 
 const perRole = <T>(prepared: T, builder: T, casual: T): Readonly<Record<PlayerRole, T>> => ({
@@ -74,6 +109,9 @@ export const EVERYONE_REPLACES: Habits = {
   golden: null,
   placement: perRole('board', 'board', 'board'),
   finale: perRole<FinalePolicy>({ kind: 'none' }, { kind: 'none' }, { kind: 'none' }),
+  dungeonRuns: DUNGEON_RUNS,
+  dungeonPolicy: perRole<DungeonPolicy>('smart', 'smart', 'first'),
+  descendAbove: DESCEND_ABOVE,
 };
 
 /** Only the replacement habit changed: the rest as step 1 (to see what each habit moves). */
@@ -96,6 +134,9 @@ export const HABITS: Habits = {
   golden: RULES.talents.golden,
   placement: perRole('board', 'board', 'random'),
   finale: perRole<FinalePolicy>({ kind: 'auto' }, { kind: 'auto' }, { kind: 'auto' }),
+  dungeonRuns: DUNGEON_RUNS,
+  dungeonPolicy: perRole<DungeonPolicy>('smart', 'smart', 'first'),
+  descendAbove: DESCEND_ABOVE,
 };
 
 /** The habits again, but a casual player equips the first Knack the creature knows (a report row: what a Knack policy is worth). */

@@ -79,6 +79,15 @@ export interface RunOptions {
   readonly rest?: boolean;
   /** Undercroft levels to try after the floor boss (0 for none; level 2 is played as if the first keeper's floor were cracked). */
   readonly levels?: number;
+  /**
+   * The worker's descent on a v2 run (`descentBreath`): the standing recover on the way down and a knocked-out creature stays out
+   * (the game's `catchBreath` alone, the default here, also gets it back up: v1's rule).
+   */
+  readonly standingOnlyDescent?: boolean;
+  /** Go down only while the team's mean share of HP (the standing's) is above this (the policy's choice; `smart` defaults to 0.5, `first` always goes). */
+  readonly descendAbove?: number;
+  /** Follow the game: a next Undercroft level opens only when the keeper's floor was cracked (`map.crack`); the default plays `levels` levels. */
+  readonly followCrack?: boolean;
 }
 
 export interface RunResult {
@@ -88,6 +97,10 @@ export interface RunResult {
   readonly undercroft: number;
   /** Fights won, the floor boss and the Undercroft included. */
   readonly fights: number;
+  /** Fights played, a lost one included (the run's last, when it ended in a wipe). */
+  readonly played: number;
+  /** Undercroft levels entered. */
+  readonly entered: number;
   /** Creatures knocked out at the end. */
   readonly knockouts: number;
   /** Keepsakes held at the end. */
@@ -152,6 +165,23 @@ function scaled(foe: BossDef, hpBp: number, atkBp: number): BossDef {
 
 // ---------- one run ----------
 
+/**
+ * The HP of a row after the way down: the game's `catchBreath` (the standing recover `catchBreathBp`, a knocked-out creature gets back up at
+ * `reviveBp`: v1), and with `standingOnly` the worker's v2 rule (`descentBreath` in `apps/worker/src/dungeon-path.ts`, not exported from the
+ * game package): a knocked-out creature stays at 0 until a camp swaps it.
+ */
+export function descentBreathOf(
+  before: Readonly<Record<string, number>>,
+  hpMax: Readonly<Record<string, number>>,
+  standingOnly: boolean,
+): Record<string, number> {
+  const caught = catchBreath(before, hpMax);
+  if (!standingOnly) return caught;
+  return Object.fromEntries(
+    Object.entries(caught).map(([id, hp]) => [id, (before[id] ?? 0) <= 0 ? (before[id] ?? 0) : hp]),
+  );
+}
+
 const share = (hp: number, max: number): number => (max > 0 ? hp / max : 0);
 
 /**
@@ -174,6 +204,7 @@ export function runMap(
   const held: string[] = [];
   const curses: { stat: 'hp' | 'atk'; bp: number }[] = [];
   let fights = 0;
+  let played = 0;
   let campChoice: string | null = null;
   let lookSeed = 0;
 
@@ -201,6 +232,7 @@ export function runMap(
   /** Play a fight for real; the carried HP is updated. */
   const play = (foe: BossDef): boolean => {
     const res = fight(foe, placements, { rng, carryHp: hp });
+    played++;
     for (const f of res.fighters) maxHp.set(f.uid, f.maxHp);
     hp = new Map(res.hpLeft);
     if (res.won) fights++;
@@ -369,24 +401,33 @@ export function runMap(
   const map = generateDungeonMap(rng);
   const cleared = walk(map, depth, false);
   let undercroft = 0;
+  let entered = 0;
   if (cleared && undercroftOpen(depth)) {
+    const threshold = options.descendAbove ?? (smart ? 0.5 : undefined);
     for (let level = 1; level <= (options.levels ?? 0); level++) {
-      const caught = catchBreath(Object.fromEntries(uids().map((u) => [u, hpOf(u)])), maxRecord());
-      hp = new Map(Object.entries(caught));
-      if (smart && health() <= 0.5) break;
+      const before = Object.fromEntries(uids().map((u) => [u, hpOf(u)]));
+      hp = new Map(
+        Object.entries(descentBreathOf(before, maxRecord(), options.standingOnlyDescent === true)),
+      );
+      if (standing().length === 0) break;
+      if (threshold !== undefined && health() <= threshold) break;
       const under = generateUndercroftMap(rng, {
         level,
         floors: undercroftBaseFloors(depth, level),
         marks: [],
       });
+      entered++;
       if (!walk(under, undercroftDepth(depth, level), true)) break;
       undercroft++;
+      if (options.followCrack && under.crack !== true) break;
     }
   }
   return {
     cleared,
     undercroft,
     fights,
+    played,
+    entered,
     knockouts: uids().filter((u) => hpOf(u) <= 0).length,
     keepsakes: held.length,
     camp: campChoice,
