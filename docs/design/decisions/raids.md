@@ -4,6 +4,26 @@ Raid schedule, parties and joining, bosses and the raid curve, the live finale, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-04: Combat v2 phase 5 answers: small parties fight a smaller boss, rewards at HP thresholds with a big kill bonus, no weather in fights **[Misa]**
+
+ID: `2026-11-04-combat-v2-phase-5-answers-small` · Status: current
+
+**Decision (Misa).** For combat v2 (`docs/design/combat/balance.md`, section 7):
+
+1. **Small parties fight a smaller boss.**
+   - A party of one to three players faces a boss whose HP and arena follow its players: the HP curve below four players, one piece per player, no simulated guests.
+   - Phase 5 measures and tunes it, since the lab never played under four.
+2. **Raid rewards are paid at HP thresholds,** whichever stage crosses them.
+   - Each threshold of the weekend's HP removed is paid once, when it is first crossed, in stage 1, stage 2 or the finale alike.
+   - The thresholds start at today's 30% and 85%, and phase 5 tunes them.
+   - **The kill bonus is big and exciting: lots of rare and epic gear.**
+3. **No weather in fights.**
+   - Boons and Omens are dropped from combat v2 fights for good.
+   - Weather stays for the valley's other systems.
+   - v1 fights keep theirs until v2 ships.
+
+**Reasoning.** Misa: small parties should get a smaller boss rather than fake players. Paying at thresholds makes rewards follow the HP removed (the raid's measure, decision `2026-10-30-a-failed-raid-boss-returns-next`), so a strong stage 1 is not penalised for crossing a threshold early. A kill should feel like a big moment. Dropping fight weather simplifies combat ("let's simplify").
+
 ## 2026-11-03: Combat v2 arenas: how the piece, the seats and the spare are built
 
 ID: `2026-11-03-combat-v2-arenas-how-the-piece` · Status: current

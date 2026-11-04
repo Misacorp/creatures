@@ -36,7 +36,7 @@ The path walks servers week by week on the track with the valley's roster. It be
 5. **Rewards out, not in.**
    - Each stage's and room's Essence, XP and gear are recorded and compared with what the valley's roster assumes (about 120 XP a day from the dungeon and 70 from the raid for a top creature; `boss-track.md`, "Touch points").
    - The simulator does not feed them back into levels: that loop is the valley's. A mismatch goes to the valley session as numbers.
-6. **The v2 reward shape** per question 2.
+6. **The v2 reward shape** (Misa, section 7): each threshold of the weekend's HP removed (30% and 85% to start) is paid once when it is first crossed, whichever stage crosses it, and a kill pays a big bonus with lots of rare and epic gear. The worker's payout changes to this, and the simulator records it.
 
 ## 3. What is measured (the gate and the rest)
 
@@ -56,7 +56,7 @@ Each is a report section and, where it gates, a lab test with its threshold in `
 - **Talents' share**, the reaction cap, crit lines, and golden's effect.
 - **The finale's actions:** what each is worth, so none is worth more than its intent.
 - **Rewards against the valley's assumptions** (section 2.5).
-- **Small parties and wide ones:** one to three players, and fifteen.
+- **Small parties and wide ones:** one to three players (a smaller boss: the HP curve below four and one piece per player, Misa), and fifteen.
 - **CPU:** the worst stage and finale replay at fifteen players stay under the Free plan's limit (`integration.md`, section 8).
 
 ## 4. The balance pass
@@ -71,7 +71,7 @@ Folded into the pass, from the lab's follow-ups and phase 4's open items:
 - second answers for the 11 cards with one answer (P-13);
 - the Tidal Colossus's and Old Bogback's second answers;
 - the gear model and gear's effect lines (`gear-plan.md`: stat lines count today, effect lines do not);
-- weather in v2 fights (question 3);
+- weather is out of v2 fights for good (Misa): remove its remaining hooks from the v2 fight path;
 - Culling Strike stays an enabler: not buffed for its solo value (decision `2026-11-03-culling-strike-stays-as-an-enabler`).
 
 ## 5. Order of the work
@@ -92,17 +92,13 @@ Folded into the pass, from the lab's follow-ups and phase 4's open items:
 - New species or bosses.
 - The six unreviewed icons; they come back when Misa wants them.
 
-## 7. Questions for Misa
+## 7. Answered by Misa (2026-11-04)
 
-1. **Small parties (one to three players).**
-   - Proposal: the boss shrinks with the party (its HP and its arena follow the players, as the curve already allows), so two friends fight a smaller boss.
-   - Alternative: simulated guests fill the party up to four (today's v1 rule).
-2. **Raid rewards on v2.**
-   - Proposal: pay each stage by the share of the weekend's HP it removed, plus a kill bonus. HP removed is the raid's measure (decision `2026-10-30-a-failed-raid-boss-returns-next`).
-   - Alternative: keep today's stage-clear tiers (30% and 85% of the HP), copied from v1.
-3. **Weather in v2 fights.**
-   - Proposal: measure the Boons and Omens in the lab, and keep only those that change a choice, not just a number.
-   - Alternative: drop weather from fights for good, and keep it for the valley's other systems.
+1. **Small parties** fight a smaller boss: its HP and arena follow the players, with no guests.
+2. **Raid rewards** are paid at HP thresholds, whichever stage crosses them, and the kill bonus is big and exciting (lots of rare and epic gear).
+3. **No weather in fights:** dropped from v2 fights for good.
+
+Decision `2026-11-04-combat-v2-phase-5-answers-small`.
 
 ## 8. Progress
 
