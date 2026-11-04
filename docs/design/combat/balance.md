@@ -52,7 +52,7 @@ Each is a report section and, where it gates, a lab test with its threshold in `
   - the share of the winning weight the top line holds.
 - **No dead Knack** (the gate): every Knack picked somewhere by the best-for-board policy, scored on damage potential (the raid searches saturate at a kill; lab follow-up, panel 6 finding 22).
 - **The casual metric:** creatures used beyond each player's top three, at 1.5 (phase 1 accepted 1.41 and set 1.5 for phase 5).
-- **The dungeon:** depth growth, first-week clears, descent rate, fights per run.
+- **The dungeon** (Misa, 2026-11-04, decision `2026-11-04-dungeon-direction-an-easy-base-dungeon`): the base dungeon is fairly easy (a daily player who plays it safe gains about 5 to 7 depth a week) and the Undercroft is the challenge, harder with depth; the choice at the end of the base floor (go down with the team as it stands, or not) must stay meaningful. A baseline with choices, not a strict target: the v1 `dungeon-*` targets are not the yardstick. The way down revives knocked-out creatures (decision `2026-11-04-combat-v2-undercroft-descent-revives-knocked`).
 - **Talents' share**, the reaction cap, crit lines, and golden's effect.
 - **The finale's actions:** what each is worth, so none is worth more than its intent.
 - **Rewards against the valley's assumptions** (section 2.5).

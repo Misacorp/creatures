@@ -4,6 +4,22 @@ The daily dungeon: paths, rooms and rare rooms, the camp, the Undercroft, foes, 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-04: [Misa] Dungeon direction: an easy base dungeon, a hard Undercroft, the descent is the choice
+
+ID: `2026-11-04-dungeon-direction-an-easy-base-dungeon` · Status: current
+
+**Decision.** The base dungeon is fairly easy and the Undercroft is the challenge. A daily player who plays it safe (never goes down, or only when sure) gains about 5 to 7 depth a week. The Undercroft gets harder as depth grows, and the interesting choice is always at the end of the base floor: go down with the team in its current state, or not. The dungeon is tuned as a baseline with meaningful choices, not to a strict target: the old v1 dungeon targets (`dungeon-*` in `packages/sim/targets.json`, depth growth 1 to 2 a week, a first-week clear of 80%) are not the v2 yardstick. Later (way down the line): a dungeon skill tree that players can reset with a moderately expensive item built from common pieces, with nodes such as camp chances (up to guaranteed camps), favoured foe elements, better rewards, healing between rooms, double keepsakes, more elite fights with double rewards, foe modifiers with a payoff, and changes to the reward pool or when loot is given. Also tried in the lab: a four-slot dungeon team, to see whether players would bring one creature for each row and how they would place it.
+
+**Reasoning.** Misa (2026-11-04): "100% tweaking the dungeon to a strict target isn't valuable work since players can change their experience in the long run. Let's tweak the baseline and offer meaningful choices in the dungeon experience. The base dungeon should be fairly easy but the undercroft should pose a challenge. Find the right things to measure keeping in mind that players always have the option to not go into the undercroft if they don't think they'll survive in it." The lab's first dungeon-over-days run (decision `2026-11-04-combat-v2-phase-5-step-3`) found the base dungeon too hard early (4 to 13% first-week clears) and the first keeper nearly unbeatable after the descent (about 5%).
+
+## 2026-11-04: [Misa] Combat v2 Undercroft descent revives knocked-out creatures
+
+ID: `2026-11-04-combat-v2-undercroft-descent-revives-knocked` · Status: current
+
+**Decision.** On a combat v2 run the way down into the Undercroft works as in v1: the standing recover and a knocked-out creature gets back up (the game's `catchBreath`, `reviveBp`). Between the base dungeon's rooms a knocked-out creature still stays out until a camp swaps it.
+
+**Reasoning.** Misa chose option (a) of three (revive on the way down; keep standing-only and weaken the keeper; leave it hard). The lab measured about 1 in 20 descents beating the first keeper under standing-only, against about 1 in 3 on v1 (balance log B-021): players went down with a weakened team and lost. The descent stays the dungeon's interesting choice (decision `2026-11-04-dungeon-direction-an-easy-base-dungeon`).
+
 ## 2026-11-02: Daily dungeon on combat v2 (phase 4, slice 4): the rules version in the run, fighters frozen at the start, what a v2 room folds in
 
 ID: `2026-11-03-daily-dungeon-on-combat-v2-phase` · Status: current
