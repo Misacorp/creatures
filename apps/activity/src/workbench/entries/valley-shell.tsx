@@ -2,6 +2,7 @@ import { bool, str } from '../props';
 import type { Entry } from '../types';
 import {
   VALLEY_DAYS,
+  VALLEY_FORGE,
   VALLEY_OPEN,
   VALLEY_RESTING,
   VALLEY_SCOUTS,
@@ -22,6 +23,7 @@ const valleyShell: Entry = {
     resting: { kind: 'select', options: VALLEY_RESTING },
     scouts: { kind: 'select', options: VALLEY_SCOUTS },
     open: { kind: 'select', options: VALLEY_OPEN },
+    forge: { kind: 'select', options: VALLEY_FORGE },
   },
   defaults: {
     start: 'valley',
@@ -30,6 +32,7 @@ const valleyShell: Entry = {
     resting: 'off',
     scouts: 'off',
     open: 'nothing',
+    forge: 'off',
   },
   presets: [
     { name: 'The valley', props: {} },
@@ -82,6 +85,46 @@ const valleyShell: Entry = {
       props: { start: 'signpost', scouts: 'one scout', open: 'buy a seat' },
     },
     {
+      name: 'Forge, systems on: no anvil bought yet',
+      props: { start: 'forge', forge: 'no anvils' },
+    },
+    { name: 'Forge, systems on: one smith at work', props: { start: 'forge', forge: 'one smith' } },
+    { name: 'Forge, systems on: two anvils', props: { start: 'forge', forge: 'two anvils' } },
+    {
+      name: 'Forge, systems on: a smith tinkering (waiting for shards)',
+      props: { start: 'forge', forge: 'tinkering' },
+    },
+    { name: 'Forge, systems on: a full floor', props: { start: 'forge', forge: 'full floor' } },
+    {
+      name: 'Forge: the order editor (a new order)',
+      props: { start: 'forge', forge: 'two anvils', open: 'order editor' },
+    },
+    {
+      name: 'Forge: change an order',
+      props: { start: 'forge', forge: 'two anvils', open: 'edit an order' },
+    },
+    {
+      name: 'Forge: the shard exchange',
+      props: { start: 'forge', forge: 'tinkering', open: 'exchange' },
+    },
+    {
+      name: 'Forge: floor and pace',
+      props: { start: 'forge', forge: 'two anvils', open: 'floor and pace' },
+    },
+    { name: 'Forge: anvil kit', props: { start: 'forge', forge: 'two anvils', open: 'anvil kit' } },
+    {
+      name: 'Forge: the smith picker',
+      props: { start: 'forge', forge: 'two anvils', open: 'smith picker' },
+    },
+    {
+      name: 'Forge: buy an anvil',
+      props: { start: 'forge', forge: 'one smith', open: 'buy an anvil' },
+    },
+    {
+      name: 'Forge: the bag with filter and sort',
+      props: { start: 'forge', forge: 'two anvils', open: 'bag filter' },
+    },
+    {
       name: 'The valley, systems on, with the Gazette (Acorns fly in too)',
       props: { resting: 'few', away: true },
     },
@@ -95,6 +138,7 @@ const valleyShell: Entry = {
       resting={str(p, 'resting')}
       scouts={str(p, 'scouts')}
       open={str(p, 'open')}
+      forge={str(p, 'forge')}
     />
   ),
 };

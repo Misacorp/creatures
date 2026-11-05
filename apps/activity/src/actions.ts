@@ -127,6 +127,11 @@ export const ActionIds = {
   seatBuy: (owned: number): ActionId => `seat-buy:${String(owned)}`,
   /** Buying one kit (once each). */
   kitBuy: (kit: string): ActionId => `kit-buy:${kit}`,
+  /** Buying the Forge's next anvil: the number of anvils owned makes it this purchase. */
+  anvilBuy: (owned: number): ActionId => `anvil-buy:${String(owned)}`,
+  /** One run of trades at the shard exchange: what it asks, and how many shards of the target the player held (so the next run is another action). */
+  exchange: (to: string, from: string | null, times: number, held: number): ActionId =>
+    `exchange:${to}:${from ?? '*'}:${String(times)}:${String(held)}`,
   gamesBuy: (week: string, offerId: string, left: number): ActionId =>
     `games-buy:${week}:${offerId}:${String(left)}`,
 };

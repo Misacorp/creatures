@@ -4,6 +4,16 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: Phase 5 step 3b: the Forge's anvils on the client
+
+ID: `2026-11-06-phase-5-step-3b-the-forge` · Status: current
+
+**Decision.** (1) With `valleySystems` on the Workshop's job slots and supply crafts give way to `valley/ForgeAnvils` (the Forge's page, passed in as `Workshop`'s `forge` prop; absent, the Workshop is as it was). Under the Forge's band scene (`castFor('forge')`: the smiths at their anvils) it is the shared `Tray` with a drag, then one card per anvil built from `ui/Slot` rows (smith: `RosterPicker`; kit: `Drawer` with `ChoiceList`), the queue up to `queueMax` as order rows (made / count, Reach), the piece in hand with a `Bar`, "Tinkering" with its reason in plain words, and the floor's fill ("Floor 2 / 5") that opens its pieces by rarity. A shelf shows scrap, Essence and shards and what each order needs and waits on. (2) Orders are added, edited and removed in `valley/OrderEditor`, a `Drawer` drawn by `Workshop` so an anvil's "Add an order" and a blueprint's "Order" open the same one; a count is the new `ui/CountStepper`; "for my team" is a choice beside a known blueprint. Free and unkeyed (`postOrder`). (3) Buying an anvil, a tongs or loupe kit and the shard exchange are keyed spends (`ActionIds.anvilBuy`, `kitBuy`, `exchange`, `runKeyed`) with `SpendConfirm` (moved to `valley/seat-parts.tsx`, shared with the Signpost) and the reason a button is disabled; the exchange shows from, to, times, the rate and the crit chance. (4) The bag gains `BagTools` (filter by slot, element, rarity; a sort; "Select all" of the shown) over `bag-filter.ts`, feeding `useMultiSelect` (with a new `setAll`) and `InventoryGrid` (`inOrder`); the bag's count is against the 200 cap. Blueprints say "Order" (no craft time, price or Crafting level). (5) Gazette stories list new pieces best first with the flag on; the Forge's Places line says anvils, smiths and what is waiting; a full floor or a long wait is the Forge's bubble. (6) Counts use the spaced slash. Flag off, none of this draws: every change in the shared files (`Workshop`, `InventoryGrid`, `Blueprints`, `multi-select`) is gated by `forge` / `order` / `inOrder`, and `multi-select`'s `setAll` is only new API.
+
+**Reasoning.** The Signpost already settled how posts look (a tray to drag from, a card per seat, spends with one gold button), so the Forge shares its parts instead of drawing a second family. The order editor lives in `Workshop` because it has two entry points and must be one drawer. Filtering is client-only over the bag the Workshop already loads; the 200 cap is the server's, the client only says how full it is.
+
+**Reasoning.**
+
 ## 2026-11-06: Phase 5 step 2b: the Signpost's scouts on the client
 
 ID: `2026-11-06-phase-5-step-2b-the-signpost` · Status: current

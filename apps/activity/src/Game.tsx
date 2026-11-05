@@ -1,11 +1,14 @@
 import type { RefObject } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
+  buyAnvil,
   buyScoutSeat,
   chooseStarter,
   dismissAway,
   dismissLevelReset,
+  exchangeShards,
   fetchState,
+  postOrder,
   postScout,
   scoutKit,
   setLoungeSpot,
@@ -86,12 +89,14 @@ import { useTabPips } from './use-tab-pips';
 import { sceneOf, type LivingRoom } from './LivingRoom';
 import { LevelResetCard } from './LevelResetCard';
 import { WipeNotice } from './WipeNotice';
-import { Workshop } from './Workshop';
+import { Workshop, type ForgeMode } from './Workshop';
 import type { TeamConfigure } from './TeamCreaturePage';
 import { Alert } from './ui/Alert';
 import { WelcomeBack } from './valley/gazette/WelcomeBack';
 import { ValleyFrame } from './valley/ValleyFrame';
 import { SignpostSeats, type SignpostActions } from './valley/SignpostSeats';
+import { ANVIL_KIT_INFO, shardName } from './valley/forge-view';
+import type { ForgeActions } from './valley/ForgeAnvils';
 import { KIT_INFO } from './valley/signpost-view';
 import { trayStates } from './valley/tray-state';
 import { placeOf, type PlaceId } from './valley/valley-art';
@@ -344,6 +349,8 @@ export function Game({
   const takeValley = (answer: { valley: ValleyVisit; state: GameState } | undefined): boolean => {
     if (answer === undefined) return false;
     setCurrent(loaded(answer.state));
+    // Pieces came home (or left the bag): the Workshop's bag is out of date.
+    if (visit !== null && answer.valley.forge.bag.count !== visit.forge.bag.count) loadGear();
     setVisit(answer.valley);
     return true;
   };
@@ -365,6 +372,40 @@ export function Game({
       );
       if (ok) setNotice(`The ${KIT_INFO[kit].name} is yours.`);
       return ok;
+    },
+  };
+  /**
+   * The Forge's anvils (phase 5 step 3), the same way: a post, a kit and an order are free, an anvil, a kit and a run of trades are keyed
+   * spends. Each answer's `valley` and state are taken in at once.
+   */
+  const forgeActions: ForgeActions = {
+    post: async (body) => takeValley(await run(() => postScout(body))),
+    setKit: async (seatId, kit) =>
+      takeValley(await run(() => scoutKit({ action: 'set', seatId, kit }))),
+    order: async (request) => takeValley(await run(() => postOrder(request))),
+    buyAnvil: async () => {
+      const owned = systems?.anvilPrices.owned ?? 0;
+      const ok = takeValley(await runKeyed(ActionIds.anvilBuy(owned), (key) => buyAnvil(key)));
+      if (ok) setNotice('A new anvil is yours.');
+      return ok;
+    },
+    buyKit: async (kit) => {
+      const ok = takeValley(
+        await runKeyed(ActionIds.kitBuy(kit), (key) =>
+          scoutKit({ action: 'buy', kit, idempotencyKey: key }),
+        ),
+      );
+      if (ok) setNotice(`The ${ANVIL_KIT_INFO[kit].name} is yours.`);
+      return ok;
+    },
+    exchange: async ({ to, from, times }) => {
+      const held = systems?.forge.shelf.shards[to] ?? 0;
+      const answer = await runKeyed(ActionIds.exchange(to, from, times, held), (key) =>
+        exchangeShards({ to, from, times, idempotencyKey: key }),
+      );
+      if (!takeValley(answer) || answer === undefined) return false;
+      setNotice(`You traded for ${String(answer.gained)} ${shardName(to)}.`);
+      return true;
     },
   };
   /** Wears an item or takes it off (the card's and the dungeon's); true when the server took it. */
@@ -801,6 +842,24 @@ export function Game({
       )}
       {tab === 'workshop' && (
         <Workshop
+          {...(valleyOn && valleySystems && systems !== null
+            ? {
+                forge: {
+                  visit: systems,
+                  trayInput: {
+                    trips: game.expeditions,
+                    jobs: gear === null ? null : gear.jobs,
+                    now: Date.now() + offset,
+                    ...trayStates(systems),
+                  },
+                  acorns: game.balances.bait,
+                  actions: forgeActions,
+                  onOpenPaddock: () => {
+                    openPlace('paddock');
+                  },
+                } satisfies ForgeMode,
+              }
+            : {})}
           state={game}
           gear={gear}
           failed={gearFailed}
@@ -960,6 +1019,7 @@ export function Game({
           },
           games: games.view,
           raid: raidGlance,
+          bestFirst: valleySystems,
         }}
         now={Date.now() + offset}
         timezone={timezone.current}
