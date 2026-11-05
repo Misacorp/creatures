@@ -26,7 +26,7 @@ export function depthScalarsText(depth: number): string {
   return `${xpScalarText(xp)} XP · ${scalarText(loot)} loot`;
 }
 
-/** The two chips of a depth: what it pays against depth 1, "1.14x XP" and "2.1x loot". */
+/** The two numbers of a depth (drawn as plain text, no box): what it pays against depth 1, "1.14x XP" and "2.1x loot". */
 export function depthScalarChips(depth: number): { xp: string; loot: string } {
   const { xp, loot } = dungeonRewardScalars(depth);
   return { xp: `${xpScalarText(xp)} XP`, loot: `${scalarText(loot)} loot` };

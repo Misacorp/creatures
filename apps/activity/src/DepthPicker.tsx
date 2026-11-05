@@ -111,8 +111,8 @@ function DepthList({
 
 /**
  * The depth picker of the pre-run card (combat v2): "Depth to play", then a trigger that looks like a dropdown
- * (the depth picked, what it pays against depth 1 as two chips, a chevron). A tap opens the shared pick sheet with
- * every depth from the player's own down to 1, each with its chips, the own one and the landmarks marked. A pick
+ * (the depth picked, what it pays against depth 1 as two plain numbers, a chevron). A tap opens the shared pick sheet with
+ * every depth from the player's own down to 1, each with its two numbers, the own one marked (and a landmark there). A pick
  * closes it. One line under the trigger says which depth is the player's own and that a lower one does not
  * advance it. Nothing is drawn when the player's own depth is 1 (nothing to pick). The pick is only a request: the
  * server checks it against the player's progress.
