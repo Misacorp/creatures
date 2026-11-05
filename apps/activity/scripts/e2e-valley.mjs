@@ -182,6 +182,24 @@ const valleyBlock = () => ({
     };
   }),
   allowance: { store: 0, cap: 480, brought: 0 },
+  anvils: [],
+  anvilPrices: {
+    owned: 0,
+    max: 2,
+    next: { acorns: 0, scrap: 0 },
+    ladder: [
+      { acorns: 0, scrap: 0 },
+      { acorns: 123, scrap: 38 },
+    ],
+  },
+  forge: {
+    shelf: { scrap: 0, essence: 0, shards: { tide: 0, ember: 0, grove: 0, spark: 0, mire: 0 } },
+    bag: { count: 0, cap: 200 },
+    fireLevel: 1,
+    exchange: { rate: 3, critBp: 1000, critYield: 2 },
+    queueMax: 3,
+    orderCountMax: 99,
+  },
   seats: scouts.seats.map(seatView),
   seatPrices: {
     owned: scouts.seats.length,
