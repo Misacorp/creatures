@@ -48,6 +48,8 @@ export interface ToolCtx {
   weather: Weather;
   /** The `COMBAT_V2` flag (also on for the tools to exist: `combat-v2-convert`; new creatures roll their v2 talent). */
   combatV2: boolean;
+  /** The valley's base systems are on (`VALLEY_SYSTEMS` with `VALLEY` and `COMBAT_V2`: the `valley-fresh` tool needs it). */
+  valleySystems: boolean;
   /** Crypto randomness for the things the tools roll (guest teams, gear, the day's seed). */
   rng: Rng;
   gearRng: Rng;
