@@ -4,9 +4,17 @@ The valley and peaceful systems overhaul planned in docs/design/valley/: job pos
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-05: Polish round: popovers above scenes, View scrolls, the Cave tells the truth, the Journal as list and pages, no ring on return
+
+ID: `2026-11-05-polish-round-popovers-above-scenes-view` · Status: current · Amends: `2026-11-05-phase-4-passes-a-polish-round`
+
+**Decision.** (1) A scene's depth layers (`--z`, a bubble's 1000000) live in a stacking context of their own (`.vy-scene-box`, the Gazette's `.gz-scene`, as the map's `.vy-map-view` already did), so the page popover layer (60) is above every scene, map and picture; `e2e-valley.mjs` checks that the popover is the topmost thing over its whole box. (2) "View" scrolls the Creatures page down to the creature's page once it is drawn (`scrollToSoon`, after the place's own jump to the top). (3) The Cave says what the dungeon is: the Dungeon page reports its phase (`dungeonPhase`: a run in progress, one that can start, neither) and the Cave offers "Continue the run", "Start the run" or, only when nothing is up, "The cave is quiet". The server's pip alone is "can start or open", so before the page has reported the Cave says "Enter the cave" and never "quiet". Calm lines that only restated the picture ("The fair is quiet", "The arena waits") are gone. (4) From 60 rem the Journal is a list of places (`ui/ChoiceList`, each with n / m) beside the chosen place's pages (`ui/WideLayout` with `ui/SidePanel`); phones keep the accordion. This is the shared Journal page, so it changes with the valley flag off too. (5) Back on the map from a place, the focus rests on the map region (no ring) and never on that place's button; Tab still walks into the places with their rings. (6) The valley's end-to-end walk gains scenarios built from test-only overrides: a run in progress, a raid weekend, a full bag, a new player.
+
+**Reasoning.** Misa's staging notes (Q60) and "a lot of UX polish ... testing out different scenarios". The popover fix is at the source (the stacking context), not a bigger z-index. The Cave bug came from one boolean standing for two states; the page already loads the truth, so the game keeps its word instead of a new server read.
+
 ## 2026-11-05: Phase 4 passes; a polish round before phase 5 (round 27, Q60) **[Misa]**
 
-ID: `2026-11-05-phase-4-passes-a-polish-round` · Status: current
+ID: `2026-11-05-phase-4-passes-a-polish-round` · Status: current, amended by `2026-11-05-polish-round-popovers-above-scenes-view`
 
 **Decision.** Phase 4's gate passes (Misa, Q60: "I think the game does seem playable from the valley map, so good job there"). Before phase 5 a polish round fixes his staging points: the creature popover above everything in a scene, "View" scrolling the Creatures page to that creature, the Cave's line matching a run in progress, the Journal on desktop as a list of places beside the open place's pages, and no keyboard focus ring on a place after Escape back to the map. More scenario tests join the valley's end-to-end walk (a dungeon run in progress, a raid weekend, a full bag, a new player).
 

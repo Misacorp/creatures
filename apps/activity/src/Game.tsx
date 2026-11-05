@@ -56,6 +56,7 @@ import { GamesTab } from './games/GamesTab';
 import { gamesAlert } from './games-view';
 import { fetchCreatureGames } from './games-api';
 import { useGames } from './use-games';
+import type { DungeonPhase } from './dungeon-flow';
 import type { Slots } from './dungeon-team';
 import { chooseCatch } from './talent-api';
 import { choiceResultText } from './talent-view';

@@ -14,7 +14,7 @@
  * It prints one line per checklist item and exits 1 on the first failure (with a screenshot of it in `--out`).
  * With `--out` it also writes a shot of the map at the end. About 30 s; not part of `check:changed`.
  */
-/* global console, document, getComputedStyle, URL */
+/* global console, document, getComputedStyle, setTimeout, URL, window */
 import { mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import process from 'node:process';
