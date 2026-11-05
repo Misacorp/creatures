@@ -127,6 +127,17 @@ const MODES: [string, DungeonXp | undefined][] = [
   ['B25: flat 120 x (1 + 0.25% a depth)', { perDepthBp: 25, maxBp: Infinity, flatBase: true }],
   ['B50: flat 120 x (1 + 0.5% a depth)', { perDepthBp: 50, maxBp: Infinity, flatBase: true }],
   ['C: depth curve, half of the part above 120 to the bench', 'share'],
+  ['landmark: ~120 a run, +1.75% at every 7th depth, no cap (Q59)', 'landmark'],
+];
+
+/** Sensitivity of the landmark rule to its two levers (mixed server of 8 alone). */
+export const LANDMARK_GRID: DungeonXp[] = [
+  { landmark: true, perRun: 100, stepBp: 175 },
+  { landmark: true, perRun: 110, stepBp: 175 },
+  { landmark: true, perRun: 130, stepBp: 175 },
+  { landmark: true, perRun: 120, stepBp: 100 },
+  { landmark: true, perRun: 120, stepBp: 250 },
+  { landmark: true, perRun: 120, stepBp: 350 },
 ];
 
 /** The day (since joining) a daily player's best creature first reaches the level cap: the median over the daily players that did, and how many did. */
@@ -193,6 +204,28 @@ export function studyReport(seeds: number, levers: boolean): string {
     '',
   );
   if (levers) {
+    out.push('## Landmark lever grid (mixed server of 8)', '');
+    out.push(
+      'Cells: the share within 5 levels at week 4 per profile, the daily T-1b spread at week 8, the daily median gap at weeks 8 and 12, the day the daily best reaches 30, and the targets that change against the base.',
+      '',
+      '| perRun | stepBp | ' +
+        STUDY_PROFILES.join(' | ') +
+        ' | spread8 | daily gap 8 / 12 | day 30 | changed |',
+      '|---|---|' + STUDY_PROFILES.map(() => '---').join('|') + '|---|---|---|---|',
+    );
+    const baseMixed = targetStatus(all['flat 120 (base)']!);
+    for (const mode of LANDMARK_GRID) {
+      if (typeof mode === 'string' || !('landmark' in mode)) continue;
+      const r = runStudy(mode, seeds);
+      const t = t1Passes(r);
+      const daily = playersOf(r['mixed8'], 'daily');
+      const st = targetStatus(r);
+      const changed = Object.keys(st).filter((id) => st[id] !== baseMixed[id]);
+      out.push(
+        `| ${mode.perRun} | ${mode.stepBp} | ${t.map((x) => `${Math.round(x.share * 100)}%${x.pass ? '' : ' FAIL'}`).join(' | ')} | ${f1(measuresOf(r).spread8 ?? NaN)} | ${f1(profileWeek(daily, 8)?.gapMedian ?? NaN)} / ${f1(profileWeek(daily, 12)?.gapMedian ?? NaN)} | ${dayAtCap(r).split(',')[0]} | ${changed.map((id) => `${id} ${baseMixed[id]}->${st[id]}`).join(', ') || 'none'} |`,
+      );
+    }
+    out.push('');
     out.push('## Lever grid (mixed server of 8)', '');
     out.push(
       'Cells: the share within 5 levels at week 4 (T-1a bar 90%), then at the end the daily player T-1b spread at week 8 (6th below 3rd, at most 5) and the daily median gap at weeks 8 and 12.',
@@ -203,7 +236,7 @@ export function studyReport(seeds: number, levers: boolean): string {
       '|---|---|' + STUDY_PROFILES.map(() => '---').join('|') + '|---|---|',
     );
     for (const mode of LEVER_GRID) {
-      if (typeof mode === 'string') continue;
+      if (typeof mode === 'string' || 'landmark' in mode) continue;
       const r = runStudy(mode, seeds, ['mixed8']);
       const t = t1Passes(r);
       const daily = playersOf(r['mixed8'], 'daily');

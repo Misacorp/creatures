@@ -46,6 +46,17 @@ Per profile at weeks 4, 8 and 12 the rows are in the data below. In short (daily
 - Targets that change against the base: B25 none; B50 T-2d2 and T-6b; C T-2d2, T-6a and T-6b.
 - So the choice is between a slow top creature (B, near today) and a fast one that leaves the roster behind (the curves, even with sharing). T-6 needs the top creature to reach 30 no sooner than about week 12 or 13, which only B at 25 bp meets with margin.
 
+## The owner's choice: the landmark rule (Q59)
+
+Q59: a combat v2 dungeon run pays about 120 XP at any depth, plus a step of +1.75% at each landmark depth (every 7th), no cap. Combat's report for a top creature's dungeon XP a day for a daily player: week 1: 86, week 4: 121, week 8: 128, week 12: 134, week 24: 157 (mean depth 2.7 / 18.6 / 45 / 71 / 150). Week 1 is below 120 because shallow runs have small rooms (a creature's share is its room-priced base over max(the row's top base, 200)). In the lab it is `dungeonXp: 'landmark'` (interpolated like the others); `{ landmark: true, perRun, stepBp }` scales that report by `perRun / 120` and by the step's growth at the reported depths, for the sensitivity grid. Tables are in the Data section below (the same layout as the other columns).
+
+- **Every target keeps its status against the flat-120 base.** None change. The curve is the same size as variant B at about 25 bp (121, 128, 134 against 126, 134, 141), a little under it.
+- **The daily player's best reaches 30 on day 89 (week 13.7), the same as the base** (week 13.7; 40 of 40 get there). T-6 (still growing at week 12) holds.
+- **Daily player, top / 3rd / median gap / bench median:** week 4 18 / 18 / 2.0 / 14.5; week 8 25 / 25 / 4.0 / 17.0; week 12 29 / 29 / 5.0 / 21.0. Base: 19 / 19 / 2.3 / 15.0; 25 / 25 / 4.0 / 17.5; 29 / 29 / 5.0 / 21.5. T-1a at week 4 passes for every profile but the new player (61%, against 65% in the base, which fails the bar as well).
+- **Levers.** Neither `perRun` (120) nor `landmarkStepBp` (175) needs to move to keep every target: in the grid (perRun 100 to 130, step 100 to 350) all targets keep their status, T-1a passes for every profile but the new player, and the daily spread at week 8 stays 3 to 4 (limit 5). One cell (perRun 110, T-2d2 pass to fail) is a one-target flip between two cells that pass; read it as noise at 20 seeds (T-2d2's limit is 17 days and it sits near it).
+- **The week 1 dip to 86 changes nothing early.** The T-2 targets (T-2a1, T-2a2, T-2b, T-2c, T-2d1, T-2d2) all keep passing, and so does every other early target. A first-week player gets 28% less dungeon XP than the flat rule (86 against 120), but the effect on week 4 is under a level (the daily top is 18 against 19). The new player's week 4 is 3.8 gap and 61% within 5 against 3.5 and 65% in the base: inside the noise of the other columns (62% at B50), and under the bar in the base too.
+- So the landmark rule is nearly the flat base; the harm to the roster that the depth and v1 curves did does not appear.
+
 ## Caveats
 
 - The curves are per top creature per day as combat v2 gave them; the lab applies them per run per player-week, and a player who is away gets nothing (as today). Depth is not tracked per player: the week of life stands in for it.
@@ -264,3 +275,48 @@ Cells: the share within 5 levels at week 4 (T-1a bar 90%), then at the end the d
 | 50         | 10000 | 100%     | 100%   | 86% FAIL        | 100%        | 100%   | 50% FAIL | 100%     | 6.0          | 7.0 / 5.3           |
 | 25         | 10000 | 100%     | 100%   | 100%            | 100%        | 100%   | 50% FAIL | 100%     | 6.0          | 7.0 / 6.0           |
 | 0          | 0     | 100%     | 100%   | 100%            | 100%        | 100%   | 50% FAIL | 100%     | 6.0          | 6.5 / 6.0           |
+
+## landmark (Q59): ~120 a run, +1.75% at every 7th depth, no cap (Q59)
+
+| Profile         | Week | Top  | 3rd  | Two-week-old gap to 3rd (median / worst) | Within 5 | Bench median level |
+| --------------- | ---- | ---- | ---- | ---------------------------------------- | -------- | ------------------ |
+| daily           | 4    | 18.0 | 18.0 | 2.0 / 3.0                                | 100%     | 14.5               |
+| daily           | 8    | 25.0 | 25.0 | 4.0 / 10.0                               | 62%      | 17.0               |
+| daily           | 12   | 29.0 | 29.0 | 5.0 / 14.0                               | 55%      | 21.0               |
+| active          | 4    | 18.0 | 17.5 | 2.0 / 3.0                                | 100%     | 15.0               |
+| active          | 8    | 25.0 | 23.0 | 2.0 / 8.0                                | 72%      | 16.5               |
+| active          | 12   | 29.0 | 26.0 | 2.5 / 11.0                               | 65%      | 20.5               |
+| every-other-day | 4    | 18.0 | 18.0 | 3.0 / 3.0                                | 100%     | 14.0               |
+| every-other-day | 8    | 25.0 | 25.0 | 4.8 / 10.0                               | 58%      | 15.0               |
+| every-other-day | 12   | 29.0 | 29.0 | 5.8 / 14.0                               | 49%      | 20.5               |
+| weekend-off     | 4    | 18.0 | 18.0 | 1.3 / 3.0                                | 100%     | 14.0               |
+| weekend-off     | 8    | 24.0 | 24.0 | 3.5 / 9.0                                | 69%      | 17.5               |
+| weekend-off     | 12   | 29.0 | 29.0 | 5.0 / 13.0                               | 52%      | 21.0               |
+| weekly          | 4    | 16.0 | 16.0 | 0.0 / 3.0                                | 100%     | 10.0               |
+| weekly          | 8    | 22.0 | 22.0 | 3.0 / 8.0                                | 71%      | 15.0               |
+| weekly          | 12   | 26.0 | 26.0 | 4.5 / 12.0                               | 59%      | 18.5               |
+| new             | 4    | 23.0 | 21.0 | 3.8 / 6.0                                | 61%      | 15.0               |
+| new             | 8    | 28.0 | 26.0 | 7.0 / 11.0                               | 43%      | 15.0               |
+| new             | 12   | 30.0 | 29.0 | 6.8 / 14.0                               | 48%      | 18.0               |
+| returner        | 4    | 18.0 | 18.0 | 2.0 / 3.0                                | 100%     | 14.3               |
+| returner        | 8    | 19.0 | 19.0 | 3.5 / 5.0                                | 100%     | 15.0               |
+| returner        | 12   | 27.0 | 27.0 | 7.3 / 12.0                               | 41%      | 15.0               |
+
+A daily player's best creature reaches level 30: day 89 (week 13.7), 40 of 40 daily players get there.
+
+T-1 per profile (share of two-week-old creatures within 5 levels at week 4, the bar is 90%): daily 100% pass, active 100% pass, every-other-day 100% pass, weekend-off 100% pass, weekly 100% pass, new 61% FAIL, returner 100% pass
+
+Targets against the base: none changed.
+
+## Landmark lever grid (mixed server of 8)
+
+Cells: the share within 5 levels at week 4 per profile, the daily T-1b spread at week 8, the daily median gap at weeks 8 and 12, the day the daily best reaches 30, and the targets that change against the base.
+
+| perRun | stepBp | daily | active | every-other-day | weekend-off | weekly | new      | returner | spread8 | daily gap 8 / 12 | day 30               | changed          |
+| ------ | ------ | ----- | ------ | --------------- | ----------- | ------ | -------- | -------- | ------- | ---------------- | -------------------- | ---------------- |
+| 100    | 175    | 100%  | 100%   | 100%            | 100%        | 100%   | 65% FAIL | 100%     | 3.0     | 4.0 / 4.3        | day 94 (week 14.4)   | none             |
+| 110    | 175    | 100%  | 100%   | 100%            | 100%        | 100%   | 58% FAIL | 100%     | 3.0     | 4.0 / 5.0        | day 91 (week 14.0)   | T-2d2 PASS->FAIL |
+| 130    | 175    | 100%  | 100%   | 100%            | 100%        | 100%   | 61% FAIL | 100%     | 4.0     | 4.0 / 5.0        | day 85.5 (week 13.2) | none             |
+| 120    | 100    | 100%  | 100%   | 100%            | 100%        | 100%   | 61% FAIL | 100%     | 3.0     | 3.5 / 5.0        | day 90 (week 13.9)   | none             |
+| 120    | 250    | 100%  | 100%   | 100%            | 100%        | 100%   | 61% FAIL | 100%     | 4.0     | 4.0 / 5.0        | day 87.5 (week 13.5) | none             |
+| 120    | 350    | 100%  | 100%   | 100%            | 100%        | 100%   | 60% FAIL | 100%     | 4.0     | 4.0 / 5.0        | day 86 (week 13.3)   | none             |

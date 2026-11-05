@@ -49,9 +49,40 @@ export const IMPLIED_DEPTH: CurvePoints = [
   [24, 156],
 ];
 
+/**
+ * The landmark rule (owner's choice, Q59): a combat v2 run pays about 120 XP at any depth plus a step of +1.75% at each landmark depth
+ * (every 7th), no cap. Combat's report of a top creature's dungeon XP a day for a daily player; week 1 is below 120 because shallow
+ * runs have small rooms (a creature's share is its room-priced base over max(the row's top base, 200)).
+ */
+export const LANDMARK_XP_CURVE: CurvePoints = [
+  [1, 86],
+  [4, 121],
+  [8, 128],
+  [12, 134],
+  [24, 157],
+];
+
+/** The mean depth of those runs, as combat reported it (weeks 1, 4, 8, 12, 24). */
+export const LANDMARK_DEPTH: CurvePoints = [
+  [1, 2.7],
+  [4, 18.6],
+  [8, 45],
+  [12, 71],
+  [24, 150],
+];
+
+export const LANDMARK_STEP = { perRun: 120, stepBp: 175, every: 7 } as const;
+
+/** The landmark rule with other levers: the reported curve scaled by `perRun / 120` and by the step's growth (landmarks passed at the reported depth). */
+export interface LandmarkLevers {
+  landmark: true;
+  perRun: number;
+  stepBp: number;
+}
+
 /** `'depth'` and `'v1'` are the two curves; an object is the lever study; absent is the lab's flat `rules.fights.dungeon.xp`. */
 /** `'share'` (variant C) is the depth curve with the part above the flat XP split between the fighters and the bench. */
-export type DungeonXp = 'depth' | 'v1' | 'share' | DepthLevers;
+export type DungeonXp = 'depth' | 'v1' | 'share' | 'landmark' | DepthLevers | LandmarkLevers;
 
 export function interpolate(points: CurvePoints, week: number): number {
   const first = points[0];
@@ -70,7 +101,14 @@ export function interpolate(points: CurvePoints, week: number): number {
 /** The XP of one dungeon run in the player's `week` (1 = the first week since they joined). */
 export function dungeonRunXp(mode: DungeonXp, week: number, flat = 120): number {
   if (mode === 'depth' || mode === 'share') return interpolate(DEPTH_XP_CURVE, week);
+  if (mode === 'landmark') return interpolate(LANDMARK_XP_CURVE, week);
   if (mode === 'v1') return interpolate(V1_XP_CURVE, week);
+  if ('landmark' in mode) {
+    const landmarks = Math.floor(interpolate(LANDMARK_DEPTH, week) / LANDMARK_STEP.every);
+    const growth =
+      (1 + (mode.stepBp * landmarks) / 10000) / (1 + (LANDMARK_STEP.stepBp * landmarks) / 10000);
+    return interpolate(LANDMARK_XP_CURVE, week) * (mode.perRun / LANDMARK_STEP.perRun) * growth;
+  }
   const bp = Math.min(mode.maxBp, mode.perDepthBp * interpolate(IMPLIED_DEPTH, week));
   const base = mode.flatBase ? flat : interpolate(V1_XP_CURVE, week);
   return base * (1 + bp / 10000);
