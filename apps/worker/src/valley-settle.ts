@@ -32,7 +32,11 @@ import { speciesOf } from './species';
 
 /** Without a request for this long, the next one is a new visit: the "+N" starts again and the allowance store comes home. */
 export const VISIT_GAP_MS = 30 * 60_000;
-/** An intent settles only when the last pass is at least this old (a state read always does). */
+/**
+ * A pass is skipped when the last one is younger than this (an intent skips before even reading the creatures; a state read
+ * answers from what is stored): looking again within a minute would write every creature's carry for under an XP. Splitting is
+ * invariant, so nothing is lost; a visit inside the minute is recorded by the next pass.
+ */
 export const INTENT_MIN_MS = 60_000;
 /** The ledger source of the idle allowance (the same Bait as the old daily claim; that claim is off with the valley on). */
 export const VALLEY_ALLOWANCE_SOURCE = 'allowance';
@@ -138,6 +142,20 @@ export class ValleySettle {
     // A clock that went back (the dev clock) settles nothing; the view is what is stored.
     const to = Math.max(now, player.settled_at);
     const newVisit = to - player.last_visit_at >= VISIT_GAP_MS;
+    if (to - player.settled_at < INTENT_MIN_MS && !newVisit) {
+      return {
+        settledAt: player.settled_at,
+        arrived: false,
+        awayHours: 0,
+        creatures: rows.map((row) => ({
+          id: row.id,
+          state: 'resting' as const,
+          gained: row.visit_xp ?? 0,
+          catchUpBp: row.catchup_bp ?? BP,
+        })),
+        allowance: { store: player.allowance_store, cap, brought: player.visit_allowance },
+      };
+    }
     const before: SettleState = {
       settledAt: player.settled_at,
       lastVisitAt: player.last_visit_at,
@@ -154,7 +172,6 @@ export class ValleySettle {
     const after = settle(before, player.settled_at, to, [
       { at: to, kind: 'visit', hearth: player.hearth_at_visit_bp / BP },
     ]);
-    const quiet = to === player.settled_at && !newVisit;
 
     let visitAllowance = newVisit ? 0 : player.visit_allowance;
     let store = after.allowance?.store ?? 0;
@@ -188,11 +205,7 @@ export class ValleySettle {
       const visitXp = (newVisit ? 0 : (row.visit_xp ?? 0)) + gainedNow;
       const catchUpBp = row.catchup_bp ?? BP;
       const changed =
-        !quiet &&
-        (row.tracked === null ||
-          whole > 0 ||
-          newVisit ||
-          (paid?.carry ?? 0) !== (row.xp_carry ?? 0));
+        row.tracked === null || whole > 0 || newVisit || (paid?.carry ?? 0) !== (row.xp_carry ?? 0);
       if (changed) this.trackCreature(userId, row.id, paid?.carry ?? 0, catchUpBp, visitXp);
       return { id: row.id, state: 'resting' as const, gained: visitXp, catchUpBp };
     });
@@ -206,19 +219,17 @@ export class ValleySettle {
         userId,
       );
     }
-    if (!quiet) {
-      this.sql.exec(
-        `UPDATE valley_players SET settled_at = ?, last_visit_at = ?, visit_started_at = ?, allowance_store = ?,
-           allowance_carry = ?, visit_allowance = ? WHERE user_id = ?`,
-        to,
-        to,
-        newVisit ? to : player.visit_started_at,
-        store,
-        carry,
-        visitAllowance,
-        userId,
-      );
-    }
+    this.sql.exec(
+      `UPDATE valley_players SET settled_at = ?, last_visit_at = ?, visit_started_at = ?, allowance_store = ?,
+         allowance_carry = ?, visit_allowance = ? WHERE user_id = ?`,
+      to,
+      to,
+      newVisit ? to : player.visit_started_at,
+      store,
+      carry,
+      visitAllowance,
+      userId,
+    );
     return {
       settledAt: to,
       arrived: newVisit,

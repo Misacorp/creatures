@@ -83,6 +83,7 @@ const TABS = [
 
 interface Tally {
   rows: number;
+  written: number;
   calls: number;
   scaled: number;
 }
@@ -91,8 +92,9 @@ class DayReads {
   private readonly bySource = new Map<string, Tally>();
 
   add(source: string, reads: ReadReport, scaledCalls = 0): void {
-    const tally = this.bySource.get(source) ?? { rows: 0, calls: 0, scaled: 0 };
+    const tally = this.bySource.get(source) ?? { rows: 0, written: 0, calls: 0, scaled: 0 };
     tally.rows += reads.total;
+    tally.written += reads.written;
     tally.calls += scaledCalls === 0 ? 1 : scaledCalls;
     if (scaledCalls > 0) tally.scaled += scaledCalls;
     this.bySource.set(source, tally);
@@ -104,14 +106,24 @@ class DayReads {
     return sum;
   }
 
+  /** The rows written in the day (Cloudflare's free tier allows 100,000 a day, apart from the reads). */
+  get written(): number {
+    let sum = 0;
+    for (const t of this.bySource.values()) sum += t.written;
+    return sum;
+  }
+
   describe(): string {
     const lines = [...this.bySource.entries()]
       .sort((a, b) => b[1].rows - a[1].rows)
       .map(
         ([source, t]) =>
-          `  ${String(t.rows).padStart(8)} rows  x${String(t.calls)}${t.scaled > 0 ? ` (${String(t.scaled)} scaled)` : ''}  ${source}`,
+          `  ${String(t.rows).padStart(8)} rows (${String(t.written)} written)  x${String(t.calls)}${t.scaled > 0 ? ` (${String(t.scaled)} scaled)` : ''}  ${source}`,
       );
-    return [`${String(this.total)} rows read in the day. By source:`, ...lines].join('\n');
+    return [
+      `${String(this.total)} rows read and ${String(this.written)} written in the day. By source:`,
+      ...lines,
+    ].join('\n');
   }
 }
 
@@ -144,9 +156,17 @@ function playerEvents(start: number, loungeStart: number): Event[] {
  * Knacks, the creature page is the v2 one on every `/api/state`, each playing player saves a Knack on each
  * opening and learns a talent from their line's book once.
  */
-async function simulateDay(options: { combatV2?: boolean; fresh?: boolean }): Promise<DayReads> {
+async function simulateDay(options: {
+  combatV2?: boolean;
+  valleySystems?: boolean;
+  fresh?: boolean;
+}): Promise<DayReads> {
   const reads = new DayReads();
-  const flag = options.combatV2 === true ? { combatV2: true } : {};
+  // The valley systems need combat v2 on (`valley-flag.ts`).
+  const flag = {
+    ...(options.combatV2 === true || options.valleySystems === true ? { combatV2: true } : {}),
+    ...(options.valleySystems === true ? { valleySystems: true } : {}),
+  };
   await inGuild(
     async (env: GuildEnv) => {
       const world = await seedWorld(env, options);
@@ -283,7 +303,11 @@ async function simulateDay(options: { combatV2?: boolean; fresh?: boolean }): Pr
           Math.round(settled.reduce((sum, t) => sum + pick(t), 0) / settled.length);
         const remaining = LOUNGE_TICKS - loungeTicks.length;
         const scaled = (source: string, perTick: number): void =>
-          reads.add(source, { total: perTick * remaining, statements: 0, top: [] }, remaining);
+          reads.add(
+            source,
+            { total: perTick * remaining, written: 0, statements: 0, top: [] },
+            remaining,
+          );
         scaled(
           'lounge:start',
           mean((t) => t.start.total),
@@ -349,6 +373,29 @@ describe('a day in the life of a 10-player server', () => {
       reads.total,
       `${reads.describe()}\nBudget: ${String(DAY_BUDGET)} rows.`,
     ).toBeLessThanOrEqual(DAY_BUDGET);
+  }, 120_000);
+});
+
+/**
+ * The same day with the valley's systems on (phase 5 step 1): every opening of the game settles the player's valley (30 creatures
+ * each in the seeded guild: an arrival pays them all, a later look in the same hour writes the carries), the daily allowance claim,
+ * the lounge's company XP and the lounge's own ticks stay as they are (the lounge message still runs). Same reads budget as the flag-off
+ * day, and a rows-written budget (plan risk 2: rows written have their own allowance, 100,000 a day on the free tier).
+ */
+// Measured 117,941 rows read (request:state 31,392 of them, 15,652 without the valley's pass) and 3,901 written (request:state 2,571, request:raid 132, request:session 409).
+const VALLEY_DAY_WRITE_BUDGET = 6000;
+
+describe('a day in the life with the valley on', () => {
+  it('reads and writes few rows in a day (every opening settles 30 creatures)', async () => {
+    const reads = await simulateDay({ valleySystems: true, fresh: true });
+    expect(
+      reads.total,
+      `${reads.describe()}\nBudget: ${String(DAY_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(DAY_BUDGET);
+    expect(
+      reads.written,
+      `${reads.describe()}\nWrite budget: ${String(VALLEY_DAY_WRITE_BUDGET)} rows.`,
+    ).toBeLessThanOrEqual(VALLEY_DAY_WRITE_BUDGET);
   }, 120_000);
 });
 

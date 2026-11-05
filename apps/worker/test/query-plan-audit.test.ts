@@ -109,6 +109,8 @@ function resolveTable(sql: string, name: string): string {
 /** What an audit run found: the statements it saw and planned, and the scans it did not accept. */
 interface Audited {
   seen: number;
+  /** The recorded statements (normalised text). */
+  statements: string[];
   planned: number;
   found: string[];
 }
@@ -118,7 +120,7 @@ interface Audited {
  * statement `exercise` runs, plans each one and collects the whole-table scans of tables that grow with play.
  */
 async function audit(
-  options: { combatV2?: boolean; fresh?: boolean },
+  options: { combatV2?: boolean; valleySystems?: boolean; fresh?: boolean },
   exercise: (env: GuildEnv, world: World) => Promise<void>,
 ): Promise<Audited> {
   let recording = false;
@@ -179,7 +181,7 @@ async function audit(
       },
     },
   );
-  return { seen: seen.size, planned, found };
+  return { seen: seen.size, statements: [...seen.keys()], planned, found };
 }
 
 const scanMessage = (found: string[]): string =>
@@ -364,6 +366,42 @@ describe('query plan audit', () => {
     });
 
     expect(result.seen, 'statements recorded').toBeGreaterThan(60);
+    expect(result.found, scanMessage(result.found)).toEqual([]);
+  }, 60_000);
+
+  it("plans the valley's lazy pass (a first look, an arrival after a day, a look mid-visit, a repeat, the pass before an intent) without a whole-table scan", async () => {
+    const result = await audit({ valleySystems: true, fresh: true }, async (env, world) => {
+      const { clock } = env;
+      const relog = async (): Promise<void> => {
+        world.secrets.set(
+          userId(1),
+          await world.core.createSession(GUILD_ID, { id: userId(1), displayName: 'Player 1' }),
+        );
+      };
+      clock.t += 6 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      clock.t += 24 * 60 * MINUTE;
+      await relog();
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      clock.t += 10 * MINUTE;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      clock.t += 10_000;
+      await callAs(world.core, world.secrets, 1, '/api/state');
+      clock.t += 5 * MINUTE;
+      await relog();
+      await callAs(world.core, world.secrets, 1, '/api/away/dismiss', {
+        method: 'POST',
+        body: { until: 1 },
+      });
+    });
+
+    expect(result.seen, 'statements recorded').toBeGreaterThan(40);
+    // The valley's own statements ran (a refactor that stops running them would pass for nothing).
+    for (const table of ['valley_players', 'valley_creatures'])
+      expect(
+        result.statements.some((q) => q.includes(table)),
+        table,
+      ).toBe(true);
     expect(result.found, scanMessage(result.found)).toEqual([]);
   }, 60_000);
 
