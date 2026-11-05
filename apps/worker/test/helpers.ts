@@ -320,8 +320,8 @@ export function undoValleyForgeMigration(sql: SqlStorage): void {
   for (const table of ['forge_orders', 'forge_floor', 'valley_bag'])
     sql.exec(`DROP TABLE IF EXISTS ${table}`);
   const has = (table: string, column: string): boolean =>
-    sql.exec(`SELECT 1 FROM pragma_table_info('${table}') WHERE name = ?`, column).toArray().length >
-    0;
+    sql.exec(`SELECT 1 FROM pragma_table_info('${table}') WHERE name = ?`, column).toArray()
+      .length > 0;
   for (const column of [
     'floor_count',
     'piece_active',

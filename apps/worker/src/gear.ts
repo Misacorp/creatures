@@ -378,8 +378,7 @@ export class Gear {
       // Take everything that moves off first, so swaps between creatures never meet the unique index.
       for (const move of moves) {
         const old = worn.get(move.creatureId)?.[move.slot];
-        if (old !== undefined)
-          setEquipped(this.sql, old, null);
+        if (old !== undefined) setEquipped(this.sql, old, null);
         if (move.itemId !== null) {
           setEquipped(this.sql, move.itemId, null);
         }
