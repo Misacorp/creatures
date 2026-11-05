@@ -182,7 +182,7 @@ export function ValleyFrame({
               draw={placeSceneDraw(SOON_ART[view.place])}
               scaleFor={(width, height) => placeScale(width, height, SOON_ART[view.place])}
               onLeave={onLeave}
-              act={<PinnedAct calm={soonLine(view.place)} mark={false} />}
+              act={<PinnedAct calm={soonLine(view.place)} />}
             />
           </section>
         )}

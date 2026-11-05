@@ -266,6 +266,16 @@ describe('the places’ scenes above today’s page', () => {
     expect(byClass(p.root, 'vy-inside')).toHaveLength(1);
   });
 
+  it('a calm line has no check mark: a check means done, and "at home" is not', () => {
+    const p = draw(true, { pending: [] });
+    open(p, 'Paddock');
+    const calm = byClass(p.root, 'vy-calm')[0];
+    if (calm === undefined) throw new Error('no calm line');
+    const kids = calm.childNodes.filter((n) => n instanceof FakeElement);
+    expect(kids).toHaveLength(1);
+    expect(visibleText(calm)).toContain('at home');
+  });
+
   it('Cave: nothing waiting is a calm line, never a disabled button', () => {
     const p = draw(true, { attention: { dungeon: false, raid: false, recheckAt: null } });
     open(p, 'Cave');

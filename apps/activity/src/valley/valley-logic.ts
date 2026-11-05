@@ -303,15 +303,24 @@ export function depthOf(x: number, y: number): number {
   return Math.round(y + SPRITE_PX) * 256 + Math.min(255, Math.max(0, Math.round(x)));
 }
 
-function apart(a: { x: number; y: number }, b: { x: number; y: number }): number {
-  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+/** A gap between creatures: one number (a square), or sideways and downwards apart (a scene with nameplates). */
+export type Gap = number | { x: number; y: number };
+
+const gapOf = (gap: Gap): { x: number; y: number } =>
+  typeof gap === 'number' ? { x: gap, y: gap } : gap;
+
+/** How many gaps apart two creatures are: under 1 means they are too close (for a square gap, Chebyshev under the gap). */
+function apart(a: { x: number; y: number }, b: { x: number; y: number }, gap: Gap): number {
+  const g = gapOf(gap);
+  return Math.max(Math.abs(a.x - b.x) / g.x, Math.abs(a.y - b.y) / g.y);
 }
 
 /** Places in `area` a whole gap apart from each other, row by row (the spots a crowd starts from). */
-export function crowdSlots(area: Rect, gap: number = MIN_GAP): { x: number; y: number }[] {
+export function crowdSlots(area: Rect, gap: Gap = MIN_GAP): { x: number; y: number }[] {
+  const g = gapOf(gap);
   const out: { x: number; y: number }[] = [];
-  for (let y = 0; y < area.height; y += gap) {
-    for (let x = 0; x < area.width; x += gap) out.push({ x: area.x + x, y: area.y + y });
+  for (let y = 0; y < area.height; y += g.y) {
+    for (let x = 0; x < area.width; x += g.x) out.push({ x: area.x + x, y: area.y + y });
   }
   return out;
 }
@@ -326,13 +335,13 @@ export function stepApart(
   rng: Rng,
   area: Rect,
   others: readonly { x: number; y: number }[],
-  gap: number = MIN_GAP,
+  gap: Gap = MIN_GAP,
 ): Walker {
   const next = stepWalker(w, rng, area);
   if (next.x === w.x && next.y === w.y) return next;
   for (const o of others) {
-    const after = apart(next, o);
-    if (after < gap && after < apart(w, o)) {
+    const after = apart(next, o, gap);
+    if (after < 1 && after < apart(w, o, gap)) {
       const to = waypoint(rng, area);
       return { ...w, tx: to.x, ty: to.y, rest: 2 + int(rng, 4) };
     }

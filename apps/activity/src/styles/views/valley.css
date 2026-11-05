@@ -598,7 +598,7 @@ main.card:has(.vy-frame) > .hud {
     0 calc(var(--px) * 2) 0 0 rgb(var(--ink-rgb) / 0.6);
 }
 
-/* The calm line of a place where nothing needs you (`PinnedAct`): paper with a check mark, news and not a button. */
+/* The calm line of a place where nothing needs you (`PinnedAct`): paper, news and not a button. */
 .vy-calm {
   display: flex;
   align-items: center;
@@ -732,7 +732,8 @@ main.card:has(.vy-frame) > .hud {
 }
 
 .vy-feet-plate .nameplate {
-  max-width: 6.5rem;
+  /* `PLATE_MAX_PX` in `place-plates.ts`: the gap between creatures is made from it. */
+  max-width: 96px;
 }
 
 /* What waits over a creature (the gate's bubble): above every creature of the scene, whatever their depth. */

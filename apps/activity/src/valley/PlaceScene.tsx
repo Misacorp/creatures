@@ -15,10 +15,11 @@ import { usePrefersReducedMotion } from '../hooks';
 import { SmallCreature } from '../SmallCreature';
 import { Nameplate } from '../ui/Nameplate';
 import { PinnedAct } from './PinnedAct';
-import { SceneFrame, type SceneGeometry } from './SceneFrame';
+import { SceneFrame, sceneGeometry, type SceneGeometry } from './SceneFrame';
 import { At, CreatureSprite, SpeechBubble, isStill, useTick } from './parts';
 import { CREATURE_PX, type Cast, type CastPlace } from './place-cast';
 import { BAND_ROWS, bandArtBox, bandScale, bandSceneDraw } from './place-scene';
+import { plateGap, roamPlan, standSpots } from './place-plates';
 import { useRoamers } from './use-roamers';
 import { depthOf } from './valley-logic';
 import { placeOf } from './valley-art';
@@ -110,7 +111,7 @@ function Roamers({
   const reduced = usePrefersReducedMotion();
   const moving = !reduced && !isStill();
   const tick = useTick(TICK_MS, moving);
-  const people = useRoamers(creatures, tick, moving, area);
+  const people = useRoamers(creatures, tick, moving, area, plateGap(g.s));
   return (
     <>
       {people.map((p) => (
@@ -166,29 +167,30 @@ export function PlaceScene({ cast, onAct }: { cast: Cast; onAct: () => void }) {
     >
       {(g) => {
         const box = bandArtBox(g, art);
+        // A scene not measured yet (width 0) is laid out as a phone's, so nothing waits for the first measure.
+        const lay = g.W > 0 ? g : sceneGeometry(390, BAND_ROWS * g.s, g.s);
+        const laid = bandArtBox(lay, art);
+        const scene = { W: lay.W, H: lay.H, s: g.s, top: lay.top };
+        const gate = cast.gate.map((n) => ({ x: laid.x + n.x, y: laid.y + n.y }));
+        const roam = roamPlan(cast, laid, scene);
         return (
           <>
-            {cast.stands.map((s) => (
+            {standSpots(cast.stands, laid, scene, gate).map((spot) => (
               <Stander
-                key={s.creature.id}
-                creature={s.creature}
-                x={box.x + s.x}
-                y={box.y + s.y}
-                flip={s.flip}
-                label={s.where}
+                key={spot.stand.creature.id}
+                creature={spot.stand.creature}
+                x={spot.x}
+                y={spot.y}
+                flip={spot.stand.flip}
+                label={spot.stand.where}
                 g={g}
               />
             ))}
-            {cast.roam !== null && (
+            {roam !== null && (
               <Roamers
                 key={`${String(g.W)}-${String(g.s)}`}
-                creatures={cast.roamers}
-                area={{
-                  x: box.x + cast.roam.x,
-                  y: box.y + cast.roam.y,
-                  width: cast.roam.width,
-                  height: cast.roam.height,
-                }}
+                creatures={cast.roamers.slice(0, roam.shown)}
+                area={roam.area}
                 g={g}
               />
             )}

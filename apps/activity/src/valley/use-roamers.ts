@@ -8,7 +8,16 @@ import { createSeededRng, type Rng } from '@creatures/game';
 import { useRef } from 'preact/hooks';
 import type { Creature } from '../api';
 import type { Rect } from './valley-art';
-import { crowdSlots, depthOf, hopOf, newWalker, stepApart, type Walker } from './valley-logic';
+import {
+  MIN_GAP,
+  crowdSlots,
+  depthOf,
+  hopOf,
+  newWalker,
+  stepApart,
+  type Gap,
+  type Walker,
+} from './valley-logic';
 
 export interface Person<C extends Pick<Creature, 'id' | 'species' | 'shiny'> = Creature> {
   key: string;
@@ -26,13 +35,14 @@ export function useRoamers<C extends Pick<Creature, 'id' | 'species' | 'shiny'>>
   tick: number,
   moving: boolean,
   area: Rect,
+  gap: Gap = MIN_GAP,
 ): Person<C>[] {
   const walkers = useRef(new Map<string, { w: Walker; rng: Rng }>());
   const lastTick = useRef(0);
   const out: Person<C>[] = [];
   const steps = moving ? tick - lastTick.current : 0;
   lastTick.current = tick;
-  const slots = crowdSlots(area);
+  const slots = crowdSlots(area, gap);
   for (const [i, c] of creatures.entries()) {
     if (walkers.current.has(c.id)) continue;
     const rng = createSeededRng(`valley-${c.id}`);
@@ -48,7 +58,7 @@ export function useRoamers<C extends Pick<Creature, 'id' | 'species' | 'shiny'>>
       const others = creatures
         .filter((o) => o.id !== c.id)
         .flatMap((o) => walkers.current.get(o.id)?.w ?? []);
-      entry.w = stepApart(entry.w, entry.rng, area, others);
+      entry.w = stepApart(entry.w, entry.rng, area, others, gap);
     }
   }
   for (const c of creatures) {
