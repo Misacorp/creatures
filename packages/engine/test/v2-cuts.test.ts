@@ -6,6 +6,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  boardEvents,
   by,
   count,
   mover,
@@ -66,6 +67,38 @@ describe('boss crits (R7.1)', () => {
     const beside = (fx: object) => [armoured({ name: 'K' }), guard({ name: 'W', col: 1, fx })];
     expect(takes(play(crits(10_000, 'row', 2), beside(ward)), 'K')[0]).toBe(66 - 5);
     expect(takes(play(crits(10_000, 'row', 2), beside({})), 'K')[0]).toBe(132 - 5);
+  });
+
+  it('Cool Head with a Sure Crit: each spared crit stores one on the creature it was aimed at, shown as a cover and a plain hit', () => {
+    const ward = { critWardBp: 10_000, critWardSure: true };
+    // The Guard beside K takes the crit aimed at K (an intercept): K, not the Guard, stores the Sure Crit.
+    const r = play(crits(10_000), [
+      armoured({ name: 'K' }),
+      guard({ name: 'W', col: 1, fx: ward }),
+    ]);
+    expect(takes(r, 'W')).toEqual([110 - 5]);
+    expect(texts(r, 'sure-crit')).toEqual(['K stores a Sure Crit (1)']);
+    const board = boardEvents(r);
+    expect(board.filter((b) => b.type === 'cover')).toHaveLength(1);
+    // The spared crit is a plain hit on the board, not a crit float.
+    expect(board.some((b) => b.type === 'hit' && b.crit)).toBe(false);
+    // Without the flag the ward stores nothing; a crit that is not spared (no ward in reach) stores nothing.
+    const plain = { critWardBp: 10_000 };
+    const w = (fx: object) => [armoured({ name: 'K' }), guard({ name: 'W', col: 1, fx })];
+    expect(count(play(crits(10_000), w(plain)), 'sure-crit')).toBe(0);
+    expect(count(play(crits(10_000), [armoured({ name: 'K' })]), 'sure-crit')).toBe(0);
+    // A creature the crit knocks out stores none (the same goes for a silenced one, R12.2).
+    expect(
+      count(play(crits(10_000), [armoured({ name: 'K', maxHp: 50, fx: ward })]), 'sure-crit'),
+    ).toBe(0);
+    expect(count(play(crits(10_000), [armoured({ name: 'K', fx: ward })]), 'sure-crit')).toBe(1);
+    // Two Cool Heads in reach store one per crit.
+    const twin = [
+      armoured({ name: 'K' }),
+      guard({ name: 'W', col: 1, fx: ward }),
+      armoured({ name: 'V', col: 2, fx: ward }),
+    ];
+    expect(count(play(crits(10_000), twin), 'sure-crit')).toBe(1);
   });
 
   it('a one-shot never crits', () => {

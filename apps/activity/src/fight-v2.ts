@@ -655,6 +655,8 @@ export function showOf(
         break;
       case 'cover':
         saves.push({ i, guard: b.guard, who: b.who, prevented: b.prevented });
+        // Cool Head's ward is a Knack's own effect: its name pops on the Guard's tile (a plain cover has none).
+        if (b.byKnack === true && !knackOwners.has(b.guard)) knackOwners.set(b.guard, i);
         break;
       case 'knockout':
         knockedOut.push({ i, who: b.who });

@@ -462,6 +462,8 @@ export type BoardEvent =
       readonly guard: string;
       readonly who: string;
       readonly prevented: number;
+      /** The cover is a Knack's own effect (Cool Head's ward): the board names the Knack on `guard`'s tile. */
+      readonly byKnack?: boolean;
     }
   /** A Support's verb adds `bp` (basis points) to the next hit of `who`; `by` is the Support. */
   | { readonly type: 'boost'; readonly who: string; readonly by: string; readonly bp: number }

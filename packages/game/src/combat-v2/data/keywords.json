@@ -157,7 +157,7 @@
   },
   {
     "name": "Sure Crit",
-    "means": "A counter on the creature, up to 3, stored from something that happened to it (a dodge, a hit taken for another creature). Its next hit that lands and is not already a crit spends one and is a guaranteed crit, with the extra damage the effect names (a hit that is a crit anyway keeps it).",
+    "means": "A counter on the creature, up to 3, stored from something that happened to it (a dodge, a hit taken for another creature, a boss crit kept plain). Its next hit that lands and is not already a crit spends one and is a guaranteed crit, with the extra damage the effect names (a hit that is a crit anyway keeps it). The extra is the spender's own: a Sure Crit from another creature deals what the spender's crit deals (a Perfect Timing creature's is 3x).",
     "not": "A Store of a Knack, or a lasting buff",
     "step": "R7.1, R10"
   },

@@ -47,7 +47,7 @@
     "name": "Double Strike",
     "asks": "The boss's hits sometimes Crit for double damage; can you turn them away or take the sting out?",
     "ops": [{ "op": "set", "stat": "critChanceBp", "value": 2000 }],
-    "answers": ["Luck", "Evasion aura"]
+    "answers": ["cool-head", "hide-in-mist"]
   },
   {
     "id": "bramble-bind",

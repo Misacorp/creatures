@@ -585,10 +585,11 @@
       "id": "cool-head",
       "name": "Cool Head",
       "family": "Luck",
-      "text": "{Crit}s on it and on the creatures {Beside} it deal no extra damage.",
-      "intent": "The answer to a boss that crits (Double Strike): a Guard that keeps a crit to a plain hit for itself and its neighbours (2026-10-31: at half it was tied with no Knack on every card but Double Strike, and barely ahead there). Nothing against a boss that never crits.",
+      "text": "{Crit}s on it and on the creatures {Beside} it deal no extra damage; each crit it spares stores a {Sure Crit} on the creature it was aimed at.",
+      "intent": "The answer to a boss that crits (Double Strike): a Guard that keeps a crit to a plain hit for itself and its neighbours, and turns each spared crit into a Sure Crit for the creature it was aimed at, so it asks for a Payoff beside the Guard. A Sure Crit deals the spender's own crit extra (a Perfect Timing creature's is 3x). Nothing against a boss that never crits (2026-10-31: at half the ward alone was tied with no Knack on every card but Double Strike).",
       "fx": {
-        "critWardBp": 10000
+        "critWardBp": 10000,
+        "critWardSure": true
       }
     }
   ]

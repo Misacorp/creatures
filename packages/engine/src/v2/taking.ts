@@ -37,21 +37,21 @@ export function dodgeOf(s: State, f: Fighter, area: boolean): number {
   );
 }
 
-/** A Sure Crit for `f` (at most `R.sureCritMax`), counted as the effect `key` firing. */
-export function gainSureCrit(s: State, f: Fighter, key: keyof KnackFx): void {
+/** A Sure Crit for `f` (at most `R.sureCritMax`), counted as the effect `key` firing (for `credit`, `f` unless another creature gave it). */
+export function gainSureCrit(s: State, f: Fighter, key: keyof KnackFx, credit: Fighter = f): void {
   const R = s.ctx.rules;
   if (f.sureCrits >= R.sureCritMax) return;
   f.sureCrits++;
-  bump(f, key);
+  bump(credit, key);
   if (s.opts.log) log(s, 'sure-crit', `${f.name} stores a Sure Crit (${f.sureCrits})`);
 }
 
 /**
  * How much of a boss crit's extra damage `taker` is spared (bp): its own Cool Head, or the largest one on a living creature
- * beside it (an aura: the largest applies, R15). Counted for the creature that gives it.
+ * beside it (an aura: the largest applies, R15). Counted for the creature that gives it, which is returned with the ward.
  */
-export function critWardOf(s: State, taker: Fighter): number {
-  if (!s.carries.has('critWardBp')) return 0;
+export function critWardOf(s: State, taker: Fighter): { ward: number; by: Fighter | undefined } {
+  if (!s.carries.has('critWardBp')) return { ward: 0, by: undefined };
   let ward = fx(taker).critWardBp ?? 0;
   let by: Fighter | undefined = ward > 0 ? taker : undefined;
   for (const o of beside(s, taker)) {
@@ -62,7 +62,7 @@ export function critWardOf(s: State, taker: Fighter): number {
     }
   }
   if (by) bump(by, 'critWardBp');
-  return ward;
+  return { ward, by };
 }
 
 /** The board's part of a boss hit on `target` that `taker` took (the same creature unless a Guard intercepted it). */

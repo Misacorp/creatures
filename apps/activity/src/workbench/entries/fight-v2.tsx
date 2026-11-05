@@ -50,6 +50,7 @@ const MOMENTS = [
   'a reaction is cashed',
   'a Guard save',
   'a Guard save two slots away',
+  'a spared crit (Cool Head)',
   'a dodge',
   'a heal',
   'a boost',
@@ -98,6 +99,12 @@ function momentBeat(
         (k) =>
           (shows[k]?.saves.length ?? 0) > 0 &&
           shows[k]?.saves.some((s) => s.prevented !== null) === true,
+      );
+    case 'a spared crit (Cool Head)':
+      return at((k) =>
+        events
+          .slice(model.beats[k]?.from, model.beats[k]?.to)
+          .some((e) => e.board?.type === 'cover' && e.board.byKnack === true),
       );
     case 'a Guard save two slots away': {
       const col = new Map(model.setup.creatures.map((c) => [c.key, c.col]));
@@ -549,6 +556,16 @@ const stageV2: Entry = {
     {
       name: 'A Guard save from two slots away (Wide Reach): the pulse runs through the tile between to the covered creature',
       props: { slot: 3, players: 5, party: 'mixed', moment: 'a Guard save two slots away' },
+    },
+    {
+      name: 'A spared crit (Double Strike, Cool Head): the Guard’s save with the Knack’s name on its tile, and the hit shown plain',
+      props: {
+        slot: 8,
+        players: 4,
+        party: 'answers',
+        moment: 'a spared crit (Cool Head)',
+        knackNames: true,
+      },
     },
     {
       name: 'A dodge ("Dodged!")',
