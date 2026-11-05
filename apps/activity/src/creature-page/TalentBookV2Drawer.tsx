@@ -2,6 +2,7 @@ import type { Creature } from '../api';
 import { talentViewOf, type BookTalentV2, type CreatureV2 } from '../combat-v2-view';
 import { TalentChip } from '../TalentChip';
 import { Drawer } from '../ui/Drawer';
+import { resourceName } from '@creatures/game';
 
 export interface TalentBookV2DrawerProps {
   open: boolean;
@@ -90,13 +91,13 @@ export function TalentBookV2Drawer({
                   type="button"
                   class="book-use"
                   disabled={busy || !afford}
-                  aria-label={`Learn ${entry.name} for ${String(learnBait)} Bait`}
+                  aria-label={`Learn ${entry.name} for ${String(learnBait)} ${resourceName('bait')}`}
                   onClick={() => {
                     onLearn(creature, entry.id);
                   }}
                 >
                   Learn{' · '}
-                  {learnBait} Bait
+                  {learnBait} {resourceName('bait')}
                 </button>
               )}
               {where === 'learned' && (
@@ -142,7 +143,9 @@ export function TalentBookV2Drawer({
           ))}
         </ul>
       )}
-      {!afford && anyNew && <p class="muted small book-short">Not enough Bait.</p>}
+      {!afford && anyNew && (
+        <p class="muted small book-short">Not enough {resourceName('bait')}.</p>
+      )}
     </Drawer>
   );
 }

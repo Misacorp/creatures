@@ -15,7 +15,6 @@ import {
   RULES,
   craftCost,
   craftItemLevel,
-  entryView,
   expeditionContent,
   gearBase,
   gearLine,
@@ -28,6 +27,7 @@ import {
   supplyJobMs,
   wearBlock,
   type GearSet,
+  resourceName,
 } from '@creatures/game';
 import type { Creature } from './api';
 import { capitalize, creatureName, getSpecies } from './game';
@@ -259,7 +259,7 @@ export function lineIdle(line: Pick<GearLine, 'active'>): boolean {
 // --- Parts ---
 
 export function partName(kind: PartKind): string {
-  return entryView(GLOSSARY_IDS.part(kind))?.title ?? kind;
+  return resourceName(kind);
 }
 
 /** The non-zero parts of a bundle, in the fixed order of the part kinds. */
@@ -534,7 +534,8 @@ export function noticeLines(notice: ConversionNotice): string[] {
         : `${String(notice.refundedItems)} spare items went back as parts.`,
     );
   }
-  if (notice.essence > 0) lines.push(`Your upgrade Essence came back: ${String(notice.essence)}.`);
+  if (notice.essence > 0)
+    lines.push(`Your upgrade ${resourceName('essence')} came back: ${String(notice.essence)}.`);
   if (partsEntries(notice.parts).length > 0) {
     lines.push(`You got these parts back: ${partsText(notice.parts)}.`);
   }
@@ -715,7 +716,7 @@ export function dismantleCountItems(range: DismantleRange): CountItem[] {
     items.push({
       key: 'essence',
       icon: { kind: 'glyph', id: 'gem' },
-      label: 'Essence',
+      label: resourceName('essence'),
       entry: 'essence',
       ...rangeBadge(range.essence),
     });
@@ -795,13 +796,13 @@ export function startBlocker(
   const lackingEssence = Math.max(0, (job.essence ?? 0) - gear.balances.essence);
   const lacks = [
     ...entries.map((e) => `${String(e.amount)} more ${partName(e.kind)}`),
-    ...(lackingEssence > 0 ? [`${String(lackingEssence)} more Essence`] : []),
+    ...(lackingEssence > 0 ? [`${String(lackingEssence)} more ${resourceName('essence')}`] : []),
   ];
   if (lacks.length > 0) return `Needs ${lacks.join(' and ')}.`;
   // A lure costs Bait as well as parts.
   const bait = job.bait ?? 0;
   if (gear.balances.bait < bait) {
-    return `Needs ${String(bait - gear.balances.bait)} more Bait.`;
+    return `Needs ${String(bait - gear.balances.bait)} more ${resourceName('bait')}.`;
   }
   return null;
 }

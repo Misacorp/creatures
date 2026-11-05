@@ -1,5 +1,6 @@
 import { gearContent } from '@creatures/game';
 import { afterEach, describe, expect, it } from 'vitest';
+import { gearName } from '../gear-view';
 import { PopoverHost } from '../PopoverHost';
 import { byClass, createPage, find, visibleText, type FakeElement, type Page } from '../test-dom';
 import { CountBadgeList } from './CountBadge';
@@ -79,6 +80,34 @@ describe('a found item', () => {
     const list = first(byClass(p.root, 'find-list'));
     expect(list.getAttribute('aria-label')).toBe('Gear');
     expect(byClass(list, 'find-row')).toHaveLength(2);
+  });
+});
+
+describe('the small form of a find', () => {
+  it('is the picture alone in one compact list: no name or tags beside it, the name for screen readers', () => {
+    const p = draw(
+      <FindList label="Found" compact>
+        <FindItem baseId={ember.id} rarity="rare" level={6} compact />
+        <FindBlueprint baseId={ember.id} compact />
+      </FindList>,
+    );
+    const list = first(byClass(p.root, 'find-list'));
+    expect(classes(list)).toContain('compact');
+    const rows = byClass(p.root, 'find-row');
+    expect(rows).toHaveLength(2);
+    for (const row of rows) expect(classes(row)).toContain('compact');
+    expect(byClass(p.root, 'find-row-tags')).toHaveLength(0);
+    expect(visibleText(p.root)).toContain(`Blueprint: ${gearName(ember.id)}`);
+  });
+
+  it('keeps a blueprint tappable: its picture opens what a blueprint is', () => {
+    const p = draw(
+      <FindList label="Found" compact>
+        <FindBlueprint baseId={ember.id} compact />
+      </FindList>,
+    );
+    const help = first(byClass(p.root, 'find-compact-help'));
+    expect(help.getAttribute('aria-label')).toContain('Blueprint');
   });
 });
 
@@ -200,5 +229,14 @@ describe('tags that explain themselves', () => {
       .map((sheet) => sheet.replace(/\/\*[\s\S]*?\*\//g, ''))
       .join('\n');
     expect(css).not.toMatch(/content\s*:\s*['"]\?['"]/);
+  });
+});
+
+describe('chips on a light card', () => {
+  it('give chips, tags and badges their own light text (the Gazette paper sets dark ink, which hid them on their ink pills)', () => {
+    const css = Object.values(sheets)
+      .map((sheet) => sheet.replace(/\/\*[\s\S]*?\*\//g, ''))
+      .join('\n');
+    expect(css).toMatch(/(^|\n)\.chip,\s*\.tag,\s*\.badge\s*\{\s*color:\s*var\(--bone\)/);
   });
 });

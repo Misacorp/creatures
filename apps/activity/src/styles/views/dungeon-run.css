@@ -194,6 +194,21 @@ button.run-keepsake::before {
   padding: 0.5rem;
 }
 
+/*
+  On a desktop the map is narrower than its column. One surface, not a box in a box: the panel takes the
+  map's own ground (the board's frame goes), so the map's backing fills the column to its edges and the
+  rooms stand in the middle of it.
+*/
+@media (min-width: 60rem) {
+  .raid-section.dungeon-run-map {
+    background: var(--night);
+  }
+
+  .dungeon-run-map .dmap-board {
+    box-shadow: none;
+  }
+}
+
 .dungeon-preview {
   margin: 0.5rem 0;
 }

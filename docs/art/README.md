@@ -97,7 +97,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-03: the valley prototype's remaining places (arena, fairground, road, chest, lectern, paddock) in the liked glow style, day and night.
 - **Source:** `apps/activity/src/sprites/concepts/valley-glow-camp.ts` (draw it with `pnpm art valley-glow-camp`)
-- **Sheet of:** `3097f5418a22`
+- **Sheet of:** `8a865da8a9b2`
 - Extends the liked `valley-glow` set (same palette keys, ink, light rings and cast shadow) with the places the valley prototype draws in the camp clearing: `apps/activity/src/proto/party/` and `proto/valley/` on branch `origin/ccr-93a1de17-yutb1a`.
 - The backdrop is the same as `valley-glow`: the world map grass tile in its night recolour, `alts.day` is the normal grass.
 - By day the light rings become ground: worn dirt, trodden grass, pebbles and flowers. Fire (arena braziers) stays lit by day; lanterns and candles are unlit glass or plain wax. No text on any sign or page, only marks.
@@ -106,7 +106,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 | --- | --- | --- | --- | --- |
 | `arena` | free |  | draft | A small sparring ring: a sand oval edged with grey stones, two posts at the back with a bunting between them and a brazier on each, whose warm light lies on the sand (brighter near the posts) and in stepped rings on the grass. The middle is left empty. By day the braziers stay lit, the sand is pale and the ground by the posts is worn dirt. |
 | `fairground` | free |  | draft | A festive striped tent with a pennant on its pole, two strings of pennants running to side posts, four lanterns and a lit doorway with tied-back flaps. The lantern light lies on the grass in front. By day the lanterns are unlit glass and the ground in front is trodden straw and flowers. |
-| `road` | free |  | draft | Where the road leaves the camp: a worn dirt path running off the top edge and fraying into the grass at its foot, a wooden signpost with three plank arrows (marks, no words) and a lantern on a hook. The lantern light lies on the path and grass in stepped rings. By day the lantern is unlit and the ground is a dirt patch with pebbles. |
+| `road` | free |  | draft | Where the road leaves the camp: a short worn dirt path that leaves the foot of the post and bends up to the right, fraying out into the grass (Misa, 2026-11-05: shorter, more to the right), and a wooden signpost with three plank arrows (marks, no words, each fully outlined) and a lantern on a hook. Warm light lies on the ground round the foot of the post. By day the lantern is unlit and the ground is a dirt patch with pebbles. |
 | `chest` | free |  | draft | The shared camp chest: a banded wooden chest, lid closed (a lighter lid top and a dark seam), with a gold lock plate and a small glint, and a candle on the ground beside it. The candle light lies on the grass in stepped rings. By day the candle is unlit and the ground is trodden dirt. |
 | `lectern` | free |  | draft | A reading stand: a slanted desk with an open journal (marks, no words) and a lit candle, on a single carved wooden post with a flared foot and two brackets under the desk. The candle lights the right-hand page and lays stepped rings on the grass. By day the candle is unlit and the ground is worn dirt. |
 | `paddock` | free |  | draft | A fenced pen seen from the front-top: a straight back rail, short side rails, front rails with an open gate gap, a hay pile and a water trough at the back and a lantern on a front post. The inside is open grass for creatures. The lantern on the gate post lays stepped rings on the gate ground; by day it is unlit and the ground is trodden dirt. |
@@ -120,7 +120,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** liked
 - **Requested:** 2026-10-31: night glow redone to stand on the valley ground, with a daytime version of the same assets.
 - **Source:** `apps/activity/src/sprites/concepts/valley-glow.ts` (draw it with `pnpm art valley-glow`)
-- **Sheet of:** `ebdd70f4db71`
+- **Sheet of:** `1729e227b84b`
 - Misa picked this direction for the valley places (2026-10-31); posters stay for each place's own screen.
 - Direction "valley glow": the night-glow look (the light sources are the stars, lit edges, cool shadow) redone as standalone places on transparent ground, like the map landmarks, so they stand on the valley tiles. No sky, no vignette, no stars or moon.
 - One drawing, two palettes: the main palette is night, `alts.day` recolours the same pixels. Keys `1 2 3` are the light spill on the ground (rings follow each light: a circle under a lamp or fire, a trapezoid in front of a window; only the outermost ring is a regular checker) in night colours; in the day palette they map to the grass greens, so the spill disappears. `x` is the cast shadow (cool blue at night, warm green by day).
@@ -225,7 +225,7 @@ Status: **liked** means Misa approved the look; **draft** means he has not said 
 - **Status:** draft
 - **Requested:** 2026-11-03 (via the valley session, Misa's round 22 decision): show the visiting teacher with no banner: the bell swings, a lectern at the door, a bench of students, a teacher prop.
 - **Source:** `apps/activity/src/sprites/concepts/valley-school.ts` (draw it with `pnpm art valley-school`)
-- **Sheet of:** `d88e301f9008`
+- **Sheet of:** `764ab7d8ac30`
 - Lead's review (2026-11-03): the yard's window light is kept faint on purpose, because the School sprite throws its own spill and students on the bench cover most of it. Push it brighter if it should read on its own. Talent icons need no new art: the four combat v2 role glyphs already ship (Setter `mark`, Payoff `sparkle`, Guard `shield`, Support `ability`).
 - Spec: valley/systems/school.md, "As decided (round 22)": no banner; the bell swings and a lectern appears at the door before the teacher comes, the teacher stands at the lectern Monday to Wednesday, students sit on a bench in front (empty seats show there is room to join), at dusk the windows light.
 - Lectern: the camp's `lectern` (48x50) is as big as the School itself, so beside a 16x16 teacher it is too big for the yard; `school-lectern` (22x17) is a small stand for the yard. Its foot is (10, 15) in its own pixels; the game puts that point at yard (73, 14). The teacher stands left of it, feet (62, 14): the sprite's top-left is (54, -1). Draw order: yard, lectern, teacher, then the students.

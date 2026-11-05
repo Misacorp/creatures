@@ -4,6 +4,14 @@ Navigation and the frame, Home and the notice board, type scale, shared componen
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-04: Two voices for notes: the Gazette's paper for the valley's stories, the ink Alert for the game (round 23, Q54) **[Misa]**
+
+ID: `2026-11-04-two-voices-for-notes-the-gazette` · Status: current
+
+**Decision.** Notes speak in two voices, on purpose (Misa, round 23, Q54: "Let's go with A"). The Gazette's cream paper is the valley telling a story: the welcome-back popup, a place's waiting stories, in-world notes. The ink `ui/Alert` is the game needing the player's attention: errors, warnings, a spend that failed, the full bag. Both close with the same X (`ui/Alert`'s dismiss). The final look of both is settled in the visual revisit Misa set for later (round 19).
+
+**Reasoning.** At a glance the player can tell whether the world is telling them something or the game needs them, and nothing has to be redrawn now; one dismiss behaviour keeps them predictable.
+
 ## 2026-11-03: Combat v2 client, the dungeon's screens: a v2 room on StageV2's single row, foe cards on the map, Out until the camp swaps it, the Knack on the team setup
 
 ID: `2026-11-03-combat-v2-client-the-dungeon-s` · Status: current
@@ -90,6 +98,34 @@ ID: `2026-10-31-creatures-wear-their-gear-on-their` · Status: current
 **Decision.** A creature's sprite shows the hat, scarf and charm it wears, on the creature page header, the creature list rows (pickers) and the living room. It is drawn on the client by a pure function, `wearing(sprite, looks)` (`src/sprites/wearing.ts`), which returns a new 16x16 sprite, so no layout changes. Each of the 60 item looks maps to one of ten worn shape classes in `src/sprites/data/worn-sprites.ts` (hats: cap, hood, crown, pointed, brimmed; scarves: scarf, mantle; charms: pendant, bell, token); the class is painted in the item's own tint, with gold trim for set pieces. Anchors come from the creature's own pixels: the hat sits on the first row where x 5 to 10 are all filled (so between ears, antlers and flames), centred on x 7.5 and moved down if it would pass row 0; the scarf covers rows 11 and 12 inside the body outline; the charm's bottom row sits on the body's bottom outline. Rows 8 to 10, x 3 to 12 (the face) are never painted. Worn colours live under their own palette keys (hat `1 2 3`, scarf `4 5 6`, charm `7 8 9`, shared `K G W C`), so a shiny body palette never touches them. Small icons (`CreatureIcon`), the dungeon and the raid stage stay bare.
 
 **Reasoning.** Gear was only visible as tiles; Misa asked that creatures visibly wear what they have. Classes instead of 60 drawings keep the art work small and make a new item cheap (add one row to the table). Finding anchors from the sprite means a new species needs nothing extra, and a test checks the face and the 16x16 grid for every species with every class. The 2x icons stay bare because three pixels of hat at that size is noise.
+
+## 2026-10-29: The boss is the hero of the Raid screen on desktop
+
+ID: `2026-10-29-the-boss-is-the-hero-of` · Status: current
+
+Panel round 2 asked for it first: from 60 rem the boss card is a centred hero. The art is drawn at twice its size (whole pixels, no frame, only a soft glow of its element behind it), the name under it, then the tags, the HP and the move chips, with the rules text smaller and quieter below (nothing deleted; no new popover was made for it). From 80 rem the roster board (`ui/RaidBoard`) takes taller tiles with 3x sprites by itself and is exactly as wide as a whole number of lanes, so the right edge never cuts a tile (CSS `round()`; lanes snap to the left edge). The phone layout is unchanged. The dungeon map's panel takes the map's own ground on desktop, so the map and its panel are one surface. The XP bar's numbers use written-out bone and ink colours, so a look cannot make them unreadable on a full bar (`xp-text-colours.test.ts`).
+
+## 2026-10-29: The room's place on desktop is a choice, and two columns are one component
+
+ID: `2026-10-29-the-room-s-place-on-desktop` · Status: current
+
+**Decision (round 2 of the desktop looks, from a persona panel's review).** Two things. First, where the living room is drawn on a wide window is a switch, `room`: `every` (the band under the HUD on every place, the game's default today) or `home` (the band only on Home, drawn as its hero with the wall band shown and an integer scale up to 6 instead of 4; other places start under the HUD). `applyRoom(mode)` in `looks.ts` sets `data-room` on the root and tells the frame (`useRoomMode`), so it can be switched without a rebuild; the workbench's `GameScreens` and `scripts/screens.mjs --room every,home` show both. The room's presence and lounging XP live in `Game`, not in the drawing, so nothing changes when the band is not drawn; a phone is unchanged in both. Misa picks which one ships. Second, the three hand-built "two columns on a desktop, `display: contents` wrappers on a phone" (Workshop `ws-col`, Dungeon `dungeon-run-side`, Raid `raid-col`) became one shared `ui/Columns` (`Columns` and `Column`, `components/columns.css`); `columns-guard.test.ts` fails on a new `display: contents` wrapper in a view stylesheet. A sticky column sticks only while the window is at least 48 rem high, so it never hides its own bottom (no inner scroll).
+
+**Also in this round.** The rail's nav is the full-height column (its list sticks inside); the Creatures cards are at least 18 rem (3 columns at 1100, 4 at 1440, 5 at 1920); the Expeditions map goes on in the map's own grass east of its edge, so no dark bar shows beside it.
+
+## 2026-10-29: Looks are staging-only until Misa picks one; dungeon map rooms are pixel discs
+
+ID: `2026-10-29-looks-are-staging-only-until-misa` · Status: current
+
+The three trial looks (arcade, hearth, quest) no longer ship: their stylesheets are loaded only in a staging build (`src/looks-styles.ts`, imported behind `__DEV_TOOLS_BUILD__`), and the staging DEV panel has a "Look" section (look and room band mode, kept on the device) so Misa can try them in Discord. Production never sets a look. When he picks one it moves into `index.css` and the rest are deleted.
+
+The dungeon map's rooms were the only smooth, glowing art in the game. They are now stepped octagons in flat layers (ink outline, ring, fill) with a hard offset shadow and no blur, glow or rounding, and the states differ by shape as well as colour: out of reach has a broken ring (four pieces when out of reach for good), a reachable room a solid ring that blinks in steps, the current room a thick gold ring with a pip, a cleared room a square stamp with a tick, elites a thick ring and bosses a thick collar. Two small fixes ride along: the raid roster board now opens on a lane edge instead of a tile cut in half, and the Workshop job countdown shows days past 24 hours.
+
+## 2026-10-28: On desktop the game fills the whole window
+
+ID: `2026-10-28-on-desktop-the-game-fills-the` · Status: current
+
+**Decision (Misa: "on desktop let's use the entire screen width and height").** From 60 rem (`WIDE_QUERY`) `main.card` is the window: full width, at least the window's height (`dvh`, `vh` fallback), no margin, frame or width cap. The HUD is its full-width top row, the living room band sits under it, then the rail (9 rem, sticky) and the screen take the rest. Phone and the 45 to 60 rem bar layout are unchanged. The old fixed widths (58 rem, 84 rem with a side panel or Home) are gone; each screen now picks its own columns: Home's board shows four notices across from 84 rem of board; Creatures cards are at least 20 rem (`auto-fill`); the Workshop has jobs and parts in a sticky left column and the bag, blueprints and supplies at the right; the Journal's chapters fill 28 rem columns; the Expeditions map keeps its width scale (2, or 3 from 1104 px) and takes 4 where both the width and the window's height below the map fit it (`mapScaleWide`; a 1920x1080 window stays at 3, since fitting the height alone would drop a 1440x900 window from 3 to 2), with the place panel at the right edge; the Dungeon puts the team and pack beside a bigger map (32 rem); the Raid puts the week and the boss at the left and the roster at the right only from 80 rem (the roster board needs about 30 rem; at 1100 it would scroll sideways); Games event cards are 22 rem columns. The wrappers this needed (`ws-col`, `dungeon-run-side`, `raid-col`) are `display: contents` below 60 rem (80 rem for the raid), so phone markup order and spacing are as before. The workbench screen shooter has a `wide` size (1100x800) for the width just above the break.
 
 ## 2026-10-28: One spacing scale inside drawers and sheets
 

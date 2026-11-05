@@ -12,9 +12,10 @@
   position: relative;
   overflow-x: auto;
   overflow-y: hidden;
-  /* As wide as the map and no wider (centred on a wide screen, so the sea stays at its left edge);
-     a few pixels of padding so a ring at the edge shows whole. */
-  max-width: calc(var(--wm-w) + 6px);
+  /* As wide as the map and the grass that goes on east of it to the window's edge (`--wm-more`, 0 when the
+     window is no wider than the map; the sea stays at the left edge); a few pixels of padding so a ring at the
+     edge shows whole. */
+  max-width: calc(var(--wm-w) + var(--wm-more, 0px) + 6px);
   padding: 0 3px;
   margin: 0 auto;
   background: var(--wm-grass);
@@ -27,9 +28,18 @@
 
 .world-map-stage {
   position: relative;
-  width: var(--wm-w);
+  width: calc(var(--wm-w) + var(--wm-more, 0px));
   height: var(--wm-h);
-  margin: 0 auto;
+  margin: 0;
+}
+
+/* The grass east of the map's own edge, a wide window's extra width. */
+.world-map-more {
+  position: absolute;
+  top: 0;
+  left: var(--wm-w);
+  display: block;
+  image-rendering: pixelated;
 }
 
 .world-map-canvas {

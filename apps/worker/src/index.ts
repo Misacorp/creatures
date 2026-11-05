@@ -19,6 +19,7 @@ import { LIVE_PATH_KINDS } from './live-socket';
 import { parseTicket, verifyTicketMac } from './live-ticket';
 import { TokenBucketLimiter } from './ratelimit';
 import { formatSessionToken, getSessionKey, parseAuthorization, verifyTokenMac } from './session';
+import { valleySystemsOn } from './valley-flag';
 
 export { GuildDirectory } from './guild-directory';
 export { GuildWorld } from './guild-world';
@@ -94,6 +95,10 @@ export function createHandler(overrides: Partial<HandlerDeps> = {}): ExportedHan
           ...(env.RAID_LIVE === 'on' ? { raidLive: true } : {}),
           // Combat v2 (staging only for now): the creature page offers the Knack and the v2 talents. Absent, not false.
           ...(env.COMBAT_V2 === 'on' ? { combatV2: true } : {}),
+          // The valley shell (staging only until phase 6): the map of places instead of the dock. Absent, not false.
+          ...(env.VALLEY === 'on' ? { valley: true } : {}),
+          // The valley's base systems (staging only until phase 6): only with VALLEY and COMBAT_V2 on too. Absent, not false.
+          ...(valleySystemsOn(env) ? { valleySystems: true } : {}),
         });
       },
     },

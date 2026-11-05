@@ -23,6 +23,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [direction.md](direction.md): Roadmap calls, Misa's standing direction, naming and tone, content policy, how agents and Misa work.
 
+- 2026-11-03 \[Misa\] Valley art goes straight onto the valley branch, not through main
 - 2026-11-03 Sprites up to 128 wide; free backdrop art may have no outline
 - 2026-11-01 \[Misa\] Retro 2026-11-01: group behaviours before naming, a name-blind parity digest, and agent workflow fixes
 - 2026-10-31 \[Misa\] Valley places: glow on the ground, day and night; posters for each place's own screen
@@ -47,6 +48,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 
 [platform.md](platform.md): Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, security, database reads, data cleanup, analytics, dev tools, the workbench, player feedback, sockets.
 
+- 2026-11-03 The resource library: one data file names every resource
 - 2026-10-30 Prettier's cache, and a cleanup script for agent worktrees
 - 2026-10-29 CI skips the build and tests for documentation-only PRs
 - 2026-10-27 A generated wiki page of the game's configuration
@@ -214,6 +216,7 @@ The old `docs/design/decisions.md` is now a stub. A branch that still has entrie
 - 2026-10-30 Raids are tuned on damage potential; young servers ramp in; Determination built but off \[Misa\] (amended)
 - 2026-10-30 Festival weeks pause the boss track; no rank ease \[Misa\]
 - 2026-10-30 A failed raid boss returns next week; raids measure HP removed \[Misa\] (amended)
+- 2026-10-29 The raid is defending the valley, with a battleground per element
 - 2026-10-26 Raid results show real damage and a separate score
 - 2026-10-26 Raids: join until the finale; new servers start at Rank 1
 - 2026-10-26 The raid board is live over the sockets
@@ -413,6 +416,7 @@ Superseded: 1 entry (see the topic file).
 
 [ui.md](ui.md): Navigation and the frame, Home and the notice board, type scale, shared components, look and feel rules that apply across screens.
 
+- 2026-11-04 Two voices for notes: the Gazette's paper for the valley's stories, the ink Alert for the game (round 23, Q54) \[Misa\]
 - 2026-11-03 Combat v2 client, the dungeon's screens: a v2 room on StageV2's single row, foe cards on the map, Out until the camp swaps it, the Knack on the team setup
 - 2026-11-03 Combat v2 client, third part: fight playback, the replay, the live finale and the results
 - 2026-11-03 Combat v2 client, second part: the raid tab before and between stages
@@ -421,6 +425,10 @@ Superseded: 1 entry (see the topic file).
 - 2026-10-31 \[Misa\] The fight board shows worn gear, item detail does not
 - 2026-10-31 Creatures blink, and shiny creatures twinkle
 - 2026-10-31 Creatures wear their gear on their sprite
+- 2026-10-29 The boss is the hero of the Raid screen on desktop
+- 2026-10-29 The room's place on desktop is a choice, and two columns are one component
+- 2026-10-29 Looks are staging-only until Misa picks one; dungeon map rooms are pixel discs
+- 2026-10-28 On desktop the game fills the whole window
 - 2026-10-28 One spacing scale inside drawers and sheets
 - 2026-10-28 One spacing scale inside popovers
 - 2026-10-28 Selecting several is shared
@@ -472,3 +480,54 @@ Superseded: 1 entry (see the topic file).
 - 2026-10-14 One popover shell (cleanup pass 1, slice 17)
 - 2026-10-14 Stylesheet split and colour tokens (cleanup pass 1, slices 10–11)
 - 2026-10-11 M6 visual foundation choices
+
+## The valley rework
+
+[valley.md](valley.md): The valley and peaceful systems overhaul planned in docs/design/valley/: job posts, the bonfire, the commons, the Forge loop, gear, trials, the School, the visitor, the economy lab, and Misa's question rounds.
+
+- 2026-11-05 The month runs on staging; no keeper at launch; passes and the fair after phase 5 (round 28, Q61-Q63) \[Misa\]
+- 2026-11-05 Phase 5 step 0: one source of numbers, the VALLEY_SYSTEMS flag rule, the lazy-pass skeleton
+- 2026-11-05 Polish round: popovers above scenes, View scrolls, the Cave tells the truth, the Journal as list and pages, no ring on return
+- 2026-11-05 Phase 4 passes; a polish round before phase 5 (round 27, Q60) \[Misa\] (amended)
+- 2026-11-05 Phase 4 panel review: the fixes adopted (2026-11-05)
+- 2026-11-05 Creatures in the Paddock's scene can be dragged by hand (phase 4, step 5b)
+- 2026-11-05 Deeper dungeon XP: today's per-run XP plus a step at each landmark depth (round 26, Q59) \[Misa\]
+- 2026-11-04 Phase 4 step 1: the valley shell is Game's second frame, one tab state, back control is DrillHead
+- 2026-11-04 Phase 4 builds nothing phase 5 throws away; new places on the map not yet open (round 25, Q57, Q58) \[Misa\]
+- 2026-11-04 Closing the Gazette flies the currencies into the purse (round 25, Q56) \[Misa\]
+- 2026-11-04 Phase 3 passes; phase 4 starts (round 24, Q55) \[Misa\]
+- 2026-11-03 The School's teacher prefers a talent that benefits a few players (2 to a quarter of the server)
+- 2026-11-03 The School's visiting teacher: weekly, Monday to Wednesday, one talent that benefits someone; found talents learned on the card (round 22, Q51-Q53) \[Misa\]
+- 2026-11-03 Phase 4 groundwork starts before the phase 3 gate (resource library, frame plan, School design) \[Misa\]
+- 2026-11-03 No poster on a place's screen; a sky backdrop instead, when the art exists (round 21, Q50) \[Misa\]
+- 2026-11-03 Place scenes: the one-scale rule is per scene; the tray is UI and keeps its own scale
+- 2026-11-03 Place scenes: one pixel scale per screen, the poster as a switchable sky strip
+- 2026-11-03 The visitor leaves when Sunday ends, after the finale
+- 2026-11-01 Late-season scrap is deferred; the lab pretends an idol takes the surplus \[Misa\]
+- 2026-11-01 No tempering; more places to spend scrap before the late season (round 20, Q49) \[Misa\] (amended)
+- 2026-10-31 The welcome-back popup is the Gazette: short prose, items that speak, tappable for a popover \[Misa\]
+- 2026-10-31 The return moment is a welcome-back popup, not a walk; the player directs, creatures act \[Misa\]
+- 2026-10-31 Valley: the Market is the second guided project (round 19, Q48)
+- 2026-10-31 Valley: a problem arrives with its fix to build (G-8)
+- 2026-10-31 Valley: the School teaches talents, a broker post trades shards, phase 2 passes (round 18, Q45 to Q47) (amended)
+- 2026-10-31 Valley: the visitor stays until the raid finale; rerolls are a service at his stall (round 17, Q43 and Q44)
+- 2026-10-31 Valley: the reset replaces the migration; gear slots open at level 1 (from the combat v2 session)
+- 2026-10-30 Valley: no time floor, Bronze stays a dungeon clear, sinks start with a weekly visitor (round 16, Q40 to Q42)
+- 2026-10-30 Valley: ribbon gates dropped, trials as honours, creatures found by rarity (round 15, Q38 and Q39)
+- 2026-10-30 Valley: building drives the item level cap; ribbons questioned (round 15)
+- 2026-10-30 Valley: three kinds of resources, a shard exchange, catch-up until the next visit (round 14, Q33 to Q35)
+- 2026-10-30 Valley: build the economy lab next (round 13, Q32)
+- 2026-10-30 Valley: communal seats are extra; co-op never takes away personal progression (round 12)
+- 2026-10-30 Valley: every place builds its own project, after a guided start (round 12)
+- 2026-10-30 Valley: a long item level ladder, elements own their lines, 1/3/5 lines, a cap warmed by the whole valley (round 11)
+- 2026-10-30 Valley: a bag of 200 with real tools, a rising item level cap to try, no pity floor (round 10)
+- 2026-10-30 Valley: gear is a Path of Exile-style lottery fed by the Forge; crafting waits on shards (round 9)
+- 2026-10-30 Valley: numbers live inside each place; the walk asks for raid preparation once a week (round 8)
+- 2026-10-30 Valley: creatures master a kind of work, and masters make room (round 7)
+- 2026-10-30 Valley: no couch, gentler away steps, work identity researched (round 6)
+- 2026-10-30 Valley: Acorns and a resource library, battlegrounds far away, no Watchtower post (round 5)
+- 2026-10-29 Valley: catch-up toward the server, a communal hearth, places with a max level (round 4)
+- 2026-10-29 Valley: dungeon passes, a weekly fair, one everyday currency (round 3)
+- 2026-10-29 Valley: gifts count in full, stores last a day and a half, raiders' seats are kept (round 2)
+- 2026-10-29 Valley: one shared valley, posts instead of timers, away growth in steps (round 1)
+- 2026-10-29 Valley: be brave, and decide in small rounds of questions

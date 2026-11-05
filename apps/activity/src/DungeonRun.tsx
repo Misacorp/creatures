@@ -11,6 +11,7 @@ import type { DungeonAct, DungeonRunState } from './dungeon-types';
 import { usePrefersReducedMotion } from './hooks';
 import { arriveScroll, shouldScrollToCard } from './reveal-arrive';
 import { Alert } from './ui/Alert';
+import { Column, Columns } from './ui/Columns';
 
 /**
  * An open run: the strip (the row with its HP, the keepsakes, the pack), then what the run stands at:
@@ -60,56 +61,60 @@ export function DungeonRun({
   }, [state.step, screen]);
 
   return (
-    <div ref={top} class="dungeon-run">
-      <DungeonRunStrip state={state} />
-      {error !== null && <Alert level="alert">{error}</Alert>}
-      {state.pending?.kind === 'event' && (
-        <DungeonEvent
-          key={state.step}
-          event={state.pending.event}
-          busy={busy}
-          onPick={(option) => {
-            onAct({ type: 'event', option });
-          }}
-        />
-      )}
-      {state.pending?.kind === 'camp' && (
-        <DungeonCamp
-          key={state.step}
-          team={state.team}
-          pack={state.pack}
-          camp={state.pending}
-          creatures={creatures}
-          busy={busy}
-          rules={state.rules}
-          onAct={onAct}
-        />
-      )}
-      {state.pending?.kind === 'descend' && (
-        <DungeonDescend
-          key={state.step}
-          descent={state.pending}
-          pack={state.pack}
-          depth={state.depth}
-          busy={busy}
-          onAct={onAct}
-        />
-      )}
-      {screen === 'run' && (
-        <section class="raid-section dungeon-run-map" aria-label="The map">
-          <DungeonMap
-            map={state.map}
-            undercroft={state.undercroft?.maps}
-            depth={state.depth}
-            state={state}
+    <Columns from="60rem" ratio="2-3" class="dungeon-run" rootRef={top}>
+      <Column stack="roomy">
+        <DungeonRunStrip state={state} />
+        {error !== null && <Alert level="alert">{error}</Alert>}
+        {state.pending?.kind === 'event' && (
+          <DungeonEvent
+            key={state.step}
+            event={state.pending.event}
             busy={busy}
-            landmark={state.landmark}
-            onGo={(node) => {
-              onAct({ type: 'move', node });
+            onPick={(option) => {
+              onAct({ type: 'event', option });
             }}
           />
-        </section>
+        )}
+        {state.pending?.kind === 'camp' && (
+          <DungeonCamp
+            key={state.step}
+            team={state.team}
+            pack={state.pack}
+            camp={state.pending}
+            creatures={creatures}
+            busy={busy}
+            rules={state.rules}
+            onAct={onAct}
+          />
+        )}
+        {state.pending?.kind === 'descend' && (
+          <DungeonDescend
+            key={state.step}
+            descent={state.pending}
+            pack={state.pack}
+            depth={state.depth}
+            busy={busy}
+            onAct={onAct}
+          />
+        )}
+      </Column>
+      {screen === 'run' && (
+        <Column sticky>
+          <section class="raid-section dungeon-run-map" aria-label="The map">
+            <DungeonMap
+              map={state.map}
+              undercroft={state.undercroft?.maps}
+              depth={state.depth}
+              state={state}
+              busy={busy}
+              landmark={state.landmark}
+              onGo={(node) => {
+                onAct({ type: 'move', node });
+              }}
+            />
+          </section>
+        </Column>
       )}
-    </div>
+    </Columns>
   );
 }

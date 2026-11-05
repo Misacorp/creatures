@@ -1,9 +1,10 @@
 import type { Zone } from '@creatures/engine';
 import type { ComponentChildren, RefObject } from 'preact';
-import { useLayoutEffect, useRef } from 'preact/hooks';
-import { laneStates, ownLaneSpan, scrollToSpan } from '../raid-board';
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { laneStates, ownLaneSpan, scrollToSpan, snapToLane } from '../raid-board';
 import { SlotButton, type SlotModel, type SlotStripProps } from './SlotButton';
 import { CueRail, type CueRailProps } from './CueRail';
+import { useMediaQuery } from '../hooks';
 import { slotState } from './slot-state';
 
 /** One row of the board: its zone, its name (for assistive technology), its label and its slots. */
@@ -31,7 +32,9 @@ interface RaidBoardProps extends SlotStripProps {
   /**
    * The size of the tiles of a `single` row. Absent (the default): the raid's own size. `large`: about
    * halfway back to the bigger tiles the dungeon used before it shared the raid's (the dungeon's
-   * team, where only three have to fit). The same component and the same tile either way.
+   * team, where only three have to fit). The same component and the same tile either way. The raid's
+   * grid takes no prop: on a desktop (`DESKTOP`, where the roster has a whole column) it draws taller tiles
+   * with 3x sprites by itself.
    */
   size?: 'large';
   /** What the rail under the board says (the "no reaction" mark, the effect line). Absent: no rail. */
@@ -54,6 +57,9 @@ const TILE_SCALE = 2;
  */
 const LARGE_TILE_SCALE = 3;
 
+/** The window width from which the Raid screen has two columns: the grid draws its larger tiles. */
+const DESKTOP = '(min-width: 80rem)';
+
 /** Scrolls the board sideways to show lanes `first` to `last` (from 0). */
 function showLanes(scroller: HTMLElement | null, first: number, last: number) {
   if (scroller === null) return;
@@ -64,8 +70,19 @@ function showLanes(scroller: HTMLElement | null, first: number, last: number) {
   const box = scroller.getBoundingClientRect();
   const left = a.getBoundingClientRect().left - box.left + scroller.scrollLeft;
   const right = b.getBoundingClientRect().right - box.left + scroller.scrollLeft;
+  const target = scrollToSpan(left, right, scroller.clientWidth, scroller.scrollWidth);
+  const laneLefts = [...lanes].map(
+    (l) => l.getBoundingClientRect().left - box.left + scroller.scrollLeft,
+  );
   scroller.scrollTo({
-    left: scrollToSpan(left, right, scroller.clientWidth, scroller.scrollWidth),
+    left: snapToLane(
+      target,
+      laneLefts,
+      left,
+      right,
+      scroller.clientWidth,
+      Math.max(0, scroller.scrollWidth - scroller.clientWidth),
+    ),
     behavior: 'auto',
   });
 }
@@ -80,6 +97,7 @@ function showLanes(scroller: HTMLElement | null, first: number, last: number) {
  */
 export function RaidBoard(props: RaidBoardProps) {
   const { rows, stripRef } = props;
+  const desktop = useMediaQuery(DESKTOP);
   const occupants = new Map(
     rows.flatMap((r) => r.slots.map((s) => [s.index, s.occupant] as const)),
   );
@@ -97,7 +115,22 @@ export function RaidBoard(props: RaidBoardProps) {
   useLayoutEffect(() => {
     if (first.current !== null)
       showLanes(stripRef.current, first.current.first, first.current.last);
-  }, []);
+  }, [desktop]);
+
+  // On the desktop board: whether lanes continue past the left or right edge (a hard-edged marker, raid-board.css).
+  const [edges, setEdges] = useState({ left: false, right: false });
+  useEffect(() => {
+    const el = stripRef.current;
+    if (el === null || !desktop || props.single !== undefined) return undefined;
+    const update = () => {
+      const left = el.scrollLeft > 1;
+      const right = el.scrollLeft < el.scrollWidth - el.clientWidth - 1;
+      setEdges((e) => (e.left === left && e.right === right ? e : { left, right }));
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    return () => el.removeEventListener('scroll', update);
+  }, [desktop, props.single !== undefined, states.length]);
 
   const dragging = props.drag.drag?.creatureId ?? null;
   if (props.single !== undefined) {
@@ -132,9 +165,15 @@ export function RaidBoard(props: RaidBoardProps) {
     );
   }
   const classes =
-    dragging === null ? 'party-strip board-scroller' : 'party-strip board-scroller dragging';
+    (dragging === null ? 'party-strip board-scroller' : 'party-strip board-scroller dragging') +
+    (desktop && edges.left ? ' more-left' : '') +
+    (desktop && edges.right ? ' more-right' : '');
   return (
-    <div class={props.v2 === true ? 'raid-board v2' : 'raid-board'}>
+    <div
+      class={['raid-board', desktop ? 'large' : '', props.v2 === true ? 'v2' : '']
+        .filter(Boolean)
+        .join(' ')}
+    >
       <div class="board-grid">
         <div class="board-labels">
           <p class="board-lane-head" aria-hidden="true">
@@ -175,7 +214,7 @@ export function RaidBoard(props: RaidBoardProps) {
                 <SlotButton
                   key={slot.index}
                   slot={slot}
-                  scale={TILE_SCALE}
+                  scale={desktop ? LARGE_TILE_SCALE : TILE_SCALE}
                   {...slotState(props, slot)}
                 />
               ))}

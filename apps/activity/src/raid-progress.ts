@@ -4,7 +4,7 @@
  * functions. The server decides every number; the client only phrases them, and never shows a
  * forecast number (the readiness band is four words).
  */
-import { finaleItemLevel } from '@creatures/game';
+import { finaleItemLevel, resourceName } from '@creatures/game';
 import { speciesName } from './game';
 import { compactPair } from './number-format';
 import type { TrackStep, TrackUnlock } from './progress-track';
@@ -112,7 +112,7 @@ export function festivalBanner(
     view.effectiveRank === null
       ? 'The boss is easier'
       : `The boss is easier and fights as a ${rankLabel(view.effectiveRank) ?? ''} boss`;
-  return `${easier}, Essence pays more, and every winner gets ${prize}.`;
+  return `${easier}, ${resourceName('essence')} pays more, and every winner gets ${prize}.`;
 }
 
 /** The teaser of the Festival creature (what it is), or null in a normal week. */
@@ -129,7 +129,7 @@ export function festivalTeaser(
  * (the server's rank decides it, as it does the drop).
  */
 export function winPaysText(view: Pick<RaidView, 'rank'>): string {
-  const base = 'Win: Essence for everyone, plus a gear piece or blueprint, better at higher ranks.';
+  const base = `Win: ${resourceName('essence')} for everyone, plus a gear piece or blueprint, better at higher ranks.`;
   return view.rank === null
     ? base
     : `${base} This week's gear arrives at item level ${String(finaleItemLevel(view.rank))}.`;
@@ -160,7 +160,7 @@ export function festivalGrantText(grant: FestivalGrant): string {
     case 'fused':
       return `You won ${name} again: it fused with yours (fusion ${String(grant.fusionCount ?? 0)} / 5).`;
     case 'converted':
-      return `You already had a fully fused ${name}: +${String(grant.bait ?? 0)} Bait instead.`;
+      return `You already had a fully fused ${name}: +${String(grant.bait ?? 0)} ${resourceName('bait')} instead.`;
   }
 }
 
@@ -169,7 +169,7 @@ export function festivalGrantText(grant: FestivalGrant): string {
 /** What the next Rank brings, as words (never a number): the track lists them under the next step. */
 const NEXT_RANK_UNLOCKS: readonly TrackUnlock[] = [
   { icon: 'skull', text: 'A tougher boss' },
-  { icon: 'gem', text: 'More Essence' },
+  { icon: 'gem', text: `More ${resourceName('essence')}` },
 ];
 
 /**

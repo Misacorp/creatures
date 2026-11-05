@@ -4,16 +4,16 @@
  * whether a badge opens a glossary entry or shows its name after the number, so those are options.
  * Pure: nothing here touches the DOM.
  */
-import { GLOSSARY_IDS, type PartKind } from '@creatures/game';
+import { GLOSSARY_IDS, type PartKind, resourceName } from '@creatures/game';
 import type { PartsBundle } from './gear-types';
 import { partName, partsEntries } from './gear-view';
-import type { IconRef } from './icon-ref';
+import { resourceIconRef, type IconRef } from './icon-ref';
 import { supplyKindOf, supplyName } from './trip-view';
 import type { CountBadgeProps, CountItem } from './ui/CountBadge';
 
 /** The pictures of Essence and Bait, for every list that draws them (count badges, the reward pile, gifts). */
-export const ESSENCE_ICON: IconRef = { kind: 'glyph', id: 'gem' };
-export const BAIT_ICON: IconRef = { kind: 'glyph', id: 'bait' };
+export const ESSENCE_ICON: IconRef = resourceIconRef('essence');
+export const BAIT_ICON: IconRef = resourceIconRef('bait');
 
 /** What differs between screens: a tap-for-help tag on the badge, and the name written after the number. */
 export interface CountOptions {
@@ -27,9 +27,9 @@ export function essenceCount(amount: number, options: CountOptions = {}): CountI
     key: 'essence',
     icon: ESSENCE_ICON,
     amount,
-    label: 'Essence',
+    label: resourceName('essence'),
     ...(options.entry === true ? { entry: 'essence' } : {}),
-    ...(options.name === true ? { name: 'Essence' } : {}),
+    ...(options.name === true ? { name: resourceName('essence') } : {}),
   };
 }
 
@@ -39,9 +39,9 @@ export function baitCount(amount: number, options: CountOptions = {}): CountItem
     key: 'bait',
     icon: BAIT_ICON,
     amount,
-    label: 'Bait',
+    label: resourceName('bait'),
     ...(options.entry === true ? { entry: 'bait' } : {}),
-    ...(options.name === true ? { name: 'Bait' } : {}),
+    ...(options.name === true ? { name: resourceName('bait') } : {}),
   };
 }
 

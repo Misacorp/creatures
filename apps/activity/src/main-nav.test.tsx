@@ -339,6 +339,23 @@ describe('MainNav as the phone dock', () => {
 });
 
 describe('MainNav as the wide rail', () => {
+  it('lights Home only when Home is the current place', () => {
+    const away = draw(nav({ wide: true, home: true, current: 'collection' }));
+    const home = first(byName(away.root, 'button', 'Home'));
+    expect(home.getAttribute('aria-current')).toBeNull();
+    expect((home.getAttribute('class') ?? '').split(' ')).not.toContain('active');
+    const here = draw(nav({ wide: true, home: true, current: 'home' }));
+    const lit = first(byName(here.root, 'button', 'Home'));
+    expect((lit.getAttribute('class') ?? '').split(' ')).toContain('active');
+  });
+
+  it('keeps the list in a sticky wrapper inside the nav, so the nav itself is the full-height column', () => {
+    const p = draw(nav({ wide: true, home: true }));
+    const stick = byClass(p.root, 'rail-stick');
+    expect(stick).toHaveLength(1);
+    expect(stick[0]?.parentNode?.getAttribute('class')).toContain('rail');
+  });
+
   it('lists every place under its group heading, with no menus, and keeps names, current mark and pips', () => {
     const p = draw(nav({ wide: true, current: 'workshop' }));
     const landmark = first(find(p.root, (el) => el.localName === 'nav'));

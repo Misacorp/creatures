@@ -556,10 +556,13 @@
   display: inline-flex;
 }
 
-/* As the app card (`components/side-panel.css`): wider from 60 rem while a wide layout shows. */
+/* As the app card (`components/main-nav.css`): from 60 rem the game's own card is the whole window. */
 @media (min-width: 60rem) {
-  .wb-frame-stage:has(.side-layout.wide) {
-    width: min(84rem, 100% - 1.25rem);
+  .wb-frame-stage:has(> main.card),
+  .wb-frame-stage:has(> .wb-valley) {
+    width: 100%;
+    margin: 0;
+    padding: 0;
   }
 }
 
@@ -602,4 +605,9 @@
 .wb-held .float-body,
 .wb-held .ko-tag {
   animation: none !important;
+}
+
+/* The valley shell fills its window in the game; on this page it is a card of a fixed height. */
+.wb-valley main.card:has(.vy-frame) {
+  height: 780px;
 }

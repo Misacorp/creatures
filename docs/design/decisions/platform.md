@@ -4,6 +4,14 @@ Hosting, Durable Objects, scheduling, CI and deploys, staging, dependencies, sec
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: The resource library: one data file names every resource
+
+ID: `2026-11-03-the-resource-library-one-data-file` · Status: current
+
+**Decision.** Every resource a player holds (currencies, materials, shards, supplies, prizes, journal pages) is one entry in `packages/game/src/content/data/resources.json`: stable `id` (the storage key), `kind`, `name`, `plural`, `icon` and its glossary entry. Screens and the worker's player-facing text read names and icons through `resourceName`, `resourceAmount` and `resourceIcon` from `@creatures/game` (`partName` and `partIcon` delegate). The prose in content JSON is not templated: `pnpm resources rename <id> <Name> [<plural>]` updates the entry and rewrites the word in the content text, printing every line it changed, and a test checks every resource's glossary title matches the library. Today's names are unchanged. See `docs/design/resource-library.md`.
+
+**Reasoning.** Misa (valley Q13): Acorns is fine, but there must be a generic source of truth so the name is easy to change later. Names were hard-coded in about 25 UI files and in the glossary; a rename would have been a hunt. Templating prose would make the content files unreadable for little gain, so a script does the one-off rewrite and a test keeps the glossary honest. Ids stay as they are (no migration).
+
 ## 2026-10-30: Prettier's cache, and a cleanup script for agent worktrees
 
 ID: `2026-10-30-prettier-s-cache-and-a-cleanup` · Status: current

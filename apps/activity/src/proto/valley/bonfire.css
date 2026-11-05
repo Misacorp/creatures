@@ -1,0 +1,95 @@
+/* The bonfire scene (prototype, dev only): what stands on its ground. */
+
+/* The small flame over a creature that is warming up: it flickers in two steps, and holds still for screenshots and reduced motion. */
+.bf-flame {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 2px);
+  transform: translateX(-50%);
+  line-height: 0;
+}
+
+.bf-flame.flicker {
+  animation: bf-flicker 700ms steps(1) infinite;
+}
+
+@keyframes bf-flicker {
+  50% {
+    transform: translateX(-50%) translateY(-2px);
+  }
+}
+
+/* The width of the pair that shares a moment: the bubble is centred on it. */
+.bf-pair {
+  display: block;
+  width: var(--pw);
+  height: 0;
+}
+
+/* A friend's creature, the owner's name under it. */
+.bf-friend {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+
+.bf-friend .pv-plate {
+  max-width: 5rem;
+}
+
+/* The "+N" of the creatures resting out of sight: a tap shows them all. */
+.bf-more {
+  line-height: 1;
+  pointer-events: auto;
+}
+
+.bf-more-btn {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 6px;
+  background: var(--ink);
+  color: var(--bone);
+  border: 0;
+  box-shadow: 0 0 0 2px var(--dusk);
+  font-size: 1.125rem;
+  cursor: pointer;
+}
+
+/* The hearth's stones: a row, the laid ones solid and the rest hollow. */
+.bf-hearth {
+  line-height: 0;
+}
+
+.bf-stones {
+  display: inline-flex;
+  gap: 3px;
+  line-height: 0;
+}
+
+.bf-hearth-panel .bf-stones {
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.bf-needs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+}
+
+/* Your stones in the hearth sheet: one gold stone and how many, at the right of what it still needs. */
+.bf-yours {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 0;
+  font-size: 1.125rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bf-flame.flicker {
+    animation: none;
+  }
+}

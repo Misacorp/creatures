@@ -22,12 +22,15 @@ export function StatsPage({
   creatures,
   onBack,
   backLabel = 'to Home',
+  bare = false,
 }: {
   profile: Profile;
   creatures: readonly Creature[];
   /** Where Back goes; absent for the place opened from the navigation (a place shows no Back). */
   onBack?: (() => void) | undefined;
   backLabel?: string;
+  /** The way back is drawn elsewhere (the valley's HUD): Escape still goes back, but no head is drawn. */
+  bare?: boolean;
 }) {
   const bonus = bonusSummary(profile.bonuses);
   return (
@@ -36,7 +39,7 @@ export function StatsPage({
       aria-label="Stats"
       {...(onBack === undefined ? {} : { onKeyDown: onDrillKey(onBack) })}
     >
-      {onBack !== undefined && (
+      {onBack !== undefined && !bare && (
         <DrillHead title="Stats" backLabel={backLabel} onBack={onBack} scroll focus />
       )}
 

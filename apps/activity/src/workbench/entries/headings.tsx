@@ -7,6 +7,7 @@ import { tierOf } from '../../countdown';
 import { cssVars } from '../../css-vars';
 import { Alert, type AlertLevel } from '../../ui/Alert';
 import { Callout } from '../../ui/Callout';
+import { Nameplate } from '../../ui/Nameplate';
 import { PixelHeading } from '../../ui/PixelHeading';
 import { TitlePlate } from '../../ui/TitlePlate';
 import { DESTINATION_IDS, NONE, SPECIES_IDS, creatureInfoFor, speciesLabel } from '../data';
@@ -100,6 +101,47 @@ const titlePlate: Entry = {
       as={str(p, 'as') === 'h3' ? 'h3' : 'h4'}
       live={bool(p, 'live')}
     />
+  ),
+};
+
+const nameplate: Entry = {
+  name: 'Nameplate',
+  file: 'apps/activity/src/ui/Nameplate.tsx',
+  group: 'Headings & banners',
+  description:
+    "The one small label on art, words on a solid ink plate: a place's name on the valley map (bold) and a creature's nameplate under its feet (its level first, in yellow). Options: bold, a leading level, size and tone; never a second look-alike.",
+  controls: {
+    text: { kind: 'text', maxLength: 40 },
+    level: { kind: 'number', min: 0, max: 99 },
+    bold: { kind: 'toggle' },
+    size: { kind: 'select', options: ['sm', 'md'] },
+    tone: { kind: 'select', options: ['bone', 'gold'] },
+  },
+  defaults: { text: 'Signpost', level: 0, bold: true, size: 'md', tone: 'bone' },
+  presets: [
+    { name: 'Place name (bold)', props: {} },
+    { name: 'Place name (plain)', props: { bold: false } },
+    {
+      name: 'Creature nameplate (level first)',
+      props: { text: 'Cindle', level: 12, bold: false, size: 'sm' },
+    },
+    { name: 'Gold tone', props: { text: 'Valley Games', tone: 'gold' } },
+    {
+      name: 'Long name',
+      props: { text: 'Sir Reginald von Fluffington the Third', level: 7, size: 'sm', bold: false },
+    },
+  ],
+  render: (p) => (
+    <div>
+      <Nameplate
+        {...(num(p, 'level') > 0 ? { level: num(p, 'level') } : {})}
+        bold={bool(p, 'bold')}
+        size={str(p, 'size') === 'sm' ? 'sm' : 'md'}
+        tone={str(p, 'tone') === 'gold' ? 'gold' : 'bone'}
+      >
+        {str(p, 'text')}
+      </Nameplate>
+    </div>
   ),
 };
 
@@ -317,6 +359,7 @@ const alert: Entry = {
 export const headingEntries: readonly Entry[] = [
   pixelHeading,
   titlePlate,
+  nameplate,
   callout,
   alert,
   banner,

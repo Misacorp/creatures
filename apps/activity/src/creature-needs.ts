@@ -9,6 +9,7 @@ import { ribbonCostText, ribbonName } from './experience';
 import { creatureName, speciesName } from './game';
 import { busyReason } from './gear-view';
 import { bookActions } from './talent-view';
+import { resourceName } from '@creatures/game';
 
 export type NeedKind = 'ribbon' | 'evolve' | 'duplicate' | 'talent';
 
@@ -58,16 +59,16 @@ export function creatureNeeds(creature: Creature, state: NeedsState): Need[] {
       kind: 'evolve',
       // Just the verb: the evolve screen names the form (or the two to choose from).
       label: 'Evolve',
-      detail: blocked ?? `${String(creature.evolution.essence)} Essence`,
+      detail: blocked ?? `${String(creature.evolution.essence)} ${resourceName('essence')}`,
     });
   } else {
     const short = evolveShortfall(creature, state.balances.essence);
     if (short !== null) {
       needs.push({
-        blocked: 'Short of Essence',
+        blocked: `Short of ${resourceName('essence')}`,
         kind: 'evolve',
         label: 'Evolve',
-        detail: `${String(short.have)} / ${String(short.cost)} Essence`,
+        detail: `${String(short.have)} / ${String(short.cost)} ${resourceName('essence')}`,
       });
     }
   }
@@ -96,7 +97,7 @@ export function creatureNeeds(creature: Creature, state: NeedsState): Need[] {
     needs.push({
       kind: 'talent',
       label: `Fill talent slot ${String(emptySlot.slot)}`,
-      detail: `${String(state.bookSlotBait)} Bait`,
+      detail: `${String(state.bookSlotBait)} ${resourceName('bait')}`,
     });
   }
   return [

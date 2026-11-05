@@ -123,7 +123,7 @@ function PlaceButton({
   );
 }
 
-/** The wide window's rail: Home, then every place under its group's heading, picture and word side by side. It scrolls inside itself if the window is short. */
+/** The wide window's rail: Home, then every place under its group's heading, picture and word side by side. The nav is the column's full height (so a look can paint it); its list sticks to the window and scrolls inside itself if the window is short. */
 function Rail({
   groups,
   current,
@@ -139,34 +139,36 @@ function Rail({
   const entry = navHome();
   return (
     <nav class="main-nav rail" aria-label="Places">
-      {home && (
-        <div class="nav-group nav-home">
-          <ul>
-            <li>
-              <PlaceButton
-                place={{ ...entry, group: '', pip: null }}
-                active={current === entry.id}
-                onSelect={onSelect}
-                extra="home"
-              />
-            </li>
-          </ul>
-        </div>
-      )}
-      {groups.map((group) => (
-        <div key={group.id} class="nav-group">
-          <p class="nav-heading pix" id={`${prefix}-${group.id}`}>
-            {group.label}
-          </p>
-          <ul aria-labelledby={`${prefix}-${group.id}`}>
-            {group.places.map((place) => (
-              <li key={place.id}>
-                <PlaceButton place={place} active={place.id === current} onSelect={onSelect} />
+      <div class="rail-stick">
+        {home && (
+          <div class="nav-group nav-home">
+            <ul>
+              <li>
+                <PlaceButton
+                  place={{ ...entry, group: '', pip: null }}
+                  active={current === entry.id}
+                  onSelect={onSelect}
+                  extra="home"
+                />
               </li>
-            ))}
-          </ul>
-        </div>
-      ))}
+            </ul>
+          </div>
+        )}
+        {groups.map((group) => (
+          <div key={group.id} class="nav-group">
+            <p class="nav-heading pix" id={`${prefix}-${group.id}`}>
+              {group.label}
+            </p>
+            <ul aria-labelledby={`${prefix}-${group.id}`}>
+              {group.places.map((place) => (
+                <li key={place.id}>
+                  <PlaceButton place={place} active={place.id === current} onSelect={onSelect} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
     </nav>
   );
 }

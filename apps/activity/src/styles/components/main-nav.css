@@ -88,6 +88,7 @@ h1.hud-title {
 */
 .hud button.howto-open,
 .hud button.hud-gear,
+.hud button.hud-back,
 .hud button.currency-pile {
   position: relative;
   min-height: 2.25rem;
@@ -95,6 +96,7 @@ h1.hud-title {
 
 .hud button.howto-open::after,
 .hud button.hud-gear::after,
+.hud button.hud-back::after,
 .hud button.currency-pile::after {
   position: absolute;
   inset: -0.25rem 0;
@@ -102,15 +104,31 @@ h1.hud-title {
 }
 
 .hud button.howto-open,
-.hud button.hud-gear {
+.hud button.hud-gear,
+.hud button.hud-back {
   min-width: 2.75rem;
   padding: 0;
 }
 
 /* The cog is drawn like the currency pile beside it: the same height, the same dark box, one line round it. */
 .hud button.currency-pile,
-.hud button.hud-gear {
+.hud button.hud-gear,
+.hud button.hud-back {
   height: 2.25rem;
+}
+
+/* The valley's way back, before the place's name: the cog's box with a "‹" in it. The ring shows for the keyboard only (:focus-visible). */
+.hud button.hud-back {
+  flex: none;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 var(--px) var(--line);
+  color: var(--bone);
+  font-size: var(--fs-title);
+  line-height: 1;
+}
+
+.hud button.hud-back:focus:not(:focus-visible) {
+  box-shadow: inset 0 0 0 var(--px) var(--line);
 }
 
 .hud button.hud-gear {
@@ -436,8 +454,17 @@ button.nav-tray-item.active:focus-visible {
   min-width: 0;
 }
 
-/* The rail: only drawn on a wide window (`MainNav`'s `wide`), so its look needs no media query. */
+/*
+  The rail: only drawn on a wide window (`MainNav`'s `wide`), so its look needs no media query. The nav itself is the
+  column, as tall as the screen beside it and reaching the bottom of the window (a look paints it); its list
+  (`.rail-stick`) sticks to the top of the window and scrolls inside itself if the window is short.
+*/
 .main-nav.rail {
+  align-self: stretch;
+  min-height: 0;
+}
+
+.rail-stick {
   position: sticky;
   top: 0.625rem;
   max-height: calc(100vh - 1.25rem);
@@ -472,13 +499,43 @@ button.nav-tray-item.active:focus-visible {
 @media (min-width: 60rem) {
   .nav-shell {
     display: grid;
-    grid-template-columns: 8.5rem minmax(0, 1fr);
+    flex: 1 0 auto; /* the card is a column at least as tall as the window: the rail reaches its bottom */
+    grid-template-columns: 9rem minmax(0, 1fr);
     gap: 1rem;
     align-items: start;
+    padding: 0 1rem 0 0;
   }
 
-  /* The card is as wide as before plus the rail; a screen with a side panel widens it further (`side-panel.css`). */
+  .nav-screen {
+    padding-bottom: 1rem;
+  }
+
+  /*
+    The whole window (Misa, 2026-10-28: "on desktop use the entire screen width and height"): the card is the
+    window, no margin, no frame, at least as tall as it. The HUD is its full-width top row, the living room
+    band under it, then the rail (a column the full height, sticky) and the screen filling the rest. Each
+    screen caps its own reading text and cards (the per-view files); the card itself never does.
+  */
   main.card:has(.main-nav.rail) {
-    width: min(58rem, 100% - 1.25rem);
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  main.card:has(.main-nav.rail) > .hud {
+    margin: 0 0 0.75rem;
+    padding-inline: 1rem;
+  }
+
+  .rail-stick {
+    top: 0;
+    max-height: 100vh;
+    max-height: 100dvh;
+    padding: 0.5rem 0.5rem 1rem 1rem;
   }
 }

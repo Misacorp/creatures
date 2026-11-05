@@ -81,3 +81,29 @@ export function msUntilReset(
 
 /** How long after the reset to ask again: a moment, so the server's day has really turned. */
 export const RESET_GRACE_MS = 1_500;
+
+/** Where today's dungeon stands, for the valley's Cave: a run in progress, one that can start, or neither. */
+export type DungeonPhase = 'active' | 'ready' | 'none';
+
+/**
+ * The phase from what the Dungeon page shows (`screen`) and today's `canRun`; null while it is still loading. A fight
+ * that ended the run, its playback and the results are over: only the screens of an open run say `active`.
+ */
+export function dungeonPhase(
+  screen: 'loading' | 'setup' | 'run' | 'fight' | 'playback' | 'results',
+  canRun: boolean,
+  runEnded: boolean,
+): DungeonPhase | null {
+  switch (screen) {
+    case 'loading':
+      return null;
+    case 'run':
+      return 'active';
+    case 'fight':
+      return runEnded ? 'none' : 'active';
+    case 'setup':
+      return canRun ? 'ready' : 'none';
+    default:
+      return 'none';
+  }
+}

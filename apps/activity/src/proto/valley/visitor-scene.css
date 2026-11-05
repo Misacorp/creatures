@@ -1,0 +1,63 @@
+/* The visitor's stall (VisitorScene.tsx): his stock on the counter of the stall, and the price rows. */
+.vs-counter {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  transform: translate(-50%, -100%);
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Each is a 44 px target sitting on the counter. */
+.vs-item {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 2px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.vs-body {
+  padding-bottom: 0.5rem;
+}
+
+.vs-odds {
+  margin: 0;
+}
+
+.vs-quiet {
+  margin: 0;
+  color: var(--haze);
+}
+
+.vs-foot {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.vs-price,
+.vs-purse {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vs-cost {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Costs and counts one size up from the small text. */
+.vs-cost .part-amount,
+.vs-foot .part-amount {
+  font-size: 1rem;
+}

@@ -34,9 +34,9 @@ export function AppHead({
 
 /**
  * The living room as a full-width band under the HUD: it breaks out of the card to the window's edges
- * (measured, so a scrollbar never makes the page scroll sideways).
+ * (measured, so a scrollbar never makes the page scroll sideways). `hero`: Home's taller room (`room` mode `home`).
  */
-export function RoomBand({ room }: { room: RoomProps }) {
+export function RoomBand({ room, hero = false }: { room: RoomProps; hero?: boolean }) {
   const probe = useRef<HTMLDivElement>(null);
   const bleed = useBleed(probe);
   return (
@@ -52,7 +52,7 @@ export function RoomBand({ room }: { room: RoomProps }) {
               },
         )}
       >
-        <LivingRoom {...room} />
+        <LivingRoom {...room} hero={hero} />
       </div>
     </div>
   );

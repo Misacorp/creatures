@@ -35,6 +35,11 @@ export interface RaidGlance {
    * many there are). Absent or null: none.
    */
   swapText?: string | null;
+  /**
+   * What the valley's Arena scene draws: this week's boss and the creatures the player placed (their ids). Absent
+   * where the view did not carry them; the party is empty before the player has placed anyone.
+   */
+  scene?: { boss: { id: string; name: string }; party: readonly string[] };
 }
 
 export interface HomeInput {
@@ -92,7 +97,7 @@ export function homeAlerts(input: HomeInput): TabAlerts {
 
 // --- Expeditions ---
 
-interface TripCounts {
+export interface TripCounts {
   /** Trips home or waiting for the push-on choice (they need the player). */
   home: Trip[];
   choice: Trip[];
@@ -100,7 +105,7 @@ interface TripCounts {
   out: Trip[];
 }
 
-function tripCounts(trips: readonly Trip[], now: number): TripCounts {
+export function tripCounts(trips: readonly Trip[], now: number): TripCounts {
   const counts: TripCounts = { home: [], choice: [], out: [] };
   for (const trip of trips) {
     if (trip.status !== 'active') continue;
@@ -114,11 +119,11 @@ function tripCounts(trips: readonly Trip[], now: number): TripCounts {
 }
 
 /** When the leg a trip is on ends. */
-function legEnd(trip: Trip, now: number): number {
+export function legEnd(trip: Trip, now: number): number {
   return tripStatus(trip, now).remainingMs + now;
 }
 
-function explorerName(trip: Trip, creatures: readonly Creature[]): string {
+export function explorerName(trip: Trip, creatures: readonly Creature[]): string {
   const creature = creatures.find((c) => c.id === trip.creatureId);
   return creature === undefined ? 'An explorer' : creatureName(creature);
 }

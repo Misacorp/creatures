@@ -4,6 +4,14 @@ Roadmap calls, Misa's standing direction, naming and tone, content policy, how a
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-03: [Misa] Valley art goes straight onto the valley branch, not through main
+
+ID: `2026-11-03-valley-art-goes-straight-onto-the` · Status: current
+
+**Decision.** Art for the valley prototype goes on the branch `claude/valley-art`, cut from the valley branch (`ccr-93a1de17-yutb1a`), and the valley session merges it in. It is not opened as a PR to `main`; it reaches `main` with the valley's own PR. The art session never pushes to the valley branch itself, and keeps the art library rules (sets in `concepts/`, `pnpm art library`, the review page).
+
+**Reasoning.** Misa (2026-11-03): "Let's try to get stuff into the valley branch under the radar, without having to make merges into main in between." Three art PRs in one day (#120, #122, #123) each waited on a merge to `main` before the valley could use them, and #122 was merged while more work was being added to its branch.
+
 ## 2026-11-03: Sprites up to 128 wide; free backdrop art may have no outline
 
 ID: `2026-11-03-sprites-up-to-128-wide-free` · Status: current

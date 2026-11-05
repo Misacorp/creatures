@@ -47,6 +47,26 @@ in the worker.
    the slow ones: `cd packages/lab && npx vitest run --reporter=json --outputFile=/tmp/v.json`, then read each
    file's `endTime - startTime` and each test's `duration`. The boss tests were split from one 22 s file into
    `boss*.test.ts` and `dungeon.test.ts` for this (2026-10-29).
+7. **Economy lab** (`packages/econ`, the valley's proposed rules). Tests run the model on one or two seeds with
+   short horizons and check invariants (no negative balances, conservation, determinism), the tuner on a tiny fake
+   model, and the targets and dials as data. Speed budget: the full report (`pnpm --filter @creatures/econ report`,
+   15+ servers over 20 seeds, one worker thread per core) under 30 s, the package's tests under 15 s. The report
+   prints its seconds per section and a warning when over; `pnpm --filter @creatures/econ speed` runs the tests and
+   fails when over. Over budget is a finding: speed the model up or move a check down a layer, do not raise it
+   quietly. A quick look is `report -- --scenario <id> --seeds 5` (a second or two); changing numbers is the tuner's
+   job (`tune -- --dials a,b`), not an agent's edit-and-rerun loop.
+8. **The valley's end-to-end checklist** (`apps/activity/scripts/e2e-valley.mjs`, Playwright; the repo's only browser
+   test, so layer 3 still says "without end-to-end browser tests" for the server contract). The real game in
+   Chromium with `VALLEY` on, the Discord SDK swapped for a stub (`scripts/e2e/discord-sdk-stub.mjs`) and every
+   `/api/*` call answered from the captured fixtures, so nothing in the game is mocked. It walks each row of
+   "Where each of today's screens lives" (`docs/design/valley/phase4-plan.md`): the Gazette with an away notice
+   and its closing, every place's button having a spoken name, Left and Right on the map, each of the seven open
+   places showing today's page with no error line and going back, Journal and Stats from the House, the four
+   places not open yet and their lines, the Places list, and a creature dragged in the Paddock (a tap still opens
+   its popover). Run `pnpm --filter @creatures/activity e2e:valley` (about 30 s; `--width 1100`, `--reduced`,
+   `--out <dir>` for its shots). It needs a browser, so it is **not in `check:changed` or `check`**: run it by
+   hand for any change to the valley's shell, scenes, map or Gazette, and before the valley's gate. A new row in
+   the plan's table adds a step to it. `CHROME` and `PLAYWRIGHT_PATH` as in `scripts/shoot.mjs`.
 
 **Rules**
 

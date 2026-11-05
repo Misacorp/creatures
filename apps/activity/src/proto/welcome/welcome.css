@@ -1,0 +1,332 @@
+/*
+  The welcome-back popup (staging only, `src/proto/welcome/`): the Valley Gazette inside the
+  app's sheet (`ui/Drawer`). It sits on the valley prototype's own look (`pv-` classes: the speech bubble, the
+  place marker); only what is new is styled here, with `wb-`. Pixel rules as the valley's: hard edges, no blur
+  (a hard outline is a shadow with no blur), motion in steps and none at all under reduced motion.
+*/
+
+/* One art pixel of a bubble or an outline, as the picture is drawn: 2 px on a phone, 3 px on a wide sheet. */
+.wb-scene {
+  --art: 2px;
+}
+
+@media (min-width: 560px) {
+  .wb-scene {
+    --art: 3px;
+  }
+}
+
+/* --- A picture: the valley round a place, with creatures on it --- */
+.wb-scene {
+  position: relative;
+  overflow: hidden;
+  background: #9cd8fb;
+}
+
+.wb-scene-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.wb-actor,
+.wb-prop {
+  z-index: 2;
+}
+
+.wb-actor {
+  /* Room for the bubble above the speaker, which sits over the picture, not outside it. */
+  overflow: visible;
+}
+
+/* A creature in a picture opens its popover: the button takes touches (the picture's layer does not), with a 44 px target. */
+.wb-actor .wb-face {
+  position: relative;
+  pointer-events: auto;
+}
+
+.wb-actor .wb-face::after {
+  position: absolute;
+  inset: -8px;
+  content: '';
+}
+
+/* --- The Valley Gazette --- */
+.wb-paper {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  background: #efe3c2;
+  box-shadow: 0 0 0 3px var(--ink);
+  color: var(--ink);
+}
+
+.wb-masthead {
+  display: grid;
+  gap: 2px;
+  border-bottom: 4px double var(--ink);
+  padding-bottom: 6px;
+  text-align: center;
+}
+
+.wb-paper-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: 2.25rem;
+  line-height: 1;
+  text-shadow: none;
+}
+
+.wb-dateline {
+  margin: 0;
+  padding-top: 2px;
+  border-top: 2px solid var(--ink);
+  color: var(--ink);
+  font-size: 1.125rem;
+  line-height: 1.2;
+}
+
+.wb-lead {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+.wb-lead-scene {
+  height: 170px;
+  box-shadow: 0 0 0 3px var(--ink);
+  margin: 3px;
+}
+
+.wb-headline {
+  margin: 0;
+  color: var(--ink);
+  font-size: 2rem;
+  line-height: 1;
+  text-shadow: none;
+}
+
+.wb-blurb,
+.wb-brief-blurb {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.wb-briefs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 2px solid var(--ink);
+}
+
+.wb-brief {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+}
+
+.wb-brief-scene {
+  height: 110px;
+  box-shadow: 0 0 0 2px var(--ink);
+  margin: 2px;
+}
+
+.wb-brief-headline {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.25rem;
+  line-height: 1.05;
+  text-shadow: none;
+}
+
+/* What a story found: one row of small finds flush under the story's line, in the Gazette and a place's clipping. */
+.wb-finds {
+  min-width: 0;
+}
+
+.wb-finds .find-list {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 0;
+}
+
+.wb-finds .part-count {
+  background: var(--ink);
+}
+
+/* A lone small story takes the width. */
+.wb-briefs:has(.wb-brief:only-child) {
+  grid-template-columns: 1fr;
+}
+
+/* On a wide sheet the small stories stand beside the headline story. */
+@media (min-width: 560px) {
+  .wb-paper {
+    grid-template-columns: 3fr 2fr;
+    column-gap: 14px;
+  }
+
+  .wb-masthead {
+    grid-column: 1 / -1;
+  }
+
+  .wb-lead-scene {
+    height: 210px;
+  }
+
+  .wb-briefs {
+    grid-template-columns: 1fr;
+    padding-top: 0;
+    padding-left: 12px;
+    border-top: 0;
+    border-left: 2px solid var(--ink);
+  }
+}
+
+/* --- The markers the valley keeps: a place's glyph is light, so it sits on an ink chip --- */
+.pv-bubble-pic {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--ink);
+  line-height: 0;
+}
+
+/* --- A place's waiting stories: a slim clipping of the Gazette's paper pinned above the place's main action --- */
+.alert.wb-clip {
+  --scroll-hint-bg: #efe3c2;
+
+  /* About a third of the scene on a phone: the whole clipping never takes more. */
+  --clip-max: max(18dvh, 6rem);
+  --clip-pad: 5px;
+
+  /* A clear gap between the clipping (and its ring) and the button under it. */
+  margin: 0 0 0.5rem;
+  color: var(--ink);
+}
+
+/* The Gazette's paper: ink on cream with an ink ring, in place of the level's tint and edge. */
+.wb-clip .alert-body {
+  align-items: center;
+  max-height: var(--clip-max);
+  padding: var(--clip-pad) 6px var(--clip-pad) 10px;
+  border-left: 0;
+  background: #efe3c2;
+  box-shadow: 0 0 0 3px var(--ink);
+}
+
+.wb-clip .alert-text {
+  color: var(--ink);
+}
+
+.wb-clip .alert-message {
+  display: block;
+}
+
+.wb-clip .alert-icon {
+  height: auto;
+}
+
+.wb-clip button.alert-close {
+  align-self: flex-start;
+  margin-top: 1px;
+  color: var(--ink);
+}
+
+/* A wide window has more scene to spare. */
+@media (min-width: 560px) {
+  .alert.wb-clip {
+    --clip-max: max(24dvh, 8rem);
+  }
+}
+
+.wb-clip-scroll {
+  /* A place with several stories shows what fits (a whole story first), and the rest scrolls inside. */
+  max-height: calc(var(--clip-max) - 2 * var(--clip-pad));
+}
+
+.wb-clip-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wb-clip-story {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* The pixel font's glyphs are taller than a tight line, which would count as "more below" and fade the text. A clipping's headline is one small line. */
+.wb-clip-story .wb-brief-headline {
+  overflow: hidden;
+  font-size: 1rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-clip-story .wb-brief-blurb {
+  overflow: hidden;
+  margin: 0;
+  font-size: 0.875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-clip-story + .wb-clip-story {
+  padding-top: 6px;
+  border-top: 2px solid var(--ink);
+}
+
+/* The story's creatures as small faces at the clipping's left, where an alert's icon is. */
+.wb-clip-faces {
+  display: flex;
+  gap: 2px;
+  line-height: 0;
+}
+
+/* --- The "+N more" of a row of finds --- */
+.wb-more {
+  display: flex;
+  align-items: center;
+}
+
+.wb-more-button,
+.wb-more-note {
+  min-height: 0;
+  margin: 0;
+  padding: 2px 6px;
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.2;
+  text-shadow: none;
+}
+
+.wb-more-button {
+  background: transparent;
+  box-shadow: none;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+}
+
+.wb-more-note {
+  background: transparent;
+}
+
+/* A newcomer in a small row: its face, a tap target like the pieces' pictures. */
+.wb-newcomer {
+  display: inline-flex;
+  min-height: 0;
+  padding: 2px;
+  background: var(--night);
+  box-shadow: none;
+  line-height: 0;
+}

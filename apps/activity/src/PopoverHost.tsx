@@ -1,7 +1,7 @@
 import { content, entryView } from '@creatures/game';
 import type { GlossarySection, GlossaryView } from '@creatures/game';
 import { createContext, type ComponentChildren, type RefObject } from 'preact';
-import { useContext, useMemo, useRef, useState } from 'preact/hooks';
+import { useContext, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { loungingText } from './creature-card-view';
 import { backLabel, creatureFactRows, shownWornItems, type CreatureInfo } from './creature-info';
 import { bossArt, shinyPalette } from './art';
@@ -65,6 +65,11 @@ export interface PopoverHostApi {
     anchor: HTMLElement,
     popover: { label: string; body: ComponentChildren },
   ) => void;
+  /**
+   * Where "View" goes: the game registers what opens a creature's page (or null to take it back). Only a creature
+   * with a `creatureId` (one of the player's own) gets the button, and only while something is registered.
+   */
+  setViewer: (view: ((creatureId: string) => void) | null) => void;
   /** A popover's "More in How to play" link: closes the popover and opens the page at `section`. */
   openHowTo: (section: GlossarySection) => void;
   close: () => void;
@@ -89,6 +94,26 @@ export function usePopoverTrigger<E extends HTMLElement>(): {
   const host = usePopoverHost();
   const ref = useRef<E>(null);
   return { host, ref, open: host?.anchor != null && host.anchor === ref.current };
+}
+
+/**
+ * Registers what "View" does in every creature popover (the game: opens the creature's page). One place, so every
+ * popover that shows one of the player's own creatures gets the button.
+ */
+export function useCreatureViewer(view: ((creatureId: string) => void) | null): void {
+  const host = usePopoverHost();
+  const latest = useRef(view);
+  latest.current = view;
+  const on = view !== null;
+  useEffect(() => {
+    if (host === null || !on) return undefined;
+    host.setViewer((id) => {
+      latest.current?.(id);
+    });
+    return () => {
+      host.setViewer(null);
+    };
+  }, [host?.setViewer, on]);
 }
 
 const reactionById = (id: string) => content.reactions.find((r) => r.id === id);
@@ -170,14 +195,20 @@ function CreaturePopover({
   open,
   onClose,
   onMore,
+  onView,
 }: {
   open: OpenPopover & { kind: 'creature' };
   onClose: () => void;
   onMore: (section: GlossarySection) => void;
+  /** What "View" does, when the game gave one. */
+  onView: ((creatureId: string) => void) | null;
 }) {
   const { info } = open;
   const rarity = getSpecies(info.species)?.rarity;
   const worn = shownWornItems(info);
+  const view =
+    onView !== null && info.creatureId !== undefined ? { id: info.creatureId, go: onView } : null;
+  const actions = open.actions ?? [];
   const nav = usePopoverNav<string | null>(null, open);
   const entry = nav.view === null ? undefined : entryView(nav.view);
   // An entry the content does not know shows the creature instead.
@@ -266,9 +297,21 @@ function CreaturePopover({
           <DataTable class="pix" rows={creatureFactRows(info, speciesName(info.species))} />
           {info.effect !== undefined && <p class="pop-effect">{info.effect}</p>}
           {worn.length > 0 && <GearList level={info.level} worn={worn} emptySlots={false} />}
-          {open.actions !== undefined && open.actions.length > 0 && (
+          {(view !== null || actions.length > 0) && (
             <div class="pop-actions">
-              {open.actions.map((action) => (
+              {view !== null && (
+                <button
+                  type="button"
+                  class="pop-action"
+                  onClick={() => {
+                    onClose();
+                    view.go(view.id);
+                  }}
+                >
+                  View
+                </button>
+              )}
+              {actions.map((action) => (
                 <button
                   key={action.label}
                   type="button"
@@ -413,6 +456,7 @@ export function PopoverHost({
   // The latest `onOpenHowTo`, so the api stays the same object while only the popover changes.
   const howTo = useRef(onOpenHowTo);
   howTo.current = onOpenHowTo;
+  const viewer = useRef<((creatureId: string) => void) | null>(null);
   const api = useMemo<PopoverHostApi>(
     () => ({
       anchor: open?.anchor ?? null,
@@ -442,6 +486,9 @@ export function PopoverHost({
       openCustom: (key, anchor, popover) => {
         setOpen((current) => toggleActive(current, { kind: 'custom', key, anchor, ...popover }));
       },
+      setViewer: (view) => {
+        viewer.current = view;
+      },
       openHowTo: (section) => {
         setOpen(null);
         howTo.current(section);
@@ -458,7 +505,7 @@ export function PopoverHost({
       {children}
       {open?.kind === 'tag' && <TagPopover open={open} onClose={api.close} onMore={onMore} />}
       {open?.kind === 'creature' && (
-        <CreaturePopover open={open} onClose={api.close} onMore={onMore} />
+        <CreaturePopover open={open} onClose={api.close} onMore={onMore} onView={viewer.current} />
       )}
       {open?.kind === 'foe' && <FoePopover open={open} onClose={api.close} onMore={onMore} />}
       {open?.kind === 'custom' && (

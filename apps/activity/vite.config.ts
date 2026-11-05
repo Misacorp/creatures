@@ -20,6 +20,9 @@ export default defineConfig(({ command, mode }) => {
   // behind the same gate: staging and `pnpm dev` only, so it (and the lab engine it bundles) never
   // reaches a production build.
   if (devToolsBuild) input['combat-lab'] = 'combat-lab.html';
+  // The prototype page (`prototype.html`, `src/proto/`, the clickable concepts on sample data) is a
+  // fourth page behind the same gate.
+  if (devToolsBuild) input['prototype'] = 'prototype.html';
   // The wiki (`wiki.html`, `src/wiki/`) is generated text with no script, for every build; see `wikiPlugin`.
   return {
     plugins: [preact(), wikiPlugin()],

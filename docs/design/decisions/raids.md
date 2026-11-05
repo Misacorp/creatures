@@ -135,6 +135,12 @@ ID: `2026-10-30-a-failed-raid-boss-returns-next` · Status: current, amended by 
 
 **Reasoning.** Research on visible progress backs measuring HP removed: effort rises as a visible goal gets closer (goal gradient, Kivetz et al. 2006), a head start raises completion (endowed progress, Nunes and Drèze 2006), and after a failure, showing what is left motivates more than showing what was done. Damage-scored co-op bosses are an established pattern (Clash of Clans' Capital raids carry damage between attacks; Raid: Shadow Legends' clan bosses pay by damage). Games that repeat a boss add relief against getting stuck (WoW's Determination, +5% per wipe up to 10 stacks; FFXIV's Echo; WoW's Icecrown buff that rose about every 4 weeks); no research says how many failed attempts are too many, so that is measured, not assumed. A fixed track also lets the lab tune each boss at the exact rank it appears.
 
+## 2026-10-29: The raid is defending the valley, with a battleground per element
+
+ID: `2026-10-29-the-raid-is-defending-the-valley` · Status: current
+
+Misa, after trying the valley prototypes: the weekly raid is not a fun arena show the creatures take part in for entertainment. It is a dangerous trial they face to defend the valley from a threat, and it should look and read that way. Direction: one distinct battleground per raid boss element (Grove: an ancient temple in the forest; Spark: a thunderous mountaintop; Tide, Ember and Mire still to choose, proposed as a drowned sea gate, a caldera and a sunken shrine in the Fen), reached each week through a gauntlet (designed on another branch). In the valley prototype the raid's place is a Watchtower at the east gate, where creatures muster; the valley's own scenes are the hub. Player-facing raid text and art from now on use the defence framing; the compendium's boss entries are the place to grow it. Map of the valley's places: the "Valley Map" artifact of this session.
+
 ## 2026-10-26: Raid results show real damage and a separate score
 
 ID: `2026-10-26-raid-results-show-real-damage-and` · Status: current · Amends: `2026-10-11-after-action-card-implementation-choices`, `2026-10-20-the-raid-summary-ships-scoreboard-first`

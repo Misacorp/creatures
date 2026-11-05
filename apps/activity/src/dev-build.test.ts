@@ -22,6 +22,12 @@ const WORKBENCH_MARKERS = ['WORKBENCH_MARKER_5c1e', 'wb-frame-stage'];
  */
 const COMBAT_LAB_MARKERS = ['COMBAT_LAB_MARKER_9d2b', 'cl-board-scroll'];
 
+/**
+ * The prototype page (`prototype.html`, `src/proto/`) is staging-only the same way. Strings only it has:
+ * its marker, and a class of its stylesheet.
+ */
+const PROTOTYPE_MARKERS = ['PROTOTYPE_MARKER_3e8a', 'proto-chooser'];
+
 /** A `#rrggbb` token's value in whitespace-free CSS. */
 function cssColour(css: string, name: string): string {
   const match = new RegExp(`${name}:(#[0-9a-fA-F]{6})`).exec(css);
@@ -133,6 +139,11 @@ describe('the debug panel and the production build', () => {
     for (const marker of COMBAT_LAB_MARKERS) {
       expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
     }
+    // The same for the prototype page: no page, no code, no styles.
+    expect(files.some((f) => f.name.includes('prototype'))).toBe(false);
+    for (const marker of PROTOTYPE_MARKERS) {
+      expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
+    }
     // The wiki is there: generated text, a stylesheet, one same-origin script and the pictures, and no lab code in any script.
     expectWikiWithOneScript(files);
     // The rarity colours are defined once, as tokens (grey, blue, pink; gold and crimson reserved), with a lighter text variant each for names.
@@ -170,6 +181,8 @@ describe('the debug panel and the production build', () => {
     // The armchair has a clear gap (at least half a rem) before the Lounge and Lounging words.
     const gap = /\.armchair-icon\{[^}]*margin-right:([\d.]+)rem/.exec(css);
     expect(Number(gap?.[1])).toBeGreaterThanOrEqual(0.5);
+    // The looks (arcade, hearth, quest) are staging-only until Misa picks one: no `data-look` rule ships.
+    expect(css).not.toContain('data-look');
     // The item picker's list and find-and-filter options were dropped from the game: only the grid ships.
     const js = files.filter((f) => f.name.endsWith('.js'));
     for (const gone of ['Find an item', 'ip-pinned', 'item-find']) {
@@ -191,6 +204,11 @@ describe('the debug panel and the production build', () => {
     for (const marker of COMBAT_LAB_MARKERS) {
       expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
     }
+    // The same for the prototype page: no page, no code, no styles.
+    expect(files.some((f) => f.name.includes('prototype'))).toBe(false);
+    for (const marker of PROTOTYPE_MARKERS) {
+      expect(files.filter((f) => f.text.includes(marker)).map((f) => f.name)).toEqual([]);
+    }
     expectWikiWithOneScript(files);
   }, 60_000);
 
@@ -205,6 +223,12 @@ describe('the debug panel and the production build', () => {
     const entry = files.find((f) => f.name.endsWith('.js') && /index/.test(f.name));
     expect(entry?.text.includes('DEV_PANEL_MARKER_7f3a')).toBe(false);
     expect(files.some((f) => f.name.endsWith('.css') && f.text.includes('dev-drawer'))).toBe(true);
+  }, 60_000);
+
+  it('has the looks styles in a staging build', async () => {
+    const files = await buildFiles('staging');
+    const css = files.filter((f) => f.name.endsWith('.css') && f.text.includes('data-look'));
+    expect(css.length).toBeGreaterThan(0);
   }, 60_000);
 
   it('has the workbench page in a staging build, apart from the game page', async () => {
@@ -236,6 +260,21 @@ describe('the debug panel and the production build', () => {
       true,
     );
     // It makes no API calls: nothing in the combat lab bundle names the API.
+    expect(bundles[0]?.text.includes('/api/')).toBe(false);
+  }, 60_000);
+
+  it('has the prototype page in a staging build, apart from the game page', async () => {
+    const files = await buildFiles('staging');
+    expect(files.some((f) => f.name === 'prototype.html')).toBe(true);
+    const bundles = files.filter((f) => f.text.includes('PROTOTYPE_MARKER_3e8a'));
+    expect(bundles.map((f) => f.name.endsWith('.js'))).toEqual([true]);
+    // The game's own page never loads the prototype bundle.
+    const gamePage = files.find((f) => f.name === 'index.html');
+    expect(gamePage?.text.includes(bundles[0]?.name ?? 'x')).toBe(false);
+    expect(files.some((f) => f.name.endsWith('.css') && f.text.includes('proto-chooser'))).toBe(
+      true,
+    );
+    // It makes no API calls: nothing in the prototype bundle names the API.
     expect(bundles[0]?.text.includes('/api/')).toBe(false);
   }, 60_000);
 });

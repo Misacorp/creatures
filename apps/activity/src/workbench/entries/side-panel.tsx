@@ -1,7 +1,8 @@
+import { Column, Columns } from '../../ui/Columns';
 import { useWide } from '../../ui/wide-layout';
 import { SidePanel } from '../../ui/SidePanel';
 import { WideLayout } from '../../ui/WideLayout';
-import { bool, str } from '../props';
+import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
 
 const LAYOUTS = ['auto', 'phone', 'desktop'] as const;
@@ -118,4 +119,66 @@ const sidePanel: Entry = {
   render: (p) => <PanelDemo p={p} />,
 };
 
-export const sidePanelEntries: readonly Entry[] = [wideLayout, sidePanel];
+const FROMS = ['60rem', '80rem'] as const;
+const RATIOS = ['1-3', '2-3', '5-4'] as const;
+const STACKS = ['none', 'tight', 'roomy'] as const;
+
+function ColumnsDemo({ p }: { p: Props }) {
+  const from = str(p, 'from') === '80rem' ? '80rem' : '60rem';
+  const ratio = RATIOS.find((r) => r === str(p, 'ratio')) ?? '1-3';
+  const stack = STACKS.find((s) => s === str(p, 'stack'));
+  const rows = Array.from({ length: num(p, 'rows') }, (_, i) => i + 1);
+  return (
+    <Columns from={from} ratio={ratio}>
+      {bool(p, 'notice') && (
+        <p class="wb-wide-main">A notice above the work: it spans both columns</p>
+      )}
+      <Column
+        sticky={bool(p, 'sticky')}
+        {...(stack === undefined || stack === 'none' ? {} : { stack })}
+      >
+        <div class="wb-wide-main">The first column{bool(p, 'sticky') ? ' (sticky)' : ''}</div>
+        <div class="wb-wide-main">Its second block</div>
+      </Column>
+      <Column {...(stack === undefined || stack === 'none' ? {} : { stack })}>
+        <ul class="wb-wide-list">
+          {rows.map((n) => (
+            <li key={n}>Row {n} of the second column</li>
+          ))}
+        </ul>
+      </Column>
+    </Columns>
+  );
+}
+
+const columns: Entry = {
+  name: 'Columns',
+  file: 'apps/activity/src/ui/Columns.tsx',
+  group: 'Controls',
+  description:
+    "A screen's two columns on a desktop that collapse into one list on a phone, with `Column` for each side: `from` is the width where there are two (60 rem or 80 rem), `ratio` how the width is shared, a `Column` can be sticky (only while the window is at least 48 rem high) and stacked with a gap, and any child that is not a Column spans both columns. Used by the Workshop (60 rem, 1-3), the open dungeon run (60 rem, 2-3) and the Raid (80 rem, 5-4). The 80 rem presets need a full-width preview of 1280 px or more.",
+  controls: {
+    from: { kind: 'select', options: FROMS },
+    ratio: { kind: 'select', options: RATIOS },
+    stack: { kind: 'select', options: STACKS },
+    sticky: { kind: 'toggle' },
+    notice: { kind: 'toggle' },
+    rows: { kind: 'number', min: 1, max: 40 },
+  },
+  defaults: { from: '60rem', ratio: '1-3', stack: 'tight', sticky: true, notice: false, rows: 20 },
+  presets: [
+    { name: 'Workshop: 60 rem, 1-3, sticky, a notice above', props: { notice: true } },
+    {
+      name: 'Dungeon run: 60 rem, 2-3, roomy',
+      props: { ratio: '2-3', stack: 'roomy', sticky: false },
+    },
+    {
+      name: 'Raid: 80 rem, 5-4',
+      props: { from: '80rem', ratio: '5-4', stack: 'none', sticky: false, rows: 8 },
+    },
+  ],
+  covers: ['Column'],
+  render: (p) => <ColumnsDemo p={p} />,
+};
+
+export const sidePanelEntries: readonly Entry[] = [wideLayout, sidePanel, columns];

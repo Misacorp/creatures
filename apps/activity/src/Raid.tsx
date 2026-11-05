@@ -49,6 +49,7 @@ import type { Forecast } from './weather-types';
 import { Accordion } from './ui/Accordion';
 import { BagFullNote } from './ui/BagFullNote';
 import { Alert } from './ui/Alert';
+import { Column, Columns } from './ui/Columns';
 
 interface Loaded {
   view: RaidView;
@@ -65,6 +66,7 @@ export function Raid({
   showPractice,
   onBalanceChange,
   onNeedsPlacementChange,
+  onViewChange,
   configure,
 }: {
   creatures: Creature[];
@@ -76,6 +78,8 @@ export function Raid({
   onBalanceChange: () => void;
   /** Whether team creatures are still to be placed, whenever the raid view loads or changes (the tab's pip). */
   onNeedsPlacementChange: (needed: boolean) => void;
+  /** The raid view on screen, whenever it loads or changes (the valley's Arena scene draws the party and boss from it). */
+  onViewChange?: ((view: RaidView) => void) | undefined;
   /** Getting your board's creatures ready (their configurator and page); absent: their popovers only. */
   configure?: TeamConfigure | undefined;
 }) {
@@ -166,7 +170,9 @@ export function Raid({
 
   // The tab's pip follows the raid view on screen.
   useEffect(() => {
-    if (loaded !== null) onNeedsPlacementChange(needsPlacement(loaded.view, creatures.length));
+    if (loaded === null) return;
+    onNeedsPlacementChange(needsPlacement(loaded.view, creatures.length));
+    onViewChange?.(loaded.view);
   }, [loaded?.view]);
 
   // When the next phase is due, ask again shortly after, so the results appear by themselves.
@@ -406,125 +412,137 @@ export function Raid({
           }}
         />
       )}
-      {v2 !== undefined && (
-        <SwapRequests
-          requests={v2.swaps.incoming}
-          grid={{ rows: v2.rows, cols: v2.cols }}
-          busy={busy}
-          onAnswer={answerToSwap}
-        />
-      )}
-      <RaidTimeline
-        view={view}
-        serverNow={serverNow}
-        finale={finaleState}
-        owned={creatures.length}
-        onAct={act}
-        onReplay={(phase) => {
-          if (party !== null) setReplay({ week: view.weekId, party: party.party, phase });
-        }}
-      />
-      {showPractice && !practiceGone && v2 === undefined && (
-        <Accordion title="Testing tools" class="practice">
-          <p class="muted">Practice fights only exist on the test server and give no rewards.</p>
-          <button type="button" disabled={busy} onClick={startPracticeFight}>
-            Start practice fight
-          </button>
-        </Accordion>
-      )}
-      {v2 === undefined ? (
-        <BossCard view={view} forecast={forecast} />
-      ) : (
-        <>
-          <section class="raid-section track-section" aria-label="The track">
-            <TrackStrip order={v2.track.order} index={v2.track.index} rank={view.rank ?? v2.slot} />
-          </section>
-          <BossCardV2 view={view} lit={litId} onLit={setLitId} />
-        </>
-      )}
-      {party !== null && (
-        <Placement
-          party={party}
-          creatures={creatures.map(toPickerCreature)}
-          canEdit={view.you.canEdit}
-          busy={busy}
-          rosterNames={rosterNames}
-          turnOrder={view.boss.turnOrder}
-          onIntent={runIntent}
-          configure={configure}
-          owned={creatures}
-          onOpenPage={setPage}
-          v2={
-            v2 === undefined
-              ? undefined
-              : {
-                  view: v2,
-                  lit: tappedMove === undefined ? null : litMove(v2.preview, tappedMove),
-                  onAskSwap: askToSwap,
-                }
-          }
-        />
-      )}
-      {party !== null && view.you.canEdit && (
-        <BagFullNote
-          inventory={configure?.gear?.inventory}
-          onOpenWorkshop={configure?.onOpenWorkshop}
-        />
-      )}
-
-      {v2 === undefined && view.you.ability !== null && (
-        <AbilityChip
-          you={view.you}
-          current={view.you.ability}
-          abilities={view.you.abilities}
-          team={view.you.team?.creatures ?? []}
-          editable={serverNow < view.schedule.finale}
-          busy={busy}
-          onPick={(abilityId) => {
-            void mutate(() => setRaidAbility(abilityId));
-          }}
-          onAutoFire={(target, on) => {
-            void mutate(() => setRaidAutofire(target, on));
-          }}
-        />
-      )}
-      {/* Combat v2: the one live input, picked before the finale (the fight itself takes the row of a Shield Wall). */}
-      {v2 !== undefined && serverNow < view.schedule.finale && (
-        <AbilityChipV2
-          you={view.you}
-          editable
-          busy={busy}
-          onPick={(abilityId) => {
-            void mutate(() => setRaidAbility(abilityId));
-          }}
-          onAutoFire={(on) => {
-            void mutate(() => setRaidAutofire('basic', on));
-          }}
-        />
-      )}
-      {/* The shipped results wait for the finale; a combat v2 stage can be watched as soon as it is played. */}
-      {party !== null &&
-        (v2 === undefined ? showFullResults(party.results) : party.results.length > 0) && (
-          <section class="raid-section" aria-labelledby="raid-results-heading">
-            <h3 id="raid-results-heading">Results</h3>
-            <ul class="cards">
-              {party.results.map((result) => (
-                <ResultCard
-                  key={result.phase}
-                  result={result}
-                  week={view.weekId}
-                  party={party.party}
-                  view={view}
-                  onReplay={() => {
-                    setReplay({ week: view.weekId, party: party.party, phase: result.phase });
-                  }}
+      <Columns from="80rem" ratio="5-4">
+        <Column>
+          {v2 !== undefined && (
+            <SwapRequests
+              requests={v2.swaps.incoming}
+              grid={{ rows: v2.rows, cols: v2.cols }}
+              busy={busy}
+              onAnswer={answerToSwap}
+            />
+          )}
+          <RaidTimeline
+            view={view}
+            serverNow={serverNow}
+            finale={finaleState}
+            owned={creatures.length}
+            onAct={act}
+            onReplay={(phase) => {
+              if (party !== null) setReplay({ week: view.weekId, party: party.party, phase });
+            }}
+          />
+          {showPractice && !practiceGone && v2 === undefined && (
+            <Accordion title="Testing tools" class="practice">
+              <p class="muted">
+                Practice fights only exist on the test server and give no rewards.
+              </p>
+              <button type="button" disabled={busy} onClick={startPracticeFight}>
+                Start practice fight
+              </button>
+            </Accordion>
+          )}
+          {v2 === undefined ? (
+            <BossCard view={view} forecast={forecast} />
+          ) : (
+            <>
+              <section class="raid-section track-section" aria-label="The track">
+                <TrackStrip
+                  order={v2.track.order}
+                  index={v2.track.index}
+                  rank={view.rank ?? v2.slot}
                 />
-              ))}
-            </ul>
-          </section>
-        )}
+              </section>
+              <BossCardV2 view={view} lit={litId} onLit={setLitId} />
+            </>
+          )}
+        </Column>
+        <Column>
+          {party !== null && (
+            <Placement
+              party={party}
+              creatures={creatures.map(toPickerCreature)}
+              canEdit={view.you.canEdit}
+              busy={busy}
+              rosterNames={rosterNames}
+              turnOrder={view.boss.turnOrder}
+              onIntent={runIntent}
+              configure={configure}
+              owned={creatures}
+              onOpenPage={setPage}
+              v2={
+                v2 === undefined
+                  ? undefined
+                  : {
+                      view: v2,
+                      lit: tappedMove === undefined ? null : litMove(v2.preview, tappedMove),
+                      onAskSwap: askToSwap,
+                    }
+              }
+            />
+          )}
+          {party !== null && view.you.canEdit && (
+            <BagFullNote
+              inventory={configure?.gear?.inventory}
+              onOpenWorkshop={configure?.onOpenWorkshop}
+            />
+          )}
 
-      <RaidNews />
+          {v2 === undefined && view.you.ability !== null && (
+            <AbilityChip
+              you={view.you}
+              current={view.you.ability}
+              abilities={view.you.abilities}
+              team={view.you.team?.creatures ?? []}
+              editable={serverNow < view.schedule.finale}
+              busy={busy}
+              onPick={(abilityId) => {
+                void mutate(() => setRaidAbility(abilityId));
+              }}
+              onAutoFire={(target, on) => {
+                void mutate(() => setRaidAutofire(target, on));
+              }}
+            />
+          )}
+          {/* Combat v2: the one live input, picked before the finale (the fight itself takes the row of a Shield Wall). */}
+          {v2 !== undefined && serverNow < view.schedule.finale && (
+            <AbilityChipV2
+              you={view.you}
+              editable
+              busy={busy}
+              onPick={(abilityId) => {
+                void mutate(() => setRaidAbility(abilityId));
+              }}
+              onAutoFire={(on) => {
+                void mutate(() => setRaidAutofire('basic', on));
+              }}
+            />
+          )}
+          {/* The shipped results wait for the finale; a combat v2 stage can be watched as soon as it is played. */}
+          {party !== null &&
+            (v2 === undefined ? showFullResults(party.results) : party.results.length > 0) && (
+              <section class="raid-section" aria-labelledby="raid-results-heading">
+                <h3 id="raid-results-heading">Results</h3>
+                <ul class="cards">
+                  {party.results.map((result) => (
+                    <ResultCard
+                      key={result.phase}
+                      result={result}
+                      week={view.weekId}
+                      party={party.party}
+                      view={view}
+                      onReplay={() => {
+                        setReplay({ week: view.weekId, party: party.party, phase: result.phase });
+                      }}
+                    />
+                  ))}
+                </ul>
+              </section>
+            )}
+
+          <RaidNews />
+        </Column>
+      </Columns>
     </>
   );
 }
