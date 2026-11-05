@@ -57,6 +57,15 @@ describe('the ladder reads the game and the valley', () => {
 });
 
 describe('loadoutAt', () => {
+  it('keeps a table line (Hunter, Ward, Beside the mark-maker) as a table of numbers, not a flag', () => {
+    const fx = loadoutAt(54, 'guard', 'tide').fx;
+    for (const field of ['vsElementBp', 'fromElementCutBp', 'besideRoleBp'] as const) {
+      const table = fx[field];
+      expect(typeof table, field).toBe('object');
+      for (const n of Object.values(table ?? {})) expect(n).toBeGreaterThan(0);
+    }
+  });
+
   it('is deterministic and grows with the item level', () => {
     const a = loadoutAt(54, 'payoff', 'tide');
     expect(loadoutAt(54, 'payoff', 'tide')).toEqual(a);

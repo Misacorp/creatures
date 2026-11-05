@@ -115,7 +115,7 @@ export function pipChances(itemLevel: number): { readonly pip: number; readonly 
 type Wearer = { role: Role; element: string };
 type Stats = { hp: number; atk: number; spd: number };
 type Effect = {
-  readonly fx: Readonly<Record<string, number | boolean>>;
+  readonly fx: Readonly<Record<string, number | boolean | Readonly<Record<string, number>>>>;
   readonly stats: GearStatAdds;
 };
 
@@ -132,7 +132,7 @@ function effectOf(item: GearItem, wearer: Wearer, stats: Stats): Effect {
   const w = { role: wearer.role, element: wearer.element as never };
   const folded = applyGear(stats, undefined, w, [item]);
   return {
-    fx: gearFx(w, [item]) as Record<string, number | boolean>,
+    fx: gearFx(w, [item]) as Effect['fx'],
     stats: {
       hp: folded.stats.hp - stats.hp,
       atk: folded.stats.atk - stats.atk,
@@ -156,6 +156,9 @@ export function baseOf(slot: GearSlot, wearer: Wearer, itemLevel: number): GearB
   return base;
 }
 
+/** Joins a table field and its key in the accumulator (`vsElementBp` and `ember`). */
+const TABLE = '\u0000';
+
 /** An accumulator of expected effect: numbers add; a flag adds its chance. */
 class Sum {
   readonly numbers = new Map<string, number>();
@@ -172,7 +175,14 @@ class Sum {
   add(e: Effect, from: Effect, weight: number): void {
     for (const [k, v] of Object.entries(e.fx)) {
       const before = from.fx[k];
-      if (typeof v === 'number') {
+      if (typeof v === 'object') {
+        // A table by element or role (Hunter, Ward, Beside the mark-maker): each entry is a number of its own.
+        const was = typeof before === 'object' ? before : {};
+        for (const [key, n] of Object.entries(v)) {
+          const name = `${k}${TABLE}${key}`;
+          this.numbers.set(name, (this.numbers.get(name) ?? 0) + weight * (n - (was[key] ?? 0)));
+        }
+      } else if (typeof v === 'number') {
         this.numbers.set(
           k,
           (this.numbers.get(k) ?? 0) + weight * (v - (typeof before === 'number' ? before : 0)),
@@ -224,10 +234,16 @@ function addPiece(
 const SLOTS: readonly GearSlot[] = ['hat', 'scarf', 'charm'];
 
 function finish(sum: Sum): Loadout {
-  const fx: Record<string, number | boolean> = {};
+  const fx: Record<string, number | boolean | Record<string, number>> = {};
   for (const [k, v] of [...sum.numbers].sort(([a], [b]) => a.localeCompare(b))) {
     const r = Math.round(v);
-    if (r !== 0) fx[k] = r;
+    if (r === 0) continue;
+    const [field, key] = k.split(TABLE);
+    if (key === undefined) fx[k] = r;
+    else {
+      const table = (fx[field as string] ??= {}) as Record<string, number>;
+      table[key] = r;
+    }
   }
   for (const [k, p] of [...sum.flags].sort(([a], [b]) => a.localeCompare(b)))
     if (p >= 0.5) fx[k] = true;

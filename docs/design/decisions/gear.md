@@ -4,6 +4,14 @@ Gear items, lines and sets, crafting, dismantling, conversions, the bag and the 
 
 <!-- Maintained with `pnpm decisions`; see README.md. Newest first. -->
 
+## 2026-11-06: Combat v2 gear slice 3: new effects for the cut and condition lines
+
+ID: `2026-11-06-combat-v2-gear-slice-3-new` · Status: current
+
+**Decision.** Seventeen new engine effect fields carry the gear lines that are cuts and conditions (batch A): `takenCutBp` (All Damage Taken), `aimedCutBp`, `reflectedCutBp` (Backdraft Ward), `lastStandCutBp` (a quarter of max HP or less, read at the hit, not latched), `vsElementBp` and `fromElementCutBp` (Hunter and Ward, tables by foe element), `markingHitBp`, `markedFoeBp`, `besideRoleBp` (a table by role; Beside the mark-maker is `setter`), `reachLeftBonus` and `reachRightBonus` (Long Arm +2 on one side; Flank Guard +1 on its side and -1 on the other), `shelterBp` (Sheltered), `keenReactionBp` and `backRowCritBp` (crit chance on a condition, scale x1.25), `heartHpBp` (max HP in the middle of the row, set when the fight starts), `fourWindsBp` (scale x2, the reaction family's, not the plan's x4) and `adaptPierceBp`. Each is read at the one place it applies; the lines are in `GEAR_LINE_FX` and count in the new rules (the client stops marking them). Hunter and Ward follow the plan's recommended OPEN 8 reading: the piece's element decides which foes, whoever wears it. The three table fields hold numbers by element or role (the only fields that are not a number or a flag); the resolver's memo key reads them whole. Skipped: nothing in batch A; batch B (triggers and auras) is slice 4.
+
+**Reasoning.** Gear effects go to `fxAll` only, so silence blanks them (R12) without new code. A condition that needs the boss's element cannot be settled before the fight (the sheet is built from the items alone), so Hunter and Ward carry a table and the engine looks the boss's element up when it hits. Heart of the Row changes max HP, so it is applied where the fight starts (the only place that knows the arena's columns). Gear-less fights read nothing new (the parity digest of the lab is unchanged). Keen Reaction and Back-row Patience take x1.25 so they keep the plan's ratio to the crit chance lines; Four Winds takes the reaction family's x2 so the cap (OPEN 14) is not broken by a second route to it.
+
 ## 2026-11-06: Combat v2 gear slice 2: the lab plays gear
 
 ID: `2026-11-06-combat-v2-gear-slice-2-the` · Status: current
