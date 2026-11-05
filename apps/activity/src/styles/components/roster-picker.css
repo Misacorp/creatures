@@ -250,3 +250,29 @@
   margin-left: auto;
   text-align: right;
 }
+
+/*
+  The dropdown panel (ui/DropList.tsx): fixed, directly under (or over) its trigger, the trigger's width, inset from the
+  window's edges, at most half the window high, scrolling by itself. DropList writes its place as custom properties.
+*/
+.drop-panel {
+  position: fixed;
+  top: var(--drop-y, 0);
+  left: var(--drop-x, 0);
+  z-index: var(--z-popover-layer);
+  box-sizing: border-box;
+  width: var(--drop-w, auto);
+  max-height: var(--drop-max, 50vh);
+  padding: 0.25rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--dusk);
+  box-shadow: var(--frame);
+  color: var(--bone);
+}
+
+/* The panel scrolls, not the list inside it. */
+.drop-panel .roster-list {
+  overflow: visible;
+  gap: 0.25rem;
+}

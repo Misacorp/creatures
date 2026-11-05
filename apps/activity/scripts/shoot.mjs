@@ -15,6 +15,9 @@
  * `--click` presses elements before the shot, one selector after the other separated by `;` (the first match of each, in
  * order), for a view that opens by a tap: a creature on the dungeon team, then its Knack.
  *
+ * `--window <px>` shoots the browser window itself (this high, scrolled by `--scroll` px; no `--sel`) instead of one
+ * element, for anything fixed to the window such as a dropdown panel, as a phone sees it. Use it with `--click`.
+ *
  * `--shell <top,bottom>` shoots the game's frame as a phone in Discord sees it, for any change to the HUD, the
  * dock or the top of a page (retro 2026-10-25: a gap under the dock, a page showing above the HUD and a field cut
  * under it were only found on Misa's phone). The entry must draw the HUD and the dock (MainNav, HomePage, with
@@ -37,7 +40,7 @@ import { createServer } from 'vite';
 import { drawSheet } from './sheet.mjs';
 
 const USAGE =
-  "usage: node scripts/shoot.mjs <Entry> [--props '<json>'] [--widths 390,1100] [--sel <css>] [--wait <ms>] [--out <dir>] [--name <name>] [--shell <top,bottom>] [--scroll <px>] [--click <css;css>]";
+  "usage: node scripts/shoot.mjs <Entry> [--props '<json>'] [--widths 390,1100] [--sel <css>] [--wait <ms>] [--out <dir>] [--name <name>] [--shell <top,bottom>] [--scroll <px>] [--click <css;css>] [--window <px>]";
 
 function readArgs(argv) {
   const [entry, ...rest] = argv;
@@ -71,8 +74,11 @@ function readArgs(argv) {
         process.exit(2);
       }
       opts.shell = { top, bottom: bottom ?? 0 };
-    } else if (key === '--scroll') opts.scroll = Number.parseInt(value, 10);
-    else {
+    } else if (key === '--window') opts.window = Number.parseInt(value, 10);
+    else if (key === '--scroll') {
+      opts.scroll = Number.parseInt(value, 10);
+      opts.scrollGiven = true;
+    } else {
       console.error(USAGE);
       process.exit(2);
     }
@@ -148,7 +154,7 @@ const shots = [];
 try {
   for (const width of opts.widths) {
     const ctx = await browser.newContext({
-      viewport: { width, height: opts.shell === null ? 900 : 844 },
+      viewport: { width, height: opts.window ?? (opts.shell === null ? 900 : 844) },
       deviceScaleFactor: 2,
     });
     const page = await ctx.newPage();
@@ -167,7 +173,16 @@ try {
       await page.waitForTimeout(300);
     }
     const file = join(outDir, `${opts.name}-${String(width)}.png`);
-    await page.locator(opts.sel).first().screenshot({ path: file });
+    if (opts.window === undefined) await page.locator(opts.sel).first().screenshot({ path: file });
+    else {
+      if (opts.scrollGiven === true) {
+        await page.evaluate((y) => {
+          window.scrollTo(0, y);
+        }, opts.scroll);
+      }
+      await page.waitForTimeout(300);
+      await page.screenshot({ path: file });
+    }
     shots.push({ label: `${String(width)} px`, file });
     await ctx.close();
   }

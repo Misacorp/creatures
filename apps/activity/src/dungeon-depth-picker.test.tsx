@@ -121,7 +121,8 @@ describe('the depth picker on the pre-run card', () => {
     expect(text).toContain(depthScalarChips(23).loot);
     expect(text).toContain('A clear unlocks depth 24.');
     expect(text).not.toContain('Your depth.');
-    expect(trigger(root).getAttribute('aria-haspopup')).toBe('dialog');
+    expect(trigger(root).getAttribute('aria-haspopup')).toBe('listbox');
+    expect(trigger(root).getAttribute('aria-expanded')).toBe('false');
     expect(trigger(root).getAttribute('aria-label')).toBe(`Depth to play: ${depthSpoken(23, 23)}`);
     expect(byClass(picker, 'equip-chevron')).toHaveLength(1);
     expect(byRole(root, 'listbox')).toHaveLength(0);
@@ -160,7 +161,12 @@ describe('the depth picker on the pre-run card', () => {
     expect(selected).toHaveLength(1);
     expect(first(byClass(first(selected), 'depth-name')).textContent).toBe('Depth 16');
     expect(first(selected).getAttribute('tabindex')).toBe('0');
-    expect(byRole(root, 'dialog')).toHaveLength(1);
+    // A dropdown panel, not a sheet: no dialog, no title, no Close.
+    expect(byRole(root, 'dialog')).toHaveLength(0);
+    expect(byClass(root, 'drop-panel')).toHaveLength(1);
+    expect(byClass(root, 'sheet')).toHaveLength(0);
+    expect(byName(root, 'button', 'Close')).toHaveLength(0);
+    expect(visibleText(first(byClass(root, 'drop-panel')))).not.toContain('Depth to play');
   });
 
   it('picks a row: it closes the list, sets the depth and says it does not take you deeper', () => {
@@ -207,7 +213,7 @@ describe('the depth picker on the pre-run card', () => {
     expect(visibleText(first(byClass(root, 'depth-pick')))).toContain('Depth 4');
     // Escape leaves the pick as it was.
     open(root);
-    p.key(first(byRole(root, 'dialog')), 'Escape');
+    p.key(list(), 'Escape');
     expect(byRole(root, 'listbox')).toHaveLength(0);
     expect(visibleText(first(byClass(root, 'depth-pick')))).toContain('Depth 4');
   });
@@ -237,6 +243,101 @@ describe('the depth picker on the pre-run card', () => {
   it('shows no picker at depth 1 (nothing to pick)', () => {
     const { root } = draw({ rules: 2, depth: 1 });
     expect(byClass(root, 'depth-pick')).toHaveLength(0);
+  });
+});
+
+describe('the dropdown panel of the depth picker', () => {
+  /** Records the document's listeners (the fake document never calls them) so a test can send a tap outside. */
+  function spyDocument(p: Page): Map<string, ((event: unknown) => void)[]> {
+    const handlers = new Map<string, ((event: unknown) => void)[]>();
+    Reflect.set(p.document, 'addEventListener', (type: string, fn: (event: unknown) => void) => {
+      handlers.set(type, [...(handlers.get(type) ?? []), fn]);
+    });
+    Reflect.set(p.document, 'removeEventListener', (type: string, fn: unknown) => {
+      handlers.set(
+        type,
+        (handlers.get(type) ?? []).filter((h) => h !== fn),
+      );
+    });
+    return handlers;
+  }
+  const panel = (root: FakeElement): FakeElement => first(byClass(root, 'drop-panel'));
+
+  it('toggles aria-expanded, and the trigger closes it again', () => {
+    const { root } = draw({ rules: 2, depth: 9 });
+    open(root);
+    expect(trigger(root).getAttribute('aria-expanded')).toBe('true');
+    expect(byClass(root, 'drop-panel')).toHaveLength(1);
+    open(root);
+    expect(trigger(root).getAttribute('aria-expanded')).toBe('false');
+    expect(byClass(root, 'drop-panel')).toHaveLength(0);
+  });
+
+  it('sits under the trigger at its width, inset from the window edge', () => {
+    const { root } = draw({ rules: 2, depth: 9 });
+    const rect = { left: 12, top: 300, width: 366, height: 44 };
+    trigger(root).getBoundingClientRect = () => rect;
+    Reflect.set(globalThis.window, 'innerWidth', 390);
+    open(root);
+    const el = panel(root);
+    expect(el.dataset['placement']).toBe('below');
+    expect(el.style.getPropertyValue('--drop-x')).toBe('12px');
+    expect(el.style.getPropertyValue('--drop-y')).toBe('348px');
+    expect(el.style.getPropertyValue('--drop-w')).toBe('366px');
+    expect(el.style.getPropertyValue('--drop-max')).toBe('400px');
+  });
+
+  it('opens above the trigger when there is no room below', () => {
+    const { root } = draw({ rules: 2, depth: 20 });
+    trigger(root).getBoundingClientRect = () => ({ left: 12, top: 770, width: 366, height: 36 });
+    Reflect.set(globalThis.window, 'innerWidth', 390);
+    open(root);
+    expect(panel(root).dataset['placement']).toBe('above');
+  });
+
+  it('closes on a tap outside, not on a tap inside it or on the trigger', () => {
+    const { root } = draw({ rules: 2, depth: 9 });
+    const p = page as Page;
+    const handlers = spyDocument(p);
+    open(root);
+    const down = (target: FakeElement): void => {
+      for (const fn of handlers.get('pointerdown') ?? []) fn({ target });
+    };
+    down(panel(root));
+    down(trigger(root));
+    expect(byClass(root, 'drop-panel')).toHaveLength(1);
+    p.update(() => {
+      down(root);
+    });
+    expect(byClass(root, 'drop-panel')).toHaveLength(0);
+  });
+
+  it('closes on Escape from anywhere, and focus returns to the trigger', () => {
+    const { root } = draw({ rules: 2, depth: 9 });
+    const p = page as Page;
+    const handlers = spyDocument(p);
+    open(root);
+    p.update(() => {
+      for (const fn of handlers.get('keydown') ?? []) fn({ key: 'Escape' });
+    });
+    expect(byClass(root, 'drop-panel')).toHaveLength(0);
+    expect(p.document.activeElement).toBe(trigger(root));
+  });
+
+  it('closes on a pick and gives the focus back to the trigger', () => {
+    const { root } = draw({ rules: 2, depth: 9 });
+    const p = page as Page;
+    open(root);
+    p.click(first(options(root)));
+    expect(byClass(root, 'drop-panel')).toHaveLength(0);
+    expect(p.document.activeElement).toBe(trigger(root));
+  });
+
+  it('scrolls the picked row into view when it opens', () => {
+    const { root } = draw({ rules: 2, depth: 23, initialDepth: 16 });
+    open(root);
+    const row = first(options(root).filter((r) => r.getAttribute('aria-selected') === 'true'));
+    expect(row.scrolled).toBeGreaterThan(0);
   });
 });
 

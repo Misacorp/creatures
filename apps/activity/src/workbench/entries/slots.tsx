@@ -1,5 +1,5 @@
 import { content, landmarkBossId } from '@creatures/game';
-import { useMemo, useState } from 'preact/hooks';
+import { useMemo, useRef, useState } from 'preact/hooks';
 import { DungeonSetup } from '../../DungeonSetup';
 import { TreatTimesContext } from '../../TreatBox';
 import { DungeonTeam } from '../../DungeonTeam';
@@ -17,6 +17,7 @@ import { isComplete, type Slots } from '../../dungeon-team';
 import type { PickerCreature } from '../../roster-picker';
 import { CueRail } from '../../ui/CueRail';
 import { DropChevron } from '../../ui/DropChevron';
+import { DropList } from '../../ui/DropList';
 import { PickSheet } from '../../ui/PickSheet';
 import { PlacedCount } from '../../ui/PlacedCount';
 import { SlotButton } from '../../ui/SlotButton';
@@ -717,7 +718,7 @@ const pickSheet: Entry = {
   file: 'apps/activity/src/ui/PickSheet.tsx',
   group: 'Slots',
   description:
-    'The bottom sheet every pick-one-from-a-list opens from a page: a title, a Close button, an optional line and the list. Escape, Close or a tap outside closes it, Tab stays inside, and focus goes back to what opened it. The creature picker (RosterPicker) and the dungeon depth picker (DepthPicker, see DungeonSetup) fill it with their lists. From a drawer a choice is a drill-in view instead, never a sheet.',
+    'The bottom sheet every pick-one-from-a-list opens from a page: a title, a Close button, an optional line and the list. Escape, Close or a tap outside closes it, Tab stays inside, and focus goes back to what opened it. The creature picker (RosterPicker) fills it with its list (a dropdown, DropList, is the lighter pick from a page). From a drawer a choice is a drill-in view instead, never a sheet.',
   controls: { open: { kind: 'toggle' }, status: { kind: 'toggle' } },
   defaults: { open: true, status: true },
   presets: [
@@ -726,6 +727,74 @@ const pickSheet: Entry = {
   ],
   render: (p) => (
     <PickSheetDemo key={`${String(bool(p, 'open'))}-${String(bool(p, 'status'))}`} p={p} />
+  ),
+};
+
+/** The dropdown panel on its own: a trigger in the shared look and a short plain list hanging from it. */
+function DropListDemo({ p }: { p: Props }) {
+  const [open, setOpen] = useState(bool(p, 'open'));
+  const [picked, setPicked] = useState(0);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const names = Array.from({ length: num(p, 'rows') }, (_, i) => `Choice ${String(i + 1)}`);
+  return (
+    <div class="depth-pick">
+      <button
+        ref={trigger}
+        type="button"
+        class="equip-trigger depth-trigger"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => {
+          setOpen(!open);
+        }}
+      >
+        <span class="depth-name">{names[picked] ?? 'Choice 1'}</span>
+        <DropChevron />
+      </button>
+      {open && (
+        <DropList
+          anchor={() => trigger.current}
+          onClose={() => {
+            setOpen(false);
+          }}
+        >
+          <ul class="roster-list" role="listbox" aria-label="Choices">
+            {names.map((name, i) => (
+              <li
+                key={name}
+                role="option"
+                aria-selected={i === picked}
+                tabIndex={i === picked ? 0 : -1}
+                class={i === picked ? 'roster-option on' : 'roster-option'}
+                onClick={() => {
+                  setPicked(i);
+                  setOpen(false);
+                }}
+              >
+                {name}
+              </li>
+            ))}
+          </ul>
+        </DropList>
+      )}
+    </div>
+  );
+}
+
+const dropList: Entry = {
+  name: 'DropList',
+  file: 'apps/activity/src/ui/DropList.tsx',
+  group: 'Slots',
+  description:
+    'The dropdown panel of a pick-one list opened from a page: directly under its trigger (above it when there is no room below), as wide as the trigger, inset from the window edges, at most half the window high with its own scroll. No title, no Close, no backdrop. Escape, Tab, a tap outside or a pick closes it and focus goes back to the trigger. The dungeon depth picker (DepthPicker) fills it with its list. From a drawer a choice is a drill-in view instead.',
+  controls: { open: { kind: 'toggle' }, rows: { kind: 'number', min: 1, max: 40 } },
+  defaults: { open: true, rows: 12 },
+  presets: [
+    { name: 'Open, a long list', props: {} },
+    { name: 'Open, a short list', props: { rows: 3 } },
+  ],
+  render: (p) => (
+    <DropListDemo key={`${String(bool(p, 'open'))}-${String(num(p, 'rows'))}`} p={p} />
   ),
 };
 
@@ -749,6 +818,7 @@ const dropChevron: Entry = {
 export const slotEntries: readonly Entry[] = [
   dungeonSetup,
   pickSheet,
+  dropList,
   dropChevron,
   creatureConfigurator,
   dungeonTeam,
