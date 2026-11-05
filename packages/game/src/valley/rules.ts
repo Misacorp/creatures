@@ -17,6 +17,13 @@ export type ValleyResource = (typeof VALLEY_RESOURCES)[number];
 
 export type KitName = 'lure' | 'lantern' | 'satchel' | 'tongs' | 'loupe';
 export type FindFamily = 'scrap' | 'shards' | 'creatures' | 'rare';
+/** A shipped place the lab does not model: when it is open (V-SCOUT-8). */
+export interface ValleyExtraPlace {
+  readonly id: string;
+  readonly element: ValleyElement | null;
+  readonly rich: FindFamily | 'none';
+  readonly opens: 'always' | 'festival';
+}
 export interface ValleyDestination {
   readonly id: string;
   readonly element: ValleyElement | null;
@@ -188,6 +195,21 @@ export const VALLEY_RULES = {
       { id: 'sunken-fen', element: 'mire', rich: 'shards' },
       { id: 'old-crossroads', element: null, rich: 'none' },
     ] as readonly ValleyDestination[],
+    // The two shipped places the lab does not model (it has six). Server only (phase 5 step 2): the lab's `destinations` are unchanged.
+    // ASSUMPTION: the Moonlit Reef is tide, rich in creatures, open all day; the Festival Grounds have no element, are rich in rare finds,
+    // and are open in festival weeks (V-SCOUT-8).
+    extraPlaces: [
+      { id: 'moonlit-reef', element: 'tide', rich: 'creatures', opens: 'always' },
+      { id: 'festival-grounds', element: null, rich: 'rare', opens: 'festival' },
+    ] as readonly ValleyExtraPlace[],
+    // ASSUMPTION (V-SCOUT-8: "gives more at night", no number in the docs): the Moonlit Reef gives this much more of everything at night.
+    nightMultiplier: 1.5,
+    // ASSUMPTION (V-SCOUT-11): the week's twist for scouts. Parts: scrap and shards x(1 + bp). Rolls ("more hours of finds" a trip): every
+    // find rate grows by this much per extra hour. Journal: pages x(1 + bp). Xp: mastery hours count x(1 + bp). Featured: the species
+    // weighs that much more.
+    twistRollsPerExtra: 0.1,
+    /** V-SCOUT-3: a duplicate waiting at the Paddock gate takes today's Recommended answer by itself after this many hours. */
+    gateAutoHours: 24,
     /** V-SCOUT-9: a keystone clock per destination for the whole server: one in about this many days. */
     keystoneMeanDays: 21,
     // ASSUMPTION: a destination whose element a creature has doubles its weight when a new creature arrives (the shipped 2x).

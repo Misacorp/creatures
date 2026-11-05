@@ -1,5 +1,16 @@
 import { VALLEY_RULES, type AwayCurve, type ValleyRules } from './rules';
 import { awayShare } from './formulas';
+import {
+  QUIET_WORLD,
+  masteryHoursOf,
+  placeOpen,
+  placeProfile,
+  seatRates,
+  type PlaceProfile,
+  type ScoutKit,
+  type ScoutWorld,
+  type SeatRates,
+} from './scouts';
 
 /**
  * The lazy pass, skeleton (V-POST-14, docs/design/valley/systems/posts.md): a pure walk through time from `from` to `to` that splits
@@ -12,6 +23,12 @@ import { awayShare } from './formulas';
  * hour-share at a time, capped at `rules.posts.storeHours` of it, nothing lost to a full store but the surplus). Seats and their
  * stores, and the notable events the Gazette reads, join `SettleState` and `SettleEvent` in later steps. The two rules that hold
  * (tested): settling a to c equals settling a to b and then b to c, and settling again at the same `now` changes nothing.
+ *
+ * Step 2 adds scouts' seats (V-POST-14, V-SCOUT-2): each seat with a creature takes the stretch's effective hours (the away share
+ * times the hours) into its store until the store is full (V-SCOUT-4), grows the creature's scouting hours (V-POST-12, which keep
+ * counting when the store is full), pays scrap and shards as expected values with a carry, and reports one `SeatStretch` per
+ * stretch so the caller can draw creatures, gear, blueprints and pages live: a stretch is split where the rates change (a mastery
+ * step, a full store, night falling, a new week's twist), never hour by hour. The same two rules hold.
  *
  * Times are UTC epoch milliseconds (or any one unit of milliseconds: only differences are used).
  */
@@ -27,12 +44,50 @@ export interface SettleCreature {
   readonly catchUp?: number;
   /** When the creature joined the player's roster: it earns nothing before (default: always there). */
   readonly joinedAt?: number;
+  /** The creature's scouting hours (V-POST-12): effective hours it has worked at a scout seat (default 0). */
+  readonly scoutHours?: number;
 }
 
 /** The allowance store (V-POST-5): whole Acorns waiting, and the fraction not yet paid into them (0 up to 1). */
 export interface SettleAllowance {
   readonly store: number;
   readonly carry: number;
+}
+
+/** One scout seat as the pass sees it (V-POST-1, V-SCOUT-2). Whole scrap and shards wait in the store with a carry. */
+export interface SettleSeat {
+  readonly id: string;
+  /** The index in `creatures` of the posted creature; -1: an empty seat, which does nothing. */
+  readonly creature: number;
+  readonly destination: string;
+  readonly kit: ScoutKit | null;
+  /** V-POST-4: the creature's element is the place's. */
+  readonly fit: boolean;
+  /** V-SCOUT-10: not the player's first scout at this place. */
+  readonly second: boolean;
+  /** Effective hours in the store, 0 up to `rules.posts.storeHours` (V-POST-5). */
+  readonly storeHours: number;
+  readonly scrap: number;
+  readonly scrapCarry: number;
+  readonly shards: number;
+  readonly shardCarry: number;
+}
+
+/** What a stretch of one seat picked up, for the live draws (V-POST-14): `hours` of effective work at `rates`, in `world`. */
+export interface SeatStretch {
+  readonly seat: string;
+  readonly at: number;
+  /** Effective hours picked up (less than the stretch's when the store filled in it). */
+  readonly hours: number;
+  readonly rates: SeatRates;
+  readonly world: ScoutWorld;
+  readonly place: PlaceProfile;
+}
+
+/** The world as a function of time: day or night, festival or not, the week's twist, and when it next changes (Infinity: never). */
+export interface WorldClock {
+  at(at: number): ScoutWorld;
+  nextChange(at: number): number;
 }
 
 export interface SettleState {
@@ -45,6 +100,10 @@ export interface SettleState {
   readonly creatures: readonly SettleCreature[];
   /** Absent: no store (the pass builds none). */
   readonly allowance?: SettleAllowance;
+  /** Absent: no seats. */
+  readonly seats?: readonly SettleSeat[];
+  /** What the seats picked up in this pass, by stretch, in time order (output only; never an input of the next pass). */
+  readonly stretches?: readonly SeatStretch[];
 }
 
 /** A change point the caller knows about. A visit restarts the away steps, and may bring a new hearth multiplier. */
@@ -57,6 +116,8 @@ export interface SettleEvent {
 export interface SettleOptions {
   readonly rules?: ValleyRules;
   readonly curve?: AwayCurve;
+  /** Absent: always day, no festival, no twist. */
+  readonly world?: WorldClock;
 }
 
 /** A tolerance so a total that is a whole number in exact arithmetic is not left a hair short by rounding (and splits agree). */
@@ -103,6 +164,67 @@ function nextJoin(creatures: readonly SettleCreature[], at: number): number {
   return next;
 }
 
+/** One seat's work in a stretch: what it takes into the store, and the rates it works at. */
+interface SeatWork {
+  readonly seat: SettleSeat;
+  readonly place: PlaceProfile;
+  readonly rates: SeatRates;
+  readonly worker: SettleCreature;
+}
+
+function seatWork(
+  rules: ValleyRules,
+  seats: readonly SettleSeat[],
+  creatures: readonly SettleCreature[],
+  world: ScoutWorld,
+  at: number,
+): SeatWork[] {
+  const out: SeatWork[] = [];
+  for (const seat of seats) {
+    const worker = creatures[seat.creature];
+    const place = placeProfile(rules, seat.destination);
+    if (worker === undefined || place === undefined || !placeOpen(place, world)) continue;
+    if (worker.joinedAt !== undefined && worker.joinedAt > at) continue;
+    out.push({
+      seat,
+      place,
+      worker,
+      rates: seatRates(rules, {
+        place,
+        fit: seat.fit,
+        masteryHours: worker.scoutHours ?? 0,
+        kit: seat.kit,
+        second: seat.second,
+        world,
+      }),
+    });
+  }
+  return out;
+}
+
+/** The next moment (a ms value, maybe fractional) a seat's rates change by themselves: its store fills or its creature's mastery steps up. */
+function nextSeatBoundary(
+  rules: ValleyRules,
+  work: readonly SeatWork[],
+  world: ScoutWorld,
+  share: number,
+  cursor: number,
+): number {
+  let next = Number.POSITIVE_INFINITY;
+  if (share <= 0) return next;
+  for (const w of work) {
+    const room = rules.posts.storeHours - w.seat.storeHours;
+    if (room > EPSILON) next = Math.min(next, cursor + (room / share) * HOUR_MS);
+    const hours = w.worker.scoutHours ?? 0;
+    const step = rules.posts.mastery.find((m) => m.hours > hours + EPSILON);
+    if (step !== undefined) {
+      const perHour = share * masteryHoursOf(1, w.place, world);
+      next = Math.min(next, cursor + ((step.hours - hours) / perHour) * HOUR_MS);
+    }
+  }
+  return next;
+}
+
 /**
  * Walks `state` from `from` (which must be `state.settledAt`) to `to`. Events with `from < at <= to` are applied at their moment (an
  * event at `to` is applied, so the next pass starts after it). Returns the new state; the input is never changed.
@@ -127,6 +249,9 @@ export function settle(
 
   let { lastVisitAt, hearth, creatures } = state;
   let allowance = state.allowance;
+  let seats = state.seats;
+  const stretches: SeatStretch[] = [];
+  const world = options.world;
   const allowanceCap = (rules.acorns.allowancePerDay / 24) * rules.posts.storeHours;
   const allowancePerHour = rules.acorns.allowancePerDay / 24;
   let cursor = from;
@@ -137,14 +262,25 @@ export function settle(
       if (e.hearth !== undefined) hearth = e.hearth;
     }
     if (cursor >= to) break;
+    const share = awayShare(rules, curve, (cursor - lastVisitAt) / HOUR_MS);
+    const scoutWorld = world?.at(cursor) ?? QUIET_WORLD;
+    const work =
+      seats === undefined || seats.length === 0
+        ? []
+        : seatWork(rules, seats, creatures, scoutWorld, cursor);
     const boundary = Math.min(
       to,
       due[next]?.at ?? Number.POSITIVE_INFINITY,
       nextAwayBoundary(rules, curve, lastVisitAt, cursor),
       nextJoin(creatures, cursor),
+      seats === undefined || seats.length === 0
+        ? Number.POSITIVE_INFINITY
+        : Math.min(
+            world?.nextChange(cursor) ?? Number.POSITIVE_INFINITY,
+            nextSeatBoundary(rules, work, scoutWorld, share, cursor),
+          ),
     );
     const hours = (boundary - cursor) / HOUR_MS;
-    const share = awayShare(rules, curve, (cursor - lastVisitAt) / HOUR_MS);
     const gain = rules.xp.idlePerHour * hearth * share * hours;
     if (gain > 0) {
       const at = cursor;
@@ -157,6 +293,43 @@ export function settle(
       const paid = payInto(allowance.store, allowance.carry, stored, allowanceCap);
       allowance = { store: paid.amount, carry: paid.carry };
     }
+    if (seats !== undefined && work.length > 0 && hours > 0) {
+      const effective = share * hours;
+      const worked = new Map(work.map((w) => [w.seat.id, w]));
+      const grown = new Map<number, number>();
+      seats = seats.map((seat) => {
+        const w = worked.get(seat.id);
+        if (w === undefined) return seat;
+        const picked = Math.min(effective, Math.max(0, rules.posts.storeHours - seat.storeHours));
+        grown.set(seat.creature, masteryHoursOf(effective, w.place, scoutWorld));
+        if (picked <= 0) return seat;
+        stretches.push({
+          seat: seat.id,
+          at: cursor,
+          hours: picked,
+          rates: w.rates,
+          world: scoutWorld,
+          place: w.place,
+        });
+        const scrap = payInto(seat.scrap, seat.scrapCarry, picked * w.rates.scrap, Infinity);
+        const shards = payInto(seat.shards, seat.shardCarry, picked * w.rates.shards, Infinity);
+        const filled = seat.storeHours + picked;
+        return {
+          ...seat,
+          storeHours: rules.posts.storeHours - filled < EPSILON ? rules.posts.storeHours : filled,
+          scrap: scrap.amount,
+          scrapCarry: scrap.carry,
+          shards: shards.amount,
+          shardCarry: shards.carry,
+        };
+      });
+      if (grown.size > 0) {
+        creatures = creatures.map((c, i) => {
+          const more = grown.get(i);
+          return more === undefined ? c : { ...c, scoutHours: (c.scoutHours ?? 0) + more };
+        });
+      }
+    }
     cursor = boundary;
   }
   return {
@@ -165,5 +338,7 @@ export function settle(
     hearth,
     creatures,
     ...(allowance === undefined ? {} : { allowance }),
+    ...(seats === undefined ? {} : { seats }),
+    ...(stretches.length === 0 ? {} : { stretches }),
   };
 }

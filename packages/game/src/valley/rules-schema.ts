@@ -96,6 +96,17 @@ export const ValleyRulesSchema = v.strictObject({
         rich: v.picklist(['scrap', 'shards', 'creatures', 'rare', 'none']),
       }),
     ),
+    extraPlaces: v.array(
+      v.strictObject({
+        id: v.pipe(v.string(), v.regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)),
+        element: v.nullable(v.picklist(VALLEY_ELEMENTS)),
+        rich: v.picklist(['scrap', 'shards', 'creatures', 'rare', 'none']),
+        opens: v.picklist(['always', 'festival']),
+      }),
+    ),
+    nightMultiplier: pos,
+    twistRollsPerExtra: num,
+    gateAutoHours: pos,
     keystoneMeanDays: pos,
     placeAffinity: pos,
     species: v.strictObject({ start: int, dropFromWeek: int, dropEveryWeeks: int, dropCount: int }),
