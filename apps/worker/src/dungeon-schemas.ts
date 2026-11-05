@@ -34,7 +34,7 @@ export const RunBodySchema = v.strictObject({
   treats: v.optional(v.pipe(v.array(IdSchema), v.maxLength(RULES.dungeon.teamSize)), []),
   /**
    * Combat v2 only: the depth to play, any depth the player has unlocked (1 up to their own depth; the server checks the
-   * upper end). Absent: their own depth. A combat v1 server refuses a body that carries it (`depth_not_allowed`).
+   * upper end). Absent: their own depth. A combat v1 server refuses a body that carries it (`invalid_body`, as before the picker).
    */
   depth: v.optional(DepthSchema),
   idempotencyKey: IdempotencyKeySchema,

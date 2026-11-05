@@ -572,7 +572,7 @@ export class Dungeon {
     const attempt = runs.length + 1;
     // --- The depth: the player's own, or (combat v2) any depth they have unlocked ---
     const v2 = this.deps.combatV2 === true;
-    if (body.depth !== undefined && !v2) throw new GameError(400, 'depth_not_allowed');
+    if (body.depth !== undefined && !v2) throw new GameError(400, 'invalid_body');
     if (body.depth !== undefined && body.depth > progress.depth) {
       throw new GameError(400, 'depth_locked');
     }
@@ -773,7 +773,7 @@ export class Dungeon {
   preview(userId: string, depth: number): Outcome<DungeonPreview> {
     const day = gameDay(this.deps.now(), this.deps.timezone(), RULES.daily.reset);
     return atomically(this.deps.storage, () => {
-      if (this.deps.combatV2 !== true) throw new GameError(400, 'depth_not_allowed');
+      if (this.deps.combatV2 !== true) throw new GameError(400, 'invalid_body');
       if (depth > progressOf(this.sql, userId).depth) throw new GameError(400, 'depth_locked');
       return {
         depth,

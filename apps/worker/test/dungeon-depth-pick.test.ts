@@ -236,7 +236,7 @@ describe('starting at a picked depth (combat v2)', () => {
         setDepth(ctx, p.id, 9);
         const res = await p.start({ depth: 5 });
         expect(res.status).toBe(400);
-        expect(res.body.error).toBe('depth_not_allowed');
+        expect(res.body.error).toBe('invalid_body');
         expect(rows(ctx.sql, 'SELECT id FROM dungeon_runs')).toHaveLength(0);
         // Without it a v1 run starts as before: at the own depth, with no mark of the picker in its state.
         const started = await p.start();
@@ -326,7 +326,7 @@ describe('GET /api/dungeon/preview', () => {
         setDepth(ctx, p.id, 5);
         const res = await p.call('GET', '/api/dungeon/preview?depth=2');
         expect(res.status).toBe(400);
-        expect(res.body.error).toBe('depth_not_allowed');
+        expect(res.body.error).toBe('invalid_body');
       },
       opts('pick-preview-v1'),
     );
